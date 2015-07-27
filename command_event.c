@@ -102,11 +102,11 @@ static void event_init_autosave(void)
    if (settings->autosave_interval < 1 || !global->savefiles)
       return;
 
-   if (!(global->autosave = (autosave_t**)calloc(global->savefiles->size,
-               sizeof(*global->autosave))))
+   if (!(global->autosave.list = (autosave_t**)calloc(global->savefiles->size,
+               sizeof(*global->autosave.list))))
       return;
 
-   global->num_autosave = global->savefiles->size;
+   global->autosave.num = global->savefiles->size;
 
    for (i = 0; i < global->savefiles->size; i++)
    {
@@ -116,12 +116,12 @@ static void event_init_autosave(void)
       if (pretro_get_memory_size(type) <= 0)
          continue;
 
-      global->autosave[i] = autosave_new(path,
+      global->autosave.list[i] = autosave_new(path,
             pretro_get_memory_data(type),
             pretro_get_memory_size(type),
             settings->autosave_interval);
 
-      if (!global->autosave[i])
+      if (!global->autosave.list[i])
          RARCH_WARN("%s\n", msg_hash_to_str(MSG_AUTOSAVE_FAILED));
    }
 }
@@ -131,14 +131,14 @@ static void event_deinit_autosave(void)
    unsigned i;
    global_t *global = global_get_ptr();
 
-   for (i = 0; i < global->num_autosave; i++)
-      autosave_free(global->autosave[i]);
+   for (i = 0; i < global->autosave.num; i++)
+      autosave_free(global->autosave.list[i]);
 
-   if (global->autosave)
-      free(global->autosave);
-   global->autosave     = NULL;
+   if (global->autosave.list)
+      free(global->autosave.list);
 
-   global->num_autosave = 0;
+   global->autosave.list     = NULL;
+   global->autosave.num      = 0;
 }
 #endif
 
@@ -147,7 +147,7 @@ static void event_save_files(void)
    unsigned i;
    global_t *global = global_get_ptr();
 
-   if (!global->savefiles || !global->use_sram)
+   if (!global->savefiles || !global->sram.use)
       return;
 
    for (i = 0; i < global->savefiles->size; i++)
@@ -543,9 +543,11 @@ static void event_deinit_core(bool reinit)
 
    /* per-core saves: restore the original path so the config is not affected */
    if(settings->sort_savefiles_enable)
-      strlcpy(global->savefile_dir,orig_savefile_dir,sizeof(global->savefile_dir));
+      strlcpy(global->dir.savefile, orig_savefile_dir,
+            sizeof(global->dir.savefile));
    if(settings->sort_savestates_enable)
-      strlcpy(global->savestate_dir,orig_savestate_dir,sizeof(global->savestate_dir));
+      strlcpy(global->dir.savestate, orig_savestate_dir,
+            sizeof(global->dir.savestate));
 
   /* auto overrides: reload the original config */
    if(global->overrides_active)
@@ -583,7 +585,7 @@ static bool event_load_save_files(void)
 
    if (!global)
       return false;
-   if (!global->savefiles || global->sram_load_disable)
+   if (!global->savefiles || global->sram.load_disable)
       return false;
 
    for (i = 0; i < global->savefiles->size; i++)
@@ -602,14 +604,14 @@ static void event_load_auto_state(void)
    global_t   *global   = global_get_ptr();
 
 #ifdef HAVE_NETPLAY
-   if (global->netplay_enable && !global->netplay_is_spectate)
+   if (global->netplay.enable && !global->netplay.is_spectate)
       return;
 #endif
 
    if (!settings->savestate_auto_load)
       return;
 
-   fill_pathname_noext(savestate_name_auto, global->savestate_name,
+   fill_pathname_noext(savestate_name_auto, global->name.savestate,
          ".auto", sizeof(savestate_name_auto));
 
    if (!path_file_exists(savestate_name_auto))
@@ -645,9 +647,9 @@ static void event_set_savestate_auto_index(void)
     * /foo/path/content.state%d, where %d is the largest number available.
     */
 
-   fill_pathname_basedir(state_dir, global->savestate_name,
+   fill_pathname_basedir(state_dir, global->name.savestate,
          sizeof(state_dir));
-   fill_pathname_base(state_base, global->savestate_name,
+   fill_pathname_base(state_base, global->name.savestate,
          sizeof(state_base));
 
    if (!(dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN)))
@@ -686,16 +688,16 @@ static bool event_init_content(void)
 
    /* No content to be loaded for dummy core,
     * just successfully exit. */
-   if (global->core_type == CORE_TYPE_DUMMY) 
+   if (global->inited.core.type == CORE_TYPE_DUMMY) 
       return true;
 
-   if (!global->libretro_no_content)
+   if (!global->inited.core.no_content)
       rarch_fill_pathnames();
 
    if (!init_content_file())
       return false;
 
-   if (global->libretro_no_content)
+   if (global->inited.core.no_content)
       return true;
 
    event_set_savestate_auto_index();
@@ -719,9 +721,11 @@ static bool event_init_core(void)
 
    /* per-core saves: save the original path */
    if(orig_savefile_dir[0] == '\0')
-      strlcpy(orig_savefile_dir,global->savefile_dir,sizeof(orig_savefile_dir));
+      strlcpy(orig_savefile_dir, global->dir.savefile,
+            sizeof(orig_savefile_dir));
    if(orig_savestate_dir[0] == '\0')
-      strlcpy(orig_savestate_dir,global->savestate_dir,sizeof(orig_savestate_dir));
+      strlcpy(orig_savestate_dir, global->dir.savestate,
+            sizeof(orig_savestate_dir));
 
    /* auto overrides: apply overrides */
    if(settings->auto_overrides_enable)
@@ -742,14 +746,14 @@ static bool event_init_core(void)
       config_load_remap();
 
    /* per-core saves: reset redirection paths */
-   if((settings->sort_savestates_enable || settings->sort_savefiles_enable) && !global->libretro_no_content) 
-      set_paths_redirect(global->basename);
+   if((settings->sort_savestates_enable || settings->sort_savefiles_enable) && !global->inited.core.no_content) 
+      set_paths_redirect(global->name.base);
 
    rarch_verify_api_version();
    pretro_init();
 
-   global->use_sram = (global->core_type == CORE_TYPE_PLAIN) &&
-      !global->libretro_no_content;
+   global->sram.use = (global->inited.core.type == CORE_TYPE_PLAIN) &&
+      !global->inited.core.no_content;
 
    if (!event_init_content())
       return false;
@@ -768,11 +772,11 @@ static bool event_save_auto_state(void)
    global_t   *global   = global_get_ptr();
 
    if (!settings->savestate_auto_save || 
-         (global->core_type == CORE_TYPE_DUMMY) ||
-       global->libretro_no_content)
+         (global->inited.core.type == CORE_TYPE_DUMMY) ||
+       global->inited.core.no_content)
        return false;
 
-   fill_pathname_noext(savestate_name_auto, global->savestate_name,
+   fill_pathname_noext(savestate_name_auto, global->name.savestate,
          ".auto", sizeof(savestate_name_auto));
 
    ret = save_state(savestate_name_auto);
@@ -817,8 +821,8 @@ static bool event_save_core_config(void)
    if (*settings->menu_config_directory)
       strlcpy(config_dir, settings->menu_config_directory,
             sizeof(config_dir));
-   else if (*global->config_path) /* Fallback */
-      fill_pathname_basedir(config_dir, global->config_path,
+   else if (*global->path.config) /* Fallback */
+      fill_pathname_basedir(config_dir, global->path.config,
             sizeof(config_dir));
    else
    {
@@ -878,8 +882,8 @@ static bool event_save_core_config(void)
 
    if ((ret = config_save_file(config_path)))
    {
-      strlcpy(global->config_path, config_path,
-            sizeof(global->config_path));
+      strlcpy(global->path.config, config_path,
+            sizeof(global->path.config));
       snprintf(msg, sizeof(msg), "Saved new config to \"%s\".",
             config_path);
       RARCH_LOG("%s\n", msg);
@@ -960,12 +964,12 @@ static void event_main_state(unsigned cmd)
 
    if (settings->state_slot > 0)
       snprintf(path, sizeof(path), "%s%d",
-            global->savestate_name, settings->state_slot);
+            global->name.savestate, settings->state_slot);
    else if (settings->state_slot < 0)
       fill_pathname_join_delim(path,
-            global->savestate_name, "auto", '.', sizeof(path));
+            global->name.savestate, "auto", '.', sizeof(path));
    else
-      strlcpy(path, global->savestate_name, sizeof(path));
+      strlcpy(path, global->name.savestate, sizeof(path));
 
    if (pretro_serialize_size())
    {
@@ -999,11 +1003,11 @@ static bool event_update_system_info(struct retro_system_info *_info,
    libretro_get_system_info(settings->libretro, _info,
          load_no_content);
 #endif
-   if (!global->core_info)
+   if (!global->core_info.list)
       return false;
 
-   if (!core_info_list_get_info(global->core_info,
-            global->core_info_current, settings->libretro))
+   if (!core_info_list_get_info(global->core_info.list,
+            global->core_info.current, settings->libretro))
       return false;
 
    return true;
@@ -1052,7 +1056,7 @@ bool event_command(enum event_command cmd)
          rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH,
                (void*)settings->libretro);
          rarch_environment_cb(RETRO_ENVIRONMENT_EXEC,
-               (void*)global->fullpath);
+               (void*)global->path.fullpath);
          event_command(EVENT_CMD_QUIT);
 #endif
          break;
@@ -1138,7 +1142,7 @@ bool event_command(enum event_command cmd)
 #endif
             rarch_main_data_deinit();
 
-            *global->fullpath = '\0';
+            *global->path.fullpath = '\0';
 
             rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
          }
@@ -1330,9 +1334,9 @@ bool event_command(enum event_command cmd)
          if (!global)
             break;
 
-         if (global->core_info)
-            core_info_list_free(global->core_info);
-         global->core_info = NULL;
+         if (global->core_info.list)
+            core_info_list_free(global->core_info.list);
+         global->core_info.list = NULL;
          break;
       case EVENT_CMD_DATA_RUNLOOP_FREE:
          rarch_main_data_free();
@@ -1341,7 +1345,7 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_CORE_INFO_DEINIT);
 
          if (*settings->libretro_directory)
-            global->core_info = core_info_list_new();
+            global->core_info.list = core_info_list_new();
          break;
       case EVENT_CMD_CORE_DEINIT:
          {
@@ -1405,9 +1409,9 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_RESTART_RETROARCH:
 #if defined(GEKKO) && defined(HW_RVL)
-         fill_pathname_join(global->fullpath, g_defaults.core_dir,
+         fill_pathname_join(global->path.fullpath, g_defaults.dir.core,
                SALAMANDER_FILE,
-               sizeof(global->fullpath));
+               sizeof(global->path.fullpath));
 #endif
          if (driver->frontend_ctx && driver->frontend_ctx->set_fork)
             driver->frontend_ctx->set_fork(true, false);
@@ -1504,17 +1508,17 @@ bool event_command(enum event_command cmd)
          global->savefiles = NULL;
          break;
       case EVENT_CMD_SAVEFILES_INIT:
-         global->use_sram = global->use_sram && !global->sram_save_disable
+         global->sram.use = global->sram.use && !global->sram.save_disable
 #ifdef HAVE_NETPLAY
-            && (!driver->netplay_data || !global->netplay_is_client)
+            && (!driver->netplay_data || !global->netplay.is_client)
 #endif
             ;
 
-         if (!global->use_sram)
+         if (!global->sram.use)
             RARCH_LOG("%s\n",
                   msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
 
-         if (global->use_sram)
+         if (global->sram.use)
             event_command(EVENT_CMD_AUTOSAVE_INIT);
          break;
       case EVENT_CMD_MSG_QUEUE_DEINIT:

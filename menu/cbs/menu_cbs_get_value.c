@@ -80,8 +80,8 @@ static void menu_action_setting_disp_set_label_configurations(
 
    *w = 19;
    strlcpy(s2, path, len2);
-   if (global && *global->config_path)
-      fill_pathname_base(s, global->config_path,
+   if (global && *global->path.config)
+      fill_pathname_base(s, global->path.config,
             len);
    else
       strlcpy(s, menu_hash_to_str(MENU_VALUE_DIRECTORY_DEFAULT), len);

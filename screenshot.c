@@ -203,7 +203,7 @@ static bool take_screenshot_viewport(void)
 
    if (!*settings->screenshot_directory)
    {
-      fill_pathname_basedir(screenshot_path, global->basename,
+      fill_pathname_basedir(screenshot_path, global->name.base,
             sizeof(screenshot_path));
       screenshot_dir = screenshot_path;
    }
@@ -237,7 +237,7 @@ static bool take_screenshot_raw(void)
 
    if (!*settings->screenshot_directory)
    {
-      fill_pathname_basedir(screenshot_path, global->basename,
+      fill_pathname_basedir(screenshot_path, global->name.base,
             sizeof(screenshot_path));
       screenshot_dir = screenshot_path;
    }
@@ -268,7 +268,7 @@ bool take_screenshot(void)
       (const struct retro_hw_render_callback*)video_driver_callback();
 
    /* No way to infer screenshot directory. */
-   if ((!*settings->screenshot_directory) && (!*global->basename))
+   if ((!*settings->screenshot_directory) && (!*global->name.base))
       return false;
 
    viewport_read = (settings->video.gpu_screenshot ||

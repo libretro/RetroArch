@@ -40,24 +40,26 @@ void main_exit_save_config(void)
    global_t   *global   = global_get_ptr();
    rarch_system_info_t *info = rarch_system_info_get_ptr();
 
-   if (settings->config_save_on_exit && *global->config_path)
+   if (settings->config_save_on_exit && *global->path.config)
    {
       /* restore original paths in case per-core organization is enabled */
       if (settings->sort_savefiles_enable && orig_savefile_dir[0] != '\0')
-         strlcpy(global->savefile_dir,orig_savefile_dir,sizeof(global->savefile_dir));
+         strlcpy(global->dir.savefile, orig_savefile_dir,
+               sizeof(global->dir.savefile));
       if (settings->sort_savestates_enable && orig_savestate_dir[0] != '\0')
-         strlcpy(global->savestate_dir,orig_savestate_dir,sizeof(global->savestate_dir));
+         strlcpy(global->dir.savestate, orig_savestate_dir,
+               sizeof(global->dir.savestate));
 
       /* Save last core-specific config to the default config location,
        * needed on consoles for core switching and reusing last good 
        * config for new cores.
        */
-      config_save_file(global->config_path);
+      config_save_file(global->path.config);
 
       /* Flush out the core specific config. */
-      if (*global->core_specific_config_path &&
+      if (*global->path.core_specific_config &&
             settings->core_specific_config)
-         config_save_file(global->core_specific_config_path);
+         config_save_file(global->path.core_specific_config);
    }
 
    event_command(EVENT_CMD_AUTOSAVE_STATE);
@@ -81,7 +83,7 @@ void main_exit(void *args)
 
    main_exit_save_config();
 
-   if (global->main_is_init)
+   if (global->inited.main)
    {
 #ifdef HAVE_MENU
       /* Do not want menu context to live any more. */
@@ -125,50 +127,50 @@ void main_exit(void *args)
 
 static void check_defaults_dirs(void)
 {
-   if (*g_defaults.core_assets_dir)
-      path_mkdir(g_defaults.core_assets_dir);
-   if (*g_defaults.remap_dir)
-      path_mkdir(g_defaults.remap_dir);
-   if (*g_defaults.autoconfig_dir)
-      path_mkdir(g_defaults.autoconfig_dir);
-   if (*g_defaults.audio_filter_dir)
-      path_mkdir(g_defaults.audio_filter_dir);
-   if (*g_defaults.video_filter_dir)
-      path_mkdir(g_defaults.video_filter_dir);
-   if (*g_defaults.assets_dir)
-      path_mkdir(g_defaults.assets_dir);
-   if (*g_defaults.playlist_dir)
-      path_mkdir(g_defaults.playlist_dir);
-   if (*g_defaults.core_dir)
-      path_mkdir(g_defaults.core_dir);
-   if (*g_defaults.core_info_dir)
-      path_mkdir(g_defaults.core_info_dir);
-   if (*g_defaults.overlay_dir)
-      path_mkdir(g_defaults.overlay_dir);
-   if (*g_defaults.port_dir)
-      path_mkdir(g_defaults.port_dir);
-   if (*g_defaults.shader_dir)
-      path_mkdir(g_defaults.shader_dir);
-   if (*g_defaults.savestate_dir)
-      path_mkdir(g_defaults.savestate_dir);
-   if (*g_defaults.sram_dir)
-      path_mkdir(g_defaults.sram_dir);
-   if (*g_defaults.system_dir)
-      path_mkdir(g_defaults.system_dir);
-   if (*g_defaults.resampler_dir)
-      path_mkdir(g_defaults.resampler_dir);
-   if (*g_defaults.menu_config_dir)
-      path_mkdir(g_defaults.menu_config_dir);
-   if (*g_defaults.content_history_dir)
-      path_mkdir(g_defaults.content_history_dir);
-   if (*g_defaults.extraction_dir)
-      path_mkdir(g_defaults.extraction_dir);
-   if (*g_defaults.database_dir)
-      path_mkdir(g_defaults.database_dir);
-   if (*g_defaults.cursor_dir)
-      path_mkdir(g_defaults.cursor_dir);
-   if (*g_defaults.cheats_dir)
-      path_mkdir(g_defaults.cheats_dir);
+   if (*g_defaults.dir.core_assets)
+      path_mkdir(g_defaults.dir.core_assets);
+   if (*g_defaults.dir.remap)
+      path_mkdir(g_defaults.dir.remap);
+   if (*g_defaults.dir.autoconfig)
+      path_mkdir(g_defaults.dir.autoconfig);
+   if (*g_defaults.dir.audio_filter)
+      path_mkdir(g_defaults.dir.audio_filter);
+   if (*g_defaults.dir.video_filter)
+      path_mkdir(g_defaults.dir.video_filter);
+   if (*g_defaults.dir.assets)
+      path_mkdir(g_defaults.dir.assets);
+   if (*g_defaults.dir.playlist)
+      path_mkdir(g_defaults.dir.playlist);
+   if (*g_defaults.dir.core)
+      path_mkdir(g_defaults.dir.core);
+   if (*g_defaults.dir.core_info)
+      path_mkdir(g_defaults.dir.core_info);
+   if (*g_defaults.dir.overlay)
+      path_mkdir(g_defaults.dir.overlay);
+   if (*g_defaults.dir.port)
+      path_mkdir(g_defaults.dir.port);
+   if (*g_defaults.dir.shader)
+      path_mkdir(g_defaults.dir.shader);
+   if (*g_defaults.dir.savestate)
+      path_mkdir(g_defaults.dir.savestate);
+   if (*g_defaults.dir.sram)
+      path_mkdir(g_defaults.dir.sram);
+   if (*g_defaults.dir.system)
+      path_mkdir(g_defaults.dir.system);
+   if (*g_defaults.dir.resampler)
+      path_mkdir(g_defaults.dir.resampler);
+   if (*g_defaults.dir.menu_config)
+      path_mkdir(g_defaults.dir.menu_config);
+   if (*g_defaults.dir.content_history)
+      path_mkdir(g_defaults.dir.content_history);
+   if (*g_defaults.dir.extraction)
+      path_mkdir(g_defaults.dir.extraction);
+   if (*g_defaults.dir.database)
+      path_mkdir(g_defaults.dir.database);
+   if (*g_defaults.dir.cursor)
+      path_mkdir(g_defaults.dir.cursor);
+   if (*g_defaults.dir.cheats)
+      path_mkdir(g_defaults.dir.cheats);
 }
 
 static void history_playlist_push(content_playlist_t *playlist,
@@ -179,7 +181,7 @@ static void history_playlist_push(content_playlist_t *playlist,
    global_t                    *global   = global_get_ptr();
    rarch_system_info_t *system           = rarch_system_info_get_ptr();
 
-   if (!playlist || (global->core_type == CORE_TYPE_DUMMY) || !info)
+   if (!playlist || (global->inited.core.type == CORE_TYPE_DUMMY) || !info)
       return;
 
    /* Path can be relative here.
@@ -251,7 +253,7 @@ bool main_load_content(int argc, char **argv, void *args,
       rarch_argc_ptr = (int*)&rarch_argc;
    }
 
-   if (global->main_is_init)
+   if (global->inited.main)
       rarch_main_deinit();
 
    if ((ret = rarch_main_init(*rarch_argc_ptr, rarch_argv_ptr)))
@@ -322,10 +324,10 @@ int rarch_main(int argc, char *argv[], void *data)
       global_t *global             = global_get_ptr();
       rarch_system_info_t *system = rarch_system_info_get_ptr();
 
-      if (global->content_is_init || system->no_content)
+      if (global->inited.content || system->no_content)
          history_playlist_push(
                g_defaults.history,
-               global->fullpath,
+               global->path.fullpath,
                settings->libretro,
                system ? &system->info : NULL);
    }

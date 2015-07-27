@@ -744,93 +744,91 @@ static void frontend_android_get_environment_settings(int *argc,
          RARCH_LOG("Application location: [%s].\n", app_dir);
          if (args && *app_dir)
          {
-            fill_pathname_join(g_defaults.assets_dir, app_dir,
-                  "assets", sizeof(g_defaults.savestate_dir));
-            fill_pathname_join(g_defaults.extraction_dir, app_dir,
-                  "tmp", sizeof(g_defaults.extraction_dir));
-            fill_pathname_join(g_defaults.shader_dir, app_dir,
-                  "shaders", sizeof(g_defaults.shader_dir));
-            fill_pathname_join(g_defaults.overlay_dir, app_dir,
-                  "overlays", sizeof(g_defaults.overlay_dir));
-            fill_pathname_join(g_defaults.core_dir, app_dir,
-                  "cores", sizeof(g_defaults.core_dir));
-            fill_pathname_join(g_defaults.core_info_dir,
-                  app_dir, "info", sizeof(g_defaults.core_info_dir));
-            fill_pathname_join(g_defaults.autoconfig_dir,
-                  app_dir, "autoconfig", sizeof(g_defaults.autoconfig_dir));
-            fill_pathname_join(g_defaults.audio_filter_dir,
-                  app_dir, "audio_filters", sizeof(g_defaults.audio_filter_dir));
-            fill_pathname_join(g_defaults.video_filter_dir,
-                  app_dir, "video_filters", sizeof(g_defaults.video_filter_dir));
-            strlcpy(g_defaults.content_history_dir,
-                  app_dir, sizeof(g_defaults.content_history_dir));
-            fill_pathname_join(g_defaults.database_dir,
-                  app_dir, "database/rdb", sizeof(g_defaults.database_dir));
-            fill_pathname_join(g_defaults.cursor_dir,
-                  app_dir, "database/cursors", sizeof(g_defaults.cursor_dir));
-            fill_pathname_join(g_defaults.cheats_dir,
-                  app_dir, "cheats", sizeof(g_defaults.cheats_dir));
-            fill_pathname_join(g_defaults.playlist_dir,
-                  app_dir, "playlists", sizeof(g_defaults.playlist_dir));
-            fill_pathname_join(g_defaults.remap_dir,
-                  app_dir, "remaps", sizeof(g_defaults.remap_dir));
-            fill_pathname_join(g_defaults.wallpapers_dir,
-                  app_dir, "wallpapers", sizeof(g_defaults.wallpapers_dir));
+            fill_pathname_join(g_defaults.dir.assets, app_dir,
+                  "assets", sizeof(g_defaults.dir.assets));
+            fill_pathname_join(g_defaults.dir.extraction, app_dir,
+                  "tmp", sizeof(g_defaults.dir.extraction));
+            fill_pathname_join(g_defaults.dir.shader, app_dir,
+                  "shaders", sizeof(g_defaults.dir.shader));
+            fill_pathname_join(g_defaults.dir.overlay, app_dir,
+                  "overlays", sizeof(g_defaults.dir.overlay));
+            fill_pathname_join(g_defaults.dir.core, app_dir,
+                  "cores", sizeof(g_defaults.dir.core));
+            fill_pathname_join(g_defaults.dir.core_info,
+                  app_dir, "info", sizeof(g_defaults.dir.core_info));
+            fill_pathname_join(g_defaults.dir.autoconfig,
+                  app_dir, "autoconfig", sizeof(g_defaults.dir.autoconfig));
+            fill_pathname_join(g_defaults.dir.audio_filter,
+                  app_dir, "audio_filters", sizeof(g_defaults.dir.audio_filter));
+            fill_pathname_join(g_defaults.dir.video_filter,
+                  app_dir, "video_filters", sizeof(g_defaults.dir.video_filter));
+            strlcpy(g_defaults.dir.content_history,
+                  app_dir, sizeof(g_defaults.dir.content_history));
+            fill_pathname_join(g_defaults.dir.database,
+                  app_dir, "database/rdb", sizeof(g_defaults.dir.database));
+            fill_pathname_join(g_defaults.dir.cursor,
+                  app_dir, "database/cursors", sizeof(g_defaults.dir.cursor));
+            fill_pathname_join(g_defaults.dir.cheats,
+                  app_dir, "cheats", sizeof(g_defaults.dir.cheats));
+            fill_pathname_join(g_defaults.dir.playlist,
+                  app_dir, "playlists", sizeof(g_defaults.dir.playlist));
+            fill_pathname_join(g_defaults.dir.remap,
+                  app_dir, "remaps", sizeof(g_defaults.dir.remap));
+            fill_pathname_join(g_defaults.dir.wallpapers,
+                  app_dir, "wallpapers", sizeof(g_defaults.dir.wallpapers));
             if(*downloads_dir && test_permissions(downloads_dir))
             {
-               fill_pathname_join(g_defaults.core_assets_dir,
-                     downloads_dir, "", sizeof(g_defaults.core_assets_dir));
+               fill_pathname_join(g_defaults.dir.core_assets,
+                     downloads_dir, "", sizeof(g_defaults.dir.core_assets));
             }
             else
             {
-               fill_pathname_join(g_defaults.core_assets_dir,
-                     app_dir, "downloads", sizeof(g_defaults.core_assets_dir));
-               path_mkdir(g_defaults.core_assets_dir);
+               fill_pathname_join(g_defaults.dir.core_assets,
+                     app_dir, "downloads", sizeof(g_defaults.dir.core_assets));
+               path_mkdir(g_defaults.dir.core_assets);
             }
 
-            RARCH_LOG("Default download folder: [%s]", g_defaults.core_assets_dir);
+            RARCH_LOG("Default download folder: [%s]", g_defaults.dir.core_assets);
 
             if(*screenshot_dir && test_permissions(screenshot_dir))
             {
-               fill_pathname_join(g_defaults.screenshot_dir,
-                     screenshot_dir, "", sizeof(g_defaults.screenshot_dir));
+               fill_pathname_join(g_defaults.dir.screenshot,
+                     screenshot_dir, "", sizeof(g_defaults.dir.screenshot));
             }
             else
             {
-               fill_pathname_join(g_defaults.screenshot_dir,
-                     app_dir, "screenshots", sizeof(g_defaults.screenshot_dir));
-               path_mkdir(g_defaults.screenshot_dir);
+               fill_pathname_join(g_defaults.dir.screenshot,
+                     app_dir, "screenshots", sizeof(g_defaults.dir.screenshot));
+               path_mkdir(g_defaults.dir.screenshot);
             }
 
-            RARCH_LOG("Default screenshot folder: [%s]", g_defaults.screenshot_dir);
+            RARCH_LOG("Default screenshot folder: [%s]", g_defaults.dir.screenshot);
 
             switch (perms)
             {
                 case SDCARD_EXT_DIR_WRITABLE:
-                   fill_pathname_join(g_defaults.sram_dir,
-                        ext_dir, "saves", sizeof(g_defaults.sram_dir));
-                   path_mkdir(g_defaults.sram_dir);
+                   fill_pathname_join(g_defaults.dir.sram,
+                        ext_dir, "saves", sizeof(g_defaults.dir.sram));
+                   path_mkdir(g_defaults.dir.sram);
 
-                   fill_pathname_join(g_defaults.savestate_dir,
-                        ext_dir, "states", sizeof(g_defaults.savestate_dir));
-                   path_mkdir(g_defaults.savestate_dir);
+                   fill_pathname_join(g_defaults.dir.savestate,
+                        ext_dir, "states", sizeof(g_defaults.dir.savestate));
+                   path_mkdir(g_defaults.dir.savestate);
 
-                   fill_pathname_join(g_defaults.system_dir,
-                        ext_dir, "system", sizeof(g_defaults.system_dir));
-                   path_mkdir(g_defaults.system_dir);
+                   fill_pathname_join(g_defaults.dir.system,
+                        ext_dir, "system", sizeof(g_defaults.dir.system));
+                   path_mkdir(g_defaults.dir.system);
                    break;
                 case SDCARD_NOT_WRITABLE:
-                   fill_pathname_join(g_defaults.sram_dir,
-                        app_dir, "saves", sizeof(g_defaults.sram_dir));
-                   path_mkdir(g_defaults.sram_dir);
-
-                   fill_pathname_join(g_defaults.savestate_dir,
-                        app_dir, "states", sizeof(g_defaults.savestate_dir));
-                   path_mkdir(g_defaults.savestate_dir);
-
-                   fill_pathname_join(g_defaults.system_dir,
-                        app_dir, "system", sizeof(g_defaults.system_dir));
-                   path_mkdir(g_defaults.system_dir);
+                   fill_pathname_join(g_defaults.dir.sram,
+                        app_dir, "saves", sizeof(g_defaults.dir.sram));
+                   path_mkdir(g_defaults.dir.sram);
+                   fill_pathname_join(g_defaults.dir.savestate,
+                        app_dir, "states", sizeof(g_defaults.dir.savestate));
+                   path_mkdir(g_defaults.dir.savestate);
+                   fill_pathname_join(g_defaults.dir.system,
+                        app_dir, "system", sizeof(g_defaults.dir.system));
+                   path_mkdir(g_defaults.dir.system);
                    break;
                 case SDCARD_ROOT_WRITABLE:
                 default:
@@ -864,9 +862,9 @@ static void frontend_android_get_environment_settings(int *argc,
                  ext_dir, "system", sizeof(buf));
             path_mkdir(buf);
 
-            RARCH_LOG("Default savefile folder: [%s]", g_defaults.sram_dir);
-            RARCH_LOG("Default savestate folder: [%s]", g_defaults.savestate_dir);
-            RARCH_LOG("Default system folder: [%s]", g_defaults.system_dir);
+            RARCH_LOG("Default savefile folder: [%s]",   g_defaults.dir.sram);
+            RARCH_LOG("Default savestate folder: [%s]",  g_defaults.dir.savestate);
+            RARCH_LOG("Default system folder: [%s]",     g_defaults.dir.system);
          }
       }
    }

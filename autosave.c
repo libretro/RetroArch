@@ -196,10 +196,10 @@ void lock_autosave(void)
    unsigned i;
    global_t *global = global_get_ptr();
 
-   for (i = 0; i < global->num_autosave; i++)
+   for (i = 0; i < global->autosave.num; i++)
    {
-      if (global->autosave[i])
-         autosave_lock(global->autosave[i]);
+      if (global->autosave.list[i])
+         autosave_lock(global->autosave.list[i]);
    }
 }
 
@@ -213,10 +213,10 @@ void unlock_autosave(void)
    unsigned i;
    global_t *global = global_get_ptr();
 
-   for (i = 0; i < global->num_autosave; i++)
+   for (i = 0; i < global->autosave.num; i++)
    {
-      if (global->autosave[i])
-         autosave_unlock(global->autosave[i]);
+      if (global->autosave.list[i])
+         autosave_unlock(global->autosave.list[i]);
    }
 }
 

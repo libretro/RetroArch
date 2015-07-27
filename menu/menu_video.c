@@ -129,7 +129,7 @@ void menu_video_frame_background(
    menu_display_set_viewport();
 
    if ((settings->menu.pause_libretro
-      || !global->main_is_init || (global->core_type == CORE_TYPE_DUMMY))
+      || !global->inited.main || (global->inited.core.type == CORE_TYPE_DUMMY))
       && !force_transparency
       && texture)
       coords.color = color;

@@ -41,15 +41,15 @@ static void menu_environment_get(int *argc, char *argv[],
       return;
 
    wrap_args->no_content       = menu->load_no_content;
-   if (!global->has_set_verbosity)
+   if (!global->has_set.verbosity)
       wrap_args->verbose       =  global->verbosity;
 
-   wrap_args->config_path      = *global->config_path   ? global->config_path   : NULL;
-   wrap_args->sram_path        = *global->savefile_dir  ? global->savefile_dir  : NULL;
-   wrap_args->state_path       = *global->savestate_dir ? global->savestate_dir : NULL;
-   wrap_args->content_path     = *global->fullpath      ? global->fullpath      : NULL;
+   wrap_args->config_path      = *global->path.config   ? global->path.config   : NULL;
+   wrap_args->sram_path        = *global->dir.savefile  ? global->dir.savefile  : NULL;
+   wrap_args->state_path       = *global->dir.savestate ? global->dir.savestate : NULL;
+   wrap_args->content_path     = *global->path.fullpath ? global->path.fullpath : NULL;
 
-   if (!global->has_set_libretro)
+   if (!global->has_set.libretro)
       wrap_args->libretro_path = *settings->libretro ? settings->libretro : NULL;
    wrap_args->touched       = true;
 }
@@ -62,18 +62,18 @@ static void menu_push_to_history_playlist(void)
    if (!settings->history_list_enable)
       return;
 
-   if (*global->fullpath)
+   if (*global->path.fullpath)
    {
       char tmp[PATH_MAX_LENGTH] = {0};
       char str[PATH_MAX_LENGTH] = {0};
 
-      fill_pathname_base(tmp, global->fullpath, sizeof(tmp));
+      fill_pathname_base(tmp, global->path.fullpath, sizeof(tmp));
       snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
       rarch_main_msg_queue_push(str, 1, 1, false);
    }
 
    content_playlist_push(g_defaults.history,
-         global->fullpath,
+         global->path.fullpath,
          NULL,
          settings->libretro,
          global->menu.info.library_name,
@@ -110,7 +110,7 @@ bool menu_load_content(enum rarch_core_type type)
       char name[PATH_MAX_LENGTH] = {0};
       char msg[PATH_MAX_LENGTH]  = {0};
 
-      fill_pathname_base(name, global->fullpath, sizeof(name));
+      fill_pathname_base(name, global->path.fullpath, sizeof(name));
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
       rarch_main_msg_queue_push(msg, 1, 90, false);
 
@@ -124,7 +124,7 @@ bool menu_load_content(enum rarch_core_type type)
 
    event_command(EVENT_CMD_HISTORY_INIT);
 
-   if (*global->fullpath || (menu && menu->load_no_content))
+   if (*global->path.fullpath || (menu && menu->load_no_content))
       menu_push_to_history_playlist();
 
    event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
@@ -218,8 +218,8 @@ void *menu_init(const void *data)
    if (menu_init_entries(&menu->entries) != 0)
       goto error;
 
-   global->core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
-   if (!global->core_info_current)
+   global->core_info.current = (core_info_t*)calloc(1, sizeof(core_info_t));
+   if (!global->core_info.current)
       goto error;
 
 #ifdef HAVE_SHADER_MANAGER
@@ -261,9 +261,9 @@ error:
    if (menu->entries.menu_list)
       menu_list_free(menu->entries.menu_list);
    menu->entries.menu_list = NULL;
-   if (global->core_info_current)
-      free(global->core_info_current);
-   global->core_info_current = NULL;
+   if (global->core_info.current)
+      free(global->core_info.current);
+   global->core_info.current = NULL;
    if (menu->shader)
       free(menu->shader);
    menu->shader = NULL;
@@ -324,12 +324,12 @@ void menu_free(menu_handle_t *menu)
 
    event_command(EVENT_CMD_HISTORY_DEINIT);
 
-   if (global->core_info)
-      core_info_list_free(global->core_info);
+   if (global->core_info.list)
+      core_info_list_free(global->core_info.list);
 
-   if (global->core_info_current)
-      free(global->core_info_current);
-   global->core_info_current = NULL;
+   if (global->core_info.current)
+      free(global->core_info.current);
+   global->core_info.current = NULL;
 
    menu_driver_unset_alive();
 

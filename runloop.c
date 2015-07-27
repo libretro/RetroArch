@@ -423,7 +423,7 @@ static void do_state_check_menu_toggle(settings_t *settings, global_t *global)
 {
    if (menu_driver_alive())
    {
-      if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY))
+      if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
       return;
    }
@@ -459,7 +459,7 @@ static int do_pre_state_checks(settings_t *settings,
       event_command(EVENT_CMD_GRAB_MOUSE_TOGGLE);
 
 #ifdef HAVE_MENU
-   if (cmd->menu_pressed || (global->core_type == CORE_TYPE_DUMMY))
+   if (cmd->menu_pressed || (global->inited.core.type == CORE_TYPE_DUMMY))
       do_state_check_menu_toggle(settings, global);
 #endif
 
@@ -751,7 +751,7 @@ static INLINE retro_input_t input_keys_pressed(driver_t *driver,
    if (!driver->input || !driver->input_data)
       return 0;
 
-   global->turbo_count++;
+   global->turbo.count++;
 
    driver->block_libretro_input = check_block_hotkey(driver,
          settings, driver->input->key_pressed(
@@ -764,13 +764,13 @@ static INLINE retro_input_t input_keys_pressed(driver_t *driver,
       input_push_analog_dpad(settings->input.autoconf_binds[i],
             settings->input.analog_dpad_mode[i]);
 
-      global->turbo_frame_enable[i] = 0;
+      global->turbo.frame_enable[i] = 0;
    }
 
    if (!driver->block_libretro_input)
    {
       for (i = 0; i < settings->input.max_users; i++)
-         global->turbo_frame_enable[i] = input_driver_state(binds, 
+         global->turbo.frame_enable[i] = input_driver_state(binds, 
                i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
    }
 

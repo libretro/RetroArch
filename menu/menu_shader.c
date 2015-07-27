@@ -47,11 +47,11 @@ void menu_shader_manager_init(menu_handle_t *menu)
 
    shader = (struct video_shader*)menu->shader;
 
-   if (*global->core_specific_config_path
+   if (*global->path.core_specific_config
          && settings->core_specific_config)
-      config_path = global->core_specific_config_path;
-   else if (*global->config_path)
-      config_path = global->config_path;
+      config_path = global->path.core_specific_config;
+   else if (*global->path.config)
+      config_path = global->path.config;
 
    /* In a multi-config setting, we can't have
     * conflicts on menu.cgp/menu.glslp. */
@@ -236,9 +236,9 @@ void menu_shader_manager_save_preset(
       strlcpy(buffer, conf_path, sizeof(buffer));
    }
 
-   if (*global->config_path)
+   if (*global->path.config)
       fill_pathname_basedir(config_directory,
-            global->config_path, sizeof(config_directory));
+            global->path.config, sizeof(config_directory));
 
    dirs[0] = settings->video.shader_dir;
    dirs[1] = settings->menu_config_directory;

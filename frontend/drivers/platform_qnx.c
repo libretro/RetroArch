@@ -45,18 +45,18 @@ static int frontend_qnx_get_rating(void)
 static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
-   fill_pathname_join(g_defaults.config_path, "app/native",
-         "retroarch.cfg", sizeof(g_defaults.config_path));
-   fill_pathname_join(g_defaults.shader_dir, "app/native",
-         "shaders_glsl", sizeof(g_defaults.shader_dir));
-   fill_pathname_join(g_defaults.overlay_dir, "app/native",
-         "overlays", sizeof(g_defaults.overlay_dir));
-   fill_pathname_join(g_defaults.core_dir, "app/native",
-         "lib", sizeof(g_defaults.core_dir));
-   fill_pathname_join(g_defaults.core_info_dir, "app/native",
-         "info", sizeof(g_defaults.core_info_dir));
-   fill_pathname_join(g_defaults.playlist_dir, "app/native",
-         "playlists", sizeof(g_defaults.playlist_dir));
+   fill_pathname_join(g_defaults.path.config, "app/native",
+         "retroarch.cfg", sizeof(g_defaults.path.config));
+   fill_pathname_join(g_defaults.dir.shader, "app/native",
+         "shaders_glsl", sizeof(g_defaults.dir.shader));
+   fill_pathname_join(g_defaults.dir.overlay, "app/native",
+         "overlays", sizeof(g_defaults.dir.overlay));
+   fill_pathname_join(g_defaults.dir.core, "app/native",
+         "lib", sizeof(g_defaults.dir.core));
+   fill_pathname_join(g_defaults.dir.core_info, "app/native",
+         "info", sizeof(g_defaults.dir.core_info));
+   fill_pathname_join(g_defaults.dir.playlist, "app/native",
+         "playlists", sizeof(g_defaults.dir.playlist));
 }
 
 enum frontend_architecture frontend_qnx_get_architecture(void)

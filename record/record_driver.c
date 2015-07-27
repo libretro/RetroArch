@@ -299,7 +299,7 @@ bool recording_init(void)
    if (!global->record.enable)
       return false;
 
-   if (global->core_type == CORE_TYPE_DUMMY)
+   if (global->inited.core.type == CORE_TYPE_DUMMY)
    {
       RARCH_WARN(msg_hash_to_str(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED));
       return false;

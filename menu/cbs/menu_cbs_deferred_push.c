@@ -330,9 +330,9 @@ static int deferred_archive_open_detect_core(menu_displaylist_info_t *info)
    info->setting      = menu_setting_find(info->label);
 
 
-   if (global->core_info)
+   if (global->core_info.list)
       strlcpy(info->exts, core_info_list_get_all_extensions(
-         global->core_info), sizeof(info->exts));
+         global->core_info.list), sizeof(info->exts));
    else if (global->menu.info.valid_extensions)
    {
       if (*global->menu.info.valid_extensions)
@@ -585,9 +585,9 @@ static int deferred_push_detect_core_list(menu_displaylist_info_t *info)
    global_t *global       = global_get_ptr();
 
    info->type_default = MENU_FILE_PLAIN;
-   if (global->core_info)
+   if (global->core_info.list)
       strlcpy(info->exts, core_info_list_get_all_extensions(
-         global->core_info), sizeof(info->exts));
+         global->core_info.list), sizeof(info->exts));
 
    (void)settings;
 

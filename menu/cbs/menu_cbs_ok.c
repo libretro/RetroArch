@@ -81,7 +81,7 @@ static int rarch_defer_core_wrapper(menu_displaylist_info_t *info,
             sizeof(menu_path_new));
    }
 
-   ret = rarch_defer_core(global->core_info,
+   ret = rarch_defer_core(global->core_info.list,
          menu_path_new, path, menu_label, menu->deferred_path,
          sizeof(menu->deferred_path));
 
@@ -165,7 +165,7 @@ static int action_ok_file_load_detect_core(const char *path,
    settings_t *settings     = config_get_ptr();
    global_t *global         = global_get_ptr();
 
-   strlcpy(global->fullpath, detect_content_path, sizeof(global->fullpath));
+   strlcpy(global->path.fullpath, detect_content_path, sizeof(global->path.fullpath));
    strlcpy(settings->libretro, path, sizeof(settings->libretro));
    event_command(EVENT_CMD_LOAD_CORE);
    menu_common_load_content(false, CORE_TYPE_PLAIN);
@@ -910,7 +910,7 @@ static int action_ok_remap_file_save_game(const char *path,
    settings_t *settings            = config_get_ptr();
    rarch_system_info_t *info         = rarch_system_info_get_ptr();
    const char *core_name           = info   ? info->info.library_name : NULL;
-   const char *game_name           = global ? path_basename(global->basename)  : NULL;
+   const char *game_name           = global ? path_basename(global->name.base)  : NULL;
 
    fill_pathname_join(directory,settings->input_remapping_directory,core_name,PATH_MAX_LENGTH);
    fill_pathname_join(file,core_name,game_name,PATH_MAX_LENGTH);
@@ -984,8 +984,8 @@ static int action_ok_core_load_deferred(const char *path,
 
    if (path)
       strlcpy(settings->libretro, path, sizeof(settings->libretro));
-   strlcpy(global->fullpath, menu->deferred_path,
-         sizeof(global->fullpath));
+   strlcpy(global->path.fullpath, menu->deferred_path,
+         sizeof(global->path.fullpath));
 
    menu_common_load_content(false, CORE_TYPE_PLAIN);
 
@@ -1051,7 +1051,7 @@ static int action_ok_core_load(const char *path,
 
    if (menu->load_no_content && settings->core.set_supports_no_game_enable)
    {
-      *global->fullpath = '\0';
+      *global->path.fullpath = '\0';
 
       menu_common_load_content(false, CORE_TYPE_PLAIN);
       return -1;
@@ -1263,8 +1263,8 @@ static int action_ok_file_load_ffmpeg(const char *path,
    menu_list_get_last(menu_list->menu_stack,
          &menu_path, NULL, NULL, NULL);
 
-   fill_pathname_join(global->fullpath, menu_path, path,
-         sizeof(global->fullpath));
+   fill_pathname_join(global->path.fullpath, menu_path, path,
+         sizeof(global->path.fullpath));
 
    menu_common_load_content(true, CORE_TYPE_FFMPEG);
 
@@ -1285,8 +1285,8 @@ static int action_ok_file_load_imageviewer(const char *path,
    menu_list_get_last(menu_list->menu_stack,
          &menu_path, NULL, NULL, NULL);
 
-   fill_pathname_join(global->fullpath, menu_path, path,
-         sizeof(global->fullpath));
+   fill_pathname_join(global->path.fullpath, menu_path, path,
+         sizeof(global->path.fullpath));
 
    menu_common_load_content(true, CORE_TYPE_IMAGEVIEWER);
 
@@ -1331,11 +1331,11 @@ static int action_ok_file_load(const char *path,
    else
    {
       if (type == MENU_FILE_IN_CARCHIVE)
-         fill_pathname_join_delim(global->fullpath, menu_path_new, path,
-               '#',sizeof(global->fullpath));
+         fill_pathname_join_delim(global->path.fullpath, menu_path_new, path,
+               '#',sizeof(global->path.fullpath));
       else
-         fill_pathname_join(global->fullpath, menu_path_new, path,
-               sizeof(global->fullpath));
+         fill_pathname_join(global->path.fullpath, menu_path_new, path,
+               sizeof(global->path.fullpath));
 
       menu_common_load_content(true, CORE_TYPE_PLAIN);
 
@@ -1648,12 +1648,12 @@ static int action_ok_file_load_or_resume(const char *path,
    if (!menu)
       return -1;
 
-   if (!strcmp(menu->deferred_path, global->fullpath))
+   if (!strcmp(menu->deferred_path, global->path.fullpath))
       return generic_action_ok_command(EVENT_CMD_RESUME);
    else
    {
-      strlcpy(global->fullpath,
-            menu->deferred_path, sizeof(global->fullpath));
+      strlcpy(global->path.fullpath,
+            menu->deferred_path, sizeof(global->path.fullpath));
       event_command(EVENT_CMD_LOAD_CORE);
       rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
       return -1;
@@ -1804,7 +1804,7 @@ static int action_ok_load_archive(const char *path,
    fill_pathname_join(detect_content_path, menu_path, content_path,
          sizeof(detect_content_path));
 
-   strlcpy(global->fullpath, detect_content_path, sizeof(global->fullpath));
+   strlcpy(global->path.fullpath, detect_content_path, sizeof(global->path.fullpath));
    event_command(EVENT_CMD_LOAD_CORE);
    menu_common_load_content(false, CORE_TYPE_PLAIN);
 
@@ -1827,7 +1827,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    if (!menu || !menu_list)
       return -1;
 
-   ret = rarch_defer_core(global->core_info, menu_path, content_path, label,
+   ret = rarch_defer_core(global->core_info.list, menu_path, content_path, label,
          menu->deferred_path, sizeof(menu->deferred_path));
 
    fill_pathname_join(detect_content_path, menu_path, content_path,

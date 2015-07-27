@@ -39,7 +39,7 @@ struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_ty
          break;
       case DIR_LIST_CORE_INFO:
          dir  = input_dir;
-         exts = (global->core_info) ? core_info_list_get_all_extensions(global->core_info) : NULL;
+         exts = (global->core_info.list) ? core_info_list_get_all_extensions(global->core_info.list) : NULL;
          break;
       case DIR_LIST_SHADERS:
          dir  = settings->video.shader_dir;

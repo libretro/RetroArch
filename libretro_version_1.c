@@ -131,13 +131,13 @@ static bool input_apply_turbo(unsigned port, unsigned id, bool res)
    settings_t *settings           = config_get_ptr();
    global_t *global               = global_get_ptr();
 
-   if (res && global->turbo_frame_enable[port])
-      global->turbo_enable[port] |= (1 << id);
+   if (res && global->turbo.frame_enable[port])
+      global->turbo.enable[port] |= (1 << id);
    else if (!res)
-      global->turbo_enable[port] &= ~(1 << id);
+      global->turbo.enable[port] &= ~(1 << id);
 
-   if (global->turbo_enable[port] & (1 << id))
-      return res && ((global->turbo_count % settings->input.turbo_period)
+   if (global->turbo.enable[port] & (1 << id))
+      return res && ((global->turbo.count % settings->input.turbo_period)
             < settings->input.turbo_duty_cycle);
    return res;
 }
@@ -283,10 +283,10 @@ void retro_init_libretro_cbs(void *data)
    if (!driver->netplay_data)
       return;
 
-   if (global->netplay_is_spectate)
+   if (global->netplay.is_spectate)
    {
       pretro_set_input_state(
-            (global->netplay_is_client ?
+            (global->netplay.is_client ?
              input_state_spectate_client : input_state_spectate)
             );
    }

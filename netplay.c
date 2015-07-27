@@ -1655,7 +1655,7 @@ bool init_netplay(void)
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
 
-   if (!global->netplay_enable)
+   if (!global->netplay.enable)
       return false;
 
    if (global->bsv.movie_start_playback)
@@ -1666,24 +1666,24 @@ bool init_netplay(void)
 
    retro_set_default_callbacks(&cbs);
 
-   if (*global->netplay_server)
+   if (*global->netplay.server)
    {
       RARCH_LOG("Connecting to netplay host...\n");
-      global->netplay_is_client = true;
+      global->netplay.is_client = true;
    }
    else
       RARCH_LOG("Waiting for client...\n");
 
    driver->netplay_data = (netplay_t*)netplay_new(
-         global->netplay_is_client ? global->netplay_server : NULL,
-         global->netplay_port ? global->netplay_port : RARCH_DEFAULT_PORT,
-         global->netplay_sync_frames, &cbs, global->netplay_is_spectate,
+         global->netplay.is_client ? global->netplay.server : NULL,
+         global->netplay.port ? global->netplay.port : RARCH_DEFAULT_PORT,
+         global->netplay.sync_frames, &cbs, global->netplay.is_spectate,
          settings->username);
 
    if (driver->netplay_data)
       return true;
 
-   global->netplay_is_client = false;
+   global->netplay.is_client = false;
    RARCH_WARN("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
 
    rarch_main_msg_queue_push_new(

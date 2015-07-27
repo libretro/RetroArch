@@ -68,29 +68,29 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
 
    strlcpy(eboot_path, argv[0], sizeof(eboot_path));
 
-   fill_pathname_basedir(g_defaults.port_dir, argv[0], sizeof(g_defaults.port_dir));
-   RARCH_LOG("port dir: [%s]\n", g_defaults.port_dir);
+   fill_pathname_basedir(g_defaults.dir.port, argv[0], sizeof(g_defaults.dir.port));
+   RARCH_LOG("port dir: [%s]\n", g_defaults.dir.port);
 
-   fill_pathname_join(g_defaults.assets_dir, g_defaults.port_dir,
-         "media", sizeof(g_defaults.assets_dir));
-   fill_pathname_join(g_defaults.core_dir, g_defaults.port_dir,
-         "cores", sizeof(g_defaults.core_dir));
-   fill_pathname_join(g_defaults.core_info_dir, g_defaults.port_dir,
-         "cores", sizeof(g_defaults.core_info_dir));
-   fill_pathname_join(g_defaults.savestate_dir, g_defaults.core_dir,
-         "savestates", sizeof(g_defaults.savestate_dir));
-   fill_pathname_join(g_defaults.sram_dir, g_defaults.core_dir,
-         "savefiles", sizeof(g_defaults.sram_dir));
-   fill_pathname_join(g_defaults.system_dir, g_defaults.core_dir,
-         "system", sizeof(g_defaults.system_dir));
-   fill_pathname_join(g_defaults.playlist_dir, g_defaults.core_dir,
-         "playlists", sizeof(g_defaults.playlist_dir));
-   fill_pathname_join(g_defaults.config_path, g_defaults.port_dir,
-         "retroarch.cfg", sizeof(g_defaults.config_path));
-   fill_pathname_join(g_defaults.cheats_dir, g_defaults.cheats_dir,
-         "cheats", sizeof(g_defaults.cheats_dir));
-   fill_pathname_join(g_defaults.remap_dir, g_defaults.remap_dir,
-         "remaps", sizeof(g_defaults.remap_dir));
+   fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
+         "media", sizeof(g_defaults.dir.assets));
+   fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
+         "cores", sizeof(g_defaults.dir.core));
+   fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.port,
+         "cores", sizeof(g_defaults.dir.core_info));
+   fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.core,
+         "savestates", sizeof(g_defaults.dir.savestate));
+   fill_pathname_join(g_defaults.dir.sram, g_defaults.dir.core,
+         "savefiles", sizeof(g_defaults.dir.sram));
+   fill_pathname_join(g_defaults.dir.system, g_defaults.dir.core,
+         "system", sizeof(g_defaults.dir.system));
+   fill_pathname_join(g_defaults.dir.playlist, g_defaults.dir.core,
+         "playlists", sizeof(g_defaults.dir.playlist));
+   fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
+         "retroarch.cfg", sizeof(g_defaults.path.config));
+   fill_pathname_join(g_defaults.dir.cheats, g_defaults.dir.cheats,
+         "cheats", sizeof(g_defaults.dir.cheats));
+   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.remap,
+         "remaps", sizeof(g_defaults.dir.remap));
 
 #ifndef IS_SALAMANDER
    if (argv[1] && (argv[1][0] != '\0'))
@@ -205,10 +205,10 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
 #ifndef IS_SALAMANDER
    global_t *global   = global_get_ptr();
 
-   if (should_load_game && global->fullpath[0] != '\0')
+   if (should_load_game && global->path.fullpath[0] != '\0')
    {
       argp[args] = '\0';
-      strlcat(argp + args, global->fullpath, sizeof(argp) - args);
+      strlcat(argp + args, global->path.fullpath, sizeof(argp) - args);
       args += strlen(argp + args) + 1;
    }
 #endif

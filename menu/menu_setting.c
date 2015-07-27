@@ -2268,7 +2268,7 @@ static void general_write_handler(void *data)
          break;
       case MENU_LABEL_LOG_VERBOSITY:
          global->verbosity         = *setting->value.boolean;
-         global->has_set_verbosity = *setting->value.boolean;
+         global->has_set.verbosity = *setting->value.boolean;
          break;
       case MENU_LABEL_VIDEO_SMOOTH:
          video_driver_set_filtering(1, settings->video.smooth);
@@ -2306,25 +2306,25 @@ static void general_write_handler(void *data)
          break;
       case MENU_LABEL_NETPLAY_IP_ADDRESS:
 #ifdef HAVE_NETPLAY
-         global->has_set_netplay_ip_address = (setting->value.string[0] != '\0');
+         global->has_set.netplay_ip_address = (setting->value.string[0] != '\0');
 #endif
          break;
       case MENU_LABEL_NETPLAY_MODE:
 #ifdef HAVE_NETPLAY
-         if (!global->netplay_is_client)
-            *global->netplay_server = '\0';
-         global->has_set_netplay_mode = true;
+         if (!global->netplay.is_client)
+            *global->netplay.server = '\0';
+         global->has_set.netplay_mode = true;
 #endif
          break;
       case MENU_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
 #ifdef HAVE_NETPLAY
-         if (global->netplay_is_spectate)
-            *global->netplay_server = '\0';
+         if (global->netplay.is_spectate)
+            *global->netplay.server = '\0';
 #endif
          break;
       case MENU_LABEL_NETPLAY_DELAY_FRAMES:
 #ifdef HAVE_NETPLAY
-         global->has_set_netplay_delay_frames = (global->netplay_sync_frames > 0);
+         global->has_set.netplay_delay_frames = (global->netplay.sync_frames > 0);
 #endif
          break;
    }
@@ -2501,7 +2501,7 @@ static bool setting_append_list_main_menu_options(
    START_GROUP(group_info,main_menu, parent_group);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
-   if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY))
+   if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
    {
       CONFIG_ACTION(
             menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS),
@@ -4633,7 +4633,7 @@ static bool setting_append_list_overlay_options(
          settings->input.overlay,
          menu_hash_to_str(MENU_LABEL_OVERLAY_PRESET),
          menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_PRESET),
-         global->overlay_dir,
+         global->dir.overlay,
          group_info.name,
          subgroup_info.name,
          parent_group,
@@ -4681,7 +4681,7 @@ static bool setting_append_list_overlay_options(
          settings->osk.overlay,
          menu_hash_to_str(MENU_LABEL_KEYBOARD_OVERLAY_PRESET),
          menu_hash_to_str(MENU_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET),
-         global->osk_overlay_dir,
+         global->dir.osk_overlay,
          group_info.name,
          subgroup_info.name,
          parent_group,
@@ -5243,7 +5243,7 @@ static bool setting_append_list_netplay_options(
    START_SUB_GROUP(list, list_info, "Netplay", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
-         global->netplay_enable,
+         global->netplay.enable,
          menu_hash_to_str(MENU_LABEL_NETPLAY_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_ENABLE),
          false,
@@ -5269,7 +5269,7 @@ static bool setting_append_list_netplay_options(
          general_read_handler);
 
    CONFIG_STRING(
-         global->netplay_server,
+         global->netplay.server,
          menu_hash_to_str(MENU_LABEL_NETPLAY_IP_ADDRESS),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_IP_ADDRESS),
          "",
@@ -5281,7 +5281,7 @@ static bool setting_append_list_netplay_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_BOOL(
-         global->netplay_is_client,
+         global->netplay.is_client,
          menu_hash_to_str(MENU_LABEL_NETPLAY_MODE),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_MODE),
          false,
@@ -5294,7 +5294,7 @@ static bool setting_append_list_netplay_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         global->netplay_is_spectate,
+         global->netplay.is_spectate,
          menu_hash_to_str(MENU_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE),
          false,
@@ -5307,7 +5307,7 @@ static bool setting_append_list_netplay_options(
          general_read_handler);
    
    CONFIG_UINT(
-         global->netplay_sync_frames,
+         global->netplay.sync_frames,
          menu_hash_to_str(MENU_LABEL_NETPLAY_DELAY_FRAMES),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_DELAY_FRAMES),
          0,
@@ -5320,7 +5320,7 @@ static bool setting_append_list_netplay_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
-         global->netplay_port,
+         global->netplay.port,
          menu_hash_to_str(MENU_LABEL_NETPLAY_TCP_UDP_PORT),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_TCP_UDP_PORT),
          RARCH_DEFAULT_PORT,
@@ -5691,7 +5691,7 @@ static bool setting_append_list_directory_options(
          settings->libretro_directory,
          menu_hash_to_str(MENU_LABEL_LIBRETRO_DIR_PATH),
          menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH),
-         g_defaults.core_dir,
+         g_defaults.dir.core,
          menu_hash_to_str(MENU_VALUE_DIRECTORY_NONE),
          group_info.name,
          subgroup_info.name,
@@ -5708,7 +5708,7 @@ static bool setting_append_list_directory_options(
          settings->libretro_info_path,
          menu_hash_to_str(MENU_LABEL_LIBRETRO_INFO_PATH),
          menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_INFO_PATH),
-         g_defaults.core_info_dir,
+         g_defaults.dir.core_info,
          menu_hash_to_str(MENU_VALUE_DIRECTORY_NONE),
          group_info.name,
          subgroup_info.name,
@@ -5807,7 +5807,7 @@ static bool setting_append_list_directory_options(
          settings->video.shader_dir,
          menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_DIR),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SHADER_DIR),
-         g_defaults.shader_dir,
+         g_defaults.dir.shader,
          menu_hash_to_str(MENU_VALUE_DIRECTORY_DEFAULT),
          group_info.name,
          subgroup_info.name,
@@ -5855,10 +5855,10 @@ static bool setting_append_list_directory_options(
    }
 #ifdef HAVE_OVERLAY
    CONFIG_DIR(
-         global->overlay_dir,
+         global->dir.overlay,
          menu_hash_to_str(MENU_LABEL_OVERLAY_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_DIRECTORY),
-         g_defaults.overlay_dir,
+         g_defaults.dir.overlay,
          menu_hash_to_str(MENU_VALUE_DIRECTORY_DEFAULT),
          group_info.name,
          subgroup_info.name,
@@ -5871,10 +5871,10 @@ static bool setting_append_list_directory_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         global->osk_overlay_dir,
+         global->dir.osk_overlay,
          menu_hash_to_str(MENU_LABEL_OSK_OVERLAY_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_OSK_OVERLAY_DIRECTORY),
-         g_defaults.osk_overlay_dir,
+         g_defaults.dir.osk_overlay,
          menu_hash_to_str(MENU_VALUE_DIRECTORY_DEFAULT),
          group_info.name,
          subgroup_info.name,
@@ -5952,7 +5952,7 @@ static bool setting_append_list_directory_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         global->savefile_dir,
+         global->dir.savefile,
          menu_hash_to_str(MENU_LABEL_SAVEFILE_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_SAVEFILE_DIRECTORY),
          "",
@@ -5968,7 +5968,7 @@ static bool setting_append_list_directory_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         global->savestate_dir,
+         global->dir.savestate,
          menu_hash_to_str(MENU_LABEL_SAVESTATE_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_SAVESTATE_DIRECTORY),
          "",
@@ -6115,7 +6115,7 @@ static bool setting_append_list_input_player_options(
       if (
             settings->input.input_descriptor_label_show
             && (i < RARCH_FIRST_META_KEY)
-            && (global->has_set_input_descriptors)
+            && (global->has_set.input_descriptors)
             && (i != RARCH_TURBO_ENABLE)
          )
       {

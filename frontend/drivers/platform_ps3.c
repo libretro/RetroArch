@@ -186,15 +186,15 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
             == CELL_GAME_ATTRIBUTE_APP_HOME)
          RARCH_LOG("RetroArch was launched from host machine (APP_HOME).\n");
 
-      ret = cellGameContentPermit(contentInfoPath, g_defaults.port_dir);
+      ret = cellGameContentPermit(contentInfoPath, g_defaults.dir.port);
 
 #ifdef HAVE_MULTIMAN
       if (multiman_detected)
       {
          fill_pathname_join(contentInfoPath, "/dev_hdd0/game/",
                EMULATOR_CONTENT_DIR, sizeof(contentInfoPath));
-         fill_pathname_join(g_defaults.port_dir, contentInfoPath,
-               "USRDIR", sizeof(g_defaults.port_dir));
+         fill_pathname_join(g_defaults.dir.port, contentInfoPath,
+               "USRDIR", sizeof(g_defaults.dir.port));
       }
 #endif
 
@@ -204,29 +204,29 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       {
          RARCH_LOG("cellGameContentPermit() OK.\n");
          RARCH_LOG("contentInfoPath : [%s].\n", contentInfoPath);
-         RARCH_LOG("usrDirPath : [%s].\n", g_defaults.port_dir);
+         RARCH_LOG("usrDirPath : [%s].\n", g_defaults.dir.port);
       }
 
-      fill_pathname_join(g_defaults.core_dir, g_defaults.port_dir,
-            "cores", sizeof(g_defaults.core_dir));
-      fill_pathname_join(g_defaults.core_info_dir, g_defaults.port_dir,
-            "cores", sizeof(g_defaults.core_info_dir));
-      fill_pathname_join(g_defaults.savestate_dir, g_defaults.core_dir,
-            "savestates", sizeof(g_defaults.savestate_dir));
-      fill_pathname_join(g_defaults.sram_dir, g_defaults.core_dir,
-            "savefiles", sizeof(g_defaults.sram_dir));
-      fill_pathname_join(g_defaults.system_dir, g_defaults.core_dir,
-            "system", sizeof(g_defaults.system_dir));
-      fill_pathname_join(g_defaults.shader_dir,  g_defaults.core_dir,
-            "shaders_cg", sizeof(g_defaults.shader_dir));
-      fill_pathname_join(g_defaults.config_path, g_defaults.port_dir,
-            "retroarch.cfg",  sizeof(g_defaults.config_path));
-      fill_pathname_join(g_defaults.overlay_dir, g_defaults.core_dir,
-            "overlays", sizeof(g_defaults.overlay_dir));
-      fill_pathname_join(g_defaults.assets_dir,   g_defaults.core_dir,
-            "media", sizeof(g_defaults.assets_dir));
-      fill_pathname_join(g_defaults.playlist_dir,   g_defaults.core_dir,
-            "playlists", sizeof(g_defaults.playlist_dir));
+      fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
+            "cores", sizeof(g_defaults.dir.core));
+      fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.port,
+            "cores", sizeof(g_defaults.dir.core_info));
+      fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.core,
+            "savestates", sizeof(g_defaults.dir.savestate));
+      fill_pathname_join(g_defaults.dir.sram, g_defaults.dir.core,
+            "savefiles", sizeof(g_defaults.dir.sram));
+      fill_pathname_join(g_defaults.dir.system, g_defaults.dir.core,
+            "system", sizeof(g_defaults.dir.system));
+      fill_pathname_join(g_defaults.dir.shader,  g_defaults.dir.core,
+            "shaders_cg", sizeof(g_defaults.dir.shader));
+      fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
+            "retroarch.cfg",  sizeof(g_defaults.path.config));
+      fill_pathname_join(g_defaults.dir.overlay, g_defaults.dir.core,
+            "overlays", sizeof(g_defaults.dir.overlay));
+      fill_pathname_join(g_defaults.dir.assets,   g_defaults.dir.core,
+            "media", sizeof(g_defaults.dir.assets));
+      fill_pathname_join(g_defaults.dir.playlist,   g_defaults.dir.core,
+            "playlists", sizeof(g_defaults.dir.playlist));
    }
 
 #ifndef IS_SALAMANDER
@@ -364,9 +364,9 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
             NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
    }
 #else
-   if (should_load_game && global->fullpath[0] != '\0')
+   if (should_load_game && global->path.fullpath[0] != '\0')
    {
-      strlcpy(game_path, global->fullpath, sizeof(game_path));
+      strlcpy(game_path, global->path.fullpath, sizeof(game_path));
 
       const char * const spawn_argv[] = {
          game_path,

@@ -145,7 +145,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    char tmp[PATH_MAX_LENGTH] = {0};
    settings_t *settings      = config_get_ptr();
    global_t *global          = global_get_ptr();
-   core_info_t *core_info    = global ? (core_info_t*)global->core_info_current : NULL;
+   core_info_t *core_info    = global ? (core_info_t*)global->core_info.current : NULL;
 
    if (!core_info || !core_info->data)
    {
@@ -241,7 +241,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    if (core_info->firmware_count > 0)
    {
       core_info_list_update_missing_firmware(
-            global->core_info, core_info->path,
+            global->core_info.list, core_info->path,
             settings->system_directory);
 
       strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_FIRMWARE), sizeof(tmp));
@@ -1582,7 +1582,7 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
    if (!menu)
       return -1;
 
-   if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY))
+   if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
    {
       rarch_system_info_t *system = rarch_system_info_get_ptr();
 
@@ -1621,7 +1621,7 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
             menu_hash_to_str(MENU_LABEL_CORE_OPTIONS),
             MENU_SETTING_ACTION, 0, 0);
 
-      if (global->has_set_input_descriptors)
+      if (global->has_set.input_descriptors)
          menu_list_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
                menu_hash_to_str(MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
@@ -1630,7 +1630,7 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
             menu_hash_to_str(MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS),
             menu_hash_to_str(MENU_LABEL_CORE_CHEAT_OPTIONS),
             MENU_SETTING_ACTION, 0, 0);
-      if ((global->core_type != CORE_TYPE_DUMMY) && system && system->disk_control.get_num_images)
+      if ((global->inited.core.type != CORE_TYPE_DUMMY) && system && system->disk_control.get_num_images)
          menu_list_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_DISK_OPTIONS),
                menu_hash_to_str(MENU_LABEL_DISK_OPTIONS),
@@ -1664,8 +1664,8 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
    if (!menu)
       return -1;
 
-   if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY)
-      && !strcmp(menu->deferred_path, global->fullpath))
+   if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY)
+      && !strcmp(menu->deferred_path, global->path.fullpath))
       menu_displaylist_parse_load_content_settings(info);
    else
       menu_list_push(info->list, "Run", "collection",
@@ -1766,7 +1766,7 @@ static int menu_displaylist_parse_load_content_list(menu_displaylist_info_t *inf
          menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
          MENU_SETTING_ACTION, 0, 0);
 
-   if (global->core_info && core_info_list_num_info_files(global->core_info))
+   if (core_info_list_num_info_files(global->core_info.list))
    {
       menu_list_push(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),
@@ -2156,8 +2156,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
 
                fill_pathname_join(core_path, dir, path, sizeof(core_path));
 
-               if (global->core_info &&
-                     core_info_list_get_display_name(global->core_info,
+               if (core_info_list_get_display_name(global->core_info.list,
                         core_path, display_name, sizeof(display_name)))
                   menu_list_set_alt_at_offset(info->list, i, display_name);
             }
@@ -2516,7 +2515,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
          {
             const core_info_t *core_info = NULL;
-            core_info_list_get_supported_cores(global->core_info,
+            core_info_list_get_supported_cores(global->core_info.list,
                   menu->deferred_path, &core_info, &list_size);
 
             if (list_size <= 0)
