@@ -534,7 +534,7 @@ static void event_deinit_core(bool reinit)
 {
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
-   rarch_system_info_t *info = rarch_system_info_get_ptr();
+
    pretro_unload_game();
    pretro_deinit();
 
