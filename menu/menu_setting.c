@@ -1116,7 +1116,6 @@ static int core_list_action_toggle(void *data, bool wraparound)
 static int setting_action_ok_bind_all(void *data, bool wraparound)
 {
    global_t      *global     = global_get_ptr();
-
    (void)wraparound;
 
    if (!global)
