@@ -32,33 +32,21 @@
 #include "config.h"
 #endif
 
-static driver_t *g_driver = NULL;
+static driver_t g_driver;
 
 void driver_free(void)
 {
-   if (g_driver)
-      free(g_driver);
-}
-
-static driver_t *driver_new(void)
-{
-   driver_t *driver = (driver_t*)calloc(1, sizeof(driver_t));
-
-   if (!driver)
-      return NULL;
-
-   return driver;
+   memset(&g_driver, 0, sizeof(g_driver));
 }
 
 void driver_clear_state(void)
 {
    driver_free();
-   g_driver  = driver_new();
 }
 
 driver_t *driver_get_ptr(void)
 {
-   return g_driver;
+   return &g_driver;
 }
 
 #define HASH_LOCATION_DRIVER           0x09189689U
