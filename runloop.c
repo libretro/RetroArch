@@ -43,7 +43,7 @@
 #endif
 
 static struct runloop *g_runloop = NULL;
-static struct global *g_extern   = NULL;
+static struct global g_extern;
 
 /**
  * check_pause:
@@ -866,7 +866,7 @@ static void rarch_main_iterate_linefeed_overlay(driver_t *driver,
 
 global_t *global_get_ptr(void)
 {
-   return g_extern;
+   return &g_extern;
 }
 
 runloop_t *rarch_main_get_ptr(void)
@@ -890,10 +890,7 @@ void rarch_main_global_free(void)
    event_command(EVENT_CMD_RECORD_DEINIT);
    event_command(EVENT_CMD_LOG_FILE_DEINIT);
 
-   if (!g_extern)
-      return;
-
-   free(g_extern);
+   memset(&g_extern, 0, sizeof(g_extern));
 }
 
 bool rarch_main_verbosity(void)
@@ -910,16 +907,6 @@ FILE *rarch_main_log_file(void)
    if (!global)
       return NULL;
    return global->log_file;
-}
-
-static global_t *rarch_main_global_new(void)
-{
-   global_t *global = (global_t*)calloc(1, sizeof(global_t));
-
-   if (!global)
-      return NULL;
-
-   return global;
 }
 
 static runloop_t *rarch_main_state_init(void)
@@ -940,7 +927,6 @@ void rarch_main_clear_state(void)
    g_runloop = rarch_main_state_init();
 
    rarch_main_global_free();
-   g_extern  = rarch_main_global_new();
 }
 
 bool rarch_main_is_idle(void)
