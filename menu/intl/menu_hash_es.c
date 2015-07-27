@@ -2053,8 +2053,6 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
                "Puedes conseguir núcleos si los\n"
                "trasladas a mano en la carpeta\n"
                "'%s'.",
-               menu_hash_to_str(MENU_LABEL_VALUE_ONLINE_UPDATER),
-               menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
                menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #endif
                );
