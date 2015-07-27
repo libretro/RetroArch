@@ -55,11 +55,11 @@ typedef struct data_runloop
 
 static char data_runloop_msg[PATH_MAX_LENGTH];
 
-static data_runloop_t *g_data_runloop;
+static data_runloop_t g_data_runloop;
 
 static data_runloop_t *rarch_main_data_get_ptr(void)
 {
-   return g_data_runloop;
+   return &g_data_runloop;
 }
 
 #ifdef HAVE_THREADS
@@ -101,18 +101,6 @@ void rarch_main_data_deinit(void)
    runloop->inited = false;
 }
 
-static void rarch_main_data_free_internal(void)
-{
-   data_runloop_t *runloop = rarch_main_data_get_ptr();
-
-   if (!runloop)
-      return;
-
-   if (runloop)
-      free(runloop);
-   runloop = NULL;
-}
-
 void rarch_main_data_free(void)
 {
    rarch_main_data_nbio_uninit();
@@ -123,7 +111,7 @@ void rarch_main_data_free(void)
    rarch_main_data_db_uninit();
 #endif
 
-   rarch_main_data_free_internal();
+   memset(&g_data_runloop, 0, sizeof(g_data_runloop));
 }
 
 static void data_runloop_iterate(bool is_thread)
@@ -291,33 +279,21 @@ void rarch_main_data_iterate(void)
    data_runloop_iterate(false);
 }
 
-static data_runloop_t *rarch_main_data_new(void)
+static void rarch_main_data_init(void)
 {
-   data_runloop_t *runloop = (data_runloop_t*)
-      calloc(1, sizeof(data_runloop_t));
-
-   if (!runloop)
-      return NULL;
-
 #ifdef HAVE_THREADS
-   runloop->thread_inited = false;
-   runloop->alive         = false;
+   g_data_runloop.thread_inited = false;
+   g_data_runloop.alive         = false;
 #endif
 
-   runloop->inited = true;
-
-
-   return runloop;
+   g_data_runloop.inited = true;
 }
 
 void rarch_main_data_clear_state(void)
 {
    rarch_main_data_deinit();
    rarch_main_data_free();
-   g_data_runloop = rarch_main_data_new();
-
-   if (!g_data_runloop)
-      return;
+   rarch_main_data_init();
 
    rarch_main_data_nbio_init();
 #ifdef HAVE_NETWORKING
