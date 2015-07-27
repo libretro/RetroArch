@@ -415,7 +415,6 @@ void set_paths_redirect(const char *path)
 
 void rarch_set_paths(const char *path)
 {
-   settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
    set_basename(path);

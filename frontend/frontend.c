@@ -38,7 +38,6 @@ void main_exit_save_config(void)
 {
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
-   rarch_system_info_t *info = rarch_system_info_get_ptr();
 
    if (settings->config_save_on_exit && *global->path.config)
    {
