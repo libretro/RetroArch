@@ -257,60 +257,6 @@ static void event_disk_control_set_eject(bool new_state, bool print_log)
 }
 
 /**
- * event_disk_control_append_image:
- * @path                 : Path to disk image. 
- *
- * Appends disk image to disk image list.
- **/
-void event_disk_control_append_image(const char *path)
-{
-   unsigned new_idx;
-   char msg[PATH_MAX_LENGTH]                         = {0};
-   struct retro_game_info info                       = {0};
-   global_t                                  *global = global_get_ptr();
-   rarch_system_info_t                       *sysinfo = rarch_system_info_get_ptr();
-   const struct retro_disk_control_callback *control = 
-      sysinfo ? (const struct retro_disk_control_callback*)&sysinfo->disk_control
-      : NULL;
-
-   if (!control)
-      return;
-
-   event_disk_control_set_eject(true, false);
-
-   control->add_image_index();
-   new_idx = control->get_num_images();
-   if (!new_idx)
-      return;
-   new_idx--;
-
-   info.path = path;
-   control->replace_image_index(new_idx, &info);
-
-   snprintf(msg, sizeof(msg), "%s: ", msg_hash_to_str(MSG_APPENDED_DISK));
-   strlcat(msg, path, sizeof(msg));
-   RARCH_LOG("%s\n", msg);
-   rarch_main_msg_queue_push(msg, 0, 180, true);
-
-   event_command(EVENT_CMD_AUTOSAVE_DEINIT);
-
-   /* TODO: Need to figure out what to do with subsystems case. */
-   if (!*global->subsystem)
-   {
-      /* Update paths for our new image.
-       * If we actually use append_image, we assume that we
-       * started out in a single disk case, and that this way
-       * of doing it makes the most sense. */
-      rarch_set_paths(path);
-      rarch_fill_pathnames();
-   }
-
-   event_command(EVENT_CMD_AUTOSAVE_INIT);
-
-   event_disk_control_set_eject(false, false);
-}
-
-/**
  * event_check_disk_eject:
  * @control              : Handle to disk control handle.
  *
@@ -375,6 +321,60 @@ static void event_disk_control_set_index(unsigned idx)
          RARCH_LOG("%s\n", msg);
       rarch_main_msg_queue_push(msg, 1, 180, true);
    }
+}
+
+/**
+ * event_disk_control_append_image:
+ * @path                 : Path to disk image.
+ *
+ * Appends disk image to disk image list.
+ **/
+void event_disk_control_append_image(const char *path)
+{
+   unsigned new_idx;
+   char msg[PATH_MAX_LENGTH]                         = {0};
+   struct retro_game_info info                       = {0};
+   global_t                                  *global = global_get_ptr();
+   rarch_system_info_t                       *sysinfo = rarch_system_info_get_ptr();
+   const struct retro_disk_control_callback *control =
+      sysinfo ? (const struct retro_disk_control_callback*)&sysinfo->disk_control
+      : NULL;
+
+   if (!control)
+      return;
+
+   event_disk_control_set_eject(true, false);
+
+   control->add_image_index();
+   new_idx = control->get_num_images();
+   if (!new_idx)
+      return;
+   new_idx--;
+
+   info.path = path;
+   control->replace_image_index(new_idx, &info);
+
+   snprintf(msg, sizeof(msg), "%s: ", msg_hash_to_str(MSG_APPENDED_DISK));
+   strlcat(msg, path, sizeof(msg));
+   RARCH_LOG("%s\n", msg);
+   rarch_main_msg_queue_push(msg, 0, 180, true);
+
+   event_command(EVENT_CMD_AUTOSAVE_DEINIT);
+
+   /* TODO: Need to figure out what to do with subsystems case. */
+   if (!*global->subsystem)
+   {
+      /* Update paths for our new image.
+       * If we actually use append_image, we assume that we
+       * started out in a single disk case, and that this way
+       * of doing it makes the most sense. */
+      rarch_set_paths(path);
+      rarch_fill_pathnames();
+   }
+
+   event_command(EVENT_CMD_AUTOSAVE_INIT);
+   event_disk_control_set_index(new_idx);
+   event_disk_control_set_eject(false, false);
 }
 
 /**
