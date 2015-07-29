@@ -46,7 +46,6 @@ override_dh_auto_build:
 override_dh_auto_install:
 	# Add here commands to install the package into debian/retroarch.
 	$(MAKE) DESTDIR=$(CURDIR)/debian/retroarch PREFIX=/usr install
-	cp $(CURDIR)/debian/retroarch.desktop $(CURDIR)/debian/retroarch/usr/share/applications/
 	cp $(CURDIR)/retroarch.cfg $(CURDIR)/debian/retroarch/etc/
 ifeq ($(ARCH),armhf)
 	rm -f $(CURDIR)/debian/retroarch/usr/bin/retroarch-cg2glsl

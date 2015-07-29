@@ -158,16 +158,17 @@ install: $(TARGET)
 	rm -f $(OBJDIR)/git_version.o
 	mkdir -p $(DESTDIR)$(PREFIX)/bin 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(GLOBAL_CONFIG_DIR) 2>/dev/null || /bin/true
+	mkdir -p $(DESTDIR)$(PREFIX)/share/applications 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(PREFIX)/share/man/man1 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(PREFIX)/share/pixmaps 2>/dev/null || /bin/true
 	install -m755 $(TARGET) $(DESTDIR)$(PREFIX)/bin 
 	install -m755 tools/cg2glsl.py $(DESTDIR)$(PREFIX)/bin/retroarch-cg2glsl
 	install -m755 $(JTARGET) $(DESTDIR)$(PREFIX)/bin
 	install -m644 retroarch.cfg $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
+	install -m644 retroarch.desktop $(DESTDIR)$(PREFIX)/share/applications
 	install -m644 docs/retroarch.1 $(DESTDIR)$(MAN_DIR)
 	install -m644 docs/retroarch-cg2glsl.1 $(DESTDIR)$(MAN_DIR)
 	install -m644 docs/retroarch-joyconfig.1 $(DESTDIR)$(MAN_DIR)
-	install -m644 media/retroarch.png $(DESTDIR)$(PREFIX)/share/pixmaps
 	install -m644 media/retroarch.svg $(DESTDIR)$(PREFIX)/share/pixmaps
 
 uninstall:
@@ -175,10 +176,10 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch-joyconfig
 	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch-cg2glsl
 	rm -f $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
+	rm -f $(DESTDIR)$(PREFIX)/share/applications/retroarch.desktop
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch.1
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch-cg2glsl.1
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch-joyconfig.1
-	rm -f $(DESTDIR)$(PREFIX)/share/pixmaps/retroarch.png
 	rm -f $(DESTDIR)$(PREFIX)/share/pixmaps/retroarch.svg
 
 clean:
