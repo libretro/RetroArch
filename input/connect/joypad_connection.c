@@ -105,7 +105,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       }
    }
 
-   return -1;
+   return pad;
 }
 
 void pad_connection_pad_deinit(joypad_connection_t *joyconn, uint32_t pad)
