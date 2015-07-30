@@ -67,7 +67,7 @@ else ifeq ($(platform), ios)
    DEFINES := -DIOS
    CFLAGS += -DGLES $(DEFINES)
    CC = clang -arch armv7 -isysroot $(IOSSDK)
-else ifeq ($(platform), qnx)
+else ifneq (,$(findstring qnx,$(platform)))
    TARGET := $(TARGET_NAME)_libretro_qnx.so
    fpic := -fPIC
    SHARED := -shared -Wl,--version-script=link.T
@@ -77,6 +77,7 @@ else ifeq ($(platform), qnx)
    AR = qcc -Vgcc_ntoarmv7le
    CFLAGS += -DGLES
    GL_LIB := -lGLESv2
+   GLES := 1
 else ifneq (,$(findstring armv,$(platform)))
    CC = gcc
    TARGET := $(TARGET_NAME)_libretro.so
@@ -117,10 +118,10 @@ else
    CFLAGS += -O3
 endif
 
-ifeq ($(platform), qnx)
-   CFLAGS += -Wc,-std=gnu99
+ifneq (,$(findstring qnx,$(platform)))
+	CFLAGS += -Wc,-std=c99
 else
-   CFLAGS += -std=gnu99
+	CFLAGS += -std=gnu99
 endif
 
 OBJECTS := libretro-test.o ../../libretro-common/glsym/rglgen.o

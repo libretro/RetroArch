@@ -50,16 +50,6 @@ static GLuint fbo;
 static GLuint rbo_color, rbo_depth_stencil;
 #endif
 
-static const GLfloat vertex_data[] = {
-   -0.5, -0.5,
-    0.5, -0.5,
-   -0.5,  0.5,
-    0.5,  0.5,
-   1.0, 1.0, 1.0, 1.0,
-   1.0, 1.0, 0.0, 1.0,
-   0.0, 1.0, 1.0, 1.0,
-   1.0, 0.0, 1.0, 1.0,
-};
 
 #ifdef CORE
 static const char *vertex_shader[] = {
@@ -182,6 +172,17 @@ static void init_multisample(unsigned samples)
 
 static void setup_vao(void)
 {
+   static const GLfloat vertex_data[] = {
+      -0.5, -0.5,
+      0.5, -0.5,
+      -0.5,  0.5,
+      0.5,  0.5,
+      1.0, 1.0, 1.0, 1.0,
+      1.0, 1.0, 0.0, 1.0,
+      0.0, 1.0, 1.0, 1.0,
+      1.0, 0.0, 1.0, 1.0,
+   };
+
 #ifdef CORE
    glGenVertexArrays(1, &vao);
 #endif

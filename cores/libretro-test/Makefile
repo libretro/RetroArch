@@ -38,7 +38,7 @@ else ifeq ($(platform), ios)
 	SHARED := -dynamiclib
 	DEFINES := -DIOS
 	CC = clang -arch armv7 -isysroot $(IOSSDK)
-else ifeq ($(platform), qnx)
+else ifneq (,$(findstring qnx,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro_qnx.so
    fpic := -fPIC
    SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
@@ -63,8 +63,8 @@ endif
 OBJECTS := libretro-test.o
 CFLAGS += -Wall -pedantic $(fpic)
 
-ifeq ($(platform), qnx)
-CFLAGS += -Wc,-std=gnu99
+ifneq (,$(findstring qnx,$(platform)))
+CFLAGS += -Wc,-std=c99
 else
 CFLAGS += -std=gnu99
 endif
