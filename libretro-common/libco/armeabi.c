@@ -11,7 +11,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#ifndef IOS
+#ifndef __APPLE__
 #include <malloc.h>
 #endif
 
