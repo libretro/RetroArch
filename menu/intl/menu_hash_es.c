@@ -338,13 +338,13 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_ALLOW_ROTATE:
          return "Permitir rotación";
       case MENU_LABEL_VALUE_VIDEO_HARD_SYNC:
-         return "Sincronización de GPU por hardware";
+         return "Sincronía estricta de GPU";
       case MENU_LABEL_VALUE_VIDEO_SWAP_INTERVAL:
          return "Intervalo de alternado de VSync";
       case MENU_LABEL_VALUE_VIDEO_VSYNC:
          return "VSync/Sincronía vertical";
       case MENU_LABEL_VALUE_VIDEO_THREADED:
-         return "Vídeo multinúcleo";
+         return "Vídeo por hilos";
       case MENU_LABEL_VALUE_VIDEO_ROTATION:
          return "Rotación";
       case MENU_LABEL_VALUE_VIDEO_GPU_SCREENSHOT:
@@ -372,7 +372,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION:
          return "Insertar fotogramas negros";
       case MENU_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES:
-         return "Sincronizar fotogramas de CPU por hardware";
+         return "Fotogramas a sincronizar estrictamente";
       case MENU_LABEL_VALUE_SORT_SAVEFILES_ENABLE:
          return "Ordenar partidas guardadas por carpetas";
       case MENU_LABEL_VALUE_SORT_SAVESTATES_ENABLE:
@@ -396,7 +396,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_SAVESTATE_AUTO_SAVE:
          return "Guardado rápido automático";
       case MENU_LABEL_VALUE_AUTOSAVE_INTERVAL:
-         return "Intervalo de autoguardados SaveRAM";
+         return "Intervalo de autoguardados de SaveRAM";
       case MENU_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
          return "No sobrescribir SaveRAM al cargar un guardado rápido";
       case MENU_LABEL_VALUE_VIDEO_SHARED_CONTEXT:
@@ -728,7 +728,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT:
          return "Soporte de OpenGL ES";
       case MENU_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT:
-         return "Soporte de multinúcleo";
+         return "Soporte de hilos";
       case MENU_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT:
          return "Soporte de KMS/EGL";
       case MENU_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT:
@@ -936,7 +936,7 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
                "ajustes. Aquí van algunas opciones:\n"
                " \n"
                "a) Ve a '%s' -> '%s' y activa\n"
-               "'Vídeo multinúcleo'. En este modo la \n"
+               "'Vídeo por hilos'. En este modo la \n"
                "frecuencia es irrelevante, habrá más fps,\n"
                "pero la imagen podría ser menos fluida.\n"
                "b) Ve a '%s' -> '%s' y busca\n"
@@ -1685,7 +1685,7 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
       case MENU_LABEL_VIDEO_THREADED:
          snprintf(s, len,
                "Utilizar un controlador de vídeo \n"
-               "multinúcleo.\n"
+               "por hilos.\n"
                " \n"
                "Esta opción podría mejorar el rendimiento \n"
                "a costa de ganar retraso y perder fluidez \n"
@@ -1697,8 +1697,8 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
          break;
       case MENU_LABEL_VIDEO_HARD_SYNC:
          snprintf(s, len,
-               "Intenta sincronizar la CPU \n"
-               "y la GPU por hardware.\n"
+               "Intenta sincronizar la CPU y la GPU \n"
+               "de una forma más estricta.\n"
                " \n"
                "Puede reducir el retraso a costa \n"
                "de perder rendimiento.");
@@ -1732,8 +1732,8 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
          snprintf(s, len,
                "Ajusta la cantidad de fotogramas \n"
                "que puede adelantar la CPU a la GPU \n"
-               "al utilizar 'Sincronizar fotogramas \n"
-               "de CPU por hardware'.\n"
+               "al utilizar 'Sincronía estricta \n"
+               "de CPU'.\n"
                " \n"
                "El valor máximo es 3.\n"
                " \n"
