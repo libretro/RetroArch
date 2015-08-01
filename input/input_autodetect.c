@@ -132,10 +132,13 @@ static void input_autoconfigure_joypad_add(
    input_autoconfigure_joypad_conf(conf,
          settings->input.autoconf_binds[params->idx]);
 
-   if (!strcmp(device_type,"remote") && !remote_is_bound)
+   if (!strcmp(device_type,"remote"))
    {
       snprintf(msg, sizeof(msg), "%s configured",
           params->name, params->idx);
+      
+      if(!remote_is_bound)
+         rarch_main_msg_queue_push(msg, 0, 60, false);
       remote_is_bound = true;
    }
    else
@@ -146,10 +149,9 @@ static void input_autoconfigure_joypad_add(
       else
          snprintf(msg, sizeof(msg), "%s configured in port #%u.",
                params->name, params->idx);
+      if (!block_osd_spam)
+          rarch_main_msg_queue_push(msg, 0, 60, false);
    }
-
-   if (!block_osd_spam && !remote_is_bound)
-      rarch_main_msg_queue_push(msg, 0, 60, false);
 
    RARCH_LOG("%s\n", msg);
 }
