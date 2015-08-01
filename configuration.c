@@ -1712,13 +1712,13 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (!config_get_path(conf, "system_directory",
             settings->system_directory, sizeof(settings->system_directory)))
    {
-      RARCH_WARN("SYSTEM DIR is empty, fill assume CONTENT DIR\n");
+      RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR\n");
       *settings->system_directory = '\0';
    }
 
    if (!strcmp(settings->system_directory, "default"))
    {
-      RARCH_WARN("SYSTEM DIR is empty, fill assume CONTENT DIR\n");
+      RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR\n");
       *settings->system_directory = '\0';
    }
 

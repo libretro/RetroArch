@@ -37,6 +37,7 @@ enum
    AUTODETECT_MATCH_NAME
 };
 #endif
+bool remote_is_bound = false;
 
 static void input_autoconfigure_joypad_conf(config_file_t *conf,
       struct retro_keybind *binds)
@@ -112,10 +113,12 @@ static void input_autoconfigure_joypad_add(
       autoconfig_params_t *params)
 {
    char msg[PATH_MAX_LENGTH] = {0};
-   char buf[PATH_MAX_LENGTH] = {0};
+   char display_name[PATH_MAX_LENGTH] = {0};
+   char device_type[PATH_MAX_LENGTH] = {0};
    settings_t      *settings = config_get_ptr();
 
-   config_get_array(conf, "input_display_name", buf, sizeof(buf));
+   config_get_array(conf, "input_device_display_name", display_name, sizeof(display_name));
+   config_get_array(conf, "input_device_type", device_type, sizeof(device_type));
 
    /* This will be the case if input driver is reinitialized.
     * No reason to spam autoconfigure messages every time. */
@@ -129,15 +132,26 @@ static void input_autoconfigure_joypad_add(
    input_autoconfigure_joypad_conf(conf,
          settings->input.autoconf_binds[params->idx]);
 
-   if (buf[0] != '\0' || strcmp(buf, ""))
-      snprintf(msg, sizeof(msg), "%s configured in port #%u.",
-            buf, params->idx);
-   else
-      snprintf(msg, sizeof(msg), "%s configured in port #%u.",
-            params->name, params->idx);
-
-      if (!block_osd_spam)
+   if (!strcmp(device_type,"remote"))
+   {
+      snprintf(msg, sizeof(msg), "%s configured",
+          params->name, params->idx);
+      
+      if(!remote_is_bound)
          rarch_main_msg_queue_push(msg, 0, 60, false);
+      remote_is_bound = true;
+   }
+   else
+   {
+      if (display_name[0] != '\0' || strcmp(display_name, ""))
+         snprintf(msg, sizeof(msg), "%s configured in port #%u.",
+               display_name, params->idx);
+      else
+         snprintf(msg, sizeof(msg), "%s configured in port #%u.",
+               params->name, params->idx);
+      if (!block_osd_spam)
+          rarch_main_msg_queue_push(msg, 0, 60, false);
+   }
 
    RARCH_LOG("%s\n", msg);
 }

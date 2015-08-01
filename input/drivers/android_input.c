@@ -654,7 +654,27 @@ static void handle_hotplug(android_input_t *android,
    {
       /* If built-in shield controller is detected bind the virtual and gpio devices to the same port*/
       *port = 0;
-      strlcpy(name_buf, "Generic GPIO Device", sizeof(name_buf));
+      strlcpy(name_buf, "Generic I/O Device", sizeof(name_buf));
+   }
+   else if (strstr(device_name, "Amazon Fire TV Remote")
+         || strstr(device_name, "Nexus Remote")
+         || strstr(device_name, "SHIELD Remote"))
+   {
+      /* hack for remote control type devices, set them always to port 0 */
+      *port = 0;
+      strlcpy(name_buf, device_name, sizeof(name_buf));
+   }
+   else if ( *port==1 && ( strstr(android->pad_states[0].name,"Amazon Fire TV Remote")
+                      ||   strstr(android->pad_states[0].name,"Nexus Remote")
+                      ||   strstr(android->pad_states[0].name,"SHIELD Remote")))
+   {
+      /* and then when we are binding a new controller in port 1 and one of those remotes
+       * was bound to port 0, bind the device as port 0 too, it causes all the controllers to 
+       * rebind on the first button press but at least the remotes can be used to navigate
+       * the user interface
+       */
+      *port = 0;
+      strlcpy(name_buf, device_name, sizeof(name_buf));
    }
    else if (
          strstr(device_name, "PLAYSTATION(R)3") ||
