@@ -127,14 +127,14 @@ static void input_autoconfigure_joypad_add(
 
    if (!settings)
       return;
-  
+
    settings->input.autoconfigured[params->idx] = true;
    input_autoconfigure_joypad_conf(conf,
          settings->input.autoconf_binds[params->idx]);
 
-   if (!strcmp(device_type,"remote"))
+   if (!strcmp(device_type,"remote") && !remote_is_bound)
    {
-      snprintf(msg, sizeof(msg), "%s configured for gui navigation",
+      snprintf(msg, sizeof(msg), "%s configured",
           params->name, params->idx);
       remote_is_bound = true;
    }
