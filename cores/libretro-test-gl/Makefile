@@ -49,9 +49,7 @@ else ifneq (,$(findstring osx,$(platform)))
 	endif
 	OSXVER = `sw_vers -productVersion | cut -d. -f 2`
 	OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
-	ifeq ($(OSX_LT_MAVERICKS),"YES")
-		fpic += -mmacosx-version-min=10.5
-	endif
+	fpic += -mmacosx-version-min=10.1
 else ifeq ($(platform), pi)
    TARGET := $(TARGET_NAME)_libretro.so
    fpic := -fPIC
