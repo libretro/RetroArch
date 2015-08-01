@@ -214,7 +214,10 @@ retro_input_t input_driver_keys_pressed(void)
          state = input->key_pressed(driver->input_data, key);
 
       if (key >= RARCH_FIRST_META_KEY)
+      {
          state |= input->meta_key_pressed(driver->input_data, key);
+         RARCH_LOG("TEST1 \n TEST1 \n");
+      }
 
 #ifdef HAVE_OVERLAY
       state |= input_overlay_key_pressed(key);
@@ -222,7 +225,10 @@ retro_input_t input_driver_keys_pressed(void)
 
 #ifdef HAVE_COMMAND
       if (driver->command)
+      {
          state |= rarch_cmd_get(driver->command, key);
+         RARCH_LOG("TEST2 \n TEST2 \n");
+      }
 #endif
 
       if (state)
