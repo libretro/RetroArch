@@ -148,7 +148,7 @@ static void input_autoconfigure_joypad_add(
                params->name, params->idx);
    }
 
-   if (!block_osd_spam)
+   if (!block_osd_spam && !remote_is_bound)
       rarch_main_msg_queue_push(msg, 0, 60, false);
 
    RARCH_LOG("%s\n", msg);
