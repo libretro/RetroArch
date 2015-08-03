@@ -921,15 +921,10 @@ bool rarch_main_is_idle(void)
 }
 
 static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
+      driver_t *driver, settings_t *settings,
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
-   driver_t *driver                = driver_get_ptr();
-   settings_t *settings            = config_get_ptr();
-
-   if (!settings)
-      return false;
-
    switch (settings->input.menu_toggle_gamepad_combo)
    {
       case 0:
@@ -956,7 +951,8 @@ static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
    return true;
 }
 
-static void rarch_main_cmd_get_state(event_cmd_state_t *cmd,
+static void rarch_main_cmd_get_state(driver_t *driver,
+      settings_t *settings, event_cmd_state_t *cmd,
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
@@ -968,7 +964,8 @@ static void rarch_main_cmd_get_state(event_cmd_state_t *cmd,
    cmd->grab_mouse_pressed          = BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE);
 #ifdef HAVE_MENU
    cmd->menu_pressed                = BIT64_GET(trigger_input, RARCH_MENU_TOGGLE) ||
-                                      rarch_main_cmd_get_state_menu_toggle_button_combo(input,
+                                      rarch_main_cmd_get_state_menu_toggle_button_combo(driver,
+                                            settings, input,
                                             old_input, trigger_input);
 #endif
    cmd->quit_key_pressed            = BIT64_GET(input, RARCH_QUIT_KEY);
@@ -1034,7 +1031,7 @@ int rarch_main_iterate(void)
 
    trigger_input = input & ~old_input;
 
-   rarch_main_cmd_get_state(&cmd, input, old_input, trigger_input);
+   rarch_main_cmd_get_state(driver, settings, &cmd, input, old_input, trigger_input);
 
    if (time_to_exit(driver, global, system, &cmd))
       return rarch_main_iterate_quit(settings, system, global);
