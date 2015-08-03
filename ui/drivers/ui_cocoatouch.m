@@ -44,9 +44,9 @@ void apple_rarch_exited(void);
 
 static void rarch_draw(void)
 {
-   runloop_t *runloop = rarch_main_get_ptr();
+   global_t *global   = global_get_ptr();
    int ret            = 0;
-   bool iterate       = iterate_observer && !runloop->is_paused;
+   bool iterate       = iterate_observer && !global->is_paused;
 
    if (iterate)
    {
@@ -70,7 +70,7 @@ static void rarch_draw(void)
       return;
    }
 
-   if (runloop->is_idle)
+   if (global->is_idle)
       return;
    CFRunLoopWakeUp(CFRunLoopGetMain());
 }
@@ -398,7 +398,7 @@ void apple_stop_iterate_timer()
 
 - (void)showGameView
 {
-   runloop_t *runloop = rarch_main_get_ptr();
+   global_t  *global  = global_get_ptr();
 
    [self popToRootViewControllerAnimated:NO];
    [self setToolbarHidden:true animated:NO];
@@ -406,20 +406,20 @@ void apple_stop_iterate_timer()
    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [self.window setRootViewController:[CocoaView get]];
 
-   runloop->is_paused                     = false;
-   runloop->is_idle                       = false;
-   runloop->ui_companion_is_on_foreground = false;
+   global->is_paused                     = false;
+   global->is_idle                       = false;
+   global->ui_companion_is_on_foreground = false;
 }
 
 - (IBAction)showPauseMenu:(id)sender
 {
-   runloop_t *runloop = rarch_main_get_ptr();
+   global_t  *global  = global_get_ptr();
     
-   if (runloop)
+   if (global)
    {
-       runloop->is_paused                     = true;
-       runloop->is_idle                       = true;
-       runloop->ui_companion_is_on_foreground = true;
+       global->is_paused                     = true;
+       global->is_idle                       = true;
+       global->ui_companion_is_on_foreground = true;
    }
 
    [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
@@ -429,9 +429,9 @@ void apple_stop_iterate_timer()
 
 - (void)toggleUI
 {
-   runloop_t *runloop = rarch_main_get_ptr();
+   global_t  *global  = global_get_ptr();
 
-   if (runloop->ui_companion_is_on_foreground)
+   if (global->ui_companion_is_on_foreground)
    {
       [self showGameView];
    }
@@ -505,15 +505,15 @@ typedef struct ui_companion_cocoatouch
 static void ui_companion_cocoatouch_switch_to_ios(void *data)
 {
    RetroArch_iOS *ap  = NULL;
-   runloop_t *runloop = rarch_main_get_ptr();
+   global_t  *global  = global_get_ptr();
     
    (void)data;
 
    if (!apple_platform)
       return;
     
-   ap = (RetroArch_iOS *)apple_platform;
-   runloop->is_idle = true;
+   ap              = (RetroArch_iOS *)apple_platform;
+   global->is_idle = true;
    [ap showPauseMenu:ap];
 }
 

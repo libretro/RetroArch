@@ -1153,12 +1153,12 @@ static void validate_cpu_features(void)
  **/
 void rarch_init_system_av_info(void)
 {
-   runloop_t *runloop = rarch_main_get_ptr();
    struct retro_system_av_info *av_info = 
       video_viewport_get_system_av_info();
+   global_t *global = global_get_ptr();
 
    pretro_get_system_av_info(av_info);
-   runloop->frames.limit.last_time = rarch_get_time_usec();
+   global->frames.limit.last_time = rarch_get_time_usec();
 }
 
 /**

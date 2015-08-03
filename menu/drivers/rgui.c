@@ -34,7 +34,6 @@
 #include "../menu_video.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
 #define RGUI_TERM_START_X        (frame_buf->width / 21)
@@ -374,8 +373,8 @@ static void rgui_render(void)
    menu_display_t *disp           = menu_display_get_ptr();
    menu_framebuf_t *frame_buf     = menu_display_fb_get_ptr();
    menu_navigation_t *nav         = menu_navigation_get_ptr();
-   runloop_t *runloop             = rarch_main_get_ptr();
    driver_t *driver               = driver_get_ptr();
+   global_t *global               = global_get_ptr();
    settings_t *settings           = config_get_ptr();
    menu_animation_t *anim         = menu_animation_get_ptr();
    uint64_t frame_count           = video_driver_get_frame_count();
@@ -398,7 +397,7 @@ static void rgui_render(void)
       if (menu_entries_needs_refresh() && menu_driver_alive() && !disp->msg_force)
          return;
 
-      if (runloop->is_idle)
+      if (global->is_idle)
          return;
 
       if (!menu_display_update_pending())

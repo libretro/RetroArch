@@ -295,7 +295,7 @@ static void engine_handle_cmd(void)
 {
    int8_t cmd;
    struct android_app *android_app = (struct android_app*)g_android;
-   runloop_t *runloop = rarch_main_get_ptr();
+   global_t *global   = global_get_ptr();
    driver_t  *driver  = driver_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
@@ -331,7 +331,7 @@ static void engine_handle_cmd(void)
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
 
-         if (runloop->is_paused)
+         if (global->is_paused)
             event_command(EVENT_CMD_REINIT);
          break;
 
@@ -358,8 +358,8 @@ static void engine_handle_cmd(void)
          if (!system->shutdown)
          {
             RARCH_LOG("Pausing RetroArch.\n");
-            runloop->is_paused = true;
-            runloop->is_idle   = true;
+            global->is_paused = true;
+            global->is_idle   = true;
          }
          break;
 
@@ -388,8 +388,8 @@ static void engine_handle_cmd(void)
          break;
 
       case APP_CMD_GAINED_FOCUS:
-         runloop->is_paused = false;
-         runloop->is_idle   = false;
+         global->is_paused = false;
+         global->is_idle   = false;
 
          if ((android_app->sensor_state_mask
                   & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))

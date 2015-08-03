@@ -25,7 +25,6 @@
 #include "d3d.h"
 #include "../video_viewport.h"
 #include "../video_monitor.h"
-#include "../../runloop.h"
 #include "../../dynamic.h"
 #include "render_chain_driver.h"
 
@@ -1633,7 +1632,6 @@ static bool d3d_frame(void *data, const void *frame,
    unsigned i                      = 0;
    d3d_video_t *d3d                = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr           = (LPDIRECT3DDEVICE)d3d->dev;
-   runloop_t *runloop              = rarch_main_get_ptr();
    driver_t *driver                = driver_get_ptr();
    settings_t *settings            = config_get_ptr();
    const font_renderer_t *font_ctx = driver->font_osd_driver;

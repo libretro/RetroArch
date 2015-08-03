@@ -32,9 +32,15 @@
 extern "C" {
 #endif
 
-/* All libretro runloop-related globals go here. */
+typedef struct rarch_resolution
+{
+   unsigned idx;
+   unsigned id;
+} rarch_resolution_t;
 
-typedef struct runloop
+/* All run-time- / command line flag-related globals go here. */
+
+typedef struct global
 {
    /* Lifecycle state checks. */
    bool is_idle;
@@ -48,18 +54,7 @@ typedef struct runloop
          retro_time_t last_time;
       } limit;
    } frames;
-} runloop_t;
 
-typedef struct rarch_resolution
-{
-   unsigned idx;
-   unsigned id;
-} rarch_resolution_t;
-
-/* All run-time- / command line flag-related globals go here. */
-
-typedef struct global
-{
    bool is_slowmotion;
    bool is_paused;
    unsigned max_frames;
@@ -317,8 +312,6 @@ typedef struct global
    char error_string[PATH_MAX_LENGTH];
    retro_keyboard_event_t frontend_key_event;
 } global_t;
-
-runloop_t *rarch_main_get_ptr(void);
 
 global_t *global_get_ptr(void);
 

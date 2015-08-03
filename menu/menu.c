@@ -352,7 +352,7 @@ int menu_iterate(retro_input_t input,
 {
    int32_t ret              = 0;
    unsigned action          = 0;
-   runloop_t *runloop       = rarch_main_get_ptr();
+   global_t *global         = global_get_ptr();
    menu_display_t *disp     = menu_display_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
 
@@ -364,7 +364,7 @@ int menu_iterate(retro_input_t input,
 
    ret = menu_entry_iterate(action);
 
-   if (menu_driver_alive() && !runloop->is_idle)
+   if (menu_driver_alive() && !global->is_idle)
       menu_display_fb();
 
    menu_driver_set_texture();
