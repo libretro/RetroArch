@@ -116,37 +116,6 @@ static void video_frame(const void *data, unsigned width,
 }
 
 /**
- * input_apply_turbo:
- * @port                 : user number
- * @id                   : identifier of the key
- * @res                  : boolean return value. FIXME/TODO: to be refactored.
- *
- * Apply turbo button if activated.
- *
- * If turbo button is held, all buttons pressed except
- * for D-pad will go into a turbo mode. Until the button is
- * released again, the input state will be modulated by a 
- * periodic pulse defined by the configured duty cycle. 
- *
- * Returns: 1 (true) if turbo button is enabled for this
- * key ID, otherwise the value of @res will be returned.
- *
- **/
-static bool input_apply_turbo(global_t *global, settings_t *settings,
-      unsigned port, unsigned id, bool res)
-{
-   if (res && global->turbo.frame_enable[port])
-      global->turbo.enable[port] |= (1 << id);
-   else if (!res)
-      global->turbo.enable[port] &= ~(1 << id);
-
-   if (global->turbo.enable[port] & (1 << id))
-      return res && ((global->turbo.count % settings->input.turbo_period)
-            < settings->input.turbo_duty_cycle);
-   return res;
-}
-
-/**
  * input_state:
  * @port                 : user number.
  * @device               : device identifier of user.
@@ -204,7 +173,27 @@ static int16_t input_state(unsigned port, unsigned device,
    /* Don't allow turbo for D-pad. */
    if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP ||
             id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
-      res = input_apply_turbo(global, settings, port, id, res);
+   {
+      /*
+       * Apply turbo button if activated.
+       *
+       * If turbo button is held, all buttons pressed except
+       * for D-pad will go into a turbo mode. Until the button is
+       * released again, the input state will be modulated by a 
+       * periodic pulse defined by the configured duty cycle. 
+       */
+      if (res && global->turbo.frame_enable[port])
+         global->turbo.enable[port] |= (1 << id);
+      else if (!res)
+         global->turbo.enable[port] &= ~(1 << id);
+
+      if (global->turbo.enable[port] & (1 << id))
+      {
+         /* if turbo button is enabled for this key ID */
+         res = res && ((global->turbo.count % settings->input.turbo_period)
+               < settings->input.turbo_duty_cycle);
+      }
+   }
 
    if (global->bsv.movie && !global->bsv.movie_playback)
       bsv_movie_set_input(global->bsv.movie, res);
