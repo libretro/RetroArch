@@ -505,7 +505,6 @@ enum rarch_content_type rarch_path_is_media_type(const char *path)
 static void parse_input(int argc, char *argv[])
 {
    const char *optstring = NULL;
-   runloop_t *runloop    = rarch_main_get_ptr();
    global_t  *global     = global_get_ptr();
    settings_t *settings  = config_get_ptr();
 
@@ -839,7 +838,7 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case RA_OPT_MAX_FRAMES:
-            runloop->frames.video.max = strtoul(optarg, NULL, 10);
+            global->max_frames = strtoul(optarg, NULL, 10);
             break;
 
          case RA_OPT_SUBSYSTEM:

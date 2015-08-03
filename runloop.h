@@ -46,11 +46,6 @@ typedef struct runloop
    {
       struct
       {
-         unsigned max;
-      } video;
-
-      struct
-      {
          retro_time_t minimum_time;
          retro_time_t last_time;
       } limit;
@@ -67,6 +62,8 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
+   unsigned max_frames;
+
    bool verbosity;
    bool perfcnt_enable;
    bool force_fullscreen;
