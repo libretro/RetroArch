@@ -283,22 +283,11 @@ uintptr_t video_driver_get_current_framebuffer(void)
    return 0;
 }
 
-uint64_t video_driver_get_frame_count(void)
-{
-   static bool              warn_once = true;
-   driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
+static uint64_t video_frame_count;
 
-   if (!poke || !poke->get_frame_count)
-   {
-      if (warn_once)
-      {
-         RARCH_WARN("Frame count not implemented!\n");
-         warn_once = false;
-      }
-      return 0;
-   }
-   return poke->get_frame_count(driver->video_data);
+uint64_t *video_driver_get_frame_count(void)
+{
+   return &video_frame_count;
 }
 
 retro_proc_address_t video_driver_get_proc_address(const char *sym)
@@ -394,6 +383,9 @@ error:
 static void init_video_input(const input_driver_t *tmp)
 {
    driver_t *driver = driver_get_ptr();
+
+   /* Reset video frame count */
+   video_frame_count = 0;
 
    /* Video driver didn't provide an input driver,
     * so we use configured one. */
@@ -1091,14 +1083,13 @@ bool video_monitor_get_fps(char *buf, size_t size,
    retro_time_t        new_time;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
-   uint64_t        frame_count = video_driver_get_frame_count();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    *buf = '\0';
 
    new_time = rarch_get_time_usec();
 
-   if (frame_count)
+   if (video_frame_count)
    {
       bool ret = false;
       unsigned write_index = video_state.frame_time_samples_count++ &
@@ -1107,19 +1098,19 @@ bool video_monitor_get_fps(char *buf, size_t size,
       video_state.frame_time_samples[write_index] = new_time - fps_time;
       fps_time = new_time;
 
-      if ((frame_count % FPS_UPDATE_INTERVAL) == 0)
+      if ((video_frame_count % FPS_UPDATE_INTERVAL) == 0)
       {
          last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
          curr_time = new_time;
 
          snprintf(buf, size, "%s || FPS: %6.1f || Frames: " U64_SIGN,
-               system->title_buf, last_fps, (unsigned long long)frame_count);
+               system->title_buf, last_fps, (unsigned long long)video_frame_count);
          ret = true;
       }
 
       if (buf_fps)
          snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: " U64_SIGN,
-               last_fps, (unsigned long long)frame_count);
+               last_fps, (unsigned long long)video_frame_count);
 
       return ret;
    }

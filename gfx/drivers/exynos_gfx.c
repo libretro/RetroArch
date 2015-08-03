@@ -1405,7 +1405,7 @@ static void exynos_gfx_free(void *data)
 }
 
 static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
-      unsigned height, unsigned pitch, const char *msg)
+      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg)
 {
    struct exynos_video *vid = data;
    struct exynos_page *page = NULL;
@@ -1471,8 +1471,6 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (exynos_flip(vid->data, page) != 0)
       goto fail;
-
-   vid->frame_count++;
 
    return true;
 
@@ -1625,16 +1623,7 @@ static void exynos_show_mouse(void *data, bool state)
    (void)state;
 }
 
-static uint64_t exynos_get_frame_count(void *data)
-{
-   struct exynos_video *vid = data;
-   if (!vid)
-      return 0;
-   return vid->frame_count;
-}
-
 static const video_poke_interface_t exynos_poke_interface = {
-   exynos_get_frame_count,
    NULL, /* set_video_mode */
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */

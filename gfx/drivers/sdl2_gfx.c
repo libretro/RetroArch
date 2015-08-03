@@ -50,7 +50,6 @@ typedef struct sdl2_tex
 
 typedef struct _sdl2_video
 {
-   uint64_t frame_count;
    SDL_Window *window;
    SDL_Renderer *renderer;
 
@@ -491,7 +490,8 @@ static void check_window(sdl2_video_t *vid)
 }
 
 static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
-                           unsigned height, unsigned pitch, const char *msg)
+      unsigned height, uint64_t frame_count,
+      unsigned pitch, const char *msg)
 {
    char buf[128]     = {0};
    sdl2_video_t *vid = (sdl2_video_t*)data;
@@ -529,8 +529,6 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (video_monitor_get_fps(buf, sizeof(buf), NULL, 0))
       SDL_SetWindowTitle(vid->window, buf);
-
-   vid->frame_count++;
 
    return true;
 }
@@ -734,16 +732,7 @@ static void sdl2_grab_mouse_toggle(void *data)
    SDL_SetWindowGrab(vid->window, SDL_GetWindowGrab(vid->window));
 }
 
-static uint64_t sdl2_get_frame_count(void *data)
-{
-   sdl2_video_t *vid = (sdl2_video_t*)data;
-   if (!vid)
-      return 0;
-   return vid->frame_count;
-}
-
 static video_poke_interface_t sdl2_video_poke_interface = {
-   sdl2_get_frame_count,
    NULL,
    sdl2_poke_set_filtering,
    NULL, /* get_video_output_size */

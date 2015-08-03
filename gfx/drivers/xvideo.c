@@ -39,7 +39,6 @@
 
 typedef struct xv
 {
-   uint64_t frame_count;
    Display *display;
    GC gc;
    Window window;
@@ -763,7 +762,8 @@ static void xv_render_msg(xv_t *xv, const char *msg,
 }
 
 static bool xv_frame(void *data, const void *frame, unsigned width,
-      unsigned height, unsigned pitch, const char *msg)
+      unsigned height, uint64_t frame_count,
+      unsigned pitch, const char *msg)
 {
    XWindowAttributes target;
    char buf[128]             = {0};
@@ -793,8 +793,6 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
 
    if (video_monitor_get_fps(buf, sizeof(buf), NULL, 0))
       XStoreName(xv->display, xv->window, buf);
-
-   xv->frame_count++;
 
    return true;
 }

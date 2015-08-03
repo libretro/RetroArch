@@ -63,7 +63,6 @@ typedef struct ctr_video
       ctr_vertex_t* frame_coords;
    }menu;
 
-   uint64_t frame_count;
    uint32_t* display_list;
    int display_list_size;
    void* texture_linear;
@@ -217,7 +216,9 @@ static void* ctr_init(const video_info_t* video,
 }
 
 static bool ctr_frame(void* data, const void* frame,
-      unsigned width, unsigned height, unsigned pitch, const char* msg)
+      unsigned width, unsigned height, 
+      uint64_t frame_count,
+      unsigned pitch, const char* msg)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
    settings_t* settings = config_get_ptr();
@@ -362,8 +363,6 @@ static bool ctr_frame(void* data, const void* frame,
 
    RARCH_PERFORMANCE_STOP(ctrframe_f);
 
-   ctr->frame_count++;
-
    return true;
 }
 
@@ -501,17 +500,8 @@ static void ctr_viewport_info(void* data, struct video_viewport* vp)
    return;
 }
 
-static uint64_t ctr_get_frame_count(void *data)
-{
-   ctr_video_t* ctr = (ctr_video_t*)data;
-   if (!ctr)
-      return 0;
-   return ctr->frame_count;
-}
-
 static const video_poke_interface_t ctr_poke_interface =
 {
-   ctr_get_frame_count,
    NULL,
    ctr_set_filtering,
    NULL, /* get_video_output_size */

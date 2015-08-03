@@ -612,9 +612,8 @@ static INLINE int time_to_exit(driver_t *driver, global_t *global,
    bool shutdown_pressed         = system && system->shutdown;
    bool video_alive              = video && video->alive(driver->video_data);
    bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);
-   uint64_t frame_count          = (driver && driver->video_poke && driver->video_poke->get_frame_count) ?
-      driver->video_poke->get_frame_count(driver->video_data) : 0;
-   bool frame_count_end          = global->max_frames && (frame_count >= global->max_frames);
+   uint64_t *frame_count         = video_driver_get_frame_count();
+   bool frame_count_end          = global->max_frames && (*frame_count >= global->max_frames);
 
    if (shutdown_pressed || cmd->quit_key_pressed || frame_count_end || movie_end
          || !video_alive)

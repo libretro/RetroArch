@@ -29,7 +29,8 @@ static void *null_gfx_init(const video_info_t *video,
 }
 
 static bool null_gfx_frame(void *data, const void *frame,
-      unsigned width, unsigned height, unsigned pitch, const char *msg)
+      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned pitch, const char *msg)
 {
    (void)data;
    (void)frame;

@@ -341,7 +341,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
 {
    unsigned width, height;
    size_t i                = 0;
-   uint64_t frame_count    = video_driver_get_frame_count();
+   uint64_t *frame_count   = video_driver_get_frame_count();
    size_t          end     = menu_entries_get_end();
    menu_display_t *disp    = menu_display_get_ptr();
    menu_entries_t *entries = menu_entries_get_ptr();
@@ -367,7 +367,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
 
       entry_selected = entries->navigation.selection_ptr == i;
 
-      glui_render_label_value(glui, y, width, frame_count / 40,
+      glui_render_label_value(glui, y, width, *frame_count / 40,
          entry_selected ? hover_color : normal_color, entry_selected,
          entry.path, entry.value);
    }
@@ -390,7 +390,7 @@ static void glui_frame(void)
    menu_display_t *disp                    = menu_display_get_ptr();
    settings_t *settings                    = config_get_ptr();
    menu_input_t *menu_input                = menu_input_get_ptr();
-   uint64_t frame_count                    = video_driver_get_frame_count();
+   uint64_t *frame_count                   = video_driver_get_frame_count();
    const uint32_t normal_color             = FONT_COLOR_ARGB_TO_RGBA(
          settings->menu.entry_normal_color);
    const uint32_t hover_color              = FONT_COLOR_ARGB_TO_RGBA(
@@ -443,7 +443,7 @@ static void glui_frame(void)
    ticker_limit = (width - glui->margin*2) / glui->glyph_width -
          strlen(menu_hash_to_str(MENU_VALUE_BACK)) * 2;
    menu_animation_ticker_str(title_buf, ticker_limit,
-         frame_count / 100, title, true);
+         *frame_count / 100, title, true);
    glui_blit_line(width / 2, 0, title_buf,
          title_color, TEXT_ALIGN_CENTER);
 

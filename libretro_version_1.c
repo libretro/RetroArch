@@ -56,6 +56,7 @@
 static void video_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
+   uint64_t *frame_count  = NULL;
    unsigned output_width  = 0;
    unsigned output_height = 0;
    unsigned  output_pitch = 0;
@@ -105,8 +106,13 @@ static void video_frame(const void *data, unsigned width,
       pitch  = output_pitch;
    }
 
-   if (!video->frame(driver->video_data, data, width, height, pitch, driver->current_msg))
+   frame_count = video_driver_get_frame_count();
+
+   if (!video->frame(driver->video_data, data, width, height, *frame_count,
+            pitch, driver->current_msg))
       driver->video_active = false;
+
+   *frame_count = *frame_count + 1;
 }
 
 /**

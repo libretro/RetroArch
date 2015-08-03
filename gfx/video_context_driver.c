@@ -236,13 +236,13 @@ bool gfx_ctx_check_window(void *data, bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
    const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-   uint64_t        frame_count = video_driver_get_frame_count();
+   uint64_t       *frame_count = video_driver_get_frame_count();
 
    if (!data)
       return false;
    
    ctx->check_window(data, quit, resize, width, height,
-         (unsigned int)frame_count);
+         (unsigned int)*frame_count);
 
    return true;
 }

@@ -499,7 +499,6 @@ struct sunxi_page
 
 struct sunxi_video
 {
-   uint64_t frame_count;
    void *font;
    const font_renderer_driver_t *font_driver;
 
@@ -761,7 +760,7 @@ static void sunxi_setup_scale (void *data,
 }
 
 static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
-      unsigned height, unsigned pitch, const char *msg)
+      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
 
@@ -787,8 +786,6 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
    }
 
    sunxi_update_main(frame, _dispvars);
-
-   _dispvars->frame_count++;
 
    return true;
 }
@@ -920,14 +917,6 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
    }
 }
 
-static uint64_t sunxi_get_frame_count(void *data)
-{
-   struct sunxi_video *_dispvars = (struct sunxi_video*)data;
-   if (!_dispvars)
-      return 0;
-   return _dispvars->frame_count;
-}
-
 static void sunxi_set_aspect_ratio (void *data, unsigned aspect_ratio_idx) 
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
@@ -940,7 +929,6 @@ static void sunxi_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
 }
 
 static const video_poke_interface_t sunxi_poke_interface = {
-   sunxi_get_frame_count,
    NULL, /* set_video_mode */
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */

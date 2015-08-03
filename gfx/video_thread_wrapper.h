@@ -213,6 +213,7 @@ typedef struct thread_video
       unsigned pitch;
       bool updated;
       bool within_thread;
+      uint64_t count;
       char msg[PATH_MAX_LENGTH];
    } frame;
 

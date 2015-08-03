@@ -395,6 +395,7 @@ static void thread_loop(void *data)
          if (thr->driver && thr->driver->frame)
             ret = thr->driver->frame(thr->driver_data,
                thr->frame.buffer, thr->frame.width, thr->frame.height,
+               thr->frame.count,
                thr->frame.pitch, *thr->frame.msg ? thr->frame.msg : NULL);
 
          slock_unlock(thr->frame.lock);
@@ -483,7 +484,8 @@ static bool thread_has_windowed(void *data)
 }
 
 static bool thread_frame(void *data, const void *frame_,
-      unsigned width, unsigned height, unsigned pitch, const char *msg)
+      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned pitch, const char *msg)
 {
    unsigned copy_stride;
    const uint8_t *src  = NULL;
@@ -498,7 +500,7 @@ static bool thread_frame(void *data, const void *frame_,
 
       if (thr->driver && thr->driver->frame)
          return thr->driver->frame(thr->driver_data, frame_,
-               width, height, pitch, msg);
+               width, height, frame_count, pitch, msg);
       return false;
    }
 
@@ -549,6 +551,7 @@ static bool thread_frame(void *data, const void *frame_,
       thr->frame.updated = true;
       thr->frame.width  = width;
       thr->frame.height = height;
+      thr->frame.count  = frame_count;
       thr->frame.pitch  = copy_stride;
 
       if (msg)
@@ -994,21 +997,7 @@ static struct video_shader *thread_get_current_shader(void *data)
    return thr->poke->get_current_shader(thr->driver_data);
 }
 
-static uint64_t thread_get_frame_count(void *data)
-{
-   uint64_t ret;
-   thread_video_t *thr = (thread_video_t*)data;
-   if (!thr)
-      return 0;
-   
-   slock_lock(thr->lock);
-   ret = thr->hit_count+thr->miss_count;
-   slock_unlock(thr->lock);
-   return ret;
-}
-
 static const video_poke_interface_t thread_poke = {
-   thread_get_frame_count,
    thread_set_video_mode,
    thread_set_filtering,
    thread_get_video_output_size,

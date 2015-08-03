@@ -100,7 +100,6 @@ enum texture_filter_type
 
 typedef struct video_poke_interface
 {
-   uint64_t (*get_frame_count)(void *data);
    void (*set_video_mode)(void *data, unsigned width, unsigned height, bool fullscreen);
    void (*set_filtering)(void *data, unsigned index, bool smooth);
    void (*get_video_output_size)(void *data, unsigned *width, unsigned *height);
@@ -138,7 +137,7 @@ typedef struct video_driver
 
    /* msg is for showing a message on the screen along with the video frame. */
    bool (*frame)(void *data, const void *frame, unsigned width,
-         unsigned height, unsigned pitch, const char *msg);
+         unsigned height, uint64_t frame_count, unsigned pitch, const char *msg);
 
    /* Should we care about syncing to vblank? Fast forwarding. */
    void (*set_nonblock_state)(void *data, bool toggle);
@@ -338,8 +337,6 @@ void video_driver_set_size_width(unsigned width);
 
 void video_driver_set_size_height(unsigned width);
 
-uint64_t video_driver_get_frame_count(void);
-
 float video_driver_get_aspect_ratio(void);
 
 void video_driver_set_aspect_ratio_value(float value);
@@ -382,6 +379,8 @@ void video_driver_cached_frame_get(const void **data, unsigned *width,
       unsigned *height, size_t *pitch);
 
 bool video_driver_cached_frame_has_valid_fb(void);
+
+uint64_t *video_driver_get_frame_count(void);
 
 #ifdef __cplusplus
 }

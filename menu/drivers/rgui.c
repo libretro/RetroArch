@@ -377,7 +377,7 @@ static void rgui_render(void)
    global_t *global               = global_get_ptr();
    settings_t *settings           = config_get_ptr();
    menu_animation_t *anim         = menu_animation_get_ptr();
-   uint64_t frame_count           = video_driver_get_frame_count();
+   uint64_t *frame_count          = video_driver_get_frame_count();
    rgui_t *rgui                   = NULL;
 
    title[0]     = '\0';
@@ -466,7 +466,7 @@ static void rgui_render(void)
    menu_entries_get_title(title, sizeof(title));
 
    menu_animation_ticker_str(title_buf, RGUI_TERM_WIDTH - 10,
-         frame_count / RGUI_TERM_START_X, title, true);
+         *frame_count / RGUI_TERM_START_X, title, true);
 
    hover_color  = HOVER_COLOR(settings);
    normal_color = NORMAL_COLOR(settings);
@@ -527,9 +527,9 @@ static void rgui_render(void)
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
 
       menu_animation_ticker_str(entry_title_buf, RGUI_TERM_WIDTH - (entry_spacing + 1 + 2),
-            frame_count / RGUI_TERM_START_X, entry_path, entry_selected);
+            *frame_count / RGUI_TERM_START_X, entry_path, entry_selected);
       menu_animation_ticker_str(type_str_buf, entry_spacing,
-            frame_count / RGUI_TERM_START_X,
+            *frame_count / RGUI_TERM_START_X,
             entry_value, entry_selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",

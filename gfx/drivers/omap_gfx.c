@@ -775,7 +775,6 @@ static void omapfb_blit_frame(omapfb_data_t *pdata, const void *src,
 
 typedef struct omap_video
 {
-   uint64_t frame_count;
    omapfb_data_t *omap;
 
    void *font;
@@ -975,7 +974,7 @@ fail:
 }
 
 static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
-      unsigned height, unsigned pitch, const char *msg)
+      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg)
 {
    omap_video_t *vid = (omap_video_t*)data;
 
@@ -1004,8 +1003,6 @@ static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
             vid->menu.scaler.out_stride);
    if (msg)
       omap_render_msg(vid, msg);
-
-   vid->frame_count++;
 
    return true;
 }
@@ -1133,16 +1130,7 @@ static void omap_gfx_set_texture_enable(void *data, bool state, bool full_screen
    (void) full_screen;
 }
 
-static uint64_t omap_gfx_get_frame_count(void *data)
-{
-   omap_video_t *vid = (omap_video_t*)data;
-   if (!vid)
-      return 0;
-   return vid->frame_count;
-}
-
 static const video_poke_interface_t omap_gfx_poke_interface = {
-   omap_gfx_get_frame_count,
    NULL,
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */

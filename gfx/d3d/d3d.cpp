@@ -1624,7 +1624,7 @@ static void d3d_get_overlay_interface(void *data,
 
 static bool d3d_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
-      unsigned pitch,
+      uint64_t frame_count, unsigned pitch,
       const char *msg)
 {
    unsigned width, height;
@@ -1975,16 +1975,7 @@ static void d3d_set_menu_texture_enable(void *data,
 }
 #endif
 
-static uint64_t d3d_get_frame_count(void *data)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   if (!d3d)
-      return 0;
-   return d3d->frame_count;
-}
-
 static const video_poke_interface_t d3d_poke_interface = {
-   d3d_get_frame_count,
    NULL,
    NULL,
    NULL, /* get_video_output_size */

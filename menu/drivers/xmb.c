@@ -1230,7 +1230,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    const char *label           = NULL;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
-   uint64_t frame_count        = video_driver_get_frame_count();
+   uint64_t *frame_count       = video_driver_get_frame_count();
    menu_handle_t *menu         = menu_driver_get_ptr();
    settings_t   *settings      = config_get_ptr();
 
@@ -1390,7 +1390,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       }
 
       menu_animation_ticker_str(name, ticker_limit,
-            frame_count / 20, entry.path,
+            *frame_count / 20, entry.path,
             (i == current));
 
       xmb_draw_text(menu, xmb, name,
@@ -1400,7 +1400,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             1, node->label_alpha, TEXT_ALIGN_LEFT);
 
       menu_animation_ticker_str(value, 35,
-            frame_count / 20, entry.value,
+            *frame_count / 20, entry.value,
             (i == current));
 
 

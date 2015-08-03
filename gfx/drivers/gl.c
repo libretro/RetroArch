@@ -1521,6 +1521,7 @@ static INLINE void gl_draw_texture(gl_t *gl)
 
 static bool gl_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
+      uint64_t frame_count,
       unsigned pitch, const char *msg)
 {
    unsigned width, height;
@@ -1528,7 +1529,6 @@ static bool gl_frame(void *data, const void *frame,
    driver_t *driver            = driver_get_ptr();
    settings_t *settings        = config_get_ptr();
    global_t *global            = global_get_ptr();
-   uint64_t frame_count        = video_driver_get_frame_count();
    const struct font_renderer *font_driver = driver ? driver->font_osd_driver : NULL;
 
    RARCH_PERFORMANCE_INIT(frame_run);
@@ -1753,8 +1753,6 @@ static bool gl_frame(void *data, const void *frame,
 #endif
 
    context_bind_hw_render(gl, true);
-
-   gl->frame_count++;
 
    return true;
 }
@@ -3252,17 +3250,7 @@ static void gl_get_video_output_next(void *data)
    gfx_ctx_get_video_output_next(data);
 }
 
-static uint64_t gl_get_frame_count(void *data)
-{
-   gl_t *gl = (gl_t*)data;
-   if (!gl)
-      return 0;
-   return gl->frame_count;
-}
-
-
 static const video_poke_interface_t gl_poke_interface = {
-   gl_get_frame_count,
    gl_set_video_mode,
    NULL,
    gl_get_video_output_size,
