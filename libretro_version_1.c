@@ -132,11 +132,9 @@ static void video_frame(const void *data, unsigned width,
  * key ID, otherwise the value of @res will be returned.
  *
  **/
-static bool input_apply_turbo(unsigned port, unsigned id, bool res)
+static bool input_apply_turbo(global_t *global, settings_t *settings,
+      unsigned port, unsigned id, bool res)
 {
-   settings_t *settings           = config_get_ptr();
-   global_t *global               = global_get_ptr();
-
    if (res && global->turbo.frame_enable[port])
       global->turbo.enable[port] |= (1 << id);
    else if (!res)
@@ -206,7 +204,7 @@ static int16_t input_state(unsigned port, unsigned device,
    /* Don't allow turbo for D-pad. */
    if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP ||
             id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
-      res = input_apply_turbo(port, id, res);
+      res = input_apply_turbo(global, settings, port, id, res);
 
    if (global->bsv.movie && !global->bsv.movie_playback)
       bsv_movie_set_input(global->bsv.movie, res);
