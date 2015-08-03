@@ -174,7 +174,6 @@ static int16_t input_state(unsigned port, unsigned device,
    if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP ||
             id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
    {
-      static uint16_t turbo_enable[MAX_USERS];
       /*
        * Apply turbo button if activated.
        *
@@ -184,11 +183,11 @@ static int16_t input_state(unsigned port, unsigned device,
        * periodic pulse defined by the configured duty cycle. 
        */
       if (res && global->turbo.frame_enable[port])
-         turbo_enable[port] |= (1 << id);
+         global->turbo.enable[port] |= (1 << id);
       else if (!res)
-         turbo_enable[port] &= ~(1 << id);
+         global->turbo.enable[port] &= ~(1 << id);
 
-      if (turbo_enable[port] & (1 << id))
+      if (global->turbo.enable[port] & (1 << id))
       {
          /* if turbo button is enabled for this key ID */
          res = res && ((global->turbo.count % settings->input.turbo_period)
