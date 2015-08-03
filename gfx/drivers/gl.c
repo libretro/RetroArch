@@ -31,7 +31,6 @@
 #include <string.h>
 #include "../../general.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include <math.h>
 
 #ifdef HAVE_CONFIG_H
@@ -1526,9 +1525,9 @@ static bool gl_frame(void *data, const void *frame,
 {
    unsigned width, height;
    gl_t                    *gl = (gl_t*)data;
-   runloop_t *runloop          = rarch_main_get_ptr();
    driver_t *driver            = driver_get_ptr();
    settings_t *settings        = config_get_ptr();
+   global_t *global            = global_get_ptr();
    uint64_t frame_count        = video_driver_get_frame_count();
    const struct font_renderer *font_driver = driver ? driver->font_osd_driver : NULL;
 
@@ -1715,8 +1714,8 @@ static bool gl_frame(void *data, const void *frame,
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (settings->video.black_frame_insertion &&
-         !driver->nonblock_state && !runloop->is_slowmotion
-         && !runloop->is_paused)
+         !driver->nonblock_state && !global->is_slowmotion
+         && !global->is_paused)
    {
       gfx_ctx_swap_buffers(gl);
       glClear(GL_COLOR_BUFFER_BIT);

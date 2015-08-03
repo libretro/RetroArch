@@ -38,7 +38,6 @@
 #include "msg_hash.h"
 #include "gfx/scaler/scaler.h"
 #include "retroarch.h"
-#include "runloop.h"
 #include "screenshot.h"
 #include "gfx/video_driver.h"
 #include "gfx/video_viewport.h"
@@ -260,7 +259,6 @@ bool take_screenshot(void)
    bool viewport_read   = false;
    bool ret             = true;
    const char *msg      = NULL;
-   runloop_t *runloop   = rarch_main_get_ptr();
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
@@ -332,9 +330,9 @@ bool take_screenshot(void)
       msg = msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
    }
 
-   rarch_main_msg_queue_push(msg, 1, runloop->is_paused ? 1 : 180, true);
+   rarch_main_msg_queue_push(msg, 1, global->is_paused ? 1 : 180, true);
 
-   if (runloop->is_paused)
+   if (global->is_paused)
       video_driver_cached_frame();
 
    return ret;

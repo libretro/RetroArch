@@ -16,7 +16,6 @@
 
 #include "video_thread_wrapper.h"
 #include "../performance.h"
-#include "../runloop.h"
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
@@ -431,9 +430,9 @@ static bool thread_alive(void *data)
 {
    bool ret;
    thread_video_t *thr = (thread_video_t*)data;
-   runloop_t *runloop  = rarch_main_get_ptr();
+   global_t *global    = global_get_ptr();
 
-   if (runloop->is_paused)
+   if (global->is_paused)
    {
       thread_packet_t pkt = { CMD_ALIVE };
       thread_send_and_wait(thr, &pkt);

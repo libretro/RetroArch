@@ -37,10 +37,8 @@ extern "C" {
 typedef struct runloop
 {
    /* Lifecycle state checks. */
-   bool is_paused;
    bool is_idle;
    bool ui_companion_is_on_foreground;
-   bool is_slowmotion;
 
    struct
    {
@@ -62,6 +60,8 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
+   bool is_slowmotion;
+   bool is_paused;
    unsigned max_frames;
 
    bool verbosity;

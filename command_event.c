@@ -19,8 +19,6 @@
 
 #include "general.h"
 #include "performance.h"
-#include "runloop_data.h"
-#include "runloop.h"
 #include "dynamic.h"
 #include "content.h"
 #include "screenshot.h"
@@ -28,6 +26,7 @@
 #include "retroarch.h"
 #include "dir_list_special.h"
 
+#include "runloop_data.h"
 #include "configuration.h"
 #include "input/input_remapping.h"
 
@@ -1025,7 +1024,6 @@ bool event_command(enum event_command cmd)
 {
    unsigned i           = 0;
    bool boolean         = false;
-   runloop_t *runloop   = rarch_main_get_ptr();
    driver_t  *driver    = driver_get_ptr();
    global_t  *global    = global_get_ptr();
    settings_t *settings = config_get_ptr();
@@ -1426,7 +1424,7 @@ bool event_command(enum event_command cmd)
 #endif
          break;
       case EVENT_CMD_PAUSE_CHECKS:
-         if (runloop->is_paused)
+         if (global->is_paused)
          {
             RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
             event_command(EVENT_CMD_AUDIO_STOP);
@@ -1441,15 +1439,15 @@ bool event_command(enum event_command cmd)
          }
          break;
       case EVENT_CMD_PAUSE_TOGGLE:
-         runloop->is_paused = !runloop->is_paused;
+         global->is_paused = !global->is_paused;
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_UNPAUSE:
-         runloop->is_paused = false;
+         global->is_paused = false;
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_PAUSE:
-         runloop->is_paused = true;
+         global->is_paused = true;
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_MENU_PAUSE_LIBRETRO:
