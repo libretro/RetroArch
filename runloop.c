@@ -605,10 +605,10 @@ static int do_state_checks(driver_t *driver, settings_t *settings,
  * Returns: 1 if any of the above conditions are true, otherwise 0.
  **/
 static INLINE int time_to_exit(driver_t *driver, global_t *global,
+      rarch_system_info_t *system,
       event_cmd_state_t *cmd)
 {
    const video_driver_t *video   = driver ? (const video_driver_t*)driver->video : NULL;
-   rarch_system_info_t *system   = rarch_system_info_get_ptr();
    bool shutdown_pressed         = system && system->shutdown;
    bool video_alive              = video && video->alive(driver->video_data);
    bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);
@@ -627,10 +627,10 @@ static INLINE int time_to_exit(driver_t *driver, global_t *global,
  * Updates frame timing if frame timing callback is in use by the core.
  **/
 static void rarch_update_frame_time(driver_t *driver, settings_t *settings,
+      rarch_system_info_t *system,
       global_t *global)
 {
    retro_time_t curr_time   = rarch_get_time_usec();
-   rarch_system_info_t *system   = rarch_system_info_get_ptr();
    retro_time_t delta       = curr_time - system->frame_time_last;
    bool is_locked_fps       = global->is_paused || driver->nonblock_state;
 
@@ -812,9 +812,10 @@ static bool input_flush(retro_input_t *input, global_t *global)
  *
  * Returns: -1 if we are about to quit, otherwise 0.
  **/
-static int rarch_main_iterate_quit(settings_t *settings, global_t *global)
+static int rarch_main_iterate_quit(settings_t *settings,
+      rarch_system_info_t *system,
+      global_t *global)
 {
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (global->core_shutdown_initiated
          && settings->load_dummy_on_core_shutdown)
@@ -1035,11 +1036,11 @@ int rarch_main_iterate(void)
 
    rarch_main_cmd_get_state(&cmd, input, old_input, trigger_input);
 
-   if (time_to_exit(driver, global, &cmd))
-      return rarch_main_iterate_quit(settings, global);
+   if (time_to_exit(driver, global, system, &cmd))
+      return rarch_main_iterate_quit(settings, system, global);
 
    if (system->frame_time.callback)
-      rarch_update_frame_time(driver, settings, global);
+      rarch_update_frame_time(driver, settings, system, global);
 
    do_pre_state_checks(settings, global, &cmd);
 
@@ -1064,7 +1065,7 @@ int rarch_main_iterate(void)
    if (global->exec)
    {
       global->exec = false;
-      return rarch_main_iterate_quit(settings, global);
+      return rarch_main_iterate_quit(settings, system, global);
    }
 
    if (do_state_checks(driver, settings, global, &cmd))
