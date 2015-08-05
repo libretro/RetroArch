@@ -994,8 +994,8 @@ static void rarch_main_cmd_get_state(driver_t *driver,
 int rarch_main_iterate(void)
 {
    unsigned i;
-   retro_input_t trigger_input, old_input;
-   event_cmd_state_t    cmd        = {0};
+   retro_input_t trigger_input;
+   event_cmd_state_t    cmd;
    int ret                         = 0;
    static retro_input_t last_input = 0;
    driver_t *driver                = driver_get_ptr();
@@ -1003,8 +1003,8 @@ int rarch_main_iterate(void)
    global_t   *global              = global_get_ptr();
    retro_input_t input             = input_keys_pressed(driver, settings, global);
    rarch_system_info_t *system     = rarch_system_info_get_ptr();
+   retro_input_t old_input         = last_input;
 
-   old_input                       = last_input;
    last_input                      = input;
 
    if (driver->flushing_input)
