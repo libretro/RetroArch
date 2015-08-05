@@ -51,6 +51,12 @@ static int action_select_default(const char *path, const char *label, unsigned t
    return ret;
 }
 
+static int action_select_path_use_directory(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return action_ok_path_use_directory(path, label, type, idx, 0 /* unused */);
+}
+
 static int action_select_directory_stub(const char *path, const char *label, unsigned type,
       size_t idx)
 {
@@ -99,8 +105,10 @@ static int menu_cbs_init_bind_select_compare_type(
          case MENU_FILE_DIRECTORY:
             cbs->action_select = action_select_directory;
             break;
-         case MENU_FILE_PATH:
          case MENU_FILE_USE_DIRECTORY:
+            cbs->action_select = action_select_path_use_directory;
+            break;
+         case MENU_FILE_PATH:
             cbs->action_select = action_select_directory_stub;
             break;
          default:
