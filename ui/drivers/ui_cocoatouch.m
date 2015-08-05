@@ -51,6 +51,15 @@ static void rarch_enable_ui(void)
    global->ui_companion_is_on_foreground = true;
 }
 
+static void rarch_disable_ui(void)
+{
+    global_t *global   = global_get_ptr();
+    
+    global->is_paused                     = false;
+    global->is_idle                       = false;
+    global->ui_companion_is_on_foreground = false;
+}
+
 static void rarch_draw(void)
 {
    global_t *global   = global_get_ptr();
@@ -300,7 +309,7 @@ enum
    [self apple_start_iteration];
 }
 
-void apple_start_iterate_observer()
+void apple_start_iterate_observer(void)
 {
   if (iterate_observer)
     return;
@@ -310,7 +319,7 @@ void apple_start_iterate_observer()
   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
 }
 
-void apple_start_iterate_timer()
+void apple_start_iterate_timer(void)
 {
   CFTimeInterval interval;
   
@@ -329,7 +338,7 @@ void apple_start_iterate_timer()
   apple_start_iterate_timer();
 }
 
-void apple_stop_iterate_observer()
+void apple_stop_iterate_observer(void)
 {
     if (!iterate_observer)
         return;
@@ -339,7 +348,7 @@ void apple_stop_iterate_observer()
     iterate_observer = NULL;
 }
 
-void apple_stop_iterate_timer()
+void apple_stop_iterate_timer(void)
 {
     if (!iterate_timer)
         return;
@@ -407,17 +416,13 @@ void apple_stop_iterate_timer()
 
 - (void)showGameView
 {
-   global_t  *global  = global_get_ptr();
-
    [self popToRootViewControllerAnimated:NO];
    [self setToolbarHidden:true animated:NO];
    [[UIApplication sharedApplication] setStatusBarHidden:true withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [self.window setRootViewController:[CocoaView get]];
 
-   global->is_paused                     = false;
-   global->is_idle                       = false;
-   global->ui_companion_is_on_foreground = false;
+   rarch_disable_ui();
 }
 
 - (IBAction)showPauseMenu:(id)sender
