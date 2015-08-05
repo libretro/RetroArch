@@ -62,14 +62,8 @@ static void rarch_disable_ui(void)
 
 static void rarch_draw(void)
 {
-   global_t *global   = global_get_ptr();
-   int ret            = 0;
    bool iterate       = iterate_observer && !(rarch_main_is_paused());
-
-   if (iterate)
-   {
-      ret                = rarch_main_iterate();
-   }
+   int ret            = iterate ? rarch_main_iterate() : 0;
 
    rarch_main_data_iterate();
 

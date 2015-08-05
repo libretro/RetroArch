@@ -352,7 +352,6 @@ int menu_iterate(retro_input_t input,
 {
    int32_t ret              = 0;
    unsigned action          = 0;
-   global_t *global         = global_get_ptr();
    menu_display_t *disp     = menu_display_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
 

@@ -1528,7 +1528,6 @@ static bool gl_frame(void *data, const void *frame,
    gl_t                    *gl = (gl_t*)data;
    driver_t *driver            = driver_get_ptr();
    settings_t *settings        = config_get_ptr();
-   global_t *global            = global_get_ptr();
    const struct font_renderer *font_driver = driver ? driver->font_osd_driver : NULL;
 
    RARCH_PERFORMANCE_INIT(frame_run);

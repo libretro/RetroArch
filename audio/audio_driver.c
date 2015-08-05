@@ -600,7 +600,6 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
    size_t   output_size           = sizeof(float);
    struct resampler_data src_data = {0};
    struct rarch_dsp_data dsp_data = {0};
-   global_t *global               = global_get_ptr();
    driver_t  *driver              = driver_get_ptr();
    const audio_driver_t *audio = driver ? 
       (const audio_driver_t*)driver->audio : NULL;
