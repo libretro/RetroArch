@@ -359,7 +359,7 @@ static void engine_handle_cmd(void)
          {
             RARCH_LOG("Pausing RetroArch.\n");
             global->is_paused = true;
-            global->is_idle   = true;
+            rarch_main_set_idle(true);
          }
          break;
 
@@ -389,7 +389,7 @@ static void engine_handle_cmd(void)
 
       case APP_CMD_GAINED_FOCUS:
          global->is_paused = false;
-         global->is_idle   = false;
+         rarch_main_set_idle(false);
 
          if ((android_app->sensor_state_mask
                   & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))

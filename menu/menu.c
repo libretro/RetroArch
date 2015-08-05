@@ -364,7 +364,7 @@ int menu_iterate(retro_input_t input,
 
    ret = menu_entry_iterate(action);
 
-   if (menu_driver_alive() && !global->is_idle)
+   if (menu_driver_alive() && !rarch_main_is_idle())
       menu_display_fb();
 
    menu_driver_set_texture();

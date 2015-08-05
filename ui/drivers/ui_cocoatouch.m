@@ -45,19 +45,19 @@ void apple_rarch_exited(void);
 static void rarch_enable_ui(void)
 {
    global_t *global   = global_get_ptr();
-    
+
    global->is_paused                     = true;
-   global->is_idle                       = true;
    global->ui_companion_is_on_foreground = true;
+   rarch_main_set_idle(true);
 }
 
 static void rarch_disable_ui(void)
 {
-    global_t *global   = global_get_ptr();
-    
-    global->is_paused                     = false;
-    global->is_idle                       = false;
-    global->ui_companion_is_on_foreground = false;
+   global_t *global   = global_get_ptr();
+
+   global->is_paused                     = false;
+   global->ui_companion_is_on_foreground = false;
+   rarch_main_set_idle(false);
 }
 
 static void rarch_draw(void)
@@ -88,7 +88,7 @@ static void rarch_draw(void)
       return;
    }
 
-   if (global->is_idle)
+   if (rarch_main_is_idle())
       return;
    CFRunLoopWakeUp(CFRunLoopGetMain());
 }

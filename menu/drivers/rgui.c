@@ -397,7 +397,7 @@ static void rgui_render(void)
       if (menu_entries_needs_refresh() && menu_driver_alive() && !disp->msg_force)
          return;
 
-      if (global->is_idle)
+      if (rarch_main_is_idle())
          return;
 
       if (!menu_display_update_pending())

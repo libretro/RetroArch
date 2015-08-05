@@ -44,6 +44,8 @@
 
 static struct global g_extern;
 
+static bool main_is_idle;
+
 /**
  * check_pause:
  * @pressed              : was libretro pause key pressed?
@@ -512,7 +514,7 @@ static int do_pause_state_checks(
 static int do_state_checks(driver_t *driver, settings_t *settings,
       global_t *global, event_cmd_state_t *cmd)
 {
-   if (global->is_idle)
+   if (main_is_idle)
       return 1;
 
    if (cmd->screenshot_pressed)
@@ -868,7 +870,7 @@ global_t *global_get_ptr(void)
 
 void rarch_main_state_free(void)
 {
-   g_extern.is_idle                       = false;
+   main_is_idle                           = false;
    g_extern.ui_companion_is_on_foreground = false;
    g_extern.frames.limit.minimum_time     = 0.0;
    g_extern.frames.limit.last_time        = 0.0;
@@ -912,12 +914,14 @@ void rarch_main_clear_state(void)
    rarch_main_global_free();
 }
 
+void rarch_main_set_idle(unsigned enable)
+{
+   main_is_idle = enable;
+}
+
 bool rarch_main_is_idle(void)
 {
-   global_t  *global  = global_get_ptr();
-   if (!global)
-      return false;
-   return global->is_idle;
+   return main_is_idle;
 }
 
 static bool rarch_main_cmd_get_state_menu_toggle_button_combo(

@@ -43,7 +43,6 @@ typedef struct rarch_resolution
 typedef struct global
 {
    /* Lifecycle state checks. */
-   bool is_idle;
    bool ui_companion_is_on_foreground;
 
    struct
@@ -344,6 +343,8 @@ bool rarch_main_verbosity(void);
 FILE *rarch_main_log_file(void);
 
 bool rarch_main_is_idle(void);
+
+void rarch_main_set_idle(unsigned enable);
 
 void rarch_main_state_free(void);
 
