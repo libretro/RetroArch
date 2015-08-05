@@ -33,6 +33,9 @@ extern char core_updater_path[PATH_MAX_LENGTH];
 
 /* Function callbacks */
 
+int action_ok_directory_push(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
+
 int core_setting_right(unsigned type, const char *label,
       bool wraparound);
 
