@@ -636,9 +636,8 @@ static void rarch_update_frame_time(driver_t *driver, float slowmotion_ratio,
 {
    retro_time_t current     = rarch_get_time_usec();
    retro_time_t delta       = current - system->frame_time_last;
-   bool is_locked_fps       = main_is_paused || driver->nonblock_state;
-
-   is_locked_fps         |= !!driver->recording_data;
+   bool is_locked_fps       = (main_is_paused || driver->nonblock_state) | 
+      !!driver->recording_data;
 
    if (!system->frame_time_last || is_locked_fps)
       delta = system->frame_time.reference;
