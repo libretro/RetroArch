@@ -42,6 +42,15 @@ static CFRunLoopTimerRef iterate_timer;
 /* forward declaration */
 void apple_rarch_exited(void);
 
+static void rarch_enable_ui(void)
+{
+   global_t *global   = global_get_ptr();
+    
+   global->is_paused                     = true;
+   global->is_idle                       = true;
+   global->ui_companion_is_on_foreground = true;
+}
+
 static void rarch_draw(void)
 {
    global_t *global   = global_get_ptr();
@@ -413,14 +422,7 @@ void apple_stop_iterate_timer()
 
 - (IBAction)showPauseMenu:(id)sender
 {
-   global_t  *global  = global_get_ptr();
-    
-   if (global)
-   {
-       global->is_paused                     = true;
-       global->is_idle                       = true;
-       global->ui_companion_is_on_foreground = true;
-   }
+   rarch_enable_ui();
 
    [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:false];
@@ -505,7 +507,6 @@ typedef struct ui_companion_cocoatouch
 static void ui_companion_cocoatouch_switch_to_ios(void *data)
 {
    RetroArch_iOS *ap  = NULL;
-   global_t  *global  = global_get_ptr();
     
    (void)data;
 
@@ -513,7 +514,6 @@ static void ui_companion_cocoatouch_switch_to_ios(void *data)
       return;
     
    ap              = (RetroArch_iOS *)apple_platform;
-   global->is_idle = true;
    [ap showPauseMenu:ap];
 }
 
@@ -563,6 +563,8 @@ static void *ui_companion_cocoatouch_init(void)
 
    if (!handle)
       return NULL;
+    
+   rarch_enable_ui();
 
    return handle;
 }
