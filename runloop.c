@@ -614,14 +614,13 @@ static INLINE int time_to_exit(driver_t *driver, global_t *global,
       event_cmd_state_t *cmd)
 {
    const video_driver_t *video   = driver ? (const video_driver_t*)driver->video : NULL;
-   bool shutdown_pressed         = system && system->shutdown;
+   bool shutdown_pressed         = (system && system->shutdown) || cmd->quit_key_pressed;
    bool video_alive              = video && video->alive(driver->video_data);
    bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);
    uint64_t *frame_count         = video_driver_get_frame_count();
    bool frame_count_end          = main_max_frames && (*frame_count >= main_max_frames);
 
-   if (shutdown_pressed || cmd->quit_key_pressed || frame_count_end || movie_end
-         || !video_alive)
+   if (shutdown_pressed || frame_count_end || movie_end || !video_alive)
       return 1;
    return 0;
 }
