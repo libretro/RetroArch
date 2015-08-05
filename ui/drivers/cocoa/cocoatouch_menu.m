@@ -324,47 +324,6 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 - (void)wasSelectedOnTableView:(UITableView*)tableView
                   ofController:(UIViewController*)controller
 {
-   char pathdir[PATH_MAX_LENGTH], pathdir_ext[PATH_MAX_LENGTH];
-   NSString *path;
-   RADirectoryList* list;
-   RAMenuItemPathDir __weak* weakSelf = self;
-
-   menu_entry_pathdir_selected(self.i);
-   menu_entry_pathdir_get_value(self.i, pathdir, sizeof(pathdir));
-   menu_entry_pathdir_extensions(self.i, pathdir_ext, sizeof(pathdir_ext));
-
-   path = BOXSTRING(pathdir);
-   
-   if ( menu_entry_get_type(self.i) == MENU_ENTRY_PATH )
-     path = [path stringByDeletingLastPathComponent];
-      
-   list =
-     [[RADirectoryList alloc]
-            initWithPath:path
-              extensions:pathdir_ext
-                  action:^(RADirectoryList* list, RADirectoryItem* item) {
-         const char *newval = "";
-         if (item) {
-           if (list.forDirectory && !item.isDirectory)
-             return;
-
-           newval = [item.path UTF8String];
-         } else {
-           if (!list.allowBlank)
-             return;
-         }
-
-         menu_entry_pathdir_set_value(self.i, newval);
-         [[list navigationController] popViewControllerAnimated:YES];
-         menu_entry_select(self.i);
-         [weakSelf.parentTable reloadData];
-       }];
-
-   list.allowBlank = menu_entry_pathdir_allow_empty(self.i);
-   // JM: Is this just Dir vs Path?
-   list.forDirectory = menu_entry_pathdir_for_directory(self.i);
-   
-   [controller.navigationController pushViewController:list animated:YES];
 }
 
 @end
