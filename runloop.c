@@ -782,26 +782,6 @@ static INLINE retro_input_t input_keys_pressed(driver_t *driver,
 }
 
 /**
- * input_flush:
- * @input                : input sample for this frame
- *
- * Resets input sample.
- *
- * Returns: always true (1).
- **/
-static bool input_flush(retro_input_t *input)
-{
-   *input = 0;
-
-   /* If core was paused before entering menu, evoke
-    * pause toggle to wake it up. */
-   if (main_is_paused)
-      BIT64_SET(*input, RARCH_PAUSE_TOGGLE);
-
-   return true;
-}
-
-/**
  * rarch_main_load_dummy_core:
  *
  * Quits out of RetroArch main loop.
@@ -1048,7 +1028,15 @@ int rarch_main_iterate(void)
    last_input                      = input;
 
    if (driver->flushing_input)
-      driver->flushing_input = (input) ? input_flush(&input) : false;
+   {
+      input = 0;
+      /* If core was paused before entering menu, evoke
+       * pause toggle to wake it up. */
+      if (main_is_paused)
+         BIT64_SET(input, RARCH_PAUSE_TOGGLE);
+
+      driver->flushing_input = false;
+   }
 
    trigger_input = input & ~old_input;
 
