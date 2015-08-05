@@ -652,11 +652,6 @@ static void rarch_update_frame_time(driver_t *driver, float slowmotion_ratio,
    system->frame_time.callback(delta);
 }
 
-/**
- * rarch_limit_frame_time:
- *
- * Limit frame time if fast forward ratio throttle is enabled.
- **/
 static void rarch_limit_frame_time(float fastforward_ratio)
 {
    retro_time_t current                  = rarch_get_time_usec();
@@ -787,25 +782,6 @@ static INLINE retro_input_t input_keys_pressed(driver_t *driver,
  *
  * Returns: -1 if we are about to quit, otherwise 0.
  **/
-static int rarch_main_iterate_quit(settings_t *settings,
-      rarch_system_info_t *system,
-      global_t *global)
-{
-
-   if (global->core_shutdown_initiated
-         && settings->load_dummy_on_core_shutdown)
-   {
-      if (!event_command(EVENT_CMD_PREPARE_DUMMY))
-         return -1;
-
-      system->shutdown = false;
-      global->core_shutdown_initiated = false;
-
-      return 0;
-   }
-
-   return -1;
-}
 
 #ifdef HAVE_OVERLAY
 static void rarch_main_iterate_linefeed_overlay(driver_t *driver,
@@ -1047,7 +1023,7 @@ int rarch_main_iterate(void)
    rarch_main_cmd_get_state(driver, settings, &cmd, input, old_input, trigger_input);
 
    if (time_to_exit(driver, global, system, &cmd))
-      return rarch_main_iterate_quit(settings, system, global);
+      goto quit;
 
    if (system->frame_time.callback)
       rarch_update_frame_time(driver, settings->slowmotion_ratio, system);
@@ -1075,7 +1051,7 @@ int rarch_main_iterate(void)
    if (global->exec)
    {
       global->exec = false;
-      return rarch_main_iterate_quit(settings, system, global);
+      goto quit;
    }
 
    if (do_state_checks(driver, settings, global, &cmd))
@@ -1143,8 +1119,29 @@ int rarch_main_iterate(void)
 #endif
 
 success:
+   /* Limit frame time if fast forward ratio throttle is enabled. */
    if (settings->fastforward_ratio_throttle_enable)
       rarch_limit_frame_time(settings->fastforward_ratio);
 
    return ret;
+
+quit:
+   /* Quits out of RetroArch main loop.
+    * On special case, loads dummy core 
+    * instead of exiting RetroArch completely.
+    * Aborts core shutdown if invoked.
+    */
+   if (global->core_shutdown_initiated
+         && settings->load_dummy_on_core_shutdown)
+   {
+      if (!event_command(EVENT_CMD_PREPARE_DUMMY))
+         return -1;
+
+      system->shutdown = false;
+      global->core_shutdown_initiated = false;
+
+      return 0;
+   }
+
+   return -1;
 }
