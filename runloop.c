@@ -48,6 +48,8 @@ static bool main_is_idle;
 static bool main_is_paused;
 static bool main_is_slowmotion;
 
+static unsigned main_max_frames;
+
 static retro_time_t frame_limit_last_time;
 
 /**
@@ -616,7 +618,7 @@ static INLINE int time_to_exit(driver_t *driver, global_t *global,
    bool video_alive              = video && video->alive(driver->video_data);
    bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);
    uint64_t *frame_count         = video_driver_get_frame_count();
-   bool frame_count_end          = global->max_frames && (*frame_count >= global->max_frames);
+   bool frame_count_end          = main_max_frames && (*frame_count >= main_max_frames);
 
    if (shutdown_pressed || cmd->quit_key_pressed || frame_count_end || movie_end
          || !video_alive)
@@ -848,7 +850,7 @@ void rarch_main_state_free(void)
    main_is_paused                         = false;
    main_is_slowmotion                     = false;
    frame_limit_last_time                  = 0.0;
-   g_extern.max_frames                    = 0;
+   main_max_frames                        = 0;
 }
 
 void rarch_main_set_frame_limit_last_time(retro_time_t t)
@@ -894,6 +896,11 @@ void rarch_main_clear_state(void)
 void rarch_main_set_slowmotion(unsigned enable)
 {
    main_is_slowmotion = enable;
+}
+
+void rarch_main_set_max_frames(unsigned val)
+{
+   main_max_frames = val;
 }
 
 void rarch_main_set_pause(unsigned enable)

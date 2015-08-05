@@ -43,8 +43,6 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
-   unsigned max_frames;
-
    bool verbosity;
    bool perfcnt_enable;
    bool force_fullscreen;
@@ -340,6 +338,8 @@ void rarch_main_set_slowmotion(unsigned enable);
 void rarch_main_set_pause(unsigned enable);
 
 void rarch_main_set_frame_limit_last_time(retro_time_t t);
+
+void rarch_main_set_max_frames(unsigned val);
 
 void rarch_main_set_idle(unsigned enable);
 

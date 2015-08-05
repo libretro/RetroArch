@@ -838,7 +838,7 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case RA_OPT_MAX_FRAMES:
-            global->max_frames = strtoul(optarg, NULL, 10);
+            rarch_main_set_max_frames(strtoul(optarg, NULL, 10));
             break;
 
          case RA_OPT_SUBSYSTEM:
