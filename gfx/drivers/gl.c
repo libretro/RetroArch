@@ -1714,7 +1714,7 @@ static bool gl_frame(void *data, const void *frame,
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (settings->video.black_frame_insertion &&
-         !driver->nonblock_state && !global->is_slowmotion
+         !driver->nonblock_state && (!(rarch_main_is_slowmotion()))
          && !rarch_main_is_paused())
    {
       gfx_ctx_swap_buffers(gl);

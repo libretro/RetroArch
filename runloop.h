@@ -54,7 +54,6 @@ typedef struct global
       } limit;
    } frames;
 
-   bool is_slowmotion;
    unsigned max_frames;
 
    bool verbosity;
@@ -343,7 +342,11 @@ FILE *rarch_main_log_file(void);
 
 bool rarch_main_is_idle(void);
 
+bool rarch_main_is_slowmotion(void);
+
 bool rarch_main_is_paused(void);
+
+void rarch_main_set_slowmotion(unsigned enable);
 
 void rarch_main_set_pause(unsigned enable);
 

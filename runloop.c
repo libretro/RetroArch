@@ -46,6 +46,7 @@ static struct global g_extern;
 
 static bool main_is_idle;
 static bool main_is_paused;
+static bool main_is_slowmotion;
 
 /**
  * check_pause:
@@ -230,9 +231,9 @@ static void check_rewind(settings_t *settings,
 static void check_slowmotion(settings_t *settings, global_t *global,
       bool slowmotion_pressed)
 {
-   global->is_slowmotion   = slowmotion_pressed;
+   main_is_slowmotion   = slowmotion_pressed;
 
-   if (!global->is_slowmotion)
+   if (!main_is_slowmotion)
       return;
 
    if (settings->video.black_frame_insertion)
@@ -627,8 +628,7 @@ static INLINE int time_to_exit(driver_t *driver, global_t *global,
  * Updates frame timing if frame timing callback is in use by the core.
  **/
 static void rarch_update_frame_time(driver_t *driver, settings_t *settings,
-      rarch_system_info_t *system,
-      global_t *global)
+      rarch_system_info_t *system)
 {
    retro_time_t curr_time   = rarch_get_time_usec();
    retro_time_t delta       = curr_time - system->frame_time_last;
@@ -639,7 +639,7 @@ static void rarch_update_frame_time(driver_t *driver, settings_t *settings,
    if (!system->frame_time_last || is_locked_fps)
       delta = system->frame_time.reference;
 
-   if (!is_locked_fps && global->is_slowmotion)
+   if (!is_locked_fps && main_is_slowmotion)
       delta /= settings->slowmotion_ratio;
 
    system->frame_time_last = curr_time;
@@ -870,10 +870,10 @@ void rarch_main_state_free(void)
 {
    main_is_idle                           = false;
    main_is_paused                         = false;
+   main_is_slowmotion                     = false;
    g_extern.ui_companion_is_on_foreground = false;
    g_extern.frames.limit.minimum_time     = 0.0;
    g_extern.frames.limit.last_time        = 0.0;
-   g_extern.is_slowmotion                 = false;
    g_extern.max_frames                    = 0;
 }
 
@@ -912,6 +912,11 @@ void rarch_main_clear_state(void)
    rarch_main_global_free();
 }
 
+void rarch_main_set_slowmotion(unsigned enable)
+{
+   main_is_slowmotion = enable;
+}
+
 void rarch_main_set_pause(unsigned enable)
 {
    main_is_paused = enable;
@@ -930,6 +935,11 @@ bool rarch_main_is_paused(void)
 bool rarch_main_is_idle(void)
 {
    return main_is_idle;
+}
+
+bool rarch_main_is_slowmotion(void)
+{
+   return main_is_slowmotion;
 }
 
 static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
@@ -1049,7 +1059,7 @@ int rarch_main_iterate(void)
       return rarch_main_iterate_quit(settings, system, global);
 
    if (system->frame_time.callback)
-      rarch_update_frame_time(driver, settings, system, global);
+      rarch_update_frame_time(driver, settings, system);
 
    do_pre_state_checks(settings, global, &cmd);
 

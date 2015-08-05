@@ -653,7 +653,7 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
       audio_driver_readjust_input_rate();
 
    src_data.ratio = audio_data.src_ratio;
-   if (global->is_slowmotion)
+   if (rarch_main_is_slowmotion())
       src_data.ratio *= settings->slowmotion_ratio;
 
    RARCH_PERFORMANCE_INIT(resampler_proc);
