@@ -17,9 +17,13 @@
 #include "../driver.h"
 #include <string.h>
 
+#include <boolean.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
+
+static bool main_ui_companion_is_on_foreground;
 
 static const ui_companion_driver_t *ui_companion_drivers[] = {
 #ifdef HAVE_COCOA
@@ -54,6 +58,16 @@ const ui_companion_driver_t *ui_companion_find_driver(const char *ident)
    }
 
    return NULL;
+}
+
+void ui_companion_set_foreground(unsigned enable)
+{
+   main_ui_companion_is_on_foreground = enable;
+}
+
+bool ui_companion_is_on_foreground(void)
+{
+   return main_ui_companion_is_on_foreground;
 }
 
 /**

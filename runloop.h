@@ -42,9 +42,6 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
-   /* Lifecycle state checks. */
-   bool ui_companion_is_on_foreground;
-
    struct
    {
       struct

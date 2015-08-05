@@ -871,7 +871,6 @@ void rarch_main_state_free(void)
    main_is_idle                           = false;
    main_is_paused                         = false;
    main_is_slowmotion                     = false;
-   g_extern.ui_companion_is_on_foreground = false;
    g_extern.frames.limit.minimum_time     = 0.0;
    g_extern.frames.limit.last_time        = 0.0;
    g_extern.max_frames                    = 0;

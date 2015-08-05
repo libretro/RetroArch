@@ -44,18 +44,14 @@ void apple_rarch_exited(void);
 
 static void rarch_enable_ui(void)
 {
-   global_t *global   = global_get_ptr();
-
-   global->ui_companion_is_on_foreground = true;
+   ui_companion_set_foreground(true);
    rarch_main_set_pause(true);
    rarch_main_set_idle(true);
 }
 
 static void rarch_disable_ui(void)
 {
-   global_t *global   = global_get_ptr();
-
-   global->ui_companion_is_on_foreground = false;
+   ui_companion_set_foreground(false);
    rarch_main_set_pause(false);
    rarch_main_set_idle(false);
 }
@@ -430,9 +426,7 @@ void apple_stop_iterate_timer(void)
 
 - (void)toggleUI
 {
-   global_t  *global  = global_get_ptr();
-
-   if (global->ui_companion_is_on_foreground)
+   if (ui_companion_is_on_foreground())
    {
       [self showGameView];
    }
