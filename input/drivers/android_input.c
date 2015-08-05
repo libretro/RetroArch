@@ -357,7 +357,7 @@ static void engine_handle_cmd(void)
          if (!system->shutdown)
          {
             RARCH_LOG("Pausing RetroArch.\n");
-            rarch_main_set_paused(true);
+            rarch_main_set_pause(true);
             rarch_main_set_idle(true);
          }
          break;
@@ -387,7 +387,7 @@ static void engine_handle_cmd(void)
          break;
 
       case APP_CMD_GAINED_FOCUS:
-         rarch_main_set_paused(false);
+         rarch_main_set_pause(false);
          rarch_main_set_idle(false);
 
          if ((android_app->sensor_state_mask

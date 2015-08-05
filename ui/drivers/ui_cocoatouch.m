@@ -47,7 +47,7 @@ static void rarch_enable_ui(void)
    global_t *global   = global_get_ptr();
 
    global->ui_companion_is_on_foreground = true;
-   rarch_main_set_paused(true);
+   rarch_main_set_pause(true);
    rarch_main_set_idle(true);
 }
 
@@ -56,7 +56,7 @@ static void rarch_disable_ui(void)
    global_t *global   = global_get_ptr();
 
    global->ui_companion_is_on_foreground = false;
-   rarch_main_set_paused(false);
+   rarch_main_set_pause(false);
    rarch_main_set_idle(false);
 }
 
