@@ -27,6 +27,7 @@
 #include "cheats.h"
 #include "dynamic.h"
 #include "system.h"
+#include "performance.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,15 +43,6 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
-   struct
-   {
-      struct
-      {
-         retro_time_t minimum_time;
-         retro_time_t last_time;
-      } limit;
-   } frames;
-
    unsigned max_frames;
 
    bool verbosity;
@@ -346,6 +338,8 @@ bool rarch_main_is_paused(void);
 void rarch_main_set_slowmotion(unsigned enable);
 
 void rarch_main_set_pause(unsigned enable);
+
+void rarch_main_set_frame_limit_last_time(retro_time_t t);
 
 void rarch_main_set_idle(unsigned enable);
 

@@ -1155,10 +1155,9 @@ void rarch_init_system_av_info(void)
 {
    struct retro_system_av_info *av_info = 
       video_viewport_get_system_av_info();
-   global_t *global = global_get_ptr();
 
    pretro_get_system_av_info(av_info);
-   global->frames.limit.last_time = rarch_get_time_usec();
+   rarch_main_set_frame_limit_last_time(rarch_get_time_usec());
 }
 
 /**

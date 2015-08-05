@@ -48,6 +48,8 @@ static bool main_is_idle;
 static bool main_is_paused;
 static bool main_is_slowmotion;
 
+static retro_time_t frame_limit_last_time;
+
 /**
  * check_pause:
  * @pressed              : was libretro pause key pressed?
@@ -655,33 +657,27 @@ static void rarch_update_frame_time(driver_t *driver, settings_t *settings,
  *
  * Limit frame time if fast forward ratio throttle is enabled.
  **/
-static void rarch_limit_frame_time(settings_t *settings, global_t *global)
+static void rarch_limit_frame_time(settings_t *settings)
 {
-   retro_time_t target      = 0;
-   retro_time_t to_sleep_ms = 0;
-   retro_time_t current     = rarch_get_time_usec();
-   struct retro_system_av_info *av_info = 
+   retro_time_t current                  = rarch_get_time_usec();
+   struct retro_system_av_info *av_info  = 
       video_viewport_get_system_av_info();
-   double effective_fps     = av_info->timing.fps * settings->fastforward_ratio;
-   double mft_f             = 1000000.0f / effective_fps;
-
-   global->frames.limit.minimum_time = (retro_time_t) roundf(mft_f);
-
-   target        = global->frames.limit.last_time + 
-                   global->frames.limit.minimum_time;
-   to_sleep_ms   = (target - current) / 1000;
+   double effective_fps                  = av_info->timing.fps * settings->fastforward_ratio;
+   double mft_f                          = 1000000.0f / effective_fps;
+   retro_time_t frame_limit_minimum_time = (retro_time_t) roundf(mft_f);
+   retro_time_t target                   = frame_limit_last_time + frame_limit_minimum_time;
+   retro_time_t to_sleep_ms              = (target - current) / 1000;
 
    if (to_sleep_ms <= 0)
    {
-      global->frames.limit.last_time = rarch_get_time_usec();
+      frame_limit_last_time = rarch_get_time_usec();
       return;
    }
 
    rarch_sleep((unsigned int)to_sleep_ms);
 
    /* Combat jitter a bit. */
-   global->frames.limit.last_time += 
-      global->frames.limit.minimum_time;
+   frame_limit_last_time += frame_limit_minimum_time;
 }
 
 /**
@@ -851,9 +847,13 @@ void rarch_main_state_free(void)
    main_is_idle                           = false;
    main_is_paused                         = false;
    main_is_slowmotion                     = false;
-   g_extern.frames.limit.minimum_time     = 0.0;
-   g_extern.frames.limit.last_time        = 0.0;
+   frame_limit_last_time                  = 0.0;
    g_extern.max_frames                    = 0;
+}
+
+void rarch_main_set_frame_limit_last_time(retro_time_t t)
+{
+   frame_limit_last_time = t;
 }
 
 void rarch_main_global_free(void)
@@ -1140,7 +1140,7 @@ int rarch_main_iterate(void)
 
 success:
    if (settings->fastforward_ratio_throttle_enable)
-      rarch_limit_frame_time(settings, global);
+      rarch_limit_frame_time(settings);
 
    return ret;
 }
