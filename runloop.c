@@ -631,11 +631,11 @@ static INLINE int time_to_exit(driver_t *driver, global_t *global,
  *
  * Updates frame timing if frame timing callback is in use by the core.
  **/
-static void rarch_update_frame_time(driver_t *driver, settings_t *settings,
+static void rarch_update_frame_time(driver_t *driver, float slowmotion_ratio,
       rarch_system_info_t *system)
 {
-   retro_time_t curr_time   = rarch_get_time_usec();
-   retro_time_t delta       = curr_time - system->frame_time_last;
+   retro_time_t current     = rarch_get_time_usec();
+   retro_time_t delta       = current - system->frame_time_last;
    bool is_locked_fps       = main_is_paused || driver->nonblock_state;
 
    is_locked_fps         |= !!driver->recording_data;
@@ -644,9 +644,9 @@ static void rarch_update_frame_time(driver_t *driver, settings_t *settings,
       delta = system->frame_time.reference;
 
    if (!is_locked_fps && main_is_slowmotion)
-      delta /= settings->slowmotion_ratio;
+      delta /= slowmotion_ratio;
 
-   system->frame_time_last = curr_time;
+   system->frame_time_last = current;
 
    if (is_locked_fps)
       system->frame_time_last = 0;
@@ -1052,7 +1052,7 @@ int rarch_main_iterate(void)
       return rarch_main_iterate_quit(settings, system, global);
 
    if (system->frame_time.callback)
-      rarch_update_frame_time(driver, settings, system);
+      rarch_update_frame_time(driver, settings->slowmotion_ratio, system);
 
    do_pre_state_checks(settings, global, &cmd);
 
