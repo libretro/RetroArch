@@ -33,6 +33,9 @@ extern char core_updater_path[PATH_MAX_LENGTH];
 
 /* Function callbacks */
 
+int action_ok_push_generic_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
+
 int action_ok_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
 
