@@ -1424,7 +1424,7 @@ bool event_command(enum event_command cmd)
 #endif
          break;
       case EVENT_CMD_PAUSE_CHECKS:
-         if (global->is_paused)
+         if (rarch_main_is_paused())
          {
             RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
             event_command(EVENT_CMD_AUDIO_STOP);
@@ -1439,15 +1439,15 @@ bool event_command(enum event_command cmd)
          }
          break;
       case EVENT_CMD_PAUSE_TOGGLE:
-         global->is_paused = !global->is_paused;
+         rarch_main_set_pause(!rarch_main_is_paused());
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_UNPAUSE:
-         global->is_paused = false;
+         rarch_main_set_pause(false);
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_PAUSE:
-         global->is_paused = true;
+         rarch_main_set_pause(true);
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_MENU_PAUSE_LIBRETRO:

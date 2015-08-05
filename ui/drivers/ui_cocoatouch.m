@@ -46,8 +46,8 @@ static void rarch_enable_ui(void)
 {
    global_t *global   = global_get_ptr();
 
-   global->is_paused                     = true;
    global->ui_companion_is_on_foreground = true;
+   rarch_main_set_paused(true);
    rarch_main_set_idle(true);
 }
 
@@ -55,8 +55,8 @@ static void rarch_disable_ui(void)
 {
    global_t *global   = global_get_ptr();
 
-   global->is_paused                     = false;
    global->ui_companion_is_on_foreground = false;
+   rarch_main_set_paused(false);
    rarch_main_set_idle(false);
 }
 
@@ -64,7 +64,7 @@ static void rarch_draw(void)
 {
    global_t *global   = global_get_ptr();
    int ret            = 0;
-   bool iterate       = iterate_observer && !global->is_paused;
+   bool iterate       = iterate_observer && !(rarch_main_is_paused());
 
    if (iterate)
    {

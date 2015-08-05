@@ -295,7 +295,6 @@ static void engine_handle_cmd(void)
 {
    int8_t cmd;
    struct android_app *android_app = (struct android_app*)g_android;
-   global_t *global   = global_get_ptr();
    driver_t  *driver  = driver_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
@@ -331,7 +330,7 @@ static void engine_handle_cmd(void)
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
 
-         if (global->is_paused)
+         if (rarch_main_is_paused())
             event_command(EVENT_CMD_REINIT);
          break;
 
@@ -358,7 +357,7 @@ static void engine_handle_cmd(void)
          if (!system->shutdown)
          {
             RARCH_LOG("Pausing RetroArch.\n");
-            global->is_paused = true;
+            rarch_main_set_paused(true);
             rarch_main_set_idle(true);
          }
          break;
@@ -388,7 +387,7 @@ static void engine_handle_cmd(void)
          break;
 
       case APP_CMD_GAINED_FOCUS:
-         global->is_paused = false;
+         rarch_main_set_paused(false);
          rarch_main_set_idle(false);
 
          if ((android_app->sensor_state_mask

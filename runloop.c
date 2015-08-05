@@ -45,6 +45,7 @@
 static struct global g_extern;
 
 static bool main_is_idle;
+static bool main_is_paused;
 
 /**
  * check_pause:
@@ -57,18 +58,17 @@ static bool main_is_idle;
  * Returns: true if libretro pause key was toggled, otherwise false.
  **/
 static bool check_pause(driver_t *driver, settings_t *settings,
-      global_t *global,
       bool pause_pressed, bool frameadvance_pressed)
 {
    static bool old_focus    = true;
    bool focus               = true;
    enum event_command cmd   = EVENT_CMD_NONE;
-   bool old_is_paused       = global ? global->is_paused : false;
+   bool old_is_paused       = main_is_paused;
    const video_driver_t *video = driver ? (const video_driver_t*)driver->video :
       NULL;
 
    /* FRAMEADVANCE will set us into pause mode. */
-   pause_pressed |= !global->is_paused && frameadvance_pressed;
+   pause_pressed |= !main_is_paused && frameadvance_pressed;
 
    if (settings->pause_nonactive)
       focus = video->focus(driver->video_data);
@@ -85,7 +85,7 @@ static bool check_pause(driver_t *driver, settings_t *settings,
    if (cmd != EVENT_CMD_NONE)
       event_command(cmd);
 
-   if (global->is_paused == old_is_paused)
+   if (main_is_paused == old_is_paused)
       return false;
 
    return true;
@@ -187,7 +187,7 @@ static void check_rewind(settings_t *settings,
          audio_driver_setup_rewind();
 
          rarch_main_msg_queue_push_new(MSG_REWINDING, 0,
-               global->is_paused ? 1 : 30, true);
+               main_is_paused ? 1 : 30, true);
          pretro_unserialize(buf, global->rewind.size);
 
          if (global->bsv.movie)
@@ -449,7 +449,7 @@ static int do_pre_state_checks(settings_t *settings,
    if (cmd->overlay_next_pressed)
       event_command(EVENT_CMD_OVERLAY_NEXT);
 
-   if (!global->is_paused || menu_driver_alive())
+   if (!main_is_paused || menu_driver_alive())
    {
       if (cmd->fullscreen_toggle)
          event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
@@ -481,7 +481,6 @@ static int do_netplay_state_checks(
 #endif
 
 static int do_pause_state_checks(
-      global_t *global,
       bool pause_pressed,
       bool frameadvance_pressed,
       bool fullscreen_toggle_pressed,
@@ -489,7 +488,7 @@ static int do_pause_state_checks(
 {
    bool check_is_oneshot     = frameadvance_pressed || rewind_pressed;
 
-   if (!global->is_paused)
+   if (!main_is_paused)
       return 0;
 
    if (fullscreen_toggle_pressed)
@@ -537,11 +536,10 @@ static int do_state_checks(driver_t *driver, settings_t *settings,
             cmd->fullscreen_toggle);
 #endif
 
-   check_pause(driver, settings, global,
+   check_pause(driver, settings, 
          cmd->pause_pressed, cmd->frameadvance_pressed);
 
    if (do_pause_state_checks(
-            global,
             cmd->pause_pressed,
             cmd->frameadvance_pressed,
             cmd->fullscreen_toggle,
@@ -634,7 +632,7 @@ static void rarch_update_frame_time(driver_t *driver, settings_t *settings,
 {
    retro_time_t curr_time   = rarch_get_time_usec();
    retro_time_t delta       = curr_time - system->frame_time_last;
-   bool is_locked_fps       = global->is_paused || driver->nonblock_state;
+   bool is_locked_fps       = main_is_paused || driver->nonblock_state;
 
    is_locked_fps         |= !!driver->recording_data;
 
@@ -791,13 +789,13 @@ static INLINE retro_input_t input_keys_pressed(driver_t *driver,
  *
  * Returns: always true (1).
  **/
-static bool input_flush(retro_input_t *input, global_t *global)
+static bool input_flush(retro_input_t *input)
 {
    *input = 0;
 
    /* If core was paused before entering menu, evoke
     * pause toggle to wake it up. */
-   if (global->is_paused)
+   if (main_is_paused)
       BIT64_SET(*input, RARCH_PAUSE_TOGGLE);
 
    return true;
@@ -871,11 +869,11 @@ global_t *global_get_ptr(void)
 void rarch_main_state_free(void)
 {
    main_is_idle                           = false;
+   main_is_paused                         = false;
    g_extern.ui_companion_is_on_foreground = false;
    g_extern.frames.limit.minimum_time     = 0.0;
    g_extern.frames.limit.last_time        = 0.0;
    g_extern.is_slowmotion                 = false;
-   g_extern.is_paused                     = false;
    g_extern.max_frames                    = 0;
 }
 
@@ -914,9 +912,19 @@ void rarch_main_clear_state(void)
    rarch_main_global_free();
 }
 
+void rarch_main_set_pause(unsigned enable)
+{
+   main_is_paused = enable;
+}
+
 void rarch_main_set_idle(unsigned enable)
 {
    main_is_idle = enable;
+}
+
+bool rarch_main_is_paused(void)
+{
+   return main_is_paused;
 }
 
 bool rarch_main_is_idle(void)
@@ -1031,7 +1039,7 @@ int rarch_main_iterate(void)
    last_input                      = input;
 
    if (driver->flushing_input)
-      driver->flushing_input = (input) ? input_flush(&input, global) : false;
+      driver->flushing_input = (input) ? input_flush(&input) : false;
 
    trigger_input = input & ~old_input;
 

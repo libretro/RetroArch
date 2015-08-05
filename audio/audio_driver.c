@@ -616,7 +616,7 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
          driver->recording->push_audio(driver->recording_data, &ffemu_data);
    }
 
-   if (global->is_paused || settings->audio.mute_enable)
+   if (rarch_main_is_paused() || settings->audio.mute_enable)
       return true;
    if (!driver->audio_active || !audio_data.data)
       return false;

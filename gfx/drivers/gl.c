@@ -1715,7 +1715,7 @@ static bool gl_frame(void *data, const void *frame,
     * and pause to prevent flicker. */
    if (settings->video.black_frame_insertion &&
          !driver->nonblock_state && !global->is_slowmotion
-         && !global->is_paused)
+         && !rarch_main_is_paused())
    {
       gfx_ctx_swap_buffers(gl);
       glClear(GL_COLOR_BUFFER_BIT);

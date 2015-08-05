@@ -330,9 +330,9 @@ bool take_screenshot(void)
       msg = msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
    }
 
-   rarch_main_msg_queue_push(msg, 1, global->is_paused ? 1 : 180, true);
+   rarch_main_msg_queue_push(msg, 1, rarch_main_is_paused() ? 1 : 180, true);
 
-   if (global->is_paused)
+   if (rarch_main_is_paused())
       video_driver_cached_frame();
 
    return ret;

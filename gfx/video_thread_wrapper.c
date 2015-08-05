@@ -431,9 +431,8 @@ static bool thread_alive(void *data)
 {
    bool ret;
    thread_video_t *thr = (thread_video_t*)data;
-   global_t *global    = global_get_ptr();
 
-   if (global->is_paused)
+   if (rarch_main_is_paused())
    {
       thread_packet_t pkt = { CMD_ALIVE };
       thread_send_and_wait(thr, &pkt);
