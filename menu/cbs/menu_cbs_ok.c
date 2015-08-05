@@ -1359,8 +1359,6 @@ static int action_ok_set_path(const char *path,
    menu_list_get_last_stack(menu_list,
          &menu_path, &menu_label, NULL, NULL);
 
-   RARCH_LOG("menu_label: %s\n", menu_label);
-
    setting = menu_setting_find(menu_label);
 
    if (!setting)
@@ -1368,7 +1366,6 @@ static int action_ok_set_path(const char *path,
 
    menu_action_setting_set_current_string_path(setting, menu_path, path);
 
-   RARCH_LOG("setting name: %s\n", setting->name);
    menu_list_pop_stack_by_needle(menu_list, setting->name);
 
    return 0;
