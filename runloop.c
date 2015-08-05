@@ -659,12 +659,11 @@ static void rarch_update_frame_time(driver_t *driver, settings_t *settings,
  *
  * Limit frame time if fast forward ratio throttle is enabled.
  **/
-static void rarch_limit_frame_time(settings_t *settings)
+static void rarch_limit_frame_time(float fastforward_ratio)
 {
    retro_time_t current                  = rarch_get_time_usec();
-   struct retro_system_av_info *av_info  = 
-      video_viewport_get_system_av_info();
-   double effective_fps                  = av_info->timing.fps * settings->fastforward_ratio;
+   struct retro_system_av_info *av_info  = video_viewport_get_system_av_info();
+   double effective_fps                  = av_info->timing.fps * fastforward_ratio;
    double mft_f                          = 1000000.0f / effective_fps;
    retro_time_t frame_limit_minimum_time = (retro_time_t) roundf(mft_f);
    retro_time_t target                   = frame_limit_last_time + frame_limit_minimum_time;
@@ -1147,7 +1146,7 @@ int rarch_main_iterate(void)
 
 success:
    if (settings->fastforward_ratio_throttle_enable)
-      rarch_limit_frame_time(settings);
+      rarch_limit_frame_time(settings->fastforward_ratio);
 
    return ret;
 }
