@@ -37,7 +37,6 @@
 
 static id apple_platform;
 static CFRunLoopObserverRef iterate_observer;
-static CFRunLoopTimerRef iterate_timer;
 
 /* forward declaration */
 void apple_rarch_exited(void);
@@ -62,14 +61,6 @@ static void rarch_draw(void)
    int ret            = iterate ? rarch_main_iterate() : 0;
 
    rarch_main_data_iterate();
-
-   if (iterate_timer)
-   {
-      if (rarch_main_data_active())
-         CFRunLoopAddTimer(CFRunLoopGetMain(), iterate_timer, kCFRunLoopCommonModes); 
-      else
-         CFRunLoopRemoveTimer(CFRunLoopGetMain(), iterate_timer, kCFRunLoopCommonModes); 
-   }
 
    if (ret == -1)
    {
@@ -309,23 +300,9 @@ void apple_start_iterate_observer(void)
   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
 }
 
-void apple_start_iterate_timer(void)
-{
-  CFTimeInterval interval;
-  
-  if (iterate_timer)
-    return;
-
-  // This number is a double measured in seconds.
-  interval = 1.0 / 60.0 / 1000.0;
-
-  iterate_timer = CFRunLoopTimerCreate(0, interval, interval, 0, 0, rarch_draw_timer, 0);
-}
-
 - (void) apple_start_iteration
 {
   apple_start_iterate_observer();
-  apple_start_iterate_timer();
 }
 
 void apple_stop_iterate_observer(void)
@@ -338,20 +315,9 @@ void apple_stop_iterate_observer(void)
     iterate_observer = NULL;
 }
 
-void apple_stop_iterate_timer(void)
-{
-    if (!iterate_timer)
-        return;
-    
-    CFRunLoopTimerInvalidate(iterate_timer);
-    CFRelease(iterate_timer);
-    iterate_timer = NULL;
-}
-
 - (void) apple_stop_iteration
 {
   apple_stop_iterate_observer();
-  apple_stop_iterate_timer();
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
