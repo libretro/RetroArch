@@ -983,6 +983,18 @@ static void rarch_main_cmd_get_state(driver_t *driver,
          RARCH_CHEAT_TOGGLE);
 }
 
+static bool input_flush(retro_input_t *input)
+{
+   *input = 0;
+
+   /* If core was paused before entering menu, evoke
+    * pause toggle to wake it up. */
+   if (main_is_paused)
+      BIT64_SET(*input, RARCH_PAUSE_TOGGLE);
+
+   return true;
+}
+
 /**
  * rarch_main_iterate:
  *
@@ -1008,15 +1020,7 @@ int rarch_main_iterate(void)
    last_input                      = input;
 
    if (driver->flushing_input)
-   {
-      input = 0;
-      /* If core was paused before entering menu, evoke
-       * pause toggle to wake it up. */
-      if (main_is_paused)
-         BIT64_SET(input, RARCH_PAUSE_TOGGLE);
-
-      driver->flushing_input = false;
-   }
+      driver->flushing_input = (input) ? input_flush(&input) : false;
 
    trigger_input = input & ~old_input;
 
