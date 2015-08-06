@@ -57,48 +57,38 @@ static char data_runloop_msg[PATH_MAX_LENGTH];
 
 static data_runloop_t g_data_runloop;
 
-static data_runloop_t *rarch_main_data_get_ptr(void)
-{
-   return &g_data_runloop;
-}
-
 #ifdef HAVE_THREADS
-static void data_runloop_thread_deinit(data_runloop_t *runloop)
+static void data_runloop_thread_deinit(void)
 {
-   if (!runloop->thread_inited)
+   if (!g_data_runloop.thread_inited)
    {
-      slock_lock(runloop->cond_lock);
-      runloop->alive = false;
-      scond_signal(runloop->cond);
-      slock_unlock(runloop->cond_lock);
-      sthread_join(runloop->thread);
+      slock_lock(g_data_runloop.cond_lock);
+      g_data_runloop.alive = false;
+      scond_signal(g_data_runloop.cond);
+      slock_unlock(g_data_runloop.cond_lock);
+      sthread_join(g_data_runloop.thread);
 
-      slock_free(runloop->lock);
-      slock_free(runloop->cond_lock);
+      slock_free(g_data_runloop.lock);
+      slock_free(g_data_runloop.cond_lock);
       rarch_main_data_overlay_thread_uninit();
-      scond_free(runloop->cond);
+      scond_free(g_data_runloop.cond);
    }
 }
 #endif
 
 void rarch_main_data_deinit(void)
 {
-   data_runloop_t *runloop = rarch_main_data_get_ptr();
-
-   if (!runloop)
-      return;
-
 #ifdef HAVE_THREADS
-   if (runloop->thread_inited)
+   if (g_data_runloop.thread_inited)
    {
-      data_runloop_thread_deinit(runloop);
+      data_runloop_thread_deinit();
 
-      runloop->thread_inited = false;
-      runloop->thread_code   = THREAD_CODE_DEINIT;
+      g_data_runloop.thread_inited = false;
+      g_data_runloop.thread_code   = THREAD_CODE_DEINIT;
    }
 #endif
 
-   runloop->inited = false;
+   g_data_runloop.inited = false;
 }
 
 void rarch_main_data_free(void)
@@ -191,47 +181,41 @@ static void data_thread_loop(void *data)
 #ifdef HAVE_THREADS
 static void rarch_main_data_thread_init(void)
 {
-   data_runloop_t *runloop  = rarch_main_data_get_ptr();
-
-   if (!runloop)
-      return;
-
-   runloop->lock            = slock_new();
-   runloop->cond_lock       = slock_new();
-   runloop->cond            = scond_new();
+   g_data_runloop.lock            = slock_new();
+   g_data_runloop.cond_lock       = slock_new();
+   g_data_runloop.cond            = scond_new();
 
 #ifdef HAVE_OVERLAY
    rarch_main_data_overlay_thread_init();
 #endif
 
-   runloop->thread    = sthread_create(data_thread_loop, runloop);
+   g_data_runloop.thread    = sthread_create(data_thread_loop, &g_data_runloop);
 
-   if (!runloop->thread)
+   if (!g_data_runloop.thread)
       goto error;
 
-   slock_lock(runloop->lock);
-   runloop->thread_inited   = true;
-   runloop->alive           = true;
-   runloop->thread_code     = THREAD_CODE_ALIVE;
-   slock_unlock(runloop->lock);
+   slock_lock(g_data_runloop.lock);
+   g_data_runloop.thread_inited   = true;
+   g_data_runloop.alive           = true;
+   g_data_runloop.thread_code     = THREAD_CODE_ALIVE;
+   slock_unlock(g_data_runloop.lock);
 
    return;
 
 error:
-   data_runloop_thread_deinit(runloop);
+   data_runloop_thread_deinit();
 }
 #endif
 
 void rarch_main_data_iterate(void)
 {
-   data_runloop_t *runloop      = rarch_main_data_get_ptr();
    settings_t     *settings     = config_get_ptr();
    
    (void)settings;
 #ifdef HAVE_THREADS
    if (settings->menu.threaded_data_runloop_enable)
    {
-      switch (runloop->thread_code)
+      switch (g_data_runloop.thread_code)
       {
          case THREAD_CODE_INIT:
             rarch_main_data_thread_init();
@@ -271,7 +255,7 @@ void rarch_main_data_iterate(void)
 #endif
 
 #ifdef HAVE_THREADS
-   if (settings->menu.threaded_data_runloop_enable && runloop->alive)
+   if (settings->menu.threaded_data_runloop_enable && g_data_runloop.alive)
       return;
 #endif
 
