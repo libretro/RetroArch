@@ -79,8 +79,6 @@ bool rarch_main_data_db_pending_scan_finished(void);
 
 void rarch_main_data_db_init_msg_queue(void);
 
-void *rarch_main_data_db_get_ptr(void);
-
 msg_queue_t *rarch_main_data_db_get_msg_queue_ptr(void);
 
 void rarch_main_data_db_uninit(void);

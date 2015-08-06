@@ -479,25 +479,18 @@ do_poll:
    }
 }
 
-void *rarch_main_data_db_get_ptr(void)
-{
-   db_handle_t      *db   = db_ptr;
-   if (!db)
-      return NULL;
-   return db;
-}
 
 void rarch_main_data_db_init_msg_queue(void)
 {
-   db_handle_t      *db   = (db_handle_t*)rarch_main_data_db_get_ptr();
+   db_handle_t      *db   = (db_handle_t*)db_ptr;
    
-   if (!db->msg_queue)
+   if (!db || !db->msg_queue)
       rarch_assert(db->msg_queue         = msg_queue_new(8));
 }
 
 msg_queue_t *rarch_main_data_db_get_msg_queue_ptr(void)
 {
-   db_handle_t      *db   = (db_handle_t*)rarch_main_data_db_get_ptr();
+   db_handle_t      *db   = (db_handle_t*)db_ptr;
    if (!db)
       return NULL;
    return db->msg_queue;
@@ -519,7 +512,7 @@ void rarch_main_data_db_init(void)
 
 bool rarch_main_data_db_is_active(void)
 {
-   db_handle_t              *db   = (db_handle_t*)rarch_main_data_db_get_ptr();
+   db_handle_t              *db   = (db_handle_t*)db_ptr;
    database_info_handle_t   *dbi  = db ? db->handle : NULL;
    if (dbi && dbi->status != DATABASE_STATUS_NONE)
       return true;
