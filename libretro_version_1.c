@@ -156,7 +156,7 @@ static int16_t input_state(unsigned port, unsigned device,
    if (settings->input.remap_binds_enable)
       input_remapping_state(port, &device, &idx, &id);
 
-   if (!driver->block_libretro_input)
+   if (!driver->flushing_input && !driver->block_libretro_input)
    {
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
          res = input->input_state(driver->input_data, libretro_input_binds, port, device, idx, id);
@@ -165,10 +165,6 @@ static int16_t input_state(unsigned port, unsigned device,
       input_state_overlay(&res, port, device, idx, id);
 #endif
    }
-
-   /* flushing_input will be cleared in rarch_main_iterate. */
-   if (driver->flushing_input)
-      res = 0;
 
    /* Don't allow turbo for D-pad. */
    if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP ||
