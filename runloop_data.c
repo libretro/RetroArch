@@ -320,7 +320,7 @@ void rarch_main_data_msg_queue_push(unsigned type,
       const char *msg, const char *msg2,
       unsigned prio, unsigned duration, bool flush)
 {
-   char new_msg[PATH_MAX_LENGTH] = {0};
+   char new_msg[PATH_MAX_LENGTH];
    msg_queue_t *queue            = NULL;
 
    switch(type)
@@ -329,14 +329,10 @@ void rarch_main_data_msg_queue_push(unsigned type,
          break;
       case DATA_TYPE_FILE:
          queue = rarch_main_data_nbio_get_msg_queue_ptr();
-         if (!queue)
-            return;
          snprintf(new_msg, sizeof(new_msg), "%s|%s", msg, msg2);
          break;
       case DATA_TYPE_IMAGE:
          queue = rarch_main_data_nbio_image_get_msg_queue_ptr();
-         if (!queue)
-            return;
          snprintf(new_msg, sizeof(new_msg), "%s|%s", msg, msg2);
          break;
 #ifdef HAVE_NETWORKING
