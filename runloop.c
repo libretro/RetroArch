@@ -134,7 +134,7 @@ static void check_fast_forward_button(driver_t *driver,
 static void check_stateslots(settings_t *settings,
       bool pressed_increase, bool pressed_decrease)
 {
-   char msg[PATH_MAX_LENGTH] = {0};
+   char msg[PATH_MAX_LENGTH];
 
    /* Save state slots */
    if (pressed_increase)
@@ -249,13 +249,12 @@ static void check_slowmotion(settings_t *settings, global_t *global,
       rarch_main_msg_queue_push_new(MSG_SLOW_MOTION, 0, 30, true);
 }
 
-static bool check_movie_init(void)
+static bool check_movie_init(global_t *global)
 {
-   char path[PATH_MAX_LENGTH]   = {0};
-   char msg[PATH_MAX_LENGTH]    = {0};
+   char path[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH];
    bool ret                     = true;
    settings_t *settings         = config_get_ptr();
-   global_t *global             = global_get_ptr();
    
    if (global->bsv.movie)
       return false;
@@ -267,6 +266,7 @@ static bool check_movie_init(void)
             global->bsv.movie_path, settings->state_slot);
    else
       strlcpy(path, global->bsv.movie_path, sizeof(path));
+
    strlcat(path, ".bsv", sizeof(path));
 
    snprintf(msg, sizeof(msg), "%s \"%s\".",
@@ -347,7 +347,7 @@ static bool check_movie(global_t *global)
    if (global->bsv.movie_playback)
       return check_movie_playback(global);
    if (!global->bsv.movie)
-      return check_movie_init();
+      return check_movie_init(global);
    return check_movie_record(global);
 }
 
@@ -371,7 +371,7 @@ static void check_shader_dir(global_t *global,
       bool pressed_next, bool pressed_prev)
 {
    uint32_t ext_hash;
-   char msg[PATH_MAX_LENGTH]   = {0};
+   char msg[PATH_MAX_LENGTH];
    const char *shader          = NULL;
    const char *ext             = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
