@@ -486,7 +486,6 @@ static int do_netplay_state_checks(
 #endif
 
 static int do_pause_state_checks(
-      bool pause_pressed,
       bool frameadvance_pressed,
       bool fullscreen_toggle_pressed,
       bool rewind_pressed)
@@ -542,7 +541,6 @@ static int do_state_checks(driver_t *driver, settings_t *settings,
          cmd->pause_pressed, cmd->frameadvance_pressed);
 
    if (do_pause_state_checks(
-            cmd->pause_pressed,
             cmd->frameadvance_pressed,
             cmd->fullscreen_toggle,
             cmd->rewind_pressed))
