@@ -160,11 +160,6 @@ struct input_overlay
 static input_overlay_t *overlay_ptr;
 static input_overlay_state_t overlay_st_ptr;
 
-static input_overlay_t *input_overlay_get_ptr(void)
-{
-   return overlay_ptr;
-}
-
 static input_overlay_state_t *input_overlay_get_state_ptr(void)
 {
    return &overlay_st_ptr;
@@ -172,7 +167,7 @@ static input_overlay_state_t *input_overlay_get_state_ptr(void)
 
 bool input_overlay_data_is_active(void)
 {
-   input_overlay_t *overlay = input_overlay_get_ptr();
+   input_overlay_t *overlay = overlay_ptr;
    if (!overlay)
       return false;
 
@@ -232,7 +227,7 @@ static void input_overlay_scale(struct overlay *ol, float scale)
 static void input_overlay_set_vertex_geom(void)
 {
    size_t i;
-   input_overlay_t *ol = input_overlay_get_ptr();
+   input_overlay_t *ol = overlay_ptr;
 
    if (!ol)
       return;
@@ -267,7 +262,7 @@ static void input_overlay_set_vertex_geom(void)
 void input_overlay_set_scale_factor(float scale)
 {
    size_t i;
-   input_overlay_t *ol = input_overlay_get_ptr();
+   input_overlay_t *ol = overlay_ptr;
 
    if (!ol)
       return;
@@ -300,7 +295,7 @@ static void input_overlay_free_overlay(struct overlay *overlay)
 static void input_overlay_free_overlays(void)
 {
    size_t i;
-   input_overlay_t *ol      = input_overlay_get_ptr();
+   input_overlay_t *ol = overlay_ptr;
 
    if (!ol)
       return;
@@ -333,7 +328,7 @@ static bool input_overlay_load_desc_image(
 {
    char overlay_desc_image_key[64]  = {0};
    char image_path[PATH_MAX_LENGTH] = {0};
-   input_overlay_t *ol      = input_overlay_get_ptr();
+   input_overlay_t *ol = overlay_ptr;
    config_file_t *conf      = ol ? config_file_new(ol->overlay_path) : NULL;
 
    if (!ol || !conf)
@@ -381,7 +376,7 @@ static bool input_overlay_load_desc(
    const char *x                        = NULL;
    const char *y                        = NULL;
    const char *box                      = NULL;
-   input_overlay_t *ol                  = input_overlay_get_ptr();
+   input_overlay_t *ol                  = overlay_ptr;
    config_file_t *conf                  = ol ? config_file_new(ol->overlay_path) : NULL;
 
    if (!ol || !conf)
@@ -622,7 +617,7 @@ static bool input_overlay_resolve_targets(struct overlay *ol,
 
 static void input_overlay_load_active(float opacity)
 {
-   input_overlay_t *ol = input_overlay_get_ptr();
+   input_overlay_t *ol = overlay_ptr;
    if (!ol)
       return;
 
@@ -645,7 +640,7 @@ static void input_overlay_load_active(float opacity)
  **/
 static void input_overlay_enable(bool enable)
 {
-   input_overlay_t *ol             = input_overlay_get_ptr();
+   input_overlay_t *ol = overlay_ptr;
    if (!ol)
       return;
    ol->enable = enable;
@@ -656,7 +651,7 @@ static void input_overlay_enable(bool enable)
 
 bool input_overlay_load_overlays_resolve_iterate(void)
 {
-   input_overlay_t *ol = input_overlay_get_ptr();
+   input_overlay_t *ol = overlay_ptr;
    bool not_done = true;
 
    if (!ol)
@@ -713,7 +708,7 @@ bool input_overlay_load_overlays_iterate(void)
    size_t i                = 0;
    bool not_done           = true;
    struct overlay *overlay = NULL;
-   input_overlay_t *ol = input_overlay_get_ptr();
+   input_overlay_t *ol     = overlay_ptr;
    
    if (!ol)
       return false;
@@ -805,7 +800,7 @@ error:
 bool input_overlay_load_overlays(void)
 {
    unsigned i;
-   input_overlay_t *ol      = input_overlay_get_ptr();
+   input_overlay_t *ol      = overlay_ptr;
    config_file_t *conf      = config_file_new(ol->overlay_path);
 
    if (!ol || !conf)
@@ -960,7 +955,7 @@ error:
 
 bool input_overlay_new_done(void)
 {
-   input_overlay_t *ol = input_overlay_get_ptr();
+   input_overlay_t *ol      = overlay_ptr;
    if (!ol)
       return false;
 
@@ -1116,7 +1111,7 @@ static void input_overlay_poll(input_overlay_state_t *out,
 {
    size_t i;
    float x, y;
-   input_overlay_t *ol             = input_overlay_get_ptr();
+   input_overlay_t *ol      = overlay_ptr;
 
    memset(out, 0, sizeof(*out));
 
@@ -1230,7 +1225,7 @@ static void input_overlay_update_desc_geom(input_overlay_t *ol,
 void input_overlay_post_poll(float opacity)
 {
    size_t i;
-   input_overlay_t *ol = input_overlay_get_ptr();
+   input_overlay_t *ol      = overlay_ptr;
 
    if (!ol)
       return;
@@ -1276,7 +1271,7 @@ void input_overlay_post_poll(float opacity)
 void input_overlay_poll_clear(float opacity)
 {
    size_t i;
-   input_overlay_t *ol = input_overlay_get_ptr();
+   input_overlay_t *ol      = overlay_ptr;
 
    if (!ol)
       return;
@@ -1311,7 +1306,7 @@ void input_overlay_poll_clear(float opacity)
  **/
 void input_overlay_next(float opacity)
 {
-   input_overlay_t *ol = input_overlay_get_ptr();
+   input_overlay_t *ol      = overlay_ptr;
    if (!ol)
       return;
 
@@ -1333,7 +1328,7 @@ void input_overlay_next(float opacity)
  **/
 bool input_overlay_full_screen(void)
 {
-   input_overlay_t *ol = input_overlay_get_ptr();
+   input_overlay_t *ol      = overlay_ptr;
    if (!ol)
       return false;
    return ol->active->full_screen;
@@ -1347,7 +1342,7 @@ bool input_overlay_full_screen(void)
  **/
 void input_overlay_free(void)
 {
-   input_overlay_t *ol = input_overlay_get_ptr();
+   input_overlay_t *ol      = overlay_ptr;
    if (!ol)
       return;
 
@@ -1411,7 +1406,7 @@ int input_overlay_new_ptr(void)
 void input_overlay_set_alpha_mod(float mod)
 {
    unsigned i;
-   input_overlay_t *ol = input_overlay_get_ptr();
+   input_overlay_t *ol      = overlay_ptr;
 
    if (!ol)
       return;
@@ -1422,7 +1417,7 @@ void input_overlay_set_alpha_mod(float mod)
 
 bool input_overlay_is_alive(void)
 {
-   input_overlay_t *ol = input_overlay_get_ptr();
+   input_overlay_t *ol      = overlay_ptr;
    if (!ol)
       return false;
    return ol->alive;
@@ -1430,7 +1425,7 @@ bool input_overlay_is_alive(void)
 
 enum overlay_status input_overlay_status(void)
 {
-   input_overlay_t *ol = input_overlay_get_ptr();
+   input_overlay_t *ol      = overlay_ptr;
    if (!ol)
       return OVERLAY_STATUS_NONE;
    return ol->state;
