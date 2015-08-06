@@ -497,7 +497,8 @@ static int cb_nbio_image_menu_boxart(void *data, size_t len)
 
 static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
 {
-   char elem0[PATH_MAX_LENGTH]  = {0};
+   char elem0[PATH_MAX_LENGTH];
+   unsigned elem0_hash          = 0;
    uint32_t cb_type_hash        = 0;
    struct nbio_t* handle        = NULL;
    struct string_list *str_list = NULL;
@@ -517,26 +518,23 @@ static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
 
    str_list                     = string_split(path, "|"); 
 
-   if (!str_list)
+   if (!str_list || (str_list->size < 1))
       goto error;
 
-   if (str_list->size > 0)
-   {
-      unsigned elem0_hash = 0;
-      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-      elem0_hash = djb2_calculate(elem0);
+   strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+   elem0_hash = djb2_calculate(elem0);
 
-      /* TODO/FIXME - should be able to deal with this
-       * in a better way. */
-      switch(elem0_hash)
-      {
-         case CB_MENU_WALLPAPER:
-         case CB_MENU_BOXART:
-            goto error;
-         default:
-            break;
-      }
+   /* TODO/FIXME - should be able to deal with this
+    * in a better way. */
+   switch(elem0_hash)
+   {
+      case CB_MENU_WALLPAPER:
+      case CB_MENU_BOXART:
+         goto error;
+      default:
+         break;
    }
+
    if (str_list->size > 1)
       cb_type_hash = djb2_calculate(str_list->elems[1].data);
 
