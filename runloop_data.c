@@ -131,28 +131,27 @@ static void data_runloop_iterate(bool is_thread)
 
 bool rarch_main_data_active(void)
 {
-   bool                  active = false;
 #ifdef HAVE_LIBRETRODB
    if (rarch_main_data_db_is_active())
-      active = true;
+      return true;
 #endif
 
 #ifdef HAVE_OVERLAY
    if (input_overlay_data_is_active())
-      active = true;
+      return true;
 #endif
    if (rarch_main_data_nbio_image_get_handle())
-      active = true;
+      return true;
    if (rarch_main_data_nbio_get_handle())
-      active = true;
+      return true;
 #ifdef HAVE_NETWORKING
    if (rarch_main_data_http_get_handle())
-      active = true;
+      return true;
    if (rarch_main_data_http_conn_get_handle())
-      active = true;
+      return true;
 #endif
 
-   return active;
+   return false;
 }
 
 #ifdef HAVE_THREADS

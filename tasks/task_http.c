@@ -375,10 +375,11 @@ static int rarch_main_data_http_iterate_poll(http_handle_t *http)
    str_list                     = string_split(url, "|");
 
    if (!str_list)
-      return -1;
+      goto error;
+   if (str_list->size < 1)
+      goto error;
 
-   if (str_list->size > 0)
-      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+   strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
 
    http->connection.handle = net_http_connection_new(elem0);
 
@@ -398,6 +399,11 @@ static int rarch_main_data_http_iterate_poll(http_handle_t *http)
    string_list_free(str_list);
    
    return 0;
+
+error:
+   if (str_list)
+      string_list_free(str_list);
+   return -1;
 }
 
 /**

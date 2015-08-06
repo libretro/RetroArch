@@ -362,8 +362,8 @@ static int database_info_iterate(database_state_handle_t *state, database_info_h
 
 static int database_info_poll(db_handle_t *db)
 {
+   char elem0[PATH_MAX_LENGTH];
    uint32_t cb_type_hash        = 0;
-   char elem0[PATH_MAX_LENGTH]  = {0};
    struct string_list *str_list = NULL;
    const char *path = msg_queue_pull(db->msg_queue);
 
@@ -374,9 +374,10 @@ static int database_info_poll(db_handle_t *db)
 
    if (!str_list)
       goto error;
+   if (str_list->size < 1)
+      goto error;
 
-   if (str_list->size > 0)
-      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+   strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
    if (str_list->size > 1)
       cb_type_hash = msg_hash_calculate(str_list->elems[1].data);
 
