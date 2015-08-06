@@ -545,7 +545,7 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
    glui->line_height            = scale_factor / 3;
    glui->margin                 = scale_factor / 6;
    menu->display.header_height  = scale_factor / 3;
-   menu->display.font.size      = scale_factor / 8;
+   menu->display.font.size      = scale_factor / 10;
    /* we assume the average glyph aspect ratio is close to 3:4 */
    glui->glyph_width            = menu->display.font.size * 3/4;
 
@@ -554,7 +554,7 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
    if (disp && disp->font.buf) /* calculate a more realistic ticker_limit */
    {
       driver_t *driver   = driver_get_ptr();
-      int m_width = driver->font_osd_driver->get_message_width(disp->font.buf, "M", 1, 1);
+      int m_width = driver->font_osd_driver->get_message_width(disp->font.buf, "a", 1, 1);
 
       if (m_width)
          glui->glyph_width = m_width;
