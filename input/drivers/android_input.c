@@ -656,9 +656,9 @@ static void handle_hotplug(android_input_t *android,
    {
       /* hack for remote control type devices, set them always to port 0 */
       *port = 0;
-       if (strstr(device_name, "Virtual") || (strstr(device_name, "gpio"))
+       if (strstr(device_name, "Virtual") || (strstr(device_name, "gpio")))
          strlcpy(name_buf, "Generic I/O Device", sizeof(name_buf));
-      else
+       else
          strlcpy(name_buf, device_name, sizeof(name_buf));
    }
    else if ( *port==1 && ( strstr(android->pad_states[0].name,"Amazon Fire TV Remote")
