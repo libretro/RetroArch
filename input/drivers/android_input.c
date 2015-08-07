@@ -648,20 +648,18 @@ static void handle_hotplug(android_input_t *android,
       *port = 0;
       strlcpy(name_buf, device_name, sizeof(name_buf));
    }
-   else if (strstr(device_name, "Virtual") || 
-         (strstr(device_name, "gpio") && strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.01")))
-   {
-      /* If built-in shield controller is detected bind the virtual and gpio devices to the same port*/
-      *port = 0;
-      strlcpy(name_buf, "Generic I/O Device", sizeof(name_buf));
-   }
    else if (strstr(device_name, "Amazon Fire TV Remote")
          || strstr(device_name, "Nexus Remote")
-         || strstr(device_name, "SHIELD Remote"))
+         || strstr(device_name, "SHIELD Remote")
+         || strstr(device_name, "gpio")
+         || strstr(device_name, "Virtual"))
    {
       /* hack for remote control type devices, set them always to port 0 */
       *port = 0;
-      strlcpy(name_buf, device_name, sizeof(name_buf));
+       if (strstr(device_name, "Virtual") || (strstr(device_name, "gpio"))
+         strlcpy(name_buf, "Generic I/O Device", sizeof(name_buf));
+      else
+         strlcpy(name_buf, device_name, sizeof(name_buf));
    }
    else if ( *port==1 && ( strstr(android->pad_states[0].name,"Amazon Fire TV Remote")
                       ||   strstr(android->pad_states[0].name,"Nexus Remote")
