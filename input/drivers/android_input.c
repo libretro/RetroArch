@@ -641,7 +641,7 @@ static void handle_hotplug(android_input_t *android,
    }
    else if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.01"))
    {
-      /* Built-in shield controller is always user 1. FIXME: This is kinda ugly.
+      /* Built-in shield contrlleris always user 1. FIXME: This is kinda ugly.
        * We really need to find a way to detect useless input devices
        * like gpio-keys in a general way.
        */
@@ -655,21 +655,6 @@ static void handle_hotplug(android_input_t *android,
       *port = 0;
       strlcpy(name_buf, "Generic I/O Device", sizeof(name_buf));
    }
-   else if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03") && !strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.03"))
-   {
-      /* Shield Controller is user 0 by default. FIXME: This is kinda ugly.
-       * this allows using the NVIDIA button as menu
-       */
-      *port = 0;
-      strlcpy(name_buf, device_name, sizeof(name_buf));
-   }
-   else if (strstr(device_name, "Virtual") || 
-         (strstr(device_name, "gpio") && strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.03")))
-   {
-      /* If the shield controller is detected bind the virtual and gpio devices to the same port*/
-      *port = 0;
-      strlcpy(name_buf, "Generic I/O Device", sizeof(name_buf));
-   }
    else if (strstr(device_name, "Amazon Fire TV Remote")
          || strstr(device_name, "Nexus Remote")
          || strstr(device_name, "SHIELD Remote"))
@@ -680,7 +665,8 @@ static void handle_hotplug(android_input_t *android,
    }
    else if ( *port==1 && ( strstr(android->pad_states[0].name,"Amazon Fire TV Remote")
                       ||   strstr(android->pad_states[0].name,"Nexus Remote")
-                      ||   strstr(android->pad_states[0].name,"SHIELD Remote")))
+                      ||   strstr(android->pad_states[0].name,"SHIELD Remote")
+                      ||   strstr(android->pad_states[0].name,"Generic I/O Device")))
    {
       /* and then when we are binding a new controller in port 1 and one of those remotes
        * was bound to port 0, bind the device as port 0 too, it causes all the controllers to 
