@@ -639,22 +639,15 @@ static void handle_hotplug(android_input_t *android,
       else if (strstr(device_name, "SideWinder"))
          strlcpy(name_buf, "SideWinder Classic", sizeof(name_buf));
    }
-   else if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.01"))
-   {
-      /* Built-in shield contrlleris always user 1. FIXME: This is kinda ugly.
-       * We really need to find a way to detect useless input devices
-       * like gpio-keys in a general way.
-       */
-      *port = 0;
-      strlcpy(name_buf, device_name, sizeof(name_buf));
-   }
+   /* Make sure generic I/O devices are always bound to port one
+    * should be easier to add these instead of one hack per device
+    */
    else if (strstr(device_name, "Amazon Fire TV Remote")
          || strstr(device_name, "Nexus Remote")
          || strstr(device_name, "SHIELD Remote")
          || strstr(device_name, "gpio")
          || strstr(device_name, "Virtual"))
    {
-      /* hack for remote control type devices, set them always to port 0 */
       *port = 0;
        if (strstr(device_name, "Virtual") || (strstr(device_name, "gpio")))
          strlcpy(name_buf, "Generic I/O Device", sizeof(name_buf));
@@ -666,10 +659,8 @@ static void handle_hotplug(android_input_t *android,
                       ||   strstr(android->pad_states[0].name,"SHIELD Remote")
                       ||   strstr(android->pad_states[0].name,"Generic I/O Device")))
    {
-      /* and then when we are binding a new controller in port 1 and one of those remotes
-       * was bound to port 0, bind the device as port 0 too, it causes all the controllers to 
-       * rebind on the first button press but at least the remotes can be used to navigate
-       * the user interface
+      /* then, when binding a new controller in port 1 and one of those remotes
+       * was bound to port 0, overwrite that binding
        */
       *port = 0;
       strlcpy(name_buf, device_name, sizeof(name_buf));
