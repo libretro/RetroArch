@@ -618,8 +618,6 @@ static void handle_hotplug(android_input_t *android,
       //For Xperia Play - count similar devices and bind them to the same 'user'
       //port
       //
-      //For nVidia Shield - see above
-      //
       //For TTT HT - keep track of how many of these 'pads' are already
       //connected, and based on that, assign one of them to be User 1 and
       //the other to be User 2.
