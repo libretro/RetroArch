@@ -6,20 +6,23 @@ Author: Hans-Kristian Arntzen (Themaister)
 License: Public domain
 """
 
-import sys
-if sys.version_info<(3,0,0):
-    sys.stderr.write("You need python 3.0 or later to run this script\n")
-    exit(1)
-
 import os
 import errno
 import subprocess
+import sys
+
+if sys.version_info < (3, 0, 0):
+    sys.stderr.write("You need python 3.0 or later to run this script\n")
+    exit(1)
+
 
 batch_mode = False
+
 
 def log(*arg):
     if not batch_mode:
         print(*arg)
+
 
 def remove_comments(source_lines):
     ret = []
@@ -28,11 +31,13 @@ def remove_comments(source_lines):
         ret.append(i)
     return ret
 
+
 def keep_line_if(func, lines):
     ret = []
     for i in filter(func, lines):
         ret.append(i)
     return ret
+
 
 def replace_global_in(source):
     split_source = source.split('\n')
@@ -80,14 +85,15 @@ def replace_global_vertex(source):
 
             ('FrameCount', 'float(FrameCount)'),
             ('FrameDirection', 'float(FrameDirection)'),
-            ('input', 'input_dummy'), # 'input' is reserved in GLSL.
-            ('output', 'output_dummy'), # 'output' is reserved in GLSL.
+            ('input', 'input_dummy'),  # 'input' is reserved in GLSL.
+            ('output', 'output_dummy'),  # 'output' is reserved in GLSL.
     ]
 
     for replacement in replace_table:
         source = source.replace(replacement[0], replacement[1])
 
     return source
+
 
 def translate_varyings(varyings, source, direction):
     dictionary = {}
@@ -99,6 +105,7 @@ def translate_varyings(varyings, source, direction):
                 break
 
     return dictionary
+
 
 def no_uniform(elem):
     banned = [
@@ -117,6 +124,7 @@ def no_uniform(elem):
         if ban in elem:
             return False
     return True
+
 
 def destructify_varyings(source, direction):
     # We have to change varying structs that Cg support to single varyings for GL.
@@ -150,9 +158,9 @@ def destructify_varyings(source, direction):
                 while (j < len(source)) and ('};' not in source[j]):
                     j += 1
 
-                lines = ['COMPAT_VARYING ' + string for string in source[i + 1 : j]]
+                lines = ['COMPAT_VARYING ' + string for string in source[(i + 1):j]]
                 varyings.extend(lines)
-                names = [string.strip().split(' ')[1].split(';')[0].strip() for string in source[i + 1 : j]]
+                names = [string.strip().split(' ')[1].split(';')[0].strip() for string in source[(i + 1):j]]
                 varyings_name.extend(names)
                 log('Found elements in struct', struct + ':', names)
                 last_struct_decl_line = j
@@ -224,100 +232,101 @@ def destructify_varyings(source, direction):
 
     return source
 
+
 def translate_varying(cg):
     # Ye, it's ugly as shit. :(
-    #log('Translate:', cg)
+    # log('Translate:', cg)
     translations = {
-        'IN.tex_coord'    : 'TexCoord',
-        'IN.vertex_coord' : 'VertexCoord',
-        'IN.lut_tex_coord' : 'LUTTexCoord',
-        'ORIG.tex_coord'  : 'OrigTexCoord',
-        'PREV.tex_coord'  : 'PrevTexCoord',
-        'PREV1.tex_coord' : 'Prev1TexCoord',
-        'PREV2.tex_coord' : 'Prev2TexCoord',
-        'PREV3.tex_coord' : 'Prev3TexCoord',
-        'PREV4.tex_coord' : 'Prev4TexCoord',
-        'PREV5.tex_coord' : 'Prev5TexCoord',
-        'PREV6.tex_coord' : 'Prev6TexCoord',
-        'PASS1.tex_coord' : 'Pass1TexCoord',
-        'PASS2.tex_coord' : 'Pass2TexCoord',
-        'PASS3.tex_coord' : 'Pass3TexCoord',
-        'PASS4.tex_coord' : 'Pass4TexCoord',
-        'PASS5.tex_coord' : 'Pass5TexCoord',
-        'PASS6.tex_coord' : 'Pass6TexCoord',
-        'PASS7.tex_coord' : 'Pass7TexCoord',
-        'PASS8.tex_coord' : 'Pass8TexCoord',
-        'PASSPREV2.tex_coord' : 'PassPrev2TexCoord',
-        'PASSPREV3.tex_coord' : 'PassPrev3TexCoord',
-        'PASSPREV4.tex_coord' : 'PassPrev4TexCoord',
-        'PASSPREV5.tex_coord' : 'PassPrev5TexCoord',
-        'PASSPREV6.tex_coord' : 'PassPrev6TexCoord',
-        'PASSPREV7.tex_coord' : 'PassPrev7TexCoord',
-        'PASSPREV8.tex_coord' : 'PassPrev8TexCoord',
+        'IN.tex_coord': 'TexCoord',
+        'IN.vertex_coord': 'VertexCoord',
+        'IN.lut_tex_coord': 'LUTTexCoord',
+        'ORIG.tex_coord': 'OrigTexCoord',
+        'PREV.tex_coord': 'PrevTexCoord',
+        'PREV1.tex_coord': 'Prev1TexCoord',
+        'PREV2.tex_coord': 'Prev2TexCoord',
+        'PREV3.tex_coord': 'Prev3TexCoord',
+        'PREV4.tex_coord': 'Prev4TexCoord',
+        'PREV5.tex_coord': 'Prev5TexCoord',
+        'PREV6.tex_coord': 'Prev6TexCoord',
+        'PASS1.tex_coord': 'Pass1TexCoord',
+        'PASS2.tex_coord': 'Pass2TexCoord',
+        'PASS3.tex_coord': 'Pass3TexCoord',
+        'PASS4.tex_coord': 'Pass4TexCoord',
+        'PASS5.tex_coord': 'Pass5TexCoord',
+        'PASS6.tex_coord': 'Pass6TexCoord',
+        'PASS7.tex_coord': 'Pass7TexCoord',
+        'PASS8.tex_coord': 'Pass8TexCoord',
+        'PASSPREV2.tex_coord': 'PassPrev2TexCoord',
+        'PASSPREV3.tex_coord': 'PassPrev3TexCoord',
+        'PASSPREV4.tex_coord': 'PassPrev4TexCoord',
+        'PASSPREV5.tex_coord': 'PassPrev5TexCoord',
+        'PASSPREV6.tex_coord': 'PassPrev6TexCoord',
+        'PASSPREV7.tex_coord': 'PassPrev7TexCoord',
+        'PASSPREV8.tex_coord': 'PassPrev8TexCoord',
     }
 
     if cg in translations:
         return translations[cg]
     else:
         return cg
+
 
 def translate_texture_size(cg):
     # Ye, it's ugly as shit. :(
-    #log('Translate:', cg)
+    # log('Translate:', cg)
     translations = {
-        'ORIG.texture_size'  : 'OrigTextureSize',
-        'PREV.texture_size'  : 'PrevTextureSize',
-        'PREV1.texture_size' : 'Prev1TextureSize',
-        'PREV2.texture_size' : 'Prev2TextureSize',
-        'PREV3.texture_size' : 'Prev3TextureSize',
-        'PREV4.texture_size' : 'Prev4TextureSize',
-        'PREV5.texture_size' : 'Prev5TextureSize',
-        'PREV6.texture_size' : 'Prev6TextureSize',
-        'PASS1.texture_size' : 'Pass1TextureSize',
-        'PASS2.texture_size' : 'Pass2TextureSize',
-        'PASS3.texture_size' : 'Pass3TextureSize',
-        'PASS4.texture_size' : 'Pass4TextureSize',
-        'PASS5.texture_size' : 'Pass5TextureSize',
-        'PASS6.texture_size' : 'Pass6TextureSize',
-        'PASS7.texture_size' : 'Pass7TextureSize',
-        'PASS8.texture_size' : 'Pass8TextureSize',
-        'PASSPREV2.texture_size' : 'PassPrev2TextureSize',
-        'PASSPREV3.texture_size' : 'PassPrev3TextureSize',
-        'PASSPREV4.texture_size' : 'PassPrev4TextureSize',
-        'PASSPREV5.texture_size' : 'PassPrev5TextureSize',
-        'PASSPREV6.texture_size' : 'PassPrev6TextureSize',
-        'PASSPREV7.texture_size' : 'PassPrev7TextureSize',
-        'PASSPREV8.texture_size' : 'PassPrev8TextureSize',
-        'ORIG.video_size'  : 'OrigInputSize',
-        'PREV.video_size'  : 'PrevInputSize',
-        'PREV1.video_size' : 'Prev1InputSize',
-        'PREV2.video_size' : 'Prev2InputSize',
-        'PREV3.video_size' : 'Prev3InputSize',
-        'PREV4.video_size' : 'Prev4InputSize',
-        'PREV5.video_size' : 'Prev5InputSize',
-        'PREV6.video_size' : 'Prev6InputSize',
-        'PASS1.video_size' : 'Pass1InputSize',
-        'PASS2.video_size' : 'Pass2InputSize',
-        'PASS3.video_size' : 'Pass3InputSize',
-        'PASS4.video_size' : 'Pass4InputSize',
-        'PASS5.video_size' : 'Pass5InputSize',
-        'PASS6.video_size' : 'Pass6InputSize',
-        'PASS7.video_size' : 'Pass7InputSize',
-        'PASS8.video_size' : 'Pass8InputSize',
-        'PASSPREV2.video_size' : 'PassPrev2InputSize',
-        'PASSPREV3.video_size' : 'PassPrev3InputSize',
-        'PASSPREV4.video_size' : 'PassPrev4InputSize',
-        'PASSPREV5.video_size' : 'PassPrev5InputSize',
-        'PASSPREV6.video_size' : 'PassPrev6InputSize',
-        'PASSPREV7.video_size' : 'PassPrev7InputSize',
-        'PASSPREV8.video_size' : 'PassPrev8InputSize',
+        'ORIG.texture_size': 'OrigTextureSize',
+        'PREV.texture_size': 'PrevTextureSize',
+        'PREV1.texture_size': 'Prev1TextureSize',
+        'PREV2.texture_size': 'Prev2TextureSize',
+        'PREV3.texture_size': 'Prev3TextureSize',
+        'PREV4.texture_size': 'Prev4TextureSize',
+        'PREV5.texture_size': 'Prev5TextureSize',
+        'PREV6.texture_size': 'Prev6TextureSize',
+        'PASS1.texture_size': 'Pass1TextureSize',
+        'PASS2.texture_size': 'Pass2TextureSize',
+        'PASS3.texture_size': 'Pass3TextureSize',
+        'PASS4.texture_size': 'Pass4TextureSize',
+        'PASS5.texture_size': 'Pass5TextureSize',
+        'PASS6.texture_size': 'Pass6TextureSize',
+        'PASS7.texture_size': 'Pass7TextureSize',
+        'PASS8.texture_size': 'Pass8TextureSize',
+        'PASSPREV2.texture_size': 'PassPrev2TextureSize',
+        'PASSPREV3.texture_size': 'PassPrev3TextureSize',
+        'PASSPREV4.texture_size': 'PassPrev4TextureSize',
+        'PASSPREV5.texture_size': 'PassPrev5TextureSize',
+        'PASSPREV6.texture_size': 'PassPrev6TextureSize',
+        'PASSPREV7.texture_size': 'PassPrev7TextureSize',
+        'PASSPREV8.texture_size': 'PassPrev8TextureSize',
+        'ORIG.video_size': 'OrigInputSize',
+        'PREV.video_size': 'PrevInputSize',
+        'PREV1.video_size': 'Prev1InputSize',
+        'PREV2.video_size': 'Prev2InputSize',
+        'PREV3.video_size': 'Prev3InputSize',
+        'PREV4.video_size': 'Prev4InputSize',
+        'PREV5.video_size': 'Prev5InputSize',
+        'PREV6.video_size': 'Prev6InputSize',
+        'PASS1.video_size': 'Pass1InputSize',
+        'PASS2.video_size': 'Pass2InputSize',
+        'PASS3.video_size': 'Pass3InputSize',
+        'PASS4.video_size': 'Pass4InputSize',
+        'PASS5.video_size': 'Pass5InputSize',
+        'PASS6.video_size': 'Pass6InputSize',
+        'PASS7.video_size': 'Pass7InputSize',
+        'PASS8.video_size': 'Pass8InputSize',
+        'PASSPREV2.video_size': 'PassPrev2InputSize',
+        'PASSPREV3.video_size': 'PassPrev3InputSize',
+        'PASSPREV4.video_size': 'PassPrev4InputSize',
+        'PASSPREV5.video_size': 'PassPrev5InputSize',
+        'PASSPREV6.video_size': 'PassPrev6InputSize',
+        'PASSPREV7.video_size': 'PassPrev7InputSize',
+        'PASSPREV8.video_size': 'PassPrev8InputSize',
     }
 
     if cg in translations:
         return translations[cg]
     else:
         return cg
-
 
 
 def replace_varyings(source):
@@ -361,6 +370,7 @@ def replace_varyings(source):
 
     return ret
 
+
 def hack_source_vertex(source):
     ref_index = 0
     for index, line in enumerate(source):
@@ -379,7 +389,7 @@ def hack_source_vertex(source):
     translations = []
     added_samplers = []
     translated_samplers = []
-    struct_texunit0 = False # If True, we have to append uniform sampler2D Texture manually ...
+    struct_texunit0 = False  # If True, we have to append uniform sampler2D Texture manually ...
     for line in source:
         if ('TEXUNIT0' in line) and ('semantic' not in line):
             main_sampler = (line.split(':')[2].split(' ')[1], 'Texture')
@@ -411,6 +421,7 @@ def hack_source_vertex(source):
     source = replace_varyings(source)
     return source
 
+
 def replace_global_fragment(source):
     source = replace_global_in(source)
     replace_table = [
@@ -419,7 +430,7 @@ def replace_global_fragment(source):
             ('FrameCount', 'float(FrameCount)'),
             ('FrameDirection', 'float(FrameDirection)'),
             ('input', 'input_dummy'),
-            ('output', 'output_dummy'), # 'output' is reserved in GLSL.
+            ('output', 'output_dummy'),  # 'output' is reserved in GLSL.
             ('gl_FragColor', 'FragColor'),
     ]
 
@@ -432,35 +443,36 @@ def replace_global_fragment(source):
 def translate_texture(cg):
     log('Translate:', cg)
     translations = {
-        'ORIG.texture'  : 'OrigTexture',
-        'PREV.texture'  : 'PrevTexture',
-        'PREV1.texture' : 'Prev1Texture',
-        'PREV2.texture' : 'Prev2Texture',
-        'PREV3.texture' : 'Prev3Texture',
-        'PREV4.texture' : 'Prev4Texture',
-        'PREV5.texture' : 'Prev5Texture',
-        'PREV6.texture' : 'Prev6Texture',
-        'PASS1.texture' : 'Pass1Texture',
-        'PASS2.texture' : 'Pass2Texture',
-        'PASS3.texture' : 'Pass3Texture',
-        'PASS4.texture' : 'Pass4Texture',
-        'PASS5.texture' : 'Pass5Texture',
-        'PASS6.texture' : 'Pass6Texture',
-        'PASS7.texture' : 'Pass7Texture',
-        'PASS8.texture' : 'Pass8Texture',
-        'PASSPREV2.texture' : 'PassPrev2Texture',
-        'PASSPREV3.texture' : 'PassPrev3Texture',
-        'PASSPREV4.texture' : 'PassPrev4Texture',
-        'PASSPREV5.texture' : 'PassPrev5Texture',
-        'PASSPREV6.texture' : 'PassPrev6Texture',
-        'PASSPREV7.texture' : 'PassPrev7Texture',
-        'PASSPREV8.texture' : 'PassPrev8Texture',
+        'ORIG.texture': 'OrigTexture',
+        'PREV.texture': 'PrevTexture',
+        'PREV1.texture': 'Prev1Texture',
+        'PREV2.texture': 'Prev2Texture',
+        'PREV3.texture': 'Prev3Texture',
+        'PREV4.texture': 'Prev4Texture',
+        'PREV5.texture': 'Prev5Texture',
+        'PREV6.texture': 'Prev6Texture',
+        'PASS1.texture': 'Pass1Texture',
+        'PASS2.texture': 'Pass2Texture',
+        'PASS3.texture': 'Pass3Texture',
+        'PASS4.texture': 'Pass4Texture',
+        'PASS5.texture': 'Pass5Texture',
+        'PASS6.texture': 'Pass6Texture',
+        'PASS7.texture': 'Pass7Texture',
+        'PASS8.texture': 'Pass8Texture',
+        'PASSPREV2.texture': 'PassPrev2Texture',
+        'PASSPREV3.texture': 'PassPrev3Texture',
+        'PASSPREV4.texture': 'PassPrev4Texture',
+        'PASSPREV5.texture': 'PassPrev5Texture',
+        'PASSPREV6.texture': 'PassPrev6Texture',
+        'PASSPREV7.texture': 'PassPrev7Texture',
+        'PASSPREV8.texture': 'PassPrev8Texture',
     }
 
     if cg in translations:
         return translations[cg]
     else:
         return cg
+
 
 def hack_source_fragment(source):
     ref_index = 0
@@ -478,7 +490,7 @@ def hack_source_fragment(source):
     added_samplers = []
     translated_samplers = []
     uniforms = []
-    struct_texunit0 = False # If True, we have to append uniform sampler2D Texture manually ...
+    struct_texunit0 = False  # If True, we have to append uniform sampler2D Texture manually ...
     for line in source:
         if ('TEXUNIT0' in line) and ('semantic' not in line):
             main_sampler = (line.split(':')[2].split(' ')[1], 'Texture')
@@ -523,6 +535,7 @@ def hack_source_fragment(source):
     ret = destructify_varyings(ret, '$vin.')
     return ret
 
+
 def validate_shader(source, target):
     log('Shader:')
     log('===')
@@ -530,12 +543,13 @@ def validate_shader(source, target):
     log('===')
 
     command = ['cgc', '-noentry', '-ogles']
-    p = subprocess.Popen(command, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+    p = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout_ret, stderr_ret = p.communicate(source.encode())
 
     log('CGC:', stderr_ret.decode())
 
     return p.returncode == 0
+
 
 def preprocess_vertex(source_data):
     input_data = source_data.split('\n')
@@ -549,11 +563,12 @@ def preprocess_vertex(source_data):
             ret.append(line)
     return '\n'.join(ret)
 
+
 def convert(source, dest):
     # Have to preprocess first to resolve #includes so we can hack potential vertex shaders.
     inc_dir = os.path.split(source)[0]
     vert_cmd_preprocess = ['cgc', '-E', '-I', '.' if inc_dir == '' else inc_dir, source]
-    p = subprocess.Popen(vert_cmd_preprocess, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
+    p = subprocess.Popen(vert_cmd_preprocess, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     source_data, stderr_ret = p.communicate()
     log(stderr_ret.decode())
 
@@ -563,8 +578,8 @@ def convert(source, dest):
     source_data = preprocess_vertex(source_data.decode())
 
     vert_cmd = ['cgc', '-profile', 'glesv', '-entry', 'main_vertex', '-quiet']
-    p = subprocess.Popen(vert_cmd, stdin = subprocess.PIPE, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
-    vertex_source, stderr_ret = p.communicate(input = source_data.encode())
+    p = subprocess.Popen(vert_cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    vertex_source, stderr_ret = p.communicate(input=source_data.encode())
     log(stderr_ret.decode())
     vertex_source = vertex_source.decode()
 
@@ -573,8 +588,8 @@ def convert(source, dest):
         return 1
 
     frag_cmd = ['cgc', '-profile', 'glesf', '-entry', 'main_fragment', '-quiet']
-    p = subprocess.Popen(frag_cmd, stdin = subprocess.PIPE, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
-    fragment_source, stderr_ret = p.communicate(input = source_data.encode())
+    p = subprocess.Popen(frag_cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    fragment_source, stderr_ret = p.communicate(input=source_data.encode())
     log(stderr_ret.decode())
     fragment_source = fragment_source.decode()
 
@@ -582,27 +597,27 @@ def convert(source, dest):
         log('Vertex compilation failed ...')
         return 1
 
-    vertex_source   = replace_global_vertex(vertex_source)
+    vertex_source = replace_global_vertex(vertex_source)
     fragment_source = replace_global_fragment(fragment_source)
 
-    vertex_source   = vertex_source.split('\n')
+    vertex_source = vertex_source.split('\n')
     fragment_source = fragment_source.split('\n')
 
     # Cg think we're using row-major matrices, but we're using column major.
     # Also, Cg tends to compile matrix multiplications as dot products in GLSL.
     # Hack in a fix for this.
     log('Hacking vertex')
-    vertex_source   = hack_source_vertex(vertex_source)
+    vertex_source = hack_source_vertex(vertex_source)
     log('Hacking fragment')
     fragment_source = hack_source_fragment(fragment_source)
 
     # We compile to GLES, but we really just want modern GL ...
-    vertex_source   = keep_line_if(lambda line: 'precision' not in line, vertex_source)
+    vertex_source = keep_line_if(lambda line: 'precision' not in line, vertex_source)
     fragment_source = keep_line_if(lambda line: 'precision' not in line, fragment_source)
 
     # Kill all comments. Cg adds lots of useless comments.
     # Remove first line. It contains the name of the cg program.
-    vertex_source   = remove_comments(vertex_source[1:])
+    vertex_source = remove_comments(vertex_source[1:])
     fragment_source = remove_comments(fragment_source[1:])
 
     vert_hacks = []
@@ -669,6 +684,7 @@ precision mediump float;
         f.write('#endif\n')
     return 0
 
+
 def convert_cgp(source, dest):
     string = ''
     with open(source, 'r') as f:
@@ -676,13 +692,16 @@ def convert_cgp(source, dest):
 
     open(dest, 'w').write(string)
 
+
 def path_ext(path):
     _, ext = os.path.splitext(path)
     return ext
 
+
 def convert_path(source, source_dir, dest_dir, conv):
     index = 0 if source_dir[-1] == '/' else 1
     return os.path.join(dest_dir, source.replace(source_dir, '')[index:]).replace(conv[0], conv[1])
+
 
 def main():
     if len(sys.argv) != 3:
@@ -757,13 +776,13 @@ def main():
 
     else:
         source = sys.argv[1]
-        dest   = sys.argv[2]
+        dest = sys.argv[2]
 
         if path_ext(source) == '.cgp':
             sys.exit(convert_cgp(source, dest))
         else:
             sys.exit(convert(source, dest))
 
+
 if __name__ == '__main__':
     sys.exit(main())
-
