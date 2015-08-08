@@ -21,6 +21,7 @@ batch_mode = False
 
 def log(*arg):
     if not batch_mode:
+        # FIXME: This causes a syntax error in python2, preventing the version warning from displaying.
         print(*arg)
 
 
