@@ -37,8 +37,19 @@ def remove_comments(source_lines):
     return keep_line_if(lambda line: line, lines_without_comments)
 
 
+def defines_var(line):
+    return ('//var' in line) or ('#var' in line)
+
+
+def replace_by_table(source, table):
+    for orig, new in table:
+        if orig:
+            source = source.replace(orig, new)
+
+    return source
+
+
 def replace_global_in(source):
-    split_source = source.split('\n')
     replace_table = [
         ('IN.video_size', 'InputSize'),
         ('IN.texture_size', 'TextureSize'),
@@ -47,8 +58,8 @@ def replace_global_in(source):
         ('IN.frame_direction', 'FrameDirection'),
     ]
 
-    for line in split_source:
-        if ('//var' in line) or ('#var' in line):
+    for line in source.splitlines():
+        if defines_var(line):
             for index, replace in enumerate(replace_table):
                 orig = line.split()[2]
                 if replace[0] == orig:
@@ -56,15 +67,12 @@ def replace_global_in(source):
 
     log('Replace globals:', replace_table)
 
-    for orig, new in replace_table:
-        if orig:
-            source = source.replace(orig, new)
-
-    return source
+    return replace_by_table(source, replace_table)
 
 
 def replace_global_vertex(source):
     source = replace_global_in(source)
+
     replace_table = [
         ('attribute', 'COMPAT_ATTRIBUTE'),
         ('varying', 'COMPAT_VARYING'),
@@ -86,17 +94,14 @@ def replace_global_vertex(source):
         ('output', 'output_dummy'),  # 'output' is reserved in GLSL.
     ]
 
-    for orig, new in replace_table:
-        source = source.replace(orig, new)
-
-    return source
+    return replace_by_table(source, replace_table)
 
 
 def translate_varyings(varyings, source, direction):
     dictionary = {}
     for varying in varyings:
         for line in source:
-            if (varying in line) and (('//var' in line) or ('#var' in line)) and (direction in line):
+            if defines_var(line) and (varying in line) and (direction in line):
                 log('Found line for', varying + ':', line)
                 dictionary[varying] = 'VAR' + line.split(':')[0].split('.')[-1].strip()
                 break
@@ -120,6 +125,7 @@ def no_uniform(elem):
     for ban in banned:
         if ban in elem:
             return False
+
     return True
 
 
@@ -132,7 +138,7 @@ def destructify_varyings(source, direction):
     # Don't try to remove this as it breaks compile.
     vout_lines = []
     for line in source:
-        if (('//var' in line) or ('#var' in line)) and (('$vout.' in line) or ('$vin.' in line)):
+        if defines_var(line) and (('$vout.' in line) or ('$vin.' in line)):
             vout_lines.append(line)
 
     struct_types = []
@@ -227,9 +233,14 @@ def destructify_varyings(source, direction):
     return source
 
 
+def translate(cg, translations):
+    if cg in translations:
+        return translations[cg]
+    else:
+        return cg
+
+
 def translate_varying(cg):
-    # Ye, it's ugly as shit. :(
-    # log('Translate:', cg)
     translations = {
         'IN.tex_coord': 'TexCoord',
         'IN.vertex_coord': 'VertexCoord',
@@ -259,15 +270,10 @@ def translate_varying(cg):
         'PASSPREV8.tex_coord': 'PassPrev8TexCoord',
     }
 
-    if cg in translations:
-        return translations[cg]
-    else:
-        return cg
+    return translate(cg, translations)
 
 
 def translate_texture_size(cg):
-    # Ye, it's ugly as shit. :(
-    # log('Translate:', cg)
     translations = {
         'ORIG.texture_size': 'OrigTextureSize',
         'PREV.texture_size': 'PrevTextureSize',
@@ -317,10 +323,7 @@ def translate_texture_size(cg):
         'PASSPREV8.video_size': 'PassPrev8InputSize',
     }
 
-    if cg in translations:
-        return translations[cg]
-    else:
-        return cg
+    return translate(cg, translations)
 
 
 def replace_varyings(source):
@@ -329,7 +332,7 @@ def replace_varyings(source):
     attribs = []
     uniforms = []
     for index, line in enumerate(source):
-        if ('//var' in line) or ('#var' in line):
+        if defines_var(line):
             func = translate_texture_size
             collection = uniforms
             if '$vin.' in line:
@@ -386,7 +389,7 @@ def fix_samplers(log_prefix, ref_index, source):
                     translated_samplers.append(translated)
                     added_samplers.append('uniform sampler2D ' + translated + ';')
                 translations.append((new_name, orig_name))
-        elif ('//var' in line) or ('#var' in line):
+        elif defines_var(line):
             orig = line.split()[2]
             translated = translate_texture_size(orig)
             if translated != orig and translated not in uniforms:
@@ -425,11 +428,13 @@ def hack_source_vertex(source):
     source = fix_samplers('Vertex:', ref_index, source)
     source = destructify_varyings(source, '$vout.')
     source = replace_varyings(source)
+
     return source
 
 
 def replace_global_fragment(source):
     source = replace_global_in(source)
+
     replace_table = [
         ('varying', 'COMPAT_VARYING'),
         ('texture2D', 'COMPAT_TEXTURE'),
@@ -440,14 +445,10 @@ def replace_global_fragment(source):
         ('gl_FragColor', 'FragColor'),
     ]
 
-    for replacement in replace_table:
-        source = source.replace(replacement[0], replacement[1])
-
-    return source
+    return replace_by_table(source, replace_table)
 
 
 def translate_texture(cg):
-    log('Translate:', cg)
     translations = {
         'ORIG.texture': 'OrigTexture',
         'PREV.texture': 'PrevTexture',
@@ -474,10 +475,7 @@ def translate_texture(cg):
         'PASSPREV8.texture': 'PassPrev8Texture',
     }
 
-    if cg in translations:
-        return translations[cg]
-    else:
-        return cg
+    return translate(cg, translations)
 
 
 def hack_source_fragment(source):
@@ -494,6 +492,7 @@ def hack_source_fragment(source):
 
     source = fix_samplers('Fragment:', ref_index, source)
     source = destructify_varyings(source, '$vin.')
+
     return source
 
 
@@ -513,7 +512,7 @@ def validate_shader(source, target):
 
 
 def preprocess_vertex(source_data):
-    input_data = source_data.split('\n')
+    input_data = source_data.splitlines()
     ret = []
     for line in input_data:
         if ('uniform' in line) and (('float4x4' in line) or ('half4x4' in line)):
@@ -561,8 +560,8 @@ def convert(source, dest):
     vertex_source = replace_global_vertex(vertex_source)
     fragment_source = replace_global_fragment(fragment_source)
 
-    vertex_source = vertex_source.split('\n')
-    fragment_source = fragment_source.split('\n')
+    vertex_source = vertex_source.splitlines()
+    fragment_source = fragment_source.splitlines()
 
     # Cg think we're using row-major matrices, but we're using column major.
     # Also, Cg tends to compile matrix multiplications as dot products in GLSL.
