@@ -329,22 +329,19 @@ def replace_varyings(source):
     attribs = []
     uniforms = []
     for index, line in enumerate(source):
-        if (('//var' in line) or ('#var' in line)) and ('$vin.' in line):
+        if ('//var' in line) or ('#var' in line):
+            func = translate_texture_size
+            collection = uniforms
+            if '$vin.' in line:
+                func = translate_varying
+                collection = attribs
             orig = line.split()[2]
-            translated = translate_varying(orig)
-            if translated != orig and translated not in attribs:
-                cg_attrib = line.split(':')[2].split(' ')[1]
-                if cg_attrib:
-                    translations.append((cg_attrib, translated))
-                    attribs.append(translated)
-        elif ('//var' in line) or ('#var' in line):
-            orig = line.split()[2]
-            translated = translate_texture_size(orig)
-            if translated != orig and translated not in uniforms:
-                cg_uniform = line.split(':')[2].split(' ')[1]
-                if cg_uniform:
-                    translations.append((cg_uniform, translated))
-                    uniforms.append(translated)
+            translated = func(orig)
+            if translated != orig and translated not in collection:
+                cg_var = line.split(':')[2].split(' ')[1]
+                if cg_var:
+                    translations.append((cg_var, translated))
+                    collection.append(translated)
 
     for index, line in enumerate(source):
         if 'void main()' in line:
