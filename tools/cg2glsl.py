@@ -25,19 +25,16 @@ def log(*arg):
         print(*arg)
 
 
-def remove_comments(source_lines):
-    ret = []
-    killed_comments = [line.split('//')[0] for line in source_lines]
-    for i in filter(lambda line: len(line) > 0, killed_comments):
-        ret.append(i)
-    return ret
-
-
 def keep_line_if(func, lines):
     ret = []
-    for i in filter(func, lines):
-        ret.append(i)
+    for line in filter(func, lines):
+        ret.append(line)
     return ret
+
+
+def remove_comments(source_lines):
+    lines_without_comments = [line.split('//')[0] for line in source_lines]
+    return keep_line_if(lambda line: line, lines_without_comments)
 
 
 def replace_global_in(source):
@@ -53,45 +50,44 @@ def replace_global_in(source):
     for line in split_source:
         if ('//var' in line) or ('#var' in line):
             for index, replace in enumerate(replace_table):
-                orig = line.split(' ')[2]
+                orig = line.split()[2]
                 if replace[0] == orig:
                     replace_table[index] = (line.split(':')[2].split(' ')[1], replace_table[index][1])
 
     log('Replace globals:', replace_table)
 
-    for replace in replace_table:
-        if replace[0]:
-            source = source.replace(replace[0], replace[1])
+    for orig, new in replace_table:
+        if orig:
+            source = source.replace(orig, new)
 
     return source
 
 
 def replace_global_vertex(source):
-
     source = replace_global_in(source)
     replace_table = [
-            ('attribute', 'COMPAT_ATTRIBUTE'),
-            ('varying', 'COMPAT_VARYING'),
-            ('texture2D', 'COMPAT_TEXTURE'),
-            ('POSITION', 'VertexCoord'),
-            ('TEXCOORD1', 'LUTTexCoord'),
-            ('TEXCOORD0', 'TexCoord'),
-            ('TEXCOORD', 'TexCoord'),
-            ('uniform vec4 _modelViewProj1[4];', ''),
-            ('_modelViewProj1', 'MVPMatrix'),
-            ('_IN1._mvp_matrix[0]', 'MVPMatrix[0]'),
-            ('_IN1._mvp_matrix[1]', 'MVPMatrix[1]'),
-            ('_IN1._mvp_matrix[2]', 'MVPMatrix[2]'),
-            ('_IN1._mvp_matrix[3]', 'MVPMatrix[3]'),
+        ('attribute', 'COMPAT_ATTRIBUTE'),
+        ('varying', 'COMPAT_VARYING'),
+        ('texture2D', 'COMPAT_TEXTURE'),
+        ('POSITION', 'VertexCoord'),
+        ('TEXCOORD1', 'LUTTexCoord'),
+        ('TEXCOORD0', 'TexCoord'),
+        ('TEXCOORD', 'TexCoord'),
+        ('uniform vec4 _modelViewProj1[4];', ''),
+        ('_modelViewProj1', 'MVPMatrix'),
+        ('_IN1._mvp_matrix[0]', 'MVPMatrix[0]'),
+        ('_IN1._mvp_matrix[1]', 'MVPMatrix[1]'),
+        ('_IN1._mvp_matrix[2]', 'MVPMatrix[2]'),
+        ('_IN1._mvp_matrix[3]', 'MVPMatrix[3]'),
 
-            ('FrameCount', 'float(FrameCount)'),
-            ('FrameDirection', 'float(FrameDirection)'),
-            ('input', 'input_dummy'),  # 'input' is reserved in GLSL.
-            ('output', 'output_dummy'),  # 'output' is reserved in GLSL.
+        ('FrameCount', 'float(FrameCount)'),
+        ('FrameDirection', 'float(FrameDirection)'),
+        ('input', 'input_dummy'),  # 'input' is reserved in GLSL.
+        ('output', 'output_dummy'),  # 'output' is reserved in GLSL.
     ]
 
-    for replacement in replace_table:
-        source = source.replace(replacement[0], replacement[1])
+    for orig, new in replace_table:
+        source = source.replace(orig, new)
 
     return source
 
@@ -110,15 +106,15 @@ def translate_varyings(varyings, source, direction):
 
 def no_uniform(elem):
     banned = [
-            '_video_size',
-            '_texture_size',
-            '_output_size',
-            '_output_dummy_size',
-            '_frame_count',
-            '_frame_direction',
-            '_mvp_matrix',
-            '_vertex_coord',
-            'sampler2D'
+        '_video_size',
+        '_texture_size',
+        '_output_size',
+        '_output_dummy_size',
+        '_frame_count',
+        '_frame_direction',
+        '_mvp_matrix',
+        '_vertex_coord',
+        'sampler2D'
     ]
 
     for ban in banned:
@@ -142,7 +138,7 @@ def destructify_varyings(source, direction):
     struct_types = []
     for line in source[1:]:
         if 'struct' in line:
-            struct_type = line.split(' ')[1]
+            struct_type = line.split()[1]
             if struct_type not in struct_types:
                 struct_types.append(struct_type)
 
@@ -161,7 +157,7 @@ def destructify_varyings(source, direction):
 
                 lines = ['COMPAT_VARYING ' + string for string in source[(i + 1):j]]
                 varyings.extend(lines)
-                names = [string.strip().split(' ')[1].split(';')[0].strip() for string in source[(i + 1):j]]
+                names = [string.split()[1].split(';')[0].strip() for string in source[(i + 1):j]]
                 varyings_name.extend(names)
                 log('Found elements in struct', struct + ':', names)
                 last_struct_decl_line = j
@@ -183,16 +179,13 @@ def destructify_varyings(source, direction):
     # the actual varyings we just declared ...
     # Globals only come before main() ...
     # Make sure to only look after all struct declarations as there might be overlap.
-    for line in source[last_struct_decl_line:]:
+    for line in remove_comments(source[last_struct_decl_line:]):
         if 'void main()' in line:
             break
 
         for struct in struct_types:
             if struct in line:
-                decomment_line = line.split('//')[0].strip()
-                if len(decomment_line) == 0:
-                    continue
-                variable = decomment_line.split(' ')[1].split(';')[0]
+                variable = line.split()[1].split(';')[0]
 
                 # Only redirect if the struct is actually used as vertex output.
                 for vout_line in vout_lines:
@@ -218,7 +211,7 @@ def destructify_varyings(source, direction):
             for varying_name in varyings_dict:
                 trans_from = variable + '.' + varying_name
                 trans_to = varyings_dict[varying_name]
-                source[index] = source[index].replace(trans_from, trans_to);
+                source[index] = source[index].replace(trans_from, trans_to)
 
     for index, _ in enumerate(source):
         for varying_name in varyings_name:
@@ -337,19 +330,19 @@ def replace_varyings(source):
     uniforms = []
     for index, line in enumerate(source):
         if (('//var' in line) or ('#var' in line)) and ('$vin.' in line):
-            orig = line.split(' ')[2]
+            orig = line.split()[2]
             translated = translate_varying(orig)
             if translated != orig and translated not in attribs:
                 cg_attrib = line.split(':')[2].split(' ')[1]
-                if len(cg_attrib.strip()) > 0:
+                if cg_attrib:
                     translations.append((cg_attrib, translated))
                     attribs.append(translated)
         elif ('//var' in line) or ('#var' in line):
-            orig = line.split(' ')[2]
+            orig = line.split()[2]
             translated = translate_texture_size(orig)
             if translated != orig and translated not in uniforms:
                 cg_uniform = line.split(':')[2].split(' ')[1]
-                if len(cg_uniform.strip()) > 0:
+                if cg_uniform:
                     translations.append((cg_uniform, translated))
                     uniforms.append(translated)
 
@@ -372,6 +365,51 @@ def replace_varyings(source):
     return ret
 
 
+def fix_samplers(log_prefix, ref_index, source):
+    translations = []
+    added_samplers = []
+    translated_samplers = []
+    uniforms = []
+    struct_texunit0 = False  # If True, we have to append uniform sampler2D Texture manually ...
+    for line in source:
+        if ('TEXUNIT0' in line) and ('semantic' not in line):
+            main_sampler = (line.split(':')[2].split(' ')[1], 'Texture')
+            if main_sampler[0]:
+                translations.append(main_sampler)
+                log(log_prefix, 'Sampler:', main_sampler[0], '->', main_sampler[1])
+                struct_texunit0 = '.' in main_sampler[0]
+        elif ('//var sampler2D' in line) or ('#var sampler2D' in line):
+            cg_texture = line.split()[2]
+            translated = translate_texture(cg_texture)
+            orig_name = translated
+            new_name = line.split(':')[2].split(' ')[1]
+            log(log_prefix, 'Sampler:', new_name, '->', orig_name)
+            if new_name:
+                if translated != cg_texture and translated not in translated_samplers:
+                    translated_samplers.append(translated)
+                    added_samplers.append('uniform sampler2D ' + translated + ';')
+                translations.append((new_name, orig_name))
+        elif ('//var' in line) or ('#var' in line):
+            orig = line.split()[2]
+            translated = translate_texture_size(orig)
+            if translated != orig and translated not in uniforms:
+                cg_uniform = line.split(':')[2].split(' ')[1]
+                if cg_uniform:
+                    translations.append((cg_uniform, translated))
+                    uniforms.append(translated)
+
+    for sampler in added_samplers:
+        source.insert(ref_index, sampler)
+    if struct_texunit0:
+        source.insert(ref_index, 'uniform sampler2D Texture;')
+    for index, line in enumerate(source):
+        for orig, new in translations:
+            log(log_prefix, 'Translation:', orig, '->', new)
+            source[index] = source[index].replace(orig, new)
+
+    return source
+
+
 def hack_source_vertex(source):
     ref_index = 0
     for index, line in enumerate(source):
@@ -387,37 +425,7 @@ def hack_source_vertex(source):
             break
 
     # Fix samplers in vertex shader (supported by GLSL).
-    translations = []
-    added_samplers = []
-    translated_samplers = []
-    struct_texunit0 = False  # If True, we have to append uniform sampler2D Texture manually ...
-    for line in source:
-        if ('TEXUNIT0' in line) and ('semantic' not in line):
-            main_sampler = (line.split(':')[2].split(' ')[1], 'Texture')
-            if len(main_sampler[0]) > 0:
-                translations.append(main_sampler)
-                log('Vertex: Sampler:', main_sampler[0], '->', main_sampler[1])
-                struct_texunit0 = '.' in main_sampler[0]
-        elif ('//var sampler2D' in line) or ('#var sampler2D' in line):
-            cg_texture = line.split(' ')[2]
-            translated = translate_texture(cg_texture)
-            orig_name = translated
-            new_name = line.split(':')[2].split(' ')[1]
-            log('Vertex: Sampler:', new_name, '->', orig_name)
-            if len(new_name) > 0:
-                if translated != cg_texture and translated not in translated_samplers:
-                    translated_samplers.append(translated)
-                    added_samplers.append('uniform sampler2D ' + translated + ';')
-                translations.append((new_name, orig_name))
-
-    for sampler in added_samplers:
-        source.insert(ref_index, sampler)
-    if struct_texunit0:
-        source.insert(ref_index, 'uniform sampler2D Texture;')
-    for index, line in enumerate(source):
-        for translation in translations:
-            source[index] = source[index].replace(translation[0], translation[1])
-
+    source = fix_samplers('Vertex:', ref_index, source)
     source = destructify_varyings(source, '$vout.')
     source = replace_varyings(source)
     return source
@@ -426,13 +434,13 @@ def hack_source_vertex(source):
 def replace_global_fragment(source):
     source = replace_global_in(source)
     replace_table = [
-            ('varying', 'COMPAT_VARYING'),
-            ('texture2D', 'COMPAT_TEXTURE'),
-            ('FrameCount', 'float(FrameCount)'),
-            ('FrameDirection', 'float(FrameDirection)'),
-            ('input', 'input_dummy'),
-            ('output', 'output_dummy'),  # 'output' is reserved in GLSL.
-            ('gl_FragColor', 'FragColor'),
+        ('varying', 'COMPAT_VARYING'),
+        ('texture2D', 'COMPAT_TEXTURE'),
+        ('FrameCount', 'float(FrameCount)'),
+        ('FrameDirection', 'float(FrameDirection)'),
+        ('input', 'input_dummy'),
+        ('output', 'output_dummy'),  # 'output' is reserved in GLSL.
+        ('gl_FragColor', 'FragColor'),
     ]
 
     for replacement in replace_table:
@@ -487,54 +495,9 @@ def hack_source_fragment(source):
             ref_index = index
             break
 
-    translations = []
-    added_samplers = []
-    translated_samplers = []
-    uniforms = []
-    struct_texunit0 = False  # If True, we have to append uniform sampler2D Texture manually ...
-    for line in source:
-        if ('TEXUNIT0' in line) and ('semantic' not in line):
-            main_sampler = (line.split(':')[2].split(' ')[1], 'Texture')
-            if len(main_sampler[0]) > 0:
-                translations.append(main_sampler)
-                log('Fragment: Sampler:', main_sampler[0], '->', main_sampler[1])
-                struct_texunit0 = '.' in main_sampler[0]
-        elif ('//var sampler2D' in line) or ('#var sampler2D' in line):
-            cg_texture = line.split(' ')[2]
-            translated = translate_texture(cg_texture)
-            orig_name = translated
-            new_name = line.split(':')[2].split(' ')[1]
-            log('Fragment: Sampler:', new_name, '->', orig_name)
-            if len(new_name) > 0:
-                if translated != cg_texture and translated not in translated_samplers:
-                    translated_samplers.append(translated)
-                    added_samplers.append('uniform sampler2D ' + translated + ';')
-                translations.append((new_name, orig_name))
-        elif ('//var' in line) or ('#var' in line):
-            orig = line.split(' ')[2]
-            translated = translate_texture_size(orig)
-            if translated != orig and translated not in uniforms:
-                cg_uniform = line.split(':')[2].split(' ')[1]
-                if len(cg_uniform.strip()) > 0:
-                    translations.append((cg_uniform, translated))
-                    uniforms.append(translated)
-
-    for sampler in added_samplers:
-        source.insert(ref_index, sampler)
-    for uniform in uniforms:
-        source.insert(ref_index, 'uniform COMPAT_PRECISION vec2 ' + uniform + ';')
-    if struct_texunit0:
-        source.insert(ref_index, 'uniform sampler2D Texture;')
-
-    ret = []
-    for line in source:
-        for translation in translations:
-            log('Translation:', translation[0], '->', translation[1])
-            line = line.replace(translation[0], translation[1])
-        ret.append(line)
-
-    ret = destructify_varyings(ret, '$vin.')
-    return ret
+    source = fix_samplers('Fragment:', ref_index, source)
+    source = destructify_varyings(source, '$vin.')
+    return source
 
 
 def validate_shader(source, target):
