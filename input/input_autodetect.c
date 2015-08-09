@@ -228,6 +228,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    {
       RARCH_LOG("Autoconf: no profiles found for %s (%d/%d)", params->name, params->vid, params->pid);
       snprintf(msg, sizeof(msg), "%s (%d/%d) not configured", parms->name, params->vid, params->pid);
+      rarch_main_msg_queue_push(msg, 0, 60, false);
       ret = 0;
    }
    string_list_free(list);
