@@ -690,7 +690,7 @@ static void handle_hotplug(android_input_t *android,
       unsigned      autoconfigured = false;
       autoconfig_params_t params   = {{0}};
 
-      RARCH_LOG("Port %d: %s.\n", *port, name_buf);
+      RARCH_LOG("Port %d: %s VID/PID: %d/%d\n", *port, name_buf, params.vid, params.pid);
 
       strlcpy(params.name, name_buf, sizeof(params.name));
       params.idx = *port;

@@ -187,6 +187,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    config_file_t *conf        = NULL;
    struct string_list *list   = NULL;
    char path[PATH_MAX_LENGTH] = {0};
+   char msg[PATH_MAX_LENGTH]  = {0};
    settings_t *settings       = config_get_ptr();
 
    fill_pathname_join(path,settings->input.autoconfig_dir,
@@ -224,8 +225,11 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       config_file_free(conf);
    }
    else
+   {
+      RARCH_LOG("Autoconf: no profiles found for %s (%d/%d)", params->name, params->vid, params->pid);
+      snprintf(msg, sizeof(msg), "%s (%d/%d) not configured", parms->name, params->vid, params->pid);
       ret = 0;
-
+   }
    string_list_free(list);
 
    if (ret == 0)
