@@ -29,8 +29,13 @@
 	DISPLAY PROTOTYPES
 ============================================================ */
 
-#if defined(SN_TARGET_PSP2)
+#if defined(SN_TARGET_PSP2) || defined(VITA)
+
+#ifdef VITA
+#define PSP_DISPLAY_PIXEL_FORMAT_8888 (PSP2_DISPLAY_PIXELFORMAT_A8B8G8R8)
+#else
 #define PSP_DISPLAY_PIXEL_FORMAT_8888 (SCE_DISPLAY_PIXELFORMAT_A8B8G8R8)
+#endif
 
 #define DisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, sync) sceDisplaySetFrameBuf(topaddr, sync)
 
