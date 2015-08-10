@@ -43,7 +43,7 @@
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../libretro_private.h"
-#include "../../gfx/drivers/gx_sdk_defines.h"
+#include "../../defines/gx_defines.h"
 
 #ifdef HW_RVL
 #include <ogc/ios.h>

@@ -1,5 +1,5 @@
-#ifndef _GX_SDK_DEFINES_H
-#define _GX_SDK_DEFINES_H
+#ifndef _GX_DEFINES_H
+#define _GX_DEFINES_H
 
 #ifdef GEKKO
 

@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _PS3_SDK_DEFINES_H
-#define _PS3_SDK_DEFINES_H
+#ifndef _PS3_DEFINES_H
+#define _PS3_DEFINES_H
 
 #include <sdk_version.h>
 

@@ -29,7 +29,7 @@
 #include <pspctrl.h>
 #endif
 
-#include "../../gfx/drivers/psp_sdk_defines.h"
+#include "../../defines/psp_defines.h"
 
 #include "../../driver.h"
 #include "../../libretro.h"

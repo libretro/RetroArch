@@ -35,7 +35,7 @@
 
 #include "ppc_asm.h"
 #include "gx_gfx_inl.h"
-#include "gx_sdk_defines.h"
+#include "../../defines/gx_defines.h"
 
 struct gx_overlay_data
 {

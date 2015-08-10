@@ -36,7 +36,7 @@
 #include "../../general.h"
 
 #if defined(__CELLOS_LV2__) || defined(__PSLIGHT__)
-#include "../../ps3/sdk_defines.h"
+#include "../../defines/ps3_defines.h"
 
 #ifdef __PSL1GHT__
 #include <ppu-asm.h>

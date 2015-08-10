@@ -22,7 +22,7 @@
 #include <psprtc.h>
 
 #include <retro_inline.h>
-#include "psp_sdk_defines.h"
+#include "../../defines/psp_defines.h"
 #include "../../general.h"
 #include "../../driver.h"
 #include "../video_viewport.h"

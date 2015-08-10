@@ -33,7 +33,7 @@
 #include <file/file_list.h>
 #endif
 
-#include "../../ps3/sdk_defines.h"
+#include "../../defines/ps3_defines.h"
 #include "../../general.h"
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"

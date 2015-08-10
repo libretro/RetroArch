@@ -30,7 +30,7 @@
 #include <file/file_list.h>
 #endif
 
-#include "../../gfx/drivers/psp_sdk_defines.h"
+#include "../../defines/psp_defines.h"
 #include "../../general.h"
 
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)

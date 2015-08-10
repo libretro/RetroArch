@@ -15,7 +15,7 @@
  */
 
 #if defined(__CELLOS_LV2__)
-#include "../../ps3/sdk_defines.h"
+#include "../../defines/ps3_defines.h"
 #ifndef __PSL1GHT__
 #include <netex/net.h>
 #include <cell/sysmodule.h>

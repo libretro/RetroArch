@@ -28,7 +28,7 @@
 #include <cafe/ai.h>
 #endif
 
-#include "../../gfx/drivers/gx_sdk_defines.h"
+#include "../../defines/gx_defines.h"
 
 #define CHUNK_FRAMES 64
 #define CHUNK_SIZE (CHUNK_FRAMES * sizeof(uint32_t))

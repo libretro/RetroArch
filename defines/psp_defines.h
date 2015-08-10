@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _PSP_SDK_DEFINES_H
-#define _PSP_SDK_DEFINES_H
+#ifndef _PSP_DEFINES_H
+#define _PSP_DEFINES_H
 
 /*============================================================
 	ERROR PROTOTYPES
