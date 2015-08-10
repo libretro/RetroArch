@@ -23,6 +23,8 @@
 #include <sceerror.h>
 #include <kernel.h>
 #include <ctrl.h>
+#elif defined(VITA)
+#include <psp2/ctrl.h>
 #elif defined(PSP)
 #include <pspctrl.h>
 #endif
