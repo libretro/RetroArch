@@ -592,17 +592,29 @@ static int frontend_darwin_parse_drive_list(void *data)
 #if TARGET_OS_IPHONE
 #ifdef HAVE_MENU
    file_list_t *list = (file_list_t*)data;
+    CFURLRef bundle_url;
+    CFStringRef bundle_path;
+    char bundle_path_buf[PATH_MAX_LENGTH] = {0};
+    char home_dir_buf[PATH_MAX_LENGTH]    = {0};
+    CFBundleRef bundle = CFBundleGetMainBundle();
+    
+    bundle_url  = CFBundleCopyBundleURL(bundle);
+    bundle_path = CFURLCopyPath(bundle_url);
+    
+    CFStringGetCString(bundle_path, bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
+    (void)home_dir_buf;
+    
+    CFSearchPathForDirectoriesInDomains(CFDocumentDirectory, CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
 
    menu_list_push(list,
-         "/var/mobile/Documents/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "/var/mobile/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         g_defaults.dir.core, "", MENU_FILE_DIRECTORY, 0, 0);
+         home_dir_buf, "", MENU_FILE_DIRECTORY, 0, 0);
    menu_list_push(list, "/", "",
          MENU_FILE_DIRECTORY, 0, 0);
 
    ret = 0;
+    
+   CFRelease(bundle_path);
+   CFRelease(bundle_url);
 #endif
 #endif
 
