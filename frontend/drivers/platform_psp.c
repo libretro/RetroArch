@@ -14,11 +14,15 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef VITA
+#include <psp2/power.h>
+#else
 #include <pspkernel.h>
 #include <pspdebug.h>
 #include <pspfpu.h>
 #include <psppower.h>
 #include <pspsdk.h>
+#endif
 
 #include <stdint.h>
 #include <boolean.h>
@@ -177,14 +181,16 @@ static void frontend_psp_init(void *data)
 {
 #ifndef IS_SALAMANDER
    (void)data;
-   //initialize debug screen
+   /* initialize debug screen */
    pspDebugScreenInit(); 
    pspDebugScreenClear();
    
    setup_callback();
    
-   pspFpuSetEnable(0);//disable FPU exceptions
+#ifndef VITA
+   pspFpuSetEnable(0); /* disable FPU exceptions */
    scePowerSetClockFrequency(333,333,166);
+#endif
 #endif
 
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
@@ -246,7 +252,7 @@ static int frontend_psp_get_rating(void)
 static enum frontend_powerstate frontend_psp_get_powerstate(int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
-   int battery                  = scePowerIsBatteryExist();
+   int battery                  = scePowerIsBatteryExist(); /* this function does not exist on Vita? */
    int plugged                  = scePowerIsPowerOnline();
    int charging                 = scePowerIsBatteryCharging();
 
