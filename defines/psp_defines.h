@@ -53,13 +53,30 @@
 	INPUT PROTOTYPES
 ============================================================ */
 
-#if defined(SN_TARGET_PSP2)
+#if defined(SN_TARGET_PSP2) || defined(VITA)
 
 #define STATE_BUTTON(state) ((state).buttons)
 #define STATE_ANALOGLX(state) ((state).lx)
 #define STATE_ANALOGLY(state) ((state).ly)
 #define STATE_ANALOGRX(state) ((state).rx)
 #define STATE_ANALOGRY(state) ((state).ry)
+
+#if defined(VITA)
+#define DEFAULT_SAMPLING_MODE (PSP2_CTRL_MODE_ANALOG)
+
+#define PSP_CTRL_LEFT PSP2_CTRL_LEFT
+#define PSP_CTRL_DOWN PSP2_CTRL_DOWN
+#define PSP_CTRL_RIGHT PSP2_CTRL_RIGHT
+#define PSP_CTRL_UP PSP2_CTRL_UP
+#define PSP_CTRL_START PSP2_CTRL_START
+#define PSP_CTRL_SELECT PSP2_CTRL_SELECT
+#define PSP_CTRL_TRIANGLE PSP2_CTRL_TRIANGLE
+#define PSP_CTRL_SQUARE PSP2_CTRL_SQUARE
+#define PSP_CTRL_CROSS PSP2_CTRL_CROSS
+#define PSP_CTRL_CIRCLE PSP2_CTRL_CIRCLE
+#define PSP_CTRL_L PSP2_CTRL_L
+#define PSP_CTRL_R PSP2_CTRL_R
+#else
 #define DEFAULT_SAMPLING_MODE (SCE_CTRL_MODE_DIGITALANALOG)
 
 #define PSP_CTRL_LEFT SCE_CTRL_LEFT
@@ -74,6 +91,7 @@
 #define PSP_CTRL_CIRCLE SCE_CTRL_CIRCLE
 #define PSP_CTRL_L SCE_CTRL_L
 #define PSP_CTRL_R SCE_CTRL_R
+#endif
 
 #define CtrlPeekBufferPositive(port, pad_data, bufs) sceCtrlPeekBufferPositive(port, pad_data, bufs)
 
