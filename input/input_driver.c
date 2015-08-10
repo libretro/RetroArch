@@ -26,7 +26,7 @@ static const input_driver_t *input_drivers[] = {
 #ifdef __CELLOS_LV2__
    &input_ps3,
 #endif
-#if defined(SN_TARGET_PSP2) || defined(PSP)
+#if defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
    &input_psp,
 #endif
 #if defined(_3DS)

@@ -302,7 +302,7 @@ INPUT
 #include "../input/drivers/ps3_input.c"
 #include "../input/drivers_joypad/ps3_joypad.c"
 #include "../input/autoconf/builtin_ps3.c"
-#elif defined(SN_TARGET_PSP2) || defined(PSP)
+#elif defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
 #include "../input/drivers/psp_input.c"
 #include "../input/drivers_joypad/psp_joypad.c"
 #include "../input/autoconf/builtin_psp.c"
