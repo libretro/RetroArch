@@ -700,7 +700,10 @@ static void handle_hotplug(android_input_t *android,
       settings->input.vid[*port] = params.vid;
 
       strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
-      autoconfigured = input_config_autoconfigure_joypad(&params);
+      
+      // Don't try to autoconfigure GPIO devices
+      if (!strstr(android->pad_states[0].name,"Generic I/O Device"))
+         autoconfigured = input_config_autoconfigure_joypad(&params);
 
       if (autoconfigured)
       {
