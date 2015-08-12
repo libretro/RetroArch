@@ -186,9 +186,16 @@ static void frontend_psp_init(void *data)
 {
 #ifndef IS_SALAMANDER
    (void)data;
+
+#ifndef VITA
+   /* TODO/FIXME - Err on the safe side for now and
+    * assume these aren't there with the PSP2/Vita SDKs.
+    */
+
    /* initialize debug screen */
    pspDebugScreenInit(); 
    pspDebugScreenClear();
+#endif
    
    setup_callback();
    
