@@ -38,7 +38,7 @@
 #include "../../defines/psp_defines.h"
 #include "../../general.h"
 
-#if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
+#if defined(HAVE_KERNEL_PRX) || (defined(IS_SALAMANDER) && !defined(VITA))
 #include "../../psp1/kernel_functions.h"
 #endif
 
