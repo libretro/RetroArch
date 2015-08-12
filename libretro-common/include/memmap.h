@@ -38,7 +38,7 @@
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
-#if !defined(HAVE_MMAN)
+#if !defined(HAVE_MMAN) || defined(_WIN32)
 void* mmap(void *desired_addr, size_t len, int mmap_prot, int mmap_flags, int fildes, size_t off);
 
 void munmap(void *base_addr, size_t len);

@@ -46,7 +46,7 @@
 # define DWORD_LO(x) (x)
 #endif
 
-static void *mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset)
+void *mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset)
 {
 	uint32_t flProtect, dwDesiredAccess;
 	off_t end;
@@ -108,13 +108,13 @@ static void *mmap(void *start, size_t length, int prot, int flags, int fd, off_t
 	return ret;
 }
 
-static void munmap(void *addr, size_t length)
+void munmap(void *addr, size_t length)
 {
 	UnmapViewOfFile(addr);
 	/* ruh-ro, we leaked handle from CreateFileMapping() ... */
 }
 
-static int mprotect(void *addr, size_t len, int prot)
+int mprotect(void *addr, size_t len, int prot)
 {
    /* Incomplete, just assumes PAGE_EXECUTE_READWRITE right now
     * instead of correctly handling prot */
