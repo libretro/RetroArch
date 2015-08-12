@@ -637,28 +637,47 @@ static void handle_hotplug(android_input_t *android,
       else if (strstr(device_name, "SideWinder"))
          strlcpy(name_buf, "SideWinder Classic", sizeof(name_buf));
    }
-   /* Make sure generic I/O devices are always bound to port one
-    * should be easier to add these instead of one hack per device
-    */
-   else if (strstr(device_name, "Amazon Fire TV Remote")
-         || strstr(device_name, "Nexus Remote")
-         || strstr(device_name, "SHIELD Remote")
-         || strstr(device_name, "gpio")
-         || strstr(device_name, "Virtual"))
+   else if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.01"))
+   {
+      /* Built-in shield controller is always user 1 */
+      *port = 0;
+      strlcpy(name_buf, device_name, sizeof(name_buf));
+   }
+   else if ((strstr(device_name, "Virtual") || 
+         strstr(device_name, "gpio")) && strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.01"))
+   {
+      /* If built-in shield controller is detected bind the virtual and gpio devices to the same port */
+      *port = 0;
+      strlcpy(name_buf, "Generic I/O Device", sizeof(name_buf));
+   }
+   else if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03") && !strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.03"))
    {
       *port = 0;
-       if (strstr(device_name, "Virtual") || (strstr(device_name, "gpio")))
-         strlcpy(name_buf, "Generic I/O Device", sizeof(name_buf));
-       else
-         strlcpy(name_buf, device_name, sizeof(name_buf));
+      strlcpy(name_buf, device_name, sizeof(name_buf));
+   }
+   else if (strstr(device_name, "Virtual") || 
+         (strstr(device_name, "gpio") && strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.03")))
+   {
+      /* If the shield controller is detected bind the virtual and gpio devices to the same port*/
+      *port = 0;
+      strlcpy(name_buf, "NVIDIA SHIELD Controller", sizeof(name_buf));
+   }
+   else if (strstr(device_name, "Amazon Fire TV Remote")
+         || strstr(device_name, "Nexus Remote")
+         || strstr(device_name, "SHIELD Remote"))
+   {
+      /* hack for remote control type devices, set them always to port 0 */
+      *port = 0;
+      strlcpy(name_buf, device_name, sizeof(name_buf));
    }
    else if ( *port==1 && ( strstr(android->pad_states[0].name,"Amazon Fire TV Remote")
                       ||   strstr(android->pad_states[0].name,"Nexus Remote")
-                      ||   strstr(android->pad_states[0].name,"SHIELD Remote")
-                      ||   strstr(android->pad_states[0].name,"Generic I/O Device")))
+                      ||   strstr(android->pad_states[0].name,"SHIELD Remote")))
    {
-      /* then, when binding a new controller in port 1 and one of those remotes
-       * was bound to port 0, overwrite that binding
+      /* and then when we are binding a new controller in port 1 and one of those remotes
+       * was bound to port 0, bind the device as port 0 too, it causes all the controllers to 
+       * rebind on the first button press but at least the remotes can be used to navigate
+       * the user interface
        */
       *port = 0;
       strlcpy(name_buf, device_name, sizeof(name_buf));
@@ -700,10 +719,7 @@ static void handle_hotplug(android_input_t *android,
       settings->input.vid[*port] = params.vid;
 
       strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
-      
-      // Don't try to autoconfigure GPIO devices
-      if (!strstr(android->pad_states[0].name,"Generic I/O Device"))
-         autoconfigured = input_config_autoconfigure_joypad(&params);
+      autoconfigured = input_config_autoconfigure_joypad(&params);
 
       if (autoconfigured)
       {
