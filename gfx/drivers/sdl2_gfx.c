@@ -605,7 +605,9 @@ static void sdl2_gfx_free(void *data)
 static void sdl2_gfx_set_rotation(void *data, unsigned rotation)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
-   vid->rotation = 270 * rotation;
+
+   if (vid)
+      vid->rotation = 270 * rotation;
 }
 
 static void sdl2_gfx_viewport_info(void *data, struct video_viewport *vp)
