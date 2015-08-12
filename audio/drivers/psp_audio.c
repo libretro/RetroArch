@@ -51,7 +51,7 @@ static int audioMainLoop(SceSize args, void* argp)
    psp_audio_t* psp = *((psp_audio_t**)argp);
 
 #ifdef VITA
-   sceAudioOutOpenPort(0, AUDIO_OUT_COUNT, psp->rate, 2);
+   int port = sceAudioOutOpenPort(PSP2_AUDIO_OUT_PORT_TYPE_MAIN, AUDIO_OUT_COUNT, psp->rate, 2);
 #else
    sceAudioSRCChReserve(AUDIO_OUT_COUNT, psp->rate, 2);
 #endif
@@ -79,7 +79,9 @@ static int audioMainLoop(SceSize args, void* argp)
       }
    }
 
-#ifndef VITA
+#ifdef VITA
+   sceAudioOutReleasePort(port);
+#else
    sceAudioSRCChRelease();
 #endif
    sceKernelExitThread(0);
