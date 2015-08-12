@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// FIXME: unfinished, mutexes and condvars basically a stub.
+/* FIXME: unfinished on PSP, mutexes and condition variables basically a stub. */
 #ifndef _PSP_PTHREAD_WRAP__
 #define _PSP_PTHREAD_WRAP__
 
