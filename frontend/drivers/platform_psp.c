@@ -15,6 +15,7 @@
  */
 
 #ifdef VITA
+#include <psp2/moduleinfo.h>
 #include <psp2/power.h>
 #else
 #include <pspkernel.h>
@@ -41,7 +42,11 @@
 #include "../../psp1/kernel_functions.h"
 #endif
 
-PSP_MODULE_INFO("RetroArch PSP", 0, 1, 1);
+#ifdef VITA
+PSP2_MODULE_INFO(0, 0, "RetroArch");
+#else
+PSP_MODULE_INFO("RetroArch", 0, 1, 1);
+#endif
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
 #ifdef BIG_STACK
 PSP_MAIN_THREAD_STACK_SIZE_KB(4*1024);
@@ -252,20 +257,25 @@ static int frontend_psp_get_rating(void)
 static enum frontend_powerstate frontend_psp_get_powerstate(int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
+#ifndef VITA
    int battery                  = scePowerIsBatteryExist(); /* this function does not exist on Vita? */
+#endif
    int plugged                  = scePowerIsPowerOnline();
    int charging                 = scePowerIsBatteryCharging();
 
    *percent = scePowerGetBatteryLifePercent();
    *seconds = scePowerGetBatteryLifeTime() * 60;
 
+#ifndef VITA
    if (!battery)
    {
       ret = FRONTEND_POWERSTATE_NO_SOURCE;
       *seconds = -1;
       *percent = -1;
    }
-   else if (charging)
+   else
+#endif
+   if (charging)
       ret = FRONTEND_POWERSTATE_CHARGING;
    else if (plugged)
       ret = FRONTEND_POWERSTATE_CHARGED;
