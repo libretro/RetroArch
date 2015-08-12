@@ -113,13 +113,24 @@ static void munmap(void *addr, size_t length)
 	UnmapViewOfFile(addr);
 	/* ruh-ro, we leaked handle from CreateFileMapping() ... */
 }
-#elif !defined(HAVE_MMAP)
-#define PROT_EXEC   0x04
-#define MAP_FAILED 0
-#define PROT_READ 0
-#define PROT_WRITE 0
-#define MAP_PRIVATE 0
-#define MAP_ANONYMOUS 0
+
+static int mprotect(void *addr, size_t len, int prot)
+{
+   /* Incomplete, just assumes PAGE_EXECUTE_READWRITE right now
+    * instead of correctly handling prot */
+   prot = 0;
+   if (prot & (PROT_READ | PROT_WRITE | PROT_EXEC))
+      prot = PAGE_EXECUTE_READWRITE;
+   return VirtualProtect(addr, len, prot, 0);
+}
+
+#elif !defined(HAVE_MMAN)
+#define PROT_EXEC       0x04
+#define MAP_FAILED      0
+#define PROT_READ       0
+#define PROT_WRITE      0
+#define MAP_PRIVATE     0
+#define MAP_ANONYMOUS   0
 
 void* mmap(void *desired_addr, size_t len, int mmap_prot, int mmap_flags, int fildes, size_t off)
 {
@@ -139,3 +150,25 @@ int mprotect(void *addr, size_t len, int prot)
 
 #endif
 
+int memsync(void *start, void *end)
+{
+   size_t len = (char*)end - (char*)start;
+   (void)len;
+#if defined(__MACH__) && defined(__arm__)
+   sys_dcache_flush(start ,len);
+   sys_icache_invalidate(start, len);
+   return 0;
+#elif defined(__arm__) && !defined(__QNX__)
+   __clear_cache(start, end);
+   return 0;
+#elif defined(HAVE_MMAN)
+   return msync(start, len, MS_SYNC | MS_CACHE_ONLY | MS_INVALIDATE_ICACHE);
+#else
+   return 0;
+#endif
+}
+
+int memprotect(void *addr, size_t len)
+{
+   return mprotect(addr, len, PROT_READ | PROT_WRITE | PROT_EXEC);
+}

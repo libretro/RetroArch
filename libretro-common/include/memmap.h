@@ -30,12 +30,24 @@
 #include <errno.h>
 #include <io.h>
 #else
-#define HAVE_MMAP
+#define HAVE_MMAN
 #include <sys/mman.h>
 #endif
 
 #ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS MAP_ANON
 #endif
+
+#if !defined(HAVE_MMAN)
+void* mmap(void *desired_addr, size_t len, int mmap_prot, int mmap_flags, int fildes, size_t off);
+
+void munmap(void *base_addr, size_t len);
+
+int mprotect(void *addr, size_t len, int prot);
+#endif
+
+int memsync(void *start, void *end);
+
+int memprotect(void *addr, size_t len);
 
 #endif
