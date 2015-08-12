@@ -49,14 +49,14 @@ static int audioMainLoop(SceSize args, void* argp)
    {
       /* Get a non-volatile copy. */
       uint16_t readPos = psp->readPos;
+      bool cond        = ((uint16_t)(psp->writePos - readPos) & AUDIO_BUFFER_SIZE_MASK)
+            < (AUDIO_OUT_COUNT * 2);
 
-      if (((uint16_t)(psp->writePos - readPos) & AUDIO_BUFFER_SIZE_MASK)
-            < (AUDIO_OUT_COUNT * 2))
-         sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, psp->zeroBuffer);
-      else
+      sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, cond ? (psp->zeroBuffer) 
+            : (psp->buffer + readPos));
+
+      if (!cond)
       {
-         sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX,
-               psp->buffer + readPos);
          readPos += AUDIO_OUT_COUNT;
          readPos &= AUDIO_BUFFER_SIZE_MASK;
          psp->readPos = readPos;
