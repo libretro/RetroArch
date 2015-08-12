@@ -18,11 +18,18 @@
 #include "../../general.h"
 #include "../../driver.h"
 
+#ifdef VITA
+#include <psp2/kernel/processmgr.h>
+#include <psp2/kernel/threadmgr.h>
+#include <psp2/kernel/sysmem.h>
+#include <psp2/audioout.h>
+#else
 #include <pspkernel.h>
 #include <pspaudio.h>
+#endif
 #include <stdint.h>
 
-typedef struct psp1_audio
+typedef struct psp_audio
 {
    bool nonblocking;
    uint32_t* buffer;
@@ -33,7 +40,7 @@ typedef struct psp1_audio
    volatile bool running;
    volatile uint16_t readPos;
    volatile uint16_t writePos;
-} psp1_audio_t;
+} psp_audio_t;
 
 #define AUDIO_OUT_COUNT 512u
 #define AUDIO_BUFFER_SIZE (1u<<13u)
@@ -41,9 +48,13 @@ typedef struct psp1_audio
 
 static int audioMainLoop(SceSize args, void* argp)
 {
-   psp1_audio_t* psp = *((psp1_audio_t**)argp);
+   psp_audio_t* psp = *((psp_audio_t**)argp);
 
+#ifdef VITA
+   sceAudioOutOpenPort(0, AUDIO_OUT_COUNT, psp->rate, 2);
+#else
    sceAudioSRCChReserve(AUDIO_OUT_COUNT, psp->rate, 2);
+#endif
 
    while (psp->running)
    {
@@ -52,8 +63,13 @@ static int audioMainLoop(SceSize args, void* argp)
       bool cond        = ((uint16_t)(psp->writePos - readPos) & AUDIO_BUFFER_SIZE_MASK)
             < (AUDIO_OUT_COUNT * 2);
 
+#ifdef VITA
+      sceAudioOutOutput(0, 
+            cond ? psp->zeroBuffer : (psp->buffer + readPos));
+#else
       sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, cond ? (psp->zeroBuffer) 
             : (psp->buffer + readPos));
+#endif
 
       if (!cond)
       {
@@ -63,7 +79,9 @@ static int audioMainLoop(SceSize args, void* argp)
       }
    }
 
+#ifndef VITA
    sceAudioSRCChRelease();
+#endif
    sceKernelExitThread(0);
    return 0;
 }
@@ -71,7 +89,7 @@ static int audioMainLoop(SceSize args, void* argp)
 static void *psp_audio_init(const char *device,
       unsigned rate, unsigned latency)
 {
-   psp1_audio_t *psp = (psp1_audio_t*)calloc(1, sizeof(psp1_audio_t));
+   psp_audio_t *psp = (psp_audio_t*)calloc(1, sizeof(psp_audio_t));
 
    if (!psp)
       return NULL;
@@ -96,7 +114,7 @@ static void *psp_audio_init(const char *device,
    psp->nonblocking = false;
 
    psp->running     = true;
-   sceKernelStartThread(psp->thread, sizeof(psp1_audio_t*), &psp);
+   sceKernelStartThread(psp->thread, sizeof(psp_audio_t*), &psp);
 
    return psp;
 }
@@ -104,7 +122,7 @@ static void *psp_audio_init(const char *device,
 static void psp_audio_free(void *data)
 {
    SceUInt timeout = 100000;
-   psp1_audio_t* psp = (psp1_audio_t*)data;
+   psp_audio_t* psp = (psp_audio_t*)data;
    if(!psp)
       return;
 
@@ -121,7 +139,7 @@ static void psp_audio_free(void *data)
 static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
 {
    uint16_t sampleCount;
-   psp1_audio_t* psp = (psp1_audio_t*)data;
+   psp_audio_t* psp = (psp_audio_t*)data;
    uint16_t writePos = psp->writePos;
 
    sampleCount= size / sizeof(uint32_t);
@@ -153,7 +171,7 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
 
 static bool psp_audio_alive(void *data)
 {
-   psp1_audio_t* psp = (psp1_audio_t*)data;
+   psp_audio_t* psp = (psp_audio_t*)data;
    if (!psp)
       return false;
    return psp->running;
@@ -163,7 +181,7 @@ static bool psp_audio_stop(void *data)
 {
    SceKernelThreadRunStatus runStatus;
    SceUInt timeout   = 100000;
-   psp1_audio_t* psp = (psp1_audio_t*)data;
+   psp_audio_t* psp = (psp_audio_t*)data;
 
    runStatus.size    = sizeof(SceKernelThreadRunStatus);
 
@@ -182,7 +200,7 @@ static bool psp_audio_stop(void *data)
 static bool psp_audio_start(void *data)
 {
    SceKernelThreadRunStatus runStatus;
-   psp1_audio_t* psp = (psp1_audio_t*)data;
+   psp_audio_t* psp = (psp_audio_t*)data;
 
    runStatus.size    = sizeof(SceKernelThreadRunStatus);
 
@@ -194,14 +212,14 @@ static bool psp_audio_start(void *data)
 
    psp->running = true;
 
-   sceKernelStartThread(psp->thread, sizeof(psp1_audio_t*), &psp);
+   sceKernelStartThread(psp->thread, sizeof(psp_audio_t*), &psp);
 
    return true;
 }
 
 static void psp_audio_set_nonblock_state(void *data, bool toggle)
 {
-   psp1_audio_t* psp = (psp1_audio_t*)data;
+   psp_audio_t* psp = (psp_audio_t*)data;
    if (psp)
       psp->nonblocking = toggle;
 }
@@ -215,7 +233,7 @@ static bool psp_audio_use_float(void *data)
 static size_t psp_write_avail(void *data)
 {
    /* TODO */
-   psp1_audio_t* psp = (psp1_audio_t*)data;
+   psp_audio_t* psp = (psp_audio_t*)data;
    return AUDIO_BUFFER_SIZE - ((uint16_t)
          (psp->writePos - psp->readPos) & AUDIO_BUFFER_SIZE_MASK);
 }
@@ -227,7 +245,7 @@ static size_t psp_buffer_size(void *data)
 }
 
 
-audio_driver_t audio_psp1 = {
+audio_driver_t audio_psp = {
    psp_audio_init,
    psp_audio_write,
    psp_audio_stop,
@@ -236,7 +254,7 @@ audio_driver_t audio_psp1 = {
    psp_audio_set_nonblock_state,
    psp_audio_free,
    psp_audio_use_float,
-   "psp1",
+   "psp",
    psp_write_avail,
    psp_buffer_size,
 };

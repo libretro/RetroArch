@@ -66,7 +66,7 @@ enum
    AUDIO_XENON360,
    AUDIO_WII,
    AUDIO_RWEBAUDIO,
-   AUDIO_PSP1,
+   AUDIO_PSP,
    AUDIO_CTR,
    AUDIO_NULL,
 
@@ -167,8 +167,8 @@ enum
 #define AUDIO_DEFAULT_DRIVER AUDIO_XENON360
 #elif defined(GEKKO)
 #define AUDIO_DEFAULT_DRIVER AUDIO_WII
-#elif defined(PSP)
-#define AUDIO_DEFAULT_DRIVER AUDIO_PSP1
+#elif defined(PSP) || defined(VITA)
+#define AUDIO_DEFAULT_DRIVER AUDIO_PSP
 #elif defined(_3DS)
 #define AUDIO_DEFAULT_DRIVER AUDIO_CTR
 #elif defined(HAVE_ALSA) && defined(HAVE_VIDEOCORE)

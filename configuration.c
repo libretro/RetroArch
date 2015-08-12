@@ -114,8 +114,8 @@ const char *config_get_default_audio(void)
          return "ps3";
       case AUDIO_WII:
          return "gx";
-      case AUDIO_PSP1:
-         return "psp1";
+      case AUDIO_PSP:
+         return "psp";
       case AUDIO_CTR:
          return "ctr";
       case AUDIO_RWEBAUDIO:

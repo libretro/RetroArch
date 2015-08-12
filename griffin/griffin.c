@@ -472,8 +472,8 @@ AUDIO
 #include "../audio/drivers/gx_audio.c"
 #elif defined(EMSCRIPTEN)
 #include "../audio/drivers/rwebaudio.c"
-#elif defined(PSP)
-#include "../audio/drivers/psp1_audio.c"
+#elif defined(PSP) || defined(VITA)
+#include "../audio/drivers/psp_audio.c"
 #elif defined(_3DS)
 #include "../audio/drivers/ctr_audio.c"
 #endif
