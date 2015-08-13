@@ -36,7 +36,6 @@
 #if TARGET_OS_IPHONE
 #include "../libretro-common/file/dir_list_obj.m"
 #include "../ui/drivers/cocoa/cocoatouch_menu.m"
-#include "../ui/drivers/cocoa/cocoatouch_browser.m"
 
 #include "../ui/drivers/ui_cocoatouch.m"
 #endif
