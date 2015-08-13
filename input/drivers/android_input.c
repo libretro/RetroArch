@@ -660,16 +660,19 @@ static void handle_hotplug(android_input_t *android,
          strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.01"))
    {
       *port = 0;
-      strlcpy(name_buf, "Generic I/O Device", sizeof(name_buf));
+      strlcpy(name_buf, "NVIDIA SHIELD Portable", sizeof(name_buf));
    }
 
    /* Other NVIDIA Shield Devices
     * NVIDIA button on the controller is on a separate HID device
     * so whenever that button is hit, bind that device to user 1 and
     * overwrite it whenever a SHIELD Controller button is pressed
+    * 
+    * In this case we won't map back (4) to menu, instead we map the 
+    * NVIDIA button (84) using an autoconf file
     */
    else if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03") 
-         && !strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.03"))
+         && !strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.0"))
    {
       *port = 0;
       strlcpy(name_buf, device_name, sizeof(name_buf));
