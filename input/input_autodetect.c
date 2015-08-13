@@ -227,6 +227,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       conf = config_file_new(list->elems[index].data);
       input_autoconfigure_joypad_add(conf, params);
       config_file_free(conf);
+      ret = 1;
    }
    else
    {
