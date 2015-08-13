@@ -441,8 +441,8 @@ static void *android_input_init(void)
    return android;
 }
 
-static int zeus_id = -1;
-static int zeus_second_id = -1;
+static int xperia1 = -1;
+static int xperia2 = -1;
 static int archos1 = -1;
 static int archos2 = -1;
 
@@ -581,22 +581,38 @@ static void handle_hotplug(android_input_t *android,
       return;
    }
 
-   /* FIXME: Ugly hack, see other FIXME note below. */
+   /* FIXME - per-device hacks for nVidia Shield, Xperia Play and others
+    * For Xperia Play We need to keep 'count' of the amount of similar devices
+    * and group them in a single port.
+    *
+    * For the NVIDIA Shield we must make sure that the built-in controllers always
+    * map to the port
+    *
+    * For TTT HT - keep track of how many of these 'pads' are already
+    * connected, and based on that, assign one of them to be User 1 and
+    * the other to be User 2.
+    *
+    * If this is finally implemented right, then these port conditionals can go.
+    */
+
+   /* Xperia Play */
    if (strstr(device_name, "keypad-game-zeus") ||
          strstr(device_name, "keypad-zeus"))
    {
-      if (zeus_id < 0)
+      if (xperia1 < 0)
       {
          RARCH_LOG("zeus_pad 1 detected: %u\n", id);
-         zeus_id = id;
+         xperia1 = id;
       }
       else
       {
          RARCH_LOG("zeus_pad 2 detected: %u\n", id);
-         zeus_second_id = id;
+         xperia2 = id;
       }
       strlcpy(name_buf, device_name, sizeof(name_buf));
    }
+
+   /* Archos Gamepad */
    else if (strstr(device_name, "joy_key") || strstr(device_name, "joystick"))
    {
       if (archos1 < 0)
@@ -606,30 +622,21 @@ static void handle_hotplug(android_input_t *android,
       *port = 0;
       strlcpy(name_buf, "Archos Gamepad", sizeof(name_buf));
    }
-   /* followed by a 4 (hex) char HW id */
+
    else if (strstr(device_name, "iControlPad-"))
       strlcpy(name_buf, "iControlPad HID Joystick profile", sizeof(name_buf));
+
    else if (strstr(device_name, "TTT THT Arcade console 2P USB Play"))
    {
-      //FIXME - need to do a similar thing here as we did for nVidia Shield
-      //and Xperia Play. We need to keep 'count' of the amount of similar (grouped)
-      //devices.
-      //
-      //For Xperia Play - count similar devices and bind them to the same 'user'
-      //port
-      //
-      //For TTT HT - keep track of how many of these 'pads' are already
-      //connected, and based on that, assign one of them to be User 1 and
-      //the other to be User 2.
-      //
-      //If this is finally implemented right, then these port conditionals can go.
       if (*port == 0)
          strlcpy(name_buf, "TTT THT Arcade (User 1)", sizeof(name_buf));
       else if (*port == 1)
          strlcpy(name_buf, "TTT THT Arcade (User 2)", sizeof(name_buf));
    }
+
    else if (strstr(device_name, "360 Wireless"))
       strlcpy(name_buf, "XBox 360 Wireless", sizeof(name_buf));
+
    else if (strstr(device_name, "Microsoft"))
    {
       if (strstr(device_name, "Dual Strike"))
@@ -637,40 +644,75 @@ static void handle_hotplug(android_input_t *android,
       else if (strstr(device_name, "SideWinder"))
          strlcpy(name_buf, "SideWinder Classic", sizeof(name_buf));
    }
-   /* Make sure generic I/O devices are always bound to port one
-    * should be easier to add these instead of one hack per device
+
+   /* NVIDIA Shield Portable 
+    * Built-in controller is always user 1 
+    * Back button is on a separate HID device with no VID/PID
+    * so we bind that controller to user 1 too and overwrite
+    * whenever a gamepad button is pressed
     */
-   else if (strstr(device_name, "Amazon Fire TV Remote")
-         || strstr(device_name, "Nexus Remote")
-         || strstr(device_name, "SHIELD Remote")
-         || strstr(device_name, "gpio")
-         || strstr(device_name, "Virtual"))
+   else if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.01"))
    {
-      *port = 0;
-       if (strstr(device_name, "Virtual") || (strstr(device_name, "gpio")))
-         strlcpy(name_buf, "Generic I/O Device", sizeof(name_buf));
-       else
-         strlcpy(name_buf, device_name, sizeof(name_buf));
-   }
-   else if ( *port==1 && ( strstr(android->pad_states[0].name,"Amazon Fire TV Remote")
-                      ||   strstr(android->pad_states[0].name,"Nexus Remote")
-                      ||   strstr(android->pad_states[0].name,"SHIELD Remote")
-                      ||   strstr(android->pad_states[0].name,"Generic I/O Device")))
-   {
-      /* then, when binding a new controller in port 1 and one of those remotes
-       * was bound to port 0, overwrite that binding
-       */
       *port = 0;
       strlcpy(name_buf, device_name, sizeof(name_buf));
    }
+   else if ((strstr(device_name, "Virtual") || strstr(device_name, "gpio")) && 
+         strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.01"))
+   {
+      *port = 0;
+      strlcpy(name_buf, "NVIDIA SHIELD Portable", sizeof(name_buf));
+   }
+
+   /* Other NVIDIA Shield Devices
+    * NVIDIA button on the controller is on a separate HID device
+    * so whenever that button is hit, bind that device to user 1 and
+    * overwrite it whenever a SHIELD Controller button is pressed
+    * 
+    * In this case we won't map back (4) to menu, instead we map the 
+    * NVIDIA button (84) using an autoconf file
+    */
+   else if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03") 
+         && !strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.0"))
+   {
+      *port = 0;
+      strlcpy(name_buf, device_name, sizeof(name_buf));
+   }
+   else if ((strstr(device_name, "Virtual") || strstr(device_name, "gpio")) 
+         && strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.03"))
+   {
+      *port = 0;
+      strlcpy(name_buf, "NVIDIA SHIELD Controller", sizeof(name_buf));
+   }
+
+   /* Other uncommon devices
+    * These are mostly remote control type devices, bind them always to port 01
+    * And overwrite the binding whenever a controller button is pressed
+    */
+   else if (strstr(device_name, "Amazon Fire TV Remote")
+         || strstr(device_name, "Nexus Remote")
+         || strstr(device_name, "SHIELD Remote"))
+   {
+      *port = 0;
+      strlcpy(name_buf, device_name, sizeof(name_buf));
+   }
+   else if ( *port==1 && ( strstr(android->pad_states[0].name,"Amazon Fire TV Remote")
+                      ||   strstr(android->pad_states[0].name,"Nexus Remote")
+                      ||   strstr(android->pad_states[0].name,"SHIELD Remote")))
+   {
+      *port = 0;
+      strlcpy(name_buf, device_name, sizeof(name_buf));
+   }
+
    else if (
          strstr(device_name, "PLAYSTATION(R)3") ||
          strstr(device_name, "Dualshock3") ||
          strstr(device_name, "Sixaxis")
          )
       strlcpy(name_buf, "PlayStation3", sizeof(name_buf));
+
    else if (strstr(device_name, "MOGA"))
       strlcpy(name_buf, "Moga IME", sizeof(name_buf));
+
    else if (device_name[0] != '\0')
       strlcpy(name_buf, device_name, sizeof(name_buf));
 
@@ -687,7 +729,7 @@ static void handle_hotplug(android_input_t *android,
 
    if (settings->input.autodetect_enable)
    {
-      unsigned      autoconfigured = false;
+      bool      autoconfigured = false;
       autoconfig_params_t params   = {{0}};
 
       RARCH_LOG("Port %d: %s VID/PID: %d/%d\n", *port, name_buf, params.vid, params.pid);
@@ -700,11 +742,7 @@ static void handle_hotplug(android_input_t *android,
       settings->input.vid[*port] = params.vid;
 
       strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
-      
-      // Don't try to autoconfigure GPIO devices
-      if (!strstr(android->pad_states[0].name,"Generic I/O Device"))
-         autoconfigured = input_config_autoconfigure_joypad(&params);
-
+      autoconfigured = input_config_autoconfigure_joypad(&params);
       if (autoconfigured)
       {
          if (settings->input.autoconf_binds[*port][RARCH_MENU_TOGGLE].joykey != 0)
@@ -729,8 +767,8 @@ static int android_input_get_id(android_input_t *android, AInputEvent *event)
    int id = AInputEvent_getDeviceId(event);
 
    /* Needs to be cleaned up */
-   if (id == zeus_second_id)
-      id = zeus_id;
+   if (id == xperia2)
+      id = xperia1;
 
    if (id == archos2)
       id = archos1;

@@ -134,8 +134,12 @@ static void input_autoconfigure_joypad_add(
 
    if (!strcmp(device_type,"remote"))
    {
-      snprintf(msg, sizeof(msg), "%s configured",
-          params->name);
+      if (display_name[0] != '\0' || strcmp(display_name, ""))
+         snprintf(msg, sizeof(msg), "%s configured",
+            display_name);
+      else
+         snprintf(msg, sizeof(msg), "%s configured",
+            params->name);
       
       if(!remote_is_bound)
          rarch_main_msg_queue_push(msg, 0, 60, false);
@@ -223,6 +227,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       conf = config_file_new(list->elems[index].data);
       input_autoconfigure_joypad_add(conf, params);
       config_file_free(conf);
+      ret = 1;
    }
    else
    {
