@@ -24,13 +24,16 @@
 #include "../../menu/menu_setting.h"
 #include "../../menu/menu.h"
 
+#ifdef HAVE_CORELOCATION
+#include <CoreLocation/CoreLocation.h>
+#endif
+
 #if defined(HAVE_COCOATOUCH)
 #include <UIKit/UIKit.h>
 
-#include <CoreLocation/CoreLocation.h>
+#ifdef HAVE_AVFOUNDATION
 #import <AVFoundation/AVCaptureOutput.h>
-
-
+#endif
 
 /*********************************************/
 /* RAMenuBase                                */
@@ -77,10 +80,6 @@ void get_ios_version(int *major, int *minor);
 
 #elif defined(HAVE_COCOA)
 #include <AppKit/AppKit.h>
-#ifdef HAVE_CORELOCATION
-#include <CoreLocation/CoreLocation.h>
-#endif
-
 
 @interface CocoaView : NSView
 #ifdef HAVE_CORELOCATION
