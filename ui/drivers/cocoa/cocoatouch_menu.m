@@ -300,25 +300,6 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 @interface RAMenuItemPathDir : RAMenuItemBase
 @end
 
-@interface RADirectoryItem : NSObject
-@property (nonatomic) NSString* path;
-@property (nonatomic) bool isDirectory;
-@end
-
-@interface RADirectoryList : RAMenuBase<UIActionSheetDelegate>
-@property (nonatomic, weak) RADirectoryItem* selectedItem;
-
-@property (nonatomic, copy) void (^chooseAction)(RADirectoryList* list, RADirectoryItem* item);
-@property (nonatomic, copy) NSString* path;
-@property (nonatomic, copy) NSString* extensions;
-
-@property (nonatomic) bool allowBlank;
-@property (nonatomic) bool forDirectory;
-
-- (id)initWithPath:(NSString*)path extensions:(const char*)extensions action:(void (^)(RADirectoryList* list, RADirectoryItem* item))action;
-- (void)browseTo:(NSString*)path;
-@end
-
 @implementation RAMenuItemPathDir
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView
