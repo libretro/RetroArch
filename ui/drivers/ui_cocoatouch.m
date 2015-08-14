@@ -283,13 +283,13 @@ enum
    if (rarch_main(0, NULL, NULL))
       apple_rarch_exited();
 
-#ifdef HAVE_MFI
-   apple_gamecontroller_init();
-#endif
-
   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
                                              true, 0, rarch_draw_observer, 0);
   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
+
+#ifdef HAVE_MFI
+   apple_gamecontroller_init();
+#endif
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
