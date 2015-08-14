@@ -287,37 +287,9 @@ enum
    apple_gamecontroller_init();
 #endif
 
-   [self apple_start_iteration];
-}
-
-void apple_start_iterate_observer(void)
-{
-  if (iterate_observer)
-    return;
-  
   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
                                              true, 0, rarch_draw_observer, 0);
   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
-}
-
-- (void) apple_start_iteration
-{
-  apple_start_iterate_observer();
-}
-
-void apple_stop_iterate_observer(void)
-{
-    if (!iterate_observer)
-        return;
-    
-    CFRunLoopObserverInvalidate(iterate_observer);
-    CFRelease(iterate_observer);
-    iterate_observer = NULL;
-}
-
-- (void) apple_stop_iteration
-{
-  apple_stop_iterate_observer();
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
@@ -327,7 +299,9 @@ void apple_stop_iterate_observer(void)
 
 - (void)applicationWillTerminate:(UIApplication *)application
 {
-    [self apple_stop_iteration];
+   CFRunLoopObserverInvalidate(iterate_observer);
+   CFRelease(iterate_observer);
+   iterate_observer = NULL;
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
@@ -463,25 +437,12 @@ typedef struct ui_companion_cocoatouch
    void *empty;
 } ui_companion_cocoatouch_t;
 
-static void ui_companion_cocoatouch_switch_to_ios(void *data)
-{
-   RetroArch_iOS *ap  = NULL;
-    
-   (void)data;
-
-   if (!apple_platform)
-      return;
-    
-   ap              = (RetroArch_iOS *)apple_platform;
-   [ap showPauseMenu:ap];
-}
-
 static void ui_companion_cocoatouch_notify_content_loaded(void *data)
 {
    RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
-   
-    (void)data;
-    
+
+   (void)data;
+
    if (ap)
       [ap showGameView];
 }
@@ -498,9 +459,12 @@ static void ui_companion_cocoatouch_toggle(void *data)
 
 static int ui_companion_cocoatouch_iterate(void *data, unsigned action)
 {
-   (void)data;
+   RetroArch_iOS *ap  = (RetroArch_iOS*)apple_platform;
 
-   ui_companion_cocoatouch_switch_to_ios(data);
+   (void)data;
+    
+   if (ap)
+      [ap showPauseMenu:ap];
 
    return 0;
 }
