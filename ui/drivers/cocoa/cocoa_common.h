@@ -46,10 +46,6 @@
 
 @end
 
-@interface RAFoldersList : RAMenuBase
-- (id) initWithFilePath:(NSString*)path;
-@end
-
 typedef struct
 {
    char orientations[32];
