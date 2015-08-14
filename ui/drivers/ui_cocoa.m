@@ -217,23 +217,13 @@ static void poll_iteration(void)
     main_exit(NULL);
 }
 
-- (void) apple_start_iteration
-{
-    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
-}
-
-- (void) apple_stop_iteration
-{
-}
-
 - (void)applicationDidBecomeActive:(NSNotification *)notification
 {
-   [self apple_start_iteration];
+   [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
 }
 
 - (void)applicationWillResignActive:(NSNotification *)notification
 {
-   [self apple_stop_iteration];
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
