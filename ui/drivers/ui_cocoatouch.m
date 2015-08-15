@@ -475,6 +475,12 @@ static int ui_companion_cocoatouch_iterate(void *data, unsigned action)
    return 0;
 }
 
+static int ui_companion_cocoatouch_iterate_menu(void *data, unsigned action)
+{
+   menu_iterate(input, 0, 0);
+   rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+}
+
 static void ui_companion_cocoatouch_deinit(void *data)
 {
    ui_companion_cocoatouch_t *handle = (ui_companion_cocoatouch_t*)data;
@@ -533,6 +539,7 @@ const ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_init,
    ui_companion_cocoatouch_deinit,
    ui_companion_cocoatouch_iterate,
+   ui_companion_cocoatouch_iterate_menu,
    ui_companion_cocoatouch_toggle,
    ui_companion_cocoatouch_event_command,
    ui_companion_cocoatouch_notify_content_loaded,

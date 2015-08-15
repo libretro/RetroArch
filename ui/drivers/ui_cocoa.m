@@ -489,6 +489,7 @@ const ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_init,
    ui_companion_cocoa_deinit,
    ui_companion_cocoa_iterate,
+   NULL,
    ui_companion_cocoa_toggle,
    ui_companion_cocoa_event_command,
    ui_companion_cocoa_notify_content_loaded,
