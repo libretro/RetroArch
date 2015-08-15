@@ -596,6 +596,17 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    */
 }
 
+-(void)renderMessageBox:(NSString *)msg
+{
+    UIAlertView *message = [[UIAlertView alloc] initWithTitle:@"Help"
+                                                      message:msg
+                                                     delegate:nil
+                                            cancelButtonTitle:@"OK"
+                                            otherButtonTitles:nil];
+     
+    [message show];
+}
+
 @end
 
 @interface RAMainMenu : RAMenuBase<RAMenuActioner>
