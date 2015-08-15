@@ -41,6 +41,7 @@ typedef struct ui_companion_driver
    void (*event_command)(void *data, enum event_command action);
    void (*notify_content_loaded)(void *data);
    void (*notify_list_loaded)(void *data, file_list_t *list, file_list_t *menu_list);
+   void (*render_messagebox)(const char *msg);
    const char *ident;
 } ui_companion_driver_t;
 

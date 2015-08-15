@@ -35,6 +35,7 @@
 #include "../../frontend/frontend.h"
 #include "../../runloop_data.h"
 
+static char msg_old[PATH_MAX_LENGTH];
 static id apple_platform;
 static CFRunLoopObserverRef iterate_observer;
 
@@ -403,6 +404,11 @@ enum
   [self.mainmenu reloadData];
 }
 
+- (void)mainMenuRenderMessageBox:(NSString *)msg
+{
+  [self.mainmenu renderMessageBox:msg];
+}
+
 @end
 
 int main(int argc, char *argv[])
@@ -512,6 +518,17 @@ static void ui_companion_cocoatouch_notify_list_pushed(void *data,
       [ap mainMenuRefresh];
 }
 
+static void ui_companion_cocoatouch_render_messagebox(const char *msg)
+{
+   RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
+
+   if (ap && strcmp(msg, msg_old))
+   {
+      [ap mainMenuRenderMessageBox: [NSString stringWithUTF8String:msg]];
+      strlcpy(msg_old, msg, sizeof(msg_old));
+   }
+}
+
 const ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_init,
    ui_companion_cocoatouch_deinit,
@@ -520,5 +537,6 @@ const ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_event_command,
    ui_companion_cocoatouch_notify_content_loaded,
    ui_companion_cocoatouch_notify_list_pushed,
+   ui_companion_cocoatouch_render_messagebox,
    "cocoatouch",
 };
