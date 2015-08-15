@@ -130,5 +130,6 @@ const ui_companion_driver_t ui_companion_qt = {
    ui_companion_qt_event_command,
    ui_companion_qt_notify_content_loaded,
    ui_companion_qt_notify_list_pushed,
+   NULL,
    "qt",
 };
