@@ -102,8 +102,6 @@ static int menu_cbs_init_bind_select_compare_type(
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
       cbs->action_select = action_select_input_desc;
-   else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
-      cbs->action_select = action_select_core_setting;
    else
    {
       switch (type)
@@ -148,6 +146,12 @@ int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       return -1;
 
    cbs->action_select = action_select_default;
+
+   if ((type >= MENU_SETTINGS_CORE_OPTION_START))
+   {
+      cbs->action_select = action_select_core_setting;
+      return 0;
+   }
 
    if (menu_cbs_init_bind_select_compare_label(cbs, label, label_hash, elem0) == 0)
       return 0;
