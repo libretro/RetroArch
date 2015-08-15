@@ -26,6 +26,7 @@
 #include "../ui_companion_driver.h"
 #include "../../input/drivers/cocoa_input.h"
 #include "../../menu/menu_setting.h"
+#include "../../retroarch.h"
 
 #ifdef HAVE_MFI
 #include "../../input/drivers_hid/mfi_hid.h"
@@ -477,8 +478,9 @@ static int ui_companion_cocoatouch_iterate(void *data, unsigned action)
 
 static int ui_companion_cocoatouch_iterate_menu(void *data, unsigned action)
 {
-   menu_iterate(input, 0, 0);
+   menu_iterate(0, 0, 0);
    rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+   return 0;
 }
 
 static void ui_companion_cocoatouch_deinit(void *data)
