@@ -732,10 +732,7 @@ static int menu_input_mouse_frame(
    if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L))
    {
       if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_TOGGLE))
-         return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_RIGHT);
-
-      if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_OK))
-         return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_OK);
+         return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_SELECT);
 
       if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_SET_NAVIGATION))
          menu_navigation_set(nav, menu_input->mouse.ptr, false);
@@ -781,12 +778,8 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    {
       if (!menu_input->mouse.oldleft)
       {
-         rarch_setting_t *setting = NULL;
-
          BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L);
 
-         setting = menu_setting_find(
-               menu_list->selection_buf->list[nav->selection_ptr].label);
          menu_input->mouse.oldleft = true;
 
          if ((unsigned)menu_input->mouse.y < disp->header_height)
@@ -797,18 +790,9 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
          if (
                (menu_input->mouse.ptr == nav->selection_ptr) &&
                cbs &&
-               cbs->action_right &&
-               setting &&
-               (setting->type == ST_BOOL || setting->type == ST_UINT || setting->type == ST_FLOAT
-                || setting->type == ST_STRING)
-            )
+               cbs->action_select            )
          {
             BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L_TOGGLE);
-         }
-         else if (menu_input->mouse.ptr == nav->selection_ptr
-            && cbs && cbs->action_ok)
-         {
-            BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L_OK);
          }
          else if (menu_input->mouse.ptr <= menu_list_get_size(menu_list)-1)
          {
