@@ -741,7 +741,9 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 - (void)menuSelect: (uint32_t) i
 {
   menu_entry_select(i);
+#if 0
   [self willReloadData];
+#endif
 }
 
 - (void)menuBack

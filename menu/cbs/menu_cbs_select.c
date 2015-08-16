@@ -34,32 +34,36 @@ static int action_select_default(const char *path, const char *label, unsigned t
    menu_entry_get(&entry, idx, NULL, false);
 
    cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, idx);
-
-
-   RARCH_LOG("setting->type: %d\n", setting->type);
-
-   switch (setting->type)
+    
+   if (setting)
    {
-      case ST_BOOL:
-      case ST_INT:
-      case ST_UINT:
-      case ST_FLOAT:
-         action = MENU_ACTION_RIGHT;
-         break;
-      case ST_PATH:
-         action = MENU_ACTION_OK;
-         break;
-      default:
-         if ((cbs && cbs->action_ok) || menu_setting_is_of_general_type(setting))
-            action = MENU_ACTION_OK;
-         else
-         {
-            if (cbs && cbs->action_start)
-               action = MENU_ACTION_START;
-            if (cbs && cbs->action_right)
+       switch (setting->type)
+       {
+           case ST_BOOL:
+           case ST_INT:
+           case ST_UINT:
+           case ST_FLOAT:
                action = MENU_ACTION_RIGHT;
-         }
-         break;
+               break;
+           case ST_PATH:
+               action = MENU_ACTION_OK;
+               break;
+           default:
+               break;
+       }
+   }
+    
+   if (action == MENU_ACTION_NOOP)
+   {
+       if ((cbs && cbs->action_ok) || menu_setting_is_of_general_type(setting))
+           action = MENU_ACTION_OK;
+       else
+       {
+           if (cbs && cbs->action_start)
+               action = MENU_ACTION_START;
+           if (cbs && cbs->action_right)
+               action = MENU_ACTION_RIGHT;
+       }
    }
     
    if (action != MENU_ACTION_NOOP)
