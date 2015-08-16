@@ -838,12 +838,8 @@ static int pointer_tap(menu_file_list_cbs_t *cbs,
             menu_list->selection_buf->list[nav->selection_ptr].label);
 
    if (menu_input->pointer.ptr == nav->selection_ptr
-         && cbs && cbs->action_right && setting &&
-         (setting->type == ST_BOOL || setting->type == ST_UINT
-          || setting->type == ST_FLOAT || setting->type == ST_STRING))
-      return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_RIGHT);
-   else if (menu_input->pointer.ptr == nav->selection_ptr)
-      return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_OK);
+         && cbs && cbs->action_select)
+      return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_SELECT);
    else
       menu_navigation_set(nav, menu_input->pointer.ptr, false);
 
