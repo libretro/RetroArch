@@ -831,11 +831,7 @@ static int pointer_tap(menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
    menu_input_t *menu_input = menu_input_get_ptr();
-   menu_list_t   *menu_list = menu_list_get_ptr();
    menu_navigation_t *nav   = menu_navigation_get_ptr();
-   rarch_setting_t *setting =
-      menu_setting_find(
-            menu_list->selection_buf->list[nav->selection_ptr].label);
 
    if (menu_input->pointer.ptr == nav->selection_ptr
          && cbs && cbs->action_select)
