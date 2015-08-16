@@ -313,12 +313,26 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 @end
 
 @implementation RAMenuItemPath
+
+- (void)wasSelectedOnTableView:(UITableView*)tableView
+                  ofController:(UIViewController*)controller
+{
+  [self.main menuSelect: self.i];
+}
+
 @end
 
 @interface RAMenuItemDir : RAMenuItemPathDir
 @end
 
 @implementation RAMenuItemDir
+
+- (void)wasSelectedOnTableView:(UITableView*)tableView
+                  ofController:(UIViewController*)controller
+{
+  [self.main menuSelect: self.i];
+}
+
 @end
 
 @interface RANumberFormatter : NSNumberFormatter<UITextFieldDelegate>
@@ -681,35 +695,47 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (RAMenuItemBase*)make_menu_item_for_entry: (uint32_t) i
 {
-  RAMenuItemBase *me = nil;
-  switch (menu_entry_get_type(i)) {
-  case MENU_ENTRY_ACTION:
-    me = [RAMenuItemAction new]; break;
-  case MENU_ENTRY_BOOL:
-    me = [RAMenuItemBool new]; break;
-  case MENU_ENTRY_INT:
-    me = [RAMenuItemInt new]; break;
-  case MENU_ENTRY_UINT:
-    me = [RAMenuItemUInt new]; break;
-  case MENU_ENTRY_FLOAT:
-    me = [RAMenuItemFloat new]; break;
-  case MENU_ENTRY_PATH:
-    me = [RAMenuItemPath new]; break;
-  case MENU_ENTRY_DIR:
-    me = [RAMenuItemDir new]; break;
-  case MENU_ENTRY_STRING:
-    me = [RAMenuItemString new]; break;
-  case MENU_ENTRY_HEX:
-    me = [RAMenuItemHex new]; break;
-  case MENU_ENTRY_BIND:
-    me = [RAMenuItemBind new]; break;
-  case MENU_ENTRY_ENUM:
-    me = [RAMenuItemEnum new]; break;
-  };
+   RAMenuItemBase *me = nil;
+   switch (menu_entry_get_type(i))
+   {
+      case MENU_ENTRY_ACTION:
+         me = [RAMenuItemAction new];
+         break;
+      case MENU_ENTRY_BOOL:
+         me = [RAMenuItemBool new];
+         break;
+      case MENU_ENTRY_INT:
+         me = [RAMenuItemInt new];
+         break;
+      case MENU_ENTRY_UINT:
+         me = [RAMenuItemUInt new];
+         break;
+      case MENU_ENTRY_FLOAT:
+         me = [RAMenuItemFloat new];
+         break;
+      case MENU_ENTRY_PATH:
+         me = [RAMenuItemPath new];
+         break;
+      case MENU_ENTRY_DIR:
+         me = [RAMenuItemDir new];
+         break;
+      case MENU_ENTRY_STRING:
+         me = [RAMenuItemString new];
+         break;
+      case MENU_ENTRY_HEX:
+         me = [RAMenuItemHex new];
+         break;
+      case MENU_ENTRY_BIND:
+         me = [RAMenuItemBind new];
+         break;
+      case MENU_ENTRY_ENUM:
+         me = [RAMenuItemEnum new];
+         break;
+   };
 
-  [me initialize:self idx:i];
+   [me initialize:self idx:i];
 
-  return me;
+   return me;
 }
 
 - (void)menuSelect: (uint32_t) i
