@@ -35,12 +35,31 @@ static int action_select_default(const char *path, const char *label, unsigned t
 
    cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, idx);
 
-   if ((cbs && cbs->action_ok) || menu_setting_is_of_general_type(setting))
-       action = MENU_ACTION_OK;
-   else { if (cbs && cbs->action_start)
-         action = MENU_ACTION_START;
-      if (cbs && cbs->action_right)
+
+   RARCH_LOG("setting->type: %d\n", setting->type);
+
+   switch (setting->type)
+   {
+      case ST_BOOL:
+      case ST_INT:
+      case ST_UINT:
+      case ST_FLOAT:
          action = MENU_ACTION_RIGHT;
+         break;
+      case ST_PATH:
+         action = MENU_ACTION_OK;
+         break;
+      default:
+         if ((cbs && cbs->action_ok) || menu_setting_is_of_general_type(setting))
+            action = MENU_ACTION_OK;
+         else
+         {
+            if (cbs && cbs->action_start)
+               action = MENU_ACTION_START;
+            if (cbs && cbs->action_right)
+               action = MENU_ACTION_RIGHT;
+         }
+         break;
    }
     
    if (action != MENU_ACTION_NOOP)
@@ -55,12 +74,6 @@ static int action_select_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    return action_ok_path_use_directory(path, label, type, idx, 0 /* unused */);
-}
-
-static int action_select_directory_stub(const char *path, const char *label, unsigned type,
-      size_t idx)
-{
-   return 0;
 }
 
 static int action_select_directory(const char *path, const char *label, unsigned type,
@@ -111,9 +124,6 @@ static int menu_cbs_init_bind_select_compare_type(
             break;
          case MENU_FILE_USE_DIRECTORY:
             cbs->action_select = action_select_path_use_directory;
-            break;
-         case MENU_FILE_PATH:
-            cbs->action_select = action_select_directory_stub;
             break;
          default:
             return -1;
