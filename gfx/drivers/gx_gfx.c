@@ -1031,7 +1031,8 @@ static void gx_blit_line(unsigned x, unsigned y, const char *message)
 }
 
 static bool gx_frame(void *data, const void *frame,
-      unsigned width, unsigned height, unsigned pitch,
+      unsigned width, unsigned height,
+      uint64_t frame_count, unsigned pitch,
       const char *msg)
 {
    char fps_txt[128]         = {0};
