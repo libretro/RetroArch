@@ -46,6 +46,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
                action = MENU_ACTION_RIGHT;
                break;
            case ST_PATH:
+           case ST_DIR:
                action = MENU_ACTION_OK;
                break;
            default:
@@ -104,12 +105,6 @@ static int action_select_input_desc(const char *path, const char *label, unsigne
    return action_right_input_desc(type, label, true);
 }
 
-static int action_select_push_generic_list(const char *path, const char *label, unsigned type,
-      size_t idx)
-{
-   return action_ok_push_generic_list(path, label, type, idx, 0 /* unused */);
-}
-
 static int menu_cbs_init_bind_select_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
 {
@@ -140,14 +135,6 @@ static int menu_cbs_init_bind_select_compare_type(
 static int menu_cbs_init_bind_select_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t hash, const char *elem0)
 {
-   rarch_setting_t *setting = menu_setting_find(label);
-
-   if (setting && setting->browser_selection_type == ST_DIR)
-   {
-      cbs->action_select = action_select_push_generic_list;
-      return 0;
-   }
-
    return -1;
 }
 
