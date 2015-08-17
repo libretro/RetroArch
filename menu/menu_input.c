@@ -833,6 +833,10 @@ static int pointer_tap(menu_file_list_cbs_t *cbs,
    menu_input_t *menu_input = menu_input_get_ptr();
    menu_navigation_t *nav   = menu_navigation_get_ptr();
 
+   menu_input->pointer.accel  = 0;
+   menu_input->pointer.accel0 = 0;
+   menu_input->pointer.accel1 = 0;
+
    if (menu_input->pointer.ptr == nav->selection_ptr
          && cbs && cbs->action_select)
       return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_SELECT);
