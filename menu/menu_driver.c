@@ -313,46 +313,6 @@ void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i)
    return NULL;
 }
 
-void menu_driver_navigation_increment(void)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_increment)
-      driver->navigation_increment();
-}
-
-void menu_driver_navigation_decrement(void)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_decrement)
-      driver->navigation_decrement();
-}
-
-void menu_driver_navigation_clear(bool pending_push)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_clear)
-      driver->navigation_clear(pending_push);
-}
-
-void menu_driver_navigation_set(bool scroll)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_set)
-      driver->navigation_set(scroll);
-}
-
-void menu_driver_navigation_set_last(void)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_set_last)
-      driver->navigation_set_last();
-}
-
 void menu_driver_set_texture(void)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
@@ -446,22 +406,6 @@ bool menu_driver_load_image(void *data, menu_image_type_t type)
       return driver->load_image(data, type);
 
    return false;
-}
-
-void  menu_driver_navigation_descend_alphabet(size_t *ptr_out)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_descend_alphabet)
-      driver->navigation_descend_alphabet(ptr_out);
-}
-
-void  menu_driver_navigation_ascend_alphabet(size_t *ptr_out)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_ascend_alphabet)
-      driver->navigation_ascend_alphabet(ptr_out);
 }
 
 bool menu_driver_alive(void)

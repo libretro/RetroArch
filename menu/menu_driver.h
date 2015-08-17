@@ -185,16 +185,6 @@ void init_menu(void);
 
 menu_handle_t *menu_driver_get_ptr(void);
 
-void menu_driver_navigation_increment(void);
-
-void menu_driver_navigation_decrement(void);
-
-void menu_driver_navigation_clear(bool pending_push);
-
-void menu_driver_navigation_set(bool scroll);
-
-void menu_driver_navigation_set_last(void);
-
 void menu_driver_set_texture(void);
 
 void menu_driver_frame(void);
@@ -213,10 +203,6 @@ void menu_driver_populate_entries(const char *path, const char *label,
          unsigned k);
 
 bool menu_driver_load_image(void *data, menu_image_type_t type);
-
-void  menu_driver_navigation_descend_alphabet(size_t *);
-
-void  menu_driver_navigation_ascend_alphabet(size_t *);
 
 void menu_driver_list_cache(menu_list_type_t type, unsigned action);
 
