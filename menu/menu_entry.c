@@ -56,22 +56,13 @@ int menu_entry_go_back(void)
 
 static rarch_setting_t *menu_entry_get_setting(uint32_t i)
 {
-   const char          *path = NULL;
-   const char   *entry_label = NULL;
-   const char *dir           = NULL;
-   const char *label         = NULL;
    menu_list_t *menu_list    = menu_list_get_ptr();
-   unsigned             type = 0;
-   unsigned menu_type        = 0;
+   menu_file_list_cbs_t *cbs = menu_list_get_actiondata_at_offset
+      (menu_list->selection_buf,i);
 
-   menu_list_get_last_stack(menu_list, &dir,
-         &label, &menu_type, NULL);
-
-   menu_list_get_at_offset(menu_list->selection_buf, i, &path,
-         &entry_label, &type, NULL);
-
-   return menu_setting_find(
-         menu_list->selection_buf->list[i].label);
+   if (!cbs)
+      return NULL;
+   return cbs->setting;
 }
 
 enum menu_entry_type menu_entry_get_type(uint32_t i)
