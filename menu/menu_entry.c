@@ -393,14 +393,9 @@ int menu_entry_iterate(unsigned action)
    if (action != MENU_ACTION_NOOP || menu_entries_needs_refresh() || menu_display_update_pending())
       menu_display_fb_set_dirty();
 
-   cbs = (menu_file_list_cbs_t*)menu_list_get_last_stack_actiondata(menu_list);
-
    menu_list_get_last_stack(menu_list, NULL, &label, NULL, NULL);
 
-   if (cbs && cbs->action_iterate)
-      return cbs->action_iterate(label, action);
-
-   return -1;
+   return menu_iterate_main(label, action);
 }
 
 int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)

@@ -106,7 +106,6 @@ typedef int  (*action_right_handler_t         )(void *data, bool wraparound);
 typedef int  (*action_up_handler_t            )(void *data);
 typedef int  (*action_down_handler_t          )(void *data);
 typedef int  (*action_start_handler_t         )(void *data);
-typedef int  (*action_iterate_handler_t       )(unsigned action);
 typedef int  (*action_cancel_handler_t        )(void *data);
 typedef int  (*action_ok_handler_t            )(void *data, bool wraparound);
 typedef int  (*action_select_handler_t        )(void *data, bool wraparound);
@@ -148,7 +147,6 @@ typedef struct rarch_setting
    change_handler_t              change_handler;
    change_handler_t              read_handler;
    action_start_handler_t        action_start;
-   action_iterate_handler_t      action_iterate;
    action_left_handler_t         action_left;
    action_right_handler_t        action_right;
    action_up_handler_t           action_up;

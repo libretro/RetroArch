@@ -17,21 +17,21 @@
 #include <file/file_path.h>
 #include <retro_inline.h>
 
-#include "../menu.h"
-#include "../menu_cbs.h"
-#include "../menu_display.h"
-#include "../menu_hash.h"
-#include "../menu_entry.h"
-#include "../menu_setting.h"
-#include "../menu_input.h"
-#include "../menu_shader.h"
-#include "../menu_navigation.h"
+#include "menu.h"
+#include "menu_cbs.h"
+#include "menu_display.h"
+#include "menu_hash.h"
+#include "menu_entry.h"
+#include "menu_setting.h"
+#include "menu_input.h"
+#include "menu_shader.h"
+#include "menu_navigation.h"
 
-#include "../../general.h"
-#include "../../performance.h"
-#include "../../retroarch.h"
-#include "../../input/input_common.h"
-#include "../../input/input_autodetect.h"
+#include "../general.h"
+#include "../performance.h"
+#include "../retroarch.h"
+#include "../input/input_common.h"
+#include "../input/input_autodetect.h"
 
 static int action_iterate_help(char *s, size_t len, const char *label)
 {
@@ -412,7 +412,7 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
    return ITERATE_TYPE_DEFAULT;
 }
 
-static int action_iterate_main(const char *label, unsigned action)
+int menu_iterate_main(const char *label, unsigned action)
 {
    menu_entry_t entry;
    char msg[PATH_MAX_LENGTH] = {0};
@@ -520,17 +520,4 @@ static int action_iterate_main(const char *label, unsigned action)
       menu_driver_render();
 
    return ret;
-}
-
-int menu_cbs_init_bind_iterate(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1,
-      uint32_t label_hash, uint32_t menu_label_hash)
-{
-   if (!cbs)
-      return -1;
-
-   cbs->action_iterate = action_iterate_main;
-
-   return -1;
 }

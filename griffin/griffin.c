@@ -767,7 +767,7 @@ MENU
 #include "../menu/cbs/menu_cbs_deferred_push.c"
 #include "../menu/cbs/menu_cbs_scan.c"
 #include "../menu/cbs/menu_cbs_get_value.c"
-#include "../menu/cbs/menu_cbs_iterate.c"
+#include "../menu/menu_iterate.c"
 #include "../menu/cbs/menu_cbs_up.c"
 #include "../menu/cbs/menu_cbs_down.c"
 #include "../menu/cbs/menu_cbs_contentlist_switch.c"

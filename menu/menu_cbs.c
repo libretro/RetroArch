@@ -149,10 +149,6 @@ void menu_cbs_init(void *data,
 
    menu_cbs_init_log(ret, "REFRESH", label, elem0, elem1, type);
 
-   ret = menu_cbs_init_bind_iterate(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
-
-   menu_cbs_init_log(ret, "ITERATE", label, elem0, elem1, type);
-
    ret = menu_cbs_init_bind_get_string_representation(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
    menu_cbs_init_log(ret, "REPRESENTATION", label, elem0, elem1, type);

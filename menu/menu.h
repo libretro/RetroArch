@@ -177,6 +177,9 @@ void *menu_init(const void *data);
 int menu_iterate(retro_input_t input,
       retro_input_t old_input, retro_input_t trigger_input);
 
+int menu_iterate_main(const char *label,
+      unsigned action);
+
 /**
  * menu_free:
  * @menu                     : Menu handle.
