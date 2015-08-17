@@ -207,6 +207,18 @@ error:
 }
 #endif
 
+#ifdef HAVE_MENU
+static void rarch_main_data_menu_iterate(void)
+{
+#ifdef HAVE_LIBRETRODB
+   if (rarch_main_data_db_pending_scan_finished())
+      menu_environment_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST, NULL);
+#endif
+
+   menu_entries_refresh(MENU_ACTION_REFRESH);
+}
+#endif
+
 void rarch_main_data_iterate(void)
 {
    settings_t     *settings     = config_get_ptr();
@@ -238,10 +250,7 @@ void rarch_main_data_iterate(void)
 #endif
 
 #ifdef HAVE_MENU
-#ifdef HAVE_LIBRETRODB
-   if (rarch_main_data_db_pending_scan_finished())
-      menu_environment_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST, NULL);
-#endif
+   rarch_main_data_menu_iterate();
 #endif
 
    if (data_runloop_msg[0] != '\0')
@@ -249,10 +258,6 @@ void rarch_main_data_iterate(void)
       rarch_main_msg_queue_push(data_runloop_msg, 1, 10, true);
       data_runloop_msg[0] = '\0';
    }
-
-#ifdef HAVE_MENU
-   menu_entries_refresh(MENU_ACTION_REFRESH);
-#endif
 
 #ifdef HAVE_THREADS
    if (settings->menu.threaded_data_runloop_enable && g_data_runloop.alive)
