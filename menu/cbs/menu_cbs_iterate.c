@@ -382,8 +382,6 @@ static int action_iterate_menu_viewport(char *s, size_t len,
             base_msg, custom->x, custom->y, custom->width, custom->height);
    }
 
-   menu_driver_render_messagebox(s);
-
    if (!custom->width)
       custom->width = stride_x;
    if (!custom->height)
@@ -470,11 +468,16 @@ static int action_iterate_main(const char *label, unsigned action)
             action = MENU_ACTION_OK;
          break;
       case ITERATE_TYPE_BIND:
-         if (menu_input_bind_iterate())
+         if (menu_input_bind_iterate(msg, sizeof(msg)))
+         {
+            if (msg[0] != '\0')
+               do_messagebox = true;
             menu_list_pop_stack(menu_list);
+         }
          break;
       case ITERATE_TYPE_VIEWPORT:
          ret = action_iterate_menu_viewport(msg, sizeof(msg), label, action, hash);
+         do_messagebox   = true;
          break;
       case ITERATE_TYPE_INFO:
          ret = action_iterate_info(msg, sizeof(msg), label);

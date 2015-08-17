@@ -193,7 +193,7 @@ void menu_input_st_string_callback(void *userdata, const char *str);
 
 void menu_input_st_cheat_callback(void *userdata, const char *str);
 
-int menu_input_bind_iterate(void);
+int menu_input_bind_iterate(char *s, size_t len);
 
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_state);
 

@@ -529,11 +529,10 @@ static int menu_input_bind_iterate_keyboard(int64_t current, int timeout)
    return 0;
 }
 
-int menu_input_bind_iterate(void)
+int menu_input_bind_iterate(char *s, size_t len)
 {
    int64_t current;
    struct menu_bind_state binds;
-   char msg[PATH_MAX_LENGTH]    = {0};
    int timeout                  = 0;
    menu_input_t *menu_input     = menu_input_get_ptr();
    driver_t *driver             = driver_get_ptr();
@@ -546,19 +545,17 @@ int menu_input_bind_iterate(void)
    timeout = (menu_input->binds.timeout_end - current) / 1000000;
 
    if (bind_mode_kb)
-   snprintf(msg, sizeof(msg),
+   snprintf(s, len,
          "[%s]\npress keyboard\n(timeout %d %s)",
          input_config_bind_map[
          menu_input->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
          timeout,
          menu_hash_to_str(MENU_VALUE_SECONDS));
     else
-        snprintf(msg, sizeof(msg),
+        snprintf(s, len,
         "[%s]\npress joypad\n(RETURN to skip)",
         input_config_bind_map[
         menu_input->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
-
-   menu_driver_render_messagebox(msg);
 
    if (bind_mode_kb)
       return menu_input_bind_iterate_keyboard(current, timeout);
