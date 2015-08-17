@@ -429,8 +429,8 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
 static int action_iterate_main(const char *label, unsigned action)
 {
    menu_entry_t entry;
+   char msg[PATH_MAX_LENGTH];
    static bool did_messagebox = false;
-   char msg[PATH_MAX_LENGTH]      = {0};
    enum action_iterate_type iterate_type;
    size_t selected;
    size_t *pop_selected      = NULL;
