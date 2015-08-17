@@ -131,12 +131,22 @@ bool menu_entries_show_back(void)
 
 /* Sets 's' to the name of the current core 
  * (shown at the top of the UI). */
-void menu_entries_get_core_title(char *s, size_t len)
+int menu_entries_get_core_title(char *s, size_t len)
 {
+   const char *core_name          = NULL;
+   const char *core_version       = NULL;
    global_t *global               = global_get_ptr();
-   const char *core_name          = global ? global->menu.info.library_name    : NULL;
-   const char *core_version       = global ? global->menu.info.library_version : NULL;
+   settings_t *settings           = config_get_ptr();
    rarch_system_info_t      *info = rarch_system_info_get_ptr();
+
+   if (!settings->menu.core_enable)
+      return -1; 
+
+   if (global)
+   {
+      core_name    = global->menu.info.library_name;
+      core_version = global->menu.info.library_version;
+   }
 
    if (!core_name || core_name[0] == '\0')
       core_name = info->info.library_name;
@@ -150,6 +160,8 @@ void menu_entries_get_core_title(char *s, size_t len)
 
    snprintf(s, len, "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
+
+   return 0;
 }
 
 static bool menu_entries_get_nonblocking_refresh(void)

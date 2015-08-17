@@ -52,7 +52,7 @@ int menu_entries_get_title(char *title, size_t title_len);
 
 bool menu_entries_show_back(void);
 
-void menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
+int menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 
 menu_entries_t *menu_entries_get_ptr(void);
 

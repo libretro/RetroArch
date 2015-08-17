@@ -1618,12 +1618,9 @@ static void xmb_frame(void)
             xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT);
    }
 
-   if (settings->menu.core_enable)
-   {
-      menu_entries_get_core_title(title_msg, sizeof(title_msg));
+   if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
       xmb_draw_text(menu, xmb, title_msg, xmb->margins.title.left, 
             height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT);
-   }
 
    depth = xmb_list_get_size(menu, MENU_LIST_PLAIN);
 

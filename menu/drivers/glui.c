@@ -460,14 +460,10 @@ static void glui_frame(void)
 
    glui_draw_scrollbar(gl);
 
-   if (settings->menu.core_enable)
-   {
-      menu_entries_get_core_title(title_msg, sizeof(title_msg));
-
+   if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
       glui_blit_line(glui->margin,
             height - glui->line_height, title_msg,
             title_color, TEXT_ALIGN_LEFT);
-   }
 
    if (settings->menu.timedate_enable)
    {

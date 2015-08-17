@@ -480,14 +480,11 @@ static void rgui_render(void)
          RGUI_TERM_START_X + (RGUI_TERM_WIDTH - strlen(title_buf)) * FONT_WIDTH_STRIDE / 2,
          RGUI_TERM_START_X, title_buf, TITLE_COLOR(settings));
 
-   if (settings->menu.core_enable)
-   {
-      menu_entries_get_core_title(title_msg, sizeof(title_msg));
+   if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
       blit_line(menu,
             RGUI_TERM_START_X,
             (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
             RGUI_TERM_START_Y + 2, title_msg, hover_color);
-   }
 
    if (settings->menu.timedate_enable)
    {
