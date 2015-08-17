@@ -122,17 +122,12 @@ const char* config_get_menu_driver_options(void)
    return options;
 }
 
-static int find_menu_driver_internal(const char *ident)
-{
-   return find_driver_index("menu_driver", ident);
-}
-
 void find_menu_driver(void)
 {
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
-   int i = find_menu_driver_internal(settings->menu.driver);
+   int i = find_driver_index("menu_driver", settings->menu.driver);
    if (i >= 0)
       driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
    else
@@ -157,7 +152,7 @@ static void init_menu_fallback(void)
 #ifdef HAVE_RGUI
    settings_t *settings = config_get_ptr();
    driver_t *driver     = driver_get_ptr();
-   int i = find_menu_driver_internal("rgui");
+   int i = find_driver_index("menu_driver", "rgui");
 
    if (i >= 0)
    {
