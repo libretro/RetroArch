@@ -2209,6 +2209,63 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
    switch (type)
    {
+      case DISPLAYLIST_HELP_SCREEN_LIST:
+      case DISPLAYLIST_MAIN_MENU:
+      case DISPLAYLIST_SETTINGS:
+      case DISPLAYLIST_SETTINGS_SUBGROUP:
+      case DISPLAYLIST_HORIZONTAL:
+      case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
+      case DISPLAYLIST_CONTENT_SETTINGS:
+      case DISPLAYLIST_INFORMATION_LIST:
+      case DISPLAYLIST_ADD_CONTENT_LIST:
+      case DISPLAYLIST_LOAD_CONTENT_LIST:
+      case DISPLAYLIST_OPTIONS:
+      case DISPLAYLIST_OPTIONS_CHEATS:
+      case DISPLAYLIST_OPTIONS_REMAPPINGS:
+      case DISPLAYLIST_SHADER_PARAMETERS_PRESET:
+      case DISPLAYLIST_PERFCOUNTERS_CORE:
+      case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
+      case DISPLAYLIST_DATABASE_ENTRY:
+      case DISPLAYLIST_DATABASE_QUERY:
+      case DISPLAYLIST_OPTIONS_SHADERS:
+      case DISPLAYLIST_CORE_CONTENT:
+      case DISPLAYLIST_CORES_UPDATER:
+      case DISPLAYLIST_SETTINGS_ALL:
+      case DISPLAYLIST_PLAYLIST_COLLECTION:
+      case DISPLAYLIST_HISTORY:
+      case DISPLAYLIST_OPTIONS_DISK:
+      case DISPLAYLIST_SYSTEM_INFO:
+      case DISPLAYLIST_CORES_SUPPORTED:
+      case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
+      case DISPLAYLIST_CORE_INFO:
+      case DISPLAYLIST_CORE_OPTIONS:
+      case DISPLAYLIST_DEFAULT:
+      case DISPLAYLIST_CORES:
+      case DISPLAYLIST_CORES_DETECTED:
+      case DISPLAYLIST_SHADER_PASS:
+      case DISPLAYLIST_SHADER_PRESET:
+      case DISPLAYLIST_DATABASES:
+      case DISPLAYLIST_DATABASE_CURSORS:
+      case DISPLAYLIST_DATABASE_PLAYLISTS:
+      case DISPLAYLIST_VIDEO_FILTERS:
+      case DISPLAYLIST_AUDIO_FILTERS:
+      case DISPLAYLIST_IMAGES:
+      case DISPLAYLIST_OVERLAYS:
+      case DISPLAYLIST_FONTS:
+      case DISPLAYLIST_CHEAT_FILES:
+      case DISPLAYLIST_REMAP_FILES:
+      case DISPLAYLIST_RECORD_CONFIG_FILES:
+      case DISPLAYLIST_CONFIG_FILES:
+      case DISPLAYLIST_CONTENT_HISTORY:
+      case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
+      case DISPLAYLIST_ARCHIVE_ACTION:
+      case DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE:
+         menu_list_clear(info->list);
+         break;
+   }
+
+   switch (type)
+   {
       case DISPLAYLIST_NONE:
          break;
       case DISPLAYLIST_INFO:
@@ -2222,7 +2279,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_entries_set_refresh();
          break;
       case DISPLAYLIST_HELP_SCREEN_LIST:
-         menu_list_clear(info->list);
          menu_list_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_HELP_CONTROLS),
                menu_hash_to_str(MENU_LABEL_HELP_CONTROLS),
@@ -2261,17 +2317,14 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_MAIN_MENU:
       case DISPLAYLIST_SETTINGS:
-         menu_list_clear(info->list);
          ret = menu_displaylist_parse_settings(menu, info, info->flags);
          need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_SUBGROUP:
-         menu_list_clear(info->list);
          ret = menu_displaylist_parse_settings_in_subgroup(info);
          need_push    = true;
          break;
       case DISPLAYLIST_HORIZONTAL:
-         menu_list_clear(info->list);
          ret = menu_displaylist_parse_horizontal_list(info);
 
          need_sort    = true;
@@ -2279,53 +2332,45 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push    = true;
          break;
       case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
-         menu_list_clear(info->list);
          ret = menu_displaylist_parse_horizontal_content_actions(info);
          need_refresh = true;
          need_push    = true;
          break;
       case DISPLAYLIST_CONTENT_SETTINGS:
-         menu_list_clear(info->list);
          ret = menu_displaylist_parse_load_content_settings(info);
 
          need_refresh = true;
          need_push    = true;
          break;
       case DISPLAYLIST_INFORMATION_LIST:
-         menu_list_clear(info->list);
          ret = menu_displaylist_parse_information_list(info);
 
          need_push    = true;
          need_refresh = true;
          break;
       case DISPLAYLIST_ADD_CONTENT_LIST:
-         menu_list_clear(info->list);
          ret = menu_displaylist_parse_add_content_list(info);
 
          need_push    = true;
          need_refresh = true;
          break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:
-         menu_list_clear(info->list);
          ret = menu_displaylist_parse_load_content_list(info);
 
          need_push    = true;
          need_refresh = true;
          break;
       case DISPLAYLIST_OPTIONS:
-         menu_list_clear(info->list);
          ret = menu_displaylist_parse_options(info);
 
          need_push    = true;
          break;
       case DISPLAYLIST_OPTIONS_CHEATS:
-         menu_list_clear(info->list);
          ret = menu_displaylist_parse_options_cheats(info);
 
          need_push    = true;
          break;
       case DISPLAYLIST_OPTIONS_REMAPPINGS:
-         menu_list_clear(info->list);
          ret = menu_displaylist_parse_options_remappings(info);
 
          need_push    = true;
@@ -2333,7 +2378,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_SHADER_PARAMETERS:
       case DISPLAYLIST_SHADER_PARAMETERS_PRESET:
 #ifdef HAVE_SHADER_MANAGER
-         menu_list_clear(info->list);
          {
             struct video_shader *shader = video_shader_driver_get_current_shader();
             if (!shader)
@@ -2357,7 +2401,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
-         menu_list_clear(info->list);
          menu_displaylist_push_perfcounter(info,
                (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
                perf_counters_libretro : perf_counters_rarch,
@@ -2372,13 +2415,11 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push    = true;
          break;
       case DISPLAYLIST_DATABASE_ENTRY:
-         menu_list_clear(info->list);
          ret = menu_displaylist_parse_database_entry(info);
 
          need_push    = true;
          break;
       case DISPLAYLIST_DATABASE_QUERY:
-         menu_list_clear(info->list);
          ret = menu_database_parse_query(info->list,
                info->path, (info->path_c[0] == '\0') ? NULL : info->path_c);
          strlcpy(info->path, info->path_b, sizeof(info->path));
@@ -2388,31 +2429,25 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push    = true;
          break;
       case DISPLAYLIST_OPTIONS_SHADERS:
-         menu_list_clear(info->list);
          ret = menu_displaylist_parse_shader_options(info);
 
          need_push    = true;
          break;
       case DISPLAYLIST_CORE_CONTENT:
-         menu_list_clear(info->list);
 #ifdef HAVE_NETWORKING
-         menu_list_clear(info->list);
          print_buf_lines(info->list, core_buf, core_len, MENU_FILE_DOWNLOAD_CORE_CONTENT);
          need_push    = true;
          need_refresh = true;
 #endif
          break;
       case DISPLAYLIST_CORES_UPDATER:
-         menu_list_clear(info->list);
 #ifdef HAVE_NETWORKING
-         menu_list_clear(info->list);
          print_buf_lines(info->list, core_buf, core_len, MENU_FILE_DOWNLOAD_CORE);
          need_push    = true;
          need_refresh = true;
 #endif
          break;
       case DISPLAYLIST_SETTINGS_ALL:
-         menu_list_clear(info->list);
          menu_displaylist_realloc_settings(&menu->entries, SL_FLAG_ALL_SETTINGS);
 
          setting = menu_setting_find(menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS));
@@ -2463,7 +2498,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push    = true;
          break;
       case DISPLAYLIST_PLAYLIST_COLLECTION:
-         menu_list_clear(info->list);
          {
             char path_playlist[PATH_MAX_LENGTH] = {0};
             content_playlist_t *playlist        = NULL;
@@ -2492,7 +2526,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          }
          break;
       case DISPLAYLIST_HISTORY:
-         menu_list_clear(info->list);
          {
             char path_playlist[PATH_MAX_LENGTH] = {0};
             content_playlist_t *playlist        = g_defaults.history;
@@ -2509,7 +2542,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          }
          break;
       case DISPLAYLIST_OPTIONS_DISK:
-         menu_list_clear(info->list);
          menu_list_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_DISK_INDEX),
                menu_hash_to_str(MENU_LABEL_DISK_INDEX),
@@ -2526,14 +2558,12 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push    = true;
          break;
       case DISPLAYLIST_SYSTEM_INFO:
-         menu_list_clear(info->list);
          menu_displaylist_parse_system_info(info);
          need_push    = true;
          need_refresh = true;
          break;
       case DISPLAYLIST_CORES_SUPPORTED:
       case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
-         menu_list_clear(info->list);
          need_sort    = true;
          need_refresh = true;
          need_push    = true;
@@ -2568,12 +2598,10 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          }
          break;
       case DISPLAYLIST_CORE_INFO:
-         menu_list_clear(info->list);
          menu_displaylist_parse_core_info(info);
          need_push = true;
          break;
       case DISPLAYLIST_CORE_OPTIONS:
-         menu_list_clear(info->list);
          if (system && system->core_options)
          {
             size_t opts = core_option_size(system->core_options);
@@ -2616,7 +2644,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_RECORD_CONFIG_FILES:
       case DISPLAYLIST_CONFIG_FILES:
       case DISPLAYLIST_CONTENT_HISTORY:
-         menu_list_clear(info->list);
          if (menu_displaylist_parse_generic(info, &need_sort) == 0)
          {
             need_refresh = true;
@@ -2624,11 +2651,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          }
          break;
       case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
-         menu_list_clear(info->list);
          menu_displaylist_parse_generic(info, &need_sort);
          break;
       case DISPLAYLIST_ARCHIVE_ACTION:
-         menu_list_clear(info->list);
          menu_list_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_OPEN_ARCHIVE),
                menu_hash_to_str(MENU_LABEL_OPEN_ARCHIVE),
@@ -2640,7 +2665,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push = true;
          break;
       case DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE:
-         menu_list_clear(info->list);
          menu_list_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_OPEN_ARCHIVE),
                menu_hash_to_str(MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE),
