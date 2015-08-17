@@ -2170,8 +2170,8 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
             for (i = 0; i < list_size; i++)
             {
                unsigned type = 0;
-               char core_path[PATH_MAX_LENGTH]    = {0};
-               char display_name[PATH_MAX_LENGTH] = {0};
+               char core_path[PATH_MAX_LENGTH];
+               char display_name[PATH_MAX_LENGTH];
                const char *path                   = NULL;
 
                menu_list_get_at_offset(info->list, i, &path, NULL, &type, NULL);
