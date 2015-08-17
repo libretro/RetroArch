@@ -103,8 +103,6 @@ float menu_entry_num_min(uint32_t i);
 
 float menu_entry_num_max(uint32_t i);
 
-int menu_entry_get_current_id(bool use_representation);
-
 bool menu_entry_is_currently_selected(unsigned id);
 
 void menu_entry_get(menu_entry_t *entry, size_t i,

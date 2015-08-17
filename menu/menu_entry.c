@@ -338,24 +338,6 @@ bool menu_entry_is_currently_selected(unsigned id)
    return (id == nav->selection_ptr);
 }
 
-int menu_entry_get_current_id(bool use_representation)
-{
-   size_t i;
-   menu_list_t   *menu_list = menu_list_get_ptr();
-   size_t               end = menu_list_get_size(menu_list);
-
-   for (i = 0; i < end; i++)
-   {
-      menu_entry_t entry = {{0}};
-      menu_entry_get(&entry, i, NULL, use_representation);
-
-      if (menu_entry_is_currently_selected(entry.idx))
-         return i;
-   }
-
-   return -1;
-}
-
 /* Performs whatever actions are associated with menu entry 'i'.
  *
  * This is the most important function because it does all the work
