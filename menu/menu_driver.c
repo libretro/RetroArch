@@ -176,7 +176,7 @@ void init_menu(void)
       case MENU_VIDEO_DRIVER_DIRECT3D:
          break;
       case MENU_VIDEO_DRIVER_OPENGL:
-         if (video_driver && !strcmp(video_driver, "d3d"))
+         if (video_driver && (strcmp(video_driver, "gl") != 0))
          {
             int i = find_menu_driver_internal("rgui");
             if (i >= 0)
