@@ -67,22 +67,8 @@ static rarch_setting_t *menu_entry_get_setting(uint32_t i)
 
 enum menu_entry_type menu_entry_get_type(uint32_t i)
 {
-   rarch_setting_t *setting  = NULL;
-   const char *path          = NULL;
-   const char *entry_label   = NULL;
-   const char *dir           = NULL;
-   const char *label         = NULL;
    menu_list_t *menu_list    = menu_list_get_ptr();
-   unsigned type             = 0;
-   unsigned menu_type        = 0;
-
-   menu_list_get_last_stack(menu_list, &dir,
-         &label, &menu_type, NULL);
-
-   menu_list_get_at_offset(menu_list->selection_buf, i, &path,
-         &entry_label, &type, NULL);
-
-   setting = menu_entry_get_setting(i);
+   rarch_setting_t *setting  = menu_entry_get_setting(i);
 
    /* XXX Really a special kind of ST_ACTION, but this should be changed */
    if (menu_setting_is_of_path_type(setting))
