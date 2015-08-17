@@ -43,7 +43,7 @@ int menu_entry_go_back(void)
    if (!menu_list)
       return -1;
 
-   menu_setting_apply_deferred();
+   menu_settings_apply_deferred();
    menu_list_pop_stack(menu_list);
 
    if (menu_entries_needs_refresh())

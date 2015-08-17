@@ -363,7 +363,62 @@ int menu_setting_set(unsigned type, const char *label,
    return ret;
 }
 
-void menu_setting_apply_deferred(void)
+int menu_setting_apply_deferred(rarch_setting_t *setting)
+{
+   if (!setting)
+      return -1;
+
+   if (setting->type >= ST_GROUP)
+      return -1;
+
+   if (!(setting->flags & SD_FLAG_IS_DEFERRED))
+      return -1;
+
+   switch (setting->type)
+   {
+      case ST_BOOL:
+         if (*setting->value.boolean != setting->original_value.boolean)
+         {
+            setting->original_value.boolean = *setting->value.boolean;
+            setting->deferred_handler(setting);
+         }
+         break;
+      case ST_INT:
+         if (*setting->value.integer != setting->original_value.integer)
+         {
+            setting->original_value.integer = *setting->value.integer;
+            setting->deferred_handler(setting);
+         }
+         break;
+      case ST_UINT:
+         if (*setting->value.unsigned_integer != setting->original_value.unsigned_integer)
+         {
+            setting->original_value.unsigned_integer = *setting->value.unsigned_integer;
+            setting->deferred_handler(setting);
+         }
+         break;
+      case ST_FLOAT:
+         if (*setting->value.fraction != setting->original_value.fraction)
+         {
+            setting->original_value.fraction = *setting->value.fraction;
+            setting->deferred_handler(setting);
+         }
+         break;
+      case ST_PATH:
+      case ST_DIR:
+      case ST_STRING:
+      case ST_BIND:
+         /* Always run the deferred write handler */
+         setting->deferred_handler(setting);
+         break;
+      default:
+         break;
+   }
+
+   return 0;
+}
+
+void menu_settings_apply_deferred(void)
 {
    rarch_setting_t *setting = menu_setting_get_ptr();
     
@@ -371,54 +426,7 @@ void menu_setting_apply_deferred(void)
       return;
     
    for (; setting->type != ST_NONE; setting++)
-   {
-      if (setting->type >= ST_GROUP)
-         continue;
-
-      if (!(setting->flags & SD_FLAG_IS_DEFERRED))
-         continue;
-
-      switch (setting->type)
-      {
-         case ST_BOOL:
-            if (*setting->value.boolean != setting->original_value.boolean)
-            {
-               setting->original_value.boolean = *setting->value.boolean;
-               setting->deferred_handler(setting);
-            }
-            break;
-         case ST_INT:
-            if (*setting->value.integer != setting->original_value.integer)
-            {
-               setting->original_value.integer = *setting->value.integer;
-               setting->deferred_handler(setting);
-            }
-            break;
-         case ST_UINT:
-            if (*setting->value.unsigned_integer != setting->original_value.unsigned_integer)
-            {
-               setting->original_value.unsigned_integer = *setting->value.unsigned_integer;
-               setting->deferred_handler(setting);
-            }
-            break;
-         case ST_FLOAT:
-            if (*setting->value.fraction != setting->original_value.fraction)
-            {
-               setting->original_value.fraction = *setting->value.fraction;
-               setting->deferred_handler(setting);
-            }
-            break;
-         case ST_PATH:
-         case ST_DIR:
-         case ST_STRING:
-         case ST_BIND:
-            /* Always run the deferred write handler */
-            setting->deferred_handler(setting);
-            break;
-         default:
-            break;
-      }
-   }
+      menu_setting_apply_deferred(setting);
 }
 
 
