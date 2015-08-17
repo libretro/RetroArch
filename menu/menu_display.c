@@ -41,24 +41,17 @@ menu_framebuf_t *menu_display_fb_get_ptr(void)
    return &disp->frame_buf;
 }
 
-static bool menu_display_fb_in_use(menu_framebuf_t *frame_buf)
-{
-   if (!frame_buf)
-      return false;
-   return (frame_buf->data != NULL);
-}
-
 void menu_display_fb_set_dirty(void)
 {
    menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
-   if (menu_display_fb_in_use(frame_buf))
+   if (frame_buf && frame_buf->data)
       frame_buf->dirty = true;
 }
 
 void menu_display_fb_unset_dirty(void)
 {
    menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
-   if (menu_display_fb_in_use(frame_buf))
+   if (frame_buf && frame_buf->data)
       frame_buf->dirty = false;
 }
 
