@@ -69,24 +69,6 @@ static bool menu_settings_list_append(rarch_setting_t **list,
    return true;
 }
 
-static void menu_settings_list_current_add_bind_type(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned type)
-{
-   unsigned idx = list_info->index - 1;
-   (*list)[idx].bind_type = type;
-}
-
-static void menu_settings_list_current_add_flags(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned values)
-{
-   unsigned idx = list_info->index - 1;
-   (*list)[idx].flags |= values;
-}
-
 static void menu_settings_list_current_add_range(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -101,7 +83,7 @@ static void menu_settings_list_current_add_range(
    (*list)[idx].enforce_minrange  = enforce_minrange_enable;
    (*list)[idx].enforce_maxrange  = enforce_maxrange_enable;
 
-   menu_settings_list_current_add_flags(list, list_info, SD_FLAG_HAS_RANGE);
+   (*list)[list_info->index - 1].flags |= SD_FLAG_HAS_RANGE;
 }
 
 static void menu_settings_list_current_add_values(
@@ -120,41 +102,6 @@ static void menu_settings_list_current_add_cmd(
 {
    unsigned idx = list_info->index - 1;
    (*list)[idx].cmd_trigger.idx = values;
-}
-
-
-static rarch_setting_t *menu_setting_list_new(unsigned size)
-{
-   rarch_setting_t *list = (rarch_setting_t*)calloc(size, sizeof(*list));
-   if (!list)
-      return NULL;
-
-   return list;
-}
-
-int menu_setting_set_flags(rarch_setting_t *setting)
-{
-   if (!setting)
-      return 0;
-
-   if (setting->flags & SD_FLAG_IS_DRIVER)
-      return MENU_SETTING_DRIVER;
-
-   switch (setting->type)
-   {
-      case ST_ACTION:
-         return MENU_SETTING_ACTION;
-      case ST_PATH:
-         return MENU_FILE_PATH;
-      case ST_GROUP:
-         return MENU_SETTING_GROUP;
-      case ST_SUB_GROUP:
-         return MENU_SETTING_SUBGROUP;
-      default:
-         break;
-   }
-
-   return 0;
 }
 
 static int setting_generic_action_ok_default(void *data, bool wraparound)
@@ -2364,10 +2311,7 @@ static void settings_data_list_current_add_flags(
       rarch_setting_info_t *list_info,
       unsigned values)
 {
-   menu_settings_list_current_add_flags(
-         list,
-         list_info,
-         values);
+   (*list)[list_info->index - 1].flags |= values;
    setting_add_special_callbacks(list, list_info, values);
 }
 
@@ -4112,7 +4056,7 @@ static bool setting_append_list_input_hotkey_options(
       CONFIG_BIND(settings->input.binds[0][i], 0, 0,
             strdup(keybind->base), strdup(keybind->desc), &retro_keybinds_1[i],
             group_info.name, subgroup_info.name, parent_group);
-      menu_settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
+      (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
    }
 
    END_SUB_GROUP(list, list_info, parent_group);
@@ -6049,7 +5993,7 @@ static bool setting_append_list_input_player_options(
                group_info.name,
                subgroup_info.name,
                parent_group);
-         menu_settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
+         (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
       }
    }
 
@@ -6106,7 +6050,7 @@ rarch_setting_t *menu_setting_new(unsigned mask)
       return NULL;
 
    list_info->size  = 32;
-   list = menu_setting_list_new(list_info->size);
+   list = (rarch_setting_t*)calloc(list_info->size, sizeof(*list));
    if (!list)
       goto error;
 
