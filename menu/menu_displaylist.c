@@ -2499,7 +2499,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_PLAYLIST_COLLECTION:
          {
-            char path_playlist[PATH_MAX_LENGTH] = {0};
+            char path_playlist[PATH_MAX_LENGTH];
             content_playlist_t *playlist        = NULL;
 
             if (menu->playlist)
@@ -2527,7 +2527,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_HISTORY:
          {
-            char path_playlist[PATH_MAX_LENGTH] = {0};
+            char path_playlist[PATH_MAX_LENGTH];
             content_playlist_t *playlist        = g_defaults.history;
 
             strlcpy(path_playlist, "history", sizeof(path_playlist));
