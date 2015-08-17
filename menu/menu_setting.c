@@ -1103,21 +1103,6 @@ static int setting_string_action_right_driver(void *data,
    return 0;
 }
 
-#if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
-static int core_list_action_toggle(void *data, bool wraparound)
-{
-   rarch_setting_t *setting  = (rarch_setting_t *)data;
-   settings_t      *settings = config_get_ptr();
-
-   /* If the user CANCELs the browse, then settings->libretro is now
-    * set to a directory, which is very bad and will cause a crash
-    * later on. I need to be able to add something to call when a
-    * cancel happens.
-    */
-   return setting_set_with_string_representation(setting, settings->libretro_directory);
-}
-#endif
-
 /**
  ******* ACTION OK CALLBACK FUNCTIONS *******
 **/
@@ -2530,12 +2515,6 @@ static bool setting_append_list_main_menu_options(
    (*list)[list_info->index - 1].size = sizeof(settings->libretro);
    (*list)[list_info->index - 1].value.string = settings->libretro;
    (*list)[list_info->index - 1].values = EXT_EXECUTABLES;
-   /* It is not a good idea to have chosen action_toggle as the place
-    * to put this callback. It should be called whenever the browser
-    * needs to get the directory to browse into. It's not quite like
-    * get_string_representation, but it is close. */
-   (*list)[list_info->index - 1].action_left  = core_list_action_toggle;
-   (*list)[list_info->index - 1].action_right = core_list_action_toggle;
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CORE);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 #endif
