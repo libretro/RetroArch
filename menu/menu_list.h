@@ -19,6 +19,7 @@
 
 #include <stddef.h>
 #include <file/file_list.h>
+#include "menu_setting.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,6 +39,7 @@ typedef enum
 
 typedef struct menu_file_list_cbs
 {
+   rarch_setting_t *setting;
    int (*action_iterate)(const char *label, unsigned action);
    int (*action_deferred_push)(menu_displaylist_info_t *info);
    int (*action_select)(const char *path, const char *label, unsigned type,

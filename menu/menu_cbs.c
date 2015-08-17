@@ -51,6 +51,7 @@ void menu_cbs_init(void *data,
 {
    char elem0[PATH_MAX_LENGTH];
    char elem1[PATH_MAX_LENGTH];
+   rarch_setting_t *setting     = NULL;
    struct string_list *str_list = NULL;
    const char *menu_label       = NULL;
    menu_file_list_cbs_t *cbs    = NULL;
@@ -66,6 +67,11 @@ void menu_cbs_init(void *data,
 
    if (!cbs)
       return;
+
+   setting = menu_setting_find(label);
+
+   if (setting)
+      cbs->setting = setting;
 
    elem0[0] = '\0';
    elem1[0] = '\0';
