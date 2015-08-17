@@ -293,7 +293,6 @@ float menu_entry_num_max(uint32_t i)
 void menu_entry_get(menu_entry_t *entry, size_t i,
       void *userdata, bool use_representation)
 {
-   const char *label         = NULL;
    const char *path          = NULL;
    const char *entry_label   = NULL;
    menu_file_list_cbs_t *cbs = NULL;
@@ -303,7 +302,6 @@ void menu_entry_get(menu_entry_t *entry, size_t i,
    if (!menu_list)
       return;
 
-   menu_list_get_last_stack(menu_list, NULL, &label, NULL, NULL);
    
    list = userdata ? (file_list_t*)userdata : menu_list->selection_buf;
 
@@ -316,11 +314,15 @@ void menu_entry_get(menu_entry_t *entry, size_t i,
    cbs = menu_list_get_actiondata_at_offset(list, i);
 
    if (cbs && cbs->action_get_value && use_representation)
+   {
+      const char *label         = NULL;
+      menu_list_get_last_stack(menu_list, NULL, &label, NULL, NULL);
       cbs->action_get_value(list,
             &entry->spacing, entry->type, i, label,
             entry->value,  sizeof(entry->value), 
             entry_label, path,
             entry->path, sizeof(entry->path));
+   }
 
    entry->idx         = i;
 
