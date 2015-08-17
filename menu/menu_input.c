@@ -825,10 +825,6 @@ static int pointer_tap(menu_file_list_cbs_t *cbs,
    menu_input_t *menu_input = menu_input_get_ptr();
    menu_navigation_t *nav   = menu_navigation_get_ptr();
 
-   menu_input->pointer.accel  = 0;
-   menu_input->pointer.accel0 = 0;
-   menu_input->pointer.accel1 = 0;
-
    if (menu_input->pointer.ptr == nav->selection_ptr
          && cbs && cbs->action_select)
       return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_SELECT);
@@ -861,6 +857,9 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
    {
       if (!menu_input->pointer.oldpressed[0])
       {
+         menu_input->pointer.accel  = 0;
+         menu_input->pointer.accel0 = 0;
+         menu_input->pointer.accel1 = 0;
          menu_input->pointer.start_x       = menu_input->pointer.x;
          menu_input->pointer.start_y       = menu_input->pointer.y;
          menu_input->pointer.old_x         = menu_input->pointer.x;
