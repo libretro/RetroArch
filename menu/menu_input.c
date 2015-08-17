@@ -531,34 +531,29 @@ static int menu_input_bind_iterate_keyboard(int64_t current, int timeout)
 
 int menu_input_bind_iterate(char *s, size_t len)
 {
-   int64_t current;
    struct menu_bind_state binds;
-   int timeout                  = 0;
    menu_input_t *menu_input     = menu_input_get_ptr();
    driver_t *driver             = driver_get_ptr();
    global_t *global             = global_get_ptr();
    bool bind_mode_kb            = global ? global->menu.bind_mode_keyboard : false;
-
-   menu_driver_render();
-
-   current = rarch_get_time_usec();
-   timeout = (menu_input->binds.timeout_end - current) / 1000000;
+   int64_t current              = rarch_get_time_usec();
+   int timeout                  = (menu_input->binds.timeout_end - current) / 1000000;
 
    if (bind_mode_kb)
-   snprintf(s, len,
-         "[%s]\npress keyboard\n(timeout %d %s)",
-         input_config_bind_map[
-         menu_input->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
-         timeout,
-         menu_hash_to_str(MENU_VALUE_SECONDS));
-    else
-        snprintf(s, len,
-        "[%s]\npress joypad\n(RETURN to skip)",
-        input_config_bind_map[
-        menu_input->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
-
-   if (bind_mode_kb)
+   {
+      snprintf(s, len,
+            "[%s]\npress keyboard\n(timeout %d %s)",
+            input_config_bind_map[
+            menu_input->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
+            timeout,
+            menu_hash_to_str(MENU_VALUE_SECONDS));
       return menu_input_bind_iterate_keyboard(current, timeout);
+   }
+   else
+      snprintf(s, len,
+            "[%s]\npress joypad\n(RETURN to skip)",
+            input_config_bind_map[
+            menu_input->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
 
    binds = menu_input->binds;
 
