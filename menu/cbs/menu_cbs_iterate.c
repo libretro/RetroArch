@@ -39,8 +39,6 @@ static int action_iterate_help(char *s, size_t len, const char *label)
    menu_handle_t *menu       = menu_driver_get_ptr();
    settings_t *settings      = config_get_ptr();
 
-   menu_driver_render();
-
    switch (menu->help_screen_type)
    {
       case MENU_HELP_WELCOME:
@@ -182,10 +180,7 @@ static int action_iterate_info(char *s, size_t len, const char *label)
    if (!menu_list)
       return 0;
 
-   list = (file_list_t*)menu_list->selection_buf;
-
-   menu_driver_render();
-
+   list            = (file_list_t*)menu_list->selection_buf;
    current_setting = menu_setting_find(list->list[selection].label);
 
    if (current_setting)
@@ -353,8 +348,6 @@ static int action_iterate_menu_viewport(char *s, size_t len,
 
    menu_list_get_last_stack(menu_list, NULL, &label, &type, NULL);
 
-   menu_driver_render();
-
    if (settings->video.scale_integer)
    {
       custom->x     = 0;
@@ -460,6 +453,7 @@ static int action_iterate_main(const char *label, unsigned action)
    {
       case ITERATE_TYPE_HELP:
          ret = action_iterate_help(msg, sizeof(msg), label);
+         do_render       = true;
          pop_selected    = NULL;
          do_messagebox   = true;
          do_pop_stack    = true;
@@ -476,11 +470,13 @@ static int action_iterate_main(const char *label, unsigned action)
          break;
       case ITERATE_TYPE_VIEWPORT:
          ret = action_iterate_menu_viewport(msg, sizeof(msg), label, action, hash);
+         do_render       = true;
          do_messagebox   = true;
          break;
       case ITERATE_TYPE_INFO:
          ret = action_iterate_info(msg, sizeof(msg), label);
          pop_selected    = &nav->selection_ptr;
+         do_render       = true;
          do_messagebox   = true;
          do_pop_stack    = true;
          do_post_iterate = true;
