@@ -567,19 +567,11 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          strlcpy(setting->value.string, value, setting->size);
          break;
       case ST_BOOL:
-         value_hash = menu_hash_calculate(value);
-
-         switch (value_hash)
-         {
-            case MENU_VALUE_TRUE:
-               *setting->value.boolean = true;
-               break;
-            case MENU_VALUE_FALSE:
-               *setting->value.boolean = false;
-               break;
-         }
+         if (!strcmp(value, "true"))
+            *setting->value.boolean = true;
+         else if (!strcmp(value, "false"))
+            *setting->value.boolean = false;
          break;
-
          /* TODO */
       case ST_HEX:
          break;
