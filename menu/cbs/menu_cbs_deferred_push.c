@@ -873,18 +873,17 @@ int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
    settings_t *settings   = config_get_ptr();
-   rarch_setting_t *setting = menu_setting_find(elem0);
 
    if (!cbs)
       return -1;
 
    cbs->action_deferred_push = deferred_push_default;
 
-   if (setting)
+   if (cbs->setting)
    {
-      uint32_t parent_group_hash = menu_hash_calculate(setting->parent_group);
+      uint32_t parent_group_hash = menu_hash_calculate(cbs->setting->parent_group);
 
-      if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && setting->type == ST_GROUP)
+      if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && cbs->setting->type == ST_GROUP)
       {
          if (!settings->menu.collapse_subgroups_enable)
          {
