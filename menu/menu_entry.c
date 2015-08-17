@@ -178,6 +178,7 @@ void menu_entry_set_bool_value(uint32_t i, bool value)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
    setting_set_with_string_representation(setting, value ? "true" : "false");
+   menu_setting_generic(setting, false);
 }
 
 struct string_list *menu_entry_enum_values(uint32_t i)
