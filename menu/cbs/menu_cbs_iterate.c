@@ -170,30 +170,23 @@ static int action_iterate_help(char *s, size_t len, const char *label)
 
 static int action_iterate_info(char *s, size_t len, const char *label)
 {
-   int ret = 0;
    char needle[PATH_MAX_LENGTH]     = {0};
-   unsigned info_type               = 0;
-   rarch_setting_t *current_setting = NULL;
-   file_list_t *list                = NULL;
+   menu_file_list_cbs_t *cbs        = NULL;
    menu_list_t *menu_list           = menu_list_get_ptr();
-   size_t selection                 = menu_navigation_get_current_selection();
+   size_t i                         = menu_navigation_get_current_selection();
+
    if (!menu_list)
       return 0;
 
-   list            = (file_list_t*)menu_list->selection_buf;
-   current_setting = menu_setting_find(list->list[selection].label);
+   cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
 
-   if (current_setting)
-      strlcpy(needle, current_setting->name, sizeof(needle));
-   else if ((current_setting = menu_setting_find(list->list[selection].label)))
-   {
-      if (current_setting)
-         strlcpy(needle, current_setting->name, sizeof(needle));
-   }
+   if (cbs->setting)
+      strlcpy(needle, cbs->setting->name, sizeof(needle));
    else
    {
       const char *lbl = NULL;
-      menu_list_get_at_offset(list, selection, NULL, &lbl, &info_type, NULL);
+      menu_list_get_at_offset(menu_list->selection_buf,
+            i, NULL, &lbl, NULL, NULL);
 
       if (lbl)
          strlcpy(needle, lbl, sizeof(needle));
@@ -201,7 +194,7 @@ static int action_iterate_info(char *s, size_t len, const char *label)
 
    setting_get_description(needle, s, len);
 
-   return ret;
+   return 0;
 }
 
 static int action_iterate_menu_viewport(char *s, size_t len,
