@@ -215,7 +215,7 @@ static void rarch_main_data_menu_iterate(void)
       menu_environment_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST, NULL);
 #endif
 
-   menu_entries_refresh(MENU_ACTION_REFRESH);
+   menu_entries_refresh();
 }
 #endif
 

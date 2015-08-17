@@ -46,7 +46,7 @@ int menu_entry_go_back(void)
    menu_list_pop_stack(menu_list);
 
    if (menu_entries_needs_refresh())
-      menu_entries_refresh(MENU_ACTION_CANCEL);
+      menu_entries_refresh();
 
    rarch_main_data_iterate();
 

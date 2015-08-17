@@ -172,7 +172,7 @@ static bool menu_entries_get_nonblocking_refresh(void)
    return entries->nonblocking_refresh;
 }
 
-int menu_entries_refresh(unsigned action)
+int menu_entries_refresh(void)
 {
    if (menu_entries_get_nonblocking_refresh())
       return -1;

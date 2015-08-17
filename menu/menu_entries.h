@@ -56,7 +56,7 @@ int menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 
 menu_entries_t *menu_entries_get_ptr(void);
 
-int menu_entries_refresh(unsigned action);
+int menu_entries_refresh(void);
 
 bool menu_entries_needs_refresh(void);
 
