@@ -967,6 +967,7 @@ static int setting_bool_action_toggle_default(void *data, bool wraparound)
       return -1;
 
    *setting->value.boolean = !(*setting->value.boolean);
+   menu_setting_apply_deferred(setting);
 
    return 0;
 }
