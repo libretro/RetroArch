@@ -42,14 +42,7 @@ int menu_entry_go_back(void)
    menu_list_t *menu_list = menu_list_get_ptr();
    if (!menu_list)
       return -1;
-
    menu_list_pop_stack(menu_list);
-
-   if (menu_entries_needs_refresh())
-      menu_entries_refresh();
-
-   rarch_main_data_iterate();
-
    return 0;
 }
 
