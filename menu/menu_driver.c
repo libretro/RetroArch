@@ -152,43 +152,47 @@ void find_menu_driver(void)
    }
 }
 
+static void init_menu_fallback(void)
+{
+#ifdef HAVE_RGUI
+   settings_t *settings = config_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   int i = find_menu_driver_internal("rgui");
+
+   if (i >= 0)
+   {
+      driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
+      if (settings)
+         strlcpy(settings->menu.driver, "rgui", sizeof(settings->menu.driver));
+   }
+#endif
+}
+
 void init_menu(void)
 {
-   int i;
    const char *video_driver;
    driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
 
    if (driver->menu)
       return;
 
-   (void)settings;
-   (void)i;
-
    find_menu_driver();
 
-#ifdef HAVE_RGUI
    video_driver = video_driver_get_ident();
 
    switch (driver->menu_ctx->type)
    {
       case MENU_VIDEO_DRIVER_GENERIC:
+         break;
       case MENU_VIDEO_DRIVER_DIRECT3D:
+         if (video_driver && (strcmp(video_driver, "d3d") != 0))
+            init_menu_fallback();
          break;
       case MENU_VIDEO_DRIVER_OPENGL:
          if (video_driver && (strcmp(video_driver, "gl") != 0))
-         {
-            int i = find_menu_driver_internal("rgui");
-            if (i >= 0)
-            {
-               driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
-               if (settings)
-                  strlcpy(settings->menu.driver, "rgui", sizeof(settings->menu.driver));
-            }
-         }
+            init_menu_fallback();
          break;
    }
-#endif
 
    if (!(driver->menu = (menu_handle_t*)menu_init(driver->menu_ctx)))
       rarch_fail(1, "init_menu()");
