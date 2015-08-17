@@ -171,7 +171,6 @@ static int action_iterate_help(char *s, size_t len, const char *label)
 static int action_iterate_info(char *s, size_t len, const char *label)
 {
    uint32_t label_hash              = 0;
-   char needle[PATH_MAX_LENGTH]     = {0};
    menu_file_list_cbs_t *cbs        = NULL;
    menu_list_t *menu_list           = menu_list_get_ptr();
    size_t i                         = menu_navigation_get_current_selection();
@@ -182,18 +181,11 @@ static int action_iterate_info(char *s, size_t len, const char *label)
    cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
 
    if (cbs->setting)
-      strlcpy(needle, cbs->setting->name, sizeof(needle));
-   else
    {
-      const char *lbl = NULL;
-      menu_list_get_at_offset(menu_list->selection_buf,
-            i, NULL, &lbl, NULL, NULL);
-
-      if (lbl)
-         strlcpy(needle, lbl, sizeof(needle));
+      char needle[PATH_MAX_LENGTH];
+      strlcpy(needle, cbs->setting->name, sizeof(needle));
+      label_hash       = menu_hash_calculate(needle);
    }
-
-   label_hash       = menu_hash_calculate(needle);
 
    return menu_hash_get_help(label_hash, s, len);
 }
@@ -423,7 +415,7 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
 static int action_iterate_main(const char *label, unsigned action)
 {
    menu_entry_t entry;
-   char msg[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH] = {0};
    static bool did_messagebox = false;
    enum action_iterate_type iterate_type;
    size_t selected;
