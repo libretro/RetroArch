@@ -360,27 +360,6 @@ void menu_driver_free(menu_handle_t *menu)
       driver->free(menu);
 }
 
-void menu_driver_render_messagebox(const char *msg)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   const ui_companion_driver_t *ui = ui_companion_get_ptr();
-   if (!msg)
-      return;
-
-   if (driver->render_messagebox && msg[0] != '\0')
-      driver->render_messagebox(msg);
-   if (ui->render_messagebox && msg[0] != '\0')
-      ui->render_messagebox(msg);
-}
-
-void menu_driver_render(void)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   
-   if (driver->render)
-      driver->render();
-}
-
 void menu_driver_toggle(bool latch)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();

@@ -193,11 +193,7 @@ void menu_driver_context_reset(void);
 
 void menu_driver_free(menu_handle_t *menu);
 
-void menu_driver_render(void);
-
 void menu_driver_toggle(bool latch);
-
-void menu_driver_render_messagebox(const char *msg);
 
 void menu_driver_populate_entries(const char *path, const char *label,
          unsigned k);
