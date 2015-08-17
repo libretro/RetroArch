@@ -226,28 +226,27 @@ void menu_entry_pathdir_get_value(uint32_t i, char *s, size_t len)
 
 int menu_entry_pathdir_set_value(uint32_t i, const char *s)
 {
-   const char *menu_label   = NULL;
-   const char *menu_path    = NULL;
-   rarch_setting_t *setting = NULL;
-   menu_list_t *menu_list   = menu_list_get_ptr();
-
-   menu_list_get_last_stack(menu_list,
-         &menu_path, &menu_label, NULL, NULL);
-
-   setting = menu_setting_find(menu_label);
-
-   if (!setting)
-      return -1;
-
-   if (setting->type != ST_DIR)
-      return -1;
+   menu_file_list_cbs_t *cbs = NULL;
+   const char *menu_path     = NULL;
+   menu_list_t *menu_list    = menu_list_get_ptr();
 
    (void)s;
-   setting_set_with_string_representation(setting, menu_path);
 
-   menu_setting_generic(setting, false);
+   menu_list_get_last_stack(menu_list,
+         &menu_path, NULL, NULL, NULL);
+   cbs = (menu_file_list_cbs_t*)menu_list_get_last_stack_actiondata(menu_list);
 
-   menu_list_pop_stack_by_needle(menu_list, setting->name);
+   if (!cbs || !cbs->setting)
+      return -1;
+
+   if (cbs->setting->type != ST_DIR)
+      return -1;
+
+   setting_set_with_string_representation(cbs->setting, menu_path);
+
+   menu_setting_generic(cbs->setting, false);
+
+   menu_list_pop_stack_by_needle(menu_list, cbs->setting->name);
 
    return 0;
 }
