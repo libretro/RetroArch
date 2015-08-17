@@ -43,7 +43,6 @@ int menu_entry_go_back(void)
    if (!menu_list)
       return -1;
 
-   menu_settings_apply_deferred();
    menu_list_pop_stack(menu_list);
 
    if (menu_entries_needs_refresh())
@@ -179,7 +178,6 @@ void menu_entry_set_bool_value(uint32_t i, bool value)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
    setting_set_with_string_representation(setting, value ? "true" : "false");
-   menu_setting_apply_deferred(setting);
 }
 
 struct string_list *menu_entry_enum_values(uint32_t i)

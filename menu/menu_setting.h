@@ -218,8 +218,6 @@ typedef struct rarch_setting
 
 int menu_setting_apply_deferred(rarch_setting_t *setting);
 
-void menu_settings_apply_deferred(void);
-
 int menu_setting_set_flags(rarch_setting_t *setting);
 
 int menu_setting_generic(rarch_setting_t *setting, bool wraparound);

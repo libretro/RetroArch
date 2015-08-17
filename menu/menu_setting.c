@@ -418,18 +418,6 @@ int menu_setting_apply_deferred(rarch_setting_t *setting)
    return 0;
 }
 
-void menu_settings_apply_deferred(void)
-{
-   rarch_setting_t *setting = menu_setting_get_ptr();
-    
-   if (!setting)
-      return;
-    
-   for (; setting->type != ST_NONE; setting++)
-      menu_setting_apply_deferred(setting);
-}
-
-
 /**
  * setting_reset_setting:
  * @setting            : pointer to setting
@@ -590,6 +578,8 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
 
    if (setting->change_handler)
       setting->change_handler(setting);
+
+   menu_setting_apply_deferred(setting);
 
    return 0;
 }
@@ -980,6 +970,8 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
          *setting->value.unsigned_integer = setting->min;
    }
 
+   menu_setting_apply_deferred(setting);
+
    return 0;
 }
 
@@ -1006,6 +998,8 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
       }
    }
 
+   menu_setting_apply_deferred(setting);
+
    return 0;
 }
 
@@ -1025,6 +1019,8 @@ static int setting_fraction_action_left_default(
       if (*setting->value.fraction < setting->min)
          *setting->value.fraction = setting->min;
    }
+
+   menu_setting_apply_deferred(setting);
 
    return 0;
 }
@@ -1053,6 +1049,8 @@ static int setting_fraction_action_right_default(
       }
    }
 
+   menu_setting_apply_deferred(setting);
+
    return 0;
 }
 
@@ -1072,6 +1070,8 @@ static int setting_string_action_left_driver(void *data,
 #endif
    }
 
+   menu_setting_apply_deferred(setting);
+
    return 0;
 }
 
@@ -1090,6 +1090,8 @@ static int setting_string_action_right_driver(void *data,
       if (settings && settings->menu.navigation.wraparound.setting_enable)
          find_first_driver(setting->name, setting->value.string, setting->size);
    }
+
+   menu_setting_apply_deferred(setting);
 
    return 0;
 }
@@ -1128,6 +1130,9 @@ static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparoun
       rarch_main_msg_queue_push("Autoconf file saved successfully", 1, 100, true);
    else
       rarch_main_msg_queue_push("Error saving autoconf file", 1, 100, true);
+
+   menu_setting_apply_deferred(setting);
+
    return 0;
 }
 
@@ -1171,6 +1176,8 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
       }
    }
 
+   menu_setting_apply_deferred(setting);
+
    return 0;
 }
 
@@ -1194,6 +1201,7 @@ static int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound
 
    if (setting_generic_action_ok_default(setting, wraparound) != 0)
       return -1;
+
 
    return 0;
 }
@@ -1226,6 +1234,8 @@ static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
    menu_input_key_start_line(setting->short_description,
          setting->name, 0, 0, cb);
 
+   menu_setting_apply_deferred(setting);
+
    return 0;
 }
 
@@ -1240,6 +1250,8 @@ static int setting_action_action_ok(void *data, bool wraparound)
 
    if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
       event_command(setting->cmd_trigger.idx);
+
+   menu_setting_apply_deferred(setting);
 
    return 0;
 }
