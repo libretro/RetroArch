@@ -344,13 +344,12 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t label_hash, uint32_t menu_label_hash, const char *elem0)
 {
    unsigned i;
-   rarch_setting_t *setting = menu_setting_find(label);
 
-   if (setting)
+   if (cbs->setting)
    {
-      uint32_t parent_group_hash = menu_hash_calculate(setting->parent_group);
+      uint32_t parent_group_hash = menu_hash_calculate(cbs->setting->parent_group);
 
-      if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && (setting->type == ST_GROUP))
+      if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && (cbs->setting->type == ST_GROUP))
       {
          cbs->action_left = action_left_scroll;
          return 0;
