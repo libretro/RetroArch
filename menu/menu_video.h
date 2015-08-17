@@ -44,6 +44,8 @@ void menu_video_frame_background(
       bool force_transparency);
 #endif
 
+const char *menu_video_get_ident(void);
+
 #ifdef __cplusplus
 }
 #endif

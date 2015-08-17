@@ -173,7 +173,7 @@ void init_menu(void)
 
    find_menu_driver();
 
-   video_driver = video_driver_get_ident();
+   video_driver = menu_video_get_ident();
 
    switch (driver->menu_ctx->type)
    {

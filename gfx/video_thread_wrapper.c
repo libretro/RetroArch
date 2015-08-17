@@ -1132,3 +1132,14 @@ void *rarch_threaded_video_get_ptr(const video_driver_t **drv)
       return NULL;
    return thr->driver_data;
 }
+
+const char *rarch_threaded_video_get_ident(void)
+{
+   driver_t *driver          = driver_get_ptr();
+   const thread_video_t *thr = (const thread_video_t*)
+      driver->video_data;
+
+   if (!thr)
+      return NULL;
+   return thr->driver->ident;
+}

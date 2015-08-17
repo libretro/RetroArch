@@ -254,5 +254,7 @@ bool rarch_threaded_video_init(
  **/
 void *rarch_threaded_video_get_ptr(const video_driver_t **drv);
 
+const char *rarch_threaded_video_get_ident(void);
+
 #endif
 

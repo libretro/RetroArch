@@ -21,6 +21,7 @@
 #include "menu_video.h"
 
 #include "../gfx/video_common.h"
+#include "../gfx/video_thread_wrapper.h"
 
 #ifdef HAVE_OPENGL
 void menu_video_draw_frame(
@@ -140,3 +141,12 @@ void menu_video_frame_background(
    gl->coords.color = gl->white_color_ptr;
 }
 #endif
+
+const char *menu_video_get_ident(void)
+{
+   settings_t *settings = config_get_ptr();
+   if (settings->video.threaded)
+      return rarch_threaded_video_get_ident();
+
+   return video_driver_get_ident();
+}
