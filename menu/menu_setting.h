@@ -61,7 +61,6 @@ enum setting_flags
    SD_FLAG_IS_DRIVER      = (1 << 6),
    SD_FLAG_EXIT           = (1 << 7),
    SD_FLAG_CMD_APPLY_AUTO = (1 << 8),
-   SD_FLAG_IS_DEFERRED    = (1 << 9),
    SD_FLAG_BROWSER_ACTION = (1 << 10),
    SD_FLAG_ADVANCED       = (1 << 11)
 };
@@ -148,7 +147,6 @@ typedef struct rarch_setting
    uint64_t             flags;
    
    change_handler_t              change_handler;
-   change_handler_t              deferred_handler;
    change_handler_t              read_handler;
    action_start_handler_t        action_start;
    action_iterate_handler_t      action_iterate;

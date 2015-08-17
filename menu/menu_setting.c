@@ -69,11 +69,6 @@ static bool menu_settings_list_append(rarch_setting_t **list,
    return true;
 }
 
-static void null_write_handler(void *data)
-{
-   (void)data;
-}
-
 static void menu_settings_list_current_add_bind_type(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -90,12 +85,6 @@ static void menu_settings_list_current_add_flags(
 {
    unsigned idx = list_info->index - 1;
    (*list)[idx].flags |= values;
-
-   if (values & SD_FLAG_IS_DEFERRED)
-   {
-      (*list)[idx].deferred_handler = (*list)[idx].change_handler;
-      (*list)[idx].change_handler = null_write_handler;
-   }
 }
 
 static void menu_settings_list_current_add_range(
@@ -363,61 +352,6 @@ int menu_setting_set(unsigned type, const char *label,
    return ret;
 }
 
-static int menu_setting_apply_deferred(rarch_setting_t *setting)
-{
-   if (!setting)
-      return -1;
-
-   if (setting->type >= ST_GROUP)
-      return -1;
-
-   if (!(setting->flags & SD_FLAG_IS_DEFERRED))
-      return -1;
-
-   switch (setting->type)
-   {
-      case ST_BOOL:
-         if (*setting->value.boolean != setting->original_value.boolean)
-         {
-            setting->original_value.boolean = *setting->value.boolean;
-            setting->deferred_handler(setting);
-         }
-         break;
-      case ST_INT:
-         if (*setting->value.integer != setting->original_value.integer)
-         {
-            setting->original_value.integer = *setting->value.integer;
-            setting->deferred_handler(setting);
-         }
-         break;
-      case ST_UINT:
-         if (*setting->value.unsigned_integer != setting->original_value.unsigned_integer)
-         {
-            setting->original_value.unsigned_integer = *setting->value.unsigned_integer;
-            setting->deferred_handler(setting);
-         }
-         break;
-      case ST_FLOAT:
-         if (*setting->value.fraction != setting->original_value.fraction)
-         {
-            setting->original_value.fraction = *setting->value.fraction;
-            setting->deferred_handler(setting);
-         }
-         break;
-      case ST_PATH:
-      case ST_DIR:
-      case ST_STRING:
-      case ST_BIND:
-         /* Always run the deferred write handler */
-         setting->deferred_handler(setting);
-         break;
-      default:
-         break;
-   }
-
-   return 0;
-}
-
 /**
  * setting_reset_setting:
  * @setting            : pointer to setting
@@ -578,8 +512,6 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
 
    if (setting->change_handler)
       setting->change_handler(setting);
-
-   menu_setting_apply_deferred(setting);
 
    return 0;
 }
@@ -948,7 +880,6 @@ static int setting_bool_action_toggle_default(void *data, bool wraparound)
       return -1;
 
    *setting->value.boolean = !(*setting->value.boolean);
-   menu_setting_apply_deferred(setting);
 
    return 0;
 }
@@ -970,7 +901,6 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
          *setting->value.unsigned_integer = setting->min;
    }
 
-   menu_setting_apply_deferred(setting);
 
    return 0;
 }
@@ -998,8 +928,6 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
       }
    }
 
-   menu_setting_apply_deferred(setting);
-
    return 0;
 }
 
@@ -1019,8 +947,6 @@ static int setting_fraction_action_left_default(
       if (*setting->value.fraction < setting->min)
          *setting->value.fraction = setting->min;
    }
-
-   menu_setting_apply_deferred(setting);
 
    return 0;
 }
@@ -1049,8 +975,6 @@ static int setting_fraction_action_right_default(
       }
    }
 
-   menu_setting_apply_deferred(setting);
-
    return 0;
 }
 
@@ -1070,8 +994,6 @@ static int setting_string_action_left_driver(void *data,
 #endif
    }
 
-   menu_setting_apply_deferred(setting);
-
    return 0;
 }
 
@@ -1090,8 +1012,6 @@ static int setting_string_action_right_driver(void *data,
       if (settings && settings->menu.navigation.wraparound.setting_enable)
          find_first_driver(setting->name, setting->value.string, setting->size);
    }
-
-   menu_setting_apply_deferred(setting);
 
    return 0;
 }
@@ -1130,8 +1050,6 @@ static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparoun
       rarch_main_msg_queue_push("Autoconf file saved successfully", 1, 100, true);
    else
       rarch_main_msg_queue_push("Error saving autoconf file", 1, 100, true);
-
-   menu_setting_apply_deferred(setting);
 
    return 0;
 }
@@ -1175,8 +1093,6 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
          target->joyaxis = AXIS_NONE;
       }
    }
-
-   menu_setting_apply_deferred(setting);
 
    return 0;
 }
@@ -1234,8 +1150,6 @@ static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
    menu_input_key_start_line(setting->short_description,
          setting->name, 0, 0, cb);
 
-   menu_setting_apply_deferred(setting);
-
    return 0;
 }
 
@@ -1250,8 +1164,6 @@ static int setting_action_action_ok(void *data, bool wraparound)
 
    if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
       event_command(setting->cmd_trigger.idx);
-
-   menu_setting_apply_deferred(setting);
 
    return 0;
 }
@@ -1600,7 +1512,6 @@ static rarch_setting_t setting_action_setting(const char* name,
    result.group                     = group;
    result.subgroup                  = subgroup;
    result.change_handler            = NULL;
-   result.deferred_handler          = NULL;
    result.read_handler              = NULL;
    result.get_string_representation = &setting_get_string_representation_default;
    result.action_start              = NULL;
@@ -4061,7 +3972,6 @@ static bool setting_append_list_audio_options(
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 32, 512, 16.0, true, true);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DEFERRED);
 
    CONFIG_FLOAT(
          settings->audio.rate_control_delta,
