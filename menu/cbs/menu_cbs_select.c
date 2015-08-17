@@ -28,16 +28,14 @@ static int action_select_default(const char *path, const char *label, unsigned t
    enum menu_action action   = MENU_ACTION_NOOP;
    menu_file_list_cbs_t *cbs = NULL;
    menu_list_t    *menu_list = menu_list_get_ptr();
-   rarch_setting_t *setting  = menu_setting_find(
-         menu_list->selection_buf->list[idx].label);
 
    menu_entry_get(&entry, idx, NULL, false);
 
    cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, idx);
     
-   if (setting)
+   if (cbs->setting)
    {
-       switch (setting->type)
+       switch (cbs->setting->type)
        {
            case ST_BOOL:
            case ST_INT:
