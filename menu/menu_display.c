@@ -62,14 +62,15 @@ void menu_display_fb_unset_dirty(void)
  **/
 void menu_display_fb(void)
 {
-   driver_t *driver     = driver_get_ptr();
-   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
    video_driver_set_texture_enable(true, false);
 
    if (!settings->menu.pause_libretro)
    {
+      driver_t *driver     = driver_get_ptr();
+      global_t *global     = global_get_ptr();
+
       if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
       {
          bool block_libretro_input = driver->block_libretro_input;
@@ -89,8 +90,7 @@ bool menu_display_update_pending(void)
    menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
 
    if ((anim && anim->is_active) || (anim && anim->label.is_updated)
-         || (frame_buf && frame_buf->dirty)
-         )
+         || (frame_buf && frame_buf->dirty))
       return true;
    return false;
 }
