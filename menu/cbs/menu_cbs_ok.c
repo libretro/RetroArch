@@ -783,22 +783,21 @@ static int action_ok_cheat_file_load(const char *path,
 static int action_ok_menu_wallpaper_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char wallpaper_path[PATH_MAX_LENGTH] = {0};
+   char wallpaper_path[PATH_MAX_LENGTH];
    const char *menu_label               = NULL;
    const char *menu_path                = NULL;
-   rarch_setting_t *setting             = NULL;
+   menu_file_list_cbs_t *cbs            = NULL;
    menu_list_t       *menu_list         = menu_list_get_ptr();
    settings_t *settings                 = config_get_ptr();
-
+   
    if (!menu_list)
       return -1;
 
    menu_list_get_last_stack(menu_list, &menu_path, &menu_label,
          NULL, NULL);
+   cbs = menu_list_get_last_stack_actiondata(menu_list);
 
-   setting = menu_setting_find(menu_label);
-
-   if (!setting)
+   if (!cbs)
       return -1;
 
    fill_pathname_join(wallpaper_path, menu_path, path, sizeof(wallpaper_path));
@@ -811,7 +810,7 @@ static int action_ok_menu_wallpaper_load(const char *path,
             true);
    }
 
-   menu_list_pop_stack_by_needle(menu_list, setting->name);
+   menu_list_pop_stack_by_needle(menu_list, cbs->setting->name);
 
    return 0;
 }
