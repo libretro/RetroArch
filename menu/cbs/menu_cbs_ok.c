@@ -1349,7 +1349,7 @@ static int action_ok_set_path(const char *path,
 {
    const char *menu_path    = NULL;
    const char *menu_label   = NULL;
-   rarch_setting_t *setting = NULL;
+   menu_file_list_cbs_t *cbs            = NULL;
    menu_list_t   *menu_list = menu_list_get_ptr();
 
    if (!menu_list)
@@ -1357,15 +1357,13 @@ static int action_ok_set_path(const char *path,
 
    menu_list_get_last_stack(menu_list,
          &menu_path, &menu_label, NULL, NULL);
+   cbs = menu_list_get_last_stack_actiondata(menu_list);
 
-   setting = menu_setting_find(menu_label);
-
-   if (!setting)
+   if (!cbs)
       return -1;
 
-   menu_action_setting_set_current_string_path(setting, menu_path, path);
-
-   menu_list_pop_stack_by_needle(menu_list, setting->name);
+   menu_action_setting_set_current_string_path(cbs->setting, menu_path, path);
+   menu_list_pop_stack_by_needle(menu_list, cbs->setting->name);
 
    return 0;
 }
@@ -2057,7 +2055,6 @@ static int is_rdb_entry(uint32_t label_hash)
 static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t hash, const char *elem0)
 {
-   rarch_setting_t *setting = menu_setting_find(label);
    uint32_t elem0_hash      = menu_hash_calculate(elem0);
 
    if (elem0[0] != '\0' && (is_rdb_entry(elem0_hash) == 0))
@@ -2066,7 +2063,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   if (setting && setting->browser_selection_type == ST_DIR)
+   if (cbs->setting && cbs->setting->browser_selection_type == ST_DIR)
    {
       cbs->action_ok = action_ok_push_generic_list;
       return 0;
