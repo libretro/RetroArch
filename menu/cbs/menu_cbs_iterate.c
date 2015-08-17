@@ -170,6 +170,7 @@ static int action_iterate_help(char *s, size_t len, const char *label)
 
 static int action_iterate_info(char *s, size_t len, const char *label)
 {
+   uint32_t label_hash              = 0;
    char needle[PATH_MAX_LENGTH]     = {0};
    menu_file_list_cbs_t *cbs        = NULL;
    menu_list_t *menu_list           = menu_list_get_ptr();
@@ -192,9 +193,9 @@ static int action_iterate_info(char *s, size_t len, const char *label)
          strlcpy(needle, lbl, sizeof(needle));
    }
 
-   setting_get_description(needle, s, len);
+   label_hash       = menu_hash_calculate(needle);
 
-   return 0;
+   return menu_hash_get_help(label_hash, s, len);
 }
 
 static int action_iterate_menu_viewport(char *s, size_t len,

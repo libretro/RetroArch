@@ -248,20 +248,6 @@ int setting_set_with_string_representation(
 void setting_get_string_representation(void *data, char *s, size_t len);
 
 /**
- * setting_get_description:
- * @label              : identifier label of setting
- * @s                  : output message 
- * @len                : size of @s
- *
- * Writes a 'Help' description message to @s if there is
- * one available based on the identifier label of the setting
- * (@label).
- *
- * Returns: 0 (always for now). TODO: make it handle -1 as well.
- **/
-int setting_get_description(const char *label, char *s, size_t len);
-
-/**
  * setting_get_label:
  * @list               : File list on which to perform the search
  * @s                  : String for the type to be represented on-screen as

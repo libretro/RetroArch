@@ -1900,26 +1900,6 @@ static rarch_setting_t setting_string_setting_options(enum setting_type type,
   return result;
 }
 
-/**
- * setting_get_description:
- * @label              : identifier label of setting
- * @s                  : output message 
- * @len                : size of @s
- *
- * Writes a 'Help' description message to @s if there is
- * one available based on the identifier label of the setting
- * (@label).
- *
- * Returns: 0 (always for now). TODO: make it handle -1 as well.
- **/
-int setting_get_description(const char *label, char *s,
-      size_t len)
-{
-   uint32_t label_hash       = menu_hash_calculate(label);
-
-   return menu_hash_get_help(label_hash, s, len);
-}
-
 static void get_string_representation_bind_device(void * data, char *s,
       size_t len)
 {
