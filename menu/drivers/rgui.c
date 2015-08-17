@@ -779,5 +779,4 @@ menu_ctx_driver_t menu_ctx_rgui = {
    "rgui",
    MENU_VIDEO_DRIVER_GENERIC,
    rgui_environ,
-   NULL,
 };

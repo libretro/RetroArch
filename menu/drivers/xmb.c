@@ -2593,5 +2593,4 @@ menu_ctx_driver_t menu_ctx_xmb = {
    "xmb",
    MENU_VIDEO_DRIVER_OPENGL,
    xmb_environ,
-   NULL,
 };

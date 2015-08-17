@@ -810,5 +810,4 @@ menu_ctx_driver_t menu_ctx_glui = {
    "glui",
    MENU_VIDEO_DRIVER_OPENGL,
    glui_environ,
-   NULL,
 };
