@@ -363,7 +363,7 @@ int menu_setting_set(unsigned type, const char *label,
    return ret;
 }
 
-int menu_setting_apply_deferred(rarch_setting_t *setting)
+static int menu_setting_apply_deferred(rarch_setting_t *setting)
 {
    if (!setting)
       return -1;
