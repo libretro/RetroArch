@@ -879,7 +879,8 @@ static int setting_bool_action_toggle_default(void *data, bool wraparound)
    if (!setting)
       return -1;
 
-   *setting->value.boolean = !(*setting->value.boolean);
+   setting_set_with_string_representation(setting,
+         *setting->value.boolean ? "false" : "true");
 
    return 0;
 }
