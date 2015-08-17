@@ -141,7 +141,6 @@ typedef struct menu_ctx_driver
    const char *ident;
    menu_video_driver_type_t type;
    int (*environ_cb)(menu_environ_cb_t type, void *data);
-   bool  (*perform_action)(void* data, unsigned action);
 } menu_ctx_driver_t;
 
 extern menu_ctx_driver_t menu_ctx_rmenu;

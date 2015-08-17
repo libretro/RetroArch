@@ -945,7 +945,7 @@ void menu_input_post_iterate(int *ret, unsigned action)
 
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 {
-   unsigned ret                            = 0;
+   unsigned ret                            = MENU_ACTION_NOOP;
    static bool initial_held                = true;
    static bool first_held                  = false;
    static const retro_input_t input_repeat =
@@ -1033,19 +1033,12 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       ret = MENU_ACTION_INFO;
    else if (trigger_input & (UINT64_C(1) << RARCH_MENU_TOGGLE))
       ret = MENU_ACTION_TOGGLE;
-   else
-      ret = MENU_ACTION_NOOP;
 
    if (settings->menu.mouse.enable)
       menu_input_mouse(&ret);
 
    if (settings->menu.pointer.enable)
       menu_input_pointer(&ret);
-
-   if (trigger_input &&
-         menu_ctx_driver_get_ptr()->perform_action &&
-         menu_ctx_driver_get_ptr()->perform_action(menu->userdata, ret))
-      return MENU_ACTION_NOOP;
 
    return ret;
 }
