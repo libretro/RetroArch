@@ -47,6 +47,10 @@ static int action_select_default(const char *path, const char *label, unsigned t
                break;
            case ST_PATH:
            case ST_DIR:
+           case ST_ACTION:
+           case ST_STRING:
+           case ST_HEX:
+           case ST_BIND:
                action = MENU_ACTION_OK;
                break;
            default:
@@ -56,7 +60,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
     
    if (action == MENU_ACTION_NOOP)
    {
-       if ((cbs && cbs->action_ok) || menu_setting_is_of_general_type(setting))
+       if (cbs && cbs->action_ok)
            action = MENU_ACTION_OK;
        else
        {

@@ -301,9 +301,7 @@ rarch_setting_t *menu_setting_find(const char *label)
    rarch_setting_t *settings = menu_setting_get_ptr();
    uint32_t needle = 0;
 
-   if (!settings)
-      return NULL;
-   if (!label)
+   if (!settings || !label)
       return NULL;
 
    needle = menu_hash_calculate(label);
@@ -6321,40 +6319,6 @@ bool menu_setting_is_of_path_type(rarch_setting_t *setting)
          (setting->flags & SD_FLAG_BROWSER_ACTION) &&
          (setting->action_right || setting->action_left || setting->action_select) &&
          setting->change_handler)
-      return true;
-   return false;
-}
-
-bool menu_setting_is_of_general_type(rarch_setting_t *setting)
-{
-   if    (
-         setting &&
-         (setting->type > ST_ACTION) &&
-         (setting->type < ST_GROUP)
-         )
-      return true;
-   return false;
-}
-
-bool menu_setting_is_of_numeric_type(rarch_setting_t *setting)
-{
-   if    (
-         setting &&
-         ((setting->type == ST_INT)  ||
-          (setting->type == ST_UINT) ||
-          (setting->type == ST_FLOAT))
-         )
-      return true;
-   return false;
-}
-
-bool menu_setting_is_of_enum_type(rarch_setting_t *setting)
-{
-   if    (
-         setting &&
-         (setting->type == ST_STRING)  &&
-         setting->values
-         )
       return true;
    return false;
 }

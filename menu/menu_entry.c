@@ -97,7 +97,7 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
    if (menu_setting_is_of_path_type(setting))
       return MENU_ENTRY_PATH;
 
-   if (menu_setting_is_of_enum_type(setting))
+   if (setting && (setting->type == ST_STRING)  && setting->values)
       return MENU_ENTRY_ENUM;
 
    if (setting)
