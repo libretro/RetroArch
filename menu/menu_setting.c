@@ -278,18 +278,15 @@ int menu_setting_set(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
    int ret                  = 0;
-   rarch_setting_t *setting = NULL;
    menu_navigation_t   *nav = menu_navigation_get_ptr();
    menu_list_t   *menu_list = menu_list_get_ptr();
+   menu_file_list_cbs_t *cbs = menu_list_get_actiondata_at_offset(
+         menu_list->selection_buf, nav->selection_ptr);
 
-   setting = menu_setting_find(
-         menu_list->selection_buf->list
-         [nav->selection_ptr].label);
-
-   if (!setting)
+   if (!cbs)
       return 0;
 
-   ret = menu_action_handle_setting(setting,
+   ret = menu_action_handle_setting(cbs->setting,
          type, action, wraparound);
 
    if (ret == -1)
