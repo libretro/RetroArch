@@ -40,10 +40,8 @@ void menu_entries_set_start(size_t i)
 {
    menu_entries_t *entries   = menu_entries_get_ptr();
    
-   if (!entries)
-     return;
-
-   entries->begin = i;
+   if (entries)
+      entries->begin = i;
 }
 
 /* Returns the starting index of the menu entry list. */
@@ -182,31 +180,27 @@ bool menu_entries_needs_refresh(void)
 void menu_entries_set_nonblocking_refresh(void)
 {
    menu_entries_t *entries = menu_entries_get_ptr();
-   if (!entries)
-      return;
-   entries->nonblocking_refresh = true;
+   if (entries)
+      entries->nonblocking_refresh = true;
 }
 
 void menu_entries_unset_nonblocking_refresh(void)
 {
    menu_entries_t *entries = menu_entries_get_ptr();
-   if (!entries)
-      return;
-   entries->nonblocking_refresh = false;
+   if (entries)
+      entries->nonblocking_refresh = false;
 }
 
 void menu_entries_set_refresh(void)
 {
    menu_entries_t *entries = menu_entries_get_ptr();
-   if (!entries)
-      return;
-   entries->need_refresh = true;
+   if (entries)
+      entries->need_refresh = true;
 }
 
 void menu_entries_unset_refresh(void)
 {
    menu_entries_t *entries = menu_entries_get_ptr();
-   if (!entries)
-      return;
-   entries->need_refresh = false;
+   if (entries)
+      entries->need_refresh = false;
 }
