@@ -503,7 +503,6 @@ static void setting_reset_setting(rarch_setting_t* setting)
 int setting_set_with_string_representation(rarch_setting_t* setting,
       const char* value)
 {
-   uint32_t value_hash;
    if (!setting || !value)
       return -1;
 
