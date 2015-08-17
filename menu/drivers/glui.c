@@ -808,6 +808,7 @@ menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    glui_load_image,
    "glui",
+   MENU_VIDEO_DRIVER_OPENGL,
    glui_environ,
    NULL,
 };

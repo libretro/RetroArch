@@ -777,6 +777,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    "rgui",
+   MENU_VIDEO_DRIVER_GENERIC,
    rgui_environ,
    NULL,
 };

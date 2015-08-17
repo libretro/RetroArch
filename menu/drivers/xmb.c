@@ -2591,6 +2591,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_list_bind_init,
    xmb_load_image,
    "xmb",
+   MENU_VIDEO_DRIVER_OPENGL,
    xmb_environ,
    NULL,
 };
