@@ -366,9 +366,6 @@ int menu_entry_iterate(unsigned action)
    if (!menu_list)
       return -1;
 
-   if (action != MENU_ACTION_NOOP || menu_entries_needs_refresh() || menu_display_update_pending())
-      menu_display_fb_set_dirty();
-
    menu_list_get_last_stack(menu_list, NULL, &label, NULL, NULL);
 
    return menu_iterate_main(label, action);

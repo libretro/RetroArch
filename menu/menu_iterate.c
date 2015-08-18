@@ -33,27 +33,6 @@
 #include "../input/input_common.h"
 #include "../input/input_autodetect.h"
 
-static void menu_driver_render_messagebox(const char *msg)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   const ui_companion_driver_t *ui = ui_companion_get_ptr();
-   if (!msg)
-      return;
-
-   if (driver->render_messagebox && msg[0] != '\0')
-      driver->render_messagebox(msg);
-   if (ui->render_messagebox && msg[0] != '\0')
-      ui->render_messagebox(msg);
-}
-
-static void menu_driver_render(void)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   
-   if (driver->render)
-      driver->render();
-}
-
 static int action_iterate_help(char *s, size_t len, const char *label)
 {
    unsigned i;
@@ -437,15 +416,16 @@ int menu_iterate_main(const char *label, unsigned action)
 {
    menu_entry_t entry;
    char msg[PATH_MAX_LENGTH] = {0};
-   static bool did_messagebox = false;
    enum action_iterate_type iterate_type;
    size_t selected;
    size_t *pop_selected      = NULL;
+   bool fb_is_dirty          = false;
    bool do_messagebox        = false;
    bool do_pop_stack         = false;
    bool do_post_iterate      = false;
    bool do_render            = false;
    int ret                   = 0;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
    menu_handle_t *menu       = menu_driver_get_ptr();
    menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_display_t *disp      = menu_display_get_ptr();
@@ -455,6 +435,9 @@ int menu_iterate_main(const char *label, unsigned action)
       return 0;
    
    iterate_type              = action_iterate_type(hash);
+
+   if (action != MENU_ACTION_NOOP || menu_entries_needs_refresh() || menu_display_update_pending())
+      fb_is_dirty = true;
 
    switch (iterate_type)
    {
@@ -523,13 +506,20 @@ int menu_iterate_main(const char *label, unsigned action)
          break;
    }
 
-   did_messagebox = did_messagebox != do_messagebox;
+   if (fb_is_dirty != do_messagebox)
+      fb_is_dirty = true;
 
-   if (did_messagebox)
+   if (fb_is_dirty)
       menu_display_fb_set_dirty();
 
-   if (do_messagebox)
-      menu_driver_render_messagebox(msg);
+   if (do_messagebox && msg[0] != '\0')
+   {
+      const ui_companion_driver_t *ui = ui_companion_get_ptr();
+      if (driver->render_messagebox && msg[0] != '\0')
+         driver->render_messagebox(msg);
+      if (ui->render_messagebox && msg[0] != '\0')
+         ui->render_messagebox(msg);
+   }
 
    if (do_pop_stack && action == MENU_ACTION_OK)
       menu_list_pop(menu_list->menu_stack, pop_selected);
@@ -538,7 +528,10 @@ int menu_iterate_main(const char *label, unsigned action)
       menu_input_post_iterate(&ret, action);
 
    if (do_render)
-      menu_driver_render();
+   {
+      if (driver->render)
+         driver->render();
+   }
 
    return ret;
 }
