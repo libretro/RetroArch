@@ -119,6 +119,116 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 }
 #endif
 
+/**
+ * menu_list_elem_is_dir:
+ * @list                     : File list handle.
+ * @offset                   : Offset index of element.
+ *
+ * Is the current entry at offset @offset a directory?
+ *
+ * Returns: true (1) if entry is a directory, otherwise false (0).
+ **/
+static bool menu_list_elem_is_dir(file_list_t *list,
+      unsigned offset)
+{
+   unsigned type     = 0;
+
+   menu_list_get_at_offset(list, offset, NULL, NULL, &type, NULL);
+
+   return type == MENU_FILE_DIRECTORY;
+}
+
+/**
+ * menu_list_elem_get_first_char:
+ * @list                     : File list handle.
+ * @offset                   : Offset index of element.
+ *
+ * Gets the first character of an element in the
+ * file list.
+ *
+ * Returns: first character of element in file list.
+ **/
+static int menu_list_elem_get_first_char(
+      file_list_t *list, unsigned offset)
+{
+   int ret;
+   const char *path = NULL;
+
+   menu_list_get_alt_at_offset(list, offset, &path);
+   ret = tolower(*path);
+
+   /* "Normalize" non-alphabetical entries so they 
+    * are lumped together for purposes of jumping. */
+   if (ret < 'a')
+      ret = 'a' - 1;
+   else if (ret > 'z')
+      ret = 'z' + 1;
+   return ret;
+}
+
+static void menu_list_build_scroll_indices(file_list_t *list)
+{
+   size_t i;
+   int current;
+   bool current_is_dir;
+   menu_navigation_t *nav = menu_navigation_get_ptr();
+
+   if (!nav || !list)
+      return;
+
+   nav->scroll.indices.size = 0;
+
+   if (!list->size)
+      return;
+
+   nav->scroll.indices.list[nav->scroll.indices.size++] = 0;
+
+   current        = menu_list_elem_get_first_char(list, 0);
+   current_is_dir = menu_list_elem_is_dir(list, 0);
+
+   for (i = 1; i < list->size; i++)
+   {
+      int first   = menu_list_elem_get_first_char(list, i);
+      bool is_dir = menu_list_elem_is_dir(list, i);
+
+      if ((current_is_dir && !is_dir) || (first > current))
+         nav->scroll.indices.list[nav->scroll.indices.size++] = i;
+
+      current        = first;
+      current_is_dir = is_dir;
+   }
+
+   nav->scroll.indices.list[nav->scroll.indices.size++] = 
+      list->size - 1;
+}
+
+/**
+ * Before a refresh, we could have deleted a 
+ * file on disk, causing selection_ptr to 
+ * suddendly be out of range.
+ *
+ * Ensure it doesn't overflow.
+ **/
+static void menu_list_refresh(file_list_t *list)
+{
+   size_t list_size;
+   menu_navigation_t *nav   = menu_navigation_get_ptr();
+   menu_list_t   *menu_list = menu_list_get_ptr();
+   if (!nav || !menu_list || !list)
+      return;
+
+   nav->scroll.indices.size = 0;
+
+   menu_list_build_scroll_indices(list);
+
+   list_size = menu_list_get_size(menu_list);
+
+   if ((nav->selection_ptr >= list_size) && list_size)
+      menu_navigation_set(nav, list_size - 1, true);
+   else if (!list_size)
+      menu_navigation_clear(nav, true);
+}
+
 static void menu_displaylist_push_perfcounter(
       menu_displaylist_info_t *info,
       const struct retro_perf_counter **counters,
