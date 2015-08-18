@@ -348,7 +348,6 @@ void menu_free(menu_handle_t *menu)
 int menu_iterate(retro_input_t input,
       retro_input_t old_input, retro_input_t trigger_input)
 {
-   int32_t ret              = 0;
    unsigned action          = 0;
    menu_display_t *disp     = menu_display_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
@@ -359,9 +358,7 @@ int menu_iterate(retro_input_t input,
 
    action = menu_input->joypad.state;
 
-   ret = menu_iterate_main(action);
-
-   if (ret)
+   if (menu_iterate_main(action))
       return -1;
 
    return 0;
