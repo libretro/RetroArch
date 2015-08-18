@@ -262,29 +262,6 @@ size_t  menu_driver_list_get_selection(void)
    return 0;
 }
 
-void  menu_driver_list_insert(file_list_t *list, const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   menu_file_list_cbs_t *cbs       = NULL;
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (!list)
-      return;
-
-   if (driver->list_insert)
-      driver->list_insert(list, path, label, idx);
-
-   file_list_free_actiondata(list, idx);
-   cbs = (menu_file_list_cbs_t*)
-      calloc(1, sizeof(menu_file_list_cbs_t));
-
-   if (!cbs)
-      return;
-
-   file_list_set_actiondata(list, idx, cbs);
-   menu_cbs_init(list, path, label, type, idx);
-}
-
 void menu_driver_list_cache(menu_list_type_t type, unsigned action)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
@@ -366,15 +343,6 @@ void menu_driver_toggle(bool latch)
 
    if (driver->toggle)
       driver->toggle(latch);
-}
-
-void menu_driver_populate_entries(const char *path, const char *label,
-         unsigned k)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->populate_entries)
-      driver->populate_entries(path, label, k);
 }
 
 bool menu_driver_load_image(void *data, menu_image_type_t type)

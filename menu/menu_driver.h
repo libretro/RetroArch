@@ -195,17 +195,11 @@ void menu_driver_free(menu_handle_t *menu);
 
 void menu_driver_toggle(bool latch);
 
-void menu_driver_populate_entries(const char *path, const char *label,
-         unsigned k);
-
 bool menu_driver_load_image(void *data, menu_image_type_t type);
 
 void menu_driver_list_cache(menu_list_type_t type, unsigned action);
 
 void  menu_driver_list_free(file_list_t *list, size_t i, size_t list_size);
-
-void  menu_driver_list_insert(file_list_t *list, const char *path,
-      const char *label, unsigned type, size_t list_size);
 
 void  menu_driver_list_clear(file_list_t *list);
 

@@ -24,6 +24,29 @@
 #include "menu_list.h"
 #include "menu_navigation.h"
 
+static void  menu_driver_list_insert(file_list_t *list, const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   menu_file_list_cbs_t *cbs       = NULL;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (!list)
+      return;
+
+   if (driver->list_insert)
+      driver->list_insert(list, path, label, idx);
+
+   file_list_free_actiondata(list, idx);
+   cbs = (menu_file_list_cbs_t*)
+      calloc(1, sizeof(menu_file_list_cbs_t));
+
+   if (!cbs)
+      return;
+
+   file_list_set_actiondata(list, idx, cbs);
+   menu_cbs_init(list, path, label, type, idx);
+}
+
 menu_list_t *menu_list_get_ptr(void)
 {
    menu_entries_t *entries       = menu_entries_get_ptr();
