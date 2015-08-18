@@ -231,10 +231,7 @@ static void menu_input_poll_bind_state(struct menu_bind_state *state, unsigned p
          RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
 
    if (!joypad)
-   {
-      RARCH_ERR("Cannot poll raw joypad state.");
       return;
-   }
 
    if (joypad->poll)
       joypad->poll();
