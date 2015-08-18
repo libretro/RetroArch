@@ -214,8 +214,6 @@ static void rarch_main_data_menu_iterate(void)
    if (rarch_main_data_db_pending_scan_finished())
       menu_environment_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST, NULL);
 #endif
-
-   menu_entries_refresh();
 }
 #endif
 

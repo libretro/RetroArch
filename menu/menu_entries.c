@@ -172,18 +172,11 @@ static bool menu_entries_get_nonblocking_refresh(void)
    return entries->nonblocking_refresh;
 }
 
-int menu_entries_refresh(void)
-{
-   if (menu_entries_get_nonblocking_refresh())
-      return -1;
-   if (!menu_entries_needs_refresh())
-      return -1;
-   return menu_entry_iterate(MENU_ACTION_REFRESH);
-}
-
 bool menu_entries_needs_refresh(void)
 {
    menu_entries_t *entries = menu_entries_get_ptr();
+   if (menu_entries_get_nonblocking_refresh())
+      return false;
    if (!entries)
       return false;
    return entries->need_refresh;

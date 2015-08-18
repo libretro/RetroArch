@@ -378,6 +378,9 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
    menu_list_t *menu_list    = menu_list_get_ptr();
    menu_file_list_cbs_t *cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
 
+   if (menu_entries_needs_refresh())
+      action = MENU_ACTION_REFRESH;
+
    switch (action)
    {
       case MENU_ACTION_UP:
