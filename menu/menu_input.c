@@ -265,14 +265,8 @@ static void menu_input_poll_bind_get_rested_axes(struct menu_bind_state *state, 
    unsigned a;
    const input_device_driver_t *joypad = input_driver_get_joypad_driver();
 
-   if (!state)
+   if (!state || !joypad)
       return;
-
-   if (!joypad)
-   {
-      RARCH_ERR("Cannot poll raw joypad state.");
-      return;
-   }
 
    /* poll only the relevant port */
    /*for (i = 0; i < settings->input.max_users; i++)*/
