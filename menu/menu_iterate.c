@@ -420,7 +420,6 @@ int menu_iterate_main(unsigned action)
    const char *label         = NULL;
    int ret                   = 0;
    uint32_t hash             = 0;
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
    menu_handle_t *menu       = menu_driver_get_ptr();
    menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_display_t *disp      = menu_display_get_ptr();
