@@ -86,6 +86,17 @@ typedef struct
    char scratch_buf[PATH_MAX_LENGTH];
    char scratch2_buf[PATH_MAX_LENGTH];
 
+   struct
+   {
+      bool fb_is_dirty;
+      bool do_messagebox;
+      bool do_pop_stack;
+      bool do_post_iterate;
+      bool do_render;
+      size_t *pop_selected;
+      char msg[PATH_MAX_LENGTH];
+   } state;
+
    /* Menu display */
    menu_display_t display;
 

@@ -415,16 +415,9 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
 int menu_iterate_main(unsigned action)
 {
    menu_entry_t entry;
-   char msg[PATH_MAX_LENGTH] = {0};
    enum action_iterate_type iterate_type;
    size_t selected;
-   size_t *pop_selected      = NULL;
    const char *label         = NULL;
-   bool fb_is_dirty          = false;
-   bool do_messagebox        = false;
-   bool do_pop_stack         = false;
-   bool do_post_iterate      = false;
-   bool do_render            = false;
    int ret                   = 0;
    uint32_t hash             = 0;
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
@@ -437,50 +430,58 @@ int menu_iterate_main(unsigned action)
    if (!menu || !menu_list)
       return 0;
 
+   menu->state.fb_is_dirty     = false;
+   menu->state.do_messagebox   = false;
+   menu->state.do_render       = false;
+   menu->state.do_pop_stack    = false;
+   menu->state.do_post_iterate = false;
+   menu->state.pop_selected    = NULL;
+   menu->state.msg[0]          = '\0';
+
    hash = menu_hash_calculate(label);
    
    iterate_type              = action_iterate_type(hash);
 
    if (action != MENU_ACTION_NOOP || menu_entries_needs_refresh() || menu_display_update_pending())
-      fb_is_dirty = true;
+      menu->state.fb_is_dirty = true;
 
    switch (iterate_type)
    {
       case ITERATE_TYPE_HELP:
-         ret = action_iterate_help(msg, sizeof(msg), label);
-         do_render       = true;
-         pop_selected    = NULL;
-         do_messagebox   = true;
-         do_pop_stack    = true;
-         do_post_iterate = true;
+         ret = action_iterate_help(menu->state.msg, sizeof(menu->state.msg), label);
+         menu->state.do_render       = true;
+         menu->state.pop_selected    = NULL;
+         menu->state.do_messagebox   = true;
+         menu->state.do_pop_stack    = true;
+         menu->state.do_post_iterate = true;
          if (ret == 1)
             action = MENU_ACTION_OK;
          break;
       case ITERATE_TYPE_BIND:
-         if (menu_input_bind_iterate(msg, sizeof(msg)))
+         if (menu_input_bind_iterate(menu->state.msg, sizeof(menu->state.msg)))
             menu_list_pop_stack(menu_list);
          else
-            do_messagebox = true;
-         do_render        = true;
+            menu->state.do_messagebox = true;
+         menu->state.do_render        = true;
          break;
       case ITERATE_TYPE_VIEWPORT:
-         ret = action_iterate_menu_viewport(msg, sizeof(msg), label, action, hash);
-         do_render       = true;
-         do_messagebox   = true;
+         ret = action_iterate_menu_viewport(menu->state.msg, sizeof(menu->state.msg), label, action, hash);
+         menu->state.do_render       = true;
+         menu->state.do_messagebox   = true;
          break;
       case ITERATE_TYPE_INFO:
-         ret = action_iterate_info(msg, sizeof(msg), label);
-         pop_selected    = &nav->selection_ptr;
-         do_render       = true;
-         do_messagebox   = true;
-         do_pop_stack    = true;
-         do_post_iterate = true;
+         ret = action_iterate_info(menu->state.msg, sizeof(menu->state.msg), label);
+         menu->state.pop_selected    = &nav->selection_ptr;
+         menu->state.do_render       = true;
+         menu->state.do_messagebox   = true;
+         menu->state.do_pop_stack    = true;
+         menu->state.do_post_iterate = true;
          break;
       case ITERATE_TYPE_MESSAGE:
-         strlcpy(msg, disp->message_contents, sizeof(msg));
-         pop_selected    = &nav->selection_ptr;
-         do_messagebox   = true;
-         do_pop_stack    = true;
+         strlcpy(menu->state.msg, disp->message_contents, sizeof(menu->state.msg));
+         menu->state.pop_selected    = &nav->selection_ptr;
+         menu->state.do_messagebox   = true;
+         menu->state.do_pop_stack    = true;
          break;
       case ITERATE_TYPE_DEFAULT:
          selected = menu_navigation_get_current_selection();
@@ -493,8 +494,8 @@ int menu_iterate_main(unsigned action)
          if (ret)
             return ret;
 
-         do_post_iterate = true;
-         do_render       = true;
+         menu->state.do_post_iterate = true;
+         menu->state.do_render       = true;
 
          /* Have to defer it so we let settings refresh. */
          if (menu->push_help_screen)
@@ -511,28 +512,28 @@ int menu_iterate_main(unsigned action)
          break;
    }
 
-   if (fb_is_dirty != do_messagebox)
-      fb_is_dirty = true;
+   if (menu->state.fb_is_dirty != menu->state.do_messagebox)
+      menu->state.fb_is_dirty = true;
 
-   if (fb_is_dirty)
+   if (menu->state.fb_is_dirty)
       menu_display_fb_set_dirty();
 
-   if (do_messagebox && msg[0] != '\0')
+   if (menu->state.do_messagebox && menu->state.msg[0] != '\0')
    {
       const ui_companion_driver_t *ui = ui_companion_get_ptr();
-      if (driver->render_messagebox && msg[0] != '\0')
-         driver->render_messagebox(msg);
-      if (ui->render_messagebox && msg[0] != '\0')
-         ui->render_messagebox(msg);
+      if (driver->render_messagebox && menu->state.msg[0] != '\0')
+         driver->render_messagebox(menu->state.msg);
+      if (ui->render_messagebox && menu->state.msg[0] != '\0')
+         ui->render_messagebox(menu->state.msg);
    }
 
-   if (do_pop_stack && action == MENU_ACTION_OK)
-      menu_list_pop(menu_list->menu_stack, pop_selected);
+   if (menu->state.do_pop_stack && action == MENU_ACTION_OK)
+      menu_list_pop(menu_list->menu_stack, menu->state.pop_selected);
    
-   if (do_post_iterate)
+   if (menu->state.do_post_iterate)
       menu_input_post_iterate(&ret, action);
 
-   if (do_render)
+   if (menu->state.do_render)
    {
       if (driver->render)
          driver->render();
