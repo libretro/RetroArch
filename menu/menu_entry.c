@@ -358,19 +358,6 @@ int menu_entry_select(uint32_t i)
    return menu_entry_action(&entry, i, MENU_ACTION_SELECT);
 }
 
-int menu_entry_iterate(unsigned action)
-{
-   const char *label         = NULL;
-   menu_list_t *menu_list    = menu_list_get_ptr();
-
-   if (!menu_list)
-      return -1;
-
-   menu_list_get_last_stack(menu_list, NULL, &label, NULL, NULL);
-
-   return menu_iterate_main(label, action);
-}
-
 int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
 {
    int ret                   = 0;

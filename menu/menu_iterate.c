@@ -412,27 +412,32 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
    return ITERATE_TYPE_DEFAULT;
 }
 
-int menu_iterate_main(const char *label, unsigned action)
+int menu_iterate_main(unsigned action)
 {
    menu_entry_t entry;
    char msg[PATH_MAX_LENGTH] = {0};
    enum action_iterate_type iterate_type;
    size_t selected;
    size_t *pop_selected      = NULL;
+   const char *label         = NULL;
    bool fb_is_dirty          = false;
    bool do_messagebox        = false;
    bool do_pop_stack         = false;
    bool do_post_iterate      = false;
    bool do_render            = false;
    int ret                   = 0;
+   uint32_t hash             = 0;
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
    menu_handle_t *menu       = menu_driver_get_ptr();
    menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_display_t *disp      = menu_display_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
-   uint32_t hash             = menu_hash_calculate(label);
+
+   menu_list_get_last_stack(menu_list, NULL, &label, NULL, NULL);
    if (!menu || !menu_list)
       return 0;
+
+   hash = menu_hash_calculate(label);
    
    iterate_type              = action_iterate_type(hash);
 

@@ -100,7 +100,7 @@ bool menu_load_content(enum rarch_core_type type)
    if (disp)
       disp->msg_force = true;
 
-   menu_entry_iterate(MENU_ACTION_NOOP);
+   menu_iterate_main(MENU_ACTION_NOOP);
 
    menu_display_fb();
 
@@ -360,7 +360,7 @@ int menu_iterate(retro_input_t input,
 
    action = menu_input->joypad.state;
 
-   ret = menu_entry_iterate(action);
+   ret = menu_iterate_main(action);
 
    if (menu_driver_alive() && !rarch_main_is_idle())
       menu_display_fb();
