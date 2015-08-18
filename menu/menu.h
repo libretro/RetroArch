@@ -179,6 +179,8 @@ int menu_iterate(retro_input_t input,
 
 int menu_iterate_main(unsigned action);
 
+int menu_iterate_main_render(void);
+
 /**
  * menu_free:
  * @menu                     : Menu handle.

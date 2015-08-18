@@ -101,8 +101,7 @@ bool menu_load_content(enum rarch_core_type type)
       disp->msg_force = true;
 
    menu_iterate_main(MENU_ACTION_NOOP);
-
-   menu_display_fb();
+   menu_iterate_main_render();
 
    if (!(main_load_content(0, NULL, NULL, menu_environment_get,
          driver->frontend_ctx->process_args)))
@@ -361,11 +360,6 @@ int menu_iterate(retro_input_t input,
    action = menu_input->joypad.state;
 
    ret = menu_iterate_main(action);
-
-   if (menu_driver_alive() && !rarch_main_is_idle())
-      menu_display_fb();
-
-   menu_driver_set_texture();
 
    if (ret)
       return -1;

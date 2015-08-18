@@ -512,6 +512,23 @@ int menu_iterate_main(unsigned action)
          break;
    }
 
+   if (menu->state.do_pop_stack && action == MENU_ACTION_OK)
+      menu_list_pop(menu_list->menu_stack, menu->state.pop_selected);
+   
+   if (menu->state.do_post_iterate)
+      menu_input_post_iterate(&ret, action);
+
+   return ret;
+}
+
+int menu_iterate_main_render(void)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+   menu_handle_t *menu       = menu_driver_get_ptr();
+
+   if (!menu)
+      return -1;
+
    if (menu->state.fb_is_dirty != menu->state.do_messagebox)
       menu->state.fb_is_dirty = true;
 
@@ -526,18 +543,17 @@ int menu_iterate_main(unsigned action)
       if (ui->render_messagebox && menu->state.msg[0] != '\0')
          ui->render_messagebox(menu->state.msg);
    }
-
-   if (menu->state.do_pop_stack && action == MENU_ACTION_OK)
-      menu_list_pop(menu_list->menu_stack, menu->state.pop_selected);
-   
-   if (menu->state.do_post_iterate)
-      menu_input_post_iterate(&ret, action);
-
+      
    if (menu->state.do_render)
    {
       if (driver->render)
          driver->render();
    }
 
-   return ret;
+   if (menu_driver_alive() && !rarch_main_is_idle())
+      menu_display_fb();
+
+   menu_driver_set_texture();
+
+   return 0;
 }
