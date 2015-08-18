@@ -253,7 +253,6 @@ void *menu_init(const void *data)
 
    rarch_assert(disp->msg_queue = msg_queue_new(8));
 
-   menu_display_fb_set_dirty();
    menu_driver_set_alive();
 
    return menu;
