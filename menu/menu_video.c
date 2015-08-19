@@ -21,7 +21,9 @@
 #include "menu_video.h"
 
 #include "../gfx/video_common.h"
+#ifdef HAVE_THREADS
 #include "../gfx/video_thread_wrapper.h"
+#endif
 
 #ifdef HAVE_OPENGL
 void menu_video_draw_frame(
@@ -145,8 +147,10 @@ void menu_video_frame_background(
 const char *menu_video_get_ident(void)
 {
    settings_t *settings = config_get_ptr();
+#ifdef HAVE_THREADS
    if (settings->video.threaded)
       return rarch_threaded_video_get_ident();
+#endif
 
    return video_driver_get_ident();
 }
