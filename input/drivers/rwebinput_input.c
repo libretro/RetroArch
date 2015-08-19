@@ -33,6 +33,7 @@ typedef struct rwebinput_state
    int mouse_y;
    char mouse_l;
    char mouse_r;
+   bool blocked;
 } rwebinput_state_t;
 
 int RWebInputInit(void);
@@ -67,10 +68,11 @@ error:
    return NULL;
 }
 
-static bool rwebinput_key_pressed(rwebinput_input_t *rwebinput, int key)
+static bool rwebinput_key_pressed(void *data, int key)
 {
    unsigned sym;
    bool ret;
+   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
    
    if (key >= RETROK_LAST)
       return false;
@@ -81,8 +83,10 @@ static bool rwebinput_key_pressed(rwebinput_input_t *rwebinput, int key)
    return ret;
 }
 
-static bool rwebinput_meta_key_pressed(rwebinput_input_t *rwebinput, int key)
+static bool rwebinput_meta_key_pressed(void *data, int key)
 {
+   (void)data;
+   (void)key;
    return false;
 }
 
@@ -263,6 +267,7 @@ input_driver_t input_rwebinput = {
    rwebinput_grab_mouse,
    NULL,
    rwebinput_set_rumble,
+   NULL,
    rwebinput_keyboard_mapping_is_blocked,
    rwebinput_keyboard_mapping_set_block,
 };
