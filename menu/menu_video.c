@@ -146,8 +146,9 @@ void menu_video_frame_background(
 
 const char *menu_video_get_ident(void)
 {
-   settings_t *settings = config_get_ptr();
 #ifdef HAVE_THREADS
+   settings_t *settings = config_get_ptr();
+
    if (settings->video.threaded)
       return rarch_threaded_video_get_ident();
 #endif
