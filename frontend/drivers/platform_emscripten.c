@@ -20,8 +20,8 @@
 #include <file/config_file.h>
 #include "../../content.h"
 #include "../frontend.h"
-//#include "../../retroarch.h"
-//#include "../../runloop.h"
+#include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../frontend_driver.h"
 #include "../runloop_data.h"
 
