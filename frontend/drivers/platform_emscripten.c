@@ -22,8 +22,8 @@
 #include "../frontend.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
+#include "../../runloop_data.h"
 #include "../frontend_driver.h"
-#include "../runloop_data.h"
 
 static void emscripten_mainloop(void)
 {
