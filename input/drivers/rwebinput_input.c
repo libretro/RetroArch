@@ -41,8 +41,6 @@ int RWebInputInit(void);
 rwebinput_state_t *RWebInputPoll(int context);
 void RWebInputDestroy(int context);
 
-static bool uninited = false;
-
 typedef struct rwebinput_input
 {
    rwebinput_state_t state;
@@ -170,7 +168,6 @@ static int16_t rwebinput_input_state(void *data, const struct retro_keybind **bi
 static void rwebinput_input_free(void *data)
 {
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
-   uninited = true;
 
    if (!rwebinput)
       return;
