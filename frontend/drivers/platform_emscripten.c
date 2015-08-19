@@ -38,22 +38,22 @@ static void emscripten_mainloop(void)
 
 void cmd_savefiles(void)
 {
-   rarch_main_command(RARCH_CMD_SAVEFILES);
+   event_command(EVENT_CMD_SAVEFILES);
 }
 
 void cmd_save_state(void)
 {
-   rarch_main_command(RARCH_CMD_SAVE_STATE);
+   event_command(EVENT_CMD_SAVE_STATE);
 }
 
 void cmd_load_state(void)
 {
-   rarch_main_command(RARCH_CMD_LOAD_STATE);
+   event_command(EVENT_CMD_LOAD_STATE);
 }
 
 void cmd_take_screenshot(void)
 {
-   rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
+   event_command(EVENT_CMD_TAKE_SCREENSHOT);
 }
 
 
