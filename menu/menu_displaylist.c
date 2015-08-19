@@ -42,10 +42,11 @@
 #include "../frontend/drivers/platform_android.h"
 #endif
 
+extern unsigned rpl_entry_selection_ptr;
+
 #ifdef HAVE_NETWORKING
 extern char *core_buf;
 extern size_t core_len;
-extern unsigned rpl_entry_selection_ptr;
 
 static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
       unsigned type)
@@ -1790,7 +1791,7 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
    menu_handle_t *menu    = menu_driver_get_ptr();
    global_t *global       = global_get_ptr();
    settings_t *settings   = config_get_ptr();
-   unsigned idx = rpl_entry_selection_ptr;
+   unsigned idx                    = rpl_entry_selection_ptr;
    const char *label               = NULL;
    const char *core_path           = NULL;
    const char *core_name           = NULL;

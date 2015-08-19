@@ -1352,6 +1352,7 @@ static void setting_get_string_representation_uint_analog_dpad_mode(void *data,
             len);
 }
 
+#ifdef HAVE_THREADS
 static void setting_get_string_representation_uint_autosave_interval(void *data,
       char *s, size_t len)
 {
@@ -1365,6 +1366,7 @@ static void setting_get_string_representation_uint_autosave_interval(void *data,
    else
       strlcpy(s, menu_hash_to_str(MENU_VALUE_OFF), len);
 }
+#endif
 
 static void setting_get_string_representation_uint_user_language(void *data,
       char *s, size_t len)

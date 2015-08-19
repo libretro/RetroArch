@@ -313,7 +313,7 @@ static void set_special_paths(char **argv, unsigned num_content)
    /* If this is already set,
     * do not overwrite it as this was initialized before in
     * a menu or otherwise. */
-   if (!settings->system_directory || settings->system_directory[0] == '\0')
+   if (settings->system_directory[0] == '\0')
    {
       RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",argv[0]);
       /*fill_pathname_basedir(settings->system_directory, argv[0],

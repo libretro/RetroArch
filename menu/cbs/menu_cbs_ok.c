@@ -1056,13 +1056,14 @@ static int action_ok_core_load(const char *path,
       return -1;
    }
 
-   return 0;
    /* Core selection on non-console just updates directory listing.
     * Will take effect on new content load. */
 #elif defined(RARCH_CONSOLE)
    event_command(EVENT_CMD_RESTART_RETROARCH);
    return -1;
 #endif
+
+   return 0;
 }
 
 static int action_ok_core_download(const char *path,
