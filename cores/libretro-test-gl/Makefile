@@ -1,3 +1,6 @@
+ifneq ($(EMSCRIPTEN),)
+	platform = emscripten
+endif
 
 ifeq ($(platform),)
 	platform = unix
@@ -102,6 +105,9 @@ else ifneq (,$(findstring hardfloat,$(platform)))
    CFLAGS += -mfloat-abi=hard
 endif
    CFLAGS += -DARM
+# emscripten
+else ifeq ($(platform), emscripten)
+	TARGET := $(TARGET_NAME)_libretro_emscripten.bc
 else
    CC = gcc
    TARGET := $(TARGET_NAME)_libretro.dll
