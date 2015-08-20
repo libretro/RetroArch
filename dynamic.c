@@ -755,15 +755,20 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (settings->system_directory[0] == '\0')
          {
             RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",global->path.fullpath);
-            fill_pathname_basedir(buf, global->path.fullpath,
-                  sizeof(buf));
+            fill_pathname_basedir(global->dir.systemdir, global->path.fullpath,
+                  sizeof(global->dir.systemdir));
 
+            *(const char**)data = global->dir.systemdir;
+            RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
+               global->dir.systemdir);
          }
-         *(const char**)data = *settings->system_directory ?
-            settings->system_directory : buf;
-
-         RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
+         else
+         {
+            *(const char**)data = settings->system_directory;
+            RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
                settings->system_directory);
+         }
+
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
