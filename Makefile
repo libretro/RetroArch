@@ -159,7 +159,7 @@ install: $(TARGET)
 	mkdir -p $(DESTDIR)$(PREFIX)/bin 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(GLOBAL_CONFIG_DIR) 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(PREFIX)/share/applications 2>/dev/null || /bin/true
-	mkdir -p $(DESTDIR)$(PREFIX)/share/man/man1 2>/dev/null || /bin/true
+	mkdir -p $(DESTDIR)$(MAN_DIR) 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(PREFIX)/share/pixmaps 2>/dev/null || /bin/true
 	install -m755 $(TARGET) $(DESTDIR)$(PREFIX)/bin 
 	install -m755 tools/cg2glsl.py $(DESTDIR)$(PREFIX)/bin/retroarch-cg2glsl
@@ -177,9 +177,9 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch-cg2glsl
 	rm -f $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
 	rm -f $(DESTDIR)$(PREFIX)/share/applications/retroarch.desktop
-	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch.1
-	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch-cg2glsl.1
-	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch-joyconfig.1
+	rm -f $(DESTDIR)$(MAN_DIR)/retroarch.1
+	rm -f $(DESTDIR)$(MAN_DIR)/retroarch-cg2glsl.1
+	rm -f $(DESTDIR)$(MAN_DIR)/retroarch-joyconfig.1
 	rm -f $(DESTDIR)$(PREFIX)/share/pixmaps/retroarch.svg
 
 clean:
