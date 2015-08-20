@@ -337,6 +337,7 @@ static void load_symbols(enum rarch_core_type type)
             {
                RARCH_ERR("Failed to open libretro core: \"%s\"\n",
                      settings->libretro);
+               RARCH_ERR("Error(s): %s\n", dylib_error());
                rarch_fail(1, "load_dynamic()");
             }
 #endif
