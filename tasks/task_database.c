@@ -269,7 +269,7 @@ static int database_info_iterate_crc_lookup(
       const char *zip_entry)
 {
 
-   if ((unsigned)db_state->list_index == (unsigned)db_state->list->size)
+   if (!db_state->list || (unsigned)db_state->list_index == (unsigned)db_state->list->size)
       return database_info_list_iterate_end_no_match(db_state);
 
    if (db_state->entry_index == 0)
