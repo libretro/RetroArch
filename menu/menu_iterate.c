@@ -548,10 +548,17 @@ end:
 int menu_iterate_render(void)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_handle_t             *menu = menu_driver_get_ptr();
+   menu_list_t          *menu_list = menu_list_get_ptr();
 
    if (!menu)
       return -1;
+
+   if (menu_entries_needs_refresh())
+   {
+      menu_displaylist_push(menu_list->selection_buf, menu_list->menu_stack);
+      menu_entries_unset_refresh(false);
+   }
 
    if (menu->state.fb_is_dirty != menu->state.do_messagebox)
       menu->state.fb_is_dirty = true;
