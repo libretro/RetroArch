@@ -57,7 +57,8 @@ static void rarch_disable_ui(void)
    rarch_main_set_idle(false);
 }
 
-static void rarch_draw(void)
+static void rarch_draw_observer(CFRunLoopObserverRef observer,
+    CFRunLoopActivity activity, void *info)
 {
    bool iterate       = iterate_observer && !(rarch_main_is_paused());
    int ret            = iterate ? rarch_main_iterate() : 0;
@@ -76,12 +77,6 @@ static void rarch_draw(void)
    if (rarch_main_is_idle())
       return;
    CFRunLoopWakeUp(CFRunLoopGetMain());
-}
-
-static void rarch_draw_observer(CFRunLoopObserverRef observer,
-    CFRunLoopActivity activity, void *info)
-{
-  rarch_draw();
 }
 
 apple_frontend_settings_t apple_frontend_settings;
