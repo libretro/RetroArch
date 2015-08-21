@@ -617,10 +617,12 @@ void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
    anim->is_active = true;
 }
 
-void menu_animation_update_time(menu_animation_t *anim)
+void menu_animation_update_time(void)
 {
    static retro_time_t last_clock_update = 0;
-   settings_t *settings = config_get_ptr();
+   menu_display_t *disp     = menu_display_get_ptr();
+   menu_animation_t *anim   = disp->animation;
+   settings_t *settings     = config_get_ptr();
 
    anim->cur_time   = rarch_get_time_usec();
    anim->delta_time = anim->cur_time - anim->old_time;

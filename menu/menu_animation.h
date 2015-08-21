@@ -153,7 +153,7 @@ void menu_animation_ticker_generic(uint64_t idx, int max_width,
 
 menu_animation_t *menu_animation_get_ptr(void);
 
-void menu_animation_update_time(menu_animation_t *anim);
+void menu_animation_update_time(void);
 
 #ifdef __cplusplus
 }
