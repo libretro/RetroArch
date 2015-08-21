@@ -436,7 +436,8 @@ int menu_iterate(bool render_this_frame, unsigned action)
    menu_display_t *disp      = menu_display_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
 
-   menu_animation_update_time();
+   if (render_this_frame)
+      menu_animation_update_time();
    menu_list_get_last_stack(menu_list, NULL, &label, NULL, NULL);
 
    if (!menu || !menu_list)
@@ -544,7 +545,7 @@ end:
    return 0;
 }
 
-int menu_iterate_main_render(void)
+int menu_iterate_render(void)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
    menu_handle_t *menu       = menu_driver_get_ptr();

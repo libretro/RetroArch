@@ -101,7 +101,7 @@ bool menu_load_content(enum rarch_core_type type)
       disp->msg_force = true;
 
    menu_iterate(true, MENU_ACTION_NOOP);
-   menu_iterate_main_render();
+   menu_iterate_render();
 
    if (!(main_load_content(0, NULL, NULL, menu_environment_get,
          driver->frontend_ctx->process_args)))

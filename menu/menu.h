@@ -174,7 +174,7 @@ void *menu_init(const void *data);
  **/
 int menu_iterate(bool render_this_frame, unsigned action);
 
-int menu_iterate_main_render(void);
+int menu_iterate_render(void);
 
 /**
  * menu_free:
