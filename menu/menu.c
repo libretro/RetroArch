@@ -180,15 +180,6 @@ void menu_common_load_content(bool persist, enum rarch_core_type type)
    menu_common_push_content_settings();
 }
 
-
-static int menu_init_entries(menu_entries_t *entries)
-{
-   if (!(entries->menu_list = (menu_list_t*)menu_list_new()))
-      return -1;
-
-   return 0;
-}
-
 /**
  * menu_init:
  * @data                     : Menu context handle.
@@ -201,20 +192,23 @@ void *menu_init(const void *data)
 {
    menu_handle_t *menu         = NULL;
    menu_display_t *disp        = NULL;
+   menu_entries_t *entries     = NULL;
    menu_ctx_driver_t *menu_ctx = (menu_ctx_driver_t*)data;
    global_t  *global           = global_get_ptr();
    settings_t *settings        = config_get_ptr();
-
+   
    if (!menu_ctx)
       return NULL;
 
    if (!(menu = (menu_handle_t*)menu_ctx->init()))
       return NULL;
 
+   entries = &menu->entries;
+
    strlcpy(settings->menu.driver, menu_ctx->ident,
          sizeof(settings->menu.driver));
 
-   if (menu_init_entries(&menu->entries) != 0)
+   if (!(entries->menu_list = (menu_list_t*)menu_list_new()))
       goto error;
 
    global->core_info.current = (core_info_t*)calloc(1, sizeof(core_info_t));
@@ -270,25 +264,6 @@ error:
    return NULL;
 }
 
-
-/**
- * menu_free_list:
- * @menu                     : Menu handle.
- *
- * Frees menu lists.
- **/
-static void menu_free_list(menu_entries_t *entries)
-{
-   if (!entries)
-      return;
-
-   menu_setting_free(entries->list_settings);
-   entries->list_settings = NULL;
-
-   menu_list_free(entries->menu_list);
-   entries->menu_list     = NULL;
-}
-
 /**
  * menu_free:
  * @menu                     : Menu handle.
@@ -299,10 +274,9 @@ void menu_free(menu_handle_t *menu)
 {
    global_t        *global    = global_get_ptr();
    menu_display_t    *disp    = menu_display_get_ptr();
-
+   menu_entries_t *entries    = menu ? &menu->entries : NULL;
    if (!menu || !disp)
       return;
-
 
    if (menu->playlist)
       content_playlist_free(menu->playlist);
@@ -318,7 +292,14 @@ void menu_free(menu_handle_t *menu)
 
    menu_display_free(menu);
 
-   menu_free_list(&menu->entries);
+   if (entries)
+   {
+      menu_setting_free(entries->list_settings);
+      entries->list_settings = NULL;
+
+      menu_list_free(entries->menu_list);
+      entries->menu_list     = NULL;
+   }
 
    event_command(EVENT_CMD_HISTORY_DEINIT);
 
