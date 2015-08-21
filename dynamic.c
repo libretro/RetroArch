@@ -653,7 +653,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
-   char buf[PATH_MAX_LENGTH];
 
    if (ignore_environment_cb)
       return false;
