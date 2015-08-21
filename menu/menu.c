@@ -218,7 +218,7 @@ void menu_free(menu_handle_t *menu)
       free(global->core_info.current);
    global->core_info.current = NULL;
 
-   menu_driver_unset_alive();
+   menu_driver_toggle(false);
 
    free(menu);
 }
@@ -286,7 +286,7 @@ void *menu_init(const void *data)
 
    rarch_assert(disp->msg_queue = msg_queue_new(8));
 
-   menu_driver_set_alive();
+   menu_driver_toggle(true);
 
    return menu;
    

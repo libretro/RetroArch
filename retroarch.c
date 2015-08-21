@@ -1389,7 +1389,6 @@ void rarch_main_set_state(unsigned cmd)
          }
 
          menu_entries_set_refresh(false);
-         menu_driver_set_alive();
 #endif
 #ifdef HAVE_OVERLAY
          if (settings->input.overlay_hide_in_menu)
@@ -1428,7 +1427,6 @@ void rarch_main_set_state(unsigned cmd)
       case RARCH_ACTION_STATE_MENU_RUNNING_FINISHED:
 #ifdef HAVE_MENU
          menu_driver_toggle(false);
-         menu_driver_unset_alive();
 
          driver_set_nonblock_state(driver->nonblock_state);
 

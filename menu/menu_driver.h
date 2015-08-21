@@ -226,10 +226,6 @@ void  menu_driver_context_destroy(void);
 
 bool menu_driver_alive(void);
 
-void menu_driver_set_alive(void);
-
-void menu_driver_unset_alive(void);
-
 size_t  menu_driver_list_get_selection(void);
 
 bool menu_environment_cb(menu_environ_cb_t type, void *data);

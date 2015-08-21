@@ -337,12 +337,32 @@ void menu_driver_free(menu_handle_t *menu)
       driver->free(menu);
 }
 
+bool menu_driver_alive(void)
+{
+   return menu_alive;
+}
+
+static void menu_driver_set_alive(void)
+{
+   menu_alive = true;
+}
+
+static void menu_driver_unset_alive(void)
+{
+   menu_alive = false;
+}
+
 void menu_driver_toggle(bool latch)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
    if (driver->toggle)
       driver->toggle(latch);
+
+   if (latch)
+      menu_driver_set_alive();
+   else
+      menu_driver_unset_alive();
 }
 
 bool menu_driver_load_image(void *data, menu_image_type_t type)
@@ -355,20 +375,6 @@ bool menu_driver_load_image(void *data, menu_image_type_t type)
    return false;
 }
 
-bool menu_driver_alive(void)
-{
-   return menu_alive;
-}
-
-void menu_driver_set_alive(void)
-{
-   menu_alive = true;
-}
-
-void menu_driver_unset_alive(void)
-{
-   menu_alive = false;
-}
 
 bool menu_environment_cb(menu_environ_cb_t type, void *data)
 {
