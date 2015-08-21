@@ -84,12 +84,6 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
   rarch_draw();
 }
 
-static void rarch_draw_timer(CFRunLoopTimerRef timer, void *info)
-{
-  rarch_draw();
-}
-
-
 apple_frontend_settings_t apple_frontend_settings;
 
 void get_ios_version(int *major, int *minor)
@@ -478,13 +472,6 @@ static int ui_companion_cocoatouch_iterate(void *data, unsigned action)
    return 0;
 }
 
-static int ui_companion_cocoatouch_iterate_menu(void *data, unsigned action)
-{
-   menu_iterate(false, MENU_ACTION_NOOP);
-   rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-   return 0;
-}
-
 static void ui_companion_cocoatouch_deinit(void *data)
 {
    ui_companion_cocoatouch_t *handle = (ui_companion_cocoatouch_t*)data;
@@ -543,7 +530,6 @@ const ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_init,
    ui_companion_cocoatouch_deinit,
    ui_companion_cocoatouch_iterate,
-   ui_companion_cocoatouch_iterate_menu,
    ui_companion_cocoatouch_toggle,
    ui_companion_cocoatouch_event_command,
    ui_companion_cocoatouch_notify_content_loaded,

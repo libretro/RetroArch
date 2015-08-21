@@ -81,7 +81,6 @@ const ui_companion_driver_t ui_companion_null = {
    ui_companion_null_init,
    ui_companion_null_deinit,
    ui_companion_null_iterate,
-   NULL,
    ui_companion_null_toggle,
    ui_companion_null_event_command,
    ui_companion_null_notify_content_loaded,

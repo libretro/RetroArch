@@ -126,7 +126,6 @@ const ui_companion_driver_t ui_companion_qt = {
    ui_companion_qt_init,
    ui_companion_qt_deinit,
    ui_companion_qt_iterate,
-   NULL,
    ui_companion_qt_toggle,
    ui_companion_qt_event_command,
    ui_companion_qt_notify_content_loaded,
