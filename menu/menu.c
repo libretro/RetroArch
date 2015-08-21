@@ -190,7 +190,6 @@ void menu_free(menu_handle_t *menu)
 {
    global_t        *global    = global_get_ptr();
    menu_display_t    *disp    = menu_display_get_ptr();
-   menu_entries_t *entries    = menu ? &menu->entries : NULL;
    if (!menu || !disp)
       return;
 
@@ -208,14 +207,7 @@ void menu_free(menu_handle_t *menu)
 
    menu_display_free(menu);
 
-   if (entries)
-   {
-      menu_setting_free(entries->list_settings);
-      entries->list_settings = NULL;
-
-      menu_list_free(entries->menu_list);
-      entries->menu_list     = NULL;
-   }
+   menu_entries_free();
 
    event_command(EVENT_CMD_HISTORY_DEINIT);
 
@@ -243,7 +235,6 @@ void *menu_init(const void *data)
 {
    menu_handle_t *menu         = NULL;
    menu_display_t *disp        = NULL;
-   menu_entries_t *entries     = NULL;
    menu_ctx_driver_t *menu_ctx = (menu_ctx_driver_t*)data;
    global_t  *global           = global_get_ptr();
    settings_t *settings        = config_get_ptr();
@@ -254,12 +245,10 @@ void *menu_init(const void *data)
    if (!(menu = (menu_handle_t*)menu_ctx->init()))
       return NULL;
 
-   entries = &menu->entries;
-
    strlcpy(settings->menu.driver, menu_ctx->ident,
          sizeof(settings->menu.driver));
 
-   if (!(entries->menu_list = (menu_list_t*)menu_list_new()))
+   if (!menu_entries_init(menu))
       goto error;
 
    global->core_info.current = (core_info_t*)calloc(1, sizeof(core_info_t));

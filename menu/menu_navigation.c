@@ -85,13 +85,6 @@ static void menu_driver_navigation_ascend_alphabet(size_t *ptr_out)
       driver->navigation_ascend_alphabet(ptr_out);
 }
 
-menu_navigation_t *menu_navigation_get_ptr(void)
-{
-   menu_entries_t *entries = menu_entries_get_ptr();
-   if (!entries)
-      return NULL;
-   return &entries->navigation;
-}
 /**
  * menu_navigation_clear:
  * @pending_push          : pending push ?

@@ -225,15 +225,6 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    return -1;
 }
 
-static rarch_setting_t *menu_setting_get_ptr(void)
-{
-   menu_entries_t *entries = menu_entries_get_ptr();
-
-   if (!entries)
-      return NULL;
-   return entries->list_settings;
-}
-
 /**
  * menu_setting_find:
  * @settings           : pointer to settings

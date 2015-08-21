@@ -16,23 +16,44 @@
 #include "menu.h"
 #include "menu_hash.h"
 #include "menu_display.h"
-#include "menu_entry.h"
-#include "menu_navigation.h"
-#include "menu_setting.h"
-#include "menu_input.h"
 
 #include "menu_entries.h"
 
 #include "../general.h"
 #include "../system.h"
 
-menu_entries_t *menu_entries_get_ptr(void)
+static menu_entries_t *menu_entries_get_ptr(void)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return NULL;
 
    return &menu->entries;
+}
+
+rarch_setting_t *menu_setting_get_ptr(void)
+{
+   menu_entries_t *entries = menu_entries_get_ptr();
+
+   if (!entries)
+      return NULL;
+   return entries->list_settings;
+}
+
+menu_list_t *menu_list_get_ptr(void)
+{
+   menu_entries_t *entries       = menu_entries_get_ptr();
+   if (!entries)
+      return NULL;
+   return entries->menu_list;
+}
+
+menu_navigation_t *menu_navigation_get_ptr(void)
+{
+   menu_entries_t *entries = menu_entries_get_ptr();
+   if (!entries)
+      return NULL;
+   return &entries->navigation;
 }
 
 /* Sets the starting index of the menu entry list. */
@@ -197,4 +218,33 @@ void menu_entries_unset_refresh(bool nonblocking)
       else
          entries->need_refresh        = false;
    }
+}
+
+bool menu_entries_init(void *data)
+{
+   menu_entries_t *entries = NULL;
+   menu_handle_t *menu     = (menu_handle_t*)data;
+   if (!menu)
+      return false;
+
+   entries = &menu->entries;
+
+   if (!(entries->menu_list = (menu_list_t*)menu_list_new()))
+      return false;
+
+   return true;
+}
+
+void menu_entries_free(void)
+{
+   menu_entries_t *entries = menu_entries_get_ptr();
+
+   if (!entries)
+      return;
+
+   menu_setting_free(entries->list_settings);
+   entries->list_settings = NULL;
+
+   menu_list_free(entries->menu_list);
+   entries->menu_list     = NULL;
 }

@@ -37,8 +37,6 @@ typedef struct menu_navigation
    size_t selection_ptr;
 } menu_navigation_t;
 
-menu_navigation_t *menu_navigation_get_ptr(void);
-
 /**
  * menu_navigation_clear:
  * @pending_push          : pending push ?

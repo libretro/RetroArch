@@ -48,14 +48,6 @@ static void  menu_driver_list_insert(file_list_t *list, const char *path,
    menu_cbs_init(list, path, label, type, idx);
 }
 
-menu_list_t *menu_list_get_ptr(void)
-{
-   menu_entries_t *entries       = menu_entries_get_ptr();
-   if (!entries)
-      return NULL;
-   return entries->menu_list;
-}
-
 size_t menu_list_get_size(menu_list_t *list)
 {
    if (!list)

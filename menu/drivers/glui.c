@@ -344,7 +344,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
    uint64_t *frame_count   = video_driver_get_frame_count();
    size_t          end     = menu_entries_get_end();
    menu_display_t *disp    = menu_display_get_ptr();
-   menu_entries_t *entries = menu_entries_get_ptr();
+   menu_navigation_t *nav  = menu_navigation_get_ptr();
 
    if (!menu_display_update_pending())
       return;
@@ -365,7 +365,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
 
       menu_entries_get(i, &entry);
 
-      entry_selected = entries->navigation.selection_ptr == i;
+      entry_selected = nav->selection_ptr == i;
 
       glui_render_label_value(glui, y, width, *frame_count / 40,
          entry_selected ? hover_color : normal_color, entry_selected,

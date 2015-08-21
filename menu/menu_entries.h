@@ -19,6 +19,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <boolean.h>
+
 #include "menu_navigation.h"
 #include "menu_list.h"
 #include "menu_setting.h"
@@ -54,13 +56,19 @@ bool menu_entries_show_back(void);
 
 int menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 
-menu_entries_t *menu_entries_get_ptr(void);
+rarch_setting_t *menu_setting_get_ptr(void);
+
+menu_navigation_t *menu_navigation_get_ptr(void);
 
 bool menu_entries_needs_refresh(void);
 
 void menu_entries_set_refresh(bool nonblocking);
 
 void menu_entries_unset_refresh(bool nonblocking);
+
+bool menu_entries_init(void *data);
+
+void menu_entries_free(void);
 
 #ifdef __cplusplus
 }
