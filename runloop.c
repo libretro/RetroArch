@@ -36,6 +36,7 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"
+#include "menu/menu_input.h"
 #endif
 
 #ifdef HAVE_NETPLAY
@@ -1038,7 +1039,7 @@ int rarch_main_iterate(void)
    {
       menu_handle_t *menu = menu_driver_get_ptr();
       if (menu)
-         if (menu_iterate(input, old_input, trigger_input) == -1)
+         if (menu_iterate(menu_input_frame(input, trigger_input)) == -1)
             rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
 
       if (!input && settings->menu.pause_libretro)

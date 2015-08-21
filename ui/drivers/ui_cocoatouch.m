@@ -478,7 +478,7 @@ static int ui_companion_cocoatouch_iterate(void *data, unsigned action)
 
 static int ui_companion_cocoatouch_iterate_menu(void *data, unsigned action)
 {
-   menu_iterate(0, 0, 0);
+   menu_iterate(MENU_ACTION_NOOP);
    rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
    return 0;
 }

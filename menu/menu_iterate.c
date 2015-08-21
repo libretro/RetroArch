@@ -412,7 +412,18 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
    return ITERATE_TYPE_DEFAULT;
 }
 
-int menu_iterate_main(unsigned action)
+/**
+ * menu_iterate:
+ * @input                    : input sample for this frame
+ * @old_input                : input sample of the previous frame
+ * @trigger_input            : difference' input sample - difference
+ *                             between 'input' and 'old_input'
+ *
+ * Runs RetroArch menu for one frame.
+ *
+ * Returns: 0 on success, -1 if we need to quit out of the loop. 
+ **/
+int menu_iterate(unsigned action)
 {
    menu_entry_t entry;
    enum action_iterate_type iterate_type;
@@ -425,7 +436,9 @@ int menu_iterate_main(unsigned action)
    menu_display_t *disp      = menu_display_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
 
+   menu_animation_update_time();
    menu_list_get_last_stack(menu_list, NULL, &label, NULL, NULL);
+
    if (!menu || !menu_list)
       return 0;
 

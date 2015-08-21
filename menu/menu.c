@@ -100,7 +100,7 @@ bool menu_load_content(enum rarch_core_type type)
    if (disp)
       disp->msg_force = true;
 
-   menu_iterate_main(MENU_ACTION_NOOP);
+   menu_iterate(MENU_ACTION_NOOP);
    menu_iterate_main_render();
 
    if (!(main_load_content(0, NULL, NULL, menu_environment_get,
@@ -332,22 +332,4 @@ void menu_free(menu_handle_t *menu)
    menu_driver_unset_alive();
 
    free(menu);
-}
-
-/**
- * menu_iterate:
- * @input                    : input sample for this frame
- * @old_input                : input sample of the previous frame
- * @trigger_input            : difference' input sample - difference
- *                             between 'input' and 'old_input'
- *
- * Runs RetroArch menu for one frame.
- *
- * Returns: 0 on success, -1 if we need to quit out of the loop. 
- **/
-int menu_iterate(retro_input_t input,
-      retro_input_t old_input, retro_input_t trigger_input)
-{
-   menu_animation_update_time();
-   return menu_iterate_main(menu_input_frame(input, trigger_input));
 }

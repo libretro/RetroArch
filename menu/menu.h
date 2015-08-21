@@ -165,19 +165,13 @@ void *menu_init(const void *data);
 
 /**
  * menu_iterate:
- * @input                    : input sample for this frame
- * @old_input                : input sample of the previous frame
- * @trigger_input            : difference' input sample - difference
- *                             between 'input' and 'old_input'
+ * @action                   : Associated action for this frame
  *
  * Runs RetroArch menu for one frame.
  *
  * Returns: 0 on success, -1 if we need to quit out of the loop.
  **/
-int menu_iterate(retro_input_t input,
-      retro_input_t old_input, retro_input_t trigger_input);
-
-int menu_iterate_main(unsigned action);
+int menu_iterate(unsigned action);
 
 int menu_iterate_main_render(void);
 
