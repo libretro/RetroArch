@@ -491,7 +491,7 @@ int menu_iterate_main(unsigned action)
          ret = menu_entry_action(&entry, selected, (enum menu_action)action);
 
          if (ret)
-            return ret;
+            goto end;
 
          menu->state.do_post_iterate = true;
          menu->state.do_render       = true;
@@ -517,7 +517,10 @@ int menu_iterate_main(unsigned action)
    if (menu->state.do_post_iterate)
       menu_input_post_iterate(&ret, action);
 
-   return ret;
+end:
+   if (ret)
+      return -1;
+   return 0;
 }
 
 int menu_iterate_main_render(void)

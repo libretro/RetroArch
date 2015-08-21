@@ -348,18 +348,9 @@ void menu_free(menu_handle_t *menu)
 int menu_iterate(retro_input_t input,
       retro_input_t old_input, retro_input_t trigger_input)
 {
-   unsigned action          = 0;
    menu_display_t *disp     = menu_display_get_ptr();
-   menu_input_t *menu_input = menu_input_get_ptr();
 
    menu_animation_update_time(disp->animation);
 
-   menu_input->joypad.state    = menu_input_frame(input, trigger_input);
-
-   action = menu_input->joypad.state;
-
-   if (menu_iterate_main(action))
-      return -1;
-
-   return 0;
+   return menu_iterate_main(menu_input_frame(input, trigger_input));
 }

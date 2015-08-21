@@ -115,11 +115,6 @@ typedef struct menu_input
 
    struct
    {
-      unsigned state;
-   } joypad;
-
-   struct
-   {
       int16_t dx;
       int16_t dy;
       int16_t x;
