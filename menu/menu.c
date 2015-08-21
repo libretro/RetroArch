@@ -181,6 +181,57 @@ void menu_common_load_content(bool persist, enum rarch_core_type type)
 }
 
 /**
+ * menu_free:
+ * @menu                     : Menu handle.
+ *
+ * Frees a menu handle
+ **/
+void menu_free(menu_handle_t *menu)
+{
+   global_t        *global    = global_get_ptr();
+   menu_display_t    *disp    = menu_display_get_ptr();
+   menu_entries_t *entries    = menu ? &menu->entries : NULL;
+   if (!menu || !disp)
+      return;
+
+   if (menu->playlist)
+      content_playlist_free(menu->playlist);
+   menu->playlist = NULL;
+  
+   menu_shader_free(menu);
+
+   menu_driver_free(menu);
+
+#ifdef HAVE_DYNAMIC
+   libretro_free_system_info(&global->menu.info);
+#endif
+
+   menu_display_free(menu);
+
+   if (entries)
+   {
+      menu_setting_free(entries->list_settings);
+      entries->list_settings = NULL;
+
+      menu_list_free(entries->menu_list);
+      entries->menu_list     = NULL;
+   }
+
+   event_command(EVENT_CMD_HISTORY_DEINIT);
+
+   if (global->core_info.list)
+      core_info_list_free(global->core_info.list);
+
+   if (global->core_info.current)
+      free(global->core_info.current);
+   global->core_info.current = NULL;
+
+   menu_driver_unset_alive();
+
+   free(menu);
+}
+
+/**
  * menu_init:
  * @data                     : Menu context handle.
  *
@@ -249,68 +300,10 @@ void *menu_init(const void *data)
    menu_driver_set_alive();
 
    return menu;
+   
 error:
-   if (menu->entries.menu_list)
-      menu_list_free(menu->entries.menu_list);
-   menu->entries.menu_list = NULL;
-   if (global->core_info.current)
-      free(global->core_info.current);
-   global->core_info.current = NULL;
-   if (menu->shader)
-      free(menu->shader);
-   menu->shader = NULL;
-   if (menu)
-      free(menu);
+   menu_free(menu);
+
    return NULL;
 }
 
-/**
- * menu_free:
- * @menu                     : Menu handle.
- *
- * Frees a menu handle
- **/
-void menu_free(menu_handle_t *menu)
-{
-   global_t        *global    = global_get_ptr();
-   menu_display_t    *disp    = menu_display_get_ptr();
-   menu_entries_t *entries    = menu ? &menu->entries : NULL;
-   if (!menu || !disp)
-      return;
-
-   if (menu->playlist)
-      content_playlist_free(menu->playlist);
-   menu->playlist = NULL;
-  
-   menu_shader_free(menu);
-
-   menu_driver_free(menu);
-
-#ifdef HAVE_DYNAMIC
-   libretro_free_system_info(&global->menu.info);
-#endif
-
-   menu_display_free(menu);
-
-   if (entries)
-   {
-      menu_setting_free(entries->list_settings);
-      entries->list_settings = NULL;
-
-      menu_list_free(entries->menu_list);
-      entries->menu_list     = NULL;
-   }
-
-   event_command(EVENT_CMD_HISTORY_DEINIT);
-
-   if (global->core_info.list)
-      core_info_list_free(global->core_info.list);
-
-   if (global->core_info.current)
-      free(global->core_info.current);
-   global->core_info.current = NULL;
-
-   menu_driver_unset_alive();
-
-   free(menu);
-}
