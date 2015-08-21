@@ -100,7 +100,7 @@ bool menu_load_content(enum rarch_core_type type)
    if (disp)
       disp->msg_force = true;
 
-   menu_iterate(MENU_ACTION_NOOP);
+   menu_iterate(true, MENU_ACTION_NOOP);
    menu_iterate_main_render();
 
    if (!(main_load_content(0, NULL, NULL, menu_environment_get,

@@ -165,13 +165,14 @@ void *menu_init(const void *data);
 
 /**
  * menu_iterate:
+ * @render_this_frame        : Render this frame or not
  * @action                   : Associated action for this frame
  *
  * Runs RetroArch menu for one frame.
  *
  * Returns: 0 on success, -1 if we need to quit out of the loop.
  **/
-int menu_iterate(unsigned action);
+int menu_iterate(bool render_this_frame, unsigned action);
 
 int menu_iterate_main_render(void);
 

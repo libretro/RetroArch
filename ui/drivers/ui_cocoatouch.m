@@ -62,6 +62,8 @@ static void rarch_draw(void)
    bool iterate       = iterate_observer && !(rarch_main_is_paused());
    int ret            = iterate ? rarch_main_iterate() : 0;
 
+   if (ret == 0)
+      menu_iterate(false, MENU_ACTION_NOOP);
    rarch_main_data_iterate();
 
    if (ret == -1)
@@ -478,7 +480,7 @@ static int ui_companion_cocoatouch_iterate(void *data, unsigned action)
 
 static int ui_companion_cocoatouch_iterate_menu(void *data, unsigned action)
 {
-   menu_iterate(MENU_ACTION_NOOP);
+   menu_iterate(false, MENU_ACTION_NOOP);
    rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
    return 0;
 }

@@ -423,7 +423,7 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
  *
  * Returns: 0 on success, -1 if we need to quit out of the loop. 
  **/
-int menu_iterate(unsigned action)
+int menu_iterate(bool render_this_frame, unsigned action)
 {
    menu_entry_t entry;
    enum action_iterate_type iterate_type;
@@ -455,13 +455,17 @@ int menu_iterate(unsigned action)
    iterate_type              = action_iterate_type(hash);
 
    if (action != MENU_ACTION_NOOP || menu_entries_needs_refresh() || menu_display_update_pending())
-      menu->state.fb_is_dirty = true;
+   {
+      if (render_this_frame)
+         menu->state.fb_is_dirty = true;
+   }
 
    switch (iterate_type)
    {
       case ITERATE_TYPE_HELP:
          ret = action_iterate_help(menu->state.msg, sizeof(menu->state.msg), label);
-         menu->state.do_render       = true;
+         if (render_this_frame)
+            menu->state.do_render       = true;
          menu->state.pop_selected    = NULL;
          menu->state.do_messagebox   = true;
          menu->state.do_pop_stack    = true;
@@ -474,17 +478,20 @@ int menu_iterate(unsigned action)
             menu_list_pop_stack(menu_list);
          else
             menu->state.do_messagebox = true;
-         menu->state.do_render        = true;
+         if (render_this_frame)
+            menu->state.do_render        = true;
          break;
       case ITERATE_TYPE_VIEWPORT:
          ret = action_iterate_menu_viewport(menu->state.msg, sizeof(menu->state.msg), label, action, hash);
-         menu->state.do_render       = true;
+         if (render_this_frame)
+            menu->state.do_render       = true;
          menu->state.do_messagebox   = true;
          break;
       case ITERATE_TYPE_INFO:
          ret = action_iterate_info(menu->state.msg, sizeof(menu->state.msg), label);
          menu->state.pop_selected    = &nav->selection_ptr;
-         menu->state.do_render       = true;
+         if (render_this_frame)
+            menu->state.do_render       = true;
          menu->state.do_messagebox   = true;
          menu->state.do_pop_stack    = true;
          menu->state.do_post_iterate = true;
@@ -507,7 +514,8 @@ int menu_iterate(unsigned action)
             goto end;
 
          menu->state.do_post_iterate = true;
-         menu->state.do_render       = true;
+         if (render_this_frame)
+            menu->state.do_render       = true;
 
          /* Have to defer it so we let settings refresh. */
          if (menu->push_help_screen)
