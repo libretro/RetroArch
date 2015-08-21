@@ -553,7 +553,7 @@ static int action_ok_core_updater_list(const char *path,
 
    (void)url_path;
 
-   menu_entries_set_nonblocking_refresh();
+   menu_entries_set_refresh(true);
 
    if (settings->network.buildbot_url[0] == '\0')
       return -1;
@@ -590,7 +590,7 @@ static int action_ok_core_content_list(const char *path,
 
    (void)url_path;
 
-   menu_entries_set_nonblocking_refresh();
+   menu_entries_set_refresh(true);
 
    if (settings->network.buildbot_url[0] == '\0')
       return -1;

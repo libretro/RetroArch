@@ -58,13 +58,9 @@ menu_entries_t *menu_entries_get_ptr(void);
 
 bool menu_entries_needs_refresh(void);
 
-void menu_entries_set_refresh(void);
+void menu_entries_set_refresh(bool nonblocking);
 
-void menu_entries_unset_refresh(void);
-
-void menu_entries_set_nonblocking_refresh(void);
-
-void menu_entries_unset_nonblocking_refresh(void);
+void menu_entries_unset_refresh(bool nonblocking);
 
 #ifdef __cplusplus
 }

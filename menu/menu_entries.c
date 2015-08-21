@@ -164,48 +164,37 @@ int menu_entries_get_core_title(char *s, size_t len)
    return 0;
 }
 
-static bool menu_entries_get_nonblocking_refresh(void)
-{
-   menu_entries_t *entries = menu_entries_get_ptr();
-   if (!entries)
-      return false;
-   return entries->nonblocking_refresh;
-}
-
 bool menu_entries_needs_refresh(void)
 {
    menu_entries_t *entries = menu_entries_get_ptr();
-   if (menu_entries_get_nonblocking_refresh())
+
+   if (!entries || entries->nonblocking_refresh)
       return false;
-   if (!entries)
-      return false;
-   return entries->need_refresh;
+   if (entries->need_refresh)
+      return true;
+   return false;
 }
 
-void menu_entries_set_nonblocking_refresh(void)
+void menu_entries_set_refresh(bool nonblocking)
 {
    menu_entries_t *entries = menu_entries_get_ptr();
    if (entries)
-      entries->nonblocking_refresh = true;
+   {
+      if (nonblocking)
+         entries->nonblocking_refresh = true;
+      else
+         entries->need_refresh        = true;
+   }
 }
 
-void menu_entries_unset_nonblocking_refresh(void)
+void menu_entries_unset_refresh(bool nonblocking)
 {
    menu_entries_t *entries = menu_entries_get_ptr();
    if (entries)
-      entries->nonblocking_refresh = false;
-}
-
-void menu_entries_set_refresh(void)
-{
-   menu_entries_t *entries = menu_entries_get_ptr();
-   if (entries)
-      entries->need_refresh = true;
-}
-
-void menu_entries_unset_refresh(void)
-{
-   menu_entries_t *entries = menu_entries_get_ptr();
-   if (entries)
-      entries->need_refresh = false;
+   {
+      if (nonblocking)
+         entries->nonblocking_refresh = false;
+      else
+         entries->need_refresh        = false;
+   }
 }

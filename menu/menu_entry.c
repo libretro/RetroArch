@@ -412,7 +412,7 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
          if (cbs && cbs->action_refresh)
          {
             ret = cbs->action_refresh(menu_list->selection_buf, menu_list->menu_stack);
-            menu_entries_unset_refresh();
+            menu_entries_unset_refresh(false);
          }
          break;
 

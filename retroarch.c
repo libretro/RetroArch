@@ -1388,7 +1388,7 @@ void rarch_main_set_state(unsigned cmd)
             system->frame_time_last    = 0;
          }
 
-         menu_entries_set_refresh();
+         menu_entries_set_refresh(false);
          menu_driver_set_alive();
 #endif
 #ifdef HAVE_OVERLAY

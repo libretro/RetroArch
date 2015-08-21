@@ -263,7 +263,7 @@ static int action_right_cheat_num_passes(unsigned type, const char *label,
       return -1;
 
    new_size = cheat->size + 1;
-   menu_entries_set_refresh();
+   menu_entries_set_refresh(false);
    cheat_manager_realloc(cheat, new_size);
 
    return 0;
@@ -284,7 +284,7 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
 
    if ((shader->passes < GFX_MAX_SHADERS))
       shader->passes++;
-   menu_entries_set_refresh();
+   menu_entries_set_refresh(false);
    video_shader_resolve_parameters(NULL, menu->shader);
 
 #endif

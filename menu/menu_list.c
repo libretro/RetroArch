@@ -180,7 +180,7 @@ void menu_list_flush_stack(menu_list_t *list,
    if (!list)
       return;
 
-   menu_entries_set_refresh();
+   menu_entries_set_refresh(false);
    menu_list_get_last(list->menu_stack,
          &path, &label, &type, &entry_idx);
 
@@ -205,7 +205,7 @@ void menu_list_pop_stack(menu_list_t *list)
    menu_driver_list_cache(MENU_LIST_PLAIN, 0);
 
    menu_list_pop(list->menu_stack, &nav->selection_ptr);
-   menu_entries_set_refresh();
+   menu_entries_set_refresh(false);
 }
 
 void menu_list_pop_stack_by_needle(menu_list_t *list,
@@ -221,7 +221,7 @@ void menu_list_pop_stack_by_needle(menu_list_t *list,
    if (!list)
       return;
 
-   menu_entries_set_refresh();
+   menu_entries_set_refresh(false);
    menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
    needle_hash            = menu_hash_calculate(needle);
    label_hash             = menu_hash_calculate(label);
