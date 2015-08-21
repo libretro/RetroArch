@@ -65,8 +65,6 @@ unsigned menu_entry_get_type_new(uint32_t i);
 
 uint32_t menu_entry_get_bool_value(uint32_t i);
 
-void menu_entry_set_bool_value(uint32_t i, bool new_val);
-
 struct string_list *menu_entry_enum_values(uint32_t i);
 
 void menu_entry_enum_set_value_with_string(uint32_t i, const char *s);

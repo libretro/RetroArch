@@ -165,7 +165,6 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
 - (void)handleBooleanSwitch:(UISwitch*)swt
 {
-  menu_entry_set_bool_value(self.i, swt.on ? true : false);
   [self.main menuSelect: self.i];
 }
 
