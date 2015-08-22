@@ -150,7 +150,6 @@ int mprotect(void *addr, size_t len, int prot)
 int memsync(void *start, void *end)
 {
    size_t len = (char*)end - (char*)start;
-   (void)len;
 #if defined(__MACH__) && defined(__arm__)
    sys_dcache_flush(start ,len);
    sys_icache_invalidate(start, len);
@@ -165,6 +164,7 @@ int memsync(void *start, void *end)
 #endif
          );
 #else
+   (void)len;
    return 0;
 #endif
 }
