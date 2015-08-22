@@ -357,6 +357,13 @@ enum
    [self.window setRootViewController:self];
 }
 
+static void ui_companion_cocoatouch_event_command(void *data,
+                                                  enum event_command cmd)
+{
+    (void)data;
+    event_command(cmd);
+}
+
 - (void)toggleUI
 {
    settings_t *settings = config_get_ptr();
@@ -368,7 +375,7 @@ enum
    else
    {
       if (settings->menu.pause_libretro)
-         ui_companion_cocoatouch_event_command(EVENT_CMD_AUDIO_STOP);
+         ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_AUDIO_STOP);
 
       [self showPauseMenu:self];
    }
@@ -493,13 +500,6 @@ static void *ui_companion_cocoatouch_init(void)
    rarch_enable_ui();
 
    return handle;
-}
-
-static void ui_companion_cocoatouch_event_command(void *data,
-    enum event_command cmd)
-{
-   (void)data;
-   event_command(cmd);
 }
 
 static void ui_companion_cocoatouch_notify_list_pushed(void *data,
