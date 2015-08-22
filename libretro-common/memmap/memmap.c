@@ -125,13 +125,6 @@ int mprotect(void *addr, size_t len, int prot)
 }
 
 #elif !defined(HAVE_MMAN)
-#define PROT_EXEC       0x04
-#define MAP_FAILED      0
-#define PROT_READ       0
-#define PROT_WRITE      0
-#define MAP_PRIVATE     0
-#define MAP_ANONYMOUS   0
-
 void* mmap(void *desired_addr, size_t len, int mmap_prot, int mmap_flags, int fildes, size_t off)
 {
    return malloc(len);
@@ -162,7 +155,11 @@ int memsync(void *start, void *end)
    __clear_cache(start, end);
    return 0;
 #elif defined(HAVE_MMAN)
-   return msync(start, len, MS_SYNC | MS_CACHE_ONLY | MS_INVALIDATE_ICACHE);
+   return msync(start, len, MS_SYNC | MS_INVALIDATE
+#ifdef __QNX__
+         MS_CACHE_ONLY
+#endif
+         );
 #else
    return 0;
 #endif

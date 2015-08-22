@@ -34,6 +34,15 @@
 #include <sys/mman.h>
 #endif
 
+#if !defined(HAVE_MMAN)
+#define PROT_EXEC       0x04
+#define MAP_FAILED      0
+#define PROT_READ       0
+#define PROT_WRITE      0
+#define MAP_PRIVATE     0
+#define MAP_ANONYMOUS   0
+#endif
+
 #ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS MAP_ANON
 #endif

@@ -27,12 +27,12 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
-#include <sys/mman.h>
 #include <sys/ioctl.h>
 
 #include <asm/types.h>
 #include <linux/videodev2.h>
 
+#include <memmap.h>
 #include <retro_miscellaneous.h>
 #include <gfx/scaler/scaler.h>
 
