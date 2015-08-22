@@ -181,6 +181,9 @@ static void data_thread_loop(void *data)
 #ifdef HAVE_THREADS
 static void rarch_main_data_thread_init(void)
 {
+   if (!g_data_runloop.thread_inited)
+      return;
+
    g_data_runloop.lock            = slock_new();
    g_data_runloop.cond_lock       = slock_new();
    g_data_runloop.cond            = scond_new();
@@ -311,6 +314,9 @@ void rarch_main_data_msg_queue_push(unsigned type,
 {
    char new_msg[PATH_MAX_LENGTH];
    msg_queue_t *queue            = NULL;
+   settings_t     *settings      = config_get_ptr();
+
+   (void)settings;
 
    switch(type)
    {
@@ -349,6 +355,14 @@ void rarch_main_data_msg_queue_push(unsigned type,
    if (flush)
       msg_queue_clear(queue);
    msg_queue_push(queue, new_msg, prio, duration);
+
+#ifdef HAVE_THREADS
+   if (settings->menu.threaded_data_runloop_enable)
+   {
+      if (!g_data_runloop.thread_inited)
+         rarch_main_data_thread_init();
+   }
+#endif
 }
 
 void data_runloop_osd_msg(const char *msg, size_t len)
