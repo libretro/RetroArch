@@ -143,6 +143,10 @@ int mprotect(void *addr, size_t len, int prot)
 
 #endif
 
+#if defined(__MACH__) && defined(__arm__)
+#include <libkern/OSCacheControl.h>
+#endif
+
 int memsync(void *start, void *end)
 {
    size_t len = (char*)end - (char*)start;
