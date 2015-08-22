@@ -31,7 +31,16 @@ int menu_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   cbs->action_refresh = action_refresh_default;
+   switch (label_hash)
+   {
+      case MENU_VALUE_MAIN_MENU:
+         cbs->action_refresh = NULL;
+         break;
+      default:
+         cbs->action_refresh = action_refresh_default;
+         break;
+   }
+
 
    return -1;
 }
