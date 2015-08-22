@@ -155,6 +155,7 @@ int memsync(void *start, void *end)
    sys_icache_invalidate(start, len);
    return 0;
 #elif defined(__arm__) && !defined(__QNX__)
+   (void)len;
    __clear_cache(start, end);
    return 0;
 #elif defined(HAVE_MMAN)
