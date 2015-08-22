@@ -63,6 +63,7 @@ COMPATIBILITY
 ============================================================ */
 #include "../compat/compat.c"
 #include "../libretro-common/compat/compat_fnmatch.c"
+#include "../libretro-common/memmap/memmap.c"
 
 /*============================================================
 CONFIG FILE
