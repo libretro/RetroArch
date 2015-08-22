@@ -359,12 +359,17 @@ enum
 
 - (void)toggleUI
 {
+   settings_t *settings = config_get_ptr();
+
    if (ui_companion_is_on_foreground())
    {
       [self showGameView];
    }
    else
    {
+      if (settings->menu.pause_libretro)
+         ui_companion_cocoatouch_event_command(EVENT_CMD_AUDIO_STOP);
+
       [self showPauseMenu:self];
    }
 }
