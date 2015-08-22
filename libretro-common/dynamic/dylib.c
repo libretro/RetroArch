@@ -95,8 +95,6 @@ function_t dylib_proc(dylib_t lib, const char *proc)
    function_t sym;
    void *ptr_sym = NULL;
 
-   (void)ptr_sym;
-
 #ifdef _WIN32
    sym = (function_t)GetProcAddress(lib ?
          (HMODULE)lib : GetModuleHandle(NULL), proc);
