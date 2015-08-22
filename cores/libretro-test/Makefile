@@ -1,8 +1,3 @@
-
-ifneq ($(EMSCRIPTEN),)
-   platform = emscripten
-endif
-
 ifeq ($(platform),)
 platform = unix
 ifeq ($(shell uname -a),)
@@ -14,6 +9,21 @@ else ifneq ($(findstring Darwin,$(shell uname -a)),)
 else ifneq ($(findstring win,$(shell uname -a)),)
    platform = win
 endif
+endif
+
+# system platform
+system_platform = unix
+ifeq ($(shell uname -a),)
+	EXE_EXT = .exe
+	system_platform = win
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+	system_platform = osx
+	arch = intel
+ifeq ($(shell uname -p),powerpc)
+	arch = ppc
+endif
+else ifneq ($(findstring MINGW,$(shell uname -a)),)
+	system_platform = win
 endif
 
 TARGET_NAME := test
@@ -42,7 +52,7 @@ else ifneq (,$(findstring qnx,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro_qnx.so
    fpic := -fPIC
    SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
-else ifneq ($(platform), emscripten)
+else ifeq ($(platform), emscripten)
    TARGET := $(TARGET_NAME)_libretro_emscripten.bc
    fpic := -fPIC
    SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
