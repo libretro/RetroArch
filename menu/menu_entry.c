@@ -358,15 +358,6 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
    menu_list_t *menu_list    = menu_list_get_ptr();
    menu_file_list_cbs_t *cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
 
-   if (menu_entries_needs_refresh())
-   {
-      if (cbs && cbs->action_refresh)
-      {
-         cbs->action_refresh(menu_list->selection_buf, menu_list->menu_stack);
-         menu_entries_unset_refresh(false);
-      }
-   }
-
    switch (action)
    {
       case MENU_ACTION_UP:
@@ -432,6 +423,15 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
 
       default:
          break;
+   }
+
+   if (menu_entries_needs_refresh())
+   {
+      if (cbs && cbs->action_refresh)
+      {
+         cbs->action_refresh(menu_list->selection_buf, menu_list->menu_stack);
+         menu_entries_unset_refresh(false);
+      }
    }
 
    return ret;
