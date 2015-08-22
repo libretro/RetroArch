@@ -168,8 +168,8 @@ static void data_thread_loop(void *data)
 
       data_runloop_iterate(true);
 
-      if (!rarch_main_data_active())
-         rarch_sleep(10);
+      while (!rarch_main_data_active())
+         scond_wait(runloop->cond, runloop->lock);
 
       slock_unlock(runloop->lock);
 
@@ -362,6 +362,12 @@ void rarch_main_data_msg_queue_push(unsigned type,
    {
       if (!g_data_runloop.thread_inited)
          rarch_main_data_thread_init();
+      else
+      {
+         slock_lock(g_data_runloop.cond_lock);
+         scond_signal(g_data_runloop.cond);
+         slock_unlock(g_data_runloop.cond_lock);
+      }
    }
 #endif
 }
