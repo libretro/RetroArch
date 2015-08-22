@@ -239,7 +239,14 @@ void menu_list_pop(file_list_t *list, size_t *directory_ptr)
 
 void menu_list_clear(file_list_t *list)
 {
-   menu_driver_list_clear(list);
+   unsigned i;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->list_clear)
+      driver->list_clear(list);
+
+   for (i = 0; i < list->size; i++)
+      file_list_free_actiondata(list, i);
 
    if (list)
       file_list_clear(list);

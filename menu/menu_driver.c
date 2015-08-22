@@ -224,18 +224,6 @@ void  menu_driver_list_free(file_list_t *list, size_t idx, size_t list_size)
    file_list_free_actiondata(list, idx);
 }
 
-void  menu_driver_list_clear(file_list_t *list)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   unsigned i;
-
-   if (driver->list_clear)
-      driver->list_clear(list);
-
-   for (i = 0; i < list->size; i++)
-      file_list_free_actiondata(list, i);
-}
-
 void  menu_driver_context_destroy(void)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();

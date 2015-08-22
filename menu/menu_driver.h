@@ -212,8 +212,6 @@ void menu_driver_list_cache(menu_list_type_t type, unsigned action);
 
 void  menu_driver_list_free(file_list_t *list, size_t i, size_t list_size);
 
-void  menu_driver_list_clear(file_list_t *list);
-
 size_t menu_driver_list_get_size(menu_list_type_t type);
 
 void  menu_driver_list_set_selection(file_list_t *list);
