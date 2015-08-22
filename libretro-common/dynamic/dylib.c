@@ -86,7 +86,7 @@ char *dylib_error(void)
       return last_dyn_error;
    return NULL;
 #else
-   return dlerror();
+   return (char*)dlerror();
 #endif
 }
 
