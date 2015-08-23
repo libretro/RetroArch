@@ -81,6 +81,11 @@ bool rarch_main_verbosity(void);
 #define RARCH_LOG_VERBOSE (true)
 #endif
 
+#if TARGET_OS_IPHONE && defined(RARCH_INTERNAL) && !TARGET_IPHONE_SIMULATOR
+static aslclient asl_client;
+static int asl_inited = 0;
+#endif
+
 #if defined(RARCH_CONSOLE) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
 #include <logger_override.h>
 #else
@@ -92,11 +97,16 @@ static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #if TARGET_IPHONE_SIMULATOR
    vprintf(fmt, ap);
 #else
+   if (!inited)
+   {
+      asl_client = asl_open("RetroArch", "com.apple.console", ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
+      inited = 1;
+   }
    aslmsg msg = asl_new(ASL_TYPE_MSG);
    asl_set(msg, ASL_KEY_READ_UID, "-1");
    if (tag)
-      asl_log(NULL, msg, ASL_LEVEL_NOTICE, "%s", tag);
-   asl_vlog(NULL, msg, ASL_LEVEL_NOTICE, fmt, ap);
+      asl_log(asl_client, msg, ASL_LEVEL_NOTICE, tag);
+   asl_vlog(asl_client, msg, ASL_LEVEL_NOTICE, fmt, ap);
    asl_free(msg);
 #endif
 #elif defined(_XBOX1)
