@@ -345,11 +345,13 @@ enum
    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [self.window setRootViewController:[CocoaView get]];
 
+   ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_AUDIO_START);
    rarch_disable_ui();
 }
 
 - (IBAction)showPauseMenu:(id)sender
 {
+   ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_AUDIO_STOP);
    rarch_enable_ui();
 
    [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
@@ -374,8 +376,6 @@ static void ui_companion_cocoatouch_event_command(void *data,
    }
    else
    {
-      if (settings->menu.pause_libretro)
-         ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_AUDIO_STOP);
 
       [self showPauseMenu:self];
    }
