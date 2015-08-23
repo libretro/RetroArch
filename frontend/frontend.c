@@ -334,13 +334,11 @@ int rarch_main(int argc, char *argv[], void *data)
    if (driver)
       driver->ui_companion = (ui_companion_driver_t*)ui_companion_init_first();
 
-#if 0
    if (driver->ui_companion && driver->ui_companion->toggle)
    {
       if (settings->ui.companion_start_on_boot)
          driver->ui_companion->toggle(driver->ui_companion_data);
    }
-#endif
 
 #ifndef HAVE_MAIN
    do{
