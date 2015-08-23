@@ -97,15 +97,15 @@ static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #if TARGET_IPHONE_SIMULATOR
    vprintf(fmt, ap);
 #else
-   if (!inited)
+   if (!asl_inited)
    {
       asl_client = asl_open("RetroArch", "com.apple.console", ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
-      inited = 1;
+      asl_inited = 1;
    }
    aslmsg msg = asl_new(ASL_TYPE_MSG);
    asl_set(msg, ASL_KEY_READ_UID, "-1");
    if (tag)
-      asl_log(asl_client, msg, ASL_LEVEL_NOTICE, tag);
+      asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s", tag);
    asl_vlog(asl_client, msg, ASL_LEVEL_NOTICE, fmt, ap);
    asl_free(msg);
 #endif

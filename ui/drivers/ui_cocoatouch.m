@@ -368,15 +368,12 @@ static void ui_companion_cocoatouch_event_command(void *data,
 
 - (void)toggleUI
 {
-   settings_t *settings = config_get_ptr();
-
    if (ui_companion_is_on_foreground())
    {
       [self showGameView];
    }
    else
    {
-
       [self showPauseMenu:self];
    }
 }
