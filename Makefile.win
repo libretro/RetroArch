@@ -147,8 +147,8 @@ $(TARGET): $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 	$(Q)$(CXX) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LDCXXFLAGS)
 
+#those mkdir shenanigans are really ugly, but I can't find any better solution
 $(OBJDIR)/%.o: %.c
-	#those mkdir shenanigans are really ugly, but I can't find any better solution
 	@mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@)) || echo .
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
