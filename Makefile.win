@@ -149,24 +149,24 @@ $(TARGET): $(RARCH_OBJ)
 
 #those mkdir shenanigans are really ugly, but I can't find any better solution
 $(OBJDIR)/%.o: %.c
-	@-mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@))
+	@-mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@)) || echo .
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 .FORCE:
 
 $(OBJDIR)/git_version.o: git_version.c .FORCE
-	@-mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@))
+	@-mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@)) || echo .
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 $(OBJDIR)/%.o: %.cpp | $(dir $@)
-	@-mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@))
+	@-mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@)) || echo .
 	@$(if $(Q), $(shell echo echo CXX $<),)
 	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 $(OBJDIR)/%.o: %.rc $(HEADERS)
-	@-mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@))
+	@-mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@)) || echo .
 	@$(if $(Q), $(shell echo echo WINDRES $<),)
 	$(Q)$(WINDRES) -o $@ $<
 
