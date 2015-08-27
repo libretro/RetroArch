@@ -518,6 +518,9 @@ static int do_pause_state_checks(
 static int do_state_checks(driver_t *driver, settings_t *settings,
       global_t *global, event_cmd_state_t *cmd)
 {
+   if (main_is_idle)
+      return 1;
+
    if (cmd->screenshot_pressed)
       event_command(EVENT_CMD_TAKE_SCREENSHOT);
 
@@ -1076,7 +1079,7 @@ int rarch_main_iterate(void)
    }
 #endif
 
-   if (main_is_idle || do_state_checks(driver, settings, global, &cmd))
+   if (do_state_checks(driver, settings, global, &cmd))
    {
       /* RetroArch has been paused */
       driver->retro_ctx.poll_cb();
