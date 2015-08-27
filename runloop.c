@@ -1081,10 +1081,8 @@ int rarch_main_iterate(void)
 
    if (do_state_checks(driver, settings, global, &cmd))
    {
-      /* RetroArch has been paused */
+      /* RetroArch has been paused. */
       driver->retro_ctx.poll_cb();
-      rarch_sleep(10);
-
       return 1;
    }
 

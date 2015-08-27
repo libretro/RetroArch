@@ -343,6 +343,9 @@ int rarch_main(int argc, char *argv[], void *data)
 #ifndef HAVE_MAIN
    do{
       ret = rarch_main_iterate();
+      
+      if (ret == 1)
+         rarch_sleep(10);
       rarch_main_data_iterate();
    }while(ret != -1);
 

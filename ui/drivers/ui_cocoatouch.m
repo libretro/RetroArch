@@ -65,6 +65,8 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 
    if (ret == 0)
       menu_iterate(false, MENU_ACTION_NOOP);
+   if (ret == 1)
+      rarch_sleep(10);
    rarch_main_data_iterate();
 
    if (ret == -1)
