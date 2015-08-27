@@ -993,7 +993,6 @@ int rarch_main_iterate(void)
    retro_input_t trigger_input;
    event_cmd_state_t    cmd;
    bool do_quit                    = false;
-   int ret                         = 0;
    static retro_input_t last_input = 0;
    driver_t *driver                = driver_get_ptr();
    settings_t *settings            = config_get_ptr();
@@ -1044,7 +1043,7 @@ int rarch_main_iterate(void)
             rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
 
       if (!input && settings->menu.pause_libretro)
-        ret = 1;
+        return 1;
       goto success;
    }
 #endif
@@ -1146,5 +1145,5 @@ success:
    if (settings->fastforward_ratio_throttle_enable)
       rarch_limit_frame_time(settings->fastforward_ratio);
 
-   return ret;
+   return 0;
 }
