@@ -1129,7 +1129,6 @@ int rarch_main_iterate(unsigned *sleep_ms)
    if ((settings->video.frame_delay > 0) && !driver->nonblock_state)
       rarch_sleep(settings->video.frame_delay);
 
-
    /* Run libretro for one frame. */
    pretro_run();
 
