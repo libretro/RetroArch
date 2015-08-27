@@ -27,9 +27,10 @@
 
 static void emscripten_mainloop(void)
 {
-   int ret = rarch_main_iterate();
-   if (ret == 1)
-      rarch_sleep(10);
+   unsigned sleep_ms = 0;
+   int ret = rarch_main_iterate(&sleep_ms);
+   if (ret == 1 && sleep_ms > 0)
+      rarch_sleep(sleep_ms);
    rarch_main_data_iterate();
    if (ret != -1)
       return;

@@ -208,12 +208,13 @@ static void poll_iteration(void)
     int ret = 0;
     while (ret != -1)
     {
-        poll_iteration();
-        ret = rarch_main_iterate();
-        if (ret == 1)
-           rarch_sleep(10);
-        rarch_main_data_iterate();
-        while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
+       unsigned sleep_ms = 0;
+       poll_iteration();
+       ret = rarch_main_iterate(&sleep_ms);
+       if (ret == 1 && sleep_ms > 0)
+          rarch_sleep(sleep_ms);
+       rarch_main_data_iterate();
+       while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
     }
     
     main_exit(NULL);

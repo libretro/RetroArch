@@ -342,10 +342,11 @@ int rarch_main(int argc, char *argv[], void *data)
 
 #ifndef HAVE_MAIN
    do{
-      ret = rarch_main_iterate();
+      unsigned sleep_ms = 0;
+      ret = rarch_main_iterate(&sleep_ms);
       
-      if (ret == 1)
-         rarch_sleep(10);
+      if (ret == 1 && sleep_ms > 0)
+         rarch_sleep(sleep_ms);
       rarch_main_data_iterate();
    }while(ret != -1);
 

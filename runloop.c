@@ -653,7 +653,7 @@ static void rarch_update_frame_time(driver_t *driver, float slowmotion_ratio,
    system->frame_time.callback(delta);
 }
 
-static int rarch_limit_frame_time(float fastforward_ratio)
+static int rarch_limit_frame_time(float fastforward_ratio, unsigned *sleep_ms)
 {
    retro_time_t current, target, to_sleep_ms;
 
@@ -666,9 +666,10 @@ static int rarch_limit_frame_time(float fastforward_ratio)
 
    if (to_sleep_ms > 0)
    {
-      rarch_sleep((unsigned int)to_sleep_ms);
+      *sleep_ms = (unsigned)to_sleep_ms;
       /* Combat jitter a bit. */
       frame_limit_last_time += frame_limit_minimum_time;
+      return 1;
    }
    else
       frame_limit_last_time  = rarch_get_time_usec();
@@ -1001,7 +1002,7 @@ static void rarch_main_cmd_get_state(driver_t *driver,
  * Returns: 0 on success, 1 if we have to wait until button input in order
  * to wake up the loop, -1 if we forcibly quit out of the RetroArch iteration loop. 
  **/
-int rarch_main_iterate(void)
+int rarch_main_iterate(unsigned *sleep_ms)
 {
    unsigned i;
    retro_input_t trigger_input;
@@ -1086,7 +1087,7 @@ int rarch_main_iterate(void)
 
       if (!input && settings->menu.pause_libretro)
         return 1;
-      return rarch_limit_frame_time(settings->fastforward_ratio);
+      return rarch_limit_frame_time(settings->fastforward_ratio, sleep_ms);
    }
 #endif
 
@@ -1094,6 +1095,7 @@ int rarch_main_iterate(void)
    {
       /* RetroArch has been paused. */
       driver->retro_ctx.poll_cb();
+      *sleep_ms = 10;
       return 1;
    }
 
@@ -1152,5 +1154,5 @@ int rarch_main_iterate(void)
    unlock_autosave();
 #endif
 
-   return rarch_limit_frame_time(settings->fastforward_ratio);
+   return rarch_limit_frame_time(settings->fastforward_ratio, sleep_ms);
 }
