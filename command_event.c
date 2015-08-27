@@ -1705,6 +1705,9 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_VOLUME_DOWN:
          event_set_volume(-0.5f);
          break;
+      case EVENT_CMD_SET_FRAME_LIMIT:
+         rarch_main_set_frame_limit_last_time();
+         break;
       case EVENT_CMD_NONE:
       default:
          return false;

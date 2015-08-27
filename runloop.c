@@ -52,6 +52,7 @@ static bool main_is_slowmotion;
 static unsigned main_max_frames;
 
 static retro_time_t frame_limit_last_time;
+static retro_time_t frame_limit_minimum_time;
 
 /**
  * check_pause:
@@ -654,18 +655,11 @@ static void rarch_update_frame_time(driver_t *driver, float slowmotion_ratio,
 
 static int rarch_limit_frame_time(settings_t *settings)
 {
-   double effective_fps, mft_f;
-   retro_time_t current, target, to_sleep_ms, frame_limit_minimum_time;
-   struct retro_system_av_info *av_info;
-   float fastforward_ratio = settings->fastforward_ratio;
+   retro_time_t current, target, to_sleep_ms;
 
    if (!settings->fastforward_ratio_throttle_enable)
       return 0;
 
-   av_info                        = video_viewport_get_system_av_info();
-   effective_fps                  = av_info->timing.fps * fastforward_ratio;
-   mft_f                          = 1000000.0f / effective_fps;
-   frame_limit_minimum_time       = (retro_time_t) roundf(mft_f);
    current                        = rarch_get_time_usec();
    target                         = frame_limit_last_time + frame_limit_minimum_time;
    to_sleep_ms                    = (target - current) / 1000;
@@ -836,7 +830,12 @@ void rarch_main_state_free(void)
 
 void rarch_main_set_frame_limit_last_time(void)
 {
-   frame_limit_last_time = rarch_get_time_usec();
+   settings_t *settings                 = config_get_ptr();
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   float fastforward_ratio              = settings->fastforward_ratio;
+
+   frame_limit_last_time                = rarch_get_time_usec();
+   frame_limit_minimum_time             = (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
 }
 
 void rarch_main_global_free(void)

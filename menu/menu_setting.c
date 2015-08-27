@@ -2956,6 +2956,7 @@ static bool setting_append_list_frame_throttling_options(
          parent_group,
          general_write_handler,
          general_read_handler);
+   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_SET_FRAME_LIMIT);
    menu_settings_list_current_add_range(list, list_info, 1, 10, 0.1, true, true);
 
    CONFIG_FLOAT(

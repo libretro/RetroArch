@@ -1157,7 +1157,7 @@ void rarch_init_system_av_info(void)
       video_viewport_get_system_av_info();
 
    pretro_get_system_av_info(av_info);
-   rarch_main_set_frame_limit_last_time();
+   event_command(EVENT_CMD_SET_FRAME_LIMIT);
 }
 
 /**
