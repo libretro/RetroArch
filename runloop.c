@@ -992,6 +992,7 @@ int rarch_main_iterate(void)
    unsigned i;
    retro_input_t trigger_input;
    event_cmd_state_t    cmd;
+   bool do_quit                    = false;
    int ret                         = 0;
    static retro_input_t last_input = 0;
    driver_t *driver                = driver_get_ptr();
@@ -1023,7 +1024,7 @@ int rarch_main_iterate(void)
    rarch_main_cmd_get_state(driver, settings, &cmd, input, old_input, trigger_input);
 
    if (time_to_exit(driver, global, system, &cmd))
-      goto quit;
+      do_quit = true;
 
    if (system->frame_time.callback)
       rarch_update_frame_time(driver, settings->slowmotion_ratio, system);
@@ -1051,7 +1052,29 @@ int rarch_main_iterate(void)
    if (global->exec)
    {
       global->exec = false;
-      goto quit;
+      do_quit      = true;
+   }
+
+   if (do_quit)
+   {
+      /* Quits out of RetroArch main loop.
+       * On special case, loads dummy core 
+       * instead of exiting RetroArch completely.
+       * Aborts core shutdown if invoked.
+       */
+      if (global->core_shutdown_initiated
+            && settings->load_dummy_on_core_shutdown)
+      {
+         if (!event_command(EVENT_CMD_PREPARE_DUMMY))
+            return -1;
+
+         system->shutdown = false;
+         global->core_shutdown_initiated = false;
+
+         return 0;
+      }
+
+      return -1;
    }
 
    if (main_is_idle || do_state_checks(driver, settings, global, &cmd))
@@ -1124,24 +1147,4 @@ success:
       rarch_limit_frame_time(settings->fastforward_ratio);
 
    return ret;
-
-quit:
-   /* Quits out of RetroArch main loop.
-    * On special case, loads dummy core 
-    * instead of exiting RetroArch completely.
-    * Aborts core shutdown if invoked.
-    */
-   if (global->core_shutdown_initiated
-         && settings->load_dummy_on_core_shutdown)
-   {
-      if (!event_command(EVENT_CMD_PREPARE_DUMMY))
-         return -1;
-
-      system->shutdown = false;
-      global->core_shutdown_initiated = false;
-
-      return 0;
-   }
-
-   return -1;
 }
