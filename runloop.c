@@ -834,9 +834,9 @@ void rarch_main_state_free(void)
    main_max_frames                        = 0;
 }
 
-void rarch_main_set_frame_limit_last_time(retro_time_t t)
+void rarch_main_set_frame_limit_last_time(void)
 {
-   frame_limit_last_time = t;
+   frame_limit_last_time = rarch_get_time_usec();
 }
 
 void rarch_main_global_free(void)

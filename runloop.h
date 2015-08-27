@@ -338,7 +338,7 @@ void rarch_main_set_slowmotion(unsigned enable);
 
 void rarch_main_set_pause(unsigned enable);
 
-void rarch_main_set_frame_limit_last_time(retro_time_t t);
+void rarch_main_set_frame_limit_last_time(void);
 
 void rarch_main_set_max_frames(unsigned val);
 
