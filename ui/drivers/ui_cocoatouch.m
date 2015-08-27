@@ -60,12 +60,9 @@ static void rarch_disable_ui(void)
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
     CFRunLoopActivity activity, void *info)
 {
-   bool iterate       = iterate_observer && !(rarch_main_is_paused());
-   int ret            = iterate ? rarch_main_iterate() : 0;
+   int ret            = rarch_main_iterate();
 
-   if (ret == 0)
-      menu_iterate(false, MENU_ACTION_NOOP);
-   if (ret == 1)
+   if (ret == 1 && !ui_companion_is_on_foreground())
       rarch_sleep(10);
    rarch_main_data_iterate();
 
