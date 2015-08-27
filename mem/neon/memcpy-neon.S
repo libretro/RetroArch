@@ -11,6 +11,7 @@
 .arm
 .fpu neon
 
+@ void* memcpy(void *destination, const void *source, size_t num)
 .global memcpy_neon
 
 /*
