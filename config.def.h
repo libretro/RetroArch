@@ -677,10 +677,7 @@ static const bool savestate_auto_load = false;
 static const float slowmotion_ratio = 3.0;
 
 /* Maximum fast forward ratio. */
-static const float fastforward_ratio = 1.0;
-
-/* Throttle fast forward. */
-static const bool fastforward_ratio_throttle_enable = false;
+static const float fastforward_ratio = 0.0;
 
 /* Enable stdin/network command interface. */
 static const bool network_cmd_enable = false;

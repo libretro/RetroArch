@@ -538,7 +538,6 @@ static void config_set_defaults(void)
    settings->rewind_granularity                = rewind_granularity;
    settings->slowmotion_ratio                  = slowmotion_ratio;
    settings->fastforward_ratio                 = fastforward_ratio;
-   settings->fastforward_ratio_throttle_enable = fastforward_ratio_throttle_enable;
    settings->pause_nonactive                   = pause_nonactive;
    settings->autosave_interval                 = autosave_interval;
 
@@ -1599,11 +1598,8 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    /* Sanitize fastforward_ratio value - previously range was -1
     * and up (with 0 being skipped) */
-   if (settings->fastforward_ratio <= 0.0f)
-      settings->fastforward_ratio = 1.0f;
-
-   CONFIG_GET_BOOL_BASE(conf, settings, fastforward_ratio_throttle_enable,
-         "fastforward_ratio_throttle_enable");
+   if (settings->fastforward_ratio < 0.0f)
+      settings->fastforward_ratio = 0.0f;
 
    CONFIG_GET_BOOL_BASE(conf, settings, pause_nonactive, "pause_nonactive");
    CONFIG_GET_INT_BASE(conf, settings, autosave_interval, "autosave_interval");
@@ -2709,8 +2705,6 @@ bool config_save_file(const char *path)
          settings->history_list_enable);
 
    config_set_float(conf, "fastforward_ratio", settings->fastforward_ratio);
-   config_set_bool(conf, "fastforward_ratio_throttle_enable",
-         settings->fastforward_ratio_throttle_enable);
    config_set_float(conf, "slowmotion_ratio", settings->slowmotion_ratio);
 
    config_set_bool(conf, "config_save_on_exit",

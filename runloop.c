@@ -653,11 +653,11 @@ static void rarch_update_frame_time(driver_t *driver, float slowmotion_ratio,
    system->frame_time.callback(delta);
 }
 
-static int rarch_limit_frame_time(settings_t *settings)
+static int rarch_limit_frame_time(float fastforward_ratio)
 {
    retro_time_t current, target, to_sleep_ms;
 
-   if (!settings->fastforward_ratio_throttle_enable)
+   if (!fastforward_ratio)
       return 0;
 
    current                        = rarch_get_time_usec();
@@ -833,6 +833,9 @@ void rarch_main_set_frame_limit_last_time(void)
    settings_t *settings                 = config_get_ptr();
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
    float fastforward_ratio              = settings->fastforward_ratio;
+
+   if (fastforward_ratio == 0.0f)
+      fastforward_ratio = 1.0f;
 
    frame_limit_last_time                = rarch_get_time_usec();
    frame_limit_minimum_time             = (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
@@ -1083,7 +1086,7 @@ int rarch_main_iterate(void)
 
       if (!input && settings->menu.pause_libretro)
         return 1;
-      return rarch_limit_frame_time(settings);
+      return rarch_limit_frame_time(settings->fastforward_ratio);
    }
 #endif
 
@@ -1149,5 +1152,5 @@ int rarch_main_iterate(void)
    unlock_autosave();
 #endif
 
-   return rarch_limit_frame_time(settings);
+   return rarch_limit_frame_time(settings->fastforward_ratio);
 }
