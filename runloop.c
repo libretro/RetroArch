@@ -628,6 +628,7 @@ static INLINE int time_to_exit(driver_t *driver, global_t *global,
  * rarch_update_frame_time:
  *
  * Updates frame timing if frame timing callback is in use by the core.
+ * Limits frame time if fast forward ratio throttle is enabled.
  **/
 static void rarch_update_frame_time(driver_t *driver, float slowmotion_ratio,
       rarch_system_info_t *system)
@@ -651,26 +652,34 @@ static void rarch_update_frame_time(driver_t *driver, float slowmotion_ratio,
    system->frame_time.callback(delta);
 }
 
-static void rarch_limit_frame_time(float fastforward_ratio)
+static int rarch_limit_frame_time(settings_t *settings)
 {
-   retro_time_t current                  = rarch_get_time_usec();
-   struct retro_system_av_info *av_info  = video_viewport_get_system_av_info();
-   double effective_fps                  = av_info->timing.fps * fastforward_ratio;
-   double mft_f                          = 1000000.0f / effective_fps;
-   retro_time_t frame_limit_minimum_time = (retro_time_t) roundf(mft_f);
-   retro_time_t target                   = frame_limit_last_time + frame_limit_minimum_time;
-   retro_time_t to_sleep_ms              = (target - current) / 1000;
+   double effective_fps, mft_f;
+   retro_time_t current, target, to_sleep_ms, frame_limit_minimum_time;
+   struct retro_system_av_info *av_info;
+   float fastforward_ratio = settings->fastforward_ratio;
 
-   if (to_sleep_ms <= 0)
+   if (!settings->fastforward_ratio_throttle_enable)
+      return 0;
+
+   av_info                        = video_viewport_get_system_av_info();
+   effective_fps                  = av_info->timing.fps * fastforward_ratio;
+   mft_f                          = 1000000.0f / effective_fps;
+   frame_limit_minimum_time       = (retro_time_t) roundf(mft_f);
+   current                        = rarch_get_time_usec();
+   target                         = frame_limit_last_time + frame_limit_minimum_time;
+   to_sleep_ms                    = (target - current) / 1000;
+
+   if (to_sleep_ms > 0)
    {
-      frame_limit_last_time = rarch_get_time_usec();
-      return;
+      rarch_sleep((unsigned int)to_sleep_ms);
+      /* Combat jitter a bit. */
+      frame_limit_last_time += frame_limit_minimum_time;
    }
+   else
+      frame_limit_last_time  = rarch_get_time_usec();
 
-   rarch_sleep((unsigned int)to_sleep_ms);
-
-   /* Combat jitter a bit. */
-   frame_limit_last_time += frame_limit_minimum_time;
+   return 0;
 }
 
 /**
@@ -1075,7 +1084,7 @@ int rarch_main_iterate(void)
 
       if (!input && settings->menu.pause_libretro)
         return 1;
-      goto success;
+      return rarch_limit_frame_time(settings);
    }
 #endif
 
@@ -1141,10 +1150,5 @@ int rarch_main_iterate(void)
    unlock_autosave();
 #endif
 
-success:
-   /* Limit frame time if fast forward ratio throttle is enabled. */
-   if (settings->fastforward_ratio_throttle_enable)
-      rarch_limit_frame_time(settings->fastforward_ratio);
-
-   return 0;
+   return rarch_limit_frame_time(settings);
 }
