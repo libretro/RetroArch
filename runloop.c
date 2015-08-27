@@ -1033,20 +1033,6 @@ int rarch_main_iterate(void)
 #ifdef HAVE_OVERLAY
    rarch_main_iterate_linefeed_overlay(driver, settings);
 #endif
-   
-#ifdef HAVE_MENU
-   if (menu_driver_alive())
-   {
-      menu_handle_t *menu = menu_driver_get_ptr();
-      if (menu)
-         if (menu_iterate(true, menu_input_frame(input, trigger_input)) == -1)
-            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-
-      if (!input && settings->menu.pause_libretro)
-        return 1;
-      goto success;
-   }
-#endif
 
    if (global->exec)
    {
@@ -1075,6 +1061,20 @@ int rarch_main_iterate(void)
 
       return -1;
    }
+   
+#ifdef HAVE_MENU
+   if (menu_driver_alive())
+   {
+      menu_handle_t *menu = menu_driver_get_ptr();
+      if (menu)
+         if (menu_iterate(true, menu_input_frame(input, trigger_input)) == -1)
+            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+
+      if (!input && settings->menu.pause_libretro)
+        return 1;
+      goto success;
+   }
+#endif
 
    if (main_is_idle || do_state_checks(driver, settings, global, &cmd))
    {
