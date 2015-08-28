@@ -28,7 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <zlib.h>
+#include <compat/zlib.h>
 
 /* File backends. Can be fleshed out later, but keep it simple for now.
  * The file is mapped to memory directly (via mmap() or just 

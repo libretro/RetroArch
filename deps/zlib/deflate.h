@@ -13,7 +13,7 @@
 #ifndef DEFLATE_H
 #define DEFLATE_H
 
-#include "zutil.h"
+#include <compat/zutil.h>
 
 /* define NO_GZIP when compiling if you want to disable gzip header and
    trailer creation by deflate().  NO_GZIP would be used to avoid linking in
