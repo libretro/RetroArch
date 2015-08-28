@@ -82,7 +82,7 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    {
       score += 3;
 #if 0
-      RARCH_LOG("Autoconf: VID/PID match score=%d\n", score);
+      RARCH_LOG("Autodetect: VID/PID match score=%d\n", score);
 #endif
    }
 
@@ -91,7 +91,7 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    {
       score += 2;
 #if 0
-      RARCH_LOG("Autoconf: exact name match score=%d\n", score);
+      RARCH_LOG("Autodetect: exact name match score=%d\n", score);
 #endif
    }
    else
@@ -100,11 +100,11 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       {
          score += 1;
 #if 0
-         RARCH_LOG("Autoconf: partial name match score=%d\n", score);
+         RARCH_LOG("Autodetect: partial name match score=%d\n", score);
 #endif
       }
    }
-   RARCH_LOG("Autoconf: configuration score=%d\n", score);
+   RARCH_LOG("Autodetect: configuration file: %s score: %d\n", conf->path, score);
    return score;
 }
 
@@ -157,7 +157,7 @@ static void input_autoconfigure_joypad_add(
           rarch_main_msg_queue_push(msg, 0, 60, false);
    }
 
-   RARCH_LOG("%s\n", msg);
+   RARCH_LOG("Autodetect: %s\n", msg);
 }
 
 #if defined(HAVE_BUILTIN_AUTOCONFIG)
@@ -207,7 +207,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    if(!list)
       return false;
 
-   RARCH_LOG("Autoconfig: %d profiles found\n", list->size);
+   RARCH_LOG("Autodetect: %d profiles found\n", list->size);
 
    for (i = 0; i < list->size; i++)
    {
@@ -222,16 +222,16 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    }
 
    if(index >= 0 && current_best > 0)
-   {
-      RARCH_LOG("Autoconf: best configuration score=%d\n", current_best);
+   {      
       conf = config_file_new(list->elems[index].data);
+      RARCH_LOG("Autodetect: selected configuration: %s\n", conf->path);
       input_autoconfigure_joypad_add(conf, params);
       config_file_free(conf);
       ret = 1;
    }
    else
    {
-      RARCH_LOG("Autoconf: no profiles found for %s (%d/%d)", params->name, params->vid, params->pid);
+      RARCH_LOG("Autodetect: no profiles found for %s (%d/%d)", params->name, params->vid, params->pid);
       snprintf(msg, sizeof(msg), "%s (%d/%d) not configured", params->name, params->vid, params->pid);
       rarch_main_msg_queue_push(msg, 0, 60, false);
       ret = 0;
@@ -326,5 +326,5 @@ void input_config_autoconfigure_disconnect(unsigned i, const char *ident)
 
    snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", i, ident);
    rarch_main_msg_queue_push(msg, 0, 60, false);
-   RARCH_LOG("%s\n", msg);
+   RARCH_LOG("Autodetect: %s\n", msg);
 }
