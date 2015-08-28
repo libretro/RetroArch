@@ -1020,7 +1020,7 @@ static config_file_t *open_default_config_file(void)
                   "retroarch.cfg", sizeof(skeleton_conf));
             conf = config_file_new(skeleton_conf);
             if (conf)
-               RARCH_WARN("Using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
+               RARCH_WARN("Config: using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
             else
                conf = config_file_new(NULL);
 
@@ -1040,7 +1040,7 @@ static config_file_t *open_default_config_file(void)
                return NULL;
             }
 
-            RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
+            RARCH_WARN("Config: Created new config file in: \"%s\".\n", conf_path);
          }
       }
    }
@@ -1205,10 +1205,10 @@ static bool config_load_file(const char *path, bool set_defaults)
    while (extra_path)
    {
       bool ret = false;
-      RARCH_LOG("Appending config \"%s\"\n", extra_path);
+      RARCH_LOG("Config: appending config \"%s\"\n", extra_path);
       ret = config_append_file(conf, extra_path);
       if (!ret)
-         RARCH_ERR("Failed to append config \"%s\"\n", extra_path);
+         RARCH_ERR("Config: failed to append config \"%s\"\n", extra_path);
       extra_path = strtok_r(NULL, "|", &save);
    }
 #if 0
@@ -1783,11 +1783,11 @@ static void config_load_core_specific(void)
       global->has_set.state_path = false;
 
       strlcpy(tmp, settings->libretro, sizeof(tmp));
-      RARCH_LOG("Loading core-specific config from: %s.\n",
+      RARCH_LOG("Config: loading core-specific config from: %s.\n",
             global->path.core_specific_config);
 
       if (!config_load_file(global->path.core_specific_config, true))
-         RARCH_WARN("Core-specific config not found, reusing last config.\n");
+         RARCH_WARN("Config: core-specific config not found, reusing last config.\n");
 
       /* Force some parameters which are implied when using core specific configs.
        * Don't have the core config file overwrite the libretro path. */
@@ -1835,8 +1835,8 @@ bool config_load_override(void)
    if (!info->info.library_name || !strcmp(info->info.library_name,"No Core"))
       return false;
 
-   RARCH_LOG("Game name: %s\n", global->name.base);
-   RARCH_LOG("Core name: %s\n", info->info.library_name);
+   RARCH_LOG("Overrides: core name: %s\n", info->info.library_name);
+   RARCH_LOG("Overrides: game name: %s\n", global->name.base);
 
    if (!global || !settings )
    {
@@ -1853,11 +1853,11 @@ bool config_load_override(void)
       fill_pathname_basedir(config_directory, global->path.config, PATH_MAX_LENGTH);
    else
    {
-      RARCH_WARN("No config directory set under Settings > Path and retroarch.cfg not found.\n");
+      RARCH_WARN("Overrides: no config directory set\n");
       return false;
    }
 
-   RARCH_LOG("Config directory: %s\n", config_directory);
+   RARCH_LOG("Overrides: config directory: %s\n", config_directory);
 
    core_name = info->info.library_name;
    game_name = path_basename(global->name.base);
@@ -1879,15 +1879,15 @@ bool config_load_override(void)
    {
       if (settings->core_specific_config)
       {
-         RARCH_LOG("Can't use overrides in conjunction with per-core configs, disabling overrides\n");
+         RARCH_LOG("Overrides: can't use overrides with with per-core configs, disabling overrides\n");
          return false;
       }
-      RARCH_LOG("Core-specific overrides found at %s. Appending.\n", core_path);
+      RARCH_LOG("Overrides: core-specific overrides found at %s\n", core_path);
       strlcpy(global->path.append_config, core_path, sizeof(global->path.append_config));
       should_append = true;
    }
    else
-      RARCH_LOG("No core-specific overrides found at %s.\n", core_path);
+      RARCH_LOG("Overrides: no core-specific overrides found at %s\n", core_path);
 
    /* Create a new config file from game_path */
    new_conf = config_file_new(game_path);
@@ -1895,7 +1895,7 @@ bool config_load_override(void)
    /* If a game override exists, add it's location to append_config_path */
    if (new_conf)
    {
-      RARCH_LOG("Game-specific overrides found at %s. Appending.\n", game_path);
+      RARCH_LOG("Overrides: game-specific overrides found at %s\n", game_path);
       if (should_append)
       {
          strlcat(global->path.append_config, "|", sizeof(global->path.append_config));
@@ -1907,7 +1907,7 @@ bool config_load_override(void)
       should_append = true;
    }
    else
-      RARCH_LOG("No game-specific overrides found at %s.\n", game_path);
+      RARCH_LOG("Overrides: no game-specific overrides found at %s\n", game_path);
 
    /* Re-load the configuration with any overrides that might have been found */
    if (should_append)
@@ -1916,14 +1916,14 @@ bool config_load_override(void)
 
       if (settings->core_specific_config)
       {
-         RARCH_WARN("Can't use overrides in conjunction with per-core configs, disabling overrides\n");
+         RARCH_LOG("Overrides: can't use overrides with with per-core configs, disabling overrides\n");
          return false;
       }
 
 #ifdef HAVE_NETPLAY
       if (global->netplay.enable)
       {
-         RARCH_WARN("Can't use overrides in conjunction with netplay, disabling overrides\n");
+         RARCH_WARN("Overrides: can't use overrides in conjunction with netplay, disabling overrides\n");
          return false;
       }
 #endif
@@ -1970,12 +1970,12 @@ bool config_load_override(void)
    *global->path.append_config = '\0';
 
    /* Toggle has_save_path to false so it resets */
-	global->has_set.save_path  = false;
-	global->has_set.state_path = false;
+   global->has_set.save_path  = false;
+   global->has_set.state_path = false;
 
    if (config_load_file(global->path.config, false))
    {
-      RARCH_LOG("Configuration overrides unloaded, original configuration reset\n");
+      RARCH_LOG("Overrides: configuration overrides unloaded, original configuration restored\n");
 
       /* Reset save paths */
       global->has_set.save_path  = true;
@@ -2016,8 +2016,8 @@ bool config_load_remap(void)
    if (!info->info.library_name || !strcmp(info->info.library_name,"No Core"))
       return false;
 
-   RARCH_LOG("Game name: %s\n", global->name.base);
-   RARCH_LOG("Core name: %s\n", info->info.library_name);
+   RARCH_LOG("Remaps: core name: %s\n", info->info.library_name);
+   RARCH_LOG("Remaps: game name: %s\n", global->name.base);
 
    /* Remap directory: remap_directory.
     * Try remap directory setting, no fallbacks defined */
@@ -2025,10 +2025,10 @@ bool config_load_remap(void)
       strlcpy(remap_directory, settings->input_remapping_directory, PATH_MAX_LENGTH);
    else
    {
-      RARCH_WARN("No remap directory set.\n");
+      RARCH_WARN("Remaps: no remap directory set.\n");
       return false;
    }
-   RARCH_LOG("Remap directory: %s\n", remap_directory);
+   RARCH_LOG("Remaps: remap directory: %s\n", remap_directory);
 
    core_name = info->info.library_name;
    game_name = path_basename(global->name.base);
@@ -2048,7 +2048,7 @@ bool config_load_remap(void)
    /* If a game remap file exists, load it. */
    if (new_conf)
    {
-      RARCH_LOG("Game-specific remap found at %s. Appending.\n", game_path);
+      RARCH_LOG("Remaps: game-specific remap found at %s\n", game_path);
       if (input_remapping_load_file(game_path))
       {
          rarch_main_msg_queue_push("Game remap file loaded", 1, 100, true);
@@ -2057,7 +2057,7 @@ bool config_load_remap(void)
    }
    else
    {
-      RARCH_LOG("No core-specific remap found at %s.\n", core_path);
+      RARCH_LOG("Remaps: no game-specific remap found at %s\n", game_path);
       *settings->input.remapping_path= '\0';
       input_remapping_set_defaults();
    }
@@ -2070,7 +2070,7 @@ bool config_load_remap(void)
    /* If a core remap file exists, load it. */
    if (new_conf)
    {
-      RARCH_LOG("Core-specific remap found at %s. Loading.\n", core_path);
+      RARCH_LOG("Remaps: core-specific remap found at %s\n", core_path);
       if (input_remapping_load_file(core_path))
       {
          rarch_main_msg_queue_push("Core remap file loaded", 1, 100, true);
@@ -2079,7 +2079,7 @@ bool config_load_remap(void)
    }
    else
    {
-      RARCH_LOG("No core-specific remap found at %s.\n", core_path);
+      RARCH_LOG("Remaps: no core-specific remap found at %s\n", core_path);
       *settings->input.remapping_path= '\0';
       input_remapping_set_defaults();
    }
@@ -2097,19 +2097,19 @@ static void parse_config_file(void)
 
    if (*global->path.config)
    {
-      RARCH_LOG("Loading config from: %s.\n", global->path.config);
+      RARCH_LOG("Config: loading config from: %s.\n", global->path.config);
    }
    else
    {
       RARCH_LOG("Loading default config.\n");
       if (*global->path.config)
-         RARCH_LOG("Found default config: %s.\n", global->path.config);
+         RARCH_LOG("Config: found default config: %s.\n", global->path.config);
    }
 
    if (ret)
       return;
 
-   RARCH_ERR("Couldn't find config at path: \"%s\"\n",
+   RARCH_ERR("Config: couldn't find config at path: \"%s\"\n",
          global->path.config);
 }
 
