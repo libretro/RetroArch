@@ -756,6 +756,8 @@ static void frontend_android_get_environment_settings(int *argc,
                   "shaders", sizeof(g_defaults.dir.shader));
             fill_pathname_join(g_defaults.dir.overlay, app_dir,
                   "overlays", sizeof(g_defaults.dir.overlay));
+            fill_pathname_join(g_defaults.dir.osk_overlay, app_dir,
+                  "overlays", sizeof(g_defaults.dir.osk_overlay));
             fill_pathname_join(g_defaults.dir.core, app_dir,
                   "cores", sizeof(g_defaults.dir.core));
             fill_pathname_join(g_defaults.dir.core_info,

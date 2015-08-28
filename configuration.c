@@ -640,6 +640,8 @@ static void config_set_defaults(void)
    settings->input.autodetect_enable               = input_autodetect_enable;
    *settings->input.keyboard_layout                = '\0';
 
+   settings->osk.enable                            = true;
+
    for (i = 0; i < MAX_USERS; i++)
    {
       settings->input.joypad_map[i] = i;
@@ -788,10 +790,10 @@ static void config_set_defaults(void)
       fill_pathname_expand_special(global->dir.osk_overlay,
             g_defaults.dir.osk_overlay, sizeof(global->dir.osk_overlay));
 #ifdef RARCH_MOBILE
-      if (!*settings->input.overlay)
+      if (!*settings->input.osk_overlay)
             fill_pathname_join(settings->osk.overlay,
                   global->dir.osk_overlay,
-                  "overlays/keyboards/US-101/US-101.cfg",
+                  "overlays/keyboards/modular-keyboard/opaque/big.cfg",
                   sizeof(settings->osk.overlay));
 #endif
    }
