@@ -423,7 +423,7 @@ static void check_shader_dir(global_t *global,
          shader);
 
    if (!video_driver_set_shader(type, shader))
-      RARCH_WARN(msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER));
+      RARCH_WARN("%s\n", msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER));
 }
 
 #ifdef HAVE_MENU

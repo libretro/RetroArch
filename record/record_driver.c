@@ -414,7 +414,7 @@ bool recording_init(void)
 
    if (!record_driver_init_first(&driver->recording, &driver->recording_data, &params))
    {
-      RARCH_ERR(msg_hash_to_str(MSG_FAILED_TO_START_RECORDING));
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_START_RECORDING));
       event_command(EVENT_CMD_GPU_RECORD_DEINIT);
 
       return false;
