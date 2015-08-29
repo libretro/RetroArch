@@ -232,8 +232,8 @@ struct string_list *dir_list_new(const char *dir,
 
    do
    {
+      char file_path[PATH_MAX_LENGTH];
       int ret                         = 0;
-      char file_path[PATH_MAX_LENGTH] = {0};
       const char *name                = ffd.cFileName;
       const char *file_ext            = path_get_extension(name);
       bool is_dir                     = ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
@@ -264,8 +264,8 @@ error:
 
    while ((entry = readdir(directory)))
    {
+      char file_path[PATH_MAX_LENGTH];
       int ret                         = 0;
-      char file_path[PATH_MAX_LENGTH] = {0};
       const char *name                = entry->d_name;
       const char *file_ext            = path_get_extension(name);
       bool is_dir                     = false;
