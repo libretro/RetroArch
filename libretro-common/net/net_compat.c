@@ -213,29 +213,21 @@ int network_interface_up(struct sockaddr_in *target, int index,
    int state, timeout_count = 10;
    ret = cellNetCtlInit();
    if (ret < 0)
-   {
-      printf("cellNetCtlInit() failed(%x)\n", ret);
       return -1;
-   }
 
    for (;;)
    {
       ret = cellNetCtlGetState(&state);
       if (ret < 0)
-      {
-         printf("cellNetCtlGetState() failed(%x)\n", ret);
          return -1;
-      }
+
       if (state == CELL_NET_CTL_STATE_IPObtained)
          break;
 
       rarch_sleep(500);
       timeout_count--;
       if (index && timeout_count < 0)
-      {
-         printf("if_up_with(%d) timeout\n", index);
          return 0;
-      }
    }
 #elif defined(GEKKO)
    char t[16];
