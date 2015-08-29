@@ -86,8 +86,95 @@ static aslclient asl_client;
 static int asl_inited = 0;
 #endif
 
-#if defined(RARCH_CONSOLE) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
-#include <logger_override.h>
+#if defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
+
+#define BUFSIZE	(64 * 1024)
+#define TCPDUMP_STACKSIZE	(16 * 1024)
+#define TCPDUMP_PRIO	(2048)
+
+void logger_init (void);
+void logger_shutdown (void);
+void logger_send (const char *__format,...);
+void logger_send_v(const char *__format, va_list args);
+
+#ifdef IS_SALAMANDER
+
+#define RARCH_LOG(...) do { \
+   logger_send("RetroArch Salamander: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_LOG_V(tag, fmt, vp) do { \
+   logger_send("RetroArch Salamander: " tag); \
+   logger_send_v(fmt, vp); \
+} while (0)
+
+#define RARCH_LOG_OUTPUT(...) do { \
+   logger_send("RetroArch Salamander [OUTPUT] :: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
+   logger_send("RetroArch Salamander [OUTPUT] :: " tag); \
+   logger_send_v(fmt, vp); \
+} while (0)
+
+#define RARCH_ERR(...) do { \
+   logger_send("RetroArch Salamander [ERROR] :: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_ERR_V(tag, fmt, vp) do { \
+   logger_send("RetroArch Salamander [ERROR] :: " tag); \
+   logger_send_v(fmt, vp); \
+} while (0)
+
+#define RARCH_WARN(...) do { \
+   logger_send("RetroArch Salamander [WARN] :: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_WARN_V(tag, fmt, vp) do { \
+   logger_send("RetroArch Salamander [WARN] :: " tag); \
+   logger_send_v(fmt, vp); \
+} while (0)
+
+#else
+
+#define RARCH_LOG(...) do { \
+   logger_send("RetroArch: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_LOG_V(tag, fmt, vp) do { \
+   logger_send("RetroArch: " tag); \
+   logger_send_v(fmt, vp); \
+} while (0)
+
+#define RARCH_ERR(...) do { \
+   logger_send("RetroArch [ERROR] :: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_ERR_V(tag, fmt, vp) do { \
+   logger_send("RetroArch [ERROR] :: " tag); \
+   logger_send_v(fmt, vp); \
+} while (0)
+
+#define RARCH_WARN(...) do { \
+   logger_send("RetroArch [WARN] :: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_WARN_V(tag, fmt, vp) do { \
+   logger_send("RetroArch [WARN] :: " tag); \
+   logger_send_v(fmt, vp); \
+} while (0)
+
+#define RARCH_LOG_OUTPUT(...) do { \
+   logger_send("RetroArch [OUTPUT] :: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
+   logger_send("RetroArch [OUTPUT] :: " tag); \
+   logger_send_v(fmt, vp); \
+} while (0)
+
+#endif
+
 #else
 static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
