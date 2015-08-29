@@ -34,6 +34,8 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include <retro_miscellaneous.h>
+
 #ifndef GEKKO
 #include <net/net_compat.h>
 #endif
@@ -92,7 +94,7 @@ static int if_up_with(int index)
       if (state == CELL_NET_CTL_STATE_IPObtained)
          break;
 
-      sys_timer_usleep(500 * 1000);
+      rarch_sleep(500);
       timeout_count--;
       if (index && timeout_count < 0)
       {
@@ -103,17 +105,15 @@ static int if_up_with(int index)
 #elif defined(GEKKO)
    char t[16];
    if (if_config(t, NULL, NULL, TRUE) < 0)
-   {
       return -1;
-   }
 #endif
 
    sock=socket(AF_INET, SOCK_DGRAM, 0);
 
    target.sin_family = AF_INET;
-   target.sin_port = htons(PC_DEVELOPMENT_UDP_PORT);
+   target.sin_port   = htons(PC_DEVELOPMENT_UDP_PORT);
 #ifdef GEKKO
-   target.sin_len = 8;
+   target.sin_len    = 8;
 #endif
 
    inet_pton(AF_INET, PC_DEVELOPMENT_IP_ADDRESS, &target.sin_addr);
