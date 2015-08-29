@@ -293,7 +293,7 @@ static bool check_movie_init(global_t *global)
       rarch_main_msg_queue_push_new(
             MSG_FAILED_TO_START_MOVIE_RECORD,
             1, 180, true);
-      RARCH_ERR(msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
    }
 
    return ret;
