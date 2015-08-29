@@ -209,7 +209,7 @@ int network_interface_up(struct sockaddr_in *target, int index,
 
    (void)index;
 
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    int state, timeout_count = 10;
    ret = cellNetCtlInit();
    if (ret < 0)
@@ -261,7 +261,7 @@ int network_interface_up(struct sockaddr_in *target, int index,
 int network_interface_down(struct sockaddr_in *target, int *s)
 {
    socket_close(*s);
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    cellNetCtlTerm();
 #elif defined(GEKKO) && !defined(HW_DOL)
    net_deinit();
