@@ -107,6 +107,7 @@ ifeq ($(USBGECKO), 1)
 endif
 ifeq ($(HAVE_LOGGER), 1)
   HAVE_NETWORKING=1
+  HAVE_NETPLAY=1
 endif
   APP_BOOTER_DIR = wii/app_booter
   PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
