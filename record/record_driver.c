@@ -301,7 +301,7 @@ bool recording_init(void)
 
    if (global->inited.core.type == CORE_TYPE_DUMMY)
    {
-      RARCH_WARN(msg_hash_to_str(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED));
+      RARCH_WARN("%s\n", msg_hash_to_str(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED));
       return false;
    }
 
