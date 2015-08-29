@@ -47,6 +47,10 @@
 #include <xtl.h>
 #include <io.h>
 
+#elif defined(GEKKO)
+
+#include <network.h>
+
 #else
 #include <sys/select.h>
 #include <sys/types.h>
@@ -60,11 +64,12 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <fcntl.h>
-#include <errno.h>
 
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <cell/sysmodule.h>
 #include <netex/net.h>
+#include <netex/libnetctl.h>
+#include <sys/timer.h>
 
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK SYS_NET_EWOULDBLOCK
@@ -75,6 +80,8 @@
 #endif
 
 #endif
+
+#include <errno.h>
 
 static INLINE bool isagain(int bytes)
 {

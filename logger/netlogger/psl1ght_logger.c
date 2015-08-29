@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <net/net.h>
+#include <net/compat.h>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -22,10 +22,6 @@
 #include <string.h>
 #include <errno.h>
 #include <stdarg.h>
-
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 
 #include "logger.h"
 

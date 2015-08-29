@@ -16,17 +16,6 @@
 
 #if defined(__CELLOS_LV2__)
 #include "../../defines/ps3_defines.h"
-#ifndef __PSL1GHT__
-#include <netex/net.h>
-#include <cell/sysmodule.h>
-#include <netex/libnetctl.h>
-#include <sys/timer.h>
-#endif
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#elif defined(GEKKO)
-#include <network.h>
 #endif
 
 #include <stdio.h>
@@ -35,10 +24,7 @@
 #include <string.h>
 
 #include <retro_miscellaneous.h>
-
-#ifndef GEKKO
 #include <net/net_compat.h>
-#endif
 
 #include "logger.h"
 

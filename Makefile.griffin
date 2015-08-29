@@ -144,9 +144,13 @@ OBJ = griffin/griffin.o  $(PLATOBJS)
 INCLUDE += -I./libretro-common/include
 
 ifeq ($(HAVE_LOGGER), 1)
-CFLAGS		+= -DHAVE_LOGGER
+CFLAGS		+= -DHAVE_LOGGER 
 CFLAGS      += -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
 INCLUDE     += -Ilogger/netlogger
+endif
+
+ifeq ($(platform), wii)
+CFLAGS      += -DHAVE_SOCKET_LEGACY
 endif
 
 ifeq ($(HAVE_LIBRETRO_MANAGEMENT), 1)
