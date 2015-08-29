@@ -201,3 +201,70 @@ void network_deinit(void)
    cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
 #endif
 }
+
+int network_interface_up(struct sockaddr_in *target, int index,
+      const char *ip_address, unsigned udp_port, int *s)
+{
+   int ret = 0;
+
+   (void)index;
+
+#ifdef __CELLOS_LV2__
+   int state, timeout_count = 10;
+   ret = cellNetCtlInit();
+   if (ret < 0)
+   {
+      printf("cellNetCtlInit() failed(%x)\n", ret);
+      return -1;
+   }
+
+   for (;;)
+   {
+      ret = cellNetCtlGetState(&state);
+      if (ret < 0)
+      {
+         printf("cellNetCtlGetState() failed(%x)\n", ret);
+         return -1;
+      }
+      if (state == CELL_NET_CTL_STATE_IPObtained)
+         break;
+
+      rarch_sleep(500);
+      timeout_count--;
+      if (index && timeout_count < 0)
+      {
+         printf("if_up_with(%d) timeout\n", index);
+         return 0;
+      }
+   }
+#elif defined(GEKKO)
+   char t[16];
+   if (if_config(t, NULL, NULL, TRUE) < 0)
+      ret = -1;
+#endif
+   if (ret < 0)
+      return -1;
+
+   *s                 = socket(AF_INET, SOCK_DGRAM, 0);
+
+   target->sin_family = AF_INET;
+   target->sin_port   = htons(udp_port);
+#ifdef GEKKO
+   target->sin_len    = 8;
+#endif
+
+   inet_pton(AF_INET, ip_address, &target->sin_addr);
+
+   return 0;
+}
+
+int network_interface_down(struct sockaddr_in *target, int *s)
+{
+   socket_close(*s);
+#ifdef __CELLOS_LV2__
+   cellNetCtlTerm();
+#elif defined(GEKKO) && !defined(HW_DOL)
+   net_deinit();
+#endif
+   return 0;
+}

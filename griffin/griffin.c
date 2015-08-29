@@ -26,16 +26,14 @@
 #include <compat/posix_string.h>
 #endif
 
+#if defined(HAVE_LOGGER) && !defined(ANDROID)
+#include "../logger/netlogger/logger.c"
+#endif
+
 /*============================================================
 CONSOLE EXTENSIONS
 ============================================================ */
 #ifdef RARCH_CONSOLE
-
-#if defined(HAVE_LOGGER) && defined(__PSL1GHT__)
-#include "../logger/netlogger/psl1ght_logger.c"
-#elif defined(HAVE_LOGGER) && !defined(ANDROID)
-#include "../logger/netlogger/logger.c"
-#endif
 
 #ifdef HW_DOL
 #include "../ngc/ssaram.c"

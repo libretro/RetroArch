@@ -192,5 +192,10 @@ bool network_init(void);
  **/
 void network_deinit(void);
 
+int network_interface_up(struct sockaddr_in *target, int index,
+      const char *ip_address, unsigned udp_port, int *s);
+
+int network_interface_down(struct sockaddr_in *target, int *s);
+
 #endif
 

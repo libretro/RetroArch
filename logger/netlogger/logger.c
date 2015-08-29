@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) || defined(__PSL1GHT__)
 #include "../../defines/ps3_defines.h"
 #endif
 
@@ -41,78 +41,21 @@ static int sock;
 static struct sockaddr_in target;
 static char sendbuf[4096];
 
-static int if_up_with(int index)
-{
-   (void)index;
-#ifdef __CELLOS_LV2__
-   int timeout_count = 10;
-   int state;
-   int ret;
-
-   ret = cellNetCtlInit();
-   if (ret < 0)
-   {
-      printf("cellNetCtlInit() failed(%x)\n", ret);
-      return -1;
-   }
-
-   for (;;)
-   {
-      ret = cellNetCtlGetState(&state);
-      if (ret < 0)
-      {
-         printf("cellNetCtlGetState() failed(%x)\n", ret);
-         return -1;
-      }
-      if (state == CELL_NET_CTL_STATE_IPObtained)
-         break;
-
-      rarch_sleep(500);
-      timeout_count--;
-      if (index && timeout_count < 0)
-      {
-         printf("if_up_with(%d) timeout\n", index);
-         return 0;
-      }
-   }
-#elif defined(GEKKO)
-   char t[16];
-   if (if_config(t, NULL, NULL, TRUE) < 0)
-      return -1;
-#endif
-
-   sock=socket(AF_INET, SOCK_DGRAM, 0);
-
-   target.sin_family = AF_INET;
-   target.sin_port   = htons(PC_DEVELOPMENT_UDP_PORT);
-#ifdef GEKKO
-   target.sin_len    = 8;
-#endif
-
-   inet_pton(AF_INET, PC_DEVELOPMENT_IP_ADDRESS, &target.sin_addr);
-
-   return 0;
-}
-
-static int if_down(int sid)
-{
-   (void)sid;
-#ifdef __CELLOS_LV2__
-   cellNetCtlTerm();
-#elif defined(GEKKO) && !defined(HW_DOL)
-   net_deinit();
-#endif
-   return 0;
-}
-
 void logger_init (void)
 {
-   g_sid = if_up_with(1);
+   if (network_interface_up(&target, 1,
+         PC_DEVELOPMENT_IP_ADDRESS,PC_DEVELOPMENT_UDP_PORT, &g_sid) < 0)
+   {
+      printf("Could not initialize network logger interface.\n");
+   }
 }
 
 void logger_shutdown (void)
 {
-   if_down(g_sid);
+   if (network_interface_down(&target, &g_sid) < 0)
+   {
+      printf("Could not deinitialize network logger interface.\n");
+   }
 }
 
 void logger_send(const char *__format,...)
