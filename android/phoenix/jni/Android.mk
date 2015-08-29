@@ -47,8 +47,8 @@ LOCAL_SRC_FILES  +=	$(RARCH_DIR)/griffin/griffin.c
 
 ifeq ($(HAVE_LOGGER), 1)
    LOCAL_CFLAGS += -DHAVE_LOGGER
-   LOGGER_LDLIBS := -llog
 endif
+LOGGER_LDLIBS := -llog
 
 ifeq ($(GLES),3)
    GLES_LIB := -lGLESv3
