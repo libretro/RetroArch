@@ -147,7 +147,7 @@ static int cb_generic_download(void *data, size_t len,
    {
       if (!zlib_parse_file(output_path, NULL, zlib_extract_core_callback,
                (void*)dir_path))
-         RARCH_LOG(msg_hash_to_str(MSG_COULD_NOT_PROCESS_ZIP_FILE));
+         RARCH_LOG("%s\n", msg_hash_to_str(MSG_COULD_NOT_PROCESS_ZIP_FILE));
 
       if (path_file_exists(output_path))
          remove(output_path);
