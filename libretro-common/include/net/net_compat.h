@@ -83,6 +83,19 @@
 
 #include <errno.h>
 
+#ifdef GEKKO
+#define sendto(s, msg, len, flags, addr, tolen) net_sendto(s, msg, len, 0, addr, 8)
+#define socket(domain, type, protocol) net_socket(domain, type, protocol)
+
+static INLINE int inet_pton(int af, const char *src, void *dst)
+{
+   if (af != AF_INET)
+      return -1;
+
+   return inet_aton (src, dst);
+}
+#endif
+
 static INLINE bool isagain(int bytes)
 {
 #if defined(_WIN32)

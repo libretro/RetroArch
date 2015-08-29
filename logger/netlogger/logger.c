@@ -41,19 +41,6 @@ static int sock;
 static struct sockaddr_in target;
 static char sendbuf[4096];
 
-#ifdef GEKKO
-#define sendto(s, msg, len, flags, addr, tolen) net_sendto(s, msg, len, 0, addr, 8)
-#define socket(domain, type, protocol) net_socket(domain, type, protocol)
-
-static int inet_pton(int af, const char *src, void *dst)
-{
-   if (af != AF_INET)
-      return -1;
-
-   return inet_aton (src, dst);
-}
-#endif
-
 static int if_up_with(int index)
 {
    (void)index;
