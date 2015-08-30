@@ -369,6 +369,8 @@ unsigned rarch_get_cpu_cores(void)
    return 1;
 #elif defined(PSP)
    return 1;
+#elif defined(VITA)
+   return 4;
 #elif defined(_3DS)
    return 1;
 #elif defined(_SC_NPROCESSORS_ONLN)
