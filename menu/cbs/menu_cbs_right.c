@@ -317,19 +317,17 @@ static int action_right_video_resolution(unsigned type, const char *label,
 int core_setting_right(unsigned type, const char *label,
       bool wraparound)
 {
+   driver_t * driver = driver_get_ptr();
+   const ui_companion_driver_t *ui = ui_companion_get_ptr();
    unsigned idx     = type - MENU_SETTINGS_CORE_OPTION_START;
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    (void)label;
 
    core_option_next(system->core_options, idx);
-    
-    driver_t * driver = driver_get_ptr();
-    const ui_companion_driver_t *ui = ui_companion_get_ptr();
-    
-    if (ui->notify_refresh && ui_companion_is_on_foreground())
-        ui->notify_refresh(driver->ui_companion_data);
 
+   if (ui->notify_refresh && ui_companion_is_on_foreground())
+      ui->notify_refresh(driver->ui_companion_data);
 
    return 0;
 }
