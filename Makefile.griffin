@@ -146,7 +146,7 @@ else ifeq ($(platform), vita)
   MACHDEP := -DVITA
   PLATCFLAGS := -O3
   LIBS += -lretro_vita \
-        -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub \
+        -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub \
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub \
 	-lSceRtc_stub -lz -lm -lc
 
