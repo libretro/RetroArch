@@ -105,13 +105,14 @@ static bool dirent_is_directory(const char *path)
 
 /**
  * parse_dir_entry:
- * @name         : name of the directory listing entry.
- * @file_path    : file path of the directory listing entry.
- * @is_dir       : is the directory listing a directory?
- * @include_dirs : include directories as part of the finished directory listing?
- * @list         : pointer to directory listing.
- * @ext_list     : pointer to allowed file extensions listing.
- * @file_ext     : file extension of the directory listing entry.
+ * @name               : name of the directory listing entry.
+ * @file_path          : file path of the directory listing entry.
+ * @is_dir             : is the directory listing a directory?
+ * @include_dirs       : include directories as part of the finished directory listing?
+ * @include_compressed : include compressed files, even when not part of ext_list.
+ * @list               : pointer to directory listing.
+ * @ext_list           : pointer to allowed file extensions listing.
+ * @file_ext           : file extension of the directory listing entry.
  *
  * Parses a directory listing.
  *
@@ -119,7 +120,7 @@ static bool dirent_is_directory(const char *path)
  * continue to the next entry in the directory listing.
  **/
 static int parse_dir_entry(const char *name, char *file_path,
-      bool is_dir, bool include_dirs,
+      bool is_dir, bool include_dirs, bool include_compressed,
       struct string_list *list, struct string_list *ext_list,
       const char *file_ext)
 {
@@ -142,7 +143,9 @@ static int parse_dir_entry(const char *name, char *file_path,
    if (!strcmp(name, ".") || !strcmp(name, ".."))
       return 1;
 
-   if (!is_compressed_file && !is_dir && ext_list && !supported_by_core)
+   if (!is_dir && ext_list &&
+           ((!is_compressed_file && !supported_by_core) ||
+            (!supported_by_core && !include_compressed)))
       return 1;
 
    if (is_dir)
@@ -168,9 +171,10 @@ static int parse_dir_entry(const char *name, char *file_path,
 
 /**
  * dir_list_new:
- * @dir          : directory path.
- * @ext          : allowed extensions of file directory entries to include.
- * @include_dirs : include directories as part of the finished directory listing?
+ * @dir                : directory path.
+ * @ext                : allowed extensions of file directory entries to include.
+ * @include_dirs       : include directories as part of the finished directory listing?
+ * @include_compressed : Include compressed files, even if not part of ext.
  *
  * Create a directory listing.
  *
@@ -178,7 +182,7 @@ static int parse_dir_entry(const char *name, char *file_path,
  * NULL in case of error. Has to be freed manually.
  **/
 struct string_list *dir_list_new(const char *dir,
-      const char *ext, bool include_dirs)
+      const char *ext, bool include_dirs, bool include_compressed)
 {
    NSArray *entries = NULL;
    char path_buf[PATH_MAX_LENGTH] = {0};
@@ -207,7 +211,7 @@ struct string_list *dir_list_new(const char *dir,
       is_dir = dirent_is_directory(file_path);
 
       ret = parse_dir_entry([name UTF8String], file_path, is_dir,
-            include_dirs, list, ext_list, file_ext);
+            include_dirs, include_compressed, list, ext_list, file_ext);
 
       if (ret == -1)
          goto error;

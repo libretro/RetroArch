@@ -2118,7 +2118,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
    else
       str_list = dir_list_new(info->path,
             filter_ext ? info->exts : NULL,
-            true);
+            true, true);
 
    if (hash_label == MENU_LABEL_SCAN_DIRECTORY)
       menu_list_push(info->list,
