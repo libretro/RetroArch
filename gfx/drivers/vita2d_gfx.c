@@ -19,6 +19,24 @@
 
 #include <vita2d.h>
 
+#define SCREEN_W 960
+#define SCREEN_H 544
+
+typedef struct vita_video
+{
+  vita2d_texture *texture;
+
+   bool vsync;
+   bool rgb32;
+
+   video_viewport_t vp;
+
+   unsigned rotation;
+   bool vblank_not_reached;
+   bool keep_aspect;
+   bool should_resize;
+} vita_video_t;
+
 static void *vita2d_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
@@ -26,25 +44,51 @@ static void *vita2d_gfx_init(const video_info_t *video,
    *input_data = NULL;
    (void)video;
 
+   vita_video_t *vita = (vita_video_t *)calloc(1, sizeof(vita_video_t));
+
+   if (!vita)
+      return NULL;
+
    vita2d_init();
    vita2d_set_clear_color(RGBA8(0x40, 0x40, 0x40, 0xFF));
+   vita2d_set_vblank_wait(video->vsync);
 
-   return (void*)-1;
+   vita->texture = vita2d_create_empty_texture(SCREEN_W, SCREEN_H);
+
+   vita->vsync = video->vsync;
+   vita->rgb32 = video->rgb32;
+
+   return vita;
 }
 
 static bool vita2d_gfx_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg)
 {
-   (void)data;
+   vita_video_t *vita = (vita_video_t *)data;
    (void)frame;
    (void)width;
    (void)height;
    (void)pitch;
    (void)msg;
 
+   unsigned int *tex_p = vita2d_texture_get_datap(vita->texture);
+   unsigned int tex_stride = vita2d_texture_get_stride(vita->texture);
+   const unsigned int *frame_p = frame;
+
    vita2d_start_drawing();
    vita2d_clear_screen();
+
+   int i, j;
+   for (i = 0; i < height; i++)
+   {
+      for (j = 0; j < width; j++)
+      {
+         tex_p[i + j * tex_stride] = frame_p[i + j * pitch];
+      }
+   }
+
+   vita2d_draw_texture(vita->texture, 0, 0);
 
    vita2d_end_drawing();
    vita2d_swap_buffers();
@@ -54,8 +98,13 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 
 static void vita2d_gfx_set_nonblock_state(void *data, bool toggle)
 {
-   (void)data;
-   (void)toggle;
+   vita_video_t *vita = (vita_video_t *)data;
+
+   if (vita)
+   {
+      vita->vsync = !toggle;
+      vita2d_set_vblank_wait(vita->vsync);
+   }
 }
 
 static bool vita2d_gfx_alive(void *data)
@@ -85,7 +134,9 @@ static bool vita2d_gfx_has_windowed(void *data)
 
 static void vita2d_gfx_free(void *data)
 {
-   (void)data;
+   vita_video_t *vita = (vita_video_t *)data;
+
+   vita2d_free_texture(vita->texture);
 
    vita2d_fini();
 }

@@ -32,7 +32,7 @@
 
 PSP2_MODULE_INFO(0, 0, "RetroArch");
 
-char eboot_path[512];
+char retroarch_path[512];
 
 static bool exit_spawn = false;
 static bool exitspawn_start_game = false;
@@ -54,9 +54,9 @@ static void frontend_vita_get_environment_settings(int *argc, char *argv[],
 #endif
 #endif
 
-   strlcpy(eboot_path, argv[0], sizeof(eboot_path));
+   strlcpy(retroarch_path, "cache0:/retroarch/", sizeof(retroarch_path));
 
-   fill_pathname_basedir(g_defaults.dir.port, argv[0], sizeof(g_defaults.dir.port));
+   fill_pathname_basedir(g_defaults.dir.port, retroarch_path, sizeof(g_defaults.dir.port));
    RARCH_LOG("port dir: [%s]\n", g_defaults.dir.port);
 
    fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
@@ -151,7 +151,7 @@ static void frontend_vita_exec(const char *path, bool should_load_game)
    SceSize   args = 0;
 
    argp[0] = '\0';
-   strlcpy(argp, eboot_path, sizeof(argp));
+   strlcpy(argp, retroarch_path, sizeof(argp));
    args = strlen(argp) + 1;
 
 #ifndef IS_SALAMANDER
