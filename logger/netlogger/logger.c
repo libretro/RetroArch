@@ -44,11 +44,20 @@ static char sendbuf[4096];
 static int network_interface_up(struct sockaddr_in *target, int index,
       const char *ip_address, unsigned udp_port, int *s)
 {
-   int ret = 0;
-
    (void)index;
 
+#if defined(VITA)
+   *s                 = sceNetSocket("RA_netlogger", PSP2_NET_AF_INET, PSP2_NET_SOCK_DGRAM, 0);
+   target->sin_family = PSP2_NET_AF_INET;
+   target->sin_port   = sceNetHtons(udp_port);
+   target->sin_len    = 8;
+
+   sceNetInetPton(PSP2_NET_AF_INET, ip_address, &target->sin_addr);
+#else
+
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+   int ret = 0;
+
    int state, timeout_count = 10;
    ret = cellNetCtlInit();
    if (ret < 0)
@@ -85,7 +94,7 @@ static int network_interface_up(struct sockaddr_in *target, int index,
 #endif
 
    inet_pton(AF_INET, ip_address, &target->sin_addr);
-
+#endif
    return 0;
 }
 
