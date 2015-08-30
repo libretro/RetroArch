@@ -121,9 +121,7 @@ static int network_interface_down(struct sockaddr_in *target, int *s)
    ret = socketclose(*s);
 #elif defined(VITA)
    if (net_memory)
-   {
       free(net_memory);
-   }
    sceNetSocketClose(*s);
 #else
    ret = close(*s);
@@ -140,17 +138,13 @@ void logger_init (void)
 {
    if (network_interface_up(&target, 1,
          PC_DEVELOPMENT_IP_ADDRESS,PC_DEVELOPMENT_UDP_PORT, &g_sid) < 0)
-   {
       printf("Could not initialize network logger interface.\n");
-   }
 }
 
 void logger_shutdown (void)
 {
    if (network_interface_down(&target, &g_sid) < 0)
-   {
       printf("Could not deinitialize network logger interface.\n");
-   }
 }
 
 void logger_send(const char *__format,...)
