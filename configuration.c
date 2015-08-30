@@ -186,8 +186,8 @@ const char *config_get_default_video(void)
          return "d3d";
       case VIDEO_PSP1:
          return "psp1";
-      case VIDEO_VITA:
-         return "vita";
+      case VIDEO_VITA2D:
+         return "vita2d";
       case VIDEO_CTR:
          return "ctr";
       case VIDEO_XVIDEO:
