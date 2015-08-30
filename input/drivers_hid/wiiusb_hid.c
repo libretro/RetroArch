@@ -71,7 +71,11 @@ static void adapter_thread(void *data)
       int report_number;
       int size = 0;
 
+      (void)tmp;
+      (void)report_number;
+
       slock_lock(adapter->send_control_lock);
+
       if (fifo_read_avail(adapter->send_control_buffer) >= sizeof(send_command_size))
       {
          fifo_read(adapter->send_control_buffer, &send_command_size, sizeof(send_command_size));
@@ -237,6 +241,8 @@ static int add_adapter(void *data, usb_device_entry *dev)
    struct wiiusb_hid *hid = (struct wiiusb_hid*)data;
    struct wiiusb_adapter *adapter  = (struct wiiusb_adapter*)
       calloc(1, sizeof(struct wiiusb_adapter));
+
+   (void)rc;
 
    if (!adapter)
       return -1;
@@ -483,6 +489,8 @@ static void *wiiusb_hid_init(void)
    int ret;
    usb_device_entry *dev_entries;
    wiiusb_hid_t *hid = (wiiusb_hid_t*)calloc(1, sizeof(*hid));
+
+   (void)ret;
 
    if (!hid)
       goto error;
