@@ -396,7 +396,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
 #if defined(HAVE_DYLIB)
    fill_pathname_basedir(basedir, filter_config, sizeof(basedir));
 
-   plugs = dir_list_new(basedir, EXT_EXECUTABLES, false);
+   plugs = dir_list_new(basedir, EXT_EXECUTABLES, false, false);
    if (!plugs)
    {
       RARCH_ERR("[SoftFilter]: Could not build up string list...\n");
