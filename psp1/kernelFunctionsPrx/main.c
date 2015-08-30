@@ -17,26 +17,26 @@ static SceUID main_thread_id;
 
 static int main_thread(SceSize args, void *argp)
 {
-	SceCtrlData paddata;
+   SceCtrlData paddata;
 
-	thread_active = 1;
+   thread_active = 1;
 
    while (thread_active)
-	{
+   {
       sceCtrlPeekBufferPositive(&paddata, 1);
-		buttons = paddata.Buttons;
-		sceKernelDelayThread(1000000/60);
-	}
+      buttons = paddata.Buttons;
+      sceKernelDelayThread(1000000/60);
+   }
 
-	sceKernelExitThread(0);
+   sceKernelExitThread(0);
 
-	return 0;
+   return 0;
 }
 
 
 unsigned int read_system_buttons(void)
 {
-	return buttons;
+   return buttons;
 }
 
 void exitspawn_kernel( const char* fileName, SceSize args, void * argp){
@@ -65,23 +65,23 @@ int module_start(SceSize args, void *argp)
    (void)args;
    (void)argp;
 
-	buttons = 0;
-	thread_active = 0;   
-	main_thread_id = sceKernelCreateThread("main Thread", main_thread, 0x11, 0x200, 0, NULL);
+   buttons = 0;
+   thread_active = 0;   
+   main_thread_id = sceKernelCreateThread("main Thread", main_thread, 0x11, 0x200, 0, NULL);
 
    if (main_thread >= 0)
-		sceKernelStartThread(main_thread_id, 0, 0);
+      sceKernelStartThread(main_thread_id, 0, 0);
 
-	return 0;
+   return 0;
 }
 
 
 int module_stop(void)
 {
-	if (main_thread_id >= 0)
-	{
-		thread_active = 0;
-		sceKernelWaitThreadEnd(main_thread_id, NULL);
-	}
-	return 0;
+   if (main_thread_id >= 0)
+   {
+      thread_active = 0;
+      sceKernelWaitThreadEnd(main_thread_id, NULL);
+   }
+   return 0;
 }
