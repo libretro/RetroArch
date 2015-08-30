@@ -1045,6 +1045,7 @@ static int action_ok_core_load(const char *path,
          sizeof(settings->libretro));
    event_command(EVENT_CMD_LOAD_CORE);
    menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
+
 #if defined(HAVE_DYNAMIC)
    /* No content needed for this core, load core immediately. */
 
@@ -1058,12 +1059,13 @@ static int action_ok_core_load(const char *path,
 
    /* Core selection on non-console just updates directory listing.
     * Will take effect on new content load. */
+   return 0;
 #elif defined(RARCH_CONSOLE)
    event_command(EVENT_CMD_RESTART_RETROARCH);
    return -1;
-#endif
-
+#else
    return 0;
+#endif
 }
 
 static int action_ok_core_download(const char *path,

@@ -124,7 +124,7 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
       softfilter_simd_mask_t cpu_features,
       unsigned threads)
 {
-   unsigned input_fmts, input_fmt, output_fmts, i;
+   unsigned input_fmts, input_fmt, output_fmts, i = 0;
    struct config_file_userdata userdata;
    char key[64]  = {0};
    char name[64] = {0};
