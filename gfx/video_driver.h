@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -129,11 +129,11 @@ typedef struct video_poke_interface
 typedef struct video_driver
 {
    /* Should the video driver act as an input driver as well?
-    * The video initialization might preinitialize an input driver 
-    * to override the settings in case the video driver relies on 
+    * The video initialization might preinitialize an input driver
+    * to override the settings in case the video driver relies on
     * input driver for event handling. */
    void *(*init)(const video_info_t *video, const input_driver_t **input,
-         void **input_data); 
+         void **input_data);
 
    /* msg is for showing a message on the screen along with the video frame. */
    bool (*frame)(void *data, const void *frame, unsigned width,
@@ -190,7 +190,7 @@ typedef struct video_driver
 
 extern video_driver_t video_gl;
 extern video_driver_t video_psp1;
-extern video_driver_t video_vita;
+extern video_driver_t video_vita2d;
 extern video_driver_t video_ctr;
 extern video_driver_t video_d3d;
 extern video_driver_t video_gx;
@@ -250,7 +250,7 @@ void find_video_driver(void);
  * video_driver_get_ptr:
  * @drv                : real video driver will be set to this.
  *
- * Use this if you need the real video driver 
+ * Use this if you need the real video driver
  * and driver data pointers.
  *
  * Returns: video driver's userdata.
