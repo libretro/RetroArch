@@ -225,8 +225,6 @@ static int wiiusb_hid_removalnotify_cb(int result, void *usrdata)
    if (!hid)
       return -1;
 
-   remove_adapter(hid, &adapters.next->device);
-
    return 0;
 }
 
