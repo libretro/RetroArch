@@ -144,7 +144,7 @@ enum
 #elif defined(HAVE_VG)
 #define VIDEO_DEFAULT_DRIVER VIDEO_VG
 #elif defined(HAVE_VITA2D)
-#define VIDEO_DEFAULT_DRIVER VIDEO_VITA
+#define VIDEO_DEFAULT_DRIVER VIDEO_VITA2D
 #elif defined(PSP)
 #define VIDEO_DEFAULT_DRIVER VIDEO_PSP1
 #elif defined(_3DS)
