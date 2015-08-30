@@ -38,6 +38,9 @@
 #include <direct.h>
 #include <windows.h>
 #endif
+#elif defined(VITA)
+#include <psp2/io/fcntl.h>
+#include <psp2/io/dirent.h>
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -96,7 +99,7 @@ void dir_list_free(struct string_list *list)
    string_list_free(list);
 }
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(VITA)
 /**
  *
  * dirent_is_directory:
@@ -209,9 +212,12 @@ static int parse_dir_entry(const char *name, char *file_path,
 struct string_list *dir_list_new(const char *dir,
       const char *ext, bool include_dirs, bool include_compressed)
 {
-#ifdef _WIN32
+#if defined(_WIN32)
    WIN32_FIND_DATA ffd;
    HANDLE hFind = INVALID_HANDLE_VALUE;
+#elif defined(VITA)
+   SceUID directory;
+   SceIoDirent entry;
 #else
    DIR *directory = NULL;
    const struct dirent *entry = NULL;
@@ -262,6 +268,43 @@ struct string_list *dir_list_new(const char *dir,
 error:
    if (hFind != INVALID_HANDLE_VALUE)
       FindClose(hFind);
+#elif defined(VITA)
+   directory = sceIoDopen(dir);
+   if (directory < 0)
+      goto error;
+
+   while (sceIoDread(directory, &entry) > 0)
+   {
+      char file_path[PATH_MAX_LENGTH];
+      int ret                         = 0;
+      const char *name                = entry.d_name;
+      const char *file_ext            = path_get_extension(name);
+      bool is_dir                     = false;
+
+      fill_pathname_join(file_path, dir, name, sizeof(file_path));
+
+      is_dir = PSP2_S_ISDIR(entry.d_stat.st_mode);
+
+      ret = parse_dir_entry(name, file_path, is_dir,
+            include_dirs, include_compressed, list, ext_list, file_ext);
+
+      if (ret == -1)
+      {
+         sceIoDclose(directory);
+         goto error;
+      }
+
+      if (ret == 1)
+         continue;
+   }
+
+   sceIoDclose(directory);
+
+   string_list_free(ext_list);
+   return list;
+
+error:
+
 #else
    directory = opendir(dir);
    if (!directory)
@@ -297,7 +340,6 @@ error:
 error:
    if (directory)
       closedir(directory);
-
 #endif
    string_list_free(list);
    string_list_free(ext_list);

@@ -147,11 +147,12 @@ else ifeq ($(platform), vita)
   MACHDEP := -DVITA
   PLATCFLAGS := -Wl,-q -Wall -O3
   LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub \
-	-lSceSysmodule_stub -lSceCtrl_stub -lScePgf_stub \
-	-lpng -ljpeg -lfreetype -lz -lm -lc
+	-lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub \
+	-lSceRtc_stub -lz -lm -lc
 
   HAVE_LIBRETRO_MANAGEMENT := 1
   HAVE_RPNG                := 1
+  HAVE_ZLIB                := 1
   HAVE_VITA2D              := 1
 endif
 
