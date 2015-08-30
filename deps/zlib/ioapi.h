@@ -61,6 +61,16 @@
 #endif
 #endif
 
+#ifdef _Z_OF
+#undef OF
+#define OF _Z_OF
+#else
+#ifndef OF
+#define _Z_OF(args) args
+#define OF _Z_OF
+#endif
+#endif
+
 /*
 #ifndef ZPOS64_T
   #ifdef _WIN32
