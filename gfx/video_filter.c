@@ -129,6 +129,8 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
    char key[64]  = {0};
    char name[64] = {0};
 
+   (void)i;
+
    snprintf(key, sizeof(key), "filter");
 
    if (!config_get_array(filt->conf, key, name, sizeof(name)))

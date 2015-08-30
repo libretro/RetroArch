@@ -133,10 +133,18 @@ else ifeq ($(platform), psp1)
   INCLUDE += -I$(PSPSDK)/psp/sdk/include
   EXT_TARGET := $(TARGET_NAME)_psp1.elf
   EXT_INTER_TARGET := $(TARGET_NAME)_psp1.elf
-  PLATCFLAGS := -DPSP -D_PSP_FW_VERSION=150 -G0
+  PLATCFLAGS := -DPSP -D_PSP_FW_VERSION=150 -G0 \
+	  -D_MIPS_ARCH_ALLEGREX
+  LIBS += $(WHOLE_START) -lretro_psp1 $(WHOLE_END) \
+			 -lpspgu -lpspgum -lm -lpspaudio -lpspfpu \
+			 -lpsppower -lpsprtc
+
+  LIBDIRS += -L.
+  LDFLAGS +=  -Wl,-q
 
   HAVE_LIBRETRO_MANAGEMENT := 1
   HAVE_RPNG                := 1
+  HAVE_KERNEL_PRX          := 1
 else ifeq ($(platform), vita)
   CC = arm-vita-eabi-gcc$(EXE_EXT)
   CXX = arm-vita-eabi-g++$(EXE_EXT)
@@ -145,7 +153,7 @@ else ifeq ($(platform), vita)
   EXT_INTER_TARGET := $(TARGET_NAME).elf
   MACHDEP := -DVITA
   PLATCFLAGS := -O3
-  LIBS += -lretro_vita \
+  LIBS += $(WHOLE_START) -lretro_vita $(WHOLE_END) \
         -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub \
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub \
 	-lScePower_stub -lSceRtc_stub -lz -lm -lc
@@ -161,6 +169,7 @@ else ifeq ($(platform), vita)
   HAVE_ZLIB                := 1
   HAVE_VITA2D              := 1
 endif
+
 
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
 
@@ -186,6 +195,10 @@ ifeq ($(HAVE_LIBRETRO_MANAGEMENT), 1)
 CFLAGS		+= -DHAVE_LIBRETRO_MANAGEMENT
 endif
 
+ifeq ($(HAVE_KERNEL_PRX), 1)
+CFLAGS      += -DHAVE_KERNEL_PRX
+endif
+
 ifeq ($(HAVE_LIBSICKSAXIS), 1)
 CFLAGS		+= -DHAVE_LIBSICKSAXIS
 endif
@@ -200,6 +213,10 @@ endif
 
 ifeq ($(HAVE_LIBRETRODB), 1)
 CFLAGS		+= -DHAVE_LIBRETRODB
+endif
+
+ifeq ($(BIG_STACK),1)
+CFLAGS		+= -DBIG_STACK
 endif
 
 ifeq ($(HAVE_RPNG), 1)

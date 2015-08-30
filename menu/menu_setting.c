@@ -2284,6 +2284,7 @@ static void settings_data_list_current_add_flags(
    setting_add_special_callbacks(list, list_info, values);
 }
 
+#ifdef HAVE_OVERLAY
 static void overlay_enable_toggle_change_handler(void *data)
 {
    settings_t *settings  = config_get_ptr();
@@ -2303,6 +2304,7 @@ static void overlay_enable_toggle_change_handler(void *data)
    else
       event_command(EVENT_CMD_OVERLAY_DEINIT);
 }
+#endif
 
 static bool setting_append_list_main_menu_options(
       rarch_setting_t **list,

@@ -455,9 +455,6 @@ static void *psp_init(const video_info_t *video,
    psp->hw_render          = false;
 
    return psp;
-error:
-   RARCH_ERR("PSP1 video could not be initialized.\n");
-   return (void*)-1;
 }
 
 //#define DISPLAY_FPS

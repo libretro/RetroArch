@@ -241,9 +241,10 @@ void find_video_driver(void)
 void *video_driver_get_ptr(const video_driver_t **drv)
 {
    driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
 
 #ifdef HAVE_THREADS
+   settings_t *settings = config_get_ptr();
+
    if (settings->video.threaded
          && !video_state.hw_render_callback.context_type)
       return rarch_threaded_video_get_ptr(drv);

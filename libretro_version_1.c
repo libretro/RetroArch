@@ -209,6 +209,8 @@ static void input_poll(void)
    const input_driver_t *input     = driver ? 
       (const input_driver_t*)driver->input : NULL;
 
+   (void)settings;
+
    input->poll(driver->input_data);
 
 #ifdef HAVE_OVERLAY
