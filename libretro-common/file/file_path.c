@@ -73,6 +73,10 @@
 #include <unistd.h>
 #endif
 
+#if defined(PSP)
+#include <pspkernel.h>
+#endif
+
 /**
  * path_get_extension:
  * @path               : path
@@ -559,7 +563,7 @@ static bool path_mkdir_norecurse(const char *dir)
    ret = _mkdir(dir);
 #elif defined(IOS)
    ret = mkdir(dir, 0755);
-#elif defined(VITA)
+#elif defined(VITA) || defined(PSP)
    ret = sceIoMkdir(dir, 0755);
 #else
    ret = mkdir(dir, 0750);
