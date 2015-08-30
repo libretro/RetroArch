@@ -39,7 +39,7 @@ void conv_rgb565_0rgb1555(void *output_, const void *input_,
       int width, int height,
       int out_stride, int in_stride)
 {
-   int h, w = 0;
+   int h, w;
    const uint16_t *input = (const uint16_t*)input_;
    uint16_t *output = (uint16_t*)output_;
 
@@ -78,7 +78,7 @@ void conv_0rgb1555_rgb565(void *output_, const void *input_,
       int width, int height,
       int out_stride, int in_stride)
 {
-   int h, w = 0;
+   int h, w;
    const uint16_t *input   = (const uint16_t*)input_;
    uint16_t *output        = (uint16_t*)output_;
 
@@ -122,7 +122,7 @@ void conv_0rgb1555_argb8888(void *output_, const void *input_,
       int width, int height,
       int out_stride, int in_stride)
 {
-   int h, w = 0;
+   int h, w;
    const uint16_t *input = (const uint16_t*)input_;
    uint32_t *output      = (uint32_t*)output_;
 
@@ -189,7 +189,7 @@ void conv_rgb565_argb8888(void *output_, const void *input_,
       int width, int height,
       int out_stride, int in_stride)
 {
-   int h, w = 0;
+   int h, w;
    const uint16_t *input    = (const uint16_t*)input_;
    uint32_t *output         = (uint32_t*)output_;
 
@@ -355,7 +355,7 @@ void conv_0rgb1555_bgr24(void *output_, const void *input_,
       int width, int height,
       int out_stride, int in_stride)
 {
-   int h, w = 0;
+   int h, w;
    const uint16_t *input     = (const uint16_t*)input_;
    uint8_t *output           = (uint8_t*)output_;
 
@@ -441,7 +441,7 @@ void conv_rgb565_bgr24(void *output_, const void *input_,
       int width, int height,
       int out_stride, int in_stride)
 {
-   int h, w = 0;
+   int h, w;
    const uint16_t *input    = (const uint16_t*)input_;
    uint8_t *output          = (uint8_t*)output_;
 
@@ -571,7 +571,7 @@ void conv_argb8888_bgr24(void *output_, const void *input_,
       int width, int height,
       int out_stride, int in_stride)
 {
-   int h, w = 0;
+   int h, w;
    const uint32_t *input = (const uint32_t*)input_;
    uint8_t *output       = (uint8_t*)output_;
 
@@ -638,7 +638,7 @@ void conv_yuyv_argb8888(void *output_, const void *input_,
       int width, int height,
       int out_stride, int in_stride)
 {
-   int h, w = 0;
+   int h, w;
    const uint8_t *input        = (const uint8_t*)input_;
    uint32_t *output            = (uint32_t*)output_;
 
