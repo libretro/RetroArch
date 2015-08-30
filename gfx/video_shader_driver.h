@@ -35,6 +35,7 @@ typedef struct shader_backend
          unsigned frame_counter,
          const void *info, 
          const void *prev_info,
+         const void *feedback_info,
          const void *fbo_info, unsigned fbo_info_cnt);
 
    void (*use)(void *data, unsigned index);
@@ -45,6 +46,7 @@ typedef struct shader_backend
    bool (*set_coords)(const void *data);
    bool (*set_mvp)(void *data, const math_matrix_4x4 *mat);
    unsigned (*get_prev_textures)(void);
+   bool (*get_feedback_pass)(unsigned *pass);
    bool (*mipmap_input)(unsigned index);
 
    struct video_shader *(*get_current_shader)(void);
