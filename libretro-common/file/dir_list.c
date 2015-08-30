@@ -281,7 +281,7 @@ error:
       is_dir = PSP2_S_ISDIR(entry.d_stat.st_mode);
 
       ret = parse_dir_entry(name, file_path, is_dir,
-            include_dirs, include_compressed, list, ext_list, file_ext);
+            include_dirs, list, ext_list, file_ext);
 
       if (ret == -1)
       {
