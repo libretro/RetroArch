@@ -107,14 +107,12 @@ static void hlsl_set_params(void *data, unsigned width, unsigned height,
       unsigned frame_counter,
       const void *_info,
       const void *_prev_info,
-      const void *_feedback_info,
       const void *_fbo_info, unsigned fbo_info_cnt)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
    const struct gfx_tex_info *info = (const struct gfx_tex_info*)_info;
    const struct gfx_tex_info *prev_info = (const struct gfx_tex_info*)_prev_info;
-   (void)_feedback_info;
    const struct gfx_tex_info *fbo_info = (const struct gfx_tex_info*)_fbo_info;
    driver_t *driver = driver_get_ptr();
    global_t *global = global_get_ptr();
@@ -479,12 +477,6 @@ static bool hlsl_mipmap_input(unsigned idx)
    return false;
 }
 
-static bool hlsl_get_feedback_pass(unsigned *idx)
-{
-   (void)idx;
-   return false;
-}
-
 static struct video_shader *hlsl_get_current_shader(void)
 {
    return NULL;
@@ -502,7 +494,6 @@ const shader_backend_t hlsl_backend = {
    NULL,              /* hlsl_set_coords */
    hlsl_set_mvp,
    NULL,              /* hlsl_get_prev_textures */
-   hlsl_get_feedback_pass,
    hlsl_mipmap_input,
    hlsl_get_current_shader,
 
