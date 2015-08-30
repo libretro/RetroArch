@@ -121,17 +121,23 @@ static INLINE int pthread_mutex_unlock(pthread_mutex_t *mutex)
 
 static INLINE int pthread_join(pthread_t thread, void **retval)
 {
+   int exit_status;
    SceUInt timeout = (SceUInt)-1;
+
    sceKernelWaitThreadEnd(thread, &timeout);
-   int exit_status = sceKernelGetThreadExitStatus(thread);
+   exit_status = sceKernelGetThreadExitStatus(thread);
    sceKernelDeleteThread(thread);
    return exit_status;
 }
 
 static INLINE int pthread_mutex_trylock(pthread_mutex_t *mutex)
 {
-   //FIXME: stub
+#ifdef VITA
+   return sceKernelTryLockMutex(*mutex, 1 /* not sure about this last param */);
+#else
+   /* FIXME: stub */
    return 1;
+#endif
 }
 
 static INLINE int pthread_cond_wait(pthread_cond_t *cond,
