@@ -137,6 +137,22 @@ else ifeq ($(platform), psp1)
 
   HAVE_LIBRETRO_MANAGEMENT := 1
   HAVE_RPNG                := 1
+else ifeq ($(platform), vita)
+  CC = arm-vita-eabi-gcc$(EXE_EXT)
+  CXX = arm-vita-eabi-g++$(EXE_EXT)
+  LD = arm-vita-eabi-ld$(EXE_EXT)
+  INCLUDE +=
+  EXT_TARGET := $(TARGET_NAME).velf
+  EXT_INTER_TARGET := $(TARGET_NAME).elf
+  MACHDEP := -DVITA
+  PLATCFLAGS := -Wl,-q -Wall -O3
+  LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub \
+	-lSceSysmodule_stub -lSceCtrl_stub -lScePgf_stub \
+	-lpng -ljpeg -lfreetype -lz -lm -lc
+
+  HAVE_LIBRETRO_MANAGEMENT := 1
+  HAVE_RPNG                := 1
+  HAVE_VITA2D              := 1
 endif
 
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
@@ -155,6 +171,10 @@ ifeq ($(platform), wii)
 CFLAGS      += -DHAVE_SOCKET_LEGACY
 endif
 
+ifeq ($(platform), vita)
+CFLAGS      += -DHAVE_SOCKET_LEGACY
+endif
+
 ifeq ($(HAVE_LIBRETRO_MANAGEMENT), 1)
 CFLAGS		+= -DHAVE_LIBRETRO_MANAGEMENT
 endif
@@ -165,6 +185,10 @@ endif
 
 ifeq ($(HAVE_WIIUSB_HID), 1)
 CFLAGS		+= -DHAVE_WIIUSB_HID -DHAVE_HID
+endif
+
+ifeq ($(HAVE_VITA2D), 1)
+CFLAGS		+= -DHAVE_VITA2D
 endif
 
 ifeq ($(HAVE_LIBRETRODB), 1)
@@ -225,6 +249,10 @@ LIBS += -lpthread-psp
 endif
 endif
 
+ifeq ($(HAVE_VITA2D), 1)
+LIBS += -lvita2d
+endif
+
 ifeq ($(HAVE_RSOUND), 1)
 CFLAGS += -DHAVE_RSOUND
 endif
@@ -241,6 +269,10 @@ all: $(EXT_TARGET)
 
 %.dol: %.elf
 	$(ELF2DOL) $< $@
+
+%.velf: %.elf
+	arm-vita-eabi-strip -g $<
+	vita-elf-create $< $@ $(VITASDK)/bin/db.json
 
 $(EXT_INTER_TARGET): $(OBJ)
 	$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(LIBS)
