@@ -444,7 +444,7 @@ static bool gfx_ctx_drm_egl_init(void *data)
       return false;
 
    drm->g_drm_fd   = -1;
-   gpu_descriptors = dir_list_new("/dev/dri", NULL, false, false);
+   gpu_descriptors = dir_list_new("/dev/dri", NULL, false);
 
 nextgpu:
    free_drm_resources(drm);

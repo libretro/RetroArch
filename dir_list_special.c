@@ -25,7 +25,7 @@ struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_ty
    const char *exts  = NULL;
    bool include_dirs = false;
 
-   global_t     *global = global_get_ptr();
+   global_t                *global = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
    (void)input_dir;
@@ -58,5 +58,5 @@ struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_ty
          return NULL;
    }
 
-   return dir_list_new(dir, exts, include_dirs, false);
+   return dir_list_new(dir, exts, include_dirs);
 }
