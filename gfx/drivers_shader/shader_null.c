@@ -43,7 +43,6 @@ static void shader_null_set_params(void *data, unsigned width, unsigned height,
       unsigned frame_count,
       const void *info, 
       const void *prev_info, 
-      const void *feedback_info,
       const void *fbo_info, unsigned fbo_info_cnt)
 {
 }
@@ -119,12 +118,6 @@ static bool shader_null_mipmap_input(unsigned idx)
    return false;
 }
 
-static bool shader_null_get_feedback_pass(unsigned *idx)
-{
-   (void)idx;
-   return false;
-}
-
 static struct video_shader *shader_null_get_current_shader(void)
 {
    return NULL;
@@ -142,7 +135,6 @@ const shader_backend_t shader_null_backend = {
    shader_null_set_coords,
    shader_null_set_mvp,
    shader_null_get_prev_textures,
-   shader_null_get_feedback_pass,
    shader_null_mipmap_input,
    shader_null_get_current_shader,
 
