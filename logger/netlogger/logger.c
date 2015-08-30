@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -37,9 +37,12 @@
 #endif
 
 static int g_sid;
-static int sock;
 static struct sockaddr_in target;
 static char sendbuf[4096];
+#ifdef VITA
+static void *net_memory = NULL;
+#define NET_INIT_SIZE 512*1024
+#endif
 
 static int network_interface_up(struct sockaddr_in *target, int index,
       const char *ip_address, unsigned udp_port, int *s)
@@ -47,10 +50,20 @@ static int network_interface_up(struct sockaddr_in *target, int index,
    (void)index;
 
 #if defined(VITA)
+   if (sceNetShowNetstat() == PSP2_NET_ERROR_ENOTINIT)
+   {
+      SceNetInitParam initparam;
+      net_memory = malloc(NET_INIT_SIZE);
+
+      initparam.memory = net_memory;
+      initparam.size = NET_INIT_SIZE;
+      initparam.flags = 0;
+
+      sceNetInit(&initparam);
+   }
    *s                 = sceNetSocket("RA_netlogger", PSP2_NET_AF_INET, PSP2_NET_SOCK_DGRAM, 0);
    target->sin_family = PSP2_NET_AF_INET;
    target->sin_port   = sceNetHtons(udp_port);
-   target->sin_len    = 8;
 
    sceNetInetPton(PSP2_NET_AF_INET, ip_address, &target->sin_addr);
 #else
@@ -106,6 +119,12 @@ static int network_interface_down(struct sockaddr_in *target, int *s)
    ret = closesocket(*s);
 #elif defined(__CELLOS_LV2__)
    ret = socketclose(*s);
+#elif defined(VITA)
+   if (net_memory)
+   {
+      free(net_memory);
+   }
+   sceNetSocketClose(*s);
 #else
    ret = close(*s);
 #endif
@@ -148,5 +167,5 @@ void logger_send_v(const char *__format, va_list args)
    int len;
    vsnprintf(sendbuf,4000,__format, args);
    len = strlen(sendbuf);
-   sendto(sock,sendbuf,len,MSG_DONTWAIT,(struct sockaddr*)&target,sizeof(target));
+   sendto(g_sid,sendbuf,len,MSG_DONTWAIT,(struct sockaddr*)&target,sizeof(target));
 }
