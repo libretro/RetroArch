@@ -141,17 +141,20 @@ else ifeq ($(platform), vita)
   CC = arm-vita-eabi-gcc$(EXE_EXT)
   CXX = arm-vita-eabi-g++$(EXE_EXT)
   LD = arm-vita-eabi-ld$(EXE_EXT)
-  INCLUDE +=
   EXT_TARGET := $(TARGET_NAME).velf
   EXT_INTER_TARGET := $(TARGET_NAME).elf
   MACHDEP := -DVITA
-  PLATCFLAGS := -Wl,-q -Wall -O3
-  LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub \
+  PLATCFLAGS := -O3
+  LIBS += -lretro_vita \
+        -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub \
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub \
 	-lSceRtc_stub -lz -lm -lc
 
   PLATOBJS += audio/audio_utils_neon.o audio/drivers_resampler/sinc_neon.o \
               audio/drivers_resampler/cc_resampler_neon.o
+
+  LIBDIRS += -L.
+  LDFLAGS +=  -Wl,-q
 
   HAVE_LIBRETRO_MANAGEMENT := 1
   HAVE_RPNG                := 1
@@ -159,7 +162,7 @@ else ifeq ($(platform), vita)
   HAVE_VITA2D              := 1
 endif
 
-CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
+CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
 
 OBJ = griffin/griffin.o  $(PLATOBJS)
 

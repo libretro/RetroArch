@@ -56,6 +56,11 @@ else ifeq ($(platform), emscripten)
    TARGET := $(TARGET_NAME)_libretro_emscripten.bc
    fpic := -fPIC
    SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
+else ifeq ($(platform), vita)
+   TARGET := $(TARGET_NAME).a
+   CC = arm-vita-eabi-gcc
+   AR = arm-vita-eabi-ar
+   CFLAGS += -Wl,-q -Wall -O3
 else
    CC = gcc
    TARGET := $(TARGET_NAME)_libretro.dll
@@ -81,8 +86,15 @@ endif
 
 all: $(TARGET)
 
+ifeq ($(platform), vita)
+
+$(TARGET): $(OBJECTS)
+	$(AR) -rc $@ $^
+else
+
 $(TARGET): $(OBJECTS)
 	$(CC) $(fpic) $(SHARED) $(INCLUDES) -o $@ $(OBJECTS) $(LDFLAGS)
+endif
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
