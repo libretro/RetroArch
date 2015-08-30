@@ -261,7 +261,6 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
       unsigned fbo_info_cnt)
 {
    unsigned i;
-   CGparameter param;
    const struct gfx_tex_info *info = (const struct gfx_tex_info*)_info;
    const struct gfx_tex_info *prev_info = (const struct gfx_tex_info*)_prev_info;
    const struct gfx_tex_info *feedback_info = (const struct gfx_tex_info*)_feedback_info;

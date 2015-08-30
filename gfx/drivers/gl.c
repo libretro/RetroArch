@@ -494,11 +494,6 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 #endif
    {
 #ifndef HAVE_OPENGLES
-      settings_t *settings = config_get_ptr();
-      GLuint base_filt     = settings->video.smooth ? GL_LINEAR : GL_NEAREST;
-      GLuint base_mip_filt = settings->video.smooth ? 
-         GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
-
       if (srgb_fbo && gl->has_srgb_fbo)
       {
          RARCH_LOG("[GL]: FBO pass #%d is sRGB.\n", i);
