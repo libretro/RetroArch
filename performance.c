@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -51,6 +51,11 @@
 #if defined(PSP)
 #include <sys/time.h>
 #include <psprtc.h>
+#endif
+
+#if defined(VITA)
+#include <psp2/kernel/processmgr.h>
+#include <psp2/rtc.h>
 #endif
 
 #if defined(__PSL1GHT__)
@@ -106,7 +111,7 @@ void rarch_perf_register(struct retro_perf_counter *perf)
 {
    global_t *global = global_get_ptr();
 
-   if (!global->perfcnt_enable || perf->registered 
+   if (!global->perfcnt_enable || perf->registered
          || perf_ptr_rarch >= MAX_COUNTERS)
       return;
 
@@ -139,7 +144,7 @@ static void log_counters(
       {
          RARCH_LOG(PERF_LOG_FMT,
                counters[i]->ident,
-               (unsigned long long)counters[i]->total / 
+               (unsigned long long)counters[i]->total /
                (unsigned long long)counters[i]->call_cnt,
                (unsigned long long)counters[i]->call_cnt);
       }
@@ -176,10 +181,10 @@ retro_perf_tick_t rarch_get_perf_counter(void)
 #if defined(__linux__) || defined(__QNX__) || defined(__MACH__)
    struct timespec tv;
    if (clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
-      time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 + 
+      time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 +
          (retro_perf_tick_t)tv.tv_nsec;
 
-#elif defined(__GNUC__) && !defined(RARCH_CONSOLE) 
+#elif defined(__GNUC__) && !defined(RARCH_CONSOLE)
 
 #if defined(__i386__) || defined(__i486__) || defined(__i686__)
    __asm__ volatile ("rdtsc" : "=A" (time_ticks));
@@ -193,7 +198,7 @@ retro_perf_tick_t rarch_get_perf_counter(void)
    __asm__ volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time_ticks) );
 #elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
    time_ticks = __mftb();
-#elif defined(PSP)
+#elif defined(PSP) || defined(VITA)
    sceRtcGetCurrentTick(&time_ticks);
 #elif defined(_3DS)
    time_ticks = svcGetSystemTick();
@@ -259,6 +264,8 @@ retro_time_t rarch_get_time_usec(void)
    return (1000000 * tv.tv_sec + tv.tv_usec);
 #elif defined(_3DS)
    return osGetTime() * 1000;
+#elif defined(VITA)
+   return sceKernelGetProcessTimeWide();
 #else
 #error "Your platform does not have a timer function implemented in rarch_get_time_usec(). Cannot continue."
 #endif
@@ -275,7 +282,7 @@ retro_time_t rarch_get_time_usec(void)
 #ifdef CPU_X86
 static void x86_cpuid(int func, int flags[4])
 {
-   /* On Android, we compile RetroArch with PIC, and we 
+   /* On Android, we compile RetroArch with PIC, and we
     * are not allowed to clobber the ebx register. */
 #ifdef __x86_64__
 #define REG_b "rbx"
@@ -306,7 +313,7 @@ static uint64_t xgetbv_x86(uint32_t idx)
 #if defined(__GNUC__)
    uint32_t eax, edx;
    __asm__ volatile (
-         /* Older GCC versions (Apple's GCC for example) do 
+         /* Older GCC versions (Apple's GCC for example) do
           * not understand xgetbv instruction.
           * Stamp out the machine code directly.
           */
@@ -326,7 +333,7 @@ static uint64_t xgetbv_x86(uint32_t idx)
 #if defined(__ARM_NEON__)
 static void arm_enable_runfast_mode(void)
 {
-   /* RunFast mode. Enables flush-to-zero and some 
+   /* RunFast mode. Enables flush-to-zero and some
     * floating point optimizations. */
    static const unsigned x = 0x04086060;
    static const unsigned y = 0x03000000;
@@ -418,7 +425,7 @@ uint64_t rarch_get_cpu_features(void)
    char buf[sizeof(" MMX MMXEXT SSE SSE2 SSE3 SSSE3 SS4 SSE4.2 AES AVX AVX2 NEON VMX VMX128 VFPU PS")];
 
    memset(buf, 0, sizeof(buf));
-   
+
    (void)cpu_flags;
    (void)flags;
    (void)max_flag;
@@ -471,9 +478,9 @@ uint64_t rarch_get_cpu_features(void)
       cpu |= RETRO_SIMD_AES;
 
 
-   /* Must only perform xgetbv check if we have 
+   /* Must only perform xgetbv check if we have
     * AVX CPU support (guaranteed to have at least i686). */
-   if (((flags[2] & avx_flags) == avx_flags) 
+   if (((flags[2] & avx_flags) == avx_flags)
          && ((xgetbv_x86(0) & 0x6) == 0x6))
       cpu |= RETRO_SIMD_AVX;
 
