@@ -28,6 +28,7 @@
 #include <pspaudio.h>
 #endif
 #include <stdint.h>
+#include <malloc.h>
 
 typedef struct psp_audio
 {
@@ -64,10 +65,10 @@ static int audioMainLoop(SceSize args, void* argp)
             < (AUDIO_OUT_COUNT * 2);
 
 #ifdef VITA
-      sceAudioOutOutput(0, 
+      sceAudioOutOutput(0,
             cond ? psp->zeroBuffer : (psp->buffer + readPos));
 #else
-      sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, cond ? (psp->zeroBuffer) 
+      sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, cond ? (psp->zeroBuffer)
             : (psp->buffer + readPos));
 #endif
 
@@ -111,8 +112,13 @@ static void *psp_audio_init(const char *device,
    psp->readPos     = 0;
    psp->writePos    = 0;
    psp->rate        = rate;
+#if defined(VITA)
+   psp->thread      = sceKernelCreateThread
+      ("audioMainLoop", audioMainLoop, 0x10000100, 0x10000, 0, 0, NULL);
+#else
    psp->thread      = sceKernelCreateThread
       ("audioMainLoop", audioMainLoop, 0x08, 0x10000, 0, NULL);
+#endif
    psp->nonblocking = false;
 
    psp->running     = true;
@@ -129,8 +135,11 @@ static void psp_audio_free(void *data)
       return;
 
    psp->running    = false;
-   
+#if defined(VITA)
+   sceKernelWaitThreadEnd(psp->thread, NULL, &timeout);
+#else
    sceKernelWaitThreadEnd(psp->thread, &timeout);
+#endif
    sceKernelDeleteThread(psp->thread);
 
    free(psp->buffer);
@@ -181,28 +190,63 @@ static bool psp_audio_alive(void *data)
 
 static bool psp_audio_stop(void *data)
 {
-   SceKernelThreadRunStatus runStatus;
    SceUInt timeout   = 100000;
    psp_audio_t* psp = (psp_audio_t*)data;
+
+#if defined(VITA)
+   SceKernelThreadInfo info;
+
+   info.size = sizeof(SceKernelThreadInfo);
+
+   if (sceKernelGetThreadInfo(
+            psp->thread, &info) < 0) /* Error */
+      return false;
+
+   if (info.status == PSP2_THREAD_STOPPED)
+      return false;
+
+#else
+   SceKernelThreadRunStatus runStatus;
 
    runStatus.size    = sizeof(SceKernelThreadRunStatus);
 
    if (sceKernelReferThreadRunStatus(
             psp->thread, &runStatus) < 0) /* Error */
       return false;
+
    if (runStatus.status == PSP_THREAD_STOPPED)
       return false;
 
+#endif
+
    psp->running = false;
+#if defined(VITA)
+   sceKernelWaitThreadEnd(psp->thread, NULL, &timeout);
+#else
    sceKernelWaitThreadEnd(psp->thread, &timeout);
+#endif
 
    return true;
 }
 
 static bool psp_audio_start(void *data)
 {
-   SceKernelThreadRunStatus runStatus;
    psp_audio_t* psp = (psp_audio_t*)data;
+
+#if defined(VITA)
+   SceKernelThreadInfo info;
+
+   info.size = sizeof(SceKernelThreadInfo);
+
+   if (sceKernelGetThreadInfo(
+            psp->thread, &info) < 0) /* Error */
+      return false;
+
+   if (info.status != PSP2_THREAD_STOPPED)
+      return false;
+
+#else
+   SceKernelThreadRunStatus runStatus;
 
    runStatus.size    = sizeof(SceKernelThreadRunStatus);
 
@@ -211,6 +255,8 @@ static bool psp_audio_start(void *data)
       return false;
    if (runStatus.status != PSP_THREAD_STOPPED)
       return false;
+
+#endif
 
    psp->running = true;
 
