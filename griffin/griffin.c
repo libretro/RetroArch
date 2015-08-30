@@ -379,6 +379,10 @@ INPUT (HID)
 #include "../input/drivers_hid/iohidmanager_hid.c"
 #endif
 
+#ifdef HAVE_WIIUSB_HID
+#include "../input/drivers_hid/wiiusb_hid.c"
+#endif
+
 #ifdef HAVE_HID
 #include "../input/connect/joypad_connection.c"
 #include "../input/connect/connect_ps3.c"

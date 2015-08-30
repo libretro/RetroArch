@@ -32,6 +32,9 @@ static hid_driver_t *hid_drivers[] = {
 #ifdef HAVE_LIBUSB
    &libusb_hid,
 #endif
+#ifdef GEKKO
+   &wiiusb_hid,
+#endif
    &null_hid,
    NULL,
 };

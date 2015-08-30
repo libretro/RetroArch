@@ -88,6 +88,8 @@ else ifeq ($(platform), ps3-cobra)
 	#TODO
   MEDIA_SHADER_DIR := ps3/iso/PS3_GAME/USRDIR/cores/shaders
 else ifeq ($(platform), wii)
+  HAVE_WIIUSB_HID          := 1
+
   CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
   CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
   LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
@@ -159,6 +161,10 @@ endif
 
 ifeq ($(HAVE_LIBSICKSAXIS), 1)
 CFLAGS		+= -DHAVE_LIBSICKSAXIS
+endif
+
+ifeq ($(HAVE_WIIUSB_HID), 1)
+CFLAGS		+= -DHAVE_WIIUSB_HID -DHAVE_HID
 endif
 
 ifeq ($(HAVE_LIBRETRODB), 1)

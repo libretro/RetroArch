@@ -146,7 +146,7 @@ static void gx_devthread(void *a)
 int gx_logger_net(struct _reent *r, int fd, const char *ptr, size_t len)
 {
    static char temp[4000];
-   size_t l = len >= 4000 ? 3999 : len;
+   size_t l = len >= 4000 ? 3999 : len - 1;
    memcpy(temp, ptr, l);
    temp[l] = 0;
    logger_send("%s", temp);
