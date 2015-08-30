@@ -628,6 +628,8 @@ FRONTEND
 #include "../frontend/drivers/platform_xdk.c"
 #elif defined(PSP)
 #include "../frontend/drivers/platform_psp.c"
+#elif defined(VITA)
+#include "../frontend/drivers/platform_vita.c"
 #elif defined(_3DS)
 #include "../frontend/drivers/platform_ctr.c"
 #elif defined(__QNX__)

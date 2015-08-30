@@ -47,6 +47,9 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(PSP)
    &frontend_ctx_psp,
 #endif
+#if defined(VITA)
+   &frontend_ctx_vita,
+#endif
 #if defined(_3DS)
    &frontend_ctx_ctr,
 #endif
@@ -83,7 +86,7 @@ frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)
  *
  * Finds first suitable driver and initialize.
  *
- * Returns: pointer to first suitable driver, otherwise NULL. 
+ * Returns: pointer to first suitable driver, otherwise NULL.
  **/
 frontend_ctx_driver_t *frontend_ctx_init_first(void)
 {

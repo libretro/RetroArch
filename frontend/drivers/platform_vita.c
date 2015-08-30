@@ -14,11 +14,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <pspkernel.h>
-#include <pspdebug.h>
-#include <pspfpu.h>
-#include <psppower.h>
-#include <pspsdk.h>
+#include <psp2/moduleinfo.h>
+#include <psp2/power.h>
 
 #include <stdint.h>
 #include <boolean.h>
@@ -33,17 +30,7 @@
 #include "../../defines/psp_defines.h"
 #include "../../general.h"
 
-#if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
-#include "../../psp1/kernel_functions.h"
-#endif
-
-
-PSP_MODULE_INFO("RetroArch", 0, 1, 1);
-PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
-#ifdef BIG_STACK
-PSP_MAIN_THREAD_STACK_SIZE_KB(4*1024);
-#endif
-PSP_HEAP_SIZE_MAX();
+PSP2_MODULE_INFO(0, 0, "RetroArch");
 
 char eboot_path[512];
 
@@ -54,7 +41,7 @@ static bool exitspawn_start_game = false;
 #include "../../file_ext.h"
 #endif
 
-static void frontend_psp_get_environment_settings(int *argc, char *argv[],
+static void frontend_vita_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
    (void)args;
@@ -63,7 +50,7 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
    global_t *global  = global_get_ptr();
-   global->log_file = fopen("ms0:/retroarch-log.txt", "w");
+   global->log_file = fopen("cache0:/retroarch-log.txt", "w");
 #endif
 #endif
 
@@ -125,7 +112,7 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
 #endif
 }
 
-static void frontend_psp_deinit(void *data)
+static void frontend_vita_deinit(void *data)
 {
    (void)data;
 #ifndef IS_SALAMANDER
@@ -141,64 +128,18 @@ static void frontend_psp_deinit(void *data)
 #endif
 }
 
-static void frontend_psp_shutdown(bool unused)
+static void frontend_vita_shutdown(bool unused)
 {
    (void)unused;
-   sceKernelExitGame();
+   sceKernelExitProcess(0);
 }
 
-static int exit_callback(int arg1, int arg2, void *common)
+static void frontend_vita_init(void *data)
 {
-   frontend_psp_deinit(NULL);
-   frontend_psp_shutdown(false);
-   return 0;
-}
-
-static int callback_thread(SceSize args, void *argp)
-{
-   int cbid = sceKernelCreateCallback("Exit callback", exit_callback, NULL);
-   sceKernelRegisterExitCallback(cbid);
-   sceKernelSleepThreadCB();
-
-   return 0;
-}
-
-static int setup_callback(void)
-{
-   int thread_id = sceKernelCreateThread("update_thread",
-         callback_thread, 0x11, 0xFA0, 0, 0);
-
-   if (thread_id >= 0)
-      sceKernelStartThread(thread_id, 0, 0);
-
-   return thread_id;
-}
-
-static void frontend_psp_init(void *data)
-{
-#ifndef IS_SALAMANDER
    (void)data;
-
-   /* TODO/FIXME - Err on the safe side for now and
-    * assume these aren't there with the PSP2/Vita SDKs.
-    */
-
-   /* initialize debug screen */
-   pspDebugScreenInit();
-   pspDebugScreenClear();
-
-   setup_callback();
-
-   pspFpuSetEnable(0); /* disable FPU exceptions */
-   scePowerSetClockFrequency(333,333,166);
-#endif
-
-#if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
-   pspSdkLoadStartModule("kernel_functions.prx", PSP_MEMORY_PARTITION_KERNEL);
-#endif
 }
 
-static void frontend_psp_exec(const char *path, bool should_load_game)
+static void frontend_vita_exec(const char *path, bool should_load_game)
 {
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
    char argp[512] = {0};
@@ -226,13 +167,13 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
 #endif
 }
 
-static void frontend_psp_set_fork(bool exit, bool start_game)
+static void frontend_vita_set_fork(bool exit, bool start_game)
 {
    exit_spawn = true;
    exitspawn_start_game = start_game;
 }
 
-static void frontend_psp_exitspawn(char *s, size_t len)
+static void frontend_vita_exitspawn(char *s, size_t len)
 {
    bool should_load_game = false;
 #ifndef IS_SALAMANDER
@@ -241,31 +182,24 @@ static void frontend_psp_exitspawn(char *s, size_t len)
    if (!exit_spawn)
       return;
 #endif
-   frontend_psp_exec(s, should_load_game);
+   frontend_vita_exec(s, should_load_game);
 }
 
-static int frontend_psp_get_rating(void)
+static int frontend_vita_get_rating(void)
 {
    return 4;
 }
 
-static enum frontend_powerstate frontend_psp_get_powerstate(int *seconds, int *percent)
+static enum frontend_powerstate frontend_vita_get_powerstate(int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
-   int battery                  = scePowerIsBatteryExist(); /* this function does not exist on Vita? */
+   int battery                  = 1;
    int plugged                  = scePowerIsPowerOnline();
    int charging                 = scePowerIsBatteryCharging();
 
    *percent = scePowerGetBatteryLifePercent();
    *seconds = scePowerGetBatteryLifeTime() * 60;
 
-   if (!battery)
-   {
-      ret = FRONTEND_POWERSTATE_NO_SOURCE;
-      *seconds = -1;
-      *percent = -1;
-   }
-   else
    if (charging)
       ret = FRONTEND_POWERSTATE_CHARGING;
    else if (plugged)
@@ -276,42 +210,38 @@ static enum frontend_powerstate frontend_psp_get_powerstate(int *seconds, int *p
    return ret;
 }
 
-enum frontend_architecture frontend_psp_get_architecture(void)
+enum frontend_architecture frontend_vita_get_architecture(void)
 {
    return FRONTEND_ARCH_MIPS;
 }
 
-static int frontend_psp_parse_drive_list(void *data)
+static int frontend_vita_parse_drive_list(void *data)
 {
 #ifndef IS_SALAMANDER
    file_list_t *list = (file_list_t*)data;
 
    menu_list_push(list,
-         "ms0:/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "ef0:/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "host0:/", "", MENU_FILE_DIRECTORY, 0, 0);
+         "cache0:/", "", MENU_FILE_DIRECTORY, 0, 0);
 #endif
 
    return 0;
 }
 
-frontend_ctx_driver_t frontend_ctx_psp = {
-   frontend_psp_get_environment_settings,
-   frontend_psp_init,
-   frontend_psp_deinit,
-   frontend_psp_exitspawn,
+frontend_ctx_driver_t frontend_ctx_vita = {
+   frontend_vita_get_environment_settings,
+   frontend_vita_init,
+   frontend_vita_deinit,
+   frontend_vita_exitspawn,
    NULL,                         /* process_args */
-   frontend_psp_exec,
-   frontend_psp_set_fork,
-   frontend_psp_shutdown,
+   frontend_vita_exec,
+   frontend_vita_set_fork,
+   frontend_vita_shutdown,
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_psp_get_rating,
+   frontend_vita_get_rating,
    NULL,                         /* load_content */
-   frontend_psp_get_architecture,
-   frontend_psp_get_powerstate,
-   frontend_psp_parse_drive_list,
-   "psp",
+   frontend_vita_get_architecture,
+   frontend_vita_get_powerstate,
+   frontend_vita_parse_drive_list,
+   "vita",
 };

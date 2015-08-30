@@ -148,7 +148,7 @@ else ifeq ($(platform), vita)
   LIBS += -lretro_vita \
         -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub \
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub \
-	-lSceRtc_stub -lz -lm -lc
+	-lScePower_stub -lSceRtc_stub -lz -lm -lc
 
   PLATOBJS += audio/audio_utils_neon.o audio/drivers_resampler/sinc_neon.o \
               audio/drivers_resampler/cc_resampler_neon.o

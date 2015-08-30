@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -84,6 +84,7 @@ extern frontend_ctx_driver_t frontend_ctx_darwin;
 extern frontend_ctx_driver_t frontend_ctx_android;
 extern frontend_ctx_driver_t frontend_ctx_linux;
 extern frontend_ctx_driver_t frontend_ctx_psp;
+extern frontend_ctx_driver_t frontend_ctx_vita;
 extern frontend_ctx_driver_t frontend_ctx_ctr;
 extern frontend_ctx_driver_t frontend_ctx_win32;
 extern frontend_ctx_driver_t frontend_ctx_null;
@@ -105,7 +106,7 @@ frontend_ctx_driver_t *frontend_get_ptr(void);
  *
  * Finds first suitable driver and initialize.
  *
- * Returns: pointer to first suitable driver, otherwise NULL. 
+ * Returns: pointer to first suitable driver, otherwise NULL.
  **/
 frontend_ctx_driver_t *frontend_ctx_init_first(void);
 
