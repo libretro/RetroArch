@@ -497,5 +497,6 @@ const ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_notify_content_loaded,
    ui_companion_cocoa_notify_list_pushed,
    NULL,
+   NULL,
    "cocoa",
 };

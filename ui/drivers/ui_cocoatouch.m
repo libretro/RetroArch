@@ -502,13 +502,17 @@ static void *ui_companion_cocoatouch_init(void)
 static void ui_companion_cocoatouch_notify_list_pushed(void *data,
    file_list_t *list, file_list_t *menu_list)
 {
-    (void)data;
-    (void)list;
-    (void)menu_list;
+   RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
 
-    RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
+   if (ap)
+      [ap mainMenuRefresh];
+}
 
-    if (ap)
+static void ui_companion_cocoatouch_notify_refresh(void *data)
+{
+   RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
+
+   if (ap)
       [ap mainMenuRefresh];
 }
 
@@ -531,6 +535,7 @@ const ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_event_command,
    ui_companion_cocoatouch_notify_content_loaded,
    ui_companion_cocoatouch_notify_list_pushed,
+   ui_companion_cocoatouch_notify_refresh,
    ui_companion_cocoatouch_render_messagebox,
    "cocoatouch",
 };
