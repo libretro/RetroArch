@@ -616,6 +616,9 @@ bool video_shader_read_conf_cgp(config_file_t *conf, struct video_shader *shader
       return false;
    }
 
+   if (!config_get_int(conf, "feedback_pass", &shader->feedback_pass))
+      shader->feedback_pass = -1;
+
    shader->passes = min(shaders, GFX_MAX_SHADERS);
    for (i = 0; i < shader->passes; i++)
    {
@@ -771,6 +774,8 @@ void video_shader_write_conf_cgp(config_file_t *conf,
    unsigned i;
 
    config_set_int(conf, "shaders", shader->passes);
+   if (shader->feedback_pass >= 0)
+      config_set_int(conf, "feedback_pass", shader->feedback_pass);
 
    for (i = 0; i < shader->passes; i++)
    {

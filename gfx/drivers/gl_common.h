@@ -209,6 +209,11 @@ typedef struct gl
    int fbo_pass;
    bool fbo_inited;
 
+   bool fbo_feedback_enable;
+   unsigned fbo_feedback_pass;
+   GLuint fbo_feedback;
+   GLuint fbo_feedback_texture;
+
    GLuint hw_render_fbo[GFX_MAX_TEXTURES];
    GLuint hw_render_depth[GFX_MAX_TEXTURES];
    bool hw_render_fbo_init;

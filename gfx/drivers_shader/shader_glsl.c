@@ -89,6 +89,7 @@ struct shader_uniforms
    int lut_texture[GFX_MAX_TEXTURES];
    
    struct shader_uniforms_frame orig;
+   struct shader_uniforms_frame feedback;
    struct shader_uniforms_frame pass[GFX_MAX_SHADERS];
    struct shader_uniforms_frame prev[PREV_TEXTURES];
 };
@@ -212,7 +213,7 @@ typedef struct glsl_shader_data
    unsigned gl_attrib_index;
    GLuint gl_program[GFX_MAX_SHADERS];
    GLuint gl_teximage[GFX_MAX_TEXTURES];
-   GLint gl_attribs[PREV_TEXTURES + 1 + 4 + GFX_MAX_SHADERS];
+   GLint gl_attribs[PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
    state_tracker_t *gl_state_tracker;
 } glsl_shader_data_t;
 
@@ -606,6 +607,9 @@ static void find_uniforms(glsl_shader_data_t *glsl,
 
    clear_uniforms_frame(&uni->orig);
    find_uniforms_frame(glsl, prog, &uni->orig, "Orig");
+   clear_uniforms_frame(&uni->feedback);
+   find_uniforms_frame(glsl, prog, &uni->feedback, "Feedback");
+
    if (pass > 1)
    {
       snprintf(frame_base, sizeof(frame_base), "PassPrev%u", pass);
@@ -944,6 +948,7 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
       unsigned frame_count,
       const void *_info, 
       const void *_prev_info, 
+      const void *_feedback_info,
       const void *_fbo_info, unsigned fbo_info_cnt)
 {
    GLfloat buffer[512];
@@ -954,6 +959,7 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
    size_t size = 0, attribs_size = 0;
    const struct gfx_tex_info *info = (const struct gfx_tex_info*)_info;
    const struct gfx_tex_info *prev_info = (const struct gfx_tex_info*)_prev_info;
+   const struct gfx_tex_info *feedback_info = (const struct gfx_tex_info*)_feedback_info;
    const struct gfx_tex_info *fbo_info = (const struct gfx_tex_info*)_fbo_info;
    struct glsl_attrib *attr = (struct glsl_attrib*)attribs;
    driver_t *driver = driver_get_ptr();
@@ -1011,9 +1017,9 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
       texunit++;
    }
 
-   /* Set original texture. */
    if (glsl->glsl_active_index)
    {
+      /* Set original texture. */
       if (uni->orig.texture >= 0)
       {
          /* Bind original texture. */
@@ -1039,6 +1045,35 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
          attr++;
 
          memcpy(buffer + size, info->coord, 8 * sizeof(GLfloat));
+         size += 8;
+      }
+
+      /* Set feedback texture. */
+      if (uni->feedback.texture >= 0)
+      {
+         /* Bind original texture. */
+         glActiveTexture(GL_TEXTURE0 + texunit);
+         glUniform1i(uni->feedback.texture, texunit);
+         glBindTexture(GL_TEXTURE_2D, feedback_info->tex);
+         texunit++;
+      }
+
+      if (uni->feedback.texture_size >= 0)
+         glUniform2fv(uni->feedback.texture_size, 1, feedback_info->tex_size);
+
+      if (uni->feedback.input_size >= 0)
+         glUniform2fv(uni->feedback.input_size, 1, feedback_info->input_size);
+
+      /* Pass texture coordinates. */
+      if (uni->feedback.tex_coord >= 0)
+      {
+         attr->loc = uni->feedback.tex_coord;
+         attr->size = 2;
+         attr->offset = size * sizeof(GLfloat);
+         attribs_size++;
+         attr++;
+
+         memcpy(buffer + size, feedback_info->coord, 8 * sizeof(GLfloat));
          size += 8;
       }
 
@@ -1350,6 +1385,17 @@ static bool gl_glsl_mipmap_input(unsigned idx)
    return false;
 }
 
+static bool gl_glsl_get_feedback_pass(unsigned *index)
+{
+   driver_t *driver = driver_get_ptr();
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver->video_shader_data;
+   if (!glsl || glsl->shader->feedback_pass < 0)
+      return false;
+
+   *index = glsl->shader->feedback_pass;
+   return true;
+}
+
 static struct video_shader *gl_glsl_get_current_shader(void)
 {
    driver_t *driver = driver_get_ptr();
@@ -1384,6 +1430,7 @@ const shader_backend_t gl_glsl_backend = {
    gl_glsl_set_coords,
    gl_glsl_set_mvp,
    gl_glsl_get_prev_textures,
+   gl_glsl_get_feedback_pass,
    gl_glsl_mipmap_input,
    gl_glsl_get_current_shader,
 

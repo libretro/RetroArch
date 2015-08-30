@@ -246,6 +246,7 @@ def translate_varying(cg):
         'IN.vertex_coord': 'VertexCoord',
         'IN.lut_tex_coord': 'LUTTexCoord',
         'ORIG.tex_coord': 'OrigTexCoord',
+        'FEEDBACK.tex_coord': 'FeedbackTexCoord',
         'PREV.tex_coord': 'PrevTexCoord',
         'PREV1.tex_coord': 'Prev1TexCoord',
         'PREV2.tex_coord': 'Prev2TexCoord',
@@ -276,6 +277,7 @@ def translate_varying(cg):
 def translate_texture_size(cg):
     translations = {
         'ORIG.texture_size': 'OrigTextureSize',
+        'FEEDBACK.texture_size': 'FeedbackTextureSize',
         'PREV.texture_size': 'PrevTextureSize',
         'PREV1.texture_size': 'Prev1TextureSize',
         'PREV2.texture_size': 'Prev2TextureSize',
@@ -299,6 +301,7 @@ def translate_texture_size(cg):
         'PASSPREV7.texture_size': 'PassPrev7TextureSize',
         'PASSPREV8.texture_size': 'PassPrev8TextureSize',
         'ORIG.video_size': 'OrigInputSize',
+        'FEEDBACK.video_size': 'FeedbackInputSize',
         'PREV.video_size': 'PrevInputSize',
         'PREV1.video_size': 'Prev1InputSize',
         'PREV2.video_size': 'Prev2InputSize',
@@ -451,6 +454,7 @@ def replace_global_fragment(source):
 def translate_texture(cg):
     translations = {
         'ORIG.texture': 'OrigTexture',
+        'FEEDBACK.texture': 'FeedbackTexture',
         'PREV.texture': 'PrevTexture',
         'PREV1.texture': 'Prev1Texture',
         'PREV2.texture': 'Prev2Texture',
