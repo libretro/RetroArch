@@ -17,6 +17,8 @@
 #include "../../driver.h"
 #include "../video_viewport.h"
 
+#include <vita2d.h>
+
 static void *vita2d_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
@@ -40,6 +42,12 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    (void)height;
    (void)pitch;
    (void)msg;
+
+   vita2d_start_drawing();
+   vita2d_clear_screen();
+
+   vita2d_end_drawing();
+   vita2d_swap_buffers();
 
    return true;
 }
