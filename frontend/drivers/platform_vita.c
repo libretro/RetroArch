@@ -80,6 +80,11 @@ static void frontend_vita_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.remap,
          "remaps", sizeof(g_defaults.dir.remap));
 
+   struct rarch_main_wrap *params = NULL;
+   params = (struct rarch_main_wrap*)params_data;
+
+   params->verbose = true;
+
 #ifndef IS_SALAMANDER
    if (argv[1] && (argv[1][0] != '\0'))
    {

@@ -257,7 +257,7 @@ endif
 endif
 
 ifeq ($(HAVE_VITA2D), 1)
-LIBS += -lvita2d
+LIBS := -lvita2d $(LIBS)
 endif
 
 ifeq ($(HAVE_RSOUND), 1)

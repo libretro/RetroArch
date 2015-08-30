@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -70,8 +70,8 @@ static const video_driver_t *video_drivers[] = {
 #if defined(HAVE_D3D)
    &video_d3d,
 #endif
-#ifdef SN_TARGET_PSP2
-   &video_vita,
+#ifdef HAVE_VITA2D
+   &video_vita2d,
 #endif
 #ifdef PSP
    &video_psp1,
@@ -233,7 +233,7 @@ void find_video_driver(void)
  * video_driver_get_ptr:
  * @drv                : real video driver will be set to this.
  *
- * Use this if you need the real video driver 
+ * Use this if you need the real video driver
  * and driver data pointers.
  *
  * Returns: video driver's userdata.
@@ -323,7 +323,7 @@ static void init_video_filter(enum retro_pixel_format colfmt)
    unsigned width, height, pow2_x, pow2_y, maxsize;
    struct retro_game_geometry *geom = NULL;
    settings_t *settings             = config_get_ptr();
-   struct retro_system_av_info *av_info = 
+   struct retro_system_av_info *av_info =
       video_viewport_get_system_av_info();
 
    deinit_video_filter();
@@ -360,7 +360,7 @@ static void init_video_filter(enum retro_pixel_format colfmt)
 
    pow2_x                    = next_pow2(width);
    pow2_y                    = next_pow2(height);
-   maxsize                   = max(pow2_x, pow2_y); 
+   maxsize                   = max(pow2_x, pow2_y);
    video_state.filter.scale  = maxsize / RARCH_SCALE_BASE;
    video_state.filter.out_rgb32 = rarch_softfilter_get_output_format(
          video_state.filter.filter) == RETRO_PIXEL_FORMAT_XRGB8888;
@@ -398,8 +398,8 @@ static void init_video_input(const input_driver_t *tmp)
 
    if (!driver->input)
    {
-      /* This should never really happen as tmp (driver.input) is always 
-       * found before this in find_driver_input(), or we have aborted 
+      /* This should never really happen as tmp (driver.input) is always
+       * found before this in find_driver_input(), or we have aborted
        * in a similar fashion anyways. */
       rarch_fail(1, "init_video_input()");
    }
@@ -452,7 +452,7 @@ void init_video(void)
    driver_t *driver                 = driver_get_ptr();
    settings_t *settings             = config_get_ptr();
    rarch_system_info_t *system      = rarch_system_info_get_ptr();
-   struct retro_system_av_info *av_info = 
+   struct retro_system_av_info *av_info =
       video_viewport_get_system_av_info();
 
    init_video_filter(video_state.pix_fmt);
@@ -478,7 +478,7 @@ void init_video(void)
    if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       float default_aspect = aspectratio_lut[ASPECT_RATIO_CORE].value;
-      aspectratio_lut[ASPECT_RATIO_CUSTOM].value = 
+      aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
          (custom_vp->width && custom_vp->height) ?
          (float)custom_vp->width / custom_vp->height : default_aspect;
    }
@@ -496,7 +496,7 @@ void init_video(void)
       if (settings->video.force_aspect)
       {
          /* Do rounding here to simplify integer scale correctness. */
-         unsigned base_width = 
+         unsigned base_width =
             roundf(geom->base_height * video_driver_get_aspect_ratio());
          width  = roundf(base_width * settings->video.scale);
       }
@@ -531,8 +531,8 @@ void init_video(void)
 #endif
    video.smooth       = settings->video.smooth;
    video.input_scale  = scale;
-   video.rgb32        = video_state.filter.filter ? 
-      video_state.filter.out_rgb32 : 
+   video.rgb32        = video_state.filter.filter ?
+      video_state.filter.out_rgb32 :
       (video_state.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 
    tmp = (const input_driver_t*)driver->input;
@@ -911,7 +911,7 @@ void video_monitor_adjust_system_rates(void)
 {
    float timing_skew;
    const struct retro_system_timing *info = NULL;
-   struct retro_system_av_info *av_info = 
+   struct retro_system_av_info *av_info =
       video_viewport_get_system_av_info();
    settings_t *settings = config_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
@@ -1016,7 +1016,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    retro_time_t accum   = 0, avg, accum_var = 0;
    unsigned samples     = 0;
    settings_t *settings = config_get_ptr();
-   
+
    samples = min(MEASURE_FRAME_TIME_SAMPLES_COUNT,
          video_state.frame_time_samples_count);
 

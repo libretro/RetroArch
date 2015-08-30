@@ -236,6 +236,8 @@ VIDEO DRIVER
 #include "../gfx/drivers/gx_gfx.c"
 #elif defined(PSP)
 #include "../gfx/drivers/psp1_gfx.c"
+#elif defined(HAVE_VITA2D)
+#include "../gfx/drivers/vita2d_gfx.c"
 #elif defined(_3DS)
 #include "../gfx/drivers/ctr_gfx.c"
 #elif defined(XENON)
