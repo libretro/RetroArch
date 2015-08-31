@@ -165,6 +165,7 @@ else ifeq ($(platform), vita)
   LDFLAGS +=  -Wl,-q
 
   HAVE_LIBRETRO_MANAGEMENT := 1
+  HAVE_BUILTIN_AUTOCONFIG  := 1
   HAVE_RPNG                := 1
   HAVE_ZLIB                := 1
   HAVE_VITA2D              := 1
