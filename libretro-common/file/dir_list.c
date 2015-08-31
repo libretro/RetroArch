@@ -203,6 +203,35 @@ static int parse_dir_entry(const char *name, char *file_path,
 }
 
 #if defined(_WIN32)
+#define dirent_opendir(directory, dir) \
+{ \
+   char path_buf[PATH_MAX_LENGTH]; \
+   snprintf(path_buf, sizeof(path_buf), "%s\\*", dir); \
+   directory = FindFirstFile(path_buf, &entry); \
+   if (directory == INVALID_HANDLE_VALUE) \
+   goto error; \
+}
+#elif defined(VITA)
+#define dirent_opendir(directory, dir) \
+   directory = sceIoDopen(dir); \
+   if (directory < 0) \
+      goto error
+#else
+#define dirent_opendir(directory, dir) \
+   directory = opendir(dir); \
+   if (!directory) \
+      goto error
+#endif
+
+#if defined(_WIN32)
+#define dirent_readdir(directory, entry) (FindNextFile((directory), &(entry)) != 0)
+#elif defined(VITA)
+#define dirent_readdir(directory, entry) (sceIoDread((directory), &(entry)) > 0)
+#else
+#define dirent_readdir(directory, entry) (entry = readdir(directory))
+#endif
+
+#if defined(_WIN32)
 #define dirent_closedir(directory) \
    if (directory != INVALID_HANDLE_VALUE) \
       FindClose(directory)
@@ -231,7 +260,6 @@ struct string_list *dir_list_new(const char *dir,
       const char *ext, bool include_dirs, bool include_compressed)
 {
 #if defined(_WIN32)
-   char path_buf[PATH_MAX_LENGTH];
    WIN32_FIND_DATA entry;
    HANDLE directory = INVALID_HANDLE_VALUE;
 #elif defined(VITA)
@@ -250,27 +278,9 @@ struct string_list *dir_list_new(const char *dir,
    if (ext)
       ext_list = string_split(ext, "|");
 
-#ifdef _WIN32
-   snprintf(path_buf, sizeof(path_buf), "%s\\*", dir);
+   dirent_opendir(directory, dir);
 
-   directory = FindFirstFile(path_buf, &entry);
-   if (directory == INVALID_HANDLE_VALUE)
-      goto error;
-
-   while (FindNextFile(directory, &entry) != 0)
-#elif defined(VITA)
-   directory = sceIoDopen(dir);
-   if (directory < 0)
-      goto error;
-
-   while (sceIoDread(directory, &entry) > 0)
-#else
-   directory = opendir(dir);
-   if (!directory)
-      goto error;
-
-   while ((entry = readdir(directory)))
-#endif
+   while (dirent_readdir(directory, entry))
    {
       char file_path[PATH_MAX_LENGTH];
       int ret                         = 0;
