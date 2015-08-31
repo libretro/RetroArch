@@ -40,7 +40,9 @@
 #include <compat/posix_string.h>
 #include <retro_miscellaneous.h>
 
+#ifdef HAVE_COMPRESSION
 #include <rhash.h>
+#endif
 
 #if defined(__CELLOS_LV2__)
 
