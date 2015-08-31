@@ -251,7 +251,8 @@ static void vita2d_gfx_free(void *data)
    if (vita->menu.frame)
       vita2d_free_texture(vita->menu.frame);
 
-   vita2d_free_texture(vita->texture);
+   if (vita->texture)
+      vita2d_free_texture(vita->texture);
 
    vita2d_fini();
 }
