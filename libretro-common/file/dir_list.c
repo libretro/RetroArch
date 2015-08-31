@@ -229,7 +229,7 @@ struct string_list *dir_list_new(const char *dir,
    DIR *directory = NULL;
    const struct dirent *entry = NULL;
 #endif
-   char path_buf[PATH_MAX_LENGTH] = {0};
+   char path_buf[PATH_MAX_LENGTH];
    struct string_list *ext_list   = NULL;
    struct string_list *list       = NULL;
 
