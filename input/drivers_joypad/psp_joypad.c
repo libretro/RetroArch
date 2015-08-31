@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -23,7 +23,11 @@ extern uint64_t lifecycle_state;
 
 static const char *psp_joypad_name(unsigned pad)
 {
+#ifdef VITA
+   return "Vita Controller";
+#else
    return "PSP Controller";
+#endif
 }
 
 static void psp_joypad_autodetect_add(unsigned autoconf_pad)
@@ -125,7 +129,7 @@ static void psp_joypad_poll(void)
 #endif
    (void)ret;
 
-   analog_state[0][0][0] = analog_state[0][0][1] = 
+   analog_state[0][0][0] = analog_state[0][0][1] =
       analog_state[0][1][0] = analog_state[0][1][1] = 0;
    pad_state = 0;
    pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
@@ -188,5 +192,9 @@ input_device_driver_t psp_joypad = {
    psp_joypad_poll,
    NULL,
    psp_joypad_name,
+#ifdef VITA
+   "vita",
+#else
    "psp",
+#endif
 };
