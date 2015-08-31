@@ -220,6 +220,7 @@ struct string_list *dir_list_new(const char *dir,
       const char *ext, bool include_dirs, bool include_compressed)
 {
 #if defined(_WIN32)
+   char path_buf[PATH_MAX_LENGTH];
    WIN32_FIND_DATA ffd;
    HANDLE hFind = INVALID_HANDLE_VALUE;
 #elif defined(VITA)
@@ -229,11 +230,8 @@ struct string_list *dir_list_new(const char *dir,
    DIR *directory = NULL;
    const struct dirent *entry = NULL;
 #endif
-   char path_buf[PATH_MAX_LENGTH];
    struct string_list *ext_list   = NULL;
    struct string_list *list       = NULL;
-
-   (void)path_buf;
 
    if (!(list = string_list_new()))
       return NULL;
