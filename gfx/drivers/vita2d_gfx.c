@@ -36,6 +36,9 @@ typedef struct vita_menu_frame
 typedef struct vita_video
 {
    vita2d_texture *texture;
+   SceGxmTextureFormat format;
+   int width;
+   int height;
 
    bool vsync;
    bool rgb32;
@@ -63,20 +66,18 @@ static void *vita2d_gfx_init(const video_info_t *video,
    if (!vita)
       return NULL;
 
+    RARCH_LOG("vita2d_gfx_init: w: %i  h: %i\n", video->width, video->height);
+
    vita2d_init();
    vita2d_set_clear_color(RGBA8(0x40, 0x40, 0x40, 0xFF));
    vita2d_set_vblank_wait(video->vsync);
 
    if (vita->rgb32)
-   {
-      vita->texture = vita2d_create_empty_texture(video->width, video->height);
-      RARCH_LOG("Creating RGBA8 texture: w: %i  h: %i\n", video->width, video->height);
-   }
+      vita->format = SCE_GXM_TEXTURE_FORMAT_X8U8U8U8_1RGB;
    else
-   {
-      vita->texture = vita2d_create_empty_texture_format(video->width, video->height, SCE_GXM_TEXTURE_FORMAT_R5G6B5);
-      RARCH_LOG("Creating R5G6B5 texture: w: %i  h: %i\n", video->width, video->height);
-   }
+      vita->format = SCE_GXM_TEXTURE_FORMAT_R5G6B5;
+
+   vita->texture = NULL;
 
    vita->menu.frame = NULL;
    vita->menu.active = 0;
@@ -100,6 +101,8 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg)
 {
+   int i, j;
+   void *tex_p;
    vita_video_t *vita = (vita_video_t *)data;
    (void)frame;
    (void)width;
@@ -107,9 +110,37 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    (void)pitch;
    (void)msg;
 
-   void *tex_p = vita2d_texture_get_datap(vita->texture);
-   unsigned int tex_stride = vita2d_texture_get_stride(vita->texture);
-   const unsigned int *frame_p = frame;
+   if (frame)
+   {
+      if (width != vita->width && height != vita->height && vita->texture)
+      {
+            vita2d_free_texture(vita->texture);
+            vita->texture = NULL;
+      }
+
+      if (!vita->texture)
+      {
+            vita->width = width;
+            vita->height = height;
+            vita->texture = vita2d_create_empty_texture_format(width, height, vita->format);
+      }
+
+      tex_p = vita2d_texture_get_datap(vita->texture);
+
+      if (vita->format == SCE_GXM_TEXTURE_FORMAT_A8B8G8R8)
+      {
+         for (i = 0; i < height; i++)
+	    for (j = 0; j < width; j++)
+	       *(unsigned int *)(tex_p + (j + i*height) * 4) = *(unsigned int *)(frame + (j + i*height) * 4);
+      }
+      else
+      {
+         /*for (i = 0; i < height; i++)
+	    for (j = 0; j < width; j++)
+	      *(unsigned short *)(tex_p + (j + i*height) * 2) = *(unsigned short *)(frame + (j + i*height) * 2);*/
+         memcpy(tex_p, frame, width*height*2);
+      }
+   }
 
    // RARCH_LOG("w: %i  h: %i  pitch: %i\n", width, height, pitch);
    // RARCH_LOG("msg: %s\n", msg);
@@ -117,22 +148,17 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    vita2d_start_drawing();
    vita2d_clear_screen();
 
-   /* int i, j;
-   for (i = 0; i < height; i++)
-   {
-      for (j = 0; j < width; j++)
-      {
-         *(unsigned int *)(tex_p + i*4 + j * tex_stride) = frame_p[i + j * width];
-      }
-   } */
-   // memcpy(tex_p, frame, height*pitch);
-
-   // vita2d_draw_texture(vita->texture, 0, 0);
+   if (frame && vita->texture)
+      vita2d_draw_texture_scale(vita->texture,
+         SCREEN_W/2 - (vita->width/2)*2,
+         SCREEN_H/2 - (vita->height/2)*2,
+         2.0f, 2.0f);
 
    if (vita->menu.active && vita->menu.frame)
-      vita2d_draw_texture(vita->menu.frame,
-         SCREEN_W/2 - vita->menu.width/2,
-         SCREEN_H/2 - vita->menu.height/2);
+      vita2d_draw_texture_scale(vita->menu.frame,
+         SCREEN_W/2 - (vita->menu.width/2)*2,
+         SCREEN_H/2 - (vita->menu.height/2)*2,
+         2.0f, 2.0f);
 
    vita2d_end_drawing();
    vita2d_swap_buffers();
@@ -222,12 +248,13 @@ static bool vita2d_gfx_read_viewport(void *data, uint8_t *buffer)
 
 static void vita_set_filtering(void *data, unsigned index, bool smooth)
 {
-   vita_video_t *psp = (vita_video_t*)data;
+   (void)data;
+   (void)index;
+   (void)smooth;
 }
 
 static void vita_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
-   vita_video_t *vid = (vita_video_t*)data;
    struct retro_system_av_info *av_info =
       video_viewport_get_system_av_info();
 
@@ -264,7 +291,6 @@ static void vita_set_texture_frame(void *data, const void *frame, bool rgb32,
 {
    int i, j;
    void *tex_p;
-   unsigned int stride;
    vita_video_t *vita = (vita_video_t*)data;
 
    (void)alpha;
@@ -275,7 +301,6 @@ static void vita_set_texture_frame(void *data, const void *frame, bool rgb32,
       vita->menu.frame = NULL;
    }
 
-
    if (!vita->menu.frame)
    {
       if (rgb32)
@@ -285,7 +310,7 @@ static void vita_set_texture_frame(void *data, const void *frame, bool rgb32,
       }
       else
       {
-         vita->menu.frame = vita2d_create_empty_texture_format(width, height, SCE_GXM_TEXTURE_FORMAT_R5G6B5);
+         vita->menu.frame = vita2d_create_empty_texture_format(width, height, SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA);
          RARCH_LOG("Creating Frame R5G6B5 texture: w: %i  h: %i\n", width, height);
       }
       vita->menu.width = width;
@@ -293,7 +318,6 @@ static void vita_set_texture_frame(void *data, const void *frame, bool rgb32,
    }
 
    tex_p = vita2d_texture_get_datap(vita->menu.frame);
-   stride = vita2d_texture_get_stride(vita->menu.frame);
 
    if (rgb32)
    {
@@ -365,5 +389,5 @@ video_driver_t video_vita2d = {
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */
 #endif
-  vita2d_gfx_get_poke_interface,
+   vita2d_gfx_get_poke_interface,
 };

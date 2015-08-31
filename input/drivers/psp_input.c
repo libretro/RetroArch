@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -93,7 +93,7 @@ static void* psp_input_initialize(void)
    psp_input_t *psp = (psp_input_t*)calloc(1, sizeof(*psp));
    if (!psp)
       return NULL;
-   
+
    psp->joypad = input_joypad_init_driver(
          settings->input.joypad_driver, psp);
 
@@ -171,7 +171,11 @@ input_driver_t input_psp = {
    NULL,
    NULL,
    psp_input_get_capabilities,
+#ifdef VITA
+   "vita",
+#else
    "psp",
+#endif
 
    psp_input_grab_mouse,
    NULL,

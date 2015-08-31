@@ -115,7 +115,11 @@ const char *config_get_default_audio(void)
       case AUDIO_WII:
          return "gx";
       case AUDIO_PSP:
+#ifdef VITA
+         return "vita";
+#else
          return "psp";
+#endif
       case AUDIO_CTR:
          return "ctr";
       case AUDIO_RWEBAUDIO:
@@ -231,7 +235,11 @@ const char *config_get_default_input(void)
       case INPUT_PS3:
          return "ps3";
       case INPUT_PSP:
+#ifdef VITA
+         return "vita";
+#else
          return "psp";
+#endif
       case INPUT_CTR:
          return "ctr";
       case INPUT_SDL:
@@ -287,7 +295,11 @@ const char *config_get_default_joypad(void)
       case JOYPAD_XDK:
          return "xdk";
       case JOYPAD_PSP:
+#ifdef VITA
+         return "vita";
+#else
          return "psp";
+#endif
       case JOYPAD_CTR:
          return "ctr";
       case JOYPAD_DINPUT:
@@ -455,7 +467,7 @@ static void config_set_defaults(void)
 #endif
    settings->multimedia.builtin_imageviewer_enable = true;
    settings->video.scale                 = scale;
-   settings->video.fullscreen            = global->force_fullscreen 
+   settings->video.fullscreen            = global->force_fullscreen
       ? true : fullscreen;
    settings->video.windowed_fullscreen   = windowed_fullscreen;
    settings->video.monitor_index         = monitor_index;
@@ -1177,7 +1189,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    const char *extra_path                = NULL;
    char tmp_str[PATH_MAX_LENGTH]         = {0};
    char tmp_append_path[PATH_MAX_LENGTH] = {0}; /* Don't destroy append_config_path. */
-   int vp_width = 0, vp_height = 0, vp_x = 0, vp_y = 0; 
+   int vp_width = 0, vp_height = 0, vp_x = 0, vp_y = 0;
    unsigned msg_color                    = 0;
    config_file_t *conf                   = NULL;
    settings_t *settings                  = config_get_ptr();
@@ -1847,7 +1859,7 @@ bool config_load_override(void)
    }
 
    /* Config directory: config_directory.
-    * Try config directory setting first, 
+    * Try config directory setting first,
     * fallback to the location of the current configuration file. */
    if (settings->menu_config_directory[0] != '\0')
       strlcpy(config_directory, settings->menu_config_directory, PATH_MAX_LENGTH);
@@ -1939,7 +1951,7 @@ bool config_load_override(void)
 
       if (config_load_file(global->path.config, false))
       {
-         /* Restore the libretro_path we're using 
+         /* Restore the libretro_path we're using
           * since it will be overwritten by the override when reloading. */
          strlcpy(settings->libretro,buf,sizeof(settings->libretro));
          rarch_main_msg_queue_push("Configuration override loaded", 1, 100, true);

@@ -198,7 +198,6 @@ static int frontend_vita_get_rating(void)
 static enum frontend_powerstate frontend_vita_get_powerstate(int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
-   int battery                  = 1;
    int plugged                  = scePowerIsPowerOnline();
    int charging                 = scePowerIsBatteryCharging();
 

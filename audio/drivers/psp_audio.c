@@ -302,7 +302,11 @@ audio_driver_t audio_psp = {
    psp_audio_set_nonblock_state,
    psp_audio_free,
    psp_audio_use_float,
+#ifdef VITA
+   "vita",
+#else
    "psp",
+#endif
    psp_write_avail,
    psp_buffer_size,
 };
