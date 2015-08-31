@@ -53,12 +53,12 @@ void *PackedResource::GetData(const char *strName) const
       return NULL;
 
 #if defined(_XBOX1)
-   for (DWORD i=0; m_pResourceTags[i].strName; i++ )
+   for (DWORD i=0; m_pResourceTags[i].strName; i++)
 #elif defined(_XBOX360)
-      for (DWORD i = 0; i < m_dwNumResourceTags; i++ )
+      for (DWORD i = 0; i < m_dwNumResourceTags; i++)
 #endif
       {
-         if (!strcasecmp( strName, m_pResourceTags[i].strName))
+         if (!strcasecmp(strName, m_pResourceTags[i].strName))
             return &m_pSysMemData[m_pResourceTags[i].dwOffset];
       }
 
@@ -70,8 +70,8 @@ static INLINE void* AllocateContiguousMemory(DWORD Size, DWORD Alignment)
 #if defined(_XBOX1)
    return D3D_AllocContiguousMemory(Size, Alignment);
 #elif defined(_XBOX360)
-   return XMemAlloc( Size, MAKE_XALLOC_ATTRIBUTES( 0, 0, 0, 0, eXALLOCAllocatorId_GameMax,
-            Alignment, XALLOC_MEMPROTECT_WRITECOMBINE, 0, XALLOC_MEMTYPE_PHYSICAL ) );
+   return XMemAlloc(Size, MAKE_XALLOC_ATTRIBUTES(0, 0, 0, 0, eXALLOCAllocatorId_GameMax,
+            Alignment, XALLOC_MEMPROTECT_WRITECOMBINE, 0, XALLOC_MEMTYPE_PHYSICAL));
 #endif
 }
 
@@ -80,8 +80,8 @@ static INLINE void FreeContiguousMemory(void* pData)
 #if defined(_XBOX1)
    return D3D_FreeContiguousMemory(pData);
 #elif defined(_XBOX360)
-   return XMemFree( pData, MAKE_XALLOC_ATTRIBUTES( 0, 0, 0, 0, eXALLOCAllocatorId_GameMax,
-            0, 0, 0, XALLOC_MEMTYPE_PHYSICAL ) );
+   return XMemFree(pData, MAKE_XALLOC_ATTRIBUTES(0, 0, 0, 0, eXALLOCAllocatorId_GameMax,
+            0, 0, 0, XALLOC_MEMTYPE_PHYSICAL));
 #endif
 }
 
@@ -90,33 +90,21 @@ char g_strMediaPath[512] = "D:\\Media\\";
 
 static HRESULT FindMediaFile(char *strPath, const char *strFilename, size_t strPathsize)
 {
-   // Check for valid arguments
-   if( strFilename == NULL || strPath == NULL )
-   {
-      RARCH_ERR("Util_FindMediaFile(): Invalid arguments\n" );
+   if(strFilename == NULL || strPath == NULL)
       return E_INVALIDARG;
-   }
 
-   // Default path is the filename itself as a fully qualified path
-   strlcpy( strPath, strFilename, strPathsize);
+   strlcpy(strPath, strFilename, strPathsize);
 
-   // Check for the ':' character to see if the filename is a fully
-   // qualified path. If not, pre-pend the media directory
    if(strFilename[1] != ':')
       snprintf(strPath, strPathsize, "%s%s", g_strMediaPath, strFilename);
 
-   // Try to open the file
-   HANDLE hFile = CreateFile( strPath, GENERIC_READ, FILE_SHARE_READ, NULL, 
-         OPEN_EXISTING, 0, NULL );
+   HANDLE hFile = CreateFile(strPath, GENERIC_READ, FILE_SHARE_READ, NULL, 
+         OPEN_EXISTING, 0, NULL);
 
-   if( hFile == INVALID_HANDLE_VALUE )
-   {
-      RARCH_ERR("FindMediaFile(): Could not find file.\n");
+   if (hFile == INVALID_HANDLE_VALUE)
       return 0x82000004;
-   }
 
-   // Found the file. Close the file and return
-   CloseHandle( hFile );
+   CloseHandle(hFile);
 
    return S_OK;
 }
@@ -130,51 +118,43 @@ HRESULT PackedResource::Create(const char *strFilename,
 HRESULT PackedResource::Create(const char *strFilename)
 #endif
 {
-#ifdef _XBOX1
-   BOOL bHasResourceOffsetsTable = FALSE;
-
-   // Find the media file
-   CHAR strResourcePath[512];
-   if( FAILED(FindMediaFile(strResourcePath, strFilename, sizeof(strResourcePath))))
-      return E_FAIL;
-   else
-      strFilename = strResourcePath;
-#endif
-
-   // Open the file
    HANDLE hFile;
    DWORD dwNumBytesRead;
-   hFile = CreateFile( strFilename, GENERIC_READ, FILE_SHARE_READ, NULL,
-         OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL );
-   if( hFile == INVALID_HANDLE_VALUE )
-   {
-      RARCH_ERR( "PackedResource::Create(): File <%s> not found.\n", strFilename );
-      return E_FAIL;
-   }
-
-   // Read in and verify the XPR magic header
    XPR_HEADER xprh;
-   bool retval = ReadFile( hFile, &xprh, sizeof( XPR_HEADER ), &dwNumBytesRead, NULL );
+   bool retval;
+#ifdef _XBOX1
+   BOOL bHasResourceOffsetsTable = FALSE;
+   char strResourcePath[512];
+
+   if (FAILED(FindMediaFile(strResourcePath, strFilename, sizeof(strResourcePath))))
+      return E_FAIL;
+   strFilename = strResourcePath;
+#endif
+
+   hFile = CreateFile(strFilename, GENERIC_READ, FILE_SHARE_READ, NULL,
+         OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
+   if (hFile == INVALID_HANDLE_VALUE)
+      return E_FAIL;
+
+   retval = ReadFile(hFile, &xprh, sizeof(XPR_HEADER), &dwNumBytesRead, NULL);
 
 #if defined(_XBOX1)
-   if( xprh.dwMagic == XPR0_MAGIC_VALUE )
+   if(xprh.dwMagic == XPR0_MAGIC_VALUE)
       bHasResourceOffsetsTable = FALSE;
-   else if( xprh.dwMagic == XPR1_MAGIC_VALUE )
+   else if(xprh.dwMagic == XPR1_MAGIC_VALUE)
       bHasResourceOffsetsTable = TRUE;
    else
 #elif defined(_XBOX360)
       if(!retval)
       {
-         RARCH_ERR("Error reading XPR header in file %s.\n", strFilename );
-         CloseHandle( hFile );
+         CloseHandle(hFile);
          return E_FAIL;
       }
 
-   if( xprh.dwMagic != XPR2_MAGIC_VALUE )
+   if (xprh.dwMagic != XPR2_MAGIC_VALUE)
 #endif
    {
-      RARCH_ERR( "Invalid Xbox Packed Resource (.xpr) file: Magic = 0x%08lx\n", xprh.dwMagic );
-      CloseHandle( hFile );
+      CloseHandle(hFile);
       return E_FAIL;
    }
 
@@ -191,22 +171,20 @@ HRESULT PackedResource::Create(const char *strFilename)
    m_pSysMemData = (BYTE*)malloc(m_dwSysMemDataSize);
    if (m_pSysMemData == NULL)
    {
-      RARCH_ERR( "Could not allocate system memory.\n" );
       m_dwSysMemDataSize = 0;
       return E_FAIL;
    }
 
-   m_pVidMemData = ( BYTE* )AllocateContiguousMemory( m_dwVidMemDataSize,
+   m_pVidMemData = (BYTE*)AllocateContiguousMemory(m_dwVidMemDataSize,
 #if defined(_XBOX1)
          D3DTEXTURE_ALIGNMENT
 #elif defined(_XBOX360)
          XALLOC_PHYSICAL_ALIGNMENT_4K
 #endif
-         );
+     );
 
-   if( m_pVidMemData == NULL )
+   if(m_pVidMemData == NULL)
    {
-      RARCH_ERR( "Could not allocate physical memory.\n" );
       m_dwSysMemDataSize = 0;
       m_dwVidMemDataSize = 0;
       free(m_pSysMemData);
@@ -215,16 +193,15 @@ HRESULT PackedResource::Create(const char *strFilename)
    }
 
    // Read in the data from the file
-   if( !ReadFile( hFile, m_pSysMemData, m_dwSysMemDataSize, &dwNumBytesRead, NULL ) ||
-         !ReadFile( hFile, m_pVidMemData, m_dwVidMemDataSize, &dwNumBytesRead, NULL ) )
+   if( !ReadFile( hFile, m_pSysMemData, m_dwSysMemDataSize, &dwNumBytesRead, NULL) ||
+         !ReadFile( hFile, m_pVidMemData, m_dwVidMemDataSize, &dwNumBytesRead, NULL))
    {
-      RARCH_ERR( "Unable to read Xbox Packed Resource (.xpr) file\n" );
-      CloseHandle( hFile );
+      CloseHandle( hFile);
       return E_FAIL;
    }
 
    // Done with the file
-   CloseHandle( hFile );
+   CloseHandle( hFile);
 
 #ifdef _XBOX1
    if (bHasResourceOffsetsTable)
@@ -232,21 +209,18 @@ HRESULT PackedResource::Create(const char *strFilename)
 #endif
 
       // Extract resource table from the header data
-      m_dwNumResourceTags = *( DWORD* )( m_pSysMemData + 0 );
-      m_pResourceTags = ( XBRESOURCE* )( m_pSysMemData + 4 );
+      m_dwNumResourceTags = *(DWORD*)(m_pSysMemData + 0);
+      m_pResourceTags = (XBRESOURCE*)(m_pSysMemData + 4);
 
       // Patch up the resources
-      for( DWORD i = 0; i < m_dwNumResourceTags; i++ )
+      for(DWORD i = 0; i < m_dwNumResourceTags; i++)
       {
-         m_pResourceTags[i].strName = ( CHAR* )( m_pSysMemData + ( DWORD )m_pResourceTags[i].strName );
+         m_pResourceTags[i].strName = (char*)(m_pSysMemData + (DWORD)m_pResourceTags[i].strName);
 #ifdef _XBOX360
-         // Fixup the texture memory
-         if( ( m_pResourceTags[i].dwType & 0xffff0000 ) == ( RESOURCETYPE_TEXTURE & 0xffff0000 ) )
+         if((m_pResourceTags[i].dwType & 0xffff0000) == (RESOURCETYPE_TEXTURE & 0xffff0000))
          {
-            D3DTexture* pTexture = ( D3DTexture* )&m_pSysMemData[m_pResourceTags[i].dwOffset];
-
-            // Adjust Base address according to where memory was allocated
-            XGOffsetBaseTextureAddress( pTexture, m_pVidMemData, m_pVidMemData );
+            D3DTexture *pTexture = (D3DTexture*)&m_pSysMemData[m_pResourceTags[i].dwOffset];
+            XGOffsetBaseTextureAddress(pTexture, m_pVidMemData, m_pVidMemData);
          }
 #endif
       }
@@ -257,7 +231,7 @@ HRESULT PackedResource::Create(const char *strFilename)
 
 #ifdef _XBOX1
    // Use user-supplied number of resources and the resource tags
-   if( dwNumResourceTags != 0 || pResourceTags != NULL )
+   if(dwNumResourceTags != 0 || pResourceTags != NULL)
    {
       m_pResourceTags     = pResourceTags;
       m_dwNumResourceTags = dwNumResourceTags;
@@ -276,7 +250,7 @@ void PackedResource::GetResourceTags(DWORD* pdwNumResourceTags,
    if (pdwNumResourceTags)
       (*pdwNumResourceTags) = m_dwNumResourceTags;
 
-   if (ppResourceTags )
+   if (ppResourceTags)
       (*ppResourceTags) = m_pResourceTags;
 }
 #endif
