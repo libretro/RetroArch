@@ -298,10 +298,7 @@ error:
             include_dirs, include_compressed, list, ext_list, file_ext);
 
       if (ret == -1)
-      {
-         sceIoDclose(directory);
          goto error;
-      }
 
       if (ret == 1)
          continue;
@@ -313,6 +310,7 @@ error:
    return list;
 
 error:
+   sceIoDclose(directory);
 
 #else
    directory = opendir(dir);
