@@ -119,12 +119,15 @@ static bool dirent_is_directory(const char *path, const void *data)
 #if defined(_WIN32)
    const WIN32_FIND_DATA *entry = (const WIN32_FIND_DATA*)data;
    return entry->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
-#elif defined(PSP)
-   const struct dirent *entry = (const struct dirent*)data;
+#elif defined(PSP) || defined(VITA)
+
+   const SceIoDirent *entry = (const SceIoDirent*)data;
+#if defined(PSP)
    return (entry->d_stat.st_attr & FIO_SO_IFDIR) == FIO_SO_IFDIR;
 #elif defined(VITA)
-   const struct dirent *entry = (const struct dirent*)data;
    return PSP2_S_ISDIR(entry->d_stat.st_mode);
+#endif
+
 #elif defined(DT_DIR)
    const struct dirent *entry = (const struct dirent*)data;
    if (entry->d_type == DT_DIR)
