@@ -115,7 +115,7 @@ void dir_list_free(struct string_list *list)
 static bool dirent_is_directory(const char *path, const void *data)
 {
 #if defined(_WIN32)
-   WIN32_FIND_DATA *ffd = (WIN32_FIND_DATA*)entry;
+   const WIN32_FIND_DATA *entry = (const WIN32_FIND_DATA*)data;
    return entry->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 #elif defined(PSP)
    const struct dirent *entry = (const struct dirent*)data;
@@ -221,7 +221,7 @@ struct string_list *dir_list_new(const char *dir,
 {
 #if defined(_WIN32)
    char path_buf[PATH_MAX_LENGTH];
-   WIN32_FIND_DATA ffd;
+   WIN32_FIND_DATA entry;
    HANDLE hFind = INVALID_HANDLE_VALUE;
 #elif defined(VITA)
    SceUID directory;
@@ -242,21 +242,21 @@ struct string_list *dir_list_new(const char *dir,
 #ifdef _WIN32
    snprintf(path_buf, sizeof(path_buf), "%s\\*", dir);
 
-   hFind = FindFirstFile(path_buf, &ffd);
+   hFind = FindFirstFile(path_buf, &entry);
    if (hFind == INVALID_HANDLE_VALUE)
       goto error;
 
-   while (FindNextFile(hFind, &ffd) != 0)
+   while (FindNextFile(hFind, &entry) != 0)
    {
       char file_path[PATH_MAX_LENGTH];
       int ret                         = 0;
-      const char *name                = ffd.cFileName;
+      const char *name                = entry.cFileName;
       const char *file_ext            = path_get_extension(name);
       bool is_dir                     = false;
       
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
 
-      is_dir = dirent_is_directory(file_path, &ffd);
+      is_dir = dirent_is_directory(file_path, &entry);
 
       ret    = parse_dir_entry(name, file_path, is_dir,
             include_dirs, include_compressed, list, ext_list, file_ext);
