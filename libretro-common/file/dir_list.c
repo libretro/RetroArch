@@ -208,19 +208,19 @@ static int parse_dir_entry(const char *name, char *file_path,
    char path_buf[PATH_MAX_LENGTH]; \
    snprintf(path_buf, sizeof(path_buf), "%s\\*", dir); \
    directory = FindFirstFile(path_buf, &entry); \
-   if (directory == INVALID_HANDLE_VALUE) \
-   goto error; \
 }
 #elif defined(VITA)
-#define dirent_opendir(directory, dir) \
-   directory = sceIoDopen(dir); \
-   if (directory < 0) \
-      goto error
+#define dirent_opendir(directory, dir) directory = sceIoDopen(dir)
 #else
-#define dirent_opendir(directory, dir) \
-   directory = opendir(dir); \
-   if (!directory) \
-      goto error
+#define dirent_opendir(directory, dir) directory = opendir(dir)
+#endif
+
+#if defined(_WIN32)
+#define dirent_error(directory) ((directory) == INVALID_HANDLE_VALUE)
+#elif defined(VITA)
+#define dirent_error(directory) ((directory) < 0)
+#else
+#define dirent_error(directory) (!(directory))
 #endif
 
 #if defined(_WIN32)
@@ -232,15 +232,11 @@ static int parse_dir_entry(const char *name, char *file_path,
 #endif
 
 #if defined(_WIN32)
-#define dirent_closedir(directory) \
-   if (directory != INVALID_HANDLE_VALUE) \
-      FindClose(directory)
+#define dirent_closedir(directory) if (directory != INVALID_HANDLE_VALUE) FindClose(directory)
 #elif defined(VITA)
 #define dirent_closedir(directory) sceIoDclose(directory)
 #else
-#define dirent_closedir(directory) \
-   if (directory) \
-      closedir(directory)
+#define dirent_closedir(directory) if (directory) closedir(directory)
 #endif
 
 
@@ -279,6 +275,9 @@ struct string_list *dir_list_new(const char *dir,
       ext_list = string_split(ext, "|");
 
    dirent_opendir(directory, dir);
+
+   if (dirent_error(directory))
+      goto error;
 
    while (dirent_readdir(directory, entry))
    {
