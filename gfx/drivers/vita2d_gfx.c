@@ -160,16 +160,16 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       else
          if (vita->width > vita->height)
          {
-	    float scale = SCREEN_H/(float)vita->height;
-	    float w = vita->width * scale;
+            float scale = SCREEN_H/(float)vita->height;
+            float w = vita->width * scale;
             vita2d_draw_texture_scale(vita->texture,
                SCREEN_W/2.0f - w/2.0f, 0.0f,
                scale, scale);
          }
          else
          {
-	    float scale = SCREEN_W/(float)vita->width;
-	    float h = vita->height * scale;
+            float scale = SCREEN_W/(float)vita->width;
+            float h = vita->height * scale;
             vita2d_draw_texture_scale(vita->texture,
                0.0f, SCREEN_H/2.0f - h/2.0f,
                scale, scale);
@@ -186,16 +186,16 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       else
          if (vita->menu.width > vita->menu.height)
          {
-	    float scale = SCREEN_H/(float)vita->menu.height;
-	    float w = vita->menu.width * scale;
+            float scale = SCREEN_H/(float)vita->menu.height;
+            float w = vita->menu.width * scale;
             vita2d_draw_texture_scale(vita->menu.frame,
                SCREEN_W/2.0f - w/2.0f, 0.0f,
                scale, scale);
          }
          else
          {
-	    float scale = SCREEN_W/(float)vita->menu.width;
-	    float h = vita->menu.height * scale;
+            float scale = SCREEN_W/(float)vita->menu.width;
+            float h = vita->menu.height * scale;
             vita2d_draw_texture_scale(vita->menu.frame,
                0.0f, SCREEN_H/2.0f - h/2.0f,
                scale, scale);
