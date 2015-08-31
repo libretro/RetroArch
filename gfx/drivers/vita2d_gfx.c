@@ -40,6 +40,7 @@ typedef struct vita_video
    int width;
    int height;
 
+   bool fullscreen;
    bool vsync;
    bool rgb32;
 
@@ -77,8 +78,9 @@ static void *vita2d_gfx_init(const video_info_t *video,
    else
       vita->format = SCE_GXM_TEXTURE_FORMAT_R5G6B5;
 
-   vita->texture = NULL;
+   vita->fullscreen = video->fullscreen;
 
+   vita->texture = NULL;
    vita->menu.frame = NULL;
    vita->menu.active = 0;
    vita->menu.width = 0;
@@ -149,16 +151,56 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    vita2d_clear_screen();
 
    if (frame && vita->texture)
-      vita2d_draw_texture_scale(vita->texture,
-         SCREEN_W/2 - (vita->width/2)*2,
-         SCREEN_H/2 - (vita->height/2)*2,
-         2.0f, 2.0f);
+   {
+      if (vita->fullscreen)
+         vita2d_draw_texture_scale(vita->texture,
+            0, 0,
+            SCREEN_W/(float)vita->width,
+            SCREEN_H/(float)vita->height);
+      else
+         if (vita->width > vita->height)
+         {
+	    float scale = SCREEN_H/(float)vita->height;
+	    float w = vita->width * scale;
+            vita2d_draw_texture_scale(vita->texture,
+               SCREEN_W/2.0f - w/2.0f, 0.0f,
+               scale, scale);
+         }
+         else
+         {
+	    float scale = SCREEN_W/(float)vita->width;
+	    float h = vita->height * scale;
+            vita2d_draw_texture_scale(vita->texture,
+               0.0f, SCREEN_H/2.0f - h/2.0f,
+               scale, scale);
+         }
+   }
 
    if (vita->menu.active && vita->menu.frame)
-      vita2d_draw_texture_scale(vita->menu.frame,
-         SCREEN_W/2 - (vita->menu.width/2)*2,
-         SCREEN_H/2 - (vita->menu.height/2)*2,
-         2.0f, 2.0f);
+   {
+      if (vita->fullscreen)
+         vita2d_draw_texture_scale(vita->menu.frame,
+            0, 0,
+            SCREEN_W/(float)vita->menu.width,
+            SCREEN_H/(float)vita->menu.height);
+      else
+         if (vita->menu.width > vita->menu.height)
+         {
+	    float scale = SCREEN_H/(float)vita->menu.height;
+	    float w = vita->menu.width * scale;
+            vita2d_draw_texture_scale(vita->menu.frame,
+               SCREEN_W/2.0f - w/2.0f, 0.0f,
+               scale, scale);
+         }
+         else
+         {
+	    float scale = SCREEN_W/(float)vita->menu.width;
+	    float h = vita->menu.height * scale;
+            vita2d_draw_texture_scale(vita->menu.frame,
+               0.0f, SCREEN_H/2.0f - h/2.0f,
+               scale, scale);
+         }
+   }
 
    vita2d_end_drawing();
    vita2d_swap_buffers();
@@ -336,11 +378,10 @@ static void vita_set_texture_frame(void *data, const void *frame, bool rgb32,
 
 static void vita_set_texture_enable(void *data, bool state, bool full_screen)
 {
-   vita_video_t *vid = (vita_video_t*)data;
-
+   vita_video_t *vita = (vita_video_t*)data;
    (void)full_screen;
 
-   vid->menu.active = state;
+   vita->menu.active = state;
 }
 
 static const video_poke_interface_t vita_poke_interface = {
