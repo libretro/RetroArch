@@ -227,8 +227,8 @@ struct string_list *dir_list_new(const char *dir,
    SceUID directory;
    SceIoDirent entry;
 #else
-   DIR *directory = NULL;
-   const struct dirent *entry = NULL;
+   DIR *directory                 = NULL;
+   const struct dirent *entry     = NULL;
 #endif
    struct string_list *ext_list   = NULL;
    struct string_list *list       = NULL;
@@ -247,85 +247,35 @@ struct string_list *dir_list_new(const char *dir,
       goto error;
 
    while (FindNextFile(hFind, &entry) != 0)
-   {
-      char file_path[PATH_MAX_LENGTH];
-      int ret                         = 0;
-      const char *name                = entry.cFileName;
-      const char *file_ext            = path_get_extension(name);
-      bool is_dir                     = false;
-      
-      fill_pathname_join(file_path, dir, name, sizeof(file_path));
-
-      is_dir = dirent_is_directory(file_path, &entry);
-
-      ret    = parse_dir_entry(name, file_path, is_dir,
-            include_dirs, include_compressed, list, ext_list, file_ext);
-
-      if (ret == -1)
-         goto error;
-
-      if (ret == 1)
-         continue;
-   }
-
-   FindClose(hFind);
-   string_list_free(ext_list);
-   return list;
-
-error:
-   if (hFind != INVALID_HANDLE_VALUE)
-      FindClose(hFind);
 #elif defined(VITA)
    directory = sceIoDopen(dir);
    if (directory < 0)
       goto error;
 
    while (sceIoDread(directory, &entry) > 0)
-   {
-      char file_path[PATH_MAX_LENGTH];
-      int ret                         = 0;
-      const char *name                = entry.d_name;
-      const char *file_ext            = path_get_extension(name);
-      bool is_dir                     = false;
-
-      fill_pathname_join(file_path, dir, name, sizeof(file_path));
-
-      is_dir = dirent_is_directory(file_path, entry);
-
-      ret    = parse_dir_entry(name, file_path, is_dir,
-            include_dirs, include_compressed, list, ext_list, file_ext);
-
-      if (ret == -1)
-         goto error;
-
-      if (ret == 1)
-         continue;
-   }
-
-   sceIoDclose(directory);
-
-   string_list_free(ext_list);
-   return list;
-
-error:
-   sceIoDclose(directory);
-
 #else
    directory = opendir(dir);
    if (!directory)
       goto error;
 
    while ((entry = readdir(directory)))
+#endif
    {
       char file_path[PATH_MAX_LENGTH];
       int ret                         = 0;
+#ifdef _WIN32
+      const char *name                = entry.cFileName;
+      bool is_dir = dirent_is_directory(file_path, &entry);
+#elif defined(VITA)
+      const char *name                = entry.d_name;
+      bool is_dir = dirent_is_directory(file_path, entry);
+#else
       const char *name                = entry->d_name;
+      bool is_dir = dirent_is_directory(file_path, entry);
+#endif
       const char *file_ext            = path_get_extension(name);
-      bool is_dir                     = false;
 
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
-
-      is_dir = dirent_is_directory(file_path, entry);
 
       ret    = parse_dir_entry(name, file_path, is_dir,
             include_dirs, include_compressed, list, ext_list, file_ext);
@@ -337,15 +287,29 @@ error:
          continue;
    }
 
-   closedir(directory);
+#ifdef _WIN32
+   FindClose(hFind);
+#elif defined(VITA)
+   sceIoDclose(directory);
+#else
+   if (directory)
+      closedir(directory);
+#endif
 
    string_list_free(ext_list);
    return list;
 
 error:
+#if defined(_WIN32)
+   if (hFind != INVALID_HANDLE_VALUE)
+      FindClose(hFind);
+#elif defined(VITA)
+   sceIoDclose(directory);
+#else
    if (directory)
       closedir(directory);
 #endif
+
    string_list_free(list);
    string_list_free(ext_list);
    return NULL;
