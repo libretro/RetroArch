@@ -99,7 +99,6 @@ void dir_list_free(struct string_list *list)
    string_list_free(list);
 }
 
-#if !defined(_WIN32)
 /**
  *
  * dirent_is_directory:
@@ -136,7 +135,6 @@ static bool dirent_is_directory(const char *path, const void *data)
    return path_is_directory(path);
 #endif
 }
-#endif
 
 /**
  * parse_dir_entry:
