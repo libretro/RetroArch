@@ -79,7 +79,7 @@ $(APP_BOOTER_DIR)/app_booter.bin:
 	$(MAKE) -C $(APP_BOOTER_DIR)
 
 pkg: all
-	cp -r $(DOL_TARGET) wii/pkg/boot.dol
+	cp -r $(DOL_TARGET) pkg/wii/boot.dol
 
 clean:
 	rm -f $(DOL_TARGET)

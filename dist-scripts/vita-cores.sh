@@ -1,10 +1,14 @@
 #!/bin/sh
 
-PLATFORM=ngc
+PLATFORM=vita
 
+#make -C ../ -f Makefile.${PLATFORM}.salamander clean || exit 1
 make -C ../ -f Makefile.griffin platform=${PLATFORM} clean || exit 1
 
-for f in *_${PLATFORM}.a ; do
+#make -C ../ -f Makefile.${PLATFORM}.salamander || exit 1
+#make -C ../ -f Makefile.${PLATFORM}.salamander pkg || exit 1
+
+for f in *_vita.a ; do
    name=`echo "$f" | sed "s/\(_libretro_${PLATFORM}\|\).a$//"`
    whole_archive=
    big_stack=
@@ -18,6 +22,6 @@ for f in *_${PLATFORM}.a ; do
    fi
    cp -f "$f" ../libretro_${PLATFORM}.a
    make -C ../ -f Makefile.griffin platform=${PLATFORM} $whole_archive $big_stack -j3 || exit 1
-   mv -f ../retroarch_${PLATFORM}.dol ../pkg/${PLATFORM}/${name}_libretro_${PLATFORM}.dol
-   rm -f ../retroarch_${PLATFORM}.dol ../retroarch_${PLATFORM}.elf ../retroarch_${PLATFORM}.elf.map
+   mv -f ../retroarch_${PLATFORM}.velf ../pkg/${PLATFORM}/${name}_libretro_${PLATFORM}.velf
+   rm -f ../retroarch_${PLATFORM}.velf ../retroarch_${PLATFORM}.elf
 done
