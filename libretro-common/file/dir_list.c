@@ -124,7 +124,7 @@ static bool dirent_is_directory(const char *path, const void *data)
    return (entry->d_stat.st_attr & FIO_SO_IFDIR) == FIO_SO_IFDIR;
 #elif defined(VITA)
    const struct dirent *entry = (const struct dirent*)data;
-   return (PSP2_S_ISDIR(entry->d_stat.st_mode);
+   return PSP2_S_ISDIR(entry->d_stat.st_mode);
 #elif defined(DT_DIR)
    const struct dirent *entry = (const struct dirent*)data;
    if (entry->d_type == DT_DIR)
