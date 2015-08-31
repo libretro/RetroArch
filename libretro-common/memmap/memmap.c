@@ -60,7 +60,7 @@
 # define DWORD_LO(x) (x)
 #endif
 
-void *mmap(void *start, size_t length, int prot, int flags, int fd, size_t offset)
+void* mmap(void *addr, size_t len, int prot, int flags, int fildes, size_t offset)
 {
 	uint32_t flProtect, dwDesiredAccess;
 	off_t end;
@@ -139,14 +139,14 @@ int mprotect(void *addr, size_t len, int prot)
 }
 
 #elif !defined(HAVE_MMAN)
-void* mmap(void *desired_addr, size_t len, int mmap_prot, int mmap_flags, int fildes, size_t off)
+void* mmap(void *addr, size_t len, int prot, int flags, int fildes, size_t offset)
 {
    return malloc(len);
 }
 
-void munmap(void *base_addr, size_t len)
+void munmap(void *addr, size_t len)
 {
-   free(base_addr);
+   free(addr);
 }
 
 int mprotect(void *addr, size_t len, int prot)
