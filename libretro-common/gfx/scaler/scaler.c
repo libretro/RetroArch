@@ -142,6 +142,8 @@ static bool set_direct_pix_conv(struct scaler_ctx *ctx)
             ctx->direct_pixconv = conv_argb8888_bgr24;
          else if (ctx->out_fmt == SCALER_FMT_ABGR8888)
             ctx->direct_pixconv = conv_argb8888_abgr8888;
+         else if (ctx->out_fmt == SCALER_FMT_RGBA4444)
+            ctx->direct_pixconv = conv_argb8888_rgba4444;
          break;
       case SCALER_FMT_YUYV:
          if (ctx->out_fmt == SCALER_FMT_ARGB8888)
@@ -196,6 +198,10 @@ static bool set_pix_conv(struct scaler_ctx *ctx)
    {
       case SCALER_FMT_ARGB8888:
          /* No need to convert :D */
+         break;
+
+      case SCALER_FMT_RGBA4444:
+         ctx->out_pixconv = conv_argb8888_rgba4444;
          break;
 
       case SCALER_FMT_0RGB1555:
