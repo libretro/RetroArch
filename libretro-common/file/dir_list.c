@@ -42,6 +42,9 @@
 #include <psp2/io/fcntl.h>
 #include <psp2/io/dirent.h>
 #else
+#if defined(PSP)
+#include <pspiofilemgr.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -209,7 +212,7 @@ static int parse_dir_entry(const char *name, char *file_path,
    snprintf(path_buf, sizeof(path_buf), "%s\\*", dir); \
    directory = FindFirstFile(path_buf, &entry); \
 }
-#elif defined(VITA)
+#elif defined(VITA) || defined(PSP)
 #define dirent_opendir(directory, dir) directory = sceIoDopen(dir)
 #else
 #define dirent_opendir(directory, dir) directory = opendir(dir)
@@ -217,7 +220,7 @@ static int parse_dir_entry(const char *name, char *file_path,
 
 #if defined(_WIN32)
 #define dirent_error(directory) ((directory) == INVALID_HANDLE_VALUE)
-#elif defined(VITA)
+#elif defined(VITA) || defined(PSP)
 #define dirent_error(directory) ((directory) < 0)
 #else
 #define dirent_error(directory) (!(directory))
@@ -225,7 +228,7 @@ static int parse_dir_entry(const char *name, char *file_path,
 
 #if defined(_WIN32)
 #define dirent_readdir(directory, entry) (FindNextFile((directory), &(entry)) != 0)
-#elif defined(VITA)
+#elif defined(VITA) || defined(PSP)
 #define dirent_readdir(directory, entry) (sceIoDread((directory), &(entry)) > 0)
 #else
 #define dirent_readdir(directory, entry) (entry = readdir(directory))
@@ -233,7 +236,7 @@ static int parse_dir_entry(const char *name, char *file_path,
 
 #if defined(_WIN32)
 #define dirent_closedir(directory) if (directory != INVALID_HANDLE_VALUE) FindClose(directory)
-#elif defined(VITA)
+#elif defined(VITA) || defined(PSP)
 #define dirent_closedir(directory) sceIoDclose(directory)
 #else
 #define dirent_closedir(directory) if (directory) closedir(directory)
@@ -258,7 +261,7 @@ struct string_list *dir_list_new(const char *dir,
 #if defined(_WIN32)
    WIN32_FIND_DATA entry;
    HANDLE directory = INVALID_HANDLE_VALUE;
-#elif defined(VITA)
+#elif defined(VITA) || defined(PSP)
    SceUID directory;
    SceIoDirent entry;
 #else
@@ -286,9 +289,9 @@ struct string_list *dir_list_new(const char *dir,
 #ifdef _WIN32
       const char *name                = entry.cFileName;
       bool is_dir = dirent_is_directory(file_path, &entry);
-#elif defined(VITA)
+#elif defined(VITA) || defined(PSP)
       const char *name                = entry.d_name;
-      bool is_dir = dirent_is_directory(file_path, entry);
+      bool is_dir = dirent_is_directory(file_path, &entry);
 #else
       const char *name                = entry->d_name;
       bool is_dir = dirent_is_directory(file_path, entry);
