@@ -56,7 +56,7 @@ static void frontend_vita_get_environment_settings(int *argc, char *argv[],
 
    strlcpy(retroarch_path, "cache0:/retroarch/", sizeof(retroarch_path));
 
-   fill_pathname_basedir(g_defaults.dir.port, retroarch_path, sizeof(g_defaults.dir.port));
+   strlcpy(g_defaults.dir.port, retroarch_path, sizeof(g_defaults.dir.port));
    RARCH_LOG("port dir: [%s]\n", g_defaults.dir.port);
 
    fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,

@@ -67,7 +67,10 @@ static void *vita2d_gfx_init(const video_info_t *video,
    if (!vita)
       return NULL;
 
-    RARCH_LOG("vita2d_gfx_init: w: %i  h: %i\n", video->width, video->height);
+   RARCH_LOG("vita2d_gfx_init: w: %i  h: %i\n", video->width, video->height);
+   RARCH_LOG("RARCH_SCALE_BASE: %i input_scale: %i = %i\n",
+	RARCH_SCALE_BASE, video->input_scale, RARCH_SCALE_BASE * video->input_scale);
+
 
    vita2d_init();
    vita2d_set_clear_color(RGBA8(0x40, 0x40, 0x40, 0xFF));
@@ -150,7 +153,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    vita2d_start_drawing();
    vita2d_clear_screen();
 
-   if (frame && vita->texture)
+   if (vita->texture)
    {
       if (vita->fullscreen)
          vita2d_draw_texture_scale(vita->texture,
@@ -248,11 +251,19 @@ static void vita2d_gfx_free(void *data)
 {
    vita_video_t *vita = (vita_video_t *)data;
 
+   RARCH_LOG("vita2d_gfx_free()\n");
+
    if (vita->menu.frame)
+   {
       vita2d_free_texture(vita->menu.frame);
+      vita->menu.frame = NULL;
+   }
 
    if (vita->texture)
+   {
       vita2d_free_texture(vita->texture);
+      vita->texture = NULL;
+   }
 
    vita2d_fini();
 }
