@@ -202,6 +202,19 @@ static int parse_dir_entry(const char *name, char *file_path,
    return 0;
 }
 
+#if defined(_WIN32)
+#define dirent_closedir(directory) \
+   if (directory != INVALID_HANDLE_VALUE) \
+      FindClose(directory)
+#elif defined(VITA)
+#define dirent_closedir(directory) sceIoDclose(directory)
+#else
+#define dirent_closedir(directory) \
+   if (directory) \
+      closedir(directory)
+#endif
+
+
 /**
  * dir_list_new:
  * @dir                : directory path.
@@ -220,7 +233,7 @@ struct string_list *dir_list_new(const char *dir,
 #if defined(_WIN32)
    char path_buf[PATH_MAX_LENGTH];
    WIN32_FIND_DATA entry;
-   HANDLE hFind = INVALID_HANDLE_VALUE;
+   HANDLE directory = INVALID_HANDLE_VALUE;
 #elif defined(VITA)
    SceUID directory;
    SceIoDirent entry;
@@ -240,11 +253,11 @@ struct string_list *dir_list_new(const char *dir,
 #ifdef _WIN32
    snprintf(path_buf, sizeof(path_buf), "%s\\*", dir);
 
-   hFind = FindFirstFile(path_buf, &entry);
-   if (hFind == INVALID_HANDLE_VALUE)
+   directory = FindFirstFile(path_buf, &entry);
+   if (directory == INVALID_HANDLE_VALUE)
       goto error;
 
-   while (FindNextFile(hFind, &entry) != 0)
+   while (FindNextFile(directory, &entry) != 0)
 #elif defined(VITA)
    directory = sceIoDopen(dir);
    if (directory < 0)
@@ -285,28 +298,13 @@ struct string_list *dir_list_new(const char *dir,
          continue;
    }
 
-#ifdef _WIN32
-   FindClose(hFind);
-#elif defined(VITA)
-   sceIoDclose(directory);
-#else
-   if (directory)
-      closedir(directory);
-#endif
+   dirent_closedir(directory);
 
    string_list_free(ext_list);
    return list;
 
 error:
-#if defined(_WIN32)
-   if (hFind != INVALID_HANDLE_VALUE)
-      FindClose(hFind);
-#elif defined(VITA)
-   sceIoDclose(directory);
-#else
-   if (directory)
-      closedir(directory);
-#endif
+   dirent_closedir(directory);
 
    string_list_free(list);
    string_list_free(ext_list);
