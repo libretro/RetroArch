@@ -99,7 +99,7 @@ void dir_list_free(struct string_list *list)
    string_list_free(list);
 }
 
-#if !defined(_WIN32) && !defined(VITA)
+#if !defined(_WIN32)
 /**
  *
  * dirent_is_directory:
@@ -112,12 +112,19 @@ void dir_list_free(struct string_list *list)
  * a directory, false if not.
  */
 
-static bool dirent_is_directory(const char *path,
-      const struct dirent *entry)
+static bool dirent_is_directory(const char *path, const void *data)
 {
-#if defined(PSP)
+#if defined(_WIN32)
+   WIN32_FIND_DATA *ffd = (WIN32_FIND_DATA*)entry;
+   return entry->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+#elif defined(PSP)
+   const struct dirent *entry = (const struct dirent*)data;
    return (entry->d_stat.st_attr & FIO_SO_IFDIR) == FIO_SO_IFDIR;
+#elif defined(VITA)
+   const struct dirent *entry = (const struct dirent*)data;
+   return (PSP2_S_ISDIR(entry->d_stat.st_mode);
 #elif defined(DT_DIR)
+   const struct dirent *entry = (const struct dirent*)data;
    if (entry->d_type == DT_DIR)
       return true;
    else if (entry->d_type == DT_UNKNOWN /* This can happen on certain file systems. */
@@ -125,6 +132,7 @@ static bool dirent_is_directory(const char *path,
       return path_is_directory(path);
    return false;
 #else /* dirent struct doesn't have d_type, do it the slow way ... */
+   const struct dirent *entry = (const struct dirent*)data;
    return path_is_directory(path);
 #endif
 }
@@ -240,17 +248,19 @@ struct string_list *dir_list_new(const char *dir,
    if (hFind == INVALID_HANDLE_VALUE)
       goto error;
 
-   do
+   while (FindNextFile(hFind, &ffd) != 0)
    {
       char file_path[PATH_MAX_LENGTH];
       int ret                         = 0;
       const char *name                = ffd.cFileName;
       const char *file_ext            = path_get_extension(name);
-      bool is_dir                     = ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
-
+      bool is_dir                     = false;
+      
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
 
-      ret = parse_dir_entry(name, file_path, is_dir,
+      is_dir = dirent_is_directory(file_path, &ffd);
+
+      ret    = parse_dir_entry(name, file_path, is_dir,
             include_dirs, include_compressed, list, ext_list, file_ext);
 
       if (ret == -1)
@@ -258,7 +268,7 @@ struct string_list *dir_list_new(const char *dir,
 
       if (ret == 1)
          continue;
-   } while (FindNextFile(hFind, &ffd) != 0);
+   }
 
    FindClose(hFind);
    string_list_free(ext_list);
@@ -282,9 +292,9 @@ error:
 
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
 
-      is_dir = PSP2_S_ISDIR(entry.d_stat.st_mode);
+      is_dir = dirent_is_directory(file_path, entry);
 
-      ret = parse_dir_entry(name, file_path, is_dir,
+      ret    = parse_dir_entry(name, file_path, is_dir,
             include_dirs, include_compressed, list, ext_list, file_ext);
 
       if (ret == -1)
@@ -321,7 +331,7 @@ error:
 
       is_dir = dirent_is_directory(file_path, entry);
 
-      ret = parse_dir_entry(name, file_path, is_dir,
+      ret    = parse_dir_entry(name, file_path, is_dir,
             include_dirs, include_compressed, list, ext_list, file_ext);
 
       if (ret == -1)
