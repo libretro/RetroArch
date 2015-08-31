@@ -1,7 +1,3 @@
-#ifndef _COMPAT_ZLIB_H
-#define _COMPAT_ZLIB_H
-
-#ifdef WANT_ZLIB
 /* zconf.h -- configuration of the zlib compression library
  * Copyright (C) 1995-2013 Jean-loup Gailly.
  * For conditions of distribution and use, see copyright notice in zlib.h
@@ -513,9 +509,3 @@ typedef uLong FAR uLongf;
 #endif
 
 #endif /* ZCONF_H */
-
-#else
-#include <zconf.h>
-#endif
-
-#endif
