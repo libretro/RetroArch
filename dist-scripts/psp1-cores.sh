@@ -20,12 +20,12 @@ for f in *_${PLATFORM}.a ; do
    big_stack=
 
    if [ $name = "nxengine" ] ; then
-      echo "NXEngine found, applying whole archive linking..."
+      echo "Applying whole archive linking..."
       whole_archive="WHOLE_ARCHIVE_LINK=1"
    fi
 
    if [ $name = "tyrquake" ] ; then
-      echo "Tyrquake found, applying big stack..."
+      echo "Applying big stack..."
       big_stack="BIG_STACK=1"
    fi
 
