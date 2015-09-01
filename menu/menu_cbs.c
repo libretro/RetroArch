@@ -15,6 +15,7 @@
 
 #include <compat/strl.h>
 #include <string/string_list.h>
+#include <retro_log.h>
 
 #include "menu.h"
 #include "menu_hash.h"
