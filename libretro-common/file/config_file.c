@@ -35,13 +35,14 @@
 #include <xtl.h>
 #endif
 
-#include <file/config_file.h>
+#include <retro_assert.h>
+#include <retro_log.h>
+#include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <compat/msvc.h>
+#include <file/config_file.h>
 #include <file/file_path.h>
-#include <retro_assert.h>
-#include <retro_miscellaneous.h>
 #include <string/string_list.h>
 #include <rhash.h>
 

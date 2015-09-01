@@ -14,17 +14,18 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <boolean.h>
+#include <stddef.h>
+#include <string.h>
+
 #include <pspkernel.h>
 #include <pspdebug.h>
 #include <pspfpu.h>
 #include <psppower.h>
 #include <pspsdk.h>
 
-#include <stdint.h>
-#include <boolean.h>
-#include <stddef.h>
-#include <string.h>
-
+#include <retro_log.h>
 #include <file/file_path.h>
 #ifndef IS_SALAMANDER
 #include <file/file_list.h>
@@ -36,7 +37,6 @@
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
 #include "../../psp1/kernel_functions.h"
 #endif
-
 
 PSP_MODULE_INFO("RetroArch", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
