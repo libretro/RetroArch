@@ -34,23 +34,10 @@
 #include <sys/mman.h>
 #endif
 
-#if !defined(HAVE_MMAN)
-#define PROT_EXEC       0x04
-#define MAP_FAILED      0
-#define PROT_READ       0
-#define PROT_WRITE      0
-#define MAP_PRIVATE     0
-#define MAP_ANONYMOUS   0
-#endif
-
-#ifndef MAP_ANONYMOUS
-#define MAP_ANONYMOUS MAP_ANON
-#endif
-
 #if !defined(HAVE_MMAN) || defined(_WIN32)
-void* mmap(void *desired_addr, size_t len, int mmap_prot, int mmap_flags, int fildes, size_t off);
+void* mmap(void *addr, size_t len, int mmap_prot, int mmap_flags, int fildes, size_t off);
 
-void munmap(void *base_addr, size_t len);
+int munmap(void *addr, size_t len);
 
 int mprotect(void *addr, size_t len, int prot);
 #endif
