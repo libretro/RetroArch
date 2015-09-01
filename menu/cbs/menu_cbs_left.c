@@ -324,15 +324,13 @@ static int disk_options_disk_idx_left(unsigned type, const char *label,
       bool wraparound)
 {
    event_command(EVENT_CMD_DISK_PREV);
-
    return 0;
 }
 
 static int bind_left_generic(unsigned type, const char *label,
       bool wraparound)
 {
-   unsigned action = MENU_ACTION_LEFT;
-   return menu_setting_set(type, label, action, wraparound);
+   return menu_setting_set(type, label, MENU_ACTION_LEFT, wraparound);
 }
 
 static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
