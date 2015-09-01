@@ -185,7 +185,7 @@ static int cb_image_menu_generic(nbio_handle_t *nbio)
    if (!nbio)
       return -1;
 
-   if (!rpng_nbio_is_valid(nbio->image.handle))
+   if (!rpng_is_valid(nbio->image.handle))
       return -1;
 
    retval = rpng_nbio_load_image_argb_process(nbio->image.handle,

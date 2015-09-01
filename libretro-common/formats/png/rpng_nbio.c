@@ -249,7 +249,7 @@ bool rpng_nbio_load_image_argb_start(struct rpng_t *rpng)
    return true;
 }
 
-bool rpng_nbio_is_valid(struct rpng_t *rpng)
+bool rpng_is_valid(struct rpng_t *rpng)
 {
    if (rpng->has_ihdr)
       return true;

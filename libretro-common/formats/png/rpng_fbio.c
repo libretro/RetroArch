@@ -160,7 +160,7 @@ bool rpng_load_image_argb_iterate(FILE **fd, struct rpng_t *rpng)
          return false;
 
       case PNG_CHUNK_IHDR:
-         if (rpng->has_ihdr || rpng->has_idat || rpng->has_iend)
+         if (rpng_is_valid(rpng))
             return false;
 
          if (!png_parse_ihdr_fio(fd, &chunk, &rpng->ihdr))
