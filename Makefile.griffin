@@ -5,6 +5,7 @@ WHOLE_ARCHIVE_LINK         = 0
 BIG_STACK		            = 1
 PC_DEVELOPMENT_IP_ADDRESS	= 255.255.255.255
 PC_DEVELOPMENT_UDP_PORT		= 3490
+RARCH_CONSOLE					= 0
 
 ifneq ($(EMSCRIPTEN),)
    platform = emscripten
@@ -67,13 +68,13 @@ endif
 ifeq ($(platform), ps3)
 	#TODO
   MEDIA_SHADER_DIR := pkg/ps3/USRDIR/cores/shaders
-  RARCH_CONSOLE            := 1
+  RARCH_CONSOLE          = 1
 
 # PS3 - Cobra
 else ifeq ($(platform), ps3-cobra)
 	#TODO
   MEDIA_SHADER_DIR := ps3/iso/PS3_GAME/USRDIR/cores/shaders
-  RARCH_CONSOLE            := 1
+  RARCH_CONSOLE          = 1
 
 # NGC/Wii - libogc
 else ifeq ($(libogc_platform), 1)
@@ -131,7 +132,7 @@ endif
   HAVE_BUILTIN_AUTOCONFIG  := 1
   HAVE_ZLIB                := 1
   HAVE_7ZIP                := 1
-  RARCH_CONSOLE            := 1
+  RARCH_CONSOLE          = 1
 
 ifeq ($(platform), wii)
   HAVE_WIIUSB_HID          := 1
@@ -168,7 +169,7 @@ else ifeq ($(platform), xenon360)
   PLATCFLAGS               += -u read -u _start -u exc_base
   HAVE_THREADS             := 1
   HAVE_GETOPT_LONG         := 1
-  RARCH_CONSOLE            := 1
+  RARCH_CONSOLE          = 1
 
 # PSP
 else ifeq ($(platform), psp1)
@@ -189,7 +190,7 @@ else ifeq ($(platform), psp1)
   HAVE_LIBRETRO_MANAGEMENT := 1
   HAVE_RPNG                := 1
   HAVE_KERNEL_PRX          := 1
-  RARCH_CONSOLE            := 1 # Maybe switch to RARCH_MOBILE ?
+  RARCH_CONSOLE          = 1
 
 ifeq ($(BUILD_PRX), 1)
 	LDFLAGS += $(addprefix -L,$(PSPSDK)/lib) -specs=$(PSPSDK)/lib/prxspecs -Wl,-q,-T$(PSPSDK)/lib/linkfile.prx $(LDFLAGS)
@@ -219,7 +220,7 @@ else ifeq ($(platform), vita)
   HAVE_RPNG                := 1
   HAVE_ZLIB                := 1
   HAVE_VITA2D              := 1
-  RARCH_CONSOLE            := 1 # Maybe switch to RARCH_MOBILE ?
+  RARCH_CONSOLE          = 1
 endif
 
 
