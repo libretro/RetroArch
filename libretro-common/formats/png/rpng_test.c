@@ -65,7 +65,7 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
       goto end;
    }
 
-   rpng = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
+   rpng = rpng_alloc();
 
    if (!rpng)
    {
@@ -73,9 +73,7 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
       goto end;
    }
 
-   rpng->buff_data = (uint8_t*)ptr;
-
-   if (!rpng->buff_data)
+   if (!rpng_set_buf_ptr(rpng, (uint8_t*)ptr))
    {
       ret = false;
       goto end;
@@ -95,7 +93,7 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
    fprintf(stderr, "has_iend: %d\n", rpng->has_iend);
 #endif
 
-   if (!rpng->has_ihdr || !rpng->has_idat || !rpng->has_iend)
+   if (!rpng_is_valid(rpng))
    {
       ret = false;
       goto end;

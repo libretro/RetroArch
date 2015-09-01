@@ -266,10 +266,20 @@ bool rpng_is_valid(struct rpng_t *rpng)
    return false;
 }
 
-void rpng_set_buf_ptr(struct rpng_t *rpng, uint8_t *data)
+bool rpng_set_buf_ptr(struct rpng_t *rpng, uint8_t *data)
 {
    if (!rpng)
       return false;
 
    rpng->buff_data = data;
+
+   return true;
+}
+
+struct rpng_t *rpng_alloc(void)
+{
+   struct rpng_t *rpng = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
+   if (!rpng)
+      return NULL;
+   return rpng;
 }

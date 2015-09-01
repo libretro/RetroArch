@@ -458,7 +458,7 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
    if (!nbio || !data)
       return -1;
    
-   nbio->image.handle = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
+   nbio->image.handle = rpng_alloc();
    nbio->image.cb     = &cb_image_menu_wallpaper;
 
    return cb_nbio_generic(nbio, &len);
@@ -471,7 +471,7 @@ static int cb_nbio_image_menu_boxart(void *data, size_t len)
    if (!nbio || !data)
       return -1;
    
-   nbio->image.handle = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
+   nbio->image.handle = rpng_alloc();
    nbio->image.cb     = &cb_image_menu_boxart;
 
    return cb_nbio_generic(nbio, &len);

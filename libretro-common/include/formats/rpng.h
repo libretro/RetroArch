@@ -33,72 +33,7 @@
 extern "C" {
 #endif
 
-struct idat_buffer
-{
-   uint8_t *data;
-   size_t size;
-};
-
-struct png_chunk
-{
-   uint32_t size;
-   char type[4];
-   uint8_t *data;
-};
-
-struct png_ihdr
-{
-   uint32_t width;
-   uint32_t height;
-   uint8_t depth;
-   uint8_t color_type;
-   uint8_t compression;
-   uint8_t filter;
-   uint8_t interlace;
-};
-
-struct rpng_process_t
-{
-   bool initialized;
-   bool inflate_initialized;
-   bool adam7_pass_initialized;
-   bool pass_initialized;
-   uint32_t *data;
-   uint32_t *palette;
-   struct png_ihdr ihdr;
-   uint8_t *prev_scanline;
-   uint8_t *decoded_scanline;
-   uint8_t *inflate_buf;
-   size_t restore_buf_size;
-   size_t adam7_restore_buf_size;
-   size_t data_restore_buf_size;
-   size_t inflate_buf_size;
-   unsigned bpp;
-   unsigned pitch;
-   unsigned h;
-   struct
-   {
-      unsigned width;
-      unsigned height;
-      size_t   size;
-      unsigned pos;
-   } pass;
-   void *stream;
-   zlib_file_handle_t handle;
-};
-
-struct rpng_t
-{
-   struct rpng_process_t process;
-   bool has_ihdr;
-   bool has_idat;
-   bool has_iend;
-   bool has_plte;
-   struct idat_buffer idat_buf;
-   struct png_ihdr ihdr;
-   uint8_t *buff_data;
-   uint32_t palette[256];
-};
+struct rpng_t;
 
 bool rpng_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height);
@@ -107,7 +42,9 @@ struct rpng_t *rpng_nbio_load_image_argb_init(const char *path);
 
 bool rpng_is_valid(struct rpng_t *rpng);
 
-void rpng_set_buf_ptr(struct rpng_t *rpng, uint8_t *data);
+bool rpng_set_buf_ptr(struct rpng_t *rpng, uint8_t *data);
+
+struct rpng_t *rpng_alloc(void);
 
 void rpng_nbio_load_image_free(struct rpng_t *rpng);
 
