@@ -27,6 +27,9 @@
 #elif defined(HAVE_COCOATOUCH)
 #include <GLKit/GLKit.h>
 #endif
+
+#include <retro_assert.h>
+
 #import "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../video_context_driver.h"
 #include "../video_monitor.h"
