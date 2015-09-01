@@ -314,7 +314,7 @@ static int deferred_archive_action(menu_displaylist_info_t *info)
    return menu_displaylist_push_list(info, DISPLAYLIST_ARCHIVE_ACTION);
 }
 
-static int deferred_archive_open_detect_core(menu_displaylist_info_t *info)
+static int general_archive_open(menu_displaylist_info_t *info, unsigned id)
 {
    settings_t        *settings = config_get_ptr();
    global_t            *global = global_get_ptr();
@@ -329,18 +329,32 @@ static int deferred_archive_open_detect_core(menu_displaylist_info_t *info)
    info->type_default = MENU_FILE_PLAIN;
    info->setting      = menu_setting_find(info->label);
 
-
-   if (global->core_info.list)
-      strlcpy(info->exts, core_info_list_get_all_extensions(
-         global->core_info.list), sizeof(info->exts));
-   else if (global->menu.info.valid_extensions)
+   switch (id)
    {
-      if (*global->menu.info.valid_extensions)
-         strlcpy(info->exts, global->menu.info.valid_extensions,
-               sizeof(info->exts));
+      case 0:
+         if (global->core_info.list)
+            strlcpy(info->exts, core_info_list_get_all_extensions(
+                     global->core_info.list), sizeof(info->exts));
+         else if (global->menu.info.valid_extensions)
+         {
+            if (*global->menu.info.valid_extensions)
+               strlcpy(info->exts, global->menu.info.valid_extensions,
+                     sizeof(info->exts));
+         }
+         else
+            strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
+         break;
+      case 1:
+         if (global->menu.info.valid_extensions)
+         {
+            if (*global->menu.info.valid_extensions)
+               strlcpy(info->exts, global->menu.info.valid_extensions,
+                     sizeof(info->exts));
+         }
+         else
+            strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
+         break;
    }
-   else
-      strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
 
    (void)settings;
 
@@ -371,56 +385,14 @@ static int deferred_archive_open_detect_core(menu_displaylist_info_t *info)
    return menu_displaylist_push_list(info, DISPLAYLIST_DEFAULT);
 }
 
+static int deferred_archive_open_detect_core(menu_displaylist_info_t *info)
+{
+   return general_archive_open(info, 0);
+}
+
 static int deferred_archive_open(menu_displaylist_info_t *info)
 {
-   settings_t        *settings = config_get_ptr();
-   global_t            *global = global_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
-   menu_handle_t *menu    = menu_driver_get_ptr();
-
-   fill_pathname_join(info->path, menu->scratch2_buf,
-         menu->scratch_buf, sizeof(info->path));
-   fill_pathname_join(info->label, menu->scratch2_buf,
-         menu->scratch_buf, sizeof(info->label));
-
-   info->type_default = MENU_FILE_PLAIN;
-   info->setting      = menu_setting_find(info->label);
-
-   if (global->menu.info.valid_extensions)
-   {
-      if (*global->menu.info.valid_extensions)
-         strlcpy(info->exts, global->menu.info.valid_extensions,
-               sizeof(info->exts));
-   }
-   else
-      strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
-
-   (void)settings;
-
-   if (settings->multimedia.builtin_mediaplayer_enable ||
-         settings->multimedia.builtin_imageviewer_enable)
-   {
-      struct retro_system_info sysinfo = {0};
-
-      (void)sysinfo;
-#ifdef HAVE_FFMPEG
-      if (settings->multimedia.builtin_mediaplayer_enable)
-      {
-         libretro_ffmpeg_retro_get_system_info(&sysinfo);
-         strlcat(info->exts, "|", sizeof(info->exts));
-         strlcat(info->exts, sysinfo.valid_extensions, sizeof(info->exts));
-      }
-#endif
-#ifdef HAVE_IMAGEVIEWER
-      if (settings->multimedia.builtin_imageviewer_enable)
-      {
-         libretro_imageviewer_retro_get_system_info(&sysinfo);
-         strlcat(info->exts, "|", sizeof(info->exts));
-         strlcat(info->exts, sysinfo.valid_extensions, sizeof(info->exts));
-      }
-#endif
-   }
-   return menu_displaylist_push_list(info, DISPLAYLIST_DEFAULT);
+   return general_archive_open(info, 1);
 }
 
 static int deferred_push_history_list(menu_displaylist_info_t *info)
