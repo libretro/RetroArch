@@ -3,6 +3,18 @@
 RARCH_VERSION=1.2.2
 PLATFORM=$1
 
+# PSP
+if [ $PLATFORM = "psp1" ] ; then
+platform=psp1
+
+mkdir -p ../pkg/${platform}/cores/
+
+make -C ../${platform}/kernelFunctionsPrx/ clean || exit 1
+make -C ../${platform}/kernelFunctionsPrx/ || exit 1
+cp -f ../kernel_functions.prx ../pkg/${platform}/kernel_functions.prx
+mv -f ../EBOOT.PBP ../pkg/${platform}/EBOOT.PBP
+fi
+# DEX PS3
 if [ $PLATFORM = "dex-ps3" ] ; then
 platform=ps3
 
@@ -10,11 +22,13 @@ EXE_PATH=/usr/local/cell/host-win32/bin
 MAKE_FSELF_NPDRM=$EXE_PATH/make_fself_npdrm.exe
 MAKE_PACKAGE_NPDRM=$EXE_PATH/make_package_npdrm.exe
 fi
+# CEX PS3
 if [ $PLATFORM = "cex-ps3" ]; then
 platform=ps3
 
 EXE_PATH=/usr/local/cell/host-win32/bin
 fi
+# ODE PS3
 if [ $PLATFORM = "ode-ps3" ]; then
 #For this script to work correctly, you must place the "data" folder containing your ps3 keys for scetool to use in the dist-scripts folder.
 platform=ps3
@@ -46,12 +60,21 @@ for f in *_${platform}.a ; do
    fi
    echo "-- Building core: $name --"
    cp -f "$f" ../libretro_${platform}.a
+
+   if [ $big_stack="BIG_STACK=1" ] ; then
+      make -C ../ -f Makefile.${platform} clean || exit 1
+   fi
+
    if [ $PLATFORM = "ode-ps3" ] ; then
       make -C ../ -f Makefile.${platform}.cobra $whole_archive -j3 || exit 1
    else
       make -C ../ -f Makefile.${platform} $whole_archive $big_stack -j3 || exit 1
    fi
 
+   if [ $PLATFORM = "psp1" ] ; then
+      mv -f ../EBOOT.PBP ../pkg/${platform}/cores/${name}_libretro.PBP
+      rm -f ../retroarchpsp.elf
+   fi
    if [ $PLATFORM = "dex-ps3" ] ; then
       $MAKE_FSELF_NPDRM ../retroarch_${platform}.elf ../CORE.SELF
    fi
@@ -69,6 +92,10 @@ for f in *_${platform}.a ; do
          mv -f ../CORE.SELF ../${platform}/iso/PS3_GAME/USRDIR/cores/"${name}_libretro_${platform}.SELF"
       fi
       rm -f ../retroarch_${platform}.elf ../retroarch_${platform}.self ../CORE.SELF
+   fi
+
+   if [ $big_stack="BIG_STACK=1" ] ; then
+      make -C ../ -f Makefile.${platform} clean || exit 1
    fi
 done
 
