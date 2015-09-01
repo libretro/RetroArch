@@ -32,11 +32,16 @@ static void shader_action_parameter_right_common(
       struct video_shader_parameter *param,
       struct video_shader *shader)
 {
+   driver_t * driver = driver_get_ptr();
+   const ui_companion_driver_t *ui = ui_companion_get_ptr();
    if (!shader)
       return;
 
    param->current += param->step;
-   param->current = min(max(param->minimum, param->current), param->maximum);
+   param->current  = min(max(param->minimum, param->current), param->maximum);
+
+   if (ui->notify_refresh && ui_companion_is_on_foreground())
+      ui->notify_refresh(driver->ui_companion_data);
 }
 #endif
 
