@@ -82,6 +82,7 @@ fi
 for f in *_${platform}.a ; do
    name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).a$//"`
    whole_archive=
+   big_stack=
    if [ $name = "nxengine" ] ; then
       echo "Applying whole archive linking..."
       whole_archive="WHOLE_ARCHIVE_LINK=1"
@@ -122,9 +123,9 @@ for f in *_${platform}.a ; do
    # Move executable files
    if [ $platform = "ps3" ] ; then
       if [ $PLATFORM = "ode-ps3" ] ; then
-         mv -f ../CORE.SELF ../pkg/${platform}/USRDIR/cores/"${name}_libretro_${platform}.SELF"
-      else
          mv -f ../CORE.SELF ../${platform}/iso/PS3_GAME/USRDIR/cores/"${name}_libretro_${platform}.SELF"
+      else
+         mv -f ../CORE.SELF ../pkg/${platform}/USRDIR/cores/"${name}_libretro_${platform}.SELF"
       fi
    elif [ $PLATFORM = "psp1" ] ; then
       mv -f ../EBOOT.PBP ../pkg/${platform}/cores/${name}_libretro.PBP
