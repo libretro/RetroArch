@@ -295,10 +295,7 @@ static int add_adapter(void *data, usb_device_entry *dev)
    device_name = (const char *)adapter->name;
 
    if (adapter->name[0] == '\0')
-   {
-      strcpy(adapter->name, "dummydev");
-      // goto error;
-   }
+      goto error;
 
    adapter->send_control_lock = slock_new();
    adapter->send_control_buffer = fifo_new(4096);
