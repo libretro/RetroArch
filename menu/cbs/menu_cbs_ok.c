@@ -41,7 +41,7 @@ char core_updater_path[PATH_MAX_LENGTH];
 static int menu_action_setting_set_current_string_path(
       rarch_setting_t *setting, const char *dir, const char *path)
 {
-   char s[PATH_MAX_LENGTH] = {0};
+   char s[PATH_MAX_LENGTH];
    fill_pathname_join(s, dir, path, sizeof(s));
    setting_set_with_string_representation(setting, s);
    return menu_setting_generic(setting, false);
@@ -880,8 +880,8 @@ static int action_ok_remap_file_save_as(const char *path,
 static int action_ok_remap_file_save_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char directory[PATH_MAX_LENGTH]   = {0};
-   char file[PATH_MAX_LENGTH]        = {0};
+   char directory[PATH_MAX_LENGTH];
+   char file[PATH_MAX_LENGTH];
    settings_t *settings              = config_get_ptr();
    rarch_system_info_t *info         = rarch_system_info_get_ptr();
    const char *core_name             = info ? info->info.library_name : NULL;
@@ -903,8 +903,8 @@ static int action_ok_remap_file_save_core(const char *path,
 static int action_ok_remap_file_save_game(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char directory[PATH_MAX_LENGTH] = {0};
-   char file[PATH_MAX_LENGTH]      = {0};
+   char directory[PATH_MAX_LENGTH];
+   char file[PATH_MAX_LENGTH];
    global_t *global                = global_get_ptr();
    settings_t *settings            = config_get_ptr();
    rarch_system_info_t *info         = rarch_system_info_get_ptr();
@@ -1431,8 +1431,8 @@ static int action_ok_download_generic(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       const char *type_msg)
 {
-   char s[PATH_MAX_LENGTH]         = {0};
-   char s2[PATH_MAX_LENGTH]        = {0};
+   char s[PATH_MAX_LENGTH];
+   char s2[PATH_MAX_LENGTH];
    settings_t *settings            = config_get_ptr();
 
    fill_pathname_join(s, settings->network.buildbot_assets_url,
@@ -1602,8 +1602,7 @@ static int action_ok_disk_cycle_tray_status(const char *path,
 static int action_ok_close_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   int                      ret = generic_action_ok_command(EVENT_CMD_UNLOAD_CORE);
-   return ret;
+   return generic_action_ok_command(EVENT_CMD_UNLOAD_CORE);
 }
 
 static int action_ok_quit(const char *path,
@@ -1674,7 +1673,7 @@ static int action_ok_rdb_entry_submenu(const char *path,
 {
    int ret;
    union string_list_elem_attr attr;
-   char new_label[PATH_MAX_LENGTH] = {0};
+   char new_label[PATH_MAX_LENGTH];
    menu_displaylist_info_t info    = {0};
    char *rdb                       = NULL;
    int len                         = 0;
@@ -1688,14 +1687,11 @@ static int action_ok_rdb_entry_submenu(const char *path,
    str_list = string_split(label, "|");
 
    if (!str_list)
-      return -1;
+      goto error;
 
    str_list2 = string_list_new();
    if (!str_list2)
-   {
-      string_list_free(str_list);
-      return -1;
-   }
+      goto error;
 
    /* element 0 : label
     * element 1 : value
@@ -1713,11 +1709,7 @@ static int action_ok_rdb_entry_submenu(const char *path,
    rdb = (char*)calloc(len, sizeof(char));
 
    if (!rdb)
-   {
-      string_list_free(str_list);
-      string_list_free(str_list2);
-      return -1;
-   }
+      goto error;
 
    string_list_join_concat(rdb, len, str_list2, "|");
 
@@ -1738,6 +1730,13 @@ static int action_ok_rdb_entry_submenu(const char *path,
    string_list_free(str_list2);
 
    return ret;
+
+error:
+   if (str_list)
+      string_list_free(str_list);
+   if (str_list2)
+      string_list_free(str_list2);
+   return -1;
 }
 
 static int action_ok_open_archive_detect_core(const char *path,
