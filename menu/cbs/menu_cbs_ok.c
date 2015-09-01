@@ -1860,82 +1860,6 @@ static int action_ok_load_archive_detect_core(const char *path,
    return ret;
 }
 
-static int action_ok_help(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info = {0};
-   menu_list_t *menu_list    = menu_list_get_ptr();
-   menu_handle_t *menu       = menu_driver_get_ptr();
-   if (!menu_list)
-      return -1;
-
-   info.list = menu_list->menu_stack;
-   strlcpy(info.label,
-         menu_hash_to_str(MENU_LABEL_HELP),
-         sizeof(info.label));
-   menu->push_help_screen = true;
-   menu->help_screen_type = MENU_HELP_WELCOME;
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
-
-}
-
-static int action_ok_help_controls(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info = {0};
-   menu_list_t *menu_list    = menu_list_get_ptr();
-   menu_handle_t *menu       = menu_driver_get_ptr();
-   if (!menu_list)
-      return -1;
-
-   info.list = menu_list->menu_stack;
-   strlcpy(info.label,
-         menu_hash_to_str(MENU_LABEL_HELP_CONTROLS),
-         sizeof(info.label));
-   menu->push_help_screen = true;
-   menu->help_screen_type = MENU_HELP_CONTROLS;
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
-}
-
-static int action_ok_help_what_is_a_core(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info = {0};
-   menu_list_t *menu_list    = menu_list_get_ptr();
-   menu_handle_t *menu       = menu_driver_get_ptr();
-   if (!menu_list)
-      return -1;
-
-   info.list = menu_list->menu_stack;
-   strlcpy(info.label,
-         menu_hash_to_str(MENU_LABEL_HELP_WHAT_IS_A_CORE),
-         sizeof(info.label));
-   menu->push_help_screen = true;
-   menu->help_screen_type = MENU_HELP_WHAT_IS_A_CORE;
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
-}
-
-static int action_ok_help_audio_video_troubleshooting(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info = {0};
-   menu_list_t *menu_list    = menu_list_get_ptr();
-   menu_handle_t *menu       = menu_driver_get_ptr();
-   if (!menu_list)
-      return -1;
-
-   info.list = menu_list->menu_stack;
-   strlcpy(info.label,
-         menu_hash_to_str(MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING),
-         sizeof(info.label));
-   menu->push_help_screen = true;
-   menu->help_screen_type = MENU_HELP_AUDIO_VIDEO_TROUBLESHOOTING;
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
-}
 
 static int  generic_action_ok_help(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -1955,6 +1879,34 @@ static int  generic_action_ok_help(const char *path,
    menu->help_screen_type = id2;
 
    return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
+}
+
+static int action_ok_help_audio_video_troubleshooting(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_help(path, label, type, idx, entry_idx,
+         MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING, MENU_HELP_AUDIO_VIDEO_TROUBLESHOOTING);
+}
+
+static int action_ok_help(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_help(path, label, type, idx, entry_idx,
+         MENU_LABEL_HELP, MENU_HELP_WELCOME);
+}
+
+static int action_ok_help_controls(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_help(path, label, type, idx, entry_idx,
+         MENU_LABEL_HELP_CONTROLS, MENU_HELP_CONTROLS);
+}
+
+static int action_ok_help_what_is_a_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_help(path, label, type, idx, entry_idx,
+         MENU_LABEL_HELP_WHAT_IS_A_CORE, MENU_HELP_WHAT_IS_A_CORE);
 }
 
 static int action_ok_help_scanning_content(const char *path,
