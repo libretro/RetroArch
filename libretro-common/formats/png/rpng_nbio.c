@@ -77,26 +77,6 @@ static bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *
    return true;
 }
 
-static bool png_read_plte_into_buf(uint8_t *buf, 
-      uint32_t *buffer, unsigned entries)
-{
-   unsigned i;
-
-   if (entries > 256)
-      return false;
-
-   buf += 8;
-
-   for (i = 0; i < entries; i++)
-   {
-      uint32_t r = buf[3 * i + 0];
-      uint32_t g = buf[3 * i + 1];
-      uint32_t b = buf[3 * i + 2];
-      buffer[i] = (r << 16) | (g << 8) | (b << 0) | (0xffu << 24);
-   }
-
-   return true;
-}
 
 bool rpng_nbio_load_image_argb_iterate(struct rpng_t *rpng)
 {
@@ -151,7 +131,12 @@ bool rpng_nbio_load_image_argb_iterate(struct rpng_t *rpng)
             if (chunk.size % 3)
                goto error;
 
-            if (!png_read_plte_into_buf(buf, rpng->palette, entries))
+            if (entries > 256)
+               goto error;
+
+            buf += 8;
+
+            if (!png_read_plte(buf, rpng->palette, entries))
                goto error;
 
             rpng->has_plte = true;
