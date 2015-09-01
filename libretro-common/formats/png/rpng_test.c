@@ -87,8 +87,7 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
       goto end;
    }
 
-   while (rpng_nbio_load_image_argb_iterate(
-            rpng->buff_data, rpng));
+   while (rpng_nbio_load_image_argb_iterate(rpng));
 
 #if 0
    fprintf(stderr, "has_ihdr: %d\n", rpng->has_ihdr);
