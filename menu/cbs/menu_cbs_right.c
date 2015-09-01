@@ -45,7 +45,7 @@ static void shader_action_parameter_right_common(
 }
 #endif
 
-static int shader_action_parameter_right(unsigned type, const char *label, bool wraparound)
+int shader_action_parameter_right(unsigned type, const char *label, bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = video_shader_driver_get_current_shader();
@@ -57,7 +57,7 @@ static int shader_action_parameter_right(unsigned type, const char *label, bool 
    return 0;
 }
 
-static int shader_action_parameter_preset_right(unsigned type, const char *label,
+int shader_action_parameter_preset_right(unsigned type, const char *label,
       bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER

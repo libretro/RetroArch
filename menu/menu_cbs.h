@@ -33,6 +33,11 @@ extern char core_updater_path[PATH_MAX_LENGTH];
 
 /* Function callbacks */
 
+int shader_action_parameter_right(unsigned type, const char *label, bool wraparound);
+
+int shader_action_parameter_preset_right(unsigned type, const char *label,
+      bool wraparound);
+
 int action_ok_push_generic_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
 
