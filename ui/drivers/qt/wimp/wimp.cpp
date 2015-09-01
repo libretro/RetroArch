@@ -20,8 +20,11 @@
 #include <QListView>
 #include <QQuickWindow>
 
+#include "configuration.h"
+
 QObject *topLevel;
 QQuickWindow *window;
+static settings_t *g_config;
 
 int Wimp::CreateMainWindow()
 {
@@ -30,11 +33,18 @@ int Wimp::CreateMainWindow()
    topLevel = engine.rootObjects().value(0);
    window = qobject_cast<QQuickWindow *>(topLevel);
 
-   SetTitle("Hello QT");
+   SetTitle("RetroArch");
+
    return this->exec();
 }
+
 
 void Wimp::SetTitle(char* title)
 {
      window->setTitle(title);
+}
+
+settings_t *config_get_ptr(void)
+{
+   return g_config;
 }

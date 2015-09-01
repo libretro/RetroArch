@@ -21,7 +21,6 @@
 #include <QtWidgets/qapplication.h>
 #include <QtQml/qqmlapplicationengine.h>
 
-
 class WIMPSHARED_EXPORT Wimp : public QGuiApplication
 {
     Q_OBJECT
