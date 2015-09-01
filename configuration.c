@@ -805,7 +805,7 @@ static void config_set_defaults(void)
       if (!*settings->osk.overlay)
             fill_pathname_join(settings->osk.overlay,
                   global->dir.osk_overlay,
-                  "overlays/keyboards/modular-keyboard/opaque/big.cfg",
+                  "keyboards/modular-keyboard/opaque/big.cfg",
                   sizeof(settings->osk.overlay));
 #endif
    }
