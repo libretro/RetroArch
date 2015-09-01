@@ -53,91 +53,130 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_END := -Wl,--no-whole-archive
 endif
 
-ifeq ($(platform), ngc)
-  CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
-  CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
-  LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
-  ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
-  EXT_TARGET := $(TARGET_NAME)_ngc.dol
-  EXT_INTER_TARGET := $(TARGET_NAME)_ngc.elf
-  INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/zlib
-  LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube -L.
-  MACHDEP := -DGEKKO -DHW_DOL -mogc -mcpu=750 -meabi -mhard-float -DMSB_FIRST
-  LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map
-ifeq ($(BIG_STACK), 1)
-   LDFLAGS += -T gx/ld/ogc.ld
-endif
-  LIBS := -lfat $(WHOLE_START) -lretro_ngc $(WHOLE_END) -logc
-ifeq ($(HAVE_LOGGER), 1)
-  LIBS += -lbba
-endif
-  PLATCFLAGS := -DGEKKO
+LIBS := $(WHOLE_START) -lretro_$(platform) $(WHOLE_END)
 
-  HAVE_FILTERS_BUILTIN     := 1
-  HAVE_THREADS             := 1
-  HAVE_ZLIB                := 1
-  HAVE_RPNG						:= 1
-  HAVE_7ZIP                := 1
-  HAVE_RPNG                := 1
-  HAVE_OVERLAY             := 1
-  HAVE_BUILTIN_AUTOCONFIG  := 1
-else ifeq ($(platform), ps3)
+libogc_platform :=
+
+ifeq ($(platform), ngc)
+libogc_platform = 1
+else ifeq ($(platform), wii)
+libogc_platform = 1
+endif
+
+# PS3
+ifeq ($(platform), ps3)
 	#TODO
-  MEDIA_SHADER_DIR := ps3/pkg/USRDIR/cores/shaders
+  MEDIA_SHADER_DIR := pkg/ps3/USRDIR/cores/shaders
+
+# PS3 - Cobra
 else ifeq ($(platform), ps3-cobra)
 	#TODO
   MEDIA_SHADER_DIR := ps3/iso/PS3_GAME/USRDIR/cores/shaders
-else ifeq ($(platform), wii)
-  HAVE_WIIUSB_HID          := 1
 
+# NGC/Wii - libogc
+else ifeq ($(libogc_platform), 1)
   CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
   CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
   LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
   ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
-  EXT_TARGET := $(TARGET_NAME)_wii.dol
-  EXT_INTER_TARGET := $(TARGET_NAME)_wii.elf
+  EXT_TARGET := $(TARGET_NAME)_$(platform).dol
+  EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
+
   INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/zlib
-  LIBDIRS += -L$(DEVKITPRO)/libogc/lib/wii -L.
-  MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float -DMSB_FIRST
-  LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size
+
+ifeq ($(platform), ngc)
+  LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube
+  MACHDEP := -DHW_DOL -mogc
+else ifeq ($(platform), wii)
+  LIBDIRS += -L$(DEVKITPRO)/libogc/lib/wii
+  MACHDEP := -DHW_RVL -mrvl
+endif
+  LIBDIRS += -L.
+  MACHDEP += -DGEKKO -mcpu=750 -meabi -mhard-float -DMSB_FIRST
+
+  LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map
+
+ifeq ($(platform), wii)
+  LDFLAGS += ,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size
+endif
+
 ifeq ($(BIG_STACK), 1)
+ifeq ($(platform), ngc)
+   LDFLAGS += -T gx/ld/ogc.ld
+else ifeq ($(platform), wii)
   LDFLAGS += -T gx/ld/rvl.ld
 endif
-  LIBS := -lfat $(WHOLE_START) -lretro_wii $(WHOLE_END) -logc -lwiiuse -lbte
+endif
+  LIBS += -lfat -logc
+
+ifeq ($(platform), wii)
+  LIBS += -lwiiuse -lbte
 ifeq ($(USBGECKO), 1)
   LIBS += -ldb
 endif
+else ifeq ($(platform), ngc)
+ifeq ($(HAVE_LOGGER), 1)
+  LIBS += -lbba
+endif
+endif
+
+  CFLAGS += -DGEKKO
+
+  HAVE_FILTERS_BUILTIN     := 1
+  HAVE_THREADS             := 1
+  HAVE_RPNG						:= 1
+  HAVE_OVERLAY             := 1
+  HAVE_BUILTIN_AUTOCONFIG  := 1
+  HAVE_ZLIB                := 1
+  HAVE_7ZIP                := 1
+
+ifeq ($(platform), wii)
+  HAVE_WIIUSB_HID          := 1
+  HAVE_RARCH_EXEC          := 1
+  HAVE_RSOUND              := 1
+  HAVE_LIBRETRO_MANAGEMENT := 1
+  HAVE_LIBSICKSAXIS        := 1
+
   APP_BOOTER_DIR = wii/app_booter
   PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
-  CFLAGS += -DGEKKO
 ifeq ($(USBGECKO), 1)
   CFLAGS += -DUSBGECKO
 endif
+endif
 
-  HAVE_FILTERS_BUILTIN     := 1
-  HAVE_RARCH_EXEC          := 1
-  HAVE_THREADS             := 1
-  HAVE_RSOUND              := 1
-HAVE_7ZIP                  := 1
-  HAVE_LIBRETRO_MANAGEMENT := 1
-  HAVE_ZLIB                := 1
-  HAVE_RPNG                := 1
-  HAVE_RPNG                := 1
-  HAVE_OVERLAY             := 1
-  HAVE_LIBSICKSAXIS        := 1
-  HAVE_BUILTIN_AUTOCONFIG  := 1
+# Libxenon (Xbox 360)
+else ifeq ($(platform), xenon360)
+	CC = xenon-gcc$(EXE_EXT)
+	CXX = xenon-g++$(EXE_EXT)
+	OBJCOPY = xenon-objcopy$(EXE_EXT)
+	LD    = xenon-ld$(EXE_EXT)
+	STRIP = xenon-strip$(EXE_EXT)
+	INCLUDE += -I$(DEVKITXENON)/usr/include
+
+	EXT_TARGET := $(TARGET_NAME)_$(platform).elf32
+	EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
+
+	LIBS += -lxenon -lm -lc
+
+  LIBDIRS += -L. -L$(DEVKITXENON)/usr/lib -L$(DEVKITXENON)/xenon/lib/32
+  LDFLAGS +=  -Wl,-q -m32 -n -T$(DEVKITXENON)/app.lds
+  PLATCFLAGS := -DHAVE_GETOPT_LONG=1
+  PLATCFLAGS += -maltivec -mhard-float -m32 -mpowerpc64 -mcpu=cell -mtune=cell -fno-pic -g -Wall -DXENON $(INCDIRS) -Wno-char-subscripts
+  PLATCFLAGS += -u read -u _start -u exc_base
+  HAVE_THREADS = 1
+  HAVE_GETOPT_LONG = 1
+
+# PSP
 else ifeq ($(platform), psp1)
   CC = psp-gcc$(EXE_EXT)
   CXX = psp-g++$(EXE_EXT)
   LD = psp-ld$(EXE_EXT)
   INCLUDE += -I$(PSPSDK)/psp/sdk/include
-  EXT_TARGET := $(TARGET_NAME)_psp1.elf
-  EXT_INTER_TARGET := $(TARGET_NAME)_psp1.elf
+  EXT_TARGET := $(TARGET_NAME)_$(platform).elf
+  EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
   PLATCFLAGS := -DPSP -D_PSP_FW_VERSION=150 -G0 \
 	  -D_MIPS_ARCH_ALLEGREX
-  LIBS += $(WHOLE_START) -lretro_psp1 $(WHOLE_END) \
-			 -lpspgu -lpspgum -lm -lpspaudio -lpspfpu \
-			 -lpsppower -lpsprtc -lpspkernel
+  LIBS +=  -lpspgu -lpspgum -lm -lpspaudio -lpspfpu -lpsppower -lpsprtc -lpspkernel
 
   LIBDIRS += -L.
   LDFLAGS +=  -Wl,-q
@@ -151,18 +190,18 @@ ifeq ($(BUILD_PRX), 1)
 	LDFLAGS += $(addprefix -L,$(PSPSDK)/lib) -specs=$(PSPSDK)/lib/prxspecs -Wl,-q,-T$(PSPSDK)/lib/linkfile.prx $(LDFLAGS)
 endif
 
+# Vita
 else ifeq ($(platform), vita)
   CC = arm-vita-eabi-gcc$(EXE_EXT)
   CXX = arm-vita-eabi-g++$(EXE_EXT)
   LD = arm-vita-eabi-ld$(EXE_EXT)
-  EXT_TARGET := $(TARGET_NAME).velf
-  EXT_INTER_TARGET := $(TARGET_NAME).elf
+  EXT_TARGET := $(TARGET_NAME)_$(platform).velf
+  EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
   MACHDEP := -DVITA
   PLATCFLAGS := -O3
-  LIBS += $(WHOLE_START) -lretro_vita $(WHOLE_END) \
-        -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub \
-	-lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub \
-	-lScePower_stub -lSceRtc_stub -lz -lm -lc
+  LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub \
+			 -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub \
+			 -lScePower_stub -lSceRtc_stub -lz -lm -lc
 
   PLATOBJS += audio/audio_utils_neon.o audio/drivers_resampler/sinc_neon.o \
               audio/drivers_resampler/cc_resampler_neon.o
@@ -288,6 +327,10 @@ ifeq ($(HAVE_RSOUND), 1)
 CFLAGS += -DHAVE_RSOUND
 endif
 
+ifeq ($(HAVE_GETOPT_LONG), 1)
+CFLAGS += -DHAVE_GETOPT_LONG=1
+endif
+
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g -DDEBUG
 else ifeq ($(platform), psp1)
@@ -304,6 +347,11 @@ all: $(EXT_TARGET)
 %.velf: %.elf
 	arm-vita-eabi-strip -g $<
 	vita-elf-create $< $@ $(VITASDK)/bin/db.json
+
+%.elf32: %.elf
+ifeq ($(platform), xenon360)
+	$(OBJCOPY) -O elf32-powerpc --adjust-vma 0x80000000 $< $@
+endif
 
 %.prx: %.elf
 ifeq ($(platform),psp1)
@@ -330,9 +378,9 @@ $(APP_BOOTER_DIR)/app_booter.bin:
 
 pkg: all
 ifeq ($(platform), wii)
-	cp -r $(EXT_TARGET) wii/pkg/CORE.dol
+	cp -r $(EXT_TARGET) pkg/wii/CORE.dol
 else ifeq ($(platform), ngc)
-	cp -r $(EXT_TARGET) ngc/pkg/CORE.dol
+	cp -r $(EXT_TARGET) pkg/ngc/CORE.dol
 else ifeq ($(platform), psp1)
 	psp-fixup-imports$(EXT) $(EXT_TARGET)
 endif
