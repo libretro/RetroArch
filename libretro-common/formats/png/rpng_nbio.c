@@ -98,9 +98,10 @@ static bool png_read_plte_into_buf(uint8_t *buf,
    return true;
 }
 
-bool rpng_nbio_load_image_argb_iterate(uint8_t *buf, struct rpng_t *rpng, unsigned *ret)
+bool rpng_nbio_load_image_argb_iterate(uint8_t *buf, struct rpng_t *rpng)
 {
    unsigned i;
+   unsigned ret;
 
    struct png_chunk chunk = {0};
 
@@ -181,7 +182,8 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf, struct rpng_t *rpng, unsign
          goto error;
    }
 
-   *ret = 4 + 4 + chunk.size + 4;
+   ret = 4 + 4 + chunk.size + 4;
+   rpng->buff_data += ret; 
 
    return true;
 

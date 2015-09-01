@@ -46,7 +46,6 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
    bool ret = true;
    struct rpng_t *rpng = NULL;
    void *ptr = NULL;
-   unsigned val = 0;
    struct nbio_t* handle = (void*)nbio_open(path, NBIO_READ);
 
    if (!handle)
@@ -89,10 +88,7 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
    }
 
    while (rpng_nbio_load_image_argb_iterate(
-            rpng->buff_data, rpng, &val))
-   {
-      rpng->buff_data += val;
-   }
+            rpng->buff_data, rpng));
 
 #if 0
    fprintf(stderr, "has_ihdr: %d\n", rpng->has_ihdr);

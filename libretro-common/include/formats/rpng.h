@@ -110,7 +110,7 @@ bool rpng_is_valid(struct rpng_t *rpng);
 void rpng_nbio_load_image_free(struct rpng_t *rpng);
 
 bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
-      struct rpng_t *rpng, unsigned *ret);
+      struct rpng_t *rpng);
 
 int rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height);

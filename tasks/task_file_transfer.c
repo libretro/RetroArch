@@ -263,13 +263,10 @@ static int rarch_main_data_image_iterate_transfer(nbio_handle_t *nbio)
 
    for (i = 0; i < nbio->image.pos_increment; i++)
    {
-      unsigned ret;
       if (!rpng_nbio_load_image_argb_iterate(
                nbio->image.handle->buff_data,
-               nbio->image.handle, &ret))
+               nbio->image.handle))
          goto error;
-
-      nbio->image.handle->buff_data += ret;
    }
 
    nbio->image.frame_count++;
