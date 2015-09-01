@@ -103,12 +103,7 @@ static int action_left_input_desc(unsigned type, const char *label,
 static int action_left_save_state(unsigned type, const char *label,
       bool wraparound)
 {
-   settings_t *settings = config_get_ptr();
-
-   /* Slot -1 is (auto) slot. */
-   if (settings->state_slot >= 0)
-      settings->state_slot--;
-
+   event_command(EVENT_CMD_SAVE_STATE_DECREMENT);
    return 0;
 }
 

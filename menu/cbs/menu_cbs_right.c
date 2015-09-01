@@ -110,9 +110,7 @@ int action_right_input_desc(unsigned type, const char *label,
 static int action_right_save_state(unsigned type, const char *label,
       bool wraparound)
 {
-   settings_t *settings = config_get_ptr();
-
-   settings->state_slot++;
+   event_command(EVENT_CMD_SAVE_STATE_INCREMENT);
 
    return 0;
 }

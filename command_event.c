@@ -1127,6 +1127,14 @@ bool event_command(enum event_command cmd)
 
          event_main_state(cmd);
          break;
+      case EVENT_CMD_SAVE_STATE_DECREMENT:
+         /* Slot -1 is (auto) slot. */
+         if (settings->state_slot >= 0)
+            settings->state_slot--;
+         break;
+      case EVENT_CMD_SAVE_STATE_INCREMENT:
+         settings->state_slot++;
+         break;
       case EVENT_CMD_TAKE_SCREENSHOT:
          if (!take_screenshot())
             return false;

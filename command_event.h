@@ -41,6 +41,8 @@ enum event_command
    EVENT_CMD_UNLOAD_CORE,
    EVENT_CMD_LOAD_STATE,
    EVENT_CMD_SAVE_STATE,
+   EVENT_CMD_SAVE_STATE_DECREMENT,
+   EVENT_CMD_SAVE_STATE_INCREMENT,
    /* Takes screenshot. */
    EVENT_CMD_TAKE_SCREENSHOT,
    /* Initializes dummy core. */
