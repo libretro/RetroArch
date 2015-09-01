@@ -1251,13 +1251,21 @@ static int action_ok_disk_image_append(const char *path,
    return -1;
 }
 
-#ifdef HAVE_FFMPEG
-static int action_ok_file_load_ffmpeg(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
+enum
+{
+   ACTION_OK_FFMPEG = 0,
+   ACTION_OK_IMAGEVIEWER
+};
+
+static int generic_action_ok_file_load(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx,
+      unsigned action_type, unsigned id)
 {
    const char *menu_path    = NULL;
    global_t *global         = global_get_ptr();
    menu_list_t   *menu_list = menu_list_get_ptr();
+
+   (void)id;
 
    if (!menu_list)
       return -1;
@@ -1268,31 +1276,33 @@ static int action_ok_file_load_ffmpeg(const char *path,
    fill_pathname_join(global->path.fullpath, menu_path, path,
          sizeof(global->path.fullpath));
 
-   menu_common_load_content(true, CORE_TYPE_FFMPEG);
+   switch (id)
+   {
+      case ACTION_OK_FFMPEG:
+      case ACTION_OK_IMAGEVIEWER:
+         menu_common_load_content(true, action_type);
+         break;
+      default:
+         break;
+   }
 
    return 0;
+}
+
+#ifdef HAVE_FFMPEG
+static int action_ok_file_load_ffmpeg(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_file_load(path, label, type, idx,
+         entry_idx, CORE_TYPE_FFMPEG, ACTION_OK_FFMPEG);
 }
 #endif
 
 static int action_ok_file_load_imageviewer(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *menu_path    = NULL;
-   global_t *global         = global_get_ptr();
-   menu_list_t   *menu_list = menu_list_get_ptr();
-
-   if (!menu_list)
-      return -1;
-
-   menu_list_get_last(menu_list->menu_stack,
-         &menu_path, NULL, NULL, NULL);
-
-   fill_pathname_join(global->path.fullpath, menu_path, path,
-         sizeof(global->path.fullpath));
-
-   menu_common_load_content(true, CORE_TYPE_IMAGEVIEWER);
-
-   return 0;
+   return generic_action_ok_file_load(path, label, type, idx,
+         entry_idx, CORE_TYPE_IMAGEVIEWER, ACTION_OK_IMAGEVIEWER);
 }
 
 static int action_ok_file_load(const char *path,
