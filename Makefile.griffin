@@ -34,44 +34,46 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
    system_platform = win
 endif
 
-TARGET_NAME := retroarch
+TARGET_NAME        := retroarch
 
-INCLUDE :=
-LDFLAGS :=
-LIBDIRS :=
+INCLUDE            :=
+LDFLAGS            :=
+LIBDIRS            :=
 
 SHADER_CG_DIR      := media/shaders_cg
-OVERLAY_DIR     := media/overlays
-SHADER_GLSL_DIR := media/shaders_glsl
+OVERLAY_DIR        := media/overlays
+SHADER_GLSL_DIR    := media/shaders_glsl
 
-PYTHON2		= python2$(EXE_EXT)
-PYTHON3		= python3$(EXE_EXT)
-GIT			= git$(EXE_EXT)
+PYTHON2		       := python2$(EXE_EXT)
+PYTHON3		       := python3$(EXE_EXT)
+GIT			       := git$(EXE_EXT)
 
 ifeq ($(WHOLE_ARCHIVE_LINK), 1)
-   WHOLE_START := -Wl,--whole-archive
-   WHOLE_END := -Wl,--no-whole-archive
+   WHOLE_START     := -Wl,--whole-archive
+   WHOLE_END       := -Wl,--no-whole-archive
 endif
 
-LIBS := $(WHOLE_START) -lretro_$(platform) $(WHOLE_END)
+LIBS               := $(WHOLE_START) -lretro_$(platform) $(WHOLE_END)
 
-libogc_platform :=
+libogc_platform    :=
 
 ifeq ($(platform), ngc)
-libogc_platform = 1
+libogc_platform    := 1
 else ifeq ($(platform), wii)
-libogc_platform = 1
+libogc_platform    := 1
 endif
 
 # PS3
 ifeq ($(platform), ps3)
 	#TODO
   MEDIA_SHADER_DIR := pkg/ps3/USRDIR/cores/shaders
+  RARCH_CONSOLE            := 1
 
 # PS3 - Cobra
 else ifeq ($(platform), ps3-cobra)
 	#TODO
   MEDIA_SHADER_DIR := ps3/iso/PS3_GAME/USRDIR/cores/shaders
+  RARCH_CONSOLE            := 1
 
 # NGC/Wii - libogc
 else ifeq ($(libogc_platform), 1)
@@ -129,6 +131,7 @@ endif
   HAVE_BUILTIN_AUTOCONFIG  := 1
   HAVE_ZLIB                := 1
   HAVE_7ZIP                := 1
+  RARCH_CONSOLE            := 1
 
 ifeq ($(platform), wii)
   HAVE_WIIUSB_HID          := 1
@@ -156,15 +159,16 @@ else ifeq ($(platform), xenon360)
 	EXT_TARGET := $(TARGET_NAME)_$(platform).elf32
 	EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
 
-	LIBS += -lxenon -lm -lc
+	LIBS                    += -lxenon -lm -lc
 
-  LIBDIRS += -L. -L$(DEVKITXENON)/usr/lib -L$(DEVKITXENON)/xenon/lib/32
-  LDFLAGS +=  -Wl,-q -m32 -n -T$(DEVKITXENON)/app.lds
-  PLATCFLAGS := -DHAVE_GETOPT_LONG=1
-  PLATCFLAGS += -maltivec -mhard-float -m32 -mpowerpc64 -mcpu=cell -mtune=cell -fno-pic -g -Wall -DXENON $(INCDIRS) -Wno-char-subscripts
-  PLATCFLAGS += -u read -u _start -u exc_base
-  HAVE_THREADS = 1
-  HAVE_GETOPT_LONG = 1
+  LIBDIRS                  += -L. -L$(DEVKITXENON)/usr/lib -L$(DEVKITXENON)/xenon/lib/32
+  LDFLAGS                  +=  -Wl,-q -m32 -n -T$(DEVKITXENON)/app.lds
+  PLATCFLAGS               := -DHAVE_GETOPT_LONG=1
+  PLATCFLAGS               += -maltivec -mhard-float -m32 -mpowerpc64 -mcpu=cell -mtune=cell -fno-pic -g -Wall -DXENON $(INCDIRS) -Wno-char-subscripts
+  PLATCFLAGS               += -u read -u _start -u exc_base
+  HAVE_THREADS             := 1
+  HAVE_GETOPT_LONG         := 1
+  RARCH_CONSOLE            := 1
 
 # PSP
 else ifeq ($(platform), psp1)
@@ -185,6 +189,7 @@ else ifeq ($(platform), psp1)
   HAVE_LIBRETRO_MANAGEMENT := 1
   HAVE_RPNG                := 1
   HAVE_KERNEL_PRX          := 1
+  RARCH_CONSOLE            := 1 # Maybe switch to RARCH_MOBILE ?
 
 ifeq ($(BUILD_PRX), 1)
 	LDFLAGS += $(addprefix -L,$(PSPSDK)/lib) -specs=$(PSPSDK)/lib/prxspecs -Wl,-q,-T$(PSPSDK)/lib/linkfile.prx $(LDFLAGS)
@@ -214,6 +219,7 @@ else ifeq ($(platform), vita)
   HAVE_RPNG                := 1
   HAVE_ZLIB                := 1
   HAVE_VITA2D              := 1
+  RARCH_CONSOLE            := 1 # Maybe switch to RARCH_MOBILE ?
 endif
 
 
@@ -306,7 +312,15 @@ ifeq ($(HAVE_NETPLAY), 1)
 CFLAGS      += -DHAVE_NETPLAY
 endif
 
-CFLAGS += -std=gnu99 -DSINC_LOWER_QUALITY -DHAVE_RGUI -DHAVE_MENU -DRARCH_CONSOLE -DHAVE_GRIFFIN=1 -Wno-char-subscripts  -DRARCH_INTERNAL
+ifeq ($(RARCH_CONSOLE), 1)
+CFLAGS += -DRARCH_CONSOLE
+endif
+
+ifeq ($(RARCH_MOBILE), 1)
+CFLAGS += -DRARCH_MOBILE
+endif
+
+CFLAGS += -std=gnu99 -DSINC_LOWER_QUALITY -DHAVE_RGUI -DHAVE_MENU -DHAVE_GRIFFIN=1 -Wno-char-subscripts  -DRARCH_INTERNAL
 
 ifeq ($(HAVE_FILTERS_BUILTIN), 1)
 CFLAGS += -DHAVE_FILTERS_BUILTIN
