@@ -57,4 +57,4 @@ HAVE_PRESERVE_DYLIB=no  # Disable dlclose() for Valgrind support
 HAVE_PARPORT=auto       # Parallel port joypad support
 HAVE_IMAGEVIEWER=yes    # Built-in image viewer support.
 HAVE_MMAP=auto          # MMAP support
-HAVE_QT=yes             # QT companion support
+HAVE_QT=no              # QT companion support
