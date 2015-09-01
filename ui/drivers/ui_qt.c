@@ -39,12 +39,12 @@ typedef struct ui_companion_qt
 static void qt_thread(void *data)
 {
    ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
-
    wimp = ctrWimp(0, NULL);
+   ConfigGetPtr(wimp,config_get_ptr());
    if(wimp)
       CreateMainWindow(wimp);
 
-   return;
+  return;
 }
 
 static void ui_companion_qt_deinit(void *data)
@@ -63,7 +63,6 @@ static void ui_companion_qt_deinit(void *data)
 static void *ui_companion_qt_init(void)
 {
    ui_companion_qt_t *handle = (ui_companion_qt_t*)calloc(1, sizeof(*handle));
-
    fflush(stdout);
 
 
@@ -72,7 +71,7 @@ static void *ui_companion_qt_init(void)
 
    handle->lock   = slock_new();
    handle->thread = sthread_create(qt_thread, handle);
-
+   
    if (!handle->thread)
    {
       slock_free(handle->lock);
@@ -87,8 +86,8 @@ static int ui_companion_qt_iterate(void *data, unsigned action)
 {
    (void)data;
    (void)action;
-   printf("Test");
    fflush(stdout);
+   
    return 0;
 }
 

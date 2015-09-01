@@ -20,3 +20,6 @@ else:unix: LIBS += -L$$PWD/../wimp/build/ -lwimp.dll
 
 INCLUDEPATH += $$PWD/../wimp/build/release
 DEPENDPATH += $$PWD/../wimp/build/release
+
+INCLUDEPATH += $$PWD/../../../../
+INCLUDEPATH += $$PWD/../../../../libretro-common/include/

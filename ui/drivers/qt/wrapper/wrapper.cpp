@@ -39,6 +39,11 @@ void SetTitle(Wimp*p, char* title)
     return p->SetTitle(title);
 }
 
+void ConfigGetPtr(Wimp*p, settings_t *settings)
+{
+    return p->ConfigGetPtr(settings);
+}
+
 #ifdef __cplusplus
 }
 #endif

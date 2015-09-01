@@ -13,6 +13,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "configuration.h"
 
 #ifndef WRAPPER_H
 #define WRAPPER_H
@@ -27,6 +28,7 @@ Wimp* ctrWimp(int argc, char *argv[]);
 
 int CreateMainWindow(Wimp* p);
 void SetTitle(Wimp* p, char* title);
+void ConfigGetPtr(Wimp*p, settings_t *settings);
 
 #ifdef __cplusplus
 }
