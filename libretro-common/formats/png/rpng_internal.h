@@ -165,11 +165,6 @@ static INLINE uint32_t dword_be(const uint8_t *buf)
    return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
 }
 
-bool png_read_plte(uint8_t *buf, 
-      uint32_t *buffer, unsigned entries);
-
-bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf);
-
 int rpng_load_image_argb_process_inflate_init(struct rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height);
 

@@ -35,6 +35,11 @@ enum png_chunk_type png_chunk_type(const struct png_chunk *chunk);
 
 bool png_process_ihdr(struct png_ihdr *ihdr);
 
+bool png_read_plte(uint8_t *buf, 
+      uint32_t *buffer, unsigned entries);
+
+bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf);
+
 int png_reverse_filter_iterate(struct rpng_t *rpng,
       uint32_t **data);
 
