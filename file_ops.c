@@ -14,20 +14,23 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "file_ops.h"
-#include <file/file_path.h>
 #include <stdlib.h>
 #include <boolean.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
+
 #include <compat/strl.h>
 #include <compat/posix_string.h>
+#include <retro_assert.h>
 #include <retro_miscellaneous.h>
-
+#include <file/file_path.h>
 #ifdef HAVE_COMPRESSION
 #include <file/file_extract.h>
 #endif
+
+#include "file_ops.h"
+
 
 #ifdef HAVE_7ZIP
 #include "decompress/7zip_support.h"

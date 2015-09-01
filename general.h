@@ -22,6 +22,7 @@
 #include <limits.h>
 #include <compat/strl.h>
 #include <retro_inline.h>
+#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include "configuration.h"
 #include "driver.h"

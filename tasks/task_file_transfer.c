@@ -19,6 +19,7 @@
 #include <formats/image.h>
 #include <formats/rpng.h>
 #include <compat/strl.h>
+#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <queues/message_queue.h>
 #include <string/string_list.h>

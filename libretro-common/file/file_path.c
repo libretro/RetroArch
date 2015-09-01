@@ -20,33 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <file/file_path.h>
 
 #include <stdlib.h>
 #include <boolean.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
-
-#ifdef __HAIKU__
-#include <kernel/image.h>
-#endif
-
-#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
-#include <unistd.h> /* stat() is defined here */
-#endif
-
-#include <compat/strl.h>
-#include <compat/posix_string.h>
-#include <retro_miscellaneous.h>
-
-#if defined(__CELLOS_LV2__)
-
-#ifndef S_ISDIR
-#define S_ISDIR(x) (x & 0040000)
-#endif
-
-#endif
 
 #if defined(_WIN32)
 #ifdef _MSC_VER
@@ -74,6 +53,30 @@
 #if defined(PSP)
 #include <pspkernel.h>
 #endif
+
+#ifdef __HAIKU__
+#include <kernel/image.h>
+#endif
+
+#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
+#include <unistd.h> /* stat() is defined here */
+#endif
+
+#include <file/file_path.h>
+
+#include <compat/strl.h>
+#include <compat/posix_string.h>
+#include <retro_assert.h>
+#include <retro_miscellaneous.h>
+
+#if defined(__CELLOS_LV2__)
+
+#ifndef S_ISDIR
+#define S_ISDIR(x) (x & 0040000)
+#endif
+
+#endif
+
 
 /**
  * path_get_extension:

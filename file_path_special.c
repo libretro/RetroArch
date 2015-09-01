@@ -20,15 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <file/file_path.h>
 #include <stdlib.h>
 #include <boolean.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
-#include <compat/strl.h>
-#include <compat/posix_string.h>
-#include <retro_miscellaneous.h>
 
 #ifdef __HAIKU__
 #include <kernel/image.h>
@@ -72,6 +68,12 @@
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #endif
+
+#include <file/file_path.h>
+#include <compat/strl.h>
+#include <compat/posix_string.h>
+#include <retro_assert.h>
+#include <retro_miscellaneous.h>
 
 void fill_pathname_expand_special(char *out_path,
       const char *in_path, size_t size)

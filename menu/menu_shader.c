@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <compat/strl.h>
+#include <retro_assert.h>
 #include <file/file_path.h>
 
 #include "menu.h"

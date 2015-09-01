@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <string/string_list.h>
 #include <string.h>
+#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>

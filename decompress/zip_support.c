@@ -21,6 +21,7 @@
 #include <sys/types.h>
 #include <string.h>
 
+#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 

@@ -49,7 +49,6 @@
 #endif
 #include <compat/msvc.h>
 
-#include <retro_log.h>
 #include <retro_inline.h>
 #include <retro_endianness.h>
 #include <limits.h>
@@ -64,15 +63,6 @@
 
 #ifndef min
 #define min(a, b) ((a) < (b) ? (a) : (b))
-#endif
-
-#ifdef RARCH_INTERNAL
-#define rarch_assert(cond) do { \
-   if (!(cond)) { RARCH_ERR("Assertion failed at %s:%d.\n", __FILE__, __LINE__); abort(); } \
-} while(0)
-#else
-#include <assert.h>
-#define rarch_assert(cond) assert(cond)
 #endif
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
