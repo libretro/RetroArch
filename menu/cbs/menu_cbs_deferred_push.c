@@ -321,7 +321,7 @@ enum
    PUSH_DEFAULT
 };
 
-static int general_push(menu_displaylist_info_t *info, unsigned id)
+static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned type)
 {
    settings_t        *settings = config_get_ptr();
    global_t            *global = global_get_ptr();
@@ -403,22 +403,22 @@ static int general_push(menu_displaylist_info_t *info, unsigned id)
 #endif
    }
 
-   return menu_displaylist_push_list(info, DISPLAYLIST_DEFAULT);
+   return menu_displaylist_push_list(info, type);
 }
 
 static int deferred_archive_open_detect_core(menu_displaylist_info_t *info)
 {
-   return general_push(info, PUSH_ARCHIVE_OPEN_DETECT_CORE);
+   return general_push(info, PUSH_ARCHIVE_OPEN_DETECT_CORE, DISPLAYLIST_DEFAULT);
 }
 
 static int deferred_archive_open(menu_displaylist_info_t *info)
 {
-   return general_push(info, PUSH_ARCHIVE_OPEN);
+   return general_push(info, PUSH_ARCHIVE_OPEN, DISPLAYLIST_DEFAULT);
 }
 
 static int deferred_push_default(menu_displaylist_info_t *info)
 {
-   return general_push(info, PUSH_DEFAULT);
+   return general_push(info, PUSH_DEFAULT, DISPLAYLIST_DEFAULT);
 }
 
 static int deferred_push_history_list(menu_displaylist_info_t *info)
