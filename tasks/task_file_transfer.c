@@ -434,6 +434,7 @@ static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
       return -1;
    }
 
+   rpng_set_buf_ptr(nbio->image.handle, (uint8_t*)ptr);
    nbio->image.handle->buff_data        = (uint8_t*)ptr;
    nbio->image.pos_increment            = (*len / 2) ? (*len / 2) : 1;
    nbio->image.processing_pos_increment = (*len / 4) ?  (*len / 4) : 1;

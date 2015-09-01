@@ -254,6 +254,9 @@ bool rpng_nbio_load_image_argb_start(struct rpng_t *rpng)
 
 bool rpng_is_valid(struct rpng_t *rpng)
 {
+   if (!rpng)
+      return false;
+
    if (rpng->has_ihdr)
       return true;
    if (rpng->has_idat)
@@ -261,4 +264,12 @@ bool rpng_is_valid(struct rpng_t *rpng)
    if (rpng->has_iend)
       return true;
    return false;
+}
+
+void rpng_set_buf_ptr(struct rpng_t *rpng, uint8_t *data)
+{
+   if (!rpng)
+      return false;
+
+   rpng->buff_data = data;
 }

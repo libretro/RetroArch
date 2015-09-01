@@ -107,6 +107,8 @@ struct rpng_t *rpng_nbio_load_image_argb_init(const char *path);
 
 bool rpng_is_valid(struct rpng_t *rpng);
 
+void rpng_set_buf_ptr(struct rpng_t *rpng, uint8_t *data);
+
 void rpng_nbio_load_image_free(struct rpng_t *rpng);
 
 bool rpng_nbio_load_image_argb_iterate(struct rpng_t *rpng);
