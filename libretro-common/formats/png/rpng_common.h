@@ -192,4 +192,7 @@ static INLINE bool png_realloc_idat(const struct png_chunk *chunk, struct idat_b
    return true;
 }
 
+int rpng_load_image_argb_process_inflate_init(struct rpng_t *rpng,
+      uint32_t **data, unsigned *width, unsigned *height);
+
 #endif
