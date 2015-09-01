@@ -18,6 +18,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include "general.h"
+#include "system.h"
 
 #include <file/file_path.h>
 #include <rthreads/rthreads.h>
@@ -38,11 +40,18 @@ typedef struct ui_companion_qt
 
 static void qt_thread(void *data)
 {
+
+   settings_t *settings = config_get_ptr();
+   /* test print the value of max users to compare with the value in QT */
+   RARCH_LOG("Max Users: %d\n", settings->input.max_users);
+
    ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
    wimp = ctrWimp(0, NULL);
-   ConfigGetPtr(wimp,config_get_ptr());
    if(wimp)
-      CreateMainWindow(wimp);
+   {
+      ConfigGetPtr(wimp, settings);
+      CreateMainWindow(wimp, "RetroArch QT");
+   }
 
    return;
 }
@@ -63,9 +72,6 @@ static void ui_companion_qt_deinit(void *data)
 static void *ui_companion_qt_init(void)
 {
    ui_companion_qt_t *handle = (ui_companion_qt_t*)calloc(1, sizeof(*handle));
-   fflush(stdout);
-
-
    if (!handle)
       return NULL;
 
@@ -85,7 +91,6 @@ static int ui_companion_qt_iterate(void *data, unsigned action)
 {
    (void)data;
    (void)action;
-   fflush(stdout);
    return 0;
 }
 

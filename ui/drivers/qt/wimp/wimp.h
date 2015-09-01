@@ -26,14 +26,13 @@
 class WIMPSHARED_EXPORT Wimp : public QGuiApplication
 {
     QQuickWindow *window;
-    settings_t *settings;
 
     Q_OBJECT
     public:
         Wimp(int argc, char *argv[]): QGuiApplication(argc, argv) {}
-        int CreateMainWindow();
+        int CreateMainWindow(char* windowTitle);
         void SetTitle(char* title);
-        void ConfigGetPtr(settings_t* settings);
+        void ConfigGetPtr(settings_t *g_config);
 
 };
 
