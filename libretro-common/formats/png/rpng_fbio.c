@@ -26,7 +26,7 @@
 #include <string.h>
 #include <boolean.h>
 
-#include "rpng_common.h"
+#include "rpng_internal.h"
 #include "rpng_decode.h"
 
 static bool read_chunk_header_fio(FILE **fd, struct png_chunk *chunk)
