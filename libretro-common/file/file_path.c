@@ -147,7 +147,7 @@ bool path_is_compressed_file(const char* path)
 #ifdef HAVE_COMPRESSION
    const char* file_ext   = path_get_extension(path);
 
-#ifdef HAVE_7ZIP
+#ifdef HAVE_ZLIB
    if (!strcmp(file_ext, "zip"))
       return true;
 #endif
