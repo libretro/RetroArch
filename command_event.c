@@ -1187,6 +1187,12 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_CHEATS_DEINIT);
          event_init_cheats();
          break;
+      case EVENT_CMD_CHEATS_APPLY:
+         if (!global->cheat)
+            break;
+
+         cheat_manager_apply_cheats(global->cheat);
+         break;
       case EVENT_CMD_REMAPPING_DEINIT:
          break;
       case EVENT_CMD_REMAPPING_INIT:

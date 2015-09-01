@@ -149,6 +149,8 @@ enum event_command
    EVENT_CMD_CHEATS_INIT,
    /* Deinitializes cheats. */
    EVENT_CMD_CHEATS_DEINIT,
+   /* Apply cheats. */
+   EVENT_CMD_CHEATS_APPLY,
    /* Deinitializes network system. */
    EVENT_CMD_NETWORK_DEINIT,
    /* Initializes network system. */

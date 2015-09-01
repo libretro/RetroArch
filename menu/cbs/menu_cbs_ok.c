@@ -276,18 +276,10 @@ static int action_ok_playlist_entry(const char *path,
    return -1;
 }
 
-
-
 static int action_ok_cheat_apply_changes(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   global_t *global       = global_get_ptr();
-   cheat_manager_t *cheat = global->cheat;
-
-   if (!cheat)
-      return -1;
-
-   cheat_manager_apply_cheats(cheat);
+   event_command(EVENT_CMD_CHEATS_APPLY);
 
    return 0;
 }
