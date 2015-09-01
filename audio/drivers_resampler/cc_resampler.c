@@ -54,34 +54,6 @@ typedef struct rarch_CC_resampler
    void (*process)(void *re, struct resampler_data *data);
 } rarch_CC_resampler_t;
 
-/* memalign() replacement functions
- * copied from sinc.c and changed signature so no conflict
- * happens when using griffin.c
- * these functions should probably be moved to a common header
- */
-
-static void *memalign_alloc__(size_t boundary, size_t size)
-{
-   void **place;
-   uintptr_t addr = 0;
-   void *ptr = malloc(boundary + size + sizeof(uintptr_t));
-   if (!ptr)
-      return NULL;
-
-   addr           = ((uintptr_t)
-         ptr + sizeof(uintptr_t) + boundary)
-      & ~(boundary - 1);
-   place          = (void**)addr;
-   place[-1]      = ptr;
-
-   return (void*)addr;
-}
-
-static void memalign_free__(void *ptr)
-{
-   void **p = (void**)ptr;
-   free(p[-1]);
-}
 
 #ifdef _MIPS_ARCH_ALLEGREX
 static void resampler_CC_process(void *re_, struct resampler_data *data)
@@ -205,7 +177,34 @@ static void *resampler_CC_init(const struct resampler_config *config,
    return (void*)-1;
 }
 #else
+/* memalign() replacement functions
+ * copied from sinc.c and changed signature so no conflict
+ * happens when using griffin.c
+ * these functions should probably be moved to a common header
+ */
 
+static void *memalign_alloc__(size_t boundary, size_t size)
+{
+   void **place;
+   uintptr_t addr = 0;
+   void *ptr = malloc(boundary + size + sizeof(uintptr_t));
+   if (!ptr)
+      return NULL;
+
+   addr           = ((uintptr_t)
+         ptr + sizeof(uintptr_t) + boundary)
+      & ~(boundary - 1);
+   place          = (void**)addr;
+   place[-1]      = ptr;
+
+   return (void*)addr;
+}
+
+static void memalign_free__(void *ptr)
+{
+   void **p = (void**)ptr;
+   free(p[-1]);
+}
 
 #if defined(__SSE__)
 #define CC_RESAMPLER_IDENT "SSE"

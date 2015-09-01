@@ -137,14 +137,20 @@ else ifeq ($(platform), psp1)
 	  -D_MIPS_ARCH_ALLEGREX
   LIBS += $(WHOLE_START) -lretro_psp1 $(WHOLE_END) \
 			 -lpspgu -lpspgum -lm -lpspaudio -lpspfpu \
-			 -lpsppower -lpsprtc
+			 -lpsppower -lpsprtc -lpspkernel
 
   LIBDIRS += -L.
   LDFLAGS +=  -Wl,-q
 
+  BUILD_PRX                 = 1
   HAVE_LIBRETRO_MANAGEMENT := 1
   HAVE_RPNG                := 1
   HAVE_KERNEL_PRX          := 1
+
+ifeq ($(BUILD_PRX), 1)
+	LDFLAGS += $(addprefix -L,$(PSPSDK)/lib) -specs=$(PSPSDK)/lib/prxspecs -Wl,-q,-T$(PSPSDK)/lib/linkfile.prx $(LDFLAGS)
+endif
+
 else ifeq ($(platform), vita)
   CC = arm-vita-eabi-gcc$(EXE_EXT)
   CXX = arm-vita-eabi-g++$(EXE_EXT)
@@ -298,6 +304,11 @@ all: $(EXT_TARGET)
 %.velf: %.elf
 	arm-vita-eabi-strip -g $<
 	vita-elf-create $< $@ $(VITASDK)/bin/db.json
+
+%.prx: %.elf
+ifeq ($(platform),psp1)
+	psp-prxgen $< $@
+endif
 
 $(EXT_INTER_TARGET): $(OBJ)
 	$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(LIBS)
