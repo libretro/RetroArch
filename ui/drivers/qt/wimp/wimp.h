@@ -20,15 +20,19 @@
 #include <QtWidgets/qwidget.h>
 #include <QtWidgets/qapplication.h>
 #include <QtQml/qqmlapplicationengine.h>
-
+#include <QtQuick/qquickwindow.h>
+#include "configuration.h"
 
 class WIMPSHARED_EXPORT Wimp : public QGuiApplication
 {
+    QQuickWindow *window;
+
     Q_OBJECT
     public:
         Wimp(int argc, char *argv[]): QGuiApplication(argc, argv) {}
-        int CreateMainWindow();
+        int CreateMainWindow(char* windowTitle);
         void SetTitle(char* title);
+        void ConfigGetPtr(settings_t *g_config);
 
 };
 
