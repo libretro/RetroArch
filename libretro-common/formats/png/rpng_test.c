@@ -87,12 +87,6 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
 
    while (rpng_nbio_load_image_argb_iterate(rpng));
 
-#if 0
-   fprintf(stderr, "has_ihdr: %d\n", rpng->has_ihdr);
-   fprintf(stderr, "has_idat: %d\n", rpng->has_idat);
-   fprintf(stderr, "has_iend: %d\n", rpng->has_iend);
-#endif
-
    if (!rpng_is_valid(rpng))
    {
       ret = false;
