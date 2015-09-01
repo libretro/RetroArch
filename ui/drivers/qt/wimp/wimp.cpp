@@ -22,29 +22,18 @@
 
 QObject *topLevel;
 
-static settings_t *settings;
-
-int Wimp::CreateMainWindow(char* windowTitle)
+int Wimp::CreateMainWindow()
 {
    QQmlApplicationEngine engine;
    engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
    topLevel = engine.rootObjects().value(0);
    window = qobject_cast<QQuickWindow *>(topLevel);
-   SetTitle(windowTitle);
 
    return this->exec();
+
 }
 
-
-void Wimp::SetTitle(char* title)
+void Wimp::GetSettings(settings_t *s)
 {
-    window->setTitle(title);
-}
-
-void Wimp::ConfigGetPtr(settings_t *g_config)
-{
-    settings = g_config;
-    /* test print the value of max users to compare with the value in RA */
-    printf("Max Users: %d\n",g_config->input.max_users);
-    fflush(stdout);
+    settings = s;
 }

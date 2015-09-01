@@ -29,7 +29,7 @@
 
 struct Wimp* wimp;
 char* args[] = {""};
-
+settings_t *settings;
 
 typedef struct ui_companion_qt
 {
@@ -41,16 +41,12 @@ typedef struct ui_companion_qt
 static void qt_thread(void *data)
 {
 
-   settings_t *settings = config_get_ptr();
-   /* test print the value of max users to compare with the value in QT */
-   RARCH_LOG("Max Users: %d\n", settings->input.max_users);
-
    ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
    wimp = ctrWimp(0, NULL);
    if(wimp)
    {
-      ConfigGetPtr(wimp, settings);
-      CreateMainWindow(wimp, "RetroArch QT");
+      GetSettings(wimp, settings);
+      CreateMainWindow(wimp);
    }
 
    return;
@@ -74,7 +70,7 @@ static void *ui_companion_qt_init(void)
    ui_companion_qt_t *handle = (ui_companion_qt_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
-
+   settings = config_get_ptr();
    handle->lock   = slock_new();
    handle->thread = sthread_create(qt_thread, handle);
    if (!handle->thread)

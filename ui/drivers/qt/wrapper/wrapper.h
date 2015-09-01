@@ -13,6 +13,11 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef HAVE_MENU
+#define HAVE_MENU
+#endif
+
+#include "config.h"
 #include "configuration.h"
 
 #ifndef WRAPPER_H
@@ -23,11 +28,12 @@ extern "C" {
 #endif
 
 typedef struct Wimp Wimp;
+typedef settings_t (*config_get_ptr_cb);
 
 Wimp* ctrWimp(int argc, char *argv[]);
 
-int CreateMainWindow(Wimp* p, char* windowTitle);
-void ConfigGetPtr(Wimp*p, settings_t *g_config);
+int CreateMainWindow(Wimp* p);
+void GetSettings(Wimp* p, settings_t *s);
 
 #ifdef __cplusplus
 }
