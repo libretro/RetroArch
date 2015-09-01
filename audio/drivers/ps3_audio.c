@@ -23,10 +23,6 @@
 
 #include "../../defines/ps3_defines.h"
 
-#if defined(__CELLOS_LV2__)
-#include <sys/ppu_thread.h>
-#endif
-
 #define AUDIO_BLOCKS 8
 #define AUDIO_CHANNELS 2
 

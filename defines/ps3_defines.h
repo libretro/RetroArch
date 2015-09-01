@@ -323,12 +323,16 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 ============================================================ */
 
 #ifdef __PSL1GHT__
+#include <sys/thread.h>
+
 /* define all the thread functions  */
 #define sys_ppu_thread_create sysThreadCreate
 #define sys_ppu_thread_join sysThreadJoin
 #define sys_ppu_thread_exit sysThreadExit
 
 #define SYS_PPU_THREAD_CREATE_JOINABLE 0 /* FIXME - not sure if this is correct */
+#elif defined(__CELLOS_LV2__)
+#include <sys/ppu_thread.h>
 #endif
 
 /*============================================================
