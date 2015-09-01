@@ -1,15 +1,15 @@
 #!/bin/sh
 
-PLATFORM=vita
+platform=vita
 
-#make -C ../ -f Makefile.${PLATFORM}.salamander clean || exit 1
-make -C ../ -f Makefile.griffin platform=${PLATFORM} clean || exit 1
+#make -C ../ -f Makefile.${platform}.salamander clean || exit 1
+make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
 
-#make -C ../ -f Makefile.${PLATFORM}.salamander || exit 1
-#make -C ../ -f Makefile.${PLATFORM}.salamander pkg || exit 1
+#make -C ../ -f Makefile.${platform}.salamander || exit 1
+#make -C ../ -f Makefile.${platform}.salamander pkg || exit 1
 
 for f in *_vita.a ; do
-   name=`echo "$f" | sed "s/\(_libretro_${PLATFORM}\|\).a$//"`
+   name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).a$//"`
    whole_archive=
    big_stack=
    if [ $name = "nxengine" ] ; then
@@ -20,8 +20,8 @@ for f in *_vita.a ; do
       echo "Tyrquake found, applying big stack..."
       big_stack="BIG_STACK=1"
    fi
-   cp -f "$f" ../libretro_${PLATFORM}.a
-   make -C ../ -f Makefile.griffin platform=${PLATFORM} $whole_archive $big_stack -j3 || exit 1
-   mv -f ../retroarch_${PLATFORM}.velf ../pkg/${PLATFORM}/${name}_libretro_${PLATFORM}.velf
-   rm -f ../retroarch_${PLATFORM}.velf ../retroarch_${PLATFORM}.elf
+   cp -f "$f" ../libretro_${platform}.a
+   make -C ../ -f Makefile.griffin platform=${platform} $whole_archive $big_stack -j3 || exit 1
+   mv -f ../retroarch_${platform}.velf ../pkg/${platform}/${name}_libretro_${platform}.velf
+   rm -f ../retroarch_${platform}.velf ../retroarch_${platform}.elf
 done

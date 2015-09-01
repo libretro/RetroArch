@@ -1,11 +1,11 @@
 #!/bin/sh
 
-PLATFORM=ngc
+platform=ngc
 
-make -C ../ -f Makefile.griffin platform=${PLATFORM} clean || exit 1
+make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
 
-for f in *_${PLATFORM}.a ; do
-   name=`echo "$f" | sed "s/\(_libretro_${PLATFORM}\|\).a$//"`
+for f in *_${platform}.a ; do
+   name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).a$//"`
    whole_archive=
    big_stack=
    if [ $name = "nxengine" ] ; then
@@ -16,8 +16,8 @@ for f in *_${PLATFORM}.a ; do
       echo "Tyrquake found, applying big stack..."
       big_stack="BIG_STACK=1"
    fi
-   cp -f "$f" ../libretro_${PLATFORM}.a
-   make -C ../ -f Makefile.griffin platform=${PLATFORM} $whole_archive $big_stack -j3 || exit 1
-   mv -f ../retroarch_${PLATFORM}.dol ../pkg/${PLATFORM}/${name}_libretro_${PLATFORM}.dol
-   rm -f ../retroarch_${PLATFORM}.dol ../retroarch_${PLATFORM}.elf ../retroarch_${PLATFORM}.elf.map
+   cp -f "$f" ../libretro_${platform}.a
+   make -C ../ -f Makefile.griffin platform=${platform} $whole_archive $big_stack -j3 || exit 1
+   mv -f ../retroarch_${platform}.dol ../pkg/${platform}/${name}_libretro_${platform}.dol
+   rm -f ../retroarch_${platform}.dol ../retroarch_${platform}.elf ../retroarch_${platform}.elf.map
 done
