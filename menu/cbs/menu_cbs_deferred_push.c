@@ -318,8 +318,10 @@ enum
 {
    PUSH_ARCHIVE_OPEN_DETECT_CORE = 0,
    PUSH_ARCHIVE_OPEN,
-   PUSH_DEFAULT
+   PUSH_DEFAULT,
+   PUSH_DETECT_CORE_LIST,
 };
+
 
 static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned type)
 {
@@ -328,20 +330,25 @@ static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned typ
    rarch_system_info_t *system = rarch_system_info_get_ptr();
    menu_handle_t *menu    = menu_driver_get_ptr();
 
-   if (id != PUSH_DEFAULT)
+   switch (id)
    {
-      fill_pathname_join(info->path, menu->scratch2_buf,
-            menu->scratch_buf, sizeof(info->path));
-      fill_pathname_join(info->label, menu->scratch2_buf,
-            menu->scratch_buf, sizeof(info->label));
+      case PUSH_DEFAULT:
+      case PUSH_DETECT_CORE_LIST:
+         break;
+      default:
+         fill_pathname_join(info->path, menu->scratch2_buf,
+               menu->scratch_buf, sizeof(info->path));
+         fill_pathname_join(info->label, menu->scratch2_buf,
+               menu->scratch_buf, sizeof(info->label));
+         break;
    }
 
    info->type_default = MENU_FILE_PLAIN;
-   info->setting      = menu_setting_find(info->label);
 
    switch (id)
    {
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:
+         info->setting      = menu_setting_find(info->label);
          if (global->core_info.list)
             strlcpy(info->exts, core_info_list_get_all_extensions(
                      global->core_info.list), sizeof(info->exts));
@@ -355,6 +362,7 @@ static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned typ
             strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
          break;
       case PUSH_ARCHIVE_OPEN:
+         info->setting      = menu_setting_find(info->label);
          if (global->menu.info.valid_extensions)
          {
             if (*global->menu.info.valid_extensions)
@@ -365,6 +373,7 @@ static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned typ
             strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
          break;
       case PUSH_DEFAULT:
+         info->setting      = menu_setting_find(info->label);
          if (info->setting && info->setting->browser_selection_type == ST_DIR) {}
          else if (global->menu.info.valid_extensions)
          {
@@ -374,6 +383,11 @@ static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned typ
          }
          else
             strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
+         break;
+      case PUSH_DETECT_CORE_LIST:
+         if (global->core_info.list)
+            strlcpy(info->exts, core_info_list_get_all_extensions(
+                     global->core_info.list), sizeof(info->exts));
          break;
    }
 
@@ -404,6 +418,11 @@ static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned typ
    }
 
    return menu_displaylist_push_list(info, type);
+}
+
+static int deferred_push_detect_core_list(menu_displaylist_info_t *info)
+{
+   return general_push(info, PUSH_DETECT_CORE_LIST, DISPLAYLIST_CORES_DETECTED);
 }
 
 static int deferred_archive_open_detect_core(menu_displaylist_info_t *info)
@@ -577,44 +596,6 @@ static int deferred_push_content_history_path(menu_displaylist_info_t *info)
    return menu_displaylist_push_list(info, DISPLAYLIST_CONTENT_HISTORY);
 }
 
-static int deferred_push_detect_core_list(menu_displaylist_info_t *info)
-{
-   settings_t *settings   = config_get_ptr();
-   global_t *global       = global_get_ptr();
-
-   info->type_default = MENU_FILE_PLAIN;
-   if (global->core_info.list)
-      strlcpy(info->exts, core_info_list_get_all_extensions(
-         global->core_info.list), sizeof(info->exts));
-
-   (void)settings;
-
-   if (settings->multimedia.builtin_mediaplayer_enable ||
-         settings->multimedia.builtin_imageviewer_enable)
-   {
-      struct retro_system_info sysinfo = {0};
-       
-      (void)sysinfo;
-#ifdef HAVE_FFMPEG
-      if (settings->multimedia.builtin_mediaplayer_enable)
-      {
-         libretro_ffmpeg_retro_get_system_info(&sysinfo);
-         strlcat(info->exts, "|", sizeof(info->exts));
-         strlcat(info->exts, sysinfo.valid_extensions, sizeof(info->exts));
-      }
-#endif
-#ifdef HAVE_IMAGEVIEWER
-      if (settings->multimedia.builtin_imageviewer_enable)
-      {
-         libretro_imageviewer_retro_get_system_info(&sysinfo);
-         strlcat(info->exts, "|", sizeof(info->exts));
-         strlcat(info->exts, sysinfo.valid_extensions, sizeof(info->exts));
-      }
-#endif
-   }
-   
-   return menu_displaylist_push_list(info, DISPLAYLIST_CORES_DETECTED);
-}
 
 
 static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *cbs, 
