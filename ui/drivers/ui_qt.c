@@ -44,7 +44,7 @@ static void qt_thread(void *data)
    if(wimp)
       CreateMainWindow(wimp);
 
-  return;
+   return;
 }
 
 static void ui_companion_qt_deinit(void *data)
@@ -71,7 +71,6 @@ static void *ui_companion_qt_init(void)
 
    handle->lock   = slock_new();
    handle->thread = sthread_create(qt_thread, handle);
-   
    if (!handle->thread)
    {
       slock_free(handle->lock);
@@ -87,7 +86,6 @@ static int ui_companion_qt_iterate(void *data, unsigned action)
    (void)data;
    (void)action;
    fflush(stdout);
-   
    return 0;
 }
 
