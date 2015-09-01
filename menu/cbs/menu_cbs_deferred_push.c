@@ -17,7 +17,6 @@
 
 #include "../menu.h"
 #include "../menu_cbs.h"
-#include "../menu_hash.h"
 #include "../menu_displaylist.h"
 
 #ifdef HAVE_LIBRETRODB
@@ -28,7 +27,6 @@
 
 #include "../../general.h"
 #include "../../file_ext.h"
-#include "../../gfx/video_shader_driver.h"
 
 static int deferred_push_core_information(menu_displaylist_info_t *info)
 {
@@ -42,7 +40,6 @@ static int deferred_push_system_information(menu_displaylist_info_t *info)
 
 static int deferred_push_rdb_collection(menu_displaylist_info_t *info)
 {
-   /* TODO/FIXME - add path? */
    return menu_displaylist_push_list(info, DISPLAYLIST_PLAYLIST_COLLECTION);
 }
 
@@ -94,26 +91,20 @@ static int deferred_push_database_manager_list_deferred(menu_displaylist_info_t 
 
 static int deferred_push_cursor_manager_list_deferred(menu_displaylist_info_t *info)
 {
+   char rdb_path[PATH_MAX_LENGTH];
    char *query                    = NULL;
    char *rdb                      = NULL;
-   char rdb_path[PATH_MAX_LENGTH] = {0};
    settings_t *settings           = config_get_ptr();
    config_file_t *conf            = config_file_new(info->path);
 
    if (!conf || !settings)
-      return -1;
+      goto error;
 
    if (!config_get_string(conf, "query", &query))
-   {
-      config_file_free(conf);
-      return -1;
-   }
+      goto error;
 
    if (!config_get_string(conf, "rdb", &rdb))
-   {
-      config_file_free(conf);
-      return -1;
-   }
+      goto error;
 
    fill_pathname_join(rdb_path, settings->content_database,
          rdb, sizeof(rdb_path));
@@ -126,6 +117,11 @@ static int deferred_push_cursor_manager_list_deferred(menu_displaylist_info_t *i
 
    config_file_free(conf);
    return 0;
+
+error:
+   if (conf)
+      config_file_free(conf);
+   return -1;
 }
 
 static int deferred_push_cursor_manager_list_deferred_query_subsearch(menu_displaylist_info_t *info)
