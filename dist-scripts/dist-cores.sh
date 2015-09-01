@@ -22,6 +22,17 @@ elif [ $PLATFORM = "vita" ] ; then
 platform=vita
 MAKEFILE_GRIFFIN=yes
 
+# Wii
+elif [ $PLATFORM = "wii" ] ; then
+platform=wii
+MAKEFILE_GRIFFIN=yes
+SALAMANDER=yes
+
+# NGC
+elif [ $PLATFORM = "ngc" ] ; then
+platform=ngc
+MAKEFILE_GRIFFIN=yes
+
 # DEX PS3
 elif [ $PLATFORM = "dex-ps3" ] ; then
 platform=ps3
@@ -119,6 +130,10 @@ for f in *_${platform}.a ; do
       mv -f ../EBOOT.PBP ../pkg/${platform}/cores/${name}_libretro.PBP
    elif [ $PLATFORM = "vita" ] ; then
       mv -f ../retroarch_${platform}.velf ../pkg/${platform}/${name}_libretro_${platform}.velf
+   elif [ $PLATFORM = "ngc" ] ; then
+      mv -f ../retroarch_${platform}.dol ../pkg/${platform}/${name}_libretro_${platform}.dol
+   elif [ $PLATFORM = "wii" ] ; then
+      mv -f ../retroarch_${platform}.dol ../pkg/${platform}/${name}_libretro_${platform}.dol
    fi
 
    # Remove executable files
@@ -128,6 +143,10 @@ for f in *_${platform}.a ; do
       rm -f ../retroarchpsp.elf
    elif [ $PLATFORM = "vita" ] ; then
       rm -f ../retroarch_${platform}.velf ../retroarch_${platform}.elf
+   elif [ $PLATFORM = "ngc" ] ; then
+      rm -f ../retroarch_${platform}.dol ../retroarch_${platform}.elf ../retroarch_${platform}.elf.map
+   elif [ $PLATFORM = "wii" ] ; then
+      rm -f ../retroarch_${platform}.dol ../retroarch_${platform}.elf ../retroarch_${platform}.elf.map
    fi
 
    # Do cleanup if this is a big stack core
