@@ -181,5 +181,15 @@ static INLINE bool png_read_plte(uint8_t *buf,
    return true;
 }
 
+static INLINE bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf)
+{
+   uint8_t *new_buffer = (uint8_t*)realloc(buf->data, buf->size + chunk->size);
+
+   if (!new_buffer)
+      return false;
+
+   buf->data  = new_buffer;
+   return true;
+}
 
 #endif

@@ -96,24 +96,6 @@ static bool png_parse_ihdr_fio(FILE **fd,
    return true;
 }
 
-static bool png_append_idat_fio(FILE **fd,
-      const struct png_chunk *chunk, struct idat_buffer *buf)
-{
-   FILE *file = *fd;
-   uint8_t *new_buffer = (uint8_t*)realloc(buf->data, buf->size + chunk->size);
-
-   if (!new_buffer)
-      return false;
-
-   buf->data  = new_buffer;
-   if (fread(buf->data + buf->size, 1, chunk->size, file) != chunk->size)
-      return false;
-   if (fseek(file, sizeof(uint32_t), SEEK_CUR) < 0)
-      return false;
-   buf->size += chunk->size;
-   return true;
-}
-
 bool rpng_load_image_argb_iterate(FILE **fd, struct rpng_t *rpng)
 {
    struct png_chunk chunk = {0};
@@ -184,8 +166,15 @@ bool rpng_load_image_argb_iterate(FILE **fd, struct rpng_t *rpng)
          if (!rpng->has_ihdr || rpng->has_iend || (rpng->ihdr.color_type == PNG_IHDR_COLOR_PLT && !rpng->has_plte))
             return false;
 
-         if (!png_append_idat_fio(fd, &chunk, &rpng->idat_buf))
+         if (!png_realloc_idat(&chunk, &rpng->idat_buf))
             return false;
+
+         if (fread(rpng->idat_buf.data + rpng->idat_buf.size, 1, chunk.size, file) != chunk.size)
+            return false;
+         if (fseek(file, sizeof(uint32_t), SEEK_CUR) < 0)
+            return false;
+
+         rpng->idat_buf.size += chunk.size;
 
          rpng->has_idat = true;
          break;

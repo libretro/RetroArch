@@ -66,18 +66,6 @@ static bool png_parse_ihdr(uint8_t *buf,
    return true;
 }
 
-static bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf)
-{
-   uint8_t *new_buffer = (uint8_t*)realloc(buf->data, buf->size + chunk->size);
-
-   if (!new_buffer)
-      return false;
-
-   buf->data  = new_buffer;
-   return true;
-}
-
-
 bool rpng_nbio_load_image_argb_iterate(struct rpng_t *rpng)
 {
    unsigned i;
