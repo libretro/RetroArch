@@ -44,11 +44,8 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(__linux__) && !defined(ANDROID)
    &frontend_ctx_linux,
 #endif
-#if defined(PSP)
+#if defined(PSP) || defined(VITA)
    &frontend_ctx_psp,
-#endif
-#if defined(VITA)
-   &frontend_ctx_vita,
 #endif
 #if defined(_3DS)
    &frontend_ctx_ctr,

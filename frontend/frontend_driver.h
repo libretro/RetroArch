@@ -84,7 +84,6 @@ extern frontend_ctx_driver_t frontend_ctx_darwin;
 extern frontend_ctx_driver_t frontend_ctx_android;
 extern frontend_ctx_driver_t frontend_ctx_linux;
 extern frontend_ctx_driver_t frontend_ctx_psp;
-extern frontend_ctx_driver_t frontend_ctx_vita;
 extern frontend_ctx_driver_t frontend_ctx_ctr;
 extern frontend_ctx_driver_t frontend_ctx_win32;
 extern frontend_ctx_driver_t frontend_ctx_null;
