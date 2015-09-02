@@ -24,19 +24,27 @@
 #include <memmap.h>
 
 #ifndef PROT_READ
-#define PROT_READ     0x1  /* Page can be read */
+#define PROT_READ         0x1  /* Page can be read */
 #endif
 
 #ifndef PROT_WRITE
-#define PROT_WRITE    0x2  /* Page can be written. */
+#define PROT_WRITE        0x2  /* Page can be written. */
+#endif
+
+#ifndef PROT_READWRITE
+#define PROT_READWRITE    0x3  /* Page can be written to and read from. */
 #endif
 
 #ifndef PROT_EXEC
-#define PROT_EXEC     0x4  /* Page can be executed. */
+#define PROT_EXEC         0x4  /* Page can be executed. */
 #endif
 
 #ifndef PROT_NONE
-#define PROT_NONE     0x0  /* Page can not be accessed. */
+#define PROT_NONE         0x0  /* Page can not be accessed. */
+#endif
+
+#ifndef MAP_FAILED
+#define MAP_FAILED        ((void *) -1)
 #endif
 
 #ifdef _WIN32
