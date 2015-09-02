@@ -34,7 +34,7 @@ typedef struct menu_navigation
       } indices;
       unsigned acceleration;
    } scroll;
-   size_t selection_ptr;
+   unsigned selection_ptr;
 } menu_navigation_t;
 
 /**
@@ -99,7 +99,7 @@ void menu_navigation_descend_alphabet(menu_navigation_t *nav, size_t *ptr_out);
  **/
 void menu_navigation_ascend_alphabet(menu_navigation_t *nav, size_t *ptr_out);
 
-ssize_t menu_navigation_get_current_selection(void);
+unsigned menu_navigation_get_current_selection(void);
 
 #ifdef __cplusplus
 }
