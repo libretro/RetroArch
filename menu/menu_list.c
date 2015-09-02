@@ -122,11 +122,11 @@ menu_file_list_cbs_t *menu_list_get_actiondata_at_offset(
       file_list_get_actiondata_at_offset(list, idx);
 }
 
-void *menu_list_get_last_stack_actiondata(const menu_list_t *list)
+menu_file_list_cbs_t *menu_list_get_last_stack_actiondata(const menu_list_t *list)
 {
    if (!list)
       return NULL;
-   return file_list_get_last_actiondata(list->menu_stack);
+   return (menu_file_list_cbs_t*)file_list_get_last_actiondata(list->menu_stack);
 }
 
 static int menu_list_flush_stack_type(

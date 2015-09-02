@@ -1251,7 +1251,7 @@ enum
 
 static int generic_action_ok_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
-      unsigned action_type, unsigned id)
+      enum rarch_core_type action_type, unsigned id)
 {
    const char *menu_path    = NULL;
    global_t *global         = global_get_ptr();
@@ -1855,7 +1855,7 @@ static int action_ok_load_archive_detect_core(const char *path,
 
 static int  generic_action_ok_help(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
-      unsigned id, unsigned id2)
+      unsigned id, menu_help_type_t id2)
 {
    menu_displaylist_info_t info = {0};
    menu_list_t *menu_list    = menu_list_get_ptr();

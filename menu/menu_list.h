@@ -97,7 +97,7 @@ size_t menu_list_get_stack_size(menu_list_t *list);
 
 size_t menu_list_get_size(menu_list_t *list);
 
-void *menu_list_get_last_stack_actiondata(const menu_list_t *list);
+menu_file_list_cbs_t *menu_list_get_last_stack_actiondata(const menu_list_t *list);
 
 void menu_list_get_last(const file_list_t *list,
       const char **path, const char **label,
