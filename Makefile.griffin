@@ -97,16 +97,14 @@ endif
   LIBDIRS += -L.
   MACHDEP += -DGEKKO -mcpu=750 -meabi -mhard-float -DMSB_FIRST
 
-  LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map
-
-ifeq ($(platform), wii)
-  LDFLAGS += ,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size
-endif
-
-ifeq ($(BIG_STACK), 1)
 ifeq ($(platform), ngc)
+	LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map
+ifeq ($(BIG_STACK), 1)
    LDFLAGS += -T gx/ld/ogc.ld
+endif
 else ifeq ($(platform), wii)
+	LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size
+ifeq ($(BIG_STACK), 1)
   LDFLAGS += -T gx/ld/rvl.ld
 endif
 endif
