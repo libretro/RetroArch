@@ -15,7 +15,6 @@
 
 /* Convoluted Cosine Resampler */
 
-#include "../audio_resampler_driver.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -23,6 +22,9 @@
 #include <xmmintrin.h>
 #endif
 #include <retro_inline.h>
+#include <memalign.h>
+
+#include "../audio_resampler_driver.h"
 
 /* Since SSE and NEON don't provide support for trigonometric functions
  * we approximate those with polynoms
@@ -177,34 +179,6 @@ static void *resampler_CC_init(const struct resampler_config *config,
    return (void*)-1;
 }
 #else
-/* memalign() replacement functions
- * copied from sinc.c and changed signature so no conflict
- * happens when using griffin.c
- * these functions should probably be moved to a common header
- */
-
-static void *memalign_alloc__(size_t boundary, size_t size)
-{
-   void **place;
-   uintptr_t addr = 0;
-   void *ptr = malloc(boundary + size + sizeof(uintptr_t));
-   if (!ptr)
-      return NULL;
-
-   addr           = ((uintptr_t)
-         ptr + sizeof(uintptr_t) + boundary)
-      & ~(boundary - 1);
-   place          = (void**)addr;
-   place[-1]      = ptr;
-
-   return (void*)addr;
-}
-
-static void memalign_free__(void *ptr)
-{
-   void **p = (void**)ptr;
-   free(p[-1]);
-}
 
 #if defined(__SSE__)
 #define CC_RESAMPLER_IDENT "SSE"
@@ -530,7 +504,7 @@ static void resampler_CC_free(void *re_)
 {
    rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
    if (re)
-      memalign_free__(re);
+      memalign_free(re);
 }
 
 static void *resampler_CC_init(const struct resampler_config *config,
@@ -538,15 +512,14 @@ static void *resampler_CC_init(const struct resampler_config *config,
 {
    int i;
    rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)
-      memalign_alloc__(32, sizeof(rarch_CC_resampler_t));
+      memalign_alloc(32, sizeof(rarch_CC_resampler_t));
 
    /* TODO: lookup if NEON support can be detected at 
     * runtime and a funcptr set at runtime for either
     * C codepath or NEON codepath. This will help out
     * Android. */
    (void)mask;
-   (void)config;
-
+   (void)config; 
    if (!re)
       return NULL;
 
