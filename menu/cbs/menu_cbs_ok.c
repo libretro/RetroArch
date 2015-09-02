@@ -291,8 +291,9 @@ static int action_ok_shader_pass_load(const char *path,
    const char    *menu_path = NULL;
    menu_handle_t      *menu = menu_driver_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
+
    if (!menu || !menu_list)
-      return -1;
+      goto error;
 
    (void)menu_path;
    (void)menu_list;
@@ -310,9 +311,10 @@ static int action_ok_shader_pass_load(const char *path,
    menu_list_flush_stack(menu_list,
          menu_hash_to_str(MENU_LABEL_SHADER_OPTIONS), 0);
    return 0;
-#else
-   return -1;
 #endif
+
+error:
+   return -1;
 }
 
 #ifdef HAVE_SHADER_MANAGER
@@ -815,7 +817,7 @@ static int action_ok_shader_preset_load(const char *path,
    menu_handle_t               *menu = menu_driver_get_ptr();
    menu_list_t       *menu_list      = menu_list_get_ptr();
    if (!menu || !menu_list)
-      return -1;
+      goto error;
 
    (void)shader_path;
    (void)menu_path;
@@ -832,9 +834,10 @@ static int action_ok_shader_preset_load(const char *path,
    menu_list_flush_stack(menu_list,
          menu_hash_to_str(MENU_LABEL_SHADER_OPTIONS), 0);
    return 0;
-#else
-   return -1;
 #endif
+
+error:
+   return -1;
 }
 
 static int action_ok_cheat(const char *path,
@@ -1648,14 +1651,13 @@ static int action_ok_file_load_or_resume(const char *path,
 
    if (!strcmp(menu->deferred_path, global->path.fullpath))
       return generic_action_ok_command(EVENT_CMD_RESUME);
-   else
-   {
-      strlcpy(global->path.fullpath,
-            menu->deferred_path, sizeof(global->path.fullpath));
-      event_command(EVENT_CMD_LOAD_CORE);
-      rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
-      return -1;
-   }
+
+   strlcpy(global->path.fullpath,
+         menu->deferred_path, sizeof(global->path.fullpath));
+   event_command(EVENT_CMD_LOAD_CORE);
+   rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
+
+   return -1;
 }
 
 static int action_ok_shader_apply_changes(const char *path,
