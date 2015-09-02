@@ -284,37 +284,69 @@ static int action_ok_cheat_apply_changes(const char *path,
    return 0;
 }
 
+enum
+{
+   ACTION_OK_LOAD_PRESET = 0,
+   ACTION_OK_LOAD_SHADER_PASS
+};
+
+static int generic_action_ok(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx,
+      unsigned id, unsigned flush_id)
+{
+   char action_path[PATH_MAX_LENGTH];
+   const char             *menu_path = NULL;
+   menu_handle_t               *menu = menu_driver_get_ptr();
+   menu_list_t       *menu_list      = menu_list_get_ptr();
+   if (!menu || !menu_list)
+      goto error;
+
+   menu_list_get_last_stack(menu_list, &menu_path, NULL,
+         NULL, NULL);
+
+   fill_pathname_join(action_path, menu_path, path, sizeof(action_path));
+
+   switch (id)
+   {
+#ifdef HAVE_SHADER_MANAGER
+      case ACTION_OK_LOAD_PRESET:
+         menu_shader_manager_set_preset(menu->shader,
+               video_shader_parse_type(action_path, RARCH_SHADER_NONE),
+               action_path);
+         break;
+#endif
+#ifdef HAVE_SHADER_MANAGER
+      case ACTION_OK_LOAD_SHADER_PASS:
+         fill_pathname_join(menu->shader->pass[hack_shader_pass].source.path,
+               menu_path, path,
+               sizeof(menu->shader->pass[hack_shader_pass].source.path));
+         video_shader_resolve_parameters(NULL, menu->shader);
+         break;
+#endif
+      default:
+         break;
+   }
+
+   menu_list_flush_stack(menu_list, menu_hash_to_str(flush_id), 0);
+
+   return 0;
+
+error:
+   return -1;
+}
+
+static int action_ok_shader_preset_load(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok(path, label, type, idx, entry_idx,
+         ACTION_OK_LOAD_SHADER_PASS, MENU_LABEL_SHADER_OPTIONS);
+}
 
 static int action_ok_shader_pass_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char    *menu_path = NULL;
-   menu_handle_t      *menu = menu_driver_get_ptr();
-   menu_list_t *menu_list   = menu_list_get_ptr();
-
-   if (!menu || !menu_list)
-      goto error;
-
-   (void)menu_path;
-   (void)menu_list;
-
-#ifdef HAVE_SHADER_MANAGER
-   menu_list_get_last_stack(menu_list, &menu_path, NULL,
-         NULL, NULL);
-
-   fill_pathname_join(menu->shader->pass[hack_shader_pass].source.path,
-         menu_path, path,
-         sizeof(menu->shader->pass[hack_shader_pass].source.path));
-
-   /* This will reset any changed parameters. */
-   video_shader_resolve_parameters(NULL, menu->shader);
-   menu_list_flush_stack(menu_list,
-         menu_hash_to_str(MENU_LABEL_SHADER_OPTIONS), 0);
-   return 0;
-#endif
-
-error:
-   return -1;
+   return generic_action_ok(path, label, type, idx, entry_idx,
+         ACTION_OK_LOAD_PRESET, MENU_LABEL_SHADER_OPTIONS);
 }
 
 #ifdef HAVE_SHADER_MANAGER
@@ -724,14 +756,11 @@ static int action_ok_record_configfile_load(const char *path,
 static int action_ok_remap_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   char remap_path[PATH_MAX_LENGTH];
    const char            *menu_path = NULL;
-   char remap_path[PATH_MAX_LENGTH] = {0};
    menu_list_t       *menu_list     = menu_list_get_ptr();
    if (!menu_list)
       return -1;
-
-   (void)remap_path;
-   (void)menu_path;
 
    menu_list_get_last_stack(menu_list, &menu_path, NULL,
          NULL, NULL);
@@ -748,13 +777,11 @@ static int action_ok_remap_file_load(const char *path,
 static int action_ok_cheat_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   char cheat_path[PATH_MAX_LENGTH];
    const char            *menu_path = NULL;
-   char cheat_path[PATH_MAX_LENGTH] = {0};
    menu_list_t       *menu_list     = menu_list_get_ptr();
    global_t                 *global = global_get_ptr();
 
-   (void)cheat_path;
-   (void)menu_path;
    menu_list_get_last_stack(menu_list, &menu_path, NULL,
          NULL, NULL);
 
@@ -809,36 +836,7 @@ static int action_ok_menu_wallpaper_load(const char *path,
    return 0;
 }
 
-static int action_ok_shader_preset_load(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   const char             *menu_path = NULL;
-   char shader_path[PATH_MAX_LENGTH] = {0};
-   menu_handle_t               *menu = menu_driver_get_ptr();
-   menu_list_t       *menu_list      = menu_list_get_ptr();
-   if (!menu || !menu_list)
-      goto error;
 
-   (void)shader_path;
-   (void)menu_path;
-   (void)menu_list;
-
-#ifdef HAVE_SHADER_MANAGER
-   menu_list_get_last_stack(menu_list, &menu_path, NULL,
-         NULL, NULL);
-
-   fill_pathname_join(shader_path, menu_path, path, sizeof(shader_path));
-   menu_shader_manager_set_preset(menu->shader,
-         video_shader_parse_type(shader_path, RARCH_SHADER_NONE),
-         shader_path);
-   menu_list_flush_stack(menu_list,
-         menu_hash_to_str(MENU_LABEL_SHADER_OPTIONS), 0);
-   return 0;
-#endif
-
-error:
-   return -1;
-}
 
 static int action_ok_cheat(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
