@@ -52,7 +52,8 @@ static int audioMainLoop(SceSize args, void* argp)
    psp_audio_t* psp = *((psp_audio_t**)argp);
 
 #ifdef VITA
-   int port = sceAudioOutOpenPort(PSP2_AUDIO_OUT_PORT_TYPE_MAIN, AUDIO_OUT_COUNT, psp->rate, 2);
+   int port = sceAudioOutOpenPort(PSP2_AUDIO_OUT_PORT_TYPE_MAIN, AUDIO_OUT_COUNT,
+      psp->rate, PSP2_AUDIO_OUT_MODE_STEREO);
 #else
    sceAudioSRCChReserve(AUDIO_OUT_COUNT, psp->rate, 2);
 #endif
@@ -65,7 +66,7 @@ static int audioMainLoop(SceSize args, void* argp)
             < (AUDIO_OUT_COUNT * 2);
 
 #ifdef VITA
-      sceAudioOutOutput(0,
+      sceAudioOutOutput(port,
             cond ? psp->zeroBuffer : (psp->buffer + readPos));
 #else
       sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, cond ? (psp->zeroBuffer)

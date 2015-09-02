@@ -30,8 +30,8 @@ typedef struct vita_menu_frame
    bool active;
    int width;
    int height;
-   vita2d_texture *frame;
-} vita_menu_frame_t;
+   vita2d_texture *texture;
+} vita_menu_t;
 
 typedef struct vita_video
 {
@@ -51,7 +51,7 @@ typedef struct vita_video
    bool keep_aspect;
    bool should_resize;
 
-   vita_menu_frame_t menu;
+   vita_menu_t menu;
 } vita_video_t;
 
 static void *vita2d_gfx_init(const video_info_t *video,
@@ -77,14 +77,20 @@ static void *vita2d_gfx_init(const video_info_t *video,
    vita2d_set_vblank_wait(video->vsync);
 
    if (vita->rgb32)
+   {
+      RARCH_LOG("Format: SCE_GXM_TEXTURE_FORMAT_X8U8U8U8_1RGB\n");
       vita->format = SCE_GXM_TEXTURE_FORMAT_X8U8U8U8_1RGB;
+   }
    else
+   {
+      RARCH_LOG("Format: SCE_GXM_TEXTURE_FORMAT_R5G6B5\n");
       vita->format = SCE_GXM_TEXTURE_FORMAT_R5G6B5;
+   }
 
    vita->fullscreen = video->fullscreen;
 
    vita->texture = NULL;
-   vita->menu.frame = NULL;
+   vita->menu.texture = NULL;
    vita->menu.active = 0;
    vita->menu.width = 0;
    vita->menu.height = 0;
@@ -108,6 +114,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 {
    int i, j;
    void *tex_p;
+   unsigned int stride;
    vita_video_t *vita = (vita_video_t *)data;
    (void)frame;
    (void)width;
@@ -125,30 +132,36 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 
       if (!vita->texture)
       {
+            RARCH_LOG("Creating texture: %ix%i\n", width, height);
             vita->width = width;
             vita->height = height;
             vita->texture = vita2d_create_empty_texture_format(width, height, vita->format);
       }
 
       tex_p = vita2d_texture_get_datap(vita->texture);
+      stride = vita2d_texture_get_stride(vita->texture);
 
-      if (vita->format == SCE_GXM_TEXTURE_FORMAT_A8B8G8R8)
+      if (vita->format == SCE_GXM_TEXTURE_FORMAT_X8U8U8U8_1RGB)
       {
+	 stride /= 4;
+	 pitch /= 4;
+	 unsigned int *tex32 = tex_p;
+	 const unsigned int *frame32 = frame;
          for (i = 0; i < height; i++)
-	    for (j = 0; j < width; j++)
-	       *(unsigned int *)(tex_p + (j + i*height) * 4) = *(unsigned int *)(frame + (j + i*height) * 4);
+            for (j = 0; j < width; j++)
+               tex32[j + i*stride] = frame32[j + i*pitch];
       }
       else
       {
-         /*for (i = 0; i < height; i++)
-	    for (j = 0; j < width; j++)
-	      *(unsigned short *)(tex_p + (j + i*height) * 2) = *(unsigned short *)(frame + (j + i*height) * 2);*/
-         memcpy(tex_p, frame, width*height*2);
+	 stride /= 2;
+	 pitch /= 2;
+	 unsigned short *tex16 = tex_p;
+	 const unsigned short *frame16 = frame;
+         for (i = 0; i < height; i++)
+            for (j = 0; j < width; j++)
+               tex16[j + i*stride] = frame16[j + i*pitch];
       }
    }
-
-   // RARCH_LOG("w: %i  h: %i  pitch: %i\n", width, height, pitch);
-   // RARCH_LOG("msg: %s\n", msg);
 
    vita2d_start_drawing();
    vita2d_clear_screen();
@@ -179,10 +192,10 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
          }
    }
 
-   if (vita->menu.active && vita->menu.frame)
+   if (vita->menu.active && vita->menu.texture)
    {
       if (vita->fullscreen)
-         vita2d_draw_texture_scale(vita->menu.frame,
+         vita2d_draw_texture_scale(vita->menu.texture,
             0, 0,
             SCREEN_W/(float)vita->menu.width,
             SCREEN_H/(float)vita->menu.height);
@@ -191,7 +204,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
          {
             float scale = SCREEN_H/(float)vita->menu.height;
             float w = vita->menu.width * scale;
-            vita2d_draw_texture_scale(vita->menu.frame,
+            vita2d_draw_texture_scale(vita->menu.texture,
                SCREEN_W/2.0f - w/2.0f, 0.0f,
                scale, scale);
          }
@@ -199,7 +212,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
          {
             float scale = SCREEN_W/(float)vita->menu.width;
             float h = vita->menu.height * scale;
-            vita2d_draw_texture_scale(vita->menu.frame,
+            vita2d_draw_texture_scale(vita->menu.texture,
                0.0f, SCREEN_H/2.0f - h/2.0f,
                scale, scale);
          }
@@ -253,10 +266,12 @@ static void vita2d_gfx_free(void *data)
 
    RARCH_LOG("vita2d_gfx_free()\n");
 
-   if (vita->menu.frame)
+   vita2d_fini();
+
+   if (vita->menu.texture)
    {
-      vita2d_free_texture(vita->menu.frame);
-      vita->menu.frame = NULL;
+      vita2d_free_texture(vita->menu.texture);
+      vita->menu.texture = NULL;
    }
 
    if (vita->texture)
@@ -265,7 +280,7 @@ static void vita2d_gfx_free(void *data)
       vita->texture = NULL;
    }
 
-   vita2d_fini();
+   RARCH_LOG("vita2d_gfx_free() done\n");
 }
 
 static bool vita2d_gfx_set_shader(void *data,
@@ -345,46 +360,53 @@ static void vita_set_texture_frame(void *data, const void *frame, bool rgb32,
 {
    int i, j;
    void *tex_p;
+   unsigned int stride;
    vita_video_t *vita = (vita_video_t*)data;
 
    (void)alpha;
 
-   if (width != vita->menu.width && height != vita->menu.height && vita->menu.frame)
+   if (width != vita->menu.width && height != vita->menu.height && vita->menu.texture)
    {
-      vita2d_free_texture(vita->menu.frame);
-      vita->menu.frame = NULL;
+      vita2d_free_texture(vita->menu.texture);
+      vita->menu.texture = NULL;
    }
 
-   if (!vita->menu.frame)
+   if (!vita->menu.texture)
    {
       if (rgb32)
       {
-         vita->menu.frame = vita2d_create_empty_texture(width, height);
+         vita->menu.texture = vita2d_create_empty_texture(width, height);
          RARCH_LOG("Creating Frame RGBA8 texture: w: %i  h: %i\n", width, height);
       }
       else
       {
-         vita->menu.frame = vita2d_create_empty_texture_format(width, height, SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA);
+         vita->menu.texture = vita2d_create_empty_texture_format(width, height, SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA);
          RARCH_LOG("Creating Frame R5G6B5 texture: w: %i  h: %i\n", width, height);
       }
       vita->menu.width = width;
       vita->menu.height = height;
    }
 
-   tex_p = vita2d_texture_get_datap(vita->menu.frame);
+   tex_p = vita2d_texture_get_datap(vita->menu.texture);
+   stride = vita2d_texture_get_stride(vita->menu.texture);
 
    if (rgb32)
    {
-      for (i = 0; i < height; i++)
-         for (j = 0; j < width; j++)
-           *(unsigned int *)(tex_p + (j + i*height) * 4) = *(unsigned int *)(frame + (j + i*height) * 4);
+	 stride /= 4;
+	 unsigned int *tex32 = tex_p;
+	 const unsigned int *frame32 = frame;
+         for (i = 0; i < height; i++)
+            for (j = 0; j < width; j++)
+               tex32[j + i*stride] = frame32[j + i*width];
    }
    else
    {
-      /*for (i = 0; i < height; i++)
-         for (j = 0; j < width; j++)
-           *(unsigned short *)(tex_p + (j + i*height) * 2) = *(unsigned short *)(frame + (j + i*height) * 2);*/
-      memcpy(tex_p, frame, width*height*2);
+	 stride /= 2;
+	 unsigned short *tex16 = tex_p;
+	 const unsigned short *frame16 = frame;
+         for (i = 0; i < height; i++)
+            for (j = 0; j < width; j++)
+               tex16[j + i*stride] = frame16[j + i*width];
    }
 }
 

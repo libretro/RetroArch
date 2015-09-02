@@ -202,7 +202,7 @@ else ifeq ($(platform), vita)
   EXT_TARGET := $(TARGET_NAME)_$(platform).velf
   EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
   MACHDEP := -DVITA
-  PLATCFLAGS := -O3
+  PLATCFLAGS := -O3 -U__ARM_NEON__
   LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub \
 			 -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub \
 			 -lScePower_stub -lSceRtc_stub -lz -lm -lc
