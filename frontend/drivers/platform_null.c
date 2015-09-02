@@ -17,8 +17,6 @@
 #include "../frontend_driver.h"
 
 #include <stdint.h>
-#include <boolean.h>
-#include <stddef.h>
 #include <string.h>
 
 frontend_ctx_driver_t frontend_ctx_null = {
