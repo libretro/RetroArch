@@ -26,48 +26,34 @@
 #include "../../general.h"
 #include "../../retroarch.h"
 
-
-#ifdef HAVE_SHADER_MANAGER
-static void shader_action_parameter_left_common(
-      struct video_shader_parameter *param,
-      struct video_shader *shader)
+static int generic_shader_action_parameter_left(unsigned type, const char *label,
+      bool wraparound, unsigned param_id)
 {
-   if (!shader)
-      return;
+#ifdef HAVE_SHADER_MANAGER
+   struct video_shader          *shader = video_shader_driver_get_current_shader();
+   struct video_shader_parameter *param = &shader->parameters[type - param_id];
 
-   param->current -= param->step;
-   param->current = min(max(param->minimum, param->current), param->maximum);
-}
+   if (shader)
+   {
+      param->current -= param->step;
+      param->current = min(max(param->minimum, param->current), param->maximum);
+   }
 #endif
+   return 0;
+}
 
 static int shader_action_parameter_left(unsigned type, const char *label,
       bool wraparound)
 {
-#ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader = video_shader_driver_get_current_shader();
-   struct video_shader_parameter *param =
-      &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
-
-   shader_action_parameter_left_common(param, shader);
-#endif
-   return 0;
+   return generic_shader_action_parameter_left(type, label, wraparound,
+         MENU_SETTINGS_SHADER_PARAMETER_0);
 }
 
 static int shader_action_parameter_preset_left(unsigned type, const char *label,
       bool wraparound)
 {
-#ifdef HAVE_SHADER_MANAGER
-   struct video_shader_parameter *param = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   struct video_shader *shader = menu ? menu->shader : NULL;
-   if (!menu || !shader)
-      return -1;
-
-   param = &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
-
-   shader_action_parameter_left_common(param, shader);
-#endif
-   return 0;
+   return generic_shader_action_parameter_left(type, label, wraparound,
+         MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
 }
 
 static int action_left_cheat(unsigned type, const char *label,
@@ -208,6 +194,7 @@ static int action_left_shader_filter_pass(unsigned type, const char *label,
       bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
+   unsigned delta = 2;
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
    struct video_shader *shader = NULL;
    struct video_shader_pass *shader_pass = NULL;
@@ -222,11 +209,7 @@ static int action_left_shader_filter_pass(unsigned type, const char *label,
    if (!shader_pass)
       return -1;
 
-   {
-      unsigned delta = 2;
-      shader_pass->filter = ((shader_pass->filter + delta) % 3);
-
-   }
+   shader_pass->filter = ((shader_pass->filter + delta) % 3);
 #endif
    return 0;
 }
