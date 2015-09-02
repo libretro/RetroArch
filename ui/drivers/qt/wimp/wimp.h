@@ -47,10 +47,17 @@ class WIMPSHARED_EXPORT Wimp : public QGuiApplication
         /* get a pointer to RetroArch settings */
         void GetSettings(settings_t *s);
 
+        void GetCollections(char* path);
+        void GetCores(char* path);
+
     private:
         /* pointer to RetroArch settings */
         settings_t *settings;
+        QStringList collections;
+        QStringList cores;
+        QQmlApplicationEngine engine;
 
 };
 
 #endif // WIMP_H
+
