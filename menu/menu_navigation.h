@@ -17,6 +17,13 @@
 #ifndef _MENU_NAVIGATION_H
 #define _MENU_NAVIGATION_H
 
+#include <stddef.h>
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <unistd.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
