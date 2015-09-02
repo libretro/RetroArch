@@ -24,6 +24,16 @@ platform=vita
 MAKEFILE_GRIFFIN=yes
 EXT=a
 
+# Emscripten
+elif [ $PLATFORM = "emscripten" ] ; then
+platform=emscripten
+EXT=bc
+
+if [ -z "$EMSCRIPTEN" ] ; then
+   echo "run this script with emmake. Ex: emmake $0"
+   exit 1
+fi
+
 # Wii
 elif [ $PLATFORM = "wii" ] ; then
 platform=wii
@@ -88,6 +98,7 @@ fi
 
 for f in *_${platform}.${EXT} ; do
    name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).${EXT}$//"`
+   lto=0
    whole_archive=
    big_stack=
    if [ $name = "nxengine" ] ; then
@@ -95,6 +106,7 @@ for f in *_${platform}.${EXT} ; do
       whole_archive="WHOLE_ARCHIVE_LINK=1"
    elif [ $name = "tyrquake" ] ; then
       echo "Applying big stack..."
+      lto=0
       big_stack="BIG_STACK=1"
    fi
    echo "-- Building core: $name --"
@@ -104,6 +116,8 @@ for f in *_${platform}.${EXT} ; do
    if [ $big_stack="BIG_STACK=1" ] ; then
       if [ $MAKEFILE_GRIFFIN = "yes" ]; then
          make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
+      elif [ $PLATFORM = "emscripten" ]; then
+         make -C ../ -f Makefile.emscripten LTO=$lto -j7 clean || exit 1
       else
          make -C ../ -f Makefile.${platform} clean || exit 1
       fi
@@ -114,6 +128,8 @@ for f in *_${platform}.${EXT} ; do
       make -C ../ -f Makefile.${platform}.cobra $whole_archive -j3 || exit 1
    elif [ $MAKEFILE_GRIFFIN = "yes" ]; then
       make -C ../ -f Makefile.griffin platform=${platform} $whole_archive $big_stack -j3 || exit 1
+   elif [ $PLATFORM = "emscripten" ]; then
+      make -C ../ -f Makefile.emscripten LTO=$lto -j7 || exit 1
    else
       make -C ../ -f Makefile.${platform} $whole_archive $big_stack -j3 || exit 1
    fi
@@ -142,6 +158,8 @@ for f in *_${platform}.${EXT} ; do
       mv -f ../retroarch_${platform}.dol ../pkg/${platform}/${name}_libretro_${platform}.dol
    elif [ $PLATFORM = "wii" ] ; then
       mv -f ../retroarch_${platform}.dol ../pkg/${platform}/${name}_libretro_${platform}.dol
+   elif [ $PLATFORM = "emscripten" ] ; then
+      mv -f ../retroarch.js ../emscripten/$name.js
    fi
 
    # Remove executable files
@@ -155,12 +173,16 @@ for f in *_${platform}.${EXT} ; do
       rm -f ../retroarch_${platform}.dol ../retroarch_${platform}.elf ../retroarch_${platform}.elf.map
    elif [ $PLATFORM = "wii" ] ; then
       rm -f ../retroarch_${platform}.dol ../retroarch_${platform}.elf ../retroarch_${platform}.elf.map
+   elif [ $platform = "emscripten" ] ; then
+      rm -f ../retroarch.js
    fi
 
    # Do cleanup if this is a big stack core
    if [ $big_stack="BIG_STACK=1" ] ; then
       if [ $MAKEFILE_GRIFFIN = "yes" ]; then
          make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
+      elif [ $PLATFORM = "emscripten" ]; then
+         make -C ../ -f Makefile.emscripten LTO=$lto -j7 clean || exit 1
       else
          make -C ../ -f Makefile.${platform} clean || exit 1
       fi
