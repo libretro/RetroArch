@@ -9,6 +9,7 @@ MAKEFILE_GRIFFIN=no
 if [ $PLATFORM = "psp1" ] ; then
 platform=psp1
 SALAMANDER=yes
+EXT=a
 
 mkdir -p ../pkg/${platform}/cores/
 
@@ -21,22 +22,26 @@ mv -f ../EBOOT.PBP ../pkg/${platform}/EBOOT.PBP
 elif [ $PLATFORM = "vita" ] ; then
 platform=vita
 MAKEFILE_GRIFFIN=yes
+EXT=a
 
 # Wii
 elif [ $PLATFORM = "wii" ] ; then
 platform=wii
 MAKEFILE_GRIFFIN=yes
 SALAMANDER=yes
+EXT=a
 
 # NGC
 elif [ $PLATFORM = "ngc" ] ; then
 platform=ngc
 MAKEFILE_GRIFFIN=yes
+EXT=a
 
 # DEX PS3
 elif [ $PLATFORM = "dex-ps3" ] ; then
 platform=ps3
 SALAMANDER=yes
+EXT=a
 
 EXE_PATH=/usr/local/cell/host-win32/bin
 MAKE_FSELF_NPDRM=$EXE_PATH/make_fself_npdrm.exe
@@ -46,6 +51,7 @@ MAKE_PACKAGE_NPDRM=$EXE_PATH/make_package_npdrm.exe
 elif [ $PLATFORM = "cex-ps3" ]; then
 platform=ps3
 SALAMANDER=yes
+EXT=a
 
 EXE_PATH=/usr/local/cell/host-win32/bin
 
@@ -54,6 +60,7 @@ elif [ $PLATFORM = "ode-ps3" ]; then
 #For this script to work correctly, you must place the "data" folder containing your ps3 keys for scetool to use in the dist-scripts folder.
 platform=ps3
 SALAMANDER=yes
+EXT=a
 
 GENPS3ISO_PATH=/cygdrive/c/Cobra_ODE_GenPS3iso_v2.3/genps3iso.exe 
 SCETOOL_PATH=/cygdrive/c/Users/aaa801/ps3tools/ps3tools/tools/scetool/scetool.exe
@@ -79,8 +86,8 @@ if [ $SALAMANDER = "yes" ]; then
    make -C ../ -f Makefile.${platform}.salamander || exit 1
 fi
 
-for f in *_${platform}.a ; do
-   name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).a$//"`
+for f in *_${platform}.${EXT} ; do
+   name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).${EXT}$//"`
    whole_archive=
    big_stack=
    if [ $name = "nxengine" ] ; then
@@ -91,7 +98,7 @@ for f in *_${platform}.a ; do
       big_stack="BIG_STACK=1"
    fi
    echo "-- Building core: $name --"
-   cp -f "$f" ../libretro_${platform}.a
+   cp -f "$f" ../libretro_${platform}.${EXT}
 
    # Do cleanup if this is a big stack core
    if [ $big_stack="BIG_STACK=1" ] ; then
