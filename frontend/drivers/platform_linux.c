@@ -31,8 +31,8 @@
 
 #include "../frontend_driver.h"
 
-static const char *proc_apm_path = "/proc/apm";
-static const char *proc_acpi_battery_path = "/proc/acpi/battery";
+static const char *proc_apm_path             = "/proc/apm";
+static const char *proc_acpi_battery_path    = "/proc/acpi/battery";
 static const char *proc_acpi_ac_adapter_path = "/proc/acpi/ac_adapter";
 
 static int open_acpi_file(const char *base, const char *node, const char *key)
@@ -158,7 +158,7 @@ check_proc_acpi_battery(const char * node, bool * have_battery,
          case ACPI_KEY_REMAINING_CAPACITY:
             {
                char  *endptr = NULL;
-               const int cvt = (int) strtol(val, &endptr, 10);
+               const int cvt = (int)strtol(val, &endptr, 10);
 
                if (*endptr == ' ')
                   remaining = cvt;
@@ -178,7 +178,7 @@ check_proc_acpi_battery(const char * node, bool * have_battery,
          case ACPI_KEY_DESIGN_CAPACITY:
             {
                char  *endptr = NULL;
-               const int cvt = (int) strtol(val, &endptr, 10);
+               const int cvt = (int)strtol(val, &endptr, 10);
 
                if (*endptr == ' ')
                   maximum = cvt;
@@ -192,7 +192,7 @@ check_proc_acpi_battery(const char * node, bool * have_battery,
       pct = (int) ((((float) remaining) / ((float) maximum)) * 100.0f);
       if (pct < 0)
          pct = 0;
-      else if (pct > 100)
+      if (pct > 100)
          pct = 100;
    }
 
