@@ -1133,9 +1133,9 @@ static int action_ok_lookup_setting(const char *path,
 static int action_ok_rdb_entry_submenu(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   int ret;
    union string_list_elem_attr attr;
    char new_label[PATH_MAX_LENGTH];
+   int ret = -1;
    menu_displaylist_info_t info    = {0};
    char *rdb                       = NULL;
    int len                         = 0;
@@ -1149,17 +1149,11 @@ static int action_ok_rdb_entry_submenu(const char *path,
    str_list = string_split(label, "|");
 
    if (!str_list)
-   {
-      ret = -1;
       goto end;
-   }
 
    str_list2 = string_list_new();
    if (!str_list2)
-   {
-      ret = -1;
       goto end;
-   }
 
    /* element 0 : label
     * element 1 : value
@@ -1177,10 +1171,7 @@ static int action_ok_rdb_entry_submenu(const char *path,
    rdb = (char*)calloc(len, sizeof(char));
 
    if (!rdb)
-   {
-      ret = -1;
       goto end;
-   }
 
    string_list_join_concat(rdb, len, str_list2, "|");
 
