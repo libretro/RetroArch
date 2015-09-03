@@ -1286,6 +1286,7 @@ static int generic_action_ok_displaylist_push(const char *path,
 {
    unsigned dl_type                  = DISPLAYLIST_GENERIC;
    menu_displaylist_info_t      info = {0};
+   const char           *menu_label  = NULL;
    const char            *menu_path  = NULL;
    const char          *content_path = NULL;
    global_t                 *global  = global_get_ptr();
@@ -1295,6 +1296,9 @@ static int generic_action_ok_displaylist_push(const char *path,
 
    if (!menu_list)
       return -1;
+
+   menu_list_get_last_stack(menu_list,
+         &menu_path, &menu_label, NULL, NULL);
 
    switch (action_type)
    {
@@ -1454,39 +1458,28 @@ static int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE:
       case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH:
+
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, path, sizeof(info.path));
+         switch (action_type)
          {
-            const char *menu_path        = NULL;
-            menu_list_get_last_stack(menu_list,
-                  &menu_path, NULL, NULL, NULL);
-
-
-            info.type          = type;
-            info.directory_ptr = idx;
-            strlcpy(info.path, path, sizeof(info.path));
-            switch (action_type)
-            {
-               case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE:
-                  strlcpy(info.label,
-                        menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE), sizeof(info.label));
-                  break;
-               case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH:
-                  strlcpy(info.label,
-                        menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION), sizeof(info.label));
-                  break;
-            }
-
-            strlcpy(menu->scratch_buf, path, sizeof(menu->scratch_buf));
-            strlcpy(menu->scratch2_buf, menu_path, sizeof(menu->scratch2_buf));
+            case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE:
+               strlcpy(info.label,
+                     menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE), sizeof(info.label));
+               break;
+            case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH:
+               strlcpy(info.label,
+                     menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION), sizeof(info.label));
+               break;
          }
+
+         strlcpy(menu->scratch_buf, path, sizeof(menu->scratch_buf));
+         strlcpy(menu->scratch2_buf, menu_path, sizeof(menu->scratch2_buf));
          break;
       case ACTION_OK_DL_DIRECTORY_PUSH:
          {
             char cat_path[PATH_MAX_LENGTH] = {0};
-            const char *menu_path          = NULL;
-            const char *menu_label         = NULL;
-
-            menu_list_get_last_stack(menu_list,
-                  &menu_path, &menu_label, NULL, NULL);
 
             fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
 
