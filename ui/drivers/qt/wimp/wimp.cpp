@@ -17,34 +17,75 @@
 #include "stdio.h"
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include <QListView>
 #include <QQuickWindow>
+#include <QDir>
+#include <QDebug>
+#include <QQmlContext>
 
 QObject *topLevel;
 
-static settings_t *settings;
-
-int Wimp::CreateMainWindow(char* windowTitle)
+int Wimp::CreateMainWindow()
 {
-   QQmlApplicationEngine engine;
+
    engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
    topLevel = engine.rootObjects().value(0);
    window = qobject_cast<QQuickWindow *>(topLevel);
-   SetTitle(windowTitle);
+
+   if(settings->playlist_directory[0] != '\0')
+       GetCollections(settings->playlist_directory);
+   else
+       collections.append("Collection dir not defined");
+
+   engine.rootContext()->setContextProperty("collections", QVariant::fromValue(collections));
+
+   if(settings->libretro_directory[0] != '\0')
+       GetCores(settings->libretro_directory);
+   else
+       cores.append("Core dir not defined");
+
+   engine.rootContext()->setContextProperty("cores", QVariant::fromValue(cores));
 
    return this->exec();
+
 }
 
-
-void Wimp::SetTitle(char* title)
+void Wimp::GetSettings(settings_t *s)
 {
-    window->setTitle(title);
+    settings = s;
 }
 
-void Wimp::ConfigGetPtr(settings_t *g_config)
+void Wimp::GetCollections(char* path)
 {
-    settings = g_config;
-    /* test print the value of max users to compare with the value in RA */
-    printf("Max Users: %d\n",g_config->input.max_users);
-    fflush(stdout);
+   QDir dir(path);
+   dir.setNameFilters(QStringList("*.lpl"));
+   QStringList fileList = dir.entryList();
+
+   if(fileList.count() == 0)
+      collections.append("Empty");
+
+   for (int i=0; i < fileList.count(); i++)
+   {
+      QString collection = fileList[i].section('.',0,0);
+      collections.append(collection);
+      qDebug() << "Found file: " << collection;
+   }
+
+}
+
+void Wimp::GetCores(char* path)
+{
+   QDir dir(path);
+   dir.setNameFilters(QStringList("*.dll"));
+   QStringList fileList = dir.entryList();
+
+   if(fileList.count() == 0)
+      cores.append("Empty");
+
+   for (int i=0; i < fileList.count(); i++)
+   {
+      QString core = fileList[i].section('.',0,0);
+      cores.append(core);
+      qDebug() << "Found file: " << core;
+   }
+
 }

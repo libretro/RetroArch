@@ -29,14 +29,14 @@ Wimp* ctrWimp(int argc, char *argv[]){
     return new Wimp(argc,argv);
 }
 
-int CreateMainWindow(Wimp* p, char* windowTitle)
+int CreateMainWindow(Wimp* p)
 {
-    return p->CreateMainWindow(windowTitle);
+    return p->CreateMainWindow();
 }
 
-void ConfigGetPtr(Wimp*p, settings_t *g_config)
+void GetSettings(Wimp* p, settings_t *s)
 {
-    return p->ConfigGetPtr(g_config);
+    return p->GetSettings(s);
 }
 
 #ifdef __cplusplus
