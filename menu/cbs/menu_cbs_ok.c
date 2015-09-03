@@ -322,15 +322,16 @@ static int generic_action_ok(const char *path,
 #endif
 #ifdef HAVE_SHADER_MANAGER
       case ACTION_OK_LOAD_SHADER_PASS:
-         fill_pathname_join(menu->shader->pass[hack_shader_pass].source.path,
-               menu_path, path,
+         strlcpy(
+               menu->shader->pass[hack_shader_pass].source.path,
+               action_path,
                sizeof(menu->shader->pass[hack_shader_pass].source.path));
          video_shader_resolve_parameters(NULL, menu->shader);
          break;
 #endif
       case ACTION_OK_LOAD_RECORD_CONFIGFILE:
-         fill_pathname_join(global->record.config, menu_path,
-               path, sizeof(global->record.config));
+         strlcpy(global->record.config, action_path,
+               sizeof(global->record.config));
          break;
       case ACTION_OK_LOAD_REMAPPING_FILE:
          input_remapping_load_file(action_path);
