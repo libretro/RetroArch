@@ -1713,13 +1713,15 @@ enum
 {
    ACTION_OK_DL_DEFAULT = 0,
    ACTION_OK_DL_OPEN_ARCHIVE,
-   ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE
+   ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE,
+   ACTION_OK_DL_HELP
 };
 
 static int generic_action_ok_displaylist_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
+   unsigned dl_type                  = DISPLAYLIST_GENERIC;
    menu_displaylist_info_t      info = {0};
    menu_list_t            *menu_list = menu_list_get_ptr();
    menu_handle_t            *menu    = menu_driver_get_ptr();
@@ -1732,6 +1734,7 @@ static int generic_action_ok_displaylist_push(const char *path,
    switch (action_type)
    {
       case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
+      case ACTION_OK_DL_OPEN_ARCHIVE:
          if (menu)
          {
             menu_path  = menu->scratch2_buf;
@@ -1753,14 +1756,30 @@ static int generic_action_ok_displaylist_push(const char *path,
                break;
          }
          strlcpy(info.path, path, sizeof(info.path));
+         info.type          = type;
+         info.directory_ptr = idx;
+         break;
+      case ACTION_OK_DL_HELP:
+         strlcpy(info.label, label, sizeof(info.label));
+         menu->push_help_screen = true;
+         dl_type                = DISPLAYLIST_HELP;
          break;
    }
 
    info.list          = menu_list->menu_stack;
-   info.type          = type;
-   info.directory_ptr = idx;
 
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+   return menu_displaylist_push_list(&info, dl_type);
+}
+
+static int  generic_action_ok_help(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx,
+      unsigned id, menu_help_type_t id2)
+{
+   const char *lbl        = menu_hash_to_str(id);
+   menu_handle_t            *menu    = menu_driver_get_ptr();
+   menu->help_screen_type = id2;
+   return generic_action_ok_displaylist_push(path, lbl, type, idx,
+         entry_idx, ACTION_OK_DL_HELP);
 }
 
 static int action_ok_open_archive_detect_core(const char *path,
@@ -1839,25 +1858,6 @@ static int action_ok_load_archive_detect_core(const char *path,
 }
 
 
-static int  generic_action_ok_help(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx,
-      unsigned id, menu_help_type_t id2)
-{
-   menu_displaylist_info_t info = {0};
-   menu_list_t *menu_list    = menu_list_get_ptr();
-   menu_handle_t *menu       = menu_driver_get_ptr();
-   if (!menu_list)
-      return -1;
-
-   info.list = menu_list->menu_stack;
-   strlcpy(info.label,
-         menu_hash_to_str(id),
-         sizeof(info.label));
-   menu->push_help_screen = true;
-   menu->help_screen_type = id2;
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
-}
 
 static int action_ok_help_audio_video_troubleshooting(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
