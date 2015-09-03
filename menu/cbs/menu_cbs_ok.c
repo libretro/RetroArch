@@ -1048,11 +1048,11 @@ static int action_ok_save_state(const char *path,
    return generic_action_ok_command(EVENT_CMD_RESUME);
 }
 
-#ifdef HAVE_NETWORKING
 static int action_ok_download_generic(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       const char *type_msg)
 {
+#ifdef HAVE_NETWORKING
    char s[PATH_MAX_LENGTH];
    char s2[PATH_MAX_LENGTH];
    settings_t *settings            = config_get_ptr();
@@ -1101,118 +1101,85 @@ static int action_ok_download_generic(const char *path,
 
    rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, s,
          type_msg, 0, 1, true);
+#endif
    return 0;
 }
-#endif
 
 static int action_ok_core_content_download(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
-   action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, type, idx, entry_idx,
          "cb_core_content_download");
-#endif
-   return 0;
 }
 
 static int action_ok_core_updater_download(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
-   action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, type, idx, entry_idx,
          "cb_core_updater_download");
-#endif
-   return 0;
 }
 
 static int action_ok_update_assets(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
-   action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, type, idx, entry_idx,
          "cb_update_assets");
-#endif
-   return 0;
 }
 
 static int action_ok_update_core_info_files(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
-   action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, type, idx, entry_idx,
          "cb_update_core_info_files");
-#endif
-   return 0;
 }
 
 static int action_ok_update_overlays(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
-   action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, type, idx, entry_idx,
          "cb_update_overlays");
-#endif
-   return 0;
 }
 
 static int action_ok_update_shaders_cg(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
-   action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, type, idx, entry_idx,
          "cb_update_shaders_cg");
-#endif
-   return 0;
 }
 
 static int action_ok_update_shaders_glsl(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
-   action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, type, idx, entry_idx,
          "cb_update_shaders_glsl");
-#endif
-   return 0;
 }
 
 static int action_ok_update_databases(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
-   action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, type, idx, entry_idx,
          "cb_update_databases");
-#endif
-   return 0;
 }
 
 static int action_ok_update_cheats(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
-   action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, type, idx, entry_idx,
          "cb_update_cheats");
-#endif
-   return 0;
 }
 
 static int action_ok_update_autoconfig_profiles(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
-   action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, type, idx, entry_idx,
          "cb_update_autoconfig_profiles");
-#endif
-   return 0;
 }
 
 static int action_ok_update_autoconfig_profiles_hid(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
-   action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, type, idx, entry_idx,
          "cb_update_autoconfig_profiles_hid");
-#endif
-   return 0;
 }
 
 static int action_ok_disk_cycle_tray_status(const char *path,
