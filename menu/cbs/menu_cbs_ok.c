@@ -392,14 +392,14 @@ static int action_ok_shader_preset_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok(path, label, type, idx, entry_idx,
-         ACTION_OK_LOAD_SHADER_PASS, MENU_LABEL_SHADER_OPTIONS);
+         ACTION_OK_LOAD_PRESET, MENU_LABEL_SHADER_OPTIONS);
 }
 
 static int action_ok_shader_pass_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok(path, label, type, idx, entry_idx,
-         ACTION_OK_LOAD_PRESET, MENU_LABEL_SHADER_OPTIONS);
+         ACTION_OK_LOAD_SHADER_PASS, MENU_LABEL_SHADER_OPTIONS);
 }
 
 #ifdef HAVE_SHADER_MANAGER
