@@ -706,57 +706,6 @@ static int action_ok_core_download(const char *path,
    return 0;
 }
 
-static int action_ok_compressed_archive_push_detect_core(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info = {0};
-   const char *menu_path        = NULL;
-   menu_handle_t    *menu = menu_driver_get_ptr();
-   menu_list_t *menu_list = menu_list_get_ptr();
-   if (!menu_list || !menu)
-      return -1;
-
-   menu_list_get_last_stack(menu_list,
-         &menu_path, NULL, NULL, NULL);
-
-   info.list          = menu_list->menu_stack;
-   info.type          = type;
-   info.directory_ptr = idx;
-   strlcpy(info.path, path, sizeof(info.path));
-   strlcpy(info.label,
-         menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE), sizeof(info.label));
-
-   strlcpy(menu->scratch_buf, path, sizeof(menu->scratch_buf));
-   strlcpy(menu->scratch2_buf, menu_path, sizeof(menu->scratch2_buf));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
-
-static int action_ok_compressed_archive_push(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info = {0};
-   const char *menu_path        = NULL;
-   menu_handle_t    *menu = menu_driver_get_ptr();
-   menu_list_t *menu_list = menu_list_get_ptr();
-   if (!menu_list || !menu)
-      return -1;
-
-   menu_list_get_last_stack(menu_list,
-         &menu_path, NULL, NULL, NULL);
-
-   info.list          = menu_list->menu_stack;
-   info.type          = type;
-   info.directory_ptr = idx;
-   strlcpy(info.path, path, sizeof(info.path));
-   strlcpy(info.label,
-         menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION), sizeof(info.label));
-
-   strlcpy(menu->scratch_buf, path, sizeof(menu->scratch_buf));
-   strlcpy(menu->scratch2_buf, menu_path, sizeof(menu->scratch2_buf));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
 
 int action_ok_directory_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -1350,7 +1299,9 @@ enum
    ACTION_OK_DL_CONTENT_COLLECTION_LIST,
    ACTION_OK_DL_CHEAT_FILE,
    ACTION_OK_DL_CORE_LIST,
-   ACTION_OK_DL_CONFIGURATIONS_LIST
+   ACTION_OK_DL_CONFIGURATIONS_LIST,
+   ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH,
+   ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE
 };
 
 static int generic_action_ok_displaylist_push(const char *path,
@@ -1525,6 +1476,33 @@ static int generic_action_ok_displaylist_push(const char *path,
             strlcpy(info.path, label, sizeof(info.path));
          strlcpy(info.label, label, sizeof(info.label));
          break;
+      case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE:
+      case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH:
+         {
+            const char *menu_path        = NULL;
+            menu_list_get_last_stack(menu_list,
+                  &menu_path, NULL, NULL, NULL);
+
+
+            info.type          = type;
+            info.directory_ptr = idx;
+            strlcpy(info.path, path, sizeof(info.path));
+            switch (action_type)
+            {
+               case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE:
+                  strlcpy(info.label,
+                        menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE), sizeof(info.label));
+                  break;
+               case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH:
+                  strlcpy(info.label,
+                        menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION), sizeof(info.label));
+                  break;
+            }
+
+            strlcpy(menu->scratch_buf, path, sizeof(menu->scratch_buf));
+            strlcpy(menu->scratch2_buf, menu_path, sizeof(menu->scratch2_buf));
+         }
+         break;
    }
 
    info.list          = menu_list->menu_stack;
@@ -1549,6 +1527,20 @@ static int action_ok_shader_parameters(const char *path,
 {
    return generic_action_ok_displaylist_push(path, label, type, idx,
          entry_idx, ACTION_OK_DL_SHADER_PARAMETERS);
+}
+
+static int action_ok_compressed_archive_push(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH);
+}
+
+static int action_ok_compressed_archive_push_detect_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE);
 }
 
 static int action_ok_configurations_list(const char *path,
@@ -1748,8 +1740,6 @@ static int action_ok_load_archive_detect_core(const char *path,
 
    return ret;
 }
-
-
 
 static int action_ok_help_audio_video_troubleshooting(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
