@@ -1149,11 +1149,17 @@ static int action_ok_rdb_entry_submenu(const char *path,
    str_list = string_split(label, "|");
 
    if (!str_list)
-      goto error;
+   {
+      ret = -1;
+      goto end;
+   }
 
    str_list2 = string_list_new();
    if (!str_list2)
-      goto error;
+   {
+      ret = -1;
+      goto end;
+   }
 
    /* element 0 : label
     * element 1 : value
@@ -1171,7 +1177,10 @@ static int action_ok_rdb_entry_submenu(const char *path,
    rdb = (char*)calloc(len, sizeof(char));
 
    if (!rdb)
-      goto error;
+   {
+      ret = -1;
+      goto end;
+   }
 
    string_list_join_concat(rdb, len, str_list2, "|");
 
@@ -1188,17 +1197,13 @@ static int action_ok_rdb_entry_submenu(const char *path,
 
    ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 
-   string_list_free(str_list);
-   string_list_free(str_list2);
-
-   return ret;
-
-error:
+end:
    if (str_list)
       string_list_free(str_list);
    if (str_list2)
       string_list_free(str_list2);
-   return -1;
+
+   return ret;
 }
 
 enum
