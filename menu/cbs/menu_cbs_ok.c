@@ -173,26 +173,6 @@ static int action_ok_file_load_detect_core(const char *path,
    return -1;
 }
 
-static int action_ok_rpl_entry(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   menu_displaylist_info_t            info = {0};
-   menu_list_t                  *menu_list = menu_list_get_ptr();
-   if (!menu_list)
-      return -1;
-
-   strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
-
-   info.list               = menu_list->menu_stack;
-   info.type               = 0;
-   info.directory_ptr      = idx;
-   rpl_entry_selection_ptr = idx;
-
-   strlcpy(info.label, menu_hash_to_str(MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS), sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
 
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -1714,8 +1694,10 @@ enum
    ACTION_OK_DL_DEFAULT = 0,
    ACTION_OK_DL_OPEN_ARCHIVE,
    ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE,
-   ACTION_OK_DL_HELP
+   ACTION_OK_DL_HELP,
+   ACTION_OK_RPL_ENTRY
 };
+
 
 static int generic_action_ok_displaylist_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -1764,11 +1746,26 @@ static int generic_action_ok_displaylist_push(const char *path,
          menu->push_help_screen = true;
          dl_type                = DISPLAYLIST_HELP;
          break;
+      case ACTION_OK_RPL_ENTRY:
+         strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
+         strlcpy(info.label,
+               menu_hash_to_str(MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS), sizeof(info.label));
+         info.type               = 0;
+         info.directory_ptr      = idx;
+         rpl_entry_selection_ptr = idx;
+         break;
    }
 
    info.list          = menu_list->menu_stack;
 
    return menu_displaylist_push_list(&info, dl_type);
+}
+
+static int action_ok_rpl_entry(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_RPL_ENTRY);
 }
 
 static int  generic_action_ok_help(const char *path,
