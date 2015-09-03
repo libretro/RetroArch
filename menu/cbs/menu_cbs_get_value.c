@@ -443,19 +443,15 @@ static void menu_action_setting_disp_set_label_perf_counters_common(
          (unsigned long long)counters[offset]->call_cnt);
 }
 
-static void menu_action_setting_disp_set_label_perf_counters(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
+static void general_disp_set_label_perf_counters(
+      const struct retro_perf_counter **counters,
+      unsigned offset,
       char *s, size_t len,
-      const char *entry_label,
-      const char *path,
-      char *s2, size_t len2)
+      char *s2, size_t len2,
+      const char *path, unsigned *w
+      )
 {
    menu_animation_t *anim = menu_animation_get_ptr();
-   const struct retro_perf_counter **counters =
-      (const struct retro_perf_counter **)perf_counters_rarch;
-   unsigned offset = type - MENU_SETTINGS_PERF_COUNTERS_BEGIN;
 
    *s = '\0';
    *w = 19;
@@ -468,6 +464,22 @@ static void menu_action_setting_disp_set_label_perf_counters(
       anim->label.is_updated = true;
 }
 
+static void menu_action_setting_disp_set_label_perf_counters(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   const struct retro_perf_counter **counters =
+      (const struct retro_perf_counter **)perf_counters_rarch;
+   unsigned offset = type - MENU_SETTINGS_PERF_COUNTERS_BEGIN;
+   general_disp_set_label_perf_counters(counters, offset, s, len,
+         s2, len, path, w);
+}
+
 static void menu_action_setting_disp_set_label_libretro_perf_counters(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -477,20 +489,11 @@ static void menu_action_setting_disp_set_label_libretro_perf_counters(
       const char *path,
       char *s2, size_t len2)
 {
-   menu_animation_t *anim = menu_animation_get_ptr();
    const struct retro_perf_counter **counters =
       (const struct retro_perf_counter **)perf_counters_libretro;
    unsigned offset = type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN;
-
-   *s = '\0';
-   *w = 19;
-   strlcpy(s2, path, len2);
-
-   menu_action_setting_disp_set_label_perf_counters_common(
-         counters, offset, s, len);
-
-   if (anim)
-      anim->label.is_updated = true;
+   general_disp_set_label_perf_counters(counters, offset, s, len,
+         s2, len, path, w);
 }
 
 static void menu_action_setting_disp_set_label_menu_more(
