@@ -1409,7 +1409,6 @@ static int action_ok_rdb_entry_submenu(const char *path,
    char new_label[PATH_MAX_LENGTH];
    char new_path[PATH_MAX_LENGTH];
    int ret = -1;
-   menu_displaylist_info_t info    = {0};
    char *rdb                       = NULL;
    int len                         = 0;
    struct string_list *str_list    = NULL;
