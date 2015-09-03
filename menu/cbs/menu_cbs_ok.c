@@ -289,7 +289,9 @@ enum
    ACTION_OK_LOAD_PRESET = 0,
    ACTION_OK_LOAD_SHADER_PASS,
    ACTION_OK_LOAD_RECORD_CONFIGFILE,
-   ACTION_OK_LOAD_REMAPPING_FILE
+   ACTION_OK_LOAD_REMAPPING_FILE,
+   ACTION_OK_LOAD_CHEAT_FILE,
+   ACTION_OK_APPEND_DISK_IMAGE
 };
 
 static int generic_action_ok(const char *path,
@@ -333,6 +335,19 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_REMAPPING_FILE:
          input_remapping_load_file(action_path);
          break;
+      case ACTION_OK_LOAD_CHEAT_FILE:
+         if (global->cheat)
+            cheat_manager_free(global->cheat);
+
+         global->cheat = cheat_manager_load(action_path);
+
+         if (!global->cheat)
+            goto error;
+         break;
+      case ACTION_OK_APPEND_DISK_IMAGE:
+         event_disk_control_append_image(action_path);
+         event_command(EVENT_CMD_RESUME);
+         break;
       default:
          break;
    }
@@ -343,6 +358,20 @@ static int generic_action_ok(const char *path,
 
 error:
    return -1;
+}
+
+static int action_ok_disk_image_append(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok(path, label, type, idx, entry_idx,
+         ACTION_OK_APPEND_DISK_IMAGE, MENU_SETTINGS);
+}
+
+static int action_ok_cheat_file_load(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok(path, label, type, idx, entry_idx,
+         ACTION_OK_LOAD_RECORD_CONFIGFILE, MENU_LABEL_CORE_CHEAT_OPTIONS);
 }
 
 static int action_ok_record_configfile_load(const char *path,
@@ -758,33 +787,6 @@ static int action_ok_core_list(const char *path,
    return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 }
 
-
-static int action_ok_cheat_file_load(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   char cheat_path[PATH_MAX_LENGTH];
-   const char            *menu_path = NULL;
-   menu_list_t       *menu_list     = menu_list_get_ptr();
-   global_t                 *global = global_get_ptr();
-
-   menu_list_get_last_stack(menu_list, &menu_path, NULL,
-         NULL, NULL);
-
-   fill_pathname_join(cheat_path, menu_path, path, sizeof(cheat_path));
-
-   if (global->cheat)
-      cheat_manager_free(global->cheat);
-
-   global->cheat = cheat_manager_load(cheat_path);
-
-   if (!global->cheat)
-      return -1;
-
-   menu_list_flush_stack(menu_list,
-         menu_hash_to_str(MENU_LABEL_CORE_CHEAT_OPTIONS), 0);
-
-   return 0;
-}
 
 static int action_ok_menu_wallpaper_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -1208,26 +1210,6 @@ static int action_ok_config_load(const char *path,
    return 0;
 }
 
-static int action_ok_disk_image_append(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   char image[PATH_MAX_LENGTH] = {0};
-   const char *menu_path       = NULL;
-   menu_list_t      *menu_list = menu_list_get_ptr();
-
-   if (!menu_list)
-      return -1;
-
-   menu_list_get_last_stack(menu_list, &menu_path, NULL, NULL, NULL);
-
-   fill_pathname_join(image, menu_path, path, sizeof(image));
-   event_disk_control_append_image(image);
-
-   event_command(EVENT_CMD_RESUME);
-
-   menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
-   return -1;
-}
 
 enum
 {
