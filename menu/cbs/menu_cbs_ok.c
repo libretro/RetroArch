@@ -672,26 +672,6 @@ static int action_ok_database_manager_list_deferred(const char *path,
    return 0;
 }
 
-static int action_ok_rdb_entry(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   char tmp[PATH_MAX_LENGTH]               = {0};
-   menu_displaylist_info_t            info = {0};
-   menu_list_t                  *menu_list = menu_list_get_ptr();
-   if (!menu_list)
-      return -1;
-
-   fill_pathname_join_delim(tmp, menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL),
-         path, '|', sizeof(tmp));
-
-   info.list          = menu_list->menu_stack;
-   info.type          = 0;
-   info.directory_ptr = idx;
-   strlcpy(info.path, label, sizeof(info.path));
-   strlcpy(info.label, tmp, sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
 
 static int action_ok_cursor_manager_list_deferred(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -1410,6 +1390,7 @@ enum
    ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE,
    ACTION_OK_DL_HELP,
    ACTION_OK_DL_RPL_ENTRY,
+   ACTION_OK_DL_RDB_ENTRY,
    ACTION_OK_DL_AUDIO_DSP_PLUGIN,
    ACTION_OK_DL_SHADER_PASS,
    ACTION_OK_DL_SHADER_PARAMETERS,
@@ -1578,6 +1559,18 @@ static int generic_action_ok_displaylist_push(const char *path,
          strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
          strlcpy(info.label, label, sizeof(info.label));
          break;
+      case ACTION_OK_DL_RDB_ENTRY:
+         {
+            char tmp[PATH_MAX_LENGTH];
+            fill_pathname_join_delim(tmp, menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL),
+                  path, '|', sizeof(tmp));
+
+            info.type          = 0;
+            info.directory_ptr = idx;
+            strlcpy(info.path, label, sizeof(info.path));
+            strlcpy(info.label, tmp, sizeof(info.label));
+         }
+         break;
    }
 
    info.list          = menu_list->menu_stack;
@@ -1602,6 +1595,13 @@ static int action_ok_shader_parameters(const char *path,
 {
    return generic_action_ok_displaylist_push(path, label, type, idx,
          entry_idx, ACTION_OK_DL_SHADER_PARAMETERS);
+}
+
+static int action_ok_rdb_entry(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_RDB_ENTRY);
 }
 
 static int action_ok_content_collection_list(const char *path,
