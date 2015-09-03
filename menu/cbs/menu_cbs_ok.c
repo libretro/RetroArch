@@ -1709,54 +1709,72 @@ error:
    return -1;
 }
 
-static int action_ok_open_archive_detect_core(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
+enum
+{
+   ACTION_OK_DL_DEFAULT = 0,
+   ACTION_OK_DL_OPEN_ARCHIVE,
+   ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE
+};
+
+static int generic_action_ok_displaylist_push(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx,
+      unsigned action_type)
 {
    menu_displaylist_info_t      info = {0};
    menu_list_t            *menu_list = menu_list_get_ptr();
    menu_handle_t            *menu    = menu_driver_get_ptr();
-   const char *menu_path  = menu ? menu->scratch2_buf : NULL;
-   const char *content_path = menu ? menu->scratch_buf  : NULL;
+   const char            *menu_path  = NULL;
+   const char          *content_path = NULL;
 
    if (!menu_list)
       return -1;
 
-   fill_pathname_join(detect_content_path, menu_path, content_path,
-         sizeof(detect_content_path));
+   switch (action_type)
+   {
+      case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
+         if (menu)
+         {
+            menu_path  = menu->scratch2_buf;
+            content_path = menu->scratch_buf;
+         }
+         fill_pathname_join(detect_content_path, menu_path, content_path,
+               sizeof(detect_content_path));
+
+         switch (action_type)
+         {
+            case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
+               strlcpy(info.label,
+                     menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE),
+                     sizeof(info.label));
+               break;
+            case ACTION_OK_DL_OPEN_ARCHIVE:
+               strlcpy(info.label,
+                     menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN), sizeof(info.label));
+               break;
+         }
+         strlcpy(info.path, path, sizeof(info.path));
+         break;
+   }
 
    info.list          = menu_list->menu_stack;
-   info.type          = 0;
-   info.directory_ptr = 0;
-   strlcpy(info.path, path, sizeof(info.path));
-   strlcpy(info.label,
-         menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE), sizeof(info.label));
+   info.type          = type;
+   info.directory_ptr = idx;
 
    return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+}
+
+static int action_ok_open_archive_detect_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+         ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE);
 }
 
 static int action_ok_open_archive(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_displaylist_info_t      info = {0};
-   menu_list_t            *menu_list = menu_list_get_ptr();
-   menu_handle_t            *menu    = menu_driver_get_ptr();
-   const char *menu_path  = menu ? menu->scratch2_buf : NULL;
-   const char *content_path = menu ? menu->scratch_buf  : NULL;
-
-   if (!menu_list)
-      return -1;
-
-   fill_pathname_join(detect_content_path, menu_path, content_path,
-         sizeof(detect_content_path));
-
-   info.list          = menu_list->menu_stack;
-   info.type          = 0;
-   info.directory_ptr = 0;
-   strlcpy(info.path, path, sizeof(info.path));
-   strlcpy(info.label,
-         menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN), sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+         ACTION_OK_DL_OPEN_ARCHIVE);
 }
 
 static int action_ok_load_archive(const char *path,
