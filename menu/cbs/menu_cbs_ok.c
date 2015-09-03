@@ -582,24 +582,6 @@ static int action_ok_cheat_file(const char *path,
    return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 }
 
-static int action_ok_audio_dsp_plugin(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info = {0};
-   menu_list_t       *menu_list = menu_list_get_ptr();
-   settings_t *settings         = config_get_ptr();
-   if (!menu_list)
-      return -1;
-
-   info.list          = menu_list->menu_stack;
-   info.type          = 0;
-   info.directory_ptr = idx;
-   strlcpy(info.path, settings->audio.filter_dir, sizeof(info.path));
-   strlcpy(info.label,
-         menu_hash_to_str(MENU_LABEL_AUDIO_DSP_PLUGIN), sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
 
 static int action_ok_core_updater_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -1695,7 +1677,8 @@ enum
    ACTION_OK_DL_OPEN_ARCHIVE,
    ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE,
    ACTION_OK_DL_HELP,
-   ACTION_OK_RPL_ENTRY
+   ACTION_OK_RPL_ENTRY,
+   ACTION_OK_AUDIO_DSP_PLUGIN
 };
 
 
@@ -1705,6 +1688,7 @@ static int generic_action_ok_displaylist_push(const char *path,
 {
    unsigned dl_type                  = DISPLAYLIST_GENERIC;
    menu_displaylist_info_t      info = {0};
+   settings_t            *settings   = config_get_ptr();
    menu_list_t            *menu_list = menu_list_get_ptr();
    menu_handle_t            *menu    = menu_driver_get_ptr();
    const char            *menu_path  = NULL;
@@ -1754,11 +1738,25 @@ static int generic_action_ok_displaylist_push(const char *path,
          info.directory_ptr      = idx;
          rpl_entry_selection_ptr = idx;
          break;
+      case ACTION_OK_AUDIO_DSP_PLUGIN:
+         info.type          = 0;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->audio.filter_dir, sizeof(info.path));
+         strlcpy(info.label,
+               menu_hash_to_str(MENU_LABEL_AUDIO_DSP_PLUGIN), sizeof(info.label));
+         break;
    }
 
    info.list          = menu_list->menu_stack;
 
    return menu_displaylist_push_list(&info, dl_type);
+}
+
+static int action_ok_audio_dsp_plugin(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_AUDIO_DSP_PLUGIN);
 }
 
 static int action_ok_rpl_entry(const char *path,
