@@ -867,35 +867,6 @@ static int action_ok_set_path(const char *path,
    return 0;
 }
 
-static int action_ok_custom_viewport(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info = {0};
-   int ret                  = 0;
-   video_viewport_t *custom = video_viewport_get_custom();
-   settings_t *settings     = config_get_ptr();
-   menu_list_t   *menu_list = menu_list_get_ptr();
-
-   if (!menu_list)
-      return -1;
-
-   info.list          = menu_list->menu_stack;
-   info.type          = MENU_SETTINGS_CUSTOM_VIEWPORT;
-   info.directory_ptr = idx;
-   strlcpy(info.label, menu_hash_to_str(MENU_LABEL_CUSTOM_VIEWPORT_1), sizeof(info.label));
-
-   ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-
-   video_driver_viewport_info(custom);
-
-   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-      (float)custom->width / custom->height;
-
-   settings->video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
-
-   event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
-   return ret;
-}
 
 
 static int generic_action_ok_command(enum event_command cmd)
@@ -1130,7 +1101,6 @@ static int action_ok_lookup_setting(const char *path,
    return menu_setting_set(type, label, MENU_ACTION_OK, false);
 }
 
-
 enum
 {
    ACTION_OK_DL_DEFAULT = 0,
@@ -1160,7 +1130,8 @@ enum
    ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE,
    ACTION_OK_DL_DIRECTORY_PUSH,
    ACTION_OK_DL_DATABASE_MANAGER_LIST,
-   ACTION_OK_DL_CURSOR_MANAGER_LIST
+   ACTION_OK_DL_CURSOR_MANAGER_LIST,
+   ACTION_OK_DL_CUSTOM_VIEWPORT
 };
 
 static int generic_action_ok_displaylist_push(const char *path,
@@ -1409,11 +1380,35 @@ static int generic_action_ok_displaylist_push(const char *path,
                   sizeof(info.label));
          }
          break;
+      case ACTION_OK_DL_CUSTOM_VIEWPORT:
+         info.type          = MENU_SETTINGS_CUSTOM_VIEWPORT;
+         info.directory_ptr = idx;
+         strlcpy(info.label, menu_hash_to_str(MENU_LABEL_CUSTOM_VIEWPORT_1), sizeof(info.label));
+         break;
    }
 
    info.list          = menu_list->menu_stack;
 
    return menu_displaylist_push_list(&info, dl_type);
+}
+
+static int action_ok_custom_viewport(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t            *settings   = config_get_ptr();
+   video_viewport_t *custom = video_viewport_get_custom();
+   int ret = generic_action_ok_displaylist_push(path,
+      label, type, idx, entry_idx, ACTION_OK_DL_CUSTOM_VIEWPORT);
+
+   video_driver_viewport_info(custom);
+
+   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+      (float)custom->width / custom->height;
+
+   settings->video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
+
+   event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
+   return ret;
 }
 
 static int action_ok_rdb_entry_submenu(const char *path,
