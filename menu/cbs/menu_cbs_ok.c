@@ -384,24 +384,6 @@ static int action_ok_shader_pass_load(const char *path,
 }
 
 
-static int action_ok_disk_image_append_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info = {0};
-   settings_t *settings         = config_get_ptr();
-   menu_list_t       *menu_list = menu_list_get_ptr();
-
-   if (!menu_list)
-      return -1;
-
-   info.list          = menu_list->menu_stack;
-   info.type          = type;
-   info.directory_ptr = idx;
-   strlcpy(info.path, settings->menu_content_directory, sizeof(info.path));
-   strlcpy(info.label, label, sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
 
 static int action_ok_configurations_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -420,24 +402,6 @@ static int action_ok_configurations_list(const char *path,
       strlcpy(info.path, dir, sizeof(info.path));
    else
       strlcpy(info.path, label, sizeof(info.path));
-   strlcpy(info.label, label, sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
-
-static int action_ok_cheat_file(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info = {0};
-   menu_list_t       *menu_list = menu_list_get_ptr();
-   settings_t *settings         = config_get_ptr();
-   if (!menu_list)
-      return -1;
-
-   info.list          = menu_list->menu_stack;
-   info.type          = type;
-   info.directory_ptr = idx;
-   strlcpy(info.path, settings->cheat_database, sizeof(info.path));
    strlcpy(info.label, label, sizeof(info.label));
 
    return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
@@ -517,81 +481,6 @@ static int action_ok_core_content_list(const char *path,
 
    return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 } 
-
-static int action_ok_record_configfile(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info   = {0};
-   menu_list_t       *menu_list   = menu_list_get_ptr();
-   global_t   *global             = global_get_ptr();
-
-   if (!menu_list)
-      return -1;
-
-   info.list          = menu_list->menu_stack;
-   info.type          = type;
-   info.directory_ptr = idx;
-   strlcpy(info.path, global->record.config_dir, sizeof(info.path));
-   strlcpy(info.label, label, sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
-
-static int action_ok_playlist_collection(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info   = {0};
-   menu_list_t       *menu_list   = menu_list_get_ptr();
-
-   if (!menu_list)
-      return -1;
-
-   info.list          = menu_list->menu_stack;
-   info.type          = type;
-   info.directory_ptr = idx;
-   strlcpy(info.path, path, sizeof(info.path));
-   strlcpy(info.label, label, sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
-
-static int action_ok_content_collection_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t   info = {0};
-   menu_list_t       *menu_list   = menu_list_get_ptr();
-   settings_t       *settings     = config_get_ptr();
-
-   if (!menu_list)
-      return -1;
-
-   info.list          = menu_list->menu_stack;
-   info.type          = type;
-   info.directory_ptr = idx;
-   strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
-   strlcpy(info.label, label, sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
-
-static int action_ok_core_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info   = {0};
-   menu_list_t       *menu_list   = menu_list_get_ptr();
-   settings_t *settings           = config_get_ptr();
-
-   if (!menu_list)
-      return -1;
-
-   info.list          = menu_list->menu_stack;
-   info.type          = type;
-   info.directory_ptr = idx;
-   strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
-   strlcpy(info.label, label, sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
 
 
 static int action_ok_menu_wallpaper_load(const char *path,
@@ -1529,7 +1418,13 @@ enum
    ACTION_OK_DL_PUSH_DEFAULT,
    ACTION_OK_DL_DOWNLOADS_DIR,
    ACTION_OK_DL_CONTENT_LIST,
-   ACTION_OK_DL_REMAP_FILE
+   ACTION_OK_DL_REMAP_FILE,
+   ACTION_OK_DL_RECORD_CONFIGFILE,
+   ACTION_OK_DL_DISK_IMAGE_APPEND_LIST,
+   ACTION_OK_DL_PLAYLIST_COLLECTION,
+   ACTION_OK_DL_CONTENT_COLLECTION_LIST,
+   ACTION_OK_DL_CHEAT_FILE,
+   ACTION_OK_DL_CORE_LIST
 };
 
 static int generic_action_ok_displaylist_push(const char *path,
@@ -1538,11 +1433,12 @@ static int generic_action_ok_displaylist_push(const char *path,
 {
    unsigned dl_type                  = DISPLAYLIST_GENERIC;
    menu_displaylist_info_t      info = {0};
+   const char            *menu_path  = NULL;
+   const char          *content_path = NULL;
+   global_t                 *global  = global_get_ptr();
    settings_t            *settings   = config_get_ptr();
    menu_list_t            *menu_list = menu_list_get_ptr();
    menu_handle_t            *menu    = menu_driver_get_ptr();
-   const char            *menu_path  = NULL;
-   const char          *content_path = NULL;
 
    if (!menu_list)
       return -1;
@@ -1645,6 +1541,43 @@ static int generic_action_ok_displaylist_push(const char *path,
          strlcpy(info.path, settings->input_remapping_directory, sizeof(info.path));
          strlcpy(info.label, label, sizeof(info.label));
          break;
+      case ACTION_OK_DL_RECORD_CONFIGFILE:
+         info.list          = menu_list->menu_stack;
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, global->record.config_dir, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->menu_content_directory, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_PLAYLIST_COLLECTION:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, path, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_CHEAT_FILE:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->cheat_database, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_CORE_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_CONTENT_COLLECTION_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
    }
 
    info.list          = menu_list->menu_stack;
@@ -1669,6 +1602,48 @@ static int action_ok_shader_parameters(const char *path,
 {
    return generic_action_ok_displaylist_push(path, label, type, idx,
          entry_idx, ACTION_OK_DL_SHADER_PARAMETERS);
+}
+
+static int action_ok_content_collection_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_CONTENT_COLLECTION_LIST);
+}
+
+static int action_ok_core_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_CORE_LIST);
+}
+
+static int action_ok_cheat_file(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_CHEAT_FILE);
+}
+
+static int action_ok_playlist_collection(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_PLAYLIST_COLLECTION);
+}
+
+static int action_ok_disk_image_append_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_DISK_IMAGE_APPEND_LIST);
+}
+
+static int action_ok_record_configfile(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_RECORD_CONFIGFILE);
 }
 
 static int action_ok_remap_file(const char *path,
