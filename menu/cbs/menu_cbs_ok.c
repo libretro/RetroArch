@@ -1130,72 +1130,6 @@ static int action_ok_lookup_setting(const char *path,
    return menu_setting_set(type, label, MENU_ACTION_OK, false);
 }
 
-static int action_ok_rdb_entry_submenu(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   union string_list_elem_attr attr;
-   char new_label[PATH_MAX_LENGTH];
-   int ret = -1;
-   menu_displaylist_info_t info    = {0};
-   char *rdb                       = NULL;
-   int len                         = 0;
-   struct string_list *str_list    = NULL;
-   struct string_list *str_list2   = NULL;
-   menu_list_t          *menu_list = menu_list_get_ptr();
-
-   if (!menu_list || !label)
-      return -1;
-
-   str_list = string_split(label, "|");
-
-   if (!str_list)
-      goto end;
-
-   str_list2 = string_list_new();
-   if (!str_list2)
-      goto end;
-
-   /* element 0 : label
-    * element 1 : value
-    * element 2 : database path
-    */
-
-   attr.i = 0;
-
-   len += strlen(str_list->elems[1].data) + 1;
-   string_list_append(str_list2, str_list->elems[1].data, attr);
-
-   len += strlen(str_list->elems[2].data) + 1;
-   string_list_append(str_list2, str_list->elems[2].data, attr);
-
-   rdb = (char*)calloc(len, sizeof(char));
-
-   if (!rdb)
-      goto end;
-
-   string_list_join_concat(rdb, len, str_list2, "|");
-
-   fill_pathname_join_delim(new_label, 
-         menu_hash_to_str(MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
-         str_list->elems[0].data, '_',
-         sizeof(new_label));
-
-   info.list          = menu_list->menu_stack;
-   info.type          = 0;
-   info.directory_ptr = idx;
-   strlcpy(info.path, rdb, sizeof(info.path));
-   strlcpy(info.label, new_label, sizeof(info.label));
-
-   ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-
-end:
-   if (str_list)
-      string_list_free(str_list);
-   if (str_list2)
-      string_list_free(str_list2);
-
-   return ret;
-}
 
 enum
 {
@@ -1205,6 +1139,7 @@ enum
    ACTION_OK_DL_HELP,
    ACTION_OK_DL_RPL_ENTRY,
    ACTION_OK_DL_RDB_ENTRY,
+   ACTION_OK_DL_RDB_ENTRY_SUBMENU,
    ACTION_OK_DL_AUDIO_DSP_PLUGIN,
    ACTION_OK_DL_SHADER_PASS,
    ACTION_OK_DL_SHADER_PARAMETERS,
@@ -1395,6 +1330,13 @@ static int generic_action_ok_displaylist_push(const char *path,
             strlcpy(info.label, tmp, sizeof(info.label));
          }
          break;
+      case ACTION_OK_DL_RDB_ENTRY_SUBMENU:
+         info.list          = menu_list->menu_stack;
+         info.type          = 0;
+         info.directory_ptr = idx;
+         strlcpy(info.label, label, sizeof(info.label));
+         strlcpy(info.path, path, sizeof(info.path));
+         break;
       case ACTION_OK_DL_CONFIGURATIONS_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -1472,6 +1414,71 @@ static int generic_action_ok_displaylist_push(const char *path,
    info.list          = menu_list->menu_stack;
 
    return menu_displaylist_push_list(&info, dl_type);
+}
+
+static int action_ok_rdb_entry_submenu(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   union string_list_elem_attr attr;
+   char new_label[PATH_MAX_LENGTH];
+   char new_path[PATH_MAX_LENGTH];
+   int ret = -1;
+   menu_displaylist_info_t info    = {0};
+   char *rdb                       = NULL;
+   int len                         = 0;
+   struct string_list *str_list    = NULL;
+   struct string_list *str_list2   = NULL;
+   menu_list_t          *menu_list = menu_list_get_ptr();
+
+   if (!menu_list || !label)
+      return -1;
+
+   str_list = string_split(label, "|");
+
+   if (!str_list)
+      goto end;
+
+   str_list2 = string_list_new();
+   if (!str_list2)
+      goto end;
+
+   /* element 0 : label
+    * element 1 : value
+    * element 2 : database path
+    */
+
+   attr.i = 0;
+
+   len += strlen(str_list->elems[1].data) + 1;
+   string_list_append(str_list2, str_list->elems[1].data, attr);
+
+   len += strlen(str_list->elems[2].data) + 1;
+   string_list_append(str_list2, str_list->elems[2].data, attr);
+
+   rdb = (char*)calloc(len, sizeof(char));
+
+   if (!rdb)
+      goto end;
+
+   string_list_join_concat(rdb, len, str_list2, "|");
+   strlcpy(new_path, rdb, sizeof(new_path));
+
+   fill_pathname_join_delim(new_label, 
+         menu_hash_to_str(MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
+         str_list->elems[0].data, '_',
+         sizeof(new_label));
+
+   ret = generic_action_ok_displaylist_push(new_path,
+         new_label, type, idx, entry_idx,
+         ACTION_OK_DL_RDB_ENTRY_SUBMENU);
+
+end:
+   if (str_list)
+      string_list_free(str_list);
+   if (str_list2)
+      string_list_free(str_list2);
+
+   return ret;
 }
 
 #ifdef HAVE_SHADER_MANAGER
