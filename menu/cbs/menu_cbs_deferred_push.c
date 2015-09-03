@@ -257,10 +257,10 @@ static int cb_net_generic(void *data_, size_t len)
    char             *data = (char*)data_;
    menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
-      return -1;
+      goto error;
 
    if (!data)
-      return -1;
+      goto error;
 
    if (core_buf)
       free(core_buf);
@@ -268,7 +268,7 @@ static int cb_net_generic(void *data_, size_t len)
    core_buf = (char*)malloc((len+1) * sizeof(char));
 
    if (!core_buf)
-      return -1;
+      goto error;
 
    memcpy(core_buf, data, len * sizeof(char));
    core_buf[len] = '\0';
@@ -277,6 +277,9 @@ static int cb_net_generic(void *data_, size_t len)
    menu_entries_unset_refresh(true);
 
    return 0;
+
+error:
+   return -1;
 }
 
 int cb_core_updater_list(void *data_, size_t len)
