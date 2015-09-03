@@ -384,44 +384,6 @@ static int action_ok_shader_pass_load(const char *path,
 }
 
 
-
-static int action_ok_core_updater_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   char url_path[PATH_MAX_LENGTH] = {0};
-   menu_displaylist_info_t info   = {0};
-   menu_list_t       *menu_list   = menu_list_get_ptr();
-   settings_t *settings           = config_get_ptr();
-   if (!menu_list)
-      return -1;
-
-   (void)url_path;
-
-   menu_entries_set_refresh(true);
-
-   if (settings->network.buildbot_url[0] == '\0')
-      return -1;
-
-#ifdef HAVE_NETWORKING
-   event_command(EVENT_CMD_NETWORK_INIT);
-
-   fill_pathname_join(url_path, settings->network.buildbot_url,
-         ".index", sizeof(url_path));
-
-   rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, url_path, "cb_core_updater_list", 0, 1,
-         true);
-#endif
-
-   info.list          = menu_list->menu_stack;
-   info.type          = type;
-   info.directory_ptr = idx;
-   strlcpy(info.path, path, sizeof(info.path));
-   strlcpy(info.label,
-         menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_UPDATER_LIST), sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-} 
-
 static int action_ok_core_content_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1131,7 +1093,8 @@ enum
    ACTION_OK_DL_DIRECTORY_PUSH,
    ACTION_OK_DL_DATABASE_MANAGER_LIST,
    ACTION_OK_DL_CURSOR_MANAGER_LIST,
-   ACTION_OK_DL_CUSTOM_VIEWPORT
+   ACTION_OK_DL_CUSTOM_VIEWPORT,
+   ACTION_OK_DL_CORE_UPDATER_LIST
 };
 
 static int generic_action_ok_displaylist_push(const char *path,
@@ -1385,11 +1348,43 @@ static int generic_action_ok_displaylist_push(const char *path,
          info.directory_ptr = idx;
          strlcpy(info.label, menu_hash_to_str(MENU_LABEL_CUSTOM_VIEWPORT_1), sizeof(info.label));
          break;
+      case ACTION_OK_DL_CORE_UPDATER_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, path, sizeof(info.path));
+         strlcpy(info.label,
+               menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_UPDATER_LIST), sizeof(info.label));
+         break;
    }
 
    info.list          = menu_list->menu_stack;
 
    return menu_displaylist_push_list(&info, dl_type);
+}
+
+static int action_ok_core_updater_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char url_path[PATH_MAX_LENGTH] = {0};
+   settings_t *settings           = config_get_ptr();
+
+   menu_entries_set_refresh(true);
+
+   if (settings->network.buildbot_url[0] == '\0')
+      return -1;
+
+#ifdef HAVE_NETWORKING
+   event_command(EVENT_CMD_NETWORK_INIT);
+
+   fill_pathname_join(url_path, settings->network.buildbot_url,
+         ".index", sizeof(url_path));
+
+   rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, url_path, "cb_core_updater_list", 0, 1,
+         true);
+#endif
+
+   return generic_action_ok_displaylist_push(path,
+         label, type, idx, entry_idx, ACTION_OK_DL_CORE_UPDATER_LIST);
 }
 
 static int action_ok_custom_viewport(const char *path,
