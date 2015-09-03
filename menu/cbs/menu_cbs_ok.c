@@ -383,47 +383,6 @@ static int action_ok_shader_pass_load(const char *path,
          ACTION_OK_LOAD_SHADER_PASS, MENU_LABEL_SHADER_OPTIONS);
 }
 
-#ifdef HAVE_SHADER_MANAGER
-extern size_t hack_shader_pass;
-#endif
-
-static int action_ok_shader_pass(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info = {0};
-   menu_handle_t *menu          = menu_driver_get_ptr();
-   menu_list_t *menu_list       = menu_list_get_ptr();
-   settings_t *settings         = config_get_ptr();
-   hack_shader_pass             = type - MENU_SETTINGS_SHADER_PASS_0;
-   if (!menu || !menu_list)
-      return -1;
-
-   info.list          = menu_list->menu_stack;
-   info.type          = type;
-   info.directory_ptr = idx;
-   strlcpy(info.path, settings->video.shader_dir, sizeof(info.path));
-   strlcpy(info.label, label, sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
-
-static int action_ok_shader_parameters(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info = {0};
-   menu_handle_t *menu          = menu_driver_get_ptr();
-   menu_list_t *menu_list       = menu_list_get_ptr();
-
-   if (!menu || !menu_list)
-      return -1;
-
-   info.list          = menu_list->menu_stack;
-   info.type          = MENU_SETTING_ACTION;
-   info.directory_ptr = idx;
-   strlcpy(info.label, label, sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
 
 int action_ok_push_generic_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -1677,8 +1636,10 @@ enum
    ACTION_OK_DL_OPEN_ARCHIVE,
    ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE,
    ACTION_OK_DL_HELP,
-   ACTION_OK_RPL_ENTRY,
-   ACTION_OK_AUDIO_DSP_PLUGIN
+   ACTION_OK_DL_RPL_ENTRY,
+   ACTION_OK_DL_AUDIO_DSP_PLUGIN,
+   ACTION_OK_DL_SHADER_PASS,
+   ACTION_OK_DL_SHADER_PARAMETERS
 };
 
 
@@ -1730,7 +1691,7 @@ static int generic_action_ok_displaylist_push(const char *path,
          menu->push_help_screen = true;
          dl_type                = DISPLAYLIST_HELP;
          break;
-      case ACTION_OK_RPL_ENTRY:
+      case ACTION_OK_DL_RPL_ENTRY:
          strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
          strlcpy(info.label,
                menu_hash_to_str(MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS), sizeof(info.label));
@@ -1738,12 +1699,23 @@ static int generic_action_ok_displaylist_push(const char *path,
          info.directory_ptr      = idx;
          rpl_entry_selection_ptr = idx;
          break;
-      case ACTION_OK_AUDIO_DSP_PLUGIN:
+      case ACTION_OK_DL_AUDIO_DSP_PLUGIN:
          info.type          = 0;
          info.directory_ptr = idx;
          strlcpy(info.path, settings->audio.filter_dir, sizeof(info.path));
          strlcpy(info.label,
                menu_hash_to_str(MENU_LABEL_AUDIO_DSP_PLUGIN), sizeof(info.label));
+         break;
+      case ACTION_OK_DL_SHADER_PASS:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->video.shader_dir, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_SHADER_PARAMETERS:
+         info.type          = MENU_SETTING_ACTION;
+         info.directory_ptr = idx;
+         strlcpy(info.label, label, sizeof(info.label));
          break;
    }
 
@@ -1752,18 +1724,37 @@ static int generic_action_ok_displaylist_push(const char *path,
    return menu_displaylist_push_list(&info, dl_type);
 }
 
+#ifdef HAVE_SHADER_MANAGER
+extern size_t hack_shader_pass;
+#endif
+
+static int action_ok_shader_pass(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   hack_shader_pass             = type - MENU_SETTINGS_SHADER_PASS_0;
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_SHADER_PASS);
+}
+
+static int action_ok_shader_parameters(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_SHADER_PARAMETERS);
+}
+
 static int action_ok_audio_dsp_plugin(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_displaylist_push(path, label, type, idx,
-         entry_idx, ACTION_OK_AUDIO_DSP_PLUGIN);
+         entry_idx, ACTION_OK_DL_AUDIO_DSP_PLUGIN);
 }
 
 static int action_ok_rpl_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_displaylist_push(path, label, type, idx,
-         entry_idx, ACTION_OK_RPL_ENTRY);
+         entry_idx, ACTION_OK_DL_RPL_ENTRY);
 }
 
 static int  generic_action_ok_help(const char *path,
