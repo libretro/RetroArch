@@ -287,7 +287,9 @@ static int action_ok_cheat_apply_changes(const char *path,
 enum
 {
    ACTION_OK_LOAD_PRESET = 0,
-   ACTION_OK_LOAD_SHADER_PASS
+   ACTION_OK_LOAD_SHADER_PASS,
+   ACTION_OK_LOAD_RECORD_CONFIGFILE,
+   ACTION_OK_LOAD_REMAPPING_FILE
 };
 
 static int generic_action_ok(const char *path,
@@ -296,6 +298,7 @@ static int generic_action_ok(const char *path,
 {
    char action_path[PATH_MAX_LENGTH];
    const char             *menu_path = NULL;
+   global_t                  *global = global_get_ptr();
    menu_handle_t               *menu = menu_driver_get_ptr();
    menu_list_t       *menu_list      = menu_list_get_ptr();
    if (!menu || !menu_list)
@@ -323,6 +326,13 @@ static int generic_action_ok(const char *path,
          video_shader_resolve_parameters(NULL, menu->shader);
          break;
 #endif
+      case ACTION_OK_LOAD_RECORD_CONFIGFILE:
+         fill_pathname_join(global->record.config, menu_path,
+               path, sizeof(global->record.config));
+         break;
+      case ACTION_OK_LOAD_REMAPPING_FILE:
+         input_remapping_load_file(action_path);
+         break;
       default:
          break;
    }
@@ -333,6 +343,20 @@ static int generic_action_ok(const char *path,
 
 error:
    return -1;
+}
+
+static int action_ok_record_configfile_load(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok(path, label, type, idx, entry_idx,
+         ACTION_OK_LOAD_RECORD_CONFIGFILE, MENU_LABEL_RECORDING_SETTINGS);
+}
+
+static int action_ok_remap_file_load(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok(path, label, type, idx, entry_idx,
+         ACTION_OK_LOAD_REMAPPING_FILE, MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS);
 }
 
 static int action_ok_shader_preset_load(const char *path,
@@ -734,45 +758,6 @@ static int action_ok_core_list(const char *path,
    return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
 }
 
-static int action_ok_record_configfile_load(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   const char          *menu_path = NULL;
-   global_t               *global = global_get_ptr();
-   menu_list_t       *menu_list   = menu_list_get_ptr();
-
-   if (!global || !menu_list)
-      return -1;
-
-   menu_list_get_last_stack(menu_list, &menu_path, NULL,
-         NULL, NULL);
-
-   fill_pathname_join(global->record.config, menu_path, path, sizeof(global->record.config));
-
-   menu_list_flush_stack(menu_list, menu_hash_to_str(MENU_LABEL_VALUE_RECORDING_SETTINGS), 0);
-   return 0;
-}
-
-static int action_ok_remap_file_load(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   char remap_path[PATH_MAX_LENGTH];
-   const char            *menu_path = NULL;
-   menu_list_t       *menu_list     = menu_list_get_ptr();
-   if (!menu_list)
-      return -1;
-
-   menu_list_get_last_stack(menu_list, &menu_path, NULL,
-         NULL, NULL);
-
-   fill_pathname_join(remap_path, menu_path, path, sizeof(remap_path));
-   input_remapping_load_file(remap_path);
-
-   menu_list_flush_stack(menu_list,
-         menu_hash_to_str(MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS), 0);
-
-   return 0;
-}
 
 static int action_ok_cheat_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
