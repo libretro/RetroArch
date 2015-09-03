@@ -707,56 +707,6 @@ static int action_ok_core_download(const char *path,
 }
 
 
-static int action_ok_database_manager_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   char rdb_path[PATH_MAX_LENGTH] = {0};
-   menu_displaylist_info_t info   = {0};
-   menu_list_t         *menu_list = menu_list_get_ptr();
-   settings_t          *settings  = config_get_ptr();
-
-   if (!menu_list || !path || !label)
-      return -1;
-
-   fill_pathname_join(rdb_path, settings->content_database,
-         path, sizeof(rdb_path));
-
-   info.list          = menu_list->menu_stack;
-   info.type          = 0;
-   info.directory_ptr = idx;
-   strlcpy(info.path, rdb_path, sizeof(info.path));
-   strlcpy(info.label,
-         menu_hash_to_str(MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST),
-         sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
-
-static int action_ok_cursor_manager_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   char cursor_path[PATH_MAX_LENGTH] = {0};
-   menu_displaylist_info_t      info = {0};
-   settings_t              *settings = config_get_ptr();
-   menu_list_t            *menu_list = menu_list_get_ptr();
-
-   if (!menu_list)
-      return -1;
-
-   fill_pathname_join(cursor_path, settings->cursor_directory,
-         path, sizeof(cursor_path));
-
-   info.list          = menu_list->menu_stack;
-   info.type          = 0;
-   info.directory_ptr = idx;
-   strlcpy(info.path, cursor_path, sizeof(info.path));
-   strlcpy(info.label,
-         menu_hash_to_str(MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
-         sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
-
 static int action_ok_config_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1277,7 +1227,9 @@ enum
    ACTION_OK_DL_CONFIGURATIONS_LIST,
    ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH,
    ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE,
-   ACTION_OK_DL_DIRECTORY_PUSH
+   ACTION_OK_DL_DIRECTORY_PUSH,
+   ACTION_OK_DL_DATABASE_MANAGER_LIST,
+   ACTION_OK_DL_CURSOR_MANAGER_LIST
 };
 
 static int generic_action_ok_displaylist_push(const char *path,
@@ -1489,6 +1441,36 @@ static int generic_action_ok_displaylist_push(const char *path,
             strlcpy(info.label, menu_label, sizeof(info.label));
          }
          break;
+      case ACTION_OK_DL_DATABASE_MANAGER_LIST:
+         {
+            char rdb_path[PATH_MAX_LENGTH] = {0};
+
+            fill_pathname_join(rdb_path, settings->content_database,
+                  path, sizeof(rdb_path));
+
+            info.type          = 0;
+            info.directory_ptr = idx;
+            strlcpy(info.path, rdb_path, sizeof(info.path));
+            strlcpy(info.label,
+                  menu_hash_to_str(MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST),
+                  sizeof(info.label));
+         }
+         break;
+      case ACTION_OK_DL_CURSOR_MANAGER_LIST:
+         {
+            char cursor_path[PATH_MAX_LENGTH] = {0};
+
+            fill_pathname_join(cursor_path, settings->cursor_directory,
+                  path, sizeof(cursor_path));
+
+            info.type          = 0;
+            info.directory_ptr = idx;
+            strlcpy(info.path, cursor_path, sizeof(info.path));
+            strlcpy(info.label,
+                  menu_hash_to_str(MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
+                  sizeof(info.label));
+         }
+         break;
    }
 
    info.list          = menu_list->menu_stack;
@@ -1520,6 +1502,20 @@ int action_ok_directory_push(const char *path,
 {
    return generic_action_ok_displaylist_push(path, label, type, idx,
          entry_idx, ACTION_OK_DL_DIRECTORY_PUSH);
+}
+
+static int action_ok_database_manager_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_DATABASE_MANAGER_LIST);
+}
+
+static int action_ok_cursor_manager_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_CURSOR_MANAGER_LIST);
 }
 
 static int action_ok_compressed_archive_push(const char *path,
