@@ -707,31 +707,6 @@ static int action_ok_core_download(const char *path,
 }
 
 
-int action_ok_directory_push(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info   = {0};
-   const char *menu_path          = NULL;
-   const char *menu_label         = NULL;
-   char cat_path[PATH_MAX_LENGTH] = {0};
-   menu_list_t         *menu_list = menu_list_get_ptr();
-   if (!menu_list || !path)
-      return -1;
-
-   menu_list_get_last_stack(menu_list,
-         &menu_path, &menu_label, NULL, NULL);
-
-   fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
-
-   info.list          = menu_list->menu_stack;
-   info.type          = type;
-   info.directory_ptr = idx;
-   strlcpy(info.path, cat_path, sizeof(info.path));
-   strlcpy(info.label, menu_label, sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
-
 static int action_ok_database_manager_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1301,7 +1276,8 @@ enum
    ACTION_OK_DL_CORE_LIST,
    ACTION_OK_DL_CONFIGURATIONS_LIST,
    ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH,
-   ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE
+   ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE,
+   ACTION_OK_DL_DIRECTORY_PUSH
 };
 
 static int generic_action_ok_displaylist_push(const char *path,
@@ -1503,6 +1479,23 @@ static int generic_action_ok_displaylist_push(const char *path,
             strlcpy(menu->scratch2_buf, menu_path, sizeof(menu->scratch2_buf));
          }
          break;
+      case ACTION_OK_DL_DIRECTORY_PUSH:
+         {
+            char cat_path[PATH_MAX_LENGTH] = {0};
+            const char *menu_path          = NULL;
+            const char *menu_label         = NULL;
+
+            menu_list_get_last_stack(menu_list,
+                  &menu_path, &menu_label, NULL, NULL);
+
+            fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
+
+            info.type          = type;
+            info.directory_ptr = idx;
+            strlcpy(info.path, cat_path, sizeof(info.path));
+            strlcpy(info.label, menu_label, sizeof(info.label));
+         }
+         break;
    }
 
    info.list          = menu_list->menu_stack;
@@ -1527,6 +1520,13 @@ static int action_ok_shader_parameters(const char *path,
 {
    return generic_action_ok_displaylist_push(path, label, type, idx,
          entry_idx, ACTION_OK_DL_SHADER_PARAMETERS);
+}
+
+int action_ok_directory_push(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_DIRECTORY_PUSH);
 }
 
 static int action_ok_compressed_archive_push(const char *path,
