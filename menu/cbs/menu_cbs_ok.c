@@ -385,29 +385,6 @@ static int action_ok_shader_pass_load(const char *path,
 
 
 
-static int action_ok_configurations_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_displaylist_info_t info = {0};
-   settings_t *settings         = config_get_ptr();
-   const char *dir              = settings->menu_config_directory;
-   menu_list_t       *menu_list = menu_list_get_ptr();
-   if (!menu_list)
-      return -1;
-
-   info.list          = menu_list->menu_stack;
-   info.type          = type;
-   info.directory_ptr = idx;
-   if (dir)
-      strlcpy(info.path, dir, sizeof(info.path));
-   else
-      strlcpy(info.path, label, sizeof(info.path));
-   strlcpy(info.label, label, sizeof(info.label));
-
-   return menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-}
-
-
 static int action_ok_core_updater_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1405,7 +1382,8 @@ enum
    ACTION_OK_DL_PLAYLIST_COLLECTION,
    ACTION_OK_DL_CONTENT_COLLECTION_LIST,
    ACTION_OK_DL_CHEAT_FILE,
-   ACTION_OK_DL_CORE_LIST
+   ACTION_OK_DL_CORE_LIST,
+   ACTION_OK_DL_CONFIGURATIONS_LIST
 };
 
 static int generic_action_ok_displaylist_push(const char *path,
@@ -1571,6 +1549,15 @@ static int generic_action_ok_displaylist_push(const char *path,
             strlcpy(info.label, tmp, sizeof(info.label));
          }
          break;
+      case ACTION_OK_DL_CONFIGURATIONS_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         if (path)
+            strlcpy(info.path, path, sizeof(info.path));
+         else
+            strlcpy(info.path, label, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
    }
 
    info.list          = menu_list->menu_stack;
@@ -1595,6 +1582,13 @@ static int action_ok_shader_parameters(const char *path,
 {
    return generic_action_ok_displaylist_push(path, label, type, idx,
          entry_idx, ACTION_OK_DL_SHADER_PARAMETERS);
+}
+
+static int action_ok_configurations_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_CONFIGURATIONS_LIST);
 }
 
 static int action_ok_rdb_entry(const char *path,
