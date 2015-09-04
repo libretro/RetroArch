@@ -857,14 +857,7 @@ static int action_ok_core_load_deferred(const char *path,
    return menu_common_load_content(false, CORE_TYPE_PLAIN);
 }
 
-static int action_ok_database_manager_list_deferred(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return 0;
-}
-
-
-static int action_ok_cursor_manager_list_deferred(const char *path,
+static int action_ok_deferred_list_stub(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return 0;
@@ -894,30 +887,23 @@ static int action_ok_core_load(const char *path,
 
 #if defined(HAVE_DYNAMIC)
    /* No content needed for this core, load core immediately. */
-
    if (menu->load_no_content && settings->core.set_supports_no_game_enable)
    {
       *global->path.fullpath = '\0';
       return menu_common_load_content(false, CORE_TYPE_PLAIN);
    }
+#elif defined(RARCH_CONSOLE)
+   event_command(EVENT_CMD_RESTART_RETROARCH);
+#endif
 
+#if defined(RARCH_CONSOLE)
+   return -1;
+#else
    /* Core selection on non-console just updates directory listing.
     * Will take effect on new content load. */
    return 0;
-#elif defined(RARCH_CONSOLE)
-   event_command(EVENT_CMD_RESTART_RETROARCH);
-   return -1;
-#else
-   return 0;
 #endif
 }
-
-static int action_ok_core_download(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return 0;
-}
-
 
 static int action_ok_config_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -2137,7 +2123,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   cbs->action_ok = action_ok_core_load;
                   break;
                case MENU_LABEL_CORE_UPDATER_LIST:
-                  cbs->action_ok = action_ok_core_download;
+                  cbs->action_ok = action_ok_deferred_list_stub;
                   break;
             }
             break;
@@ -2153,7 +2139,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             switch (menu_label_hash)
             {
                case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
-                  cbs->action_ok = action_ok_database_manager_list_deferred;
+                  cbs->action_ok = action_ok_deferred_list_stub;
                   break;
                case MENU_LABEL_DATABASE_MANAGER_LIST:
                case MENU_VALUE_HORIZONTAL_MENU:
@@ -2168,7 +2154,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             switch (menu_label_hash)
             {
                case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
-                  cbs->action_ok = action_ok_cursor_manager_list_deferred;
+                  cbs->action_ok = action_ok_deferred_list_stub;
                   break;
                case MENU_LABEL_CURSOR_MANAGER_LIST:
                   cbs->action_ok = action_ok_cursor_manager_list;
