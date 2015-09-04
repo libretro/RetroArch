@@ -16,7 +16,6 @@
 #include <time.h>
 
 #include "menu.h"
-#include "menu_display.h"
 #include "../../config.def.h"
 #include "../gfx/video_context_driver.h"
 #include "../gfx/video_thread_wrapper.h"

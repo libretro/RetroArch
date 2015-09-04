@@ -18,8 +18,6 @@
 
 #include "menu.h"
 #include "menu_hash.h"
-#include "menu_display.h"
-#include "menu_entry.h"
 #include "menu_shader.h"
 
 #include "../general.h"

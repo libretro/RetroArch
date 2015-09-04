@@ -17,7 +17,6 @@
 #include <string/string_list.h>
 
 #include "menu.h"
-#include "menu_entry.h"
 
 /* This file provides an abstraction of the currently displayed
  * menu.

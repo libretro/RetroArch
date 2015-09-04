@@ -17,12 +17,8 @@
 #include <string.h>
 #include <string/string_list.h>
 
-#include "menu_driver.h"
 #include "menu.h"
-#include "menu_cbs.h"
-#include "menu_displaylist.h"
 #include "menu_video.h"
-#include "../driver.h"
 
 static bool menu_alive = false;
 

@@ -15,12 +15,8 @@
 
 #include "menu.h"
 #include "menu_hash.h"
-#include "menu_display.h"
-
-#include "menu_entries.h"
 
 #include "../general.h"
-#include "../system.h"
 
 static menu_entries_t *menu_entries_get_ptr(void)
 {

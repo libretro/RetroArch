@@ -22,9 +22,6 @@
 
 #include "menu.h"
 #include "menu_hash.h"
-#include "menu_display.h"
-#include "menu_displaylist.h"
-#include "menu_setting.h"
 
 #ifdef HAVE_LIBRETRODB
 #include "../database_info.h"

@@ -23,9 +23,6 @@
 
 #include <boolean.h>
 
-#include "menu_displaylist.h"
-#include "menu_navigation.h"
-
 #include "../configuration.h"
 
 static void menu_driver_navigation_increment(void)
