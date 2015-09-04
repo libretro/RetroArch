@@ -380,7 +380,6 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx, const char *pa
    int ret                  = 0;
    menu_handle_t *menu      = menu_driver_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
-   settings_t *settings     = config_get_ptr();
    global_t *global         = global_get_ptr();
 
    if (!menu)
@@ -1644,8 +1643,6 @@ static int action_ok_load_archive_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int ret = 0;
-   menu_displaylist_info_t info = {0};
-   settings_t *settings   = config_get_ptr();
    global_t      *global  = global_get_ptr();
    size_t selected        = menu_navigation_get_current_selection();
    menu_handle_t *menu    = menu_driver_get_ptr();

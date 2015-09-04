@@ -48,8 +48,12 @@ struct RDIR *retro_opendir(const char *name)
 {
    char path_buf[1024];
    struct RDIR *rdir = (struct RDIR*)calloc(1, sizeof(*rdir));
+
    if (!rdir)
       return NULL;
+
+   (void)path_buf;
+
 #if defined(_WIN32)
    snprintf(path_buf, sizeof(path_buf), "%s\\*", name);
    rdir->directory = FindFirstFile(path_buf, &rdir->entry);
@@ -114,7 +118,6 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
    const WIN32_FIND_DATA *entry = (const WIN32_FIND_DATA*)rdir->entry;
    return entry->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 #elif defined(PSP) || defined(VITA)
-
    const SceIoDirent *entry = (const SceIoDirent*)rdir->entry;
 #if defined(PSP)
    return (entry->d_stat.st_attr & FIO_SO_IFDIR) == FIO_SO_IFDIR;
