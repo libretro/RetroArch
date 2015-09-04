@@ -84,6 +84,7 @@ static int generic_action_ok_displaylist_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
+   char action_path[PATH_MAX_LENGTH];
    unsigned dl_type                  = DISPLAYLIST_GENERIC;
    menu_displaylist_info_t      info = {0};
    const char           *menu_label  = NULL;
@@ -99,6 +100,8 @@ static int generic_action_ok_displaylist_push(const char *path,
 
    menu_list_get_last_stack(menu_list,
          &menu_path, &menu_label, NULL, NULL);
+
+   fill_pathname_join(action_path, menu_path, path, sizeof(action_path));
 
    switch (action_type)
    {
@@ -285,20 +288,14 @@ static int generic_action_ok_displaylist_push(const char *path,
          strlcpy(menu->scratch2_buf, menu_path, sizeof(menu->scratch2_buf));
          break;
       case ACTION_OK_DL_DIRECTORY_PUSH:
-         {
-            char cat_path[PATH_MAX_LENGTH] = {0};
-
-            fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
-
-            info.type          = type;
-            info.directory_ptr = idx;
-            strlcpy(info.path, cat_path, sizeof(info.path));
-            strlcpy(info.label, menu_label, sizeof(info.label));
-         }
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, action_path, sizeof(info.path));
+         strlcpy(info.label, menu_label, sizeof(info.label));
          break;
       case ACTION_OK_DL_DATABASE_MANAGER_LIST:
          {
-            char rdb_path[PATH_MAX_LENGTH] = {0};
+            char rdb_path[PATH_MAX_LENGTH];
 
             fill_pathname_join(rdb_path, settings->content_database,
                   path, sizeof(rdb_path));
@@ -313,7 +310,7 @@ static int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_CURSOR_MANAGER_LIST:
          {
-            char cursor_path[PATH_MAX_LENGTH] = {0};
+            char cursor_path[PATH_MAX_LENGTH];
 
             fill_pathname_join(cursor_path, settings->cursor_directory,
                   path, sizeof(cursor_path));
@@ -605,8 +602,7 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_CORE:
          flush_char = NULL;
          flush_type = MENU_SETTINGS;
-         fill_pathname_join(settings->libretro, menu_path, path,
-               sizeof(settings->libretro));
+         strlcpy(settings->libretro, action_path, sizeof(settings->libretro));
          event_command(EVENT_CMD_LOAD_CORE);
 
 #if defined(HAVE_DYNAMIC)
