@@ -30,43 +30,20 @@
 #include <kernel/image.h>
 #endif
 
-#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
-#include <unistd.h> /* stat() is defined here */
-#endif
-
-#if defined(__CELLOS_LV2__)
-
-#ifndef S_ISDIR
-#define S_ISDIR(x) (x & 0040000)
-#endif
-
-#endif
-
-#if defined(_WIN32)
-#ifdef _MSC_VER
-#define setmode _setmode
-#endif
-#ifdef _XBOX
-#include <xtl.h>
-#define INVALID_FILE_ATTRIBUTES -1
-#else
-#include <io.h>
-#include <fcntl.h>
+#ifdef _WIN32
 #include <direct.h>
-#include <windows.h>
-#endif
-#elif defined(VITA)
-#include <psp2/io/fcntl.h>
-#include <psp2/io/dirent.h>
 #else
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <unistd.h>
+#include <unistd.h> /* stat() is defined here */
 #endif
 
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
+#endif
+
+#if defined(__CELLOS_LV2__)
+#ifndef S_ISDIR
+#define S_ISDIR(x) (x & 0040000)
+#endif
 #endif
 
 #include <file/file_path.h>
