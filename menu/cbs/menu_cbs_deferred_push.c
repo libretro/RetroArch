@@ -17,7 +17,6 @@
 
 #include "../menu.h"
 #include "../menu_cbs.h"
-#include "../menu_displaylist.h"
 
 #ifdef HAVE_LIBRETRODB
 #include "../../database_info.h"
