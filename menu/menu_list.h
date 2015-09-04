@@ -82,9 +82,6 @@ void menu_list_pop(file_list_t *list, size_t *directory_ptr);
 
 void menu_list_pop_stack(menu_list_t *list);
 
-void menu_list_pop_stack_by_needle(menu_list_t *list,
-      const char *needle);
-
 void menu_list_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type,
       size_t *entry_idx);

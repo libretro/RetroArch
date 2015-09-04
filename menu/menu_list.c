@@ -174,33 +174,6 @@ void menu_list_pop_stack(menu_list_t *list)
    menu_entries_set_refresh(false);
 }
 
-void menu_list_pop_stack_by_needle(menu_list_t *list,
-      const char *needle)
-{
-   uint32_t needle_hash, label_hash;
-   const char *path       = NULL;
-   const char *label      = NULL;
-   unsigned type          = 0;
-   size_t entry_idx       = 0;
-   menu_navigation_t *nav = menu_navigation_get_ptr();
-
-   if (!list)
-      return;
-
-   menu_entries_set_refresh(false);
-   menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
-   needle_hash            = menu_hash_calculate(needle);
-   label_hash             = menu_hash_calculate(label);
-
-   while (needle_hash == label_hash)
-   {
-      menu_list_pop(list->menu_stack, &nav->selection_ptr);
-      menu_list_get_last(list->menu_stack, &path, &label, &type, &entry_idx);
-      label_hash             = menu_hash_calculate(label);
-      needle_hash            = menu_hash_calculate(needle);
-   }
-}
-
 void menu_list_pop(file_list_t *list, size_t *directory_ptr)
 {
    if (list->size != 0)
