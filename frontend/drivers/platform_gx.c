@@ -20,12 +20,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <dirent.h>
-#ifndef _DIRENT_HAVE_D_TYPE
-#include <sys/stat.h>
-#endif
-#include <unistd.h>
-#include <dirent.h>
 
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
 #include <ogc/mutex.h>

@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <dirent.h>
+#include <retro_dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/utsname.h>
@@ -359,37 +359,33 @@ bool frontend_linux_powerstate_check_apm(enum frontend_powerstate *state,
 bool frontend_linux_powerstate_check_acpi(enum frontend_powerstate *state,
       int *seconds, int *percent)
 {
-   struct dirent *dent = NULL;
-   DIR *dirp           = NULL;
+   bool ret            = false;
+   struct RDIR *entry  = NULL;
    bool have_battery   = false;
    bool have_ac        = false;
    bool charging       = false;
 
    *state = FRONTEND_POWERSTATE_NONE;
 
-   dirp = opendir(proc_acpi_battery_path);
-   if (dirp == NULL)
-      return false;  /* can't use this interface. */
+   entry = retro_opendir(proc_acpi_battery_path);
+   if (!entry)
+      goto end;
 
-   while ((dent = readdir(dirp)) != NULL)
-   {
-      const char *node = dent->d_name;
-      check_proc_acpi_battery(node, &have_battery, &charging,
-            seconds, percent);
-   }
-   closedir(dirp);
+   if (retro_dirent_error(entry))
+      goto end;
 
-   dirp = opendir(proc_acpi_ac_adapter_path);
-   if (dirp == NULL)
-      return false;  /* can't use this interface. */
+   while (retro_readdir(entry))
+      check_proc_acpi_battery(retro_dirent_get_name(entry),
+            &have_battery, &charging, seconds, percent);
 
-   while ((dent = readdir(dirp)) != NULL)
-   {
-      const char *node = dent->d_name;
+   retro_closedir(entry);
 
-      check_proc_acpi_ac_adapter(node, &have_ac);
-   }
-   closedir(dirp);
+   entry = retro_opendir(proc_acpi_ac_adapter_path);
+   if (!entry)
+      goto end;
+
+   while (retro_readdir(entry))
+      check_proc_acpi_ac_adapter(retro_dirent_get_name(entry), &have_ac);
 
    if (!have_battery)
       *state = FRONTEND_POWERSTATE_NO_SOURCE;
@@ -400,7 +396,13 @@ bool frontend_linux_powerstate_check_acpi(enum frontend_powerstate *state,
    else
       *state = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
 
-   return true;   /* definitive answer. */
+   ret = true;
+
+end:
+   if (entry)
+      retro_closedir(entry);
+
+   return ret;
 }
 
 static enum frontend_powerstate 
