@@ -14,11 +14,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "input_keymaps.h"
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
 
+#ifdef __linux__
+#include <linux/input.h>
+#include <linux/kd.h>
+#endif
+
+#include "input_keymaps.h"
 #include "../general.h"
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -26,11 +31,6 @@
 
 #ifdef __APPLE__
 #include "drivers/apple_keycode.h"
-#endif
-
-#ifdef __linux__
-#include <linux/input.h>
-#include <linux/kd.h>
 #endif
 
 const struct input_key_map input_config_key_map[] = {

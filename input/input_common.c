@@ -14,13 +14,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "input_common.h"
-#include "input_keymaps.h"
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
 
 #include <file/file_path.h>
+
+#include "input_common.h"
+#include "input_keymaps.h"
 
 #include "../general.h"
 #ifdef HAVE_CONFIG_H
