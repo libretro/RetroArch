@@ -560,7 +560,8 @@ enum
    ACTION_OK_APPEND_DISK_IMAGE,
    ACTION_OK_LOAD_CONFIG_FILE,
    ACTION_OK_LOAD_CORE,
-   ACTION_OK_LOAD_WALLPAPER
+   ACTION_OK_LOAD_WALLPAPER,
+   ACTION_OK_SET_PATH
 };
 
 
@@ -668,8 +669,18 @@ static int generic_action_ok(const char *path,
             goto error;
          break;
       case ACTION_OK_APPEND_DISK_IMAGE:
+         flush_char = NULL;
+         flush_type = 49;
          event_disk_control_append_image(action_path);
          event_command(EVENT_CMD_RESUME);
+         break;
+      case ACTION_OK_SET_PATH:
+         {
+            menu_file_list_cbs_t *cbs = menu_list_get_last_stack_actiondata(menu_list);
+
+            if (cbs)
+               menu_action_setting_set_current_string_path(cbs->setting, menu_path, path);
+         }
          break;
       default:
          break;
@@ -681,6 +692,13 @@ static int generic_action_ok(const char *path,
 
 error:
    return -1;
+}
+
+static int action_ok_set_path(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok(path, label, type, idx, entry_idx,
+         ACTION_OK_SET_PATH, MENU_SETTINGS);
 }
 
 static int action_ok_menu_wallpaper_load(const char *path,
@@ -1011,29 +1029,6 @@ static int action_ok_file_load(const char *path,
    return 0;
 }
 
-static int action_ok_set_path(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   const char *menu_path     = NULL;
-   const char *menu_label    = NULL;
-   menu_file_list_cbs_t *cbs = NULL;
-   menu_list_t   *menu_list  = menu_list_get_ptr();
-
-   if (!menu_list)
-      return -1;
-
-   menu_list_get_last_stack(menu_list,
-         &menu_path, &menu_label, NULL, NULL);
-   cbs = menu_list_get_last_stack_actiondata(menu_list);
-
-   if (!cbs)
-      return -1;
-
-   menu_action_setting_set_current_string_path(cbs->setting, menu_path, path);
-   menu_list_pop_stack_by_needle(menu_list, cbs->setting->name);
-
-   return 0;
-}
 
 static int generic_action_ok_command(enum event_command cmd)
 {
