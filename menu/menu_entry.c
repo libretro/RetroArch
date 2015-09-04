@@ -33,10 +33,11 @@
 /* Clicks the back button */
 int menu_entry_go_back(void)
 {
+   menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
    if (!menu_list)
       return -1;
-   menu_list_pop_stack(menu_list);
+   menu_list_pop_stack(menu_list, &nav->selection_ptr);
    return 0;
 }
 

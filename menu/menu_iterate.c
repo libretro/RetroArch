@@ -469,7 +469,7 @@ int menu_iterate(bool render_this_frame, unsigned action)
          break;
       case ITERATE_TYPE_BIND:
          if (menu_input_bind_iterate(menu->state.msg, sizeof(menu->state.msg)))
-            menu_list_pop_stack(menu_list);
+            menu_list_pop_stack(menu_list, &nav->selection_ptr);
          else
             menu->state.do_messagebox = true;
          if (render_this_frame)
@@ -527,7 +527,7 @@ int menu_iterate(bool render_this_frame, unsigned action)
    }
 
    if (menu->state.do_pop_stack && action == MENU_ACTION_OK)
-      menu_list_pop(menu_list->menu_stack, menu->state.pop_selected);
+      menu_list_pop_stack(menu_list, menu->state.pop_selected);
    
    if (menu->state.do_post_iterate)
       menu_input_post_iterate(&ret, action);

@@ -460,6 +460,7 @@ static int action_ok_playlist_entry(const char *path,
    content_playlist_t *playlist = g_defaults.history;
    bool is_history              = true;
    menu_handle_t *menu          = menu_driver_get_ptr();
+   menu_navigation_t *nav       = menu_navigation_get_ptr();
    menu_list_t *menu_list       = menu_list_get_ptr();
    uint32_t hash_label          = menu_hash_calculate(label);
 
@@ -517,7 +518,7 @@ static int action_ok_playlist_entry(const char *path,
       {
          case MENU_LABEL_COLLECTION:
          case MENU_LABEL_RDB_ENTRY_START_CONTENT:
-            menu_list_pop_stack(menu_list);
+            menu_list_pop_stack(menu_list, &nav->selection_ptr);
             break;
          default:
             menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
@@ -869,8 +870,9 @@ static int action_ok_core_deferred_set(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char core_display_name[PATH_MAX_LENGTH];
-   menu_handle_t                     *menu = menu_driver_get_ptr();
-   menu_list_t                  *menu_list = menu_list_get_ptr();
+   menu_handle_t               *menu = menu_driver_get_ptr();
+   menu_navigation_t            *nav = menu_navigation_get_ptr();
+   menu_list_t            *menu_list = menu_list_get_ptr();
    if (!menu || !menu_list)
       return -1;
 
@@ -888,7 +890,7 @@ static int action_ok_core_deferred_set(const char *path,
 
    content_playlist_write_file(menu->playlist);
 
-   menu_list_pop_stack(menu_list);
+   menu_list_pop_stack(menu_list, &nav->selection_ptr);
 
    return -1;
 }

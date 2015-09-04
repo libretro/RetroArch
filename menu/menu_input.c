@@ -722,7 +722,7 @@ static int menu_input_mouse_frame(
    }
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_R))
-      menu_list_pop_stack(menu_list);
+      menu_list_pop_stack(menu_list, &nav->selection_ptr);
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_WHEEL_DOWN))
       menu_navigation_increment(nav, 1);
@@ -767,7 +767,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 
          if ((unsigned)menu_input->mouse.y < disp->header_height)
          {
-            menu_list_pop_stack(menu_list);
+            menu_list_pop_stack(menu_list, &nav->selection_ptr);
             return 0;
          }
          if (
@@ -830,6 +830,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
 {
    int ret                  = 0;
    menu_display_t *disp     = menu_display_get_ptr();
+   menu_navigation_t *nav   = menu_navigation_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
    settings_t *settings     = config_get_ptr();
@@ -880,7 +881,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
          if (!menu_input->pointer.dragging)
          {
             if ((unsigned)menu_input->pointer.start_y < disp->header_height)
-               menu_list_pop_stack(menu_list);
+               menu_list_pop_stack(menu_list, &nav->selection_ptr);
             else if (menu_input->pointer.ptr <= menu_list_get_size(menu_list)-1)
             {
                menu_input->pointer.oldpressed[0] = false;
@@ -904,7 +905,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       if (!menu_input->pointer.oldback)
       {
          menu_input->pointer.oldback = true;
-         menu_list_pop_stack(menu_list);
+         menu_list_pop_stack(menu_list, &nav->selection_ptr);
       }
    }
    menu_input->pointer.oldback = menu_input->pointer.back;

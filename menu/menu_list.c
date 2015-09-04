@@ -133,6 +133,16 @@ static INLINE int menu_list_flush_stack_type(
    return needle ? strcmp(needle, label) : (type != final_type);
 }
 
+static void menu_list_pop(file_list_t *list, size_t *directory_ptr)
+{
+   if (list->size != 0)
+      menu_driver_list_free(list, list->size - 1, list->size - 1);
+
+   file_list_pop(list, directory_ptr);
+
+   menu_driver_list_set_selection(list);
+}
+
 void menu_list_flush_stack(menu_list_t *list,
       const char *needle, unsigned final_type)
 {
@@ -157,9 +167,8 @@ void menu_list_flush_stack(menu_list_t *list,
    }
 }
 
-void menu_list_pop_stack(menu_list_t *list)
+void menu_list_pop_stack(menu_list_t *list, size_t *directory_ptr)
 {
-   menu_navigation_t *nav = menu_navigation_get_ptr();
    if (!list)
       return;
 
@@ -168,19 +177,10 @@ void menu_list_pop_stack(menu_list_t *list)
 
    menu_driver_list_cache(MENU_LIST_PLAIN, 0);
 
-   menu_list_pop(list->menu_stack, &nav->selection_ptr);
+   menu_list_pop(list->menu_stack, directory_ptr);
    menu_entries_set_refresh(false);
 }
 
-void menu_list_pop(file_list_t *list, size_t *directory_ptr)
-{
-   if (list->size != 0)
-      menu_driver_list_free(list, list->size - 1, list->size - 1);
-
-   file_list_pop(list, directory_ptr);
-
-   menu_driver_list_set_selection(list);
-}
 
 void menu_list_clear(file_list_t *list)
 {

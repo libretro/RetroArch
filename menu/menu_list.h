@@ -78,9 +78,7 @@ menu_list_t *menu_list_new(void);
 void menu_list_flush_stack(menu_list_t *list,
       const char *needle, unsigned final_type);
 
-void menu_list_pop(file_list_t *list, size_t *directory_ptr);
-
-void menu_list_pop_stack(menu_list_t *list);
+void menu_list_pop_stack(menu_list_t *list, size_t *directory_ptr);
 
 void menu_list_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type,
