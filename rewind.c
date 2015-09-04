@@ -16,14 +16,16 @@
  */
 
 #define __STDC_LIMIT_MACROS
-#include "rewind.h"
-#include "performance.h"
 #include <stdlib.h>
 #include <string.h>
+
 #include <retro_inline.h>
+
 #include "dynamic.h"
 #include "general.h"
 #include "msg_hash.h"
+#include "rewind.h"
+#include "performance.h"
 
 #ifndef UINT16_MAX
 #define UINT16_MAX 0xffff

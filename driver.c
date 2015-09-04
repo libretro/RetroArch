@@ -14,11 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/posix_string.h>
+
 #include "driver.h"
 #include "general.h"
-#include "retroarch.h"
 #include "msg_hash.h"
-#include "compat/posix_string.h"
 #include "gfx/video_monitor.h"
 #include "audio/audio_monitor.h"
 

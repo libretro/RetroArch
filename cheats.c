@@ -14,22 +14,24 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "cheats.h"
-#include "general.h"
-#include "runloop.h"
-#include "dynamic.h"
+#include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
+
 #include <file/config_file.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 
+#include "cheats.h"
+#include "general.h"
+#include "runloop.h"
+#include "dynamic.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include <stdlib.h>
-#include <stddef.h>
-#include <string.h>
 
 void cheat_manager_apply_cheats(cheat_manager_t *handle)
 {

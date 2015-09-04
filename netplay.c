@@ -20,7 +20,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+
 #include <net/net_compat.h>
+
 #include "netplay.h"
 #include "general.h"
 #include "autosave.h"
