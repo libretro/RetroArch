@@ -40,33 +40,6 @@
 #include "decompress/zip_support.h"
 #endif
 
-#ifdef __HAIKU__
-#include <kernel/image.h>
-#endif
-
-#if defined(_WIN32)
-#ifdef _MSC_VER
-#define setmode _setmode
-#endif
-#ifdef _XBOX
-#include <xtl.h>
-#define INVALID_FILE_ATTRIBUTES -1
-#else
-#include <io.h>
-#include <fcntl.h>
-#include <direct.h>
-#include <windows.h>
-#endif
-#elif defined(VITA)
-#include <psp2/io/fcntl.h>
-#include <psp2/io/dirent.h>
-#else
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <unistd.h>
-#endif
-
 /**
  * write_file:
  * @path             : path to file.
