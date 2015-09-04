@@ -264,7 +264,7 @@ static int action_iterate_menu_viewport(char *s, size_t len,
          break;
 
       case MENU_ACTION_CANCEL:
-         menu_list_pop_stack(menu_list);
+         menu_list_flush_stack(menu_list, NULL, 49);
 
          if (hash == MENU_LABEL_CUSTOM_VIEWPORT_2)
          {
@@ -277,7 +277,7 @@ static int action_iterate_menu_viewport(char *s, size_t len,
          break;
 
       case MENU_ACTION_OK:
-         menu_list_pop_stack(menu_list);
+         menu_list_flush_stack(menu_list, NULL, 49);
 
          if (type == MENU_SETTINGS_CUSTOM_VIEWPORT
                && !settings->video.scale_integer)
