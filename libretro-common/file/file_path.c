@@ -498,13 +498,15 @@ const char *path_basename(const char *path)
  **/
 bool path_is_absolute(const char *path)
 {
+   if (path[0] == '/')
+      return true;
 #ifdef _WIN32
    /* Many roads lead to Rome ... */
-   return path[0] == '/' || (strstr(path, "\\\\") == path)
-      || strstr(path, ":/") || strstr(path, ":\\") || strstr(path, ":\\\\");
-#else
-   return path[0] == '/';
+   if ((strstr(path, "\\\\") == path)
+         || strstr(path, ":/") || strstr(path, ":\\") || strstr(path, ":\\\\"))
+      return true;
 #endif
+   return false;
 }
 
 /**
@@ -583,17 +585,14 @@ bool path_mkdir(const char *dir)
    const char *target = NULL;
    /* Use heap. Real chance of stack overflow if we recurse too hard. */
    char     *basedir = strdup(dir);
-   bool          ret = true;
+   bool          ret = false;
 
    if (!basedir)
       return false;
 
    path_parent_dir(basedir);
    if (!*basedir || !strcmp(basedir, dir))
-   {
-      ret = false;
       goto end;
-   }
 
    if (path_is_directory(basedir))
    {
