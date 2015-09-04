@@ -43,6 +43,7 @@
 #elif defined(VITA)
 #include <psp2/io/fcntl.h>
 #include <psp2/io/dirent.h>
+#include <sys/stat.h>
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
