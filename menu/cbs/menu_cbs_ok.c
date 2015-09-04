@@ -1297,6 +1297,7 @@ static int action_ok_lookup_setting(const char *path,
 }
 
 
+#ifdef HAVE_NETWORKING
 static int action_ok_core_content_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1308,7 +1309,6 @@ static int action_ok_core_content_list(const char *path,
    if (settings->network.buildbot_url[0] == '\0')
       return -1;
 
-#ifdef HAVE_NETWORKING
    event_command(EVENT_CMD_NETWORK_INIT);
 
    fill_pathname_join(url_path, settings->network.buildbot_assets_url,
@@ -1316,7 +1316,6 @@ static int action_ok_core_content_list(const char *path,
 
    rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, url_path, "cb_core_content_list", 0, 1,
          true);
-#endif
 
    return generic_action_ok_displaylist_push(path,
          label, type, idx, entry_idx, ACTION_OK_DL_CORE_CONTENT_LIST);
@@ -1333,7 +1332,6 @@ static int action_ok_core_updater_list(const char *path,
    if (settings->network.buildbot_url[0] == '\0')
       return -1;
 
-#ifdef HAVE_NETWORKING
    event_command(EVENT_CMD_NETWORK_INIT);
 
    fill_pathname_join(url_path, settings->network.buildbot_url,
@@ -1341,11 +1339,12 @@ static int action_ok_core_updater_list(const char *path,
 
    rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, url_path, "cb_core_updater_list", 0, 1,
          true);
-#endif
 
    return generic_action_ok_displaylist_push(path,
          label, type, idx, entry_idx, ACTION_OK_DL_CORE_UPDATER_LIST);
 }
+#endif
+
 
 static int action_ok_custom_viewport(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -1892,12 +1891,14 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_RECORD_CONFIG:
          cbs->action_ok = action_ok_record_configfile;
          break;
+#ifdef HAVE_NETWORKING
       case MENU_LABEL_DOWNLOAD_CORE_CONTENT:
          cbs->action_ok = action_ok_core_content_list;
          break;
       case MENU_LABEL_VALUE_CORE_UPDATER_LIST:
          cbs->action_ok = action_ok_core_updater_list;
          break;
+#endif
       case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
       case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
          cbs->action_ok = action_ok_shader_parameters;
