@@ -558,7 +558,8 @@ enum
    ACTION_OK_LOAD_REMAPPING_FILE,
    ACTION_OK_LOAD_CHEAT_FILE,
    ACTION_OK_APPEND_DISK_IMAGE,
-   ACTION_OK_LOAD_CONFIG_FILE
+   ACTION_OK_LOAD_CONFIG_FILE,
+   ACTION_OK_LOAD_CORE
 };
 
 
@@ -567,12 +568,15 @@ static int generic_action_ok(const char *path,
       unsigned id, unsigned flush_id)
 {
    char action_path[PATH_MAX_LENGTH];
+   unsigned flush_type               = 0;
    int ret                           = 0;
    const char             *menu_path = NULL;
+   const char *flush_char            = NULL;
    global_t                  *global = global_get_ptr();
    menu_navigation_t            *nav = menu_navigation_get_ptr();
    menu_display_t              *disp = menu_display_get_ptr();
    menu_handle_t               *menu = menu_driver_get_ptr();
+   settings_t              *settings = config_get_ptr();
    menu_list_t       *menu_list      = menu_list_get_ptr();
    if (!menu || !menu_list)
       goto error;
@@ -581,9 +585,35 @@ static int generic_action_ok(const char *path,
          NULL, NULL);
 
    fill_pathname_join(action_path, menu_path, path, sizeof(action_path));
+   flush_char = menu_hash_to_str(flush_id);
 
    switch (id)
    {
+      case ACTION_OK_LOAD_CORE:
+         flush_char = NULL;
+         flush_type = MENU_SETTINGS;
+         fill_pathname_join(settings->libretro, menu_path, path,
+               sizeof(settings->libretro));
+         event_command(EVENT_CMD_LOAD_CORE);
+
+#if defined(HAVE_DYNAMIC)
+         /* No content needed for this core, load core immediately. */
+         if (menu->load_no_content && settings->core.set_supports_no_game_enable)
+         {
+            *global->path.fullpath = '\0';
+            ret = menu_common_load_content(false, CORE_TYPE_PLAIN);
+         }
+         else
+            ret = 0;
+#elif defined(RARCH_CONSOLE)
+         /* Core selection on non-console just updates directory listing.
+          * Will take effect on new content load. */
+         ret = -1;
+         event_command(EVENT_CMD_RESTART_RETROARCH);
+#endif
+
+         break;
+
       case ACTION_OK_LOAD_CONFIG_FILE:
          disp->msg_force = true;
 
@@ -633,12 +663,19 @@ static int generic_action_ok(const char *path,
          break;
    }
 
-   menu_list_flush_stack(menu_list, menu_hash_to_str(flush_id), 0);
+   menu_list_flush_stack(menu_list, flush_char, flush_type);
 
    return ret;
 
 error:
    return -1;
+}
+
+static int action_ok_core_load(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok(path, label, type, idx, entry_idx,
+         ACTION_OK_LOAD_CORE, MENU_SETTINGS);
 }
 
 static int action_ok_config_load(const char *path,
@@ -888,47 +925,6 @@ static int action_ok_deferred_list_stub(const char *path,
    return 0;
 }
 
-static int action_ok_core_load(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   const char *menu_path    = NULL;
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   menu_list_t   *menu_list = menu_list_get_ptr();
-   settings_t *settings     = config_get_ptr();
-   global_t *global         = global_get_ptr();
-
-   if (!menu || !menu_list)
-      return -1;
-
-   (void)global;
-
-   menu_list_get_last_stack(menu_list,
-         &menu_path, NULL, NULL, NULL);
-
-   fill_pathname_join(settings->libretro, menu_path, path,
-         sizeof(settings->libretro));
-   event_command(EVENT_CMD_LOAD_CORE);
-   menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
-
-#if defined(HAVE_DYNAMIC)
-   /* No content needed for this core, load core immediately. */
-   if (menu->load_no_content && settings->core.set_supports_no_game_enable)
-   {
-      *global->path.fullpath = '\0';
-      return menu_common_load_content(false, CORE_TYPE_PLAIN);
-   }
-#elif defined(RARCH_CONSOLE)
-   event_command(EVENT_CMD_RESTART_RETROARCH);
-#endif
-
-#if defined(RARCH_CONSOLE)
-   return -1;
-#else
-   /* Core selection on non-console just updates directory listing.
-    * Will take effect on new content load. */
-   return 0;
-#endif
-}
 
 
 
