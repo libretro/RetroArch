@@ -740,17 +740,37 @@ static int action_ok_remap_file_save_as(const char *path,
    return 0;
 }
 
-static int action_ok_remap_file_save_core(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
+enum
+{
+   ACTION_OK_REMAP_FILE_SAVE_CORE = 0,
+   ACTION_OK_REMAP_FILE_SAVE_GAME
+};
+
+static int generic_action_ok_remap_file_save(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx,
+      unsigned action_type)
 {
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
-   settings_t *settings              = config_get_ptr();
-   rarch_system_info_t *info         = rarch_system_info_get_ptr();
-   const char *core_name             = info ? info->info.library_name : NULL;
+   global_t *global                = global_get_ptr();
+   settings_t *settings            = config_get_ptr();
+   rarch_system_info_t *info       = rarch_system_info_get_ptr();
+   const char *game_name           = NULL;
+   const char *core_name           = info ? info->info.library_name : NULL;
 
-   fill_pathname_join(directory,settings->input_remapping_directory,core_name,PATH_MAX_LENGTH);
-   fill_pathname_join(file,core_name,core_name,PATH_MAX_LENGTH);
+   fill_pathname_join(directory, settings->input_remapping_directory, core_name, PATH_MAX_LENGTH);
+
+   switch (action_type)
+   {
+      case ACTION_OK_REMAP_FILE_SAVE_CORE:
+         fill_pathname_join(file, core_name, core_name, PATH_MAX_LENGTH);
+         break;
+      case ACTION_OK_REMAP_FILE_SAVE_GAME:
+         if (global)
+            game_name           = path_basename(global->name.base);
+         fill_pathname_join(file, core_name, game_name, PATH_MAX_LENGTH);
+         break;
+   }
 
    if(!path_file_exists(directory))
        path_mkdir(directory);
@@ -763,29 +783,18 @@ static int action_ok_remap_file_save_core(const char *path,
    return 0;
 }
 
+static int action_ok_remap_file_save_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_remap_file_save(path, label, type,
+         idx, entry_idx, ACTION_OK_REMAP_FILE_SAVE_CORE);
+}
+
 static int action_ok_remap_file_save_game(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char directory[PATH_MAX_LENGTH];
-   char file[PATH_MAX_LENGTH];
-   global_t *global                = global_get_ptr();
-   settings_t *settings            = config_get_ptr();
-   rarch_system_info_t *info         = rarch_system_info_get_ptr();
-   const char *core_name           = info   ? info->info.library_name : NULL;
-   const char *game_name           = global ? path_basename(global->name.base)  : NULL;
-
-   fill_pathname_join(directory,settings->input_remapping_directory,core_name,PATH_MAX_LENGTH);
-   fill_pathname_join(file,core_name,game_name,PATH_MAX_LENGTH);
-
-   if(!path_file_exists(directory))
-       path_mkdir(directory);
-
-   if(input_remapping_save_file(file))
-      rarch_main_msg_queue_push("Remap file saved successfully", 1, 100, true);
-   else
-      rarch_main_msg_queue_push("Error saving remap file", 1, 100, true);
-
-   return 0;
+   return generic_action_ok_remap_file_save(path, label, type,
+         idx, entry_idx, ACTION_OK_REMAP_FILE_SAVE_GAME);
 }
 
 int action_ok_path_use_directory(const char *path,
