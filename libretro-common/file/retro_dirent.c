@@ -115,14 +115,6 @@ const char *retro_dirent_get_name(struct RDIR *rdir)
 #endif
 }
 
-#if defined(__CELLOS_LV2__)
-
-#ifndef S_ISDIR
-#define S_ISDIR(x) (x & 0040000)
-#endif
-
-#endif
-
 /**
  *
  * retro_dirent_is_dir:
