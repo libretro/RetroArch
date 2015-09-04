@@ -34,15 +34,6 @@ size_t hack_shader_pass = 0;
 char core_updater_path[PATH_MAX_LENGTH];
 #endif
 
-static int menu_action_setting_set_current_string_path(
-      rarch_setting_t *setting, const char *dir, const char *path)
-{
-   char s[PATH_MAX_LENGTH];
-   fill_pathname_join(s, dir, path, sizeof(s));
-   setting_set_with_string_representation(setting, s);
-   return menu_setting_generic(setting, false);
-}
-
 enum
 {
    ACTION_OK_DL_DEFAULT = 0,
@@ -671,11 +662,16 @@ static int generic_action_ok(const char *path,
          event_command(EVENT_CMD_RESUME);
          break;
       case ACTION_OK_SET_PATH:
+         flush_char = NULL;
+         flush_type = 49;
          {
             menu_file_list_cbs_t *cbs = menu_list_get_last_stack_actiondata(menu_list);
 
             if (cbs)
-               menu_action_setting_set_current_string_path(cbs->setting, menu_path, path);
+            {
+               setting_set_with_string_representation(cbs->setting, action_path);
+               ret = menu_setting_generic(cbs->setting, false);
+            }
          }
          break;
       default:
@@ -1006,10 +1002,7 @@ static int action_ok_file_load(const char *path,
    setting = menu_setting_find(menu_label);
 
    if (setting && setting->type == ST_PATH)
-   {
-      menu_action_setting_set_current_string_path(setting, menu_path_new, path);
-      menu_list_pop_stack_by_needle(menu_list, setting->name);
-   }
+      return action_ok_set_path(path, label, type, idx, entry_idx);
    else
    {
       if (type == MENU_FILE_IN_CARCHIVE)
