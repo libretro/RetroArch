@@ -15,12 +15,8 @@
 
 #include <retro_miscellaneous.h>
 
-#include "menu_display.h"
-#include "menu_hash.h"
-#include "menu_setting.h"
 #include "menu_video.h"
 
-#include "../gfx/video_common.h"
 #ifdef HAVE_THREADS
 #include "../gfx/video_thread_wrapper.h"
 #endif

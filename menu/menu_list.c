@@ -18,12 +18,9 @@
 
 #include <retro_inline.h>
 
-#include "../driver.h"
 #include "menu.h"
 #include "menu_cbs.h"
-#include "menu_hash.h"
 #include "menu_list.h"
-#include "menu_navigation.h"
 
 size_t menu_list_get_size(menu_list_t *list)
 {

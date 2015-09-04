@@ -17,12 +17,7 @@
 #include <string/string_list.h>
 
 #include "menu.h"
-#include "menu_display.h"
 #include "menu_entry.h"
-#include "menu_navigation.h"
-#include "menu_setting.h"
-#include "menu_input.h"
-#include "../runloop_data.h"
 
 /* This file provides an abstraction of the currently displayed
  * menu.

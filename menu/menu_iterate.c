@@ -18,18 +18,11 @@
 #include <retro_inline.h>
 
 #include "menu.h"
-#include "menu_cbs.h"
-#include "menu_display.h"
 #include "menu_hash.h"
-#include "menu_entry.h"
 #include "menu_setting.h"
-#include "menu_input.h"
-#include "menu_shader.h"
 #include "menu_navigation.h"
 
 #include "../general.h"
-#include "../performance.h"
-#include "../retroarch.h"
 #include "../input/input_common.h"
 #include "../input/input_autodetect.h"
 

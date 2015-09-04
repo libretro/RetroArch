@@ -24,7 +24,6 @@
 #include "menu_hash.h"
 #include "menu_display.h"
 #include "menu_displaylist.h"
-#include "menu_navigation.h"
 #include "menu_setting.h"
 
 #ifdef HAVE_LIBRETRODB
@@ -32,11 +31,9 @@
 #endif
 
 #include "../general.h"
-#include "../retroarch.h"
 #include "../gfx/video_shader_driver.h"
 #include "../config.features.h"
 #include "../git_version.h"
-#include "../performance.h"
 
 #ifdef ANDROID
 #include "../frontend/drivers/platform_android.h"

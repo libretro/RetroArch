@@ -25,7 +25,6 @@
 
 #include "menu_displaylist.h"
 #include "menu_navigation.h"
-#include "menu_entries.h"
 
 #include "../configuration.h"
 

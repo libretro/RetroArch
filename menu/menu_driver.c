@@ -23,7 +23,6 @@
 #include "menu_displaylist.h"
 #include "menu_video.h"
 #include "../driver.h"
-#include "../general.h"
 
 static bool menu_alive = false;
 

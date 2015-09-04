@@ -17,13 +17,9 @@
 
 #include "menu.h"
 #include "menu_display.h"
-#include "menu_animation.h"
-#include "../dynamic.h"
-#include "../../retroarch.h"
 #include "../../config.def.h"
 #include "../gfx/video_context_driver.h"
 #include "../gfx/video_thread_wrapper.h"
-#include "menu_list.h"
 
 menu_display_t *menu_display_get_ptr(void)
 {

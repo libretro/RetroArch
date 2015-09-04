@@ -22,7 +22,6 @@
 #include "menu_display.h"
 #include "menu_animation.h"
 #include "../configuration.h"
-#include "../runloop.h"
 #include "../performance.h"
 
 menu_animation_t *menu_animation_get_ptr(void)
