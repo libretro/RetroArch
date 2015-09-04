@@ -520,7 +520,7 @@ bool path_is_absolute(const char *path)
 void path_resolve_realpath(char *buf, size_t size)
 {
 #ifndef RARCH_CONSOLE
-   char tmp[PATH_MAX_LENGTH] = {0};
+   char tmp[PATH_MAX_LENGTH];
 
    strlcpy(tmp, buf, sizeof(tmp));
 
@@ -537,10 +537,6 @@ void path_resolve_realpath(char *buf, size_t size)
    if (!realpath(tmp, buf))
       strlcpy(buf, tmp, size);
 #endif
-
-#else
-   (void)buf;
-   (void)size;
 #endif
 }
 
@@ -633,13 +629,14 @@ void fill_pathname_resolve_relative(char *out_path,
       const char *in_refpath, const char *in_path, size_t size)
 {
    if (path_is_absolute(in_path))
-      rarch_assert(strlcpy(out_path, in_path, size) < size);
-   else
    {
-      rarch_assert(strlcpy(out_path, in_refpath, size) < size);
-      path_basedir(out_path);
-      rarch_assert(strlcat(out_path, in_path, size) < size);
+      rarch_assert(strlcpy(out_path, in_path, size) < size);
+      return;
    }
+
+   rarch_assert(strlcpy(out_path, in_refpath, size) < size);
+   path_basedir(out_path);
+   rarch_assert(strlcat(out_path, in_path, size) < size);
 }
 
 /**
@@ -712,18 +709,18 @@ void fill_short_pathname_representation(char* out_rep,
             sizeof(path_short));
 
    last_hash = (char*)strchr(path_short,'#');
-   /* We handle paths like:
-    * /path/to/file.7z#mygame.img
-    * short_name: mygame.img:
-    */
    if(last_hash != NULL)
    {
-      /* We check whether something is actually
+      /* We handle paths like:
+       * /path/to/file.7z#mygame.img
+       * short_name: mygame.img:
+       *
+       * We check whether something is actually
        * after the hash to avoid going over the buffer.
        */
       rarch_assert(strlen(last_hash) > 1);
-      strlcpy(out_rep,last_hash + 1, size);
+      strlcpy(out_rep, last_hash + 1, size);
    }
    else
-      strlcpy(out_rep,path_short, size);
+      strlcpy(out_rep, path_short, size);
 }
