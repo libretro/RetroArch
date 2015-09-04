@@ -25,6 +25,7 @@ PPU_SRCS		= frontend/frontend_salamander.c \
 				  frontend/drivers/platform_null.c \
 				  libretro-common/file/file_path.c \
 				  libretro-common/file/dir_list.c \
+				  libretro-common/file/retro_dirent.c \
 				  libretro-common/hash/rhash.c \
 				  libretro-common/string/string_list.c \
 				  libretro-common/compat/compat.c \

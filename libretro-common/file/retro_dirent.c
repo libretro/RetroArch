@@ -130,8 +130,6 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
 #elif defined(VITA)
    return PSP2_S_ISDIR(entry->d_stat.st_mode);
 #endif
-#elif defined(__CELLOS_LV2__)
-   return S_ISDIR(entry->d_stat.st_mode);
 #elif defined(DT_DIR)
    const struct dirent *entry = (const struct dirent*)rdir->entry;
    if (entry->d_type == DT_DIR)
