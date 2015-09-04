@@ -27,13 +27,9 @@
 #include <retro_inline.h>
 
 #include "../menu.h"
-#include "../menu_animation.h"
-#include "../menu_entry.h"
 #include "../menu_hash.h"
-#include "../menu_display.h"
 #include "../menu_video.h"
 
-#include "../../configuration.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
 #define RGUI_TERM_START_X        (frame_buf->width / 21)

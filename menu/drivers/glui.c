@@ -28,12 +28,10 @@
 #include "../menu.h"
 #include "../menu_driver.h"
 #include "../menu_hash.h"
-#include "../menu_entry.h"
 #include "../menu_display.h"
 #include "../menu_video.h"
 
 #include "../../gfx/video_thread_wrapper.h"
-#include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
 
 #include "../../runloop_data.h"
