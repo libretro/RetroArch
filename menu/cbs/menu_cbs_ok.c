@@ -557,16 +557,21 @@ enum
    ACTION_OK_LOAD_RECORD_CONFIGFILE,
    ACTION_OK_LOAD_REMAPPING_FILE,
    ACTION_OK_LOAD_CHEAT_FILE,
-   ACTION_OK_APPEND_DISK_IMAGE
+   ACTION_OK_APPEND_DISK_IMAGE,
+   ACTION_OK_LOAD_CONFIG_FILE
 };
+
 
 static int generic_action_ok(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned id, unsigned flush_id)
 {
    char action_path[PATH_MAX_LENGTH];
+   int ret                           = 0;
    const char             *menu_path = NULL;
    global_t                  *global = global_get_ptr();
+   menu_navigation_t            *nav = menu_navigation_get_ptr();
+   menu_display_t              *disp = menu_display_get_ptr();
    menu_handle_t               *menu = menu_driver_get_ptr();
    menu_list_t       *menu_list      = menu_list_get_ptr();
    if (!menu || !menu_list)
@@ -579,6 +584,15 @@ static int generic_action_ok(const char *path,
 
    switch (id)
    {
+      case ACTION_OK_LOAD_CONFIG_FILE:
+         disp->msg_force = true;
+
+         if (rarch_replace_config(action_path))
+         {
+            menu_navigation_clear(nav, false);
+            ret = -1;
+         }
+         break;
 #ifdef HAVE_SHADER_MANAGER
       case ACTION_OK_LOAD_PRESET:
          menu_shader_manager_set_preset(menu->shader,
@@ -621,10 +635,17 @@ static int generic_action_ok(const char *path,
 
    menu_list_flush_stack(menu_list, menu_hash_to_str(flush_id), 0);
 
-   return 0;
+   return ret;
 
 error:
    return -1;
+}
+
+static int action_ok_config_load(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok(path, label, type, idx, entry_idx,
+         ACTION_OK_LOAD_CONFIG_FILE, MENU_SETTINGS);
 }
 
 static int action_ok_disk_image_append(const char *path,
@@ -909,34 +930,6 @@ static int action_ok_core_load(const char *path,
 #endif
 }
 
-static int action_ok_config_load(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   const char *menu_path         = NULL;
-   char config[PATH_MAX_LENGTH]  = {0};
-   menu_navigation_t        *nav = menu_navigation_get_ptr();
-   menu_handle_t           *menu = menu_driver_get_ptr();
-   menu_display_t          *disp = menu_display_get_ptr();
-   menu_list_t        *menu_list = menu_list_get_ptr();
-
-   if (!menu || !menu_list)
-      return -1;
-
-   menu_list_get_last_stack(menu_list, &menu_path, NULL, NULL, NULL);
-
-   fill_pathname_join(config, menu_path, path, sizeof(config));
-   menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
-
-   disp->msg_force = true;
-
-   if (rarch_replace_config(config))
-   {
-      menu_navigation_clear(nav, false);
-      return -1;
-   }
-
-   return 0;
-}
 
 
 enum
