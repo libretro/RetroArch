@@ -620,59 +620,59 @@ static int generic_action_ok(const char *path,
 #elif defined(RARCH_CONSOLE)
          /* Core selection on non-console just updates directory listing.
           * Will take effect on new content load. */
-      ret = -1;
-      event_command(EVENT_CMD_RESTART_RETROARCH);
+         ret = -1;
+         event_command(EVENT_CMD_RESTART_RETROARCH);
 #endif
 
-      break;
+         break;
 
       case ACTION_OK_LOAD_CONFIG_FILE:
-      disp->msg_force = true;
+         disp->msg_force = true;
 
-      if (rarch_replace_config(action_path))
-      {
-         menu_navigation_clear(nav, false);
-         ret = -1;
-      }
-      break;
+         if (rarch_replace_config(action_path))
+         {
+            menu_navigation_clear(nav, false);
+            ret = -1;
+         }
+         break;
 #ifdef HAVE_SHADER_MANAGER
       case ACTION_OK_LOAD_PRESET:
-      menu_shader_manager_set_preset(menu->shader,
-            video_shader_parse_type(action_path, RARCH_SHADER_NONE),
-            action_path);
-      break;
+         menu_shader_manager_set_preset(menu->shader,
+               video_shader_parse_type(action_path, RARCH_SHADER_NONE),
+               action_path);
+         break;
 #endif
 #ifdef HAVE_SHADER_MANAGER
       case ACTION_OK_LOAD_SHADER_PASS:
-      strlcpy(
-            menu->shader->pass[hack_shader_pass].source.path,
-            action_path,
-            sizeof(menu->shader->pass[hack_shader_pass].source.path));
-      video_shader_resolve_parameters(NULL, menu->shader);
-      break;
+         strlcpy(
+               menu->shader->pass[hack_shader_pass].source.path,
+               action_path,
+               sizeof(menu->shader->pass[hack_shader_pass].source.path));
+         video_shader_resolve_parameters(NULL, menu->shader);
+         break;
 #endif
       case ACTION_OK_LOAD_RECORD_CONFIGFILE:
-      strlcpy(global->record.config, action_path,
-            sizeof(global->record.config));
-      break;
+         strlcpy(global->record.config, action_path,
+               sizeof(global->record.config));
+         break;
       case ACTION_OK_LOAD_REMAPPING_FILE:
-      input_remapping_load_file(action_path);
-      break;
+         input_remapping_load_file(action_path);
+         break;
       case ACTION_OK_LOAD_CHEAT_FILE:
-      if (global->cheat)
-         cheat_manager_free(global->cheat);
+         if (global->cheat)
+            cheat_manager_free(global->cheat);
 
-      global->cheat = cheat_manager_load(action_path);
+         global->cheat = cheat_manager_load(action_path);
 
-      if (!global->cheat)
-         goto error;
-      break;
+         if (!global->cheat)
+            goto error;
+         break;
       case ACTION_OK_APPEND_DISK_IMAGE:
-      event_disk_control_append_image(action_path);
-      event_command(EVENT_CMD_RESUME);
-      break;
+         event_disk_control_append_image(action_path);
+         event_command(EVENT_CMD_RESUME);
+         break;
       default:
-      break;
+         break;
    }
 
    menu_list_flush_stack(menu_list, flush_char, flush_type);
