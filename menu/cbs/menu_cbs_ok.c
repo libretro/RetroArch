@@ -559,7 +559,8 @@ enum
    ACTION_OK_LOAD_CHEAT_FILE,
    ACTION_OK_APPEND_DISK_IMAGE,
    ACTION_OK_LOAD_CONFIG_FILE,
-   ACTION_OK_LOAD_CORE
+   ACTION_OK_LOAD_CORE,
+   ACTION_OK_LOAD_WALLPAPER
 };
 
 
@@ -589,6 +590,17 @@ static int generic_action_ok(const char *path,
 
    switch (id)
    {
+      case ACTION_OK_LOAD_WALLPAPER:
+         flush_char = NULL;
+         flush_type = 49;
+         if (path_file_exists(action_path))
+         {
+            strlcpy(settings->menu.wallpaper, action_path, sizeof(settings->menu.wallpaper));
+
+            rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, action_path, "cb_menu_wallpaper", 0, 1,
+                  true);
+         }
+         break;
       case ACTION_OK_LOAD_CORE:
          flush_char = NULL;
          flush_type = MENU_SETTINGS;
@@ -608,59 +620,59 @@ static int generic_action_ok(const char *path,
 #elif defined(RARCH_CONSOLE)
          /* Core selection on non-console just updates directory listing.
           * Will take effect on new content load. */
-         ret = -1;
-         event_command(EVENT_CMD_RESTART_RETROARCH);
+      ret = -1;
+      event_command(EVENT_CMD_RESTART_RETROARCH);
 #endif
 
-         break;
+      break;
 
       case ACTION_OK_LOAD_CONFIG_FILE:
-         disp->msg_force = true;
+      disp->msg_force = true;
 
-         if (rarch_replace_config(action_path))
-         {
-            menu_navigation_clear(nav, false);
-            ret = -1;
-         }
-         break;
+      if (rarch_replace_config(action_path))
+      {
+         menu_navigation_clear(nav, false);
+         ret = -1;
+      }
+      break;
 #ifdef HAVE_SHADER_MANAGER
       case ACTION_OK_LOAD_PRESET:
-         menu_shader_manager_set_preset(menu->shader,
-               video_shader_parse_type(action_path, RARCH_SHADER_NONE),
-               action_path);
-         break;
+      menu_shader_manager_set_preset(menu->shader,
+            video_shader_parse_type(action_path, RARCH_SHADER_NONE),
+            action_path);
+      break;
 #endif
 #ifdef HAVE_SHADER_MANAGER
       case ACTION_OK_LOAD_SHADER_PASS:
-         strlcpy(
-               menu->shader->pass[hack_shader_pass].source.path,
-               action_path,
-               sizeof(menu->shader->pass[hack_shader_pass].source.path));
-         video_shader_resolve_parameters(NULL, menu->shader);
-         break;
+      strlcpy(
+            menu->shader->pass[hack_shader_pass].source.path,
+            action_path,
+            sizeof(menu->shader->pass[hack_shader_pass].source.path));
+      video_shader_resolve_parameters(NULL, menu->shader);
+      break;
 #endif
       case ACTION_OK_LOAD_RECORD_CONFIGFILE:
-         strlcpy(global->record.config, action_path,
-               sizeof(global->record.config));
-         break;
+      strlcpy(global->record.config, action_path,
+            sizeof(global->record.config));
+      break;
       case ACTION_OK_LOAD_REMAPPING_FILE:
-         input_remapping_load_file(action_path);
-         break;
+      input_remapping_load_file(action_path);
+      break;
       case ACTION_OK_LOAD_CHEAT_FILE:
-         if (global->cheat)
-            cheat_manager_free(global->cheat);
+      if (global->cheat)
+         cheat_manager_free(global->cheat);
 
-         global->cheat = cheat_manager_load(action_path);
+      global->cheat = cheat_manager_load(action_path);
 
-         if (!global->cheat)
-            goto error;
-         break;
+      if (!global->cheat)
+         goto error;
+      break;
       case ACTION_OK_APPEND_DISK_IMAGE:
-         event_disk_control_append_image(action_path);
-         event_command(EVENT_CMD_RESUME);
-         break;
+      event_disk_control_append_image(action_path);
+      event_command(EVENT_CMD_RESUME);
+      break;
       default:
-         break;
+      break;
    }
 
    menu_list_flush_stack(menu_list, flush_char, flush_type);
@@ -669,6 +681,14 @@ static int generic_action_ok(const char *path,
 
 error:
    return -1;
+}
+
+static int action_ok_menu_wallpaper_load(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+
+   return generic_action_ok(path, label, type, idx, entry_idx,
+         ACTION_OK_LOAD_WALLPAPER, MENU_SETTINGS);
 }
 
 static int action_ok_core_load(const char *path,
@@ -726,44 +746,6 @@ static int action_ok_shader_pass_load(const char *path,
    return generic_action_ok(path, label, type, idx, entry_idx,
          ACTION_OK_LOAD_SHADER_PASS, MENU_LABEL_SHADER_OPTIONS);
 }
-
-
-
-static int action_ok_menu_wallpaper_load(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   char wallpaper_path[PATH_MAX_LENGTH];
-   const char *menu_label               = NULL;
-   const char *menu_path                = NULL;
-   menu_file_list_cbs_t *cbs            = NULL;
-   menu_list_t       *menu_list         = menu_list_get_ptr();
-   settings_t *settings                 = config_get_ptr();
-   
-   if (!menu_list)
-      return -1;
-
-   menu_list_get_last_stack(menu_list, &menu_path, &menu_label,
-         NULL, NULL);
-   cbs = menu_list_get_last_stack_actiondata(menu_list);
-
-   if (!cbs)
-      return -1;
-
-   fill_pathname_join(wallpaper_path, menu_path, path, sizeof(wallpaper_path));
-
-   if (path_file_exists(wallpaper_path))
-   {
-      strlcpy(settings->menu.wallpaper, wallpaper_path, sizeof(settings->menu.wallpaper));
-
-      rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, wallpaper_path, "cb_menu_wallpaper", 0, 1,
-            true);
-   }
-
-   menu_list_pop_stack_by_needle(menu_list, cbs->setting->name);
-
-   return 0;
-}
-
 
 
 static int action_ok_cheat(const char *path,
@@ -876,7 +858,7 @@ static int action_ok_path_scan_directory(const char *path,
 static int action_ok_core_deferred_set(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char core_display_name[PATH_MAX_LENGTH] = {0};
+   char core_display_name[PATH_MAX_LENGTH];
    menu_handle_t                     *menu = menu_driver_get_ptr();
    menu_list_t                  *menu_list = menu_list_get_ptr();
    if (!menu || !menu_list)
@@ -924,9 +906,6 @@ static int action_ok_deferred_list_stub(const char *path,
 {
    return 0;
 }
-
-
-
 
 enum
 {
@@ -1035,10 +1014,10 @@ static int action_ok_file_load(const char *path,
 static int action_ok_set_path(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *menu_path    = NULL;
-   const char *menu_label   = NULL;
-   menu_file_list_cbs_t *cbs            = NULL;
-   menu_list_t   *menu_list = menu_list_get_ptr();
+   const char *menu_path     = NULL;
+   const char *menu_label    = NULL;
+   menu_file_list_cbs_t *cbs = NULL;
+   menu_list_t   *menu_list  = menu_list_get_ptr();
 
    if (!menu_list)
       return -1;
@@ -1055,8 +1034,6 @@ static int action_ok_set_path(const char *path,
 
    return 0;
 }
-
-
 
 static int generic_action_ok_command(enum event_command cmd)
 {
@@ -1656,7 +1633,8 @@ static int action_ok_load_archive_detect_core(const char *path,
    {
       case -1:
          event_command(EVENT_CMD_LOAD_CORE);
-         return menu_common_load_content(false, CORE_TYPE_PLAIN);
+         ret = menu_common_load_content(false, CORE_TYPE_PLAIN);
+         break;
       case 0:
          ret = generic_action_ok_displaylist_push(path, label, type,
                selected, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
