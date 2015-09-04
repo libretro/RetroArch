@@ -584,6 +584,7 @@ FILE
 #ifndef IOS
 #include "../libretro-common/file/dir_list.c"
 #endif
+#include "../libretro-common/file/retro_dirent.c"
 #include "../dir_list_special.c"
 #include "../libretro-common/string/string_list.c"
 #include "../libretro-common/string/stdstring.c"
