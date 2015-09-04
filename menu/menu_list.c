@@ -126,13 +126,11 @@ menu_file_list_cbs_t *menu_list_get_last_stack_actiondata(const menu_list_t *lis
    return (menu_file_list_cbs_t*)file_list_get_last_actiondata(list->menu_stack);
 }
 
-static int menu_list_flush_stack_type(
+static INLINE int menu_list_flush_stack_type(
       const char *needle, const char *label,
       unsigned type, unsigned final_type)
 {
-   if (needle)
-      return strcmp(needle, label);
-   return type != final_type;
+   return needle ? strcmp(needle, label) : (type != final_type);
 }
 
 void menu_list_flush_stack(menu_list_t *list,
