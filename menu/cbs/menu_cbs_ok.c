@@ -422,9 +422,7 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx, const char *pa
    {
       case -1:
          event_command(EVENT_CMD_LOAD_CORE);
-         menu_common_load_content(false, CORE_TYPE_PLAIN);
-         ret = -1;
-         break;
+         return menu_common_load_content(false, CORE_TYPE_PLAIN);
       case 0:
          ret = generic_action_ok_displaylist_push(path,
                NULL, 0, idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
@@ -463,9 +461,7 @@ static int action_ok_file_load_detect_core(const char *path,
    strlcpy(global->path.fullpath, detect_content_path, sizeof(global->path.fullpath));
    strlcpy(settings->libretro, path, sizeof(settings->libretro));
    event_command(EVENT_CMD_LOAD_CORE);
-   menu_common_load_content(false, CORE_TYPE_PLAIN);
-
-   return -1;
+   return menu_common_load_content(false, CORE_TYPE_PLAIN);
 }
 
 
@@ -858,9 +854,7 @@ static int action_ok_core_load_deferred(const char *path,
    strlcpy(global->path.fullpath, menu->deferred_path,
          sizeof(global->path.fullpath));
 
-   menu_common_load_content(false, CORE_TYPE_PLAIN);
-
-   return -1;
+   return menu_common_load_content(false, CORE_TYPE_PLAIN);
 }
 
 static int action_ok_database_manager_list_deferred(const char *path,
@@ -904,9 +898,7 @@ static int action_ok_core_load(const char *path,
    if (menu->load_no_content && settings->core.set_supports_no_game_enable)
    {
       *global->path.fullpath = '\0';
-
-      menu_common_load_content(false, CORE_TYPE_PLAIN);
-      return -1;
+      return menu_common_load_content(false, CORE_TYPE_PLAIN);
    }
 
    /* Core selection on non-console just updates directory listing.
@@ -1055,9 +1047,7 @@ static int action_ok_file_load(const char *path,
          fill_pathname_join(global->path.fullpath, menu_path_new, path,
                sizeof(global->path.fullpath));
 
-      menu_common_load_content(true, CORE_TYPE_PLAIN);
-
-      return -1;
+      return menu_common_load_content(true, CORE_TYPE_PLAIN);
    }
 
    return 0;
@@ -1690,8 +1680,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    {
       case -1:
          event_command(EVENT_CMD_LOAD_CORE);
-         menu_common_load_content(false, CORE_TYPE_PLAIN);
-         break;
+         return menu_common_load_content(false, CORE_TYPE_PLAIN);
       case 0:
          ret = generic_action_ok_displaylist_push(path, label, type,
                selected, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);

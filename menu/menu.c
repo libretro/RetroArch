@@ -149,12 +149,10 @@ void menu_common_push_content_settings(void)
    menu_displaylist_push_list(&info, DISPLAYLIST_CONTENT_SETTINGS);
 }
 
-void menu_common_load_content(bool persist, enum rarch_core_type type)
+int menu_common_load_content(bool persist, enum rarch_core_type type)
 {
    menu_display_t *disp         = menu_display_get_ptr();
    menu_list_t *menu_list       = menu_list_get_ptr();
-   if (!menu_list)
-      return;
 
    switch (type)
    {
@@ -178,6 +176,8 @@ void menu_common_load_content(bool persist, enum rarch_core_type type)
    disp->msg_force = true;
 
    menu_common_push_content_settings();
+
+   return -1;
 }
 
 /**
