@@ -13,8 +13,8 @@ EXT=a
 
 mkdir -p ../pkg/${platform}/cores/
 
-make -C ../${platform}/kernelFunctionsPrx/ clean || exit 1
-make -C ../${platform}/kernelFunctionsPrx/ || exit 1
+make -C ../${platform}/kernel_functions_prx/ clean || exit 1
+make -C ../${platform}/kernel_functions_prx/ || exit 1
 cp -f ../kernel_functions.prx ../pkg/${platform}/kernel_functions.prx
 mv -f ../EBOOT.PBP ../pkg/${platform}/EBOOT.PBP
 
