@@ -1269,11 +1269,19 @@ static int action_ok_lookup_setting(const char *path,
 
 
 #ifdef HAVE_NETWORKING
-static int action_ok_core_content_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
+enum
 {
-   char url_path[PATH_MAX_LENGTH] = {0};
+   ACTION_OK_NETWORK_CORE_CONTENT_LIST = 0,
+   ACTION_OK_NETWORK_CORE_UPDATER_LIST
+};
+
+static int generic_action_ok_network(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx,
+      unsigned type_id)
+{
+   char url_path[PATH_MAX_LENGTH];
    settings_t *settings           = config_get_ptr();
+   unsigned type_id2 = 0;
 
    menu_entries_set_refresh(true);
 
@@ -1282,37 +1290,42 @@ static int action_ok_core_content_list(const char *path,
 
    event_command(EVENT_CMD_NETWORK_INIT);
 
-   fill_pathname_join(url_path, settings->network.buildbot_assets_url,
-         "cores/gw/.index", sizeof(url_path));
+   switch (type_id)
+   {
+      case ACTION_OK_NETWORK_CORE_CONTENT_LIST:
+         fill_pathname_join(url_path, settings->network.buildbot_assets_url,
+               "cores/gw/.index", sizeof(url_path));
 
-   rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, url_path, "cb_core_content_list", 0, 1,
-         true);
+         rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, url_path, "cb_core_content_list", 0, 1,
+               true);
+         type_id2 = ACTION_OK_DL_CORE_CONTENT_LIST;
+         break;
+      case ACTION_OK_NETWORK_CORE_UPDATER_LIST:
+         fill_pathname_join(url_path, settings->network.buildbot_url,
+               ".index", sizeof(url_path));
+
+         rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, url_path, "cb_core_updater_list", 0, 1,
+               true);
+         type_id2 = ACTION_OK_DL_CORE_UPDATER_LIST;
+         break;
+   }
 
    return generic_action_ok_displaylist_push(path,
-         label, type, idx, entry_idx, ACTION_OK_DL_CORE_CONTENT_LIST);
+         label, type, idx, entry_idx, type_id2);
+}
+
+static int action_ok_core_content_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_network(path, label, type, idx, entry_idx,
+         ACTION_OK_NETWORK_CORE_CONTENT_LIST);
 } 
 
 static int action_ok_core_updater_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char url_path[PATH_MAX_LENGTH] = {0};
-   settings_t *settings           = config_get_ptr();
-
-   menu_entries_set_refresh(true);
-
-   if (settings->network.buildbot_url[0] == '\0')
-      return -1;
-
-   event_command(EVENT_CMD_NETWORK_INIT);
-
-   fill_pathname_join(url_path, settings->network.buildbot_url,
-         ".index", sizeof(url_path));
-
-   rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, url_path, "cb_core_updater_list", 0, 1,
-         true);
-
-   return generic_action_ok_displaylist_push(path,
-         label, type, idx, entry_idx, ACTION_OK_DL_CORE_UPDATER_LIST);
+   return generic_action_ok_network(path, label, type, idx, entry_idx,
+         ACTION_OK_NETWORK_CORE_UPDATER_LIST);
 }
 #endif
 
