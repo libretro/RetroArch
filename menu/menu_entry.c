@@ -225,7 +225,7 @@ int menu_entry_pathdir_set_value(uint32_t i, const char *s)
 
    menu_setting_generic(cbs->setting, false);
 
-   menu_list_pop_stack_by_needle(menu_list, cbs->setting->name);
+   menu_list_flush_stack(menu_list, NULL, 49);
 
    return 0;
 }
