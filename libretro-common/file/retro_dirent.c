@@ -28,8 +28,6 @@
 
 #include <boolean.h>
 
-#include <file/file_path.h>
-
 struct RDIR
 {
 #if defined(_WIN32)
@@ -101,6 +99,14 @@ const char *retro_dirent_get_name(struct RDIR *rdir)
 #endif
 }
 
+#if defined(__CELLOS_LV2__)
+
+#ifndef S_ISDIR
+#define S_ISDIR(x) (x & 0040000)
+#endif
+
+#endif
+
 /**
  *
  * retro_dirent_is_dir:
@@ -124,18 +130,28 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
 #elif defined(VITA)
    return PSP2_S_ISDIR(entry->d_stat.st_mode);
 #endif
-
+#elif defined(__CELLOS_LV2__)
+   return S_ISDIR(entry->d_stat.st_mode);
 #elif defined(DT_DIR)
    const struct dirent *entry = (const struct dirent*)rdir->entry;
    if (entry->d_type == DT_DIR)
       return true;
    else if (entry->d_type == DT_UNKNOWN /* This can happen on certain file systems. */
          || entry->d_type == DT_LNK)
-      return path_is_directory(path);
+   {
+      struct stat buf;
+      if (stat(path, &buf) < 0)
+         return false;
+
+      return S_ISDIR(buf.st_mode);
+   }
    return false;
 #else /* dirent struct doesn't have d_type, do it the slow way ... */
-   const struct dirent *entry = (const struct dirent*)data;
-   return path_is_directory(path);
+   struct stat buf;
+   if (stat(path, &buf) < 0)
+      return false;
+
+   return S_ISDIR(buf.st_mode);
 #endif
 }
 
