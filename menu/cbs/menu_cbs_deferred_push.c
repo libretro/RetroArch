@@ -50,7 +50,6 @@ static int deferred_push_help(menu_displaylist_info_t *info)
 
 static int deferred_push_rdb_entry_detail(menu_displaylist_info_t *info)
 {
-   int ret;
    struct string_list *str_list  = string_split(info->label, "|"); 
 
    if (!str_list)
@@ -59,11 +58,9 @@ static int deferred_push_rdb_entry_detail(menu_displaylist_info_t *info)
    strlcpy(info->path_b,   str_list->elems[1].data, sizeof(info->path_b));
    strlcpy(info->label,    str_list->elems[0].data, sizeof(info->label));
 
-   ret = menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_ENTRY);
-
    string_list_free(str_list);
 
-   return ret;
+   return menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_ENTRY);
 }
 
 static int deferred_push_rpl_entry_actions(menu_displaylist_info_t *info)
@@ -92,19 +89,20 @@ static int deferred_push_database_manager_list_deferred(menu_displaylist_info_t 
 static int deferred_push_cursor_manager_list_deferred(menu_displaylist_info_t *info)
 {
    char rdb_path[PATH_MAX_LENGTH];
+   int ret                        = -1;
    char *query                    = NULL;
    char *rdb                      = NULL;
    settings_t *settings           = config_get_ptr();
    config_file_t *conf            = config_file_new(info->path);
 
    if (!conf || !settings)
-      goto error;
+      goto end;
 
    if (!config_get_string(conf, "query", &query))
-      goto error;
+      goto end;
 
    if (!config_get_string(conf, "rdb", &rdb))
-      goto error;
+      goto end;
 
    fill_pathname_join(rdb_path, settings->content_database,
          rdb, sizeof(rdb_path));
@@ -113,31 +111,25 @@ static int deferred_push_cursor_manager_list_deferred(menu_displaylist_info_t *i
    strlcpy(info->path,   rdb_path,   sizeof(info->path));
    strlcpy(info->path_c,    query,   sizeof(info->path_c));
 
-   menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_QUERY);
+   ret = menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_QUERY);
 
-   config_file_free(conf);
-   return 0;
-
-error:
+end:
    if (conf)
       config_file_free(conf);
-   return -1;
+   return ret;
 }
 
 static int deferred_push_cursor_manager_list_deferred_query_subsearch(menu_displaylist_info_t *info)
 {
+   int ret                       = -1;
 #ifdef HAVE_LIBRETRODB
-   int ret;
    char query[PATH_MAX_LENGTH]   = {0};
    struct string_list *str_list  = string_split(info->path, "|"); 
 
    database_info_build_query(query, sizeof(query), info->label, str_list->elems[0].data);
 
    if (query[0] == '\0')
-   {
-      string_list_free(str_list);
-      return -1;
-   }
+      goto end;
 
    strlcpy(info->path,   str_list->elems[1].data, sizeof(info->path));
    strlcpy(info->path_b,    str_list->elems[0].data, sizeof(info->path_b));
@@ -145,12 +137,11 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(menu_displ
 
    ret = menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_QUERY);
 
-   string_list_free(str_list);
-
-   return ret;
-#else
-   return 0;
+end:
+   if (str_list)
+      string_list_free(str_list);
 #endif
+   return ret;
 }
 
 static int deferred_push_video_shader_preset_parameters(menu_displaylist_info_t *info)
@@ -254,13 +245,14 @@ size_t core_len;
 
 static int cb_net_generic(void *data_, size_t len)
 {
+   int                ret = -1;
    char             *data = (char*)data_;
    menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
-      goto error;
+      goto end;
 
    if (!data)
-      goto error;
+      goto end;
 
    if (core_buf)
       free(core_buf);
@@ -268,18 +260,17 @@ static int cb_net_generic(void *data_, size_t len)
    core_buf = (char*)malloc((len+1) * sizeof(char));
 
    if (!core_buf)
-      goto error;
+      goto end;
 
    memcpy(core_buf, data, len * sizeof(char));
    core_buf[len] = '\0';
-   core_len = len;
+   core_len      = len;
+   ret           = 0;
 
    menu_entries_unset_refresh(true);
 
-   return 0;
-
-error:
-   return -1;
+end:
+   return ret;
 }
 
 int cb_core_updater_list(void *data_, size_t len)
