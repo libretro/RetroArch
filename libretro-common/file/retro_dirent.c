@@ -65,7 +65,6 @@ struct RDIR *retro_opendir(const char *name)
    rdir->directory = FindFirstFile(path_buf, &rdir->entry);
 #elif defined(VITA) || defined(PSP)
    rdir->directory = sceIoDopen(name);
-   rdir->entry     = NULL;
 #elif defined(__CELLOS_LV2__)
    rdir->error = cellFsOpendir(name, &rdir->directory);
 #else
@@ -132,7 +131,7 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
    const WIN32_FIND_DATA *entry = (const WIN32_FIND_DATA*)rdir->entry;
    return entry->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 #elif defined(PSP) || defined(VITA)
-   const SceIoDirent *entry = (const SceIoDirent*)rdir->entry;
+   const SceIoDirent *entry = (const SceIoDirent*)&rdir->entry;
 #if defined(PSP)
    return (entry->d_stat.st_attr & FIO_SO_IFDIR) == FIO_SO_IFDIR;
 #elif defined(VITA)
