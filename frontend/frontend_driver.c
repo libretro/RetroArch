@@ -53,6 +53,9 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(_WIN32) && !defined(_XBOX)
    &frontend_ctx_win32,
 #endif
+#ifdef XENON
+   &frontend_ctx_xenon,
+#endif
    &frontend_ctx_null,
    NULL
 };

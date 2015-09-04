@@ -634,6 +634,8 @@ FRONTEND
 #include "../frontend/drivers/platform_psp.c"
 #elif defined(_3DS)
 #include "../frontend/drivers/platform_ctr.c"
+#elif defined(XENON)
+#include "../frontend/drivers/platform_xenon.c"
 #elif defined(__QNX__)
 #include "../frontend/drivers/platform_qnx.c"
 #elif defined(ANDROID)
@@ -659,11 +661,7 @@ UI
 /*============================================================
 MAIN
 ============================================================ */
-#if defined(XENON)
-#include "../frontend/frontend_xenon.c"
-#else
 #include "../frontend/frontend.c"
-#endif
 
 /*============================================================
 GIT
