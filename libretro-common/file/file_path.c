@@ -42,11 +42,9 @@
 #endif
 #elif defined(VITA)
 #include <psp2/io/fcntl.h>
-#include <psp2/io/dirent.h>
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <dirent.h>
 #include <unistd.h>
 #endif
 
