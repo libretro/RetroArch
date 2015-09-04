@@ -47,6 +47,330 @@ static int menu_action_setting_set_current_string_path(
    return menu_setting_generic(setting, false);
 }
 
+enum
+{
+   ACTION_OK_DL_DEFAULT = 0,
+   ACTION_OK_DL_OPEN_ARCHIVE,
+   ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE,
+   ACTION_OK_DL_HELP,
+   ACTION_OK_DL_RPL_ENTRY,
+   ACTION_OK_DL_RDB_ENTRY,
+   ACTION_OK_DL_RDB_ENTRY_SUBMENU,
+   ACTION_OK_DL_AUDIO_DSP_PLUGIN,
+   ACTION_OK_DL_SHADER_PASS,
+   ACTION_OK_DL_SHADER_PARAMETERS,
+   ACTION_OK_DL_SHADER_PRESET,
+   ACTION_OK_DL_GENERIC,
+   ACTION_OK_DL_PUSH_DEFAULT,
+   ACTION_OK_DL_DOWNLOADS_DIR,
+   ACTION_OK_DL_CONTENT_LIST,
+   ACTION_OK_DL_REMAP_FILE,
+   ACTION_OK_DL_RECORD_CONFIGFILE,
+   ACTION_OK_DL_DISK_IMAGE_APPEND_LIST,
+   ACTION_OK_DL_PLAYLIST_COLLECTION,
+   ACTION_OK_DL_CONTENT_COLLECTION_LIST,
+   ACTION_OK_DL_CHEAT_FILE,
+   ACTION_OK_DL_CORE_LIST,
+   ACTION_OK_DL_CONFIGURATIONS_LIST,
+   ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH,
+   ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE,
+   ACTION_OK_DL_DIRECTORY_PUSH,
+   ACTION_OK_DL_DATABASE_MANAGER_LIST,
+   ACTION_OK_DL_CURSOR_MANAGER_LIST,
+   ACTION_OK_DL_CUSTOM_VIEWPORT,
+   ACTION_OK_DL_CORE_UPDATER_LIST,
+   ACTION_OK_DL_CORE_CONTENT_LIST,
+   ACTION_OK_DL_DEFERRED_CORE_LIST,
+   ACTION_OK_DL_DEFERRED_CORE_LIST_SET
+};
+
+static int generic_action_ok_displaylist_push(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx,
+      unsigned action_type)
+{
+   unsigned dl_type                  = DISPLAYLIST_GENERIC;
+   menu_displaylist_info_t      info = {0};
+   const char           *menu_label  = NULL;
+   const char            *menu_path  = NULL;
+   const char          *content_path = NULL;
+   global_t                 *global  = global_get_ptr();
+   settings_t            *settings   = config_get_ptr();
+   menu_list_t            *menu_list = menu_list_get_ptr();
+   menu_handle_t            *menu    = menu_driver_get_ptr();
+
+   if (!menu_list)
+      return -1;
+
+   menu_list_get_last_stack(menu_list,
+         &menu_path, &menu_label, NULL, NULL);
+
+   switch (action_type)
+   {
+      case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
+      case ACTION_OK_DL_OPEN_ARCHIVE:
+         if (menu)
+         {
+            menu_path  = menu->scratch2_buf;
+            content_path = menu->scratch_buf;
+         }
+         fill_pathname_join(detect_content_path, menu_path, content_path,
+               sizeof(detect_content_path));
+
+         switch (action_type)
+         {
+            case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
+               strlcpy(info.label,
+                     menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE),
+                     sizeof(info.label));
+               break;
+            case ACTION_OK_DL_OPEN_ARCHIVE:
+               strlcpy(info.label,
+                     menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN), sizeof(info.label));
+               break;
+         }
+         strlcpy(info.path, path, sizeof(info.path));
+         info.type          = type;
+         info.directory_ptr = idx;
+         break;
+      case ACTION_OK_DL_HELP:
+         strlcpy(info.label, label, sizeof(info.label));
+         menu->push_help_screen = true;
+         dl_type                = DISPLAYLIST_HELP;
+         break;
+      case ACTION_OK_DL_RPL_ENTRY:
+         strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
+         strlcpy(info.label,
+               menu_hash_to_str(MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS), sizeof(info.label));
+         info.type               = 0;
+         info.directory_ptr      = idx;
+         rpl_entry_selection_ptr = idx;
+         break;
+      case ACTION_OK_DL_AUDIO_DSP_PLUGIN:
+         info.type          = 0;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->audio.filter_dir, sizeof(info.path));
+         strlcpy(info.label,
+               menu_hash_to_str(MENU_LABEL_AUDIO_DSP_PLUGIN), sizeof(info.label));
+         break;
+      case ACTION_OK_DL_SHADER_PASS:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->video.shader_dir, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_SHADER_PARAMETERS:
+         info.type          = MENU_SETTING_ACTION;
+         info.directory_ptr = idx;
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_GENERIC:
+         if (path)
+            strlcpy(menu->deferred_path, path,
+                  sizeof(menu->deferred_path));
+
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_PUSH_DEFAULT:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, label, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_SHADER_PRESET:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->video.shader_dir, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_DOWNLOADS_DIR:
+         info.type          = MENU_FILE_DIRECTORY;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->core_assets_directory, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_CONTENT_LIST:
+         info.type          = MENU_FILE_DIRECTORY;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->menu_content_directory, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_REMAP_FILE:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->input_remapping_directory, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_RECORD_CONFIGFILE:
+         info.list          = menu_list->menu_stack;
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, global->record.config_dir, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->menu_content_directory, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_PLAYLIST_COLLECTION:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, path, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_CHEAT_FILE:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->cheat_database, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_CORE_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_CONTENT_COLLECTION_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_RDB_ENTRY:
+         {
+            char tmp[PATH_MAX_LENGTH];
+            fill_pathname_join_delim(tmp, menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL),
+                  path, '|', sizeof(tmp));
+
+            info.type          = 0;
+            info.directory_ptr = idx;
+            strlcpy(info.path, label, sizeof(info.path));
+            strlcpy(info.label, tmp, sizeof(info.label));
+         }
+         break;
+      case ACTION_OK_DL_RDB_ENTRY_SUBMENU:
+         info.list          = menu_list->menu_stack;
+         info.type          = 0;
+         info.directory_ptr = idx;
+         strlcpy(info.label, label, sizeof(info.label));
+         strlcpy(info.path, path, sizeof(info.path));
+         break;
+      case ACTION_OK_DL_CONFIGURATIONS_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         if (path)
+            strlcpy(info.path, path, sizeof(info.path));
+         else
+            strlcpy(info.path, label, sizeof(info.path));
+         strlcpy(info.label, label, sizeof(info.label));
+         break;
+      case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE:
+      case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH:
+
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, path, sizeof(info.path));
+         switch (action_type)
+         {
+            case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE:
+               strlcpy(info.label,
+                     menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE), sizeof(info.label));
+               break;
+            case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH:
+               strlcpy(info.label,
+                     menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION), sizeof(info.label));
+               break;
+         }
+
+         strlcpy(menu->scratch_buf, path, sizeof(menu->scratch_buf));
+         strlcpy(menu->scratch2_buf, menu_path, sizeof(menu->scratch2_buf));
+         break;
+      case ACTION_OK_DL_DIRECTORY_PUSH:
+         {
+            char cat_path[PATH_MAX_LENGTH] = {0};
+
+            fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
+
+            info.type          = type;
+            info.directory_ptr = idx;
+            strlcpy(info.path, cat_path, sizeof(info.path));
+            strlcpy(info.label, menu_label, sizeof(info.label));
+         }
+         break;
+      case ACTION_OK_DL_DATABASE_MANAGER_LIST:
+         {
+            char rdb_path[PATH_MAX_LENGTH] = {0};
+
+            fill_pathname_join(rdb_path, settings->content_database,
+                  path, sizeof(rdb_path));
+
+            info.type          = 0;
+            info.directory_ptr = idx;
+            strlcpy(info.path, rdb_path, sizeof(info.path));
+            strlcpy(info.label,
+                  menu_hash_to_str(MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST),
+                  sizeof(info.label));
+         }
+         break;
+      case ACTION_OK_DL_CURSOR_MANAGER_LIST:
+         {
+            char cursor_path[PATH_MAX_LENGTH] = {0};
+
+            fill_pathname_join(cursor_path, settings->cursor_directory,
+                  path, sizeof(cursor_path));
+
+            info.type          = 0;
+            info.directory_ptr = idx;
+            strlcpy(info.path, cursor_path, sizeof(info.path));
+            strlcpy(info.label,
+                  menu_hash_to_str(MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
+                  sizeof(info.label));
+         }
+         break;
+      case ACTION_OK_DL_CUSTOM_VIEWPORT:
+         info.type          = MENU_SETTINGS_CUSTOM_VIEWPORT;
+         info.directory_ptr = idx;
+         strlcpy(info.label, menu_hash_to_str(MENU_LABEL_CUSTOM_VIEWPORT_1), sizeof(info.label));
+         break;
+      case ACTION_OK_DL_CORE_UPDATER_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, path, sizeof(info.path));
+         strlcpy(info.label,
+               menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_UPDATER_LIST), sizeof(info.label));
+         break;
+      case ACTION_OK_DL_CORE_CONTENT_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         strlcpy(info.path, path, sizeof(info.path));
+         strlcpy(info.label,
+               menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_CONTENT_LIST), sizeof(info.label));
+         break;
+      case ACTION_OK_DL_DEFERRED_CORE_LIST:
+         info.type          = 0;
+         info.directory_ptr = idx;
+         strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
+         strlcpy(info.label,
+               menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST), sizeof(info.label));
+         break;
+      case ACTION_OK_DL_DEFERRED_CORE_LIST_SET:
+         info.type          = 0;
+         info.directory_ptr = idx;
+         rdb_entry_start_game_selection_ptr = idx;
+         strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
+         strlcpy(info.label,
+               menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST_SET), sizeof(info.label));
+         break;
+   }
+
+   info.list          = menu_list->menu_stack;
+
+   return menu_displaylist_push_list(&info, dl_type);
+}
+
 static int rarch_defer_core_wrapper(menu_displaylist_info_t *info,
       size_t idx, size_t entry_idx, const char *path, uint32_t hash_label,
       bool is_carchive)
@@ -95,14 +419,8 @@ static int rarch_defer_core_wrapper(menu_displaylist_info_t *info,
          switch (hash_label)
          {
             case MENU_LABEL_COLLECTION:
-               info->list          = menu_list->menu_stack;
-               info->type          = 0;
-               info->directory_ptr = idx;
-               rdb_entry_start_game_selection_ptr = idx;
-               strlcpy(info->path, settings->libretro_directory, sizeof(info->path));
-               strlcpy(info->label,
-                     menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST_SET), sizeof(info->label));
-               ret = menu_displaylist_push_list(info, DISPLAYLIST_GENERIC);
+               ret = generic_action_ok_displaylist_push(path,
+                     info->label, 0, idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST_SET);
                break;
             default:
                event_command(EVENT_CMD_LOAD_CORE);
@@ -1026,312 +1344,6 @@ static int action_ok_lookup_setting(const char *path,
    return menu_setting_set(type, label, MENU_ACTION_OK, false);
 }
 
-enum
-{
-   ACTION_OK_DL_DEFAULT = 0,
-   ACTION_OK_DL_OPEN_ARCHIVE,
-   ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE,
-   ACTION_OK_DL_HELP,
-   ACTION_OK_DL_RPL_ENTRY,
-   ACTION_OK_DL_RDB_ENTRY,
-   ACTION_OK_DL_RDB_ENTRY_SUBMENU,
-   ACTION_OK_DL_AUDIO_DSP_PLUGIN,
-   ACTION_OK_DL_SHADER_PASS,
-   ACTION_OK_DL_SHADER_PARAMETERS,
-   ACTION_OK_DL_SHADER_PRESET,
-   ACTION_OK_DL_GENERIC,
-   ACTION_OK_DL_PUSH_DEFAULT,
-   ACTION_OK_DL_DOWNLOADS_DIR,
-   ACTION_OK_DL_CONTENT_LIST,
-   ACTION_OK_DL_REMAP_FILE,
-   ACTION_OK_DL_RECORD_CONFIGFILE,
-   ACTION_OK_DL_DISK_IMAGE_APPEND_LIST,
-   ACTION_OK_DL_PLAYLIST_COLLECTION,
-   ACTION_OK_DL_CONTENT_COLLECTION_LIST,
-   ACTION_OK_DL_CHEAT_FILE,
-   ACTION_OK_DL_CORE_LIST,
-   ACTION_OK_DL_CONFIGURATIONS_LIST,
-   ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH,
-   ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE,
-   ACTION_OK_DL_DIRECTORY_PUSH,
-   ACTION_OK_DL_DATABASE_MANAGER_LIST,
-   ACTION_OK_DL_CURSOR_MANAGER_LIST,
-   ACTION_OK_DL_CUSTOM_VIEWPORT,
-   ACTION_OK_DL_CORE_UPDATER_LIST,
-   ACTION_OK_DL_CORE_CONTENT_LIST
-};
-
-static int generic_action_ok_displaylist_push(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx,
-      unsigned action_type)
-{
-   unsigned dl_type                  = DISPLAYLIST_GENERIC;
-   menu_displaylist_info_t      info = {0};
-   const char           *menu_label  = NULL;
-   const char            *menu_path  = NULL;
-   const char          *content_path = NULL;
-   global_t                 *global  = global_get_ptr();
-   settings_t            *settings   = config_get_ptr();
-   menu_list_t            *menu_list = menu_list_get_ptr();
-   menu_handle_t            *menu    = menu_driver_get_ptr();
-
-   if (!menu_list)
-      return -1;
-
-   menu_list_get_last_stack(menu_list,
-         &menu_path, &menu_label, NULL, NULL);
-
-   switch (action_type)
-   {
-      case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
-      case ACTION_OK_DL_OPEN_ARCHIVE:
-         if (menu)
-         {
-            menu_path  = menu->scratch2_buf;
-            content_path = menu->scratch_buf;
-         }
-         fill_pathname_join(detect_content_path, menu_path, content_path,
-               sizeof(detect_content_path));
-
-         switch (action_type)
-         {
-            case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
-               strlcpy(info.label,
-                     menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE),
-                     sizeof(info.label));
-               break;
-            case ACTION_OK_DL_OPEN_ARCHIVE:
-               strlcpy(info.label,
-                     menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN), sizeof(info.label));
-               break;
-         }
-         strlcpy(info.path, path, sizeof(info.path));
-         info.type          = type;
-         info.directory_ptr = idx;
-         break;
-      case ACTION_OK_DL_HELP:
-         strlcpy(info.label, label, sizeof(info.label));
-         menu->push_help_screen = true;
-         dl_type                = DISPLAYLIST_HELP;
-         break;
-      case ACTION_OK_DL_RPL_ENTRY:
-         strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
-         strlcpy(info.label,
-               menu_hash_to_str(MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS), sizeof(info.label));
-         info.type               = 0;
-         info.directory_ptr      = idx;
-         rpl_entry_selection_ptr = idx;
-         break;
-      case ACTION_OK_DL_AUDIO_DSP_PLUGIN:
-         info.type          = 0;
-         info.directory_ptr = idx;
-         strlcpy(info.path, settings->audio.filter_dir, sizeof(info.path));
-         strlcpy(info.label,
-               menu_hash_to_str(MENU_LABEL_AUDIO_DSP_PLUGIN), sizeof(info.label));
-         break;
-      case ACTION_OK_DL_SHADER_PASS:
-         info.type          = type;
-         info.directory_ptr = idx;
-         strlcpy(info.path, settings->video.shader_dir, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
-         break;
-      case ACTION_OK_DL_SHADER_PARAMETERS:
-         info.type          = MENU_SETTING_ACTION;
-         info.directory_ptr = idx;
-         strlcpy(info.label, label, sizeof(info.label));
-         break;
-      case ACTION_OK_DL_GENERIC:
-         if (path)
-            strlcpy(menu->deferred_path, path,
-                  sizeof(menu->deferred_path));
-
-         info.type          = type;
-         info.directory_ptr = idx;
-         strlcpy(info.label, label, sizeof(info.label));
-         break;
-      case ACTION_OK_DL_PUSH_DEFAULT:
-         info.type          = type;
-         info.directory_ptr = idx;
-         strlcpy(info.path, label, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
-         break;
-      case ACTION_OK_DL_SHADER_PRESET:
-         info.type          = type;
-         info.directory_ptr = idx;
-         strlcpy(info.path, settings->video.shader_dir, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
-         break;
-      case ACTION_OK_DL_DOWNLOADS_DIR:
-         info.type          = MENU_FILE_DIRECTORY;
-         info.directory_ptr = idx;
-         strlcpy(info.path, settings->core_assets_directory, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
-         break;
-      case ACTION_OK_DL_CONTENT_LIST:
-         info.type          = MENU_FILE_DIRECTORY;
-         info.directory_ptr = idx;
-         strlcpy(info.path, settings->menu_content_directory, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
-         break;
-      case ACTION_OK_DL_REMAP_FILE:
-         info.type          = type;
-         info.directory_ptr = idx;
-         strlcpy(info.path, settings->input_remapping_directory, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
-         break;
-      case ACTION_OK_DL_RECORD_CONFIGFILE:
-         info.list          = menu_list->menu_stack;
-         info.type          = type;
-         info.directory_ptr = idx;
-         strlcpy(info.path, global->record.config_dir, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
-         break;
-      case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
-         info.type          = type;
-         info.directory_ptr = idx;
-         strlcpy(info.path, settings->menu_content_directory, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
-         break;
-      case ACTION_OK_DL_PLAYLIST_COLLECTION:
-         info.type          = type;
-         info.directory_ptr = idx;
-         strlcpy(info.path, path, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
-         break;
-      case ACTION_OK_DL_CHEAT_FILE:
-         info.type          = type;
-         info.directory_ptr = idx;
-         strlcpy(info.path, settings->cheat_database, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
-         break;
-      case ACTION_OK_DL_CORE_LIST:
-         info.type          = type;
-         info.directory_ptr = idx;
-         strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
-         break;
-      case ACTION_OK_DL_CONTENT_COLLECTION_LIST:
-         info.type          = type;
-         info.directory_ptr = idx;
-         strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
-         break;
-      case ACTION_OK_DL_RDB_ENTRY:
-         {
-            char tmp[PATH_MAX_LENGTH];
-            fill_pathname_join_delim(tmp, menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL),
-                  path, '|', sizeof(tmp));
-
-            info.type          = 0;
-            info.directory_ptr = idx;
-            strlcpy(info.path, label, sizeof(info.path));
-            strlcpy(info.label, tmp, sizeof(info.label));
-         }
-         break;
-      case ACTION_OK_DL_RDB_ENTRY_SUBMENU:
-         info.list          = menu_list->menu_stack;
-         info.type          = 0;
-         info.directory_ptr = idx;
-         strlcpy(info.label, label, sizeof(info.label));
-         strlcpy(info.path, path, sizeof(info.path));
-         break;
-      case ACTION_OK_DL_CONFIGURATIONS_LIST:
-         info.type          = type;
-         info.directory_ptr = idx;
-         if (path)
-            strlcpy(info.path, path, sizeof(info.path));
-         else
-            strlcpy(info.path, label, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
-         break;
-      case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE:
-      case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH:
-
-         info.type          = type;
-         info.directory_ptr = idx;
-         strlcpy(info.path, path, sizeof(info.path));
-         switch (action_type)
-         {
-            case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE:
-               strlcpy(info.label,
-                     menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE), sizeof(info.label));
-               break;
-            case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH:
-               strlcpy(info.label,
-                     menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION), sizeof(info.label));
-               break;
-         }
-
-         strlcpy(menu->scratch_buf, path, sizeof(menu->scratch_buf));
-         strlcpy(menu->scratch2_buf, menu_path, sizeof(menu->scratch2_buf));
-         break;
-      case ACTION_OK_DL_DIRECTORY_PUSH:
-         {
-            char cat_path[PATH_MAX_LENGTH] = {0};
-
-            fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
-
-            info.type          = type;
-            info.directory_ptr = idx;
-            strlcpy(info.path, cat_path, sizeof(info.path));
-            strlcpy(info.label, menu_label, sizeof(info.label));
-         }
-         break;
-      case ACTION_OK_DL_DATABASE_MANAGER_LIST:
-         {
-            char rdb_path[PATH_MAX_LENGTH] = {0};
-
-            fill_pathname_join(rdb_path, settings->content_database,
-                  path, sizeof(rdb_path));
-
-            info.type          = 0;
-            info.directory_ptr = idx;
-            strlcpy(info.path, rdb_path, sizeof(info.path));
-            strlcpy(info.label,
-                  menu_hash_to_str(MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST),
-                  sizeof(info.label));
-         }
-         break;
-      case ACTION_OK_DL_CURSOR_MANAGER_LIST:
-         {
-            char cursor_path[PATH_MAX_LENGTH] = {0};
-
-            fill_pathname_join(cursor_path, settings->cursor_directory,
-                  path, sizeof(cursor_path));
-
-            info.type          = 0;
-            info.directory_ptr = idx;
-            strlcpy(info.path, cursor_path, sizeof(info.path));
-            strlcpy(info.label,
-                  menu_hash_to_str(MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
-                  sizeof(info.label));
-         }
-         break;
-      case ACTION_OK_DL_CUSTOM_VIEWPORT:
-         info.type          = MENU_SETTINGS_CUSTOM_VIEWPORT;
-         info.directory_ptr = idx;
-         strlcpy(info.label, menu_hash_to_str(MENU_LABEL_CUSTOM_VIEWPORT_1), sizeof(info.label));
-         break;
-      case ACTION_OK_DL_CORE_UPDATER_LIST:
-         info.type          = type;
-         info.directory_ptr = idx;
-         strlcpy(info.path, path, sizeof(info.path));
-         strlcpy(info.label,
-               menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_UPDATER_LIST), sizeof(info.label));
-         break;
-      case ACTION_OK_DL_CORE_CONTENT_LIST:
-         info.type          = type;
-         info.directory_ptr = idx;
-         strlcpy(info.path, path, sizeof(info.path));
-         strlcpy(info.label,
-               menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_CONTENT_LIST), sizeof(info.label));
-         break;
-   }
-
-   info.list          = menu_list->menu_stack;
-
-   return menu_displaylist_push_list(&info, dl_type);
-}
 
 static int action_ok_core_content_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -1704,14 +1716,8 @@ static int action_ok_load_archive_detect_core(const char *path,
          menu_common_load_content(false, CORE_TYPE_PLAIN);
          break;
       case 0:
-         info.list          = menu_list->menu_stack;
-         info.type          = 0;
-         info.directory_ptr = selected;
-         strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
-         strlcpy(info.label,
-               menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST), sizeof(info.label));
-
-         ret = menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+         ret = generic_action_ok_displaylist_push(path, label, type,
+               selected, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
          break;
    }
 
