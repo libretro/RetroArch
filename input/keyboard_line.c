@@ -124,7 +124,7 @@ bool input_keyboard_line_event(
          state->size--;
       }
    }
-   else if (isprint(c))
+   else if (isprint((int)c))
    {
       /* Handle left/right here when suitable */
 

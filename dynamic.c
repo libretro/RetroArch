@@ -521,10 +521,10 @@ void libretro_get_current_core_pathname(char *name, size_t size)
    {
       char c = id[i];
 
-      if (isspace((int)c) || isblank(c))
+      if (isspace((int)c) || isblank((int)c))
          name[i] = '_';
       else
-         name[i] = tolower(c);
+         name[i] = tolower((int)c);
    }
 }
 
