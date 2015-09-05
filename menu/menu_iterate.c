@@ -166,7 +166,8 @@ static int action_iterate_info(char *s, size_t len, const char *label)
    uint32_t label_hash              = 0;
    menu_file_list_cbs_t *cbs        = NULL;
    menu_list_t *menu_list           = menu_list_get_ptr();
-   size_t i                         = menu_navigation_get_current_selection();
+   menu_navigation_t *nav           = menu_navigation_get_ptr();
+   size_t i                         = menu_navigation_get_selection(nav);
 
    if (!menu_list)
       return 0;
@@ -497,7 +498,7 @@ int menu_iterate(bool render_this_frame, unsigned action)
          menu->state.do_pop_stack    = true;
          break;
       case ITERATE_TYPE_DEFAULT:
-         selected = menu_navigation_get_current_selection();
+         selected = menu_navigation_get_selection(nav);
          /* FIXME: selected > selection_buf->list->size, i don't know why. */
          selected = max(min(selected, menu_list_get_size(menu_list)-1), 0);
 

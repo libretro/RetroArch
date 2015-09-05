@@ -254,9 +254,8 @@ void menu_navigation_ascend_alphabet(menu_navigation_t *nav, size_t *ptr_out)
    menu_driver_navigation_ascend_alphabet(ptr_out);
 }
 
-ssize_t menu_navigation_get_current_selection(void)
+ssize_t menu_navigation_get_selection(menu_navigation_t *nav)
 {
-   menu_navigation_t *nav = menu_navigation_get_ptr();
    if (!nav)
       return -1;
    return nav->selection_ptr;

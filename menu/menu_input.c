@@ -918,8 +918,9 @@ void menu_input_post_iterate(int *ret, unsigned action)
    menu_entry_t entry        = {{0}};
    menu_input_t *menu_input  = menu_input_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
+   menu_navigation_t *nav    = menu_navigation_get_ptr();
    settings_t *settings      = config_get_ptr();
-   size_t selected           = menu_navigation_get_current_selection();
+   size_t selected           = menu_navigation_get_selection(nav);
    menu_file_list_cbs_t *cbs = menu_list_get_actiondata_at_offset
       (menu_list->selection_buf, selected);
 
