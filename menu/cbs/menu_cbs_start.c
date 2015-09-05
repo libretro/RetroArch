@@ -50,21 +50,34 @@ static int action_start_video_filter_file_load(unsigned type, const char *label)
    return 0;
 }
 
+static int generic_action_start_performance_counters(struct retro_perf_counter **counters,
+      unsigned offset, unsigned type, const char *label)
+{
+   if (counters[offset])
+   {
+      counters[offset]->total    = 0;
+      counters[offset]->call_cnt = 0;
+   }
+
+   return 0;
+}
+
 static int action_start_performance_counters_core(unsigned type, const char *label)
 {
    struct retro_perf_counter **counters = (struct retro_perf_counter**)
       perf_counters_libretro;
    unsigned offset = type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN;
 
-   (void)label;
+   return generic_action_start_performance_counters(counters, offset, type, label);
+}
 
-   if (counters[offset])
-   {
-      counters[offset]->total = 0;
-      counters[offset]->call_cnt = 0;
-   }
-
-   return 0;
+static int action_start_performance_counters_frontend(unsigned type,
+      const char *label)
+{
+   struct retro_perf_counter **counters = (struct retro_perf_counter**)
+      perf_counters_rarch;
+   unsigned offset = type - MENU_SETTINGS_PERF_COUNTERS_BEGIN;
+   return generic_action_start_performance_counters(counters, offset, type, label);
 }
 
 static int action_start_input_desc(unsigned type, const char *label)
@@ -232,31 +245,11 @@ static int action_start_cheat_num_passes(unsigned type, const char *label)
    return 0;
 }
 
-static int action_start_performance_counters_frontend(unsigned type,
-      const char *label)
-{
-   struct retro_perf_counter **counters = (struct retro_perf_counter**)
-      perf_counters_rarch;
-   unsigned offset = type - MENU_SETTINGS_PERF_COUNTERS_BEGIN;
-
-   (void)label;
-
-   if (counters[offset])
-   {
-      counters[offset]->total = 0;
-      counters[offset]->call_cnt = 0;
-   }
-
-   return 0;
-}
-
 static int action_start_core_setting(unsigned type,
       const char *label)
 {
    unsigned idx           = type - MENU_SETTINGS_CORE_OPTION_START;
    rarch_system_info_t *system = rarch_system_info_get_ptr();
-
-   (void)label;
 
    if (system)
       core_option_set_default(system->core_options, idx);
