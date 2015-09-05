@@ -380,7 +380,9 @@ fi
 check_header PARPORT linux/parport.h
 check_header PARPORT linux/ppdev.h
 
-check_lib STRL "$CLIB" strlcpy
+if [ "$OS" != 'Win32' ]; then
+   check_lib STRL "$CLIB" strlcpy
+fi
 check_lib STRCASESTR "$CLIB" strcasestr
 check_lib MMAP "$CLIB" mmap
 
