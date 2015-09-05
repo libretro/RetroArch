@@ -16,6 +16,7 @@
 
 #include <IOKit/hid/IOHIDManager.h>
 #include <IOKit/hid/IOHIDKeys.h>
+
 #include "../connect/joypad_connection.h"
 #include "../drivers/cocoa_input.h"
 #include "../input_autodetect.h"

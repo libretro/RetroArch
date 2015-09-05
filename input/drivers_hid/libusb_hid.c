@@ -14,10 +14,12 @@
  */
 
 #include <libusb-1.0/libusb.h>
+
 #include <rthreads/rthreads.h>
 #include <compat/strl.h>
 #include <queues/fifo_buffer.h>
 #include <retro_log.h>
+
 #include "../connect/joypad_connection.h"
 #include "../input_autodetect.h"
 #include "../input_hid_driver.h"

@@ -13,9 +13,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <boolean.h>
+
 #include <AvailabilityMacros.h>
 #import <GameController/GameController.h>
-#include <boolean.h>
+
 #include "mfi_hid.h"
 #include "../../input/drivers/cocoa_input.h"
 

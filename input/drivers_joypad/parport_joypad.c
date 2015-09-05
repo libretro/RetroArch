@@ -12,18 +12,19 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include "../input_autodetect.h"
-#include "../../general.h"
-#include <unistd.h>
 #include <stdint.h>
 #include <string.h>
+#include <unistd.h>
 #include <limits.h>
 #include <errno.h>
+
 #include <linux/parport.h>
 #include <linux/ppdev.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+
+#include "../input_autodetect.h"
+#include "../../general.h"
 
 /* Linux parport driver does not support reading the control register
    Other platforms may support up to 17 buttons */

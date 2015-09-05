@@ -14,6 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <boolean.h>
+#include <retro_inline.h>
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/xf86vmode.h>
@@ -22,10 +25,6 @@
 #include <X11/extensions/Xinerama.h>
 #endif
 
-#include <boolean.h>
-#include <retro_inline.h>
-#include "../../driver.h"
-#include "../keyboard_line.h"
 #include "../input_keymaps.h"
 
 static INLINE unsigned leading_ones(uint8_t c)
