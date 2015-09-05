@@ -400,12 +400,12 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
          (void)offset;
          (void)outSizeProcessed;
 
+         /* we skip over everything, which is a directory. */
          if (f->IsDir)
-         {
-            /* we skip over everything, which is a directory. */
             continue;
-         }
+
          len = SzArEx_GetFileNameUtf16(&db, i, NULL);
+
          if (len > tempSize)
          {
             free(temp);
