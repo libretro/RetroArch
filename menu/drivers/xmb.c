@@ -981,6 +981,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
    settings_t *settings   = config_get_ptr();
+   size_t       selection = nav->selection_ptr;
 
    if (!menu)
       return;
@@ -1002,8 +1003,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 
    xmb_list_switch_old(xmb, xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
-   xmb_list_switch_new(xmb, menu_list->selection_buf,
-         dir, nav->selection_ptr);
+   xmb_list_switch_new(xmb, menu_list->selection_buf, dir, selection);
    xmb->categories.active.idx_old = xmb->categories.selection_ptr;
 
    if (settings->menu.boxart_enable)

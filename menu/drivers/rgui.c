@@ -682,6 +682,7 @@ static void rgui_navigation_set(bool scroll)
    menu_handle_t *menu            = menu_driver_get_ptr();
    menu_framebuf_t *frame_buf     = menu_display_fb_get_ptr();
    menu_navigation_t *nav         = menu_navigation_get_ptr();
+   size_t               selection = nav->selection_ptr;
    if (!menu)
       return;
 
@@ -690,12 +691,12 @@ static void rgui_navigation_set(bool scroll)
    if (!scroll)
       return;
 
-   if (nav->selection_ptr < RGUI_TERM_HEIGHT/2)
+   if (selection < RGUI_TERM_HEIGHT/2)
       menu_entries_set_start(0);
-   else if (nav->selection_ptr >= RGUI_TERM_HEIGHT/2
-         && nav->selection_ptr < (end - RGUI_TERM_HEIGHT/2))
-      menu_entries_set_start(nav->selection_ptr - RGUI_TERM_HEIGHT/2);
-   else if (nav->selection_ptr >= (end - RGUI_TERM_HEIGHT/2))
+   else if (selection >= (RGUI_TERM_HEIGHT/2)
+         && selection < (end - RGUI_TERM_HEIGHT/2))
+      menu_entries_set_start(selection - RGUI_TERM_HEIGHT/2);
+   else if (selection >= (end - RGUI_TERM_HEIGHT/2))
       menu_entries_set_start(end - RGUI_TERM_HEIGHT);
 }
 

@@ -682,6 +682,7 @@ static float glui_get_scroll(void)
    glui_handle_t *glui    = NULL;
    menu_handle_t *menu    = menu_driver_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
+   size_t selection       = nav->selection_ptr;
 
    if (!menu || !menu->userdata)
       return 0;
@@ -692,9 +693,9 @@ static float glui_get_scroll(void)
    if (glui->line_height)
       half = (height / glui->line_height) / 2;
 
-   if (nav->selection_ptr < (unsigned)half)
+   if (selection < (unsigned)half)
       return 0;
-   return ((nav->selection_ptr + 2 - half) * glui->line_height);
+   return ((selection + 2 - half) * glui->line_height);
 }
 
 static void glui_navigation_set(bool scroll)
