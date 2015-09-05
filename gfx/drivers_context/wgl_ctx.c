@@ -26,6 +26,8 @@
 #include <windows.h>
 #include <commdlg.h>
 
+#include <dynamic/dylib.h>
+
 #include "../../driver.h"
 #include "../../dynamic.h"
 #include "../../runloop.h"
@@ -62,7 +64,7 @@ static unsigned g_pos_x = CW_USEDEFAULT;
 static unsigned g_pos_y = CW_USEDEFAULT;
 static bool g_resized;
 
-static HINSTANCE dll_handle = NULL; /* Handle to OpenGL32.dll */
+static dylib_t dll_handle = NULL; /* Handle to OpenGL32.dll */
 
 static bool g_restore_desktop;
 
@@ -118,7 +120,7 @@ static void create_gl_context(HWND hwnd)
    bool debug       = hw_render->debug_context;
 
 #ifdef _WIN32
-   dll_handle = (HINSTANCE)dylib_load("OpenGL32.dll");
+   dll_handle = dylib_load("OpenGL32.dll");
 #endif
 
    g_hdc = GetDC(hwnd);
@@ -655,7 +657,7 @@ static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
    void *func = (void *)wglGetProcAddress(symbol);
    if (func)
       return (gfx_ctx_proc_t)wglGetProcAddress(symbol);
-   return (gfx_ctx_proc_t)GetProcAddress(dll_handle, symbol);
+   return (gfx_ctx_proc_t)GetProcAddress((HINSTANCE)dll_handle, symbol);
 }
 
 static bool gfx_ctx_wgl_get_metrics(void *data,
