@@ -92,7 +92,7 @@ static char *extract_value(char *line, bool is_value)
 
    if (is_value)
    {
-      while (isspace(*line))
+      while (isspace((int)*line))
          line++;
 
       /* If we don't have an equal sign here,
@@ -103,7 +103,7 @@ static char *extract_value(char *line, bool is_value)
       line++;
    }
 
-   while (isspace(*line))
+   while (isspace((int)*line))
       line++;
 
    /* We have a full string. Read until next ". */
@@ -307,10 +307,10 @@ static bool parse_line(config_file_t *conf,
    }
 
    /* Skips to first character. */
-   while (isspace(*line))
+   while (isspace((int)*line))
       line++;
 
-   while (isgraph(*line))
+   while (isgraph((int)*line))
    {
       if (idx == cur_size)
       {

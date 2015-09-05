@@ -521,7 +521,7 @@ void libretro_get_current_core_pathname(char *name, size_t size)
    {
       char c = id[i];
 
-      if (isspace(c) || isblank(c))
+      if (isspace((int)c) || isblank(c))
          name[i] = '_';
       else
          name[i] = tolower(c);

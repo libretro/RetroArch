@@ -667,7 +667,7 @@ static void event_set_savestate_auto_index(void)
          continue;
 
       end = dir_elem + strlen(dir_elem);
-      while ((end > dir_elem) && isdigit(end[-1]))
+      while ((end > dir_elem) && isdigit((int)end[-1]))
          end--;
 
       idx = strtoul(end, NULL, 0);

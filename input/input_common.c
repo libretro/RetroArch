@@ -212,8 +212,8 @@ static enum retro_key find_rk_bind(const char *str)
  **/
 enum retro_key input_translate_str_to_rk(const char *str)
 {
-   if (strlen(str) == 1 && isalpha(*str))
-      return (enum retro_key)(RETROK_a + (tolower(*str) - (int)'a'));
+   if (strlen(str) == 1 && isalpha((int)*str))
+      return (enum retro_key)(RETROK_a + (tolower((int)*str) - (int)'a'));
    return find_rk_bind(str);
 }
 
@@ -244,7 +244,7 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
    if (!bind || !str)
       return;
 
-   if (!isdigit(*str))
+   if (!isdigit((int)*str))
       return;
 
    hat = strtoul(str, &dir, 0);
