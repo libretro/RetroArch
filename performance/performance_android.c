@@ -100,9 +100,8 @@ static INLINE void cpu_x86_cpuid(int func, int values[4])
 static int
 cpu_read_file(const char*  pathname, char*  buffer, size_t  buffsize)
 {
-    int  fd, len;
-
-    fd = open(pathname, O_RDONLY);
+    int len;
+    int fd = open(pathname, O_RDONLY);
     if (fd < 0)
         return -1;
 
@@ -124,21 +123,23 @@ cpu_read_file(const char*  pathname, char*  buffer, size_t  buffsize)
 static char*
 extract_cpuinfo_field(char* buffer, int buflen, const char* field)
 {
+   int len;
+   const char *q;
    int  fieldlen = strlen(field);
    char* bufend = buffer + buflen;
    char* result = NULL;
-   int len;
-   const char *p, *q;
 
    /* Look for first field occurence, and ensures it starts the line.
    */
-   p = buffer;
+   const char *p = buffer;
+
    bufend = buffer + buflen;
+
    for (;;)
    {
       p = memmem(p, bufend-p, field, fieldlen);
       if (p == NULL)
-         goto EXIT;
+         goto end;
 
       if (p == buffer || p[-1] == '\n')
          break;
@@ -150,7 +151,7 @@ extract_cpuinfo_field(char* buffer, int buflen, const char* field)
    p += fieldlen;
    p  = memchr(p, ':', bufend-p);
    if (p == NULL || p[1] != ' ')
-      goto EXIT;
+      goto end;
 
    /* Find the end of the line */
    p += 2;
@@ -162,12 +163,12 @@ extract_cpuinfo_field(char* buffer, int buflen, const char* field)
    len = q-p;
    result = malloc(len+1);
    if (result == NULL)
-      goto EXIT;
+      goto end;
 
    memcpy(result, p, len);
    result[len] = '\0';
 
-EXIT:
+end:
    return result;
 }
 
