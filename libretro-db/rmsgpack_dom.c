@@ -354,8 +354,7 @@ void rmsgpack_dom_value_print(struct rmsgpack_dom_value *obj)
          break;
       case RDT_STRING:
          printf("\"%s\"", obj->val.string.buff);
-         break;
-      case RDT_BINARY:
+         break; case RDT_BINARY:
          printf("\"");
          for (i = 0; i < obj->val.binary.len; i++)
             printf("%02X", (unsigned char) obj->val.binary.buff[i]);
@@ -462,13 +461,10 @@ int rmsgpack_dom_read_into(FILE *fp, ...)
    uint64_t min_len;
    char *buff_value                 = NULL;
    const char *key_name             = NULL;
-   int value_type                   = 0;
 
    va_start(ap, fp);
 
    rv = rmsgpack_dom_read(fp, &map);
-
-   (void)value_type;
 
    if (rv < 0)
    {
@@ -477,20 +473,14 @@ int rmsgpack_dom_read_into(FILE *fp, ...)
    }
 
    if (map.type != RDT_MAP)
-   {
-      rv = -EINVAL;
-      goto clean;
-   }
+      goto error;
 
    while (1)
    {
       key_name = va_arg(ap, const char *);
 
       if (!key_name)
-      {
-         rv = 0;
-         goto clean;
-      }
+         goto error;
 
       key.type        = RDT_STRING;
       key.val.string.len  = strlen(key_name);
@@ -531,12 +521,11 @@ int rmsgpack_dom_read_into(FILE *fp, ...)
             memcpy(buff_value, value->val.string.buff, (size_t)min_len);
             break;
          default:
-            rv = -1;
-            goto clean;
+            goto error;
       }
    }
 
-clean:
+error:
    va_end(ap);
    rmsgpack_dom_value_free(&map);
    return 0;

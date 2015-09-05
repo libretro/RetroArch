@@ -101,26 +101,27 @@ int libretrodb_create(FILE *fp, libretrodb_value_provider value_provider,
    while ((rv = value_provider(ctx, &item)) == 0)
    {
       if ((rv = validate_document(&item)) < 0)
-         goto clean;
+         goto error;
 
       if ((rv = rmsgpack_dom_write(fp, &item)) < 0)
-         goto clean;
+         goto error;
 
       item_count++;
    }
 
    if (rv < 0)
-      goto clean;
+      goto error;
 
    if ((rv = rmsgpack_dom_write(fp, &sentinal)) < 0)
-      goto clean;
+      goto error;
 
    header.metadata_offset = httobe64(flseek(fp, 0, SEEK_CUR));
    md.count = item_count;
    libretrodb_write_metadata(fp, &md);
    flseek(fp, root, SEEK_SET);
    fwrite(&header, 1, sizeof(header), fp);
-clean:
+
+error:
    rmsgpack_dom_value_free(&item);
    return rv;
 }
@@ -405,7 +406,6 @@ static uint64_t libretrodb_tell(libretrodb_t *db)
 int libretrodb_create_index(libretrodb_t *db,
       const char *name, const char *field_name)
 {
-   int rv;
    struct node_iter_ctx nictx;
    struct rmsgpack_dom_value key;
    libretrodb_index_t idx;
@@ -422,10 +422,7 @@ int libretrodb_create_index(libretrodb_t *db,
    bintree_new(&tree, node_compare, &field_size);
 
    if (libretrodb_cursor_open(db, &cur, NULL) != 0)
-   {
-      rv = -1;
-      goto clean;
-   }
+      goto error;
 
    key.type        = RDT_STRING;
    key.val.string.len  = strlen(field_name);
@@ -437,49 +434,41 @@ int libretrodb_create_index(libretrodb_t *db,
    {
       if (item.type != RDT_MAP)
       {
-         rv = -EINVAL;
          printf("Only map keys are supported\n");
-         goto clean;
+         goto error;
       }
 
       field = rmsgpack_dom_value_map_value(&item, &key);
 
       if (!field)
       {
-         rv = -EINVAL;
          printf("field not found in item\n");
-         goto clean;
+         goto error;
       }
 
       if (field->type != RDT_BINARY)
       {
-         rv = -EINVAL;
          printf("field is not binary\n");
-         goto clean;
+         goto error;
       }
 
       if (field->val.binary.len == 0)
       {
-         rv = -EINVAL;
          printf("field is empty\n");
-         goto clean;
+         goto error;
       }
 
       if (field_size == 0)
          field_size = field->val.binary.len;
       else if (field->val.binary.len != field_size)
       {
-         rv = -EINVAL;
          printf("field is not of correct size\n");
-         goto clean;
+         goto error;
       }
 
       buff = malloc(field_size + sizeof(uint64_t));
       if (!buff)
-      {
-         rv = -ENOMEM;
-         goto clean;
-      }
+         goto error;
 
       memcpy(buff, field->val.binary.buff, field_size);
 
@@ -492,18 +481,15 @@ int libretrodb_create_index(libretrodb_t *db,
          printf("Value is not unique: ");
          rmsgpack_dom_value_print(field);
          printf("\n");
-         rv = -EINVAL;
-         goto clean;
+         goto error;
       }
       buff = NULL;
       rmsgpack_dom_value_free(&item);
       item_loc = libretrodb_tell(db);
    }
 
-   (void)rv;
-   (void)idx_header_offset;
-
    idx_header_offset = flseek(db->fp, 0, SEEK_END);
+   (void)idx_header_offset;
    strncpy(idx.name, name, 50);
 
    idx.name[49] = '\0';
@@ -515,7 +501,8 @@ int libretrodb_create_index(libretrodb_t *db,
    nictx.idx    = &idx;
    bintree_iterate(&tree, node_iter, &nictx);
    bintree_free(&tree);
-clean:
+
+error:
    rmsgpack_dom_value_free(&item);
    if (buff)
       free(buff);

@@ -17,14 +17,6 @@
 #include <string.h>
 #include <ctype.h>
 
-#ifdef NEED_DYNAMIC
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <dlfcn.h>
-#endif
-#endif
-
 #include <boolean.h>
 #include <file/file_path.h>
 #include <retro_log.h>
@@ -35,13 +27,11 @@
 #include "config.h"
 #endif
 
-#include "dynamic.h"
 #include "performance.h"
 
 #include "libretro_private.h"
 #include "cores/internal_cores.h"
 #include "retroarch.h"
-#include "runloop.h"
 #include "configuration.h"
 #include "general.h"
 #include "msg_hash.h"

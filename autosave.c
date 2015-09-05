@@ -16,13 +16,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <boolean.h>
 #include <string.h>
+
+#include <boolean.h>
 
 #include <rthreads/rthreads.h>
 
 #include "general.h"
-#include "autosave.h"
 
 struct autosave
 {
