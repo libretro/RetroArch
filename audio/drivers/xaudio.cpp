@@ -14,14 +14,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../driver.h"
-#include <stdint.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stddef.h>
-#include <compat/msvc.h>
-#include <boolean.h>
 #include <stdlib.h>
+#include <boolean.h>
+
+#include <compat/msvc.h>
+
 #include "xaudio.h"
+
+#include "../../driver.h"
 #include "../../general.h"
 
 typedef struct xaudio2 xaudio2_t;
@@ -71,7 +74,7 @@ struct xaudio2 : public IXAudio2VoiceCallback
    IXAudio2SourceVoice *pSourceVoice;
    HANDLE hEvent;
 
-   volatile long buffers;
+   unsigned long volatile buffers;
    unsigned bufsize;
    unsigned bufptr;
    unsigned write_buffer;

@@ -14,14 +14,25 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if defined(_MSC_VER) && !defined(_XBOX)
-#pragma comment(lib, "dsound")
-#pragma comment(lib, "dxguid")
+#include <stdint.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
+
+#include <dsound.h>
+#ifndef _XBOX
+#include <mmreg.h>
 #endif
+
+#include <boolean.h>
 
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <rthreads/rthreads.h>
+#include <queues/fifo_buffer.h>
+
+#include "../../driver.h"
+#include "../../general.h"
 
 #ifdef _XBOX
 #define DSERR_BUFFERLOST                MAKE_DSHRESULT(150)
@@ -29,21 +40,11 @@
 #define DSERR_PRIOLEVELNEEDED           MAKE_DSHRESULT(70)
 #endif
 
-#include "../../driver.h"
-#include <stdlib.h>
-#include <boolean.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
-
-#ifndef _XBOX
-// Need these includes in MinGW-w64 4.9 it seems ...
-#include <mmreg.h>
-#include <mmsystem.h>
+#if defined(_MSC_VER) && !defined(_XBOX)
+#pragma comment(lib, "dsound")
+#pragma comment(lib, "dxguid")
 #endif
-#include <dsound.h>
-#include <queues/fifo_buffer.h>
-#include "../../general.h"
+
 
 typedef struct dsound
 {
@@ -68,7 +69,7 @@ static INLINE unsigned write_avail(unsigned read_ptr, unsigned write_ptr, unsign
    return (read_ptr + buffer_size - write_ptr) % buffer_size;
 }
 
-static INLINE void get_positions(dsound_t *ds, DWORD *read_ptr, DWORD *write_ptr)
+static INLINE void get_positions(dsound_t *ds, uint32_t *read_ptr, uint32_t *write_ptr)
 {
    IDirectSoundBuffer_GetCurrentPosition(ds->dsb, read_ptr, write_ptr);
 }
@@ -79,11 +80,11 @@ struct audio_lock
 {
    void *chunk1;
    void *chunk2;
-   DWORD size1;
-   DWORD size2;
+   uint32_t size1;
+   uint32_t size2;
 };
 
-static INLINE bool grab_region(dsound_t *ds, DWORD write_ptr,
+static INLINE bool grab_region(dsound_t *ds, uint32_t write_ptr,
       struct audio_lock *region)
 {
    const char *err;
@@ -137,7 +138,7 @@ static INLINE void release_region(dsound_t *ds, const struct audio_lock *region)
 
 static void dsound_thread(void *data)
 {
-   DWORD write_ptr;
+   uint32_t write_ptr;
    dsound_t *ds = (dsound_t*)data;
 
    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
@@ -148,7 +149,7 @@ static void dsound_thread(void *data)
    while (ds->thread_alive)
    {
       struct audio_lock region;
-      DWORD read_ptr, avail, fifo_avail;
+      uint32_t read_ptr, avail, fifo_avail;
       get_positions(ds, &read_ptr, NULL);
       
       avail = write_avail(read_ptr, write_ptr, ds->buffer_size);
@@ -237,7 +238,7 @@ static bool dsound_start_thread(dsound_t *ds)
 static void dsound_clear_buffer(dsound_t *ds)
 {
    void *ptr;
-   DWORD size;
+   uint32_t size;
    IDirectSoundBuffer_SetCurrentPosition(ds->dsb, 0);
 
    if (IDirectSoundBuffer_Lock(ds->dsb, 0, 0, &ptr, &size,

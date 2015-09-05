@@ -17,25 +17,8 @@
 #ifndef __RARCH_GENERAL_H
 #define __RARCH_GENERAL_H
 
-#include <boolean.h>
 #include <stdint.h>
 #include <limits.h>
-#include <compat/strl.h>
-#include <retro_inline.h>
-#include <retro_assert.h>
-#include <retro_miscellaneous.h>
-#include "configuration.h"
-#include "driver.h"
-#include "playlist.h"
-#include "runloop.h"
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "1.2.2"
-#endif
 
 /* Platform-specific headers */
 
@@ -47,11 +30,30 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
+#endif
+
+#include <boolean.h>
+#include <compat/strl.h>
 #include <compat/posix_string.h>
+#include <retro_inline.h>
+#include <retro_assert.h>
+#include <retro_miscellaneous.h>
+
+#include "configuration.h"
+#include "driver.h"
+#include "playlist.h"
+#include "runloop.h"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
 #ifdef HAVE_COMMAND
 #include "command.h"
+#endif
+
+#ifndef PACKAGE_VERSION
+#define PACKAGE_VERSION "1.2.2"
 #endif
 
 #ifdef __cplusplus
@@ -156,8 +158,7 @@ static INLINE void rarch_fail(int error_code, const char *error)
     * just exit right away. */
    rarch_assert(global->inited.error);
 
-   strlcpy(global->error_string, error,
-         sizeof(global->error_string));
+   strcpy(global->error_string, error);
    longjmp(global->error_sjlj_context, error_code);
 }
 
