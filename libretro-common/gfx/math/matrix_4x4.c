@@ -20,9 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <gfx/math/matrix_4x4.h>
 #include <string.h>
 #include <math.h>
+
+#include <gfx/math/matrix_4x4.h>
 
 /*
  * Sets mat to an identity matrix

@@ -24,7 +24,6 @@
 #include "../file_ops.h"
 #include "../msg_hash.h"
 #include "../general.h"
-#include "tasks.h"
 
 #define CB_DB_SCAN_FILE    0x70ce56d2U
 #define CB_DB_SCAN_FOLDER  0xde2bef8eU

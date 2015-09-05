@@ -14,13 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "x11_common.h"
 #include <stdlib.h>
 #include <string.h>
-#include <X11/Xatom.h>
 #include <math.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+
+#include <X11/Xatom.h>
+
+#include "x11_common.h"
 #include "../../general.h"
 
 static void x11_hide_mouse(Display *dpy, Window win)

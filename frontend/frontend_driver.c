@@ -14,9 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "frontend_driver.h"
-#include "../driver.h"
 #include <string.h>
+
+#include "../driver.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

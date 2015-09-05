@@ -22,8 +22,9 @@
 
 #include <stdlib.h>
 
-#include <file/dir_list.h>
 #include <file/file_path.h>
+#include <string/string_list.h>
+
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <retro_dirent.h>

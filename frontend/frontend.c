@@ -24,8 +24,6 @@
 #include "../runloop.h"
 #include "../runloop_data.h"
 
-#include "frontend.h"
-
 #define MAX_ARGS 32
 
 /**

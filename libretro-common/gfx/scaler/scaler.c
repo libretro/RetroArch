@@ -20,16 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+
 #include <gfx/scaler/scaler.h>
 #include <gfx/scaler/scaler_int.h>
 #include <gfx/scaler/filter.h>
 #include <gfx/scaler/pixconv.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <math.h>
-
-/* In case aligned allocs are needed later. */
 
 /**
  * scaler_alloc:

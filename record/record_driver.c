@@ -15,16 +15,11 @@
  */
 
 #include <string.h>
+
 #include <file/file_path.h>
-#include "record_driver.h"
 
 #include "../driver.h"
-#include "../dynamic.h"
 #include "../general.h"
-#include "../retroarch.h"
-#include "../runloop.h"
-#include "../gfx/video_driver.h"
-#include "../gfx/video_viewport.h"
 #include "../msg_hash.h"
 
 #ifdef HAVE_CONFIG_H

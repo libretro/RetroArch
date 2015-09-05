@@ -15,15 +15,12 @@
  */
 
 #include <string.h>
+
 #include <string/string_list.h>
-#include "audio_driver.h"
-#include "audio_monitor.h"
+
 #include "audio_utils.h"
 #include "audio_thread_wrapper.h"
-#include "../driver.h"
 #include "../general.h"
-#include "../retroarch.h"
-#include "../performance.h"
 
 #ifndef AUDIO_BUFFER_FREE_SAMPLES_COUNT
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)

@@ -13,11 +13,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ui_companion_driver.h"
-#include "../driver.h"
 #include <string.h>
 
 #include <boolean.h>
+
+#include "../driver.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

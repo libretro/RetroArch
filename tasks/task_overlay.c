@@ -19,7 +19,6 @@
 #endif
 
 #include "../input/input_overlay.h"
-#include "tasks.h"
 
 #ifdef HAVE_THREADS
 static slock_t *overlay_lock;

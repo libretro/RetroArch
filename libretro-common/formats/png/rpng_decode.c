@@ -20,18 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <file/file_extract.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "rpng_internal.h"
-#include "rpng_decode.h"
-
 #ifdef GEKKO
 #include <malloc.h>
 #endif
+
+#include <file/file_extract.h>
+
+#include "rpng_internal.h"
+#include "rpng_decode.h"
+
 
 enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
 {

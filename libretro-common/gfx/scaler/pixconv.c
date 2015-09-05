@@ -20,12 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <gfx/scaler/pixconv.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
+
 #include <retro_inline.h>
+
+#include <gfx/scaler/pixconv.h>
 
 #ifdef SCALER_NO_SIMD
 #undef __SSE2__
