@@ -150,7 +150,7 @@ static int menu_list_elem_get_first_char(
    const char *path = NULL;
 
    menu_list_get_alt_at_offset(list, offset, &path);
-   ret = tolower(*path);
+   ret = tolower((int)*path);
 
    /* "Normalize" non-alphabetical entries so they 
     * are lumped together for purposes of jumping. */

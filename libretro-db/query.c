@@ -414,7 +414,7 @@ struct registered_func registered_functions[100] = {
 
 static struct buffer chomp(struct buffer buff)
 {
-   for (; (unsigned)buff.offset < buff.len && isspace(buff.data[buff.offset]); buff.offset++);
+   for (; (unsigned)buff.offset < buff.len && isspace((int)buff.data[buff.offset]); buff.offset++);
    return buff;
 }
 
@@ -575,7 +575,7 @@ static struct buffer parse_integer(struct buffer buff,
       raise_expected_number(buff.offset, error);
    else
    {
-      while (isdigit(buff.data[buff.offset]))
+      while (isdigit((int)buff.data[buff.offset]))
          buff.offset++;
    }
    return buff;
@@ -605,7 +605,7 @@ static struct buffer parse_value(struct buffer buff,
    }
    else if (peek(buff, "b") || peek(buff, "\"") || peek(buff, "'"))
       buff = parse_string(buff, value, error);
-   else if (isdigit(buff.data[buff.offset]))
+   else if (isdigit((int)buff.data[buff.offset]))
       buff = parse_integer(buff, value, error);
    return buff;
 }
@@ -628,7 +628,7 @@ static struct buffer get_ident(struct buffer buff,
 
    if (*error)
       goto clean;
-   if (!isalpha(c))
+   if (!isalpha((int)c))
       return buff;
 
    buff.offset++;
@@ -637,7 +637,7 @@ static struct buffer get_ident(struct buffer buff,
 
    while (!*error)
    {
-      if (!(isalpha(c) || isdigit(c) || c == '_'))
+      if (!(isalpha((int)c) || isdigit((int)c) || c == '_'))
          break;
       buff.offset++;
       *len = *len + 1;
@@ -761,7 +761,7 @@ static struct buffer parse_table(struct buffer buff,
          goto clean;
       }
 
-      if (isalpha(buff.data[buff.offset]))
+      if (isalpha((int)buff.data[buff.offset]))
       {
          buff = get_ident(buff, &ident_name, &ident_len, error);
 
@@ -854,7 +854,7 @@ static struct buffer parse_argument(struct buffer buff,
    buff = chomp(buff);
 
    if (
-         isalpha(buff.data[buff.offset])
+         isalpha((int)buff.data[buff.offset])
          && !(
             peek(buff, "nil")
             || peek(buff, "true")
@@ -920,7 +920,7 @@ void *libretrodb_query_compile(libretrodb_t *db,
       if (*error)
          goto clean;
    }
-   else if (isalpha(buff.data[buff.offset]))
+   else if (isalpha((int)buff.data[buff.offset]))
       buff = parse_method_call(buff, &q->root, error);
 
    buff = expect_eof(buff, error);
