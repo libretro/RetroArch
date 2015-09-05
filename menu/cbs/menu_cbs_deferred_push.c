@@ -247,10 +247,7 @@ static int cb_net_generic(void *data_, size_t len)
    int                ret = -1;
    char             *data = (char*)data_;
    menu_handle_t *menu    = menu_driver_get_ptr();
-   if (!menu)
-      goto end;
-
-   if (!data)
+   if (!menu || !data)
       goto end;
 
    if (core_buf)
