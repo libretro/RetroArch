@@ -16,7 +16,7 @@
 #include "../../general.h"
 #include "win32_common.h"
 
-#if !defined(_XBOX) && defined(_WIN32)
+#if !defined(_XBOX)
 
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0500 //_WIN32_WINNT_WIN2K
