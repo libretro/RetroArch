@@ -39,10 +39,8 @@
 #include "msg_hash.h"
 
 #include "libretro_version_1.h"
-#include "dynamic.h"
 #include "configuration.h"
 #include "general.h"
-#include "retroarch.h"
 #include "runloop_data.h"
 #include "performance.h"
 #include "cheats.h"
@@ -53,10 +51,6 @@
 #ifdef HAVE_MENU
 #include "menu/menu.h"
 #include "menu/menu_hash.h"
-#include "menu/menu_entries.h"
-#include "menu/menu_setting.h"
-#include "menu/menu_shader.h"
-#include "menu/menu_input.h"
 #endif
 
 char orig_savestate_dir[PATH_MAX_LENGTH];

@@ -25,18 +25,13 @@
 #include <retro_log.h>
 #include <boolean.h>
 
-#include "libretro_version_1.h"
 #include "libretro.h"
-#include "dynamic.h"
 #include "general.h"
 #include "runloop.h"
 #include "runloop_data.h"
 #include "retroarch.h"
 #include "performance.h"
-#include "input/keyboard_line.h"
 #include "input/input_remapping.h"
-#include "audio/audio_driver.h"
-#include "audio/audio_utils.h"
 #include "record/record_driver.h"
 #include "gfx/video_pixel_converter.h"
 

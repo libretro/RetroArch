@@ -23,7 +23,6 @@
 #include <compat/strl.h>
 
 #include "configuration.h"
-#include "dynamic.h"
 #include "performance.h"
 #include "retroarch.h"
 #include "runloop.h"
@@ -36,7 +35,6 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"
-#include "menu/menu_input.h"
 #endif
 
 #ifdef HAVE_NETPLAY

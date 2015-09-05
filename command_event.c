@@ -1219,7 +1219,8 @@ bool event_command(enum event_command cmd)
          global->rewind.state = NULL;
          break;
       case EVENT_CMD_REWIND_INIT:
-         init_rewind();
+         if (!driver->netplay_data)
+            init_rewind();
          break;
       case EVENT_CMD_REWIND_TOGGLE:
          if (settings->rewind_enable)

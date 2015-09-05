@@ -21,14 +21,11 @@
 
 #include "general.h"
 
-#include "runloop_data.h"
 #include "tasks/tasks.h"
 #include "input/input_overlay.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"
-#include "menu/menu_entries.h"
-#include "menu/menu_input.h"
 #endif
 
 enum

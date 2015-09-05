@@ -21,7 +21,6 @@
 
 #include <retro_inline.h>
 
-#include "dynamic.h"
 #include "general.h"
 #include "msg_hash.h"
 #include "rewind.h"
@@ -554,16 +553,8 @@ void state_manager_capacity(state_manager_t *state,
 void init_rewind(void)
 {
    void *state          = NULL;
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
-
-   (void)driver;
-
-#ifdef HAVE_NETPLAY
-   if (driver->netplay_data)
-      return;
-#endif
 
    if (!settings->rewind_enable || global->rewind.state)
       return;

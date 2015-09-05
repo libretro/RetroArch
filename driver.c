@@ -16,7 +16,6 @@
 
 #include <compat/posix_string.h>
 
-#include "driver.h"
 #include "general.h"
 #include "msg_hash.h"
 #include "gfx/video_monitor.h"
