@@ -14,12 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "input_joypad_driver.h"
-#include "input_keymaps.h"
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
+
 #include <string/string_list.h>
+
+#include "input_keymaps.h"
 #include "../general.h"
 
 static input_device_driver_t *joypad_drivers[] = {

@@ -14,11 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "video_thread_wrapper.h"
-#include "../performance.h"
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+
+#include "video_thread_wrapper.h"
+#include "../performance.h"
 
 static void *thread_init_never_call(const video_info_t *video,
       const input_driver_t **input, void **input_data)

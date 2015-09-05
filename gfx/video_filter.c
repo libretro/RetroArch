@@ -14,16 +14,18 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "video_filter.h"
-#include "video_filters/softfilter.h"
-#include "../dynamic.h"
+#include <stdlib.h>
+
 #include <file/config_file_userdata.h>
 #include <file/file_path.h>
-#include "../file_ext.h"
 #include <file/dir_list.h>
+
+#include "../dynamic.h"
+#include "../file_ext.h"
 #include "../general.h"
 #include "../performance.h"
-#include <stdlib.h>
+#include "video_filter.h"
+#include "video_filters/softfilter.h"
 
 struct rarch_soft_plug
 {

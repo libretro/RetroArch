@@ -28,9 +28,7 @@
 #include <clamping.h>
 #include <rhash.h>
 
-#include "input_overlay.h"
 #include "../configuration.h"
-#include "../driver.h"
 #include "input_common.h"
 
 #define BOX_RADIAL       0x18df06d2U

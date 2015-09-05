@@ -21,7 +21,6 @@
 #include <string/string_list.h>
 
 #include "input_hid_driver.h"
-#include "../driver.h"
 #include "../general.h"
 
 static hid_driver_t *hid_drivers[] = {

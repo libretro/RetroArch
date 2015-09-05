@@ -15,7 +15,6 @@
  */
 
 #include "font_driver.h"
-#include "font_renderer_driver.h"
 #include "../general.h"
 
 #ifdef HAVE_D3D

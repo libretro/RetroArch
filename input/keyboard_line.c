@@ -18,10 +18,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "keyboard_line.h"
 #include "../general.h"
-#include "../driver.h"
-#include "../retroarch.h"
 
 struct input_keyboard_line
 {

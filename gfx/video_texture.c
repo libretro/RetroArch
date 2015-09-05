@@ -14,8 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "video_texture.h"
 #include <file/file_path.h>
+
+#include "video_texture.h"
 #include "video_pixel_converter.h"
 #include "video_thread_wrapper.h"
 

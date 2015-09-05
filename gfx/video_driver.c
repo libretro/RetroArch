@@ -15,14 +15,14 @@
  */
 
 #include <string.h>
+
 #include <string/string_list.h>
-#include "video_driver.h"
+
 #include "video_thread_wrapper.h"
 #include "video_pixel_converter.h"
 #include "video_monitor.h"
 #include "../general.h"
 #include "../performance.h"
-#include "../retroarch.h"
 
 #ifndef MEASURE_FRAME_TIME_SAMPLES_COUNT
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
