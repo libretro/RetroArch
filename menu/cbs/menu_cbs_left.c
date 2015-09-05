@@ -59,17 +59,9 @@ static int shader_action_parameter_preset_left(unsigned type, const char *label,
 static int action_left_cheat(unsigned type, const char *label,
       bool wraparound)
 {
-   global_t *global       = global_get_ptr();
-   cheat_manager_t *cheat = global->cheat;
    size_t idx             = type - MENU_SETTINGS_CHEAT_BEGIN;
-
-   if (!cheat)
-      return -1;
-
-   cheat->cheats[idx].state = !cheat->cheats[idx].state;
-   cheat_manager_update(cheat, idx);
-
-   return 0;
+   return generic_action_cheat_toggle(idx, type, label,
+         wraparound);
 }
 
 static int action_left_input_desc(unsigned type, const char *label,

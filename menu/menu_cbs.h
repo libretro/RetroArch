@@ -38,6 +38,9 @@ int shader_action_parameter_right(unsigned type, const char *label, bool wraparo
 int shader_action_parameter_preset_right(unsigned type, const char *label,
       bool wraparound);
 
+int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
+      bool wraparound);
+
 int action_ok_push_generic_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
 

@@ -61,12 +61,11 @@ int shader_action_parameter_preset_right(unsigned type, const char *label,
          MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
 }
 
-int action_right_cheat(unsigned type, const char *label,
+int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
       bool wraparound)
 {
    global_t *global       = global_get_ptr();
    cheat_manager_t *cheat = global->cheat;
-   size_t idx             = type - MENU_SETTINGS_CHEAT_BEGIN;
 
    if (!cheat)
       return -1;
@@ -75,6 +74,14 @@ int action_right_cheat(unsigned type, const char *label,
    cheat_manager_update(cheat, idx);
 
    return 0;
+}
+
+int action_right_cheat(unsigned type, const char *label,
+      bool wraparound)
+{
+   size_t idx             = type - MENU_SETTINGS_CHEAT_BEGIN;
+   return generic_action_cheat_toggle(idx, type, label,
+         wraparound);
 }
 
 int action_right_input_desc(unsigned type, const char *label,
