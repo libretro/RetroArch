@@ -92,8 +92,7 @@ void menu_navigation_clear(menu_navigation_t *nav, bool pending_push)
    if (!nav)
       return;
 
-   nav->selection_ptr = 0;
-
+   menu_navigation_set(nav, 0, true);
    menu_driver_navigation_clear(pending_push);
 }
 

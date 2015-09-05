@@ -363,7 +363,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
 
       menu_entries_get(i, &entry);
 
-      entry_selected = nav->selection_ptr == i;
+      entry_selected = (nav->selection_ptr == i);
 
       glui_render_label_value(glui, y, width, *frame_count / 40,
          entry_selected ? hover_color : normal_color, entry_selected,
