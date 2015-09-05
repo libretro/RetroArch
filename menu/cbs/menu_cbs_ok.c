@@ -397,15 +397,16 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx, const char *pa
 
    if (hash_label == MENU_LABEL_COLLECTION)
    {
-      ret = generic_action_ok_displaylist_push(path,
+      return generic_action_ok_displaylist_push(path,
             NULL, 0, idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST_SET);
    }
-   else
+
    switch (ret)
    {
       case -1:
          event_command(EVENT_CMD_LOAD_CORE);
-         return menu_common_load_content(false, CORE_TYPE_PLAIN);
+         ret = menu_common_load_content(false, CORE_TYPE_PLAIN);
+         break;
       case 0:
          ret = generic_action_ok_displaylist_push(path,
                NULL, 0, idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
@@ -1005,19 +1006,15 @@ static int action_ok_file_load(const char *path,
 
    if (setting && setting->type == ST_PATH)
       return action_ok_set_path(path, label, type, idx, entry_idx);
+
+   if (type == MENU_FILE_IN_CARCHIVE)
+      fill_pathname_join_delim(global->path.fullpath, menu_path_new, path,
+            '#',sizeof(global->path.fullpath));
    else
-   {
-      if (type == MENU_FILE_IN_CARCHIVE)
-         fill_pathname_join_delim(global->path.fullpath, menu_path_new, path,
-               '#',sizeof(global->path.fullpath));
-      else
-         fill_pathname_join(global->path.fullpath, menu_path_new, path,
-               sizeof(global->path.fullpath));
+      fill_pathname_join(global->path.fullpath, menu_path_new, path,
+            sizeof(global->path.fullpath));
 
-      return menu_common_load_content(true, CORE_TYPE_PLAIN);
-   }
-
-   return 0;
+   return menu_common_load_content(true, CORE_TYPE_PLAIN);
 }
 
 
@@ -1592,9 +1589,9 @@ static int action_ok_open_archive(const char *path,
 static int action_ok_load_archive(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   global_t      *global  = global_get_ptr();
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   const char *menu_path  = menu ? menu->scratch2_buf : NULL;
+   global_t      *global    = global_get_ptr();
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   const char *menu_path    = menu ? menu->scratch2_buf : NULL;
    const char *content_path = menu ? menu->scratch_buf  : NULL;
 
    fill_pathname_join(detect_content_path, menu_path, content_path,
@@ -1610,12 +1607,12 @@ static int action_ok_load_archive(const char *path,
 static int action_ok_load_archive_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   int ret = 0;
-   global_t      *global  = global_get_ptr();
-   size_t selected        = menu_navigation_get_current_selection();
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   menu_list_t *menu_list = menu_list_get_ptr();
-   const char *menu_path  = menu ? menu->scratch2_buf : NULL;
+   int ret                  = 0;
+   global_t      *global    = global_get_ptr();
+   size_t selected          = menu_navigation_get_current_selection();
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   menu_list_t *menu_list   = menu_list_get_ptr();
+   const char *menu_path    = menu ? menu->scratch2_buf : NULL;
    const char *content_path = menu ? menu->scratch_buf  : NULL;
 
    if (!menu || !menu_list)
@@ -1694,12 +1691,7 @@ static int action_ok_help_load_content(const char *path,
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   unsigned width = 0, height = 0;
    global_t *global = global_get_ptr();
-
-   (void)global;
-   (void)width;
-   (void)height;
 
 #ifdef __CELLOS_LV2__
    if (global->console.screen.resolutions.list[
@@ -1717,6 +1709,9 @@ static int action_ok_video_resolution(const char *path,
 
    event_command(EVENT_CMD_REINIT);
 #else
+   unsigned width   = 0;
+   unsigned  height = 0;
+
    if (video_driver_get_video_output_size(&width, &height))
    {
       char msg[PATH_MAX_LENGTH] = {0};
