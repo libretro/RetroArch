@@ -26,8 +26,6 @@
 #include <file/file_path.h>
 #include <string/string_list.h>
 
-#include "7zip_support.h"
-
 #include "../deps/7zip/7z.h"
 #include "../deps/7zip/7zAlloc.h"
 #include "../deps/7zip/7zCrc.h"

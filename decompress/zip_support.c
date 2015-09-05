@@ -25,8 +25,6 @@
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 
-#include "zip_support.h"
-
 #include "../deps/zlib/unzip.h"
 
 /* Undefined at the end of the file

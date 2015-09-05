@@ -14,16 +14,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <boolean.h>
 #include <compat/msvc.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <boolean.h>
 #include "../record_driver.h"
 
 static void record_null_free(void *data)
