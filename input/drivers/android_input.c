@@ -16,9 +16,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <android/keycodes.h>
 #include <unistd.h>
-#include <dlfcn.h>
+
+#include <android/keycodes.h>
 
 #include <retro_inline.h>
 

@@ -22,13 +22,14 @@
 #include <sys/resource.h>
 
 #include <retro_inline.h>
+#include <file/file_path.h>
 
 #include "platform_android.h"
 
 #include "../frontend.h"
 #include "../../general.h"
 #include "../../msg_hash.h"
-#include <file/file_path.h>
+#include "../../runloop_data.h"
 
 #define SDCARD_ROOT_WRITABLE 1
 #define SDCARD_EXT_DIR_WRITABLE 2
