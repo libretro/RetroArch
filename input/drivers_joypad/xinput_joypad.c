@@ -21,18 +21,19 @@
  * Some wrappers for other controllers also simulate xinput (as it is easier to implement)
  * so this may be useful for those also.
  **/
-#include "../input_autodetect.h"
-#include "../input_common.h"
-
-#include <dynamic/dylib.h>
-#include "../../general.h"
-#include <boolean.h>
-
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 
 #include <retro_inline.h>
+#include <dynamic/dylib.h>
+#include <boolean.h>
+
+#include "../input_autodetect.h"
+#include "../input_common.h"
+
+#include "../../general.h"
+
 
 /* Check if the definitions do not already exist.
  * Official and mingw xinput headers have different include guards.

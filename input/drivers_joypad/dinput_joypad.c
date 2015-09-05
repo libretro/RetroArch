@@ -14,15 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <dinput.h>
-
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 #include <windowsx.h>
 
-#include <retro_log.h>
+#include <dinput.h>
+
 #include <boolean.h>
+#include <retro_log.h>
 
 #include "../../general.h"
 #include "../input_autodetect.h"

@@ -13,19 +13,20 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include "../input_autodetect.h"
-#include "../../general.h"
-#include <unistd.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <string.h>
 #include <limits.h>
 #include <errno.h>
+
 #include <sys/types.h>
 #include <sys/inotify.h>
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <linux/joystick.h>
+
+#include "../input_autodetect.h"
+#include "../../general.h"
 
 #define NUM_BUTTONS 32
 #define NUM_AXES 32

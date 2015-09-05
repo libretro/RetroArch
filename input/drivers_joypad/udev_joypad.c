@@ -13,22 +13,24 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../input_autodetect.h"
-#include "../../general.h"
-#include <unistd.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <string.h>
 #include <limits.h>
+#include <fcntl.h>
 #include <errno.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/poll.h>
-#include <fcntl.h>
 #include <libudev.h>
 #include <linux/types.h>
 #include <linux/input.h>
 
 #include <retro_inline.h>
+
+#include "../input_autodetect.h"
+#include "../../general.h"
 
 /* Udev/evdev Linux joypad driver.
  * More complex and extremely low level,
