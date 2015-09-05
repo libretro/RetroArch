@@ -713,6 +713,11 @@ static void glui_navigation_set(bool scroll)
          &menu->scroll_y, EASING_IN_OUT_QUAD, -1, NULL);
 }
 
+static void  glui_list_set_selection(file_list_t *list)
+{
+   glui_navigation_set(true);
+}
+
 static void glui_navigation_clear(bool pending_push)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -799,7 +804,7 @@ menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    NULL,
    NULL,
-   NULL,
+   glui_list_set_selection,
    NULL,
    glui_load_image,
    "glui",
