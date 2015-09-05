@@ -21,7 +21,7 @@
 	ERROR PROTOTYPES
 ============================================================ */
 
-#if defined(PSP)
+#ifndef SCE_OK
 #define SCE_OK 0
 #endif
 
