@@ -128,7 +128,7 @@ const char *retro_dirent_get_name(struct RDIR *rdir)
 bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
 {
 #if defined(_WIN32)
-   const WIN32_FIND_DATA *entry = (const WIN32_FIND_DATA*)rdir->entry;
+   const WIN32_FIND_DATA *entry = (const WIN32_FIND_DATA*)&rdir->entry;
    return entry->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 #elif defined(PSP) || defined(VITA)
    const SceIoDirent *entry = (const SceIoDirent*)&rdir->entry;
