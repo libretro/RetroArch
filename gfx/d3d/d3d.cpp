@@ -21,6 +21,9 @@
 #endif
 
 #include <formats/image.h>
+#include <compat/strl.h>
+#include <compat/posix_string.h>
+#include <file/file_path.h>
 
 #include "d3d.h"
 #include "../video_viewport.h"
@@ -29,14 +32,12 @@
 #include "render_chain_driver.h"
 
 #include "../common/win32_common.h"
-#ifndef _XBOX
 
+#ifndef _XBOX
 #define HAVE_MONITOR
 #define HAVE_WINDOW
 #endif
 
-#include <compat/posix_string.h>
-#include <file/file_path.h>
 #include "../../performance.h"
 
 #include "d3d_defines.h"
@@ -51,8 +52,6 @@
 #include "../drivers_shader/shader_hlsl.h"
 #endif
 #endif
-
-#include <dynamic/dylib.h>
 
 /* forward declarations */
 static void d3d_calculate_rect(d3d_video_t *d3d,

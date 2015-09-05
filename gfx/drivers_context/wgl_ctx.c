@@ -21,6 +21,11 @@
 #define _WIN32_WINNT 0x0500 //_WIN32_WINNT_WIN2K
 #endif
 
+#include <string.h>
+
+#include <windows.h>
+#include <commdlg.h>
+
 #include "../../driver.h"
 #include "../../dynamic.h"
 #include "../../runloop.h"
@@ -29,12 +34,12 @@
 #include "../video_monitor.h"
 #include "../common/win32_common.h"
 #include "../drivers_wm/win32_shader_dlg.h"
-#include <windows.h>
-#include <commdlg.h>
-#include <string.h>
 
 #define IDI_ICON 1
+
+#ifndef MAX_MONITORS
 #define MAX_MONITORS 9
+#endif
 
 static bool g_use_hw_ctx;
 static HWND g_hwnd;

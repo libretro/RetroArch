@@ -102,7 +102,7 @@ extern int g_xinput_pad_indexes[MAX_USERS];
 extern bool g_xinput_block_pads;
 
 /* For xinput1_n.dll */
-static HINSTANCE g_xinput_dll;
+static dylib_t g_xinput_dll;
 
 /* Function pointer, to be assigned with dylib_proc */
 typedef uint32_t (__stdcall *XInputGetStateEx_t)(uint32_t, XINPUT_STATE*);
@@ -171,11 +171,10 @@ static bool xinput_joypad_init(void *data)
     * success anyway.
     */
 
-   /* Using dylib_* complicates building joyconfig. */
-   g_xinput_dll = (HINSTANCE)dylib_load("xinput1_4.dll"); 
+   g_xinput_dll = dylib_load("xinput1_4.dll"); 
    if (!g_xinput_dll)
    {
-      g_xinput_dll = (HINSTANCE)dylib_load("xinput1_3.dll");
+      g_xinput_dll = dylib_load("xinput1_3.dll");
       version = "1.3";
    }
 
@@ -457,8 +456,8 @@ static bool xinput_joypad_rumble(unsigned pad,
    else if (effect == RETRO_RUMBLE_WEAK)
       g_xinput_rumble_states[xuser].wRightMotorSpeed = strength;
 
-   return g_XInputSetState(xuser, &g_xinput_rumble_states[xuser]) 
-      == ERROR_SUCCESS;
+   return (g_XInputSetState(xuser, &g_xinput_rumble_states[xuser]) 
+      == 0);
 }
 
 input_device_driver_t xinput_joypad = {
