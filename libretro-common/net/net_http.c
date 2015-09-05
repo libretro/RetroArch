@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+
 #include <net/net_http.h>
 #include <net/net_compat.h>
 #include <compat/strl.h>

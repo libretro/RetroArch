@@ -22,8 +22,9 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include <string/string_list.h>
 #include <string.h>
+
+#include <string/string_list.h>
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>

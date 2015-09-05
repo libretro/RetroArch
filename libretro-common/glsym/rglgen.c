@@ -21,9 +21,10 @@
  */
 
 #include <stdint.h>
+#include <string.h>
+
 #include <glsym/rglgen.h>
 #include <glsym/glsym.h>
-#include <string.h>
 
 void rglgen_resolve_symbols_custom(rglgen_proc_address_t proc,
       const struct rglgen_sym_map *map)

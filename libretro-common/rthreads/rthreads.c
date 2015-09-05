@@ -20,8 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <rthreads/rthreads.h>
 #include <stdlib.h>
+
+#include <rthreads/rthreads.h>
 
 #if defined(_WIN32)
 #ifdef _XBOX

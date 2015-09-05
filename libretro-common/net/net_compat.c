@@ -14,11 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <net/net_compat.h>
 #include <stdint.h>
 #include <sys/types.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <net/net_compat.h>
 
 int getaddrinfo_rarch(const char *node, const char *service,
       const struct addrinfo *hints,
