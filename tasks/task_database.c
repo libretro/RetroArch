@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "tasks.h"
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
 

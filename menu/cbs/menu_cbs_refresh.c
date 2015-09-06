@@ -14,6 +14,7 @@
  */
 
 #include "../menu.h"
+#include "../menu_cbs.h"
 #include "../menu_hash.h"
 
 static int action_refresh_default(file_list_t *list, file_list_t *menu_list)

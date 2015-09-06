@@ -18,6 +18,7 @@
 #include <rthreads/rthreads.h>
 #endif
 
+#include "tasks.h"
 #include "../input/input_overlay.h"
 
 #ifdef HAVE_THREADS

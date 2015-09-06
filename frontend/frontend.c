@@ -17,6 +17,7 @@
 
 #include <file/file_path.h>
 
+#include "frontend.h"
 #include "../system.h"
 #include "../driver.h"
 #include "../general.h"

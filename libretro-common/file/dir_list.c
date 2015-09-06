@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 
+#include <file/dir_list.h>
 #include <file/file_path.h>
 #include <string/string_list.h>
 

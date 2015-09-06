@@ -1,3 +1,5 @@
+#include <retro_dirent.h>
+
 #include <stdlib.h>
 
 #if defined(_WIN32)
