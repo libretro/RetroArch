@@ -114,8 +114,8 @@ bool menu_animation_update(menu_animation_t *animation, float dt);
 void menu_animation_ticker_str(char *s, size_t len, uint64_t tick,
       const char *str, bool selected);
 
-void menu_animation_ticker_generic(uint64_t idx, int max_width,
-      int *offset, int *width);
+void menu_animation_ticker_generic(uint64_t idx, size_t max_width,
+      size_t *offset, size_t *width);
 
 menu_animation_t *menu_animation_get_ptr(void);
 

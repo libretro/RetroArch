@@ -571,8 +571,8 @@ bool menu_animation_update(menu_animation_t *anim, float dt)
    return true;
 }
 
-void menu_animation_ticker_generic(uint64_t idx, int max_width,
-      int *offset, int *width)
+void menu_animation_ticker_generic(uint64_t idx, size_t max_width,
+      size_t *offset, size_t *width)
 {
    int ticker_period, phase, phase_left_stop;
    int phase_left_moving, phase_right_stop;
@@ -620,8 +620,8 @@ void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
       const char *str, bool selected)
 {
    menu_animation_t *anim = menu_animation_get_ptr();
-   int            str_len = strlen(str);
-   int             offset = 0;
+   size_t           str_len = strlen(str);
+   size_t           offset = 0;
 
    if ((size_t)str_len <= len)
    {
