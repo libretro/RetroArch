@@ -119,16 +119,11 @@ static INLINE bool grab_region(dsound_t *ds, uint32_t write_ptr,
          break;
 
       default:
-         err = NULL;
+         return true;
    }
 
-   if (err)
-   {
-      RARCH_WARN("[DirectSound error]: %s\n", err);
-      return false;
-   }
-
-   return true;
+   RARCH_WARN("[DirectSound error]: %s\n", err);
+   return false;
 }
 
 static INLINE void release_region(dsound_t *ds, const struct audio_lock *region)
