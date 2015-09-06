@@ -101,7 +101,7 @@ typedef struct
    menu_display_t display;
 
    /* Menu entries */
-   menu_entries_t entries;
+   struct menu_entries_t *entries;
 
    bool load_no_content;
 

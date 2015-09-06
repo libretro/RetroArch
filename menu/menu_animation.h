@@ -131,7 +131,6 @@ bool menu_animation_is_active(struct menu_animation_t *anim);
 
 void *menu_animation_init(void);
 
-
 #ifdef __cplusplus
 }
 #endif

@@ -18,18 +18,30 @@
 
 #include "../general.h"
 
-static menu_entries_t *menu_entries_get_ptr(void)
+typedef struct menu_entries
+{
+   /* Flagged when menu entries need to be refreshed */
+   bool need_refresh;
+   bool nonblocking_refresh;
+
+   size_t begin;
+   menu_list_t *menu_list;
+   rarch_setting_t *list_settings;
+   menu_navigation_t navigation;
+} menu_entries_t;
+
+static struct menu_entries *menu_entries_get_ptr(void)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return NULL;
 
-   return &menu->entries;
+   return (struct menu_entries*)menu->entries;
 }
 
 rarch_setting_t *menu_setting_get_ptr(void)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
+   struct menu_entries *entries = menu_entries_get_ptr();
 
    if (!entries)
       return NULL;
@@ -38,7 +50,7 @@ rarch_setting_t *menu_setting_get_ptr(void)
 
 menu_list_t *menu_list_get_ptr(void)
 {
-   menu_entries_t *entries       = menu_entries_get_ptr();
+   struct menu_entries *entries = menu_entries_get_ptr();
    if (!entries)
       return NULL;
    return entries->menu_list;
@@ -46,7 +58,7 @@ menu_list_t *menu_list_get_ptr(void)
 
 menu_navigation_t *menu_navigation_get_ptr(void)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
+   struct menu_entries *entries = menu_entries_get_ptr();
    if (!entries)
       return NULL;
    return &entries->navigation;
@@ -55,7 +67,7 @@ menu_navigation_t *menu_navigation_get_ptr(void)
 /* Sets the starting index of the menu entry list. */
 void menu_entries_set_start(size_t i)
 {
-   menu_entries_t *entries   = menu_entries_get_ptr();
+   struct menu_entries *entries   = menu_entries_get_ptr();
    
    if (entries)
       entries->begin = i;
@@ -64,7 +76,7 @@ void menu_entries_set_start(size_t i)
 /* Returns the starting index of the menu entry list. */
 size_t menu_entries_get_start(void)
 {
-   menu_entries_t *entries   = menu_entries_get_ptr();
+   struct menu_entries *entries   = menu_entries_get_ptr();
    
    if (!entries)
      return 0;
@@ -75,7 +87,7 @@ size_t menu_entries_get_start(void)
 /* Returns the last index (+1) of the menu entry list. */
 size_t menu_entries_get_end(void)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
+   struct menu_entries *entries = menu_entries_get_ptr();
    return menu_list_get_size(entries->menu_list);
 }
 
@@ -86,7 +98,7 @@ void menu_entries_get(size_t i, menu_entry_t *entry)
    const char *path          = NULL;
    const char *entry_label   = NULL;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_entries_t   *entries = menu_entries_get_ptr();
+   struct menu_entries   *entries = menu_entries_get_ptr();
 
    if (!entries || !entries->menu_list)
       return;
@@ -120,7 +132,7 @@ int menu_entries_get_title(char *s, size_t len)
    const char *label         = NULL;
    unsigned menu_type        = 0;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_entries_t *entries = menu_entries_get_ptr();
+   struct menu_entries *entries = menu_entries_get_ptr();
    
    if (!entries->menu_list)
       return -1;
@@ -138,7 +150,7 @@ int menu_entries_get_title(char *s, size_t len)
  * one level deep in the menu hierarchy). */
 bool menu_entries_show_back(void)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
+   struct menu_entries *entries = menu_entries_get_ptr();
 
    if (!entries->menu_list)
       return false;
@@ -183,7 +195,7 @@ int menu_entries_get_core_title(char *s, size_t len)
 
 bool menu_entries_needs_refresh(void)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
+   struct menu_entries *entries = menu_entries_get_ptr();
 
    if (!entries || entries->nonblocking_refresh)
       return false;
@@ -194,7 +206,7 @@ bool menu_entries_needs_refresh(void)
 
 void menu_entries_set_refresh(bool nonblocking)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
+   struct menu_entries *entries = menu_entries_get_ptr();
    if (entries)
    {
       if (nonblocking)
@@ -206,7 +218,7 @@ void menu_entries_set_refresh(bool nonblocking)
 
 void menu_entries_unset_refresh(bool nonblocking)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
+   struct menu_entries *entries = menu_entries_get_ptr();
    if (entries)
    {
       if (nonblocking)
@@ -218,22 +230,34 @@ void menu_entries_unset_refresh(bool nonblocking)
 
 bool menu_entries_init(void *data)
 {
-   menu_entries_t *entries = NULL;
+   struct menu_entries *entries = NULL;
    menu_handle_t *menu     = (menu_handle_t*)data;
    if (!menu)
-      return false;
+      goto error;
 
-   entries = &menu->entries;
+   entries = (struct menu_entries*)calloc(1, sizeof(*entries));
+
+   if (!entries)
+      goto error;
+
+   menu->entries = (void*)entries;
 
    if (!(entries->menu_list = (menu_list_t*)menu_list_new()))
-      return false;
+      goto error;
 
    return true;
+
+error:
+   if (entries)
+      free(entries);
+   if (menu)
+      menu->entries = NULL;
+   return false;
 }
 
 void menu_entries_free(void)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
+   struct menu_entries *entries = menu_entries_get_ptr();
 
    if (!entries)
       return;
@@ -243,4 +267,19 @@ void menu_entries_free(void)
 
    menu_list_free(entries->menu_list);
    entries->menu_list     = NULL;
+}
+
+void menu_entries_free_list(struct menu_entries_t *data)
+{
+   struct menu_entries *entries = (struct menu_entries*)data;
+   if (entries && entries->list_settings)
+      menu_setting_free(entries->list_settings);
+}
+
+void menu_entries_new_list(struct menu_entries_t *data, unsigned flags)
+{
+   struct menu_entries *entries = (struct menu_entries*)data;
+   if (!entries)
+      return;
+   entries->list_settings      = menu_setting_new(flags);
 }

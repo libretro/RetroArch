@@ -1492,15 +1492,10 @@ static int deferred_push_video_shader_parameters_common(
 }
 #endif
 
-static void menu_displaylist_realloc_settings(menu_entries_t *entries, unsigned flags)
+static void menu_displaylist_realloc_settings(struct menu_entries_t *entries, unsigned flags)
 {
-   if (!entries)
-      return;
-
-   if (entries->list_settings)
-      menu_setting_free(entries->list_settings);
-
-   entries->list_settings      = menu_setting_new(flags);
+   menu_entries_free_list(entries);
+   menu_entries_new_list(entries, flags);
 }
 
 static int menu_setting_set_flags(rarch_setting_t *setting)
@@ -1535,7 +1530,7 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
    rarch_setting_t *setting = NULL;
    settings_t *settings     = config_get_ptr();
 
-   menu_displaylist_realloc_settings(&menu->entries, setting_flags);
+   menu_displaylist_realloc_settings(menu->entries, setting_flags);
 
    setting                  = menu_setting_find(info->label);
 
@@ -1599,7 +1594,7 @@ static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *
       }
    }
 
-   menu_displaylist_realloc_settings(&menu->entries, SL_FLAG_ALL_SETTINGS);
+   menu_displaylist_realloc_settings(menu->entries, SL_FLAG_ALL_SETTINGS);
 
    info->setting = menu_setting_find(elem0);
 
@@ -2562,7 +2557,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 #endif
          break;
       case DISPLAYLIST_SETTINGS_ALL:
-         menu_displaylist_realloc_settings(&menu->entries, SL_FLAG_ALL_SETTINGS);
+         menu_displaylist_realloc_settings(menu->entries, SL_FLAG_ALL_SETTINGS);
 
          setting = menu_setting_find(menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS));
 

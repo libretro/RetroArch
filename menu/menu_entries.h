@@ -30,17 +30,7 @@
 extern "C" {
 #endif
 
-typedef struct menu_entries
-{
-   /* Flagged when menu entries need to be refreshed */
-   bool need_refresh;
-   bool nonblocking_refresh;
-
-   size_t begin;
-   menu_list_t *menu_list;
-   rarch_setting_t *list_settings;
-   menu_navigation_t navigation;
-} menu_entries_t;
+struct menu_entries_t;
 
 void menu_entries_set_start(size_t i);
 
@@ -69,6 +59,10 @@ void menu_entries_unset_refresh(bool nonblocking);
 bool menu_entries_init(void *data);
 
 void menu_entries_free(void);
+
+void menu_entries_free_list(struct menu_entries_t *data);
+
+void menu_entries_new_list(struct menu_entries_t *data, unsigned flags);
 
 #ifdef __cplusplus
 }
