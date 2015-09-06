@@ -8,11 +8,12 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "libretrodb.h"
-
-#include "rmsgpack_dom.h"
 #include <compat/fnmatch.h>
 #include <compat/strl.h>
+
+#include "libretrodb.h"
+#include "query.h"
+#include "rmsgpack_dom.h"
 
 #define MAX_ERROR_LEN 256
 #undef  MAX_ARGS

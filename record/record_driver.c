@@ -18,6 +18,8 @@
 
 #include <file/file_path.h>
 
+#include "record_driver.h"
+
 #include "../driver.h"
 #include "../general.h"
 #include "../msg_hash.h"

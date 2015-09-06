@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "input_sensor.h"
+
 #include "../driver.h"
 
 /**
