@@ -129,7 +129,7 @@ float menu_animation_get_delta_time(struct menu_animation_t *anim);
 
 bool menu_animation_is_active(struct menu_animation_t *anim);
 
-void *menu_animation_init(void);
+struct menu_animation_t *menu_animation_init(void);
 
 #ifdef __cplusplus
 }

@@ -696,12 +696,12 @@ float menu_animation_get_delta_time(struct menu_animation_t *animation)
    return anim->delta_time;
 }
 
-void *menu_animation_init(void)
+struct menu_animation_t *menu_animation_init(void)
 {
    struct menu_animation *anim = (struct menu_animation*)calloc(1, sizeof(*anim));
    if (!anim)
       return NULL;
-   return anim;
+   return (struct menu_animation_t*)anim;
 }
 
 bool menu_animation_is_active(struct menu_animation_t *animation)
