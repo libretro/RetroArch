@@ -236,7 +236,7 @@ static int action_start_cheat_num_passes(unsigned type, const char *label)
    if (!cheat)
       return -1;
 
-   if (cheat->size)
+   if (cheat_manager_get_size(cheat))
    {
       menu_entries_set_refresh(false);
       cheat_manager_realloc(cheat, 0);

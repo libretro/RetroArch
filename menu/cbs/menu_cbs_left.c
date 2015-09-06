@@ -231,8 +231,8 @@ static int action_left_cheat_num_passes(unsigned type, const char *label,
    if (!cheat)
       return -1;
 
-   if (cheat->size)
-      new_size = cheat->size - 1;
+   if (cheat_manager_get_size(cheat))
+      new_size = cheat_manager_get_size(cheat) - 1;
    menu_entries_set_refresh(false);
    cheat_manager_realloc(cheat, new_size);
 

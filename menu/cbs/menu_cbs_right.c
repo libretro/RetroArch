@@ -70,8 +70,7 @@ int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
    if (!cheat)
       return -1;
 
-   cheat->cheats[idx].state = !cheat->cheats[idx].state;
-   cheat_manager_update(cheat, idx);
+   cheat_manager_toggle_index(cheat, idx);
 
    return 0;
 }
@@ -260,7 +259,7 @@ static int action_right_cheat_num_passes(unsigned type, const char *label,
    if (!cheat)
       return -1;
 
-   new_size = cheat->size + 1;
+   new_size = cheat_manager_get_size(cheat) + 1;
    menu_entries_set_refresh(false);
    cheat_manager_realloc(cheat, new_size);
 

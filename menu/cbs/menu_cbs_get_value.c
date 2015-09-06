@@ -46,7 +46,7 @@ static void menu_action_setting_disp_set_label_cheat_num_passes(
    *w = 19;
    strlcpy(s2, path, len2);
    if (global && global->cheat)
-      snprintf(s, len, "%u", global->cheat->buf_size);
+      snprintf(s, len, "%u", cheat_manager_get_buf_size(global->cheat));
 }
 
 static void menu_action_setting_disp_set_label_remap_file_load(
@@ -409,12 +409,12 @@ static void menu_action_setting_disp_set_label_cheat(
    if (!global)
       return;
 
-   if (cheat_index < global->cheat->buf_size)
+   if (cheat_index < cheat_manager_get_buf_size(global->cheat))
       snprintf(s, len, "%s : (%s)",
-            (global->cheat->cheats[cheat_index].code != NULL)
-            ? global->cheat->cheats[cheat_index].code : 
+            (cheat_manager_get_code(global->cheat, cheat_index) != NULL)
+            ? cheat_manager_get_code(global->cheat, cheat_index) : 
             menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE),
-            global->cheat->cheats[cheat_index].state ? 
+            cheat_manager_get_code_state(global->cheat, cheat_index) ? 
             menu_hash_to_str(MENU_VALUE_ON) :
             menu_hash_to_str(MENU_VALUE_OFF)
             );

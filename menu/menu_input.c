@@ -186,9 +186,7 @@ void menu_input_st_cheat_callback(void *userdata, const char *str)
    if (cheat && str && *str)
    {
       unsigned cheat_index = menu_input->keyboard.type - MENU_SETTINGS_CHEAT_BEGIN;
-
-      cheat->cheats[cheat_index].code  = strdup(str);
-      cheat->cheats[cheat_index].state = true;
+      cheat_manager_set_code(cheat, cheat_index, str);
    }
 
    menu_input_key_end_line();

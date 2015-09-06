@@ -2008,13 +2008,13 @@ static int menu_displaylist_parse_options_cheats(menu_displaylist_info_t *info)
          menu_hash_to_str(MENU_LABEL_CHEAT_APPLY_CHANGES),
          MENU_SETTING_ACTION, 0, 0);
 
-   for (i = 0; i < cheat->size; i++)
+   for (i = 0; i < cheat_manager_get_size(cheat); i++)
    {
       char cheat_label[64] = {0};
 
       snprintf(cheat_label, sizeof(cheat_label), "%s #%u: ", menu_hash_to_str(MENU_VALUE_CHEAT), i);
-      if (cheat->cheats[i].desc)
-         strlcat(cheat_label, cheat->cheats[i].desc, sizeof(cheat_label));
+      if (cheat_manager_get_desc(cheat, i))
+         strlcat(cheat_label, cheat_manager_get_desc(cheat, i), sizeof(cheat_label));
       menu_list_push(info->list, cheat_label, "", MENU_SETTINGS_CHEAT_BEGIN + i, 0, 0);
    }
 
