@@ -36,7 +36,7 @@ struct tween
    tween_cb cb;
 };
 
-typedef struct menu_animation
+struct menu_animation
 {
    struct tween *list;
 
@@ -49,7 +49,7 @@ typedef struct menu_animation
    float delta_time;
    retro_time_t cur_time;
    retro_time_t old_time;
-} menu_animation_t;
+};
 
 struct menu_animation_t *menu_animation_get_ptr(void)
 {

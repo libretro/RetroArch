@@ -1492,7 +1492,7 @@ static int deferred_push_video_shader_parameters_common(
 }
 #endif
 
-static void menu_displaylist_realloc_settings(struct menu_entries_t *entries, unsigned flags)
+static void menu_displaylist_realloc_settings(void *entries, unsigned flags)
 {
    menu_entries_free_list(entries);
    menu_entries_new_list(entries, flags);

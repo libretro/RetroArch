@@ -60,9 +60,9 @@ bool menu_entries_init(void *data);
 
 void menu_entries_free(void);
 
-void menu_entries_free_list(struct menu_entries_t *data);
+void menu_entries_free_list(void *data);
 
-void menu_entries_new_list(struct menu_entries_t *data, unsigned flags);
+void menu_entries_new_list(void *data, unsigned flags);
 
 #ifdef __cplusplus
 }

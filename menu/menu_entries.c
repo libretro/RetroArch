@@ -18,7 +18,7 @@
 
 #include "../general.h"
 
-typedef struct menu_entries
+struct menu_entries
 {
    /* Flagged when menu entries need to be refreshed */
    bool need_refresh;
@@ -28,7 +28,7 @@ typedef struct menu_entries
    menu_list_t *menu_list;
    rarch_setting_t *list_settings;
    menu_navigation_t navigation;
-} menu_entries_t;
+};
 
 static struct menu_entries *menu_entries_get_ptr(void)
 {
@@ -240,7 +240,7 @@ bool menu_entries_init(void *data)
    if (!entries)
       goto error;
 
-   menu->entries = (void*)entries;
+   menu->entries = (struct menu_entries*)entries;
 
    if (!(entries->menu_list = (menu_list_t*)menu_list_new()))
       goto error;
@@ -269,14 +269,14 @@ void menu_entries_free(void)
    entries->menu_list     = NULL;
 }
 
-void menu_entries_free_list(struct menu_entries_t *data)
+void menu_entries_free_list(void *data)
 {
    struct menu_entries *entries = (struct menu_entries*)data;
    if (entries && entries->list_settings)
       menu_setting_free(entries->list_settings);
 }
 
-void menu_entries_new_list(struct menu_entries_t *data, unsigned flags)
+void menu_entries_new_list(void *data, unsigned flags)
 {
    struct menu_entries *entries = (struct menu_entries*)data;
    if (!entries)
