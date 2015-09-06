@@ -212,10 +212,12 @@ OBJ += frontend/frontend.o \
 OBJ += gfx/image/image.o
 
 ifneq ($(C89_BUILD), 1)
-# stb_image is not a C89-compliant API.
+ifneq ($(C90_BUILD), 1)
+# stb_image is not a C89/C90-compliant API.
 ifeq ($(HAVE_IMAGEVIEWER), 1)
 DEFINES += -DHAVE_IMAGEVIEWER
 OBJ += cores/image_core.o
+endif
 endif
 endif
 
@@ -246,11 +248,13 @@ ifeq ($(HAVE_STDIN_CMD), 1)
 endif
 
 ifneq ($(C89_BUILD), 1)
-# Python 3.x bindings are not C89-compliant.
+ifneq ($(C90_BUILD), 1)
+# Python 3.x bindings are not C89/C90-compliant.
 ifeq ($(HAVE_PYTHON), 1)
    DEFINES += $(PYTHON_CFLAGS) -Wno-unused-parameter
    LIBS += $(PYTHON_LIBS)
    OBJ += gfx/video_state_python.o
+endif
 endif
 endif
 
@@ -313,11 +317,13 @@ ifeq ($(HAVE_JACK),1)
 endif
 
 ifneq ($(C89_BUILD), 1)
-# PulseAudio is not a C89-compliant API.
+ifneq ($(C90_BUILD), 1)
+# PulseAudio is not a C89/C90-compliant API.
 ifeq ($(HAVE_PULSE), 1)
    OBJ += audio/drivers/pulse.o
    LIBS += $(PULSE_LIBS)
    DEFINES += $(PULSE_CFLAGS)
+endif
 endif
 endif
 
@@ -461,11 +467,13 @@ endif
 #Input
 
 ifneq ($(C89_BUILD), 1)
-# Wayland is not a C89-compliant API.
+ifneq ($(C90_BUILD), 1)
+# Wayland is not a C89/C90-compliant API.
 ifeq ($(HAVE_WAYLAND), 1)
  #OBJ += input/drivers/wayland.o
  DEFINES += $(WAYLAND_CFLAGS)
  LIBS += $(WAYLAND_LIBS)
+endif
 endif
 endif
 
@@ -506,13 +514,15 @@ ifeq ($(HAVE_UDEV), 1)
 endif
 
 ifneq ($(C89_BUILD), 1)
-# libusb is not a C89-compliant API.
+ifneq ($(C90_BUILD), 1)
+# libusb is not a C89/C90-compliant API.
 ifeq ($(HAVE_LIBUSB), 1)
 	DEFINES += -DHAVE_LIBUSB
 	OBJ += input/drivers_hid/libusb_hid.o
 	LIBS += -lusb-1.0
 	JOYCONFIG_LIBS += -lusb-1.0
 	HAVE_HID = 1
+endif
 endif
 endif
 
@@ -595,12 +605,14 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
    endif
 
 ifneq ($(C89_BUILD), 1)
-	# Wayland is not a C89-compliant API.
+ifneq ($(C90_BUILD), 1)
+	# Wayland is not a C89/C90-compliant API.
    ifeq ($(HAVE_WAYLAND), 1)
 	   ifeq ($(HAVE_EGL), 1)
 	     OBJ += gfx/drivers_context/wayland_ctx.o
       endif
    endif
+endif
 endif
 	
    ifeq ($(HAVE_GLES), 1)
@@ -855,13 +867,15 @@ endif
 # Record
 
 ifneq ($(C89_BUILD), 1)
-# ffmpeg and friends are not C89-compliant APIs. 
+ifneq ($(C90_BUILD), 1)
+# ffmpeg and friends are not C89/C90-compliant APIs. 
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/drivers/record_ffmpeg.o \
 			 cores/ffmpeg_core.o
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
    DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS)
 	DEFINES += -DHAVE_FFMPEG -Iffmpeg
+endif
 endif
 endif
 
