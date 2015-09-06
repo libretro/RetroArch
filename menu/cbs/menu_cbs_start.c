@@ -288,7 +288,7 @@ static int action_start_lookup_setting(unsigned type, const char *label)
    return menu_setting_set(type, label, MENU_ACTION_START, false);
 }
 
-int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs,
+static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs,
       uint32_t hash)
 {
    switch (hash)

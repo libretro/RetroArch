@@ -1813,7 +1813,7 @@ static rarch_setting_t setting_bind_setting(const char* name,
  *
  * Returns: String setting of type @type.
  **/
-rarch_setting_t setting_string_setting(enum setting_type type,
+static rarch_setting_t setting_string_setting(enum setting_type type,
       const char* name, const char* short_description, char* target,
       unsigned size, const char* default_value, const char *empty,
       const char *group, const char *subgroup, const char *parent_group,

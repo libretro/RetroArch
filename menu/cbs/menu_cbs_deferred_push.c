@@ -27,6 +27,10 @@
 #include "../../general.h"
 #include "../../file_ext.h"
 
+/* foward declarations */
+int cb_core_updater_list(void *data_, size_t len);
+int cb_core_content_list(void *data_, size_t len);
+
 static int deferred_push_core_information(menu_displaylist_info_t *info)
 {
    return menu_displaylist_push_list(info, DISPLAYLIST_CORE_INFO);

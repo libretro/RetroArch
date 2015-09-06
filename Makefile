@@ -1,5 +1,5 @@
 HAVE_FILE_LOGGER=1
-MISSING_DECLS=0
+MISSING_DECLS   =0
 
 include config.mk
 
