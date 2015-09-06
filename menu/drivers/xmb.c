@@ -390,9 +390,12 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = color;
 
-   glViewport(x, height - y, xmb->icon.size, xmb->icon.size);
-
-   menu_video_draw_frame(gl->shader, &coords, &mymat, false, texture);
+   menu_video_draw_frame(
+         x,
+         height - y,
+         xmb->icon.size,
+         xmb->icon.size,
+         gl->shader, &coords, &mymat, false, texture);
 }
 
 static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
@@ -445,9 +448,12 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = color;
 
-   glViewport(x, height - y, xmb->icon.size, xmb->icon.size);
-
-   menu_video_draw_frame(gl->shader, &coords, mymat, false, texture);
+   menu_video_draw_frame(
+         x,
+         height - y,
+         xmb->icon.size,
+         xmb->icon.size,
+         gl->shader, &coords, mymat, false, texture);
 }
 
 static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb)
@@ -494,9 +500,12 @@ static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb)
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = color;
 
-   glViewport(x, height - y, xmb->boxart_size, xmb->boxart_size);
-
-   menu_video_draw_frame(gl->shader, &coords, &mymat, false, xmb->boxart);
+   menu_video_draw_frame(
+         x,
+         height - y,
+         xmb->boxart_size,
+         xmb->boxart_size,
+         gl->shader, &coords, &mymat, false, xmb->boxart);
 }
 
 static void xmb_draw_text(menu_handle_t *menu,
@@ -1469,9 +1478,12 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
 
    xmb_draw_icon_begin(gl);
 
-   glViewport(x, height - y, xmb->cursor.size, xmb->cursor.size);
-
-   menu_video_draw_frame(gl->shader, &coords, &mymat, true, xmb->textures.list[XMB_TEXTURE_POINTER].id);
+   menu_video_draw_frame(
+         x,
+         height - y,
+         xmb->cursor.size,
+         xmb->cursor.size,
+         gl->shader, &coords, &mymat, true, xmb->textures.list[XMB_TEXTURE_POINTER].id);
 }
 
 static void xmb_render(void)

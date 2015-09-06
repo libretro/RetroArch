@@ -27,6 +27,8 @@ extern "C" {
 #include "../gfx/drivers/gl_common.h"
 
 void menu_video_draw_frame(
+      unsigned x, unsigned y,
+      unsigned width, unsigned height,
       const shader_backend_t *shader,
       struct gfx_coords *coords,
       math_matrix_4x4 *mat, 

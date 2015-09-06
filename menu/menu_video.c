@@ -23,6 +23,8 @@
 
 #ifdef HAVE_OPENGL
 void menu_video_draw_frame(
+      unsigned x, unsigned y,
+      unsigned width, unsigned height,
       const shader_backend_t *shader,
       struct gfx_coords *coords,
       math_matrix_4x4 *mat, 
@@ -32,6 +34,7 @@ void menu_video_draw_frame(
 {
    driver_t *driver = driver_get_ptr();
 
+   glViewport(x, y, width, height);
    glBindTexture(GL_TEXTURE_2D, texture);
 
    shader->set_coords(coords);
@@ -56,6 +59,7 @@ void menu_video_frame_background(
       GRfloat *coord_color)
 {
    struct gfx_coords coords;
+   unsigned width, height;
    GRfloat color[16], vertex[8], tex_coord[8];
 
    global_t *global = global_get_ptr();
@@ -112,7 +116,10 @@ void menu_video_frame_background(
       && texture)
       coords.color = color;
 
-   menu_video_draw_frame(gl->shader, &coords,
+   video_driver_get_size(&width, &height);
+
+   menu_video_draw_frame(0, 0, width, height,
+         gl->shader, &coords,
          &gl->mvp_no_rot, true, texture);
 
    gl->coords.color = gl->white_color_ptr;
