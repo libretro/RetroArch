@@ -37,6 +37,7 @@
 
 #include "file_ops.h"
 
+#ifdef HAVE_COMPRESSION
 #ifdef HAVE_7ZIP
 #include "deps/7zip/7z.h"
 #include "deps/7zip/7zAlloc.h"
@@ -614,6 +615,8 @@ error:
    unzClose(zipfile);
    return -1;
 }
+#endif
+
 #endif
 
 /**
