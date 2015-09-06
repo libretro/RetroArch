@@ -275,7 +275,8 @@ static bool int_string(char *str, int *val)
    return ((*str != '\0') && (*endptr == '\0'));
 }
 
-bool frontend_linux_powerstate_check_apm(enum frontend_powerstate *state,
+static bool frontend_linux_powerstate_check_apm(
+      enum frontend_powerstate *state,
       int *seconds, int *percent)
 {
    ssize_t br;
@@ -356,7 +357,8 @@ bool frontend_linux_powerstate_check_apm(enum frontend_powerstate *state,
    return true;
 }
 
-bool frontend_linux_powerstate_check_acpi(enum frontend_powerstate *state,
+static bool frontend_linux_powerstate_check_acpi(
+      enum frontend_powerstate *state,
       int *seconds, int *percent)
 {
    bool ret            = false;
@@ -426,7 +428,7 @@ frontend_linux_get_powerstate(int *seconds, int *percent)
 #define LINUX_ARCH_MIPS       0x7c9aa25eU
 #define LINUX_ARCH_TILE       0x7c9e7873U
 
-enum frontend_architecture frontend_linux_get_architecture(void)
+static enum frontend_architecture frontend_linux_get_architecture(void)
 {
    uint32_t buffer_hash;
    struct utsname buffer;
