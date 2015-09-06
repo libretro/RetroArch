@@ -68,7 +68,7 @@ typedef enum
 {
    MENU_VIDEO_DRIVER_GENERIC = 0,
    MENU_VIDEO_DRIVER_OPENGL,
-   MENU_VIDEO_DRIVER_DIRECT3D,
+   MENU_VIDEO_DRIVER_DIRECT3D
 } menu_video_driver_type_t;
 
 typedef struct

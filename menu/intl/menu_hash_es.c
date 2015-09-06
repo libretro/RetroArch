@@ -636,9 +636,9 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Iniciando descarga: ";
       case MENU_VALUE_SECONDS:
          return "segundos";
-      case MENU_VALUE_OFF: //Not changed. Would be "SÍ"
+      case MENU_VALUE_OFF: /* Not changed. Would be "SÍ" */
          return "OFF";
-      case MENU_VALUE_ON: //Not changed. Would be "NO"
+      case MENU_VALUE_ON: /* Not changed. Would be "NO" */
          return "ON";
       case MENU_LABEL_VALUE_UPDATE_ASSETS:
          return "Actualizar recursos";

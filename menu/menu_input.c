@@ -358,7 +358,9 @@ static bool menu_input_poll_find_trigger(struct menu_bind_state *state,
 
       /* Update the joypad mapping automatically.
        * More friendly that way. */
-      //settings->input.joypad_map[state->user] = i;
+#if 0
+      settings->input.joypad_map[state->user] = i;
+#endif
       return true;
    }
    return false;

@@ -403,6 +403,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
 static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 {
+   int controller;
    char feat_str[PATH_MAX_LENGTH]        = {0};
    char tmp[PATH_MAX_LENGTH]             = {0};
    char tmp2[PATH_MAX_LENGTH]            = {0};
@@ -445,7 +446,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       menu_list_push(info->list, cpu_str, "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
-   for(int controller = 0; controller < MAX_USERS; controller++)
+   for(controller = 0; controller < MAX_USERS; controller++)
    {
        if (settings->input.autoconfigured[controller])
        {

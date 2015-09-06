@@ -554,12 +554,13 @@ static void gl_create_fbo_textures(gl_t *gl)
 static bool gl_create_fbo_targets(gl_t *gl)
 {
    int i;
+   GLenum status;
+
    if (!gl)
       return false;
 
    glBindTexture(GL_TEXTURE_2D, 0);
    glGenFramebuffers(gl->fbo_pass, gl->fbo);
-   GLenum status;
 
    for (i = 0; i < gl->fbo_pass; i++)
    {
