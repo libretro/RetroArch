@@ -571,8 +571,7 @@ static int png_reverse_filter_adam7(uint32_t **data_,
    return ret;
 }
 
-int png_reverse_filter_iterate(struct rpng_t *rpng,
-      uint32_t **data)
+int png_reverse_filter_iterate(rpng_t *rpng, uint32_t **data)
 {
    if (!rpng)
       return false;
@@ -583,7 +582,7 @@ int png_reverse_filter_iterate(struct rpng_t *rpng,
    return png_reverse_filter_regular_iterate(data, &rpng->ihdr, &rpng->process);
 }
 
-int rpng_load_image_argb_process_inflate_init(struct rpng_t *rpng,
+int rpng_load_image_argb_process_inflate_init(rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height)
 {
    int zstatus;
@@ -669,7 +668,7 @@ bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf)
    return true;
 }
 
-bool rpng_load_image_argb_process_init(struct rpng_t *rpng,
+bool rpng_load_image_argb_process_init(rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height)
 {
    rpng->process.inflate_buf_size = 0;

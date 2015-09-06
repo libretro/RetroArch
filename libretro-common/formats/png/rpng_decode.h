@@ -40,10 +40,9 @@ bool png_read_plte(uint8_t *buf,
 
 bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf);
 
-int png_reverse_filter_iterate(struct rpng_t *rpng,
-      uint32_t **data);
+int png_reverse_filter_iterate(rpng_t *rpng, uint32_t **data);
 
-bool rpng_load_image_argb_process_init(struct rpng_t *rpng,
+bool rpng_load_image_argb_process_init(rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height);
 
 #endif

@@ -66,7 +66,7 @@ static bool png_parse_ihdr(uint8_t *buf,
    return true;
 }
 
-bool rpng_nbio_load_image_argb_iterate(struct rpng_t *rpng)
+bool rpng_nbio_load_image_argb_iterate(rpng_t *rpng)
 {
    unsigned i;
    unsigned ret;
@@ -165,7 +165,7 @@ error:
    return false;
 }
 
-int rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
+int rpng_nbio_load_image_argb_process(rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height)
 {
    if (!rpng->process.initialized)
@@ -188,7 +188,7 @@ int rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
    return png_reverse_filter_iterate(rpng, data);
 }
 
-void rpng_nbio_load_image_free(struct rpng_t *rpng)
+void rpng_nbio_load_image_free(rpng_t *rpng)
 {
    if (!rpng)
       return;
@@ -206,7 +206,7 @@ void rpng_nbio_load_image_free(struct rpng_t *rpng)
    free(rpng);
 }
 
-bool rpng_nbio_load_image_argb_start(struct rpng_t *rpng)
+bool rpng_nbio_load_image_argb_start(rpng_t *rpng)
 {
    unsigned i;
    char header[8] = {0};
@@ -225,7 +225,7 @@ bool rpng_nbio_load_image_argb_start(struct rpng_t *rpng)
    return true;
 }
 
-bool rpng_is_valid(struct rpng_t *rpng)
+bool rpng_is_valid(rpng_t *rpng)
 {
    if (!rpng)
       return false;
@@ -239,7 +239,7 @@ bool rpng_is_valid(struct rpng_t *rpng)
    return false;
 }
 
-bool rpng_set_buf_ptr(struct rpng_t *rpng, uint8_t *data)
+bool rpng_set_buf_ptr(rpng_t *rpng, uint8_t *data)
 {
    if (!rpng)
       return false;
@@ -249,9 +249,9 @@ bool rpng_set_buf_ptr(struct rpng_t *rpng, uint8_t *data)
    return true;
 }
 
-struct rpng_t *rpng_alloc(void)
+rpng_t *rpng_alloc(void)
 {
-   struct rpng_t *rpng = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
+   rpng_t *rpng = (rpng_t*)calloc(1, sizeof(rpng_t));
    if (!rpng)
       return NULL;
    return rpng;

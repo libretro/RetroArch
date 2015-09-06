@@ -56,7 +56,7 @@ typedef struct nbio_image_handle
    bool is_finished;
    transfer_cb_t  cb;
 #ifdef HAVE_RPNG
-   struct rpng_t *handle;
+   rpng_t *handle;
 #endif
    unsigned processing_pos_increment;
    unsigned pos_increment;

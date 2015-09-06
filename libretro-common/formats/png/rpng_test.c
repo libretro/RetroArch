@@ -44,7 +44,7 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
    int retval;
    size_t file_len;
    bool ret = true;
-   struct rpng_t *rpng = NULL;
+   rpng_t *rpng = NULL;
    void *ptr = NULL;
    struct nbio_t* handle = (void*)nbio_open(path, NBIO_READ);
 

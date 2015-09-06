@@ -33,27 +33,27 @@
 extern "C" {
 #endif
 
-struct rpng_t;
+typedef struct rpng rpng_t;
 
 bool rpng_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height);
 
-struct rpng_t *rpng_nbio_load_image_argb_init(const char *path);
+rpng_t *rpng_nbio_load_image_argb_init(const char *path);
 
-bool rpng_is_valid(struct rpng_t *rpng);
+bool rpng_is_valid(rpng_t *rpng);
 
-bool rpng_set_buf_ptr(struct rpng_t *rpng, uint8_t *data);
+bool rpng_set_buf_ptr(rpng_t *rpng, uint8_t *data);
 
-struct rpng_t *rpng_alloc(void);
+rpng_t *rpng_alloc(void);
 
-void rpng_nbio_load_image_free(struct rpng_t *rpng);
+void rpng_nbio_load_image_free(rpng_t *rpng);
 
-bool rpng_nbio_load_image_argb_iterate(struct rpng_t *rpng);
+bool rpng_nbio_load_image_argb_iterate(rpng_t *rpng);
 
-int rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
+int rpng_nbio_load_image_argb_process(rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height);
 
-bool rpng_nbio_load_image_argb_start(struct rpng_t *rpng);
+bool rpng_nbio_load_image_argb_start(rpng_t *rpng);
 
 #ifdef HAVE_ZLIB_DEFLATE
 bool rpng_save_image_argb(const char *path, const uint32_t *data,

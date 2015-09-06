@@ -97,7 +97,7 @@ static bool png_parse_ihdr_fio(FILE **fd,
    return true;
 }
 
-bool rpng_load_image_argb_iterate(FILE **fd, struct rpng_t *rpng)
+bool rpng_load_image_argb_iterate(FILE **fd, rpng_t *rpng)
 {
    struct png_chunk chunk = {0};
    FILE *file = *fd;
@@ -200,7 +200,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    long pos, file_len;
    FILE *file;
    char header[8]     = {0};
-   struct rpng_t rpng = {{0}};
+   rpng_t rpng        = {{0}};
    bool ret           = true;
    int retval         = 0;
 
