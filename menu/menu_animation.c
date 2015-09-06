@@ -23,7 +23,35 @@
 #include "../configuration.h"
 #include "../performance.h"
 
-menu_animation_t *menu_animation_get_ptr(void)
+struct tween
+{
+   bool   alive;
+   float  duration;
+   float  running_since;
+   float  initial_value;
+   float  target_value;
+   float* subject;
+   int           tag;
+   easingFunc easing;
+   tween_cb cb;
+};
+
+typedef struct menu_animation
+{
+   struct tween *list;
+
+   size_t capacity;
+   size_t size;
+   size_t first_dead;
+   bool is_active;
+
+   /* Delta timing */
+   float delta_time;
+   retro_time_t cur_time;
+   retro_time_t old_time;
+} menu_animation_t;
+
+struct menu_animation_t *menu_animation_get_ptr(void)
 {
    menu_display_t *disp = menu_display_get_ptr();
    if (!disp)
@@ -259,9 +287,10 @@ static float easing_out_in_bounce(float t, float b, float c, float d)
    return easing_in_bounce((t * 2) - d, b + c / 2, c / 2, d);
 }
 
-void menu_animation_free(menu_animation_t *anim)
+void menu_animation_free(struct menu_animation_t *animation)
 {
    size_t i;
+   struct menu_animation *anim = (struct menu_animation*)animation;
 
    if (!anim)
       return;
@@ -276,26 +305,27 @@ void menu_animation_free(menu_animation_t *anim)
    free(anim);
 }
 
-void menu_animation_kill_by_subject(menu_animation_t *animation,
+void menu_animation_kill_by_subject(struct menu_animation_t *animation,
       size_t count, const void *subjects)
 {
    unsigned i, j, killed = 0;
    float **sub = (float**)subjects;
+   struct menu_animation *anim = (struct menu_animation*)animation;
 
-   for (i = 0; i < animation->size; ++i)
+   for (i = 0; i < anim->size; ++i)
    {
-      if (!animation->list[i].alive)
+      if (!anim->list[i].alive)
          continue;
 
       for (j = 0; j < count; ++j)
       {
-         if (animation->list[i].subject == sub[j])
+         if (anim->list[i].subject == sub[j])
          {
-            animation->list[i].alive   = false;
-            animation->list[i].subject = NULL;
+            anim->list[i].alive   = false;
+            anim->list[i].subject = NULL;
 
-            if (i < animation->first_dead)
-               animation->first_dead = i;
+            if (i < anim->first_dead)
+               anim->first_dead = i;
 
             killed++;
             break;
@@ -304,9 +334,10 @@ void menu_animation_kill_by_subject(menu_animation_t *animation,
    }
 }
 
-void menu_animation_kill_by_tag(menu_animation_t *anim, int tag)
+void menu_animation_kill_by_tag(struct menu_animation_t *animation, int tag)
 {
    unsigned i;
+   struct menu_animation *anim = (struct menu_animation*)animation;
 
    if (tag == -1)
       return;
@@ -324,7 +355,7 @@ void menu_animation_kill_by_tag(menu_animation_t *anim, int tag)
    }
 }
 
-static void menu_animation_push_internal(menu_animation_t *anim, const struct tween *t)
+static void menu_animation_push_internal(struct menu_animation *anim, const struct tween *t)
 {
    struct tween *target = NULL;
 
@@ -345,13 +376,14 @@ static void menu_animation_push_internal(menu_animation_t *anim, const struct tw
    *target = *t;
 }
 
-bool menu_animation_push(menu_animation_t *anim,
+bool menu_animation_push(struct menu_animation_t *animation,
       float duration,
       float target_value, float* subject,
       enum menu_animation_easing_type easing_enum,
       int tag, tween_cb cb)
 {
    struct tween t;
+   struct menu_animation *anim = (struct menu_animation*)animation;
 
    if (!subject)
       return false;
@@ -489,7 +521,7 @@ bool menu_animation_push(menu_animation_t *anim,
 }
 
 static int menu_animation_iterate(
-      menu_animation_t *anim, unsigned idx,
+      struct menu_animation *anim, unsigned idx,
       float dt, unsigned *active_tweens)
 {
    struct tween *tween = &anim->list[idx];
@@ -523,10 +555,11 @@ static int menu_animation_iterate(
    return 0;
 }
 
-bool menu_animation_update(menu_animation_t *anim, float dt)
+bool menu_animation_update(struct menu_animation_t *animation, float dt)
 {
    unsigned i;
    unsigned active_tweens = 0;
+   struct menu_animation *anim = (struct menu_animation*)animation;
 
    for(i = 0; i < anim->size; i++)
       menu_animation_iterate(anim, i, dt, &active_tweens);
@@ -591,7 +624,7 @@ void menu_animation_ticker_generic(uint64_t idx, int max_width,
 void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
       const char *str, bool selected)
 {
-   menu_animation_t *anim = menu_animation_get_ptr();
+   struct menu_animation *anim = (struct menu_animation*)menu_animation_get_ptr();
    int            str_len = strlen(str);
    int             offset = 0;
 
@@ -619,7 +652,7 @@ void menu_animation_update_time(void)
 {
    static retro_time_t last_clock_update = 0;
    menu_display_t *disp     = menu_display_get_ptr();
-   menu_animation_t *anim   = disp->animation;
+   struct menu_animation *anim   = (struct menu_animation*)disp->animation;
    settings_t *settings     = config_get_ptr();
 
    anim->cur_time   = rarch_get_time_usec();
@@ -634,7 +667,47 @@ void menu_animation_update_time(void)
    if (((anim->cur_time - last_clock_update) > 1000000) 
          && settings->menu.timedate_enable)
    {
-      anim->label.is_updated = true;
+      anim->is_active           = true;
       last_clock_update = anim->cur_time;
    }
+}
+
+void menu_animation_set_active(struct menu_animation_t *animation)
+{
+   struct menu_animation *anim = (struct menu_animation*)animation;
+   if (!anim)
+      return;
+   anim->is_active           = true;
+}
+
+void menu_animation_clear_active(struct menu_animation_t *animation)
+{
+   struct menu_animation *anim = (struct menu_animation*)animation;
+   if (!anim)
+      return;
+   anim->is_active           = false;
+}
+
+float menu_animation_get_delta_time(struct menu_animation_t *animation)
+{
+   struct menu_animation *anim = (struct menu_animation*)animation;
+   if (!anim)
+      return 0.0f;
+   return anim->delta_time;
+}
+
+void *menu_animation_init(void)
+{
+   struct menu_animation *anim = (struct menu_animation*)calloc(1, sizeof(*anim));
+   if (!anim)
+      return NULL;
+   return anim;
+}
+
+bool menu_animation_is_active(struct menu_animation_t *animation)
+{
+   struct menu_animation *anim = (struct menu_animation*)animation;
+   if (!anim)
+      return false;
+   return anim->is_active;
 }

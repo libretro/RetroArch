@@ -451,7 +451,7 @@ static void general_disp_set_label_perf_counters(
       const char *path, unsigned *w
       )
 {
-   menu_animation_t *anim = menu_animation_get_ptr();
+   struct menu_animation_t *anim = menu_animation_get_ptr();
 
    *s = '\0';
    *w = 19;
@@ -460,8 +460,7 @@ static void general_disp_set_label_perf_counters(
    menu_action_setting_disp_set_label_perf_counters_common(
          counters, offset, s, len);
 
-   if (anim)
-      anim->label.is_updated = true;
+   menu_animation_set_active(anim);
 }
 
 static void menu_action_setting_disp_set_label_perf_counters(

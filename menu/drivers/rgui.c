@@ -257,10 +257,9 @@ static void rgui_render_background(void)
 static void rgui_set_message(const char *message)
 {
    menu_handle_t    *menu = menu_driver_get_ptr();
-   menu_animation_t *anim = menu_animation_get_ptr();
    rgui_t           *rgui = NULL;
 
-   if (!menu || !menu->userdata || !anim || !message || !*message)
+   if (!menu || !menu->userdata || !message || !*message)
       return;
 
    rgui = (rgui_t*)menu->userdata;
@@ -371,7 +370,7 @@ static void rgui_render(void)
    menu_navigation_t *nav         = menu_navigation_get_ptr();
    driver_t *driver               = driver_get_ptr();
    settings_t *settings           = config_get_ptr();
-   menu_animation_t *anim         = menu_animation_get_ptr();
+   struct menu_animation_t *anim  = menu_animation_get_ptr();
    uint64_t *frame_count          = video_driver_get_frame_count();
    rgui_t *rgui                   = NULL;
 
@@ -408,11 +407,9 @@ static void rgui_render(void)
       rgui->last_height = frame_buf->height;
    }
 
-
    /* ensures the framebuffer will be rendered on the screen */
    menu_display_fb_set_dirty();
-   anim->is_active           = false;
-   anim->label.is_updated    = false;
+   menu_animation_clear_active(anim);
    rgui->force_redraw        = false;
 
 

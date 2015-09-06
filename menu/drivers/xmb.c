@@ -1481,7 +1481,7 @@ static void xmb_render(void)
    settings_t   *settings   = config_get_ptr();
    menu_handle_t    *menu   = menu_driver_get_ptr();
    menu_display_t   *disp   = menu_display_get_ptr();
-   menu_animation_t *anim   = menu_animation_get_ptr();
+   struct menu_animation_t *anim   = menu_animation_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
    menu_navigation_t *nav   = menu_navigation_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
@@ -1494,7 +1494,7 @@ static void xmb_render(void)
    if (!xmb)
       return;
 
-   menu_animation_update(disp->animation, disp->animation->delta_time / IDEAL_DT);
+   menu_animation_update(disp->animation, menu_animation_get_delta_time(disp->animation) / IDEAL_DT);
 
    video_driver_get_size(NULL, &height);
 
@@ -1525,8 +1525,7 @@ static void xmb_render(void)
    if (menu_entries_get_start() >= end)
       menu_entries_set_start(0);
 
-   anim->is_active = false;
-   anim->label.is_updated    = false;
+   menu_animation_clear_active(anim);
 }
 
 static void xmb_frame_horizontal_list(xmb_handle_t *xmb,

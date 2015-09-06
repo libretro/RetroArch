@@ -257,7 +257,7 @@ static void glui_render(void)
    glui = (glui_handle_t*)menu->userdata;
 
    menu_animation_update(disp->animation,
-         disp->animation->delta_time / IDEAL_DT);
+         menu_animation_get_delta_time(disp->animation) / IDEAL_DT);
 
    /* TODO/FIXME - we don't use framebuffer at all
     * for GLUI, we should refactor this dependency
@@ -383,7 +383,7 @@ static void glui_frame(void)
    const struct font_renderer *font_driver = NULL;
    driver_t *driver                        = driver_get_ptr();
    menu_handle_t *menu                     = menu_driver_get_ptr();
-   menu_animation_t *anim                  = menu_animation_get_ptr();
+   struct menu_animation_t *anim           = menu_animation_get_ptr();
    menu_navigation_t *nav                  = menu_navigation_get_ptr();
    menu_display_t *disp                    = menu_display_get_ptr();
    settings_t *settings                    = config_get_ptr();
@@ -432,8 +432,7 @@ static void glui_frame(void)
          disp->header_height - menu->scroll_y + glui->line_height *
          menu_navigation_get_selection(nav), width, glui->line_height, 1, 1, 1, 0.1);
 
-   anim->is_active           = true;
-   anim->label.is_updated    = false;
+   menu_animation_set_active(anim);
 
    glui_render_quad(gl, 0, 0, width,
          disp->header_height, 0.2, 0.2, 0.2, 1);

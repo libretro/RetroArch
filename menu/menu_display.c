@@ -81,11 +81,10 @@ void menu_display_fb(void)
 
 bool menu_display_update_pending(void)
 {
-   menu_animation_t     *anim = menu_animation_get_ptr();
+   struct menu_animation_t     *anim = menu_animation_get_ptr();
    menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
 
-   if ((anim && anim->is_active) || (anim && anim->label.is_updated)
-         || (frame_buf && frame_buf->dirty))
+   if (menu_animation_is_active(anim) || (frame_buf && frame_buf->dirty))
       return true;
    return false;
 }
@@ -123,8 +122,7 @@ bool menu_display_init(void *data)
    if (!menu)
       return false;
 
-   menu->display.animation = (menu_animation_t*)calloc
-      (1, sizeof(menu_animation_t));
+   menu->display.animation = menu_animation_init();
 
    if (!menu->display.animation)
       return false;
