@@ -702,12 +702,10 @@ static void glui_navigation_set(bool scroll)
 {
    menu_display_t *disp = menu_display_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
-   float     scroll_pos = 0;
+   float     scroll_pos = glui_get_scroll();
 
    if (!menu || !disp || !scroll)
       return;
-
-   scroll_pos = glui_get_scroll();
 
    menu_animation_push(disp->animation, 10, scroll_pos,
          &menu->scroll_y, EASING_IN_OUT_QUAD, -1, NULL);
