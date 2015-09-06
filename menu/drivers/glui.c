@@ -129,13 +129,13 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
 
    video_driver_get_size(NULL, &height);
 
-   glViewport(x, height - y - h, w, h);
-
    coords.vertices      = 4;
    coords.vertex        = glui_vertexes;
    coords.tex_coord     = glui_tex_coords;
    coords.lut_tex_coord = glui_tex_coords;
    coords.color         = (coord_color) ? coord_color : color;
+
+   glViewport(x, height - y - h, w, h);
 
    menu_video_draw_frame(gl->shader, &coords,
          &gl->mvp_no_rot, true, glui->textures.white);

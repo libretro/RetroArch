@@ -384,13 +384,13 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    matrix_4x4_scale(&mscal, scale_factor, scale_factor, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
-   glViewport(x, height - y, xmb->icon.size, xmb->icon.size);
-
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = color;
+
+   glViewport(x, height - y, xmb->icon.size, xmb->icon.size);
 
    menu_video_draw_frame(gl->shader, &coords, &mymat, false, texture);
 }
@@ -439,13 +439,13 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-   glViewport(x, height - y, xmb->icon.size, xmb->icon.size);
-
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = color;
+
+   glViewport(x, height - y, xmb->icon.size, xmb->icon.size);
 
    menu_video_draw_frame(gl->shader, &coords, mymat, false, texture);
 }
@@ -488,13 +488,13 @@ static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb)
    matrix_4x4_scale(&mscal, 1, 1, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
-   glViewport(x, height - y, xmb->boxart_size, xmb->boxart_size);
-
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = color;
+
+   glViewport(x, height - y, xmb->boxart_size, xmb->boxart_size);
 
    menu_video_draw_frame(gl->shader, &coords, &mymat, false, xmb->boxart);
 }
@@ -1461,8 +1461,6 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
    matrix_4x4_rotate_z(&mrot, 0);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
-   glViewport(x, height - y, xmb->cursor.size, xmb->cursor.size);
-
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
    coords.tex_coord     = rmb_tex_coord;
@@ -1470,6 +1468,8 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
    coords.color         = color;
 
    xmb_draw_icon_begin(gl);
+
+   glViewport(x, height - y, xmb->cursor.size, xmb->cursor.size);
 
    menu_video_draw_frame(gl->shader, &coords, &mymat, true, xmb->textures.list[XMB_TEXTURE_POINTER].id);
 }
