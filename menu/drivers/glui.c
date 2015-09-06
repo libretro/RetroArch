@@ -56,6 +56,20 @@ typedef struct glui_handle
    gfx_font_raster_block_t list_block;
 } glui_handle_t;
 
+static const GRfloat glui_vertexes[] = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
+static const GRfloat glui_tex_coords[] = {
+   0, 1,
+   1, 1,
+   0, 0,
+   1, 0
+};
+
 static void glui_blit_line(float x, float y,
       const char *message, uint32_t color, enum text_alignment text_align)
 {
@@ -86,29 +100,11 @@ static void glui_blit_line(float x, float y,
 static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
       float r, float g, float b, float a, GRfloat *coord_color)
 {
+   GRfloat color[16];
    unsigned width, height;
    struct gfx_coords coords;
-   GRfloat color[16], tex_coord[8], vertex[8];
    menu_handle_t *menu = menu_driver_get_ptr();
    glui_handle_t *glui = (glui_handle_t*)menu->userdata;
-
-   vertex[0] = 0;
-   vertex[1] = 0;
-   vertex[2] = 1;
-   vertex[3] = 0;
-   vertex[4] = 0;
-   vertex[5] = 1;
-   vertex[6] = 1;
-   vertex[7] = 1;
-
-   tex_coord[0] = 0;
-   tex_coord[1] = 1;
-   tex_coord[2] = 1;
-   tex_coord[3] = 1;
-   tex_coord[4] = 0;
-   tex_coord[5] = 0;
-   tex_coord[6] = 1;
-   tex_coord[7] = 0;
 
    if (!coord_color)
    {
@@ -128,6 +124,7 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
       color[13]    = g;
       color[14]    = b;
       color[15]    = a;
+
    }
 
    video_driver_get_size(NULL, &height);
@@ -135,15 +132,15 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
    glViewport(x, height - y - h, w, h);
 
    coords.vertices      = 4;
-   coords.vertex        = vertex;
-   coords.tex_coord     = tex_coord;
-   coords.lut_tex_coord = tex_coord;
-   coords.color         = coord_color ? (const float*)coord_color : color;
+   coords.vertex        = glui_vertexes;
+   coords.tex_coord     = glui_tex_coords;
+   coords.lut_tex_coord = glui_tex_coords;
+   coords.color         = (coord_color) ? coord_color : color;
 
    menu_video_draw_frame(gl->shader, &coords,
          &gl->mvp_no_rot, true, glui->textures.white);
 
-   gl->coords.color = gl->white_color_ptr;
+   gl->coords.color     = gl->white_color_ptr;
 }
 
 static void glui_draw_cursor(gl_t *gl, float x, float y)
