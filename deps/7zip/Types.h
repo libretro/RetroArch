@@ -10,17 +10,9 @@
 #include <windows.h>
 #endif
 
-#ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
+extern "C" {
 #endif
-#endif
-
-EXTERN_C_BEGIN
 
 #define SZ_OK 0
 
@@ -221,6 +213,8 @@ typedef struct
 
 #endif
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif
