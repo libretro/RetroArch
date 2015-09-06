@@ -571,8 +571,8 @@ bool menu_animation_update(menu_animation_t *anim, float dt)
    return true;
 }
 
-void menu_animation_ticker_generic(uint64_t idx, size_t max_width,
-      size_t *offset, size_t *width)
+static void menu_animation_ticker_generic(uint64_t idx,
+      size_t max_width, size_t *offset, size_t *width)
 {
    int ticker_period, phase, phase_left_stop;
    int phase_left_moving, phase_right_stop;
