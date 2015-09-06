@@ -84,7 +84,7 @@ static void glui_blit_line(float x, float y,
 }
 
 static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
-      float r, float g, float b, float a)
+      float r, float g, float b, float a, GRfloat *coord_color)
 {
    unsigned width, height;
    struct gfx_coords coords;
@@ -110,24 +110,27 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
    tex_coord[6] = 1;
    tex_coord[7] = 0;
 
-   color[ 0]    = r;
-   color[ 1]    = g;
-   color[ 2]    = b;
-   color[ 3]    = a;
-   color[ 4]    = r;
-   color[ 5]    = g;
-   color[ 6]    = b;
-   color[ 7]    = a;
-   color[ 8]    = r;
-   color[ 9]    = g;
-   color[10]    = b;
-   color[11]    = a;
-   color[12]    = r;
-   color[13]    = g;
-   color[14]    = b;
-   color[15]    = a;
+   if (!coord_color)
+   {
+      color[ 0]    = r;
+      color[ 1]    = g;
+      color[ 2]    = b;
+      color[ 3]    = a;
+      color[ 4]    = r;
+      color[ 5]    = g;
+      color[ 6]    = b;
+      color[ 7]    = a;
+      color[ 8]    = r;
+      color[ 9]    = g;
+      color[10]    = b;
+      color[11]    = a;
+      color[12]    = r;
+      color[13]    = g;
+      color[14]    = b;
+      color[15]    = a;
+   }
 
-   video_driver_get_size(&width, &height);
+   video_driver_get_size(NULL, &height);
 
    glViewport(x, height - y - h, w, h);
 
@@ -135,7 +138,7 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
    coords.vertex        = vertex;
    coords.tex_coord     = tex_coord;
    coords.lut_tex_coord = tex_coord;
-   coords.color         = color;
+   coords.color         = coord_color ? (const float*)coord_color : color;
 
    menu_video_draw_frame(gl->shader, &coords,
          &gl->mvp_no_rot, true, glui->textures.white);
@@ -145,7 +148,7 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
 
 static void glui_draw_cursor(gl_t *gl, float x, float y)
 {
-   glui_render_quad(gl, x-5, y-5, 10, 10, 1, 1, 1, 1);
+   glui_render_quad(gl, x-5, y-5, 10, 10, 1, 1, 1, 1, NULL);
 }
 
 static void glui_draw_scrollbar(gl_t *gl)
@@ -176,7 +179,7 @@ static void glui_draw_scrollbar(gl_t *gl)
          disp->header_height + y,
          scrollbar_width,
          scrollbar_height,
-         1, 1, 1, 1);
+         1, 1, 1, 1, NULL);
 }
 
 static void glui_get_message(const char *message)
@@ -374,6 +377,7 @@ static void glui_frame(void)
 {
    unsigned i;
    GRfloat coord_color[16];
+   GRfloat black_bg[16];
    unsigned width, height, ticker_limit;
    char title[PATH_MAX_LENGTH];
    char title_buf[PATH_MAX_LENGTH];
@@ -419,10 +423,13 @@ static void glui_frame(void)
    for (i = 0; i < 16; i++)
    {
       coord_color[i] = 0;
+      black_bg[i]    = 0;
       if (i == 3 || i == 7 || i == 11 || i == 15)
+      {
+         black_bg[i]    = 0.75f;
          coord_color[i] = 0.75f;
+      }
    }
-
    menu_video_frame_background(menu, settings,
          gl, glui->textures.bg.id, 0.75f, false, &coord_color[0]);
 
@@ -438,12 +445,14 @@ static void glui_frame(void)
 
    glui_render_quad(gl, 0,
          disp->header_height - menu->scroll_y + glui->line_height *
-         menu_navigation_get_selection(nav), width, glui->line_height, 1, 1, 1, 0.1);
+         menu_navigation_get_selection(nav), width, glui->line_height, 1, 1, 1, 0.1,
+         NULL);
 
    menu_animation_set_active(anim);
 
    glui_render_quad(gl, 0, 0, width,
-         disp->header_height, 0.2, 0.2, 0.2, 1);
+         disp->header_height, 0.2, 0.2, 0.2, 1,
+         NULL);
 
    ticker_limit = (width - glui->margin*2) / glui->glyph_width -
          strlen(menu_hash_to_str(MENU_VALUE_BACK)) * 2;
@@ -461,7 +470,7 @@ static void glui_frame(void)
          height - disp->header_height,
          width,
          disp->header_height,
-         0.2, 0.2, 0.2, 1);
+         0.2, 0.2, 0.2, 1, NULL);
 
    glui_draw_scrollbar(gl);
 
@@ -486,14 +495,14 @@ static void glui_frame(void)
 
       if (!str)
          str = "";
-      glui_render_quad(gl, 0, 0, width, height, 0, 0, 0, 0.75);
+      glui_render_quad(gl, 0, 0, width, height, 0, 0, 0, 0.75, &black_bg[0]);
       snprintf(msg, sizeof(msg), "%s\n%s", menu_input->keyboard.label, str);
       glui_render_messagebox(msg);
    }
 
    if (glui->box_message[0] != '\0')
    {
-      glui_render_quad(gl, 0, 0, width, height, 0, 0, 0, 0.75);
+      glui_render_quad(gl, 0, 0, width, height, 0, 0, 0, 0.75, &black_bg[0]);
       glui_render_messagebox(glui->box_message);
       glui->box_message[0] = '\0';
    }
