@@ -338,11 +338,12 @@ static void xmb_draw_icon_end(void)
 }
 
 static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
-      GRuint texture, float x, float y,
+      GRuint texture,
+      float x, float y,
+      unsigned width, unsigned height,
       float alpha, float rotation, float scale_factor)
 {
    struct gfx_coords coords;
-   unsigned width, height;
    GRfloat color[16];
    math_matrix_4x4 mymat, mrot, mscal;
 
@@ -351,8 +352,6 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
 
    if (alpha == 0)
       return;
-
-   video_driver_get_size(&width, &height);
 
    if (
          x < -xmb->icon.size/2 || 
@@ -400,11 +399,12 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
 
 static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
       math_matrix_4x4 *mymat,
-      GRuint texture, float x, float y,
+      GRuint texture,
+      float x, float y,
+      unsigned width, unsigned height,
       float alpha, float rotation, float scale_factor)
 {
    struct gfx_coords coords;
-   unsigned width, height;
    GRfloat color[16];
 
    if (alpha > xmb->alpha)
@@ -412,8 +412,6 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
 
    if (alpha == 0)
       return;
-
-   video_driver_get_size(&width, &height);
 
    if (
          x < -xmb->icon.size/2 || 
@@ -1423,7 +1421,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
       xmb_draw_icon_begin(gl);
 
-      xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
+      xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, width, height, node->alpha, 0, node->zoom);
 
 
       if (texture_switch != 0)
@@ -1432,6 +1430,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal
                + xmb->icon.size / 2.0 + xmb->margins.setting.left,
                xmb->margins.screen.top + node->y + xmb->icon.size / 2.0,
+               width, height,
                node->alpha,
                0,
                1);
@@ -1441,9 +1440,9 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 }
 
 
-static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
+static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb,
+      float x, float y, unsigned width, unsigned height)
 {
-   unsigned width, height;
    struct gfx_coords coords;
    math_matrix_4x4 mymat, mrot;
    GRfloat color[16];
@@ -1464,8 +1463,6 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
    color[13] = 1.0f;
    color[14] = 1.0f;
    color[15] = xmb->alpha;
-
-   video_driver_get_size(&width, &height);
 
    matrix_4x4_rotate_z(&mrot, 0);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
@@ -1541,7 +1538,7 @@ static void xmb_render(void)
 }
 
 static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
-      menu_handle_t *menu, gl_t *gl)
+      menu_handle_t *menu, gl_t *gl, unsigned width, unsigned height)
 {
    unsigned i;
    size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
@@ -1563,6 +1560,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
             xmb->margins.screen.left + 
             xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
             xmb->margins.screen.top + xmb->icon.size / 2.0, 
+            width, height,
             node->alpha, 
             0, 
             node->zoom);
@@ -1673,17 +1671,24 @@ static void xmb_frame(void)
 
    if (settings->menu.timedate_enable)
       xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
-            width - xmb->icon.size, xmb->icon.size, 1, 0, 1);
+            width - xmb->icon.size, xmb->icon.size, width, height, 1, 0, 1);
 
-   xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_ARROW].id,
+   xmb_draw_icon_predone(gl,
+         xmb,
+         &mymat,
+         xmb->textures.list[XMB_TEXTURE_ARROW].id,
          xmb->x + xmb->margins.screen.left + 
          xmb->icon.spacing.horizontal - xmb->icon.size / 2.0 + xmb->icon.size,
          xmb->margins.screen.top + 
          xmb->icon.size / 2.0 + xmb->icon.spacing.vertical 
          * xmb->item.active.factor,
-         xmb->textures.arrow.alpha, 0, 1);
+         width,
+         height,
+         xmb->textures.arrow.alpha,
+         0,
+         1);
 
-   xmb_frame_horizontal_list(xmb, menu, gl);
+   xmb_frame_horizontal_list(xmb, menu, gl, width, height);
 
    menu_display_font_flush_block(menu, font_driver);
 
@@ -1716,7 +1721,7 @@ static void xmb_frame(void)
    }
 
    if (settings->menu.mouse.enable)
-      xmb_draw_cursor(gl, xmb, menu_input->mouse.x, menu_input->mouse.y);
+      xmb_draw_cursor(gl, xmb, menu_input->mouse.x, menu_input->mouse.y, width, height);
 
    menu_display_unset_viewport();
 }
