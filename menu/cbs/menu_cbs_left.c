@@ -91,14 +91,15 @@ static int action_left_scroll(unsigned type, const char *label,
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
    menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
+   size_t selection       = menu_navigation_get_selection(nav);
    if (!nav || !menu_list)
       return -1;
 
    scroll_speed      = (max(nav->scroll.acceleration, 2) - 2) / 4 + 1;
    fast_scroll_speed = 4 + 4 * scroll_speed;
 
-   if (nav->selection_ptr > fast_scroll_speed)
-      menu_navigation_set(nav, nav->selection_ptr - fast_scroll_speed, true);
+   if (selection > fast_scroll_speed)
+      menu_navigation_set(nav, selection - fast_scroll_speed, true);
    else
       menu_navigation_clear(nav, false);
 

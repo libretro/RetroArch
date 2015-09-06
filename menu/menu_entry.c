@@ -33,8 +33,8 @@
 /* Clicks the back button */
 int menu_entry_go_back(void)
 {
-   menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
+   menu_navigation_t *nav = menu_navigation_get_ptr();
    if (!menu_list)
       return -1;
    menu_list_pop_stack(menu_list, &nav->selection_ptr);
@@ -323,9 +323,10 @@ void menu_entry_get(menu_entry_t *entry, size_t i,
 bool menu_entry_is_currently_selected(unsigned id)
 {
    menu_navigation_t *nav = menu_navigation_get_ptr();
+   size_t selection       = menu_navigation_get_selection(nav);
    if (!nav)
       return false;
-   return (id == nav->selection_ptr);
+   return (id == selection);
 }
 
 /* Performs whatever actions are associated with menu entry 'i'.

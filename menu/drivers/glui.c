@@ -363,7 +363,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
 
       menu_entries_get(i, &entry);
 
-      entry_selected = (nav->selection_ptr == i);
+      entry_selected = (menu_navigation_get_selection(nav) == i);
 
       glui_render_label_value(glui, y, width, *frame_count / 40,
          entry_selected ? hover_color : normal_color, entry_selected,
@@ -430,7 +430,7 @@ static void glui_frame(void)
 
    glui_render_quad(gl, 0,
          disp->header_height - menu->scroll_y + glui->line_height *
-         nav->selection_ptr, width, glui->line_height, 1, 1, 1, 0.1);
+         menu_navigation_get_selection(nav), width, glui->line_height, 1, 1, 1, 0.1);
 
    anim->is_active           = true;
    anim->label.is_updated    = false;
@@ -682,7 +682,7 @@ static float glui_get_scroll(void)
    glui_handle_t *glui    = NULL;
    menu_handle_t *menu    = menu_driver_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
-   size_t selection       = nav->selection_ptr;
+   size_t selection       = menu_navigation_get_selection(nav);
 
    if (!menu || !menu->userdata)
       return 0;

@@ -642,7 +642,7 @@ static void xmb_selection_pointer_changed(bool allow_animations)
    if (!xmb)
       return;
 
-   current   = nav->selection_ptr;
+   current   = menu_navigation_get_selection(nav);
    end       = menu_entries_get_end();
    tag       = (uintptr_t)menu_list;
    threshold = xmb->icon.size*10;
@@ -981,7 +981,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
    settings_t *settings   = config_get_ptr();
-   size_t       selection = nav->selection_ptr;
+   size_t       selection = menu_navigation_get_selection(nav);
 
    if (!menu)
       return;
@@ -1498,7 +1498,7 @@ static void xmb_render(void)
 
    video_driver_get_size(NULL, &height);
 
-   current = nav->selection_ptr;
+   current = menu_navigation_get_selection(nav);
    end     = menu_list_get_size(menu_list);
 
    if (settings->menu.pointer.enable || settings->menu.mouse.enable)

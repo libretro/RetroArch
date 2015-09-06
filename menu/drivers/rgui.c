@@ -506,7 +506,7 @@ static void rgui_render(void)
       unsigned entry_spacing                = menu_entry_get_spacing(i);
       bool entry_selected                   = menu_entry_is_currently_selected(i);
 
-      if (i > (nav->selection_ptr + 100))
+      if (i > (menu_navigation_get_selection(nav) + 100))
          continue;
 
       entry_path[0]      = '\0';
@@ -682,7 +682,7 @@ static void rgui_navigation_set(bool scroll)
    menu_handle_t *menu            = menu_driver_get_ptr();
    menu_framebuf_t *frame_buf     = menu_display_fb_get_ptr();
    menu_navigation_t *nav         = menu_navigation_get_ptr();
-   size_t               selection = nav->selection_ptr;
+   size_t               selection = menu_navigation_get_selection(nav);
    if (!menu)
       return;
 
