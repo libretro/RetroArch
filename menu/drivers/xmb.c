@@ -379,16 +379,10 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
       GRuint texture,
       float x, float y,
       unsigned width, unsigned height,
-      float alpha, float rotation, float scale_factor)
+      float alpha, float rotation, float scale_factor,
+      GRfloat *color)
 {
    struct gfx_coords coords;
-   GRfloat color[16];
-
-   if (alpha > xmb->alpha)
-      alpha = xmb->alpha;
-
-   if (alpha == 0)
-      return;
 
    if (
          x < -xmb->icon.size/2 || 
@@ -396,23 +390,6 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
          y < xmb->icon.size/2 ||
          y > height + xmb->icon.size)
       return;
-
-   color[ 0] = 1.0f;
-   color[ 1] = 1.0f;
-   color[ 2] = 1.0f;
-   color[ 3] = alpha;
-   color[ 4] = 1.0f;
-   color[ 5] = 1.0f;
-   color[ 6] = 1.0f;
-   color[ 7] = alpha;
-   color[ 8] = 1.0f;
-   color[ 9] = 1.0f;
-   color[10] = 1.0f;
-   color[11] = alpha;
-   color[12] = 1.0f;
-   color[13] = 1.0f;
-   color[14] = 1.0f;
-   color[15] = alpha;
 
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
@@ -1374,16 +1351,17 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
       xmb_draw_icon_begin(gl);
 
-      alpha    = node->alpha;
-      if (alpha > xmb->alpha)
-         alpha = xmb->alpha;
-      color[3] = color[7] = color[11] = color[15] = alpha;
+      /* set alpha components of color */
+      color[3] = color[7] = color[11] = color[15] = (node->alpha > xmb->alpha) ? xmb->alpha : node->alpha;
 
-      if (alpha != 0)
+      if (color[3] != 0)
          xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, width, height, 
                0, node->zoom, &color[0]);
 
-      if (texture_switch != 0)
+      /* set alpha components of color */
+      color[3]  = color[7]  = color[11]  = color[15]  = (node->alpha > xmb->alpha) ? xmb->alpha : node->alpha;
+
+      if (texture_switch != 0 && color[3] != 0)
          xmb_draw_icon_predone(gl, xmb, &mymat,
                texture_switch,
                node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal
@@ -1392,7 +1370,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                width, height,
                node->alpha,
                0,
-               1);
+               1, &color[0]);
 
       xmb_draw_icon_end();
    }
@@ -1487,7 +1465,6 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
 
    for (i = 0; i <= list_size; i++)
    {
-      float alpha;
       xmb_node_t *node = &xmb->settings_node;
 
       if (i > 0)
@@ -1498,12 +1475,10 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
 
       xmb_draw_icon_begin(gl);
 
-      alpha    = node->alpha;
-      if (alpha > xmb->alpha)
-         alpha = xmb->alpha;
-      color[3] = color[7] = color[11] = color[15] = alpha;
+      /* set alpha components of color */
+      color[3] = color[7] = color[11] = color[15] = (node->alpha > xmb->alpha) ? xmb->alpha : node->alpha;
 
-      if (alpha != 0)
+      if (color[3] != 0)
          xmb_draw_icon(gl, xmb, node->icon, 
                xmb->x + xmb->categories.x_pos + 
                xmb->margins.screen.left + 
@@ -1568,6 +1543,7 @@ static void xmb_frame(void)
       item_color[i]   = 1.0f;
    }
 
+   /* set alpha components of colors */
    coord_color[3]  = coord_color[7]  = coord_color[11]  = coord_color[15]  = (0.75f > xmb->alpha) ? xmb->alpha : 0.75f;
    coord_color2[3] = coord_color2[7] = coord_color2[11] = coord_color2[15] = xmb->alpha;
 
@@ -1623,24 +1599,32 @@ static void xmb_frame(void)
    if (settings->menu.boxart_enable && xmb->boxart)
       xmb_draw_boxart(gl, xmb, &coord_color2[0], width, height);
 
-   if (settings->menu.timedate_enable)
-      xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
-            width - xmb->icon.size, xmb->icon.size, width, height, 1, 0, 1);
+   /* set alpha components of colors */
+   coord_color2[3]  = coord_color2[7]  = coord_color2[11]  = coord_color2[15]  = (1.00f > xmb->alpha) ? xmb->alpha : 1.00f;
 
-   xmb_draw_icon_predone(gl,
-         xmb,
-         &mymat,
-         xmb->textures.list[XMB_TEXTURE_ARROW].id,
-         xmb->x + xmb->margins.screen.left + 
-         xmb->icon.spacing.horizontal - xmb->icon.size / 2.0 + xmb->icon.size,
-         xmb->margins.screen.top + 
-         xmb->icon.size / 2.0 + xmb->icon.spacing.vertical 
-         * xmb->item.active.factor,
-         width,
-         height,
-         xmb->textures.arrow.alpha,
-         0,
-         1);
+   if (settings->menu.timedate_enable && coord_color2[3] != 0)
+      xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
+            width - xmb->icon.size, xmb->icon.size, width, height, 1, 0, 1, &coord_color2[0]);
+
+   /* set alpha components of colors */
+   coord_color2[3]  = coord_color2[7]  = coord_color2[11]  = coord_color2[15]  = (xmb->textures.arrow.alpha > xmb->alpha) 
+      ? xmb->alpha : xmb->textures.arrow.alpha;
+
+   if (coord_color2[3] != 0)
+      xmb_draw_icon_predone(gl,
+            xmb,
+            &mymat,
+            xmb->textures.list[XMB_TEXTURE_ARROW].id,
+            xmb->x + xmb->margins.screen.left + 
+            xmb->icon.spacing.horizontal - xmb->icon.size / 2.0 + xmb->icon.size,
+            xmb->margins.screen.top + 
+            xmb->icon.size / 2.0 + xmb->icon.spacing.vertical 
+            * xmb->item.active.factor,
+            width,
+            height,
+            xmb->textures.arrow.alpha,
+            0,
+            1, &coord_color2[0]);
 
    xmb_frame_horizontal_list(xmb, menu, gl, width, height, &item_color[0]);
 
