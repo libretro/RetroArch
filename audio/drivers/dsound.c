@@ -20,6 +20,7 @@
 #include <string.h>
 
 #ifndef _XBOX
+#include <windows.h>
 #include <mmreg.h>
 #include <mmsystem.h>
 #endif
