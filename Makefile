@@ -1,4 +1,5 @@
 HAVE_FILE_LOGGER=1
+MISSING_DECLS=0
 
 include config.mk
 
@@ -28,6 +29,10 @@ ifeq ($(shell $(CC) -v 2>&1 | grep -c "clang"),1)
 endif
 
 HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
+
+ifeq ($(MISSING_DECLS), 1)
+	DEFINES += -Werror=missing-declarations
+endif
 
 ifeq ($(HAVE_DYLIB), 1)
    LIBS += $(DYLIB_LIB)
