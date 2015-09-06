@@ -454,15 +454,12 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
          gl->shader, &coords, mymat, false, texture);
 }
 
-static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb)
+static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb, unsigned width, unsigned height)
 {
    struct gfx_coords coords;
-   unsigned width, height;
    float x, y;
    math_matrix_4x4 mymat, mrot, mscal;
    GRfloat color[16];
-
-   video_driver_get_size(&width, &height);
 
    color[ 0] = 1.0f;
    color[ 1] = 1.0f;
@@ -510,9 +507,9 @@ static void xmb_draw_text(menu_handle_t *menu,
       xmb_handle_t *xmb,
       const char *str, float x,
       float y, float scale_factor, float alpha,
-      enum text_alignment text_align)
+      enum text_alignment text_align,
+      unsigned width, unsigned height)
 {
-   unsigned width, height;
    uint8_t a8                =   0;
    struct font_params params = {0};
 
@@ -523,8 +520,6 @@ static void xmb_draw_text(menu_handle_t *menu,
 
    if (a8 == 0)
       return;
-
-   video_driver_get_size(&width, &height);
 
    if (x < -xmb->icon.size || x > width + xmb->icon.size
          || y < -xmb->icon.size || y > height + xmb->icon.size)
@@ -604,7 +599,9 @@ static void xmb_frame_messagebox(const char *message)
                y + i * menu->display.font.size,
                1,
                1,
-               TEXT_ALIGN_LEFT);
+               TEXT_ALIGN_LEFT,
+               width,
+               height);
    }
 
 end:
@@ -1403,7 +1400,8 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             node->x + xmb->margins.screen.left + 
             xmb->icon.spacing.horizontal + xmb->margins.label.left, 
             xmb->margins.screen.top + node->y + xmb->margins.label.top, 
-            1, node->label_alpha, TEXT_ALIGN_LEFT);
+            1, node->label_alpha, TEXT_ALIGN_LEFT,
+            width, height);
 
       menu_animation_ticker_str(value, 35,
             *frame_count / 20, entry.value,
@@ -1417,7 +1415,8 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                xmb->margins.screen.top + node->y + xmb->margins.label.top, 
                1, 
                node->label_alpha,
-               TEXT_ALIGN_LEFT);
+               TEXT_ALIGN_LEFT,
+               width, height);
 
       xmb_draw_icon_begin(gl);
 
@@ -1628,7 +1627,8 @@ static void xmb_frame(void)
 
    xmb_draw_text(menu, xmb,
          xmb->title_name, xmb->margins.title.left,
-         xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT);
+         xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT,
+         width, height);
 
    if (settings->menu.timedate_enable)
    {
@@ -1636,12 +1636,14 @@ static void xmb_frame(void)
 
       xmb_draw_text(menu, xmb, timedate,
             width - xmb->margins.title.left - xmb->icon.size / 4, 
-            xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT);
+            xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
+            width, height);
    }
 
    if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
       xmb_draw_text(menu, xmb, title_msg, xmb->margins.title.left, 
-            height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT);
+            height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
+            width, height);
 
    depth = xmb_list_get_size(menu, MENU_LIST_PLAIN);
 
@@ -1667,7 +1669,7 @@ static void xmb_frame(void)
    xmb_draw_icon_begin(gl);
 
    if (settings->menu.boxart_enable && xmb->boxart)
-      xmb_draw_boxart(gl, xmb);
+      xmb_draw_boxart(gl, xmb, width, height);
 
    if (settings->menu.timedate_enable)
       xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
