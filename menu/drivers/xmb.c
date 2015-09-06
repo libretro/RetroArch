@@ -1562,11 +1562,11 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
 static void xmb_frame(void)
 {
    math_matrix_4x4 mymat, mrot, mscal;
-   unsigned depth;
-   unsigned width, height;
+   unsigned depth, i, width, height;
    char msg[PATH_MAX_LENGTH];
    char title_msg[PATH_MAX_LENGTH];
    char timedate[PATH_MAX_LENGTH];
+   GRfloat coord_color[16];
    bool render_background                  = false;
    xmb_handle_t *xmb                       = NULL;
    gl_t *gl                                = NULL;
@@ -1600,8 +1600,15 @@ static void xmb_frame(void)
 
    xmb->raster_block.carr.coords.vertices = 0;
 
+   for (i = 0; i < 16; i++)
+   {
+      coord_color[i] = 0;
+      if (i == 3 || i == 7 || i == 11 || i == 15)
+         coord_color[i] = (0.75f > xmb->alpha) ? xmb->alpha : 0.75f;
+   }
+
    menu_video_frame_background(menu, settings,
-         gl, xmb->textures.bg.id, xmb->alpha, 0.75f, false);
+         gl, xmb->textures.bg.id, xmb->alpha, false, &coord_color[0]);
 
    xmb_draw_text(menu, xmb,
          xmb->title_name, xmb->margins.title.left,
@@ -1684,7 +1691,7 @@ static void xmb_frame(void)
    if (render_background)
    {
       menu_video_frame_background(menu, settings, gl,
-            xmb->textures.bg.id, xmb->alpha, 0.75f, true);
+            xmb->textures.bg.id, xmb->alpha, true, &coord_color[0]);
       xmb_frame_messagebox(msg);
    }
 

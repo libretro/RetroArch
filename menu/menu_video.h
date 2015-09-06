@@ -40,8 +40,8 @@ void menu_video_frame_background(
       gl_t *gl,
       GLuint texture,
       float handle_alpha,
-      float alpha,
-      bool force_transparency);
+      bool force_transparency,
+      GRfloat *color);
 #endif
 
 const char *menu_video_get_ident(void);

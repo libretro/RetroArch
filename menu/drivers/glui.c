@@ -135,8 +135,7 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
    coords.vertex        = vertex;
    coords.tex_coord     = tex_coord;
    coords.lut_tex_coord = tex_coord;
-
-   coords.color = color;
+   coords.color         = color;
 
    menu_video_draw_frame(gl->shader, &coords,
          &gl->mvp_no_rot, true, glui->textures.white);
@@ -373,6 +372,8 @@ static void glui_render_menu_list(glui_handle_t *glui,
 
 static void glui_frame(void)
 {
+   unsigned i;
+   GRfloat coord_color[16];
    unsigned width, height, ticker_limit;
    char title[PATH_MAX_LENGTH];
    char title_buf[PATH_MAX_LENGTH];
@@ -415,8 +416,15 @@ static void glui_frame(void)
 
    menu_display_set_viewport();
 
+   for (i = 0; i < 16; i++)
+   {
+      coord_color[i] = 0;
+      if (i == 3 || i == 7 || i == 11 || i == 15)
+         coord_color[i] = 0.75f;
+   }
+
    menu_video_frame_background(menu, settings,
-         gl, glui->textures.bg.id, 0.75f, 0.75f, false);
+         gl, glui->textures.bg.id, 0.75f, false, &coord_color[0]);
 
    menu_entries_get_title(title, sizeof(title));
 
