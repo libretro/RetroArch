@@ -28,12 +28,12 @@
 #include "menu/menu.h"
 #endif
 
-enum
+enum thread_code_enum
 {
    THREAD_CODE_INIT = 0,
    THREAD_CODE_DEINIT,
    THREAD_CODE_ALIVE
-} thread_code_enum;
+};
 
 typedef struct data_runloop
 {
