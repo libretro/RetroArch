@@ -1185,11 +1185,11 @@ static GRuint xmb_icon_get_id(xmb_handle_t *xmb,
 
 static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       file_list_t *list, file_list_t *stack,
-      size_t current, size_t cat_selection_ptr, GRfloat *color)
+      size_t current, size_t cat_selection_ptr, GRfloat *color,
+      unsigned width, unsigned height)
 {
-   unsigned i, width, height, ticker_limit;
+   unsigned i, ticker_limit;
    math_matrix_4x4 mymat, mrot, mscal;
-   const char *label           = NULL;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
    uint64_t *frame_count       = video_driver_get_frame_count();
@@ -1198,10 +1198,6 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
    if (!list || !list->size || !menu)
       return;
-
-   video_driver_get_size(&width, &height);
-
-   menu_list_get_last(stack, NULL, &label, NULL, NULL);
 
    if (cat_selection_ptr)
       core_node = xmb_get_userdata_from_horizontal_list(xmb, cat_selection_ptr - 1);
@@ -1234,7 +1230,6 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       uint32_t hash_value         = 0;
       bool do_draw_text           = false;
 
-      *name = *value = 0;
       *entry.path = *entry.label = *entry.value = 0;
       entry.idx = entry.spacing = entry.type = 0;
 
@@ -1610,14 +1605,14 @@ static void xmb_frame(void)
          xmb->selection_ptr_old,
          depth > 1 ? xmb->categories.selection_ptr :
          xmb->categories.selection_ptr_old,
-         &item_color[0]);
+         &item_color[0], width, height);
 
    xmb_draw_items(xmb, gl,
          menu_list->selection_buf,
          menu_list->menu_stack,
          nav->selection_ptr,
          xmb->categories.selection_ptr,
-         &item_color[0]);
+         &item_color[0], width, height);
 
    matrix_4x4_rotate_z(&mrot, 0 /* rotation */);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
