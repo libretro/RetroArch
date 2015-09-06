@@ -44,6 +44,7 @@ void menu_video_frame_background(
       float handle_alpha,
       bool force_transparency,
       GRfloat *color,
+      GRfloat *color2,
       const GRfloat *vertex,
       const GRfloat *tex_coord);
 #endif

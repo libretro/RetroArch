@@ -57,31 +57,14 @@ void menu_video_frame_background(
       float handle_alpha,
       bool force_transparency,
       GRfloat *coord_color,
+      GRfloat *coord_color2,
       const GRfloat *vertex,
       const GRfloat *tex_coord)
 {
    struct gfx_coords coords;
    unsigned width, height;
-   GRfloat color[16];
 
    global_t *global = global_get_ptr();
-
-   color[ 0] = 1.0f;
-   color[ 1] = 1.0f;
-   color[ 2] = 1.0f;
-   color[ 3] = handle_alpha;
-   color[ 4] = 1.0f;
-   color[ 5] = 1.0f;
-   color[ 6] = 1.0f;
-   color[ 7] = handle_alpha;
-   color[ 8] = 1.0f;
-   color[ 9] = 1.0f;
-   color[10] = 1.0f;
-   color[11] = handle_alpha;
-   color[12] = 1.0f;
-   color[13] = 1.0f;
-   color[14] = 1.0f;
-   color[15] = handle_alpha;
 
    coords.vertices      = 4;
    coords.vertex        = vertex;
@@ -98,7 +81,7 @@ void menu_video_frame_background(
       || !global->inited.main || (global->inited.core.type == CORE_TYPE_DUMMY))
       && !force_transparency
       && texture)
-      coords.color = color;
+      coords.color = (const float*)coord_color2;
 
    video_driver_get_size(&width, &height);
 

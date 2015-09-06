@@ -1579,6 +1579,7 @@ static void xmb_frame(void)
    char title_msg[PATH_MAX_LENGTH];
    char timedate[PATH_MAX_LENGTH];
    GRfloat coord_color[16];
+   GRfloat coord_color2[16];
    bool render_background                  = false;
    xmb_handle_t *xmb                       = NULL;
    gl_t *gl                                = NULL;
@@ -1614,14 +1615,18 @@ static void xmb_frame(void)
 
    for (i = 0; i < 16; i++)
    {
-      coord_color[i] = 0;
+      coord_color[i]  = 0;
+      coord_color2[i] = 1.0f;
       if (i == 3 || i == 7 || i == 11 || i == 15)
-         coord_color[i] = (0.75f > xmb->alpha) ? xmb->alpha : 0.75f;
+      {
+         coord_color[i]  = (0.75f > xmb->alpha) ? xmb->alpha : 0.75f;
+         coord_color2[i] = xmb->alpha;
+      }
    }
 
    menu_video_frame_background(menu, settings,
          gl, xmb->textures.bg.id, xmb->alpha, false, &coord_color[0],
-         &rmb_vertex[0], &rmb_tex_coord[0]);
+         &coord_color2[0], &rmb_vertex[0], &rmb_tex_coord[0]);
 
    xmb_draw_text(menu, xmb,
          xmb->title_name, xmb->margins.title.left,
@@ -1704,7 +1709,8 @@ static void xmb_frame(void)
    if (render_background)
    {
       menu_video_frame_background(menu, settings, gl,
-            xmb->textures.bg.id, xmb->alpha, true, &coord_color[0],
+            xmb->textures.bg.id, xmb->alpha, true,
+            &coord_color[0], &coord_color2[0],
             &rmb_vertex[0], &rmb_tex_coord[0]);
       xmb_frame_messagebox(msg);
    }

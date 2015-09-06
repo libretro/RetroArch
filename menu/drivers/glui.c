@@ -341,6 +341,7 @@ static void glui_frame(void)
 {
    unsigned i;
    GRfloat coord_color[16];
+   GRfloat coord_color2[16];
    GRfloat black_bg[16];
    GRfloat bar_bg[16];
    GRfloat highlight_bg[16];
@@ -390,6 +391,7 @@ static void glui_frame(void)
    for (i = 0; i < 16; i++)
    {
       coord_color[i]  = 0;
+      coord_color2[i] = 1.0f;
       black_bg[i]     = 0;
       bar_bg[i]       = 0.2;
       highlight_bg[i] = 1;
@@ -399,12 +401,14 @@ static void glui_frame(void)
       {
          black_bg[i]     = 0.75f;
          coord_color[i]  = 0.75f;
+         coord_color2[i] = 0.75f;
          bar_bg[i]       = 1.00f;
          highlight_bg[i] = 0.1f;
       }
    }
    menu_video_frame_background(menu, settings,
-         gl, glui->textures.bg.id, 0.75f, false, &coord_color[0],
+         gl, glui->textures.bg.id, 0.75f, false,
+         &coord_color[0],   &coord_color2[0],
          &glui_vertexes[0], &glui_tex_coords[0]);
 
    menu_entries_get_title(title, sizeof(title));
