@@ -265,7 +265,7 @@ static int action_iterate_menu_viewport(char *s, size_t len,
          break;
 
       case MENU_ACTION_CANCEL:
-         menu_list_flush_stack(menu_list, NULL, 49);
+         menu_entry_go_back();
 
          if (hash == MENU_LABEL_CUSTOM_VIEWPORT_2)
          {
