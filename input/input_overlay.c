@@ -156,6 +156,16 @@ struct input_overlay
    } deferred;
 };
 
+typedef struct input_overlay_state
+{
+   /* This is a bitmask of (1 << key_bind_id). */
+   uint64_t buttons;
+   /* Left X, Left Y, Right X, Right Y */
+   int16_t analog[4]; 
+
+   uint32_t keys[RETROK_LAST / 32 + 1];
+} input_overlay_state_t;
+
 static input_overlay_t *overlay_ptr;
 static input_overlay_state_t overlay_st_ptr;
 

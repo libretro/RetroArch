@@ -95,16 +95,6 @@ typedef struct overlay_desc overlay_desc_t;
 
 typedef struct input_overlay input_overlay_t;
 
-typedef struct input_overlay_state
-{
-   /* This is a bitmask of (1 << key_bind_id). */
-   uint64_t buttons;
-   /* Left X, Left Y, Right X, Right Y */
-   int16_t analog[4]; 
-
-   uint32_t keys[RETROK_LAST / 32 + 1];
-} input_overlay_state_t;
-
 /**
  * input_overlay_new:
  * @path                  : Path to overlay file.
