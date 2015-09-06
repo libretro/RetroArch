@@ -2524,6 +2524,17 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push    = true;
          break;
       case DISPLAYLIST_DATABASE_ENTRY:
+         {
+            struct string_list *str_list  = string_split(info->label, "|"); 
+
+            if (!str_list)
+               return -1;
+
+            strlcpy(info->path_b,   str_list->elems[1].data, sizeof(info->path_b));
+            strlcpy(info->label,    str_list->elems[0].data, sizeof(info->label));
+
+            string_list_free(str_list);
+         }
          ret = menu_displaylist_parse_database_entry(info);
 
          need_push    = true;
@@ -2735,12 +2746,21 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                   MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
          need_push = true;
          break;
+      case DISPLAYLIST_DATABASES:
+         info->type_default = MENU_FILE_RDB;
+         strlcpy(info->exts, "rdb", sizeof(info->exts));
+         strlcpy(info->path, settings->content_database, sizeof(info->path));
+         if (menu_displaylist_parse_generic(info, &need_sort) == 0)
+         {
+            need_refresh = true;
+            need_push    = true;
+         }
+         break;
       case DISPLAYLIST_DEFAULT:
       case DISPLAYLIST_CORES:
       case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_SHADER_PASS:
       case DISPLAYLIST_SHADER_PRESET:
-      case DISPLAYLIST_DATABASES:
       case DISPLAYLIST_DATABASE_CURSORS:
       case DISPLAYLIST_DATABASE_PLAYLISTS:
       case DISPLAYLIST_VIDEO_FILTERS:

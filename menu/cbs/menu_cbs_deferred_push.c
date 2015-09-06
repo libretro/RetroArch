@@ -53,16 +53,6 @@ static int deferred_push_help(menu_displaylist_info_t *info)
 
 static int deferred_push_rdb_entry_detail(menu_displaylist_info_t *info)
 {
-   struct string_list *str_list  = string_split(info->label, "|"); 
-
-   if (!str_list)
-      return -1;
-
-   strlcpy(info->path_b,   str_list->elems[1].data, sizeof(info->path_b));
-   strlcpy(info->label,    str_list->elems[0].data, sizeof(info->label));
-
-   string_list_free(str_list);
-
    return menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_ENTRY);
 }
 
@@ -446,12 +436,6 @@ int deferred_push_content_list(void *data, void *userdata, const char *path,
 
 static int deferred_push_database_manager_list(menu_displaylist_info_t *info)
 {
-   settings_t *settings   = config_get_ptr();
-
-   info->type_default = MENU_FILE_RDB;
-   strlcpy(info->exts, "rdb", sizeof(info->exts));
-   strlcpy(info->path, settings->content_database, sizeof(info->path));
-
    return menu_displaylist_push_list(info, DISPLAYLIST_DATABASES);
 }
 
