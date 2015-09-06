@@ -130,7 +130,7 @@ static void rmenu_render(void)
    char title_msg[64]            = {0};
    menu_handle_t *menu           = menu_driver_get_ptr();
    menu_display_t *disp          = menu_display_get_ptr();
-   struct menu_animation_t *anim = menu_animation_get_ptr();
+   menu_animation_t *anim        = menu_animation_get_ptr();
    menu_list_t *menu_list        = menu_list_get_ptr();
    menu_navigation_t *nav        = menu_navigation_get_ptr();
    uint64_t *frame_count         = video_driver_get_frame_count();

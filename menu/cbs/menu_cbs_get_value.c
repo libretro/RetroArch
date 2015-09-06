@@ -451,7 +451,7 @@ static void general_disp_set_label_perf_counters(
       const char *path, unsigned *w
       )
 {
-   struct menu_animation_t *anim = menu_animation_get_ptr();
+   menu_animation_t *anim = menu_animation_get_ptr();
 
    *s = '\0';
    *w = 19;

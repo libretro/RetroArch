@@ -383,7 +383,7 @@ static void glui_frame(void)
    const struct font_renderer *font_driver = NULL;
    driver_t *driver                        = driver_get_ptr();
    menu_handle_t *menu                     = menu_driver_get_ptr();
-   struct menu_animation_t *anim           = menu_animation_get_ptr();
+   menu_animation_t *anim                  = menu_animation_get_ptr();
    menu_navigation_t *nav                  = menu_navigation_get_ptr();
    menu_display_t *disp                    = menu_display_get_ptr();
    settings_t *settings                    = config_get_ptr();

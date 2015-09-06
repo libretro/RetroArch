@@ -81,7 +81,7 @@ void menu_display_fb(void)
 
 bool menu_display_update_pending(void)
 {
-   struct menu_animation_t     *anim = menu_animation_get_ptr();
+   menu_animation_t     *anim = menu_animation_get_ptr();
    menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
 
    if (menu_animation_is_active(anim) || (frame_buf && frame_buf->dirty))

@@ -574,7 +574,7 @@ static int menu_input_mouse(unsigned *action)
 {
    video_viewport_t vp;
    const struct retro_keybind *binds[MAX_USERS];
-   struct menu_animation_t *anim = menu_animation_get_ptr();
+   menu_animation_t *anim    = menu_animation_get_ptr();
    menu_input_t *menu_input  = menu_input_get_ptr();
    menu_framebuf_t *frame_buf= menu_display_fb_get_ptr();
    settings_t *settings      = config_get_ptr();
@@ -662,7 +662,7 @@ static int menu_input_pointer(unsigned *action)
    int pointer_device, pointer_x, pointer_y;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    menu_input_t *menu_input  = menu_input_get_ptr();
-   struct menu_animation_t *anim    = menu_animation_get_ptr();
+   menu_animation_t *anim    = menu_animation_get_ptr();
    menu_framebuf_t *frame_buf= menu_display_fb_get_ptr();
    settings_t *settings      = config_get_ptr();
    driver_t *driver          = driver_get_ptr();

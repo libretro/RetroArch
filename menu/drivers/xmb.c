@@ -1481,7 +1481,7 @@ static void xmb_render(void)
    settings_t   *settings   = config_get_ptr();
    menu_handle_t    *menu   = menu_driver_get_ptr();
    menu_display_t   *disp   = menu_display_get_ptr();
-   struct menu_animation_t *anim   = menu_animation_get_ptr();
+   menu_animation_t *anim   = menu_animation_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
    menu_navigation_t *nav   = menu_navigation_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
