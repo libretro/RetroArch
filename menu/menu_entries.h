@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-struct menu_entries_t;
+typedef struct menu_entries menu_entries_t;
 
 void menu_entries_set_start(size_t i);
 
@@ -60,9 +60,9 @@ bool menu_entries_init(void *data);
 
 void menu_entries_free(void);
 
-void menu_entries_free_list(void *data);
+void menu_entries_free_list(menu_entries_t *entries);
 
-void menu_entries_new_list(void *data, unsigned flags);
+void menu_entries_new_list(menu_entries_t *entries, unsigned flags);
 
 #ifdef __cplusplus
 }
