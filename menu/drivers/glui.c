@@ -146,11 +146,6 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
    gl->coords.color     = gl->white_color_ptr;
 }
 
-static void glui_draw_cursor(gl_t *gl, float x, float y)
-{
-   glui_render_quad(gl, x-5, y-5, 10, 10, 1, 1, 1, 1, NULL);
-}
-
 static void glui_draw_scrollbar(gl_t *gl)
 {
    unsigned width, height;
@@ -378,6 +373,7 @@ static void glui_frame(void)
    unsigned i;
    GRfloat coord_color[16];
    GRfloat black_bg[16];
+   GRfloat bar_bg[16];
    unsigned width, height, ticker_limit;
    char title[PATH_MAX_LENGTH];
    char title_buf[PATH_MAX_LENGTH];
@@ -424,10 +420,12 @@ static void glui_frame(void)
    {
       coord_color[i] = 0;
       black_bg[i]    = 0;
+      bar_bg[i]      = 0.2;
       if (i == 3 || i == 7 || i == 11 || i == 15)
       {
          black_bg[i]    = 0.75f;
          coord_color[i] = 0.75f;
+         bar_bg[i]      = 1.00f;
       }
    }
    menu_video_frame_background(menu, settings,
@@ -443,6 +441,7 @@ static void glui_frame(void)
 
    menu_display_font_flush_block(menu, font_driver);
 
+
    glui_render_quad(gl, 0,
          disp->header_height - menu->scroll_y + glui->line_height *
          menu_navigation_get_selection(nav), width, glui->line_height, 1, 1, 1, 0.1,
@@ -452,7 +451,7 @@ static void glui_frame(void)
 
    glui_render_quad(gl, 0, 0, width,
          disp->header_height, 0.2, 0.2, 0.2, 1,
-         NULL);
+         &bar_bg[0]);
 
    ticker_limit = (width - glui->margin*2) / glui->glyph_width -
          strlen(menu_hash_to_str(MENU_VALUE_BACK)) * 2;
@@ -470,7 +469,7 @@ static void glui_frame(void)
          height - disp->header_height,
          width,
          disp->header_height,
-         0.2, 0.2, 0.2, 1, NULL);
+         0.2, 0.2, 0.2, 1, &bar_bg[0]);
 
    glui_draw_scrollbar(gl);
 
@@ -508,7 +507,7 @@ static void glui_frame(void)
    }
 
    if (settings->menu.mouse.enable)
-      glui_draw_cursor(gl, menu_input->mouse.x, menu_input->mouse.y);
+      glui_render_quad(gl, menu_input->mouse.x - 5, menu_input->mouse.y - 5, 10, 10, 1, 1, 1, 1, NULL);
 
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
