@@ -25,7 +25,6 @@
 #include "../../cores/internal_cores.h"
 
 #include "../../general.h"
-#include "../../file_ext.h"
 
 /* foward declarations */
 int cb_core_updater_list(void *data_, size_t len);
@@ -159,7 +158,6 @@ static int deferred_push_settings_subgroup(menu_displaylist_info_t *info)
 
 static int deferred_push_category(menu_displaylist_info_t *info)
 {
-   info->flags = SL_FLAG_ALL_SETTINGS;
 
    return menu_displaylist_push_list(info, DISPLAYLIST_SETTINGS);
 }
@@ -441,136 +439,83 @@ static int deferred_push_database_manager_list(menu_displaylist_info_t *info)
 
 static int deferred_push_cursor_manager_list(menu_displaylist_info_t *info)
 {
-   settings_t *settings   = config_get_ptr();
-
-   info->type_default = MENU_FILE_CURSOR;
-   strlcpy(info->exts, "dbc", sizeof(info->exts));
-   strlcpy(info->path, settings->cursor_directory, sizeof(info->path));
-
    return menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_CURSORS);
 }
 
 static int deferred_push_content_collection_list(menu_displaylist_info_t *info)
 {
-   info->type_default = MENU_FILE_PLAIN;
-   strlcpy(info->exts, "lpl", sizeof(info->exts));
-
    return menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_PLAYLISTS);
 }
 
 static int deferred_push_core_list(menu_displaylist_info_t *info)
 {
-   info->type_default = MENU_FILE_PLAIN;
-   strlcpy(info->exts, EXT_EXECUTABLES, sizeof(info->exts));
-
    return menu_displaylist_push_list(info, DISPLAYLIST_CORES);
 }
 
 static int deferred_push_configurations(menu_displaylist_info_t *info)
 {
-   info->type_default = MENU_FILE_CONFIG;
-   strlcpy(info->exts, "cfg", sizeof(info->exts));
-
    return menu_displaylist_push_list(info, DISPLAYLIST_CONFIG_FILES);
 }
 
 static int deferred_push_video_shader_preset(menu_displaylist_info_t *info)
 {
-   info->type_default = MENU_FILE_SHADER_PRESET;
-   strlcpy(info->exts, "cgp|glslp", sizeof(info->exts));
-
    return menu_displaylist_push_list(info, DISPLAYLIST_SHADER_PRESET);
 }
 
 static int deferred_push_video_shader_pass(menu_displaylist_info_t *info)
 {
-   info->type_default = MENU_FILE_SHADER;
-   strlcpy(info->exts, "cg|glsl", sizeof(info->exts));
-
    return menu_displaylist_push_list(info, DISPLAYLIST_SHADER_PASS);
 }
 
 static int deferred_push_video_filter(menu_displaylist_info_t *info)
 {
-   info->type_default = MENU_FILE_VIDEOFILTER;
-   strlcpy(info->exts, "filt", sizeof(info->exts));
-
    return menu_displaylist_push_list(info, DISPLAYLIST_VIDEO_FILTERS);
 }
 
 static int deferred_push_images(menu_displaylist_info_t *info)
 {
-   info->type_default = MENU_FILE_IMAGE;
-   strlcpy(info->exts, "png", sizeof(info->exts));
-
    return menu_displaylist_push_list(info, DISPLAYLIST_IMAGES);
 }
 
 static int deferred_push_audio_dsp_plugin(menu_displaylist_info_t *info)
 {
-   info->type_default = MENU_FILE_AUDIOFILTER;
-   strlcpy(info->exts, "dsp", sizeof(info->exts));
-
    return menu_displaylist_push_list(info, DISPLAYLIST_AUDIO_FILTERS);
 }
 
 static int deferred_push_cheat_file_load(menu_displaylist_info_t *info)
 {
-   info->type_default = MENU_FILE_CHEAT;
-   strlcpy(info->exts, "cht", sizeof(info->exts));
-
    return menu_displaylist_push_list(info, DISPLAYLIST_CHEAT_FILES);
 }
 
 static int deferred_push_remap_file_load(menu_displaylist_info_t *info)
 {
-   info->type_default = MENU_FILE_REMAP;
-   strlcpy(info->exts, "rmp", sizeof(info->exts));
-
    return menu_displaylist_push_list(info, DISPLAYLIST_REMAP_FILES);
 }
 
 static int deferred_push_record_configfile(menu_displaylist_info_t *info)
 {
-   info->type_default = MENU_FILE_RECORD_CONFIG;
-   strlcpy(info->exts, "cfg", sizeof(info->exts));
-
    return menu_displaylist_push_list(info, DISPLAYLIST_RECORD_CONFIG_FILES);
 }
 
 static int deferred_push_input_overlay(menu_displaylist_info_t *info)
 {
-   info->type_default = MENU_FILE_OVERLAY;
-   strlcpy(info->exts, "cfg", sizeof(info->exts));
-
    return menu_displaylist_push_list(info, DISPLAYLIST_OVERLAYS);
 }
 
 static int deferred_push_input_osk_overlay(menu_displaylist_info_t *info)
 {
-   info->type_default = MENU_FILE_OVERLAY;
-   strlcpy(info->exts, "cfg", sizeof(info->exts));
-
    return menu_displaylist_push_list(info, DISPLAYLIST_OVERLAYS);
 }
 
 static int deferred_push_video_font_path(menu_displaylist_info_t *info)
 {
-   info->type_default = MENU_FILE_FONT;
-   strlcpy(info->exts, "ttf", sizeof(info->exts));
-
    return menu_displaylist_push_list(info, DISPLAYLIST_FONTS);
 }
 
 static int deferred_push_content_history_path(menu_displaylist_info_t *info)
 {
-   info->type_default = MENU_FILE_PLAIN;
-   strlcpy(info->exts, "lpl", sizeof(info->exts));
-
    return menu_displaylist_push_list(info, DISPLAYLIST_CONTENT_HISTORY);
 }
-
-
 
 static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *cbs, 
       const char *label, uint32_t label_hash)

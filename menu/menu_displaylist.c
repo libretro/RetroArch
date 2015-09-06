@@ -31,6 +31,7 @@
 #include "../gfx/video_shader_driver.h"
 #include "../config.features.h"
 #include "../git_version.h"
+#include "../file_ext.h"
 
 #ifdef ANDROID
 #include "../frontend/drivers/platform_android.h"
@@ -2321,6 +2322,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_HELP_SCREEN_LIST:
       case DISPLAYLIST_MAIN_MENU:
       case DISPLAYLIST_SETTINGS:
+      case DISPLAYLIST_SETTINGS_ALL:
       case DISPLAYLIST_SETTINGS_SUBGROUP:
       case DISPLAYLIST_HORIZONTAL:
       case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
@@ -2339,24 +2341,24 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_DATABASE_QUERY:
       case DISPLAYLIST_OPTIONS_SHADERS:
       case DISPLAYLIST_CORE_CONTENT:
-      case DISPLAYLIST_CORES_UPDATER:
-      case DISPLAYLIST_SETTINGS_ALL:
       case DISPLAYLIST_PLAYLIST_COLLECTION:
       case DISPLAYLIST_HISTORY:
       case DISPLAYLIST_OPTIONS_DISK:
       case DISPLAYLIST_SYSTEM_INFO:
+      case DISPLAYLIST_CORES:
+      case DISPLAYLIST_CORES_DETECTED:
+      case DISPLAYLIST_CORES_UPDATER:
       case DISPLAYLIST_CORES_SUPPORTED:
       case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
       case DISPLAYLIST_CORE_INFO:
       case DISPLAYLIST_CORE_OPTIONS:
       case DISPLAYLIST_DEFAULT:
-      case DISPLAYLIST_CORES:
-      case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_SHADER_PASS:
       case DISPLAYLIST_SHADER_PRESET:
       case DISPLAYLIST_DATABASES:
       case DISPLAYLIST_DATABASE_CURSORS:
       case DISPLAYLIST_DATABASE_PLAYLISTS:
+      case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
       case DISPLAYLIST_VIDEO_FILTERS:
       case DISPLAYLIST_AUDIO_FILTERS:
       case DISPLAYLIST_IMAGES:
@@ -2367,7 +2369,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_RECORD_CONFIG_FILES:
       case DISPLAYLIST_CONFIG_FILES:
       case DISPLAYLIST_CONTENT_HISTORY:
-      case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
       case DISPLAYLIST_ARCHIVE_ACTION:
       case DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE:
          menu_list_clear(info->list);
@@ -2425,12 +2426,66 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu->push_help_screen = false;
          break;
       case DISPLAYLIST_MAIN_MENU:
+         ret = menu_displaylist_parse_settings(menu, info, info->flags);
+         need_push    = true;
+         break;
       case DISPLAYLIST_SETTINGS:
+         info->flags = SL_FLAG_ALL_SETTINGS;
          ret = menu_displaylist_parse_settings(menu, info, info->flags);
          need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_SUBGROUP:
          ret = menu_displaylist_parse_settings_in_subgroup(info);
+         need_push    = true;
+         break;
+      case DISPLAYLIST_SETTINGS_ALL:
+         menu_displaylist_realloc_settings(menu->entries, SL_FLAG_ALL_SETTINGS);
+
+         setting = menu_setting_find(menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS));
+
+         if (settings->menu.collapse_subgroups_enable)
+         {
+            for (; setting->type != ST_NONE; setting++)
+            {
+               if (setting->type == ST_GROUP)
+               {
+                  if (setting->flags & SD_FLAG_ADVANCED &&
+                        !settings->menu.show_advanced_settings)
+                     continue;
+                  menu_list_push(info->list, setting->short_description,
+                        setting->name, menu_setting_set_flags(setting), 0, 0);
+               }
+            }
+         }
+         else
+         {
+            for (; setting->type != ST_NONE; setting++)
+            {
+               char group_label[PATH_MAX_LENGTH]    = {0};
+               char subgroup_label[PATH_MAX_LENGTH] = {0};
+
+               if (setting->type == ST_GROUP)
+                  strlcpy(group_label, setting->name, sizeof(group_label));
+               else if (setting->type == ST_SUB_GROUP)
+               {
+                  char new_label[PATH_MAX_LENGTH] = {0};
+                  char new_path[PATH_MAX_LENGTH]  = {0};
+
+                  strlcpy(subgroup_label, setting->name, sizeof(group_label));
+                  strlcpy(new_label, group_label, sizeof(new_label));
+                  strlcat(new_label, "|", sizeof(new_label));
+                  strlcat(new_label, subgroup_label, sizeof(new_label));
+
+                  strlcpy(new_path, group_label, sizeof(new_path));
+                  strlcat(new_path, " - ", sizeof(new_path));
+                  strlcat(new_path, setting->short_description, sizeof(new_path));
+
+                  menu_list_push(info->list, new_path,
+                        new_label, MENU_SETTING_SUBGROUP, 0, 0);
+               }
+            }
+         }
+
          need_push    = true;
          break;
       case DISPLAYLIST_HORIZONTAL:
@@ -2566,56 +2621,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push    = true;
          need_refresh = true;
 #endif
-         break;
-      case DISPLAYLIST_SETTINGS_ALL:
-         menu_displaylist_realloc_settings(menu->entries, SL_FLAG_ALL_SETTINGS);
-
-         setting = menu_setting_find(menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS));
-
-         if (settings->menu.collapse_subgroups_enable)
-         {
-            for (; setting->type != ST_NONE; setting++)
-            {
-               if (setting->type == ST_GROUP)
-               {
-                  if (setting->flags & SD_FLAG_ADVANCED &&
-                        !settings->menu.show_advanced_settings)
-                     continue;
-                  menu_list_push(info->list, setting->short_description,
-                        setting->name, menu_setting_set_flags(setting), 0, 0);
-               }
-            }
-         }
-         else
-         {
-            for (; setting->type != ST_NONE; setting++)
-            {
-               char group_label[PATH_MAX_LENGTH]    = {0};
-               char subgroup_label[PATH_MAX_LENGTH] = {0};
-
-               if (setting->type == ST_GROUP)
-                  strlcpy(group_label, setting->name, sizeof(group_label));
-               else if (setting->type == ST_SUB_GROUP)
-               {
-                  char new_label[PATH_MAX_LENGTH] = {0};
-                  char new_path[PATH_MAX_LENGTH]  = {0};
-
-                  strlcpy(subgroup_label, setting->name, sizeof(group_label));
-                  strlcpy(new_label, group_label, sizeof(new_label));
-                  strlcat(new_label, "|", sizeof(new_label));
-                  strlcat(new_label, subgroup_label, sizeof(new_label));
-
-                  strlcpy(new_path, group_label, sizeof(new_path));
-                  strlcat(new_path, " - ", sizeof(new_path));
-                  strlcat(new_path, setting->short_description, sizeof(new_path));
-
-                  menu_list_push(info->list, new_path,
-                        new_label, MENU_SETTING_SUBGROUP, 0, 0);
-               }
-            }
-         }
-
-         need_push    = true;
          break;
       case DISPLAYLIST_PLAYLIST_COLLECTION:
          {
@@ -2772,6 +2777,67 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_LOAD_ARCHIVE_DETECT_CORE),
                0, 0, 0);
          need_push = true;
+         break;
+      case DISPLAYLIST_DATABASE_CURSORS:
+         info->type_default = MENU_FILE_CURSOR;
+         strlcpy(info->exts, "dbc", sizeof(info->exts));
+         strlcpy(info->path, settings->cursor_directory, sizeof(info->path));
+         break;
+      case DISPLAYLIST_DATABASE_PLAYLISTS:
+         info->type_default = MENU_FILE_PLAIN;
+         strlcpy(info->exts, "lpl", sizeof(info->exts));
+         break;
+      case DISPLAYLIST_CORES:
+         info->type_default = MENU_FILE_PLAIN;
+         strlcpy(info->exts, EXT_EXECUTABLES, sizeof(info->exts));
+         break;
+      case DISPLAYLIST_CONFIG_FILES:
+         info->type_default = MENU_FILE_CONFIG;
+         strlcpy(info->exts, "cfg", sizeof(info->exts));
+         break;
+      case DISPLAYLIST_SHADER_PRESET:
+         info->type_default = MENU_FILE_SHADER_PRESET;
+         strlcpy(info->exts, "cgp|glslp", sizeof(info->exts));
+         break;
+      case DISPLAYLIST_SHADER_PASS:
+         info->type_default = MENU_FILE_SHADER;
+         strlcpy(info->exts, "cg|glsl", sizeof(info->exts));
+         break;
+      case DISPLAYLIST_VIDEO_FILTERS:
+         info->type_default = MENU_FILE_VIDEOFILTER;
+         strlcpy(info->exts, "filt", sizeof(info->exts));
+         break;
+      case DISPLAYLIST_IMAGES:
+         info->type_default = MENU_FILE_IMAGE;
+         strlcpy(info->exts, "png", sizeof(info->exts));
+         break;
+      case DISPLAYLIST_AUDIO_FILTERS:
+         info->type_default = MENU_FILE_AUDIOFILTER;
+         strlcpy(info->exts, "dsp", sizeof(info->exts));
+         break;
+      case DISPLAYLIST_CHEAT_FILES:
+         info->type_default = MENU_FILE_CHEAT;
+         strlcpy(info->exts, "cht", sizeof(info->exts));
+         break;
+      case DISPLAYLIST_CONTENT_HISTORY:
+         info->type_default = MENU_FILE_PLAIN;
+         strlcpy(info->exts, "lpl", sizeof(info->exts));
+         break;
+      case DISPLAYLIST_FONTS:
+         info->type_default = MENU_FILE_FONT;
+         strlcpy(info->exts, "ttf", sizeof(info->exts));
+         break;
+      case DISPLAYLIST_OVERLAYS:
+         info->type_default = MENU_FILE_OVERLAY;
+         strlcpy(info->exts, "cfg", sizeof(info->exts));
+         break;
+      case DISPLAYLIST_RECORD_CONFIG_FILES:
+         info->type_default = MENU_FILE_RECORD_CONFIG;
+         strlcpy(info->exts, "cfg", sizeof(info->exts));
+         break;
+      case DISPLAYLIST_REMAP_FILES:
+         info->type_default = MENU_FILE_REMAP;
+         strlcpy(info->exts, "rmp", sizeof(info->exts));
          break;
    }
 
