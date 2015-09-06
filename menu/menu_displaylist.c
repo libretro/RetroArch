@@ -2750,37 +2750,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          info->type_default = MENU_FILE_RDB;
          strlcpy(info->exts, "rdb", sizeof(info->exts));
          strlcpy(info->path, settings->content_database, sizeof(info->path));
-         if (menu_displaylist_parse_generic(info, &need_sort) == 0)
-         {
-            need_refresh = true;
-            need_push    = true;
-         }
-         break;
-      case DISPLAYLIST_DEFAULT:
-      case DISPLAYLIST_CORES:
-      case DISPLAYLIST_CORES_DETECTED:
-      case DISPLAYLIST_SHADER_PASS:
-      case DISPLAYLIST_SHADER_PRESET:
-      case DISPLAYLIST_DATABASE_CURSORS:
-      case DISPLAYLIST_DATABASE_PLAYLISTS:
-      case DISPLAYLIST_VIDEO_FILTERS:
-      case DISPLAYLIST_AUDIO_FILTERS:
-      case DISPLAYLIST_IMAGES:
-      case DISPLAYLIST_OVERLAYS:
-      case DISPLAYLIST_FONTS:
-      case DISPLAYLIST_CHEAT_FILES:
-      case DISPLAYLIST_REMAP_FILES:
-      case DISPLAYLIST_RECORD_CONFIG_FILES:
-      case DISPLAYLIST_CONFIG_FILES:
-      case DISPLAYLIST_CONTENT_HISTORY:
-         if (menu_displaylist_parse_generic(info, &need_sort) == 0)
-         {
-            need_refresh = true;
-            need_push    = true;
-         }
-         break;
-      case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
-         menu_displaylist_parse_generic(info, &need_sort);
          break;
       case DISPLAYLIST_ARCHIVE_ACTION:
          menu_list_push(info->list,
@@ -2803,6 +2772,35 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_LOAD_ARCHIVE_DETECT_CORE),
                0, 0, 0);
          need_push = true;
+         break;
+   }
+
+   switch (type)
+   {
+      case DISPLAYLIST_DATABASES:
+      case DISPLAYLIST_DEFAULT:
+      case DISPLAYLIST_CORES:
+      case DISPLAYLIST_CORES_DETECTED:
+      case DISPLAYLIST_SHADER_PASS:
+      case DISPLAYLIST_SHADER_PRESET:
+      case DISPLAYLIST_DATABASE_CURSORS:
+      case DISPLAYLIST_DATABASE_PLAYLISTS:
+      case DISPLAYLIST_VIDEO_FILTERS:
+      case DISPLAYLIST_AUDIO_FILTERS:
+      case DISPLAYLIST_IMAGES:
+      case DISPLAYLIST_OVERLAYS:
+      case DISPLAYLIST_FONTS:
+      case DISPLAYLIST_CHEAT_FILES:
+      case DISPLAYLIST_REMAP_FILES:
+      case DISPLAYLIST_RECORD_CONFIG_FILES:
+      case DISPLAYLIST_CONFIG_FILES:
+      case DISPLAYLIST_CONTENT_HISTORY:
+      case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
+         if (menu_displaylist_parse_generic(info, &need_sort) == 0)
+         {
+            need_refresh = true;
+            need_push    = true;
+         }
          break;
    }
 
