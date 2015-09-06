@@ -599,7 +599,11 @@ static const bool allow_rotate = true;
 static const bool audio_enable = true;
 
 /* Output samplerate. */
+#ifdef GEKKO
+static const unsigned out_rate = 32000;
+#else
 static const unsigned out_rate = 48000;
+#endif
 
 /* Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults. */
 static const char *audio_device = NULL;
