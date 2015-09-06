@@ -20,7 +20,7 @@
 #include <string.h>
 
 #include <dsound.h>
-#ifndef _XBOX
+#if !defined(_XBOX) && !defined(MSC_VER)
 #include <mmreg.h>
 #endif
 
