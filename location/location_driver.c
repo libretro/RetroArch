@@ -16,11 +16,8 @@
 
 #include <string.h>
 #include <string/string_list.h>
-#include "location_driver.h"
-#include "../driver.h"
+
 #include "../general.h"
-#include "../runloop.h"
-#include "../system.h"
 
 static const location_driver_t *location_drivers[] = {
 #ifdef ANDROID
