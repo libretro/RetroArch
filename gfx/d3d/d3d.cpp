@@ -653,7 +653,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    }
 
    video_monitor_get_fps(buffer, sizeof(buffer), NULL, 0);
-   snprintf(buffer, sizeof(buffer), "%s || Direct3D", buffer);
+   sprintf(buffer, "%s || Direct3D", buffer);
 
    d3d->hWnd = CreateWindowEx(0, "RetroArch", buffer,
          info->fullscreen ?
