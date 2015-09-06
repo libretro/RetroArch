@@ -23,7 +23,7 @@
 #ifndef __LIBRETRO_SDK_COMPAT_POSIX_STRING_H
 #define __LIBRETRO_SDK_COMPAT_POSIX_STRING_H
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 
 #include <compat/msvc.h>
 
@@ -31,8 +31,18 @@
 extern "C" {
 #endif
 
-#include <stdio.h>
-#define snprintf _snprintf
+#undef strcasecmp
+#undef strdup
+#undef isblank
+#undef strtok_r
+#define strcasecmp(a, b) rarch_strcasecmp__(a, b)
+#define strdup(orig) rarch_strdup__(orig)
+#define isblank(c) rarch_isblank__(c)
+#define strtok_r(str, delim, saveptr) rarch_strtok_r__(str, delim, saveptr)
+int strcasecmp(const char *a, const char *b);
+char *strdup(const char *orig);
+int isblank(int c);
+char *strtok_r(char *str, const char *delim, char **saveptr);
 
 #ifdef __cplusplus
 }

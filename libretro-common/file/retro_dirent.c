@@ -1,6 +1,7 @@
 #include <retro_dirent.h>
 
 #include <stdlib.h>
+#include <stdio.h>
 
 #if defined(_WIN32)
 #  include <compat/posix_string.h>

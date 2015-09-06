@@ -21,6 +21,7 @@
  */
 
 #include <string.h>
+#include <stdio.h>
 #include <dynamic/dylib.h>
 
 #ifdef NEED_DYNAMIC
