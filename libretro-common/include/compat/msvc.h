@@ -23,6 +23,12 @@
 #ifndef __LIBRETRO_SDK_COMPAT_MSVC_H
 #define __LIBRETRO_SDK_COMPAT_MSVC_H
 
+#ifdef _WIN32
+#ifndef snprintf
+#define snprintf _snprintf
+#endif
+#endif
+
 #ifdef _MSC_VER
 
 #undef UNICODE /* Do not bother with UNICODE at this time. */
@@ -42,7 +48,6 @@ typedef int ssize_t;
 #endif
 
 #define mkdir(dirname, unused) _mkdir(dirname)
-#define snprintf _snprintf
 #define strtoull _strtoui64
 #undef strcasecmp
 #define strcasecmp _stricmp
