@@ -101,7 +101,7 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
       float r, float g, float b, float a, GRfloat *coord_color)
 {
    GRfloat color[16];
-   unsigned width, height;
+   unsigned height;
    struct gfx_coords coords;
    menu_handle_t *menu = menu_driver_get_ptr();
    glui_handle_t *glui = (glui_handle_t*)menu->userdata;
