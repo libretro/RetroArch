@@ -623,7 +623,7 @@ void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
    int            str_len = strlen(str);
    int             offset = 0;
 
-   if (str_len <= len)
+   if ((size_t)str_len <= len)
    {
       strlcpy(s, str, len + 1);
       return;
