@@ -49,8 +49,9 @@ typedef unsigned short ush;
 typedef ush FAR ushf;
 typedef unsigned long  ulg;
 
-extern char * const z_errmsg[10]; /* indexed by 2-zlib_error */
-/* (size given to avoid silly warnings with Visual C++) */
+extern char z_errmsg[10][21]; /* indexed by 2-zlib_error */
+/* (array size given to avoid silly warnings with Visual C++) */
+/* (array entry size given to avoid silly string cast warnings) */
 
 #define ERR_MSG(err) z_errmsg[Z_NEED_DICT-(err)]
 

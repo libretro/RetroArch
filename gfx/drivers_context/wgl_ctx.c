@@ -526,7 +526,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
    {
       if (!fullscreen && settings->ui.menubar_enable)
       {
-         RECT rc_temp = {0, 0, height, 0x7FFF};
+         RECT rc_temp = {0, 0, (LONG)height, 0x7FFF};
          SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
          SendMessage(g_hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
          g_resize_height = height += rc_temp.top + rect.top;
