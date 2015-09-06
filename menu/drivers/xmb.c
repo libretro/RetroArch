@@ -1198,7 +1198,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       char name[PATH_MAX_LENGTH];
       char value[PATH_MAX_LENGTH];
       menu_entry_t entry;
-      float icon_x, icon_y, alpha;
+      float icon_x, icon_y;
 
       GRuint texture_switch       = 0;
       GRuint         icon         = 0;
