@@ -75,12 +75,14 @@ static int generic_action_ok_displaylist_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
+   char tmp[PATH_MAX_LENGTH];
    char action_path[PATH_MAX_LENGTH];
    unsigned dl_type                  = DISPLAYLIST_GENERIC;
    menu_displaylist_info_t      info = {0};
    const char           *menu_label  = NULL;
    const char            *menu_path  = NULL;
    const char          *content_path = NULL;
+   const char          *info_label   = NULL;
    global_t                 *global  = global_get_ptr();
    settings_t            *settings   = config_get_ptr();
    menu_list_t            *menu_list = menu_list_get_ptr();
@@ -111,13 +113,10 @@ static int generic_action_ok_displaylist_push(const char *path,
          switch (action_type)
          {
             case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
-               strlcpy(info.label,
-                     menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE),
-                     sizeof(info.label));
+               info_label = menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE);
                break;
             case ACTION_OK_DL_OPEN_ARCHIVE:
-               strlcpy(info.label,
-                     menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN), sizeof(info.label));
+               info_label = menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN);
                break;
          }
          strlcpy(info.path, path, sizeof(info.path));
@@ -125,33 +124,31 @@ static int generic_action_ok_displaylist_push(const char *path,
          info.directory_ptr = idx;
          break;
       case ACTION_OK_DL_HELP:
-         strlcpy(info.label, label, sizeof(info.label));
+         info_label = label;
          menu->push_help_screen = true;
          dl_type                = DISPLAYLIST_HELP;
          break;
       case ACTION_OK_DL_RPL_ENTRY:
          strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
-         strlcpy(info.label,
-               menu_hash_to_str(MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS), sizeof(info.label));
+         info_label = menu_hash_to_str(MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
          info.directory_ptr      = idx;
          rpl_entry_selection_ptr = idx;
          break;
       case ACTION_OK_DL_AUDIO_DSP_PLUGIN:
          info.directory_ptr = idx;
          strlcpy(info.path, settings->audio.filter_dir, sizeof(info.path));
-         strlcpy(info.label,
-               menu_hash_to_str(MENU_LABEL_AUDIO_DSP_PLUGIN), sizeof(info.label));
+         info_label = menu_hash_to_str(MENU_LABEL_AUDIO_DSP_PLUGIN);
          break;
       case ACTION_OK_DL_SHADER_PASS:
          info.type          = type;
          info.directory_ptr = idx;
          strlcpy(info.path, settings->video.shader_dir, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
+         info_label = label;
          break;
       case ACTION_OK_DL_SHADER_PARAMETERS:
          info.type          = MENU_SETTING_ACTION;
          info.directory_ptr = idx;
-         strlcpy(info.label, label, sizeof(info.label));
+         info_label = label;
          break;
       case ACTION_OK_DL_GENERIC:
          if (path)
@@ -160,88 +157,85 @@ static int generic_action_ok_displaylist_push(const char *path,
 
          info.type          = type;
          info.directory_ptr = idx;
-         strlcpy(info.label, label, sizeof(info.label));
+         info_label = label;
          break;
       case ACTION_OK_DL_PUSH_DEFAULT:
          info.type          = type;
          info.directory_ptr = idx;
          strlcpy(info.path, label, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
+         info_label = label;
          break;
       case ACTION_OK_DL_SHADER_PRESET:
          info.type          = type;
          info.directory_ptr = idx;
          strlcpy(info.path, settings->video.shader_dir, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
+         info_label = label;
          break;
       case ACTION_OK_DL_DOWNLOADS_DIR:
          info.type          = MENU_FILE_DIRECTORY;
          info.directory_ptr = idx;
          strlcpy(info.path, settings->core_assets_directory, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
+         info_label = label;
          break;
       case ACTION_OK_DL_CONTENT_LIST:
          info.type          = MENU_FILE_DIRECTORY;
          info.directory_ptr = idx;
          strlcpy(info.path, settings->menu_content_directory, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
+         info_label = label;
          break;
       case ACTION_OK_DL_REMAP_FILE:
          info.type          = type;
          info.directory_ptr = idx;
          strlcpy(info.path, settings->input_remapping_directory, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
+         info_label = label;
          break;
       case ACTION_OK_DL_RECORD_CONFIGFILE:
          info.type          = type;
          info.directory_ptr = idx;
          strlcpy(info.path, global->record.config_dir, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
+         info_label = label;
          break;
       case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
          info.type          = type;
          info.directory_ptr = idx;
          strlcpy(info.path, settings->menu_content_directory, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
+         info_label = label;
          break;
       case ACTION_OK_DL_PLAYLIST_COLLECTION:
          info.type          = type;
          info.directory_ptr = idx;
          strlcpy(info.path, path, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
+         info_label = label;
          break;
       case ACTION_OK_DL_CHEAT_FILE:
          info.type          = type;
          info.directory_ptr = idx;
          strlcpy(info.path, settings->cheat_database, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
+         info_label = label;
          break;
       case ACTION_OK_DL_CORE_LIST:
          info.type          = type;
          info.directory_ptr = idx;
          strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
+         info_label = label;
          break;
       case ACTION_OK_DL_CONTENT_COLLECTION_LIST:
          info.type          = type;
          info.directory_ptr = idx;
          strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
+         info_label = label;
          break;
       case ACTION_OK_DL_RDB_ENTRY:
-         {
-            char tmp[PATH_MAX_LENGTH];
-            fill_pathname_join_delim(tmp, menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL),
-                  path, '|', sizeof(tmp));
+         fill_pathname_join_delim(tmp, menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL),
+               path, '|', sizeof(tmp));
 
-            info.directory_ptr = idx;
-            strlcpy(info.path, label, sizeof(info.path));
-            strlcpy(info.label, tmp, sizeof(info.label));
-         }
+         info.directory_ptr = idx;
+         strlcpy(info.path, label, sizeof(info.path));
+         info_label = tmp;
          break;
       case ACTION_OK_DL_RDB_ENTRY_SUBMENU:
          info.directory_ptr = idx;
-         strlcpy(info.label, label, sizeof(info.label));
+         info_label = label;
          strlcpy(info.path, path, sizeof(info.path));
          break;
       case ACTION_OK_DL_CONFIGURATIONS_LIST:
@@ -251,7 +245,7 @@ static int generic_action_ok_displaylist_push(const char *path,
             strlcpy(info.path, path, sizeof(info.path));
          else
             strlcpy(info.path, label, sizeof(info.path));
-         strlcpy(info.label, label, sizeof(info.label));
+         info_label = label;
          break;
       case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE:
       case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH:
@@ -262,12 +256,10 @@ static int generic_action_ok_displaylist_push(const char *path,
          switch (action_type)
          {
             case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE:
-               strlcpy(info.label,
-                     menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE), sizeof(info.label));
+               info_label = menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE);
                break;
             case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH:
-               strlcpy(info.label,
-                     menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION), sizeof(info.label));
+               info_label = menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION);
                break;
          }
 
@@ -278,7 +270,7 @@ static int generic_action_ok_displaylist_push(const char *path,
          info.type          = type;
          info.directory_ptr = idx;
          strlcpy(info.path, action_path, sizeof(info.path));
-         strlcpy(info.label, menu_label, sizeof(info.label));
+         info_label = menu_label;
          break;
       case ACTION_OK_DL_DATABASE_MANAGER_LIST:
          {
@@ -289,9 +281,7 @@ static int generic_action_ok_displaylist_push(const char *path,
 
             info.directory_ptr = idx;
             strlcpy(info.path, rdb_path, sizeof(info.path));
-            strlcpy(info.label,
-                  menu_hash_to_str(MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST),
-                  sizeof(info.label));
+            info_label = menu_hash_to_str(MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST);
          }
          break;
       case ACTION_OK_DL_CURSOR_MANAGER_LIST:
@@ -303,44 +293,41 @@ static int generic_action_ok_displaylist_push(const char *path,
 
             info.directory_ptr = idx;
             strlcpy(info.path, cursor_path, sizeof(info.path));
-            strlcpy(info.label,
-                  menu_hash_to_str(MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
-                  sizeof(info.label));
+            info_label = menu_hash_to_str(MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST);
          }
          break;
       case ACTION_OK_DL_CUSTOM_VIEWPORT:
          info.type          = MENU_SETTINGS_CUSTOM_VIEWPORT;
          info.directory_ptr = idx;
-         strlcpy(info.label, menu_hash_to_str(MENU_LABEL_CUSTOM_VIEWPORT_1), sizeof(info.label));
+         info_label         = menu_hash_to_str(MENU_LABEL_CUSTOM_VIEWPORT_1);
          break;
       case ACTION_OK_DL_CORE_UPDATER_LIST:
          info.type          = type;
          info.directory_ptr = idx;
          strlcpy(info.path, path, sizeof(info.path));
-         strlcpy(info.label,
-               menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_UPDATER_LIST), sizeof(info.label));
+         info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_UPDATER_LIST);
          break;
       case ACTION_OK_DL_CORE_CONTENT_LIST:
          info.type          = type;
          info.directory_ptr = idx;
          strlcpy(info.path, path, sizeof(info.path));
-         strlcpy(info.label,
-               menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_CONTENT_LIST), sizeof(info.label));
+         info_label = menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_CONTENT_LIST);
          break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST:
          info.directory_ptr = idx;
          strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
-         strlcpy(info.label,
-               menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST), sizeof(info.label));
+         info_label = menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST);
          break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST_SET:
          info.directory_ptr = idx;
          rdb_entry_start_game_selection_ptr = idx;
          strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
-         strlcpy(info.label,
-               menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST_SET), sizeof(info.label));
+         info_label = menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST_SET);
          break;
    }
+
+   if (info_label)
+      strlcpy(info.label, info_label, sizeof(info.label));
 
 
    return menu_displaylist_push_list(&info, dl_type);
