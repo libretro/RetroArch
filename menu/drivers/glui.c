@@ -313,7 +313,7 @@ static void glui_render_label_value(glui_handle_t *glui, int y, unsigned width,
    char value_str[PATH_MAX_LENGTH];
    int value_len   = strlen(value);
    int ticker_limit = 0;
-   int usable_width = 0;
+   size_t usable_width = 0;
 
    label_str[0] = '\0';
    value_str[0] = '\0';
