@@ -341,17 +341,11 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
       GRuint texture,
       float x, float y,
       unsigned width, unsigned height,
-      float alpha, float rotation, float scale_factor)
+      float rotation, float scale_factor,
+      GRfloat *color)
 {
    struct gfx_coords coords;
-   GRfloat color[16];
    math_matrix_4x4 mymat, mrot, mscal;
-
-   if (alpha > xmb->alpha)
-      alpha = xmb->alpha;
-
-   if (alpha == 0)
-      return;
 
    if (
          x < -xmb->icon.size/2 || 
@@ -359,23 +353,6 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
          y < xmb->icon.size/2 ||
          y > height + xmb->icon.size)
       return;
-
-   color[ 0] = 1.0f;
-   color[ 1] = 1.0f;
-   color[ 2] = 1.0f;
-   color[ 3] = alpha;
-   color[ 4] = 1.0f;
-   color[ 5] = 1.0f;
-   color[ 6] = 1.0f;
-   color[ 7] = alpha;
-   color[ 8] = 1.0f;
-   color[ 9] = 1.0f;
-   color[10] = 1.0f;
-   color[11] = alpha;
-   color[12] = 1.0f;
-   color[13] = 1.0f;
-   color[14] = 1.0f;
-   color[15] = alpha;
 
    matrix_4x4_rotate_z(&mrot, rotation);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
@@ -387,7 +364,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    coords.vertex        = rmb_vertex;
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
-   coords.color         = color;
+   coords.color         = (const float*)color;
 
    menu_video_draw_frame(
          x,
@@ -1210,6 +1187,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       file_list_t *list, file_list_t *stack,
       size_t current, size_t cat_selection_ptr)
 {
+   GRfloat color[16];
    unsigned i, width, height, ticker_limit;
    math_matrix_4x4 mymat, mrot, mscal;
    const char *label           = NULL;
@@ -1221,6 +1199,9 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
    if (!list || !list->size || !menu)
       return;
+
+   for (i = 0; i < 16; i++)
+      color[i] = 1.00;
 
    video_driver_get_size(&width, &height);
 
@@ -1248,7 +1229,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       char name[PATH_MAX_LENGTH];
       char value[PATH_MAX_LENGTH];
       menu_entry_t entry;
-      float icon_x, icon_y;
+      float icon_x, icon_y, alpha;
 
       GRuint texture_switch       = 0;
       GRuint         icon         = 0;
@@ -1402,8 +1383,14 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
       xmb_draw_icon_begin(gl);
 
-      xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, width, height, node->alpha, 0, node->zoom);
+      alpha    = node->alpha;
+      if (alpha > xmb->alpha)
+         alpha = xmb->alpha;
+      color[3] = color[7] = color[11] = color[15] = alpha;
 
+      if (alpha != 0)
+         xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, width, height, 
+               0, node->zoom, &color[0]);
 
       if (texture_switch != 0)
          xmb_draw_icon_predone(gl, xmb, &mymat,
@@ -1505,9 +1492,14 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
 {
    unsigned i;
    size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
+   GRfloat color[16];
+
+   for (i = 0; i < 16; i++)
+      color[i] = 1.00;
 
    for (i = 0; i <= list_size; i++)
    {
+      float alpha;
       xmb_node_t *node = &xmb->settings_node;
 
       if (i > 0)
@@ -1518,15 +1510,21 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
 
       xmb_draw_icon_begin(gl);
 
-      xmb_draw_icon(gl, xmb, node->icon, 
-            xmb->x + xmb->categories.x_pos + 
-            xmb->margins.screen.left + 
-            xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
-            xmb->margins.screen.top + xmb->icon.size / 2.0, 
-            width, height,
-            node->alpha, 
-            0, 
-            node->zoom);
+      alpha    = node->alpha;
+      if (alpha > xmb->alpha)
+         alpha = xmb->alpha;
+      color[3] = color[7] = color[11] = color[15] = alpha;
+
+      if (alpha != 0)
+         xmb_draw_icon(gl, xmb, node->icon, 
+               xmb->x + xmb->categories.x_pos + 
+               xmb->margins.screen.left + 
+               xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
+               xmb->margins.screen.top + xmb->icon.size / 2.0, 
+               width, height,
+               0, 
+               node->zoom,
+               &color[0]);
 
       xmb_draw_icon_end();
    }
