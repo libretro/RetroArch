@@ -454,29 +454,11 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
          gl->shader, &coords, mymat, false, texture);
 }
 
-static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb, unsigned width, unsigned height)
+static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb, GRfloat *color, unsigned width, unsigned height)
 {
    struct gfx_coords coords;
    float x, y;
    math_matrix_4x4 mymat, mrot, mscal;
-   GRfloat color[16];
-
-   color[ 0] = 1.0f;
-   color[ 1] = 1.0f;
-   color[ 2] = 1.0f;
-   color[ 3] = xmb->alpha;
-   color[ 4] = 1.0f;
-   color[ 5] = 1.0f;
-   color[ 6] = 1.0f;
-   color[ 7] = xmb->alpha;
-   color[ 8] = 1.0f;
-   color[ 9] = 1.0f;
-   color[10] = 1.0f;
-   color[11] = xmb->alpha;
-   color[12] = 1.0f;
-   color[13] = 1.0f;
-   color[14] = 1.0f;
-   color[15] = xmb->alpha;
 
    y = xmb->margins.screen.top + xmb->icon.size + xmb->boxart_size;
 
@@ -493,7 +475,7 @@ static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb, unsigned width, unsigne
    coords.vertex        = rmb_vertex;
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
-   coords.color         = color;
+   coords.color         = (const float*)color;
 
    menu_video_draw_frame(
          x,
@@ -1438,30 +1420,12 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    }
 }
 
-
 static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb,
+      GRfloat *color,
       float x, float y, unsigned width, unsigned height)
 {
    struct gfx_coords coords;
    math_matrix_4x4 mymat, mrot;
-   GRfloat color[16];
-
-   color[ 0] = 1.0f;
-   color[ 1] = 1.0f;
-   color[ 2] = 1.0f;
-   color[ 3] = xmb->alpha;
-   color[ 4] = 1.0f;
-   color[ 5] = 1.0f;
-   color[ 6] = 1.0f;
-   color[ 7] = xmb->alpha;
-   color[ 8] = 1.0f;
-   color[ 9] = 1.0f;
-   color[10] = 1.0f;
-   color[11] = xmb->alpha;
-   color[12] = 1.0f;
-   color[13] = 1.0f;
-   color[14] = 1.0f;
-   color[15] = xmb->alpha;
 
    matrix_4x4_rotate_z(&mrot, 0);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
@@ -1470,7 +1434,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb,
    coords.vertex        = rmb_vertex;
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
-   coords.color         = color;
+   coords.color         = (const float*)color;
 
    xmb_draw_icon_begin(gl);
 
@@ -1669,7 +1633,7 @@ static void xmb_frame(void)
    xmb_draw_icon_begin(gl);
 
    if (settings->menu.boxart_enable && xmb->boxart)
-      xmb_draw_boxart(gl, xmb, width, height);
+      xmb_draw_boxart(gl, xmb, &coord_color2[0], width, height);
 
    if (settings->menu.timedate_enable)
       xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
@@ -1723,7 +1687,8 @@ static void xmb_frame(void)
    }
 
    if (settings->menu.mouse.enable)
-      xmb_draw_cursor(gl, xmb, menu_input->mouse.x, menu_input->mouse.y, width, height);
+      xmb_draw_cursor(gl, xmb, &coord_color2[0],
+            menu_input->mouse.x, menu_input->mouse.y, width, height);
 
    menu_display_unset_viewport();
 }
