@@ -736,7 +736,6 @@ ifeq ($(HAVE_7ZIP),1)
    7ZOBJ = 	deps/7zip/7zIn.o \
 		deps/7zip/7zAlloc.o \
 		deps/7zip/Bra86.o \
-		deps/7zip/CpuArch.o \
 		deps/7zip/7zFile.o \
 		deps/7zip/7zStream.o \
 		deps/7zip/7zBuf2.o \
