@@ -41,25 +41,28 @@ static INLINE void sanitize_to_string(char *s, const char *label, size_t len)
    replace_chars(s, '_', ' ');
 }
 
+static int fill_title(char *s, const char *title, const char *path, size_t len)
+{
+   fill_pathname_join_delim(s, title, path, ' ', len);
+   return 0;
+}
+
 static int action_get_title_disk_image_append(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "DISK APPEND", path, ' ', len);
-   return 0;
+   return fill_title(s, "DISK APPEND", path, len);
 }
 
 static int action_get_title_cheat_file_load(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "CHEAT FILE", path, ' ', len);
-   return 0;
+   return fill_title(s, "CHEAT FILE", path, len);
 }
 
 static int action_get_title_remap_file_load(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "REMAP FILE", path, ' ', len);
-   return 0;
+   return fill_title(s, "REMAP FILE", path, len);
 }
 
 static int action_get_title_help(const char *path, const char *label, 
@@ -79,50 +82,43 @@ static int action_get_title_help_list(const char *path, const char *label,
 static int action_get_title_overlay(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "OVERLAY", path, ' ', len);
-   return 0;
+   return fill_title(s, "OVERLAY", path, len);
 }
 
 static int action_get_title_video_filter(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "VIDEO FILTER", path, ' ', len);
-   return 0;
+   return fill_title(s, "VIDEO FILTER", path, len);
 }
 
 static int action_get_title_cheat_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "CHEAT DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "CHEAT DIR", path, len);
 }
 
 static int action_get_title_core_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "CORE DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "CORE DIR", path, len);
 }
 
 static int action_get_title_core_info_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "CORE INFO DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "CORE INFO DIR", path, len);
 }
 
 static int action_get_title_audio_filter(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "AUDIO FILTER", path, ' ', len);
-   return 0;
+   return fill_title(s, "AUDIO FILTER", path, len);
 }
 
 static int action_get_title_font_path(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "FONT", path, ' ', len);
-   return 0;
+   return fill_title(s, "FONT", path, len);
 }
 
 static int action_get_title_custom_viewport(const char *path, const char *label, 
@@ -135,8 +131,7 @@ static int action_get_title_custom_viewport(const char *path, const char *label,
 static int action_get_title_video_shader_preset(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "SHADER PRESET", path, ' ', len);
-   return 0;
+   return fill_title(s, "SHADER PRESET", path, len);
 }
 
 static int action_get_title_generic(char *s, size_t len, const char *path,
@@ -232,9 +227,6 @@ static int action_get_title_list_rdb_entry_esrb_rating(const char *path, const c
 static int action_get_title_list_rdb_entry_database_info(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-#if 0
-   snprintf(s, len, "DATABASE INFO: %s", elem1);
-#endif
    return action_get_title_generic(s, len, path, "DATABASE INFO ");
 }
 
@@ -271,8 +263,7 @@ static int action_get_title_list_rdb_entry_max_users(const char *path, const cha
 static int action_get_title_deferred_core_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "DETECTED CORES", path, ' ', len);
-   return 0;
+   return fill_title(s, "DETECTED CORES", path, len);
 }
 
 static int action_get_title_default(const char *path, const char *label, 
@@ -321,176 +312,151 @@ static int action_get_title_action_generic(const char *path, const char *label,
 static int action_get_title_configurations(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "CONFIG", path, ' ', len);
-   return 0;
+   return fill_title(s, "CONFIG", path, len);
 }
 
 static int action_get_title_content_database_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "DATABASE DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "DATABASE DIR", path, len);
 }
 
 static int action_get_title_savestate_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "SAVESTATE DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "SAVESTATE DIR", path, len);
 }
 
 static int action_get_title_dynamic_wallpapers_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "DYNAMIC WALLPAPERS DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "DYNAMIC WALLPAPERS DIR", path, len);
 }
 
 static int action_get_title_core_assets_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "CORE ASSETS DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "CORE ASSETS DIR", path, len);
 }
 
 static int action_get_title_config_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "CONFIG DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "CONFIG DIR", path, len);
 }
 
 static int action_get_title_input_remapping_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "INPUT REMAPPING DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "INPUT REMAPPING DIR", path, len);
 }
 
 static int action_get_title_autoconfig_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "AUTOCONFIG DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "AUTOCONFIG DIR", path, len);
 }
 
 static int action_get_title_playlist_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "PLAYLIST DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "PLAYLIST DIR", path, len);
 }
 
 static int action_get_title_browser_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "BROWSER DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "BROWSER DIR", path, len);
 }
 
 static int action_get_title_content_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "CONTENT DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "CONTENT DIR", path, len);
 }
 
 static int action_get_title_screenshot_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "SCREENSHOT DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "SCREENSHOT DIR", path, len);
 }
 
 static int action_get_title_cursor_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "CURSOR DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "CURSOR DIR", path, len);
 }
 
 static int action_get_title_onscreen_overlay_keyboard_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "OSK OVERLAY DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "OSK OVERLAY DIR", path, len);
 }
 
 static int action_get_title_recording_config_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "RECORDING CONFIG DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "RECORDING CONFIG DIR", path, len);
 }
 
 static int action_get_title_recording_output_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "RECORDING OUTPUT DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "RECORDING OUTPUT DIR", path, len);
 }
 
 static int action_get_title_video_shader_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "SHADER DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "SHADER DIR", path, len);
 }
 
 static int action_get_title_audio_filter_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "AUDIO FILTER DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "AUDIO FILTER DIR", path, len);
 }
 
 static int action_get_title_video_filter_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "VIDEO FILTER DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "VIDEO FILTER DIR", path, len);
 }
 
 static int action_get_title_savefile_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "SAVEFILE DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "SAVEFILE DIR", path, len);
 }
 
 static int action_get_title_overlay_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "OVERLAY DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "OVERLAY DIR", path, len);
 }
 
 static int action_get_title_system_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "SYSTEM DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "SYSTEM DIR", path, len);
 }
 
 static int action_get_title_assets_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "ASSETS DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "ASSETS DIR", path, len);
 }
 
 static int action_get_title_extraction_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "EXTRACTION DIR", path, ' ', len);
-   return 0;
+   return fill_title(s, "EXTRACTION DIR", path, len);
 }
 
 static int action_get_title_menu(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   fill_pathname_join_delim(s, "MENU", path, ' ', len);
-   return 0;
+   return fill_title(s, "MENU", path, len);
 }
 
 static int action_get_title_input_settings(const char *path, const char *label, 
