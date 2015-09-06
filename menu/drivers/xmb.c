@@ -1185,9 +1185,8 @@ static GRuint xmb_icon_get_id(xmb_handle_t *xmb,
 
 static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       file_list_t *list, file_list_t *stack,
-      size_t current, size_t cat_selection_ptr)
+      size_t current, size_t cat_selection_ptr, GRfloat *color)
 {
-   GRfloat color[16];
    unsigned i, width, height, ticker_limit;
    math_matrix_4x4 mymat, mrot, mscal;
    const char *label           = NULL;
@@ -1199,9 +1198,6 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
    if (!list || !list->size || !menu)
       return;
-
-   for (i = 0; i < 16; i++)
-      color[i] = 1.00;
 
    video_driver_get_size(&width, &height);
 
@@ -1488,14 +1484,11 @@ static void xmb_render(void)
 }
 
 static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
-      menu_handle_t *menu, gl_t *gl, unsigned width, unsigned height)
+      menu_handle_t *menu, gl_t *gl, unsigned width, unsigned height,
+      GRfloat *color)
 {
    unsigned i;
    size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
-   GRfloat color[16];
-
-   for (i = 0; i < 16; i++)
-      color[i] = 1.00;
 
    for (i = 0; i <= list_size; i++)
    {
@@ -1537,6 +1530,7 @@ static void xmb_frame(void)
    char msg[PATH_MAX_LENGTH];
    char title_msg[PATH_MAX_LENGTH];
    char timedate[PATH_MAX_LENGTH];
+   GRfloat item_color[16];
    GRfloat coord_color[16];
    GRfloat coord_color2[16];
    bool render_background                  = false;
@@ -1576,6 +1570,7 @@ static void xmb_frame(void)
    {
       coord_color[i]  = 0;
       coord_color2[i] = 1.0f;
+      item_color[i]   = 1.0f;
       if (i == 3 || i == 7 || i == 11 || i == 15)
       {
          coord_color[i]  = (0.75f > xmb->alpha) ? xmb->alpha : 0.75f;
@@ -1614,13 +1609,15 @@ static void xmb_frame(void)
          xmb->menu_stack_old,
          xmb->selection_ptr_old,
          depth > 1 ? xmb->categories.selection_ptr :
-         xmb->categories.selection_ptr_old);
+         xmb->categories.selection_ptr_old,
+         &item_color[0]);
 
    xmb_draw_items(xmb, gl,
          menu_list->selection_buf,
          menu_list->menu_stack,
          nav->selection_ptr,
-         xmb->categories.selection_ptr);
+         xmb->categories.selection_ptr,
+         &item_color[0]);
 
    matrix_4x4_rotate_z(&mrot, 0 /* rotation */);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
@@ -1652,7 +1649,7 @@ static void xmb_frame(void)
          0,
          1);
 
-   xmb_frame_horizontal_list(xmb, menu, gl, width, height);
+   xmb_frame_horizontal_list(xmb, menu, gl, width, height, &item_color[0]);
 
    menu_display_font_flush_block(menu, font_driver);
 
