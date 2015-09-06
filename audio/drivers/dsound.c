@@ -19,10 +19,10 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <dsound.h>
-#if !defined(_XBOX) && !defined(MSC_VER)
+#ifndef _XBOX
 #include <mmreg.h>
 #endif
+#include <dsound.h>
 
 #include <boolean.h>
 
