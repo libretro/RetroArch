@@ -94,6 +94,8 @@ static int generic_action_ok_displaylist_push(const char *path,
 
    fill_pathname_join(action_path, menu_path, path, sizeof(action_path));
 
+   info.list          = menu_list->menu_stack;
+
    switch (action_type)
    {
       case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
@@ -131,12 +133,10 @@ static int generic_action_ok_displaylist_push(const char *path,
          strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
          strlcpy(info.label,
                menu_hash_to_str(MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS), sizeof(info.label));
-         info.type               = 0;
          info.directory_ptr      = idx;
          rpl_entry_selection_ptr = idx;
          break;
       case ACTION_OK_DL_AUDIO_DSP_PLUGIN:
-         info.type          = 0;
          info.directory_ptr = idx;
          strlcpy(info.path, settings->audio.filter_dir, sizeof(info.path));
          strlcpy(info.label,
@@ -193,7 +193,6 @@ static int generic_action_ok_displaylist_push(const char *path,
          strlcpy(info.label, label, sizeof(info.label));
          break;
       case ACTION_OK_DL_RECORD_CONFIGFILE:
-         info.list          = menu_list->menu_stack;
          info.type          = type;
          info.directory_ptr = idx;
          strlcpy(info.path, global->record.config_dir, sizeof(info.path));
@@ -235,15 +234,12 @@ static int generic_action_ok_displaylist_push(const char *path,
             fill_pathname_join_delim(tmp, menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL),
                   path, '|', sizeof(tmp));
 
-            info.type          = 0;
             info.directory_ptr = idx;
             strlcpy(info.path, label, sizeof(info.path));
             strlcpy(info.label, tmp, sizeof(info.label));
          }
          break;
       case ACTION_OK_DL_RDB_ENTRY_SUBMENU:
-         info.list          = menu_list->menu_stack;
-         info.type          = 0;
          info.directory_ptr = idx;
          strlcpy(info.label, label, sizeof(info.label));
          strlcpy(info.path, path, sizeof(info.path));
@@ -291,7 +287,6 @@ static int generic_action_ok_displaylist_push(const char *path,
             fill_pathname_join(rdb_path, settings->content_database,
                   path, sizeof(rdb_path));
 
-            info.type          = 0;
             info.directory_ptr = idx;
             strlcpy(info.path, rdb_path, sizeof(info.path));
             strlcpy(info.label,
@@ -306,7 +301,6 @@ static int generic_action_ok_displaylist_push(const char *path,
             fill_pathname_join(cursor_path, settings->cursor_directory,
                   path, sizeof(cursor_path));
 
-            info.type          = 0;
             info.directory_ptr = idx;
             strlcpy(info.path, cursor_path, sizeof(info.path));
             strlcpy(info.label,
@@ -334,14 +328,12 @@ static int generic_action_ok_displaylist_push(const char *path,
                menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_CONTENT_LIST), sizeof(info.label));
          break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST:
-         info.type          = 0;
          info.directory_ptr = idx;
          strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
          strlcpy(info.label,
                menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST), sizeof(info.label));
          break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST_SET:
-         info.type          = 0;
          info.directory_ptr = idx;
          rdb_entry_start_game_selection_ptr = idx;
          strlcpy(info.path, settings->libretro_directory, sizeof(info.path));
@@ -350,7 +342,6 @@ static int generic_action_ok_displaylist_push(const char *path,
          break;
    }
 
-   info.list          = menu_list->menu_stack;
 
    return menu_displaylist_push_list(&info, dl_type);
 }
