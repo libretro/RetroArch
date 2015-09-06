@@ -1566,12 +1566,10 @@ static void xmb_frame(void)
       coord_color[i]  = 0;
       coord_color2[i] = 1.0f;
       item_color[i]   = 1.0f;
-      if (i == 3 || i == 7 || i == 11 || i == 15)
-      {
-         coord_color[i]  = (0.75f > xmb->alpha) ? xmb->alpha : 0.75f;
-         coord_color2[i] = xmb->alpha;
-      }
    }
+
+   coord_color[3]  = coord_color[7]  = coord_color[11]  = coord_color[15]  = (0.75f > xmb->alpha) ? xmb->alpha : 0.75f;
+   coord_color2[3] = coord_color2[7] = coord_color2[11] = coord_color2[15] = xmb->alpha;
 
    menu_video_frame_background(menu, settings,
          gl, width, height, xmb->textures.bg.id, xmb->alpha, false, &coord_color[0],
