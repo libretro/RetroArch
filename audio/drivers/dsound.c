@@ -69,7 +69,7 @@ static INLINE unsigned write_avail(unsigned read_ptr, unsigned write_ptr, unsign
    return (read_ptr + buffer_size - write_ptr) % buffer_size;
 }
 
-static INLINE void get_positions(dsound_t *ds, uint32_t *read_ptr, uint32_t *write_ptr)
+static INLINE void get_positions(dsound_t *ds, DWORD *read_ptr, DWORD *write_ptr)
 {
    IDirectSoundBuffer_GetCurrentPosition(ds->dsb, read_ptr, write_ptr);
 }
@@ -80,8 +80,8 @@ struct audio_lock
 {
    void *chunk1;
    void *chunk2;
-   uint32_t size1;
-   uint32_t size2;
+   DWORD size1;
+   DWORD size2;
 };
 
 static INLINE bool grab_region(dsound_t *ds, uint32_t write_ptr,
@@ -133,7 +133,7 @@ static INLINE void release_region(dsound_t *ds, const struct audio_lock *region)
 
 static void dsound_thread(void *data)
 {
-   uint32_t write_ptr;
+   DWORD write_ptr;
    dsound_t *ds = (dsound_t*)data;
 
    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
@@ -144,7 +144,7 @@ static void dsound_thread(void *data)
    while (ds->thread_alive)
    {
       struct audio_lock region;
-      uint32_t read_ptr, avail, fifo_avail;
+      DWORD read_ptr, avail, fifo_avail;
       get_positions(ds, &read_ptr, NULL);
       
       avail = write_avail(read_ptr, write_ptr, ds->buffer_size);
@@ -233,7 +233,7 @@ static bool dsound_start_thread(dsound_t *ds)
 static void dsound_clear_buffer(dsound_t *ds)
 {
    void *ptr;
-   uint32_t size;
+   DWORD size;
    IDirectSoundBuffer_SetCurrentPosition(ds->dsb, 0);
 
    if (IDirectSoundBuffer_Lock(ds->dsb, 0, 0, &ptr, &size,

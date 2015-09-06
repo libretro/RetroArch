@@ -26,6 +26,7 @@
 #ifdef NEED_DYNAMIC
 
 #ifdef _WIN32
+#include <compat/posix_string.h>
 #include <windows.h>
 #else
 #include <dlfcn.h>

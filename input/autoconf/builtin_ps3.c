@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../input_autodetect.h"
 #include "builtin.h"
 
 #define PS3INPUT_DEFAULT_BINDS \
