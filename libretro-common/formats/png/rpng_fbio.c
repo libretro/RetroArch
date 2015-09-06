@@ -97,7 +97,7 @@ static bool png_parse_ihdr_fio(FILE **fd,
    return true;
 }
 
-bool rpng_load_image_argb_iterate(FILE **fd, rpng_t *rpng)
+static bool rpng_load_image_argb_iterate(FILE **fd, rpng_t *rpng)
 {
    struct png_chunk chunk = {0};
    FILE *file = *fd;
