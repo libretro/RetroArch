@@ -53,6 +53,8 @@ void menu_video_frame_background(
       menu_handle_t *menu,
       settings_t *settings,
       gl_t *gl,
+      unsigned width,
+      unsigned height,
       GLuint texture,
       float handle_alpha,
       bool force_transparency,
@@ -62,7 +64,6 @@ void menu_video_frame_background(
       const GRfloat *tex_coord)
 {
    struct gfx_coords coords;
-   unsigned width, height;
 
    global_t *global = global_get_ptr();
 
@@ -82,8 +83,6 @@ void menu_video_frame_background(
       && !force_transparency
       && texture)
       coords.color = (const float*)coord_color2;
-
-   video_driver_get_size(&width, &height);
 
    menu_video_draw_frame(0, 0, width, height,
          gl->shader, &coords,
