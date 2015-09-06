@@ -43,7 +43,9 @@ void menu_video_frame_background(
       GLuint texture,
       float handle_alpha,
       bool force_transparency,
-      GRfloat *color);
+      GRfloat *color,
+      const GRfloat *vertex,
+      const GRfloat *tex_coord);
 #endif
 
 const char *menu_video_get_ident(void);

@@ -1620,7 +1620,8 @@ static void xmb_frame(void)
    }
 
    menu_video_frame_background(menu, settings,
-         gl, xmb->textures.bg.id, xmb->alpha, false, &coord_color[0]);
+         gl, xmb->textures.bg.id, xmb->alpha, false, &coord_color[0],
+         &rmb_vertex[0], &rmb_tex_coord[0]);
 
    xmb_draw_text(menu, xmb,
          xmb->title_name, xmb->margins.title.left,
@@ -1703,7 +1704,8 @@ static void xmb_frame(void)
    if (render_background)
    {
       menu_video_frame_background(menu, settings, gl,
-            xmb->textures.bg.id, xmb->alpha, true, &coord_color[0]);
+            xmb->textures.bg.id, xmb->alpha, true, &coord_color[0],
+            &rmb_vertex[0], &rmb_tex_coord[0]);
       xmb_frame_messagebox(msg);
    }
 

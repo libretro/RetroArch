@@ -404,7 +404,8 @@ static void glui_frame(void)
       }
    }
    menu_video_frame_background(menu, settings,
-         gl, glui->textures.bg.id, 0.75f, false, &coord_color[0]);
+         gl, glui->textures.bg.id, 0.75f, false, &coord_color[0],
+         &glui_vertexes[0], &glui_tex_coords[0]);
 
    menu_entries_get_title(title, sizeof(title));
 

@@ -56,31 +56,15 @@ void menu_video_frame_background(
       GLuint texture,
       float handle_alpha,
       bool force_transparency,
-      GRfloat *coord_color)
+      GRfloat *coord_color,
+      const GRfloat *vertex,
+      const GRfloat *tex_coord)
 {
    struct gfx_coords coords;
    unsigned width, height;
-   GRfloat color[16], vertex[8], tex_coord[8];
+   GRfloat color[16];
 
    global_t *global = global_get_ptr();
-
-   vertex[0] = 0;
-   vertex[1] = 0;
-   vertex[2] = 1;
-   vertex[3] = 0;
-   vertex[4] = 0;
-   vertex[5] = 1;
-   vertex[6] = 1;
-   vertex[7] = 1;
-
-   tex_coord[0] = 0;
-   tex_coord[1] = 1;
-   tex_coord[2] = 1;
-   tex_coord[3] = 1;
-   tex_coord[4] = 0;
-   tex_coord[5] = 0;
-   tex_coord[6] = 1;
-   tex_coord[7] = 0;
 
    color[ 0] = 1.0f;
    color[ 1] = 1.0f;
