@@ -747,15 +747,13 @@ ifeq ($(HAVE_7ZIP),1)
 		deps/7zip/Bcj2.o \
 		deps/7zip/7zCrc.o \
 		deps/7zip/Lzma2Dec.o \
-		deps/7zip/7zBuf.o \
-		decompress/7zip_support.o 
+		deps/7zip/7zBuf.o
    OBJ += $(7ZOBJ)
 endif
 
    OBJ += libretro-common/formats/tga/tga_decode.o
 
 ifeq ($(HAVE_ZLIB), 1)
-   ZLIB_OBJS =	decompress/zip_support.o 
 	OBJ += libretro-common/file/file_extract.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB

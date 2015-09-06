@@ -43,7 +43,6 @@ CONSOLE EXTENSIONS
 
 #ifdef HAVE_ZLIB
 #include "../libretro-common/file/file_extract.c"
-#include "../decompress/zip_support.c"
 #endif
 
 /*============================================================
@@ -868,7 +867,6 @@ DEPENDENCIES
 #include "../deps/7zip/7zCrc.c"
 #include "../deps/7zip/Lzma2Dec.c"
 #include "../deps/7zip/7zBuf.c"
-#include "../decompress/7zip_support.c"
 #endif
 
 /*============================================================
