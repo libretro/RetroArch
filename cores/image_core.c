@@ -19,6 +19,7 @@
 #include "stb_image.h"
 
 #ifdef RARCH_INTERNAL
+#include "internal_cores.h"
 #include "../libretro.h"
 #define IMAGE_CORE_PREFIX(s) libretro_imageviewer_##s
 #else

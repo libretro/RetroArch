@@ -28,6 +28,8 @@
 #include <clamping.h>
 #include <rhash.h>
 
+#include "input_overlay.h"
+
 #include "../configuration.h"
 #include "input_common.h"
 
@@ -1231,7 +1233,7 @@ static void input_overlay_update_desc_geom(input_overlay_t *ol,
  * update the range modifiers for pressed/unpressed regions
  * and alpha mods.
  **/
-void input_overlay_post_poll(float opacity)
+static void input_overlay_post_poll(float opacity)
 {
    size_t i;
    input_overlay_t *ol      = overlay_ptr;
@@ -1277,7 +1279,7 @@ void input_overlay_post_poll(float opacity)
  * Call when there is nothing to poll. Allows overlay to
  * clear certain state.
  **/
-void input_overlay_poll_clear(float opacity)
+static void input_overlay_poll_clear(float opacity)
 {
    size_t i;
    input_overlay_t *ol      = overlay_ptr;
@@ -1335,7 +1337,7 @@ void input_overlay_next(float opacity)
  *
  * Returns: true (1) if overlay is fullscreen, otherwise false (0).
  **/
-bool input_overlay_full_screen(void)
+static bool input_overlay_full_screen(void)
 {
    input_overlay_t *ol      = overlay_ptr;
    if (!ol)

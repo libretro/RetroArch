@@ -14,12 +14,22 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if defined(__CELLOS_LV2__)
+#include <sdk_version.h>
+
+#if (CELL_SDK_VERSION > 0x340000)
+#include <sysutil/sysutil_bgmplayback.h>
+#endif
+
+#endif
+
 #include <file/file_path.h>
 #include <file/config_file.h>
 
+#include "menu_setting.h"
+
 #include "menu.h"
 #include "menu_input.h"
-#include "menu_setting.h"
 #include "menu_hash.h"
 
 #include "../driver.h"
@@ -31,15 +41,6 @@
 #include "../config.def.h"
 #include "../file_ext.h"
 #include "../performance.h"
-
-#if defined(__CELLOS_LV2__)
-#include <sdk_version.h>
-
-#if (CELL_SDK_VERSION > 0x340000)
-#include <sysutil/sysutil_bgmplayback.h>
-#endif
-
-#endif
 
 static void menu_settings_info_list_free(rarch_setting_info_t *list_info)
 {
