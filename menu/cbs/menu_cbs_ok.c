@@ -339,20 +339,18 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx, const char *pa
             sizeof(detect_content_path));
 
    if (hash_label == MENU_LABEL_COLLECTION)
-   {
       return generic_action_ok_displaylist_push(path,
             NULL, 0, idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST_SET);
-   }
 
    switch (ret)
    {
       case -1:
          event_command(EVENT_CMD_LOAD_CORE);
-         ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
-         break;
+         return menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
       case 0:
-         ret = generic_action_ok_displaylist_push(path,
+         return generic_action_ok_displaylist_push(path,
                NULL, 0, idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
+      default:
          break;
    }
 
@@ -1561,11 +1559,11 @@ static int action_ok_load_archive_detect_core(const char *path,
    {
       case -1:
          event_command(EVENT_CMD_LOAD_CORE);
-         ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
-         break;
+         return menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
       case 0:
-         ret = generic_action_ok_displaylist_push(path, label, type,
+         return generic_action_ok_displaylist_push(path, label, type,
                selected, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
+      default:
          break;
    }
 
