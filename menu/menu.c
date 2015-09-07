@@ -151,6 +151,7 @@ int menu_common_load_content(
    global_t *global             = global_get_ptr();
    menu_display_t *disp         = menu_display_get_ptr();
    menu_list_t *menu_list       = menu_list_get_ptr();
+   enum event_command cmd       = EVENT_CMD_NONE;
 
    if (core_path)
    {
@@ -167,19 +168,22 @@ int menu_common_load_content(
    {
       case CORE_TYPE_PLAIN:
       case CORE_TYPE_DUMMY:
-         event_command(persist ? EVENT_CMD_LOAD_CONTENT_PERSIST : EVENT_CMD_LOAD_CONTENT);
+         cmd = persist ? EVENT_CMD_LOAD_CONTENT_PERSIST : EVENT_CMD_LOAD_CONTENT;
          break;
 #ifdef HAVE_FFMPEG
       case CORE_TYPE_FFMPEG:
-         event_command(EVENT_CMD_LOAD_CONTENT_FFMPEG);
+         cmd = EVENT_CMD_LOAD_CONTENT_FFMPEG;
          break;
 #endif
       case CORE_TYPE_IMAGEVIEWER:
 #ifdef HAVE_IMAGEVIEWER
-         event_command(EVENT_CMD_LOAD_CONTENT_IMAGEVIEWER);
+         cmd = EVENT_CMD_LOAD_CONTENT_IMAGEVIEWER;
 #endif
          break;
    }
+
+   if (cmd != EVENT_CMD_NONE)
+      event_command(cmd);
 
    menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
    disp->msg_force = true;
