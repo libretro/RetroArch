@@ -568,8 +568,6 @@ static int generic_action_ok(const char *path,
                video_shader_parse_type(action_path, RARCH_SHADER_NONE),
                action_path);
          break;
-#endif
-#ifdef HAVE_SHADER_MANAGER
       case ACTION_OK_LOAD_SHADER_PASS:
          strlcpy(
                menu->shader->pass[hack_shader_pass].source.path,

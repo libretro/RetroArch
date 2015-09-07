@@ -95,6 +95,7 @@ static int action_select_core_setting(const char *path, const char *label, unsig
    return core_setting_right(type, label, true);
 }
 
+#ifdef HAVE_SHADER_MANAGER
 static int shader_action_parameter_select(const char *path, const char *label, unsigned type,
       size_t idx)
 {
@@ -106,6 +107,7 @@ static int shader_action_parameter_preset_select(const char *path, const char *l
 {
    return shader_action_parameter_preset_right(type, label, true);
 }
+#endif
 
 static int action_select_cheat(const char *path, const char *label, unsigned type,
       size_t idx)
@@ -122,15 +124,17 @@ static int action_select_input_desc(const char *path, const char *label, unsigne
 static int menu_cbs_init_bind_select_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
 {
-   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+   if (type >= MENU_SETTINGS_CHEAT_BEGIN
+         && type <= MENU_SETTINGS_CHEAT_END)
+      cbs->action_select = action_select_cheat;
+#ifdef HAVE_SHADER_MANAGER
+   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       cbs->action_select = shader_action_parameter_select;
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
       cbs->action_select = shader_action_parameter_preset_select;
-   else if (type >= MENU_SETTINGS_CHEAT_BEGIN
-         && type <= MENU_SETTINGS_CHEAT_END)
-      cbs->action_select = action_select_cheat;
+#endif
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
       cbs->action_select = action_select_input_desc;
