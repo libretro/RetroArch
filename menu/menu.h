@@ -195,7 +195,8 @@ void menu_free(menu_handle_t *menu);
  **/
 bool menu_load_content(enum rarch_core_type type);
 
-int menu_common_load_content(bool persist, enum rarch_core_type type);
+int menu_common_load_content(const char *core_path, const char *full_path,
+      bool persist, enum rarch_core_type type);
 
 void menu_common_push_content_settings(void);
 

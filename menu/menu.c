@@ -143,10 +143,25 @@ void menu_common_push_content_settings(void)
    menu_displaylist_push_list(&info, DISPLAYLIST_CONTENT_SETTINGS);
 }
 
-int menu_common_load_content(bool persist, enum rarch_core_type type)
+int menu_common_load_content(
+      const char *core_path, const char *fullpath,
+      bool persist, enum rarch_core_type type)
 {
+   settings_t *settings         = config_get_ptr();
+   global_t *global             = global_get_ptr();
    menu_display_t *disp         = menu_display_get_ptr();
    menu_list_t *menu_list       = menu_list_get_ptr();
+
+   if (core_path)
+   {
+      strlcpy(settings->libretro, core_path, sizeof(settings->libretro));
+      event_command(EVENT_CMD_LOAD_CORE);
+   }
+
+   if (fullpath)
+   {
+      strlcpy(global->path.fullpath, fullpath, sizeof(global->path.fullpath));
+   }
 
    switch (type)
    {

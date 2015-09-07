@@ -294,7 +294,7 @@ static void poll_iteration(void)
                  if (menu->load_no_content && settings->core.set_supports_no_game_enable)
                  {
                      *global->path.fullpath = '\0';
-                     menu_common_load_content(false, CORE_TYPE_PLAIN);
+                     menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
                  }
              }
              else

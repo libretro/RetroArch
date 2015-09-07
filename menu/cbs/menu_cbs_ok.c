@@ -376,7 +376,7 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx, const char *pa
    {
       case -1:
          event_command(EVENT_CMD_LOAD_CORE);
-         ret = menu_common_load_content(false, CORE_TYPE_PLAIN);
+         ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
          break;
       case 0:
          ret = generic_action_ok_displaylist_push(path,
@@ -410,13 +410,8 @@ static int action_ok_file_load_with_detect_core(const char *path,
 static int action_ok_file_load_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings     = config_get_ptr();
-   global_t *global         = global_get_ptr();
-
-   strlcpy(global->path.fullpath, detect_content_path, sizeof(global->path.fullpath));
-   strlcpy(settings->libretro, path, sizeof(settings->libretro));
-   event_command(EVENT_CMD_LOAD_CORE);
-   return menu_common_load_content(false, CORE_TYPE_PLAIN);
+   return menu_common_load_content(path, detect_content_path,
+         false, CORE_TYPE_PLAIN);
 }
 
 
@@ -574,7 +569,7 @@ static int generic_action_ok(const char *path,
          if (menu->load_no_content && settings->core.set_supports_no_game_enable)
          {
             *global->path.fullpath = '\0';
-            ret = menu_common_load_content(false, CORE_TYPE_PLAIN);
+            ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
          }
          else
             ret = 0;
@@ -870,19 +865,12 @@ static int action_ok_core_deferred_set(const char *path,
 static int action_ok_core_load_deferred(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings     = config_get_ptr();
-   global_t *global         = global_get_ptr();
    menu_handle_t *menu      = menu_driver_get_ptr();
 
    if (!menu)
       return -1;
 
-   if (path)
-      strlcpy(settings->libretro, path, sizeof(settings->libretro));
-   strlcpy(global->path.fullpath, menu->deferred_path,
-         sizeof(global->path.fullpath));
-
-   return menu_common_load_content(false, CORE_TYPE_PLAIN);
+   return menu_common_load_content(path, menu->deferred_path, false, CORE_TYPE_PLAIN);
 }
 
 static int action_ok_deferred_list_stub(const char *path,
@@ -901,6 +889,7 @@ static int generic_action_ok_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       enum rarch_core_type action_type, unsigned id)
 {
+   char new_path[PATH_MAX_LENGTH];
    const char *menu_path    = NULL;
    global_t *global         = global_get_ptr();
    menu_list_t   *menu_list = menu_list_get_ptr();
@@ -913,14 +902,14 @@ static int generic_action_ok_file_load(const char *path,
    menu_list_get_last(menu_list->menu_stack,
          &menu_path, NULL, NULL, NULL);
 
-   fill_pathname_join(global->path.fullpath, menu_path, path,
-         sizeof(global->path.fullpath));
+   fill_pathname_join(new_path, menu_path, path,
+         sizeof(new_path));
 
    switch (id)
    {
       case ACTION_OK_FFMPEG:
       case ACTION_OK_IMAGEVIEWER:
-         menu_common_load_content(true, action_type);
+         menu_common_load_content(NULL, new_path, true, action_type);
          break;
       default:
          break;
@@ -949,6 +938,7 @@ static int action_ok_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char menu_path_new[PATH_MAX_LENGTH];
+   char full_path_new[PATH_MAX_LENGTH];
    const char *menu_label   = NULL;
    const char *menu_path    = NULL;
    rarch_setting_t *setting = NULL;
@@ -979,13 +969,13 @@ static int action_ok_file_load(const char *path,
       return action_ok_set_path(path, label, type, idx, entry_idx);
 
    if (type == MENU_FILE_IN_CARCHIVE)
-      fill_pathname_join_delim(global->path.fullpath, menu_path_new, path,
-            '#',sizeof(global->path.fullpath));
+      fill_pathname_join_delim(full_path_new, menu_path_new, path,
+            '#',sizeof(full_path_new));
    else
-      fill_pathname_join(global->path.fullpath, menu_path_new, path,
-            sizeof(global->path.fullpath));
+      fill_pathname_join(full_path_new, menu_path_new, path,
+            sizeof(full_path_new));
 
-   return menu_common_load_content(true, CORE_TYPE_PLAIN);
+   return menu_common_load_content(NULL, full_path_new, true, CORE_TYPE_PLAIN);
 }
 
 
@@ -1560,7 +1550,6 @@ static int action_ok_open_archive(const char *path,
 static int action_ok_load_archive(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   global_t      *global    = global_get_ptr();
    menu_handle_t *menu      = menu_driver_get_ptr();
    const char *menu_path    = menu ? menu->scratch2_buf : NULL;
    const char *content_path = menu ? menu->scratch_buf  : NULL;
@@ -1568,9 +1557,8 @@ static int action_ok_load_archive(const char *path,
    fill_pathname_join(detect_content_path, menu_path, content_path,
          sizeof(detect_content_path));
 
-   strlcpy(global->path.fullpath, detect_content_path, sizeof(global->path.fullpath));
    event_command(EVENT_CMD_LOAD_CORE);
-   menu_common_load_content(false, CORE_TYPE_PLAIN);
+   menu_common_load_content(NULL, detect_content_path, false, CORE_TYPE_PLAIN);
 
    return 0;
 }
@@ -1600,7 +1588,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    {
       case -1:
          event_command(EVENT_CMD_LOAD_CORE);
-         ret = menu_common_load_content(false, CORE_TYPE_PLAIN);
+         ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
          break;
       case 0:
          ret = generic_action_ok_displaylist_push(path, label, type,
