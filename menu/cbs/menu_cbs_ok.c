@@ -311,10 +311,10 @@ static int generic_action_ok_displaylist_push(const char *path,
          info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST);
          break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST_SET:
-         info.directory_ptr = idx;
+         info.directory_ptr                 = idx;
          rdb_entry_start_game_selection_ptr = idx;
-         info_path  = settings->libretro_directory;
-         info_label = menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST_SET);
+         info_path                          = settings->libretro_directory;
+         info_label                         = menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST_SET);
          break;
    }
 
