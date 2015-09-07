@@ -17,6 +17,7 @@
 #include <file/file_path.h>
 
 #include "menu.h"
+#include "menu_cbs.h"
 #include "menu_hash.h"
 #include "menu_shader.h"
 
@@ -126,23 +127,6 @@ bool menu_load_content(enum rarch_core_type type)
    return true;
 }
 
-void menu_common_push_content_settings(void)
-{
-   menu_list_t *menu_list       = menu_list_get_ptr();
-   menu_displaylist_info_t info = {0};
-
-   if (!menu_list)
-      return;
-
-   info.list      = menu_list->selection_buf;
-   strlcpy(info.path, menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS), sizeof(info.path));
-   strlcpy(info.label, menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS), sizeof(info.label));
-
-   menu_list_push(menu_list->menu_stack,
-         info.path, info.label, info.type, info.flags, 0);
-   menu_displaylist_push_list(&info, DISPLAYLIST_CONTENT_SETTINGS);
-}
-
 int menu_common_load_content(
       const char *core_path, const char *fullpath,
       bool persist, enum rarch_core_type type)
@@ -188,7 +172,8 @@ int menu_common_load_content(
    menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
    disp->msg_force = true;
 
-   menu_common_push_content_settings();
+   generic_action_ok_displaylist_push("",
+         "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
 
    return -1;
 }

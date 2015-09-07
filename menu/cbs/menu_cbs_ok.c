@@ -34,44 +34,7 @@ size_t hack_shader_pass = 0;
 char core_updater_path[PATH_MAX_LENGTH];
 #endif
 
-enum
-{
-   ACTION_OK_DL_DEFAULT = 0,
-   ACTION_OK_DL_OPEN_ARCHIVE,
-   ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE,
-   ACTION_OK_DL_HELP,
-   ACTION_OK_DL_RPL_ENTRY,
-   ACTION_OK_DL_RDB_ENTRY,
-   ACTION_OK_DL_RDB_ENTRY_SUBMENU,
-   ACTION_OK_DL_AUDIO_DSP_PLUGIN,
-   ACTION_OK_DL_SHADER_PASS,
-   ACTION_OK_DL_SHADER_PARAMETERS,
-   ACTION_OK_DL_SHADER_PRESET,
-   ACTION_OK_DL_GENERIC,
-   ACTION_OK_DL_PUSH_DEFAULT,
-   ACTION_OK_DL_DOWNLOADS_DIR,
-   ACTION_OK_DL_CONTENT_LIST,
-   ACTION_OK_DL_REMAP_FILE,
-   ACTION_OK_DL_RECORD_CONFIGFILE,
-   ACTION_OK_DL_DISK_IMAGE_APPEND_LIST,
-   ACTION_OK_DL_PLAYLIST_COLLECTION,
-   ACTION_OK_DL_CONTENT_COLLECTION_LIST,
-   ACTION_OK_DL_CHEAT_FILE,
-   ACTION_OK_DL_CORE_LIST,
-   ACTION_OK_DL_CONFIGURATIONS_LIST,
-   ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH,
-   ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE,
-   ACTION_OK_DL_DIRECTORY_PUSH,
-   ACTION_OK_DL_DATABASE_MANAGER_LIST,
-   ACTION_OK_DL_CURSOR_MANAGER_LIST,
-   ACTION_OK_DL_CUSTOM_VIEWPORT,
-   ACTION_OK_DL_CORE_UPDATER_LIST,
-   ACTION_OK_DL_CORE_CONTENT_LIST,
-   ACTION_OK_DL_DEFERRED_CORE_LIST,
-   ACTION_OK_DL_DEFERRED_CORE_LIST_SET
-};
-
-static int generic_action_ok_displaylist_push(const char *path,
+int generic_action_ok_displaylist_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
@@ -95,7 +58,8 @@ static int generic_action_ok_displaylist_push(const char *path,
    menu_list_get_last_stack(menu_list,
          &menu_path, &menu_label, NULL, NULL);
 
-   fill_pathname_join(action_path, menu_path, path, sizeof(action_path));
+   if (path && menu_path)
+      fill_pathname_join(action_path, menu_path, path, sizeof(action_path));
 
    info.list          = menu_list->menu_stack;
 
@@ -316,6 +280,14 @@ static int generic_action_ok_displaylist_push(const char *path,
          info_path                          = settings->libretro_directory;
          info_label                         = menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST_SET);
          break;
+      case ACTION_OK_DL_CONTENT_SETTINGS:
+         dl_type            = DISPLAYLIST_CONTENT_SETTINGS;
+         info.list          = menu_list->selection_buf;
+         info_path          = menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS);
+         info_label         = menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS);
+         menu_list_push(menu_list->menu_stack,
+               info_path, info_label, 0, 0, 0);
+         break;
    }
 
    if (info_label)
@@ -492,7 +464,8 @@ static int action_ok_playlist_entry(const char *path,
             break;
       }
 
-      menu_common_push_content_settings();
+      generic_action_ok_displaylist_push("",
+            "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
    }
 
    return -1;
