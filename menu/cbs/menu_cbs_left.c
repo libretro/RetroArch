@@ -26,13 +26,11 @@
 #include "../../general.h"
 #include "../../retroarch.h"
 
-static int generic_shader_action_parameter_left(unsigned type, const char *label,
-      bool wraparound, unsigned param_id)
+static int generic_shader_action_parameter_left(
+      struct video_shader *shader, struct video_shader_parameter *param,
+      unsigned type, const char *label, bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader          *shader = video_shader_driver_get_current_shader();
-   struct video_shader_parameter *param = &shader->parameters[type - param_id];
-
    if (shader)
    {
       param->current -= param->step;
@@ -45,15 +43,18 @@ static int generic_shader_action_parameter_left(unsigned type, const char *label
 static int shader_action_parameter_left(unsigned type, const char *label,
       bool wraparound)
 {
-   return generic_shader_action_parameter_left(type, label, wraparound,
-         MENU_SETTINGS_SHADER_PARAMETER_0);
+   struct video_shader          *shader = video_shader_driver_get_current_shader();
+   struct video_shader_parameter *param = &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
+   return generic_shader_action_parameter_left(shader, param, type, label, wraparound);
 }
 
 static int shader_action_parameter_preset_left(unsigned type, const char *label,
       bool wraparound)
 {
-   return generic_shader_action_parameter_left(type, label, wraparound,
-         MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
+   menu_handle_t                  *menu = menu_driver_get_ptr();
+   struct video_shader          *shader = menu ? menu->shader : NULL;
+   struct video_shader_parameter *param = &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
+   return generic_shader_action_parameter_left(shader, param, type, label, wraparound);
 }
 
 static int action_left_cheat(unsigned type, const char *label,
