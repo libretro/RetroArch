@@ -98,21 +98,13 @@ static int action_select_core_setting(const char *path, const char *label, unsig
 static int shader_action_parameter_select(const char *path, const char *label, unsigned type,
       size_t idx)
 {
-#ifdef HAVE_SHADER_MANAGER
    return shader_action_parameter_right(type, label, true);
-#else
-   return 0;
-#endif
 }
 
 static int shader_action_parameter_preset_select(const char *path, const char *label, unsigned type,
       size_t idx)
 {
-#ifdef HAVE_SHADER_MANAGER
    return shader_action_parameter_preset_right(type, label, true);
-#else
-   return 0;
-#endif
 }
 
 static int action_select_cheat(const char *path, const char *label, unsigned type,

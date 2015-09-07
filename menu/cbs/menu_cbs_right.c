@@ -50,15 +50,23 @@ static int generic_shader_action_parameter_right(unsigned type, const char *labe
 
 int shader_action_parameter_right(unsigned type, const char *label, bool wraparound)
 {
+#ifdef HAVE_SHADER_MANAGER
    return generic_shader_action_parameter_right(type, label, wraparound,
          MENU_SETTINGS_SHADER_PARAMETER_0);
+#else
+   return 0;
+#endif
 }
 
 int shader_action_parameter_preset_right(unsigned type, const char *label,
       bool wraparound)
 {
+#ifdef HAVE_SHADER_MANAGER
    return generic_shader_action_parameter_right(type, label, wraparound,
          MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
+#else
+   return 0;
+#endif
 }
 
 int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
