@@ -26,17 +26,16 @@
 #include "../../general.h"
 #include "../../retroarch.h"
 
+#ifdef HAVE_SHADER_MANAGER
 static int generic_shader_action_parameter_left(
       struct video_shader *shader, struct video_shader_parameter *param,
       unsigned type, const char *label, bool wraparound)
 {
-#ifdef HAVE_SHADER_MANAGER
    if (shader)
    {
       param->current -= param->step;
       param->current = min(max(param->minimum, param->current), param->maximum);
    }
-#endif
    return 0;
 }
 
@@ -56,6 +55,7 @@ static int shader_action_parameter_preset_left(unsigned type, const char *label,
    struct video_shader_parameter *param = &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
    return generic_shader_action_parameter_left(shader, param, type, label, wraparound);
 }
+#endif
 
 static int action_left_cheat(unsigned type, const char *label,
       bool wraparound)
@@ -390,15 +390,17 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
 static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type, uint32_t label_hash, uint32_t menu_label_hash)
 {
-   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+   if (type >= MENU_SETTINGS_CHEAT_BEGIN
+         && type <= MENU_SETTINGS_CHEAT_END)
+      cbs->action_left = action_left_cheat;
+#ifdef HAVE_SHADER_MANAGER
+   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       cbs->action_left = shader_action_parameter_left;
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
       cbs->action_left = shader_action_parameter_preset_left;
-   else if (type >= MENU_SETTINGS_CHEAT_BEGIN
-         && type <= MENU_SETTINGS_CHEAT_END)
-      cbs->action_left = action_left_cheat;
+#endif
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
       cbs->action_left = action_left_input_desc;
