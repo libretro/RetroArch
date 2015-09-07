@@ -72,17 +72,17 @@ platform=ps3
 SALAMANDER=yes
 EXT=a
 
-GENPS3ISO_PATH=/cygdrive/c/Cobra_ODE_GenPS3iso_v2.3/genps3iso.exe 
+GENPS3ISO_PATH=/cygdrive/c/Cobra_ODE_GenPS3iso_v2.3/genps3iso.exe
 SCETOOL_PATH=/cygdrive/c/Users/aaa801/ps3tools/ps3tools/tools/scetool/scetool.exe
 SCETOOL_FLAGS="--sce-type SELF --compress-data FALSE --self-type APP --key-revision 0004 --self-fw-version 0003004100000000 --self-app-version 0001000000000000 --self-auth-id 1010000001000003 --self-vendor-id 01000002 --self-cap-flags 00000000000000000000000000000000000000000000003b0000000100040000"
 fi
 
-# Cleanup Salamander core if it exists 
+# Cleanup Salamander core if it exists
 if [ $SALAMANDER = "yes" ]; then
 make -C ../ -f Makefile.${platform}.salamander clean || exit 1
 fi
 
-# Cleanup existing core if it exists 
+# Cleanup existing core if it exists
 if [ $PLATFORM = "ode-ps3" ]; then
    make -C ../ -f Makefile.${platform}.cobra clean || exit 1
 elif [ $MAKEFILE_GRIFFIN = "yes" ]; then
@@ -113,7 +113,7 @@ for f in *_${platform}.${EXT} ; do
    cp -f "$f" ../libretro_${platform}.${EXT}
 
    # Do cleanup if this is a big stack core
-   if [ $big_stack="BIG_STACK=1" ] ; then
+   if [ "$big_stack" = "BIG_STACK=1" ] ; then
       if [ $MAKEFILE_GRIFFIN = "yes" ]; then
          make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
       elif [ $PLATFORM = "emscripten" ]; then
@@ -134,7 +134,7 @@ for f in *_${platform}.${EXT} ; do
       make -C ../ -f Makefile.${platform} $whole_archive $big_stack -j3 || exit 1
    fi
 
-   # Do manual executable step 
+   # Do manual executable step
    if [ $PLATFORM = "dex-ps3" ] ; then
       $MAKE_FSELF_NPDRM ../retroarch_${platform}.elf ../CORE.SELF
    elif [ $PLATFORM = "cex-ps3" ] ; then
@@ -178,7 +178,7 @@ for f in *_${platform}.${EXT} ; do
    fi
 
    # Do cleanup if this is a big stack core
-   if [ $big_stack="BIG_STACK=1" ] ; then
+   if [ "$big_stack" = "BIG_STACK=1" ] ; then
       if [ $MAKEFILE_GRIFFIN = "yes" ]; then
          make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
       elif [ $PLATFORM = "emscripten" ]; then
