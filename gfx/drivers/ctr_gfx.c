@@ -166,7 +166,7 @@ static void* ctr_init(const video_info_t* video,
    GPU_DepthMap(-1.0f, 0.0f);
    GPU_SetFaceCulling(GPU_CULL_NONE);
    GPU_SetStencilTest(false, GPU_ALWAYS, 0x00, 0xFF, 0x00);
-   GPU_SetStencilOp(GPU_KEEP, GPU_KEEP, GPU_KEEP);
+   GPU_SetStencilOp(GPU_STENCIL_KEEP, GPU_STENCIL_KEEP, GPU_STENCIL_KEEP);
    GPU_SetBlendingColor(0, 0, 0, 0);
 //      GPU_SetDepthTestAndWriteMask(true, GPU_GREATER, GPU_WRITE_ALL);
    GPU_SetDepthTestAndWriteMask(false, GPU_ALWAYS, GPU_WRITE_ALL);
@@ -332,7 +332,7 @@ static bool ctr_frame(void* data, const void* frame,
 
    ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->frame_coords));
    ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->scale_vector, 1);
-   GPU_DrawArray(GPU_UNKPRIM, 1);
+   GPU_DrawArray(GPU_UNKPRIM, 0, 1);
 
    if (ctr->menu_texture_enable)
    {
@@ -351,7 +351,7 @@ static bool ctr_frame(void* data, const void* frame,
 
       ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->menu.frame_coords));
       ctrGuSetVertexShaderFloatUniform(1, (float*)&ctr->menu.scale_vector, 1);
-      GPU_DrawArray(GPU_UNKPRIM, 1);
+      GPU_DrawArray(GPU_UNKPRIM, 0, 1);
    }
 
    GPU_FinishDrawing();
