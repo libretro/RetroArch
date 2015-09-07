@@ -16,7 +16,6 @@ mkdir -p ../pkg/${platform}/cores/
 make -C ../${platform}/kernel_functions_prx/ clean || exit 1
 make -C ../${platform}/kernel_functions_prx/ || exit 1
 cp -f ../kernel_functions.prx ../pkg/${platform}/kernel_functions.prx
-mv -f ../EBOOT.PBP ../pkg/${platform}/EBOOT.PBP
 
 # Vita
 elif [ $PLATFORM = "vita" ] ; then
@@ -94,6 +93,9 @@ fi
 # Compile Salamander core
 if [ $SALAMANDER = "yes" ]; then
    make -C ../ -f Makefile.${platform}.salamander || exit 1
+   if [ $PLATFORM = "psp1" ] ; then
+   mv -f ../EBOOT.PBP ../pkg/${platform}/EBOOT.PBP
+   fi
 fi
 
 for f in *_${platform}.${EXT} ; do
