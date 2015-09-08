@@ -36,6 +36,7 @@ typedef struct vita_video
    SceGxmTextureFormat format;
    int width;
    int height;
+   SceGxmTextureFilter tex_filter;
 
    bool fullscreen;
    bool vsync;
@@ -94,6 +95,8 @@ static void *vita2d_gfx_init(const video_info_t *video,
    vita->vsync        = video->vsync;
    vita->rgb32        = video->rgb32;
 
+   vita->tex_filter = video->smooth? SCE_GXM_TEXTURE_FILTER_LINEAR : SCE_GXM_TEXTURE_FILTER_POINT;
+
    if (input && input_data)
    {
       pspinput = input_psp.init();
@@ -133,8 +136,8 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
          vita->width = width;
          vita->height = height;
          vita->texture = vita2d_create_empty_texture_format(width, height, vita->format);
+         vita2d_texture_set_texture_filter(vita->texture,vita->tex_filter);
       }
-
       tex_p = vita2d_texture_get_datap(vita->texture);
       stride = vita2d_texture_get_stride(vita->texture);
 
@@ -322,9 +325,12 @@ static bool vita2d_gfx_read_viewport(void *data, uint8_t *buffer)
 
 static void vita_set_filtering(void *data, unsigned index, bool smooth)
 {
-   (void)data;
-   (void)index;
-   (void)smooth;
+  vita_video_t *vita = (vita_video_t *)data;
+
+  if (vita){
+    vita->tex_filter = smooth? SCE_GXM_TEXTURE_FILTER_LINEAR : SCE_GXM_TEXTURE_FILTER_POINT;
+    vita2d_texture_set_texture_filter(vita->texture,vita->tex_filter);
+  }
 }
 
 static void vita_set_aspect_ratio(void *data, unsigned aspectratio_index)
@@ -390,7 +396,7 @@ static void vita_set_texture_frame(void *data, const void *frame, bool rgb32,
       vita->menu.width = width;
       vita->menu.height = height;
    }
-
+   vita2d_texture_set_texture_filter(vita->menu.texture,SCE_GXM_TEXTURE_FILTER_LINEAR);
    tex_p = vita2d_texture_get_datap(vita->menu.texture);
    stride = vita2d_texture_get_stride(vita->menu.texture);
 
