@@ -1681,6 +1681,15 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
    strlcpy(lpl_basename, item->path, sizeof(lpl_basename));
    path_remove_extension(lpl_basename);
 
+   if (!strcmp(lpl_basename, "content_history"))
+   {
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
+            menu_hash_to_str(MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
+            0, 0, 0);
+      return 0;
+   }
+
    if (menu->playlist)
       content_playlist_free(menu->playlist);
 
