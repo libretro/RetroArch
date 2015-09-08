@@ -1255,11 +1255,13 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_EXEC:
       case RETRO_ENVIRONMENT_EXEC_ESCAPE:
-
-         *global->path.fullpath = '\0';
-         if (data)
-            strlcpy(global->path.fullpath, (const char*)data,
-                  sizeof(global->path.fullpath));
+         if (global->path.fullpath != data)
+         {
+            *global->path.fullpath = '\0';
+            if (data)
+               strlcpy(global->path.fullpath, (const char*)data,
+                     sizeof(global->path.fullpath));
+         }
 
 #if defined(RARCH_CONSOLE)
          if (driver->frontend_ctx && driver->frontend_ctx->set_fork)
