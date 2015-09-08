@@ -2633,7 +2633,10 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 #endif
          break;
       case DISPLAYLIST_PLAYLIST_COLLECTION:
+         if (!strcmp(info->path, "content_history.lpl")) { }
+         else
          {
+            RARCH_LOG("GETS HERE, path: %s\n", info->path);
             char path_playlist[PATH_MAX_LENGTH];
             content_playlist_t *playlist        = NULL;
 
@@ -2658,8 +2661,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                need_refresh = true;
                need_push    = true;
             }
+            break;
          }
-         break;
       case DISPLAYLIST_HISTORY:
          {
             char path_playlist[PATH_MAX_LENGTH];
