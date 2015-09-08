@@ -1667,6 +1667,7 @@ static int menu_displaylist_sort_playlist(const content_playlist_entry_t *a,
 
 static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
 {
+   bool is_historylist                 = false;
    char path_playlist[PATH_MAX_LENGTH] = {0};
    char lpl_basename[PATH_MAX_LENGTH]  = {0};
    content_playlist_t *playlist        = NULL;
@@ -1680,15 +1681,6 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
 
    strlcpy(lpl_basename, item->path, sizeof(lpl_basename));
    path_remove_extension(lpl_basename);
-
-   if (!strcmp(lpl_basename, "content_history"))
-   {
-      menu_list_push(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
-            menu_hash_to_str(MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
-            0, 0, 0);
-      return 0;
-   }
 
    if (menu->playlist)
       content_playlist_free(menu->playlist);
@@ -1706,7 +1698,10 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
 
    content_playlist_qsort(playlist, menu_displaylist_sort_playlist);
 
-   menu_displaylist_parse_playlist(info, playlist, path_playlist, false);
+   if (!strcmp(lpl_basename, "content_history"))
+      is_historylist = true;
+
+   menu_displaylist_parse_playlist(info, playlist, path_playlist, is_historylist);
 
    return 0;
 }
@@ -2636,7 +2631,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          if (!strcmp(info->path, "content_history.lpl")) { }
          else
          {
-            RARCH_LOG("GETS HERE, path: %s\n", info->path);
             char path_playlist[PATH_MAX_LENGTH];
             content_playlist_t *playlist        = NULL;
 
