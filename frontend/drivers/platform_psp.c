@@ -223,6 +223,8 @@ static void frontend_psp_init(void *data)
 
    pspFpuSetEnable(0); /* disable FPU exceptions */
    scePowerSetClockFrequency(333,333,166);
+#else
+   scePowerSetArmClockFrequency(444);
 #endif
 #endif
 
