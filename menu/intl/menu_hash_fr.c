@@ -87,11 +87,11 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
          return "Réglages du rembobinage";
       case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
-         return "Set Upper-Left Corner";
+         return "Modifier le coin haut-gauche";
       case MENU_LABEL_CUSTOM_VIEWPORT_2:
          return "custom_viewport_2";
       case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
-         return "Set Bottom-Right Corner";
+         return "Modifier le coin bas-droite";
       case MENU_VALUE_SHADER:
          return "Shader";
       case MENU_VALUE_CHEAT:
@@ -99,7 +99,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_VALUE_USER:
          return "Utilisateur";
       case MENU_LABEL_VALUE_SYSTEM_BGM_ENABLE:
-         return "System BGM Enable";
+         return "Musique du système activée";
       case MENU_VALUE_RETROPAD:
          return "RetroPad";
       case MENU_VALUE_RETROKEYBOARD:
@@ -109,7 +109,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Block Frames";
       case MENU_LABEL_VALUE_INPUT_BIND_MODE:
-         return "Bind Mode";
+         return "Mode mappage";
       case MENU_LABEL_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
          return "autoconfig_descriptor_label_show";
       case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
@@ -117,7 +117,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:
          return "input_descriptor_label_show";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
-         return "Display Core Input Descriptor Labels";
+         return "Afficher les remaps du coeur";
       case MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
          return "input_descriptor_hide_unbound";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
@@ -129,27 +129,27 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_FONT_SIZE:
          return "Taille du texte des messages";
       case MENU_LABEL_VALUE_VIDEO_MESSAGE_POS_X:
-         return "Position sur X";
+         return "Position X";
       case MENU_LABEL_VALUE_VIDEO_MESSAGE_POS_Y:
-         return "Position sur Y";
+         return "Position Y";
       case MENU_LABEL_VALUE_VIDEO_SOFT_FILTER:
-         return "Soft Filter Enable";
+         return "Filtre doux activé";
       case MENU_LABEL_VIDEO_FILTER_FLICKER:
          return "video_filter_flicker";
       case MENU_LABEL_VALUE_VIDEO_FILTER_FLICKER:
-         return "Flicker filter";
+         return "Filtre anti-scintillement";
       case MENU_VALUE_DIRECTORY_CONTENT:
-         return "<Dossier contenus>";
+         return "<Dossier de contenu>";
       case MENU_VALUE_UNKNOWN:
          return "Inconnu";
       case MENU_VALUE_DONT_CARE:
-         return "Don't care";
+         return "Peu importe";
       case MENU_VALUE_LINEAR:
-         return "Linear";
+         return "Linéaire";
       case MENU_VALUE_NEAREST:
-         return "Nearest";
+         return "Au plus proche";
       case MENU_VALUE_DIRECTORY_DEFAULT:
-         return "<Par defaut>";
+         return "<Par défaut>";
       case MENU_VALUE_DIRECTORY_NONE:
          return "<Aucun>";
       case MENU_VALUE_NOT_AVAILABLE:
@@ -223,7 +223,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
          return "Dossier des overlays claviers";
       case MENU_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
-         return "Swap Netplay Input";
+         return "Inverser les entrées du jeu en réseau";
       case MENU_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
          return "Activer le mode spectateur";
       case MENU_LABEL_VALUE_NETPLAY_IP_ADDRESS:
@@ -259,15 +259,15 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_CORE_ENABLE:
          return "Afficher le coeur actuel";
       case MENU_LABEL_VALUE_DPI_OVERRIDE_ENABLE:
-         return "Surcharger le DPI";
+         return "Personnaliser le DPI";
       case MENU_LABEL_VALUE_DPI_OVERRIDE_VALUE:
-         return "DPI personnalisé";
+         return "Valeur du DPI personnalisé";
       case MENU_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE:
-         return "Désactiver l'éconimiseur d'écran";
+         return "Désactiver l'économiseur d'écran";
       case MENU_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION:
          return "Désactiver le compositeur du bureau";
       case MENU_LABEL_VALUE_PAUSE_NONACTIVE:
-         return "Don't run in background";
+         return "Ne pas fonctionner en arrière-plan";
       case MENU_LABEL_VALUE_UI_COMPANION_START_ON_BOOT:
          return "UI Companion Start On Boot";
       case MENU_LABEL_VALUE_UI_MENUBAR_ENABLE:
@@ -287,11 +287,11 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
          return "Utiliser un faux coeur lorsqu'il n'y en a pas";
       case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
-         return "Ne pas démarrer un coeur automatiquement";
+         return "Ne pas démarrer de coeur automatiquement";
       case MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Limiter la vitesse d'exécution";
       case MENU_LABEL_VALUE_FASTFORWARD_RATIO:
-         return "Vitesse d'avance rapide";
+         return "Vitesse de l'avance rapide";
       case MENU_LABEL_VALUE_AUTO_REMAPS_ENABLE:
          return "Charger les fichiers remaps automatiquement";
       case MENU_LABEL_VALUE_SLOWMOTION_RATIO:
@@ -303,7 +303,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
          return "Sauver la config en quittant";
       case MENU_LABEL_VALUE_VIDEO_SMOOTH:
-         return "Filtre bilineaire (HW)";
+         return "Filtre bilinéaire (HW)";
       case MENU_LABEL_VALUE_VIDEO_GAMMA:
          return "Gamma";
       case MENU_LABEL_VALUE_VIDEO_ALLOW_ROTATE:
