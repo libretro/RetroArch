@@ -397,6 +397,11 @@ endif
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
+   ifeq ($(PSEUDOLOC), 1)
+      PSEUDO_NS := pseudo
+   else
+      PSEUDO_NS :=
+   endif
    OBJ += menu/menu.o \
 			 menu/menu_hash.o \
 			 menu/intl/menu_hash_de.o \
@@ -407,7 +412,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/intl/menu_hash_nl.o \
 			 menu/intl/menu_hash_pl.o \
 			 menu/intl/menu_hash_pt.o \
-			 menu/intl/menu_hash_us.o \
+			 menu/intl/menu_hash_us$(PSEUDO_NS).o \
 			 menu/menu_input.o \
 			 menu/menu_entry.o \
 			 menu/menu_entries.o \
