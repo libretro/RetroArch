@@ -311,7 +311,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_HARD_SYNC:
          return "Synchroniser le GPU au CPU";
       case MENU_LABEL_VALUE_VIDEO_SWAP_INTERVAL:
-         return "Intervale de synchro verticale";
+         return "Intervale de synchronisation verticale";
       case MENU_LABEL_VALUE_VIDEO_VSYNC:
          return "Synchronisation verticale";
       case MENU_LABEL_VALUE_VIDEO_THREADED:
@@ -341,11 +341,11 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_VI_WIDTH:
          return "Set VI Screen Width"; /* TODO */
       case MENU_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION:
-         return "Inserer des images noires";
+         return "Insérer des frames noires";
       case MENU_LABEL_VALUE_SORT_SAVEFILES_ENABLE:
          return "Classer les sauvegardes par dossier";
       case MENU_LABEL_VALUE_SORT_SAVESTATES_ENABLE:
-         return "Classer les sauvegardes d'état par dossier";
+         return "Classer les savestates par dossier";
       case MENU_LABEL_VALUE_VIDEO_FULLSCREEN:
          return "Plein écran";
       case MENU_LABEL_VALUE_VIDEO_SCALE:
@@ -357,17 +357,17 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_LIBRETRO_LOG_LEVEL:
          return "Niveau de log des coeurs";
       case MENU_LABEL_VALUE_LOG_VERBOSITY:
-         return "Logs verbeux";
+         return "Niveaux des logs";
       case MENU_LABEL_VALUE_SAVESTATE_AUTO_LOAD:
-         return "Charger automatiquement l'état";
+         return "Charger automatiquement les savestates";
       case MENU_LABEL_VALUE_SAVESTATE_AUTO_INDEX:
-         return "Indice automatique de sauvegarde d'etat";
+         return "Indexer automatiquement les savestates";
       case MENU_LABEL_VALUE_SAVESTATE_AUTO_SAVE:
          return "Sauvegarde automatique";
       case MENU_LABEL_VALUE_AUTOSAVE_INTERVAL:
          return "Intervale de sauvegarde SaveRAM";
       case MENU_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
-         return "Ne pas écraser la SaveRAM en chargeant l'état";
+         return "Ne pas écraser la SaveRAM en chargeant la savestate";
       case MENU_LABEL_VALUE_VIDEO_SHARED_CONTEXT:
          return "Partager le contexte matériel";
       case MENU_LABEL_VALUE_RESTART_RETROARCH:
@@ -375,13 +375,13 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_NETPLAY_NICKNAME:
          return "Nom d'utilisateur";
       case MENU_LABEL_VALUE_USER_LANGUAGE:
-         return "Langue";
+         return "Langage";
       case MENU_LABEL_VALUE_CAMERA_ALLOW:
          return "Autoriser la caméra";
       case MENU_LABEL_VALUE_LOCATION_ALLOW:
          return "Autoriser la localisation";
       case MENU_LABEL_VALUE_PAUSE_LIBRETRO:
-         return "Pause quand le menu est activé";
+         return "Pauser le contenu quand le menu est activé";
       case MENU_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE:
          return "Afficher l'overlay clavier";
       case MENU_LABEL_VALUE_INPUT_OVERLAY_ENABLE:
@@ -389,11 +389,11 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_MONITOR_INDEX:
          return "Écran";
       case MENU_LABEL_VALUE_VIDEO_FRAME_DELAY:
-         return "Delai d'image";
+         return "Délayer les frames";
       case MENU_LABEL_VALUE_INPUT_DUTY_CYCLE:
          return "Rapport de cycle";
       case MENU_LABEL_VALUE_INPUT_TURBO_PERIOD:
-         return "Delai du turbo";
+         return "Délai du turbo";
       case MENU_LABEL_VALUE_INPUT_AXIS_THRESHOLD:
          return "Seuil des axes";
       case MENU_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE:
@@ -411,7 +411,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_REMAP_FILE_SAVE_CORE:
          return "Charger un fichier remaps de coeur";
       case MENU_LABEL_VALUE_REMAP_FILE_SAVE_GAME:
-         return "Charger un fichier remap de jeu";
+         return "Charger un fichier remap de contenu";
       case MENU_LABEL_VALUE_CHEAT_APPLY_CHANGES:
          return "Appliquer les changements";
       case MENU_LABEL_VALUE_SHADER_APPLY_CHANGES:
@@ -447,13 +447,13 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
          return "Charger un fichier de remap";
       case MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS:
-         return "Enregistrer un fichier de remap sous";
+         return "Enregistrer un fichier de remap sous...";
       case MENU_LABEL_VALUE_CUSTOM_RATIO:
          return "Forcer une résolution";
       case MENU_LABEL_VALUE_USE_THIS_DIRECTORY:
          return "<Choisir ce dossier>";
       case MENU_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
-         return "Lancer le contenu";
+         return "Exécuter le contenu";
       case MENU_LABEL_VALUE_DISK_OPTIONS:
          return "Options de disques";
       case MENU_LABEL_VALUE_CORE_OPTIONS:
@@ -531,9 +531,9 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_MANAGEMENT:
          return "Gestion avancée";
       case MENU_LABEL_VALUE_SAVE_STATE:
-         return "Sauvegarder un état";
+         return "Sauvegarder une savestate";
       case MENU_LABEL_VALUE_LOAD_STATE:
-         return "Charger un etat";
+         return "Charger une savestate";
       case MENU_LABEL_VALUE_RESUME_CONTENT:
          return "Reprendre";
       case MENU_LABEL_VALUE_INPUT_DRIVER:
@@ -555,9 +555,9 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE:
          return "Impossible de lire l'archive.";
       case MENU_LABEL_VALUE_OVERLAY_SCALE:
-         return "Zoom de l'Overlay";
+         return "Zoom de l'overlay";
       case MENU_LABEL_VALUE_OVERLAY_PRESET:
-         return "Préréglages d'Overlay";
+         return "Préréglages de l'overlay";
       case MENU_LABEL_VALUE_AUDIO_LATENCY:
          return "Latence audio (ms)";
       case MENU_LABEL_VALUE_AUDIO_DEVICE:
@@ -601,7 +601,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_UPDATE_OVERLAYS:
          return "Mettre à jour les overlays";
       case MENU_LABEL_VALUE_UPDATE_CG_SHADERS:
-         return "Mettre à jour les shaders Cg";
+         return "Mettre à jour les shaders CG";
       case MENU_LABEL_VALUE_UPDATE_GLSL_SHADERS:
          return "Mettre à jour les shaders GLSL";
       case MENU_LABEL_VALUE_CORE_INFO_CORE_NAME:
@@ -721,7 +721,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT:
          return "Support des bibliothèques dynamiques";
       case MENU_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT:
-         return "Support de Cg";
+         return "Support de CG";
       case MENU_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT:
          return "Support de GLSL";
       case MENU_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT:
@@ -729,7 +729,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT:
          return "Support du parser XML libxml2";
       case MENU_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT:
-         return "Support de SDL image";
+         return "Support de SDL_Image";
       case MENU_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT:
          return "Support d'OpenGL/Direct3D render-to-texture (shaders multi-passages)";
       case MENU_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT:
@@ -739,9 +739,9 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT:
          return "Support de FreeType";
       case MENU_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT:
-         return "Support du jeu en réseau (peer-to-peer)";
+         return "Support du jeu en réseau";
       case MENU_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT:
-         return "Support Python (scripting des shaders)";
+         return "Support de Python (scripting des shaders)";
       case MENU_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT:
          return "Support de Video4Linux2";
       case MENU_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT:
@@ -751,7 +751,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_NO:
          return "Non";
       case MENU_VALUE_BACK:
-         return "RETOUR";
+         return "Retour";
       case MENU_LABEL_VALUE_SCREEN_RESOLUTION:
          return "Résolution d'écran";
       case MENU_VALUE_DISABLED:
@@ -849,9 +849,9 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_VALUE_LANG_ESPERANTO:
          return "Esperanto";
       case MENU_VALUE_LEFT_ANALOG:
-         return "Analogique gauche";
+         return "Stick analogique gauche";
       case MENU_VALUE_RIGHT_ANALOG:
-         return "Analogique droite";
+         return "Stick analogique droite";
       case MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS:
          return "Réglages des racourcis d'entrées";
       case MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
