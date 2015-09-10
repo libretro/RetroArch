@@ -150,6 +150,33 @@ static void color_rect(menu_handle_t *menu,
             frame_buf->data[j * (frame_buf->pitch >> 1) + i] = color;
 }
 
+static uint8_t string_walkbyte(const char **string)
+{
+   return *((*string)++);
+}
+
+#ifdef HAVE_UTF8
+/* Does not validate the input, returns garbage if it's not UTF-8. */
+static uint32_t string_walk(const char **string)
+{
+   uint8_t first = string_walkbyte(string);
+   uint32_t ret;
+   
+   if (first<128) return first;
+   
+   ret = 0;
+   ret = (ret<<6) | (string_walkbyte(string)&0x3F);
+   if (first >= 0xE0) ret = (ret<<6) | (string_walkbyte(string)&0x3F);
+   if (first >= 0xF0) ret = (ret<<6) | (string_walkbyte(string)&0x3F);
+   
+   if (first >= 0xF0) return ret | (first&31)<<18;
+   if (first >= 0xE0) return ret | (first&15)<<12;
+   return ret | (first&7)<<6;
+}
+#else
+#define string_walk string_walkbyte
+#endif
+
 static void blit_line(menu_handle_t *menu, int x, int y,
       const char *message, uint16_t color)
 {
@@ -159,14 +186,15 @@ static void blit_line(menu_handle_t *menu, int x, int y,
 
    while (*message)
    {
+      uint32_t symbol = string_walk(&message);
+      
       for (j = 0; j < FONT_HEIGHT; j++)
       {
          for (i = 0; i < FONT_WIDTH; i++)
          {
             uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
             int offset  = (i + j * FONT_WIDTH) >> 3;
-            bool col    = (disp->font.framebuf[FONT_OFFSET
-                  ((unsigned char)*message) + offset] & rem);
+            bool col    = (disp->font.framebuf[FONT_OFFSET(symbol) + offset] & rem);
 
             if (!col)
                continue;
@@ -177,7 +205,6 @@ static void blit_line(menu_handle_t *menu, int x, int y,
       }
 
       x += FONT_WIDTH_STRIDE;
-      message++;
    }
 }
 

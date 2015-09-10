@@ -444,6 +444,10 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/drivers/null.o
 endif
 
+ifeq ($(UTF8), 1)
+   DEFINES += -DHAVE_UTF8
+endif
+
 ifeq ($(HAVE_STB_FONT), 1)
    OBJ += gfx/drivers_font_renderer/stb.o
 endif
