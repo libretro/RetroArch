@@ -61,7 +61,9 @@ COMPATIBILITY
 #include "../compat/compat.c"
 #include "../libretro-common/compat/compat_fnmatch.c"
 #include "../libretro-common/memmap/memalign.c"
+#if !defined(_3DS)
 #include "../libretro-common/memmap/memmap.c"
+#endif
 
 /*============================================================
 CONFIG FILE
