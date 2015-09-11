@@ -185,10 +185,12 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
                PSP_FB_HEIGHT / (float)vita->height);
       else
       {
+         const float radian = 90 * 0.0174532925f;
+         const float rad = vita->rotation * radian;
          float scalex = vita->vp.width / (float)vita->width;
          float scaley = vita->vp.height / (float)vita->height;
-         vita2d_draw_texture_scale(vita->texture, vita->vp.x,
-               vita->vp.y, scalex, scaley);
+         vita2d_draw_texture_scale_rotate(vita->texture, vita->vp.x,
+               vita->vp.y, scalex, scaley, rad);
       }
    }
 
@@ -315,7 +317,12 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita)
    {
       float delta;
       float desired_aspect = video_driver_get_aspect_ratio();
-
+      if (vita->rotation == ORIENTATION_VERTICAL ||
+            vita->rotation == ORIENTATION_FLIPPED_ROTATED){
+              device_aspect = 1.0 / device_aspect;
+              width = PSP_FB_HEIGHT;
+              height = PSP_FB_WIDTH;
+            }
 #if defined(HAVE_MENU)
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
@@ -332,8 +339,7 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita)
       else
 #endif
       {
-         if ((fabsf(device_aspect - desired_aspect) < 0.0001f)
-               || (fabsf((16.0/9.0) - desired_aspect) < 0.02f))
+         if ((fabsf(device_aspect - desired_aspect) < 0.0001f))
          {
             /* If the aspect ratios of screen and desired aspect
              * ratio are sufficiently equal (floating point stuff),
@@ -354,6 +360,12 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita)
             y      = (int)roundf(height * (0.5f - delta));
             height = (unsigned)roundf(2.0f * height * delta);
          }
+
+         if (vita->rotation == ORIENTATION_VERTICAL ||
+               vita->rotation == ORIENTATION_FLIPPED_ROTATED){
+                 x = (PSP_FB_WIDTH - width) * 0.5f;
+                 y = (PSP_FB_HEIGHT - height) * 0.5f;
+               }
       }
 
       vita->vp.x      = x;
@@ -378,8 +390,13 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita)
 static void vita2d_gfx_set_rotation(void *data,
       unsigned rotation)
 {
-   (void)data;
-   (void)rotation;
+  vita_video_t *vita = (vita_video_t*)data;
+
+  if (!vita)
+     return;
+
+  vita->rotation = rotation;
+  vita->should_resize = true;
 }
 
 static void vita2d_gfx_viewport_info(void *data,
