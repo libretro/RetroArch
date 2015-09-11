@@ -134,7 +134,6 @@ OBJ += frontend/frontend.o \
 		libretro-common/string/string_list.o \
 		libretro-common/string/stdstring.o \
 		libretro-common/memmap/memalign.o \
-		libretro-common/memmap/memmap.o \
 		dir_list_special.o \
 		file_ops.o \
 		libretro-common/file/nbio/nbio_stdio.o \
