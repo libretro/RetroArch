@@ -1,8 +1,93 @@
 TARGET := retroarch_3ds
-OBJS :=
-OBJS += gfx/drivers/ctr_sprite.o griffin/griffin.o
-#NO_SMDH = 1
+LIBRETRO = gambatte
+
 DEBUG = 0
+
+APP_TITLE         = Retroarch 3DS
+APP_DESCRIPTION   = Retroarch 3DS
+APP_AUTHOR        = Team Libretro
+APP_PRODUCT_CODE  = RETROARCH-3DS
+APP_UNIQUE_ID     = 0xBAC00
+APP_ICON          = ctr/default.png
+APP_BANNER        = ctr/libretro_banner.png
+APP_AUDIO         = ctr/silent.wav
+
+ifeq ($(LIBRETRO), gambatte)
+	APP_TITLE         = Gambatte Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-GAMBATTE
+	APP_UNIQUE_ID     = 0xBAC01
+	APP_ICON          = ctr/gambatte.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), gpsp)
+	APP_TITLE         = gpSP Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-GPSP
+	APP_UNIQUE_ID     = 0xBAC02
+	APP_ICON          = ctr/gpsp.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), fceumm)
+	APP_TITLE         = FCeumm Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-FCEUMM
+	APP_UNIQUE_ID     = 0xBAC03
+	APP_ICON          = ctr/fceumm.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), nestopia)
+	APP_TITLE         = Nestopia Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-NESTOPIA
+	APP_UNIQUE_ID     = 0xBAC04
+	APP_ICON          = ctr/nestopia.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), nxengine)
+	APP_TITLE         = NXengine Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-NXENGINE
+	APP_UNIQUE_ID     = 0xBAC05
+	APP_ICON          = ctr/nxengine.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), genesis_plus_gx)
+	APP_TITLE         = Genesis Plus GX Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-GENPLUSGX
+	APP_UNIQUE_ID     = 0xBAC06
+	APP_ICON          = ctr/gambatte.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), catsfc)
+	APP_TITLE         = CATSFC Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-CATSFC
+	APP_UNIQUE_ID     = 0xBAC07
+	APP_ICON          = ctr/gambatte.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+endif
+
+
+OBJS :=
+OBJS += gfx/drivers/ctr_sprite.o
+OBJS += griffin/griffin.o
 
 
 ifeq ($(strip $(DEVKITARM)),)
@@ -17,11 +102,20 @@ ifeq ($(strip $(AEMSTRO)),)
 $(error "Please set AEMSTRO in your environment. export AEMSTRO=<path to>aemstro")
 endif
 
+
+
+APP_TITLE         := $(shell echo "$(APP_TITLE)" | cut -c1-128)
+APP_DESCRIPTION   := $(shell echo "$(APP_DESCRIPTION)" | cut -c1-256)
+APP_AUTHOR        := $(shell echo "$(APP_AUTHOR)" | cut -c1-128)
+APP_PRODUCT_CODE  := $(shell echo $(APP_PRODUCT_CODE) | cut -c1-16)
+APP_UNIQUE_ID     := $(shell echo $(APP_UNIQUE_ID) | cut -c1-7)
+
+
 INCDIRS := -I$(CTRULIB)/include
 LIBDIRS := -L. -L$(CTRULIB)/lib
 
 
-ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard
+ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp
 
 CFLAGS	+=	-mword-relocations \
 			-fomit-frame-pointer -ffast-math \
@@ -45,8 +139,9 @@ CFLAGS += -DHAVE_ZLIB -DHAVE_RPNG -DWANT_ZLIB -DHAVE_BUILTIN_AUTOCONFIG
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
-ASFLAGS	:=	-g $(ARCH)
+ASFLAGS	:=	-g $(ARCH) -O3
 LDFLAGS   =	-specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+
 CFLAGS   += -std=gnu99 -ffast-math
 
 
@@ -56,34 +151,16 @@ LIBS	:= -lretro_ctr -lctru -lm
 
 .PHONY: $(BUILD) clean all
 
-#---------------------------------------------------------------------------------
 all: $(TARGET)
 
-clean:
-	rm -f $(OBJS)
-	rm -f $(TARGET).3dsx
-	rm -f $(TARGET).elf
+$(TARGET): $(TARGET).3dsx $(TARGET).smdh $(TARGET).cia
+$(TARGET).3dsx: $(TARGET).elf
+$(TARGET).elf: $(OBJS) libretro_ctr.a
 
+ctr_sprite_shader_shbin.h: gfx/drivers/ctr_sprite.o
+gfx/drivers/ctr_gfx.c: ctr_sprite_shader_shbin.h
+griffin/griffin.c: gfx/drivers/ctr_gfx.c
 
-$(TARGET): $(TARGET).3dsx
-$(TARGET).3dsx	:	$(TARGET).elf
-$(TARGET).elf	:	$(OBJS)
-
-ifeq ($(strip $(APP_TITLE)),)
-APP_TITLE	:=	$(notdir $(TARGET))
-endif
-
-ifeq ($(strip $(APP_DESCRIPTION)),)
-APP_DESCRIPTION	:=	Built with devkitARM & libctru
-endif
-
-ifeq ($(strip $(APP_AUTHOR)),)
-APP_AUTHOR	:=	Unspecified Author
-endif
-
-ifeq ($(strip $(APP_ICON)),)
-APP_ICON	:=	$(CTRULIB)/default_icon.png
-endif
 
 PREFIX		:=	$(DEVKITARM)/bin/arm-none-eabi-
 
@@ -96,10 +173,19 @@ STRIP   := $(PREFIX)strip
 NM      := $(PREFIX)nm
 LD      := $(CXX)
 
+ifneq ($(findstring Linux,$(shell uname -a)),)
+	MAKEROM = ctr/tools/makerom-linux
+	BANNERTOOL = ctr/tools/bannertool-linux
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+	MAKEROM = ctr/tools/makerom-mac
+	BANNERTOOL = ctr/tools/bannertool-mac
+else
+	MAKEROM = ctr/tools/makerom.exe
+	BANNERTOOL = ctr/tools/bannertool.exe
+endif
+
 
 %.o: %.shader
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
 	python $(AEMSTRO)/aemstro_as.py $< $(notdir $<).shbin
 	$(DEVKITARM)/bin/bin2s $(notdir $<).shbin | $(PREFIX)as -o $@
 	echo "extern const u8" `(echo $(notdir $<).shbin | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(notdir $<).shbin | tr . _)`.h
@@ -125,22 +211,42 @@ LD      := $(CXX)
 
 %.vsh:
 
-#---------------------------------------------------------------------------------
-%.smdh: $(APP_ICON) $(MAKEFILE_LIST)
-	@echo building ... $(notdir $@)
+%.smdh: $(APP_ICON)
 	smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
 
-#---------------------------------------------------------------------------------
 %.3dsx: %.elf
-	@echo building ... $(notdir $@)
-	3dsxtool $< $@ $(_3DSXFLAGS)
+	-3dsxtool $< $@ $(_3DSXFLAGS)
 
-#---------------------------------------------------------------------------------
-%.elf: .FORCE
-	@echo linking $(notdir $@)
+%.elf:
 	$(LD) $(LDFLAGS) $(OBJS) $(LIBDIRS) $(LIBS) -o $@
 	$(NM) -CSn $@ > $(notdir $*.lst)
 
+$(TARGET).bnr: $(APP_BANNER) $(APP_AUDIO)
+	$(BANNERTOOL) makebanner -i "$(APP_BANNER)" -a "$(APP_AUDIO)" -o $@
 
-.PHONY: .FORCE
+$(TARGET).icn: $(APP_ICON)
+	$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_TITLE)" -p "$(APP_AUTHOR)" -i $(APP_ICON) -o $@
+
+$(TARGET).rsf: ctr/tools/template-cia.rsf
+	cat ctr/tools/template-cia.rsf | sed 's/{APP_TITLE}/$(APP_TITLE)/' | sed 's/{APP_PRODUCT_CODE}/$(APP_PRODUCT_CODE)/' | sed 's/{APP_UNIQUE_ID}/$(APP_UNIQUE_ID)/' > $@
+
+$(TARGET)_stripped.elf: $(TARGET).elf
+	cp $(TARGET).elf $@
+	$(STRIP) $@
+
+$(TARGET).cia: $(TARGET)_stripped.elf $(TARGET).bnr $(TARGET).icn $(TARGET).rsf
+	$(MAKEROM) -f cia -o $@ -rsf $(TARGET).rsf -target t -exefslogo -elf $(TARGET)_stripped.elf -icon $(TARGET).icn -banner $(TARGET).bnr
+
+clean:
+	rm -f $(OBJS)
+	rm -f $(TARGET).3dsx
+	rm -f $(TARGET).elf
+	rm -f $(TARGET)_stripped.elf
+	rm -f $(TARGET).cia
+	rm -f $(TARGET).bnr
+	rm -f $(TARGET).icn
+	rm -f $(TARGET).rsf
+	rm -f *_shader_shbin.h
+
+.PHONY: clean
 

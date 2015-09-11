@@ -27,6 +27,9 @@ EXT=a
 elif [ $PLATFORM = "ctr" ] ; then
 platform=ctr
 EXT=a
+mkdir -p ../pkg/3ds/elf
+mkdir -p ../pkg/3ds/cia
+mkdir -p ../pkg/3ds/3ds
 
 # Emscripten
 elif [ $PLATFORM = "emscripten" ] ; then
@@ -137,6 +140,8 @@ for f in *_${platform}.${EXT} ; do
       make -C ../ -f Makefile.griffin platform=${platform} $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "emscripten" ]; then
       make -C ../ -f Makefile.emscripten LTO=$lto -j7 || exit 1
+   elif [ $PLATFORM = "ctr" ]; then
+      make -C ../ -f Makefile.${platform} LIBRETRO=$name $whole_archive $big_stack -j3 || exit 1
    else
       make -C ../ -f Makefile.${platform} $whole_archive $big_stack -j3 || exit 1
    fi
@@ -162,8 +167,11 @@ for f in *_${platform}.${EXT} ; do
    elif [ $PLATFORM = "vita" ] ; then
       mv -f ../retroarch_${platform}.velf ../pkg/${platform}/${name}_libretro_${platform}.velf
    elif [ $PLATFORM = "ctr" ] ; then
-      mkdir -p ../pkg/3ds/${name}_libretro
-      mv -f ../retroarch_3ds.3dsx ../pkg/3ds/${name}_libretro/${name}_libretro.3dsx
+      mv -f ../retroarch_3ds.cia ../pkg/3ds/cia/${name}_libretro.cia
+      mv -f ../retroarch_3ds.elf ../pkg/3ds/elf/${name}_libretro.elf
+      mkdir -p ../pkg/3ds/3ds/${name}_libretro
+      mv -f ../retroarch_3ds.3dsx ../pkg/3ds/3ds/${name}_libretro/${name}_libretro.3dsx
+      mv -f ../retroarch_3ds.smdh ../pkg/3ds/3ds/${name}_libretro/${name}_libretro.smdh
    elif [ $PLATFORM = "ngc" ] ; then
       mv -f ../retroarch_${platform}.dol ../pkg/${platform}/${name}_libretro_${platform}.dol
    elif [ $PLATFORM = "wii" ] ; then
@@ -180,7 +188,10 @@ for f in *_${platform}.${EXT} ; do
    elif [ $PLATFORM = "vita" ] ; then
       rm -f ../retroarch_${platform}.velf ../retroarch_${platform}.elf
    elif [ $PLATFORM = "ctr" ] ; then
-      rm -f ../retroarch_3ds.elf
+      rm -f ../retroarch_3ds_stripped.elf
+      rm -f ../retroarch_3ds.rsf
+      rm -f ../retroarch_3ds.bnr
+      rm -f ../retroarch_3ds.icn
    elif [ $PLATFORM = "ngc" ] ; then
       rm -f ../retroarch_${platform}.dol ../retroarch_${platform}.elf ../retroarch_${platform}.elf.map
    elif [ $PLATFORM = "wii" ] ; then
