@@ -151,12 +151,6 @@ done:
    data->output_frames = outp - (audio_frame_float_t*)data->data_out;
 }
 
-
-static void resampler_CC_free(void *re_)
-{
-   (void)re_;
-}
-
 static void *resampler_CC_init(const struct resampler_config *config,
       double bandwidth_mod, resampler_simd_mask_t mask)
 {
@@ -497,12 +491,6 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
       re->process(re_, data);
 }
 
-static void resampler_CC_free(void *re_)
-{
-   rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
-   if (re)
-      memalign_free(re);
-}
 
 static void *resampler_CC_init(const struct resampler_config *config,
       double bandwidth_mod, resampler_simd_mask_t mask)
@@ -542,6 +530,16 @@ static void *resampler_CC_init(const struct resampler_config *config,
    return re;
 }
 #endif
+
+static void resampler_CC_free(void *re_)
+{
+#ifndef _MIPS_ARCH_ALLEGREX
+   rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
+   if (re)
+      memalign_free(re);
+#endif
+   (void)re_;
+}
 
 rarch_resampler_t CC_resampler = {
    resampler_CC_init,
