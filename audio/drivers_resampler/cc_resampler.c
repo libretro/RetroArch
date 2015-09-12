@@ -185,19 +185,16 @@ static void *resampler_CC_init(const struct resampler_config *config,
 
 static void resampler_CC_downsample(void *re_, struct resampler_data *data)
 {
-   __m128 vec_previous, vec_current;
-   float ratio, b;
    rarch_CC_resampler_t *re     = (rarch_CC_resampler_t*)re_;
 
    audio_frame_float_t *inp     = (audio_frame_float_t*)data->data_in;
    audio_frame_float_t *inp_max = (audio_frame_float_t*)(inp + data->input_frames);
    audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
+   float ratio                  = 1.0 / data->ratio;
+   float b                      = data->ratio; /* cutoff frequency. */
 
-   ratio = 1.0 / data->ratio;
-   b = data->ratio; /* cutoff frequency. */
-
-   vec_previous = _mm_loadu_ps((float*)&re->buffer[0]);
-   vec_current  = _mm_loadu_ps((float*)&re->buffer[2]);
+   __m128 vec_previous          = _mm_loadu_ps((float*)&re->buffer[0]);
+   __m128 vec_current           = _mm_loadu_ps((float*)&re->buffer[2]);
 
    while (inp != inp_max)
    {
