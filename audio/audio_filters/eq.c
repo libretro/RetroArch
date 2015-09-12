@@ -119,10 +119,9 @@ static int gains_cmp(const void *a_, const void *b_)
    const struct eq_gain *b = (const struct eq_gain*)b_;
    if (a->freq < b->freq)
       return -1;
-   else if (a->freq > b->freq)
+   if (a->freq > b->freq)
       return 1;
-   else
-      return 0;
+   return 0;
 }
 
 static void generate_response(fft_complex_t *response,
