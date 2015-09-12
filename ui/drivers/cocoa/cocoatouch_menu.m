@@ -568,6 +568,11 @@ titleForHeaderInSection:(NSInteger)section
    return [[self itemForIndexPath:indexPath] cellForTableView:tableView];
 }
 
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    return UITableViewAutomaticDimension;
+}
+
 - (void)tableView:(UITableView *)tableView
 didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
