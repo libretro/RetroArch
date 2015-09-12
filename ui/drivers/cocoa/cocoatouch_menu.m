@@ -618,11 +618,21 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     UIAlertView *message = [[UIAlertView alloc] initWithTitle:@"Help"
                                                       message:msg
-                                                     delegate:nil
+                                                     delegate:self
                                             cancelButtonTitle:@"OK"
                                             otherButtonTitles:nil];
      
     [message show];
+}
+
+- (void)alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    switch (buttonIndex)
+    {
+        case 0:
+            menu_iterate(true, MENU_ACTION_OK);
+            break;
+    }
 }
 
 @end
