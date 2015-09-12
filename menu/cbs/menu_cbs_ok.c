@@ -860,7 +860,6 @@ static int generic_action_ok_file_load(const char *path,
 {
    char new_path[PATH_MAX_LENGTH];
    const char *menu_path    = NULL;
-   global_t *global         = global_get_ptr();
    menu_list_t   *menu_list = menu_list_get_ptr();
 
    (void)id;
@@ -911,7 +910,6 @@ static int action_ok_file_load(const char *path,
    const char *menu_label   = NULL;
    const char *menu_path    = NULL;
    rarch_setting_t *setting = NULL;
-   global_t *global         = global_get_ptr();
    menu_handle_t *menu      = menu_driver_get_ptr();
    menu_list_t   *menu_list = menu_list_get_ptr();
 
