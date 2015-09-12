@@ -594,24 +594,25 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    // Option 1. This is like how setting app works, but not exactly.
    // There is a typedef for the 'withRowAnimation' that has lots of
    // options, just Google UITableViewRowAnimation
+#if 0
 
    [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0]
                  withRowAnimation:UITableViewRowAnimationAutomatic];
+#else
 
-   // Optione 2. This is a "bigger" transistion, but doesn't look as
+   // Option 2. This is a "bigger" transition, but doesn't look as
    // much like Settings. It has more options. Just Google
    // UIViewAnimationOptionTransition
 
-   /*
    [UIView transitionWithView:self.tableView
-                     duration:0.35f
-                      options:UIViewAnimationOptionTransitionCurlUp
+                     duration:0.40f
+                      options:UIViewAnimationOptionTransitionCrossDissolve
                    animations:^(void)
            {
              [self.tableView reloadData];
            }
    completion: nil];
-   */
+#endif
 }
 
 -(void)renderMessageBox:(NSString *)msg
