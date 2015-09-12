@@ -427,9 +427,7 @@ int deferred_push_content_list(void *data, void *userdata, const char *path,
       const char *label, unsigned type)
 {
    menu_list_t *menu_list = menu_list_get_ptr();
-   if (!menu_list)
-      return -1;
-   return menu_displaylist_push((file_list_t*)data, menu_list->selection_buf);
+   return action_refresh_default((file_list_t*)data, menu_list->selection_buf);
 }
 
 static int deferred_push_database_manager_list(menu_displaylist_info_t *info)

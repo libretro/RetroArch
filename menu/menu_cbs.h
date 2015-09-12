@@ -71,6 +71,8 @@ extern char core_updater_path[PATH_MAX_LENGTH];
 
 /* Function callbacks */
 
+int action_refresh_default(file_list_t *list, file_list_t *menu_list);
+
 int shader_action_parameter_right(unsigned type, const char *label, bool wraparound);
 
 int shader_action_parameter_preset_right(unsigned type, const char *label,
