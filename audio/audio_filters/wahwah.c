@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define wahwahlfoskipsamples 30
+#define WAHWAH_LFO_SKIP_SAMPLES 30
 
 #ifndef M_PI
 #define M_PI		3.1415926535897932384626433832795
@@ -42,25 +42,27 @@ struct wahwah_data
 
 static void wahwah_free(void *data)
 {
-   free(data);
+   if (data)
+      free(data);
 }
 
 static void wahwah_process(void *data, struct dspfilter_output *output,
       const struct dspfilter_input *input)
 {
    unsigned i;
+   float *out;
    struct wahwah_data *wah = (struct wahwah_data*)data;
 
-   output->samples = input->samples;
-   output->frames  = input->frames;
-   float *out = output->samples;
+   output->samples         = input->samples;
+   output->frames          = input->frames;
+   out                     = output->samples;
 
    for (i = 0; i < input->frames; i++, out += 2)
    {
       float out_l, out_r;
       float in[2] = { out[0], out[1] };
 
-      if ((wah->skipcount++ % wahwahlfoskipsamples) == 0)
+      if ((wah->skipcount++ % WAHWAH_LFO_SKIP_SAMPLES) == 0)
       {
          float omega, sn, cs, alpha;
          float frequency = (1.0 + cos(wah->skipcount * wah->lfoskip + wah->phase)) / 2.0;
@@ -94,8 +96,8 @@ static void wahwah_process(void *data, struct dspfilter_output *output,
       wah->r.yn2 = wah->r.yn1;
       wah->r.yn1 = out_r;
 
-      out[0] = out_l;
-      out[1] = out_r;
+      out[0]     = out_l;
+      out[1]     = out_r;
    }
 }
 

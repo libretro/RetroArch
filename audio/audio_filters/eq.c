@@ -65,14 +65,17 @@ static void eq_free(void *data)
 static void eq_process(void *data, struct dspfilter_output *output,
       const struct dspfilter_input *input)
 {
+   float *out;
+   const float *in;
+   unsigned input_frames;
    struct eq_data *eq = (struct eq_data*)data;
 
-   output->samples = eq->buffer;
-   output->frames  = 0;
+   output->samples    = eq->buffer;
+   output->frames     = 0;
 
-   float *out = eq->buffer;
-   const float *in = input->samples;
-   unsigned input_frames = input->frames;
+   out                = eq->buffer;
+   in                 = input->samples;
+   input_frames       = input->frames;
 
    while (input_frames)
    {
