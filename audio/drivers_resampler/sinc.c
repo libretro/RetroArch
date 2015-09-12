@@ -25,6 +25,7 @@
 #endif
 
 #include <retro_inline.h>
+#include <filters.h>
 #include <memalign.h>
 
 #include "../audio_resampler_driver.h"
@@ -116,43 +117,9 @@ typedef struct rarch_sinc_resampler
    float *main_buffer;
 } rarch_sinc_resampler_t;
 
-static INLINE double sinc(double val)
-{
-   if (fabs(val) < 0.00001)
-      return 1.0;
-   return sin(val) / val;
-}
-
 #if defined(SINC_WINDOW_LANCZOS)
 #define window_function(idx)  (sinc(M_PI * (idx)))
 #elif defined(SINC_WINDOW_KAISER)
-/* Modified Bessel function of first order.
- * Check Wiki for mathematical definition ... */
-static INLINE double besseli0(double x)
-{
-   unsigned i;
-   double sum            = 0.0;
-   double factorial      = 1.0;
-   double factorial_mult = 0.0;
-   double x_pow          = 1.0;
-   double two_div_pow    = 1.0;
-   double x_sqr          = x * x;
-
-   /* Approximate. This is an infinite sum.
-    * Luckily, it converges rather fast. */
-   for (i = 0; i < 18; i++)
-   {
-      sum += x_pow * two_div_pow / (factorial * factorial);
-
-      factorial_mult += 1.0;
-      x_pow *= x_sqr;
-      two_div_pow *= 0.25;
-      factorial *= factorial_mult;
-   }
-
-   return sum;
-}
-
 #define window_function(idx) (besseli0(SINC_WINDOW_KAISER_BETA * sqrt(1 - (idx) * (idx))))
 #else
 #error "No SINC window function defined."
