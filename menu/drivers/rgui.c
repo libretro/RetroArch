@@ -26,6 +26,7 @@
 #include <file/file_path.h>
 #include <retro_inline.h>
 
+#include "general.h"
 #include "../menu.h"
 #include "../menu_hash.h"
 #include "../menu_video.h"
