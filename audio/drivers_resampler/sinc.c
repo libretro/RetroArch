@@ -426,7 +426,7 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    (void)config;
 
    re->taps = TAPS;
-   cutoff = CUTOFF;
+   cutoff   = CUTOFF;
 
    /* Downsampling, must lower cutoff, and extend number of 
     * taps accordingly to keep same stopband attenuation. */

@@ -13,8 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../resamplers/resampler.h"
-#include "../audio_utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -22,6 +20,9 @@
 #include <string.h>
 #include <assert.h>
 #include <stdbool.h>
+
+#include "../audio_resampler_driver.h"
+#include "../audio_utils.h"
 
 #ifndef RESAMPLER_IDENT
 #define RESAMPLER_IDENT "sinc"
