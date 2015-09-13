@@ -1,0 +1,134 @@
+
+
+ifeq ($(LIBRETRO), gambatte)
+	APP_TITLE         = Gambatte Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-GAMBATTE
+	APP_UNIQUE_ID     = 0xBAC01
+	APP_ICON          = ctr/gambatte.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), gpsp)
+	APP_TITLE         = gpSP Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-GPSP
+	APP_UNIQUE_ID     = 0xBAC02
+	APP_ICON          = ctr/gpsp.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), fceumm)
+	APP_TITLE         = FCeumm Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-FCEUMM
+	APP_UNIQUE_ID     = 0xBAC03
+	APP_ICON          = ctr/fceumm.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), nestopia)
+	APP_TITLE         = Nestopia Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-NESTOPIA
+	APP_UNIQUE_ID     = 0xBAC04
+	APP_ICON          = ctr/nestopia.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+	BUILD_3DSX        = 0
+
+else ifeq ($(LIBRETRO), nxengine)
+	APP_TITLE         = NXengine Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-NXENGINE
+	APP_UNIQUE_ID     = 0xBAC05
+	APP_ICON          = ctr/nxengine.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), genesis_plus_gx)
+	APP_TITLE         = Genesis Plus GX Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-GENPLUSGX
+	APP_UNIQUE_ID     = 0xBAC06
+	APP_ICON          = ctr/genesis_plus_gx.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), catsfc)
+	APP_TITLE         = CATSFC Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-CATSFC
+	APP_UNIQUE_ID     = 0xBAC07
+	APP_ICON          = ctr/catsfc.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), mednafen_wswan)
+	APP_TITLE         = Mednafen wswan Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-M-WSWAN
+	APP_UNIQUE_ID     = 0xBAC08
+	APP_ICON          = ctr/mednafen_wswan.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), mednafen_vb)
+	APP_TITLE         = Mednafen VB Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-M-VB
+	APP_UNIQUE_ID     = 0xBAC09
+	APP_ICON          = ctr/mednafen_vb.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), mednafen_ngp)
+	APP_TITLE         = Mednafen NGP Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-M-NGP
+	APP_UNIQUE_ID     = 0xBAC0A
+	APP_ICON          = ctr/mednafen_ngp.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), 2048)
+	APP_TITLE         = 2048 Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-2048
+	APP_UNIQUE_ID     = 0xBAC0B
+	APP_ICON          = ctr/2048.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), picodrive)
+	APP_TITLE         = Picodrive Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-PICODRIVE
+	APP_UNIQUE_ID     = 0xBAC0C
+	APP_ICON          = ctr/picodrive.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), snes9x_next)
+	APP_TITLE         = Snes9x Next Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-SNES9XNEXT
+	APP_UNIQUE_ID     = 0xBAC0D
+	APP_ICON          = ctr/snes9x_next.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+endif

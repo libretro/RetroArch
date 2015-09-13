@@ -26,10 +26,12 @@
 #endif
 
 #include "../../general.h"
+#include "retroarch.h"
 
 #ifdef IS_SALAMANDER
 #include "../../file_ext.h"
 #else
+#include "../../menu/menu.h"
 #include "../../menu/menu_list.h"
 #endif
 
