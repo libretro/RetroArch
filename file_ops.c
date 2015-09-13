@@ -653,7 +653,7 @@ bool write_file(const char *path, const void *data, ssize_t size)
  */
 static int read_generic_file(const char *path, void **buf, ssize_t *len)
 {
-   long ret                 = 0;
+   size_t bytes_read        = 0;
    ssize_t content_buf_size = 0;
    void *content_buf        = NULL;
    FILE *file               = fopen(path, "rb");
@@ -675,7 +675,7 @@ static int read_generic_file(const char *path, void **buf, ssize_t *len)
    if (!content_buf)
       goto error;
 
-   if ((ret = fread(content_buf, 1, content_buf_size, file)) < content_buf_size)
+   if ((bytes_read = fread(content_buf, 1, content_buf_size, file)) < content_buf_size)
       RARCH_WARN("Didn't read whole file.\n");
 
    *buf    = content_buf;
@@ -688,7 +688,7 @@ static int read_generic_file(const char *path, void **buf, ssize_t *len)
       RARCH_WARN("Failed to close file stream.\n");
 
    if (len)
-      *len = ret;
+      *len = bytes_read;
 
    return 1;
 
