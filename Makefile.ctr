@@ -3,7 +3,9 @@ LIBRETRO =
 
 DEBUG = 0
 GRIFFIN_BUILD = 1
-
+WHOLE_ARCHIVE_LINK = 0
+BUILD_3DSX = 1
+BUILD_CIA  = 1
 
 APP_TITLE         = Retroarch 3DS
 APP_DESCRIPTION   = Retroarch 3DS
@@ -256,6 +258,12 @@ ifeq ($(DEBUG), 1)
 else
    CFLAGS	+= -O3
 endif
+
+ifeq ($(WHOLE_ARCHIVE_LINK), 1)
+   WHOLE_START := -Wl,--whole-archive
+   WHOLE_END := -Wl,--no-whole-archive
+endif
+
 CFLAGS += -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include
 
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE -DSINC_LOWEST_QUALITY
@@ -272,15 +280,22 @@ LDFLAGS   =	-specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 CFLAGS   += -std=gnu99 -ffast-math
 
 
-LIBS	:= -lretro_ctr -lctru -lm
+LIBS	:= $(WHOLE_START) -lretro_ctr $(WHOLE_END) -lctru -lm
 
 
+ifeq ($(BUILD_3DSX), 1)
+TARGET_3DSX := $(TARGET).3dsx $(TARGET).smdh
+endif
+
+ifeq ($(BUILD_CIA), 1)
+TARGET_CIA := $(TARGET).cia
+else
 
 .PHONY: $(BUILD) clean all
 
 all: $(TARGET)
 
-$(TARGET): $(TARGET).3dsx $(TARGET).smdh $(TARGET).cia
+$(TARGET): $(TARGET_3DSX) $(TARGET_CIA)
 $(TARGET).3dsx: $(TARGET).elf
 $(TARGET).elf: $(OBJS) libretro_ctr.a
 
