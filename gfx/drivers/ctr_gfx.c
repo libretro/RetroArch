@@ -253,7 +253,6 @@ static bool ctr_frame(void* data, const void* frame,
    svcWaitSynchronization(gspEvents[GSPEVENT_PPF], 20000000);
    svcClearEvent(gspEvents[GSPEVENT_PPF]);
 
-   gfxSwapBuffersGpu();   
    frames++;
 
    if (ctr->vsync)
@@ -361,6 +360,7 @@ static bool ctr_frame(void* data, const void* frame,
    ctrGuDisplayTransfer(true, CTR_GPU_FRAMEBUFFER, 240,400, CTRGU_RGBA8,
                         gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL), 240,400,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
+   gfxSwapBuffersGpu();
    RARCH_PERFORMANCE_STOP(ctrframe_f);
 
    return true;
