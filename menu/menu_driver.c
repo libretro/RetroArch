@@ -19,7 +19,7 @@
 
 #include "menu.h"
 #include "menu_video.h"
-#include "general.h"
+#include "../general.h"
 
 static bool menu_alive = false;
 
