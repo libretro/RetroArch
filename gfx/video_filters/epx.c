@@ -110,10 +110,10 @@ static void EPX_16(int width, int height,
       uint16_t *src, unsigned src_stride, uint16_t *dst,
       unsigned dst_stride)
 {
+	int		w, prevline;
 	uint16_t	colorX, colorA, colorB, colorC, colorD;
 	uint16_t	*sP = NULL, *uP = NULL, *lP = NULL;
 	uint32_t	*dP1 = NULL, *dP2 = NULL;
-	int		w, prevline;
 
    if (!src || !dst)
       return;
@@ -398,8 +398,9 @@ static void epx_generic_packets(void *data,
       void *output, size_t output_stride,
       const void *input, unsigned width, unsigned height, size_t input_stride)
 {
-   struct filter_data *filt = (struct filter_data*)data;
    unsigned i;
+   struct filter_data *filt = (struct filter_data*)data;
+
    for (i = 0; i < filt->threads; i++)
    {
       struct softfilter_thread_data *thr = 
