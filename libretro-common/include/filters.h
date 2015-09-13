@@ -60,4 +60,14 @@ static INLINE double besseli0(double x)
    return sum;
 }
 
+static INLINE double kaiser_window_function(double index, double beta)
+{
+   return besseli0(beta * sqrtf(1 - index * index));
+}
+
+static INLINE double lanzcos_window_function(double index)
+{
+   return sinc(M_PI * index);
+}
+
 #endif

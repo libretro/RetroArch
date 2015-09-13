@@ -118,9 +118,9 @@ typedef struct rarch_sinc_resampler
 } rarch_sinc_resampler_t;
 
 #if defined(SINC_WINDOW_LANCZOS)
-#define window_function(idx)  (sinc(M_PI * (idx)))
+#define window_function(idx)  (lanzcos_window_function(idx))
 #elif defined(SINC_WINDOW_KAISER)
-#define window_function(idx) (besseli0(SINC_WINDOW_KAISER_BETA * sqrt(1 - (idx) * (idx))))
+#define window_function(idx)  (kaiser_window_function(idx, SINC_WINDOW_KAISER_BETA))
 #else
 #error "No SINC window function defined."
 #endif
