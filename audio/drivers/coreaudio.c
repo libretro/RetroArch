@@ -13,12 +13,8 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include "../../driver.h"
-#include "../../general.h"
-#include <queues/fifo_buffer.h>
 #include <stdlib.h>
-#include <boolean.h>
+
 #include <pthread.h>
 
 #if TARGET_OS_IPHONE
@@ -30,6 +26,13 @@
 #include <CoreAudio/CoreAudioTypes.h>
 #include <AudioUnit/AudioUnit.h>
 #include <AudioUnit/AUComponent.h>
+
+#include <boolean.h>
+#include <queues/fifo_buffer.h>
+#include <retro_endianness.h>
+
+#include "../../driver.h"
+#include "../../general.h"
 
 #if defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
 
