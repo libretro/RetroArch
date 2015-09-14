@@ -1,10 +1,11 @@
-#include "../../libretro.h"
+#include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <math.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
+
+#include "../../libretro.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846

@@ -1,8 +1,9 @@
-#include <assert.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
+#include <assert.h>
+
 #include <boolean.h>
 
 #define STB_IMAGE_IMPLEMENTATION
