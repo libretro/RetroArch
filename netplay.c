@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include <net/net_compat.h>
+#include <retro_endianness.h>
 
 #include "netplay.h"
 #include "general.h"

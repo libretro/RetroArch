@@ -47,11 +47,11 @@
 #elif defined(_WIN32) && defined(_XBOX)
 #include <Xtl.h>
 #endif
-#include <compat/msvc.h>
 
-#include <retro_inline.h>
-#include <retro_endianness.h>
 #include <limits.h>
+
+#include <compat/msvc.h>
+#include <retro_inline.h>
 
 #ifndef PATH_MAX_LENGTH
 #define PATH_MAX_LENGTH 4096

@@ -18,7 +18,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <boolean.h>
-#include <retro_miscellaneous.h>
+#include <retro_endianness.h>
 #include "joypad_connection.h"
 
 /* wiimote state flags*/

@@ -13,9 +13,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "tasks.h"
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
+#include <retro_endianness.h>
+
+#include "tasks.h"
 
 #ifdef HAVE_LIBRETRODB
 #include "../database_info.h"

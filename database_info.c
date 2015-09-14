@@ -18,6 +18,7 @@
 #include <stdint.h>
 
 #include <file/file_extract.h>
+#include <retro_endianness.h>
 
 #include "dir_list_special.h"
 #include "database_info.h"

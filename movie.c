@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include <rhash.h>
+#include <retro_endianness.h>
 
 #include "general.h"
 
