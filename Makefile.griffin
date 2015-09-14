@@ -359,7 +359,7 @@ all: $(EXT_TARGET)
 
 %.velf: %.elf
 	arm-vita-eabi-strip -g $<
-	vita-elf-create $< $@ $(VITASDK)/bin/db.json
+	vita-elf-create $< $@ $(VITASDK)/bin/db.json $(VITASDK)/bin/extra.json
 
 %.elf32: %.elf
 ifeq ($(platform), xenon360)
