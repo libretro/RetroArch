@@ -654,7 +654,7 @@ bool write_file(const char *path, const void *data, ssize_t size)
 static int read_generic_file(const char *path, void **buf, ssize_t *len)
 {
    size_t bytes_read        = 0;
-   size_t content_buf_size  = 0;
+   ssize_t content_buf_size = 0;
    void *content_buf        = NULL;
    FILE *file               = fopen(path, "rb");
 
@@ -665,7 +665,7 @@ static int read_generic_file(const char *path, void **buf, ssize_t *len)
       goto error;
 
    content_buf_size = ftell(file);
-   if (content_buf_size < 0)
+   if (content_buf_size == -1)
       goto error;
 
    rewind(file);
