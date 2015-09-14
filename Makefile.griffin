@@ -202,10 +202,10 @@ else ifeq ($(platform), vita)
   EXT_TARGET := $(TARGET_NAME)_$(platform).velf
   EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
   MACHDEP := -DVITA
-  PLATCFLAGS := -O3 -U__ARM_NEON__
+  PLATCFLAGS :=  -O3 -mfloat-abi=hard -ffast-math -fsingle-precision-constant -U__ARM_NEON__
   LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub \
 			 -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub \
-			 -lScePower_stub -lSceRtc_stub -lz -lm -lc
+			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lz -lm -lc
 
   PLATOBJS += audio/audio_utils_neon.o audio/drivers_resampler/sinc_neon.o \
               audio/drivers_resampler/cc_resampler_neon.o
