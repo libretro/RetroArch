@@ -33,6 +33,8 @@
 
 static const char *proc_apm_path             = "/proc/apm";
 static const char *proc_acpi_battery_path    = "/proc/acpi/battery";
+static const char *proc_acpi_sys_ac_adapter_path= "/sys/class/power_supply/ACAD";
+static const char *proc_acpi_sys_battery_path= "/sys/class/power_supply";
 static const char *proc_acpi_ac_adapter_path = "/proc/acpi/ac_adapter";
 
 static int open_acpi_file(const char *base, const char *node, const char *key)
@@ -220,6 +222,43 @@ check_proc_acpi_battery(const char * node, bool * have_battery,
    }
 }
 
+static void
+check_proc_acpi_sys_battery(const char * node, bool * have_battery,
+      bool * charging, int *seconds, int *percent)
+{
+   unsigned capacity;
+   const char *base  = proc_acpi_sys_battery_path;
+   char info[1024]   = {0};
+   char state[1024]  = {0};
+   char         *ptr = NULL;
+   char         *key = NULL;
+   char         *val = NULL;
+   bool       charge = false;
+   bool       choose = false;
+   int       maximum = -1;
+   int     remaining = -1;
+   int          secs = -1;
+   int           pct = -1;
+
+   if (!strstr(node, "BAT"))
+      return;
+
+   if (!load_acpi_file(base, node, "status", state, sizeof (state)))
+      return;
+
+   if (strstr(state, "Discharging"))
+      *have_battery = true;
+   else if (strstr(state, "Full"))
+      *have_battery = true;
+
+   if (!load_acpi_file(base, node, "capacity", state, sizeof (state)))
+      return;
+
+   capacity = atoi(state);
+
+   *percent = capacity;
+}
+
 
 static void
 check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
@@ -243,6 +282,19 @@ check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
              val_hash == ACPI_VAL_ONLINE)
           *have_ac = true;
     }
+}
+
+static void
+check_proc_acpi_sys_ac_adapter(const char * node, bool *have_ac)
+{
+    char  state[256];
+    const char *base = proc_acpi_sys_ac_adapter_path;
+
+    if (!load_acpi_file(base, node, "online", state, sizeof (state)))
+        return;
+
+    if (strstr(state, "1"))
+       *have_ac = true;
 }
 
 static bool next_string(char **_ptr, char **_str)
@@ -407,6 +459,58 @@ end:
    return ret;
 }
 
+static bool frontend_linux_powerstate_check_acpi_sys(
+      enum frontend_powerstate *state,
+      int *seconds, int *percent)
+{
+   bool ret            = false;
+   struct RDIR *entry  = NULL;
+   bool have_battery   = false;
+   bool have_ac        = false;
+   bool charging       = false;
+
+   *state = FRONTEND_POWERSTATE_NONE;
+
+   entry = retro_opendir(proc_acpi_sys_battery_path);
+   if (!entry)
+      goto error;
+
+   if (retro_dirent_error(entry))
+      goto error;
+
+   while (retro_readdir(entry))
+      check_proc_acpi_sys_battery(retro_dirent_get_name(entry),
+            &have_battery, &charging, seconds, percent);
+
+   retro_closedir(entry);
+
+   entry = retro_opendir(proc_acpi_sys_ac_adapter_path);
+   if (!entry)
+      goto error;
+
+   while (retro_readdir(entry))
+      check_proc_acpi_sys_ac_adapter(retro_dirent_get_name(entry), &have_ac);
+
+   if (!have_battery)
+   {
+      *state = FRONTEND_POWERSTATE_NO_SOURCE;
+   }
+   else if (charging)
+      *state = FRONTEND_POWERSTATE_CHARGING;
+   else if (have_ac)
+      *state = FRONTEND_POWERSTATE_CHARGED;
+   else
+      *state = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
+
+   return true;
+
+error:
+   if (entry)
+      retro_closedir(entry);
+
+   return false;
+}
+
 static enum frontend_powerstate 
 frontend_linux_get_powerstate(int *seconds, int *percent)
 {
@@ -416,6 +520,9 @@ frontend_linux_get_powerstate(int *seconds, int *percent)
       return ret;
 
    if (frontend_linux_powerstate_check_acpi(&ret, seconds, percent))
+      return ret;
+
+   if (frontend_linux_powerstate_check_acpi_sys(&ret, seconds, percent))
       return ret;
 
    return FRONTEND_POWERSTATE_NONE;
