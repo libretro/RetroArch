@@ -339,6 +339,7 @@ static void* ctr_init(const video_info_t* video,
 
    ctr->keep_aspect   = true;
    ctr->should_resize = true;
+   ctr->smooth        = true;
 
    return ctr;
 }
