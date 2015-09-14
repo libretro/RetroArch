@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../driver.h"
-#include "../../general.h"
+#include <string.h>
+#include <time.h>
 
 #ifdef __APPLE__
 #include <OpenAL/al.h>
@@ -24,12 +24,12 @@
 #include <AL/alc.h>
 #endif
 
-#include <time.h>
-#include <string.h>
-
 #ifdef _WIN32
 #include <windows.h>
 #endif
+
+#include "../../driver.h"
+#include "../../general.h"
 
 #define BUFSIZE 1024
 

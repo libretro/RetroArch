@@ -13,13 +13,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+
+#include <boolean.h>
+
+#include <queues/fifo_buffer.h>
+#include <rthreads/rthreads.h>
 
 #include "../audio_driver.h"
-#include <stdlib.h>
 #include "rsound.h"
-#include <queues/fifo_buffer.h>
-#include <boolean.h>
-#include <rthreads/rthreads.h>
 
 typedef struct rsd
 {

@@ -14,6 +14,7 @@
  */
 
 #include <stdlib.h>
+
 #include <alsa/asoundlib.h>
 
 #include "../../driver.h"

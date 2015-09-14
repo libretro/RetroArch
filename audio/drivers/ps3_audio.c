@@ -14,12 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+#include <string.h>
+
+#include <queues/fifo_buffer.h>
+
 #include "../driver.h"
 #include "../general.h"
-#include <stdlib.h>
-
-#include <string.h>
-#include <queues/fifo_buffer.h>
 
 #include "../../defines/ps3_defines.h"
 

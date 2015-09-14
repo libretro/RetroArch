@@ -13,13 +13,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <stdlib.h>
+
+#include <errno.h>
+
+#include <roaraudio.h>
+
+#include <boolean.h>
 
 #include "../../driver.h"
-#include <stdlib.h>
-#include <roaraudio.h>
-#include <errno.h>
-#include <stdint.h>
-#include <boolean.h>
 #include "../../general.h"
 
 typedef struct

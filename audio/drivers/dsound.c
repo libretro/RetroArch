@@ -24,6 +24,7 @@
 #include <mmreg.h>
 #include <mmsystem.h>
 #endif
+
 #include <dsound.h>
 
 #include <boolean.h>

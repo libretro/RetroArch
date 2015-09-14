@@ -13,19 +13,21 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-#include "../../driver.h"
+#include <stdint.h>
 #include <stdlib.h>
-#include "../../general.h"
+#include <string.h>
+
+#include <assert.h>
 
 #include <jack/jack.h>
 #include <jack/types.h>
 #include <jack/ringbuffer.h>
-#include <stdint.h>
+
 #include <boolean.h>
-#include <string.h>
-#include <assert.h>
 #include <rthreads/rthreads.h>
+
+#include "../../driver.h"
+#include "../../general.h"
 
 #define FRAMES(x) (x / (sizeof(float) * 2))
 

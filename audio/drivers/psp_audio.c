@@ -15,8 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../general.h"
-#include "../../driver.h"
+#include <stdint.h>
+#include <malloc.h>
 
 #ifdef VITA
 #include <psp2/kernel/processmgr.h>
@@ -27,8 +27,9 @@
 #include <pspkernel.h>
 #include <pspaudio.h>
 #endif
-#include <stdint.h>
-#include <malloc.h>
+
+#include "../../general.h"
+#include "../../driver.h"
 
 typedef struct psp_audio
 {
