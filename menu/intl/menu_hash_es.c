@@ -321,9 +321,9 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
          return "No ejecutar automáticamente";
       case MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
-         return "Limitar velocidad de ejecución máxima";
+         return "Limitar velocidad máxima de ejecución";
       case MENU_LABEL_VALUE_FASTFORWARD_RATIO:
-         return "Velocidad de ejecución máxima";
+         return "Velocidad máxima de ejecución";
       case MENU_LABEL_VALUE_AUTO_REMAPS_ENABLE:
          return "Cargar autom. archivos de reasignación";
       case MENU_LABEL_VALUE_SLOWMOTION_RATIO:
@@ -425,7 +425,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_FRAME_DELAY:
          return "Retraso de fotogramas";
       case MENU_LABEL_VALUE_INPUT_DUTY_CYCLE:
-         return "Ciclo de deberes";
+         return "Ciclo de trabajo";
       case MENU_LABEL_VALUE_INPUT_TURBO_PERIOD:
          return "Período de turbo";
       case MENU_LABEL_VALUE_INPUT_AXIS_THRESHOLD:
@@ -437,7 +437,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_INPUT_AUTODETECT_ENABLE:
          return "Activar autoconfiguración";
       case MENU_LABEL_VALUE_AUDIO_OUTPUT_RATE:
-         return "Frecuencia de salida de sonido (KHz)";
+         return "Frecuencia de sonido (KHz)";
       case MENU_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
          return "Variación máxima de sincronía de sonido";
       case MENU_LABEL_VALUE_CHEAT_NUM_PASSES:
@@ -585,7 +585,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_JOYPAD_DRIVER:
          return "Controlador de joypad";
       case MENU_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER:
-         return "Controlador de remuestreo de sonido";
+         return "Controlador de muestreo de sonido";
       case MENU_LABEL_VALUE_RECORD_DRIVER:
          return "Controlador de grabación";
       case MENU_LABEL_VALUE_MENU_DRIVER:
@@ -679,7 +679,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_CORE_INFO_CORE_NOTES:
          return "Notas del núcleo";
       case MENU_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE:
-         return "Fecha de compilado";
+         return "Fecha de compilación";
       case MENU_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION:
          return "Versión de Git";
       case MENU_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES:
