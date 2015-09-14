@@ -39,12 +39,8 @@ static const char *proc_acpi_ac_adapter_path = "/proc/acpi/ac_adapter";
 
 static int open_acpi_file(const char *base, const char *node, const char *key)
 {
-   const size_t pathlen = strlen(base) + strlen(node) + strlen(key) + 3;
-   char *path = (char *)alloca(pathlen);
-   if (!path)
-      return -1;
-
-   snprintf(path, pathlen, "%s/%s/%s", base, node, key);
+   char path[1024];
+   snprintf(path, sizeof(path), "%s/%s/%s", base, node, key);
    return open(path, O_RDONLY);
 }
 
