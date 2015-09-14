@@ -17,14 +17,15 @@
 #include <string.h>
 
 #include <compat/strl.h>
+#include <retro_assert.h>
 #include <file/file_path.h>
 
 #include "menu.h"
 #include "menu_hash.h"
 #include "menu_shader.h"
-#include "menu_setting.h"
 #include "../configuration.h"
 #include "../runloop.h"
+
 /**
  * menu_shader_manager_init:
  *
@@ -47,11 +48,11 @@ void menu_shader_manager_init(menu_handle_t *menu)
 
    shader = (struct video_shader*)menu->shader;
 
-   if (*global->core_specific_config_path
+   if (*global->path.core_specific_config
          && settings->core_specific_config)
-      config_path = global->core_specific_config_path;
-   else if (*global->config_path)
-      config_path = global->config_path;
+      config_path = global->path.core_specific_config;
+   else if (*global->path.config)
+      config_path = global->path.config;
 
    /* In a multi-config setting, we can't have
     * conflicts on menu.cgp/menu.glslp. */
@@ -174,7 +175,7 @@ void menu_shader_manager_set_preset(struct video_shader *shader,
    }
    config_file_free(conf);
 
-   menu_entries_set_refresh();
+   menu_entries_set_refresh(false);
 #endif
 }
 
@@ -236,9 +237,9 @@ void menu_shader_manager_save_preset(
       strlcpy(buffer, conf_path, sizeof(buffer));
    }
 
-   if (*global->config_path)
+   if (*global->path.config)
       fill_pathname_basedir(config_directory,
-            global->config_path, sizeof(config_directory));
+            global->path.config, sizeof(config_directory));
 
    dirs[0] = settings->video.shader_dir;
    dirs[1] = settings->menu_config_directory;

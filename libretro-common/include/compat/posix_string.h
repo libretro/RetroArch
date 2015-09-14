@@ -23,7 +23,7 @@
 #ifndef __LIBRETRO_SDK_COMPAT_POSIX_STRING_H
 #define __LIBRETRO_SDK_COMPAT_POSIX_STRING_H
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 
 #include <compat/msvc.h>
 

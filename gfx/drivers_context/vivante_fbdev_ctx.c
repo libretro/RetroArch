@@ -40,11 +40,8 @@ static void sighandler(int sig)
 static void gfx_ctx_vivante_set_swap_interval(void *data, unsigned interval)
 {
    (void)data;
-
-   if (!g_egl_dpy)
-      return;
-
-   eglSwapInterval(g_egl_dpy, interval);
+   if (g_egl_dpy)
+      eglSwapInterval(g_egl_dpy, interval);
 }
 
 static void gfx_ctx_vivante_destroy(void *data)
@@ -215,8 +212,8 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
    if (!height || !fullscreen)
       height = 1024;
 
-   g_width = width;
-   g_height = height;
+   g_width    = width;
+   g_height   = height;
 
    window     = fbCreateWindow(fbGetDisplayByIndex(0), 0, 0, 0, 0);
    g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, window, 0);

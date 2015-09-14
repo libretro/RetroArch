@@ -35,7 +35,7 @@
 
 #include "ppc_asm.h"
 #include "gx_gfx_inl.h"
-#include "gx_sdk_defines.h"
+#include "../../defines/gx_defines.h"
 
 struct gx_overlay_data
 {
@@ -47,7 +47,6 @@ struct gx_overlay_data
 
 typedef struct gx_video
 {
-   uint64_t frame_count;
    bool should_resize;
    bool keep_aspect;
    bool double_strike;
@@ -1032,7 +1031,8 @@ static void gx_blit_line(unsigned x, unsigned y, const char *message)
 }
 
 static bool gx_frame(void *data, const void *frame,
-      unsigned width, unsigned height, unsigned pitch,
+      unsigned width, unsigned height,
+      uint64_t frame_count, unsigned pitch,
       const char *msg)
 {
    char fps_txt[128]         = {0};
@@ -1165,8 +1165,6 @@ static bool gx_frame(void *data, const void *frame,
    VIFlush();
 
    RARCH_PERFORMANCE_STOP(gx_frame);
-
-   gx->frame_count++;
 
    return true;
 }
@@ -1309,16 +1307,7 @@ static void gx_get_video_output_next(void *data)
    }
 }
 
-static uint64_t gx_get_frame_count(void *data)
-{
-   gx_video_t *gx = (gx_video_t*)data;
-   if (!gx)
-      return 0;
-   return gx->frame_count;
-}
-
 static const video_poke_interface_t gx_poke_interface = {
-   gx_get_frame_count,
    gx_set_video_mode,
    NULL,
    gx_get_video_output_size,

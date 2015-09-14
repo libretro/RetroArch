@@ -26,16 +26,14 @@
 #include <compat/posix_string.h>
 #endif
 
+#if defined(HAVE_LOGGER) && !defined(ANDROID)
+#include "../logger/netlogger/logger.c"
+#endif
+
 /*============================================================
 CONSOLE EXTENSIONS
 ============================================================ */
 #ifdef RARCH_CONSOLE
-
-#if defined(HAVE_LOGGER) && defined(__PSL1GHT__)
-#include "../logger/netlogger/psl1ght_logger.c"
-#elif defined(HAVE_LOGGER) && !defined(ANDROID)
-#include "../logger/netlogger/logger.c"
-#endif
 
 #ifdef HW_DOL
 #include "../ngc/ssaram.c"
@@ -45,7 +43,6 @@ CONSOLE EXTENSIONS
 
 #ifdef HAVE_ZLIB
 #include "../libretro-common/file/file_extract.c"
-#include "../decompress/zip_support.c"
 #endif
 
 /*============================================================
@@ -63,6 +60,7 @@ COMPATIBILITY
 ============================================================ */
 #include "../compat/compat.c"
 #include "../libretro-common/compat/compat_fnmatch.c"
+#include "../libretro-common/memmap/memalign.c"
 
 /*============================================================
 CONFIG FILE
@@ -237,6 +235,8 @@ VIDEO DRIVER
 #include "../gfx/drivers/gx_gfx.c"
 #elif defined(PSP)
 #include "../gfx/drivers/psp1_gfx.c"
+#elif defined(HAVE_VITA2D)
+#include "../gfx/drivers/vita2d_gfx.c"
 #elif defined(_3DS)
 #include "../gfx/drivers/ctr_gfx.c"
 #elif defined(XENON)
@@ -302,7 +302,7 @@ INPUT
 #include "../input/drivers/ps3_input.c"
 #include "../input/drivers_joypad/ps3_joypad.c"
 #include "../input/autoconf/builtin_ps3.c"
-#elif defined(SN_TARGET_PSP2) || defined(PSP)
+#elif defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
 #include "../input/drivers/psp_input.c"
 #include "../input/drivers_joypad/psp_joypad.c"
 #include "../input/autoconf/builtin_psp.c"
@@ -378,6 +378,10 @@ INPUT (HID)
 #include "../input/drivers_hid/btstack_hid.c"
 #elif defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
 #include "../input/drivers_hid/iohidmanager_hid.c"
+#endif
+
+#ifdef HAVE_WIIUSB_HID
+#include "../input/drivers_hid/wiiusb_hid.c"
 #endif
 
 #ifdef HAVE_HID
@@ -472,8 +476,8 @@ AUDIO
 #include "../audio/drivers/gx_audio.c"
 #elif defined(EMSCRIPTEN)
 #include "../audio/drivers/rwebaudio.c"
-#elif defined(PSP)
-#include "../audio/drivers/psp1_audio.c"
+#elif defined(PSP) || defined(VITA)
+#include "../audio/drivers/psp_audio.c"
 #elif defined(_3DS)
 #include "../audio/drivers/ctr_audio.c"
 #endif
@@ -575,7 +579,10 @@ FILE
 #include "../content.c"
 #include "../libretro-common/file/file_path.c"
 #include "../file_path_special.c"
+#ifndef IOS
 #include "../libretro-common/file/dir_list.c"
+#endif
+#include "../libretro-common/file/retro_dirent.c"
 #include "../dir_list_special.c"
 #include "../libretro-common/string/string_list.c"
 #include "../libretro-common/string/stdstring.c"
@@ -621,10 +628,12 @@ FRONTEND
 #endif
 #elif defined(_XBOX)
 #include "../frontend/drivers/platform_xdk.c"
-#elif defined(PSP)
+#elif defined(PSP) || defined(VITA)
 #include "../frontend/drivers/platform_psp.c"
 #elif defined(_3DS)
 #include "../frontend/drivers/platform_ctr.c"
+#elif defined(XENON)
+#include "../frontend/drivers/platform_xenon.c"
 #elif defined(__QNX__)
 #include "../frontend/drivers/platform_qnx.c"
 #elif defined(ANDROID)
@@ -650,11 +659,7 @@ UI
 /*============================================================
 MAIN
 ============================================================ */
-#if defined(XENON)
-#include "../frontend/frontend_xenon.c"
-#else
 #include "../frontend/frontend.c"
-#endif
 
 /*============================================================
 GIT
@@ -765,7 +770,7 @@ MENU
 #include "../menu/cbs/menu_cbs_deferred_push.c"
 #include "../menu/cbs/menu_cbs_scan.c"
 #include "../menu/cbs/menu_cbs_get_value.c"
-#include "../menu/cbs/menu_cbs_iterate.c"
+#include "../menu/menu_iterate.c"
 #include "../menu/cbs/menu_cbs_up.c"
 #include "../menu/cbs/menu_cbs_down.c"
 #include "../menu/cbs/menu_cbs_contentlist_switch.c"
@@ -849,7 +854,6 @@ DEPENDENCIES
 #include "../deps/7zip/7zIn.c"
 #include "../deps/7zip/7zAlloc.c"
 #include "../deps/7zip/Bra86.c"
-#include "../deps/7zip/CpuArch.c"
 #include "../deps/7zip/7zFile.c"
 #include "../deps/7zip/7zStream.c"
 #include "../deps/7zip/7zBuf2.c"
@@ -861,7 +865,6 @@ DEPENDENCIES
 #include "../deps/7zip/7zCrc.c"
 #include "../deps/7zip/Lzma2Dec.c"
 #include "../deps/7zip/7zBuf.c"
-#include "../decompress/7zip_support.c"
 #endif
 
 /*============================================================

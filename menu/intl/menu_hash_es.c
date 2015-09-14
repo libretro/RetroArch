@@ -16,17 +16,20 @@
 
 #include <stdint.h>
 #include <string.h>
+
+#include <retro_assert.h>
+
 #include "../../configuration.h"
 #include "../menu_hash.h"
 
- /* IMPORTANT:
-  * For non-english characters to work without proper unicode support,
-  * we need this file to be encoded in ISO 8859-1 (Latin1), not UTF-8.
-  * If you save this file as UTF-8, you'll break non-english characters
-  * (e.g. German "Umlauts" and Portugese diacritics).
+/* IMPORTANT:
+ * For non-english characters to work without proper unicode support,
+ * we need this file to be encoded in ISO 8859-1 (Latin1), not UTF-8.
+ * If you save this file as UTF-8, you'll break non-english characters
+ * (e.g. German "Umlauts" and Portugese diacritics).
  */
 /* DO NOT REMOVE THIS. If it causes build failure, it's because you saved the file as UTF-8. Read the above comment. */
-extern const char force_iso_8859_1[sizeof("äÄöÖßüÜ")==7+1 ? 1 : -1];
+extern const char force_iso_8859_1[sizeof("¿áéíÍñóºú")==9+1 ? 1 : -1];
 
 const char *menu_hash_to_str_es(uint32_t hash)
 {
@@ -633,9 +636,9 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Iniciando descarga: ";
       case MENU_VALUE_SECONDS:
          return "segundos";
-      case MENU_VALUE_OFF: //Not changed. Would be "SÍ"
+      case MENU_VALUE_OFF: /* Not changed. Would be "SÍ" */
          return "OFF";
-      case MENU_VALUE_ON: //Not changed. Would be "NO"
+      case MENU_VALUE_ON: /* Not changed. Would be "NO" */
          return "ON";
       case MENU_LABEL_VALUE_UPDATE_ASSETS:
          return "Actualizar recursos";
@@ -921,6 +924,10 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
    uint32_t driver_hash = 0;
    settings_t      *settings = config_get_ptr();
 
+   /* If this one throws errors, stop sledgehammering square pegs into round holes and */
+   /* READ THE COMMENTS at the top of the file. */
+   (void)sizeof(force_iso_8859_1);
+
    switch (hash)
    {
       case MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC:
@@ -936,7 +943,9 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
                "ajustes. Aquí van algunas opciones:\n"
                " \n"
                "a) Ve a '%s' -> '%s' y activa\n"
-               "'Vídeo por hilos'. En este modo la \n"
+               "'Vídeo por hilos'. En este modo la tasa\n"
+               "de refresco es irrelevante, habrá más fps,\n"
+               "'Vídeo multinúcleo'. En este modo la \n"
                "frecuencia es irrelevante, habrá más fps,\n"
                "pero la imagen podría ser menos fluida.\n"
                "b) Ve a '%s' -> '%s' y busca\n"
@@ -1774,8 +1783,8 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
          break;
       case MENU_LABEL_VIDEO_FULLSCREEN:
          snprintf(s, len, 
-		        "Activa o desactiva el modo \n"
-				"en pantalla completa.");
+                "Activa o desactiva el modo \n"
+                "en pantalla completa.");
          break;
       case MENU_LABEL_BLOCK_SRAM_OVERWRITE:
          snprintf(s, len,
@@ -2047,8 +2056,6 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
                "Puedes conseguir núcleos si los\n"
                "trasladas a mano en la carpeta\n"
                "'%s'.",
-               menu_hash_to_str(MENU_LABEL_VALUE_ONLINE_UPDATER),
-               menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
                menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #endif
                );

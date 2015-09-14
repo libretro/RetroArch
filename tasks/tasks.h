@@ -37,8 +37,6 @@ msg_queue_t *rarch_main_data_nbio_get_msg_queue_ptr(void);
 
 msg_queue_t *rarch_main_data_nbio_image_get_msg_queue_ptr(void);
 
-void *rarch_main_data_nbio_get_ptr(void);
-
 void *rarch_main_data_nbio_get_handle(void);
 
 void *rarch_main_data_nbio_image_get_handle(void);
@@ -65,8 +63,6 @@ void *rarch_main_data_http_conn_get_handle(void);
 void rarch_main_data_http_uninit(void);
 
 void rarch_main_data_http_init(void);
-
-void *rarch_main_data_http_get_ptr(void);
 #endif
 
 #ifdef HAVE_RPNG
@@ -82,8 +78,6 @@ bool rarch_main_data_db_pending_scan_finished(void);
 #endif
 
 void rarch_main_data_db_init_msg_queue(void);
-
-void *rarch_main_data_db_get_ptr(void);
 
 msg_queue_t *rarch_main_data_db_get_msg_queue_ptr(void);
 

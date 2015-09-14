@@ -55,15 +55,13 @@ enum setting_flags
    SD_FLAG_PATH_DIR       = (1 << 0),
    SD_FLAG_PATH_FILE      = (1 << 1),
    SD_FLAG_ALLOW_EMPTY    = (1 << 2),
-   SD_FLAG_VALUE_DESC     = (1 << 3),
-   SD_FLAG_HAS_RANGE      = (1 << 4),
-   SD_FLAG_ALLOW_INPUT    = (1 << 5),
-   SD_FLAG_IS_DRIVER      = (1 << 6),
-   SD_FLAG_EXIT           = (1 << 7),
-   SD_FLAG_CMD_APPLY_AUTO = (1 << 8),
-   SD_FLAG_IS_DEFERRED    = (1 << 9),
-   SD_FLAG_BROWSER_ACTION = (1 << 10),
-   SD_FLAG_ADVANCED       = (1 << 11)
+   SD_FLAG_HAS_RANGE      = (1 << 3),
+   SD_FLAG_ALLOW_INPUT    = (1 << 4),
+   SD_FLAG_IS_DRIVER      = (1 << 5),
+   SD_FLAG_EXIT           = (1 << 6),
+   SD_FLAG_CMD_APPLY_AUTO = (1 << 7),
+   SD_FLAG_BROWSER_ACTION = (1 << 8),
+   SD_FLAG_ADVANCED       = (1 << 9)
 };
 
 enum setting_list_flags
@@ -108,7 +106,6 @@ typedef int  (*action_right_handler_t         )(void *data, bool wraparound);
 typedef int  (*action_up_handler_t            )(void *data);
 typedef int  (*action_down_handler_t          )(void *data);
 typedef int  (*action_start_handler_t         )(void *data);
-typedef int  (*action_iterate_handler_t       )(unsigned action);
 typedef int  (*action_cancel_handler_t        )(void *data);
 typedef int  (*action_ok_handler_t            )(void *data, bool wraparound);
 typedef int  (*action_select_handler_t        )(void *data, bool wraparound);
@@ -148,10 +145,8 @@ typedef struct rarch_setting
    uint64_t             flags;
    
    change_handler_t              change_handler;
-   change_handler_t              deferred_handler;
    change_handler_t              read_handler;
    action_start_handler_t        action_start;
-   action_iterate_handler_t      action_iterate;
    action_left_handler_t         action_left;
    action_right_handler_t        action_right;
    action_up_handler_t           action_up;
@@ -214,12 +209,6 @@ typedef struct rarch_setting
    bool              enforce_maxrange;
 }  rarch_setting_t;
 
-
-
-void menu_setting_apply_deferred(void);
-
-int menu_setting_set_flags(rarch_setting_t *setting);
-
 int menu_setting_generic(rarch_setting_t *setting, bool wraparound);
 
 int menu_setting_set(unsigned type, const char *label,
@@ -257,20 +246,6 @@ int setting_set_with_string_representation(
 void setting_get_string_representation(void *data, char *s, size_t len);
 
 /**
- * setting_get_description:
- * @label              : identifier label of setting
- * @s                  : output message 
- * @len                : size of @s
- *
- * Writes a 'Help' description message to @s if there is
- * one available based on the identifier label of the setting
- * (@label).
- *
- * Returns: 0 (always for now). TODO: make it handle -1 as well.
- **/
-int setting_get_description(const char *label, char *s, size_t len);
-
-/**
  * setting_get_label:
  * @list               : File list on which to perform the search
  * @s                  : String for the type to be represented on-screen as
@@ -303,12 +278,6 @@ void menu_setting_free(rarch_setting_t *list);
 rarch_setting_t* menu_setting_new(unsigned mask);
 
 bool menu_setting_is_of_path_type(rarch_setting_t *setting);
-
-bool menu_setting_is_of_general_type(rarch_setting_t *setting);
-
-bool menu_setting_is_of_numeric_type(rarch_setting_t *setting);
-
-bool menu_setting_is_of_enum_type(rarch_setting_t *setting);
 
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound);

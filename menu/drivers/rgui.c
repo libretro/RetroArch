@@ -26,15 +26,11 @@
 #include <file/file_path.h>
 #include <retro_inline.h>
 
+#include "../../general.h"
 #include "../menu.h"
-#include "../menu_animation.h"
-#include "../menu_entry.h"
 #include "../menu_hash.h"
-#include "../menu_display.h"
 #include "../menu_video.h"
 
-#include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
 #define RGUI_TERM_START_X        (frame_buf->width / 21)
@@ -155,6 +151,33 @@ static void color_rect(menu_handle_t *menu,
             frame_buf->data[j * (frame_buf->pitch >> 1) + i] = color;
 }
 
+static uint8_t string_walkbyte(const char **string)
+{
+   return *((*string)++);
+}
+
+#ifdef HAVE_UTF8
+/* Does not validate the input, returns garbage if it's not UTF-8. */
+static uint32_t string_walk(const char **string)
+{
+   uint8_t first = string_walkbyte(string);
+   uint32_t ret;
+   
+   if (first<128) return first;
+   
+   ret = 0;
+   ret = (ret<<6) | (string_walkbyte(string)&0x3F);
+   if (first >= 0xE0) ret = (ret<<6) | (string_walkbyte(string)&0x3F);
+   if (first >= 0xF0) ret = (ret<<6) | (string_walkbyte(string)&0x3F);
+   
+   if (first >= 0xF0) return ret | (first&31)<<18;
+   if (first >= 0xE0) return ret | (first&15)<<12;
+   return ret | (first&7)<<6;
+}
+#else
+#define string_walk string_walkbyte
+#endif
+
 static void blit_line(menu_handle_t *menu, int x, int y,
       const char *message, uint16_t color)
 {
@@ -164,14 +187,15 @@ static void blit_line(menu_handle_t *menu, int x, int y,
 
    while (*message)
    {
+      uint32_t symbol = string_walk(&message);
+      
       for (j = 0; j < FONT_HEIGHT; j++)
       {
          for (i = 0; i < FONT_WIDTH; i++)
          {
             uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
             int offset  = (i + j * FONT_WIDTH) >> 3;
-            bool col    = (disp->font.framebuf[FONT_OFFSET
-                  ((unsigned char)*message) + offset] & rem);
+            bool col    = (disp->font.framebuf[FONT_OFFSET(symbol) + offset] & rem);
 
             if (!col)
                continue;
@@ -182,7 +206,6 @@ static void blit_line(menu_handle_t *menu, int x, int y,
       }
 
       x += FONT_WIDTH_STRIDE;
-      message++;
    }
 }
 
@@ -262,10 +285,9 @@ static void rgui_render_background(void)
 static void rgui_set_message(const char *message)
 {
    menu_handle_t    *menu = menu_driver_get_ptr();
-   menu_animation_t *anim = menu_animation_get_ptr();
    rgui_t           *rgui = NULL;
 
-   if (!menu || !menu->userdata || !anim || !message || !*message)
+   if (!menu || !menu->userdata || !message || !*message)
       return;
 
    rgui = (rgui_t*)menu->userdata;
@@ -374,11 +396,10 @@ static void rgui_render(void)
    menu_display_t *disp           = menu_display_get_ptr();
    menu_framebuf_t *frame_buf     = menu_display_fb_get_ptr();
    menu_navigation_t *nav         = menu_navigation_get_ptr();
-   runloop_t *runloop             = rarch_main_get_ptr();
    driver_t *driver               = driver_get_ptr();
    settings_t *settings           = config_get_ptr();
    menu_animation_t *anim         = menu_animation_get_ptr();
-   uint64_t frame_count           = video_driver_get_frame_count();
+   uint64_t *frame_count          = video_driver_get_frame_count();
    rgui_t *rgui                   = NULL;
 
    title[0]     = '\0';
@@ -398,7 +419,7 @@ static void rgui_render(void)
       if (menu_entries_needs_refresh() && menu_driver_alive() && !disp->msg_force)
          return;
 
-      if (runloop->is_idle)
+      if (rarch_main_is_idle())
          return;
 
       if (!menu_display_update_pending())
@@ -414,11 +435,9 @@ static void rgui_render(void)
       rgui->last_height = frame_buf->height;
    }
 
-
    /* ensures the framebuffer will be rendered on the screen */
    menu_display_fb_set_dirty();
-   anim->is_active           = false;
-   anim->label.is_updated    = false;
+   menu_animation_clear_active(anim);
    rgui->force_redraw        = false;
 
 
@@ -467,7 +486,7 @@ static void rgui_render(void)
    menu_entries_get_title(title, sizeof(title));
 
    menu_animation_ticker_str(title_buf, RGUI_TERM_WIDTH - 10,
-         frame_count / RGUI_TERM_START_X, title, true);
+         *frame_count / RGUI_TERM_START_X, title, true);
 
    hover_color  = HOVER_COLOR(settings);
    normal_color = NORMAL_COLOR(settings);
@@ -482,14 +501,11 @@ static void rgui_render(void)
          RGUI_TERM_START_X + (RGUI_TERM_WIDTH - strlen(title_buf)) * FONT_WIDTH_STRIDE / 2,
          RGUI_TERM_START_X, title_buf, TITLE_COLOR(settings));
 
-   if (settings->menu.core_enable)
-   {
-      menu_entries_get_core_title(title_msg, sizeof(title_msg));
+   if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
       blit_line(menu,
             RGUI_TERM_START_X,
             (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
             RGUI_TERM_START_Y + 2, title_msg, hover_color);
-   }
 
    if (settings->menu.timedate_enable)
    {
@@ -515,7 +531,7 @@ static void rgui_render(void)
       unsigned entry_spacing                = menu_entry_get_spacing(i);
       bool entry_selected                   = menu_entry_is_currently_selected(i);
 
-      if (i > (nav->selection_ptr + 100))
+      if (i > (menu_navigation_get_selection(nav) + 100))
          continue;
 
       entry_path[0]      = '\0';
@@ -528,9 +544,9 @@ static void rgui_render(void)
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
 
       menu_animation_ticker_str(entry_title_buf, RGUI_TERM_WIDTH - (entry_spacing + 1 + 2),
-            frame_count / RGUI_TERM_START_X, entry_path, entry_selected);
+            *frame_count / RGUI_TERM_START_X, entry_path, entry_selected);
       menu_animation_ticker_str(type_str_buf, entry_spacing,
-            frame_count / RGUI_TERM_START_X,
+            *frame_count / RGUI_TERM_START_X,
             entry_value, entry_selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
@@ -691,6 +707,7 @@ static void rgui_navigation_set(bool scroll)
    menu_handle_t *menu            = menu_driver_get_ptr();
    menu_framebuf_t *frame_buf     = menu_display_fb_get_ptr();
    menu_navigation_t *nav         = menu_navigation_get_ptr();
+   size_t               selection = menu_navigation_get_selection(nav);
    if (!menu)
       return;
 
@@ -699,12 +716,12 @@ static void rgui_navigation_set(bool scroll)
    if (!scroll)
       return;
 
-   if (nav->selection_ptr < RGUI_TERM_HEIGHT/2)
+   if (selection < RGUI_TERM_HEIGHT/2)
       menu_entries_set_start(0);
-   else if (nav->selection_ptr >= RGUI_TERM_HEIGHT/2
-         && nav->selection_ptr < (end - RGUI_TERM_HEIGHT/2))
-      menu_entries_set_start(nav->selection_ptr - RGUI_TERM_HEIGHT/2);
-   else if (nav->selection_ptr >= (end - RGUI_TERM_HEIGHT/2))
+   else if (selection >= (RGUI_TERM_HEIGHT/2)
+         && selection < (end - RGUI_TERM_HEIGHT/2))
+      menu_entries_set_start(selection - RGUI_TERM_HEIGHT/2);
+   else if (selection >= (end - RGUI_TERM_HEIGHT/2))
       menu_entries_set_start(end - RGUI_TERM_HEIGHT);
 }
 
@@ -779,6 +796,6 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    "rgui",
+   MENU_VIDEO_DRIVER_GENERIC,
    rgui_environ,
-   NULL,
 };

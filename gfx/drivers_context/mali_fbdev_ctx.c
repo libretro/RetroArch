@@ -111,6 +111,7 @@ static bool gfx_ctx_mali_fbdev_init(void *data)
    EGLint num_config;
    EGLint egl_version_major, egl_version_minor;
    EGLint format;
+   struct sigaction sa = {{0}};
    static const EGLint attribs[] = {
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -120,15 +121,14 @@ static bool gfx_ctx_mali_fbdev_init(void *data)
       EGL_ALPHA_SIZE, 8,
       EGL_NONE
    };
-   struct sigaction sa = {{0}};
+
+   (void)data;
 
    sa.sa_handler = gfx_ctx_mali_fbdev_sighandler;
    sa.sa_flags   = SA_RESTART;
    sigemptyset(&sa.sa_mask);
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
-
-   (void)data;
 
    /* Disable cursor blinking so it's not visible in RetroArch. */
    system("setterm -cursor off");
@@ -147,8 +147,8 @@ static bool gfx_ctx_mali_fbdev_init(void *data)
       goto error;
    }
 
-   RARCH_LOG("[Mali fbdev]: EGL version: %d.%d\n", egl_version_major, egl_version_minor);
-
+   RARCH_LOG("[Mali fbdev]: EGL version: %d.%d\n",
+         egl_version_major, egl_version_minor);
 
    if (!eglChooseConfig(g_egl_dpy, attribs, &g_egl_config, 1, &num_config))
    {
@@ -167,7 +167,6 @@ error:
 static void gfx_ctx_mali_fbdev_swap_buffers(void *data)
 {
    (void)data;
-
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 

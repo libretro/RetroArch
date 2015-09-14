@@ -12,12 +12,14 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include "dspfilter.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
+
 #include <retro_inline.h>
+#include <filters.h>
+
+#include "dspfilter.h"
 
 #include "fft/fft.c"
 
@@ -45,7 +47,7 @@ struct eq_data
 struct eq_gain
 {
    float freq;
-   float gain; // Linear.
+   float gain; /* Linear. */
 };
 
 static void eq_free(void *data)
@@ -65,18 +67,22 @@ static void eq_free(void *data)
 static void eq_process(void *data, struct dspfilter_output *output,
       const struct dspfilter_input *input)
 {
+   float *out;
+   const float *in;
+   unsigned input_frames;
    struct eq_data *eq = (struct eq_data*)data;
 
-   output->samples = eq->buffer;
-   output->frames  = 0;
+   output->samples    = eq->buffer;
+   output->frames     = 0;
 
-   float *out = eq->buffer;
-   const float *in = input->samples;
-   unsigned input_frames = input->frames;
+   out                = eq->buffer;
+   in                 = input->samples;
+   input_frames       = input->frames;
 
    while (input_frames)
    {
       unsigned write_avail = eq->block_size - eq->block_ptr;
+
       if (input_frames < write_avail)
          write_avail = input_frames;
 
@@ -119,10 +125,9 @@ static int gains_cmp(const void *a_, const void *b_)
    const struct eq_gain *b = (const struct eq_gain*)b_;
    if (a->freq < b->freq)
       return -1;
-   else if (a->freq > b->freq)
+   if (a->freq > b->freq)
       return 1;
-   else
-      return 0;
+   return 0;
 }
 
 static void generate_response(fft_complex_t *response,
@@ -133,8 +138,8 @@ static void generate_response(fft_complex_t *response,
    float start_freq = 0.0f;
    float start_gain = 1.0f;
 
-   float end_freq = 1.0f;
-   float end_gain = 1.0f;
+   float end_freq   = 1.0f;
+   float end_gain   = 1.0f;
 
    if (num_gains)
    {
@@ -147,6 +152,8 @@ static void generate_response(fft_complex_t *response,
    // Create a response by linear interpolation between known frequency sample points.
    for (i = 0; i <= samples; i++)
    {
+      float gain;
+      float lerp = 0.5f;
       float freq = (float)i / samples;
 
       while (freq >= end_freq)
@@ -171,11 +178,10 @@ static void generate_response(fft_complex_t *response,
          }
       }
 
-      float lerp = 0.5f;
-      // Edge case where i == samples.
+      /* Edge case where i == samples. */
       if (end_freq > start_freq)
          lerp = (freq - start_freq) / (end_freq - start_freq);
-      float gain = (1.0f - lerp) * start_gain + lerp * end_gain;
+      gain = (1.0f - lerp) * start_gain + lerp * end_gain;
 
       response[i].real = gain;
       response[i].imag = 0.0f;
@@ -184,58 +190,25 @@ static void generate_response(fft_complex_t *response,
    }
 }
 
-// Modified Bessel function of first order.
-// Check Wiki for mathematical definition ...
-static INLINE double kaiser_besseli0(double x)
-{
-   unsigned i;
-   double sum = 0.0;
-
-   double factorial = 1.0;
-   double factorial_mult = 0.0;
-   double x_pow = 1.0;
-   double two_div_pow = 1.0;
-   double x_sqr = x * x;
-
-   // Approximate. This is an infinite sum.
-   // Luckily, it converges rather fast.
-   for (i = 0; i < 18; i++)
-   {
-      sum += x_pow * two_div_pow / (factorial * factorial);
-
-      factorial_mult += 1.0;
-      x_pow *= x_sqr;
-      two_div_pow *= 0.25;
-      factorial *= factorial_mult;
-   }
-
-   return sum;
-}
-
-static INLINE double kaiser_window(double index, double beta)
-{
-   return kaiser_besseli0(beta * sqrt(1 - index * index));
-}
-
 static void create_filter(struct eq_data *eq, unsigned size_log2,
       struct eq_gain *gains, unsigned num_gains, double beta, const char *filter_path)
 {
    int i;
    int half_block_size = eq->block_size >> 1;
-   double window_mod = 1.0 / kaiser_window(0.0, beta);
+   double window_mod = 1.0 / kaiser_window_function(0.0, beta);
 
    fft_t *fft = fft_new(size_log2);
    float *time_filter = (float*)calloc(eq->block_size * 2 + 1, sizeof(*time_filter));
    if (!fft || !time_filter)
       goto end;
 
-   // Make sure bands are in correct order.
+   /* Make sure bands are in correct order. */
    qsort(gains, num_gains, sizeof(*gains), gains_cmp);
 
-   // Compute desired filter response.
+   /* Compute desired filter response. */
    generate_response(eq->filter, gains, num_gains, half_block_size);
 
-   // Get equivalent time-domain filter.
+   /* Get equivalent time-domain filter. */
    fft_process_inverse(fft, time_filter, eq->filter, 1);
 
    // ifftshift() to create the correct linear phase filter.
@@ -248,16 +221,16 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
       time_filter[i] = tmp;
    }
 
-   // Apply a window to smooth out the frequency repsonse.
+   /* Apply a window to smooth out the frequency repsonse. */
    for (i = 0; i < (int)eq->block_size; i++)
    {
-      // Kaiser window.
+      /* Kaiser window. */
       double phase = (double)i / eq->block_size;
       phase = 2.0 * (phase - 0.5);
-      time_filter[i] *= window_mod * kaiser_window(phase, beta);
+      time_filter[i] *= window_mod * kaiser_window_function(phase, beta);
    }
 
-   // Debugging.
+   /* Debugging. */
    if (filter_path)
    {
       FILE *file = fopen(filter_path, "w");
@@ -269,9 +242,10 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
       }
    }
 
-   // Padded FFT to create our FFT filter.
-   // Make our even-length filter odd by discarding the first coefficient.
-   // For some interesting reason, this allows us to design an odd-length linear phase filter.
+   /* Padded FFT to create our FFT filter.
+    * Make our even-length filter odd by discarding the first coefficient.
+    * For some interesting reason, this allows us to design an odd-length linear phase filter.
+    */
    fft_process_forward(eq->fft, eq->filter, time_filter + 1, 1);
 
 end:
@@ -282,28 +256,27 @@ end:
 static void *eq_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
-   unsigned i;
+   float *frequencies, *gain;
+   unsigned num_freq, num_gain, i, size;
+   int size_log2;
+   float beta;
+   struct eq_gain *gains = NULL;
+   char *filter_path = NULL;
+   const float default_freq[] = { 0.0f, info->input_rate };
+   const float default_gain[] = { 0.0f, 0.0f };
    struct eq_data *eq = (struct eq_data*)calloc(1, sizeof(*eq));
    if (!eq)
       return NULL;
 
-   const float default_freq[] = { 0.0f, info->input_rate };
-   const float default_gain[] = { 0.0f, 0.0f };
 
-   float beta;
    config->get_float(userdata, "window_beta", &beta, 4.0f);
 
-   int size_log2;
    config->get_int(userdata, "block_size_log2", &size_log2, 8);
-   unsigned size = 1 << size_log2;
+   size = 1 << size_log2;
 
-   struct eq_gain *gains = NULL;
-   float *frequencies, *gain;
-   unsigned num_freq, num_gain;
    config->get_float_array(userdata, "frequencies", &frequencies, &num_freq, default_freq, 2);
    config->get_float_array(userdata, "gains", &gain, &num_gain, default_gain, 2);
 
-   char *filter_path = NULL;
    if (!config->get_string(userdata, "impulse_response_output", &filter_path, ""))
    {
       config->free(filter_path);
@@ -331,8 +304,9 @@ static void *eq_init(const struct dspfilter_info *info,
    eq->fftblock = (fft_complex_t*)calloc(2 * size, sizeof(*eq->fftblock));
    eq->filter   = (fft_complex_t*)calloc(2 * size, sizeof(*eq->filter));
 
-   // Use an FFT which is twice the block size with zero-padding
-   // to make circular convolution => proper convolution.
+   /* Use an FFT which is twice the block size with zero-padding
+    * to make circular convolution => proper convolution.
+    */
    eq->fft = fft_new(size_log2 + 1);
 
    if (!eq->fft || !eq->fftblock || !eq->save || !eq->block || !eq->filter)

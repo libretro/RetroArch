@@ -16,20 +16,48 @@
 #ifndef WIMP_H
 #define WIMP_H
 
+/* this is the only define missing from config.h remove these once
+ * we can build everything with a single makefile
+ */
+
+#ifndef HAVE_MENU
+#define HAVE_MENU
+#endif
+
+#include "config.h"
+#include "configuration.h"
+
 #include "wimp_global.h"
 #include <QtWidgets/qwidget.h>
 #include <QtWidgets/qapplication.h>
 #include <QtQml/qqmlapplicationengine.h>
-
+#include <QtQuick/qquickwindow.h>
 
 class WIMPSHARED_EXPORT Wimp : public QGuiApplication
 {
+    QQuickWindow *window;
+
     Q_OBJECT
     public:
         Wimp(int argc, char *argv[]): QGuiApplication(argc, argv) {}
+
+        /* create the main QT window */
         int CreateMainWindow();
-        void SetTitle(char* title);
+
+        /* get a pointer to RetroArch settings */
+        void GetSettings(settings_t *s);
+
+        void GetCollections(char* path);
+        void GetCores(char* path);
+
+    private:
+        /* pointer to RetroArch settings */
+        settings_t *settings;
+        QStringList collections;
+        QStringList cores;
+        QQmlApplicationEngine engine;
 
 };
 
 #endif // WIMP_H
+

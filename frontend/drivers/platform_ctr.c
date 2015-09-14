@@ -26,10 +26,12 @@
 #endif
 
 #include "../../general.h"
+#include "retroarch.h"
 
 #ifdef IS_SALAMANDER
 #include "../../file_ext.h"
 #else
+#include "../../menu/menu.h"
 #include "../../menu/menu_list.h"
 #endif
 
@@ -56,27 +58,27 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
 #endif
 #endif
 
-   fill_pathname_basedir(g_defaults.port_dir, elf_path_cst, sizeof(g_defaults.port_dir));
-   RARCH_LOG("port dir: [%s]\n", g_defaults.port_dir);
+   fill_pathname_basedir(g_defaults.dir.port, elf_path_cst, sizeof(g_defaults.dir.port));
+   RARCH_LOG("port dir: [%s]\n", g_defaults.dir.port);
 
-   fill_pathname_join(g_defaults.core_assets_dir, g_defaults.port_dir,
-         "downloads", sizeof(g_defaults.core_assets_dir));
-   fill_pathname_join(g_defaults.assets_dir, g_defaults.port_dir,
-         "media", sizeof(g_defaults.assets_dir));
-   fill_pathname_join(g_defaults.core_dir, g_defaults.port_dir,
-         "cores", sizeof(g_defaults.core_dir));
-   fill_pathname_join(g_defaults.core_info_dir, g_defaults.port_dir,
-         "cores", sizeof(g_defaults.core_info_dir));
-   fill_pathname_join(g_defaults.savestate_dir, g_defaults.core_dir,
-         "savestates", sizeof(g_defaults.savestate_dir));
-   fill_pathname_join(g_defaults.sram_dir, g_defaults.core_dir,
-         "savefiles", sizeof(g_defaults.sram_dir));
-   fill_pathname_join(g_defaults.system_dir, g_defaults.core_dir,
-         "system", sizeof(g_defaults.system_dir));
-   fill_pathname_join(g_defaults.playlist_dir, g_defaults.core_dir,
-         "playlists", sizeof(g_defaults.playlist_dir));
-   fill_pathname_join(g_defaults.config_path, g_defaults.port_dir,
-         "retroarch.cfg", sizeof(g_defaults.config_path));
+   fill_pathname_join(g_defaults.dir.core_assets, g_defaults.dir.port,
+         "downloads", sizeof(g_defaults.dir.core_assets));
+   fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
+         "media", sizeof(g_defaults.dir.assets));
+   fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
+         "cores", sizeof(g_defaults.dir.core));
+   fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.port,
+         "cores", sizeof(g_defaults.dir.core_info));
+   fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.core,
+         "savestates", sizeof(g_defaults.dir.savestate));
+   fill_pathname_join(g_defaults.dir.sram, g_defaults.dir.core,
+         "savefiles", sizeof(g_defaults.dir.sram));
+   fill_pathname_join(g_defaults.dir.system, g_defaults.dir.core,
+         "system", sizeof(g_defaults.dir.system));
+   fill_pathname_join(g_defaults.dir.playlist, g_defaults.dir.core,
+         "playlists", sizeof(g_defaults.dir.playlist));
+   fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
+         "retroarch.cfg", sizeof(g_defaults.path.config));
 
 #ifndef IS_SALAMANDER
 #if 0
@@ -223,7 +225,7 @@ static int frontend_ctr_parse_drive_list(void *data)
    return 0;
 }
 
-const frontend_ctx_driver_t frontend_ctx_ctr = {
+frontend_ctx_driver_t frontend_ctx_ctr = {
    frontend_ctr_get_environment_settings,
    frontend_ctr_init,
    frontend_ctr_deinit,

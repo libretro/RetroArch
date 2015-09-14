@@ -64,6 +64,13 @@ typedef enum
    MENU_HELP_LAST
 } menu_help_type_t;
 
+typedef enum
+{
+   MENU_VIDEO_DRIVER_GENERIC = 0,
+   MENU_VIDEO_DRIVER_OPENGL,
+   MENU_VIDEO_DRIVER_DIRECT3D
+} menu_video_driver_type_t;
+
 typedef struct
 {
    void *userdata;
@@ -79,11 +86,22 @@ typedef struct
    char scratch_buf[PATH_MAX_LENGTH];
    char scratch2_buf[PATH_MAX_LENGTH];
 
+   struct
+   {
+      bool fb_is_dirty;
+      bool do_messagebox;
+      bool do_pop_stack;
+      bool do_post_iterate;
+      bool do_render;
+      size_t *pop_selected;
+      char msg[PATH_MAX_LENGTH];
+   } state;
+
    /* Menu display */
    menu_display_t display;
 
    /* Menu entries */
-   menu_entries_t entries;
+   menu_entries_t *entries;
 
    bool load_no_content;
 
@@ -132,8 +150,8 @@ typedef struct menu_ctx_driver
          uint32_t label_hash, uint32_t menu_label_hash);
    bool  (*load_image)(void *data, menu_image_type_t type);
    const char *ident;
+   menu_video_driver_type_t type;
    int (*environ_cb)(menu_environ_cb_t type, void *data);
-   bool  (*perform_action)(void* data, unsigned action);
 } menu_ctx_driver_t;
 
 extern menu_ctx_driver_t menu_ctx_rmenu;
@@ -178,16 +196,6 @@ void init_menu(void);
 
 menu_handle_t *menu_driver_get_ptr(void);
 
-void menu_driver_navigation_increment(void);
-
-void menu_driver_navigation_decrement(void);
-
-void menu_driver_navigation_clear(bool pending_push);
-
-void menu_driver_navigation_set(bool scroll);
-
-void menu_driver_navigation_set_last(void);
-
 void menu_driver_set_texture(void);
 
 void menu_driver_frame(void);
@@ -196,29 +204,13 @@ void menu_driver_context_reset(void);
 
 void menu_driver_free(menu_handle_t *menu);
 
-void menu_driver_render(void);
-
 void menu_driver_toggle(bool latch);
 
-void menu_driver_render_messagebox(const char *msg);
-
-void menu_driver_populate_entries(const char *path, const char *label,
-         unsigned k);
-
 bool menu_driver_load_image(void *data, menu_image_type_t type);
-
-void  menu_driver_navigation_descend_alphabet(size_t *);
-
-void  menu_driver_navigation_ascend_alphabet(size_t *);
 
 void menu_driver_list_cache(menu_list_type_t type, unsigned action);
 
 void  menu_driver_list_free(file_list_t *list, size_t i, size_t list_size);
-
-void  menu_driver_list_insert(file_list_t *list, const char *path,
-      const char *label, unsigned type, size_t list_size);
-
-void  menu_driver_list_clear(file_list_t *list);
 
 size_t menu_driver_list_get_size(menu_list_type_t type);
 
@@ -231,10 +223,6 @@ const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void);
 void  menu_driver_context_destroy(void);
 
 bool menu_driver_alive(void);
-
-void menu_driver_set_alive(void);
-
-void menu_driver_unset_alive(void);
 
 size_t  menu_driver_list_get_selection(void);
 

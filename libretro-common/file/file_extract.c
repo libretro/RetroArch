@@ -28,7 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <zlib.h>
+#include <compat/zlib.h>
 
 /* File backends. Can be fleshed out later, but keep it simple for now.
  * The file is mapped to memory directly (via mmap() or just 
@@ -479,8 +479,7 @@ end:
    return ret;
 }
 
-
-int zlib_parse_file_iterate_step_internal(
+static int zlib_parse_file_iterate_step_internal(
       zlib_transfer_t *state, char *filename,
       const uint8_t **cdata,
       unsigned *cmode, uint32_t *size, uint32_t *csize,
@@ -519,7 +518,7 @@ int zlib_parse_file_iterate_step_internal(
    return 1;
 }
 
-int zlib_parse_file_iterate_step(zlib_transfer_t *state,
+static int zlib_parse_file_iterate_step(zlib_transfer_t *state,
       const char *valid_exts, void *userdata, zlib_file_cb file_cb)
 {
    const uint8_t *cdata = NULL;
@@ -549,7 +548,7 @@ int zlib_parse_file_iterate_step(zlib_transfer_t *state,
    return 1;
 }
 
-int zlib_parse_file_init(zlib_transfer_t *state,
+static int zlib_parse_file_init(zlib_transfer_t *state,
       const char *file)
 {
    state->backend = zlib_get_default_file_backend();
@@ -683,11 +682,11 @@ struct zip_extract_userdata
    bool found_content;
 };
 
-enum
+enum zlib_compression_mode
 {
    ZLIB_MODE_UNCOMPRESSED = 0,
    ZLIB_MODE_DEFLATE      = 8
-} zlib_compression_mode;
+};
 
 static int zip_extract_cb(const char *name, const char *valid_exts,
       const uint8_t *cdata,

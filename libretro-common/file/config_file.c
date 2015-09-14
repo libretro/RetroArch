@@ -20,19 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <file/config_file.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
-#include <compat/strl.h>
-#include <compat/posix_string.h>
-#include <compat/msvc.h>
-#include <file/file_path.h>
-#include <retro_miscellaneous.h>
-#include <string/string_list.h>
-#include <rhash.h>
 
 #if !defined(_WIN32) && !defined(__CELLOS_LV2__) && !defined(_XBOX)
 #include <sys/param.h> /* PATH_MAX */
@@ -43,8 +35,18 @@
 #include <xtl.h>
 #endif
 
-#define MAX_INCLUDE_DEPTH 16
+#include <retro_assert.h>
+#include <retro_log.h>
+#include <retro_miscellaneous.h>
+#include <compat/strl.h>
+#include <compat/posix_string.h>
+#include <compat/msvc.h>
+#include <file/config_file.h>
+#include <file/file_path.h>
+#include <string/string_list.h>
+#include <rhash.h>
 
+#define MAX_INCLUDE_DEPTH 16
 
 static config_file_t *config_file_new_internal(const char *path, unsigned depth);
 void config_file_free(config_file_t *conf);
@@ -90,7 +92,7 @@ static char *extract_value(char *line, bool is_value)
 
    if (is_value)
    {
-      while (isspace(*line))
+      while (isspace((int)*line))
          line++;
 
       /* If we don't have an equal sign here,
@@ -101,7 +103,7 @@ static char *extract_value(char *line, bool is_value)
       line++;
    }
 
-   while (isspace(*line))
+   while (isspace((int)*line))
       line++;
 
    /* We have a full string. Read until next ". */
@@ -305,10 +307,10 @@ static bool parse_line(config_file_t *conf,
    }
 
    /* Skips to first character. */
-   while (isspace(*line))
+   while (isspace((int)*line))
       line++;
 
-   while (isgraph(*line))
+   while (isgraph((int)*line))
    {
       if (idx == cur_size)
       {

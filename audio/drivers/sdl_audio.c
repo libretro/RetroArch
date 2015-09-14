@@ -13,21 +13,21 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-#include "../../driver.h"
-#include <stdlib.h>
-#include <boolean.h>
-#include <stddef.h>
 #include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "SDL.h"
 #include "SDL_audio.h"
-#include <rthreads/rthreads.h>
 
-#include "../../general.h"
+#include <boolean.h>
+#include <rthreads/rthreads.h>
 #include <queues/fifo_buffer.h>
 #include <retro_inline.h>
+
+#include "../../driver.h"
+#include "../../general.h"
 
 typedef struct sdl_audio
 {

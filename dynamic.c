@@ -17,14 +17,6 @@
 #include <string.h>
 #include <ctype.h>
 
-#ifdef NEED_DYNAMIC
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <dlfcn.h>
-#endif
-#endif
-
 #include <boolean.h>
 #include <file/file_path.h>
 #include <retro_log.h>
@@ -35,13 +27,11 @@
 #include "config.h"
 #endif
 
-#include "dynamic.h"
 #include "performance.h"
 
 #include "libretro_private.h"
 #include "cores/internal_cores.h"
 #include "retroarch.h"
-#include "runloop.h"
 #include "configuration.h"
 #include "general.h"
 #include "msg_hash.h"
@@ -337,6 +327,7 @@ static void load_symbols(enum rarch_core_type type)
             {
                RARCH_ERR("Failed to open libretro core: \"%s\"\n",
                      settings->libretro);
+               RARCH_ERR("Error(s): %s\n", dylib_error());
                rarch_fail(1, "load_dynamic()");
             }
 #endif
@@ -520,10 +511,10 @@ void libretro_get_current_core_pathname(char *name, size_t size)
    {
       char c = id[i];
 
-      if (isspace(c) || isblank(c))
+      if (isspace((int)c) || isblank((int)c))
          name[i] = '_';
       else
-         name[i] = tolower(c);
+         name[i] = tolower((int)c);
    }
 }
 
@@ -703,9 +694,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             char buf[PATH_MAX_LENGTH]         = {0};
             const char *options_path          = settings->core_options_path;
 
-            if (!*options_path && *global->config_path)
+            if (!*options_path && *global->path.config)
             {
-               fill_pathname_resolve_relative(buf, global->config_path,
+               fill_pathname_resolve_relative(buf, global->path.config,
                      "retroarch-core-options.cfg", sizeof(buf));
                options_path = buf;
             }
@@ -751,24 +742,30 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
-         if (!settings->system_directory || settings->system_directory[0] == '\0')
+         if (settings->system_directory[0] == '\0')
          {
-            RARCH_WARN("SYSTEM DIR is empty, fill assume CONTENT DIR %s\n",global->fullpath);
-            fill_pathname_basedir(settings->system_directory, global->fullpath,
-                  sizeof(settings->system_directory));
-         }
-         *(const char**)data = *settings->system_directory ?
-            settings->system_directory : NULL;
+            RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",global->path.fullpath);
+            fill_pathname_basedir(global->dir.systemdir, global->path.fullpath,
+                  sizeof(global->dir.systemdir));
 
-         RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
+            *(const char**)data = global->dir.systemdir;
+            RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
+               global->dir.systemdir);
+         }
+         else
+         {
+            *(const char**)data = settings->system_directory;
+            RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
                settings->system_directory);
+         }
+
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
-         *(const char**)data = *global->savefile_dir ?
-            global->savefile_dir : NULL;
+         *(const char**)data = *global->dir.savefile ?
+            global->dir.savefile : NULL;
          RARCH_LOG("Environ SAVE_DIRECTORY: \"%s\".\n",
-               global->savefile_dir);
+               global->dir.savefile);
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:
@@ -893,7 +890,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             }
          }
 
-         global->has_set_input_descriptors = true;
+         global->has_set.input_descriptors = true;
 
          break;
       }
@@ -1020,7 +1017,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             return false;
 
 #ifdef HAVE_NETPLAY
-         if (global->netplay_enable)
+         if (global->netplay.enable)
             return false;
 #endif
 
@@ -1039,7 +1036,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 #ifdef HAVE_NETPLAY
          /* retro_run() will be called in very strange and 
           * mysterious ways, have to disable it. */
-         if (global->netplay_enable)
+         if (global->netplay.enable)
             return false;
 #endif
 
@@ -1258,12 +1255,13 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_EXEC:
       case RETRO_ENVIRONMENT_EXEC_ESCAPE:
-
-         if (data)
-            strlcpy(global->fullpath, (const char*)data,
-                  sizeof(global->fullpath));
-         else
-            *global->fullpath = '\0';
+         if (global->path.fullpath != data)
+         {
+            *global->path.fullpath = '\0';
+            if (data)
+               strlcpy(global->path.fullpath, (const char*)data,
+                     sizeof(global->path.fullpath));
+         }
 
 #if defined(RARCH_CONSOLE)
          if (driver->frontend_ctx && driver->frontend_ctx->set_fork)

@@ -15,16 +15,14 @@
  */
 
 #include <string.h>
+
 #include <string/string_list.h>
-#include "audio_driver.h"
+
 #include "audio_monitor.h"
+#include "audio_driver.h"
 #include "audio_utils.h"
 #include "audio_thread_wrapper.h"
-#include "../driver.h"
 #include "../general.h"
-#include "../retroarch.h"
-#include "../runloop.h"
-#include "../performance.h"
 
 #ifndef AUDIO_BUFFER_FREE_SAMPLES_COUNT
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
@@ -118,8 +116,8 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef EMSCRIPTEN
    &audio_rwebaudio,
 #endif
-#ifdef PSP
-   &audio_psp1,
+#if defined(PSP) || defined(VITA)
+   &audio_psp,
 #endif   
 #ifdef _3DS
    &audio_ctr,
@@ -601,7 +599,6 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
    size_t   output_size           = sizeof(float);
    struct resampler_data src_data = {0};
    struct rarch_dsp_data dsp_data = {0};
-   runloop_t *runloop             = rarch_main_get_ptr();
    driver_t  *driver              = driver_get_ptr();
    const audio_driver_t *audio = driver ? 
       (const audio_driver_t*)driver->audio : NULL;
@@ -617,7 +614,7 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
          driver->recording->push_audio(driver->recording_data, &ffemu_data);
    }
 
-   if (runloop->is_paused || settings->audio.mute_enable)
+   if (rarch_main_is_paused() || settings->audio.mute_enable)
       return true;
    if (!driver->audio_active || !audio_data.data)
       return false;
@@ -654,7 +651,7 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
       audio_driver_readjust_input_rate();
 
    src_data.ratio = audio_data.src_ratio;
-   if (runloop->is_slowmotion)
+   if (rarch_main_is_slowmotion())
       src_data.ratio *= settings->slowmotion_ratio;
 
    RARCH_PERFORMANCE_INIT(resampler_proc);

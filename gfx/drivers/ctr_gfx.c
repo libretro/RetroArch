@@ -63,7 +63,6 @@ typedef struct ctr_video
       ctr_vertex_t* frame_coords;
    }menu;
 
-   uint64_t frame_count;
    uint32_t* display_list;
    int display_list_size;
    void* texture_linear;
@@ -77,11 +76,16 @@ typedef struct ctr_video
    DVLB_s*         dvlb;
    shaderProgram_s shader;
 
+   video_viewport_t vp;
+
    bool rgb32;
    bool vsync;
    bool smooth;
    bool menu_texture_enable;
    unsigned rotation;
+   bool keep_aspect;
+   bool should_resize;
+
 } ctr_video_t;
 
 static INLINE void ctr_set_scale_vector(ctr_scale_vector_t* vec,
@@ -92,6 +96,117 @@ static INLINE void ctr_set_scale_vector(ctr_scale_vector_t* vec,
    vec->y = -2.0 / viewport_height;
    vec->u =  1.0 / texture_width;
    vec->v = -1.0 / texture_height;
+}
+
+static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
+{
+   if (ctr->rotation == 0)
+   {
+      ctr->frame_coords->x0 = ctr->vp.x;
+      ctr->frame_coords->y0 = ctr->vp.y;
+      ctr->frame_coords->x1 = ctr->vp.x + ctr->vp.width;
+      ctr->frame_coords->y1 = ctr->vp.y + ctr->vp.height;
+   }
+   else if (ctr->rotation == 1) /* 90° */
+   {
+      ctr->frame_coords->x1 = ctr->vp.x;
+      ctr->frame_coords->y0 = ctr->vp.y;
+      ctr->frame_coords->x0 = ctr->vp.x + ctr->vp.width;
+      ctr->frame_coords->y1 = ctr->vp.y + ctr->vp.height;
+   }
+   else if (ctr->rotation == 2) /* 180° */
+   {
+      ctr->frame_coords->x1 = ctr->vp.x;
+      ctr->frame_coords->y1 = ctr->vp.y;
+      ctr->frame_coords->x0 = ctr->vp.x + ctr->vp.width;
+      ctr->frame_coords->y0 = ctr->vp.y + ctr->vp.height;
+   }
+   else /* 270° */
+   {
+      ctr->frame_coords->x0 = ctr->vp.x;
+      ctr->frame_coords->y1 = ctr->vp.y;
+      ctr->frame_coords->x1 = ctr->vp.x + ctr->vp.width;
+      ctr->frame_coords->y0 = ctr->vp.y + ctr->vp.height;
+   }
+}
+
+
+static void ctr_update_viewport(ctr_video_t* ctr)
+{
+   int x                = 0;
+   int y                = 0;
+   float device_aspect  = ((float)ctr->vp.full_width) / ctr->vp.full_height;
+   float width          = ctr->vp.full_width;
+   float height         = ctr->vp.full_height;
+   settings_t *settings = config_get_ptr();
+
+   if (settings->video.scale_integer)
+   {
+      video_viewport_get_scaled_integer(&ctr->vp, ctr->vp.full_width,
+            ctr->vp.full_height, video_driver_get_aspect_ratio(), ctr->keep_aspect);
+      width  = ctr->vp.width;
+      height = ctr->vp.height;
+   }
+   else if (ctr->keep_aspect)
+   {
+      float delta;
+      float desired_aspect = video_driver_get_aspect_ratio();
+
+#if defined(HAVE_MENU)
+      if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      {
+         struct video_viewport *custom = video_viewport_get_custom();
+
+         if (custom)
+         {
+            x      = custom->x;
+            y      = custom->y;
+            width  = custom->width;
+            height = custom->height;
+         }
+      }
+      else
+#endif
+      {
+         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
+         {
+            /* If the aspect ratios of screen and desired aspect
+             * ratio are sufficiently equal (floating point stuff),
+             * assume they are actually equal.
+             */
+         }
+         else if (device_aspect > desired_aspect)
+         {
+            delta = (desired_aspect / device_aspect - 1.0f)
+               / 2.0f + 0.5f;
+            x     = (int)roundf(width * (0.5f - delta));
+            width = (unsigned)roundf(2.0f * width * delta);
+         }
+         else
+         {
+            delta  = (device_aspect / desired_aspect - 1.0f)
+               / 2.0f + 0.5f;
+            y      = (int)roundf(height * (0.5f - delta));
+            height = (unsigned)roundf(2.0f * height * delta);
+         }
+      }
+
+      ctr->vp.x      = x;
+      ctr->vp.y      = y;
+      ctr->vp.width  = width;
+      ctr->vp.height = height;
+   }
+   else
+   {
+      ctr->vp.x = ctr->vp.y = 0;
+      ctr->vp.width = width;
+      ctr->vp.height = height;
+   }
+
+   ctr_set_screen_coords(ctr);
+
+   ctr->should_resize = false;
+
 }
 
 static void* ctr_init(const video_info_t* video,
@@ -107,6 +222,15 @@ static void* ctr_init(const video_info_t* video,
 //   gfxSet3D(false);
 
    memset(ctr, 0, sizeof(ctr_video_t));
+
+
+   ctr->vp.x                = 0;
+   ctr->vp.y                = 0;
+   ctr->vp.width            = CTR_TOP_FRAMEBUFFER_WIDTH;
+   ctr->vp.height           = CTR_TOP_FRAMEBUFFER_HEIGHT;
+   ctr->vp.full_width       = CTR_TOP_FRAMEBUFFER_WIDTH;
+   ctr->vp.full_height      = CTR_TOP_FRAMEBUFFER_HEIGHT;
+
 
    ctr->display_list_size = 0x40000;
    ctr->display_list = linearAlloc(ctr->display_list_size * sizeof(uint32_t));
@@ -167,7 +291,7 @@ static void* ctr_init(const video_info_t* video,
    GPU_DepthMap(-1.0f, 0.0f);
    GPU_SetFaceCulling(GPU_CULL_NONE);
    GPU_SetStencilTest(false, GPU_ALWAYS, 0x00, 0xFF, 0x00);
-   GPU_SetStencilOp(GPU_KEEP, GPU_KEEP, GPU_KEEP);
+   GPU_SetStencilOp(GPU_STENCIL_KEEP, GPU_STENCIL_KEEP, GPU_STENCIL_KEEP);
    GPU_SetBlendingColor(0, 0, 0, 0);
 //      GPU_SetDepthTestAndWriteMask(true, GPU_GREATER, GPU_WRITE_ALL);
    GPU_SetDepthTestAndWriteMask(false, GPU_ALWAYS, GPU_WRITE_ALL);
@@ -213,11 +337,17 @@ static void* ctr_init(const video_info_t* video,
       *input_data = ctrinput;
    }
 
+   ctr->keep_aspect   = true;
+   ctr->should_resize = true;
+   ctr->smooth        = true;
+
    return ctr;
 }
 
 static bool ctr_frame(void* data, const void* frame,
-      unsigned width, unsigned height, unsigned pitch, const char* msg)
+      unsigned width, unsigned height, 
+      uint64_t frame_count,
+      unsigned pitch, const char* msg)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
    settings_t* settings = config_get_ptr();
@@ -252,7 +382,6 @@ static bool ctr_frame(void* data, const void* frame,
    svcWaitSynchronization(gspEvents[GSPEVENT_PPF], 20000000);
    svcClearEvent(gspEvents[GSPEVENT_PPF]);
 
-   gfxSwapBuffersGpu();   
    frames++;
 
    if (ctr->vsync)
@@ -274,6 +403,11 @@ static bool ctr_frame(void* data, const void* frame,
 
    RARCH_PERFORMANCE_INIT(ctrframe_f);
    RARCH_PERFORMANCE_START(ctrframe_f);
+
+   if (ctr->should_resize)
+      ctr_update_viewport(ctr);
+
+
 
    ctrGuSetMemoryFill(true, (u32*)CTR_GPU_FRAMEBUFFER, 0x00000000,
                     (u32*)(CTR_GPU_FRAMEBUFFER + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * sizeof(uint32_t)),
@@ -321,7 +455,8 @@ static bool ctr_frame(void* data, const void* frame,
 
 
    ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(ctr->texture_swizzled), ctr->texture_width, ctr->texture_height,
-                  GPU_TEXTURE_MAG_FILTER(GPU_LINEAR) | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR) |
+                  (ctr->smooth? GPU_TEXTURE_MAG_FILTER(GPU_LINEAR)  | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR)
+                              : GPU_TEXTURE_MAG_FILTER(GPU_NEAREST) | GPU_TEXTURE_MIN_FILTER(GPU_NEAREST)) |
                   GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
                   GPU_RGB565);
 
@@ -331,7 +466,7 @@ static bool ctr_frame(void* data, const void* frame,
 
    ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->frame_coords));
    ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->scale_vector, 1);
-   GPU_DrawArray(GPU_UNKPRIM, 1);
+   GPU_DrawArray(GPU_UNKPRIM, 0, 1);
 
    if (ctr->menu_texture_enable)
    {
@@ -350,7 +485,7 @@ static bool ctr_frame(void* data, const void* frame,
 
       ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->menu.frame_coords));
       ctrGuSetVertexShaderFloatUniform(1, (float*)&ctr->menu.scale_vector, 1);
-      GPU_DrawArray(GPU_UNKPRIM, 1);
+      GPU_DrawArray(GPU_UNKPRIM, 0, 1);
    }
 
    GPU_FinishDrawing();
@@ -360,9 +495,8 @@ static bool ctr_frame(void* data, const void* frame,
    ctrGuDisplayTransfer(true, CTR_GPU_FRAMEBUFFER, 240,400, CTRGU_RGBA8,
                         gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL), 240,400,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
+   gfxSwapBuffersGpu();
    RARCH_PERFORMANCE_STOP(ctrframe_f);
-
-   ctr->frame_count++;
 
    return true;
 }
@@ -473,6 +607,7 @@ static void ctr_set_rotation(void* data, unsigned rotation)
       return;
 
    ctr->rotation = rotation;
+   ctr->should_resize = true;
 }
 static void ctr_set_filtering(void* data, unsigned index, bool smooth)
 {
@@ -484,34 +619,54 @@ static void ctr_set_filtering(void* data, unsigned index, bool smooth)
 
 static void ctr_set_aspect_ratio(void* data, unsigned aspectratio_index)
 {
-   (void)data;
-   (void)aspectratio_index;
-   return;
+   ctr_video_t *ctr = (ctr_video_t*)data;
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+
+   switch (aspectratio_index)
+   {
+      case ASPECT_RATIO_SQUARE:
+         video_viewport_set_square_pixel(
+               av_info->geometry.base_width,
+               av_info->geometry.base_height);
+         break;
+
+      case ASPECT_RATIO_CORE:
+         video_viewport_set_core();
+         break;
+
+      case ASPECT_RATIO_CONFIG:
+         video_viewport_set_config();
+         break;
+
+      default:
+         break;
+   }
+
+   video_driver_set_aspect_ratio_value(aspectratio_lut[aspectratio_index].value);
+
+   ctr->keep_aspect = true;
+   ctr->should_resize = true;
 }
 
 static void ctr_apply_state_changes(void* data)
 {
-   (void)data;
-   return;
+   ctr_video_t* ctr = (ctr_video_t*)data;
+
+   if (ctr)
+      ctr->should_resize = true;
+
 }
 
 static void ctr_viewport_info(void* data, struct video_viewport* vp)
 {
-   (void)data;
-   return;
-}
-
-static uint64_t ctr_get_frame_count(void *data)
-{
    ctr_video_t* ctr = (ctr_video_t*)data;
-   if (!ctr)
-      return 0;
-   return ctr->frame_count;
+
+   if (ctr)
+      *vp = ctr->vp;
 }
 
 static const video_poke_interface_t ctr_poke_interface =
 {
-   ctr_get_frame_count,
    NULL,
    ctr_set_filtering,
    NULL, /* get_video_output_size */

@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "rpng_common.h"
+#include "rpng_internal.h"
 
 #undef GOTO_END_ERROR
 #define GOTO_END_ERROR() do { \

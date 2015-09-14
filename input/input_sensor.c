@@ -15,6 +15,7 @@
  */
 
 #include "input_sensor.h"
+
 #include "../driver.h"
 
 /**

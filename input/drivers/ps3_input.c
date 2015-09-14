@@ -21,7 +21,7 @@
 
 #include <sdk_version.h>
 
-#include "../../ps3/sdk_defines.h"
+#include "../../defines/ps3_defines.h"
 
 #include "../../driver.h"
 #include "../../libretro.h"

@@ -17,6 +17,13 @@
 #ifndef _MENU_NAVIGATION_H
 #define _MENU_NAVIGATION_H
 
+#include <stddef.h>
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <unistd.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,8 +43,6 @@ typedef struct menu_navigation
    } scroll;
    size_t selection_ptr;
 } menu_navigation_t;
-
-menu_navigation_t *menu_navigation_get_ptr(void);
 
 /**
  * menu_navigation_clear:
@@ -101,7 +106,7 @@ void menu_navigation_descend_alphabet(menu_navigation_t *nav, size_t *ptr_out);
  **/
 void menu_navigation_ascend_alphabet(menu_navigation_t *nav, size_t *ptr_out);
 
-ssize_t menu_navigation_get_current_selection(void);
+size_t menu_navigation_get_selection(menu_navigation_t *nav);
 
 #ifdef __cplusplus
 }

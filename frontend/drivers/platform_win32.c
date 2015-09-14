@@ -27,7 +27,6 @@
 #include "../../general.h"
 #include "../../menu/menu.h"
 
-#if defined(_WIN32)
 /* We only load this library once, so we let it be 
  * unloaded at application shutdown, since unloading 
  * it early seems to cause issues on some systems.
@@ -95,7 +94,6 @@ static void gfx_set_dwm(void)
       RARCH_ERR("Failed to set composition state ...\n");
    dwm_composition_disabled = settings->video.disable_composition;
 }
-#endif
 
 static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 {
@@ -227,7 +225,7 @@ static int frontend_win32_parse_drive_list(void *data)
    return 0;
 }
 
-const frontend_ctx_driver_t frontend_ctx_win32 = {
+frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,						   /* environment_get */
    frontend_win32_init,
    NULL,                           /* deinit */

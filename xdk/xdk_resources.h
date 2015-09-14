@@ -22,13 +22,13 @@ DWORD XBResource_SizeOf( LPDIRECT3DRESOURCE pResource );
 struct XBRESOURCE
 {
 #if defined(_XBOX1)
-   CHAR* strName;
+   char *strName;
    DWORD dwOffset;
 #elif defined(_XBOX360)
    DWORD dwType;
    DWORD dwOffset;
    DWORD dwSize;
-   CHAR* strName;
+   char *strName;
 #endif
 };
 
@@ -107,15 +107,15 @@ class PackedResource
       { return (LPDIRECT3DVERTEXBUFFER)GetResource( dwOffset ); }
 
       // Functions to retrieve resources by their name
-      void *GetData( const CHAR* strName ) const;
+      void *GetData( const char* strName ) const;
 
-      LPDIRECT3DRESOURCE GetResource( const CHAR* strName ) const
+      LPDIRECT3DRESOURCE GetResource( const char* strName ) const
       { return RegisterResource( (LPDIRECT3DRESOURCE)GetData( strName ) ); }
 
-      LPDIRECT3DTEXTURE GetTexture( const CHAR* strName ) const
+      LPDIRECT3DTEXTURE GetTexture( const char* strName ) const
       { return (LPDIRECT3DTEXTURE)GetResource( strName ); }
 
-      LPDIRECT3DVERTEXBUFFER GetVertexBuffer( const CHAR* strName ) const
+      LPDIRECT3DVERTEXBUFFER GetVertexBuffer( const char* strName ) const
       { return (LPDIRECT3DVERTEXBUFFER)GetResource( strName ); }
 
       // Constructor/destructor

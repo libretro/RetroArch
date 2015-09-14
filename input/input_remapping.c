@@ -14,7 +14,6 @@
  */
 
 #include "input_remapping.h"
-
 #include <file/config_file.h>
 #include <file/file_path.h>
 

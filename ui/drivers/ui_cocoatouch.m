@@ -26,6 +26,7 @@
 #include "../ui_companion_driver.h"
 #include "../../input/drivers/cocoa_input.h"
 #include "../../menu/menu_setting.h"
+#include "../../retroarch.h"
 
 #ifdef HAVE_MFI
 #include "../../input/drivers_hid/mfi_hid.h"
@@ -35,33 +36,36 @@
 #include "../../frontend/frontend.h"
 #include "../../runloop_data.h"
 
+static char msg_old[PATH_MAX_LENGTH];
 static id apple_platform;
 static CFRunLoopObserverRef iterate_observer;
-static CFRunLoopTimerRef iterate_timer;
 
 /* forward declaration */
 void apple_rarch_exited(void);
 
-static void rarch_draw(void)
+static void rarch_enable_ui(void)
 {
-   runloop_t *runloop = rarch_main_get_ptr();
-   int ret            = 0;
-   bool iterate       = iterate_observer && !runloop->is_paused;
+   ui_companion_set_foreground(true);
+   rarch_main_set_pause(true);
+   rarch_main_set_idle(true);
+}
 
-   if (iterate)
-   {
-      ret                = rarch_main_iterate();
-   }
+static void rarch_disable_ui(void)
+{
+   ui_companion_set_foreground(false);
+   rarch_main_set_pause(false);
+   rarch_main_set_idle(false);
+}
 
+static void rarch_draw_observer(CFRunLoopObserverRef observer,
+    CFRunLoopActivity activity, void *info)
+{
+   unsigned sleep_ms  = 0;
+   int ret            = rarch_main_iterate(&sleep_ms);
+
+   if (ret == 1 && !ui_companion_is_on_foreground() && sleep_ms > 0)
+      rarch_sleep(sleep_ms);
    rarch_main_data_iterate();
-
-   if (iterate_timer)
-   {
-      if (rarch_main_data_active())
-         CFRunLoopAddTimer(CFRunLoopGetMain(), iterate_timer, kCFRunLoopCommonModes); 
-      else
-         CFRunLoopRemoveTimer(CFRunLoopGetMain(), iterate_timer, kCFRunLoopCommonModes); 
-   }
 
    if (ret == -1)
    {
@@ -70,22 +74,10 @@ static void rarch_draw(void)
       return;
    }
 
-   if (runloop->is_idle)
+   if (rarch_main_is_idle())
       return;
    CFRunLoopWakeUp(CFRunLoopGetMain());
 }
-
-static void rarch_draw_observer(CFRunLoopObserverRef observer,
-    CFRunLoopActivity activity, void *info)
-{
-  rarch_draw();
-}
-
-static void rarch_draw_timer(CFRunLoopTimerRef timer, void *info)
-{
-  rarch_draw();
-}
-
 
 apple_frontend_settings_t apple_frontend_settings;
 
@@ -284,66 +276,13 @@ enum
    if (rarch_main(0, NULL, NULL))
       apple_rarch_exited();
 
-#ifdef HAVE_MFI
-   apple_gamecontroller_init();
-#endif
-
-   [self apple_start_iteration];
-}
-
-void apple_start_iterate_observer()
-{
-  if (iterate_observer)
-    return;
-  
   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
                                              true, 0, rarch_draw_observer, 0);
   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
-}
 
-void apple_start_iterate_timer()
-{
-  CFTimeInterval interval;
-  
-  if (iterate_timer)
-    return;
-
-  // This number is a double measured in seconds.
-  interval = 1.0 / 60.0 / 1000.0;
-
-  iterate_timer = CFRunLoopTimerCreate(0, interval, interval, 0, 0, rarch_draw_timer, 0);
-}
-
-- (void) apple_start_iteration
-{
-  apple_start_iterate_observer();
-  apple_start_iterate_timer();
-}
-
-void apple_stop_iterate_observer()
-{
-    if (!iterate_observer)
-        return;
-    
-    CFRunLoopObserverInvalidate(iterate_observer);
-    CFRelease(iterate_observer);
-    iterate_observer = NULL;
-}
-
-void apple_stop_iterate_timer()
-{
-    if (!iterate_timer)
-        return;
-    
-    CFRunLoopTimerInvalidate(iterate_timer);
-    CFRelease(iterate_timer);
-    iterate_timer = NULL;
-}
-
-- (void) apple_stop_iteration
-{
-  apple_stop_iterate_observer();
-  apple_stop_iterate_timer();
+#ifdef HAVE_MFI
+   apple_gamecontroller_init();
+#endif
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
@@ -353,7 +292,9 @@ void apple_stop_iterate_timer()
 
 - (void)applicationWillTerminate:(UIApplication *)application
 {
-    [self apple_stop_iteration];
+   CFRunLoopObserverInvalidate(iterate_observer);
+   CFRelease(iterate_observer);
+   iterate_observer = NULL;
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
@@ -398,40 +339,36 @@ void apple_stop_iterate_timer()
 
 - (void)showGameView
 {
-   runloop_t *runloop = rarch_main_get_ptr();
-
    [self popToRootViewControllerAnimated:NO];
    [self setToolbarHidden:true animated:NO];
    [[UIApplication sharedApplication] setStatusBarHidden:true withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [self.window setRootViewController:[CocoaView get]];
 
-   runloop->is_paused                     = false;
-   runloop->is_idle                       = false;
-   runloop->ui_companion_is_on_foreground = false;
+   ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_AUDIO_START);
+   rarch_disable_ui();
 }
 
 - (IBAction)showPauseMenu:(id)sender
 {
-   runloop_t *runloop = rarch_main_get_ptr();
-    
-   if (runloop)
-   {
-       runloop->is_paused                     = true;
-       runloop->is_idle                       = true;
-       runloop->ui_companion_is_on_foreground = true;
-   }
+   ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_AUDIO_STOP);
+   rarch_enable_ui();
 
    [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:false];
    [self.window setRootViewController:self];
 }
 
+static void ui_companion_cocoatouch_event_command(void *data,
+                                                  enum event_command cmd)
+{
+    (void)data;
+    event_command(cmd);
+}
+
 - (void)toggleUI
 {
-   runloop_t *runloop = rarch_main_get_ptr();
-
-   if (runloop->ui_companion_is_on_foreground)
+   if (ui_companion_is_on_foreground())
    {
       [self showGameView];
    }
@@ -468,6 +405,11 @@ void apple_stop_iterate_timer()
   [self.mainmenu reloadData];
 }
 
+- (void)mainMenuRenderMessageBox:(NSString *)msg
+{
+  [self.mainmenu renderMessageBox:msg];
+}
+
 @end
 
 int main(int argc, char *argv[])
@@ -502,27 +444,12 @@ typedef struct ui_companion_cocoatouch
    void *empty;
 } ui_companion_cocoatouch_t;
 
-static void ui_companion_cocoatouch_switch_to_ios(void *data)
-{
-   RetroArch_iOS *ap  = NULL;
-   runloop_t *runloop = rarch_main_get_ptr();
-    
-   (void)data;
-
-   if (!apple_platform)
-      return;
-    
-   ap = (RetroArch_iOS *)apple_platform;
-   runloop->is_idle = true;
-   [ap showPauseMenu:ap];
-}
-
 static void ui_companion_cocoatouch_notify_content_loaded(void *data)
 {
    RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
-   
-    (void)data;
-    
+
+   (void)data;
+
    if (ap)
       [ap showGameView];
 }
@@ -539,9 +466,12 @@ static void ui_companion_cocoatouch_toggle(void *data)
 
 static int ui_companion_cocoatouch_iterate(void *data, unsigned action)
 {
-   (void)data;
+   RetroArch_iOS *ap  = (RetroArch_iOS*)apple_platform;
 
-   ui_companion_cocoatouch_switch_to_ios(data);
+   (void)data;
+    
+   if (ap)
+      [ap showPauseMenu:ap];
 
    return 0;
 }
@@ -563,28 +493,38 @@ static void *ui_companion_cocoatouch_init(void)
 
    if (!handle)
       return NULL;
+    
+   rarch_enable_ui();
 
    return handle;
-}
-
-static void ui_companion_cocoatouch_event_command(void *data,
-    enum event_command cmd)
-{
-   (void)data;
-   event_command(cmd);
 }
 
 static void ui_companion_cocoatouch_notify_list_pushed(void *data,
    file_list_t *list, file_list_t *menu_list)
 {
-    (void)data;
-    (void)list;
-    (void)menu_list;
+   RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
 
-    RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
-
-    if (ap)
+   if (ap)
       [ap mainMenuRefresh];
+}
+
+static void ui_companion_cocoatouch_notify_refresh(void *data)
+{
+   RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
+
+   if (ap)
+      [ap mainMenuRefresh];
+}
+
+static void ui_companion_cocoatouch_render_messagebox(const char *msg)
+{
+   RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
+
+   if (ap && strcmp(msg, msg_old))
+   {
+      [ap mainMenuRenderMessageBox: [NSString stringWithUTF8String:msg]];
+      strlcpy(msg_old, msg, sizeof(msg_old));
+   }
 }
 
 const ui_companion_driver_t ui_companion_cocoatouch = {
@@ -595,5 +535,7 @@ const ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_event_command,
    ui_companion_cocoatouch_notify_content_loaded,
    ui_companion_cocoatouch_notify_list_pushed,
+   ui_companion_cocoatouch_notify_refresh,
+   ui_companion_cocoatouch_render_messagebox,
    "cocoatouch",
 };

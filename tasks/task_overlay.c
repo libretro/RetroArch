@@ -18,8 +18,8 @@
 #include <rthreads/rthreads.h>
 #endif
 
-#include "../input/input_overlay.h"
 #include "tasks.h"
+#include "../input/input_overlay.h"
 
 #ifdef HAVE_THREADS
 static slock_t *overlay_lock;

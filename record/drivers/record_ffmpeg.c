@@ -20,9 +20,26 @@
 #include "../../config.h"
 #endif
 
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <assert.h>
+
+#ifdef FFEMU_PERF
+#include <time.h>
+#endif
+
+#include <boolean.h>
+#include <queues/fifo_buffer.h>
+#include <rthreads/rthreads.h>
+#include <gfx/scaler/scaler.h>
+#include <file/config_file.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 #include <libavcodec/avcodec.h>
 #include <libavutil/mathematics.h>
 #include <libavutil/avutil.h>
@@ -36,26 +53,14 @@ extern "C" {
 #include <libavutil/avconfig.h>
 #include <libavutil/pixdesc.h>
 #include <libswscale/swscale.h>
+
 #ifdef __cplusplus
 }
 #endif
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <boolean.h>
-#include <queues/fifo_buffer.h>
-#include <rthreads/rthreads.h>
 #include "../../general.h"
-#include <gfx/scaler/scaler.h>
-#include <file/config_file.h>
 #include "../../audio/audio_utils.h"
 #include "../record_driver.h"
-#include <assert.h>
-
-#ifdef FFEMU_PERF
-#include <time.h>
-#endif
 
 #if LIBAVUTIL_VERSION_INT <= AV_VERSION_INT(52, 9, 0)
 #define av_frame_alloc avcodec_alloc_frame

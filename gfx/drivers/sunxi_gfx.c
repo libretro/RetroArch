@@ -24,6 +24,7 @@
 #include <sys/ioctl.h>
 #include <linux/fb.h>
 #include <signal.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <rthreads/rthreads.h>
 
@@ -498,7 +499,6 @@ struct sunxi_page
 
 struct sunxi_video
 {
-   uint64_t frame_count;
    void *font;
    const font_renderer_driver_t *font_driver;
 
@@ -541,7 +541,7 @@ struct sunxi_video
    unsigned int menu_height;
    unsigned int menu_pitch;
 
-   bool aspect_changed;
+   float aspect_ratio;
 };
 
 static void sunxi_blank_console(struct sunxi_video *_dispvars)
@@ -632,6 +632,11 @@ static void *sunxi_gfx_init(const video_info_t *video,
    _dispvars->keep_vsync          = true;
    _dispvars->menu_active         = false;
    _dispvars->bytes_per_pixel     = video->rgb32 ? 4 : 2;
+   /* It's very important that we set aspect here because the 
+    * call seq when a core is loaded is gfx_init()->set_aspect()->gfx_frame()
+    * and we don't want the main surface to be setup in set_aspect() 
+    * before we get to gfx_frame(). */
+   _dispvars->aspect_ratio = video_driver_get_aspect_ratio();
 
    switch (_dispvars->bytes_per_pixel)
    {
@@ -744,29 +749,7 @@ static void sunxi_setup_scale (void *data,
       _dispvars->pages[i].address = ((uint32_t*) _dispvars->sunxi_disp->framebuffer_addr + (_dispvars->sunxi_disp->yres + i * _dispvars->src_height) * _dispvars->dst_pitch/4);
    }
 
-   switch (settings->video.aspect_ratio_idx)
-   {
-      case ASPECT_RATIO_4_3:
-         aspect = (float)4 / (float)3;
-         break;
-      case ASPECT_RATIO_16_9:
-         aspect = (float)16 / (float)9;
-         break;
-      case ASPECT_RATIO_16_10: 
-         aspect = (float)16 / (float)10;
-         break;
-      case ASPECT_RATIO_16_15: 
-         aspect = (float)16 / (float)15;
-         break;
-      case ASPECT_RATIO_CORE: 
-         aspect = (float)_dispvars->src_width / (float)_dispvars->src_height;
-         break;
-      default: 
-         aspect = (float)_dispvars->src_width / (float)_dispvars->src_height;
-         break;
-   }        
-
-   visible_width = _dispvars->sunxi_disp->yres * aspect;
+   visible_width = _dispvars->sunxi_disp->yres * _dispvars->aspect_ratio;
    xpos = (_dispvars->sunxi_disp->xres - visible_width) / 2; 
 
    /* setup layer window */
@@ -777,7 +760,7 @@ static void sunxi_setup_scale (void *data,
 }
 
 static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
-      unsigned height, unsigned pitch, const char *msg)
+      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
 
@@ -803,8 +786,6 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
    }
 
    sunxi_update_main(frame, _dispvars);
-
-   _dispvars->frame_count++;
 
    return true;
 }
@@ -897,52 +878,57 @@ static void sunxi_set_texture_enable(void *data, bool state, bool full_screen)
 static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
-   uint32_t line[dst_width]; 
-   uint16_t src_pix;
-   uint32_t R, G, B, dst_pix;
-   unsigned int i, j;
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
-   
-   /* We have to go on a pixel format conversion adventure for now, until we can
-    * convince RGUI to output in an 8888 format. */
-   unsigned int src_pitch        = width * 2; 
-   unsigned int dst_pitch        = _dispvars->sunxi_disp->xres * 4;
-   unsigned int dst_width        = _dispvars->sunxi_disp->xres;
+  
+   if (_dispvars->menu_active) {
+      uint16_t src_pix;
+      uint32_t R, G, B, dst_pix;
+      unsigned int i, j;
+ 
+      /* We have to go on a pixel format conversion adventure for now, until we can
+       * convince RGUI to output in an 8888 format. */
+      unsigned int src_pitch        = width * 2; 
+      unsigned int dst_pitch        = _dispvars->sunxi_disp->xres * 4;
+      unsigned int dst_width        = _dispvars->sunxi_disp->xres;
+      uint32_t line[dst_width]; 
 
-   /* Remember, memcpy() works with 8bits pointers for increments. */
-   char *dst_base_addr           = (char*)(_dispvars->pages[0].address);
-   char *src_base_addr           = (char*)frame;  
+      /* Remember, memcpy() works with 8bits pointers for increments. */
+      char *dst_base_addr           = (char*)(_dispvars->pages[0].address);
+      char *src_base_addr           = (char*)frame;  
 
-   for (i = 0; i < height; i++)
-   {
-      for (j = 0; j < src_pitch / 2; j++)
+      for (i = 0; i < height; i++)
       {
-         src_pix = *((uint16_t*)frame + (src_pitch / 2 * i) + j); 
-         /* The hex AND is for keeping only the part we need for each component. */
-         R = (src_pix << 8) & 0x00FF0000;
-         G = (src_pix << 4) & 0x0000FF00;
-         B = (src_pix << 0) & 0x000000FF;
-         line[j] = (0 | R | G | B); 
+	 for (j = 0; j < src_pitch / 2; j++)
+	 {
+	    src_pix = *((uint16_t*)frame + (src_pitch / 2 * i) + j); 
+	    /* The hex AND is for keeping only the part we need for each component. */
+	    R = (src_pix << 8) & 0x00FF0000;
+	    G = (src_pix << 4) & 0x0000FF00;
+	    B = (src_pix << 0) & 0x000000FF;
+	    line[j] = (0 | R | G | B); 
+	 }
+	 memcpy(dst_base_addr + (dst_pitch * i), (char*)line, dst_pitch);
       }
-      memcpy(dst_base_addr + (dst_pitch * i), (char*)line, dst_pitch);
-   }
 
-   /* Issue pageflip. Will flip on next vsync. */
-   sunxi_layer_set_rgb_input_buffer(_dispvars->sunxi_disp,
-         _dispvars->sunxi_disp->bits_per_pixel, 
-         _dispvars->pages[0].offset, width, height, _dispvars->sunxi_disp->xres);
+      /* Issue pageflip. Will flip on next vsync. */
+      sunxi_layer_set_rgb_input_buffer(_dispvars->sunxi_disp,
+	    _dispvars->sunxi_disp->bits_per_pixel, 
+	    _dispvars->pages[0].offset, width, height, _dispvars->sunxi_disp->xres);
+   }
 }
 
-static uint64_t sunxi_get_frame_count(void *data)
+static void sunxi_set_aspect_ratio (void *data, unsigned aspect_ratio_idx) 
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
-   if (!_dispvars)
-      return 0;
-   return _dispvars->frame_count;
+   /* Here we obtain the new aspect ratio. */
+   float new_aspect = aspectratio_lut[aspect_ratio_idx].value;
+   if (new_aspect != _dispvars->aspect_ratio) {
+      _dispvars->aspect_ratio = new_aspect;
+      sunxi_setup_scale(_dispvars, _dispvars->src_width, _dispvars->src_height, _dispvars->src_pitch);
+   }
 }
 
 static const video_poke_interface_t sunxi_poke_interface = {
-   sunxi_get_frame_count,
    NULL, /* set_video_mode */
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */
@@ -950,7 +936,7 @@ static const video_poke_interface_t sunxi_poke_interface = {
    NULL, /* get_video_output_next */
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
-   NULL, /* sunxi_set_aspect_ratio */
+   sunxi_set_aspect_ratio,
    NULL, /* sunxi_apply_state_changes */
 #ifdef HAVE_MENU
    sunxi_set_texture_frame,

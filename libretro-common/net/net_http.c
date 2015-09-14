@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+
 #include <net/net_http.h>
 #include <net/net_compat.h>
 #include <compat/strl.h>
@@ -226,7 +227,7 @@ bool net_http_connection_done(struct http_connection_t *conn)
    if (*conn->scan == ':')
    {
 
-      if (!isdigit(conn->scan[1]))
+      if (!isdigit((int)conn->scan[1]))
          return false;
 
       conn->port = strtoul(conn->scan + 1, &conn->scan, 10);

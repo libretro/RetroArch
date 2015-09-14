@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -32,6 +32,9 @@
 #elif defined(PSP)
 #define EXT_EXECUTABLES "pbp"
 #define SALAMANDER_FILE "EBOOT.PBP"
+#elif defined(VITA)
+#define EXT_EXECUTABLES "velf"
+#define SALAMANDER_FILE "default.velf"
 #elif defined(_XBOX1)
 #define EXT_EXECUTABLES "xbe"
 #define SALAMANDER_FILE "default.xbe"

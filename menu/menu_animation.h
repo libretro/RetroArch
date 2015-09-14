@@ -33,38 +33,7 @@ extern "C" {
 typedef float (*easingFunc)(float, float, float, float);
 typedef void  (*tween_cb) (void);
 
-struct tween
-{
-   bool   alive;
-   float  duration;
-   float  running_since;
-   float  initial_value;
-   float  target_value;
-   float* subject;
-   int           tag;
-   easingFunc easing;
-   tween_cb cb;
-};
-
-typedef struct menu_animation
-{
-   struct tween *list;
-
-   size_t capacity;
-   size_t size;
-   size_t first_dead;
-   bool is_active;
-
-   /* Delta timing */
-   float delta_time;
-   retro_time_t cur_time;
-   retro_time_t old_time;
-
-   struct
-   {
-      bool is_updated;
-   } label;
-} menu_animation_t;
+typedef struct menu_animation menu_animation_t;
 
 enum menu_animation_easing_type
 {
@@ -112,8 +81,7 @@ enum menu_animation_easing_type
    EASING_OUT_IN_BOUNCE
 };
 
-void menu_animation_free(
-      menu_animation_t *animation);
+void menu_animation_free(menu_animation_t *animation);
 
 void menu_animation_kill_by_subject(
       menu_animation_t *animation,
@@ -130,9 +98,7 @@ bool menu_animation_push(
       enum menu_animation_easing_type easing_enum,
       int tag, tween_cb cb);
 
-bool menu_animation_update(
-      menu_animation_t *animation,
-      float dt);
+bool menu_animation_update(menu_animation_t *animation, float dt);
 
 /**
  * menu_animation_ticker_str:
@@ -148,12 +114,19 @@ bool menu_animation_update(
 void menu_animation_ticker_str(char *s, size_t len, uint64_t tick,
       const char *str, bool selected);
 
-void menu_animation_ticker_generic(uint64_t idx, int max_width,
-      int *offset, int *width);
-
 menu_animation_t *menu_animation_get_ptr(void);
 
-void menu_animation_update_time(menu_animation_t *anim);
+void menu_animation_update_time(void);
+
+void menu_animation_set_active(menu_animation_t *anim);
+
+void menu_animation_clear_active(menu_animation_t *anim);
+
+float menu_animation_get_delta_time(menu_animation_t *anim);
+
+bool menu_animation_is_active(menu_animation_t *anim);
+
+menu_animation_t *menu_animation_init(void);
 
 #ifdef __cplusplus
 }

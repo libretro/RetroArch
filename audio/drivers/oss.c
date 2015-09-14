@@ -12,14 +12,12 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include "../../driver.h"
-#include "../../general.h"
+#include <stdint.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+#include <errno.h>
 
 #ifdef HAVE_OSS_BSD
 #include <soundcard.h>
@@ -27,11 +25,14 @@
 #include <sys/soundcard.h>
 #endif
 
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <unistd.h>
-#include <errno.h>
-#include <stdint.h>
+#include <retro_endianness.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include "../../driver.h"
+#include "../../general.h"
 
 #ifdef HAVE_OSS_BSD
 #define DEFAULT_OSS_DEV "/dev/audio"

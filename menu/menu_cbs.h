@@ -25,6 +25,44 @@
 extern "C" {
 #endif
 
+enum
+{
+   ACTION_OK_DL_DEFAULT = 0,
+   ACTION_OK_DL_OPEN_ARCHIVE,
+   ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE,
+   ACTION_OK_DL_HELP,
+   ACTION_OK_DL_RPL_ENTRY,
+   ACTION_OK_DL_RDB_ENTRY,
+   ACTION_OK_DL_RDB_ENTRY_SUBMENU,
+   ACTION_OK_DL_AUDIO_DSP_PLUGIN,
+   ACTION_OK_DL_SHADER_PASS,
+   ACTION_OK_DL_SHADER_PARAMETERS,
+   ACTION_OK_DL_SHADER_PRESET,
+   ACTION_OK_DL_GENERIC,
+   ACTION_OK_DL_PUSH_DEFAULT,
+   ACTION_OK_DL_DOWNLOADS_DIR,
+   ACTION_OK_DL_CONTENT_LIST,
+   ACTION_OK_DL_REMAP_FILE,
+   ACTION_OK_DL_RECORD_CONFIGFILE,
+   ACTION_OK_DL_DISK_IMAGE_APPEND_LIST,
+   ACTION_OK_DL_PLAYLIST_COLLECTION,
+   ACTION_OK_DL_CONTENT_COLLECTION_LIST,
+   ACTION_OK_DL_CHEAT_FILE,
+   ACTION_OK_DL_CORE_LIST,
+   ACTION_OK_DL_CONFIGURATIONS_LIST,
+   ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH,
+   ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE,
+   ACTION_OK_DL_DIRECTORY_PUSH,
+   ACTION_OK_DL_DATABASE_MANAGER_LIST,
+   ACTION_OK_DL_CURSOR_MANAGER_LIST,
+   ACTION_OK_DL_CUSTOM_VIEWPORT,
+   ACTION_OK_DL_CORE_UPDATER_LIST,
+   ACTION_OK_DL_CORE_CONTENT_LIST,
+   ACTION_OK_DL_DEFERRED_CORE_LIST,
+   ACTION_OK_DL_DEFERRED_CORE_LIST_SET,
+   ACTION_OK_DL_CONTENT_SETTINGS
+};
+
 /* FIXME - Externs, refactor */
 extern size_t hack_shader_pass;
 #ifdef HAVE_NETWORKING
@@ -32,6 +70,25 @@ extern char core_updater_path[PATH_MAX_LENGTH];
 #endif
 
 /* Function callbacks */
+
+int action_refresh_default(file_list_t *list, file_list_t *menu_list);
+
+int shader_action_parameter_right(unsigned type, const char *label, bool wraparound);
+
+int shader_action_parameter_preset_right(unsigned type, const char *label,
+      bool wraparound);
+
+int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
+      bool wraparound);
+
+int action_ok_push_generic_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
+
+int action_ok_path_use_directory(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
+
+int action_ok_directory_push(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
 
 int core_setting_right(unsigned type, const char *label,
       bool wraparound);
@@ -41,6 +98,10 @@ int action_right_input_desc(unsigned type, const char *label,
 
 int action_right_cheat(unsigned type, const char *label,
       bool wraparound);
+
+int generic_action_ok_displaylist_push(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx,
+      unsigned action_type);
 /* End of function callbacks */
 
 int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
@@ -96,11 +157,6 @@ int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1, const char *menu_label,
-      uint32_t label_hash, uint32_t menu_label_hash);
-
-int menu_cbs_init_bind_iterate(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash);
 
 int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,

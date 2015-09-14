@@ -19,12 +19,14 @@
 #include <stddef.h>
 #include <string.h>
 
+#include <retro_log.h>
 #include <file/config_file.h>
-#include "../general.h"
-#include "../file_ext.h"
 #include <file/file_path.h>
 #include <file/dir_list.h>
+
 #include "frontend_driver.h"
+#include "../general.h"
+#include "../file_ext.h"
 
 struct defaults g_defaults;
 
@@ -42,7 +44,7 @@ static void find_first_libretro_core(char *first_file,
    RARCH_LOG("Searching for valid libretro implementation in: \"%s\".\n",
          dir);
 
-   list = dir_list_new(dir, ext, false);
+   list = dir_list_new(dir, ext, false, false);
    if (!list)
    {
       RARCH_ERR("Couldn't read directory. Cannot infer default libretro core.\n");
@@ -89,11 +91,11 @@ static void find_and_set_first_file(char *s, size_t len,
 
    char first_file[PATH_MAX_LENGTH] = {0};
    find_first_libretro_core(first_file, sizeof(first_file),
-         g_defaults.core_dir, ext);
+         g_defaults.dir.core, ext);
 
    if (first_file[0] != '\0')
    {
-      fill_pathname_join(s, g_defaults.core_dir, first_file, len);
+      fill_pathname_join(s, g_defaults.dir.core, first_file, len);
       RARCH_LOG("libretro_path now set to: %s.\n", s);
    }
    else
@@ -105,13 +107,13 @@ static void salamander_init(char *s, size_t len)
    /* normal executable loading path */
    bool config_file_exists = false;
 
-   if (path_file_exists(g_defaults.config_path))
+   if (path_file_exists(g_defaults.path.config))
       config_file_exists = true;
 
    if (config_file_exists)
    {
       char tmp_str[PATH_MAX_LENGTH];
-      config_file_t * conf = (config_file_t*)config_file_new(g_defaults.config_path);
+      config_file_t * conf = (config_file_t*)config_file_new(g_defaults.path.config);
 
       if (conf)
       {
@@ -137,7 +139,7 @@ static void salamander_init(char *s, size_t len)
       if (conf)
       {
          config_set_string(conf, "libretro_path", s);
-         config_file_write(conf, g_defaults.config_path);
+         config_file_write(conf, g_defaults.path.config);
          config_file_free(conf);
       }
    }

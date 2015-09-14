@@ -158,9 +158,11 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    {
 	   char str[PATH_MAX_LENGTH] = {0};
 
-      menu_entries_get_core_title(str, sizeof(str));
-	   mbstowcs(strw_buffer, str, sizeof(strw_buffer) / sizeof(wchar_t));
-	   XuiTextElementSetText(m_menutitlebottom, strw_buffer);
+      if (menu_entries_get_core_title(str, sizeof(str)) == 0)
+      {
+         mbstowcs(strw_buffer, str, sizeof(strw_buffer) / sizeof(wchar_t));
+         XuiTextElementSetText(m_menutitlebottom, strw_buffer);
+      }
    }
 
    return 0;
@@ -550,8 +552,7 @@ static void rmenu_xui_render(void)
 		return;
 
    menu_display_fb_unset_dirty();
-   anim->is_active = false;
-   anim->label.is_updated    = false;
+   menu_animation_clear_active(anim);
 
 	rmenu_xui_render_background();
 
@@ -565,10 +566,11 @@ static void rmenu_xui_render(void)
 
 	if (XuiHandleIsValid(m_menutitle))
 	{
-      menu_entries_get_core_title(title, sizeof(title));
-
-		mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
-		XuiTextElementSetText(m_menutitlebottom, strw_buffer);
+      if (menu_entries_get_core_title(title, sizeof(title)) == 0)
+      {
+         mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
+         XuiTextElementSetText(m_menutitlebottom, strw_buffer);
+      }
 	}
 
 	end = menu_entries_get_end();
@@ -586,7 +588,7 @@ static void rmenu_xui_render(void)
       mbstowcs(msg_right, entry_value, sizeof(msg_right) / sizeof(wchar_t));
       rmenu_xui_set_list_text(i, msg_left, msg_right);
    }
-	XuiListSetCurSelVisible(m_menulist, nav->selection_ptr);
+	XuiListSetCurSelVisible(m_menulist, menu_navigation_get_selection(nav));
 
 	if (menu->keyboard.display)
 	{
@@ -612,7 +614,7 @@ static void rmenu_xui_populate_entries(const char *path,
    (void)label;
    (void)path;
 
-   XuiListSetCurSelVisible(m_menulist, nav->selection_ptr);
+   XuiListSetCurSelVisible(m_menulist, menu_navigation_get_selection(nav));
 }
 
 static void rmenu_xui_navigation_clear(bool pending_push)
@@ -621,7 +623,7 @@ static void rmenu_xui_navigation_clear(bool pending_push)
    menu_navigation_t *nav      = menu_navigation_get_ptr();
 
    if (menu)
-      XuiListSetCurSelVisible(m_menulist, nav->selection_ptr);
+      XuiListSetCurSelVisible(m_menulist, menu_navigation_get_selection(nav));
 }
 
 static void rmenu_xui_navigation_set_visible(void)
@@ -630,7 +632,7 @@ static void rmenu_xui_navigation_set_visible(void)
    menu_navigation_t *nav      = menu_navigation_get_ptr();
 
    if (menu)
-      XuiListSetCurSelVisible(m_menulist, nav->selection_ptr);
+      XuiListSetCurSelVisible(m_menulist, menu_navigation_get_selection(nav));
 }
 
 static void rmenu_xui_navigation_alphabet(size_t *ptr_out)
@@ -712,6 +714,6 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_list_set_selection,
    NULL,
    "rmenu_xui",
+   MENU_VIDEO_DRIVER_DIRECT3D,
    rmenu_xui_environ,
-   NULL,
 };

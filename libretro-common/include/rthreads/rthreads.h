@@ -179,6 +179,8 @@ void scond_signal(scond_t *cond);
 #elif defined(PSP)
 #include <pspthreadman.h>
 #include <psputils.h>
+#elif defined(VITA)
+#include <psp2/kernel/threadmgr.h>
 #elif defined(_3DS)
 #include <3ds.h>
 #elif defined(_WIN32) && !defined(_XBOX)
@@ -199,7 +201,7 @@ static INLINE void retro_sleep(unsigned msec)
 {
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    sys_timer_usleep(1000 * msec);
-#elif defined(PSP)
+#elif defined(PSP) || defined(VITA)
    sceKernelDelayThread(1000 * msec);
 #elif defined(_3DS)
    svcSleepThread(1000000 * (s64)msec);

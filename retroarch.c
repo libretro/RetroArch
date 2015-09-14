@@ -39,10 +39,8 @@
 #include "msg_hash.h"
 
 #include "libretro_version_1.h"
-#include "dynamic.h"
 #include "configuration.h"
 #include "general.h"
-#include "retroarch.h"
 #include "runloop_data.h"
 #include "performance.h"
 #include "cheats.h"
@@ -53,10 +51,6 @@
 #ifdef HAVE_MENU
 #include "menu/menu.h"
 #include "menu/menu_hash.h"
-#include "menu/menu_entries.h"
-#include "menu/menu_setting.h"
-#include "menu/menu_shader.h"
-#include "menu/menu_input.h"
 #endif
 
 char orig_savestate_dir[PATH_MAX_LENGTH];
@@ -245,8 +239,8 @@ static void set_basename(const char *path)
    char *dst          = NULL;
    global_t *global   = global_get_ptr();
 
-   strlcpy(global->fullpath, path, sizeof(global->fullpath));
-   strlcpy(global->basename, path, sizeof(global->basename));
+   strlcpy(global->path.fullpath, path, sizeof(global->path.fullpath));
+   strlcpy(global->name.base, path, sizeof(global->name.base));
 
 #ifdef HAVE_COMPRESSION
    /* Removing extension is a bit tricky for compressed files.
@@ -268,11 +262,11 @@ static void set_basename(const char *path)
     * directory then and the name of srm and states are meaningful.
     *
     */
-   path_basedir(global->basename);
-   fill_pathname_dir(global->basename, path, "", sizeof(global->basename));
+   path_basedir(global->name.base);
+   fill_pathname_dir(global->name.base, path, "", sizeof(global->name.base));
 #endif
 
-   if ((dst = strrchr(global->basename, '.')))
+   if ((dst = strrchr(global->name.base, '.')))
       *dst = '\0';
 }
 
@@ -297,30 +291,29 @@ static void set_special_paths(char **argv, unsigned num_content)
    /* We defer SRAM path updates until we can resolve it.
     * It is more complicated for special content types. */
 
-   if (!global->has_set_state_path)
-      fill_pathname_noext(global->savestate_name, global->basename,
-            ".state", sizeof(global->savestate_name));
+   if (!global->has_set.state_path)
+      fill_pathname_noext(global->name.savestate, global->name.base,
+            ".state", sizeof(global->name.savestate));
 
-   if (path_is_directory(global->savestate_name))
+   if (path_is_directory(global->name.savestate))
    {
-      fill_pathname_dir(global->savestate_name, global->basename,
-            ".state", sizeof(global->savestate_name));
+      fill_pathname_dir(global->name.savestate, global->name.base,
+            ".state", sizeof(global->name.savestate));
       RARCH_LOG("%s \"%s\".\n",
             msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
-            global->savestate_name);
+            global->name.savestate);
    }
 
    /* If this is already set,
     * do not overwrite it as this was initialized before in
     * a menu or otherwise. */
-   if (!settings->system_directory || settings->system_directory[0] == '\0')
+   if (settings->system_directory[0] == '\0')
    {
       RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",argv[0]);
-      fill_pathname_basedir(settings->system_directory, argv[0],
-            sizeof(settings->system_directory));
+      /*fill_pathname_basedir(settings->system_directory, argv[0],
+            sizeof(settings->system_directory));*/
    }
-   else
-      settings->system_in_content_dir = false;
+
 }
 
 void set_paths_redirect(const char *path)
@@ -338,107 +331,98 @@ void set_paths_redirect(const char *path)
          (global_library_name_hash != MENU_VALUE_NO_CORE))
    {
       /* per-core saves: append the library_name to the save location */
-      if (settings->sort_savefiles_enable && global->savefile_dir[0] != '\0')
+      if (settings->sort_savefiles_enable && global->dir.savefile[0] != '\0')
       {
-         strlcpy(orig_savefile_dir,global->savefile_dir,sizeof(global->savefile_dir));
+         strlcpy(orig_savefile_dir,global->dir.savefile,
+               sizeof(orig_savefile_dir));
          fill_pathname_dir(
-               global->savefile_dir,
-               global->savefile_dir,
+               global->dir.savefile,
+               global->dir.savefile,
                info->info.library_name,
-               sizeof(global->savefile_dir));
+               sizeof(global->dir.savefile));
 
          /* If path doesn't exist, try to create it,
           * if everything fails revert to the original path. */
-         if(!path_is_directory(global->savefile_dir) && global->savestate_dir[0] != '\0')
-            if(!path_mkdir(global->savefile_dir))
-               strlcpy(global->savefile_dir,
+         if(!path_is_directory(global->dir.savefile) && global->dir.savestate[0] != '\0')
+            if(!path_mkdir(global->dir.savefile))
+               strlcpy(global->dir.savefile,
                      orig_savefile_dir,
-                     sizeof(global->savefile_dir));
+                     sizeof(global->dir.savefile));
       }
 
       /* per-core states: append the library_name to the save location */
-      if (settings->sort_savestates_enable && global->savefile_dir[0] != '\0')
+      if (settings->sort_savestates_enable && global->dir.savefile[0] != '\0')
       {
          strlcpy(orig_savestate_dir,
-               global->savestate_dir,
-               sizeof(global->savestate_dir));
-         fill_pathname_dir(global->savestate_dir,
-               global->savestate_dir,
+               global->dir.savestate,
+               sizeof(orig_savestate_dir));
+         fill_pathname_dir(global->dir.savestate,
+               global->dir.savestate,
                info->info.library_name,
-               sizeof(global->savestate_dir));
+               sizeof(global->dir.savestate));
 
          /* If path doesn't exist, try to create it.
           * If everything fails, revert to the original path. */
-         if(!path_is_directory(global->savestate_dir))
-            if(!path_mkdir(global->savestate_dir))
-               strlcpy(global->savestate_dir,
+         if(!path_is_directory(global->dir.savestate))
+            if(!path_mkdir(global->dir.savestate))
+               strlcpy(global->dir.savestate,
                      orig_savestate_dir,
-                     sizeof(global->savestate_dir));
+                     sizeof(global->dir.savestate));
       }
    }
 
-   if(path_is_directory(global->savefile_dir))
-      strlcpy(global->savefile_name,global->savefile_dir,sizeof(global->savefile_dir));
+   if(path_is_directory(global->dir.savefile))
+      strlcpy(global->name.savefile, global->dir.savefile,
+            sizeof(global->name.savefile));
 
-   if(path_is_directory(global->savestate_dir))
-      strlcpy(global->savestate_name,global->savestate_dir,sizeof(global->savestate_dir));
+   if(path_is_directory(global->dir.savestate))
+      strlcpy(global->name.savestate, global->dir.savestate,
+            sizeof(global->name.savestate));
 
-   if (path_is_directory(global->savefile_name))
+   if (path_is_directory(global->name.savefile))
    {
-      fill_pathname_dir(global->savefile_name, global->basename,
-            ".srm", sizeof(global->savefile_name));
+      fill_pathname_dir(global->name.savefile, global->name.base,
+            ".srm", sizeof(global->name.savefile));
       RARCH_LOG("%s \"%s\".\n",
             msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
-            global->savefile_name);
+            global->name.savefile);
    }
 
-   if (path_is_directory(global->savestate_name))
+   if (path_is_directory(global->name.savestate))
    {
-      fill_pathname_dir(global->savestate_name, global->basename,
-            ".state", sizeof(global->savestate_name));
+      fill_pathname_dir(global->name.savestate, global->name.base,
+            ".state", sizeof(global->name.savestate));
       RARCH_LOG("%s \"%s\".\n",
             msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
-            global->savestate_name);
+            global->name.savestate);
    }
 
-   if (path_is_directory(global->cheatfile_name))
+   if (path_is_directory(global->name.cheatfile))
    {
-      fill_pathname_dir(global->cheatfile_name, global->basename,
-            ".state", sizeof(global->cheatfile_name));
+      fill_pathname_dir(global->name.cheatfile, global->name.base,
+            ".state", sizeof(global->name.cheatfile));
       RARCH_LOG("%s \"%s\".\n",
             msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),
-            global->cheatfile_name);
+            global->name.cheatfile);
    }
 }
 
 void rarch_set_paths(const char *path)
 {
-   settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
    set_basename(path);
 
-   if (!global->has_set_save_path)
-      fill_pathname_noext(global->savefile_name, global->basename,
-            ".srm", sizeof(global->savefile_name));
-   if (!global->has_set_state_path)
-      fill_pathname_noext(global->savestate_name, global->basename,
-            ".state", sizeof(global->savestate_name));
-   fill_pathname_noext(global->cheatfile_name, global->basename,
-         ".cht", sizeof(global->cheatfile_name));
+   if (!global->has_set.save_path)
+      fill_pathname_noext(global->name.savefile, global->name.base,
+            ".srm", sizeof(global->name.savefile));
+   if (!global->has_set.state_path)
+      fill_pathname_noext(global->name.savestate, global->name.base,
+            ".state", sizeof(global->name.savestate));
+   fill_pathname_noext(global->name.cheatfile, global->name.base,
+         ".cht", sizeof(global->name.cheatfile));
 
    set_paths_redirect(path);
-
-   /* If this is already set, do not overwrite it
-    * as this was initialized before in a menu or otherwise. */
-   if (!settings->system_directory || settings->system_directory[0] == '\0')
-   {
-      RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",path);
-      fill_pathname_basedir(settings->system_directory, path,
-            sizeof(settings->system_directory));
-   }
-   else
-      settings->system_in_content_dir = false;
 }
 
 
@@ -515,7 +499,6 @@ enum rarch_content_type rarch_path_is_media_type(const char *path)
 static void parse_input(int argc, char *argv[])
 {
    const char *optstring = NULL;
-   runloop_t *runloop    = rarch_main_get_ptr();
    global_t  *global     = global_get_ptr();
    settings_t *settings  = config_get_ptr();
 
@@ -567,36 +550,36 @@ static void parse_input(int argc, char *argv[])
       { NULL, 0, NULL, 0 }
    };
 
-   global->libretro_no_content           = false;
-   global->core_type                     = CORE_TYPE_PLAIN;
+   global->inited.core.no_content        = false;
+   global->inited.core.type              = CORE_TYPE_PLAIN;
    *global->subsystem                    = '\0';
-   global->has_set_save_path             = false;
-   global->has_set_state_path            = false;
-   global->has_set_libretro              = false;
-   global->has_set_libretro_directory    = false;
-   global->has_set_verbosity             = false;
+   global->has_set.save_path             = false;
+   global->has_set.state_path            = false;
+   global->has_set.libretro              = false;
+   global->has_set.libretro_directory    = false;
+   global->has_set.verbosity             = false;
 
-   global->has_set_netplay_mode          = false;
-   global->has_set_username              = false;
-   global->has_set_netplay_ip_address    = false;
-   global->has_set_netplay_delay_frames  = false;
-   global->has_set_netplay_ip_port       = false;
+   global->has_set.netplay_mode          = false;
+   global->has_set.username              = false;
+   global->has_set.netplay_ip_address    = false;
+   global->has_set.netplay_delay_frames  = false;
+   global->has_set.netplay_ip_port       = false;
 
-   global->has_set_ups_pref              = false;
-   global->has_set_bps_pref              = false;
-   global->has_set_ips_pref              = false;
-   global->ups_pref                      = false;
-   global->bps_pref                      = false;
-   global->ips_pref                      = false;
-   *global->ups_name                     = '\0';
-   *global->bps_name                     = '\0';
-   *global->ips_name                     = '\0';
+   global->has_set.ups_pref              = false;
+   global->has_set.bps_pref              = false;
+   global->has_set.ips_pref              = false;
+   global->patch.ups_pref                = false;
+   global->patch.bps_pref                = false;
+   global->patch.ips_pref                = false;
+   *global->name.ups                     = '\0';
+   *global->name.bps                     = '\0';
+   *global->name.ips                     = '\0';
 
    global->overrides_active              = false;
 
    if (argc < 2)
    {
-      global->core_type                  = CORE_TYPE_DUMMY;
+      global->inited.core.type           = CORE_TYPE_DUMMY;
       return;
    }
 
@@ -639,7 +622,7 @@ static void parse_input(int argc, char *argv[])
                rarch_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = id;
-            global->has_set_libretro_device[port - 1] = true;
+            global->has_set.libretro_device[port - 1] = true;
             break;
          }
 
@@ -652,13 +635,13 @@ static void parse_input(int argc, char *argv[])
                rarch_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = RETRO_DEVICE_ANALOG;
-            global->has_set_libretro_device[port - 1] = true;
+            global->has_set.libretro_device[port - 1] = true;
             break;
 
          case 's':
-            strlcpy(global->savefile_name, optarg,
-                  sizeof(global->savefile_name));
-            global->has_set_save_path = true;
+            strlcpy(global->name.savefile, optarg,
+                  sizeof(global->name.savefile));
+            global->has_set.save_path = true;
             break;
 
          case 'f':
@@ -666,14 +649,14 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 'S':
-            strlcpy(global->savestate_name, optarg,
-                  sizeof(global->savestate_name));
-            global->has_set_state_path = true;
+            strlcpy(global->name.savestate, optarg,
+                  sizeof(global->name.savestate));
+            global->has_set.state_path = true;
             break;
 
          case 'v':
             global->verbosity = true;
-            global->has_set_verbosity = true;
+            global->has_set.verbosity = true;
             break;
 
          case 'N':
@@ -685,12 +668,12 @@ static void parse_input(int argc, char *argv[])
                rarch_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = RETRO_DEVICE_NONE;
-            global->has_set_libretro_device[port - 1] = true;
+            global->has_set.libretro_device[port - 1] = true;
             break;
 
          case 'c':
-            strlcpy(global->config_path, optarg,
-                  sizeof(global->config_path));
+            strlcpy(global->path.config, optarg,
+                  sizeof(global->path.config));
             break;
 
          case 'r':
@@ -706,15 +689,15 @@ static void parse_input(int argc, char *argv[])
                *settings->libretro = '\0';
                strlcpy(settings->libretro_directory, optarg,
                      sizeof(settings->libretro_directory));
-               global->has_set_libretro = true;
-               global->has_set_libretro_directory = true;
+               global->has_set.libretro = true;
+               global->has_set.libretro_directory = true;
                RARCH_WARN("Using old --libretro behavior. Setting libretro_directory to \"%s\" instead.\n", optarg);
             }
             else
             {
                strlcpy(settings->libretro, optarg,
                      sizeof(settings->libretro));
-               global->has_set_libretro = true;
+               global->has_set.libretro = true;
             }
             break;
 #endif
@@ -729,13 +712,13 @@ static void parse_input(int argc, char *argv[])
          case 'M':
             if (!strcmp(optarg, "noload-nosave"))
             {
-               global->sram_load_disable = true;
-               global->sram_save_disable = true;
+               global->sram.load_disable = true;
+               global->sram.save_disable = true;
             }
             else if (!strcmp(optarg, "noload-save"))
-               global->sram_load_disable = true;
+               global->sram.load_disable = true;
             else if (!strcmp(optarg, "load-nosave"))
-               global->sram_save_disable = true;
+               global->sram.save_disable = true;
             else if (strcmp(optarg, "load-save") != 0)
             {
                RARCH_ERR("Invalid argument in --sram-mode.\n");
@@ -746,47 +729,47 @@ static void parse_input(int argc, char *argv[])
 
 #ifdef HAVE_NETPLAY
          case 'H':
-            global->has_set_netplay_ip_address = true;
-            global->netplay_enable = true;
-            *global->netplay_server = '\0';
+            global->has_set.netplay_ip_address = true;
+            global->netplay.enable = true;
+            *global->netplay.server = '\0';
             break;
 
          case 'C':
-            global->has_set_netplay_ip_address = true;
-            global->netplay_enable = true;
-            strlcpy(global->netplay_server, optarg,
-                  sizeof(global->netplay_server));
+            global->has_set.netplay_ip_address = true;
+            global->netplay.enable = true;
+            strlcpy(global->netplay.server, optarg,
+                  sizeof(global->netplay.server));
             break;
 
          case 'F':
-            global->netplay_sync_frames = strtol(optarg, NULL, 0);
-            global->has_set_netplay_delay_frames = true;
+            global->netplay.sync_frames = strtol(optarg, NULL, 0);
+            global->has_set.netplay_delay_frames = true;
             break;
 #endif
 
          case RA_OPT_BPS:
-            strlcpy(global->bps_name, optarg,
-                  sizeof(global->bps_name));
-            global->bps_pref = true;
-            global->has_set_bps_pref = true;
+            strlcpy(global->name.bps, optarg,
+                  sizeof(global->name.bps));
+            global->patch.bps_pref   = true;
+            global->has_set.bps_pref = true;
             break;
 
          case 'U':
-            strlcpy(global->ups_name, optarg,
-                  sizeof(global->ups_name));
-            global->ups_pref = true;
-            global->has_set_ups_pref = true;
+            strlcpy(global->name.ups, optarg,
+                  sizeof(global->name.ups));
+            global->patch.ups_pref   = true;
+            global->has_set.ups_pref = true;
             break;
 
          case RA_OPT_IPS:
-            strlcpy(global->ips_name, optarg,
-                  sizeof(global->ips_name));
-            global->ips_pref = true;
-            global->has_set_ips_pref = true;
+            strlcpy(global->name.ips, optarg,
+                  sizeof(global->name.ips));
+            global->patch.ips_pref   = true;
+            global->has_set.ips_pref = true;
             break;
 
          case RA_OPT_NO_PATCH:
-            global->block_patch = true;
+            global->patch.block_patch = true;
             break;
 
          case 'D':
@@ -796,23 +779,23 @@ static void parse_input(int argc, char *argv[])
             break;
          
          case RA_OPT_MENU:
-            global->core_type                  = CORE_TYPE_DUMMY;
+            global->inited.core.type        = CORE_TYPE_DUMMY;
             break;
 
 #ifdef HAVE_NETPLAY
          case RA_OPT_PORT:
-            global->has_set_netplay_ip_port = true;
-            global->netplay_port = strtoul(optarg, NULL, 0);
+            global->has_set.netplay_ip_port = true;
+            global->netplay.port = strtoul(optarg, NULL, 0);
             break;
 
          case RA_OPT_SPECTATE:
-            global->has_set_netplay_mode = true;
-            global->netplay_is_spectate = true;
+            global->has_set.netplay_mode = true;
+            global->netplay.is_spectate = true;
             break;
 
 #endif
          case RA_OPT_NICK:
-            global->has_set_username = true;
+            global->has_set.username = true;
             strlcpy(settings->username, optarg,
                   sizeof(settings->username));
             break;
@@ -827,8 +810,8 @@ static void parse_input(int argc, char *argv[])
 #endif
 
          case RA_OPT_APPENDCONFIG:
-            strlcpy(global->append_config_path, optarg,
-                  sizeof(global->append_config_path));
+            strlcpy(global->path.append_config, optarg,
+                  sizeof(global->path.append_config));
             break;
 
          case RA_OPT_SIZE:
@@ -849,7 +832,7 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case RA_OPT_MAX_FRAMES:
-            runloop->frames.video.max = strtoul(optarg, NULL, 10);
+            rarch_main_set_max_frames(strtoul(optarg, NULL, 10));
             break;
 
          case RA_OPT_SUBSYSTEM:
@@ -884,7 +867,7 @@ static void parse_input(int argc, char *argv[])
       }
    }
 
-   if (global->core_type == CORE_TYPE_DUMMY)
+   if (global->inited.core.type == CORE_TYPE_DUMMY)
    {
       if (optind < argc)
       {
@@ -897,19 +880,19 @@ static void parse_input(int argc, char *argv[])
    else if (*global->subsystem && optind < argc)
       set_special_paths(argv + optind, argc - optind);
    else
-      global->libretro_no_content = true;
+      global->inited.core.no_content = true;
 
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
-   if (global->has_set_save_path &&
-         path_is_directory(global->savefile_name))
-      strlcpy(global->savefile_dir, global->savefile_name,
-            sizeof(global->savefile_dir));
+   if (global->has_set.save_path &&
+         path_is_directory(global->name.savefile))
+      strlcpy(global->dir.savefile, global->name.savefile,
+            sizeof(global->dir.savefile));
 
-   if (global->has_set_state_path &&
-         path_is_directory(global->savestate_name))
-      strlcpy(global->savestate_dir, global->savestate_name,
-            sizeof(global->savestate_dir));
+   if (global->has_set.state_path &&
+         path_is_directory(global->name.savestate))
+      strlcpy(global->dir.savestate, global->name.savestate,
+            sizeof(global->dir.savestate));
 }
 
 static void rarch_init_savefile_paths(void)
@@ -938,7 +921,7 @@ static void rarch_init_savefile_paths(void)
             global->subsystem_fullpaths ?
             global->subsystem_fullpaths->size : 0);
 
-      bool use_sram_dir = path_is_directory(global->savefile_dir);
+      bool use_sram_dir = path_is_directory(global->dir.savefile);
 
       for (i = 0; i < num_content; i++)
       {
@@ -956,7 +939,7 @@ static void rarch_init_savefile_paths(void)
             if (use_sram_dir)
             {
                /* Redirect content fullpath to save directory. */
-               strlcpy(path, global->savefile_dir, sizeof(path));
+               strlcpy(path, global->dir.savefile, sizeof(path));
                fill_pathname_dir(path,
                      global->subsystem_fullpaths->elems[i].data, ext,
                      sizeof(path));
@@ -973,16 +956,16 @@ static void rarch_init_savefile_paths(void)
       }
 
       /* Let other relevant paths be inferred from the main SRAM location. */
-      if (!global->has_set_save_path)
-         fill_pathname_noext(global->savefile_name, global->basename, ".srm",
-               sizeof(global->savefile_name));
-      if (path_is_directory(global->savefile_name))
+      if (!global->has_set.save_path)
+         fill_pathname_noext(global->name.savefile, global->name.base, ".srm",
+               sizeof(global->name.savefile));
+      if (path_is_directory(global->name.savefile))
       {
-         fill_pathname_dir(global->savefile_name, global->basename, ".srm",
-               sizeof(global->savefile_name));
+         fill_pathname_dir(global->name.savefile, global->name.base, ".srm",
+               sizeof(global->name.savefile));
          RARCH_LOG("%s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
-               global->savefile_name);
+               global->name.savefile);
       }
    }
    else
@@ -991,12 +974,12 @@ static void rarch_init_savefile_paths(void)
       char savefile_name_rtc[PATH_MAX_LENGTH] = {0};
 
       attr.i = RETRO_MEMORY_SAVE_RAM;
-      string_list_append(global->savefiles, global->savefile_name, attr);
+      string_list_append(global->savefiles, global->name.savefile, attr);
 
       /* Infer .rtc save path from save ram path. */
       attr.i = RETRO_MEMORY_RTC;
       fill_pathname(savefile_name_rtc,
-            global->savefile_name, ".rtc", sizeof(savefile_name_rtc));
+            global->name.savefile, ".rtc", sizeof(savefile_name_rtc));
       string_list_append(global->savefiles, savefile_name_rtc, attr);
    }
 }
@@ -1006,21 +989,21 @@ void rarch_fill_pathnames(void)
    global_t   *global   = global_get_ptr();
 
    rarch_init_savefile_paths();
-   fill_pathname(global->bsv.movie_path, global->savefile_name, "",
+   strlcpy(global->bsv.movie_path, global->name.savefile,
          sizeof(global->bsv.movie_path));
 
-   if (!*global->basename)
+   if (!*global->name.base)
       return;
 
-   if (!*global->ups_name)
-      fill_pathname_noext(global->ups_name, global->basename, ".ups",
-            sizeof(global->ups_name));
-   if (!*global->bps_name)
-      fill_pathname_noext(global->bps_name, global->basename, ".bps",
-            sizeof(global->bps_name));
-   if (!*global->ips_name)
-      fill_pathname_noext(global->ips_name, global->basename, ".ips",
-            sizeof(global->ips_name));
+   if (!*global->name.ups)
+      fill_pathname_noext(global->name.ups, global->name.base, ".ups",
+            sizeof(global->name.ups));
+   if (!*global->name.bps)
+      fill_pathname_noext(global->name.bps, global->name.base, ".bps",
+            sizeof(global->name.bps));
+   if (!*global->name.ips)
+      fill_pathname_noext(global->name.ips, global->name.base, ".ips",
+            sizeof(global->name.ips));
 }
 
 static bool init_state(void)
@@ -1041,7 +1024,7 @@ static void main_clear_state_drivers(void)
    bool inited      = false;
    if (!global)
       return;
-   inited           = global->main_is_init;
+   inited           = global->inited.main;
    if (!inited)
       return;
 
@@ -1164,12 +1147,11 @@ static void validate_cpu_features(void)
  **/
 void rarch_init_system_av_info(void)
 {
-   runloop_t *runloop = rarch_main_get_ptr();
    struct retro_system_av_info *av_info = 
       video_viewport_get_system_av_info();
 
    pretro_get_system_av_info(av_info);
-   runloop->frames.limit.last_time = rarch_get_time_usec();
+   event_command(EVENT_CMD_SET_FRAME_LIMIT);
 }
 
 /**
@@ -1193,8 +1175,8 @@ int rarch_main_init(int argc, char *argv[])
       RARCH_ERR("Fatal error received in: \"%s\"\n", global->error_string);
       return sjlj_ret;
    }
-   global->error_in_init = true;
-   global->log_file = stderr;
+   global->inited.error = true;
+   global->log_file     = stderr;
    parse_input(argc, argv);
 
    if (global->verbosity)
@@ -1221,15 +1203,15 @@ int rarch_main_init(int argc, char *argv[])
       if (settings && (settings->multimedia.builtin_mediaplayer_enable ||
             settings->multimedia.builtin_imageviewer_enable))
       {
-         switch (rarch_path_is_media_type(global->fullpath))
+         switch (rarch_path_is_media_type(global->path.fullpath))
          {
             case RARCH_CONTENT_MOVIE:
             case RARCH_CONTENT_MUSIC:
                if (settings->multimedia.builtin_mediaplayer_enable)
                {
 #ifdef HAVE_FFMPEG
-                  global->has_set_libretro              = false;
-                  global->core_type = CORE_TYPE_FFMPEG;
+                  global->has_set.libretro              = false;
+                  global->inited.core.type              = CORE_TYPE_FFMPEG;
 #endif
                }
                break;
@@ -1237,8 +1219,8 @@ int rarch_main_init(int argc, char *argv[])
             case RARCH_CONTENT_IMAGE:
                if (settings->multimedia.builtin_imageviewer_enable)
                {
-                  global->has_set_libretro              = false;
-                  global->core_type = CORE_TYPE_IMAGEVIEWER;
+                  global->has_set.libretro              = false;
+                  global->inited.core.type              = CORE_TYPE_IMAGEVIEWER;
                }
                break;
 #endif
@@ -1248,7 +1230,7 @@ int rarch_main_init(int argc, char *argv[])
       }
    }
 
-   init_libretro_sym(global->core_type);
+   init_libretro_sym(global->inited.core.type);
    rarch_system_info_init();
 
    init_drivers_pre();
@@ -1290,14 +1272,14 @@ int rarch_main_init(int argc, char *argv[])
    }
 #endif
 
-   global->error_in_init = false;
-   global->main_is_init  = true;
+   global->inited.error = false;
+   global->inited.main  = true;
    return 0;
 
 error:
    event_command(EVENT_CMD_CORE_DEINIT);
 
-   global->main_is_init = false;
+   global->inited.main  = false;
    return 1;
 }
 
@@ -1400,8 +1382,7 @@ void rarch_main_set_state(unsigned cmd)
             system->frame_time_last    = 0;
          }
 
-         menu_entries_set_refresh();
-         menu_driver_set_alive();
+         menu_entries_set_refresh(false);
 #endif
 #ifdef HAVE_OVERLAY
          if (settings->input.overlay_hide_in_menu)
@@ -1439,10 +1420,7 @@ void rarch_main_set_state(unsigned cmd)
          break;
       case RARCH_ACTION_STATE_MENU_RUNNING_FINISHED:
 #ifdef HAVE_MENU
-         menu_setting_apply_deferred();
-
          menu_driver_toggle(false);
-         menu_driver_unset_alive();
 
          driver_set_nonblock_state(driver->nonblock_state);
 
@@ -1488,7 +1466,7 @@ void rarch_main_deinit(void)
    event_command(EVENT_CMD_NETPLAY_DEINIT);
    event_command(EVENT_CMD_COMMAND_DEINIT);
 
-   if (global->use_sram)
+   if (global->sram.use)
       event_command(EVENT_CMD_AUTOSAVE_DEINIT);
 
    event_command(EVENT_CMD_RECORD_DEINIT);
@@ -1506,7 +1484,7 @@ void rarch_main_deinit(void)
    event_command(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
    event_command(EVENT_CMD_SAVEFILES_DEINIT);
 
-   global->main_is_init = false;
+   global->inited.main = false;
 }
 
 /**
@@ -1585,7 +1563,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
 
    if (menu_label_hash == MENU_LABEL_LOAD_CONTENT)
    {
-      info = (const core_info_t*)&global->core_info_current;
+      info = (const core_info_t*)&global->core_info.current;
 
       if (info)
       {
@@ -1601,7 +1579,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    if (supported != 1)
       return 0;
 
-   strlcpy(global->fullpath, s, sizeof(global->fullpath));
+   strlcpy(global->path.fullpath, s, sizeof(global->path.fullpath));
 
    if (path_file_exists(new_core_path))
       strlcpy(settings->libretro, new_core_path,
@@ -1636,13 +1614,13 @@ bool rarch_replace_config(const char *path)
 
    /* If config file to be replaced is the same as the
     * current config file, exit. */
-   if (!strcmp(path, global->config_path))
+   if (!strcmp(path, global->path.config))
       return false;
 
-   if (settings->config_save_on_exit && *global->config_path)
-      config_save_file(global->config_path);
+   if (settings->config_save_on_exit && *global->path.config)
+      config_save_file(global->path.config);
 
-   strlcpy(global->config_path, path, sizeof(global->config_path));
+   strlcpy(global->path.config, path, sizeof(global->path.config));
    global->block_config_read = false;
    *settings->libretro = '\0'; /* Load core in new config. */
 

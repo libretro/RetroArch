@@ -16,10 +16,11 @@
 #include "../menu.h"
 #include "../menu_cbs.h"
 #include "../menu_hash.h"
-#include "../menu_displaylist.h"
 
-static int action_refresh_default(file_list_t *list, file_list_t *menu_list)
+int action_refresh_default(file_list_t *list, file_list_t *menu_list)
 {
+   if (!menu_list)
+      return -1;
    return menu_displaylist_push(list, menu_list);
 }
 

@@ -44,9 +44,8 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
    int retval;
    size_t file_len;
    bool ret = true;
-   struct rpng_t *rpng = NULL;
+   rpng_t *rpng = NULL;
    void *ptr = NULL;
-   unsigned val = 0;
    struct nbio_t* handle = (void*)nbio_open(path, NBIO_READ);
 
    if (!handle)
@@ -66,7 +65,7 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
       goto end;
    }
 
-   rpng = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
+   rpng = rpng_alloc();
 
    if (!rpng)
    {
@@ -74,9 +73,7 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
       goto end;
    }
 
-   rpng->buff_data = (uint8_t*)ptr;
-
-   if (!rpng->buff_data)
+   if (!rpng_set_buf_ptr(rpng, (uint8_t*)ptr))
    {
       ret = false;
       goto end;
@@ -88,19 +85,9 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
       goto end;
    }
 
-   while (rpng_nbio_load_image_argb_iterate(
-            rpng->buff_data, rpng, &val))
-   {
-      rpng->buff_data += val;
-   }
+   while (rpng_nbio_load_image_argb_iterate(rpng));
 
-#if 0
-   fprintf(stderr, "has_ihdr: %d\n", rpng->has_ihdr);
-   fprintf(stderr, "has_idat: %d\n", rpng->has_idat);
-   fprintf(stderr, "has_iend: %d\n", rpng->has_iend);
-#endif
-
-   if (!rpng->has_ihdr || !rpng->has_idat || !rpng->has_iend)
+   if (!rpng_is_valid(rpng))
    {
       ret = false;
       goto end;

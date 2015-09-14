@@ -14,12 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "input_hid_driver.h"
-#include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
+
 #include <string/string_list.h>
-#include "../driver.h"
+
+#include "input_hid_driver.h"
 #include "../general.h"
 
 static hid_driver_t *hid_drivers[] = {
@@ -31,6 +32,9 @@ static hid_driver_t *hid_drivers[] = {
 #endif
 #ifdef HAVE_LIBUSB
    &libusb_hid,
+#endif
+#ifdef HW_RVL
+   &wiiusb_hid,
 #endif
    &null_hid,
    NULL,

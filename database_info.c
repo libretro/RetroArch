@@ -15,22 +15,19 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+
 #include <file/file_extract.h>
+#include <retro_endianness.h>
 
-#include "file_ext.h"
 #include "dir_list_special.h"
-
 #include "database_info.h"
-#include "file_ops.h"
 #include "msg_hash.h"
 #include "general.h"
-#include "runloop.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#include <stdint.h>
 
 #define DB_QUERY_ENTRY                          0x1c310956U
 #define DB_QUERY_ENTRY_PUBLISHER                0x125e594dU

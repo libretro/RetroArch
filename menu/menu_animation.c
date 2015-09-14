@@ -20,10 +20,36 @@
 #include <retro_miscellaneous.h>
 
 #include "menu_display.h"
-#include "menu_animation.h"
 #include "../configuration.h"
-#include "../runloop.h"
 #include "../performance.h"
+
+struct tween
+{
+   bool   alive;
+   float  duration;
+   float  running_since;
+   float  initial_value;
+   float  target_value;
+   float* subject;
+   int           tag;
+   easingFunc easing;
+   tween_cb cb;
+};
+
+struct menu_animation
+{
+   struct tween *list;
+
+   size_t capacity;
+   size_t size;
+   size_t first_dead;
+   bool is_active;
+
+   /* Delta timing */
+   float delta_time;
+   retro_time_t cur_time;
+   retro_time_t old_time;
+};
 
 menu_animation_t *menu_animation_get_ptr(void)
 {
@@ -278,26 +304,26 @@ void menu_animation_free(menu_animation_t *anim)
    free(anim);
 }
 
-void menu_animation_kill_by_subject(menu_animation_t *animation,
+void menu_animation_kill_by_subject(menu_animation_t *anim,
       size_t count, const void *subjects)
 {
    unsigned i, j, killed = 0;
    float **sub = (float**)subjects;
 
-   for (i = 0; i < animation->size; ++i)
+   for (i = 0; i < anim->size; ++i)
    {
-      if (!animation->list[i].alive)
+      if (!anim->list[i].alive)
          continue;
 
       for (j = 0; j < count; ++j)
       {
-         if (animation->list[i].subject == sub[j])
+         if (anim->list[i].subject == sub[j])
          {
-            animation->list[i].alive   = false;
-            animation->list[i].subject = NULL;
+            anim->list[i].alive   = false;
+            anim->list[i].subject = NULL;
 
-            if (i < animation->first_dead)
-               animation->first_dead = i;
+            if (i < anim->first_dead)
+               anim->first_dead = i;
 
             killed++;
             break;
@@ -545,8 +571,8 @@ bool menu_animation_update(menu_animation_t *anim, float dt)
    return true;
 }
 
-void menu_animation_ticker_generic(uint64_t idx, int max_width,
-      int *offset, int *width)
+static void menu_animation_ticker_generic(uint64_t idx,
+      size_t max_width, size_t *offset, size_t *width)
 {
    int ticker_period, phase, phase_left_stop;
    int phase_left_moving, phase_right_stop;
@@ -594,10 +620,10 @@ void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
       const char *str, bool selected)
 {
    menu_animation_t *anim = menu_animation_get_ptr();
-   int            str_len = strlen(str);
-   int             offset = 0;
+   size_t           str_len = strlen(str);
+   size_t           offset = 0;
 
-   if (str_len <= len)
+   if ((size_t)str_len <= len)
    {
       strlcpy(s, str, len + 1);
       return;
@@ -617,10 +643,12 @@ void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
    anim->is_active = true;
 }
 
-void menu_animation_update_time(menu_animation_t *anim)
+void menu_animation_update_time(void)
 {
    static retro_time_t last_clock_update = 0;
-   settings_t *settings = config_get_ptr();
+   menu_display_t *disp     = menu_display_get_ptr();
+   menu_animation_t *anim   = disp->animation;
+   settings_t *settings     = config_get_ptr();
 
    anim->cur_time   = rarch_get_time_usec();
    anim->delta_time = anim->cur_time - anim->old_time;
@@ -634,7 +662,43 @@ void menu_animation_update_time(menu_animation_t *anim)
    if (((anim->cur_time - last_clock_update) > 1000000) 
          && settings->menu.timedate_enable)
    {
-      anim->label.is_updated = true;
+      anim->is_active           = true;
       last_clock_update = anim->cur_time;
    }
+}
+
+void menu_animation_set_active(menu_animation_t *anim)
+{
+   if (!anim)
+      return;
+   anim->is_active           = true;
+}
+
+void menu_animation_clear_active(menu_animation_t *anim)
+{
+   if (!anim)
+      return;
+   anim->is_active           = false;
+}
+
+float menu_animation_get_delta_time(menu_animation_t *anim)
+{
+   if (!anim)
+      return 0.0f;
+   return anim->delta_time;
+}
+
+menu_animation_t *menu_animation_init(void)
+{
+   menu_animation_t *anim = (menu_animation_t*)calloc(1, sizeof(*anim));
+   if (!anim)
+      return NULL;
+   return (menu_animation_t*)anim;
+}
+
+bool menu_animation_is_active(menu_animation_t *anim)
+{
+   if (!anim)
+      return false;
+   return anim->is_active;
 }

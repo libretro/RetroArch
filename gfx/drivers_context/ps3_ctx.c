@@ -16,7 +16,7 @@
 
 #include "../../driver.h"
 #include "../../runloop.h"
-#include "../../ps3/sdk_defines.h"
+#include "../../defines/ps3_defines.h"
 
 #ifdef HAVE_LIBDBGFONT
 #ifndef __PSL1GHT__

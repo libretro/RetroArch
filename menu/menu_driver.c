@@ -17,11 +17,8 @@
 #include <string.h>
 #include <string/string_list.h>
 
-#include "menu_driver.h"
 #include "menu.h"
-#include "menu_cbs.h"
-#include "menu_displaylist.h"
-#include "../driver.h"
+#include "menu_video.h"
 #include "../general.h"
 
 static bool menu_alive = false;
@@ -122,17 +119,12 @@ const char* config_get_menu_driver_options(void)
    return options;
 }
 
-static int find_menu_driver_internal(const char *ident)
-{
-   return find_driver_index("menu_driver", ident);
-}
-
 void find_menu_driver(void)
 {
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
-   int i = find_menu_driver_internal(settings->menu.driver);
+   int i = find_driver_index("menu_driver", settings->menu.driver);
    if (i >= 0)
       driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
    else
@@ -152,35 +144,47 @@ void find_menu_driver(void)
    }
 }
 
+static void init_menu_fallback(void)
+{
+#ifdef HAVE_RGUI
+   settings_t *settings = config_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   int i = find_driver_index("menu_driver", "rgui");
+
+   if (i >= 0)
+   {
+      driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
+      if (settings)
+         strlcpy(settings->menu.driver, "rgui", sizeof(settings->menu.driver));
+   }
+#endif
+}
+
 void init_menu(void)
 {
-   driver_t *driver = driver_get_ptr();
+   const char *video_driver;
+   driver_t *driver     = driver_get_ptr();
+
    if (driver->menu)
       return;
 
    find_menu_driver();
 
-#ifdef HAVE_RGUI
-   /* TOD/FIXME - UGLY HACK!!!!
-    * Will have to be fixed properly after release. */
-   if (!strcmp(driver->menu_ctx->ident, "xmb") ||
-         !strcmp(driver->menu_ctx->ident, "glui"))
-   {
-      const char *video_driver = video_driver_get_ident();
+   video_driver = menu_video_get_ident();
 
-      if (video_driver && !strcmp(video_driver, "d3d"))
-      {
-         settings_t *settings = config_get_ptr();
-         int i = find_menu_driver_internal("rgui");
-         if (i >= 0)
-         {
-            driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
-            if (settings)
-               strlcpy(settings->menu.driver, "rgui", sizeof(settings->menu.driver));
-         }
-      }
+   switch (driver->menu_ctx->type)
+   {
+      case MENU_VIDEO_DRIVER_GENERIC:
+         break;
+      case MENU_VIDEO_DRIVER_DIRECT3D:
+         if (video_driver && (strcmp(video_driver, "d3d") != 0))
+            init_menu_fallback();
+         break;
+      case MENU_VIDEO_DRIVER_OPENGL:
+         if (video_driver && (strcmp(video_driver, "gl") != 0))
+            init_menu_fallback();
+         break;
    }
-#endif
 
    if (!(driver->menu = (menu_handle_t*)menu_init(driver->menu_ctx)))
       rarch_fail(1, "init_menu()");
@@ -216,23 +220,11 @@ void  menu_driver_list_free(file_list_t *list, size_t idx, size_t list_size)
    file_list_free_actiondata(list, idx);
 }
 
-void  menu_driver_list_clear(file_list_t *list)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   unsigned i;
-
-   if (driver->list_clear)
-      driver->list_clear(list);
-
-   for (i = 0; i < list->size; i++)
-      file_list_free_actiondata(list, i);
-}
-
 void  menu_driver_context_destroy(void)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->context_destroy)
+   if (driver && driver->context_destroy)
       driver->context_destroy();
 }
 
@@ -240,7 +232,7 @@ void  menu_driver_list_set_selection(file_list_t *list)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->list_set_selection)
+   if (driver && driver->list_set_selection)
       driver->list_set_selection(list);
 }
 
@@ -249,32 +241,9 @@ size_t  menu_driver_list_get_selection(void)
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
    menu_handle_t *menu             = menu_driver_get_ptr();
 
-   if (driver->list_get_selection)
+   if (driver && driver->list_get_selection)
       return driver->list_get_selection(menu);
    return 0;
-}
-
-void  menu_driver_list_insert(file_list_t *list, const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   menu_file_list_cbs_t *cbs       = NULL;
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (!list)
-      return;
-
-   if (driver->list_insert)
-      driver->list_insert(list, path, label, idx);
-
-   file_list_free_actiondata(list, idx);
-   cbs = (menu_file_list_cbs_t*)
-      calloc(1, sizeof(menu_file_list_cbs_t));
-
-   if (!cbs)
-      return;
-
-   file_list_set_actiondata(list, idx, cbs);
-   menu_cbs_init(list, path, label, type, idx);
 }
 
 void menu_driver_list_cache(menu_list_type_t type, unsigned action)
@@ -303,46 +272,6 @@ void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i)
    if (driver && driver->list_get_entry)
       return driver->list_get_entry(menu, type, i);
    return NULL;
-}
-
-void menu_driver_navigation_increment(void)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_increment)
-      driver->navigation_increment();
-}
-
-void menu_driver_navigation_decrement(void)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_decrement)
-      driver->navigation_decrement();
-}
-
-void menu_driver_navigation_clear(bool pending_push)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_clear)
-      driver->navigation_clear(pending_push);
-}
-
-void menu_driver_navigation_set(bool scroll)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_set)
-      driver->navigation_set(scroll);
-}
-
-void menu_driver_navigation_set_last(void)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_set_last)
-      driver->navigation_set_last();
 }
 
 void menu_driver_set_texture(void)
@@ -392,22 +321,9 @@ void menu_driver_free(menu_handle_t *menu)
       driver->free(menu);
 }
 
-void menu_driver_render_messagebox(const char *msg)
+bool menu_driver_alive(void)
 {
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   if (!msg)
-      return;
-
-   if (driver->render_messagebox && msg[0] != '\0')
-      driver->render_messagebox(msg);
-}
-
-void menu_driver_render(void)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   
-   if (driver->render)
-      driver->render();
+   return menu_alive;
 }
 
 void menu_driver_toggle(bool latch)
@@ -416,15 +332,8 @@ void menu_driver_toggle(bool latch)
 
    if (driver->toggle)
       driver->toggle(latch);
-}
 
-void menu_driver_populate_entries(const char *path, const char *label,
-         unsigned k)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->populate_entries)
-      driver->populate_entries(path, label, k);
+   menu_alive = latch;
 }
 
 bool menu_driver_load_image(void *data, menu_image_type_t type)
@@ -437,36 +346,6 @@ bool menu_driver_load_image(void *data, menu_image_type_t type)
    return false;
 }
 
-void  menu_driver_navigation_descend_alphabet(size_t *ptr_out)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_descend_alphabet)
-      driver->navigation_descend_alphabet(ptr_out);
-}
-
-void  menu_driver_navigation_ascend_alphabet(size_t *ptr_out)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_ascend_alphabet)
-      driver->navigation_ascend_alphabet(ptr_out);
-}
-
-bool menu_driver_alive(void)
-{
-   return menu_alive;
-}
-
-void menu_driver_set_alive(void)
-{
-   menu_alive = true;
-}
-
-void menu_driver_unset_alive(void)
-{
-   menu_alive = false;
-}
 
 bool menu_environment_cb(menu_environ_cb_t type, void *data)
 {

@@ -1,4 +1,5 @@
 HAVE_FILE_LOGGER=1
+MISSING_DECLS   =0
 
 include config.mk
 
@@ -23,7 +24,15 @@ endif
 
 include Makefile.common
 
+ifeq ($(shell $(CC) -v 2>&1 | grep -c "clang"),1)
+   DEFINES +=  -Wno-invalid-source-encoding
+endif
+
 HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
+
+ifeq ($(MISSING_DECLS), 1)
+	DEFINES += -Werror=missing-declarations
+endif
 
 ifeq ($(HAVE_DYLIB), 1)
    LIBS += $(DYLIB_LIB)
@@ -46,7 +55,7 @@ else
 endif
 
 CFLAGS   += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) $(DEBUG_FLAG) -I.
-CXXFLAGS := $(CFLAGS) -std=c++0x -D__STDC_CONSTANT_MACROS
+CXXFLAGS := $(CFLAGS) -std=c++98 -D__STDC_CONSTANT_MACROS
 OBJCFLAGS :=  $(CFLAGS) -D__STDC_CONSTANT_MACROS
 
 ifeq ($(CXX_BUILD), 1)
@@ -158,16 +167,17 @@ install: $(TARGET)
 	rm -f $(OBJDIR)/git_version.o
 	mkdir -p $(DESTDIR)$(PREFIX)/bin 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(GLOBAL_CONFIG_DIR) 2>/dev/null || /bin/true
-	mkdir -p $(DESTDIR)$(PREFIX)/share/man/man1 2>/dev/null || /bin/true
+	mkdir -p $(DESTDIR)$(PREFIX)/share/applications 2>/dev/null || /bin/true
+	mkdir -p $(DESTDIR)$(MAN_DIR) 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(PREFIX)/share/pixmaps 2>/dev/null || /bin/true
 	install -m755 $(TARGET) $(DESTDIR)$(PREFIX)/bin 
 	install -m755 tools/cg2glsl.py $(DESTDIR)$(PREFIX)/bin/retroarch-cg2glsl
 	install -m755 $(JTARGET) $(DESTDIR)$(PREFIX)/bin
 	install -m644 retroarch.cfg $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
+	install -m644 retroarch.desktop $(DESTDIR)$(PREFIX)/share/applications
 	install -m644 docs/retroarch.1 $(DESTDIR)$(MAN_DIR)
 	install -m644 docs/retroarch-cg2glsl.1 $(DESTDIR)$(MAN_DIR)
 	install -m644 docs/retroarch-joyconfig.1 $(DESTDIR)$(MAN_DIR)
-	install -m644 media/retroarch.png $(DESTDIR)$(PREFIX)/share/pixmaps
 	install -m644 media/retroarch.svg $(DESTDIR)$(PREFIX)/share/pixmaps
 
 uninstall:
@@ -175,10 +185,10 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch-joyconfig
 	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch-cg2glsl
 	rm -f $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
-	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch.1
-	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch-cg2glsl.1
-	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch-joyconfig.1
-	rm -f $(DESTDIR)$(PREFIX)/share/pixmaps/retroarch.png
+	rm -f $(DESTDIR)$(PREFIX)/share/applications/retroarch.desktop
+	rm -f $(DESTDIR)$(MAN_DIR)/retroarch.1
+	rm -f $(DESTDIR)$(MAN_DIR)/retroarch-cg2glsl.1
+	rm -f $(DESTDIR)$(MAN_DIR)/retroarch-joyconfig.1
 	rm -f $(DESTDIR)$(PREFIX)/share/pixmaps/retroarch.svg
 
 clean:

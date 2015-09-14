@@ -176,34 +176,34 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 #endif
 
 #if defined(_XBOX1)
-   strlcpy(g_defaults.core_dir, "D:", sizeof(g_defaults.core_dir));
-   strlcpy(g_defaults.core_info_dir, "D:", sizeof(g_defaults.core_info_dir));
-   fill_pathname_join(g_defaults.config_path, g_defaults.core_dir,
-         "retroarch.cfg", sizeof(g_defaults.config_path));
-   fill_pathname_join(g_defaults.savestate_dir, g_defaults.core_dir,
-         "savestates", sizeof(g_defaults.savestate_dir));
-   fill_pathname_join(g_defaults.sram_dir, g_defaults.core_dir,
-         "savefiles", sizeof(g_defaults.sram_dir));
-   fill_pathname_join(g_defaults.system_dir, g_defaults.core_dir,
-         "system", sizeof(g_defaults.system_dir));
-   fill_pathname_join(g_defaults.screenshot_dir, g_defaults.core_dir,
-         "screenshots", sizeof(g_defaults.screenshot_dir));
+   strlcpy(g_defaults.dir.core, "D:", sizeof(g_defaults.dir.core));
+   strlcpy(g_defaults.dir.core_info, "D:", sizeof(g_defaults.dir.core_info));
+   fill_pathname_join(g_defaults.path.config, g_defaults.dir.core,
+         "retroarch.cfg", sizeof(g_defaults.path.config));
+   fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.core,
+         "savestates", sizeof(g_defaults.dir.savestate));
+   fill_pathname_join(g_defaults.dir.sram, g_defaults.dir.core,
+         "savefiles", sizeof(g_defaults.dir.sram));
+   fill_pathname_join(g_defaults.dir.system, g_defaults.dir.core,
+         "system", sizeof(g_defaults.dir.system));
+   fill_pathname_join(g_defaults.dir.screenshot, g_defaults.dir.core,
+         "screenshots", sizeof(g_defaults.dir.screenshot));
 #elif defined(_XBOX360)
-   strlcpy(g_defaults.core_dir, "game:", sizeof(g_defaults.core_dir));
-   strlcpy(g_defaults.core_info_dir,
-         "game:", sizeof(g_defaults.core_info_dir));
-   strlcpy(g_defaults.config_path,
-         "game:\\retroarch.cfg", sizeof(g_defaults.config_path));
-   strlcpy(g_defaults.screenshot_dir,
-         "game:", sizeof(g_defaults.screenshot_dir));
-   strlcpy(g_defaults.savestate_dir,
-         "game:\\savestates", sizeof(g_defaults.savestate_dir));
-   strlcpy(g_defaults.playlist_dir,
-         "game:\\playlists", sizeof(g_defaults.playlist_dir));
-   strlcpy(g_defaults.sram_dir,
-         "game:\\savefiles", sizeof(g_defaults.sram_dir));
-   strlcpy(g_defaults.system_dir,
-         "game:\\system", sizeof(g_defaults.system_dir));
+   strlcpy(g_defaults.dir.core, "game:", sizeof(g_defaults.dir.core));
+   strlcpy(g_defaults.dir.core_info,
+         "game:", sizeof(g_defaults.dir.core_info));
+   strlcpy(g_defaults.path.config,
+         "game:\\retroarch.cfg", sizeof(g_defaults.path.config));
+   strlcpy(g_defaults.dir.screenshot,
+         "game:", sizeof(g_defaults.dir.screenshot));
+   strlcpy(g_defaults.dir.savestate,
+         "game:\\savestates", sizeof(g_defaults.dir.savestate));
+   strlcpy(g_defaults.dir.playlist,
+         "game:\\playlists", sizeof(g_defaults.dir.playlist));
+   strlcpy(g_defaults.dir.sram,
+         "game:\\savefiles", sizeof(g_defaults.dir.sram));
+   strlcpy(g_defaults.dir.system,
+         "game:\\system", sizeof(g_defaults.dir.system));
 #endif
 
 #ifndef IS_SALAMANDER
@@ -407,7 +407,7 @@ static int frontend_xdk_parse_drive_list(void *data)
    return 0;
 }
 
-const frontend_ctx_driver_t frontend_ctx_xdk = {
+frontend_ctx_driver_t frontend_ctx_xdk = {
    frontend_xdk_get_environment_settings,
    frontend_xdk_init,
    NULL,                         /* deinit */

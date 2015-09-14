@@ -260,8 +260,7 @@ static size_t xmb_list_get_size(void *data, menu_list_type_t type)
 {
    size_t list_size        = 0;
    menu_handle_t *menu     = (menu_handle_t*)data;
-   menu_entries_t *entries = menu    ? &menu->entries : NULL;
-   menu_list_t *menu_list  = entries ? entries->menu_list : NULL;
+   menu_list_t *menu_list  = menu_list_get_ptr();
    xmb_handle_t *xmb       = menu    ? (xmb_handle_t*)menu->userdata : NULL;
 
    switch (type)
@@ -339,21 +338,14 @@ static void xmb_draw_icon_end(void)
 }
 
 static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
-      GRuint texture, float x, float y,
-      float alpha, float rotation, float scale_factor)
+      GRuint texture,
+      float x, float y,
+      unsigned width, unsigned height,
+      float rotation, float scale_factor,
+      GRfloat *color)
 {
    struct gfx_coords coords;
-   unsigned width, height;
-   GRfloat color[16];
    math_matrix_4x4 mymat, mrot, mscal;
-
-   if (alpha > xmb->alpha)
-      alpha = xmb->alpha;
-
-   if (alpha == 0)
-      return;
-
-   video_driver_get_size(&width, &height);
 
    if (
          x < -xmb->icon.size/2 || 
@@ -361,23 +353,6 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
          y < xmb->icon.size/2 ||
          y > height + xmb->icon.size)
       return;
-
-   color[ 0] = 1.0f;
-   color[ 1] = 1.0f;
-   color[ 2] = 1.0f;
-   color[ 3] = alpha;
-   color[ 4] = 1.0f;
-   color[ 5] = 1.0f;
-   color[ 6] = 1.0f;
-   color[ 7] = alpha;
-   color[ 8] = 1.0f;
-   color[ 9] = 1.0f;
-   color[10] = 1.0f;
-   color[11] = alpha;
-   color[12] = 1.0f;
-   color[13] = 1.0f;
-   color[14] = 1.0f;
-   color[15] = alpha;
 
    matrix_4x4_rotate_z(&mrot, rotation);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
@@ -385,33 +360,29 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    matrix_4x4_scale(&mscal, scale_factor, scale_factor, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
-   glViewport(x, height - y, xmb->icon.size, xmb->icon.size);
-
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
-   coords.color         = color;
+   coords.color         = (const float*)color;
 
-   menu_video_draw_frame(gl->shader, &coords, &mymat, false, texture);
+   menu_video_draw_frame(
+         x,
+         height - y,
+         xmb->icon.size,
+         xmb->icon.size,
+         gl->shader, &coords, &mymat, false, texture);
 }
 
 static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
       math_matrix_4x4 *mymat,
-      GRuint texture, float x, float y,
-      float alpha, float rotation, float scale_factor)
+      GRuint texture,
+      float x, float y,
+      unsigned width, unsigned height,
+      float alpha, float rotation, float scale_factor,
+      GRfloat *color)
 {
    struct gfx_coords coords;
-   unsigned width, height;
-   GRfloat color[16];
-
-   if (alpha > xmb->alpha)
-      alpha = xmb->alpha;
-
-   if (alpha == 0)
-      return;
-
-   video_driver_get_size(&width, &height);
 
    if (
          x < -xmb->icon.size/2 || 
@@ -420,27 +391,8 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
          y > height + xmb->icon.size)
       return;
 
-   color[ 0] = 1.0f;
-   color[ 1] = 1.0f;
-   color[ 2] = 1.0f;
-   color[ 3] = alpha;
-   color[ 4] = 1.0f;
-   color[ 5] = 1.0f;
-   color[ 6] = 1.0f;
-   color[ 7] = alpha;
-   color[ 8] = 1.0f;
-   color[ 9] = 1.0f;
-   color[10] = 1.0f;
-   color[11] = alpha;
-   color[12] = 1.0f;
-   color[13] = 1.0f;
-   color[14] = 1.0f;
-   color[15] = alpha;
-
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
-
-   glViewport(x, height - y, xmb->icon.size, xmb->icon.size);
 
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
@@ -448,35 +400,19 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = color;
 
-   menu_video_draw_frame(gl->shader, &coords, mymat, false, texture);
+   menu_video_draw_frame(
+         x,
+         height - y,
+         xmb->icon.size,
+         xmb->icon.size,
+         gl->shader, &coords, mymat, false, texture);
 }
 
-static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb)
+static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb, GRfloat *color, unsigned width, unsigned height)
 {
    struct gfx_coords coords;
-   unsigned width, height;
    float x, y;
    math_matrix_4x4 mymat, mrot, mscal;
-   GRfloat color[16];
-
-   video_driver_get_size(&width, &height);
-
-   color[ 0] = 1.0f;
-   color[ 1] = 1.0f;
-   color[ 2] = 1.0f;
-   color[ 3] = xmb->alpha;
-   color[ 4] = 1.0f;
-   color[ 5] = 1.0f;
-   color[ 6] = 1.0f;
-   color[ 7] = xmb->alpha;
-   color[ 8] = 1.0f;
-   color[ 9] = 1.0f;
-   color[10] = 1.0f;
-   color[11] = xmb->alpha;
-   color[12] = 1.0f;
-   color[13] = 1.0f;
-   color[14] = 1.0f;
-   color[15] = xmb->alpha;
 
    y = xmb->margins.screen.top + xmb->icon.size + xmb->boxart_size;
 
@@ -489,24 +425,27 @@ static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb)
    matrix_4x4_scale(&mscal, 1, 1, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
-   glViewport(x, height - y, xmb->boxart_size, xmb->boxart_size);
-
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
-   coords.color         = color;
+   coords.color         = (const float*)color;
 
-   menu_video_draw_frame(gl->shader, &coords, &mymat, false, xmb->boxart);
+   menu_video_draw_frame(
+         x,
+         height - y,
+         xmb->boxart_size,
+         xmb->boxart_size,
+         gl->shader, &coords, &mymat, false, xmb->boxart);
 }
 
 static void xmb_draw_text(menu_handle_t *menu,
       xmb_handle_t *xmb,
       const char *str, float x,
       float y, float scale_factor, float alpha,
-      enum text_alignment text_align)
+      enum text_alignment text_align,
+      unsigned width, unsigned height)
 {
-   unsigned width, height;
    uint8_t a8                =   0;
    struct font_params params = {0};
 
@@ -517,8 +456,6 @@ static void xmb_draw_text(menu_handle_t *menu,
 
    if (a8 == 0)
       return;
-
-   video_driver_get_size(&width, &height);
 
    if (x < -xmb->icon.size || x > width + xmb->icon.size
          || y < -xmb->icon.size || y > height + xmb->icon.size)
@@ -598,7 +535,9 @@ static void xmb_frame_messagebox(const char *message)
                y + i * menu->display.font.size,
                1,
                1,
-               TEXT_ALIGN_LEFT);
+               TEXT_ALIGN_LEFT,
+               width,
+               height);
    }
 
 end:
@@ -643,7 +582,7 @@ static void xmb_selection_pointer_changed(bool allow_animations)
    if (!xmb)
       return;
 
-   current   = nav->selection_ptr;
+   current   = menu_navigation_get_selection(nav);
    end       = menu_entries_get_end();
    tag       = (uintptr_t)menu_list;
    threshold = xmb->icon.size*10;
@@ -982,6 +921,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
    settings_t *settings   = config_get_ptr();
+   size_t       selection = menu_navigation_get_selection(nav);
 
    if (!menu)
       return;
@@ -1003,8 +943,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 
    xmb_list_switch_old(xmb, xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
-   xmb_list_switch_new(xmb, menu_list->selection_buf,
-         dir, nav->selection_ptr);
+   xmb_list_switch_new(xmb, menu_list->selection_buf, dir, selection);
    xmb->categories.active.idx_old = xmb->categories.selection_ptr;
 
    if (settings->menu.boxart_enable)
@@ -1166,8 +1105,7 @@ static GRuint xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_FOLDER].id;
       case MENU_FILE_PLAIN:
          return xmb->textures.list[XMB_TEXTURE_FILE].id;
-      case MENU_FILE_PLAYLIST_ENTRY:
-      case MENU_FILE_RDB_ENTRY:
+      case MENU_FILE_RPL_ENTRY:
          if (core_node)
             return core_node->content_icon;
          return xmb->textures.list[XMB_TEXTURE_FILE].id;
@@ -1185,6 +1123,7 @@ static GRuint xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_RDB].id;
       case MENU_FILE_CURSOR:
          return xmb->textures.list[XMB_TEXTURE_CURSOR].id;
+      case MENU_FILE_PLAYLIST_ENTRY:
       case MENU_SETTING_ACTION_RUN:
          return xmb->textures.list[XMB_TEXTURE_RUN].id;
       case MENU_SETTING_ACTION_CLOSE:
@@ -1193,6 +1132,7 @@ static GRuint xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_SAVESTATE].id;
       case MENU_SETTING_ACTION_LOADSTATE:
          return xmb->textures.list[XMB_TEXTURE_LOADSTATE].id;
+      case MENU_FILE_RDB_ENTRY:
       case MENU_SETTING_ACTION_CORE_INFORMATION:
          return xmb->textures.list[XMB_TEXTURE_CORE_INFO].id;
       case MENU_SETTING_ACTION_CORE_OPTIONS:
@@ -1222,23 +1162,19 @@ static GRuint xmb_icon_get_id(xmb_handle_t *xmb,
 
 static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       file_list_t *list, file_list_t *stack,
-      size_t current, size_t cat_selection_ptr)
+      size_t current, size_t cat_selection_ptr, GRfloat *color,
+      unsigned width, unsigned height)
 {
-   unsigned i, width, height, ticker_limit;
+   unsigned i, ticker_limit;
    math_matrix_4x4 mymat, mrot, mscal;
-   const char *label           = NULL;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
-   uint64_t frame_count        = video_driver_get_frame_count();
+   uint64_t *frame_count       = video_driver_get_frame_count();
    menu_handle_t *menu         = menu_driver_get_ptr();
    settings_t   *settings      = config_get_ptr();
 
    if (!list || !list->size || !menu)
       return;
-
-   video_driver_get_size(&width, &height);
-
-   menu_list_get_last(stack, NULL, &label, NULL, NULL);
 
    if (cat_selection_ptr)
       core_node = xmb_get_userdata_from_horizontal_list(xmb, cat_selection_ptr - 1);
@@ -1271,7 +1207,6 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       uint32_t hash_value         = 0;
       bool do_draw_text           = false;
 
-      *name = *value = 0;
       *entry.path = *entry.label = *entry.value = 0;
       entry.idx = entry.spacing = entry.type = 0;
 
@@ -1389,17 +1324,18 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       }
 
       menu_animation_ticker_str(name, ticker_limit,
-            frame_count / 20, entry.path,
+            *frame_count / 20, entry.path,
             (i == current));
 
       xmb_draw_text(menu, xmb, name,
             node->x + xmb->margins.screen.left + 
             xmb->icon.spacing.horizontal + xmb->margins.label.left, 
             xmb->margins.screen.top + node->y + xmb->margins.label.top, 
-            1, node->label_alpha, TEXT_ALIGN_LEFT);
+            1, node->label_alpha, TEXT_ALIGN_LEFT,
+            width, height);
 
       menu_animation_ticker_str(value, 35,
-            frame_count / 20, entry.value,
+            *frame_count / 20, entry.value,
             (i == current));
 
 
@@ -1410,68 +1346,60 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                xmb->margins.screen.top + node->y + xmb->margins.label.top, 
                1, 
                node->label_alpha,
-               TEXT_ALIGN_LEFT);
+               TEXT_ALIGN_LEFT,
+               width, height);
 
       xmb_draw_icon_begin(gl);
 
-      xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
+      /* set alpha components of color */
+      color[3] = color[7] = color[11] = color[15] = (node->alpha > xmb->alpha) ? xmb->alpha : node->alpha;
 
+      if (color[3] != 0)
+         xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, width, height, 
+               0, node->zoom, &color[0]);
 
-      if (texture_switch != 0)
+      /* set alpha components of color */
+      color[3]  = color[7]  = color[11]  = color[15]  = (node->alpha > xmb->alpha) ? xmb->alpha : node->alpha;
+
+      if (texture_switch != 0 && color[3] != 0)
          xmb_draw_icon_predone(gl, xmb, &mymat,
                texture_switch,
                node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal
                + xmb->icon.size / 2.0 + xmb->margins.setting.left,
                xmb->margins.screen.top + node->y + xmb->icon.size / 2.0,
+               width, height,
                node->alpha,
                0,
-               1);
+               1, &color[0]);
 
       xmb_draw_icon_end();
    }
 }
 
-
-static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
+static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb,
+      GRfloat *color,
+      float x, float y, unsigned width, unsigned height)
 {
-   unsigned width, height;
    struct gfx_coords coords;
    math_matrix_4x4 mymat, mrot;
-   GRfloat color[16];
-
-   color[ 0] = 1.0f;
-   color[ 1] = 1.0f;
-   color[ 2] = 1.0f;
-   color[ 3] = xmb->alpha;
-   color[ 4] = 1.0f;
-   color[ 5] = 1.0f;
-   color[ 6] = 1.0f;
-   color[ 7] = xmb->alpha;
-   color[ 8] = 1.0f;
-   color[ 9] = 1.0f;
-   color[10] = 1.0f;
-   color[11] = xmb->alpha;
-   color[12] = 1.0f;
-   color[13] = 1.0f;
-   color[14] = 1.0f;
-   color[15] = xmb->alpha;
-
-   video_driver_get_size(&width, &height);
 
    matrix_4x4_rotate_z(&mrot, 0);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
-
-   glViewport(x, height - y, xmb->cursor.size, xmb->cursor.size);
 
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
-   coords.color         = color;
+   coords.color         = (const float*)color;
 
    xmb_draw_icon_begin(gl);
 
-   menu_video_draw_frame(gl->shader, &coords, &mymat, true, xmb->textures.list[XMB_TEXTURE_POINTER].id);
+   menu_video_draw_frame(
+         x,
+         height - y,
+         xmb->cursor.size,
+         xmb->cursor.size,
+         gl->shader, &coords, &mymat, true, xmb->textures.list[XMB_TEXTURE_POINTER].id);
 }
 
 static void xmb_render(void)
@@ -1494,11 +1422,11 @@ static void xmb_render(void)
    if (!xmb)
       return;
 
-   menu_animation_update(disp->animation, disp->animation->delta_time / IDEAL_DT);
+   menu_animation_update(disp->animation, menu_animation_get_delta_time(disp->animation) / IDEAL_DT);
 
    video_driver_get_size(NULL, &height);
 
-   current = nav->selection_ptr;
+   current = menu_navigation_get_selection(nav);
    end     = menu_list_get_size(menu_list);
 
    if (settings->menu.pointer.enable || settings->menu.mouse.enable)
@@ -1525,12 +1453,12 @@ static void xmb_render(void)
    if (menu_entries_get_start() >= end)
       menu_entries_set_start(0);
 
-   anim->is_active = false;
-   anim->label.is_updated    = false;
+   menu_animation_clear_active(anim);
 }
 
 static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
-      menu_handle_t *menu, gl_t *gl)
+      menu_handle_t *menu, gl_t *gl, unsigned width, unsigned height,
+      GRfloat *color)
 {
    unsigned i;
    size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
@@ -1547,14 +1475,19 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
 
       xmb_draw_icon_begin(gl);
 
-      xmb_draw_icon(gl, xmb, node->icon, 
-            xmb->x + xmb->categories.x_pos + 
-            xmb->margins.screen.left + 
-            xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
-            xmb->margins.screen.top + xmb->icon.size / 2.0, 
-            node->alpha, 
-            0, 
-            node->zoom);
+      /* set alpha components of color */
+      color[3] = color[7] = color[11] = color[15] = (node->alpha > xmb->alpha) ? xmb->alpha : node->alpha;
+
+      if (color[3] != 0)
+         xmb_draw_icon(gl, xmb, node->icon, 
+               xmb->x + xmb->categories.x_pos + 
+               xmb->margins.screen.left + 
+               xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
+               xmb->margins.screen.top + xmb->icon.size / 2.0, 
+               width, height,
+               0, 
+               node->zoom,
+               &color[0]);
 
       xmb_draw_icon_end();
    }
@@ -1563,11 +1496,13 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
 static void xmb_frame(void)
 {
    math_matrix_4x4 mymat, mrot, mscal;
-   unsigned depth;
-   unsigned width, height;
+   unsigned depth, i, width, height;
    char msg[PATH_MAX_LENGTH];
    char title_msg[PATH_MAX_LENGTH];
    char timedate[PATH_MAX_LENGTH];
+   GRfloat item_color[16];
+   GRfloat coord_color[16];
+   GRfloat coord_color2[16];
    bool render_background                  = false;
    xmb_handle_t *xmb                       = NULL;
    gl_t *gl                                = NULL;
@@ -1601,12 +1536,25 @@ static void xmb_frame(void)
 
    xmb->raster_block.carr.coords.vertices = 0;
 
+   for (i = 0; i < 16; i++)
+   {
+      coord_color[i]  = 0;
+      coord_color2[i] = 1.0f;
+      item_color[i]   = 1.0f;
+   }
+
+   /* set alpha components of colors */
+   coord_color[3]  = coord_color[7]  = coord_color[11]  = coord_color[15]  = (0.75f > xmb->alpha) ? xmb->alpha : 0.75f;
+   coord_color2[3] = coord_color2[7] = coord_color2[11] = coord_color2[15] = xmb->alpha;
+
    menu_video_frame_background(menu, settings,
-         gl, xmb->textures.bg.id, xmb->alpha, 0.75f, false);
+         gl, width, height, xmb->textures.bg.id, xmb->alpha, false, &coord_color[0],
+         &coord_color2[0], &rmb_vertex[0], &rmb_tex_coord[0]);
 
    xmb_draw_text(menu, xmb,
          xmb->title_name, xmb->margins.title.left,
-         xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT);
+         xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT,
+         width, height);
 
    if (settings->menu.timedate_enable)
    {
@@ -1614,15 +1562,14 @@ static void xmb_frame(void)
 
       xmb_draw_text(menu, xmb, timedate,
             width - xmb->margins.title.left - xmb->icon.size / 4, 
-            xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT);
+            xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
+            width, height);
    }
 
-   if (settings->menu.core_enable)
-   {
-      menu_entries_get_core_title(title_msg, sizeof(title_msg));
+   if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
       xmb_draw_text(menu, xmb, title_msg, xmb->margins.title.left, 
-            height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT);
-   }
+            height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
+            width, height);
 
    depth = xmb_list_get_size(menu, MENU_LIST_PLAIN);
 
@@ -1631,13 +1578,15 @@ static void xmb_frame(void)
          xmb->menu_stack_old,
          xmb->selection_ptr_old,
          depth > 1 ? xmb->categories.selection_ptr :
-         xmb->categories.selection_ptr_old);
+         xmb->categories.selection_ptr_old,
+         &item_color[0], width, height);
 
    xmb_draw_items(xmb, gl,
          menu_list->selection_buf,
          menu_list->menu_stack,
          nav->selection_ptr,
-         xmb->categories.selection_ptr);
+         xmb->categories.selection_ptr,
+         &item_color[0], width, height);
 
    matrix_4x4_rotate_z(&mrot, 0 /* rotation */);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
@@ -1648,21 +1597,36 @@ static void xmb_frame(void)
    xmb_draw_icon_begin(gl);
 
    if (settings->menu.boxart_enable && xmb->boxart)
-      xmb_draw_boxart(gl, xmb);
+      xmb_draw_boxart(gl, xmb, &coord_color2[0], width, height);
 
-   if (settings->menu.timedate_enable)
+   /* set alpha components of colors */
+   coord_color2[3]  = coord_color2[7]  = coord_color2[11]  = coord_color2[15]  = (1.00f > xmb->alpha) ? xmb->alpha : 1.00f;
+
+   if (settings->menu.timedate_enable && coord_color2[3] != 0)
       xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
-            width - xmb->icon.size, xmb->icon.size, 1, 0, 1);
+            width - xmb->icon.size, xmb->icon.size, width, height, 1, 0, 1, &coord_color2[0]);
 
-   xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_ARROW].id,
-         xmb->x + xmb->margins.screen.left + 
-         xmb->icon.spacing.horizontal - xmb->icon.size / 2.0 + xmb->icon.size,
-         xmb->margins.screen.top + 
-         xmb->icon.size / 2.0 + xmb->icon.spacing.vertical 
-         * xmb->item.active.factor,
-         xmb->textures.arrow.alpha, 0, 1);
+   /* set alpha components of colors */
+   coord_color2[3]  = coord_color2[7]  = coord_color2[11]  = coord_color2[15]  = (xmb->textures.arrow.alpha > xmb->alpha) 
+      ? xmb->alpha : xmb->textures.arrow.alpha;
 
-   xmb_frame_horizontal_list(xmb, menu, gl);
+   if (coord_color2[3] != 0)
+      xmb_draw_icon_predone(gl,
+            xmb,
+            &mymat,
+            xmb->textures.list[XMB_TEXTURE_ARROW].id,
+            xmb->x + xmb->margins.screen.left + 
+            xmb->icon.spacing.horizontal - xmb->icon.size / 2.0 + xmb->icon.size,
+            xmb->margins.screen.top + 
+            xmb->icon.size / 2.0 + xmb->icon.spacing.vertical 
+            * xmb->item.active.factor,
+            width,
+            height,
+            xmb->textures.arrow.alpha,
+            0,
+            1, &coord_color2[0]);
+
+   xmb_frame_horizontal_list(xmb, menu, gl, width, height, &item_color[0]);
 
    menu_display_font_flush_block(menu, font_driver);
 
@@ -1688,12 +1652,16 @@ static void xmb_frame(void)
    if (render_background)
    {
       menu_video_frame_background(menu, settings, gl,
-            xmb->textures.bg.id, xmb->alpha, 0.75f, true);
+            width, height,
+            xmb->textures.bg.id, xmb->alpha, true,
+            &coord_color[0], &coord_color2[0],
+            &rmb_vertex[0], &rmb_tex_coord[0]);
       xmb_frame_messagebox(msg);
    }
 
    if (settings->menu.mouse.enable)
-      xmb_draw_cursor(gl, xmb, menu_input->mouse.x, menu_input->mouse.y);
+      xmb_draw_cursor(gl, xmb, &coord_color2[0],
+            menu_input->mouse.x, menu_input->mouse.y, width, height);
 
    menu_display_unset_viewport();
 }
@@ -2590,6 +2558,6 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_list_bind_init,
    xmb_load_image,
    "xmb",
+   MENU_VIDEO_DRIVER_OPENGL,
    xmb_environ,
-   NULL,
 };

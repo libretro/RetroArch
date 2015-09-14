@@ -14,10 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../input_hid_driver.h"
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
-#include <stdio.h>
 #include <string.h>
 #ifdef __APPLE__
 #include <CoreFoundation/CFRunLoop.h>
@@ -25,11 +24,13 @@
 #ifdef HAVE_MFI
 #include "mfi_hid.h"
 #endif
-#include <rthreads/rthreads.h>
 
+#include <rthreads/rthreads.h>
+#include <dynamic/dylib.h>
+
+#include "../input_hid_driver.h"
 #define BUILDING_BTDYNAMIC
 #include "btstack_hid.h"
-#include <dynamic/dylib.h>
 #include "../connect/joypad_connection.h"
 
 typedef struct btstack_hid

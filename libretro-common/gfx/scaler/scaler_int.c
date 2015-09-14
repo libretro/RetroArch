@@ -21,6 +21,7 @@
  */
 
 #include <gfx/scaler/scaler_int.h>
+
 #include <retro_inline.h>
 
 #ifdef SCALER_NO_SIMD

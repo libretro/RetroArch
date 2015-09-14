@@ -10,7 +10,7 @@
    inflate_fast() can be used with either inflate.c or infback.c.
    */
 
-#include "zutil.h"
+#include <compat/zutil.h>
 #include "inftrees.h"
 #include "inflate.h"
 #include "inffast.h"

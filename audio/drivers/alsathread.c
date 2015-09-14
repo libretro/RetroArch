@@ -14,13 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-#include "../../driver.h"
 #include <stdlib.h>
+
 #include <alsa/asoundlib.h>
-#include "../../general.h"
+
 #include <rthreads/rthreads.h>
 #include <queues/fifo_buffer.h>
+
+#include "../../driver.h"
+#include "../../general.h"
 
 #define TRY_ALSA(x) if (x < 0) { \
                   goto error; \

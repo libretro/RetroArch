@@ -46,7 +46,7 @@ static void menu_action_setting_disp_set_label_cheat_num_passes(
    *w = 19;
    strlcpy(s2, path, len2);
    if (global && global->cheat)
-      snprintf(s, len, "%u", global->cheat->buf_size);
+      snprintf(s, len, "%u", cheat_manager_get_buf_size(global->cheat));
 }
 
 static void menu_action_setting_disp_set_label_remap_file_load(
@@ -80,8 +80,8 @@ static void menu_action_setting_disp_set_label_configurations(
 
    *w = 19;
    strlcpy(s2, path, len2);
-   if (global && *global->config_path)
-      fill_pathname_base(s, global->config_path,
+   if (global && *global->path.config)
+      fill_pathname_base(s, global->path.config,
             len);
    else
       strlcpy(s, menu_hash_to_str(MENU_VALUE_DIRECTORY_DEFAULT), len);
@@ -409,12 +409,12 @@ static void menu_action_setting_disp_set_label_cheat(
    if (!global)
       return;
 
-   if (cheat_index < global->cheat->buf_size)
+   if (cheat_index < cheat_manager_get_buf_size(global->cheat))
       snprintf(s, len, "%s : (%s)",
-            (global->cheat->cheats[cheat_index].code != NULL)
-            ? global->cheat->cheats[cheat_index].code : 
+            (cheat_manager_get_code(global->cheat, cheat_index) != NULL)
+            ? cheat_manager_get_code(global->cheat, cheat_index) : 
             menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE),
-            global->cheat->cheats[cheat_index].state ? 
+            cheat_manager_get_code_state(global->cheat, cheat_index) ? 
             menu_hash_to_str(MENU_VALUE_ON) :
             menu_hash_to_str(MENU_VALUE_OFF)
             );
@@ -443,6 +443,26 @@ static void menu_action_setting_disp_set_label_perf_counters_common(
          (unsigned long long)counters[offset]->call_cnt);
 }
 
+static void general_disp_set_label_perf_counters(
+      const struct retro_perf_counter **counters,
+      unsigned offset,
+      char *s, size_t len,
+      char *s2, size_t len2,
+      const char *path, unsigned *w
+      )
+{
+   menu_animation_t *anim = menu_animation_get_ptr();
+
+   *s = '\0';
+   *w = 19;
+   strlcpy(s2, path, len2);
+
+   menu_action_setting_disp_set_label_perf_counters_common(
+         counters, offset, s, len);
+
+   menu_animation_set_active(anim);
+}
+
 static void menu_action_setting_disp_set_label_perf_counters(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -452,20 +472,11 @@ static void menu_action_setting_disp_set_label_perf_counters(
       const char *path,
       char *s2, size_t len2)
 {
-   menu_animation_t *anim = menu_animation_get_ptr();
    const struct retro_perf_counter **counters =
       (const struct retro_perf_counter **)perf_counters_rarch;
    unsigned offset = type - MENU_SETTINGS_PERF_COUNTERS_BEGIN;
-
-   *s = '\0';
-   *w = 19;
-   strlcpy(s2, path, len2);
-
-   menu_action_setting_disp_set_label_perf_counters_common(
-         counters, offset, s, len);
-
-   if (anim)
-      anim->label.is_updated = true;
+   general_disp_set_label_perf_counters(counters, offset, s, len,
+         s2, len, path, w);
 }
 
 static void menu_action_setting_disp_set_label_libretro_perf_counters(
@@ -477,20 +488,11 @@ static void menu_action_setting_disp_set_label_libretro_perf_counters(
       const char *path,
       char *s2, size_t len2)
 {
-   menu_animation_t *anim = menu_animation_get_ptr();
    const struct retro_perf_counter **counters =
       (const struct retro_perf_counter **)perf_counters_libretro;
    unsigned offset = type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN;
-
-   *s = '\0';
-   *w = 19;
-   strlcpy(s2, path, len2);
-
-   menu_action_setting_disp_set_label_perf_counters_common(
-         counters, offset, s, len);
-
-   if (anim)
-      anim->label.is_updated = true;
+   general_disp_set_label_perf_counters(counters, offset, s, len,
+         s2, len, path, w);
 }
 
 static void menu_action_setting_disp_set_label_menu_more(
@@ -906,6 +908,9 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
    {
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
          *w = strlen(label);
+         break;
+      case MENU_LABEL_SYSTEM_INFORMATION:
+         *w = 2;
          break;
    }
 

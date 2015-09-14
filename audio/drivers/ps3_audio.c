@@ -14,14 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../driver.h"
-#include "../general.h"
 #include <stdlib.h>
-
 #include <string.h>
+
 #include <queues/fifo_buffer.h>
 
-#include "../ps3/sdk_defines.h"
+#include "../driver.h"
+#include "../general.h"
+
+#include "../../defines/ps3_defines.h"
 
 #define AUDIO_BLOCKS 8
 #define AUDIO_CHANNELS 2

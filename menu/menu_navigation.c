@@ -23,19 +23,64 @@
 
 #include <boolean.h>
 
-#include "menu_displaylist.h"
-#include "menu_navigation.h"
-#include "menu_entries.h"
-
 #include "../configuration.h"
 
-menu_navigation_t *menu_navigation_get_ptr(void)
+static void menu_driver_navigation_increment(void)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
-   if (!entries)
-      return NULL;
-   return &entries->navigation;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->navigation_increment)
+      driver->navigation_increment();
 }
+
+static void menu_driver_navigation_decrement(void)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->navigation_decrement)
+      driver->navigation_decrement();
+}
+
+static void menu_driver_navigation_clear(bool pending_push)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->navigation_clear)
+      driver->navigation_clear(pending_push);
+}
+
+static void menu_driver_navigation_set(bool scroll)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->navigation_set)
+      driver->navigation_set(scroll);
+}
+
+static void menu_driver_navigation_set_last(void)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->navigation_set_last)
+      driver->navigation_set_last();
+}
+
+static void  menu_driver_navigation_descend_alphabet(size_t *ptr_out)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->navigation_descend_alphabet)
+      driver->navigation_descend_alphabet(ptr_out);
+}
+
+static void menu_driver_navigation_ascend_alphabet(size_t *ptr_out)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->navigation_ascend_alphabet)
+      driver->navigation_ascend_alphabet(ptr_out);
+}
+
 /**
  * menu_navigation_clear:
  * @pending_push          : pending push ?
@@ -47,8 +92,7 @@ void menu_navigation_clear(menu_navigation_t *nav, bool pending_push)
    if (!nav)
       return;
 
-   nav->selection_ptr = 0;
-
+   menu_navigation_set(nav, 0, true);
    menu_driver_navigation_clear(pending_push);
 }
 
@@ -61,13 +105,13 @@ void menu_navigation_decrement(menu_navigation_t *nav, unsigned scroll_speed)
 {
    menu_list_t *menu_list = menu_list_get_ptr();
    settings_t *settings   = config_get_ptr();
+   size_t selection       = nav->selection_ptr;
 
    if (!nav)
       return;
 
-   if (nav->selection_ptr >= scroll_speed)
-         menu_navigation_set(nav,
-               nav->selection_ptr - scroll_speed, true);
+   if (selection >= scroll_speed)
+         menu_navigation_set(nav, selection - scroll_speed, true);
    else
    {
       if (settings->menu.navigation.wraparound.vertical_enable)
@@ -89,14 +133,14 @@ void menu_navigation_increment(menu_navigation_t *nav, unsigned scroll_speed)
 {
    settings_t *settings   = config_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
+   size_t selection       = nav->selection_ptr;
 
    if (!nav)
       return;
 
-   if (nav->selection_ptr + scroll_speed < (menu_list_get_size(menu_list)))
+   if ((selection + scroll_speed) < (menu_list_get_size(menu_list)))
    {
-      menu_navigation_set(nav,
-            nav->selection_ptr + scroll_speed, true);
+      menu_navigation_set(nav, selection + scroll_speed, true);
       menu_driver_navigation_increment();
    }
    else
@@ -210,10 +254,9 @@ void menu_navigation_ascend_alphabet(menu_navigation_t *nav, size_t *ptr_out)
    menu_driver_navigation_ascend_alphabet(ptr_out);
 }
 
-ssize_t menu_navigation_get_current_selection(void)
+size_t menu_navigation_get_selection(menu_navigation_t *nav)
 {
-   menu_navigation_t *nav = menu_navigation_get_ptr();
    if (!nav)
-      return -1;
+      return 0;
    return nav->selection_ptr;
 }

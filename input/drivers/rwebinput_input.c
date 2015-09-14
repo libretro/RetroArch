@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <boolean.h>
 
+#include "../input_joypad.h"
 #include "../input_autodetect.h"
 #include "../input_common.h"
 #include "../input_keymaps.h"
@@ -25,7 +26,6 @@
 
 #include "../../general.h"
 #include "../keyboard_line.h"
-#include "../input_joypad.h"
 
 typedef struct rwebinput_state
 {
@@ -34,13 +34,12 @@ typedef struct rwebinput_state
    int mouse_y;
    char mouse_l;
    char mouse_r;
+   bool blocked;
 } rwebinput_state_t;
 
 int RWebInputInit(void);
 rwebinput_state_t *RWebInputPoll(int context);
 void RWebInputDestroy(int context);
-
-static bool uninited = false;
 
 typedef struct rwebinput_input
 {
@@ -68,10 +67,11 @@ error:
    return NULL;
 }
 
-static bool rwebinput_key_pressed(rwebinput_input_t *rwebinput, int key)
+static bool rwebinput_key_pressed__(void *data, int key)
 {
    unsigned sym;
    bool ret;
+   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
    
    if (key >= RETROK_LAST)
       return false;
@@ -82,8 +82,10 @@ static bool rwebinput_key_pressed(rwebinput_input_t *rwebinput, int key)
    return ret;
 }
 
-static bool rwebinput_meta_key_pressed(rwebinput_input_t *rwebinput, int key)
+static bool rwebinput_meta_key_pressed(void *data, int key)
 {
+   (void)data;
+   (void)key;
    return false;
 }
 
@@ -93,7 +95,7 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
    if (id < RARCH_BIND_LIST_END)
    {
       const struct retro_keybind *bind = &binds[id];
-      return bind->valid && rwebinput_key_pressed(rwebinput, binds[id].key);
+      return bind->valid && rwebinput_key_pressed__(rwebinput, binds[id].key);
    }
 
    return false;
@@ -166,7 +168,6 @@ static int16_t rwebinput_input_state(void *data, const struct retro_keybind **bi
 static void rwebinput_input_free(void *data)
 {
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
-   uninited = true;
 
    if (!rwebinput)
       return;
@@ -239,7 +240,7 @@ static bool rwebinput_keyboard_mapping_is_blocked(void *data)
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
    if (!rwebinput)
       return false;
-   return rwebinput->blocked;
+   return rwebinput->state.blocked;
 }
 
 static void rwebinput_keyboard_mapping_set_block(void *data, bool value)
@@ -247,7 +248,7 @@ static void rwebinput_keyboard_mapping_set_block(void *data, bool value)
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
    if (!rwebinput)
       return;
-   rwebinput->blocked = value;
+   rwebinput->state.blocked = value;
 }
 
 input_driver_t input_rwebinput = {
@@ -264,6 +265,7 @@ input_driver_t input_rwebinput = {
    rwebinput_grab_mouse,
    NULL,
    rwebinput_set_rumble,
+   NULL,
    rwebinput_keyboard_mapping_is_blocked,
    rwebinput_keyboard_mapping_set_block,
 };

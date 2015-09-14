@@ -41,6 +41,8 @@ enum event_command
    EVENT_CMD_UNLOAD_CORE,
    EVENT_CMD_LOAD_STATE,
    EVENT_CMD_SAVE_STATE,
+   EVENT_CMD_SAVE_STATE_DECREMENT,
+   EVENT_CMD_SAVE_STATE_INCREMENT,
    /* Takes screenshot. */
    EVENT_CMD_TAKE_SCREENSHOT,
    /* Initializes dummy core. */
@@ -149,6 +151,8 @@ enum event_command
    EVENT_CMD_CHEATS_INIT,
    /* Deinitializes cheats. */
    EVENT_CMD_CHEATS_DEINIT,
+   /* Apply cheats. */
+   EVENT_CMD_CHEATS_APPLY,
    /* Deinitializes network system. */
    EVENT_CMD_NETWORK_DEINIT,
    /* Initializes network system. */
@@ -196,6 +200,7 @@ enum event_command
    EVENT_CMD_REMAPPING_DEINIT,
    EVENT_CMD_VOLUME_UP,
    EVENT_CMD_VOLUME_DOWN,
+   EVENT_CMD_SET_FRAME_LIMIT,
    EVENT_CMD_DATA_RUNLOOP_FREE
 };
 

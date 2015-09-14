@@ -14,13 +14,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "movie.h"
-#include <rhash.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <rhash.h>
+#include <retro_endianness.h>
+
 #include "general.h"
-#include "dynamic.h"
 
 struct bsv_movie
 {

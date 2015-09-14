@@ -15,41 +15,68 @@
 
 #include "menu.h"
 #include "menu_hash.h"
-#include "menu_display.h"
-#include "menu_entry.h"
-#include "menu_navigation.h"
-#include "menu_setting.h"
-#include "menu_input.h"
-
-#include "menu_entries.h"
 
 #include "../general.h"
-#include "../system.h"
 
-menu_entries_t *menu_entries_get_ptr(void)
+struct menu_entries
+{
+   /* Flagged when menu entries need to be refreshed */
+   bool need_refresh;
+   bool nonblocking_refresh;
+
+   size_t begin;
+   menu_list_t *menu_list;
+   rarch_setting_t *list_settings;
+   menu_navigation_t navigation;
+};
+
+static menu_entries_t *menu_entries_get_ptr(void)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return NULL;
 
-   return &menu->entries;
+   return menu->entries;
+}
+
+rarch_setting_t *menu_setting_get_ptr(void)
+{
+   menu_entries_t *entries = menu_entries_get_ptr();
+
+   if (!entries)
+      return NULL;
+   return entries->list_settings;
+}
+
+menu_list_t *menu_list_get_ptr(void)
+{
+   menu_entries_t *entries = menu_entries_get_ptr();
+   if (!entries)
+      return NULL;
+   return entries->menu_list;
+}
+
+menu_navigation_t *menu_navigation_get_ptr(void)
+{
+   menu_entries_t *entries = menu_entries_get_ptr();
+   if (!entries)
+      return NULL;
+   return &entries->navigation;
 }
 
 /* Sets the starting index of the menu entry list. */
 void menu_entries_set_start(size_t i)
 {
-   menu_entries_t *entries   = menu_entries_get_ptr();
+   menu_entries_t *entries = menu_entries_get_ptr();
    
-   if (!entries)
-     return;
-
-   entries->begin = i;
+   if (entries)
+      entries->begin = i;
 }
 
 /* Returns the starting index of the menu entry list. */
 size_t menu_entries_get_start(void)
 {
-   menu_entries_t *entries   = menu_entries_get_ptr();
+   menu_entries_t *entries = menu_entries_get_ptr();
    
    if (!entries)
      return 0;
@@ -71,7 +98,7 @@ void menu_entries_get(size_t i, menu_entry_t *entry)
    const char *path          = NULL;
    const char *entry_label   = NULL;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_entries_t   *entries = menu_entries_get_ptr();
+   menu_entries_t *entries   = menu_entries_get_ptr();
 
    if (!entries || !entries->menu_list)
       return;
@@ -105,7 +132,7 @@ int menu_entries_get_title(char *s, size_t len)
    const char *label         = NULL;
    unsigned menu_type        = 0;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_entries_t *entries = menu_entries_get_ptr();
+   menu_entries_t *entries   = menu_entries_get_ptr();
    
    if (!entries->menu_list)
       return -1;
@@ -123,7 +150,7 @@ int menu_entries_get_title(char *s, size_t len)
  * one level deep in the menu hierarchy). */
 bool menu_entries_show_back(void)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
+   menu_entries_t *entries   = menu_entries_get_ptr();
 
    if (!entries->menu_list)
       return false;
@@ -133,12 +160,22 @@ bool menu_entries_show_back(void)
 
 /* Sets 's' to the name of the current core 
  * (shown at the top of the UI). */
-void menu_entries_get_core_title(char *s, size_t len)
+int menu_entries_get_core_title(char *s, size_t len)
 {
+   const char *core_name          = NULL;
+   const char *core_version       = NULL;
    global_t *global               = global_get_ptr();
-   const char *core_name          = global ? global->menu.info.library_name    : NULL;
-   const char *core_version       = global ? global->menu.info.library_version : NULL;
+   settings_t *settings           = config_get_ptr();
    rarch_system_info_t      *info = rarch_system_info_get_ptr();
+
+   if (!settings->menu.core_enable)
+      return -1; 
+
+   if (global)
+   {
+      core_name    = global->menu.info.library_name;
+      core_version = global->menu.info.library_version;
+   }
 
    if (!core_name || core_name[0] == '\0')
       core_name = info->info.library_name;
@@ -152,61 +189,95 @@ void menu_entries_get_core_title(char *s, size_t len)
 
    snprintf(s, len, "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
-}
 
-static bool menu_entries_get_nonblocking_refresh(void)
-{
-   menu_entries_t *entries = menu_entries_get_ptr();
-   if (!entries)
-      return false;
-   return entries->nonblocking_refresh;
-}
-
-int menu_entries_refresh(unsigned action)
-{
-   if (menu_entries_get_nonblocking_refresh())
-      return -1;
-   if (!menu_entries_needs_refresh())
-      return -1;
-   return menu_entry_iterate(MENU_ACTION_REFRESH);
+   return 0;
 }
 
 bool menu_entries_needs_refresh(void)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
-   if (!entries)
+   menu_entries_t *entries   = menu_entries_get_ptr();
+
+   if (!entries || entries->nonblocking_refresh)
       return false;
-   return entries->need_refresh;
+   if (entries->need_refresh)
+      return true;
+   return false;
 }
 
-void menu_entries_set_nonblocking_refresh(void)
+void menu_entries_set_refresh(bool nonblocking)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
-   if (!entries)
-      return;
-   entries->nonblocking_refresh = true;
+   menu_entries_t *entries   = menu_entries_get_ptr();
+   if (entries)
+   {
+      if (nonblocking)
+         entries->nonblocking_refresh = true;
+      else
+         entries->need_refresh        = true;
+   }
 }
 
-void menu_entries_unset_nonblocking_refresh(void)
+void menu_entries_unset_refresh(bool nonblocking)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
-   if (!entries)
-      return;
-   entries->nonblocking_refresh = false;
+   menu_entries_t *entries   = menu_entries_get_ptr();
+   if (entries)
+   {
+      if (nonblocking)
+         entries->nonblocking_refresh = false;
+      else
+         entries->need_refresh        = false;
+   }
 }
 
-void menu_entries_set_refresh(void)
+bool menu_entries_init(void *data)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
+   menu_entries_t *entries = NULL;
+   menu_handle_t *menu     = (menu_handle_t*)data;
+   if (!menu)
+      goto error;
+
+   entries = (menu_entries_t*)calloc(1, sizeof(*entries));
+
    if (!entries)
-      return;
-   entries->need_refresh = true;
+      goto error;
+
+   menu->entries = (struct menu_entries*)entries;
+
+   if (!(entries->menu_list = (menu_list_t*)menu_list_new()))
+      goto error;
+
+   return true;
+
+error:
+   if (entries)
+      free(entries);
+   if (menu)
+      menu->entries = NULL;
+   return false;
 }
 
-void menu_entries_unset_refresh(void)
+void menu_entries_free(void)
 {
    menu_entries_t *entries = menu_entries_get_ptr();
+
    if (!entries)
       return;
-   entries->need_refresh = false;
+
+   menu_setting_free(entries->list_settings);
+   entries->list_settings = NULL;
+
+   menu_list_free(entries->menu_list);
+   entries->menu_list     = NULL;
+}
+
+void menu_entries_free_list(menu_entries_t *entries)
+{
+   if (entries && entries->list_settings)
+      menu_setting_free(entries->list_settings);
+}
+
+void menu_entries_new_list(menu_entries_t *entries, unsigned flags)
+{
+   if (!entries)
+      return;
+   entries->list_settings      = menu_setting_new(flags);
 }

@@ -51,7 +51,6 @@ typedef enum menu_action
    MENU_ACTION_SEARCH,
    MENU_ACTION_SCAN,
    MENU_ACTION_CANCEL,
-   MENU_ACTION_REFRESH,
    MENU_ACTION_INFO,
    MENU_ACTION_SELECT,
    MENU_ACTION_START,
@@ -66,7 +65,6 @@ enum mouse_action
 {
    MOUSE_ACTION_NONE = 0,
    MOUSE_ACTION_BUTTON_L,
-   MOUSE_ACTION_BUTTON_L_OK,
    MOUSE_ACTION_BUTTON_L_TOGGLE,
    MOUSE_ACTION_BUTTON_L_SET_NAVIGATION,
    MOUSE_ACTION_BUTTON_R,
@@ -113,11 +111,6 @@ struct menu_bind_state
 typedef struct menu_input
 {
    struct menu_bind_state binds;
-
-   struct
-   {
-      unsigned state;
-   } joypad;
 
    struct
    {
@@ -194,7 +187,7 @@ void menu_input_st_string_callback(void *userdata, const char *str);
 
 void menu_input_st_cheat_callback(void *userdata, const char *str);
 
-int menu_input_bind_iterate(void);
+int menu_input_bind_iterate(char *s, size_t len);
 
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_state);
 

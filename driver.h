@@ -194,7 +194,7 @@ enum
 
 typedef struct driver
 {
-   const frontend_ctx_driver_t *frontend_ctx;
+   frontend_ctx_driver_t *frontend_ctx;
    const ui_companion_driver_t *ui_companion;
    const audio_driver_t *audio;
    const video_driver_t *video;

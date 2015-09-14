@@ -1179,6 +1179,10 @@ STBIDEF void   stbi_ldr_to_hdr_gamma(float gamma) { stbi__l2h_gamma = gamma; }
 STBIDEF void   stbi_ldr_to_hdr_scale(float scale) { stbi__l2h_scale = scale; }
 #endif
 
+/* forward declarations */
+STBIDEF void   stbi_hdr_to_ldr_gamma(float gamma);
+STBIDEF void   stbi_hdr_to_ldr_scale(float scale);
+
 STBIDEF void   stbi_hdr_to_ldr_gamma(float gamma) { stbi__h2l_gamma_i = 1/gamma; }
 STBIDEF void   stbi_hdr_to_ldr_scale(float scale) { stbi__h2l_scale_i = 1/scale; }
 

@@ -6,10 +6,18 @@
 
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void *SzAlloc(void *p, size_t size);
 void SzFree(void *p, void *address);
 
 void *SzAllocTemp(void *p, size_t size);
 void SzFreeTemp(void *p, void *address);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

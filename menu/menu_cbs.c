@@ -15,6 +15,7 @@
 
 #include <compat/strl.h>
 #include <string/string_list.h>
+#include <retro_log.h>
 
 #include "menu.h"
 #include "menu_hash.h"
@@ -51,6 +52,7 @@ void menu_cbs_init(void *data,
 {
    char elem0[PATH_MAX_LENGTH];
    char elem1[PATH_MAX_LENGTH];
+   rarch_setting_t *setting     = NULL;
    struct string_list *str_list = NULL;
    const char *menu_label       = NULL;
    menu_file_list_cbs_t *cbs    = NULL;
@@ -67,6 +69,11 @@ void menu_cbs_init(void *data,
    if (!cbs)
       return;
 
+   setting = menu_setting_find(label);
+
+   if (setting)
+      cbs->setting = setting;
+
    elem0[0] = '\0';
    elem1[0] = '\0';
 
@@ -77,10 +84,8 @@ void menu_cbs_init(void *data,
 
    if (str_list && str_list->size > 0)
       strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-   else elem0[0]='\0';
    if (str_list && str_list->size > 1)
       strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
-   else elem1[0]='\0';
 
    if (str_list)
    {
@@ -142,10 +147,6 @@ void menu_cbs_init(void *data,
    ret = menu_cbs_init_bind_refresh(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
    menu_cbs_init_log(ret, "REFRESH", label, elem0, elem1, type);
-
-   ret = menu_cbs_init_bind_iterate(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
-
-   menu_cbs_init_log(ret, "ITERATE", label, elem0, elem1, type);
 
    ret = menu_cbs_init_bind_get_string_representation(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 

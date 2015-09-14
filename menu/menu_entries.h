@@ -19,6 +19,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <boolean.h>
+
 #include "menu_navigation.h"
 #include "menu_list.h"
 #include "menu_setting.h"
@@ -28,17 +30,7 @@
 extern "C" {
 #endif
 
-typedef struct menu_entries
-{
-   /* Flagged when menu entries need to be refreshed */
-   bool need_refresh;
-   bool nonblocking_refresh;
-
-   size_t begin;
-   menu_list_t *menu_list;
-   rarch_setting_t *list_settings;
-   menu_navigation_t navigation;
-} menu_entries_t;
+typedef struct menu_entries menu_entries_t;
 
 void menu_entries_set_start(size_t i);
 
@@ -52,21 +44,25 @@ int menu_entries_get_title(char *title, size_t title_len);
 
 bool menu_entries_show_back(void);
 
-void menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
+int menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 
-menu_entries_t *menu_entries_get_ptr(void);
+rarch_setting_t *menu_setting_get_ptr(void);
 
-int menu_entries_refresh(unsigned action);
+menu_navigation_t *menu_navigation_get_ptr(void);
 
 bool menu_entries_needs_refresh(void);
 
-void menu_entries_set_refresh(void);
+void menu_entries_set_refresh(bool nonblocking);
 
-void menu_entries_unset_refresh(void);
+void menu_entries_unset_refresh(bool nonblocking);
 
-void menu_entries_set_nonblocking_refresh(void);
+bool menu_entries_init(void *data);
 
-void menu_entries_unset_nonblocking_refresh(void);
+void menu_entries_free(void);
+
+void menu_entries_free_list(menu_entries_t *entries);
+
+void menu_entries_new_list(menu_entries_t *entries, unsigned flags);
 
 #ifdef __cplusplus
 }

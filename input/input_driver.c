@@ -15,18 +15,16 @@
  */
 
 #include <string.h>
-#include <string/string_list.h>
-#include "input_driver.h"
-#include "../driver.h"
-#include "../general.h"
-#include "../libretro.h"
 
+#include <string/string_list.h>
+
+#include "../general.h"
 
 static const input_driver_t *input_drivers[] = {
 #ifdef __CELLOS_LV2__
    &input_ps3,
 #endif
-#if defined(SN_TARGET_PSP2) || defined(PSP)
+#if defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
    &input_psp,
 #endif
 #if defined(_3DS)

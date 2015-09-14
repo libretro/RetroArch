@@ -60,6 +60,7 @@ static void echo_process(void *data, struct dspfilter_output *output,
 
    for (i = 0; i < input->frames; i++, out += 2)
    {
+      float left, right;
       float echo_left  = 0.0f;
       float echo_right = 0.0f;
 
@@ -72,8 +73,8 @@ static void echo_process(void *data, struct dspfilter_output *output,
       echo_left  *= echo->amp;
       echo_right *= echo->amp;
 
-      float left  = out[0] + echo_left;
-      float right = out[1] + echo_right;
+      left        = out[0] + echo_left;
+      right       = out[1] + echo_right;
 
       for (c = 0; c < echo->num_channels; c++)
       {
@@ -94,22 +95,21 @@ static void echo_process(void *data, struct dspfilter_output *output,
 static void *echo_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
-   unsigned i;
-   struct echo_data *echo = (struct echo_data*)calloc(1, sizeof(*echo));
-   if (!echo)
-      return NULL;
-
+   unsigned i, channels;
    float *delay = NULL, *feedback = NULL;
    unsigned num_delay = 0, num_feedback = 0;
 
    static const float default_delay[] = { 200.0f };
    static const float default_feedback[] = { 0.5f };
+   struct echo_data *echo = (struct echo_data*)calloc(1, sizeof(*echo));
+   if (!echo)
+      return NULL;
 
    config->get_float_array(userdata, "delay", &delay, &num_delay, default_delay, 1);
    config->get_float_array(userdata, "feedback", &feedback, &num_feedback, default_feedback, 1);
    config->get_float(userdata, "amp", &echo->amp, 0.2f);
 
-   unsigned channels = num_feedback = num_delay = min(num_delay, num_feedback);
+   channels       = num_feedback = num_delay = min(num_delay, num_feedback);
 
    echo->channels = (struct echo_channel*)calloc(channels, sizeof(*echo->channels));
    if (!echo->channels)

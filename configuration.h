@@ -303,7 +303,6 @@ typedef struct settings
    char resampler_directory[PATH_MAX_LENGTH];
    char screenshot_directory[PATH_MAX_LENGTH];
    char system_directory[PATH_MAX_LENGTH];
-   bool system_in_content_dir;
 
    char extraction_directory[PATH_MAX_LENGTH];
    char playlist_directory[PATH_MAX_LENGTH];
@@ -315,7 +314,6 @@ typedef struct settings
 
    float slowmotion_ratio;
    float fastforward_ratio;
-   bool fastforward_ratio_throttle_enable;
 
    bool pause_nonactive;
    unsigned autosave_interval;

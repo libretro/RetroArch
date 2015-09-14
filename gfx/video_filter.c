@@ -14,16 +14,18 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "video_filter.h"
-#include "video_filters/softfilter.h"
-#include "../dynamic.h"
+#include <stdlib.h>
+
 #include <file/config_file_userdata.h>
 #include <file/file_path.h>
-#include "../file_ext.h"
 #include <file/dir_list.h>
+
+#include "../dynamic.h"
+#include "../file_ext.h"
 #include "../general.h"
 #include "../performance.h"
-#include <stdlib.h>
+#include "video_filter.h"
+#include "video_filters/softfilter.h"
 
 struct rarch_soft_plug
 {
@@ -124,10 +126,12 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
       softfilter_simd_mask_t cpu_features,
       unsigned threads)
 {
-   unsigned input_fmts, input_fmt, output_fmts, i;
+   unsigned input_fmts, input_fmt, output_fmts, i = 0;
    struct config_file_userdata userdata;
    char key[64]  = {0};
    char name[64] = {0};
+
+   (void)i;
 
    snprintf(key, sizeof(key), "filter");
 
@@ -396,7 +400,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
 #if defined(HAVE_DYLIB)
    fill_pathname_basedir(basedir, filter_config, sizeof(basedir));
 
-   plugs = dir_list_new(basedir, EXT_EXECUTABLES, false);
+   plugs = dir_list_new(basedir, EXT_EXECUTABLES, false, false);
    if (!plugs)
    {
       RARCH_ERR("[SoftFilter]: Could not build up string list...\n");

@@ -19,6 +19,7 @@
 
 #include <stddef.h>
 #include <file/file_list.h>
+#include "menu_setting.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,6 +39,7 @@ typedef enum
 
 typedef struct menu_file_list_cbs
 {
+   rarch_setting_t *setting;
    int (*action_iterate)(const char *label, unsigned action);
    int (*action_deferred_push)(menu_displaylist_info_t *info);
    int (*action_select)(const char *path, const char *label, unsigned type,
@@ -76,12 +78,7 @@ menu_list_t *menu_list_new(void);
 void menu_list_flush_stack(menu_list_t *list,
       const char *needle, unsigned final_type);
 
-void menu_list_pop(file_list_t *list, size_t *directory_ptr);
-
-void menu_list_pop_stack(menu_list_t *list);
-
-void menu_list_pop_stack_by_needle(menu_list_t *list,
-      const char *needle);
+void menu_list_pop_stack(menu_list_t *list, size_t *directory_ptr);
 
 void menu_list_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type,
@@ -95,7 +92,7 @@ size_t menu_list_get_stack_size(menu_list_t *list);
 
 size_t menu_list_get_size(menu_list_t *list);
 
-void *menu_list_get_last_stack_actiondata(const menu_list_t *list);
+menu_file_list_cbs_t *menu_list_get_last_stack_actiondata(const menu_list_t *list);
 
 void menu_list_get_last(const file_list_t *list,
       const char **path, const char **label,
@@ -117,8 +114,6 @@ void menu_list_get_alt_at_offset(const file_list_t *list, size_t idx,
 
 void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
       const char *alt);
-
-void menu_list_refresh(file_list_t *list);
 
 #ifdef __cplusplus
 }

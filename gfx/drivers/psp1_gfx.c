@@ -22,7 +22,7 @@
 #include <psprtc.h>
 
 #include <retro_inline.h>
-#include "psp_sdk_defines.h"
+#include "../../defines/psp_defines.h"
 #include "../../general.h"
 #include "../../driver.h"
 #include "../video_viewport.h"
@@ -85,7 +85,6 @@ typedef struct psp1_menu_frame
 
 typedef struct psp1_video
 {
-   uint64_t frame_count;
    void* main_dList;
    void* frame_dList;
    void* draw_buffer;
@@ -456,15 +455,13 @@ static void *psp_init(const video_info_t *video,
    psp->hw_render          = false;
 
    return psp;
-error:
-   RARCH_ERR("PSP1 video could not be initialized.\n");
-   return (void*)-1;
 }
 
 //#define DISPLAY_FPS
 
 static bool psp_frame(void *data, const void *frame,
-      unsigned width, unsigned height, unsigned pitch, const char *msg)
+      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned pitch, const char *msg)
 {
    static char fps_txt[128]      = {0};
    static char fps_text_buf[128] = {0};
@@ -526,7 +523,6 @@ static bool psp_frame(void *data, const void *frame,
 #endif
 
    psp->draw_buffer = FROM_GU_POINTER(sceGuSwapBuffers());
-   psp->frame_count++;
 
    RARCH_PERFORMANCE_INIT(psp_frame_run);
    RARCH_PERFORMANCE_START(psp_frame_run);
@@ -838,16 +834,7 @@ static void psp_viewport_info(void *data, struct video_viewport *vp)
       *vp = psp->vp;
 }
 
-static uint64_t psp_get_frame_count(void *data)
-{
-   psp1_video_t *psp = (psp1_video_t*)data;
-   if (!psp)
-      return 0;
-   return psp->frame_count;
-}
-
 static const video_poke_interface_t psp_poke_interface = {
-   psp_get_frame_count,
    NULL,
    psp_set_filtering,
    NULL, /* get_video_output_size */

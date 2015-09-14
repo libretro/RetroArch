@@ -84,7 +84,6 @@ static bool g_quitting;
 
 typedef struct gl
 {
-   uint64_t frame_count;
    unsigned char *screen;
    struct XenosVertexBuffer *vb;
    struct XenosDevice * gl_device;
@@ -194,7 +193,8 @@ static void *xenon360_gfx_init(const video_info_t *video, const input_driver_t *
    return gl;
 }
 
-static bool xenon360_gfx_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
+static bool xenon360_gfx_frame(void *data, const void *frame, unsigned width, unsigned height,
+      uint64_t frame_count, unsigned pitch, const char *msg)
 {
    gl_t *vid = data;
 
@@ -238,8 +238,6 @@ static bool xenon360_gfx_frame(void *data, const void *frame, unsigned width, un
    // Resolve
    Xe_Resolve(vid->gl_device);
    Xe_Sync(vid->gl_device);
-
-   vid->frame_count++;
 
    return true;
 }

@@ -42,7 +42,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "zlib.h"
+#include <compat/zlib.h>
 
 #if defined(USE_FILE32API)
 #define fopen64 fopen
@@ -58,6 +58,16 @@
   #define ftello64 ftell
   #define fseeko64 fseek
  #endif
+#endif
+#endif
+
+#ifdef _Z_OF
+#undef OF
+#define OF _Z_OF
+#else
+#ifndef OF
+#define _Z_OF(args) args
+#define OF _Z_OF
 #endif
 #endif
 

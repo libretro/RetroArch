@@ -47,7 +47,7 @@ uint32_t MY_FAST_CALL CrcCalc(const void *data, size_t size)
    return g_CrcUpdate(CRC_INIT_VAL, data, size, g_CrcTable) ^ CRC_INIT_VAL;
 }
 
-void MY_FAST_CALL CrcGenerateTable()
+void MY_FAST_CALL CrcGenerateTable(void)
 {
    uint32_t i;
    for (i = 0; i < 256; i++)
@@ -68,8 +68,7 @@ void MY_FAST_CALL CrcGenerateTable()
    }
    g_CrcUpdate = CrcUpdateT4;
 #ifdef MY_CPU_X86_OR_AMD64
-   if (!CPU_Is_InOrder())
-      g_CrcUpdate = CrcUpdateT8;
+   g_CrcUpdate = CrcUpdateT8;
 #endif
 #endif
 }

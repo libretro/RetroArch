@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "video_viewport.h"
 #include "../general.h"
 
 static video_viewport_t video_viewport_custom;

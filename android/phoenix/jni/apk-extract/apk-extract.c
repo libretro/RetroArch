@@ -1,9 +1,12 @@
-#include <file/file_extract.h>
-#include <file/file_path.h>
 
 #include <stdio.h>
 #include <string.h>
+
+#include <file/file_extract.h>
+#include <file/file_path.h>
+#include <retro_assert.h>
 #include <retro_miscellaneous.h>
+
 #include "../native/com_retroarch_browser_NativeInterface.h"
 
 //#define VERBOSE_LOG

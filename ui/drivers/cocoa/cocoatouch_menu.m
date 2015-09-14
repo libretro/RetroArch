@@ -165,7 +165,6 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
 - (void)handleBooleanSwitch:(UISwitch*)swt
 {
-  menu_entry_set_bool_value(self.i, swt.on ? true : false);
   [self.main menuSelect: self.i];
 }
 
@@ -300,71 +299,11 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 @interface RAMenuItemPathDir : RAMenuItemBase
 @end
 
-@interface RADirectoryItem : NSObject
-@property (nonatomic) NSString* path;
-@property (nonatomic) bool isDirectory;
-@end
-
-@interface RADirectoryList : RAMenuBase<UIActionSheetDelegate>
-@property (nonatomic, weak) RADirectoryItem* selectedItem;
-
-@property (nonatomic, copy) void (^chooseAction)(RADirectoryList* list, RADirectoryItem* item);
-@property (nonatomic, copy) NSString* path;
-@property (nonatomic, copy) NSString* extensions;
-
-@property (nonatomic) bool allowBlank;
-@property (nonatomic) bool forDirectory;
-
-- (id)initWithPath:(NSString*)path extensions:(const char*)extensions action:(void (^)(RADirectoryList* list, RADirectoryItem* item))action;
-- (void)browseTo:(NSString*)path;
-@end
-
 @implementation RAMenuItemPathDir
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView
                   ofController:(UIViewController*)controller
 {
-   char pathdir[PATH_MAX_LENGTH], pathdir_ext[PATH_MAX_LENGTH];
-   NSString *path;
-   RADirectoryList* list;
-   RAMenuItemPathDir __weak* weakSelf = self;
-
-   menu_entry_pathdir_selected(self.i);
-   menu_entry_pathdir_get_value(self.i, pathdir, sizeof(pathdir));
-   menu_entry_pathdir_extensions(self.i, pathdir_ext, sizeof(pathdir_ext));
-
-   path = BOXSTRING(pathdir);
-   
-   if ( menu_entry_get_type(self.i) == MENU_ENTRY_PATH )
-     path = [path stringByDeletingLastPathComponent];
-      
-   list =
-     [[RADirectoryList alloc]
-            initWithPath:path
-              extensions:pathdir_ext
-                  action:^(RADirectoryList* list, RADirectoryItem* item) {
-         const char *newval = "";
-         if (item) {
-           if (list.forDirectory && !item.isDirectory)
-             return;
-
-           newval = [item.path UTF8String];
-         } else {
-           if (!list.allowBlank)
-             return;
-         }
-
-         menu_entry_pathdir_set_value(self.i, newval);
-         [[list navigationController] popViewControllerAnimated:YES];
-         menu_entry_select(self.i);
-         [weakSelf.parentTable reloadData];
-       }];
-
-   list.allowBlank = menu_entry_pathdir_allow_empty(self.i);
-   // JM: Is this just Dir vs Path?
-   list.forDirectory = menu_entry_pathdir_for_directory(self.i);
-   
-   [controller.navigationController pushViewController:list animated:YES];
 }
 
 @end
@@ -373,12 +312,26 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 @end
 
 @implementation RAMenuItemPath
+
+- (void)wasSelectedOnTableView:(UITableView*)tableView
+                  ofController:(UIViewController*)controller
+{
+  [self.main menuSelect: self.i];
+}
+
 @end
 
 @interface RAMenuItemDir : RAMenuItemPathDir
 @end
 
 @implementation RAMenuItemDir
+
+- (void)wasSelectedOnTableView:(UITableView*)tableView
+                  ofController:(UIViewController*)controller
+{
+  [self.main menuSelect: self.i];
+}
+
 @end
 
 @interface RANumberFormatter : NSNumberFormatter<UITextFieldDelegate>
@@ -615,6 +568,11 @@ titleForHeaderInSection:(NSInteger)section
    return [[self itemForIndexPath:indexPath] cellForTableView:tableView];
 }
 
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    return UITableViewAutomaticDimension;
+}
+
 - (void)tableView:(UITableView *)tableView
 didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
@@ -636,24 +594,46 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    // Option 1. This is like how setting app works, but not exactly.
    // There is a typedef for the 'withRowAnimation' that has lots of
    // options, just Google UITableViewRowAnimation
+#if 0
 
    [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0]
                  withRowAnimation:UITableViewRowAnimationAutomatic];
+#else
 
-   // Optione 2. This is a "bigger" transistion, but doesn't look as
+   // Option 2. This is a "bigger" transition, but doesn't look as
    // much like Settings. It has more options. Just Google
    // UIViewAnimationOptionTransition
 
-   /*
    [UIView transitionWithView:self.tableView
-                     duration:0.35f
-                      options:UIViewAnimationOptionTransitionCurlUp
+                     duration:0.40f
+                      options:UIViewAnimationOptionTransitionCrossDissolve
                    animations:^(void)
            {
              [self.tableView reloadData];
            }
    completion: nil];
-   */
+#endif
+}
+
+-(void)renderMessageBox:(NSString *)msg
+{
+    UIAlertView *message = [[UIAlertView alloc] initWithTitle:@"Help"
+                                                      message:msg
+                                                     delegate:self
+                                            cancelButtonTitle:@"OK"
+                                            otherButtonTitles:nil];
+     
+    [message show];
+}
+
+- (void)alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    switch (buttonIndex)
+    {
+        case 0:
+            menu_iterate(true, MENU_ACTION_OK);
+            break;
+    }
 }
 
 @end
@@ -730,40 +710,55 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (RAMenuItemBase*)make_menu_item_for_entry: (uint32_t) i
 {
-  RAMenuItemBase *me = nil;
-  switch (menu_entry_get_type(i)) {
-  case MENU_ENTRY_ACTION:
-    me = [RAMenuItemAction new]; break;
-  case MENU_ENTRY_BOOL:
-    me = [RAMenuItemBool new]; break;
-  case MENU_ENTRY_INT:
-    me = [RAMenuItemInt new]; break;
-  case MENU_ENTRY_UINT:
-    me = [RAMenuItemUInt new]; break;
-  case MENU_ENTRY_FLOAT:
-    me = [RAMenuItemFloat new]; break;
-  case MENU_ENTRY_PATH:
-    me = [RAMenuItemPath new]; break;
-  case MENU_ENTRY_DIR:
-    me = [RAMenuItemDir new]; break;
-  case MENU_ENTRY_STRING:
-    me = [RAMenuItemString new]; break;
-  case MENU_ENTRY_HEX:
-    me = [RAMenuItemHex new]; break;
-  case MENU_ENTRY_BIND:
-    me = [RAMenuItemBind new]; break;
-  case MENU_ENTRY_ENUM:
-    me = [RAMenuItemEnum new]; break;
-  };
+   RAMenuItemBase *me = nil;
+   switch (menu_entry_get_type(i))
+   {
+      case MENU_ENTRY_ACTION:
+         me = [RAMenuItemAction new];
+         break;
+      case MENU_ENTRY_BOOL:
+         me = [RAMenuItemBool new];
+         break;
+      case MENU_ENTRY_INT:
+         me = [RAMenuItemInt new];
+         break;
+      case MENU_ENTRY_UINT:
+         me = [RAMenuItemUInt new];
+         break;
+      case MENU_ENTRY_FLOAT:
+         me = [RAMenuItemFloat new];
+         break;
+      case MENU_ENTRY_PATH:
+         me = [RAMenuItemPath new];
+         break;
+      case MENU_ENTRY_DIR:
+         me = [RAMenuItemDir new];
+         break;
+      case MENU_ENTRY_STRING:
+         me = [RAMenuItemString new];
+         break;
+      case MENU_ENTRY_HEX:
+         me = [RAMenuItemHex new];
+         break;
+      case MENU_ENTRY_BIND:
+         me = [RAMenuItemBind new];
+         break;
+      case MENU_ENTRY_ENUM:
+         me = [RAMenuItemEnum new];
+         break;
+   };
 
-  [me initialize:self idx:i];
+   [me initialize:self idx:i];
 
-  return me;
+   return me;
 }
 
 - (void)menuSelect: (uint32_t) i
 {
   menu_entry_select(i);
+#if 0
+  [self willReloadData];
+#endif
 }
 
 - (void)menuBack

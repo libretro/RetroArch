@@ -1,0 +1,235 @@
+BasicInfo:
+  Title                   : "{APP_TITLE}"
+  CompanyCode             : "00"
+  ProductCode             : "{APP_PRODUCT_CODE}"
+  ContentType             : Application
+  Logo                    : Nintendo # Nintendo / Licensed / Distributed / iQue / iQueForSystem
+
+#Rom:
+  # Specifies the root path of the file system to include in the ROM.
+  # HostRoot                : "romfs"
+
+
+TitleInfo:
+  UniqueId                : {APP_UNIQUE_ID}
+  Category                : Application
+  
+CardInfo:
+  MediaSize               : 128MB # 128MB / 256MB / 512MB / 1GB / 2GB / 4GB / 8GB / 16GB / 32GB
+  MediaType               : Card1 # Card1 / Card2
+  CardDevice              : None # NorFlash(Pick this if you use savedata) / None
+  
+
+Option:
+  FreeProductCode         : true # Removes limitations on ProductCode
+  MediaFootPadding        : false # If true CCI files are created with padding
+  EnableCrypt             : true # Enables encryption for NCCH and CIA
+  EnableCompress          : true # Compresses exefs code
+
+
+ExeFs: # these are the program segments from the ELF, check your elf for the appropriate segment names
+  ReadOnly: 
+   - .rodata
+   - RO
+  ReadWrite: 
+   - .data
+   - RO
+  Text: 
+   - .init
+   - .text
+   - STUP_ENTRY
+   
+PlainRegion: # only used with SDK ELFs 
+ - .module_id
+  
+AccessControlInfo:
+  # UseExtSaveData : true
+  # ExtSaveDataId: 0xff3ff
+  # UseExtendedSaveDataAccessControl: true
+  # AccessibleSaveDataIds: [0x101, 0x202, 0x303, 0x404, 0x505, 0x606]
+
+SystemControlInfo:
+  SaveDataSize: 128KB
+  RemasterVersion: 0
+  StackSize: 0x40000
+  
+# DO NOT EDIT BELOW HERE OR PROGRAMS WILL NOT LAUNCH (most likely)
+
+AccessControlInfo:
+  FileSystemAccess:
+   - Debug
+   - DirectSdmc
+   - DirectSdmcWrite
+   
+  IdealProcessor                : 0
+  AffinityMask                  : 1
+  
+  Priority                      : 16
+   
+  MaxCpu                        : 0x9E # Default
+  
+  CoreVersion                   : 2
+  DescVersion                   : 2
+  
+  ReleaseKernelMajor            : "02"
+  ReleaseKernelMinor            : "33" 
+  MemoryType                    : Application
+  HandleTableSize: 512
+  IORegisterMapping: 
+   - 1ff50000-1ff57fff
+   - 1ff70000-1ff77fff
+  MemoryMapping: 
+   - 1f000000-1f5fffff:r
+  SystemCallAccess: 
+    ArbitrateAddress: 34
+    Break: 60
+    CancelTimer: 28
+    ClearEvent: 25
+    ClearTimer: 29
+    CloseHandle: 35
+    ConnectToPort: 45
+    ControlMemory: 1
+    CreateAddressArbiter: 33
+    CreateEvent: 23
+    CreateMemoryBlock: 30
+    CreateMutex: 19
+    CreateSemaphore: 21
+    CreateThread: 8
+    CreateTimer: 26
+    DuplicateHandle: 39
+    ExitProcess: 3
+    ExitThread: 9
+    GetCurrentProcessorNumber: 17
+    GetHandleInfo: 41
+    GetProcessId: 53
+    GetProcessIdOfThread: 54
+    GetProcessIdealProcessor: 6
+    GetProcessInfo: 43
+    GetResourceLimit: 56
+    GetResourceLimitCurrentValues: 58
+    GetResourceLimitLimitValues: 57
+    GetSystemInfo: 42
+    GetSystemTick: 40
+    GetThreadContext: 59
+    GetThreadId: 55
+    GetThreadIdealProcessor: 15
+    GetThreadInfo: 44
+    GetThreadPriority: 11
+    MapMemoryBlock: 31
+    OutputDebugString: 61
+    QueryMemory: 2
+    ReleaseMutex: 20
+    ReleaseSemaphore: 22
+    SendSyncRequest1: 46
+    SendSyncRequest2: 47
+    SendSyncRequest3: 48
+    SendSyncRequest4: 49
+    SendSyncRequest: 50
+    SetThreadPriority: 12
+    SetTimer: 27
+    SignalEvent: 24
+    SleepThread: 10
+    UnmapMemoryBlock: 32
+    WaitSynchronization1: 36
+    WaitSynchronizationN: 37
+  InterruptNumbers:
+  ServiceAccessControl: 
+   - APT:U
+   - $hioFIO
+   - $hostio0
+   - $hostio1
+   - ac:u
+   - boss:U
+   - cam:u
+   - cecd:u
+   - cfg:u
+   - dlp:FKCL
+   - dlp:SRVR
+   - dsp::DSP
+   - frd:u
+   - fs:USER
+   - gsp::Gpu
+   - hid:USER
+   - http:C
+   - mic:u
+   - ndm:u
+   - news:u
+   - nwm::UDS
+   - ptm:u
+   - pxi:dev
+   - soc:U
+   - ssl:C
+   - y2r:u
+   - ldr:ro
+   - ir:USER
+  
+   
+SystemControlInfo:
+  Dependency: 
+    ac: 0x0004013000002402L
+    am: 0x0004013000001502L
+    boss: 0x0004013000003402L
+    camera: 0x0004013000001602L
+    cecd: 0x0004013000002602L
+    cfg: 0x0004013000001702L
+    codec: 0x0004013000001802L
+    csnd: 0x0004013000002702L
+    dlp: 0x0004013000002802L
+    dsp: 0x0004013000001a02L
+    friends: 0x0004013000003202L
+    gpio: 0x0004013000001b02L
+    gsp: 0x0004013000001c02L
+    hid: 0x0004013000001d02L
+    http: 0x0004013000002902L
+    i2c: 0x0004013000001e02L
+    ir: 0x0004013000003302L
+    mcu: 0x0004013000001f02L
+    mic: 0x0004013000002002L
+    ndm: 0x0004013000002b02L
+    news: 0x0004013000003502L
+    nim: 0x0004013000002c02L
+    nwm: 0x0004013000002d02L
+    pdn: 0x0004013000002102L
+    ps: 0x0004013000003102L
+    ptm: 0x0004013000002202L
+    ro: 0x0004013000003702L
+    socket: 0x0004013000002e02L
+    spi: 0x0004013000002302L
+    ssl: 0x0004013000002f02L
+CommonHeaderKey: 
+  D: |
+    jL2yO86eUQnYbXIrzgFVMm7FVze0LglZ2f5g+c42hWoEdnb5BOotaMQPBfqt
+    aUyAEmzQPaoi/4l4V+hTJRXQfthVRqIEx27B84l8LA6Tl5Fy9PaQaQ+4yRfP
+    g6ylH2l0EikrIVjy2uMlFgl0QJCrG+QGKHftxhaGCifdAwFNmiZuyJ/TmktZ
+    0RCb66lYcr2h/p2G7SnpKUliS9h9KnpmG+UEgVYQUK+4SCfByUa9PxYGpT0E
+    nw1UcRz0gsBmdOqcgzwnAd9vVqgb42hVn6uQZyAl+j1RKiMWywZarazIR/k5
+    Lmr4+groimSEa+3ajyoIho9WaWTDmFU3mkhA2tUDIQ==
+  Exponent: |
+    AQAB
+  Modulus: |
+    zwCcsyCgMkdlieCgQMVXA6X2jmb1ICjup0Q+jk/AydPkOgsx7I/MjUymFEkU
+    vgXBtCKtzh3NKXtFFuW51tJ60GPOabLKuG0Qm5li+UXALrWhzWuvd5vv2FZI
+    dTQCbrq/MFS/M02xNtwqzWiBjE/LwqIdbrDAAvX4HGy0ydaQJ1DKYeQeph5D
+    lAGBw2nQ4izXhhuLaU3w8VQkIJHdhxIKI5gJY/20AGkG0vHD553Mh5kBINrWp
+    CRYmmJS8DCYbAiQtKbkeUfzHViGTZuj6PwaY8Mv39PGO47a++pt45IUyCEs4/
+    LjMS72cyfo8tU4twRGp76SFGYejYj3wGC1f/POQw==
+  Signature: |
+    BOPR0jL0BOV5Zx502BuPbOvi/hvOq5ID8Dz1MQfOjkey6FKP/6cb4f9YXpm6c
+    ZCHAZLo0GduKdMepiKPUq1rsbbAxkRdQdjOOusEWoxNA58x3E4373tCAhlqM2
+    DvuQERrIIQ/XnYLV9C3uw4efZwhFqog1jvVyoEHpuvs8xnYtGbsKQ8FrgLwXv
+    pOZYy9cSgq+jqLy2D9IxiowPcbq2cRlbW9d2xlUfpq0AohyuXQhpxn7d9RUor
+    9veoARRAdxRJK12EpcSoEM1LhTRYdJnSRCY3x3p6YIV3c+l1sWvaQwKt0sZ/U
+    8TTDx2gb9g7r/+U9icneu/zlqUpSkexCS009Q==
+  Descriptor: |
+    AP///wAABAACAAAAAAAFGJ4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAiIAAAAAAAABBUFQ6VQAAACRo
+    aW9GSU8AJGhvc3RpbzAkaG9zdGlvMWFjOnUAAAAAYm9zczpVAABjYW06dQAA
+    AGNlY2Q6dQAAY2ZnOnUAAABkbHA6RktDTGRscDpTUlZSZHNwOjpEU1BmcmQ6
+    dQAAAGZzOlVTRVIAZ3NwOjpHcHVoaWQ6VVNFUmh0dHA6QwAAbWljOnUAAABu
+    ZG06dQAAAG5ld3M6dQAAbndtOjpVRFNwdG06dQAAAHB4aTpkZXYAc29jOlUA
+    AABzc2w6QwAAAHkycjp1AAAAbGRyOnJvAABpcjpVU0VSAAAAAAAAAAAAAAAA
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    AAAAAAAAAABOn/rw/7//8ec/APIA8JH/APaR/1D/gf9Y/4H/cP+B/3j/gf8B
+    AQD/AAIA/iECAPz/////////////////////////////////////////////
+    ////////////////////////////////////////AAAAAAAAAAAAAAAAAAAA
+    AAADAAAAAAAAAAAAAAAAAAI=

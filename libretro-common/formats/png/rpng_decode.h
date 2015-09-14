@@ -35,10 +35,14 @@ enum png_chunk_type png_chunk_type(const struct png_chunk *chunk);
 
 bool png_process_ihdr(struct png_ihdr *ihdr);
 
-int png_reverse_filter_iterate(struct rpng_t *rpng,
-      uint32_t **data);
+bool png_read_plte(uint8_t *buf, 
+      uint32_t *buffer, unsigned entries);
 
-bool rpng_load_image_argb_process_init(struct rpng_t *rpng,
+bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf);
+
+int png_reverse_filter_iterate(rpng_t *rpng, uint32_t **data);
+
+bool rpng_load_image_argb_process_init(rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height);
 
 #endif

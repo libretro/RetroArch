@@ -16,7 +16,7 @@
 #include "../../general.h"
 #include "win32_common.h"
 
-#if !defined(_XBOX) && defined(_WIN32)
+#if !defined(_XBOX)
 
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0500 //_WIN32_WINNT_WIN2K
@@ -99,7 +99,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                      cmd = EVENT_CMD_LOAD_CORE;
                      break;
                   case ID_M_LOAD_CONTENT:
-                     strlcpy(global->fullpath, win32_file, sizeof(global->fullpath));
+                     strlcpy(global->path.fullpath, win32_file, sizeof(global->path.fullpath));
                      cmd = EVENT_CMD_LOAD_CONTENT;
                      do_wm_close = true;
                      break;

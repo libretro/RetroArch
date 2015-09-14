@@ -38,7 +38,6 @@
 #include "msg_hash.h"
 #include "gfx/scaler/scaler.h"
 #include "retroarch.h"
-#include "runloop.h"
 #include "screenshot.h"
 #include "gfx/video_driver.h"
 #include "gfx/video_viewport.h"
@@ -203,7 +202,7 @@ static bool take_screenshot_viewport(void)
 
    if (!*settings->screenshot_directory)
    {
-      fill_pathname_basedir(screenshot_path, global->basename,
+      fill_pathname_basedir(screenshot_path, global->name.base,
             sizeof(screenshot_path));
       screenshot_dir = screenshot_path;
    }
@@ -237,7 +236,7 @@ static bool take_screenshot_raw(void)
 
    if (!*settings->screenshot_directory)
    {
-      fill_pathname_basedir(screenshot_path, global->basename,
+      fill_pathname_basedir(screenshot_path, global->name.base,
             sizeof(screenshot_path));
       screenshot_dir = screenshot_path;
    }
@@ -260,7 +259,6 @@ bool take_screenshot(void)
    bool viewport_read   = false;
    bool ret             = true;
    const char *msg      = NULL;
-   runloop_t *runloop   = rarch_main_get_ptr();
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
@@ -268,7 +266,7 @@ bool take_screenshot(void)
       (const struct retro_hw_render_callback*)video_driver_callback();
 
    /* No way to infer screenshot directory. */
-   if ((!*settings->screenshot_directory) && (!*global->basename))
+   if ((!*settings->screenshot_directory) && (!*global->name.base))
       return false;
 
    viewport_read = (settings->video.gpu_screenshot ||
@@ -332,9 +330,9 @@ bool take_screenshot(void)
       msg = msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
    }
 
-   rarch_main_msg_queue_push(msg, 1, runloop->is_paused ? 1 : 180, true);
+   rarch_main_msg_queue_push(msg, 1, rarch_main_is_paused() ? 1 : 180, true);
 
-   if (runloop->is_paused)
+   if (rarch_main_is_paused())
       video_driver_cached_frame();
 
    return ret;

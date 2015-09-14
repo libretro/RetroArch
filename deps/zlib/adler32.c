@@ -8,7 +8,7 @@
 #define ZLIB_INTERNAL
 #include <stdint.h>
 #include <stddef.h>
-#include "zutil.h"
+#include <compat/zutil.h>
 
 #define BASE 65521UL    /* largest prime smaller than 65536 */
 #define NMAX 5552

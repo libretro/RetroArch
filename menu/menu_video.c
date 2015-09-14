@@ -15,15 +15,16 @@
 
 #include <retro_miscellaneous.h>
 
-#include "menu_display.h"
-#include "menu_hash.h"
-#include "menu_setting.h"
 #include "menu_video.h"
 
-#include "../gfx/video_common.h"
+#ifdef HAVE_THREADS
+#include "../gfx/video_thread_wrapper.h"
+#endif
 
 #ifdef HAVE_OPENGL
 void menu_video_draw_frame(
+      unsigned x, unsigned y,
+      unsigned width, unsigned height,
       const shader_backend_t *shader,
       struct gfx_coords *coords,
       math_matrix_4x4 *mat, 
@@ -33,6 +34,7 @@ void menu_video_draw_frame(
 {
    driver_t *driver = driver_get_ptr();
 
+   glViewport(x, y, width, height);
    glBindTexture(GL_TEXTURE_2D, texture);
 
    shader->set_coords(coords);
@@ -51,77 +53,25 @@ void menu_video_frame_background(
       menu_handle_t *menu,
       settings_t *settings,
       gl_t *gl,
+      unsigned width,
+      unsigned height,
       GLuint texture,
       float handle_alpha,
-      float alpha,
-      bool force_transparency)
+      bool force_transparency,
+      GRfloat *coord_color,
+      GRfloat *coord_color2,
+      const GRfloat *vertex,
+      const GRfloat *tex_coord)
 {
    struct gfx_coords coords;
-   GRfloat color[16], black_color[16],
-           vertex[8], tex_coord[8];
 
    global_t *global = global_get_ptr();
-
-   vertex[0] = 0;
-   vertex[1] = 0;
-   vertex[2] = 1;
-   vertex[3] = 0;
-   vertex[4] = 0;
-   vertex[5] = 1;
-   vertex[6] = 1;
-   vertex[7] = 1;
-
-   tex_coord[0] = 0;
-   tex_coord[1] = 1;
-   tex_coord[2] = 1;
-   tex_coord[3] = 1;
-   tex_coord[4] = 0;
-   tex_coord[5] = 0;
-   tex_coord[6] = 1;
-   tex_coord[7] = 0;
-
-   color[ 0] = 1.0f;
-   color[ 1] = 1.0f;
-   color[ 2] = 1.0f;
-   color[ 3] = handle_alpha;
-   color[ 4] = 1.0f;
-   color[ 5] = 1.0f;
-   color[ 6] = 1.0f;
-   color[ 7] = handle_alpha;
-   color[ 8] = 1.0f;
-   color[ 9] = 1.0f;
-   color[10] = 1.0f;
-   color[11] = handle_alpha;
-   color[12] = 1.0f;
-   color[13] = 1.0f;
-   color[14] = 1.0f;
-   color[15] = handle_alpha;
-
-   if (alpha > handle_alpha)
-      alpha = handle_alpha;
-
-   black_color[ 0] = 0.0f;
-   black_color[ 1] = 0.0f;
-   black_color[ 2] = 0.0f;
-   black_color[ 3] = alpha;
-   black_color[ 4] = 0.0f;
-   black_color[ 5] = 0.0f;
-   black_color[ 6] = 0.0f;
-   black_color[ 7] = alpha;
-   black_color[ 8] = 0.0f;
-   black_color[ 9] = 0.0f;
-   black_color[10] = 0.0f;
-   black_color[11] = alpha;
-   black_color[12] = 0.0f;
-   black_color[13] = 0.0f;
-   black_color[14] = 0.0f;
-   black_color[15] = alpha;
 
    coords.vertices      = 4;
    coords.vertex        = vertex;
    coords.tex_coord     = tex_coord;
    coords.lut_tex_coord = tex_coord;
-   coords.color         = black_color;
+   coords.color         = (const float*)coord_color;
 
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
@@ -129,14 +79,27 @@ void menu_video_frame_background(
    menu_display_set_viewport();
 
    if ((settings->menu.pause_libretro
-      || !global->main_is_init || (global->core_type == CORE_TYPE_DUMMY))
+      || !global->inited.main || (global->inited.core.type == CORE_TYPE_DUMMY))
       && !force_transparency
       && texture)
-      coords.color = color;
+      coords.color = (const float*)coord_color2;
 
-   menu_video_draw_frame(gl->shader, &coords,
+   menu_video_draw_frame(0, 0, width, height,
+         gl->shader, &coords,
          &gl->mvp_no_rot, true, texture);
 
    gl->coords.color = gl->white_color_ptr;
 }
 #endif
+
+const char *menu_video_get_ident(void)
+{
+#ifdef HAVE_THREADS
+   settings_t *settings = config_get_ptr();
+
+   if (settings->video.threaded)
+      return rarch_threaded_video_get_ident();
+#endif
+
+   return video_driver_get_ident();
+}

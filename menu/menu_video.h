@@ -27,6 +27,8 @@ extern "C" {
 #include "../gfx/drivers/gl_common.h"
 
 void menu_video_draw_frame(
+      unsigned x, unsigned y,
+      unsigned width, unsigned height,
       const shader_backend_t *shader,
       struct gfx_coords *coords,
       math_matrix_4x4 *mat, 
@@ -38,11 +40,17 @@ void menu_video_frame_background(
       menu_handle_t *menu,
       settings_t *settings,
       gl_t *gl,
+      unsigned width, unsigned height,
       GLuint texture,
       float handle_alpha,
-      float alpha,
-      bool force_transparency);
+      bool force_transparency,
+      GRfloat *color,
+      GRfloat *color2,
+      const GRfloat *vertex,
+      const GRfloat *tex_coord);
 #endif
+
+const char *menu_video_get_ident(void);
 
 #ifdef __cplusplus
 }

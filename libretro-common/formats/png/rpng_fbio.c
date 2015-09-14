@@ -24,9 +24,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <boolean.h>
 
-#include "rpng_common.h"
+#include "rpng_internal.h"
 #include "rpng_decode.h"
 
 static bool read_chunk_header_fio(FILE **fd, struct png_chunk *chunk)
@@ -96,51 +97,7 @@ static bool png_parse_ihdr_fio(FILE **fd,
    return true;
 }
 
-static bool png_append_idat_fio(FILE **fd,
-      const struct png_chunk *chunk, struct idat_buffer *buf)
-{
-   FILE *file = *fd;
-   uint8_t *new_buffer = (uint8_t*)realloc(buf->data, buf->size + chunk->size);
-
-   if (!new_buffer)
-      return false;
-
-   buf->data  = new_buffer;
-   if (fread(buf->data + buf->size, 1, chunk->size, file) != chunk->size)
-      return false;
-   if (fseek(file, sizeof(uint32_t), SEEK_CUR) < 0)
-      return false;
-   buf->size += chunk->size;
-   return true;
-}
-
-static bool png_read_plte_fio(FILE **fd, uint32_t *buffer, unsigned entries)
-{
-   unsigned i;
-   uint8_t buf[256 * 3];
-   FILE *file = *fd;
-
-   if (entries > 256)
-      return false;
-
-   if (fread(buf, 3, entries, file) != entries)
-      return false;
-
-   for (i = 0; i < entries; i++)
-   {
-      uint32_t r = buf[3 * i + 0];
-      uint32_t g = buf[3 * i + 1];
-      uint32_t b = buf[3 * i + 2];
-      buffer[i] = (r << 16) | (g << 8) | (b << 0) | (0xffu << 24);
-   }
-
-   if (fseek(file, sizeof(uint32_t), SEEK_CUR) < 0)
-      return false;
-
-   return true;
-}
-
-bool rpng_load_image_argb_iterate(FILE **fd, struct rpng_t *rpng)
+static bool rpng_load_image_argb_iterate(FILE **fd, rpng_t *rpng)
 {
    struct png_chunk chunk = {0};
    FILE *file = *fd;
@@ -160,7 +117,7 @@ bool rpng_load_image_argb_iterate(FILE **fd, struct rpng_t *rpng)
          return false;
 
       case PNG_CHUNK_IHDR:
-         if (rpng->has_ihdr || rpng->has_idat || rpng->has_iend)
+         if (rpng_is_valid(rpng))
             return false;
 
          if (!png_parse_ihdr_fio(fd, &chunk, &rpng->ihdr))
@@ -180,24 +137,45 @@ bool rpng_load_image_argb_iterate(FILE **fd, struct rpng_t *rpng)
          break;
 
       case PNG_CHUNK_PLTE:
-         if (!rpng->has_ihdr || rpng->has_plte || rpng->has_iend || rpng->has_idat)
-            return false;
+         {
+            uint8_t buf[256 * 3];
+            unsigned entries = chunk.size / 3;
 
-         if (chunk.size % 3)
-            return false;
+            if (!rpng->has_ihdr || rpng->has_plte || rpng->has_iend || rpng->has_idat)
+               return false;
 
-         if (!png_read_plte_fio(fd, rpng->palette, chunk.size / 3))
-            return false;
+            if (chunk.size % 3)
+               return false;
 
-         rpng->has_plte = true;
+            if (entries > 256)
+               return false;
+
+            if (fread(rpng->palette, 3, entries, *fd) != entries)
+               return false;
+
+            if (!png_read_plte(&buf[0], rpng->palette, entries))
+               return false;
+
+            if (fseek(*fd, sizeof(uint32_t), SEEK_CUR) < 0)
+               return false;
+
+            rpng->has_plte = true;
+         }
          break;
 
       case PNG_CHUNK_IDAT:
          if (!rpng->has_ihdr || rpng->has_iend || (rpng->ihdr.color_type == PNG_IHDR_COLOR_PLT && !rpng->has_plte))
             return false;
 
-         if (!png_append_idat_fio(fd, &chunk, &rpng->idat_buf))
+         if (!png_realloc_idat(&chunk, &rpng->idat_buf))
             return false;
+
+         if (fread(rpng->idat_buf.data + rpng->idat_buf.size, 1, chunk.size, file) != chunk.size)
+            return false;
+         if (fseek(file, sizeof(uint32_t), SEEK_CUR) < 0)
+            return false;
+
+         rpng->idat_buf.size += chunk.size;
 
          rpng->has_idat = true;
          break;
@@ -222,7 +200,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    long pos, file_len;
    FILE *file;
    char header[8]     = {0};
-   struct rpng_t rpng = {{0}};
+   rpng_t rpng        = {{0}};
    bool ret           = true;
    int retval         = 0;
 

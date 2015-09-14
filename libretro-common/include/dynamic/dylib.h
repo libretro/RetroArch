@@ -61,6 +61,8 @@ dylib_t dylib_load(const char *path);
  **/
 void dylib_close(dylib_t lib);
 
+char *dylib_error(void);
+
 function_t dylib_proc(dylib_t lib, const char *proc);
 #endif
 

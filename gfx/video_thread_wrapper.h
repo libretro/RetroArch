@@ -213,6 +213,7 @@ typedef struct thread_video
       unsigned pitch;
       bool updated;
       bool within_thread;
+      uint64_t count;
       char msg[PATH_MAX_LENGTH];
    } frame;
 
@@ -252,6 +253,8 @@ bool rarch_threaded_video_init(
  * NULL.
  **/
 void *rarch_threaded_video_get_ptr(const video_driver_t **drv);
+
+const char *rarch_threaded_video_get_ident(void);
 
 #endif
 

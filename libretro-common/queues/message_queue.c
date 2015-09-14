@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+
 #include <boolean.h>
 #include <queues/message_queue.h>
 #include <compat/strl.h>

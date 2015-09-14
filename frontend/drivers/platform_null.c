@@ -17,11 +17,9 @@
 #include "../frontend_driver.h"
 
 #include <stdint.h>
-#include <boolean.h>
-#include <stddef.h>
 #include <string.h>
 
-const frontend_ctx_driver_t frontend_ctx_null = {
+frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* environment_get */
    NULL,                         /* init */
    NULL,                         /* deinit */

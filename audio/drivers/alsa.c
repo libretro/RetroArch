@@ -13,15 +13,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+
+#include <alsa/asoundlib.h>
 
 #include "../../driver.h"
-#include <stdlib.h>
-#include <alsa/asoundlib.h>
 #include "../../general.h"
-
-#define TRY_ALSA(x) if (x < 0) { \
-                  goto error; \
-               }
 
 typedef struct alsa
 {
@@ -73,43 +70,72 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency)
    if (device)
       alsa_dev = device;
 
-   TRY_ALSA(snd_pcm_open(
-            &alsa->pcm, alsa_dev, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK));
-   TRY_ALSA(snd_pcm_hw_params_malloc(&params));
+   if (snd_pcm_open(
+            &alsa->pcm, alsa_dev, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK) < 0)
+      goto error;
+
+   if (snd_pcm_hw_params_malloc(&params) < 0)
+      goto error;
+
    alsa->has_float = find_float_format(alsa->pcm, params);
    format = alsa->has_float ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
 
-   TRY_ALSA(snd_pcm_hw_params_any(alsa->pcm, params));
-   TRY_ALSA(snd_pcm_hw_params_set_access(
-            alsa->pcm, params, SND_PCM_ACCESS_RW_INTERLEAVED));
-   TRY_ALSA(snd_pcm_hw_params_set_format(alsa->pcm, params, format));
-   TRY_ALSA(snd_pcm_hw_params_set_channels(alsa->pcm, params, channels));
-   TRY_ALSA(snd_pcm_hw_params_set_rate(alsa->pcm, params, rate, 0));
+   if (snd_pcm_hw_params_any(alsa->pcm, params) < 0)
+      goto error;
 
-   TRY_ALSA(snd_pcm_hw_params_set_buffer_time_near(
-            alsa->pcm, params, &latency_usec, NULL));
-   TRY_ALSA(snd_pcm_hw_params_set_periods_near(
-            alsa->pcm, params, &periods, NULL));
+   if (snd_pcm_hw_params_set_access(
+            alsa->pcm, params, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)
+      goto error;
 
-   TRY_ALSA(snd_pcm_hw_params(alsa->pcm, params));
+   if (snd_pcm_hw_params_set_format(alsa->pcm, params, format) < 0)
+      goto error;
+
+   if (snd_pcm_hw_params_set_channels(alsa->pcm, params, channels) < 0)
+      goto error;
+
+   if (snd_pcm_hw_params_set_rate(alsa->pcm, params, rate, 0) < 0)
+      goto error;
+
+   if (snd_pcm_hw_params_set_buffer_time_near(
+            alsa->pcm, params, &latency_usec, NULL) < 0)
+      goto error;
+
+   if (snd_pcm_hw_params_set_periods_near(
+            alsa->pcm, params, &periods, NULL) < 0)
+      goto error;
+
+   if (snd_pcm_hw_params(alsa->pcm, params) < 0)
+      goto error;
 
    /* Shouldn't have to bother with this, 
     * but some drivers are apparently broken. */
    if (snd_pcm_hw_params_get_period_size(params, &buffer_size, NULL))
       snd_pcm_hw_params_get_period_size_min(params, &buffer_size, NULL);
+
    RARCH_LOG("ALSA: Period size: %d frames\n", (int)buffer_size);
+
    if (snd_pcm_hw_params_get_buffer_size(params, &buffer_size))
       snd_pcm_hw_params_get_buffer_size_max(params, &buffer_size);
+
    RARCH_LOG("ALSA: Buffer size: %d frames\n", (int)buffer_size);
+
    alsa->buffer_size = snd_pcm_frames_to_bytes(alsa->pcm, buffer_size);
    alsa->can_pause = snd_pcm_hw_params_can_pause(params);
+
    RARCH_LOG("ALSA: Can pause: %s.\n", alsa->can_pause ? "yes" : "no");
 
-   TRY_ALSA(snd_pcm_sw_params_malloc(&sw_params));
-   TRY_ALSA(snd_pcm_sw_params_current(alsa->pcm, sw_params));
-   TRY_ALSA(snd_pcm_sw_params_set_start_threshold(
-            alsa->pcm, sw_params, buffer_size / 2));
-   TRY_ALSA(snd_pcm_sw_params(alsa->pcm, sw_params));
+   if (snd_pcm_sw_params_malloc(&sw_params) < 0)
+      goto error;
+
+   if (snd_pcm_sw_params_current(alsa->pcm, sw_params) < 0)
+      goto error;
+
+   if (snd_pcm_sw_params_set_start_threshold(
+            alsa->pcm, sw_params, buffer_size / 2) < 0)
+      goto error;
+
+   if (snd_pcm_sw_params(alsa->pcm, sw_params) < 0)
+      goto error;
 
    snd_pcm_hw_params_free(params);
    snd_pcm_sw_params_free(sw_params);

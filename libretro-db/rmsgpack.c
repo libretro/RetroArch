@@ -57,8 +57,7 @@ static const uint8_t MPF_NIL = 0xc0;
 
 static INLINE ssize_t fpwrite(FILE *fp, const void *buf, size_t count)
 {
-   size_t num_written = fwrite(buf, 1, count, fp);
-   return num_written != count ? -1 : (ssize_t)count;
+   return (fwrite(buf, 1, count, fp) != count) ? -1 : (ssize_t)count;
 }
 
 static INLINE ssize_t fpread(FILE *fp, void *buf, size_t count)
@@ -367,15 +366,12 @@ static int read_uint(FILE *fp, uint64_t *out, size_t size)
 
 static int read_int(FILE *fp, int64_t *out, size_t size)
 {
-   uint8_t tmp8 = 0;
    uint16_t tmp16;
    uint32_t tmp32;
    uint64_t tmp64;
 
    if (fpread(fp, &tmp64, size) == -1)
       return -errno;
-
-   (void)tmp8;
 
    switch (size)
    {
@@ -395,6 +391,7 @@ static int read_int(FILE *fp, int64_t *out, size_t size)
          *out = *((int64_t *)(&tmp64));
          break;
    }
+
    return 0;
 }
 
@@ -403,18 +400,21 @@ static int read_buff(FILE *fp, size_t size, char **pbuff, uint64_t *len)
    uint64_t tmp_len = 0;
 
    if (read_uint(fp, &tmp_len, size) == -1)
-      return -errno;
+      goto error;
 
    *pbuff = (char *)calloc((size_t)tmp_len + 1, sizeof(char));
 
    if (fpread(fp, *pbuff, (size_t)tmp_len) == -1)
-   {
-      free(*pbuff);
-      return -errno;
-   }
+      goto error;
 
    *len = tmp_len;
    return 0;
+
+error:
+   if (*pbuff)
+      free(*pbuff);
+   return -errno;
+
 }
 
 static int read_map(FILE *fp, uint32_t len,

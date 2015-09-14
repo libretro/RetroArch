@@ -1,8 +1,9 @@
-#include <assert.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
+#include <assert.h>
+
 #include <boolean.h>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -19,6 +20,7 @@
 #include "stb_image.h"
 
 #ifdef RARCH_INTERNAL
+#include "internal_cores.h"
 #include "../libretro.h"
 #define IMAGE_CORE_PREFIX(s) libretro_imageviewer_##s
 #else

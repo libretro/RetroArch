@@ -15,6 +15,9 @@
 
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
+#include <retro_endianness.h>
+
+#include "tasks.h"
 
 #ifdef HAVE_LIBRETRODB
 #include "../database_info.h"
@@ -24,12 +27,15 @@
 #include "../file_ops.h"
 #include "../msg_hash.h"
 #include "../general.h"
-#include "tasks.h"
 
 #define CB_DB_SCAN_FILE    0x70ce56d2U
 #define CB_DB_SCAN_FOLDER  0xde2bef8eU
 
 #define HASH_EXTENSION_ZIP 0x0b88c7d8U
+
+#ifndef COLLECTION_SIZE
+#define COLLECTION_SIZE 99999
+#endif
 
 typedef struct database_state_handle
 {
@@ -213,7 +219,7 @@ static int database_info_list_iterate_found_match(
    fill_pathname_join(db_playlist_path, settings->playlist_directory,
          db_playlist_base_str, sizeof(db_playlist_path));
 
-   playlist = content_playlist_init(db_playlist_path, 1000);
+   playlist = content_playlist_init(db_playlist_path, COLLECTION_SIZE);
 
 
    snprintf(db_crc, sizeof(db_crc), "%08X|crc", db_info_entry->crc32);
@@ -265,7 +271,7 @@ static int database_info_iterate_crc_lookup(
       const char *zip_entry)
 {
 
-   if ((unsigned)db_state->list_index == (unsigned)db_state->list->size)
+   if (!db_state->list || (unsigned)db_state->list_index == (unsigned)db_state->list->size)
       return database_info_list_iterate_end_no_match(db_state);
 
    if (db_state->entry_index == 0)
@@ -331,7 +337,7 @@ static int database_info_iterate_playlist_zip(
    return 1;
 }
 
-static int database_info_iterate(database_state_handle_t *state, database_info_handle_t *db)
+static int database_info_iterate(database_state_handle_t *db_state, database_info_handle_t *db)
 {
    const char *name = db ? db->list->elems[db->list_ptr].data : NULL;
 
@@ -346,11 +352,11 @@ static int database_info_iterate(database_state_handle_t *state, database_info_h
       case DATABASE_TYPE_NONE:
          break;
       case DATABASE_TYPE_ITERATE:
-         return database_info_iterate_playlist(state, db, name);
+         return database_info_iterate_playlist(db_state, db, name);
       case DATABASE_TYPE_ITERATE_ZIP:
-         return database_info_iterate_playlist_zip(state, db, name);
+         return database_info_iterate_playlist_zip(db_state, db, name);
       case DATABASE_TYPE_CRC_LOOKUP:
-         return database_info_iterate_crc_lookup(state, db, NULL);
+         return database_info_iterate_crc_lookup(db_state, db, NULL);
    }
 
    return 0;
@@ -358,8 +364,8 @@ static int database_info_iterate(database_state_handle_t *state, database_info_h
 
 static int database_info_poll(db_handle_t *db)
 {
+   char elem0[PATH_MAX_LENGTH];
    uint32_t cb_type_hash        = 0;
-   char elem0[PATH_MAX_LENGTH]  = {0};
    struct string_list *str_list = NULL;
    const char *path = msg_queue_pull(db->msg_queue);
 
@@ -370,9 +376,10 @@ static int database_info_poll(db_handle_t *db)
 
    if (!str_list)
       goto error;
+   if (str_list->size < 1)
+      goto error;
 
-   if (str_list->size > 0)
-      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+   strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
    if (str_list->size > 1)
       cb_type_hash = msg_hash_calculate(str_list->elems[1].data);
 
@@ -474,25 +481,18 @@ do_poll:
    }
 }
 
-void *rarch_main_data_db_get_ptr(void)
-{
-   db_handle_t      *db   = db_ptr;
-   if (!db)
-      return NULL;
-   return db;
-}
 
 void rarch_main_data_db_init_msg_queue(void)
 {
-   db_handle_t      *db   = (db_handle_t*)rarch_main_data_db_get_ptr();
+   db_handle_t      *db   = (db_handle_t*)db_ptr;
    
-   if (!db->msg_queue)
+   if (!db || !db->msg_queue)
       rarch_assert(db->msg_queue         = msg_queue_new(8));
 }
 
 msg_queue_t *rarch_main_data_db_get_msg_queue_ptr(void)
 {
-   db_handle_t      *db   = (db_handle_t*)rarch_main_data_db_get_ptr();
+   db_handle_t      *db   = (db_handle_t*)db_ptr;
    if (!db)
       return NULL;
    return db->msg_queue;
@@ -514,7 +514,7 @@ void rarch_main_data_db_init(void)
 
 bool rarch_main_data_db_is_active(void)
 {
-   db_handle_t              *db   = (db_handle_t*)rarch_main_data_db_get_ptr();
+   db_handle_t              *db   = (db_handle_t*)db_ptr;
    database_info_handle_t   *dbi  = db ? db->handle : NULL;
    if (dbi && dbi->status != DATABASE_STATUS_NONE)
       return true;

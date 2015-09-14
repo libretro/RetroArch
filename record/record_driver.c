@@ -15,16 +15,13 @@
  */
 
 #include <string.h>
+
 #include <file/file_path.h>
+
 #include "record_driver.h"
 
 #include "../driver.h"
-#include "../dynamic.h"
 #include "../general.h"
-#include "../retroarch.h"
-#include "../runloop.h"
-#include "../gfx/video_driver.h"
-#include "../gfx/video_viewport.h"
 #include "../msg_hash.h"
 
 #ifdef HAVE_CONFIG_H
@@ -299,9 +296,9 @@ bool recording_init(void)
    if (!global->record.enable)
       return false;
 
-   if (global->core_type == CORE_TYPE_DUMMY)
+   if (global->inited.core.type == CORE_TYPE_DUMMY)
    {
-      RARCH_WARN(msg_hash_to_str(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED));
+      RARCH_WARN("%s\n", msg_hash_to_str(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED));
       return false;
    }
 
@@ -414,7 +411,7 @@ bool recording_init(void)
 
    if (!record_driver_init_first(&driver->recording, &driver->recording_data, &params))
    {
-      RARCH_ERR(msg_hash_to_str(MSG_FAILED_TO_START_RECORDING));
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_START_RECORDING));
       event_command(EVENT_CMD_GPU_RECORD_DEINIT);
 
       return false;

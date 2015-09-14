@@ -23,7 +23,6 @@
 #include <compat/strl.h>
 
 #include "configuration.h"
-#include "dynamic.h"
 #include "performance.h"
 #include "retroarch.h"
 #include "runloop.h"
@@ -42,8 +41,16 @@
 #include "netplay.h"
 #endif
 
-static struct runloop *g_runloop = NULL;
-static struct global *g_extern   = NULL;
+static struct global g_extern;
+
+static bool main_is_idle;
+static bool main_is_paused;
+static bool main_is_slowmotion;
+
+static unsigned main_max_frames;
+
+static retro_time_t frame_limit_last_time;
+static retro_time_t frame_limit_minimum_time;
 
 /**
  * check_pause:
@@ -56,18 +63,17 @@ static struct global *g_extern   = NULL;
  * Returns: true if libretro pause key was toggled, otherwise false.
  **/
 static bool check_pause(driver_t *driver, settings_t *settings,
-      runloop_t *runloop,
       bool pause_pressed, bool frameadvance_pressed)
 {
    static bool old_focus    = true;
    bool focus               = true;
    enum event_command cmd   = EVENT_CMD_NONE;
-   bool old_is_paused       = runloop ? runloop->is_paused : false;
+   bool old_is_paused       = main_is_paused;
    const video_driver_t *video = driver ? (const video_driver_t*)driver->video :
       NULL;
 
    /* FRAMEADVANCE will set us into pause mode. */
-   pause_pressed |= !runloop->is_paused && frameadvance_pressed;
+   pause_pressed |= !main_is_paused && frameadvance_pressed;
 
    if (settings->pause_nonactive)
       focus = video->focus(driver->video_data);
@@ -84,7 +90,7 @@ static bool check_pause(driver_t *driver, settings_t *settings,
    if (cmd != EVENT_CMD_NONE)
       event_command(cmd);
 
-   if (runloop->is_paused == old_is_paused)
+   if (main_is_paused == old_is_paused)
       return false;
 
    return true;
@@ -128,7 +134,7 @@ static void check_fast_forward_button(driver_t *driver,
 static void check_stateslots(settings_t *settings,
       bool pressed_increase, bool pressed_decrease)
 {
-   char msg[PATH_MAX_LENGTH] = {0};
+   char msg[PATH_MAX_LENGTH];
 
    /* Save state slots */
    if (pressed_increase)
@@ -157,7 +163,7 @@ static void check_stateslots(settings_t *settings,
  * Checks if rewind toggle/hold was being pressed and/or held.
  **/
 static void check_rewind(settings_t *settings,
-      global_t *global, runloop_t *runloop, bool pressed)
+      global_t *global, bool pressed)
 {
    static bool first = true;
 
@@ -186,7 +192,7 @@ static void check_rewind(settings_t *settings,
          audio_driver_setup_rewind();
 
          rarch_main_msg_queue_push_new(MSG_REWINDING, 0,
-               runloop->is_paused ? 1 : 30, true);
+               main_is_paused ? 1 : 30, true);
          pretro_unserialize(buf, global->rewind.size);
 
          if (global->bsv.movie)
@@ -227,11 +233,11 @@ static void check_rewind(settings_t *settings,
  * Checks if slowmotion toggle/hold was being pressed and/or held.
  **/
 static void check_slowmotion(settings_t *settings, global_t *global,
-      runloop_t *runloop, bool slowmotion_pressed)
+      bool slowmotion_pressed)
 {
-   runloop->is_slowmotion   = slowmotion_pressed;
+   main_is_slowmotion   = slowmotion_pressed;
 
-   if (!runloop->is_slowmotion)
+   if (!main_is_slowmotion)
       return;
 
    if (settings->video.black_frame_insertion)
@@ -243,13 +249,12 @@ static void check_slowmotion(settings_t *settings, global_t *global,
       rarch_main_msg_queue_push_new(MSG_SLOW_MOTION, 0, 30, true);
 }
 
-static bool check_movie_init(void)
+static bool check_movie_init(global_t *global)
 {
-   char path[PATH_MAX_LENGTH]   = {0};
-   char msg[PATH_MAX_LENGTH]    = {0};
+   char path[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH];
    bool ret                     = true;
    settings_t *settings         = config_get_ptr();
-   global_t *global             = global_get_ptr();
    
    if (global->bsv.movie)
       return false;
@@ -261,6 +266,7 @@ static bool check_movie_init(void)
             global->bsv.movie_path, settings->state_slot);
    else
       strlcpy(path, global->bsv.movie_path, sizeof(path));
+
    strlcat(path, ".bsv", sizeof(path));
 
    snprintf(msg, sizeof(msg), "%s \"%s\".",
@@ -285,7 +291,7 @@ static bool check_movie_init(void)
       rarch_main_msg_queue_push_new(
             MSG_FAILED_TO_START_MOVIE_RECORD,
             1, 180, true);
-      RARCH_ERR(msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
    }
 
    return ret;
@@ -341,7 +347,7 @@ static bool check_movie(global_t *global)
    if (global->bsv.movie_playback)
       return check_movie_playback(global);
    if (!global->bsv.movie)
-      return check_movie_init();
+      return check_movie_init(global);
    return check_movie_record(global);
 }
 
@@ -365,7 +371,7 @@ static void check_shader_dir(global_t *global,
       bool pressed_next, bool pressed_prev)
 {
    uint32_t ext_hash;
-   char msg[PATH_MAX_LENGTH]   = {0};
+   char msg[PATH_MAX_LENGTH];
    const char *shader          = NULL;
    const char *ext             = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
@@ -415,7 +421,7 @@ static void check_shader_dir(global_t *global,
          shader);
 
    if (!video_driver_set_shader(type, shader))
-      RARCH_WARN(msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER));
+      RARCH_WARN("%s\n", msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER));
 }
 
 #ifdef HAVE_MENU
@@ -423,7 +429,7 @@ static void do_state_check_menu_toggle(settings_t *settings, global_t *global)
 {
    if (menu_driver_alive())
    {
-      if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY))
+      if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
       return;
    }
@@ -443,13 +449,12 @@ static void do_state_check_menu_toggle(settings_t *settings, global_t *global)
  * Returns: 0.
  **/
 static int do_pre_state_checks(settings_t *settings,
-      global_t *global, runloop_t *runloop,
-      event_cmd_state_t *cmd)
+      global_t *global, event_cmd_state_t *cmd)
 {
    if (cmd->overlay_next_pressed)
       event_command(EVENT_CMD_OVERLAY_NEXT);
 
-   if (!runloop->is_paused || menu_driver_alive())
+   if (!main_is_paused || menu_driver_alive())
    {
       if (cmd->fullscreen_toggle)
          event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
@@ -459,7 +464,7 @@ static int do_pre_state_checks(settings_t *settings,
       event_command(EVENT_CMD_GRAB_MOUSE_TOGGLE);
 
 #ifdef HAVE_MENU
-   if (cmd->menu_pressed || (global->core_type == CORE_TYPE_DUMMY))
+   if (cmd->menu_pressed || (global->inited.core.type == CORE_TYPE_DUMMY))
       do_state_check_menu_toggle(settings, global);
 #endif
 
@@ -481,15 +486,13 @@ static int do_netplay_state_checks(
 #endif
 
 static int do_pause_state_checks(
-      runloop_t *runloop,
-      bool pause_pressed,
       bool frameadvance_pressed,
       bool fullscreen_toggle_pressed,
       bool rewind_pressed)
 {
    bool check_is_oneshot     = frameadvance_pressed || rewind_pressed;
 
-   if (!runloop->is_paused)
+   if (!main_is_paused)
       return 0;
 
    if (fullscreen_toggle_pressed)
@@ -512,9 +515,9 @@ static int do_pause_state_checks(
  * Returns: 1 if RetroArch is in pause mode, 0 otherwise.
  **/
 static int do_state_checks(driver_t *driver, settings_t *settings,
-      global_t *global, runloop_t *runloop, event_cmd_state_t *cmd)
+      global_t *global, event_cmd_state_t *cmd)
 {
-   if (runloop->is_idle)
+   if (main_is_idle)
       return 1;
 
    if (cmd->screenshot_pressed)
@@ -537,12 +540,10 @@ static int do_state_checks(driver_t *driver, settings_t *settings,
             cmd->fullscreen_toggle);
 #endif
 
-   check_pause(driver, settings, runloop,
+   check_pause(driver, settings, 
          cmd->pause_pressed, cmd->frameadvance_pressed);
 
    if (do_pause_state_checks(
-            runloop,
-            cmd->pause_pressed,
             cmd->frameadvance_pressed,
             cmd->fullscreen_toggle,
             cmd->rewind_pressed))
@@ -559,9 +560,8 @@ static int do_state_checks(driver_t *driver, settings_t *settings,
    else if (cmd->load_state_pressed)
       event_command(EVENT_CMD_LOAD_STATE);
 
-   check_rewind(settings, global, runloop, cmd->rewind_pressed);
-   check_slowmotion(settings, global, runloop,
-         cmd->slowmotion_pressed);
+   check_rewind(settings, global, cmd->rewind_pressed);
+   check_slowmotion(settings, global, cmd->slowmotion_pressed);
 
    if (cmd->movie_record)
       check_movie(global);
@@ -608,19 +608,17 @@ static int do_state_checks(driver_t *driver, settings_t *settings,
  * Returns: 1 if any of the above conditions are true, otherwise 0.
  **/
 static INLINE int time_to_exit(driver_t *driver, global_t *global,
-      runloop_t *runloop, event_cmd_state_t *cmd)
+      rarch_system_info_t *system,
+      event_cmd_state_t *cmd)
 {
    const video_driver_t *video   = driver ? (const video_driver_t*)driver->video : NULL;
-   rarch_system_info_t *system   = rarch_system_info_get_ptr();
-   bool shutdown_pressed         = system && system->shutdown;
+   bool shutdown_pressed         = (system && system->shutdown) || cmd->quit_key_pressed;
    bool video_alive              = video && video->alive(driver->video_data);
    bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);
-   uint64_t frame_count          = video_driver_get_frame_count();
-   bool frame_count_end          = (runloop->frames.video.max && 
-         frame_count >= runloop->frames.video.max);
+   uint64_t *frame_count         = video_driver_get_frame_count();
+   bool frame_count_end          = main_max_frames && (*frame_count >= main_max_frames);
 
-   if (shutdown_pressed || cmd->quit_key_pressed || frame_count_end || movie_end
-         || !video_alive)
+   if (shutdown_pressed || frame_count_end || movie_end || !video_alive)
       return 1;
    return 0;
 }
@@ -629,24 +627,23 @@ static INLINE int time_to_exit(driver_t *driver, global_t *global,
  * rarch_update_frame_time:
  *
  * Updates frame timing if frame timing callback is in use by the core.
+ * Limits frame time if fast forward ratio throttle is enabled.
  **/
-static void rarch_update_frame_time(driver_t *driver, settings_t *settings,
-      runloop_t *runloop)
+static void rarch_update_frame_time(driver_t *driver, float slowmotion_ratio,
+      rarch_system_info_t *system)
 {
-   retro_time_t curr_time   = rarch_get_time_usec();
-   rarch_system_info_t *system   = rarch_system_info_get_ptr();
-   retro_time_t delta       = curr_time - system->frame_time_last;
-   bool is_locked_fps       = runloop->is_paused || driver->nonblock_state;
-
-   is_locked_fps         |= !!driver->recording_data;
+   retro_time_t current     = rarch_get_time_usec();
+   retro_time_t delta       = current - system->frame_time_last;
+   bool is_locked_fps       = (main_is_paused || driver->nonblock_state) | 
+      !!driver->recording_data;
 
    if (!system->frame_time_last || is_locked_fps)
       delta = system->frame_time.reference;
 
-   if (!is_locked_fps && runloop->is_slowmotion)
-      delta /= settings->slowmotion_ratio;
+   if (!is_locked_fps && main_is_slowmotion)
+      delta /= slowmotion_ratio;
 
-   system->frame_time_last = curr_time;
+   system->frame_time_last = current;
 
    if (is_locked_fps)
       system->frame_time_last = 0;
@@ -654,38 +651,28 @@ static void rarch_update_frame_time(driver_t *driver, settings_t *settings,
    system->frame_time.callback(delta);
 }
 
-/**
- * rarch_limit_frame_time:
- *
- * Limit frame time if fast forward ratio throttle is enabled.
- **/
-static void rarch_limit_frame_time(settings_t *settings, runloop_t *runloop)
+static int rarch_limit_frame_time(float fastforward_ratio, unsigned *sleep_ms)
 {
-   retro_time_t target      = 0;
-   retro_time_t to_sleep_ms = 0;
-   retro_time_t current     = rarch_get_time_usec();
-   struct retro_system_av_info *av_info = 
-      video_viewport_get_system_av_info();
-   double effective_fps     = av_info->timing.fps * settings->fastforward_ratio;
-   double mft_f             = 1000000.0f / effective_fps;
+   retro_time_t current, target, to_sleep_ms;
 
-   runloop->frames.limit.minimum_time = (retro_time_t) roundf(mft_f);
+   if (!fastforward_ratio)
+      return 0;
 
-   target        = runloop->frames.limit.last_time + 
-                   runloop->frames.limit.minimum_time;
-   to_sleep_ms   = (target - current) / 1000;
+   current                        = rarch_get_time_usec();
+   target                         = frame_limit_last_time + frame_limit_minimum_time;
+   to_sleep_ms                    = (target - current) / 1000;
 
-   if (to_sleep_ms <= 0)
+   if (to_sleep_ms > 0)
    {
-      runloop->frames.limit.last_time = rarch_get_time_usec();
-      return;
+      *sleep_ms = (unsigned)to_sleep_ms;
+      /* Combat jitter a bit. */
+      frame_limit_last_time += frame_limit_minimum_time;
+      return 1;
    }
+   else
+      frame_limit_last_time  = rarch_get_time_usec();
 
-   rarch_sleep((unsigned int)to_sleep_ms);
-
-   /* Combat jitter a bit. */
-   runloop->frames.limit.last_time += 
-      runloop->frames.limit.minimum_time;
+   return 0;
 }
 
 /**
@@ -751,7 +738,7 @@ static INLINE retro_input_t input_keys_pressed(driver_t *driver,
    if (!driver->input || !driver->input_data)
       return 0;
 
-   global->turbo_count++;
+   global->turbo.count++;
 
    driver->block_libretro_input = check_block_hotkey(driver,
          settings, driver->input->key_pressed(
@@ -764,13 +751,13 @@ static INLINE retro_input_t input_keys_pressed(driver_t *driver,
       input_push_analog_dpad(settings->input.autoconf_binds[i],
             settings->input.analog_dpad_mode[i]);
 
-      global->turbo_frame_enable[i] = 0;
+      global->turbo.frame_enable[i] = 0;
    }
 
    if (!driver->block_libretro_input)
    {
       for (i = 0; i < settings->input.max_users; i++)
-         global->turbo_frame_enable[i] = input_driver_state(binds, 
+         global->turbo.frame_enable[i] = input_driver_state(binds, 
                i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
    }
 
@@ -786,26 +773,6 @@ static INLINE retro_input_t input_keys_pressed(driver_t *driver,
 }
 
 /**
- * input_flush:
- * @input                : input sample for this frame
- *
- * Resets input sample.
- *
- * Returns: always true (1).
- **/
-static bool input_flush(runloop_t *runloop, retro_input_t *input)
-{
-   *input = 0;
-
-   /* If core was paused before entering menu, evoke
-    * pause toggle to wake it up. */
-   if (runloop->is_paused)
-      BIT64_SET(*input, RARCH_PAUSE_TOGGLE);
-
-   return true;
-}
-
-/**
  * rarch_main_load_dummy_core:
  *
  * Quits out of RetroArch main loop.
@@ -816,24 +783,6 @@ static bool input_flush(runloop_t *runloop, retro_input_t *input)
  *
  * Returns: -1 if we are about to quit, otherwise 0.
  **/
-static int rarch_main_iterate_quit(settings_t *settings, global_t *global)
-{
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
-
-   if (global->core_shutdown_initiated
-         && settings->load_dummy_on_core_shutdown)
-   {
-      if (!event_command(EVENT_CMD_PREPARE_DUMMY))
-         return -1;
-
-      system->shutdown = false;
-      global->core_shutdown_initiated = false;
-
-      return 0;
-   }
-
-   return -1;
-}
 
 #ifdef HAVE_OVERLAY
 static void rarch_main_iterate_linefeed_overlay(driver_t *driver,
@@ -866,21 +815,29 @@ static void rarch_main_iterate_linefeed_overlay(driver_t *driver,
 
 global_t *global_get_ptr(void)
 {
-   return g_extern;
-}
-
-runloop_t *rarch_main_get_ptr(void)
-{
-   return g_runloop;
+   return &g_extern;
 }
 
 void rarch_main_state_free(void)
 {
-   if (!g_runloop)
-      return;
+   main_is_idle                           = false;
+   main_is_paused                         = false;
+   main_is_slowmotion                     = false;
+   frame_limit_last_time                  = 0.0;
+   main_max_frames                        = 0;
+}
 
-   free(g_runloop);
-   g_runloop = NULL;
+void rarch_main_set_frame_limit_last_time(void)
+{
+   settings_t *settings                 = config_get_ptr();
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   float fastforward_ratio              = settings->fastforward_ratio;
+
+   if (fastforward_ratio == 0.0f)
+      fastforward_ratio = 1.0f;
+
+   frame_limit_last_time                = rarch_get_time_usec();
+   frame_limit_minimum_time             = (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
 }
 
 void rarch_main_global_free(void)
@@ -890,11 +847,7 @@ void rarch_main_global_free(void)
    event_command(EVENT_CMD_RECORD_DEINIT);
    event_command(EVENT_CMD_LOG_FILE_DEINIT);
 
-   if (!g_extern)
-      return;
-
-   free(g_extern);
-   g_extern = NULL;
+   memset(&g_extern, 0, sizeof(g_extern));
 }
 
 bool rarch_main_verbosity(void)
@@ -913,55 +866,55 @@ FILE *rarch_main_log_file(void)
    return global->log_file;
 }
 
-static global_t *rarch_main_global_new(void)
-{
-   global_t *global = (global_t*)calloc(1, sizeof(global_t));
-
-   if (!global)
-      return NULL;
-
-   return global;
-}
-
-static runloop_t *rarch_main_state_init(void)
-{
-   runloop_t *runloop = (runloop_t*)calloc(1, sizeof(runloop_t));
-
-   if (!runloop)
-      return NULL;
-
-   return runloop;
-}
-
 void rarch_main_clear_state(void)
 {
    driver_clear_state();
 
    rarch_main_state_free();
-   g_runloop = rarch_main_state_init();
 
    rarch_main_global_free();
-   g_extern  = rarch_main_global_new();
+}
+
+void rarch_main_set_slowmotion(unsigned enable)
+{
+   main_is_slowmotion = enable;
+}
+
+void rarch_main_set_max_frames(unsigned val)
+{
+   main_max_frames = val;
+}
+
+void rarch_main_set_pause(unsigned enable)
+{
+   main_is_paused = enable;
+}
+
+void rarch_main_set_idle(unsigned enable)
+{
+   main_is_idle = enable;
+}
+
+bool rarch_main_is_paused(void)
+{
+   return main_is_paused;
 }
 
 bool rarch_main_is_idle(void)
 {
-   runloop_t *runloop = rarch_main_get_ptr();
-   if (!runloop)
-      return false;
-   return runloop->is_idle;
+   return main_is_idle;
+}
+
+bool rarch_main_is_slowmotion(void)
+{
+   return main_is_slowmotion;
 }
 
 static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
+      driver_t *driver, settings_t *settings,
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
-   driver_t *driver                = driver_get_ptr();
-   settings_t *settings            = config_get_ptr();
-
-   if (!settings)
-      return false;
-
    switch (settings->input.menu_toggle_gamepad_combo)
    {
       case 0:
@@ -988,7 +941,8 @@ static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
    return true;
 }
 
-static void rarch_main_cmd_get_state(event_cmd_state_t *cmd,
+static void rarch_main_cmd_get_state(driver_t *driver,
+      settings_t *settings, event_cmd_state_t *cmd,
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
@@ -1000,7 +954,8 @@ static void rarch_main_cmd_get_state(event_cmd_state_t *cmd,
    cmd->grab_mouse_pressed          = BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE);
 #ifdef HAVE_MENU
    cmd->menu_pressed                = BIT64_GET(trigger_input, RARCH_MENU_TOGGLE) ||
-                                      rarch_main_cmd_get_state_menu_toggle_button_combo(input,
+                                      rarch_main_cmd_get_state_menu_toggle_button_combo(driver,
+                                            settings, input,
                                             old_input, trigger_input);
 #endif
    cmd->quit_key_pressed            = BIT64_GET(input, RARCH_QUIT_KEY);
@@ -1045,68 +1000,100 @@ static void rarch_main_cmd_get_state(event_cmd_state_t *cmd,
  * Returns: 0 on success, 1 if we have to wait until button input in order
  * to wake up the loop, -1 if we forcibly quit out of the RetroArch iteration loop. 
  **/
-int rarch_main_iterate(void)
+int rarch_main_iterate(unsigned *sleep_ms)
 {
    unsigned i;
-   retro_input_t trigger_input, old_input;
-   event_cmd_state_t    cmd        = {0};
-   int ret                         = 0;
+   retro_input_t trigger_input;
+   event_cmd_state_t    cmd;
+   bool do_quit                    = false;
    static retro_input_t last_input = 0;
    driver_t *driver                = driver_get_ptr();
    settings_t *settings            = config_get_ptr();
    global_t   *global              = global_get_ptr();
-   runloop_t *runloop              = rarch_main_get_ptr();
    retro_input_t input             = input_keys_pressed(driver, settings, global);
    rarch_system_info_t *system     = rarch_system_info_get_ptr();
+   retro_input_t old_input         = last_input;
 
-   old_input                       = last_input;
    last_input                      = input;
 
    if (driver->flushing_input)
-      driver->flushing_input = (input) ? input_flush(runloop, &input) : false;
+   {
+      driver->flushing_input = false;
+      if (input)
+      {
+         input = 0;
+
+         /* If core was paused before entering menu, evoke
+          * pause toggle to wake it up. */
+         if (main_is_paused)
+            BIT64_SET(input, RARCH_PAUSE_TOGGLE);
+         driver->flushing_input = true;
+      }
+   }
 
    trigger_input = input & ~old_input;
 
-   rarch_main_cmd_get_state(&cmd, input, old_input, trigger_input);
+   rarch_main_cmd_get_state(driver, settings, &cmd, input, old_input, trigger_input);
 
-   if (time_to_exit(driver, global, runloop, &cmd))
-      return rarch_main_iterate_quit(settings, global);
+   if (time_to_exit(driver, global, system, &cmd))
+      do_quit = true;
 
    if (system->frame_time.callback)
-      rarch_update_frame_time(driver, settings, runloop);
+      rarch_update_frame_time(driver, settings->slowmotion_ratio, system);
 
-   do_pre_state_checks(settings, global, runloop, &cmd);
+   do_pre_state_checks(settings, global, &cmd);
 
 #ifdef HAVE_OVERLAY
    rarch_main_iterate_linefeed_overlay(driver, settings);
 #endif
+
+   if (global->exec)
+   {
+      global->exec = false;
+      do_quit      = true;
+   }
+
+   if (do_quit)
+   {
+      /* Quits out of RetroArch main loop.
+       * On special case, loads dummy core 
+       * instead of exiting RetroArch completely.
+       * Aborts core shutdown if invoked.
+       */
+      if (global->core_shutdown_initiated
+            && settings->load_dummy_on_core_shutdown)
+      {
+         if (!event_command(EVENT_CMD_PREPARE_DUMMY))
+            return -1;
+
+         system->shutdown = false;
+         global->core_shutdown_initiated = false;
+
+         return 0;
+      }
+
+      return -1;
+   }
    
 #ifdef HAVE_MENU
    if (menu_driver_alive())
    {
       menu_handle_t *menu = menu_driver_get_ptr();
       if (menu)
-         if (menu_iterate(input, old_input, trigger_input) == -1)
+         if (menu_iterate(true, menu_input_frame(input, trigger_input)) == -1)
             rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
 
       if (!input && settings->menu.pause_libretro)
-        ret = 1;
-      goto success;
+        return 1;
+      return rarch_limit_frame_time(settings->fastforward_ratio, sleep_ms);
    }
 #endif
 
-   if (global->exec)
+   if (do_state_checks(driver, settings, global, &cmd))
    {
-      global->exec = false;
-      return rarch_main_iterate_quit(settings, global);
-   }
-
-   if (do_state_checks(driver, settings, global, runloop, &cmd))
-   {
-      /* RetroArch has been paused */
+      /* RetroArch has been paused. */
       driver->retro_ctx.poll_cb();
-      rarch_sleep(10);
-
+      *sleep_ms = 10;
       return 1;
    }
 
@@ -1140,7 +1127,6 @@ int rarch_main_iterate(void)
    if ((settings->video.frame_delay > 0) && !driver->nonblock_state)
       rarch_sleep(settings->video.frame_delay);
 
-
    /* Run libretro for one frame. */
    pretro_run();
 
@@ -1165,9 +1151,5 @@ int rarch_main_iterate(void)
    unlock_autosave();
 #endif
 
-success:
-   if (settings->fastforward_ratio_throttle_enable)
-      rarch_limit_frame_time(settings, runloop);
-
-   return ret;
+   return rarch_limit_frame_time(settings->fastforward_ratio, sleep_ms);
 }

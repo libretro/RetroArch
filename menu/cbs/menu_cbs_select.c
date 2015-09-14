@@ -28,19 +28,45 @@ static int action_select_default(const char *path, const char *label, unsigned t
    enum menu_action action   = MENU_ACTION_NOOP;
    menu_file_list_cbs_t *cbs = NULL;
    menu_list_t    *menu_list = menu_list_get_ptr();
-   rarch_setting_t *setting  = menu_setting_find(
-         menu_list->selection_buf->list[idx].label);
 
    menu_entry_get(&entry, idx, NULL, false);
 
    cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, idx);
-
-   if ((cbs && cbs->action_ok) || menu_setting_is_of_general_type(setting))
-       action = MENU_ACTION_OK;
-   else { if (cbs && cbs->action_start)
-         action = MENU_ACTION_START;
-      if (cbs && cbs->action_right)
-         action = MENU_ACTION_RIGHT;
+    
+   if (cbs->setting)
+   {
+       switch (cbs->setting->type)
+       {
+           case ST_BOOL:
+           case ST_INT:
+           case ST_UINT:
+           case ST_FLOAT:
+               action = MENU_ACTION_RIGHT;
+               break;
+           case ST_PATH:
+           case ST_DIR:
+           case ST_ACTION:
+           case ST_STRING:
+           case ST_HEX:
+           case ST_BIND:
+               action = MENU_ACTION_OK;
+               break;
+           default:
+               break;
+       }
+   }
+    
+   if (action == MENU_ACTION_NOOP)
+   {
+       if (cbs && cbs->action_ok)
+           action = MENU_ACTION_OK;
+       else
+       {
+           if (cbs && cbs->action_start)
+               action = MENU_ACTION_START;
+           if (cbs && cbs->action_right)
+               action = MENU_ACTION_RIGHT;
+       }
    }
     
    if (action != MENU_ACTION_NOOP)
@@ -51,10 +77,16 @@ static int action_select_default(const char *path, const char *label, unsigned t
    return ret;
 }
 
+static int action_select_path_use_directory(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return action_ok_path_use_directory(path, label, type, idx, 0 /* unused */);
+}
+
 static int action_select_directory(const char *path, const char *label, unsigned type,
       size_t idx)
 {
-   return 0;
+   return action_ok_directory_push(path, label, type, idx, 0 /* ignored */);
 }
 
 static int action_select_core_setting(const char *path, const char *label, unsigned type,
@@ -62,6 +94,20 @@ static int action_select_core_setting(const char *path, const char *label, unsig
 {
    return core_setting_right(type, label, true);
 }
+
+#ifdef HAVE_SHADER_MANAGER
+static int shader_action_parameter_select(const char *path, const char *label, unsigned type,
+      size_t idx)
+{
+   return shader_action_parameter_right(type, label, true);
+}
+
+static int shader_action_parameter_preset_select(const char *path, const char *label, unsigned type,
+      size_t idx)
+{
+   return shader_action_parameter_preset_right(type, label, true);
+}
+#endif
 
 static int action_select_cheat(const char *path, const char *label, unsigned type,
       size_t idx)
@@ -81,19 +127,26 @@ static int menu_cbs_init_bind_select_compare_type(
    if (type >= MENU_SETTINGS_CHEAT_BEGIN
          && type <= MENU_SETTINGS_CHEAT_END)
       cbs->action_select = action_select_cheat;
+#ifdef HAVE_SHADER_MANAGER
+   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+      cbs->action_select = shader_action_parameter_select;
+   else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
+      cbs->action_select = shader_action_parameter_preset_select;
+#endif
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
       cbs->action_select = action_select_input_desc;
-   else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
-      cbs->action_select = action_select_core_setting;
    else
    {
       switch (type)
       {
-         case MENU_FILE_PATH:
          case MENU_FILE_DIRECTORY:
-         case MENU_FILE_USE_DIRECTORY:
             cbs->action_select = action_select_directory;
+            break;
+         case MENU_FILE_USE_DIRECTORY:
+            cbs->action_select = action_select_path_use_directory;
             break;
          default:
             return -1;
@@ -101,6 +154,12 @@ static int menu_cbs_init_bind_select_compare_type(
    }
 
    return 0;
+}
+
+static int menu_cbs_init_bind_select_compare_label(menu_file_list_cbs_t *cbs,
+      const char *label, uint32_t hash, const char *elem0)
+{
+   return -1;
 }
 
 int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
@@ -112,6 +171,15 @@ int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       return -1;
 
    cbs->action_select = action_select_default;
+
+   if ((type >= MENU_SETTINGS_CORE_OPTION_START))
+   {
+      cbs->action_select = action_select_core_setting;
+      return 0;
+   }
+
+   if (menu_cbs_init_bind_select_compare_label(cbs, label, label_hash, elem0) == 0)
+      return 0;
 
    if (menu_cbs_init_bind_select_compare_type(cbs, type) == 0)
       return 0;

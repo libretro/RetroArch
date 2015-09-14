@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -15,14 +15,14 @@
  */
 
 #include <string.h>
+
 #include <string/string_list.h>
-#include "video_driver.h"
+
 #include "video_thread_wrapper.h"
 #include "video_pixel_converter.h"
 #include "video_monitor.h"
 #include "../general.h"
 #include "../performance.h"
-#include "../retroarch.h"
 
 #ifndef MEASURE_FRAME_TIME_SAMPLES_COUNT
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
@@ -70,8 +70,8 @@ static const video_driver_t *video_drivers[] = {
 #if defined(HAVE_D3D)
    &video_d3d,
 #endif
-#ifdef SN_TARGET_PSP2
-   &video_vita,
+#ifdef HAVE_VITA2D
+   &video_vita2d,
 #endif
 #ifdef PSP
    &video_psp1,
@@ -233,7 +233,7 @@ void find_video_driver(void)
  * video_driver_get_ptr:
  * @drv                : real video driver will be set to this.
  *
- * Use this if you need the real video driver 
+ * Use this if you need the real video driver
  * and driver data pointers.
  *
  * Returns: video driver's userdata.
@@ -241,9 +241,10 @@ void find_video_driver(void)
 void *video_driver_get_ptr(const video_driver_t **drv)
 {
    driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
 
 #ifdef HAVE_THREADS
+   settings_t *settings = config_get_ptr();
+
    if (settings->video.threaded
          && !video_state.hw_render_callback.context_type)
       return rarch_threaded_video_get_ptr(drv);
@@ -254,28 +255,15 @@ void *video_driver_get_ptr(const video_driver_t **drv)
    return driver->video_data;
 }
 
-static const video_poke_interface_t *video_driver_get_poke_ptr(void)
-{
-   driver_t *driver = driver_get_ptr();
-   if (!driver)
-      return NULL;
-   return driver->video_poke;
-}
+#define video_driver_get_poke_ptr(driver) (driver) ? driver->video_poke : NULL
 
-static const video_driver_t *video_driver_ctx_get_ptr(void)
-{
-   driver_t *driver = driver_get_ptr();
-   if (!driver)
-      return NULL;
-   return driver->video;
-}
+#define video_driver_ctx_get_ptr(driver)  (driver) ? driver->video : NULL
 
 const char *video_driver_get_ident(void)
 {
-   const video_driver_t *video = video_driver_ctx_get_ptr();
-   if (video)
-      return video->ident;
-   return NULL;
+   driver_t *driver     = driver_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
+   return (video) ? video->ident : NULL;
 }
 
 /**
@@ -289,35 +277,24 @@ const char *video_driver_get_ident(void)
 uintptr_t video_driver_get_current_framebuffer(void)
 {
    driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr();
+   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
 
    if (poke && poke->get_current_framebuffer)
       return poke->get_current_framebuffer(driver->video_data);
    return 0;
 }
 
-uint64_t video_driver_get_frame_count(void)
-{
-   static bool              warn_once = true;
-   driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr();
+static uint64_t video_frame_count;
 
-   if (!poke || !poke->get_frame_count)
-   {
-      if (warn_once)
-      {
-         RARCH_WARN("Frame count not implemented!\n");
-         warn_once = false;
-      }
-      return 0;
-   }
-   return poke->get_frame_count(driver->video_data);
+uint64_t *video_driver_get_frame_count(void)
+{
+   return &video_frame_count;
 }
 
 retro_proc_address_t video_driver_get_proc_address(const char *sym)
 {
    driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr();
+   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
 
    if (poke && poke->get_proc_address)
       return poke->get_proc_address(driver->video_data, sym);
@@ -328,7 +305,7 @@ bool video_driver_set_shader(enum rarch_shader_type type,
       const char *path)
 {
    driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
    if (video->set_shader)
       return video->set_shader(driver->video_data, type, path);
@@ -347,7 +324,7 @@ static void init_video_filter(enum retro_pixel_format colfmt)
    unsigned width, height, pow2_x, pow2_y, maxsize;
    struct retro_game_geometry *geom = NULL;
    settings_t *settings             = config_get_ptr();
-   struct retro_system_av_info *av_info = 
+   struct retro_system_av_info *av_info =
       video_viewport_get_system_av_info();
 
    deinit_video_filter();
@@ -384,7 +361,7 @@ static void init_video_filter(enum retro_pixel_format colfmt)
 
    pow2_x                    = next_pow2(width);
    pow2_y                    = next_pow2(height);
-   maxsize                   = max(pow2_x, pow2_y); 
+   maxsize                   = max(pow2_x, pow2_y);
    video_state.filter.scale  = maxsize / RARCH_SCALE_BASE;
    video_state.filter.out_rgb32 = rarch_softfilter_get_output_format(
          video_state.filter.filter) == RETRO_PIXEL_FORMAT_XRGB8888;
@@ -408,6 +385,9 @@ static void init_video_input(const input_driver_t *tmp)
 {
    driver_t *driver = driver_get_ptr();
 
+   /* Reset video frame count */
+   video_frame_count = 0;
+
    /* Video driver didn't provide an input driver,
     * so we use configured one. */
    RARCH_LOG("Graphics driver did not initialize an input driver. Attempting to pick a suitable driver.\n");
@@ -419,8 +399,8 @@ static void init_video_input(const input_driver_t *tmp)
 
    if (!driver->input)
    {
-      /* This should never really happen as tmp (driver.input) is always 
-       * found before this in find_driver_input(), or we have aborted 
+      /* This should never really happen as tmp (driver.input) is always
+       * found before this in find_driver_input(), or we have aborted
        * in a similar fashion anyways. */
       rarch_fail(1, "init_video_input()");
    }
@@ -473,7 +453,7 @@ void init_video(void)
    driver_t *driver                 = driver_get_ptr();
    settings_t *settings             = config_get_ptr();
    rarch_system_info_t *system      = rarch_system_info_get_ptr();
-   struct retro_system_av_info *av_info = 
+   struct retro_system_av_info *av_info =
       video_viewport_get_system_av_info();
 
    init_video_filter(video_state.pix_fmt);
@@ -499,7 +479,7 @@ void init_video(void)
    if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       float default_aspect = aspectratio_lut[ASPECT_RATIO_CORE].value;
-      aspectratio_lut[ASPECT_RATIO_CUSTOM].value = 
+      aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
          (custom_vp->width && custom_vp->height) ?
          (float)custom_vp->width / custom_vp->height : default_aspect;
    }
@@ -517,7 +497,7 @@ void init_video(void)
       if (settings->video.force_aspect)
       {
          /* Do rounding here to simplify integer scale correctness. */
-         unsigned base_width = 
+         unsigned base_width =
             roundf(geom->base_height * video_driver_get_aspect_ratio());
          width  = roundf(base_width * settings->video.scale);
       }
@@ -552,8 +532,8 @@ void init_video(void)
 #endif
    video.smooth       = settings->video.smooth;
    video.input_scale  = scale;
-   video.rgb32        = video_state.filter.filter ? 
-      video_state.filter.out_rgb32 : 
+   video.rgb32        = video_state.filter.filter ?
+      video_state.filter.out_rgb32 :
       (video_state.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 
    tmp = (const input_driver_t*)driver->input;
@@ -619,7 +599,7 @@ void init_video(void)
 bool video_driver_suppress_screensaver(bool enable)
 {
    driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
    return video->suppress_screensaver(driver->video_data, enable);
 }
@@ -627,7 +607,7 @@ bool video_driver_suppress_screensaver(bool enable)
 bool video_driver_has_windowed(void)
 {
    driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
    return video->has_windowed(driver->video_data);
 }
@@ -635,7 +615,7 @@ bool video_driver_has_windowed(void)
 void video_driver_set_nonblock_state(bool toggle)
 {
    driver_t              *driver = driver_get_ptr();
-   const video_driver_t  *video  = video_driver_ctx_get_ptr();
+   const video_driver_t   *video = video_driver_ctx_get_ptr(driver);
 
    if (video->set_nonblock_state)
       video->set_nonblock_state(driver->video_data, toggle);
@@ -645,7 +625,7 @@ bool video_driver_set_viewport(unsigned width, unsigned height,
       bool force_fullscreen, bool allow_rotate)
 {
    driver_t                   *driver = driver_get_ptr();
-   const video_driver_t        *video = video_driver_ctx_get_ptr();
+   const video_driver_t        *video = video_driver_ctx_get_ptr(driver);
 
    if (video->set_viewport)
    {
@@ -659,7 +639,7 @@ bool video_driver_set_viewport(unsigned width, unsigned height,
 bool video_driver_set_rotation(unsigned rotation)
 {
    driver_t                   *driver = driver_get_ptr();
-   const video_driver_t        *video = video_driver_ctx_get_ptr();
+   const video_driver_t        *video = video_driver_ctx_get_ptr(driver);
 
    if (video->set_rotation)
    {
@@ -674,7 +654,7 @@ void video_driver_set_video_mode(unsigned width,
       unsigned height, bool fullscreen)
 {
    driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr();
+   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
 
    if (poke && poke->set_video_mode)
       poke->set_video_mode(driver->video_data,
@@ -684,7 +664,7 @@ void video_driver_set_video_mode(unsigned width,
 bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
 {
    driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr();
+   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
 
    if (poke && poke->get_video_output_size)
    {
@@ -697,7 +677,7 @@ bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
 void video_driver_set_aspect_ratio(unsigned aspectratio_index)
 {
    driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr();
+   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
 
    if (poke && poke->set_aspect_ratio)
       poke->set_aspect_ratio(driver->video_data, aspectratio_index);
@@ -706,7 +686,7 @@ void video_driver_set_aspect_ratio(unsigned aspectratio_index)
 void video_driver_show_mouse(bool state)
 {
    driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr();
+   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
 
    if (poke && poke->show_mouse)
       poke->show_mouse(driver->video_data, state);
@@ -716,7 +696,7 @@ void video_driver_set_osd_msg(const char *msg,
       const struct font_params *params, void *font)
 {
    driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr();
+   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
 
    if (poke && poke->set_osd_msg)
       poke->set_osd_msg(driver->video_data, msg, params, font);
@@ -726,7 +706,7 @@ void video_driver_set_texture_enable(bool enable, bool fullscreen)
 {
 #ifdef HAVE_MENU
    driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr();
+   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
 
    if (poke && poke->set_texture_enable)
       poke->set_texture_enable(driver->video_data,
@@ -739,7 +719,7 @@ void video_driver_set_texture_frame(const void *frame, bool rgb32,
 {
 #ifdef HAVE_MENU
    driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr();
+   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
 
    if (poke &&  poke->set_texture_frame)
       poke->set_texture_frame(driver->video_data,
@@ -750,7 +730,7 @@ void video_driver_set_texture_frame(const void *frame, bool rgb32,
 bool video_driver_viewport_info(struct video_viewport *vp)
 {
    driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
    if (video->viewport_info)
    {
@@ -763,7 +743,7 @@ bool video_driver_viewport_info(struct video_viewport *vp)
 bool video_driver_read_viewport(uint8_t *buffer)
 {
    driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
    if (video->read_viewport)
       return video->read_viewport(driver->video_data,
@@ -774,7 +754,7 @@ bool video_driver_read_viewport(uint8_t *buffer)
 bool video_driver_focus(void)
 {
    driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
    return video->focus(driver->video_data);
 }
@@ -783,7 +763,7 @@ bool video_driver_focus(void)
 bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
 {
    driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
    if (video->overlay_interface)
    {
@@ -798,7 +778,7 @@ void * video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch)
 {
    driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
    if (video->read_frame_raw)
       return video->read_frame_raw(driver->video_data, width,
@@ -809,7 +789,7 @@ void * video_driver_read_frame_raw(unsigned *width,
 void video_driver_set_filtering(unsigned index, bool smooth)
 {
    driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr();
+   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
 
    if (poke && poke->set_filtering)
       poke->set_filtering(driver->video_data, index, smooth);
@@ -818,7 +798,7 @@ void video_driver_set_filtering(unsigned index, bool smooth)
 void video_driver_apply_state_changes(void)
 {
    driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr();
+   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
 
    if (poke && poke->apply_state_changes)
       poke->apply_state_changes(driver->video_data);
@@ -827,7 +807,7 @@ void video_driver_apply_state_changes(void)
 void video_driver_get_video_output_next(void)
 {
    driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr();
+   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
 
    if (poke && poke->get_video_output_next)
       poke->get_video_output_next(driver->video_data);
@@ -836,7 +816,7 @@ void video_driver_get_video_output_next(void)
 void video_driver_get_video_output_prev(void)
 {
    driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr();
+   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
 
    if (poke && poke->get_video_output_prev)
       poke->get_video_output_prev(driver->video_data);
@@ -850,10 +830,9 @@ void video_driver_get_video_output_prev(void)
 void video_driver_cached_frame(void)
 {
    driver_t *driver   = driver_get_ptr();
-   runloop_t *runloop = rarch_main_get_ptr();
    void *recording    = driver ? driver->recording_data : NULL;
 
-   if (runloop->is_idle)
+   if (rarch_main_is_idle())
       return;
 
    /* Cannot allow recording when pushing duped frames. */
@@ -933,7 +912,7 @@ void video_monitor_adjust_system_rates(void)
 {
    float timing_skew;
    const struct retro_system_timing *info = NULL;
-   struct retro_system_av_info *av_info = 
+   struct retro_system_av_info *av_info =
       video_viewport_get_system_av_info();
    settings_t *settings = config_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
@@ -1038,7 +1017,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    retro_time_t accum   = 0, avg, accum_var = 0;
    unsigned samples     = 0;
    settings_t *settings = config_get_ptr();
-   
+
    samples = min(MEASURE_FRAME_TIME_SAMPLES_COUNT,
          video_state.frame_time_samples_count);
 
@@ -1104,14 +1083,13 @@ bool video_monitor_get_fps(char *buf, size_t size,
    retro_time_t        new_time;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
-   uint64_t        frame_count = video_driver_get_frame_count();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    *buf = '\0';
 
    new_time = rarch_get_time_usec();
 
-   if (frame_count)
+   if (video_frame_count)
    {
       bool ret = false;
       unsigned write_index = video_state.frame_time_samples_count++ &
@@ -1120,19 +1098,19 @@ bool video_monitor_get_fps(char *buf, size_t size,
       video_state.frame_time_samples[write_index] = new_time - fps_time;
       fps_time = new_time;
 
-      if ((frame_count % FPS_UPDATE_INTERVAL) == 0)
+      if ((video_frame_count % FPS_UPDATE_INTERVAL) == 0)
       {
          last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
          curr_time = new_time;
 
          snprintf(buf, size, "%s || FPS: %6.1f || Frames: " U64_SIGN,
-               system->title_buf, last_fps, (unsigned long long)frame_count);
+               system->title_buf, last_fps, (unsigned long long)video_frame_count);
          ret = true;
       }
 
       if (buf_fps)
          snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: " U64_SIGN,
-               last_fps, (unsigned long long)frame_count);
+               last_fps, (unsigned long long)video_frame_count);
 
       return ret;
    }

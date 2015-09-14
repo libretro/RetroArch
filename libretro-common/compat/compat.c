@@ -21,21 +21,24 @@
  */
 
 #include <ctype.h>
+
+#ifndef HAVE_GETOPT_LONG
+#include <string.h>
+#include <boolean.h>
+#include <stddef.h>
+#include <stdlib.h>
+
+#include <retro_miscellaneous.h>
+#endif
+
 #include <compat/getopt.h>
 #include <compat/strl.h>
 #include <compat/strcasestr.h>
 #include <compat/posix_string.h>
 
+#include <retro_assert.h>
+
 #ifndef HAVE_GETOPT_LONG
-
-#include <string.h>
-#include <boolean.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <ctype.h>
-
-#include <retro_miscellaneous.h>
-
 char *optarg;
 int optind, opterr, optopt;
 

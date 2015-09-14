@@ -34,7 +34,6 @@
 
 typedef struct
 {
-   uint64_t frame_count;
    bool should_resize;
    float mScreenAspect;
    bool mKeepAspect;
@@ -311,7 +310,8 @@ static void vg_copy_frame(void *data, const void *frame,
 }
 
 static bool vg_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, unsigned pitch, const char *msg)
+      unsigned frame_width, unsigned frame_height,
+      uint64_t frame_count, unsigned pitch, const char *msg)
 {
    unsigned width, height;
    vg_t                    *vg = (vg_t*)data;
@@ -358,8 +358,6 @@ static bool vg_frame(void *data, const void *frame,
    RARCH_PERFORMANCE_STOP(vg_fr);
 
    gfx_ctx_swap_buffers(vg);
-
-   vg->frame_count++;
 
    return true;
 }

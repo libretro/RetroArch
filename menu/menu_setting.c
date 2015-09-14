@@ -14,12 +14,22 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if defined(__CELLOS_LV2__)
+#include <sdk_version.h>
+
+#if (CELL_SDK_VERSION > 0x340000)
+#include <sysutil/sysutil_bgmplayback.h>
+#endif
+
+#endif
+
 #include <file/file_path.h>
 #include <file/config_file.h>
 
+#include "menu_setting.h"
+
 #include "menu.h"
 #include "menu_input.h"
-#include "menu_setting.h"
 #include "menu_hash.h"
 
 #include "../driver.h"
@@ -31,15 +41,6 @@
 #include "../config.def.h"
 #include "../file_ext.h"
 #include "../performance.h"
-
-#if defined(__CELLOS_LV2__)
-#include <sdk_version.h>
-
-#if (CELL_SDK_VERSION > 0x340000)
-#include <sysutil/sysutil_bgmplayback.h>
-#endif
-
-#endif
 
 static void menu_settings_info_list_free(rarch_setting_info_t *list_info)
 {
@@ -69,35 +70,6 @@ static bool menu_settings_list_append(rarch_setting_t **list,
    return true;
 }
 
-static void null_write_handler(void *data)
-{
-   (void)data;
-}
-
-static void menu_settings_list_current_add_bind_type(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned type)
-{
-   unsigned idx = list_info->index - 1;
-   (*list)[idx].bind_type = type;
-}
-
-static void menu_settings_list_current_add_flags(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned values)
-{
-   unsigned idx = list_info->index - 1;
-   (*list)[idx].flags |= values;
-
-   if (values & SD_FLAG_IS_DEFERRED)
-   {
-      (*list)[idx].deferred_handler = (*list)[idx].change_handler;
-      (*list)[idx].change_handler = null_write_handler;
-   }
-}
-
 static void menu_settings_list_current_add_range(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -112,7 +84,7 @@ static void menu_settings_list_current_add_range(
    (*list)[idx].enforce_minrange  = enforce_minrange_enable;
    (*list)[idx].enforce_maxrange  = enforce_maxrange_enable;
 
-   menu_settings_list_current_add_flags(list, list_info, SD_FLAG_HAS_RANGE);
+   (*list)[list_info->index - 1].flags |= SD_FLAG_HAS_RANGE;
 }
 
 static void menu_settings_list_current_add_values(
@@ -131,41 +103,6 @@ static void menu_settings_list_current_add_cmd(
 {
    unsigned idx = list_info->index - 1;
    (*list)[idx].cmd_trigger.idx = values;
-}
-
-
-static rarch_setting_t *menu_setting_list_new(unsigned size)
-{
-   rarch_setting_t *list = (rarch_setting_t*)calloc(size, sizeof(*list));
-   if (!list)
-      return NULL;
-
-   return list;
-}
-
-int menu_setting_set_flags(rarch_setting_t *setting)
-{
-   if (!setting)
-      return 0;
-
-   if (setting->flags & SD_FLAG_IS_DRIVER)
-      return MENU_SETTING_DRIVER;
-
-   switch (setting->type)
-   {
-      case ST_ACTION:
-         return MENU_SETTING_ACTION;
-      case ST_PATH:
-         return MENU_FILE_PATH;
-      case ST_GROUP:
-         return MENU_SETTING_GROUP;
-      case ST_SUB_GROUP:
-         return MENU_SETTING_SUBGROUP;
-      default:
-         break;
-   }
-
-   return 0;
 }
 
 static int setting_generic_action_ok_default(void *data, bool wraparound)
@@ -289,15 +226,6 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    return -1;
 }
 
-static rarch_setting_t *menu_setting_get_ptr(void)
-{
-   menu_entries_t *entries = menu_entries_get_ptr();
-
-   if (!entries)
-      return NULL;
-   return entries->list_settings;
-}
-
 /**
  * menu_setting_find:
  * @settings           : pointer to settings
@@ -312,9 +240,7 @@ rarch_setting_t *menu_setting_find(const char *label)
    rarch_setting_t *settings = menu_setting_get_ptr();
    uint32_t needle = 0;
 
-   if (!settings)
-      return NULL;
-   if (!label)
+   if (!settings || !label)
       return NULL;
 
    needle = menu_hash_calculate(label);
@@ -344,83 +270,21 @@ int menu_setting_set(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
    int ret                  = 0;
-   rarch_setting_t *setting = NULL;
    menu_navigation_t   *nav = menu_navigation_get_ptr();
    menu_list_t   *menu_list = menu_list_get_ptr();
+   menu_file_list_cbs_t *cbs = menu_list_get_actiondata_at_offset(
+         menu_list->selection_buf, nav->selection_ptr);
 
-   setting = menu_setting_find(
-         menu_list->selection_buf->list
-         [nav->selection_ptr].label);
-
-   if (!setting)
+   if (!cbs)
       return 0;
 
-   ret = menu_action_handle_setting(setting,
+   ret = menu_action_handle_setting(cbs->setting,
          type, action, wraparound);
 
    if (ret == -1)
       return 0;
    return ret;
 }
-
-void menu_setting_apply_deferred(void)
-{
-   rarch_setting_t *setting = menu_setting_get_ptr();
-    
-   if (!setting)
-      return;
-    
-   for (; setting->type != ST_NONE; setting++)
-   {
-      if (setting->type >= ST_GROUP)
-         continue;
-
-      if (!(setting->flags & SD_FLAG_IS_DEFERRED))
-         continue;
-
-      switch (setting->type)
-      {
-         case ST_BOOL:
-            if (*setting->value.boolean != setting->original_value.boolean)
-            {
-               setting->original_value.boolean = *setting->value.boolean;
-               setting->deferred_handler(setting);
-            }
-            break;
-         case ST_INT:
-            if (*setting->value.integer != setting->original_value.integer)
-            {
-               setting->original_value.integer = *setting->value.integer;
-               setting->deferred_handler(setting);
-            }
-            break;
-         case ST_UINT:
-            if (*setting->value.unsigned_integer != setting->original_value.unsigned_integer)
-            {
-               setting->original_value.unsigned_integer = *setting->value.unsigned_integer;
-               setting->deferred_handler(setting);
-            }
-            break;
-         case ST_FLOAT:
-            if (*setting->value.fraction != setting->original_value.fraction)
-            {
-               setting->original_value.fraction = *setting->value.fraction;
-               setting->deferred_handler(setting);
-            }
-            break;
-         case ST_PATH:
-         case ST_DIR:
-         case ST_STRING:
-         case ST_BIND:
-            /* Always run the deferred write handler */
-            setting->deferred_handler(setting);
-            break;
-         default:
-            break;
-      }
-   }
-}
-
 
 /**
  * setting_reset_setting:
@@ -495,7 +359,6 @@ static void setting_reset_setting(rarch_setting_t* setting)
 int setting_set_with_string_representation(rarch_setting_t* setting,
       const char* value)
 {
-   uint32_t value_hash;
    if (!setting || !value)
       return -1;
 
@@ -559,19 +422,11 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          strlcpy(setting->value.string, value, setting->size);
          break;
       case ST_BOOL:
-         value_hash = menu_hash_calculate(value);
-
-         switch (value_hash)
-         {
-            case MENU_VALUE_TRUE:
-               *setting->value.boolean = true;
-               break;
-            case MENU_VALUE_FALSE:
-               *setting->value.boolean = false;
-               break;
-         }
+         if (!strcmp(value, "true"))
+            *setting->value.boolean = true;
+         else if (!strcmp(value, "false"))
+            *setting->value.boolean = false;
          break;
-
          /* TODO */
       case ST_HEX:
          break;
@@ -958,7 +813,8 @@ static int setting_bool_action_toggle_default(void *data, bool wraparound)
    if (!setting)
       return -1;
 
-   *setting->value.boolean = !(*setting->value.boolean);
+   setting_set_with_string_representation(setting,
+         *setting->value.boolean ? "false" : "true");
 
    return 0;
 }
@@ -979,6 +835,7 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
       if (*setting->value.unsigned_integer < setting->min)
          *setting->value.unsigned_integer = setting->min;
    }
+
 
    return 0;
 }
@@ -1094,21 +951,6 @@ static int setting_string_action_right_driver(void *data,
    return 0;
 }
 
-#if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
-static int core_list_action_toggle(void *data, bool wraparound)
-{
-   rarch_setting_t *setting  = (rarch_setting_t *)data;
-   settings_t      *settings = config_get_ptr();
-
-   /* If the user CANCELs the browse, then settings->libretro is now
-    * set to a directory, which is very bad and will cause a crash
-    * later on. I need to be able to add something to call when a
-    * cancel happens.
-    */
-   return setting_set_with_string_representation(setting, settings->libretro_directory);
-}
-#endif
-
 /**
  ******* ACTION OK CALLBACK FUNCTIONS *******
 **/
@@ -1116,7 +958,6 @@ static int core_list_action_toggle(void *data, bool wraparound)
 static int setting_action_ok_bind_all(void *data, bool wraparound)
 {
    global_t      *global     = global_get_ptr();
-
    (void)wraparound;
 
    if (!global)
@@ -1144,6 +985,7 @@ static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparoun
       rarch_main_msg_queue_push("Autoconf file saved successfully", 1, 100, true);
    else
       rarch_main_msg_queue_push("Error saving autoconf file", 1, 100, true);
+
    return 0;
 }
 
@@ -1210,6 +1052,7 @@ static int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound
 
    if (setting_generic_action_ok_default(setting, wraparound) != 0)
       return -1;
+
 
    return 0;
 }
@@ -1340,8 +1183,7 @@ static void setting_get_string_representation_st_float_video_refresh_rate_auto(v
       snprintf(s, len, "%.3f Hz (%.1f%% dev, %u samples)",
             video_refresh_rate, 100.0 * deviation, sample_points);
 
-      if (anim)
-         anim->label.is_updated = true;
+      menu_animation_set_active(anim);
    }
    else
       strlcpy(s, menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), len);
@@ -1501,6 +1343,7 @@ static void setting_get_string_representation_uint_analog_dpad_mode(void *data,
             len);
 }
 
+#ifdef HAVE_THREADS
 static void setting_get_string_representation_uint_autosave_interval(void *data,
       char *s, size_t len)
 {
@@ -1514,6 +1357,7 @@ static void setting_get_string_representation_uint_autosave_interval(void *data,
    else
       strlcpy(s, menu_hash_to_str(MENU_VALUE_OFF), len);
 }
+#endif
 
 static void setting_get_string_representation_uint_user_language(void *data,
       char *s, size_t len)
@@ -1604,11 +1448,9 @@ static rarch_setting_t setting_action_setting(const char* name,
    result.group                     = group;
    result.subgroup                  = subgroup;
    result.change_handler            = NULL;
-   result.deferred_handler          = NULL;
    result.read_handler              = NULL;
    result.get_string_representation = &setting_get_string_representation_default;
    result.action_start              = NULL;
-   result.action_iterate            = NULL;
    result.action_left               = NULL;
    result.action_right              = NULL;
    result.action_ok                 = setting_action_action_ok;
@@ -1971,7 +1813,7 @@ static rarch_setting_t setting_bind_setting(const char* name,
  *
  * Returns: String setting of type @type.
  **/
-rarch_setting_t setting_string_setting(enum setting_type type,
+static rarch_setting_t setting_string_setting(enum setting_type type,
       const char* name, const char* short_description, char* target,
       unsigned size, const char* default_value, const char *empty,
       const char *group, const char *subgroup, const char *parent_group,
@@ -2048,26 +1890,6 @@ static rarch_setting_t setting_string_setting_options(enum setting_type type,
   result.parent_group    = parent_group;
   result.values          = values;
   return result;
-}
-
-/**
- * setting_get_description:
- * @label              : identifier label of setting
- * @s                  : output message 
- * @len                : size of @s
- *
- * Writes a 'Help' description message to @s if there is
- * one available based on the identifier label of the setting
- * (@label).
- *
- * Returns: 0 (always for now). TODO: make it handle -1 as well.
- **/
-int setting_get_description(const char *label, char *s,
-      size_t len)
-{
-   uint32_t label_hash       = menu_hash_calculate(label);
-
-   return menu_hash_get_help(label_hash, s, len);
 }
 
 static void get_string_representation_bind_device(void * data, char *s,
@@ -2269,7 +2091,7 @@ static void general_write_handler(void *data)
          break;
       case MENU_LABEL_LOG_VERBOSITY:
          global->verbosity         = *setting->value.boolean;
-         global->has_set_verbosity = *setting->value.boolean;
+         global->has_set.verbosity = *setting->value.boolean;
          break;
       case MENU_LABEL_VIDEO_SMOOTH:
          video_driver_set_filtering(1, settings->video.smooth);
@@ -2307,25 +2129,25 @@ static void general_write_handler(void *data)
          break;
       case MENU_LABEL_NETPLAY_IP_ADDRESS:
 #ifdef HAVE_NETPLAY
-         global->has_set_netplay_ip_address = (setting->value.string[0] != '\0');
+         global->has_set.netplay_ip_address = (setting->value.string[0] != '\0');
 #endif
          break;
       case MENU_LABEL_NETPLAY_MODE:
 #ifdef HAVE_NETPLAY
-         if (!global->netplay_is_client)
-            *global->netplay_server = '\0';
-         global->has_set_netplay_mode = true;
+         if (!global->netplay.is_client)
+            *global->netplay.server = '\0';
+         global->has_set.netplay_mode = true;
 #endif
          break;
       case MENU_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
 #ifdef HAVE_NETPLAY
-         if (global->netplay_is_spectate)
-            *global->netplay_server = '\0';
+         if (global->netplay.is_spectate)
+            *global->netplay.server = '\0';
 #endif
          break;
       case MENU_LABEL_NETPLAY_DELAY_FRAMES:
 #ifdef HAVE_NETPLAY
-         global->has_set_netplay_delay_frames = (global->netplay_sync_frames > 0);
+         global->has_set.netplay_delay_frames = (global->netplay.sync_frames > 0);
 #endif
          break;
    }
@@ -2458,13 +2280,11 @@ static void settings_data_list_current_add_flags(
       rarch_setting_info_t *list_info,
       unsigned values)
 {
-   menu_settings_list_current_add_flags(
-         list,
-         list_info,
-         values);
+   (*list)[list_info->index - 1].flags |= values;
    setting_add_special_callbacks(list, list_info, values);
 }
 
+#ifdef HAVE_OVERLAY
 static void overlay_enable_toggle_change_handler(void *data)
 {
    settings_t *settings  = config_get_ptr();
@@ -2484,6 +2304,7 @@ static void overlay_enable_toggle_change_handler(void *data)
    else
       event_command(EVENT_CMD_OVERLAY_DEINIT);
 }
+#endif
 
 static bool setting_append_list_main_menu_options(
       rarch_setting_t **list,
@@ -2502,6 +2323,16 @@ static bool setting_append_list_main_menu_options(
    START_GROUP(group_info,main_menu, parent_group);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
+   if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
+   {
+      CONFIG_ACTION(
+            menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS),
+            menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS),
+            group_info.name,
+            subgroup_info.name,
+            parent_group);
+   }
+
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
    CONFIG_ACTION(
          menu_hash_to_str(MENU_LABEL_CORE_LIST),
@@ -2512,12 +2343,6 @@ static bool setting_append_list_main_menu_options(
    (*list)[list_info->index - 1].size = sizeof(settings->libretro);
    (*list)[list_info->index - 1].value.string = settings->libretro;
    (*list)[list_info->index - 1].values = EXT_EXECUTABLES;
-   /* It is not a good idea to have chosen action_toggle as the place
-    * to put this callback. It should be called whenever the browser
-    * needs to get the directory to browse into. It's not quite like
-    * get_string_representation, but it is close. */
-   (*list)[list_info->index - 1].action_left  = core_list_action_toggle;
-   (*list)[list_info->index - 1].action_right = core_list_action_toggle;
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CORE);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 #endif
@@ -2557,15 +2382,6 @@ static bool setting_append_list_main_menu_options(
          parent_group);
 #endif
 
-   if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY))
-   {
-      CONFIG_ACTION(
-            menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS),
-            menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS),
-            group_info.name,
-            subgroup_info.name,
-            parent_group);
-   }
 
    if (mask & SL_FLAG_MAIN_MENU_SETTINGS)
    {
@@ -3118,19 +2934,6 @@ static bool setting_append_list_frame_throttling_options(
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
-   CONFIG_BOOL(
-         settings->fastforward_ratio_throttle_enable,
-         menu_hash_to_str(MENU_LABEL_FRAME_THROTTLE_ENABLE),
-         menu_hash_to_str(MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE),
-         fastforward_ratio_throttle_enable,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-
    CONFIG_FLOAT(
          settings->fastforward_ratio,
          menu_hash_to_str(MENU_LABEL_FASTFORWARD_RATIO),
@@ -3142,7 +2945,8 @@ static bool setting_append_list_frame_throttling_options(
          parent_group,
          general_write_handler,
          general_read_handler);
-   menu_settings_list_current_add_range(list, list_info, 1, 10, 0.1, true, true);
+   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_SET_FRAME_LIMIT);
+   menu_settings_list_current_add_range(list, list_info, 0, 10, 1.0, true, true);
 
    CONFIG_FLOAT(
          settings->slowmotion_ratio,
@@ -4070,7 +3874,6 @@ static bool setting_append_list_audio_options(
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 32, 512, 16.0, true, true);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DEFERRED);
 
    CONFIG_FLOAT(
          settings->audio.rate_control_delta,
@@ -4212,7 +4015,7 @@ static bool setting_append_list_input_hotkey_options(
       CONFIG_BIND(settings->input.binds[0][i], 0, 0,
             strdup(keybind->base), strdup(keybind->desc), &retro_keybinds_1[i],
             group_info.name, subgroup_info.name, parent_group);
-      menu_settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
+      (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
    }
 
    END_SUB_GROUP(list, list_info, parent_group);
@@ -4633,7 +4436,7 @@ static bool setting_append_list_overlay_options(
          settings->input.overlay,
          menu_hash_to_str(MENU_LABEL_OVERLAY_PRESET),
          menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_PRESET),
-         global->overlay_dir,
+         global->dir.overlay,
          group_info.name,
          subgroup_info.name,
          parent_group,
@@ -4681,7 +4484,7 @@ static bool setting_append_list_overlay_options(
          settings->osk.overlay,
          menu_hash_to_str(MENU_LABEL_KEYBOARD_OVERLAY_PRESET),
          menu_hash_to_str(MENU_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET),
-         global->osk_overlay_dir,
+         global->dir.osk_overlay,
          group_info.name,
          subgroup_info.name,
          parent_group,
@@ -5243,7 +5046,7 @@ static bool setting_append_list_netplay_options(
    START_SUB_GROUP(list, list_info, "Netplay", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
-         global->netplay_enable,
+         global->netplay.enable,
          menu_hash_to_str(MENU_LABEL_NETPLAY_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_ENABLE),
          false,
@@ -5269,7 +5072,7 @@ static bool setting_append_list_netplay_options(
          general_read_handler);
 
    CONFIG_STRING(
-         global->netplay_server,
+         global->netplay.server,
          menu_hash_to_str(MENU_LABEL_NETPLAY_IP_ADDRESS),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_IP_ADDRESS),
          "",
@@ -5281,7 +5084,7 @@ static bool setting_append_list_netplay_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_BOOL(
-         global->netplay_is_client,
+         global->netplay.is_client,
          menu_hash_to_str(MENU_LABEL_NETPLAY_MODE),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_MODE),
          false,
@@ -5294,7 +5097,7 @@ static bool setting_append_list_netplay_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         global->netplay_is_spectate,
+         global->netplay.is_spectate,
          menu_hash_to_str(MENU_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE),
          false,
@@ -5307,7 +5110,7 @@ static bool setting_append_list_netplay_options(
          general_read_handler);
    
    CONFIG_UINT(
-         global->netplay_sync_frames,
+         global->netplay.sync_frames,
          menu_hash_to_str(MENU_LABEL_NETPLAY_DELAY_FRAMES),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_DELAY_FRAMES),
          0,
@@ -5320,7 +5123,7 @@ static bool setting_append_list_netplay_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
-         global->netplay_port,
+         global->netplay.port,
          menu_hash_to_str(MENU_LABEL_NETPLAY_TCP_UDP_PORT),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_TCP_UDP_PORT),
          RARCH_DEFAULT_PORT,
@@ -5691,7 +5494,7 @@ static bool setting_append_list_directory_options(
          settings->libretro_directory,
          menu_hash_to_str(MENU_LABEL_LIBRETRO_DIR_PATH),
          menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH),
-         g_defaults.core_dir,
+         g_defaults.dir.core,
          menu_hash_to_str(MENU_VALUE_DIRECTORY_NONE),
          group_info.name,
          subgroup_info.name,
@@ -5708,7 +5511,7 @@ static bool setting_append_list_directory_options(
          settings->libretro_info_path,
          menu_hash_to_str(MENU_LABEL_LIBRETRO_INFO_PATH),
          menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_INFO_PATH),
-         g_defaults.core_info_dir,
+         g_defaults.dir.core_info,
          menu_hash_to_str(MENU_VALUE_DIRECTORY_NONE),
          group_info.name,
          subgroup_info.name,
@@ -5807,7 +5610,7 @@ static bool setting_append_list_directory_options(
          settings->video.shader_dir,
          menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_DIR),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SHADER_DIR),
-         g_defaults.shader_dir,
+         g_defaults.dir.shader,
          menu_hash_to_str(MENU_VALUE_DIRECTORY_DEFAULT),
          group_info.name,
          subgroup_info.name,
@@ -5855,10 +5658,10 @@ static bool setting_append_list_directory_options(
    }
 #ifdef HAVE_OVERLAY
    CONFIG_DIR(
-         global->overlay_dir,
+         global->dir.overlay,
          menu_hash_to_str(MENU_LABEL_OVERLAY_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_DIRECTORY),
-         g_defaults.overlay_dir,
+         g_defaults.dir.overlay,
          menu_hash_to_str(MENU_VALUE_DIRECTORY_DEFAULT),
          group_info.name,
          subgroup_info.name,
@@ -5871,10 +5674,10 @@ static bool setting_append_list_directory_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         global->osk_overlay_dir,
+         global->dir.osk_overlay,
          menu_hash_to_str(MENU_LABEL_OSK_OVERLAY_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_OSK_OVERLAY_DIRECTORY),
-         g_defaults.osk_overlay_dir,
+         g_defaults.dir.osk_overlay,
          menu_hash_to_str(MENU_VALUE_DIRECTORY_DEFAULT),
          group_info.name,
          subgroup_info.name,
@@ -5952,7 +5755,7 @@ static bool setting_append_list_directory_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         global->savefile_dir,
+         global->dir.savefile,
          menu_hash_to_str(MENU_LABEL_SAVEFILE_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_SAVEFILE_DIRECTORY),
          "",
@@ -5968,7 +5771,7 @@ static bool setting_append_list_directory_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         global->savestate_dir,
+         global->dir.savestate,
          menu_hash_to_str(MENU_LABEL_SAVESTATE_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_SAVESTATE_DIRECTORY),
          "",
@@ -6115,7 +5918,7 @@ static bool setting_append_list_input_player_options(
       if (
             settings->input.input_descriptor_label_show
             && (i < RARCH_FIRST_META_KEY)
-            && (global->has_set_input_descriptors)
+            && (global->has_set.input_descriptors)
             && (i != RARCH_TURBO_ENABLE)
          )
       {
@@ -6149,7 +5952,7 @@ static bool setting_append_list_input_player_options(
                group_info.name,
                subgroup_info.name,
                parent_group);
-         menu_settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
+         (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
       }
    }
 
@@ -6206,7 +6009,7 @@ rarch_setting_t *menu_setting_new(unsigned mask)
       return NULL;
 
    list_info->size  = 32;
-   list = menu_setting_list_new(list_info->size);
+   list = (rarch_setting_t*)calloc(list_info->size, sizeof(*list));
    if (!list)
       goto error;
 
@@ -6419,40 +6222,6 @@ bool menu_setting_is_of_path_type(rarch_setting_t *setting)
          (setting->flags & SD_FLAG_BROWSER_ACTION) &&
          (setting->action_right || setting->action_left || setting->action_select) &&
          setting->change_handler)
-      return true;
-   return false;
-}
-
-bool menu_setting_is_of_general_type(rarch_setting_t *setting)
-{
-   if    (
-         setting &&
-         (setting->type > ST_ACTION) &&
-         (setting->type < ST_GROUP)
-         )
-      return true;
-   return false;
-}
-
-bool menu_setting_is_of_numeric_type(rarch_setting_t *setting)
-{
-   if    (
-         setting &&
-         ((setting->type == ST_INT)  ||
-          (setting->type == ST_UINT) ||
-          (setting->type == ST_FLOAT))
-         )
-      return true;
-   return false;
-}
-
-bool menu_setting_is_of_enum_type(rarch_setting_t *setting)
-{
-   if    (
-         setting &&
-         (setting->type == ST_STRING)  &&
-         setting->values
-         )
       return true;
    return false;
 }

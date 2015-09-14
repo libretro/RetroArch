@@ -130,8 +130,10 @@ OBJ += frontend/frontend.o \
 		content.o \
 		libretro-common/file/file_list.o \
 		libretro-common/file/dir_list.o \
+		libretro-common/file/retro_dirent.o \
 		libretro-common/string/string_list.o \
 		libretro-common/string/stdstring.o \
+		libretro-common/memmap/memalign.o \
 		dir_list_special.o \
 		file_ops.o \
 		libretro-common/file/nbio/nbio_stdio.o \
@@ -209,10 +211,12 @@ OBJ += frontend/frontend.o \
 OBJ += gfx/image/image.o
 
 ifneq ($(C89_BUILD), 1)
-# stb_image is not a C89-compliant API.
+ifneq ($(C90_BUILD), 1)
+# stb_image is not a C89/C90-compliant API.
 ifeq ($(HAVE_IMAGEVIEWER), 1)
 DEFINES += -DHAVE_IMAGEVIEWER
 OBJ += cores/image_core.o
+endif
 endif
 endif
 
@@ -221,7 +225,7 @@ endif
 ifeq ($(HAVE_QT), 1)
 OBJ += ui/drivers/ui_qt.o
 # TODO/FIXME - figure out which libraries we need to link against
-LIBS += -lQt5Quick -lQt5Widgets -lQt5Gui -lQt5Qml -lQt5Network -lQt5Core -lglu32 -lopengl32 -L./ui/drivers/qt/release -lwrapper
+LIBS += -lQt5Quick -lQt5Widgets -lQt5Gui -lQt5Qml -lQt5Network -lQt5Core -lglu32 -lopengl32 -L./ui/drivers/qt/wrapper/build/release -lwrapper
 endif
 
 # LibretroDB
@@ -243,16 +247,14 @@ ifeq ($(HAVE_STDIN_CMD), 1)
 endif
 
 ifneq ($(C89_BUILD), 1)
-# Python 3.x bindings are not C89-compliant.
+ifneq ($(C90_BUILD), 1)
+# Python 3.x bindings are not C89/C90-compliant.
 ifeq ($(HAVE_PYTHON), 1)
    DEFINES += $(PYTHON_CFLAGS) -Wno-unused-parameter
    LIBS += $(PYTHON_LIBS)
    OBJ += gfx/video_state_python.o
 endif
 endif
-
-ifeq ($(OSX), 1)
-   DEFINES += -Wno-invalid-source-encoding
 endif
 
 ifeq ($(HAVE_EMSCRIPTEN), 1)
@@ -314,11 +316,13 @@ ifeq ($(HAVE_JACK),1)
 endif
 
 ifneq ($(C89_BUILD), 1)
-# PulseAudio is not a C89-compliant API.
+ifneq ($(C90_BUILD), 1)
+# PulseAudio is not a C89/C90-compliant API.
 ifeq ($(HAVE_PULSE), 1)
    OBJ += audio/drivers/pulse.o
    LIBS += $(PULSE_LIBS)
    DEFINES += $(PULSE_CFLAGS)
+endif
 endif
 endif
 
@@ -392,6 +396,11 @@ endif
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
+   ifeq ($(PSEUDOLOC), 1)
+      PSEUDO_NS := pseudo
+   else
+      PSEUDO_NS :=
+   endif
    OBJ += menu/menu.o \
 			 menu/menu_hash.o \
 			 menu/intl/menu_hash_de.o \
@@ -402,7 +411,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/intl/menu_hash_nl.o \
 			 menu/intl/menu_hash_pl.o \
 			 menu/intl/menu_hash_pt.o \
-			 menu/intl/menu_hash_us.o \
+			 menu/intl/menu_hash_us$(PSEUDO_NS).o \
 			 menu/menu_input.o \
 			 menu/menu_entry.o \
 			 menu/menu_entries.o \
@@ -422,7 +431,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/cbs/menu_cbs_deferred_push.o \
 			 menu/cbs/menu_cbs_scan.o \
 			 menu/cbs/menu_cbs_get_value.o \
-			 menu/cbs/menu_cbs_iterate.o \
+			 menu/menu_iterate.o \
 			 menu/cbs/menu_cbs_title.o \
 			 menu/cbs/menu_cbs_up.o \
 			 menu/cbs/menu_cbs_down.o \
@@ -432,6 +441,10 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/menu_displaylist.o \
 			 menu/menu_animation.o \
 			 menu/drivers/null.o
+endif
+
+ifeq ($(UTF8), 1)
+   DEFINES += -DHAVE_UTF8
 endif
 
 ifeq ($(HAVE_STB_FONT), 1)
@@ -462,11 +475,13 @@ endif
 #Input
 
 ifneq ($(C89_BUILD), 1)
-# Wayland is not a C89-compliant API.
+ifneq ($(C90_BUILD), 1)
+# Wayland is not a C89/C90-compliant API.
 ifeq ($(HAVE_WAYLAND), 1)
  #OBJ += input/drivers/wayland.o
  DEFINES += $(WAYLAND_CFLAGS)
  LIBS += $(WAYLAND_LIBS)
+endif
 endif
 endif
 
@@ -507,13 +522,15 @@ ifeq ($(HAVE_UDEV), 1)
 endif
 
 ifneq ($(C89_BUILD), 1)
-# libusb is not a C89-compliant API.
+ifneq ($(C90_BUILD), 1)
+# libusb is not a C89/C90-compliant API.
 ifeq ($(HAVE_LIBUSB), 1)
 	DEFINES += -DHAVE_LIBUSB
 	OBJ += input/drivers_hid/libusb_hid.o
 	LIBS += -lusb-1.0
 	JOYCONFIG_LIBS += -lusb-1.0
 	HAVE_HID = 1
+endif
 endif
 endif
 
@@ -596,12 +613,14 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
    endif
 
 ifneq ($(C89_BUILD), 1)
-	# Wayland is not a C89-compliant API.
+ifneq ($(C90_BUILD), 1)
+	# Wayland is not a C89/C90-compliant API.
    ifeq ($(HAVE_WAYLAND), 1)
 	   ifeq ($(HAVE_EGL), 1)
 	     OBJ += gfx/drivers_context/wayland_ctx.o
       endif
    endif
+endif
 endif
 	
    ifeq ($(HAVE_GLES), 1)
@@ -737,7 +756,6 @@ ifeq ($(HAVE_7ZIP),1)
    7ZOBJ = 	deps/7zip/7zIn.o \
 		deps/7zip/7zAlloc.o \
 		deps/7zip/Bra86.o \
-		deps/7zip/CpuArch.o \
 		deps/7zip/7zFile.o \
 		deps/7zip/7zStream.o \
 		deps/7zip/7zBuf2.o \
@@ -748,15 +766,13 @@ ifeq ($(HAVE_7ZIP),1)
 		deps/7zip/Bcj2.o \
 		deps/7zip/7zCrc.o \
 		deps/7zip/Lzma2Dec.o \
-		deps/7zip/7zBuf.o \
-		decompress/7zip_support.o 
+		deps/7zip/7zBuf.o
    OBJ += $(7ZOBJ)
 endif
 
    OBJ += libretro-common/formats/tga/tga_decode.o
 
 ifeq ($(HAVE_ZLIB), 1)
-   ZLIB_OBJS =	decompress/zip_support.o 
 	OBJ += libretro-common/file/file_extract.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
@@ -859,13 +875,15 @@ endif
 # Record
 
 ifneq ($(C89_BUILD), 1)
-# ffmpeg and friends are not C89-compliant APIs. 
+ifneq ($(C90_BUILD), 1)
+# ffmpeg and friends are not C89/C90-compliant APIs. 
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/drivers/record_ffmpeg.o \
 			 cores/ffmpeg_core.o
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
    DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS)
 	DEFINES += -DHAVE_FFMPEG -Iffmpeg
+endif
 endif
 endif
 

@@ -1,3 +1,6 @@
+ifneq ($(EMSCRIPTEN),)
+	platform = emscripten
+endif
 
 ifeq ($(platform),)
 	platform = unix
@@ -38,7 +41,7 @@ ifeq ($(platform), unix)
    fpic := -fPIC
    SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
    GL_LIB := -lGL
-else ifeq ($(platform), osx)
+else ifneq (,$(findstring osx,$(platform)))
    TARGET := $(TARGET_NAME)_libretro.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
@@ -49,9 +52,7 @@ else ifeq ($(platform), osx)
 	endif
 	OSXVER = `sw_vers -productVersion | cut -d. -f 2`
 	OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
-	ifeq ($(OSX_LT_MAVERICKS),"YES")
-		fpic += -mmacosx-version-min=10.5
-	endif
+	fpic += -mmacosx-version-min=10.1
 else ifeq ($(platform), pi)
    TARGET := $(TARGET_NAME)_libretro.so
    fpic := -fPIC
@@ -67,7 +68,7 @@ else ifeq ($(platform), ios)
    DEFINES := -DIOS
    CFLAGS += -DGLES $(DEFINES)
    CC = clang -arch armv7 -isysroot $(IOSSDK)
-else ifeq ($(platform), qnx)
+else ifneq (,$(findstring qnx,$(platform)))
    TARGET := $(TARGET_NAME)_libretro_qnx.so
    fpic := -fPIC
    SHARED := -shared -Wl,--version-script=link.T
@@ -77,6 +78,7 @@ else ifeq ($(platform), qnx)
    AR = qcc -Vgcc_ntoarmv7le
    CFLAGS += -DGLES
    GL_LIB := -lGLESv2
+   GLES := 1
 else ifneq (,$(findstring armv,$(platform)))
    CC = gcc
    TARGET := $(TARGET_NAME)_libretro.so
@@ -103,6 +105,9 @@ else ifneq (,$(findstring hardfloat,$(platform)))
    CFLAGS += -mfloat-abi=hard
 endif
    CFLAGS += -DARM
+# emscripten
+else ifeq ($(platform), emscripten)
+	TARGET := $(TARGET_NAME)_libretro_emscripten.bc
 else
    CC = gcc
    TARGET := $(TARGET_NAME)_libretro.dll
@@ -117,10 +122,10 @@ else
    CFLAGS += -O3
 endif
 
-ifeq ($(platform), qnx)
-   CFLAGS += -Wc,-std=gnu99
+ifneq (,$(findstring qnx,$(platform)))
+	CFLAGS += -Wc,-std=c99
 else
-   CFLAGS += -std=gnu99
+	CFLAGS += -std=gnu99
 endif
 
 OBJECTS := libretro-test.o ../../libretro-common/glsym/rglgen.o

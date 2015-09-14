@@ -89,6 +89,7 @@ typedef enum
    MENU_FILE_DOWNLOAD_CORE_INFO,
    MENU_FILE_RDB,
    MENU_FILE_RDB_ENTRY,
+   MENU_FILE_RPL_ENTRY,
    MENU_FILE_CURSOR,
    MENU_FILE_RECORD_CONFIG,
    MENU_FILE_PLAYLIST_COLLECTION,
@@ -164,17 +165,16 @@ void *menu_init(const void *data);
 
 /**
  * menu_iterate:
- * @input                    : input sample for this frame
- * @old_input                : input sample of the previous frame
- * @trigger_input            : difference' input sample - difference
- *                             between 'input' and 'old_input'
+ * @render_this_frame        : Render this frame or not
+ * @action                   : Associated action for this frame
  *
  * Runs RetroArch menu for one frame.
  *
  * Returns: 0 on success, -1 if we need to quit out of the loop.
  **/
-int menu_iterate(retro_input_t input,
-      retro_input_t old_input, retro_input_t trigger_input);
+int menu_iterate(bool render_this_frame, unsigned action);
+
+int menu_iterate_render(void);
 
 /**
  * menu_free:
@@ -195,7 +195,8 @@ void menu_free(menu_handle_t *menu);
  **/
 bool menu_load_content(enum rarch_core_type type);
 
-void menu_common_load_content(bool persist, enum rarch_core_type type);
+int menu_common_load_content(const char *core_path, const char *full_path,
+      bool persist, enum rarch_core_type type);
 
 void menu_common_push_content_settings(void);
 

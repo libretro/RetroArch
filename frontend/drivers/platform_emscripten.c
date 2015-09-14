@@ -20,12 +20,17 @@
 #include <file/config_file.h>
 #include "../../content.h"
 #include "../frontend.h"
+#include "../../retroarch.h"
+#include "../../runloop.h"
+#include "../../runloop_data.h"
 #include "../frontend_driver.h"
-#include "../runloop_data.h"
 
 static void emscripten_mainloop(void)
 {
-   int ret = rarch_main_iterate();
+   unsigned sleep_ms = 0;
+   int ret = rarch_main_iterate(&sleep_ms);
+   if (ret == 1 && sleep_ms > 0)
+      rarch_sleep(sleep_ms);
    rarch_main_data_iterate();
    if (ret != -1)
       return;
@@ -33,6 +38,27 @@ static void emscripten_mainloop(void)
    main_exit(NULL);
    exit(0);
 }
+
+void cmd_savefiles(void)
+{
+   event_command(EVENT_CMD_SAVEFILES);
+}
+
+void cmd_save_state(void)
+{
+   event_command(EVENT_CMD_SAVE_STATE);
+}
+
+void cmd_load_state(void)
+{
+   event_command(EVENT_CMD_LOAD_STATE);
+}
+
+void cmd_take_screenshot(void)
+{
+   event_command(EVENT_CMD_TAKE_SCREENSHOT);
+}
+
 
 int main(int argc, char *argv[])
 {

@@ -46,7 +46,6 @@ typedef struct sdl_menu_frame
 
 typedef struct sdl_video
 {
-   uint64_t frame_count;
    SDL_Surface *screen;
    bool quitting;
 
@@ -346,7 +345,8 @@ static void sdl_gfx_check_window(sdl_video_t *vid)
 }
 
 static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
-      unsigned height, unsigned pitch, const char *msg)
+      unsigned height, uint64_t frame_count,
+      unsigned pitch, const char *msg)
 {
    char buf[128]    = {0};
    sdl_video_t *vid = (sdl_video_t*)data;
@@ -377,8 +377,6 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
       SDL_WM_SetCaption(buf, NULL);
 
    SDL_Flip(vid->screen);
-
-   vid->frame_count++;
 
    return true;
 }
@@ -516,16 +514,7 @@ static void sdl_grab_mouse_toggle(void *data)
    SDL_WM_GrabInput(mode == SDL_GRAB_ON ? SDL_GRAB_OFF : SDL_GRAB_ON);
 }
 
-static void sdl_get_frame_count(void *data)
-{
-   sdl_video_t *vid = (sdl_video_t*)data;
-   if (!vid)
-      return 0;
-   return vid->frame_count;
-}
-
 static const video_poke_interface_t sdl_poke_interface = {
-   sdl_get_frame_count,
    NULL,
    sdl_set_filtering,
    NULL, /* get_video_output_size */

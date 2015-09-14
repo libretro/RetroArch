@@ -20,35 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <file/file_path.h>
 
 #include <stdlib.h>
 #include <boolean.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
-
-#ifdef __HAIKU__
-#include <kernel/image.h>
-#endif
-
-#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
-#include <unistd.h> /* stat() is defined here */
-#endif
-
-#include <compat/strl.h>
-#include <compat/posix_string.h>
-#include <retro_miscellaneous.h>
-
-#include <rhash.h>
-
-#if defined(__CELLOS_LV2__)
-
-#ifndef S_ISDIR
-#define S_ISDIR(x) (x & 0040000)
-#endif
-
-#endif
 
 #if defined(_WIN32)
 #ifdef _MSC_VER
@@ -63,18 +40,49 @@
 #include <direct.h>
 #include <windows.h>
 #endif
+#elif defined(VITA)
+#include <psp2/io/fcntl.h>
+#include <psp2/io/dirent.h>
+#include <sys/stat.h>
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <dirent.h>
 #include <unistd.h>
 #endif
+
+#if defined(PSP)
+#include <pspkernel.h>
+#endif
+
+#ifdef __HAIKU__
+#include <kernel/image.h>
+#endif
+
+#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
+#include <unistd.h> /* stat() is defined here */
+#endif
+
+#include <file/file_path.h>
+
+#include <compat/strl.h>
+#include <compat/posix_string.h>
+#include <retro_assert.h>
+#include <retro_miscellaneous.h>
+
+#if defined(__CELLOS_LV2__)
+
+#ifndef S_ISDIR
+#define S_ISDIR(x) (x & 0040000)
+#endif
+
+#endif
+
 
 /**
  * path_get_extension:
  * @path               : path
  *
- * Gets extension of file. Only '.'s 
+ * Gets extension of file. Only '.'s
  * after the last slash are considered.
  *
  * Returns: extension part from the path.
@@ -126,9 +134,6 @@ bool path_contains_compressed_file(const char *path)
    return (strchr(path,'#') != NULL);
 }
 
-#define FILE_EXT_7Z     0x005971d6U
-#define FILE_EXT_ZIP    0x0b88c7d8U
-
 /**
  * path_is_compressed_file:
  * @path               : path
@@ -141,19 +146,16 @@ bool path_is_compressed_file(const char* path)
 {
 #ifdef HAVE_COMPRESSION
    const char* file_ext   = path_get_extension(path);
-   uint32_t file_ext_hash = djb2_calculate(file_ext);
 
-   switch (file_ext_hash)
-   {
-#ifdef HAVE_7ZIP
-      case FILE_EXT_7Z:
-         return true;
-#endif
 #ifdef HAVE_ZLIB
-      case FILE_EXT_ZIP:
-         return true;
+   if (!strcmp(file_ext, "zip"))
+      return true;
 #endif
-   }
+
+#ifdef HAVE_7ZIP
+   if (!strcmp(file_ext, "7z"))
+      return true;
+#endif
 
 #endif
    return false;
@@ -204,7 +206,7 @@ bool path_file_exists(const char *path)
  * fill_pathname:
  * @out_path           : output path
  * @in_path            : input  path
- * @replace            : what to replace 
+ * @replace            : what to replace
  * @size               : buffer size of output path
  *
  * FIXME: Verify
@@ -216,10 +218,10 @@ bool path_file_exists(const char *path)
  * Only '.'s after the last slash are considered as extensions.
  * If no '.' is present, in_path and replace will simply be concatenated.
  * 'size' is buffer size of 'out_path'.
- * E.g.: in_path = "/foo/bar/baz/boo.c", replace = ".asm" => 
- * out_path = "/foo/bar/baz/boo.asm" 
+ * E.g.: in_path = "/foo/bar/baz/boo.c", replace = ".asm" =>
+ * out_path = "/foo/bar/baz/boo.asm"
  * E.g.: in_path = "/foo/bar/baz/boo.c", replace = ""     =>
- * out_path = "/foo/bar/baz/boo" 
+ * out_path = "/foo/bar/baz/boo"
  */
 void fill_pathname(char *out_path, const char *in_path,
       const char *replace, size_t size)
@@ -240,7 +242,7 @@ void fill_pathname(char *out_path, const char *in_path,
  * fill_pathname_noext:
  * @out_path           : output path
  * @in_path            : input  path
- * @replace            : what to replace 
+ * @replace            : what to replace
  * @size               : buffer size of output path
  *
  * Appends a filename extension 'replace' to 'in_path', and outputs
@@ -270,7 +272,7 @@ static char *find_last_slash(const char *str)
    return (char*)slash;
 }
 
-/** 
+/**
  * fill_pathname_slash:
  * @path               : path
  * @size               : size of path
@@ -324,7 +326,7 @@ void fill_pathname_dir(char *in_dir, const char *in_basename,
 
 /**
  * fill_pathname_base:
- * @out                : output path         
+ * @out                : output path
  * @in_path            : input path
  * @size               : size of output path
  *
@@ -362,7 +364,7 @@ void fill_pathname_base(char *out, const char *in_path, size_t size)
 
 /**
  * fill_pathname_basedir:
- * @out_dir            : output directory        
+ * @out_dir            : output directory
  * @in_path            : input path
  * @size               : size of output directory
  *
@@ -379,7 +381,7 @@ void fill_pathname_basedir(char *out_dir,
 
 /**
  * fill_pathname_parent_dir:
- * @out_dir            : output directory        
+ * @out_dir            : output directory
  * @in_dir             : input directory
  * @size               : size of output directory
  *
@@ -399,10 +401,10 @@ void fill_pathname_parent_dir(char *out_dir,
  * @ext                : extension of output filename
  * @size               : buffer size of output filename
  *
- * Creates a 'dated' filename prefixed by 'RetroArch', and 
+ * Creates a 'dated' filename prefixed by 'RetroArch', and
  * concatenates extension (@ext) to it.
  *
- * E.g.: 
+ * E.g.:
  * out_filename = "RetroArch-{month}{day}-{Hours}{Minutes}.{@ext}"
  **/
 void fill_dated_filename(char *out_filename,
@@ -418,7 +420,7 @@ void fill_dated_filename(char *out_filename,
 
 /**
  * path_basedir:
- * @path               : path           
+ * @path               : path
  *
  * Extracts base directory by mutating path.
  * Keeps trailing '/'.
@@ -497,13 +499,15 @@ const char *path_basename(const char *path)
  **/
 bool path_is_absolute(const char *path)
 {
+   if (path[0] == '/')
+      return true;
 #ifdef _WIN32
    /* Many roads lead to Rome ... */
-   return path[0] == '/' || (strstr(path, "\\\\") == path)
-      || strstr(path, ":/") || strstr(path, ":\\") || strstr(path, ":\\\\");
-#else
-   return path[0] == '/';
+   if ((strstr(path, "\\\\") == path)
+         || strstr(path, ":/") || strstr(path, ":\\") || strstr(path, ":\\\\"))
+      return true;
 #endif
+   return false;
 }
 
 /**
@@ -517,7 +521,7 @@ bool path_is_absolute(const char *path)
 void path_resolve_realpath(char *buf, size_t size)
 {
 #ifndef RARCH_CONSOLE
-   char tmp[PATH_MAX_LENGTH] = {0};
+   char tmp[PATH_MAX_LENGTH];
 
    strlcpy(tmp, buf, sizeof(tmp));
 
@@ -534,10 +538,6 @@ void path_resolve_realpath(char *buf, size_t size)
    if (!realpath(tmp, buf))
       strlcpy(buf, tmp, size);
 #endif
-
-#else
-   (void)buf;
-   (void)size;
 #endif
 }
 
@@ -556,6 +556,8 @@ static bool path_mkdir_norecurse(const char *dir)
    ret = _mkdir(dir);
 #elif defined(IOS)
    ret = mkdir(dir, 0755);
+#elif defined(VITA) || defined(PSP)
+   ret = sceIoMkdir(dir, 0755);
 #else
    ret = mkdir(dir, 0750);
 #endif
@@ -580,17 +582,14 @@ bool path_mkdir(const char *dir)
    const char *target = NULL;
    /* Use heap. Real chance of stack overflow if we recurse too hard. */
    char     *basedir = strdup(dir);
-   bool          ret = true;
+   bool          ret = false;
 
    if (!basedir)
       return false;
 
    path_parent_dir(basedir);
    if (!*basedir || !strcmp(basedir, dir))
-   {
-      ret = false;
       goto end;
-   }
 
    if (path_is_directory(basedir))
    {
@@ -631,24 +630,25 @@ void fill_pathname_resolve_relative(char *out_path,
       const char *in_refpath, const char *in_path, size_t size)
 {
    if (path_is_absolute(in_path))
-      rarch_assert(strlcpy(out_path, in_path, size) < size);
-   else
    {
-      rarch_assert(strlcpy(out_path, in_refpath, size) < size);
-      path_basedir(out_path);
-      rarch_assert(strlcat(out_path, in_path, size) < size);
+      rarch_assert(strlcpy(out_path, in_path, size) < size);
+      return;
    }
+
+   rarch_assert(strlcpy(out_path, in_refpath, size) < size);
+   path_basedir(out_path);
+   rarch_assert(strlcat(out_path, in_path, size) < size);
 }
 
 /**
  * fill_pathname_join:
  * @out_path           : output path
- * @dir                : directory   
+ * @dir                : directory
  * @path               : path
  * @size               : size of output path
  *
  * Joins a directory (@dir) and path (@path) together.
- * Makes sure not to get  two consecutive slashes 
+ * Makes sure not to get  two consecutive slashes
  * between directory and path.
  **/
 void fill_pathname_join(char *out_path,
@@ -665,12 +665,12 @@ void fill_pathname_join(char *out_path,
 /**
  * fill_pathname_join_delim:
  * @out_path           : output path
- * @dir                : directory   
+ * @dir                : directory
  * @path               : path
- * @delim              : delimiter 
+ * @delim              : delimiter
  * @size               : size of output path
  *
- * Joins a directory (@dir) and path (@path) together 
+ * Joins a directory (@dir) and path (@path) together
  * using the given delimiter (@delim).
  **/
 void fill_pathname_join_delim(char *out_path, const char *dir,
@@ -710,18 +710,18 @@ void fill_short_pathname_representation(char* out_rep,
             sizeof(path_short));
 
    last_hash = (char*)strchr(path_short,'#');
-   /* We handle paths like:
-    * /path/to/file.7z#mygame.img
-    * short_name: mygame.img:
-    */
    if(last_hash != NULL)
    {
-      /* We check whether something is actually 
+      /* We handle paths like:
+       * /path/to/file.7z#mygame.img
+       * short_name: mygame.img:
+       *
+       * We check whether something is actually
        * after the hash to avoid going over the buffer.
        */
       rarch_assert(strlen(last_hash) > 1);
-      strlcpy(out_rep,last_hash + 1, size);
+      strlcpy(out_rep, last_hash + 1, size);
    }
    else
-      strlcpy(out_rep,path_short, size);
+      strlcpy(out_rep, path_short, size);
 }

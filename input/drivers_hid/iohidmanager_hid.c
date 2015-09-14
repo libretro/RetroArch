@@ -16,6 +16,7 @@
 
 #include <IOKit/hid/IOHIDManager.h>
 #include <IOKit/hid/IOHIDKeys.h>
+
 #include "../connect/joypad_connection.h"
 #include "../drivers/cocoa_input.h"
 #include "../input_autodetect.h"
@@ -59,10 +60,18 @@ static uint64_t iohidmanager_hid_joypad_get_buttons(void *data, unsigned port)
 
 static bool iohidmanager_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 {
+   driver_t *driver          = driver_get_ptr();
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
+#endif
    uint64_t buttons          = iohidmanager_hid_joypad_get_buttons(data, port);
 
    if (joykey == NO_BTN)
       return false;
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+   if (!apple)
+      return false;
+#endif
 
    /* Check hat. */
    if (GET_HAT_DIR(joykey))
@@ -70,7 +79,11 @@ static bool iohidmanager_hid_joypad_button(void *data, unsigned port, uint16_t j
 
    /* Check the button. */
    if ((port < MAX_USERS) && (joykey < 32))
-      return ((buttons & (1 << joykey)) != 0);
+      return ((buttons & (1 << joykey)) != 0)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+         || ((apple->buttons[port] & (1 << joykey)) != 0)
+#endif
+         ;
    return false;
 }
 
@@ -85,22 +98,36 @@ static bool iohidmanager_hid_joypad_rumble(void *data, unsigned pad,
 
 static int16_t iohidmanager_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
 {
+   driver_t *driver          = driver_get_ptr();
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
+#endif
    iohidmanager_hid_t          *hid = (iohidmanager_hid_t*)data;
    int16_t               val = 0;
 
    if (joyaxis == AXIS_NONE)
       return 0;
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+   if (!apple)
+      return 0;
+#endif
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      val = pad_connection_get_axis(&hid->slots[port], port, AXIS_NEG_GET(joyaxis));
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+      val += apple->axes[port][AXIS_NEG_GET(joyaxis)];
+#endif
+      val += pad_connection_get_axis(&hid->slots[port], port, AXIS_NEG_GET(joyaxis));
 
       if (val >= 0)
          val = 0;
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
-      val = pad_connection_get_axis(&hid->slots[port], port, AXIS_POS_GET(joyaxis));
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+      val += apple->axes[port][AXIS_POS_GET(joyaxis)];
+#endif
+      val += pad_connection_get_axis(&hid->slots[port], port, AXIS_POS_GET(joyaxis));
 
       if (val <= 0)
          val = 0;
@@ -140,7 +167,9 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
       void* sender, IOHIDValueRef value)
 {
    driver_t                  *driver = driver_get_ptr();
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
    cocoa_input_data_t         *apple = (cocoa_input_data_t*)driver->input_data;
+#endif
    struct iohidmanager_hid_adapter *adapter = (struct iohidmanager_hid_adapter*)data;
    IOHIDElementRef element           = IOHIDValueGetElement(value);
    uint32_t type                     = IOHIDElementGetType(element);
@@ -180,8 +209,10 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                            if (use != axis_use_ids[i])
                               continue;
 
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
                            apple->axes[adapter->slot][i] =
                               ((val * 2.0f) - 1.0f) * 32767.0f;
+#endif
                         }
                      }
                      break;
@@ -197,10 +228,12 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                   CFIndex state = IOHIDValueGetIntegerValue(value);
                   unsigned id = use - 1;
 
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
                   if (state)
                      BIT64_SET(apple->buttons[adapter->slot], id);
                   else
                      BIT64_CLEAR(apple->buttons[adapter->slot], id);
+#endif
                }
                break;
          }
@@ -211,7 +244,9 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
 static void iohidmanager_hid_device_remove(void *data, IOReturn result, void* sender)
 {
    driver_t                  *driver = driver_get_ptr();
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
    cocoa_input_data_t         *apple = (cocoa_input_data_t*)driver->input_data;
+#endif
    struct iohidmanager_hid_adapter *adapter = (struct iohidmanager_hid_adapter*)data;
    iohidmanager_hid_t                  *hid = driver ? (iohidmanager_hid_t*)driver->hid_data : NULL;
 
@@ -219,8 +254,10 @@ static void iohidmanager_hid_device_remove(void *data, IOReturn result, void* se
    {
       input_config_autoconfigure_disconnect(adapter->slot, adapter->name);
 
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
       apple->buttons[adapter->slot] = 0;
       memset(apple->axes[adapter->slot], 0, sizeof(apple->axes));
+#endif
 
       pad_connection_pad_deinit(&hid->slots[adapter->slot], adapter->slot);
       free(adapter);

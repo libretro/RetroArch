@@ -26,64 +26,43 @@
 #include "../../general.h"
 #include "../../retroarch.h"
 
-
 #ifdef HAVE_SHADER_MANAGER
-static void shader_action_parameter_left_common(
-      struct video_shader_parameter *param,
-      struct video_shader *shader)
+static int generic_shader_action_parameter_left(
+      struct video_shader *shader, struct video_shader_parameter *param,
+      unsigned type, const char *label, bool wraparound)
 {
-   if (!shader)
-      return;
-
-   param->current -= param->step;
-   param->current = min(max(param->minimum, param->current), param->maximum);
+   if (shader)
+   {
+      param->current -= param->step;
+      param->current = min(max(param->minimum, param->current), param->maximum);
+   }
+   return 0;
 }
-#endif
 
 static int shader_action_parameter_left(unsigned type, const char *label,
       bool wraparound)
 {
-#ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader = video_shader_driver_get_current_shader();
-   struct video_shader_parameter *param =
-      &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
-
-   shader_action_parameter_left_common(param, shader);
-#endif
-   return 0;
+   struct video_shader          *shader = video_shader_driver_get_current_shader();
+   struct video_shader_parameter *param = &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
+   return generic_shader_action_parameter_left(shader, param, type, label, wraparound);
 }
 
 static int shader_action_parameter_preset_left(unsigned type, const char *label,
       bool wraparound)
 {
-#ifdef HAVE_SHADER_MANAGER
-   struct video_shader_parameter *param = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   struct video_shader *shader = menu ? menu->shader : NULL;
-   if (!menu || !shader)
-      return -1;
-
-   param = &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
-
-   shader_action_parameter_left_common(param, shader);
-#endif
-   return 0;
+   menu_handle_t                  *menu = menu_driver_get_ptr();
+   struct video_shader          *shader = menu ? menu->shader : NULL;
+   struct video_shader_parameter *param = &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
+   return generic_shader_action_parameter_left(shader, param, type, label, wraparound);
 }
+#endif
 
 static int action_left_cheat(unsigned type, const char *label,
       bool wraparound)
 {
-   global_t *global       = global_get_ptr();
-   cheat_manager_t *cheat = global->cheat;
    size_t idx             = type - MENU_SETTINGS_CHEAT_BEGIN;
-
-   if (!cheat)
-      return -1;
-
-   cheat->cheats[idx].state = !cheat->cheats[idx].state;
-   cheat_manager_update(cheat, idx);
-
-   return 0;
+   return generic_action_cheat_toggle(idx, type, label,
+         wraparound);
 }
 
 static int action_left_input_desc(unsigned type, const char *label,
@@ -103,12 +82,7 @@ static int action_left_input_desc(unsigned type, const char *label,
 static int action_left_save_state(unsigned type, const char *label,
       bool wraparound)
 {
-   settings_t *settings = config_get_ptr();
-
-   /* Slot -1 is (auto) slot. */
-   if (settings->state_slot >= 0)
-      settings->state_slot--;
-
+   event_command(EVENT_CMD_SAVE_STATE_DECREMENT);
    return 0;
 }
 
@@ -118,14 +92,15 @@ static int action_left_scroll(unsigned type, const char *label,
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
    menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
+   size_t selection       = menu_navigation_get_selection(nav);
    if (!nav || !menu_list)
       return -1;
 
    scroll_speed      = (max(nav->scroll.acceleration, 2) - 2) / 4 + 1;
    fast_scroll_speed = 4 + 4 * scroll_speed;
 
-   if (nav->selection_ptr > fast_scroll_speed)
-      menu_navigation_set(nav, nav->selection_ptr - fast_scroll_speed, true);
+   if (selection > fast_scroll_speed)
+      menu_navigation_set(nav, selection - fast_scroll_speed, true);
    else
       menu_navigation_clear(nav, false);
 
@@ -213,6 +188,7 @@ static int action_left_shader_filter_pass(unsigned type, const char *label,
       bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
+   unsigned delta = 2;
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
    struct video_shader *shader = NULL;
    struct video_shader_pass *shader_pass = NULL;
@@ -227,11 +203,7 @@ static int action_left_shader_filter_pass(unsigned type, const char *label,
    if (!shader_pass)
       return -1;
 
-   {
-      unsigned delta = 2;
-      shader_pass->filter = ((shader_pass->filter + delta) % 3);
-
-   }
+   shader_pass->filter = ((shader_pass->filter + delta) % 3);
 #endif
    return 0;
 }
@@ -260,9 +232,9 @@ static int action_left_cheat_num_passes(unsigned type, const char *label,
    if (!cheat)
       return -1;
 
-   if (cheat->size)
-      new_size = cheat->size - 1;
-   menu_entries_set_refresh();
+   if (cheat_manager_get_size(cheat))
+      new_size = cheat_manager_get_size(cheat) - 1;
+   menu_entries_set_refresh(false);
    cheat_manager_realloc(cheat, new_size);
 
    return 0;
@@ -283,7 +255,7 @@ static int action_left_shader_num_passes(unsigned type, const char *label,
 
    if (shader->passes)
       shader->passes--;
-   menu_entries_set_refresh();
+   menu_entries_set_refresh(false);
    video_shader_resolve_parameters(NULL, menu->shader);
 
 #endif
@@ -329,28 +301,25 @@ static int disk_options_disk_idx_left(unsigned type, const char *label,
       bool wraparound)
 {
    event_command(EVENT_CMD_DISK_PREV);
-
    return 0;
 }
 
 static int bind_left_generic(unsigned type, const char *label,
       bool wraparound)
 {
-   unsigned action = MENU_ACTION_LEFT;
-   return menu_setting_set(type, label, action, wraparound);
+   return menu_setting_set(type, label, MENU_ACTION_LEFT, wraparound);
 }
 
 static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t label_hash, uint32_t menu_label_hash, const char *elem0)
 {
    unsigned i;
-   rarch_setting_t *setting = menu_setting_find(label);
 
-   if (setting)
+   if (cbs->setting)
    {
-      uint32_t parent_group_hash = menu_hash_calculate(setting->parent_group);
+      uint32_t parent_group_hash = menu_hash_calculate(cbs->setting->parent_group);
 
-      if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && (setting->type == ST_GROUP))
+      if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && (cbs->setting->type == ST_GROUP))
       {
          cbs->action_left = action_left_scroll;
          return 0;
@@ -421,15 +390,17 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
 static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type, uint32_t label_hash, uint32_t menu_label_hash)
 {
-   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+   if (type >= MENU_SETTINGS_CHEAT_BEGIN
+         && type <= MENU_SETTINGS_CHEAT_END)
+      cbs->action_left = action_left_cheat;
+#ifdef HAVE_SHADER_MANAGER
+   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       cbs->action_left = shader_action_parameter_left;
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
       cbs->action_left = shader_action_parameter_preset_left;
-   else if (type >= MENU_SETTINGS_CHEAT_BEGIN
-         && type <= MENU_SETTINGS_CHEAT_END)
-      cbs->action_left = action_left_cheat;
+#endif
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
       cbs->action_left = action_left_input_desc;
@@ -449,6 +420,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_FILE_CORE:
          case MENU_FILE_RDB:
          case MENU_FILE_RDB_ENTRY:
+         case MENU_FILE_RPL_ENTRY:
          case MENU_FILE_CURSOR:
          case MENU_FILE_SHADER:
          case MENU_FILE_SHADER_PRESET:

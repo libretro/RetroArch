@@ -242,12 +242,15 @@ rarch_dsp_filter_t *rarch_dsp_filter_new(
 #if !defined(HAVE_FILTERS_BUILTIN) && defined(HAVE_DYLIB)
    fill_pathname_basedir(basedir, filter_config, sizeof(basedir));
 
-   plugs = dir_list_new(basedir, EXT_EXECUTABLES, false);
+   plugs = dir_list_new(basedir, EXT_EXECUTABLES, false, false);
    if (!plugs)
       goto error;
 #endif
+
+#if defined(HAVE_DYLIB) || defined(HAVE_FILTERS_BUILTIN)
    if (!append_plugs(dsp, plugs))
       goto error;
+#endif
 
    if (plugs)
       string_list_free(plugs);

@@ -16,14 +16,9 @@
 #include <time.h>
 
 #include "menu.h"
-#include "menu_display.h"
-#include "menu_animation.h"
-#include "../dynamic.h"
-#include "../../retroarch.h"
 #include "../../config.def.h"
 #include "../gfx/video_context_driver.h"
 #include "../gfx/video_thread_wrapper.h"
-#include "menu_list.h"
 
 menu_display_t *menu_display_get_ptr(void)
 {
@@ -41,27 +36,18 @@ menu_framebuf_t *menu_display_fb_get_ptr(void)
    return &disp->frame_buf;
 }
 
-static bool menu_display_fb_in_use(menu_framebuf_t *frame_buf)
-{
-   if (!frame_buf)
-      return false;
-   return (frame_buf->data != NULL);
-}
-
 void menu_display_fb_set_dirty(void)
 {
    menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
-   if (!menu_display_fb_in_use(frame_buf))
-      return;
-   frame_buf->dirty = true;
+   if (frame_buf && frame_buf->data)
+      frame_buf->dirty = true;
 }
 
 void menu_display_fb_unset_dirty(void)
 {
    menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
-   if (!menu_display_fb_in_use(frame_buf))
-      return;
-   frame_buf->dirty = false;
+   if (frame_buf && frame_buf->data)
+      frame_buf->dirty = false;
 }
 
 /**
@@ -71,15 +57,16 @@ void menu_display_fb_unset_dirty(void)
  **/
 void menu_display_fb(void)
 {
-   driver_t *driver     = driver_get_ptr();
-   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
    video_driver_set_texture_enable(true, false);
 
    if (!settings->menu.pause_libretro)
    {
-      if (global->main_is_init && (global->core_type != CORE_TYPE_DUMMY))
+      driver_t *driver     = driver_get_ptr();
+      global_t *global     = global_get_ptr();
+
+      if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
       {
          bool block_libretro_input = driver->block_libretro_input;
          driver->block_libretro_input = true;
@@ -97,9 +84,7 @@ bool menu_display_update_pending(void)
    menu_animation_t     *anim = menu_animation_get_ptr();
    menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
 
-   if ((anim && anim->is_active) || (anim && anim->label.is_updated))
-      return true;
-   if (frame_buf && frame_buf->dirty)
+   if (menu_animation_is_active(anim) || (frame_buf && frame_buf->dirty))
       return true;
    return false;
 }
@@ -137,8 +122,7 @@ bool menu_display_init(void *data)
    if (!menu)
       return false;
 
-   menu->display.animation = (menu_animation_t*)calloc
-      (1, sizeof(menu_animation_t));
+   menu->display.animation = menu_animation_init();
 
    if (!menu->display.animation)
       return false;

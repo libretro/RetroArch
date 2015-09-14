@@ -3,7 +3,7 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-#include "zutil.h"
+#include <compat/zutil.h>
 #include "inftrees.h"
 #include "inflate.h"
 #include "inffast.h"

@@ -6,7 +6,9 @@
 
 #include "Types.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern uint32_t g_CrcTable[];
 
@@ -20,6 +22,8 @@ void MY_FAST_CALL CrcGenerateTable(void);
 uint32_t MY_FAST_CALL CrcUpdate(uint32_t crc, const void *data, size_t size);
 uint32_t MY_FAST_CALL CrcCalc(const void *data, size_t size);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif

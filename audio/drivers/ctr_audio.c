@@ -17,7 +17,6 @@
 #include "../../driver.h"
 #include "../../performance.h"
 
-
 typedef struct
 {
    bool nonblocking;

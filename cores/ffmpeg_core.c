@@ -36,6 +36,7 @@ extern "C" {
 #include <queues/fifo_buffer.h>
 
 #ifdef RARCH_INTERNAL
+#include "internal_cores.h"
 #include "../libretro.h"
 #define CORE_PREFIX(s) libretro_ffmpeg_##s
 #else

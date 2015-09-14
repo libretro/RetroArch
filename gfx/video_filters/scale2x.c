@@ -101,9 +101,9 @@ static void scale2x_generic_xrgb8888(unsigned width, unsigned height,
       uint32_t *dst, unsigned dst_stride)
 {
    unsigned x, y;
-   uint32_t *out0, *out1;
-   out0 = (uint32_t*)dst;
-   out1 = (uint32_t*)(dst + dst_stride);
+   uint32_t *out0 = (uint32_t*)dst;
+   uint32_t *out1 = (uint32_t*)(dst + dst_stride);
+
    SCALE2X_GENERIC(uint32_t, width, height, first, last,
          src, src_stride, dst, dst_stride, out0, out1);
 }

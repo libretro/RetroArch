@@ -14,15 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "frontend_driver.h"
-#include "../driver.h"
 #include <string.h>
+
+#include "../driver.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
 
-static const frontend_ctx_driver_t *frontend_ctx_drivers[] = {
+static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(__CELLOS_LV2__)
    &frontend_ctx_ps3,
 #endif
@@ -44,7 +44,7 @@ static const frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(__linux__) && !defined(ANDROID)
    &frontend_ctx_linux,
 #endif
-#if defined(PSP)
+#if defined(PSP) || defined(VITA)
    &frontend_ctx_psp,
 #endif
 #if defined(_3DS)
@@ -52,6 +52,9 @@ static const frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #endif
 #if defined(_WIN32) && !defined(_XBOX)
    &frontend_ctx_win32,
+#endif
+#ifdef XENON
+   &frontend_ctx_xenon,
 #endif
    &frontend_ctx_null,
    NULL
@@ -65,7 +68,7 @@ static const frontend_ctx_driver_t *frontend_ctx_drivers[] = {
  *
  * Returns: pointer to driver if successful, otherwise NULL.
  **/
-const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)
+frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)
 {
    unsigned i;
 
@@ -83,12 +86,12 @@ const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)
  *
  * Finds first suitable driver and initialize.
  *
- * Returns: pointer to first suitable driver, otherwise NULL. 
+ * Returns: pointer to first suitable driver, otherwise NULL.
  **/
-const frontend_ctx_driver_t *frontend_ctx_init_first(void)
+frontend_ctx_driver_t *frontend_ctx_init_first(void)
 {
    unsigned i;
-   const frontend_ctx_driver_t *frontend = NULL;
+   frontend_ctx_driver_t *frontend = NULL;
 
    for (i = 0; frontend_ctx_drivers[i]; i++)
    {
@@ -100,7 +103,7 @@ const frontend_ctx_driver_t *frontend_ctx_init_first(void)
 }
 
 #ifndef IS_SALAMANDER
-const frontend_ctx_driver_t *frontend_get_ptr(void)
+frontend_ctx_driver_t *frontend_get_ptr(void)
 {
    driver_t *driver        = driver_get_ptr();
    if (!driver)
@@ -110,7 +113,7 @@ const frontend_ctx_driver_t *frontend_get_ptr(void)
 
 int frontend_driver_parse_drive_list(void *data)
 {
-   const frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
 
    if (!frontend || !frontend->parse_drive_list)
       return -1;

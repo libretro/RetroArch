@@ -1,17 +1,14 @@
 #!/bin/sh
 
-#make -C ../ -f Makefile.wii.salamander clean || exit 1
-#make -C ../ -f Makefile.wii clean || exit 1
+platform=xdk360
 
-#make -C ../ -f Makefile.wii.salamander || exit 1
-#make -C ../ -f Makefile.wii.salamander pkg || exit 1
 mkdir -p ../msvc/RetroArch-360/Debug
 mkdir -p ../msvc/RetroArch-360/Release
 mkdir -p ../msvc/RetroArch-360/Release_LTCG
 
-for f in *_xdk360.lib ; do
-   name=`echo "$f" | sed 's/\(_libretro_xdk360\|\).lib$//'`
+for f in *_${platform}.lib ; do
+   name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).lib$//"`
    echo $name
-   cp -f "$f" ../msvc/RetroArch-360/Release_LTCG/libretro_xdk360.lib
-   cmd.exe /k xdk360_env.bat ${name}_libretro_xdk360
+   cp -f "$f" ../msvc/RetroArch-360/Release_LTCG/libretro_${platform}.lib
+   cmd.exe /k ${platform}_env.bat ${name}_libretro_${platform}
 done

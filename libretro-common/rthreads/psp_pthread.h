@@ -20,13 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// FIXME: unfinished, mutexes and condvars basically a stub.
+/* FIXME: unfinished on PSP, mutexes and condition variables basically a stub. */
 #ifndef _PSP_PTHREAD_WRAP__
 #define _PSP_PTHREAD_WRAP__
 
+#ifdef VITA
+#include <psp2/kernel/threadmgr.h>
+#else
 #include <pspkernel.h>
 #include <pspthreadman.h>
 #include <pspthreadman_kernel.h>
+#endif
 #include <stdio.h>
 #include <retro_inline.h>
 
@@ -78,40 +82,62 @@ static INLINE int pthread_mutex_init(pthread_mutex_t *mutex,
 {
    sprintf(name_buffer, "0x%08X", (uint32_t) mutex);
 
+#ifdef VITA
+   return *mutex = sceKernelCreateMutex(name_buffer, 0, 0, 0);
+#else
    return *mutex = sceKernelCreateSema(name_buffer, 0, 1, 1, NULL);
+#endif
 }
 
 static INLINE int pthread_mutex_destroy(pthread_mutex_t *mutex)
 {
+#ifdef VITA
+   return sceKernelDeleteMutex(*mutex);
+#else
    return sceKernelDeleteSema(*mutex);
+#endif
 }
 
 static INLINE int pthread_mutex_lock(pthread_mutex_t *mutex)
 {
-   //FIXME: stub
+#ifdef VITA
+   return sceKernelLockMutex(*mutex, 1, 0);
+#else
+   /* FIXME: stub */
    return 1;
+#endif
 }
 
 static INLINE int pthread_mutex_unlock(pthread_mutex_t *mutex)
 {
-   //FIXME: stub
+#ifdef VITA
+   return sceKernelUnlockMutex(*mutex, 1);
+#else
+   /* FIXME: stub */
    return 1;
+#endif
 }
 
 
 static INLINE int pthread_join(pthread_t thread, void **retval)
 {
+   int exit_status;
    SceUInt timeout = (SceUInt)-1;
+
    sceKernelWaitThreadEnd(thread, &timeout);
-   int exit_status = sceKernelGetThreadExitStatus(thread);
+   exit_status = sceKernelGetThreadExitStatus(thread);
    sceKernelDeleteThread(thread);
    return exit_status;
 }
 
 static INLINE int pthread_mutex_trylock(pthread_mutex_t *mutex)
 {
-   //FIXME: stub
+#ifdef VITA
+   return sceKernelTryLockMutex(*mutex, 1 /* not sure about this last param */);
+#else
+   /* FIXME: stub */
    return 1;
+#endif
 }
 
 static INLINE int pthread_cond_wait(pthread_cond_t *cond,

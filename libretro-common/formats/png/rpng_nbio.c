@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "rpng_common.h"
+#include "rpng_internal.h"
 #include "rpng_decode.h"
 
 static bool read_chunk_header(uint8_t *buf, struct png_chunk *chunk)
@@ -66,41 +66,11 @@ static bool png_parse_ihdr(uint8_t *buf,
    return true;
 }
 
-static bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf)
-{
-   uint8_t *new_buffer = (uint8_t*)realloc(buf->data, buf->size + chunk->size);
-
-   if (!new_buffer)
-      return false;
-
-   buf->data  = new_buffer;
-   return true;
-}
-
-static bool png_read_plte_into_buf(uint8_t *buf, 
-      uint32_t *buffer, unsigned entries)
+bool rpng_nbio_load_image_argb_iterate(rpng_t *rpng)
 {
    unsigned i;
-
-   if (entries > 256)
-      return false;
-
-   buf += 8;
-
-   for (i = 0; i < entries; i++)
-   {
-      uint32_t r = buf[3 * i + 0];
-      uint32_t g = buf[3 * i + 1];
-      uint32_t b = buf[3 * i + 2];
-      buffer[i] = (r << 16) | (g << 8) | (b << 0) | (0xffu << 24);
-   }
-
-   return true;
-}
-
-bool rpng_nbio_load_image_argb_iterate(uint8_t *buf, struct rpng_t *rpng, unsigned *ret)
-{
-   unsigned i;
+   unsigned ret;
+   uint8_t *buf = (uint8_t*)rpng->buff_data;
 
    struct png_chunk chunk = {0};
 
@@ -149,7 +119,12 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf, struct rpng_t *rpng, unsign
             if (chunk.size % 3)
                goto error;
 
-            if (!png_read_plte_into_buf(buf, rpng->palette, entries))
+            if (entries > 256)
+               goto error;
+
+            buf += 8;
+
+            if (!png_read_plte(buf, rpng->palette, entries))
                goto error;
 
             rpng->has_plte = true;
@@ -181,7 +156,8 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf, struct rpng_t *rpng, unsign
          goto error;
    }
 
-   *ret = 4 + 4 + chunk.size + 4;
+   ret = 4 + 4 + chunk.size + 4;
+   rpng->buff_data += ret; 
 
    return true;
 
@@ -189,7 +165,7 @@ error:
    return false;
 }
 
-int rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
+int rpng_nbio_load_image_argb_process(rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height)
 {
    if (!rpng->process.initialized)
@@ -212,7 +188,7 @@ int rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
    return png_reverse_filter_iterate(rpng, data);
 }
 
-void rpng_nbio_load_image_free(struct rpng_t *rpng)
+void rpng_nbio_load_image_free(rpng_t *rpng)
 {
    if (!rpng)
       return;
@@ -230,7 +206,7 @@ void rpng_nbio_load_image_free(struct rpng_t *rpng)
    free(rpng);
 }
 
-bool rpng_nbio_load_image_argb_start(struct rpng_t *rpng)
+bool rpng_nbio_load_image_argb_start(rpng_t *rpng)
 {
    unsigned i;
    char header[8] = {0};
@@ -247,4 +223,36 @@ bool rpng_nbio_load_image_argb_start(struct rpng_t *rpng)
    rpng->buff_data += 8;
 
    return true;
+}
+
+bool rpng_is_valid(rpng_t *rpng)
+{
+   if (!rpng)
+      return false;
+
+   if (rpng->has_ihdr)
+      return true;
+   if (rpng->has_idat)
+      return true;
+   if (rpng->has_iend)
+      return true;
+   return false;
+}
+
+bool rpng_set_buf_ptr(rpng_t *rpng, uint8_t *data)
+{
+   if (!rpng)
+      return false;
+
+   rpng->buff_data = data;
+
+   return true;
+}
+
+rpng_t *rpng_alloc(void)
+{
+   rpng_t *rpng = (rpng_t*)calloc(1, sizeof(rpng_t));
+   if (!rpng)
+      return NULL;
+   return rpng;
 }

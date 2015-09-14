@@ -133,8 +133,9 @@ static void rmenu_render(void)
    menu_animation_t *anim        = menu_animation_get_ptr();
    menu_list_t *menu_list        = menu_list_get_ptr();
    menu_navigation_t *nav        = menu_navigation_get_ptr();
-   uint64_t frame_count          = video_driver_get_frame_count();
+   uint64_t *frame_count         = video_driver_get_frame_count();
    size_t  entries_end           = menu_entries_get_end();
+   size_t  selection             = menu_navigation_get_selection(nav);
 
    if (!menu)
       return;
@@ -150,16 +151,15 @@ static void rmenu_render(void)
       return;
 
    menu_display_fb_unset_dirty();
-   anim->is_active           = false;
-   anim->label.is_updated    = false;
+   menu_animation_clear_active(anim);
 
    if (!menu_list->selection_buf)
       return;
 
-   begin = (nav->selection_ptr >= (ENTRIES_HEIGHT / 2)) ? 
-      (nav->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
-   end   = ((nav->selection_ptr + ENTRIES_HEIGHT) <= entries_end)
-      ? nav->selection_ptr + ENTRIES_HEIGHT : entries_end;
+   begin = (selection >= (ENTRIES_HEIGHT / 2)) ? 
+      (selection - (ENTRIES_HEIGHT / 2)) : 0;
+   end   = ((selection + ENTRIES_HEIGHT) <= entries_end)
+      ? selection + ENTRIES_HEIGHT : entries_end;
 
    if (entries_end <= ENTRIES_HEIGHT)
       begin = 0;
@@ -172,7 +172,7 @@ static void rmenu_render(void)
    menu_entries_get_title(title, sizeof(title));
 
    menu_animation_ticker_str(title_buf, RMENU_TERM_WIDTH,
-         frame_count / 15, title, true);
+         *frame_count / 15, title, true);
 
    font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
    font_parms.y = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET
@@ -207,9 +207,9 @@ static void rmenu_render(void)
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
 
       menu_animation_ticker_str(entry_title_buf, RMENU_TERM_WIDTH - (entry_spacing + 1 + 2),
-            frame_count / 15, entry_path, entry_selected);
+            *frame_count / 15, entry_path, entry_selected);
       menu_animation_ticker_str(type_str_buf, entry_spacing,
-            frame_count / 15, entry_value, entry_selected);
+            *frame_count / 15, entry_value, entry_selected);
 
       snprintf(message, sizeof(message), "%c %s",
             entry_selected ? '>' : ' ', entry_title_buf);
@@ -353,6 +353,6 @@ menu_ctx_driver_t menu_ctx_rmenu = {
    NULL,
    NULL,
    "rmenu",
+   MENU_VIDEO_DRIVER_DIRECT3D,
    rmenu_environ,
-   NULL,
 };

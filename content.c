@@ -73,7 +73,7 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
       return true;
 
    /* Attempt to apply a patch. */
-   if (!global->block_patch)
+   if (!global->patch.block_patch)
       patch_content(&ret_buf, length);
    
 #ifdef HAVE_ZLIB
@@ -610,7 +610,7 @@ bool init_content_file(void)
       attr.i |= system->info.need_fullpath << 1;
       attr.i |= (!system->no_content) << 2;
       string_list_append(content,
-            (global->libretro_no_content && settings->core.set_supports_no_game_enable) ? "" : global->fullpath, attr);
+            (global->inited.core.no_content && settings->core.set_supports_no_game_enable) ? "" : global->path.fullpath, attr);
    }
 
 #ifdef HAVE_ZLIB
@@ -655,7 +655,7 @@ bool init_content_file(void)
    ret = load_content(special, content);
 
 error:
-   global->content_is_init = (ret) ? true : false;
+   global->inited.content = (ret) ? true : false;
 
    if (content)
       string_list_free(content);

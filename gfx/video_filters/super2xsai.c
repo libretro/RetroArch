@@ -68,16 +68,18 @@ static void *supertwoxsai_generic_create(const struct softfilter_config *config,
       unsigned max_width, unsigned max_height,
       unsigned threads, softfilter_simd_mask_t simd, void *userdata)
 {
+   struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
+   if (!filt)
+      return NULL;
+
    (void)simd;
    (void)config;
    (void)userdata;
 
-   struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
-   if (!filt)
-      return NULL;
    filt->workers = (struct softfilter_thread_data*)calloc(threads, sizeof(struct softfilter_thread_data));
    filt->threads = 1;
    filt->in_fmt  = in_fmt;
+
    if (!filt->workers)
    {
       free(filt);
@@ -202,8 +204,8 @@ static void supertwoxsai_generic_xrgb8888(unsigned width, unsigned height,
       int first, int last, uint32_t *src, 
       unsigned src_stride, uint32_t *dst, unsigned dst_stride)
 {
-   unsigned nextline, finish;
-   nextline = (last) ? 0 : src_stride;
+   unsigned finish;
+   unsigned nextline = (last) ? 0 : src_stride;
 
    for (; height; height--)
    {
@@ -232,8 +234,8 @@ static void supertwoxsai_generic_rgb565(unsigned width, unsigned height,
       int first, int last, uint16_t *src, 
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
-   unsigned nextline, finish;
-   nextline = (last) ? 0 : src_stride;
+   unsigned finish;
+   unsigned nextline = (last) ? 0 : src_stride;
 
    for (; height; height--)
    {
@@ -287,8 +289,9 @@ static void supertwoxsai_generic_packets(void *data,
       void *output, size_t output_stride,
       const void *input, unsigned width, unsigned height, size_t input_stride)
 {
-   struct filter_data *filt = (struct filter_data*)data;
    unsigned i;
+   struct filter_data *filt = (struct filter_data*)data;
+
    for (i = 0; i < filt->threads; i++)
    {
       struct softfilter_thread_data *thr = (struct softfilter_thread_data*)&filt->workers[i];

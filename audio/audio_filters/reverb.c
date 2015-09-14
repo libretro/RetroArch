@@ -245,11 +245,12 @@ static void reverb_process(void *data, struct dspfilter_output *output,
       const struct dspfilter_input *input)
 {
    unsigned i;
+   float *out;
    struct reverb_data *rev = (struct reverb_data*)data;
 
-   output->samples = input->samples;
-   output->frames  = input->frames;
-   float *out = output->samples;
+   output->samples         = input->samples;
+   output->frames          = input->frames;
+   out                     = output->samples;
 
    for (i = 0; i < input->frames; i++, out += 2)
    {
@@ -263,11 +264,12 @@ static void reverb_process(void *data, struct dspfilter_output *output,
 static void *reverb_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
-   struct reverb_data *rev = (struct reverb_data*)calloc(1, sizeof(*rev));
+   float drytime, wettime, damping, roomwidth, roomsize;
+   struct reverb_data *rev = (struct reverb_data*)
+      calloc(1, sizeof(*rev));
    if (!rev)
       return NULL;
 
-   float drytime, wettime, damping, roomwidth, roomsize;
    config->get_float(userdata, "drytime", &drytime, 0.43f);
    config->get_float(userdata, "wettime", &wettime, 0.4f);
    config->get_float(userdata, "damping", &damping, 0.8f);

@@ -27,6 +27,10 @@
 extern "C" {
 #endif
 
+#ifndef COLLECTION_SIZE
+#define COLLECTION_SIZE 99999
+#endif
+
 enum
 {
    DISPLAYLIST_NONE = 0,

@@ -16,6 +16,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <dlfcn.h>
+
 static const char *android_joypad_name(unsigned pad)
 {
    settings_t *settings = config_get_ptr();

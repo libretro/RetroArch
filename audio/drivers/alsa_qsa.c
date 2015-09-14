@@ -14,12 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../general.h"
-#include "../../driver.h"
-
 #define ALSA_PCM_NEW_HW_PARAMS_API
 #define ALSA_PCM_NEW_SW_PARAMS_API
 #include <sys/asoundlib.h>
+
+#include "../../general.h"
+#include "../../driver.h"
 
 #define MAX_FRAG_SIZE 3072
 #define DEFAULT_RATE 48000

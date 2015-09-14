@@ -137,6 +137,9 @@ static void *font_renderer_stb_init(const char *font_path, float font_size)
    stbtt_fontinfo info;
    stb_font_renderer_t *self = (stb_font_renderer_t*) calloc(1, sizeof(*self));
 
+   /* See https://github.com/nothings/stb/blob/master/stb_truetype.h#L539 */
+   font_size = STBTT_POINT_SIZE(font_size);
+
    /* prevent warnings */
    (void)rect_width_compare;
 
@@ -182,6 +185,8 @@ static const char *font_renderer_stb_get_default_font(void)
       "/Library/Fonts/Microsoft/Candara.ttf",
       "/Library/Fonts/Verdana.ttf",
       "/Library/Fonts/Tahoma.ttf",
+      "/Library/Fonts/Andale Mono.ttf",
+      "/Library/Fonts/Courier New.ttf",
 #elif defined(__ANDROID_API__)
       "/system/fonts/DroidSansMono.ttf",
       "/system/fonts/CutiveMono.ttf",
