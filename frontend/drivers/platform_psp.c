@@ -22,6 +22,8 @@
 #ifdef VITA
 #include <psp2/moduleinfo.h>
 #include <psp2/power.h>
+
+int scePowerSetArmClockFrequency(int freq);
 #else
 #include <pspkernel.h>
 #include <pspdebug.h>

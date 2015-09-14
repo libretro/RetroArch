@@ -13,14 +13,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <vita2d.h>
+
 #include <retro_inline.h>
+
 #include "../../defines/psp_defines.h"
 #include "../../general.h"
 #include "../../driver.h"
 #include "../video_viewport.h"
 #include "../video_monitor.h"
-
-#include <vita2d.h>
 
 typedef struct vita_menu_frame
 {
@@ -418,12 +419,13 @@ static bool vita2d_gfx_read_viewport(void *data, uint8_t *buffer)
 
 static void vita_set_filtering(void *data, unsigned index, bool smooth)
 {
-  vita_video_t *vita = (vita_video_t *)data;
+   vita_video_t *vita = (vita_video_t *)data;
 
-  if (vita){
-    vita->tex_filter = smooth? SCE_GXM_TEXTURE_FILTER_LINEAR : SCE_GXM_TEXTURE_FILTER_POINT;
-    vita2d_texture_set_texture_filter(vita->texture,vita->tex_filter);
-  }
+   if (vita)
+   {
+      vita->tex_filter = smooth? SCE_GXM_TEXTURE_FILTER_LINEAR : SCE_GXM_TEXTURE_FILTER_POINT;
+      vita2d_texture_set_texture_filter(vita->texture,vita->tex_filter);
+   }
 }
 
 static void vita_set_aspect_ratio(void *data, unsigned aspectratio_index)
@@ -503,9 +505,10 @@ static void vita_set_texture_frame(void *data, const void *frame, bool rgb32,
 
    if (rgb32)
    {
-      stride                 /= 4;
       uint32_t         *tex32 = tex_p;
       const uint32_t *frame32 = frame;
+
+      stride                 /= 4;
 
       for (i = 0; i < height; i++)
          for (j = 0; j < width; j++)
@@ -513,9 +516,10 @@ static void vita_set_texture_frame(void *data, const void *frame, bool rgb32,
    }
    else
    {
-      stride                       /= 2;
       uint16_t               *tex16 = tex_p;
       const uint16_t       *frame16 = frame;
+
+      stride                       /= 2;
 
       for (i = 0; i < height; i++)
          for (j = 0; j < width; j++)
