@@ -460,11 +460,13 @@ bool core_info_does_support_file(const core_info_t *core, const char *path)
          core->supported_extensions_list, ".", path_get_extension(path));
 }
 
-const char *core_info_list_get_all_extensions(core_info_list_t *core_info_list)
+const char *core_info_list_get_all_extensions(void)
 {
-   if (!core_info_list)
-      return "";
-   return core_info_list->all_ext;
+   global_t *global = global_get_ptr();
+   core_info_list_t *list = (global->core_info.list) ? global->core_info.list : NULL;
+   if (!list)
+      return NULL;
+   return list->all_ext;
 }
 
 /* qsort_r() is not in standard C, sadly. */
