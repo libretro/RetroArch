@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __INTL_ENGLISH_H
-#define __INTL_ENGLISH_H
+#ifndef __INTL_SPANISH_H
+#define __INTL_SPANISH_H
 
 #define RETRO_LBL_JOYPAD_B "Botón B RetroPad"
 #define RETRO_LBL_JOYPAD_Y "Botón Y RetroPad"
