@@ -23,13 +23,14 @@
 #ifndef __LIBRETRO_SDK_COMPAT_MSVC_H
 #define __LIBRETRO_SDK_COMPAT_MSVC_H
 
-#ifdef _WIN32
+#ifdef _MSC_VER
+
+// Pre-MSVC 2015 compilers don't implement snprintf in a cross-platform manner.
+#if _MSC_VER < 1900
 #ifndef snprintf
 #define snprintf _snprintf
 #endif
 #endif
-
-#ifdef _MSC_VER
 
 #undef UNICODE /* Do not bother with UNICODE at this time. */
 #include <direct.h>
