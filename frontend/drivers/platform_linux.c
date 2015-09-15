@@ -570,12 +570,9 @@ static void frontend_linux_get_os(char *s, size_t len, int *major, int *minor)
 static void frontend_linux_get_env(int *argc,
       char *argv[], void *data, void *params_data)
 {
-   const char *xdg                 = NULL;
-   const char *home                = NULL;
    char base_path[PATH_MAX];
-
-   xdg  = getenv("XDG_CONFIG_HOME");
-   home = getenv("HOME");
+   const char *xdg  = getenv("XDG_CONFIG_HOME");
+   const char *home = getenv("HOME");
 
    if (xdg)
      snprintf(base_path, sizeof(base_path), "%s/retroarch", xdg);
