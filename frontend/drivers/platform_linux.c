@@ -23,13 +23,16 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/utsname.h>
+#include <sys/param.h> /* PATH_MAX */
 
 #include <boolean.h>
 #include <retro_dirent.h>
 #include <compat/strl.h>
 #include <rhash.h>
+#include <file/file_path.h>
 
 #include "../frontend_driver.h"
+#include "../../general.h"
 
 #ifndef ANDROID
 static const char *proc_apm_path             = "/proc/apm";
@@ -564,8 +567,68 @@ static void frontend_linux_get_os(char *s, size_t len, int *major, int *minor)
 #endif
 }
 
+static void frontend_linux_get_env(int *argc,
+      char *argv[], void *data, void *params_data)
+{
+   const char *xdg                 = NULL;
+   const char *home                = NULL;
+   char base_path[PATH_MAX];
+
+   xdg  = getenv("XDG_CONFIG_HOME");
+   home = getenv("HOME");
+
+   if (xdg)
+     snprintf(base_path, sizeof(base_path), "%s/retroarch", xdg);
+   else if (home)
+     snprintf(base_path, sizeof(base_path), "%s/.config/retroarch", home);
+   else
+     snprintf(base_path, sizeof(base_path), "retroarch");
+
+   fill_pathname_join(g_defaults.dir.core, base_path,
+      "cores", sizeof(g_defaults.dir.core));
+   fill_pathname_join(g_defaults.dir.core_info, base_path,
+      "cores", sizeof(g_defaults.dir.core_info));
+   fill_pathname_join(g_defaults.dir.autoconfig, base_path,
+      "autoconf", sizeof(g_defaults.dir.autoconfig));
+   fill_pathname_join(g_defaults.dir.assets, base_path,
+      "assets", sizeof(g_defaults.dir.assets));
+   fill_pathname_join(g_defaults.dir.remap, base_path,
+      "remap", sizeof(g_defaults.dir.remap));
+   fill_pathname_join(g_defaults.dir.playlist, base_path,
+      "playlists", sizeof(g_defaults.dir.playlist));
+   fill_pathname_join(g_defaults.dir.cursor, base_path,
+      "database/cursors", sizeof(g_defaults.dir.cursor));
+   fill_pathname_join(g_defaults.dir.database, base_path,
+      "database/rdb", sizeof(g_defaults.dir.database));
+   fill_pathname_join(g_defaults.dir.shader, base_path,
+      "shaders", sizeof(g_defaults.dir.shader));
+   fill_pathname_join(g_defaults.dir.cheat, base_path,
+      "cheats", sizeof(g_defaults.dir.cheat));
+   fill_pathname_join(g_defaults.dir.overlay, base_path,
+      "overlay", sizeof(g_defaults.dir.overlay));
+   fill_pathname_join(g_defaults.dir.osk_overlay, base_path,
+      "overlay", sizeof(g_defaults.dir.osk_overlay));
+
+   if(home)
+   {
+      fill_pathname_join(g_defaults.dir.screenshot, home,
+         "Pictures", sizeof(g_defaults.dir.screenshot));
+      fill_pathname_join(g_defaults.dir.core_assets, home,
+         "Downloads", sizeof(g_defaults.dir.core_assets));
+   }
+   else
+   {
+      fill_pathname_join(g_defaults.dir.screenshot, home,
+         "retroArch/screenshots", sizeof(g_defaults.dir.screenshot));
+      fill_pathname_join(g_defaults.dir.core_assets, home,
+         "retroarch/downloads", sizeof(g_defaults.dir.core_assets));
+   }
+
+   return;
+}
+
 frontend_ctx_driver_t frontend_ctx_linux = {
-   NULL,                         /* environment_get */
+   frontend_linux_get_env,       /* environment_get */
    NULL,                         /* init */
    NULL,                         /* deinit */
    NULL,                         /* exitspawn */
