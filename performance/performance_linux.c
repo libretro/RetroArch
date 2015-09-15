@@ -2,15 +2,19 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <unistd.h>
 
+#ifdef ANDROID
 #include <sys/system_properties.h>
+#endif
 #ifdef __arm__
 #include <machine/cpu-features.h>
 #endif
 #include <pthread.h>
 
 #include <retro_inline.h>
-#include "performance_android.h"
+#include <retro_log.h>
+#include "performance_linux.h"
 
 static  pthread_once_t     g_once;
 static  cpu_family         g_cpuFamily;
@@ -68,6 +72,7 @@ static int cpu_read_file(const char *pathname, char *buffer, size_t buffsize)
     return len;
 }
 
+#ifdef __ARM_ARCH__
 /* Extract the content of a the first occurence of a given field in
  * the content of /proc/cpuinfo and return it as a heap-allocated
  * string that must be freed by the caller.
@@ -154,6 +159,8 @@ static int has_list_item(const char* list, const char* item)
     }
     return 0;
 }
+#endif
+
 
 /* Parse an decimal integer starting from 'input', but not going further
  * than 'limit'. Return the value into '*result'.
@@ -296,7 +303,7 @@ static int get_cpu_count(void)
    return __builtin_popcount(cpus_present->mask);
 }
 
-static void android_cpuInit(void)
+static void linux_cpu_init(void)
 {
    char cpuinfo[4096];
    int  cpuinfo_len;
@@ -328,7 +335,7 @@ static void android_cpuInit(void)
     */
    char* cpu_arch = extract_cpuinfo_field(cpuinfo, cpuinfo_len, "CPU architecture");
 
-   if (cpu_arch != NULL)
+   if (cpu_arch)
    {
       char*  end;
       int    has_armv7 = 0;
@@ -384,7 +391,7 @@ static void android_cpuInit(void)
    /* Extract the list of CPU features from 'Features' field */
    char* cpu_features = extract_cpuinfo_field(cpuinfo, cpuinfo_len, "Features");
 
-   if (cpu_features != NULL)
+   if (cpu_features)
    {
       RARCH_LOG("found cpu_features = '%s'\n", cpu_features);
 
@@ -431,23 +438,23 @@ static void android_cpuInit(void)
 
 #ifdef _MIPS_ARCH
    g_cpuFamily = CPU_FAMILY_MIPS;
-#endif /* _MIPS_ARCH */
+#endif
 }
 
-cpu_family android_getCpuFamily(void)
+cpu_family linux_get_cpu_platform(void)
 {
-    pthread_once(&g_once, android_cpuInit);
+    pthread_once(&g_once, linux_cpu_init);
     return g_cpuFamily;
 }
 
-uint64_t android_getCpuFeatures(void)
+uint64_t linux_get_cpu_features(void)
 {
-    pthread_once(&g_once, android_cpuInit);
+    pthread_once(&g_once, linux_cpu_init);
     return g_cpuFeatures;
 }
 
-int android_getCpuCount(void)
+int linux_get_cpu_count(void)
 {
-    pthread_once(&g_once, android_cpuInit);
+    pthread_once(&g_once, linux_cpu_init);
     return g_cpuCount;
 }

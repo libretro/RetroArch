@@ -49,8 +49,8 @@ CONSOLE EXTENSIONS
 PERFORMANCE
 ============================================================ */
 
-#ifdef ANDROID
-#include "../performance/performance_android.c"
+#if defined(__linux__)
+#include "../performance/performance_linux.c"
 #endif
 
 #include "../performance.c"

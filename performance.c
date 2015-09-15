@@ -20,8 +20,8 @@
 #include "general.h"
 #include "compat/strl.h"
 
-#ifdef ANDROID
-#include "performance/performance_android.h"
+#if defined(__linux__)
+#include "performance/performance_linux.h"
 #endif
 
 #if !defined(_WIN32) && !defined(RARCH_CONSOLE)
@@ -364,7 +364,7 @@ unsigned rarch_get_cpu_cores(void)
    GetSystemInfo(&sysinfo);
    return sysinfo.dwNumberOfProcessors;
 #elif defined(ANDROID)
-   return android_getCpuCount();
+   return linux_get_cpu_count();
 #elif defined(GEKKO)
    return 1;
 #elif defined(PSP)
@@ -505,7 +505,7 @@ uint64_t rarch_get_cpu_features(void)
    }
 
 #elif defined(ANDROID) && defined(ANDROID_ARM)
-   cpu_flags = android_getCpuFeatures();
+   cpu_flags = linux_get_cpu_features();
 
 #ifdef __ARM_NEON__
    if (cpu_flags & CPU_ARM_FEATURE_NEON)
