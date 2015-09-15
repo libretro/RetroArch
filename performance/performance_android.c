@@ -97,8 +97,7 @@ static INLINE void cpu_x86_cpuid(int func, int values[4])
  * zero-terminate the content. Will not read more
  * than 'buffsize' bytes.
  */
-static int
-cpu_read_file(const char*  pathname, char*  buffer, size_t  buffsize)
+static int cpu_read_file(const char *pathname, char *buffer, size_t buffsize)
 {
     int len;
     int fd = open(pathname, O_RDONLY);
@@ -120,17 +119,14 @@ cpu_read_file(const char*  pathname, char*  buffer, size_t  buffsize)
  *
  * Return NULL if not found
  */
-static char*
-extract_cpuinfo_field(char* buffer, int buflen, const char* field)
+static char *extract_cpuinfo_field(char* buffer, int buflen, const char* field)
 {
    int len;
    const char *q;
    int  fieldlen = strlen(field);
-   char* bufend = buffer + buflen;
-   char* result = NULL;
-
-   /* Look for first field occurence, and ensures it starts the line.
-   */
+   char* bufend  = buffer + buflen;
+   char* result  = NULL;
+   /* Look for first field occurence, and ensures it starts the line. */
    const char *p = buffer;
 
    bufend = buffer + buflen;
@@ -139,7 +135,7 @@ extract_cpuinfo_field(char* buffer, int buflen, const char* field)
    {
       p = memmem(p, bufend-p, field, fieldlen);
       if (p == NULL)
-         goto end;
+         return result;
 
       if (p == buffer || p[-1] == '\n')
          break;
@@ -151,25 +147,22 @@ extract_cpuinfo_field(char* buffer, int buflen, const char* field)
    p += fieldlen;
    p  = memchr(p, ':', bufend-p);
    if (p == NULL || p[1] != ' ')
-      goto end;
+      return result;
 
    /* Find the end of the line */
    p += 2;
-   q = memchr(p, '\n', bufend-p);
+   q  = memchr(p, '\n', bufend-p);
    if (q == NULL)
       q = bufend;
 
    /* Copy the line into a heap-allocated buffer */
-   len = q-p;
+   len    = q-p;
    result = malloc(len+1);
    if (result == NULL)
-      goto end;
+      return result;
 
    memcpy(result, p, len);
    result[len] = '\0';
-
-end:
-   return result;
 }
 
 /* Checks that a space-separated list of items contains one given 'item'.
@@ -258,9 +251,9 @@ typedef struct {
  */
 static void cpulist_parse(CpuList* list, const char* line, int line_len)
 {
-   const char* p = line;
-   const char* end = p + line_len;
    const char* q;
+   const char* p   = line;
+   const char* end = p + line_len;
 
    /* NOTE: the input line coming from sysfs typically contains a
     * trailing newline, so take care of it in the code below
@@ -277,7 +270,7 @@ static void cpulist_parse(CpuList* list, const char* line, int line_len)
       /* Get first value */
       p = parse_decimal(p, q, &start_value);
       if (p == NULL)
-         goto BAD_FORMAT;
+         return;
 
       end_value = start_value;
 
@@ -303,14 +296,10 @@ static void cpulist_parse(CpuList* list, const char* line, int line_len)
       if (p < end)
          p++;
    }
-
-BAD_FORMAT:
-   ;
 }
 
 /* Read a CPU list from one sysfs file */
-static void
-cpulist_read_from(CpuList* list, const char* filename)
+static void cpulist_read_from(CpuList* list, const char* filename)
 {
    char   file[64];
    int    filelen;
