@@ -602,8 +602,8 @@ static void frontend_linux_get_env(int *argc,
       "database/rdb", sizeof(g_defaults.dir.database));
    fill_pathname_join(g_defaults.dir.shader, base_path,
       "shaders", sizeof(g_defaults.dir.shader));
-   fill_pathname_join(g_defaults.dir.cheat, base_path,
-      "cheats", sizeof(g_defaults.dir.cheat));
+   fill_pathname_join(g_defaults.dir.cheats, base_path,
+      "cheats", sizeof(g_defaults.dir.cheats));
    fill_pathname_join(g_defaults.dir.overlay, base_path,
       "overlay", sizeof(g_defaults.dir.overlay));
    fill_pathname_join(g_defaults.dir.osk_overlay, base_path,
