@@ -33,7 +33,6 @@ static bool exit_spawn;
 static bool exitspawn_start_game;
 
 #ifdef _XBOX360
-
 typedef struct _STRING 
 {
     USHORT Length;
