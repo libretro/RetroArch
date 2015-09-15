@@ -58,7 +58,8 @@ static int cpu_read_file(const char *pathname, char *buffer, size_t buffsize)
     if (fd < 0)
         return -1;
 
-    do {
+    do
+    {
         len = read(fd, buffer, buffsize);
     } while (len < 0 && errno == EINTR);
 
@@ -127,7 +128,7 @@ static char *extract_cpuinfo_field(char* buffer, int buflen, const char* field)
 static int has_list_item(const char* list, const char* item)
 {
     const char*  p = list;
-    int itemlen = strlen(item);
+    int    itemlen = strlen(item);
 
     if (list == NULL)
         return 0;
@@ -167,7 +168,8 @@ static int has_list_item(const char* list, const char* item)
 static const char *parse_decimal(const char* input, const char* limit, int* result)
 {
     const char* p = input;
-    int val = 0;
+    int       val = 0;
+
     while (p < limit)
     {
         int d = (*p - '0');
@@ -280,7 +282,7 @@ static void cpulist_read_from(CpuList* list, const char* filename)
  */
 static int get_cpu_count(void)
 {
-   CpuList cpus_present[1];
+   CpuList  cpus_present[1];
    CpuList cpus_possible[1];
 
    cpulist_read_from(cpus_present, "/sys/devices/system/cpu/present");
@@ -329,20 +331,18 @@ static void android_cpuInit(void)
    if (cpu_arch != NULL)
    {
       char*  end;
-      long   archNumber;
-      int    hasARMv7 = 0;
+      int    has_armv7 = 0;
+      /* read the initial decimal number, ignore the rest */
+      long   arch_number = strtol(cpu_arch, &end, 10);
 
       RARCH_LOG("Found CPU architecture = '%s'\n", cpu_arch);
-
-      /* read the initial decimal number, ignore the rest */
-      archNumber = strtol(cpu_arch, &end, 10);
 
       /* Here we assume that ARMv8 will be upwards compatible with v7
        * in the future. Unfortunately, there is no 'Features' field to
        * indicate that Thumb-2 is supported.
        */
-      if (end > cpu_arch && archNumber >= 7)
-         hasARMv7 = 1;
+      if (end > cpu_arch && arch_number >= 7)
+         has_armv7 = 1;
 
       /* Unfortunately, it seems that certain ARMv6-based CPUs
        * report an incorrect architecture number of 7!
@@ -354,55 +354,54 @@ static void android_cpuInit(void)
        * form of "(v7l)" for an ARMv7-based CPU, and "(v6l)" for
        * an ARMv6-one.
        */
-      if (hasARMv7)
+      if (has_armv7)
       {
-         char* cpuProc = extract_cpuinfo_field(cpuinfo, cpuinfo_len,
+         char *cpu_proc = extract_cpuinfo_field(cpuinfo, cpuinfo_len,
                "Processor");
-         if (cpuProc != NULL)
+
+         if (cpu_proc != NULL)
          {
-            RARCH_LOG("found cpuProc = '%s'\n", cpuProc);
-            if (has_list_item(cpuProc, "(v6l)"))
+            RARCH_LOG("found cpu_proc = '%s'\n", cpu_proc);
+            if (has_list_item(cpu_proc, "(v6l)"))
             {
                RARCH_ERR("CPU processor and architecture mismatch!!\n");
-               hasARMv7 = 0;
+               has_armv7 = 0;
             }
-            free(cpuProc);
+            free(cpu_proc);
          }
       }
 
-      if (hasARMv7)
+      if (has_armv7)
          g_cpuFeatures |= CPU_ARM_FEATURE_ARMv7;
 
       /* The LDREX / STREX instructions are available from ARMv6 */
-      if (archNumber >= 6)
+      if (arch_number >= 6)
          g_cpuFeatures |= CPU_ARM_FEATURE_LDREX_STREX;
 
       free(cpu_arch);
    }
 
    /* Extract the list of CPU features from 'Features' field */
-   char* cpuFeatures = extract_cpuinfo_field(cpuinfo, cpuinfo_len, "Features");
+   char* cpu_features = extract_cpuinfo_field(cpuinfo, cpuinfo_len, "Features");
 
-   if (cpuFeatures != NULL)
+   if (cpu_features != NULL)
    {
-      RARCH_LOG("found cpuFeatures = '%s'\n", cpuFeatures);
+      RARCH_LOG("found cpu_features = '%s'\n", cpu_features);
 
-      if (has_list_item(cpuFeatures, "vfpv3"))
+      if (has_list_item(cpu_features, "vfpv3"))
          g_cpuFeatures |= CPU_ARM_FEATURE_VFPv3;
 
-      else if (has_list_item(cpuFeatures, "vfpv3d16"))
+      else if (has_list_item(cpu_features, "vfpv3d16"))
          g_cpuFeatures |= CPU_ARM_FEATURE_VFPv3;
 
-      if (has_list_item(cpuFeatures, "neon"))
-      {
-         /* Note: Certain kernels only report neon but not vfpv3
-          *       in their features list. However, ARM mandates
-          *       that if Neon is implemented, so must be VFPv3
-          *       so always set the flag.
-          */
+      /* Note: Certain kernels only report NEON but not VFPv3
+       * in their features list. However, ARM mandates
+       * that if NEON is implemented, so must be VFPv3
+       * so always set the flag.
+       */
+      if (has_list_item(cpu_features, "neon"))
          g_cpuFeatures |= CPU_ARM_FEATURE_NEON | CPU_ARM_FEATURE_VFPv3;
-      }
-      free(cpuFeatures);
+      free(cpu_features);
    }
 #endif /* __ARM_ARCH__ */
 
