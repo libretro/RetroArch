@@ -308,7 +308,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    }
 
    memset(android_app, 0, sizeof(struct android_app));
-   
+
    android_app->activity = activity;
    android_app->mutex    = slock_new();
    android_app->cond     = scond_new();
@@ -352,7 +352,7 @@ int system_property_get(const char *name, char *value)
    }
 
    curpos = value;
-   
+
    while (!feof(pipe))
    {
       if (fgets(buffer, 128, pipe) != NULL)
@@ -416,15 +416,15 @@ static void frontend_android_get_os(char *s, size_t len, int *major, int *minor)
 
 static void frontend_android_get_version_sdk(int32_t *sdk)
 {
-  char os_version_str[PROP_VALUE_MAX] = {0};
-  system_property_get("ro.build.version.sdk", os_version_str);
+   char os_version_str[PROP_VALUE_MAX] = {0};
+   system_property_get("ro.build.version.sdk", os_version_str);
 
-  *sdk = 0;
-  if (os_version_str[0])
-  {
-    int num_read = sscanf(os_version_str, "%d", sdk);
-    (void) num_read;
-  }
+   *sdk = 0;
+   if (os_version_str[0])
+   {
+      int num_read = sscanf(os_version_str, "%d", sdk);
+      (void) num_read;
+   }
 }
 
 static bool device_is_xperia_play(const char *name)
@@ -435,7 +435,7 @@ static bool device_is_xperia_play(const char *name)
          !strcmp(name, "R800i") ||
          !strcmp(name, "R800a") ||
          !strcmp(name, "SO-01D")
-         )
+      )
       return true;
 
    return false;
@@ -449,7 +449,7 @@ static bool device_is_game_console(const char *name)
          !strcmp(name, "GAMEMID_BT") ||
          !strcmp(name, "S7800") ||
          !strcmp(name, "SHIELD")
-         )
+      )
       return true;
 
    return false;
@@ -486,7 +486,7 @@ static void frontend_android_get_environment_settings(int *argc,
    jstring                      jstr = NULL;
    struct android_app   *android_app = (struct android_app*)data;
    char buf[PATH_MAX_LENGTH]         = {0};
-   
+
    if (!android_app)
       return;
 
@@ -504,7 +504,7 @@ static void frontend_android_get_environment_settings(int *argc,
       args->sram_path  = NULL;
       args->state_path = NULL;
    }
-   
+
    frontend_android_get_version(&major, &minor, &rel);
 
    RARCH_LOG("Android OS version (major : %d, minor : %d, rel : %d)\n",
@@ -627,7 +627,7 @@ static void frontend_android_get_environment_settings(int *argc,
          /* TODO base dir handler */
       }
    }
-   
+
    /* Screenshots */
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "SCREENSHOTS"));
@@ -649,7 +649,7 @@ static void frontend_android_get_environment_settings(int *argc,
          /* TODO: screenshot handler */
       }
    }
-   
+
    /* Downloads */
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "DOWNLOADS"));
@@ -691,7 +691,7 @@ static void frontend_android_get_environment_settings(int *argc,
          RARCH_LOG("APK location [%s].\n", apk_path);
       }
    }
-   
+
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "EXTERNAL"));
 
@@ -727,22 +727,22 @@ static void frontend_android_get_environment_settings(int *argc,
          strlcpy(app_dir, argv, sizeof(app_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-   //set paths depending on the ability to write to sdcard_dir
+      //set paths depending on the ability to write to sdcard_dir
 
-   if(*sdcard_dir)
-   {
-      if(test_permissions(sdcard_dir))
-         perms = SDCARD_ROOT_WRITABLE;
-   }
-   else if(*ext_dir)
-   {
-      if(test_permissions(ext_dir))
-         perms = SDCARD_EXT_DIR_WRITABLE;
-   }
-   else
-       perms = SDCARD_NOT_WRITABLE;
+      if(*sdcard_dir)
+      {
+         if(test_permissions(sdcard_dir))
+            perms = SDCARD_ROOT_WRITABLE;
+      }
+      else if(*ext_dir)
+      {
+         if(test_permissions(ext_dir))
+            perms = SDCARD_EXT_DIR_WRITABLE;
+      }
+      else
+         perms = SDCARD_NOT_WRITABLE;
 
-   RARCH_LOG("SD permissions: %d",perms);
+      RARCH_LOG("SD permissions: %d",perms);
 
       if (*app_dir)
       {
@@ -813,60 +813,60 @@ static void frontend_android_get_environment_settings(int *argc,
 
             switch (perms)
             {
-                case SDCARD_EXT_DIR_WRITABLE:
-                   fill_pathname_join(g_defaults.dir.sram,
+               case SDCARD_EXT_DIR_WRITABLE:
+                  fill_pathname_join(g_defaults.dir.sram,
                         ext_dir, "saves", sizeof(g_defaults.dir.sram));
-                   path_mkdir(g_defaults.dir.sram);
+                  path_mkdir(g_defaults.dir.sram);
 
-                   fill_pathname_join(g_defaults.dir.savestate,
+                  fill_pathname_join(g_defaults.dir.savestate,
                         ext_dir, "states", sizeof(g_defaults.dir.savestate));
-                   path_mkdir(g_defaults.dir.savestate);
+                  path_mkdir(g_defaults.dir.savestate);
 
-                   fill_pathname_join(g_defaults.dir.system,
+                  fill_pathname_join(g_defaults.dir.system,
                         ext_dir, "system", sizeof(g_defaults.dir.system));
-                   path_mkdir(g_defaults.dir.system);
-                   break;
-                case SDCARD_NOT_WRITABLE:
-                   fill_pathname_join(g_defaults.dir.sram,
+                  path_mkdir(g_defaults.dir.system);
+                  break;
+               case SDCARD_NOT_WRITABLE:
+                  fill_pathname_join(g_defaults.dir.sram,
                         app_dir, "saves", sizeof(g_defaults.dir.sram));
-                   path_mkdir(g_defaults.dir.sram);
-                   fill_pathname_join(g_defaults.dir.savestate,
+                  path_mkdir(g_defaults.dir.sram);
+                  fill_pathname_join(g_defaults.dir.savestate,
                         app_dir, "states", sizeof(g_defaults.dir.savestate));
-                   path_mkdir(g_defaults.dir.savestate);
-                   fill_pathname_join(g_defaults.dir.system,
+                  path_mkdir(g_defaults.dir.savestate);
+                  fill_pathname_join(g_defaults.dir.system,
                         app_dir, "system", sizeof(g_defaults.dir.system));
-                   path_mkdir(g_defaults.dir.system);
-                   break;
-                case SDCARD_ROOT_WRITABLE:
-                default:
-                   break;
+                  path_mkdir(g_defaults.dir.system);
+                  break;
+               case SDCARD_ROOT_WRITABLE:
+               default:
+                  break;
             }
-            
+
             /* create save and system directories in the internal dir too */
             fill_pathname_join(buf,
-                 app_dir, "saves", sizeof(buf));
+                  app_dir, "saves", sizeof(buf));
             path_mkdir(buf);
 
             fill_pathname_join(buf,
-                 app_dir, "states", sizeof(buf));
+                  app_dir, "states", sizeof(buf));
             path_mkdir(buf);
 
             fill_pathname_join(buf,
-                 app_dir, "system", sizeof(buf));
+                  app_dir, "system", sizeof(buf));
             path_mkdir(buf);
-            
+
             /* create save and system directories in the internal sd too */
 
             fill_pathname_join(buf,
-                 ext_dir, "saves", sizeof(buf));
+                  ext_dir, "saves", sizeof(buf));
             path_mkdir(buf);
 
             fill_pathname_join(buf,
-                 ext_dir, "states", sizeof(buf));
+                  ext_dir, "states", sizeof(buf));
             path_mkdir(buf);
 
             fill_pathname_join(buf,
-                 ext_dir, "system", sizeof(buf));
+                  ext_dir, "system", sizeof(buf));
             path_mkdir(buf);
 
             RARCH_LOG("Default savefile folder: [%s]",   g_defaults.dir.sram);
@@ -898,8 +898,8 @@ static void frontend_android_get_environment_settings(int *argc,
 #if 0
    /* Explicitly disable input overlay by default 
     * for gamepad-like/console devices. */
-   if (device_is_game_console(device_model))
-      g_defaults.settings.input_overlay_enable = false;
+                  if (device_is_game_console(device_model))
+                     g_defaults.settings.input_overlay_enable = false;
 #endif
 }
 
@@ -1044,7 +1044,7 @@ static int frontend_android_parse_drive_list(void *data)
          app_dir, "Application Dir", MENU_FILE_DIRECTORY, 0, 0);
    menu_list_push(list,
          ext_dir, "External Application Dir", MENU_FILE_DIRECTORY, 0, 0);
-         menu_list_push(list,
+   menu_list_push(list,
          sdcard_dir, "Internal Memory", MENU_FILE_DIRECTORY, 0, 0);
 
    menu_list_push(list, "/", "",
