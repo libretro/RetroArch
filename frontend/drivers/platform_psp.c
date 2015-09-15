@@ -15,7 +15,6 @@
  */
 
 #include <stdint.h>
-#include <boolean.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -32,6 +31,7 @@ int scePowerSetArmClockFrequency(int freq);
 #include <pspsdk.h>
 #endif
 
+#include <boolean.h>
 #include <retro_log.h>
 #include <file/file_path.h>
 #ifndef IS_SALAMANDER

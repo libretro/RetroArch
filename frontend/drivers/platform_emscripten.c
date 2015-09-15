@@ -16,8 +16,10 @@
  */
 
 #include <emscripten/emscripten.h>
-#include "../../general.h"
+
 #include <file/config_file.h>
+
+#include "../../general.h"
 #include "../../content.h"
 #include "../frontend.h"
 #include "../../retroarch.h"

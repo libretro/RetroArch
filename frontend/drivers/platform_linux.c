@@ -16,16 +16,16 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include <boolean.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <retro_dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/utsname.h>
 
+#include <boolean.h>
+#include <retro_dirent.h>
 #include <compat/strl.h>
 #include <rhash.h>
 

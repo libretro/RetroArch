@@ -13,12 +13,13 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <3ds.h>
-
 #include <stdint.h>
-#include <boolean.h>
 #include <stddef.h>
 #include <string.h>
+
+#include <boolean.h>
+
+#include <3ds.h>
 
 #include <file/file_path.h>
 #ifndef IS_SALAMANDER

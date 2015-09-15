@@ -18,10 +18,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <fat.h>
 #include <gctypes.h>
 #include <ogc/cache.h>
-#include "../../gfx/drivers/ppc_asm.h"
 #include <ogc/system.h>
 #include <ogc/usbstorage.h>
 #include <sdcard/wiisd_io.h>
@@ -29,6 +29,8 @@
 #include <retro_log.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
+
+#include "../../gfx/drivers/ppc_asm.h"
 
 #define EXECUTE_ADDR ((uint8_t *) 0x91800000)
 #define BOOTER_ADDR  ((uint8_t *) 0x93000000)
