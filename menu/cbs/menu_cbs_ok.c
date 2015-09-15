@@ -206,8 +206,8 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_CONFIGURATIONS_LIST:
          info.type          = type;
          info.directory_ptr = idx;
-         if (path)
-            info_path        = path;
+         if (settings->menu_config_directory)
+            info_path        = settings->menu_config_directory;
          else
             info_path        = label;
          info_label = label;
