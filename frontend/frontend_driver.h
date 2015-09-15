@@ -81,7 +81,6 @@ extern frontend_ctx_driver_t frontend_ctx_ps3;
 extern frontend_ctx_driver_t frontend_ctx_xdk;
 extern frontend_ctx_driver_t frontend_ctx_qnx;
 extern frontend_ctx_driver_t frontend_ctx_darwin;
-extern frontend_ctx_driver_t frontend_ctx_android;
 extern frontend_ctx_driver_t frontend_ctx_linux;
 extern frontend_ctx_driver_t frontend_ctx_psp;
 extern frontend_ctx_driver_t frontend_ctx_ctr;
