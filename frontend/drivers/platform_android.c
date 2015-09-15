@@ -521,9 +521,7 @@ static void frontend_android_get_environment_settings(int *argc,
    if (android_app->getStringExtra && jstr)
    {
       static char config_path[PATH_MAX_LENGTH] = {0};
-      const char *argv = NULL;
-
-      argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)
          strlcpy(config_path, argv, sizeof(config_path));
@@ -569,10 +567,9 @@ static void frontend_android_get_environment_settings(int *argc,
    if (android_app->getStringExtra && jstr)
    {
       static char core_path[PATH_MAX_LENGTH];
-      const char *argv = NULL;
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       *core_path = '\0';
-      argv = (*env)->GetStringUTFChars(env, jstr, 0);
       if (argv && *argv)
          strlcpy(core_path, argv, sizeof(core_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
@@ -589,10 +586,9 @@ static void frontend_android_get_environment_settings(int *argc,
    if (android_app->getStringExtra && jstr)
    {
       static char path[PATH_MAX_LENGTH];
-      const char *argv = NULL;
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       *path = '\0';
-      argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)
          strlcpy(path, argv, sizeof(path));
@@ -612,10 +608,9 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      const char *argv = NULL;
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       *sdcard_dir = '\0';
-      argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)
          strlcpy(sdcard_dir, argv, sizeof(sdcard_dir));
@@ -634,10 +629,9 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      const char *argv = NULL;
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       *screenshot_dir = '\0';
-      argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)
          strlcpy(screenshot_dir, argv, sizeof(screenshot_dir));
@@ -656,10 +650,9 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      const char *argv = NULL;
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       *downloads_dir = '\0';
-      argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)
          strlcpy(downloads_dir, argv, sizeof(downloads_dir));
@@ -677,10 +670,9 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      const char *argv = NULL;
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       *apk_path = '\0';
-      argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)
          strlcpy(apk_path, argv, sizeof(apk_path));
@@ -697,10 +689,9 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      const char *argv = NULL;
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       *ext_dir = '\0';
-      argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)
          strlcpy(ext_dir, argv, sizeof(ext_dir));
@@ -718,10 +709,9 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {      
-      const char *argv = NULL;
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       *app_dir = '\0';
-      argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)
          strlcpy(app_dir, argv, sizeof(app_dir));
