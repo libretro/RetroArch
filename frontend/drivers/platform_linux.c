@@ -31,10 +31,11 @@
 
 #include "../frontend_driver.h"
 
+#ifndef ANDROID
 static const char *proc_apm_path             = "/proc/apm";
 static const char *proc_acpi_battery_path    = "/proc/acpi/battery";
-static const char *proc_acpi_sys_ac_adapter_path= "/sys/class/power_supply/ACAD";
-static const char *proc_acpi_sys_battery_path= "/sys/class/power_supply";
+static const char *proc_acpi_sysfs_ac_adapter_path= "/sys/class/power_supply/ACAD";
+static const char *proc_acpi_sysfs_battery_path= "/sys/class/power_supply";
 static const char *proc_acpi_ac_adapter_path = "/proc/acpi/ac_adapter";
 
 static bool load_power_file(const char *path, char *buf, size_t buflen)
@@ -101,14 +102,13 @@ static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
 #define ACPI_VAL_YES                   0x0b88c316U
 #define ACPI_VAL_ONLINE                0x6842bf17U
 
-static void
-check_proc_acpi_battery(const char * node, bool * have_battery,
+static void check_proc_acpi_battery(const char * node, bool * have_battery,
       bool * charging, int *seconds, int *percent)
 {
    const char *base  = proc_acpi_battery_path;
    char path[1024];
-   char info[1024]   = {0};
-   char state[1024]  = {0};
+   char info[1024];
+   char state[1024];
    char         *ptr = NULL;
    char         *key = NULL;
    char         *val = NULL;
@@ -215,13 +215,12 @@ check_proc_acpi_battery(const char * node, bool * have_battery,
    }
 }
 
-static void
-check_proc_acpi_sys_battery(const char * node, bool * have_battery,
+static void check_proc_acpi_sysfs_battery(const char * node, bool * have_battery,
       bool * charging, int *seconds, int *percent)
 {
    unsigned capacity;
    char path[1024], info[1024], state[1024];
-   const char *base  = proc_acpi_sys_battery_path;
+   const char *base  = proc_acpi_sysfs_battery_path;
    char         *ptr = NULL;
    char         *key = NULL;
    char         *val = NULL;
@@ -253,9 +252,7 @@ check_proc_acpi_sys_battery(const char * node, bool * have_battery,
    *percent = capacity;
 }
 
-
-static void
-check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
+static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
 {
    char path[1024];
    const char *base = proc_acpi_ac_adapter_path;
@@ -280,11 +277,10 @@ check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
    }
 }
 
-static void
-check_proc_acpi_sys_ac_adapter(const char * node, bool *have_ac)
+static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
 {
    char  state[256], path[1024];
-   const char *base = proc_acpi_sys_ac_adapter_path;
+   const char *base = proc_acpi_sysfs_ac_adapter_path;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "online");
    if (!load_power_file(path, state, sizeof (state)))
@@ -448,8 +444,7 @@ end:
    return ret;
 }
 
-static bool frontend_linux_powerstate_check_acpi_sys(
-      enum frontend_powerstate *state,
+static bool frontend_linux_powerstate_check_acpi_sysfs(enum frontend_powerstate *state,
       int *seconds, int *percent)
 {
    bool ret            = false;
@@ -460,7 +455,7 @@ static bool frontend_linux_powerstate_check_acpi_sys(
 
    *state = FRONTEND_POWERSTATE_NONE;
 
-   entry = retro_opendir(proc_acpi_sys_battery_path);
+   entry = retro_opendir(proc_acpi_sysfs_battery_path);
    if (!entry)
       goto error;
 
@@ -468,17 +463,17 @@ static bool frontend_linux_powerstate_check_acpi_sys(
       goto error;
 
    while (retro_readdir(entry))
-      check_proc_acpi_sys_battery(retro_dirent_get_name(entry),
+      check_proc_acpi_sysfs_battery(retro_dirent_get_name(entry),
             &have_battery, &charging, seconds, percent);
 
    retro_closedir(entry);
 
-   entry = retro_opendir(proc_acpi_sys_ac_adapter_path);
+   entry = retro_opendir(proc_acpi_sysfs_ac_adapter_path);
    if (!entry)
       goto error;
 
    while (retro_readdir(entry))
-      check_proc_acpi_sys_ac_adapter(retro_dirent_get_name(entry), &have_ac);
+      check_proc_acpi_sysfs_ac_adapter(retro_dirent_get_name(entry), &have_ac);
 
    if (!have_battery)
    {
@@ -499,20 +494,22 @@ error:
 
    return false;
 }
+#endif
 
-static enum frontend_powerstate 
-frontend_linux_get_powerstate(int *seconds, int *percent)
+static enum frontend_powerstate frontend_linux_get_powerstate(int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
 
-   if (frontend_linux_powerstate_check_apm(&ret, seconds, percent))
+#ifndef ANDROID
+   if (frontend_linux_powerstate_check_acpi_sysfs(&ret, seconds, percent))
       return ret;
 
    if (frontend_linux_powerstate_check_acpi(&ret, seconds, percent))
       return ret;
 
-   if (frontend_linux_powerstate_check_acpi_sys(&ret, seconds, percent))
+   if (frontend_linux_powerstate_check_apm(&ret, seconds, percent))
       return ret;
+#endif
 
    return FRONTEND_POWERSTATE_NONE;
 }
@@ -555,6 +552,7 @@ static enum frontend_architecture frontend_linux_get_architecture(void)
 
 static void frontend_linux_get_os(char *s, size_t len, int *major, int *minor)
 {
+#ifndef ANDROID
    unsigned krel;
    struct utsname buffer;
 
@@ -563,6 +561,7 @@ static void frontend_linux_get_os(char *s, size_t len, int *major, int *minor)
 
    sscanf(buffer.release, "%d.%d.%u", major, minor, &krel);
    strlcpy(s, "Linux", len);
+#endif
 }
 
 frontend_ctx_driver_t frontend_ctx_linux = {
@@ -581,5 +580,9 @@ frontend_ctx_driver_t frontend_ctx_linux = {
    frontend_linux_get_architecture,
    frontend_linux_get_powerstate,
    NULL,                         /* parse_drive_list */
+#ifdef ANDROID
+   "android",
+#else
    "linux",
+#endif
 };
