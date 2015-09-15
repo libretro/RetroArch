@@ -90,6 +90,7 @@ AccessControlInfo:
   Priority                      : 16
    
   MaxCpu                        : 0x9E # Default
+  CpuSpeed                      : 804mhz
   
   DisableDebug                  : false
   EnableForceDebug              : false
