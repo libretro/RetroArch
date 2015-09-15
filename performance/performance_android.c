@@ -1,74 +1,28 @@
-/*
- * Copyright (C) 2010 The Android Open Source Project
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *  * Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  * Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
- * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
-
-/* ChangeLog for this library:
- *
- * NDK r7c: Fix CPU count computation. The old method only reported the
- *           number of _active_ CPUs when the library was initialized,
- *           which could be less than the real total.
- *
- * NDK r5: Handle buggy kernels which report a CPU Architecture number of 7
- *         for an ARMv6 CPU (see below).
- *
- *         Handle kernels that only report 'neon', and not 'vfpv3'
- *         (VFPv3 is mandated by the ARM architecture is Neon is implemented)
- *
- *         Handle kernels that only report 'vfpv3d16', and not 'vfpv3'
- *
- *         Fix x86 compilation. Report ANDROID_CPU_FAMILY_X86 in
- *         android_getCpuFamily().
- *
- * NDK r4: Initial release
- */
-#include <sys/system_properties.h>
-#ifdef __arm__
-#include <machine/cpu-features.h>
-#endif
-#include <pthread.h>
-#include "performance_android.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
 
+#include <sys/system_properties.h>
+#ifdef __arm__
+#include <machine/cpu-features.h>
+#endif
+#include <pthread.h>
+
 #include <retro_inline.h>
+#include "performance_android.h"
 
 static  pthread_once_t     g_once;
-static  AndroidCpuFamily   g_cpuFamily;
+static  cpu_family   g_cpuFamily;
 static  uint64_t           g_cpuFeatures;
 static  int                g_cpuCount;
 
 #ifdef __arm__
-#  define DEFAULT_CPU_FAMILY  ANDROID_CPU_FAMILY_ARM
+#  define DEFAULT_CPU_FAMILY  CPU_FAMILY_ARM
 #elif defined __i386__
-#  define DEFAULT_CPU_FAMILY  ANDROID_CPU_FAMILY_X86
+#  define DEFAULT_CPU_FAMILY  CPU_FAMILY_X86
 #else
-#  define DEFAULT_CPU_FAMILY  ANDROID_CPU_FAMILY_UNKNOWN
+#  define DEFAULT_CPU_FAMILY  CPU_FAMILY_UNKNOWN
 #endif
 
 #ifdef __i386__
@@ -163,6 +117,8 @@ static char *extract_cpuinfo_field(char* buffer, int buflen, const char* field)
 
    memcpy(result, p, len);
    result[len] = '\0';
+
+   return result;
 }
 
 /* Checks that a space-separated list of items contains one given 'item'.
@@ -281,7 +237,7 @@ static void cpulist_parse(CpuList* list, const char* line, int line_len)
       {
          p = parse_decimal(p+1, q, &end_value);
          if (p == NULL)
-            goto BAD_FORMAT;
+            return;
       }
 
       /* Set bits CPU list bits */
@@ -418,11 +374,11 @@ static void android_cpuInit(void)
       }
 
       if (hasARMv7)
-         g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_ARMv7;
+         g_cpuFeatures |= CPU_ARM_FEATURE_ARMv7;
 
       /* The LDREX / STREX instructions are available from ARMv6 */
       if (archNumber >= 6)
-         g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_LDREX_STREX;
+         g_cpuFeatures |= CPU_ARM_FEATURE_LDREX_STREX;
 
       free(cpuArch);
    }
@@ -435,10 +391,10 @@ static void android_cpuInit(void)
       RARCH_LOG("found cpuFeatures = '%s'\n", cpuFeatures);
 
       if (has_list_item(cpuFeatures, "vfpv3"))
-         g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_VFPv3;
+         g_cpuFeatures |= CPU_ARM_FEATURE_VFPv3;
 
       else if (has_list_item(cpuFeatures, "vfpv3d16"))
-         g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_VFPv3;
+         g_cpuFeatures |= CPU_ARM_FEATURE_VFPv3;
 
       if (has_list_item(cpuFeatures, "neon"))
       {
@@ -447,15 +403,14 @@ static void android_cpuInit(void)
           *       that if Neon is implemented, so must be VFPv3
           *       so always set the flag.
           */
-         g_cpuFeatures |= ANDROID_CPU_ARM_FEATURE_NEON |
-            ANDROID_CPU_ARM_FEATURE_VFPv3;
+         g_cpuFeatures |= CPU_ARM_FEATURE_NEON | CPU_ARM_FEATURE_VFPv3;
       }
       free(cpuFeatures);
    }
 #endif /* __ARM_ARCH__ */
 
 #ifdef __i386__
-   g_cpuFamily = ANDROID_CPU_FAMILY_X86;
+   g_cpuFamily = CPU_FAMILY_X86;
 
    int regs[4];
 
@@ -471,19 +426,19 @@ static void android_cpuInit(void)
 
    cpu_x86_cpuid(1, regs);
    if ((regs[2] & (1 << 9)) != 0)
-      g_cpuFeatures |= ANDROID_CPU_X86_FEATURE_SSSE3;
+      g_cpuFeatures |= CPU_X86_FEATURE_SSSE3;
    if ((regs[2] & (1 << 23)) != 0)
-      g_cpuFeatures |= ANDROID_CPU_X86_FEATURE_POPCNT;
+      g_cpuFeatures |= CPU_X86_FEATURE_POPCNT;
    if (vendorIsIntel && (regs[2] & (1 << 22)) != 0)
-      g_cpuFeatures |= ANDROID_CPU_X86_FEATURE_MOVBE;
+      g_cpuFeatures |= CPU_X86_FEATURE_MOVBE;
 #endif
 
 #ifdef _MIPS_ARCH
-   g_cpuFamily = ANDROID_CPU_FAMILY_MIPS;
+   g_cpuFamily = CPU_FAMILY_MIPS;
 #endif /* _MIPS_ARCH */
 }
 
-AndroidCpuFamily android_getCpuFamily(void)
+cpu_family android_getCpuFamily(void)
 {
     pthread_once(&g_once, android_cpuInit);
     return g_cpuFamily;

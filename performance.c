@@ -508,13 +508,13 @@ uint64_t rarch_get_cpu_features(void)
    cpu_flags = android_getCpuFeatures();
 
 #ifdef __ARM_NEON__
-   if (cpu_flags & ANDROID_CPU_ARM_FEATURE_NEON)
+   if (cpu_flags & CPU_ARM_FEATURE_NEON)
    {
       cpu |= RETRO_SIMD_NEON;
       arm_enable_runfast_mode();
    }
 #endif
-   if (cpu_flags & ANDROID_CPU_ARM_FEATURE_VFPv3)
+   if (cpu_flags & CPU_ARM_FEATURE_VFPv3)
       cpu |= RETRO_SIMD_VFPV3;
 
 #elif defined(__ARM_NEON__)
