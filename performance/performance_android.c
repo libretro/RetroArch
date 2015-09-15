@@ -13,7 +13,7 @@
 #include "performance_android.h"
 
 static  pthread_once_t     g_once;
-static  cpu_family   g_cpuFamily;
+static  cpu_family         g_cpuFamily;
 static  uint64_t           g_cpuFeatures;
 static  int                g_cpuCount;
 
@@ -124,8 +124,7 @@ static char *extract_cpuinfo_field(char* buffer, int buflen, const char* field)
 /* Checks that a space-separated list of items contains one given 'item'.
  * Returns 1 if found, 0 otherwise.
  */
-static int
-has_list_item(const char* list, const char* item)
+static int has_list_item(const char* list, const char* item)
 {
     const char*  p = list;
     int itemlen = strlen(item);
@@ -165,8 +164,7 @@ has_list_item(const char* list, const char* item)
  * position after the decimal number in case of success (which will always
  * be <= 'limit').
  */
-static const char*
-parse_decimal(const char* input, const char* limit, int* result)
+static const char *parse_decimal(const char* input, const char* limit, int* result)
 {
     const char* p = input;
     int val = 0;
@@ -191,7 +189,8 @@ parse_decimal(const char* input, const char* limit, int* result)
  * For now, we don't expect more than 32 cores on mobile devices, so keep
  * everything simple.
  */
-typedef struct {
+typedef struct
+{
     uint32_t mask;
 } CpuList;
 
@@ -305,8 +304,6 @@ static void android_cpuInit(void)
    g_cpuCount    = 1;
 
    cpuinfo_len = cpu_read_file("/proc/cpuinfo", cpuinfo, sizeof cpuinfo);
-   RARCH_LOG("cpuinfo_len is (%d):\n%.*s\n", cpuinfo_len,
-         cpuinfo_len >= 0 ? cpuinfo_len : 0, cpuinfo);
 
    if (cpuinfo_len < 0)
       return;
@@ -327,24 +324,24 @@ static void android_cpuInit(void)
     * $KERNEL/arch/arm/kernel/setup.c and the 'c_show' function in
     * same file.
     */
-   char* cpuArch = extract_cpuinfo_field(cpuinfo, cpuinfo_len, "CPU architecture");
+   char* cpu_arch = extract_cpuinfo_field(cpuinfo, cpuinfo_len, "CPU architecture");
 
-   if (cpuArch != NULL)
+   if (cpu_arch != NULL)
    {
       char*  end;
       long   archNumber;
       int    hasARMv7 = 0;
 
-      RARCH_LOG("found cpuArch = '%s'\n", cpuArch);
+      RARCH_LOG("Found CPU architecture = '%s'\n", cpu_arch);
 
       /* read the initial decimal number, ignore the rest */
-      archNumber = strtol(cpuArch, &end, 10);
+      archNumber = strtol(cpu_arch, &end, 10);
 
       /* Here we assume that ARMv8 will be upwards compatible with v7
        * in the future. Unfortunately, there is no 'Features' field to
        * indicate that Thumb-2 is supported.
        */
-      if (end > cpuArch && archNumber >= 7)
+      if (end > cpu_arch && archNumber >= 7)
          hasARMv7 = 1;
 
       /* Unfortunately, it seems that certain ARMv6-based CPUs
@@ -380,7 +377,7 @@ static void android_cpuInit(void)
       if (archNumber >= 6)
          g_cpuFeatures |= CPU_ARM_FEATURE_LDREX_STREX;
 
-      free(cpuArch);
+      free(cpu_arch);
    }
 
    /* Extract the list of CPU features from 'Features' field */
