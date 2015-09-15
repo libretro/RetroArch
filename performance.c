@@ -363,8 +363,6 @@ unsigned rarch_get_cpu_cores(void)
    SYSTEM_INFO sysinfo;
    GetSystemInfo(&sysinfo);
    return sysinfo.dwNumberOfProcessors;
-#elif defined(ANDROID)
-   return linux_get_cpu_count();
 #elif defined(GEKKO)
    return 1;
 #elif defined(PSP)
@@ -397,6 +395,8 @@ unsigned rarch_get_cpu_cores(void)
          num_cpu = 1;
    }
    return num_cpu;
+#elif defined(__linux__)
+   return linux_get_cpu_count();
 #elif defined(_XBOX360)
    return 3;
 #else
@@ -504,7 +504,7 @@ uint64_t rarch_get_cpu_features(void)
          cpu |= RETRO_SIMD_MMXEXT;
    }
 
-#elif defined(ANDROID) && defined(ANDROID_ARM)
+#elif defined(__linux__)
    cpu_flags = linux_get_cpu_features();
 
 #ifdef __ARM_NEON__
