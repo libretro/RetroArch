@@ -589,7 +589,22 @@ static void frontend_linux_get_env(int *argc,
       "cores", sizeof(g_defaults.dir.core));
    fill_pathname_join(g_defaults.dir.core_info, base_path,
       "cores", sizeof(g_defaults.dir.core_info));
-
+   fill_pathname_join(g_defaults.dir.autoconfig, base_path,
+      "autoconf", sizeof(g_defaults.dir.autoconfig));
+   fill_pathname_join(g_defaults.dir.assets, base_path,
+      "assets", sizeof(g_defaults.dir.assets));
+   fill_pathname_join(g_defaults.dir.remap, base_path,
+      "remap", sizeof(g_defaults.dir.remap));
+   fill_pathname_join(g_defaults.dir.playlist, base_path,
+      "playlists", sizeof(g_defaults.dir.playlist));
+   fill_pathname_join(g_defaults.dir.cursor, base_path,
+      "database/cursors", sizeof(g_defaults.dir.cursor));
+   fill_pathname_join(g_defaults.dir.database, base_path,
+      "database/rdb", sizeof(g_defaults.dir.database));
+   fill_pathname_join(g_defaults.dir.shader, base_path,
+      "shaders", sizeof(g_defaults.dir.shader));
+   fill_pathname_join(g_defaults.dir.overlay, base_path,
+      "overlay", sizeof(g_defaults.dir.overlay));
    return;
 }
 
