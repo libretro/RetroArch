@@ -23,13 +23,16 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/utsname.h>
+#include <sys/param.h> /* PATH_MAX */
 
 #include <boolean.h>
 #include <retro_dirent.h>
 #include <compat/strl.h>
 #include <rhash.h>
+#include <file/file_path.h>
 
 #include "../frontend_driver.h"
+#include "../../general.h"
 
 static const char *proc_apm_path             = "/proc/apm";
 static const char *proc_acpi_battery_path    = "/proc/acpi/battery";
@@ -565,8 +568,33 @@ static void frontend_linux_get_os(char *s, size_t len, int *major, int *minor)
    strlcpy(s, "Linux", len);
 }
 
+static void frontend_linux_get_env(int *argc,
+      char *argv[], void *data, void *params_data)
+{
+   const char *xdg                 = NULL;
+   const char *home                = NULL;
+   char base_path[PATH_MAX];
+
+   xdg  = getenv("XDG_CONFIG_HOME");
+   home = getenv("HOME");
+
+   if (xdg)
+     snprintf(base_path, sizeof(base_path), "%s/retroarch", xdg);
+   else if (home)
+     snprintf(base_path, sizeof(base_path), "%s/.config/retroarch", home);
+   else
+     snprintf(base_path, sizeof(base_path), "retroarch");
+
+   fill_pathname_join(g_defaults.dir.core, base_path,
+      "cores", sizeof(g_defaults.dir.core));
+   fill_pathname_join(g_defaults.dir.core_info, base_path,
+      "cores", sizeof(g_defaults.dir.core_info));
+
+   return;
+}
+
 frontend_ctx_driver_t frontend_ctx_linux = {
-   NULL,                         /* environment_get */
+   frontend_linux_get_env,       /* environment_get */
    NULL,                         /* init */
    NULL,                         /* deinit */
    NULL,                         /* exitspawn */
