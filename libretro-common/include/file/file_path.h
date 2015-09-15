@@ -23,12 +23,12 @@
 #ifndef __LIBRETRO_SDK_FILE_PATH_H
 #define __LIBRETRO_SDK_FILE_PATH_H
 
-#include <boolean.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <sys/types.h>
 
+#include <boolean.h>
 #include <retro_inline.h>
 
 #ifdef __cplusplus

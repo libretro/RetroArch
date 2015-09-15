@@ -28,10 +28,11 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
-#include <boolean.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stddef.h>
+
+#include <boolean.h>
 
 struct config_entry_list
 {

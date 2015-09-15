@@ -16,6 +16,7 @@
  */
 
 #define __STDC_LIMIT_MACROS
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -26,12 +27,12 @@
 #include "rewind.h"
 #include "performance.h"
 
-#ifndef UINT16_MAX
-#define UINT16_MAX 0xffff
+#ifndef UINT_FAST16_MAX
+#define UINT_FAST16_MAX 0xffff
 #endif
 
-#ifndef UINT32_MAX
-#define UINT32_MAX 0xffffffffu
+#ifndef UINT_LEAST32_MAX
+#define UINT_LEAST32_MAX 0xffffffffu
 #endif
 
 #undef CPU_X86
@@ -67,7 +68,7 @@ size thisstart;
 size_t state_manager_raw_maxsize(size_t uncomp)
 {
    /* bytes covered by a compressed block */
-   const int maxcblkcover = UINT16_MAX * sizeof(uint16_t);
+   const int maxcblkcover = UINT_FAST16_MAX * sizeof(uint16_t);
    /* uncompressed size, rounded to 16 bits */
    size_t uncomp16        = (uncomp + sizeof(uint16_t) - 1) & ~sizeof(uint16_t);
    /* number of blocks */
@@ -245,15 +246,13 @@ size_t state_manager_raw_compress(const void *src,
       new16 += skip;
       num16s -= skip;
    
-      if (skip > UINT16_MAX)
+      if (skip > UINT_FAST16_MAX)
       {
-         if (skip > UINT32_MAX)
-         {
-            /* This will make it scan the entire thing again, 
-             * but it only hits on 8GB unchanged data anyways,
-             * and if you're doing that, you've got bigger problems. */
-            skip = UINT32_MAX;
-         }
+         /* This will make it scan the entire thing again, 
+          * but it only hits on 8GB unchanged data anyways,
+          * and if you're doing that, you've got bigger problems. */
+         if (skip > UINT_LEAST32_MAX)
+            skip = UINT_LEAST32_MAX;
          *compressed16++ = 0;
          *compressed16++ = skip;
          *compressed16++ = skip >> 16;
@@ -262,8 +261,8 @@ size_t state_manager_raw_compress(const void *src,
       }
    
       changed = find_same(old16, new16);
-      if (changed > UINT16_MAX)
-         changed = UINT16_MAX;
+      if (changed > UINT_FAST16_MAX)
+         changed = UINT_FAST16_MAX;
    
       *compressed16++ = changed;
       *compressed16++ = skip;
