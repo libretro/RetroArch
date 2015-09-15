@@ -636,9 +636,7 @@ FRONTEND
 #include "../frontend/drivers/platform_xenon.c"
 #elif defined(__QNX__)
 #include "../frontend/drivers/platform_qnx.c"
-#elif defined(ANDROID)
-#include "../frontend/drivers/platform_android.c"
-#elif defined(__linux__) && !defined(ANDROID)
+#elif defined(__linux__)
 #include "../frontend/drivers/platform_linux.c"
 #endif
 #include "../frontend/drivers/platform_null.c"
