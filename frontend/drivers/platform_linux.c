@@ -49,6 +49,25 @@
 #include "../../general.h"
 #include "platform_linux.h"
 
+static bool load_generic_file(ssize_t *len, const char *path, char *buf, size_t buflen)
+{
+   const int fd = open(path, O_RDONLY);
+   if (fd < 0)
+      return false;
+
+   do
+   {
+      *len = read(fd, buf, buflen);
+   }while(*len < 0 && errno == EINTR);
+
+   close(fd);
+   if (*len < 0)
+      return false;
+   buf[*len] = '\0';             /* null-terminate the string. */
+
+   return true;
+}
+
 #ifdef ANDROID
 #define SDCARD_ROOT_WRITABLE     1
 #define SDCARD_EXT_DIR_WRITABLE  2
@@ -98,27 +117,6 @@ static INLINE void cpu_x86_cpuid(int func, int values[4])
 }
 #endif
 
-/* Read the content of /proc/cpuinfo into a user-provided buffer.
- * Return the length of the data, or -1 on error. Does *not*
- * zero-terminate the content. Will not read more
- * than 'buffsize' bytes.
- */
-static int cpu_read_file(const char *pathname, char *buffer, size_t buffsize)
-{
-    int len;
-    int fd = open(pathname, O_RDONLY);
-    if (fd < 0)
-        return -1;
-
-    do
-    {
-        len = read(fd, buffer, buffsize);
-    } while (len < 0 && errno == EINTR);
-
-    close(fd);
-
-    return len;
-}
 
 #ifdef __ARM_ARCH__
 /* Extract the content of a the first occurence of a given field in
@@ -314,13 +312,11 @@ static void cpulist_parse(CpuList* list, const char* line, int line_len)
 static void cpulist_read_from(CpuList* list, const char* filename)
 {
    char   file[64];
-   int    filelen;
+   ssize_t    filelen;
 
    list->mask = 0;
 
-   filelen = cpu_read_file(filename, file, sizeof file);
-
-   if (filelen < 0)
+   if (!load_generic_file(&filelen, filename, file, sizeof(file)))
    {
       RARCH_ERR("Could not read %s: %s\n", filename, strerror(errno));
       return;
@@ -354,13 +350,13 @@ static int get_cpu_count(void)
 static void linux_cpu_init(void)
 {
    char cpuinfo[4096];
-   int  cpuinfo_len;
+   ssize_t  cpuinfo_len = 0;
 
    g_cpuFamily   = DEFAULT_CPU_FAMILY;
    g_cpuFeatures = 0;
    g_cpuCount    = 1;
 
-   cpuinfo_len = cpu_read_file("/proc/cpuinfo", cpuinfo, sizeof cpuinfo);
+   load_generic_file(&cpuinfo_len, "/proc/cpuinfo", cpuinfo, sizeof cpuinfo);
 
    if (cpuinfo_len < 0)
       return;
@@ -943,20 +939,6 @@ static const char *proc_acpi_sysfs_ac_adapter_path= "/sys/class/power_supply/ACA
 static const char *proc_acpi_sysfs_battery_path= "/sys/class/power_supply";
 static const char *proc_acpi_ac_adapter_path = "/proc/acpi/ac_adapter";
 
-static bool load_power_file(const char *path, char *buf, size_t buflen)
-{
-   ssize_t br = 0;
-   const int fd = open(path, O_RDONLY);
-   if (fd == -1)
-      return false;
-   br = read(fd, buf, buflen-1);
-   close(fd);
-   if (br < 0)
-      return false;
-   buf[br] = '\0';             /* null-terminate the string. */
-
-   return true;
-}
 
 static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
 {
@@ -1014,6 +996,7 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
    char path[1024];
    char info[1024];
    char state[1024];
+   ssize_t buflen    = 0;
    char         *ptr = NULL;
    char         *key = NULL;
    char         *val = NULL;
@@ -1026,11 +1009,11 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
 
-   if (!load_power_file(path, state, sizeof (state)))
+   if (!load_generic_file(&buflen, path, state, sizeof (state)))
       return;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "info");
-   if (!load_power_file(path, info, sizeof (info)))
+   if (!load_generic_file(&buflen, path, info, sizeof (info)))
       return;
 
    ptr = &state[0];
@@ -1131,6 +1114,7 @@ static void check_proc_acpi_sysfs_battery(const char * node, bool * have_battery
    char         *val = NULL;
    bool       charge = false;
    bool       choose = false;
+   ssize_t buflen    = 0;
    int       maximum = -1;
    int     remaining = -1;
    int          secs = -1;
@@ -1140,7 +1124,7 @@ static void check_proc_acpi_sysfs_battery(const char * node, bool * have_battery
       return;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "status");
-   if (!load_power_file(path, state, sizeof (state)))
+   if (!load_generic_file(&buflen, path, state, sizeof (state)))
       return;
 
    if (strstr(state, "Discharging"))
@@ -1149,7 +1133,7 @@ static void check_proc_acpi_sysfs_battery(const char * node, bool * have_battery
       *have_battery = true;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "capacity");
-   if (!load_power_file(path, state, sizeof (state)))
+   if (!load_generic_file(&buflen, path, state, sizeof (state)))
       return;
 
    capacity = atoi(state);
@@ -1165,9 +1149,10 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
    char        *ptr = NULL;
    char        *key = NULL;
    char        *val = NULL;
+   ssize_t buflen   = 0;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
-   if (!load_power_file(path, state, sizeof (state)))
+   if (!load_generic_file(&buflen, path, state, sizeof (state)))
       return;
 
    ptr = &state[0];
@@ -1185,10 +1170,11 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
 static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
 {
    char  state[256], path[1024];
+   ssize_t buflen   = 0;
    const char *base = proc_acpi_sysfs_ac_adapter_path;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "online");
-   if (!load_power_file(path, state, sizeof (state)))
+   if (!load_generic_file(&buflen, path, state, sizeof (state)))
       return;
 
    if (strstr(state, "1"))
@@ -1235,9 +1221,10 @@ static bool frontend_linux_powerstate_check_apm(
    int battery_flag    = 0;
    int battery_percent = 0;
    int battery_time    = 0;
+   ssize_t buflen      = 0;
    char *str           = NULL;
    
-   if (!load_power_file(proc_apm_path, buf, sizeof(buf)))
+   if (!load_generic_file(&buflen, proc_apm_path, buf, sizeof(buf)))
       return false;
 
    ptr                 = &buf[0];
