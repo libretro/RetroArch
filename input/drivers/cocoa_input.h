@@ -51,6 +51,7 @@ typedef struct
    uint32_t key_state[MAX_KEYS];
 
    uint32_t buttons[MAX_USERS];
+   uint32_t mfi_buttons[MAX_USERS];
    int16_t axes[MAX_USERS][4];
    int8_t  hats[NUM_HATS][2];
 

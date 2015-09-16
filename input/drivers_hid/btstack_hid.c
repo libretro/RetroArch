@@ -775,7 +775,11 @@ static bool btstack_hid_joypad_button(void *data, unsigned port, uint16_t joykey
 
    /* Check the button. */
    if ((port < MAX_USERS) && (joykey < 32))
-      return ((buttons & (1 << joykey)) != 0);
+      return ((buttons & (1 << joykey)) != 0)
+#ifdef HAVE_MFI
+         || ((apple->mfi_buttons[port] & (1 << joykey)) != 0)
+#endif
+         ;
    return false;
 }
 
