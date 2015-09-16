@@ -20,9 +20,6 @@
 #include "general.h"
 #include "compat/strl.h"
 
-#if defined(__linux__)
-#include "performance/performance_linux.h"
-#endif
 
 #if !defined(_WIN32) && !defined(RARCH_CONSOLE)
 #include <unistd.h>
@@ -101,6 +98,10 @@ static int clock_gettime(int clk_ik, struct timespec *t)
 #endif
 
 #include <string.h>
+
+#if defined(__linux__)
+#include "frontend/drivers/platform_linux.h"
+#endif
 
 const struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
 const struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];

@@ -81,7 +81,6 @@ ifneq ($(findstring Linux,$(OS)),)
    JOYCONFIG_LIBS += -lrt -lpthread
    OBJ += input/drivers/linuxraw_input.o \
 			 input/drivers_joypad/linuxraw_joypad.o \
-			 performance/performance_linux.o \
 			 frontend/drivers/platform_linux.o
 endif
 

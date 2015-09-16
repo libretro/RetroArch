@@ -48,11 +48,6 @@ CONSOLE EXTENSIONS
 /*============================================================
 PERFORMANCE
 ============================================================ */
-
-#if defined(__linux__)
-#include "../performance/performance_linux.c"
-#endif
-
 #include "../performance.c"
 
 /*============================================================
