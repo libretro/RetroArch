@@ -126,10 +126,6 @@ int find_token(int fd, const char *token)
 
 int detect_ps1_game(const char *track_path, char *game_id)
 {
-   int i;
-   const char *pat_c;
-   char *c, *id_start;
-   const char *pattern = "cdrom:";
    int              fd = open(track_path, O_RDONLY);
 
    if (fd < 0)
@@ -199,10 +195,10 @@ int find_first_data_track(const char *cue_path,
    int rv;
    char tmp_token[MAX_TOKEN_LEN];
    int m, s, f;
-   char cue_dir[PATH_MAX];
+   char cue_dir[PATH_MAX_LENGTH];
    int fd = -1;
 
-   strlcpy(cue_dir, cue_path, PATH_MAX);
+   strlcpy(cue_dir, cue_path, PATH_MAX_LENGTH);
    path_basedir(cue_dir);
 
    fd = open(cue_path, O_RDONLY);

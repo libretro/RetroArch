@@ -350,13 +350,12 @@ static int database_info_iterate_playlist_cue(
       database_info_handle_t *db, const char *name)
 {
    int rv;
-   char track_path[PATH_MAX];
+   char track_path[PATH_MAX_LENGTH];
    int32_t offset = 0;
    const char* system_name = NULL;
-   size_t max_len = MAX_TOKEN_LEN;
    char game_id[4096];
 
-   rv = find_first_data_track(name, &offset, track_path, PATH_MAX);
+   rv = find_first_data_track(name, &offset, track_path, PATH_MAX_LENGTH);
    if (rv < 0)
    {
       RARCH_LOG("Could not find valid data track: %s\n", strerror(-rv));
