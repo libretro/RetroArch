@@ -83,10 +83,7 @@ static int zlib_extract_core_callback(const char *name, const char *valid_exts,
    path_basedir(path);
 
    if (!path_mkdir(path))
-   {
-      RARCH_ERR("Failed to create directory: %s.\n", path);
-      return 0;
-   }
+      goto error;
 
    /* Ignore directories. */
    if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
@@ -98,14 +95,8 @@ static int zlib_extract_core_callback(const char *name, const char *valid_exts,
 
    if (!zlib_perform_mode(path, valid_exts,
             cdata, cmode, csize, size, crc32, userdata))
-   {
-      if (cmode == 0)
-      {
-         RARCH_ERR("Failed to write file: %s.\n", path);
-         return 0;
-      }
       goto error;
-   }
+
    return 1;
 
 error:

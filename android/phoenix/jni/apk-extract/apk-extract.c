@@ -42,23 +42,13 @@ static int zlib_cb(const char *name, const char *valid_exts,
    fill_pathname_basedir(path_dir, path, sizeof(path_dir));
 
    if (!path_mkdir(path_dir))
-   {
-      RARCH_ERR("Failed to create dir: %s.\n", path_dir);
-      return 0;
-   }
+      goto error;
 
    RARCH_LOG("Extracting %s -> %s ...\n", name, path);
 
    if (!zlib_perform_mode(path, valid_exts,
             cdata, cmode, csize, size, crc32, userdata))
-   {
-      if (cmode == 0)
-      {
-         RARCH_ERR("Failed to write file: %s.\n", path);
-         return 0;
-      }
       goto error;
-   }
 
    return 1;
 
