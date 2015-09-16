@@ -116,7 +116,6 @@ endif
 
 ifeq ($(HAVE_LOGGER), 1)
 DEFINES			+= -DHAVE_LOGGER
-INCDIRS        +=  -Ilogger/netlogger
 endif
 
 PPU_CFLAGS := $(PPU_OPTIMIZE_LV) $(INCDIRS) $(DEFINES)

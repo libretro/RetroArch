@@ -54,7 +54,7 @@ ifeq ($(TDM_GCC),)
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
-   CFLAGS += -DHAVE_FILE_LOGGER -Ilogger/netlogger
+   CFLAGS += -DHAVE_FILE_LOGGER
 endif
 
 CFLAGS += -I./libretro-common/include
