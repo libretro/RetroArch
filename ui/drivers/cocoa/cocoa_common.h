@@ -19,11 +19,6 @@
 
 #include <Foundation/Foundation.h>
 
-#include "../../core_info.h"
-#include "../../playlist.h"
-#include "../../menu/menu_setting.h"
-#include "../../menu/menu.h"
-
 #ifdef HAVE_CORELOCATION
 #include <CoreLocation/CoreLocation.h>
 #endif
@@ -34,6 +29,11 @@
 #ifdef HAVE_AVFOUNDATION
 #import <AVFoundation/AVCaptureOutput.h>
 #endif
+
+#include "../../core_info.h"
+#include "../../playlist.h"
+#include "../../menu/menu_setting.h"
+#include "../../menu/menu.h"
 
 /*********************************************/
 /* RAMenuBase                                */
