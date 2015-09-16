@@ -14,14 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <signal.h>
+
+#include <EGL/egl.h>
+
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
 #include "../drivers/gl_common.h"
-
-#include <EGL/egl.h>
-#include <signal.h>
 
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;

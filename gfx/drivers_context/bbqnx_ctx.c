@@ -14,23 +14,24 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+
+#include <EGL/egl.h>
+#include <GLES2/gl2.h>
+
+#include <bps/screen.h>
+#include <bps/navigator.h>
+#include <bps/event.h>
+#include <screen/screen.h>
+#include <sys/platform.h>
+
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
 #include "../drivers/gl_common.h"
 
-#include <EGL/egl.h>
-#include <bps/screen.h>
-#include <bps/navigator.h>
-#include <bps/event.h>
-#include <screen/screen.h>
-#include <sys/platform.h>
-#include <GLES2/gl2.h>
-
 #include "../image/image.h"
-
-#include <stdint.h>
 
 #ifdef HAVE_GLSL
 #include "../shader_glsl.h"

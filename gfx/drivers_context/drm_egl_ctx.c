@@ -18,24 +18,18 @@
  * Based on kmscube example by Rob Clark.
  */
 
-#include "../../driver.h"
-#include "../../runloop.h"
-#include "../drivers/gl_common.h"
-#include "../video_monitor.h"
-#include <file/dir_list.h>
-
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
-
+#include <stdint.h>
 #include <errno.h>
 #include <signal.h>
-#include <stdint.h>
-#include <signal.h>
+#include <fcntl.h>
 #include <unistd.h>
+#include <math.h>
+
 #include <sched.h>
 #include <sys/time.h>
-#include <math.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/poll.h>
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -44,10 +38,17 @@
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 #include <gbm.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/poll.h>
-#include <fcntl.h>
+
+#include <file/dir_list.h>
+
+#include "../../driver.h"
+#include "../../runloop.h"
+#include "../drivers/gl_common.h"
+#include "../video_monitor.h"
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
 
 #ifndef EGL_OPENGL_ES3_BIT_KHR
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040

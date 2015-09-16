@@ -18,16 +18,17 @@
 * Should be its own file as it has lots of X11 stuff baked into it as well.
 */
 
+#include <stdint.h>
+#include <signal.h>
+
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../drivers/gl_common.h"
 #include "../video_monitor.h"
 #include "../common/x11_common.h"
-
-#include <signal.h>
-#include <stdint.h>
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
 
 #ifndef EGL_OPENGL_ES3_BIT_KHR
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040

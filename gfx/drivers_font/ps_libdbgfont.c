@@ -14,9 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../font_renderer_driver.h"
-#include "../font_driver.h"
-
 #if defined(SN_TARGET_PSP2)
 #include <libdbgfont.h>
 #define DbgFontPrint(x, y, scale, color, msg) sceDbgFontPrint(x, y, color, msg)
@@ -31,6 +28,9 @@
 #define DbgFontInit cellDbgFontInit
 #define DbgFontExit cellDbgFontExit
 #endif
+
+#include "../font_renderer_driver.h"
+#include "../font_driver.h"
 
 static void *libdbg_font_init_font(void *gl_data, const char *font_path, float font_size)
 {

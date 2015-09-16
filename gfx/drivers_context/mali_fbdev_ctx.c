@@ -13,21 +13,23 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <fcntl.h>
+#include <unistd.h>
+
+#include <signal.h>
+#include <sys/ioctl.h>
+
+#include <EGL/egl.h>
+
+/* Includes and defines for framebuffer size retrieval */
+#include <linux/fb.h>
+#include <linux/vt.h>
+
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
 #include "../drivers/gl_common.h"
-
-#include <EGL/egl.h>
-#include <signal.h>
-
-/* Includes and defines for framebuffer size retrieval */
-#include <sys/ioctl.h>
-#include <linux/fb.h>
-#include <linux/vt.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 struct fbdev_window native_window;
 static EGLContext g_egl_ctx;
