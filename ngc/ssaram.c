@@ -4,10 +4,12 @@
 /****************************************************************************
 * SSARAM
 ***************************************************************************/
-#include <gccore.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <gccore.h>
+
 #include "ssaram.h"
 
 static char aramfix[2048] ATTRIBUTE_ALIGN(32);

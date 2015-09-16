@@ -1,18 +1,19 @@
-/**
- * Adopted from WiiMC (Tantric 2009-2012) and WiiFlow (http://code.google.com/p/wiiflow/)
- */
+/** Adopted from WiiMC (Tantric 2009-2012) and WiiFlow (http://code.google.com/p/wiiflow/) */
+
+#include <string.h>
+#include <malloc.h>
+#include <unistd.h>
 
 #include <ogc/machine/asm.h>
 #include <ogc/lwp_heap.h>
 #include <ogc/system.h>
-#include "../gfx/drivers/ppc_asm.h"
-#include <string.h>
-#include <malloc.h>
-#include <unistd.h>
-#include "mem2_manager.h"
+
 #include <retro_inline.h>
 
-// Forbid the use of MEM2 through malloc
+#include "mem2_manager.h"
+#include "../gfx/drivers/ppc_asm.h"
+
+/* Forbid the use of MEM2 through malloc */
 u32 MALLOC_MEM2 = 0;
 
 /*** from libogc (lwp_heap.inl) ****/
