@@ -232,8 +232,7 @@ static void check_rewind(settings_t *settings,
  *
  * Checks if slowmotion toggle/hold was being pressed and/or held.
  **/
-static void check_slowmotion(settings_t *settings, global_t *global,
-      bool slowmotion_pressed)
+static void check_slowmotion(settings_t *settings, bool slowmotion_pressed)
 {
    main_is_slowmotion   = slowmotion_pressed;
 
@@ -561,7 +560,7 @@ static int do_state_checks(driver_t *driver, settings_t *settings,
       event_command(EVENT_CMD_LOAD_STATE);
 
    check_rewind(settings, global, cmd->rewind_pressed);
-   check_slowmotion(settings, global, cmd->slowmotion_pressed);
+   check_slowmotion(settings, cmd->slowmotion_pressed);
 
    if (cmd->movie_record)
       check_movie(global);
