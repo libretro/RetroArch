@@ -64,6 +64,8 @@ repeat {
 size thisstart;
 #endif
 
+static bool frame_is_reversed;
+
 size_t state_manager_raw_maxsize(size_t uncomp)
 {
    /* bytes covered by a compressed block */
@@ -587,4 +589,14 @@ void init_rewind(void)
    state_manager_push_where(global->rewind.state, &state);
    pretro_serialize(state, global->rewind.size);
    state_manager_push_do(global->rewind.state);
+}
+
+bool state_manager_frame_is_reversed(void)
+{
+   return frame_is_reversed;
+}
+
+void state_manager_set_frame_is_reversed(bool value)
+{
+   frame_is_reversed = value;
 }

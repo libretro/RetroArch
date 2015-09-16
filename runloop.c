@@ -167,10 +167,10 @@ static void check_rewind(settings_t *settings,
 {
    static bool first = true;
 
-   if (global->rewind.frame_is_reverse)
+   if (state_manager_frame_is_reversed())
    {
       audio_driver_frame_is_reverse();
-      global->rewind.frame_is_reverse = false;
+      state_manager_set_frame_is_reversed(false);
    }
 
    if (first)
@@ -188,7 +188,7 @@ static void check_rewind(settings_t *settings,
 
       if (state_manager_pop(global->rewind.state, &buf))
       {
-         global->rewind.frame_is_reverse = true;
+         state_manager_set_frame_is_reversed(true);
          audio_driver_setup_rewind();
 
          rarch_main_msg_queue_push_new(MSG_REWINDING, 0,
@@ -243,7 +243,7 @@ static void check_slowmotion(settings_t *settings, global_t *global,
    if (settings->video.black_frame_insertion)
       video_driver_cached_frame();
 
-   if (global->rewind.frame_is_reverse)
+   if (state_manager_frame_is_reversed())
       rarch_main_msg_queue_push_new(MSG_SLOW_MOTION_REWIND, 0, 30, true);
    else
       rarch_main_msg_queue_push_new(MSG_SLOW_MOTION, 0, 30, true);

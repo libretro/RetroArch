@@ -30,6 +30,7 @@
 #include "runloop.h"
 #include "runloop_data.h"
 #include "retroarch.h"
+#include "rewind.h"
 #include "performance.h"
 #include "input/input_remapping.h"
 #include "record/record_driver.h"
@@ -294,9 +295,7 @@ void retro_init_libretro_cbs(void *data)
  **/
 void retro_set_rewind_callbacks(void)
 {
-   global_t *global = global_get_ptr();
-
-   if (global->rewind.frame_is_reverse)
+   if (state_manager_frame_is_reversed())
    {
       pretro_set_audio_sample(audio_driver_sample_rewind);
       pretro_set_audio_sample_batch(audio_driver_sample_batch_rewind);

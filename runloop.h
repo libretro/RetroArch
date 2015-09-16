@@ -157,7 +157,6 @@ typedef struct global
       /* Rewind support. */
       state_manager_t *state;
       size_t size;
-      bool frame_is_reverse;
    } rewind;
 
    struct

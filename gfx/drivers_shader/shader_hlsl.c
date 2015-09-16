@@ -15,8 +15,10 @@
  */
 
 #include "shader_hlsl.h"
+
 #include "../video_shader_parse.h"
 #include "../d3d/d3d.h"
+#include "../../rewind.h"
 
 static const char *stock_hlsl_program =
       "void main_vertex\n"
@@ -117,7 +119,6 @@ static void hlsl_set_params(void *data, unsigned width, unsigned height,
    (void)_feedback_info;
    const struct gfx_tex_info *fbo_info = (const struct gfx_tex_info*)_fbo_info;
    driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
    hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver->video_shader_data;
 
    if (!hlsl)
@@ -135,13 +136,13 @@ static void hlsl_set_params(void *data, unsigned width, unsigned height,
    set_param_2f(hlsl->prg[hlsl->active_idx].tex_size_f, tex_size, hlsl->prg[hlsl->active_idx].f_ctable);
    set_param_2f(hlsl->prg[hlsl->active_idx].out_size_f, out_size, hlsl->prg[hlsl->active_idx].f_ctable);
    set_param_1f(hlsl->prg[hlsl->active_idx].frame_cnt_f, frame_cnt, hlsl->prg[hlsl->active_idx].f_ctable);
-   set_param_1f(hlsl->prg[hlsl->active_idx].frame_dir_f, global->rewind.frame_is_reverse ? -1.0 : 1.0, hlsl->prg[hlsl->active_idx].f_ctable);
+   set_param_1f(hlsl->prg[hlsl->active_idx].frame_dir_f, state_manager_frame_is_reversed() ? -1.0 : 1.0, hlsl->prg[hlsl->active_idx].f_ctable);
 
    set_param_2f(hlsl->prg[hlsl->active_idx].vid_size_v, ori_size, hlsl->prg[hlsl->active_idx].v_ctable);
    set_param_2f(hlsl->prg[hlsl->active_idx].tex_size_v, tex_size, hlsl->prg[hlsl->active_idx].v_ctable);
    set_param_2f(hlsl->prg[hlsl->active_idx].out_size_v, out_size, hlsl->prg[hlsl->active_idx].v_ctable);
    set_param_1f(hlsl->prg[hlsl->active_idx].frame_cnt_v, frame_cnt, hlsl->prg[hlsl->active_idx].v_ctable);
-   set_param_1f(hlsl->prg[hlsl->active_idx].frame_dir_v, global->rewind.frame_is_reverse ? -1.0 : 1.0, hlsl->prg[hlsl->active_idx].v_ctable);
+   set_param_1f(hlsl->prg[hlsl->active_idx].frame_dir_v, state_manager_frame_is_reversed() ? -1.0 : 1.0, hlsl->prg[hlsl->active_idx].v_ctable);
 
    /* TODO - set lookup textures/FBO textures/state parameters/etc */
 }
