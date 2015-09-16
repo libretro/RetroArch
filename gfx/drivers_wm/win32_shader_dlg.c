@@ -25,6 +25,14 @@
 #define _WIN32_IE 0x0300
 #endif
 
+#include <string.h>
+
+#include <windows.h>
+#include <commdlg.h>
+#include <commctrl.h>
+
+#include <retro_inline.h>
+
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../video_context_driver.h"
@@ -32,11 +40,6 @@
 #include "../video_monitor.h"
 #include "../common/win32_common.h"
 #include "win32_shader_dlg.h"
-#include <windows.h>
-#include <commdlg.h>
-#include <commctrl.h>
-#include <string.h>
-#include <retro_inline.h>
 
 #define IDI_ICON 1
 
