@@ -68,22 +68,7 @@ static bool load_generic_file(ssize_t *len, const char *path, char *buf, size_t 
    return true;
 }
 
-#ifdef ANDROID
-#define SDCARD_ROOT_WRITABLE     1
-#define SDCARD_EXT_DIR_WRITABLE  2
-#define SDCARD_NOT_WRITABLE      3
-
-struct android_app *g_android;
-static pthread_key_t thread_key;
-
-char screenshot_dir[PATH_MAX_LENGTH];
-char downloads_dir[PATH_MAX_LENGTH];
-char apk_path[PATH_MAX_LENGTH];
-char sdcard_dir[PATH_MAX_LENGTH];
-char app_dir[PATH_MAX_LENGTH];
-char ext_dir[PATH_MAX_LENGTH];
-
-static  pthread_once_t     g_once;
+static bool                cpu_inited_once;
 static  cpu_family         g_cpuFamily;
 static  uint64_t           g_cpuFeatures;
 static  int                g_cpuCount;
@@ -116,7 +101,6 @@ static INLINE void cpu_x86_cpuid(int func, int values[4])
     values[3] = d;
 }
 #endif
-
 
 #ifdef __ARM_ARCH__
 /* Extract the content of a the first occurence of a given field in
@@ -487,21 +471,34 @@ static void linux_cpu_init(void)
 
 cpu_family linux_get_cpu_platform(void)
 {
-    pthread_once(&g_once, linux_cpu_init);
     return g_cpuFamily;
 }
 
 uint64_t linux_get_cpu_features(void)
 {
-    pthread_once(&g_once, linux_cpu_init);
     return g_cpuFeatures;
 }
 
 int linux_get_cpu_count(void)
 {
-    pthread_once(&g_once, linux_cpu_init);
     return g_cpuCount;
 }
+
+#ifdef ANDROID
+#define SDCARD_ROOT_WRITABLE     1
+#define SDCARD_EXT_DIR_WRITABLE  2
+#define SDCARD_NOT_WRITABLE      3
+
+struct android_app *g_android;
+static pthread_key_t thread_key;
+
+char screenshot_dir[PATH_MAX_LENGTH];
+char downloads_dir[PATH_MAX_LENGTH];
+char apk_path[PATH_MAX_LENGTH];
+char sdcard_dir[PATH_MAX_LENGTH];
+char app_dir[PATH_MAX_LENGTH];
+char ext_dir[PATH_MAX_LENGTH];
+
 
 /* forward declaration */
 bool android_run_events(void *data);
@@ -2050,6 +2047,7 @@ static void frontend_linux_init(void *data)
    GET_METHOD_ID(env, android_app->getStringExtra, class,
          "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
 #endif
+   linux_cpu_init();
 }
 
 #ifdef ANDROID
