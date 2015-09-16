@@ -1,7 +1,7 @@
 BasicInfo:
-  Title                   : "{APP_TITLE}"
+  Title                   : "$(APP_TITLE)"
   CompanyCode             : "00"
-  ProductCode             : "{APP_PRODUCT_CODE}"
+  ProductCode             : "$(APP_PRODUCT_CODE)"
   ContentType             : Application
   Logo                    : Nintendo # Nintendo / Licensed / Distributed / iQue / iQueForSystem
 
@@ -9,9 +9,8 @@ BasicInfo:
   # Specifies the root path of the file system to include in the ROM.
   # HostRoot                : "romfs"
 
-
 TitleInfo:
-  UniqueId                : {APP_UNIQUE_ID}
+  UniqueId                : $(APP_UNIQUE_ID)
   Category                : Application
   
 CardInfo:
