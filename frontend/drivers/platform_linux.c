@@ -2047,7 +2047,12 @@ static void frontend_linux_init(void *data)
    GET_METHOD_ID(env, android_app->getStringExtra, class,
          "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
 #endif
-   linux_cpu_init();
+
+   if (!cpu_inited_once)
+   {
+      linux_cpu_init();
+      cpu_inited_once = true;
+   }
 }
 
 #ifdef ANDROID
