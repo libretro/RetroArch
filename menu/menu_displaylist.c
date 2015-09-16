@@ -33,8 +33,8 @@
 #include "../git_version.h"
 #include "../file_ext.h"
 
-#ifdef ANDROID
-#include "../frontend/drivers/platform_android.h"
+#ifdef __linux__
+#include "../frontend/drivers/platform_linux.h"
 #endif
 
 extern unsigned rpl_entry_selection_ptr;

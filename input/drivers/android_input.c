@@ -22,7 +22,7 @@
 
 #include <retro_inline.h>
 
-#include "../../frontend/drivers/platform_android.h"
+#include "../../frontend/drivers/platform_linux.h"
 #include "../input_autodetect.h"
 #include "../input_common.h"
 #include "../input_joypad.h"
