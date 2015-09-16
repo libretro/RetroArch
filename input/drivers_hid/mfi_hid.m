@@ -39,7 +39,7 @@ static bool apple_gamecontroller_available(void)
 
 static void apple_gamecontroller_poll(GCController *controller)
 {
-   uint32_t i, slot, pause;
+   uint32_t slot, pause;
    uint32_t *buttons;
    driver_t *driver          = driver_get_ptr();
    cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;

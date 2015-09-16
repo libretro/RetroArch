@@ -764,7 +764,11 @@ static uint64_t btstack_hid_joypad_get_buttons(void *data, unsigned port)
 
 static bool btstack_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 {
+   driver_t *driver          = driver_get_ptr();
    uint64_t buttons          = btstack_hid_joypad_get_buttons(data, port);
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
+#endif
 
    if (joykey == NO_BTN)
       return false;
