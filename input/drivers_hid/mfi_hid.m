@@ -30,16 +30,11 @@ static bool apple_gamecontroller_available(void)
 {
    int major, minor;
    get_ios_version(&major, &minor);
-    
+
    if (major <= 6)
       return false;
-   /* by checking for extern symbols defined by the framework, we can check for its
-    * existence at runtime. This is the Apple endorsed way of dealing with this */
-#ifdef __IPHONE_7_0
-   return (&GCControllerDidConnectNotification && &GCControllerDidDisconnectNotification);
-#else
-   return false;
-#endif
+
+   return true;
 }
 
 static void apple_gamecontroller_poll(GCController *controller)
