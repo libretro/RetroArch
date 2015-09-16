@@ -15,6 +15,8 @@ APP_UNIQUE_ID     = 0xBAC00
 APP_ICON          = ctr/default.png
 APP_BANNER        = ctr/libretro_banner.png
 APP_AUDIO         = ctr/silent.wav
+APP_CIA_RSF       = ctr/tools/template-cia.rsf
+APP_3DS_RSF       = ctr/tools/template-3ds.rsf
 
 include ctr/Makefile.cores
 
@@ -369,15 +371,12 @@ $(TARGET).bnr: $(APP_BANNER) $(APP_AUDIO)
 $(TARGET).icn: $(APP_ICON)
 	$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_TITLE)" -p "$(APP_AUTHOR)" -i $(APP_ICON) -o $@
 
-$(TARGET).rsf: ctr/tools/template-cia.rsf
-	cat ctr/tools/template-cia.rsf | sed 's/{APP_TITLE}/$(APP_TITLE)/' | sed 's/{APP_PRODUCT_CODE}/$(APP_PRODUCT_CODE)/' | sed 's/{APP_UNIQUE_ID}/$(APP_UNIQUE_ID)/' > $@
-
 $(TARGET)_stripped.elf: $(TARGET).elf
 	cp $(TARGET).elf $@
 	$(STRIP) $@
 
-$(TARGET).cia: $(TARGET)_stripped.elf $(TARGET).bnr $(TARGET).icn $(TARGET).rsf
-	$(MAKEROM) -f cia -o $@ -rsf $(TARGET).rsf -target t -exefslogo -elf $(TARGET)_stripped.elf -icon $(TARGET).icn -banner $(TARGET).bnr
+$(TARGET).cia: $(TARGET)_stripped.elf $(TARGET).bnr $(TARGET).icn
+	$(MAKEROM) -f cia -o $@ -rsf $(APP_CIA_RSF) -target t -exefslogo -elf $(TARGET)_stripped.elf -icon $(TARGET).icn -banner $(TARGET).bnr -DAPP_TITLE=$(APP_TITLE) -DAPP_PRODUCT_CODE=$(APP_PRODUCT_CODE) -DAPP_UNIQUE_ID=$(APP_UNIQUE_ID)
 
 clean:
 	rm -f $(OBJS)
@@ -387,7 +386,6 @@ clean:
 	rm -f $(TARGET).cia
 	rm -f $(TARGET).bnr
 	rm -f $(TARGET).icn
-	rm -f $(TARGET).rsf
 	rm -f *_shader_shbin.h
 
 .PHONY: clean
