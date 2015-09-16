@@ -13,11 +13,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <errno.h>
+#include <fcntl.h>
+
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
 #include <retro_endianness.h>
-#include <errno.h>
-#include <fcntl.h>
 
 #include "tasks.h"
 
@@ -39,23 +40,6 @@
 #ifndef COLLECTION_SIZE
 #define COLLECTION_SIZE 99999
 #endif
-
-#define MAX_TOKEN_LEN 255
-
-#define MAGIC_LEN 16
-
-struct MagicEntry
-{
-    const char* system_name;
-    const char* magic;
-};
-
-static struct MagicEntry MAGIC_NUMBERS[] = {
-    {"ps1", "\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x00\x02\x00\x02\x00"},
-    {"pcecd", "\x82\xb1\x82\xcc\x83\x76\x83\x8d\x83\x4f\x83\x89\x83\x80\x82\xcc\x92"},
-    {"scd", "\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x00\x02\x00\x01\x53"},
-    {NULL, NULL}
-};
 
 typedef struct database_state_handle
 {
@@ -359,212 +343,6 @@ static int database_info_iterate_playlist_zip(
 #endif
 
    return 1;
-}
-
-ssize_t get_token(int fd, char *token, size_t max_len)
-{
-   char *c = token;
-   int rv;
-   ssize_t len = 0;
-   int in_string = 0;
-
-   while (1)
-   {
-      rv = read(fd, c, 1);
-      if (rv == 0)
-         return 0;
-      else if (rv < 1)
-      {
-         switch (errno)
-         {
-            case EINTR:
-            case EAGAIN:
-               continue;
-            default:
-               return -errno;
-         }
-      }
-
-      switch (*c)
-      {
-         case ' ':
-         case '\t':
-         case '\r':
-         case '\n':
-            if (c == token)
-               continue;
-
-            if (!in_string)
-            {
-               *c = '\0';
-               return len;
-            }
-            break;
-         case '\"':
-            if (c == token)
-            {
-               in_string = 1;
-               continue;
-            }
-
-            *c = '\0';
-            return len;
-      }
-
-      len++;
-      c++;
-      if (len == (ssize_t)max_len)
-      {
-         *c = '\0';
-         return len;
-      }
-   }
-}
-
-int find_token(int fd, const char *token)
-{
-   int tmp_len = strlen(token);
-   char *tmp_token = (char*)calloc(tmp_len, 1);
-   if (!tmp_token)
-      return -1;
-   while (strncmp(tmp_token, token, tmp_len) != 0)
-   {
-      if (get_token(fd, tmp_token, tmp_len) <= 0)
-         return -1;
-   }
-
-   return 0;
-}
-
-static int detect_ps1_game(const char* track_path, char* game_id)
-{
-   const char* pattern = "cdrom:";
-   const char* pat_c;
-   char* c;
-   char* id_start;
-   int i;
-
-   int fd = open(track_path, O_RDONLY);
-   if (fd < 0)
-   {
-      RARCH_LOG("Could not open data track: %s\n", strerror(errno));
-      return -errno;
-   }
-
-   lseek(fd, 0x9340, SEEK_SET);
-   if (read(fd, game_id, 10) > 0)
-   {
-      game_id[10] = '\0';
-      game_id[4] = '-';
-   }
-
-   close(fd);
-   return 1;
-}
-
-static int detect_system(const char* track_path, int32_t offset,
-        const char** system_name)
-{
-   int rv;
-   char magic[MAGIC_LEN];
-   int fd;
-   int i;
-
-   fd = open(track_path, O_RDONLY);
-   if (fd < 0)
-   {
-      RARCH_LOG("Could not open data track of file '%s': %s\n",
-            track_path, strerror(errno));
-      rv = -errno;
-      goto clean;
-   }
-
-   lseek(fd, offset, SEEK_SET);
-   if (read(fd, magic, MAGIC_LEN) < MAGIC_LEN)
-   {
-      RARCH_LOG("Could not read data from file '%s' at offset %d: %s\n",
-            track_path, offset, strerror(errno));
-      rv = -errno;
-      goto clean;
-   }
-
-   RARCH_LOG("Comparing with known magic numbers...\n");
-   for (i = 0; MAGIC_NUMBERS[i].system_name != NULL; i++)
-   {
-      if (memcmp(MAGIC_NUMBERS[i].magic, magic, MAGIC_LEN) == 0)
-      {
-         *system_name = MAGIC_NUMBERS[i].system_name;
-         rv = 0;
-         goto clean;
-      }
-   }
-
-   RARCH_LOG("Could not find compatible system\n");
-   rv = -EINVAL;
-clean:
-   close(fd);
-   return rv;
-}
-
-static int find_first_data_track(const char* cue_path, int32_t* offset,
-                                 char* track_path, size_t max_len)
-{
-   int rv;
-   int fd = -1;
-   char tmp_token[MAX_TOKEN_LEN];
-   int m, s, f;
-   char cue_dir[PATH_MAX];
-   strlcpy(cue_dir, cue_path, PATH_MAX);
-   path_basedir(cue_dir);
-
-   fd = open(cue_path, O_RDONLY);
-   if (fd < 0)
-   {
-      RARCH_LOG("Could not open CUE file '%s': %s\n", cue_path,
-            strerror(errno));
-      return -errno;
-   }
-
-   RARCH_LOG("Parsing CUE file '%s'...\n", cue_path);
-
-   while (get_token(fd, tmp_token, MAX_TOKEN_LEN) > 0)
-   {
-      if (strcmp(tmp_token, "FILE") == 0)
-      {
-         get_token(fd, tmp_token, MAX_TOKEN_LEN);
-         fill_pathname_join(track_path, cue_dir, tmp_token, max_len);
-
-      }
-      else if (strcasecmp(tmp_token, "TRACK") == 0)
-      {
-         get_token(fd, tmp_token, MAX_TOKEN_LEN);
-         get_token(fd, tmp_token, MAX_TOKEN_LEN);
-         if (strcasecmp(tmp_token, "AUDIO") == 0)
-            continue;
-
-         find_token(fd, "INDEX");
-         get_token(fd, tmp_token, MAX_TOKEN_LEN);
-         get_token(fd, tmp_token, MAX_TOKEN_LEN);
-         if (sscanf(tmp_token, "%02d:%02d:%02d", &m, &s, &f) < 3)
-         {
-            RARCH_LOG("Error parsing time stamp '%s'\n", tmp_token);
-            return -errno;
-         }
-         *offset = ((m * 60) * (s * 75) * f) * 25;
-
-         RARCH_LOG("Found 1st data track on file '%s+%d'\n",
-               track_path, *offset);
-
-         rv = 0;
-         goto clean;
-      }
-   }
-
-   rv = -EINVAL;
-
-clean:
-   close(fd);
-   return rv;
 }
 
 static int database_info_iterate_playlist_cue(

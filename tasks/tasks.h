@@ -23,6 +23,8 @@
 
 #include "../runloop_data.h"
 
+#define MAX_TOKEN_LEN 255
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -101,6 +103,14 @@ void rarch_main_data_overlay_thread_init(void);
 void rarch_main_data_nbio_iterate(bool is_thread);
     
 void data_runloop_osd_msg(const char *s, size_t len);
+
+int find_first_data_track(const char* cue_path,
+      int32_t* offset, char* track_path, size_t max_len);
+
+int detect_system(const char* track_path, int32_t offset,
+        const char** system_name);
+
+int detect_ps1_game(const char *track_path, char *game_id);
 
 #ifdef __cplusplus
 }
