@@ -45,9 +45,9 @@
 struct RFILE
 {
 #if defined(PSP) || defined(VITA)
-   SceUID fd;
+   SceUID sfd;
 #elif defined(HAVE_BUFFERED_IO)
-   FILE *fd;
+   FILE *file;
 #else
    int fd;
 #endif
@@ -64,27 +64,27 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
    {
       case RFILE_MODE_READ:
 #if defined(VITA) || defined(PSP)
-         stream->fd = sceIoOpen(path, O_RDONLY, 0777);
+         stream->sfd = sceIoOpen(path, O_RDONLY, 0777);
 #elif defined(HAVE_BUFFERED_IO)
-         stream->fd = fopen(path, "rb");
+         stream->file = fopen(path, "rb");
 #else
          stream->fd = open(path, O_RDONLY);
 #endif
          break;
       case RFILE_MODE_WRITE:
 #if defined(VITA) || defined(PSP)
-         stream->fd = sceIoOpen(path, O_WRONLY | O_CREAT, 0777);
+         stream->sfd = sceIoOpen(path, O_WRONLY | O_CREAT, 0777);
 #elif defined(HAVE_BUFFERED_IO)
-         stream->fd = fopen(path, "wb");
+         stream->file = fopen(path, "wb");
 #else
          stream->fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 #endif
          break;
       case RFILE_MODE_READ_WRITE:
 #if defined(VITA) || defined(PSP)
-         stream->fd = sceIoOpen(path, O_RDWR, 0777);
+         stream->sfd = sceIoOpen(path, O_RDWR, 0777);
 #elif defined(HAVE_BUFFERED_IO)
-         stream->fd = fopen(path, "w+");
+         stream->file = fopen(path, "w+");
 #else
 #ifdef _WIN32
          stream->fd = open(path, O_RDWR | O_BINARY);
@@ -95,8 +95,10 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
          break;
    }
 
-#if defined(HAVE_BUFFERED_IO)
-   if (!stream->fd)
+#if defined(VITA) || defined(PSP)
+   if (stream->sfd == -1)
+#elif defined(HAVE_BUFFERED_IO)
+   if (!stream->file)
 #else
    if (stream->fd == -1)
 #endif
@@ -115,9 +117,9 @@ ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence)
       return -1;
 
 #if defined(VITA) || defined(PSP)
-   return sceIoLseek(stream->fd, (SceOff)offset, whence);
+   return sceIoLseek(stream->sfd, (SceOff)offset, whence);
 #elif defined(HAVE_BUFFERED_IO)
-   return fseek(stream->fd, (long)offset, whence);
+   return fseek(stream->file, (long)offset, whence);
 #else
    return lseek(stream->fd, offset, whence);
 #endif
@@ -128,9 +130,9 @@ ssize_t retro_fread(RFILE *stream, void *s, size_t len)
    if (!stream)
       return -1;
 #if defined(VITA) || defined(PSP)
-   return sceIoRead(stream->fd, s, len);
+   return sceIoRead(stream->sfd, s, len);
 #elif defined(HAVE_BUFFERED_IO)
-   return fread(s, len, 1, stream->fd);
+   return fread(s, len, 1, stream->file);
 #else
    return read(stream->fd, s, len);
 #endif
@@ -141,9 +143,9 @@ ssize_t retro_fwrite(RFILE *stream, const void *s, size_t len)
    if (!stream)
       return -1;
 #if defined(VITA) || defined(PSP)
-   return sceIoWrite(stream->fd, s, len);
+   return sceIoWrite(stream->sfd, s, len);
 #elif defined(HAVE_BUFFERED_IO)
-   return fwrite(s, len, 1, stream->fd);
+   return fwrite(s, len, 1, stream->file);
 #else
    return write(stream->fd, s, len);
 #endif
@@ -155,11 +157,11 @@ void retro_fclose(RFILE *stream)
       return;
 
 #if defined(VITA) || defined(PSP)
-   if (stream->fd > 0)
-      sceIoClose(stream->fd);
+   if (stream->sfd > 0)
+      sceIoClose(stream->sfd);
 #elif defined(HAVE_BUFFERED_IO)
-   if (stream->fd)
-      fclose(stream->fd);
+   if (stream->file)
+      fclose(stream->file);
 #else
    if (stream->fd > 0)
       close(stream->fd);
