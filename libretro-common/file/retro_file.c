@@ -182,10 +182,15 @@ static bool retro_fread_iterate(RFILE *stream, char *s, size_t len, ssize_t *byt
 bool retro_fmemcpy(const char *path, char *s, size_t len, ssize_t *bytes_written)
 {
    RFILE *stream = retro_fopen(path, RFILE_MODE_READ, -1);
+   ssize_t bytes_written_this;
    if (!stream)
       return false;
 
-   while(retro_fread_iterate(stream, s, len-1, bytes_written));
+   *bytes_written = 0;
+   while(retro_fread_iterate(stream, s, len-1, &bytes_written_this))
+   {
+      *bytes_written += bytes_written_this;
+   }
 
    retro_fclose(stream);
    if (*bytes_written < 0)
