@@ -3,40 +3,17 @@
 
 #include <stdint.h>
 
-struct rmsgpack_read_callbacks {
-	int (* read_nil)(void *);
-	int (* read_bool)(
-	        int,
-	        void *
-	);
-	int (* read_int)(
-	        int64_t,
-	        void *
-	);
-	int (* read_uint)(
-	        uint64_t,
-	        void *
-	);
-	int (* read_string)(
-	        char *,
-	        uint32_t,
-	        void *
-	);
-	int (* read_bin)(
-	        void *,
-	        uint32_t,
-	        void *
-	);
-	int (* read_map_start)(
-	        uint32_t,
-	        void *
-	);
-	int (* read_array_start)(
-	        uint32_t,
-	        void *
-	);
+struct rmsgpack_read_callbacks
+{
+   int (* read_nil) (void *);
+   int (* read_bool)(int, void *);
+   int (* read_int) (int64_t, void *);
+   int (* read_uint)(uint64_t, void *);
+   int (* read_string)(char *, uint32_t, void *);
+   int (* read_bin)(void *, uint32_t, void *);
+   int (* read_map_start)  (uint32_t, void *);
+   int (* read_array_start)(uint32_t, void *);
 };
-
 
 int rmsgpack_write_array_header(
         int fd,

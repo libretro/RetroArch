@@ -81,8 +81,8 @@ int libretrodb_create(int fd, libretrodb_value_provider value_provider,
    off_t root;
    libretrodb_metadata_t md;
    uint64_t item_count = 0;
-   struct rmsgpack_dom_value item = {};
-   libretrodb_header_t header = {};
+   struct rmsgpack_dom_value item = {0};
+   libretrodb_header_t header = {0};
 
    memcpy(header.magic_number, MAGIC_NUMBER, sizeof(MAGIC_NUMBER)-1);
    root = lseek(fd, 0, SEEK_CUR);

@@ -7,7 +7,8 @@
 extern "C" {
 #endif
 
-enum rmsgpack_dom_type {
+enum rmsgpack_dom_type
+{
 	RDT_NULL = 0,
 	RDT_BOOL,
 	RDT_UINT,
@@ -49,7 +50,8 @@ struct rmsgpack_dom_value
    } val;
 };
 
-struct rmsgpack_dom_pair {
+struct rmsgpack_dom_pair
+{
 	struct rmsgpack_dom_value key;
 	struct rmsgpack_dom_value value;
 };
