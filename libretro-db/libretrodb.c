@@ -14,6 +14,8 @@
 
 #include <stdio.h>
 
+#include <retro_file.h>
+
 #include "rmsgpack_dom.h"
 #include "rmsgpack.h"
 #include "bintree.h"
@@ -31,7 +33,7 @@ struct node_iter_ctx
 
 typedef struct libretrodb
 {
-	int fd;
+	RFILE *fd;
 	uint64_t root;
 	uint64_t count;
 	uint64_t first_index_offset;
@@ -59,7 +61,7 @@ typedef struct libretrodb_header
 typedef struct libretrodb_cursor
 {
 	int is_valid;
-	int fd;
+   RFILE *fd;
 	int eof;
 	libretrodb_query_t *query;
 	libretrodb_t *db;
@@ -67,12 +69,12 @@ typedef struct libretrodb_cursor
 
 static struct rmsgpack_dom_value sentinal;
 
-static int libretrodb_read_metadata(int fd, libretrodb_metadata_t *md)
+static int libretrodb_read_metadata(RFILE *fd, libretrodb_metadata_t *md)
 {
    return rmsgpack_dom_read_into(fd, "count", &md->count, NULL);
 }
 
-static int libretrodb_write_metadata(int fd, libretrodb_metadata_t *md)
+static int libretrodb_write_metadata(RFILE *fd, libretrodb_metadata_t *md)
 {
    rmsgpack_write_map_header(fd, 1);
    rmsgpack_write_string(fd, "count", strlen("count"));
@@ -113,7 +115,7 @@ static int validate_document(const struct rmsgpack_dom_value *doc)
    return rv;
 }
 
-int libretrodb_create(int fd, libretrodb_value_provider value_provider,
+int libretrodb_create(RFILE *fd, libretrodb_value_provider value_provider,
       void *ctx)
 {
    int rv;
@@ -124,12 +126,12 @@ int libretrodb_create(int fd, libretrodb_value_provider value_provider,
    libretrodb_header_t header = {{0}};
 
    memcpy(header.magic_number, MAGIC_NUMBER, sizeof(MAGIC_NUMBER)-1);
-   root = lseek(fd, 0, SEEK_CUR);
+   root = retro_fseek(fd, 0, SEEK_CUR);
 
    /* We write the header in the end because we need to know the size of
     * the db first */
 
-   lseek(fd, sizeof(libretrodb_header_t), SEEK_CUR);
+   retro_fseek(fd, sizeof(libretrodb_header_t), SEEK_CUR);
 
    while ((rv = value_provider(ctx, &item)) == 0)
    {
@@ -148,17 +150,17 @@ int libretrodb_create(int fd, libretrodb_value_provider value_provider,
    if ((rv = rmsgpack_dom_write(fd, &sentinal)) < 0)
       goto clean;
 
-   header.metadata_offset = httobe64(lseek(fd, 0, SEEK_CUR));
+   header.metadata_offset = httobe64(retro_fseek(fd, 0, SEEK_CUR));
    md.count = item_count;
    libretrodb_write_metadata(fd, &md);
-   lseek(fd, root, SEEK_SET);
-   write(fd, &header, sizeof(header));
+   retro_fseek(fd, root, SEEK_SET);
+   retro_fwrite(fd, &header, sizeof(header));
 clean:
    rmsgpack_dom_value_free(&item);
    return rv;
 }
 
-static int libretrodb_read_index_header(int fd, libretrodb_index_t *idx)
+static int libretrodb_read_index_header(RFILE *fd, libretrodb_index_t *idx)
 {
    uint64_t name_len = 50;
    return rmsgpack_dom_read_into(fd,
@@ -167,7 +169,7 @@ static int libretrodb_read_index_header(int fd, libretrodb_index_t *idx)
          "next", &idx->next, NULL);
 }
 
-static void libretrodb_write_index_header(int fd, libretrodb_index_t *idx)
+static void libretrodb_write_index_header(RFILE *fd, libretrodb_index_t *idx)
 {
    rmsgpack_write_map_header(fd, 3);
    rmsgpack_write_string(fd, "name", strlen("name"));
@@ -180,8 +182,9 @@ static void libretrodb_write_index_header(int fd, libretrodb_index_t *idx)
 
 void libretrodb_close(libretrodb_t *db)
 {
-   close(db->fd);
-   db->fd = -1;
+   if (db->fd)
+      retro_fclose(db->fd);
+   db->fd = NULL;
 }
 
 int libretrodb_open(const char *path, libretrodb_t *db)
@@ -189,19 +192,15 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    libretrodb_header_t header;
    libretrodb_metadata_t md;
    int rv;
-#ifdef _WIN32
-   int fd = open(path, O_RDWR | O_BINARY);
-#else
-   int fd = open(path, O_RDWR);
-#endif
+   RFILE *fd = retro_fopen(path, RFILE_MODE_READ_WRITE, -1);
 
-   if (fd == -1)
+   if (!fd)
       return -errno;
 
    strcpy(db->path, path);
-   db->root = lseek(fd, 0, SEEK_CUR);
+   db->root = retro_fseek(fd, 0, SEEK_CUR);
 
-   if ((rv = read(fd, &header, sizeof(header))) == -1)
+   if ((rv = retro_fread(fd, &header, sizeof(header))) == -1)
    {
       rv = -errno;
       goto error;
@@ -214,7 +213,7 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    }
 
    header.metadata_offset = betoht64(header.metadata_offset);
-   lseek(fd, header.metadata_offset, SEEK_SET);
+   retro_fseek(fd, header.metadata_offset, SEEK_SET);
 
    if (libretrodb_read_metadata(fd, &md) < 0)
    {
@@ -223,20 +222,21 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    }
 
    db->count = md.count;
-   db->first_index_offset = lseek(fd, 0, SEEK_CUR);
+   db->first_index_offset = retro_fseek(fd, 0, SEEK_CUR);
    db->fd = fd;
    return 0;
 
 error:
-   close(fd);
+   if (fd)
+      retro_fclose(fd);
    return rv;
 }
 
 static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
       libretrodb_index_t *idx)
 {
-   off_t eof    = lseek(db->fd, 0, SEEK_END);
-   off_t offset = lseek(db->fd, db->first_index_offset, SEEK_SET);
+   off_t eof    = retro_fseek(db->fd, 0, SEEK_END);
+   off_t offset = retro_fseek(db->fd, db->first_index_offset, SEEK_SET);
 
    while (offset < eof)
    {
@@ -245,7 +245,7 @@ static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
       if (strncmp(index_name, idx->name, strlen(idx->name)) == 0)
          return 0;
 
-      offset = lseek(db->fd, idx->next, SEEK_CUR);
+      offset = retro_fseek(db->fd, idx->next, SEEK_CUR);
    }
 
    return -1;
@@ -301,7 +301,7 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
    while (nread < bufflen)
    {
       void *buff_ = (uint64_t *)buff + nread;
-      rv = read(db->fd, buff_, bufflen - nread);
+      rv = retro_fread(db->fd, buff_, bufflen - nread);
 
       if (rv <= 0)
       {
@@ -315,7 +315,7 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
    free(buff);
 
    if (rv == 0)
-      lseek(db->fd, offset, SEEK_SET);
+      retro_fseek(db->fd, offset, SEEK_SET);
 
    return rmsgpack_dom_read(db->fd, out);
 }
@@ -331,7 +331,7 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
 int libretrodb_cursor_reset(libretrodb_cursor_t *cursor)
 {
    cursor->eof = 0;
-   return lseek(cursor->fd,
+   return retro_fseek(cursor->fd,
          cursor->db->root + sizeof(libretrodb_header_t),
          SEEK_SET);
 }
@@ -378,16 +378,17 @@ void libretrodb_cursor_close(libretrodb_cursor_t *cursor)
    if (!cursor)
       return;
 
-   close(cursor->fd);
-   cursor->is_valid = 0;
-   cursor->fd = -1;
-   cursor->eof = 1;
-   cursor->db = NULL;
+   if (cursor->fd)
+      retro_fclose(cursor->fd);
 
    if (cursor->query)
       libretrodb_query_free(cursor->query);
 
-   cursor->query = NULL;
+   cursor->is_valid = 0;
+   cursor->eof      = 1;
+   cursor->fd       = NULL;
+   cursor->db       = NULL;
+   cursor->query    = NULL;
 }
 
 /**
@@ -403,9 +404,9 @@ void libretrodb_cursor_close(libretrodb_cursor_t *cursor)
 int libretrodb_cursor_open(libretrodb_t *db, libretrodb_cursor_t *cursor,
       libretrodb_query_t *q)
 {
-   cursor->fd = dup(db->fd);
+   cursor->fd = retro_fopen(db->path, RFILE_MODE_READ, -1);
 
-   if (cursor->fd == -1)
+   if (!cursor->fd)
       return -errno;
 
    cursor->db = db;
@@ -423,7 +424,7 @@ static int node_iter(void *value, void *ctx)
 {
    struct node_iter_ctx *nictx = (struct node_iter_ctx*)ctx;
 
-   if (write(nictx->db->fd, value,
+   if (retro_fwrite(nictx->db->fd, value,
             nictx->idx->key_size + sizeof(uint64_t)) > 0)
       return 0;
 
@@ -432,7 +433,7 @@ static int node_iter(void *value, void *ctx)
 
 static uint64_t libretrodb_tell(libretrodb_t *db)
 {
-   return lseek(db->fd, 0, SEEK_CUR);
+   return retro_fseek(db->fd, 0, SEEK_CUR);
 }
 
 int libretrodb_create_index(libretrodb_t *db,
@@ -534,7 +535,7 @@ int libretrodb_create_index(libretrodb_t *db,
    (void)rv;
    (void)idx_header_offset;
 
-   idx_header_offset = lseek(db->fd, 0, SEEK_END);
+   idx_header_offset = retro_fseek(db->fd, 0, SEEK_END);
    strncpy(idx.name, name, 50);
 
    idx.name[49] = '\0';

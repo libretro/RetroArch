@@ -23,7 +23,7 @@ typedef struct libretrodb_index libretrodb_index_t;
 
 typedef int (*libretrodb_value_provider)(void *ctx, struct rmsgpack_dom_value *out);
 
-int libretrodb_create(int fd, libretrodb_value_provider value_provider, void *ctx);
+int libretrodb_create(RFILE *fd, libretrodb_value_provider value_provider, void *ctx);
 
 void libretrodb_close(libretrodb_t *db);
 

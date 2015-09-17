@@ -67,9 +67,10 @@ static int value_provider(void * ctx, struct rmsgpack_dom_value *out)
 
 int main(int argc, char ** argv)
 {
-   const char * db_file;
-   const char * lua_file;
-   int dst = -1;
+   lua_State *L;
+   const char *db_file;
+   const char *lua_file;
+   RFILE *dst;
    int rv = 0;
 
    if (argc < 3)
@@ -78,10 +79,10 @@ int main(int argc, char ** argv)
       return 1;
    }
 
-   db_file = argv[1];
+   db_file  = argv[1];
    lua_file = argv[2];
+   L        = luaL_newstate();
 
-   lua_State * L = luaL_newstate();
    luaL_openlibs(L);
    luaL_dostring(L, LUA_COMMON);
 
@@ -90,8 +91,8 @@ int main(int argc, char ** argv)
 
    call_init(L, argc - 2, (const char **) argv + 2);
 
-   dst = open(db_file, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-   if (dst == -1)
+   dst = retro_fopen(db_file, RFILE_MODE_WRITE, -1);
+   if (!dst)
    {
       printf(
             "Could not open destination file '%s': %s\n",
@@ -106,8 +107,7 @@ int main(int argc, char ** argv)
 
 clean:
    lua_close(L);
-   if (dst != -1)
-      close(dst);
+   retro_fclose(dst);
    return rv;
 }
 

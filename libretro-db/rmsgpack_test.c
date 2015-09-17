@@ -162,15 +162,16 @@ static struct rmsgpack_read_callbacks stub_callbacks = {
 
 int main(void)
 {
-   int fd;
    struct stub_state state;
+   RFILE *fd = retro_fopen("test.msgpack", RFILE_MODE_READ, 0);
 
    state.i = 0;
    state.stack[0] = 0;
-   fd = open("test.msgpack", O_RDONLY);
+
    rmsgpack_read(fd, &stub_callbacks, &state);
+
    printf("Test succeeded.\n");
-   close(fd);
+   retro_fclose(fd);
 
    return 0;
 }

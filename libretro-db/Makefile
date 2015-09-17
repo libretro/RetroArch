@@ -11,6 +11,7 @@ LUA_CONVERTER_C = \
 		    query.c \
 		    lua_converter.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
+			 $(LIBRETRO_COMMON_DIR)/file/retro_file.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat.c
 
 LUA_CONVERTER_C_OBJS := $(LUA_CONVERTER_C:.c=.o)
@@ -23,6 +24,7 @@ RARCHDB_TOOL_C = \
 		   query.c \
 		   libretrodb.c \
 		   $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
+			$(LIBRETRO_COMMON_DIR)/file/retro_file.c \
 			$(LIBRETRO_COMMON_DIR)/compat/compat.c
 
 RARCHDB_TOOL_OBJS := $(RARCHDB_TOOL_C:.c=.o)
@@ -36,9 +38,17 @@ TESTLIB_C = \
 	      rmsgpack.c \
 	      rmsgpack_dom.c \
 		   $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
+			$(LIBRETRO_COMMON_DIR)/file/retro_file.c \
 			$(LIBRETRO_COMMON_DIR)/compat/compat.c
 
 TESTLIB_OBJS := $(TESTLIB_C:.c=.o)
+
+RMSGPACK_C = \
+			rmsgpack.c \
+			rmsgpack_test.c \
+			$(LIBRETRO_COMMON_DIR)/file/retro_file.c
+
+RMSGPACK_OBJS := $(RMSGPACK_C:.c=.o)
 
 LUA_FLAGS     = `pkg-config lua --libs`
 TESTLIB_FLAGS = ${CFLAGS} ${LUA_FLAGS} -shared -fpic
@@ -56,8 +66,8 @@ lua_converter: ${LUA_CONVERTER_C_OBJS}
 libretrodb_tool: ${RARCHDB_TOOL_OBJS}
 	${CC} $(INCFLAGS) ${RARCHDB_TOOL_OBJS} -o $@
 
-rmsgpack_test:
-	${CC} $(INCFLAGS) rmsgpack.c rmsgpack_test.c -g -o $@
+rmsgpack_test: $(RMSGPACK_OBJS)
+	${CC} $(INCFLAGS) ${RMSGPACK_OBJS} -g -o $@
 
 testlib.so: ${TESTLIB_OBJS}
 	${CC} ${INCFLAGS} ${TESTLIB_FLAGS} ${TESTLIB_OBJS} -o $@

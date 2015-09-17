@@ -37,36 +37,27 @@
 #include <fcntl.h>
 #endif
 
-struct RFILE
+typedef struct RFILE
 {
    int fd;
-};
+} RFILE;
 
-enum
+RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 {
-   MODE_READ = 0,
-   MODE_WRITE,
-   MODE_READ_WRITE,
-};
-
-struct RFILE *retro_fopen(const char *path, const char *mode, size_t len)
-{
-   int flags = 0;
-   struct RFILE *stream = (struct RFILE*)calloc(1, sizeof(*stream));
+   RFILE *stream = (RFILE*)calloc(1, sizeof(*stream));
 
    if (!stream)
       return NULL;
 
-   if (!strcmp(mode, "w+"))
-      flags = MODE_READ_WRITE;
-
-   switch (flags)
+   switch (mode)
    {
-      case MODE_READ:
+      case RFILE_MODE_READ:
+         stream->fd = open(path, O_RDONLY);
          break;
-      case MODE_WRITE:
+      case RFILE_MODE_WRITE:
+         stream->fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
          break;
-      case MODE_READ_WRITE:
+      case RFILE_MODE_READ_WRITE:
 #ifdef _WIN32
          stream->fd = open(path, O_RDWR | O_BINARY);
 #else
@@ -78,7 +69,7 @@ struct RFILE *retro_fopen(const char *path, const char *mode, size_t len)
    return stream;
 }
 
-ssize_t retro_seek(struct RFILE *stream, ssize_t offset, int whence)
+ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence)
 {
    if (!stream)
       return -1;
@@ -86,24 +77,25 @@ ssize_t retro_seek(struct RFILE *stream, ssize_t offset, int whence)
    return lseek(stream->fd, offset, whence);
 }
 
-ssize_t retro_read(struct RFILE *stream, void *s, size_t len)
+ssize_t retro_fread(RFILE *stream, void *s, size_t len)
 {
    if (!stream)
       return -1;
    return read(stream->fd, s, len);
 }
 
-ssize_t retro_write(struct RFILE *stream, const void *s, size_t len)
+ssize_t retro_fwrite(RFILE *stream, const void *s, size_t len)
 {
    if (!stream)
       return -1;
    return write(stream->fd, s, len);
 }
 
-void retro_fclose(struct RFILE *stream)
+void retro_fclose(RFILE *stream)
 {
    if (!stream)
       return;
 
+   close(stream->fd);
    free(stream);
 }

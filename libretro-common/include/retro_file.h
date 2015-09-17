@@ -32,17 +32,24 @@
 extern "C" {
 #endif
 
-struct RFILE;
+typedef struct RFILE RFILE;
 
-struct RFILE *retro_fopen(const char *path, const char *mode, size_t len);
+enum
+{
+   RFILE_MODE_READ = 0,
+   RFILE_MODE_WRITE,
+   RFILE_MODE_READ_WRITE,
+};
 
-ssize_t retro_seek(struct RFILE *stream, ssize_t offset, int whence);
+RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len);
 
-ssize_t retro_read(struct RFILE *stream, void *s, size_t len);
+ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence);
 
-ssize_t retro_write(struct RFILE *stream, const void *s, size_t len);
+ssize_t retro_fread(RFILE *stream, void *s, size_t len);
 
-void retro_fclose(struct RFILE *stream);
+ssize_t retro_fwrite(RFILE *stream, const void *s, size_t len);
+
+void retro_fclose(RFILE *stream);
 
 #ifdef __cplusplus
 }

@@ -338,7 +338,7 @@ void rmsgpack_dom_value_print(struct rmsgpack_dom_value *obj)
          printf("]");
    }
 }
-int rmsgpack_dom_write(int fd, const struct rmsgpack_dom_value *obj)
+int rmsgpack_dom_write(RFILE *fd, const struct rmsgpack_dom_value *obj)
 {
    unsigned i;
    int rv = 0;
@@ -388,7 +388,7 @@ int rmsgpack_dom_write(int fd, const struct rmsgpack_dom_value *obj)
    return written;
 }
 
-int rmsgpack_dom_read(int fd, struct rmsgpack_dom_value *out)
+int rmsgpack_dom_read(RFILE *fd, struct rmsgpack_dom_value *out)
 {
    struct dom_reader_state s;
    int rv = 0;
@@ -404,7 +404,7 @@ int rmsgpack_dom_read(int fd, struct rmsgpack_dom_value *out)
    return rv;
 }
 
-int rmsgpack_dom_read_into(int fd, ...)
+int rmsgpack_dom_read_into(RFILE *fd, ...)
 {
    va_list ap;
    struct rmsgpack_dom_value map;

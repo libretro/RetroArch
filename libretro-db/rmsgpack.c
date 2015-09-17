@@ -87,7 +87,7 @@ static const uint8_t MPF_UINT64   = _MPF_UINT64;
 
 static const uint8_t MPF_NIL      = _MPF_NIL;
 
-int rmsgpack_write_array_header(int fd, uint32_t size)
+int rmsgpack_write_array_header(RFILE *fd, uint32_t size)
 {
    uint16_t tmp_i16;
    uint32_t tmp_i32;
@@ -95,26 +95,26 @@ int rmsgpack_write_array_header(int fd, uint32_t size)
    if (size < 16)
    {
       size = (size | MPF_FIXARRAY);
-      if (write(fd, &size, sizeof(int8_t)) == -1)
+      if (retro_fwrite(fd, &size, sizeof(int8_t)) == -1)
          goto error;
       return sizeof(int8_t);
    }
    else if (size == (uint16_t)size)
    {
-      if (write(fd, &MPF_ARRAY16, sizeof(MPF_ARRAY16)) == -1)
+      if (retro_fwrite(fd, &MPF_ARRAY16, sizeof(MPF_ARRAY16)) == -1)
          goto error;
       tmp_i16 = httobe16(size);
-      if (write(fd, (void *)(&tmp_i16), sizeof(uint16_t)) == -1)
+      if (retro_fwrite(fd, (void *)(&tmp_i16), sizeof(uint16_t)) == -1)
          goto error;
       return sizeof(int8_t) + sizeof(uint16_t);
    }
 
-   if (write(fd, &MPF_ARRAY32, sizeof(MPF_ARRAY32)) == -1)
+   if (retro_fwrite(fd, &MPF_ARRAY32, sizeof(MPF_ARRAY32)) == -1)
       goto error;
    
    tmp_i32 = httobe32(size);
 
-   if (write(fd, (void *)(&tmp_i32), sizeof(uint32_t)) == -1)
+   if (retro_fwrite(fd, (void *)(&tmp_i32), sizeof(uint32_t)) == -1)
       goto error;
 
    return sizeof(int8_t) + sizeof(uint32_t);
@@ -123,7 +123,7 @@ error:
    return -errno;
 }
 
-int rmsgpack_write_map_header(int fd, uint32_t size)
+int rmsgpack_write_map_header(RFILE *fd, uint32_t size)
 {
    uint16_t tmp_i16;
    uint32_t tmp_i32;
@@ -131,24 +131,24 @@ int rmsgpack_write_map_header(int fd, uint32_t size)
    if (size < 16)
    {
       size = (size | MPF_FIXMAP);
-      if (write(fd, &size, sizeof(int8_t)) == -1)
+      if (retro_fwrite(fd, &size, sizeof(int8_t)) == -1)
          goto error;
       return sizeof(int8_t);
    }
    else if (size < (uint16_t)size)
    {
-      if (write(fd, &MPF_MAP16, sizeof(MPF_MAP16)) == -1)
+      if (retro_fwrite(fd, &MPF_MAP16, sizeof(MPF_MAP16)) == -1)
          goto error;
       tmp_i16 = httobe16(size);
-      if (write(fd, (void *)(&tmp_i16), sizeof(uint16_t)) == -1)
+      if (retro_fwrite(fd, (void *)(&tmp_i16), sizeof(uint16_t)) == -1)
          goto error;
       return sizeof(uint8_t) + sizeof(uint16_t);
    }
 
    tmp_i32 = httobe32(size);
-   if (write(fd, &MPF_MAP32, sizeof(MPF_MAP32)) == -1)
+   if (retro_fwrite(fd, &MPF_MAP32, sizeof(MPF_MAP32)) == -1)
       goto error;
-   if (write(fd, (void *)(&tmp_i32), sizeof(uint32_t)) == -1)
+   if (retro_fwrite(fd, (void *)(&tmp_i32), sizeof(uint32_t)) == -1)
       goto error;
 
    return sizeof(int8_t) + sizeof(uint32_t);
@@ -157,7 +157,7 @@ error:
    return -errno;
 }
 
-int rmsgpack_write_string(int fd, const char *s, uint32_t len)
+int rmsgpack_write_string(RFILE *fd, const char *s, uint32_t len)
 {
    uint16_t tmp_i16;
    uint32_t tmp_i32;
@@ -167,37 +167,37 @@ int rmsgpack_write_string(int fd, const char *s, uint32_t len)
    if (len < 32)
    {
       fixlen = len | MPF_FIXSTR;
-      if (write(fd, &fixlen, sizeof(int8_t)) == -1)
+      if (retro_fwrite(fd, &fixlen, sizeof(int8_t)) == -1)
          goto error;
    }
    else if (len < (1 << 8))
    {
-      if (write(fd, &MPF_STR8, sizeof(MPF_STR8)) == -1)
+      if (retro_fwrite(fd, &MPF_STR8, sizeof(MPF_STR8)) == -1)
          goto error;
-      if (write(fd, &len, sizeof(uint8_t)) == -1)
+      if (retro_fwrite(fd, &len, sizeof(uint8_t)) == -1)
          goto error;
       written += sizeof(uint8_t);
    }
    else if (len < (1 << 16))
    {
-      if (write(fd, &MPF_STR16, sizeof(MPF_STR16)) == -1)
+      if (retro_fwrite(fd, &MPF_STR16, sizeof(MPF_STR16)) == -1)
          goto error;
       tmp_i16 = httobe16(len);
-      if (write(fd, &tmp_i16, sizeof(uint16_t)) == -1)
+      if (retro_fwrite(fd, &tmp_i16, sizeof(uint16_t)) == -1)
          goto error;
       written += sizeof(uint16_t);
    }
    else
    {
-      if (write(fd, &MPF_STR32, sizeof(MPF_STR32)) == -1)
+      if (retro_fwrite(fd, &MPF_STR32, sizeof(MPF_STR32)) == -1)
          goto error;
       tmp_i32 = httobe32(len);
-      if (write(fd, &tmp_i32, sizeof(uint32_t)) == -1)
+      if (retro_fwrite(fd, &tmp_i32, sizeof(uint32_t)) == -1)
          goto error;
       written += sizeof(uint32_t);
    }
 
-   if (write(fd, s, len) == -1)
+   if (retro_fwrite(fd, s, len) == -1)
       goto error;
 
    written += len;
@@ -208,7 +208,7 @@ error:
    return -errno;
 }
 
-int rmsgpack_write_bin(int fd, const void *s, uint32_t len)
+int rmsgpack_write_bin(RFILE *fd, const void *s, uint32_t len)
 {
    uint16_t tmp_i16;
    uint32_t tmp_i32;
@@ -216,31 +216,31 @@ int rmsgpack_write_bin(int fd, const void *s, uint32_t len)
 
    if (len == (uint8_t)len)
    {
-      if (write(fd, &MPF_BIN8, sizeof(MPF_BIN8)) == -1)
+      if (retro_fwrite(fd, &MPF_BIN8, sizeof(MPF_BIN8)) == -1)
          goto error;
-      if (write(fd, &len, sizeof(uint8_t)) == -1)
+      if (retro_fwrite(fd, &len, sizeof(uint8_t)) == -1)
          goto error;
       written += sizeof(uint8_t);
    }
    else if (len == (uint16_t)len)
    {
-      if (write(fd, &MPF_BIN16, sizeof(MPF_BIN16)) == -1)
+      if (retro_fwrite(fd, &MPF_BIN16, sizeof(MPF_BIN16)) == -1)
          goto error;
       tmp_i16 = httobe16(len);
-      if (write(fd, &tmp_i16, sizeof(uint16_t)) == -1)
+      if (retro_fwrite(fd, &tmp_i16, sizeof(uint16_t)) == -1)
          goto error;
       written += sizeof(uint16_t);
    }
    else
    {
-      if (write(fd, &MPF_BIN32, sizeof(MPF_BIN32)) == -1)
+      if (retro_fwrite(fd, &MPF_BIN32, sizeof(MPF_BIN32)) == -1)
          goto error;
       tmp_i32 = httobe32(len);
-      if (write(fd, &tmp_i32, sizeof(uint32_t)) == -1)
+      if (retro_fwrite(fd, &tmp_i32, sizeof(uint32_t)) == -1)
          goto error;
       written += sizeof(uint32_t);
    }
-   if (write(fd, s, len) == -1)
+   if (retro_fwrite(fd, s, len) == -1)
       goto error;
 
    written += len;
@@ -251,22 +251,22 @@ error:
    return -errno;
 }
 
-int rmsgpack_write_nil(int fd)
+int rmsgpack_write_nil(RFILE *fd)
 {
-   if (write(fd, &MPF_NIL, sizeof(MPF_NIL)) == -1)
+   if (retro_fwrite(fd, &MPF_NIL, sizeof(MPF_NIL)) == -1)
       return -errno;
    return sizeof(uint8_t);
 }
 
-int rmsgpack_write_bool(int fd, int value)
+int rmsgpack_write_bool(RFILE *fd, int value)
 {
    if (value)
    {
-      if (write(fd, &MPF_TRUE, sizeof(MPF_TRUE)) == -1)
+      if (retro_fwrite(fd, &MPF_TRUE, sizeof(MPF_TRUE)) == -1)
          goto error;
    }
 
-   if (write(fd, &MPF_FALSE, sizeof(MPF_FALSE)) == -1)
+   if (retro_fwrite(fd, &MPF_FALSE, sizeof(MPF_FALSE)) == -1)
       goto error;
 
    return sizeof(uint8_t);
@@ -275,7 +275,7 @@ error:
    return -errno;
 }
 
-int rmsgpack_write_int(int fd, int64_t value)
+int rmsgpack_write_int(RFILE *fd, int64_t value)
 {
    int16_t tmp_i16;
    int32_t tmp_i32;
@@ -284,51 +284,51 @@ int rmsgpack_write_int(int fd, int64_t value)
 
    if (value >=0 && value < 128)
    {
-      if (write(fd, &value, sizeof(int8_t)) == -1)
+      if (retro_fwrite(fd, &value, sizeof(int8_t)) == -1)
          goto error;
    }
    else if (value < 0 && value > -32)
    {
       tmpval = (value) | 0xe0;
-      if (write(fd, &tmpval, sizeof(uint8_t)) == -1)
+      if (retro_fwrite(fd, &tmpval, sizeof(uint8_t)) == -1)
          goto error;
    }
    else if (value == (int8_t)value)
    {
-      if (write(fd, &MPF_INT8, sizeof(MPF_INT8)) == -1)
+      if (retro_fwrite(fd, &MPF_INT8, sizeof(MPF_INT8)) == -1)
          goto error;
 
-      if (write(fd, &value, sizeof(int8_t)) == -1)
+      if (retro_fwrite(fd, &value, sizeof(int8_t)) == -1)
          goto error;
       written += sizeof(int8_t);
    }
    else if (value == (int16_t)value)
    {
-      if (write(fd, &MPF_INT16, sizeof(MPF_INT16)) == -1)
+      if (retro_fwrite(fd, &MPF_INT16, sizeof(MPF_INT16)) == -1)
          goto error;
 
       tmp_i16 = httobe16(value);
-      if (write(fd, &tmp_i16, sizeof(int16_t)) == -1)
+      if (retro_fwrite(fd, &tmp_i16, sizeof(int16_t)) == -1)
          goto error;
       written += sizeof(int16_t);
    }
    else if (value == (int32_t)value)
    {
-      if (write(fd, &MPF_INT32, sizeof(MPF_INT32)) == -1)
+      if (retro_fwrite(fd, &MPF_INT32, sizeof(MPF_INT32)) == -1)
          goto error;
 
       tmp_i32 = httobe32(value);
-      if (write(fd, &tmp_i32, sizeof(int32_t)) == -1)
+      if (retro_fwrite(fd, &tmp_i32, sizeof(int32_t)) == -1)
          goto error;
       written += sizeof(int32_t);
    }
    else
    {
-      if (write(fd, &MPF_INT64, sizeof(MPF_INT64)) == -1)
+      if (retro_fwrite(fd, &MPF_INT64, sizeof(MPF_INT64)) == -1)
          goto error;
 
       value = httobe64(value);
-      if (write(fd, &value, sizeof(int64_t)) == -1)
+      if (retro_fwrite(fd, &value, sizeof(int64_t)) == -1)
          goto error;
       written += sizeof(int64_t);
    }
@@ -339,7 +339,7 @@ error:
    return -errno;
 }
 
-int rmsgpack_write_uint(int fd, uint64_t value)
+int rmsgpack_write_uint(RFILE *fd, uint64_t value)
 {
    uint16_t tmp_i16;
    uint32_t tmp_i32;
@@ -347,40 +347,40 @@ int rmsgpack_write_uint(int fd, uint64_t value)
 
    if (value == (uint8_t)value)
    {
-      if (write(fd, &MPF_UINT8, sizeof(MPF_UINT8)) == -1)
+      if (retro_fwrite(fd, &MPF_UINT8, sizeof(MPF_UINT8)) == -1)
          goto error;
 
-      if (write(fd, &value, sizeof(uint8_t)) == -1)
+      if (retro_fwrite(fd, &value, sizeof(uint8_t)) == -1)
          goto error;
       written += sizeof(uint8_t);
    }
    else if (value == (uint16_t)value)
    {
-      if (write(fd, &MPF_UINT16, sizeof(MPF_UINT16)) == -1)
+      if (retro_fwrite(fd, &MPF_UINT16, sizeof(MPF_UINT16)) == -1)
          goto error;
 
       tmp_i16 = httobe16(value);
-      if (write(fd, &tmp_i16, sizeof(uint16_t)) == -1)
+      if (retro_fwrite(fd, &tmp_i16, sizeof(uint16_t)) == -1)
          goto error;
       written += sizeof(uint16_t);
    }
    else if (value == (uint32_t)value)
    {
-      if (write(fd, &MPF_UINT32, sizeof(MPF_UINT32)) == -1)
+      if (retro_fwrite(fd, &MPF_UINT32, sizeof(MPF_UINT32)) == -1)
          goto error;
 
       tmp_i32 = httobe32(value);
-      if (write(fd, &tmp_i32, sizeof(uint32_t)) == -1)
+      if (retro_fwrite(fd, &tmp_i32, sizeof(uint32_t)) == -1)
          goto error;
       written += sizeof(uint32_t);
    }
    else
    {
-      if (write(fd, &MPF_UINT64, sizeof(MPF_UINT64)) == -1)
+      if (retro_fwrite(fd, &MPF_UINT64, sizeof(MPF_UINT64)) == -1)
          goto error;
 
       value = httobe64(value);
-      if (write(fd, &value, sizeof(uint64_t)) == -1)
+      if (retro_fwrite(fd, &value, sizeof(uint64_t)) == -1)
          goto error;
       written += sizeof(uint64_t);
    }
@@ -390,11 +390,11 @@ error:
    return -errno;
 }
 
-static int read_uint(int fd, uint64_t *out, size_t size)
+static int read_uint(RFILE *fd, uint64_t *out, size_t size)
 {
    uint64_t tmp;
 
-   if (read(fd, &tmp, size) == -1)
+   if (retro_fread(fd, &tmp, size) == -1)
       return -errno;
 
    switch (size)
@@ -415,14 +415,14 @@ static int read_uint(int fd, uint64_t *out, size_t size)
    return 0;
 }
 
-static int read_int(int fd, int64_t *out, size_t size)
+static int read_int(RFILE *fd, int64_t *out, size_t size)
 {
    uint8_t tmp8 = 0;
    uint16_t tmp16;
    uint32_t tmp32;
    uint64_t tmp64;
 
-   if (read(fd, &tmp64, size) == -1)
+   if (retro_fread(fd, &tmp64, size) == -1)
       return -errno;
 
    (void)tmp8;
@@ -448,7 +448,7 @@ static int read_int(int fd, int64_t *out, size_t size)
    return 0;
 }
 
-static int read_buff(int fd, size_t size, char **pbuff, uint64_t *len)
+static int read_buff(RFILE *fd, size_t size, char **pbuff, uint64_t *len)
 {
    uint64_t tmp_len = 0;
 
@@ -457,7 +457,7 @@ static int read_buff(int fd, size_t size, char **pbuff, uint64_t *len)
 
    *pbuff = (char *)calloc(tmp_len + 1, sizeof(char));
 
-   if (read(fd, *pbuff, tmp_len) == -1)
+   if (retro_fread(fd, *pbuff, tmp_len) == -1)
    {
       free(*pbuff);
       return -errno;
@@ -467,7 +467,7 @@ static int read_buff(int fd, size_t size, char **pbuff, uint64_t *len)
    return 0;
 }
 
-static int read_map(int fd, uint32_t len,
+static int read_map(RFILE *fd, uint32_t len,
         struct rmsgpack_read_callbacks *callbacks, void *data)
 {
    int rv;
@@ -488,7 +488,7 @@ static int read_map(int fd, uint32_t len,
    return 0;
 }
 
-static int read_array(int fd, uint32_t len,
+static int read_array(RFILE *fd, uint32_t len,
       struct rmsgpack_read_callbacks *callbacks, void *data)
 {
    int rv;
@@ -507,7 +507,7 @@ static int read_array(int fd, uint32_t len,
    return 0;
 }
 
-int rmsgpack_read(int fd,
+int rmsgpack_read(RFILE *fd,
       struct rmsgpack_read_callbacks *callbacks, void *data)
 {
    int rv;
@@ -517,7 +517,7 @@ int rmsgpack_read(int fd,
    uint8_t type      = 0;
    char *buff        = NULL;
 
-   if (read(fd, &type, sizeof(uint8_t)) == -1)
+   if (retro_fread(fd, &type, sizeof(uint8_t)) == -1)
       goto error;
 
    if (type < MPF_FIXMAP)
@@ -542,7 +542,7 @@ int rmsgpack_read(int fd,
       buff = (char *)calloc(tmp_len + 1, sizeof(char));
       if (!buff)
          return -ENOMEM;
-      if (read(fd, buff, tmp_len) == -1)
+      if (retro_fread(fd, buff, tmp_len) == -1)
       {
          free(buff);
          goto error;

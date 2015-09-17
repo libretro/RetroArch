@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include <retro_file.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -66,11 +68,11 @@ struct rmsgpack_dom_value *rmsgpack_dom_value_map_value(
         const struct rmsgpack_dom_value *map,
         const struct rmsgpack_dom_value *key);
 
-int rmsgpack_dom_read(int fd, struct rmsgpack_dom_value *out);
+int rmsgpack_dom_read(RFILE *fd, struct rmsgpack_dom_value *out);
 
-int rmsgpack_dom_write(int fd, const struct rmsgpack_dom_value *obj);
+int rmsgpack_dom_write(RFILE *fd, const struct rmsgpack_dom_value *obj);
 
-int rmsgpack_dom_read_into(int fd, ...);
+int rmsgpack_dom_read_into(RFILE *fd, ...);
 
 #ifdef __cplusplus
 }
