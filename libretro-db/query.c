@@ -850,6 +850,11 @@ void libretrodb_query_free(void *q)
 
 	for (i = 0; i < real_q->root.argc; i++)
 		argument_free(&real_q->root.argv[i]);
+
+   
+   free(real_q->root.argv);
+   real_q->root.argv = NULL;
+   free(real_q);
 }
 
 void *libretrodb_query_compile(libretrodb_t *db,
