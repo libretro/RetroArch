@@ -20,6 +20,7 @@
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
 #include <retro_endianness.h>
+#include <retro_file.h>
 
 #include "tasks.h"
 
@@ -47,7 +48,7 @@ static struct magic_entry MAGIC_NUMBERS[] = {
     {NULL, NULL}
 };
 
-ssize_t get_token(int fd, char *token, size_t max_len)
+static ssize_t get_token(RFILE *fd, char *token, size_t max_len)
 {
    int rv;
    char *c       = token;
@@ -56,7 +57,7 @@ ssize_t get_token(int fd, char *token, size_t max_len)
 
    while (1)
    {
-      rv = read(fd, c, 1);
+      rv = retro_fread(fd, c, 1);
       if (rv == 0)
          return 0;
       else if (rv < 1)
@@ -107,7 +108,7 @@ ssize_t get_token(int fd, char *token, size_t max_len)
    }
 }
 
-int find_token(int fd, const char *token)
+static int find_token(RFILE *fd, const char *token)
 {
    int     tmp_len = strlen(token);
    char *tmp_token = (char*)calloc(tmp_len, 1);
@@ -126,23 +127,23 @@ int find_token(int fd, const char *token)
 
 int detect_ps1_game(const char *track_path, char *game_id)
 {
-   int              fd = open(track_path, O_RDONLY);
+   RFILE *fd = retro_fopen(track_path, RFILE_MODE_READ, -1);
 
-   if (fd < 0)
+   if (!fd)
    {
       RARCH_LOG("Could not open data track: %s\n", strerror(errno));
       return -errno;
    }
 
-   lseek(fd, 0x9340, SEEK_SET);
+   retro_fseek(fd, 0x9340, SEEK_SET);
 
-   if (read(fd, game_id, 10) > 0)
+   if (retro_fread(fd, game_id, 10) > 0)
    {
       game_id[10] = '\0';
       game_id[4] = '-';
    }
 
-   close(fd);
+   retro_fclose(fd);
    return 1;
 }
 
@@ -152,9 +153,9 @@ int detect_system(const char *track_path, int32_t offset,
    int rv;
    char magic[MAGIC_LEN];
    int i;
-   int fd = open(track_path, O_RDONLY);
-
-   if (fd < 0)
+   RFILE *fd = retro_fopen(track_path, RFILE_MODE_READ, -1);
+   
+   if (!fd)
    {
       RARCH_LOG("Could not open data track of file '%s': %s\n",
             track_path, strerror(errno));
@@ -162,8 +163,8 @@ int detect_system(const char *track_path, int32_t offset,
       goto clean;
    }
 
-   lseek(fd, offset, SEEK_SET);
-   if (read(fd, magic, MAGIC_LEN) < MAGIC_LEN)
+   retro_fseek(fd, offset, SEEK_SET);
+   if (retro_fread(fd, magic, MAGIC_LEN) < MAGIC_LEN)
    {
       RARCH_LOG("Could not read data from file '%s' at offset %d: %s\n",
             track_path, offset, strerror(errno));
@@ -185,24 +186,23 @@ int detect_system(const char *track_path, int32_t offset,
    RARCH_LOG("Could not find compatible system\n");
    rv = -EINVAL;
 clean:
-   close(fd);
+   retro_fclose(fd);
    return rv;
 }
 
 int find_first_data_track(const char *cue_path,
       int32_t *offset, char *track_path, size_t max_len)
 {
-   int rv;
+   int rv, m, s, f;
    char tmp_token[MAX_TOKEN_LEN];
-   int m, s, f;
    char cue_dir[PATH_MAX_LENGTH];
-   int fd = -1;
+   RFILE *fd;
 
    strlcpy(cue_dir, cue_path, PATH_MAX_LENGTH);
    path_basedir(cue_dir);
 
-   fd = open(cue_path, O_RDONLY);
-   if (fd < 0)
+   fd = retro_fopen(cue_path, RFILE_MODE_READ, -1);
+   if (!fd)
    {
       RARCH_LOG("Could not open CUE file '%s': %s\n", cue_path,
             strerror(errno));
@@ -247,6 +247,6 @@ int find_first_data_track(const char *cue_path,
    rv = -EINVAL;
 
 clean:
-   close(fd);
+   retro_fclose(fd);
    return rv;
 }
