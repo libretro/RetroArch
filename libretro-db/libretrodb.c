@@ -50,18 +50,18 @@ static int validate_document(const struct rmsgpack_dom_value * doc)
    if (doc->type != RDT_MAP)
       return -EINVAL;
 
-   for (i = 0; i < doc->map.len; i++)
+   for (i = 0; i < doc->val.map.len; i++)
    {
-      key = doc->map.items[i].key;
-      value = doc->map.items[i].value;
+      key = doc->val.map.items[i].key;
+      value = doc->val.map.items[i].value;
 
       if (key.type != RDT_STRING)
          return -EINVAL;
 
-      if (key.string.len <= 0)
+      if (key.val.string.len <= 0)
          return -EINVAL;
 
-      if (key.string.buff[0] == '$')
+      if (key.val.string.buff[0] == '$')
          return -EINVAL;
 
       if (value.type != RDT_MAP)
@@ -419,10 +419,10 @@ int libretrodb_create_index(libretrodb_t *db,
 	}
 
 	key.type = RDT_STRING;
-	key.string.len = strlen(field_name);
+	key.val.string.len = strlen(field_name);
 
 	/* We know we aren't going to change it */
-	key.string.buff = (char *) field_name;
+	key.val.string.buff = (char *) field_name;
 
 	while (libretrodb_cursor_read_item(&cur, &item) == 0)
    {
@@ -449,7 +449,7 @@ int libretrodb_create_index(libretrodb_t *db,
 			goto clean;
 		}
 
-		if (field->binary.len == 0)
+		if (field->val.binary.len == 0)
       {
 			rv = -EINVAL;
 			printf("field is empty\n");
@@ -457,8 +457,8 @@ int libretrodb_create_index(libretrodb_t *db,
 		}
 
 		if (field_size == 0)
-			field_size = field->binary.len;
-		else if (field->binary.len != field_size)
+			field_size = field->val.binary.len;
+		else if (field->val.binary.len != field_size)
       {
 			rv = -EINVAL;
 			printf("field is not of correct size\n");
@@ -472,7 +472,7 @@ int libretrodb_create_index(libretrodb_t *db,
 			goto clean;
 		}
 
-		memcpy(buff, field->binary.buff, field_size);
+		memcpy(buff, field->val.binary.buff, field_size);
 
 		buff_u64 = (uint64_t *)buff + field_size;
 

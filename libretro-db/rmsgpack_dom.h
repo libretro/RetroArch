@@ -18,29 +18,35 @@ enum rmsgpack_dom_type {
 	RDT_ARRAY
 };
 
-struct rmsgpack_dom_value {
-	enum rmsgpack_dom_type type;
-	union {
-		uint64_t uint_;
-		int64_t int_;
-		struct {
-			uint32_t len;
-			char * buff;
-		} string;
-		struct {
-			uint32_t len;
-			char * buff;
-		} binary;
-		int bool_;
-		struct {
-			uint32_t len;
-			struct rmsgpack_dom_pair * items;
-		} map;
-		struct {
-			uint32_t len;
-			struct rmsgpack_dom_value * items;
-		} array;
-	};
+struct rmsgpack_dom_value
+{
+   enum rmsgpack_dom_type type;
+   union
+   {
+      uint64_t uint_;
+      int64_t int_;
+      struct
+      {
+         uint32_t len;
+         char * buff;
+      } string;
+      struct
+      {
+         uint32_t len;
+         char * buff;
+      } binary;
+      int bool_;
+      struct
+      {
+         uint32_t len;
+         struct rmsgpack_dom_pair * items;
+      } map;
+      struct
+      {
+         uint32_t len;
+         struct rmsgpack_dom_value * items;
+      } array;
+   } val;
 };
 
 struct rmsgpack_dom_pair {
