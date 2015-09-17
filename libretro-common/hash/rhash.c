@@ -31,6 +31,7 @@
 #include <rhash.h>
 #include <retro_miscellaneous.h>
 #include <retro_endianness.h>
+#include <retro_file.h>
 
 #define LSL32(x, n) ((uint32_t)(x) << (n))
 #define LSR32(x, n) ((uint32_t)(x) >> (n))
@@ -504,16 +505,16 @@ int sha1_calculate(const char *path, char *result)
    unsigned char buff[4096] = {0};
    SHA1Context sha;
    int rv = 1;
-   int fd = open(path, O_RDONLY);
+   RFILE *fd = retro_fopen(path, RFILE_MODE_READ, -1);
 
-   if (fd < 0)
+   if (!fd)
       goto error;
 
    SHA1Reset(&sha);
 
    do
    {
-      rv = read(fd, buff, 4096);
+      rv = retro_fread(fd, buff, 4096);
       if (rv < 0)
          goto error;
 
@@ -529,12 +530,12 @@ int sha1_calculate(const char *path, char *result)
          sha.Message_Digest[2],
          sha.Message_Digest[3], sha.Message_Digest[4]);
 
-   close(fd);
+   retro_fclose(fd);
    return 0;
 
 error:
-   if (fd >= 0)
-      close(fd);
+   if (fd)
+      retro_fclose(fd);
    return -1;
 }
 

@@ -21,6 +21,7 @@
 #include "retroarch-joyconfig.c"
 
 #include "../libretro-common/dynamic/dylib.c"
+#include "../libretro-common/file/retro_file.c"
 
 #if defined(__linux) && !defined(ANDROID)
 #include "../input/drivers/linuxraw_input.c"
