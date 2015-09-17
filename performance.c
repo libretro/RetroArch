@@ -331,7 +331,7 @@ static uint64_t xgetbv_x86(uint32_t idx)
 }
 #endif
 
-#if defined(__ARM_NEON__)
+#if defined(__ARM_NEON__)  
 static void arm_enable_runfast_mode(void)
 {
    /* RunFast mode. Enables flush-to-zero and some
