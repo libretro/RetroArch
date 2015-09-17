@@ -224,6 +224,7 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    db->first_index_offset = lseek(fd, 0, SEEK_CUR);
    db->fd = fd;
    return 0;
+
 error:
    close(fd);
    return rv;

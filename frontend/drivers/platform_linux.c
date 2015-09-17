@@ -245,7 +245,6 @@ typedef struct
  */
 static void cpulist_parse(CpuList* list, const char* line, int line_len)
 {
-   const char* q;
    const char* p   = line;
    const char* end = p + line_len;
 
@@ -255,10 +254,10 @@ static void cpulist_parse(CpuList* list, const char* line, int line_len)
    while (p < end && *p != '\n')
    {
       int val, start_value, end_value;
-
       /* Find the end of current item, and put it into 'q' */
-      q = memchr(p, ',', end-p);
-      if (q == NULL)
+      const char *q = (const char*)memchr(p, ',', end-p);
+
+      if (!q)
          q = end;
 
       /* Get first value */
