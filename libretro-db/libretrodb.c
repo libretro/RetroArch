@@ -314,12 +314,7 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
    if (rv == 0)
       lseek(db->fd, offset, SEEK_SET);
 
-   rv = rmsgpack_dom_read(db->fd, out);
-
-   if (rv < 0)
-      return rv;
-
-   return rv;
+   return rmsgpack_dom_read(db->fd, out);
 }
 
 /**
