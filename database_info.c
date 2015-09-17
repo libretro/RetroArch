@@ -447,15 +447,18 @@ void database_info_free(database_info_handle_t *db)
 database_info_list_t *database_info_list_new(
       const char *rdb_path, const char *query)
 {
-   libretrodb_t db;
-   libretrodb_cursor_t cur;
    int ret                                  = 0;
    unsigned k                               = 0;
    database_info_t *database_info           = NULL;
    database_info_list_t *database_info_list = NULL;
+   libretrodb_t *db                         = libretrodb_new();
+   libretrodb_cursor_t *cur                 = libretrodb_cursor_new();
 
-   if ((database_cursor_open(&db, &cur, rdb_path, query) != 0))
-      return NULL;
+   if (!db || !cur)
+      goto end;
+
+   if ((database_cursor_open(db, cur, rdb_path, query) != 0))
+      goto end;
 
    database_info_list = (database_info_list_t*)
       calloc(1, sizeof(*database_info_list));
@@ -466,7 +469,7 @@ database_info_list_t *database_info_list_new(
    while (ret != -1)
    {
       database_info_t db_info = {0};
-      ret = database_cursor_iterate(&cur, &db_info);
+      ret = database_cursor_iterate(cur, &db_info);
 
       if (ret == 0)
       {
@@ -496,7 +499,12 @@ database_info_list_t *database_info_list_new(
    database_info_list->count = k;
 
 end:
-   database_cursor_close(&db, &cur);
+   database_cursor_close(db, cur);
+
+   if (db)
+      libretrodb_free(db);
+   if (cur)
+      libretrodb_cursor_free(cur);
 
    return database_info_list;
 }

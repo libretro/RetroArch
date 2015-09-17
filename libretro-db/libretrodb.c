@@ -19,12 +19,49 @@
 #include "bintree.h"
 #include "libretrodb_endian.h"
 #include "query.h"
+#include "libretrodb.h"
 
 struct node_iter_ctx
 {
 	libretrodb_t *db;
 	libretrodb_index_t *idx;
 };
+
+typedef struct libretrodb
+{
+	int fd;
+	uint64_t root;
+	uint64_t count;
+	uint64_t first_index_offset;
+   char path[1024];
+} libretrodb_t;
+
+typedef struct libretrodb_index
+{
+	char name[50];
+	uint64_t key_size;
+	uint64_t next;
+} libretrodb_index_t;
+
+typedef struct libretrodb_metadata
+{
+	uint64_t count;
+} libretrodb_metadata_t;
+
+typedef struct libretrodb_header
+{
+	char magic_number[sizeof(MAGIC_NUMBER)-1];
+	uint64_t metadata_offset;
+} libretrodb_header_t;
+
+typedef struct libretrodb_cursor
+{
+	int is_valid;
+	int fd;
+	int eof;
+	libretrodb_query_t *query;
+	libretrodb_t *db;
+} libretrodb_cursor_t;
 
 static struct rmsgpack_dom_value sentinal;
 
@@ -525,4 +562,41 @@ clean:
 	if (cur.is_valid)
 		libretrodb_cursor_close(&cur);
 	return 0;
+}
+
+libretrodb_cursor_t *libretrodb_cursor_new(void)
+{
+   libretrodb_cursor_t *dbc = (libretrodb_cursor_t*)
+      calloc(1, sizeof(*dbc));
+
+   if (!dbc)
+      return NULL;
+
+   return dbc;
+}
+
+void libretrodb_cursor_free(libretrodb_cursor_t *dbc)
+{
+   if (!dbc)
+      return;
+
+   free(dbc);
+}
+
+libretrodb_t *libretrodb_new(void)
+{
+   libretrodb_t *db = (libretrodb_t*)calloc(1, sizeof(*db));
+
+   if (!db)
+      return NULL;
+
+   return db;
+}
+
+void libretrodb_free(libretrodb_t *db)
+{
+   if (!db)
+      return;
+
+   free(db);
 }
