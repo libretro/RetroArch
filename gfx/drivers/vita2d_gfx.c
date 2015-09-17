@@ -71,7 +71,7 @@ static void *vita2d_gfx_init(const video_info_t *video,
 	RARCH_SCALE_BASE, video->input_scale, RARCH_SCALE_BASE * video->input_scale);
 
    vita2d_init();
-   vita2d_set_clear_color(RGBA8(0x40, 0x40, 0x40, 0xFF));
+   vita2d_set_clear_color(RGBA8(0x00, 0x00, 0x00, 0xFF));
    vita2d_set_vblank_wait(video->vsync);
 
    if (vita->rgb32)
