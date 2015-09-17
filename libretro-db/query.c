@@ -46,7 +46,7 @@ static void raise_expected_number(off_t where, const char **error)
    *error = tmp_error_buff;
 }
 
-static void raise_expected_string(off_t where, const char ** error)
+static void raise_expected_string(off_t where, const char **error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
 #ifdef _WIN32
@@ -58,7 +58,7 @@ static void raise_expected_string(off_t where, const char ** error)
    *error = tmp_error_buff;
 }
 
-static void raise_unexpected_eof(off_t where, const char ** error)
+static void raise_unexpected_eof(off_t where, const char **error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
 #ifdef _WIN32
@@ -199,7 +199,7 @@ static struct rmsgpack_dom_value is_true(struct rmsgpack_dom_value input,
 }
 
 static struct rmsgpack_dom_value equals(struct rmsgpack_dom_value input,
-        unsigned argc, const struct argument * argv)
+        unsigned argc, const struct argument *argv)
 {
    struct rmsgpack_dom_value res;
    struct argument arg;
@@ -228,7 +228,7 @@ static struct rmsgpack_dom_value equals(struct rmsgpack_dom_value input,
 }
 
 static struct rmsgpack_dom_value operator_or(struct rmsgpack_dom_value input,
-        unsigned argc, const struct argument * argv)
+        unsigned argc, const struct argument *argv)
 {
    struct rmsgpack_dom_value res;
    unsigned i;
@@ -256,7 +256,7 @@ static struct rmsgpack_dom_value operator_or(struct rmsgpack_dom_value input,
 }
 
 static struct rmsgpack_dom_value between(struct rmsgpack_dom_value input,
-      unsigned argc, const struct argument * argv)
+      unsigned argc, const struct argument *argv)
 {
    struct rmsgpack_dom_value res;
    unsigned i    = 0;
@@ -289,7 +289,7 @@ static struct rmsgpack_dom_value between(struct rmsgpack_dom_value input,
 }
 
 static struct rmsgpack_dom_value operator_and(struct rmsgpack_dom_value input,
-      unsigned argc, const struct argument * argv)
+      unsigned argc, const struct argument *argv)
 {
    struct rmsgpack_dom_value res;
    unsigned i;
@@ -318,7 +318,7 @@ static struct rmsgpack_dom_value operator_and(struct rmsgpack_dom_value input,
 }
 
 static struct rmsgpack_dom_value q_glob(struct rmsgpack_dom_value input,
-      unsigned argc, const struct argument * argv)
+      unsigned argc, const struct argument *argv)
 {
    struct rmsgpack_dom_value res;
    unsigned i    = 0;
@@ -412,7 +412,7 @@ static struct buffer chomp(struct buffer buff)
 }
 
 static struct buffer expect_char(struct buffer buff,
-      char c, const char ** error)
+      char c, const char **error)
 {
    if (buff.offset >= buff.len)
       raise_unexpected_eof(buff.offset, error);
@@ -424,7 +424,7 @@ static struct buffer expect_char(struct buffer buff,
    return buff;
 }
 
-static struct buffer expect_eof(struct buffer buff, const char ** error)
+static struct buffer expect_eof(struct buffer buff, const char **error)
 {
    buff = chomp(buff);
    if (buff.offset < buff.len)
@@ -432,7 +432,7 @@ static struct buffer expect_eof(struct buffer buff, const char ** error)
    return buff;
 }
 
-static int peek(struct buffer buff, const char * data)
+static int peek(struct buffer buff, const char *data)
 {
    size_t remain = buff.len - buff.offset;
 
@@ -459,8 +459,8 @@ static void peek_char(struct buffer buff, char *c, const char **error)
    *c = buff.data[buff.offset];
 }
 
-static struct buffer get_char(struct buffer buff, char * c,
-      const char ** error)
+static struct buffer get_char(struct buffer buff, char *c,
+      const char **error)
 {
 	if (is_eot(buff))
    {
@@ -475,7 +475,7 @@ static struct buffer get_char(struct buffer buff, char * c,
 static struct buffer parse_string(struct buffer buff,
       struct rmsgpack_dom_value *value, const char **error)
 {
-   const char * str_start;
+   const char *str_start;
    char terminator = '\0';
    char c = '\0';
 
@@ -613,7 +613,7 @@ static struct buffer parse_method_call(struct buffer buff,
    unsigned i;
    struct argument args[MAX_ARGS];
    unsigned argi = 0;
-   struct registered_func * rf = registered_functions;
+   struct registered_func *rf = registered_functions;
 
    invocation->func = NULL;
 
@@ -675,7 +675,7 @@ static struct buffer parse_method_call(struct buffer buff,
 
    invocation->argc = argi;
    invocation->argv = (struct argument*)
-      malloc(sizeof(struct argument) * argi);
+      malloc(sizeof(struct argument) *argi);
 
    if (!invocation->argv)
    {
@@ -683,7 +683,7 @@ static struct buffer parse_method_call(struct buffer buff,
       goto error;
    }
    memcpy(invocation->argv, args,
-         sizeof(struct argument) * argi);
+         sizeof(struct argument) *argi);
 
    return buff;
 
@@ -797,7 +797,7 @@ static struct buffer parse_table(struct buffer buff,
       goto error;
    }
    memcpy(invocation->argv, args,
-         sizeof(struct argument) * argi);
+         sizeof(struct argument) *argi);
 
    return buff;
 
@@ -842,7 +842,7 @@ static struct buffer parse_argument(struct buffer buff,
 void libretrodb_query_free(void *q)
 {
 	unsigned i;
-	struct query * real_q = (struct query*)q;
+	struct query *real_q = (struct query*)q;
 
 	real_q->ref_count--;
 	if (real_q->ref_count > 0)

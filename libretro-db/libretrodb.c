@@ -40,7 +40,7 @@ static int libretrodb_write_metadata(int fd, libretrodb_metadata_t *md)
    return rmsgpack_write_uint(fd, md->count);
 }
 
-static int validate_document(const struct rmsgpack_dom_value * doc)
+static int validate_document(const struct rmsgpack_dom_value *doc)
 {
    unsigned i;
    struct rmsgpack_dom_value key;
@@ -75,7 +75,7 @@ static int validate_document(const struct rmsgpack_dom_value * doc)
 }
 
 int libretrodb_create(int fd, libretrodb_value_provider value_provider,
-        void * ctx)
+        void *ctx)
 {
    int rv;
    off_t root;
@@ -128,7 +128,7 @@ static int libretrodb_read_index_header(int fd, libretrodb_index_t *idx)
          "next", &idx->next, NULL);
 }
 
-static void libretrodb_write_index_header(int fd, libretrodb_index_t * idx)
+static void libretrodb_write_index_header(int fd, libretrodb_index_t *idx)
 {
 	rmsgpack_write_map_header(fd, 3);
 	rmsgpack_write_string(fd, "name", strlen("name"));
@@ -211,17 +211,17 @@ static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
    return -1;
 }
 
-static int node_compare(const void * a, const void * b, void * ctx)
+static int node_compare(const void *a, const void *b, void *ctx)
 {
    return memcmp(a, b, *(uint8_t *)ctx);
 }
 
-static int binsearch(const void * buff, const void * item,
-      uint64_t count, uint8_t field_size, uint64_t * offset)
+static int binsearch(const void *buff, const void *item,
+      uint64_t count, uint8_t field_size, uint64_t *offset)
 {
    int mid            = count / 2;
    int item_size      = field_size + sizeof(uint64_t);
-   uint64_t * current = (uint64_t *)buff + (mid * item_size);
+   uint64_t *current  = (uint64_t *)buff + (mid * item_size);
    int rv             = node_compare(current, item, &field_size);
 
    if (rv == 0)
@@ -245,7 +245,7 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
 {
    libretrodb_index_t idx;
    int rv;
-   void * buff;
+   void *buff;
    uint64_t offset;
    ssize_t bufflen, nread = 0;
 
@@ -260,7 +260,7 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
 
    while (nread < bufflen)
    {
-      void * buff_ = (uint64_t *)buff + nread;
+      void *buff_ = (uint64_t *)buff + nread;
       rv = read(db->fd, buff_, bufflen - nread);
 
       if (rv <= 0)
@@ -302,7 +302,7 @@ int libretrodb_cursor_reset(libretrodb_cursor_t *cursor)
 }
 
 int libretrodb_cursor_read_item(libretrodb_cursor_t *cursor,
-      struct rmsgpack_dom_value * out)
+      struct rmsgpack_dom_value *out)
 {
    int rv;
 
@@ -384,7 +384,7 @@ int libretrodb_cursor_open(libretrodb_t *db, libretrodb_cursor_t *cursor,
    return 0;
 }
 
-static int node_iter(void * value, void * ctx)
+static int node_iter(void *value, void *ctx)
 {
 	struct node_iter_ctx *nictx = (struct node_iter_ctx*)ctx;
 
@@ -408,11 +408,11 @@ int libretrodb_create_index(libretrodb_t *db,
 	struct rmsgpack_dom_value key;
 	libretrodb_index_t idx;
 	struct rmsgpack_dom_value item;
-	struct rmsgpack_dom_value * field;
+	struct rmsgpack_dom_value *field;
 	uint64_t idx_header_offset;
 	libretrodb_cursor_t cur     = {0};
-	void * buff                 = NULL;
-	uint64_t * buff_u64         = NULL;
+	void *buff                  = NULL;
+	uint64_t *buff_u64          = NULL;
 	uint8_t field_size          = 0;
 	uint64_t item_loc           = libretrodb_tell(db);
 	bintree_t *tree             = bintree_new(node_compare, &field_size);

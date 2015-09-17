@@ -49,29 +49,25 @@ typedef struct libretrodb_cursor
 	int is_valid;
 	int fd;
 	int eof;
-	libretrodb_query_t * query;
-	libretrodb_t * db;
+	libretrodb_query_t *query;
+	libretrodb_t *db;
 } libretrodb_cursor_t;
 
-typedef int (* libretrodb_value_provider)(void * ctx,
-      struct rmsgpack_dom_value * out);
+typedef int (*libretrodb_value_provider)(void *ctx,
+      struct rmsgpack_dom_value *out);
 
-int libretrodb_create(int fd, libretrodb_value_provider value_provider,
-      void * ctx);
+int libretrodb_create(int fd,
+      libretrodb_value_provider value_provider, void *ctx);
 
-void libretrodb_close(libretrodb_t * db);
+void libretrodb_close(libretrodb_t *db);
 
-int libretrodb_open(const char * path, libretrodb_t * db);
+int libretrodb_open(const char *path, libretrodb_t *db);
 
-int libretrodb_create_index(libretrodb_t * db, const char *name,
+int libretrodb_create_index(libretrodb_t *db, const char *name,
       const char *field_name);
 
-int libretrodb_find_entry(
-        libretrodb_t * db,
-        const char * index_name,
-        const void * key,
-        struct rmsgpack_dom_value * out
-);
+int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
+        const void *key, struct rmsgpack_dom_value *out);
 
 /**
  * libretrodb_cursor_open:
@@ -97,7 +93,7 @@ int libretrodb_cursor_open(
  *
  * Returns: ???.
  **/
-int libretrodb_cursor_reset(libretrodb_cursor_t * cursor);
+int libretrodb_cursor_reset(libretrodb_cursor_t *cursor);
 
 /**
  * libretrodb_cursor_close:
@@ -105,19 +101,15 @@ int libretrodb_cursor_reset(libretrodb_cursor_t * cursor);
  *
  * Closes cursor and frees up allocated memory.
  **/
-void libretrodb_cursor_close(libretrodb_cursor_t * cursor);
+void libretrodb_cursor_close(libretrodb_cursor_t *cursor);
 
-void *libretrodb_query_compile(
-        libretrodb_t * db,
-        const char * query,
-        size_t buff_len,
-        const char ** error
-);
+void *libretrodb_query_compile(libretrodb_t *db, const char *query,
+        size_t buff_len, const char **error);
 
 void libretrodb_query_free(void *q);
 
-int libretrodb_cursor_read_item(libretrodb_cursor_t * cursor,
-      struct rmsgpack_dom_value * out);
+int libretrodb_cursor_read_item(libretrodb_cursor_t *cursor,
+      struct rmsgpack_dom_value *out);
 
 #ifdef __cplusplus
 }
