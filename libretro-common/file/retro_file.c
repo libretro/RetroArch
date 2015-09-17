@@ -191,6 +191,7 @@ bool retro_fmemcpy(const char *path, char *s, size_t len, ssize_t *bytes_written
    {
       *bytes_written += bytes_written_this;
    }
+   *bytes_written += bytes_written_this;
 
    retro_fclose(stream);
    if (*bytes_written < 0)
