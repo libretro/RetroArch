@@ -9,8 +9,7 @@ static void *NIL_NODE = &NIL_NODE;
 
 static struct bintree_node *new_nil_node(struct bintree_node *parent);
 
-void bintree_new(struct bintree *t, bintree_cmp_func cmp,
-      void *ctx)
+void bintree_new(struct bintree *t, bintree_cmp_func cmp, void *ctx)
 {
    t->root = new_nil_node(NULL);
    t->cmp  = cmp;
@@ -35,8 +34,7 @@ static INLINE int is_nil(const struct bintree_node *node)
    return (node == NULL) || (node->value == NIL_NODE);
 }
 
-static int insert(struct bintree *t, struct bintree_node *root,
-      void *value)
+static int insert(struct bintree *t, struct bintree_node *root, void *value)
 {
    int cmp_res = 0;
 

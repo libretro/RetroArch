@@ -370,7 +370,7 @@ static struct rmsgpack_dom_value all_map(struct rmsgpack_dom_value input,
       if (arg.type != AT_VALUE)
       {
          res.val.bool_ = 0;
-         goto clean;
+         return res;
       }
       value = rmsgpack_dom_value_map_value(&input, &arg.value);
       if (!value) /* All missing fields are nil */
@@ -390,7 +390,7 @@ static struct rmsgpack_dom_value all_map(struct rmsgpack_dom_value input,
       if (!res.val.bool_)
          break;
    }
-clean:
+
    return res;
 }
 
@@ -576,26 +576,24 @@ static struct buffer get_ident(struct buffer buff,
 {
    char c = '\0';
 
-	if (is_eot(buff))
+   if (is_eot(buff))
    {
       raise_unexpected_eof(buff.offset, error);
       return buff;
    }
 
-	*ident = buff.data + buff.offset;
-	*len   = 0;
-	peek_char(buff, &c, error);
+   *ident = buff.data + buff.offset;
+   *len   = 0;
+   peek_char(buff, &c, error);
 
-	if (*error)
-		goto clean;
-	if (!isalpha(c))
-		return buff;
+   if (*error || !isalpha(c))
+      return buff;
 
-	buff.offset++;
-	*len = *len + 1;
-	peek_char(buff, &c, error);
+   buff.offset++;
+   *len = *len + 1;
+   peek_char(buff, &c, error);
 
-	while (!*error)
+   while (!*error)
    {
       if (!(isalpha(c) || isdigit(c) || c == '_'))
          break;
@@ -604,8 +602,7 @@ static struct buffer get_ident(struct buffer buff,
       peek_char(buff, &c, error);
    }
 
-clean:
-	return buff;
+   return buff;
 }
 
 static struct buffer parse_method_call(struct buffer buff,
@@ -622,12 +619,12 @@ static struct buffer parse_method_call(struct buffer buff,
 
    buff = get_ident(buff, &func_name, &func_name_len, error);
    if (*error)
-      goto clean;
+      goto error;
 
    buff = chomp(buff);
    buff = expect_char(buff, '(', error);
    if (*error)
-      goto clean;
+      goto error;
 
    while (rf->name)
    {
@@ -643,7 +640,7 @@ static struct buffer parse_method_call(struct buffer buff,
    {
       raise_unknown_function(buff.offset, func_name,
             func_name_len, error);
-      goto clean;
+      goto error;
    }
 
    buff = chomp(buff);
@@ -652,13 +649,13 @@ static struct buffer parse_method_call(struct buffer buff,
       if (argi >= MAX_ARGS)
       {
          raise_too_many_arguments(error);
-         goto clean;
+         goto error;
       }
 
       buff = parse_argument(buff, &args[argi], error);
 
       if (*error)
-         goto clean;
+         goto error;
 
       argi++;
       buff = chomp(buff);
@@ -674,7 +671,7 @@ static struct buffer parse_method_call(struct buffer buff,
    buff = expect_char(buff, ')', error);
 
    if (*error)
-      goto clean;
+      goto error;
 
    invocation->argc = argi;
    invocation->argv = (struct argument*)
@@ -683,16 +680,16 @@ static struct buffer parse_method_call(struct buffer buff,
    if (!invocation->argv)
    {
       raise_enomem(error);
-      goto clean;
+      goto error;
    }
    memcpy(invocation->argv, args,
          sizeof(struct argument) * argi);
 
-   goto success;
-clean:
+   return buff;
+
+error:
    for (i = 0; i < argi; i++)
       argument_free(&args[i]);
-success:
    return buff;
 }
 
@@ -711,7 +708,7 @@ static struct buffer parse_table(struct buffer buff,
    buff = expect_char(buff, '{', error);
 
    if (*error)
-      goto clean;
+      goto error;
 
    buff = chomp(buff);
 
@@ -720,7 +717,7 @@ static struct buffer parse_table(struct buffer buff,
       if (argi >= MAX_ARGS)
       {
          raise_too_many_arguments(error);
-         goto clean;
+         goto error;
       }
 
       if (isalpha(buff.data[buff.offset]))
@@ -737,7 +734,7 @@ static struct buffer parse_table(struct buffer buff,
                   );
 
             if (!args[argi].value.val.string.buff)
-               goto clean;
+               goto error;
 
             strncpy(
                   args[argi].value.val.string.buff,
@@ -750,7 +747,7 @@ static struct buffer parse_table(struct buffer buff,
          buff = parse_string(buff, &args[argi].value, error);
 
       if (*error)
-         goto clean;
+         goto error;
 
       args[argi].type = AT_VALUE;
       buff = chomp(buff);
@@ -758,20 +755,20 @@ static struct buffer parse_table(struct buffer buff,
       buff = expect_char(buff, ':', error);
 
       if (*error)
-         goto clean;
+         goto error;
 
       buff = chomp(buff);
 
       if (argi >= MAX_ARGS)
       {
          raise_too_many_arguments(error);
-         goto clean;
+         goto error;
       }
 
       buff = parse_argument(buff, &args[argi], error);
 
       if (*error)
-         goto clean;
+         goto error;
       argi++;
       buff = chomp(buff);
       buff = expect_char(buff, ',', error);
@@ -787,7 +784,7 @@ static struct buffer parse_table(struct buffer buff,
    buff = expect_char(buff, '}', error);
 
    if (*error)
-      goto clean;
+      goto error;
 
    invocation->func = all_map;
    invocation->argc = argi;
@@ -797,16 +794,16 @@ static struct buffer parse_table(struct buffer buff,
    if (!invocation->argv)
    {
       raise_enomem(error);
-      goto clean;
+      goto error;
    }
    memcpy(invocation->argv, args,
          sizeof(struct argument) * argi);
 
-   goto success;
-clean:
+   return buff;
+
+error:
    for (i = 0; i < argi; i++)
       argument_free(&args[i]);
-success:
    return buff;
 }
 
@@ -862,7 +859,7 @@ void *libretrodb_query_compile(libretrodb_t *db,
    struct query *q = (struct query*)malloc(sizeof(struct query));
 
    if (!q)
-      goto clean;
+      goto error;
 
    memset(q, 0, sizeof(struct query));
 
@@ -878,25 +875,26 @@ void *libretrodb_query_compile(libretrodb_t *db,
    {
       buff = parse_table(buff, &q->root, error);
       if (*error)
-         goto clean;
+         goto error;
    }
    else if (isalpha(buff.data[buff.offset]))
       buff = parse_method_call(buff, &q->root, error);
 
    buff = expect_eof(buff, error);
    if (*error)
-      goto clean;
+      goto error;
 
    if (!q->root.func)
    {
       raise_unexpected_eof(buff.offset, error);
       return NULL;
    }
-   goto success;
-clean:
+
+   return q;
+
+error:
    if (q)
       libretrodb_query_free(q);
-success:
    return q;
 }
 
