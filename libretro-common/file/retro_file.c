@@ -84,7 +84,7 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 #if defined(VITA) || defined(PSP)
          stream->sfd = sceIoOpen(path, O_RDWR, 0777);
 #elif defined(HAVE_BUFFERED_IO)
-         stream->file = fopen(path, "w+");
+         stream->file = fopen(path, "w+b");
 #else
 #ifdef _WIN32
          stream->fd = open(path, O_RDWR | O_BINARY);
