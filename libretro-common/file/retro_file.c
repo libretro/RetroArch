@@ -132,7 +132,7 @@ ssize_t retro_fread(RFILE *stream, void *s, size_t len)
 #if defined(VITA) || defined(PSP)
    return sceIoRead(stream->sfd, s, len);
 #elif defined(HAVE_BUFFERED_IO)
-   return fread(s, len, 1, stream->file);
+   return fread(s, 1, len, stream->file);
 #else
    return read(stream->fd, s, len);
 #endif
@@ -145,7 +145,7 @@ ssize_t retro_fwrite(RFILE *stream, const void *s, size_t len)
 #if defined(VITA) || defined(PSP)
    return sceIoWrite(stream->sfd, s, len);
 #elif defined(HAVE_BUFFERED_IO)
-   return fwrite(s, len, 1, stream->file);
+   return fwrite(s, 1, len, stream->file);
 #else
    return write(stream->fd, s, len);
 #endif
