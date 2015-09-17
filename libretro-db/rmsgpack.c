@@ -31,6 +31,28 @@
 #define _MPF_ARRAY16    0xdc
 #define _MPF_ARRAY32    0xdd
 
+#define _MPF_FIXSTR     0xa0
+#define _MPF_STR8       0xd9
+#define _MPF_STR16      0xda
+#define _MPF_STR32      0xdb
+
+#define _MPF_BIN8       0xc4
+#define _MPF_BIN16      0xc5
+#define _MPF_BIN32      0xc6
+
+#define _MPF_FALSE      0xc2
+#define _MPF_TRUE       0xc3
+
+#define _MPF_INT8       0xd0
+#define _MPF_INT16      0xd1
+#define _MPF_INT32      0xd2
+#define _MPF_INT64      0xd3
+
+#define _MPF_UINT8      0xcc
+#define _MPF_UINT16     0xcd
+#define _MPF_UINT32     0xce
+#define _MPF_UINT64     0xcf
+
 #define _MPF_NIL        0xc0
 
 static const uint8_t MPF_FIXMAP   = _MPF_FIXMAP;
@@ -41,27 +63,27 @@ static const uint8_t MPF_FIXARRAY = _MPF_FIXARRAY;
 static const uint8_t MPF_ARRAY16  = _MPF_ARRAY16;
 static const uint8_t MPF_ARRAY32  = _MPF_ARRAY32;
 
-static const uint8_t MPF_FIXSTR = 0xa0;
-static const uint8_t MPF_STR8 = 0xd9;
-static const uint8_t MPF_STR16 = 0xda;
-static const uint8_t MPF_STR32 = 0xdb;
+static const uint8_t MPF_FIXSTR   = _MPF_FIXSTR;
+static const uint8_t MPF_STR8     = _MPF_STR8;
+static const uint8_t MPF_STR16    = _MPF_STR16;
+static const uint8_t MPF_STR32    = _MPF_STR32;
 
-static const uint8_t MPF_BIN8 = 0xc4;
-static const uint8_t MPF_BIN16  = 0xc5;
-static const uint8_t MPF_BIN32 = 0xc6;
+static const uint8_t MPF_BIN8     = _MPF_BIN8;
+static const uint8_t MPF_BIN16    = _MPF_BIN16;
+static const uint8_t MPF_BIN32    = _MPF_BIN32;
 
-static const uint8_t MPF_FALSE = 0xc2;
-static const uint8_t MPF_TRUE = 0xc3;
+static const uint8_t MPF_FALSE    = _MPF_FALSE;
+static const uint8_t MPF_TRUE     = _MPF_TRUE;
 
-static const uint8_t MPF_INT8 = 0xd0;
-static const uint8_t MPF_INT16 = 0xd1;
-static const uint8_t MPF_INT32 = 0xd2;
-static const uint8_t MPF_INT64 = 0xd3;
+static const uint8_t MPF_INT8     = _MPF_INT8;
+static const uint8_t MPF_INT16    = _MPF_INT16;
+static const uint8_t MPF_INT32    = _MPF_INT32;
+static const uint8_t MPF_INT64    = _MPF_INT64;
 
-static const uint8_t MPF_UINT8 = 0xcc;
-static const uint8_t MPF_UINT16 = 0xcd;
-static const uint8_t MPF_UINT32 = 0xce;
-static const uint8_t MPF_UINT64 = 0xcf;
+static const uint8_t MPF_UINT8    = _MPF_UINT8;
+static const uint8_t MPF_UINT16   = _MPF_UINT16;
+static const uint8_t MPF_UINT32   = _MPF_UINT32;
+static const uint8_t MPF_UINT64   = _MPF_UINT64;
 
 static const uint8_t MPF_NIL      = _MPF_NIL;
 
@@ -546,29 +568,29 @@ int rmsgpack_read(int fd,
          if (callbacks->read_nil)
             return callbacks->read_nil(data);
          break;
-      case 0xc2:
+      case _MPF_FALSE:
          if (callbacks->read_bool)
             return callbacks->read_bool(0, data);
          break;
-      case 0xc3:
+      case _MPF_TRUE:
          if (callbacks->read_bool)
             return callbacks->read_bool(1, data);
          break;
-      case 0xc4:
-      case 0xc5:
-      case 0xc6:
-         if ((rv = read_buff(fd, 1<<(type - 0xc4),
+      case _MPF_BIN8:
+      case _MPF_BIN16:
+      case _MPF_BIN32:
+         if ((rv = read_buff(fd, 1<<(type - _MPF_BIN8),
                      &buff, &tmp_len)) < 0)
             return rv;
 
          if (callbacks->read_bin)
             return callbacks->read_bin(buff, tmp_len, data);
          break;
-      case 0xcc:
-      case 0xcd:
-      case 0xce:
-      case 0xcf:
-         tmp_len  = UINT32_C(1) << (type - 0xcc);
+      case _MPF_UINT8:
+      case _MPF_UINT16:
+      case _MPF_UINT32:
+      case _MPF_UINT64:
+         tmp_len  = UINT32_C(1) << (type - _MPF_UINT8);
          tmp_uint = 0;
          if (read_uint(fd, &tmp_uint, tmp_len) == -1)
             goto error;
@@ -576,11 +598,11 @@ int rmsgpack_read(int fd,
          if (callbacks->read_uint)
             return callbacks->read_uint(tmp_uint, data);
          break;
-      case 0xd0:
-      case 0xd1:
-      case 0xd2:
-      case 0xd3:
-         tmp_len = UINT32_C(1) << (type - 0xd0);
+      case _MPF_INT8:
+      case _MPF_INT16:
+      case _MPF_INT32:
+      case _MPF_INT64:
+         tmp_len = UINT32_C(1) << (type - _MPF_INT8);
          tmp_int = 0;
          if (read_int(fd, &tmp_int, tmp_len) == -1)
             goto error;
@@ -588,10 +610,10 @@ int rmsgpack_read(int fd,
          if (callbacks->read_int)
             return callbacks->read_int(tmp_int, data);
          break;
-      case 0xd9:
-      case 0xda:
-      case 0xdb:
-         if ((rv = read_buff(fd, 1<<(type - 0xd9), &buff, &tmp_len)) < 0)
+      case _MPF_STR8:
+      case _MPF_STR16:
+      case _MPF_STR32:
+         if ((rv = read_buff(fd, 1<<(type - _MPF_STR8), &buff, &tmp_len)) < 0)
             return rv;
 
          if (callbacks->read_string)
