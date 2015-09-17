@@ -80,8 +80,8 @@ int libretrodb_create(int fd, libretrodb_value_provider value_provider,
    int rv;
    off_t root;
    libretrodb_metadata_t md;
-   uint64_t item_count = 0;
-   struct rmsgpack_dom_value item = {0};
+   struct rmsgpack_dom_value item;
+   uint64_t item_count        = 0;
    libretrodb_header_t header = {{0}};
 
    memcpy(header.magic_number, MAGIC_NUMBER, sizeof(MAGIC_NUMBER)-1);
@@ -409,15 +409,19 @@ int libretrodb_create_index(libretrodb_t *db,
 	libretrodb_index_t idx;
 	struct rmsgpack_dom_value item;
 	struct rmsgpack_dom_value * field;
-	struct bintree tree;
-	libretrodb_cursor_t cur;
 	uint64_t idx_header_offset;
-	void * buff = NULL;
-	uint64_t * buff_u64 = NULL;
-	uint8_t field_size = 0;
-	uint64_t item_loc = libretrodb_tell(db);
+	libretrodb_cursor_t cur     = {0};
+	void * buff                 = NULL;
+	uint64_t * buff_u64         = NULL;
+	uint8_t field_size          = 0;
+	uint64_t item_loc           = libretrodb_tell(db);
+	bintree_t *tree             = bintree_new(node_compare, &field_size);
 
-	bintree_new(&tree, node_compare, &field_size);
+   if (!tree)
+   {
+      rv = -1;
+      goto clean;
+   }
 
 	if (libretrodb_cursor_open(db, &cur, NULL) != 0)
    {
@@ -485,7 +489,7 @@ int libretrodb_create_index(libretrodb_t *db,
 
 		memcpy(buff_u64, &item_loc, sizeof(uint64_t));
 
-		if (bintree_insert(&tree, buff) != 0)
+		if (bintree_insert(tree, buff) != 0)
       {
 			printf("Value is not unique: ");
 			rmsgpack_dom_value_print(field);
@@ -511,8 +515,8 @@ int libretrodb_create_index(libretrodb_t *db,
 
 	nictx.db = db;
 	nictx.idx = &idx;
-	bintree_iterate(&tree, node_iter, &nictx);
-	bintree_free(&tree);
+	bintree_iterate(tree, node_iter, &nictx);
+	bintree_free(tree);
 
 clean:
 	rmsgpack_dom_value_free(&item);
