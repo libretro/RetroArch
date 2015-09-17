@@ -112,7 +112,7 @@ static int validate_document(const struct rmsgpack_dom_value *doc)
 }
 
 int libretrodb_create(int fd, libretrodb_value_provider value_provider,
-        void *ctx)
+      void *ctx)
 {
    int rv;
    off_t root;
@@ -167,19 +167,19 @@ static int libretrodb_read_index_header(int fd, libretrodb_index_t *idx)
 
 static void libretrodb_write_index_header(int fd, libretrodb_index_t *idx)
 {
-	rmsgpack_write_map_header(fd, 3);
-	rmsgpack_write_string(fd, "name", strlen("name"));
-	rmsgpack_write_string(fd, idx->name, strlen(idx->name));
-	rmsgpack_write_string(fd, "key_size", strlen("key_size"));
-	rmsgpack_write_uint(fd, idx->key_size);
-	rmsgpack_write_string(fd, "next", strlen("next"));
-	rmsgpack_write_uint(fd, idx->next);
+   rmsgpack_write_map_header(fd, 3);
+   rmsgpack_write_string(fd, "name", strlen("name"));
+   rmsgpack_write_string(fd, idx->name, strlen(idx->name));
+   rmsgpack_write_string(fd, "key_size", strlen("key_size"));
+   rmsgpack_write_uint(fd, idx->key_size);
+   rmsgpack_write_string(fd, "next", strlen("next"));
+   rmsgpack_write_uint(fd, idx->next);
 }
 
 void libretrodb_close(libretrodb_t *db)
 {
-	close(db->fd);
-	db->fd = -1;
+   close(db->fd);
+   db->fd = -1;
 }
 
 int libretrodb_open(const char *path, libretrodb_t *db)
@@ -278,7 +278,7 @@ static int binsearch(const void *buff, const void *item,
 }
 
 int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
-        const void *key, struct rmsgpack_dom_value *out)
+      const void *key, struct rmsgpack_dom_value *out)
 {
    libretrodb_index_t idx;
    int rv;
@@ -332,8 +332,8 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
  **/
 int libretrodb_cursor_reset(libretrodb_cursor_t *cursor)
 {
-	cursor->eof = 0;
-	return lseek(cursor->fd,
+   cursor->eof = 0;
+   return lseek(cursor->fd,
          cursor->db->root + sizeof(libretrodb_header_t),
          SEEK_SET);
 }
@@ -380,16 +380,16 @@ void libretrodb_cursor_close(libretrodb_cursor_t *cursor)
    if (!cursor)
       return;
 
-	close(cursor->fd);
-	cursor->is_valid = 0;
-	cursor->fd = -1;
-	cursor->eof = 1;
-	cursor->db = NULL;
+   close(cursor->fd);
+   cursor->is_valid = 0;
+   cursor->fd = -1;
+   cursor->eof = 1;
+   cursor->db = NULL;
 
-	if (cursor->query)
-		libretrodb_query_free(cursor->query);
+   if (cursor->query)
+      libretrodb_query_free(cursor->query);
 
-	cursor->query = NULL;
+   cursor->query = NULL;
 }
 
 /**
@@ -423,36 +423,36 @@ int libretrodb_cursor_open(libretrodb_t *db, libretrodb_cursor_t *cursor,
 
 static int node_iter(void *value, void *ctx)
 {
-	struct node_iter_ctx *nictx = (struct node_iter_ctx*)ctx;
+   struct node_iter_ctx *nictx = (struct node_iter_ctx*)ctx;
 
-	if (write(nictx->db->fd, value,
+   if (write(nictx->db->fd, value,
             nictx->idx->key_size + sizeof(uint64_t)) > 0)
-		return 0;
+      return 0;
 
-	return -1;
+   return -1;
 }
 
 static uint64_t libretrodb_tell(libretrodb_t *db)
 {
-	return lseek(db->fd, 0, SEEK_CUR);
+   return lseek(db->fd, 0, SEEK_CUR);
 }
 
 int libretrodb_create_index(libretrodb_t *db,
       const char *name, const char *field_name)
 {
-	int rv;
-	struct node_iter_ctx nictx;
-	struct rmsgpack_dom_value key;
-	libretrodb_index_t idx;
-	struct rmsgpack_dom_value item;
-	struct rmsgpack_dom_value *field;
-	uint64_t idx_header_offset;
-	libretrodb_cursor_t cur     = {0};
-	void *buff                  = NULL;
-	uint64_t *buff_u64          = NULL;
-	uint8_t field_size          = 0;
-	uint64_t item_loc           = libretrodb_tell(db);
-	bintree_t *tree             = bintree_new(node_compare, &field_size);
+   int rv;
+   struct node_iter_ctx nictx;
+   struct rmsgpack_dom_value key;
+   libretrodb_index_t idx;
+   struct rmsgpack_dom_value item;
+   struct rmsgpack_dom_value *field;
+   uint64_t idx_header_offset;
+   libretrodb_cursor_t cur     = {0};
+   void *buff                  = NULL;
+   uint64_t *buff_u64          = NULL;
+   uint8_t field_size          = 0;
+   uint64_t item_loc           = libretrodb_tell(db);
+   bintree_t *tree             = bintree_new(node_compare, &field_size);
 
    if (!tree)
    {
@@ -460,108 +460,108 @@ int libretrodb_create_index(libretrodb_t *db,
       goto clean;
    }
 
-	if (libretrodb_cursor_open(db, &cur, NULL) != 0)
+   if (libretrodb_cursor_open(db, &cur, NULL) != 0)
    {
-		rv = -1;
-		goto clean;
-	}
+      rv = -1;
+      goto clean;
+   }
 
-	key.type = RDT_STRING;
-	key.val.string.len = strlen(field_name);
+   key.type = RDT_STRING;
+   key.val.string.len = strlen(field_name);
 
-	/* We know we aren't going to change it */
-	key.val.string.buff = (char *) field_name;
+   /* We know we aren't going to change it */
+   key.val.string.buff = (char *) field_name;
 
-	while (libretrodb_cursor_read_item(&cur, &item) == 0)
+   while (libretrodb_cursor_read_item(&cur, &item) == 0)
    {
-		if (item.type != RDT_MAP)
+      if (item.type != RDT_MAP)
       {
-			rv = -EINVAL;
-			printf("Only map keys are supported\n");
-			goto clean;
-		}
+         rv = -EINVAL;
+         printf("Only map keys are supported\n");
+         goto clean;
+      }
 
-		field = rmsgpack_dom_value_map_value(&item, &key);
+      field = rmsgpack_dom_value_map_value(&item, &key);
 
-		if (!field)
+      if (!field)
       {
-			rv = -EINVAL;
-			printf("field not found in item\n");
-			goto clean;
-		}
+         rv = -EINVAL;
+         printf("field not found in item\n");
+         goto clean;
+      }
 
-		if (field->type != RDT_BINARY)
+      if (field->type != RDT_BINARY)
       {
-			rv = -EINVAL;
-			printf("field is not binary\n");
-			goto clean;
-		}
+         rv = -EINVAL;
+         printf("field is not binary\n");
+         goto clean;
+      }
 
-		if (field->val.binary.len == 0)
+      if (field->val.binary.len == 0)
       {
-			rv = -EINVAL;
-			printf("field is empty\n");
-			goto clean;
-		}
+         rv = -EINVAL;
+         printf("field is empty\n");
+         goto clean;
+      }
 
-		if (field_size == 0)
-			field_size = field->val.binary.len;
-		else if (field->val.binary.len != field_size)
+      if (field_size == 0)
+         field_size = field->val.binary.len;
+      else if (field->val.binary.len != field_size)
       {
-			rv = -EINVAL;
-			printf("field is not of correct size\n");
-			goto clean;
-		}
+         rv = -EINVAL;
+         printf("field is not of correct size\n");
+         goto clean;
+      }
 
-		buff = malloc(field_size + sizeof(uint64_t));
-		if (!buff)
+      buff = malloc(field_size + sizeof(uint64_t));
+      if (!buff)
       {
-			rv = -ENOMEM;
-			goto clean;
-		}
+         rv = -ENOMEM;
+         goto clean;
+      }
 
-		memcpy(buff, field->val.binary.buff, field_size);
+      memcpy(buff, field->val.binary.buff, field_size);
 
-		buff_u64 = (uint64_t *)buff + field_size;
+      buff_u64 = (uint64_t *)buff + field_size;
 
-		memcpy(buff_u64, &item_loc, sizeof(uint64_t));
+      memcpy(buff_u64, &item_loc, sizeof(uint64_t));
 
-		if (bintree_insert(tree, buff) != 0)
+      if (bintree_insert(tree, buff) != 0)
       {
-			printf("Value is not unique: ");
-			rmsgpack_dom_value_print(field);
-			printf("\n");
-			rv = -EINVAL;
-			goto clean;
-		}
-		buff = NULL;
-		rmsgpack_dom_value_free(&item);
-		item_loc = libretrodb_tell(db);
-	}
+         printf("Value is not unique: ");
+         rmsgpack_dom_value_print(field);
+         printf("\n");
+         rv = -EINVAL;
+         goto clean;
+      }
+      buff = NULL;
+      rmsgpack_dom_value_free(&item);
+      item_loc = libretrodb_tell(db);
+   }
 
-	(void)rv;
-	(void)idx_header_offset;
+   (void)rv;
+   (void)idx_header_offset;
 
-	idx_header_offset = lseek(db->fd, 0, SEEK_END);
-	strncpy(idx.name, name, 50);
+   idx_header_offset = lseek(db->fd, 0, SEEK_END);
+   strncpy(idx.name, name, 50);
 
-	idx.name[49] = '\0';
-	idx.key_size = field_size;
-	idx.next = db->count * (field_size + sizeof(uint64_t));
-	libretrodb_write_index_header(db->fd, &idx);
+   idx.name[49] = '\0';
+   idx.key_size = field_size;
+   idx.next = db->count * (field_size + sizeof(uint64_t));
+   libretrodb_write_index_header(db->fd, &idx);
 
-	nictx.db = db;
-	nictx.idx = &idx;
-	bintree_iterate(tree, node_iter, &nictx);
-	bintree_free(tree);
+   nictx.db = db;
+   nictx.idx = &idx;
+   bintree_iterate(tree, node_iter, &nictx);
+   bintree_free(tree);
 
 clean:
-	rmsgpack_dom_value_free(&item);
-	if (buff)
-		free(buff);
-	if (cur.is_valid)
-		libretrodb_cursor_close(&cur);
-	return 0;
+   rmsgpack_dom_value_free(&item);
+   if (buff)
+      free(buff);
+   if (cur.is_valid)
+      libretrodb_cursor_close(&cur);
+   return 0;
 }
 
 libretrodb_cursor_t *libretrodb_cursor_new(void)
