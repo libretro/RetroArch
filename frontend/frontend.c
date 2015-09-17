@@ -49,7 +49,7 @@ void main_exit_save_config(void)
                sizeof(global->dir.savestate));
 
       /* Save last core-specific config to the default config location,
-       * needed on consoles for core switching and reusing last good 
+       * needed on consoles for core switching and reusing last good
        * config for new cores.
        */
       config_save_file(global->path.config);
@@ -125,10 +125,15 @@ void main_exit(void *args)
 
 static void check_defaults_dirs(void)
 {
-   if (*g_defaults.dir.core_assets)
-      path_mkdir(g_defaults.dir.core_assets);
-   if (*g_defaults.dir.remap)
-      path_mkdir(g_defaults.dir.remap);
+   settings_t *settings = NULL;
+   settings = config_get_ptr();
+
+   if(settings->core_assets_directory[0] == '\0')
+      if (*g_defaults.dir.core_assets)
+         path_mkdir(g_defaults.dir.core_assets);
+   if(settings->input_remapping_directory[0] == '\0')
+      if (*g_defaults.dir.remap)
+         path_mkdir(g_defaults.dir.remap);
    if (*g_defaults.dir.autoconfig)
       path_mkdir(g_defaults.dir.autoconfig);
    if (*g_defaults.dir.audio_filter)
@@ -241,8 +246,6 @@ bool main_load_content(int argc, char **argv, void *args,
    if (environ_get)
       environ_get(rarch_argc_ptr, rarch_argv_ptr, args, wrap_args);
 
-   check_defaults_dirs();
-
    if (wrap_args->touched)
    {
       rarch_main_init_wrap(wrap_args, &rarch_argc, rarch_argv);
@@ -262,6 +265,8 @@ bool main_load_content(int argc, char **argv, void *args,
 
    event_command(EVENT_CMD_RESUME);
 
+   check_defaults_dirs();
+
    if (process_args)
       process_args(rarch_argc_ptr, rarch_argv_ptr);
 
@@ -278,7 +283,7 @@ error:
  * Main function of RetroArch.
  *
  * If HAVE_MAIN is not defined, will contain main loop and will not
- * be exited from until we exit the program. Otherwise, will 
+ * be exited from until we exit the program. Otherwise, will
  * just do initialization.
  *
  * Returns: varies per platform.
@@ -343,7 +348,7 @@ int rarch_main(int argc, char *argv[], void *data)
    do{
       unsigned sleep_ms = 0;
       ret = rarch_main_iterate(&sleep_ms);
-      
+
       if (ret == 1 && sleep_ms > 0)
          rarch_sleep(sleep_ms);
       rarch_main_data_iterate();
