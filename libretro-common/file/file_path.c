@@ -557,7 +557,7 @@ static bool path_mkdir_norecurse(const char *dir)
 #elif defined(IOS)
    ret = mkdir(dir, 0755);
 #elif defined(VITA) || defined(PSP)
-   ret = sceIoMkdir(dir, 0755);
+   ret = sceIoMkdir(dir, 0777);
 #else
    ret = mkdir(dir, 0750);
 #endif
