@@ -196,7 +196,7 @@ int main(void)
    state.stack[0] = 0;
    fd = open("test.msgpack", O_RDONLY);
    rmsgpack_read(fd, &stub_callbacks, &state);
-   printf("\n");
+   printf("Test succeeded.\n");
    close(fd);
 
    return 0;
