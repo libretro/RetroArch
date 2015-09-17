@@ -40,7 +40,11 @@
 
 struct RFILE
 {
+#if defined(PSP) || defined(VITA)
+   SceUID fd;
+#else
    int fd;
+#endif
 };
 
 RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
@@ -53,16 +57,28 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
    switch (mode)
    {
       case RFILE_MODE_READ:
+#if defined(VITA) || defined(PSP)
+         stream->fd = sceIoOpen(path, O_RDONLY, 0777);
+#else
          stream->fd = open(path, O_RDONLY);
+#endif
          break;
       case RFILE_MODE_WRITE:
+#if defined(VITA) || defined(PSP)
+         stream->fd = sceIoOpen(path, O_WRONLY | O_CREAT, 0777);
+#else
          stream->fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+#endif
          break;
       case RFILE_MODE_READ_WRITE:
+#if defined(VITA) || defined(PSP)
+         stream->fd = sceIoOpen(path, O_RDWR, 0777);
+#else
 #ifdef _WIN32
          stream->fd = open(path, O_RDWR | O_BINARY);
 #else
          stream->fd = open(path, O_RDWR);
+#endif
 #endif
          break;
    }
@@ -75,21 +91,33 @@ ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence)
    if (!stream)
       return -1;
 
+#if defined(VITA) || defined(PSP)
+   return sceIoLseek(stream->fd, (SceOff)offset, whence);
+#else
    return lseek(stream->fd, offset, whence);
+#endif
 }
 
 ssize_t retro_fread(RFILE *stream, void *s, size_t len)
 {
    if (!stream)
       return -1;
+#if defined(VITA) || defined(PSP)
+   return sceIoRead(stream->fd, s, len);
+#else
    return read(stream->fd, s, len);
+#endif
 }
 
 ssize_t retro_fwrite(RFILE *stream, const void *s, size_t len)
 {
    if (!stream)
       return -1;
+#if defined(VITA) || defined(PSP)
+   return sceIoWrite(stream->fd, s, len);
+#else
    return write(stream->fd, s, len);
+#endif
 }
 
 void retro_fclose(RFILE *stream)
@@ -97,7 +125,11 @@ void retro_fclose(RFILE *stream)
    if (!stream)
       return;
 
+#if defined(VITA) || defined(PSP)
+   sceIoClose(stream->fd);
+#else
    close(stream->fd);
+#endif
    free(stream);
 }
 
