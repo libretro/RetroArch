@@ -39,6 +39,7 @@
 #include <boolean.h>
 #include <retro_dirent.h>
 #include <retro_inline.h>
+#include <retro_file.h>
 #include <retro_log.h>
 #include <compat/strl.h>
 #include <rhash.h>
@@ -48,25 +49,6 @@
 #include "../frontend_driver.h"
 #include "../../general.h"
 #include "platform_linux.h"
-
-static bool load_generic_file(ssize_t *len, const char *path, char *buf, size_t buflen)
-{
-   const int fd = open(path, O_RDONLY);
-   if (fd < 0)
-      return false;
-
-   do
-   {
-      *len = read(fd, buf, buflen);
-   }while(*len < 0 && errno == EINTR);
-
-   close(fd);
-   if (*len < 0)
-      return false;
-   buf[*len] = '\0';             /* null-terminate the string. */
-
-   return true;
-}
 
 static bool                cpu_inited_once;
 static  cpu_family         g_cpuFamily;
@@ -299,7 +281,7 @@ static void cpulist_read_from(CpuList* list, const char* filename)
 
    list->mask = 0;
 
-   if (!load_generic_file(&filelen, filename, file, sizeof(file)))
+   if (!retro_fmemcpy(filename, file, sizeof(file), &filelen))
    {
       RARCH_ERR("Could not read %s: %s\n", filename, strerror(errno));
       return;
@@ -339,9 +321,7 @@ static void linux_cpu_init(void)
    g_cpuFeatures = 0;
    g_cpuCount    = 1;
 
-   load_generic_file(&cpuinfo_len, "/proc/cpuinfo", cpuinfo, sizeof cpuinfo);
-
-   if (cpuinfo_len < 0)
+   if (!retro_fmemcpy("/proc/cpuinfo", cpuinfo, sizeof(cpuinfo), &cpuinfo_len))
       return;
 
    /* Count the CPU cores, the value may be 0 for single-core CPUs */
@@ -1005,11 +985,11 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
 
-   if (!load_generic_file(&buflen, path, state, sizeof (state)))
+   if (!retro_fmemcpy(path, state, sizeof(state), &buflen))
       return;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "info");
-   if (!load_generic_file(&buflen, path, info, sizeof (info)))
+   if (!retro_fmemcpy(path, info, sizeof(info), &buflen))
       return;
 
    ptr = &state[0];
@@ -1120,7 +1100,7 @@ static void check_proc_acpi_sysfs_battery(const char * node, bool * have_battery
       return;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "status");
-   if (!load_generic_file(&buflen, path, state, sizeof (state)))
+   if (!retro_fmemcpy(path, state, sizeof (state), &buflen))
       return;
 
    if (strstr(state, "Discharging"))
@@ -1129,7 +1109,7 @@ static void check_proc_acpi_sysfs_battery(const char * node, bool * have_battery
       *have_battery = true;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "capacity");
-   if (!load_generic_file(&buflen, path, state, sizeof (state)))
+   if (!retro_fmemcpy(path, state, sizeof (state), &buflen))
       return;
 
    capacity = atoi(state);
@@ -1148,7 +1128,7 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
    ssize_t buflen   = 0;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
-   if (!load_generic_file(&buflen, path, state, sizeof (state)))
+   if (!retro_fmemcpy(path, state, sizeof(state), &buflen))
       return;
 
    ptr = &state[0];
@@ -1170,7 +1150,7 @@ static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
    const char *base = proc_acpi_sysfs_ac_adapter_path;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "online");
-   if (!load_generic_file(&buflen, path, state, sizeof (state)))
+   if (!retro_fmemcpy(path, state, sizeof(state), &buflen))
       return;
 
    if (strstr(state, "1"))
@@ -1220,7 +1200,7 @@ static bool frontend_linux_powerstate_check_apm(
    ssize_t buflen      = 0;
    char *str           = NULL;
    
-   if (!load_generic_file(&buflen, proc_apm_path, buf, sizeof(buf)))
+   if (!retro_fmemcpy(proc_apm_path, buf, sizeof(buf), &buflen))
       return false;
 
    ptr                 = &buf[0];

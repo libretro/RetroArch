@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #if defined(_WIN32)
 #  include <compat/posix_string.h>
@@ -37,10 +38,10 @@
 #include <fcntl.h>
 #endif
 
-typedef struct RFILE
+struct RFILE
 {
    int fd;
-} RFILE;
+};
 
 RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 {
@@ -98,4 +99,25 @@ void retro_fclose(RFILE *stream)
 
    close(stream->fd);
    free(stream);
+}
+
+bool retro_fmemcpy(const char *path, char *s, size_t len, ssize_t *bytes_written)
+{
+   RFILE *stream = retro_fopen(path, RFILE_MODE_READ, -1);
+   if (!stream)
+      return false;
+
+   do
+   {
+      *bytes_written = retro_fread(stream, s, len);
+   }while(*bytes_written < 0 && errno == EINTR);
+
+   retro_fclose(stream);
+   if (*bytes_written < 0)
+      return false;
+
+   /* NULL-terminate the string. */
+   s[*bytes_written] = '\0';
+
+   return true;
 }

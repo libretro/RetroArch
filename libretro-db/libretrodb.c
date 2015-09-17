@@ -31,21 +31,21 @@ struct node_iter_ctx
 	libretrodb_index_t *idx;
 };
 
-typedef struct libretrodb
+struct libretrodb
 {
 	RFILE *fd;
 	uint64_t root;
 	uint64_t count;
 	uint64_t first_index_offset;
    char path[1024];
-} libretrodb_t;
+};
 
-typedef struct libretrodb_index
+struct libretrodb_index
 {
 	char name[50];
 	uint64_t key_size;
 	uint64_t next;
-} libretrodb_index_t;
+};
 
 typedef struct libretrodb_metadata
 {
@@ -58,14 +58,14 @@ typedef struct libretrodb_header
 	uint64_t metadata_offset;
 } libretrodb_header_t;
 
-typedef struct libretrodb_cursor
+struct libretrodb_cursor
 {
 	int is_valid;
    RFILE *fd;
 	int eof;
 	libretrodb_query_t *query;
 	libretrodb_t *db;
-} libretrodb_cursor_t;
+};
 
 static struct rmsgpack_dom_value sentinal;
 

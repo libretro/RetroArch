@@ -14,12 +14,12 @@ struct bintree_node
    struct bintree_node *right;
 };
 
-typedef struct bintree
+struct bintree
 {
    struct bintree_node *root;
    bintree_cmp_func cmp;
    void *ctx;
-} bintree_t;
+};
 
 static void *NIL_NODE = &NIL_NODE;
 
