@@ -9,8 +9,6 @@
 #endif
 #include "rmsgpack_dom.h"
 
-#define MAGIC_NUMBER "RARCHDB"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

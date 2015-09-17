@@ -21,6 +21,8 @@
 #include "query.h"
 #include "libretrodb.h"
 
+#define MAGIC_NUMBER "RARCHDB"
+
 struct node_iter_ctx
 {
 	libretrodb_t *db;
