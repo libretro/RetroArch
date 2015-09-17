@@ -185,7 +185,7 @@ bool retro_fmemcpy(const char *path, char *s, size_t len, ssize_t *bytes_written
    if (!stream)
       return false;
 
-   while(retro_fread_iterate(stream, s, len, bytes_written));
+   while(retro_fread_iterate(stream, s, len-1, bytes_written));
 
    retro_fclose(stream);
    if (*bytes_written < 0)
