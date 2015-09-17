@@ -19,12 +19,55 @@
 
 static char tmp_error_buff [MAX_ERROR_LEN] = {0};
 
+enum argument_type
+{
+   AT_FUNCTION,
+   AT_VALUE
+};
+
+struct argument;
+
+typedef struct rmsgpack_dom_value (*rarch_query_func)(struct rmsgpack_dom_value input,
+        unsigned argc, const struct argument *argv);
+
+struct invocation
+{
+	rarch_query_func func;
+	unsigned argc;
+	struct argument *argv;
+};
+
+struct argument
+{
+	enum argument_type type;
+	union
+   {
+		struct rmsgpack_dom_value value;
+		struct invocation invocation;
+	};
+};
+
+struct query
+{
+	unsigned ref_count;
+	struct invocation root;
+};
+
+struct registered_func
+{
+	const char *name;
+	rarch_query_func func;
+};
+
 struct buffer
 {
 	const char *data;
 	size_t len;
 	off_t offset;
 };
+
+/* Forward declarations */
+struct argument;
 
 /* Errors */
 static void raise_too_many_arguments(const char **error)
@@ -122,37 +165,6 @@ static void raise_unexpected_char(off_t where, char expected, char found,
    *error = tmp_error_buff;
 }
 
-enum argument_type
-{
-   AT_FUNCTION,
-   AT_VALUE
-};
-
-struct argument;
-
-typedef struct rmsgpack_dom_value (*rarch_query_func)(
-        struct rmsgpack_dom_value input,
-        unsigned argc,
-        const struct argument *argv
-);
-
-struct invocation
-{
-	rarch_query_func func;
-	unsigned argc;
-	struct argument *argv;
-};
-
-struct argument
-{
-	enum argument_type type;
-	union
-   {
-		struct rmsgpack_dom_value value;
-		struct invocation invocation;
-	};
-};
-
 static void argument_free(struct argument *arg)
 {
    unsigned i;
@@ -166,18 +178,6 @@ static void argument_free(struct argument *arg)
    for (i = 0; i < arg->invocation.argc; i++)
       argument_free(&arg->invocation.argv[i]);
 }
-
-struct query
-{
-	unsigned ref_count;
-	struct invocation root;
-};
-
-struct registered_func
-{
-	const char *name;
-	rarch_query_func func;
-};
 
 static struct buffer parse_argument(struct buffer buff, struct argument *arg,
       const char **error);
@@ -345,11 +345,11 @@ static struct rmsgpack_dom_value q_glob(struct rmsgpack_dom_value input,
 static struct rmsgpack_dom_value all_map(struct rmsgpack_dom_value input,
       unsigned argc, const struct argument *argv)
 {
+   unsigned i;
    struct rmsgpack_dom_value res;
-   struct rmsgpack_dom_value *value = NULL;
    struct argument arg;
    struct rmsgpack_dom_value nil_value;
-   unsigned i;
+   struct rmsgpack_dom_value *value = NULL;
 
    nil_value.type = RDT_NULL;
    res.type       = RDT_BOOL;
@@ -406,7 +406,9 @@ struct registered_func registered_functions[100] = {
 static struct buffer chomp(struct buffer buff)
 {
    off_t i = 0;
+
    (void)i;
+
    for (; buff.offset < buff.len && isspace(buff.data[buff.offset]); buff.offset++);
    return buff;
 }
@@ -861,12 +863,11 @@ void *libretrodb_query_compile(libretrodb_t *db,
       const char *query, size_t buff_len, const char **error)
 {
    struct buffer buff;
-   struct query *q = (struct query*)malloc(sizeof(struct query));
+   struct query *q = (struct query*)calloc(1,
+         sizeof(*q));
 
    if (!q)
       goto error;
-
-   memset(q, 0, sizeof(struct query));
 
    q->ref_count = 1;
    buff.data    = query;
