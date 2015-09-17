@@ -1,7 +1,6 @@
 #ifndef __LIBRETRODB_H__
 #define __LIBRETRODB_H__
 
-#include <stdio.h>
 #include <stdint.h>
 #ifdef _WIN32
 #include <direct.h>
@@ -20,7 +19,7 @@ typedef struct libretrodb_query libretrodb_query_t;
 
 typedef struct libretrodb
 {
-	FILE *fp;
+	int fd;
 	uint64_t root;
 	uint64_t count;
 	uint64_t first_index_offset;
@@ -48,7 +47,7 @@ typedef struct libretrodb_header
 typedef struct libretrodb_cursor
 {
 	int is_valid;
-	FILE *fp;
+	int fd;
 	int eof;
 	libretrodb_query_t * query;
 	libretrodb_t * db;
@@ -57,7 +56,7 @@ typedef struct libretrodb_cursor
 typedef int (* libretrodb_value_provider)(void * ctx,
       struct rmsgpack_dom_value * out);
 
-int libretrodb_create(FILE *fp, libretrodb_value_provider value_provider,
+int libretrodb_create(int fd, libretrodb_value_provider value_provider,
       void * ctx);
 
 void libretrodb_close(libretrodb_t * db);

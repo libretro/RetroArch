@@ -1,7 +1,6 @@
 #ifndef __RARCHDB_MSGPACK_H__
 #define __RARCHDB_MSGPACK_H__
 
-#include <stdio.h>
 #include <stdint.h>
 
 struct rmsgpack_read_callbacks {
@@ -40,39 +39,39 @@ struct rmsgpack_read_callbacks {
 
 
 int rmsgpack_write_array_header(
-        FILE *fp,
+        int fd,
         uint32_t size
 );
 int rmsgpack_write_map_header(
-        FILE *fp,
+        int fd,
         uint32_t size
 );
 int rmsgpack_write_string(
-        FILE *fp,
+        int fd,
         const char * s,
         uint32_t len
 );
 int rmsgpack_write_bin(
-        FILE *fp,
+        int fd,
         const void * s,
         uint32_t len
 );
-int rmsgpack_write_nil(FILE *fp);
+int rmsgpack_write_nil(int fd);
 int rmsgpack_write_bool(
-        FILE *fp,
+        int fd,
         int value
 );
 int rmsgpack_write_int(
-        FILE *fp,
+        int fd,
         int64_t value
 );
 int rmsgpack_write_uint(
-        FILE *fp,
+        int fd,
         uint64_t value
 );
 
 int rmsgpack_read(
-        FILE *fp,
+        int fd,
         struct rmsgpack_read_callbacks * callbacks,
         void * data
 );

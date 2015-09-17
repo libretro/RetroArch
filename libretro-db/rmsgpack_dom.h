@@ -1,7 +1,6 @@
 #ifndef __RARCHDB_MSGPACK_DOM_H__
 #define __RARCHDB_MSGPACK_DOM_H__
 
-#include <stdio.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -24,32 +23,24 @@ struct rmsgpack_dom_value {
 	union {
 		uint64_t uint_;
 		int64_t int_;
-		struct
-      {
+		struct {
 			uint32_t len;
 			char * buff;
 		} string;
-
-		struct
-      {
+		struct {
 			uint32_t len;
 			char * buff;
 		} binary;
-
 		int bool_;
-
-		struct
-      {
+		struct {
 			uint32_t len;
 			struct rmsgpack_dom_pair * items;
 		} map;
-
-		struct
-      {
+		struct {
 			uint32_t len;
 			struct rmsgpack_dom_value * items;
 		} array;
-	} val;
+	};
 };
 
 struct rmsgpack_dom_pair {
@@ -70,15 +61,15 @@ struct rmsgpack_dom_value * rmsgpack_dom_value_map_value(
 );
 
 int rmsgpack_dom_read(
-        FILE *fp,
+        int fd,
         struct rmsgpack_dom_value * out
 );
 int rmsgpack_dom_write(
-        FILE *fp,
+        int fd,
         const struct rmsgpack_dom_value * obj
 );
 
-int rmsgpack_dom_read_into(FILE *fp, ...);
+int rmsgpack_dom_read_into(int fd, ...);
 
 #ifdef __cplusplus
 }
