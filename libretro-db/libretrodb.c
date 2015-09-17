@@ -450,13 +450,7 @@ int libretrodb_create_index(libretrodb_t *db,
    uint64_t item_loc           = libretrodb_tell(db);
    bintree_t *tree             = bintree_new(node_compare, &field_size);
 
-   if (!tree)
-   {
-      rv = -1;
-      goto clean;
-   }
-
-   if (libretrodb_cursor_open(db, &cur, NULL) != 0)
+   if (!tree || (libretrodb_cursor_open(db, &cur, NULL) != 0))
    {
       rv = -1;
       goto clean;
