@@ -28,7 +28,7 @@ int libretrodb_lua_to_rmsgpack_value(lua_State *L, int index,
          printf("skipping non string key\n");
       else if (lua_isnil(L, value_idx))
       {
-         // Skipping nil value fields to save disk space
+         /* Skipping nil value fields to save disk space */
       }
       else
       {
