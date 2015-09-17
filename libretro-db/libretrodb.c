@@ -213,7 +213,7 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    }
 
    header.metadata_offset = betoht64(header.metadata_offset);
-   retro_fseek(fd, header.metadata_offset, SEEK_SET);
+   retro_fseek(fd, (ssize_t)header.metadata_offset, SEEK_SET);
 
    if (libretrodb_read_metadata(fd, &md) < 0)
    {
@@ -236,7 +236,7 @@ static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
       libretrodb_index_t *idx)
 {
    off_t eof    = retro_fseek(db->fd, 0, SEEK_END);
-   off_t offset = retro_fseek(db->fd, db->first_index_offset, SEEK_SET);
+   off_t offset = retro_fseek(db->fd, (ssize_t)db->first_index_offset, SEEK_SET);
 
    while (offset < eof)
    {
@@ -245,7 +245,7 @@ static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
       if (strncmp(index_name, idx->name, strlen(idx->name)) == 0)
          return 0;
 
-      offset = retro_fseek(db->fd, idx->next, SEEK_CUR);
+      offset = retro_fseek(db->fd, (ssize_t)idx->next, SEEK_CUR);
    }
 
    return -1;
@@ -311,11 +311,11 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
       nread += rv;
    }
 
-   rv = binsearch(buff, key, db->count, idx.key_size, &offset);
+   rv = binsearch(buff, key, db->count, (ssize_t)idx.key_size, &offset);
    free(buff);
 
    if (rv == 0)
-      retro_fseek(db->fd, offset, SEEK_SET);
+      retro_fseek(db->fd, (ssize_t)offset, SEEK_SET);
 
    return rmsgpack_dom_read(db->fd, out);
 }
@@ -332,7 +332,7 @@ int libretrodb_cursor_reset(libretrodb_cursor_t *cursor)
 {
    cursor->eof = 0;
    return retro_fseek(cursor->fd,
-         cursor->db->root + sizeof(libretrodb_header_t),
+         (ssize_t)(cursor->db->root + sizeof(libretrodb_header_t)),
          SEEK_SET);
 }
 
@@ -425,7 +425,7 @@ static int node_iter(void *value, void *ctx)
    struct node_iter_ctx *nictx = (struct node_iter_ctx*)ctx;
 
    if (retro_fwrite(nictx->db->fd, value,
-            nictx->idx->key_size + sizeof(uint64_t)) > 0)
+            (ssize_t)(nictx->idx->key_size + sizeof(uint64_t))) > 0)
       return 0;
 
    return -1;
@@ -532,10 +532,11 @@ int libretrodb_create_index(libretrodb_t *db,
       item_loc = libretrodb_tell(db);
    }
 
-   (void)rv;
-   (void)idx_header_offset;
-
    idx_header_offset = retro_fseek(db->fd, 0, SEEK_END);
+
+   (void)idx_header_offset;
+   (void)rv;
+
    strncpy(idx.name, name, 50);
 
    idx.name[49] = '\0';

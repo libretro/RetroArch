@@ -455,9 +455,9 @@ static int read_buff(RFILE *fd, size_t size, char **pbuff, uint64_t *len)
    if (read_uint(fd, &tmp_len, size) == -1)
       return -errno;
 
-   *pbuff = (char *)calloc(tmp_len + 1, sizeof(char));
+   *pbuff = (char *)calloc((size_t)(tmp_len + 1), sizeof(char));
 
-   if (retro_fread(fd, *pbuff, tmp_len) == -1)
+   if (retro_fread(fd, *pbuff, (size_t)tmp_len) == -1)
    {
       free(*pbuff);
       return -errno;
@@ -529,20 +529,20 @@ int rmsgpack_read(RFILE *fd,
    else if (type < MPF_FIXARRAY)
    {
       tmp_len = type - MPF_FIXMAP;
-      return read_map(fd, tmp_len, callbacks, data);
+      return read_map(fd, (uint32_t)tmp_len, callbacks, data);
    }
    else if (type < MPF_FIXSTR)
    {
       tmp_len = type - MPF_FIXARRAY;
-      return read_array(fd, tmp_len, callbacks, data);
+      return read_array(fd, (uint32_t)tmp_len, callbacks, data);
    }
    else if (type < MPF_NIL)
    {
       tmp_len = type - MPF_FIXSTR;
-      buff = (char *)calloc(tmp_len + 1, sizeof(char));
+      buff = (char *)calloc((size_t)(tmp_len + 1), sizeof(char));
       if (!buff)
          return -ENOMEM;
-      if (retro_fread(fd, buff, tmp_len) == -1)
+      if (retro_fread(fd, buff, (ssize_t)tmp_len) == -1)
       {
          free(buff);
          goto error;
@@ -553,7 +553,7 @@ int rmsgpack_read(RFILE *fd,
          free(buff);
          return 0;
       }
-      return callbacks->read_string(buff, tmp_len, data);
+      return callbacks->read_string(buff, (uint32_t)tmp_len, data);
    }
    else if (type > MPF_MAP32)
    {
@@ -584,7 +584,7 @@ int rmsgpack_read(RFILE *fd,
             return rv;
 
          if (callbacks->read_bin)
-            return callbacks->read_bin(buff, tmp_len, data);
+            return callbacks->read_bin(buff, (uint32_t)tmp_len, data);
          break;
       case _MPF_UINT8:
       case _MPF_UINT16:
@@ -592,7 +592,7 @@ int rmsgpack_read(RFILE *fd,
       case _MPF_UINT64:
          tmp_len  = UINT32_C(1) << (type - _MPF_UINT8);
          tmp_uint = 0;
-         if (read_uint(fd, &tmp_uint, tmp_len) == -1)
+         if (read_uint(fd, &tmp_uint, (size_t)tmp_len) == -1)
             goto error;
 
          if (callbacks->read_uint)
@@ -604,7 +604,7 @@ int rmsgpack_read(RFILE *fd,
       case _MPF_INT64:
          tmp_len = UINT32_C(1) << (type - _MPF_INT8);
          tmp_int = 0;
-         if (read_int(fd, &tmp_int, tmp_len) == -1)
+         if (read_int(fd, &tmp_int, (size_t)tmp_len) == -1)
             goto error;
 
          if (callbacks->read_int)
@@ -617,18 +617,18 @@ int rmsgpack_read(RFILE *fd,
             return rv;
 
          if (callbacks->read_string)
-            return callbacks->read_string(buff, tmp_len, data);
+            return callbacks->read_string(buff, (uint32_t)tmp_len, data);
          break;
       case _MPF_ARRAY16:
       case _MPF_ARRAY32:
          if (read_uint(fd, &tmp_len, 2<<(type - _MPF_ARRAY16)) == -1)
             goto error;
-         return read_array(fd, tmp_len, callbacks, data);
+         return read_array(fd, (uint32_t)tmp_len, callbacks, data);
       case _MPF_MAP16:
       case _MPF_MAP32:
          if (read_uint(fd, &tmp_len, 2<<(type - _MPF_MAP16)) == -1)
             goto error;
-         return read_map(fd, tmp_len, callbacks, data);
+         return read_map(fd, (uint32_t)tmp_len, callbacks, data);
    }
 
    return 0;
