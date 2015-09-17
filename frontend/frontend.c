@@ -265,9 +265,6 @@ bool main_load_content(int argc, char **argv, void *args,
 
    event_command(EVENT_CMD_RESUME);
 
-   settings_t *settings;
-   settings = config_get_ptr();
-   printf("***%s\n",settings->core_assets_directory);
    check_defaults_dirs();
 
    if (process_args)
