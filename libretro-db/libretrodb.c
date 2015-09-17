@@ -150,7 +150,11 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    libretrodb_header_t header;
    libretrodb_metadata_t md;
    int rv;
+#ifdef _WIN32
+   int fd = open(path, O_RDWR | O_BINARY);
+#else
    int fd = open(path, O_RDWR);
+#endif
 
    if (fd == -1)
       return -errno;
