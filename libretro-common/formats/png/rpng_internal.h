@@ -42,55 +42,6 @@ static const uint8_t png_magic[8] = {
    0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a,
 };
 
-enum png_chunk_type
-{
-   PNG_CHUNK_NOOP = 0,
-   PNG_CHUNK_ERROR,
-   PNG_CHUNK_IHDR,
-   PNG_CHUNK_IDAT,
-   PNG_CHUNK_PLTE,
-   PNG_CHUNK_IEND
-};
-
-enum png_line_filter
-{
-   PNG_FILTER_NONE = 0,
-   PNG_FILTER_SUB,
-   PNG_FILTER_UP,
-   PNG_FILTER_AVERAGE,
-   PNG_FILTER_PAETH
-};
-
-enum png_ihdr_color_type
-{
-   PNG_IHDR_COLOR_GRAY       = 0,
-   PNG_IHDR_COLOR_RGB        = 2,
-   PNG_IHDR_COLOR_PLT        = 3,
-   PNG_IHDR_COLOR_GRAY_ALPHA = 4,
-   PNG_IHDR_COLOR_RGBA       = 6
-};
-
-struct adam7_pass
-{
-   unsigned x;
-   unsigned y;
-   unsigned stride_x;
-   unsigned stride_y;
-};
-
-struct idat_buffer
-{
-   uint8_t *data;
-   size_t size;
-};
-
-struct png_chunk
-{
-   uint32_t size;
-   char type[4];
-   uint8_t *data;
-};
-
 struct png_ihdr
 {
    uint32_t width;
@@ -100,49 +51,6 @@ struct png_ihdr
    uint8_t compression;
    uint8_t filter;
    uint8_t interlace;
-};
-
-struct rpng_process_t
-{
-   bool initialized;
-   bool inflate_initialized;
-   bool adam7_pass_initialized;
-   bool pass_initialized;
-   uint32_t *data;
-   uint32_t *palette;
-   struct png_ihdr ihdr;
-   uint8_t *prev_scanline;
-   uint8_t *decoded_scanline;
-   uint8_t *inflate_buf;
-   size_t restore_buf_size;
-   size_t adam7_restore_buf_size;
-   size_t data_restore_buf_size;
-   size_t inflate_buf_size;
-   unsigned bpp;
-   unsigned pitch;
-   unsigned h;
-   struct
-   {
-      unsigned width;
-      unsigned height;
-      size_t   size;
-      unsigned pos;
-   } pass;
-   void *stream;
-   zlib_file_handle_t handle;
-};
-
-struct rpng
-{
-   struct rpng_process_t process;
-   bool has_ihdr;
-   bool has_idat;
-   bool has_iend;
-   bool has_plte;
-   struct idat_buffer idat_buf;
-   struct png_ihdr ihdr;
-   uint8_t *buff_data;
-   uint32_t palette[256];
 };
 
 /* Paeth prediction filter. */
