@@ -14,6 +14,14 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <malloc.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <gccore.h>
+#include <ogcsys.h>
+
+#include <retro_file.h>
 
 #include "../../driver.h"
 #include "../../general.h"
@@ -26,12 +34,6 @@
 #ifdef HW_RVL
 #include "../../wii/mem2_manager.h"
 #endif
-
-#include <gccore.h>
-#include <ogcsys.h>
-#include <malloc.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "ppc_asm.h"
 #include "gx_gfx_inl.h"
@@ -600,19 +602,19 @@ static void build_disp_list(void)
 static void gx_efb_screenshot(void)
 {
    int x, y;
-
    uint8_t tga_header[] = {0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x02, 0xE0, 0x01, 0x18, 0x00};
-   FILE *out = fopen("/screenshot.tga", "wb");
+   RFILE *out = retro_fopen("/screenshot.tga", RFILE_MODE_WRITE, -1);
 
    if (!out)
       return;
 
-   fwrite(tga_header, 1, sizeof(tga_header), out);
+   retro_fwrite(out, tga_header, sizeof(tga_header));
 
    for (y = 479; y >= 0; --y)
    {
       uint8_t line[640 * 3];
       unsigned i = 0;
+
       for (x = 0; x < 640; x++)
       {
          GXColor color;
@@ -621,10 +623,10 @@ static void gx_efb_screenshot(void)
          line[i++] = color.g;
          line[i++] = color.r;
       }
-      fwrite(line, 1, sizeof(line), out);
+      retro_fwrite(out, line, sizeof(line));
    }
 
-   fclose(out);
+   retro_fclose(out);
 }
 
 #endif
