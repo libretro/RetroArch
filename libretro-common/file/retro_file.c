@@ -66,45 +66,61 @@ int retro_get_fd(RFILE *stream)
 
 RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 {
-   RFILE *stream = (RFILE*)calloc(1, sizeof(*stream));
+   int            flags = 0;
+   int         mode_int = 0;
+   const char *mode_str = NULL;
+   RFILE        *stream = (RFILE*)calloc(1, sizeof(*stream));
 
    if (!stream)
       return NULL;
+
+   (void)mode_str;
+   (void)mode_int;
 
    switch (mode)
    {
       case RFILE_MODE_READ:
 #if defined(VITA) || defined(PSP)
-         stream->fd = sceIoOpen(path, O_RDONLY, 0777);
+         mode_int = 0777;
+         flags = O_RDONLY;
 #elif defined(HAVE_BUFFERED_IO)
-         stream->fd = fopen(path, "rb");
+         mode_str = "rb";
 #else
-         stream->fd = open(path, O_RDONLY);
+         flags    = O_RDONLY;
 #endif
          break;
       case RFILE_MODE_WRITE:
 #if defined(VITA) || defined(PSP)
-         stream->fd = sceIoOpen(path, O_WRONLY | O_CREAT, 0777);
+         mode_int = 0777;
+         flags    = O_WRONLY | O_CREAT;
 #elif defined(HAVE_BUFFERED_IO)
-         stream->fd = fopen(path, "wb");
+         mode_str = "wb";
 #else
-         stream->fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+         flags    = O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR;
 #endif
          break;
       case RFILE_MODE_READ_WRITE:
 #if defined(VITA) || defined(PSP)
-         stream->fd = sceIoOpen(path, O_RDWR, 0777);
+         mode_int = 0777;
+         flags    = O_RDWR;
 #elif defined(HAVE_BUFFERED_IO)
-         stream->fd = fopen(path, "w+");
+         mode_str = "w+";
 #else
+         flags    = O_RDWR;
 #ifdef _WIN32
-         stream->fd = open(path, O_RDWR | O_BINARY);
-#else
-         stream->fd = open(path, O_RDWR);
+         flags   |= O_BINARY;
 #endif
 #endif
          break;
    }
+
+#if defined(VITA) || defined(PSP)
+   stream->fd = sceIoOpen(path, flags, mode_int);
+#elif defined(HAVE_BUFFERED_IO)
+   stream->fd = fopen(path, mode_str);
+#else
+   stream->fd = open(path, flags);
+#endif
 
 #if defined(HAVE_BUFFERED_IO)
    if (!stream->fd)
