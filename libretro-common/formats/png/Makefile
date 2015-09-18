@@ -17,6 +17,7 @@ SOURCES_C := 	rpng_fbio.c \
 					../../file/nbio/nbio_stdio.c \
 					../../file/file_extract.c \
 					../../file/file_path.c \
+					../../file/retro_file.c \
 					../../string/string_list.c
 
 OBJS := $(SOURCES_C:.c=.o)

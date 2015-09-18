@@ -62,7 +62,7 @@ static int test_nonblocking_rpng(const char *in_path)
    if (!rpng_save_image_argb("/tmp/test.png", test_data, 4, 4, 16))
       return 1;
 
-   if (!rpng_nbio_load_image_argb(in_path, &data, &width, &height))
+   if (!rpng_load_image_argb(in_path, &data, &width, &height))
       return 2;
 
    fprintf(stderr, "Path: %s.\n", in_path);
