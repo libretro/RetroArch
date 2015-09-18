@@ -53,6 +53,17 @@ struct RFILE
 #endif
 };
 
+int retro_get_fd(RFILE *stream)
+{
+   if (!stream)
+      return -1;
+#if defined(HAVE_BUFFERED_IO)
+   return fileno(stream->fd);
+#else
+   return stream->fd;
+#endif
+}
+
 RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 {
    RFILE *stream = (RFILE*)calloc(1, sizeof(*stream));

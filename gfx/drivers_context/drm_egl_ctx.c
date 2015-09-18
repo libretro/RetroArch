@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include <errno.h>
 #include <signal.h>
-#include <fcntl.h>
 #include <unistd.h>
 #include <math.h>
 
@@ -40,6 +39,7 @@
 #include <gbm.h>
 
 #include <file/dir_list.h>
+#include <retro_file.h>
 
 #include "../../driver.h"
 #include "../../runloop.h"
@@ -57,6 +57,7 @@
 typedef struct gfx_ctx_drm_egl_data
 {
    bool g_use_hw_ctx;
+   RFILE *g_drm;
    int g_drm_fd;
    uint32_t g_crtc_id;
    uint32_t g_connector_id;
@@ -356,7 +357,7 @@ static void free_drm_resources(gfx_ctx_drm_egl_data_t *drm)
       drmModeFreeCrtc(drm->g_orig_crtc);
 
    if (drm->g_drm_fd >= 0)
-      close(drm->g_drm_fd);
+      retro_fclose(drm->g_drm);
 
    drm->g_gbm_surface = NULL;
    drm->g_gbm_dev     = NULL;
@@ -457,12 +458,14 @@ nextgpu:
    }
    gpu = gpu_descriptors->elems[gpu_index++].data;
 
-   drm->g_drm_fd = open(gpu, O_RDWR);
-   if (drm->g_drm_fd < 0)
+   drm->g_drm    = retro_fopen(gpu, RFILE_MODE_READ_WRITE, -1);
+   if (!drm->g_drm)
    {
       RARCH_WARN("[KMS/EGL]: Couldn't open DRM device.\n");
       goto nextgpu;
    }
+
+   drm->g_drm_fd = retro_get_fd(drm->g_drm);
 
    drm->g_resources = drmModeGetResources(drm->g_drm_fd);
    if (!drm->g_resources)

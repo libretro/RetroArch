@@ -55,6 +55,8 @@ void retro_fclose(RFILE *stream);
 
 bool retro_fmemcpy(const char *path, char *s, size_t len, ssize_t *bytes_written);
 
+int retro_get_fd(RFILE *stream);
+
 #ifdef __cplusplus
 }
 #endif
