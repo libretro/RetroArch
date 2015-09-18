@@ -129,7 +129,10 @@ ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence)
    (void)ret;
 
 #if defined(VITA) || defined(PSP)
-   return sceIoLseek(stream->fd, (SceOff)offset, whence);
+   ret = sceIoLseek(stream->fd, (SceOff)offset, whence);
+   if (ret == -1)
+      return -1;
+   return 0;
 #elif defined(HAVE_BUFFERED_IO)
    return fseek(stream->fd, (long)offset, whence);
 #else
@@ -145,7 +148,9 @@ ssize_t retro_ftell(RFILE *stream)
    int ret = 0;
    if (!stream)
       return -1;
-#ifdef HAVE_BUFFERED_IO
+#if defined(VITA) || defined(PSP)
+   return sceIoLseek(stream->fd, 0, SEEK_CUR);
+#elif defined(HAVE_BUFFERED_IO)
    return ftell(stream->fd);
 #else 
    return lseek(stream->fd, 0, SEEK_CUR);
