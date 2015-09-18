@@ -13,9 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
-#include <fcntl.h>
-
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
 #include <retro_endianness.h>

@@ -15,7 +15,6 @@
  */
 
 #include <errno.h>
-#include <fcntl.h>
 
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
@@ -60,7 +59,8 @@ static ssize_t get_token(RFILE *fd, char *token, size_t max_len)
       rv = retro_fread(fd, c, 1);
       if (rv == 0)
          return 0;
-      else if (rv < 1)
+
+      if (rv < 1)
       {
          switch (errno)
          {
