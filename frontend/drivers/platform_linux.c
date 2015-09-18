@@ -1148,7 +1148,8 @@ static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
    ssize_t buflen   = 0;
    const char *base = proc_acpi_sysfs_ac_adapter_path;
 
-   snprintf(path, sizeof(path), "%s/%s/%s", base, node, "online");
+   snprintf(path, sizeof(path), "%s/%s", base, "online");
+   printf("path: %s\n", path);
    if (!retro_fmemcpy(path, state, sizeof(state), &buflen))
       return;
 
