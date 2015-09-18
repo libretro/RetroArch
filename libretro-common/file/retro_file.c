@@ -57,7 +57,9 @@ int retro_get_fd(RFILE *stream)
 {
    if (!stream)
       return -1;
-#if defined(HAVE_BUFFERED_IO)
+#if defined(VITA) || defined(PSP)
+   return stream->fd;
+#elif defined(HAVE_BUFFERED_IO)
    return fileno(stream->fd);
 #else
    return stream->fd;
