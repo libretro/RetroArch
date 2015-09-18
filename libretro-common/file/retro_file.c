@@ -207,10 +207,10 @@ ssize_t retro_fwrite(RFILE *stream, const void *s, size_t len)
 #endif
 }
 
-void retro_fclose(RFILE *stream)
+int retro_fclose(RFILE *stream)
 {
    if (!stream)
-      return;
+      return -1;
 
 #if defined(VITA) || defined(PSP)
    if (stream->fd > 0)
@@ -223,6 +223,8 @@ void retro_fclose(RFILE *stream)
       close(stream->fd);
 #endif
    free(stream);
+
+   return 0;
 }
 
 static bool retro_fread_iterate(RFILE *stream, char *s, size_t len, ssize_t *bytes_written)
@@ -251,4 +253,68 @@ bool retro_fmemcpy(const char *path, char *s, size_t len, ssize_t *bytes_written
    s[*bytes_written] = '\0';
 
    return true;
+}
+
+/**
+ * retro_fmemcpy_alloc:
+ * @path             : path to file.
+ * @buf              : buffer to allocate and read the contents of the
+ *                     file into. Needs to be freed manually.
+ *
+ * Read the contents of a file into @buf.
+ *
+ * Returns: number of items read, -1 on error.
+ */
+int retro_fmemcpy_alloc(const char *path, void **buf, ssize_t *len)
+{
+   ssize_t ret              = 0;
+   ssize_t content_buf_size = 0;
+   void *content_buf        = NULL;
+   RFILE *file              = retro_fopen(path, RFILE_MODE_READ, -1);
+
+   if (!file)
+      goto error;
+
+   if (retro_fseek(file, 0, SEEK_END) != 0)
+      goto error;
+
+   content_buf_size = retro_ftell(file);
+   if (content_buf_size < 0)
+      goto error;
+
+   retro_frewind(file);
+
+   content_buf = malloc(content_buf_size + 1);
+
+   if (!content_buf)
+      goto error;
+
+   if ((ret = retro_fread(file, content_buf, content_buf_size)) < content_buf_size)
+      printf("Didn't read whole file.\n");
+
+   if (!content_buf)
+      goto error;
+
+   *buf    = content_buf;
+
+   /* Allow for easy reading of strings to be safe.
+    * Will only work with sane character formatting (Unix). */
+   ((char*)content_buf)[content_buf_size] = '\0';
+
+   if (retro_fclose(file) != 0)
+      printf("Failed to close file stream.\n");
+
+   if (len)
+      *len = ret;
+
+   return 1;
+
+error:
+   retro_fclose(file);
+   if (content_buf)
+      free(content_buf);
+   if (len)
+      *len = -1;
+   *buf = NULL;
+   return 0;
 }

@@ -644,69 +644,6 @@ bool write_file(const char *path, const void *data, ssize_t size)
    return (ret == size);
 }
 
-/**
- * read_generic_file:
- * @path             : path to file.
- * @buf              : buffer to allocate and read the contents of the
- *                     file into. Needs to be freed manually.
- *
- * Read the contents of a file into @buf.
- *
- * Returns: number of items read, -1 on error.
- */
-static int read_generic_file(const char *path, void **buf, ssize_t *len)
-{
-   ssize_t ret;
-   ssize_t bytes_read       = 0;
-   ssize_t content_buf_size = 0;
-   void *content_buf        = NULL;
-   RFILE *file              = retro_fopen(path, RFILE_MODE_READ, -1);
-
-   if (!file)
-      goto error;
-
-   ret = retro_fseek(file, 0, SEEK_END);
-
-   if (ret != 0)
-      goto error;
-
-   content_buf_size = retro_ftell(file);
-   if (content_buf_size == -1)
-      goto error;
-
-   retro_frewind(file);
-
-   content_buf = malloc(content_buf_size + 1);
-
-   if (!content_buf)
-      goto error;
-
-   if ((bytes_read = retro_fread(file, content_buf, content_buf_size)) < content_buf_size)
-      RARCH_WARN("Didn't read whole file.\n");
-
-   *buf    = content_buf;
-
-   /* Allow for easy reading of strings to be safe.
-    * Will only work with sane character formatting (Unix). */
-   ((char*)content_buf)[content_buf_size] = '\0';
-
-   retro_fclose(file);
-
-   if (len)
-      *len = bytes_read;
-
-   return 1;
-
-error:
-   retro_fclose(file);
-   if (content_buf)
-      free(content_buf);
-   if (len)
-      *len = -1;
-   *buf = NULL;
-   return 0;
-}
-
 #ifdef HAVE_COMPRESSION
 /* Generic compressed file loader.
  * Extracts to buf, unless optional_filename != 0
@@ -787,7 +724,7 @@ int read_compressed_file(const char * path, void **buf,
  * @length           : Number of items read, -1 on error.
  *
  * Read the contents of a file into @buf. Will call read_compressed_file
- * if path contains a compressed file, otherwise will call read_generic_file.
+ * if path contains a compressed file, otherwise will call retro_fmemcpy_alloc.
  *
  * Returns: 1 if file read, 0 on error.
  */
@@ -800,7 +737,7 @@ int read_file(const char *path, void **buf, ssize_t *length)
          return 1;
    }
 #endif
-   return read_generic_file(path, buf, length);
+   return retro_fmemcpy_alloc(path, buf, length);
 }
 
 struct string_list *compressed_file_list_new(const char *path,

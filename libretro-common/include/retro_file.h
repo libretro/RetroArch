@@ -55,9 +55,11 @@ ssize_t retro_ftell(RFILE *stream);
 
 void retro_frewind(RFILE *stream);
 
-void retro_fclose(RFILE *stream);
+int retro_fclose(RFILE *stream);
 
 bool retro_fmemcpy(const char *path, char *s, size_t len, ssize_t *bytes_written);
+
+int retro_fmemcpy_alloc(const char *path, void **buf, ssize_t *len);
 
 int retro_get_fd(RFILE *stream);
 
