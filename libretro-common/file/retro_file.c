@@ -76,6 +76,7 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 
    (void)mode_str;
    (void)mode_int;
+   (void)flags;
 
    switch (mode)
    {
@@ -162,7 +163,6 @@ ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence)
 
 ssize_t retro_ftell(RFILE *stream)
 {
-   int ret = 0;
    if (!stream)
       return -1;
 #if defined(VITA) || defined(PSP)
