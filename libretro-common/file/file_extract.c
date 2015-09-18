@@ -143,10 +143,6 @@ typedef struct
    size_t size;
 } zlib_file_data_t;
 
-static int zlib_read_file(const char *path, void **buf, ssize_t *len)
-{
-}
-
 static void zlib_file_free(void *handle)
 {
    zlib_file_data_t *data = (zlib_file_data_t*)handle;
