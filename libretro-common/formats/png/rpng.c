@@ -44,6 +44,11 @@ enum png_process_code
    PNG_PROCESS_END       =  1
 };
 
+static INLINE uint32_t dword_be(const uint8_t *buf)
+{
+   return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
+}
+
 static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
 {
    unsigned i;

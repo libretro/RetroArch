@@ -160,11 +160,6 @@ static INLINE int paeth(int a, int b, int c)
    return c;
 }
 
-static INLINE uint32_t dword_be(const uint8_t *buf)
-{
-   return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
-}
-
 int rpng_load_image_argb_process_inflate_init(rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height);
 
