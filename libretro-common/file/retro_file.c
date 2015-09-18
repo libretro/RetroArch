@@ -256,7 +256,7 @@ bool retro_fmemcpy(const char *path, char *s, size_t len, ssize_t *bytes_written
 }
 
 /**
- * retro_fmemcpy_alloc:
+ * retro_read_file:
  * @path             : path to file.
  * @buf              : buffer to allocate and read the contents of the
  *                     file into. Needs to be freed manually.
@@ -265,7 +265,7 @@ bool retro_fmemcpy(const char *path, char *s, size_t len, ssize_t *bytes_written
  *
  * Returns: number of items read, -1 on error.
  */
-int retro_fmemcpy_alloc(const char *path, void **buf, ssize_t *len)
+int retro_read_file(const char *path, void **buf, ssize_t *len)
 {
    ssize_t ret              = 0;
    ssize_t content_buf_size = 0;

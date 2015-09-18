@@ -701,7 +701,7 @@ int read_compressed_file(const char * path, void **buf,
  * @length           : Number of items read, -1 on error.
  *
  * Read the contents of a file into @buf. Will call read_compressed_file
- * if path contains a compressed file, otherwise will call retro_fmemcpy_alloc.
+ * if path contains a compressed file, otherwise will call retro_read_file().
  *
  * Returns: 1 if file read, 0 on error.
  */
@@ -714,7 +714,7 @@ int read_file(const char *path, void **buf, ssize_t *length)
          return 1;
    }
 #endif
-   return retro_fmemcpy_alloc(path, buf, length);
+   return retro_read_file(path, buf, length);
 }
 
 struct string_list *compressed_file_list_new(const char *path,

@@ -35,7 +35,7 @@
 
 /* File backends. Can be fleshed out later, but keep it simple for now.
  * The file is mapped to memory directly (via mmap() or just 
- * plain retro_fmemcpy_alloc()).
+ * plain retro_read_file()).
  */
 
 struct zlib_file_backend
@@ -181,7 +181,7 @@ static void *zlib_file_open(const char *path)
    if (!data)
       return NULL;
 
-   read_from_file = retro_fmemcpy_alloc(path, &data->data, &ret);
+   read_from_file = retro_read_file(path, &data->data, &ret);
 
    if (!read_from_file || ret < 0)
    {

@@ -59,7 +59,7 @@ int retro_fclose(RFILE *stream);
 
 bool retro_fmemcpy(const char *path, char *s, size_t len, ssize_t *bytes_written);
 
-int retro_fmemcpy_alloc(const char *path, void **buf, ssize_t *len);
+int retro_read_file(const char *path, void **buf, ssize_t *len);
 
 bool retro_write_file(const char *path, const void *data, ssize_t size);
 
