@@ -318,3 +318,26 @@ error:
    *buf = NULL;
    return 0;
 }
+
+/**
+ * retro_write_file:
+ * @path             : path to file.
+ * @data             : contents to write to the file.
+ * @size             : size of the contents.
+ *
+ * Writes data to a file.
+ *
+ * Returns: true (1) on success, false (0) otherwise.
+ */
+bool retro_write_file(const char *path, const void *data, ssize_t size)
+{
+   ssize_t ret   = 0;
+   RFILE *file   = retro_fopen(path, RFILE_MODE_WRITE, -1);
+   if (!file)
+      return false;
+
+   ret = retro_fwrite(file, data, size);
+   retro_fclose(file);
+
+   return (ret == size);
+}

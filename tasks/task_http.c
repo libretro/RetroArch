@@ -21,6 +21,7 @@
 #include <file/file_path.h>
 #include <file/file_extract.h>
 #include <net/net_compat.h>
+#include <retro_file.h>
 
 #include "../file_ops.h"
 #include "../general.h"
@@ -119,7 +120,7 @@ static int cb_generic_download(void *data, size_t len,
    fill_pathname_join(output_path, dir_path,
          core_updater_path, sizeof(output_path));
 
-   if (!write_file(output_path, data, len))
+   if (!retro_write_file(output_path, data, len))
       return -1;
 
    snprintf(msg, sizeof(msg), "%s: %s.",

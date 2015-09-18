@@ -54,19 +54,6 @@ struct zlib_file_backend
 #define END_OF_CENTRAL_DIR_SIGNATURE 0x06054b50
 #endif
 
-static bool zlib_write_file(const char *path, const void *data, ssize_t size)
-{
-   ssize_t ret   = 0;
-   FILE *file = fopen(path, "wb");
-   if (!file)
-      return false;
-
-   ret = fwrite(data, 1, size, file);
-   fclose(file);
-   return (ret == size);
-}
-
-
 #ifdef HAVE_MMAP
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -422,7 +409,7 @@ int zlib_inflate_data_to_file(zlib_file_handle_t *handle,
    }
 #endif
 
-   if (!zlib_write_file(path, handle->data, size))
+   if (!retro_write_file(path, handle->data, size))
       GOTO_END_ERROR();
 
 end:
@@ -664,7 +651,7 @@ static int zip_extract_cb(const char *name, const char *valid_exts,
       switch (cmode)
       {
          case ZLIB_MODE_UNCOMPRESSED:
-            data->found_content = zlib_write_file(new_path, cdata, size);
+            data->found_content = retro_write_file(new_path, cdata, size);
             return false;
          case ZLIB_MODE_DEFLATE:
             {
@@ -830,7 +817,7 @@ bool zlib_perform_mode(const char *path, const char *valid_exts,
    switch (cmode)
    {
       case 0: /* Uncompressed */
-         if (!zlib_write_file(path, cdata, size))
+         if (!retro_write_file(path, cdata, size))
             return false;
          break;
 

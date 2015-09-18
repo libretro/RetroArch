@@ -61,6 +61,8 @@ bool retro_fmemcpy(const char *path, char *s, size_t len, ssize_t *bytes_written
 
 int retro_fmemcpy_alloc(const char *path, void **buf, ssize_t *len);
 
+bool retro_write_file(const char *path, const void *data, ssize_t size);
+
 int retro_get_fd(RFILE *stream);
 
 #ifdef __cplusplus

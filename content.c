@@ -33,6 +33,7 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <file/file_extract.h>
+#include <retro_file.h>
 
 #include "msg_hash.h"
 #include "content.h"
@@ -118,7 +119,7 @@ static void dump_to_file_desperate(const void *data,
    strftime(timebuf, sizeof(timebuf), "%Y-%m-%d-%H-%M-%S", localtime(&time_));
    strlcat(path, timebuf, sizeof(path));
 
-   if (write_file(path, data, size))
+   if (retro_write_file(path, data, size))
       RARCH_WARN("Succeeded in saving RAM data to \"%s\".\n", path);
    else
       goto error;
@@ -169,7 +170,7 @@ bool save_state(const char *path)
    ret = pretro_serialize(data, size);
 
    if (ret)
-      ret = write_file(path, data, size);
+      ret = retro_write_file(path, data, size);
 
    if (!ret)
       RARCH_ERR("%s \"%s\".\n", 
@@ -332,7 +333,7 @@ void save_ram_file(const char *path, int type)
    if (size <= 0)
       return;
 
-   if (!write_file(path, data, size))
+   if (!retro_write_file(path, data, size))
    {
       RARCH_ERR("%s.\n",
             msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
