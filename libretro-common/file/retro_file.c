@@ -38,7 +38,7 @@
 #include <fcntl.h>
 #endif
 
-#if 0
+#if 1
 #define HAVE_BUFFERED_IO 1
 #endif
 

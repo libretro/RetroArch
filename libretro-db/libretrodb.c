@@ -191,7 +191,7 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    libretrodb_header_t header;
    libretrodb_metadata_t md;
    int rv;
-   RFILE *fd = retro_fopen(path, RFILE_MODE_READ_WRITE, -1);
+   RFILE *fd = retro_fopen(path, RFILE_MODE_READ, -1);
 
    if (!fd)
       return -errno;
