@@ -38,6 +38,10 @@
 #include <fcntl.h>
 #endif
 
+#ifdef RARCH_INTERNAL
+#include <retro_log.h>
+#endif
+
 #if 1
 #define HAVE_BUFFERED_IO 1
 #endif
@@ -227,34 +231,6 @@ int retro_fclose(RFILE *stream)
    return 0;
 }
 
-static bool retro_fread_iterate(RFILE *stream, char *s, size_t len, ssize_t *bytes_written)
-{
-   *bytes_written = retro_fread(stream, s, len);
-#if defined(HAVE_BUFFERED_IO)
-   return (*bytes_written < 0);
-#else
-   return (*bytes_written < 0 && errno == EINTR);
-#endif
-}
-
-bool retro_fmemcpy(const char *path, char *s, size_t len, ssize_t *bytes_written)
-{
-   RFILE *stream = retro_fopen(path, RFILE_MODE_READ, -1);
-   if (!stream)
-      return false;
-
-   while(retro_fread_iterate(stream, s, len, bytes_written));
-
-   retro_fclose(stream);
-   if (*bytes_written < 0)
-      return false;
-
-   /* NULL-terminate the string. */
-   s[*bytes_written] = '\0';
-
-   return true;
-}
-
 /**
  * retro_read_file:
  * @path             : path to file.
@@ -290,7 +266,13 @@ int retro_read_file(const char *path, void **buf, ssize_t *len)
       goto error;
 
    if ((ret = retro_fread(file, content_buf, content_buf_size)) < content_buf_size)
-      printf("Didn't read whole file.\n");
+   {
+#ifdef RARCH_INTERNAL
+      RARCH_WARN("Didn't read whole file: %s.\n", path);
+#else
+      printf("Didn't read whole file: %s.\n", path);
+#endif
+   }
 
    if (!content_buf)
       goto error;

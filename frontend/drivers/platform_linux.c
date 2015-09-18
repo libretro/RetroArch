@@ -90,17 +90,17 @@ static INLINE void cpu_x86_cpuid(int func, int values[4])
  *
  * Return NULL if not found
  */
-static char *extract_cpuinfo_field(char* buffer, int buflen, const char* field)
+static char *extract_cpuinfo_field(char* buffer, ssize_t length, const char* field)
 {
    int len;
    const char *q;
    int  fieldlen = strlen(field);
-   char* bufend  = buffer + buflen;
+   char* bufend  = buffer + length;
    char* result  = NULL;
    /* Look for first field occurence, and ensures it starts the line. */
    const char *p = buffer;
 
-   bufend = buffer + buflen;
+   bufend = buffer + length;
 
    for (;;)
    {
@@ -224,10 +224,10 @@ typedef struct
  *             2,4-127,128-143
  *             0-1
  */
-static void cpulist_parse(CpuList* list, const char* line, int line_len)
+static void cpulist_parse(CpuList* list, char **buf, ssize_t length)
 {
-   const char* p   = line;
-   const char* end = p + line_len;
+   const char* p   = (const char*)buf;
+   const char* end = p + length;
 
    /* NOTE: the input line coming from sysfs typically contains a
     * trailing newline, so take care of it in the code below
@@ -275,18 +275,21 @@ static void cpulist_parse(CpuList* list, const char* line, int line_len)
 /* Read a CPU list from one sysfs file */
 static void cpulist_read_from(CpuList* list, const char* filename)
 {
-   char   file[64];
-   ssize_t    filelen;
+   ssize_t length;
+   char *buf  = NULL;
 
    list->mask = 0;
 
-   if (!retro_fmemcpy(filename, file, sizeof(file), &filelen))
+   if (retro_read_file(filename, (void**)&buf, &length) != 1)
    {
       RARCH_ERR("Could not read %s: %s\n", filename, strerror(errno));
       return;
    }
 
-   cpulist_parse(list, file, filelen);
+   cpulist_parse(list, &buf, length);
+   if (buf)
+      free(buf);
+   buf = NULL;
 }
 
 /* Return the number of cpus present on a given device.
@@ -313,14 +316,14 @@ static int get_cpu_count(void)
 
 static void linux_cpu_init(void)
 {
-   char cpuinfo[4096];
-   ssize_t  cpuinfo_len = 0;
+   ssize_t  length;
+   void *buf = NULL;
 
    g_cpuFamily   = DEFAULT_CPU_FAMILY;
    g_cpuFeatures = 0;
    g_cpuCount    = 1;
 
-   if (!retro_fmemcpy("/proc/cpuinfo", cpuinfo, sizeof(cpuinfo), &cpuinfo_len))
+   if (retro_read_file("/proc/cpuinfo", &buf, &length) != 1)
       return;
 
    /* Count the CPU cores, the value may be 0 for single-core CPUs */
@@ -445,6 +448,10 @@ static void linux_cpu_init(void)
 #ifdef _MIPS_ARCH
    g_cpuFamily = CPU_FAMILY_MIPS;
 #endif
+
+   if (buf)
+      free(buf);
+   buf = NULL;
 }
 
 cpu_family linux_get_cpu_platform(void)
@@ -969,10 +976,10 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
 {
    const char *base  = proc_acpi_battery_path;
    char path[1024];
-   char info[1024];
-   char state[1024];
-   ssize_t buflen    = 0;
+   ssize_t length    = 0;
    char         *ptr = NULL;
+   char  *buf        = NULL;
+   char  *buf_info   = NULL;
    char         *key = NULL;
    char         *val = NULL;
    bool       charge = false;
@@ -984,14 +991,14 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
 
-   if (!retro_fmemcpy(path, state, sizeof(state), &buflen))
-      return;
+   if (!retro_read_file(path, (void**)&buf, &length))
+      goto end;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "info");
-   if (!retro_fmemcpy(path, info, sizeof(info), &buflen))
-      return;
+   if (!retro_read_file(path, (void**)&buf_info, &length))
+      goto end;
 
-   ptr = &state[0];
+   ptr = &buf[0];
 
    while (make_proc_acpi_key_val(&ptr, &key, &val))
    {
@@ -1025,7 +1032,7 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
       }
    }
 
-   ptr = &info[0];
+   ptr = &buf_info[0];
 
    while (make_proc_acpi_key_val(&ptr, &key, &val))
    {
@@ -1076,20 +1083,29 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
       *percent = pct;
       *charging = charge;
    }
+
+end:
+   if (buf_info)
+      free(buf_info);
+   if (buf)
+      free(buf);
+   buf      = NULL;
+   buf_info = NULL;
 }
 
 static void check_proc_acpi_sysfs_battery(const char * node, bool * have_battery,
       bool * charging, int *seconds, int *percent)
 {
    unsigned capacity;
-   char path[1024], info[1024], state[1024];
+   char path[1024], info[1024];
    const char *base  = proc_acpi_sysfs_battery_path;
+   char        *buf  = NULL;
    char         *ptr = NULL;
    char         *key = NULL;
    char         *val = NULL;
    bool       charge = false;
    bool       choose = false;
-   ssize_t buflen    = 0;
+   ssize_t length    = 0;
    int       maximum = -1;
    int     remaining = -1;
    int          secs = -1;
@@ -1099,38 +1115,43 @@ static void check_proc_acpi_sysfs_battery(const char * node, bool * have_battery
       return;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "status");
-   if (!retro_fmemcpy(path, state, sizeof (state), &buflen))
+   if (retro_read_file(path, (void**)&buf, &length) != 1)
       return;
 
-   if (strstr(state, "Discharging"))
+   if (strstr((char*)buf, "Discharging"))
       *have_battery = true;
-   else if (strstr(state, "Full"))
+   else if (strstr((char*)buf, "Full"))
       *have_battery = true;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "capacity");
-   if (!retro_fmemcpy(path, state, sizeof (state), &buflen))
-      return;
+   if (retro_read_file(path, (void**)&buf, &length) != 1)
+      goto end;
 
-   capacity = atoi(state);
+   capacity = atoi(buf);
 
    *percent = capacity;
+
+end:
+   if (buf)
+      free(buf);
+   buf = NULL;
 }
 
 static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
 {
    char path[1024];
    const char *base = proc_acpi_ac_adapter_path;
-   char  state[256] = {0};
+   char       *buf  = NULL;
    char        *ptr = NULL;
    char        *key = NULL;
    char        *val = NULL;
-   ssize_t buflen   = 0;
+   ssize_t length   = 0;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
-   if (!retro_fmemcpy(path, state, sizeof(state), &buflen))
+   if (retro_read_file(path, (void**)&buf, &length) != 1)
       return;
 
-   ptr = &state[0];
+   ptr = &buf[0];
    while (make_proc_acpi_key_val(&ptr, &key, &val))
    {
       uint32_t key_hash = djb2_calculate(key);
@@ -1140,20 +1161,29 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
             val_hash == ACPI_VAL_ONLINE)
          *have_ac = true;
    }
+
+   if (buf)
+      free(buf);
+   buf = NULL;
 }
 
 static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
 {
-   char  state[256], path[1024];
-   ssize_t buflen   = 0;
+   char  path[1024];
+   ssize_t length   = 0;
+   char     *buf    = NULL;
    const char *base = proc_acpi_sysfs_ac_adapter_path;
 
    snprintf(path, sizeof(path), "%s/%s", base, "online");
-   if (!retro_fmemcpy(path, state, sizeof(state), &buflen))
+   if (retro_read_file(path, (void**)&buf, &length) != 1)
       return;
 
-   if (strstr(state, "1"))
+   if (strstr((char*)buf, "1"))
       *have_ac = true;
+
+   if (buf)
+      free(buf);
+   buf = NULL;
 }
 
 static bool next_string(char **_ptr, char **_str)
@@ -1190,55 +1220,56 @@ static bool frontend_linux_powerstate_check_apm(
       enum frontend_powerstate *state,
       int *seconds, int *percent)
 {
-   char buf[128], *ptr;
+   char *ptr;
    int ac_status       = 0;
    int battery_status  = 0;
    int battery_flag    = 0;
    int battery_percent = 0;
    int battery_time    = 0;
-   ssize_t buflen      = 0;
+   ssize_t length      = 0;
+   char  *buf          = NULL;
    char *str           = NULL;
    
-   if (!retro_fmemcpy(proc_apm_path, buf, sizeof(buf), &buflen))
-      return false;
+   if (retro_read_file(proc_apm_path, (void**)&buf, &length) != 1)
+      goto error;
 
    ptr                 = &buf[0];
 
    if (!next_string(&ptr, &str))     /* driver version */
-      return false;
+      goto error;
    if (!next_string(&ptr, &str))     /* BIOS version */
-      return false;
+      goto error;
    if (!next_string(&ptr, &str))     /* APM flags */
-      return false;
+      goto error;
 
    if (!next_string(&ptr, &str))     /* AC line status */
-      return false;
+      goto error;
    else if (!int_string(str, &ac_status))
-      return false;
+      goto error;
 
    if (!next_string(&ptr, &str))     /* battery status */
-      return false;
+      goto error;
    else if (!int_string(str, &battery_status))
-      return false;
+      goto error;
 
    if (!next_string(&ptr, &str))     /* battery flag */
-      return false;
+      goto error;
    else if (!int_string(str, &battery_flag))
-      return false;
+      goto error;
    if (!next_string(&ptr, &str))    /* remaining battery life percent */
-      return false;
+      goto error;
    if (str[strlen(str) - 1] == '%')
       str[strlen(str) - 1] = '\0';
    if (!int_string(str, &battery_percent))
-      return false;
+      goto error;
 
    if (!next_string(&ptr, &str))     /* remaining battery life time */
-      return false;
+      goto error;
    else if (!int_string(str, &battery_time))
-      return false;
+      goto error;
 
    if (!next_string(&ptr, &str))     /* remaining battery life time units */
-      return false;
+      goto error;
    else if (!strcmp(str, "min"))
       battery_time *= 60;
 
@@ -1258,7 +1289,18 @@ static bool frontend_linux_powerstate_check_apm(
    if (battery_time >= 0)            /* -1 == unknown */
       *seconds = battery_time;
 
+   if (buf)
+      free(buf);
+   buf = NULL;
+
    return true;
+
+error:
+   if (buf)
+      free(buf);
+   buf = NULL;
+
+   return false;
 }
 
 static bool frontend_linux_powerstate_check_acpi(
