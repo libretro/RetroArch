@@ -124,10 +124,11 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 
 #if defined(HAVE_BUFFERED_IO)
    if (!stream->fd)
+      goto error;
 #else
    if (stream->fd == -1)
+      goto error
 #endif
-      goto error;
 
    return stream;
 
