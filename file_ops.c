@@ -285,8 +285,9 @@ static int read_7zip_file(
             outsize = outSizeProcessed;
             if (optional_outfile != NULL)
             {
-               FILE* outsink = fopen(optional_outfile,"wb");
-               if (outsink == NULL)
+               RFILE *outsink = retro_fopen(optional_outfile, RFILE_MODE_WRITE, -1);
+
+               if (!outsink)
                {
                   RARCH_ERR("Could not open outfilepath %s.\n",
                         optional_outfile);
@@ -296,8 +297,8 @@ static int read_7zip_file(
                   File_Close(&archiveStream.file);
                   return -1;
                }
-               fwrite(outBuffer+offset,1,outsize,outsink);
-               fclose(outsink);
+               retro_fwrite(outsink, outBuffer + offset, outsize);
+               retro_fclose(outsink);
             }
             else
             {
@@ -560,7 +561,7 @@ static int read_zip_file(const char *archive_path,
          else
          {
             char read_buffer[RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX] = {0};
-            FILE* outsink = fopen(optional_outfile,"wb");
+            RFILE* outsink = retro_fopen(optional_outfile, RFILE_MODE_WRITE, -1);
 
             if (outsink == NULL)
                goto close;
@@ -573,18 +574,18 @@ static int read_zip_file(const char *archive_path,
 
                bytes_read = unzReadCurrentFile(zipfile, read_buffer,
                      RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX );
-               fwrite_bytes = fwrite(read_buffer, 1, bytes_read,outsink);
+
+               fwrite_bytes = retro_fwrite(outsink, read_buffer, bytes_read);
 
                if (fwrite_bytes == bytes_read)
                   continue;
 
-               /* couldn't write all bytes */
-               RARCH_ERR("Error writing to %s.\n",optional_outfile);
-               fclose(outsink);
+               RARCH_ERR("Error writing to %s.\n", optional_outfile);
+               retro_fclose(outsink);
                goto close;
             } while(bytes_read > 0);
 
-            fclose(outsink);
+            retro_fclose(outsink);
          }
          finished_reading = true;
       }
