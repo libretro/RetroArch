@@ -554,6 +554,9 @@ static int generic_action_ok(const char *path,
          break;
 
       case ACTION_OK_LOAD_CONFIG_FILE:
+         flush_char = NULL;
+         flush_type = MENU_SETTINGS;
+
          disp->msg_force = true;
 
          if (rarch_replace_config(action_path))
@@ -561,8 +564,6 @@ static int generic_action_ok(const char *path,
             menu_navigation_clear(nav, false);
             ret = -1;
          }
-         flush_char = NULL;
-         flush_type = MENU_SETTINGS;
          break;
 #ifdef HAVE_SHADER_MANAGER
       case ACTION_OK_LOAD_PRESET:
