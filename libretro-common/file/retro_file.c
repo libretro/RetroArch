@@ -97,7 +97,7 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 #elif defined(HAVE_BUFFERED_IO)
          mode_str = "wb";
 #else
-         flags    = O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR;
+         flags    = O_WRONLY | O_CREAT | O_TRUNC | S_IRUSR | S_IWUSR;
 #endif
          break;
       case RFILE_MODE_READ_WRITE:
@@ -128,7 +128,7 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
       goto error;
 #else
    if (stream->fd == -1)
-      goto error
+      goto error;
 #endif
 
    return stream;
