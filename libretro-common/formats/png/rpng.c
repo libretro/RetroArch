@@ -44,14 +44,6 @@ enum png_process_code
    PNG_PROCESS_END       =  1
 };
 
-enum image_process_code
-{
-   IMAGE_PROCESS_ERROR     = -2,
-   IMAGE_PROCESS_ERROR_END = -1,
-   IMAGE_PROCESS_NEXT      =  0,
-   IMAGE_PROCESS_END       =  1,
-};
-
 static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
 {
    unsigned i;
@@ -1009,9 +1001,9 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    do
    {
       retval = rpng_nbio_load_image_argb_process(rpng, data, width, height);
-   }while(retval == IMAGE_PROCESS_NEXT);
+   }while(retval == PNG_PROCESS_NEXT);
 
-   if (retval == IMAGE_PROCESS_ERROR || retval == IMAGE_PROCESS_ERROR_END)
+   if (retval == PNG_PROCESS_ERROR || retval == PNG_PROCESS_ERROR_END)
       ret = false;
 
 end:
