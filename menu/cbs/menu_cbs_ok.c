@@ -561,8 +561,9 @@ static int generic_action_ok(const char *path,
             menu_navigation_clear(nav, false);
             ret = -1;
          }
-         menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
-         return ret;
+         flush_char = NULL;
+         flush_type = MENU_SETTINGS;
+         break;
 #ifdef HAVE_SHADER_MANAGER
       case ACTION_OK_LOAD_PRESET:
          menu_shader_manager_set_preset(menu->shader,
