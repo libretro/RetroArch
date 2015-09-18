@@ -1339,8 +1339,7 @@ static bool frontend_linux_powerstate_check_acpi_sysfs(enum frontend_powerstate 
    if (!entry)
       goto error;
 
-   while (retro_readdir(entry))
-      check_proc_acpi_sysfs_ac_adapter(retro_dirent_get_name(entry), &have_ac);
+   check_proc_acpi_sysfs_ac_adapter(retro_dirent_get_name(entry), &have_ac);
 
    if (!have_battery)
    {
