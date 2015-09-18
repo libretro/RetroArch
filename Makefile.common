@@ -793,9 +793,7 @@ ifdef HAVE_RPNG
 endif
 
 ifeq ($(HAVE_RPNG), 1)
-   OBJ += libretro-common/formats/png/rpng_nbio.o \
-			 libretro-common/formats/png/rpng_fbio.o \
-			 libretro-common/formats/png/rpng_decode.o \
+   OBJ += libretro-common/formats/png/rpng.o \
 			 libretro-common/formats/png/rpng_encode.o
 endif
 

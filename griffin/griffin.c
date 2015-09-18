@@ -174,9 +174,7 @@ VIDEO IMAGE
 #endif
 
 #ifdef HAVE_RPNG
-#include "../libretro-common/formats/png/rpng_fbio.c"
-#include "../libretro-common/formats/png/rpng_nbio.c"
-#include "../libretro-common/formats/png/rpng_decode.c"
+#include "../libretro-common/formats/png/rpng.c"
 #include "../libretro-common/formats/png/rpng_encode.c"
 #endif
 
