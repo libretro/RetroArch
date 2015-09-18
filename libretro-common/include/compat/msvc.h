@@ -25,7 +25,7 @@
 
 #ifdef _MSC_VER
 
-// Pre-MSVC 2015 compilers don't implement snprintf in a cross-platform manner.
+/* Pre-MSVC 2015 compilers don't implement snprintf in a cross-platform manner. */
 #if _MSC_VER < 1900
 #ifndef snprintf
 #define snprintf _snprintf

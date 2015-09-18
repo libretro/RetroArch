@@ -99,13 +99,13 @@ static bool font_renderer_stb_create_atlas(stb_font_renderer_t *self,
       g->width          = c->x1 - c->x0;
       g->height         = c->y1 - c->y0;
 
-      /* make sure important characters fit */
+      /* Make sure important characters fit */
       if (isalnum(i) && (!g->width || !g->height))
       {
          int new_width  = width  * 1.2;
          int new_height = height * 1.2;
 
-         /* limit growth to 2048x2048 unless we already reached that */
+         /* Limit growth to 2048x2048 unless we already reached that */
          if (width < 2048 || height < 2048)
          {
             new_width  = min(new_width,  2048);
@@ -156,7 +156,7 @@ static void *font_renderer_stb_init(const char *font_path, float font_size)
       goto error;
 
    stbtt_GetFontVMetrics(&info, &ascent, &descent, &line_gap);
-   self->line_height  = ascent - descent;// + line_gap;
+   self->line_height  = ascent - descent;
 
    if (font_size < 0)
       self->line_height *= stbtt_ScaleForMappingEmToPixels(&info, -font_size);
