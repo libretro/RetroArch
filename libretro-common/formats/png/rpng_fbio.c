@@ -26,244 +26,90 @@
 #include <string.h>
 
 #include <boolean.h>
+#include <file/nbio.h>
+#include <formats/rpng.h>
 
 #include "rpng_internal.h"
 #include "rpng_decode.h"
 
-static bool read_chunk_header_fio(FILE **fd, struct png_chunk *chunk)
+enum image_process_code
 {
-   uint8_t dword[4] = {0};
-   FILE *file = *fd;
-
-   if (fread(dword, 1, 4, file) != 4)
-      return false;
-
-   chunk->size = dword_be(dword);
-
-   if (fread(chunk->type, 1, 4, file) != 4)
-      return false;
-
-   return true;
-}
-
-static bool png_read_chunk(FILE **fd, struct png_chunk *chunk)
-{
-   FILE *file = *fd;
-   free(chunk->data);
-   chunk->data = (uint8_t*)calloc(1, chunk->size + sizeof(uint32_t)); /* CRC32 */
-   if (!chunk->data)
-      return false;
-
-   if (fread(chunk->data, 1, chunk->size + 
-            sizeof(uint32_t), file) != (chunk->size + sizeof(uint32_t)))
-   {
-      free(chunk->data);
-      return false;
-   }
-
-   /* Ignore CRC. */
-   return true;
-}
-
-static void png_free_chunk(struct png_chunk *chunk)
-{
-   if (!chunk)
-      return;
-
-   free(chunk->data);
-   chunk->data = NULL;
-}
-
-static bool png_parse_ihdr_fio(FILE **fd,
-      struct png_chunk *chunk, struct png_ihdr *ihdr)
-{
-   if (!png_read_chunk(fd, chunk))
-      return false;
-
-   if (chunk->size != 13)
-      return false;
-
-   ihdr->width       = dword_be(chunk->data + 0);
-   ihdr->height      = dword_be(chunk->data + 4);
-   ihdr->depth       = chunk->data[8];
-   ihdr->color_type  = chunk->data[9];
-   ihdr->compression = chunk->data[10];
-   ihdr->filter      = chunk->data[11];
-   ihdr->interlace   = chunk->data[12];
-
-   if (ihdr->width == 0 || ihdr->height == 0)
-      return false;
-
-   return true;
-}
-
-static bool rpng_load_image_argb_iterate(FILE **fd, rpng_t *rpng)
-{
-   struct png_chunk chunk = {0};
-   FILE *file = *fd;
-
-   if (!read_chunk_header_fio(fd, &chunk))
-      return false;
-
-   switch (png_chunk_type(&chunk))
-   {
-      case PNG_CHUNK_NOOP:
-      default:
-         if (fseek(file, chunk.size + sizeof(uint32_t), SEEK_CUR) < 0)
-            return false;
-         break;
-
-      case PNG_CHUNK_ERROR:
-         return false;
-
-      case PNG_CHUNK_IHDR:
-         if (rpng_is_valid(rpng))
-            return false;
-
-         if (!png_parse_ihdr_fio(fd, &chunk, &rpng->ihdr))
-         {
-            png_free_chunk(&chunk);
-            return false;
-         }
-
-         if (!png_process_ihdr(&rpng->ihdr))
-         {
-            png_free_chunk(&chunk);
-            return false;
-         }
-
-         png_free_chunk(&chunk);
-         rpng->has_ihdr = true;
-         break;
-
-      case PNG_CHUNK_PLTE:
-         {
-            uint8_t buf[256 * 3];
-            unsigned entries = chunk.size / 3;
-
-            if (!rpng->has_ihdr || rpng->has_plte || rpng->has_iend || rpng->has_idat)
-               return false;
-
-            if (chunk.size % 3)
-               return false;
-
-            if (entries > 256)
-               return false;
-
-            if (fread(rpng->palette, 3, entries, *fd) != entries)
-               return false;
-
-            if (!png_read_plte(&buf[0], rpng->palette, entries))
-               return false;
-
-            if (fseek(*fd, sizeof(uint32_t), SEEK_CUR) < 0)
-               return false;
-
-            rpng->has_plte = true;
-         }
-         break;
-
-      case PNG_CHUNK_IDAT:
-         if (!rpng->has_ihdr || rpng->has_iend || (rpng->ihdr.color_type == PNG_IHDR_COLOR_PLT && !rpng->has_plte))
-            return false;
-
-         if (!png_realloc_idat(&chunk, &rpng->idat_buf))
-            return false;
-
-         if (fread(rpng->idat_buf.data + rpng->idat_buf.size, 1, chunk.size, file) != chunk.size)
-            return false;
-         if (fseek(file, sizeof(uint32_t), SEEK_CUR) < 0)
-            return false;
-
-         rpng->idat_buf.size += chunk.size;
-
-         rpng->has_idat = true;
-         break;
-
-      case PNG_CHUNK_IEND:
-         if (!rpng->has_ihdr || !rpng->has_idat)
-            return false;
-
-         if (fseek(file, sizeof(uint32_t), SEEK_CUR) < 0)
-            return false;
-
-         rpng->has_iend = true;
-         break;
-   }
-
-   return true;
-}
+   IMAGE_PROCESS_ERROR     = -2,
+   IMAGE_PROCESS_ERROR_END = -1,
+   IMAGE_PROCESS_NEXT      =  0,
+   IMAGE_PROCESS_END       =  1,
+};
 
 bool rpng_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height)
 {
-   long pos, file_len;
-   FILE *file;
-   char header[8]     = {0};
-   rpng_t rpng        = {{0}};
-   bool ret           = true;
-   int retval         = 0;
+   int retval;
+   size_t file_len;
+   bool ret = true;
+   rpng_t *rpng = NULL;
+   void *ptr = NULL;
+   struct nbio_t* handle = (void*)nbio_open(path, NBIO_READ);
 
-   *data   = NULL;
-   *width  = 0;
-   *height = 0;
+   if (!handle)
+      goto end;
 
-   file = fopen(path, "rb");
-   if (!file)
-      return false;
+   ptr  = nbio_get_ptr(handle, &file_len);
 
-   fseek(file, 0, SEEK_END);
-   file_len = ftell(file);
-   rewind(file);
+   nbio_begin_read(handle);
 
-   if (fread(header, 1, sizeof(header), file) != sizeof(header))
-      GOTO_END_ERROR();
+   while (!nbio_iterate(handle));
 
-   if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
-      GOTO_END_ERROR();
+   ptr = nbio_get_ptr(handle, &file_len);
 
-   /* feof() apparently isn't triggered after a seek (IEND). */
-   for (pos = ftell(file); 
-         pos < file_len && pos >= 0; pos = ftell(file))
+   if (!ptr)
    {
-      if (!rpng_load_image_argb_iterate(&file, &rpng))
-         GOTO_END_ERROR();
+      ret = false;
+      goto end;
    }
 
-   if (!rpng.has_ihdr || !rpng.has_idat || !rpng.has_iend)
-      GOTO_END_ERROR();
+   rpng = rpng_alloc();
 
-   if (!rpng_load_image_argb_process_init(&rpng, data, width,
-            height))
-      GOTO_END_ERROR();
+   if (!rpng)
+   {
+      ret = false;
+      goto end;
+   }
 
-   do{
-      retval = rpng_load_image_argb_process_inflate_init(&rpng, data,
-               width, height);
-   }while(retval == 0);
+   if (!rpng_set_buf_ptr(rpng, (uint8_t*)ptr))
+   {
+      ret = false;
+      goto end;
+   }
 
-   if (retval == -1)
-      GOTO_END_ERROR();
+   if (!rpng_nbio_load_image_argb_start(rpng))
+   {
+      ret = false;
+      goto end;
+   }
 
-   do{
-      retval = png_reverse_filter_iterate(&rpng, data);
-   }while(retval == PNG_PROCESS_NEXT);
+   while (rpng_nbio_load_image_argb_iterate(rpng));
 
-   if (retval == PNG_PROCESS_ERROR || retval == PNG_PROCESS_ERROR_END)
-      GOTO_END_ERROR();
+   if (!rpng_is_valid(rpng))
+   {
+      ret = false;
+      goto end;
+   }
+   
+   do
+   {
+      retval = rpng_nbio_load_image_argb_process(rpng, data, width, height);
+   }while(retval == IMAGE_PROCESS_NEXT);
+
+   if (retval == IMAGE_PROCESS_ERROR || retval == IMAGE_PROCESS_ERROR_END)
+      ret = false;
 
 end:
-   if (file)
-      fclose(file);
+   if (handle)
+      nbio_free(handle);
+   if (rpng)
+      rpng_nbio_load_image_free(rpng);
+   rpng = NULL;
    if (!ret)
       free(*data);
-   free(rpng.idat_buf.data);
-   free(rpng.process.inflate_buf);
-
-   if (rpng.process.stream)
-   {
-      zlib_stream_free(rpng.process.stream);
-      free(rpng.process.stream);
-   }
    return ret;
 }

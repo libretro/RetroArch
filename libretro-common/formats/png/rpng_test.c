@@ -20,8 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <formats/rpng.h>
-#include <file/nbio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -30,6 +28,9 @@
 #include <Imlib2.h>
 #endif
 
+#include <file/nbio.h>
+#include <formats/rpng.h>
+
 enum image_process_code
 {
    IMAGE_PROCESS_ERROR     = -2,
@@ -37,80 +38,6 @@ enum image_process_code
    IMAGE_PROCESS_NEXT      =  0,
    IMAGE_PROCESS_END       =  1,
 };
-
-static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
-      unsigned *width, unsigned *height)
-{
-   int retval;
-   size_t file_len;
-   bool ret = true;
-   rpng_t *rpng = NULL;
-   void *ptr = NULL;
-   struct nbio_t* handle = (void*)nbio_open(path, NBIO_READ);
-
-   if (!handle)
-      goto end;
-
-   ptr  = nbio_get_ptr(handle, &file_len);
-
-   nbio_begin_read(handle);
-
-   while (!nbio_iterate(handle));
-
-   ptr = nbio_get_ptr(handle, &file_len);
-
-   if (!ptr)
-   {
-      ret = false;
-      goto end;
-   }
-
-   rpng = rpng_alloc();
-
-   if (!rpng)
-   {
-      ret = false;
-      goto end;
-   }
-
-   if (!rpng_set_buf_ptr(rpng, (uint8_t*)ptr))
-   {
-      ret = false;
-      goto end;
-   }
-
-   if (!rpng_nbio_load_image_argb_start(rpng))
-   {
-      ret = false;
-      goto end;
-   }
-
-   while (rpng_nbio_load_image_argb_iterate(rpng));
-
-   if (!rpng_is_valid(rpng))
-   {
-      ret = false;
-      goto end;
-   }
-   
-   do
-   {
-      retval = rpng_nbio_load_image_argb_process(rpng, data, width, height);
-   }while(retval == IMAGE_PROCESS_NEXT);
-
-   if (retval == IMAGE_PROCESS_ERROR || retval == IMAGE_PROCESS_ERROR_END)
-      ret = false;
-
-end:
-   if (handle)
-      nbio_free(handle);
-   if (rpng)
-      rpng_nbio_load_image_free(rpng);
-   rpng = NULL;
-   if (!ret)
-      free(*data);
-   return ret;
-}
 
 static int test_nonblocking_rpng(const char *in_path)
 {
@@ -211,7 +138,6 @@ static int test_blocking_rpng(const char *in_path)
 
    if (!rpng_save_image_argb("/tmp/test.png", test_data, 4, 4, 16))
       return 1;
-
 
    if (!rpng_load_image_argb(in_path, &data, &width, &height))
       return 2;
