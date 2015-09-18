@@ -122,16 +122,39 @@ error:
 
 ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence)
 {
+   int ret = 0;
    if (!stream)
       return -1;
+
+   (void)ret;
 
 #if defined(VITA) || defined(PSP)
    return sceIoLseek(stream->fd, (SceOff)offset, whence);
 #elif defined(HAVE_BUFFERED_IO)
    return fseek(stream->fd, (long)offset, whence);
 #else
-   return lseek(stream->fd, offset, whence);
+   ret = lseek(stream->fd, offset, whence);
+   if (ret == -1)
+      return -1;
+   return 0;
 #endif
+}
+
+ssize_t retro_ftell(RFILE *stream)
+{
+   int ret = 0;
+   if (!stream)
+      return -1;
+#ifdef HAVE_BUFFERED_IO
+   return ftell(stream->fd);
+#else 
+   return lseek(stream->fd, 0, SEEK_CUR);
+#endif
+}
+
+void retro_frewind(RFILE *stream)
+{
+   retro_fseek(stream, 0L, SEEK_SET);
 }
 
 ssize_t retro_fread(RFILE *stream, void *s, size_t len)

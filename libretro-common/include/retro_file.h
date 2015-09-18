@@ -51,6 +51,10 @@ ssize_t retro_fread(RFILE *stream, void *s, size_t len);
 
 ssize_t retro_fwrite(RFILE *stream, const void *s, size_t len);
 
+ssize_t retro_ftell(RFILE *stream);
+
+void retro_frewind(RFILE *stream);
+
 void retro_fclose(RFILE *stream);
 
 bool retro_fmemcpy(const char *path, char *s, size_t len, ssize_t *bytes_written);

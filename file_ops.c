@@ -30,6 +30,7 @@
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
+#include <retro_file.h>
 #include <string/string_list.h>
 #ifdef HAVE_COMPRESSION
 #include <file/file_extract.h>
@@ -632,12 +633,13 @@ error:
 bool write_file(const char *path, const void *data, ssize_t size)
 {
    ssize_t ret   = 0;
-   FILE *file   = fopen(path, "wb");
+   RFILE *file   = retro_fopen(path, RFILE_MODE_WRITE, -1);
    if (!file)
       return false;
 
-   ret = fwrite(data, 1, size, file);
-   fclose(file);
+   ret = retro_fwrite(file, data, size);
+   retro_fclose(file);
+
    return (ret == size);
 }
 
@@ -653,29 +655,32 @@ bool write_file(const char *path, const void *data, ssize_t size)
  */
 static int read_generic_file(const char *path, void **buf, ssize_t *len)
 {
+   ssize_t ret;
    ssize_t bytes_read       = 0;
    ssize_t content_buf_size = 0;
    void *content_buf        = NULL;
-   FILE *file               = fopen(path, "rb");
+   RFILE *file              = retro_fopen(path, RFILE_MODE_READ, -1);
 
    if (!file)
       goto error;
 
-   if (fseek(file, 0, SEEK_END) != 0)
+   ret = retro_fseek(file, 0, SEEK_END);
+
+   if (ret != 0)
       goto error;
 
-   content_buf_size = ftell(file);
+   content_buf_size = retro_ftell(file);
    if (content_buf_size == -1)
       goto error;
 
-   rewind(file);
+   retro_frewind(file);
 
    content_buf = malloc(content_buf_size + 1);
 
    if (!content_buf)
       goto error;
 
-   if ((bytes_read = fread(content_buf, 1, content_buf_size, file)) < content_buf_size)
+   if ((bytes_read = retro_fread(file, content_buf, content_buf_size)) < content_buf_size)
       RARCH_WARN("Didn't read whole file.\n");
 
    *buf    = content_buf;
@@ -684,8 +689,7 @@ static int read_generic_file(const char *path, void **buf, ssize_t *len)
     * Will only work with sane character formatting (Unix). */
    ((char*)content_buf)[content_buf_size] = '\0';
 
-   if (fclose(file) != 0)
-      RARCH_WARN("Failed to close file stream.\n");
+   retro_fclose(file);
 
    if (len)
       *len = bytes_read;
@@ -693,8 +697,7 @@ static int read_generic_file(const char *path, void **buf, ssize_t *len)
    return 1;
 
 error:
-   if (file)
-      fclose(file);
+   retro_fclose(file);
    if (content_buf)
       free(content_buf);
    if (len)
