@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include <retro_log.h>
+#include <retro_file.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
 
@@ -51,7 +52,7 @@
 #else
 #define IMG_EXT "bmp"
 
-static bool write_header_bmp(FILE *file, unsigned width, unsigned height)
+static bool write_header_bmp(RFILE *file, unsigned width, unsigned height)
 {
    unsigned line_size  = (width * 3 + 3) & ~3;
    unsigned size       = line_size * height + 54;
@@ -80,16 +81,16 @@ static bool write_header_bmp(FILE *file, unsigned width, unsigned height)
       0, 0, 0, 0
    };
 
-   return fwrite(header, 1, sizeof(header), file) == sizeof(header);
+   return retro_fwrite(file, header, sizeof(header)) == sizeof(header);
 }
 
-static void dump_lines_file(FILE *file, uint8_t **lines,
+static void dump_lines_file(RFILE *file, uint8_t **lines,
       size_t line_size, unsigned height)
 {
    unsigned i;
 
    for (i = 0; i < height; i++)
-      fwrite(lines[i], 1, line_size, file);
+      retro_fwrite(file, lines[i], line_size);
 }
 
 static void dump_line_bgr(uint8_t *line, const uint8_t *src, unsigned width)
@@ -126,7 +127,7 @@ static void dump_line_32(uint8_t *line, const uint32_t *src, unsigned width)
    }
 }
 
-static void dump_content(FILE *file, const void *frame,
+static void dump_content(RFILE *file, const void *frame,
       int width, int height, int pitch, bool bgr24)
 {
    size_t line_size;
@@ -346,7 +347,7 @@ bool screenshot_dump(const char *folder, const void *frame,
    char filename[PATH_MAX_LENGTH] = {0};
    char shotname[PATH_MAX_LENGTH] = {0};
    struct scaler_ctx scaler       = {0};
-   FILE *file                     = NULL;
+   RFILE *file                    = NULL;
    uint8_t *out_buffer            = NULL;
    bool ret                       = false;
    driver_t *driver               = driver_get_ptr();
@@ -409,7 +410,7 @@ bool screenshot_dump(const char *folder, const void *frame,
       RARCH_ERR("Failed to take screenshot.\n");
    free(out_buffer);
 #else
-   file = fopen(filename, "wb");
+   file = retro_fopen(filename, RFILE_MODE_WRITE, -1);
    if (!file)
    {
       RARCH_ERR("Failed to open file \"%s\" for screenshot.\n", filename);
@@ -423,7 +424,7 @@ bool screenshot_dump(const char *folder, const void *frame,
    else
       RARCH_ERR("Failed to write image header.\n");
 
-   fclose(file);
+   retro_fclose(file);
 #endif
 
    return ret;
