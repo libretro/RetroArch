@@ -41,6 +41,7 @@
 #include <windows.h>
 #endif
 #elif defined(VITA)
+#define SCE_ERROR_ERRNO_EEXIST 0x80010011
 #include <psp2/io/fcntl.h>
 #include <psp2/io/dirent.h>
 #include <psp2/io/stat.h>
@@ -566,8 +567,13 @@ static bool path_mkdir_norecurse(const char *dir)
    ret = mkdir(dir, 0750);
 #endif
    /* Don't treat this as an error. */
+#if defined(VITA)
+   if ((ret == SCE_ERROR_ERRNO_EEXIST) && path_is_directory(dir))
+      ret = 0;
+#else 
    if (ret < 0 && errno == EEXIST && path_is_directory(dir))
       ret = 0;
+#endif
    if (ret < 0)
       printf("mkdir(%s) error: %s.\n", dir, strerror(errno));
    return ret == 0;

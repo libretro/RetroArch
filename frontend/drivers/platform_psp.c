@@ -110,9 +110,9 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "playlists", sizeof(g_defaults.dir.playlist));
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
          "retroarch.cfg", sizeof(g_defaults.path.config));
-   fill_pathname_join(g_defaults.dir.cheats, g_defaults.dir.cheats,
+   fill_pathname_join(g_defaults.dir.cheats, g_defaults.dir.port,
          "cheats", sizeof(g_defaults.dir.cheats));
-   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.remap,
+   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
          "remaps", sizeof(g_defaults.dir.remap));
 
 #ifdef VITA
