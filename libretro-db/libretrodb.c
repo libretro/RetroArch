@@ -1,5 +1,5 @@
-#include "libretrodb.h"
 
+#include <stdio.h>
 #include <sys/types.h>
 #ifdef _WIN32
 #include <direct.h>
@@ -11,10 +11,10 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 
-#include <stdio.h>
-
 #include <retro_file.h>
+#include <compat/strl.h>
 
+#include "libretrodb.h"
 #include "rmsgpack_dom.h"
 #include "rmsgpack.h"
 #include "bintree.h"
@@ -196,7 +196,7 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    if (!fd)
       return -errno;
 
-   strcpy(db->path, path);
+   strlcpy(db->path, path, sizeof(db->path));
    db->root = retro_fseek(fd, 0, SEEK_CUR);
 
    if ((rv = retro_fread(fd, &header, sizeof(header))) == -1)
