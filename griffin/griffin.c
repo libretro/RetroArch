@@ -178,6 +178,8 @@ VIDEO IMAGE
 #include "../libretro-common/formats/png/rpng_encode.c"
 #endif
 
+#include "../libretro-common/formats/bmp/rbmp_encode.c"
+
 /*============================================================
 VIDEO DRIVER
 ============================================================ */

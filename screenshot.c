@@ -34,6 +34,7 @@
 #if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
 #include <formats/rpng.h>
 #endif
+#include <formats/rbmp.h>
 
 #include "general.h"
 #include "msg_hash.h"
@@ -51,131 +52,6 @@
 #define IMG_EXT "png"
 #else
 #define IMG_EXT "bmp"
-
-static bool write_header_bmp(RFILE *file, unsigned width, unsigned height)
-{
-   unsigned line_size  = (width * 3 + 3) & ~3;
-   unsigned size       = line_size * height + 54;
-   unsigned size_array = line_size * height;
-
-   /* Generic BMP stuff. */
-   const uint8_t header[] = {
-      'B', 'M',
-      (uint8_t)(size >> 0), (uint8_t)(size >> 8),
-      (uint8_t)(size >> 16), (uint8_t)(size >> 24),
-      0, 0, 0, 0,
-      54, 0, 0, 0,
-      40, 0, 0, 0,
-      (uint8_t)(width >> 0), (uint8_t)(width >> 8),
-      (uint8_t)(width >> 16), (uint8_t)(width >> 24),
-      (uint8_t)(height >> 0), (uint8_t)(height >> 8),
-      (uint8_t)(height >> 16), (uint8_t)(height >> 24),
-      1, 0,
-      24, 0,
-      0, 0, 0, 0,
-      (uint8_t)(size_array >> 0), (uint8_t)(size_array >> 8),
-      (uint8_t)(size_array >> 16), (uint8_t)(size_array >> 24),
-      19, 11, 0, 0,
-      19, 11, 0, 0,
-      0, 0, 0, 0,
-      0, 0, 0, 0
-   };
-
-   return retro_fwrite(file, header, sizeof(header)) == sizeof(header);
-}
-
-static void dump_lines_file(RFILE *file, uint8_t **lines,
-      size_t line_size, unsigned height)
-{
-   unsigned i;
-
-   for (i = 0; i < height; i++)
-      retro_fwrite(file, lines[i], line_size);
-}
-
-static void dump_line_bgr(uint8_t *line, const uint8_t *src, unsigned width)
-{
-   memcpy(line, src, width * 3);
-}
-
-static void dump_line_16(uint8_t *line, const uint16_t *src, unsigned width)
-{
-   unsigned i;
-
-   for (i = 0; i < width; i++)
-   {
-      uint16_t pixel = *src++;
-      uint8_t b = (pixel >>  0) & 0x1f;
-      uint8_t g = (pixel >>  5) & 0x3f;
-      uint8_t r = (pixel >> 11) & 0x1f;
-      *line++   = (b << 3) | (b >> 2);
-      *line++   = (g << 2) | (g >> 4);
-      *line++   = (r << 3) | (r >> 2);
-   }
-}
-
-static void dump_line_32(uint8_t *line, const uint32_t *src, unsigned width)
-{
-   unsigned i;
-
-   for (i = 0; i < width; i++)
-   {
-      uint32_t pixel = *src++;
-      *line++ = (pixel >>  0) & 0xff;
-      *line++ = (pixel >>  8) & 0xff;
-      *line++ = (pixel >> 16) & 0xff;
-   }
-}
-
-static void dump_content(RFILE *file, const void *frame,
-      int width, int height, int pitch, bool bgr24)
-{
-   size_t line_size;
-   int i, j;
-   union
-   {
-      const uint8_t *u8;
-      const uint16_t *u16;
-      const uint32_t *u32;
-   } u;
-   uint8_t **lines = (uint8_t**)calloc(height, sizeof(uint8_t*));
-
-   if (!lines)
-      return;
-
-   u.u8      = (const uint8_t*)frame;
-   line_size = (width * 3 + 3) & ~3;
-
-   for (i = 0; i < height; i++)
-   {
-      lines[i] = (uint8_t*)calloc(1, line_size);
-      if (!lines[i])
-         goto end;
-   }
-
-   if (bgr24) /* BGR24 byte order. Can directly copy. */
-   {
-      for (j = 0; j < height; j++, u.u8 += pitch)
-         dump_line_bgr(lines[j], u.u8, width);
-   }
-   else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
-   {
-      for (j = 0; j < height; j++, u.u8 += pitch)
-         dump_line_32(lines[j], u.u32, width);
-   }
-   else /* RGB565 */
-   {
-      for (j = 0; j < height; j++, u.u8 += pitch)
-         dump_line_16(lines[j], u.u16, width);
-   }
-
-   dump_lines_file(file, lines, line_size, height);
-
-end:
-   for (i = 0; i < height; i++)
-      free(lines[i]);
-   free(lines);
-}
 #endif
 
 static bool take_screenshot_viewport(void)
@@ -370,13 +246,9 @@ bool screenshot_dump(const char *folder, const void *frame,
    surf->Release();
 
    if(ret == S_OK)
-   {
-      RARCH_LOG("Screenshot saved: %s.\n", filename);
-      rarch_main_msg_queue_push("Screenshot saved.", 1, 30, false);
-      return true;
-   }
-
-   ret = false;
+      ret = true;
+   else
+      ret = false;
 #elif defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
    out_buffer = (uint8_t*)malloc(width * height * 3);
    if (!out_buffer)
@@ -406,27 +278,13 @@ bool screenshot_dump(const char *folder, const void *frame,
    RARCH_LOG("Using RPNG for PNG screenshots.\n");
    ret = rpng_save_image_bgr24(filename,
          out_buffer, width, height, width * 3);
-   if (!ret)
-      RARCH_ERR("Failed to take screenshot.\n");
    free(out_buffer);
 #else
-   file = retro_fopen(filename, RFILE_MODE_WRITE, -1);
-   if (!file)
-   {
-      RARCH_ERR("Failed to open file \"%s\" for screenshot.\n", filename);
-      return false;
-   }
-
-   ret = write_header_bmp(file, width, height);
-
-   if (ret)
-      dump_content(file, frame, width, height, pitch, bgr24);
-   else
-      RARCH_ERR("Failed to write image header.\n");
-
-   retro_fclose(file);
+   ret = rbmp_save_image(filename, frame, width, height, pitch, bgr24,
+        (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888) );
 #endif
+   if (!ret)
+      RARCH_ERR("Failed to take screenshot.\n");
 
    return ret;
 }
-
