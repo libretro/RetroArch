@@ -247,14 +247,13 @@ static int read_7zip_file(
          size_t outSizeProcessed = 0;
          const CSzFileItem    *f = db.db.Files + i;
 
+         /* We skip over everything which is not a directory. 
+          * FIXME: Why continue then if f->IsDir is true?*/
          if (f->IsDir)
-         {
-            /* We skip over everything which is not a directory. 
-             * FIXME: Why continue then if f->IsDir is true?*/
             continue;
-         }
 
          len = SzArEx_GetFileNameUtf16(&db, i, NULL);
+
          if (len > tempSize)
          {
             free(temp);
@@ -266,6 +265,7 @@ static int read_7zip_file(
                break;
             }
          }
+
          SzArEx_GetFileNameUtf16(&db, i, temp);
          res = ConvertUtf16toCharString(temp,infile);
 
@@ -278,11 +278,12 @@ static int read_7zip_file(
             res = SzArEx_Extract(&db, &lookStream.s, i,&blockIndex,
                   &outBuffer, &outBufferSize,&offset, &outSizeProcessed,
                   &allocImp, &allocTempImp);
+
             if (res != SZ_OK)
-            {
                break; /* This goes to the error section. */
-            }
+
             outsize = outSizeProcessed;
+            
             if (optional_outfile != NULL)
             {
                const void *ptr = (const void*)(outBuffer + offset);
