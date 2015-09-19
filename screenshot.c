@@ -33,8 +33,11 @@
 
 #if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
 #include <formats/rpng.h>
-#endif
+#define IMG_EXT "png"
+#else
 #include <formats/rbmp.h>
+#define IMG_EXT "bmp"
+#endif
 
 #include "general.h"
 #include "msg_hash.h"
@@ -46,12 +49,6 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
-
-#if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
-#define IMG_EXT "png"
-#else
-#define IMG_EXT "bmp"
 #endif
 
 static bool take_screenshot_viewport(void)
