@@ -342,7 +342,7 @@ static void linux_cpu_init(void)
     * $KERNEL/arch/arm/kernel/setup.c and the 'c_show' function in
     * same file.
     */
-   char* cpu_arch = extract_cpuinfo_field(cpuinfo, cpuinfo_len, "CPU architecture");
+   char* cpu_arch = extract_cpuinfo_field(buf, length, "CPU architecture");
 
    if (cpu_arch)
    {
@@ -372,7 +372,7 @@ static void linux_cpu_init(void)
        */
       if (has_armv7)
       {
-         char *cpu_proc = extract_cpuinfo_field(cpuinfo, cpuinfo_len,
+         char *cpu_proc = extract_cpuinfo_field(buf, length,
                "Processor");
 
          if (cpu_proc != NULL)
@@ -398,7 +398,7 @@ static void linux_cpu_init(void)
    }
 
    /* Extract the list of CPU features from 'Features' field */
-   char* cpu_features = extract_cpuinfo_field(cpuinfo, cpuinfo_len, "Features");
+   char* cpu_features = extract_cpuinfo_field(buf, length, "Features");
 
    if (cpu_features)
    {
