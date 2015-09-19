@@ -363,12 +363,12 @@ static int rsnd_send_header_info(rsound_t *rd)
 #define LSB16(x) if ( !rsnd_is_little_endian() ) { rsnd_swap_endian_16(&(x)); }
 #define LSB32(x) if ( !rsnd_is_little_endian() ) { rsnd_swap_endian_32(&(x)); }
 
-   // Here we embed in the rest of the WAV header for it to be somewhat valid
+   /* Here we embed in the rest of the WAV header for it to be somewhat valid */
 
-   strcpy(header, "RIFF");
+   strlcpy(header, "RIFF", sizeof(header));
    SET32(header, 4, 0);
-   strcpy(header+8, "WAVE");
-   strcpy(header+12, "fmt ");
+   strlcpy(header+8, "WAVE", sizeof(header));
+   strlcpy(header+12, "fmt ", sizeof(header));
 
    temp32 = 16;
    LSB32(temp32);
@@ -414,15 +414,15 @@ static int rsnd_send_header_info(rsound_t *rd)
    LSB16(temp_bits);
    SET16(header, FRAMESIZE, temp_bits);
 
-   strcpy(header+36, "data");
+   strlcpy(header+36, "data", sizeof(header));
 
-   // Do not care about cksize here (impossible to know beforehand). It is used by
-   // the server for format.
+   /* Do not care about cksize here (impossible to know beforehand).
+    * It is used by the server for format. */
 
    LSB16(temp_format);
    SET16(header, FORMAT, temp_format);
 
-   // End static header
+   /* End static header */
 
    if ( rsnd_send_chunk(rd->conn.socket, header, HEADER_SIZE, 1) != HEADER_SIZE )
    {
