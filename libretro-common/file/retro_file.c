@@ -89,7 +89,11 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
       case RFILE_MODE_READ:
 #if defined(VITA) || defined(PSP)
          mode_int = 0777;
+#if defined(VITA)
+         flags    = PSP2_O_RDONLY;
+#else
          flags = O_RDONLY;
+#endif
 #elif defined(HAVE_BUFFERED_IO)
          mode_str = "rb";
 #else
@@ -99,7 +103,11 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
       case RFILE_MODE_WRITE:
 #if defined(VITA) || defined(PSP)
          mode_int = 0777;
+#if defined(VITA)
+         flags    = PSP2_O_CREAT | PSP2_O_WRONLY | PSP2_O_TRUNC;
+#else
          flags    = O_WRONLY | O_CREAT;
+#endif
 #elif defined(HAVE_BUFFERED_IO)
          mode_str = "wb";
 #else
@@ -109,7 +117,11 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
       case RFILE_MODE_READ_WRITE:
 #if defined(VITA) || defined(PSP)
          mode_int = 0777;
+#if defined(VITA)
+         flags    = PSP2_O_RDWR;
+#else
          flags    = O_RDWR;
+#endif
 #elif defined(HAVE_BUFFERED_IO)
          mode_str = "w+";
 #else
