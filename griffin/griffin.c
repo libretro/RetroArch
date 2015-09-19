@@ -167,7 +167,7 @@ VIDEO IMAGE
 #include "../gfx/image/image.c"
 #include "../gfx/video_texture.c"
 
-#include "../libretro-common/formats/tga/tga.c"
+#include "../libretro-common/formats/tga/rtga.c"
 
 #ifdef HAVE_IMAGEVIEWER
 #include "../cores/image_core.c"
