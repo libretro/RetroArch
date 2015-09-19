@@ -34,24 +34,39 @@ static bool write_header_bmp(RFILE *file, unsigned width, unsigned height)
 
    /* Generic BMP stuff. */
    const uint8_t header[] = {
+      /* signature */
       'B', 'M',
+      /* file size */
       (uint8_t)(size >> 0), (uint8_t)(size >> 8),
       (uint8_t)(size >> 16), (uint8_t)(size >> 24),
+      /* reserved */
       0, 0, 0, 0,
+      /* offset */
       54, 0, 0, 0,
+      /* DIB size */
       40, 0, 0, 0,
+      /* width */
       (uint8_t)(width >> 0), (uint8_t)(width >> 8),
       (uint8_t)(width >> 16), (uint8_t)(width >> 24),
+      /* height */
       (uint8_t)(height >> 0), (uint8_t)(height >> 8),
       (uint8_t)(height >> 16), (uint8_t)(height >> 24),
+      /* color planes */
       1, 0,
+      /* bits per pixel */
       24, 0,
+      /* compression method */
       0, 0, 0, 0,
+      /* image data size */
       (uint8_t)(size_array >> 0), (uint8_t)(size_array >> 8),
       (uint8_t)(size_array >> 16), (uint8_t)(size_array >> 24),
+      /* horizontal resolution */
       19, 11, 0, 0,
+      /* vertical resolution */
       19, 11, 0, 0,
+      /* palette size */
       0, 0, 0, 0,
+      /* important color count */
       0, 0, 0, 0
    };
 
