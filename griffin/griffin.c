@@ -176,9 +176,8 @@ VIDEO IMAGE
 #ifdef HAVE_RPNG
 #include "../libretro-common/formats/png/rpng.c"
 #include "../libretro-common/formats/png/rpng_encode.c"
-#else
-#include "../libretro-common/formats/bmp/rbmp_encode.c"
 #endif
+#include "../libretro-common/formats/bmp/rbmp_encode.c"
 
 /*============================================================
 VIDEO DRIVER

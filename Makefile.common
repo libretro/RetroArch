@@ -794,10 +794,9 @@ endif
 ifeq ($(HAVE_RPNG), 1)
    OBJ += libretro-common/formats/png/rpng.o \
 			 libretro-common/formats/png/rpng_encode.o
-else
-	OBJ += libretro-common/formats/bmp/rbmp_encode.o
 endif
-OBJ += libretro-common/formats/tga/tga_decode.o
+OBJ += libretro-common/formats/bmp/rbmp_encode.o \
+		 libretro-common/formats/tga/tga_decode.o
 
 ifdef HAVE_COMPRESSION
    DEFINES += -DHAVE_COMPRESSION

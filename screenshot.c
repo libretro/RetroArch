@@ -31,11 +31,12 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 
+#include <formats/rbmp.h>
+
 #if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
 #include <formats/rpng.h>
 #define IMG_EXT "png"
 #else
-#include <formats/rbmp.h>
 #define IMG_EXT "bmp"
 #endif
 
