@@ -689,7 +689,7 @@ static int png_reverse_filter_iterate(rpng_t *rpng, uint32_t **data)
    return png_reverse_filter_regular_iterate(data, &rpng->ihdr, &rpng->process);
 }
 
-int rpng_load_image_argb_process_inflate_init(rpng_t *rpng,
+static int rpng_load_image_argb_process_inflate_init(rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height)
 {
    int zstatus;

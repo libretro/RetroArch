@@ -68,7 +68,4 @@ static INLINE int paeth(int a, int b, int c)
    return c;
 }
 
-int rpng_load_image_argb_process_inflate_init(rpng_t *rpng,
-      uint32_t **data, unsigned *width, unsigned *height);
-
 #endif
