@@ -202,11 +202,29 @@ void wait_for_input(void)
          break;
 
       if (kDown & KEY_SELECT)
-         select_pressed = true;
+         exit(0);
+//         select_pressed = true;
 
       rarch_sleep(1);
    }
 }
+
+int usleep (useconds_t us)
+{
+   svcSleepThread((int64_t)us * 1000);
+}
+
+long sysconf(int name)
+{
+   switch(name)
+   {
+   case _SC_NPROCESSORS_ONLN:
+      return 2;
+   }
+
+   return -1;
+}
+
 
 enum frontend_architecture frontend_ctr_get_architecture(void)
 {

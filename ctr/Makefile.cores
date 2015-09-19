@@ -134,10 +134,20 @@ else ifeq ($(LIBRETRO), snes9x_next)
 else ifeq ($(LIBRETRO), mgba)
 	APP_TITLE         = mGBA Libretro
 	#APP_DESCRIPTION   = Retroarch 3DS
-	APP_AUTHOR        = Jeffrey Pfau, Team Libretro
+	APP_AUTHOR        = Jeffrey Pfau
 	APP_PRODUCT_CODE  = RARCH-MGBA
 	APP_UNIQUE_ID     = 0xBAC0E
 	APP_ICON          = ctr/mgba.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), quicknes)
+	APP_TITLE         = QuickNES Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	APP_AUTHOR        = blargg, kode54
+	APP_PRODUCT_CODE  = RARCH-QUICKNES
+	APP_UNIQUE_ID     = 0xBAC0F
+	APP_ICON          = ctr/quicknes.png
 	#APP_BANNER        = ctr/libretro_banner.png
 	#APP_AUDIO         = ctr/silent.wav
 
