@@ -175,7 +175,7 @@ struct http_connection_t *net_http_connection_new(const char *url)
    if (!conn->urlcopy)
       goto error;
 
-   strcpy(conn->urlcopy, url);
+   strlcpy(conn->urlcopy, url, sizeof(conn->urlcopy));
 
    if (strncmp(url, "http://", strlen("http://")) != 0)
       goto error;
