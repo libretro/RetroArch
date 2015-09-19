@@ -201,17 +201,19 @@ static int read_7zip_file(
    SRes res;
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
-   uint16_t *temp  = NULL;
-   size_t tempSize = 0;
-   long outsize    = -1;
-   bool file_found = false;
+   uint8_t *outBuffer   = 0;
+   size_t outBufferSize = 0;
+   uint16_t *temp       = NULL;
+   size_t tempSize      = 0;
+   long outsize         = -1;
+   bool file_found      = false;
 
    /*These are the allocation routines.
     * Currently using the non-standard 7zip choices. */
-   allocImp.Alloc     = SzAlloc;
-   allocImp.Free      = SzFree;
-   allocTempImp.Alloc = SzAllocTemp;
-   allocTempImp.Free  = SzFreeTemp;
+   allocImp.Alloc       = SzAlloc;
+   allocImp.Free        = SzFree;
+   allocTempImp.Alloc   = SzAllocTemp;
+   allocTempImp.Free    = SzFreeTemp;
 
    if (InFile_Open(&archiveStream.file, archive_path))
    {
@@ -236,8 +238,6 @@ static int read_7zip_file(
    {
       uint32_t i;
       uint32_t blockIndex  = 0xFFFFFFFF;
-      uint8_t *outBuffer   = 0;
-      size_t outBufferSize = 0;
 
       for (i = 0; i < db.db.NumFiles; i++)
       {
@@ -285,20 +285,17 @@ static int read_7zip_file(
             outsize = outSizeProcessed;
             if (optional_outfile != NULL)
             {
-               RFILE *outsink = retro_fopen(optional_outfile, RFILE_MODE_WRITE, -1);
+               const void *ptr = (const void*)(outBuffer + offset);
 
-               if (!outsink)
+               if (!retro_write_file(optional_outfile, ptr, outsize))
                {
                   RARCH_ERR("Could not open outfilepath %s.\n",
                         optional_outfile);
-                  IAlloc_Free(&allocImp, outBuffer);
-                  SzArEx_Free(&db, &allocImp);
-                  free(temp);
-                  File_Close(&archiveStream.file);
-                  return -1;
+                  res        = SZ_OK;
+                  file_found = true;
+                  outsize    = -1;
+                  break;
                }
-               retro_fwrite(outsink, outBuffer + offset, outsize);
-               retro_fclose(outsink);
             }
             else
             {
@@ -311,14 +308,14 @@ static int read_7zip_file(
                ((char*)(*buf))[outsize] = '\0';
                memcpy(*buf,outBuffer+offset,outsize);
             }
-            IAlloc_Free(&allocImp, outBuffer);
             break;
          }
       }
    }
+
+   IAlloc_Free(&allocImp, outBuffer);
    SzArEx_Free(&db, &allocImp);
    free(temp);
-
    File_Close(&archiveStream.file);
 
    if (res == SZ_OK && file_found == true)
@@ -563,21 +560,17 @@ static int read_zip_file(const char *archive_path,
             char read_buffer[RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX] = {0};
             RFILE* outsink = retro_fopen(optional_outfile, RFILE_MODE_WRITE, -1);
 
-            if (outsink == NULL)
+            if (!outsink)
                goto close;
 
             bytes_read = 0;
 
             do
             {
-               ssize_t fwrite_bytes;
-
                bytes_read = unzReadCurrentFile(zipfile, read_buffer,
                      RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX );
 
-               fwrite_bytes = retro_fwrite(outsink, read_buffer, bytes_read);
-
-               if (fwrite_bytes == bytes_read)
+               if (retro_fwrite(outsink, read_buffer, bytes_read) == bytes_read)
                   continue;
 
                RARCH_ERR("Error writing to %s.\n", optional_outfile);
