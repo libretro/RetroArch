@@ -95,7 +95,7 @@ static bool png_write_ihdr(RFILE *file, const struct png_ihdr *ihdr)
 
 static bool png_write_idat(RFILE *file, const uint8_t *data, size_t size)
 {
-   if (retro_fwrite(file, data, size) != size)
+   if (retro_fwrite(file, data, size) != (ssize_t)size)
       return false;
 
    if (!png_write_crc(file, data + sizeof(uint32_t), size - sizeof(uint32_t)))
