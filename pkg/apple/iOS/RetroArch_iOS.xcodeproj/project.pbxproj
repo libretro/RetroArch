@@ -485,9 +485,9 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
-					../,
-					"../../libretro-common/include",
 					../../,
+					"../../../libretro-common/include",
+					../../../,
 				);
 				INFOPLIST_FILE = "RetroArch copy-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
@@ -551,9 +551,9 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
-					../,
-					"../../libretro-common/include",
 					../../,
+					"../../../libretro-common/include",
+					../../../,
 				);
 				INFOPLIST_FILE = "RetroArch copy-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
@@ -785,9 +785,9 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
-					../,
-					"../../libretro-common/include",
 					../../,
+					"../../../libretro-common/include",
+					../../../,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/RetroArch-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
@@ -853,9 +853,9 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
-					../,
-					"../../libretro-common/include",
 					../../,
+					"../../../libretro-common/include",
+					../../../,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/RetroArch-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
