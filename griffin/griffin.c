@@ -27,7 +27,7 @@
 #endif
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
-#include "../logger/netlogger.c"
+#include "../netlogger.c"
 #endif
 
 /*============================================================
