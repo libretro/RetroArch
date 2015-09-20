@@ -186,9 +186,9 @@ You will need Microsoft Visual Studio 2010 installed (or higher) in order to com
 
 The solution file can be found at the following location:
 
-<tt>msvc-360/RetroArch-360.sln</tt>
+<tt>pkg/msvc-360/RetroArch-360.sln</tt>
 
-NOTE: A pre-existing libretro library needs to be present in the `msvc-360/RetroArch-360/Release` directory in order to link RetroArch 360. This file needs to be
+NOTE: A pre-existing libretro library needs to be present in the `pkg/msvc-360/RetroArch-360/Release` directory in order to link RetroArch 360. This file needs to be
 called <em><b>`libretro_xdk360.lib`</b></em>.
 
 <b> Xbox 360 (Libxenon)</b><br />
