@@ -2,7 +2,7 @@
 # $ source /usr/local/angstrom/arm/environment-setup
 # $ setprj retroarch
 
-PNDDIR=./pandora
+PNDDIR=./pkg/pandora
 BINDIR=$(PNDDIR)/bin
 
 all: $(BINDIR)/retroarch
