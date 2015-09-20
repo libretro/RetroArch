@@ -18,6 +18,11 @@ APP_AUDIO         = ctr/silent.wav
 APP_CIA_RSF       = ctr/tools/template-cia.rsf
 APP_3DS_RSF       = ctr/tools/template-3ds.rsf
 
+CTR_STACK_SIZE   = 0x100000
+CTR_HEAP_SIZE    = 0x3000000
+CTR_PROG_MEMSIZE = 0x800000
+
+
 include ctr/Makefile.cores
 
 
@@ -265,6 +270,19 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_START := -Wl,--whole-archive
    WHOLE_END := -Wl,--no-whole-archive
 endif
+
+ifneq ($(CTR_STACK_SIZE),)
+   CFLAGS += -DCTR_STACK_SIZE=$(CTR_STACK_SIZE)
+endif
+
+ifneq ($(CTR_HEAP_SIZE),)
+   CFLAGS += -DCTR_HEAP_SIZE=$(CTR_HEAP_SIZE)
+endif
+
+ifneq ($(CTR_PROG_MEMSIZE),)
+   CFLAGS += -DCTR_PROG_MEMSIZE=$(CTR_PROG_MEMSIZE)
+endif
+
 
 CFLAGS += -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include
 
