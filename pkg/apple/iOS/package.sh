@@ -23,7 +23,7 @@ SCRIPT=$(read_link "$0")
 echo "Script: $SCRIPT"
 APP_BUNDLE_NAME=RetroArch.app
 BASE_DIR=$(dirname "$SCRIPT")
-RETROARCH_DIR=${BASE_DIR}/../..
+RETROARCH_DIR=${BASE_DIR}/../../..
 IOSDIR=${BASE_DIR}/iOS
 APP_BUNDLE_DIR=${BASE_DIR}/obj/${APP_BUNDLE_NAME}
 APP_BUNDLE_DIR_MEDIA=${APP_BUNDLE_DIR}/Media.xcassets

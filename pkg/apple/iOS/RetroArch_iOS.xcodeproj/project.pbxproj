@@ -73,31 +73,31 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = "<group>"; };
-		501232CB192E5FDC0063A359 /* sinc_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_neon.S; path = ../../audio/drivers_resampler/sinc_neon.S; sourceTree = SOURCE_ROOT; };
-		501232CD192E5FE30063A359 /* audio_utils_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = audio_utils_neon.S; path = ../../audio/audio_utils_neon.S; sourceTree = SOURCE_ROOT; };
+		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../../griffin/griffin.c; sourceTree = "<group>"; };
+		501232CB192E5FDC0063A359 /* sinc_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_neon.S; path = ../../../audio/drivers_resampler/sinc_neon.S; sourceTree = SOURCE_ROOT; };
+		501232CD192E5FE30063A359 /* audio_utils_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = audio_utils_neon.S; path = ../../../audio/audio_utils_neon.S; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
 		503700AD1ACA18E400A51A37 /* RetroArch copy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RetroArch copy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		503700AE1ACA18E400A51A37 /* RetroArch copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch copy-Info.plist"; path = "/Users/squarepusher/libretro-super/retroarch/apple/iOS/RetroArch copy-Info.plist"; sourceTree = "<absolute>"; };
 		5040F04F1AE47ED4006F6972 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
-		50521A431AA23BF500185CC9 /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../griffin/griffin_objc.m; sourceTree = "<group>"; };
+		50521A431AA23BF500185CC9 /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../../griffin/griffin_objc.m; sourceTree = "<group>"; };
 		50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
-		50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; name = cc_resampler_neon.S; path = ../../audio/drivers_resampler/cc_resampler_neon.S; sourceTree = "<group>"; };
+		50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; name = cc_resampler_neon.S; path = ../../../audio/drivers_resampler/cc_resampler_neon.S; sourceTree = "<group>"; };
 		50E7189E184B88AA001956CE /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		696012F119F3389A006A1088 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
 		69D31DE31A547EC800EF4C92 /* Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Media.xcassets; sourceTree = "<group>"; };
 		83D632DB19ECFCC4009E3161 /* ic_pause.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ic_pause.png; sourceTree = "<group>"; };
 		83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = PauseIndicatorView.xib; sourceTree = "<group>"; };
 		83EB675F19EEAF050096F441 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = SOURCE_ROOT; };
-		84F9A9BB1A87E068003AF12F /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = assets; path = ../../../media/assets; sourceTree = "<group>"; };
-		84F9A9BD1A87E0A2003AF12F /* autoconfig */ = {isa = PBXFileReference; lastKnownFileType = folder; name = autoconfig; path = ../../../media/autoconfig; sourceTree = "<group>"; };
-		84F9A9BF1A87E0C6003AF12F /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../../../media/overlays; sourceTree = "<group>"; };
-		84F9A9C11A87E180003AF12F /* cht */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cht; path = ../../../media/libretrodb/cht; sourceTree = "<group>"; };
-		84F9A9C41A87E1D0003AF12F /* cursors */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cursors; path = ../../../media/libretrodb/cursors; sourceTree = "<group>"; };
-		84F9A9C61A87E1E8003AF12F /* rdb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = rdb; path = ../../../media/libretrodb/rdb; sourceTree = "<group>"; };
-		84FD66AD1AB530B20074AC3A /* shaders_glsl */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shaders_glsl; path = ../../../media/shaders_glsl; sourceTree = "<group>"; };
+		84F9A9BB1A87E068003AF12F /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = assets; path = ../../../../media/assets; sourceTree = "<group>"; };
+		84F9A9BD1A87E0A2003AF12F /* autoconfig */ = {isa = PBXFileReference; lastKnownFileType = folder; name = autoconfig; path = ../../../../media/autoconfig; sourceTree = "<group>"; };
+		84F9A9BF1A87E0C6003AF12F /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../../../../media/overlays; sourceTree = "<group>"; };
+		84F9A9C11A87E180003AF12F /* cht */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cht; path = ../../../../media/libretrodb/cht; sourceTree = "<group>"; };
+		84F9A9C41A87E1D0003AF12F /* cursors */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cursors; path = ../../../../media/libretrodb/cursors; sourceTree = "<group>"; };
+		84F9A9C61A87E1E8003AF12F /* rdb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = rdb; path = ../../../../media/libretrodb/rdb; sourceTree = "<group>"; };
+		84FD66AD1AB530B20074AC3A /* shaders_glsl */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shaders_glsl; path = ../../../../media/shaders_glsl; sourceTree = "<group>"; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		963C3C33186E3DED00A6EB1E /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
