@@ -2,7 +2,7 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := retroarch-jni
-RARCH_DIR := ../../..
+RARCH_DIR := ../../../..
 LOCAL_CFLAGS += -std=gnu99 -Wall -DRARCH_DUMMY_LOG -DHAVE_ZLIB -DHAVE_MMAP -DRARCH_INTERNAL
 LOCAL_LDLIBS := -llog -lz
 LOCAL_SRC_FILES := apk-extract/apk-extract.c $(RARCH_DIR)/libretro-common/file/file_extract.c $(RARCH_DIR)/libretro-common/file/file_path.c $(RARCH_DIR)/file_ops.c $(RARCH_DIR)/libretro-common/string/string_list.c $(RARCH_DIR)/libretro-common/compat/compat.c $(RARCH_DIR)/libretro-common/file/retro_file.c
