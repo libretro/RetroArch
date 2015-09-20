@@ -21,7 +21,7 @@ OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy$(EXE_EXT)
 BIN_TARGET := app_booter.bin
 ELF_TARGET := app_booter.elf
 
-LIBRETRO_COMM_DIR := ../../../../libretro-common
+LIBRETRO_COMM_DIR := ../../libretro-common
 
 INCLUDE := -I. -I$(DEVKITPRO)/libogc/include -I$(LIBRETRO_COMM_DIR)/crt/include
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii

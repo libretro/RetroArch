@@ -37,7 +37,7 @@ CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map
 LIBS := -lfat -lwiiuse -logc -lbte
 
-APP_BOOTER_DIR = bootstrap/gx/wii/app_booter
+APP_BOOTER_DIR = wii/app_booter
 
 OBJ = frontend/frontend_salamander.o \
 		frontend/frontend_driver.o \

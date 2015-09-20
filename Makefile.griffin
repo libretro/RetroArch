@@ -139,7 +139,7 @@ ifeq ($(platform), wii)
   HAVE_LIBRETRO_MANAGEMENT := 1
   HAVE_LIBSICKSAXIS        := 1
 
-  APP_BOOTER_DIR = bootstrap/gx/wii/app_booter
+  APP_BOOTER_DIR = wii/app_booter
   PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
 ifeq ($(USBGECKO), 1)
   CFLAGS += -DUSBGECKO
