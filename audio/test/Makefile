@@ -23,6 +23,7 @@ SHAREDOBJ += $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
 				 $(LIBRETRO_COMM_DIR)/string/string_list.o \
 				 $(LIBRETRO_COMM_DIR)/file/config_file_userdata.o \
 				 $(LIBRETRO_COMM_DIR)/file/config_file.o \
+				 $(LIBRETRO_COMM_DIR)/file/retro_file.o \
 				 $(LIBRETRO_COMM_DIR)/file/file_path.o \
 				 $(LIBRETRO_COMM_DIR)/compat/compat.o \
 				 $(LIBRETRO_COMM_DIR)/hash/rhash.o \
