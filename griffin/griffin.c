@@ -36,7 +36,7 @@ CONSOLE EXTENSIONS
 #ifdef RARCH_CONSOLE
 
 #ifdef HW_DOL
-#include "../ngc/ssaram.c"
+#include "../memory/ngc/ssaram.c"
 #endif
 
 #endif
@@ -186,7 +186,7 @@ VIDEO DRIVER
 #if defined(GEKKO)
 #ifdef HW_RVL
 #include "../wii/vi_encoder.c"
-#include "../wii/mem2_manager.c"
+#include "../memory/wii/mem2_manager.c"
 #endif
 #endif
 
