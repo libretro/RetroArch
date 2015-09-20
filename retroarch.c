@@ -240,7 +240,7 @@ static void set_basename(const char *path)
    global_t *global   = global_get_ptr();
 
    strlcpy(global->path.fullpath, path, sizeof(global->path.fullpath));
-   strlcpy(global->name.base, path, sizeof(global->name.base));
+   strlcpy(global->name.base,     path, sizeof(global->name.base));
 
 #ifdef HAVE_COMPRESSION
    /* Removing extension is a bit tricky for compressed files.
