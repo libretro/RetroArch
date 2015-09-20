@@ -44,7 +44,7 @@
 
 #include <retro_miscellaneous.h>
 
-#include "../gfx/drivers/ppc_asm.h"
+#include "../../gfx/drivers/ppc_asm.h"
 
 /****************************************************************************
  *  I2C driver by Hector Martin (marcan)

@@ -185,7 +185,7 @@ VIDEO DRIVER
 
 #if defined(GEKKO)
 #ifdef HW_RVL
-#include "../wii/vi_encoder.c"
+#include "../gfx/drivers/gx_gfx_vi_encoder.c"
 #include "../memory/wii/mem2_manager.c"
 #endif
 #endif
