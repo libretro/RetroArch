@@ -43,22 +43,11 @@ void wait_for_input(void);
 #define DEBUG_HOLD() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);wait_for_input();}while(0)
 
 #ifndef CTR_STACK_SIZE
-#define CTR_STACK_SIZE        0x100000
+#define CTR_STACK_SIZE         0x100000
 #endif
 
-#ifndef CTR_HEAP_SIZE
-#define CTR_HEAP_SIZE         0x3000000
-#endif
-
-#ifndef CTR_PROG_MEMSIZE
-#define CTR_PROG_MEMSIZE      0x800000
-#endif
-
-#define CTR_MEMORY_MAX        0x04000000
-
-
-#if CTR_MEMORY_MAX < (CTR_PROG_MEMSIZE + CTR_HEAP_SIZE + CTR_STACK_SIZE)
-#error
+#ifndef CTR_LINEAR_HEAP_SIZE
+#define CTR_LINEAR_HEAP_SIZE   0x600000
 #endif
 
 int __stacksize__ = CTR_STACK_SIZE;
@@ -77,9 +66,11 @@ void __libc_fini_array(void);
 
 void __system_allocateHeaps() {
 	u32 tmp=0;
+   int64_t mem_used;
+   svcGetSystemInfo(&mem_used, 0, 1);
 
-   __heap_size_local = CTR_HEAP_SIZE;
-   __linear_heap_size_local = CTR_MEMORY_MAX - (CTR_PROG_MEMSIZE + CTR_HEAP_SIZE + CTR_STACK_SIZE);
+   __linear_heap_size_local = CTR_LINEAR_HEAP_SIZE;
+   __heap_size_local        = (0x4000000 - mem_used - __linear_heap_size_local - 0x1000) & 0xFFFFF000;
 
 	// Allocate the application heap
 	__heapBase = 0x08000000;
