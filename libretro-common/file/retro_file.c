@@ -23,6 +23,7 @@
 #  include <psp2/io/fcntl.h>
 #  include <psp2/io/dirent.h>
 
+#define PSP_O_RDONLY PSP2_O_RDONLY
 #define PSP_O_RDWR   PSP2_O_RDWR
 #define PSP_O_CREAT  PSP2_O_CREAT
 #define PSP_O_WRONLY PSP2_O_WRONLY
