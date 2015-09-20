@@ -180,7 +180,7 @@ static int cb_image_menu_boxart_upload(void *data, size_t len)
 
 static int cb_image_menu_generic(nbio_handle_t *nbio)
 {
-   unsigned width, height;
+   unsigned width = 0, height = 0;
    int retval;
    if (!nbio)
       return -1;
@@ -276,7 +276,7 @@ error:
 
 static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
 {
-   unsigned i, width, height;
+   unsigned i, width = 0, height = 0;
    int retval = 0;
 
    if (!nbio)
