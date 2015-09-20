@@ -12,18 +12,18 @@ APP_DESCRIPTION   = Retroarch 3DS
 APP_AUTHOR        = Team Libretro
 APP_PRODUCT_CODE  = RETROARCH-3DS
 APP_UNIQUE_ID     = 0xBAC00
-APP_ICON          = ctr/default.png
-APP_BANNER        = ctr/libretro_banner.png
-APP_AUDIO         = ctr/silent.wav
-APP_CIA_RSF       = ctr/tools/template-cia.rsf
-APP_3DS_RSF       = ctr/tools/template-3ds.rsf
+APP_ICON          = pkg/ctr/default.png
+APP_BANNER        = pkg/ctr/libretro_banner.png
+APP_AUDIO         = pkg/ctr/silent.wav
+APP_CIA_RSF       = pkg/ctr/tools/template-cia.rsf
+APP_3DS_RSF       = pkg/ctr/tools/template-3ds.rsf
 
 CTR_STACK_SIZE   = 0x100000
 CTR_HEAP_SIZE    = 0x3400000
 CTR_PROG_MEMSIZE = 0x500000
 
 
-include ctr/Makefile.cores
+include pkg/ctr/Makefile.cores
 
 
 OBJS :=
@@ -336,14 +336,14 @@ NM      := $(PREFIX)nm
 LD      := $(CXX)
 
 ifneq ($(findstring Linux,$(shell uname -a)),)
-	MAKEROM = ctr/tools/makerom-linux
-	BANNERTOOL = ctr/tools/bannertool-linux
+	MAKEROM    = pkg/ctr/tools/makerom-linux
+	BANNERTOOL = pkg/ctr/tools/bannertool-linux
 else ifneq ($(findstring Darwin,$(shell uname -a)),)
-	MAKEROM = ctr/tools/makerom-mac
-	BANNERTOOL = ctr/tools/bannertool-mac
+	MAKEROM    = pkg/ctr/tools/makerom-mac
+	BANNERTOOL = pkg/ctr/tools/bannertool-mac
 else
-	MAKEROM = ctr/tools/makerom.exe
-	BANNERTOOL = ctr/tools/bannertool.exe
+	MAKEROM    = pkg/ctr/tools/makerom.exe
+	BANNERTOOL = pkg/ctr/tools/bannertool.exe
 endif
 
 
