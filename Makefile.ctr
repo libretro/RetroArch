@@ -19,8 +19,8 @@ APP_CIA_RSF       = ctr/tools/template-cia.rsf
 APP_3DS_RSF       = ctr/tools/template-3ds.rsf
 
 CTR_STACK_SIZE   = 0x100000
-CTR_HEAP_SIZE    = 0x3000000
-CTR_PROG_MEMSIZE = 0x800000
+CTR_HEAP_SIZE    = 0x3400000
+CTR_PROG_MEMSIZE = 0x500000
 
 
 include ctr/Makefile.cores
