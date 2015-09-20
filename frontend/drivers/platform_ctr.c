@@ -36,14 +36,85 @@
 #include "../../menu/menu_list.h"
 #endif
 
-
-int __stacksize__ = 1*1024*1024;
-
 const char* elf_path_cst = "sdmc:/retroarch/test.3dsx";
 
 void wait_for_input(void);
 
 #define DEBUG_HOLD() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);wait_for_input();}while(0)
+
+#ifndef CTR_STACK_SIZE
+#define CTR_STACK_SIZE        0x100000
+#endif
+
+#ifndef CTR_HEAP_SIZE
+#define CTR_HEAP_SIZE         0x3000000
+#endif
+
+#ifndef CTR_PROG_MEMSIZE
+#define CTR_PROG_MEMSIZE      0x800000
+#endif
+
+#define CTR_MEMORY_MAX        0x04000000
+
+
+#if CTR_MEMORY_MAX < (CTR_PROG_MEMSIZE + CTR_HEAP_SIZE + CTR_STACK_SIZE)
+#error
+#endif
+
+int __stacksize__ = CTR_STACK_SIZE;
+
+extern char* fake_heap_start;
+extern char* fake_heap_end;
+u32 __linear_heap;
+u32 __heapBase;
+static u32 __heap_size, __linear_heap_size;
+
+extern void (*__system_retAddr)(void);
+
+void __destroy_handle_list(void);
+void __appExit();
+void __libc_fini_array(void);
+
+void __system_allocateHeaps() {
+	u32 tmp=0;
+
+   __heap_size = CTR_HEAP_SIZE;
+   __linear_heap_size = CTR_MEMORY_MAX - (CTR_PROG_MEMSIZE + CTR_HEAP_SIZE + CTR_STACK_SIZE);
+
+	// Allocate the application heap
+	__heapBase = 0x08000000;
+	svcControlMemory(&tmp, __heapBase, 0x0, __heap_size, MEMOP_ALLOC, MEMPERM_READ | MEMPERM_WRITE);
+
+	// Allocate the linear heap
+	svcControlMemory(&__linear_heap, 0x0, 0x0, __linear_heap_size, MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
+	// Set up newlib heap
+	fake_heap_start = (char*)__heapBase;
+	fake_heap_end = fake_heap_start + __heap_size;
+
+}
+
+void __attribute__((noreturn)) __libctru_exit(int rc)
+{
+	u32 tmp=0;
+
+	// Unmap the linear heap
+	svcControlMemory(&tmp, __linear_heap, 0x0, __linear_heap_size, MEMOP_FREE, 0x0);
+
+	// Unmap the application heap
+	svcControlMemory(&tmp, __heapBase, 0x0, __heap_size, MEMOP_FREE, 0x0);
+
+	// Close some handles
+	__destroy_handle_list();
+
+	// Jump to the loader if it provided a callback
+	if (__system_retAddr)
+		__system_retAddr();
+
+	// Since above did not jump, end this process
+	svcExitProcess();
+}
+
+
 
 static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
