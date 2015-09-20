@@ -170,13 +170,13 @@ void retro_perf_log(void)
 }
 
 /**
- * rarch_get_perf_counter:
+ * retro_get_perf_counter:
  *
  * Gets performance counter.
  *
  * Returns: performance counter.
  **/
-retro_perf_tick_t rarch_get_perf_counter(void)
+retro_perf_tick_t retro_get_perf_counter(void)
 {
    retro_perf_tick_t time_ticks = 0;
 #if defined(__linux__) || defined(__QNX__) || defined(__MACH__)
@@ -229,13 +229,13 @@ retro_perf_tick_t rarch_get_perf_counter(void)
 }
 
 /**
- * rarch_get_time_usec:
+ * retro_get_time_usec:
  *
  * Gets time in microseconds.
  *
  * Returns: time in microseconds.
  **/
-retro_time_t rarch_get_time_usec(void)
+retro_time_t retro_get_time_usec(void)
 {
 #if defined(_WIN32)
    static LARGE_INTEGER freq;
@@ -268,7 +268,7 @@ retro_time_t rarch_get_time_usec(void)
 #elif defined(VITA)
    return sceKernelGetProcessTimeWide();
 #else
-#error "Your platform does not have a timer function implemented in rarch_get_time_usec(). Cannot continue."
+#error "Your platform does not have a timer function implemented in retro_get_time_usec(). Cannot continue."
 #endif
 }
 
@@ -351,13 +351,13 @@ static void arm_enable_runfast_mode(void)
 #endif
 
 /**
- * rarch_get_cpu_cores:
+ * retro_get_cpu_cores:
  *
  * Gets the amount of available CPU cores.
  *
  * Returns: amount of CPU cores available.
  **/
-unsigned rarch_get_cpu_cores(void)
+unsigned retro_get_cpu_cores(void)
 {
 #if defined(_WIN32) && !defined(_XBOX)
    /* Win32 */
@@ -407,13 +407,13 @@ unsigned rarch_get_cpu_cores(void)
 }
 
 /**
- * rarch_get_cpu_features:
+ * retro_get_cpu_features:
  *
  * Gets CPU features..
  *
  * Returns: bitmask of all CPU features available.
  **/
-uint64_t rarch_get_cpu_features(void)
+uint64_t retro_get_cpu_features(void)
 {
    int flags[4];
    int vendor_shuffle[3];
@@ -555,21 +555,31 @@ uint64_t rarch_get_cpu_features(void)
    return cpu;
 }
 
-void rarch_perf_start(struct retro_perf_counter *perf)
+int rarch_perf_init(struct retro_perf_counter *perf, const char *name)
+{
+   perf->ident = name;
+
+   if (!perf->registered)
+      rarch_perf_register(perf);
+
+   return 0;
+}
+
+void retro_perf_start(struct retro_perf_counter *perf)
 {
    global_t *global = global_get_ptr();
    if (!global->perfcnt_enable || !perf)
       return;
 
    perf->call_cnt++;
-   perf->start = rarch_get_perf_counter();
+   perf->start = retro_get_perf_counter();
 }
 
-void rarch_perf_stop(struct retro_perf_counter *perf)
+void retro_perf_stop(struct retro_perf_counter *perf)
 {
    global_t *global = global_get_ptr();
    if (!global->perfcnt_enable || !perf)
       return;
 
-   perf->total += rarch_get_perf_counter() - perf->start;
+   perf->total += retro_get_perf_counter() - perf->start;
 }

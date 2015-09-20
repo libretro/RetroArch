@@ -1122,7 +1122,7 @@ void rarch_verify_api_version(void)
  */
 static void validate_cpu_features(void)
 {
-   uint64_t cpu = rarch_get_cpu_features();
+   uint64_t cpu = retro_get_cpu_features();
    (void)cpu;
 
 #ifdef __SSE__

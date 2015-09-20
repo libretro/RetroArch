@@ -348,8 +348,9 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg)
 {
-   char buf[128]    = {0};
-   sdl_video_t *vid = (sdl_video_t*)data;
+   char                       buf[128] = {0};
+   static struct retro_perf_counter sdl_scale = {0};
+   sdl_video_t                    *vid = (sdl_video_t*)data;
 
    if (!frame)
       return true;
@@ -359,10 +360,10 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
    if (SDL_MUSTLOCK(vid->screen))
       SDL_LockSurface(vid->screen);
 
-   RARCH_PERFORMANCE_INIT(sdl_scale);
-   RARCH_PERFORMANCE_START(sdl_scale);
+   rarch_perf_init(&sdl_scale, "sdl_scale");
+   retro_perf_start(&sdl_scale);
    scaler_ctx_scale(&vid->scaler, vid->screen->pixels, frame);
-   RARCH_PERFORMANCE_STOP(sdl_scale);
+   retro_perf_stop(&sdl_scale);
 
    if (vid->menu.active)
       SDL_BlitSurface(vid->menu.frame, NULL, vid->screen, NULL);

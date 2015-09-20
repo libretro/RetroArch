@@ -1037,15 +1037,16 @@ static bool gx_frame(void *data, const void *frame,
       uint64_t frame_count, unsigned pitch,
       const char *msg)
 {
-   char fps_txt[128]         = {0};
-   char fps_text_buf[128]   = {0};
-   gx_video_t *gx           = (gx_video_t*)data;
-   struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-   u8 clear_efb             = GX_FALSE;
-   settings_t *settings     = config_get_ptr();
+   static struct retro_perf_counter gx_frame = {0};
+   char fps_txt[128]                  = {0};
+   char fps_text_buf[128]             = {0};
+   gx_video_t *gx                     = (gx_video_t*)data;
+   struct __gx_regdef           *__gx = (struct __gx_regdef*)__gxregs;
+   u8                       clear_efb = GX_FALSE;
+   settings_t               *settings = config_get_ptr();
 
-   RARCH_PERFORMANCE_INIT(gx_frame);
-   RARCH_PERFORMANCE_START(gx_frame);
+   rarch_perf_init(&gx_frame, "gx_frame");
+   retro_perf_start(&gx_frame);
 
    if(!gx || (!frame && !gx->menu_texture_enable))
       return true;
@@ -1078,8 +1079,10 @@ static bool gx_frame(void *data, const void *frame,
 
    if (frame)
    {
-      RARCH_PERFORMANCE_INIT(gx_frame_convert);
-      RARCH_PERFORMANCE_START(gx_frame_convert);
+      static struct retro_perf_counter gx_frame_convert = {0};
+
+      rarch_perf_init(&gx_frame_convert, "gx_frame_convert");
+      retro_perf_start(&gx_frame_convert);
 
       if (gx->rgb32)
          convert_texture32(frame, g_tex.data, width, height, pitch);
@@ -1089,7 +1092,7 @@ static bool gx_frame(void *data, const void *frame,
          convert_texture16(frame, g_tex.data, width, height, pitch);
       DCFlushRange(g_tex.data, height * (width << (gx->rgb32 ? 2 : 1)));
 
-      RARCH_PERFORMANCE_STOP(gx_frame_convert);
+      retro_perf_stop(&gx_frame_convert);
    }
 
    if (gx->menu_texture_enable && gx->menu_data)
@@ -1166,7 +1169,7 @@ static bool gx_frame(void *data, const void *frame,
    VISetNextFrameBuffer(g_framebuf[g_current_framebuf]);
    VIFlush();
 
-   RARCH_PERFORMANCE_STOP(gx_frame);
+   retro_perf_stop(&gx_frame);
 
    return true;
 }

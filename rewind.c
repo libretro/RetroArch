@@ -480,6 +480,7 @@ void state_manager_push_where(state_manager_t *state, void **data)
 
 void state_manager_push_do(state_manager_t *state)
 {
+   static struct retro_perf_counter gen_deltas = {0};
    uint8_t *swap = NULL;
 
    if (state->thisblock_valid)
@@ -504,8 +505,8 @@ recheckcapacity:;
          goto recheckcapacity;
       }
 
-      RARCH_PERFORMANCE_INIT(gen_deltas);
-      RARCH_PERFORMANCE_START(gen_deltas);
+      rarch_perf_init(&gen_deltas, "gen_deltas");
+      retro_perf_start(&gen_deltas);
 
       oldb = state->thisblock;
       newb = state->nextblock;
@@ -524,7 +525,7 @@ recheckcapacity:;
       write_size_t(state->head, compressed-state->data);
       state->head = compressed;
 
-      RARCH_PERFORMANCE_STOP(gen_deltas);
+      retro_perf_stop(&gen_deltas);
    }
    else
       state->thisblock_valid = true;

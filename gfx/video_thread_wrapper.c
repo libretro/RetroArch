@@ -488,9 +488,10 @@ static bool thread_frame(void *data, const void *frame_,
       unsigned pitch, const char *msg)
 {
    unsigned copy_stride;
-   const uint8_t *src  = NULL;
-   uint8_t *dst        = NULL;
-   thread_video_t *thr = (thread_video_t*)data;
+   static struct retro_perf_counter thr_frame = {0};
+   const uint8_t *src                  = NULL;
+   uint8_t *dst                        = NULL;
+   thread_video_t *thr                 = (thread_video_t*)data;
 
    /* If called from within read_viewport, we're actually in the 
     * driver thread, so just render directly. */
@@ -504,8 +505,8 @@ static bool thread_frame(void *data, const void *frame_,
       return false;
    }
 
-   RARCH_PERFORMANCE_INIT(thr_frame);
-   RARCH_PERFORMANCE_START(thr_frame);
+   rarch_perf_init(&thr_frame, "thr_frame");
+   retro_perf_start(&thr_frame);
 
    copy_stride = width * (thr->info.rgb32 
          ? sizeof(uint32_t) : sizeof(uint16_t));
@@ -526,8 +527,8 @@ static bool thread_frame(void *data, const void *frame_,
       /* Ideally, use absolute time, but that is only a good idea on POSIX. */
       while (thr->frame.updated)
       {
-         retro_time_t current = rarch_get_time_usec();
-         retro_time_t delta = target - current;
+         retro_time_t current = retro_get_time_usec();
+         retro_time_t delta   = target - current;
 
          if (delta <= 0)
             break;
@@ -575,9 +576,9 @@ static bool thread_frame(void *data, const void *frame_,
 
    slock_unlock(thr->lock);
 
-   RARCH_PERFORMANCE_STOP(thr_frame);
+   retro_perf_stop(&thr_frame);
 
-   thr->last_time = rarch_get_time_usec();
+   thr->last_time = retro_get_time_usec();
    return true;
 }
 
@@ -617,7 +618,7 @@ static bool thread_init(thread_video_t *thr, const video_info_t *info,
 
    memset(thr->frame.buffer, 0x80, max_size);
 
-   thr->last_time       = rarch_get_time_usec();
+   thr->last_time       = retro_get_time_usec();
    thr->thread          = sthread_create(thread_loop, thr);
    if (!thr->thread)
       return false;

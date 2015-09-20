@@ -211,13 +211,15 @@ static void check_rewind(settings_t *settings,
 
       if ((cnt == 0) || global->bsv.movie)
       {
+         static struct retro_perf_counter rewind_serialize = {0};
          void *state = NULL;
+
          state_manager_push_where(global->rewind.state, &state);
 
-         RARCH_PERFORMANCE_INIT(rewind_serialize);
-         RARCH_PERFORMANCE_START(rewind_serialize);
+         rarch_perf_init(&rewind_serialize, "rewind_serialize");
+         retro_perf_start(&rewind_serialize);
          pretro_serialize(state, global->rewind.size);
-         RARCH_PERFORMANCE_STOP(rewind_serialize);
+         retro_perf_stop(&rewind_serialize);
 
          state_manager_push_do(global->rewind.state);
       }
@@ -631,7 +633,7 @@ static INLINE int time_to_exit(driver_t *driver, global_t *global,
 static void rarch_update_frame_time(driver_t *driver, float slowmotion_ratio,
       rarch_system_info_t *system)
 {
-   retro_time_t current     = rarch_get_time_usec();
+   retro_time_t current     = retro_get_time_usec();
    retro_time_t delta       = current - system->frame_time_last;
    bool is_locked_fps       = (main_is_paused || driver->nonblock_state) | 
       !!driver->recording_data;
@@ -657,7 +659,7 @@ static int rarch_limit_frame_time(float fastforward_ratio, unsigned *sleep_ms)
    if (!fastforward_ratio)
       return 0;
 
-   current                        = rarch_get_time_usec();
+   current                        = retro_get_time_usec();
    target                         = frame_limit_last_time + frame_limit_minimum_time;
    to_sleep_ms                    = (target - current) / 1000;
 
@@ -669,7 +671,7 @@ static int rarch_limit_frame_time(float fastforward_ratio, unsigned *sleep_ms)
       return 1;
    }
    else
-      frame_limit_last_time  = rarch_get_time_usec();
+      frame_limit_last_time  = retro_get_time_usec();
 
    return 0;
 }
@@ -835,7 +837,7 @@ void rarch_main_set_frame_limit_last_time(void)
    if (fastforward_ratio == 0.0f)
       fastforward_ratio = 1.0f;
 
-   frame_limit_last_time                = rarch_get_time_usec();
+   frame_limit_last_time                = retro_get_time_usec();
    frame_limit_minimum_time             = (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
 }
 

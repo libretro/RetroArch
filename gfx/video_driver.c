@@ -1087,7 +1087,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
 
    *buf = '\0';
 
-   new_time = rarch_get_time_usec();
+   new_time = retro_get_time_usec();
 
    if (video_frame_count)
    {
@@ -1158,9 +1158,10 @@ bool video_driver_frame_filter(const void *data,
       unsigned *output_width, unsigned *output_height,
       unsigned *output_pitch)
 {
+   static struct retro_perf_counter softfilter_process = {0};
    settings_t *settings = config_get_ptr();
 
-   RARCH_PERFORMANCE_INIT(softfilter_process);
+   rarch_perf_init(&softfilter_process, "softfilter_process");
 
    if (!video_state.filter.filter)
       return false;
@@ -1172,11 +1173,11 @@ bool video_driver_frame_filter(const void *data,
 
    *output_pitch = (*output_width) * video_state.filter.out_bpp;
 
-   RARCH_PERFORMANCE_START(softfilter_process);
+   retro_perf_start(&softfilter_process);
    rarch_softfilter_process(video_state.filter.filter,
          video_state.filter.buffer, *output_pitch,
          data, width, height, pitch);
-   RARCH_PERFORMANCE_STOP(softfilter_process);
+   retro_perf_stop(&softfilter_process);
 
    if (settings->video.post_filter_record)
       recording_dump_frame(video_state.filter.buffer,

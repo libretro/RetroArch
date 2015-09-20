@@ -1120,12 +1120,12 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_perf_callback *cb = (struct retro_perf_callback*)data;
 
          RARCH_LOG("Environ GET_PERF_INTERFACE.\n");
-         cb->get_time_usec    = rarch_get_time_usec;
-         cb->get_cpu_features = rarch_get_cpu_features;
-         cb->get_perf_counter = rarch_get_perf_counter;
+         cb->get_time_usec    = retro_get_time_usec;
+         cb->get_cpu_features = retro_get_cpu_features;
+         cb->get_perf_counter = retro_get_perf_counter;
          cb->perf_register    = retro_perf_register; /* libretro specific path. */
-         cb->perf_start       = rarch_perf_start;
-         cb->perf_stop        = rarch_perf_stop;
+         cb->perf_start       = retro_perf_start;
+         cb->perf_stop        = retro_perf_stop;
          cb->perf_log         = retro_perf_log; /* libretro specific path. */
          break;
       }

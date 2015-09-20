@@ -34,7 +34,6 @@ typedef struct
    uint64_t cpu_ticks_last;
 
    int rate;
-
 } ctr_audio_t;
 
 #define CTR_AUDIO_COUNT       (1u << 11u)
@@ -44,28 +43,26 @@ typedef struct
 
 static void *ctr_audio_init(const char *device, unsigned rate, unsigned latency)
 {
+   ctr_audio_t *ctr = (ctr_audio_t*)calloc(1, sizeof(ctr_audio_t));
 
+   if (!ctr)
+      return NULL;
 
    (void)device;
    (void)rate;
    (void)latency;
 
-//   if(!csndInit())
-//      return NULL;
-
-   ctr_audio_t *ctr = (ctr_audio_t*)calloc(1, sizeof(ctr_audio_t));
-
-   ctr->l = linearAlloc(CTR_AUDIO_SIZE);
-   ctr->r = linearAlloc(CTR_AUDIO_SIZE);
+   ctr->l                    = linearAlloc(CTR_AUDIO_SIZE);
+   ctr->r                    = linearAlloc(CTR_AUDIO_SIZE);
 
    memset(ctr->l, 0, CTR_AUDIO_SIZE);
    memset(ctr->r, 0, CTR_AUDIO_SIZE);
 
-   ctr->l_paddr = osConvertVirtToPhys((u32)ctr->l);
-   ctr->r_paddr = osConvertVirtToPhys((u32)ctr->r);
+   ctr->l_paddr              = osConvertVirtToPhys((u32)ctr->l);
+   ctr->r_paddr              = osConvertVirtToPhys((u32)ctr->r);
 
-   ctr->pos  = 0;
-   ctr->rate = rate;
+   ctr->pos                  = 0;
+   ctr->rate                 = rate;
    ctr->cpu_ticks_per_sample = CSND_TIMER(rate) * 4;
 
    GSPGPU_FlushDataCache(NULL, (u8*)ctr->l_paddr, CTR_AUDIO_SIZE);
@@ -76,9 +73,9 @@ static void *ctr_audio_init(const char *device, unsigned rate, unsigned latency)
    csndPlaySound(0x9, SOUND_LOOPMODE(CSND_LOOPMODE_NORMAL)| SOUND_FORMAT(CSND_ENCODING_PCM16),
                  rate, 1.0, 1.0, ctr->r, ctr->r, CTR_AUDIO_SIZE);
 
-   ctr->playpos = 0;
-   ctr->cpu_ticks_last = svcGetSystemTick();
-   ctr->playing = true;
+   ctr->playpos              = 0;
+   ctr->cpu_ticks_last       = svcGetSystemTick();
+   ctr->playing              = true;
 
    return ctr;
 }
@@ -100,20 +97,22 @@ static void ctr_audio_free(void *data)
 
 static ssize_t ctr_audio_write(void *data, const void *buf, size_t size)
 {
+   int i;
+   uint32_t samples_played;
+   uint64_t current_tick;
+   static struct retro_perf_counter ctraudio_f = {0};
+   const uint16_t *src = buf;
+   ctr_audio_t    *ctr = (ctr_audio_t*)data;
+
    (void)data;
    (void)buf;
 
-   ctr_audio_t* ctr = (ctr_audio_t*)data;
+   rarch_perf_init(&ctraudio_f, "ctraudio_f");
+   retro_perf_start(&ctraudio_f);
 
-   int i;
-   const uint16_t* src = buf;
-
-   RARCH_PERFORMANCE_INIT(ctraudio_f);   
-   RARCH_PERFORMANCE_START(ctraudio_f);
-
-   uint64_t current_tick = svcGetSystemTick();
-   uint32_t samples_played = (current_tick - ctr->cpu_ticks_last) / ctr->cpu_ticks_per_sample;
-   ctr->playpos = (ctr->playpos + samples_played) & CTR_AUDIO_COUNT_MASK;
+   current_tick         = svcGetSystemTick();
+   samples_played       = (current_tick - ctr->cpu_ticks_last) / ctr->cpu_ticks_per_sample;
+   ctr->playpos         = (ctr->playpos + samples_played) & CTR_AUDIO_COUNT_MASK;
    ctr->cpu_ticks_last += samples_played * ctr->cpu_ticks_per_sample;
 
 
@@ -144,11 +143,11 @@ static ssize_t ctr_audio_write(void *data, const void *buf, size_t size)
       ctr->pos++;
       ctr->pos &= CTR_AUDIO_COUNT_MASK;
    }
+
    GSPGPU_FlushDataCache(NULL, (u8*)ctr->l, CTR_AUDIO_SIZE);
    GSPGPU_FlushDataCache(NULL, (u8*)ctr->r, CTR_AUDIO_SIZE);
 
-
-   RARCH_PERFORMANCE_STOP(ctraudio_f);
+   retro_perf_stop(&ctraudio_f);
 
    return size;
 }
@@ -160,8 +159,10 @@ static bool ctr_audio_stop(void *data)
    /* using SetPlayState would make tracking the playback
     * position more difficult */
 
-//   CSND_SetPlayState(0x8, 0);
-//   CSND_SetPlayState(0x9, 0);
+#if 0
+   CSND_SetPlayState(0x8, 0);
+   CSND_SetPlayState(0x9, 0);
+#endif
 
    /* setting the channel volume to 0 seems to make it
     * impossible to set it back to full volume later */
@@ -186,14 +187,16 @@ static bool ctr_audio_start(void *data)
    ctr_audio_t* ctr = (ctr_audio_t*)data;
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
-   /* prevents restarting audio when the menu
+   /* Prevents restarting audio when the menu
     * is toggled off on shutdown */
 
    if (system->shutdown)
       return true;
 
-//   CSND_SetPlayState(0x8, 1);
-//   CSND_SetPlayState(0x9, 1);
+#if 0
+   CSND_SetPlayState(0x8, 1);
+   CSND_SetPlayState(0x9, 1);
+#endif
 
    CSND_SetVol(0x8, 0x00008000, 0);
    CSND_SetVol(0x9, 0x80000000, 0);
