@@ -123,20 +123,20 @@ make
 
 <b>Mac</b><br/>
 - Prerequisites: [XCode](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0CB4QFjAA&url=https%3A%2F%2Fitunes.apple.com%2Fus%2Fapp%2Fxcode%2Fid497799835%3Fmt%3D12&ei=ZmfeVNPtIILVoASBnoCYBw&usg=AFQjCNGrxKmVtXUdvUU3MhqZhP4MHT6Gtg&sig2=RIXKsWQ79YTQBt_lK5fdKA&bvm=bv.85970519,d.cGU), [Cg](https://developer.nvidia.com/cg-toolkit-download).
-- You can open the project (**apple/RetroArch.xcodeproj**) in the Xcode IDE and build (**&#8984;-B**) and run (**&#8984;-R**) it there. Or you can use the command line...
+- You can open the project (**pkg/apple/RetroArch.xcodeproj**) in the Xcode IDE and build (**&#8984;-B**) and run (**&#8984;-R**) it there. Or you can use the command line...
 - Debug:
 ```bash
 # Build
-xcodebuild -target RetroArch -configuration Debug -project apple/RetroArch.xcodeproj
+xcodebuild -target RetroArch -configuration Debug -project pkg/apple/RetroArch.xcodeproj
 # Run
-open ./apple/build/Debug/RetroArch.app/
+open ./pkg/apple/build/Debug/RetroArch.app/
 ```
 - Release:
 ```bash
 # Build
-xcodebuild -target RetroArch -configuration Release -project apple/RetroArch.xcodeproj
+xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch.xcodeproj
 # Run
-open ./apple/build/Release/RetroArch.app/
+open ./pkg/apple/build/Release/RetroArch.app/
 ```
 
 <b>PC</b><br/>
