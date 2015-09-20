@@ -1374,6 +1374,15 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
                   db_info_entry->cero_rating, info->path, info->list) == -1)
             goto error;
       }
+
+      if (db_info_entry->serial)
+      {
+         if (create_string_list_rdb_entry_string("Serial",
+                  "Serial",
+                  db_info_entry->serial, info->path, info->list) == -1)
+            goto error;
+      }
+
       snprintf(tmp, sizeof(tmp),
             "%s : %s",
             "Analog supported",
