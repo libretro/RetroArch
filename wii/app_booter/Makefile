@@ -30,7 +30,7 @@ CFLAGS += -Wall -O2 -ffreestanding -std=gnu99 $(MACHDEP) $(INCLUDE)
 
 LDFLAGS := -T link.ld
 
-OBJ = crt0.o dolloader.o elfloader.o main.o ../../libretro-common/crt/string.o sync.o
+OBJ = crt0.o main.o ../../libretro-common/crt/string.o
 
 all: $(BIN_TARGET)
 
