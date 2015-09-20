@@ -1,15 +1,14 @@
 #include <stdio.h>
+#include <string.h>
 
 #include <pspdebug.h>
 #include <pspsdk.h>
 #include <pspctrl.h>
 #include <psploadexec_kernel.h>
 #include <pspthreadman_kernel.h>
-#include <string.h>
 
 PSP_MODULE_INFO("kernel_functions", PSP_MODULE_KERNEL, 0, 0);
 PSP_MAIN_THREAD_ATTR(0);
-
 
 static volatile int thread_active;
 static unsigned int buttons;
@@ -33,15 +32,16 @@ static int main_thread(SceSize args, void *argp)
    return 0;
 }
 
-
 unsigned int read_system_buttons(void)
 {
    return buttons;
 }
 
-void exitspawn_kernel( const char* fileName, SceSize args, void * argp){
-   thread_active = 0;
+void exitspawn_kernel(const char *fileName, SceSize args, void *argp)
+{
    struct SceKernelLoadExecVSHParam game_param;
+
+   thread_active = 0;
 
    memset(&game_param,0,sizeof(game_param));
 
@@ -74,7 +74,6 @@ int module_start(SceSize args, void *argp)
 
    return 0;
 }
-
 
 int module_stop(void)
 {

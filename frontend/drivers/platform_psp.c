@@ -43,7 +43,7 @@ int scePowerSetArmClockFrequency(int freq);
 
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
 #ifndef VITA
-#include "../../psp1/kernel_functions.h"
+#include "../../bootstrap/psp1/kernel_functions.h"
 #endif
 #endif
 

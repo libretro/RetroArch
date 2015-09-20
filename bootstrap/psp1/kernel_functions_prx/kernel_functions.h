@@ -8,6 +8,7 @@ extern "C" {
 #endif
 
 unsigned int read_system_buttons(void);
+
 void exitspawn_kernel( const char* fileName, SceSize args, void * argp);
 
 #ifdef __cplusplus
