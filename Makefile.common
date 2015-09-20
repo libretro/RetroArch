@@ -669,6 +669,8 @@ ifeq ($(HAVE_SDL), 1)
    LIBS += $(SDL_LIBS)
 endif
 
+# SDL_syswm.h is not C89/C90-compliant.
+ifneq ($(C89_BUILD), 1)
 ifeq ($(HAVE_SDL2), 1)
    OBJ += gfx/drivers/sdl2_gfx.o \
 			 input/drivers/sdl_input.o \
@@ -683,6 +685,7 @@ ifeq ($(HAVE_SDL2), 1)
    DEFINES += $(SDL2_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL2_LIBS)
    HAVE_SDL = 0
+endif
 endif
 
 ifeq ($(HAVE_OMAP), 1)
