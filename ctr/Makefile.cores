@@ -151,4 +151,34 @@ else ifeq ($(LIBRETRO), quicknes)
 	#APP_BANNER        = ctr/libretro_banner.png
 	#APP_AUDIO         = ctr/silent.wav
 
+else ifeq ($(LIBRETRO), fb_alpha_neo)
+	APP_TITLE         = Neo Geo (FB Alpha)
+	#APP_DESCRIPTION   = Retroarch 3DS
+	APP_AUTHOR        = Team FB Alpha
+	APP_PRODUCT_CODE  = RARCH-FBANEOGEO
+	APP_UNIQUE_ID     = 0xBAC10
+	APP_ICON          = ctr/fb_alpha_neo.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), fb_alpha_cps1)
+	APP_TITLE         = Final Burn Alpha - CPS-1
+	#APP_DESCRIPTION   = Retroarch 3DS
+	APP_AUTHOR        = Team FB Alpha
+	APP_PRODUCT_CODE  = RARCH-FBACPS1
+	APP_UNIQUE_ID     = 0xBAC11
+	APP_ICON          = ctr/fb_alpha_cps1.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), fb_alpha_cps2)
+	APP_TITLE         = Final Burn Alpha - CPS-2
+	#APP_DESCRIPTION   = Retroarch 3DS
+	APP_AUTHOR        = Team FB Alpha
+	APP_PRODUCT_CODE  = RARCH-FBACPS2
+	APP_UNIQUE_ID     = 0xBAC12
+	APP_ICON          = ctr/fb_alpha_cps2.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
 endif
