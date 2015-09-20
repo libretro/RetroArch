@@ -67,7 +67,7 @@ extern char* fake_heap_start;
 extern char* fake_heap_end;
 u32 __linear_heap;
 u32 __heapBase;
-static u32 __heap_size, __linear_heap_size;
+static u32 __heap_size_local, __linear_heap_size_local;
 
 extern void (*__system_retAddr)(void);
 
@@ -78,18 +78,18 @@ void __libc_fini_array(void);
 void __system_allocateHeaps() {
 	u32 tmp=0;
 
-   __heap_size = CTR_HEAP_SIZE;
-   __linear_heap_size = CTR_MEMORY_MAX - (CTR_PROG_MEMSIZE + CTR_HEAP_SIZE + CTR_STACK_SIZE);
+   __heap_size_local = CTR_HEAP_SIZE;
+   __linear_heap_size_local = CTR_MEMORY_MAX - (CTR_PROG_MEMSIZE + CTR_HEAP_SIZE + CTR_STACK_SIZE);
 
 	// Allocate the application heap
 	__heapBase = 0x08000000;
-	svcControlMemory(&tmp, __heapBase, 0x0, __heap_size, MEMOP_ALLOC, MEMPERM_READ | MEMPERM_WRITE);
+	svcControlMemory(&tmp, __heapBase, 0x0, __heap_size_local, MEMOP_ALLOC, MEMPERM_READ | MEMPERM_WRITE);
 
 	// Allocate the linear heap
-	svcControlMemory(&__linear_heap, 0x0, 0x0, __linear_heap_size, MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
+	svcControlMemory(&__linear_heap, 0x0, 0x0, __linear_heap_size_local, MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
 	// Set up newlib heap
 	fake_heap_start = (char*)__heapBase;
-	fake_heap_end = fake_heap_start + __heap_size;
+	fake_heap_end = fake_heap_start + __heap_size_local;
 
 }
 
@@ -98,10 +98,10 @@ void __attribute__((noreturn)) __libctru_exit(int rc)
 	u32 tmp=0;
 
 	// Unmap the linear heap
-	svcControlMemory(&tmp, __linear_heap, 0x0, __linear_heap_size, MEMOP_FREE, 0x0);
+	svcControlMemory(&tmp, __linear_heap, 0x0, __linear_heap_size_local, MEMOP_FREE, 0x0);
 
 	// Unmap the application heap
-	svcControlMemory(&tmp, __heapBase, 0x0, __heap_size, MEMOP_FREE, 0x0);
+	svcControlMemory(&tmp, __heapBase, 0x0, __heap_size_local, MEMOP_FREE, 0x0);
 
 	// Close some handles
 	__destroy_handle_list();

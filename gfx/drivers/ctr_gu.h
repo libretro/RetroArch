@@ -54,7 +54,7 @@ extern Handle gspEvents[GSPEVENT_MAX];
 extern u32* gpuCmdBuf;
 extern u32 gpuCmdBufOffset;
 extern u32 __linear_heap_size;
-extern u32* __linear_heap;
+extern u32 __linear_heap;
 
 __attribute__((always_inline))
 static INLINE void ctrGuSetTexture(GPU_TEXUNIT unit, u32* data,
@@ -119,7 +119,7 @@ __attribute__((always_inline))
 static INLINE void ctrGuFlushAndRun(bool queued)
 {
    //take advantage of GX_SetCommandList_First to flush gsp heap
-   ctrGuSetCommandList_First(queued, gpuCmdBuf, gpuCmdBufOffset*4, __linear_heap, __linear_heap_size, NULL, 0);
+   ctrGuSetCommandList_First(queued, gpuCmdBuf, gpuCmdBufOffset*4, (u32*)__linear_heap, __linear_heap_size, NULL, 0);
    ctrGuSetCommandList_Last(queued, gpuCmdBuf, gpuCmdBufOffset*4, 0x0);
 }
 
