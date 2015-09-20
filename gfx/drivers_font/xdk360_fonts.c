@@ -19,7 +19,7 @@
 #include "../font_driver.h"
 #include "../d3d/d3d.h"
 #include "../../general.h"
-#include "../../xdk/xdk_resources.h"
+#include "../../frontend/drivers/platform_xdk.h"
 
 #define FONT_SCALE(d3d) ((d3d->resolution_hd_enable) ? 2 : 1)
 
