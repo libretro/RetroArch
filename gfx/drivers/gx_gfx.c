@@ -32,7 +32,7 @@
 #include "../video_monitor.h"
 
 #ifdef HW_RVL
-#include "../../wii/mem2_manager.h"
+#include "../../memory/wii/mem2_manager.h"
 #endif
 
 #include "ppc_asm.h"

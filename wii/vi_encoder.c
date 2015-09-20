@@ -37,11 +37,14 @@
  *
  ****************************************************************************************/
 
+#include <stdint.h>
 #include <string.h>
 #include <gccore.h>
 #include <ogcsys.h>
+
+#include <retro_miscellaneous.h>
+
 #include "../gfx/drivers/ppc_asm.h"
-#include <retro_inline.h>
 
 /****************************************************************************
  *  I2C driver by Hector Martin (marcan)
@@ -61,150 +64,151 @@ static vu32* const _i2cReg = (u32*)0xCD800000;
 
 static INLINE void __viOpenI2C(u32 channel)
 {
-	u32 val = ((_i2cReg[49]&~0x8000)|0x4000);
-	val |= _SHIFTL(channel,15,1);
+	u32 val = ((_i2cReg[49]&~0x8000)|0x4000) | _SHIFTL(channel,15,1);
 	_i2cReg[49] = val;
 }
 
 static INLINE void __viSetSCL(u32 channel)
 {
-	u32 val = (_i2cReg[48]&~0x4000);
-	val |= _SHIFTL(channel,14,1);
-	_i2cReg[48] = val;
+   u32 val = (_i2cReg[48]&~0x4000) | _SHIFTL(channel,14,1);
+   _i2cReg[48] = val;
 }
+
 static INLINE void __viSetSDA(u32 channel)
 {
-	u32 val = (_i2cReg[48]&~0x8000);
-	val |= _SHIFTL(channel,15,1);
-	_i2cReg[48] = val;
+   u32 val = (_i2cReg[48]&~0x8000) | _SHIFTL(channel,15,1);
+   _i2cReg[48] = val;
 }
 
 #define __viGetSDA() (_SHIFTR(_i2cReg[50],15,1))
 
 static u32 __sendSlaveAddress(u8 addr)
 {
-	u32 i;
+   u32 i;
 
-	__viSetSDA(i2cIdentFlag^1);
-	udelay(2);
+   __viSetSDA(i2cIdentFlag^1);
+   udelay(2);
 
-	__viSetSCL(0);
-	for(i=0;i<8;i++) {
-		if(addr&0x80) __viSetSDA(i2cIdentFlag);
-		else __viSetSDA(i2cIdentFlag^1);
-		udelay(2);
+   __viSetSCL(0);
+   for(i=0;i<8;i++)
+   {
+      if (addr&0x80)
+         __viSetSDA(i2cIdentFlag);
+      else
+         __viSetSDA(i2cIdentFlag^1);
+      udelay(2);
 
-		__viSetSCL(1);
-		udelay(2);
+      __viSetSCL(1);
+      udelay(2);
 
-		__viSetSCL(0);
-		addr <<= 1;
-	}
+      __viSetSCL(0);
+      addr <<= 1;
+   }
 
-	__viOpenI2C(0);
-	udelay(2);
+   __viOpenI2C(0);
+   udelay(2);
 
-	__viSetSCL(1);
-	udelay(2);
+   __viSetSCL(1);
+   udelay(2);
 
-	if(i2cIdentFlag==1 && __viGetSDA()!=0) return 0;
+   if(i2cIdentFlag==1 && __viGetSDA()!=0)
+      return 0;
 
-	__viSetSDA(i2cIdentFlag^1);
-	__viOpenI2C(1);
-	__viSetSCL(0);
+   __viSetSDA(i2cIdentFlag^1);
+   __viOpenI2C(1);
+   __viSetSCL(0);
 
-	return 1;
+   return 1;
 }
 
 void VIDEO_SetTrapFilter(bool enable)
 {
-  u8 disable;
-  u8 data;
-  u8 reg;
-  u8 buf[2];
+   void *val;
+   u8 buf[2];
+   s32 i,j;
+   u32 c, level, ret;
 
-  disable = !enable;
-  data = !disable;
-  reg = 0x03;
+   u8 disable = !enable;
+   u8 data    = !disable;
+   u8 reg     = 0x03;
+   u8 addr    = 0xe0;
+   u32 len    = 2;
 
-  buf[0] = reg;
-  buf[1] = data;
+   buf[0] = reg;
+   buf[1] = data;
 
-  u8 addr = 0xe0;
-  void* val = buf;
-  u32 len = 2;
+   val = buf;
 
-  u8 c;
-  s32 i,j;
-  u32 level,ret;
+   if(i2cIdentFirst==0)
+   {
+      __viOpenI2C(0);
+      udelay(4);
 
-  if(i2cIdentFirst==0)
-  {
-	  __viOpenI2C(0);
-	  udelay(4);
+      i2cIdentFlag = 0;
+      if(__viGetSDA()!=0)
+         i2cIdentFlag = 1;
+      i2cIdentFirst = 1;
+   }
 
-	  i2cIdentFlag = 0;
-	  if(__viGetSDA()!=0)
-		  i2cIdentFlag = 1;
-	  i2cIdentFirst = 1;
-  }
+   _CPU_ISR_Disable(level);
+   (void)level;
 
-  _CPU_ISR_Disable(level);
-  (void)level;
+   __viOpenI2C(1);
+   __viSetSCL(1);
 
-  __viOpenI2C(1);
-  __viSetSCL(1);
+   __viSetSDA(i2cIdentFlag);
+   udelay(4);
 
-  __viSetSDA(i2cIdentFlag);
-  udelay(4);
+   ret = __sendSlaveAddress(addr);
+   if(ret==0) {
+      _CPU_ISR_Restore(level);
+      goto end;
+   }
 
-  ret = __sendSlaveAddress(addr);
-  if(ret==0) {
-	  _CPU_ISR_Restore(level);
-	  goto end;
-  }
+   __viOpenI2C(1);
+   for(i=0;i<len;i++)
+   {
+      c = ((u8*)val)[i];
+      for(j=0;j<8;j++)
+      {
+         u32 chan = i2cIdentFlag;
+         if(c&0x80) {}
+         else
+            chan ^= 1;
 
-  __viOpenI2C(1);
-  for(i=0;i<len;i++) {
-	  c = ((u8*)val)[i];
-	  for(j=0;j<8;j++) {
-                  u32 chan = i2cIdentFlag;
-		  if(c&0x80) {}
-                  else
-                    chan ^= 1;
+         __viSetSDA(chan);
+         udelay(2);
 
-		  __viSetSDA(chan);
-		  udelay(2);
+         __viSetSCL(1);
+         udelay(2);
+         __viSetSCL(0);
 
-		  __viSetSCL(1);
-		  udelay(2);
-		  __viSetSCL(0);
+         c <<= 1;
+      }
+      __viOpenI2C(0);
+      udelay(2);
+      __viSetSCL(1);
+      udelay(2);
 
-		  c <<= 1;
-	  }
-	  __viOpenI2C(0);
-	  udelay(2);
-	  __viSetSCL(1);
-	  udelay(2);
+      if(i2cIdentFlag==1 && __viGetSDA()!=0)
+      {
+         _CPU_ISR_Restore(level);
+         goto end;
+      }
 
-	  if(i2cIdentFlag==1 && __viGetSDA()!=0) {
-		  _CPU_ISR_Restore(level);
-		  goto end;
-	  }
+      __viSetSDA(i2cIdentFlag^1);
+      __viOpenI2C(1);
+      __viSetSCL(0);
+   }
 
-	  __viSetSDA(i2cIdentFlag^1);
-	  __viOpenI2C(1);
-	  __viSetSCL(0);
-  }
+   __viOpenI2C(1);
+   __viSetSDA(i2cIdentFlag^1);
+   udelay(2);
+   __viSetSDA(i2cIdentFlag);
 
-  __viOpenI2C(1);
-  __viSetSDA(i2cIdentFlag^1);
-  udelay(2);
-  __viSetSDA(i2cIdentFlag);
-
-  _CPU_ISR_Restore(level);
+   _CPU_ISR_Restore(level);
 
 end:
 
-  udelay(2);
+   udelay(2);
 }
