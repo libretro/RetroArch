@@ -34,6 +34,7 @@
 #include <file/file_path.h>
 #include <file/file_extract.h>
 #include <retro_file.h>
+#include <retro_stat.h>
 
 #include "msg_hash.h"
 #include "content.h"

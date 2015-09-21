@@ -1,4 +1,3 @@
-#include <retro_file.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,6 +46,8 @@
 #ifdef RARCH_INTERNAL
 #include <retro_log.h>
 #endif
+
+#include <retro_file.h>
 
 #if 1
 #define HAVE_BUFFERED_IO 1

@@ -35,6 +35,7 @@
 #include <compat/getopt.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
+#include <retro_stat.h>
 
 #include "msg_hash.h"
 

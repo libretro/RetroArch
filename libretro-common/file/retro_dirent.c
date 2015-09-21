@@ -36,6 +36,7 @@
 
 #include <boolean.h>
 #include <file/file_path.h>
+#include <retro_stat.h>
 
 struct RDIR
 {

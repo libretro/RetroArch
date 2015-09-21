@@ -16,6 +16,7 @@
  */
 
 #include <file/file_path.h>
+#include <retro_stat.h>
 
 #include "frontend.h"
 #include "../system.h"

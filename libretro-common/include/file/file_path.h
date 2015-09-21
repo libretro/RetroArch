@@ -75,18 +75,6 @@ bool path_is_compressed_file(const char *path);
 bool path_contains_compressed_file(const char *path);
 
 /**
- * path_is_directory:
- * @path               : path
- *
- * Checks if path is a directory.
- *
- * Returns: true (1) if path is a directory, otherwise false (0).
- */
-bool path_is_directory(const char *path);
-
-bool path_is_valid(const char *path);
-
-/**
  * path_file_exists:
  * @path               : path
  *
@@ -106,16 +94,6 @@ bool path_file_exists(const char *path);
  * Returns: extension part from the path.
  */
 const char *path_get_extension(const char *path);
-
-/**
- * path_mkdir:
- * @dir                : directory
- *
- * Create directory on filesystem.
- *
- * Returns: true (1) if directory could be created, otherwise false (0).
- **/
-bool path_mkdir(const char *dir);
 
 /**
  * path_remove_extension:

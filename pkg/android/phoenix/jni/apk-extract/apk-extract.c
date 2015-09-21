@@ -5,6 +5,7 @@
 #include <file/file_extract.h>
 #include <file/file_path.h>
 #include <retro_assert.h>
+#include <retro_stat.h>
 #include <retro_miscellaneous.h>
 
 #include "../native/com_retroarch_browser_NativeInterface.h"

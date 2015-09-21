@@ -22,6 +22,7 @@
 #include <file/file_extract.h>
 #include <net/net_compat.h>
 #include <retro_file.h>
+#include <retro_stat.h>
 
 #include "../file_ops.h"
 #include "../general.h"

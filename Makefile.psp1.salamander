@@ -42,6 +42,7 @@ OBJS = frontend/frontend_salamander.o \
 		 libretro-common/compat/compat.o \
 		 libretro-common/file/config_file.o \
 		 libretro-common/file/retro_file.o \
+		 libretro-common/file/retro_stat.o \
 		 libretro-common/hash/rhash.o \
 		 bootstrap/psp1/kernel_functions.o 
 

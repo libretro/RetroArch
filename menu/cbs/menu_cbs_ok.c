@@ -14,6 +14,7 @@
  */
 
 #include <file/file_path.h>
+#include <retro_stat.h>
 
 #include "../menu.h"
 #include "../menu_cbs.h"
