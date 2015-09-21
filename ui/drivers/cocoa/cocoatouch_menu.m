@@ -588,31 +588,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 - (void)reloadData
 {
    [self willReloadData];
-
-   // Here are two options:
-
-   // Option 1. This is like how setting app works, but not exactly.
-   // There is a typedef for the 'withRowAnimation' that has lots of
-   // options, just Google UITableViewRowAnimation
-#if 0
-
-   [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0]
-                 withRowAnimation:UITableViewRowAnimationAutomatic];
-#else
-
-   // Option 2. This is a "bigger" transition, but doesn't look as
-   // much like Settings. It has more options. Just Google
-   // UIViewAnimationOptionTransition
-
-   [UIView transitionWithView:self.tableView
-                     duration:0.40f
-                      options:UIViewAnimationOptionTransitionCrossDissolve
-                   animations:^(void)
-           {
-             [self.tableView reloadData];
-           }
-   completion: nil];
-#endif
+   [self.tableView reloadData];
 }
 
 -(void)renderMessageBox:(NSString *)msg
@@ -673,7 +649,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    end = menu_entries_get_end();    
    for (i = menu_entries_get_start(); i < end; i++)
      [everything addObject:[self make_menu_item_for_entry: i]];
-   
+
    self.sections = [NSMutableArray array];
    [self.sections addObject:everything];
 
@@ -756,9 +732,6 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 - (void)menuSelect: (uint32_t) i
 {
   menu_entry_select(i);
-#if 0
-  [self willReloadData];
-#endif
 }
 
 - (void)menuBack

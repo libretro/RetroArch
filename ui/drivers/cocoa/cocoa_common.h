@@ -41,6 +41,7 @@
 @interface RAMenuBase : UITableViewController
 @property (nonatomic) NSMutableArray* sections;
 @property (nonatomic) BOOL hidesHeaders;
+@property (nonatomic) RAMenuBase* last_menu;
 
 - (id)initWithStyle:(UITableViewStyle)style;
 - (id)itemForIndexPath:(NSIndexPath*)indexPath;
@@ -64,6 +65,7 @@ extern apple_frontend_settings_t apple_frontend_settings;
 @property (nonatomic) UIWindow* window;
 @property (nonatomic) NSString* documentsDirectory;
 @property (nonatomic) RAMenuBase* mainmenu;
+@property (nonatomic) int menu_count;
                       
 + (RetroArch_iOS*)get;
 
@@ -71,6 +73,7 @@ extern apple_frontend_settings_t apple_frontend_settings;
 - (void)toggleUI;
 
 - (void)refreshSystemConfig;
+- (void)mainMenuPushPop: (bool)pushp;
 - (void)mainMenuRefresh;
 @end
 
