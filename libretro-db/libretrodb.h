@@ -7,13 +7,13 @@
 #else
 #include <unistd.h>
 #endif
+
+#include "query.h"
 #include "rmsgpack_dom.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef struct libretrodb_query libretrodb_query_t;
 
 typedef struct libretrodb libretrodb_t;
 

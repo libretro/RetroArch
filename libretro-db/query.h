@@ -2,6 +2,9 @@
 #define __LIBRETRODB_QUERY_H__
 
 #include "libretrodb.h"
+#include "rmsgpack_dom.h"
+
+typedef struct libretrodb_query libretrodb_query_t;
 
 void libretrodb_query_inc_ref(libretrodb_query_t *q);
 
