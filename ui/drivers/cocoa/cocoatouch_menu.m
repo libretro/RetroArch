@@ -113,8 +113,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
   menu_entry_get_path(self.i, label, sizeof(label));
   menu_entry_get_value(self.i, buffer, sizeof(buffer));
-  
-  result.selectionStyle = UITableViewCellSelectionStyleNone;
+
   result.textLabel.text = BOXSTRING(label);
 
   if (label[0] == '\0')
