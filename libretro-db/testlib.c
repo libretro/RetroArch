@@ -16,55 +16,32 @@ static void push_rmsgpack_value(lua_State *L, struct rmsgpack_dom_value *value)
 {
    uint32_t i;
 
-   switch (value->type)
+   switch(value->type)
    {
       case RDT_INT:
-         lua_pushnumber(
-               L,
-               value->int_
-               );
+         lua_pushnumber(L, value->int_);
          break;
       case RDT_UINT:
-         lua_pushnumber(
-               L,
-               value->uint_
-               );
+         lua_pushnumber(L, value->uint_);
          break;
       case RDT_BINARY:
-         lua_pushlstring(
-               L,
-               value->binary.buff,
-               value->binary.len
-               );
+         lua_pushlstring(L, value->binary.buff, value->binary.len);
          break;
       case RDT_BOOL:
-         lua_pushboolean(
-               L,
-               value->bool_
-               );
+         lua_pushboolean(L, value->bool_);
          break;
       case RDT_NULL:
          lua_pushnil(L);
          break;
       case RDT_STRING:
-         lua_pushlstring(
-               L,
-               value->string.buff,
-               value->binary.len
-               );
+         lua_pushlstring(L, value->string.buff, value->binary.len);
          break;
       case RDT_MAP:
          lua_createtable(L, 0, value->map.len);
          for (i = 0; i < value->map.len; i++)
          {
-            push_rmsgpack_value(
-                  L,
-                  &value->map.items[i].key
-                  );
-            push_rmsgpack_value(
-                  L,
-                  &value->map.items[i].value
-                  );
+            push_rmsgpack_value(L, &value->map.items[i].key);
+            push_rmsgpack_value(L, &value->map.items[i].value);
             lua_settable(L, -3);
          }
          break;
@@ -72,14 +49,8 @@ static void push_rmsgpack_value(lua_State *L, struct rmsgpack_dom_value *value)
          lua_createtable(L, value->array.len, 0);
          for (i = 0; i < value->array.len; i++)
          {
-            lua_pushnumber(
-                  L,
-                  i + 1
-                  );
-            push_rmsgpack_value(
-                  L,
-                  &value->array.items[i]
-                  );
+            lua_pushnumber(L, i + 1);
+            push_rmsgpack_value(L, &value->array.items[i]);
             lua_settable(L, -3);
          }
          break;
@@ -112,7 +83,7 @@ static int value_provider(void *ctx, struct rmsgpack_dom_value *out)
    return rv;
 }
 
-static int create_db (lua_State *L)
+static int create_db(lua_State *L)
 {
    int rv;
    RFILE *dst;
@@ -138,7 +109,7 @@ static int create_db (lua_State *L)
    return 0;
 }
 
-static int db_new (lua_State *L)
+static int db_new(lua_State *L)
 {
    libretrodb_t *db = NULL;
    const char *db_file = NULL;
@@ -167,14 +138,14 @@ static libretrodb *checkdb(lua_State *L)
 	return ud;
 }
 
-static int db_close (lua_State *L)
+static int db_close(lua_State *L)
 {
 	libretrodb_t *db = checkdb(L);
 	libretrodb_close(db);
 	return 0;
 }
 
-static int db_cursor_open (lua_State *L)
+static int db_cursor_open(lua_State *L)
 {
    int rv;
    libretrodb_cursor_t *cursor = NULL;
@@ -195,7 +166,7 @@ static int db_cursor_open (lua_State *L)
    return 2;
 }
 
-static int db_query (lua_State *L)
+static int db_query(lua_State *L)
 {
    int rv;
    libretrodb_cursor_t *cursor = NULL;
@@ -237,14 +208,14 @@ static libretrodb_cursor *checkcursor(lua_State *L)
 	return ud;
 }
 
-static int cursor_close (lua_State *L)
+static int cursor_close(lua_State *L)
 {
 	libretrodb_cursor_t *cursor = checkcursor(L);
 	libretrodb_cursor_close(cursor);
 	return 0;
 }
 
-static int cursor_read (lua_State *L)
+static int cursor_read(lua_State *L)
 {
    libretrodb_cursor_t *cursor = checkcursor(L);
    struct rmsgpack_dom_value value;
@@ -255,7 +226,7 @@ static int cursor_read (lua_State *L)
    return 1;
 }
 
-static int cursor_iter (lua_State *L)
+static int cursor_iter(lua_State *L)
 {
    libretrodb_cursor_t *cursor = checkcursor(L);
    luaL_getmetafield(L, -1, "read");
