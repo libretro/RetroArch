@@ -34,7 +34,7 @@ static int action_info_default(unsigned type, const char *label)
          menu_hash_to_str(MENU_LABEL_INFO_SCREEN),
         sizeof(info.label));
 
-   return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
+   return menu_displaylist_push_list(&info, DISPLAYLIST_HELP, MENU_ACTION_NOOP);
 }
 
 int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,

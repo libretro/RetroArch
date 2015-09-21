@@ -2317,7 +2317,8 @@ static void menu_driver_populate_entries(const char *path,
       driver->populate_entries(path, label, k, type);
 }
 
-int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
+int menu_displaylist_push_list(menu_displaylist_info_t *info,
+      unsigned type, unsigned action_type)
 {
    size_t i, list_size;
    int ret                     = 0;
@@ -2330,6 +2331,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    global_t          *global   = global_get_ptr();
    settings_t      *settings   = config_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
+
+   (void)action_type;
 
    switch (type)
    {
@@ -2933,9 +2936,10 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    {
       case MENU_VALUE_MAIN_MENU:
          info.flags = SL_FLAG_MAIN_MENU | SL_FLAG_MAIN_MENU_SETTINGS;
-         return menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
+         return menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU, MENU_ACTION_NOOP);
       case MENU_VALUE_HORIZONTAL_MENU:
-         return menu_displaylist_push_list(&info, DISPLAYLIST_HORIZONTAL);
+         /* TODO/FIXME - might want to do something different here other than MENU_ACTION_NOOP */
+         return menu_displaylist_push_list(&info, DISPLAYLIST_HORIZONTAL, MENU_ACTION_NOOP);
    }
 
    cbs = (menu_file_list_cbs_t*)
@@ -2971,7 +2975,7 @@ bool menu_displaylist_init(void *data)
 
    menu_list_push(menu_list->menu_stack,
          info.path, info.label, info.type, info.flags, 0);
-   menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
+   menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU, MENU_ACTION_NOOP);
    menu_navigation_clear(nav, true);
 
    return true;
