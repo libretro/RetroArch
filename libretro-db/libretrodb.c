@@ -12,13 +12,13 @@
 #include <stdlib.h>
 
 #include <retro_file.h>
+#include <retro_endianness.h>
 #include <compat/strl.h>
 
 #include "libretrodb.h"
 #include "rmsgpack_dom.h"
 #include "rmsgpack.h"
 #include "bintree.h"
-#include "libretrodb_endian.h"
 #include "query.h"
 #include "libretrodb.h"
 
@@ -149,7 +149,7 @@ int libretrodb_create(RFILE *fd, libretrodb_value_provider value_provider,
    if ((rv = rmsgpack_dom_write(fd, &sentinal)) < 0)
       goto clean;
 
-   header.metadata_offset = httobe64(retro_fseek(fd, 0, SEEK_CUR));
+   header.metadata_offset = swap_if_little64(retro_fseek(fd, 0, SEEK_CUR));
    md.count = item_count;
    libretrodb_write_metadata(fd, &md);
    retro_fseek(fd, root, SEEK_SET);
@@ -211,7 +211,7 @@ int libretrodb_open(const char *path, libretrodb_t *db)
       goto error;
    }
 
-   header.metadata_offset = betoht64(header.metadata_offset);
+   header.metadata_offset = swap_if_little64(header.metadata_offset);
    retro_fseek(fd, (ssize_t)header.metadata_offset, SEEK_SET);
 
    if (libretrodb_read_metadata(fd, &md) < 0)

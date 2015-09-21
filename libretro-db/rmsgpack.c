@@ -9,7 +9,6 @@
  * For more information http://msgpack.org/
  */
 
-#include "rmsgpack.h"
 
 #include <stdlib.h>
 #ifdef _WIN32
@@ -21,7 +20,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "libretrodb_endian.h"
+#include <retro_endianness.h>
+
+#include "rmsgpack.h"
 
 #define _MPF_FIXMAP     0x80
 #define _MPF_MAP16      0xde
@@ -327,7 +328,7 @@ int rmsgpack_write_int(RFILE *fd, int64_t value)
       if (retro_fwrite(fd, &MPF_INT64, sizeof(MPF_INT64)) == -1)
          goto error;
 
-      value = httobe64(value);
+      value = swap_if_little64(value);
       if (retro_fwrite(fd, &value, sizeof(int64_t)) == -1)
          goto error;
       written += sizeof(int64_t);
@@ -379,7 +380,7 @@ int rmsgpack_write_uint(RFILE *fd, uint64_t value)
       if (retro_fwrite(fd, &MPF_UINT64, sizeof(MPF_UINT64)) == -1)
          goto error;
 
-      value = httobe64(value);
+      value = swap_if_little64(value);
       if (retro_fwrite(fd, &value, sizeof(uint64_t)) == -1)
          goto error;
       written += sizeof(uint64_t);
@@ -409,7 +410,7 @@ static int read_uint(RFILE *fd, uint64_t *out, size_t size)
          *out = swap_if_little32(tmp);
          break;
       case 8:
-         *out = betoht64(tmp);
+         *out = swap_if_little64(tmp);
          break;
    }
    return 0;
@@ -441,7 +442,7 @@ static int read_int(RFILE *fd, int64_t *out, size_t size)
          *out = *((int32_t *)(&tmp32));
          break;
       case 8:
-         tmp64 = betoht64(tmp64);
+         tmp64 = swap_if_little64(tmp64);
          *out = *((int64_t *)(&tmp64));
          break;
    }
