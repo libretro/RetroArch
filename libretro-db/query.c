@@ -72,8 +72,7 @@ struct argument;
 /* Errors */
 static void raise_too_many_arguments(const char **error)
 {
-	snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         "Too many arguments in function call.");
+	strlcpy(tmp_error_buff, "Too many arguments in function call.", MAX_ERROR_LEN);
 	*error = tmp_error_buff;
 }
 
@@ -116,7 +115,7 @@ static void raise_unexpected_eof(off_t where, const char **error)
 
 static void raise_enomem(const char **error)
 {
-   snprintf(tmp_error_buff, MAX_ERROR_LEN, "Out of memory");
+   strlcpy(tmp_error_buff, "Out of memory", MAX_ERROR_LEN);
    *error = tmp_error_buff;
 }
 
