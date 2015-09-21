@@ -94,7 +94,7 @@ static void raise_unknown_function(off_t where, const char *name,
    if (len < (MAX_ERROR_LEN - n - 3))
       strncpy(tmp_error_buff + n, name, len);
 
-   strcpy(tmp_error_buff + n + len, "'");
+   strlcpy(tmp_error_buff + n + len, "'", sizeof(tmp_error_buff));
    *error = tmp_error_buff;
 }
 static void raise_expected_eof(off_t where, char found, const char **error)
