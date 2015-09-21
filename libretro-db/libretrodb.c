@@ -83,8 +83,7 @@ static int libretrodb_write_metadata(RFILE *fd, libretrodb_metadata_t *md)
 static int validate_document(const struct rmsgpack_dom_value *doc)
 {
    unsigned i;
-   struct rmsgpack_dom_value key;
-   struct rmsgpack_dom_value value;
+   struct rmsgpack_dom_value key, value;
    int rv = 0;
 
    if (doc->type != RDT_MAP)
@@ -118,14 +117,13 @@ int libretrodb_create(RFILE *fd, libretrodb_value_provider value_provider,
       void *ctx)
 {
    int rv;
-   off_t root;
    libretrodb_metadata_t md;
    struct rmsgpack_dom_value item;
    uint64_t item_count        = 0;
    libretrodb_header_t header = {{0}};
+   ssize_t root = retro_fseek(fd, 0, SEEK_CUR);
 
    memcpy(header.magic_number, MAGIC_NUMBER, sizeof(MAGIC_NUMBER)-1);
-   root = retro_fseek(fd, 0, SEEK_CUR);
 
    /* We write the header in the end because we need to know the size of
     * the db first */
@@ -234,8 +232,8 @@ error:
 static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
       libretrodb_index_t *idx)
 {
-   off_t eof    = retro_fseek(db->fd, 0, SEEK_END);
-   off_t offset = retro_fseek(db->fd, (ssize_t)db->first_index_offset, SEEK_SET);
+   ssize_t eof    = retro_fseek(db->fd, 0, SEEK_END);
+   ssize_t offset = retro_fseek(db->fd, (ssize_t)db->first_index_offset, SEEK_SET);
 
    while (offset < eof)
    {

@@ -24,7 +24,7 @@ struct buffer
 {
    const char *data;
    size_t len;
-   off_t offset;
+   ssize_t offset;
 };
 
 /* Errors */
@@ -35,7 +35,7 @@ static void raise_too_many_arguments(const char **error)
    *error = tmp_error_buff;
 }
 
-static void raise_expected_number(off_t where, const char **error)
+static void raise_expected_number(ssize_t where, const char **error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
 #ifdef _WIN32
@@ -47,7 +47,7 @@ static void raise_expected_number(off_t where, const char **error)
    *error = tmp_error_buff;
 }
 
-static void raise_expected_string(off_t where, const char ** error)
+static void raise_expected_string(ssize_t where, const char ** error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
 #ifdef _WIN32
@@ -59,7 +59,7 @@ static void raise_expected_string(off_t where, const char ** error)
    *error = tmp_error_buff;
 }
 
-static void raise_unexpected_eof(off_t where, const char ** error)
+static void raise_unexpected_eof(ssize_t where, const char ** error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
 #ifdef _WIN32
@@ -78,7 +78,7 @@ static void raise_enomem(const char **error)
    *error = tmp_error_buff;
 }
 
-static void raise_unknown_function(off_t where, const char *name,
+static void raise_unknown_function(ssize_t where, const char *name,
       ssize_t len, const char **error)
 {
    int n = snprintf(tmp_error_buff, MAX_ERROR_LEN,
@@ -96,7 +96,7 @@ static void raise_unknown_function(off_t where, const char *name,
    strlcpy(tmp_error_buff + n + len, "'", sizeof(tmp_error_buff));
    *error = tmp_error_buff;
 }
-static void raise_expected_eof(off_t where, char found, const char **error)
+static void raise_expected_eof(ssize_t where, char found, const char **error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
 #ifdef _WIN32
@@ -110,7 +110,7 @@ static void raise_expected_eof(off_t where, char found, const char **error)
    *error = tmp_error_buff;
 }
 
-static void raise_unexpected_char(off_t where, char expected, char found,
+static void raise_unexpected_char(ssize_t where, char expected, char found,
       const char **error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
