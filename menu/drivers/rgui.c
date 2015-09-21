@@ -747,12 +747,9 @@ static void rgui_navigation_ascend_alphabet(size_t *unused)
 }
 
 static void rgui_populate_entries(const char *path,
-      const char *label, unsigned k, unsigned type)
+      const char *label, unsigned k)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
-
-   (void)type;
-
    if (menu)
       rgui_navigation_set(true);
 }

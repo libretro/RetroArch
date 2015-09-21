@@ -1068,15 +1068,13 @@ static void xmb_list_open(xmb_handle_t *xmb)
 }
 
 static void xmb_populate_entries(const char *path,
-      const char *label, unsigned k, unsigned type)
+      const char *label, unsigned k)
 {
    xmb_handle_t *xmb   = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
-
-   (void)type;
 
    xmb = (xmb_handle_t*)menu->userdata;
 

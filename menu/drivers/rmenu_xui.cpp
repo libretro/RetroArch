@@ -603,7 +603,7 @@ static void rmenu_xui_render(void)
 }
 
 static void rmenu_xui_populate_entries(const char *path,
-      const char *label, unsigned i, unsigned type)
+      const char *label, unsigned i)
 {
    menu_handle_t *menu         = menu_driver_get_ptr();
    menu_navigation_t *nav      = menu_navigation_get_ptr();
@@ -613,7 +613,6 @@ static void rmenu_xui_populate_entries(const char *path,
 
    (void)label;
    (void)path;
-   (void)type;
 
    XuiListSetCurSelVisible(m_menulist, menu_navigation_get_selection(nav));
 }
