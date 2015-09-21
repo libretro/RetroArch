@@ -16,13 +16,8 @@
 	 | (((uint64_t)(val) & 0xff00000000000000ULL) >> 56))
 #endif
 
-
 #define httobe64(x) (is_little_endian() ? swap64(x) : (x))
-#define httobe32(x) (is_little_endian() ? SWAP32(x) : (x))
-#define httobe16(x) (is_little_endian() ? SWAP16(x) : (x))
 
-#define betoht16(x) httobe16(x)
-#define betoht32(x) httobe32(x)
 #define betoht64(x) httobe64(x)
 
 #endif
