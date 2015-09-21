@@ -396,7 +396,7 @@ static int read_uint(RFILE *fd, uint64_t *out, size_t size)
    uint64_t tmp;
 
    if (retro_fread(fd, &tmp, size) == -1)
-      return -errno;
+      goto error;
 
    switch (size)
    {
@@ -414,6 +414,9 @@ static int read_uint(RFILE *fd, uint64_t *out, size_t size)
          break;
    }
    return 0;
+
+error:
+   return -errno;
 }
 
 static int read_int(RFILE *fd, int64_t *out, size_t size)
@@ -424,7 +427,7 @@ static int read_int(RFILE *fd, int64_t *out, size_t size)
    uint64_t tmp64;
 
    if (retro_fread(fd, &tmp64, size) == -1)
-      return -errno;
+      goto error;
 
    (void)tmp8;
 
@@ -447,6 +450,9 @@ static int read_int(RFILE *fd, int64_t *out, size_t size)
          break;
    }
    return 0;
+
+error:
+   return -errno;
 }
 
 static int read_buff(RFILE *fd, size_t size, char **pbuff, uint64_t *len)
@@ -459,13 +465,14 @@ static int read_buff(RFILE *fd, size_t size, char **pbuff, uint64_t *len)
    *pbuff = (char *)calloc((size_t)(tmp_len + 1), sizeof(char));
 
    if (retro_fread(fd, *pbuff, (size_t)tmp_len) == -1)
-   {
-      free(*pbuff);
-      return -errno;
-   }
+      goto error;
 
    *len = tmp_len;
    return 0;
+
+error:
+   free(*pbuff);
+   return -errno;
 }
 
 static int read_map(RFILE *fd, uint32_t len,
