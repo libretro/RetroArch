@@ -35,6 +35,7 @@
 #endif
 
 #include <boolean.h>
+#include <file/file_path.h>
 
 struct RDIR
 {
@@ -148,22 +149,13 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
    const struct dirent *entry = (const struct dirent*)rdir->entry;
    if (entry->d_type == DT_DIR)
       return true;
-   else if (entry->d_type == DT_UNKNOWN /* This can happen on certain file systems. */
-         || entry->d_type == DT_LNK)
-   {
-      struct stat buf;
-      if (stat(path, &buf) < 0)
-         return false;
-
-      return S_ISDIR(buf.st_mode);
-   }
+   /* This can happen on certain file systems. */
+   if (entry->d_type == DT_UNKNOWN || entry->d_type == DT_LNK)
+      return path_is_directory(path);
    return false;
-#else /* dirent struct doesn't have d_type, do it the slow way ... */
-   struct stat buf;
-   if (stat(path, &buf) < 0)
-      return false;
-
-   return S_ISDIR(buf.st_mode);
+#else
+   /* dirent struct doesn't have d_type, do it the slow way ... */
+   return path_is_directory(path);
 #endif
 }
 
