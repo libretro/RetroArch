@@ -78,6 +78,9 @@
 
 #endif
 
+#if defined(VITA)
+#define FIO_SO_ISDIR PSP2_S_ISDIR
+#endif
 
 /**
  * path_get_extension:
@@ -176,7 +179,7 @@ bool path_is_directory(const char *path)
    SceIoStat buf;
    if (sceIoGetstat(path, &buf) < 0)
       return false;
-   return PSP2_S_ISDIR(buf.st_mode);
+   return FIO_SO_ISDIR(buf.st_mode);
 #elif defined(__CELLOS_LV2__)
     CellFsStat buf;
     if (cellFsStat(path, &buf) < 0)
