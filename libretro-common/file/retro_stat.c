@@ -67,11 +67,7 @@
 #include <retro_miscellaneous.h>
 
 #if defined(__CELLOS_LV2__)
-
-#ifndef S_ISDIR
-#define S_ISDIR(x) (x & 0040000)
-#endif
-
+#include <cell/cell_fs.h>
 #endif
 
 #if defined(VITA)
