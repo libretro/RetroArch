@@ -482,6 +482,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
@@ -490,18 +491,18 @@
 					../../../,
 				);
 				INFOPLIST_FILE = "RetroArch copy-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_NETPLAY",
-                                        "-DHAVE_CORETEXT",
+					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_IMAGEVIEWER",
+					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
@@ -548,6 +549,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
@@ -556,19 +558,19 @@
 					../../../,
 				);
 				INFOPLIST_FILE = "RetroArch copy-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_NETPLAY",
-                                        "-DHAVE_CORETEXT",
+					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_IMAGEVIEWER",
+					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
@@ -602,12 +604,12 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_NETPLAY",
-                                        "-DHAVE_CORETEXT",
+					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_IMAGEVIEWER",
+					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
@@ -656,6 +658,7 @@
 				CODE_SIGN_IDENTITY = "";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
 				COPY_PHASE_STRIP = NO;
+				ENABLE_BITCODE = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -668,16 +671,16 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = ../;
-				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_NETPLAY",
-                                        "-DHAVE_CORETEXT",
+					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_IMAGEVIEWER",
+					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
@@ -722,23 +725,24 @@
 				CODE_SIGN_IDENTITY = "";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
 				COPY_PHASE_STRIP = YES;
+				ENABLE_BITCODE = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_OPTIMIZATION_LEVEL = 2;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = ../;
-				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_NETPLAY",
-                                        "-DHAVE_CORETEXT",
+					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_IMAGEVIEWER",
+					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
@@ -782,6 +786,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
@@ -790,18 +795,18 @@
 					../../../,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/RetroArch-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_NETPLAY",
-                                        "-DHAVE_CORETEXT",
+					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_IMAGEVIEWER",
+					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
@@ -850,6 +855,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
@@ -858,19 +864,19 @@
 					../../../,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/RetroArch-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_NETPLAY",
-                                        "-DHAVE_CORETEXT",
+					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_IMAGEVIEWER",
+					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
@@ -906,12 +912,12 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_NETPLAY",
-                                        "-DHAVE_CORETEXT",
+					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_IMAGEVIEWER",
+					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
 					"-DHAVE_RGUI",
 					"-DHAVE_MENU",
