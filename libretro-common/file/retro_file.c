@@ -56,6 +56,8 @@ struct RFILE
 {
 #if defined(PSP) || defined(VITA)
    SceUID fd;
+#elif defined(__CELLOS_LV2__)
+   int fd;
 #elif defined(HAVE_BUFFERED_IO)
    FILE *fd;
 #else
@@ -67,7 +69,7 @@ int retro_get_fd(RFILE *stream)
 {
    if (!stream)
       return -1;
-#if defined(VITA) || defined(PSP)
+#if defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__)
    return stream->fd;
 #elif defined(HAVE_BUFFERED_IO)
    return fileno(stream->fd);
@@ -96,6 +98,9 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 #if defined(VITA) || defined(PSP)
          mode_int = 0777;
          flags    = PSP_O_RDONLY;
+#elif defined(__CELLOS_LV2__)
+         mode_int = 0777;
+         flags    = CELL_FS_O_RDONLY;
 #elif defined(HAVE_BUFFERED_IO)
          mode_str = "rb";
 #else
@@ -106,6 +111,9 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 #if defined(VITA) || defined(PSP)
          mode_int = 0777;
          flags    = PSP_O_CREAT | PSP_O_WRONLY | PSP_O_TRUNC;
+#elif defined(__CELLOS_LV2__)
+         mode_int = 0777;
+         flags    = CELL_FS_O_CREAT | CELL_FS_O_WRONLY | CELL_FS_O_TRUNC;
 #elif defined(HAVE_BUFFERED_IO)
          mode_str = "wb";
 #else
@@ -116,6 +124,9 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 #if defined(VITA) || defined(PSP)
          mode_int = 0777;
          flags    = PSP_O_RDWR;
+#elif defined(__CELLOS_LV2__)
+         mode_int = 0777;
+         flags    = CELL_FS_O_RDWR;
 #elif defined(HAVE_BUFFERED_IO)
          mode_str = "w+";
 #else
@@ -129,6 +140,8 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 
 #if defined(VITA) || defined(PSP)
    stream->fd = sceIoOpen(path, flags, mode_int);
+#elif defined(__CELLOS_LV2__)
+   cellFsOpen(path, flags, &stream->fd, NULL, 0);
 #elif defined(HAVE_BUFFERED_IO)
    stream->fd = fopen(path, mode_str);
 #else
@@ -163,6 +176,11 @@ ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence)
    if (ret == -1)
       return -1;
    return 0;
+#elif defined(__CELLOS_LV2__)
+   uint64_t pos = 0;
+   if (cellFsLseek(stream->fd, offset, whence, &pos) != CELL_FS_SUCCEEDED)
+      return -1;
+   return 0;
 #elif defined(HAVE_BUFFERED_IO)
    return fseek(stream->fd, (long)offset, whence);
 #else
@@ -179,6 +197,11 @@ ssize_t retro_ftell(RFILE *stream)
       return -1;
 #if defined(VITA) || defined(PSP)
    return sceIoLseek(stream->fd, 0, SEEK_CUR);
+#elif defined(__CELLOS_LV2__)
+   uint64_t pos = 0;
+   if (cellFsLseek(stream->fd, 0, CELL_FS_SEEK_CUR, &pos) != CELL_FS_SUCCEEDED)
+      return -1;
+   return 0;
 #elif defined(HAVE_BUFFERED_IO)
    return ftell(stream->fd);
 #else 
@@ -197,6 +220,11 @@ ssize_t retro_fread(RFILE *stream, void *s, size_t len)
       return -1;
 #if defined(VITA) || defined(PSP)
    return sceIoRead(stream->fd, s, len);
+#elif defined(__CELLOS_LV2__)
+   uint64_t bytes_written;
+   if (cellFsRead(stream->fd, s, len, &bytes_written) != CELL_FS_SUCCEEDED)
+      return -1;
+   return bytes_written;
 #elif defined(HAVE_BUFFERED_IO)
    return fread(s, 1, len, stream->fd);
 #else
@@ -210,6 +238,11 @@ ssize_t retro_fwrite(RFILE *stream, const void *s, size_t len)
       return -1;
 #if defined(VITA) || defined(PSP)
    return sceIoWrite(stream->fd, s, len);
+#elif defined(__CELLOS_LV2__)
+   uint64_t bytes_written;
+   if (cellFsWrite(stream->fd, s, len, &bytes_written) != CELL_FS_SUCCEEDED)
+      return -1;
+   return bytes_written;
 #elif defined(HAVE_BUFFERED_IO)
    return fwrite(s, 1, len, stream->fd);
 #else
@@ -225,6 +258,9 @@ int retro_fclose(RFILE *stream)
 #if defined(VITA) || defined(PSP)
    if (stream->fd > 0)
       sceIoClose(stream->fd);
+#elif defined(__CELLOS_LV2__)
+   if (stream->fd > 0)
+      cellFsClose(stream->fd);
 #elif defined(HAVE_BUFFERED_IO)
    if (stream->fd)
       fclose(stream->fd);
