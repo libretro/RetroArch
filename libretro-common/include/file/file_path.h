@@ -84,6 +84,8 @@ bool path_contains_compressed_file(const char *path);
  */
 bool path_is_directory(const char *path);
 
+bool path_is_valid(const char *path);
+
 /**
  * path_file_exists:
  * @path               : path
