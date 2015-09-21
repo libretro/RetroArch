@@ -308,7 +308,7 @@ int rmsgpack_write_int(RFILE *fd, int64_t value)
       if (retro_fwrite(fd, &MPF_INT16, sizeof(MPF_INT16)) == -1)
          goto error;
 
-      tmp_i16 = swap_if_little16(value);
+      tmp_i16 = swap_if_little16((uint16_t)value);
       if (retro_fwrite(fd, &tmp_i16, sizeof(int16_t)) == -1)
          goto error;
       written += sizeof(int16_t);
@@ -318,7 +318,7 @@ int rmsgpack_write_int(RFILE *fd, int64_t value)
       if (retro_fwrite(fd, &MPF_INT32, sizeof(MPF_INT32)) == -1)
          goto error;
 
-      tmp_i32 = swap_if_little32(value);
+      tmp_i32 = swap_if_little32((uint32_t)value);
       if (retro_fwrite(fd, &tmp_i32, sizeof(int32_t)) == -1)
          goto error;
       written += sizeof(int32_t);
@@ -360,7 +360,7 @@ int rmsgpack_write_uint(RFILE *fd, uint64_t value)
       if (retro_fwrite(fd, &MPF_UINT16, sizeof(MPF_UINT16)) == -1)
          goto error;
 
-      tmp_i16 = swap_if_little16(value);
+      tmp_i16 = swap_if_little16((uint16_t)value);
       if (retro_fwrite(fd, &tmp_i16, sizeof(uint16_t)) == -1)
          goto error;
       written += sizeof(uint16_t);
@@ -370,7 +370,7 @@ int rmsgpack_write_uint(RFILE *fd, uint64_t value)
       if (retro_fwrite(fd, &MPF_UINT32, sizeof(MPF_UINT32)) == -1)
          goto error;
 
-      tmp_i32 = swap_if_little32(value);
+      tmp_i32 = swap_if_little32((uint32_t)value);
       if (retro_fwrite(fd, &tmp_i32, sizeof(uint32_t)) == -1)
          goto error;
       written += sizeof(uint32_t);
@@ -404,10 +404,10 @@ static int read_uint(RFILE *fd, uint64_t *out, size_t size)
          *out = *(uint8_t *)(&tmp);
          break;
       case 2:
-         *out = swap_if_little16(tmp);
+         *out = swap_if_little16((uint16_t)tmp);
          break;
       case 4:
-         *out = swap_if_little32(tmp);
+         *out = swap_if_little32((uint32_t)tmp);
          break;
       case 8:
          *out = swap_if_little64(tmp);
@@ -434,11 +434,11 @@ static int read_int(RFILE *fd, int64_t *out, size_t size)
          *out = *((int8_t *)(&tmp64));
          break;
       case 2:
-         tmp16 = swap_if_little16(tmp64);
+         tmp16 = swap_if_little16((uint16_t)tmp64);
          *out = *((int16_t *)(&tmp16));
          break;
       case 4:
-         tmp32 = swap_if_little32(tmp64);
+         tmp32 = swap_if_little32((uint32_t)tmp64);
          *out = *((int32_t *)(&tmp32));
          break;
       case 8:
