@@ -740,11 +740,13 @@ static void glui_navigation_alphabet(size_t *unused)
 }
 
 static void glui_populate_entries(const char *path,
-      const char *label, unsigned i)
+      const char *label, unsigned i, unsigned type)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
+
+   (void)type;
 
    menu->scroll_y      = glui_get_scroll();
 }
