@@ -172,13 +172,19 @@ bool path_is_compressed_file(const char* path)
  */
 bool path_is_directory(const char *path)
 {
-#ifdef _WIN32
+#if defined(VITA)
+   SceIoStat buf;
+   if (sceIoGetstat(path, &buf) < 0)
+      return -1;
+   return PSP2_S_ISDIR(buf.st_mode);
+#elif defined(__CELLOS_LV2__)
+    CellFsStat buf;
+    if (cellFsStat(path, &buf) < 0)
+       return -1;
+    return ((buf.st_mode & S_IFMT) == S_IFDIR);
+#elif defined(_WIN32)
    DWORD ret = GetFileAttributes(path);
    return (ret & FILE_ATTRIBUTE_DIRECTORY) && (ret != INVALID_FILE_ATTRIBUTES);
-#elif defined(VITA)
-   SceIoStat stat;
-	 if(sceIoGetstat(path,&stat) < 0)return -1;
-	 return PSP2_S_ISDIR(stat.st_mode);
 #else
    struct stat buf;
    if (stat(path, &buf) < 0)
