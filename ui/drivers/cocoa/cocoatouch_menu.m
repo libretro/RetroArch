@@ -546,20 +546,18 @@ replacementString:(NSString *)string
 - (NSString*)tableView:(UITableView*)tableView
 titleForHeaderInSection:(NSInteger)section
 {
-   if (self.hidesHeaders)
-       return nil;
-   return self.sections[section][0];
+   return nil;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView
  numberOfRowsInSection:(NSInteger)section
 {
-   return [self.sections[section] count] - 1;
+   return [self.sections[section] count];
 }
 
 - (id)itemForIndexPath:(NSIndexPath*)indexPath
 {
-   return self.sections[indexPath.section][indexPath.row + 1];
+   return self.sections[indexPath.section][indexPath.row];
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView
@@ -615,6 +613,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 @end
 
 @interface RAMainMenu : RAMenuBase<RAMenuActioner>
+@property(nonatomic) UILabel *osdmessage;
 @end
 
 @implementation RAMainMenu
@@ -628,7 +627,17 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (void)viewWillAppear:(BOOL)animated
 {
+   char title_msg[256];
    [self reloadData];
+
+   self.osdmessage = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 300, 44)];
+   self.osdmessage.backgroundColor = [UIColor clearColor];
+
+   UIBarButtonItem *item = [[UIBarButtonItem alloc] initWithCustomView:self.osdmessage];
+   [self setToolbarItems: [NSArray arrayWithObject:item]];
+
+   menu_entries_get_core_title(title_msg, sizeof(title_msg));
+   self.osdmessage.text = BOXSTRING(title_msg);
 }
 
 - (void)willReloadData
@@ -641,10 +650,10 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    everything = [NSMutableArray array];
 
    menu_entries_get_core_title(title_msg, sizeof(title_msg));
-   self.title = BOXSTRING(title_msg);
+   self.osdmessage.text = BOXSTRING(title_msg);
 
    menu_entries_get_title(title, sizeof(title));
-   [everything addObject:BOXSTRING(title)];
+   self.title = BOXSTRING(title);
   
    end = menu_entries_get_end();    
    for (i = menu_entries_get_start(); i < end; i++)
