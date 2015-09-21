@@ -404,10 +404,6 @@ struct registered_func registered_functions[100] = {
 
 static struct buffer chomp(struct buffer buff)
 {
-   off_t i = 0;
-
-   (void)i;
-
    for (; buff.offset < buff.len && isspace(buff.data[buff.offset]); buff.offset++);
    return buff;
 }
