@@ -15,9 +15,8 @@
 #include "query.h"
 #include "rmsgpack_dom.h"
 
-#define MAX_ERROR_LEN 256
-#undef  MAX_ARGS
-#define MAX_ARGS 50
+#define MAX_ERROR_LEN   256
+#define QUERY_MAX_ARGS  50
 
 static char tmp_error_buff [MAX_ERROR_LEN] = {0};
 
@@ -654,7 +653,7 @@ static struct buffer parse_method_call(struct buffer buff,
 {
    size_t func_name_len;
    unsigned i;
-   struct argument args[MAX_ARGS];
+   struct argument args[QUERY_MAX_ARGS];
    unsigned argi = 0;
    const char *func_name = NULL;
    struct registered_func *rf = registered_functions;
@@ -690,7 +689,7 @@ static struct buffer parse_method_call(struct buffer buff,
    buff = chomp(buff);
    while (!peek(buff, ")"))
    {
-      if (argi >= MAX_ARGS)
+      if (argi >= QUERY_MAX_ARGS)
       {
          raise_too_many_arguments(error);
          goto clean;
@@ -742,7 +741,7 @@ static struct buffer parse_table(struct buffer buff,
 {
    unsigned i;
    size_t ident_len;
-   struct argument args[MAX_ARGS];
+   struct argument args[QUERY_MAX_ARGS];
    const char *ident_name = NULL;
    unsigned argi = 0;
 
@@ -756,7 +755,7 @@ static struct buffer parse_table(struct buffer buff,
 
    while (!peek(buff, "}"))
    {
-      if (argi >= MAX_ARGS)
+      if (argi >= QUERY_MAX_ARGS)
       {
          raise_too_many_arguments(error);
          goto clean;
@@ -801,7 +800,7 @@ static struct buffer parse_table(struct buffer buff,
 
       buff = chomp(buff);
 
-      if (argi >= MAX_ARGS)
+      if (argi >= QUERY_MAX_ARGS)
       {
          raise_too_many_arguments(error);
          goto clean;
