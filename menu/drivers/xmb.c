@@ -1688,9 +1688,7 @@ static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
    strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
    strlcpy(info.exts, "lpl", sizeof(info.exts));
 
-   /* TODO/FIXME _ might want to do something different here other than MENU_ACTION_OK
-    * in case you want to differentiate between horizontal pushes and normal pushes */
-   menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, MENU_ACTION_OK);
+   menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL);
 }
 
 static void xmb_font(menu_handle_t *menu)
@@ -2504,9 +2502,7 @@ static void xmb_toggle(bool menu_on)
 
 static int deferred_push_content_actions(menu_displaylist_info_t *info)
 {
-   /* TODO/FIXME _ might want to do something different here other than MENU_ACTION_OK
-    * in case you want to differentiate between horizontal pushes and normal pushes */
-   return menu_displaylist_push_list(info, DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, MENU_ACTION_OK);
+   return menu_displaylist_push_list(info, DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS);
 }
 
 static int xmb_list_bind_init_compare_label(menu_file_list_cbs_t *cbs,

@@ -273,7 +273,7 @@ static int action_iterate_menu_viewport(char *s, size_t len,
             info.type          = MENU_SETTINGS_CUSTOM_VIEWPORT;
             info.directory_ptr = nav->selection_ptr;
 
-            menu_displaylist_push_list(&info, DISPLAYLIST_INFO, MENU_ACTION_CANCEL);
+            menu_displaylist_push_list(&info, DISPLAYLIST_INFO);
          }
          break;
 
@@ -290,7 +290,7 @@ static int action_iterate_menu_viewport(char *s, size_t len,
             info.type          = 0;
             info.directory_ptr = nav->selection_ptr;
 
-            menu_displaylist_push_list(&info, DISPLAYLIST_INFO, MENU_ACTION_OK);
+            menu_displaylist_push_list(&info, DISPLAYLIST_INFO);
          }
          break;
 
@@ -522,7 +522,7 @@ int menu_iterate(bool render_this_frame, unsigned action)
                   menu_hash_to_str(MENU_LABEL_HELP),
                   sizeof(info.label));
 
-            menu_displaylist_push_list(&info, DISPLAYLIST_HELP, MENU_ACTION_NOOP);
+            menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
          }
          break;
    }

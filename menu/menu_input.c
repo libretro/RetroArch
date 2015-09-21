@@ -416,7 +416,7 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
          strlcpy(info.label,
                menu_hash_to_str(MENU_LABEL_CUSTOM_BIND), sizeof(info.label));
 
-         menu_displaylist_push_list(&info, DISPLAYLIST_INFO, MENU_ACTION_OK);
+         menu_displaylist_push_list(&info, DISPLAYLIST_INFO);
          break;
       case MENU_INPUT_BIND_ALL:
          menu_input->binds.target = &settings->input.binds
@@ -431,7 +431,7 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
                menu_hash_to_str(MENU_LABEL_CUSTOM_BIND_ALL),
                sizeof(info.label));
 
-         menu_displaylist_push_list(&info, DISPLAYLIST_INFO, MENU_ACTION_OK);
+         menu_displaylist_push_list(&info, DISPLAYLIST_INFO);
          break;
    }
    return 0;
