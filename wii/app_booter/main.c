@@ -2,6 +2,7 @@
    This code is licensed to you under the terms of the GNU GPL, version 2;
    see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt  */
 #include <stdio.h>
+#include <stdint.h>
 #include <stdarg.h>
 #include "string.h"
 
@@ -9,22 +10,22 @@
 
 #include "elf_abi.h"
 
-#define EXECUTABLE_MEM_ADDR 0x91800000
-#define SYSTEM_ARGV	((struct __argv *) 0x93200000)
+#define SYSTEM_ARGV           ((struct __argv *) 0x93200000)
 
-#define ARENA1_HI_LIMIT 0x81800000
+#define EXECUTABLE_MEM_ADDR   0x91800000
+#define ARENA1_HI_LIMIT       0x81800000
 
 typedef struct _dolheade
 {
-   u32 text_pos[7];
-   u32 data_pos[11];
-   u32 text_start[7];
-   u32 data_start[11];
-   u32 text_size[7];
-   u32 data_size[11];
-   u32 bss_start;
-   u32 bss_size;
-   u32 entry_point;
+   uint32_t text_pos[7];
+   uint32_t data_pos[11];
+   uint32_t text_start[7];
+   uint32_t data_start[11];
+   uint32_t text_size[7];
+   uint32_t data_size[11];
+   uint32_t bss_start;
+   uint32_t bss_size;
+   uint32_t entry_point;
 } dolheader;
 
 typedef void (*entrypoint)(void);
@@ -68,7 +69,6 @@ static int32_t valid_elf_image (void *addr)
 
 static uint32_t load_elf_image (void *elfstart)
 {
-   u8 *image;
    int i;
    Elf32_Phdr *phdrs = NULL;
    Elf32_Ehdr *ehdr  = (Elf32_Ehdr*) elfstart;
@@ -83,6 +83,8 @@ static uint32_t load_elf_image (void *elfstart)
 
    for (i = 0; i < ehdr->e_phnum; i++)
    {
+      uint8_t *image;
+
       if(phdrs[i].p_type != PT_LOAD)
          continue;
 
@@ -95,7 +97,7 @@ static uint32_t load_elf_image (void *elfstart)
       if(!phdrs[i].p_filesz)
          continue;
 
-      image = (u8 *) (elfstart + phdrs[i].p_offset);
+      image = (uint8_t*)(elfstart + phdrs[i].p_offset);
       memcpy ((void *) phdrs[i].p_paddr, (const void *) image, phdrs[i].p_filesz);
 
       sync_before_exec ((void *) phdrs[i].p_paddr, phdrs[i].p_memsz);
@@ -106,7 +108,7 @@ static uint32_t load_elf_image (void *elfstart)
 
 static uint32_t load_dol_image(const void *dolstart)
 {
-	u32 i;
+	uint32_t i;
    dolheader *dolfile = NULL;
 
 	if(!dolstart)
@@ -141,9 +143,9 @@ static uint32_t load_dol_image(const void *dolstart)
 
 void app_booter_main(void)
 {
-	void *exeBuffer = (void*)EXECUTABLE_MEM_ADDR;
-	u32 exeEntryPointAddress = 0;
 	entrypoint exeEntryPoint;
+	uint32_t exeEntryPointAddress = 0;
+	void *exeBuffer = (void*)EXECUTABLE_MEM_ADDR;
 
 	if (valid_elf_image(exeBuffer) == 1)
 		exeEntryPointAddress = load_elf_image(exeBuffer);
@@ -157,7 +159,7 @@ void app_booter_main(void)
 
 	if (SYSTEM_ARGV->argvMagic == ARGV_MAGIC)
 	{
-		void *new_argv = (void *) (exeEntryPointAddress + 8);
+		void *new_argv = (void*)(exeEntryPointAddress + 8);
 		memcpy(new_argv, SYSTEM_ARGV, sizeof(struct __argv));
 		sync_before_exec(new_argv, sizeof(struct __argv));
 	}
