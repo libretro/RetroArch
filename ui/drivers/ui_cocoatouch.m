@@ -527,6 +527,14 @@ static void ui_companion_cocoatouch_notify_list_pushed(void *data,
    bool pushp = false;
 
    size_t new_size = file_list_get_size( menu_list );
+
+   /* FIXME workaround for the double call */
+   if ( old_size == 0 )
+   {
+      old_size = new_size;
+      return;
+   }
+
    if ( old_size == new_size ) {
      pushp = false;
    } else if ( old_size < new_size ) {
