@@ -1633,6 +1633,7 @@ static bool gl_frame(void *data, const void *frame,
       unsigned pitch, const char *msg)
 {
    unsigned width, height;
+   struct gfx_tex_info feedback_info;
    static struct retro_perf_counter frame_run = {0};
    gl_t                            *gl = (gl_t*)data;
    driver_t                    *driver = driver_get_ptr();
@@ -1742,7 +1743,8 @@ static bool gl_frame(void *data, const void *frame,
    gl->tex_info.tex_size[0]   = gl->tex_w;
    gl->tex_info.tex_size[1]   = gl->tex_h;
 
-   struct gfx_tex_info feedback_info = gl->tex_info;
+   feedback_info              = gl->tex_info;
+
    if (gl->fbo_feedback_enable)
    {
       const struct gfx_fbo_rect *rect = &gl->fbo_rect[gl->fbo_feedback_pass];
