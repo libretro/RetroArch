@@ -59,12 +59,12 @@ static void menu_push_to_history_playlist(void)
 
    if (*global->path.fullpath)
    {
-      char tmp[PATH_MAX_LENGTH] = {0};
-      char str[PATH_MAX_LENGTH] = {0};
+      char tmp[PATH_MAX_LENGTH];
+      char str[PATH_MAX_LENGTH];
 
       fill_pathname_base(tmp, global->path.fullpath, sizeof(tmp));
       snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
-      rarch_main_msg_queue_push(str, 1, 1, false);
+      menu_display_msg_queue_push(str, 1, 1, false);
    }
 
    content_playlist_push(g_defaults.history,
@@ -106,7 +106,7 @@ bool menu_load_content(enum rarch_core_type type)
 
       fill_pathname_base(name, global->path.fullpath, sizeof(name));
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
-      rarch_main_msg_queue_push(msg, 1, 90, false);
+      menu_display_msg_queue_push(msg, 1, 90, false);
 
       if (disp)
          disp->msg_force = true;

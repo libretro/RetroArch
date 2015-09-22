@@ -16,6 +16,7 @@
 #include "../menu.h"
 #include "../menu_cbs.h"
 #include "../menu_input.h"
+#include "../menu_display.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 #include "../menu_hash.h"
@@ -277,7 +278,7 @@ static int action_start_video_resolution(
       global->console.screen.resolutions.height = height;
 
       snprintf(msg, sizeof(msg),"Resetting to: %dx%d",width, height);
-      rarch_main_msg_queue_push(msg, 1, 100, true);
+      menu_display_msg_queue_push(msg, 1, 100, true);
    }
 
    return 0;

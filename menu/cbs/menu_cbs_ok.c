@@ -1653,7 +1653,7 @@ static int action_ok_video_resolution(const char *path,
       global->console.screen.resolutions.height = height;
 
       snprintf(msg, sizeof(msg),"Applying: %dx%d\n START to reset",width, height);
-      rarch_main_msg_queue_push(msg, 1, 100, true);
+      menu_display_msg_queue_push(msg, 1, 100, true);
    }
 #endif
 
