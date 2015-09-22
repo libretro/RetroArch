@@ -599,6 +599,13 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
     [message show];
 }
 
+
+-(void)msgQueuePush:(NSString *)msg
+{
+   self.osdmessage.text = msg;
+}
+
+
 - (void)alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
     switch (buttonIndex)
@@ -612,7 +619,6 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 @end
 
 @interface RAMainMenu : RAMenuBase<RAMenuActioner>
-@property(nonatomic) UILabel *osdmessage;
 @end
 
 @implementation RAMainMenu

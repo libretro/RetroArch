@@ -42,6 +42,7 @@
 @property (nonatomic) NSMutableArray* sections;
 @property (nonatomic) BOOL hidesHeaders;
 @property (nonatomic) RAMenuBase* last_menu;
+@property (nonatomic) UILabel *osdmessage;
 
 - (id)initWithStyle:(UITableViewStyle)style;
 - (id)itemForIndexPath:(NSIndexPath*)indexPath;
