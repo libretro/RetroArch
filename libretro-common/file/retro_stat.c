@@ -75,7 +75,8 @@
 enum stat_mode
 {
    IS_DIRECTORY = 0,
-   IS_CHARACTER_SPECIAL
+   IS_CHARACTER_SPECIAL,
+   IS_VALID
 };
 
 static bool path_stat(const char *path, enum stat_mode mode)
@@ -90,6 +91,8 @@ static bool path_stat(const char *path, enum stat_mode mode)
        return false;
 #elif defined(_WIN32)
    DWORD ret = GetFileAttributes(path);
+   if (ret == INVALID_FILE_ATTRIBUTES)
+      return false;
 #else
    struct stat buf;
    if (stat(path, &buf) < 0)
@@ -104,7 +107,7 @@ static bool path_stat(const char *path, enum stat_mode mode)
 #elif defined(__CELLOS_LV2__)
          return ((buf.st_mode & S_IFMT) == S_IFDIR);
 #elif defined(_WIN32)
-         return (ret & FILE_ATTRIBUTE_DIRECTORY) && (ret != INVALID_FILE_ATTRIBUTES);
+         return (ret & FILE_ATTRIBUTE_DIRECTORY);
 #else
          return S_ISDIR(buf.st_mode);
 #endif
@@ -114,6 +117,8 @@ static bool path_stat(const char *path, enum stat_mode mode)
 #else
          return S_ISCHR(buf.st_mode);
 #endif
+      case IS_VALID:
+         return true;
    }
 
    return false;
@@ -135,6 +140,11 @@ bool path_is_directory(const char *path)
 bool path_is_character_special(const char *path)
 {
    return path_stat(path, IS_CHARACTER_SPECIAL);
+}
+
+bool stat_is_valid(const char *path)
+{
+   return path_stat(path, IS_VALID);
 }
 
 /**
@@ -168,27 +178,4 @@ bool mkdir_norecurse(const char *dir)
    if (ret < 0)
       printf("mkdir(%s) error: %s.\n", dir, strerror(errno));
    return ret == 0;
-}
-
-bool stat_is_valid(const char *path)
-{
-#if defined(VITA) || defined(PSP)
-   SceIoStat buf;
-   if (sceIoGetstat(path, &buf) < 0)
-      return false;
-   return true;
-#elif defined(__CELLOS_LV2__)
-    CellFsStat buf;
-    if (cellFsStat(path, &buf) < 0)
-       return false;
-    return true;
-#elif defined(_WIN32)
-   DWORD ret = GetFileAttributes(path);
-   return (ret != INVALID_FILE_ATTRIBUTES);
-#else
-   struct stat buf;
-   if (stat(path, &buf) < 0)
-      return false;
-   return true;
-#endif
 }
