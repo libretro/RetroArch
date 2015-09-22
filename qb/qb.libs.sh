@@ -212,7 +212,11 @@ create_config_header()
 
 		while [ "$1" ]; do
 			case $(eval echo \$HAVE_$1) in
-				'yes') echo "#define HAVE_$1 1";;
+				'yes')
+					if [ "$(eval echo \$C89_$1)" = "no" ]; then echo "#if __cplusplus || __STDC_VERSION__ >= 199901L"; fi
+					echo "#define HAVE_$1 1"
+					if [ "$(eval echo \$C89_$1)" = "no" ]; then echo "#endif"; fi
+					;;
 				'no') echo "/* #undef HAVE_$1 */";;
 			esac
 			shift
@@ -247,7 +251,11 @@ create_config_make()
 
 		while [ "$1" ]; do
 			case $(eval echo \$HAVE_$1) in
-				'yes') echo "HAVE_$1 = 1";;
+				'yes')
+					if [ "$(eval echo \$C89_$1)" = "no" ]; then echo "ifneq (\$(C89_BUILD),1)"; fi
+					echo "HAVE_$1 = 1"
+					if [ "$(eval echo \$C89_$1)" = "no" ]; then echo "endif"; fi
+					;;
 				'no') echo "HAVE_$1 = 0";;
 			esac
 			
