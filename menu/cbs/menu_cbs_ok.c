@@ -667,7 +667,7 @@ static int action_ok_cheat_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok(path, label, type, idx, entry_idx,
-         ACTION_OK_LOAD_RECORD_CONFIGFILE, MENU_LABEL_CORE_CHEAT_OPTIONS);
+         ACTION_OK_LOAD_CHEAT_FILE, MENU_LABEL_CORE_CHEAT_OPTIONS);
 }
 
 static int action_ok_record_configfile_load(const char *path,
