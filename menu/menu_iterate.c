@@ -555,11 +555,11 @@ int menu_iterate_render(void)
 
    if (menu->state.do_messagebox && menu->state.msg[0] != '\0')
    {
-      const ui_companion_driver_t *ui = ui_companion_get_ptr();
       if (driver->render_messagebox)
          driver->render_messagebox(menu->state.msg);
       if (ui_companion_is_on_foreground())
       {
+         const ui_companion_driver_t *ui = ui_companion_get_ptr();
          if (ui->render_messagebox)
             ui->render_messagebox(menu->state.msg);
       }

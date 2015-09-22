@@ -576,6 +576,7 @@ const ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_notify_content_loaded,
    ui_companion_cocoatouch_notify_list_pushed,
    ui_companion_cocoatouch_notify_refresh,
+   NULL,
    ui_companion_cocoatouch_render_messagebox,
    "cocoatouch",
 };
