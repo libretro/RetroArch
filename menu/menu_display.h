@@ -104,6 +104,9 @@ void menu_display_unset_viewport(void);
 
 void menu_display_timedate(char *s, size_t len, unsigned time_mode);
 
+void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
+      bool flush);
+
 #ifdef __cplusplus
 }
 #endif

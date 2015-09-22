@@ -18,6 +18,7 @@
 
 #include "../menu.h"
 #include "../menu_cbs.h"
+#include "../menu_display.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 #include "../menu_hash.h"
@@ -767,9 +768,9 @@ static int generic_action_ok_remap_file_save(const char *path,
        path_mkdir(directory);
 
    if(input_remapping_save_file(file))
-      rarch_main_msg_queue_push("Remap file saved successfully", 1, 100, true);
+      menu_display_msg_queue_push("Remap file saved successfully", 1, 100, true);
    else
-      rarch_main_msg_queue_push("Error saving remap file", 1, 100, true);
+      menu_display_msg_queue_push("Error saving remap file", 1, 100, true);
 
    return 0;
 }
@@ -1023,7 +1024,7 @@ static int action_ok_download_generic(const char *path,
          menu_hash_to_str(MENU_LABEL_VALUE_STARTING_DOWNLOAD),
          path);
 
-   rarch_main_msg_queue_push(s2, 1, 90, true);
+   menu_display_msg_queue_push(s2, 1, 90, true);
 
    rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, s,
          type_msg, 0, 1, true);

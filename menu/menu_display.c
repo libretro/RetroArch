@@ -286,3 +286,9 @@ void menu_display_timedate(char *s, size_t len, unsigned time_mode)
          break;
    }
 }
+
+void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
+      bool flush)
+{
+   rarch_main_msg_queue_push(msg, prio, duration, flush);
+}
