@@ -28,10 +28,6 @@
 
 #include <boolean.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * path_mkdir:
  * @dir                : directory
@@ -53,9 +49,5 @@ bool path_mkdir(const char *dir);
 bool path_is_directory(const char *path);
 
 bool path_is_valid(const char *path);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

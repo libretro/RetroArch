@@ -27,7 +27,6 @@
 #include <string/string_list.h>
 
 #include <compat/strl.h>
-#include <compat/posix_string.h>
 #include <retro_dirent.h>
 
 #include <retro_miscellaneous.h>
