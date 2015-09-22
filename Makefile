@@ -82,7 +82,7 @@ else
    endif
 
    ifneq ($(C89_BUILD),)
-      CFLAGS += -std=c89 -ansi -pedantic -Werror=pedantic
+      CFLAGS += -std=c89 -ansi -pedantic -Werror=pedantic -Wno-long-long
    endif
 endif
 
