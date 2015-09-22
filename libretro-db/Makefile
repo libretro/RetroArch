@@ -76,4 +76,7 @@ check: testlib.so tests.lua
 	lua ./tests.lua
 
 clean:
+	rm -rf $(LIBRETRO_COMMON_DIR)/*.o
+	rm -rf $(LIBRETRO_COMMON_DIR)/compat/*.o
+	rm -rf $(LIBRETRO_COMMON_DIR)/file/*.o
 	rm -rf *.o rmsgpack_test lua_converter libretrodb_tool testlib.so
