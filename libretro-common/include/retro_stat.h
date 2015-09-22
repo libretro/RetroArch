@@ -29,16 +29,6 @@
 #include <boolean.h>
 
 /**
- * path_mkdir:
- * @dir                : directory
- *
- * Create directory on filesystem.
- *
- * Returns: true (1) if directory could be created, otherwise false (0).
- **/
-bool path_mkdir(const char *dir);
-
-/**
  * path_is_directory:
  * @path               : path
  *
@@ -49,5 +39,15 @@ bool path_mkdir(const char *dir);
 bool path_is_directory(const char *path);
 
 bool path_is_valid(const char *path);
+
+/**
+ * path_mkdir_norecurse:
+ * @dir                : directory
+ *
+ * Create directory on filesystem.
+ *
+ * Returns: true (1) if directory could be created, otherwise false (0).
+ **/
+bool mkdir_norecurse(const char *dir);
 
 #endif

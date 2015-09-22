@@ -31,12 +31,62 @@
 #include <kernel/image.h>
 #endif
 
+#include <sys/stat.h>
+
 #include <file/file_path.h>
 
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <retro_assert.h>
+#include <retro_stat.h>
 #include <retro_miscellaneous.h>
+
+
+/**
+ * path_mkdir:
+ * @dir                : directory
+ *
+ * Create directory on filesystem.
+ *
+ * Returns: true (1) if directory could be created, otherwise false (0).
+ **/
+bool path_mkdir(const char *dir)
+{
+   const char *target = NULL;
+   /* Use heap. Real chance of stack overflow if we recurse too hard. */
+   char     *basedir = strdup(dir);
+   bool          ret = false;
+
+   if (!basedir)
+      return false;
+
+   path_parent_dir(basedir);
+   if (!*basedir || !strcmp(basedir, dir))
+      goto end;
+
+   if (path_is_directory(basedir))
+   {
+      target = dir;
+      ret    = mkdir_norecurse(dir);
+   }
+   else
+   {
+      target = basedir;
+      ret    = path_mkdir(basedir);
+
+      if (ret)
+      {
+         target = dir;
+         ret    = mkdir_norecurse(dir);
+      }
+   }
+
+end:
+   if (target && !ret)
+      printf("Failed to create directory: \"%s\".\n", target);
+   free(basedir);
+   return ret;
+}
 
 /**
  * path_get_extension:

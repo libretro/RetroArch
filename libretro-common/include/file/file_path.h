@@ -379,6 +379,16 @@ void fill_pathname_slash(char *path, size_t size);
 void fill_pathname_application_path(char *buf, size_t size);
 #endif
 
+/**
+ * path_mkdir:
+ * @dir                : directory
+ *
+ * Create directory on filesystem.
+ *
+ * Returns: true (1) if directory could be created, otherwise false (0).
+ **/
+bool path_mkdir(const char *dir);
+
 #ifdef __cplusplus
 }
 #endif

@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -56,13 +57,6 @@
 #include <kernel/image.h>
 #endif
 
-#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
-#include <unistd.h> /* stat() is defined here */
-#endif
-
-#include <file/file_path.h>
-#include <retro_miscellaneous.h>
-
 #if defined(__CELLOS_LV2__)
 #include <cell/cell_fs.h>
 #endif
@@ -70,6 +64,13 @@
 #if defined(VITA)
 #define FIO_SO_ISDIR PSP2_S_ISDIR
 #endif
+
+#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
+#include <unistd.h> /* stat() is defined here */
+#endif
+
+#include <retro_miscellaneous.h>
+#include <boolean.h>
 
 /**
  * path_is_directory:
@@ -111,7 +112,7 @@ bool path_is_directory(const char *path)
  *
  * Returns: true (1) if directory could be created, otherwise false (0).
  **/
-static bool path_mkdir_norecurse(const char *dir)
+bool mkdir_norecurse(const char *dir)
 {
    int ret;
 #if defined(_WIN32)
@@ -135,52 +136,6 @@ static bool path_mkdir_norecurse(const char *dir)
       printf("mkdir(%s) error: %s.\n", dir, strerror(errno));
    return ret == 0;
 }
-
-/**
- * path_mkdir:
- * @dir                : directory
- *
- * Create directory on filesystem.
- *
- * Returns: true (1) if directory could be created, otherwise false (0).
- **/
-bool path_mkdir(const char *dir)
-{
-   const char *target = NULL;
-   /* Use heap. Real chance of stack overflow if we recurse too hard. */
-   char     *basedir = strdup(dir);
-   bool          ret = false;
-
-   if (!basedir)
-      return false;
-
-   path_parent_dir(basedir);
-   if (!*basedir || !strcmp(basedir, dir))
-      goto end;
-
-   if (path_is_directory(basedir))
-   {
-      target = dir;
-      ret = path_mkdir_norecurse(dir);
-   }
-   else
-   {
-      target = basedir;
-      ret = path_mkdir(basedir);
-      if (ret)
-      {
-         target = dir;
-         ret = path_mkdir_norecurse(dir);
-      }
-   }
-
-end:
-   if (target && !ret)
-      printf("Failed to create directory: \"%s\".\n", target);
-   free(basedir);
-   return ret;
-}
-
 
 bool stat_is_valid(const char *path)
 {
