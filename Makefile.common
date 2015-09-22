@@ -57,10 +57,6 @@ ifeq ($(HAVE_FILE_LOGGER), 1)
    CFLAGS += -DHAVE_FILE_LOGGER
 endif
 
-ifeq ($(C89_BUILD), 1)
-	CFLAGS += -DC89_BUILD
-endif
-
 CFLAGS += -I./libretro-common/include
 
 # Switches

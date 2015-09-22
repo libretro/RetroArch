@@ -46,7 +46,7 @@
 #include "../input/drivers_joypad/parport_joypad.c"
 #endif
 
-#ifndef C89_BUILD
+#ifndef __STDC_C89__
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
 #include "../input/drivers_joypad/sdl_joypad.c"
 #endif
