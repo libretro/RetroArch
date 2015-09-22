@@ -38,6 +38,8 @@
  */
 bool path_is_directory(const char *path);
 
+bool path_is_character_special(const char *path);
+
 bool path_is_valid(const char *path);
 
 /**

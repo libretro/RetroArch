@@ -24,7 +24,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/ioctl.h>
@@ -35,6 +34,7 @@
 #include <memmap.h>
 #include <retro_miscellaneous.h>
 #include <gfx/scaler/scaler.h>
+#include <retro_stat.h>
 
 #include <compat/strl.h>
 
@@ -300,7 +300,6 @@ static void v4l_free(void *data)
 static void *v4l_init(const char *device, uint64_t caps,
       unsigned width, unsigned height)
 {
-   struct stat st;
    video4linux_t *v4l = NULL;
 
    if ((caps & (UINT64_C(1) << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER)) == 0)
@@ -320,14 +319,7 @@ static void *v4l_init(const char *device, uint64_t caps,
    v4l->height = height;
    v4l->ready  = false;
 
-   if (stat(v4l->dev_name, &st) == -1)
-   {
-      RARCH_ERR("Cannot identify '%s' : %d, %s\n", v4l->dev_name,
-            errno, strerror(errno));
-      goto error;
-   }
-
-   if (!S_ISCHR(st.st_mode))
+   if (!path_is_character_special(v4l->dev_name))
    {
       RARCH_ERR("%s is no device.\n", v4l->dev_name);
       goto error;
