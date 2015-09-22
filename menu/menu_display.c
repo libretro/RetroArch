@@ -290,13 +290,5 @@ void menu_display_timedate(char *s, size_t len, unsigned time_mode)
 void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
       bool flush)
 {
-
    rarch_main_msg_queue_push(msg, prio, duration, flush);
-
-   if (ui_companion_is_on_foreground())
-   {
-      const ui_companion_driver_t *ui = ui_companion_get_ptr();
-      if (ui->msg_queue_push)
-         ui->msg_queue_push(msg, prio, duration, flush);
-   }
 }

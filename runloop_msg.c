@@ -73,6 +73,13 @@ void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration
       msg_queue_clear(g_msg_queue);
    msg_queue_push(g_msg_queue, msg, prio, duration);
 
+   if (ui_companion_is_on_foreground())
+   {
+      const ui_companion_driver_t *ui = ui_companion_get_ptr();
+      if (ui->msg_queue_push)
+         ui->msg_queue_push(msg, prio, duration, flush);
+   }
+
 #ifdef HAVE_THREADS
    slock_unlock(mq_lock);
 #endif
