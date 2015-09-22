@@ -21,6 +21,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 
 #if defined(_WIN32)
@@ -60,10 +61,6 @@
 #endif
 
 #include <file/file_path.h>
-
-#include <compat/strl.h>
-#include <compat/posix_string.h>
-#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 
 #if defined(__CELLOS_LV2__)
