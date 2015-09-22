@@ -1541,29 +1541,36 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
    switch (hash)
    {
       case MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC:
-         snprintf(s, len,
-               "RetroArch relies on an unique form of\n"
-               "audio/video synchronization where it needs to be\n"
-               "calibrated against the refresh rate of your\n"
-               "display for best performance results.\n"
-               " \n"
-               "If you experience any audio crackling or video\n"
-               "tearing, usually it means that you need to\n"
-               "calibrate the settings. Some choices below:\n"
-               " \n"
-               "a) Go to '%s' -> '%s', and enable\n"
-               "'Threaded Video'. Refresh rate will not matter\n"
-               "in this mode, framerate will be higher,\n"
-               "but video might be less smooth.\n"
-               "b) Go to '%s' -> '%s', and look at\n"
-               "'%s'. Let it run for\n"
-               "2048 frames, then press 'OK'.",
-               menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
-               menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS),
-               menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
-               menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS),
-               menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO)
-               );
+         {
+            /* Work around C89 limitations */
+            char u[501];
+            char t[501];
+            strlcpy(u, 
+                  "RetroArch relies on an unique form of\n"
+                  "audio/video synchronization where it needs to be\n"
+                  "calibrated against the refresh rate of your\n"
+                  "display for best performance results.\n"
+                  " \n"
+                  "If you experience any audio crackling or video\n"
+                  "tearing, usually it means that you need to\n"
+                  "calibrate the settings. Some choices below:\n"
+                  " \n", sizeof(u));
+            snprintf(t, sizeof(t),
+                  "a) Go to '%s' -> '%s', and enable\n"
+                  "'Threaded Video'. Refresh rate will not matter\n"
+                  "in this mode, framerate will be higher,\n"
+                  "but video might be less smooth.\n"
+                  "b) Go to '%s' -> '%s', and look at\n"
+                  "'%s'. Let it run for\n"
+                  "2048 frames, then press 'OK'.",
+                  menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
+                  menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS),
+                  menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
+                  menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS),
+                  menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO));
+            strlcat(s, u, len);
+            strlcat(s, t, len);
+         }
          break;
       case MENU_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
          snprintf(s, len,
