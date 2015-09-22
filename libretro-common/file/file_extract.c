@@ -55,11 +55,12 @@ struct zlib_file_backend
 #endif
 
 #ifdef HAVE_MMAP
-#include <sys/mman.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
+
+#include <sys/mman.h>
+#include <sys/stat.h>
 
 typedef struct
 {

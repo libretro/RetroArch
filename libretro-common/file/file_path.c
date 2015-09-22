@@ -31,8 +31,6 @@
 #include <kernel/image.h>
 #endif
 
-#include <retro_stat.h>
-
 #include <file/file_path.h>
 
 #include <compat/strl.h>
