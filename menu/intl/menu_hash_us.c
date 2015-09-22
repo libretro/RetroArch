@@ -1545,7 +1545,8 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
             /* Work around C89 limitations */
             char u[501];
             char t[501];
-            strlcpy(u, 
+
+            strlcpy(t, 
                   "RetroArch relies on an unique form of\n"
                   "audio/video synchronization where it needs to be\n"
                   "calibrated against the refresh rate of your\n"
@@ -1554,8 +1555,8 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                   "If you experience any audio crackling or video\n"
                   "tearing, usually it means that you need to\n"
                   "calibrate the settings. Some choices below:\n"
-                  " \n", sizeof(u));
-            snprintf(t, sizeof(t),
+                  " \n", sizeof(t));
+            snprintf(u, sizeof(u),
                   "a) Go to '%s' -> '%s', and enable\n"
                   "'Threaded Video'. Refresh rate will not matter\n"
                   "in this mode, framerate will be higher,\n"
@@ -1568,8 +1569,8 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                   menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
                   menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS),
                   menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO));
-            strlcat(s, u, len);
             strlcat(s, t, len);
+            strlcat(s, u, len);
          }
          break;
       case MENU_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:

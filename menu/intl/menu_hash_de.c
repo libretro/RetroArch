@@ -868,26 +868,35 @@ int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
          switch (driver_hash)
          {
             case MENU_LABEL_INPUT_DRIVER_UDEV:
-               snprintf(s, len,
-                     "udev-Eingabetreiber. \n"
-                     " \n"
-                     "Dieser Treiber kann ohne X ausgeführt werden. \n"
-                     " \n"
-                     "Er verwende die neue evdev-Joypad-API \n"
-                     "für die Joystick-Unterstützung und unterstützt \n"
-                     "auch Hotplugging und Force-Feedback (wenn das \n"
-                     "Gerät dies unterstützt). \n"
-                     " \n"
-                     "Der Treiber liest evdev-Ereigniss für Tastatur- \n"
-                     "Unterstützung und kann auch mit  Tastatur-Callbacks, \n"
-                     "Mäusen und Touchpads umgehen. \n"
-                     " \n"
-                     "Standardmäßig sind die /dev/input-Dateien in den \n"
-                     "meisten Linux-Distribution nur für den Root- \n"
-                     "Benutzer lesbar (mode 600). Du kannst eine udev- \n"
-                     "Regel erstellen, die auch den Zugriff für andere \n"
-                     "Benutzer erlaubt."
-                     );
+               {
+                  /* Work around C89 limitations */
+                  char u[501];
+                  char t[501];
+
+                  snprintf(t, sizeof(t),
+                        "udev-Eingabetreiber. \n"
+                        " \n"
+                        "Dieser Treiber kann ohne X ausgeführt werden. \n"
+                        " \n"
+                        "Er verwende die neue evdev-Joypad-API \n"
+                        "für die Joystick-Unterstützung und unterstützt \n"
+                        "auch Hotplugging und Force-Feedback (wenn das \n"
+                        "Gerät dies unterstützt). \n"
+                        " \n"
+                        );
+                  snprintf(u, sizeof(u),
+                        "Der Treiber liest evdev-Ereigniss für Tastatur- \n"
+                        "Unterstützung und kann auch mit  Tastatur-Callbacks, \n"
+                        "Mäusen und Touchpads umgehen. \n"
+                        " \n"
+                        "Standardmäßig sind die /dev/input-Dateien in den \n"
+                        "meisten Linux-Distribution nur für den Root- \n"
+                        "Benutzer lesbar (mode 600). Du kannst eine udev- \n"
+                        "Regel erstellen, die auch den Zugriff für andere \n"
+                        "Benutzer erlaubt.");
+                  strlcat(s, t, len);
+                  strlcat(s, u, len);
+               }
                break;
             case MENU_LABEL_INPUT_DRIVER_LINUXRAW:
                snprintf(s, len,

@@ -931,32 +931,41 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
    switch (hash)
    {
       case MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC:
-         snprintf(s, len,
-               "RetroArch utiliza un formato único para \n"
-               "sincronizar vídeo y sonido que necesita \n"
-               "calibrarse con la frecuencia de \n"
-               "actualización de tu monitor para obtener \n"
-               "el mejor rendimiento. \n"
-               " \n"
-               "Si notas cortes de sonido o en la imagen,\n"
-               "lo normal es que necesites calibrar estos\n"
-               "ajustes. Aquí van algunas opciones:\n"
-               " \n"
-               "a) Ve a '%s' -> '%s' y activa\n"
-               "'Vídeo por hilos'. En este modo la tasa\n"
-               "de refresco es irrelevante, habrá más fps,\n"
-               "'Vídeo multinúcleo'. En este modo la \n"
-               "frecuencia es irrelevante, habrá más fps,\n"
-               "pero la imagen podría ser menos fluida.\n"
-               "b) Ve a '%s' -> '%s' y busca\n"
-               "'%s'. Deja que se ejecute durante\n"
-               "2048 fotogramas y selecciona Aceptar.",
-               menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
-               menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS),
-               menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
-               menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS),
-               menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO)
-               );
+         {
+            /* Work around C89 limitations */
+            char u[501];
+            char t[501];
+
+            strlcpy(t,
+                  "RetroArch utiliza un formato único para \n"
+                  "sincronizar vídeo y sonido que necesita \n"
+                  "calibrarse con la frecuencia de \n"
+                  "actualización de tu monitor para obtener \n"
+                  "el mejor rendimiento. \n"
+                  " \n"
+                  "Si notas cortes de sonido o en la imagen,\n"
+                  "lo normal es que necesites calibrar estos\n"
+                  "ajustes. Aquí van algunas opciones:\n"
+                  " \n", sizeof(t));
+            snprintf(u, sizeof(u),
+                  "a) Ve a '%s' -> '%s' y activa\n"
+                  "'Vídeo por hilos'. En este modo la tasa\n"
+                  "de refresco es irrelevante, habrá más fps,\n"
+                  "'Vídeo multinúcleo'. En este modo la \n"
+                  "frecuencia es irrelevante, habrá más fps,\n"
+                  "pero la imagen podría ser menos fluida.\n"
+                  "b) Ve a '%s' -> '%s' y busca\n"
+                  "'%s'. Deja que se ejecute durante\n"
+                  "2048 fotogramas y selecciona Aceptar.",
+                  menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
+                  menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS),
+                  menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
+                  menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS),
+                  menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO)
+                     );
+            strlcat(s, t, len);
+            strlcat(s, u, len);
+         }
          break;
       case MENU_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
          snprintf(s, len,
@@ -1008,26 +1017,37 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
          switch (driver_hash)
          {
             case MENU_LABEL_INPUT_DRIVER_UDEV:
-               snprintf(s, len,
-                     "Controlador de entrada udev. \n"
-                     " \n"
-                     "Este controlador puede funcionar sin X. \n"
-                     " \n"
-                     "Utiliza la API más reciente para joypads \n"
-                     "evdec para dar compatibilidad con joysticks. \n"
-                     "Permite conexión en caliente y force \n"
-                     "feedback (si lo admite el dispositivo). \n"
-                     " \n"
-                     "El controlador lee los eventos evdev para \n"
-                     "dar compatibilidad con teclados. También \n"
-                     "es compatible con retrollamadas de teclado, \n"
-                     "ratones y pantallas táctiles. \n"
-                     " \n"
-                     "La mayoría de las distros tienen los nodos \n"
-                     "/dev/input en modo root-only (modo 600). \n"
-                     "Puedes configurar una regla udev que los haga \n"
-                     "accesibles fuera de la raíz."
-                     );
+               {
+                  /* Work around C89 limitations */
+                  char u[501];
+                  char t[501];
+
+                  strlcpy(t,
+                        "Controlador de entrada udev. \n"
+                        " \n"
+                        "Este controlador puede funcionar sin X. \n"
+                        " \n"
+                        "Utiliza la API más reciente para joypads \n"
+                        "evdec para dar compatibilidad con joysticks. \n"
+                        "Permite conexión en caliente y force \n"
+                        "feedback (si lo admite el dispositivo). \n",
+                        sizeof(t));
+                  strlcpy(u,
+                        " \n"
+                        "El controlador lee los eventos evdev para \n"
+                        "dar compatibilidad con teclados. También \n"
+                        "es compatible con retrollamadas de teclado, \n"
+                        "ratones y pantallas táctiles. \n"
+                        " \n"
+                        "La mayoría de las distros tienen los nodos \n"
+                        "/dev/input en modo root-only (modo 600). \n"
+                        "Puedes configurar una regla udev que los haga \n"
+                        "accesibles fuera de la raíz.", sizeof(u)
+                        );
+
+                  strlcat(s, t, len);
+                  strlcat(s, u, len);
+               }
                break;
             case MENU_LABEL_INPUT_DRIVER_LINUXRAW:
                snprintf(s, len,
@@ -1513,27 +1533,36 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
                "implementaciones de núcleos libretro.");
          break;
       case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
-         snprintf(s, len,
-               "Frecuencia de actualización automática.\n"
-               " \n"
-               "La frecuencia de actualización precisa del \n"
-               "monitor (en Hz). Se utiliza para calcular \n"
-               "la frecuencia de entrada de sonido con esta \n"
-               "fórmula: \n"
-               " \n"
-               "audio_input_rate = veloc. de entrada de juego \n"
-               "* frecuencia de actualización de pantalla / \n"
-               "frecuencia de actualización de juego \n"
-               " \n"
-               "Si la implementación no indica un valor, se \n"
-               "asumirá de forma predeterminada el sistema \n"
-               "NTSC por compatibilidad.\n"
-               " \n"
-               "Este valor debería ser lo más similar a 60Hz \n"
-               "para evitar cambios en el tono. Si tu \n"
-               "monitor no funciona a 60Hz o similar, \n"
-               "desactiva la sincronía vertical y deja \n"
-               "esta opción en su valor predeterminado.");
+         {
+            /* Work around C89 limitations */
+            char u[501];
+            char t[501];
+
+            strlcpy(t,
+                  "Frecuencia de actualización automática.\n"
+                  " \n"
+                  "La frecuencia de actualización precisa del \n"
+                  "monitor (en Hz). Se utiliza para calcular \n"
+                  "la frecuencia de entrada de sonido con esta \n"
+                  "fórmula: \n"
+                  " \n"
+                  "audio_input_rate = veloc. de entrada de juego \n"
+                  "* frecuencia de actualización de pantalla / \n"
+                  "frecuencia de actualización de juego \n"
+                  " \n", sizeof(t));
+            strlcpy(u,
+                  "Si la implementación no indica un valor, se \n"
+                  "asumirá de forma predeterminada el sistema \n"
+                  "NTSC por compatibilidad.\n"
+                  " \n"
+                  "Este valor debería ser lo más similar a 60Hz \n"
+                  "para evitar cambios en el tono. Si tu \n"
+                  "monitor no funciona a 60Hz o similar, \n"
+                  "desactiva la sincronía vertical y deja \n"
+                  "esta opción en su valor predeterminado.", sizeof(u));
+            strlcat(s, t, len);
+            strlcat(s, u, len);
+         }
          break;
       case MENU_LABEL_VIDEO_ROTATION:
          snprintf(s, len,
