@@ -85,7 +85,7 @@ static int network_interface_up(struct sockaddr_in *target, int index,
       if (state == CELL_NET_CTL_STATE_IPObtained)
          break;
 
-      rarch_sleep(500);
+      retro_sleep(500);
       timeout_count--;
       if (index && timeout_count < 0)
          return 0;

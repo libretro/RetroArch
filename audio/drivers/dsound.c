@@ -166,7 +166,7 @@ static void dsound_thread(void *data)
           * but it is not guaranteed to work, so use high 
           * priority sleeping patterns.
           */
-         rarch_sleep(1);
+         retro_sleep(1);
          continue;
       }
 

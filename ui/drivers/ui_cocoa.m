@@ -212,7 +212,7 @@ static void poll_iteration(void)
        poll_iteration();
        ret = rarch_main_iterate(&sleep_ms);
        if (ret == 1 && sleep_ms > 0)
-          rarch_sleep(sleep_ms);
+          retro_sleep(sleep_ms);
        rarch_main_data_iterate();
        while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
     }

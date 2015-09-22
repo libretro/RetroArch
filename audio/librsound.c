@@ -153,7 +153,6 @@ static int rsnd_send_info_query(rsound_t *rd);
 static int rsnd_update_server_info(rsound_t *rd);
 
 static int rsnd_poll(struct pollfd *fd, int numfd, int timeout);
-static void rsnd_sleep(int msec);
 
 static void rsnd_cb_thread(void *thread_data);
 static void rsnd_thread(void *thread_data);
@@ -748,12 +747,6 @@ static int64_t rsnd_get_time_usec(void)
 #endif
 }
 
-static void rsnd_sleep(int msec)
-{
-   rarch_sleep(msec);
-}
-
-
 /* Calculates how many bytes there are in total in the virtual buffer. This is calculated client side.
    It should be accurate enough unless we have big problems with buffer underruns.
    This function is called by rsd_delay() to determine the latency. 
@@ -1246,7 +1239,7 @@ static void rsnd_cb_thread(void *thread_data)
                // The network might do things in large chunks, so it may request large amounts of data in short periods of time.
                // This breaks when the caller cannot buffer up big buffers beforehand, so do short sleeps inbetween.
                // This is somewhat dirty, but I cannot see a better solution
-               rsnd_sleep(1);
+               retro_sleep(1);
             }
          }
       }
@@ -1513,7 +1506,7 @@ void rsd_delay_wait(rsound_t *rd)
       {
          int64_t sleep_ms = latency_ms - rd->max_latency;
          RSD_DEBUG("[RSound] Delay wait: %d ms.\n", (int)sleep_ms);
-         rsnd_sleep((int)sleep_ms);
+         retro_sleep((int)sleep_ms);
       }
    }
 }

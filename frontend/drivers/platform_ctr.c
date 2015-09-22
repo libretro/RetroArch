@@ -265,9 +265,11 @@ void wait_for_input(void)
 
       if (kDown & KEY_SELECT)
          exit(0);
-//         select_pressed = true;
+#if 0
+      select_pressed = true;
+#endif
 
-      rarch_sleep(1);
+      retro_sleep(1);
    }
 }
 

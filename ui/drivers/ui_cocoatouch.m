@@ -64,7 +64,7 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
    int ret            = rarch_main_iterate(&sleep_ms);
 
    if (ret == 1 && !ui_companion_is_on_foreground() && sleep_ms > 0)
-      rarch_sleep(sleep_ms);
+      retro_sleep(sleep_ms);
    rarch_main_data_iterate();
 
    if (ret == -1)

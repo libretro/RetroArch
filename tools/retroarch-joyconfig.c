@@ -216,7 +216,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf,
           * Ideally use an event-based joypad scheme,
           * but it adds far more complexity, so, meh.
           */
-         rarch_sleep(10);
+         retro_sleep(10);
 
          if (timeout_ticks)
          {

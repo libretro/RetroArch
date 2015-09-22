@@ -484,12 +484,12 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
                    * 0x00 to 0x(4)A400FB. (support clones) */
                   buf = 0x55;
                   wiimote_write_data(wm, 0x04A400F0, &buf, 1);
-                  rarch_sleep(100);
+                  retro_sleep(100);
                   buf = 0x00;
                   wiimote_write_data(wm, 0x04A400FB, &buf, 1);
 
                   /* check extension type! */
-                  rarch_sleep(100);
+                  retro_sleep(100);
                   wiimote_read_data(wm, WM_EXP_MEM_CALIBR + 220, 4);
 #if 0
                   wiimote_read_data(wm, WM_EXP_MEM_CALIBR, EXP_HANDSHAKE_LEN);
@@ -553,7 +553,7 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
                switch (id)
                {
                   case IDENT_CC:
-                     rarch_sleep(100);
+                     retro_sleep(100);
                      /* pedimos datos de calibracion del JOY! */
                      wiimote_read_data(wm, WM_EXP_MEM_CALIBR, 16);
                      wm->handshake_state = 5;

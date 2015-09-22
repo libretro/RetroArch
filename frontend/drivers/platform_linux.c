@@ -696,7 +696,7 @@ static void android_app_entry(void *data)
       ret = rarch_main_iterate(&sleep_ms);
 
       if (ret == 1 && sleep_ms > 0)
-         rarch_sleep(sleep_ms);
+         retro_sleep(sleep_ms);
       rarch_main_data_iterate();
    }while (ret != -1);
 
