@@ -132,16 +132,13 @@ error:
 
 static void *font_renderer_stb_init(const char *font_path, float font_size)
 {
-   uint8_t *font_data = NULL;
    int ascent, descent, line_gap;
    stbtt_fontinfo info;
+   uint8_t *font_data = NULL;
    stb_font_renderer_t *self = (stb_font_renderer_t*) calloc(1, sizeof(*self));
 
    /* See https://github.com/nothings/stb/blob/master/stb_truetype.h#L539 */
    font_size = STBTT_POINT_SIZE(font_size);
-
-   /* prevent warnings */
-   (void)rect_width_compare;
 
    if (!self)
       goto error;
