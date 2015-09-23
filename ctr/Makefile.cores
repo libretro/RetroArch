@@ -181,4 +181,35 @@ else ifeq ($(LIBRETRO), fb_alpha_cps2)
 	#APP_BANNER        = ctr/libretro_banner.png
 	#APP_AUDIO         = ctr/silent.wav
 
+else ifeq ($(LIBRETRO), catsfc_plus)
+	APP_TITLE         = CATSFC Plus Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-CATSFCPLUS
+	APP_UNIQUE_ID     = 0xBAC13
+	APP_ICON          = ctr/catsfc_plus.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), mednafen_pce_fast)
+	APP_TITLE         = Mednafen/Beetle PCE FAST
+	#APP_DESCRIPTION   = Retroarch 3DS
+	APP_AUTHOR        = Ryphecha
+	APP_PRODUCT_CODE  = RARCH-M-PCE-FAST
+	APP_UNIQUE_ID     = 0xBAC14
+	APP_ICON          = ctr/mednafen_pce_fast.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), pcsx_rearmed)
+	APP_TITLE         = PCSX ReARMed
+	#APP_DESCRIPTION   = Retroarch 3DS
+	APP_AUTHOR        = PCSX Team, notaz, Exophase
+	APP_PRODUCT_CODE  = RARCH-PCSXRARMD
+	APP_UNIQUE_ID     = 0xBAC15
+	APP_ICON          = ctr/pcsx_rearmed.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+	BUILD_3DSX        = 0
+
 endif
