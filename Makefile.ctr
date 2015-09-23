@@ -1,11 +1,12 @@
 TARGET := retroarch_3ds
 LIBRETRO =
 
-DEBUG = 0
-GRIFFIN_BUILD = 1
+DEBUG              = 0
+GRIFFIN_BUILD      = 1
 WHOLE_ARCHIVE_LINK = 0
-BUILD_3DSX = 1
-BUILD_CIA  = 1
+BIG_STACK          = 0
+BUILD_3DSX         = 1
+BUILD_CIA          = 1
 
 APP_TITLE         = Retroarch 3DS
 APP_DESCRIPTION   = Retroarch 3DS
@@ -19,7 +20,11 @@ APP_CIA_RSF       = ctr/tools/template-cia.rsf
 APP_3DS_RSF       = ctr/tools/template-3ds.rsf
 
 
+ifeq ($(BIG_STACK),1)
+CTR_STACK_SIZE        = 0x400000
+else
 CTR_STACK_SIZE        = 0x100000
+endif
 CTR_LINEAR_HEAP_SIZE  = 0x600000
 
 include ctr/Makefile.cores
@@ -45,11 +50,10 @@ else
 	OBJS += gfx/drivers_context/gfx_null_ctx.o
 	OBJS += gfx/image/image.o
 	OBJS += gfx/video_texture.o
-	OBJS += libretro-common/formats/tga/tga_decode.o
-	OBJS += libretro-common/formats/png/rpng_fbio.o
-	OBJS += libretro-common/formats/png/rpng_nbio.o
-	OBJS += libretro-common/formats/png/rpng_decode.o
+	OBJS += libretro-common/formats/tga/rtga.o
+	OBJS += libretro-common/formats/png/rpng.o
 	OBJS += libretro-common/formats/png/rpng_encode.o
+	OBJS += libretro-common/formats/bmp/rbmp_encode.o
 	OBJS += gfx/drivers/ctr_gfx.o
 	OBJS += gfx/drivers/nullgfx.o
 	OBJS += gfx/font_renderer_driver.o
@@ -123,6 +127,7 @@ else
 	OBJS += file_path_special.o
 	OBJS += libretro-common/file/dir_list.o
 	OBJS += libretro-common/file/retro_dirent.o
+	OBJS += libretro-common/file/retro_file.o
 	OBJS += dir_list_special.o
 	OBJS += libretro-common/string/string_list.o
 	OBJS += libretro-common/string/stdstring.o
