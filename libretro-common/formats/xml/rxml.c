@@ -20,15 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <formats/rxml.h>
-#include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include <ctype.h>
-#include <stdint.h>
+
 #include <boolean.h>
+#include <retro_file.h>
 #include <compat/posix_string.h>
+
+#include <formats/rxml.h>
 
 struct rxml_document
 {
@@ -414,8 +418,7 @@ rxml_document_t *rxml_load_document(const char *path)
    char *new_memory_buffer = NULL;
    const char *mem_ptr     = NULL;
    long len                = 0;
-
-   FILE *file = fopen(path, "r");
+   RFILE *file             = retro_fopen(path, RFILE_MODE_READ, -1);
    if (!file)
       return NULL;
 
@@ -423,19 +426,19 @@ rxml_document_t *rxml_load_document(const char *path)
    if (!doc)
       goto error;
 
-   fseek(file, 0, SEEK_END);
-   len = ftell(file);
-   rewind(file);
+   retro_fseek(file, 0, SEEK_END);
+   len = retro_ftell(file);
+   retro_frewind(file);
 
    memory_buffer = (char*)malloc(len + 1);
    if (!memory_buffer)
       goto error;
 
    memory_buffer[len] = '\0';
-   if (fread(memory_buffer, 1, len, file) != (size_t)len)
+   if (retro_fread(file, memory_buffer, len) != (size_t)len)
       goto error;
 
-   fclose(file);
+   retro_fclose(file);
    file = NULL;
 
    mem_ptr = memory_buffer;
@@ -459,8 +462,7 @@ rxml_document_t *rxml_load_document(const char *path)
 
 error:
    free(memory_buffer);
-   if (file)
-      fclose(file);
+   retro_fclose(file);
    rxml_free_document(doc);
    return NULL;
 }
