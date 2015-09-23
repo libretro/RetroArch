@@ -216,25 +216,25 @@ size_t __real_malloc_usable_size(void *p);
 __attribute__ ((used)) void *__wrap_malloc(size_t size)
 {
    void *p = __real_malloc(size);
-   if (p == 0)
-      return _mem2_malloc(size);
-   return p;
+   if (p != 0)
+      return p;
+   return _mem2_malloc(size);
 }
 
 __attribute__ ((used)) void *__wrap_calloc(size_t n, size_t size)
 {
    void *p = __real_calloc(n, size);
-   if (p == 0)
-      return _mem2_calloc(n, size);
-   return p;
+   if (p != 0)
+      return p;
+   return _mem2_calloc(n, size);
 }
 
 __attribute__ ((used)) void *__wrap_memalign(size_t a, size_t size)
 {
    void *p = __real_memalign(a, size);
-   if (p == 0)
-      return _mem2_memalign(a, size);
-   return p;
+   if (p != 0)
+      return p;
+   return _mem2_memalign(a, size);
 }
 
 __attribute__ ((used)) void __wrap_free(void *p)
@@ -287,17 +287,17 @@ __attribute__ ((used)) void *__wrap_realloc(void *p, size_t size)
 __attribute__ ((used)) void *__wrap_strdup(const char *s)
 {
    void *p = __real_strdup(s);
-   if (p == 0)
-      return _mem2_strdup(s);
-   return p;
+   if (p != 0)
+      return p;
+   return _mem2_strdup(s);
 }
 
 __attribute__ ((used)) void *__wrap_strndup(const char *s, size_t n)
 {
    void *p = __real_strndup(s, n);
-   if (p == 0)
-      return _mem2_strndup(s, n);
-   return p;
+   if (p != 0)
+      return p;
+   return _mem2_strndup(s, n);
 }
 
 __attribute__ ((used)) size_t __wrap_malloc_usable_size(void *p)
