@@ -201,7 +201,7 @@ int database_info_build_query(char *s, size_t len,
    return 0;
 }
 
-static char *bin_to_hex_alloc(const uint8_t *data, size_t len)
+char *bin_to_hex_alloc(const uint8_t *data, size_t len)
 {
    size_t i;
    char *ret = (char*)malloc(len * 2 + 1);
