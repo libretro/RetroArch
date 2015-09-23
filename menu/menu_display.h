@@ -56,12 +56,6 @@ typedef struct menu_display
 
    unsigned header_height;
 
-   /* This buffer can be used to display generic OK messages to the user.
-    * Fill it and call
-    * menu_list_push(driver->menu->menu_stack, "", "message", 0, 0);
-    */
-   char message_contents[PATH_MAX_LENGTH];
-
    msg_queue_t *msg_queue;
 } menu_display_t;
 

@@ -492,7 +492,6 @@ int menu_iterate(bool render_this_frame, unsigned action)
          menu->state.do_post_iterate = true;
          break;
       case ITERATE_TYPE_MESSAGE:
-         strlcpy(menu->state.msg, disp->message_contents, sizeof(menu->state.msg));
          menu->state.pop_selected    = &nav->selection_ptr;
          menu->state.do_messagebox   = true;
          menu->state.do_pop_stack    = true;
