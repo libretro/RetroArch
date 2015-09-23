@@ -127,6 +127,8 @@ bool menu_display_init(void *data)
    if (!menu->display.animation)
       return false;
 
+   rarch_assert(menu->display.msg_queue = msg_queue_new(8));
+
    return true;
 }
 

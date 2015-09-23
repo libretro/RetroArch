@@ -230,7 +230,6 @@ void menu_free(menu_handle_t *menu)
 void *menu_init(const void *data)
 {
    menu_handle_t *menu         = NULL;
-   menu_display_t *disp        = NULL;
    menu_ctx_driver_t *menu_ctx = (menu_ctx_driver_t*)data;
    global_t  *global           = global_get_ptr();
    settings_t *settings        = config_get_ptr();
@@ -277,10 +276,6 @@ void *menu_init(const void *data)
 
    if (!menu_display_init(menu))
       goto error;
-
-   disp = &menu->display;
-
-   rarch_assert(disp->msg_queue = msg_queue_new(8));
 
    return menu;
    
