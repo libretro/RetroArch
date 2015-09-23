@@ -373,7 +373,6 @@ enum action_iterate_type
    ITERATE_TYPE_DEFAULT = 0,
    ITERATE_TYPE_HELP,
    ITERATE_TYPE_INFO,
-   ITERATE_TYPE_MESSAGE,
    ITERATE_TYPE_VIEWPORT,
    ITERATE_TYPE_BIND
 };
@@ -392,8 +391,6 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
          return ITERATE_TYPE_HELP;
       case MENU_LABEL_INFO_SCREEN:
          return ITERATE_TYPE_INFO;
-      case MENU_LABEL_MESSAGE:
-         return ITERATE_TYPE_MESSAGE;
       case MENU_LABEL_CUSTOM_VIEWPORT_1:
       case MENU_LABEL_CUSTOM_VIEWPORT_2:
          return ITERATE_TYPE_VIEWPORT;
@@ -490,11 +487,6 @@ int menu_iterate(bool render_this_frame, unsigned action)
          menu->state.do_messagebox   = true;
          menu->state.do_pop_stack    = true;
          menu->state.do_post_iterate = true;
-         break;
-      case ITERATE_TYPE_MESSAGE:
-         menu->state.pop_selected    = &nav->selection_ptr;
-         menu->state.do_messagebox   = true;
-         menu->state.do_pop_stack    = true;
          break;
       case ITERATE_TYPE_DEFAULT:
          selected = menu_navigation_get_selection(nav);
