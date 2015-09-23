@@ -21,7 +21,7 @@ include $(PSPSDK)/lib/build.mak
 
 all:
 	psp-build-exports -s $(PRX_EXPORTS)
-	cp $(TARGET).prx ../../$(TARGET).prx
+	cp $(TARGET).prx ../../../$(TARGET).prx
 	cp $(TARGET).S ../$(TARGET).S
 	cp $(TARGET).h ../$(TARGET).h
 	rm -f $(TARGET).prx
