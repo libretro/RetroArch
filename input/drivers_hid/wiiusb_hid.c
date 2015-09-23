@@ -472,8 +472,6 @@ static void wiiusb_hid_free(void *data)
 
    // wiiusb_hotplug_deregister_callback(hid->ctx, hid->hp);
 
-   USB_Deinitialize();
-
    if (hid)
       free(hid);
 }
@@ -500,8 +498,6 @@ static void *wiiusb_hid_init(void)
 
    if (!dev_entries)
       goto error;
-
-   USB_Initialize();
 
    if (USB_GetDeviceList(dev_entries, MAX_USERS, USB_CLASS_HID, &count) < 0)
    {
