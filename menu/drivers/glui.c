@@ -252,7 +252,7 @@ static void glui_render(void)
    {
       unsigned new_mouse_ptr = 0;
       bool mouse_scrolldown, mouse_scrollup;
-      int16_t mouse_y          = menu_input_pointer_state(MENU_MOUSE_Y_AXIS);
+      int16_t mouse_y          = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
       menu_input_ctl(MENU_CTL_MOUSE_SCROLL_DOWN, &mouse_scrolldown);
       menu_input_ctl(MENU_CTL_MOUSE_SCROLL_UP,   &mouse_scrollup);

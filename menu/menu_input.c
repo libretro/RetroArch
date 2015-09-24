@@ -197,13 +197,13 @@ bool menu_input_ctl(enum menu_ctl_state state, void *data)
          return true;
       case MENU_CTL_POINTER_ACCEL_READ:
          {
-            float *ptr = (float*)ptr;
+            float *ptr = (float*)data;
             *ptr = menu_input->pointer.accel;
          }
          return true;
       case MENU_CTL_POINTER_ACCEL_WRITE:
          {
-            float *ptr = (float*)ptr;
+            float *ptr = (float*)data;
             menu_input->pointer.accel = *ptr;
          }
          return true;
