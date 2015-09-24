@@ -168,8 +168,11 @@ bool mkdir_norecurse(const char *dir)
    ret = mkdir(dir, 0750);
 #endif
    /* Don't treat this as an error. */
-#if defined(VITA) || defined(PSP)
+#if defined(VITA)
    if ((ret == SCE_ERROR_ERRNO_EEXIST) && path_is_directory(dir))
+      ret = 0;
+#elif defined(PSP)
+   if ((ret == -1) && path_is_directory(dir))
       ret = 0;
 #else 
    if (ret < 0 && errno == EEXIST && path_is_directory(dir))
