@@ -138,6 +138,8 @@ void menu_input_set_acceleration(enum menu_input_pointer_acceleration accel, flo
 
 float menu_input_get_acceleration(enum menu_input_pointer_acceleration accel);
 
+menu_input_t *menu_input_get_ptr(void);
+
 void menu_input_free(void *data);
 
 bool menu_input_init(void *data);
