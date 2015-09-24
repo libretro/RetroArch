@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <retro_miscellaneous.h>
+#include "menu_input.h"
 #include "menu_animation.h"
 #include "menu_display.h"
 #include "menu_displaylist.h"
@@ -109,7 +110,7 @@ typedef struct
    char default_cgp[PATH_MAX_LENGTH];
    struct video_shader *shader;
 
-   void *input;
+   menu_input_t *input;
 
    content_playlist_t *playlist;
    char db_playlist_file[PATH_MAX_LENGTH];
