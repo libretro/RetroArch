@@ -1436,6 +1436,7 @@ static void xmb_render(void)
          float item_y1     = xmb->margins.screen.top + xmb_item_y(xmb, i, current);
          float item_y2     = item_y1 + xmb->icon.size;
          int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
+         int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
          if (settings->menu.pointer.enable)
          {
@@ -1445,7 +1446,7 @@ static void xmb_render(void)
 
          if (settings->menu.mouse.enable)
          {
-            if (menu_input->mouse.y > item_y1 && menu_input->mouse.y < item_y2)
+            if (mouse_y > item_y1 && mouse_y < item_y2)
                menu_input->mouse.ptr = i;
          }
       }
