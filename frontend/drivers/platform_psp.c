@@ -72,7 +72,6 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
    struct rarch_main_wrap *params = NULL;
-   char buf[PATH_MAX_LENGTH]         = {0};
 
    (void)args;
 
