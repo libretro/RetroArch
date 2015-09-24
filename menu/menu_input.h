@@ -77,7 +77,8 @@ enum menu_ctl_state
 {
    MENU_CTL_MOUSE_SCROLL_DOWN = 0,
    MENU_CTL_MOUSE_SCROLL_UP,
-   MENU_CTL_MOUSE_PTR
+   MENU_CTL_MOUSE_PTR,
+   MENU_CTL_POINTER_PTR
 };
 
 enum mouse_action

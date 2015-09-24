@@ -234,10 +234,11 @@ static void glui_render(void)
    if (settings->menu.pointer.enable)
    {
       int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
-
-      menu_input->pointer.ptr = 
+      unsigned new_pointer_val = 
          (pointer_y - glui->line_height + menu->scroll_y - 16)
          / glui->line_height;
+
+      menu_input_ctl(MENU_CTL_POINTER_PTR, &new_pointer_val);
 
       menu->scroll_y            -= menu_input->pointer.accel / 60.0;
       menu_input->pointer.accel  = menu_input->pointer.accel * 0.96;

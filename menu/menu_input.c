@@ -87,6 +87,12 @@ bool menu_input_ctl(enum menu_ctl_state state, void *data)
             menu_input->mouse.ptr = *ptr;
          }
          return true;
+      case MENU_CTL_POINTER_PTR:
+         {
+            unsigned *ptr = (unsigned*)data;
+            menu_input->pointer.ptr = *ptr;
+         }
+         return true;
    }
 
    return false;

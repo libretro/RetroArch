@@ -1410,7 +1410,6 @@ static void xmb_render(void)
    menu_handle_t    *menu   = menu_driver_get_ptr();
    menu_display_t   *disp   = menu_display_get_ptr();
    menu_animation_t *anim   = menu_animation_get_ptr();
-   menu_input_t *menu_input = menu_input_get_ptr();
    menu_navigation_t *nav   = menu_navigation_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
 
@@ -1441,13 +1440,13 @@ static void xmb_render(void)
          if (settings->menu.pointer.enable)
          {
             if (pointer_y > item_y1 && pointer_y < item_y2)
-               menu_input->pointer.ptr = i;
+               menu_input_ctl(MENU_CTL_POINTER_PTR, &i);
          }
 
          if (settings->menu.mouse.enable)
          {
             if (mouse_y > item_y1 && mouse_y < item_y2)
-               menu_input->mouse.ptr = i;
+               menu_input_ctl(MENU_CTL_MOUSE_PTR, &i);
          }
       }
    }
