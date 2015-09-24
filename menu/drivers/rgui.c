@@ -444,7 +444,7 @@ static void rgui_render(void)
 
    if (settings->menu.pointer.enable)
    {
-      unsigned new_val = menu_input->pointer.y / 11 - 2 + menu_entries_get_start();
+      unsigned new_val = menu_input_pointer_state(MENU_POINTER_Y_AXIS) / 11 - 2 + menu_entries_get_start();
       menu_input_ctl(MENU_CTL_POINTER_PTR, &new_val);
 
       if (menu_input->pointer.dragging)
@@ -460,6 +460,7 @@ static void rgui_render(void)
    {
       unsigned new_mouse_ptr;
       bool mouse_scrolldown, mouse_scrollup;
+      int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
       menu_input_ctl(MENU_CTL_MOUSE_SCROLL_DOWN, &mouse_scrolldown);
       menu_input_ctl(MENU_CTL_MOUSE_SCROLL_UP,   &mouse_scrollup);
@@ -471,7 +472,7 @@ static void rgui_render(void)
       if (mouse_scrollup && (menu_entries_get_start() > 0))
          menu_entries_set_start(menu_entries_get_start() - 1);
 
-      new_mouse_ptr = menu_input->mouse.y / 11 - 2 + menu_entries_get_start();
+      new_mouse_ptr = mouse_y / 11 - 2 + menu_entries_get_start();
 
       menu_input_ctl(MENU_CTL_MOUSE_PTR, &new_mouse_ptr);
    }
