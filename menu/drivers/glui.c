@@ -497,7 +497,11 @@ static void glui_frame(void)
    }
 
    if (settings->menu.mouse.enable)
-      glui_render_quad(gl, menu_input->mouse.x - 5, menu_input->mouse.y - 5, 10, 10, width, height, &white_bg[0]);
+   {
+      int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+      int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+      glui_render_quad(gl, mouse_x - 5, mouse_y - 5, 10, 10, width, height, &white_bg[0]);
+   }
 
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 

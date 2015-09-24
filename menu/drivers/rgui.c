@@ -372,10 +372,8 @@ end:
 
 static void rgui_blit_cursor(menu_handle_t *menu)
 {
-   menu_input_t *menu_input = menu_input_get_ptr();
-
-   int16_t x = menu_input->mouse.x;
-   int16_t y = menu_input->mouse.y;
+   int16_t x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+   int16_t y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
    color_rect(menu, x, y - 5, 1, 11, 0xFFFF);
    color_rect(menu, x - 5, y, 11, 1, 0xFFFF);

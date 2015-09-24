@@ -1661,8 +1661,12 @@ static void xmb_frame(void)
    }
 
    if (settings->menu.mouse.enable)
-      xmb_draw_cursor(gl, xmb, &coord_color2[0],
-            menu_input->mouse.x, menu_input->mouse.y, width, height);
+   {
+      int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+      int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+
+      xmb_draw_cursor(gl, xmb, &coord_color2[0], mouse_x, mouse_y, width, height);
+   }
 
    menu_display_unset_viewport();
 }

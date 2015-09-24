@@ -844,6 +844,24 @@ int16_t menu_input_pointer_state(enum menu_input_pointer_state state)
    return 0;
 }
 
+int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
+{
+   menu_input_t *menu = menu_input_get_ptr();
+
+   if (!menu)
+      return 0;
+
+   switch (state)
+   {
+      case MENU_MOUSE_X_AXIS:
+         return menu->mouse.x;
+      case MENU_MOUSE_Y_AXIS:
+         return menu->mouse.y;
+   }
+
+   return 0;
+}
+
 static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {

@@ -67,6 +67,12 @@ enum menu_input_pointer_state
    MENU_POINTER_Y_AXIS
 };
 
+enum menu_input_mouse_state
+{
+   MENU_MOUSE_X_AXIS = 0,
+   MENU_MOUSE_Y_AXIS
+};
+
 enum mouse_action
 {
    MOUSE_ACTION_NONE = 0,
@@ -206,6 +212,8 @@ int menu_input_set_keyboard_bind_mode(void *data, enum menu_input_bind_mode type
 int menu_input_set_input_device_bind_mode(void *data, enum menu_input_bind_mode type);
 
 int16_t menu_input_pointer_state(enum menu_input_pointer_state state);
+
+int16_t menu_input_mouse_state(enum menu_input_mouse_state state);
 
 menu_input_t *menu_input_get_ptr(void);
 
