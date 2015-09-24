@@ -197,6 +197,8 @@ void menu_free(menu_handle_t *menu)
   
    menu_shader_free(menu);
 
+   menu_input_free(menu);
+
    menu_driver_free(menu);
 
 #ifdef HAVE_DYNAMIC
@@ -239,6 +241,9 @@ void *menu_init(const void *data)
 
    if (!(menu = (menu_handle_t*)menu_ctx->init()))
       return NULL;
+
+   if (!menu_input_init(menu))
+      goto error;
 
    strlcpy(settings->menu.driver, menu_ctx->ident,
          sizeof(settings->menu.driver));

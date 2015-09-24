@@ -235,6 +235,10 @@ bool menu_input_ctl(enum menu_ctl_state state, void *data);
 
 menu_input_t *menu_input_get_ptr(void);
 
+void menu_input_free(void *data);
+
+bool menu_input_init(void *data);
+
 #ifdef __cplusplus
 }
 #endif
