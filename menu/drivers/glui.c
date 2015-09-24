@@ -212,7 +212,6 @@ static void glui_render(void)
    menu_display_t *disp               = menu_display_get_ptr();
    menu_framebuf_t *frame_buf         = menu_display_fb_get_ptr();
    menu_handle_t *menu                = menu_driver_get_ptr();
-   menu_input_t *menu_input           = menu_input_get_ptr();
    settings_t *settings               = config_get_ptr();
 
    if (!menu || !menu->userdata)
@@ -234,14 +233,19 @@ static void glui_render(void)
    if (settings->menu.pointer.enable)
    {
       int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
+      float    old_accel_val, new_accel_val;
       unsigned new_pointer_val = 
          (pointer_y - glui->line_height + menu->scroll_y - 16)
          / glui->line_height;
 
+      menu_input_ctl(MENU_CTL_POINTER_ACCEL_READ, &old_accel_val);
       menu_input_ctl(MENU_CTL_POINTER_PTR, &new_pointer_val);
 
-      menu->scroll_y            -= menu_input->pointer.accel / 60.0;
-      menu_input->pointer.accel  = menu_input->pointer.accel * 0.96;
+      menu->scroll_y            -= old_accel_val / 60.0;
+
+      new_accel_val = old_accel_val * 0.96;
+
+      menu_input_ctl(MENU_CTL_POINTER_ACCEL_WRITE, &new_accel_val);
    }
 
    if (settings->menu.mouse.enable)

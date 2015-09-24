@@ -392,7 +392,6 @@ static void rgui_render(void)
    char msg[PATH_MAX_LENGTH];
    char timedate[PATH_MAX_LENGTH];
    menu_handle_t *menu            = menu_driver_get_ptr();
-   menu_input_t *menu_input       = menu_input_get_ptr();
    menu_display_t *disp           = menu_display_get_ptr();
    menu_framebuf_t *frame_buf     = menu_display_fb_get_ptr();
    menu_navigation_t *nav         = menu_navigation_get_ptr();
@@ -444,12 +443,15 @@ static void rgui_render(void)
 
    if (settings->menu.pointer.enable)
    {
+      bool pointer_dragged = false;
       unsigned new_val = menu_input_pointer_state(MENU_POINTER_Y_AXIS) / 11 - 2 + menu_entries_get_start();
       menu_input_ctl(MENU_CTL_POINTER_PTR, &new_val);
+      menu_input_ctl(MENU_CTL_POINTER_DRAGGING, &pointer_dragged);
 
-      if (menu_input->pointer.dragging)
+      if (pointer_dragged)
       {
-         menu->scroll_y += menu_input->pointer.dy;
+         int16_t delta_y = menu_input_pointer_state(MENU_POINTER_DELTA_Y_AXIS);
+         menu->scroll_y += delta_y;
          menu_entries_set_start(-menu->scroll_y / 11 + 2);
          if (menu->scroll_y > 0)
             menu->scroll_y = 0;

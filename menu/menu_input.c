@@ -93,6 +93,24 @@ bool menu_input_ctl(enum menu_ctl_state state, void *data)
             menu_input->pointer.ptr = *ptr;
          }
          return true;
+      case MENU_CTL_POINTER_ACCEL_READ:
+         {
+            float *ptr = (float*)ptr;
+            *ptr = menu_input->pointer.accel;
+         }
+         return true;
+      case MENU_CTL_POINTER_ACCEL_WRITE:
+         {
+            float *ptr = (float*)ptr;
+            menu_input->pointer.accel = *ptr;
+         }
+         return true;
+      case MENU_CTL_POINTER_DRAGGING:
+         {
+            bool *ptr = (bool*)data;
+            *ptr = menu_input->pointer.dragging;
+         }
+         return true;
       case MENU_CTL_KEYBOARD_DISPLAY:
          {
             bool *ptr = (bool*)data;
@@ -895,6 +913,10 @@ int16_t menu_input_pointer_state(enum menu_input_pointer_state state)
          return menu->pointer.x;
       case MENU_POINTER_Y_AXIS:
          return menu->pointer.y;
+      case MENU_POINTER_DELTA_X_AXIS:
+         return menu->pointer.dx;
+      case MENU_POINTER_DELTA_Y_AXIS:
+         return menu->pointer.dy;
    }
 
    return 0;
