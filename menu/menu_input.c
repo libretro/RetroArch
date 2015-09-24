@@ -139,7 +139,7 @@ typedef struct menu_input
 
 unsigned bind_port;
 
-menu_input_t *menu_input_get_ptr(void)
+static menu_input_t *menu_input_get_ptr(void)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
