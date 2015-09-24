@@ -25,6 +25,7 @@
 #include <boolean.h>
 
 #include "../driver.h"
+#include "../input/input_driver.h"
 #include "../dynamic.h"
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)

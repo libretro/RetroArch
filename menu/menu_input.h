@@ -25,22 +25,6 @@
 extern "C" {
 #endif
  
-#ifndef MENU_MAX_BUTTONS
-#define MENU_MAX_BUTTONS 219
-#endif
-
-#ifndef MENU_MAX_AXES
-#define MENU_MAX_AXES 32
-#endif
-
-#ifndef MENU_MAX_HATS
-#define MENU_MAX_HATS 4
-#endif
-
-#ifndef MAX_USERS
-#define MAX_USERS 16
-#endif
-
 typedef enum menu_action
 {
    MENU_ACTION_UP,
@@ -86,7 +70,7 @@ enum menu_ctl_state
    MENU_CTL_POINTER_DRAGGING,
    MENU_CTL_KEYBOARD_DISPLAY,
    MENU_CTL_KEYBOARD_BUFF_PTR,
-   MENU_CTL_KEYBOARD_LABEL,
+   MENU_CTL_KEYBOARD_LABEL
 };
 
 enum mouse_action

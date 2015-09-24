@@ -29,6 +29,10 @@
 #include "input_overlay.h"
 #endif
 
+#ifndef MAX_USERS
+#define MAX_USERS 16
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
