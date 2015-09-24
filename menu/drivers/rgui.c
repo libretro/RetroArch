@@ -390,7 +390,6 @@ static void rgui_render(void)
    char title_msg[64];
    char timedate[PATH_MAX_LENGTH];
    menu_handle_t *menu            = menu_driver_get_ptr();
-   menu_input_t *menu_input       = menu_input_get_ptr();
    menu_display_t *disp           = menu_display_get_ptr();
    menu_framebuf_t *frame_buf     = menu_display_fb_get_ptr();
    menu_navigation_t *nav         = menu_navigation_get_ptr();

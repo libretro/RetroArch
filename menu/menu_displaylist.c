@@ -403,9 +403,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
 static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
 {
-   char tmp[PATH_MAX_LENGTH]             = {0};
-   char tmp2[PATH_MAX_LENGTH]            = {0};
-
+   char tmp[PATH_MAX_LENGTH];
    settings_t *settings                = config_get_ptr();
    global_t *global                    = global_get_ptr();
 
