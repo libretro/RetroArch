@@ -20,7 +20,6 @@
 #include <file/file_path.h>
 
 #include "general.h"
-#include "retroarch.h"
 
 #include "tasks/tasks.h"
 #include "input/input_overlay.h"
@@ -210,16 +209,14 @@ error:
 #endif
 
 #ifdef HAVE_MENU
-extern unsigned menu_input_this_frame;
-
 static void rarch_main_data_menu_iterate(void)
 {
 #ifdef HAVE_LIBRETRODB
    if (rarch_main_data_db_pending_scan_finished())
       menu_environment_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST, NULL);
 #endif
-   if (menu_iterate(true, menu_input_this_frame) == -1)
-      rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+
+   menu_iterate_render();
 }
 #endif
 

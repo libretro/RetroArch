@@ -993,8 +993,6 @@ static void rarch_main_cmd_get_state(driver_t *driver,
          RARCH_CHEAT_TOGGLE);
 }
 
-unsigned menu_input_this_frame;
-
 /**
  * rarch_main_iterate:
  *
@@ -1079,19 +1077,16 @@ int rarch_main_iterate(unsigned *sleep_ms)
    }
    
 #ifdef HAVE_MENU
-   menu_input_this_frame = 0;
    if (menu_driver_alive())
    {
       menu_handle_t *menu = menu_driver_get_ptr();
       if (menu)
-      {
-         menu_input_this_frame = menu_input_frame(input, trigger_input);
-         menu_iterate_render();
+         if (menu_iterate(true, menu_input_frame(input, trigger_input)) == -1)
+            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
 
-         if (!input && settings->menu.pause_libretro)
-            return 1;
-         return rarch_limit_frame_time(settings->fastforward_ratio, sleep_ms);
-      }
+      if (!input && settings->menu.pause_libretro)
+        return 1;
+      return rarch_limit_frame_time(settings->fastforward_ratio, sleep_ms);
    }
 #endif
 
