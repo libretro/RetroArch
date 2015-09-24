@@ -426,8 +426,6 @@ int menu_iterate(bool render_this_frame, unsigned action)
    menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
 
-   if (render_this_frame)
-      menu_animation_update_time();
    menu_list_get_last_stack(menu_list, NULL, &label, NULL, NULL);
 
    if (!menu || !menu_list)
@@ -543,6 +541,7 @@ int menu_iterate_render(void)
    if (menu->state.fb_is_dirty)
       menu_display_fb_set_dirty();
 
+
    if (menu->state.do_messagebox && menu->state.msg[0] != '\0')
    {
       if (driver->render_messagebox)
@@ -557,6 +556,7 @@ int menu_iterate_render(void)
       
    if (menu->state.do_render)
    {
+      menu_animation_update_time();
       if (driver->render)
          driver->render();
    }
