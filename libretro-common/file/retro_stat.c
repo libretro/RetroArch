@@ -103,7 +103,7 @@ static bool path_stat(const char *path, enum stat_mode mode)
    {
       case IS_DIRECTORY:
 #if defined(VITA) || defined(PSP)
-         return FIO_SO_ISDIR(buf.st_mode);
+         return FIO_SO_ISDIR(buf.st_attr);
 #elif defined(__CELLOS_LV2__)
          return ((buf.st_mode & S_IFMT) == S_IFDIR);
 #elif defined(_WIN32)
