@@ -39,6 +39,100 @@
 #include "../input/input_remapping.h"
 #include "../input/input_common.h"
 
+struct menu_bind_state_port
+{
+   bool buttons[MENU_MAX_BUTTONS];
+   int16_t axes[MENU_MAX_AXES];
+   uint16_t hats[MENU_MAX_HATS];
+};
+
+struct menu_bind_axis_state
+{
+   /* Default axis state. */
+   int16_t rested_axes[MENU_MAX_AXES];
+   /* Locked axis state. If we configured an axis,
+    * avoid having the same axis state trigger something again right away. */
+   int16_t locked_axes[MENU_MAX_AXES];
+};
+
+struct menu_bind_state
+{
+   struct retro_keybind *target;
+   /* For keyboard binding. */
+   int64_t timeout_end;
+   unsigned begin;
+   unsigned last;
+   unsigned user;
+   struct menu_bind_state_port state[MAX_USERS];
+   struct menu_bind_axis_state axis_state[MAX_USERS];
+   bool skip;
+};
+
+typedef struct menu_input
+{
+   struct menu_bind_state binds;
+
+   struct
+   {
+      int16_t dx;
+      int16_t dy;
+      int16_t x;
+      int16_t y;
+      int16_t screen_x;
+      int16_t screen_y;
+      bool    left;
+      bool    right;
+      bool    oldleft;
+      bool    oldright;
+      bool    wheelup;
+      bool    wheeldown;
+      bool    hwheelup;
+      bool    hwheeldown;
+      bool    scrollup;
+      bool    scrolldown;
+      unsigned ptr;
+      uint64_t state;
+   } mouse;
+
+   struct
+   {
+      int16_t x;
+      int16_t y;
+      int16_t dx;
+      int16_t dy;
+      int16_t old_x;
+      int16_t old_y;
+      int16_t start_x;
+      int16_t start_y;
+      float accel;
+      float accel0;
+      float accel1;
+      bool pressed[2];
+      bool oldpressed[2];
+      bool dragging;
+      bool back;
+      bool oldback;
+      unsigned ptr;
+   } pointer;
+
+   struct
+   {
+      const char **buffer;
+      const char *label;
+      const char *label_setting;
+      bool display;
+      unsigned type;
+      unsigned idx;
+   } keyboard;
+
+   /* Used for key repeat */
+   struct
+   {
+      float timer;
+      float count;
+   } delay;
+} menu_input_t;
+
 unsigned bind_port;
 
 menu_input_t *menu_input_get_ptr(void)
@@ -46,7 +140,133 @@ menu_input_t *menu_input_get_ptr(void)
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return NULL;
-   return &menu->input;
+   return menu->input;
+}
+
+void menu_input_set_binds(unsigned min, unsigned max)
+{
+   menu_input_t *ptr = menu_input_get_ptr();
+
+   if (!ptr)
+      return;
+
+   ptr->binds.begin = min;
+   ptr->binds.last  = max;
+}
+
+void menu_input_set_pointer(enum menu_input_pointer_type type, unsigned val)
+{
+   menu_input_t *ptr = menu_input_get_ptr();
+
+   if (!ptr)
+      return;
+
+   switch (type)
+   {
+      case MENU_INPUT_PTR_TYPE_POINTER:
+         ptr->pointer.ptr = val;
+         break;
+      case MENU_INPUT_PTR_TYPE_MOUSE:
+         ptr->mouse.ptr = val;
+         break;
+   }
+}
+
+int16_t menu_input_pressed(enum menu_input_action axis)
+{
+   menu_input_t *ptr = menu_input_get_ptr();
+
+   switch (axis)
+   {
+      case MENU_INPUT_POINTER_AXIS_X:
+         return ptr->pointer.x;
+      case MENU_INPUT_POINTER_AXIS_Y:
+         return ptr->pointer.y;
+      case MENU_INPUT_POINTER_DELTA_AXIS_X:
+         return ptr->pointer.dx;
+      case MENU_INPUT_POINTER_DELTA_AXIS_Y:
+         return ptr->pointer.dy;
+      case MENU_INPUT_POINTER_DRAGGED:
+         return ptr->pointer.dragging;
+      case MENU_INPUT_MOUSE_AXIS_X:
+         return ptr->mouse.x;
+      case MENU_INPUT_MOUSE_AXIS_Y:
+         return ptr->mouse.y;
+      case MENU_INPUT_MOUSE_SCROLL_UP:
+         return ptr->mouse.scrollup;
+      case MENU_INPUT_MOUSE_SCROLL_DOWN:
+         return ptr->mouse.scrolldown;
+   }
+
+   return 0;
+}
+
+void menu_input_set_acceleration(enum menu_input_pointer_acceleration accel, float val)
+{
+   menu_input_t *ptr = menu_input_get_ptr();
+
+   if (!ptr)
+      return;
+
+   switch (accel)
+   {
+      case MENU_INPUT_PTR_ACCELERATION:
+         ptr->pointer.accel = val;
+         break;
+      case MENU_INPUT_PTR_ACCELERATION_1:
+         ptr->pointer.accel0 = val;
+         break;
+      case MENU_INPUT_PTR_ACCELERATION_2:
+         ptr->pointer.accel1 = val;
+         break;
+   }
+}
+
+float menu_input_get_acceleration(enum menu_input_pointer_acceleration accel)
+{
+   menu_input_t *ptr = menu_input_get_ptr();
+
+   if (!ptr)
+      return 0.0f;
+
+   switch (accel)
+   {
+      case MENU_INPUT_PTR_ACCELERATION:
+         return ptr->pointer.accel;
+      case MENU_INPUT_PTR_ACCELERATION_1:
+         return ptr->pointer.accel0;
+      case MENU_INPUT_PTR_ACCELERATION_2:
+         return ptr->pointer.accel1;
+   }
+
+   return 0.0f;
+}
+
+bool menu_input_key_displayed(void)
+{
+   menu_input_t *menu_input = menu_input_get_ptr();
+   if (!menu_input)
+      return false;
+
+   return menu_input->keyboard.display;
+}
+
+const char *menu_input_key_get_buff(void)
+{
+   menu_input_t *menu_input = menu_input_get_ptr();
+   if (!menu_input)
+      return NULL;
+
+   return *menu_input->keyboard.buffer;
+}
+
+const char *menu_input_key_get_label(void)
+{
+   menu_input_t *menu_input = menu_input_get_ptr();
+   if (!menu_input)
+      return NULL;
+
+   return menu_input->keyboard.label;
 }
 
 void menu_input_key_start_line(const char *label,
@@ -926,12 +1146,12 @@ void menu_input_post_iterate(int *ret, unsigned action)
 
    menu_entry_get(&entry, selected, NULL, false);
 
-   if (settings->menu.mouse.enable)
+   if (settings && settings->menu.mouse.enable)
       *ret  = menu_input_mouse_post_iterate  (&menu_input->mouse.state, cbs, action);
 
    *ret = menu_input_mouse_frame(cbs, &entry, menu_input->mouse.state);
 
-   if (settings->menu.pointer.enable)
+   if (settings && settings->menu.pointer.enable)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
 }
 
@@ -1033,4 +1253,29 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       menu_input_pointer(&ret);
 
    return ret;
+}
+
+void menu_input_free(void *data)
+{
+   menu_handle_t    *menu   = (menu_handle_t*)data;
+   if (!menu)
+      return;
+
+   if (menu->input)
+      free(menu->input);
+   menu->input = NULL;
+}
+
+bool menu_input_init(void *data)
+{
+   menu_handle_t    *menu   = (menu_handle_t*)data;
+   if (!menu)
+      return false;
+
+   menu->input = (menu_input_t*)calloc(1, sizeof(*menu->input));
+
+   if (!menu->input)
+      return false;
+
+   return true;
 }

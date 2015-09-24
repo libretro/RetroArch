@@ -996,14 +996,11 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
    struct retro_keybind *target = NULL;
    const struct retro_keybind *def_binds = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
-   menu_input_t *menu_input  = menu_input_get_ptr();
    settings_t    *settings   = config_get_ptr();
    global_t      *global     = global_get_ptr();
 
    (void)wraparound;
 
-   if (!menu_input)
-      return -1;
    if (!setting)
       return -1;
 
@@ -1015,8 +1012,7 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
    if (!target)
       return -1;
 
-   menu_input->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-   menu_input->binds.last  = MENU_SETTINGS_BIND_LAST;
+   menu_input_set_binds(MENU_SETTINGS_BIND_BEGIN, MENU_SETTINGS_BIND_LAST);
 
    for (i = MENU_SETTINGS_BIND_BEGIN;
          i <= MENU_SETTINGS_BIND_LAST; i++, target++)

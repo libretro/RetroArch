@@ -1433,19 +1433,22 @@ static void xmb_render(void)
    {
       for (i = 0; i < end; i++)
       {
-         float item_y1 = xmb->margins.screen.top + xmb_item_y(xmb, i, current);
-         float item_y2 = item_y1 + xmb->icon.size;
+         float item_y1  = xmb->margins.screen.top + xmb_item_y(xmb, i, current);
+         float item_y2  = item_y1 + xmb->icon.size;
+         int16_t y_axis = menu_input_pressed(MENU_INPUT_POINTER_AXIS_Y);
 
          if (settings->menu.pointer.enable)
          {
-            if (menu_input->pointer.y > item_y1 && menu_input->pointer.y < item_y2)
-               menu_input->pointer.ptr = i;
+            if ((y_axis > item_y1) && (y_axis < item_y2))
+               menu_input_set_pointer(MENU_INPUT_PTR_TYPE_POINTER, i);
          }
 
          if (settings->menu.mouse.enable)
          {
-            if (menu_input->mouse.y > item_y1 && menu_input->mouse.y < item_y2)
-               menu_input->mouse.ptr = i;
+            y_axis = menu_input_pressed(MENU_INPUT_MOUSE_AXIS_Y);
+
+            if ((y_axis > item_y1) && (y_axis < item_y2))
+               menu_input_set_pointer(MENU_INPUT_PTR_TYPE_MOUSE, i);
          }
       }
    }
@@ -1630,14 +1633,14 @@ static void xmb_frame(void)
 
    menu_display_font_flush_block(menu, font_driver);
 
-   if (menu_input->keyboard.display)
+   if (menu_input_key_displayed())
    {
-      const char *str = *menu_input->keyboard.buffer;
+      const char *str = menu_input_key_get_buff();
 
       if (!str)
          str = "";
       snprintf(msg, sizeof(msg), "%s\n%s",
-            menu_input->keyboard.label, str);
+            menu_input_key_get_label(), str);
       render_background = true;
    }
 
@@ -1661,7 +1664,9 @@ static void xmb_frame(void)
 
    if (settings->menu.mouse.enable)
       xmb_draw_cursor(gl, xmb, &coord_color2[0],
-            menu_input->mouse.x, menu_input->mouse.y, width, height);
+            menu_input_pressed(MENU_INPUT_MOUSE_AXIS_X),
+            menu_input_pressed(MENU_INPUT_MOUSE_AXIS_Y),
+            width, height);
 
    menu_display_unset_viewport();
 }

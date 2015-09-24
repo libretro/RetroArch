@@ -28,6 +28,7 @@
 #include "../menu.h"
 #include "../menu_driver.h"
 #include "../menu_hash.h"
+#include "../menu_input.h"
 #include "../menu_display.h"
 #include "../menu_video.h"
 
@@ -233,25 +234,26 @@ static void glui_render(void)
 
    if (settings->menu.pointer.enable)
    {
-      menu_input->pointer.ptr =
-         (menu_input->pointer.y - glui->line_height + menu->scroll_y - 16)
+      unsigned new_ptr = (menu_input_pressed(MENU_INPUT_POINTER_AXIS_Y) - glui->line_height + menu->scroll_y - 16)
          / glui->line_height;
 
-      menu->scroll_y -= menu_input->pointer.accel / 60.0;
-      menu_input->pointer.accel = menu_input->pointer.accel * 0.96;
+      menu_input_set_pointer(MENU_INPUT_PTR_TYPE_POINTER, new_ptr);
+
+      menu->scroll_y            -= menu_input_get_acceleration(MENU_INPUT_PTR_ACCELERATION) / 60.0;
+      menu_input_set_acceleration(MENU_INPUT_PTR_ACCELERATION, menu_input_get_acceleration(MENU_INPUT_PTR_ACCELERATION) * 0.96);
    }
 
    if (settings->menu.mouse.enable)
    {
-      if (menu_input->mouse.scrolldown)
+      if (menu_input_pressed(MENU_INPUT_MOUSE_SCROLL_DOWN))
          menu->scroll_y += 10;
 
-      if (menu_input->mouse.scrollup)
+      if (menu_input_pressed(MENU_INPUT_MOUSE_SCROLL_UP))
          menu->scroll_y -= 10;
 
-      menu_input->mouse.ptr =
-         (menu_input->mouse.y - glui->line_height + menu->scroll_y - 16)
-         / glui->line_height;
+      menu_input_set_pointer(MENU_INPUT_PTR_TYPE_MOUSE, 
+         (menu_input_pressed(MENU_INPUT_MOUSE_AXIS_Y) - glui->line_height + menu->scroll_y - 16)
+         / glui->line_height);
    }
 
    if (menu->scroll_y < 0)
@@ -474,16 +476,16 @@ static void glui_frame(void)
             TEXT_ALIGN_RIGHT);
    }
 
-   if (menu_input->keyboard.display)
+   if (menu_input_key_displayed())
    {
       char msg[PATH_MAX_LENGTH];
-      const char           *str = *menu_input->keyboard.buffer;
+      const char           *str = menu_input_key_get_buff();
       msg[0] = '\0';
 
       if (!str)
          str = "";
       glui_render_quad(gl, 0, 0, width, height, width, height, &black_bg[0]);
-      snprintf(msg, sizeof(msg), "%s\n%s", menu_input->keyboard.label, str);
+      snprintf(msg, sizeof(msg), "%s\n%s", menu_input_key_get_label(), str);
       glui_render_messagebox(msg);
    }
 
@@ -495,7 +497,10 @@ static void glui_frame(void)
    }
 
    if (settings->menu.mouse.enable)
-      glui_render_quad(gl, menu_input->mouse.x - 5, menu_input->mouse.y - 5, 10, 10, width, height, &white_bg[0]);
+      glui_render_quad(gl,
+            menu_input_pressed(MENU_INPUT_MOUSE_AXIS_X) - 5,
+            menu_input_pressed(MENU_INPUT_MOUSE_AXIS_Y) - 5,
+            10, 10, width, height, &white_bg[0]);
 
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 

@@ -21,12 +21,12 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <retro_miscellaneous.h>
+#include "menu_input.h"
 #include "menu_animation.h"
 #include "menu_display.h"
 #include "menu_displaylist.h"
 #include "menu_entries.h"
 #include "menu_list.h"
-#include "menu_input.h"
 #include "menu_navigation.h"
 #include "menu_setting.h"
 #include "../libretro.h"
@@ -110,7 +110,7 @@ typedef struct
    char default_cgp[PATH_MAX_LENGTH];
    struct video_shader *shader;
 
-   menu_input_t input;
+   menu_input_t *input;
 
    content_playlist_t *playlist;
    char db_playlist_file[PATH_MAX_LENGTH];

@@ -72,6 +72,32 @@ enum mouse_action
    MOUSE_ACTION_WHEEL_DOWN
 };
 
+enum menu_input_action
+{
+   MENU_INPUT_POINTER_AXIS_X = 0,
+   MENU_INPUT_POINTER_AXIS_Y,
+   MENU_INPUT_POINTER_DELTA_AXIS_X,
+   MENU_INPUT_POINTER_DELTA_AXIS_Y,
+   MENU_INPUT_POINTER_DRAGGED,
+   MENU_INPUT_MOUSE_AXIS_X,
+   MENU_INPUT_MOUSE_AXIS_Y,
+   MENU_INPUT_MOUSE_SCROLL_UP,
+   MENU_INPUT_MOUSE_SCROLL_DOWN
+};
+
+enum menu_input_pointer_acceleration
+{
+   MENU_INPUT_PTR_ACCELERATION  = 0,
+   MENU_INPUT_PTR_ACCELERATION_1,
+   MENU_INPUT_PTR_ACCELERATION_2 
+};
+
+enum menu_input_pointer_type
+{
+   MENU_INPUT_PTR_TYPE_POINTER = 0,
+   MENU_INPUT_PTR_TYPE_MOUSE
+};
+
 enum menu_input_bind_mode
 {
    MENU_INPUT_BIND_NONE,
@@ -79,99 +105,7 @@ enum menu_input_bind_mode
    MENU_INPUT_BIND_ALL
 };
 
-struct menu_bind_state_port
-{
-   bool buttons[MENU_MAX_BUTTONS];
-   int16_t axes[MENU_MAX_AXES];
-   uint16_t hats[MENU_MAX_HATS];
-};
-
-struct menu_bind_axis_state
-{
-   /* Default axis state. */
-   int16_t rested_axes[MENU_MAX_AXES];
-   /* Locked axis state. If we configured an axis,
-    * avoid having the same axis state trigger something again right away. */
-   int16_t locked_axes[MENU_MAX_AXES];
-};
-
-struct menu_bind_state
-{
-   struct retro_keybind *target;
-   /* For keyboard binding. */
-   int64_t timeout_end;
-   unsigned begin;
-   unsigned last;
-   unsigned user;
-   struct menu_bind_state_port state[MAX_USERS];
-   struct menu_bind_axis_state axis_state[MAX_USERS];
-   bool skip;
-};
-
-typedef struct menu_input
-{
-   struct menu_bind_state binds;
-
-   struct
-   {
-      int16_t dx;
-      int16_t dy;
-      int16_t x;
-      int16_t y;
-      int16_t screen_x;
-      int16_t screen_y;
-      bool    left;
-      bool    right;
-      bool    oldleft;
-      bool    oldright;
-      bool    wheelup;
-      bool    wheeldown;
-      bool    hwheelup;
-      bool    hwheeldown;
-      bool    scrollup;
-      bool    scrolldown;
-      unsigned ptr;
-      uint64_t state;
-   } mouse;
-
-   struct
-   {
-      int16_t x;
-      int16_t y;
-      int16_t dx;
-      int16_t dy;
-      int16_t old_x;
-      int16_t old_y;
-      int16_t start_x;
-      int16_t start_y;
-      float accel;
-      float accel0;
-      float accel1;
-      bool pressed[2];
-      bool oldpressed[2];
-      bool dragging;
-      bool back;
-      bool oldback;
-      unsigned ptr;
-   } pointer;
-
-   struct
-   {
-      const char **buffer;
-      const char *label;
-      const char *label_setting;
-      bool display;
-      unsigned type;
-      unsigned idx;
-   } keyboard;
-
-   /* Used for key repeat */
-   struct
-   {
-      float timer;
-      float count;
-   } delay;
-} menu_input_t;
+typedef struct menu_input menu_input_t;
 
 void menu_input_key_event(bool down, unsigned keycode, uint32_t character,
       uint16_t key_modifiers);
@@ -179,6 +113,12 @@ void menu_input_key_event(bool down, unsigned keycode, uint32_t character,
 void menu_input_key_start_line(const char *label,
       const char *label_setting, unsigned type, unsigned idx,
       input_keyboard_line_complete_t cb);
+
+bool menu_input_key_displayed(void);
+
+const char *menu_input_key_get_buff(void);
+
+const char *menu_input_key_get_label(void);
 
 void menu_input_st_uint_callback(void *userdata, const char *str);
 void menu_input_st_hex_callback(void *userdata, const char *str);
@@ -199,7 +139,21 @@ int menu_input_set_keyboard_bind_mode(void *data, enum menu_input_bind_mode type
 
 int menu_input_set_input_device_bind_mode(void *data, enum menu_input_bind_mode type);
 
+void menu_input_set_binds(unsigned min, unsigned max);
+
+void menu_input_set_pointer(enum menu_input_pointer_type type, unsigned val);
+
+int16_t menu_input_pressed(enum menu_input_action axis);
+
+void menu_input_set_acceleration(enum menu_input_pointer_acceleration accel, float val);
+
+float menu_input_get_acceleration(enum menu_input_pointer_acceleration accel);
+
 menu_input_t *menu_input_get_ptr(void);
+
+void menu_input_free(void *data);
+
+bool menu_input_init(void *data);
 
 #ifdef __cplusplus
 }
