@@ -49,6 +49,17 @@ menu_input_t *menu_input_get_ptr(void)
    return &menu->input;
 }
 
+void menu_input_key_event(bool down, unsigned keycode,
+      uint32_t character, uint16_t mod)
+{
+   (void)down;
+   (void)keycode;
+   (void)mod;
+
+   if (character == '/')
+      menu_entry_action(NULL, 0, MENU_ACTION_SEARCH);
+}
+
 void menu_input_key_start_line(const char *label,
       const char *label_setting, unsigned type, unsigned idx,
       input_keyboard_line_complete_t cb)
@@ -192,6 +203,7 @@ void menu_input_st_cheat_callback(void *userdata, const char *str)
    menu_input_key_end_line();
 }
 
+
 void menu_input_search_start(void)
 {
    menu_handle_t      *menu = menu_driver_get_ptr();
@@ -205,16 +217,6 @@ void menu_input_search_start(void)
       input_keyboard_start_line(menu, menu_input_search_callback);
 }
 
-void menu_input_key_event(bool down, unsigned keycode,
-      uint32_t character, uint16_t mod)
-{
-   (void)down;
-   (void)keycode;
-   (void)mod;
-
-   if (character == '/')
-      menu_entry_action(NULL, 0, MENU_ACTION_SEARCH);
-}
 
 static void menu_input_poll_bind_state(struct menu_bind_state *state, unsigned port)
 {
@@ -571,7 +573,6 @@ int menu_input_bind_iterate(char *s, size_t len)
    return 0;
 }
 
-
 static int menu_input_mouse(unsigned *action)
 {
    video_viewport_t vp;
@@ -825,6 +826,24 @@ static int pointer_tap(menu_file_list_cbs_t *cbs,
    return 0;
 }
 
+int16_t menu_input_pointer_state(enum menu_input_pointer_state state)
+{
+   menu_input_t *menu = menu_input_get_ptr();
+
+   if (!menu)
+      return 0;
+
+   switch (state)
+   {
+      case MENU_POINTER_X_AXIS:
+         return menu->pointer.x;
+      case MENU_POINTER_Y_AXIS:
+         return menu->pointer.y;
+   }
+
+   return 0;
+}
+
 static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
@@ -847,26 +866,29 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
 
    if (menu_input->pointer.pressed[0])
    {
+      int16_t pointer_x = menu_input_pointer_state(MENU_POINTER_X_AXIS);
+      int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
+
       if (!menu_input->pointer.oldpressed[0])
       {
-         menu_input->pointer.accel  = 0;
-         menu_input->pointer.accel0 = 0;
-         menu_input->pointer.accel1 = 0;
-         menu_input->pointer.start_x       = menu_input->pointer.x;
-         menu_input->pointer.start_y       = menu_input->pointer.y;
-         menu_input->pointer.old_x         = menu_input->pointer.x;
-         menu_input->pointer.old_y         = menu_input->pointer.y;
+         menu_input->pointer.accel         = 0;
+         menu_input->pointer.accel0        = 0;
+         menu_input->pointer.accel1        = 0;
+         menu_input->pointer.start_x       = pointer_x;
+         menu_input->pointer.start_y       = pointer_y;
+         menu_input->pointer.old_x         = pointer_x;
+         menu_input->pointer.old_y         = pointer_y;
          menu_input->pointer.oldpressed[0] = true;
       }
-      else if (abs(menu_input->pointer.x - menu_input->pointer.start_x) > 3
-            || abs(menu_input->pointer.y - menu_input->pointer.start_y) > 3)
+      else if (abs(pointer_x - menu_input->pointer.start_x) > 3
+            || abs(pointer_y - menu_input->pointer.start_y) > 3)
       {
          float s;
-         menu_input->pointer.dragging = true;
-         menu_input->pointer.dx       = menu_input->pointer.x - menu_input->pointer.old_x;
-         menu_input->pointer.dy       = menu_input->pointer.y - menu_input->pointer.old_y;
-         menu_input->pointer.old_x    = menu_input->pointer.x;
-         menu_input->pointer.old_y    = menu_input->pointer.y;
+         menu_input->pointer.dragging      = true;
+         menu_input->pointer.dx            = pointer_x - menu_input->pointer.old_x;
+         menu_input->pointer.dy            = pointer_y - menu_input->pointer.old_y;
+         menu_input->pointer.old_x         = pointer_x;
+         menu_input->pointer.old_y         = pointer_y;
 
          s =  menu_input->pointer.dy / menu_animation_get_delta_time(disp->animation) * 1000000.0;
          menu_input->pointer.accel = (menu_input->pointer.accel0 + menu_input->pointer.accel1 + s) / 3;
