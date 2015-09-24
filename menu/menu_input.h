@@ -26,6 +26,18 @@ typedef uint64_t retro_input_t;
 extern "C" {
 #endif
  
+#ifndef MENU_MAX_BUTTONS
+#define MENU_MAX_BUTTONS 219
+#endif
+
+#ifndef MENU_MAX_AXES
+#define MENU_MAX_AXES 32
+#endif
+
+#ifndef MENU_MAX_HATS
+#define MENU_MAX_HATS 4
+#endif
+
 #ifndef MAX_USERS
 #define MAX_USERS 16
 #endif

@@ -39,10 +39,6 @@
 #include "../input/input_remapping.h"
 #include "../input/input_common.h"
 
-#define MENU_MAX_BUTTONS   219
-#define MENU_MAX_AXES      32
-#define MENU_MAX_HATS      4
-
 struct menu_bind_state_port
 {
    bool buttons[MENU_MAX_BUTTONS];
