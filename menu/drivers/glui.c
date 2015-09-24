@@ -213,6 +213,7 @@ static void glui_render(void)
    menu_display_t *disp               = menu_display_get_ptr();
    menu_framebuf_t *frame_buf         = menu_display_fb_get_ptr();
    menu_handle_t *menu                = menu_driver_get_ptr();
+   menu_input_t *menu_input           = menu_input_get_ptr();
    settings_t *settings               = config_get_ptr();
 
    if (!menu || !menu->userdata)
@@ -360,6 +361,7 @@ static void glui_frame(void)
    menu_navigation_t *nav                  = menu_navigation_get_ptr();
    menu_display_t *disp                    = menu_display_get_ptr();
    settings_t *settings                    = config_get_ptr();
+   menu_input_t *menu_input                = menu_input_get_ptr();
    uint64_t *frame_count                   = video_driver_get_frame_count();
    const uint32_t normal_color             = FONT_COLOR_ARGB_TO_RGBA(
          settings->menu.entry_normal_color);

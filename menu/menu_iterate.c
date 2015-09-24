@@ -424,6 +424,7 @@ int menu_iterate(bool render_this_frame, unsigned action)
    uint32_t hash             = 0;
    menu_handle_t *menu       = menu_driver_get_ptr();
    menu_navigation_t *nav    = menu_navigation_get_ptr();
+   menu_display_t *disp      = menu_display_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
 
    if (render_this_frame)
