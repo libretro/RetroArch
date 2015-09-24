@@ -93,8 +93,6 @@ enum menu_input_bind_mode
    MENU_INPUT_BIND_ALL
 };
 
-typedef struct menu_input menu_input_t;
-
 void menu_input_key_event(bool down, unsigned keycode, uint32_t character,
       uint16_t key_modifiers);
 
