@@ -233,12 +233,14 @@ static void glui_render(void)
 
    if (settings->menu.pointer.enable)
    {
-      menu_input->pointer.ptr =
-         (menu_input->pointer.y - glui->line_height + menu->scroll_y - 16)
+      int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
+
+      menu_input->pointer.ptr = 
+         (pointer_y - glui->line_height + menu->scroll_y - 16)
          / glui->line_height;
 
-      menu->scroll_y -= menu_input->pointer.accel / 60.0;
-      menu_input->pointer.accel = menu_input->pointer.accel * 0.96;
+      menu->scroll_y            -= menu_input->pointer.accel / 60.0;
+      menu_input->pointer.accel  = menu_input->pointer.accel * 0.96;
    }
 
    if (settings->menu.mouse.enable)
