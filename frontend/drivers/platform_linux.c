@@ -30,9 +30,9 @@
 
 #ifdef ANDROID
 #include <sys/system_properties.h>
-#endif
 #ifdef __arm__
 #include <machine/cpu-features.h>
+#endif
 #endif
 
 #include <boolean.h>
