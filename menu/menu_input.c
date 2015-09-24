@@ -60,6 +60,32 @@ void menu_input_key_event(bool down, unsigned keycode,
       menu_entry_action(NULL, 0, MENU_ACTION_SEARCH);
 }
 
+bool menu_input_ctl(enum menu_ctl_state state, void *data)
+{
+   menu_input_t *menu_input = menu_input_get_ptr();
+
+   if (!menu_input)
+      return false;
+
+   switch (state)
+   {
+      case MENU_CTL_MOUSE_SCROLL_DOWN:
+         {
+            bool *ptr = (bool*)data;
+            *ptr = menu_input->mouse.scrolldown;
+         }
+         return true;
+      case MENU_CTL_MOUSE_SCROLL_UP:
+         {
+            bool *ptr = (bool*)data;
+            *ptr = menu_input->mouse.scrollup;
+         }
+         return true;
+   }
+
+   return false;
+}
+
 void menu_input_key_start_line(const char *label,
       const char *label_setting, unsigned type, unsigned idx,
       input_keyboard_line_complete_t cb)

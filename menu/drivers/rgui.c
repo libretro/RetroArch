@@ -454,11 +454,16 @@ static void rgui_render(void)
 
    if (settings->menu.mouse.enable)
    {
-      if (menu_input->mouse.scrolldown
+      bool mouse_scrolldown, mouse_scrollup;
+
+      menu_input_ctl(MENU_CTL_MOUSE_SCROLL_DOWN, &mouse_scrolldown);
+      menu_input_ctl(MENU_CTL_MOUSE_SCROLL_UP,   &mouse_scrollup);
+
+      if (mouse_scrolldown
             && (menu_entries_get_start() < menu_entries_get_end() - RGUI_TERM_HEIGHT))
          menu_entries_set_start(menu_entries_get_start() + 1);
 
-      if (menu_input->mouse.scrollup && (menu_entries_get_start() > 0))
+      if (mouse_scrollup && (menu_entries_get_start() > 0))
          menu_entries_set_start(menu_entries_get_start() - 1);
 
       menu_input->mouse.ptr = menu_input->mouse.y / 11 - 2 + menu_entries_get_start();

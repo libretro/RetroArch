@@ -245,12 +245,16 @@ static void glui_render(void)
 
    if (settings->menu.mouse.enable)
    {
-      int16_t mouse_y = menu_input_pointer_state(MENU_MOUSE_Y_AXIS);
+      bool mouse_scrolldown, mouse_scrollup;
+      int16_t mouse_y          = menu_input_pointer_state(MENU_MOUSE_Y_AXIS);
 
-      if (menu_input->mouse.scrolldown)
+      menu_input_ctl(MENU_CTL_MOUSE_SCROLL_DOWN, &mouse_scrolldown);
+      menu_input_ctl(MENU_CTL_MOUSE_SCROLL_UP,   &mouse_scrollup);
+
+      if (mouse_scrolldown)
          menu->scroll_y += 10;
 
-      if (menu_input->mouse.scrollup)
+      if (mouse_scrollup)
          menu->scroll_y -= 10;
 
       menu_input->mouse.ptr =

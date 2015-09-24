@@ -73,6 +73,12 @@ enum menu_input_mouse_state
    MENU_MOUSE_Y_AXIS
 };
 
+enum menu_ctl_state
+{
+   MENU_CTL_MOUSE_SCROLL_DOWN = 0,
+   MENU_CTL_MOUSE_SCROLL_UP
+};
+
 enum mouse_action
 {
    MOUSE_ACTION_NONE = 0,
@@ -214,6 +220,8 @@ int menu_input_set_input_device_bind_mode(void *data, enum menu_input_bind_mode 
 int16_t menu_input_pointer_state(enum menu_input_pointer_state state);
 
 int16_t menu_input_mouse_state(enum menu_input_mouse_state state);
+
+bool menu_input_ctl(enum menu_ctl_state state, void *data);
 
 menu_input_t *menu_input_get_ptr(void);
 
