@@ -176,6 +176,7 @@ static int database_info_iterate_playlist(
          return 1;
 #endif
       case HASH_EXTENSION_CUE:
+         db_state->serial[0] = '\0';
          cue_get_serial(db_state, db, name, db_state->serial);
          db->type = DATABASE_TYPE_SERIAL_LOOKUP;
          return 1;
