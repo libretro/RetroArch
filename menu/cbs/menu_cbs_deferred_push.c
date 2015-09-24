@@ -40,6 +40,11 @@ static int deferred_push_system_information(menu_displaylist_info_t *info)
    return menu_displaylist_push_list(info, DISPLAYLIST_SYSTEM_INFO);
 }
 
+static int deferred_push_debug_information(menu_displaylist_info_t *info)
+{
+   return menu_displaylist_push_list(info, DISPLAYLIST_DEBUG_INFO);
+}
+
 static int deferred_push_rdb_collection(menu_displaylist_info_t *info)
 {
    return menu_displaylist_push_list(info, DISPLAYLIST_PLAYLIST_COLLECTION);
@@ -628,6 +633,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *
             break;
          case MENU_LABEL_SYSTEM_INFORMATION:
             cbs->action_deferred_push = deferred_push_system_information;
+         case MENU_LABEL_DEBUG_INFORMATION:
+            cbs->action_deferred_push = deferred_push_debug_information;
             break;
          case MENU_LABEL_CORE_COUNTERS:
             cbs->action_deferred_push = deferred_push_core_counters;

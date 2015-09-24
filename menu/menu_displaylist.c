@@ -401,6 +401,46 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    return 0;
 }
 
+static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
+{
+   char tmp[PATH_MAX_LENGTH]             = {0};
+   char tmp2[PATH_MAX_LENGTH]            = {0};
+
+   settings_t *settings                = config_get_ptr();
+   global_t *global                    = global_get_ptr();
+
+   snprintf(tmp, sizeof(tmp), "%s", menu_hash_to_str(MENU_LABEL_VALUE_SAVEFILE_DIRECTORY));
+   menu_list_push(info->list, tmp, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   snprintf(tmp, sizeof(tmp), "%s", global->dir.savefile);
+   menu_list_push(info->list, tmp, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   snprintf(tmp, sizeof(tmp), "%s", global->name.savefile);
+   menu_list_push(info->list, tmp, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   snprintf(tmp, sizeof(tmp), "%s", menu_hash_to_str(MENU_LABEL_VALUE_SAVESTATE_DIRECTORY));
+   menu_list_push(info->list, tmp, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   snprintf(tmp, sizeof(tmp), "%s", global->dir.savestate);
+   menu_list_push(info->list, tmp, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   snprintf(tmp, sizeof(tmp), "%s", global->name.savestate);
+   menu_list_push(info->list, tmp, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   snprintf(tmp, sizeof(tmp), "%s", menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_DIRECTORY));
+   menu_list_push(info->list, tmp, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   snprintf(tmp, sizeof(tmp), "%s", settings->system_directory);
+   menu_list_push(info->list, tmp, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   snprintf(tmp, sizeof(tmp), "%s", global->dir.systemdir);
+   menu_list_push(info->list, tmp, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   return 0;
+}
+
 static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 {
    int controller;
@@ -1833,6 +1873,7 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
 static int menu_displaylist_parse_information_list(menu_displaylist_info_t *info)
 {
    global_t *global            = global_get_ptr();
+   settings_t *settings        = config_get_ptr();
 
    menu_list_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFORMATION),
@@ -1843,6 +1884,12 @@ static int menu_displaylist_parse_information_list(menu_displaylist_info_t *info
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFORMATION),
          menu_hash_to_str(MENU_LABEL_SYSTEM_INFORMATION),
          MENU_SETTING_ACTION, 0, 0);
+
+   if(settings->debug_panel_enable)
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_DEBUG_INFORMATION),
+            menu_hash_to_str(MENU_LABEL_DEBUG_INFORMATION),
+            MENU_SETTING_ACTION, 0, 0);
 
 #ifdef HAVE_LIBRETRODB
    menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_DATABASE_MANAGER),
@@ -2359,6 +2406,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_HISTORY:
       case DISPLAYLIST_OPTIONS_DISK:
       case DISPLAYLIST_SYSTEM_INFO:
+      case DISPLAYLIST_DEBUG_INFO:
       case DISPLAYLIST_CORES:
       case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_CORES_UPDATER:
@@ -2700,6 +2748,11 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_SYSTEM_INFO:
          menu_displaylist_parse_system_info(info);
+         need_push    = true;
+         need_refresh = true;
+         break;
+      case DISPLAYLIST_DEBUG_INFO:
+         menu_displaylist_parse_debug_info(info);
          need_push    = true;
          need_refresh = true;
          break;
