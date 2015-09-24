@@ -46,7 +46,7 @@ menu_input_t *menu_input_get_ptr(void)
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return NULL;
-   return menu->input;
+   return &menu->input;
 }
 
 void menu_input_key_event(bool down, unsigned keycode,
@@ -1151,31 +1151,4 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       menu_input_pointer(&ret);
 
    return ret;
-}
-
-void menu_input_free(void *data)
-{
-   menu_handle_t *menu = (menu_handle_t*)data;
-
-   if (!menu)
-      return;
-
-   if (menu->input)
-      free(menu->input);
-   menu->input = NULL;
-}
-
-bool menu_input_init(void *data)
-{
-   menu_handle_t *menu = (menu_handle_t*)data;
-
-   if (!menu)
-      return false;
-
-   menu->input = (menu_input_t*)calloc(1, sizeof(*menu->input));
-
-   if (!menu->input)
-      return false;
-
-   return true;
 }
