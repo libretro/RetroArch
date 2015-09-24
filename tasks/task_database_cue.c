@@ -127,6 +127,7 @@ static int find_token(RFILE *fd, const char *token)
 
 int detect_ps1_game(const char *track_path, char *game_id)
 {
+   unsigned pos = 0;
    RFILE *fd = retro_fopen(track_path, RFILE_MODE_READ, -1);
 
    if (!fd)
@@ -135,12 +136,39 @@ int detect_ps1_game(const char *track_path, char *game_id)
       return -errno;
    }
 
-   retro_fseek(fd, 0x9340, SEEK_SET);
-
-   if (retro_fread(fd, game_id, 10) > 0)
+   while (true)
    {
-      game_id[10] = '\0';
-      game_id[4] = '-';
+      retro_fseek(fd, pos, SEEK_SET);
+
+      if (retro_fread(fd, game_id, 5) > 0)
+      {
+         if (!strcmp(game_id, "SLUS_")
+          || !strcmp(game_id, "SCUS_")
+
+          || !strcmp(game_id, "SLES_")
+          || !strcmp(game_id, "SCES_")
+          || !strcmp(game_id, "SCED_")
+
+          || !strcmp(game_id, "SLPS_")
+          || !strcmp(game_id, "SCPS_")
+          || !strcmp(game_id, "SLPM_")
+         )
+         {
+            retro_fseek(fd, pos, SEEK_SET);
+            if (retro_fread(fd, game_id, 11) > 0)
+            {
+               game_id[4] = '-';
+               game_id[8] = game_id[9];
+               game_id[9] = game_id[10];
+               game_id[10] = '\0';
+            }
+            break;
+         }
+      }
+      else
+         break;
+
+      pos++;
    }
 
    retro_fclose(fd);
