@@ -26,6 +26,15 @@
 #include "../input/input_common.h"
 #include "../input/input_autodetect.h"
 
+enum menu_state_changes
+{
+   MENU_STATE_RENDER_FRAMEBUFFER = 0,
+   MENU_STATE_RENDER_MESSAGEBOX,
+   MENU_STATE_BLIT,
+   MENU_STATE_POP_STACK,
+   MENU_STATE_POST_ITERATE
+}; 
+
 static int action_iterate_help(char *s, size_t len, const char *label)
 {
    unsigned i;
@@ -431,13 +440,10 @@ int menu_iterate(bool render_this_frame, unsigned action)
    if (!menu || !menu_list)
       return 0;
 
-   menu->state.fb_is_dirty     = false;
-   menu->state.do_messagebox   = false;
-   menu->state.do_render       = false;
-   menu->state.do_pop_stack    = false;
-   menu->state.do_post_iterate = false;
-   menu->state.pop_selected    = NULL;
-   menu->state.msg[0]          = '\0';
+   menu->state = 0;
+
+   menu->menu_state.pop_selected    = NULL;
+   menu->menu_state.msg[0]          = '\0';
 
    hash = menu_hash_calculate(label);
    
@@ -446,44 +452,44 @@ int menu_iterate(bool render_this_frame, unsigned action)
    if (action != MENU_ACTION_NOOP || menu_entries_needs_refresh() || menu_display_update_pending())
    {
       if (render_this_frame)
-         menu->state.fb_is_dirty = true;
+         BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
    }
 
    switch (iterate_type)
    {
       case ITERATE_TYPE_HELP:
-         ret = action_iterate_help(menu->state.msg, sizeof(menu->state.msg), label);
+         ret = action_iterate_help(menu->menu_state.msg, sizeof(menu->menu_state.msg), label);
          if (render_this_frame)
-            menu->state.do_render       = true;
-         menu->state.pop_selected    = NULL;
-         menu->state.do_messagebox   = true;
-         menu->state.do_pop_stack    = true;
-         menu->state.do_post_iterate = true;
+            BIT64_SET(menu->state, MENU_STATE_BLIT);
+         menu->menu_state.pop_selected    = NULL;
+         BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
+         BIT64_SET(menu->state, MENU_STATE_POP_STACK);
+         BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
          if (ret == 1)
             action = MENU_ACTION_OK;
          break;
       case ITERATE_TYPE_BIND:
-         if (menu_input_bind_iterate(menu->state.msg, sizeof(menu->state.msg)))
+         if (menu_input_bind_iterate(menu->menu_state.msg, sizeof(menu->menu_state.msg)))
             menu_list_pop_stack(menu_list, &nav->selection_ptr);
          else
-            menu->state.do_messagebox = true;
+            BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          if (render_this_frame)
-            menu->state.do_render        = true;
+            BIT64_SET(menu->state, MENU_STATE_BLIT);
          break;
       case ITERATE_TYPE_VIEWPORT:
-         ret = action_iterate_menu_viewport(menu->state.msg, sizeof(menu->state.msg), label, action, hash);
+         ret = action_iterate_menu_viewport(menu->menu_state.msg, sizeof(menu->menu_state.msg), label, action, hash);
          if (render_this_frame)
-            menu->state.do_render       = true;
-         menu->state.do_messagebox   = true;
+            BIT64_SET(menu->state, MENU_STATE_BLIT);
+         BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          break;
       case ITERATE_TYPE_INFO:
-         ret = action_iterate_info(menu->state.msg, sizeof(menu->state.msg), label);
-         menu->state.pop_selected    = &nav->selection_ptr;
+         ret = action_iterate_info(menu->menu_state.msg, sizeof(menu->menu_state.msg), label);
+         menu->menu_state.pop_selected    = &nav->selection_ptr;
          if (render_this_frame)
-            menu->state.do_render       = true;
-         menu->state.do_messagebox   = true;
-         menu->state.do_pop_stack    = true;
-         menu->state.do_post_iterate = true;
+            BIT64_SET(menu->state, MENU_STATE_BLIT);
+         BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
+         BIT64_SET(menu->state, MENU_STATE_POP_STACK);
+         BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
          break;
       case ITERATE_TYPE_DEFAULT:
          selected = menu_navigation_get_selection(nav);
@@ -496,9 +502,9 @@ int menu_iterate(bool render_this_frame, unsigned action)
          if (ret)
             goto end;
 
-         menu->state.do_post_iterate = true;
+         BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
          if (render_this_frame)
-            menu->state.do_render       = true;
+            BIT64_SET(menu->state, MENU_STATE_BLIT);
 
          /* Have to defer it so we let settings refresh. */
          if (menu->push_help_screen)
@@ -515,10 +521,10 @@ int menu_iterate(bool render_this_frame, unsigned action)
          break;
    }
 
-   if (menu->state.do_pop_stack && action == MENU_ACTION_OK)
-      menu_list_pop_stack(menu_list, menu->state.pop_selected);
+   if (BIT64_GET(menu->state, MENU_STATE_POP_STACK) && action == MENU_ACTION_OK)
+      menu_list_pop_stack(menu_list, menu->menu_state.pop_selected);
    
-   if (menu->state.do_post_iterate)
+   if (BIT64_GET(menu->state, MENU_STATE_POST_ITERATE))
       menu_input_post_iterate(&ret, action);
 
 end:
@@ -535,26 +541,25 @@ int menu_iterate_render(void)
    if (!menu)
       return -1;
 
-   if (menu->state.fb_is_dirty != menu->state.do_messagebox)
-      menu->state.fb_is_dirty = true;
+   if (BIT64_GET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER) != BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX))
+      BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
 
-   if (menu->state.fb_is_dirty)
+   if (BIT64_GET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER))
       menu_display_fb_set_dirty();
 
-
-   if (menu->state.do_messagebox && menu->state.msg[0] != '\0')
+   if (BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX) && menu->menu_state.msg[0] != '\0')
    {
       if (driver->render_messagebox)
-         driver->render_messagebox(menu->state.msg);
+         driver->render_messagebox(menu->menu_state.msg);
       if (ui_companion_is_on_foreground())
       {
          const ui_companion_driver_t *ui = ui_companion_get_ptr();
          if (ui->render_messagebox)
-            ui->render_messagebox(menu->state.msg);
+            ui->render_messagebox(menu->menu_state.msg);
       }
    }
       
-   if (menu->state.do_render)
+   if (BIT64_GET(menu->state, MENU_STATE_BLIT))
    {
       menu_animation_update_time();
       if (driver->render)
