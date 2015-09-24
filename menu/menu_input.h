@@ -233,6 +233,8 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state);
 
 bool menu_input_ctl(enum menu_ctl_state state, void *data);
 
+void menu_input_set_binds_minmax(unsigned min, unsigned max);
+
 menu_input_t *menu_input_get_ptr(void);
 
 #ifdef __cplusplus
