@@ -245,6 +245,7 @@ static void glui_render(void)
 
    if (settings->menu.mouse.enable)
    {
+      unsigned new_mouse_ptr = 0;
       bool mouse_scrolldown, mouse_scrollup;
       int16_t mouse_y          = menu_input_pointer_state(MENU_MOUSE_Y_AXIS);
 
@@ -257,9 +258,11 @@ static void glui_render(void)
       if (mouse_scrollup)
          menu->scroll_y -= 10;
 
-      menu_input->mouse.ptr =
+      new_mouse_ptr = 
          (mouse_y - glui->line_height + menu->scroll_y - 16)
          / glui->line_height;
+
+      menu_input_ctl(MENU_CTL_MOUSE_PTR, &new_mouse_ptr);
    }
 
    if (menu->scroll_y < 0)

@@ -454,6 +454,7 @@ static void rgui_render(void)
 
    if (settings->menu.mouse.enable)
    {
+      unsigned new_mouse_ptr;
       bool mouse_scrolldown, mouse_scrollup;
 
       menu_input_ctl(MENU_CTL_MOUSE_SCROLL_DOWN, &mouse_scrolldown);
@@ -466,7 +467,9 @@ static void rgui_render(void)
       if (mouse_scrollup && (menu_entries_get_start() > 0))
          menu_entries_set_start(menu_entries_get_start() - 1);
 
-      menu_input->mouse.ptr = menu_input->mouse.y / 11 - 2 + menu_entries_get_start();
+      new_mouse_ptr = menu_input->mouse.y / 11 - 2 + menu_entries_get_start();
+
+      menu_input_ctl(MENU_CTL_MOUSE_PTR, &new_mouse_ptr);
    }
 
    /* Do not scroll if all items are visible. */

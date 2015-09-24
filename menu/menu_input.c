@@ -81,6 +81,12 @@ bool menu_input_ctl(enum menu_ctl_state state, void *data)
             *ptr = menu_input->mouse.scrollup;
          }
          return true;
+      case MENU_CTL_MOUSE_PTR:
+         {
+            unsigned *ptr = (unsigned*)data;
+            menu_input->mouse.ptr = *ptr;
+         }
+         return true;
    }
 
    return false;
