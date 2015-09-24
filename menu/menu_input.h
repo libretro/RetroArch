@@ -107,100 +107,6 @@ enum menu_input_bind_mode
    MENU_INPUT_BIND_ALL
 };
 
-struct menu_bind_state_port
-{
-   bool buttons[MENU_MAX_BUTTONS];
-   int16_t axes[MENU_MAX_AXES];
-   uint16_t hats[MENU_MAX_HATS];
-};
-
-struct menu_bind_axis_state
-{
-   /* Default axis state. */
-   int16_t rested_axes[MENU_MAX_AXES];
-   /* Locked axis state. If we configured an axis,
-    * avoid having the same axis state trigger something again right away. */
-   int16_t locked_axes[MENU_MAX_AXES];
-};
-
-struct menu_bind_state
-{
-   struct retro_keybind *target;
-   /* For keyboard binding. */
-   int64_t timeout_end;
-   unsigned begin;
-   unsigned last;
-   unsigned user;
-   struct menu_bind_state_port state[MAX_USERS];
-   struct menu_bind_axis_state axis_state[MAX_USERS];
-   bool skip;
-};
-
-typedef struct menu_input
-{
-   struct menu_bind_state binds;
-
-   struct
-   {
-      int16_t dx;
-      int16_t dy;
-      int16_t x;
-      int16_t y;
-      int16_t screen_x;
-      int16_t screen_y;
-      bool    left;
-      bool    right;
-      bool    oldleft;
-      bool    oldright;
-      bool    wheelup;
-      bool    wheeldown;
-      bool    hwheelup;
-      bool    hwheeldown;
-      bool    scrollup;
-      bool    scrolldown;
-      unsigned ptr;
-      uint64_t state;
-   } mouse;
-
-   struct
-   {
-      int16_t x;
-      int16_t y;
-      int16_t dx;
-      int16_t dy;
-      int16_t old_x;
-      int16_t old_y;
-      int16_t start_x;
-      int16_t start_y;
-      float accel;
-      float accel0;
-      float accel1;
-      bool pressed[2];
-      bool oldpressed[2];
-      bool dragging;
-      bool back;
-      bool oldback;
-      unsigned ptr;
-   } pointer;
-
-   struct
-   {
-      const char **buffer;
-      const char *label;
-      const char *label_setting;
-      bool display;
-      unsigned type;
-      unsigned idx;
-   } keyboard;
-
-   /* Used for key repeat */
-   struct
-   {
-      float timer;
-      float count;
-   } delay;
-} menu_input_t;
-
 void menu_input_key_event(bool down, unsigned keycode, uint32_t character,
       uint16_t key_modifiers);
 
@@ -235,7 +141,7 @@ bool menu_input_ctl(enum menu_ctl_state state, void *data);
 
 void menu_input_set_binds_minmax(unsigned min, unsigned max);
 
-menu_input_t *menu_input_get_ptr(void);
+void menu_input_free(void);
 
 #ifdef __cplusplus
 }

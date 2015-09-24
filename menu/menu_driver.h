@@ -110,8 +110,6 @@ typedef struct
    char default_cgp[PATH_MAX_LENGTH];
    struct video_shader *shader;
 
-   menu_input_t input;
-
    content_playlist_t *playlist;
    char db_playlist_file[PATH_MAX_LENGTH];
 } menu_handle_t;

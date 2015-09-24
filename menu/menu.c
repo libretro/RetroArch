@@ -197,6 +197,7 @@ void menu_free(menu_handle_t *menu)
   
    menu_shader_free(menu);
 
+   menu_input_free();
    menu_driver_free(menu);
 
 #ifdef HAVE_DYNAMIC
