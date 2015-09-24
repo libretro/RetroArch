@@ -62,6 +62,10 @@ void rarch_main_msg_queue_push_new(uint32_t hash, unsigned prio, unsigned durati
 void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
       bool flush)
 {
+   settings_t *settings;
+   settings = config_get_ptr();
+   if(!settings->video.font_enable)
+      return;
    if (!g_msg_queue)
       return;
 
