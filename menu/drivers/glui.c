@@ -351,6 +351,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
 static void glui_frame(void)
 {
    unsigned i;
+   bool display_kb;
    GRfloat coord_color[16];
    GRfloat coord_color2[16];
    GRfloat black_bg[16];
@@ -358,6 +359,7 @@ static void glui_frame(void)
    GRfloat highlight_bg[16];
    GRfloat white_bg[16];
    unsigned width, height, ticker_limit;
+   char msg[PATH_MAX_LENGTH];
    char title[PATH_MAX_LENGTH];
    char title_buf[PATH_MAX_LENGTH];
    char title_msg[PATH_MAX_LENGTH];
@@ -371,7 +373,6 @@ static void glui_frame(void)
    menu_navigation_t *nav                  = menu_navigation_get_ptr();
    menu_display_t *disp                    = menu_display_get_ptr();
    settings_t *settings                    = config_get_ptr();
-   menu_input_t *menu_input                = menu_input_get_ptr();
    uint64_t *frame_count                   = video_driver_get_frame_count();
    const uint32_t normal_color             = FONT_COLOR_ARGB_TO_RGBA(
          settings->menu.entry_normal_color);
@@ -390,6 +391,7 @@ static void glui_frame(void)
 
    glui = (glui_handle_t*)menu->userdata;
 
+   msg[0]       = '\0';
    title[0]     = '\0';
    title_buf[0] = '\0';
    title_msg[0] = '\0';
@@ -486,16 +488,18 @@ static void glui_frame(void)
             TEXT_ALIGN_RIGHT);
    }
 
-   if (menu_input->keyboard.display)
+   menu_input_ctl(MENU_CTL_KEYBOARD_DISPLAY, &display_kb);
+
+   if (display_kb)
    {
-      char msg[PATH_MAX_LENGTH];
-      const char           *str = *menu_input->keyboard.buffer;
-      msg[0] = '\0';
+      const char *str = NULL, *label = NULL;
+      menu_input_ctl(MENU_CTL_KEYBOARD_BUFF_PTR, &str);
+      menu_input_ctl(MENU_CTL_KEYBOARD_LABEL,    &label);
 
       if (!str)
          str = "";
       glui_render_quad(gl, 0, 0, width, height, width, height, &black_bg[0]);
-      snprintf(msg, sizeof(msg), "%s\n%s", menu_input->keyboard.label, str);
+      snprintf(msg, sizeof(msg), "%s\n%s", label, str);
       glui_render_messagebox(msg);
    }
 

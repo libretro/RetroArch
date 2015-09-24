@@ -1504,12 +1504,12 @@ static void xmb_frame(void)
    GRfloat item_color[16];
    GRfloat coord_color[16];
    GRfloat coord_color2[16];
+   bool display_kb;
    bool render_background                  = false;
    xmb_handle_t *xmb                       = NULL;
    gl_t *gl                                = NULL;
    const struct font_renderer *font_driver = NULL;
    menu_handle_t   *menu                   = menu_driver_get_ptr();
-   menu_input_t *menu_input                = menu_input_get_ptr();
    menu_navigation_t *nav                  = menu_navigation_get_ptr();
    menu_list_t *menu_list                  = menu_list_get_ptr();
    settings_t   *settings                  = config_get_ptr();
@@ -1631,14 +1631,17 @@ static void xmb_frame(void)
 
    menu_display_font_flush_block(menu, font_driver);
 
-   if (menu_input->keyboard.display)
+   menu_input_ctl(MENU_CTL_KEYBOARD_DISPLAY, &display_kb);
+
+   if (display_kb)
    {
-      const char *str = *menu_input->keyboard.buffer;
+      const char *str = NULL, *label = NULL;
+      menu_input_ctl(MENU_CTL_KEYBOARD_BUFF_PTR, &str);
+      menu_input_ctl(MENU_CTL_KEYBOARD_LABEL,    &label);
 
       if (!str)
          str = "";
-      snprintf(msg, sizeof(msg), "%s\n%s",
-            menu_input->keyboard.label, str);
+      snprintf(msg, sizeof(msg), "%s\n%s", label, str);
       render_background = true;
    }
 

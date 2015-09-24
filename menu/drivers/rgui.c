@@ -382,12 +382,14 @@ static void rgui_blit_cursor(menu_handle_t *menu)
 static void rgui_render(void)
 {
    unsigned x, y;
+   bool display_kb;
    uint16_t hover_color, normal_color;
    size_t i, end;
    int bottom;
    char title[256];
    char title_buf[256];
    char title_msg[64];
+   char msg[PATH_MAX_LENGTH];
    char timedate[PATH_MAX_LENGTH];
    menu_handle_t *menu            = menu_driver_get_ptr();
    menu_input_t *menu_input       = menu_input_get_ptr();
@@ -400,6 +402,7 @@ static void rgui_render(void)
    uint64_t *frame_count          = video_driver_get_frame_count();
    rgui_t *rgui                   = NULL;
 
+   msg[0]       = '\0';
    title[0]     = '\0';
    title_buf[0] = '\0';
    title_msg[0] = '\0';
@@ -441,7 +444,8 @@ static void rgui_render(void)
 
    if (settings->menu.pointer.enable)
    {
-      menu_input->pointer.ptr = menu_input->pointer.y / 11 - 2 + menu_entries_get_start();
+      unsigned new_val = menu_input->pointer.y / 11 - 2 + menu_entries_get_start();
+      menu_input_ctl(MENU_CTL_POINTER_PTR, &new_val);
 
       if (menu_input->pointer.dragging)
       {
@@ -580,14 +584,17 @@ static void rgui_render(void)
    rgui_render_messagebox( message_queue);
 #endif
 
-   if (menu_input->keyboard.display)
+   menu_input_ctl(MENU_CTL_KEYBOARD_DISPLAY, &display_kb);
+
+   if (display_kb)
    {
-      char msg[PATH_MAX_LENGTH] = {0};
-      const char           *str = *menu_input->keyboard.buffer;
+      const char *str = NULL, *label = NULL;
+      menu_input_ctl(MENU_CTL_KEYBOARD_BUFF_PTR, &str);
+      menu_input_ctl(MENU_CTL_KEYBOARD_LABEL,    &label);
 
       if (!str)
          str = "";
-      snprintf(msg, sizeof(msg), "%s\n%s", menu_input->keyboard.label, str);
+      snprintf(msg, sizeof(msg), "%s\n%s", label, str);
       rgui_render_messagebox(msg);
    }
 

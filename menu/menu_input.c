@@ -93,6 +93,24 @@ bool menu_input_ctl(enum menu_ctl_state state, void *data)
             menu_input->pointer.ptr = *ptr;
          }
          return true;
+      case MENU_CTL_KEYBOARD_DISPLAY:
+         {
+            bool *ptr = (bool*)data;
+            *ptr = menu_input->keyboard.display;
+         }
+         return true;
+      case MENU_CTL_KEYBOARD_BUFF_PTR:
+         {
+            const char *ptr = (const char *)ptr;
+            ptr = *menu_input->keyboard.buffer;
+         }
+         return true;
+      case MENU_CTL_KEYBOARD_LABEL:
+         {
+            const char *ptr = (const char*)ptr;
+            ptr = menu_input->keyboard.label;
+         }
+         return true;
    }
 
    return false;
