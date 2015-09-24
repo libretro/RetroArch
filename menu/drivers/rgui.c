@@ -372,8 +372,10 @@ end:
 
 static void rgui_blit_cursor(menu_handle_t *menu)
 {
-   int16_t x = menu_input_pressed(MENU_INPUT_MOUSE_AXIS_X);
-   int16_t y = menu_input_pressed(MENU_INPUT_MOUSE_AXIS_Y);
+   menu_input_t *menu_input = menu_input_get_ptr();
+
+   int16_t x = menu_input->mouse.x;
+   int16_t y = menu_input->mouse.y;
 
    color_rect(menu, x, y - 5, 1, 11, 0xFFFF);
    color_rect(menu, x - 5, y, 11, 1, 0xFFFF);
@@ -441,13 +443,11 @@ static void rgui_render(void)
 
    if (settings->menu.pointer.enable)
    {
-      unsigned new_ptr = menu_input_pressed(MENU_INPUT_POINTER_AXIS_Y) / 11 - 2 + menu_entries_get_start();
+      menu_input->pointer.ptr = menu_input->pointer.y / 11 - 2 + menu_entries_get_start();
 
-      menu_input_set_pointer(MENU_INPUT_PTR_TYPE_POINTER, new_ptr);
-
-      if (menu_input_pressed(MENU_INPUT_POINTER_DRAGGED))
+      if (menu_input->pointer.dragging)
       {
-         menu->scroll_y += menu_input_pressed(MENU_INPUT_POINTER_DELTA_AXIS_Y);
+         menu->scroll_y += menu_input->pointer.dy;
          menu_entries_set_start(-menu->scroll_y / 11 + 2);
          if (menu->scroll_y > 0)
             menu->scroll_y = 0;
@@ -456,16 +456,14 @@ static void rgui_render(void)
 
    if (settings->menu.mouse.enable)
    {
-      if (menu_input_pressed(MENU_INPUT_MOUSE_SCROLL_DOWN))
-         if ((menu_entries_get_start() < menu_entries_get_end() - RGUI_TERM_HEIGHT))
-            menu_entries_set_start(menu_entries_get_start() + 1);
+      if (menu_input->mouse.scrolldown
+            && (menu_entries_get_start() < menu_entries_get_end() - RGUI_TERM_HEIGHT))
+         menu_entries_set_start(menu_entries_get_start() + 1);
 
-      if (menu_input_pressed(MENU_INPUT_MOUSE_SCROLL_UP))
-         if (menu_entries_get_start() > 0)
-            menu_entries_set_start(menu_entries_get_start() - 1);
+      if (menu_input->mouse.scrollup && (menu_entries_get_start() > 0))
+         menu_entries_set_start(menu_entries_get_start() - 1);
 
-      menu_input_set_pointer(MENU_INPUT_PTR_TYPE_MOUSE,
-            menu_input_pressed(MENU_INPUT_MOUSE_AXIS_Y) / 11 - 2 + menu_entries_get_start());
+      menu_input->mouse.ptr = menu_input->mouse.y / 11 - 2 + menu_entries_get_start();
    }
 
    /* Do not scroll if all items are visible. */
@@ -576,14 +574,14 @@ static void rgui_render(void)
    rgui_render_messagebox( message_queue);
 #endif
 
-   if (menu_input_key_displayed())
+   if (menu_input->keyboard.display)
    {
       char msg[PATH_MAX_LENGTH] = {0};
-      const char           *str = menu_input_key_get_buff();
+      const char           *str = *menu_input->keyboard.buffer;
 
       if (!str)
          str = "";
-      snprintf(msg, sizeof(msg), "%s\n%s", menu_input_key_get_label(), str);
+      snprintf(msg, sizeof(msg), "%s\n%s", menu_input->keyboard.label, str);
       rgui_render_messagebox(msg);
    }
 

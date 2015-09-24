@@ -590,14 +590,14 @@ static void rmenu_xui_render(void)
    }
 	XuiListSetCurSelVisible(m_menulist, menu_navigation_get_selection(nav));
 
-	if (menu_input_key_displayed())
+	if (menu->keyboard.display)
 	{
 		char msg[1024]  = {0};
-		const char *str = menu_input_key_get_ptr();
+		const char *str = *menu->keyboard.buffer;
 
 		if (!str)
 			str = "";
-		snprintf(msg, sizeof(msg), "%s\n%s", menu_input_key_get_label(), str);
+		snprintf(msg, sizeof(msg), "%s\n%s", menu->keyboard.label, str);
 		rmenu_xui_render_messagebox(msg);			
 	}
 }
