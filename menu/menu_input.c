@@ -221,14 +221,14 @@ bool menu_input_ctl(enum menu_ctl_state state, void *data)
          return true;
       case MENU_CTL_KEYBOARD_BUFF_PTR:
          {
-            const char *ptr = (const char *)ptr;
-            ptr = *menu_input->keyboard.buffer;
+            const char **ptr = (const char**)data;
+            *ptr = *menu_input->keyboard.buffer;
          }
          return true;
       case MENU_CTL_KEYBOARD_LABEL:
          {
-            const char *ptr = (const char*)ptr;
-            ptr = menu_input->keyboard.label;
+            const char **ptr = (const char**)data;
+            *ptr = menu_input->keyboard.label;
          }
          return true;
    }
