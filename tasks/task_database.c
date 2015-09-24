@@ -385,7 +385,8 @@ static int database_info_iterate_serial_lookup(
    if (db_state->entry_index == 0)
    {
       char query[50] = {0};
-      snprintf(query, sizeof(query), "{'serial': '%s'}", db_state->serial);
+      snprintf(query, sizeof(query), "{'serial': b'%s'}",
+            bin_to_hex_alloc((uint8_t*)db_state->serial, 10*sizeof(uint8_t)));
 
       database_info_list_iterate_new(db_state, query);
    }
@@ -396,11 +397,11 @@ static int database_info_iterate_serial_lookup(
 
       if (db_info_entry && db_info_entry->serial)
       {
-#if 1
+#if 0
          RARCH_LOG("serial: %s , entry serial: %s (%s).\n",
                    db_state->serial, db_info_entry->serial, db_info_entry->name);
 #endif
-         if (db_state->serial == db_info_entry->serial)
+         if (!strcmp(db_state->serial, db_info_entry->serial))
             database_info_list_iterate_found_match(db_state, db, NULL);
       }
    }
