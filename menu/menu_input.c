@@ -1179,13 +1179,12 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       | (1UL << RETRO_DEVICE_ID_JOYPAD_L)
       | (1UL << RETRO_DEVICE_ID_JOYPAD_R);
    menu_navigation_t *nav      = menu_navigation_get_ptr();
-   menu_handle_t *menu         = menu_driver_get_ptr();
    menu_display_t *disp        = menu_display_get_ptr();
    menu_input_t *menu_input    = menu_input_get_ptr();
    driver_t *driver            = driver_get_ptr();
    settings_t *settings        = config_get_ptr();
 
-   if (!menu || !driver || !nav || !menu_input)
+   if (!driver || !nav || !menu_input)
       return 0;
 
    driver->retro_ctx.poll_cb();
