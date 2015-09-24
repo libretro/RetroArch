@@ -17,9 +17,10 @@
 #ifndef _MENU_INPUT_H
 #define _MENU_INPUT_H
 
-#include "../input/input_driver.h"
 #include "../input/keyboard_line.h"
 #include "../libretro.h"
+
+typedef uint64_t retro_input_t;
 
 #ifdef __cplusplus
 extern "C" {

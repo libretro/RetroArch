@@ -633,6 +633,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *
             break;
          case MENU_LABEL_SYSTEM_INFORMATION:
             cbs->action_deferred_push = deferred_push_system_information;
+            break;
          case MENU_LABEL_DEBUG_INFORMATION:
             cbs->action_deferred_push = deferred_push_debug_information;
             break;
