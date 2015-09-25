@@ -150,6 +150,7 @@ void menu_list_flush_stack(menu_list_t *list,
    const char *label      = NULL;
    unsigned type          = 0;
    size_t entry_idx       = 0;
+   menu_navigation_t *nav = menu_navigation_get_ptr();
    if (!list)
       return;
 
@@ -160,12 +161,7 @@ void menu_list_flush_stack(menu_list_t *list,
    while (menu_list_flush_stack_type(
             needle, label, type, final_type) != 0)
    {
-      size_t new_selection_ptr;
-
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
-      menu_list_pop(list->menu_stack, &new_selection_ptr);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
-
+      menu_list_pop(list->menu_stack, &nav->selection_ptr);
       menu_list_get_last(list->menu_stack,
             &path, &label, &type, &entry_idx);
    }
