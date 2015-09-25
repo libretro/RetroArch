@@ -40,7 +40,8 @@ enum menu_animation_ctl_state
    MENU_ANIMATION_CTL_CLEAR_ACTIVE,
    MENU_ANIMATION_CTL_SET_ACTIVE,
    MENU_ANIMATION_CTL_DELTA_TIME,
-   MENU_ANIMATION_CTL_UPDATE_TIME
+   MENU_ANIMATION_CTL_UPDATE_TIME,
+   MENU_ANIMATION_CTL_UPDATE
 };
 
 enum menu_animation_easing_type
@@ -98,8 +99,6 @@ void menu_animation_kill_by_tag(int tag);
 /* Use -1 for untagged */
 bool menu_animation_push(float duration, float target_value, float* subject,
       enum menu_animation_easing_type easing_enum, int tag, tween_cb cb);
-
-bool menu_animation_update(float dt);
 
 /**
  * menu_animation_ticker_str:

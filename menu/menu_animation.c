@@ -587,26 +587,6 @@ bool menu_animation_push(float duration, float target_value, float* subject,
 }
 
 
-bool menu_animation_update(float dt)
-{
-   unsigned i;
-   unsigned active_tweens = 0;
-   menu_animation_t *anim = menu_animation_get_ptr();
-
-   for(i = 0; i < anim->size; i++)
-      menu_animation_iterate(anim, i, dt, &active_tweens);
-
-   if (!active_tweens)
-   {
-      anim->size = 0;
-      anim->first_dead = 0;
-      return false;
-   }
-
-   anim->is_active = true;
-
-   return true;
-}
 
 
 /**
@@ -694,6 +674,28 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
             }
          }
          return true;
+      case MENU_ANIMATION_CTL_UPDATE:
+         {
+            unsigned i;
+            unsigned active_tweens = 0;
+            float *dt = (float*)data;
+
+            if (!dt)
+               return false;
+
+            for(i = 0; i < anim->size; i++)
+               menu_animation_iterate(anim, i, *dt, &active_tweens);
+
+            if (!active_tweens)
+            {
+               anim->size = 0;
+               anim->first_dead = 0;
+               return false;
+            }
+
+            anim->is_active = true;
+         }
+   return true;
    }
 
    return false;
