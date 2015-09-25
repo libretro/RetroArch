@@ -448,6 +448,7 @@ static void xmb_draw_text(menu_handle_t *menu,
 {
    uint8_t a8                =   0;
    struct font_params params = {0};
+   menu_display_t *disp      = menu_display_get_ptr();
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -469,7 +470,7 @@ static void xmb_draw_text(menu_handle_t *menu,
    params.full_screen = true;
    params.text_align  = text_align;
 
-   video_driver_set_osd_msg(str, &params, menu->display.font.buf);
+   video_driver_set_osd_msg(str, &params, disp->font.buf);
 }
 
 static void xmb_render_messagebox_internal(const char *message)
@@ -497,6 +498,7 @@ static void xmb_frame_messagebox(const char *message)
    gl_t *gl                 = NULL;
    xmb_handle_t *xmb        = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
+   menu_display_t *disp     = menu_display_get_ptr();
 
    if (!menu)
       return;
@@ -520,8 +522,8 @@ static void xmb_frame_messagebox(const char *message)
    if (list->elems == 0)
       goto end;
 
-   x = width  / 2 - strlen(list->elems[0].data) * menu->display.font.size / 4;
-   y = height / 2 - list->size * menu->display.font.size / 2;
+   x = width  / 2 - strlen(list->elems[0].data) * disp->font.size / 4;
+   y = height / 2 - list->size * disp->font.size / 2;
 
    for (i = 0; i < list->size; i++)
    {
@@ -532,7 +534,7 @@ static void xmb_frame_messagebox(const char *message)
                xmb,
                msg,
                x,
-               y + i * menu->display.font.size,
+               y + i * disp->font.size,
                1,
                1,
                TEXT_ALIGN_LEFT,
@@ -1692,17 +1694,15 @@ static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
 
 static void xmb_font(menu_handle_t *menu)
 {
+   char mediapath[PATH_MAX_LENGTH], themepath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
    settings_t *settings = config_get_ptr();
-
-   char mediapath[PATH_MAX_LENGTH] = {0};
-   char themepath[PATH_MAX_LENGTH] = {0};
-   char fontpath[PATH_MAX_LENGTH]  = {0};
+   menu_display_t *disp = menu_display_get_ptr();
 
    fill_pathname_join(mediapath, settings->assets_directory, "xmb", sizeof(mediapath));
    fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
    fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
 
-   if (!menu_display_init_main_font(menu, fontpath, menu->display.font.size))
+   if (!menu_display_init_main_font(menu, fontpath, disp->font.size))
       RARCH_WARN("Failed to load font.");
 }
 
@@ -1710,8 +1710,9 @@ static void xmb_layout(menu_handle_t *menu, xmb_handle_t *xmb)
 {
    size_t selection;
    float scale_factor;
-   menu_list_t *menu_list = menu_list_get_ptr();
    unsigned width, height, i, current, end;
+   menu_list_t *menu_list = menu_list_get_ptr();
+   menu_display_t *disp   = menu_display_get_ptr();
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
@@ -1722,18 +1723,18 @@ static void xmb_layout(menu_handle_t *menu, xmb_handle_t *xmb)
 
    xmb->boxart_size             = 460.0 * scale_factor;
    xmb->cursor.size             = 48.0;
-   menu->display.font.size      = 32.0 * scale_factor;
+   disp->font.size              = 32.0 * scale_factor;
    xmb->icon.spacing.horizontal = 200.0 * scale_factor;
    xmb->icon.spacing.vertical   = 64.0 * scale_factor;
    xmb->margins.screen.left     = 336.0 * scale_factor;
    xmb->margins.screen.top      = (256+32) * scale_factor;
    xmb->margins.title.left      = 60 * scale_factor;
-   xmb->margins.title.top       = 60 * scale_factor + menu->display.font.size/3;
-   xmb->margins.title.bottom    = 60 * scale_factor - menu->display.font.size/3;
+   xmb->margins.title.top       = 60 * scale_factor + disp->font.size/3;
+   xmb->margins.title.bottom    = 60 * scale_factor - disp->font.size/3;
    xmb->margins.label.left      = 85.0 * scale_factor;
-   xmb->margins.label.top       = menu->display.font.size / 3.0;
+   xmb->margins.label.top       = disp->font.size / 3.0;
    xmb->margins.setting.left    = 600.0 * scale_factor;
-   menu->display.header_height  = 128.0 * scale_factor;
+   disp->header_height          = 128.0 * scale_factor;
 
    if (width >= 3840)
       scale_factor              = 2.0;
@@ -2467,7 +2468,7 @@ static void xmb_context_destroy(void)
 
    xmb_context_destroy_horizontal_list(xmb, menu);
 
-   menu_display_free_main_font(menu);
+   menu_display_free_main_font();
 }
 
 static void xmb_toggle(bool menu_on)

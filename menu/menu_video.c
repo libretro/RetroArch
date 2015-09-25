@@ -15,6 +15,7 @@
 
 #include <retro_miscellaneous.h>
 
+#include "menu_display.h"
 #include "menu_video.h"
 
 #ifdef HAVE_THREADS

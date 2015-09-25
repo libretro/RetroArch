@@ -22,7 +22,6 @@
 #include <boolean.h>
 #include <retro_miscellaneous.h>
 #include "menu_animation.h"
-#include "menu_display.h"
 #include "menu_displaylist.h"
 #include "menu_entries.h"
 #include "menu_list.h"
@@ -91,9 +90,6 @@ typedef struct
    {
       char msg[PATH_MAX_LENGTH];
    } menu_state;
-
-   /* Menu display */
-   menu_display_t display;
 
    /* Menu entries */
    menu_entries_t *entries;

@@ -550,20 +550,22 @@ static void glui_allocate_white_texture(glui_handle_t *glui)
 
 static void glui_font(menu_handle_t *menu)
 {
-   settings_t *settings  = config_get_ptr();
    const char *font_path = NULL;
+   settings_t *settings  = config_get_ptr();
+   menu_display_t *disp  = menu_display_get_ptr();
 
    font_path = settings->video.font_enable ? settings->video.font_path : NULL;
 
-   if (!menu_display_init_main_font(menu, font_path, menu->display.font.size))
+   if (!menu_display_init_main_font(menu, font_path, disp->font.size))
       RARCH_ERR("Failed to load font.");
 }
 
 static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
 {
-   menu_display_t *disp = menu_display_get_ptr();
    float scale_factor;
    unsigned width, height;
+   menu_display_t *disp = menu_display_get_ptr();
+
    video_driver_get_size(&width, &height);
 
    /* Mobiles platforms may have very small display metrics coupled to a high
@@ -574,10 +576,10 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
 
    glui->line_height            = scale_factor / 3;
    glui->margin                 = scale_factor / 6;
-   menu->display.header_height  = scale_factor / 3;
-   menu->display.font.size      = scale_factor / 10;
+   disp->header_height          = scale_factor / 3;
+   disp->font.size              = scale_factor / 10;
    /* we assume the average glyph aspect ratio is close to 3:4 */
-   glui->glyph_width            = menu->display.font.size * 3/4;
+   glui->glyph_width            = disp->font.size * 3/4;
 
    glui_font(menu);
 
@@ -675,7 +677,7 @@ static void glui_context_destroy(void)
 
    glui = (glui_handle_t*)menu->userdata;
 
-   menu_display_free_main_font(menu);
+   menu_display_free_main_font();
 
    glui_context_bg_destroy(glui);
 }

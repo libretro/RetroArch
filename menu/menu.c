@@ -18,6 +18,7 @@
 
 #include "menu.h"
 #include "menu_cbs.h"
+#include "menu_display.h"
 #include "menu_hash.h"
 #include "menu_shader.h"
 
@@ -204,8 +205,7 @@ void menu_free(menu_handle_t *menu)
    libretro_free_system_info(&global->menu.info);
 #endif
 
-   menu_display_free(menu);
-
+   menu_display_free();
    menu_entries_free();
 
    event_command(EVENT_CMD_HISTORY_DEINIT);
@@ -275,7 +275,7 @@ void *menu_init(const void *data)
 
    menu_shader_manager_init(menu);
 
-   if (!menu_display_init(menu))
+   if (!menu_display_init())
       goto error;
 
    return menu;

@@ -70,9 +70,9 @@ menu_display_t  *menu_display_get_ptr(void);
 
 void menu_display_libretro(void);
 
-void menu_display_free(void *data);
+void menu_display_free(void);
 
-bool menu_display_init(void *data);
+bool menu_display_init(void);
 
 bool menu_display_font_init_first(const void **font_driver,
       void **font_handle, void *video_data, const char *font_path,
@@ -87,7 +87,7 @@ bool menu_display_font_flush_block(void *data,
 bool menu_display_init_main_font(void *data,
       const char *font_path, float font_size);
 
-void menu_display_free_main_font(void *data);
+void menu_display_free_main_font(void);
 
 
 bool menu_display_ctl(enum menu_display_ctl_state state, void *data);

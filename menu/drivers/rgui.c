@@ -28,6 +28,7 @@
 
 #include "../../general.h"
 #include "../menu.h"
+#include "../menu_display.h"
 #include "../menu_hash.h"
 #include "../menu_video.h"
 
@@ -212,12 +213,13 @@ static void blit_line(uint16_t *data,
 static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
 {
    unsigned i;
-   uint8_t *font = (uint8_t *) calloc(1, FONT_OFFSET(256));
+   uint8_t        *font = (uint8_t *) calloc(1, FONT_OFFSET(256));
+   menu_display_t *disp = menu_display_get_ptr();
 
    if (!font)
       return false;
 
-   menu->display.font.alloc_framebuf = true;
+   disp->font.alloc_framebuf = true;
 
    for (i = 0; i < 256; i++)
    {
@@ -227,7 +229,7 @@ static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
             font_bmp_buf + 54 + 3 * (256 * (255 - 16 * y) + 16 * x));
    }
 
-   menu->display.font.framebuf = font;
+   disp->font.framebuf = font;
    return true;
 }
 
@@ -235,6 +237,7 @@ static bool rguidisp_init_font(menu_handle_t *menu)
 {
    const uint8_t *font_bmp_buf = NULL;
    const uint8_t *font_bin_buf = bitmap_bin;
+   menu_display_t *disp        = menu_display_get_ptr();
 
    if (!menu)
       return false;
@@ -245,7 +248,7 @@ static bool rguidisp_init_font(menu_handle_t *menu)
    if (!font_bin_buf)
       return false;
 
-   menu->display.font.framebuf = font_bin_buf;
+   disp->font.framebuf = font_bin_buf;
 
    return true;
 }
@@ -407,12 +410,12 @@ static void rgui_render(void)
    char title[256], title_buf[256], title_msg[64];
    char msg[PATH_MAX_LENGTH], timedate[PATH_MAX_LENGTH];
    uint16_t *fb_data              = NULL;
+   rgui_t *rgui                   = NULL;
    menu_handle_t *menu            = menu_driver_get_ptr();
    menu_display_t *disp           = menu_display_get_ptr();
    driver_t *driver               = driver_get_ptr();
    settings_t *settings           = config_get_ptr();
    uint64_t *frame_count          = video_driver_get_frame_count();
-   rgui_t *rgui                   = NULL;
 
    msg[0]       = '\0';
    title[0]     = '\0';
@@ -641,6 +644,7 @@ static void *rgui_init(void)
    uint16_t        *fb_data   = NULL;
    rgui_t               *rgui = NULL;
    bool                   ret = false;
+   menu_display_t  *disp      = menu_display_get_ptr();
    menu_handle_t        *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
@@ -665,7 +669,7 @@ static void *rgui_init(void)
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT,  &fb_height);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FB_DATA, fb_data);
 
-   menu->display.header_height        = FONT_HEIGHT_STRIDE * 2;
+   disp->header_height        = FONT_HEIGHT_STRIDE * 2;
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FB_PITCH, &fb_pitch);
 
@@ -701,8 +705,8 @@ error:
 
 static void rgui_free(void *data)
 {
-   menu_handle_t  *menu = (menu_handle_t*)data;
-   menu_display_t *disp = menu ? &menu->display : NULL;
+   menu_handle_t  *menu  = (menu_handle_t*)data;
+   menu_display_t  *disp = menu_display_get_ptr();
 
    if (!menu || !disp)
       return;
