@@ -34,7 +34,8 @@ enum menu_display_ctl_state
    MENU_DISPLAY_CTL_SET_VIEWPORT = 0,
    MENU_DISPLAY_CTL_UNSET_VIEWPORT,
    MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG,
-   MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG
+   MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG,
+   MENU_DISPLAY_CTL_GET_DPI
 };
 
 typedef struct menu_framebuf
@@ -78,8 +79,6 @@ void menu_display_free(void *data);
 bool menu_display_init(void *data);
 
 bool menu_display_update_pending(void);
-
-float menu_display_get_dpi(void);
 
 bool menu_display_font_init_first(const void **font_driver,
       void **font_handle, void *video_data, const char *font_path,

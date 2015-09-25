@@ -120,24 +120,6 @@ bool menu_display_init(void *data)
    return true;
 }
 
-float menu_display_get_dpi(void)
-{
-   float dpi = menu_dpi_override_value;
-   settings_t *settings = config_get_ptr();
-
-   if (!settings)
-      return dpi;
-
-   if (settings->menu.dpi.override_enable)
-      dpi = settings->menu.dpi.override_value;
-#if defined(HAVE_OPENGL) || defined(HAVE_GLES)
-   else if (!gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, &dpi))
-      dpi = menu_dpi_override_value;
-#endif
-
-   return dpi;
-}
-
 bool menu_display_font_init_first(const void **font_driver,
       void **font_handle, void *video_data, const char *font_path,
       float font_size)
@@ -262,6 +244,22 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
       case MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG:
          if (frame_buf && frame_buf->data)
             frame_buf->dirty = false;
+         return true;
+      case MENU_DISPLAY_CTL_GET_DPI:
+         {
+            settings_t *settings = config_get_ptr();
+            float           *dpi = (float*)data;
+
+            *dpi       = menu_dpi_override_value;
+
+            if (!settings)
+               return true;
+
+            if (settings->menu.dpi.override_enable)
+               *dpi = settings->menu.dpi.override_value;
+            else if (!gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, dpi))
+               *dpi = menu_dpi_override_value;
+         }
          return true;
    }
 

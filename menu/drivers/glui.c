@@ -561,7 +561,7 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
       resolution, so we should be dpi aware to ensure the entries hitboxes are big
       enough. On desktops, we just care about readability, with every widget size
       proportional to the display width. */
-   scale_factor = menu_display_get_dpi();
+   menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
 
    glui->line_height            = scale_factor / 3;
    glui->margin                 = scale_factor / 6;
