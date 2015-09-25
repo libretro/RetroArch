@@ -49,8 +49,8 @@
 #define FONT_HEIGHT_STRIDE (FONT_HEIGHT + 1)
 #define RXUI_TERM_START_X 15
 #define RXUI_TERM_START_Y 27
-#define RXUI_TERM_WIDTH (((frame_buf->width - RXUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
-#define RXUI_TERM_HEIGHT (((frame_buf->height - RXUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
+#define RXUI_TERM_WIDTH(width) (((width - RXUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
+#define RXUI_TERM_HEIGHT(height) (((height - RXUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
 
 HXUIOBJ m_menulist;
 HXUIOBJ m_menutitle;
@@ -530,6 +530,7 @@ static void rmenu_xui_set_list_text(int index, const wchar_t* leftText,
 
 static void rmenu_xui_render(void)
 {
+   unsigned fb_width;
 	size_t end, i, selection;
 	char title[PATH_MAX_LENGTH] = {0};
 	const char *dir             = NULL;
@@ -538,8 +539,9 @@ static void rmenu_xui_render(void)
    menu_handle_t *menu         = menu_driver_get_ptr();
    menu_animation_t *anim      = menu_animation_get_ptr();
    menu_display_t *disp        = menu_display_get_ptr();
-   menu_framebuf_t *frame_buf  = menu_display_fb_get_ptr();
    uint64_t frame_count        = video_driver_get_frame_count();
+
+   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH, &fb_width);
 
    if (!menu)
       return;
@@ -560,7 +562,7 @@ static void rmenu_xui_render(void)
       menu_entries_get_title(title, sizeof(title));
 		mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
 		XuiTextElementSetText(m_menutitle, strw_buffer);
-		menu_animation_ticker_str(title, RXUI_TERM_WIDTH - 3, (unsigned int)frame_count / 15, title, true);
+		menu_animation_ticker_str(title, RXUI_TERM_WIDTH(fb_width) - 3, (unsigned int)frame_count / 15, title, true);
 	}
 
 	if (XuiHandleIsValid(m_menutitle))
