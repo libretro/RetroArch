@@ -435,7 +435,6 @@ int menu_iterate(bool render_this_frame, unsigned action)
    int ret                   = 0;
    uint32_t hash             = 0;
    menu_handle_t *menu       = menu_driver_get_ptr();
-   menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
 
    menu_list_get_last_stack(menu_list, NULL, &label, NULL, NULL);
