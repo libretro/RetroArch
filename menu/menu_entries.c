@@ -27,7 +27,6 @@ struct menu_entries
    size_t begin;
    menu_list_t *menu_list;
    rarch_setting_t *list_settings;
-   menu_navigation_t navigation;
 };
 
 static menu_entries_t *menu_entries_get_ptr(void)
@@ -54,14 +53,6 @@ menu_list_t *menu_list_get_ptr(void)
    if (!entries)
       return NULL;
    return entries->menu_list;
-}
-
-menu_navigation_t *menu_navigation_get_ptr(void)
-{
-   menu_entries_t *entries = menu_entries_get_ptr();
-   if (!entries)
-      return NULL;
-   return &entries->navigation;
 }
 
 /* Sets the starting index of the menu entry list. */

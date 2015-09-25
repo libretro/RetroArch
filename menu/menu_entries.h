@@ -21,7 +21,6 @@
 
 #include <boolean.h>
 
-#include "menu_navigation.h"
 #include "menu_list.h"
 #include "menu_setting.h"
 #include "menu_entry.h"
@@ -47,8 +46,6 @@ bool menu_entries_show_back(void);
 int menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 
 rarch_setting_t *menu_setting_get_ptr(void);
-
-menu_navigation_t *menu_navigation_get_ptr(void);
 
 bool menu_entries_needs_refresh(void);
 

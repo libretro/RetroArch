@@ -18,12 +18,40 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <unistd.h>
+#endif
 #include <limits.h>
 #include <ctype.h>
 
 #include <boolean.h>
 
 #include "../configuration.h"
+
+typedef struct menu_navigation
+{
+   struct
+   {
+      /* Quick jumping indices with L/R.
+       * Rebuilt when parsing directory. */
+      struct
+      {
+         size_t list[2 * (26 + 2) + 1];
+         unsigned size;
+      } indices;
+      unsigned acceleration;
+   } scroll;
+   size_t selection_ptr;
+} menu_navigation_t;
+
+static menu_navigation_t menu_navigation_state;
+
+static menu_navigation_t *menu_navigation_get_ptr(void)
+{
+   return &menu_navigation_state;
+}
 
 bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
 {
@@ -228,4 +256,9 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
    }
 
    return false;
+}
+
+void menu_navigation_free(void)
+{
+   memset(&menu_navigation_state, 0, sizeof(menu_navigation_t));
 }

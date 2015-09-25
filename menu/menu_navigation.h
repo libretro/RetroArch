@@ -18,31 +18,10 @@
 #define _MENU_NAVIGATION_H
 
 #include <stddef.h>
-#ifdef _WIN32
-#include <direct.h>
-#else
-#include <unistd.h>
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef struct menu_navigation
-{
-   struct
-   {
-      /* Quick jumping indices with L/R.
-       * Rebuilt when parsing directory. */
-      struct
-      {
-         size_t list[2 * (26 + 2) + 1];
-         unsigned size;
-      } indices;
-      unsigned acceleration;
-   } scroll;
-   size_t selection_ptr;
-} menu_navigation_t;
 
 enum menu_navigation_ctl_state
 {
@@ -62,6 +41,8 @@ enum menu_navigation_ctl_state
 };
 
 bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data);
+
+void menu_navigation_free(void);
 
 #ifdef __cplusplus
 }
