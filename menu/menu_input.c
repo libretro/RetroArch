@@ -756,12 +756,15 @@ int menu_input_bind_iterate(char *s, size_t len)
 
 static int menu_input_mouse(unsigned *action)
 {
+   unsigned fb_width, fb_height;
    video_viewport_t vp;
    const struct retro_keybind *binds[MAX_USERS];
    menu_animation_t *anim    = menu_animation_get_ptr();
    menu_input_t *menu_input  = menu_input_get_ptr();
-   menu_framebuf_t *frame_buf= menu_display_fb_get_ptr();
    settings_t *settings      = config_get_ptr();
+
+   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,  &fb_width);
+   menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &fb_height);
 
    if (!settings->menu.mouse.enable
 #ifdef HAVE_OVERLAY
@@ -810,20 +813,20 @@ static int menu_input_mouse(unsigned *action)
    menu_input->mouse.screen_x += menu_input->mouse.dx;
    menu_input->mouse.screen_y += menu_input->mouse.dy;
 
-   menu_input->mouse.x         = ((int)menu_input->mouse.screen_x * (int)frame_buf->width) / (int)vp.width;
-   menu_input->mouse.y         = ((int)menu_input->mouse.screen_y * (int)frame_buf->height) / (int)vp.height;
+   menu_input->mouse.x         = ((int)menu_input->mouse.screen_x * (int)fb_width) / (int)vp.width;
+   menu_input->mouse.y         = ((int)menu_input->mouse.screen_y * (int)fb_height) / (int)vp.height;
 
    if (menu_input->mouse.x < 5)
       menu_input->mouse.x       = 5;
    if (menu_input->mouse.y < 5)
       menu_input->mouse.y       = 5;
-   if (menu_input->mouse.x > (int)frame_buf->width - 5)
-      menu_input->mouse.x       = frame_buf->width - 5;
-   if (menu_input->mouse.y > (int)frame_buf->height - 5)
-      menu_input->mouse.y       = frame_buf->height - 5;
+   if (menu_input->mouse.x > (int)fb_width - 5)
+      menu_input->mouse.x       = fb_width - 5;
+   if (menu_input->mouse.y > (int)fb_height - 5)
+      menu_input->mouse.y       = fb_height - 5;
 
    menu_input->mouse.scrollup   = (menu_input->mouse.y == 5);
-   menu_input->mouse.scrolldown = (menu_input->mouse.y == (int)frame_buf->height - 5);
+   menu_input->mouse.scrolldown = (menu_input->mouse.y == (int)fb_height - 5);
 
    if (
          (menu_input->mouse.dx != 0)     ||
@@ -843,13 +846,16 @@ static int menu_input_mouse(unsigned *action)
 
 static int menu_input_pointer(unsigned *action)
 {
+   unsigned fb_width, fb_height;
    int pointer_device, pointer_x, pointer_y;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    menu_input_t *menu_input  = menu_input_get_ptr();
    menu_animation_t *anim    = menu_animation_get_ptr();
-   menu_framebuf_t *frame_buf= menu_display_fb_get_ptr();
    settings_t *settings      = config_get_ptr();
    driver_t *driver          = driver_get_ptr();
+
+   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,  &fb_width);
+   menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &fb_height);
 
    if (!settings->menu.pointer.enable)
    {
@@ -870,8 +876,8 @@ static int menu_input_pointer(unsigned *action)
    pointer_x = input_driver_state(binds, 0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_X);
    pointer_y = input_driver_state(binds, 0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_Y);
 
-   menu_input->pointer.x = ((pointer_x + 0x7fff) * (int)frame_buf->width) / 0xFFFF;
-   menu_input->pointer.y = ((pointer_y + 0x7fff) * (int)frame_buf->height) / 0xFFFF;
+   menu_input->pointer.x = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
+   menu_input->pointer.y = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
 
    if (
          menu_input->pointer.pressed[0]    ||
