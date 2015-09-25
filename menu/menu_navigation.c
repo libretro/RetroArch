@@ -59,6 +59,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
    settings_t          *settings   = config_get_ptr();
    menu_navigation_t        *nav   = menu_navigation_get_ptr();
    menu_list_t          *menu_list = menu_list_get_ptr();
+   size_t          menu_list_size  = menu_list_get_size(menu_list);
    size_t selection                = nav->selection_ptr;
 
    (void)menu_list;
@@ -88,7 +89,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             if (!scroll_speed)
                return false;
 
-            if ((selection + (*scroll_speed)) < (menu_list_get_size(menu_list)))
+            if ((selection + (*scroll_speed)) < menu_list_size)
             {
                size_t idx  = selection + (*scroll_speed);
                bool scroll = true;
@@ -105,7 +106,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                }
                else
                {
-                  if ((menu_list_get_size(menu_list) > 0))
+                  if (menu_list_size > 0)
                   {
                      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
                      menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, NULL);
@@ -129,7 +130,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                idx = selection - *scroll_speed;
             else
             {
-               idx  = menu_list_get_size(menu_list) - 1;
+               idx  = menu_list_size - 1;
                if (!settings->menu.navigation.wraparound.vertical_enable)
                   idx = 0;
             }
@@ -154,7 +155,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          return true;
       case MENU_NAVIGATION_CTL_SET_LAST:
          {
-            size_t new_selection = menu_list_get_size(menu_list) - 1;
+            size_t new_selection = menu_list_size - 1;
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection);
 
             if (driver->navigation_set_last)
