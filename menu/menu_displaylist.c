@@ -220,7 +220,12 @@ static void menu_list_refresh(file_list_t *list)
    list_size = menu_list_get_size(menu_list);
 
    if ((nav->selection_ptr >= list_size) && list_size)
-      menu_navigation_set(nav, list_size - 1, true);
+   {
+      size_t idx  = list_size - 1;
+      bool scroll = true;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+   }
    else if (!list_size)
    {
       bool pending_push = true;

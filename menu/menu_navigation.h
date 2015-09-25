@@ -58,15 +58,6 @@ enum menu_navigation_ctl_state
 };
 
 /**
- * menu_navigation_set:      
- * @idx                   : index to set navigation pointer to.
- * @scroll                : should we scroll when needed?
- *
- * Sets navigation pointer to index @idx.
- **/
-void menu_navigation_set(menu_navigation_t *nav, size_t i, bool scroll);
-
-/**
  * menu_navigation_descend_alphabet:
  * @ptr_out               : Amount of indices to 'scroll' to get
  *                          to the next entry.

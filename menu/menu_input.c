@@ -278,7 +278,11 @@ static void menu_input_search_callback(void *userdata, const char *str)
       return;
 
    if (str && *str && file_list_search(menu_list->selection_buf, str, &idx))
-         menu_navigation_set(nav, idx, true);
+   {
+      bool scroll = true;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+   }
 
    menu_input_key_end_line();
 }
@@ -895,7 +899,12 @@ static int menu_input_mouse_frame(
          return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_SELECT);
 
       if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_SET_NAVIGATION))
-         menu_navigation_set(nav, menu_input->mouse.ptr, false);
+      {
+         size_t idx  = menu_input->mouse.ptr;
+         bool scroll = false;
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+      }
    }
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_R))
@@ -1003,7 +1012,12 @@ static int pointer_tap(menu_file_list_cbs_t *cbs,
          && cbs && cbs->action_select)
       return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_SELECT);
    else
-      menu_navigation_set(nav, menu_input->pointer.ptr, false);
+   {
+      size_t idx  = menu_input->pointer.ptr;
+      bool scroll = false;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+   }
 
    return 0;
 }

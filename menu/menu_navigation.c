@@ -39,12 +39,15 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
    {
       case MENU_NAVIGATION_CTL_CLEAR:
          {
+            size_t idx         = 0;
+            bool scroll        = true;
             bool *pending_push = (bool*)data;
 
             if (!pending_push)
                return false;
 
-            menu_navigation_set(nav, 0, true);
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
             if (driver->navigation_clear)
                driver->navigation_clear(*pending_push);
          }
@@ -59,7 +62,10 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
 
             if ((selection + (*scroll_speed)) < (menu_list_get_size(menu_list)))
             {
-               menu_navigation_set(nav, selection + (*scroll_speed), true);
+               size_t idx  = selection + (*scroll_speed);
+               bool scroll = true;
+               menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+               menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
                menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, NULL);
             }
             else
@@ -84,6 +90,8 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          return true;
       case MENU_NAVIGATION_CTL_DECREMENT:
          {
+            size_t idx             = 0;
+            bool scroll            = true;
             size_t selection       = nav->selection_ptr;
             unsigned *scroll_speed = (unsigned*)data;
 
@@ -91,17 +99,17 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                return false;
 
             if (selection >= *scroll_speed)
-               menu_navigation_set(nav, selection - *scroll_speed, true);
+               idx = selection - *scroll_speed;
             else
             {
-               if (settings->menu.navigation.wraparound.vertical_enable)
-                  menu_navigation_set(nav, 
-                        menu_list_get_size(menu_list) - 1, true);
-               else
-                  menu_navigation_set(nav, 0, true);
+               idx  = menu_list_get_size(menu_list) - 1;
+               if (!settings->menu.navigation.wraparound.vertical_enable)
+                  idx = 0;
             }
-
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, NULL);
+
             if (driver->navigation_decrement)
                driver->navigation_decrement();
          }
@@ -163,20 +171,6 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
    }
 
    return false;
-}
-
-/**
- * menu_navigation_set:      
- * @idx                   : index to set navigation pointer to.
- * @scroll                : should we scroll when needed?
- *
- * Sets navigation pointer to index @idx.
- **/
-void menu_navigation_set(menu_navigation_t *nav,
-      size_t idx, bool scroll)
-{
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
 }
 
 /**

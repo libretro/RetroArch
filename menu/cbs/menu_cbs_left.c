@@ -103,7 +103,12 @@ static int action_left_scroll(unsigned type, const char *label,
    fast_scroll_speed = 4 + 4 * scroll_speed;
 
    if (selection > fast_scroll_speed)
-      menu_navigation_set(nav, selection - fast_scroll_speed, true);
+   {
+      size_t idx  = selection - fast_scroll_speed;
+      bool scroll = true;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+   }
    else
    {
       bool pending_push = false;
