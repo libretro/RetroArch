@@ -411,7 +411,6 @@ static void rgui_render(void)
    menu_display_t *disp           = menu_display_get_ptr();
    driver_t *driver               = driver_get_ptr();
    settings_t *settings           = config_get_ptr();
-   menu_animation_t *anim         = menu_animation_get_ptr();
    uint64_t *frame_count          = video_driver_get_frame_count();
    rgui_t *rgui                   = NULL;
 
@@ -455,7 +454,7 @@ static void rgui_render(void)
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG, NULL);
 
-   menu_animation_clear_active(anim);
+   menu_animation_clear_active();
    rgui->force_redraw        = false;
 
 

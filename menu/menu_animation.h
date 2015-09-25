@@ -81,24 +81,17 @@ enum menu_animation_easing_type
    EASING_OUT_IN_BOUNCE
 };
 
-void menu_animation_free(menu_animation_t *animation);
+void menu_animation_free(void);
 
-void menu_animation_kill_by_subject(
-      menu_animation_t *animation,
-      size_t count,
-      const void *subjects);
+void menu_animation_kill_by_subject(size_t count, const void *subjects);
 
-void menu_animation_kill_by_tag(menu_animation_t *anim, int tag);
+void menu_animation_kill_by_tag(int tag);
 
 /* Use -1 for untagged */
-bool menu_animation_push(
-      menu_animation_t *animation,
-      float duration,
-      float target_value, float* subject,
-      enum menu_animation_easing_type easing_enum,
-      int tag, tween_cb cb);
+bool menu_animation_push(float duration, float target_value, float* subject,
+      enum menu_animation_easing_type easing_enum, int tag, tween_cb cb);
 
-bool menu_animation_update(menu_animation_t *animation, float dt);
+bool menu_animation_update(float dt);
 
 /**
  * menu_animation_ticker_str:
@@ -118,15 +111,13 @@ menu_animation_t *menu_animation_get_ptr(void);
 
 void menu_animation_update_time(void);
 
-void menu_animation_set_active(menu_animation_t *anim);
+void menu_animation_set_active(void);
 
-void menu_animation_clear_active(menu_animation_t *anim);
+void menu_animation_clear_active(void);
 
-float menu_animation_get_delta_time(menu_animation_t *anim);
+float menu_animation_get_delta_time(void);
 
-bool menu_animation_is_active(menu_animation_t *anim);
-
-menu_animation_t *menu_animation_init(void);
+bool menu_animation_is_active(void);
 
 #ifdef __cplusplus
 }

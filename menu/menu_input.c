@@ -759,7 +759,6 @@ static int menu_input_mouse(unsigned *action)
    unsigned fb_width, fb_height;
    video_viewport_t vp;
    const struct retro_keybind *binds[MAX_USERS];
-   menu_animation_t *anim    = menu_animation_get_ptr();
    menu_input_t *menu_input  = menu_input_get_ptr();
    settings_t *settings      = config_get_ptr();
 
@@ -839,7 +838,7 @@ static int menu_input_mouse(unsigned *action)
          menu_input->mouse.scrollup      ||
          menu_input->mouse.scrolldown
       )
-      menu_animation_set_active(anim);
+      menu_animation_set_active();
 
    return 0;
 }
@@ -850,7 +849,6 @@ static int menu_input_pointer(unsigned *action)
    int pointer_device, pointer_x, pointer_y;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    menu_input_t *menu_input  = menu_input_get_ptr();
-   menu_animation_t *anim    = menu_animation_get_ptr();
    settings_t *settings      = config_get_ptr();
    driver_t *driver          = driver_get_ptr();
 
@@ -887,7 +885,7 @@ static int menu_input_pointer(unsigned *action)
          (menu_input->pointer.dy != 0)     ||
          (menu_input->pointer.dx != 0)
       )
-      menu_animation_set_active(anim);
+      menu_animation_set_active();
 
    return 0;
 }
@@ -1126,7 +1124,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
          menu_input->pointer.old_x         = pointer_x;
          menu_input->pointer.old_y         = pointer_y;
 
-         s =  menu_input->pointer.dy / menu_animation_get_delta_time(disp->animation) * 1000000.0;
+         s =  menu_input->pointer.dy / menu_animation_get_delta_time() * 1000000.0;
          menu_input->pointer.accel = (menu_input->pointer.accel0 + menu_input->pointer.accel1 + s) / 3;
          menu_input->pointer.accel0 = menu_input->pointer.accel1;
          menu_input->pointer.accel1 = menu_input->pointer.accel;
@@ -1273,7 +1271,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL,
             &new_scroll_accel);
 
-   menu_input->delay.count += menu_animation_get_delta_time(disp->animation) / IDEAL_DT;
+   menu_input->delay.count += menu_animation_get_delta_time() / IDEAL_DT;
 
    if (menu_input->keyboard.display)
    {

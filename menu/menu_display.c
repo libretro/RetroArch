@@ -97,8 +97,7 @@ void menu_display_free(void *data)
       msg_queue_free(disp->msg_queue);
    disp->msg_queue = NULL;
 
-   menu_animation_free(disp->animation);
-   disp->animation = NULL;
+   menu_animation_free();
 
    menu_display_fb_free(&frame_buf_state);
    memset(&frame_buf_state, 0, sizeof(menu_framebuf_t));
@@ -108,11 +107,6 @@ bool menu_display_init(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
    if (!menu)
-      return false;
-
-   menu->display.animation = menu_animation_init();
-
-   if (!menu->display.animation)
       return false;
 
    rarch_assert(menu->display.msg_queue = msg_queue_new(8));
@@ -300,12 +294,8 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          }
          return true;
       case MENU_DISPLAY_CTL_UPDATE_PENDING:
-         {
-            menu_animation_t     *anim = menu_animation_get_ptr();
-
-            if (menu_animation_is_active(anim) || (frame_buf && frame_buf->dirty))
-               return true;
-         }
+         if (menu_animation_is_active() || (frame_buf && frame_buf->dirty))
+            return true;
          return false;
       case MENU_DISPLAY_CTL_SET_VIEWPORT:
          video_driver_get_size(&width, &height);

@@ -537,7 +537,6 @@ static void rmenu_xui_render(void)
    const char *label           = NULL;
 	unsigned menu_type          = 0;
    menu_handle_t *menu         = menu_driver_get_ptr();
-   menu_animation_t *anim      = menu_animation_get_ptr();
    menu_display_t *disp        = menu_display_get_ptr();
    uint64_t frame_count        = video_driver_get_frame_count();
 
@@ -553,7 +552,7 @@ static void rmenu_xui_render(void)
 		return;
 
    menu_display_fb_unset_dirty();
-   menu_animation_clear_active(anim);
+   menu_animation_clear_active();
 
 	rmenu_xui_render_background();
 

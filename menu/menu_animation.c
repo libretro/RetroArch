@@ -51,12 +51,11 @@ struct menu_animation
    retro_time_t old_time;
 };
 
+static menu_animation_t menu_animation_state;
+
 menu_animation_t *menu_animation_get_ptr(void)
 {
-   menu_display_t *disp = menu_display_get_ptr();
-   if (!disp)
-      return NULL;
-   return disp->animation;
+   return &menu_animation_state;
 }
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
@@ -287,9 +286,10 @@ static float easing_out_in_bounce(float t, float b, float c, float d)
    return easing_in_bounce((t * 2) - d, b + c / 2, c / 2, d);
 }
 
-void menu_animation_free(menu_animation_t *anim)
+void menu_animation_free(void)
 {
    size_t i;
+   menu_animation_t *anim = menu_animation_get_ptr();
 
    if (!anim)
       return;
@@ -301,14 +301,15 @@ void menu_animation_free(menu_animation_t *anim)
    }
 
    free(anim->list);
-   free(anim);
+
+   memset(&menu_animation_state, 0, sizeof(menu_animation_t));
 }
 
-void menu_animation_kill_by_subject(menu_animation_t *anim,
-      size_t count, const void *subjects)
+void menu_animation_kill_by_subject(size_t count, const void *subjects)
 {
    unsigned i, j, killed = 0;
    float **sub = (float**)subjects;
+   menu_animation_t *anim = menu_animation_get_ptr();
 
    for (i = 0; i < anim->size; ++i)
    {
@@ -332,9 +333,10 @@ void menu_animation_kill_by_subject(menu_animation_t *anim,
    }
 }
 
-void menu_animation_kill_by_tag(menu_animation_t *anim, int tag)
+void menu_animation_kill_by_tag(int tag)
 {
    unsigned i;
+   menu_animation_t *anim = menu_animation_get_ptr();
 
    if (tag == -1)
       return;
@@ -352,9 +354,10 @@ void menu_animation_kill_by_tag(menu_animation_t *anim, int tag)
    }
 }
 
-static void menu_animation_push_internal(menu_animation_t *anim, const struct tween *t)
+static void menu_animation_push_internal(const struct tween *t)
 {
    struct tween *target = NULL;
+   menu_animation_t *anim = menu_animation_get_ptr();
 
    if (anim->first_dead < anim->size && !anim->list[anim->first_dead].alive)
       target = &anim->list[anim->first_dead++];
@@ -373,13 +376,11 @@ static void menu_animation_push_internal(menu_animation_t *anim, const struct tw
    *target = *t;
 }
 
-bool menu_animation_push(menu_animation_t *anim,
-      float duration,
-      float target_value, float* subject,
-      enum menu_animation_easing_type easing_enum,
-      int tag, tween_cb cb)
+bool menu_animation_push(float duration, float target_value, float* subject,
+      enum menu_animation_easing_type easing_enum, int tag, tween_cb cb)
 {
    struct tween t;
+   menu_animation_t *anim = menu_animation_get_ptr();
 
    if (!subject)
       return false;
@@ -511,18 +512,17 @@ bool menu_animation_push(menu_animation_t *anim,
    if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
       return false;
 
-   menu_animation_push_internal(anim, &t);
+   menu_animation_push_internal(&t);
 
    return true;
 }
 
-static int menu_animation_iterate(
-      menu_animation_t *anim, unsigned idx,
-      float dt, unsigned *active_tweens)
+static int menu_animation_iterate(unsigned idx, float dt, unsigned *active_tweens)
 {
-   struct tween *tween = &anim->list[idx];
+   menu_animation_t *anim = menu_animation_get_ptr();
+   struct tween    *tween = anim ? &anim->list[idx] : NULL;
 
-   if (!tween->alive)
+   if (!tween || !tween->alive)
       return -1;
 
    tween->running_since += dt;
@@ -551,13 +551,14 @@ static int menu_animation_iterate(
    return 0;
 }
 
-bool menu_animation_update(menu_animation_t *anim, float dt)
+bool menu_animation_update(float dt)
 {
    unsigned i;
    unsigned active_tweens = 0;
+   menu_animation_t *anim = menu_animation_get_ptr();
 
    for(i = 0; i < anim->size; i++)
-      menu_animation_iterate(anim, i, dt, &active_tweens);
+      menu_animation_iterate(i, dt, &active_tweens);
 
    if (!active_tweens)
    {
@@ -647,7 +648,7 @@ void menu_animation_update_time(void)
 {
    static retro_time_t last_clock_update = 0;
    menu_display_t *disp     = menu_display_get_ptr();
-   menu_animation_t *anim   = disp->animation;
+   menu_animation_t *anim   = menu_animation_get_ptr();
    settings_t *settings     = config_get_ptr();
 
    anim->cur_time           = retro_get_time_usec();
@@ -667,37 +668,33 @@ void menu_animation_update_time(void)
    }
 }
 
-void menu_animation_set_active(menu_animation_t *anim)
+void menu_animation_set_active(void)
 {
+   menu_animation_t *anim   = menu_animation_get_ptr();
    if (!anim)
       return;
    anim->is_active           = true;
 }
 
-void menu_animation_clear_active(menu_animation_t *anim)
+void menu_animation_clear_active(void)
 {
+   menu_animation_t *anim   = menu_animation_get_ptr();
    if (!anim)
       return;
    anim->is_active           = false;
 }
 
-float menu_animation_get_delta_time(menu_animation_t *anim)
+float menu_animation_get_delta_time(void)
 {
+   menu_animation_t *anim   = menu_animation_get_ptr();
    if (!anim)
       return 0.0f;
    return anim->delta_time;
 }
 
-menu_animation_t *menu_animation_init(void)
+bool menu_animation_is_active(void)
 {
-   menu_animation_t *anim = (menu_animation_t*)calloc(1, sizeof(*anim));
-   if (!anim)
-      return NULL;
-   return (menu_animation_t*)anim;
-}
-
-bool menu_animation_is_active(menu_animation_t *anim)
-{
+   menu_animation_t *anim   = menu_animation_get_ptr();
    if (!anim)
       return false;
    return anim->is_active;

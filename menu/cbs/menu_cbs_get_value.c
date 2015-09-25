@@ -451,16 +451,13 @@ static void general_disp_set_label_perf_counters(
       const char *path, unsigned *w
       )
 {
-   menu_animation_t *anim = menu_animation_get_ptr();
-
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
 
    menu_action_setting_disp_set_label_perf_counters_common(
          counters, offset, s, len);
-
-   menu_animation_set_active(anim);
+   menu_animation_set_active();
 }
 
 static void menu_action_setting_disp_set_label_perf_counters(

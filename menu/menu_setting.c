@@ -1183,12 +1183,9 @@ static void setting_get_string_representation_st_float_video_refresh_rate_auto(v
 
    if (video_monitor_fps_statistics(&video_refresh_rate, &deviation, &sample_points))
    {
-      menu_animation_t *anim = menu_animation_get_ptr();
-
       snprintf(s, len, "%.3f Hz (%.1f%% dev, %u samples)",
             video_refresh_rate, 100.0 * deviation, sample_points);
-
-      menu_animation_set_active(anim);
+      menu_animation_set_active();
    }
    else
       strlcpy(s, menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), len);

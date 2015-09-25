@@ -590,7 +590,7 @@ static void xmb_selection_pointer_changed(bool allow_animations)
 
    video_driver_get_size(NULL, &height);
 
-   menu_animation_kill_by_tag(disp->animation, tag);
+   menu_animation_kill_by_tag(tag);
    menu_entries_set_start(0);
    skip = 0;
 
@@ -628,14 +628,10 @@ static void xmb_selection_pointer_changed(bool allow_animations)
       }
       else
       {
-         menu_animation_push(disp->animation,
-               XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, tag, NULL);
-         menu_animation_push(disp->animation,
-               XMB_DELAY, ia, &node->label_alpha, EASING_IN_OUT_QUAD, tag, NULL);
-         menu_animation_push(disp->animation,
-               XMB_DELAY, iz, &node->zoom,  EASING_IN_OUT_QUAD, tag, NULL);
-         menu_animation_push(disp->animation,
-               XMB_DELAY, iy, &node->y,     EASING_IN_OUT_QUAD, tag, NULL);
+         menu_animation_push(XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, tag, NULL);
+         menu_animation_push(XMB_DELAY, ia, &node->label_alpha, EASING_IN_OUT_QUAD, tag, NULL);
+         menu_animation_push(XMB_DELAY, iz, &node->zoom,  EASING_IN_OUT_QUAD, tag, NULL);
+         menu_animation_push(XMB_DELAY, iy, &node->y,     EASING_IN_OUT_QUAD, tag, NULL);
       }
    }
 
@@ -681,11 +677,11 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
       }
       else
       {
-         menu_animation_push(disp->animation,
+         menu_animation_push(
                XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, -1, NULL);
-         menu_animation_push(disp->animation,
+         menu_animation_push(
                XMB_DELAY, 0, &node->label_alpha, EASING_IN_OUT_QUAD, -1, NULL);
-         menu_animation_push(disp->animation,
+         menu_animation_push(
                XMB_DELAY, xmb->icon.size * dir * -2, &node->x,
                EASING_IN_OUT_QUAD, -1, NULL);
       }
@@ -738,11 +734,11 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       }
       else
       {
-         menu_animation_push(disp->animation,
+         menu_animation_push(
                XMB_DELAY, ia, &node->alpha,  EASING_IN_OUT_QUAD, -1, NULL);
-         menu_animation_push(disp->animation,
+         menu_animation_push(
                XMB_DELAY, ia, &node->label_alpha,  EASING_IN_OUT_QUAD, -1, NULL);
-         menu_animation_push(disp->animation,
+         menu_animation_push(
                XMB_DELAY, 0, &node->x, EASING_IN_OUT_QUAD, -1, NULL);
       }
    }
@@ -784,15 +780,11 @@ static xmb_node_t* xmb_get_userdata_from_horizontal_list(
 
 static void xmb_push_animations(xmb_node_t *node, float ia, float ix)
 {
-   menu_display_t *disp = menu_display_get_ptr();
-   if (!disp)
-      return;
-
-   menu_animation_push(disp->animation,
+   menu_animation_push(
          XMB_DELAY, ia, &node->alpha,  EASING_IN_OUT_QUAD, -1, NULL);
-   menu_animation_push(disp->animation,
+   menu_animation_push(
          XMB_DELAY, ia, &node->label_alpha,  EASING_IN_OUT_QUAD, -1, NULL);
-   menu_animation_push(disp->animation,
+   menu_animation_push(
          XMB_DELAY, ix, &node->x, EASING_IN_OUT_QUAD, -1, NULL);
 }
 
@@ -907,9 +899,9 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *me
          iz = xmb->categories.active.zoom;
       }
 
-      menu_animation_push(menu->display.animation,
+      menu_animation_push(
             XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, -1, NULL);
-      menu_animation_push(menu->display.animation,
+      menu_animation_push(
             XMB_DELAY, iz, &node->zoom, EASING_IN_OUT_QUAD, -1, NULL);
    }
 }
@@ -935,7 +927,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 
    xmb_list_switch_horizontal_list(xmb, menu);
 
-   menu_animation_push(disp->animation, XMB_DELAY,
+   menu_animation_push(XMB_DELAY,
          xmb->icon.spacing.horizontal * -(float)xmb->categories.selection_ptr,
          &xmb->categories.x_pos, EASING_IN_OUT_QUAD, -1, NULL);
 
@@ -973,7 +965,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
       else if (xmb->depth <= 1)
          ia = xmb->categories.passive.alpha;
 
-      menu_animation_push(menu->display.animation, XMB_DELAY, ia,
+      menu_animation_push(XMB_DELAY, ia,
             &node->alpha, EASING_IN_OUT_QUAD, -1, NULL);
    }
 }
@@ -1051,18 +1043,18 @@ static void xmb_list_open(xmb_handle_t *xmb)
    switch (xmb->depth)
    {
       case 1:
-         menu_animation_push(disp->animation,
+         menu_animation_push(
                XMB_DELAY, xmb->icon.size * -(xmb->depth*2-2),
                &xmb->x, EASING_IN_OUT_QUAD, -1, NULL);
-         menu_animation_push(disp->animation,
+         menu_animation_push(
                XMB_DELAY, 0, &xmb->textures.arrow.alpha,
                EASING_IN_OUT_QUAD, -1, NULL);
          break;
       case 2:
-         menu_animation_push(disp->animation,
+         menu_animation_push(
                XMB_DELAY, xmb->icon.size * -(xmb->depth*2-2),
                &xmb->x, EASING_IN_OUT_QUAD, -1, NULL);
-         menu_animation_push(disp->animation,
+         menu_animation_push(
                XMB_DELAY, 1, &xmb->textures.arrow.alpha,
                EASING_IN_OUT_QUAD, -1, NULL);
          break;
@@ -1414,7 +1406,6 @@ static void xmb_render(void)
    settings_t   *settings   = config_get_ptr();
    menu_handle_t    *menu   = menu_driver_get_ptr();
    menu_display_t   *disp   = menu_display_get_ptr();
-   menu_animation_t *anim   = menu_animation_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
 
    if (!menu)
@@ -1425,7 +1416,7 @@ static void xmb_render(void)
    if (!xmb)
       return;
 
-   menu_animation_update(disp->animation, menu_animation_get_delta_time(disp->animation) / IDEAL_DT);
+   menu_animation_update(menu_animation_get_delta_time() / IDEAL_DT);
 
    video_driver_get_size(NULL, &height);
 
@@ -1460,7 +1451,7 @@ static void xmb_render(void)
    if (menu_entries_get_start() >= end)
       menu_entries_set_start(0);
 
-   menu_animation_clear_active(anim);
+   menu_animation_clear_active();
 }
 
 static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
@@ -2322,7 +2313,7 @@ static void xmb_list_clear(file_list_t *list)
       subjects[3] = &node->x;
       subjects[4] = &node->y;
 
-      menu_animation_kill_by_subject(disp->animation, 5, subjects);
+      menu_animation_kill_by_subject(5, subjects);
 
       file_list_free_userdata(list, i);
    }
@@ -2346,7 +2337,7 @@ static void xmb_list_deep_copy(menu_handle_t *menu, const file_list_t *src, file
          subjects[3] = &node->x;
          subjects[4] = &node->y;
 
-         menu_animation_kill_by_subject(menu->display.animation, 5, subjects);
+         menu_animation_kill_by_subject(5, subjects);
       }
 
       file_list_free_userdata(dst, i);
@@ -2508,7 +2499,7 @@ static void xmb_toggle(bool menu_on)
       return;
    }
 
-   menu_animation_push(disp->animation, XMB_DELAY, 1.0f,
+   menu_animation_push(XMB_DELAY, 1.0f,
          &xmb->alpha, EASING_IN_OUT_QUAD, -1, NULL);
 
    xmb->prevent_populate = !menu_entries_needs_refresh();

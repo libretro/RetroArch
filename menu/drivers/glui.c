@@ -222,8 +222,8 @@ static void glui_render(void)
 
    glui = (glui_handle_t*)menu->userdata;
 
-   menu_animation_update(disp->animation,
-         menu_animation_get_delta_time(disp->animation) / IDEAL_DT);
+   menu_animation_update(
+         menu_animation_get_delta_time() / IDEAL_DT);
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,  &width);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &height);
@@ -379,7 +379,6 @@ static void glui_frame(void)
    const struct font_renderer *font_driver = NULL;
    driver_t *driver                        = driver_get_ptr();
    menu_handle_t *menu                     = menu_driver_get_ptr();
-   menu_animation_t *anim                  = menu_animation_get_ptr();
    settings_t *settings                    = config_get_ptr();
    uint64_t *frame_count                   = video_driver_get_frame_count();
    const uint32_t normal_color             = FONT_COLOR_ARGB_TO_RGBA(
@@ -453,7 +452,7 @@ static void glui_frame(void)
          width, height,
          &highlight_bg[0]);
 
-   menu_animation_set_active(anim);
+   menu_animation_set_active();
 
    glui_render_quad(gl, 0, 0, width,
          header_height,
@@ -741,7 +740,7 @@ static void glui_navigation_set(bool scroll)
    if (!menu || !disp || !scroll)
       return;
 
-   menu_animation_push(disp->animation, 10, scroll_pos,
+   menu_animation_push(10, scroll_pos,
          &menu->scroll_y, EASING_IN_OUT_QUAD, -1, NULL);
 }
 

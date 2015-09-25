@@ -130,7 +130,6 @@ static void rmenu_render(void)
    char title_msg[64]            = {0};
    menu_handle_t *menu           = menu_driver_get_ptr();
    menu_display_t *disp          = menu_display_get_ptr();
-   menu_animation_t *anim        = menu_animation_get_ptr();
    menu_list_t *menu_list        = menu_list_get_ptr();
    uint64_t *frame_count         = video_driver_get_frame_count();
    size_t  entries_end           = menu_entries_get_end();
@@ -152,7 +151,7 @@ static void rmenu_render(void)
       return;
 
    menu_display_fb_unset_dirty();
-   menu_animation_clear_active(anim);
+   menu_animation_clear_active();
 
    if (!menu_list->selection_buf)
       return;
