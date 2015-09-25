@@ -179,7 +179,7 @@ static int detect_ps1_game_sub(const char *track_path, char *game_id, int sub_ch
    }
 
    cd_sector = tmp[2] | (tmp[3] << 8) | (tmp[4] << 16);
-   retro_fseek(fp, 14 + skip + cd_sector * frame_size, SEEK_SET);
+   retro_fseek(fp, 13 + skip + cd_sector * frame_size, SEEK_SET);
    retro_fread(fp, buffer, 256);
 
    tmp = (uint8_t*)strrchr((const char*)buffer, '\\');
