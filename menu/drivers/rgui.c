@@ -394,7 +394,6 @@ static void rgui_render(void)
    menu_handle_t *menu            = menu_driver_get_ptr();
    menu_display_t *disp           = menu_display_get_ptr();
    menu_framebuf_t *frame_buf     = menu_display_fb_get_ptr();
-   menu_navigation_t *nav         = menu_navigation_get_ptr();
    driver_t *driver               = driver_get_ptr();
    settings_t *settings           = config_get_ptr();
    menu_animation_t *anim         = menu_animation_get_ptr();
@@ -546,7 +545,7 @@ static void rgui_render(void)
       bool entry_selected                   = menu_entry_is_currently_selected(i);
       
       if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-         return false;
+         continue;
 
       if (i > (selection + 100))
          continue;

@@ -1541,7 +1541,6 @@ static int action_ok_load_archive_detect_core(const char *path,
    size_t selection;
    int ret                  = 0;
    global_t      *global    = global_get_ptr();
-   menu_navigation_t *nav   = menu_navigation_get_ptr();
    menu_handle_t *menu      = menu_driver_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
    const char *menu_path    = menu ? menu->scratch2_buf : NULL;

@@ -1157,7 +1157,6 @@ void menu_input_post_iterate(int *ret, unsigned action)
    menu_entry_t entry        = {{0}};
    menu_input_t *menu_input  = menu_input_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
-   menu_navigation_t *nav    = menu_navigation_get_ptr();
    settings_t *settings      = config_get_ptr();
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))

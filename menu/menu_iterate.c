@@ -176,7 +176,6 @@ static int action_iterate_info(char *s, size_t len, const char *label)
    uint32_t label_hash              = 0;
    menu_file_list_cbs_t *cbs        = NULL;
    menu_list_t *menu_list           = menu_list_get_ptr();
-   menu_navigation_t *nav           = menu_navigation_get_ptr();
 
    if (!menu_list)
       return 0;

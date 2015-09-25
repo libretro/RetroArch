@@ -571,7 +571,6 @@ static void xmb_selection_pointer_changed(bool allow_animations)
    xmb_handle_t    *xmb   = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
    menu_display_t   *disp = menu_display_get_ptr();
-   menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
    settings_t *settings = config_get_ptr();
 
@@ -921,7 +920,6 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    int dir = -1;
    menu_handle_t    *menu = menu_driver_get_ptr();
    menu_display_t   *disp = menu_display_get_ptr();
-   menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
    settings_t *settings   = config_get_ptr();
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
@@ -1415,7 +1413,6 @@ static void xmb_render(void)
    menu_handle_t    *menu   = menu_driver_get_ptr();
    menu_display_t   *disp   = menu_display_get_ptr();
    menu_animation_t *anim   = menu_animation_get_ptr();
-   menu_navigation_t *nav   = menu_navigation_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
 
    if (!menu)
