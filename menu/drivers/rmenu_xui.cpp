@@ -539,7 +539,6 @@ static void rmenu_xui_render(void)
    menu_animation_t *anim      = menu_animation_get_ptr();
    menu_display_t *disp        = menu_display_get_ptr();
    menu_framebuf_t *frame_buf  = menu_display_fb_get_ptr();
-   menu_navigation_t *nav      = menu_navigation_get_ptr();
    uint64_t frame_count        = video_driver_get_frame_count();
 
    if (!menu)
