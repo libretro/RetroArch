@@ -354,7 +354,6 @@ int menu_entry_select(uint32_t i)
 int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
 {
    int ret                   = 0;
-   menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
    menu_file_list_cbs_t *cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
 
@@ -369,10 +368,10 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
             ret = cbs->action_down(entry->type, entry->label);
          break;
       case MENU_ACTION_SCROLL_UP:
-         menu_navigation_ctl(MENU_NAVIGATION_CTL_DESCEND_ALPHABET, &nav->selection_ptr);
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_DESCEND_ALPHABET, NULL);
          break;
       case MENU_ACTION_SCROLL_DOWN:
-         menu_navigation_ctl(MENU_NAVIGATION_CTL_ASCEND_ALPHABET, &nav->selection_ptr);
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_ASCEND_ALPHABET, NULL);
          break;
       case MENU_ACTION_CANCEL:
          if (cbs && cbs->action_cancel)

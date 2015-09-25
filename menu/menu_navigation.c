@@ -135,10 +135,14 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          return true;
       case MENU_NAVIGATION_CTL_ASCEND_ALPHABET:
          {
-            size_t *ptr_out = (size_t*)data;
-            size_t i = 0, ptr = *ptr_out;
+            size_t i = 0, ptr;
+            size_t *ptr_out = nav ? (size_t*)&nav->selection_ptr : NULL;
+
             if (!nav || !nav->scroll.indices.size || !ptr_out)
                return false;
+
+            ptr = *ptr_out;
+
             if (ptr == nav->scroll.indices.list[nav->scroll.indices.size - 1])
                return false;
 
@@ -153,13 +157,18 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          return true;
       case MENU_NAVIGATION_CTL_DESCEND_ALPHABET:
          {
-            size_t *ptr_out = (size_t*)data;
-            size_t i, ptr = *ptr_out;
+            size_t i = 0, ptr;
+            size_t *ptr_out = nav ? (size_t*)&nav->selection_ptr : NULL;
 
-            if (!nav || !nav->scroll.indices.size || ptr == 0 || !ptr_out)
+            if (!nav || !nav->scroll.indices.size || !ptr_out)
                return false;
 
-            i = nav->scroll.indices.size - 1;
+            ptr = *ptr_out;
+
+            if (ptr == 0)
+               return false;
+
+            i   = nav->scroll.indices.size - 1;
 
             while (i && nav->scroll.indices.list[i - 1] >= ptr)
                i--;
