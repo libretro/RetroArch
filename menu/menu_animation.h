@@ -39,7 +39,8 @@ enum menu_animation_ctl_state
    MENU_ANIMATION_CTL_IS_ACTIVE = 0,
    MENU_ANIMATION_CTL_CLEAR_ACTIVE,
    MENU_ANIMATION_CTL_SET_ACTIVE,
-   MENU_ANIMATION_CTL_DELTA_TIME
+   MENU_ANIMATION_CTL_DELTA_TIME,
+   MENU_ANIMATION_CTL_UPDATE_TIME
 };
 
 enum menu_animation_easing_type
@@ -113,8 +114,6 @@ bool menu_animation_update(float dt);
  **/
 void menu_animation_ticker_str(char *s, size_t len, uint64_t tick,
       const char *str, bool selected);
-
-void menu_animation_update_time(void);
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data);
 

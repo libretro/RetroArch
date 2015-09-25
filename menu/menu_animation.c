@@ -647,29 +647,6 @@ void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
    anim->is_active = true;
 }
 
-void menu_animation_update_time(void)
-{
-   static retro_time_t last_clock_update = 0;
-   menu_animation_t *anim   = menu_animation_get_ptr();
-   settings_t *settings     = config_get_ptr();
-
-   anim->cur_time           = retro_get_time_usec();
-   anim->delta_time         = anim->cur_time - anim->old_time;
-
-   if (anim->delta_time >= IDEAL_DT * 4)
-      anim->delta_time = IDEAL_DT * 4;
-   if (anim->delta_time <= IDEAL_DT / 4)
-      anim->delta_time = IDEAL_DT / 4;
-   anim->old_time      = anim->cur_time;
-
-   if (((anim->cur_time - last_clock_update) > 1000000) 
-         && settings->menu.timedate_enable)
-   {
-      anim->is_active           = true;
-      last_clock_update = anim->cur_time;
-   }
-}
-
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 {
    menu_animation_t *anim   = menu_animation_get_ptr();
@@ -693,6 +670,28 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
             if (!ptr)
                return false;
             *ptr = anim->delta_time;
+         }
+         return true;
+      case MENU_ANIMATION_CTL_UPDATE_TIME:
+         {
+            static retro_time_t last_clock_update = 0;
+            settings_t *settings     = config_get_ptr();
+
+            anim->cur_time           = retro_get_time_usec();
+            anim->delta_time         = anim->cur_time - anim->old_time;
+
+            if (anim->delta_time >= IDEAL_DT * 4)
+               anim->delta_time = IDEAL_DT * 4;
+            if (anim->delta_time <= IDEAL_DT / 4)
+               anim->delta_time = IDEAL_DT / 4;
+            anim->old_time      = anim->cur_time;
+
+            if (((anim->cur_time - last_clock_update) > 1000000) 
+                  && settings->menu.timedate_enable)
+            {
+               anim->is_active           = true;
+               last_clock_update = anim->cur_time;
+            }
          }
          return true;
    }

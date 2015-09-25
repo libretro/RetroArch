@@ -567,7 +567,7 @@ int menu_iterate_render(void)
       
    if (BIT64_GET(menu->state, MENU_STATE_BLIT))
    {
-      menu_animation_update_time();
+      menu_animation_ctl(MENU_ANIMATION_CTL_UPDATE_TIME, NULL);
       if (driver->render)
          driver->render();
    }
