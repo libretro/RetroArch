@@ -375,7 +375,7 @@ void set_paths_redirect(const char *path)
             path_mkdir(global->dir.savestate);
             if(!path_is_directory(global->dir.savestate))
             {
-               RARCH_LOG("Reverting savestate directory to %s\n", orig_savefile_dir);
+               RARCH_LOG("Reverting savestate directory to %s\n", orig_savestate_dir);
                strlcpy(global->dir.savestate,
                      orig_savestate_dir,
                      sizeof(global->dir.savestate));
