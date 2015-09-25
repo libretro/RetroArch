@@ -31,6 +31,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
    settings_t          *settings   = config_get_ptr();
    menu_navigation_t        *nav   = menu_navigation_get_ptr();
    menu_list_t          *menu_list = menu_list_get_ptr();
+   size_t selection                = nav->selection_ptr;
 
    (void)menu_list;
    (void)settings;
@@ -54,7 +55,6 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          return true;
       case MENU_NAVIGATION_CTL_INCREMENT:
          {
-            size_t selection       = nav->selection_ptr;
             unsigned *scroll_speed = (unsigned*)data;
 
             if (!scroll_speed)
@@ -92,7 +92,6 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          {
             size_t idx             = 0;
             bool scroll            = true;
-            size_t selection       = nav->selection_ptr;
             unsigned *scroll_speed = (unsigned*)data;
 
             if (!scroll_speed)
@@ -126,9 +125,13 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          }
          return true;
       case MENU_NAVIGATION_CTL_SET_LAST:
-         nav->selection_ptr = menu_list_get_size(menu_list) - 1;
-         if (driver->navigation_set_last)
-            driver->navigation_set_last();
+         {
+            size_t new_selection = menu_list_get_size(menu_list) - 1;
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection);
+
+            if (driver->navigation_set_last)
+               driver->navigation_set_last();
+         }
          return true;
       case MENU_NAVIGATION_CTL_ASCEND_ALPHABET:
          {
@@ -171,7 +174,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             size_t *sel = (size_t*)data;
             if (!nav || !sel)
                return false;
-            *sel = nav->selection_ptr;
+            *sel = selection;
          }
          return true;
       case MENU_NAVIGATION_CTL_SET_SELECTION:
