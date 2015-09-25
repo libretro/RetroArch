@@ -170,9 +170,7 @@ static void menu_list_build_scroll_indices(file_list_t *list)
    size_t scroll_indices = 0;
    menu_navigation_t *nav = menu_navigation_get_ptr();
 
-   if (!nav || !list)
-      return;
-   if (!list->size)
+   if (!nav || !list || !list->size)
       return;
 
    nav->scroll.indices.list[scroll_indices++] = 0;
