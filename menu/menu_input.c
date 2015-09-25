@@ -1152,16 +1152,21 @@ void menu_input_set_binds_minmax(unsigned min, unsigned max)
 
 void menu_input_post_iterate(int *ret, unsigned action)
 {
+   size_t selection;
+   menu_file_list_cbs_t *cbs = NULL;
    menu_entry_t entry        = {{0}};
    menu_input_t *menu_input  = menu_input_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
    menu_navigation_t *nav    = menu_navigation_get_ptr();
    settings_t *settings      = config_get_ptr();
-   size_t selected           = menu_navigation_get_selection(nav);
-   menu_file_list_cbs_t *cbs = menu_list_get_actiondata_at_offset
-      (menu_list->selection_buf, selected);
 
-   menu_entry_get(&entry, selected, NULL, false);
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return;
+
+   cbs = menu_list_get_actiondata_at_offset
+      (menu_list->selection_buf, selection);
+
+   menu_entry_get(&entry, selection, NULL, false);
 
    if (settings->menu.mouse.enable)
       *ret  = menu_input_mouse_post_iterate  (&menu_input->mouse.state, cbs, action);

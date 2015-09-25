@@ -52,7 +52,8 @@ enum menu_navigation_ctl_state
    MENU_NAVIGATION_CTL_SET,
    MENU_NAVIGATION_CTL_SET_LAST,
    MENU_NAVIGATION_CTL_DESCEND_ALPHABET,
-   MENU_NAVIGATION_CTL_ASCEND_ALPHABET
+   MENU_NAVIGATION_CTL_ASCEND_ALPHABET,
+   MENU_NAVIGATION_CTL_GET_SELECTION
 };
 
 /**
@@ -95,8 +96,6 @@ void menu_navigation_descend_alphabet(menu_navigation_t *nav, size_t *ptr_out);
  * navigation pointer will be set to an entry called 'Beta'.
  **/
 void menu_navigation_ascend_alphabet(menu_navigation_t *nav, size_t *ptr_out);
-
-size_t menu_navigation_get_selection(menu_navigation_t *nav);
 
 bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data);
 

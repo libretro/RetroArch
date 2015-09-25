@@ -322,10 +322,10 @@ void menu_entry_get(menu_entry_t *entry, size_t i,
 
 bool menu_entry_is_currently_selected(unsigned id)
 {
-   menu_navigation_t *nav = menu_navigation_get_ptr();
-   size_t selection       = menu_navigation_get_selection(nav);
-   if (!nav)
-      return false;
+   size_t selection;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+         return false;
+
    return (id == selection);
 }
 

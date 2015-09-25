@@ -536,6 +536,7 @@ static void rgui_render(void)
 
    for (; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
+      size_t selection;
       char entry_path[PATH_MAX_LENGTH];
       char entry_value[PATH_MAX_LENGTH];
       char message[PATH_MAX_LENGTH];
@@ -543,8 +544,11 @@ static void rgui_render(void)
       char type_str_buf[PATH_MAX_LENGTH];
       unsigned entry_spacing                = menu_entry_get_spacing(i);
       bool entry_selected                   = menu_entry_is_currently_selected(i);
+      
+      if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+         return false;
 
-      if (i > (menu_navigation_get_selection(nav) + 100))
+      if (i > (selection + 100))
          continue;
 
       entry_path[0]      = '\0';
@@ -719,17 +723,13 @@ static void rgui_navigation_clear(bool pending_push)
 
 static void rgui_navigation_set(bool scroll)
 {
-   size_t end;
+   size_t selection;
    menu_handle_t *menu            = menu_driver_get_ptr();
    menu_framebuf_t *frame_buf     = menu_display_fb_get_ptr();
-   menu_navigation_t *nav         = menu_navigation_get_ptr();
-   size_t               selection = menu_navigation_get_selection(nav);
-   if (!menu)
+   size_t end                     = menu_entries_get_end();
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
-
-   end = menu_entries_get_end();
-
-   if (!scroll)
+   if (!menu || !scroll)
       return;
 
    if (selection < RGUI_TERM_HEIGHT/2)

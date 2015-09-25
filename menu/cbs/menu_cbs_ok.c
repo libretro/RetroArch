@@ -1538,10 +1538,10 @@ static int action_ok_load_archive(const char *path,
 static int action_ok_load_archive_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   size_t selection;
    int ret                  = 0;
    global_t      *global    = global_get_ptr();
    menu_navigation_t *nav   = menu_navigation_get_ptr();
-   size_t selected          = menu_navigation_get_selection(nav);
    menu_handle_t *menu      = menu_driver_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
    const char *menu_path    = menu ? menu->scratch2_buf : NULL;
@@ -1549,6 +1549,9 @@ static int action_ok_load_archive_detect_core(const char *path,
 
    if (!menu || !menu_list)
       return -1;
+
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return false;
 
    ret = rarch_defer_core(global->core_info.list, menu_path, content_path, label,
          menu->deferred_path, sizeof(menu->deferred_path));
@@ -1563,7 +1566,7 @@ static int action_ok_load_archive_detect_core(const char *path,
          return menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
       case 0:
          return generic_action_ok_displaylist_push(path, label, type,
-               selected, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
+               selection, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
       default:
          break;
    }

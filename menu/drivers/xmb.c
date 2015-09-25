@@ -565,7 +565,8 @@ static void xmb_update_boxart(xmb_handle_t *xmb, unsigned i)
 
 static void xmb_selection_pointer_changed(bool allow_animations)
 {
-   unsigned i, current, end, tag, height, skip;
+   size_t selection;
+   unsigned i, end, tag, height, skip;
    int threshold = 0;
    xmb_handle_t    *xmb   = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
@@ -581,8 +582,9 @@ static void xmb_selection_pointer_changed(bool allow_animations)
 
    if (!xmb)
       return;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return;
 
-   current   = menu_navigation_get_selection(nav);
    end       = menu_entries_get_end();
    tag       = (uintptr_t)menu_list;
    threshold = xmb->icon.size*10;
@@ -604,10 +606,10 @@ static void xmb_selection_pointer_changed(bool allow_animations)
       if (!node)
          continue;
 
-      iy      = xmb_item_y(xmb, i, current);
+      iy      = xmb_item_y(xmb, i, selection);
       real_iy = iy + xmb->margins.screen.top;
 
-      if (i == current)
+      if (i == selection)
       {
          ia = xmb->item.active.alpha;
          iz = xmb->item.active.zoom;
@@ -915,13 +917,15 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *me
 
 static void xmb_list_switch(xmb_handle_t *xmb)
 {
+   size_t selection;
    int dir = -1;
    menu_handle_t    *menu = menu_driver_get_ptr();
    menu_display_t   *disp = menu_display_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
    settings_t *settings   = config_get_ptr();
-   size_t       selection = menu_navigation_get_selection(nav);
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return;
 
    if (!menu)
       return;
@@ -1404,7 +1408,8 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb,
 
 static void xmb_render(void)
 {
-   unsigned i, current, end, height = 0;
+   size_t selection;
+   unsigned i, end, height = 0;
    xmb_handle_t      *xmb   = NULL;
    settings_t   *settings   = config_get_ptr();
    menu_handle_t    *menu   = menu_driver_get_ptr();
@@ -1425,14 +1430,16 @@ static void xmb_render(void)
 
    video_driver_get_size(NULL, &height);
 
-   current = menu_navigation_get_selection(nav);
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return;
+
    end     = menu_list_get_size(menu_list);
 
    if (settings->menu.pointer.enable || settings->menu.mouse.enable)
    {
       for (i = 0; i < end; i++)
       {
-         float item_y1     = xmb->margins.screen.top + xmb_item_y(xmb, i, current);
+         float item_y1     = xmb->margins.screen.top + xmb_item_y(xmb, i, selection);
          float item_y2     = item_y1 + xmb->icon.size;
          int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
          int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);

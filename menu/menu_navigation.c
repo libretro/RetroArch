@@ -140,6 +140,14 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                driver->navigation_descend_alphabet(ptr_out);
          }
          return true;
+      case MENU_NAVIGATION_CTL_GET_SELECTION:
+         {
+            size_t *sel = (size_t*)data;
+            if (!nav || !sel)
+               return false;
+            *sel = nav->selection_ptr;
+         }
+         return true;
    }
 
    return false;
@@ -229,11 +237,4 @@ void menu_navigation_ascend_alphabet(menu_navigation_t *nav, size_t *ptr_out)
    *ptr_out = nav->scroll.indices.list[i + 1];
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_ASCEND_ALPHABET, ptr_out);
-}
-
-size_t menu_navigation_get_selection(menu_navigation_t *nav)
-{
-   if (!nav)
-      return 0;
-   return nav->selection_ptr;
 }

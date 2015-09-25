@@ -325,7 +325,6 @@ static void glui_render_menu_list(glui_handle_t *glui,
    uint64_t *frame_count   = video_driver_get_frame_count();
    size_t          end     = menu_entries_get_end();
    menu_display_t *disp    = menu_display_get_ptr();
-   menu_navigation_t *nav  = menu_navigation_get_ptr();
 
    if (!menu_display_ctl(MENU_DISPLAY_CTL_UPDATE_PENDING, NULL))
       return;
@@ -334,17 +333,22 @@ static void glui_render_menu_list(glui_handle_t *glui,
 
    for (i = menu_entries_get_start(); i < end; i++)
    {
+      int y;
+      size_t selection;
       bool entry_selected;
       menu_entry_t entry;
 
-      int y = disp->header_height - menu->scroll_y + (glui->line_height * i);
+      if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+         continue;
+
+      y = disp->header_height - menu->scroll_y + (glui->line_height * i);
 
       if (y > (int)height || ((y + (int)glui->line_height) < 0))
          continue;
 
       menu_entries_get(i, &entry);
 
-      entry_selected = (menu_navigation_get_selection(nav) == i);
+      entry_selected = selection == i;
 
       glui_render_label_value(glui, y, width, height, *frame_count / 40,
          entry_selected ? hover_color : normal_color, entry_selected,
@@ -368,13 +372,13 @@ static void glui_frame(void)
    char title_buf[PATH_MAX_LENGTH];
    char title_msg[PATH_MAX_LENGTH];
    char timedate[PATH_MAX_LENGTH];
+   size_t selection;
    gl_t *gl                                = NULL;
    glui_handle_t *glui                     = NULL;
    const struct font_renderer *font_driver = NULL;
    driver_t *driver                        = driver_get_ptr();
    menu_handle_t *menu                     = menu_driver_get_ptr();
    menu_animation_t *anim                  = menu_animation_get_ptr();
-   menu_navigation_t *nav                  = menu_navigation_get_ptr();
    menu_display_t *disp                    = menu_display_get_ptr();
    settings_t *settings                    = config_get_ptr();
    uint64_t *frame_count                   = video_driver_get_frame_count();
@@ -439,9 +443,12 @@ static void glui_frame(void)
 
    menu_display_font_flush_block(menu, font_driver);
 
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return;
+
    glui_render_quad(gl, 0,
          disp->header_height - menu->scroll_y + glui->line_height *
-         menu_navigation_get_selection(nav), width, glui->line_height,
+         selection, width, glui->line_height,
          width, height,
          &highlight_bg[0]);
 
@@ -704,12 +711,14 @@ static bool glui_load_image(void *data, menu_image_type_t type)
 
 static float glui_get_scroll(void)
 {
-   int half = 0;
+   size_t selection;
    unsigned width, height;
+   int half = 0;
    glui_handle_t *glui    = NULL;
    menu_handle_t *menu    = menu_driver_get_ptr();
-   menu_navigation_t *nav = menu_navigation_get_ptr();
-   size_t selection       = menu_navigation_get_selection(nav);
+
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return 0;
 
    if (!menu || !menu->userdata)
       return 0;

@@ -118,12 +118,14 @@ static int action_right_save_state(unsigned type, const char *label,
 static int action_right_scroll(unsigned type, const char *label,
       bool wraparound)
 {
+   size_t selection;
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
    menu_list_t *menu_list = menu_list_get_ptr();
    menu_navigation_t *nav = menu_navigation_get_ptr();
-   size_t selection       = menu_navigation_get_selection(nav);
    if (!nav || !menu_list)
       return -1;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return false;
 
    scroll_speed      = (max(nav->scroll.acceleration, 2) - 2) / 4 + 1;
    fast_scroll_speed = 4 + 4 * scroll_speed;

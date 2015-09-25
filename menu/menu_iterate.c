@@ -172,16 +172,18 @@ static int action_iterate_help(char *s, size_t len, const char *label)
 
 static int action_iterate_info(char *s, size_t len, const char *label)
 {
+   size_t selection;
    uint32_t label_hash              = 0;
    menu_file_list_cbs_t *cbs        = NULL;
    menu_list_t *menu_list           = menu_list_get_ptr();
    menu_navigation_t *nav           = menu_navigation_get_ptr();
-   size_t i                         = menu_navigation_get_selection(nav);
 
    if (!menu_list)
       return 0;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return 0;
 
-   cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
+   cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, selection);
 
    if (cbs->setting)
    {
@@ -427,7 +429,7 @@ int menu_iterate(bool render_this_frame, unsigned action)
 {
    menu_entry_t entry;
    enum action_iterate_type iterate_type;
-   size_t selected;
+   size_t selection;
    const char *label         = NULL;
    int ret                   = 0;
    uint32_t hash             = 0;
@@ -491,12 +493,12 @@ int menu_iterate(bool render_this_frame, unsigned action)
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
          break;
       case ITERATE_TYPE_DEFAULT:
-         selected = menu_navigation_get_selection(nav);
-         /* FIXME: selected > selection_buf->list->size, i don't know why. */
-         selected = max(min(selected, menu_list_get_size(menu_list)-1), 0);
+         if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+            return 0;
+         selection = max(min(selection, menu_list_get_size(menu_list)-1), 0);
 
-         menu_entry_get(&entry,    selected, NULL, false);
-         ret = menu_entry_action(&entry, selected, (enum menu_action)action);
+         menu_entry_get(&entry,    selection, NULL, false);
+         ret = menu_entry_action(&entry, selection, (enum menu_action)action);
 
          if (ret)
             goto end;
