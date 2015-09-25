@@ -461,7 +461,6 @@ int menu_iterate(bool render_this_frame, unsigned action)
          ret = action_iterate_help(menu->menu_state.msg, sizeof(menu->menu_state.msg), label);
          if (render_this_frame)
             BIT64_SET(menu->state, MENU_STATE_BLIT);
-         menu->menu_state.pop_selected    = NULL;
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
