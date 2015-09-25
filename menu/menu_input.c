@@ -1079,6 +1079,7 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
 static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
+   unsigned header_height;
    size_t selection;
    int ret                  = 0;
    menu_display_t *disp     = menu_display_get_ptr();
@@ -1090,6 +1091,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       return -1;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return -1;
+   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
    if (!settings->menu.pointer.enable
 #ifdef HAVE_OVERLAY
@@ -1136,7 +1138,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       {
          if (!menu_input->pointer.dragging)
          {
-            if ((unsigned)menu_input->pointer.start_y < disp->header_height)
+            if ((unsigned)menu_input->pointer.start_y < header_height)
             {
                menu_list_pop_stack(menu_list, &selection);
                menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
