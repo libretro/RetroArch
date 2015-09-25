@@ -179,11 +179,11 @@ static uint32_t string_walk(const char **string)
 #define string_walk string_walkbyte
 #endif
 
-static void blit_line(menu_handle_t *menu, int x, int y,
+static void blit_line(uint16_t *data,
+      size_t pitch, int x, int y,
       const char *message, uint16_t color)
 {
    unsigned i, j;
-   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
    menu_display_t  *disp      = menu_display_get_ptr();
 
    while (*message)
@@ -201,8 +201,7 @@ static void blit_line(menu_handle_t *menu, int x, int y,
             if (!col)
                continue;
 
-            frame_buf->data[(y + j) *
-               (frame_buf->pitch >> 1) + (x + i)] = color;
+            data[(y + j) * (pitch >> 1) + (x + i)] = color;
          }
       }
 
@@ -368,7 +367,8 @@ static void rgui_render_messagebox(const char *message)
       const char *msg = list->elems[i].data;
       int offset_x    = FONT_WIDTH_STRIDE * (glyphs_width - strlen(msg)) / 2;
       int offset_y    = FONT_HEIGHT_STRIDE * i;
-      blit_line(menu, x + 8 + offset_x, y + 8 + offset_y, msg, color);
+      blit_line(frame_buf->data, frame_buf->pitch,
+            x + 8 + offset_x, y + 8 + offset_y, msg, color);
    }
 
 end:
@@ -514,18 +514,18 @@ static void rgui_render(void)
    normal_color = NORMAL_COLOR(settings);
 
    if (menu_entries_show_back())
-      blit_line(menu,
+      blit_line(frame_buf->data, frame_buf->pitch,
             RGUI_TERM_START_X(fb_width),
             RGUI_TERM_START_X(fb_width),
             menu_hash_to_str(MENU_VALUE_BACK),
             TITLE_COLOR(settings));
 
-   blit_line(menu,
+   blit_line(frame_buf->data, frame_buf->pitch,
          RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width) - strlen(title_buf)) * FONT_WIDTH_STRIDE / 2,
          RGUI_TERM_START_X(fb_width), title_buf, TITLE_COLOR(settings));
 
    if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
-      blit_line(menu,
+      blit_line(frame_buf->data, frame_buf->pitch,
             RGUI_TERM_START_X(fb_width),
             (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
             RGUI_TERM_START_Y(fb_height) + 2, title_msg, hover_color);
@@ -534,7 +534,7 @@ static void rgui_render(void)
    {
       menu_display_timedate(timedate, sizeof(timedate), 3);
 
-      blit_line(menu,
+      blit_line(frame_buf->data, frame_buf->pitch,
             RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE - RGUI_TERM_START_X(fb_width),
             (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
             RGUI_TERM_START_Y(fb_height) + 2, timedate, hover_color);
@@ -584,7 +584,7 @@ static void rgui_render(void)
             entry_spacing,
             type_str_buf);
 
-      blit_line(menu, x, y, message, entry_selected ? hover_color : normal_color);
+      blit_line(frame_buf->data, frame_buf->pitch, x, y, message, entry_selected ? hover_color : normal_color);
    }
 
 #ifdef GEKKO
