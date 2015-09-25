@@ -224,11 +224,8 @@ static void glui_render(void)
    menu_animation_update(disp->animation,
          menu_animation_get_delta_time(disp->animation) / IDEAL_DT);
 
-   /* TODO/FIXME - we don't use framebuffer at all
-    * for GLUI, we should refactor this dependency
-    * away. */
-   frame_buf->width  = width;
-   frame_buf->height = height;
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,  &width);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &height);
 
    if (settings->menu.pointer.enable)
    {

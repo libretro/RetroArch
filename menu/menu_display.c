@@ -218,6 +218,38 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
    switch (state)
    {
+      case MENU_DISPLAY_CTL_SET_WIDTH:
+         {
+            unsigned *ptr = (unsigned*)data;
+            if (!ptr)
+               return false;
+            frame_buf->width = *ptr;
+         }
+         return true;
+      case MENU_DISPLAY_CTL_WIDTH:
+         {
+            unsigned *ptr = (unsigned*)data;
+            if (!ptr)
+               return false;
+            *ptr = frame_buf->width;
+         }
+         return true;
+      case MENU_DISPLAY_CTL_HEIGHT:
+         {
+            unsigned *ptr = (unsigned*)data;
+            if (!ptr)
+               return false;
+            *ptr = frame_buf->height;
+         }
+         return true;
+      case MENU_DISPLAY_CTL_SET_HEIGHT:
+         {
+            unsigned *ptr = (unsigned*)data;
+            if (!ptr)
+               return false;
+            frame_buf->height = *ptr;
+         }
+         return true;
       case MENU_DISPLAY_CTL_UPDATE_PENDING:
          {
             menu_animation_t     *anim = menu_animation_get_ptr();
