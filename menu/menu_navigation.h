@@ -44,6 +44,17 @@ typedef struct menu_navigation
    size_t selection_ptr;
 } menu_navigation_t;
 
+enum menu_navigation_ctl_state
+{
+   MENU_NAVIGATION_CTL_CLEAR = 0,
+   MENU_NAVIGATION_CTL_INCREMENT,
+   MENU_NAVIGATION_CTL_DECREMENT,
+   MENU_NAVIGATION_CTL_SET,
+   MENU_NAVIGATION_CTL_SET_LAST,
+   MENU_NAVIGATION_CTL_DESCEND_ALPHABET,
+   MENU_NAVIGATION_CTL_ASCEND_ALPHABET
+};
+
 /**
  * menu_navigation_clear:
  * @pending_push          : pending push ?

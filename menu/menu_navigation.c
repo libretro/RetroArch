@@ -25,60 +25,58 @@
 
 #include "../configuration.h"
 
-static void menu_driver_navigation_increment(void)
+bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->navigation_increment)
-      driver->navigation_increment();
-}
+   switch (state)
+   {
+      case MENU_NAVIGATION_CTL_CLEAR:
+         {
+            bool *pending_push = (bool*)data;
+            if (driver->navigation_clear)
+               driver->navigation_clear(*pending_push);
+         }
+         return true;
+      case MENU_NAVIGATION_CTL_INCREMENT:
+         if (driver->navigation_increment)
+            driver->navigation_increment();
+         return true;
+      case MENU_NAVIGATION_CTL_DECREMENT:
+         if (driver->navigation_decrement)
+            driver->navigation_decrement();
+         return true;
+      case MENU_NAVIGATION_CTL_SET:
+         {
+            bool *scroll = (bool*)data;
 
-static void menu_driver_navigation_decrement(void)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+            if (driver->navigation_set)
+               driver->navigation_set(*scroll);
+         }
+         return true;
+      case MENU_NAVIGATION_CTL_SET_LAST:
+         if (driver->navigation_set_last)
+            driver->navigation_set_last();
+         return true;
+      case MENU_NAVIGATION_CTL_ASCEND_ALPHABET:
+         {
+            size_t *ptr_out = (size_t*)data;
 
-   if (driver->navigation_decrement)
-      driver->navigation_decrement();
-}
+            if (driver->navigation_ascend_alphabet)
+               driver->navigation_ascend_alphabet(ptr_out);
+         }
+         return true;
+      case MENU_NAVIGATION_CTL_DESCEND_ALPHABET:
+         {
+            size_t *ptr_out = (size_t*)data;
 
-static void menu_driver_navigation_clear(bool pending_push)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+            if (driver->navigation_descend_alphabet)
+               driver->navigation_descend_alphabet(ptr_out);
+         }
+         return true;
+   }
 
-   if (driver->navigation_clear)
-      driver->navigation_clear(pending_push);
-}
-
-static void menu_driver_navigation_set(bool scroll)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_set)
-      driver->navigation_set(scroll);
-}
-
-static void menu_driver_navigation_set_last(void)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_set_last)
-      driver->navigation_set_last();
-}
-
-static void  menu_driver_navigation_descend_alphabet(size_t *ptr_out)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_descend_alphabet)
-      driver->navigation_descend_alphabet(ptr_out);
-}
-
-static void menu_driver_navigation_ascend_alphabet(size_t *ptr_out)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->navigation_ascend_alphabet)
-      driver->navigation_ascend_alphabet(ptr_out);
+   return false;
 }
 
 /**
@@ -93,7 +91,7 @@ void menu_navigation_clear(menu_navigation_t *nav, bool pending_push)
       return;
 
    menu_navigation_set(nav, 0, true);
-   menu_driver_navigation_clear(pending_push);
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
 }
 
 /**
@@ -121,7 +119,7 @@ void menu_navigation_decrement(menu_navigation_t *nav, unsigned scroll_speed)
          menu_navigation_set(nav, 0, true);
    }
 
-   menu_driver_navigation_decrement();
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, NULL);
 }
 
 /**
@@ -141,7 +139,7 @@ void menu_navigation_increment(menu_navigation_t *nav, unsigned scroll_speed)
    if ((selection + scroll_speed) < (menu_list_get_size(menu_list)))
    {
       menu_navigation_set(nav, selection + scroll_speed, true);
-      menu_driver_navigation_increment();
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, NULL);
    }
    else
    {
@@ -151,8 +149,8 @@ void menu_navigation_increment(menu_navigation_t *nav, unsigned scroll_speed)
       {
          if ((menu_list_get_size(menu_list) > 0))
          {
-            menu_navigation_set_last(nav);
-            menu_driver_navigation_increment();
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, NULL);
          }
       }
    }
@@ -174,7 +172,7 @@ void menu_navigation_set(menu_navigation_t *nav,
 
    nav->selection_ptr = idx; 
 
-   menu_driver_navigation_set(scroll);
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
 }
 
 /**
@@ -190,7 +188,7 @@ void menu_navigation_set_last(menu_navigation_t *nav)
 
    nav->selection_ptr = menu_list_get_size(menu_list) - 1;
 
-   menu_driver_navigation_set_last();
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_LAST, NULL);
 }
 
 /**
@@ -221,7 +219,7 @@ void menu_navigation_descend_alphabet(menu_navigation_t *nav, size_t *ptr_out)
       i--;
    *ptr_out = nav->scroll.indices.list[i - 1];
 
-   menu_driver_navigation_descend_alphabet(ptr_out);
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_DESCEND_ALPHABET, ptr_out);
 }
 
 /**
@@ -251,7 +249,7 @@ void menu_navigation_ascend_alphabet(menu_navigation_t *nav, size_t *ptr_out)
       i++;
    *ptr_out = nav->scroll.indices.list[i + 1];
 
-   menu_driver_navigation_ascend_alphabet(ptr_out);
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_ASCEND_ALPHABET, ptr_out);
 }
 
 size_t menu_navigation_get_selection(menu_navigation_t *nav)
