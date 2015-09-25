@@ -210,7 +210,6 @@ static void glui_render(void)
    unsigned width, height;
    glui_handle_t *glui                = NULL;
    menu_display_t *disp               = menu_display_get_ptr();
-   menu_framebuf_t *frame_buf         = menu_display_fb_get_ptr();
    menu_handle_t *menu                = menu_driver_get_ptr();
    settings_t *settings               = config_get_ptr();
 

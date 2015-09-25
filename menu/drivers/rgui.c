@@ -700,22 +700,24 @@ static void rgui_free(void *data)
 
 static void rgui_set_texture(void)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   unsigned fb_width, fb_height;
+   menu_handle_t        *menu = menu_driver_get_ptr();
    menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
 
    if (!menu)
       return;
-
    if (!frame_buf->dirty)
       return;
 
+   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH, &fb_width);
+   menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &fb_height);
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG, NULL);
 
    video_driver_set_texture_frame(
          frame_buf->data,
          false,
-         frame_buf->width,
-         frame_buf->height,
+         fb_width,
+         fb_height,
          1.0f);
 }
 
@@ -733,7 +735,6 @@ static void rgui_navigation_set(bool scroll)
 {
    size_t selection, fb_width, fb_height;
    menu_handle_t *menu            = menu_driver_get_ptr();
-   menu_framebuf_t *frame_buf     = menu_display_fb_get_ptr();
    size_t end                     = menu_entries_get_end();
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
