@@ -530,6 +530,7 @@ static void rmenu_xui_set_list_text(int index, const wchar_t* leftText,
 
 static void rmenu_xui_render(void)
 {
+   bool display_kb;
    unsigned fb_width;
 	size_t end, i, selection;
 	char title[PATH_MAX_LENGTH] = {0};
@@ -592,10 +593,14 @@ static void rmenu_xui_render(void)
       return;
 	XuiListSetCurSelVisible(m_menulist, selection);
 
-	if (menu->keyboard.display)
+   menu_input_ctl(MENU_CTL_KEYBOARD_DISPLAY, &display_kb);
+
+   if (display_kb)
 	{
 		char msg[1024]  = {0};
-		const char *str = *menu->keyboard.buffer;
+      const char *str = NULL, *label = NULL;
+      menu_input_ctl(MENU_CTL_KEYBOARD_BUFF_PTR, &str);
+      menu_input_ctl(MENU_CTL_KEYBOARD_LABEL,    &label);
 
 		if (!str)
 			str = "";
