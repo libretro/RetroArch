@@ -187,8 +187,7 @@ int menu_common_load_content(
 void menu_free(menu_handle_t *menu)
 {
    global_t        *global    = global_get_ptr();
-   menu_display_t    *disp    = menu_display_get_ptr();
-   if (!menu || !disp)
+   if (!menu)
       return;
 
    if (menu->playlist)
