@@ -119,15 +119,17 @@ static int action_right_scroll(unsigned type, const char *label,
       bool wraparound)
 {
    size_t selection;
+   size_t scroll_accel   = 0;
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
    menu_list_t *menu_list = menu_list_get_ptr();
-   menu_navigation_t *nav = menu_navigation_get_ptr();
-   if (!nav || !menu_list)
+   if (!menu_list)
       return -1;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return false;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
+      return false;
 
-   scroll_speed      = (max(nav->scroll.acceleration, 2) - 2) / 4 + 1;
+   scroll_speed      = (max(scroll_accel, 2) - 2) / 4 + 1;
    fast_scroll_speed = 4 + 4 * scroll_speed;
 
    if (selection  + fast_scroll_speed < (menu_list_get_size(menu_list)))
@@ -149,24 +151,25 @@ static int action_right_scroll(unsigned type, const char *label,
 static int action_right_mainmenu(unsigned type, const char *label,
       bool wraparound)
 {
+   size_t selection          = 0;
    menu_file_list_cbs_t *cbs = NULL;
    unsigned        push_list = 0;
    menu_list_t    *menu_list = menu_list_get_ptr();
-   menu_navigation_t    *nav = menu_navigation_get_ptr();
    unsigned           action = MENU_ACTION_RIGHT;
    size_t          list_size = menu_driver_list_get_size(MENU_LIST_PLAIN);
 
    if (list_size == 1)
    {
-      nav->selection_ptr = 0;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
       if (menu_driver_list_get_selection() != (menu_driver_list_get_size(MENU_LIST_HORIZONTAL)))
          push_list = 1;
    }
    else
       push_list = 2;
 
-   cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf,
-         nav->selection_ptr);
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+
+   cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, selection);
 
    switch (push_list)
    {
