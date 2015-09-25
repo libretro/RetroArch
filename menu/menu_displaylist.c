@@ -222,7 +222,10 @@ static void menu_list_refresh(file_list_t *list)
    if ((nav->selection_ptr >= list_size) && list_size)
       menu_navigation_set(nav, list_size - 1, true);
    else if (!list_size)
-      menu_navigation_clear(nav, true);
+   {
+      bool pending_push = true;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+   }
 }
 
 static void menu_displaylist_push_perfcounter(
@@ -2372,7 +2375,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    bool need_push              = false;
    rarch_setting_t    *setting = NULL;
    menu_handle_t       *menu   = menu_driver_get_ptr();
-   menu_navigation_t    *nav   = menu_navigation_get_ptr();
    global_t          *global   = global_get_ptr();
    settings_t      *settings   = config_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
@@ -2444,11 +2446,14 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_list_push(info->list, info->path, info->label, info->type, info->directory_ptr, 0);
          break;
       case DISPLAYLIST_GENERIC:
-         menu_driver_list_cache(MENU_LIST_PLAIN, 0);
+         {
+            bool pending_push = true;
+            menu_driver_list_cache(MENU_LIST_PLAIN, 0);
 
-         menu_list_push(info->list, info->path, info->label, info->type, info->directory_ptr, 0);
-         menu_navigation_clear(nav, true);
-         menu_entries_set_refresh(false);
+            menu_list_push(info->list, info->path, info->label, info->type, info->directory_ptr, 0);
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+            menu_entries_set_refresh(false);
+         }
          break;
       case DISPLAYLIST_HELP_SCREEN_LIST:
          menu_list_push(info->list,
@@ -3009,9 +3014,9 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
  **/
 bool menu_displaylist_init(void *data)
 {
+   bool pending_push            = true;
    menu_handle_t       *menu    = (menu_handle_t*)data;
    menu_list_t       *menu_list = menu_list_get_ptr();
-   menu_navigation_t       *nav = menu_navigation_get_ptr();
    menu_displaylist_info_t info = {0};
    if (!menu || !menu_list)
       return false;
@@ -3024,7 +3029,7 @@ bool menu_displaylist_init(void *data)
    menu_list_push(menu_list->menu_stack,
          info.path, info.label, info.type, info.flags, 0);
    menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
-   menu_navigation_clear(nav, true);
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
 
    return true;
 }

@@ -57,14 +57,6 @@ enum menu_navigation_ctl_state
 };
 
 /**
- * menu_navigation_clear:
- * @pending_push          : pending push ?
- *
- * Clears the navigation pointer.
- **/
-void menu_navigation_clear(menu_navigation_t *nav, bool pending_push);
-
-/**
  * menu_navigation_set:      
  * @idx                   : index to set navigation pointer to.
  * @scroll                : should we scroll when needed?

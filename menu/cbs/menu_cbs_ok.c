@@ -563,7 +563,8 @@ static int generic_action_ok(const char *path,
 
          if (rarch_replace_config(action_path))
          {
-            menu_navigation_clear(nav, false);
+            bool pending_push = false;
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
             ret = -1;
          }
          break;

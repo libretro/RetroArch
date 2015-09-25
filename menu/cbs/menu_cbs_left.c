@@ -105,7 +105,10 @@ static int action_left_scroll(unsigned type, const char *label,
    if (selection > fast_scroll_speed)
       menu_navigation_set(nav, selection - fast_scroll_speed, true);
    else
-      menu_navigation_clear(nav, false);
+   {
+      bool pending_push = false;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+   }
 
    return 0;
 }

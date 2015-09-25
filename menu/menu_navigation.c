@@ -44,6 +44,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             if (!pending_push)
                return false;
 
+            menu_navigation_set(nav, 0, true);
             if (driver->navigation_clear)
                driver->navigation_clear(*pending_push);
          }
@@ -64,7 +65,10 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             else
             {
                if (settings->menu.navigation.wraparound.vertical_enable)
-                  menu_navigation_clear(nav, false);
+               {
+                  bool pending_push = false;
+                  menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+               }
                else
                {
                   if ((menu_list_get_size(menu_list) > 0))
@@ -151,21 +155,6 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
    }
 
    return false;
-}
-
-/**
- * menu_navigation_clear:
- * @pending_push          : pending push ?
- *
- * Clears the navigation pointer.
- **/
-void menu_navigation_clear(menu_navigation_t *nav, bool pending_push)
-{
-   if (!nav)
-      return;
-
-   menu_navigation_set(nav, 0, true);
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
 }
 
 /**
