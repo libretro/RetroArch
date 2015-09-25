@@ -258,6 +258,14 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             *ptr = frame_buf->data;
          }
          return true;
+      case MENU_DISPLAY_CTL_SET_FB_DATA:
+         {
+            uint16_t *ptr = (uint16_t*)data;
+            if (!ptr)
+               return false;
+            frame_buf->data = ptr;
+         }
+         return true;
       case MENU_DISPLAY_CTL_FB_PITCH:
          {
             size_t *ptr = (size_t*)data;

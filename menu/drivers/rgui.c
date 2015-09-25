@@ -639,10 +639,10 @@ static void *rgui_init(void)
 {
    size_t fb_pitch;
    unsigned fb_width, fb_height;
-   bool                   ret = false;
-   menu_framebuf_t *frame_buf = NULL;
-   menu_handle_t        *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
+   uint16_t        *fb_data   = NULL;
    rgui_t               *rgui = NULL;
+   bool                   ret = false;
+   menu_handle_t        *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
       return NULL;
@@ -652,20 +652,19 @@ static void *rgui_init(void)
    if (!rgui)
       goto error;
 
-   frame_buf                          = menu_display_fb_get_ptr();
-
    /* 4 extra lines to cache  the checked background */
-   frame_buf->data = (uint16_t*)calloc(400 * (240 + 4), sizeof(uint16_t));
+   fb_data = (uint16_t*)calloc(400 * (240 + 4), sizeof(uint16_t));
 
-   if (!frame_buf->data)
+   if (!fb_data)
       goto error;
 
    fb_width                   = 320;
    fb_height                  = 240;
    fb_pitch                   = fb_width * sizeof(uint16_t);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,  &fb_width);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &fb_height);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,   &fb_width);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT,  &fb_height);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_FB_DATA, fb_data);
 
    menu->display.header_height        = FONT_HEIGHT_STRIDE * 2;
 
@@ -678,7 +677,7 @@ static void *rgui_init(void)
    if (!ret)
       goto error;
 
-   fill_rect(frame_buf->data, fb_pitch, 0, fb_height,
+   fill_rect(fb_data, fb_pitch, 0, fb_height,
          fb_width, 4, gray_filler);
 
    rgui->last_width  = fb_width;
@@ -689,9 +688,10 @@ static void *rgui_init(void)
 error:
    if (menu)
    {
-      if (frame_buf->data)
-         free(frame_buf->data);
-      frame_buf->data = NULL;
+      if (fb_data)
+         free(fb_data);
+      fb_data = NULL;
+      menu_display_ctl(MENU_DISPLAY_CTL_SET_FB_DATA, &fb_data);
       if (menu->userdata)
          free(menu->userdata);
       menu->userdata = NULL;
