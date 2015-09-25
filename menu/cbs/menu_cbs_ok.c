@@ -504,7 +504,6 @@ static int generic_action_ok(const char *path,
    const char             *menu_path = NULL;
    const char *flush_char            = NULL;
    global_t                  *global = global_get_ptr();
-   menu_navigation_t            *nav = menu_navigation_get_ptr();
    menu_display_t              *disp = menu_display_get_ptr();
    menu_handle_t               *menu = menu_driver_get_ptr();
    settings_t              *settings = config_get_ptr();
