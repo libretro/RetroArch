@@ -272,9 +272,8 @@ static void menu_input_search_callback(void *userdata, const char *str)
 {
    size_t idx = 0;
    menu_list_t *menu_list = menu_list_get_ptr();
-   menu_navigation_t *nav = menu_navigation_get_ptr();
 
-   if (!menu_list || !nav)
+   if (!menu_list)
       return;
 
    if (str && *str && file_list_search(menu_list->selection_buf, str, &idx))
@@ -567,15 +566,17 @@ static bool menu_input_custom_bind_keyboard_cb(void *data, unsigned code)
 static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
       enum menu_input_bind_mode type)
 {
+   size_t selection;
    menu_displaylist_info_t info  = {0};
    struct retro_keybind *keybind = NULL;
    settings_t     *settings      = config_get_ptr();
    menu_list_t        *menu_list = menu_list_get_ptr();
    menu_input_t      *menu_input = menu_input_get_ptr();
-   menu_navigation_t       *nav  = menu_navigation_get_ptr();
 
    if (!setting)
       return -1;
+
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
 
    switch (type)
    {
@@ -594,7 +595,7 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
 
          info.list          = menu_list->menu_stack;
          info.type          = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
-         info.directory_ptr = nav->selection_ptr;
+         info.directory_ptr = selection;
          strlcpy(info.label,
                menu_hash_to_str(MENU_LABEL_CUSTOM_BIND), sizeof(info.label));
 
@@ -608,7 +609,7 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
 
          info.list          = menu_list->menu_stack;
          info.type          = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
-         info.directory_ptr = nav->selection_ptr;
+         info.directory_ptr = selection;
          strlcpy(info.label,
                menu_hash_to_str(MENU_LABEL_CUSTOM_BIND_ALL),
                sizeof(info.label));
@@ -889,14 +890,16 @@ static int menu_input_mouse_frame(
       menu_file_list_cbs_t *cbs, menu_entry_t *entry,
       uint64_t input_mouse)
 {
+   size_t selection;
    menu_input_t *menu_input = menu_input_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
-   menu_navigation_t *nav   = menu_navigation_get_ptr();
+
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L))
    {
       if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_TOGGLE))
-         return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_SELECT);
+         return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
 
       if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_SET_NAVIGATION))
       {
@@ -908,7 +911,10 @@ static int menu_input_mouse_frame(
    }
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_R))
-      menu_list_pop_stack(menu_list, &nav->selection_ptr);
+   {
+      menu_list_pop_stack(menu_list, &selection);
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+   }
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_WHEEL_DOWN))
    {
@@ -928,6 +934,7 @@ static int menu_input_mouse_frame(
 static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
       menu_file_list_cbs_t *cbs, unsigned action)
 {
+   size_t selection;
    settings_t *settings     = config_get_ptr();
    menu_display_t *disp     = menu_display_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
@@ -935,6 +942,8 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    menu_navigation_t *nav   = menu_navigation_get_ptr();
 
    *input_mouse = MOUSE_ACTION_NONE;
+
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
 
    if (!settings->menu.mouse.enable
 #ifdef HAVE_OVERLAY
@@ -959,13 +968,11 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 
          if ((unsigned)menu_input->mouse.y < disp->header_height)
          {
-            menu_list_pop_stack(menu_list, &nav->selection_ptr);
+            menu_list_pop_stack(menu_list, &selection);
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
             return 0;
          }
-         if (
-               (menu_input->mouse.ptr == nav->selection_ptr) &&
-               cbs &&
-               cbs->action_select            )
+         if ((menu_input->mouse.ptr == selection) && cbs && cbs->action_select)
          {
             BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L_TOGGLE);
          }
@@ -1005,19 +1012,19 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 static int pointer_tap(menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
+   size_t selection, idx;
+   bool scroll              = false;
    menu_input_t *menu_input = menu_input_get_ptr();
-   menu_navigation_t *nav   = menu_navigation_get_ptr();
 
-   if (menu_input->pointer.ptr == nav->selection_ptr
-         && cbs && cbs->action_select)
-      return menu_entry_action(entry, nav->selection_ptr, MENU_ACTION_SELECT);
-   else
-   {
-      size_t idx  = menu_input->pointer.ptr;
-      bool scroll = false;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
-   }
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+
+   if (menu_input->pointer.ptr == selection && cbs && cbs->action_select)
+      return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
+
+   idx  = menu_input->pointer.ptr;
+
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
 
    return 0;
 }
@@ -1065,14 +1072,16 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
 static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
+   size_t selection;
    int ret                  = 0;
    menu_display_t *disp     = menu_display_get_ptr();
-   menu_navigation_t *nav   = menu_navigation_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
    settings_t *settings     = config_get_ptr();
 
    if (!menu_input)
+      return -1;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return -1;
 
    if (!settings->menu.pointer.enable
@@ -1121,7 +1130,10 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
          if (!menu_input->pointer.dragging)
          {
             if ((unsigned)menu_input->pointer.start_y < disp->header_height)
-               menu_list_pop_stack(menu_list, &nav->selection_ptr);
+            {
+               menu_list_pop_stack(menu_list, &selection);
+               menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+            }
             else if (menu_input->pointer.ptr <= menu_list_get_size(menu_list)-1)
             {
                menu_input->pointer.oldpressed[0] = false;
@@ -1145,7 +1157,8 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       if (!menu_input->pointer.oldback)
       {
          menu_input->pointer.oldback = true;
-         menu_list_pop_stack(menu_list, &nav->selection_ptr);
+         menu_list_pop_stack(menu_list, &selection);
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
       }
    }
    menu_input->pointer.oldback = menu_input->pointer.back;
