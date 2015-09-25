@@ -182,12 +182,19 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             nav->selection_ptr = *sel;
          }
          return true;
-      case MENU_NAVIGATION_CTL_SET_SCROLL_INDICES:
+      case MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES:
+         {
+            if (!nav)
+               return false;
+            nav->scroll.indices.size = 0;
+         }
+         return true;
+      case MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX:
          {
             size_t *sel = (size_t*)data;
             if (!nav || !sel)
                return false;
-            nav->scroll.indices.size = *sel;
+            nav->scroll.indices.list[nav->scroll.indices.size++] = *sel;
          }
          return true;
    }

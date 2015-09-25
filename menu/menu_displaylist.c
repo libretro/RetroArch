@@ -167,13 +167,13 @@ static void menu_list_build_scroll_indices(file_list_t *list)
    size_t i;
    int current;
    bool current_is_dir;
-   size_t scroll_indices = 0;
-   menu_navigation_t *nav = menu_navigation_get_ptr();
+   size_t scroll_value   = 0;
 
-   if (!nav || !list || !list->size)
+   if (!list || !list->size)
       return;
 
-   nav->scroll.indices.list[scroll_indices++] = 0;
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES, NULL);
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &scroll_value);
 
    current        = menu_list_elem_get_first_char(list, 0);
    current_is_dir = menu_list_elem_is_dir(list, 0);
@@ -184,14 +184,15 @@ static void menu_list_build_scroll_indices(file_list_t *list)
       bool is_dir = menu_list_elem_is_dir(list, i);
 
       if ((current_is_dir && !is_dir) || (first > current))
-         nav->scroll.indices.list[scroll_indices++] = i;
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &i);
 
       current        = first;
       current_is_dir = is_dir;
    }
 
-   nav->scroll.indices.list[scroll_indices++] =  list->size - 1;
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_INDICES, &scroll_indices);
+
+   scroll_value = list->size - 1;
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &scroll_value);
 }
 
 /**
@@ -204,14 +205,11 @@ static void menu_list_build_scroll_indices(file_list_t *list)
 static void menu_list_refresh(file_list_t *list)
 {
    size_t list_size, selection;
-   size_t scroll_indices    = 0;
    menu_list_t   *menu_list = menu_list_get_ptr();
    if (!menu_list || !list)
       return;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
-
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_INDICES, &scroll_indices);
 
    menu_list_build_scroll_indices(list);
 
