@@ -187,7 +187,6 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound)
 {
    menu_displaylist_info_t  info = {0};
-   menu_navigation_t        *nav = menu_navigation_get_ptr();
 
    if (!setting)
       return -1;
@@ -197,11 +196,15 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_PATH:
          if (action == MENU_ACTION_OK)
          {
+            size_t selection;
             menu_list_t   *menu_list = menu_list_get_ptr();
 
+            if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+               return -1;
+
             info.list           = menu_list->menu_stack;
+            info.directory_ptr  = selection;
             info.type           = type;
-            info.directory_ptr  = nav->selection_ptr;
             strlcpy(info.path, setting->default_value.string, sizeof(info.path));
             strlcpy(info.label, setting->name, sizeof(info.label));
 
@@ -270,11 +273,15 @@ rarch_setting_t *menu_setting_find(const char *label)
 int menu_setting_set(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
-   int ret                  = 0;
-   menu_navigation_t   *nav = menu_navigation_get_ptr();
-   menu_list_t   *menu_list = menu_list_get_ptr();
-   menu_file_list_cbs_t *cbs = menu_list_get_actiondata_at_offset(
-         menu_list->selection_buf, nav->selection_ptr);
+   size_t selection;
+   int ret                   = 0;
+   menu_file_list_cbs_t *cbs = NULL;
+   menu_list_t   *menu_list  = menu_list_get_ptr();
+
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return 0;
+
+   cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, selection);
 
    if (!cbs)
       return 0;
