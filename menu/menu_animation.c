@@ -51,9 +51,11 @@ struct menu_animation
    retro_time_t old_time;
 };
 
+typedef struct menu_animation menu_animation_t;
+
 static menu_animation_t menu_animation_state;
 
-menu_animation_t *menu_animation_get_ptr(void)
+static menu_animation_t *menu_animation_get_ptr(void)
 {
    return &menu_animation_state;
 }

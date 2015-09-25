@@ -33,8 +33,6 @@ extern "C" {
 typedef float (*easingFunc)(float, float, float, float);
 typedef void  (*tween_cb) (void);
 
-typedef struct menu_animation menu_animation_t;
-
 enum menu_animation_easing_type
 {
    /* Linear */
@@ -106,8 +104,6 @@ bool menu_animation_update(float dt);
  **/
 void menu_animation_ticker_str(char *s, size_t len, uint64_t tick,
       const char *str, bool selected);
-
-menu_animation_t *menu_animation_get_ptr(void);
 
 void menu_animation_update_time(void);
 
