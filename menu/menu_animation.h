@@ -26,12 +26,18 @@
 #define IDEAL_DT (1.0 / 60.0 * 1000000.0)
 #endif
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef float (*easingFunc)(float, float, float, float);
 typedef void  (*tween_cb) (void);
+
+enum menu_animation_ctl_state
+{
+   MENU_ANIMATION_CTL_IS_ACTIVE = 0
+};
 
 enum menu_animation_easing_type
 {
@@ -113,7 +119,7 @@ void menu_animation_clear_active(void);
 
 float menu_animation_get_delta_time(void);
 
-bool menu_animation_is_active(void);
+bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }

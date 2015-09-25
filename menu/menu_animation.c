@@ -694,10 +694,15 @@ float menu_animation_get_delta_time(void)
    return anim->delta_time;
 }
 
-bool menu_animation_is_active(void)
+bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 {
    menu_animation_t *anim   = menu_animation_get_ptr();
-   if (!anim)
-      return false;
-   return anim->is_active;
+
+   switch (state)
+   {
+      case MENU_ANIMATION_CTL_IS_ACTIVE:
+         return anim->is_active;
+   }
+
+   return false;
 }

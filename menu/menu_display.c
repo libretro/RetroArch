@@ -294,7 +294,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          }
          return true;
       case MENU_DISPLAY_CTL_UPDATE_PENDING:
-         if (menu_animation_is_active() || (frame_buf && frame_buf->dirty))
+         if (menu_animation_ctl(MENU_ANIMATION_CTL_IS_ACTIVE, NULL) || (frame_buf && frame_buf->dirty))
             return true;
          return false;
       case MENU_DISPLAY_CTL_SET_VIEWPORT:
