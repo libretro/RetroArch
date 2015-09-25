@@ -686,14 +686,6 @@ void menu_animation_clear_active(void)
    anim->is_active           = false;
 }
 
-float menu_animation_get_delta_time(void)
-{
-   menu_animation_t *anim   = menu_animation_get_ptr();
-   if (!anim)
-      return 0.0f;
-   return anim->delta_time;
-}
-
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 {
    menu_animation_t *anim   = menu_animation_get_ptr();
@@ -702,6 +694,14 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
    {
       case MENU_ANIMATION_CTL_IS_ACTIVE:
          return anim->is_active;
+      case MENU_ANIMATION_CTL_DELTA_TIME:
+         {
+            float *ptr = (float*)data;
+            if (!ptr)
+               return false;
+            *ptr = anim->delta_time;
+         }
+         return true;
    }
 
    return false;

@@ -1116,14 +1116,16 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       else if (abs(pointer_x - menu_input->pointer.start_x) > 3
             || abs(pointer_y - menu_input->pointer.start_y) > 3)
       {
-         float s;
+         float s, delta_time;
          menu_input->pointer.dragging      = true;
          menu_input->pointer.dx            = pointer_x - menu_input->pointer.old_x;
          menu_input->pointer.dy            = pointer_y - menu_input->pointer.old_y;
          menu_input->pointer.old_x         = pointer_x;
          menu_input->pointer.old_y         = pointer_y;
 
-         s =  menu_input->pointer.dy / menu_animation_get_delta_time() * 1000000.0;
+         menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
+
+         s =  menu_input->pointer.dy / delta_time * 1000000.0;
          menu_input->pointer.accel = (menu_input->pointer.accel0 + menu_input->pointer.accel1 + s) / 3;
          menu_input->pointer.accel0 = menu_input->pointer.accel1;
          menu_input->pointer.accel1 = menu_input->pointer.accel;
@@ -1211,6 +1213,7 @@ void menu_input_post_iterate(int *ret, unsigned action)
 
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 {
+   float delta_time;
    unsigned ret                            = MENU_ACTION_NOOP;
    static bool initial_held                = true;
    static bool first_held                  = false;
@@ -1269,7 +1272,9 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL,
             &new_scroll_accel);
 
-   menu_input->delay.count += menu_animation_get_delta_time() / IDEAL_DT;
+   menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
+
+   menu_input->delay.count += delta_time / IDEAL_DT;
 
    if (menu_input->keyboard.display)
    {

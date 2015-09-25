@@ -208,6 +208,7 @@ end:
 
 static void glui_render(void)
 {
+   float delta_time;
    int bottom;
    unsigned width, height, header_height;
    glui_handle_t *glui                = NULL;
@@ -221,8 +222,8 @@ static void glui_render(void)
 
    glui = (glui_handle_t*)menu->userdata;
 
-   menu_animation_update(
-         menu_animation_get_delta_time() / IDEAL_DT);
+   menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
+   menu_animation_update(delta_time / IDEAL_DT);
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,  &width);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &height);
