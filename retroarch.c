@@ -344,15 +344,21 @@ void set_paths_redirect(const char *path)
 
          /* If path doesn't exist, try to create it,
           * if everything fails revert to the original path. */
-         if(!path_is_directory(global->dir.savefile) && global->dir.savestate[0] != '\0')
-            if(!path_mkdir(global->dir.savefile))
+         if(!path_is_directory(global->dir.savefile) && global->dir.savefile[0] != '\0')
+         {
+            path_mkdir(global->dir.savefile);
+            if(!path_is_directory(global->dir.savefile))
+            {
+               RARCH_LOG("Reverting savefile directory to %s\n", orig_savefile_dir);
                strlcpy(global->dir.savefile,
                      orig_savefile_dir,
                      sizeof(global->dir.savefile));
+            }
+         }
       }
 
       /* per-core states: append the library_name to the save location */
-      if (settings->sort_savestates_enable && global->dir.savefile[0] != '\0')
+      if (settings->sort_savestates_enable && global->dir.savestate[0] != '\0')
       {
          strlcpy(orig_savestate_dir,
                global->dir.savestate,
@@ -364,11 +370,17 @@ void set_paths_redirect(const char *path)
 
          /* If path doesn't exist, try to create it.
           * If everything fails, revert to the original path. */
-         if(!path_is_directory(global->dir.savestate))
-            if(!path_mkdir(global->dir.savestate))
+         if(!path_is_directory(global->dir.savestate) && global->dir.savestate[0] != '\0')
+         {
+            path_mkdir(global->dir.savestate);
+            if(!path_is_directory(global->dir.savestate))
+            {
+               RARCH_LOG("Reverting savestate directory to %s\n", orig_savefile_dir);
                strlcpy(global->dir.savestate,
                      orig_savestate_dir,
                      sizeof(global->dir.savestate));
+            }
+         }
       }
    }
 
