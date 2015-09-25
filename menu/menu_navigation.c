@@ -114,6 +114,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          }
          return true;
       case MENU_NAVIGATION_CTL_SET_LAST:
+         nav->selection_ptr = menu_list_get_size(menu_list) - 1;
          if (driver->navigation_set_last)
             driver->navigation_set_last();
          return true;
@@ -175,22 +176,6 @@ void menu_navigation_set(menu_navigation_t *nav,
    nav->selection_ptr = idx; 
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
-}
-
-/**
- * menu_navigation_set_last:
- *
- * Sets navigation pointer to last index.
- **/
-void menu_navigation_set_last(menu_navigation_t *nav)
-{
-   menu_list_t *menu_list = menu_list_get_ptr();
-   if (!menu_list || !nav)
-      return;
-
-   nav->selection_ptr = menu_list_get_size(menu_list) - 1;
-
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_LAST, NULL);
 }
 
 /**

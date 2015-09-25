@@ -73,13 +73,6 @@ void menu_navigation_clear(menu_navigation_t *nav, bool pending_push);
 void menu_navigation_set(menu_navigation_t *nav, size_t i, bool scroll);
 
 /**
- * menu_navigation_set_last:
- *
- * Sets navigation pointer to last index.
- **/
-void menu_navigation_set_last(menu_navigation_t *nav);
-
-/**
  * menu_navigation_descend_alphabet:
  * @ptr_out               : Amount of indices to 'scroll' to get
  *                          to the next entry.

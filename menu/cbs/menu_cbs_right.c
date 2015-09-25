@@ -133,7 +133,7 @@ static int action_right_scroll(unsigned type, const char *label,
    else
    {
       if ((menu_list_get_size(menu_list) > 0))
-         menu_navigation_set_last(nav);
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_LAST, NULL);
    }
 
    return 0;
