@@ -544,7 +544,7 @@ int menu_iterate_render(void)
       BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
 
    if (BIT64_GET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER))
-      menu_display_fb_set_dirty();
+      menu_display_ctl(MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG, NULL);
 
    if (BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX) && menu->menu_state.msg[0] != '\0')
    {

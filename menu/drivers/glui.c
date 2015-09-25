@@ -403,7 +403,7 @@ static void glui_frame(void)
 
    video_driver_get_size(&width, &height);
 
-   menu_display_set_viewport();
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
    for (i = 0; i < 16; i++)
    {
@@ -523,7 +523,7 @@ static void glui_frame(void)
 
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-   menu_display_unset_viewport();
+   menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
 
 static void glui_allocate_white_texture(glui_handle_t *glui)

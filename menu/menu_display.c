@@ -15,8 +15,10 @@
 
 #include <time.h>
 
+#include "../config.def.h"
+
 #include "menu.h"
-#include "../../config.def.h"
+#include "menu_display.h"
 #include "../gfx/video_context_driver.h"
 #include "../gfx/video_thread_wrapper.h"
 
@@ -34,20 +36,6 @@ menu_framebuf_t *menu_display_fb_get_ptr(void)
    if (!disp)
       return NULL;
    return &disp->frame_buf;
-}
-
-void menu_display_fb_set_dirty(void)
-{
-   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
-   if (frame_buf && frame_buf->data)
-      frame_buf->dirty = true;
-}
-
-void menu_display_fb_unset_dirty(void)
-{
-   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
-   if (frame_buf && frame_buf->data)
-      frame_buf->dirty = false;
 }
 
 /**
@@ -250,21 +238,34 @@ bool menu_display_init_main_font(void *data,
    return ret;
 }
 
-void menu_display_set_viewport(void)
+bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 {
    unsigned width, height;
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
 
-   video_driver_get_size(&width, &height);
-   video_driver_set_viewport(width, height, true, false);
-}
+   switch (state)
+   {
+      case MENU_DISPLAY_CTL_SET_VIEWPORT:
+         video_driver_get_size(&width, &height);
+         video_driver_set_viewport(width,
+               height, true, false);
+         return true;
+      case MENU_DISPLAY_CTL_UNSET_VIEWPORT:
+         video_driver_get_size(&width, &height);
+         video_driver_set_viewport(width,
+               height, false, true);
+         return true;
+      case MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG:
+         if (frame_buf && frame_buf->data)
+            frame_buf->dirty = true;
+         return true;
+      case MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG:
+         if (frame_buf && frame_buf->data)
+            frame_buf->dirty = false;
+         return true;
+   }
 
-void menu_display_unset_viewport(void)
-{
-   unsigned width, height;
-
-   video_driver_get_size(&width, &height);
-   video_driver_set_viewport(width,
-         height, false, true);
+   return false;
 }
 
 void menu_display_timedate(char *s, size_t len, unsigned time_mode)

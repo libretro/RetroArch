@@ -76,7 +76,7 @@ void menu_video_frame_background(
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-   menu_display_set_viewport();
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
    if ((settings->menu.pause_libretro
       || !global->inited.main || (global->inited.core.type == CORE_TYPE_DUMMY))

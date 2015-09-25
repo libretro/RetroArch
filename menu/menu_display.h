@@ -29,6 +29,14 @@
 extern "C" {
 #endif
 
+enum menu_display_ctl_state
+{
+   MENU_DISPLAY_CTL_SET_VIEWPORT = 0,
+   MENU_DISPLAY_CTL_UNSET_VIEWPORT,
+   MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG,
+   MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG
+};
+
 typedef struct menu_framebuf
 {
    uint16_t *data;
@@ -65,10 +73,6 @@ menu_framebuf_t *menu_display_fb_get_ptr(void);
 
 void menu_display_libretro(void);
 
-void menu_display_fb_set_dirty(void);
-
-void menu_display_fb_unset_dirty(void);
-
 void menu_display_free(void *data);
 
 bool menu_display_init(void *data);
@@ -92,9 +96,8 @@ bool menu_display_init_main_font(void *data,
 
 void menu_display_free_main_font(void *data);
 
-void menu_display_set_viewport(void);
 
-void menu_display_unset_viewport(void);
+bool menu_display_ctl(enum menu_display_ctl_state state, void *data);
 
 void menu_display_timedate(char *s, size_t len, unsigned time_mode);
 

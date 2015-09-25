@@ -1176,7 +1176,7 @@ bool event_command(enum event_command cmd)
             input->poll(driver->input_data);
 
 #ifdef HAVE_MENU
-            menu_display_fb_set_dirty();
+            menu_display_ctl(MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG, NULL);
 
             if (menu_driver_alive())
                event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);

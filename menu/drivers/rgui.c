@@ -435,8 +435,8 @@ static void rgui_render(void)
       rgui->last_height = frame_buf->height;
    }
 
-   /* ensures the framebuffer will be rendered on the screen */
-   menu_display_fb_set_dirty();
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG, NULL);
+
    menu_animation_clear_active(anim);
    rgui->force_redraw        = false;
 
@@ -697,7 +697,7 @@ static void rgui_set_texture(void)
    if (!frame_buf->dirty)
       return;
 
-   menu_display_fb_unset_dirty();
+   menu_display_ctl(MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG, NULL);
 
    video_driver_set_texture_frame(
          frame_buf->data,

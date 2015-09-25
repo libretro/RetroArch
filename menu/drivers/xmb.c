@@ -1671,7 +1671,7 @@ static void xmb_frame(void)
       xmb_draw_cursor(gl, xmb, &coord_color2[0], mouse_x, mouse_y, width, height);
    }
 
-   menu_display_unset_viewport();
+   menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
 
 static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
