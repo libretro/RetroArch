@@ -119,19 +119,19 @@ static uint16_t green_filler(unsigned x, unsigned y)
 #endif
 }
 
-static void fill_rect(menu_framebuf_t *frame_buf,
+static void fill_rect(uint16_t *data, size_t pitch,
       unsigned x, unsigned y,
       unsigned width, unsigned height,
       uint16_t (*col)(unsigned x, unsigned y))
 {
    unsigned i, j;
 
-   if (!frame_buf->data || !col)
+   if (!data || !col)
       return;
 
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
-         frame_buf->data[j * (frame_buf->pitch >> 1) + i] = col(i, j);
+         data[j * (pitch >> 1) + i] = col(i, j);
 }
 
 static void color_rect(menu_handle_t *menu,
@@ -280,11 +280,11 @@ static void rgui_render_background(void)
    }
 
 
-   fill_rect(frame_buf, 5, 5, fb_width - 10, 5, green_filler);
-   fill_rect(frame_buf, 5, fb_height - 10, fb_width - 10, 5, green_filler);
+   fill_rect(frame_buf->data, frame_buf->pitch, 5, 5, fb_width - 10, 5, green_filler);
+   fill_rect(frame_buf->data, frame_buf->pitch, 5, fb_height - 10, fb_width - 10, 5, green_filler);
 
-   fill_rect(frame_buf, 5, 5, 5, fb_height - 10, green_filler);
-   fill_rect(frame_buf, fb_width - 10, 5, 5, fb_height - 10,
+   fill_rect(frame_buf->data, frame_buf->pitch, 5, 5, 5, fb_height - 10, green_filler);
+   fill_rect(frame_buf->data, frame_buf->pitch, fb_width - 10, 5, 5, fb_height - 10,
          green_filler);
 }
 
@@ -354,14 +354,14 @@ static void rgui_render_messagebox(const char *message)
    x      = (fb_width  - width) / 2;
    y      = (fb_height - height) / 2;
 
-   fill_rect(frame_buf, x + 5, y + 5, width - 10,
+   fill_rect(frame_buf->data, frame_buf->pitch, x + 5, y + 5, width - 10,
          height - 10, gray_filler);
-   fill_rect(frame_buf, x, y, width - 5, 5, green_filler);
-   fill_rect(frame_buf, x + width - 5, y, 5,
+   fill_rect(frame_buf->data, frame_buf->pitch, x, y, width - 5, 5, green_filler);
+   fill_rect(frame_buf->data, frame_buf->pitch, x + width - 5, y, 5,
          height - 5, green_filler);
-   fill_rect(frame_buf, x + 5, y + height - 5,
+   fill_rect(frame_buf->data, frame_buf->pitch, x + 5, y + height - 5,
          width - 5, 5, green_filler);
-   fill_rect(frame_buf, x, y + 5, 5,
+   fill_rect(frame_buf->data, frame_buf->pitch, x, y + 5, 5,
          height - 5, green_filler);
 
    color = NORMAL_COLOR(settings);
@@ -437,7 +437,7 @@ static void rgui_render(void)
    /* if the framebuffer changed size, recache the background */
    if (rgui->last_width != fb_width || rgui->last_height != fb_height)
    {
-      fill_rect(frame_buf, 0, fb_height, fb_width, 4, gray_filler);
+      fill_rect(frame_buf->data, frame_buf->pitch, 0, fb_height, fb_width, 4, gray_filler);
       rgui->last_width  = fb_width;
       rgui->last_height = fb_height;
    }
@@ -659,7 +659,7 @@ static void *rgui_init(void)
    if (!ret)
       goto error;
 
-   fill_rect(frame_buf, 0, frame_buf->height,
+   fill_rect(frame_buf->data, frame_buf->pitch, 0, frame_buf->height,
          frame_buf->width, 4, gray_filler);
 
    rgui->last_width = frame_buf->width;
