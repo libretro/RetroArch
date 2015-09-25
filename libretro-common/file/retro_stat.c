@@ -83,8 +83,18 @@ static bool path_stat(const char *path, enum stat_mode mode)
 {
 #if defined(VITA) || defined(PSP)
    SceIoStat buf;
+   char *tmp = strdup(path);
+   size_t len = strlen(tmp);
+   if (tmp[len-1] == '/')
+      tmp[len-1]='\0';
+
    if (sceIoGetstat(path, &buf) < 0)
+   {
+      free(tmp);
       return false;
+   }
+   free(tmp);
+
 #elif defined(__CELLOS_LV2__)
     CellFsStat buf;
     if (cellFsStat(path, &buf) < 0)
