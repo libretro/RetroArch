@@ -30,7 +30,7 @@ static int action_bind_up_generic(unsigned type, const char *label)
    if (menu_list_get_size(menu_list) <= 0)
       return 0;
 
-   menu_navigation_decrement(nav, scroll_speed);
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, &scroll_speed);
 
    return 0;
 }

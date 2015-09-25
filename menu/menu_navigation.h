@@ -64,13 +64,6 @@ enum menu_navigation_ctl_state
 void menu_navigation_clear(menu_navigation_t *nav, bool pending_push);
 
 /**
- * menu_navigation_decrement:
- *
- * Decrement the navigation pointer.
- **/
-void menu_navigation_decrement(menu_navigation_t *nav, unsigned scroll_speed);
-
-/**
  * menu_navigation_increment:
  *
  * Increment the navigation pointer.

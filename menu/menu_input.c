@@ -905,7 +905,10 @@ static int menu_input_mouse_frame(
       menu_navigation_increment(nav, 1);
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_WHEEL_UP))
-      menu_navigation_decrement(nav, 1);
+   {
+      unsigned decrement_by = 1;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, &decrement_by);
+   }
 
    return 0;
 }

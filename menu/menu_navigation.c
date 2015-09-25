@@ -28,12 +28,17 @@
 bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+   menu_navigation_t        *nav   = menu_navigation_get_ptr();
 
    switch (state)
    {
       case MENU_NAVIGATION_CTL_CLEAR:
          {
             bool *pending_push = (bool*)data;
+
+            if (!pending_push)
+               return false;
+
             if (driver->navigation_clear)
                driver->navigation_clear(*pending_push);
          }
@@ -43,12 +48,37 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             driver->navigation_increment();
          return true;
       case MENU_NAVIGATION_CTL_DECREMENT:
-         if (driver->navigation_decrement)
-            driver->navigation_decrement();
+         {
+            menu_list_t *menu_list = menu_list_get_ptr();
+            settings_t *settings   = config_get_ptr();
+            size_t selection       = nav->selection_ptr;
+            unsigned *scroll_speed = (unsigned*)data;
+
+            if (!scroll_speed)
+               return false;
+
+            if (selection >= *scroll_speed)
+               menu_navigation_set(nav, selection - *scroll_speed, true);
+            else
+            {
+               if (settings->menu.navigation.wraparound.vertical_enable)
+                  menu_navigation_set(nav, 
+                        menu_list_get_size(menu_list) - 1, true);
+               else
+                  menu_navigation_set(nav, 0, true);
+            }
+
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, NULL);
+            if (driver->navigation_decrement)
+               driver->navigation_decrement();
+         }
          return true;
       case MENU_NAVIGATION_CTL_SET:
          {
             bool *scroll = (bool*)data;
+
+            if (!scroll)
+               return false;
 
             if (driver->navigation_set)
                driver->navigation_set(*scroll);
@@ -62,6 +92,9 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          {
             size_t *ptr_out = (size_t*)data;
 
+            if (!ptr_out)
+               return false;
+
             if (driver->navigation_ascend_alphabet)
                driver->navigation_ascend_alphabet(ptr_out);
          }
@@ -69,6 +102,9 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
       case MENU_NAVIGATION_CTL_DESCEND_ALPHABET:
          {
             size_t *ptr_out = (size_t*)data;
+
+            if (!ptr_out)
+               return false;
 
             if (driver->navigation_descend_alphabet)
                driver->navigation_descend_alphabet(ptr_out);
@@ -92,34 +128,6 @@ void menu_navigation_clear(menu_navigation_t *nav, bool pending_push)
 
    menu_navigation_set(nav, 0, true);
    menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
-}
-
-/**
- * menu_navigation_decrement:
- *
- * Decrement the navigation pointer.
- **/
-void menu_navigation_decrement(menu_navigation_t *nav, unsigned scroll_speed)
-{
-   menu_list_t *menu_list = menu_list_get_ptr();
-   settings_t *settings   = config_get_ptr();
-   size_t selection       = nav->selection_ptr;
-
-   if (!nav)
-      return;
-
-   if (selection >= scroll_speed)
-         menu_navigation_set(nav, selection - scroll_speed, true);
-   else
-   {
-      if (settings->menu.navigation.wraparound.vertical_enable)
-         menu_navigation_set(nav, 
-               menu_list_get_size(menu_list) - 1, true);
-      else
-         menu_navigation_set(nav, 0, true);
-   }
-
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, NULL);
 }
 
 /**
