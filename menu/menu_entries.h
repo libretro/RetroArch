@@ -21,7 +21,6 @@
 
 #include <boolean.h>
 
-#include "menu_list.h"
 #include "menu_setting.h"
 #include "menu_entry.h"
 
