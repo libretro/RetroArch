@@ -902,7 +902,10 @@ static int menu_input_mouse_frame(
       menu_list_pop_stack(menu_list, &nav->selection_ptr);
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_WHEEL_DOWN))
-      menu_navigation_increment(nav, 1);
+   {
+      unsigned increment_by = 1;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, &increment_by);
+   }
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_WHEEL_UP))
    {

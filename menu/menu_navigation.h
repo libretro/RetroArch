@@ -64,13 +64,6 @@ enum menu_navigation_ctl_state
 void menu_navigation_clear(menu_navigation_t *nav, bool pending_push);
 
 /**
- * menu_navigation_increment:
- *
- * Increment the navigation pointer.
- **/
-void menu_navigation_increment(menu_navigation_t *nav, unsigned scroll_speed);
-
-/**
  * menu_navigation_set:      
  * @idx                   : index to set navigation pointer to.
  * @scroll                : should we scroll when needed?
@@ -111,6 +104,8 @@ void menu_navigation_descend_alphabet(menu_navigation_t *nav, size_t *ptr_out);
 void menu_navigation_ascend_alphabet(menu_navigation_t *nav, size_t *ptr_out);
 
 size_t menu_navigation_get_selection(menu_navigation_t *nav);
+
+bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }

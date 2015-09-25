@@ -44,8 +44,36 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          }
          return true;
       case MENU_NAVIGATION_CTL_INCREMENT:
-         if (driver->navigation_increment)
-            driver->navigation_increment();
+         {
+            settings_t *settings   = config_get_ptr();
+            menu_list_t *menu_list = menu_list_get_ptr();
+            size_t selection       = nav->selection_ptr;
+            unsigned *scroll_speed = (unsigned*)data;
+
+            if (!scroll_speed)
+               return false;
+
+            if ((selection + (*scroll_speed)) < (menu_list_get_size(menu_list)))
+            {
+               menu_navigation_set(nav, selection + (*scroll_speed), true);
+               menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, NULL);
+            }
+            else
+            {
+               if (settings->menu.navigation.wraparound.vertical_enable)
+                  menu_navigation_clear(nav, false);
+               else
+               {
+                  if ((menu_list_get_size(menu_list) > 0))
+                  {
+                     menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
+                     menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, NULL);
+                  }
+               }
+            }
+            if (driver->navigation_increment)
+               driver->navigation_increment();
+         }
          return true;
       case MENU_NAVIGATION_CTL_DECREMENT:
          {
@@ -128,41 +156,6 @@ void menu_navigation_clear(menu_navigation_t *nav, bool pending_push)
 
    menu_navigation_set(nav, 0, true);
    menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
-}
-
-/**
- * menu_navigation_increment:
- *
- * Increment the navigation pointer.
- **/
-void menu_navigation_increment(menu_navigation_t *nav, unsigned scroll_speed)
-{
-   settings_t *settings   = config_get_ptr();
-   menu_list_t *menu_list = menu_list_get_ptr();
-   size_t selection       = nav->selection_ptr;
-
-   if (!nav)
-      return;
-
-   if ((selection + scroll_speed) < (menu_list_get_size(menu_list)))
-   {
-      menu_navigation_set(nav, selection + scroll_speed, true);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, NULL);
-   }
-   else
-   {
-      if (settings->menu.navigation.wraparound.vertical_enable)
-         menu_navigation_clear(nav, false);
-      else
-      {
-         if ((menu_list_get_size(menu_list) > 0))
-         {
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, NULL);
-         }
-      }
-   }
-
 }
 
 /**
