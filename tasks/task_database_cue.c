@@ -125,6 +125,95 @@ static int find_token(RFILE *fd, const char *token)
    return 0;
 }
 
+
+#if 1
+static int detect_ps1_game_sub(const char *track_path, char *game_id, int sub_channel_mixed)
+{
+   uint8_t* tmp;
+   uint8_t buffer[2048 * 2];
+   int skip, frame_size, is_mode1, cd_sector;
+   RFILE *fp = retro_fopen(track_path, RFILE_MODE_READ, -1);
+   if (!fp)
+      return 0;
+
+   is_mode1 = 0;
+   retro_fseek(fp, 0, SEEK_END);
+
+   if (!sub_channel_mixed)
+   {
+      if (!(retro_ftell(fp) & 0x7FF))
+      {
+         unsigned int mode_test = 0;
+
+         retro_fseek(fp, 0, SEEK_SET);
+         retro_fread(fp, &mode_test, 4);
+#if defined(MSB_FIRST)
+         if (mode_test != 0x00ffffff)
+#else
+            if (mode_test != 0xffffff00)
+#endif
+               is_mode1 = 1;
+      }
+   }
+
+   skip       = is_mode1? 0: 24;
+   frame_size = sub_channel_mixed? 2448: is_mode1? 2048: 2352;
+
+   retro_fseek(fp, 156 + skip + 16 * frame_size, SEEK_SET);
+   retro_fread(fp, buffer, 6);
+
+   cd_sector = buffer[2] | (buffer[3] << 8) | (buffer[4] << 16);
+   retro_fseek(fp, skip + cd_sector * frame_size, SEEK_SET);
+   retro_fread(fp, buffer, 2048 * 2);
+
+   tmp = buffer;
+   while (tmp < (buffer + 2048 * 2))
+   {
+      if (!*tmp)
+         return 0;
+
+      if (!strncasecmp((const char*)(tmp + 33), "SYSTEM.CNF;1", 12))
+         break;
+
+      tmp += *tmp;
+   }
+
+   cd_sector = tmp[2] | (tmp[3] << 8) | (tmp[4] << 16);
+   retro_fseek(fp, 14 + skip + cd_sector * frame_size, SEEK_SET);
+   retro_fread(fp, buffer, 256);
+
+   tmp = (uint8_t*)strrchr((const char*)buffer, '\\');
+   if(!tmp)
+      tmp = buffer;
+   else
+      tmp++;
+
+   *game_id++ = *tmp++;
+   *game_id++ = *tmp++;
+   *game_id++ = *tmp++;
+   *game_id++ = *tmp++;
+   *game_id++ = '-';
+   tmp++;
+   *game_id++ = *tmp++;
+   *game_id++ = *tmp++;
+   *game_id++ = *tmp++;
+   tmp++;
+   *game_id++ = *tmp++;
+   *game_id++ = *tmp++;
+   *game_id = 0;
+
+   retro_fclose(fp);
+   return 1;
+}
+
+int detect_ps1_game(const char *track_path, char *game_id)
+{
+   if (detect_ps1_game_sub(track_path, game_id, 0))
+      return 1;
+
+   return detect_ps1_game_sub(track_path, game_id, 1);
+}
+#else
 int detect_ps1_game(const char *track_path, char *game_id)
 {
    bool rv = false;
@@ -175,6 +264,7 @@ int detect_ps1_game(const char *track_path, char *game_id)
    retro_fclose(fd);
    return rv;
 }
+#endif
 
 int detect_system(const char *track_path, int32_t offset,
         const char **system_name)
