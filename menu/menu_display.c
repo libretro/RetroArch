@@ -22,6 +22,15 @@
 #include "../gfx/video_context_driver.h"
 #include "../gfx/video_thread_wrapper.h"
 
+typedef struct menu_framebuf
+{
+   uint16_t *data;
+   unsigned width;
+   unsigned height;
+   size_t pitch;
+   bool dirty;
+} menu_framebuf_t;
+
 static menu_framebuf_t frame_buf_state;
 
 menu_display_t *menu_display_get_ptr(void)
@@ -32,7 +41,7 @@ menu_display_t *menu_display_get_ptr(void)
    return &menu->display;
 }
 
-menu_framebuf_t *menu_display_fb_get_ptr(void)
+static menu_framebuf_t *menu_display_fb_get_ptr(void)
 {
    return &frame_buf_state;
 }

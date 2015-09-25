@@ -48,15 +48,6 @@ enum menu_display_ctl_state
    MENU_DISPLAY_CTL_SET_FB_PITCH
 };
 
-typedef struct menu_framebuf
-{
-   uint16_t *data;
-   unsigned width;
-   unsigned height;
-   size_t pitch;
-   bool dirty;
-} menu_framebuf_t;
-
 typedef struct menu_display
 {
    bool msg_force;
@@ -78,8 +69,6 @@ typedef struct menu_display
 } menu_display_t;
 
 menu_display_t  *menu_display_get_ptr(void);
-
-menu_framebuf_t *menu_display_fb_get_ptr(void);
 
 void menu_display_libretro(void);
 
