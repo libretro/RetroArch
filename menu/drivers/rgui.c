@@ -453,8 +453,8 @@ static void rgui_render(void)
    }
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG, NULL);
+   menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 
-   menu_animation_clear_active();
    rgui->force_redraw        = false;
 
 

@@ -1444,7 +1444,7 @@ static void xmb_render(void)
    if (menu_entries_get_start() >= end)
       menu_entries_set_start(0);
 
-   menu_animation_clear_active();
+   menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 }
 
 static void xmb_frame_horizontal_list(xmb_handle_t *xmb,

@@ -37,6 +37,7 @@ typedef void  (*tween_cb) (void);
 enum menu_animation_ctl_state
 {
    MENU_ANIMATION_CTL_IS_ACTIVE = 0,
+   MENU_ANIMATION_CTL_CLEAR_ACTIVE,
    MENU_ANIMATION_CTL_DELTA_TIME
 };
 
@@ -115,8 +116,6 @@ void menu_animation_ticker_str(char *s, size_t len, uint64_t tick,
 void menu_animation_update_time(void);
 
 void menu_animation_set_active(void);
-
-void menu_animation_clear_active(void);
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data);
 

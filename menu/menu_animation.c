@@ -678,22 +678,20 @@ void menu_animation_set_active(void)
    anim->is_active           = true;
 }
 
-void menu_animation_clear_active(void)
-{
-   menu_animation_t *anim   = menu_animation_get_ptr();
-   if (!anim)
-      return;
-   anim->is_active           = false;
-}
-
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 {
    menu_animation_t *anim   = menu_animation_get_ptr();
+
+   if (!anim)
+      return false;
 
    switch (state)
    {
       case MENU_ANIMATION_CTL_IS_ACTIVE:
          return anim->is_active;
+      case MENU_ANIMATION_CTL_CLEAR_ACTIVE:
+         anim->is_active           = false;
+         return true;
       case MENU_ANIMATION_CTL_DELTA_TIME:
          {
             float *ptr = (float*)data;
