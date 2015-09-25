@@ -637,6 +637,8 @@ static void rgui_render(void)
 
 static void *rgui_init(void)
 {
+   size_t fb_pitch;
+   unsigned fb_width, fb_height;
    bool                   ret = false;
    menu_framebuf_t *frame_buf = NULL;
    menu_handle_t        *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
@@ -658,10 +660,16 @@ static void *rgui_init(void)
    if (!frame_buf->data)
       goto error;
 
-   frame_buf->width                   = 320;
-   frame_buf->height                  = 240;
+   fb_width                   = 320;
+   fb_height                  = 240;
+   fb_pitch                   = fb_width * sizeof(uint16_t);
+
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,  &fb_width);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &fb_height);
+
    menu->display.header_height        = FONT_HEIGHT_STRIDE * 2;
-   frame_buf->pitch                   = frame_buf->width * sizeof(uint16_t);
+
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_FB_PITCH, &fb_pitch);
 
    menu_entries_set_start(0);
 
@@ -670,11 +678,11 @@ static void *rgui_init(void)
    if (!ret)
       goto error;
 
-   fill_rect(frame_buf->data, frame_buf->pitch, 0, frame_buf->height,
-         frame_buf->width, 4, gray_filler);
+   fill_rect(frame_buf->data, fb_pitch, 0, fb_height,
+         fb_width, 4, gray_filler);
 
-   rgui->last_width  = frame_buf->width;
-   rgui->last_height = frame_buf->height;
+   rgui->last_width  = fb_width;
+   rgui->last_height = fb_height;
 
    return menu;
 

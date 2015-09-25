@@ -1803,7 +1803,6 @@ static void *xmb_init(void)
    menu_handle_t *menu                = NULL;
    xmb_handle_t *xmb                  = NULL;
    const video_driver_t *video_driver = NULL;
-   menu_framebuf_t *frame_buf         = NULL;
    float scale_factor                 = 1;
    gl_t *gl                           = (gl_t*)
       video_driver_get_ptr(&video_driver);
@@ -1820,8 +1819,6 @@ static void *xmb_init(void)
 
    if (!menu)
       goto error;
-
-   frame_buf = menu_display_fb_get_ptr();
 
    video_driver_get_size(&width, &height);
 
@@ -1871,8 +1868,8 @@ static void *xmb_init(void)
     * for XMB, we should refactor this dependency
     * away. */
 
-   frame_buf->width  = width;
-   frame_buf->height = height;
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,  &width);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &height);
 
    xmb_init_horizontal_list(menu, xmb);
    xmb_font(menu);
