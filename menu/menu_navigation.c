@@ -152,6 +152,14 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             *sel = nav->selection_ptr;
          }
          return true;
+      case MENU_NAVIGATION_CTL_SET_SELECTION:
+         {
+            size_t *sel = (size_t*)data;
+            if (!nav || !sel)
+               return false;
+            nav->selection_ptr = *sel;
+         }
+         return true;
    }
 
    return false;
@@ -167,11 +175,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
 void menu_navigation_set(menu_navigation_t *nav,
       size_t idx, bool scroll)
 {
-   if (!nav)
-      return;
-
-   nav->selection_ptr = idx; 
-
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
    menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
 }
 
