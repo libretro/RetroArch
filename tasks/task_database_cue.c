@@ -15,6 +15,7 @@
  */
 
 #include <errno.h>
+#include <ctype.h>
 
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
@@ -188,10 +189,10 @@ static int detect_ps1_game_sub(const char *track_path, char *game_id, int sub_ch
    else
       tmp++;
 
-   *game_id++ = *tmp++;
-   *game_id++ = *tmp++;
-   *game_id++ = *tmp++;
-   *game_id++ = *tmp++;
+   *game_id++ = toupper(*tmp++);
+   *game_id++ = toupper(*tmp++);
+   *game_id++ = toupper(*tmp++);
+   *game_id++ = toupper(*tmp++);
    *game_id++ = '-';
    tmp++;
    *game_id++ = *tmp++;
