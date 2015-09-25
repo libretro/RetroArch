@@ -172,9 +172,6 @@ static void menu_list_build_scroll_indices(file_list_t *list)
 
    if (!nav || !list)
       return;
-
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_INDICES, &scroll_indices);
-
    if (!list->size)
       return;
 
@@ -195,10 +192,8 @@ static void menu_list_build_scroll_indices(file_list_t *list)
       current_is_dir = is_dir;
    }
 
+   nav->scroll.indices.list[scroll_indices++] =  list->size - 1;
    menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_INDICES, &scroll_indices);
-
-   nav->scroll.indices.list[nav->scroll.indices.size++] = 
-      list->size - 1;
 }
 
 /**
