@@ -120,25 +120,27 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
 
 static void glui_draw_scrollbar(gl_t *gl, unsigned width, unsigned height, GRfloat *coord_color)
 {
+   unsigned header_height;
    float content_height, total_height, scrollbar_height, y;
    int scrollbar_width  = 4;
    glui_handle_t *glui  = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
-   menu_display_t *disp = menu_display_get_ptr();
 
    if (!menu)
       return;
 
+   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
+
    glui                 = (glui_handle_t*)menu->userdata;
    content_height       = menu_entries_get_end() * glui->line_height;
-   total_height         = height - disp->header_height * 2;
+   total_height         = height - header_height * 2;
    scrollbar_height     = total_height / (content_height / total_height);
    y                    = total_height * menu->scroll_y / content_height;
 
    if (content_height >= total_height)
       glui_render_quad(gl,
             width - scrollbar_width,
-            disp->header_height + y,
+            header_height + y,
             scrollbar_width,
             scrollbar_height,
             width, height,
@@ -207,7 +209,7 @@ end:
 static void glui_render(void)
 {
    int bottom;
-   unsigned width, height;
+   unsigned width, height, header_height;
    glui_handle_t *glui                = NULL;
    menu_display_t *disp               = menu_display_get_ptr();
    menu_handle_t *menu                = menu_driver_get_ptr();
@@ -225,6 +227,7 @@ static void glui_render(void)
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,  &width);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &height);
+   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
    if (settings->menu.pointer.enable)
    {
@@ -270,12 +273,12 @@ static void glui_render(void)
       menu->scroll_y = 0;
 
    bottom = menu_entries_get_end() * glui->line_height
-      - height + disp->header_height * 2;
+      - height + header_height * 2;
    if (menu->scroll_y > bottom)
       menu->scroll_y = bottom;
 
    if (menu_entries_get_end() * glui->line_height
-         < height - disp->header_height*2)
+         < height - header_height*2)
       menu->scroll_y = 0;
 
    if (menu_entries_get_end() < height / glui->line_height)
@@ -317,13 +320,15 @@ static void glui_render_menu_list(glui_handle_t *glui,
       uint32_t normal_color,
       uint32_t hover_color)
 {
+   unsigned header_height;
    size_t i                = 0;
    uint64_t *frame_count   = video_driver_get_frame_count();
    size_t          end     = menu_entries_get_end();
-   menu_display_t *disp    = menu_display_get_ptr();
 
    if (!menu_display_ctl(MENU_DISPLAY_CTL_UPDATE_PENDING, NULL))
       return;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
    glui->list_block.carr.coords.vertices = 0;
 
@@ -337,7 +342,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
       if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
          continue;
 
-      y = disp->header_height - menu->scroll_y + (glui->line_height * i);
+      y = header_height - menu->scroll_y + (glui->line_height * i);
 
       if (y > (int)height || ((y + (int)glui->line_height) < 0))
          continue;
@@ -354,7 +359,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
 
 static void glui_frame(void)
 {
-   unsigned i;
+   unsigned i, header_height;
    bool display_kb;
    GRfloat coord_color[16];
    GRfloat coord_color2[16];
@@ -375,7 +380,6 @@ static void glui_frame(void)
    driver_t *driver                        = driver_get_ptr();
    menu_handle_t *menu                     = menu_driver_get_ptr();
    menu_animation_t *anim                  = menu_animation_get_ptr();
-   menu_display_t *disp                    = menu_display_get_ptr();
    settings_t *settings                    = config_get_ptr();
    uint64_t *frame_count                   = video_driver_get_frame_count();
    const uint32_t normal_color             = FONT_COLOR_ARGB_TO_RGBA(
@@ -404,6 +408,7 @@ static void glui_frame(void)
    video_driver_get_size(&width, &height);
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
+   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
    for (i = 0; i < 16; i++)
    {
@@ -443,7 +448,7 @@ static void glui_frame(void)
       return;
 
    glui_render_quad(gl, 0,
-         disp->header_height - menu->scroll_y + glui->line_height *
+         header_height - menu->scroll_y + glui->line_height *
          selection, width, glui->line_height,
          width, height,
          &highlight_bg[0]);
@@ -451,7 +456,7 @@ static void glui_frame(void)
    menu_animation_set_active(anim);
 
    glui_render_quad(gl, 0, 0, width,
-         disp->header_height,
+         header_height,
          width, height,
          &bar_bg[0]);
 
@@ -468,9 +473,9 @@ static void glui_frame(void)
 
    glui_render_quad(gl,
          0,
-         height - disp->header_height,
+         height - header_height,
          width,
-         disp->header_height,
+         header_height,
          width, height,
          &bar_bg[0]);
 
@@ -594,10 +599,7 @@ static void *glui_init(void)
       video_driver_get_ptr(&video_driver);
 
    if (video_driver != &video_gl || !gl)
-   {
-      RARCH_ERR("Cannot initialize GLUI menu driver: gl video driver is not active.\n");
-      return NULL;
-   }
+      goto error;
 
    menu                 = (menu_handle_t*)calloc(1, sizeof(*menu));
 

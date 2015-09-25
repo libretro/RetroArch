@@ -224,7 +224,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 {
    unsigned width, height;
    menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
-
+   menu_display_t  *disp      = menu_display_get_ptr();
    switch (state)
    {
       case MENU_DISPLAY_CTL_SET_WIDTH:
@@ -249,6 +249,14 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             if (!ptr)
                return false;
             *ptr = frame_buf->height;
+         }
+         return true;
+      case MENU_DISPLAY_CTL_HEADER_HEIGHT:
+         {
+            unsigned *ptr = (unsigned*)data;
+            if (!ptr)
+               return false;
+            *ptr = disp->header_height;
          }
          return true;
       case MENU_DISPLAY_CTL_SET_HEIGHT:

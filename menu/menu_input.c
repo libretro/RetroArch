@@ -941,8 +941,8 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
       menu_file_list_cbs_t *cbs, unsigned action)
 {
    size_t selection;
+   unsigned header_height;
    settings_t *settings     = config_get_ptr();
-   menu_display_t *disp     = menu_display_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
 
@@ -967,11 +967,13 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    {
       if (!menu_input->mouse.oldleft)
       {
+         menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
+
          BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L);
 
          menu_input->mouse.oldleft = true;
 
-         if ((unsigned)menu_input->mouse.y < disp->header_height)
+         if ((unsigned)menu_input->mouse.y < header_height)
          {
             menu_list_pop_stack(menu_list, &selection);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
