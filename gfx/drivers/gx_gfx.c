@@ -1108,7 +1108,7 @@ static bool gx_frame(void *data, const void *frame,
 
       menu_display_ctl(MENU_DISPLAY_CTL_WIDTH, &fb_width);
       menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &fb_height);
-      menu_display_ctl(MENU_DISPLAY_CTL_PITCH, &fb_pitch);
+      menu_display_ctl(MENU_DISPLAY_CTL_FB_PITCH, &fb_pitch);
 
       convert_texture16(
             gx->menu_data,
