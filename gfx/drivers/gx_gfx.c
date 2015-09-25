@@ -237,7 +237,6 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    unsigned modetype, level, viHeightMultiplier, viWidth, tvmode,
             max_width, max_height, i;
    gx_video_t *gx             = (gx_video_t*)data;
-   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
    settings_t *settings       = config_get_ptr();
 
    (void)level;
@@ -395,7 +394,6 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
          gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE 
          ? "interlaced" : "progressive");
 
-   if (frame_buf)
    {
       size_t new_fb_pitch;
       unsigned new_fb_width;
@@ -412,8 +410,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
 
       menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,  &new_fb_width);
       menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &new_fb_height);
-
-      frame_buf->pitch = new_fb_pitch;
+      menu_display_ctl(MENU_DISPLAY_CTL_SET_FB_PITCH, &new_fb_pitch);
    }
 
    if (tvmode == VI_PAL)

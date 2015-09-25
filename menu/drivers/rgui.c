@@ -673,7 +673,7 @@ static void *rgui_init(void)
    fill_rect(frame_buf->data, frame_buf->pitch, 0, frame_buf->height,
          frame_buf->width, 4, gray_filler);
 
-   rgui->last_width = frame_buf->width;
+   rgui->last_width  = frame_buf->width;
    rgui->last_height = frame_buf->height;
 
    return menu;
