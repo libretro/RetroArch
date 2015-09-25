@@ -339,9 +339,9 @@ bool menu_entry_is_currently_selected(unsigned id)
 int menu_entry_select(uint32_t i)
 {
    menu_entry_t     entry = {{0}};
-   menu_navigation_t *nav = menu_navigation_get_ptr();
     
-   nav->selection_ptr = i;
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &i);
+
    menu_entry_get(&entry, i, NULL, false);
 
    return menu_entry_action(&entry, i, MENU_ACTION_SELECT);
