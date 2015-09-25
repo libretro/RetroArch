@@ -211,7 +211,6 @@ static void glui_render(void)
    int bottom;
    unsigned width, height, header_height;
    glui_handle_t *glui                = NULL;
-   menu_display_t *disp               = menu_display_get_ptr();
    menu_handle_t *menu                = menu_driver_get_ptr();
    settings_t *settings               = config_get_ptr();
 

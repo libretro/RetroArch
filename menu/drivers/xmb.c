@@ -570,7 +570,6 @@ static void xmb_selection_pointer_changed(bool allow_animations)
    int threshold = 0;
    xmb_handle_t    *xmb   = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
-   menu_display_t   *disp = menu_display_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
    settings_t *settings = config_get_ptr();
 
@@ -642,12 +641,8 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i, height = 0;
-   int threshold = xmb->icon.size * 10;
+   int        threshold = xmb->icon.size * 10;
    size_t           end = 0;
-   menu_display_t *disp = menu_display_get_ptr();
-
-   if (!disp)
-      return;
 
    end = file_list_get_size(list);
 
@@ -692,8 +687,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i, height;
-   int threshold = xmb->icon.size * 10;
-   menu_display_t *disp = menu_display_get_ptr();
+   int        threshold = xmb->icon.size * 10;
    size_t           end = file_list_get_size(list);
 
    video_driver_get_size(NULL, &height);
@@ -911,7 +905,6 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    size_t selection;
    int dir = -1;
    menu_handle_t    *menu = menu_driver_get_ptr();
-   menu_display_t   *disp = menu_display_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
    settings_t *settings   = config_get_ptr();
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
@@ -1018,7 +1011,6 @@ static void xmb_list_open(xmb_handle_t *xmb)
    size_t selection;
    int                dir = 0;
    menu_handle_t    *menu = menu_driver_get_ptr();
-   menu_display_t   *disp = menu_display_get_ptr();
    menu_list_t *menu_list = menu_list_get_ptr();
 
    if (!menu)
@@ -1405,7 +1397,6 @@ static void xmb_render(void)
    xmb_handle_t      *xmb   = NULL;
    settings_t   *settings   = config_get_ptr();
    menu_handle_t    *menu   = menu_driver_get_ptr();
-   menu_display_t   *disp   = menu_display_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
 
    if (!menu)
@@ -2295,10 +2286,9 @@ static void xmb_list_free(file_list_t *list,
 
 static void xmb_list_clear(file_list_t *list)
 {
-   menu_display_t *disp = menu_display_get_ptr();
-   size_t size, i;
+   size_t i;
+   size_t size = list->size;
 
-   size = list->size;
    for (i = 0; i < size; ++i)
    {
       float *subjects[5];
@@ -2481,7 +2471,6 @@ static void xmb_toggle(bool menu_on)
 {
    xmb_handle_t *xmb    = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
-   menu_display_t *disp = menu_display_get_ptr();
 
    if (!menu)
       return;

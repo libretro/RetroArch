@@ -1080,7 +1080,6 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
    unsigned header_height;
    size_t selection;
    int ret                  = 0;
-   menu_display_t *disp     = menu_display_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
    settings_t *settings     = config_get_ptr();
@@ -1224,7 +1223,6 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       | (1UL << RETRO_DEVICE_ID_JOYPAD_R);
    bool set_scroll                         = false;
    size_t new_scroll_accel                 = 0;
-   menu_display_t *disp                    = menu_display_get_ptr();
    menu_input_t *menu_input                = menu_input_get_ptr();
    driver_t *driver                        = driver_get_ptr();
    settings_t *settings                    = config_get_ptr();

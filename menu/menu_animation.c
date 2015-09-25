@@ -650,7 +650,6 @@ void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
 void menu_animation_update_time(void)
 {
    static retro_time_t last_clock_update = 0;
-   menu_display_t *disp     = menu_display_get_ptr();
    menu_animation_t *anim   = menu_animation_get_ptr();
    settings_t *settings     = config_get_ptr();
 
