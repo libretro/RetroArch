@@ -33,11 +33,16 @@
 /* Clicks the back button */
 int menu_entry_go_back(void)
 {
+   size_t new_selection_ptr;
    menu_list_t *menu_list = menu_list_get_ptr();
-   menu_navigation_t *nav = menu_navigation_get_ptr();
+
    if (!menu_list)
       return -1;
-   menu_list_pop_stack(menu_list, &nav->selection_ptr);
+
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
+   menu_list_pop_stack(menu_list, &new_selection_ptr);
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
+
    return 0;
 }
 
@@ -349,6 +354,7 @@ int menu_entry_select(uint32_t i)
 
 int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
 {
+   size_t new_selection_ptr;
    int ret                   = 0;
    menu_navigation_t *nav    = menu_navigation_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
@@ -365,10 +371,14 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
             ret = cbs->action_down(entry->type, entry->label);
          break;
       case MENU_ACTION_SCROLL_UP:
-         menu_navigation_descend_alphabet(nav, &nav->selection_ptr);
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
+         menu_navigation_descend_alphabet(nav, &new_selection_ptr);
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
          break;
       case MENU_ACTION_SCROLL_DOWN:
-         menu_navigation_ascend_alphabet(nav, &nav->selection_ptr);
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
+         menu_navigation_ascend_alphabet(nav, &new_selection_ptr);
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
          break;
 
       case MENU_ACTION_CANCEL:
