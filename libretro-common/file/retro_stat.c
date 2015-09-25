@@ -88,7 +88,7 @@ static bool path_stat(const char *path, enum stat_mode mode)
    if (tmp[len-1] == '/')
       tmp[len-1]='\0';
 
-   if (sceIoGetstat(path, &buf) < 0)
+   if (sceIoGetstat(tmp, &buf) < 0)
    {
       free(tmp);
       return false;
