@@ -134,25 +134,22 @@ static void fill_rect(uint16_t *data, size_t pitch,
          data[j * (pitch >> 1) + i] = col(i, j);
 }
 
-static void color_rect(menu_handle_t *menu,
+static void color_rect(
+      uint16_t *data, size_t pitch,
+      unsigned fb_width, unsigned fb_height,
       unsigned x, unsigned y,
       unsigned width, unsigned height,
       uint16_t color)
 {
    unsigned i, j;
-   unsigned fb_width, fb_height;
-   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
 
-   if (!frame_buf || !frame_buf->data)
+   if (!data)
       return;
-
-   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH, &fb_width);
-   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH, &fb_height);
 
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
          if (i < fb_width && j < fb_height)
-            frame_buf->data[j * (frame_buf->pitch >> 1) + i] = color;
+            data[j * (pitch >> 1) + i] = color;
 }
 
 static uint8_t string_walkbyte(const char **string)
@@ -380,11 +377,16 @@ end:
 
 static void rgui_blit_cursor(menu_handle_t *menu)
 {
+   unsigned fb_width, fb_height;
    int16_t x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
    int16_t y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
 
-   color_rect(menu, x, y - 5, 1, 11, 0xFFFF);
-   color_rect(menu, x - 5, y, 11, 1, 0xFFFF);
+   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH, &fb_width);
+   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH, &fb_height);
+
+   color_rect(frame_buf->data, frame_buf->pitch, fb_width, fb_height, x, y - 5, 1, 11, 0xFFFF);
+   color_rect(frame_buf->data, frame_buf->pitch, fb_width, fb_height, x - 5, y, 11, 1, 0xFFFF);
 }
 
 static void rgui_render(void)
