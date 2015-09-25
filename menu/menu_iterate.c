@@ -197,6 +197,7 @@ static int action_iterate_info(char *s, size_t len, const char *label)
 static int action_iterate_menu_viewport(char *s, size_t len,
       const char *label, unsigned action, uint32_t hash)
 {
+   size_t selection;
    int stride_x = 1, stride_y = 1;
    menu_displaylist_info_t info     = {0};
    struct retro_game_geometry *geom = NULL;
@@ -204,12 +205,13 @@ static int action_iterate_menu_viewport(char *s, size_t len,
    unsigned type                    = 0;
    video_viewport_t *custom         = video_viewport_get_custom();
    menu_display_t *disp             = menu_display_get_ptr();
-   menu_navigation_t *nav           = menu_navigation_get_ptr();
    menu_list_t *menu_list           = menu_list_get_ptr();
    settings_t *settings             = config_get_ptr();
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
    if (!menu_list)
+      return -1;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return -1;
 
    menu_list_get_last_stack(menu_list, NULL, NULL, &type, NULL);
@@ -281,7 +283,7 @@ static int action_iterate_menu_viewport(char *s, size_t len,
          {
             info.list          = menu_list->menu_stack;
             info.type          = MENU_SETTINGS_CUSTOM_VIEWPORT;
-            info.directory_ptr = nav->selection_ptr;
+            info.directory_ptr = selection;
 
             menu_displaylist_push_list(&info, DISPLAYLIST_INFO);
          }
@@ -298,7 +300,7 @@ static int action_iterate_menu_viewport(char *s, size_t len,
                   menu_hash_to_str(MENU_LABEL_CUSTOM_VIEWPORT_2),
                   sizeof(info.label));
             info.type          = 0;
-            info.directory_ptr = nav->selection_ptr;
+            info.directory_ptr = selection;
 
             menu_displaylist_push_list(&info, DISPLAYLIST_INFO);
          }
@@ -426,9 +428,9 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
  **/
 int menu_iterate(bool render_this_frame, unsigned action)
 {
+   size_t selection;
    menu_entry_t entry;
    enum action_iterate_type iterate_type;
-   size_t selection;
    const char *label         = NULL;
    int ret                   = 0;
    uint32_t hash             = 0;
@@ -439,6 +441,8 @@ int menu_iterate(bool render_this_frame, unsigned action)
    menu_list_get_last_stack(menu_list, NULL, &label, NULL, NULL);
 
    if (!menu || !menu_list)
+      return 0;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;
 
    menu->state = 0;
@@ -470,7 +474,10 @@ int menu_iterate(bool render_this_frame, unsigned action)
          break;
       case ITERATE_TYPE_BIND:
          if (menu_input_bind_iterate(menu->menu_state.msg, sizeof(menu->menu_state.msg)))
-            menu_list_pop_stack(menu_list, &nav->selection_ptr);
+         {
+            menu_list_pop_stack(menu_list, &selection);
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+         }
          else
             BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          if (render_this_frame)
@@ -492,8 +499,6 @@ int menu_iterate(bool render_this_frame, unsigned action)
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
          break;
       case ITERATE_TYPE_DEFAULT:
-         if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-            return 0;
          selection = max(min(selection, menu_list_get_size(menu_list)-1), 0);
 
          menu_entry_get(&entry,    selection, NULL, false);
