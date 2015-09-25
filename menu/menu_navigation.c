@@ -209,6 +209,22 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             nav->scroll.indices.list[nav->scroll.indices.size++] = *sel;
          }
          return true;
+      case MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL:
+         {
+            size_t *sel = (size_t*)data;
+            if (!nav || !sel)
+               return false;
+            *sel = nav->scroll.acceleration;
+         }
+         return true;
+      case MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL:
+         {
+            size_t *sel = (size_t*)data;
+            if (!nav || !sel)
+               return false;
+            nav->scroll.acceleration = *sel;
+         }
+         return true;
    }
 
    return false;

@@ -1214,13 +1214,14 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       | (1UL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
       | (1UL << RETRO_DEVICE_ID_JOYPAD_L)
       | (1UL << RETRO_DEVICE_ID_JOYPAD_R);
-   menu_navigation_t *nav      = menu_navigation_get_ptr();
-   menu_display_t *disp        = menu_display_get_ptr();
-   menu_input_t *menu_input    = menu_input_get_ptr();
-   driver_t *driver            = driver_get_ptr();
-   settings_t *settings        = config_get_ptr();
+   bool set_scroll                         = false;
+   size_t new_scroll_accel                 = 0;
+   menu_display_t *disp                    = menu_display_get_ptr();
+   menu_input_t *menu_input                = menu_input_get_ptr();
+   driver_t *driver                        = driver_get_ptr();
+   settings_t *settings                    = config_get_ptr();
 
-   if (!driver || !nav || !menu_input)
+   if (!driver || !menu_input)
       return 0;
 
    driver->retro_ctx.poll_cb();
@@ -1239,20 +1240,28 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 
       if (menu_input->delay.count >= menu_input->delay.timer)
       {
-         first_held = false;
+         set_scroll     = true;
+         first_held     = false;
          trigger_input |= input & input_repeat;
-         nav->scroll.acceleration =
-            min(nav->scroll.acceleration + 1, 64);
+
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL,
+               &new_scroll_accel);
+
+         new_scroll_accel = min(new_scroll_accel + 1, 64);
       }
 
-      initial_held = false;
+      initial_held  = false;
    }
    else
    {
-      first_held = false;
+      set_scroll   = true;
+      first_held   = false;
       initial_held = true;
-      nav->scroll.acceleration = 0;
    }
+
+   if (set_scroll)
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL,
+            &new_scroll_accel);
 
    menu_input->delay.count += menu_animation_get_delta_time(disp->animation) / IDEAL_DT;
 
