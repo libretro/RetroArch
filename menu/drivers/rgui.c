@@ -422,7 +422,7 @@ static void rgui_render(void)
       if (rarch_main_is_idle())
          return;
 
-      if (!menu_display_update_pending())
+      if (!menu_display_ctl(MENU_DISPLAY_CTL_UPDATE_PENDING, NULL))
          return;
    }
 

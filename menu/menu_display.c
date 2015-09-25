@@ -67,15 +67,6 @@ void menu_display_libretro(void)
    video_driver_cached_frame();
 }
 
-bool menu_display_update_pending(void)
-{
-   menu_animation_t     *anim = menu_animation_get_ptr();
-   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
-
-   if (menu_animation_is_active(anim) || (frame_buf && frame_buf->dirty))
-      return true;
-   return false;
-}
 
 static void menu_display_fb_free(menu_framebuf_t *frame_buf)
 {
@@ -227,6 +218,14 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
    switch (state)
    {
+      case MENU_DISPLAY_CTL_UPDATE_PENDING:
+         {
+            menu_animation_t     *anim = menu_animation_get_ptr();
+
+            if (menu_animation_is_active(anim) || (frame_buf && frame_buf->dirty))
+               return true;
+         }
+         return false;
       case MENU_DISPLAY_CTL_SET_VIEWPORT:
          video_driver_get_size(&width, &height);
          video_driver_set_viewport(width,

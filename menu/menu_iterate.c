@@ -449,7 +449,7 @@ int menu_iterate(bool render_this_frame, unsigned action)
    
    iterate_type              = action_iterate_type(hash);
 
-   if (action != MENU_ACTION_NOOP || menu_entries_needs_refresh() || menu_display_update_pending())
+   if (action != MENU_ACTION_NOOP || menu_entries_needs_refresh() || menu_display_ctl(MENU_DISPLAY_CTL_UPDATE_PENDING, NULL))
    {
       if (render_this_frame)
          BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);

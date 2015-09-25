@@ -327,7 +327,7 @@ static void glui_render_menu_list(glui_handle_t *glui,
    menu_display_t *disp    = menu_display_get_ptr();
    menu_navigation_t *nav  = menu_navigation_get_ptr();
 
-   if (!menu_display_update_pending())
+   if (!menu_display_ctl(MENU_DISPLAY_CTL_UPDATE_PENDING, NULL))
       return;
 
    glui->list_block.carr.coords.vertices = 0;
