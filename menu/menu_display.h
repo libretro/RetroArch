@@ -22,7 +22,6 @@
 
 #include <queues/message_queue.h>
 
-#include "menu_animation.h"
 #include "../gfx/font_renderer_driver.h"
 
 #ifdef __cplusplus
