@@ -447,7 +447,6 @@ int menu_iterate(bool render_this_frame, unsigned action)
 
    menu->state = 0;
 
-   menu->menu_state.pop_selected    = NULL;
    menu->menu_state.msg[0]          = '\0';
 
    hash = menu_hash_calculate(label);
@@ -491,7 +490,6 @@ int menu_iterate(bool render_this_frame, unsigned action)
          break;
       case ITERATE_TYPE_INFO:
          ret = action_iterate_info(menu->menu_state.msg, sizeof(menu->menu_state.msg), label);
-         menu->menu_state.pop_selected    = &nav->selection_ptr;
          if (render_this_frame)
             BIT64_SET(menu->state, MENU_STATE_BLIT);
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
@@ -527,7 +525,11 @@ int menu_iterate(bool render_this_frame, unsigned action)
    }
 
    if (BIT64_GET(menu->state, MENU_STATE_POP_STACK) && action == MENU_ACTION_OK)
-      menu_list_pop_stack(menu_list, menu->menu_state.pop_selected);
+   {
+      size_t new_selection_ptr = selection;
+      menu_list_pop_stack(menu_list, &new_selection_ptr);
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+   }
    
    if (BIT64_GET(menu->state, MENU_STATE_POST_ITERATE))
       menu_input_post_iterate(&ret, action);

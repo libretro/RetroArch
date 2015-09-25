@@ -89,7 +89,6 @@ typedef struct
    uint64_t state;
    struct
    {
-      size_t *pop_selected;
       char msg[PATH_MAX_LENGTH];
    } menu_state;
 
