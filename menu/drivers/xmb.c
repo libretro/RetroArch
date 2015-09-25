@@ -1821,7 +1821,7 @@ static void *xmb_init(void)
    if (!menu)
       goto error;
 
-   frame_buf = &menu->display.frame_buf;
+   frame_buf = menu_display_fb_get_ptr();
 
    video_driver_get_size(&width, &height);
 

@@ -650,7 +650,7 @@ static void *rgui_init(void)
    if (!rgui)
       goto error;
 
-   frame_buf                  = &menu->display.frame_buf;
+   frame_buf                          = menu_display_fb_get_ptr();
 
    /* 4 extra lines to cache  the checked background */
    frame_buf->data = (uint16_t*)calloc(400 * (240 + 4), sizeof(uint16_t));

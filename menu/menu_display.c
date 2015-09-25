@@ -22,6 +22,8 @@
 #include "../gfx/video_context_driver.h"
 #include "../gfx/video_thread_wrapper.h"
 
+static menu_framebuf_t frame_buf_state;
+
 menu_display_t *menu_display_get_ptr(void)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -32,10 +34,7 @@ menu_display_t *menu_display_get_ptr(void)
 
 menu_framebuf_t *menu_display_fb_get_ptr(void)
 {
-   menu_display_t *disp = menu_display_get_ptr();
-   if (!disp)
-      return NULL;
-   return &disp->frame_buf;
+   return &frame_buf_state;
 }
 
 /**
@@ -92,7 +91,8 @@ void menu_display_free(void *data)
    menu_animation_free(disp->animation);
    disp->animation = NULL;
 
-   menu_display_fb_free(&disp->frame_buf);
+   menu_display_fb_free(&frame_buf_state);
+   memset(&frame_buf_state, 0, sizeof(menu_framebuf_t));
 }
 
 bool menu_display_init(void *data)

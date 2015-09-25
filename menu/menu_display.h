@@ -60,7 +60,6 @@ typedef struct menu_display
 {
    bool msg_force;
 
-   menu_framebuf_t frame_buf;
    menu_animation_t *animation;
 
    struct
