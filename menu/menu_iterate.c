@@ -566,7 +566,7 @@ int menu_iterate_render(void)
    }
 
    if (menu_driver_alive() && !rarch_main_is_idle())
-      menu_display_fb();
+      menu_display_libretro();
 
    menu_driver_set_texture();
 

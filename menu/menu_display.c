@@ -55,7 +55,7 @@ void menu_display_fb_unset_dirty(void)
  *
  * Draws menu graphics onscreen.
  **/
-void menu_display_fb(void)
+void menu_display_libretro(void)
 {
    settings_t *settings = config_get_ptr();
 
@@ -75,7 +75,7 @@ void menu_display_fb(void)
          return;
       }
    }
-    
+
    video_driver_cached_frame();
 }
 

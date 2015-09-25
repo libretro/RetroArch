@@ -63,7 +63,7 @@ menu_display_t  *menu_display_get_ptr(void);
 
 menu_framebuf_t *menu_display_fb_get_ptr(void);
 
-void menu_display_fb(void);
+void menu_display_libretro(void);
 
 void menu_display_fb_set_dirty(void);
 
