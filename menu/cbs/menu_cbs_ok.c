@@ -390,6 +390,7 @@ static int action_ok_file_load_detect_core(const char *path,
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   size_t selection;
    uint32_t core_name_hash, core_path_hash;
    const char *entry_path       = NULL;
    const char *entry_label      = NULL;
@@ -399,11 +400,12 @@ static int action_ok_playlist_entry(const char *path,
    content_playlist_t *playlist = g_defaults.history;
    bool is_history              = true;
    menu_handle_t *menu          = menu_driver_get_ptr();
-   menu_navigation_t *nav       = menu_navigation_get_ptr();
    menu_list_t *menu_list       = menu_list_get_ptr();
    uint32_t hash_label          = menu_hash_calculate(label);
 
    if (!menu)
+      return -1;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return -1;
 
    switch (hash_label)
@@ -457,7 +459,8 @@ static int action_ok_playlist_entry(const char *path,
       {
          case MENU_LABEL_COLLECTION:
          case MENU_LABEL_RDB_ENTRY_START_CONTENT:
-            menu_list_pop_stack(menu_list, &nav->selection_ptr);
+            menu_list_pop_stack(menu_list, &selection);
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
             break;
          default:
             menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
@@ -810,11 +813,13 @@ static int action_ok_path_scan_directory(const char *path,
 static int action_ok_core_deferred_set(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   size_t selection;
    char core_display_name[PATH_MAX_LENGTH];
    menu_handle_t               *menu = menu_driver_get_ptr();
-   menu_navigation_t            *nav = menu_navigation_get_ptr();
    menu_list_t            *menu_list = menu_list_get_ptr();
    if (!menu || !menu_list)
+      return -1;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return -1;
 
    rarch_assert(menu->playlist != NULL);
@@ -831,7 +836,8 @@ static int action_ok_core_deferred_set(const char *path,
 
    content_playlist_write_file(menu->playlist);
 
-   menu_list_pop_stack(menu_list, &nav->selection_ptr);
+   menu_list_pop_stack(menu_list, &selection);
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
 
    return -1;
 }
