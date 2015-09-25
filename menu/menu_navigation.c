@@ -28,7 +28,12 @@
 bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+   settings_t          *settings   = config_get_ptr();
    menu_navigation_t        *nav   = menu_navigation_get_ptr();
+   menu_list_t          *menu_list = menu_list_get_ptr();
+
+   (void)menu_list;
+   (void)settings;
 
    switch (state)
    {
@@ -45,8 +50,6 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          return true;
       case MENU_NAVIGATION_CTL_INCREMENT:
          {
-            settings_t *settings   = config_get_ptr();
-            menu_list_t *menu_list = menu_list_get_ptr();
             size_t selection       = nav->selection_ptr;
             unsigned *scroll_speed = (unsigned*)data;
 
@@ -77,8 +80,6 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          return true;
       case MENU_NAVIGATION_CTL_DECREMENT:
          {
-            menu_list_t *menu_list = menu_list_get_ptr();
-            settings_t *settings   = config_get_ptr();
             size_t selection       = nav->selection_ptr;
             unsigned *scroll_speed = (unsigned*)data;
 
