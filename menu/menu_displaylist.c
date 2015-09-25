@@ -167,17 +167,18 @@ static void menu_list_build_scroll_indices(file_list_t *list)
    size_t i;
    int current;
    bool current_is_dir;
+   size_t scroll_indices = 0;
    menu_navigation_t *nav = menu_navigation_get_ptr();
 
    if (!nav || !list)
       return;
 
-   nav->scroll.indices.size = 0;
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_INDICES, &scroll_indices);
 
    if (!list->size)
       return;
 
-   nav->scroll.indices.list[nav->scroll.indices.size++] = 0;
+   nav->scroll.indices.list[scroll_indices++] = 0;
 
    current        = menu_list_elem_get_first_char(list, 0);
    current_is_dir = menu_list_elem_is_dir(list, 0);
@@ -188,11 +189,13 @@ static void menu_list_build_scroll_indices(file_list_t *list)
       bool is_dir = menu_list_elem_is_dir(list, i);
 
       if ((current_is_dir && !is_dir) || (first > current))
-         nav->scroll.indices.list[nav->scroll.indices.size++] = i;
+         nav->scroll.indices.list[scroll_indices++] = i;
 
       current        = first;
       current_is_dir = is_dir;
    }
+
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_INDICES, &scroll_indices);
 
    nav->scroll.indices.list[nav->scroll.indices.size++] = 
       list->size - 1;
@@ -207,19 +210,21 @@ static void menu_list_build_scroll_indices(file_list_t *list)
  **/
 static void menu_list_refresh(file_list_t *list)
 {
-   size_t list_size;
-   menu_navigation_t *nav   = menu_navigation_get_ptr();
+   size_t list_size, selection;
+   size_t scroll_indices    = 0;
    menu_list_t   *menu_list = menu_list_get_ptr();
-   if (!nav || !menu_list || !list)
+   if (!menu_list || !list)
+      return;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
-   nav->scroll.indices.size = 0;
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_INDICES, &scroll_indices);
 
    menu_list_build_scroll_indices(list);
 
    list_size = menu_list_get_size(menu_list);
 
-   if ((nav->selection_ptr >= list_size) && list_size)
+   if ((selection >= list_size) && list_size)
    {
       size_t idx  = list_size - 1;
       bool scroll = true;
