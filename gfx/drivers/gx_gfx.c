@@ -397,13 +397,11 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
 
    if (frame_buf)
    {
-      frame_buf->height = gx_mode.efbHeight / (gx->double_strike ? 1 : 2);
-      frame_buf->height &= ~3;
+      frame_buf->height = (gx_mode.efbHeight / (gx->double_strike ? 1 : 2)) & ~3;
       if (frame_buf->height > 240)
          frame_buf->height = 240;
 
-      frame_buf->width = gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2);
-      frame_buf->width &= ~3;
+      frame_buf->width = (gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2)) & ~3;
       if (frame_buf->width > 400)
          frame_buf->width = 400;
       frame_buf->pitch = frame_buf->width * 2;
@@ -1101,11 +1099,14 @@ static bool gx_frame(void *data, const void *frame,
 
       if (frame_buf)
       {
-         convert_texture16(gx->menu_data, menu_tex.data,
+         convert_texture16(
+               gx->menu_data,
+               menu_tex.data,
                frame_buf->width,
                frame_buf->height,
                frame_buf->pitch);
-         DCFlushRange(menu_tex.data,
+         DCFlushRange(
+               menu_tex.data,
                frame_buf->width * 
                frame_buf->pitch);
       }

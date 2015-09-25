@@ -284,6 +284,14 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          video_driver_set_viewport(width,
                height, false, true);
          return true;
+      case MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG:
+         {
+            bool *ptr = (bool*)data;
+            if (!ptr)
+               return false;
+            *ptr = frame_buf->dirty;
+         }
+         return true;
       case MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG:
          if (frame_buf && frame_buf->data)
             frame_buf->dirty = true;

@@ -713,12 +713,15 @@ static void rgui_set_texture(void)
 {
    unsigned fb_width, fb_height;
    uint16_t *fb_data          = NULL;
+   bool              fb_dirty = false;
    menu_handle_t        *menu = menu_driver_get_ptr();
-   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
 
    if (!menu)
       return;
-   if (!frame_buf->dirty)
+
+   menu_display_ctl(MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG, &fb_dirty);
+
+   if (!fb_dirty)
       return;
 
    menu_display_ctl(MENU_DISPLAY_CTL_WIDTH, &fb_width);
