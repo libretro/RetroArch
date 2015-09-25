@@ -939,7 +939,6 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    menu_display_t *disp     = menu_display_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
    menu_list_t *menu_list   = menu_list_get_ptr();
-   menu_navigation_t *nav   = menu_navigation_get_ptr();
 
    *input_mouse = MOUSE_ACTION_NONE;
 
