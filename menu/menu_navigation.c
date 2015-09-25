@@ -133,9 +133,16 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
       case MENU_NAVIGATION_CTL_ASCEND_ALPHABET:
          {
             size_t *ptr_out = (size_t*)data;
-
-            if (!ptr_out)
+            size_t i = 0, ptr = *ptr_out;
+            if (!nav || !nav->scroll.indices.size || !ptr_out)
                return false;
+            if (ptr == nav->scroll.indices.list[nav->scroll.indices.size - 1])
+               return false;
+
+            while (i < nav->scroll.indices.size - 1
+                  && nav->scroll.indices.list[i + 1] <= ptr)
+               i++;
+            *ptr_out = nav->scroll.indices.list[i + 1];
 
             if (driver->navigation_ascend_alphabet)
                driver->navigation_ascend_alphabet(ptr_out);
@@ -144,9 +151,16 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
       case MENU_NAVIGATION_CTL_DESCEND_ALPHABET:
          {
             size_t *ptr_out = (size_t*)data;
+            size_t i, ptr = *ptr_out;
 
-            if (!ptr_out)
+            if (!nav || !nav->scroll.indices.size || ptr == 0 || !ptr_out)
                return false;
+
+            i = nav->scroll.indices.size - 1;
+
+            while (i && nav->scroll.indices.list[i - 1] >= ptr)
+               i--;
+            *ptr_out = nav->scroll.indices.list[i - 1];
 
             if (driver->navigation_descend_alphabet)
                driver->navigation_descend_alphabet(ptr_out);
@@ -179,57 +193,4 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
    }
 
    return false;
-}
-
-/**
- * menu_navigation_descend_alphabet:
- * @ptr_out               : Amount of indices to 'scroll' to get
- *                          to the next entry.
- *
- * Descends alphabet.
- * E.g.:
- * If navigation points to an entry called 'Beta',
- * navigation pointer will be set to an entry called 'Alpha'.
- **/
-void menu_navigation_descend_alphabet(menu_navigation_t *nav, size_t *ptr_out)
-{
-   size_t i, ptr = *ptr_out;
-
-   if (!nav || !nav->scroll.indices.size || ptr == 0)
-      return;
-
-   i = nav->scroll.indices.size - 1;
-
-   while (i && nav->scroll.indices.list[i - 1] >= ptr)
-      i--;
-   *ptr_out = nav->scroll.indices.list[i - 1];
-
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_DESCEND_ALPHABET, ptr_out);
-}
-
-/**
- * menu_navigation_ascends_alphabet:
- * @ptr_out               : Amount of indices to 'scroll' to get
- *                          to the next entry.
- *
- * Ascends alphabet.
- * E.g.:
- * If navigation points to an entry called 'Alpha',
- * navigation pointer will be set to an entry called 'Beta'.
- **/
-void menu_navigation_ascend_alphabet(menu_navigation_t *nav, size_t *ptr_out)
-{
-   size_t i = 0, ptr = *ptr_out;
-   if (!nav || !nav->scroll.indices.size)
-      return;
-
-   if (ptr == nav->scroll.indices.list[nav->scroll.indices.size - 1])
-      return;
-
-   while (i < nav->scroll.indices.size - 1
-         && nav->scroll.indices.list[i + 1] <= ptr)
-      i++;
-   *ptr_out = nav->scroll.indices.list[i + 1];
-
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_ASCEND_ALPHABET, ptr_out);
 }

@@ -369,12 +369,11 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
             ret = cbs->action_down(entry->type, entry->label);
          break;
       case MENU_ACTION_SCROLL_UP:
-         menu_navigation_descend_alphabet(nav, &nav->selection_ptr);
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_DESCEND_ALPHABET, &nav->selection_ptr);
          break;
       case MENU_ACTION_SCROLL_DOWN:
-         menu_navigation_ascend_alphabet(nav, &nav->selection_ptr);
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_ASCEND_ALPHABET, &nav->selection_ptr);
          break;
-
       case MENU_ACTION_CANCEL:
          if (cbs && cbs->action_cancel)
             ret = cbs->action_cancel(entry->path, entry->label, entry->type, i);

@@ -58,30 +58,6 @@ enum menu_navigation_ctl_state
    MENU_NAVIGATION_CTL_SET_SCROLL_INDICES
 };
 
-/**
- * menu_navigation_descend_alphabet:
- * @ptr_out               : Amount of indices to 'scroll' to get
- *                          to the next entry.
- *
- * Descends alphabet.
- * E.g.:
- * If navigation points to an entry called 'Beta',
- * navigation pointer will be set to an entry called 'Alpha'.
- **/
-void menu_navigation_descend_alphabet(menu_navigation_t *nav, size_t *ptr_out);
-
-/**
- * menu_navigation_ascends_alphabet:
- * @ptr_out               : Amount of indices to 'scroll' to get
- *                          to the next entry.
- *
- * Ascends alphabet.
- * E.g.:
- * If navigation points to an entry called 'Alpha',
- * navigation pointer will be set to an entry called 'Beta'.
- **/
-void menu_navigation_ascend_alphabet(menu_navigation_t *nav, size_t *ptr_out);
-
 bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data);
 
 #ifdef __cplusplus
