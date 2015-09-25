@@ -123,7 +123,7 @@ end:
 
 static void rmenu_render(void)
 {
-   size_t begin, end, i, j;
+   size_t begin, end, i, j, selection;
    struct font_params font_parms = {0};
    char title[256]               = {0};
    char title_buf[256]           = {0};
@@ -132,10 +132,11 @@ static void rmenu_render(void)
    menu_display_t *disp          = menu_display_get_ptr();
    menu_animation_t *anim        = menu_animation_get_ptr();
    menu_list_t *menu_list        = menu_list_get_ptr();
-   menu_navigation_t *nav        = menu_navigation_get_ptr();
    uint64_t *frame_count         = video_driver_get_frame_count();
    size_t  entries_end           = menu_entries_get_end();
-   size_t  selection             = menu_navigation_get_selection(nav);
+
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return;
 
    if (!menu)
       return;

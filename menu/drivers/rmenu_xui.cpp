@@ -530,7 +530,7 @@ static void rmenu_xui_set_list_text(int index, const wchar_t* leftText,
 
 static void rmenu_xui_render(void)
 {
-	size_t end, i;
+	size_t end, i, selection;
 	char title[PATH_MAX_LENGTH] = {0};
 	const char *dir             = NULL;
    const char *label           = NULL;
@@ -588,7 +588,9 @@ static void rmenu_xui_render(void)
       mbstowcs(msg_right, entry_value, sizeof(msg_right) / sizeof(wchar_t));
       rmenu_xui_set_list_text(i, msg_left, msg_right);
    }
-	XuiListSetCurSelVisible(m_menulist, menu_navigation_get_selection(nav));
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return;
+	XuiListSetCurSelVisible(m_menulist, selection);
 
 	if (menu->keyboard.display)
 	{
@@ -605,34 +607,32 @@ static void rmenu_xui_render(void)
 static void rmenu_xui_populate_entries(const char *path,
       const char *label, unsigned i)
 {
-   menu_handle_t *menu         = menu_driver_get_ptr();
-   menu_navigation_t *nav      = menu_navigation_get_ptr();
-
-   if (!menu)
+   size_t selection;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
    (void)label;
    (void)path;
 
-   XuiListSetCurSelVisible(m_menulist, menu_navigation_get_selection(nav));
+   XuiListSetCurSelVisible(m_menulist, selection);
 }
 
 static void rmenu_xui_navigation_clear(bool pending_push)
 {
-   menu_handle_t *menu         = menu_driver_get_ptr();
-   menu_navigation_t *nav      = menu_navigation_get_ptr();
+   size_t selection;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return;
 
-   if (menu)
-      XuiListSetCurSelVisible(m_menulist, menu_navigation_get_selection(nav));
+   XuiListSetCurSelVisible(m_menulist, selection);
 }
 
 static void rmenu_xui_navigation_set_visible(void)
 {
-   menu_handle_t *menu         = menu_driver_get_ptr();
-   menu_navigation_t *nav      = menu_navigation_get_ptr();
+   size_t selection;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return;
 
-   if (menu)
-      XuiListSetCurSelVisible(m_menulist, menu_navigation_get_selection(nav));
+   XuiListSetCurSelVisible(m_menulist, selection);
 }
 
 static void rmenu_xui_navigation_alphabet(size_t *ptr_out)
