@@ -457,7 +457,7 @@ static void general_disp_set_label_perf_counters(
 
    menu_action_setting_disp_set_label_perf_counters_common(
          counters, offset, s, len);
-   menu_animation_set_active();
+   menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 }
 
 static void menu_action_setting_disp_set_label_perf_counters(

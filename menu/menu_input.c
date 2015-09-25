@@ -838,7 +838,7 @@ static int menu_input_mouse(unsigned *action)
          menu_input->mouse.scrollup      ||
          menu_input->mouse.scrolldown
       )
-      menu_animation_set_active();
+      menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    return 0;
 }
@@ -885,7 +885,7 @@ static int menu_input_pointer(unsigned *action)
          (menu_input->pointer.dy != 0)     ||
          (menu_input->pointer.dx != 0)
       )
-      menu_animation_set_active();
+      menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    return 0;
 }

@@ -452,7 +452,7 @@ static void glui_frame(void)
          width, height,
          &highlight_bg[0]);
 
-   menu_animation_set_active();
+   menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    glui_render_quad(gl, 0, 0, width,
          header_height,
