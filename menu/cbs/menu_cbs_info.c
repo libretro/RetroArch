@@ -21,15 +21,17 @@
 
 static int action_info_default(unsigned type, const char *label)
 {
+   size_t selection             = 0;
    menu_displaylist_info_t info = {0};
-   menu_navigation_t *nav       = menu_navigation_get_ptr();
    menu_list_t *menu_list       = menu_list_get_ptr();
 
    if (!menu_list)
       return 0;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return 0;
 
    info.list          = menu_list->menu_stack;
-   info.directory_ptr = nav->selection_ptr;
+   info.directory_ptr = selection;
    strlcpy(info.label,
          menu_hash_to_str(MENU_LABEL_INFO_SCREEN),
         sizeof(info.label));
