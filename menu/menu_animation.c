@@ -586,9 +586,6 @@ bool menu_animation_push(float duration, float target_value, float* subject,
    return true;
 }
 
-
-
-
 /**
  * menu_animation_ticker_str:
  * @s                        : buffer to write new message line to.
@@ -695,7 +692,7 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 
             anim->is_active = true;
          }
-   return true;
+         return true;
    }
 
    return false;
