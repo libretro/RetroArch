@@ -397,14 +397,23 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
 
    if (frame_buf)
    {
-      frame_buf->height = (gx_mode.efbHeight / (gx->double_strike ? 1 : 2)) & ~3;
-      if (frame_buf->height > 240)
-         frame_buf->height = 240;
+      size_t new_fb_pitch;
+      unsigned new_fb_width;
+      unsigned new_fb_height  = (gx_mode.efbHeight / (gx->double_strike ? 1 : 2)) & ~3;
+      if (new_fb_height > 240)
+         new_fb_height = 240;
 
-      frame_buf->width = (gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2)) & ~3;
-      if (frame_buf->width > 400)
-         frame_buf->width = 400;
-      frame_buf->pitch = frame_buf->width * 2;
+
+      new_fb_width = (gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2)) & ~3;
+      if (new_fb_width > 400)
+         new_fb_width = 400;
+
+      new_fb_pitch = new_fb_width * 2;
+
+      menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,  &new_fb_width);
+      menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &new_fb_height);
+
+      frame_buf->pitch = new_fb_pitch;
    }
 
    if (tvmode == VI_PAL)
@@ -483,7 +492,6 @@ static void init_texture(void *data, unsigned width, unsigned height)
    struct __gx_texobj *fb_ptr   = (struct __gx_texobj*)&g_tex.obj;
    struct __gx_texobj *menu_ptr = (struct __gx_texobj*)&menu_tex.obj;
    menu_handle_t *menu          = menu_driver_get_ptr();
-   menu_framebuf_t *frame_buf   = menu_display_fb_get_ptr();
    settings_t *settings         = config_get_ptr();
 
    width &= ~3;
@@ -494,8 +502,8 @@ static void init_texture(void *data, unsigned width, unsigned height)
 
    if (menu)
    {
-      menu_w = frame_buf->width;
-      menu_h = frame_buf->height;
+      menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,  &menu_w);
+      menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &menu_h);
    }
 
    __GX_InitTexObj(fb_ptr, g_tex.data, width, height,
@@ -1095,21 +1103,22 @@ static bool gx_frame(void *data, const void *frame,
 
    if (gx->menu_texture_enable && gx->menu_data)
    {
-      menu_framebuf_t *frame_buf   = menu_display_fb_get_ptr();
+      size_t fb_pitch;
+      unsigned fb_width, fb_height;
 
-      if (frame_buf)
-      {
-         convert_texture16(
-               gx->menu_data,
-               menu_tex.data,
-               frame_buf->width,
-               frame_buf->height,
-               frame_buf->pitch);
-         DCFlushRange(
-               menu_tex.data,
-               frame_buf->width * 
-               frame_buf->pitch);
-      }
+      menu_display_ctl(MENU_DISPLAY_CTL_WIDTH, &fb_width);
+      menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &fb_height);
+      menu_display_ctl(MENU_DISPLAY_CTL_PITCH, &fb_pitch);
+
+      convert_texture16(
+            gx->menu_data,
+            menu_tex.data,
+            fb_width,
+            fb_height,
+            fb_pitch);
+      DCFlushRange(
+            menu_tex.data,
+            fb_width * fb_pitch);
    }
 
    __GX_InvalidateTexAll(__gx);
