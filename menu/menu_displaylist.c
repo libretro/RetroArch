@@ -3030,7 +3030,6 @@ bool menu_displaylist_init(void *data)
    menu_list_push(menu_list->menu_stack,
          info.path, info.label, info.type, info.flags, 0);
    menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
 
    return true;
 }
