@@ -481,8 +481,6 @@ int menu_iterate(bool render_this_frame, unsigned action)
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
          break;
       case ITERATE_TYPE_DEFAULT:
-         selection = max(min(selection, menu_list_get_size(menu_list)-1), 0);
-
          menu_entry_get(&entry,    selection, NULL, false);
          ret = menu_entry_action(&entry, selection, (enum menu_action)action);
 
