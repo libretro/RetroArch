@@ -60,26 +60,6 @@ enum menu_display_ctl_state
    MENU_DISPLAY_CTL_SET_FONT_FB
 };
 
-typedef struct menu_display
-{
-   bool msg_force;
-
-   struct
-   {
-      void *buf;
-      int size;
-
-      const uint8_t *framebuf;
-      bool alloc_framebuf;
-   } font;
-
-   unsigned header_height;
-
-   msg_queue_t *msg_queue;
-} menu_display_t;
-
-menu_display_t  *menu_display_get_ptr(void);
-
 void menu_display_free(void);
 
 bool menu_display_init(void);
@@ -98,7 +78,6 @@ bool menu_display_init_main_font(void *data,
       const char *font_path, float font_size);
 
 void menu_display_free_main_font(void);
-
 
 bool menu_display_ctl(enum menu_display_ctl_state state, void *data);
 

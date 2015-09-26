@@ -31,11 +31,29 @@ typedef struct menu_framebuf
    bool dirty;
 } menu_framebuf_t;
 
+typedef struct menu_display
+{
+   bool msg_force;
+
+   struct
+   {
+      void *buf;
+      int size;
+
+      const uint8_t *framebuf;
+      bool alloc_framebuf;
+   } font;
+
+   unsigned header_height;
+
+   msg_queue_t *msg_queue;
+} menu_display_t;
+
 static menu_display_t  menu_display_state;
 
 static menu_framebuf_t frame_buf_state;
 
-menu_display_t *menu_display_get_ptr(void)
+static menu_display_t *menu_display_get_ptr(void)
 {
    return &menu_display_state;
 }
