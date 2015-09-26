@@ -282,6 +282,8 @@ bool menu_setting_is_of_path_type(rarch_setting_t *setting);
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound);
 
+enum setting_type menu_setting_get_type(rarch_setting_t *setting);
+
 #ifdef __cplusplus
 }
 #endif

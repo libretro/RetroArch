@@ -43,6 +43,13 @@
 #include "../file_ext.h"
 #include "../performance.h"
 
+enum setting_type menu_setting_get_type(rarch_setting_t *setting)
+{
+   if (!setting)
+      return ST_NONE;
+   return setting->type;
+}
+
 static void menu_settings_info_list_free(rarch_setting_info_t *list_info)
 {
    if (list_info)
@@ -186,12 +193,15 @@ static int setting_handler(rarch_setting_t *setting, unsigned action)
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound)
 {
+   enum setting_type setting_type;
    menu_displaylist_info_t  info = {0};
 
    if (!setting)
       return -1;
 
-   switch (setting->type)
+   setting_type = menu_setting_get_type(setting);
+
+   switch (setting_type)
    {
       case ST_PATH:
          if (action == MENU_ACTION_OK)
@@ -249,9 +259,9 @@ rarch_setting_t *menu_setting_find(const char *label)
 
    needle = menu_hash_calculate(label);
 
-   for (; settings->type != ST_NONE; settings++)
+   for (; menu_setting_get_type(settings) != ST_NONE; settings++)
    {
-      if (needle == settings->name_hash && settings->type <= ST_GROUP)
+      if (needle == settings->name_hash && menu_setting_get_type(settings) <= ST_GROUP)
       {
          /* make sure this isn't a collision */
          if (strcmp(label, settings->name) != 0)
@@ -302,10 +312,13 @@ int menu_setting_set(unsigned type, const char *label,
  **/
 static void setting_reset_setting(rarch_setting_t* setting)
 {
+   enum setting_type setting_type;
    if (!setting)
       return;
 
-   switch (setting->type)
+   setting_type = menu_setting_get_type(setting);
+
+   switch (setting_type)
    {
       case ST_BOOL:
          *setting->value.boolean          = setting->default_value.boolean;
@@ -327,7 +340,7 @@ static void setting_reset_setting(rarch_setting_t* setting)
       case ST_DIR:
          if (setting->default_value.string)
          {
-            if (setting->type == ST_STRING)
+            if (menu_setting_get_type(setting) == ST_STRING)
                setting_set_with_string_representation(setting, setting->default_value.string);
             else
                fill_pathname_expand_special(setting->value.string,
@@ -367,10 +380,13 @@ static void setting_reset_setting(rarch_setting_t* setting)
 int setting_set_with_string_representation(rarch_setting_t* setting,
       const char* value)
 {
+   enum setting_type setting_type;
    if (!setting || !value)
       return -1;
 
-   switch (setting->type)
+   setting_type = menu_setting_get_type(setting);
+
+   switch (setting_type)
    {
       case ST_INT:
          sscanf(value, "%d", setting->value.integer);
@@ -1064,6 +1080,7 @@ static int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound
 
 static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
 {
+   enum setting_type setting_type;
    input_keyboard_line_complete_t cb = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -1071,8 +1088,9 @@ static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
       return -1;
 
    (void)wraparound;
+   setting_type = menu_setting_get_type(setting);
 
-   switch (setting->type)
+   switch (setting_type)
    {
       case ST_UINT:
          cb = menu_input_st_uint_callback;
@@ -5971,7 +5989,7 @@ void menu_setting_free(rarch_setting_t *list)
    if (!list)
       return;
 
-   for (; setting->type != ST_NONE; setting++)
+   for (; menu_setting_get_type(setting) != ST_NONE; setting++)
    {
       if (setting->flags & SD_FLAG_IS_DRIVER)
       {
@@ -5979,7 +5997,7 @@ void menu_setting_free(rarch_setting_t *list)
             free((void*)setting->values);
       }
 
-      if (setting->type == ST_BIND)
+      if (menu_setting_get_type(setting) == ST_BIND)
       {
          free((void*)setting->name);
          free((void*)setting->short_description);
@@ -6220,7 +6238,7 @@ bool menu_setting_is_of_path_type(rarch_setting_t *setting)
 {
    if    (
          setting &&
-         setting->type == ST_ACTION &&
+         (menu_setting_get_type(setting) == ST_ACTION) &&
          (setting->flags & SD_FLAG_BROWSER_ACTION) &&
          (setting->action_right || setting->action_left || setting->action_select) &&
          setting->change_handler)

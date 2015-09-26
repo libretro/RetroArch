@@ -1554,13 +1554,14 @@ static void menu_displaylist_realloc_settings(menu_entries_t *entries, unsigned 
 
 static int menu_setting_set_flags(rarch_setting_t *setting)
 {
+   enum setting_type setting_type = menu_setting_get_type(setting);
    if (!setting)
       return 0;
 
    if (setting->flags & SD_FLAG_IS_DRIVER)
       return MENU_SETTING_DRIVER;
 
-   switch (setting->type)
+   switch (setting_type)
    {
       case ST_ACTION:
          return MENU_SETTING_ACTION;
@@ -1592,9 +1593,9 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
       return -1;
 
 
-   for (; setting->type != ST_END_GROUP; setting++)
+   for (; menu_setting_get_type(setting) != ST_END_GROUP; setting++)
    {
-      switch (setting->type)
+      switch (menu_setting_get_type(setting))
       {
          case ST_GROUP:
          case ST_SUB_GROUP:
@@ -1657,7 +1658,7 @@ static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *
 
    while (1)
    {
-      if (info->setting->type == ST_SUB_GROUP)
+      if (menu_setting_get_type(info->setting) == ST_SUB_GROUP)
       {
          if ((strlen(info->setting->name) != 0) && !strcmp(info->setting->name, elem1))
             break;
@@ -1668,7 +1669,7 @@ static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *
 
    info->setting++;
 
-   for (; info->setting->type != ST_END_SUB_GROUP; info->setting++)
+   for (; menu_setting_get_type(info->setting) != ST_END_SUB_GROUP; info->setting++)
       menu_list_push(info->list, info->setting->short_description,
             info->setting->name, menu_setting_set_flags(info->setting), 0, 0);
 
@@ -2512,9 +2513,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
          if (settings->menu.collapse_subgroups_enable)
          {
-            for (; setting->type != ST_NONE; setting++)
+            for (; menu_setting_get_type(setting) != ST_NONE; setting++)
             {
-               if (setting->type == ST_GROUP)
+               if (menu_setting_get_type(setting) == ST_GROUP)
                {
                   if (setting->flags & SD_FLAG_ADVANCED &&
                         !settings->menu.show_advanced_settings)
@@ -2526,29 +2527,35 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          }
          else
          {
-            for (; setting->type != ST_NONE; setting++)
+            for (; menu_setting_get_type(setting) != ST_NONE; setting++)
             {
-               char group_label[PATH_MAX_LENGTH]    = {0};
-               char subgroup_label[PATH_MAX_LENGTH] = {0};
+               char group_label[PATH_MAX_LENGTH], subgroup_label[PATH_MAX_LENGTH];
+               enum setting_type setting_type = menu_setting_get_type(setting);
 
-               if (setting->type == ST_GROUP)
-                  strlcpy(group_label, setting->name, sizeof(group_label));
-               else if (setting->type == ST_SUB_GROUP)
+               switch (setting_type)
                {
-                  char new_label[PATH_MAX_LENGTH] = {0};
-                  char new_path[PATH_MAX_LENGTH]  = {0};
+                  case ST_GROUP:
+                     strlcpy(group_label, setting->name, sizeof(group_label));
+                     break;
+                  case ST_SUB_GROUP:
+                     {
+                        char new_label[PATH_MAX_LENGTH], new_path[PATH_MAX_LENGTH];
 
-                  strlcpy(subgroup_label, setting->name, sizeof(group_label));
-                  strlcpy(new_label, group_label, sizeof(new_label));
-                  strlcat(new_label, "|", sizeof(new_label));
-                  strlcat(new_label, subgroup_label, sizeof(new_label));
+                        strlcpy(subgroup_label, setting->name, sizeof(group_label));
+                        strlcpy(new_label, group_label, sizeof(new_label));
+                        strlcat(new_label, "|", sizeof(new_label));
+                        strlcat(new_label, subgroup_label, sizeof(new_label));
 
-                  strlcpy(new_path, group_label, sizeof(new_path));
-                  strlcat(new_path, " - ", sizeof(new_path));
-                  strlcat(new_path, setting->short_description, sizeof(new_path));
+                        strlcpy(new_path, group_label, sizeof(new_path));
+                        strlcat(new_path, " - ", sizeof(new_path));
+                        strlcat(new_path, setting->short_description, sizeof(new_path));
 
-                  menu_list_push(info->list, new_path,
-                        new_label, MENU_SETTING_SUBGROUP, 0, 0);
+                        menu_list_push(info->list, new_path,
+                              new_label, MENU_SETTING_SUBGROUP, 0, 0);
+                     }
+                     break;
+                  default:
+                     break;
                }
             }
          }

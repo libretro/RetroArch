@@ -33,27 +33,24 @@ static int action_select_default(const char *path, const char *label, unsigned t
 
    cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, idx);
     
-   if (cbs->setting)
+   switch (menu_setting_get_type(cbs->setting))
    {
-       switch (cbs->setting->type)
-       {
-           case ST_BOOL:
-           case ST_INT:
-           case ST_UINT:
-           case ST_FLOAT:
-               action = MENU_ACTION_RIGHT;
-               break;
-           case ST_PATH:
-           case ST_DIR:
-           case ST_ACTION:
-           case ST_STRING:
-           case ST_HEX:
-           case ST_BIND:
-               action = MENU_ACTION_OK;
-               break;
-           default:
-               break;
-       }
+      case ST_BOOL:
+      case ST_INT:
+      case ST_UINT:
+      case ST_FLOAT:
+         action = MENU_ACTION_RIGHT;
+         break;
+      case ST_PATH:
+      case ST_DIR:
+      case ST_ACTION:
+      case ST_STRING:
+      case ST_HEX:
+      case ST_BIND:
+         action = MENU_ACTION_OK;
+         break;
+      default:
+         break;
    }
     
    if (action == MENU_ACTION_NOOP)

@@ -230,7 +230,7 @@ static int action_left_shader_filter_default(unsigned type, const char *label,
    if (!setting)
       return -1;
    return menu_action_handle_setting(setting,
-         setting->type, MENU_ACTION_LEFT, wraparound);
+         menu_setting_get_type(setting), MENU_ACTION_LEFT, wraparound);
 #else
    return 0;
 #endif
@@ -333,7 +333,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
    {
       uint32_t parent_group_hash = menu_hash_calculate(cbs->setting->parent_group);
 
-      if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && (cbs->setting->type == ST_GROUP))
+      if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && (menu_setting_get_type(cbs->setting) == ST_GROUP))
       {
          cbs->action_left = action_left_scroll;
          return 0;

@@ -740,7 +740,7 @@ int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
    {
       uint32_t parent_group_hash = menu_hash_calculate(cbs->setting->parent_group);
 
-      if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && cbs->setting->type == ST_GROUP)
+      if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && menu_setting_get_type(cbs->setting) == ST_GROUP)
       {
          if (!settings->menu.collapse_subgroups_enable)
          {

@@ -254,7 +254,7 @@ static int action_right_shader_filter_default(unsigned type, const char *label,
    rarch_setting_t *setting = menu_setting_find(menu_hash_to_str(MENU_LABEL_VIDEO_SMOOTH));
    if (!setting)
       return -1;
-   return menu_action_handle_setting(setting, setting->type, MENU_ACTION_RIGHT,
+   return menu_action_handle_setting(setting, menu_setting_get_type(setting), MENU_ACTION_RIGHT,
          wraparound);
 #else
    return 0;
@@ -440,7 +440,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
    {
       uint32_t parent_group_hash = menu_hash_calculate(cbs->setting->parent_group);
 
-      if ((parent_group_hash == MENU_LABEL_SETTINGS) && (cbs->setting->type == ST_GROUP))
+      if ((parent_group_hash == MENU_LABEL_SETTINGS) && (menu_setting_get_type(cbs->setting) == ST_GROUP))
       {
          cbs->action_right = action_right_scroll;
          return 0;

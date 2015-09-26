@@ -66,12 +66,14 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
    if (menu_setting_is_of_path_type(setting))
       return MENU_ENTRY_PATH;
 
-   if (setting && (setting->type == ST_STRING)  && setting->values)
-      return MENU_ENTRY_ENUM;
-
    if (setting)
    {
-      switch (setting->type)
+      enum setting_type setting_type = menu_setting_get_type(setting);
+
+      if ((setting_type == ST_STRING)  && setting->values)
+         return MENU_ENTRY_ENUM;
+
+      switch (setting_type)
       {
          case ST_BOOL:
             return MENU_ENTRY_BOOL;
@@ -224,7 +226,7 @@ int menu_entry_pathdir_set_value(uint32_t i, const char *s)
    if (!cbs || !cbs->setting)
       return -1;
 
-   if (cbs->setting->type != ST_DIR)
+   if (menu_setting_get_type(cbs->setting) != ST_DIR)
       return -1;
 
    setting_set_with_string_representation(cbs->setting, menu_path);
