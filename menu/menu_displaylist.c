@@ -46,8 +46,8 @@ extern size_t core_len;
 static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
       unsigned type)
 {
-   int i, j = 0;
    char c;
+   int i, j = 0;
    char *line_start = buf;
 
    for (i = 0; i < buf_size; i++)
@@ -107,7 +107,7 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 
       /* Restore the saved char */
       *(buf + i + 1) = c;
-      line_start = buf + i + 1;
+      line_start     = buf + i + 1;
    }
    /* If the buffer was completely full, and didn't end with a newline, just
     * ignore the partial last line.
