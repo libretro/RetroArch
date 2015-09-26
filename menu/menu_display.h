@@ -69,8 +69,6 @@ typedef struct menu_display
 
 menu_display_t  *menu_display_get_ptr(void);
 
-void menu_display_libretro(void);
-
 void menu_display_free(void);
 
 bool menu_display_init(void);
