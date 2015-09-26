@@ -1101,7 +1101,7 @@ void rarch_main_free(void)
    event_command(EVENT_CMD_LOG_FILE_DEINIT);
 
    rarch_main_state_free();
-   rarch_main_global_free();
+   rarch_main_ctl(RARCH_MAIN_CTL_GLOBAL_FREE, NULL);
    config_free();
 }
 

@@ -508,10 +508,18 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
          global->bsv.movie_end      = false;
          global->bsv.movie_playback = false;
          break;
+      case RARCH_MAIN_CTL_GLOBAL_FREE:
+         event_command(EVENT_CMD_TEMPORARY_CONTENT_DEINIT);
+         event_command(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
+         event_command(EVENT_CMD_RECORD_DEINIT);
+         event_command(EVENT_CMD_LOG_FILE_DEINIT);
+
+         memset(&g_extern, 0, sizeof(g_extern));
+         break;
       case RARCH_MAIN_CTL_CLEAR_STATE:
          driver_clear_state();
          rarch_main_state_free();
-         rarch_main_global_free();
+         rarch_main_ctl(RARCH_MAIN_CTL_GLOBAL_FREE, NULL);
          break;
       case RARCH_MAIN_CTL_SET_MAX_FRAMES:
          {
@@ -719,16 +727,6 @@ void rarch_main_state_free(void)
    main_is_slowmotion                     = false;
    frame_limit_last_time                  = 0.0;
    main_max_frames                        = 0;
-}
-
-void rarch_main_global_free(void)
-{
-   event_command(EVENT_CMD_TEMPORARY_CONTENT_DEINIT);
-   event_command(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
-   event_command(EVENT_CMD_RECORD_DEINIT);
-   event_command(EVENT_CMD_LOG_FILE_DEINIT);
-
-   memset(&g_extern, 0, sizeof(g_extern));
 }
 
 bool rarch_main_verbosity(void)
