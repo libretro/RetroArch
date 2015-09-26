@@ -556,10 +556,8 @@ static void glui_allocate_white_texture(glui_handle_t *glui)
 static void glui_font(menu_handle_t *menu)
 {
    int font_size;
-   const char *font_path = NULL;
    settings_t *settings  = config_get_ptr();
-
-   font_path = settings->video.font_enable ? settings->video.font_path : NULL;
+   const char *font_path = settings->video.font_enable ? settings->video.font_path : NULL;
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
 
