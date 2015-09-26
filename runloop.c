@@ -864,17 +864,20 @@ void rarch_main_clear_state(void)
    rarch_main_global_free();
 }
 
-void rarch_main_set_max_frames(unsigned val)
-{
-   main_max_frames = val;
-}
-
 bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 {
    settings_t *settings                 = config_get_ptr();
 
    switch (state)
    {
+      case RARCH_MAIN_CTL_SET_MAX_FRAMES:
+         {
+            unsigned *ptr = (unsigned*)data;
+            if (!ptr)
+               return false;
+            main_max_frames = *ptr;
+         }
+         return true;
       case RARCH_MAIN_CTL_SET_FRAME_LIMIT_LAST_TIME:
          {
             struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
