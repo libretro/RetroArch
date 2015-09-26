@@ -73,10 +73,10 @@ static void glui_blit_line(float x, float y, unsigned width, unsigned height,
       const char *message, uint32_t color, enum text_alignment text_align)
 {
    int font_size;
+   void *fb_buf              = NULL;
    glui_handle_t *glui       = NULL;
    struct font_params params = {0};
    menu_handle_t *menu       = menu_driver_get_ptr();
-   menu_display_t *disp      = menu_display_get_ptr();
 
    if (!menu)
       return;
@@ -93,7 +93,9 @@ static void glui_blit_line(float x, float y, unsigned width, unsigned height,
    params.full_screen = true;
    params.text_align  = text_align;
 
-   video_driver_set_osd_msg(message, &params, disp->font.buf);
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &fb_buf);
+
+   video_driver_set_osd_msg(message, &params, fb_buf);
 }
 
 static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
@@ -175,10 +177,9 @@ static void glui_render_messagebox(const char *message)
    int x, y, font_size;
    struct string_list *list = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
-   menu_display_t *disp     = menu_display_get_ptr();
    settings_t *settings     = config_get_ptr();
 
-   if (!menu || !disp || !menu->userdata)
+   if (!menu || !menu->userdata)
       return;
 
    list = (struct string_list*)string_split(message, "\n");
@@ -567,10 +568,10 @@ static void glui_font(menu_handle_t *menu)
 
 static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
 {
+   void *fb_buf;
    float scale_factor;
    int new_font_size;
    unsigned width, height, new_header_height;
-   menu_display_t *disp = menu_display_get_ptr();
 
    video_driver_get_size(&width, &height);
 
@@ -594,10 +595,12 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
 
    glui_font(menu);
 
-   if (disp && disp->font.buf) /* calculate a more realistic ticker_limit */
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &fb_buf);
+
+   if (fb_buf) /* calculate a more realistic ticker_limit */
    {
       driver_t *driver   = driver_get_ptr();
-      int m_width = driver->font_osd_driver->get_message_width(disp->font.buf, "a", 1, 1);
+      int m_width = driver->font_osd_driver->get_message_width(fb_buf, "a", 1, 1);
 
       if (m_width)
          glui->glyph_width = m_width;
@@ -748,11 +751,10 @@ static float glui_get_scroll(void)
 
 static void glui_navigation_set(bool scroll)
 {
-   menu_display_t *disp = menu_display_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
    float     scroll_pos = glui_get_scroll();
 
-   if (!menu || !disp || !scroll)
+   if (!menu || !scroll)
       return;
 
    menu_animation_push(10, scroll_pos,

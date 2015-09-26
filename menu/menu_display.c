@@ -193,14 +193,20 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
    switch (state)
    {
       case MENU_DISPLAY_CTL_FONT_BUF:
-         if (!data)
-            return false;
-         data = disp->font.buf;
+         {
+            void **ptr = (void**)data;
+            if (!ptr)
+               return false;
+            *ptr = disp->font.buf;
+         }
          return true;
       case MENU_DISPLAY_CTL_SET_FONT_BUF:
-         if (!data)
-            return false;
-         disp->font.buf = data;
+         {
+            void **ptr = (void**)data;
+            if (!ptr)
+               return false;
+            disp->font.buf = *ptr;
+         }
          return true;
       case MENU_DISPLAY_CTL_FONT_FB:
          {

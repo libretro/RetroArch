@@ -448,7 +448,7 @@ static void xmb_draw_text(menu_handle_t *menu,
 {
    uint8_t a8                =   0;
    struct font_params params = {0};
-   menu_display_t *disp      = menu_display_get_ptr();
+   void *disp_buf            = NULL;
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -470,7 +470,9 @@ static void xmb_draw_text(menu_handle_t *menu,
    params.full_screen = true;
    params.text_align  = text_align;
 
-   video_driver_set_osd_msg(str, &params, disp->font.buf);
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &disp_buf);
+
+   video_driver_set_osd_msg(str, &params, disp_buf);
 }
 
 static void xmb_render_messagebox_internal(const char *message)
