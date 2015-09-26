@@ -329,12 +329,6 @@ static int action_iterate_menu_viewport(char *s, size_t len,
             event_command(EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
          }
          break;
-
-      case MENU_ACTION_MESSAGE:
-         if (disp)
-            disp->msg_force = true;
-         break;
-
       default:
          break;
    }

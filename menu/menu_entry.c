@@ -405,14 +405,6 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
          if (cbs && cbs->action_select)
             ret = cbs->action_select(entry->path, entry->label, entry->type, i);
          break;
-      case MENU_ACTION_MESSAGE:
-         {
-            menu_display_t *disp      = menu_display_get_ptr();
-            if (disp)
-               disp->msg_force = true;
-         }
-         break;
-
       case MENU_ACTION_SEARCH:
          menu_input_ctl(MENU_INPUT_CTL_SEARCH_START, NULL);
          break;
