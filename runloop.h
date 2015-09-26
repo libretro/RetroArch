@@ -43,7 +43,15 @@ enum rarch_main_ctl_state
    RARCH_MAIN_CTL_SET_PAUSED,
    RARCH_MAIN_CTL_SET_MAX_FRAMES,
    RARCH_MAIN_CTL_SET_FRAME_LIMIT_LAST_TIME,
-   RARCH_MAIN_CTL_CLEAR_STATE
+   RARCH_MAIN_CTL_CLEAR_STATE,
+   RARCH_MAIN_CTL_CHECK_MOVIE,
+   /* Checks if movie is being played. */
+   RARCH_MAIN_CTL_CHECK_MOVIE_PLAYBACK,
+   RARCH_MAIN_CTL_CHECK_MOVIE_INIT,
+   /* Checks if movie is being recorded. */
+   RARCH_MAIN_CTL_CHECK_MOVIE_RECORD,
+   /* Checks if slowmotion toggle/hold was being pressed and/or held. */
+   RARCH_MAIN_CTL_CHECK_SLOWMOTION
 };
 
 typedef struct rarch_resolution

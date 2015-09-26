@@ -228,130 +228,6 @@ static void check_rewind(settings_t *settings,
    retro_set_rewind_callbacks();
 }
 
-/**
- * check_slowmotion:
- * @slowmotion_pressed   : was slow motion key pressed or held?
- *
- * Checks if slowmotion toggle/hold was being pressed and/or held.
- **/
-static void check_slowmotion(settings_t *settings, bool slowmotion_pressed)
-{
-   main_is_slowmotion   = slowmotion_pressed;
-
-   if (!main_is_slowmotion)
-      return;
-
-   if (settings->video.black_frame_insertion)
-      video_driver_cached_frame();
-
-   if (state_manager_frame_is_reversed())
-      rarch_main_msg_queue_push_new(MSG_SLOW_MOTION_REWIND, 0, 30, true);
-   else
-      rarch_main_msg_queue_push_new(MSG_SLOW_MOTION, 0, 30, true);
-}
-
-static bool check_movie_init(global_t *global)
-{
-   char path[PATH_MAX_LENGTH];
-   char msg[PATH_MAX_LENGTH];
-   bool ret                     = true;
-   settings_t *settings         = config_get_ptr();
-   
-   if (global->bsv.movie)
-      return false;
-
-   settings->rewind_granularity = 1;
-
-   if (settings->state_slot > 0)
-      snprintf(path, sizeof(path), "%s%d",
-            global->bsv.movie_path, settings->state_slot);
-   else
-      strlcpy(path, global->bsv.movie_path, sizeof(path));
-
-   strlcat(path, ".bsv", sizeof(path));
-
-   snprintf(msg, sizeof(msg), "%s \"%s\".",
-         msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-         path);
-
-   global->bsv.movie = bsv_movie_init(path, RARCH_MOVIE_RECORD);
-
-   if (!global->bsv.movie)
-      ret = false;
-
-
-   if (global->bsv.movie)
-   {
-      rarch_main_msg_queue_push(msg, 1, 180, true);
-      RARCH_LOG("%s \"%s\".\n",
-         msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-            path);
-   }
-   else
-   {
-      rarch_main_msg_queue_push_new(
-            MSG_FAILED_TO_START_MOVIE_RECORD,
-            1, 180, true);
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
-   }
-
-   return ret;
-}
-
-/**
- * check_movie_record:
- *
- * Checks if movie is being recorded.
- *
- * Returns: true (1) if movie is being recorded, otherwise false (0).
- **/
-static bool check_movie_record(global_t *global)
-{
-   if (!global->bsv.movie)
-      return false;
-
-   rarch_main_msg_queue_push_new(
-         MSG_MOVIE_RECORD_STOPPED, 2, 180, true);
-   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
-
-   event_command(EVENT_CMD_BSV_MOVIE_DEINIT);
-
-   return true;
-}
-
-/**
- * check_movie_playback:
- *
- * Checks if movie is being played.
- *
- * Returns: true (1) if movie is being played, otherwise false (0).
- **/
-static bool check_movie_playback(global_t *global)
-{
-   if (!global->bsv.movie_end)
-      return false;
-
-   rarch_main_msg_queue_push_new(
-         MSG_MOVIE_PLAYBACK_ENDED, 1, 180, false);
-   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
-
-   event_command(EVENT_CMD_BSV_MOVIE_DEINIT);
-
-   global->bsv.movie_end      = false;
-   global->bsv.movie_playback = false;
-
-   return true;
-}
-
-static bool check_movie(global_t *global)
-{
-   if (global->bsv.movie_playback)
-      return check_movie_playback(global);
-   if (!global->bsv.movie)
-      return check_movie_init(global);
-   return check_movie_record(global);
-}
-
 #define SHADER_EXT_GLSL      0x7c976537U
 #define SHADER_EXT_GLSLP     0x0f840c87U
 #define SHADER_EXT_CG        0x0059776fU
@@ -508,6 +384,188 @@ static int do_pause_state_checks(
    return 0;
 }
 
+bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
+{
+   settings_t *settings  = config_get_ptr();
+   global_t     *global  = global_get_ptr();
+
+   switch (state)
+   {
+      case RARCH_MAIN_CTL_CHECK_SLOWMOTION:
+         {
+            bool *ptr            = (bool*)data;
+
+            if (!ptr)
+               return false;
+
+            main_is_slowmotion   = *ptr;
+
+            if (!main_is_slowmotion)
+               return false;
+
+            if (settings->video.black_frame_insertion)
+               video_driver_cached_frame();
+
+            if (state_manager_frame_is_reversed())
+               rarch_main_msg_queue_push_new(MSG_SLOW_MOTION_REWIND, 0, 30, true);
+            else
+               rarch_main_msg_queue_push_new(MSG_SLOW_MOTION, 0, 30, true);
+         }
+         return true;
+      case RARCH_MAIN_CTL_CHECK_MOVIE:
+         if (global->bsv.movie_playback)
+            return rarch_main_ctl(RARCH_MAIN_CTL_CHECK_MOVIE_PLAYBACK, NULL);
+         if (!global->bsv.movie)
+            return rarch_main_ctl(RARCH_MAIN_CTL_CHECK_MOVIE_INIT, NULL);
+         return rarch_main_ctl(RARCH_MAIN_CTL_CHECK_MOVIE_RECORD, NULL);
+      case RARCH_MAIN_CTL_CHECK_MOVIE_RECORD:
+         if (!global->bsv.movie)
+            return false;
+
+         rarch_main_msg_queue_push_new(
+               MSG_MOVIE_RECORD_STOPPED, 2, 180, true);
+         RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
+
+         event_command(EVENT_CMD_BSV_MOVIE_DEINIT);
+
+         return true;
+      case RARCH_MAIN_CTL_CHECK_MOVIE_INIT:
+         if (global->bsv.movie)
+            return false;
+         {
+            char path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
+            bool ret                     = true;
+
+            settings->rewind_granularity = 1;
+
+            if (settings->state_slot > 0)
+               snprintf(path, sizeof(path), "%s%d",
+                     global->bsv.movie_path, settings->state_slot);
+            else
+               strlcpy(path, global->bsv.movie_path, sizeof(path));
+
+            strlcat(path, ".bsv", sizeof(path));
+
+            snprintf(msg, sizeof(msg), "%s \"%s\".",
+                  msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+                  path);
+
+            global->bsv.movie = bsv_movie_init(path, RARCH_MOVIE_RECORD);
+
+            if (!global->bsv.movie)
+               ret = false;
+
+
+            if (global->bsv.movie)
+            {
+               rarch_main_msg_queue_push(msg, 1, 180, true);
+               RARCH_LOG("%s \"%s\".\n",
+                     msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+                     path);
+            }
+            else
+            {
+               rarch_main_msg_queue_push_new(
+                     MSG_FAILED_TO_START_MOVIE_RECORD,
+                     1, 180, true);
+               RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
+            }
+
+            return ret;
+         }
+      case RARCH_MAIN_CTL_CHECK_MOVIE_PLAYBACK:
+         if (!global->bsv.movie_end)
+            return false;
+
+         rarch_main_msg_queue_push_new(
+               MSG_MOVIE_PLAYBACK_ENDED, 1, 180, false);
+         RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
+
+         event_command(EVENT_CMD_BSV_MOVIE_DEINIT);
+
+         global->bsv.movie_end      = false;
+         global->bsv.movie_playback = false;
+
+         return true;
+      case RARCH_MAIN_CTL_CLEAR_STATE:
+         driver_clear_state();
+         rarch_main_state_free();
+         rarch_main_global_free();
+         return true;
+      case RARCH_MAIN_CTL_SET_MAX_FRAMES:
+         {
+            unsigned *ptr = (unsigned*)data;
+            if (!ptr)
+               return false;
+            main_max_frames = *ptr;
+         }
+         return true;
+      case RARCH_MAIN_CTL_SET_FRAME_LIMIT_LAST_TIME:
+         {
+            struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+            float fastforward_ratio              = settings->fastforward_ratio;
+
+            if (fastforward_ratio == 0.0f)
+               fastforward_ratio = 1.0f;
+
+            frame_limit_last_time                = retro_get_time_usec();
+            frame_limit_minimum_time             = (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
+         }
+         return true;
+      case RARCH_MAIN_CTL_IS_IDLE:
+         {
+            bool *ptr = (bool*)data;
+            if (!ptr)
+               return false;
+            *ptr = main_is_idle;
+         }
+         return true;
+      case RARCH_MAIN_CTL_SET_IDLE:
+         {
+            bool *ptr = (bool*)data;
+            if (!ptr)
+               return false;
+            main_is_idle = *ptr;
+         }
+         return true;
+      case RARCH_MAIN_CTL_IS_SLOWMOTION:
+         {
+            bool *ptr = (bool*)data;
+            if (!ptr)
+               return false;
+            *ptr = main_is_slowmotion;
+         }
+         return true;
+      case RARCH_MAIN_CTL_SET_SLOWMOTION:
+         {
+            bool *ptr = (bool*)data;
+            if (!ptr)
+               return false;
+            main_is_slowmotion = *ptr;
+         }
+         return true;
+      case RARCH_MAIN_CTL_SET_PAUSED:
+         {
+            bool *ptr = (bool*)data;
+            if (!ptr)
+               return false;
+            main_is_paused = *ptr;
+         }
+         return true;
+      case RARCH_MAIN_CTL_IS_PAUSED:
+         {
+            bool *ptr = (bool*)data;
+            if (!ptr)
+               return false;
+            *ptr = main_is_paused;
+         }
+         return true;
+
+   }
+
+   return false;
+}
+
 /**
  * do_state_checks:
  *
@@ -562,10 +620,11 @@ static int do_state_checks(driver_t *driver, settings_t *settings,
       event_command(EVENT_CMD_LOAD_STATE);
 
    check_rewind(settings, global, cmd->rewind_pressed);
-   check_slowmotion(settings, cmd->slowmotion_pressed);
+
+   rarch_main_ctl(RARCH_MAIN_CTL_CHECK_SLOWMOTION, &cmd->slowmotion_pressed);
 
    if (cmd->movie_record)
-      check_movie(global);
+      rarch_main_ctl(RARCH_MAIN_CTL_CHECK_MOVIE, NULL);
 
    check_shader_dir(global, cmd->shader_next_pressed,
          cmd->shader_prev_pressed);
@@ -855,90 +914,6 @@ FILE *rarch_main_log_file(void)
    return global->log_file;
 }
 
-bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
-{
-   settings_t *settings                 = config_get_ptr();
-
-   switch (state)
-   {
-      case RARCH_MAIN_CTL_CLEAR_STATE:
-         driver_clear_state();
-         rarch_main_state_free();
-         rarch_main_global_free();
-         return true;
-      case RARCH_MAIN_CTL_SET_MAX_FRAMES:
-         {
-            unsigned *ptr = (unsigned*)data;
-            if (!ptr)
-               return false;
-            main_max_frames = *ptr;
-         }
-         return true;
-      case RARCH_MAIN_CTL_SET_FRAME_LIMIT_LAST_TIME:
-         {
-            struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-            float fastforward_ratio              = settings->fastforward_ratio;
-
-            if (fastforward_ratio == 0.0f)
-               fastforward_ratio = 1.0f;
-
-            frame_limit_last_time                = retro_get_time_usec();
-            frame_limit_minimum_time             = (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
-         }
-         return true;
-      case RARCH_MAIN_CTL_IS_IDLE:
-         {
-            bool *ptr = (bool*)data;
-            if (!ptr)
-               return false;
-            *ptr = main_is_idle;
-         }
-         return true;
-      case RARCH_MAIN_CTL_SET_IDLE:
-         {
-            bool *ptr = (bool*)data;
-            if (!ptr)
-               return false;
-            main_is_idle = *ptr;
-         }
-         return true;
-      case RARCH_MAIN_CTL_IS_SLOWMOTION:
-         {
-            bool *ptr = (bool*)data;
-            if (!ptr)
-               return false;
-            *ptr = main_is_slowmotion;
-         }
-         return true;
-      case RARCH_MAIN_CTL_SET_SLOWMOTION:
-         {
-            bool *ptr = (bool*)data;
-            if (!ptr)
-               return false;
-            main_is_slowmotion = *ptr;
-         }
-         return true;
-      case RARCH_MAIN_CTL_SET_PAUSED:
-         {
-            bool *ptr = (bool*)data;
-            if (!ptr)
-               return false;
-            main_is_paused = *ptr;
-         }
-         return true;
-      case RARCH_MAIN_CTL_IS_PAUSED:
-         {
-            bool *ptr = (bool*)data;
-            if (!ptr)
-               return false;
-            *ptr = main_is_paused;
-         }
-         return true;
-
-   }
-
-   return false;
-}
 
 static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
       driver_t *driver, settings_t *settings,
