@@ -634,9 +634,7 @@ int menu_input_set_keyboard_bind_mode(void *data,
 {
    rarch_setting_t  *setting = (rarch_setting_t*)data;
 
-   if (!setting)
-      return -1;
-   if (menu_input_set_bind_mode_common(setting, type) == -1)
+   if (!setting || menu_input_set_bind_mode_common(setting, type) == -1)
       return -1;
 
    return menu_input_set_timeout();
@@ -651,9 +649,7 @@ int menu_input_set_input_device_bind_mode(void *data,
 
    bind_port = settings->input.joypad_map[setting->index_offset];
 
-   if (!setting)
-      return -1;
-   if (menu_input_set_bind_mode_common(setting, type) == -1)
+   if (!setting || menu_input_set_bind_mode_common(setting, type) == -1)
       return -1;
 
    menu_input_poll_bind_get_rested_axes(&menu_input->binds, bind_port);
