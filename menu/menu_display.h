@@ -20,10 +20,6 @@
 #include <stdlib.h>
 #include <boolean.h>
 
-#include <queues/message_queue.h>
-
-#include "../gfx/font_renderer_driver.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -68,11 +64,9 @@ bool menu_display_font_init_first(const void **font_driver,
       void **font_handle, void *video_data, const char *font_path,
       float font_size);
 
-bool menu_display_font_bind_block(void *data,
-      const struct font_renderer *font_driver, void *userdata);
+bool menu_display_font_bind_block(void *data, const void *font_data, void *userdata);
 
-bool menu_display_font_flush_block(void *data,
-      const struct font_renderer *font_driver);
+bool menu_display_font_flush_block(void *data, const void *font_data);
 
 bool menu_display_init_main_font(void *data,
       const char *font_path, float font_size);

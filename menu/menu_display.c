@@ -15,12 +15,15 @@
 
 #include <time.h>
 
+#include <queues/message_queue.h>
+
 #include "../config.def.h"
+#include "../gfx/font_renderer_driver.h"
+#include "../gfx/video_context_driver.h"
+#include "../gfx/video_thread_wrapper.h"
 
 #include "menu.h"
 #include "menu_display.h"
-#include "../gfx/video_context_driver.h"
-#include "../gfx/video_thread_wrapper.h"
 
 typedef struct menu_framebuf
 {
@@ -136,9 +139,10 @@ bool menu_display_font_init_first(const void **font_driver,
          font_path, font_size, FONT_DRIVER_RENDER_OPENGL_API);
 }
 
-bool menu_display_font_bind_block(void *data,
-      const struct font_renderer *font_driver, void *userdata)
+bool menu_display_font_bind_block(void *data, const void *font_data, void *userdata)
 {
+   const struct font_renderer *font_driver = 
+      (const struct font_renderer*)font_data;
    menu_display_t *disp = menu_display_get_ptr();
    if (!disp || !font_driver || !font_driver->bind_block)
       return false;
@@ -148,9 +152,10 @@ bool menu_display_font_bind_block(void *data,
    return true;
 }
 
-bool menu_display_font_flush_block(void *data,
-      const struct font_renderer *font_driver)
+bool menu_display_font_flush_block(void *data, const void *font_data)
 {
+   const struct font_renderer *font_driver = 
+      (const struct font_renderer*)font_data;
    menu_handle_t *menu = (menu_handle_t*)data;
    menu_display_t *disp = menu_display_get_ptr();
    if (!font_driver || !font_driver->flush)
