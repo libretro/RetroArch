@@ -432,12 +432,9 @@ int menu_iterate(bool render_this_frame, unsigned action)
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;
 
-   menu->state = 0;
-
-   menu->menu_state.msg[0]          = '\0';
-
-   hash = menu_hash_calculate(label);
-   
+   menu->state               = 0;
+   menu->menu_state.msg[0]   = '\0';
+   hash                      = menu_hash_calculate(label);
    iterate_type              = action_iterate_type(hash);
 
    if (action != MENU_ACTION_NOOP || menu_entries_needs_refresh() || menu_display_ctl(MENU_DISPLAY_CTL_UPDATE_PENDING, NULL))
@@ -546,6 +543,7 @@ int menu_iterate_render(void)
    {
       if (driver->render_messagebox)
          driver->render_messagebox(menu->menu_state.msg);
+
       if (ui_companion_is_on_foreground())
       {
          const ui_companion_driver_t *ui = ui_companion_get_ptr();
