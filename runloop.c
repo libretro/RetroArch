@@ -301,20 +301,6 @@ static void check_shader_dir(global_t *global,
       RARCH_WARN("%s\n", msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER));
 }
 
-#ifdef HAVE_MENU
-static void do_state_check_menu_toggle(settings_t *settings, global_t *global)
-{
-   if (menu_driver_alive())
-   {
-      if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
-         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-      return;
-   }
-
-   rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
-}
-#endif
-
 global_t *global_get_ptr(void)
 {
    return &g_extern;
@@ -630,30 +616,6 @@ static void rarch_update_frame_time(driver_t *driver, float slowmotion_ratio,
    system->frame_time.callback(delta);
 }
 
-static int rarch_limit_frame_time(float fastforward_ratio, unsigned *sleep_ms)
-{
-   retro_time_t current, target, to_sleep_ms;
-
-   if (!fastforward_ratio)
-      return 0;
-
-   current                        = retro_get_time_usec();
-   target                         = frame_limit_last_time + frame_limit_minimum_time;
-   to_sleep_ms                    = (target - current) / 1000;
-
-   if (to_sleep_ms > 0)
-   {
-      *sleep_ms = (unsigned)to_sleep_ms;
-      /* Combat jitter a bit. */
-      frame_limit_last_time += frame_limit_minimum_time;
-      return 1;
-   }
-
-   frame_limit_last_time  = retro_get_time_usec();
-
-   return 0;
-}
-
 /**
  * check_block_hotkey:
  * @enable_hotkey        : Is hotkey enable key enabled?
@@ -751,18 +713,6 @@ static INLINE retro_input_t input_keys_pressed(driver_t *driver,
    return ret;
 }
 
-/**
- * rarch_main_load_dummy_core:
- *
- * Quits out of RetroArch main loop.
- *
- * On special case, loads dummy core 
- * instead of exiting RetroArch completely.
- * Aborts core shutdown if invoked.
- *
- * Returns: -1 if we are about to quit, otherwise 0.
- **/
-
 #ifdef HAVE_OVERLAY
 static void rarch_main_iterate_linefeed_overlay(driver_t *driver,
       settings_t *settings)
@@ -774,14 +724,12 @@ static void rarch_main_iterate_linefeed_overlay(driver_t *driver,
       driver->osk_enable    = false;
       prev_overlay_restore  = true;
       event_command(EVENT_CMD_OVERLAY_DEINIT);
-      return;
    }
    else if (!driver->osk_enable && driver->keyboard_linefeed_enable)
    {
       driver->osk_enable    = true;
       prev_overlay_restore  = false;
       event_command(EVENT_CMD_OVERLAY_INIT);
-      return;
    }
    else if (prev_overlay_restore)
    {
@@ -800,7 +748,6 @@ void rarch_main_state_free(void)
    frame_limit_last_time                  = 0.0;
    main_max_frames                        = 0;
 }
-
 
 void rarch_main_global_free(void)
 {
@@ -923,6 +870,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    unsigned i;
    retro_input_t trigger_input;
    event_cmd_state_t    cmd;
+   retro_time_t current, target, to_sleep_ms;
    static retro_input_t last_input = 0;
    driver_t *driver                = driver_get_ptr();
    settings_t *settings            = config_get_ptr();
@@ -969,7 +917,15 @@ int rarch_main_iterate(unsigned *sleep_ms)
 
 #ifdef HAVE_MENU
    if (cmd.menu_pressed || (global->inited.core.type == CORE_TYPE_DUMMY))
-      do_state_check_menu_toggle(settings, global);
+   {
+      if (menu_driver_alive())
+      {
+         if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
+            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+      }
+      else
+         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+   }
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -1027,7 +983,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
 
       if (!input && settings->menu.pause_libretro)
         return 1;
-      return rarch_limit_frame_time(settings->fastforward_ratio, sleep_ms);
+      goto end;
    }
 #endif
 
@@ -1093,5 +1049,23 @@ int rarch_main_iterate(unsigned *sleep_ms)
    unlock_autosave();
 #endif
 
-   return rarch_limit_frame_time(settings->fastforward_ratio, sleep_ms);
+end:
+   if (!settings->fastforward_ratio)
+      return 0;
+
+   current                        = retro_get_time_usec();
+   target                         = frame_limit_last_time + frame_limit_minimum_time;
+   to_sleep_ms                    = (target - current) / 1000;
+
+   if (to_sleep_ms > 0)
+   {
+      *sleep_ms = (unsigned)to_sleep_ms;
+      /* Combat jitter a bit. */
+      frame_limit_last_time += frame_limit_minimum_time;
+      return 1;
+   }
+
+   frame_limit_last_time  = retro_get_time_usec();
+
+   return 0;
 }
