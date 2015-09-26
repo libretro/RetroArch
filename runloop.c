@@ -315,54 +315,7 @@ static void do_state_check_menu_toggle(settings_t *settings, global_t *global)
 }
 #endif
 
-/**
- * do_pre_state_checks:
- *
- * Checks for state changes in this frame.
- *
- * Unlike do_state_checks(), this is performed for both
- * the menu and the regular loop.
- *
- * Returns: 0.
- **/
-static int do_pre_state_checks(settings_t *settings,
-      global_t *global, event_cmd_state_t *cmd)
-{
-   if (cmd->overlay_next_pressed)
-      event_command(EVENT_CMD_OVERLAY_NEXT);
-
-   if (!main_is_paused || menu_driver_alive())
-   {
-      if (cmd->fullscreen_toggle)
-         event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
-   }
-
-   if (cmd->grab_mouse_pressed)
-      event_command(EVENT_CMD_GRAB_MOUSE_TOGGLE);
-
-#ifdef HAVE_MENU
-   if (cmd->menu_pressed || (global->inited.core.type == CORE_TYPE_DUMMY))
-      do_state_check_menu_toggle(settings, global);
-#endif
-
-   return 0;
-}
-
-#ifdef HAVE_NETPLAY
-static int do_netplay_state_checks(
-      bool netplay_flip_pressed,
-      bool fullscreen_toggle)
-{
-   if (netplay_flip_pressed)
-      event_command(EVENT_CMD_NETPLAY_FLIP_PLAYERS);
-
-   if (fullscreen_toggle)
-      event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
-   return 0;
-}
-#endif
-
-static int do_pause_state_checks(
+static bool do_pause_state_checks(
       bool frameadvance_pressed,
       bool fullscreen_toggle_pressed,
       bool rewind_pressed)
@@ -370,7 +323,7 @@ static int do_pause_state_checks(
    bool check_is_oneshot     = frameadvance_pressed || rewind_pressed;
 
    if (!main_is_paused)
-      return 0;
+      return true;
 
    if (fullscreen_toggle_pressed)
    {
@@ -379,9 +332,9 @@ static int do_pause_state_checks(
    }
 
    if (!check_is_oneshot)
-      return 1;
+      return false;
 
-   return 0;
+   return true;
 }
 
 global_t *global_get_ptr(void)
@@ -578,11 +531,11 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
  *
  * Returns: 1 if RetroArch is in pause mode, 0 otherwise.
  **/
-static int do_state_checks(driver_t *driver, settings_t *settings,
+static bool do_state_checks(driver_t *driver, settings_t *settings,
       global_t *global, event_cmd_state_t *cmd)
 {
    if (main_is_idle)
-      return 1;
+      return false;
 
    if (cmd->screenshot_pressed)
       event_command(EVENT_CMD_TAKE_SCREENSHOT);
@@ -600,18 +553,24 @@ static int do_state_checks(driver_t *driver, settings_t *settings,
 
 #ifdef HAVE_NETPLAY
    if (driver->netplay_data)
-      return do_netplay_state_checks(cmd->netplay_flip_pressed,
-            cmd->fullscreen_toggle);
+   {
+      if (cmd->netplay_flip_pressed)
+         event_command(EVENT_CMD_NETPLAY_FLIP_PLAYERS);
+
+      if (cmd->fullscreen_toggle)
+         event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
+      return true;
+   }
 #endif
 
    check_pause(driver, settings, 
          cmd->pause_pressed, cmd->frameadvance_pressed);
 
-   if (do_pause_state_checks(
+   if (!do_pause_state_checks(
             cmd->frameadvance_pressed,
             cmd->fullscreen_toggle,
             cmd->rewind_pressed))
-      return 1;
+      return false;
 
    check_fast_forward_button(driver,
          cmd->fastforward_pressed,
@@ -654,7 +613,7 @@ static int do_state_checks(driver_t *driver, settings_t *settings,
          cheat_manager_toggle(global->cheat);
    }
 
-   return 0;
+   return true;
 }
 
 /**
@@ -878,7 +837,6 @@ static void rarch_main_iterate_linefeed_overlay(driver_t *driver,
 }
 #endif
 
-
 void rarch_main_state_free(void)
 {
    main_is_idle                           = false;
@@ -1047,7 +1005,22 @@ int rarch_main_iterate(unsigned *sleep_ms)
    if (system->frame_time.callback)
       rarch_update_frame_time(driver, settings->slowmotion_ratio, system);
 
-   do_pre_state_checks(settings, global, &cmd);
+   if (cmd.overlay_next_pressed)
+      event_command(EVENT_CMD_OVERLAY_NEXT);
+
+   if (!main_is_paused || menu_driver_alive())
+   {
+      if (cmd.fullscreen_toggle)
+         event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
+   }
+
+   if (cmd.grab_mouse_pressed)
+      event_command(EVENT_CMD_GRAB_MOUSE_TOGGLE);
+
+#ifdef HAVE_MENU
+   if (cmd.menu_pressed || (global->inited.core.type == CORE_TYPE_DUMMY))
+      do_state_check_menu_toggle(settings, global);
+#endif
 
 #ifdef HAVE_OVERLAY
    rarch_main_iterate_linefeed_overlay(driver, settings);
@@ -1095,7 +1068,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    }
 #endif
 
-   if (do_state_checks(driver, settings, global, &cmd))
+   if (!do_state_checks(driver, settings, global, &cmd))
    {
       /* RetroArch has been paused. */
       driver->retro_ctx.poll_cb();
