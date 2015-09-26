@@ -214,12 +214,13 @@ static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
 {
    unsigned i;
    uint8_t        *font = (uint8_t *) calloc(1, FONT_OFFSET(256));
+   bool fb_font_inited  = true;
    menu_display_t *disp = menu_display_get_ptr();
 
    if (!font)
       return false;
 
-   disp->font.alloc_framebuf = true;
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_FB_DATA_INIT, &fb_font_inited);
 
    for (i = 0; i < 256; i++)
    {
@@ -708,6 +709,7 @@ error:
 
 static void rgui_free(void *data)
 {
+   bool fb_font_inited   = false;
    menu_handle_t  *menu  = (menu_handle_t*)data;
    menu_display_t  *disp = menu_display_get_ptr();
 
@@ -718,9 +720,14 @@ static void rgui_free(void *data)
       free(menu->userdata);
    menu->userdata = NULL;
 
-   if (disp->font.alloc_framebuf)
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_FB_DATA_INIT, &fb_font_inited);
+
+   if (fb_font_inited)
       free((uint8_t*)disp->font.framebuf);
-   disp->font.alloc_framebuf = false;
+
+   fb_font_inited = false;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_FB_DATA_INIT, &fb_font_inited);
 }
 
 static void rgui_set_texture(void)

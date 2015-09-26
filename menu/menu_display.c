@@ -286,6 +286,22 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             frame_buf->pitch = *ptr;
          }
          return true;
+      case MENU_DISPLAY_CTL_FONT_FB_DATA_INIT:
+         {
+            bool *ptr = (bool*)data;
+            if (!ptr)
+               return false;
+            *ptr = disp->font.alloc_framebuf;
+         }
+         return true;
+      case MENU_DISPLAY_CTL_SET_FONT_FB_DATA_INIT:
+         {
+            bool *ptr = (bool*)data;
+            if (!ptr)
+               return false;
+            disp->font.alloc_framebuf = *ptr;
+         }
+         return true;
       case MENU_DISPLAY_CTL_UPDATE_PENDING:
          if (menu_animation_ctl(MENU_ANIMATION_CTL_IS_ACTIVE, NULL) || (frame_buf && frame_buf->dirty))
             return true;
