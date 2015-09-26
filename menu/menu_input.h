@@ -70,7 +70,8 @@ enum menu_input_ctl_state
    MENU_INPUT_CTL_POINTER_DRAGGING,
    MENU_INPUT_CTL_KEYBOARD_DISPLAY,
    MENU_INPUT_CTL_KEYBOARD_BUFF_PTR,
-   MENU_INPUT_CTL_KEYBOARD_LABEL
+   MENU_INPUT_CTL_KEYBOARD_LABEL,
+   MENU_INPUT_CTL_SEARCH_START
 };
 
 enum mouse_action
@@ -110,8 +111,6 @@ int menu_input_bind_iterate(char *s, size_t len);
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_state);
 
 void menu_input_post_iterate(int *ret, unsigned action);
-
-void menu_input_search_start(void);
 
 int menu_input_set_keyboard_bind_mode(void *data, enum menu_input_bind_mode type);
 

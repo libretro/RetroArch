@@ -162,15 +162,55 @@ void menu_input_key_event(bool down, unsigned keycode,
       menu_entry_action(NULL, 0, MENU_ACTION_SEARCH);
 }
 
+static void menu_input_key_end_line(void)
+{
+   driver_t *driver         = driver_get_ptr();
+   menu_input_t *menu_input = menu_input_get_ptr();
+   if (!menu_input)
+      return;
+
+   menu_input->keyboard.display       = false;
+   menu_input->keyboard.label         = NULL;
+   menu_input->keyboard.label_setting = NULL;
+
+   /* Avoid triggering states on pressing return. */
+   driver->flushing_input = true;
+}
+
+static void menu_input_search_callback(void *userdata, const char *str)
+{
+   size_t idx = 0;
+   menu_list_t *menu_list = menu_list_get_ptr();
+
+   if (!menu_list)
+      return;
+
+   if (str && *str && file_list_search(menu_list->selection_buf, str, &idx))
+   {
+      bool scroll = true;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+   }
+
+   menu_input_key_end_line();
+}
+
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 {
    menu_input_t *menu_input = menu_input_get_ptr();
+   menu_handle_t      *menu = menu_driver_get_ptr();
 
    if (!menu_input)
       return false;
 
    switch (state)
    {
+      case MENU_INPUT_CTL_SEARCH_START:
+         menu_input->keyboard.display = true;
+         menu_input->keyboard.label   = menu_hash_to_str(MENU_VALUE_SEARCH);
+         menu_input->keyboard.buffer  =
+            input_keyboard_start_line(menu, menu_input_search_callback);
+         return true;
       case MENU_INPUT_CTL_MOUSE_SCROLL_DOWN:
          {
             bool *ptr = (bool*)data;
@@ -253,38 +293,7 @@ void menu_input_key_start_line(const char *label,
    menu_input->keyboard.buffer        = input_keyboard_start_line(menu, cb);
 }
 
-static void menu_input_key_end_line(void)
-{
-   driver_t *driver         = driver_get_ptr();
-   menu_input_t *menu_input = menu_input_get_ptr();
-   if (!menu_input)
-      return;
 
-   menu_input->keyboard.display       = false;
-   menu_input->keyboard.label         = NULL;
-   menu_input->keyboard.label_setting = NULL;
-
-   /* Avoid triggering states on pressing return. */
-   driver->flushing_input = true;
-}
-
-static void menu_input_search_callback(void *userdata, const char *str)
-{
-   size_t idx = 0;
-   menu_list_t *menu_list = menu_list_get_ptr();
-
-   if (!menu_list)
-      return;
-
-   if (str && *str && file_list_search(menu_list->selection_buf, str, &idx))
-   {
-      bool scroll = true;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
-   }
-
-   menu_input_key_end_line();
-}
 
 void menu_input_st_uint_callback(void *userdata, const char *str)
 {
@@ -382,18 +391,6 @@ void menu_input_st_cheat_callback(void *userdata, const char *str)
    menu_input_key_end_line();
 }
 
-void menu_input_search_start(void)
-{
-   menu_handle_t      *menu = menu_driver_get_ptr();
-   menu_input_t *menu_input = menu_input_get_ptr();
-   if (!menu || !menu_input)
-      return;
-
-   menu_input->keyboard.display = true;
-   menu_input->keyboard.label   = menu_hash_to_str(MENU_VALUE_SEARCH);
-   menu_input->keyboard.buffer  =
-      input_keyboard_start_line(menu, menu_input_search_callback);
-}
 
 
 static void menu_input_poll_bind_state(struct menu_bind_state *state, unsigned port)

@@ -414,7 +414,7 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
          break;
 
       case MENU_ACTION_SEARCH:
-         menu_input_search_start();
+         menu_input_ctl(MENU_INPUT_CTL_SEARCH_START, NULL);
          break;
 
       case MENU_ACTION_SCAN:
