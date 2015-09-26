@@ -25,6 +25,7 @@
 
 #include "menu_input.h"
 #include "menu.h"
+#include "menu_animation.h"
 #include "menu_display.h"
 #include "menu_entry.h"
 #include "menu_setting.h"

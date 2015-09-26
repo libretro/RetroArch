@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <retro_miscellaneous.h>
-#include "menu_animation.h"
 #include "menu_displaylist.h"
 #include "menu_entries.h"
 #include "menu_list.h"

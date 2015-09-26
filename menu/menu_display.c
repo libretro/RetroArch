@@ -23,6 +23,7 @@
 #include "../gfx/video_thread_wrapper.h"
 
 #include "menu.h"
+#include "menu_animation.h"
 #include "menu_display.h"
 
 typedef struct menu_framebuf

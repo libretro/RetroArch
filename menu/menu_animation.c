@@ -19,7 +19,7 @@
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 
-#include "menu_display.h"
+#include "menu_animation.h"
 #include "../configuration.h"
 #include "../performance.h"
 
