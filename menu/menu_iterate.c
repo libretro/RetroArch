@@ -36,6 +36,15 @@ enum menu_state_changes
    MENU_STATE_POST_ITERATE
 }; 
 
+enum action_iterate_type
+{
+   ITERATE_TYPE_DEFAULT = 0,
+   ITERATE_TYPE_HELP,
+   ITERATE_TYPE_INFO,
+   ITERATE_TYPE_VIEWPORT,
+   ITERATE_TYPE_BIND
+};
+
 static int action_iterate_help(char *s, size_t len, const char *label)
 {
    unsigned i;
@@ -367,15 +376,6 @@ static int action_iterate_menu_viewport(char *s, size_t len,
 
    return 0;
 }
-
-enum action_iterate_type
-{
-   ITERATE_TYPE_DEFAULT = 0,
-   ITERATE_TYPE_HELP,
-   ITERATE_TYPE_INFO,
-   ITERATE_TYPE_VIEWPORT,
-   ITERATE_TYPE_BIND
-};
 
 static enum action_iterate_type action_iterate_type(uint32_t hash)
 {
