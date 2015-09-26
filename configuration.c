@@ -786,12 +786,12 @@ static void config_set_defaults(void)
 #ifdef HAVE_OVERLAY
    if (*g_defaults.dir.overlay)
    {
-      fill_pathname_expand_special(global->dir.overlay,
-            g_defaults.dir.overlay, sizeof(global->dir.overlay));
+      fill_pathname_expand_special(settings->overlay_directory,
+            g_defaults.dir.overlay, sizeof(settings->overlay_directory));
 #ifdef RARCH_MOBILE
       if (!*settings->input.overlay)
             fill_pathname_join(settings->input.overlay,
-                  global->dir.overlay,
+                  settings->overlay_directory,
                   "gamepads/retropad/retropad.cfg",
                   sizeof(settings->input.overlay));
 #endif
@@ -811,7 +811,7 @@ static void config_set_defaults(void)
    }
    else
       strlcpy(global->dir.osk_overlay,
-            global->dir.overlay, sizeof(global->dir.osk_overlay));
+            settings->overlay_directory, sizeof(global->dir.osk_overlay));
 #endif
 #ifdef HAVE_MENU
    if (*g_defaults.dir.menu_config)
@@ -1575,9 +1575,9 @@ static bool config_load_file(const char *path, bool set_defaults)
          sizeof(global->record.config_dir));
 
 #ifdef HAVE_OVERLAY
-   config_get_path(conf, "overlay_directory", global->dir.overlay, sizeof(global->dir.overlay));
-   if (!strcmp(global->dir.overlay, "default"))
-      *global->dir.overlay = '\0';
+   config_get_path(conf, "overlay_directory", settings->overlay_directory, sizeof(settings->overlay_directory));
+   if (!strcmp(settings->overlay_directory, "default"))
+      *settings->overlay_directory = '\0';
 
    config_get_path(conf, "input_overlay", settings->input.overlay, sizeof(settings->input.overlay));
    CONFIG_GET_BOOL_BASE(conf, settings, input.overlay_enable, "input_overlay_enable");
@@ -2658,7 +2658,7 @@ bool config_save_file(const char *path)
 
 #ifdef HAVE_OVERLAY
    config_set_path(conf, "overlay_directory",
-         *global->dir.overlay ? global->dir.overlay : "default");
+         *settings->overlay_directory ? settings->overlay_directory : "default");
    config_set_path(conf, "input_overlay", settings->input.overlay);
    config_set_bool(conf, "input_overlay_enable", settings->input.overlay_enable);
    config_set_bool(conf, "input_overlay_enable_autopreferred", settings->input.overlay_enable_autopreferred);

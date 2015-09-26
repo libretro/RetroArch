@@ -4456,7 +4456,7 @@ static bool setting_append_list_overlay_options(
          settings->input.overlay,
          menu_hash_to_str(MENU_LABEL_OVERLAY_PRESET),
          menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_PRESET),
-         global->dir.overlay,
+         settings->overlay_directory,
          group_info.name,
          subgroup_info.name,
          parent_group,
@@ -5678,7 +5678,7 @@ static bool setting_append_list_directory_options(
    }
 #ifdef HAVE_OVERLAY
    CONFIG_DIR(
-         global->dir.overlay,
+         settings->overlay_directory,
          menu_hash_to_str(MENU_LABEL_OVERLAY_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_DIRECTORY),
          g_defaults.dir.overlay,

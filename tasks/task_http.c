@@ -217,8 +217,8 @@ static int cb_update_databases(void *data, size_t len)
 
 static int cb_update_overlays(void *data, size_t len)
 {
-   global_t                *global       = global_get_ptr();
-   return cb_generic_download(data, len, global->dir.overlay);
+   settings_t              *settings     = config_get_ptr();
+   return cb_generic_download(data, len, settings->overlay_directory);
 }
 
 static int cb_update_cheats(void *data, size_t len)

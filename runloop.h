@@ -148,7 +148,6 @@ typedef struct global
       char savestate[PATH_MAX_LENGTH];
       char systemdir[PATH_MAX_LENGTH];
 #ifdef HAVE_OVERLAY
-      char overlay[PATH_MAX_LENGTH];
       char osk_overlay[PATH_MAX_LENGTH];
 #endif
    } dir;
