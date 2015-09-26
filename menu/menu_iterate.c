@@ -447,8 +447,6 @@ int menu_iterate(bool render_this_frame, unsigned action)
    {
       case ITERATE_TYPE_HELP:
          ret = action_iterate_help(menu->menu_state.msg, sizeof(menu->menu_state.msg), label);
-         if (render_this_frame)
-            BIT64_SET(menu->state, MENU_STATE_BLIT);
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
@@ -463,19 +461,13 @@ int menu_iterate(bool render_this_frame, unsigned action)
          }
          else
             BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
-         if (render_this_frame)
-            BIT64_SET(menu->state, MENU_STATE_BLIT);
          break;
       case ITERATE_TYPE_VIEWPORT:
          ret = action_iterate_menu_viewport(menu->menu_state.msg, sizeof(menu->menu_state.msg), label, action, hash);
-         if (render_this_frame)
-            BIT64_SET(menu->state, MENU_STATE_BLIT);
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          break;
       case ITERATE_TYPE_INFO:
          ret = action_iterate_info(menu->menu_state.msg, sizeof(menu->menu_state.msg), label);
-         if (render_this_frame)
-            BIT64_SET(menu->state, MENU_STATE_BLIT);
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
@@ -488,8 +480,6 @@ int menu_iterate(bool render_this_frame, unsigned action)
             goto end;
 
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
-         if (render_this_frame)
-            BIT64_SET(menu->state, MENU_STATE_BLIT);
 
          /* Have to defer it so we let settings refresh. */
          if (menu->push_help_screen)
@@ -505,6 +495,9 @@ int menu_iterate(bool render_this_frame, unsigned action)
          }
          break;
    }
+
+   if (render_this_frame)
+      BIT64_SET(menu->state, MENU_STATE_BLIT);
 
    if (BIT64_GET(menu->state, MENU_STATE_POP_STACK) && action == MENU_ACTION_OK)
    {
