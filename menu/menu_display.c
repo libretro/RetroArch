@@ -45,34 +45,6 @@ static menu_framebuf_t *menu_display_fb_get_ptr(void)
    return &frame_buf_state;
 }
 
-/**
- ** menu_display_fb:
- *
- * Draws menu graphics onscreen.
- **/
-void menu_display_libretro(void)
-{
-   settings_t *settings = config_get_ptr();
-
-   video_driver_set_texture_enable(true, false);
-
-   if (!settings->menu.pause_libretro)
-   {
-      driver_t *driver     = driver_get_ptr();
-      global_t *global     = global_get_ptr();
-
-      if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
-      {
-         bool block_libretro_input = driver->block_libretro_input;
-         driver->block_libretro_input = true;
-         pretro_run();
-         driver->block_libretro_input = block_libretro_input;
-         return;
-      }
-   }
-
-   video_driver_cached_frame();
-}
 
 
 static void menu_display_fb_free(menu_framebuf_t *frame_buf)
@@ -218,8 +190,30 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
    unsigned width, height;
    menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
    menu_display_t  *disp      = menu_display_get_ptr();
+   settings_t *settings       = config_get_ptr();
+
    switch (state)
    {
+      case MENU_DISPLAY_CTL_LIBRETRO:
+         video_driver_set_texture_enable(true, false);
+
+         if (!settings->menu.pause_libretro)
+         {
+            driver_t *driver     = driver_get_ptr();
+            global_t *global     = global_get_ptr();
+
+            if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
+            {
+               bool block_libretro_input = driver->block_libretro_input;
+               driver->block_libretro_input = true;
+               pretro_run();
+               driver->block_libretro_input = block_libretro_input;
+               return true;
+            }
+         }
+
+         video_driver_cached_frame();
+         return true;
       case MENU_DISPLAY_CTL_SET_WIDTH:
          {
             unsigned *ptr = (unsigned*)data;
@@ -324,10 +318,8 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          return true;
       case MENU_DISPLAY_CTL_GET_DPI:
          {
-            settings_t *settings = config_get_ptr();
             float           *dpi = (float*)data;
-
-            *dpi       = menu_dpi_override_value;
+            *dpi                 = menu_dpi_override_value;
 
             if (!settings)
                return true;
