@@ -131,6 +131,7 @@ static bool take_screenshot_raw(void)
  **/
 bool take_screenshot(void)
 {
+   bool is_paused;
    bool viewport_read   = false;
    bool ret             = true;
    const char *msg      = NULL;
@@ -205,9 +206,11 @@ bool take_screenshot(void)
       msg = msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
    }
 
-   rarch_main_msg_queue_push(msg, 1, rarch_main_is_paused() ? 1 : 180, true);
+   rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED, &is_paused);
 
-   if (rarch_main_is_paused())
+   rarch_main_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
+
+   if (is_paused)
       video_driver_cached_frame();
 
    return ret;

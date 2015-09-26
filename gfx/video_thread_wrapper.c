@@ -430,10 +430,12 @@ static void thread_loop(void *data)
 
 static bool thread_alive(void *data)
 {
-   bool ret;
+   bool ret, is_paused;
    thread_video_t *thr = (thread_video_t*)data;
 
-   if (rarch_main_is_paused())
+   rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED, &is_paused);
+
+   if (is_paused)
    {
       thread_packet_t pkt = { CMD_ALIVE };
       thread_send_and_wait(thr, &pkt);

@@ -1632,7 +1632,7 @@ static bool gl_frame(void *data, const void *frame,
       uint64_t frame_count,
       unsigned pitch, const char *msg)
 {
-   bool is_slowmotion;
+   bool is_slowmotion, is_paused;
    unsigned width, height;
    struct gfx_tex_info feedback_info;
    static struct retro_perf_counter frame_run = {0};
@@ -1840,12 +1840,14 @@ static bool gl_frame(void *data, const void *frame,
 #endif
 #endif
    rarch_main_ctl(RARCH_MAIN_CTL_IS_SLOWMOTION, &is_slowmotion);
+   rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED,     &is_paused);
 
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
-   if (settings->video.black_frame_insertion &&
-         !driver->nonblock_state && !is_slowmotion
-         && !rarch_main_is_paused())
+   if (
+         settings->video.black_frame_insertion
+         && !driver->nonblock_state
+         && !is_slowmotion && !is_paused)
    {
       gfx_ctx_swap_buffers(gl);
       glClear(GL_COLOR_BUFFER_BIT);

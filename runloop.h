@@ -36,7 +36,8 @@ extern "C" {
 enum rarch_main_ctl_state
 {
    RARCH_MAIN_CTL_IS_IDLE = 0,
-   RARCH_MAIN_CTL_IS_SLOWMOTION
+   RARCH_MAIN_CTL_IS_SLOWMOTION,
+   RARCH_MAIN_CTL_IS_PAUSED,
 };
 
 typedef struct rarch_resolution
@@ -334,8 +335,6 @@ bool rarch_main_verbosity(void);
 FILE *rarch_main_log_file(void);
 
 bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data);
-
-bool rarch_main_is_paused(void);
 
 void rarch_main_set_slowmotion(unsigned enable);
 

@@ -594,7 +594,7 @@ void audio_driver_set_nonblocking_state(bool enable)
  **/
 bool audio_driver_flush(const int16_t *data, size_t samples)
 {
-   bool is_slowmotion;
+   bool is_slowmotion, is_paused;
    static struct retro_perf_counter audio_convert_s16 = {0};
    static struct retro_perf_counter audio_convert_float = {0};
    static struct retro_perf_counter audio_dsp         = {0};
@@ -619,7 +619,9 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
          driver->recording->push_audio(driver->recording_data, &ffemu_data);
    }
 
-   if (rarch_main_is_paused() || settings->audio.mute_enable)
+   rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED, &is_paused);
+
+   if (is_paused || settings->audio.mute_enable)
       return true;
    if (!driver->audio_active || !audio_data.data)
       return false;

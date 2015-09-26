@@ -293,6 +293,7 @@ error:
 
 static void engine_handle_cmd(void)
 {
+   bool is_paused;
    int8_t cmd;
    struct android_app *android_app = (struct android_app*)g_android;
    driver_t  *driver  = driver_get_ptr();
@@ -330,7 +331,9 @@ static void engine_handle_cmd(void)
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
 
-         if (rarch_main_is_paused())
+         rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED, &is_paused);
+
+         if (is_paused)
             event_command(EVENT_CMD_REINIT);
          break;
 

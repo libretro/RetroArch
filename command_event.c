@@ -1439,7 +1439,9 @@ bool event_command(enum event_command cmd)
 #endif
          break;
       case EVENT_CMD_PAUSE_CHECKS:
-         if (rarch_main_is_paused())
+         rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED, &boolean);
+
+         if (boolean)
          {
             RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
             event_command(EVENT_CMD_AUDIO_STOP);
@@ -1454,7 +1456,8 @@ bool event_command(enum event_command cmd)
          }
          break;
       case EVENT_CMD_PAUSE_TOGGLE:
-         rarch_main_set_pause(!rarch_main_is_paused());
+         rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED, &boolean);
+         rarch_main_set_pause(!boolean);
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_UNPAUSE:

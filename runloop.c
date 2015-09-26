@@ -896,11 +896,6 @@ void rarch_main_set_idle(unsigned enable)
    main_is_idle = enable;
 }
 
-bool rarch_main_is_paused(void)
-{
-   return main_is_paused;
-}
-
 bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 {
    switch (state)
@@ -921,6 +916,15 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             *ptr = main_is_slowmotion;
          }
          return true;
+      case RARCH_MAIN_CTL_IS_PAUSED:
+         {
+            bool *ptr = (bool*)data;
+            if (!ptr)
+               return false;
+            *ptr = main_is_paused;
+         }
+         return true;
+
    }
 
    return false;
