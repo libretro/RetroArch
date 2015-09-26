@@ -334,6 +334,9 @@ void menu_driver_toggle(bool latch)
       driver->toggle(latch);
 
    menu_alive = latch;
+
+   if (menu_alive)
+      menu_entries_set_refresh(false);
 }
 
 bool menu_driver_load_image(void *data, menu_image_type_t type)

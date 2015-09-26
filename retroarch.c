@@ -1397,8 +1397,6 @@ void rarch_main_set_state(unsigned cmd)
             system->key_event          = menu_input_key_event;
             system->frame_time_last    = 0;
          }
-
-         menu_entries_set_refresh(false);
 #endif
 #ifdef HAVE_OVERLAY
          if (settings->input.overlay_hide_in_menu)
