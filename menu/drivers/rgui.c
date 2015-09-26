@@ -465,8 +465,8 @@ static void rgui_render(void)
    {
       bool pointer_dragged = false;
       unsigned new_val = menu_input_pointer_state(MENU_POINTER_Y_AXIS) / 11 - 2 + menu_entries_get_start();
-      menu_input_ctl(MENU_CTL_POINTER_PTR, &new_val);
-      menu_input_ctl(MENU_CTL_POINTER_DRAGGING, &pointer_dragged);
+      menu_input_ctl(MENU_INPUT_CTL_POINTER_PTR, &new_val);
+      menu_input_ctl(MENU_INPUT_CTL_POINTER_DRAGGING, &pointer_dragged);
 
       if (pointer_dragged)
       {
@@ -484,8 +484,8 @@ static void rgui_render(void)
       bool mouse_scrolldown, mouse_scrollup;
       int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-      menu_input_ctl(MENU_CTL_MOUSE_SCROLL_DOWN, &mouse_scrolldown);
-      menu_input_ctl(MENU_CTL_MOUSE_SCROLL_UP,   &mouse_scrollup);
+      menu_input_ctl(MENU_INPUT_CTL_MOUSE_SCROLL_DOWN, &mouse_scrolldown);
+      menu_input_ctl(MENU_INPUT_CTL_MOUSE_SCROLL_UP,   &mouse_scrollup);
 
       if (mouse_scrolldown
             && (menu_entries_get_start() < menu_entries_get_end() - RGUI_TERM_HEIGHT(fb_width, fb_height)))
@@ -496,7 +496,7 @@ static void rgui_render(void)
 
       new_mouse_ptr = mouse_y / 11 - 2 + menu_entries_get_start();
 
-      menu_input_ctl(MENU_CTL_MOUSE_PTR, &new_mouse_ptr);
+      menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &new_mouse_ptr);
    }
 
    /* Do not scroll if all items are visible. */
@@ -612,13 +612,13 @@ static void rgui_render(void)
    rgui_render_messagebox( message_queue);
 #endif
 
-   menu_input_ctl(MENU_CTL_KEYBOARD_DISPLAY, &display_kb);
+   menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
 
    if (display_kb)
    {
       const char *str = NULL, *label = NULL;
-      menu_input_ctl(MENU_CTL_KEYBOARD_BUFF_PTR, &str);
-      menu_input_ctl(MENU_CTL_KEYBOARD_LABEL,    &label);
+      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_BUFF_PTR, &str);
+      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL,    &label);
 
       if (!str)
          str = "";

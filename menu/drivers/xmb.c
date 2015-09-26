@@ -1433,13 +1433,13 @@ static void xmb_render(void)
          if (settings->menu.pointer.enable)
          {
             if (pointer_y > item_y1 && pointer_y < item_y2)
-               menu_input_ctl(MENU_CTL_POINTER_PTR, &i);
+               menu_input_ctl(MENU_INPUT_CTL_POINTER_PTR, &i);
          }
 
          if (settings->menu.mouse.enable)
          {
             if (mouse_y > item_y1 && mouse_y < item_y2)
-               menu_input_ctl(MENU_CTL_MOUSE_PTR, &i);
+               menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &i);
          }
       }
    }
@@ -1626,13 +1626,13 @@ static void xmb_frame(void)
 
    menu_display_font_flush_block(menu, font_driver);
 
-   menu_input_ctl(MENU_CTL_KEYBOARD_DISPLAY, &display_kb);
+   menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
 
    if (display_kb)
    {
       const char *str = NULL, *label = NULL;
-      menu_input_ctl(MENU_CTL_KEYBOARD_BUFF_PTR, &str);
-      menu_input_ctl(MENU_CTL_KEYBOARD_LABEL,    &label);
+      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_BUFF_PTR, &str);
+      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL,    &label);
 
       if (!str)
          str = "";

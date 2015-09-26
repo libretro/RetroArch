@@ -593,14 +593,14 @@ static void rmenu_xui_render(void)
       return;
 	XuiListSetCurSelVisible(m_menulist, selection);
 
-   menu_input_ctl(MENU_CTL_KEYBOARD_DISPLAY, &display_kb);
+   menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
 
    if (display_kb)
 	{
 		char msg[1024]  = {0};
       const char *str = NULL, *label = NULL;
-      menu_input_ctl(MENU_CTL_KEYBOARD_BUFF_PTR, &str);
-      menu_input_ctl(MENU_CTL_KEYBOARD_LABEL,    &label);
+      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_BUFF_PTR, &str);
+      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL,    &label);
 
 		if (!str)
 			str = "";

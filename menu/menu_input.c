@@ -162,7 +162,7 @@ void menu_input_key_event(bool down, unsigned keycode,
       menu_entry_action(NULL, 0, MENU_ACTION_SEARCH);
 }
 
-bool menu_input_ctl(enum menu_ctl_state state, void *data)
+bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 {
    menu_input_t *menu_input = menu_input_get_ptr();
 
@@ -171,61 +171,61 @@ bool menu_input_ctl(enum menu_ctl_state state, void *data)
 
    switch (state)
    {
-      case MENU_CTL_MOUSE_SCROLL_DOWN:
+      case MENU_INPUT_CTL_MOUSE_SCROLL_DOWN:
          {
             bool *ptr = (bool*)data;
             *ptr = menu_input->mouse.scrolldown;
          }
          return true;
-      case MENU_CTL_MOUSE_SCROLL_UP:
+      case MENU_INPUT_CTL_MOUSE_SCROLL_UP:
          {
             bool *ptr = (bool*)data;
             *ptr = menu_input->mouse.scrollup;
          }
          return true;
-      case MENU_CTL_MOUSE_PTR:
+      case MENU_INPUT_CTL_MOUSE_PTR:
          {
             unsigned *ptr = (unsigned*)data;
             menu_input->mouse.ptr = *ptr;
          }
          return true;
-      case MENU_CTL_POINTER_PTR:
+      case MENU_INPUT_CTL_POINTER_PTR:
          {
             unsigned *ptr = (unsigned*)data;
             menu_input->pointer.ptr = *ptr;
          }
          return true;
-      case MENU_CTL_POINTER_ACCEL_READ:
+      case MENU_INPUT_CTL_POINTER_ACCEL_READ:
          {
             float *ptr = (float*)data;
             *ptr = menu_input->pointer.accel;
          }
          return true;
-      case MENU_CTL_POINTER_ACCEL_WRITE:
+      case MENU_INPUT_CTL_POINTER_ACCEL_WRITE:
          {
             float *ptr = (float*)data;
             menu_input->pointer.accel = *ptr;
          }
          return true;
-      case MENU_CTL_POINTER_DRAGGING:
+      case MENU_INPUT_CTL_POINTER_DRAGGING:
          {
             bool *ptr = (bool*)data;
             *ptr = menu_input->pointer.dragging;
          }
          return true;
-      case MENU_CTL_KEYBOARD_DISPLAY:
+      case MENU_INPUT_CTL_KEYBOARD_DISPLAY:
          {
             bool *ptr = (bool*)data;
             *ptr = menu_input->keyboard.display;
          }
          return true;
-      case MENU_CTL_KEYBOARD_BUFF_PTR:
+      case MENU_INPUT_CTL_KEYBOARD_BUFF_PTR:
          {
             const char **ptr = (const char**)data;
             *ptr = *menu_input->keyboard.buffer;
          }
          return true;
-      case MENU_CTL_KEYBOARD_LABEL:
+      case MENU_INPUT_CTL_KEYBOARD_LABEL:
          {
             const char **ptr = (const char**)data;
             *ptr = menu_input->keyboard.label;
@@ -381,7 +381,6 @@ void menu_input_st_cheat_callback(void *userdata, const char *str)
 
    menu_input_key_end_line();
 }
-
 
 void menu_input_search_start(void)
 {

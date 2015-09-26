@@ -59,18 +59,18 @@ enum menu_input_mouse_state
    MENU_MOUSE_Y_AXIS
 };
 
-enum menu_ctl_state
+enum menu_input_ctl_state
 {
-   MENU_CTL_MOUSE_SCROLL_DOWN = 0,
-   MENU_CTL_MOUSE_SCROLL_UP,
-   MENU_CTL_MOUSE_PTR,
-   MENU_CTL_POINTER_PTR,
-   MENU_CTL_POINTER_ACCEL_READ,
-   MENU_CTL_POINTER_ACCEL_WRITE,
-   MENU_CTL_POINTER_DRAGGING,
-   MENU_CTL_KEYBOARD_DISPLAY,
-   MENU_CTL_KEYBOARD_BUFF_PTR,
-   MENU_CTL_KEYBOARD_LABEL
+   MENU_INPUT_CTL_MOUSE_SCROLL_DOWN = 0,
+   MENU_INPUT_CTL_MOUSE_SCROLL_UP,
+   MENU_INPUT_CTL_MOUSE_PTR,
+   MENU_INPUT_CTL_POINTER_PTR,
+   MENU_INPUT_CTL_POINTER_ACCEL_READ,
+   MENU_INPUT_CTL_POINTER_ACCEL_WRITE,
+   MENU_INPUT_CTL_POINTER_DRAGGING,
+   MENU_INPUT_CTL_KEYBOARD_DISPLAY,
+   MENU_INPUT_CTL_KEYBOARD_BUFF_PTR,
+   MENU_INPUT_CTL_KEYBOARD_LABEL
 };
 
 enum mouse_action
@@ -121,7 +121,7 @@ int16_t menu_input_pointer_state(enum menu_input_pointer_state state);
 
 int16_t menu_input_mouse_state(enum menu_input_mouse_state state);
 
-bool menu_input_ctl(enum menu_ctl_state state, void *data);
+bool menu_input_ctl(enum menu_input_ctl_state state, void *data);
 
 void menu_input_set_binds_minmax(unsigned min, unsigned max);
 
