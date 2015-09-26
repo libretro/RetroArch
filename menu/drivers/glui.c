@@ -72,6 +72,7 @@ static const GRfloat glui_tex_coords[] = {
 static void glui_blit_line(float x, float y, unsigned width, unsigned height,
       const char *message, uint32_t color, enum text_alignment text_align)
 {
+   int font_size;
    glui_handle_t *glui       = NULL;
    struct font_params params = {0};
    menu_handle_t *menu       = menu_driver_get_ptr();
@@ -82,8 +83,10 @@ static void glui_blit_line(float x, float y, unsigned width, unsigned height,
 
    glui = (glui_handle_t*)menu->userdata;
 
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
+
    params.x           = x / width;
-   params.y           = 1.0f - (y + glui->line_height/2 + disp->font.size/3) 
+   params.y           = 1.0f - (y + glui->line_height / 2 + font_size / 3) 
       / height;
    params.scale       = 1.0;
    params.color       = color;
@@ -169,7 +172,7 @@ static void glui_render_messagebox(const char *message)
    unsigned i;
    unsigned width, height;
    uint32_t normal_color;
-   int x, y;
+   int x, y, font_size;
    struct string_list *list = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
    menu_display_t *disp     = menu_display_get_ptr();
@@ -188,8 +191,10 @@ static void glui_render_messagebox(const char *message)
 
    video_driver_get_size(&width, &height);
 
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
+
    x = width  / 2;
-   y = height / 2 - list->size * disp->font.size / 2;
+   y = height / 2 - list->size * font_size / 2;
 
    normal_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_normal_color);
 
@@ -197,7 +202,7 @@ static void glui_render_messagebox(const char *message)
    {
       const char *msg = list->elems[i].data;
       if (msg)
-         glui_blit_line(x, y + i * disp->font.size,
+         glui_blit_line(x, y + i * font_size,
                width, height,
                msg, normal_color, TEXT_ALIGN_CENTER);
    }
@@ -550,20 +555,24 @@ static void glui_allocate_white_texture(glui_handle_t *glui)
 
 static void glui_font(menu_handle_t *menu)
 {
+   int font_size;
    const char *font_path = NULL;
    settings_t *settings  = config_get_ptr();
    menu_display_t *disp  = menu_display_get_ptr();
 
    font_path = settings->video.font_enable ? settings->video.font_path : NULL;
 
-   if (!menu_display_init_main_font(menu, font_path, disp->font.size))
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
+
+   if (!menu_display_init_main_font(menu, font_path, font_size))
       RARCH_ERR("Failed to load font.");
 }
 
 static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
 {
    float scale_factor;
-   unsigned width, height;
+   int new_font_size;
+   unsigned width, height, new_header_height;
    menu_display_t *disp = menu_display_get_ptr();
 
    video_driver_get_size(&width, &height);
@@ -574,12 +583,17 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
       proportional to the display width. */
    menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
 
+   new_header_height            = scale_factor / 3;
+   new_font_size                = scale_factor / 10;
+
    glui->line_height            = scale_factor / 3;
    glui->margin                 = scale_factor / 6;
-   disp->header_height          = scale_factor / 3;
-   disp->font.size              = scale_factor / 10;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &new_header_height);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,     &new_font_size);
+
    /* we assume the average glyph aspect ratio is close to 3:4 */
-   glui->glyph_width            = disp->font.size * 3/4;
+   glui->glyph_width            = new_font_size * 3/4;
 
    glui_font(menu);
 

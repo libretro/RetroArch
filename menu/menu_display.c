@@ -246,6 +246,30 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             *ptr = disp->header_height;
          }
          return true;
+      case MENU_DISPLAY_CTL_SET_HEADER_HEIGHT:
+         {
+            unsigned *ptr = (unsigned*)data;
+            if (!ptr)
+               return false;
+            disp->header_height = *ptr;
+         }
+         return true;
+      case MENU_DISPLAY_CTL_FONT_SIZE:
+         {
+            unsigned *ptr = (unsigned*)data;
+            if (!ptr)
+               return false;
+            *ptr = disp->font.size;
+         }
+         return true;
+      case MENU_DISPLAY_CTL_SET_FONT_SIZE:
+         {
+            unsigned *ptr = (unsigned*)data;
+            if (!ptr)
+               return false;
+            disp->font.size = *ptr;
+         }
+         return true;
       case MENU_DISPLAY_CTL_SET_HEIGHT:
          {
             unsigned *ptr = (unsigned*)data;

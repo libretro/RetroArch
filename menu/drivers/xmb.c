@@ -491,14 +491,13 @@ static void xmb_render_messagebox_internal(const char *message)
 
 static void xmb_frame_messagebox(const char *message)
 {
-   int x, y;
+   int x, y, font_size;
    unsigned i;
    unsigned width, height;
    struct string_list *list = NULL;
    gl_t *gl                 = NULL;
    xmb_handle_t *xmb        = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
-   menu_display_t *disp     = menu_display_get_ptr();
 
    if (!menu)
       return;
@@ -522,8 +521,10 @@ static void xmb_frame_messagebox(const char *message)
    if (list->elems == 0)
       goto end;
 
-   x = width  / 2 - strlen(list->elems[0].data) * disp->font.size / 4;
-   y = height / 2 - list->size * disp->font.size / 2;
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
+
+   x = width  / 2 - strlen(list->elems[0].data) * font_size / 4;
+   y = height / 2 - list->size * font_size / 2;
 
    for (i = 0; i < list->size; i++)
    {
@@ -534,7 +535,7 @@ static void xmb_frame_messagebox(const char *message)
                xmb,
                msg,
                x,
-               y + i * disp->font.size,
+               y + i * font_size,
                1,
                1,
                TEXT_ALIGN_LEFT,
@@ -1694,47 +1695,53 @@ static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
 
 static void xmb_font(menu_handle_t *menu)
 {
+   int font_size;
    char mediapath[PATH_MAX_LENGTH], themepath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
    settings_t *settings = config_get_ptr();
-   menu_display_t *disp = menu_display_get_ptr();
+
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
 
    fill_pathname_join(mediapath, settings->assets_directory, "xmb", sizeof(mediapath));
    fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
    fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
 
-   if (!menu_display_init_main_font(menu, fontpath, disp->font.size))
+   if (!menu_display_init_main_font(menu, fontpath, font_size))
       RARCH_WARN("Failed to load font.");
 }
 
 static void xmb_layout(menu_handle_t *menu, xmb_handle_t *xmb)
 {
+   int new_font_size;
    size_t selection;
    float scale_factor;
-   unsigned width, height, i, current, end;
+   unsigned width, height, i, current, end, new_header_height;
    menu_list_t *menu_list = menu_list_get_ptr();
-   menu_display_t *disp   = menu_display_get_ptr();
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
    video_driver_get_size(&width, &height);
 
-   scale_factor = width / 1920.0;
+   scale_factor                 = width / 1920.0;
+   new_font_size                = 32.0  * scale_factor;
+   new_header_height            = 128.0 * scale_factor;
 
    xmb->boxart_size             = 460.0 * scale_factor;
    xmb->cursor.size             = 48.0;
-   disp->font.size              = 32.0 * scale_factor;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,     &new_font_size);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &new_header_height);
+
    xmb->icon.spacing.horizontal = 200.0 * scale_factor;
    xmb->icon.spacing.vertical   = 64.0 * scale_factor;
    xmb->margins.screen.left     = 336.0 * scale_factor;
    xmb->margins.screen.top      = (256+32) * scale_factor;
    xmb->margins.title.left      = 60 * scale_factor;
-   xmb->margins.title.top       = 60 * scale_factor + disp->font.size/3;
-   xmb->margins.title.bottom    = 60 * scale_factor - disp->font.size/3;
+   xmb->margins.title.top       = 60 * scale_factor + new_font_size / 3;
+   xmb->margins.title.bottom    = 60 * scale_factor - new_font_size / 3;
    xmb->margins.label.left      = 85.0 * scale_factor;
-   xmb->margins.label.top       = disp->font.size / 3.0;
+   xmb->margins.label.top       = new_font_size / 3.0;
    xmb->margins.setting.left    = 600.0 * scale_factor;
-   disp->header_height          = 128.0 * scale_factor;
 
    if (width >= 3840)
       scale_factor              = 2.0;

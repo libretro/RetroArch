@@ -644,11 +644,10 @@ static void rgui_render(void)
 static void *rgui_init(void)
 {
    size_t fb_pitch;
-   unsigned fb_width, fb_height;
+   unsigned fb_width, fb_height, new_font_height;
    uint16_t        *fb_data   = NULL;
    rgui_t               *rgui = NULL;
    bool                   ret = false;
-   menu_display_t  *disp      = menu_display_get_ptr();
    menu_handle_t        *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
@@ -668,14 +667,13 @@ static void *rgui_init(void)
    fb_width                   = 320;
    fb_height                  = 240;
    fb_pitch                   = fb_width * sizeof(uint16_t);
+   new_font_height            = FONT_HEIGHT_STRIDE * 2;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,   &fb_width);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT,  &fb_height);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_FB_DATA, fb_data);
-
-   disp->header_height        = FONT_HEIGHT_STRIDE * 2;
-
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_FB_PITCH, &fb_pitch);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,         &fb_width);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT,        &fb_height);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_FB_DATA,       fb_data);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &new_font_height);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_FB_PITCH,      &fb_pitch);
 
    menu_entries_set_start(0);
 
