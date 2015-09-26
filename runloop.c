@@ -332,9 +332,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
          {
             event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
 
-            if (!cmd)
-               return false;
-            if (main_is_idle)
+            if (!cmd || main_is_idle)
                return false;
 
             if (cmd->screenshot_pressed)
@@ -359,7 +357,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 
                if (cmd->fullscreen_toggle)
                   event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
-               return true;
+               break;
             }
 #endif
 
@@ -545,8 +543,8 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             if (fastforward_ratio == 0.0f)
                fastforward_ratio = 1.0f;
 
-            frame_limit_last_time                = retro_get_time_usec();
-            frame_limit_minimum_time             = (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
+            frame_limit_last_time    = retro_get_time_usec();
+            frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
          }
          break;
       case RARCH_MAIN_CTL_IS_IDLE:
