@@ -33,6 +33,8 @@ extern "C" {
 
 typedef struct settings
 {
+   video_viewport_t video_viewport_custom;
+
    struct
    {
       char driver[32];

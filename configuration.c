@@ -1189,13 +1189,10 @@ static bool config_load_file(const char *path, bool set_defaults)
    const char *extra_path                = NULL;
    char tmp_str[PATH_MAX_LENGTH]         = {0};
    char tmp_append_path[PATH_MAX_LENGTH] = {0}; /* Don't destroy append_config_path. */
-   int vp_width = 0, vp_height = 0, vp_x = 0, vp_y = 0;
    unsigned msg_color                    = 0;
    config_file_t *conf                   = NULL;
    settings_t *settings                  = config_get_ptr();
    global_t   *global                    = global_get_ptr();
-   video_viewport_t *custom_vp           = (video_viewport_t*)
-      video_viewport_get_custom();
 
    if (path)
    {
@@ -1369,19 +1366,10 @@ static bool config_load_file(const char *path, bool set_defaults)
 #endif
    CONFIG_GET_INT_BASE(conf, settings, state_slot, "state_slot");
 
-
-   config_get_int(conf, "custom_viewport_width",  &vp_width);
-   config_get_int(conf, "custom_viewport_height", &vp_height);
-   config_get_int(conf, "custom_viewport_x",      &vp_x);
-   config_get_int(conf, "custom_viewport_y",      &vp_y);
-
-   if (custom_vp)
-   {
-      custom_vp->width  = vp_width;
-      custom_vp->height = vp_height;
-      custom_vp->x      = vp_x;
-      custom_vp->y      = vp_y;
-   }
+   CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.width,  "custom_viewport_width");
+   CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.height, "custom_viewport_height");
+   CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.x,      "custom_viewport_x");
+   CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.y,      "custom_viewport_y");
 
    if (config_get_hex(conf, "video_message_color", &msg_color))
    {
@@ -2421,8 +2409,6 @@ bool config_save_file(const char *path)
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
-   const video_viewport_t *custom_vp = (const video_viewport_t*)
-      video_viewport_get_custom();
 
    if (!conf)
       conf = config_file_new(NULL);
@@ -2697,13 +2683,13 @@ bool config_save_file(const char *path)
    config_set_int(conf, "current_resolution_id",
          global->console.screen.resolutions.current.id);
    config_set_int(conf, "custom_viewport_width",
-         custom_vp->width);
+         settings->video_viewport_custom.width);
    config_set_int(conf, "custom_viewport_height",
-         custom_vp->height);
+         settings->video_viewport_custom.height);
    config_set_int(conf, "custom_viewport_x",
-         custom_vp->x);
+         settings->video_viewport_custom.x);
    config_set_int(conf, "custom_viewport_y",
-         custom_vp->y);
+         settings->video_viewport_custom.y);
 
 
    config_set_float(conf, "video_font_size", settings->video.font_size);
