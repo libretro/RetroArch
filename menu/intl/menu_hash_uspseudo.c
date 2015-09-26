@@ -827,7 +827,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Rècord Eñable";
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "GPU Réçord Eñable";
-      case MENU_LABEL_VALUE_RECORD_PATH:
+      case MENU_LABEL_VALUE_RECORD_PATH: /* FIXME/UPDATE */
          return "Réçórd Pãth";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "Usè Output Dir";
