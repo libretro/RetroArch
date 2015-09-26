@@ -45,8 +45,6 @@ static menu_framebuf_t *menu_display_fb_get_ptr(void)
    return &frame_buf_state;
 }
 
-
-
 static void menu_display_fb_free(menu_framebuf_t *frame_buf)
 {
    if (!frame_buf)
@@ -194,6 +192,32 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
    switch (state)
    {
+      case MENU_DISPLAY_CTL_FONT_BUF:
+         if (!data)
+            return false;
+         data = disp->font.buf;
+         return true;
+      case MENU_DISPLAY_CTL_SET_FONT_BUF:
+         if (!data)
+            return false;
+         disp->font.buf = data;
+         return true;
+      case MENU_DISPLAY_CTL_FONT_FB:
+         {
+            uint8_t **ptr = (uint8_t**)data;
+            if (!ptr)
+               return false;
+            *ptr = (uint8_t*)disp->font.framebuf;
+         }
+         return true;
+      case MENU_DISPLAY_CTL_SET_FONT_FB:
+         {
+            uint8_t **ptr = (uint8_t**)data;
+            if (!ptr)
+               return false;
+            disp->font.framebuf = *ptr;
+         }
+         return true;
       case MENU_DISPLAY_CTL_LIBRETRO:
          video_driver_set_texture_enable(true, false);
 

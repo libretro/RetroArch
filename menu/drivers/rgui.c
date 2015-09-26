@@ -185,11 +185,13 @@ static void blit_line(uint16_t *data,
       const char *message, uint16_t color)
 {
    unsigned i, j;
-   menu_display_t  *disp      = menu_display_get_ptr();
 
    while (*message)
    {
-      uint32_t symbol = string_walk(&message);
+      uint8_t *font_fb;
+      uint32_t symbol   = string_walk(&message);
+
+      menu_display_ctl(MENU_DISPLAY_CTL_FONT_FB, &font_fb);
       
       for (j = 0; j < FONT_HEIGHT; j++)
       {
@@ -197,7 +199,7 @@ static void blit_line(uint16_t *data,
          {
             uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
             int offset  = (i + j * FONT_WIDTH) >> 3;
-            bool col    = (disp->font.framebuf[FONT_OFFSET(symbol) + offset] & rem);
+            bool col    = (font_fb[FONT_OFFSET(symbol) + offset] & rem);
 
             if (!col)
                continue;
@@ -215,7 +217,6 @@ static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
    unsigned i;
    uint8_t        *font = (uint8_t *) calloc(1, FONT_OFFSET(256));
    bool fb_font_inited  = true;
-   menu_display_t *disp = menu_display_get_ptr();
 
    if (!font)
       return false;
@@ -230,7 +231,8 @@ static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
             font_bmp_buf + 54 + 3 * (256 * (255 - 16 * y) + 16 * x));
    }
 
-   disp->font.framebuf = font;
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_FB, &font);
+
    return true;
 }
 
@@ -238,7 +240,6 @@ static bool rguidisp_init_font(menu_handle_t *menu)
 {
    const uint8_t *font_bmp_buf = NULL;
    const uint8_t *font_bin_buf = bitmap_bin;
-   menu_display_t *disp        = menu_display_get_ptr();
 
    if (!menu)
       return false;
@@ -249,7 +250,7 @@ static bool rguidisp_init_font(menu_handle_t *menu)
    if (!font_bin_buf)
       return false;
 
-   disp->font.framebuf = font_bin_buf;
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_FB, &font_bin_buf);
 
    return true;
 }
@@ -711,11 +712,11 @@ error:
 
 static void rgui_free(void *data)
 {
+   uint8_t *font_fb;
    bool fb_font_inited   = false;
    menu_handle_t  *menu  = (menu_handle_t*)data;
-   menu_display_t  *disp = menu_display_get_ptr();
 
-   if (!menu || !disp)
+   if (!menu)
       return;
 
    if (menu->userdata)
@@ -723,9 +724,10 @@ static void rgui_free(void *data)
    menu->userdata = NULL;
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_DATA_INIT, &fb_font_inited);
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_FB, &font_fb);
 
    if (fb_font_inited)
-      free((uint8_t*)disp->font.framebuf);
+      free(font_fb);
 
    fb_font_inited = false;
 
