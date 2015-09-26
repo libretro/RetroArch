@@ -876,11 +876,6 @@ void rarch_main_clear_state(void)
    rarch_main_global_free();
 }
 
-void rarch_main_set_slowmotion(unsigned enable)
-{
-   main_is_slowmotion = enable;
-}
-
 void rarch_main_set_max_frames(unsigned val)
 {
    main_max_frames = val;
@@ -909,6 +904,14 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             if (!ptr)
                return false;
             *ptr = main_is_slowmotion;
+         }
+         return true;
+      case RARCH_MAIN_CTL_SET_SLOWMOTION:
+         {
+            bool *ptr = (bool*)data;
+            if (!ptr)
+               return false;
+            main_is_slowmotion = *ptr;
          }
          return true;
       case RARCH_MAIN_CTL_SET_PAUSED:
