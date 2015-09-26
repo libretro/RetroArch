@@ -36,6 +36,7 @@ extern "C" {
 enum rarch_main_ctl_state
 {
    RARCH_MAIN_CTL_IS_IDLE = 0,
+   RARCH_MAIN_CTL_SET_IDLE,
    RARCH_MAIN_CTL_IS_SLOWMOTION,
    RARCH_MAIN_CTL_SET_SLOWMOTION,
    RARCH_MAIN_CTL_IS_PAUSED,
@@ -341,8 +342,6 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data);
 void rarch_main_set_frame_limit_last_time(void);
 
 void rarch_main_set_max_frames(unsigned val);
-
-void rarch_main_set_idle(unsigned enable);
 
 void rarch_main_state_free(void);
 
