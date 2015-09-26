@@ -67,10 +67,6 @@ struct texture_image *menu_texture;
 static bool render_normal = true;
 static bool menu_texture_inited =false;
 
-static void rmenu_render_background(void)
-{
-}
-
 static void rmenu_render_messagebox(const char *message)
 {
    struct font_params font_parms;
@@ -169,8 +165,6 @@ static void rmenu_render(void)
    if (end - begin > ENTRIES_HEIGHT)
       end = begin + ENTRIES_HEIGHT;
    
-   rmenu_render_background();
-
    menu_entries_get_title(title, sizeof(title));
 
    menu_animation_ticker_str(title_buf, RMENU_TERM_WIDTH,
