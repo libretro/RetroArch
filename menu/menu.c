@@ -87,14 +87,13 @@ static void menu_push_to_history_playlist(void)
  **/
 bool menu_load_content(enum rarch_core_type type)
 {
+   bool msg_force       = true;
    menu_handle_t *menu  = menu_driver_get_ptr();
-   menu_display_t *disp = menu_display_get_ptr();
    driver_t *driver     = driver_get_ptr();
    global_t *global     = global_get_ptr();
 
    /* redraw menu frame */
-   if (disp)
-      disp->msg_force = true;
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
 
    menu_iterate(true, MENU_ACTION_NOOP);
    menu_iterate_render();
@@ -108,9 +107,6 @@ bool menu_load_content(enum rarch_core_type type)
       fill_pathname_base(name, global->path.fullpath, sizeof(name));
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
       menu_display_msg_queue_push(msg, 1, 90, false);
-
-      if (disp)
-         disp->msg_force = true;
 
       return false;
    }
@@ -132,9 +128,9 @@ int menu_common_load_content(
       const char *core_path, const char *fullpath,
       bool persist, enum rarch_core_type type)
 {
+   bool msg_force               = true;
    settings_t *settings         = config_get_ptr();
    global_t *global             = global_get_ptr();
-   menu_display_t *disp         = menu_display_get_ptr();
    menu_list_t *menu_list       = menu_list_get_ptr();
    enum event_command cmd       = EVENT_CMD_NONE;
 
@@ -171,7 +167,7 @@ int menu_common_load_content(
       event_command(cmd);
 
    menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
-   disp->msg_force = true;
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
 
    generic_action_ok_displaylist_push("",
          "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);

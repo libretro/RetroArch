@@ -530,7 +530,7 @@ static void rmenu_xui_set_list_text(int index, const wchar_t* leftText,
 
 static void rmenu_xui_render(void)
 {
-   bool display_kb;
+   bool display_kb, msg_force;
    unsigned fb_width;
 	size_t end, i, selection;
 	char title[PATH_MAX_LENGTH] = {0};
@@ -538,17 +538,17 @@ static void rmenu_xui_render(void)
    const char *label           = NULL;
 	unsigned menu_type          = 0;
    menu_handle_t *menu         = menu_driver_get_ptr();
-   menu_display_t *disp        = menu_display_get_ptr();
    uint64_t frame_count        = video_driver_get_frame_count();
 
-   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH, &fb_width);
+   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,     &fb_width);
+   menu_display_ctl(MENU_DISPLAY_CTL_MSG_FORCE, &msg_force);
 
    if (!menu)
       return;
    if (
          menu_entries_needs_refresh() && 
          menu_driver_alive() &&
-         !disp->msg_force
+         !msg_force
       )
 		return;
 

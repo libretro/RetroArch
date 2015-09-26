@@ -413,7 +413,6 @@ static void rgui_render(void)
    uint16_t *fb_data              = NULL;
    rgui_t *rgui                   = NULL;
    menu_handle_t *menu            = menu_driver_get_ptr();
-   menu_display_t *disp           = menu_display_get_ptr();
    driver_t *driver               = driver_get_ptr();
    settings_t *settings           = config_get_ptr();
    uint64_t *frame_count          = video_driver_get_frame_count();
@@ -433,8 +432,11 @@ static void rgui_render(void)
 
    if (!rgui->force_redraw)
    {
-      bool is_idle;
-      if (menu_entries_needs_refresh() && menu_driver_alive() && !disp->msg_force)
+      bool is_idle, msg_force;
+
+      menu_display_ctl(MENU_DISPLAY_CTL_MSG_FORCE, &msg_force);
+
+      if (menu_entries_needs_refresh() && menu_driver_alive() && !msg_force)
          return;
 
       rarch_main_ctl(RARCH_MAIN_CTL_IS_IDLE, &is_idle);
@@ -605,10 +607,12 @@ static void rgui_render(void)
 #ifdef GEKKO
    const char *message_queue;
 
-   if (disp->msg_force)
+   if (msg_force)
    {
+      msg_force     = false;
       message_queue = rarch_main_msg_queue_pull();
-      disp->msg_force = false;
+
+      menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
    }
    else
       message_queue = driver->current_msg;

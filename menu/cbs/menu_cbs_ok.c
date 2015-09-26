@@ -501,16 +501,17 @@ static int generic_action_ok(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned id, unsigned flush_id)
 {
+   bool msg_force;
    char action_path[PATH_MAX_LENGTH];
    unsigned flush_type               = 0;
    int ret                           = 0;
    const char             *menu_path = NULL;
    const char *flush_char            = NULL;
    global_t                  *global = global_get_ptr();
-   menu_display_t              *disp = menu_display_get_ptr();
    menu_handle_t               *menu = menu_driver_get_ptr();
    settings_t              *settings = config_get_ptr();
    menu_list_t       *menu_list      = menu_list_get_ptr();
+
    if (!menu || !menu_list)
       goto error;
 
@@ -558,10 +559,10 @@ static int generic_action_ok(const char *path,
          break;
 
       case ACTION_OK_LOAD_CONFIG_FILE:
-         flush_char = NULL;
-         flush_type = MENU_SETTINGS;
-
-         disp->msg_force = true;
+         flush_char      = NULL;
+         flush_type      = MENU_SETTINGS;
+         msg_force       = true;
+         menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
 
          if (rarch_replace_config(action_path))
          {

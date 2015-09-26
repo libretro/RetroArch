@@ -123,13 +123,13 @@ end:
 
 static void rmenu_render(void)
 {
+   bool msg_force;
    size_t begin, end, i, j, selection;
    struct font_params font_parms = {0};
    char title[256]               = {0};
    char title_buf[256]           = {0};
    char title_msg[64]            = {0};
    menu_handle_t *menu           = menu_driver_get_ptr();
-   menu_display_t *disp          = menu_display_get_ptr();
    menu_list_t *menu_list        = menu_list_get_ptr();
    uint64_t *frame_count         = video_driver_get_frame_count();
    size_t  entries_end           = menu_entries_get_end();
@@ -146,8 +146,10 @@ static void rmenu_render(void)
       return;
    }
 
+   menu_display_ctl(MENU_DISPLAY_CTL_MSG_FORCE, &msg_force);
+
    if (menu_entries_needs_refresh() && menu_driver_alive() 
-         && !disp->msg_force)
+         && !msg_force)
       return;
 
    menu_display_fb_unset_dirty();

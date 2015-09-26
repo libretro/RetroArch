@@ -310,6 +310,22 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             frame_buf->pitch = *ptr;
          }
          return true;
+      case MENU_DISPLAY_CTL_MSG_FORCE:
+         {
+            bool *ptr = (bool*)data;
+            if (!ptr)
+               return false;
+            *ptr = disp->msg_force;
+         }
+         return true;
+      case MENU_DISPLAY_CTL_SET_MSG_FORCE:
+         {
+            bool *ptr = (bool*)data;
+            if (!ptr)
+               return false;
+            disp->msg_force = *ptr;
+         }
+         return true;
       case MENU_DISPLAY_CTL_FONT_DATA_INIT:
          {
             bool *ptr = (bool*)data;
