@@ -670,8 +670,8 @@ static int rarch_limit_frame_time(float fastforward_ratio, unsigned *sleep_ms)
       frame_limit_last_time += frame_limit_minimum_time;
       return 1;
    }
-   else
-      frame_limit_last_time  = retro_get_time_usec();
+
+   frame_limit_last_time  = retro_get_time_usec();
 
    return 0;
 }
@@ -699,12 +699,12 @@ static bool check_block_hotkey(driver_t *driver, settings_t *settings,
    /* If we haven't bound anything to this, 
     * always allow hotkeys. */
    use_hotkey_enable                = 
-      bind->key != RETROK_UNKNOWN ||
-      bind->joykey != NO_BTN ||
-      bind->joyaxis != AXIS_NONE ||
-      autoconf_bind->key != RETROK_UNKNOWN ||
-      autoconf_bind->joykey != NO_BTN ||
-      autoconf_bind->joyaxis != AXIS_NONE;
+         (bind->key != RETROK_UNKNOWN)
+      || (bind->joykey != NO_BTN)
+      || (bind->joyaxis != AXIS_NONE)
+      || (autoconf_bind->key != RETROK_UNKNOWN )
+      || (autoconf_bind->joykey != NO_BTN)
+      || (autoconf_bind->joyaxis != AXIS_NONE);
 
    driver->block_hotkey             = 
       input_driver_keyboard_mapping_is_blocked() ||
