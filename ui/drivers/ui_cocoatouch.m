@@ -48,9 +48,9 @@ static void rarch_enable_ui(void)
    bool boolean = true;
 
    ui_companion_set_foreground(true);
-   rarch_main_set_pause(true);
 
-   rarch_main_ctl(RARCH_MAIN_CTL_SET_IDLE, &boolean);
+   rarch_main_ctl(RARCH_MAIN_CTL_SET_PAUSED, &boolean);
+   rarch_main_ctl(RARCH_MAIN_CTL_SET_IDLE,   &boolean);
 }
 
 static void rarch_disable_ui(void)
@@ -58,9 +58,9 @@ static void rarch_disable_ui(void)
    bool boolean = false;
 
    ui_companion_set_foreground(false);
-   rarch_main_set_pause(false);
 
-   rarch_main_ctl(RARCH_MAIN_CTL_SET_IDLE, &boolean);
+   rarch_main_ctl(RARCH_MAIN_CTL_SET_PAUSED, &boolean);
+   rarch_main_ctl(RARCH_MAIN_CTL_SET_IDLE,   &boolean);
 }
 
 static void rarch_draw_observer(CFRunLoopObserverRef observer,

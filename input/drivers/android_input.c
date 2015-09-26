@@ -361,9 +361,9 @@ static void engine_handle_cmd(void)
          {
             bool boolean = true;
             RARCH_LOG("Pausing RetroArch.\n");
-            rarch_main_set_pause(true);
 
-            rarch_main_ctl(RARCH_MAIN_CTL_SET_IDLE, &boolean);
+            rarch_main_ctl(RARCH_MAIN_CTL_SET_PAUSED, &boolean);
+            rarch_main_ctl(RARCH_MAIN_CTL_SET_IDLE,   &boolean);
          }
          break;
 
@@ -395,8 +395,8 @@ static void engine_handle_cmd(void)
          {
             bool boolean = false;
 
-            rarch_main_set_pause(false);
-            rarch_main_ctl(RARCH_MAIN_CTL_SET_IDLE, &boolean);
+            rarch_main_ctl(RARCH_MAIN_CTL_SET_PAUSED, &boolean);
+            rarch_main_ctl(RARCH_MAIN_CTL_SET_IDLE,   &boolean);
 
             if ((android_app->sensor_state_mask
                      & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))
