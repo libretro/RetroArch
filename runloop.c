@@ -384,6 +384,11 @@ static int do_pause_state_checks(
    return 0;
 }
 
+global_t *global_get_ptr(void)
+{
+   return &g_extern;
+}
+
 bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 {
    settings_t *settings  = config_get_ptr();
@@ -873,10 +878,6 @@ static void rarch_main_iterate_linefeed_overlay(driver_t *driver,
 }
 #endif
 
-global_t *global_get_ptr(void)
-{
-   return &g_extern;
-}
 
 void rarch_main_state_free(void)
 {
