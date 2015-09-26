@@ -199,7 +199,7 @@ static int action_iterate_menu_viewport(char *s, size_t len,
       const char *label, unsigned action, uint32_t hash)
 {
    size_t selection;
-   int stride_x = 1, stride_y = 1;
+   int stride_x, stride_y;
    menu_displaylist_info_t info     = {0};
    struct retro_game_geometry *geom = NULL;
    const char *base_msg             = NULL;
@@ -215,13 +215,9 @@ static int action_iterate_menu_viewport(char *s, size_t len,
 
    menu_list_get_last_stack(menu_list, NULL, NULL, &type, NULL);
 
-   geom = (struct retro_game_geometry*)&av_info->geometry;
-
-   if (settings->video.scale_integer)
-   {
-      stride_x = geom->base_width;
-      stride_y = geom->base_height;
-   }
+   geom     = (struct retro_game_geometry*)&av_info->geometry;
+   stride_x = settings->video.scale_integer ? geom->base_width  : 1;
+   stride_y = settings->video.scale_integer ? geom->base_height : 1;
 
    switch (action)
    {
