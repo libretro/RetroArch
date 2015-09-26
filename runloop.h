@@ -44,6 +44,7 @@ enum rarch_main_ctl_state
    RARCH_MAIN_CTL_SET_MAX_FRAMES,
    RARCH_MAIN_CTL_SET_FRAME_LIMIT_LAST_TIME,
    RARCH_MAIN_CTL_CLEAR_STATE,
+   RARCH_MAIN_CTL_STATE_FREE,
    RARCH_MAIN_CTL_GLOBAL_FREE,
    /* Checks for state changes in this frame. */
    RARCH_MAIN_CTL_CHECK_STATE,
@@ -350,8 +351,6 @@ bool rarch_main_verbosity(void);
 FILE *rarch_main_log_file(void);
 
 bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data);
-
-void rarch_main_state_free(void);
 
 #ifdef __cplusplus
 }

@@ -508,6 +508,13 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
          global->bsv.movie_end      = false;
          global->bsv.movie_playback = false;
          break;
+      case RARCH_MAIN_CTL_STATE_FREE:
+         main_is_idle               = false;
+         main_is_paused             = false;
+         main_is_slowmotion         = false;
+         frame_limit_last_time      = 0.0;
+         main_max_frames            = 0;
+         break;
       case RARCH_MAIN_CTL_GLOBAL_FREE:
          event_command(EVENT_CMD_TEMPORARY_CONTENT_DEINIT);
          event_command(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
@@ -518,7 +525,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
          break;
       case RARCH_MAIN_CTL_CLEAR_STATE:
          driver_clear_state();
-         rarch_main_state_free();
+         rarch_main_ctl(RARCH_MAIN_CTL_STATE_FREE,  NULL);
          rarch_main_ctl(RARCH_MAIN_CTL_GLOBAL_FREE, NULL);
          break;
       case RARCH_MAIN_CTL_SET_MAX_FRAMES:
@@ -719,15 +726,6 @@ static void rarch_main_iterate_linefeed_overlay(driver_t *driver,
    }
 }
 #endif
-
-void rarch_main_state_free(void)
-{
-   main_is_idle                           = false;
-   main_is_paused                         = false;
-   main_is_slowmotion                     = false;
-   frame_limit_last_time                  = 0.0;
-   main_max_frames                        = 0;
-}
 
 bool rarch_main_verbosity(void)
 {
