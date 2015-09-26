@@ -44,6 +44,8 @@ enum rarch_main_ctl_state
    RARCH_MAIN_CTL_SET_MAX_FRAMES,
    RARCH_MAIN_CTL_SET_FRAME_LIMIT_LAST_TIME,
    RARCH_MAIN_CTL_CLEAR_STATE,
+   /* Checks for state changes in this frame. */
+   RARCH_MAIN_CTL_CHECK_STATE,
    RARCH_MAIN_CTL_CHECK_MOVIE,
    /* Checks if movie is being played. */
    RARCH_MAIN_CTL_CHECK_MOVIE_PLAYBACK,

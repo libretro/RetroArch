@@ -322,11 +322,97 @@ global_t *global_get_ptr(void)
 
 bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 {
+   driver_t     *driver  = driver_get_ptr();
    settings_t *settings  = config_get_ptr();
    global_t     *global  = global_get_ptr();
 
    switch (state)
    {
+      case RARCH_MAIN_CTL_CHECK_STATE:
+         {
+            event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
+
+            if (!cmd)
+               return false;
+            if (main_is_idle)
+               return false;
+
+            if (cmd->screenshot_pressed)
+               event_command(EVENT_CMD_TAKE_SCREENSHOT);
+
+            if (cmd->mute_pressed)
+               event_command(EVENT_CMD_AUDIO_MUTE_TOGGLE);
+
+            if (cmd->osk_pressed)
+               driver->keyboard_linefeed_enable = !driver->keyboard_linefeed_enable;
+
+            if (cmd->volume_up_pressed)
+               event_command(EVENT_CMD_VOLUME_UP);
+            else if (cmd->volume_down_pressed)
+               event_command(EVENT_CMD_VOLUME_DOWN);
+
+#ifdef HAVE_NETPLAY
+            if (driver->netplay_data)
+            {
+               if (cmd->netplay_flip_pressed)
+                  event_command(EVENT_CMD_NETPLAY_FLIP_PLAYERS);
+
+               if (cmd->fullscreen_toggle)
+                  event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
+               return true;
+            }
+#endif
+
+            check_pause(driver, settings, 
+                  cmd->pause_pressed, cmd->frameadvance_pressed);
+
+            if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_PAUSE_STATE, &cmd))
+               return false;
+
+            check_fast_forward_button(driver,
+                  cmd->fastforward_pressed,
+                  cmd->hold_pressed, cmd->old_hold_pressed);
+            check_stateslots(settings, cmd->state_slot_increase,
+                  cmd->state_slot_decrease);
+
+            if (cmd->save_state_pressed)
+               event_command(EVENT_CMD_SAVE_STATE);
+            else if (cmd->load_state_pressed)
+               event_command(EVENT_CMD_LOAD_STATE);
+
+            check_rewind(settings, global, cmd->rewind_pressed);
+
+            rarch_main_ctl(RARCH_MAIN_CTL_CHECK_SLOWMOTION, &cmd->slowmotion_pressed);
+
+            if (cmd->movie_record)
+               rarch_main_ctl(RARCH_MAIN_CTL_CHECK_MOVIE, NULL);
+
+            check_shader_dir(global, cmd->shader_next_pressed,
+                  cmd->shader_prev_pressed);
+
+            if (cmd->disk_eject_pressed)
+               event_command(EVENT_CMD_DISK_EJECT_TOGGLE);
+            else if (cmd->disk_next_pressed)
+               event_command(EVENT_CMD_DISK_NEXT);
+            else if (cmd->disk_prev_pressed)
+               event_command(EVENT_CMD_DISK_PREV);	  
+
+            if (cmd->reset_pressed)
+               event_command(EVENT_CMD_RESET);
+
+            if (global->cheat)
+            {
+               if (cmd->cheat_index_plus_pressed)
+                  cheat_manager_index_next(global->cheat);
+               else if (cmd->cheat_index_minus_pressed)
+                  cheat_manager_index_prev(global->cheat);
+               else if (cmd->cheat_toggle_pressed)
+                  cheat_manager_toggle(global->cheat);
+            }
+         }
+
+         return true;
+
       case RARCH_MAIN_CTL_CHECK_PAUSE_STATE:
          {
             bool check_is_oneshot;
@@ -523,95 +609,6 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
    }
 
    return false;
-}
-
-/**
- * do_state_checks:
- *
- * Checks for state changes in this frame.
- *
- * Returns: 1 if RetroArch is in pause mode, 0 otherwise.
- **/
-static bool do_state_checks(driver_t *driver, settings_t *settings,
-      global_t *global, event_cmd_state_t *cmd)
-{
-   if (main_is_idle)
-      return false;
-
-   if (cmd->screenshot_pressed)
-      event_command(EVENT_CMD_TAKE_SCREENSHOT);
-
-   if (cmd->mute_pressed)
-      event_command(EVENT_CMD_AUDIO_MUTE_TOGGLE);
-
-   if (cmd->osk_pressed)
-      driver->keyboard_linefeed_enable = !driver->keyboard_linefeed_enable;
-      
-   if (cmd->volume_up_pressed)
-      event_command(EVENT_CMD_VOLUME_UP);
-   else if (cmd->volume_down_pressed)
-      event_command(EVENT_CMD_VOLUME_DOWN);
-
-#ifdef HAVE_NETPLAY
-   if (driver->netplay_data)
-   {
-      if (cmd->netplay_flip_pressed)
-         event_command(EVENT_CMD_NETPLAY_FLIP_PLAYERS);
-
-      if (cmd->fullscreen_toggle)
-         event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
-      return true;
-   }
-#endif
-
-   check_pause(driver, settings, 
-         cmd->pause_pressed, cmd->frameadvance_pressed);
-
-   if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_PAUSE_STATE, &cmd))
-      return false;
-
-   check_fast_forward_button(driver,
-         cmd->fastforward_pressed,
-         cmd->hold_pressed, cmd->old_hold_pressed);
-   check_stateslots(settings, cmd->state_slot_increase,
-         cmd->state_slot_decrease);
-
-   if (cmd->save_state_pressed)
-      event_command(EVENT_CMD_SAVE_STATE);
-   else if (cmd->load_state_pressed)
-      event_command(EVENT_CMD_LOAD_STATE);
-
-   check_rewind(settings, global, cmd->rewind_pressed);
-
-   rarch_main_ctl(RARCH_MAIN_CTL_CHECK_SLOWMOTION, &cmd->slowmotion_pressed);
-
-   if (cmd->movie_record)
-      rarch_main_ctl(RARCH_MAIN_CTL_CHECK_MOVIE, NULL);
-
-   check_shader_dir(global, cmd->shader_next_pressed,
-         cmd->shader_prev_pressed);
-
-   if (cmd->disk_eject_pressed)
-      event_command(EVENT_CMD_DISK_EJECT_TOGGLE);
-   else if (cmd->disk_next_pressed)
-      event_command(EVENT_CMD_DISK_NEXT);
-   else if (cmd->disk_prev_pressed)
-      event_command(EVENT_CMD_DISK_PREV);	  
-
-   if (cmd->reset_pressed)
-      event_command(EVENT_CMD_RESET);
-
-   if (global->cheat)
-   {
-      if (cmd->cheat_index_plus_pressed)
-         cheat_manager_index_next(global->cheat);
-      else if (cmd->cheat_index_minus_pressed)
-         cheat_manager_index_prev(global->cheat);
-      else if (cmd->cheat_toggle_pressed)
-         cheat_manager_toggle(global->cheat);
-   }
-
-   return true;
 }
 
 /**
@@ -1066,7 +1063,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    }
 #endif
 
-   if (!do_state_checks(driver, settings, global, &cmd))
+   if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_STATE, &cmd))
    {
       /* RetroArch has been paused. */
       driver->retro_ctx.poll_cb();
