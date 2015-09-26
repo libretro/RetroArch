@@ -38,6 +38,7 @@ enum rarch_main_ctl_state
    RARCH_MAIN_CTL_IS_IDLE = 0,
    RARCH_MAIN_CTL_IS_SLOWMOTION,
    RARCH_MAIN_CTL_IS_PAUSED,
+   RARCH_MAIN_CTL_SET_PAUSED
 };
 
 typedef struct rarch_resolution
@@ -337,8 +338,6 @@ FILE *rarch_main_log_file(void);
 bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data);
 
 void rarch_main_set_slowmotion(unsigned enable);
-
-void rarch_main_set_pause(unsigned enable);
 
 void rarch_main_set_frame_limit_last_time(void);
 

@@ -1456,16 +1456,21 @@ bool event_command(enum event_command cmd)
          }
          break;
       case EVENT_CMD_PAUSE_TOGGLE:
-         rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED, &boolean);
-         rarch_main_set_pause(!boolean);
+         rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED,  &boolean);
+         boolean = !boolean;
+         rarch_main_ctl(RARCH_MAIN_CTL_SET_PAUSED, &boolean);
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_UNPAUSE:
-         rarch_main_set_pause(false);
+         boolean = false;
+
+         rarch_main_ctl(RARCH_MAIN_CTL_SET_PAUSED, &boolean);
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_PAUSE:
-         rarch_main_set_pause(true);
+         boolean = true;
+
+         rarch_main_ctl(RARCH_MAIN_CTL_SET_PAUSED, &boolean);
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_MENU_PAUSE_LIBRETRO:
