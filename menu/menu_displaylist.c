@@ -164,10 +164,9 @@ static int menu_list_elem_get_first_char(
 
 static void menu_list_build_scroll_indices(file_list_t *list)
 {
-   size_t i;
    int current;
    bool current_is_dir;
-   size_t scroll_value   = 0;
+   size_t i, scroll_value   = 0;
 
    if (!list || !list->size)
       return;
@@ -478,7 +477,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
 #endif
    {
-      char cpu_str[PATH_MAX_LENGTH] = {0};
+      char cpu_str[PATH_MAX_LENGTH];
 
       strlcpy(cpu_str, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES), sizeof(cpu_str));
       strlcat(cpu_str, ": ", sizeof(cpu_str));
@@ -1043,8 +1042,7 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
 
    for (i = 0; i < shader->passes; i++)
    {
-      char buf_tmp[64] = {0};
-      char buf[64] = {0};
+      char buf_tmp[64], buf[64];
 
       snprintf(buf_tmp, sizeof(buf_tmp), "%s #%u", menu_hash_to_str(MENU_VALUE_SHADER), i);
 
@@ -1070,8 +1068,8 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
 static int create_string_list_rdb_entry_string(const char *desc, const char *label,
       const char *actual_string, const char *path, file_list_t *list)
 {
+   char tmp[PATH_MAX_LENGTH];
    union string_list_elem_attr attr = {0};
-   char tmp[PATH_MAX_LENGTH]    = {0};
    char *output_label           = NULL;
    int str_len                  = 0;
    struct string_list *str_list = string_list_new();
@@ -1114,12 +1112,12 @@ static int create_string_list_rdb_entry_string(const char *desc, const char *lab
 static int create_string_list_rdb_entry_int(const char *desc, const char *label,
       int actual_int, const char *path, file_list_t *list)
 {
+   char tmp[PATH_MAX_LENGTH];
    union string_list_elem_attr attr = {0};
-   char tmp[PATH_MAX_LENGTH]    = {0};
-   char str[PATH_MAX_LENGTH]    = {0};
-   char *output_label           = NULL;
-   int str_len                  = 0;
-   struct string_list *str_list = string_list_new();
+   char str[PATH_MAX_LENGTH]        = {0};
+   char *output_label               = NULL;
+   int str_len                      = 0;
+   struct string_list *str_list     = string_list_new();
 
    if (!str_list)
       return -1;
@@ -1717,9 +1715,8 @@ static int menu_displaylist_sort_playlist(const content_playlist_entry_t *a,
 
 static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
 {
+   char path_playlist[PATH_MAX_LENGTH], lpl_basename[PATH_MAX_LENGTH];
    bool is_historylist                 = false;
-   char path_playlist[PATH_MAX_LENGTH] = {0};
-   char lpl_basename[PATH_MAX_LENGTH]  = {0};
    content_playlist_t *playlist        = NULL;
    settings_t      *settings           = config_get_ptr();
    menu_handle_t        *menu          = menu_driver_get_ptr();
@@ -1833,9 +1830,9 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
 
 static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_info_t *info)
 {
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   global_t *global       = global_get_ptr();
-   settings_t *settings   = config_get_ptr();
+   menu_handle_t *menu             = menu_driver_get_ptr();
+   global_t *global                = global_get_ptr();
+   settings_t *settings            = config_get_ptr();
    unsigned idx                    = rpl_entry_selection_ptr;
    const char *label               = NULL;
    const char *core_path           = NULL;
@@ -2111,7 +2108,7 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
    {
       for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 4; retro_id++)
       {
-         char desc_label[64]     = {0};
+         char desc_label[64];
          unsigned user           = p + 1;
          unsigned desc_offset    = retro_id;
          const char *description = NULL;
@@ -2332,9 +2329,8 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
 
             for (i = 0; i < list_size; i++)
             {
-               unsigned type = 0;
-               char core_path[PATH_MAX_LENGTH];
-               char display_name[PATH_MAX_LENGTH];
+               char core_path[PATH_MAX_LENGTH], display_name[PATH_MAX_LENGTH];
+               unsigned type                      = 0;
                const char *path                   = NULL;
 
                menu_list_get_at_offset(info->list, i, &path, NULL, &type, NULL);
