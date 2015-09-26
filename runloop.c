@@ -315,28 +315,6 @@ static void do_state_check_menu_toggle(settings_t *settings, global_t *global)
 }
 #endif
 
-static bool do_pause_state_checks(
-      bool frameadvance_pressed,
-      bool fullscreen_toggle_pressed,
-      bool rewind_pressed)
-{
-   bool check_is_oneshot     = frameadvance_pressed || rewind_pressed;
-
-   if (!main_is_paused)
-      return true;
-
-   if (fullscreen_toggle_pressed)
-   {
-      event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
-      video_driver_cached_frame();
-   }
-
-   if (!check_is_oneshot)
-      return false;
-
-   return true;
-}
-
 global_t *global_get_ptr(void)
 {
    return &g_extern;
@@ -349,6 +327,29 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_MAIN_CTL_CHECK_PAUSE_STATE:
+         {
+            bool check_is_oneshot;
+            event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
+
+            if (!cmd)
+               return false;
+
+            check_is_oneshot     = cmd->frameadvance_pressed || cmd->rewind_pressed;
+
+            if (!main_is_paused)
+               return true;
+
+            if (cmd->fullscreen_toggle)
+            {
+               event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
+               video_driver_cached_frame();
+            }
+
+            if (!check_is_oneshot)
+               return false;
+         }
+         return true;
       case RARCH_MAIN_CTL_CHECK_SLOWMOTION:
          {
             bool *ptr            = (bool*)data;
@@ -566,10 +567,7 @@ static bool do_state_checks(driver_t *driver, settings_t *settings,
    check_pause(driver, settings, 
          cmd->pause_pressed, cmd->frameadvance_pressed);
 
-   if (!do_pause_state_checks(
-            cmd->frameadvance_pressed,
-            cmd->fullscreen_toggle,
-            cmd->rewind_pressed))
+   if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_PAUSE_STATE, &cmd))
       return false;
 
    check_fast_forward_button(driver,

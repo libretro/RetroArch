@@ -51,7 +51,8 @@ enum rarch_main_ctl_state
    /* Checks if movie is being recorded. */
    RARCH_MAIN_CTL_CHECK_MOVIE_RECORD,
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */
-   RARCH_MAIN_CTL_CHECK_SLOWMOTION
+   RARCH_MAIN_CTL_CHECK_SLOWMOTION,
+   RARCH_MAIN_CTL_CHECK_PAUSE_STATE
 };
 
 typedef struct rarch_resolution
