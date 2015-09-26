@@ -205,7 +205,6 @@ static int action_iterate_menu_viewport(char *s, size_t len,
    const char *base_msg             = NULL;
    unsigned type                    = 0;
    video_viewport_t *custom         = video_viewport_get_custom();
-   menu_display_t *disp             = menu_display_get_ptr();
    menu_list_t *menu_list           = menu_list_get_ptr();
    settings_t *settings             = config_get_ptr();
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
