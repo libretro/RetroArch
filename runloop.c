@@ -828,18 +828,6 @@ void rarch_main_state_free(void)
    main_max_frames                        = 0;
 }
 
-void rarch_main_set_frame_limit_last_time(void)
-{
-   settings_t *settings                 = config_get_ptr();
-   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-   float fastforward_ratio              = settings->fastforward_ratio;
-
-   if (fastforward_ratio == 0.0f)
-      fastforward_ratio = 1.0f;
-
-   frame_limit_last_time                = retro_get_time_usec();
-   frame_limit_minimum_time             = (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
-}
 
 void rarch_main_global_free(void)
 {
@@ -883,8 +871,22 @@ void rarch_main_set_max_frames(unsigned val)
 
 bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 {
+   settings_t *settings                 = config_get_ptr();
+
    switch (state)
    {
+      case RARCH_MAIN_CTL_SET_FRAME_LIMIT_LAST_TIME:
+         {
+            struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+            float fastforward_ratio              = settings->fastforward_ratio;
+
+            if (fastforward_ratio == 0.0f)
+               fastforward_ratio = 1.0f;
+
+            frame_limit_last_time                = retro_get_time_usec();
+            frame_limit_minimum_time             = (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
+         }
+         return true;
       case RARCH_MAIN_CTL_IS_IDLE:
          {
             bool *ptr = (bool*)data;

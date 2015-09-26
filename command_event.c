@@ -1729,7 +1729,7 @@ bool event_command(enum event_command cmd)
          event_set_volume(-0.5f);
          break;
       case EVENT_CMD_SET_FRAME_LIMIT:
-         rarch_main_set_frame_limit_last_time();
+         rarch_main_ctl(RARCH_MAIN_CTL_SET_FRAME_LIMIT_LAST_TIME, NULL);
          break;
       case EVENT_CMD_NONE:
       default:
