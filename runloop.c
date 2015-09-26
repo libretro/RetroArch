@@ -910,10 +910,10 @@ int rarch_main_iterate(unsigned *sleep_ms)
       if (menu_driver_alive())
       {
          if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
-            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
       }
       else
-         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+         rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING, NULL);
    }
 #endif
 
@@ -968,7 +968,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
       menu_handle_t *menu = menu_driver_get_ptr();
       if (menu)
          if (menu_iterate(true, menu_input_frame(input, trigger_input)) == -1)
-            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
 
       if (!input && settings->menu.pause_libretro)
         return 1;

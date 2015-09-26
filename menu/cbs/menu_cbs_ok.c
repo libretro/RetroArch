@@ -1173,7 +1173,7 @@ static int action_ok_file_load_or_resume(const char *path,
    strlcpy(global->path.fullpath,
          menu->deferred_path, sizeof(global->path.fullpath));
    event_command(EVENT_CMD_LOAD_CORE);
-   rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
+   rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT, NULL);
 
    return -1;
 }

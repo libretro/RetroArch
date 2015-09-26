@@ -1037,15 +1037,15 @@ bool event_command(enum event_command cmd)
 #ifdef HAVE_DYNAMIC
          event_command(EVENT_CMD_LOAD_CORE);
 #endif
-         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
+         rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT, NULL);
          break;
 #ifdef HAVE_FFMPEG
       case EVENT_CMD_LOAD_CONTENT_FFMPEG:
-         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT_FFMPEG);
+         rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT_FFMPEG, NULL);
          break;
 #endif
       case EVENT_CMD_LOAD_CONTENT_IMAGEVIEWER:
-         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT_IMAGEVIEWER);
+         rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT_IMAGEVIEWER, NULL);
          break;
       case EVENT_CMD_LOAD_CONTENT:
 #ifdef HAVE_DYNAMIC
@@ -1105,9 +1105,9 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_MENU_TOGGLE:
          if (menu_driver_alive())
-            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
          else
-            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING, NULL);
          break;
       case EVENT_CMD_CONTROLLERS_INIT:
          event_init_controllers();
@@ -1150,7 +1150,7 @@ bool event_command(enum event_command cmd)
 
             *global->path.fullpath = '\0';
 
-            rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
+            rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT, NULL);
          }
          break;
       case EVENT_CMD_UNLOAD_CORE:
@@ -1158,7 +1158,7 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_LOAD_CORE_DEINIT);
          break;
       case EVENT_CMD_QUIT:
-         rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
+         rarch_ctl(RARCH_ACTION_STATE_QUIT, NULL);
          break;
       case EVENT_CMD_REINIT:
          {
@@ -1415,10 +1415,10 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_DRIVERS_INIT);
          break;
       case EVENT_CMD_QUIT_RETROARCH:
-         rarch_main_set_state(RARCH_ACTION_STATE_FORCE_QUIT);
+         rarch_ctl(RARCH_ACTION_STATE_FORCE_QUIT, NULL);
          break;
       case EVENT_CMD_RESUME:
-         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+         rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
          break;
       case EVENT_CMD_RESTART_RETROARCH:
 #if defined(GEKKO) && defined(HW_RVL)

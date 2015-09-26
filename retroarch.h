@@ -27,20 +27,6 @@
 extern "C" {
 #endif
 
-enum action_state
-{
-   RARCH_ACTION_STATE_NONE = 0,
-   RARCH_ACTION_STATE_LOAD_CONTENT,
-#ifdef HAVE_FFMPEG
-   RARCH_ACTION_STATE_LOAD_CONTENT_FFMPEG,
-#endif
-   RARCH_ACTION_STATE_LOAD_CONTENT_IMAGEVIEWER,
-   RARCH_ACTION_STATE_MENU_RUNNING,
-   RARCH_ACTION_STATE_MENU_RUNNING_FINISHED,
-   RARCH_ACTION_STATE_QUIT,
-   RARCH_ACTION_STATE_FORCE_QUIT
-};
-
 #define MENU_VALUE_FILE_WEBM                                                   0x7ca00b50U
 #define MENU_VALUE_FILE_F4F                                                    0x0b886be5U
 #define MENU_VALUE_FILE_F4V                                                    0x0b886bf5U
@@ -66,6 +52,20 @@ enum action_state
 #define MENU_VALUE_FILE_PNG_CAPS                                               0x0b88118aU
 #define MENU_VALUE_FILE_TGA                                                    0x0b88ae01U
 #define MENU_VALUE_FILE_BMP                                                    0x0b886244U
+
+enum rarch_ctl_state
+{
+   RARCH_ACTION_STATE_NONE = 0,
+   RARCH_ACTION_STATE_LOAD_CONTENT,
+#ifdef HAVE_FFMPEG
+   RARCH_ACTION_STATE_LOAD_CONTENT_FFMPEG,
+#endif
+   RARCH_ACTION_STATE_LOAD_CONTENT_IMAGEVIEWER,
+   RARCH_ACTION_STATE_MENU_RUNNING,
+   RARCH_ACTION_STATE_MENU_RUNNING_FINISHED,
+   RARCH_ACTION_STATE_QUIT,
+   RARCH_ACTION_STATE_FORCE_QUIT
+};
 
 enum rarch_content_type
 {
@@ -101,7 +101,7 @@ void rarch_main_new(void);
 
 void rarch_main_free(void);
 
-void rarch_main_set_state(unsigned action);
+void rarch_ctl(enum rarch_ctl_state state, void *data);
 
 /**
  * rarch_main_init:

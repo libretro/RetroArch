@@ -327,8 +327,7 @@ void set_paths_redirect(const char *path)
             (info->info.library_name[0] != '\0'))
          ? msg_hash_calculate(info->info.library_name) : 0);
 
-   if(
-         global_library_name_hash != 0 &&
+   if(global_library_name_hash != 0 &&
          (global_library_name_hash != MENU_VALUE_NO_CORE))
    {
       /* per-core saves: append the library_name to the save location */
@@ -1163,8 +1162,7 @@ static void validate_cpu_features(void)
  **/
 void rarch_init_system_av_info(void)
 {
-   struct retro_system_av_info *av_info = 
-      video_viewport_get_system_av_info();
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
    pretro_get_system_av_info(av_info);
    event_command(EVENT_CMD_SET_FRAME_LIMIT);
@@ -1367,14 +1365,14 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
 #endif
 }
 
-void rarch_main_set_state(unsigned cmd)
+void rarch_ctl(enum rarch_ctl_state state, void *data)
 {
    driver_t *driver     = driver_get_ptr();
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
-   switch (cmd)
+   switch(state)
    {
       case RARCH_ACTION_STATE_MENU_RUNNING:
 #ifdef HAVE_MENU
@@ -1389,7 +1387,7 @@ void rarch_main_set_state(unsigned cmd)
 #ifdef HAVE_MENU
          /* If content loading fails, we go back to menu. */
          if (!menu_load_content(CORE_TYPE_PLAIN))
-            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING, NULL);
 #endif
          if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)
             driver->frontend_ctx->content_loaded();
@@ -1399,7 +1397,7 @@ void rarch_main_set_state(unsigned cmd)
 #ifdef HAVE_MENU
          /* If content loading fails, we go back to menu. */
          if (!menu_load_content(CORE_TYPE_FFMPEG))
-            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING, NULL);
 #endif
          if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)
             driver->frontend_ctx->content_loaded();
@@ -1409,7 +1407,7 @@ void rarch_main_set_state(unsigned cmd)
 #ifdef HAVE_MENU
          /* If content loading fails, we go back to menu. */
          if (!menu_load_content(CORE_TYPE_IMAGEVIEWER))
-            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING, NULL);
 #endif
          if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)
             driver->frontend_ctx->content_loaded();
@@ -1425,12 +1423,12 @@ void rarch_main_set_state(unsigned cmd)
 #endif
          break;
       case RARCH_ACTION_STATE_QUIT:
-	     if (global)
+         if (global)
             system->shutdown = true;
-         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+         rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
          break;
       case RARCH_ACTION_STATE_FORCE_QUIT:
-         rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
+         rarch_ctl(RARCH_ACTION_STATE_QUIT, NULL);
          break;
       case RARCH_ACTION_STATE_NONE:
       default:
