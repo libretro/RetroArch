@@ -25,15 +25,15 @@
 
 struct tween
 {
-   bool   alive;
-   float  duration;
-   float  running_since;
-   float  initial_value;
-   float  target_value;
-   float* subject;
-   int           tag;
-   easingFunc easing;
-   tween_cb cb;
+   bool        alive;
+   float       duration;
+   float       running_since;
+   float       initial_value;
+   float       target_value;
+   float       *subject;
+   int         tag;
+   easing_cb   easing;
+   tween_cb    cb;
 };
 
 struct menu_animation
