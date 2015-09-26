@@ -411,7 +411,7 @@ static void rgui_blit_cursor(menu_handle_t *menu)
 static void rgui_render(void)
 {
    unsigned x, y;
-   bool display_kb;
+   bool display_kb, msg_force;
    uint16_t hover_color, normal_color;
    size_t i, end, fb_pitch;
    unsigned fb_width, fb_height;
@@ -440,7 +440,7 @@ static void rgui_render(void)
 
    if (!rgui->force_redraw)
    {
-      bool is_idle, msg_force;
+      bool is_idle;
 
       menu_display_ctl(MENU_DISPLAY_CTL_MSG_FORCE, &msg_force);
 
