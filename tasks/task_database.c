@@ -33,6 +33,7 @@
 
 #define HASH_EXTENSION_ZIP 0x0b88c7d8U
 #define HASH_EXTENSION_CUE 0x0b886782U
+#define HASH_EXTENSION_ISO 0x0b8880d0U
 
 #ifndef COLLECTION_SIZE
 #define COLLECTION_SIZE 99999
@@ -153,6 +154,18 @@ static int cue_get_serial(database_state_handle_t *db_state,
    return 0;
 }
 
+static int iso_get_serial(database_state_handle_t *db_state,
+      database_info_handle_t *db, const char *name, char* serial)
+{
+   RARCH_LOG("Detected ISO image\n");
+
+   if (detect_psp_game(name, serial) == 0)
+      return 0;
+   RARCH_LOG("Found disk label '%s'\n", serial);
+
+   return 0;
+}
+
 static int database_info_iterate_playlist(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
@@ -178,6 +191,11 @@ static int database_info_iterate_playlist(
       case HASH_EXTENSION_CUE:
          db_state->serial[0] = '\0';
          cue_get_serial(db_state, db, name, db_state->serial);
+         db->type = DATABASE_TYPE_SERIAL_LOOKUP;
+         return 1;
+      case HASH_EXTENSION_ISO:
+         db_state->serial[0] = '\0';
+         iso_get_serial(db_state, db, name, db_state->serial);
          db->type = DATABASE_TYPE_SERIAL_LOOKUP;
          return 1;
       default:

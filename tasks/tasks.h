@@ -112,6 +112,8 @@ int detect_system(const char* track_path, int32_t offset,
 
 int detect_ps1_game(const char *track_path, char *game_id);
 
+int detect_psp_game(const char *track_path, char *game_id);
+
 #ifdef __cplusplus
 }
 #endif

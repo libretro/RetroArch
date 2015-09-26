@@ -269,6 +269,72 @@ int detect_ps1_game(const char *track_path, char *game_id)
 }
 #endif
 
+int detect_psp_game(const char *track_path, char *game_id)
+{
+   bool rv = false;
+   unsigned pos;
+   RFILE *fd = retro_fopen(track_path, RFILE_MODE_READ, -1);
+
+   if (!fd)
+   {
+      RARCH_LOG("Could not open data track: %s\n", strerror(errno));
+      return -errno;
+   }
+
+   for (pos = 0; pos < 100000; pos++)
+   {
+      retro_fseek(fd, pos, SEEK_SET);
+
+      if (retro_fread(fd, game_id, 5) > 0)
+      {
+         game_id[5] = '\0';
+         if (!strcmp(game_id, "ULES-")
+          || !strcmp(game_id, "ULUS-")
+          || !strcmp(game_id, "ULJS-")
+
+          || !strcmp(game_id, "ULEM-")
+          || !strcmp(game_id, "ULUM-")
+          || !strcmp(game_id, "ULJM-")
+
+          || !strcmp(game_id, "UCES-")
+          || !strcmp(game_id, "UCUS-")
+          || !strcmp(game_id, "UCJS-")
+          || !strcmp(game_id, "UCAS-")
+
+          || !strcmp(game_id, "NPEH-")
+          || !strcmp(game_id, "NPUH-")
+          || !strcmp(game_id, "NPJH-")
+
+          || !strcmp(game_id, "NPEG-")
+          || !strcmp(game_id, "NPUG-")
+          || !strcmp(game_id, "NPJG-")
+          || !strcmp(game_id, "NPHG-")
+
+          || !strcmp(game_id, "NPEZ-")
+          || !strcmp(game_id, "NPUZ-")
+          || !strcmp(game_id, "NPJZ-")
+         )
+         {
+            retro_fseek(fd, pos, SEEK_SET);
+            if (retro_fread(fd, game_id, 10) > 0)
+            {
+               //game_id[4] = '-';
+               //game_id[8] = game_id[9];
+               //game_id[9] = game_id[10];
+               game_id[10] = '\0';
+               rv = true;
+            }
+            break;
+         }
+      }
+      else
+         break;
+   }
+
+   retro_fclose(fd);
+   return rv;
+}
+
 int detect_system(const char *track_path, int32_t offset,
         const char **system_name)
 {
