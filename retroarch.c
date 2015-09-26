@@ -1379,24 +1379,6 @@ void rarch_main_set_state(unsigned cmd)
       case RARCH_ACTION_STATE_MENU_RUNNING:
 #ifdef HAVE_MENU
          menu_driver_toggle(true);
-
-         /* Menu should always run with vsync on. */
-         event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
-         /* Stop all rumbling before entering the menu. */
-         event_command(EVENT_CMD_RUMBLE_STOP);
-
-         if (settings->menu.pause_libretro)
-            event_command(EVENT_CMD_AUDIO_STOP);
-
-         /* Override keyboard callback to redirect to menu instead.
-          * We'll use this later for something ...
-          * FIXME: This should probably be moved to menu_common somehow. */
-         if (global)
-         {
-            global->frontend_key_event = system->key_event;
-            system->key_event          = menu_input_key_event;
-            system->frame_time_last    = 0;
-         }
 #endif
 #ifdef HAVE_OVERLAY
          if (settings->input.overlay_hide_in_menu)
@@ -1435,18 +1417,6 @@ void rarch_main_set_state(unsigned cmd)
       case RARCH_ACTION_STATE_MENU_RUNNING_FINISHED:
 #ifdef HAVE_MENU
          menu_driver_toggle(false);
-
-         driver_set_nonblock_state(driver->nonblock_state);
-
-         if (settings && settings->menu.pause_libretro)
-            event_command(EVENT_CMD_AUDIO_START);
-
-         /* Prevent stray input from going to libretro core */
-         driver->flushing_input = true;
-
-         /* Restore libretro keyboard callback. */
-         if (global)
-            system->key_event = global->frontend_key_event;
 #endif
          video_driver_set_texture_enable(false, false);
 #ifdef HAVE_OVERLAY

@@ -328,15 +328,53 @@ bool menu_driver_alive(void)
 
 void menu_driver_toggle(bool latch)
 {
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+   driver_t                     *driver = driver_get_ptr();
+   const menu_ctx_driver_t *menu_driver = menu_ctx_driver_get_ptr();
+   settings_t                 *settings = config_get_ptr();
+   global_t                   *global   = global_get_ptr();
+   rarch_system_info_t          *system = rarch_system_info_get_ptr();
 
-   if (driver->toggle)
-      driver->toggle(latch);
+   if (menu_driver->toggle)
+      menu_driver->toggle(latch);
 
    menu_alive = latch;
 
-   if (menu_alive)
+   if (menu_alive == true)
+   {
       menu_entries_set_refresh(false);
+
+      /* Menu should always run with vsync on. */
+      event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
+      /* Stop all rumbling before entering the menu. */
+      event_command(EVENT_CMD_RUMBLE_STOP);
+
+      if (settings->menu.pause_libretro)
+         event_command(EVENT_CMD_AUDIO_STOP);
+
+      /* Override keyboard callback to redirect to menu instead.
+       * We'll use this later for something ...
+       * FIXME: This should probably be moved to menu_common somehow. */
+      if (global)
+      {
+         global->frontend_key_event = system->key_event;
+         system->key_event          = menu_input_key_event;
+         system->frame_time_last    = 0;
+      }
+   }
+   else
+   {
+      driver_set_nonblock_state(driver->nonblock_state);
+
+      if (settings && settings->menu.pause_libretro)
+         event_command(EVENT_CMD_AUDIO_START);
+
+      /* Prevent stray input from going to libretro core */
+      driver->flushing_input = true;
+
+      /* Restore libretro keyboard callback. */
+      if (global)
+         system->key_event = global->frontend_key_event;
+   }
 }
 
 bool menu_driver_load_image(void *data, menu_image_type_t type)
