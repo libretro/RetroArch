@@ -210,9 +210,7 @@ static int action_iterate_menu_viewport(char *s, size_t len,
    settings_t *settings             = config_get_ptr();
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
-   if (!menu_list)
-      return -1;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+   if (!menu_list || !menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return -1;
 
    menu_list_get_last_stack(menu_list, NULL, NULL, &type, NULL);
