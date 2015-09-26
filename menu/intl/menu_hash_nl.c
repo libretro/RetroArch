@@ -202,7 +202,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "GPU Opname";
       case MENU_LABEL_VALUE_RECORD_PATH:
-         return "Opname Pad";
+         return "Uitvoer Bestand";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "Gebruik uitvoer map";
       case MENU_LABEL_VALUE_RECORD_CONFIG:

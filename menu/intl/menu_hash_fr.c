@@ -178,7 +178,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Autoriser les captures vidéo";
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "Captures vidéo via le GPU";
-      case MENU_LABEL_VALUE_RECORD_PATH:
+      case MENU_LABEL_VALUE_RECORD_PATH: /* FIXME/UPDATE */
          return "Chemin de l'enregistrement";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "Utiliser le dossier d'enregistrement";

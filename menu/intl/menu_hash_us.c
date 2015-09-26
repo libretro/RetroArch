@@ -829,7 +829,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "GPU Record Enable";
       case MENU_LABEL_VALUE_RECORD_PATH:
-         return "Record Path";
+         return "Output File";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "Use Output Dir";
       case MENU_LABEL_VALUE_RECORD_CONFIG:

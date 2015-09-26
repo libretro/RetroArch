@@ -212,7 +212,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Activar grabación";
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "Activar grabación de GPU";
-      case MENU_LABEL_VALUE_RECORD_PATH:
+      case MENU_LABEL_VALUE_RECORD_PATH: /* FIXME/UPDATE */
          return "Carpeta de grabación";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "Usar carpeta de salida";

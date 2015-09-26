@@ -165,7 +165,7 @@ const char *menu_hash_to_str_pl(uint32_t hash)
          return "W³±cz nagrywanie";
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "W³±cz nagrywanie z u¿yciem GPU";
-      case MENU_LABEL_VALUE_RECORD_PATH:
+      case MENU_LABEL_VALUE_RECORD_PATH: /* FIXME/UPDATE */
          return "¦cie¿ka nagrywania";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "U¿ywaj katalogu wyj¶ciowego nagrywania";

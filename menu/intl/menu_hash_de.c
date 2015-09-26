@@ -155,7 +155,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Aktiviere Aufnahmefunktion";
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "Aktiviere GPU-Aufnahmefunktion";
-      case MENU_LABEL_VALUE_RECORD_PATH:
+      case MENU_LABEL_VALUE_RECORD_PATH: /* FIXME/UPDATE */
          return "Aufnahmepfad";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "Verwende Aufnahme-Ausgabeverzeichnis";
