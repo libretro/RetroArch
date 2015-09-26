@@ -220,7 +220,7 @@ static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
    if (!font)
       return false;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_FB_DATA_INIT, &fb_font_inited);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_DATA_INIT, &fb_font_inited);
 
    for (i = 0; i < 256; i++)
    {
@@ -720,14 +720,14 @@ static void rgui_free(void *data)
       free(menu->userdata);
    menu->userdata = NULL;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_FB_DATA_INIT, &fb_font_inited);
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_DATA_INIT, &fb_font_inited);
 
    if (fb_font_inited)
       free((uint8_t*)disp->font.framebuf);
 
    fb_font_inited = false;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_FB_DATA_INIT, &fb_font_inited);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_DATA_INIT, &fb_font_inited);
 }
 
 static void rgui_set_texture(void)

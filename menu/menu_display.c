@@ -286,7 +286,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             frame_buf->pitch = *ptr;
          }
          return true;
-      case MENU_DISPLAY_CTL_FONT_FB_DATA_INIT:
+      case MENU_DISPLAY_CTL_FONT_DATA_INIT:
          {
             bool *ptr = (bool*)data;
             if (!ptr)
@@ -294,7 +294,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             *ptr = disp->font.alloc_framebuf;
          }
          return true;
-      case MENU_DISPLAY_CTL_SET_FONT_FB_DATA_INIT:
+      case MENU_DISPLAY_CTL_SET_FONT_DATA_INIT:
          {
             bool *ptr = (bool*)data;
             if (!ptr)
