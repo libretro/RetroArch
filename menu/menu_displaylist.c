@@ -77,7 +77,7 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
             type, 0, 0);
       if (type == MENU_FILE_DOWNLOAD_CORE)
       {
-         char core_path[PATH_MAX_LENGTH]    = {0};
+         char core_path[PATH_MAX_LENGTH];
          char display_name[PATH_MAX_LENGTH] = {0};
          settings_t *settings      = config_get_ptr();
 
@@ -252,7 +252,7 @@ static void menu_displaylist_push_perfcounter(
 static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 {
    unsigned i;
-   char tmp[PATH_MAX_LENGTH] = {0};
+   char tmp[PATH_MAX_LENGTH];
    settings_t *settings      = config_get_ptr();
    global_t *global          = global_get_ptr();
    core_info_t *core_info    = global ? (core_info_t*)global->core_info.current : NULL;
@@ -407,7 +407,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
 static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
 {
-   char tmp[PATH_MAX_LENGTH]             = {0};
+   char tmp[PATH_MAX_LENGTH];
 
    settings_t *settings                = config_get_ptr();
    global_t *global                    = global_get_ptr();
@@ -447,12 +447,10 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
 static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 {
    int controller;
-   char feat_str[PATH_MAX_LENGTH]        = {0};
-   char tmp[PATH_MAX_LENGTH]             = {0};
-   char tmp2[PATH_MAX_LENGTH]            = {0};
+   char tmp[PATH_MAX_LENGTH], tmp2[PATH_MAX_LENGTH], feat_str[PATH_MAX_LENGTH];
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
-   settings_t *settings                = config_get_ptr();
+   settings_t                  *settings = config_get_ptr();
 
    snprintf(tmp, sizeof(tmp), "%s: %s", menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE), __DATE__);
    menu_list_push(info->list, tmp, "",
@@ -951,8 +949,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    for (i = 0; i < list_size; i++)
    {
       uint32_t core_name_hash;
-      char fill_buf[PATH_MAX_LENGTH]  = {0};
-      char path_copy[PATH_MAX_LENGTH] = {0};
+      char fill_buf[PATH_MAX_LENGTH], path_copy[PATH_MAX_LENGTH];
       bool core_detected              = false;
       const char *core_name           = NULL;
       const char *db_name             = NULL;
@@ -1164,9 +1161,9 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 {
 #ifdef HAVE_LIBRETRODB
    unsigned i, j, k;
+   char path_playlist[PATH_MAX_LENGTH];
    content_playlist_t *playlist        = NULL;
    database_info_list_t *db_info       = NULL;
-   char path_playlist[PATH_MAX_LENGTH] = {0};
    char path_base[PATH_MAX_LENGTH]     = {0};
    char query[PATH_MAX_LENGTH]         = {0};
    menu_handle_t *menu                 = menu_driver_get_ptr();
