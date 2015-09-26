@@ -558,7 +558,6 @@ static void glui_font(menu_handle_t *menu)
    int font_size;
    const char *font_path = NULL;
    settings_t *settings  = config_get_ptr();
-   menu_display_t *disp  = menu_display_get_ptr();
 
    font_path = settings->video.font_enable ? settings->video.font_path : NULL;
 
