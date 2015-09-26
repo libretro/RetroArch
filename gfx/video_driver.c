@@ -829,10 +829,13 @@ void video_driver_get_video_output_prev(void)
  **/
 void video_driver_cached_frame(void)
 {
+   bool is_idle;
    driver_t *driver   = driver_get_ptr();
    void *recording    = driver ? driver->recording_data : NULL;
 
-   if (rarch_main_is_idle())
+   rarch_main_ctl(RARCH_MAIN_CTL_IS_IDLE, &is_idle);
+
+   if (is_idle)
       return;
 
    /* Cannot allow recording when pushing duped frames. */

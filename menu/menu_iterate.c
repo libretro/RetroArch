@@ -542,6 +542,7 @@ end:
 
 int menu_iterate_render(void)
 {
+   bool is_idle;
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
    menu_handle_t *menu       = menu_driver_get_ptr();
 
@@ -573,7 +574,9 @@ int menu_iterate_render(void)
          driver->render();
    }
 
-   if (menu_driver_alive() && !rarch_main_is_idle())
+   rarch_main_ctl(RARCH_MAIN_CTL_IS_IDLE, &is_idle);
+
+   if (menu_driver_alive() && !is_idle)
       menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO, NULL);
 
    menu_driver_set_texture();

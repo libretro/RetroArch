@@ -60,6 +60,7 @@ static void rarch_disable_ui(void)
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
     CFRunLoopActivity activity, void *info)
 {
+   bool is_idle;
    unsigned sleep_ms  = 0;
    int ret            = rarch_main_iterate(&sleep_ms);
 
@@ -74,7 +75,9 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
       return;
    }
 
-   if (rarch_main_is_idle())
+   rarch_main_ctl(RARCH_MAIN_CTL_IS_IDLE, &is_idle);
+
+   if (is_idle)
       return;
    CFRunLoopWakeUp(CFRunLoopGetMain());
 }

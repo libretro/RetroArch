@@ -901,14 +901,29 @@ bool rarch_main_is_paused(void)
    return main_is_paused;
 }
 
-bool rarch_main_is_idle(void)
+bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 {
-   return main_is_idle;
-}
+   switch (state)
+   {
+      case RARCH_MAIN_CTL_IS_IDLE:
+         {
+            bool *ptr = (bool*)data;
+            if (!ptr)
+               return false;
+            *ptr = main_is_idle;
+         }
+         return true;
+      case RARCH_MAIN_CTL_IS_SLOWMOTION:
+         {
+            bool *ptr = (bool*)data;
+            if (!ptr)
+               return false;
+            *ptr = main_is_slowmotion;
+         }
+         return true;
+   }
 
-bool rarch_main_is_slowmotion(void)
-{
-   return main_is_slowmotion;
+   return false;
 }
 
 static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
