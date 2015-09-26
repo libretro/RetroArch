@@ -589,34 +589,6 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 }
 
 /**
- * rarch_update_frame_time:
- *
- * Updates frame timing if frame timing callback is in use by the core.
- * Limits frame time if fast forward ratio throttle is enabled.
- **/
-static void rarch_update_frame_time(driver_t *driver, float slowmotion_ratio,
-      rarch_system_info_t *system)
-{
-   retro_time_t current     = retro_get_time_usec();
-   retro_time_t delta       = current - system->frame_time_last;
-   bool is_locked_fps       = (main_is_paused || driver->nonblock_state) | 
-      !!driver->recording_data;
-
-   if (!system->frame_time_last || is_locked_fps)
-      delta = system->frame_time.reference;
-
-   if (!is_locked_fps && main_is_slowmotion)
-      delta /= slowmotion_ratio;
-
-   system->frame_time_last = current;
-
-   if (is_locked_fps)
-      system->frame_time_last = 0;
-
-   system->frame_time.callback(delta);
-}
-
-/**
  * check_block_hotkey:
  * @enable_hotkey        : Is hotkey enable key enabled?
  *
@@ -901,7 +873,28 @@ int rarch_main_iterate(unsigned *sleep_ms)
    rarch_main_cmd_get_state(driver, settings, &cmd, input, old_input, trigger_input);
 
    if (system->frame_time.callback)
-      rarch_update_frame_time(driver, settings->slowmotion_ratio, system);
+   {
+      /* Updates frame timing if frame timing callback is in use by the core.
+       * Limits frame time if fast forward ratio throttle is enabled. */
+
+      retro_time_t current     = retro_get_time_usec();
+      retro_time_t delta       = current - system->frame_time_last;
+      bool is_locked_fps       = (main_is_paused || driver->nonblock_state) | 
+         !!driver->recording_data;
+
+      if (!system->frame_time_last || is_locked_fps)
+         delta = system->frame_time.reference;
+
+      if (!is_locked_fps && main_is_slowmotion)
+         delta /= settings->slowmotion_ratio;
+
+      system->frame_time_last = current;
+
+      if (is_locked_fps)
+         system->frame_time_last = 0;
+
+      system->frame_time.callback(delta);
+   }
 
    if (cmd.overlay_next_pressed)
       event_command(EVENT_CMD_OVERLAY_NEXT);
