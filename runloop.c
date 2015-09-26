@@ -952,7 +952,6 @@ int rarch_main_iterate(unsigned *sleep_ms)
 
    rarch_main_cmd_get_state(driver, settings, &cmd, input, old_input, trigger_input);
 
-
    if (system->frame_time.callback)
       rarch_update_frame_time(driver, settings->slowmotion_ratio, system);
 
@@ -977,9 +976,6 @@ int rarch_main_iterate(unsigned *sleep_ms)
    rarch_main_iterate_linefeed_overlay(driver, settings);
 #endif
 
-   if (global->exec)
-      global->exec = false;
-
    {
       /* Time to exit out of the main loop? 
        * Reasons for exiting:
@@ -997,6 +993,9 @@ int rarch_main_iterate(unsigned *sleep_ms)
 
       if (shutdown_pressed || frame_count_end || movie_end || !video_alive || global->exec)
       {
+         if (global->exec)
+            global->exec = false;
+
          /* Quits out of RetroArch main loop.
           * On special case, loads dummy core 
           * instead of exiting RetroArch completely.
