@@ -410,9 +410,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
                   cheat_manager_toggle(global->cheat);
             }
          }
-
-         return true;
-
+         break;
       case RARCH_MAIN_CTL_CHECK_PAUSE_STATE:
          {
             bool check_is_oneshot;
@@ -435,7 +433,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             if (!check_is_oneshot)
                return false;
          }
-         return true;
+         break;
       case RARCH_MAIN_CTL_CHECK_SLOWMOTION:
          {
             bool *ptr            = (bool*)data;
@@ -456,7 +454,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             else
                rarch_main_msg_queue_push_new(MSG_SLOW_MOTION, 0, 30, true);
          }
-         return true;
+         break;
       case RARCH_MAIN_CTL_CHECK_MOVIE:
          if (global->bsv.movie_playback)
             return rarch_main_ctl(RARCH_MAIN_CTL_CHECK_MOVIE_PLAYBACK, NULL);
@@ -472,14 +470,12 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
          RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
 
          event_command(EVENT_CMD_BSV_MOVIE_DEINIT);
-
-         return true;
+         break;
       case RARCH_MAIN_CTL_CHECK_MOVIE_INIT:
          if (global->bsv.movie)
             return false;
          {
             char path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
-            bool ret                     = true;
 
             settings->rewind_granularity = 1;
 
@@ -498,10 +494,8 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             global->bsv.movie = bsv_movie_init(path, RARCH_MOVIE_RECORD);
 
             if (!global->bsv.movie)
-               ret = false;
-
-
-            if (global->bsv.movie)
+               return false;
+            else if (global->bsv.movie)
             {
                rarch_main_msg_queue_push(msg, 1, 180, true);
                RARCH_LOG("%s \"%s\".\n",
@@ -515,9 +509,8 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
                      1, 180, true);
                RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
             }
-
-            return ret;
          }
+         break;
       case RARCH_MAIN_CTL_CHECK_MOVIE_PLAYBACK:
          if (!global->bsv.movie_end)
             return false;
@@ -530,13 +523,12 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 
          global->bsv.movie_end      = false;
          global->bsv.movie_playback = false;
-
-         return true;
+         break;
       case RARCH_MAIN_CTL_CLEAR_STATE:
          driver_clear_state();
          rarch_main_state_free();
          rarch_main_global_free();
-         return true;
+         break;
       case RARCH_MAIN_CTL_SET_MAX_FRAMES:
          {
             unsigned *ptr = (unsigned*)data;
@@ -544,7 +536,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
                return false;
             main_max_frames = *ptr;
          }
-         return true;
+         break;
       case RARCH_MAIN_CTL_SET_FRAME_LIMIT_LAST_TIME:
          {
             struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
@@ -556,7 +548,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             frame_limit_last_time                = retro_get_time_usec();
             frame_limit_minimum_time             = (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
          }
-         return true;
+         break;
       case RARCH_MAIN_CTL_IS_IDLE:
          {
             bool *ptr = (bool*)data;
@@ -564,7 +556,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
                return false;
             *ptr = main_is_idle;
          }
-         return true;
+         break;
       case RARCH_MAIN_CTL_SET_IDLE:
          {
             bool *ptr = (bool*)data;
@@ -572,7 +564,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
                return false;
             main_is_idle = *ptr;
          }
-         return true;
+         break;
       case RARCH_MAIN_CTL_IS_SLOWMOTION:
          {
             bool *ptr = (bool*)data;
@@ -580,7 +572,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
                return false;
             *ptr = main_is_slowmotion;
          }
-         return true;
+         break;
       case RARCH_MAIN_CTL_SET_SLOWMOTION:
          {
             bool *ptr = (bool*)data;
@@ -588,7 +580,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
                return false;
             main_is_slowmotion = *ptr;
          }
-         return true;
+         break;
       case RARCH_MAIN_CTL_SET_PAUSED:
          {
             bool *ptr = (bool*)data;
@@ -596,7 +588,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
                return false;
             main_is_paused = *ptr;
          }
-         return true;
+         break;
       case RARCH_MAIN_CTL_IS_PAUSED:
          {
             bool *ptr = (bool*)data;
@@ -604,11 +596,12 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
                return false;
             *ptr = main_is_paused;
          }
-         return true;
-
+         break;
+      default:
+         return false;
    }
 
-   return false;
+   return true;
 }
 
 /**
@@ -868,7 +861,6 @@ FILE *rarch_main_log_file(void)
    return global->log_file;
 }
 
-
 static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
       driver_t *driver, settings_t *settings,
       retro_input_t input, retro_input_t old_input,
@@ -972,7 +964,6 @@ int rarch_main_iterate(unsigned *sleep_ms)
    retro_input_t input             = input_keys_pressed(driver, settings, global);
    rarch_system_info_t *system     = rarch_system_info_get_ptr();
    retro_input_t old_input         = last_input;
-
    last_input                      = input;
 
    if (driver->flushing_input)
