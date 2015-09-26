@@ -855,21 +855,17 @@ FILE *rarch_main_log_file(void)
    return global->log_file;
 }
 
-void rarch_main_clear_state(void)
-{
-   driver_clear_state();
-
-   rarch_main_state_free();
-
-   rarch_main_global_free();
-}
-
 bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 {
    settings_t *settings                 = config_get_ptr();
 
    switch (state)
    {
+      case RARCH_MAIN_CTL_CLEAR_STATE:
+         driver_clear_state();
+         rarch_main_state_free();
+         rarch_main_global_free();
+         return true;
       case RARCH_MAIN_CTL_SET_MAX_FRAMES:
          {
             unsigned *ptr = (unsigned*)data;

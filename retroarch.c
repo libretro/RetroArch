@@ -1073,7 +1073,7 @@ void rarch_main_alloc(void)
 
    event_command(EVENT_CMD_HISTORY_DEINIT);
 
-   rarch_main_clear_state();
+   rarch_main_ctl(RARCH_MAIN_CTL_CLEAR_STATE, NULL);
    rarch_main_data_clear_state();
 }
 

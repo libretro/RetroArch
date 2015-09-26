@@ -42,7 +42,8 @@ enum rarch_main_ctl_state
    RARCH_MAIN_CTL_IS_PAUSED,
    RARCH_MAIN_CTL_SET_PAUSED,
    RARCH_MAIN_CTL_SET_MAX_FRAMES,
-   RARCH_MAIN_CTL_SET_FRAME_LIMIT_LAST_TIME
+   RARCH_MAIN_CTL_SET_FRAME_LIMIT_LAST_TIME,
+   RARCH_MAIN_CTL_CLEAR_STATE
 };
 
 typedef struct rarch_resolution
@@ -332,8 +333,6 @@ const char *rarch_main_msg_queue_pull(void);
 void rarch_main_msg_queue_free(void);
 
 void rarch_main_msg_queue_init(void);
-
-void rarch_main_clear_state(void);
 
 bool rarch_main_verbosity(void);
 
