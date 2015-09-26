@@ -603,37 +603,6 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 }
 
 /**
- * time_to_exit:
- *
- * rarch_main_iterate() checks this to see if it's time to
- * exit out of the main loop.
- *
- * Reasons for exiting:
- * a) Shutdown environment callback was invoked.
- * b) Quit key was pressed.
- * c) Frame count exceeds or equals maximum amount of frames to run.
- * d) Video driver no longer alive.
- * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
- *
- * Returns: 1 if any of the above conditions are true, otherwise 0.
- **/
-static INLINE int time_to_exit(driver_t *driver, global_t *global,
-      rarch_system_info_t *system,
-      event_cmd_state_t *cmd)
-{
-   const video_driver_t *video   = driver ? (const video_driver_t*)driver->video : NULL;
-   bool shutdown_pressed         = (system && system->shutdown) || cmd->quit_key_pressed;
-   bool video_alive              = video && video->alive(driver->video_data);
-   bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);
-   uint64_t *frame_count         = video_driver_get_frame_count();
-   bool frame_count_end          = main_max_frames && (*frame_count >= main_max_frames);
-
-   if (shutdown_pressed || frame_count_end || movie_end || !video_alive)
-      return 1;
-   return 0;
-}
-
-/**
  * rarch_update_frame_time:
  *
  * Updates frame timing if frame timing callback is in use by the core.
@@ -954,13 +923,13 @@ int rarch_main_iterate(unsigned *sleep_ms)
    unsigned i;
    retro_input_t trigger_input;
    event_cmd_state_t    cmd;
-   bool do_quit                    = false;
    static retro_input_t last_input = 0;
    driver_t *driver                = driver_get_ptr();
    settings_t *settings            = config_get_ptr();
    global_t   *global              = global_get_ptr();
    retro_input_t input             = input_keys_pressed(driver, settings, global);
    rarch_system_info_t *system     = rarch_system_info_get_ptr();
+   const video_driver_t *video     = driver ? (const video_driver_t*)driver->video : NULL;
    retro_input_t old_input         = last_input;
    last_input                      = input;
 
@@ -983,8 +952,6 @@ int rarch_main_iterate(unsigned *sleep_ms)
 
    rarch_main_cmd_get_state(driver, settings, &cmd, input, old_input, trigger_input);
 
-   if (time_to_exit(driver, global, system, &cmd))
-      do_quit = true;
 
    if (system->frame_time.callback)
       rarch_update_frame_time(driver, settings->slowmotion_ratio, system);
@@ -1011,31 +978,44 @@ int rarch_main_iterate(unsigned *sleep_ms)
 #endif
 
    if (global->exec)
-   {
       global->exec = false;
-      do_quit      = true;
-   }
 
-   if (do_quit)
    {
-      /* Quits out of RetroArch main loop.
-       * On special case, loads dummy core 
-       * instead of exiting RetroArch completely.
-       * Aborts core shutdown if invoked.
+      /* Time to exit out of the main loop? 
+       * Reasons for exiting:
+       * a) Shutdown environment callback was invoked.
+       * b) Quit key was pressed.
+       * c) Frame count exceeds or equals maximum amount of frames to run.
+       * d) Video driver no longer alive.
+       * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
        */
-      if (global->core_shutdown_initiated
-            && settings->load_dummy_on_core_shutdown)
+      bool shutdown_pressed         = (system && system->shutdown) || cmd.quit_key_pressed;
+      bool video_alive              = video && video->alive(driver->video_data);
+      bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);
+      uint64_t *frame_count         = video_driver_get_frame_count();
+      bool frame_count_end          = main_max_frames && (*frame_count >= main_max_frames);
+
+      if (shutdown_pressed || frame_count_end || movie_end || !video_alive || global->exec)
       {
-         if (!event_command(EVENT_CMD_PREPARE_DUMMY))
-            return -1;
+         /* Quits out of RetroArch main loop.
+          * On special case, loads dummy core 
+          * instead of exiting RetroArch completely.
+          * Aborts core shutdown if invoked.
+          */
+         if (global->core_shutdown_initiated
+               && settings->load_dummy_on_core_shutdown)
+         {
+            if (!event_command(EVENT_CMD_PREPARE_DUMMY))
+               return -1;
 
-         system->shutdown = false;
-         global->core_shutdown_initiated = false;
+            system->shutdown = false;
+            global->core_shutdown_initiated = false;
 
-         return 0;
+            return 0;
+         }
+
+         return -1;
       }
-
-      return -1;
    }
    
 #ifdef HAVE_MENU
