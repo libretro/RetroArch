@@ -538,6 +538,9 @@ static int setting_action_start_custom_viewport_width(void *data)
    else
       custom->width = vp.full_width - custom->x;
 
+   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+      (float)custom->width / custom->height;
+
    return 0;
 }
 
@@ -560,6 +563,9 @@ static int setting_action_start_custom_viewport_height(void *data)
             geom->base_height) * geom->base_height;
    else
       custom->height = vp.full_height - custom->y;
+
+   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+      (float)custom->width / custom->height;
 
    return 0;
 }
@@ -930,6 +936,9 @@ static int setting_uint_action_left_custom_viewport_width(void *data, bool wrapa
    else
       custom->width -= 1;
 
+   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+      (float)custom->width / custom->height;
+
    return 0;
 }
 
@@ -951,6 +960,9 @@ static int setting_uint_action_right_custom_viewport_width(void *data, bool wrap
       custom->width += geom->base_width;
    else
       custom->width += 1;
+
+   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+      (float)custom->width / custom->height;
 
    return 0;
 }
@@ -974,6 +986,9 @@ static int setting_uint_action_left_custom_viewport_height(void *data, bool wrap
    else
       custom->height -= 1;
 
+   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+      (float)custom->width / custom->height;
+
    return 0;
 }
 
@@ -995,6 +1010,9 @@ static int setting_uint_action_right_custom_viewport_height(void *data, bool wra
       custom->height += geom->base_height;
    else
       custom->height += 1;
+
+   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+      (float)custom->width / custom->height;
 
    return 0;
 }
@@ -2248,6 +2266,8 @@ static void general_write_handler(void *data)
                custom->y      = 0;
                custom->width  = ((custom->width + geom->base_width   - 1) / geom->base_width)  * geom->base_width;
                custom->height = ((custom->height + geom->base_height - 1) / geom->base_height) * geom->base_height;
+               aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+                  (float)custom->width / custom->height;
             }
          }
          break;
