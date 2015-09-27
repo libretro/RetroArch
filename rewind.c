@@ -44,6 +44,30 @@
 #define NO_UNALIGNED_MEM
 #endif
 
+struct state_manager
+{
+   uint8_t *data;
+   size_t capacity;
+   /* Reading and writing is done here here. */
+   uint8_t *head;
+   /* If head comes close to this, discard a frame. */
+   uint8_t *tail;
+
+   uint8_t *thisblock;
+   uint8_t *nextblock;
+
+   /* This one is rounded up from reset::blocksize. */
+   size_t blocksize;
+
+   /* size_t + (blocksize + 131071) / 131072 * 
+    * (blocksize + u16 + u16) + u16 + u32 + size_t
+    * (yes, the math is a bit ugly). */
+   size_t maxcompsize;
+
+   unsigned entries;
+   bool thisblock_valid;
+};
+
 /* Format per frame (pseudocode): */
 #if 0
 size nextstart;
@@ -363,29 +387,6 @@ static INLINE size_t read_size_t(const void *ptr)
    return ret;
 }
 
-struct state_manager
-{
-   uint8_t *data;
-   size_t capacity;
-   /* Reading and writing is done here here. */
-   uint8_t *head;
-   /* If head comes close to this, discard a frame. */
-   uint8_t *tail;
-
-   uint8_t *thisblock;
-   uint8_t *nextblock;
-
-   /* This one is rounded up from reset::blocksize. */
-   size_t blocksize;
-
-   /* size_t + (blocksize + 131071) / 131072 * 
-    * (blocksize + u16 + u16) + u16 + u32 + size_t
-    * (yes, the math is a bit ugly). */
-   size_t maxcompsize;
-
-   unsigned entries;
-   bool thisblock_valid;
-};
 
 state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
 {
