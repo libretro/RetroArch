@@ -249,10 +249,9 @@ int menu_iterate(bool render_this_frame, enum menu_action action)
       case ITERATE_TYPE_HELP:
          ret = action_iterate_help(menu->menu_state.msg, sizeof(menu->menu_state.msg), label);
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
-         BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
          if (ret == 1)
-            action = MENU_ACTION_OK;
+            BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          break;
       case ITERATE_TYPE_BIND:
          if (menu_input_bind_iterate(menu->menu_state.msg, sizeof(menu->menu_state.msg)))
@@ -278,8 +277,9 @@ int menu_iterate(bool render_this_frame, enum menu_action action)
             ret = menu_hash_get_help(label_hash, menu->menu_state.msg, sizeof(menu->menu_state.msg));
          }
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
-         BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
+         if (action == MENU_ACTION_OK)
+            BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          break;
       case ITERATE_TYPE_DEFAULT:
          menu_entry_get(&entry,    selection, NULL, false);
@@ -308,7 +308,7 @@ int menu_iterate(bool render_this_frame, enum menu_action action)
    if (render_this_frame)
       BIT64_SET(menu->state, MENU_STATE_BLIT);
 
-   if (BIT64_GET(menu->state, MENU_STATE_POP_STACK) && action == MENU_ACTION_OK)
+   if (BIT64_GET(menu->state, MENU_STATE_POP_STACK))
    {
       size_t new_selection_ptr = selection;
       menu_list_pop_stack(menu_list, &new_selection_ptr);
