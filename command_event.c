@@ -748,7 +748,7 @@ static bool event_init_core(void)
    if((settings->sort_savestates_enable || settings->sort_savefiles_enable) && !global->inited.core.no_content) 
       set_paths_redirect(global->name.base);
 
-   rarch_verify_api_version();
+   rarch_ctl(RARCH_ACTION_STATE_VERIFY_API_VERSION, NULL);
    pretro_init();
 
    global->sram.use = (global->inited.core.type == CORE_TYPE_PLAIN) &&

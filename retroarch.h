@@ -68,7 +68,14 @@ enum rarch_ctl_state
     * properly. */
    RARCH_ACTION_STATE_REPLACE_CONFIG,
    RARCH_ACTION_STATE_QUIT,
-   RARCH_ACTION_STATE_FORCE_QUIT
+   RARCH_ACTION_STATE_FORCE_QUIT,
+   /* Compare libretro core API version against API version
+    * used by RetroArch.
+    *
+    * TODO - when libretro v2 gets added, allow for switching
+    * between libretro version backend dynamically.
+    */
+   RARCH_ACTION_STATE_VERIFY_API_VERSION
 };
 
 enum rarch_content_type
@@ -188,17 +195,6 @@ int rarch_defer_core(core_info_list_t *data,
       char *s, size_t len);
 
 void rarch_fill_pathnames(void);
-
-/* 
- * rarch_verify_api_version:
- *
- * Compare libretro core API version against API version
- * used by RetroArch.
- *
- * TODO - when libretro v2 gets added, allow for switching
- * between libretro version backend dynamically.
- **/
-void rarch_verify_api_version(void);
 
 /**
  * rarch_init_system_av_info:

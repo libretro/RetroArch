@@ -1104,24 +1104,6 @@ void rarch_main_free(void)
    config_free();
 }
 
-/* 
- * rarch_verify_api_version:
- *
- * Compare libretro core API version against API version
- * used by the program.
- *
- * TODO - when libretro v2 gets added, allow for switching
- * between libretro version backend dynamically.
- **/
-void rarch_verify_api_version(void)
-{
-   RARCH_LOG("Version of libretro API: %u\n", pretro_api_version());
-   RARCH_LOG("Compiled against API: %u\n",    RETRO_API_VERSION);
-
-   if (pretro_api_version() != RETRO_API_VERSION)
-      RARCH_WARN("%s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
-}
-
 #define FAIL_CPU(simd_type) do { \
    RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
    rarch_fail(1, "validate_cpu_features()"); \
@@ -1450,6 +1432,13 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_ACTION_STATE_FORCE_QUIT:
          rarch_ctl(RARCH_ACTION_STATE_QUIT, NULL);
+         break;
+      case RARCH_ACTION_STATE_VERIFY_API_VERSION:
+         RARCH_LOG("Version of libretro API: %u\n", pretro_api_version());
+         RARCH_LOG("Compiled against API: %u\n",    RETRO_API_VERSION);
+
+         if (pretro_api_version() != RETRO_API_VERSION)
+            RARCH_WARN("%s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
          break;
       case RARCH_ACTION_STATE_NONE:
       default:
