@@ -122,6 +122,32 @@ static int database_info_iterate_start
    return 0;
 }
 
+static int iso_get_serial(database_state_handle_t *db_state,
+      database_info_handle_t *db, const char *name, char* serial)
+{
+   int rv;
+   int32_t offset = 0;
+   const char* system_name = NULL;
+
+   if ((rv = detect_system(name, offset, &system_name)) < 0)
+      return rv;
+
+   if (strcmp(system_name, "psp") == 0)
+   {
+      if (detect_psp_game(name, serial) == 0)
+         return 0;
+      RARCH_LOG("Found disk label '%s'\n", serial);
+   }
+   else if (strcmp(system_name, "ps1") == 0)
+   {
+      if (detect_ps1_game(name, serial) == 0)
+         return 0;
+      RARCH_LOG("Found disk label '%s'\n", serial);
+   }
+
+   return 0;
+}
+
 static int cue_get_serial(database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name, char* serial)
 {
@@ -139,31 +165,7 @@ static int cue_get_serial(database_state_handle_t *db_state,
 
    RARCH_LOG("Reading 1st data track...\n");
 
-   if ((rv = detect_system(track_path, offset, &system_name)) < 0)
-      return rv;
-
-   RARCH_LOG("Detected %s media\n", system_name);
-
-   if (strcmp(system_name, "ps1") == 0)
-   {
-      if (detect_ps1_game(track_path, serial) == 0)
-         return 0;
-      RARCH_LOG("Found disk label '%s'\n", serial);
-   }
-
-   return 0;
-}
-
-static int iso_get_serial(database_state_handle_t *db_state,
-      database_info_handle_t *db, const char *name, char* serial)
-{
-   RARCH_LOG("Detected ISO image\n");
-
-   if (detect_psp_game(name, serial) == 0)
-      return 0;
-   RARCH_LOG("Found disk label '%s'\n", serial);
-
-   return 0;
+   return iso_get_serial(db_state, db, track_path, serial);
 }
 
 static int database_info_iterate_playlist(
