@@ -926,7 +926,7 @@ static int setting_uint_action_left_custom_viewport_width(void *data, bool wrapa
    video_driver_viewport_info(&vp);
 
    if (settings->video.scale_integer)
-      custom->width = (custom->width % geom->base_width - 1) * geom->base_width;
+      custom->width -= geom->base_width;
    else
       custom->width -= 1;
 
@@ -948,7 +948,7 @@ static int setting_uint_action_right_custom_viewport_width(void *data, bool wrap
    video_driver_viewport_info(&vp);
 
    if (settings->video.scale_integer)
-      custom->width = (custom->width % geom->base_width + 1) * geom->base_width;
+      custom->width += geom->base_width;
    else
       custom->width += 1;
 
@@ -970,7 +970,7 @@ static int setting_uint_action_left_custom_viewport_height(void *data, bool wrap
    video_driver_viewport_info(&vp);
 
    if (settings->video.scale_integer)
-      custom->height  = (custom->height % geom->base_height - 1) * geom->base_height;
+      custom->height -= geom->base_height;
    else
       custom->height -= 1;
 
@@ -992,7 +992,7 @@ static int setting_uint_action_right_custom_viewport_height(void *data, bool wra
    video_driver_viewport_info(&vp);
 
    if (settings->video.scale_integer)
-      custom->height  = (custom->height % geom->base_height + 1) * geom->base_height;
+      custom->height += geom->base_height;
    else
       custom->height += 1;
 
