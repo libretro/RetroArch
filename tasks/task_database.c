@@ -33,6 +33,7 @@
 
 #define HASH_EXTENSION_ZIP             0x0b88c7d8U
 #define HASH_EXTENSION_CUE             0x0b886782U
+#define HASH_EXTENSION_CUE_UPPERCASE   0x0b87db22U
 #define HASH_EXTENSION_ISO             0x0b8880d0U
 #define HASH_EXTENSION_ISO_UPPERCASE   0x0b87f470U
 
@@ -192,6 +193,7 @@ static int database_info_iterate_playlist(
          return 1;
 #endif
       case HASH_EXTENSION_CUE:
+      case HASH_EXTENSION_CUE_UPPERCASE:
          db_state->serial[0] = '\0';
          cue_get_serial(db_state, db, name, db_state->serial);
          db->type = DATABASE_TYPE_SERIAL_LOOKUP;
