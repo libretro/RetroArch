@@ -844,6 +844,27 @@ static int setting_bool_action_toggle_default(void *data, bool wraparound)
    return 0;
 }
 
+static int setting_int_action_left_default(void *data, bool wraparound)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   if (*setting->value.integer != setting->min)
+      *setting->value.integer =
+         *setting->value.integer - setting->step;
+
+   if (setting->enforce_minrange)
+   {
+      if (*setting->value.integer < setting->min)
+         *setting->value.integer = setting->min;
+   }
+
+
+   return 0;
+}
+
 static int setting_uint_action_left_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -885,6 +906,32 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
             *setting->value.unsigned_integer = setting->min;
          else
             *setting->value.unsigned_integer = setting->max;
+      }
+   }
+
+   return 0;
+}
+
+static int setting_int_action_right_default(void *data, bool wraparound)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.integer =
+      *setting->value.integer + setting->step;
+
+   if (setting->enforce_maxrange)
+   {
+      if (*setting->value.integer > setting->max)
+      {
+         settings_t *settings = config_get_ptr();
+
+         if (settings && settings->menu.navigation.wraparound.setting_enable)
+            *setting->value.integer = setting->min;
+         else
+            *setting->value.integer = setting->max;
       }
    }
 
@@ -1257,7 +1304,6 @@ static void setting_get_string_representation_st_bind(void *data,
    input_get_bind_string(s, keybind, auto_bind, len);
 }
 
-#if 0
 static void setting_get_string_representation_int(void *data,
       char *s, size_t len)
 {
@@ -1266,7 +1312,6 @@ static void setting_get_string_representation_int(void *data,
    if (setting)
       snprintf(s, len, "%d", *setting->value.integer);
 }
-#endif
 
 static void setting_get_string_representation_uint_video_monitor_index(void *data,
       char *s, size_t len)
@@ -1649,12 +1694,11 @@ static rarch_setting_t setting_bool_setting(const char* name,
  *
  * Returns: setting of type ST_INT.
  **/
-#if 0
 static rarch_setting_t setting_int_setting(const char* name,
-      const char* short_description, int* target, int default_value,
+      const char* short_description, int* target,
+      int default_value,
       const char *group, const char *subgroup, const char *parent_group,
-      change_handler_t change_handler,
-      change_handler_t read_handler)
+      change_handler_t change_handler, change_handler_t read_handler)
 {
    rarch_setting_t result        = {0};
 
@@ -1672,11 +1716,16 @@ static rarch_setting_t setting_int_setting(const char* name,
    result.original_value.integer = *target;
    result.default_value.integer  = default_value;
 
+   result.action_start                    = setting_generic_action_start_default;
+   result.action_left                     = setting_int_action_left_default;
+   result.action_right                    = setting_int_action_right_default;
+   result.action_ok                       = setting_generic_action_ok_default;
+   result.action_select                   = setting_generic_action_ok_default;
+   result.action_cancel                   = NULL;
    result.get_string_representation       = &setting_get_string_representation_int;
 
    return result;
 }
-#endif
 
 /**
  * setting_uint_setting:
@@ -3354,6 +3403,52 @@ static bool setting_append_list_video_options(
          group_info.name,
          subgroup_info.name,
          parent_group);
+
+   CONFIG_INT(
+         settings->video_viewport_custom.x,
+         "video_viewport_custom_x",
+         "Custom Viewport X",
+         0,
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_INT(
+         settings->video_viewport_custom.y,
+         "video_viewport_custom_y",
+         "Custom Viewport Y",
+         0,
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_UINT(
+         settings->video_viewport_custom.width,
+         "video_viewport_custom_width",
+         "Custom Viewport Width",
+         0,
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   menu_settings_list_current_add_range(list, list_info, 0, 0, 1, false, false);
+
+   CONFIG_UINT(
+         settings->video_viewport_custom.height,
+         "video_viewport_custom_height",
+         "Custom Viewport Height",
+         0,
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   menu_settings_list_current_add_range(list, list_info, 0, 0, 1, false, false);
 
    END_SUB_GROUP(list, list_info, parent_group);
    START_SUB_GROUP(list, list_info, "Scaling", group_info.name, subgroup_info, parent_group);
