@@ -2237,7 +2237,6 @@ static void general_write_handler(void *data)
             video_viewport_t vp;
             struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
             video_viewport_t            *custom  = video_viewport_get_custom();
-            settings_t                 *settings = config_get_ptr();
             struct retro_game_geometry     *geom = (struct retro_game_geometry*)
                &av_info->geometry;
 
