@@ -25,7 +25,7 @@
 extern "C" {
 #endif
  
-typedef enum menu_action
+enum menu_action
 {
    MENU_ACTION_UP,
    MENU_ACTION_DOWN,
@@ -42,7 +42,7 @@ typedef enum menu_action
    MENU_ACTION_SCROLL_UP,
    MENU_ACTION_TOGGLE,
    MENU_ACTION_NOOP
-} menu_action_t;
+};
 
 enum menu_input_pointer_state
 {
@@ -107,7 +107,7 @@ void menu_input_st_cheat_callback(void *userdata, const char *str);
 
 int menu_input_bind_iterate(char *s, size_t len);
 
-unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_state);
+enum menu_action menu_input_frame(retro_input_t input, retro_input_t trigger_state);
 
 void menu_input_post_iterate(int *ret, unsigned action);
 
