@@ -41,6 +41,51 @@ typedef struct
 #define CTR_AUDIO_SIZE        (CTR_AUDIO_COUNT * sizeof(int16_t))
 #define CTR_AUDIO_SIZE_MASK   (CTR_AUDIO_SIZE  - 1u)
 
+Result csndPlaySound_custom(int chn, u32 flags, u32 sampleRate, float vol, float pan, void* data0, void* data1, u32 size)
+{
+	if (!(csndChannels & BIT(chn)))
+		return 1;
+
+	u32 paddr0 = 0, paddr1 = 0;
+
+	int encoding = (flags >> 12) & 3;
+	int loopMode = (flags >> 10) & 3;
+
+	if (!loopMode) flags |= SOUND_ONE_SHOT;
+
+	if (encoding != CSND_ENCODING_PSG)
+	{
+		if (data0) paddr0 = osConvertVirtToPhys((u32)data0);
+		if (data1) paddr1 = osConvertVirtToPhys((u32)data1);
+
+		if (data0 && encoding == CSND_ENCODING_ADPCM)
+		{
+			int adpcmSample = ((s16*)data0)[-2];
+			int adpcmIndex = ((u8*)data0)[-2];
+			CSND_SetAdpcmState(chn, 0, adpcmSample, adpcmIndex);
+		}
+	}
+
+	u32 timer = CSND_TIMER(sampleRate);
+	if (timer < 0x0042) timer = 0x0042;
+	else if (timer > 0xFFFF) timer = 0xFFFF;
+	flags &= ~0xFFFF001F;
+	flags |= SOUND_ENABLE | SOUND_CHANNEL(chn) | (timer << 16);
+
+	u32 volumes = CSND_VOL(vol, pan);
+	CSND_SetChnRegs(flags, paddr0, paddr1, size, volumes, volumes);
+
+	if (loopMode == CSND_LOOPMODE_NORMAL && paddr1 > paddr0)
+	{
+		// Now that the first block is playing, configure the size of the subsequent blocks
+		size -= paddr1 - paddr0;
+		CSND_SetBlock(chn, 1, paddr1, size);
+	}
+
+	return 0;
+}
+
+
 static void *ctr_audio_init(const char *device, unsigned rate, unsigned latency)
 {
    ctr_audio_t *ctr = (ctr_audio_t*)calloc(1, sizeof(ctr_audio_t));
@@ -67,12 +112,13 @@ static void *ctr_audio_init(const char *device, unsigned rate, unsigned latency)
 
    GSPGPU_FlushDataCache(NULL, (u8*)ctr->l_paddr, CTR_AUDIO_SIZE);
    GSPGPU_FlushDataCache(NULL, (u8*)ctr->r_paddr, CTR_AUDIO_SIZE);
-   csndPlaySound(0x8, SOUND_LOOPMODE(CSND_LOOPMODE_NORMAL)| SOUND_FORMAT(CSND_ENCODING_PCM16),
+   csndPlaySound_custom(0x8, SOUND_LOOPMODE(CSND_LOOPMODE_NORMAL)| SOUND_FORMAT(CSND_ENCODING_PCM16),
                  rate, 1.0, -1.0, ctr->l, ctr->l, CTR_AUDIO_SIZE);
 
-   csndPlaySound(0x9, SOUND_LOOPMODE(CSND_LOOPMODE_NORMAL)| SOUND_FORMAT(CSND_ENCODING_PCM16),
+   csndPlaySound_custom(0x9, SOUND_LOOPMODE(CSND_LOOPMODE_NORMAL)| SOUND_FORMAT(CSND_ENCODING_PCM16),
                  rate, 1.0, 1.0, ctr->r, ctr->r, CTR_AUDIO_SIZE);
 
+   csndExecCmds(false);
    ctr->playpos              = 0;
    ctr->cpu_ticks_last       = svcGetSystemTick();
    ctr->playing              = true;
