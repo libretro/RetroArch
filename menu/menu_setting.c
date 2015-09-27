@@ -518,6 +518,52 @@ static int setting_action_start_bind_device(void *data)
    return 0;
 }
 
+static int setting_action_start_custom_viewport_width(void *data)
+{
+   video_viewport_t vp;
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   video_viewport_t            *custom  = video_viewport_get_custom();
+   settings_t                 *settings = config_get_ptr();
+   struct retro_game_geometry     *geom = (struct retro_game_geometry*)
+      &av_info->geometry;
+
+   if (!settings || !av_info)
+      return -1;
+
+   video_driver_viewport_info(&vp);
+
+   if (settings->video.scale_integer)
+      custom->width = ((custom->width + geom->base_width - 1) /
+            geom->base_width) * geom->base_width;
+   else
+      custom->width = vp.full_width - custom->x;
+
+   return 0;
+}
+
+static int setting_action_start_custom_viewport_height(void *data)
+{
+   video_viewport_t vp;
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   video_viewport_t            *custom  = video_viewport_get_custom();
+   settings_t                 *settings = config_get_ptr();
+   struct retro_game_geometry     *geom = (struct retro_game_geometry*)
+      &av_info->geometry;
+
+   if (!settings || !av_info)
+      return -1;
+
+   video_driver_viewport_info(&vp);
+
+   if (settings->video.scale_integer)
+      custom->height = ((custom->height + geom->base_height - 1) /
+            geom->base_height) * geom->base_height;
+   else
+      custom->height = vp.full_height - custom->y;
+
+   return 0;
+}
+
 static int setting_generic_action_start_default(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -861,6 +907,94 @@ static int setting_int_action_left_default(void *data, bool wraparound)
          *setting->value.integer = setting->min;
    }
 
+
+   return 0;
+}
+
+static int setting_uint_action_left_custom_viewport_width(void *data, bool wraparound)
+{
+   video_viewport_t vp;
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   video_viewport_t            *custom  = video_viewport_get_custom();
+   settings_t                 *settings = config_get_ptr();
+   struct retro_game_geometry     *geom = (struct retro_game_geometry*)
+      &av_info->geometry;
+
+   if (!settings || !av_info)
+      return -1;
+
+   video_driver_viewport_info(&vp);
+
+   if (settings->video.scale_integer)
+      custom->width -= geom->base_width;
+   else
+      custom->width -= 1;
+
+   return 0;
+}
+
+static int setting_uint_action_right_custom_viewport_width(void *data, bool wraparound)
+{
+   video_viewport_t vp;
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   video_viewport_t            *custom  = video_viewport_get_custom();
+   settings_t                 *settings = config_get_ptr();
+   struct retro_game_geometry     *geom = (struct retro_game_geometry*)
+      &av_info->geometry;
+
+   if (!settings || !av_info)
+      return -1;
+
+   video_driver_viewport_info(&vp);
+
+   if (settings->video.scale_integer)
+      custom->width += geom->base_width;
+   else
+      custom->width += 1;
+
+   return 0;
+}
+
+static int setting_uint_action_left_custom_viewport_height(void *data, bool wraparound)
+{
+   video_viewport_t vp;
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   video_viewport_t            *custom  = video_viewport_get_custom();
+   settings_t                 *settings = config_get_ptr();
+   struct retro_game_geometry     *geom = (struct retro_game_geometry*)
+      &av_info->geometry;
+
+   if (!settings || !av_info)
+      return -1;
+
+   video_driver_viewport_info(&vp);
+
+   if (settings->video.scale_integer)
+      custom->height -= geom->base_height;
+   else
+      custom->height -= 1;
+
+   return 0;
+}
+
+static int setting_uint_action_right_custom_viewport_height(void *data, bool wraparound)
+{
+   video_viewport_t vp;
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   video_viewport_t            *custom  = video_viewport_get_custom();
+   settings_t                 *settings = config_get_ptr();
+   struct retro_game_geometry     *geom = (struct retro_game_geometry*)
+      &av_info->geometry;
+
+   if (!settings || !av_info)
+      return -1;
+
+   video_driver_viewport_info(&vp);
+
+   if (settings->video.scale_integer)
+      custom->height += geom->base_height;
+   else
+      custom->height += 1;
 
    return 0;
 }
@@ -3415,6 +3549,10 @@ static bool setting_append_list_video_options(
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, -99999, 0, 1, false, false);
+   menu_settings_list_current_add_cmd(
+         list,
+         list_info,
+         EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
 
    CONFIG_INT(
          settings->video_viewport_custom.y,
@@ -3427,6 +3565,10 @@ static bool setting_append_list_video_options(
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, -99999, 0, 1, false, false);
+   menu_settings_list_current_add_cmd(
+         list,
+         list_info,
+         EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
 
    CONFIG_UINT(
          settings->video_viewport_custom.width,
@@ -3439,6 +3581,14 @@ static bool setting_append_list_video_options(
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 0, 1, false, false);
+   (*list)[list_info->index - 1].action_start = 
+      &setting_action_start_custom_viewport_width;
+   (*list)[list_info->index - 1].action_left  = setting_uint_action_left_custom_viewport_width;
+   (*list)[list_info->index - 1].action_right = setting_uint_action_right_custom_viewport_width;
+   menu_settings_list_current_add_cmd(
+         list,
+         list_info,
+         EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
 
    CONFIG_UINT(
          settings->video_viewport_custom.height,
@@ -3451,6 +3601,14 @@ static bool setting_append_list_video_options(
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 0, 1, false, false);
+   (*list)[list_info->index - 1].action_start = 
+      &setting_action_start_custom_viewport_height;
+   (*list)[list_info->index - 1].action_left  = setting_uint_action_left_custom_viewport_height;
+   (*list)[list_info->index - 1].action_right = setting_uint_action_right_custom_viewport_height;
+   menu_settings_list_current_add_cmd(
+         list,
+         list_info,
+         EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
 
    END_SUB_GROUP(list, list_info, parent_group);
    START_SUB_GROUP(list, list_info, "Scaling", group_info.name, subgroup_info, parent_group);
