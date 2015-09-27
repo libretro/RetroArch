@@ -28,15 +28,16 @@
 #include "../msg_hash.h"
 #include "../general.h"
 
-#define CB_DB_SCAN_FILE    0x70ce56d2U
-#define CB_DB_SCAN_FOLDER  0xde2bef8eU
+#define CB_DB_SCAN_FILE                0x70ce56d2U
+#define CB_DB_SCAN_FOLDER              0xde2bef8eU
 
-#define HASH_EXTENSION_ZIP 0x0b88c7d8U
-#define HASH_EXTENSION_CUE 0x0b886782U
-#define HASH_EXTENSION_ISO 0x0b8880d0U
+#define HASH_EXTENSION_ZIP             0x0b88c7d8U
+#define HASH_EXTENSION_CUE             0x0b886782U
+#define HASH_EXTENSION_ISO             0x0b8880d0U
+#define HASH_EXTENSION_ISO_UPPERCASE   0x0b87f470U
 
 #ifndef COLLECTION_SIZE
-#define COLLECTION_SIZE 99999
+#define COLLECTION_SIZE                99999
 #endif
 
 typedef struct database_state_handle
@@ -196,6 +197,7 @@ static int database_info_iterate_playlist(
          db->type = DATABASE_TYPE_SERIAL_LOOKUP;
          return 1;
       case HASH_EXTENSION_ISO:
+      case HASH_EXTENSION_ISO_UPPERCASE:
          db_state->serial[0] = '\0';
          iso_get_serial(db_state, db, name, db_state->serial);
          db->type = DATABASE_TYPE_SERIAL_LOOKUP;
