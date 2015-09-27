@@ -371,6 +371,18 @@ int detect_system(const char *track_path, int32_t offset,
       }
    }
 
+   retro_fseek(fd, 0x8008, SEEK_SET);
+   if (retro_fread(fd, magic, 8) > 0)
+   {
+      magic[8] = '\0';
+      if (!strcmp(magic, "PSP GAME"))
+      {
+         *system_name = "psp\0";
+         rv = 0;
+         goto clean;
+      }
+   }
+
    RARCH_LOG("Could not find compatible system\n");
    rv = -EINVAL;
 clean:
