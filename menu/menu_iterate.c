@@ -233,7 +233,6 @@ int menu_iterate(bool render_this_frame, enum menu_action action)
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;
 
-   menu->state               = 0;
    menu->menu_state.msg[0]   = '\0';
    hash                      = menu_hash_calculate(label);
    iterate_type              = action_iterate_type(hash);
@@ -365,6 +364,8 @@ int menu_iterate_render(void)
       menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO, NULL);
 
    menu_driver_set_texture();
+
+   menu->state               = 0;
 
    return 0;
 }
