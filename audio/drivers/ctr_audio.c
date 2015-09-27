@@ -118,7 +118,7 @@ static void *ctr_audio_init(const char *device, unsigned rate, unsigned latency)
    csndPlaySound_custom(0x9, SOUND_LOOPMODE(CSND_LOOPMODE_NORMAL)| SOUND_FORMAT(CSND_ENCODING_PCM16),
                  rate, 1.0, 1.0, ctr->r, ctr->r, CTR_AUDIO_SIZE);
 
-   csndExecCmds(false);
+   csndExecCmds(true);
    ctr->playpos              = 0;
    ctr->cpu_ticks_last       = svcGetSystemTick();
    ctr->playing              = true;
