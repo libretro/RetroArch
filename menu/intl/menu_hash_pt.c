@@ -75,10 +75,6 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "Saves";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
          return "Retrocesso";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
-         return "Definir Quina Superior Esquerda";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
-         return "Definir Quina Inferior Direita";
       case MENU_VALUE_SHADER:
          return "Shader";
       case MENU_VALUE_CHEAT:

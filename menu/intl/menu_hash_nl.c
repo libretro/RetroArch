@@ -121,10 +121,6 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "Saving";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
          return "Rewind";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
-         return "Bovenlinkse Hoek Instellen";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
-         return "Benedenrechtse hoek instellen";
       case MENU_VALUE_SHADER:
          return "Shader";
       case MENU_VALUE_CHEAT:

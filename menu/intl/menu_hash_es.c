@@ -132,10 +132,6 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Guardado";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
          return "Rebobinado";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
-         return "Asignar esquina superior izquierda";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
-         return "Asignar esquina inferior derecha";
       case MENU_VALUE_SHADER:
          return "Shader";
       case MENU_VALUE_CHEAT:

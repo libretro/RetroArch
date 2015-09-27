@@ -86,12 +86,6 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Réglages des sauvegardes";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
          return "Réglages du rembobinage";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
-         return "Modifier le coin haut-gauche";
-      case MENU_LABEL_CUSTOM_VIEWPORT_2:
-         return "custom_viewport_2";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
-         return "Modifier le coin bas-droite";
       case MENU_VALUE_SHADER:
          return "Shader";
       case MENU_VALUE_CHEAT:

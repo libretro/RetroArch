@@ -92,10 +92,6 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "load_content";
       case MENU_LABEL_NO_SETTINGS_FOUND:
          return "menu_label_no_settings_found";
-      case MENU_LABEL_CUSTOM_VIEWPORT_1:
-         return "custom_viewport_1";
-      case MENU_LABEL_CUSTOM_VIEWPORT_2:
-         return "custom_viewport_2";
       case MENU_LABEL_SYSTEM_BGM_ENABLE:
          return "system_bgm_enable";
       case MENU_LABEL_AUDIO_BLOCK_FRAMES:
@@ -748,10 +744,6 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Saving";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
          return "Rewind";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
-         return "Set Upper-Left Corner";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
-         return "Set Bottom-Right Corner";
       case MENU_VALUE_SHADER:
          return "Shader";
       case MENU_VALUE_CHEAT:

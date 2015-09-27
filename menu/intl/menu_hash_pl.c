@@ -85,10 +85,6 @@ const char *menu_hash_to_str_pl(uint32_t hash)
          return "Ustawienia zapisywania";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
          return "Ustawienia przewijania";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
-         return "Ustaw lewy górny róg";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
-         return "Ustaw prawy dolny róg";
       case MENU_VALUE_SHADER:
          return "Shader";
       case MENU_VALUE_CHEAT:

@@ -254,11 +254,6 @@ int generic_action_ok_displaylist_push(const char *path,
          info_path          = tmp;
          info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST);
          break;
-      case ACTION_OK_DL_CUSTOM_VIEWPORT:
-         info.type          = MENU_SETTINGS_CUSTOM_VIEWPORT;
-         info.directory_ptr = idx;
-         info_label         = menu_hash_to_str(MENU_LABEL_CUSTOM_VIEWPORT_1);
-         break;
       case ACTION_OK_DL_CORE_UPDATER_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -1252,25 +1247,6 @@ static int action_ok_core_updater_list(const char *path,
 #endif
 
 
-static int action_ok_custom_viewport(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   settings_t            *settings   = config_get_ptr();
-   video_viewport_t *custom = video_viewport_get_custom();
-   int ret = generic_action_ok_displaylist_push(path,
-      label, type, idx, entry_idx, ACTION_OK_DL_CUSTOM_VIEWPORT);
-
-   video_driver_viewport_info(custom);
-
-   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-      (float)custom->width / custom->height;
-
-   settings->video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
-
-   event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
-   return ret;
-}
-
 static int action_ok_rdb_entry_submenu(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1879,9 +1855,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          break;
       case MENU_LABEL_CONFIGURATIONS:
          cbs->action_ok = action_ok_configurations_list;
-         break;
-      case MENU_LABEL_CUSTOM_RATIO:
-         cbs->action_ok = action_ok_custom_viewport;
          break;
       case MENU_LABEL_SCREEN_RESOLUTION:
          cbs->action_ok = action_ok_video_resolution;

@@ -3574,13 +3574,6 @@ static bool setting_append_list_video_options(
    (*list)[list_info->index - 1].get_string_representation = 
       &setting_get_string_representation_uint_aspect_ratio_index;
 
-   CONFIG_ACTION(
-         menu_hash_to_str(MENU_LABEL_CUSTOM_RATIO),
-         menu_hash_to_str(MENU_LABEL_VALUE_CUSTOM_RATIO),
-         group_info.name,
-         subgroup_info.name,
-         parent_group);
-
    CONFIG_INT(
          settings->video_viewport_custom.x,
          "video_viewport_custom_x",

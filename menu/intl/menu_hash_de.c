@@ -75,10 +75,6 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Spielstand-Einstellungen";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
          return "Zurückspul-Einstellungen";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
-         return "Kalibriere obere, linke Ecke";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
-         return "Kalibriere untere, rechte Ecke";
       case MENU_VALUE_SHADER:
          return "Shader";
       case MENU_VALUE_CHEAT:

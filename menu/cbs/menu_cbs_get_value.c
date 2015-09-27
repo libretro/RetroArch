@@ -1126,7 +1126,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
                menu_action_setting_disp_set_label_menu_file_cheat;
             break;
          case MENU_SETTING_SUBGROUP:
-         case MENU_SETTINGS_CUSTOM_VIEWPORT:
          case MENU_SETTINGS_CUSTOM_BIND_ALL:
          case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
             cbs->action_get_value =
