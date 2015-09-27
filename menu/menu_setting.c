@@ -3684,6 +3684,10 @@ static bool setting_append_list_video_options(
          parent_group,
          general_write_handler,
          general_read_handler);
+   menu_settings_list_current_add_cmd(
+         list,
+         list_info,
+         EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
 
 #ifdef GEKKO
    CONFIG_UINT(
