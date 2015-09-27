@@ -2232,6 +2232,26 @@ static void general_write_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_VIDEO_SCALE_INTEGER:
+         {
+            video_viewport_t vp;
+            struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+            video_viewport_t            *custom  = video_viewport_get_custom();
+            settings_t                 *settings = config_get_ptr();
+            struct retro_game_geometry     *geom = (struct retro_game_geometry*)
+               &av_info->geometry;
+
+            video_driver_viewport_info(&vp);
+
+            if (*setting->value.boolean)
+            {
+               custom->x      = 0;
+               custom->y      = 0;
+               custom->width  = ((custom->width + geom->base_width   - 1) / geom->base_width)  * geom->base_width;
+               custom->height = ((custom->height + geom->base_height - 1) / geom->base_height) * geom->base_height;
+            }
+         }
+         break;
       case MENU_LABEL_HELP:
          if (!menu_list)
             return;
