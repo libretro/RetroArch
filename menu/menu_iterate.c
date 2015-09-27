@@ -250,7 +250,7 @@ int menu_iterate(bool render_this_frame, enum menu_action action)
          ret = action_iterate_help(menu->menu_state.msg, sizeof(menu->menu_state.msg), label);
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
-         if (ret == 1)
+         if (ret == 1 || action == MENU_ACTION_OK)
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          break;
       case ITERATE_TYPE_BIND:
