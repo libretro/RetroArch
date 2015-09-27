@@ -1313,4 +1313,3 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 
    return ret;
 }
-
