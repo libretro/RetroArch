@@ -999,28 +999,6 @@ static void rarch_init_savefile_paths(void)
    }
 }
 
-void rarch_fill_pathnames(void)
-{
-   global_t   *global   = global_get_ptr();
-
-   rarch_init_savefile_paths();
-   strlcpy(global->bsv.movie_path, global->name.savefile,
-         sizeof(global->bsv.movie_path));
-
-   if (!*global->name.base)
-      return;
-
-   if (!*global->name.ups)
-      fill_pathname_noext(global->name.ups, global->name.base, ".ups",
-            sizeof(global->name.ups));
-   if (!*global->name.bps)
-      fill_pathname_noext(global->name.bps, global->name.base, ".bps",
-            sizeof(global->name.bps));
-   if (!*global->name.ips)
-      fill_pathname_noext(global->name.ips, global->name.base, ".ips",
-            sizeof(global->name.ips));
-}
-
 static bool init_state(void)
 {
    driver_t *driver     = driver_get_ptr();
@@ -1431,6 +1409,24 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
          if (pretro_api_version() != RETRO_API_VERSION)
             RARCH_WARN("%s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
+         break;
+      case RARCH_ACTION_STATE_FILL_PATHNAMES:
+         rarch_init_savefile_paths();
+         strlcpy(global->bsv.movie_path, global->name.savefile,
+               sizeof(global->bsv.movie_path));
+
+         if (!*global->name.base)
+            return false;
+
+         if (!*global->name.ups)
+            fill_pathname_noext(global->name.ups, global->name.base, ".ups",
+                  sizeof(global->name.ups));
+         if (!*global->name.bps)
+            fill_pathname_noext(global->name.bps, global->name.base, ".bps",
+                  sizeof(global->name.bps));
+         if (!*global->name.ips)
+            fill_pathname_noext(global->name.ips, global->name.base, ".ips",
+                  sizeof(global->name.ips));
          break;
       case RARCH_ACTION_STATE_NONE:
       default:

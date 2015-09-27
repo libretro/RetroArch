@@ -368,7 +368,7 @@ void event_disk_control_append_image(const char *path)
        * started out in a single disk case, and that this way
        * of doing it makes the most sense. */
       rarch_set_paths(path);
-      rarch_fill_pathnames();
+      rarch_ctl(RARCH_ACTION_STATE_FILL_PATHNAMES, NULL);
    }
 
    event_command(EVENT_CMD_AUTOSAVE_INIT);
@@ -691,7 +691,7 @@ static bool event_init_content(void)
       return true;
 
    if (!global->inited.core.no_content)
-      rarch_fill_pathnames();
+      rarch_ctl(RARCH_ACTION_STATE_FILL_PATHNAMES, NULL);
 
    if (!init_content_file())
       return false;

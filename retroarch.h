@@ -91,7 +91,9 @@ enum rarch_ctl_state
        * Make sure we haven't compiled for something we cannot run.
        * Ideally, code would get swapped out depending on CPU support, 
        * but this will do for now. */
-   RARCH_ACTION_STATE_VALIDATE_CPU_FEATURES
+   RARCH_ACTION_STATE_VALIDATE_CPU_FEATURES,
+
+   RARCH_ACTION_STATE_FILL_PATHNAMES
 };
 
 enum rarch_content_type
@@ -188,8 +190,6 @@ void rarch_playlist_load_content(void *data, unsigned index);
 int rarch_defer_core(core_info_list_t *data,
       const char *dir, const char *path, const char *menu_label,
       char *s, size_t len);
-
-void rarch_fill_pathnames(void);
 
 /**
  * rarch_init_system_av_info:
