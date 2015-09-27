@@ -3414,6 +3414,7 @@ static bool setting_append_list_video_options(
          parent_group,
          general_write_handler,
          general_read_handler);
+   menu_settings_list_current_add_range(list, list_info, -99999, 0, 1, false, false);
 
    CONFIG_INT(
          settings->video_viewport_custom.y,
@@ -3425,6 +3426,7 @@ static bool setting_append_list_video_options(
          parent_group,
          general_write_handler,
          general_read_handler);
+   menu_settings_list_current_add_range(list, list_info, -99999, 0, 1, false, false);
 
    CONFIG_UINT(
          settings->video_viewport_custom.width,
