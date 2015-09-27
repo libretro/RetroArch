@@ -56,26 +56,42 @@ extern "C" {
 enum rarch_ctl_state
 {
    RARCH_ACTION_STATE_NONE = 0,
+
    RARCH_ACTION_STATE_LOAD_CONTENT,
+
 #ifdef HAVE_FFMPEG
    RARCH_ACTION_STATE_LOAD_CONTENT_FFMPEG,
 #endif
+
    RARCH_ACTION_STATE_LOAD_CONTENT_IMAGEVIEWER,
+
    RARCH_ACTION_STATE_MENU_RUNNING,
+
    RARCH_ACTION_STATE_MENU_RUNNING_FINISHED,
+
    /* Replaces currently loaded configuration file with
     * another one. Will load a dummy core to flush state
     * properly. */
    RARCH_ACTION_STATE_REPLACE_CONFIG,
+
    RARCH_ACTION_STATE_QUIT,
+
    RARCH_ACTION_STATE_FORCE_QUIT,
-   /* Compare libretro core API version against API version
-    * used by RetroArch.
-    *
-    * TODO - when libretro v2 gets added, allow for switching
-    * between libretro version backend dynamically.
-    */
-   RARCH_ACTION_STATE_VERIFY_API_VERSION
+
+      /* Compare libretro core API version against API version
+       * used by RetroArch.
+       *
+       * TODO - when libretro v2 gets added, allow for switching
+       * between libretro version backend dynamically.
+       */
+   RARCH_ACTION_STATE_VERIFY_API_VERSION,
+
+      /* Validates CPU features for given processor architecture.
+       *
+       * Make sure we haven't compiled for something we cannot run.
+       * Ideally, code would get swapped out depending on CPU support, 
+       * but this will do for now. */
+   RARCH_ACTION_STATE_VALIDATE_CPU_FEATURES
 };
 
 enum rarch_content_type

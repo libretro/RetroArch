@@ -1104,38 +1104,6 @@ void rarch_main_free(void)
    config_free();
 }
 
-#define FAIL_CPU(simd_type) do { \
-   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
-   rarch_fail(1, "validate_cpu_features()"); \
-} while(0)
-
-/* validate_cpu_features:
- *
- * Validates CPU features for given processor architecture.
- *
- * Make sure we haven't compiled for something we cannot run.
- * Ideally, code would get swapped out depending on CPU support, 
- * but this will do for now.
- */
-static void validate_cpu_features(void)
-{
-   uint64_t cpu = retro_get_cpu_features();
-   (void)cpu;
-
-#ifdef __SSE__
-   if (!(cpu & RETRO_SIMD_SSE))
-      FAIL_CPU("SSE");
-#endif
-#ifdef __SSE2__
-   if (!(cpu & RETRO_SIMD_SSE2))
-      FAIL_CPU("SSE2");
-#endif
-#ifdef __AVX__
-   if (!(cpu & RETRO_SIMD_AVX))
-      FAIL_CPU("AVX");
-#endif
-}
-
 /**
  * rarch_init_system_av_info:
  *
@@ -1190,7 +1158,7 @@ int rarch_main_init(int argc, char *argv[])
       RARCH_LOG_OUTPUT("=================================================\n");
    }
 
-   validate_cpu_features();
+   rarch_ctl(RARCH_ACTION_STATE_VALIDATE_CPU_FEATURES, NULL);
    config_load();
 
    {
@@ -1347,6 +1315,11 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
 #endif
 }
 
+#define FAIL_CPU(simd_type) do { \
+   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
+   rarch_fail(1, "validate_cpu_features()"); \
+} while(0)
+
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
    driver_t *driver     = driver_get_ptr();
@@ -1432,6 +1405,25 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_ACTION_STATE_FORCE_QUIT:
          rarch_ctl(RARCH_ACTION_STATE_QUIT, NULL);
+         break;
+      case RARCH_ACTION_STATE_VALIDATE_CPU_FEATURES:
+         {
+            uint64_t cpu = retro_get_cpu_features();
+            (void)cpu;
+
+#ifdef __SSE__
+            if (!(cpu & RETRO_SIMD_SSE))
+               FAIL_CPU("SSE");
+#endif
+#ifdef __SSE2__
+            if (!(cpu & RETRO_SIMD_SSE2))
+               FAIL_CPU("SSE2");
+#endif
+#ifdef __AVX__
+            if (!(cpu & RETRO_SIMD_AVX))
+               FAIL_CPU("AVX");
+#endif
+         }
          break;
       case RARCH_ACTION_STATE_VERIFY_API_VERSION:
          RARCH_LOG("Version of libretro API: %u\n", pretro_api_version());
