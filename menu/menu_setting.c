@@ -931,7 +931,9 @@ static int setting_uint_action_left_custom_viewport_width(void *data, bool wrapa
 
    video_driver_viewport_info(&vp);
 
-   if (settings->video.scale_integer)
+   if (custom->width <= 1)
+      custom->width = 1;
+   else if (settings->video.scale_integer)
       custom->width -= geom->base_width;
    else
       custom->width -= 1;
@@ -981,7 +983,9 @@ static int setting_uint_action_left_custom_viewport_height(void *data, bool wrap
 
    video_driver_viewport_info(&vp);
 
-   if (settings->video.scale_integer)
+   if (custom->height <= 1)
+      custom->height = 1;
+   else if (settings->video.scale_integer)
       custom->height -= geom->base_height;
    else
       custom->height -= 1;
@@ -3619,9 +3623,8 @@ static bool setting_append_list_video_options(
          parent_group,
          general_write_handler,
          general_read_handler);
-   menu_settings_list_current_add_range(list, list_info, 0, 0, 1, false, false);
-   (*list)[list_info->index - 1].action_start = 
-      &setting_action_start_custom_viewport_width;
+   menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
+   (*list)[list_info->index - 1].action_start = &setting_action_start_custom_viewport_width;
    (*list)[list_info->index - 1].action_left  = setting_uint_action_left_custom_viewport_width;
    (*list)[list_info->index - 1].action_right = setting_uint_action_right_custom_viewport_width;
    menu_settings_list_current_add_cmd(
@@ -3639,9 +3642,8 @@ static bool setting_append_list_video_options(
          parent_group,
          general_write_handler,
          general_read_handler);
-   menu_settings_list_current_add_range(list, list_info, 0, 0, 1, false, false);
-   (*list)[list_info->index - 1].action_start = 
-      &setting_action_start_custom_viewport_height;
+   menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
+   (*list)[list_info->index - 1].action_start = &setting_action_start_custom_viewport_height;
    (*list)[list_info->index - 1].action_left  = setting_uint_action_left_custom_viewport_height;
    (*list)[list_info->index - 1].action_right = setting_uint_action_right_custom_viewport_height;
    menu_settings_list_current_add_cmd(
