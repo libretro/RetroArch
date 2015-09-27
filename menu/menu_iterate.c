@@ -232,10 +232,7 @@ static int action_iterate_menu_viewport(char *s, size_t len,
    {
       case MENU_ACTION_UP:
          if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
-         {
             custom->y      -= stride_y;
-            custom->height += stride_y;
-         }
          else if (custom->height >= (unsigned)stride_y)
             custom->height -= stride_y;
 
@@ -244,11 +241,7 @@ static int action_iterate_menu_viewport(char *s, size_t len,
 
       case MENU_ACTION_DOWN:
          if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
-         {
-            custom->y += stride_y;
-            if (custom->height >= (unsigned)stride_y)
-               custom->height -= stride_y;
-         }
+            custom->y      += stride_y;
          else
             custom->height += stride_y;
 
@@ -257,10 +250,7 @@ static int action_iterate_menu_viewport(char *s, size_t len,
 
       case MENU_ACTION_LEFT:
          if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
-         {
             custom->x     -= stride_x;
-            custom->width += stride_x;
-         }
          else if (custom->width >= (unsigned)stride_x)
             custom->width -= stride_x;
 
@@ -269,11 +259,7 @@ static int action_iterate_menu_viewport(char *s, size_t len,
 
       case MENU_ACTION_RIGHT:
          if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
-         {
-            custom->x += stride_x;
-            if (custom->width >= (unsigned)stride_x)
-               custom->width -= stride_x;
-         }
+            custom->x     += stride_x;
          else
             custom->width += stride_x;
 
