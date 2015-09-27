@@ -180,30 +180,6 @@ static int action_iterate_help(char *s, size_t len, const char *label)
    return 0;
 }
 
-static int action_iterate_info(char *s, size_t len, const char *label)
-{
-   size_t selection;
-   uint32_t label_hash              = 0;
-   menu_file_list_cbs_t *cbs        = NULL;
-   menu_list_t *menu_list           = menu_list_get_ptr();
-
-   if (!menu_list)
-      return 0;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return 0;
-
-   cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, selection);
-
-   if (cbs->setting)
-   {
-      char needle[PATH_MAX_LENGTH];
-      strlcpy(needle, cbs->setting->name, sizeof(needle));
-      label_hash       = menu_hash_calculate(needle);
-   }
-
-   return menu_hash_get_help(label_hash, s, len);
-}
-
 static enum action_iterate_type action_iterate_type(uint32_t hash)
 {
    switch (hash)
@@ -245,6 +221,7 @@ int menu_iterate(bool render_this_frame, unsigned action)
    enum action_iterate_type iterate_type;
    const char *label         = NULL;
    int ret                   = 0;
+   uint32_t label_hash       = 0;
    uint32_t hash             = 0;
    menu_handle_t *menu       = menu_driver_get_ptr();
    menu_list_t *menu_list    = menu_list_get_ptr();
@@ -287,7 +264,19 @@ int menu_iterate(bool render_this_frame, unsigned action)
             BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          break;
       case ITERATE_TYPE_INFO:
-         ret = action_iterate_info(menu->menu_state.msg, sizeof(menu->menu_state.msg), label);
+         {
+            menu_file_list_cbs_t *cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, selection);
+            rarch_setting_t *setting  = cbs->setting;
+
+            if (setting)
+            {
+               char needle[PATH_MAX_LENGTH];
+               strlcpy(needle, setting->name, sizeof(needle));
+               label_hash       = menu_hash_calculate(needle);
+            }
+
+            ret = menu_hash_get_help(label_hash, menu->menu_state.msg, sizeof(menu->menu_state.msg));
+         }
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
