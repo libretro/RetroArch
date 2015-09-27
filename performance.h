@@ -27,12 +27,6 @@
 extern "C" {
 #endif
 
-#ifdef _WIN32
-#define PERF_LOG_FMT "[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n"
-#else
-#define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
-#endif
-
 #ifndef MAX_COUNTERS
 #define MAX_COUNTERS 64
 #endif

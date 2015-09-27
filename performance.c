@@ -20,6 +20,11 @@
 #include "general.h"
 #include "compat/strl.h"
 
+#ifdef _WIN32
+#define PERF_LOG_FMT "[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n"
+#else
+#define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
+#endif
 
 #if !defined(_WIN32) && !defined(RARCH_CONSOLE)
 #include <unistd.h>
