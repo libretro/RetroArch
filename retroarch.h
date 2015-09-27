@@ -63,6 +63,10 @@ enum rarch_ctl_state
    RARCH_ACTION_STATE_LOAD_CONTENT_IMAGEVIEWER,
    RARCH_ACTION_STATE_MENU_RUNNING,
    RARCH_ACTION_STATE_MENU_RUNNING_FINISHED,
+   /* Replaces currently loaded configuration file with
+    * another one. Will load a dummy core to flush state
+    * properly. */
+   RARCH_ACTION_STATE_REPLACE_CONFIG,
    RARCH_ACTION_STATE_QUIT,
    RARCH_ACTION_STATE_FORCE_QUIT
 };
@@ -101,7 +105,7 @@ void rarch_main_new(void);
 
 void rarch_main_free(void);
 
-void rarch_ctl(enum rarch_ctl_state state, void *data);
+bool rarch_ctl(enum rarch_ctl_state state, void *data);
 
 /**
  * rarch_main_init:

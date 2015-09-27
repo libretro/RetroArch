@@ -564,7 +564,7 @@ static int generic_action_ok(const char *path,
          msg_force       = true;
          menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
 
-         if (rarch_replace_config(action_path))
+         if (rarch_ctl(RARCH_ACTION_STATE_REPLACE_CONFIG, action_path))
          {
             bool pending_push = false;
             menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);

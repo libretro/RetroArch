@@ -1365,7 +1365,7 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
 #endif
 }
 
-void rarch_ctl(enum rarch_ctl_state state, void *data)
+bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
    driver_t *driver     = driver_get_ptr();
    global_t *global     = global_get_ptr();
@@ -1374,6 +1374,27 @@ void rarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
+      case RARCH_ACTION_STATE_REPLACE_CONFIG:
+         {
+            char *path = (char*)data;
+
+            if (!path)
+               return false;
+
+            /* If config file to be replaced is the same as the
+             * current config file, exit. */
+            if (!strcmp(path, global->path.config))
+               return false;
+
+            if (settings->config_save_on_exit && *global->path.config)
+               config_save_file(global->path.config);
+
+            strlcpy(global->path.config, path, sizeof(global->path.config));
+            global->block_config_read = false;
+            *settings->libretro = '\0'; /* Load core in new config. */
+         }
+         event_command(EVENT_CMD_PREPARE_DUMMY);
+         return true;
       case RARCH_ACTION_STATE_MENU_RUNNING:
 #ifdef HAVE_MENU
          menu_driver_toggle(true);
@@ -1432,8 +1453,10 @@ void rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_ACTION_STATE_NONE:
       default:
-         break;
+         return false;
    }
+
+   return true;
 }
 
 /**
@@ -1569,44 +1592,3 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    return -1;
 }
 
-/**
- * rarch_replace_config:
- * @path                 : Path to config file to replace
- *                         current config file with.
- *
- * Replaces currently loaded configuration file with
- * another one. Will load a dummy core to flush state
- * properly.
- *
- * Quite intrusive and error prone.
- * Likely to have lots of small bugs.
- * Cleanly exit the main loop to ensure that all the tiny details
- * get set properly.
- *
- * This should mitigate most of the smaller bugs.
- *
- * Returns: true (1) if successful, false (0) if @path was the
- * same as the current config file.
- **/
-
-bool rarch_replace_config(const char *path)
-{
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-
-   /* If config file to be replaced is the same as the
-    * current config file, exit. */
-   if (!strcmp(path, global->path.config))
-      return false;
-
-   if (settings->config_save_on_exit && *global->path.config)
-      config_save_file(global->path.config);
-
-   strlcpy(global->path.config, path, sizeof(global->path.config));
-   global->block_config_read = false;
-   *settings->libretro = '\0'; /* Load core in new config. */
-
-   event_command(EVENT_CMD_PREPARE_DUMMY);
-
-   return true;
-}
