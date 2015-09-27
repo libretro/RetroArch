@@ -214,7 +214,7 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
  *
  * Returns: 0 on success, -1 if we need to quit out of the loop. 
  **/
-int menu_iterate(bool render_this_frame, unsigned action)
+int menu_iterate(bool render_this_frame, enum menu_action action)
 {
    size_t selection;
    menu_entry_t entry;

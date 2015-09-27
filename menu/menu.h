@@ -60,6 +60,25 @@
 extern "C" {
 #endif
 
+enum menu_action
+{
+   MENU_ACTION_NOOP = 0,
+   MENU_ACTION_UP,
+   MENU_ACTION_DOWN,
+   MENU_ACTION_LEFT,
+   MENU_ACTION_RIGHT,
+   MENU_ACTION_OK,
+   MENU_ACTION_SEARCH,
+   MENU_ACTION_SCAN,
+   MENU_ACTION_CANCEL,
+   MENU_ACTION_INFO,
+   MENU_ACTION_SELECT,
+   MENU_ACTION_START,
+   MENU_ACTION_SCROLL_DOWN,
+   MENU_ACTION_SCROLL_UP,
+   MENU_ACTION_TOGGLE
+};
+
 typedef enum
 {
    MENU_FILE_NONE = 0,
@@ -173,7 +192,7 @@ void *menu_init(const void *data);
  *
  * Returns: 0 on success, -1 if we need to quit out of the loop.
  **/
-int menu_iterate(bool render_this_frame, unsigned action);
+int menu_iterate(bool render_this_frame, enum menu_action action);
 
 int menu_iterate_render(void);
 
