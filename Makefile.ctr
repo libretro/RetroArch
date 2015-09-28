@@ -128,7 +128,7 @@ else
 	OBJS += libretro-common/file/dir_list.o
 	OBJS += libretro-common/file/retro_dirent.o
 	OBJS += libretro-common/file/retro_file.o
-   OBJS += libretro-common/file/retro_stat.o
+	OBJS += libretro-common/file/retro_stat.o
 	OBJS += dir_list_special.o
 	OBJS += libretro-common/string/string_list.o
 	OBJS += libretro-common/string/stdstring.o
