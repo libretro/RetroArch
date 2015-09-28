@@ -104,6 +104,9 @@ if [ $SALAMANDER = "yes" ]; then
    if [ $PLATFORM = "psp1" ] ; then
    mv -f ../EBOOT.PBP ../pkg/${platform}/EBOOT.PBP
    fi
+   if [ $PLATFORM = "wii" ] ; then
+   mv -f ../retroarch-salamander_wii.dol ../pkg/${platform}/boot.dol
+   fi
 fi
 
 for f in *_${platform}.${EXT} ; do
