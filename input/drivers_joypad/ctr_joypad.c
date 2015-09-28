@@ -123,13 +123,14 @@ static void ctr_joypad_poll(void)
 {
    unsigned i, j;
    uint32_t state_tmp;
-   circlePosition state_tmp_analog;
+   circlePosition state_tmp_left_analog, state_tmp_right_analog;
    touchPosition state_tmp_touch;
 
    hidScanInput();
 
    state_tmp = hidKeysHeld();
-   hidCircleRead(&state_tmp_analog);
+   hidCircleRead(&state_tmp_left_analog);
+   irrstCstickRead(&state_tmp_right_analog);
    hidTouchRead(&state_tmp_touch);
 
    analog_state[0][0][0] = analog_state[0][0][1] =
@@ -150,12 +151,10 @@ static void ctr_joypad_poll(void)
    pad_state |= (state_tmp & KEY_ZR) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
    pad_state |= (state_tmp & KEY_ZL) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
 
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X]  =  (state_tmp_analog.dx * 200);
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y]  = -(state_tmp_analog.dy * 200);
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] =  (state_tmp & KEY_CSTICK_RIGHT)?  0x7fff:
-                                                                                  (state_tmp & KEY_CSTICK_LEFT)?  -0x7fff: 0;
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] =  (state_tmp & KEY_CSTICK_DOWN)?   0x7fff:
-                                                                                  (state_tmp & KEY_CSTICK_UP)?    -0x7fff: 0;
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X]  =  (state_tmp_left_analog.dx * 200);
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y]  = -(state_tmp_left_analog.dy * 200);
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] =  (state_tmp_right_analog.dx * 200);
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] = -(state_tmp_right_analog.dy * 200);
 
    for (i = 0; i < 2; i++)
       for (j = 0; j < 2; j++)
