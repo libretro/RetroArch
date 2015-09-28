@@ -284,6 +284,16 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 
 enum setting_type menu_setting_get_type(rarch_setting_t *setting);
 
+const char *menu_setting_get_values(rarch_setting_t *setting);
+
+uint64_t menu_setting_get_flags(rarch_setting_t *setting);
+
+double menu_setting_get_min(rarch_setting_t *setting);
+
+double menu_setting_get_max(rarch_setting_t *setting);
+
+uint32_t menu_setting_get_index(rarch_setting_t *setting);
+
 #ifdef __cplusplus
 }
 #endif

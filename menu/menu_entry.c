@@ -69,8 +69,9 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
    if (setting)
    {
       enum setting_type setting_type = menu_setting_get_type(setting);
+      const char            *values  = menu_setting_get_values(setting);
 
-      if ((setting_type == ST_STRING)  && setting->values)
+      if (values && (setting_type == ST_STRING))
          return MENU_ENTRY_ENUM;
 
       switch (setting_type)
@@ -148,7 +149,11 @@ uint32_t menu_entry_get_bool_value(uint32_t i)
 struct string_list *menu_entry_enum_values(uint32_t i)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   return string_split(setting->values, "|");
+   const char      *values  = menu_setting_get_values(setting);
+
+   if (!values)
+      return NULL;
+   return string_split(values, "|");
 }
 
 void menu_entry_enum_set_value_with_string(uint32_t i, const char *s)
@@ -160,8 +165,10 @@ void menu_entry_enum_set_value_with_string(uint32_t i, const char *s)
 int32_t menu_entry_bind_index(uint32_t i)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   if (setting->index)
-      return setting->index - 1;
+   uint32_t          index  = menu_setting_get_index(setting);
+
+   if (index)
+      return index - 1;
    return 0;
 }
 
@@ -193,15 +200,17 @@ void menu_entry_pathdir_selected(uint32_t i)
 bool menu_entry_pathdir_allow_empty(uint32_t i)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   if (!setting)
-      return false;
-   return setting->flags & SD_FLAG_ALLOW_EMPTY;
+   uint64_t           flags = menu_setting_get_flags(setting);
+
+   return flags & SD_FLAG_ALLOW_EMPTY;
 }
 
 uint32_t menu_entry_pathdir_for_directory(uint32_t i)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   return setting->flags & SD_FLAG_PATH_DIR;
+   uint64_t           flags = menu_setting_get_flags(setting);
+
+   return flags & SD_FLAG_PATH_DIR;
 }
 
 void menu_entry_pathdir_get_value(uint32_t i, char *s, size_t len)
@@ -241,9 +250,12 @@ int menu_entry_pathdir_set_value(uint32_t i, const char *s)
 void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   const char *extensions   = setting ? setting->values : NULL;
-   if (setting && extensions)
-      strlcpy(s, extensions, len);
+   const char      *values  = menu_setting_get_values(setting);
+
+   if (!values)
+      return;
+
+   strlcpy(s, values, len);
 }
 
 void menu_entry_reset(uint32_t i)
@@ -270,19 +282,23 @@ void menu_entry_set_value(uint32_t i, const char *s)
 uint32_t menu_entry_num_has_range(uint32_t i)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   return (setting->flags & SD_FLAG_HAS_RANGE);
+   uint64_t           flags = menu_setting_get_flags(setting);
+
+   return (flags & SD_FLAG_HAS_RANGE);
 }
 
 float menu_entry_num_min(uint32_t i)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   return setting->min;
+   double               min = menu_setting_get_min(setting);
+   return (float)min;
 }
 
 float menu_entry_num_max(uint32_t i)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   return setting->max;
+   double               max = menu_setting_get_max(setting);
+   return (float)max;
 }
 
 void menu_entry_get(menu_entry_t *entry, size_t i,
@@ -296,7 +312,6 @@ void menu_entry_get(menu_entry_t *entry, size_t i,
 
    if (!menu_list)
       return;
-
    
    list = userdata ? (file_list_t*)userdata : menu_list->selection_buf;
 

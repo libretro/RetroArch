@@ -6539,3 +6539,38 @@ bool menu_setting_is_of_path_type(rarch_setting_t *setting)
       return true;
    return false;
 }
+
+const char *menu_setting_get_values(rarch_setting_t *setting)
+{
+   if (!setting)
+      return NULL;
+   return setting->values;
+}
+
+uint64_t menu_setting_get_flags(rarch_setting_t *setting)
+{
+   if (!setting)
+      return 0;
+   return setting->flags;
+}
+
+double menu_setting_get_min(rarch_setting_t *setting)
+{
+   if (!setting)
+      return 0.0f;
+   return setting->min;
+}
+
+double menu_setting_get_max(rarch_setting_t *setting)
+{
+   if (!setting)
+      return 0.0f;
+   return setting->max;
+}
+
+uint32_t menu_setting_get_index(rarch_setting_t *setting)
+{
+   if (!setting)
+      return 0;
+   return setting->index;
+}
