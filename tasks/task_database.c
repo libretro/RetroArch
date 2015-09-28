@@ -601,8 +601,11 @@ do_poll:
 void rarch_main_data_db_init_msg_queue(void)
 {
    db_handle_t      *db   = (db_handle_t*)db_ptr;
+
+   if (!db)
+      return;
    
-   if (!db || !db->msg_queue)
+   if (!db->msg_queue)
       rarch_assert(db->msg_queue         = msg_queue_new(8));
 }
 

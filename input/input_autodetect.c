@@ -191,7 +191,6 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    config_file_t *conf        = NULL;
    struct string_list *list   = NULL;
    char path[PATH_MAX_LENGTH] = {0};
-   char msg[PATH_MAX_LENGTH]  = {0};
    settings_t *settings       = config_get_ptr();
 
    fill_pathname_join(path,settings->input.autoconfig_dir,
@@ -231,6 +230,8 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    }
    else
    {
+      char msg[PATH_MAX_LENGTH];
+
       RARCH_LOG("Autodetect: no profiles found for %s (%d/%d)", params->name, params->vid, params->pid);
       snprintf(msg, sizeof(msg), "%s (%ld/%ld) not configured", params->name, (long)params->vid, (long)params->pid);
       rarch_main_msg_queue_push(msg, 0, 60, false);

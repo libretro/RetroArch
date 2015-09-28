@@ -77,13 +77,14 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
             type, 0, 0);
       if (type == MENU_FILE_DOWNLOAD_CORE)
       {
-         char core_path[PATH_MAX_LENGTH];
-         char display_name[PATH_MAX_LENGTH] = {0};
          settings_t *settings      = config_get_ptr();
 
          if (settings)
          {
+            char core_path[PATH_MAX_LENGTH];
+            char display_name[PATH_MAX_LENGTH] = {0};
             char *last = NULL;
+
             fill_pathname_join(core_path, settings->libretro_info_path,
                   line_start, sizeof(core_path));
 
@@ -1549,13 +1550,15 @@ static void menu_displaylist_realloc_settings(menu_entries_t *entries, unsigned 
 
 static int menu_setting_set_flags(rarch_setting_t *setting)
 {
-   enum setting_type setting_type = menu_setting_get_type(setting);
+   enum setting_type setting_type;
    uint64_t                 flags = menu_setting_get_flags(setting);
    if (!setting)
       return 0;
 
    if (flags & SD_FLAG_IS_DRIVER)
       return MENU_SETTING_DRIVER;
+
+   setting_type = menu_setting_get_type(setting);
 
    switch (setting_type)
    {
@@ -2791,7 +2794,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             core_info_list_get_supported_cores(global->core_info.list,
                   menu->deferred_path, &core_info, &list_size);
 
-            if (list_size <= 0)
+            if (list_size == 0)
             {
                menu_list_push(info->list,
                      menu_hash_to_str(MENU_LABEL_VALUE_NO_CORES_AVAILABLE),

@@ -1517,7 +1517,6 @@ static void frontend_linux_get_env(int *argc,
 {
 #ifdef ANDROID
    int32_t major, minor, rel;
-   int perms = 0;
    char device_model[PROP_VALUE_MAX] = {0};
    char device_id[PROP_VALUE_MAX]    = {0};
    struct rarch_main_wrap      *args = NULL;
@@ -1525,7 +1524,6 @@ static void frontend_linux_get_env(int *argc,
    jobject                       obj = NULL;
    jstring                      jstr = NULL;
    struct android_app   *android_app = (struct android_app*)data;
-   char buf[PATH_MAX_LENGTH]         = {0};
 
    if (!android_app)
       return;
@@ -1749,6 +1747,7 @@ static void frontend_linux_get_env(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {      
+      int perms = 0;
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       *app_dir = '\0';
@@ -1779,6 +1778,8 @@ static void frontend_linux_get_env(int *argc,
          RARCH_LOG("Application location: [%s].\n", app_dir);
          if (args && *app_dir)
          {
+            char buf[PATH_MAX_LENGTH];
+
             fill_pathname_join(g_defaults.dir.assets, app_dir,
                   "assets", sizeof(g_defaults.dir.assets));
             fill_pathname_join(g_defaults.dir.extraction, app_dir,

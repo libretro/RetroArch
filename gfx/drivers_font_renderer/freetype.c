@@ -131,7 +131,6 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle)
    /* Blit our texture atlas. */
    for (i = 0; i < FT_ATLAS_SIZE; i++)
    {
-      unsigned r, c;
       uint8_t *dst      = NULL;
       unsigned offset_x = (i % FT_ATLAS_COLS) * max_width;
       unsigned offset_y = (i / FT_ATLAS_COLS) * max_height;
@@ -144,6 +143,7 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle)
 
       if (buffer[i])
       {
+         unsigned r, c;
          const uint8_t *src = (const uint8_t*)buffer[i];
 
          for (r = 0; r < handle->glyphs[i].height;

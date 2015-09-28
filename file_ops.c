@@ -658,7 +658,9 @@ int read_compressed_file(const char * path, void **buf,
    /* We split the string in two, by putting a \0, where the hash was: */
    *archive_found  = '\0';
    archive_found  += 1;
+#if defined(HAVE_7ZIP) || defined(HAVE_ZLIB)
    file_ext        = path_get_extension(archive_path);
+#endif
 
 #ifdef HAVE_7ZIP
    if (strcasecmp(file_ext,"7z") == 0)
@@ -708,7 +710,9 @@ struct string_list *compressed_file_list_new(const char *path,
       const char* ext)
 {
 #ifdef HAVE_COMPRESSION
+#if defined(HAVE_7ZIP) || defined(HAVE_ZLIB)
    const char* file_ext = path_get_extension(path);
+#endif
 #ifdef HAVE_7ZIP
    if (strcasecmp(file_ext,"7z") == 0)
       return compressed_7zip_file_list_new(path,ext);
@@ -717,7 +721,6 @@ struct string_list *compressed_file_list_new(const char *path,
    if (strcasecmp(file_ext,"zip") == 0)
       return zlib_get_file_list(path, ext);
 #endif
-
 #endif
    return NULL;
 }

@@ -95,7 +95,6 @@ char *dylib_error(void)
 function_t dylib_proc(dylib_t lib, const char *proc)
 {
    function_t sym;
-   void *ptr_sym = NULL;
 
 #ifdef _WIN32
    sym = (function_t)GetProcAddress(lib ?
@@ -107,6 +106,8 @@ function_t dylib_proc(dylib_t lib, const char *proc)
    }
    last_dyn_error[0] = 0;
 #else
+   void *ptr_sym = NULL;
+
    if (lib)
       ptr_sym = dlsym(lib, proc);
    else

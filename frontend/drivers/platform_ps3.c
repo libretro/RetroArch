@@ -116,7 +116,6 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
    unsigned int get_attributes;
    CellGameContentSize size;
    char dirName[CELL_GAME_DIRNAME_SIZE]  = {0};
-   char contentInfoPath[PATH_MAX_LENGTH] = {0};
 
 #ifdef HAVE_MULTIMAN
    /* not launched from external launcher, set default path */
@@ -169,6 +168,8 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
    }
    else
    {
+      char content_info_path[PATH_MAX_LENGTH] = {0};
+
       RARCH_LOG("cellGameBootCheck() OK.\n");
       RARCH_LOG("Directory name: [%s].\n", dirName);
       RARCH_LOG(" HDD Free Size (in KB) = [%d] Size (in KB) = [%d] System Size (in KB) = [%d].\n",
@@ -188,14 +189,14 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
             == CELL_GAME_ATTRIBUTE_APP_HOME)
          RARCH_LOG("RetroArch was launched from host machine (APP_HOME).\n");
 
-      ret = cellGameContentPermit(contentInfoPath, g_defaults.dir.port);
+      ret = cellGameContentPermit(content_info_path, g_defaults.dir.port);
 
 #ifdef HAVE_MULTIMAN
       if (multiman_detected)
       {
-         fill_pathname_join(contentInfoPath, "/dev_hdd0/game/",
-               EMULATOR_CONTENT_DIR, sizeof(contentInfoPath));
-         fill_pathname_join(g_defaults.dir.port, contentInfoPath,
+         fill_pathname_join(content_info_path, "/dev_hdd0/game/",
+               EMULATOR_CONTENT_DIR, sizeof(content_info_path));
+         fill_pathname_join(g_defaults.dir.port, content_info_path,
                "USRDIR", sizeof(g_defaults.dir.port));
       }
 #endif
@@ -205,7 +206,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       else
       {
          RARCH_LOG("cellGameContentPermit() OK.\n");
-         RARCH_LOG("contentInfoPath : [%s].\n", contentInfoPath);
+         RARCH_LOG("content_info_path : [%s].\n", content_info_path);
          RARCH_LOG("usrDirPath : [%s].\n", g_defaults.dir.port);
       }
 
@@ -357,17 +358,14 @@ static int frontend_ps3_exec_exitspawn(const char *path,
 
 static void frontend_ps3_exec(const char *path, bool should_load_game)
 {
-   int ret = 0;
-
-   (void)should_load_game;
-   (void)ret;
-
 #ifndef IS_SALAMANDER
    global_t      *global = global_get_ptr();
    bool original_verbose = global->verbosity;
 
    global->verbosity = true;
 #endif
+
+   (void)should_load_game;
 
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
 
@@ -382,13 +380,13 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
          NULL
       };
 
-      ret = frontend_ps3_exec_exitspawn(path,
+      frontend_ps3_exec_exitspawn(path,
             (const char** const)spawn_argv, NULL);
    }
    else
 #endif
    {
-      ret = frontend_ps3_exec_exitspawn(path,
+      frontend_ps3_exec_exitspawn(path,
             NULL, NULL);
    }
 

@@ -310,14 +310,14 @@ static bool parport_joypad_init(void *data)
 static void parport_joypad_destroy(void)
 {
    unsigned i;
-   struct parport_joypad *pad = NULL;
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      pad = (struct parport_joypad*)&parport_pads[i];
+      struct parport_joypad *pad = (struct parport_joypad*)&parport_pads[i];
       if (pad->fd >= 0)
          parport_free_pad(pad);
    }
+
    memset(parport_pads, 0, sizeof(parport_pads));
    for (i = 0; i < MAX_USERS; i++)
       parport_pads[i].fd = -1;

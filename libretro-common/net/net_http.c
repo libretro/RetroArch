@@ -194,8 +194,7 @@ error:
    if (conn->urlcopy)
       free(conn->urlcopy);
    conn->urlcopy = NULL;
-   if (conn)
-      free(conn);
+   free(conn);
    return NULL;
 }
 

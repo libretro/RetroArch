@@ -50,14 +50,13 @@ static struct magic_entry MAGIC_NUMBERS[] = {
 
 static ssize_t get_token(RFILE *fd, char *token, size_t max_len)
 {
-   int rv;
    char *c       = token;
    ssize_t len   = 0;
    int in_string = 0;
 
    while (1)
    {
-      rv = retro_fread(fd, c, 1);
+      int rv = retro_fread(fd, c, 1);
       if (rv == 0)
          return 0;
 

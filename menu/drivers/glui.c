@@ -128,7 +128,6 @@ static void glui_draw_scrollbar(gl_t *gl, unsigned width, unsigned height, GRflo
 {
    unsigned header_height;
    float content_height, total_height, scrollbar_height, y;
-   int scrollbar_width  = 4;
    glui_handle_t *glui  = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
 
@@ -144,6 +143,9 @@ static void glui_draw_scrollbar(gl_t *gl, unsigned width, unsigned height, GRflo
    y                    = total_height * menu->scroll_y / content_height;
 
    if (content_height >= total_height)
+   {
+      int scrollbar_width  = 4;
+
       glui_render_quad(gl,
             width - scrollbar_width,
             header_height + y,
@@ -151,6 +153,7 @@ static void glui_draw_scrollbar(gl_t *gl, unsigned width, unsigned height, GRflo
             scrollbar_height,
             width, height,
             coord_color);
+   }
 }
 
 static void glui_get_message(const char *message)

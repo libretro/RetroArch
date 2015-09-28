@@ -32,6 +32,9 @@ static int action_select_default(const char *path, const char *label, unsigned t
    menu_entry_get(&entry, idx, NULL, false);
 
    cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, idx);
+
+   if (!cbs)
+      return -1;
     
    switch (menu_setting_get_type(cbs->setting))
    {
@@ -55,13 +58,13 @@ static int action_select_default(const char *path, const char *label, unsigned t
     
    if (action == MENU_ACTION_NOOP)
    {
-       if (cbs && cbs->action_ok)
+       if (cbs->action_ok)
            action = MENU_ACTION_OK;
        else
        {
-           if (cbs && cbs->action_start)
+           if (cbs->action_start)
                action = MENU_ACTION_START;
-           if (cbs && cbs->action_right)
+           if (cbs->action_right)
                action = MENU_ACTION_RIGHT;
        }
    }

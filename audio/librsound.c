@@ -465,7 +465,7 @@ static int rsnd_get_backend_info ( rsound_t *rd )
       rd->backend_info.chunk_size = MAX_CHUNK_SIZE;
 
    /* Assumes a default buffer size should it cause problems of being too small */
-   if ( rd->buffer_size <= 0 || rd->buffer_size < rd->backend_info.chunk_size * 2 )
+   if ( rd->buffer_size == 0 || rd->buffer_size < rd->backend_info.chunk_size * 2 )
       rd->buffer_size = rd->backend_info.chunk_size * 32;
 
    if ( rd->fifo_buffer != NULL )
@@ -1324,11 +1324,10 @@ size_t rsd_write( rsound_t *rsound, const void* buf, size_t size)
 
    while ( written < size )
    {
-      size_t result;
       size_t write_size = (size - written) > max_write ? max_write : (size - written); 
-      result = rsnd_fill_buffer(rsound, (const char*)buf + written, write_size);
+      size_t     result = rsnd_fill_buffer(rsound, (const char*)buf + written, write_size);
 
-      if ( result <= 0 )
+      if (result == 0)
       {
          rsd_stop(rsound);
          return 0;
@@ -1347,10 +1346,7 @@ int rsd_start(rsound_t *rsound)
    assert(rsound->port != NULL);
 
    if ( rsnd_create_connection(rsound) < 0 )
-   {
       return -1;
-   }
-
 
    return 0;
 }
