@@ -49,6 +49,8 @@
 #define CTRGU_MULTISAMPLE_2x2       (2 << 24)
 
 #define CTR_CPU_TICKS_PER_SECOND    268123480
+#define CTR_CPU_TICKS_PER_FRAME     4481134
+
 
 extern Handle gspEvents[GSPEVENT_MAX];
 extern u32* gpuCmdBuf;

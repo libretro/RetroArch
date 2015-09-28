@@ -582,7 +582,9 @@ static const bool font_enable = true;
  * This value should stay close to 60Hz to avoid large pitch changes.
  * If your monitor does not run at 60Hz, or something close to it,
  * disable VSync, and leave this at its default. */
-#if defined(RARCH_CONSOLE)
+#ifdef _3DS
+static const float refresh_rate = (32730.0 * 8192.0) / 4481134.0 ;
+#elif defined(RARCH_CONSOLE)
 static const float refresh_rate = 60/1.001;
 #else
 static const float refresh_rate = 59.95;
@@ -601,6 +603,8 @@ static const bool audio_enable = true;
 /* Output samplerate. */
 #ifdef GEKKO
 static const unsigned out_rate = 32000;
+#elif defined(_3DS)
+static const unsigned out_rate = 32730;
 #else
 static const unsigned out_rate = 48000;
 #endif
