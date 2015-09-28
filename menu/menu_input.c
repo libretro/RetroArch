@@ -165,14 +165,12 @@ void menu_input_key_event(bool down, unsigned keycode,
 
 static void menu_input_key_end_line(void)
 {
+   bool keyboard_display    = false;
    driver_t *driver         = driver_get_ptr();
-   menu_input_t *menu_input = menu_input_get_ptr();
-   if (!menu_input)
-      return;
 
-   menu_input->keyboard.display       = false;
-   menu_input->keyboard.label         = NULL;
-   menu_input->keyboard.label_setting = NULL;
+   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY, &keyboard_display);
+   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL, NULL);
+   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING, NULL);
 
    /* Avoid triggering states on pressing return. */
    driver->flushing_input = true;
@@ -260,6 +258,12 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
             *ptr = menu_input->keyboard.display;
          }
          return true;
+      case MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY:
+         {
+            bool *ptr = (bool*)data;
+            menu_input->keyboard.display = *ptr;
+         }
+         return true;
       case MENU_INPUT_CTL_KEYBOARD_BUFF_PTR:
          {
             const char **ptr = (const char**)data;
@@ -272,6 +276,24 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
             *ptr = menu_input->keyboard.label;
          }
          return true;
+      case MENU_INPUT_CTL_SET_KEYBOARD_LABEL:
+         {
+            const char *ptr = (const char*)data;
+            menu_input->keyboard.label = ptr;
+         }
+         return true;
+      case MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING:
+         {
+            const char **ptr = (const char**)data;
+            *ptr = menu_input->keyboard.label_setting;
+         }
+         return true;
+      case MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING:
+         {
+            const char *ptr = (const char*)data;
+            menu_input->keyboard.label_setting = ptr;
+         }
+         return true;
    }
 
    return false;
@@ -281,14 +303,16 @@ void menu_input_key_start_line(const char *label,
       const char *label_setting, unsigned type, unsigned idx,
       input_keyboard_line_complete_t cb)
 {
+   bool keyboard_display    = true;
    menu_handle_t    *menu   = menu_driver_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
    if (!menu || !menu_input)
       return;
 
-   menu_input->keyboard.display       = true;
-   menu_input->keyboard.label         = label;
-   menu_input->keyboard.label_setting = label_setting;
+   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY,       &keyboard_display);
+   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL,         &label);
+   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING, &label_setting);
+
    menu_input->keyboard.type          = type;
    menu_input->keyboard.idx           = idx;
    menu_input->keyboard.buffer        = input_keyboard_start_line(menu, cb);
@@ -306,7 +330,13 @@ void menu_input_st_uint_callback(void *userdata, const char *str)
    if (str && *str)
    {
       rarch_setting_t *current_setting = NULL;
-      if ((current_setting = menu_setting_find(menu_input->keyboard.label_setting)))
+      const char                *label = NULL;
+
+      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
+
+      current_setting = menu_setting_find(label);
+
+      if (current_setting)
          setting_set_with_string_representation(current_setting, str);
    }
 
@@ -323,7 +353,13 @@ void menu_input_st_hex_callback(void *userdata, const char *str)
    if (str && *str)
    {
       rarch_setting_t *current_setting = NULL;
-      if ((current_setting = menu_setting_find(menu_input->keyboard.label_setting)))
+      const char                *label = NULL;
+
+      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
+
+      current_setting = menu_setting_find(label);
+
+      if (current_setting)
          if (str[0] == '#')
             str++;
          *current_setting->value.unsigned_integer = strtoul(str, NULL, 16);
@@ -342,8 +378,13 @@ void menu_input_st_string_callback(void *userdata, const char *str)
 
    if (str && *str)
    {
-      global_t *global = global_get_ptr();
-      rarch_setting_t *current_setting = menu_setting_find(menu_input->keyboard.label_setting);
+      rarch_setting_t *current_setting = NULL;
+      const char *label = NULL;
+      global_t *global  = global_get_ptr();
+
+      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
+
+      current_setting = menu_setting_find(label);
 
       if (current_setting)
       {
@@ -352,7 +393,7 @@ void menu_input_st_string_callback(void *userdata, const char *str)
       }
       else
       {
-         uint32_t hash_label = menu_hash_calculate(menu_input->keyboard.label_setting);
+         uint32_t hash_label = menu_hash_calculate(label);
 
          switch (hash_label)
          {
