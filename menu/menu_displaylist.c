@@ -936,7 +936,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
    list_size = content_playlist_size(playlist);
 
-   if (list_size <= 0)
+   if (list_size == 0)
    {
       menu_list_push(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
@@ -1525,7 +1525,7 @@ static int deferred_push_video_shader_parameters_common(
    unsigned i;
    size_t list_size = shader->num_parameters;
 
-   if (list_size <= 0)
+   if (list_size == 0)
    {
       menu_list_push(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_NO_SHADER_PARAMETERS),
@@ -2207,7 +2207,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
 
    list_size = str_list->size;
 
-   if (list_size <= 0)
+   if (list_size == 0)
    {
       if (!(info->flags & SL_FLAG_ALLOW_EMPTY_LIST))
       {

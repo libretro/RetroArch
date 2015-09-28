@@ -246,7 +246,6 @@ static void udev_handle_mouse(udev_input_t *udev,
                else if (event->value == -1)
                   udev->mouse_whd = 1;
                break;
-               break;
             default:
                break;
          }

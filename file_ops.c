@@ -201,10 +201,10 @@ static int read_7zip_file(
    SRes res;
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
-   uint8_t *outBuffer   = 0;
-   size_t outBufferSize = 0;
+   uint8_t *output      = 0;
+   size_t output_size   = 0;
    uint16_t *temp       = NULL;
-   size_t tempSize      = 0;
+   size_t temp_size     = 0;
    long outsize         = -1;
    bool file_found      = false;
 
@@ -254,11 +254,11 @@ static int read_7zip_file(
 
          len = SzArEx_GetFileNameUtf16(&db, i, NULL);
 
-         if (len > tempSize)
+         if (len > temp_size)
          {
             free(temp);
-            tempSize = len;
-            temp = (uint16_t *)malloc(tempSize * sizeof(temp[0]));
+            temp_size = len;
+            temp = (uint16_t *)malloc(temp_size * sizeof(temp[0]));
             if (temp == 0)
             {
                res = SZ_ERROR_MEM;
@@ -276,7 +276,7 @@ static int read_7zip_file(
              * */
             file_found = true;
             res = SzArEx_Extract(&db, &lookStream.s, i,&blockIndex,
-                  &outBuffer, &outBufferSize,&offset, &outSizeProcessed,
+                  &output, &output_size, &offset, &outSizeProcessed,
                   &allocImp, &allocTempImp);
 
             if (res != SZ_OK)
@@ -286,7 +286,7 @@ static int read_7zip_file(
             
             if (optional_outfile != NULL)
             {
-               const void *ptr = (const void*)(outBuffer + offset);
+               const void *ptr = (const void*)(output + offset);
 
                if (!retro_write_file(optional_outfile, ptr, outsize))
                {
@@ -307,14 +307,14 @@ static int read_7zip_file(
                 * copy and free the old one. */
                *buf = malloc(outsize + 1);
                ((char*)(*buf))[outsize] = '\0';
-               memcpy(*buf,outBuffer+offset,outsize);
+               memcpy(*buf,output + offset,outsize);
             }
             break;
          }
       }
    }
 
-   IAlloc_Free(&allocImp, outBuffer);
+   IAlloc_Free(&allocImp, output);
    SzArEx_Free(&db, &allocImp);
    free(temp);
    File_Close(&archiveStream.file);
@@ -346,7 +346,7 @@ static struct string_list *compressed_7zip_file_list_new(
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
    uint16_t *temp               = NULL;
-   size_t tempSize              = 0;
+   size_t temp_size             = 0;
    long outsize                 = -1;
 
    struct string_list *ext_list = NULL;
@@ -384,13 +384,6 @@ static struct string_list *compressed_7zip_file_list_new(
    if (res == SZ_OK)
    {
       uint32_t i;
-      uint32_t blockIndex  = 0xFFFFFFFF;
-      uint8_t *outBuffer   = 0;
-      size_t outBufferSize = 0;
-
-      (void)blockIndex;
-      (void)outBufferSize;
-      (void)outBuffer;
 
       for (i = 0; i < db.db.NumFiles; i++)
       {
@@ -412,11 +405,11 @@ static struct string_list *compressed_7zip_file_list_new(
 
          len = SzArEx_GetFileNameUtf16(&db, i, NULL);
 
-         if (len > tempSize)
+         if (len > temp_size)
          {
             free(temp);
-            tempSize = len;
-            temp     = (uint16_t *)malloc(tempSize * sizeof(temp[0]));
+            temp_size = len;
+            temp      = (uint16_t *)malloc(temp_size * sizeof(temp[0]));
 
             if (temp == 0)
             {

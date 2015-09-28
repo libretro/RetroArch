@@ -262,7 +262,6 @@ static void rmenu_wallpaper_set_defaults(char *s, size_t len)
 
 static void rmenu_context_reset(void)
 {
-   unsigned fb_width, fb_height;
    char menu_bg[PATH_MAX_LENGTH] = {0};
    menu_handle_t *menu           = menu_driver_get_ptr();
    settings_t *settings          = config_get_ptr();

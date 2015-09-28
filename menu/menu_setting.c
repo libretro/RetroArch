@@ -55,7 +55,6 @@ static void menu_settings_info_list_free(rarch_setting_info_t *list_info)
 {
    if (list_info)
       free(list_info);
-   list_info = NULL;
 }
 
 static bool menu_settings_list_append(rarch_setting_t **list,
@@ -668,7 +667,7 @@ static int setting_action_start_analog_dpad_mode(void *data)
 
 static int setting_action_start_libretro_device_type(void *data)
 {
-   unsigned current_device, i, devices[128], types = 0, port = 0;
+   unsigned current_device, devices[128], types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
    rarch_setting_t   *setting  = (rarch_setting_t*)data;
    settings_t        *settings = config_get_ptr();
@@ -692,6 +691,8 @@ static int setting_action_start_libretro_device_type(void *data)
 
    if (desc)
    {
+      unsigned i;
+
       for (i = 0; i < desc->num_types; i++)
       {
          unsigned id = desc->types[i].id;
@@ -1690,17 +1691,19 @@ static void setting_get_string_representation_uint_user_language(void *data,
 static void setting_get_string_representation_uint_libretro_log_level(void *data,
       char *s, size_t len)
 {
-   static const char *modes[] = {
-      "0 (Debug)",
-      "1 (Info)",
-      "2 (Warning)",
-      "3 (Error)"
-   };
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (setting)
+   {
+      static const char *modes[] = {
+         "0 (Debug)",
+         "1 (Info)",
+         "2 (Warning)",
+         "3 (Error)"
+      };
       strlcpy(s, modes[*setting->value.unsigned_integer],
             len);
+   }
 }
 
 static void setting_get_string_representation_uint(void *data,
@@ -6600,6 +6603,7 @@ rarch_setting_t *menu_setting_new(unsigned mask)
       goto error;
 
    menu_settings_info_list_free(list_info);
+   list_info = NULL;
 
    return list;
 
@@ -6607,6 +6611,8 @@ error:
    RARCH_ERR("Allocation failed.\n");
    menu_settings_info_list_free(list_info);
    menu_setting_free(list);
+
+   list_info = NULL;
 
    return NULL;
 }

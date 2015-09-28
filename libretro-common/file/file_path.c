@@ -154,7 +154,7 @@ bool path_contains_compressed_file(const char *path)
  **/
 bool path_is_compressed_file(const char* path)
 {
-#ifdef HAVE_COMPRESSION
+#if defined(HAVE_COMPRESSION) && (defined(HAVE_ZLIB) || defined(HAVE_7ZIP))
    const char* file_ext   = path_get_extension(path);
 
 #ifdef HAVE_ZLIB

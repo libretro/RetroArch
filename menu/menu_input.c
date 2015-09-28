@@ -350,9 +350,11 @@ void menu_input_st_hex_callback(void *userdata, const char *str)
       setting = menu_setting_find(label);
 
       if (setting)
+      {
          if (str[0] == '#')
             str++;
          *setting->value.unsigned_integer = strtoul(str, NULL, 16);
+      }
    }
 
    menu_input_key_end_line();

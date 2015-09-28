@@ -2324,16 +2324,17 @@ static void xmb_list_clear(file_list_t *list)
 
 static void xmb_list_deep_copy(menu_handle_t *menu, const file_list_t *src, file_list_t *dst)
 {
-   size_t size, i;
+   size_t i;
+   size_t size = dst->size;
 
-   size = dst->size;
    for (i = 0; i < size; ++i)
    {
-      float *subjects[5];
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(dst, i);
 
       if (node)
       {
+         float *subjects[5];
+
          subjects[0] = &node->alpha;
          subjects[1] = &node->label_alpha;
          subjects[2] = &node->zoom;
@@ -2350,6 +2351,7 @@ static void xmb_list_deep_copy(menu_handle_t *menu, const file_list_t *src, file
    file_list_copy(src, dst);
 
    size = dst->size;
+
    for (i = 0; i < size; ++i)
    {
       void *src_udata = file_list_get_userdata_at_offset(src, i);

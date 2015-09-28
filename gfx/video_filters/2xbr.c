@@ -106,7 +106,6 @@ static unsigned twoxbr_generic_threads(void *data)
 
 static void SetupFormat(void * data)
 {
-   uint16_t r, g, b, y, u, v;
    uint32_t c;
    struct filter_data *filt = (struct filter_data*)data;
 
@@ -210,12 +209,12 @@ static void SetupFormat(void * data)
 
    for (c = 0; c < 65536; c++)
    {
-      r = filt->tbl_5_to_8[(c &   RED_MASK565) >> 11];
-      g = filt->tbl_6_to_8[(c & GREEN_MASK565) >>  5];
-      b = filt->tbl_5_to_8[(c &  BLUE_MASK565)      ];
-      y = ((r << 4) + (g << 5) + (b << 2));
-      u = (   -r  - (g << 1) + (b << 2));
-      v = ((r << 1) - (g << 1) - (b >> 1));
+      uint16_t r = filt->tbl_5_to_8[(c &   RED_MASK565) >> 11];
+      uint16_t g = filt->tbl_6_to_8[(c & GREEN_MASK565) >>  5];
+      uint16_t b = filt->tbl_5_to_8[(c &  BLUE_MASK565)      ];
+      uint16_t y = ((r << 4) + (g << 5) + (b << 2));
+      uint16_t u = (   -r  - (g << 1) + (b << 2));
+      uint16_t v = ((r << 1) - (g << 1) - (b >> 1));
       filt->RGBtoYUV[c] = y + u + v;
    }
 }

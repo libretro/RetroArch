@@ -402,12 +402,13 @@ error:
  **/
 static int rarch_main_data_http_iterate_transfer(void *data)
 {
-   http_handle_t *http = (http_handle_t*)data;
+   http_handle_t *http  = (http_handle_t*)data;
    size_t pos  = 0, tot = 0;
-   int percent = 0;
 
    if (!net_http_update(http->handle, &pos, &tot))
    {
+      int percent = 0;
+
       if(tot != 0)
          percent = (unsigned long long)pos * 100
             / (unsigned long long)tot;

@@ -331,7 +331,7 @@ void save_ram_file(const char *path, int type)
 
    if (!data)
       return;
-   if (size <= 0)
+   if (size == 0)
       return;
 
    if (!retro_write_file(path, data, size))

@@ -759,10 +759,8 @@ static int zlib_get_file_list_cb(const char *path, const char *valid_exts,
 
    if (ext_list)
    {
-      char last_char = ' ';
-
       /* Checks if this entry is a directory or a file. */
-      last_char = path[strlen(path)-1];
+      char last_char = path[strlen(path)-1];
 
       if (last_char == '/' || last_char == '\\' ) /* Skip if directory. */
          goto error;

@@ -66,7 +66,7 @@ static unsigned bitswap(unsigned i, unsigned range)
    unsigned ret = 0;
 
    for (shifts = 0; shifts < range; shifts++)
-      ret |= i & (1 << (range - shifts - 1)) ? (1 << shifts) : 0;
+      ret |= (i & (1 << (range - shifts - 1))) ? (1 << shifts) : 0;
 
    return ret;
 }
