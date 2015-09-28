@@ -1593,6 +1593,9 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
 
    for (; menu_setting_get_type(setting) != ST_END_GROUP; setting++)
    {
+      const char *short_description = menu_setting_get_short_description(setting);
+      const char *name              = menu_setting_get_name(setting);
+
       switch (menu_setting_get_type(setting))
       {
          case ST_GROUP:
@@ -1607,8 +1610,8 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
             !settings->menu.show_advanced_settings)
          continue;
 
-      menu_list_push(info->list, setting->short_description,
-            setting->name, menu_setting_set_flags(setting), 0, 0);
+      menu_list_push(info->list, short_description,
+            name, menu_setting_set_flags(setting), 0, 0);
       count++;
    }
 
@@ -1623,6 +1626,7 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
 
 static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *info)
 {
+   const char *short_description;
    char elem0[PATH_MAX_LENGTH]  = {0};
    char elem1[PATH_MAX_LENGTH]  = {0};
    struct string_list *str_list = NULL;
@@ -1656,9 +1660,11 @@ static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *
 
    while (1)
    {
+      const char *name = menu_setting_get_name(info->setting);
+
       if (menu_setting_get_type(info->setting) == ST_SUB_GROUP)
       {
-         if ((strlen(info->setting->name) != 0) && !strcmp(info->setting->name, elem1))
+         if ((strlen(name) != 0) && !strcmp(name, elem1))
             break;
       }
       info->setting++;
@@ -1668,8 +1674,12 @@ static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *
    info->setting++;
 
    for (; menu_setting_get_type(info->setting) != ST_END_SUB_GROUP; info->setting++)
-      menu_list_push(info->list, info->setting->short_description,
-            info->setting->name, menu_setting_set_flags(info->setting), 0, 0);
+   {
+      const char *name              = menu_setting_get_name(info->setting);
+      const char *short_description = menu_setting_get_short_description(info->setting);
+      menu_list_push(info->list, short_description,
+            name, menu_setting_set_flags(info->setting), 0, 0);
+   }
 
    return 0;
 }
@@ -2506,21 +2516,23 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_SETTINGS_ALL:
          menu_displaylist_realloc_settings(menu->entries, SL_FLAG_ALL_SETTINGS);
 
-         setting = menu_setting_find(menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS));
-
+         setting            = menu_setting_find(menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS));
          flags              = menu_setting_get_flags(setting);
 
          if (settings->menu.collapse_subgroups_enable)
          {
             for (; menu_setting_get_type(setting) != ST_NONE; setting++)
             {
+               const char *short_description  = menu_setting_get_short_description(setting);
+               const char *name               = menu_setting_get_name(setting);
+
                if (menu_setting_get_type(setting) == ST_GROUP)
                {
                   if (flags & SD_FLAG_ADVANCED &&
                         !settings->menu.show_advanced_settings)
                      continue;
-                  menu_list_push(info->list, setting->short_description,
-                        setting->name, menu_setting_set_flags(setting), 0, 0);
+                  menu_list_push(info->list, short_description,
+                        name, menu_setting_set_flags(setting), 0, 0);
                }
             }
          }
@@ -2530,24 +2542,26 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             {
                char group_label[PATH_MAX_LENGTH], subgroup_label[PATH_MAX_LENGTH];
                enum setting_type setting_type = menu_setting_get_type(setting);
+               const char *short_description  = menu_setting_get_short_description(setting);
+               const char *name               = menu_setting_get_name(setting);
 
                switch (setting_type)
                {
                   case ST_GROUP:
-                     strlcpy(group_label, setting->name, sizeof(group_label));
+                     strlcpy(group_label, name, sizeof(group_label));
                      break;
                   case ST_SUB_GROUP:
                      {
                         char new_label[PATH_MAX_LENGTH], new_path[PATH_MAX_LENGTH];
 
-                        strlcpy(subgroup_label, setting->name, sizeof(group_label));
+                        strlcpy(subgroup_label, name, sizeof(group_label));
                         strlcpy(new_label, group_label, sizeof(new_label));
                         strlcat(new_label, "|", sizeof(new_label));
                         strlcat(new_label, subgroup_label, sizeof(new_label));
 
                         strlcpy(new_path, group_label, sizeof(new_path));
                         strlcat(new_path, " - ", sizeof(new_path));
-                        strlcat(new_path, setting->short_description, sizeof(new_path));
+                        strlcat(new_path, short_description, sizeof(new_path));
 
                         menu_list_push(info->list, new_path,
                               new_label, MENU_SETTING_SUBGROUP, 0, 0);

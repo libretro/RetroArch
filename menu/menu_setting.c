@@ -261,6 +261,20 @@ const char *menu_setting_get_values(rarch_setting_t *setting)
    return setting->values;
 }
 
+const char *menu_setting_get_name(rarch_setting_t *setting)
+{
+   if (!setting)
+      return NULL;
+   return setting->name;
+}
+
+const char *menu_setting_get_short_description(rarch_setting_t *setting)
+{
+   if (!setting)
+      return NULL;
+   return setting->short_description;
+}
+
 uint64_t menu_setting_get_flags(rarch_setting_t *setting)
 {
    if (!setting)
