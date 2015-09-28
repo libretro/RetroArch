@@ -98,7 +98,7 @@ static bool xenon360_input_meta_key_pressed(void *data, int key)
    return (lifecycle_state & (UINT64_C(1) << key));
 }
 
-static uint64_t xenon360_get_capabilities(void *data)
+static uint64_t xenon360_input_get_capabilities(void *data)
 {
    uint64_t caps = 0;
 

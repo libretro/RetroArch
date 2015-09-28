@@ -676,9 +676,12 @@ int menu_input_set_input_device_bind_mode(void *data,
    rarch_setting_t  *setting = (rarch_setting_t*)data;
    settings_t *settings      = config_get_ptr();
 
+   if (!setting)
+      return -1;
+
    bind_port = settings->input.joypad_map[setting->index_offset];
 
-   if (!setting || menu_input_set_bind_mode_common(setting, type) == -1)
+   if (menu_input_set_bind_mode_common(setting, type) == -1)
       return -1;
 
    menu_input_poll_bind_get_rested_axes(&menu_input->binds, bind_port);

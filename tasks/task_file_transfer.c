@@ -61,7 +61,6 @@ typedef struct nbio_image_handle
    unsigned processing_pos_increment;
    unsigned pos_increment;
    uint64_t frame_count;
-   uint64_t processing_frame_count;
    int processing_final_state;
    msg_queue_t *msg_queue;
    unsigned status;
@@ -294,8 +293,6 @@ static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
          break;
    }
 
-   nbio->image.processing_frame_count++;
-
    if (retval == IMAGE_PROCESS_NEXT)
       return 0;
 
@@ -312,7 +309,6 @@ static int rarch_main_data_image_iterate_parse_free(nbio_handle_t *nbio)
 
    nbio->image.handle                 = NULL;
    nbio->image.frame_count            = 0;
-   nbio->image.processing_frame_count = 0;
 
    msg_queue_clear(nbio->image.msg_queue);
 
@@ -321,18 +317,22 @@ static int rarch_main_data_image_iterate_parse_free(nbio_handle_t *nbio)
 
 static int rarch_main_data_image_iterate_process_transfer_parse(nbio_handle_t *nbio)
 {
-   size_t len = 0;
    if (nbio->image.handle && nbio->image.cb)
+   {
+      size_t len = 0;
       nbio->image.cb(nbio, len);
+   }
 
    return 0;
 }
 
 static int rarch_main_data_image_iterate_transfer_parse(nbio_handle_t *nbio)
 {
-   size_t len = 0;
    if (nbio->image.handle && nbio->image.cb)
+   {
+      size_t len = 0;
       nbio->image.cb(nbio, len);
+   }
 
    return 0;
 }

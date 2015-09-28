@@ -47,7 +47,6 @@ enum action_iterate_type
 
 static int action_iterate_help(char *s, size_t len, const char *label)
 {
-   unsigned i;
    menu_handle_t *menu       = menu_driver_get_ptr();
    settings_t *settings      = config_get_ptr();
 
@@ -86,6 +85,7 @@ static int action_iterate_help(char *s, size_t len, const char *label)
          break;
       case MENU_HELP_CONTROLS:
          {
+            unsigned i;
             char s2[PATH_MAX_LENGTH];
             const unsigned binds[] = {
                RETRO_DEVICE_ID_JOYPAD_UP,
