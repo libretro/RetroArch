@@ -222,8 +222,7 @@ static int check_pcm_status(void *data, int channel_type)
 
 static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 {
-   alsa_t *alsa = (alsa_t*)data;
-   snd_pcm_channel_status_t cstatus = {0};
+   alsa_t              *alsa = (alsa_t*)data;
    snd_pcm_sframes_t written = 0;
 
    while (size)

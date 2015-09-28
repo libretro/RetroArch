@@ -268,12 +268,13 @@ bool cheat_manager_realloc(cheat_manager_t *handle, unsigned new_size)
 
 void cheat_manager_free(cheat_manager_t *handle)
 {
-   unsigned i;
    if (!handle)
       return;
 
    if (handle->cheats)
    {
+      unsigned i;
+
       for (i = 0; i < handle->size; i++)
       {
          free(handle->cheats[i].desc);

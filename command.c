@@ -132,28 +132,29 @@ rarch_cmd_t *rarch_cmd_new(bool stdin_enable,
    if (!handle)
       return NULL;
 
+   (void)network_enable;
+   (void)port;
+   (void)stdin_enable;
+
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
    handle->net_fd = -1;
    if (network_enable && !cmd_init_network(handle, port))
       goto error;
-#else
-   (void)network_enable;
-   (void)port;
 #endif
 
 #ifdef HAVE_STDIN_CMD
    handle->stdin_enable = stdin_enable;
    if (stdin_enable && !cmd_init_stdin(handle))
       goto error;
-#else
-   (void)stdin_enable;
 #endif
 
    return handle;
 
+#if (defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)) || defined(HAVE_STDIN_CMD)
 error:
    rarch_cmd_free(handle);
    return NULL;
+#endif
 }
 
 void rarch_cmd_free(rarch_cmd_t *handle)

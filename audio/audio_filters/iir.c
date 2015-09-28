@@ -302,6 +302,7 @@ static void iir_filter_init(struct iir_data *iir,
          a1pha = sn / (2.0 * 0.4845);
          A = exp(log(10.0) * -9.477 / 40.0);
          beta = sqrt(A + A);
+         (void)a1pha;
       case HSH:
          b0 = A * ((A + 1.0) + (A - 1.0) * cs + beta * sn);
          b1 = -2.0 * A * ((A - 1.0) + (A + 1.0) * cs);

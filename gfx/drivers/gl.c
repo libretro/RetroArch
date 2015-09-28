@@ -1074,7 +1074,6 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
 {
    unsigned width, height;
    const struct gfx_fbo_rect *prev_rect;
-   const struct gfx_fbo_rect *rect;
    struct gfx_tex_info *fbo_info;
    struct gfx_tex_info fbo_tex_info[GFX_MAX_SHADERS];
    int i;
@@ -1091,8 +1090,9 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
     * and render all passes from FBOs, to another FBO. */
    for (i = 1; i < gl->fbo_pass; i++)
    {
+      const struct gfx_fbo_rect *rect = &gl->fbo_rect[i];
+
       prev_rect = &gl->fbo_rect[i - 1];
-      rect      = &gl->fbo_rect[i];
       fbo_info  = &fbo_tex_info[i - 1];
 
       xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
@@ -2775,10 +2775,9 @@ static bool gl_set_shader(void *data,
 
    if (!gl->shader->init(gl, path))
    {
-      bool ret = false;
+      bool ret = gl->shader->init(gl, NULL);
 
       RARCH_WARN("[GL]: Failed to set multipass shader. Falling back to stock.\n");
-      ret = gl->shader->init(gl, NULL);
 
       if (!ret)
          gl->shader = NULL;

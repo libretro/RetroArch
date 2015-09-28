@@ -370,9 +370,7 @@ static int database_cursor_open(libretrodb_t *db,
 error:
    if (q)
       libretrodb_query_free(q);
-   query = NULL;
    libretrodb_close(db);
-   db    = NULL;
 
    return -1;
 }
