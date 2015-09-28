@@ -306,11 +306,14 @@ void CORE_PREFIX(retro_reset)(void)
 
 static void check_variables(void)
 {
-   struct retro_variable color_var, var, fft_var, fft_ms_var;
-
-   (void)var;
-   (void)fft_var;
-   (void)fft_ms_var;
+   struct retro_variable color_var  = {0};
+#ifdef HAVE_OPENGL
+   struct retro_variable var        = {0};
+#endif
+#ifdef HAVE_GL_FFT
+   struct retro_variable fft_var    = {0};
+   struct retro_variable fft_ms_var = {0};
+#endif
 
 #ifdef HAVE_OPENGL
    var.key = "ffmpeg_temporal_interp";

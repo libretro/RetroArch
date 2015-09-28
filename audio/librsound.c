@@ -1002,9 +1002,6 @@ static int rsnd_send_info_query(rsound_t *rd)
 // In that case, we read the packet.
 static int rsnd_update_server_info(rsound_t *rd)
 {
-
-   ssize_t rc;
-
    long long int client_ptr = -1;
    long long int serv_ptr = -1;
    char temp[RSD_PROTO_MAXSIZE + 1] = {0};
@@ -1012,6 +1009,7 @@ static int rsnd_update_server_info(rsound_t *rd)
    // We read until we have the last (most recent) data in the network buffer.
    for (;;)
    {
+      ssize_t rc;
       const char *substr;
       char *tmpstr;
       memset(temp, 0, sizeof(temp));
@@ -1315,21 +1313,19 @@ int rsd_stop(rsound_t *rd)
 
 size_t rsd_write( rsound_t *rsound, const void* buf, size_t size)
 {
+   size_t max_write, written = 0;
    assert(rsound != NULL);
    if ( !rsound->ready_for_data )
       return 0;
 
-   size_t result;
-   size_t max_write = (rsound->buffer_size - rsound->backend_info.chunk_size)/2;
-
-   size_t written = 0;
-   size_t write_size;
+   max_write = (rsound->buffer_size - rsound->backend_info.chunk_size)/2;
 
    /* Makes sure that we can handle arbitrary large write sizes */
 
    while ( written < size )
    {
-      write_size = (size - written) > max_write ? max_write : (size - written); 
+      size_t result;
+      size_t write_size = (size - written) > max_write ? max_write : (size - written); 
       result = rsnd_fill_buffer(rsound, (const char*)buf + written, write_size);
 
       if ( result <= 0 )
