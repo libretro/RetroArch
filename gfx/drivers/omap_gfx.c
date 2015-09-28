@@ -429,6 +429,10 @@ static int omapfb_alloc_mem(omapfb_data_t *pdata)
 
    if (av_info)
       geom     = &av_info->geometry;
+
+   if (!geom)
+      goto error;
+
    mem_size = geom->max_width * geom->max_height *
       pdata->bpp * pdata->num_pages;
 

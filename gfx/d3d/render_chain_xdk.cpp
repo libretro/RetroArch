@@ -136,6 +136,9 @@ static void renderchain_set_vertices(void *data, unsigned pass,
 
    video_driver_get_size(&width, &height);
 
+   if (!chain)
+      return;
+
    if (chain->last_width != vert_width || chain->last_height != vert_height)
    {
       unsigned i;

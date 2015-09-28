@@ -336,7 +336,10 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
    ret = IOHIDDeviceOpen(device, kIOHIDOptionsTypeNone);
 
    if (ret != kIOReturnSuccess)
+   {
+      free(adapter);
       return;
+   }
 
    /* Move the device's run loop to this thread. */
    IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(),

@@ -818,17 +818,17 @@ void audio_driver_frame_is_reverse(void)
 void audio_monitor_adjust_system_rates(void)
 {
    float timing_skew;
-   settings_t *settings = config_get_ptr();
-   struct retro_system_av_info *av_info = 
-      video_viewport_get_system_av_info();
-   const struct retro_system_timing *info = 
-      av_info ? (const struct retro_system_timing*)&av_info->timing : NULL;
+   settings_t                   *settings = config_get_ptr();
+   const struct retro_system_timing *info = NULL;
+   struct retro_system_av_info   *av_info = video_viewport_get_system_av_info();
+   
+   if (av_info)
+      info = (const struct retro_system_timing*)&av_info->timing;
 
-   if (info->sample_rate <= 0.0)
+   if (!info || info->sample_rate <= 0.0)
       return;
 
-   timing_skew                 = fabs(1.0f - info->fps / 
-                                 settings->video.refresh_rate);
+   timing_skew        = fabs(1.0f - info->fps / settings->video.refresh_rate);
    audio_data.in_rate = info->sample_rate;
 
    if (timing_skew <= settings->audio.max_timing_skew)

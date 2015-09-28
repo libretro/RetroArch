@@ -1187,12 +1187,12 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
    for (; i < end; i++)
    {
-      const float half_size = xmb->icon.size / 2.0f;
       char name[PATH_MAX_LENGTH];
       char value[PATH_MAX_LENGTH];
-      menu_entry_t entry;
       float icon_x, icon_y;
 
+      const float half_size       = xmb->icon.size / 2.0f;
+      menu_entry_t entry          = {{0}};
       GRuint texture_switch       = 0;
       GRuint         icon         = 0;
       xmb_node_t *   node         = (xmb_node_t*)menu_list_get_userdata_at_offset(list, i);
@@ -1200,8 +1200,8 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       uint32_t hash_value         = 0;
       bool do_draw_text           = false;
 
-      *entry.path = *entry.label = *entry.value = 0;
-      entry.idx = entry.spacing = entry.type = 0;
+      *entry.path = *entry.label  = *entry.value = 0;
+      entry.idx   = entry.spacing = entry.type = 0;
 
       if (!node)
          continue;

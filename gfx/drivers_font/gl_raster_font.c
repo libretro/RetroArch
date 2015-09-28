@@ -146,7 +146,7 @@ static void *gl_raster_font_init_font(void *data,
    if (!font_renderer_create_default(&font->font_driver,
             &font->font_data, font_path, font_size))
    {
-      RARCH_WARN("Couldn't init font renderer.\n");
+      RARCH_WARN("Couldn't initialize font renderer.\n");
       free(font);
       return NULL;
    }
@@ -158,20 +158,22 @@ static void *gl_raster_font_init_font(void *data,
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-   atlas = font->font_driver->get_atlas(font->font_data);
-
+   atlas            = font->font_driver->get_atlas(font->font_data);
    font->tex_width  = next_pow2(atlas->width);;
    font->tex_height = next_pow2(atlas->height);;
 
    if (!gl_raster_font_upload_atlas(font, atlas, font->tex_width, font->tex_height))
-   {
-      gl_raster_font_free_font(font);
-      font = NULL;
-   }
+      goto error;
 
    glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
 
    return font;
+
+error:
+   gl_raster_font_free_font(font);
+   font = NULL;
+
+   return NULL;
 }
 
 static void gl_raster_font_free_font(void *data)

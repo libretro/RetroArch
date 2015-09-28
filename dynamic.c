@@ -1219,6 +1219,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_game_geometry *geom = av_info ? 
             (struct retro_game_geometry*)&av_info->geometry : NULL;
 
+         if (!geom)
+            return false;
+
          RARCH_LOG("Environ SET_GEOMETRY.\n");
 
          /* Can potentially be called every frame,

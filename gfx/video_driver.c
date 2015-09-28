@@ -307,7 +307,7 @@ bool video_driver_set_shader(enum rarch_shader_type type,
    driver_t            *driver = driver_get_ptr();
    const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
-   if (video->set_shader)
+   if (video && video->set_shader)
       return video->set_shader(driver->video_data, type, path);
    return false;
 }
@@ -343,6 +343,10 @@ static void init_video_filter(enum retro_pixel_format colfmt)
    }
 
    geom    = av_info ? (struct retro_game_geometry*)&av_info->geometry : NULL;
+
+   if (!geom)
+      return;
+
    width   = geom->max_width;
    height  = geom->max_height;
 
