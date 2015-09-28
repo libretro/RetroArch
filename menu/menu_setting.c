@@ -131,14 +131,14 @@ static int setting_generic_action_ok_default(void *data, bool wraparound)
 
 int menu_setting_generic(rarch_setting_t *setting, bool wraparound)
 {
+   uint64_t flags = menu_setting_get_flags(setting);
    if (setting_generic_action_ok_default(setting, wraparound) != 0)
       return -1;
 
    if (setting->change_handler)
       setting->change_handler(setting);
 
-   if (setting->flags & SD_FLAG_EXIT
-         && setting->cmd_trigger.triggered)
+   if ((flags & SD_FLAG_EXIT) && setting->cmd_trigger.triggered)
    {
       setting->cmd_trigger.triggered = false;
       return -1;
@@ -239,6 +239,54 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    }
 
    return -1;
+}
+
+bool menu_setting_is_of_path_type(rarch_setting_t *setting)
+{
+   uint64_t flags = menu_setting_get_flags(setting);
+   if    (
+         setting &&
+         (menu_setting_get_type(setting) == ST_ACTION) &&
+         (flags & SD_FLAG_BROWSER_ACTION) &&
+         (setting->action_right || setting->action_left || setting->action_select) &&
+         setting->change_handler)
+      return true;
+   return false;
+}
+
+const char *menu_setting_get_values(rarch_setting_t *setting)
+{
+   if (!setting)
+      return NULL;
+   return setting->values;
+}
+
+uint64_t menu_setting_get_flags(rarch_setting_t *setting)
+{
+   if (!setting)
+      return 0;
+   return setting->flags;
+}
+
+double menu_setting_get_min(rarch_setting_t *setting)
+{
+   if (!setting)
+      return 0.0f;
+   return setting->min;
+}
+
+double menu_setting_get_max(rarch_setting_t *setting)
+{
+   if (!setting)
+      return 0.0f;
+   return setting->max;
+}
+
+uint32_t menu_setting_get_index(rarch_setting_t *setting)
+{
+   if (!setting)
+      return 0;
+   return setting->index;
 }
 
 /**
@@ -381,62 +429,66 @@ static void setting_reset_setting(rarch_setting_t* setting)
 int setting_set_with_string_representation(rarch_setting_t* setting,
       const char* value)
 {
+   double min, max;
    enum setting_type setting_type;
+   uint64_t flags = menu_setting_get_flags(setting);
    if (!setting || !value)
       return -1;
 
    setting_type = menu_setting_get_type(setting);
+   min          = menu_setting_get_min(setting);
+   max          = menu_setting_get_max(setting);
 
    switch (setting_type)
    {
       case ST_INT:
          sscanf(value, "%d", setting->value.integer);
-         if (setting->flags & SD_FLAG_HAS_RANGE)
+         if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (setting->enforce_minrange && *setting->value.integer < setting->min)
-               *setting->value.integer = setting->min;
-            if (setting->enforce_maxrange && *setting->value.integer > setting->max)
+            if (setting->enforce_minrange && *setting->value.integer < min)
+               *setting->value.integer = min;
+            if (setting->enforce_maxrange && *setting->value.integer > max)
             {
                settings_t *settings = config_get_ptr();
 
                if (settings && settings->menu.navigation.wraparound.setting_enable)
-                  *setting->value.integer = setting->min;
+                  *setting->value.integer = min;
                else
-                  *setting->value.integer = setting->max;
+                  *setting->value.integer = max;
             }
          }
          break;
       case ST_UINT:
          sscanf(value, "%u", setting->value.unsigned_integer);
-         if (setting->flags & SD_FLAG_HAS_RANGE)
+         if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (setting->enforce_minrange && *setting->value.unsigned_integer < setting->min)
-               *setting->value.unsigned_integer = setting->min;
-            if (setting->enforce_maxrange && *setting->value.unsigned_integer > setting->max)
+            if (setting->enforce_minrange && *setting->value.unsigned_integer < min)
+               *setting->value.unsigned_integer = min;
+            if (setting->enforce_maxrange && *setting->value.unsigned_integer > max)
             {
                settings_t *settings = config_get_ptr();
 
                if (settings && settings->menu.navigation.wraparound.setting_enable)
-                  *setting->value.unsigned_integer = setting->min;
+                  *setting->value.unsigned_integer = min;
                else
-                  *setting->value.unsigned_integer = setting->max;
+                  *setting->value.unsigned_integer = max;
             }
          }
          break;      
       case ST_FLOAT:
          sscanf(value, "%f", setting->value.fraction);
-         if (setting->flags & SD_FLAG_HAS_RANGE)
+         if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (setting->enforce_minrange && *setting->value.fraction < setting->min)
-               *setting->value.fraction = setting->min;
-            if (setting->enforce_maxrange && *setting->value.fraction > setting->max)
+            if (setting->enforce_minrange && *setting->value.fraction < min)
+               *setting->value.fraction = min;
+            if (setting->enforce_maxrange && *setting->value.fraction > max)
             {
                settings_t *settings = config_get_ptr();
 
                if (settings && settings->menu.navigation.wraparound.setting_enable)
-                  *setting->value.fraction = setting->min;
+                  *setting->value.fraction = min;
                else
-                  *setting->value.fraction = setting->max;
+                  *setting->value.fraction = max;
             }
          }
          break;
@@ -899,18 +951,19 @@ static int setting_bool_action_toggle_default(void *data, bool wraparound)
 static int setting_int_action_left_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   double min          = menu_setting_get_min(setting);
 
    if (!setting)
       return -1;
 
-   if (*setting->value.integer != setting->min)
+   if (*setting->value.integer != min)
       *setting->value.integer =
          *setting->value.integer - setting->step;
 
    if (setting->enforce_minrange)
    {
-      if (*setting->value.integer < setting->min)
-         *setting->value.integer = setting->min;
+      if (*setting->value.integer < min)
+         *setting->value.integer = min;
    }
 
 
@@ -1024,18 +1077,19 @@ static int setting_uint_action_right_custom_viewport_height(void *data, bool wra
 static int setting_uint_action_left_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   double               min = menu_setting_get_min(setting);
 
    if (!setting)
       return -1;
 
-   if (*setting->value.unsigned_integer != setting->min)
+   if (*setting->value.unsigned_integer != min)
       *setting->value.unsigned_integer =
          *setting->value.unsigned_integer - setting->step;
 
    if (setting->enforce_minrange)
    {
-      if (*setting->value.unsigned_integer < setting->min)
-         *setting->value.unsigned_integer = setting->min;
+      if (*setting->value.unsigned_integer < min)
+         *setting->value.unsigned_integer = min;
    }
 
 
@@ -1045,6 +1099,8 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
 static int setting_uint_action_right_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   double               min = menu_setting_get_min(setting);
+   double               max = menu_setting_get_max(setting);
 
    if (!setting)
       return -1;
@@ -1054,14 +1110,14 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
 
    if (setting->enforce_maxrange)
    {
-      if (*setting->value.unsigned_integer > setting->max)
+      if (*setting->value.unsigned_integer > max)
       {
          settings_t *settings = config_get_ptr();
 
          if (settings && settings->menu.navigation.wraparound.setting_enable)
-            *setting->value.unsigned_integer = setting->min;
+            *setting->value.unsigned_integer = min;
          else
-            *setting->value.unsigned_integer = setting->max;
+            *setting->value.unsigned_integer = max;
       }
    }
 
@@ -1071,6 +1127,8 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
 static int setting_int_action_right_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   double               min = menu_setting_get_min(setting);
+   double               max = menu_setting_get_max(setting);
 
    if (!setting)
       return -1;
@@ -1080,14 +1138,14 @@ static int setting_int_action_right_default(void *data, bool wraparound)
 
    if (setting->enforce_maxrange)
    {
-      if (*setting->value.integer > setting->max)
+      if (*setting->value.integer > max)
       {
          settings_t *settings = config_get_ptr();
 
          if (settings && settings->menu.navigation.wraparound.setting_enable)
-            *setting->value.integer = setting->min;
+            *setting->value.integer = min;
          else
-            *setting->value.integer = setting->max;
+            *setting->value.integer = max;
       }
    }
 
@@ -1098,6 +1156,7 @@ static int setting_fraction_action_left_default(
       void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   double               min = menu_setting_get_min(setting);
 
    if (!setting)
       return -1;
@@ -1107,8 +1166,8 @@ static int setting_fraction_action_left_default(
 
    if (setting->enforce_minrange)
    {
-      if (*setting->value.fraction < setting->min)
-         *setting->value.fraction = setting->min;
+      if (*setting->value.fraction < min)
+         *setting->value.fraction = min;
    }
 
    return 0;
@@ -1118,6 +1177,8 @@ static int setting_fraction_action_right_default(
       void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   double               min = menu_setting_get_min(setting);
+   double               max = menu_setting_get_max(setting);
 
    if (!setting)
       return -1;
@@ -1127,14 +1188,14 @@ static int setting_fraction_action_right_default(
 
    if (setting->enforce_maxrange)
    {
-      if (*setting->value.fraction > setting->max)
+      if (*setting->value.fraction > max)
       {
          settings_t *settings = config_get_ptr();
 
          if (settings && settings->menu.navigation.wraparound.setting_enable)
-            *setting->value.fraction = setting->min;
+            *setting->value.fraction = min;
          else
-            *setting->value.fraction = setting->max;
+            *setting->value.fraction = max;
       }
    }
 
@@ -2229,26 +2290,27 @@ static void general_write_handler(void *data)
 {
    enum event_command rarch_cmd = EVENT_CMD_NONE;
    menu_displaylist_info_t info = {0};
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-   settings_t *settings     = config_get_ptr();
-   driver_t *driver         = driver_get_ptr();
-   global_t *global         = global_get_ptr();
-   menu_list_t *menu_list   = menu_list_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
-   uint32_t hash            = setting ? menu_hash_calculate(setting->name) : 0;
+   rarch_setting_t *setting     = (rarch_setting_t*)data;
+   settings_t *settings         = config_get_ptr();
+   driver_t *driver             = driver_get_ptr();
+   global_t *global             = global_get_ptr();
+   menu_list_t *menu_list       = menu_list_get_ptr();
+   rarch_system_info_t *system  = rarch_system_info_get_ptr();
+   uint32_t hash                = setting ? menu_hash_calculate(setting->name) : 0;
+   uint64_t flags               = menu_setting_get_flags(setting);
 
    if (!setting)
       return;
 
    if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
    {
-      if (setting->flags & SD_FLAG_EXIT)
+      if (flags & SD_FLAG_EXIT)
       {
          if (*setting->value.boolean)
             *setting->value.boolean = false;
       }
       if (setting->cmd_trigger.triggered ||
-            (setting->flags & SD_FLAG_CMD_APPLY_AUTO))
+            (flags & SD_FLAG_CMD_APPLY_AUTO))
          rarch_cmd = setting->cmd_trigger.idx;
    }
 
@@ -6279,13 +6341,14 @@ static bool setting_append_list_input_player_options(
 void menu_setting_free(rarch_setting_t *list)
 {
    rarch_setting_t *setting = list;
+   uint64_t flags = menu_setting_get_flags(setting);
 
    if (!list)
       return;
 
    for (; menu_setting_get_type(setting) != ST_NONE; setting++)
    {
-      if (setting->flags & SD_FLAG_IS_DRIVER)
+      if (flags & SD_FLAG_IS_DRIVER)
       {
          if (setting->values)
             free((void*)setting->values);
@@ -6528,49 +6591,3 @@ error:
    return NULL;
 }
 
-bool menu_setting_is_of_path_type(rarch_setting_t *setting)
-{
-   if    (
-         setting &&
-         (menu_setting_get_type(setting) == ST_ACTION) &&
-         (setting->flags & SD_FLAG_BROWSER_ACTION) &&
-         (setting->action_right || setting->action_left || setting->action_select) &&
-         setting->change_handler)
-      return true;
-   return false;
-}
-
-const char *menu_setting_get_values(rarch_setting_t *setting)
-{
-   if (!setting)
-      return NULL;
-   return setting->values;
-}
-
-uint64_t menu_setting_get_flags(rarch_setting_t *setting)
-{
-   if (!setting)
-      return 0;
-   return setting->flags;
-}
-
-double menu_setting_get_min(rarch_setting_t *setting)
-{
-   if (!setting)
-      return 0.0f;
-   return setting->min;
-}
-
-double menu_setting_get_max(rarch_setting_t *setting)
-{
-   if (!setting)
-      return 0.0f;
-   return setting->max;
-}
-
-uint32_t menu_setting_get_index(rarch_setting_t *setting)
-{
-   if (!setting)
-      return 0;
-   return setting->index;
-}
