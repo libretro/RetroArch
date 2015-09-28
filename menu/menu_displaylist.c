@@ -1550,10 +1550,11 @@ static void menu_displaylist_realloc_settings(menu_entries_t *entries, unsigned 
 static int menu_setting_set_flags(rarch_setting_t *setting)
 {
    enum setting_type setting_type = menu_setting_get_type(setting);
+   uint64_t                 flags = menu_setting_get_flags(setting);
    if (!setting)
       return 0;
 
-   if (setting->flags & SD_FLAG_IS_DRIVER)
+   if (flags & SD_FLAG_IS_DRIVER)
       return MENU_SETTING_DRIVER;
 
    switch (setting_type)
@@ -1576,6 +1577,7 @@ static int menu_setting_set_flags(rarch_setting_t *setting)
 static int menu_displaylist_parse_settings(menu_handle_t *menu,
       menu_displaylist_info_t *info, unsigned setting_flags)
 {
+   uint64_t flags;
    size_t             count = 0;
    rarch_setting_t *setting = NULL;
    settings_t *settings     = config_get_ptr();
@@ -1583,6 +1585,7 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
    menu_displaylist_realloc_settings(menu->entries, setting_flags);
 
    setting                  = menu_setting_find(info->label);
+   flags                    = menu_setting_get_flags(setting);
 
    if (!setting)
       return -1;
@@ -1600,7 +1603,7 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
             break;
       }
 
-      if (setting->flags & SD_FLAG_ADVANCED &&
+      if (flags & SD_FLAG_ADVANCED &&
             !settings->menu.show_advanced_settings)
          continue;
 
@@ -2363,6 +2366,7 @@ static void menu_driver_populate_entries(const char *path,
 
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
+   uint64_t flags;
    size_t i, list_size;
    int ret                     = 0;
    bool need_sort              = false;
@@ -2504,13 +2508,15 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
          setting = menu_setting_find(menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS));
 
+         flags              = menu_setting_get_flags(setting);
+
          if (settings->menu.collapse_subgroups_enable)
          {
             for (; menu_setting_get_type(setting) != ST_NONE; setting++)
             {
                if (menu_setting_get_type(setting) == ST_GROUP)
                {
-                  if (setting->flags & SD_FLAG_ADVANCED &&
+                  if (flags & SD_FLAG_ADVANCED &&
                         !settings->menu.show_advanced_settings)
                      continue;
                   menu_list_push(info->list, setting->short_description,
