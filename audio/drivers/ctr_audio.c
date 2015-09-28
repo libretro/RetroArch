@@ -31,10 +31,7 @@ typedef struct
    uint32_t pos;
 
    uint32_t playpos;
-   uint32_t cpu_ticks_per_sample;
    uint64_t cpu_ticks_last;
-
-   int rate;
 } ctr_audio_t;
 
 #define CTR_AUDIO_COUNT       (1u << 11u)
@@ -42,19 +39,23 @@ typedef struct
 #define CTR_AUDIO_SIZE        (CTR_AUDIO_COUNT * sizeof(int16_t))
 #define CTR_AUDIO_SIZE_MASK   (CTR_AUDIO_SIZE  - 1u)
 
+#define CTR_AUDIO_RATE              32730
+#define CTR_CSND_TICKS_PER_SAMPLE   2048
+#define CTR_CPU_TICKS_PER_SAMPLE    (CTR_CSND_TICKS_PER_SAMPLE * 4)
+
 static void ctr_audio_update_playpos(ctr_audio_t* ctr)
 {
    uint32_t samples_played;
    uint64_t current_tick;
 
    current_tick   = svcGetSystemTick();
-   samples_played = (current_tick - ctr->cpu_ticks_last) / ctr->cpu_ticks_per_sample;
+   samples_played = (current_tick - ctr->cpu_ticks_last) / CTR_CPU_TICKS_PER_SAMPLE;
    ctr->playpos   = (ctr->playpos + samples_played) & CTR_AUDIO_COUNT_MASK;
-   ctr->cpu_ticks_last += samples_played * ctr->cpu_ticks_per_sample;
+   ctr->cpu_ticks_last += samples_played * CTR_CPU_TICKS_PER_SAMPLE;
 }
 
 
-Result csndPlaySound_custom(int chn, u32 flags, u32 sampleRate, float vol, float pan, void* data0, void* data1, u32 size)
+Result csndPlaySound_custom(int chn, u32 flags, float vol, float pan, void* data0, void* data1, u32 size)
 {
 	if (!(csndChannels & BIT(chn)))
 		return 1;
@@ -79,11 +80,8 @@ Result csndPlaySound_custom(int chn, u32 flags, u32 sampleRate, float vol, float
 		}
 	}
 
-	u32 timer = CSND_TIMER(sampleRate);
-	if (timer < 0x0042) timer = 0x0042;
-	else if (timer > 0xFFFF) timer = 0xFFFF;
 	flags &= ~0xFFFF001F;
-	flags |= SOUND_ENABLE | SOUND_CHANNEL(chn) | (timer << 16);
+	flags |= SOUND_ENABLE | SOUND_CHANNEL(chn) | (CTR_CSND_TICKS_PER_SAMPLE << 16);
 
 	u32 volumes = CSND_VOL(vol, pan);
 	CSND_SetChnRegs(flags, paddr0, paddr1, size, volumes, volumes);
@@ -98,10 +96,10 @@ Result csndPlaySound_custom(int chn, u32 flags, u32 sampleRate, float vol, float
 	return 0;
 }
 
-
 static void *ctr_audio_init(const char *device, unsigned rate, unsigned latency)
 {
    ctr_audio_t *ctr = (ctr_audio_t*)calloc(1, sizeof(ctr_audio_t));
+   settings_t *settings = config_get_ptr();
 
    if (!ctr)
       return NULL;
@@ -109,6 +107,8 @@ static void *ctr_audio_init(const char *device, unsigned rate, unsigned latency)
    (void)device;
    (void)rate;
    (void)latency;
+
+   settings->audio.out_rate  = CTR_AUDIO_RATE;
 
    ctr->l                    = linearAlloc(CTR_AUDIO_SIZE);
    ctr->r                    = linearAlloc(CTR_AUDIO_SIZE);
@@ -120,16 +120,14 @@ static void *ctr_audio_init(const char *device, unsigned rate, unsigned latency)
    ctr->r_paddr              = osConvertVirtToPhys((u32)ctr->r);
 
    ctr->pos                  = 0;
-   ctr->rate                 = rate;
-   ctr->cpu_ticks_per_sample = CSND_TIMER(rate) * 4;
 
    GSPGPU_FlushDataCache(NULL, (u8*)ctr->l_paddr, CTR_AUDIO_SIZE);
    GSPGPU_FlushDataCache(NULL, (u8*)ctr->r_paddr, CTR_AUDIO_SIZE);
    csndPlaySound_custom(0x8, SOUND_LOOPMODE(CSND_LOOPMODE_NORMAL)| SOUND_FORMAT(CSND_ENCODING_PCM16),
-                 rate, 1.0, -1.0, ctr->l, ctr->l, CTR_AUDIO_SIZE);
+                 1.0, -1.0, ctr->l, ctr->l, CTR_AUDIO_SIZE);
 
    csndPlaySound_custom(0x9, SOUND_LOOPMODE(CSND_LOOPMODE_NORMAL)| SOUND_FORMAT(CSND_ENCODING_PCM16),
-                 rate, 1.0, 1.0, ctr->r, ctr->r, CTR_AUDIO_SIZE);
+                 1.0,  1.0, ctr->r, ctr->r, CTR_AUDIO_SIZE);
 
    csndExecCmds(true);
    ctr->playpos              = 0;

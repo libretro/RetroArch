@@ -345,6 +345,8 @@ static void* ctr_init(const video_info_t* video,
    ctr->empty_framebuffer = linearAlloc(320 * 240 * 2);
    memset(ctr->empty_framebuffer, 0, 320 * 240 * 2);
 
+   driver_set_refresh_rate((32730.0 * 8192.0) / 4481134.0);
+
    return ctr;
 }
 
