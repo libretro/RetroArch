@@ -24,6 +24,25 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+enum menu_action
+{
+   MENU_ACTION_NOOP = 0,
+   MENU_ACTION_UP,
+   MENU_ACTION_DOWN,
+   MENU_ACTION_LEFT,
+   MENU_ACTION_RIGHT,
+   MENU_ACTION_OK,
+   MENU_ACTION_SEARCH,
+   MENU_ACTION_SCAN,
+   MENU_ACTION_CANCEL,
+   MENU_ACTION_INFO,
+   MENU_ACTION_SELECT,
+   MENU_ACTION_START,
+   MENU_ACTION_SCROLL_DOWN,
+   MENU_ACTION_SCROLL_UP,
+   MENU_ACTION_TOGGLE
+};
  
 enum menu_input_pointer_state
 {
@@ -88,7 +107,7 @@ void menu_input_st_cheat_callback(void *userdata, const char *str);
 
 int menu_input_bind_iterate(char *s, size_t len);
 
-enum menu_action menu_input_frame(retro_input_t input, retro_input_t trigger_state);
+unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_state);
 
 void menu_input_post_iterate(int *ret, unsigned action);
 

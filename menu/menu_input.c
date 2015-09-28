@@ -1204,10 +1204,10 @@ void menu_input_post_iterate(int *ret, unsigned action)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
 }
 
-enum menu_action menu_input_frame(retro_input_t input, retro_input_t trigger_input)
+unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 {
    float delta_time;
-   enum menu_action ret                    = MENU_ACTION_NOOP;
+   unsigned         ret                    = MENU_ACTION_NOOP;
    static bool initial_held                = true;
    static bool first_held                  = false;
    static const retro_input_t input_repeat =
