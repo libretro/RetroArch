@@ -203,7 +203,7 @@ else ifeq ($(platform), vita)
   EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
   MACHDEP := -DVITA
   PLATCFLAGS :=  -O3 -mfloat-abi=hard -ffast-math -fsingle-precision-constant 
-  LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub \
+  LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
 			 -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub -lUVLoader_stub \
 			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lz -lm -lc
 
@@ -219,6 +219,9 @@ else ifeq ($(platform), vita)
   HAVE_RPNG                := 1
   HAVE_ZLIB                := 1
   HAVE_VITA2D              := 1
+  HAVE_NETWORKING          := 1
+  HAVE_NETPLAY             := 1
+  HAVE_OVERLAY             := 1
   RARCH_CONSOLE          = 1
 endif
 
