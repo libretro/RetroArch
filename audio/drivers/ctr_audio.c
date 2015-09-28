@@ -281,7 +281,7 @@ static size_t ctr_audio_write_avail(void *data)
    return (ctr->playpos - ctr->pos) & CTR_AUDIO_COUNT_MASK;
 }
 
-static size_t ctr_buffer_size(void *data)
+static size_t ctr_audio_buffer_size(void *data)
 {
    (void)data;
    return CTR_AUDIO_COUNT;
@@ -299,5 +299,5 @@ audio_driver_t audio_ctr = {
    ctr_audio_use_float,
    "ctr",
    ctr_audio_write_avail,
-   ctr_buffer_size
+   ctr_audio_buffer_size
 };
