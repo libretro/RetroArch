@@ -66,9 +66,6 @@ static void parse_map( pr_state_t* parser, int skip, int isrom )
 {
    pr_node_t   dummy;
    pr_node_t*  node;
-   unsigned    hash;
-   const char* key;
-   unsigned    keylen;
 
    if ( skip )
    {
@@ -82,6 +79,10 @@ static void parse_map( pr_state_t* parser, int skip, int isrom )
 
    while ( parser->lexer.token != LX_RPAREN )
    {
+      unsigned    hash;
+      const char* key;
+      unsigned    keylen;
+
       if ( parser->lexer.token != LX_TAG )
          longjmp( parser->env, PR_UNEXPECTED_TOKEN );
 
