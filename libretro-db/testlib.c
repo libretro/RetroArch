@@ -59,7 +59,7 @@ static void push_rmsgpack_value(lua_State *L, struct rmsgpack_dom_value *value)
 
 static int value_provider(void *ctx, struct rmsgpack_dom_value *out)
 {
-   int rv;
+   int rv       = 0;
    lua_State *L = ctx;
 
    lua_getfield(L, LUA_REGISTRYINDEX, "testlib_get_value");

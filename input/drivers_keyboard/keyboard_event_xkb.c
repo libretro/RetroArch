@@ -53,6 +53,9 @@ void handle_xkb(
    if (value)
       num_syms = xkb_state_key_get_syms(xkb_state, xk_code, &syms);
 
+   if (!syms)
+      return;
+
    xkb_state_update_key(xkb_state, xk_code, value ? XKB_KEY_DOWN : XKB_KEY_UP);
 
    /* Build mod state. */

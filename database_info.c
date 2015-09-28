@@ -473,18 +473,19 @@ database_info_list_t *database_info_list_new(
 
       if (ret == 0)
       {
-         database_info_t *db_ptr = NULL;
-         database_info = (database_info_t*)
+         database_info_t *db_ptr  = NULL;
+         database_info_t *new_ptr = (database_info_t*)
             realloc(database_info, (k+1) * sizeof(database_info_t));
 
-         if (!database_info)
+         if (!new_ptr)
          {
             database_info_list_free(database_info_list);
             database_info_list = NULL;
             goto end;
          }
 
-         db_ptr = &database_info[k];
+         database_info = new_ptr;
+         db_ptr        = &database_info[k];
 
          if (!db_ptr)
             continue;

@@ -41,7 +41,7 @@ static int call_init(lua_State * L, int argc, const char ** argv)
 
 static int value_provider(void * ctx, struct rmsgpack_dom_value *out)
 {
-   int rv;
+   int rv        = 0;
    lua_State * L = ctx;
 
    lua_getglobal(L, "get_value");

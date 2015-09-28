@@ -465,6 +465,13 @@ void init_video(void)
 
    if (av_info)
       geom      = (const struct retro_game_geometry*)&av_info->geometry;
+
+   if (!geom)
+   {
+      RARCH_ERR("AV geometry not initialized, cannot initialize video driver.\n");
+      rarch_fail(1, "init_video()");
+   }
+
    max_dim   = max(geom->max_width, geom->max_height);
    scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
    scale     = max(scale, 1);
@@ -621,7 +628,7 @@ void video_driver_set_nonblock_state(bool toggle)
    driver_t              *driver = driver_get_ptr();
    const video_driver_t   *video = video_driver_ctx_get_ptr(driver);
 
-   if (video->set_nonblock_state)
+   if (video && video->set_nonblock_state)
       video->set_nonblock_state(driver->video_data, toggle);
 }
 
@@ -631,7 +638,7 @@ bool video_driver_set_viewport(unsigned width, unsigned height,
    driver_t                   *driver = driver_get_ptr();
    const video_driver_t        *video = video_driver_ctx_get_ptr(driver);
 
-   if (video->set_viewport)
+   if (video && video->set_viewport)
    {
       video->set_viewport(driver->video_data, width, height,
             force_fullscreen, allow_rotate);
@@ -645,7 +652,7 @@ bool video_driver_set_rotation(unsigned rotation)
    driver_t                   *driver = driver_get_ptr();
    const video_driver_t        *video = video_driver_ctx_get_ptr(driver);
 
-   if (video->set_rotation)
+   if (video && video->set_rotation)
    {
       video->set_rotation(driver->video_data, rotation);
       return true;
@@ -736,7 +743,7 @@ bool video_driver_viewport_info(struct video_viewport *vp)
    driver_t            *driver = driver_get_ptr();
    const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
-   if (video->viewport_info)
+   if (video && video->viewport_info)
    {
       video->viewport_info(driver->video_data, vp);
       return true;
@@ -749,7 +756,7 @@ bool video_driver_read_viewport(uint8_t *buffer)
    driver_t            *driver = driver_get_ptr();
    const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
-   if (video->read_viewport)
+   if (video && video->read_viewport)
       return video->read_viewport(driver->video_data,
             buffer);
    return false;
@@ -778,13 +785,13 @@ bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
 }
 #endif
 
-void * video_driver_read_frame_raw(unsigned *width,
+void *video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch)
 {
    driver_t            *driver = driver_get_ptr();
    const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
-   if (video->read_frame_raw)
+   if (video && video->read_frame_raw)
       return video->read_frame_raw(driver->video_data, width,
             height, pitch);
    return NULL;
@@ -930,7 +937,7 @@ void video_monitor_adjust_system_rates(void)
    if  (av_info)
       info = (const struct retro_system_timing*)&av_info->timing;
 
-   if (info->fps <= 0.0)
+   if (!info || info->fps <= 0.0)
       return;
 
    timing_skew = fabs(1.0f - info->fps / settings->video.refresh_rate);
