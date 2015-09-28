@@ -125,11 +125,13 @@ static void ctr_joypad_poll(void)
    unsigned i, j;
    uint32_t state_tmp;
    circlePosition state_tmp_analog;
+   touchPosition state_tmp_touch;
 
    hidScanInput();
 
    state_tmp = hidKeysHeld();
    hidCircleRead(&state_tmp_analog);
+   hidTouchRead(&state_tmp_touch);
 
    analog_state[0][0][0] = analog_state[0][0][1] =
       analog_state[0][1][0] = analog_state[0][1][1] = 0;
@@ -146,9 +148,15 @@ static void ctr_joypad_poll(void)
    pad_state |= (state_tmp & KEY_A) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A) : 0;
    pad_state |= (state_tmp & KEY_R) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R) : 0;
    pad_state |= (state_tmp & KEY_L) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0;
+   pad_state |= (state_tmp & KEY_ZR) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
+   pad_state |= (state_tmp & KEY_ZL) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
 
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] =  (state_tmp_analog.dx * 200);
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = -(state_tmp_analog.dy * 200);
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X]  =  (state_tmp_analog.dx * 200);
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y]  = -(state_tmp_analog.dy * 200);
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] =  (state_tmp & KEY_CSTICK_RIGHT)?  0x7fff:
+                                                                                  (state_tmp & KEY_CSTICK_LEFT)?  -0x7fff: 0;
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] =  (state_tmp & KEY_CSTICK_DOWN)?   0x7fff:
+                                                                                  (state_tmp & KEY_CSTICK_UP)?    -0x7fff: 0;
 
    for (i = 0; i < 2; i++)
       for (j = 0; j < 2; j++)
@@ -157,7 +165,7 @@ static void ctr_joypad_poll(void)
 
    BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
-   if(state_tmp & KEY_TOUCH)
+   if((state_tmp & KEY_TOUCH) && (state_tmp_touch.py > 120))
       BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
 
    /* panic button */

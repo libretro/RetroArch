@@ -86,6 +86,8 @@ typedef struct ctr_video
    bool keep_aspect;
    bool should_resize;
 
+   void* empty_framebuffer;
+
 } ctr_video_t;
 
 static INLINE void ctr_set_scale_vector(ctr_scale_vector_t* vec,
@@ -341,6 +343,9 @@ static void* ctr_init(const video_info_t* video,
    ctr->should_resize = true;
    ctr->smooth        = true;
 
+   ctr->empty_framebuffer = linearAlloc(320 * 240 * 2);
+   memset(ctr->empty_framebuffer, 0, 320 * 240 * 2);
+
    return ctr;
 }
 
@@ -357,6 +362,8 @@ static bool ctr_frame(void* data, const void* frame,
    static int total_frames = 0;
    static int       frames = 0;
    static struct retro_perf_counter ctrframe_f = {0};
+   uint32_t state_tmp;
+   touchPosition state_tmp_touch;
 
    extern bool select_pressed;
 
@@ -377,6 +384,20 @@ static bool ctr_frame(void* data, const void* frame,
       event_command(EVENT_CMD_QUIT);
       return true;
    }
+
+   state_tmp = hidKeysDown();
+   hidTouchRead(&state_tmp_touch);
+   if((state_tmp & KEY_TOUCH) && (state_tmp_touch.py < 120))
+   {
+      extern PrintConsole* currentConsole;
+      if ((u8*)currentConsole->frameBuffer == gfxBottomFramebuffers[0])
+         gfxBottomFramebuffers[0] = (u8*)ctr->empty_framebuffer;
+      else
+         gfxBottomFramebuffers[0] = (u8*)currentConsole->frameBuffer;
+   }
+
+
+
 
    svcWaitSynchronization(gspEvents[GSPEVENT_P3D], 20000000);
    svcClearEvent(gspEvents[GSPEVENT_P3D]);
@@ -550,7 +571,8 @@ static void ctr_free(void* data)
    linearFree(ctr->menu.texture_linear);
    linearFree(ctr->menu.texture_swizzled);
    linearFree(ctr->menu.frame_coords);
-   linearFree(ctr);
+   linearFree(ctr->empty_framebuffer);
+   linearFree(ctr);   
    //   gfxExit();
 }
 
