@@ -324,15 +324,15 @@ void menu_input_st_uint_callback(void *userdata, const char *str)
 {
    if (str && *str)
    {
-      rarch_setting_t *current_setting = NULL;
+      rarch_setting_t         *setting = NULL;
       const char                *label = NULL;
 
       menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
 
-      current_setting = menu_setting_find(label);
+      setting = menu_setting_find(label);
 
-      if (current_setting)
-         setting_set_with_string_representation(current_setting, str);
+      if (setting)
+         setting_set_with_string_representation(setting, str);
    }
 
    menu_input_key_end_line();
@@ -342,17 +342,17 @@ void menu_input_st_hex_callback(void *userdata, const char *str)
 {
    if (str && *str)
    {
-      rarch_setting_t *current_setting = NULL;
+      rarch_setting_t         *setting = NULL;
       const char                *label = NULL;
 
       menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
 
-      current_setting = menu_setting_find(label);
+      setting = menu_setting_find(label);
 
-      if (current_setting)
+      if (setting)
          if (str[0] == '#')
             str++;
-         *current_setting->value.unsigned_integer = strtoul(str, NULL, 16);
+         *setting->value.unsigned_integer = strtoul(str, NULL, 16);
    }
 
    menu_input_key_end_line();
@@ -363,18 +363,18 @@ void menu_input_st_string_callback(void *userdata, const char *str)
 {
    if (str && *str)
    {
-      rarch_setting_t *current_setting = NULL;
-      const char *label = NULL;
-      global_t *global  = global_get_ptr();
+      rarch_setting_t         *setting = NULL;
+      const char                *label = NULL;
+      global_t                 *global = global_get_ptr();
 
       menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
 
-      current_setting = menu_setting_find(label);
+      setting = menu_setting_find(label);
 
-      if (current_setting)
+      if (setting)
       {
-         setting_set_with_string_representation(current_setting, str);
-         menu_setting_generic(current_setting, false);
+         setting_set_with_string_representation(setting, str);
+         menu_setting_generic(setting, false);
       }
       else
       {
