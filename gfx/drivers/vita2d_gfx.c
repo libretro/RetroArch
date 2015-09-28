@@ -117,9 +117,8 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg)
 {
-   int i, j;
+   int i;
    void *tex_p;
-   unsigned int stride;
    vita_video_t *vita = (vita_video_t *)data;
 
    (void)frame;
@@ -130,6 +129,9 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 
    if (frame)
    {
+      unsigned j;
+      unsigned int stride;
+
       if ((width != vita->width || height != vita->height) && vita->texture)
       {
          vita2d_free_texture(vita->texture);
@@ -316,7 +318,6 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita)
    }
    else if (vita->keep_aspect)
    {
-      float delta;
       float desired_aspect = video_driver_get_aspect_ratio();
       if (vita->rotation == ORIENTATION_VERTICAL ||
             vita->rotation == ORIENTATION_FLIPPED_ROTATED){
@@ -340,6 +341,8 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita)
       else
 #endif
       {
+         float delta;
+
          if ((fabsf(device_aspect - desired_aspect) < 0.0001f))
          {
             /* If the aspect ratios of screen and desired aspect

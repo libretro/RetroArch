@@ -1215,9 +1215,10 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    while (extra_path)
    {
-      bool ret = false;
+      bool ret = config_append_file(conf, extra_path);
+
       RARCH_LOG("Config: appending config \"%s\"\n", extra_path);
-      ret = config_append_file(conf, extra_path);
+
       if (!ret)
          RARCH_ERR("Config: failed to append config \"%s\"\n", extra_path);
       extra_path = strtok_r(NULL, "|", &save);
@@ -1834,18 +1835,18 @@ bool config_load_override(void)
    settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *info              = rarch_system_info_get_ptr();
 
+   if (!global || !settings )
+   {
+      RARCH_ERR("Could not obtain global pointer or configuration file pointer to retrieve path of retroarch.cfg.\n");
+      return false;
+   }
+
    /* Early return in case a library isn't loaded */
    if (!info->info.library_name || !strcmp(info->info.library_name,"No Core"))
       return false;
 
    RARCH_LOG("Overrides: core name: %s\n", info->info.library_name);
    RARCH_LOG("Overrides: game name: %s\n", global->name.base);
-
-   if (!global || !settings )
-   {
-      RARCH_ERR("Could not obtain global pointer or configuration file pointer to retrieve path of retroarch.cfg.\n");
-      return false;
-   }
 
    /* Config directory: config_directory.
     * Try config directory setting first,
@@ -2065,8 +2066,6 @@ bool config_load_remap(void)
       input_remapping_set_defaults();
    }
 
-   new_conf = NULL;
-
    /* Create a new config file from core_path */
    new_conf = config_file_new(core_path);
 
@@ -2200,7 +2199,6 @@ static void save_keybind_axis(config_file_t *conf, const char *prefix,
       const char *base, const struct retro_keybind *bind, bool save_empty)
 {
    char key[64]    = {0};
-   char config[16] = {0};
    unsigned axis   = 0;
    char dir        = '\0';
 
@@ -2225,6 +2223,7 @@ static void save_keybind_axis(config_file_t *conf, const char *prefix,
 
    if (dir)
    {
+      char config[16];
       snprintf(config, sizeof(config), "%c%u", dir, axis);
       config_set_string(conf, key, config);
    }

@@ -738,7 +738,7 @@ static void handle_hotplug(android_input_t *android,
 
    if (settings->input.autodetect_enable)
    {
-      bool      autoconfigured = false;
+      bool      autoconfigured;
       autoconfig_params_t params   = {{0}};
 
       RARCH_LOG("Port %d: %s VID/PID: %d/%d\n", *port, name_buf, params.vid, params.pid);
@@ -752,6 +752,7 @@ static void handle_hotplug(android_input_t *android,
 
       strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
       autoconfigured = input_config_autoconfigure_joypad(&params);
+
       if (autoconfigured)
       {
          if (settings->input.autoconf_binds[*port][RARCH_MENU_TOGGLE].joykey != 0)

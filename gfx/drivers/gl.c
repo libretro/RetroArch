@@ -865,7 +865,6 @@ static void gl_set_viewport(void *data, unsigned viewport_width,
    }
    else if (gl->keep_aspect && !force_full)
    {
-      float delta;
       float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
@@ -882,6 +881,8 @@ static void gl_set_viewport(void *data, unsigned viewport_width,
       else
 #endif
       {
+         float delta;
+
          if (fabsf(device_aspect - desired_aspect) < 0.0001f)
          {
             /* If the aspect ratios of screen and desired aspect 

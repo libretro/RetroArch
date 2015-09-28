@@ -598,13 +598,14 @@ static int rarch_main_data_nbio_iterate_parse_free(nbio_handle_t *nbio)
 
 static int rarch_main_data_nbio_iterate_parse(nbio_handle_t *nbio)
 {
-   int len = 0;
-
    if (!nbio)
       return -1;
 
    if (nbio->cb)
+   {
+      int len = 0;
       nbio->cb(nbio, len);
+   }
 
    return 0;
 }

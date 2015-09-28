@@ -56,12 +56,12 @@
 static bool screenshot_dump(const char *folder, const void *frame,
       unsigned width, unsigned height, int pitch, bool bgr24)
 {
+   bool ret;
    char filename[PATH_MAX_LENGTH] = {0};
    char shotname[PATH_MAX_LENGTH] = {0};
    struct scaler_ctx scaler       = {0};
    RFILE *file                    = NULL;
    uint8_t *out_buffer            = NULL;
-   bool ret                       = false;
    driver_t *driver               = driver_get_ptr();
 
    (void)file;

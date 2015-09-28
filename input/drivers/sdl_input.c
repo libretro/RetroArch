@@ -491,12 +491,12 @@ static void sdl_poll_mouse(sdl_input_t *sdl)
 
    SDL_GetMouseState(&sdl->mouse_abs_x, &sdl->mouse_abs_y);
 
-   sdl->mouse_l  = SDL_BUTTON(SDL_BUTTON_LEFT)      & btn ? 1 : 0;
-   sdl->mouse_r  = SDL_BUTTON(SDL_BUTTON_RIGHT)     & btn ? 1 : 0;
-   sdl->mouse_m  = SDL_BUTTON(SDL_BUTTON_MIDDLE)    & btn ? 1 : 0;
+   sdl->mouse_l  = (SDL_BUTTON(SDL_BUTTON_LEFT)      & btn) ? 1 : 0;
+   sdl->mouse_r  = (SDL_BUTTON(SDL_BUTTON_RIGHT)     & btn) ? 1 : 0;
+   sdl->mouse_m  = (SDL_BUTTON(SDL_BUTTON_MIDDLE)    & btn) ? 1 : 0;
 #ifndef HAVE_SDL2
-   sdl->mouse_wu = SDL_BUTTON(SDL_BUTTON_WHEELUP)   & btn ? 1 : 0;
-   sdl->mouse_wd = SDL_BUTTON(SDL_BUTTON_WHEELDOWN) & btn ? 1 : 0;
+   sdl->mouse_wu = (SDL_BUTTON(SDL_BUTTON_WHEELUP)   & btn) ? 1 : 0;
+   sdl->mouse_wd = (SDL_BUTTON(SDL_BUTTON_WHEELDOWN) & btn) ? 1 : 0;
 #endif
 }
 

@@ -120,7 +120,10 @@ void video_viewport_set_config(void)
    {
       struct retro_game_geometry *geom = &av_info->geometry;
 
-      if (geom && geom->aspect_ratio > 0.0f && settings->video.aspect_ratio_auto)
+      if (!geom)
+         return;
+
+      if (geom->aspect_ratio > 0.0f && settings->video.aspect_ratio_auto)
          aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
       else
       {

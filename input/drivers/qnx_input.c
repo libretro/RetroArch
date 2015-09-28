@@ -149,7 +149,7 @@ static void qnx_process_gamepad_event(
    *state_cur = 0;
 
    for (i = 0; i < 20; i++)
-      *state_cur |= (controller->buttons & (1 << i) ? (1 << i) : 0);
+      *state_cur |= ((controller->buttons & (1 << i)) ? (1 << i) : 0);
 
    if (controller->analogCount > 0)
       screen_get_event_property_iv(screen_event,

@@ -310,6 +310,7 @@ static void check_variables(void)
 
    (void)var;
    (void)fft_var;
+   (void)fft_ms_var;
 
 #ifdef HAVE_OPENGL
    var.key = "ffmpeg_temporal_interp";

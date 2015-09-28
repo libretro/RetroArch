@@ -321,11 +321,12 @@ void state_manager_raw_decompress(const void *patch,
    
    for (;;)
    {
-      uint16_t i;
       uint16_t numchanged = *(patch16++);
 
       if (numchanged)
       {
+         uint16_t i;
+
          out16 += *patch16++;
 
          /* We could do memcpy, but it seems that memcpy has a 

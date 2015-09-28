@@ -1038,7 +1038,9 @@ int rarch_main_iterate(unsigned *sleep_ms)
    unlock_autosave();
 #endif
 
+#ifdef HAVE_MENU
 end:
+#endif
    if (!settings->fastforward_ratio)
       return 0;
 

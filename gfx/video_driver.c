@@ -931,8 +931,10 @@ void video_monitor_adjust_system_rates(void)
    settings_t *settings = config_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
-   if (system)
-      system->force_nonblock = false;
+   if (!system)
+      return;
+
+   system->force_nonblock = false;
 
    if  (av_info)
       info = (const struct retro_system_timing*)&av_info->timing;
@@ -1093,7 +1095,6 @@ bool video_monitor_fps_statistics(double *refresh_rate,
 bool video_monitor_get_fps(char *buf, size_t size,
       char *buf_fps, size_t size_fps)
 {
-   static float last_fps;
    retro_time_t        new_time;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
@@ -1105,6 +1106,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
 
    if (video_frame_count)
    {
+      static float last_fps;
       bool ret = false;
       unsigned write_index = video_state.frame_time_samples_count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);

@@ -238,7 +238,7 @@ void retro_frewind(RFILE *stream)
 
 ssize_t retro_fread(RFILE *stream, void *s, size_t len)
 {
-   if (!stream)
+   if (!stream || !s)
       return -1;
 #if defined(VITA) || defined(PSP)
    return sceIoRead(stream->fd, s, len);

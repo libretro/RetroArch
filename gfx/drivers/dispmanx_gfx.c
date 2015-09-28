@@ -621,7 +621,6 @@ static void dispmanx_gfx_get_poke_interface(void *data,
 static void dispmanx_gfx_free(void *data)
 {
    struct dispmanx_video *_dispvars = data;
-   int i;
    dispmanx_surface_free(_dispvars, &_dispvars->main_surface);
    dispmanx_surface_free(_dispvars, &_dispvars->back_surface);
    if (_dispvars->menu_surface != NULL) 

@@ -724,7 +724,6 @@ static void sunxi_setup_scale (void *data,
       unsigned width, unsigned height, unsigned pitch)
 {
    int i;
-   float aspect;
    unsigned int xpos, visible_width;
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
    settings_t *settings          = config_get_ptr();
@@ -879,12 +878,11 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
-  
-   if (_dispvars->menu_active) {
-      uint16_t src_pix;
-      uint32_t R, G, B, dst_pix;
+
+   if (_dispvars->menu_active)
+   {
       unsigned int i, j;
- 
+
       /* We have to go on a pixel format conversion adventure for now, until we can
        * convince RGUI to output in an 8888 format. */
       unsigned int src_pitch        = width * 2; 
@@ -898,22 +896,22 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
 
       for (i = 0; i < height; i++)
       {
-	 for (j = 0; j < src_pitch / 2; j++)
-	 {
-	    src_pix = *((uint16_t*)frame + (src_pitch / 2 * i) + j); 
-	    /* The hex AND is for keeping only the part we need for each component. */
-	    R = (src_pix << 8) & 0x00FF0000;
-	    G = (src_pix << 4) & 0x0000FF00;
-	    B = (src_pix << 0) & 0x000000FF;
-	    line[j] = (0 | R | G | B); 
-	 }
-	 memcpy(dst_base_addr + (dst_pitch * i), (char*)line, dst_pitch);
+         for (j = 0; j < src_pitch / 2; j++)
+         {
+            uint16_t src_pix = *((uint16_t*)frame + (src_pitch / 2 * i) + j); 
+            /* The hex AND is for keeping only the part we need for each component. */
+            uint32_t R = (src_pix << 8) & 0x00FF0000;
+            uint32_t G = (src_pix << 4) & 0x0000FF00;
+            uint32_t B = (src_pix << 0) & 0x000000FF;
+            line[j] = (0 | R | G | B); 
+         }
+         memcpy(dst_base_addr + (dst_pitch * i), (char*)line, dst_pitch);
       }
 
       /* Issue pageflip. Will flip on next vsync. */
       sunxi_layer_set_rgb_input_buffer(_dispvars->sunxi_disp,
-	    _dispvars->sunxi_disp->bits_per_pixel, 
-	    _dispvars->pages[0].offset, width, height, _dispvars->sunxi_disp->xres);
+            _dispvars->sunxi_disp->bits_per_pixel, 
+            _dispvars->pages[0].offset, width, height, _dispvars->sunxi_disp->xres);
    }
 }
 

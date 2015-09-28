@@ -157,14 +157,16 @@ static void ctr_audio_free(void *data)
 static ssize_t ctr_audio_write(void *data, const void *buf, size_t size)
 {
    int i;
-   uint32_t samples_played;
-   uint64_t current_tick;
+   uint32_t samples_played = 0;
+   uint64_t current_tick   = 0;
    static struct retro_perf_counter ctraudio_f = {0};
    const uint16_t *src = buf;
    ctr_audio_t    *ctr = (ctr_audio_t*)data;
 
    (void)data;
    (void)buf;
+   (void)samples_played;
+   (void)current_tick;
 
    rarch_perf_init(&ctraudio_f, "ctraudio_f");
    retro_perf_start(&ctraudio_f);

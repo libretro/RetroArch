@@ -131,8 +131,7 @@ void file_list_free(file_list_t *list)
    if (list->list)
       free(list->list);
    list->list = NULL;
-   if (list)
-      free(list);
+   free(list);
 }
 
 void file_list_clear(file_list_t *list)

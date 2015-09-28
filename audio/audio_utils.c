@@ -427,9 +427,9 @@ void audio_convert_init_simd(void)
 
    (void)cpu;
 #if defined(__ARM_NEON__) && !defined(VITA)
-   audio_convert_s16_to_float_arm = cpu & RETRO_SIMD_NEON ?
+   audio_convert_s16_to_float_arm = (cpu & RETRO_SIMD_NEON) ?
       audio_convert_s16_to_float_neon : audio_convert_s16_to_float_C;
-   audio_convert_float_to_s16_arm = cpu & RETRO_SIMD_NEON ?
+   audio_convert_float_to_s16_arm = (cpu & RETRO_SIMD_NEON) ?
       audio_convert_float_to_s16_neon : audio_convert_float_to_s16_C;
 #endif
 }

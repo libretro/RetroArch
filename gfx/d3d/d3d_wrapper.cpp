@@ -333,10 +333,6 @@ void d3d_texture_blit(unsigned pixel_size,
       LPDIRECT3DTEXTURE tex, D3DLOCKED_RECT *lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
-   unsigned y;
-
-   (void)y;
-
 #ifdef _XBOX
    D3DTexture_LockRect(tex, 0, lr, NULL, D3DLOCK_NOSYSLOCK);
 #if defined(_XBOX360)
@@ -345,6 +341,7 @@ void d3d_texture_blit(unsigned pixel_size,
    XGCopySurface(lr->pBits, lr->Pitch, width, height, desc.Format, NULL,
       frame, pitch, desc.Format, NULL, 0, 0);
 #elif defined(_XBOX1)
+   unsigned y;
    for (y = 0; y < height; y++)
    {
       const uint8_t *in = (const uint8_t*)frame + y * pitch;
@@ -356,6 +353,7 @@ void d3d_texture_blit(unsigned pixel_size,
 #else
    if (SUCCEEDED(tex->LockRect(0, lr, NULL, D3DLOCK_NOSYSLOCK)))
    {
+      unsigned y;
       for (y = 0; y < height; y++)
       { 
          const uint8_t *in = (const uint8_t*)frame + y * pitch;
