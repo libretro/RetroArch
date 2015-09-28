@@ -191,6 +191,7 @@ for f in *_${platform}.${EXT} ; do
    elif [ $PLATFORM = "vita" ] ; then
       rm -f ../retroarch_${platform}.velf ../retroarch_${platform}.elf
    elif [ $PLATFORM = "ctr" ] ; then
+      rm -f ../retroarch_3ds_stripped.elf
       rm -f ../retroarch_3ds.rsf
       rm -f ../retroarch_3ds.bnr
       rm -f ../retroarch_3ds.icn
