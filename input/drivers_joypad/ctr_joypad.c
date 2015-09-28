@@ -125,11 +125,13 @@ static void ctr_joypad_poll(void)
    unsigned i, j;
    uint32_t state_tmp;
    circlePosition state_tmp_analog;
+   touchPosition state_tmp_touch;
 
    hidScanInput();
 
    state_tmp = hidKeysHeld();
    hidCircleRead(&state_tmp_analog);
+   hidTouchRead(&state_tmp_touch);
 
    analog_state[0][0][0] = analog_state[0][0][1] =
       analog_state[0][1][0] = analog_state[0][1][1] = 0;
@@ -163,7 +165,7 @@ static void ctr_joypad_poll(void)
 
    BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
-   if(state_tmp & KEY_TOUCH)
+   if((state_tmp & KEY_TOUCH) && (state_tmp_touch.py > 120))
       BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
 
    /* panic button */
