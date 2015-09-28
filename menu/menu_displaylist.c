@@ -1626,7 +1626,6 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
 
 static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *info)
 {
-   const char *short_description;
    char elem0[PATH_MAX_LENGTH]  = {0};
    char elem1[PATH_MAX_LENGTH]  = {0};
    struct string_list *str_list = NULL;
