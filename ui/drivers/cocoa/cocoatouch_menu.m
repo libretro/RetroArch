@@ -26,6 +26,7 @@
 #include "../../../input/drivers/cocoa_input.h"
 
 #include "../../../menu/menu_entry.h"
+#include "../../../runloop_data.h"
 
 // Menu Support
 
@@ -745,7 +746,14 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (void)menuSelect: (uint32_t) i
 {
+  unsigned j;
   menu_entry_select(i);
+    
+  if (!rarch_main_data_active())
+      return;
+    
+  for (j = 0; j < 32; j++)
+     rarch_main_data_iterate();
 }
 
 - (void)menuBack
