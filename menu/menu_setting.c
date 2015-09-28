@@ -194,6 +194,7 @@ static int setting_handler(rarch_setting_t *setting, unsigned action)
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound)
 {
+   const char *name;
    enum setting_type setting_type;
    menu_displaylist_info_t  info = {0};
 
@@ -201,6 +202,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       return -1;
 
    setting_type = menu_setting_get_type(setting);
+   name         = menu_setting_get_name(setting);
 
    switch (setting_type)
    {
@@ -216,8 +218,8 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             info.list           = menu_list->menu_stack;
             info.directory_ptr  = selection;
             info.type           = type;
-            strlcpy(info.path, setting->default_value.string, sizeof(info.path));
-            strlcpy(info.label, setting->name, sizeof(info.label));
+            strlcpy(info.path,  setting->default_value.string, sizeof(info.path));
+            strlcpy(info.label, name, sizeof(info.label));
 
             menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
          }
@@ -314,29 +316,32 @@ uint32_t menu_setting_get_index(rarch_setting_t *setting)
  **/
 rarch_setting_t *menu_setting_find(const char *label)
 {
-   rarch_setting_t *settings = menu_setting_get_ptr();
+   rarch_setting_t *setting = menu_setting_get_ptr();
    uint32_t needle = 0;
 
-   if (!settings || !label)
+   if (!setting || !label)
       return NULL;
 
    needle = menu_hash_calculate(label);
 
-   for (; menu_setting_get_type(settings) != ST_NONE; settings++)
+   for (; menu_setting_get_type(setting) != ST_NONE; setting++)
    {
-      if (needle == settings->name_hash && menu_setting_get_type(settings) <= ST_GROUP)
+      const char *name = menu_setting_get_name(setting);
+      const char *short_description = menu_setting_get_short_description(setting);
+
+      if (needle == setting->name_hash && menu_setting_get_type(setting) <= ST_GROUP)
       {
          /* make sure this isn't a collision */
-         if (strcmp(label, settings->name) != 0)
+         if (strcmp(label, name) != 0)
             continue;
 
-         if (settings->short_description && settings->short_description[0] == '\0')
+         if (short_description[0] == '\0')
             return NULL;
 
-         if (settings->read_handler)
-            settings->read_handler(settings);
+         if (setting->read_handler)
+            setting->read_handler(setting);
 
-         return settings;
+         return setting;
       }
    }
 
@@ -1361,7 +1366,8 @@ static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
 {
    enum setting_type setting_type;
    input_keyboard_line_complete_t cb = NULL;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   rarch_setting_t      *setting = (rarch_setting_t*)data;
+   const char *short_description = menu_setting_get_short_description(setting);
 
    if (!setting)
       return -1;
@@ -1384,7 +1390,7 @@ static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
          break;
    }
 
-   menu_input_key_start_line(setting->short_description,
+   menu_input_key_start_line(short_description,
          setting->name, 0, 0, cb);
 
    return 0;
