@@ -396,7 +396,7 @@ void audio_convert_float_to_s16_ALLEGREX(int16_t *out,
 #ifndef RARCH_INTERNAL
 
 #ifdef __cplusplus
-extern "C" 
+extern "C" {
 #endif
 retro_get_cpu_features_t perf_get_cpu_features_cb;
 
