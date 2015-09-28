@@ -322,11 +322,6 @@ void menu_input_key_start_line(const char *label,
 
 void menu_input_st_uint_callback(void *userdata, const char *str)
 {
-   menu_input_t *menu_input = menu_input_get_ptr();
-
-   if (!menu_input)
-      return;
-
    if (str && *str)
    {
       rarch_setting_t *current_setting = NULL;
@@ -345,11 +340,6 @@ void menu_input_st_uint_callback(void *userdata, const char *str)
 
 void menu_input_st_hex_callback(void *userdata, const char *str)
 {
-   menu_input_t *menu_input = menu_input_get_ptr();
-
-   if (!menu_input)
-      return;
-
    if (str && *str)
    {
       rarch_setting_t *current_setting = NULL;
@@ -371,11 +361,6 @@ void menu_input_st_hex_callback(void *userdata, const char *str)
 
 void menu_input_st_string_callback(void *userdata, const char *str)
 {
-   menu_input_t *menu_input = menu_input_get_ptr();
-
-   if (!menu_input)
-      return;
-
    if (str && *str)
    {
       rarch_setting_t *current_setting = NULL;
