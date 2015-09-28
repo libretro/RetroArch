@@ -156,9 +156,8 @@ static int cue_get_serial(database_state_handle_t *db_state,
    int rv;
    char track_path[PATH_MAX_LENGTH];
    int32_t offset = 0;
-   const char* system_name = NULL;
-
-   rv = find_first_data_track(name, &offset, track_path, PATH_MAX_LENGTH);
+   int rv = find_first_data_track(name, &offset, track_path, PATH_MAX_LENGTH);
+    
    if (rv < 0)
    {
       RARCH_LOG("Could not find valid data track: %s\n", strerror(-rv));
