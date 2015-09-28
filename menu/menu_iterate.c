@@ -281,6 +281,10 @@ int menu_iterate(bool render_this_frame, enum menu_action action)
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          break;
       case ITERATE_TYPE_DEFAULT:
+         /* Crappy hack, needed for mouse controls to not be completely broken
+          * in case we press back. NOTE/FIXME: we need to fix this entire mess,
+          * mouse controls should not rely on a hack like this in order to work. */
+         selection = max(min(selection, menu_list_get_size(menu_list)-1), 0);
          menu_entry_get(&entry,    selection, NULL, false);
          ret = menu_entry_action(&entry, selection, (enum menu_action)action);
 
