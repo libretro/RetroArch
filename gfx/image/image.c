@@ -40,11 +40,11 @@ bool texture_image_set_color_shifts(unsigned *r_shift, unsigned *g_shift,
 {
    driver_t *driver     = driver_get_ptr();
    /* This interface "leak" is very ugly. FIXME: Fix this properly ... */
-   bool use_rgba    = driver ? driver->gfx_use_rgba : false;
-   *a_shift = 24;
-   *r_shift = use_rgba ? 0 : 16;
-   *g_shift = 8;
-   *b_shift = use_rgba ? 16 : 0;
+   bool use_rgba        = driver ? driver->gfx_use_rgba : false;
+   *a_shift             = 24;
+   *r_shift             = use_rgba ? 0 : 16;
+   *g_shift             = 8;
+   *b_shift             = use_rgba ? 16 : 0;
 
    return use_rgba;
 }
@@ -63,11 +63,11 @@ bool texture_image_color_convert(unsigned r_shift,
       for (i = 0; i < num_pixels; i++)
       {
          uint32_t col = pixels[i];
-         uint8_t a = (uint8_t)(col >> 24);
-         uint8_t r = (uint8_t)(col >> 16);
-         uint8_t g = (uint8_t)(col >>  8);
-         uint8_t b = (uint8_t)(col >>  0);
-         pixels[i] = (a << a_shift) |
+         uint8_t a    = (uint8_t)(col >> 24);
+         uint8_t r    = (uint8_t)(col >> 16);
+         uint8_t g    = (uint8_t)(col >>  8);
+         uint8_t b    = (uint8_t)(col >>  0);
+         pixels[i]    = (a << a_shift) |
             (r << r_shift) | (g << g_shift) | (b << b_shift);
       }
 
@@ -219,8 +219,8 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
 #else
 bool texture_image_load(struct texture_image *out_img, const char *path)
 {
-   bool ret = false;
    unsigned r_shift, g_shift, b_shift, a_shift;
+   bool ret = false;
 
    texture_image_set_color_shifts(&r_shift, &g_shift, &b_shift,
          &a_shift);
@@ -229,9 +229,9 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
 
    if (strstr(path, ".tga"))
    {
-      void *raw_buf = NULL;
-      uint8_t *buf = NULL;
       ssize_t len;
+      void *raw_buf = NULL;
+      uint8_t *buf  = NULL;
       ret = read_file(path, &raw_buf, &len);
 
       if (!ret || len < 0)

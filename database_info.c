@@ -201,6 +201,10 @@ int database_info_build_query(char *s, size_t len,
    return 0;
 }
 
+/*
+ * NOTE: Allocates memory, it is the caller's responsibility to free the
+ * memory after it is no longer required.
+ */
 char *bin_to_hex_alloc(const uint8_t *data, size_t len)
 {
    size_t i;
@@ -210,7 +214,7 @@ char *bin_to_hex_alloc(const uint8_t *data, size_t len)
       return NULL;
    
    for (i = 0; i < len; i++)
-      snprintf(ret+i*2, 3, "%02X", data[i]);
+      snprintf(ret+i * 2, 3, "%02X", data[i]);
    return ret;
 }
 

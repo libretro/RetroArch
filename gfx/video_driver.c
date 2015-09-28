@@ -776,7 +776,7 @@ bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
    driver_t            *driver = driver_get_ptr();
    const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
-   if (video->overlay_interface)
+   if (video && video->overlay_interface)
    {
       video->overlay_interface(driver->video_data, iface);
       return true;

@@ -407,11 +407,16 @@ static int database_info_iterate_serial_lookup(
 
    if (db_state->entry_index == 0)
    {
-      char query[50] = {0};
-      snprintf(query, sizeof(query), "{'serial': b'%s'}",
-            bin_to_hex_alloc((uint8_t*)db_state->serial, 10*sizeof(uint8_t)));
+      char query[50];
+      char *serial_buf = bin_to_hex_alloc((uint8_t*)db_state->serial, 10 * sizeof(uint8_t));
 
+      if (!serial_buf)
+         return 1;
+
+      snprintf(query, sizeof(query), "{'serial': b'%s'}", serial_buf);
       database_info_list_iterate_new(db_state, query);
+
+      free(serial_buf);
    }
 
    if (db_state->info)
