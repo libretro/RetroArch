@@ -2359,14 +2359,14 @@ static void xmb_list_deep_copy(menu_handle_t *menu, const file_list_t *src, file
 
       if (src_udata)
       {
-         void *data = calloc(sizeof(xmb_node_t), 1);
+         void *data = calloc(1, sizeof(xmb_node_t));
          memcpy(data, src_udata, sizeof(xmb_node_t));
          file_list_set_userdata(dst, i, data);
       }
 
       if (src_adata)
       {
-         void *data = calloc(sizeof(menu_file_list_cbs_t), 1);
+         void *data = calloc(1, sizeof(menu_file_list_cbs_t));
          memcpy(data, src_adata, sizeof(menu_file_list_cbs_t));
          file_list_set_actiondata(dst, i, data);
       }
