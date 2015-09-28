@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <3ds.h>
 #include "../../general.h"
 #include "../../driver.h"
 #include "../../performance.h"
@@ -40,6 +41,18 @@ typedef struct
 #define CTR_AUDIO_COUNT_MASK  (CTR_AUDIO_COUNT - 1u)
 #define CTR_AUDIO_SIZE        (CTR_AUDIO_COUNT * sizeof(int16_t))
 #define CTR_AUDIO_SIZE_MASK   (CTR_AUDIO_SIZE  - 1u)
+
+static void ctr_audio_update_playpos(ctr_audio_t* ctr)
+{
+   uint32_t samples_played;
+   uint64_t current_tick;
+
+   current_tick   = svcGetSystemTick();
+   samples_played = (current_tick - ctr->cpu_ticks_last) / ctr->cpu_ticks_per_sample;
+   ctr->playpos   = (ctr->playpos + samples_played) & CTR_AUDIO_COUNT_MASK;
+   ctr->cpu_ticks_last += samples_played * ctr->cpu_ticks_per_sample;
+}
+
 
 Result csndPlaySound_custom(int chn, u32 flags, u32 sampleRate, float vol, float pan, void* data0, void* data1, u32 size)
 {
@@ -156,11 +169,7 @@ static ssize_t ctr_audio_write(void *data, const void *buf, size_t size)
    rarch_perf_init(&ctraudio_f, "ctraudio_f");
    retro_perf_start(&ctraudio_f);
 
-   current_tick         = svcGetSystemTick();
-   samples_played       = (current_tick - ctr->cpu_ticks_last) / ctr->cpu_ticks_per_sample;
-   ctr->playpos         = (ctr->playpos + samples_played) & CTR_AUDIO_COUNT_MASK;
-   ctr->cpu_ticks_last += samples_played * ctr->cpu_ticks_per_sample;
-
+   ctr_audio_update_playpos(ctr);
 
    if((((ctr->playpos  - ctr->pos) & CTR_AUDIO_COUNT_MASK) < (CTR_AUDIO_COUNT >> 2)) ||
       (((ctr->pos - ctr->playpos ) & CTR_AUDIO_COUNT_MASK) < (CTR_AUDIO_COUNT >> 4)) ||
@@ -173,10 +182,7 @@ static ssize_t ctr_audio_write(void *data, const void *buf, size_t size)
          do{
             /* todo: compute the correct sleep period */
             retro_sleep(1);
-            current_tick = svcGetSystemTick();
-            samples_played = (current_tick - ctr->cpu_ticks_last) / ctr->cpu_ticks_per_sample;
-            ctr->playpos = (ctr->playpos + samples_played) & CTR_AUDIO_COUNT_MASK;
-            ctr->cpu_ticks_last += samples_played * ctr->cpu_ticks_per_sample;
+            ctr_audio_update_playpos(ctr);
          }while (((ctr->playpos - ctr->pos) & CTR_AUDIO_COUNT_MASK) < (CTR_AUDIO_COUNT >> 1)
                  || (((ctr->pos - ctr->playpos) & CTR_AUDIO_COUNT_MASK) < (CTR_AUDIO_COUNT >> 4)));
       }
@@ -269,10 +275,18 @@ static bool ctr_audio_use_float(void *data)
 
 static size_t ctr_audio_write_avail(void *data)
 {
-   /* stub */
-   (void)data;
-   return 0;
+   ctr_audio_t* ctr = (ctr_audio_t*)data;
+
+   ctr_audio_update_playpos(ctr);
+   return (ctr->playpos - ctr->pos) & CTR_AUDIO_COUNT_MASK;
 }
+
+static size_t ctr_audio_buffer_size(void *data)
+{
+   (void)data;
+   return CTR_AUDIO_COUNT;
+}
+
 
 audio_driver_t audio_ctr = {
    ctr_audio_init,
@@ -285,5 +299,5 @@ audio_driver_t audio_ctr = {
    ctr_audio_use_float,
    "ctr",
    ctr_audio_write_avail,
-   NULL
+   ctr_audio_buffer_size
 };
