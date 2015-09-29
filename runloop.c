@@ -845,7 +845,6 @@ int rarch_main_iterate(unsigned *sleep_ms)
    global_t   *global              = global_get_ptr();
    retro_input_t input             = input_keys_pressed(driver, settings, global);
    rarch_system_info_t *system     = rarch_system_info_get_ptr();
-   const video_driver_t *video     = driver ? (const video_driver_t*)driver->video : NULL;
    retro_input_t old_input         = last_input;
    last_input                      = input;
 
@@ -930,6 +929,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
        * d) Video driver no longer alive.
        * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
        */
+      video_driver_t *video         = driver ? (video_driver_t*)driver->video : NULL;
       bool shutdown_pressed         = (system && system->shutdown) || cmd.quit_key_pressed;
       bool video_alive              = video && video->alive(driver->video_data);
       bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);
