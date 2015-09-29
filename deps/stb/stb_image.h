@@ -1747,14 +1747,18 @@ static int stbi__jpeg_decode_block(stbi__jpeg *j, short data[64], stbi__huffman 
 
 static int stbi__jpeg_decode_block_prog_dc(stbi__jpeg *j, short data[64], stbi__huffman *hdc, int b)
 {
-   int diff,dc;
-   int t;
-   if (j->spec_end != 0) return stbi__err("can't merge dc and ac", "Corrupt JPEG");
+   if (j->spec_end != 0)
+      return stbi__err("can't merge dc and ac", "Corrupt JPEG");
 
-   if (j->code_bits < 16) stbi__grow_buffer_unsafe(j);
+   if (j->code_bits < 16)
+      stbi__grow_buffer_unsafe(j);
 
-   if (j->succ_high == 0) {
-      // first scan for DC coefficient, must be first
+   if (j->succ_high == 0)
+   {
+      int diff,dc;
+      int t;
+
+      /* first scan for DC coefficient, must be first */
       memset(data,0,64*sizeof(data[0])); // 0 all the ac values now
       t = stbi__jpeg_huff_decode(j, hdc);
       diff = t ? stbi__extend_receive(j, t) : 0;
@@ -1762,8 +1766,10 @@ static int stbi__jpeg_decode_block_prog_dc(stbi__jpeg *j, short data[64], stbi__
       dc = j->img_comp[b].dc_pred + diff;
       j->img_comp[b].dc_pred = dc;
       data[0] = (short) (dc << j->succ_low);
-   } else {
-      // refinement scan for DC coefficient
+   }
+   else
+   {
+      /* refinement scan for DC coefficient */
       if (stbi__jpeg_get_bit(j))
          data[0] += (short) (1 << j->succ_low);
    }
@@ -2648,25 +2654,36 @@ static int stbi__process_scan_header(stbi__jpeg *z)
 {
    int i;
    int Ls = stbi__get16be(z->s);
+
    z->scan_n = stbi__get8(z->s);
-   if (z->scan_n < 1 || z->scan_n > 4 || z->scan_n > (int) z->s->img_n) return stbi__err("bad SOS component count","Corrupt JPEG");
-   if (Ls != 6+2*z->scan_n) return stbi__err("bad SOS len","Corrupt JPEG");
-   for (i=0; i < z->scan_n; ++i) {
+
+   if (z->scan_n < 1 || z->scan_n > 4 || z->scan_n > (int) z->s->img_n)
+      return stbi__err("bad SOS component count","Corrupt JPEG");
+   if (Ls != 6+2*z->scan_n)
+      return stbi__err("bad SOS len","Corrupt JPEG");
+
+   for (i=0; i < z->scan_n; ++i)
+   {
       int id = stbi__get8(z->s), which;
-      int q = stbi__get8(z->s);
+      int q  = stbi__get8(z->s);
+
       for (which = 0; which < z->s->img_n; ++which)
          if (z->img_comp[which].id == id)
             break;
-      if (which == z->s->img_n) return 0; // no match
-      z->img_comp[which].hd = q >> 4;   if (z->img_comp[which].hd > 3) return stbi__err("bad DC huff","Corrupt JPEG");
-      z->img_comp[which].ha = q & 15;   if (z->img_comp[which].ha > 3) return stbi__err("bad AC huff","Corrupt JPEG");
+      if (which == z->s->img_n)
+         return 0; /* no match */
+
+      z->img_comp[which].hd = q >> 4;   if (z->img_comp[which].hd > 3)
+         return stbi__err("bad DC huff","Corrupt JPEG");
+      z->img_comp[which].ha = q & 15;   if (z->img_comp[which].ha > 3)
+         return stbi__err("bad AC huff","Corrupt JPEG");
       z->order[i] = which;
    }
 
    {
       int aa;
       z->spec_start = stbi__get8(z->s);
-      z->spec_end   = stbi__get8(z->s); // should be 63, but might be 0
+      z->spec_end   = stbi__get8(z->s); /* should be 63, but might be 0 */
       aa = stbi__get8(z->s);
       z->succ_high = (aa >> 4);
       z->succ_low  = (aa & 15);
@@ -4590,7 +4607,7 @@ static int stbi__shiftsigned(int v, int shift, int bits)
 static stbi_uc *stbi__bmp_load(stbi__context *s, int *x, int *y, int *comp, int req_comp)
 {
    stbi_uc *out;
-   unsigned int mr=0,mg=0,mb=0,ma=0, fake_a=0;
+   unsigned int mr=0,mg=0,mb=0,ma=0;
    stbi_uc pal[256][4];
    int psize=0,i,j,compress=0,width;
    int bpp, flip_vertically, pad, target, offset, hsz;
@@ -4631,17 +4648,20 @@ static stbi_uc *stbi__bmp_load(stbi__context *s, int *x, int *y, int *comp, int 
             stbi__get32le(s);
             stbi__get32le(s);
          }
-         if (bpp == 16 || bpp == 32) {
+         if (bpp == 16 || bpp == 32)
+         {
             mr = mg = mb = 0;
-            if (compress == 0) {
-               if (bpp == 32) {
+            if (compress == 0)
+            {
+               if (bpp == 32)
+               {
                   mr = 0xffu << 16;
                   mg = 0xffu <<  8;
                   mb = 0xffu <<  0;
                   ma = 0xffu << 24;
-                  fake_a = 1; // @TODO: check for cases like alpha value is all 0 and switch it to 255
-                  STBI_NOTUSED(fake_a);
-               } else {
+               }
+               else
+               {
                   mr = 31u << 10;
                   mg = 31u <<  5;
                   mb = 31u <<  0;

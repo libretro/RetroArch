@@ -134,13 +134,14 @@ static void gfx_ctx_d3d_update_title(void *data)
 {
    char buf[128]        = {0};
    char buffer_fps[128] = {0};
-   d3d_video_t *d3d     = (d3d_video_t*)data;
    settings_t *settings = config_get_ptr();
 
    if (video_monitor_get_fps(buf, sizeof(buf),
             buffer_fps, sizeof(buffer_fps)))
    {
 #ifndef _XBOX
+      d3d_video_t *d3d     = (d3d_video_t*)data;
+
       SetWindowText(d3d->hWnd, buf);
 #endif
    }
@@ -270,9 +271,9 @@ static void gfx_ctx_d3d_input_driver(void *data,
 static void gfx_ctx_d3d_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
+#ifdef _XBOX
    d3d_video_t *d3d = (d3d_video_t*)data;
 
-#ifdef _XBOX
    (void)width;
    (void)height;
 #if defined(_XBOX360)

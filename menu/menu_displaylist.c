@@ -447,7 +447,7 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
 static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 {
    int controller;
-   char tmp[PATH_MAX_LENGTH], tmp2[PATH_MAX_LENGTH], feat_str[PATH_MAX_LENGTH];
+   char tmp[PATH_MAX_LENGTH], feat_str[PATH_MAX_LENGTH];
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
    settings_t                  *settings = config_get_ptr();
@@ -500,6 +500,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
    if (frontend)
    {
+      char tmp2[PATH_MAX_LENGTH];
       int major = 0, minor = 0;
 
       strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER), sizeof(tmp));
@@ -1550,17 +1551,14 @@ static void menu_displaylist_realloc_settings(menu_entries_t *entries, unsigned 
 
 static int menu_setting_set_flags(rarch_setting_t *setting)
 {
-   enum setting_type setting_type;
-   uint64_t                 flags = menu_setting_get_flags(setting);
+   uint64_t flags = menu_setting_get_flags(setting);
    if (!setting)
       return 0;
 
    if (flags & SD_FLAG_IS_DRIVER)
       return MENU_SETTING_DRIVER;
 
-   setting_type = menu_setting_get_type(setting);
-
-   switch (setting_type)
+   switch (menu_setting_get_type(setting))
    {
       case ST_ACTION:
          return MENU_SETTING_ACTION;
@@ -1631,7 +1629,6 @@ static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *
 {
    char elem0[PATH_MAX_LENGTH]  = {0};
    char elem1[PATH_MAX_LENGTH]  = {0};
-   struct string_list *str_list = NULL;
    menu_handle_t          *menu = menu_driver_get_ptr();
 
    if (!menu)
@@ -1639,15 +1636,15 @@ static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *
 
    if (info->label[0] != '\0')
    {
-      str_list = string_split(info->label, "|");
-
-      if (str_list && str_list->size > 0)
-         strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-      if (str_list && str_list->size > 1)
-         strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+      struct string_list *str_list = string_split(info->label, "|");
 
       if (str_list)
       {
+         if (str_list->size > 0)
+            strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+         if (str_list->size > 1)
+            strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+
          string_list_free(str_list);
          str_list = NULL;
       }
@@ -2542,18 +2539,18 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          {
             for (; menu_setting_get_type(setting) != ST_NONE; setting++)
             {
-               char group_label[PATH_MAX_LENGTH], subgroup_label[PATH_MAX_LENGTH];
-               enum setting_type setting_type = menu_setting_get_type(setting);
+               char group_label[PATH_MAX_LENGTH];
                const char *short_description  = menu_setting_get_short_description(setting);
                const char *name               = menu_setting_get_name(setting);
 
-               switch (setting_type)
+               switch (menu_setting_get_type(setting))
                {
                   case ST_GROUP:
                      strlcpy(group_label, name, sizeof(group_label));
                      break;
                   case ST_SUB_GROUP:
                      {
+                        char subgroup_label[PATH_MAX_LENGTH];
                         char new_label[PATH_MAX_LENGTH], new_path[PATH_MAX_LENGTH];
 
                         strlcpy(subgroup_label, name, sizeof(group_label));

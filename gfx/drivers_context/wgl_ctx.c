@@ -294,6 +294,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
          if (settings->ui.menubar_enable)
          {
             LRESULT ret = win32_menu_loop(g_hwnd, wparam);
+            (void)ret;
          }
          break;
    }

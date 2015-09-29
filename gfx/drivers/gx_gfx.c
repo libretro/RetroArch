@@ -466,15 +466,17 @@ static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 
 static void setup_video_mode(void *data)
 {
-   unsigned i;
    if (!g_framebuf[0])
+   {
+      unsigned i;
       for (i = 0; i < 2; i++)
          g_framebuf[i] = MEM_K0_TO_K1(
                memalign(32, 640 * 576 * VI_DISPLAY_PIX_SZ));
+   }
 
    g_current_framebuf = 0;
-   g_draw_done = true;
-   g_orientation = ORIENTATION_NORMAL;
+   g_draw_done        = true;
+   g_orientation      = ORIENTATION_NORMAL;
    OSInitThreadQueue(&g_video_cond);
 
    VIDEO_GetPreferredMode(&gx_mode);
@@ -569,8 +571,8 @@ static void init_vtx(void *data, const video_info_t *video)
       }
    }
 
-   DCFlushRange(g_tex.data, g_tex.width *
-         g_tex.height * video->rgb32 ? 4 : 2);
+   DCFlushRange(g_tex.data, (g_tex.width *
+         g_tex.height * video->rgb32) ? 4 : 2);
 
    gx->rgb32 = video->rgb32;
    gx->scale = video->input_scale;
@@ -840,12 +842,11 @@ static void convert_texture32(const uint32_t *_src, uint32_t *_dst,
 
 static void gx_resize(void *data)
 {
-   gx_video_t *gx = (gx_video_t*)data;
    int x = 0, y = 0;
    unsigned width = gx->vp.full_width, height = gx->vp.full_height;
-   settings_t *settings = config_get_ptr();
-   const global_t *global     = (const global_t*)global_get_ptr();
-   struct video_viewport *custom_vp = video_viewport_get_custom();
+   gx_video_t                   *gx = (gx_video_t*)data;
+   settings_t             *settings = config_get_ptr();
+   const global_t           *global = (const global_t*)global_get_ptr();
 
 #ifdef HW_RVL
    VIDEO_SetTrapFilter(global->console.softfilter_enable);
@@ -857,20 +858,14 @@ static void gx_resize(void *data)
       float desired_aspect = video_driver_get_aspect_ratio();
       if (desired_aspect == 0.0)
          desired_aspect = 1.0;
-#ifdef HW_RVL
-      float device_aspect = CONF_GetAspectRatio() == CONF_ASPECT_4_3 ?
-         4.0 / 3.0 : 16.0 / 9.0;
-#else
-      float device_aspect = 4.0 / 3.0;
-#endif
       if (g_orientation == ORIENTATION_VERTICAL ||
             g_orientation == ORIENTATION_FLIPPED_ROTATED)
          desired_aspect = 1.0 / desired_aspect;
-      float delta;
 
-#ifdef RARCH_CONSOLE
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
+         struct video_viewport *custom_vp = video_viewport_get_custom();
+
          if (!custom_vp->width || !custom_vp->height)
          {
             custom_vp->x = 0;
@@ -885,8 +880,14 @@ static void gx_resize(void *data)
          height = custom_vp->height;
       }
       else
-#endif
       {
+         float delta;
+#ifdef HW_RVL
+         float device_aspect = CONF_GetAspectRatio() == CONF_ASPECT_4_3 ?
+            4.0 / 3.0 : 16.0 / 9.0;
+#else
+         float device_aspect = 4.0 / 3.0;
+#endif
          if (fabs(device_aspect - desired_aspect) < 0.0001)
          {
             /* If the aspect ratios of screen and desired aspect ratio 
@@ -1216,9 +1217,9 @@ static bool gx_has_windowed(void *data)
 static void gx_free(void *data)
 {
    driver_t *driver = driver_get_ptr();
+#ifdef HAVE_OVERLAY
    gx_video_t *gx = (gx_video_t*)driver->video_data;
 
-#ifdef HAVE_OVERLAY
    gx_free_overlay(gx);
 #endif
 

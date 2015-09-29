@@ -194,16 +194,14 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound)
 {
    const char *name;
-   enum setting_type setting_type;
    menu_displaylist_info_t  info = {0};
 
    if (!setting)
       return -1;
 
-   setting_type = menu_setting_get_type(setting);
    name         = menu_setting_get_name(setting);
 
-   switch (setting_type)
+   switch (menu_setting_get_type(setting))
    {
       case ST_PATH:
          if (action == MENU_ACTION_OK)
@@ -379,13 +377,10 @@ int menu_setting_set(unsigned type, const char *label,
  **/
 static void setting_reset_setting(rarch_setting_t* setting)
 {
-   enum setting_type setting_type;
    if (!setting)
       return;
 
-   setting_type = menu_setting_get_type(setting);
-
-   switch (setting_type)
+   switch (menu_setting_get_type(setting))
    {
       case ST_BOOL:
          *setting->value.boolean          = setting->default_value.boolean;
@@ -448,16 +443,14 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
       const char* value)
 {
    double min, max;
-   enum setting_type setting_type;
    uint64_t flags = menu_setting_get_flags(setting);
    if (!setting || !value)
       return -1;
 
-   setting_type = menu_setting_get_type(setting);
    min          = menu_setting_get_min(setting);
    max          = menu_setting_get_max(setting);
 
-   switch (setting_type)
+   switch (menu_setting_get_type(setting))
    {
       case ST_INT:
          sscanf(value, "%d", setting->value.integer);
@@ -1365,7 +1358,6 @@ static int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound
 
 static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
 {
-   enum setting_type setting_type;
    input_keyboard_line_complete_t cb = NULL;
    rarch_setting_t      *setting = (rarch_setting_t*)data;
    const char *short_description = menu_setting_get_short_description(setting);
@@ -1374,9 +1366,8 @@ static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
       return -1;
 
    (void)wraparound;
-   setting_type = menu_setting_get_type(setting);
 
-   switch (setting_type)
+   switch (menu_setting_get_type(setting))
    {
       case ST_UINT:
          cb = menu_input_st_uint_callback;

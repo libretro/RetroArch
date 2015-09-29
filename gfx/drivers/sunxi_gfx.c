@@ -726,7 +726,6 @@ static void sunxi_setup_scale (void *data,
    int i;
    unsigned int xpos, visible_width;
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
-   settings_t *settings          = config_get_ptr();
 
    _dispvars->src_width  = width;
    _dispvars->src_height = height;
@@ -892,7 +891,6 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
 
       /* Remember, memcpy() works with 8bits pointers for increments. */
       char *dst_base_addr           = (char*)(_dispvars->pages[0].address);
-      char *src_base_addr           = (char*)frame;  
 
       for (i = 0; i < height; i++)
       {

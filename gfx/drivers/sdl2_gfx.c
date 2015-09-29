@@ -207,10 +207,10 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
 
 static void sdl2_gfx_set_handles(sdl2_video_t *vid)
 {
-   driver_t *driver = driver_get_ptr();
-
    /* SysWMinfo headers are broken on OSX. */
 #if defined(_WIN32) || defined(HAVE_X11)
+   driver_t *driver = driver_get_ptr();
+
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
 
@@ -496,7 +496,6 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 {
    char buf[128]     = {0};
    sdl2_video_t *vid = (sdl2_video_t*)data;
-   driver_t *driver  = driver_get_ptr();
 
    if (vid->should_resize)
       sdl_refresh_viewport(vid);

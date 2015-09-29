@@ -84,7 +84,6 @@ void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
    int i;
    unsigned state, key;
    uint16_t mod = 0;
-   char keybuf[32] = {0};
    uint32_t chars[32] = {0};
 
    bool down     = event->type == KeyPress;
@@ -93,6 +92,7 @@ void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
 
    if (down && !filter)
    {
+      char keybuf[32] = {0};
 #ifdef X_HAVE_UTF8_STRING
       Status status = 0;
 

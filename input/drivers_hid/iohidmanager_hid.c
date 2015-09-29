@@ -60,8 +60,8 @@ static uint64_t iohidmanager_hid_joypad_get_buttons(void *data, unsigned port)
 
 static bool iohidmanager_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 {
-   driver_t *driver          = driver_get_ptr();
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+   driver_t *driver          = driver_get_ptr();
    cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
 #endif
    uint64_t buttons          = iohidmanager_hid_joypad_get_buttons(data, port);
@@ -98,8 +98,8 @@ static bool iohidmanager_hid_joypad_rumble(void *data, unsigned pad,
 
 static int16_t iohidmanager_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
 {
-   driver_t *driver          = driver_get_ptr();
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+   driver_t *driver          = driver_get_ptr();
    cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
 #endif
    iohidmanager_hid_t          *hid = (iohidmanager_hid_t*)data;
@@ -166,8 +166,8 @@ static void iohidmanager_hid_device_report(void *data,
 static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
       void* sender, IOHIDValueRef value)
 {
-   driver_t                  *driver = driver_get_ptr();
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+   driver_t                  *driver = driver_get_ptr();
    cocoa_input_data_t         *apple = (cocoa_input_data_t*)driver->input_data;
 #endif
    struct iohidmanager_hid_adapter *adapter = (struct iohidmanager_hid_adapter*)data;
@@ -204,7 +204,9 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                            CFIndex min   = IOHIDElementGetPhysicalMin(element);
                            CFIndex max   = IOHIDElementGetPhysicalMax(element) - min;
                            CFIndex state = IOHIDValueGetIntegerValue(value) - min;
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
                            float val     = (float)state / (float)max;
+#endif
 
                            if (use != axis_use_ids[i])
                               continue;
@@ -225,8 +227,10 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
          {
             case kIOHIDElementTypeInput_Button:
                {
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
                   CFIndex state = IOHIDValueGetIntegerValue(value);
-                  unsigned id = use - 1;
+#endif
+                  unsigned   id = use - 1;
 
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
                   if (state)

@@ -56,15 +56,13 @@ typedef struct vita_video
 static void *vita2d_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   void *pspinput = NULL;
-   *input = NULL;
-   *input_data = NULL;
-   (void)video;
-
    vita_video_t *vita = (vita_video_t *)calloc(1, sizeof(vita_video_t));
 
    if (!vita)
       return NULL;
+
+   *input         = NULL;
+   *input_data    = NULL;
 
    RARCH_LOG("vita2d_gfx_init: w: %i  h: %i\n", video->width, video->height);
    RARCH_LOG("RARCH_SCALE_BASE: %i input_scale: %i = %i\n",
@@ -100,8 +98,8 @@ static void *vita2d_gfx_init(const video_info_t *video,
 
    if (input && input_data)
    {
-      pspinput = input_psp.init();
-      *input = pspinput ? &input_psp : NULL;
+      void *pspinput = input_psp.init();
+      *input      = pspinput ? &input_psp : NULL;
       *input_data = pspinput;
    }
 
@@ -117,7 +115,6 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg)
 {
-   int i;
    void *tex_p;
    vita_video_t *vita = (vita_video_t *)data;
 
@@ -129,7 +126,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 
    if (frame)
    {
-      unsigned j;
+      unsigned i, j;
       unsigned int stride;
 
       if ((width != vita->width || height != vita->height) && vita->texture)

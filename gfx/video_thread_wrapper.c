@@ -126,9 +126,9 @@ static void thread_update_driver_state(thread_video_t *thr)
 /* returns true when thread_loop should quit */
 static bool thread_handle_packet(thread_video_t *thr, const thread_packet_t *incoming)
 {
+   unsigned i;
    thread_packet_t pkt = *incoming;
-   bool ret   = false;
-   unsigned i = 0;
+   bool            ret = false;
 
    switch (pkt.type)
    {
@@ -363,7 +363,6 @@ static void thread_loop(void *data)
    for (;;)
    {
       thread_packet_t pkt;
-      bool ret = false;
       bool updated = false;
 
       slock_lock(thr->lock);
@@ -383,10 +382,10 @@ static void thread_loop(void *data)
 
       if (updated)
       {
-         ret = false;
-         bool alive = false;
-         bool focus = false;
-         bool has_windowed = true;
+         bool                 ret = false;
+         bool               alive = false;
+         bool               focus = false;
+         bool        has_windowed = true;
          struct video_viewport vp = {0};
 
          slock_lock(thr->frame.lock);
@@ -414,11 +413,11 @@ static void thread_loop(void *data)
             thr->driver->viewport_info(thr->driver_data, &vp);
 
          slock_lock(thr->lock);
-         thr->alive = alive;
-         thr->focus = focus;
-         thr->has_windowed = has_windowed;
+         thr->alive         = alive;
+         thr->focus         = focus;
+         thr->has_windowed  = has_windowed;
          thr->frame.updated = false;
-         thr->vp = vp;
+         thr->vp            = vp;
          scond_signal(thr->cond_cmd);
          slock_unlock(thr->lock);
       }

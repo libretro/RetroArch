@@ -407,6 +407,7 @@ static void *xv_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    unsigned i;
+   XWindowAttributes target;
    char buf[128]                          = {0};
    char buf_fps[128]                      = {0};
    struct sigaction sa                    = {{0}};
@@ -420,12 +421,12 @@ static void *xv_init(const video_info_t *video,
    void *xinput                           = NULL;
    XVisualInfo *visualinfo                = NULL;
    XvAdaptorInfo *adaptor_info            = NULL;
-   driver_t *driver                       = driver_get_ptr();
-   settings_t *settings                   = config_get_ptr();
    const struct retro_game_geometry *geom = NULL;
    struct retro_system_av_info *av_info   = NULL;
-   xv_t *xv = (xv_t*)calloc(1, sizeof(*xv));
-   XWindowAttributes target;
+   driver_t *driver                       = driver_get_ptr();
+   settings_t *settings                   = config_get_ptr();
+
+   xv_t                               *xv = (xv_t*)calloc(1, sizeof(*xv));
    if (!xv)
       return NULL;
 
@@ -487,9 +488,11 @@ static void *xv_init(const video_info_t *video,
    visualinfo              = XGetVisualInfo(xv->display, VisualIDMask | 
          VisualScreenMask | VisualDepthMask, &visualtemplate, &visualmatches);
 
+   if (!visualinfo)
+      goto error;
+
    if (visualmatches < 1 || !visualinfo->visual)
    {
-      if (visualinfo) XFree(visualinfo);
       RARCH_ERR("XVideo: Unable to find Xv-compatible visual.\n");
       goto error;
    }
@@ -601,6 +604,8 @@ static void *xv_init(const video_info_t *video,
    return xv;
 
 error:
+   if (visualinfo)
+      XFree(visualinfo);
    free(xv);
    return NULL;
 }

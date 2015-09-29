@@ -369,7 +369,9 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
    while (*strText)
    {
       float fOffset, fAdvance, fWidth, fHeight;
+#ifdef MSB_FIRST
       uint32_t tu1, tu2, tv1, tv2;
+#endif
       const GLYPH_ATTR *pGlyph;
       wchar_t letter = *strText++; /* Get the current letter in the string */
 
@@ -396,11 +398,13 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
 
       /* Add the vertices to draw this glyph. */
 
+#ifdef MSB_FIRST
       /* Convert shorts to 32 bit longs for in register merging */
       tu1 = pGlyph->tu1;        
       tv1 = pGlyph->tv1;
       tu2 = pGlyph->tu2;
       tv2 = pGlyph->tv2;
+#endif
 
       /* NOTE: The vertexes are 2 floats for the screen coordinates,
        * followed by two USHORTS for the u/vs of the character,

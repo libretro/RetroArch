@@ -388,10 +388,10 @@ static EGLint *xegl_fill_attribs(EGLint *attr)
                (const struct retro_hw_render_callback*)video_driver_callback();
             unsigned version = g_major * 1000 + g_minor;
             bool core        = version >= 3001;
-            bool debug       = hw_render->debug_context;
-
 #ifdef GL_DEBUG
-            debug = true;
+            bool debug = true;
+#else
+            bool debug       = hw_render->debug_context;
 #endif
 
             if (core)
@@ -472,7 +472,6 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    sigaction(SIGTERM, &sa, NULL);
 
    windowed_full = settings->video.windowed_fullscreen;
-   true_full = false;
 
    attr = egl_attribs;
    attr = xegl_fill_attribs(attr);
