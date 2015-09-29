@@ -842,11 +842,17 @@ static void convert_texture32(const uint32_t *_src, uint32_t *_dst,
 
 static void gx_resize(void *data)
 {
+   unsigned width, height;
    int x = 0, y = 0;
-   unsigned width = gx->vp.full_width, height = gx->vp.full_height;
    gx_video_t                   *gx = (gx_video_t*)data;
    settings_t             *settings = config_get_ptr();
    const global_t           *global = (const global_t*)global_get_ptr();
+
+   if (!gx)
+      return;
+
+   width  = gx->vp.full_width;
+   height = gx->vp.full_height;
 
 #ifdef HW_RVL
    VIDEO_SetTrapFilter(global->console.softfilter_enable);
