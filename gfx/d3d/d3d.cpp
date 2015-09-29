@@ -756,15 +756,15 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
 {
    /* Default to Direct3D9 for now.
    TODO: GL core contexts through ANGLE? */
-   enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
-   unsigned major       = 9;
    unsigned minor       = 0;
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
-
 #if defined(HAVE_D3D8)
-   api                  = GFX_CTX_DIRECT3D8_API;
-   major                = 8;
+   unsigned major       = 8;
+   enum gfx_ctx_api api = GFX_CTX_DIRECT3D8_API;
+#else
+   unsigned major       = 9;
+   enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
 #endif
    return gfx_ctx_init_first(driver->video_data,
          settings->video.context_driver,

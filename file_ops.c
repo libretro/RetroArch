@@ -204,7 +204,6 @@ static int read_7zip_file(
    uint8_t *output      = 0;
    size_t output_size   = 0;
    uint16_t *temp       = NULL;
-   size_t temp_size     = 0;
    long outsize         = -1;
    bool file_found      = false;
 
@@ -237,7 +236,8 @@ static int read_7zip_file(
    if (res == SZ_OK)
    {
       uint32_t i;
-      uint32_t blockIndex  = 0xFFFFFFFF;
+      size_t temp_size     = 0;
+      uint32_t block_index = 0xFFFFFFFF;
 
       for (i = 0; i < db.db.NumFiles; i++)
       {
@@ -275,7 +275,7 @@ static int read_7zip_file(
              * sourceforge.net/p/sevenzip/discussion/45798/thread/6fb59aaf/
              * */
             file_found = true;
-            res = SzArEx_Extract(&db, &lookStream.s, i,&blockIndex,
+            res = SzArEx_Extract(&db, &lookStream.s, i, &block_index,
                   &output, &output_size, &offset, &outSizeProcessed,
                   &allocImp, &allocTempImp);
 

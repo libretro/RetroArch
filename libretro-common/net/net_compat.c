@@ -188,13 +188,12 @@ int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
 #if defined(__CELLOS_LV2__)
    return socketselect(nfds, readfs, writefds, errorfds, timeout);
 #elif defined(VITA)
-   int               i = 0;
    SceNetEpollEvent ev = {0};
 
    ev.events = PSP2_NET_EPOLLIN | PSP2_NET_EPOLLHUP;
    ev.data.fd = nfds;
 
-   if((i = sceNetEpollControl(rarch_epoll_fd, PSP2_NET_EPOLL_CTL_ADD, nfds, &ev)))
+   if((sceNetEpollControl(rarch_epoll_fd, PSP2_NET_EPOLL_CTL_ADD, nfds, &ev)))
    {
       int ret = sceNetEpollWait(rarch_epoll_fd, &ev, 1, 0);
       sceNetEpollControl(rarch_epoll_fd, PSP2_NET_EPOLL_CTL_DEL, nfds, NULL);

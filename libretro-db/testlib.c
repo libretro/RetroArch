@@ -85,7 +85,6 @@ static int value_provider(void *ctx, struct rmsgpack_dom_value *out)
 
 static int create_db(lua_State *L)
 {
-   int rv;
    RFILE *dst;
    const char *db_file = luaL_checkstring(L, -2);
 

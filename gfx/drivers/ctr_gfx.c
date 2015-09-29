@@ -150,9 +150,6 @@ static void ctr_update_viewport(ctr_video_t* ctr)
    }
    else if (ctr->keep_aspect)
    {
-      float delta;
-      float desired_aspect = video_driver_get_aspect_ratio();
-
 #if defined(HAVE_MENU)
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
@@ -169,6 +166,9 @@ static void ctr_update_viewport(ctr_video_t* ctr)
       else
 #endif
       {
+         float delta;
+         float desired_aspect = video_driver_get_aspect_ratio();
+
          if (fabsf(device_aspect - desired_aspect) < 0.0001f)
          {
             /* If the aspect ratios of screen and desired aspect

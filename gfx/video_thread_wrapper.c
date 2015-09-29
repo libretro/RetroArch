@@ -126,7 +126,9 @@ static void thread_update_driver_state(thread_video_t *thr)
 /* returns true when thread_loop should quit */
 static bool thread_handle_packet(thread_video_t *thr, const thread_packet_t *incoming)
 {
+#ifdef HAVE_OVERLAY
    unsigned i;
+#endif
    thread_packet_t pkt = *incoming;
    bool            ret = false;
 

@@ -289,9 +289,11 @@ void *xdk_renderchain_new(void)
 
 static bool xdk_renderchain_init_shader(void *data, void *renderchain_data)
 {
-   const char *shader_path = NULL;
    d3d_video_t        *d3d = (d3d_video_t*)data;
+#if defined(HAVE_HLSL)
+   const char *shader_path = NULL;
    settings_t *settings    = config_get_ptr();
+#endif
 
    if (!d3d)
       return false;
@@ -395,8 +397,6 @@ static bool xdk_renderchain_render(void *data, const void *frame,
 static bool xdk_renderchain_add_lut(void *data,
       const char *id, const char *path, bool smooth)
 {
-   xdk_renderchain_t *chain = (xdk_renderchain_t*)data;
-
    (void)data;
    (void)id;
    (void)path;

@@ -192,7 +192,6 @@ static bool send_chunk(netplay_t *netplay)
  **/
 static bool get_self_input_state(netplay_t *netplay)
 {
-   unsigned i;
    uint32_t state          = 0;
    struct delta_frame *ptr = &netplay->buffer[netplay->self_ptr];
    driver_t *driver        = driver_get_ptr();
@@ -200,6 +199,8 @@ static bool get_self_input_state(netplay_t *netplay)
 
    if (!driver->block_libretro_input && netplay->frame_count > 0)
    {
+      unsigned i;
+
       /* First frame we always give zero input since relying on 
        * input from first frame screws up when we use -F 0. */
       retro_input_state_t cb = netplay->cbs.state_cb;

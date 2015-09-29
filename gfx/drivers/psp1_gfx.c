@@ -706,8 +706,6 @@ static void psp_update_viewport(psp1_video_t* psp)
    }
    else if (psp->keep_aspect)
    {
-      float delta;
-      float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
@@ -725,6 +723,9 @@ static void psp_update_viewport(psp1_video_t* psp)
       else
 #endif
       {
+         float delta;
+         float desired_aspect = video_driver_get_aspect_ratio();
+
          if ((fabsf(device_aspect - desired_aspect) < 0.0001f)
                || (fabsf((16.0/9.0) - desired_aspect) < 0.02f))
          {

@@ -232,10 +232,11 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
       {
          memcpy(alsa->buffer[alsa->buffer_index] + 
                alsa->buffer_ptr, buf, avail_write);
-         alsa->buffer_ptr += avail_write;
-         buf            += avail_write;
-         size           -= avail_write;
-         written        += avail_write;
+
+         alsa->buffer_ptr      += avail_write;
+         buf                    = (void*)((uint8_t*)buf + avail_write);
+         size                  -= avail_write;
+         written               += avail_write;
       }
 
       if (alsa->buffer_ptr >= alsa->buf_size)
@@ -244,7 +245,7 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
                alsa->buffer[alsa->buffer_index], alsa->buf_size);
 
          alsa->buffer_index = (alsa->buffer_index + 1) % alsa->buf_count;
-         alsa->buffer_ptr = 0;
+         alsa->buffer_ptr   = 0;
 
          if (frames <= 0)
          {

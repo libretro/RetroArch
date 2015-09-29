@@ -1333,8 +1333,7 @@ static void renderchain_blit_to_texture(void *data,
 {
    D3DLOCKED_RECT d3dlr;
    cg_renderchain_t *chain = (cg_renderchain_t*)data;
-   Pass *first          = (Pass*)&chain->passes[0];
-   driver_t *driver     = driver_get_ptr();
+   Pass             *first = (Pass*)&chain->passes[0];
 
    if (first->last_width != width || first->last_height != height)
    {

@@ -492,8 +492,6 @@ static void MDTestSuite(void)
 
 int main (int argc, char *argv[])
 {
-   int i;
-
    /* For each command line argument in turn:
     ** filename          -- prints message digest and name of file
     ** -sstring          -- prints message digest and contents of string
@@ -504,6 +502,8 @@ int main (int argc, char *argv[])
    if (argc == 1)
       MDFilter ();
    else
+   {
+      unsigned i;
       for (i = 1; i < argc; i++)
          if (argv[i][0] == '-' && argv[i][1] == 's')
             MDString (argv[i] + 2);
@@ -512,6 +512,7 @@ int main (int argc, char *argv[])
          else if (!strcmp (argv[i], "-x"))
             MDTestSuite ();
          else MDFile (argv[i]);
+   }
 
   return 0;
 }

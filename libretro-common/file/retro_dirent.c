@@ -78,13 +78,13 @@ struct RDIR
 
 struct RDIR *retro_opendir(const char *name)
 {
+#if defined(_WIN32)
    char path_buf[1024];
+#endif
    struct RDIR *rdir = (struct RDIR*)calloc(1, sizeof(*rdir));
 
    if (!rdir)
       return NULL;
-
-   (void)path_buf;
 
 #if defined(_WIN32)
    snprintf(path_buf, sizeof(path_buf), "%s\\*", name);

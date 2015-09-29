@@ -81,14 +81,14 @@ static unsigned char *dup_binary( const char* str, unsigned len )
 
 static int provider( void* ctx, struct rmsgpack_dom_value* out )
 {
-   unsigned i, hash;
-   pr_node_t** game_ptr = (pr_node_t**)ctx;
-   pr_node_t* game = *game_ptr;
+   unsigned i;
+   pr_node_t **game_ptr = (pr_node_t**)ctx;
+   pr_node_t      *game = *game_ptr;
 
-   if ( game == NULL )
+   if (!game)
       return 1;
 
-   *game_ptr        = game->next;
+   *game_ptr            = game->next;
 
    out->type            = RDT_MAP;
    out->val.map.len     = game->count;
@@ -96,6 +96,8 @@ static int provider( void* ctx, struct rmsgpack_dom_value* out )
 
    for ( i = 0; i < game->count; i++ )
    {
+      unsigned hash;
+
       out->val.map.items[ i ].key.type = RDT_STRING;
       out->val.map.items[ i ].key.val.string.len = game->pairs[ i ].key_len;
       out->val.map.items[ i ].key.val.string.buff = dup_string( game->pairs[ i ].key, game->pairs[ i ].key_len );
