@@ -173,7 +173,6 @@ static void frontend_win32_init(void *data)
 		}
 	}
    
-   gfx_set_dwm();
 }
 
 enum frontend_powerstate frontend_win32_get_powerstate(int *seconds, int *percent)
@@ -225,8 +224,14 @@ static int frontend_win32_parse_drive_list(void *data)
    return 0;
 }
 
+static void frontend_win32_environment_get(int *argc, char *argv[],
+      void *args, void *params_data)
+{
+   gfx_set_dwm();
+}
+
 frontend_ctx_driver_t frontend_ctx_win32 = {
-   NULL,						   /* environment_get */
+   frontend_win32_evironment_get,
    frontend_win32_init,
    NULL,                           /* deinit */
    NULL,                           /* exitspawn */
