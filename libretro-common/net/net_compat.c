@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include <net/net_compat.h>
+#include <compat/strl.h>
 
 #if defined(VITA)
 static void *_net_compat_net_memory = NULL;
@@ -29,67 +30,60 @@ static void *_net_compat_net_memory = NULL;
 
 typedef uint32_t in_addr_t;
 
-struct in_addr {
+struct in_addr
+{
    in_addr_t s_addr;
 };
 
 char *inet_ntoa(struct SceNetInAddr in)
 {
-	static char ip_addr[INET_ADDRSTRLEN+1];
+	static char ip_addr[INET_ADDRSTRLEN + 1];
 
 	if(sceNetInetNtop(AF_INET, &in, ip_addr, INET_ADDRSTRLEN) == NULL)
-	{
-		strcpy(ip_addr, "Invalid");
-	}
+		strlcpy(ip_addr, "Invalid", sizeof(ip_addr));
 
 	return ip_addr;
 }
 
-struct SceNetInAddr inet_aton(const char * ip_addr)
+struct SceNetInAddr inet_aton(const char *ip_addr)
 {
-	SceNetInAddr inaddr;
+   SceNetInAddr inaddr;
 
-	sceNetInetPton(AF_INET, ip_addr, &inaddr);	
-	return inaddr;
+   sceNetInetPton(AF_INET, ip_addr, &inaddr);	
+   return inaddr;
 }
 
 unsigned int inet_addr(const char *cp)
 {
-	return inet_aton(cp).s_addr;
+   return inet_aton(cp).s_addr;
 }
 
 struct hostent *gethostbyname(const char *name)
 {
-	static struct hostent ent;
-	static char sname[MAX_NAME] = "";
-	static struct SceNetInAddr saddr = { 0 };
-	static char *addrlist[2] = { (char *) &saddr, NULL };
-	int rid;
+   int err;
+   static struct hostent ent;
+   static char sname[MAX_NAME] = "";
+   static struct SceNetInAddr saddr = { 0 };
+   static char *addrlist[2] = { (char *) &saddr, NULL };
+   int rid = sceNetResolverCreate("resolver", NULL, 0);
 
+   if(rid < 0)
+      return NULL;
 
-		int err;
-    rid = sceNetResolverCreate("resolver", NULL, 0);
-		if(rid < 0)
-		{
-			return NULL;
-		}
+   err = sceNetResolverStartNtoa(rid, name, &saddr, 0,0,0);
+   sceNetResolverDestroy(rid);
+   if(err < 0)
+      return NULL;
 
-		err = sceNetResolverStartNtoa(rid, name, &saddr, 0,0,0);
-		sceNetResolverDestroy(rid);
-		if(err < 0)
-		{
-			return NULL;
-		}
+   addrlist[0]     = inet_ntoa(saddr);
+   ent.h_name      = sname;
+   ent.h_aliases   = 0;
+   ent.h_addrtype  = AF_INET;
+   ent.h_length    = sizeof(struct in_addr);
+   ent.h_addr_list = addrlist;
+   ent.h_addr      = addrlist[0];
 
-  addrlist[0]=inet_ntoa(saddr);
-	ent.h_name = sname;
-	ent.h_aliases = 0;
-	ent.h_addrtype = AF_INET;
-	ent.h_length = sizeof(struct in_addr);
-	ent.h_addr_list = addrlist;
-	ent.h_addr = addrlist[0];
-
-	return &ent;
+   return &ent;
 }
 
 int rarch_epoll_fd;
@@ -194,19 +188,19 @@ int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
 #if defined(__CELLOS_LV2__)
    return socketselect(nfds, readfs, writefds, errorfds, timeout);
 #elif defined(VITA)
-  SceNetEpollEvent ev = {0};
-  ev.events = PSP2_NET_EPOLLIN | PSP2_NET_EPOLLHUP;
-  ev.data.fd = nfds;
+   int               i = 0;
+   SceNetEpollEvent ev = {0};
 
-  int i = 0;
-  if((i = sceNetEpollControl(rarch_epoll_fd, PSP2_NET_EPOLL_CTL_ADD, nfds, &ev))){
-    int ret = sceNetEpollWait(rarch_epoll_fd, &ev, 1, 0);
-    sceNetEpollControl(rarch_epoll_fd, PSP2_NET_EPOLL_CTL_DEL, nfds, NULL);
-    return ret;
-  }else{
-    return 0;
-  }
-   
+   ev.events = PSP2_NET_EPOLLIN | PSP2_NET_EPOLLHUP;
+   ev.data.fd = nfds;
+
+   if((i = sceNetEpollControl(rarch_epoll_fd, PSP2_NET_EPOLL_CTL_ADD, nfds, &ev)))
+   {
+      int ret = sceNetEpollWait(rarch_epoll_fd, &ev, 1, 0);
+      sceNetEpollControl(rarch_epoll_fd, PSP2_NET_EPOLL_CTL_DEL, nfds, NULL);
+      return ret;
+   }
+   return 0;
 #else
    return select(nfds, readfs, writefds, errorfds, timeout);
 #endif
@@ -274,20 +268,23 @@ bool network_init(void)
 #elif defined(VITA)
    SceNetInitParam initparam;
    /* Init Net */
-   if (sceNetShowNetstat() == PSP2_NET_ERROR_ENOTINIT) {
-       _net_compat_net_memory = malloc(COMPAT_NET_INIT_SIZE);
+   if (sceNetShowNetstat() == PSP2_NET_ERROR_ENOTINIT)
+   {
+      _net_compat_net_memory = malloc(COMPAT_NET_INIT_SIZE);
 
-       initparam.memory = _net_compat_net_memory;
-       initparam.size = COMPAT_NET_INIT_SIZE;
-       initparam.flags = 0;
+      initparam.memory = _net_compat_net_memory;
+      initparam.size = COMPAT_NET_INIT_SIZE;
+      initparam.flags = 0;
 
-       sceNetInit(&initparam);
-       //printf("sceNetInit(): 0x%08X\n", ret);
-       
-       /* Init NetCtl */
-       sceNetCtlInit();
-   } else {
-       //printf("Net is already initialized.\n");
+      sceNetInit(&initparam);
+      //printf("sceNetInit(): 0x%08X\n", ret);
+
+      /* Init NetCtl */
+      sceNetCtlInit();
+   }
+   else
+   {
+      //printf("Net is already initialized.\n");
    }
    
    rarch_epoll_fd = sceNetEpollCreate("epoll", 0);
@@ -313,12 +310,13 @@ void network_deinit(void)
    sys_net_finalize_network();
    cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
 #elif defined(VITA)
-    sceNetCtlTerm();
-    sceNetTerm();
+   sceNetCtlTerm();
+   sceNetTerm();
 
-    if (_net_compat_net_memory) {
-        free(_net_compat_net_memory);
-        _net_compat_net_memory = NULL;
-    }
+   if (_net_compat_net_memory)
+   {
+      free(_net_compat_net_memory);
+      _net_compat_net_memory = NULL;
+   }
 #endif
 }
