@@ -95,6 +95,8 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
 #endif
    RARCH_LOG("port dir: [%s]\n", g_defaults.dir.port);
 
+   fill_pathname_join(g_defaults.dir.core_assets, g_defaults.dir.port,
+         "downloads", sizeof(g_defaults.dir.core_assets));
    fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
          "media", sizeof(g_defaults.dir.assets));
    fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
@@ -115,6 +117,11 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "cheats", sizeof(g_defaults.dir.cheats));
    fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
          "remaps", sizeof(g_defaults.dir.remap));
+
+#ifdef VITA
+   fill_pathname_join(g_defaults.dir.overlay, g_defaults.dir.core,
+         "overlays", sizeof(g_defaults.dir.overlay));
+#endif
 
 #ifdef VITA
    params = (struct rarch_main_wrap*)params_data;

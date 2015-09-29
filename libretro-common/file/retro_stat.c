@@ -62,7 +62,7 @@
 #endif
 
 #if defined(VITA)
-#define FIO_SO_ISDIR PSP2_S_ISDIR
+#define FIO_S_ISDIR PSP2_S_ISDIR
 #endif
 
 #if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
@@ -113,7 +113,7 @@ static bool path_stat(const char *path, enum stat_mode mode)
    {
       case IS_DIRECTORY:
 #if defined(VITA) || defined(PSP)
-         return FIO_SO_ISDIR(buf.st_attr);
+         return FIO_S_ISDIR(buf.st_mode);
 #elif defined(__CELLOS_LV2__)
          return ((buf.st_mode & S_IFMT) == S_IFDIR);
 #elif defined(_WIN32)
