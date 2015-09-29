@@ -142,14 +142,16 @@ static const dspfilter_get_implementation_t dsp_plugs_builtin[] = {
    eq_dspfilter_get_implementation,
    chorus_dspfilter_get_implementation,
 };
+#endif
 
 static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 {
-   unsigned i;
    dspfilter_simd_mask_t mask = retro_get_cpu_features();
 
+   (void)mask;
    (void)list;
 
+#if defined(HAVE_FILTERS_BUILTIN)
    dsp->plugs = (struct rarch_dsp_plug*)
       calloc(ARRAY_SIZE(dsp_plugs_builtin), sizeof(*dsp->plugs));
    if (!dsp->plugs)
@@ -163,26 +165,22 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
       if (!dsp->plugs[i].impl)
          return false;
    }
-
-   return true;
-}
 #elif defined(HAVE_DYLIB)
-static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
-{
    unsigned i;
-   dspfilter_simd_mask_t mask = retro_get_cpu_features();
 
    for (i = 0; i < list->size; i++)
    {
-      const struct dspfilter_implementation *impl = NULL;
-      struct rarch_dsp_plug *new_plugs = NULL;
-      dylib_t lib = dylib_load(list->elems[i].data);
       dspfilter_get_implementation_t cb;
+      const struct dspfilter_implementation *impl = NULL;
+      struct rarch_dsp_plug            *new_plugs = NULL;
+      dylib_t lib = dylib_load(list->elems[i].data);
 
       if (!lib)
          continue;
 
-      cb = (dspfilter_get_implementation_t)dylib_proc(lib, "dspfilter_get_implementation");
+      cb = (dspfilter_get_implementation_t)
+         dylib_proc(lib, "dspfilter_get_implementation");
+
       if (!cb)
       {
          dylib_close(lib);
@@ -211,27 +209,36 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
       }
 
       /* Found plug. */
-      
-      dsp->plugs = new_plugs;
-      dsp->plugs[dsp->num_plugs].lib = lib;
+      dsp->plugs                      = new_plugs;
+      dsp->plugs[dsp->num_plugs].lib  = lib;
       dsp->plugs[dsp->num_plugs].impl = impl;
       dsp->num_plugs++;
    }
+#endif
 
    return true;
 }
+
+int allocate_plugs(struct string_list *plugs, const char *filter_config)
+{
+#if !defined(HAVE_FILTERS_BUILTIN) && defined(HAVE_DYLIB)
+   char basedir[PATH_MAX_LENGTH];
+   fill_pathname_basedir(basedir, filter_config, sizeof(basedir));
+
+   plugs = dir_list_new(basedir, EXT_EXECUTABLES, false, false);
+   if (!plugs)
+      return -1;
 #endif
+   return 0;
+}
 
 rarch_dsp_filter_t *rarch_dsp_filter_new(
       const char *filter_config, float sample_rate)
 {
-   char basedir[PATH_MAX_LENGTH] = {0};
    struct string_list *plugs     = NULL;
-   rarch_dsp_filter_t *dsp       = NULL;
+   rarch_dsp_filter_t *dsp = (rarch_dsp_filter_t*)
+      calloc(1, sizeof(*dsp));
 
-   (void)basedir;
-   
-   dsp = (rarch_dsp_filter_t*)calloc(1, sizeof(*dsp));
    if (!dsp)
       return NULL;
 
@@ -239,18 +246,11 @@ rarch_dsp_filter_t *rarch_dsp_filter_new(
    if (!dsp->conf)   /* Did not find config. */
       goto error;
 
-#if !defined(HAVE_FILTERS_BUILTIN) && defined(HAVE_DYLIB)
-   fill_pathname_basedir(basedir, filter_config, sizeof(basedir));
-
-   plugs = dir_list_new(basedir, EXT_EXECUTABLES, false, false);
-   if (!plugs)
+   if (allocate_plugs(plugs, filter_config) == -1)
       goto error;
-#endif
 
-#if defined(HAVE_DYLIB) || defined(HAVE_FILTERS_BUILTIN)
    if (!append_plugs(dsp, plugs))
       goto error;
-#endif
 
    if (plugs)
       string_list_free(plugs);
