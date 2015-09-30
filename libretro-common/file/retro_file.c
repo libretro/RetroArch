@@ -26,7 +26,6 @@
 #include <errno.h>
 
 #if defined(_WIN32)
-#  include <compat/posix_string.h>
 #  ifdef _MSC_VER
 #    define setmode _setmode
 #  endif
