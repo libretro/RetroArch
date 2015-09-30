@@ -871,7 +871,7 @@ static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
       return -1;
    }
 
-   return 0;
+   return 1;
 }
 
 /**
@@ -972,7 +972,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
 
    ret = rarch_main_iterate_time_to_exit(&cmd);
 
-   if (ret == -1)
+   if (ret != 1)
       return -1;
 
    
