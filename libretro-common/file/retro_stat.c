@@ -152,7 +152,7 @@ bool path_is_character_special(const char *path)
    return path_stat(path, IS_CHARACTER_SPECIAL);
 }
 
-bool stat_is_valid(const char *path)
+bool path_is_valid(const char *path)
 {
    return path_stat(path, IS_VALID);
 }
