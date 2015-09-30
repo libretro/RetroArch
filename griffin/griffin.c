@@ -274,6 +274,11 @@ FONTS
 #include "../gfx/drivers_font/xdk360_fonts.c"
 #endif
 
+#if defined(VITA)
+#include "../vita/stockfont.c"
+#include "../gfx/drivers_font/vita2d_font.c"
+#endif
+
 /*============================================================
 INPUT
 ============================================================ */
