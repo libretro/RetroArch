@@ -835,8 +835,8 @@ static void rarch_main_cmd_get_state(driver_t *driver,
  */
 static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
 {
-   settings_t *settings            = config_get_ptr();
-   global_t   *global              = global_get_ptr();
+   settings_t *settings          = config_get_ptr();
+   global_t   *global            = global_get_ptr();
    driver_t *driver              = driver_get_ptr();
    rarch_system_info_t *system   = rarch_system_info_get_ptr();
    video_driver_t *video         = driver ? (video_driver_t*)driver->video : NULL;
