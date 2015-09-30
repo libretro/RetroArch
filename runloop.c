@@ -350,7 +350,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             check_pause(driver, settings, 
                   cmd->pause_pressed, cmd->frameadvance_pressed);
 
-            if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_PAUSE_STATE, &cmd))
+            if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_PAUSE_STATE, cmd))
                return false;
 
             check_fast_forward_button(driver,
@@ -782,7 +782,6 @@ static void rarch_main_cmd_get_state(driver_t *driver,
    if (!cmd)
       return;
 
-   cmd->fullscreen_toggle           = BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
    cmd->overlay_next_pressed        = BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT);
    cmd->grab_mouse_pressed          = BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE);
 #ifdef HAVE_MENU
