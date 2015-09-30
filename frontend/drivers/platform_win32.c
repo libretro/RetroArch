@@ -231,7 +231,7 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
 }
 
 frontend_ctx_driver_t frontend_ctx_win32 = {
-   frontend_win32_evironment_get,
+   frontend_win32_environment_get,
    frontend_win32_init,
    NULL,                           /* deinit */
    NULL,                           /* exitspawn */
