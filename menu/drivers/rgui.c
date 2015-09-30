@@ -399,8 +399,8 @@ static void rgui_blit_cursor(menu_handle_t *menu)
    int16_t        x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
    int16_t        y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH, &fb_width);
-   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH, &fb_height);
+   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,  &fb_width);
+   menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &fb_height);
    menu_display_ctl(MENU_DISPLAY_CTL_FB_DATA,  &fb_data);
    menu_display_ctl(MENU_DISPLAY_CTL_FB_PITCH, &fb_pitch);
 
@@ -784,7 +784,8 @@ static void rgui_navigation_clear(bool pending_push)
 
 static void rgui_navigation_set(bool scroll)
 {
-   size_t selection, fb_width, fb_height;
+   size_t selection;
+   unsigned fb_width, fb_height;
    menu_handle_t *menu            = menu_driver_get_ptr();
    size_t end                     = menu_entries_get_end();
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
