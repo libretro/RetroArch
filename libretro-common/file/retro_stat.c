@@ -100,8 +100,11 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
     if (cellFsStat(path, &buf) < 0)
        return false;
 #elif defined(_WIN32)
+   struct stat buf;
    DWORD ret = GetFileAttributes(path);
    if (ret == INVALID_FILE_ATTRIBUTES)
+      return false;
+   if (stat(path, &buf) < 0)
       return false;
 #else
    struct stat buf;
