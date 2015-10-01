@@ -159,6 +159,7 @@ else ifeq ($(LIBRETRO), fb_alpha_neo)
 	APP_ICON          = ctr/fb_alpha_neo.png
 	#APP_BANNER        = ctr/libretro_banner.png
 	#APP_AUDIO         = ctr/silent.wav
+   O3DS_80MB_APPMEM  = 1
 
 else ifeq ($(LIBRETRO), fb_alpha_cps1)
 	APP_TITLE         = Final Burn Alpha - CPS-1
@@ -179,6 +180,7 @@ else ifeq ($(LIBRETRO), fb_alpha_cps2)
 	APP_ICON          = ctr/fb_alpha_cps2.png
 	#APP_BANNER        = ctr/libretro_banner.png
 	#APP_AUDIO         = ctr/silent.wav
+   O3DS_80MB_APPMEM  = 1
 
 else ifeq ($(LIBRETRO), catsfc_plus)
 	APP_TITLE         = CATSFC Plus Libretro
