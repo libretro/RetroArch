@@ -39,7 +39,6 @@ else ifeq ($(LIBRETRO), nestopia)
 	APP_ICON          = ctr/nestopia.png
 	#APP_BANNER        = ctr/libretro_banner.png
 	#APP_AUDIO         = ctr/silent.wav
-	BUILD_3DSX        = 0
 
 else ifeq ($(LIBRETRO), nxengine)
 	APP_TITLE         = NXengine Libretro
@@ -210,6 +209,5 @@ else ifeq ($(LIBRETRO), pcsx_rearmed)
 	APP_ICON          = ctr/pcsx_rearmed.png
 	#APP_BANNER        = ctr/libretro_banner.png
 	#APP_AUDIO         = ctr/silent.wav
-	BUILD_3DSX        = 0
 
 endif
