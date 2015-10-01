@@ -43,6 +43,8 @@ void wait_for_input(void);
 
 #define DEBUG_HOLD() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);wait_for_input();}while(0)
 
+#define CTR_APPMEMALLOC_PTR ((u32*)0x1FF80040)
+
 #ifndef CTR_STACK_SIZE
 #define CTR_STACK_SIZE         0x100000
 #endif
@@ -68,10 +70,11 @@ void __libc_fini_array(void);
 void __system_allocateHeaps() {
 	u32 tmp=0;
    int64_t mem_used;
+   u32 app_memory = *CTR_APPMEMALLOC_PTR;
    svcGetSystemInfo(&mem_used, 0, 1);
 
    __linear_heap_size_local = CTR_LINEAR_HEAP_SIZE;
-   __heap_size_local        = (0x4000000 - mem_used - __linear_heap_size_local - 0x1000) & 0xFFFFF000;
+   __heap_size_local        = (app_memory - mem_used - __linear_heap_size_local - 0x10000) & 0xFFFFF000;
 
 	// Allocate the application heap
 	__heapBase = 0x08000000;

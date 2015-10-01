@@ -92,6 +92,8 @@ AccessControlInfo:
   MaxCpu                        : 0x9E # Default
   CpuSpeed                      : 804mhz
   EnableL2Cache                 : true
+  SystemMode                    : $(APP_SYSTEM_MODE)
+  SystemModeExt                 : $(APP_SYSTEM_MODE_EXT)
   
   DisableDebug                  : false
   EnableForceDebug              : false

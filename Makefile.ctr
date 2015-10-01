@@ -20,6 +20,9 @@ APP_CIA_RSF       = ctr/tools/template-cia.rsf
 APP_3DS_RSF       = ctr/tools/template-3ds.rsf
 
 
+O3DS_80MB_APPMEM = 0
+
+
 ifeq ($(BIG_STACK),1)
 CTR_STACK_SIZE        = 0x400000
 else
@@ -28,6 +31,15 @@ endif
 CTR_LINEAR_HEAP_SIZE  = 0x600000
 
 include ctr/Makefile.cores
+
+
+ifeq ($(O3DS_80MB_APPMEM), 1)
+APP_SYSTEM_MODE     = 3
+else
+APP_SYSTEM_MODE     = 0
+endif
+
+APP_SYSTEM_MODE_EXT = 6
 
 
 OBJS :=
@@ -394,7 +406,9 @@ $(TARGET)_stripped.elf: $(TARGET).elf
 	$(STRIP) $@
 
 $(TARGET).cia: $(TARGET)_stripped.elf $(TARGET).bnr $(TARGET).icn $(APP_CIA_RSF)
-	$(MAKEROM) -f cia -o $@ -rsf $(APP_CIA_RSF) -target t -exefslogo -elf $(TARGET)_stripped.elf -icon $(TARGET).icn -banner $(TARGET).bnr -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(APP_PRODUCT_CODE)" -DAPP_UNIQUE_ID=$(APP_UNIQUE_ID)
+	$(MAKEROM) -f cia -o $@ -rsf $(APP_CIA_RSF) -target t -exefslogo -elf $(TARGET)_stripped.elf -icon $(TARGET).icn\
+              -banner $(TARGET).bnr -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(APP_PRODUCT_CODE)" -DAPP_UNIQUE_ID=$(APP_UNIQUE_ID)\
+              -DAPP_SYSTEM_MODE=$(APP_SYSTEM_MODE) -DAPP_SYSTEM_MODE_EXT=$(APP_SYSTEM_MODE_EXT)
 
 clean:
 	rm -f $(OBJS)
