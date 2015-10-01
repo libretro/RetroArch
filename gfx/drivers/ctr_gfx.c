@@ -400,7 +400,6 @@ static bool ctr_frame(void* data, const void* frame,
 
       if(srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
       {
-         printf("here !!\n");
          u32 *cmdbuf = getThreadCommandBuffer();
          cmdbuf[0] = ctr->lcd_buttom_on? 0x00120040:  0x00110040;
          cmdbuf[1] = 2;
