@@ -406,9 +406,7 @@ $(TARGET)_stripped.elf: $(TARGET).elf
 	$(STRIP) $@
 
 $(TARGET).cia: $(TARGET)_stripped.elf $(TARGET).bnr $(TARGET).icn $(APP_CIA_RSF)
-	$(MAKEROM) -f cia -o $@ -rsf $(APP_CIA_RSF) -target t -exefslogo -elf $(TARGET)_stripped.elf -icon $(TARGET).icn\
-              -banner $(TARGET).bnr -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(APP_PRODUCT_CODE)" -DAPP_UNIQUE_ID=$(APP_UNIQUE_ID)\
-              -DAPP_SYSTEM_MODE=$(APP_SYSTEM_MODE) -DAPP_SYSTEM_MODE_EXT=$(APP_SYSTEM_MODE_EXT)
+	$(MAKEROM) -f cia -o $@ -rsf $(APP_CIA_RSF) -target t -exefslogo -elf $(TARGET)_stripped.elf -icon $(TARGET).icn -banner $(TARGET).bnr -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(APP_PRODUCT_CODE)" -DAPP_UNIQUE_ID=$(APP_UNIQUE_ID) -DAPP_SYSTEM_MODE=$(APP_SYSTEM_MODE) -DAPP_SYSTEM_MODE_EXT=$(APP_SYSTEM_MODE_EXT)
 
 clean:
 	rm -f $(OBJS)
