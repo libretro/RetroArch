@@ -79,7 +79,7 @@ enum stat_mode
    IS_VALID
 };
 
-static bool path_stat(const char *path, enum stat_mode mode)
+static bool path_stat(const char *path, enum stat_mode mode, ssize_t *size)
 {
 #if defined(VITA) || defined(PSP)
    SceIoStat buf;
@@ -108,6 +108,9 @@ static bool path_stat(const char *path, enum stat_mode mode)
    if (stat(path, &buf) < 0)
       return false;
 #endif
+
+   if (size)
+      *size = buf.st_size;
 
    switch (mode)
    {
@@ -144,17 +147,26 @@ static bool path_stat(const char *path, enum stat_mode mode)
  */
 bool path_is_directory(const char *path)
 {
-   return path_stat(path, IS_DIRECTORY);
+   return path_stat(path, IS_DIRECTORY, NULL);
 }
 
 bool path_is_character_special(const char *path)
 {
-   return path_stat(path, IS_CHARACTER_SPECIAL);
+   return path_stat(path, IS_CHARACTER_SPECIAL, NULL);
 }
 
 bool path_is_valid(const char *path)
 {
-   return path_stat(path, IS_VALID);
+   return path_stat(path, IS_VALID, NULL);
+}
+
+ssize_t path_get_size(const char *path)
+{
+   ssize_t filesize;
+   if (path_stat(path, IS_VALID, &filesize))
+      return filesize;
+
+   return -1;
 }
 
 /**

@@ -30,6 +30,7 @@
 #include <file/file_extract.h>
 #include <file/file_path.h>
 #include <retro_file.h>
+#include <retro_stat.h>
 #include <retro_miscellaneous.h>
 #include <string/string_list.h>
 
@@ -101,7 +102,6 @@ static size_t zlib_file_size(void *handle)
 
 static void *zlib_file_open(const char *path)
 {
-   struct stat fds;
    zlib_file_data_t *data = (zlib_file_data_t*)calloc(1, sizeof(*data));
 
    if (!data)
@@ -109,16 +109,11 @@ static void *zlib_file_open(const char *path)
 
    data->fd = open(path, O_RDONLY);
 
+   /* Failed to open archive. */
    if (data->fd < 0)
-   {
-      /* Failed to open archive. */
-      goto error;
-   }
-
-   if (fstat(data->fd, &fds) < 0)
       goto error;
 
-   data->size = fds.st_size;
+   data->size = path_get_size(path);
    if (!data->size)
       return data;
 

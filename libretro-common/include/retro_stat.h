@@ -46,6 +46,8 @@ bool path_is_character_special(const char *path);
 
 bool path_is_valid(const char *path);
 
+ssize_t path_get_size(const char *path);
+
 /**
  * path_mkdir_norecurse:
  * @dir                : directory
