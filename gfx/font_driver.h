@@ -29,7 +29,8 @@ enum font_driver_render_api
 {
    FONT_DRIVER_RENDER_DONT_CARE,
    FONT_DRIVER_RENDER_OPENGL_API,
-   FONT_DRIVER_RENDER_DIRECT3D_API
+   FONT_DRIVER_RENDER_DIRECT3D_API,
+   FONT_DRIVER_RENDER_VITA2D
 };
 
 bool font_init_first(
@@ -42,4 +43,3 @@ bool font_init_first(
 #endif
 
 #endif
-
