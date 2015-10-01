@@ -182,6 +182,8 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
 
 static void frontend_ctr_deinit(void *data)
 {
+   extern PrintConsole* currentConsole;
+   Handle lcd_handle;
    (void)data;
 #ifndef IS_SALAMANDER
    global_t *global   = global_get_ptr();
@@ -193,7 +195,17 @@ static void frontend_ctr_deinit(void *data)
    global->log_file = NULL;
 #endif
 
-   wait_for_input();
+   if(gfxBottomFramebuffers[0] == (u8*)currentConsole->frameBuffer)
+      wait_for_input();
+
+   if(srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
+   {
+      u32 *cmdbuf = getThreadCommandBuffer();
+      cmdbuf[0] = 0x00110040;
+      cmdbuf[1] = 2;
+      svcSendSyncRequest(lcd_handle);
+      svcCloseHandle(lcd_handle);
+   }
 
    csndExit();
    gfxExit();

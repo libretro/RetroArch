@@ -85,6 +85,7 @@ typedef struct ctr_video
    unsigned rotation;
    bool keep_aspect;
    bool should_resize;
+   bool lcd_buttom_on;
 
    void* empty_framebuffer;
 } ctr_video_t;
@@ -341,6 +342,7 @@ static void* ctr_init(const video_info_t* video,
    ctr->keep_aspect   = true;
    ctr->should_resize = true;
    ctr->smooth        = true;
+   ctr->lcd_buttom_on = true;
 
    ctr->empty_framebuffer = linearAlloc(320 * 240 * 2);
    memset(ctr->empty_framebuffer, 0, 320 * 240 * 2);
@@ -390,11 +392,23 @@ static bool ctr_frame(void* data, const void* frame,
    hidTouchRead(&state_tmp_touch);
    if((state_tmp & KEY_TOUCH) && (state_tmp_touch.py < 120))
    {
+      Handle lcd_handle;
       extern PrintConsole* currentConsole;
-      if ((u8*)currentConsole->frameBuffer == gfxBottomFramebuffers[0])
-         gfxBottomFramebuffers[0] = (u8*)ctr->empty_framebuffer;
-      else
-         gfxBottomFramebuffers[0] = (u8*)currentConsole->frameBuffer;
+
+      gfxBottomFramebuffers[0] = ctr->lcd_buttom_on ? (u8*)ctr->empty_framebuffer:
+                                                      (u8*)currentConsole->frameBuffer;
+
+      if(srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
+      {
+         printf("here !!\n");
+         u32 *cmdbuf = getThreadCommandBuffer();
+         cmdbuf[0] = ctr->lcd_buttom_on? 0x00120040:  0x00110040;
+         cmdbuf[1] = 2;
+         svcSendSyncRequest(lcd_handle);
+         svcCloseHandle(lcd_handle);
+      }
+
+      ctr->lcd_buttom_on = !ctr->lcd_buttom_on;
    }
 
    svcWaitSynchronization(gspEvents[GSPEVENT_P3D], 20000000);
