@@ -76,18 +76,14 @@ static void vita2d_font_render_msg(void *data, const char *msg,
    {
       x     = settings->video.msg_pos_x;
       y     = 0.90f;
-      scale = 1.04f;
-      color = SILVER;
+      scale = 0.8f;
+      color = YELLOW;
    }
-
-   vita2d_font_draw_text(vita->font, x, y, color, vita->size*scale, msg);
-
-   if (!params)
-      vita2d_font_draw_text(vita->font, x, y, color, vita->size*(scale - 0.01f), msg);
-      
+   
+   vita2d_font_draw_text(vita->font, x, y, color, vita->size*scale, msg);      
 }
 
-font_renderer_t vita2d_font_renderer = {
+font_renderer_t vita2d_vita_font = {
    vita2d_font_init_font,
    vita2d_font_free_font,
    vita2d_font_render_msg,

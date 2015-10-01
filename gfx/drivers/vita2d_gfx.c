@@ -83,6 +83,8 @@ static void *vita2d_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    vita_video_t *vita = (vita_video_t *)calloc(1, sizeof(vita_video_t));
+   driver_t            *driver = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (!vita)
       return NULL;
@@ -134,6 +136,14 @@ static void *vita2d_gfx_init(const video_info_t *video,
 #ifdef HAVE_OVERLAY
    vita->overlay_enable           = false;
 #endif
+   if (!font_init_first((const void**)&driver->font_osd_driver, &driver->font_osd_data,
+          vita, *settings->video.font_path 
+          ? settings->video.font_path : NULL, settings->video.font_size,
+          FONT_DRIVER_RENDER_VITA2D))
+   {
+      RARCH_ERR("Font: Failed to initialize font renderer.\n");
+        return false;
+   }
    return vita;
 }
 
@@ -237,6 +247,11 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       }
    }
 
+#ifdef HAVE_OVERLAY
+   if (vita->overlay_enable)
+      vita2d_render_overlay(vita);
+#endif
+
    if (vita->menu.active && vita->menu.texture)
    {
       if (vita->fullscreen)
@@ -265,11 +280,14 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       }
    }
    
-#ifdef HAVE_OVERLAY
-   if (vita->overlay_enable)
-     vita2d_render_overlay(vita);
-#endif
-
+   if(msg&&strcmp(msg,"")){
+     driver_t          *driver = driver_get_ptr();
+     const font_renderer_t *font_ctx = driver->font_osd_driver;
+     
+     if (font_ctx->render_msg)
+       font_ctx->render_msg(driver->font_osd_data, msg, NULL);
+   }
+   
    vita2d_end_drawing();
    vita2d_swap_buffers();
 
@@ -600,7 +618,7 @@ static const video_poke_interface_t vita_poke_interface = {
    NULL,
    NULL,
    NULL
-};
+ };
 
 static void vita2d_gfx_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
