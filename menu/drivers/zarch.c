@@ -234,10 +234,12 @@ static unsigned zui_hash(zui_t *zui, const char *s)
    return zui->hash = hval;
 }
 
+#if 0
 static uint32_t zui_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
    return FONT_COLOR_RGBA(r, g, b, a);
 }
+#endif
 
 static void zui_set_color(GLfloat *rgbaf, size_t count, uint32_t color)
 {
@@ -664,52 +666,54 @@ static void zui_render(zui_t *zui)
 
    render_sidebar(zui);
 
-   if (layout == LAY_HOME)
+   switch (layout)
    {
-      render_lay_root(global, zui);
-   }
-   else if (layout == LAY_PICK_CORE)
-   {
-      if (zui->pick_supported == 1)
-      {
-         fputs("Core loading is not implemented yet, sorry.", stderr);
-         layout = LAY_HOME;
-      }
-      else
-      {
-         zui_draw_text(zui, ~0, 8, 18, "Select a core: ");
-
-         if (zui_button(zui, 0, 18 + zui->font_size, "<- Back"))
-            layout = LAY_HOME;
-
-         if (zui->pick_supported)
+      case LAY_HOME:
+         render_lay_root(global, zui);
+         break;
+      case LAY_SETTINGS:
+         /* FIXME/TODO - stub */
+         break;
+      case LAY_PICK_CORE:
+         if (zui->pick_supported == 1)
          {
-            unsigned i, j = 0;
-            zui->pick_first += zui->mouse.wheel;
-            zui->pick_first = min(max(zui->pick_first, 0), zui->pick_supported - 5);
-
-            for (i = zui->pick_first; i < zui->pick_supported; ++i)
-            {
-               if (j > 10)
-                  break;
-
-               if (zui_list_item(zui, 0, 60 + j * 30, zui->pick_cores[i].display_name))
-               {
-                  fputs("Core loading is not implemented yet, sorry.", stderr);
-                  layout = LAY_HOME;
-                  break;
-               }
-               j++;
-            }
+            fputs("Core loading is not implemented yet, sorry.", stderr);
+            layout = LAY_HOME;
          }
          else
          {
-            zui_list_item(zui, 0, 60, "Content unsupported");
+            zui_draw_text(zui, ~0, 8, 18, "Select a core: ");
+
+            if (zui_button(zui, 0, 18 + zui->font_size, "<- Back"))
+               layout = LAY_HOME;
+
+            if (zui->pick_supported)
+            {
+               unsigned i, j = 0;
+               zui->pick_first += zui->mouse.wheel;
+               zui->pick_first = min(max(zui->pick_first, 0), zui->pick_supported - 5);
+
+               for (i = zui->pick_first; i < zui->pick_supported; ++i)
+               {
+                  if (j > 10)
+                     break;
+
+                  if (zui_list_item(zui, 0, 60 + j * 30, zui->pick_cores[i].display_name))
+                  {
+                     fputs("Core loading is not implemented yet, sorry.", stderr);
+                     layout = LAY_HOME;
+                     break;
+                  }
+                  j++;
+               }
+            }
+            else
+            {
+               zui_list_item(zui, 0, 60, "Content unsupported");
+            }
          }
-      }
+         break;
    }
-
-
 
    zui_finish(zui);
 }
