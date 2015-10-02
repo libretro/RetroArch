@@ -810,6 +810,10 @@ MENU
 #include "../menu/drivers/glui.c"
 #endif
 
+#ifdef HAVE_ZARCH
+#include "../menu/drivers/zarch.c"
+#endif
+
 #endif
 
 #ifdef HAVE_COMMAND
