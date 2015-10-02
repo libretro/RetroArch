@@ -101,7 +101,7 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
        return false;
 #elif defined(_WIN32)
    WIN32_FILE_ATTRIBUTE_DATA file_info;
-   DWORD ret = GetFileAttributes(path, 0, &file_info);
+   DWORD ret = GetFileAttributesEx(path, 0, &file_info);
    if (ret == INVALID_FILE_ATTRIBUTES)
       return false;
 #else
