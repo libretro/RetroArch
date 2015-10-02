@@ -169,6 +169,8 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
    driver_t                  *driver = driver_get_ptr();
    cocoa_input_data_t         *apple = (cocoa_input_data_t*)driver->input_data;
+   struct iohidmanager_hid_adapter *adapter =
+    (struct iohidmanager_hid_adapter*)data;
 #endif
    IOHIDElementRef element           = IOHIDValueGetElement(value);
    uint32_t type                     = IOHIDElementGetType(element);
@@ -195,12 +197,8 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                      break;
                   default:
                      {
-                        static const uint32_t axis_use_ids[4] = { 48, 49, 50, 53 };
                         int i;
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
-                        struct iohidmanager_hid_adapter *adapter = 
-                           (struct iohidmanager_hid_adapter*)data;
-#endif
+                        static const uint32_t axis_use_ids[4] = { 48, 49, 50, 53 };
 
                         for (i = 0; i < 4; i ++)
                         {
