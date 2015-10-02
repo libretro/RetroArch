@@ -455,7 +455,7 @@ static bool ctr_frame(void* data, const void* frame,
 
    if(frame)
    {
-      if(((((u32)(frame)) >= 0x14000000 && ((u32)(frame)) < 0x1c000000)) /* frame in linear memory */
+      if(((((u32)(frame)) >= 0x14000000 && ((u32)(frame)) < 0x40000000)) /* frame in linear memory */
          && !((u32)frame & 0x7F)                                         /* 128-byte aligned */
          && !((pitch) & 0xF))                                            /* 16-byte aligned */
       {
