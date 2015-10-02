@@ -68,9 +68,14 @@ void __appExit();
 void __libc_fini_array(void);
 
 void __system_allocateHeaps() {
-	u32 tmp=0;
+   extern unsigned int __service_ptr;
+   u32 tmp=0;
    int64_t mem_used;
-   u32 app_memory = *CTR_APPMEMALLOC_PTR;
+   u32 app_memory = 0x04000000;
+
+   if(!__service_ptr)
+      app_memory = *CTR_APPMEMALLOC_PTR;
+
    svcGetSystemInfo(&mem_used, 0, 1);
 
    __linear_heap_size_local = CTR_LINEAR_HEAP_SIZE;
