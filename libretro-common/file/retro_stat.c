@@ -100,11 +100,9 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
     if (cellFsStat(path, &buf) < 0)
        return false;
 #elif defined(_WIN32)
-   struct stat buf;
-   DWORD ret = GetFileAttributes(path);
+   WIN32_FILE_ATTRIBUTE_DATA file_info;
+   DWORD ret = GetFileAttributes(path, 0, &file_info);
    if (ret == INVALID_FILE_ATTRIBUTES)
-      return false;
-   if (stat(path, &buf) < 0)
       return false;
 #else
    struct stat buf;
@@ -112,8 +110,13 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
       return false;
 #endif
 
+#if defined(_WIN32)
+   if (size)
+      *size = file_info.nFileSizeLow;
+#else
    if (size)
       *size = buf.st_size;
+#endif
 
    switch (mode)
    {
