@@ -450,7 +450,7 @@ static bool zui_button(zui_t *zui, int x1, int y1, const char *label)
 static bool zui_list_item(zui_t *zui, int x1, int y1, const char *label)
 {
    unsigned id = zui_hash(zui, label);
-   int x2      = x1 + zui->width/2;
+   int x2      = x1 + zui->width/1.5;
    int y2      = y1 + 30;
    bool active = check_button_up(zui, id, x1, y1, x2, y2);
    uint32_t bg = ZUI_BG_PANEL;
@@ -515,7 +515,7 @@ void render_lay_root(zui_t *zui)
 
    zui_tabbed_begin(zui, &tabbed, 0, 0);
 
-   tabbed.width = zui->width/2;
+   tabbed.width = zui->width/1.5;
 
    if (zui_tab(zui, &tabbed, "Recent"))
    {
@@ -673,7 +673,7 @@ void render_lay_root(zui_t *zui)
       zui->load_dlist = NULL;
    }
 
-   zui_push_quad(zui, ZUI_BG_HILITE, 0, 30, zui->width/2, 30+4);
+   zui_push_quad(zui, ZUI_BG_HILITE, 0, 30, zui->width/1.5, 30+4);
 }
 
 void render_sidebar(zui_t *zui)
