@@ -773,10 +773,7 @@ static void zarch_frame(void)
 
    video_driver_get_size(&zui->width, &zui->height);
 
-#if 0
-   menu_display_set_viewport();
-#endif
-
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &zui->fb_buf);
 
    zui_render(zui);
@@ -789,9 +786,7 @@ static void zarch_frame(void)
 
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-#if 0
-   menu_display_unset_viewport();
-#endif
+   menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
 
 static void *zarch_init(void)
