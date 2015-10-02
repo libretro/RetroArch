@@ -153,7 +153,7 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
    if (calculate_delta)
    {
       int phase;
-      unsigned p;
+      int p;
 
       for (p = 0; p < phases - 1; p++)
       {

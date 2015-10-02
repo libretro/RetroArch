@@ -1931,7 +1931,7 @@ static rarch_setting_t setting_int_setting(const char* name,
       const char *group, const char *subgroup, const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t result        = {0};
+   rarch_setting_t result        = {ST_NONE};
 
    result.type                   = ST_INT;
    result.name                   = name;

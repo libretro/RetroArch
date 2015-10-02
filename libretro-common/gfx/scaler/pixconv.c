@@ -55,7 +55,7 @@ void conv_rgb565_0rgb1555(void *output_, const void *input_,
    for (h = 0; h < height;
          h++, output += out_stride >> 1, input += in_stride >> 1)
    {
-      unsigned w = 0;
+      int w = 0;
 #if defined(__SSE2_)
       for (; w < max_width; w += 8)
       {
@@ -96,7 +96,7 @@ void conv_0rgb1555_rgb565(void *output_, const void *input_,
    for (h = 0; h < height;
          h++, output += out_stride >> 1, input += in_stride >> 1)
    {
-      unsigned w = 0;
+      int w = 0;
 #if defined(__SSE2__)
       for (; w < max_width; w += 8)
       {
@@ -141,7 +141,7 @@ void conv_0rgb1555_argb8888(void *output_, const void *input_,
    for (h = 0; h < height;
          h++, output += out_stride >> 2, input += in_stride >> 1)
    {
-      unsigned w = 0;
+      int w = 0;
 #ifdef __SSE2__
       for (; w < max_width; w += 8)
       {
@@ -210,7 +210,7 @@ void conv_rgb565_argb8888(void *output_, const void *input_,
    for (h = 0; h < height;
          h++, output += out_stride >> 2, input += in_stride >> 1)
    {
-      unsigned w = 0;
+      int w = 0;
 #if defined(__SSE2__)
       for (; w < max_width; w += 8)
       {
@@ -403,7 +403,7 @@ void conv_0rgb1555_bgr24(void *output_, const void *input_,
          h++, output += out_stride, input += in_stride >> 1)
    {
       uint8_t *out = output;
-      unsigned   w = 0;
+      int   w = 0;
 
 #if defined(__SSE2__)
       for (; w < max_width; w += 16, out += 48)
@@ -490,7 +490,7 @@ void conv_rgb565_bgr24(void *output_, const void *input_,
    for (h = 0; h < height; h++, output += out_stride, input += in_stride >> 1)
    {
       uint8_t *out = output;
-      unsigned   w = 0;
+      int        w = 0;
 #if defined(__SSE2__)
       for (; w < max_width; w += 16, out += 48)
       {
@@ -612,7 +612,7 @@ void conv_argb8888_bgr24(void *output_, const void *input_,
          h++, output += out_stride, input += in_stride >> 2)
    {
       uint8_t *out = output;
-      unsigned   w = 0;
+      int        w = 0;
 #if defined(__SSE2__)
       for (; w < max_width; w += 16, out += 48)
       {
@@ -690,7 +690,7 @@ void conv_yuyv_argb8888(void *output_, const void *input_,
    {
       const uint8_t *src = input;
       uint32_t      *dst = output;
-      unsigned         w = 0;
+      int              w = 0;
 
 #if defined(__SSE2__)
       /* Each loop processes 16 pixels. */
