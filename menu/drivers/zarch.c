@@ -93,6 +93,33 @@ typedef struct zarch_handle
    int header_height;
 } zui_t;
 
+typedef struct
+{
+   unsigned active;
+   int x, y;
+   int width;
+   int height; /* unused */
+   int tabline_size;
+   bool update_width;
+   bool vertical;
+   int tab_width;
+} zui_tabbed_t;
+
+typedef struct
+{
+   float x, y;
+   float xspeed, yspeed;
+   uint8_t alpha;
+   bool alive;
+} part_t;
+
+static enum
+{
+   LAY_HOME,
+   LAY_PICK_CORE,
+   LAY_SETTINGS
+} layout = LAY_HOME;
+
 static float zui_strwidth(zui_t *zui, const char *text, float scale)
 {
    driver_t *driver = (driver_t*)driver_get_ptr();
@@ -101,6 +128,8 @@ static float zui_strwidth(zui_t *zui, const char *text, float scale)
 
 static void zui_begin(zui_t *zui)
 {
+   int dx, dy;
+   const struct retro_keybind *binds[MAX_USERS];
    driver_t *driver = (driver_t*)driver_get_ptr();
    gl_t *gl = (gl_t*)driver->video_data;
 
@@ -109,19 +138,17 @@ static void zui_begin(zui_t *zui)
    zui->hash = 0;
    zui->item.hot = 0;
 
-
    glViewport(0, 0, zui->width, zui->height);
    gl->shader->set_mvp(gl, &zui->mvp);
 
    /* why do i need this? */
-   const struct retro_keybind *binds[MAX_USERS];
    zui->mouse.left  = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
    zui->mouse.right = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
    zui->mouse.wheel = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN) -
          input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
 
-   int dx = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
-   int dy = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
+   dx = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
+   dy = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
 
    zui->mouse.x += dx;
    zui->mouse.y += dy;
@@ -137,7 +164,7 @@ static void zui_begin(zui_t *zui)
 void zui_finish(zui_t *zui)
 {
    driver_t *driver = (driver_t*)driver_get_ptr();
-   gl_t *gl = (gl_t*)driver->video_data;
+   gl_t         *gl = (gl_t*)driver->video_data;
 
    if (!zui->mouse.left)
       zui->item.active = 0;
@@ -168,7 +195,7 @@ static bool check_hit(zui_t *zui, int x1, int y1, int x2, int y2)
    unsigned mx = zui->mouse.x;
    unsigned my = zui->mouse.y;
 
-   return mx >= x1 && mx <= x2 && my >= y1 && my <= y2;
+   return ((mx >= x1) && (mx <= x2) && (my >= y1) && (my <= y2));
 }
 
 static bool mouse_down(zui_t *zui)
@@ -222,6 +249,7 @@ static bool check_button_up(zui_t *zui, unsigned id, int x1, int y1, int x2, int
 static unsigned zui_hash(zui_t *zui, const char *s)
 {
    unsigned hval = zui->hash;
+
    while(*s!=0)
    {
       hval+=*s++;
@@ -313,20 +341,14 @@ static float scalef(float val, float oldmin, float oldmax, float newmin, float n
    return (((val - oldmin) * (newmax - newmin)) / (oldmax - oldmin)) + newmin;
 }
 
+#define NPARTICLES 100
+
 static void zui_snow(zui_t *zui)
 {
-#define NPARTICLES 100
-   typedef struct {
-      float x, y;
-      float xspeed, yspeed;
-      uint8_t alpha;
-      bool alive;
-   } part_t;
    static part_t particles[NPARTICLES];
    static bool initialized = false;
-   static int timeout = 0;
-
-   unsigned i, j, max_gen = 2;
+   static int timeout      = 0;
+   unsigned i, j, max_gen  = 2;
 
    if (!initialized)
    {
@@ -337,6 +359,7 @@ static void zui_snow(zui_t *zui)
    for (i = 0; i < NPARTICLES; ++i)
    {
       part_t *p = &particles[i];
+
       if (p->alive)
       {
          p->y += p->yspeed;
@@ -363,6 +386,7 @@ static void zui_snow(zui_t *zui)
       timeout--;
 
    j = 0;
+
    for (i = 0; i < NPARTICLES; ++i)
    {
       part_t *p = &particles[i];
@@ -380,7 +404,9 @@ static void zui_snow(zui_t *zui)
 static bool zui_button_full(zui_t *zui, int x1, int y1, int x2, int y2, const char *label)
 {
    unsigned id = zui_hash(zui, label);
-//   int x2      = x1 + zui_strwidth(zui, label, 1.0) + 16;
+#if 0
+   int x2      = x1 + zui_strwidth(zui, label, 1.0) + 16;
+#endif
    bool active = check_button_up(zui, id, x1, y1, x2, y2);
    uint32_t bg = ZUI_BG_PANEL;
 
@@ -401,9 +427,8 @@ static bool zui_button(zui_t *zui, int x1, int y1, const char *label)
 static bool zui_list_item(zui_t *zui, int x1, int y1, const char *label)
 {
    unsigned id = zui_hash(zui, label);
-   int x2 = x1 + zui->width/2;
-   int y2 = y1 + 30;
-
+   int x2      = x1 + zui->width/2;
+   int y2      = y1 + 30;
    bool active = check_button_up(zui, id, x1, y1, x2, y2);
    uint32_t bg = ZUI_BG_PANEL;
 
@@ -416,17 +441,6 @@ static bool zui_list_item(zui_t *zui, int x1, int y1, const char *label)
    return active;
 }
 
-typedef struct {
-   unsigned active;
-   int x, y;
-   int width;
-   int height; /* unused */
-   int tabline_size;
-   bool update_width;
-   bool vertical;
-   int tab_width;
-} zui_tabbed_t;
-
 static void zui_tabbed_begin(zui_t *zui, zui_tabbed_t *tab, int x, int y)
 {
    tab->x = x;
@@ -436,19 +450,21 @@ static void zui_tabbed_begin(zui_t *zui, zui_tabbed_t *tab, int x, int y)
 
 static bool zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label)
 {
+   bool active;
+   int x1, y1, x2, y2;
    unsigned id = zui_hash(zui, label);
-   int width = tab->tab_width;
+   int width   = tab->tab_width;
+   uint32_t bg = ZUI_BG_PANEL;
 
    if (!width)
       width = zui_strwidth(zui, label, 1.0) + 16;
 
-   int x1 = tab->x;
-   int y1 = tab->y;
-   int x2  = x1 + width;
-   int y2 = y1 + 30;
+   x1          = tab->x;
+   y1          = tab->y;
+   x2          = x1 + width;
+   y2          = y1 + 30;
 
-   bool active = check_button_up(zui, id, x1, y1, x2, y2);
-   uint32_t bg = ZUI_BG_PANEL;
+   active      = check_button_up(zui, id, x1, y1, x2, y2);
 
    if (zui->item.active == id || tab->active == ~0)
       tab->active = id;
@@ -460,27 +476,20 @@ static bool zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label)
    zui_draw_text(zui, ZUI_FG_NORMAL, x1+8, y1 + 18, label);
 
    if (tab->vertical)
-   {
       tab->y += y2 - y1;
-   }
    else
-   {
       tab->x = x2;
-   }
 
-   return active || tab->active == id;
+   return (active || (tab->active == id));
 }
 
-static enum {
-   LAY_HOME,
-   LAY_PICK_CORE,
-   LAY_SETTINGS
-} layout = LAY_HOME;
 
 
-void render_lay_root(global_t *global, zui_t *zui)
+void render_lay_root(zui_t *zui)
 {
    static zui_tabbed_t tabbed = {~0};
+   global_t *global = global_get_ptr();
+
    zui_tabbed_begin(zui, &tabbed, 0, 0);
 
    tabbed.width = zui->width/2;
@@ -514,6 +523,8 @@ void render_lay_root(global_t *global, zui_t *zui)
 
    if (zui_tab(zui, &tabbed, "Load"))
    {
+      unsigned cwd_offset;
+
       if (!zui->load_cwd)
          zui->load_cwd = strdup(zui->set->menu_content_directory);
 
@@ -524,13 +535,14 @@ void render_lay_root(global_t *global, zui_t *zui)
          zui->load_dlist_first = 0;
       }
 
-      unsigned cwd_offset = min(strlen(zui->load_cwd), 30);
+      cwd_offset = min(strlen(zui->load_cwd), 30);
 
       zui_draw_text(zui, ZUI_FG_NORMAL, 60, tabbed.tabline_size + 5 + 18, &zui->load_cwd[strlen(zui->load_cwd) - cwd_offset]);
 
       if (zui_button(zui, 0, tabbed.tabline_size + 5, "HOME"))
       {
          char tmp[PATH_MAX_LENGTH];
+
          fill_pathname_expand_special(tmp, "~", sizeof(tmp));
 
          free(zui->load_cwd);
@@ -577,12 +589,15 @@ void render_lay_root(global_t *global, zui_t *zui)
 
             for (i = skip + zui->load_dlist_first; i < size; ++i)
             {
+               char label[PATH_MAX_LENGTH];
+               const char *path     = NULL;
+               const char *basename = NULL;
+
                if (j > 10)
                   break;
 
-               const char *path = zui->load_dlist->elems[i].data;
-               const char *basename = path_basename(path);
-               char label[PATH_MAX_LENGTH];
+               path = zui->load_dlist->elems[i].data;
+               basename = path_basename(path);
 
                *label = 0;
                strncat(label, "  ", sizeof(label)-1);
@@ -628,15 +643,16 @@ void render_lay_root(global_t *global, zui_t *zui)
 
 void render_sidebar(zui_t *zui)
 {
+   int width, x1, y1;
    static zui_tabbed_t tabbed = {~0};
    tabbed.vertical = true;
    tabbed.tab_width = 100;
 
    zui_tabbed_begin(zui, &tabbed, zui->width - 100, 30);
 
-   int width = 100;
-   int x1    = zui->width - width;
-   int y1    = 30;
+   width = 100;
+   x1    = zui->width - width;
+   y1    = 30;
 
    if (zui_button_full(zui, x1, y1, x1 + width, y1 + 30, "Home"))
       layout = LAY_HOME;
@@ -658,8 +674,6 @@ static void zui_render(zui_t *zui)
       return;
 
    zui_begin(zui);
-   global_t *global = global_get_ptr();
-
 
    zui_push_quad(zui, ZUI_BG_SCREEN, 0, 0, zui->width, zui->height);
    zui_snow(zui);
@@ -669,7 +683,7 @@ static void zui_render(zui_t *zui)
    switch (layout)
    {
       case LAY_HOME:
-         render_lay_root(global, zui);
+         render_lay_root(zui);
          break;
       case LAY_SETTINGS:
          /* FIXME/TODO - stub */
@@ -720,7 +734,9 @@ static void zui_render(zui_t *zui)
 
 static void zarch_draw_cursor(gl_t *gl, float x, float y)
 {
-//   zarch_render_quad(gl, x-5, y-5, 10, 10, 1, 1, 1, 1);
+#if 0
+   zarch_render_quad(gl, x-5, y-5, 10, 10, 1, 1, 1, 1);
+#endif
 }
 static void zarch_get_message(const char *message)
 {
@@ -731,7 +747,7 @@ static void zarch_render(void)
 {
    int bottom;
    unsigned width, height;
-   zui_t *zarch = NULL;
+   zui_t         *zarch = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
@@ -757,7 +773,9 @@ static void zarch_frame(void)
 
    video_driver_get_size(&zui->width, &zui->height);
 
-//   menu_display_set_viewport();
+#if 0
+   menu_display_set_viewport();
+#endif
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &zui->fb_buf);
 
@@ -771,12 +789,15 @@ static void zarch_frame(void)
 
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-//   menu_display_unset_viewport();
+#if 0
+   menu_display_unset_viewport();
+#endif
 }
 
 static void *zarch_init(void)
 {
-   zui_t *zui                     = NULL;
+   int tmpi;
+   zui_t *zui                              = NULL;
    const video_driver_t *video_driver      = NULL;
    menu_handle_t                     *menu = NULL;
    settings_t *settings                    = config_get_ptr();
@@ -807,14 +828,13 @@ static void *zarch_init(void)
 
    zui                  = (zui_t*)menu->userdata;
 
-   int tmpi;
    tmpi = 1000;
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &tmpi);
 
    tmpi = 14;
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE, &tmpi);
 
-   zui->header_height  = 1000;//dpi / 3;
+   zui->header_height  = 1000; /* dpi / 3; */
    zui->font_size       = 14;
 
    if (settings->menu.wallpaper[0] != '\0')
@@ -889,9 +909,11 @@ static bool zarch_load_wallpaper(void *data, menu_image_type_t type)
    
    zarch_context_bg_destroy(zarch);
 
-//   zarch->textures.bg.id   = video_texture_load(data,
-//         TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
-//   zarch_allocate_white_texture(zarch);
+#if 0
+   zarch->textures.bg.id   = video_texture_load(data,
+         TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+   zarch_allocate_white_texture(zarch);
+#endif
 
    return true;
 }
@@ -913,7 +935,9 @@ static void zarch_context_reset(void)
       RARCH_WARN("Failed to load font.");
 
    zarch_context_bg_destroy(zui);
-//   zarch_allocate_white_texture(zarch);
+#if 0
+   zarch_allocate_white_texture(zarch);
+#endif
 
    rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE,
          settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
