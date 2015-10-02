@@ -101,7 +101,8 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
        return false;
 #elif defined(_WIN32)
    WIN32_FILE_ATTRIBUTE_DATA file_info;
-   DWORD ret = GetFileAttributesEx(path, GetFileExInfoStandard, &file_info);
+   GET_FILEEX_INFO_LEVELS fInfoLevelId = GetFileExInfoStandard;
+   DWORD ret = GetFileAttributesEx(path, fInfoLevelId, &file_info);
    if (ret == 0)
       return false;
 #else
@@ -126,7 +127,7 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
 #elif defined(__CELLOS_LV2__)
          return ((buf.st_mode & S_IFMT) == S_IFDIR);
 #elif defined(_WIN32)
-         return (ret & FILE_ATTRIBUTE_DIRECTORY);
+         return (file_info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
 #else
          return S_ISDIR(buf.st_mode);
 #endif
