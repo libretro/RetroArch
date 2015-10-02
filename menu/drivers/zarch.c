@@ -81,6 +81,15 @@ typedef struct zarch_handle
    char *load_cwd;
    int  load_dlist_first;
 
+   struct
+   {
+      struct
+      {
+         GRuint id;
+         char path[PATH_MAX_LENGTH];
+      } bg;
+      GRuint white;
+   } textures;
 
    /* LAY_PICK_CORE */
    int pick_first;
@@ -119,6 +128,20 @@ static enum
    LAY_PICK_CORE,
    LAY_SETTINGS
 } layout = LAY_HOME;
+
+static const GRfloat zarch_vertexes[] = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
+static const GRfloat zarch_tex_coords[] = {
+   0, 1,
+   1, 1,
+   0, 0,
+   1, 0
+};
 
 static float zui_strwidth(zui_t *zui, const char *text, float scale)
 {
@@ -760,7 +783,11 @@ static void zarch_render(void)
 
 static void zarch_frame(void)
 {
+   unsigned i;
+   GRfloat coord_color[16];
+   GRfloat coord_color2[16];
    zui_t *zui          = NULL;
+   settings_t *settings                    = config_get_ptr();
    menu_handle_t *menu = menu_driver_get_ptr();
    gl_t *gl = (gl_t*)driver_get_ptr()->video_data;
 
@@ -776,6 +803,17 @@ static void zarch_frame(void)
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &zui->fb_buf);
 
+   for (i = 0; i < 16; i++)
+   {
+      coord_color[i]  = 0;
+      coord_color2[i] = 2.0f;
+
+      if (i == 3 || i == 7 || i == 11 || i == 15)
+      {
+         coord_color[i]  = 0.10f;
+         coord_color2[i] = 0.10f;
+      }
+   }
    zui_render(zui);
 
    /* fetch it again in case the pointer was invalidated by a core load */
@@ -783,6 +821,12 @@ static void zarch_frame(void)
 
    if (zui->set->menu.mouse.enable)
       zarch_draw_cursor(gl, zui->mouse.x, zui->mouse.y);
+
+   menu_video_frame_background(menu, settings,
+         gl, zui->width, zui->height,
+         zui->textures.bg.id, 0.75f, false,
+         &coord_color[0],   &coord_color2[0],
+         &zarch_vertexes[0], &zarch_tex_coords[0]);
 
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
@@ -892,7 +936,20 @@ static void zarch_context_destroy(void)
    zarch_context_bg_destroy(zarch);
 }
 
-static bool zarch_load_wallpaper(void *data, menu_image_type_t type)
+static void zarch_allocate_white_texture(zui_t *zarch)
+{
+   struct texture_image ti;
+   static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
+
+   ti.width  = 1;
+   ti.height = 1;
+   ti.pixels = (uint32_t*)&white_data;
+
+   zarch->textures.white   = video_texture_load(&ti,
+         TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_NEAREST);
+}
+
+static bool zarch_load_image(void *data, menu_image_type_t type)
 {
    zui_t *zarch = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -904,11 +961,9 @@ static bool zarch_load_wallpaper(void *data, menu_image_type_t type)
    
    zarch_context_bg_destroy(zarch);
 
-#if 0
    zarch->textures.bg.id   = video_texture_load(data,
          TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
    zarch_allocate_white_texture(zarch);
-#endif
 
    return true;
 }
@@ -930,9 +985,7 @@ static void zarch_context_reset(void)
       RARCH_WARN("Failed to load font.");
 
    zarch_context_bg_destroy(zui);
-#if 0
-   zarch_allocate_white_texture(zarch);
-#endif
+   zarch_allocate_white_texture(zui);
 
    rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE,
          settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
@@ -965,7 +1018,7 @@ menu_ctx_driver_t menu_ctx_zarch = {
    NULL,
    NULL,
    NULL,
-   zarch_load_wallpaper,
+   zarch_load_image,
    "zarch",
    MENU_VIDEO_DRIVER_OPENGL,
    NULL,
