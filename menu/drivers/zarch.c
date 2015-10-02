@@ -549,7 +549,15 @@ void render_lay_root(zui_t *zui)
       unsigned cwd_offset;
 
       if (!zui->load_cwd)
+      {
          zui->load_cwd = strdup(zui->set->menu_content_directory);
+         if ((zui->load_cwd[strlen(zui->load_cwd)-1] == '/')
+#ifdef _WIN32
+            || (zui->load_cwd[strlen(zui->load_cwd)-1] == '\\')
+#endif
+            )
+            zui->load_cwd[strlen(zui->load_cwd)-1] = 0;
+      }
 
       if (!zui->load_dlist)
       {
@@ -580,7 +588,11 @@ void render_lay_root(zui_t *zui)
          if (zui_list_item(zui, 0, tabbed.tabline_size + 40, "^ .."))
          {
             path_basedir(zui->load_cwd);
-            if (zui->load_cwd[strlen(zui->load_cwd)-1] == '/')
+            if ((zui->load_cwd[strlen(zui->load_cwd)-1] == '/')
+#ifdef _WIN32
+                  || (zui->load_cwd[strlen(zui->load_cwd)-1] == '\\')
+#endif
+               )
                zui->load_cwd[strlen(zui->load_cwd)-1] = 0;
 
             dir_list_free(zui->load_dlist);
