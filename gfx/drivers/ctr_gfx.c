@@ -393,12 +393,14 @@ static bool ctr_frame(void* data, const void* frame,
    if((state_tmp & KEY_TOUCH) && (state_tmp_touch.py < 120))
    {
       Handle lcd_handle;
+      u8 not_2DS;
       extern PrintConsole* currentConsole;
 
       gfxBottomFramebuffers[0] = ctr->lcd_buttom_on ? (u8*)ctr->empty_framebuffer:
                                                       (u8*)currentConsole->frameBuffer;
 
-      if(srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
+      CFGU_GetModelNintendo2DS(&not_2DS);
+      if(not_2DS && srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
       {
          u32 *cmdbuf = getThreadCommandBuffer();
          cmdbuf[0] = ctr->lcd_buttom_on? 0x00120040:  0x00110040;
