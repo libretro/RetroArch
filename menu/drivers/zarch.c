@@ -27,6 +27,8 @@
 #include <retro_log.h>
 #include <retro_stat.h>
 
+#include "menu_generic.h"
+
 #include "../menu.h"
 #include "../menu_entry.h"
 #include "../menu_display.h"
@@ -1008,6 +1010,7 @@ menu_ctx_driver_t menu_ctx_zarch = {
    zarch_get_message,
    zarch_render,
    zarch_frame,
+   generic_menu_init_list,
    zarch_init,
    zarch_free,
    zarch_context_reset,

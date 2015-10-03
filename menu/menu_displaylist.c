@@ -3043,31 +3043,3 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
 
    return 0;
 }
-
-/**
- * menu_displaylist_init:
- * @menu                     : Menu handle.
- *
- * Creates and initializes menu display list.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool menu_displaylist_init(void *data)
-{
-   menu_handle_t       *menu    = (menu_handle_t*)data;
-   menu_list_t       *menu_list = menu_list_get_ptr();
-   menu_displaylist_info_t info = {0};
-   if (!menu || !menu_list)
-      return false;
-
-   info.list  = menu_list->selection_buf;
-   info.type  = MENU_SETTINGS;
-   info.flags = SL_FLAG_MAIN_MENU | SL_FLAG_MAIN_MENU_SETTINGS;
-   strlcpy(info.label, menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));
-
-   menu_list_push(menu_list->menu_stack,
-         info.path, info.label, info.type, info.flags, 0);
-   menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
-
-   return true;
-}

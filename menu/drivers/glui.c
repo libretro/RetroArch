@@ -25,6 +25,8 @@
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 
+#include "menu_generic.h"
+
 #include "../menu.h"
 #include "../menu_driver.h"
 #include "../menu_animation.h"
@@ -836,6 +838,7 @@ menu_ctx_driver_t menu_ctx_glui = {
    glui_get_message,
    glui_render,
    glui_frame,
+   generic_menu_init_list,
    glui_init,
    glui_free,
    glui_context_reset,

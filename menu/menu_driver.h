@@ -110,6 +110,7 @@ typedef struct menu_ctx_driver
    void  (*render_messagebox)(const char *msg);
    void  (*render)(void);
    void  (*frame)(void);
+   bool  (*init_list)(void*);
    void* (*init)(void);
    void  (*free)(void*);
    void  (*context_reset)(void);

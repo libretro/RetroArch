@@ -24,6 +24,8 @@
 #include <compat/posix_string.h>
 #include <string/string_list.h>
 
+#include "menu_generic.h"
+
 #include "../menu.h"
 #include "../menu_driver.h"
 #include "../menu_entry.h"
@@ -328,6 +330,7 @@ menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_render_messagebox,
    rmenu_render,
    NULL,
+   generic_menu_init_list,
    rmenu_init,
    rmenu_free,
    rmenu_context_reset,

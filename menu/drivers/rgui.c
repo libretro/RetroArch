@@ -26,6 +26,8 @@
 #include <file/file_path.h>
 #include <retro_inline.h>
 
+#include "menu_generic.h"
+
 #include "../../general.h"
 
 #include "../menu.h"
@@ -852,6 +854,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_message,
    rgui_render,
    NULL,
+   generic_menu_init_list,
    rgui_init,
    rgui_free,
    NULL,

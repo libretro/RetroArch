@@ -25,6 +25,8 @@
 #include <string/stdstring.h>
 #include <string/string_list.h>
 
+#include "menu_generic.h"
+
 #include "../menu.h"
 #include "../menu_driver.h"
 #include "../menu_entry.h"
@@ -2547,6 +2549,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_render_messagebox_internal,
    xmb_render,
    xmb_frame,
+   generic_menu_init_list,
    xmb_init,
    xmb_free,
    xmb_context_reset,

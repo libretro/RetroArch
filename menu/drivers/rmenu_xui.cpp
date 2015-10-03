@@ -27,6 +27,8 @@
 #include <file/file_path.h>
 #include <string/string_list.h>
 
+#include "menu_generic.h"
+
 #include "../menu_driver.h"
 #include "../menu.h"
 #include "../menu_entry.h"
@@ -695,6 +697,7 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_render_messagebox,
    rmenu_xui_render,
    rmenu_xui_frame,
+   generic_menu_init_list,
    rmenu_xui_init,
    rmenu_xui_free,
    NULL,

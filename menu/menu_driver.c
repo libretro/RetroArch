@@ -163,6 +163,22 @@ static void init_menu_fallback(void)
 #endif
 }
 
+menu_handle_t *menu_driver_get_ptr(void)
+{
+   driver_t *driver = driver_get_ptr();
+   if (!driver || !driver->menu)
+      return NULL;
+   return driver->menu;
+}
+
+const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void)
+{
+   driver_t *driver = driver_get_ptr();
+   if (!driver || !driver->menu_ctx)
+      return NULL;
+   return driver->menu_ctx;
+}
+
 void init_menu(void)
 {
    const char *video_driver;
@@ -192,25 +208,11 @@ void init_menu(void)
    if (!(driver->menu = (menu_handle_t*)menu_init(driver->menu_ctx)))
       rarch_fail(1, "init_menu()");
 
-   if (!(menu_displaylist_init(driver->menu)))
-      rarch_fail(1, "init_menu()");
+   if (driver->menu_ctx->init_list)
+      if (!driver->menu_ctx->init_list(driver->menu))
+         rarch_fail(1, "init_menu()");
 }
 
-menu_handle_t *menu_driver_get_ptr(void)
-{
-   driver_t *driver = driver_get_ptr();
-   if (!driver || !driver->menu)
-      return NULL;
-   return driver->menu;
-}
-
-const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void)
-{
-   driver_t *driver = driver_get_ptr();
-   if (!driver || !driver->menu_ctx)
-      return NULL;
-   return driver->menu_ctx;
-}
 
 void  menu_driver_list_free(file_list_t *list, size_t idx, size_t list_size)
 {

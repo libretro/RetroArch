@@ -28,6 +28,7 @@ menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* render_messagebox */
   NULL,  /* render */
   NULL,  /* frame */
+  NULL,  /* init_list */
   NULL,  /* init */
   NULL,  /* free */
   NULL,  /* context_reset */

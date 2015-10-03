@@ -789,6 +789,7 @@ MENU
 #include "../menu/intl/menu_hash_us.c"
 
 #include "../menu/drivers/null.c"
+#include "../menu/drivers/menu_generic.c"
 #endif
 
 
