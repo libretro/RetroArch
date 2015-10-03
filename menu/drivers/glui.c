@@ -218,6 +218,35 @@ end:
    string_list_free(list);
 }
 
+static void glui_draw_cursor(glui_handle_t *glui,
+      float x, float y, unsigned width, unsigned height)
+{
+   bool mouse_scrolldown, mouse_scrollup;
+   unsigned new_mouse_ptr = 0;
+   menu_handle_t *menu                = menu_driver_get_ptr();
+   gl_t *gl                           = NULL;
+
+   gl = (gl_t*)video_driver_get_ptr(NULL);
+
+   if (!gl)
+      return;
+
+   menu_input_ctl(MENU_INPUT_CTL_MOUSE_SCROLL_DOWN, &mouse_scrolldown);
+   menu_input_ctl(MENU_INPUT_CTL_MOUSE_SCROLL_UP,   &mouse_scrollup);
+
+   if (mouse_scrolldown)
+      menu->scroll_y += 10;
+
+   if (mouse_scrollup)
+      menu->scroll_y -= 10;
+
+   new_mouse_ptr = 
+      (y - glui->line_height + menu->scroll_y - 16)
+      / glui->line_height;
+
+   menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &new_mouse_ptr);
+}
+
 static void glui_render(void)
 {
    float delta_time, dt;
@@ -263,24 +292,10 @@ static void glui_render(void)
 
    if (settings->menu.mouse.enable)
    {
-      unsigned new_mouse_ptr = 0;
-      bool mouse_scrolldown, mouse_scrollup;
+      int16_t mouse_x          = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       int16_t mouse_y          = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-      menu_input_ctl(MENU_INPUT_CTL_MOUSE_SCROLL_DOWN, &mouse_scrolldown);
-      menu_input_ctl(MENU_INPUT_CTL_MOUSE_SCROLL_UP,   &mouse_scrollup);
-
-      if (mouse_scrolldown)
-         menu->scroll_y += 10;
-
-      if (mouse_scrollup)
-         menu->scroll_y -= 10;
-
-      new_mouse_ptr = 
-         (mouse_y - glui->line_height + menu->scroll_y - 16)
-         / glui->line_height;
-
-      menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &new_mouse_ptr);
+      glui_draw_cursor(glui, mouse_x, mouse_y, width, height);
    }
 
    if (menu->scroll_y < 0)
