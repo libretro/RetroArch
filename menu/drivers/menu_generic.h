@@ -22,6 +22,23 @@
 
 #include "../menu_input.h"
 
+enum menu_state_changes
+{
+   MENU_STATE_RENDER_FRAMEBUFFER = 0,
+   MENU_STATE_RENDER_MESSAGEBOX,
+   MENU_STATE_BLIT,
+   MENU_STATE_POP_STACK,
+   MENU_STATE_POST_ITERATE
+}; 
+
+enum action_iterate_type
+{
+   ITERATE_TYPE_DEFAULT = 0,
+   ITERATE_TYPE_HELP,
+   ITERATE_TYPE_INFO,
+   ITERATE_TYPE_BIND
+};
+
 int generic_menu_iterate(bool render_this_frame, enum menu_action action);
 
 bool generic_menu_init_list(void *data);

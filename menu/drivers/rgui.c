@@ -851,8 +851,8 @@ static int rgui_environ(menu_environ_cb_t type, void *data)
 
 menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
-   generic_menu_iterate,
    rgui_set_message,
+   generic_menu_iterate,
    rgui_render,
    NULL,
    rgui_init,

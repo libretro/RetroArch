@@ -33,23 +33,6 @@
 
 #include "../../runloop.h"
 
-enum menu_state_changes
-{
-   MENU_STATE_RENDER_FRAMEBUFFER = 0,
-   MENU_STATE_RENDER_MESSAGEBOX,
-   MENU_STATE_BLIT,
-   MENU_STATE_POP_STACK,
-   MENU_STATE_POST_ITERATE
-}; 
-
-enum action_iterate_type
-{
-   ITERATE_TYPE_DEFAULT = 0,
-   ITERATE_TYPE_HELP,
-   ITERATE_TYPE_INFO,
-   ITERATE_TYPE_BIND
-};
-
 static int action_iterate_help(char *s, size_t len, const char *label)
 {
    menu_handle_t *menu       = menu_driver_get_ptr();

@@ -1005,10 +1005,26 @@ static void zarch_context_reset(void)
          settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
 }
 
+static int zarch_iterate(bool render_this_frame, enum menu_action action)
+{
+   menu_handle_t *menu       = menu_driver_get_ptr();
+
+   if (!menu)
+      return 0;
+
+   if (render_this_frame)
+   {
+      BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
+      BIT64_SET(menu->state, MENU_STATE_BLIT);
+   }
+
+   return 0;
+}
+
 menu_ctx_driver_t menu_ctx_zarch = {
    NULL,
    zarch_get_message,
-   generic_menu_iterate,
+   zarch_iterate,
    zarch_render,
    zarch_frame,
    zarch_init,
