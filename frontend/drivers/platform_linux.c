@@ -1976,8 +1976,8 @@ static void frontend_linux_get_env(int *argc,
                         "overlay", sizeof(g_defaults.dir.overlay));
                   fill_pathname_join(g_defaults.dir.osk_overlay, base_path,
                         "overlay", sizeof(g_defaults.dir.osk_overlay));
-                  fill_pathname_join(g_defaults.dir.core_assets_directory, base_path,
-                        "downloads", sizeof(g_defaults.dir.core_assets_directory));
+                  fill_pathname_join(g_defaults.dir.core_assets, base_path,
+                        "downloads", sizeof(g_defaults.dir.core_assets));
                   fill_pathname_join(g_defaults.dir.screenshot, base_path,
                         "screenshots", sizeof(g_defaults.dir.screenshot));
 #endif
