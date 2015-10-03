@@ -293,8 +293,8 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
          return true;
       case MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING:
          {
-            const char *ptr = (const char*)data;
-            menu_input->keyboard.label_setting = ptr;
+            char **ptr = (char**)data;
+            menu_input->keyboard.label_setting = *ptr;
          }
          return true;
       case MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL_SETTING:
