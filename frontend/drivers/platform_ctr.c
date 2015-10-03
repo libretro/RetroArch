@@ -192,6 +192,7 @@ static void frontend_ctr_deinit(void *data)
 {
    extern PrintConsole* currentConsole;
    Handle lcd_handle;
+   u8 not_2DS;
    (void)data;
 #ifndef IS_SALAMANDER
    global_t *global   = global_get_ptr();
@@ -206,7 +207,8 @@ static void frontend_ctr_deinit(void *data)
    if(gfxBottomFramebuffers[0] == (u8*)currentConsole->frameBuffer)
       wait_for_input();
 
-   if(srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
+   CFGU_GetModelNintendo2DS(&not_2DS);
+   if(not_2DS && srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
    {
       u32 *cmdbuf = getThreadCommandBuffer();
       cmdbuf[0] = 0x00110040;
@@ -215,6 +217,7 @@ static void frontend_ctr_deinit(void *data)
       svcCloseHandle(lcd_handle);
    }
 
+   exitCfgu();
    csndExit();
    gfxExit();
 
@@ -255,6 +258,7 @@ static void frontend_ctr_init(void *data)
 #endif
    gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);
    csndInit();
+   initCfgu();
    gfxSet3D(false);
    consoleInit(GFX_BOTTOM, NULL);
 #endif
