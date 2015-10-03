@@ -205,7 +205,7 @@ else ifeq ($(platform), vita)
   PLATCFLAGS :=  -O3 -mfloat-abi=hard -ffast-math -fsingle-precision-constant 
   LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
 			 -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub -lUVLoader_stub \
-			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lfreetype -lz -lm -lc
+			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lfreetype -lz -lm -lc -lpng
 
   PLATOBJS += audio/audio_utils_neon.o audio/drivers_resampler/sinc_neon.o \
               audio/drivers_resampler/cc_resampler_neon.o
