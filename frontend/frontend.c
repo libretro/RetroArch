@@ -126,9 +126,6 @@ void main_exit(void *args)
 
 static void check_defaults_dirs(void)
 {
-   settings_t *settings = NULL;
-   settings = config_get_ptr();
-
    if (*g_defaults.dir.core_assets)
       path_mkdir(g_defaults.dir.core_assets);
    if (*g_defaults.dir.remap)
