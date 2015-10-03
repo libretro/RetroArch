@@ -1040,7 +1040,7 @@ menu_ctx_driver_t menu_ctx_zarch = {
    NULL,
    NULL,
    NULL,
-   generic_menu_init_list,
+   NULL,
    NULL,
    NULL,
    NULL,
