@@ -50,7 +50,7 @@ void main_exit_save_config(void)
                sizeof(global->dir.savestate));
 
       /* Save last core-specific config to the default config location,
-       * needed on consoles for core switching and reusing last good 
+       * needed on consoles for core switching and reusing last good
        * config for new cores.
        */
       config_save_file(global->path.config);
@@ -279,7 +279,7 @@ error:
  * Main function of RetroArch.
  *
  * If HAVE_MAIN is not defined, will contain main loop and will not
- * be exited from until we exit the program. Otherwise, will 
+ * be exited from until we exit the program. Otherwise, will
  * just do initialization.
  *
  * Returns: varies per platform.
@@ -344,7 +344,7 @@ int rarch_main(int argc, char *argv[], void *data)
    do{
       unsigned sleep_ms = 0;
       ret = rarch_main_iterate(&sleep_ms);
-      
+
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
       rarch_main_data_iterate();
