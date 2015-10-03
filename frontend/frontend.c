@@ -242,8 +242,6 @@ bool main_load_content(int argc, char **argv, void *args,
    if (environ_get)
       environ_get(rarch_argc_ptr, rarch_argv_ptr, args, wrap_args);
 
-   check_defaults_dirs();
-
    if (wrap_args->touched)
    {
       rarch_main_init_wrap(wrap_args, &rarch_argc, rarch_argv);
@@ -262,6 +260,8 @@ bool main_load_content(int argc, char **argv, void *args,
    }
 
    event_command(EVENT_CMD_RESUME);
+
+   check_defaults_dirs();
 
    if (process_args)
       process_args(rarch_argc_ptr, rarch_argv_ptr);
