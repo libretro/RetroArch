@@ -110,7 +110,6 @@ typedef struct menu_ctx_driver
    void  (*render_messagebox)(const char *msg);
    void  (*render)(void);
    void  (*frame)(void);
-   bool  (*init_list)(void*);
    void* (*init)(void);
    void  (*free)(void*);
    void  (*context_reset)(void);
@@ -125,6 +124,7 @@ typedef struct menu_ctx_driver
    void  (*navigation_set_last)(void);
    void  (*navigation_descend_alphabet)(size_t *);
    void  (*navigation_ascend_alphabet)(size_t *);
+   bool  (*lists_init)(void*);
    void  (*list_insert)(file_list_t *list, const char *, const char *, size_t);
    void  (*list_free)(file_list_t *list, size_t, size_t);
    void  (*list_clear)(file_list_t *list);

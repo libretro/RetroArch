@@ -28,7 +28,6 @@ menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* render_messagebox */
   NULL,  /* render */
   NULL,  /* frame */
-  NULL,  /* init_list */
   NULL,  /* init */
   NULL,  /* free */
   NULL,  /* context_reset */
@@ -42,6 +41,7 @@ menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* navigation_set_last */
   NULL,  /* navigation_descend_alphabet */
   NULL,  /* navigation_ascend_alphabet */
+  NULL,  /* lists_init */
   NULL,  /* list_insert */
   NULL,  /* list_delete */
   NULL,  /* list_clear */

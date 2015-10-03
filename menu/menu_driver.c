@@ -208,8 +208,8 @@ void init_menu(void)
    if (!(driver->menu = (menu_handle_t*)menu_init(driver->menu_ctx)))
       rarch_fail(1, "init_menu()");
 
-   if (driver->menu_ctx->init_list)
-      if (!driver->menu_ctx->init_list(driver->menu))
+   if (driver->menu_ctx->lists_init)
+      if (!driver->menu_ctx->lists_init(driver->menu))
          rarch_fail(1, "init_menu()");
 }
 
