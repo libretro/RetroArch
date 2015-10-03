@@ -328,6 +328,7 @@ static int rmenu_environ(menu_environ_cb_t type, void *data)
 menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_set_texture,
    rmenu_render_messagebox,
+   generic_menu_iterate,
    rmenu_render,
    NULL,
    rmenu_init,

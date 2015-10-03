@@ -836,6 +836,7 @@ static int glui_environ(menu_environ_cb_t type, void *data)
 menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    glui_get_message,
+   generic_menu_iterate,
    glui_render,
    glui_frame,
    glui_init,

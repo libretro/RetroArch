@@ -331,6 +331,15 @@ bool menu_driver_alive(void)
    return menu_alive;
 }
 
+int menu_driver_iterate(bool render, enum menu_action action)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->iterate)
+      return driver->iterate(render, action);
+   return -1;
+}
+
 void menu_driver_toggle(bool latch)
 {
    driver_t                     *driver = driver_get_ptr();

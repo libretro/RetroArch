@@ -20,6 +20,10 @@
 
 #include <boolean.h>
 
+#include "../menu_input.h"
+
+int generic_menu_iterate(bool render_this_frame, enum menu_action action);
+
 bool generic_menu_init_list(void *data);
 
 #endif

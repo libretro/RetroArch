@@ -94,8 +94,6 @@ bool menu_load_content(enum rarch_core_type type)
 
    /* redraw menu frame */
    menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
-
-   menu_iterate(true, MENU_ACTION_NOOP);
    menu_iterate_render();
 
    if (!(main_load_content(0, NULL, NULL, menu_environment_get,

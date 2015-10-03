@@ -695,6 +695,7 @@ static int rmenu_xui_environ(menu_environ_cb_t type, void *data)
 menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    rmenu_xui_render_messagebox,
+   generic_menu_iterate,
    rmenu_xui_render,
    rmenu_xui_frame,
    rmenu_xui_init,

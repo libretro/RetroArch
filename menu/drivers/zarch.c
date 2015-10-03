@@ -1008,6 +1008,7 @@ static void zarch_context_reset(void)
 menu_ctx_driver_t menu_ctx_zarch = {
    NULL,
    zarch_get_message,
+   generic_menu_iterate,
    zarch_render,
    zarch_frame,
    zarch_init,

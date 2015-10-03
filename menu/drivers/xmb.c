@@ -2547,6 +2547,7 @@ static int xmb_list_bind_init(menu_file_list_cbs_t *cbs,
 menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_render_messagebox_internal,
+   generic_menu_iterate,
    xmb_render,
    xmb_frame,
    xmb_init,
