@@ -428,7 +428,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/cbs/menu_cbs_deferred_push.o \
 			 menu/cbs/menu_cbs_scan.o \
 			 menu/cbs/menu_cbs_get_value.o \
-			 menu/menu_iterate.o \
 			 menu/cbs/menu_cbs_title.o \
 			 menu/cbs/menu_cbs_up.o \
 			 menu/cbs/menu_cbs_down.o \
