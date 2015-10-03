@@ -169,8 +169,8 @@ static void menu_input_key_end_line(void)
    driver_t *driver         = driver_get_ptr();
 
    menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY, &keyboard_display);
-   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL, NULL);
-   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING, NULL);
+   menu_input_ctl(MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL, NULL);
+   menu_input_ctl(MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL_SETTING, NULL);
 
    /* Avoid triggering states on pressing return. */
    driver->flushing_input = true;
@@ -282,6 +282,12 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
             menu_input->keyboard.label = ptr;
          }
          return true;
+      case MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL:
+         {
+            const char *ptr = (const char*)data;
+            menu_input->keyboard.label = NULL;
+         }
+         return true;
       case MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING:
          {
             const char **ptr = (const char**)data;
@@ -292,6 +298,12 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
          {
             const char *ptr = (const char*)data;
             menu_input->keyboard.label_setting = ptr;
+         }
+         return true;
+      case MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL_SETTING:
+         {
+            const char *ptr = (const char*)data;
+            menu_input->keyboard.label_setting = NULL;
          }
          return true;
    }
