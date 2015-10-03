@@ -1229,7 +1229,7 @@ static bool frontend_linux_powerstate_check_apm(
    ssize_t length      = 0;
    char  *buf          = NULL;
    char *str           = NULL;
-   
+
    if (retro_read_file(proc_apm_path, (void**)&buf, &length) != 1)
       goto error;
 
@@ -1746,7 +1746,7 @@ static void frontend_linux_get_env(int *argc,
          (*env)->NewStringUTF(env, "DATADIR"));
 
    if (android_app->getStringExtra && jstr)
-   {      
+   {
       int perms = 0;
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
@@ -1856,6 +1856,11 @@ static void frontend_linux_get_env(int *argc,
                   fill_pathname_join(g_defaults.dir.system,
                         ext_dir, "system", sizeof(g_defaults.dir.system));
                   path_mkdir(g_defaults.dir.system);
+
+                  fill_pathname_join(g_defaults.dir.menu_config,
+                        ext_dir, "config", sizeof(g_defaults.dir.menu_config));
+                  path_mkdir(g_defaults.dir.menu_config);
+
                   break;
                case SDCARD_NOT_WRITABLE:
                   fill_pathname_join(g_defaults.dir.sram,
@@ -1867,6 +1872,10 @@ static void frontend_linux_get_env(int *argc,
                   fill_pathname_join(g_defaults.dir.system,
                         app_dir, "system", sizeof(g_defaults.dir.system));
                   path_mkdir(g_defaults.dir.system);
+
+                  fill_pathname_join(g_defaults.dir.menu_config,
+                        app_dir, "config", sizeof(g_defaults.dir.menu_config));
+                  path_mkdir(g_defaults.dir.menu_config);
                   break;
                case SDCARD_ROOT_WRITABLE:
                default:
@@ -1887,7 +1896,6 @@ static void frontend_linux_get_env(int *argc,
             path_mkdir(buf);
 
             /* create save and system directories in the internal sd too */
-
             fill_pathname_join(buf,
                   ext_dir, "saves", sizeof(buf));
             path_mkdir(buf);
@@ -1927,7 +1935,7 @@ static void frontend_linux_get_env(int *argc,
       g_defaults.settings.video_refresh_rate = 59.65;
 
 #if 0
-   /* Explicitly disable input overlay by default 
+   /* Explicitly disable input overlay by default
     * for gamepad-like/console devices. */
                   if (device_is_game_console(device_model))
                      g_defaults.settings.input_overlay_enable = false;
