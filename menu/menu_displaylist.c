@@ -19,6 +19,7 @@
 #include <file/file_path.h>
 #include <file/file_extract.h>
 #include <file/dir_list.h>
+#include <retro_stat.h>
 
 #include "menu.h"
 #include "menu_hash.h"
