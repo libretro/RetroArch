@@ -154,7 +154,7 @@ static int menu_list_elem_get_first_char(
    menu_list_get_alt_at_offset(list, offset, &path);
    ret = tolower((int)*path);
 
-   /* "Normalize" non-alphabetical entries so they 
+   /* "Normalize" non-alphabetical entries so they
     * are lumped together for purposes of jumping. */
    if (ret < 'a')
       ret = 'a' - 1;
@@ -196,8 +196,8 @@ static void menu_list_build_scroll_indices(file_list_t *list)
 }
 
 /**
- * Before a refresh, we could have deleted a 
- * file on disk, causing selection_ptr to 
+ * Before a refresh, we could have deleted a
+ * file on disk, causing selection_ptr to
  * suddendly be out of range.
  *
  * Ensure it doesn't overflow.
@@ -412,33 +412,52 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
    settings_t *settings                = config_get_ptr();
    global_t *global                    = global_get_ptr();
 
-   snprintf(tmp, sizeof(tmp), "%s", menu_hash_to_str(MENU_LABEL_VALUE_SAVEFILE_DIRECTORY));
-   menu_list_push(info->list, tmp, "",
+   bool ret;
+
+   menu_list_push(info->list, "Directory Tests:", "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   snprintf(tmp, sizeof(tmp), "%s", global->dir.savefile);
-   menu_list_push(info->list, tmp, "",
-         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   snprintf(tmp, sizeof(tmp), "%s", global->name.savefile);
+
+   // assume libretro directory exists and check if stat works
+   ret = path_is_directory(settings->libretro_directory);
+   snprintf(tmp, sizeof(tmp), "Test 1: stat directory... %s",  ret ? "passed" : "failed");
    menu_list_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-   snprintf(tmp, sizeof(tmp), "%s", menu_hash_to_str(MENU_LABEL_VALUE_SAVESTATE_DIRECTORY));
-   menu_list_push(info->list, tmp, "",
-         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   snprintf(tmp, sizeof(tmp), "%s", global->dir.savestate);
-   menu_list_push(info->list, tmp, "",
-         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   snprintf(tmp, sizeof(tmp), "%s", global->name.savestate);
+   // try to create a "test" subdirectory on top of libretro directory
+   fill_pathname_join(tmp, settings->libretro_directory, "test", PATH_MAX_LENGTH);
+   ret = path_mkdir(tmp);
+   snprintf(tmp, sizeof(tmp), "Test 2: create a directory... %s",  ret ? "passed" : "failed");
    menu_list_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-   snprintf(tmp, sizeof(tmp), "%s", menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_DIRECTORY));
+
+   menu_list_push(info->list, "", "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   // check if save directory exists:
+   menu_list_push(info->list, "Savefile Directory", "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   ret = path_is_directory(global->dir.savefile);
+   snprintf(tmp, sizeof(tmp), "Directory exists: %s",  ret ? "true" : "false");
    menu_list_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   snprintf(tmp, sizeof(tmp), "%s", settings->system_directory);
+   //check if save directory is writable
+   fill_pathname_join(tmp, global->dir.savefile, "test", PATH_MAX_LENGTH);
+   ret = path_mkdir(tmp);
+   snprintf(tmp, sizeof(tmp), "Directory writable: %s",  ret ? "true" : "false");
    menu_list_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   snprintf(tmp, sizeof(tmp), "%s", global->dir.systemdir);
+
+   // check if state directory exists:
+   menu_list_push(info->list, "Savestate Directory", "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   ret = path_is_directory(global->dir.savestate);
+   snprintf(tmp, sizeof(tmp), "Directory exists: %s",  ret ? "true" : "false");
+   menu_list_push(info->list, tmp, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   //check if save directory is writable
+   fill_pathname_join(tmp, global->dir.savestate, "test", PATH_MAX_LENGTH);
+   ret = path_mkdir(tmp);
+   snprintf(tmp, sizeof(tmp), "Directory writable: %s",  ret ? "true" : "false");
    menu_list_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    return 0;
@@ -1895,12 +1914,6 @@ static int menu_displaylist_parse_information_list(menu_displaylist_info_t *info
          menu_hash_to_str(MENU_LABEL_SYSTEM_INFORMATION),
          MENU_SETTING_ACTION, 0, 0);
 
-   if(settings->debug_panel_enable)
-      menu_list_push(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_DEBUG_INFORMATION),
-            menu_hash_to_str(MENU_LABEL_DEBUG_INFORMATION),
-            MENU_SETTING_ACTION, 0, 0);
-
 #ifdef HAVE_LIBRETRODB
    menu_list_push(info->list, menu_hash_to_str(MENU_LABEL_VALUE_DATABASE_MANAGER),
          menu_hash_to_str(MENU_LABEL_DATABASE_MANAGER_LIST),
@@ -1922,6 +1935,12 @@ static int menu_displaylist_parse_information_list(menu_displaylist_info_t *info
             menu_hash_to_str(MENU_LABEL_CORE_COUNTERS),
             MENU_SETTING_ACTION, 0, 0);
    }
+
+   if(settings->debug_panel_enable)
+      menu_list_push(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_DEBUG_INFORMATION),
+            menu_hash_to_str(MENU_LABEL_DEBUG_INFORMATION),
+            MENU_SETTING_ACTION, 0, 0);
 
    return 0;
 }
@@ -2666,7 +2685,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_DATABASE_ENTRY:
          {
-            struct string_list *str_list  = string_split(info->label, "|"); 
+            struct string_list *str_list  = string_split(info->label, "|");
 
             if (!str_list)
                return -1;
