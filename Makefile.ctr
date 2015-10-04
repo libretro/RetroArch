@@ -28,7 +28,7 @@ CTR_STACK_SIZE        = 0x400000
 else
 CTR_STACK_SIZE        = 0x100000
 endif
-CTR_LINEAR_HEAP_SIZE  = 0x800000
+CTR_LINEAR_HEAP_SIZE  = 0xC00000
 
 include ctr/Makefile.cores
 
@@ -202,7 +202,6 @@ else
 	OBJS += menu/cbs/menu_cbs_deferred_push.o
 	OBJS += menu/cbs/menu_cbs_scan.o
 	OBJS += menu/cbs/menu_cbs_get_value.o
-	OBJS += menu/menu_iterate.o
 	OBJS += menu/cbs/menu_cbs_up.o
 	OBJS += menu/cbs/menu_cbs_down.o
 	OBJS += menu/cbs/menu_cbs_contentlist_switch.o
@@ -221,6 +220,7 @@ else
 	OBJS += menu/intl/menu_hash_pt.o
 	OBJS += menu/intl/menu_hash_us.o
 	OBJS += menu/drivers/null.o
+   OBJS += menu/drivers/menu_generic.o
 	OBJS += menu/drivers/rgui.o
 	OBJS += command_event.o
 	OBJS += deps/zlib/adler32.o

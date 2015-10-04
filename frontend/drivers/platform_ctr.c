@@ -39,9 +39,10 @@
 
 const char* elf_path_cst = "sdmc:/retroarch/test.3dsx";
 
+#ifndef DEBUG_HOLD
 void wait_for_input(void);
-
 #define DEBUG_HOLD() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);wait_for_input();}while(0)
+#endif
 
 #define CTR_APPMEMALLOC_PTR ((u32*)0x1FF80040)
 
