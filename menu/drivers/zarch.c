@@ -332,24 +332,31 @@ static void zui_draw_text(zui_t *zui, uint32_t color, int x, int y, const char *
 
 static void zui_push_quad(zui_t *zui, uint32_t color, int x1, int y1, int x2, int y2)
 {
-   const GLfloat vertex[4 * 2] = {
-      x1 / (float)zui->width, y1 / (float)zui->height,
-      x2 / (float)zui->width, y1 / (float)zui->height,
-      x1 / (float)zui->width, y2 / (float)zui->height,
-      x2 / (float)zui->width, y2 / (float)zui->height,
-   };
+   gfx_coords_t coords;
+   GLfloat colors[16];
+   GLfloat vertex[8];
+   GLfloat tex_coord[8];
 
-   const GLfloat tex_coord[4 * 2] = {
-      0, 1,
-      1, 1,
-      0, 0,
-      1, 0,
-   };
+   tex_coord[0] = 0;
+   tex_coord[1] = 1;
+   tex_coord[2] = 1;
+   tex_coord[3] = 1;
+   tex_coord[4] = 0;
+   tex_coord[5] = 0;
+   tex_coord[6] = 1;
+   tex_coord[7] = 0;
 
-   GLfloat colors[4 * 4];
+   vertex[0] = x1 / (float)zui->width;
+   vertex[1] = y1 / (float)zui->height;
+   vertex[2] = x2 / (float)zui->width;
+   vertex[3] = y1 / (float)zui->height;
+   vertex[4] = x1 / (float)zui->width;
+   vertex[5] = y2 / (float)zui->height;
+   vertex[6] = x2 / (float)zui->width;
+   vertex[7] = y2 / (float)zui->height;
+
    zui_set_color(colors, 4, color);
 
-   gfx_coords_t coords;
    coords.color         = colors;
    coords.vertex        = vertex;
    coords.tex_coord     = tex_coord;
