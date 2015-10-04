@@ -600,9 +600,9 @@ void render_lay_root(zui_t *zui)
 
       cwd_offset = min(strlen(zui->load_cwd), 30);
 
-      zui_draw_text(zui, ZUI_FG_NORMAL, 60, tabbed.tabline_size + 5 + 18, &zui->load_cwd[strlen(zui->load_cwd) - cwd_offset]);
+      zui_draw_text(zui, ZUI_FG_NORMAL, 15, tabbed.tabline_size + 5 + 18, &zui->load_cwd[strlen(zui->load_cwd) - cwd_offset]);
 
-      if (zui_button(zui, 0, tabbed.tabline_size + 5, "HOME"))
+      if (zui_button(zui, (zui->width/1.5)-60, tabbed.tabline_size + 5, "Home"))
       {
          char tmp[PATH_MAX_LENGTH];
 
