@@ -584,8 +584,26 @@ static bool zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label)
 }
 
 
+static void render_lay_settings(zui_t *zui)
+{
+   int width, x1, y1;
+   static zui_tabbed_t tabbed = {~0};
+   tabbed.vertical = true;
+   tabbed.tab_width = 100;
 
-void render_lay_root(zui_t *zui)
+   zui_tabbed_begin(zui, &tabbed, zui->width - 100, 20);
+
+   width = 290;
+   x1    = zui->width - width - 20;
+   y1    = 20;
+
+   y1 += 64;
+
+   if (zui_button_full(zui, x1, y1, x1 + width, y1 + 64, "Back"))
+      layout = LAY_HOME;
+}
+
+static void render_lay_root(zui_t *zui)
 {
    static zui_tabbed_t tabbed = {~0};
    global_t *global = global_get_ptr();
@@ -809,17 +827,18 @@ static void zui_render(void)
    zui_push_quad(zui, ZUI_BG_SCREEN, 0, 0, zui->width, zui->height);
    zui_snow(zui);
 
-   render_sidebar(zui);
 
    switch (layout)
    {
       case LAY_HOME:
+         render_sidebar(zui);
          render_lay_root(zui);
          break;
       case LAY_SETTINGS:
-         /* FIXME/TODO - stub */
+         render_lay_settings(zui);
          break;
       case LAY_PICK_CORE:
+         render_sidebar(zui);
          if (zui->pick_supported == 1)
          {
             fputs("Core loading is not implemented yet, sorry.", stderr);
