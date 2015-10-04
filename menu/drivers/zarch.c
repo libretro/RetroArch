@@ -744,6 +744,11 @@ void render_lay_root(zui_t *zui)
          }
       }
    }
+   else if (zui->load_dlist)
+   {
+      dir_list_free(zui->load_dlist);
+      zui->load_dlist = NULL;
+   }
 
    if (zui_tab(zui, &tabbed, "Collections"))
    {
@@ -755,11 +760,6 @@ void render_lay_root(zui_t *zui)
       /* STUB/FIXME */
    }
 
-   else if (zui->load_dlist)
-   {
-      dir_list_free(zui->load_dlist);
-      zui->load_dlist = NULL;
-   }
 
    zui_push_quad(zui, ZUI_BG_HILITE, 0, 60, zui->width - 290 - 40, 60+4);
 }
