@@ -39,15 +39,51 @@
 #include "../../gfx/video_texture.h"
 #include "../menu_video.h"
 
-const uint32_t ZUI_NORMAL = FONT_COLOR_RGBA(0x5b, 0x5d, 0x5a, 255);
-const uint32_t ZUI_HILITE = FONT_COLOR_RGBA(0xa4, 0x00, 0x5d, 255);
-const uint32_t ZUI_PRESS  = FONT_COLOR_RGBA(0x43, 0x47, 0x48, 255);
-const uint32_t ZUI_BARBG  = FONT_COLOR_RGBA(0x05, 0x47, 0xdf, 255);
+const GLfloat ZUI_NORMAL[] = {
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+};
+const GLfloat ZUI_HILITE[] = {
+   1, 0, 0, 1,
+   1, 0, 0, 1,
+   1, 0, 0, 1,
+   1, 0, 0, 1,
+};
+const GLfloat ZUI_PRESS[] = {
+   0, 1, 0, 1,
+   0, 1, 0, 1,
+   0, 1, 0, 1,
+   0, 1, 0, 1,
+};
+const GLfloat ZUI_BARBG[] = {
+   0, 0, 1, 1,
+   0, 0, 1, 1,
+   0, 0, 1, 1,
+   0, 0, 1, 1,
+};
 
 const uint32_t ZUI_FG_NORMAL = ~0;
-const uint32_t ZUI_BG_PANEL  = FONT_COLOR_RGBA(  0,   0,   0 , 32);
-const uint32_t ZUI_BG_SCREEN = FONT_COLOR_RGBA( 22,  57,  81, 255);
-const uint32_t ZUI_BG_HILITE = FONT_COLOR_RGBA( 57, 153, 189, 255);
+const GLfloat ZUI_BG_PANEL[] = {
+   0, 0, 0, 0.25,
+   0, 0, 0, 0.25,
+   0, 0, 0, 0.25,
+   0, 0, 0, 0.25,
+};
+const GLfloat ZUI_BG_SCREEN[] = {
+   0.07, 0.19, 0.26, 1,
+   0.07, 0.19, 0.26, 1,
+   0.15, 0.31, 0.47, 1,
+   0.15, 0.31, 0.47, 1,
+};
+const GLfloat ZUI_BG_HILITE[] = {
+   0.22, 0.60, 0.74, 1,
+   0.22, 0.60, 0.74, 1,
+   0.22, 0.60, 0.74, 1,
+   0.22, 0.60, 0.74, 1,
+};
+
 
 typedef struct zarch_handle
 {
@@ -120,7 +156,7 @@ typedef struct
 {
    float x, y;
    float xspeed, yspeed;
-   uint8_t alpha;
+   float alpha;
    bool alive;
 } part_t;
 
@@ -317,17 +353,6 @@ static uint32_t zui_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 }
 #endif
 
-static void zui_set_color(GLfloat *rgbaf, size_t count, uint32_t color)
-{
-   while (count--)
-   {
-      *rgbaf++ = FONT_COLOR_GET_RED(color) / 255.0f;
-      *rgbaf++ = FONT_COLOR_GET_GREEN(color) / 255.0f;
-      *rgbaf++ = FONT_COLOR_GET_BLUE(color) / 255.0f;
-      *rgbaf++ = FONT_COLOR_GET_ALPHA(color) / 255.0f;
-   }
-}
-
 static void zui_draw_text(zui_t *zui, uint32_t color, int x, int y, const char *text)
 {
    struct font_params params = {0};
@@ -343,10 +368,10 @@ static void zui_draw_text(zui_t *zui, uint32_t color, int x, int y, const char *
    video_driver_set_osd_msg(text, &params, zui->fb_buf);
 }
 
-static void zui_push_quad(zui_t *zui, uint32_t color, int x1, int y1, int x2, int y2)
+static void zui_push_quad(zui_t *zui, const GLfloat *colors, int x1, int y1,
+      int x2, int y2)
 {
    gfx_coords_t coords;
-   GLfloat colors[16];
    GLfloat vertex[8];
    GLfloat tex_coord[8];
 
@@ -367,8 +392,6 @@ static void zui_push_quad(zui_t *zui, uint32_t color, int x1, int y1, int x2, in
    vertex[5] = y2 / (float)zui->height;
    vertex[6] = x2 / (float)zui->width;
    vertex[7] = y2 / (float)zui->height;
-
-   zui_set_color(colors, 4, color);
 
    coords.color         = colors;
    coords.vertex        = vertex;
@@ -428,7 +451,7 @@ static void zui_snow(zui_t *zui)
          p->yspeed = randf(1, 2);
          p->y = 0;
          p->x = rand() % (int)zui->width;
-         p->alpha = randf(8, 32);
+         p->alpha = (float)rand() / (float)RAND_MAX;
          p->alive = true;
 
          max_gen--;
@@ -449,8 +472,15 @@ static void zui_snow(zui_t *zui)
       if (!p->alive)
          continue;
 
-      zui_push_quad(zui, FONT_COLOR_RGBA(255, 255, 255, randf(0, 100) > 90 ? p->alpha/2 : p->alpha),
-                    p->x-2, p->y-2, p->x+2, p->y+2);
+      GLfloat alpha = randf(0, 100) > 90 ? p->alpha/2 : p->alpha;
+      GLfloat colors[] = {
+         1, 1, 1, alpha,
+         1, 1, 1, alpha,
+         1, 1, 1, alpha,
+         1, 1, 1, alpha,
+      };
+
+      zui_push_quad(zui, colors, p->x-2, p->y-2, p->x+2, p->y+2);
 
       j++;
    }
@@ -463,7 +493,7 @@ static bool zui_button_full(zui_t *zui, int x1, int y1, int x2, int y2, const ch
    int x2      = x1 + zui_strwidth(zui->fb_buf, label, 1.0) + 16;
 #endif
    bool active = check_button_up(zui, id, x1, y1, x2, y2);
-   uint32_t bg = ZUI_BG_PANEL;
+   const GLfloat *bg = ZUI_BG_PANEL;
 
    if (zui->item.active == id || zui->item.hot == id)
       bg = ZUI_BG_HILITE;
@@ -485,7 +515,7 @@ static bool zui_list_item(zui_t *zui, int x1, int y1, const char *label)
    int x2      = x1 + zui->width/1.5;
    int y2      = y1 + 30;
    bool active = check_button_up(zui, id, x1, y1, x2, y2);
-   uint32_t bg = ZUI_BG_PANEL;
+   const GLfloat *bg = ZUI_BG_PANEL;
 
    if (zui->item.active == id || zui->item.hot == id)
       bg = ZUI_BG_HILITE;
@@ -509,7 +539,7 @@ static bool zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label)
    int x1, y1, x2, y2;
    unsigned id = zui_hash(zui, label);
    int width   = tab->tab_width;
-   uint32_t bg = ZUI_BG_PANEL;
+   const GLfloat *bg = ZUI_BG_PANEL;
 
    if (!width)
       width = zui_strwidth(zui->fb_buf, label, 1.0) + 16;
