@@ -238,7 +238,7 @@ static void* ctr_init(const video_info_t* video,
    ctr->display_list = linearAlloc(ctr->display_list_size * sizeof(uint32_t));
    GPU_Reset(NULL, ctr->display_list, ctr->display_list_size);
 
-   ctr->texture_width = 512;
+   ctr->texture_width = 1024;
    ctr->texture_height = 512;
    ctr->texture_linear =
          linearMemAlign(ctr->texture_width * ctr->texture_height * sizeof(uint32_t), 128);
@@ -518,7 +518,7 @@ static bool ctr_frame(void* data, const void* frame,
 
 
       ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->menu.frame_coords));
-      ctrGuSetVertexShaderFloatUniform(1, (float*)&ctr->menu.scale_vector, 1);
+      ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->menu.scale_vector, 1);
       GPU_DrawArray(GPU_UNKPRIM, 0, 1);
    }
 

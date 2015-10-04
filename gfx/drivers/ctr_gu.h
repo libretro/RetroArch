@@ -51,6 +51,11 @@
 #define CTR_CPU_TICKS_PER_SECOND    268123480
 #define CTR_CPU_TICKS_PER_FRAME     4481134
 
+#ifndef DEBUG_HOLD
+void wait_for_input(void);
+#define DEBUG_HOLD() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);wait_for_input();}while(0)
+#endif
+
 
 extern Handle gspEvents[GSPEVENT_MAX];
 extern u32* gpuCmdBuf;
