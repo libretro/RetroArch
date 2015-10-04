@@ -155,12 +155,13 @@ static void zui_begin(zui_t *zui)
 {
    int dx, dy;
    const struct retro_keybind *binds[MAX_USERS];
+   gl_t        *gl  = NULL;
    driver_t *driver = (driver_t*)driver_get_ptr();
 
    if (!driver)
       return;
 
-   gl_t *gl = driver ? (gl_t*)driver->video_data : NULL;
+   gl = driver ? (gl_t*)driver->video_data : NULL;
 
    if (!gl)
       return;
