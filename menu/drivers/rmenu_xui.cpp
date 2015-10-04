@@ -279,7 +279,7 @@ static void* rmenu_xui_init(void)
    if (!menu)
       return NULL;
 
-   d3d= (d3d_video_t*)driver->video_data;
+   d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
 
    if (d3d->resolution_hd_enable)
       RARCH_LOG("HD menus enabled.\n");
@@ -367,7 +367,7 @@ static void xui_render_message(const char *msg)
    size_t j                      = 0;
    struct string_list *list      = NULL;
    driver_t *driver              = driver_get_ptr();
-   d3d_video_t *d3d              = (d3d_video_t*)driver->video_data;
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
 
    if (!d3d)
       return;
@@ -414,7 +414,7 @@ static void rmenu_xui_frame(void)
    if (!menu)
       return;
 
-   d3d = (d3d_video_t*)driver->video_data;
+   d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
    
    if (!d3d)
       return;
