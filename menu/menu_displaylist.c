@@ -418,13 +418,13 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
    menu_list_push(info->list, "Directory Tests:", "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-   // assume libretro directory exists and check if stat works
+   /* Assume libretro directory exists and check if stat works */
    ret = path_is_directory(settings->libretro_directory);
    snprintf(tmp, sizeof(tmp), "Test 1: stat directory... %s",  ret ? "passed" : "failed");
    menu_list_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-   // try to create a "test" subdirectory on top of libretro directory
+   /* Try to create a "test" subdirectory on top of libretro directory */
    fill_pathname_join(tmp, settings->libretro_directory, "test", PATH_MAX_LENGTH);
    ret = path_mkdir(tmp);
    snprintf(tmp, sizeof(tmp), "Test 2: create a directory... %s",  ret ? "passed" : "failed");
@@ -434,28 +434,31 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
 
    menu_list_push(info->list, "", "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   // check if save directory exists:
+
+   /* Check if save directory exists */
    menu_list_push(info->list, "Savefile Directory", "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    ret = path_is_directory(global->dir.savefile);
    snprintf(tmp, sizeof(tmp), "Directory exists: %s",  ret ? "true" : "false");
    menu_list_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   //check if save directory is writable
+
+   /* Check if save directory is writable */
    fill_pathname_join(tmp, global->dir.savefile, "test", PATH_MAX_LENGTH);
    ret = path_mkdir(tmp);
    snprintf(tmp, sizeof(tmp), "Directory writable: %s",  ret ? "true" : "false");
    menu_list_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-   // check if state directory exists:
+   /* Check if state directory exists */
    menu_list_push(info->list, "Savestate Directory", "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    ret = path_is_directory(global->dir.savestate);
    snprintf(tmp, sizeof(tmp), "Directory exists: %s",  ret ? "true" : "false");
    menu_list_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   //check if save directory is writable
+
+   /* Check if save directory is writable */
    fill_pathname_join(tmp, global->dir.savestate, "test", PATH_MAX_LENGTH);
    ret = path_mkdir(tmp);
    snprintf(tmp, sizeof(tmp), "Directory writable: %s",  ret ? "true" : "false");
