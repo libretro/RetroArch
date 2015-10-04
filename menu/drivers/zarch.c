@@ -744,6 +744,17 @@ void render_lay_root(zui_t *zui)
          }
       }
    }
+
+   if (zui_tab(zui, &tabbed, "Collections"))
+   {
+      /* STUB/FIXME */
+   }
+
+   if (zui_tab(zui, &tabbed, "Download"))
+   {
+      /* STUB/FIXME */
+   }
+
    else if (zui->load_dlist)
    {
       dir_list_free(zui->load_dlist);
