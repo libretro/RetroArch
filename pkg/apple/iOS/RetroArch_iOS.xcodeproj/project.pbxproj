@@ -515,6 +515,7 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_GLUI",
+					"-DHAVE_ZARCH",
 					"-DHAVE_XMB",
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
@@ -583,6 +584,7 @@
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_7ZIP",
 					"-DHAVE_GLUI",
+					"-DHAVE_ZARCH",
 					"-DHAVE_XMB",
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
@@ -622,6 +624,7 @@
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_7ZIP",
 					"-DHAVE_GLUI",
+					"-DHAVE_ZARCH",
 					"-DHAVE_XMB",
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
@@ -818,6 +821,7 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_GLUI",
+					"-DHAVE_ZARCH",
 					"-DHAVE_XMB",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
@@ -889,6 +893,7 @@
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_7ZIP",
 					"-DHAVE_GLUI",
+					"-DHAVE_ZARCH",
 					"-DHAVE_XMB",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
@@ -930,6 +935,7 @@
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_7ZIP",
 					"-DHAVE_GLUI",
+					"-DHAVE_ZARCH",
 					"-DHAVE_XMB",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",

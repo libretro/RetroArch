@@ -933,7 +933,7 @@ static void *zarch_init(void)
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE, &tmpi);
 
    zui->header_height  = 1000; /* dpi / 3; */
-   zui->font_size       = 14;
+   zui->font_size      = 20;
 
    if (settings->menu.wallpaper[0] != '\0')
       rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE,
