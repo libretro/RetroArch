@@ -156,7 +156,14 @@ static void zui_begin(zui_t *zui)
    int dx, dy;
    const struct retro_keybind *binds[MAX_USERS];
    driver_t *driver = (driver_t*)driver_get_ptr();
-   gl_t *gl = (gl_t*)driver->video_data;
+
+   if (!driver)
+      return;
+
+   gl_t *gl = driver ? (gl_t*)driver->video_data : NULL;
+
+   if (!gl)
+      return;
 
    zui->rendering = true;
 
@@ -164,7 +171,9 @@ static void zui_begin(zui_t *zui)
    zui->item.hot = 0;
 
    glViewport(0, 0, zui->width, zui->height);
-   gl->shader->set_mvp(gl, &zui->mvp);
+
+   if (gl && gl->shader && gl->shader->set_mvp)
+      gl->shader->set_mvp(gl, &zui->mvp);
 
    /* why do i need this? */
    zui->mouse.left  = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
@@ -800,14 +809,20 @@ static void zarch_frame(void)
    unsigned i;
    GRfloat coord_color[16];
    GRfloat coord_color2[16];
-   zui_t *zui          = NULL;
-   settings_t *settings                    = config_get_ptr();
-   menu_handle_t *menu = menu_driver_get_ptr();
-   gl_t *gl = (gl_t*)driver_get_ptr()->video_data;
+   zui_t *zui           = NULL;
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   gl_t *gl             = NULL;
+   
+   if (!menu)
+      return;
 
-   rarch_assert(menu);
-   rarch_assert(gl);
+   gl = driver ? driver->video_data : NULL;
 
+   if (!gl)
+      return;
+   
    zui      = (zui_t*)menu->userdata;
    zui->set = config_get_ptr();
    zui->menu = menu;
