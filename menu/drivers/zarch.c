@@ -903,6 +903,10 @@ static void zarch_render(void)
 
    if (!menu || !menu->userdata)
       return;
+    
+   (void)settings;
+   (void)bottom;
+   (void)zarch;
 
    video_driver_get_size(&width, &height);
 
@@ -926,6 +930,8 @@ static void zarch_frame(void)
 
    if (!gl)
       return;
+    
+   (void)driver;
    
    zui      = (zui_t*)menu->userdata;
    zui->set = config_get_ptr();
