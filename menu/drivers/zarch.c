@@ -145,23 +145,32 @@ static const GRfloat zarch_tex_coords[] = {
    1, 0
 };
 
-static float zui_strwidth(zui_t *zui, const char *text, float scale)
+static float zui_strwidth(void *fb_buf, const char *text, float scale)
 {
    driver_t *driver = (driver_t*)driver_get_ptr();
-   return driver->font_osd_driver->get_message_width(zui->fb_buf, text, strlen(text), scale);
+   return driver->font_osd_driver->get_message_width(fb_buf, text, strlen(text), scale);
 }
 
-static void zui_begin(zui_t *zui)
+static void zui_begin(void)
 {
    int dx, dy;
    const struct retro_keybind *binds[MAX_USERS];
    gl_t        *gl  = NULL;
    driver_t *driver = (driver_t*)driver_get_ptr();
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   zui_t *zui           = NULL;
 
+   if (!menu)
+      return;
+
+   zui      = (zui_t*)menu->userdata;
+
+   if (!zui)
+      return;
    if (!driver)
       return;
 
-   gl = driver ? (gl_t*)driver->video_data : NULL;
+   gl                   = (gl_t*)video_driver_get_ptr(NULL);
 
    if (!gl)
       return;
@@ -172,6 +181,7 @@ static void zui_begin(zui_t *zui)
    zui->item.hot = 0;
 
    glViewport(0, 0, zui->width, zui->height);
+
 
    if (gl && gl->shader && gl->shader->set_mvp)
       gl->shader->set_mvp(gl, &zui->mvp);
@@ -199,7 +209,10 @@ static void zui_begin(zui_t *zui)
 void zui_finish(zui_t *zui)
 {
    driver_t *driver = (driver_t*)driver_get_ptr();
-   gl_t         *gl = (gl_t*)driver->video_data;
+   gl_t         *gl = (gl_t*)video_driver_get_ptr(NULL);
+
+   if (!gl)
+      return;
 
    if (!zui->mouse.left)
       zui->item.active = 0;
@@ -447,7 +460,7 @@ static bool zui_button_full(zui_t *zui, int x1, int y1, int x2, int y2, const ch
 {
    unsigned id = zui_hash(zui, label);
 #if 0
-   int x2      = x1 + zui_strwidth(zui, label, 1.0) + 16;
+   int x2      = x1 + zui_strwidth(zui->fb_buf, label, 1.0) + 16;
 #endif
    bool active = check_button_up(zui, id, x1, y1, x2, y2);
    uint32_t bg = ZUI_BG_PANEL;
@@ -463,7 +476,7 @@ static bool zui_button_full(zui_t *zui, int x1, int y1, int x2, int y2, const ch
 
 static bool zui_button(zui_t *zui, int x1, int y1, const char *label)
 {
-   return zui_button_full(zui, x1, y1, x1 + zui_strwidth(zui, label, 1.0) + 16, y1 + 30, label);
+   return zui_button_full(zui, x1, y1, x1 + zui_strwidth(zui->fb_buf, label, 1.0) + 16, y1 + 30, label);
 }
 
 static bool zui_list_item(zui_t *zui, int x1, int y1, const char *label)
@@ -499,7 +512,7 @@ static bool zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label)
    uint32_t bg = ZUI_BG_PANEL;
 
    if (!width)
-      width = zui_strwidth(zui, label, 1.0) + 16;
+      width = zui_strwidth(zui->fb_buf, label, 1.0) + 16;
 
    x1          = tab->x;
    y1          = tab->y;
@@ -722,12 +735,20 @@ void render_sidebar(zui_t *zui)
       exit(0);
 }
 
-static void zui_render(zui_t *zui)
+static void zui_render(void)
 {
-   if (zui->rendering)
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   zui_t *zui           = NULL;
+
+   if (!menu)
       return;
 
-   zui_begin(zui);
+   zui      = (zui_t*)menu->userdata;
+
+   if (!zui || zui->rendering)
+      return;
+
+   zui_begin();
 
    zui_push_quad(zui, ZUI_BG_SCREEN, 0, 0, zui->width, zui->height);
    zui_snow(zui);
@@ -817,16 +838,16 @@ static void zarch_frame(void)
    unsigned i;
    GRfloat coord_color[16];
    GRfloat coord_color2[16];
-   zui_t *zui           = NULL;
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
+   zui_t *zui           = NULL;
    gl_t *gl             = NULL;
    
    if (!menu)
       return;
 
-   gl = driver ? driver->video_data : NULL;
+   gl                   = (gl_t*)video_driver_get_ptr(NULL);
 
    if (!gl)
       return;
@@ -851,10 +872,10 @@ static void zarch_frame(void)
          coord_color2[i] = 0.10f;
       }
    }
-   zui_render(zui);
+   zui_render();
 
    /* fetch it again in case the pointer was invalidated by a core load */
-   gl = (gl_t*)driver_get_ptr()->video_data;
+   gl                   = (gl_t*)video_driver_get_ptr(NULL);
 
    if (zui->set->menu.mouse.enable)
       zarch_draw_cursor(gl, zui->mouse.x, zui->mouse.y);
@@ -865,7 +886,8 @@ static void zarch_frame(void)
          &coord_color[0],   &coord_color2[0],
          &zarch_vertexes[0], &zarch_tex_coords[0]);
 
-   gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+   if (gl && gl->shader && gl->shader->use)
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
