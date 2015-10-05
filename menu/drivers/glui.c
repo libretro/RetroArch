@@ -231,15 +231,6 @@ static void glui_draw_cursor(glui_handle_t *glui,
    if (!gl)
       return;
 
-   menu_input_ctl(MENU_INPUT_CTL_MOUSE_SCROLL_DOWN, &mouse_scrolldown);
-   menu_input_ctl(MENU_INPUT_CTL_MOUSE_SCROLL_UP,   &mouse_scrollup);
-
-   if (mouse_scrolldown)
-      menu->scroll_y += 10;
-
-   if (mouse_scrollup)
-      menu->scroll_y -= 10;
-
    new_mouse_ptr = 
       (y - glui->line_height + menu->scroll_y - 16)
       / glui->line_height;

@@ -854,9 +854,6 @@ static int menu_input_mouse(unsigned *action)
    if (menu_input->mouse.y > (int)fb_height - 5)
       menu_input->mouse.y       = fb_height - 5;
 
-   menu_input->mouse.scrollup   = (menu_input->mouse.y == 5);
-   menu_input->mouse.scrolldown = (menu_input->mouse.y == (int)fb_height - 5);
-
    if (
          (menu_input->mouse.dx != 0)     ||
          (menu_input->mouse.dy !=0)      ||
