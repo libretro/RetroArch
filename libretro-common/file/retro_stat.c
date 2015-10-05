@@ -200,7 +200,7 @@ bool mkdir_norecurse(const char *dir)
 #if defined(VITA)
    if ((ret == SCE_ERROR_ERRNO_EEXIST) && path_is_directory(dir))
       ret = 0;
-#elif defined(PSP)
+#elif defined(PSP) || defined(_3DS)
    if ((ret == -1) && path_is_directory(dir))
       ret = 0;
 #else 
