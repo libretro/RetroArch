@@ -69,8 +69,12 @@ struct dinput_input
    const input_device_driver_t *joypad;
    uint8_t state[256];
 
+   int window_pos_x;
+   int window_pos_y;
    int mouse_rel_x;
+   int mouse_last_x;
    int mouse_rel_y;
+   int mouse_last_y;
    int mouse_x;
    int mouse_y;
    bool mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd, mouse_hwu, mouse_hwd;
@@ -266,7 +270,10 @@ static void *dinput_init(void)
 
    if (di->mouse)
    {
-      IDirectInputDevice8_SetDataFormat(di->mouse, &c_dfDIMouse2);
+      DIDATAFORMAT c_dfDIMouse2_custom = c_dfDIMouse2;
+
+      c_dfDIMouse2_custom.dwFlags = DIDF_ABSAXIS;
+      IDirectInputDevice8_SetDataFormat(di->mouse, &c_dfDIMouse2_custom);
       IDirectInputDevice8_SetCooperativeLevel(di->mouse, (HWND)driver->video_window,
             DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
       IDirectInputDevice8_Acquire(di->mouse);
@@ -310,8 +317,12 @@ static void dinput_poll(void *data)
             memset(&mouse_state, 0, sizeof(mouse_state));
       }
 
-      di->mouse_rel_x = mouse_state.lX;
-      di->mouse_rel_y = mouse_state.lY;
+      di->mouse_last_x = di->mouse_rel_x;
+      di->mouse_last_y = di->mouse_rel_y;
+
+      di->mouse_rel_x = di->window_pos_x;
+      di->mouse_rel_y = di->window_pos_y;
+
       di->mouse_l  = mouse_state.rgbButtons[0];
       di->mouse_r  = mouse_state.rgbButtons[1];
       di->mouse_m  = mouse_state.rgbButtons[2];
@@ -393,9 +404,9 @@ static int16_t dinput_lightgun_state(struct dinput_input *di, unsigned id)
    switch (id)
    {
       case RETRO_DEVICE_ID_LIGHTGUN_X:
-         return di->mouse_rel_x;
+         return di->mouse_rel_x - di->mouse_last_x;
       case RETRO_DEVICE_ID_LIGHTGUN_Y:
-         return di->mouse_rel_y;
+         return di->mouse_rel_y - di->mouse_last_y;
       case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
          return di->mouse_l;
       case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
@@ -418,9 +429,10 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
    switch (id)
    {
       case RETRO_DEVICE_ID_MOUSE_X:
-         return di->mouse_rel_x;
+         return di->mouse_rel_x - di->mouse_last_x;
       case RETRO_DEVICE_ID_MOUSE_Y:
-         return di->mouse_rel_y;
+         //RARCH_LOG("mouse y: %d\n", di->mouse_rel_y - di->mouse_last_y);
+         return di->mouse_rel_y - di->mouse_last_y;
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          return di->mouse_l;
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
@@ -655,6 +667,12 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
 
    switch (message)
    {
+      case WM_MOUSEMOVE:
+	 RARCH_LOG("Mouse X: %d, Mouse Y: %d\n", GET_X_LPARAM(lParam),
+			 GET_Y_LPARAM(lParam));
+	 di->window_pos_x = GET_X_LPARAM(lParam);
+	 di->window_pos_y = GET_Y_LPARAM(lParam);
+         break;
       case WM_POINTERDOWN:
       {
          struct pointer_status *new_pointer =
