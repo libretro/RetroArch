@@ -431,7 +431,6 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
       case RETRO_DEVICE_ID_MOUSE_X:
          return di->mouse_rel_x - di->mouse_last_x;
       case RETRO_DEVICE_ID_MOUSE_Y:
-         //RARCH_LOG("mouse y: %d\n", di->mouse_rel_y - di->mouse_last_y);
          return di->mouse_rel_y - di->mouse_last_y;
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          return di->mouse_l;
@@ -668,8 +667,6 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
    switch (message)
    {
       case WM_MOUSEMOVE:
-	 RARCH_LOG("Mouse X: %d, Mouse Y: %d\n", GET_X_LPARAM(lParam),
-			 GET_Y_LPARAM(lParam));
 	 di->window_pos_x = GET_X_LPARAM(lParam);
 	 di->window_pos_y = GET_Y_LPARAM(lParam);
          break;
