@@ -46,21 +46,12 @@ void wait_for_input(void);
 
 #define CTR_APPMEMALLOC_PTR ((u32*)0x1FF80040)
 
-#ifndef CTR_STACK_SIZE
-#define CTR_STACK_SIZE         0x100000
-#endif
-
-#ifndef CTR_LINEAR_HEAP_SIZE
-#define CTR_LINEAR_HEAP_SIZE   0x600000
-#endif
-
-int __stacksize__ = CTR_STACK_SIZE;
-
 extern char* fake_heap_start;
 extern char* fake_heap_end;
 u32 __linear_heap;
 u32 __heapBase;
-static u32 __heap_size_local, __linear_heap_size_local;
+static u32 heap_size;
+extern u32 linear_heap_size;
 
 extern void (*__system_retAddr)(void);
 
@@ -79,18 +70,17 @@ void __system_allocateHeaps() {
 
    svcGetSystemInfo(&mem_used, 0, 1);
 
-   __linear_heap_size_local = CTR_LINEAR_HEAP_SIZE;
-   __heap_size_local        = (app_memory - mem_used - __linear_heap_size_local - 0x10000) & 0xFFFFF000;
+   heap_size        = (app_memory - mem_used - linear_heap_size - 0x10000) & 0xFFFFF000;
 
 	// Allocate the application heap
 	__heapBase = 0x08000000;
-	svcControlMemory(&tmp, __heapBase, 0x0, __heap_size_local, MEMOP_ALLOC, MEMPERM_READ | MEMPERM_WRITE);
+	svcControlMemory(&tmp, __heapBase, 0x0, heap_size, MEMOP_ALLOC, MEMPERM_READ | MEMPERM_WRITE);
 
 	// Allocate the linear heap
-	svcControlMemory(&__linear_heap, 0x0, 0x0, __linear_heap_size_local, MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
+	svcControlMemory(&__linear_heap, 0x0, 0x0, linear_heap_size, MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
 	// Set up newlib heap
 	fake_heap_start = (char*)__heapBase;
-	fake_heap_end = fake_heap_start + __heap_size_local;
+	fake_heap_end = fake_heap_start + heap_size;
 
 }
 
@@ -99,10 +89,10 @@ void __attribute__((noreturn)) __libctru_exit(int rc)
 	u32 tmp=0;
 
 	// Unmap the linear heap
-	svcControlMemory(&tmp, __linear_heap, 0x0, __linear_heap_size_local, MEMOP_FREE, 0x0);
+	svcControlMemory(&tmp, __linear_heap, 0x0, linear_heap_size, MEMOP_FREE, 0x0);
 
 	// Unmap the application heap
-	svcControlMemory(&tmp, __heapBase, 0x0, __heap_size_local, MEMOP_FREE, 0x0);
+	svcControlMemory(&tmp, __heapBase, 0x0, heap_size, MEMOP_FREE, 0x0);
 
 	// Close some handles
 	__destroy_handle_list();
