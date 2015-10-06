@@ -88,6 +88,8 @@ typedef struct ctr_video
    bool lcd_buttom_on;
 
    void* empty_framebuffer;
+
+   aptHookCookie lcd_aptHook;
 } ctr_video_t;
 
 static INLINE void ctr_set_scale_vector(ctr_scale_vector_t* vec,
@@ -211,6 +213,28 @@ static void ctr_update_viewport(ctr_video_t* ctr)
 
 }
 
+
+static void ctr_lcd_aptHook(int hook, void* param)
+{
+   ctr_video_t *ctr  = (ctr_video_t*)param;
+   if(!ctr)
+      return;
+
+   if((hook == APTHOOK_ONSUSPEND) || (hook == APTHOOK_ONRESTORE))
+   {
+      Handle lcd_handle;
+      u8 not_2DS;
+      CFGU_GetModelNintendo2DS(&not_2DS);
+      if(not_2DS && srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
+      {
+         u32 *cmdbuf = getThreadCommandBuffer();
+         cmdbuf[0] = ((hook == APTHOOK_ONSUSPEND) || ctr->lcd_buttom_on)? 0x00110040: 0x00120040;
+         cmdbuf[1] = 2;
+         svcSendSyncRequest(lcd_handle);
+         svcCloseHandle(lcd_handle);
+      }
+   }
+}
 static void* ctr_init(const video_info_t* video,
       const input_driver_t** input, void** input_data)
 {
@@ -348,6 +372,8 @@ static void* ctr_init(const video_info_t* video,
    memset(ctr->empty_framebuffer, 0, 320 * 240 * 2);
 
    driver_set_refresh_rate((32730.0 * 8192.0) / 4481134.0);
+
+   aptHook(&ctr->lcd_aptHook, ctr_lcd_aptHook, ctr);
 
    return ctr;
 }
@@ -575,6 +601,7 @@ static void ctr_free(void* data)
    if (!ctr)
       return;
 
+   aptUnhook(&ctr->lcd_aptHook);
    shaderProgramFree(&ctr->shader);
    DVLB_Free(ctr->dvlb);
    linearFree(ctr->display_list);
@@ -584,7 +611,7 @@ static void ctr_free(void* data)
    linearFree(ctr->menu.texture_linear);
    linearFree(ctr->menu.texture_swizzled);
    linearFree(ctr->menu.frame_coords);
-   linearFree(ctr->empty_framebuffer);
+   linearFree(ctr->empty_framebuffer);   
    linearFree(ctr);
    //   gfxExit();
 }
