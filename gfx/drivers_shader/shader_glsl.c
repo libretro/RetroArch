@@ -885,7 +885,7 @@ static bool gl_glsl_init(void *data, const char *path)
    {
       struct state_tracker_info info = {0};
 
-      info.wram      = (uint8_t*)pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+      info.wram      = (uint8_t*)core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
       info.info      = glsl->shader->variable;
       info.info_elem = glsl->shader->variables;
 

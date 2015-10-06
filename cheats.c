@@ -68,12 +68,12 @@ void cheat_manager_apply_cheats(cheat_manager_t *handle)
    if (!handle)
       return;
 
-   pretro_cheat_reset();
+   core.retro_cheat_reset();
 
    for (i = 0; i < handle->size; i++)
    {
       if (handle->cheats[i].state)
-         pretro_cheat_set(idx++, true, handle->cheats[i].code);
+         core.retro_cheat_set(idx++, true, handle->cheats[i].code);
    }
 }
 

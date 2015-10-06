@@ -42,63 +42,26 @@
 #ifdef HAVE_DYNAMIC
 #define SYMBOL(x) do { \
    function_t func = dylib_proc(lib_handle, #x); \
-   memcpy(&p##x, &func, sizeof(func)); \
-   if (p##x == NULL) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); rarch_fail(1, "init_libretro_sym()"); } \
+   memcpy(&core.x, &func, sizeof(func)); \
+   if (core.x == NULL) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); rarch_fail(1, "init_libretro_sym()"); } \
 } while (0)
 
 static dylib_t lib_handle;
 #else
-#define SYMBOL(x) p##x = x
+#define SYMBOL(x) core.x = x
 #endif
 
-#define SYMBOL_DUMMY(x) p##x = libretro_dummy_##x
+#define SYMBOL_DUMMY(x) core.x = libretro_dummy_##x
 
 #ifdef HAVE_FFMPEG
-#define SYMBOL_FFMPEG(x) p##x = libretro_ffmpeg_##x
+#define SYMBOL_FFMPEG(x) core.x = libretro_ffmpeg_##x
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
-#define SYMBOL_IMAGEVIEWER(x) p##x = libretro_imageviewer_##x
+#define SYMBOL_IMAGEVIEWER(x) core.x = libretro_imageviewer_##x
 #endif
 
-void (*pretro_init)(void);
-void (*pretro_deinit)(void);
-
-unsigned (*pretro_api_version)(void);
-
-void (*pretro_get_system_info)(struct retro_system_info*);
-void (*pretro_get_system_av_info)(struct retro_system_av_info*);
-
-void (*pretro_set_environment)(retro_environment_t);
-void (*pretro_set_video_refresh)(retro_video_refresh_t);
-void (*pretro_set_audio_sample)(retro_audio_sample_t);
-void (*pretro_set_audio_sample_batch)(retro_audio_sample_batch_t);
-void (*pretro_set_input_poll)(retro_input_poll_t);
-void (*pretro_set_input_state)(retro_input_state_t);
-
-void (*pretro_set_controller_port_device)(unsigned, unsigned);
-
-void (*pretro_reset)(void);
-void (*pretro_run)(void);
-
-size_t (*pretro_serialize_size)(void);
-bool (*pretro_serialize)(void*, size_t);
-bool (*pretro_unserialize)(const void*, size_t);
-
-void (*pretro_cheat_reset)(void);
-void (*pretro_cheat_set)(unsigned, bool, const char*);
-
-bool (*pretro_load_game)(const struct retro_game_info*);
-bool (*pretro_load_game_special)(unsigned,
-      const struct retro_game_info*, size_t);
-
-void (*pretro_unload_game)(void);
-
-unsigned (*pretro_get_region)(void);
-
-void *(*pretro_get_memory_data)(unsigned);
-size_t (*pretro_get_memory_size)(unsigned);
-
+struct retro_core_t core;
 static bool ignore_environment_cb;
 
 #ifdef HAVE_DYNAMIC
@@ -495,7 +458,7 @@ void libretro_get_current_core_pathname(char *name, size_t size)
    if (size == 0)
       return;
 
-   pretro_get_system_info(&info);
+   core.retro_get_system_info(&info);
    id = info.library_name ? info.library_name : 
       msg_hash_to_str(MSG_UNKNOWN);
 
@@ -555,31 +518,31 @@ void uninit_libretro_sym(void)
    lib_handle = NULL;
 #endif
 
-   pretro_init = NULL;
-   pretro_deinit = NULL;
-   pretro_api_version = NULL;
-   pretro_get_system_info = NULL;
-   pretro_get_system_av_info = NULL;
-   pretro_set_environment = NULL;
-   pretro_set_video_refresh = NULL;
-   pretro_set_audio_sample = NULL;
-   pretro_set_audio_sample_batch = NULL;
-   pretro_set_input_poll = NULL;
-   pretro_set_input_state = NULL;
-   pretro_set_controller_port_device = NULL;
-   pretro_reset = NULL;
-   pretro_run = NULL;
-   pretro_serialize_size = NULL;
-   pretro_serialize = NULL;
-   pretro_unserialize = NULL;
-   pretro_cheat_reset = NULL;
-   pretro_cheat_set = NULL;
-   pretro_load_game = NULL;
-   pretro_load_game_special = NULL;
-   pretro_unload_game = NULL;
-   pretro_get_region = NULL;
-   pretro_get_memory_data = NULL;
-   pretro_get_memory_size = NULL;
+   core.retro_init = NULL;
+   core.retro_deinit = NULL;
+   core.retro_api_version = NULL;
+   core.retro_get_system_info = NULL;
+   core.retro_get_system_av_info = NULL;
+   core.retro_set_environment = NULL;
+   core.retro_set_video_refresh = NULL;
+   core.retro_set_audio_sample = NULL;
+   core.retro_set_audio_sample_batch = NULL;
+   core.retro_set_input_poll = NULL;
+   core.retro_set_input_state = NULL;
+   core.retro_set_controller_port_device = NULL;
+   core.retro_reset = NULL;
+   core.retro_run = NULL;
+   core.retro_serialize_size = NULL;
+   core.retro_serialize = NULL;
+   core.retro_unserialize = NULL;
+   core.retro_cheat_reset = NULL;
+   core.retro_cheat_set = NULL;
+   core.retro_load_game = NULL;
+   core.retro_load_game_special = NULL;
+   core.retro_unload_game = NULL;
+   core.retro_get_region = NULL;
+   core.retro_get_memory_data = NULL;
+   core.retro_get_memory_size = NULL;
 
    rarch_system_info_free();
 

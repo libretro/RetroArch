@@ -193,7 +193,7 @@ static void check_rewind(settings_t *settings,
 
          rarch_main_msg_queue_push_new(MSG_REWINDING, 0,
                main_is_paused ? 1 : 30, true);
-         pretro_unserialize(buf, global->rewind.size);
+         core.retro_unserialize(buf, global->rewind.size);
 
          if (global->bsv.movie)
             bsv_movie_frame_rewind(global->bsv.movie);
@@ -218,7 +218,7 @@ static void check_rewind(settings_t *settings,
 
          rarch_perf_init(&rewind_serialize, "rewind_serialize");
          retro_perf_start(&rewind_serialize);
-         pretro_serialize(state, global->rewind.size);
+         core.retro_serialize(state, global->rewind.size);
          retro_perf_stop(&rewind_serialize);
 
          state_manager_push_do(global->rewind.state);
@@ -1026,7 +1026,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
       retro_sleep(settings->video.frame_delay);
 
    /* Run libretro for one frame. */
-   pretro_run();
+   core.retro_run();
 
    for (i = 0; i < settings->input.max_users; i++)
    {

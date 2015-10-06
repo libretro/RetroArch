@@ -699,7 +699,7 @@ static int setting_action_start_libretro_device_type(void *data)
    current_device = RETRO_DEVICE_JOYPAD;
 
    settings->input.libretro_device[port] = current_device;
-   pretro_set_controller_port_device(port, current_device);
+   core.retro_set_controller_port_device(port, current_device);
 
    return 0;
 }
@@ -849,7 +849,7 @@ static int setting_action_left_libretro_device_type(
       [(current_idx + types - 1) % types];
 
    settings->input.libretro_device[port] = current_device;
-   pretro_set_controller_port_device(port, current_device);
+   core.retro_set_controller_port_device(port, current_device);
 
    return 0;
 }
@@ -907,7 +907,7 @@ static int setting_action_right_libretro_device_type(
       [(current_idx + 1) % types];
 
    settings->input.libretro_device[port] = current_device;
-   pretro_set_controller_port_device(port, current_device);
+   core.retro_set_controller_port_device(port, current_device);
 
    return 0;
 }
