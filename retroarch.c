@@ -1092,7 +1092,7 @@ void rarch_init_system_av_info(void)
 {
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
-   pretro_get_system_av_info(av_info);
+   core.retro_get_system_av_info(av_info);
    event_command(EVENT_CMD_SET_FRAME_LIMIT);
 }
 
@@ -1404,10 +1404,10 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          }
          break;
       case RARCH_ACTION_STATE_VERIFY_API_VERSION:
-         RARCH_LOG("Version of libretro API: %u\n", pretro_api_version());
+         RARCH_LOG("Version of libretro API: %u\n", core.retro_api_version());
          RARCH_LOG("Compiled against API: %u\n",    RETRO_API_VERSION);
 
-         if (pretro_api_version() != RETRO_API_VERSION)
+         if (core.retro_api_version() != RETRO_API_VERSION)
             RARCH_WARN("%s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
          break;
       case RARCH_ACTION_STATE_FILL_PATHNAMES:

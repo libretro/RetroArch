@@ -260,7 +260,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             {
                bool block_libretro_input = driver->block_libretro_input;
                driver->block_libretro_input = true;
-               pretro_run();
+               core.retro_run();
                driver->block_libretro_input = block_libretro_input;
                return true;
             }

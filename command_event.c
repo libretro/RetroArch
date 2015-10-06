@@ -112,12 +112,12 @@ static void event_init_autosave(void)
       const char *path = global->savefiles->elems[i].data;
       unsigned    type = global->savefiles->elems[i].attr.i;
 
-      if (pretro_get_memory_size(type) <= 0)
+      if (core.retro_get_memory_size(type) <= 0)
          continue;
 
       global->autosave.list[i] = autosave_new(path,
-            pretro_get_memory_data(type),
-            pretro_get_memory_size(type),
+            core.retro_get_memory_data(type),
+            core.retro_get_memory_size(type),
             settings->autosave_interval);
 
       if (!global->autosave.list[i])
@@ -513,7 +513,7 @@ static void event_init_controllers(void)
       {
          case RETRO_DEVICE_NONE:
             RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
-            pretro_set_controller_port_device(i, device);
+            core.retro_set_controller_port_device(i, device);
             break;
          case RETRO_DEVICE_JOYPAD:
             break;
@@ -523,7 +523,7 @@ static void event_init_controllers(void)
              * cores needlessly. */
             RARCH_LOG("Connecting %s (ID: %u) to port %u.\n", ident,
                   device, i + 1);
-            pretro_set_controller_port_device(i, device);
+            core.retro_set_controller_port_device(i, device);
             break;
       }
    }
@@ -534,8 +534,8 @@ static void event_deinit_core(bool reinit)
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
-   pretro_unload_game();
-   pretro_deinit();
+   core.retro_unload_game();
+   core.retro_deinit();
 
    if (reinit)
       event_command(EVENT_CMD_DRIVERS_DEINIT);
@@ -738,7 +738,7 @@ static bool event_init_core(void)
    /* reset video format to libretro's default */
    video_driver_set_pixel_format(RETRO_PIXEL_FORMAT_0RGB1555);
 
-   pretro_set_environment(rarch_environment_cb);
+   core.retro_set_environment(rarch_environment_cb);
 
    /* auto-remap: apply remap files */
    if(settings->auto_remaps_enable)
@@ -749,7 +749,7 @@ static bool event_init_core(void)
       set_paths_redirect(global->name.base);
 
    rarch_ctl(RARCH_ACTION_STATE_VERIFY_API_VERSION, NULL);
-   pretro_init();
+   core.retro_init();
 
    global->sram.use = (global->inited.core.type == CORE_TYPE_PLAIN) &&
       !global->inited.core.no_content;
@@ -970,7 +970,7 @@ static void event_main_state(unsigned cmd)
    else
       strlcpy(path, global->name.savestate, sizeof(path));
 
-   if (pretro_serialize_size())
+   if (core.retro_serialize_size())
    {
       switch (cmd)
       {
@@ -1115,7 +1115,7 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_RESET:
          RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
          rarch_main_msg_queue_push_new(MSG_RESET, 1, 120, true);
-         pretro_reset();
+         core.retro_reset();
 
          /* bSNES since v073r01 resets controllers to JOYPAD
           * after a reset, so just enforce it here. */

@@ -570,7 +570,7 @@ void init_rewind(void)
       return;
    }
 
-   global->rewind.size = pretro_serialize_size();
+   global->rewind.size = core.retro_serialize_size();
 
    if (!global->rewind.size)
    {
@@ -590,7 +590,7 @@ void init_rewind(void)
       RARCH_WARN("%s.\n", msg_hash_to_str(MSG_REWIND_INIT_FAILED));
 
    state_manager_push_where(global->rewind.state, &state);
-   pretro_serialize(state, global->rewind.size);
+   core.retro_serialize(state, global->rewind.size);
    state_manager_push_do(global->rewind.state);
 }
 

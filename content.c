@@ -150,7 +150,7 @@ bool save_state(const char *path)
 {
    bool ret    = false;
    void *data  = NULL;
-   size_t size = pretro_serialize_size();
+   size_t size = core.retro_serialize_size();
 
    RARCH_LOG("%s: \"%s\".\n",
          msg_hash_to_str(MSG_SAVING_STATE),
@@ -168,7 +168,7 @@ bool save_state(const char *path)
          msg_hash_to_str(MSG_STATE_SIZE),
          (int)size,
          msg_hash_to_str(MSG_BYTES));
-   ret = pretro_serialize(data, size);
+   ret = core.retro_serialize(data, size);
 
    if (ret)
       ret = retro_write_file(path, data, size);
@@ -236,7 +236,7 @@ bool load_state(const char *path)
    }
 
    for (i = 0; i < num_blocks; i++)
-      blocks[i].size = pretro_get_memory_size(blocks[i].type);
+      blocks[i].size = core.retro_get_memory_size(blocks[i].type);
 
    for (i = 0; i < num_blocks; i++)
       if (blocks[i].size)
@@ -247,20 +247,20 @@ bool load_state(const char *path)
    {
       if (blocks[i].data)
       {
-         const void *ptr = pretro_get_memory_data(blocks[i].type);
+         const void *ptr = core.retro_get_memory_data(blocks[i].type);
          if (ptr)
             memcpy(blocks[i].data, ptr, blocks[i].size);
       }
    }
 
-   ret = pretro_unserialize(buf, size);
+   ret = core.retro_unserialize(buf, size);
 
    /* Flush back. */
    for (i = 0; i < num_blocks; i++)
    {
       if (blocks[i].data)
       {
-         void *ptr = pretro_get_memory_data(blocks[i].type);
+         void *ptr = core.retro_get_memory_data(blocks[i].type);
          if (ptr)
             memcpy(ptr, blocks[i].data, blocks[i].size);
       }
@@ -285,8 +285,8 @@ void load_ram_file(const char *path, int type)
    ssize_t rc;
    bool ret    = false;
    void *buf   = NULL;
-   size_t size = pretro_get_memory_size(type);
-   void *data  = pretro_get_memory_data(type);
+   size_t size = core.retro_get_memory_size(type);
+   void *data  = core.retro_get_memory_data(type);
 
    if (size == 0 || !data)
       return;
@@ -326,8 +326,8 @@ void load_ram_file(const char *path, int type)
  */
 void save_ram_file(const char *path, int type)
 {
-   size_t size = pretro_get_memory_size(type);
-   void *data  = pretro_get_memory_data(type);
+   size_t size = core.retro_get_memory_size(type);
+   void *data  = core.retro_get_memory_data(type);
 
    if (!data)
       return;
@@ -508,9 +508,9 @@ static bool load_content(const struct retro_subsystem_info *special,
    }
 
    if (special)
-      ret = pretro_load_game_special(special->id, info, content->size);
+      ret = core.retro_load_game_special(special->id, info, content->size);
    else
-      ret = pretro_load_game(*content->elems[0].data ? info : NULL);
+      ret = core.retro_load_game(*content->elems[0].data ? info : NULL);
 
    if (!ret)
       RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
