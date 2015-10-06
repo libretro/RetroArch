@@ -30,6 +30,7 @@
 #include "menu_generic.h"
 
 #include "../menu.h"
+#include "../menu_animation.h"
 #include "../menu_entry.h"
 #include "../menu_display.h"
 #include "../../runloop_data.h"
@@ -526,17 +527,29 @@ static bool zui_button(zui_t *zui, int x1, int y1, const char *label)
 
 static bool zui_list_item(zui_t *zui, int x1, int y1, const char *label)
 {
+   char title_buf[PATH_MAX_LENGTH];
+   unsigned ticker_size;
    unsigned id = zui_hash(zui, label);
    int x2      = x1 + zui->width - 290 - 40;
    int y2      = y1 + 50;
    bool active = check_button_up(zui, id, x1, y1, x2, y2);
    const GLfloat *bg = ZUI_BG_PANEL;
+   uint64_t *frame_count = video_driver_get_frame_count();
 
    if (zui->item.active == id || zui->item.hot == id)
       bg = ZUI_BG_HILITE;
 
    zui_push_quad(zui, bg, x1, y1, x2, y2);
-   zui_draw_text(zui, ZUI_FG_NORMAL, 12, y1 + 35, label);
+
+   ticker_size = x2 / 14;
+
+   menu_animation_ticker_str(title_buf,
+         ticker_size,
+         *frame_count / 50,
+         label,
+         (bg == ZUI_BG_HILITE));
+
+   zui_draw_text(zui, ZUI_FG_NORMAL, 12, y1 + 35, title_buf);
 
    return active;
 }
