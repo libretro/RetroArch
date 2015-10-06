@@ -160,6 +160,7 @@ else ifeq ($(LIBRETRO), fb_alpha_neo)
 	#APP_BANNER        = ctr/libretro_banner.png
 	#APP_AUDIO         = ctr/silent.wav
 	O3DS_80MB_APPMEM  = 1
+	N3DS_178MB_APPMEM = 1
 
 else ifeq ($(LIBRETRO), fb_alpha_cps1)
 	APP_TITLE         = Final Burn Alpha - CPS-1
