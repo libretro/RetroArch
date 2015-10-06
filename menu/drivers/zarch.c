@@ -652,7 +652,10 @@ static void render_lay_root(zui_t *zui)
                label = core_name;
          }
 
-         zui_list_item(zui, 0, tabbed.tabline_size + i * 54, label);
+         if (zui_list_item(zui, 0, tabbed.tabline_size + i * 54, label))
+         {
+            RARCH_LOG("Gets here, label: %s, path: %s.\n", core_name, path);
+         }
       }
    }
 
@@ -1197,6 +1200,8 @@ static int zarch_iterate(bool render_this_frame, enum menu_action action)
          break;
       case MENU_ACTION_RIGHT:
          zui->load_dlist_first += 5;
+         break;
+      default:
          break;
    }
 
