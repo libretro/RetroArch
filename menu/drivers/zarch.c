@@ -241,6 +241,7 @@ static void zui_begin(void)
    if (gl && gl->shader && gl->shader->set_mvp)
       gl->shader->set_mvp(gl, &zui->mvp);
 
+
    /* why do i need this? */
    zui->mouse.left  = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
    zui->mouse.right = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
@@ -1182,6 +1183,23 @@ static int zarch_iterate(bool render_this_frame, enum menu_action action)
       BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
       BIT64_SET(menu->state, MENU_STATE_BLIT);
    }
+
+   switch (action)
+   {
+      case MENU_ACTION_UP:
+         zui->load_dlist_first--;
+         break;
+      case MENU_ACTION_DOWN:
+         zui->load_dlist_first++;
+         break;
+      case MENU_ACTION_LEFT:
+         zui->load_dlist_first -= 5;
+         break;
+      case MENU_ACTION_RIGHT:
+         zui->load_dlist_first += 5;
+         break;
+   }
+
 
    if (zui->time_to_exit)
    {
