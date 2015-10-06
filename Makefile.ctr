@@ -33,7 +33,6 @@ CTR_LINEAR_HEAP_SIZE  = 0xD00000
 
 include ctr/Makefile.cores
 
-
 ifeq ($(O3DS_80MB_APPMEM), 1)
 APP_SYSTEM_MODE     = 3
 else
@@ -42,6 +41,8 @@ endif
 
 ifeq ($(N3DS_178MB_APPMEM), 1)
 APP_SYSTEM_MODE_EXT = 2
+#we can't have both :(
+APP_SYSTEM_MODE    = 0
 else
 APP_SYSTEM_MODE_EXT = 1
 endif
