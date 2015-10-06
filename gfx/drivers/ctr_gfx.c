@@ -611,7 +611,7 @@ static void ctr_free(void* data)
    linearFree(ctr->menu.texture_linear);
    linearFree(ctr->menu.texture_swizzled);
    linearFree(ctr->menu.frame_coords);
-   linearFree(ctr->empty_framebuffer);   
+   linearFree(ctr->empty_framebuffer);
    linearFree(ctr);
    //   gfxExit();
 }
