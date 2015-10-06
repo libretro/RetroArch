@@ -413,18 +413,13 @@ $(TARGET).bnr: $(APP_BANNER) $(APP_AUDIO)
 $(TARGET).icn: $(APP_ICON)
 	$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_TITLE)" -p "$(APP_AUTHOR)" -i $(APP_ICON) -o $@
 
-$(TARGET)_stripped.elf: $(TARGET).elf
-	cp $(TARGET).elf $@
-	$(STRIP) $@
-
-$(TARGET).cia: $(TARGET)_stripped.elf $(TARGET).bnr $(TARGET).icn $(APP_CIA_RSF)
-	$(MAKEROM) -f cia -o $@ -rsf $(APP_CIA_RSF) -target t -exefslogo -elf $(TARGET)_stripped.elf -icon $(TARGET).icn -banner $(TARGET).bnr -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(APP_PRODUCT_CODE)" -DAPP_UNIQUE_ID=$(APP_UNIQUE_ID) -DAPP_SYSTEM_MODE=$(APP_SYSTEM_MODE) -DAPP_SYSTEM_MODE_EXT=$(APP_SYSTEM_MODE_EXT)
+$(TARGET).cia: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_CIA_RSF)
+	$(MAKEROM) -f cia -o $@ -rsf $(APP_CIA_RSF) -target t -exefslogo -elf $(TARGET).elf -icon $(TARGET).icn -banner $(TARGET).bnr -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(APP_PRODUCT_CODE)" -DAPP_UNIQUE_ID=$(APP_UNIQUE_ID) -DAPP_SYSTEM_MODE=$(APP_SYSTEM_MODE) -DAPP_SYSTEM_MODE_EXT=$(APP_SYSTEM_MODE_EXT)
 
 clean:
 	rm -f $(OBJS)
 	rm -f $(TARGET).3dsx
 	rm -f $(TARGET).elf
-	rm -f $(TARGET)_stripped.elf
 	rm -f $(TARGET).cia
 	rm -f $(TARGET).bnr
 	rm -f $(TARGET).icn
