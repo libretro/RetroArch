@@ -808,11 +808,6 @@ void render_sidebar(zui_t *zui)
    x1    = zui->width - width - 20;
    y1    = 20;
 
-   if (zui_button_full(zui, x1, y1, x1 + width, y1 + 64, "Home"))
-      layout = LAY_HOME;
-
-   y1 += 64;
-
    if (zui_button_full(zui, x1, y1, x1 + width, y1 + 64, "Settings"))
       layout = LAY_SETTINGS;
 
