@@ -29,6 +29,8 @@
 
 #include "menu_generic.h"
 
+#include "../../config.def.h"
+
 #include "../menu.h"
 #include "../menu_animation.h"
 #include "../menu_entry.h"
@@ -96,6 +98,7 @@ typedef struct zarch_handle
    unsigned height;
    gfx_font_raster_block_t tmp_block;
    unsigned hash;
+   bool time_to_exit;
 
    struct {
       unsigned active;
@@ -817,6 +820,19 @@ void render_sidebar(zui_t *zui)
       exit(0);
 }
 
+static int zui_load_content(zui_t *zui, unsigned i)
+{
+   global_t *global                = global_get_ptr();
+   menu_handle_t *menu             = menu_driver_get_ptr();
+   settings_t *settings            = config_get_ptr();
+   int ret = menu_common_load_content
+      (zui->pick_cores[i].path, zui->pick_content, false, CORE_TYPE_PLAIN);
+
+   layout = LAY_HOME;
+
+   return ret;
+}
+
 static void zui_render(void)
 {
    menu_handle_t *menu  = menu_driver_get_ptr();
@@ -849,8 +865,10 @@ static void zui_render(void)
          render_sidebar(zui);
          if (zui->pick_supported == 1)
          {
-            fputs("Core loading is not implemented yet, sorry.", stderr);
+            int ret =zui_load_content(zui, 0);
             layout = LAY_HOME;
+            zui->time_to_exit = true;
+            return;
          }
          else
          {
@@ -872,8 +890,10 @@ static void zui_render(void)
 
                   if (zui_list_item(zui, 0, 54 + j * 54, zui->pick_cores[i].display_name))
                   {
-                     fputs("Core loading is not implemented yet, sorry.", stderr);
+                     int ret =zui_load_content(zui, i);
                      layout = LAY_HOME;
+
+                     zui->time_to_exit = true;
                      break;
                   }
                   j++;
@@ -1146,15 +1166,28 @@ static void zarch_context_reset(void)
 
 static int zarch_iterate(bool render_this_frame, enum menu_action action)
 {
-   menu_handle_t *menu       = menu_driver_get_ptr();
+   zui_t *zui           = NULL;
+   menu_handle_t *menu  = menu_driver_get_ptr();
 
    if (!menu)
       return 0;
+
+   zui      = (zui_t*)menu->userdata;
+
+   if (!zui)
+      return -1;
 
    if (render_this_frame)
    {
       BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
       BIT64_SET(menu->state, MENU_STATE_BLIT);
+   }
+
+   if (zui->time_to_exit)
+   {
+      RARCH_LOG("Gets here.\n");
+      zui->time_to_exit = false;
+      return -1;
    }
 
    return 0;
