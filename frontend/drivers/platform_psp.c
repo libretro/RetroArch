@@ -180,7 +180,7 @@ static void frontend_psp_shutdown(bool unused)
 {
    (void)unused;
 #ifdef VITA
-   sceKernelExitProcess(0);
+   return;
 #else
    sceKernelExitGame();
 #endif
