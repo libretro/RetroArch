@@ -20,7 +20,8 @@ APP_CIA_RSF       = ctr/tools/template-cia.rsf
 APP_3DS_RSF       = ctr/tools/template-3ds.rsf
 
 
-O3DS_80MB_APPMEM = 0
+O3DS_80MB_APPMEM  = 0
+N3DS_178MB_APPMEM = 0
 
 
 ifeq ($(BIG_STACK),1)
@@ -39,7 +40,12 @@ else
 APP_SYSTEM_MODE     = 0
 endif
 
-APP_SYSTEM_MODE_EXT = 6
+ifeq ($(N3DS_178MB_APPMEM), 1)
+APP_SYSTEM_MODE_EXT = 2
+else
+APP_SYSTEM_MODE_EXT = 1
+endif
+
 
 
 CONFIG_OBJECT = ctr/ctr_config_$(CTR_STACK_SIZE)_$(CTR_LINEAR_HEAP_SIZE).o
