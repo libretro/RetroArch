@@ -581,7 +581,7 @@ static bool gl_cg_load_imports(cg_shader_data_t *cg)
       }
 
       if ((memtype != -1u) && 
-            (cg->shader->variable[i].addr >= pretro_get_memory_size(memtype)))
+            (cg->shader->variable[i].addr >= core.retro_get_memory_size(memtype)))
       {
          RARCH_ERR("Address out of bounds.\n");
          return false;
@@ -589,7 +589,7 @@ static bool gl_cg_load_imports(cg_shader_data_t *cg)
    }
 
    tracker_info.wram = (uint8_t*)
-      pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+      core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
    tracker_info.info      = cg->shader->variable;
    tracker_info.info_elem = cg->shader->variables;
 
