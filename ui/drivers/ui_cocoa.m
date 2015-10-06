@@ -248,6 +248,8 @@ static void poll_iteration(void)
 }
 
 
+extern void action_ok_push_quick_menu(void);
+
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
    if (filenames.count == 1 && [filenames objectAtIndex:0])
@@ -293,8 +295,11 @@ static void poll_iteration(void)
                  
                  if (menu->load_no_content && settings->core.set_supports_no_game_enable)
                  {
+                    int ret = 0;
                      *global->path.fullpath = '\0';
-                     menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
+                     ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
+                     if (ret == -1)
+                        action_ok_push_quick_menu();
                  }
              }
              else

@@ -126,10 +126,8 @@ int menu_common_load_content(
       const char *core_path, const char *fullpath,
       bool persist, enum rarch_core_type type)
 {
-   bool msg_force               = true;
    settings_t *settings         = config_get_ptr();
    global_t *global             = global_get_ptr();
-   menu_list_t *menu_list       = menu_list_get_ptr();
    enum event_command cmd       = EVENT_CMD_NONE;
 
    if (core_path)
@@ -139,9 +137,7 @@ int menu_common_load_content(
    }
 
    if (fullpath)
-   {
       strlcpy(global->path.fullpath, fullpath, sizeof(global->path.fullpath));
-   }
 
    switch (type)
    {
@@ -163,12 +159,6 @@ int menu_common_load_content(
 
    if (cmd != EVENT_CMD_NONE)
       event_command(cmd);
-
-   menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
-
-   generic_action_ok_displaylist_push("",
-         "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
 
    return -1;
 }
