@@ -333,13 +333,6 @@ static INLINE GLenum min_filter_to_mag(GLenum type)
 }
 
 #ifdef HAVE_FBO
-static void gl_shader_scale(gl_t *gl, unsigned idx,
-      struct gfx_fbo_scale *scale)
-{
-   scale->valid = false;
-   gl->shader->shader_scale(idx, scale);
-}
-
 /* Compute FBO geometry.
  * When width/height changes or window sizes change, 
  * we have to recalculate geometry of our FBO. */
@@ -635,8 +628,8 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
 
    video_driver_get_size(&width, &height);
 
-   gl_shader_scale(gl, 1, &scale);
-   gl_shader_scale(gl, gl->shader->num_shaders(), &scale_last);
+   video_shader_scale(1, gl->shader, &scale);
+   video_shader_scale(gl->shader->num_shaders(), gl->shader, &scale_last);
 
    /* we always want FBO to be at least initialized on startup for consoles */
    if (gl->shader->num_shaders() == 1 && !scale.valid)
@@ -664,7 +657,7 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
 
    for (i = 1; i < gl->fbo_pass; i++)
    {
-      gl_shader_scale(gl, i + 1, &gl->fbo_scale[i]);
+      video_shader_scale(i + 1, gl->shader, &gl->fbo_scale[i]);
 
       if (!gl->fbo_scale[i].valid)
       {
