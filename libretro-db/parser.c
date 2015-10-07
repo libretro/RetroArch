@@ -1,7 +1,8 @@
 #include <malloc.h>
 #include <string.h>
 
-#include "djb2.h"
+#include <rhash.h>
+
 #include "parser.h"
 
 static void match_any( pr_state_t* parser )
@@ -89,7 +90,7 @@ static void parse_map( pr_state_t* parser, int skip, int isrom )
       key = parser->lexer.start;
       keylen = parser->lexer.len;
 
-      hash = djb2( key, keylen );
+      hash = djb2_calculate(key);
 
       match_any( parser );
 

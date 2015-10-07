@@ -5,9 +5,9 @@
 #include <errno.h>
 
 #include <retro_file.h>
+#include <rhash.h>
 
 #include "parser.h"
-#include "djb2.h"
 #include "libretrodb.h"
 
 static const char *printchar( pr_state_t* parser )
@@ -102,7 +102,7 @@ static int provider( void* ctx, struct rmsgpack_dom_value* out )
       out->val.map.items[ i ].key.val.string.len = game->pairs[ i ].key_len;
       out->val.map.items[ i ].key.val.string.buff = dup_string( game->pairs[ i ].key, game->pairs[ i ].key_len );
 
-      hash = djb2( game->pairs[ i ].key, game->pairs[ i ].key_len );
+      hash = djb2_calculate(game->pairs[ i ].key);
 
       switch ( hash )
       {
