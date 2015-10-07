@@ -953,7 +953,7 @@ static bool d3d_init_imports(d3d_video_t *d3d)
       return true;
 
    tracker_info.wram      = (uint8_t*)
-      pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+      core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
    tracker_info.info      = d3d->shader.variable;
    tracker_info.info_elem = d3d->shader.variables;
 
