@@ -62,6 +62,10 @@ extern "C" {
 
 #define AUDIO_MAX_RATIO 16
 
+/* Specialized _MOUSE that targets the full screen regardless of viewport.
+ */
+#define RARCH_DEVICE_MOUSE_SCREEN (RETRO_DEVICE_MOUSE | 0x10000)
+
 /* Specialized _POINTER that targets the full screen regardless of viewport.
  * Should not be used by a libretro implementation as coordinates returned
  * make no sense.

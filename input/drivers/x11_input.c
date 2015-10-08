@@ -307,8 +307,8 @@ static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
 static int16_t x_pointer_state(x11_input_t *x11,
       unsigned idx, unsigned id, bool screen)
 {
-   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
    bool valid, inside;
+   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
 
    if (idx != 0)
       return 0;
