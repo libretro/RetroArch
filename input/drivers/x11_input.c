@@ -304,6 +304,21 @@ static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
    return 0;
 }
 
+static int16_t x_mouse_state_screen(x11_input_t *x11, unsigned id)
+{
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_MOUSE_X:
+         return x11->mouse_x;
+      case RETRO_DEVICE_ID_MOUSE_Y:
+         return x11->mouse_y;
+      default:
+         break;
+   }
+
+   return x_mouse_state(x11, id);
+}
+
 static int16_t x_pointer_state(x11_input_t *x11,
       unsigned idx, unsigned id, bool screen)
 {
@@ -391,6 +406,8 @@ static int16_t x_input_state(void *data,
 
       case RETRO_DEVICE_MOUSE:
          return x_mouse_state(x11, id);
+      case RARCH_DEVICE_MOUSE_SCREEN:
+         return x_mouse_state_screen(x11, id);
 
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
