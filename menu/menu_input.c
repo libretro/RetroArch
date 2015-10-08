@@ -784,7 +784,7 @@ int menu_input_bind_iterate(char *s, size_t len)
    return 0;
 }
 
-#if 0
+#if 1
 #define EXPERIMENTAL_MOUSE_SCREEN
 #endif
 
