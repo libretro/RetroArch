@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_DEBUG_PANEL_ENABLE:
+         return "debug_panel_enable";
       case MENU_LABEL_HELP_SCANNING_CONTENT:
          return "help_scanning_content";
       case MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
@@ -648,6 +650,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_DEBUG_PANEL_ENABLE:
+         return "Debug Panel Enable";
       case MENU_LABEL_VALUE_HELP_SCANNING_CONTENT:
          return "Scanning For Content";
       case MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING:

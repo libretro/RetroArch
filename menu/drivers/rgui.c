@@ -648,7 +648,7 @@ static void rgui_render(void)
       rgui->force_redraw = true;
    }
 
-   if (settings->menu.mouse.enable)
+   if (settings->menu.mouse.enable && settings->video.fullscreen)
       rgui_blit_cursor(menu);
 }
 
