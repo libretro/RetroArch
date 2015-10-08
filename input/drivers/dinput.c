@@ -71,12 +71,10 @@ struct dinput_input
 
    int window_pos_x;
    int window_pos_y;
-   int mouse_rel_x;
-   int mouse_last_x;
-   int mouse_rel_y;
-   int mouse_last_y;
    int mouse_x;
+   int mouse_last_x;
    int mouse_y;
+   int mouse_last_y;
    bool mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd, mouse_hwu, mouse_hwd;
    struct pointer_status pointer_head;  /* dummy head for easier iteration */
 };
@@ -317,11 +315,11 @@ static void dinput_poll(void *data)
             memset(&mouse_state, 0, sizeof(mouse_state));
       }
 
-      di->mouse_last_x = di->mouse_rel_x;
-      di->mouse_last_y = di->mouse_rel_y;
+      di->mouse_last_x = di->mouse_x;
+      di->mouse_last_y = di->mouse_y;
 
-      di->mouse_rel_x = di->window_pos_x;
-      di->mouse_rel_y = di->window_pos_y;
+      di->mouse_x = di->window_pos_x;
+      di->mouse_y = di->window_pos_y;
 
       di->mouse_l  = mouse_state.rgbButtons[0];
       di->mouse_r  = mouse_state.rgbButtons[1];
@@ -404,9 +402,9 @@ static int16_t dinput_lightgun_state(struct dinput_input *di, unsigned id)
    switch (id)
    {
       case RETRO_DEVICE_ID_LIGHTGUN_X:
-         return di->mouse_rel_x - di->mouse_last_x;
+         return di->mouse_x - di->mouse_last_x;
       case RETRO_DEVICE_ID_LIGHTGUN_Y:
-         return di->mouse_rel_y - di->mouse_last_y;
+         return di->mouse_y - di->mouse_last_y;
       case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
          return di->mouse_l;
       case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
@@ -429,9 +427,9 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
    switch (id)
    {
       case RETRO_DEVICE_ID_MOUSE_X:
-         return di->mouse_rel_x - di->mouse_last_x;
+         return di->mouse_x - di->mouse_last_x;
       case RETRO_DEVICE_ID_MOUSE_Y:
-         return di->mouse_rel_y - di->mouse_last_y;
+         return di->mouse_y - di->mouse_last_y;
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          return di->mouse_l;
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
@@ -461,6 +459,21 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
    }
 
    return 0;
+}
+
+static int16_t dinput_mouse_state_screen(struct dinput_input *di, unsigned id)
+{
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_MOUSE_X:
+         return di->mouse_x;
+      case RETRO_DEVICE_ID_MOUSE_Y:
+         return di->mouse_y;
+      default:
+	 break;
+   }
+
+   return dinput_mouse_state(di, id);
 }
 
 static int16_t dinput_pointer_state(struct dinput_input *di,
@@ -546,6 +559,9 @@ static int16_t dinput_input_state(void *data,
 
       case RETRO_DEVICE_MOUSE:
          return dinput_mouse_state(di, id);
+
+      case RARCH_DEVICE_MOUSE_SCREEN:
+	 return dinput_mouse_state_screen(di, id);
 
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
