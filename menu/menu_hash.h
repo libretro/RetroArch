@@ -22,6 +22,9 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_DEBUG_PANEL_ENABLE                                          0xbad176a1U
+#define MENU_LABEL_VALUE_DEBUG_PANEL_ENABLE                                    0x15042803U
+
 #define MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG                                  0x72674cdfU
 
 #define MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE                                   0xf3b0f77eU
