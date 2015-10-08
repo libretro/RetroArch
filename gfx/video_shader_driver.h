@@ -86,9 +86,6 @@ extern const shader_backend_t shader_null_backend;
 
 #endif
 
-void video_shader_scale(unsigned idx,
-      const shader_backend_t *shader,  struct gfx_fbo_scale *scale);
-
 /**
  * shader_ctx_find_driver:
  * @ident                   : Identifier of shader context driver to find.
