@@ -248,7 +248,7 @@ static void zui_begin(void)
    zui->mouse.wheel = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN) -
          input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
 
-#if 0
+#if 1
    zui->mouse.x = input_driver_state(binds, 0, RARCH_DEVICE_MOUSE_SCREEN, 0, RETRO_DEVICE_ID_MOUSE_X);
    zui->mouse.y = input_driver_state(binds, 0, RARCH_DEVICE_MOUSE_SCREEN, 0, RETRO_DEVICE_ID_MOUSE_Y);
 #else

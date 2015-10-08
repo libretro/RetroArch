@@ -43,8 +43,12 @@ typedef struct
    uint32_t touch_count;
 
    uint32_t mouse_buttons;
-   int16_t mouse_x;
-   int16_t mouse_y;
+    int16_t mouse_x_last;
+    int16_t mouse_y_last;
+    int16_t window_pos_x;
+    int16_t window_pos_y;
+   int16_t mouse_rel_x;
+   int16_t mouse_rel_y;
    int16_t mouse_wu;
    int16_t mouse_wd;
 

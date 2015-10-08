@@ -109,14 +109,26 @@ void apple_rarch_exited(void)
       case NSOtherMouseDragged:
       {
          NSPoint pos;
+          NSPoint mouse_pos;
          /* Relative */
-         apple->mouse_x = event.deltaX;
-         apple->mouse_y = event.deltaY;
+         apple->mouse_rel_x = event.deltaX;
+         apple->mouse_rel_y = event.deltaY;
 
          /* Absolute */
          pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
          apple->touches[0].screen_x = pos.x;
          apple->touches[0].screen_y = pos.y;
+          
+          //window is a variable containing your window
+          //mouse_pos = [self.window mouseLocationOutsideOfEventStream];
+          //convert to screen coordinates
+          //mouse_pos = [[self.window convertBaseToScreen:mouse_pos];
+          
+         //mouse_pos = [event locationInWindow];
+          //mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:[CocoaView get] ];
+        mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow]  fromView:nil];
+          apple->window_pos_x = (int16_t)mouse_pos.x;
+          apple->window_pos_y = (int16_t)mouse_pos.y;
       }
          break;
        case NSScrollWheel:
@@ -191,9 +203,6 @@ static void poll_iteration(void)
 
     if (!apple)
       return;
-
-    apple->mouse_x = 0;
-    apple->mouse_y = 0;
     
     do
     {
