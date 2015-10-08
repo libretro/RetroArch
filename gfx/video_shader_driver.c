@@ -86,7 +86,7 @@ struct video_shader *video_shader_driver_get_current_shader(void)
 void video_shader_scale(unsigned idx,
       const shader_backend_t *shader,  struct gfx_fbo_scale *scale)
 {
-   if (!scale || shader)
+   if (!scale || !shader)
       return;
 
    scale->valid = false;
