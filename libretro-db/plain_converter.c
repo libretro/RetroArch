@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <malloc.h>
 #include <errno.h>
@@ -11,9 +12,7 @@ static int cmpkeystr_( const pr_key_t* key, const char** str )
   int res = 1;
   
   if ( key->prev )
-  {
     res = cmpkeystr_( key->prev, str );
-  }
   
   res = res && !strncmp( key->key.str, *str, key->key.len );
   ( *str ) += key->key.len + 1;
