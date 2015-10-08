@@ -541,9 +541,8 @@ static void glui_frame(void)
       glui->box_message[0] = '\0';
    }
 
-   if (settings->menu.mouse.enable && settings->video.fullscreen)
+   if (settings->menu.mouse.enable && (settings->video.fullscreen || !video_driver_has_windowed()))
    {
-      RARCH_LOG("still gets in.\n");
       int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
       glui_render_quad(gl, mouse_x - 5, mouse_y - 5, 10, 10, width, height, &white_bg[0]);

@@ -1663,7 +1663,7 @@ static void xmb_frame(void)
       xmb_frame_messagebox(msg);
    }
 
-   if (settings->menu.mouse.enable && settings->video.fullscreen)
+   if (settings->menu.mouse.enable && (settings->video.fullscreen || !video_driver_has_windowed()))
    {
       int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
