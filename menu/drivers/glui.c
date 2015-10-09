@@ -221,7 +221,6 @@ end:
 static void glui_draw_cursor(glui_handle_t *glui,
       float x, float y, unsigned width, unsigned height)
 {
-   bool mouse_scrolldown, mouse_scrollup;
    unsigned new_mouse_ptr = 0;
    menu_handle_t *menu                = menu_driver_get_ptr();
    gl_t *gl                           = NULL;
