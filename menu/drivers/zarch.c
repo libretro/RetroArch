@@ -267,7 +267,11 @@ static void zui_begin(void)
 
 }
 
-void zui_finish(zui_t *zui)
+static void zui_finish(zui_t *zui,
+      unsigned x, unsigned y,
+      unsigned width, unsigned height,
+      bool blend,
+      GLuint texture)
 {
    driver_t *driver = (driver_t*)driver_get_ptr();
    gl_t         *gl = (gl_t*)video_driver_get_ptr(NULL);
@@ -280,21 +284,20 @@ void zui_finish(zui_t *zui)
    else if (zui->item.active == 0)
       zui->item.active = -1;
 
-   if (gl) /* it's null when we load a core :( */
-   {
-      glBindTexture(GL_TEXTURE_2D, 0);
+   glViewport(x, y, width, height);
+   //glBindTexture(GL_TEXTURE_2D, texture);
+   glBindTexture(GL_TEXTURE_2D, 0);
 
-      gl->shader->set_coords(&zui->ca);
+   gl->shader->set_coords(&zui->ca);
 
-      glEnable(GL_BLEND);
-      glDrawArrays(GL_TRIANGLES, 0, zui->ca.coords.vertices);
+   glEnable(GL_BLEND);
+   glDrawArrays(GL_TRIANGLES, 0, zui->ca.coords.vertices);
 
-      menu_display_font_flush_block(zui->menu, driver->font_osd_driver);
+   menu_display_font_flush_block(zui->menu, driver->font_osd_driver);
 
-      glDisable(GL_BLEND);
+   glDisable(GL_BLEND);
 
-      gl->shader->set_mvp(gl, &gl->mvp_no_rot);
-   }
+   gl->shader->set_mvp(gl, &gl->mvp_no_rot);
 
    zui->rendering = false;
 }
@@ -916,7 +919,7 @@ static void zui_render(void)
          break;
    }
 
-   zui_finish(zui);
+   zui_finish(zui, 0, 0, zui->width, zui->height, true, zui->textures.white);
 }
 
 static void zarch_draw_cursor(gl_t *gl, float x, float y)
