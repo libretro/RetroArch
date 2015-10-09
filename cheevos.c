@@ -66,7 +66,7 @@ enum
   COND_OP_NOT_EQUAL_TO,
 
   COND_OP_LAST
-}; /* cond_t.op */
+}; /* cheevos_cond_t.op */
 
 enum
 {
@@ -75,7 +75,7 @@ enum
   COND_TYPE_RESET_IF,
 
   COND_TYPE_LAST
-}; /* cond_t.type */
+}; /* cheevos_cond_t.type */
 
 enum
 {
@@ -111,12 +111,11 @@ typedef struct
   var_t    source;
   unsigned op;
   var_t    target;
-}
-cond_t;
+} cheevos_cond_t;
 
 typedef struct
 {
-  cond_t*  conds;
+  cheevos_cond_t*  conds;
   unsigned count;
 
   const char* expression;
@@ -410,7 +409,7 @@ static void parse_var( var_t* var, const char** memaddr )
   *memaddr = end;
 }
 
-static void parse_cond( cond_t* cond, const char** memaddr )
+static void parse_cond( cheevos_cond_t* cond, const char** memaddr )
 {
   const char* str = *memaddr;
 
@@ -441,7 +440,7 @@ static void parse_cond( cond_t* cond, const char** memaddr )
 static unsigned count_cond_sets( const char* memaddr )
 {
   unsigned count = 0;
-  cond_t   cond;
+  cheevos_cond_t   cond;
 
   do
   {
@@ -467,7 +466,7 @@ static unsigned count_conds_in_set( const char* memaddr, unsigned set )
 {
   unsigned index = 0;
   unsigned count = 0;
-  cond_t   cond;
+  cheevos_cond_t   cond;
 
   do
   {
@@ -492,7 +491,7 @@ static unsigned count_conds_in_set( const char* memaddr, unsigned set )
   return count;
 }
 
-static void parse_memaddr( cond_t* cond, const char* memaddr )
+static void parse_memaddr( cheevos_cond_t* cond, const char* memaddr )
 {
   do
   {
@@ -593,7 +592,7 @@ static int new_cheevo( readud_t* ud )
 
       if ( condset->count )
       {
-        condset->conds = (cond_t*)malloc( condset->count * sizeof( cond_t ) );
+        condset->conds = (cheevos_cond_t*)malloc( condset->count * sizeof( cheevos_cond_t ) );
 
         if ( !condset->conds )
         {
@@ -811,7 +810,7 @@ static unsigned get_var_value( var_t* var )
   return 0;
 }
 
-static int test_condition( cond_t* cond )
+static int test_condition( cheevos_cond_t* cond )
 {
   unsigned sval = get_var_value( &cond->source );
   unsigned tval = get_var_value( &cond->target );
@@ -846,8 +845,8 @@ static int test_cond_set( const condset_t* condset, int* dirty_conds, int* reset
   int cond_valid = 0;
   int set_valid = 1;
   int pause_active = 0;
-  const cond_t* end = condset->conds + condset->count;
-  cond_t* cond;
+  const cheevos_cond_t* end = condset->conds + condset->count;
+  cheevos_cond_t* cond;
 
   /* Now, read all Pause conditions, and if any are true, do not process further (retain old state) */
   for ( cond = condset->conds; cond < end; cond++ )
@@ -931,8 +930,8 @@ static int test_cond_set( const condset_t* condset, int* dirty_conds, int* reset
 static int reset_cond_set( condset_t* condset, int deltas )
 {
   int dirty = 0;
-  const cond_t* end = condset->conds + condset->count;
-  cond_t* cond;
+  const cheevos_cond_t* end = condset->conds + condset->count;
+  cheevos_cond_t* cond;
 
   if ( deltas )
   {
