@@ -235,7 +235,7 @@ OBJ += libretro-db/bintree.o \
 		 libretro-db/rmsgpack_dom.o \
 		 database_info.o \
 		 tasks/task_database.o \
-		 tasks/task_database_cue.o 
+		 tasks/task_database_cue.o
 endif
 
 # Miscellaneous
@@ -604,7 +604,7 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
 	     OBJ += gfx/drivers_context/wayland_ctx.o
       endif
    endif
-	
+
    ifeq ($(HAVE_GLES), 1)
       LIBS += $(GLES_LIBS)
       DEFINES += $(GLES_CFLAGS) -DHAVE_OPENGLES -DHAVE_OPENGLES2
@@ -626,7 +626,7 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
 		LIBS += $(GL_LIBS)
    endif
 
-   OBJ += gfx/drivers_shader/shader_glsl.o 
+   OBJ += gfx/drivers_shader/shader_glsl.o
    DEFINES += -DHAVE_GLSL
 endif
 
@@ -696,7 +696,7 @@ endif
 
 ifeq ($(HAVE_XVIDEO), 1)
    OBJ += gfx/drivers/xvideo.o
-   LIBS += $(XVIDEO_LIBS) 
+   LIBS += $(XVIDEO_LIBS)
    DEFINES += $(XVIDEO_CFLAGS)
 endif
 
@@ -733,7 +733,7 @@ endif
 
 ifeq ($(HAVE_7ZIP),1)
    CFLAGS  += -I./deps/7zip
-   HAVE_COMPRESSION = 1 
+   HAVE_COMPRESSION = 1
    DEFINES += -DHAVE_7ZIP
    7ZOBJ = 	deps/7zip/7zIn.o \
 		deps/7zip/7zAlloc.o \
@@ -758,7 +758,7 @@ ifeq ($(HAVE_ZLIB), 1)
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
 	HAVE_RPNG = 1
-   HAVE_COMPRESSION = 1 
+   HAVE_COMPRESSION = 1
    ifeq ($(WANT_ZLIB), 1)
       DEFINES += -DWANT_ZLIB
    else
@@ -776,7 +776,8 @@ ifeq ($(HAVE_RPNG), 1)
 			 libretro-common/formats/png/rpng_encode.o
 endif
 OBJ += libretro-common/formats/bmp/rbmp_encode.o \
-		 libretro-common/formats/tga/rtga.o
+		 libretro-common/formats/tga/rtga.o \
+		 libretro-common/formats/json/jsonsax.o
 
 ifdef HAVE_COMPRESSION
    DEFINES += -DHAVE_COMPRESSION
@@ -810,6 +811,18 @@ endif
 
 ifeq ($(HAVE_ZLIB_DEFLATE),1)
 DEFINES += -DHAVE_ZLIB_DEFLATE
+endif
+
+# Retro Achievements
+
+OBJ += cheevos.o
+
+ifeq ($(HAVE_CHEEVOS), 1)
+  ifeq ($(HAVE_SMW_CHEEVOS), 1)
+    DEFINES += -DHAVE_SMW_CHEEVOS
+  endif
+
+  DEFINES += -DHAVE_CHEEVOS
 endif
 
 # Camera
@@ -846,7 +859,7 @@ endif
 
 ifeq ($(HAVE_AVFOUNDATION), 1)
 ifeq ($(HAVE_COCOA), 1)
-   DEFINES += -DHAVE_AVFOUNDATION 
+   DEFINES += -DHAVE_AVFOUNDATION
    LIBS += -framework AVFoundation
    LIBS += -framework CoreVideo
    LIBS += -framework CoreMedia
@@ -865,7 +878,7 @@ endif
 
 ifeq ($(HAVE_COMPRESSION), 1)
    DEFINES += -DHAVE_COMPRESSION
-endif 
+endif
 
 ifeq ($(HAVE_COCOA),1)
 	DEFINES += -DHAVE_MAIN
