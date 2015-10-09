@@ -22,6 +22,7 @@
 
 #include <compat/strl.h>
 
+#include "cheevos.h"
 #include "configuration.h"
 #include "performance.h"
 #include "retroarch.h"
@@ -57,7 +58,7 @@ static retro_time_t frame_limit_minimum_time;
  * @pressed              : was libretro pause key pressed?
  * @frameadvance_pressed : was frameadvance key pressed?
  *
- * Check if libretro pause key was pressed. If so, pause or 
+ * Check if libretro pause key was pressed. If so, pause or
  * unpause the libretro core.
  *
  * Returns: true if libretro pause key was toggled, otherwise false.
@@ -102,7 +103,7 @@ static bool check_pause(driver_t *driver, settings_t *settings,
  * @hold_pressed         : is fastforward key pressed and held?
  * @old_hold_pressed     : was fastforward key pressed and held the last frame?
  *
- * Checks if the fast forward key has been pressed for this frame. 
+ * Checks if the fast forward key has been pressed for this frame.
  *
  **/
 static void check_fast_forward_button(driver_t *driver,
@@ -110,7 +111,7 @@ static void check_fast_forward_button(driver_t *driver,
       bool hold_pressed, bool old_hold_pressed)
 {
    /* To avoid continous switching if we hold the button down, we require
-    * that the button must go from pressed to unpressed back to pressed 
+    * that the button must go from pressed to unpressed back to pressed
     * to be able to toggle between then.
     */
    if (fastforward_pressed)
@@ -128,8 +129,8 @@ static void check_fast_forward_button(driver_t *driver,
  * @pressed_increase     : is state slot increase key pressed?
  * @pressed_decrease     : is state slot decrease key pressed?
  *
- * Checks if the state increase/decrease keys have been pressed 
- * for this frame. 
+ * Checks if the state increase/decrease keys have been pressed
+ * for this frame.
  **/
 static void check_stateslots(settings_t *settings,
       bool pressed_increase, bool pressed_decrease)
@@ -238,7 +239,7 @@ static void check_rewind(settings_t *settings,
  * @pressed_next         : was next shader key pressed?
  * @pressed_previous     : was previous shader key pressed?
  *
- * Checks if any one of the shader keys has been pressed for this frame: 
+ * Checks if any one of the shader keys has been pressed for this frame:
  * a) Next shader index.
  * b) Previous shader index.
  *
@@ -347,7 +348,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             }
 #endif
 
-            check_pause(driver, settings, 
+            check_pause(driver, settings,
                   cmd->pause_pressed, cmd->frameadvance_pressed);
 
             if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_PAUSE_STATE, cmd))
@@ -379,7 +380,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             else if (cmd->disk_next_pressed)
                event_command(EVENT_CMD_DISK_NEXT);
             else if (cmd->disk_prev_pressed)
-               event_command(EVENT_CMD_DISK_PREV);	  
+               event_command(EVENT_CMD_DISK_PREV);
 
             if (cmd->reset_pressed)
                event_command(EVENT_CMD_RESET);
@@ -613,19 +614,19 @@ static bool check_block_hotkey(driver_t *driver, settings_t *settings,
       bool enable_hotkey)
 {
    bool use_hotkey_enable;
-   const struct retro_keybind *bind = 
+   const struct retro_keybind *bind =
       &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
-   const struct retro_keybind *autoconf_bind = 
+   const struct retro_keybind *autoconf_bind =
       &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
 
    /* Don't block the check to RARCH_ENABLE_HOTKEY
     * unless we're really supposed to. */
-   driver->block_hotkey             = 
+   driver->block_hotkey             =
       input_driver_keyboard_mapping_is_blocked();
 
-   /* If we haven't bound anything to this, 
+   /* If we haven't bound anything to this,
     * always allow hotkeys. */
-   use_hotkey_enable                = 
+   use_hotkey_enable                =
          (bind->key != RETROK_UNKNOWN)
       || (bind->joykey != NO_BTN)
       || (bind->joyaxis != AXIS_NONE)
@@ -633,11 +634,11 @@ static bool check_block_hotkey(driver_t *driver, settings_t *settings,
       || (autoconf_bind->joykey != NO_BTN)
       || (autoconf_bind->joyaxis != AXIS_NONE);
 
-   driver->block_hotkey             = 
+   driver->block_hotkey             =
       input_driver_keyboard_mapping_is_blocked() ||
       (use_hotkey_enable && !enable_hotkey);
 
-   /* If we hold ENABLE_HOTKEY button, block all libretro input to allow 
+   /* If we hold ENABLE_HOTKEY button, block all libretro input to allow
     * hotkeys to be bound to same keys as RetroPad. */
    return (use_hotkey_enable && enable_hotkey);
 }
@@ -659,7 +660,7 @@ static INLINE retro_input_t input_keys_pressed(driver_t *driver,
    unsigned i;
    const struct retro_keybind *binds[MAX_USERS];
    retro_input_t ret        = 0;
-   
+
    for (i = 0; i < MAX_USERS; i++)
       binds[i] = settings->input.binds[i];
 
@@ -685,7 +686,7 @@ static INLINE retro_input_t input_keys_pressed(driver_t *driver,
    if (!driver->block_libretro_input)
    {
       for (i = 0; i < settings->input.max_users; i++)
-         global->turbo.frame_enable[i] = input_driver_state(binds, 
+         global->turbo.frame_enable[i] = input_driver_state(binds,
                i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
    }
 
@@ -824,7 +825,7 @@ static void rarch_main_cmd_get_state(driver_t *driver,
          RARCH_CHEAT_TOGGLE);
 }
 
-/* Time to exit out of the main loop? 
+/* Time to exit out of the main loop?
  * Reasons for exiting:
  * a) Shutdown environment callback was invoked.
  * b) Quit key was pressed.
@@ -851,7 +852,7 @@ static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
          global->exec = false;
 
       /* Quits out of RetroArch main loop.
-       * On special case, loads dummy core 
+       * On special case, loads dummy core
        * instead of exiting RetroArch completely.
        * Aborts core shutdown if invoked.
        */
@@ -879,7 +880,7 @@ static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
  * Run Libretro core in RetroArch for one frame.
  *
  * Returns: 0 on success, 1 if we have to wait until button input in order
- * to wake up the loop, -1 if we forcibly quit out of the RetroArch iteration loop. 
+ * to wake up the loop, -1 if we forcibly quit out of the RetroArch iteration loop.
  **/
 int rarch_main_iterate(unsigned *sleep_ms)
 {
@@ -923,7 +924,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
 
       retro_time_t current     = retro_get_time_usec();
       retro_time_t delta       = current - system->frame_time_last;
-      bool is_locked_fps       = (main_is_paused || driver->nonblock_state) | 
+      bool is_locked_fps       = (main_is_paused || driver->nonblock_state) |
          !!driver->recording_data;
 
       if (!system->frame_time_last || is_locked_fps)
@@ -974,7 +975,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    if (ret != 1)
       return -1;
 
-   
+
 #ifdef HAVE_MENU
    if (menu_driver_alive())
    {
@@ -1027,6 +1028,8 @@ int rarch_main_iterate(unsigned *sleep_ms)
 
    /* Run libretro for one frame. */
    core.retro_run();
+   /* Test the achievements. */
+   cheevos_test();
 
    for (i = 0; i < settings->input.max_users; i++)
    {
