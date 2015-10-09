@@ -208,7 +208,6 @@ static float zui_strwidth(void *fb_buf, const char *text, float scale)
 
 static void zui_begin(void)
 {
-   int dx, dy;
    const struct retro_keybind *binds[MAX_USERS];
    gl_t        *gl  = NULL;
    driver_t *driver = (driver_t*)driver_get_ptr();
@@ -834,11 +833,8 @@ void render_sidebar(zui_t *zui)
 
 static int zui_load_content(zui_t *zui, unsigned i)
 {
-   global_t *global                = global_get_ptr();
-   menu_handle_t *menu             = menu_driver_get_ptr();
-   settings_t *settings            = config_get_ptr();
-   int ret = menu_common_load_content
-      (zui->pick_cores[i].path, zui->pick_content, false, CORE_TYPE_PLAIN);
+   int ret = menu_common_load_content(zui->pick_cores[i].path,
+         zui->pick_content, false, CORE_TYPE_PLAIN);
 
    layout = LAY_HOME;
 
@@ -878,6 +874,9 @@ static void zui_render(void)
          if (zui->pick_supported == 1)
          {
             int ret =zui_load_content(zui, 0);
+
+            (void)ret;
+
             layout = LAY_HOME;
             zui->time_to_exit = true;
             return;
@@ -903,6 +902,9 @@ static void zui_render(void)
                   if (zui_list_item(zui, 0, 54 + j * 54, zui->pick_cores[i].display_name))
                   {
                      int ret =zui_load_content(zui, i);
+
+                     (void)ret;
+
                      layout = LAY_HOME;
 
                      zui->time_to_exit = true;
