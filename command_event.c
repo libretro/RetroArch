@@ -1104,10 +1104,12 @@ bool event_command(enum event_command cmd)
          global->pending.windowed_scale = 0;
          break;
       case EVENT_CMD_MENU_TOGGLE:
+#ifdef HAVE_MENU
          if (menu_driver_alive())
             rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
          else
             rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING, NULL);
+#endif
          break;
       case EVENT_CMD_CONTROLLERS_INIT:
          event_init_controllers();
@@ -1474,6 +1476,7 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_MENU_PAUSE_LIBRETRO:
+#ifdef HAVE_MENU
          if (menu_driver_alive())
          {
             if (settings->menu.pause_libretro)
@@ -1486,6 +1489,7 @@ bool event_command(enum event_command cmd)
             if (settings->menu.pause_libretro)
                event_command(EVENT_CMD_AUDIO_START);
          }
+#endif
          break;
       case EVENT_CMD_SHADER_DIR_DEINIT:
          if (!global)
