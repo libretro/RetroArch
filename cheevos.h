@@ -27,7 +27,7 @@ cheevos_config_t;
 extern cheevos_config_t cheevos_config;
 
 int  cheevos_load( const char* json );
-void cheevos_test();
-void cheevos_unload();
+void cheevos_test( void );
+void cheevos_unload( void );
 
 #endif /* __RARCH_CHEEVOS_H */

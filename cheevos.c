@@ -1021,7 +1021,7 @@ static void test_cheevo_set( const cheevoset_t* set )
   }
 }
 
-void cheevos_test( int unofficial )
+void cheevos_test( void )
 {
 #ifdef HAVE_SMW_CHEEVOS
   static int init = 1;
@@ -1076,7 +1076,7 @@ static void free_cheevo_set( const cheevoset_t* set )
   free( (void*)set->cheevos );
 }
 
-void cheevos_unload()
+void cheevos_unload( void )
 {
   free_cheevo_set( &core_cheevos );
   free_cheevo_set( &unofficial_cheevos );
