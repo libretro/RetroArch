@@ -81,8 +81,6 @@ typedef struct menu_input
 
    struct
    {
-      int16_t dx;
-      int16_t dy;
       int16_t x;
       int16_t y;
       int16_t screen_x;
@@ -784,10 +782,6 @@ int menu_input_bind_iterate(char *s, size_t len)
    return 0;
 }
 
-#if 1
-#define EXPERIMENTAL_MOUSE_SCREEN
-#endif
-
 static int menu_input_mouse(unsigned *action)
 {
    unsigned fb_width, fb_height;
@@ -838,20 +832,10 @@ static int menu_input_mouse(unsigned *action)
          0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP);
    menu_input->mouse.hwheeldown = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
          0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN);
-#ifdef EXPERIMENTAL_MOUSE_SCREEN
    menu_input->mouse.screen_x   = input_driver_state(binds, 0, RARCH_DEVICE_MOUSE_SCREEN,
          0, RETRO_DEVICE_ID_MOUSE_X);
    menu_input->mouse.screen_y   = input_driver_state(binds, 0, RARCH_DEVICE_MOUSE_SCREEN,
          0, RETRO_DEVICE_ID_MOUSE_Y);
-#else
-   menu_input->mouse.dx         = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
-         0, RETRO_DEVICE_ID_MOUSE_X);
-   menu_input->mouse.dy         = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
-         0, RETRO_DEVICE_ID_MOUSE_Y);
-
-   menu_input->mouse.screen_x += menu_input->mouse.dx;
-   menu_input->mouse.screen_y += menu_input->mouse.dy;
-#endif
 
 
    menu_input->mouse.x         = ((int)menu_input->mouse.screen_x * (int)fb_width) / (int)vp.width;
@@ -867,10 +851,6 @@ static int menu_input_mouse(unsigned *action)
       menu_input->mouse.y       = fb_height - 5;
 
    if (
-#ifndef EXPERIMENTAL_MOUSE_SCREEN
-         (menu_input->mouse.dx != 0)     ||
-         (menu_input->mouse.dy !=0)      ||
-#endif
          menu_input->mouse.left          ||
          menu_input->mouse.wheelup       ||
          menu_input->mouse.wheeldown     ||
