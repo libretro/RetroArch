@@ -1028,8 +1028,6 @@ int rarch_main_iterate(unsigned *sleep_ms)
 
    /* Run libretro for one frame. */
    core.retro_run();
-   /* Test the achievements. */
-   cheevos_test();
 
    for (i = 0; i < settings->input.max_users; i++)
    {
