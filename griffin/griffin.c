@@ -77,6 +77,12 @@ CHEATS
 #include "../libretro-common/hash/rhash.c"
 
 /*============================================================
+ACHIEVEMENTS
+============================================================ */
+#include "../libretro-common/formats/json/jsonsax.c"
+#include "../cheevos.c"
+
+/*============================================================
 UI COMMON CONTEXT
 ============================================================ */
 #if defined(_WIN32)
