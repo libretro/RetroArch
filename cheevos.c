@@ -1089,11 +1089,11 @@ int cheevos_load( const char* json )
   return -1;
 }
 
-void cheevos_test()
+void cheevos_test( void )
 {
 }
 
-void cheevos_unload()
+void cheevos_unload( void )
 {
 }
 
