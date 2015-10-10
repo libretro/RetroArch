@@ -284,7 +284,9 @@ static void zui_finish(zui_t *zui,
       zui->item.active = -1;
 
    glViewport(x, y, width, height);
-   //glBindTexture(GL_TEXTURE_2D, texture);
+#if 0
+   glBindTexture(GL_TEXTURE_2D, texture);
+#endif
    glBindTexture(GL_TEXTURE_2D, 0);
 
    gl->shader->set_coords(&zui->ca);
@@ -453,7 +455,7 @@ static void zui_snow(zui_t *zui)
    static part_t particles[NPARTICLES];
    static bool initialized = false;
    static int timeout      = 0;
-   unsigned i, j, max_gen  = 2;
+   unsigned i, max_gen  = 2;
 
    if (!initialized)
    {
@@ -490,22 +492,24 @@ static void zui_snow(zui_t *zui)
    else
       timeout--;
 
-   j = 0;
-
    for (i = 0; i < NPARTICLES; ++i)
    {
+      unsigned j;
+      GLfloat alpha;
+      GLfloat colors[16];
       part_t *p = &particles[i];
 
       if (!p->alive)
          continue;
 
-      GLfloat alpha = randf(0, 100) > 90 ? p->alpha/2 : p->alpha;
-      GLfloat colors[] = {
-         1, 1, 1, alpha,
-         1, 1, 1, alpha,
-         1, 1, 1, alpha,
-         1, 1, 1, alpha,
-      };
+      alpha = randf(0, 100) > 90 ? p->alpha/2 : p->alpha;
+
+      for (j = 0; j < 16; j++)
+      {
+         colors[j] = 1;
+         if (j == 3 || j == 7 || j == 11 || j == 15)
+            colors[j] = alpha;
+      }
 
       zui_push_quad(zui, colors, p->x-2, p->y-2, p->x+2, p->y+2);
 
