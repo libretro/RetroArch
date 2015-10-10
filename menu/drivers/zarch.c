@@ -209,19 +209,17 @@ static float zui_strwidth(void *fb_buf, const char *text, float scale)
 static void zui_begin(void)
 {
    const struct retro_keybind *binds[MAX_USERS];
-   gl_t        *gl  = NULL;
-   driver_t *driver = (driver_t*)driver_get_ptr();
-   menu_handle_t *menu  = menu_driver_get_ptr();
    zui_t *zui           = NULL;
+   driver_t     *driver = (driver_t*)driver_get_ptr();
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   gl_t            *gl  = NULL;
 
    if (!menu)
       return;
 
    zui      = (zui_t*)menu->userdata;
 
-   if (!zui)
-      return;
-   if (!driver)
+   if (!zui || !driver)
       return;
 
    gl                   = (gl_t*)video_driver_get_ptr(NULL);
@@ -247,16 +245,8 @@ static void zui_begin(void)
    zui->mouse.wheel = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN) -
          input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
 
-#if 1
    zui->mouse.x = input_driver_state(binds, 0, RARCH_DEVICE_MOUSE_SCREEN, 0, RETRO_DEVICE_ID_MOUSE_X);
    zui->mouse.y = input_driver_state(binds, 0, RARCH_DEVICE_MOUSE_SCREEN, 0, RETRO_DEVICE_ID_MOUSE_Y);
-#else
-   dx = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
-   dy = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
-
-   zui->mouse.x += dx;
-   zui->mouse.y += dy;
-#endif
 
    zui->ca.coords.vertices = 0;
 
