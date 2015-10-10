@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -17,8 +17,13 @@
 /* Win32/WGL context. */
 
 /* necessary for mingw32 multimon defines: */
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0500 //_WIN32_WINNT_WIN2K
+
+#include "../../config.h"
+
+#ifndef _WINSDK7
+#define _WIN32_WINNT 0x0501
+#else
+#define _WIN32_WINNT 0x0601
 #endif
 
 #include <string.h>
@@ -139,9 +144,9 @@ static void create_gl_context(HWND hwnd)
    else
    {
       g_hrc = wglCreateContext(g_hdc);
-      
+
       /* We'll create shared context later if not. */
-      if (g_hrc && !core_context && !debug) 
+      if (g_hrc && !core_context && !debug)
       {
          g_hw_hrc = wglCreateContext(g_hdc);
          if (g_hw_hrc)
@@ -183,7 +188,7 @@ static void create_gl_context(HWND hwnd)
          *aptr++ = g_minor;
 
          /* Technically, we don't have core/compat until 3.2.
-          * Version 3.1 is either compat or not depending 
+          * Version 3.1 is either compat or not depending
           * on GL_ARB_compatibility.
           */
          if ((g_major * 1000 + g_minor) >= 3002)
@@ -643,6 +648,39 @@ static bool gfx_ctx_wgl_suppress_screensaver(void *data, bool enable)
    (void)data;
    (void)enable;
 
+
+   if(enable)
+   {
+#if _WIN32_WINNT >= 0x0601
+      typedef HANDLE (WINAPI * PowerCreateRequestPtr)(REASON_CONTEXT *context);
+      HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll");
+      PowerCreateRequestPtr powerCreateRequest =
+           (PowerCreateRequestPtr)GetProcAddress(kernel32, "PowerCreateRequest");
+      if(powerCreateRequest)
+      {
+         /* Windows 7, 8, 10 codepath */
+         POWER_REQUEST_CONTEXT RequestContext;
+         HANDLE Request;
+
+         RequestContext.Version = POWER_REQUEST_CONTEXT_VERSION;
+         RequestContext.Flags = POWER_REQUEST_CONTEXT_SIMPLE_STRING;
+         RequestContext.Reason.SimpleReasonString = L"RetroArch running";
+
+         Request = PowerCreateRequest(&RequestContext);
+         RARCH_LOG("TEST WINVER7!!!! %#010x, %#010x", _WIN32_WINNT, WINVER);
+         PowerSetRequest( Request, PowerRequestDisplayRequired);
+         return true;
+      }
+      else
+#endif
+      {
+         /* XP / Vista codepath */
+         SetThreadExecutionState(ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED);
+         RARCH_LOG("TEST WINVERXP!!!! %#010x, %#010x", _WIN32_WINNT, WINVER);
+         return true;
+      }
+   }
+
    return false;
 }
 
@@ -719,4 +757,3 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    "wgl",
    gfx_ctx_wgl_bind_hw_render,
 };
-
