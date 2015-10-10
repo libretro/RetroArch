@@ -30,9 +30,6 @@
 #include "../../gfx/video_viewport.h"
 #include "../../general.h"
 
-/* forward declarations */
-void x_input_poll_wheel(void *data, XButtonEvent *event, bool latch);
-
 typedef struct x11_input
 {
    bool blocked;
