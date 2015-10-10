@@ -46,6 +46,7 @@ DerivedData
 apple/tmp
 apple/*.mobileprovision
 apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
+menu/driverspzarch.c
 /Cg/
 /GL/
 /SDL/
