@@ -17,8 +17,13 @@
 /* Win32/WGL context. */
 
 /* necessary for mingw32 multimon defines: */
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0601 //_WIN32_WINNT_WIN7
+
+#include "../../config.h"
+
+#ifndef _WINSDK7
+#define _WIN32_WINNT 0x0501
+#else
+#define _WIN32_WINNT 0x0601
 #endif
 
 #include <string.h>
@@ -644,13 +649,13 @@ static bool gfx_ctx_wgl_suppress_screensaver(void *data, bool enable)
    (void)enable;
 
 
-   typedef HANDLE (WINAPI * PowerCreateRequestPtr)(REASON_CONTEXT *context);
-   HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll");
-   PowerCreateRequestPtr powerCreateRequest =
-     (PowerCreateRequestPtr)GetProcAddress(kernel32, "PowerCreateRequest");
-
    if(enable)
    {
+#if _WIN32_WINNT >= 0x0601
+      typedef HANDLE (WINAPI * PowerCreateRequestPtr)(REASON_CONTEXT *context);
+      HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll");
+      PowerCreateRequestPtr powerCreateRequest =
+           (PowerCreateRequestPtr)GetProcAddress(kernel32, "PowerCreateRequest");
       if(powerCreateRequest)
       {
          /* Windows 7, 8, 10 codepath */
@@ -662,14 +667,16 @@ static bool gfx_ctx_wgl_suppress_screensaver(void *data, bool enable)
          RequestContext.Reason.SimpleReasonString = L"RetroArch running";
 
          Request = PowerCreateRequest(&RequestContext);
-
+         RARCH_LOG("TEST WINVER7!!!! %#010x, %#010x", _WIN32_WINNT, WINVER);
          PowerSetRequest( Request, PowerRequestDisplayRequired);
          return true;
       }
       else
+#endif
       {
          /* XP / Vista codepath */
          SetThreadExecutionState(ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED);
+         RARCH_LOG("TEST WINVERXP!!!! %#010x, %#010x", _WIN32_WINNT, WINVER);
          return true;
       }
    }
