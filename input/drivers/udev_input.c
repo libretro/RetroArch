@@ -33,6 +33,7 @@
 
 #include <file/file_path.h>
 
+#include "../input_common.h"
 #include "../input_joypad.h"
 #include "../input_keymaps.h"
 #include "../../general.h"
@@ -518,6 +519,45 @@ static int16_t udev_analog_pressed(udev_input_t *udev,
    return pressed_plus + pressed_minus;
 }
 
+static int16_t udev_pointer_state(udev_input_t *udev,
+      unsigned idx, unsigned id, bool screen)
+{
+   bool valid, inside;
+   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
+
+   if (idx != 0)
+      return 0;
+
+   valid = input_translate_coord_viewport(udev->mouse_x, udev->mouse_y,
+         &res_x, &res_y, &res_screen_x, &res_screen_y);
+
+   if (!valid)
+      return 0;
+
+   if (screen)
+   {
+      res_x = res_screen_x;
+      res_y = res_screen_y;
+   }
+
+   inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
+
+   if (!inside)
+      return 0;
+
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_POINTER_X:
+         return res_x;
+      case RETRO_DEVICE_ID_POINTER_Y:
+         return res_y;
+      case RETRO_DEVICE_ID_POINTER_PRESSED:
+         return udev->mouse_l;
+   }
+
+   return 0;
+}
+
 static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
@@ -543,6 +583,11 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
          }
       case RETRO_DEVICE_MOUSE:
          return udev_mouse_state(udev, id);
+
+      case RETRO_DEVICE_POINTER:
+      case RARCH_DEVICE_POINTER_SCREEN:
+         return udev_pointer_state(udev, idx, id,
+               device == RARCH_DEVICE_POINTER_SCREEN);
 
       case RETRO_DEVICE_LIGHTGUN:
          return udev_lightgun_state(udev, id);
