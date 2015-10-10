@@ -30,6 +30,35 @@
 #include "../drivers_wm/win32_shader_dlg.h"
 #endif
 
+#ifndef _XBOX
+/* Power Request APIs */
+
+typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_REQUEST_CONTEXT;
+
+WINBASEAPI
+HANDLE
+WINAPI
+PowerCreateRequest (
+    PREASON_CONTEXT Context
+    );
+
+WINBASEAPI
+BOOL
+WINAPI
+PowerSetRequest (
+    HANDLE PowerRequest,
+    POWER_REQUEST_TYPE RequestType
+    );
+
+WINBASEAPI
+BOOL
+WINAPI
+PowerClearRequest (
+    HANDLE PowerRequest,
+    POWER_REQUEST_TYPE RequestType
+    );
+#endif
+
 static bool win32_browser(
       HWND owner,
       char *filename,
@@ -237,5 +266,44 @@ void win32_check_window(void)
       TranslateMessage(&msg);
       DispatchMessage(&msg);
    }
+#endif
+}
+
+bool win32_suppress_screensaver(void *data, bool enable)
+{
+#ifdef _XBOX
+   return false;
+#else
+   typedef HANDLE (WINAPI * PowerCreateRequestPtr)(REASON_CONTEXT *context);
+   HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll");
+   PowerCreateRequestPtr powerCreateRequest =
+     (PowerCreateRequestPtr)GetProcAddress(kernel32, "PowerCreateRequest");
+
+   if(enable)
+   {
+      if(powerCreateRequest)
+      {
+         /* Windows 7, 8, 10 codepath */
+         POWER_REQUEST_CONTEXT RequestContext;
+        HANDLE Request;
+
+         RequestContext.Version = POWER_REQUEST_CONTEXT_VERSION;
+         RequestContext.Flags = POWER_REQUEST_CONTEXT_SIMPLE_STRING;
+         RequestContext.Reason.SimpleReasonString = L"RetroArch running";
+
+         Request = PowerCreateRequest(&RequestContext);
+
+        PowerSetRequest( Request, PowerRequestDisplayRequired);
+         return true;
+      }
+     else
+      {
+         /* XP / Vista codepath */
+         SetThreadExecutionState(ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED);
+         return true;
+      }
+   }
+
+   return false;
 #endif
 }

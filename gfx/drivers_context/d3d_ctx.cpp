@@ -206,10 +206,7 @@ static bool gfx_ctx_d3d_has_focus(void *data)
 
 static bool gfx_ctx_d3d_suppress_screensaver(void *data, bool enable)
 {
-   (void)data;
-   (void)enable;
-
-   return false;
+   return win32_suppress_screensaver(data, enable);
 }
 
 static bool gfx_ctx_d3d_has_windowed(void *data)

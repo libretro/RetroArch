@@ -640,10 +640,7 @@ static bool gfx_ctx_wgl_has_focus(void *data)
 
 static bool gfx_ctx_wgl_suppress_screensaver(void *data, bool enable)
 {
-   (void)data;
-   (void)enable;
-
-   return false;
+   return win32_suppress_screensaver(data, enable);
 }
 
 static bool gfx_ctx_wgl_has_windowed(void *data)
