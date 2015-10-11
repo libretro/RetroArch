@@ -353,6 +353,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_HEX:
       case ST_FLOAT:
       case ST_STRING:
+      case ST_STRING_OPTIONS:
       case ST_DIR:
       case ST_BIND:
       case ST_ACTION:
@@ -520,6 +521,7 @@ void *setting_get_ptr(rarch_setting_t *setting)
       case ST_BIND:
          return setting->value.keybind;
       case ST_STRING:
+      case ST_STRING_OPTIONS:
       case ST_PATH:
       case ST_DIR:
          return setting->value.string;
@@ -559,6 +561,7 @@ static void setting_reset_setting(rarch_setting_t* setting)
          *setting->value.keybind          = *setting->default_value.keybind;
          break;
       case ST_STRING:
+      case ST_STRING_OPTIONS:
       case ST_PATH:
       case ST_DIR:
          if (setting->default_value.string)
@@ -654,6 +657,7 @@ int menu_setting_set_with_string_representation(rarch_setting_t* setting,
       case ST_PATH:
       case ST_DIR:
       case ST_STRING:
+      case ST_STRING_OPTIONS:
       case ST_ACTION:
          strlcpy(setting->value.string, value, setting->size);
          break;
@@ -1538,6 +1542,7 @@ static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
          cb = menu_input_st_hex_callback;
          break;
       case ST_STRING:
+      case ST_STRING_OPTIONS:
          cb = menu_input_st_string_callback;
          break;
       default:
@@ -2714,7 +2719,7 @@ static void general_write_handler(void *data)
 
 #define CONFIG_STRING_OPTIONS(TARGET, NAME, SHORT, DEF, OPTS, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
 { \
-  if (!(menu_settings_list_append(list, list_info, setting_string_setting_options(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", OPTS, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+  if (!(menu_settings_list_append(list, list_info, setting_string_setting_options(ST_STRING_OPTIONS, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", OPTS, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
 #define CONFIG_HEX(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
@@ -2761,11 +2766,6 @@ static void setting_add_special_callbacks(
          default:
             break;
       }
-   }
-   else if (values & SD_FLAG_IS_DRIVER)
-   {
-      (*list)[idx].action_left  = setting_string_action_left_driver;
-      (*list)[idx].action_right = setting_string_action_right_driver;
    }
 }
 
@@ -2971,6 +2971,8 @@ static bool setting_append_list_driver_options(
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
    CONFIG_STRING_OPTIONS(
          settings->input.joypad_driver,
@@ -2984,6 +2986,8 @@ static bool setting_append_list_driver_options(
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
    CONFIG_STRING_OPTIONS(
          settings->video.driver,
@@ -2997,6 +3001,8 @@ static bool setting_append_list_driver_options(
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
    CONFIG_STRING_OPTIONS(
          settings->audio.driver,
@@ -3010,6 +3016,8 @@ static bool setting_append_list_driver_options(
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
    CONFIG_STRING_OPTIONS(
          settings->audio.resampler,
@@ -3023,6 +3031,8 @@ static bool setting_append_list_driver_options(
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
    CONFIG_STRING_OPTIONS(
          settings->camera.driver,
@@ -3036,6 +3046,8 @@ static bool setting_append_list_driver_options(
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
    CONFIG_STRING_OPTIONS(
          settings->location.driver,
@@ -3049,6 +3061,8 @@ static bool setting_append_list_driver_options(
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
    CONFIG_STRING_OPTIONS(
          settings->menu.driver,
@@ -3062,6 +3076,8 @@ static bool setting_append_list_driver_options(
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
    CONFIG_STRING_OPTIONS(
          settings->record.driver,
@@ -3075,6 +3091,8 @@ static bool setting_append_list_driver_options(
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
    END_SUB_GROUP(list, list_info, parent_group);
    END_GROUP(list, list_info, parent_group);
@@ -6555,16 +6573,23 @@ void menu_setting_free(rarch_setting_t *list)
 
    for (; menu_setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
    {
-      if (flags & SD_FLAG_IS_DRIVER)
-      {
-         if (setting->values)
-            free((void*)setting->values);
-      }
+      enum setting_type setting_type = menu_setting_get_type(setting);
 
-      if (menu_setting_get_type(setting) == ST_BIND)
+      switch (setting_type)
       {
-         free((void*)setting->name);
-         free((void*)setting->short_description);
+         case ST_STRING_OPTIONS:
+            if (setting->values)
+               free((void*)setting->values);
+            setting->values = NULL;
+            break;
+         case ST_BIND:
+            free((void*)setting->name);
+            free((void*)setting->short_description);
+            setting->name = NULL;
+            setting->short_description = NULL;
+            break;
+         default:
+            break;
       }
    }
 

@@ -71,9 +71,6 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
       enum setting_type setting_type = menu_setting_get_type(setting);
       const char            *values  = menu_setting_get_values(setting);
 
-      if (values && (setting_type == ST_STRING))
-         return MENU_ENTRY_ENUM;
-
       switch (setting_type)
       {
          case ST_BOOL:
@@ -90,17 +87,14 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
             return MENU_ENTRY_PATH;
          case ST_DIR:
             return MENU_ENTRY_DIR;
+         case ST_STRING_OPTIONS:
+            return MENU_ENTRY_ENUM;
          case ST_STRING:
             return MENU_ENTRY_STRING;
          case ST_HEX:
             return MENU_ENTRY_HEX;
-           
-         case ST_NONE:
-         case ST_ACTION:
-         case ST_GROUP:
-         case ST_SUB_GROUP:
-         case ST_END_GROUP:
-         case ST_END_SUB_GROUP:
+
+         default:
             break;
       }
    }

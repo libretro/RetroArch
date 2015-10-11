@@ -36,6 +36,7 @@ enum setting_type
    ST_PATH,
    ST_DIR,
    ST_STRING,
+   ST_STRING_OPTIONS,
    ST_HEX,
    ST_BIND,
    ST_GROUP,
