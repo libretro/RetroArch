@@ -25,8 +25,6 @@
 
 #include "../command_event.h"
 
-#define BINDFOR(s) (*(&(s))->value.keybind)
-
 #ifdef __cplusplus
 extern "C" {
 #endif

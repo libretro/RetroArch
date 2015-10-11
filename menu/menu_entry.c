@@ -177,20 +177,26 @@ int32_t menu_entry_bind_index(uint32_t i)
 
 void menu_entry_bind_key_set(uint32_t i, int32_t value)
 {
-   rarch_setting_t *setting = menu_entry_get_setting(i);
-   BINDFOR(*setting).key = (enum retro_key)value;
+   rarch_setting_t      *setting = menu_entry_get_setting(i);
+   struct retro_keybind *keybind = (struct retro_keybind*)setting_get_ptr(setting);
+   if (keybind)
+      keybind->key = (enum retro_key)value;
 }
 
 void menu_entry_bind_joykey_set(uint32_t i, int32_t value)
 {
-   rarch_setting_t *setting = menu_entry_get_setting(i);
-   BINDFOR(*setting).joykey = value;
+   rarch_setting_t      *setting = menu_entry_get_setting(i);
+   struct retro_keybind *keybind = (struct retro_keybind*)setting_get_ptr(setting);
+   if (keybind)
+      keybind->joykey = value;
 }
 
 void menu_entry_bind_joyaxis_set(uint32_t i, int32_t value)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   BINDFOR(*setting).joyaxis = value;
+   struct retro_keybind *keybind = (struct retro_keybind*)setting_get_ptr(setting);
+   if (keybind)
+      keybind->joyaxis = value;
 }
 
 void menu_entry_pathdir_selected(uint32_t i)
