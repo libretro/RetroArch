@@ -1932,7 +1932,7 @@ static void xmb_free(void *data)
 static void xmb_context_bg_destroy(xmb_handle_t *xmb)
 {
    if (xmb->textures.bg.id)
-      glDeleteTextures(1, &xmb->textures.bg.id);
+      glDeleteTextures(1, (const GLuint*)&xmb->textures.bg.id);
 }
 
 static bool xmb_load_image(void *data, menu_image_type_t type)
@@ -2457,8 +2457,8 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb,
       if (!node)
          continue;
 
-      glDeleteTextures(1, &node->icon);
-      glDeleteTextures(1, &node->content_icon);
+      glDeleteTextures(1, (const GLuint*)&node->icon);
+      glDeleteTextures(1, (const GLuint*)&node->content_icon);
    }
 }
 
@@ -2477,7 +2477,7 @@ static void xmb_context_destroy(void)
       return;
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
-      glDeleteTextures(1, &xmb->textures.list[i].id);
+      glDeleteTextures(1, (const GLuint*)&xmb->textures.list[i].id);
 
    xmb_context_destroy_horizontal_list(xmb, menu);
 

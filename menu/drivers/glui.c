@@ -681,9 +681,9 @@ static void glui_context_bg_destroy(glui_handle_t *glui)
    if (glui)
    {
       if (glui->textures.bg.id)
-         glDeleteTextures(1, &glui->textures.bg.id);
+         glDeleteTextures(1, (const GLuint*)&glui->textures.bg.id);
       if (glui->textures.white)
-         glDeleteTextures(1, &glui->textures.white);
+         glDeleteTextures(1, (const GLuint*)&glui->textures.white);
 
       glui->textures.bg.id = 0;
       glui->textures.white = 0;
