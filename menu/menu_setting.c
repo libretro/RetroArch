@@ -64,6 +64,14 @@ static void menu_settings_info_list_free(rarch_setting_info_t *list_info)
       free(list_info);
 }
 
+void menu_settings_list_increment(rarch_setting_t **list)
+{
+   if (!list || !*list)
+      return;
+
+   *list = *list + 1;
+}
+
 static bool menu_settings_list_append(rarch_setting_t **list,
       rarch_setting_info_t *list_info, rarch_setting_t value)
 {
@@ -335,7 +343,7 @@ rarch_setting_t *menu_setting_find(const char *label)
 
    needle = menu_hash_calculate(label);
 
-   for (; menu_setting_get_type(setting) != ST_NONE; setting++)
+   for (; menu_setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
    {
       const char *name = menu_setting_get_name(setting);
       const char *short_description = menu_setting_get_short_description(setting);
@@ -6463,7 +6471,7 @@ void menu_setting_free(rarch_setting_t *list)
    if (!list)
       return;
 
-   for (; menu_setting_get_type(setting) != ST_NONE; setting++)
+   for (; menu_setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
    {
       if (flags & SD_FLAG_IS_DRIVER)
       {

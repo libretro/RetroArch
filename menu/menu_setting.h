@@ -308,6 +308,8 @@ void *setting_get_ptr(rarch_setting_t *setting);
 
 bool menu_setting_action_right(rarch_setting_t *setting, bool wraparound);
 
+void menu_settings_list_increment(rarch_setting_t **list);
+
 #ifdef __cplusplus
 }
 #endif

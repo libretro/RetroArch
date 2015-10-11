@@ -1615,7 +1615,7 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
       return -1;
 
 
-   for (; menu_setting_get_type(setting) != ST_END_GROUP; setting++)
+   for (; menu_setting_get_type(setting) != ST_END_GROUP; menu_settings_list_increment(&setting))
    {
       const char *short_description = menu_setting_get_short_description(setting);
       const char *name              = menu_setting_get_name(setting);
@@ -1689,13 +1689,12 @@ static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *
          if ((strlen(name) != 0) && !strcmp(name, elem1))
             break;
       }
-      info->setting++;
+      menu_settings_list_increment(&info->setting);
    }
 
+   menu_settings_list_increment(&info->setting);
 
-   info->setting++;
-
-   for (; menu_setting_get_type(info->setting) != ST_END_SUB_GROUP; info->setting++)
+   for (; menu_setting_get_type(info->setting) != ST_END_SUB_GROUP; menu_settings_list_increment(&info->setting))
    {
       const char *name              = menu_setting_get_name(info->setting);
       const char *short_description = menu_setting_get_short_description(info->setting);
@@ -2542,7 +2541,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
          if (settings->menu.collapse_subgroups_enable)
          {
-            for (; menu_setting_get_type(setting) != ST_NONE; setting++)
+            for (; menu_setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
             {
                const char *short_description  = menu_setting_get_short_description(setting);
                const char *name               = menu_setting_get_name(setting);
@@ -2559,7 +2558,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          }
          else
          {
-            for (; menu_setting_get_type(setting) != ST_NONE; setting++)
+            for (; menu_setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
             {
                char group_label[PATH_MAX_LENGTH];
                const char *short_description  = menu_setting_get_short_description(setting);
