@@ -25,7 +25,7 @@
 /* Begin PBXFileReference section */
 		7A868DD21AC85A8500B0EDDB /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = ../OSX/en.lproj/MainMenu.xib; sourceTree = SOURCE_ROOT; };
 		7A868DD41AC85A8500B0EDDB /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = ../OSX/en.lproj/Settings.xib; sourceTree = SOURCE_ROOT; };
-		7ACC4C4F1AC864B800D67175 /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../griffin/griffin_objc.m; sourceTree = SOURCE_ROOT; };
+		7ACC4C4F1AC864B800D67175 /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../../griffin/griffin_objc.m; sourceTree = SOURCE_ROOT; };
 		7AEFCD861921295E00FB5B6A /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		962EE0E1178B3DF6004224FF /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = /System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
 		96355CDF1788E72A0010DBFA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -309,7 +309,7 @@
 					"-DHAVE_DYLIB",
 					"-DHAVE_7ZIP",
 					"-DHAVE_GLUI",
-               "-DHAVE_ZARCH",
+					"-DHAVE_ZARCH",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
 					"-DHAVE_FILTERS_BUILTIN",
@@ -375,7 +375,7 @@
 					"-DHAVE_DYLIB",
 					"-DHAVE_7ZIP",
 					"-DHAVE_GLUI",
-               "-DHAVE_ZARCH",
+					"-DHAVE_ZARCH",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
 					"-DHAVE_FILTERS_BUILTIN",
