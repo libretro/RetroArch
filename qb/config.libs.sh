@@ -353,7 +353,7 @@ fi
 
 check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
-[ "$HAVE_X11" = "no" ] && HAVE_XEXT=no && HAVE_XF86VM=no && HAVE_XINERAMA=no
+[ "$HAVE_X11" = "no" ] && HAVE_XEXT=no && HAVE_XF86VM=no && HAVE_XINERAMA=no && HAVE_XSHM=no
 
 check_pkgconf WAYLAND wayland-egl
 
@@ -376,6 +376,9 @@ if [ "$HAVE_UDEV" != "no" ]; then
       [ "$HAVE_UDEV" = "yes" ] && UDEV_LIBS=-ludev
    fi
 fi
+
+#this one is broken (XShm.h requires some other X headers first), but xshm itself doesn't work either, so it's okay
+check_header XSHM X11/extensions/XShm.h
 
 check_header PARPORT linux/parport.h
 check_header PARPORT linux/ppdev.h
