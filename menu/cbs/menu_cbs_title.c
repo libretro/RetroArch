@@ -25,6 +25,12 @@
 
 #include "../../general.h"
 
+#ifndef BIND_ACTION_GET_TITLE
+#define BIND_ACTION_GET_TITLE(cbs, name) \
+   cbs->action_get_title = name; \
+   cbs->action_get_title_ident = #name;
+#endif
+
 static INLINE void replace_chars(char *str, char c1, char c2)
 {
    char *pos = NULL;
@@ -464,7 +470,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
 
       if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && menu_setting_get_type(cbs->setting) == ST_GROUP)
       {
-         cbs->action_get_title = action_get_title_group_settings;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_group_settings);
          return 0;
       }
    }
@@ -472,130 +478,130 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
    switch (label_hash)
    {
       case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
-         cbs->action_get_title = action_get_title_deferred_database_manager_list;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_database_manager_list);
          break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
-         cbs->action_get_title = action_get_title_deferred_cursor_manager_list;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_cursor_manager_list);
          break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER:
-         cbs->action_get_title = action_get_title_list_rdb_entry_developer;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_developer);
          break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER:
-         cbs->action_get_title = action_get_title_list_rdb_entry_publisher;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_publisher);
          break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN:
-         cbs->action_get_title = action_get_title_list_rdb_entry_origin;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_origin);
          break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE:
-         cbs->action_get_title = action_get_title_list_rdb_entry_franchise;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_franchise);
          break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING:
-         cbs->action_get_title = action_get_title_list_rdb_entry_edge_magazine_rating;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_edge_magazine_rating);
          break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
-         cbs->action_get_title = action_get_title_list_rdb_entry_edge_magazine_issue;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_edge_magazine_issue);
          break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH:
-         cbs->action_get_title = action_get_title_list_rdb_entry_releasedate_by_month;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_releasedate_by_month);
          break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR:
-         cbs->action_get_title = action_get_title_list_rdb_entry_releasedate_by_year;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_releasedate_by_year);
          break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING:
-         cbs->action_get_title = action_get_title_list_rdb_entry_esrb_rating;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_esrb_rating);
          break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
-         cbs->action_get_title = action_get_title_list_rdb_entry_elspa_rating;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_elspa_rating);
          break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING:
-         cbs->action_get_title = action_get_title_list_rdb_entry_pegi_rating;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_pegi_rating);
          break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING:
-         cbs->action_get_title = action_get_title_list_rdb_entry_cero_rating;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_cero_rating);
          break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING:
-         cbs->action_get_title = action_get_title_list_rdb_entry_bbfc_rating;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_bbfc_rating);
          break;
       case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS:
-         cbs->action_get_title = action_get_title_list_rdb_entry_max_users;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_max_users);
          break;
       case MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL:
-         cbs->action_get_title = action_get_title_list_rdb_entry_database_info;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_database_info);
          break;
       case MENU_LABEL_DEFERRED_CORE_LIST:
-         cbs->action_get_title = action_get_title_deferred_core_list;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_core_list);
          break;
       case MENU_LABEL_CONFIGURATIONS:
-         cbs->action_get_title = action_get_title_configurations;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_configurations);
          break;
       case MENU_LABEL_JOYPAD_AUTOCONFIG_DIR:
-         cbs->action_get_title = action_get_title_autoconfig_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_autoconfig_directory);
          break;
       case MENU_LABEL_EXTRACTION_DIRECTORY:
-         cbs->action_get_title = action_get_title_extraction_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_extraction_directory);
          break;
       case MENU_LABEL_SYSTEM_DIRECTORY:
-         cbs->action_get_title = action_get_title_system_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_system_directory);
          break;
       case MENU_LABEL_ASSETS_DIRECTORY:
-         cbs->action_get_title = action_get_title_assets_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_assets_directory);
          break;
       case MENU_LABEL_SAVEFILE_DIRECTORY:
-         cbs->action_get_title = action_get_title_savefile_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_savefile_directory);
          break;
       case MENU_LABEL_OVERLAY_DIRECTORY:
-         cbs->action_get_title = action_get_title_overlay_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_overlay_directory);
          break;
       case MENU_LABEL_RGUI_BROWSER_DIRECTORY:
-         cbs->action_get_title = action_get_title_browser_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_browser_directory);
          break;
       case MENU_LABEL_PLAYLIST_DIRECTORY:
-         cbs->action_get_title = action_get_title_playlist_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_playlist_directory);
          break;
       case MENU_LABEL_CONTENT_DIRECTORY:
-         cbs->action_get_title = action_get_title_content_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_content_directory);
          break;
       case MENU_LABEL_SCREENSHOT_DIRECTORY:
-         cbs->action_get_title = action_get_title_screenshot_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_screenshot_directory);
          break;
       case MENU_LABEL_VIDEO_SHADER_DIR:
-         cbs->action_get_title = action_get_title_video_shader_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_video_shader_directory);
          break;
       case MENU_LABEL_VIDEO_FILTER_DIR:
-         cbs->action_get_title = action_get_title_video_filter_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_video_filter_directory);
          break;
       case MENU_LABEL_AUDIO_FILTER_DIR:
-         cbs->action_get_title = action_get_title_audio_filter_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_audio_filter_directory);
          break;
       case MENU_LABEL_CURSOR_DIRECTORY:
-         cbs->action_get_title = action_get_title_cursor_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_cursor_directory);
          break;
       case MENU_LABEL_RECORDING_CONFIG_DIRECTORY:
-         cbs->action_get_title = action_get_title_recording_config_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_recording_config_directory);
          break;
       case MENU_LABEL_RECORDING_OUTPUT_DIRECTORY:
-         cbs->action_get_title = action_get_title_recording_output_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_recording_output_directory);
          break;
       case MENU_LABEL_OSK_OVERLAY_DIRECTORY:
-         cbs->action_get_title = action_get_title_onscreen_overlay_keyboard_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_onscreen_overlay_keyboard_directory);
          break;
       case MENU_LABEL_INPUT_REMAPPING_DIRECTORY:
-         cbs->action_get_title = action_get_title_input_remapping_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_input_remapping_directory);
          break;
       case MENU_LABEL_CONTENT_DATABASE_DIRECTORY:
-         cbs->action_get_title = action_get_title_content_database_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_content_database_directory);
          break;
       case MENU_LABEL_SAVESTATE_DIRECTORY:
-         cbs->action_get_title = action_get_title_savestate_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_savestate_directory);
          break;
       case MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
-         cbs->action_get_title = action_get_title_dynamic_wallpapers_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_dynamic_wallpapers_directory);
          break;
       case MENU_LABEL_CORE_ASSETS_DIRECTORY:
-         cbs->action_get_title = action_get_title_core_assets_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_core_assets_directory);
          break;
       case MENU_LABEL_RGUI_CONFIG_DIRECTORY:
-         cbs->action_get_title = action_get_title_config_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_config_directory);
          break;
       case MENU_LABEL_CORE_LIST:
       case MENU_LABEL_MANAGEMENT:
@@ -623,46 +629,46 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_LOAD_CONTENT_LIST:
       case MENU_LABEL_CONTENT_SETTINGS:
       case MENU_LABEL_ADD_CONTENT_LIST:
-         cbs->action_get_title = action_get_title_action_generic;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_action_generic);
          break;
       case MENU_LABEL_DISK_IMAGE_APPEND:
-         cbs->action_get_title = action_get_title_disk_image_append;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_disk_image_append);
          break;
       case MENU_LABEL_VIDEO_SHADER_PRESET:
-         cbs->action_get_title = action_get_title_video_shader_preset;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_video_shader_preset);
          break;
       case MENU_LABEL_CHEAT_FILE_LOAD:
-         cbs->action_get_title = action_get_title_cheat_file_load;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_cheat_file_load);
          break;
       case MENU_LABEL_REMAP_FILE_LOAD:
-         cbs->action_get_title = action_get_title_remap_file_load;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_remap_file_load);
          break;
       case MENU_LABEL_HELP:
-         cbs->action_get_title = action_get_title_help;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_help);
          break;
       case MENU_LABEL_HELP_LIST:
-         cbs->action_get_title = action_get_title_help_list;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_help_list);
          break;
       case MENU_LABEL_INPUT_OVERLAY:
-         cbs->action_get_title = action_get_title_overlay;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_overlay);
          break;
       case MENU_LABEL_VIDEO_FONT_PATH:
-         cbs->action_get_title = action_get_title_font_path;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_font_path);
          break;
       case MENU_LABEL_VIDEO_FILTER:
-         cbs->action_get_title = action_get_title_video_filter;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_video_filter);
          break;
       case MENU_LABEL_AUDIO_DSP_PLUGIN:
-         cbs->action_get_title = action_get_title_audio_filter;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_audio_filter);
          break;
       case MENU_LABEL_CHEAT_DATABASE_PATH:
-         cbs->action_get_title = action_get_title_cheat_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_cheat_directory);
          break;
       case MENU_LABEL_LIBRETRO_DIR_PATH:
-         cbs->action_get_title = action_get_title_core_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_core_directory);
          break;
       case MENU_LABEL_LIBRETRO_INFO_PATH:
-         cbs->action_get_title = action_get_title_core_info_directory;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_core_info_directory);
          break;
       default:
          return -1;
@@ -677,14 +683,14 @@ static int menu_cbs_init_bind_title_compare_type(menu_file_list_cbs_t *cbs,
    switch (type)
    {
       case MENU_SETTINGS:
-         cbs->action_get_title = action_get_title_menu;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_menu);
          break;
       case MENU_SETTINGS_CUSTOM_BIND:
       case MENU_SETTINGS_CUSTOM_BIND_KEYBOARD:
-         cbs->action_get_title = action_get_title_input_settings;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_input_settings);
          break;
       case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
-         cbs->action_get_title = action_get_title_action_generic;
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_action_generic);
          break;
       default:
          return -1;
@@ -701,7 +707,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   cbs->action_get_title = action_get_title_default;
+   BIND_ACTION_GET_TITLE(cbs, action_get_title_default);
 
    if (menu_cbs_init_bind_title_compare_label(cbs, label, label_hash, elem1) == 0)
       return 0;
