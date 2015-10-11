@@ -436,8 +436,10 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
             if (settings->menu.dpi.override_enable)
                *dpi = settings->menu.dpi.override_value;
+#if defined(HAVE_OPENGL) || defined(HAVE_GLES)
             else if (!gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, dpi))
                *dpi = menu_dpi_override_value;
+#endif
          }
          return true;
    }
