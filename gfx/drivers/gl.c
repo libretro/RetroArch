@@ -1507,6 +1507,7 @@ static INLINE void gl_set_prev_texture(gl_t *gl,
    memcpy(&gl->prev_info[0], tex_info,
          sizeof(*tex_info));
 
+#ifdef HAVE_FBO
    /* Implement feedback by swapping out FBO/textures for FBO pass #N and feedbacks. */
    if (gl->fbo_feedback_enable)
    {
@@ -1517,6 +1518,7 @@ static INLINE void gl_set_prev_texture(gl_t *gl,
       gl->fbo[gl->fbo_feedback_pass] = tmp_fbo;
       gl->fbo_texture[gl->fbo_feedback_pass] = tmp_tex;
    }
+#endif
 }
 
 static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned shader)
