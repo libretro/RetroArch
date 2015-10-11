@@ -377,8 +377,7 @@ if [ "$HAVE_UDEV" != "no" ]; then
    fi
 fi
 
-#this one is broken (XShm.h requires some other X headers first), but xshm itself doesn't work either, so it's okay
-check_header XSHM X11/extensions/XShm.h
+check_header XSHM X11/Xlib.h X11/extensions/XShm.h
 
 check_header PARPORT linux/parport.h
 check_header PARPORT linux/ppdev.h
