@@ -44,6 +44,115 @@
 #include "../file_ext.h"
 #include "../performance.h"
 
+typedef void (*change_handler_t               )(void *data);
+typedef int  (*action_left_handler_t          )(void *data, bool wraparound);
+typedef int  (*action_right_handler_t         )(void *data, bool wraparound);
+typedef int  (*action_up_handler_t            )(void *data);
+typedef int  (*action_down_handler_t          )(void *data);
+typedef int  (*action_start_handler_t         )(void *data);
+typedef int  (*action_cancel_handler_t        )(void *data);
+typedef int  (*action_ok_handler_t            )(void *data, bool wraparound);
+typedef int  (*action_select_handler_t        )(void *data, bool wraparound);
+typedef void (*get_string_representation_t    )(void *data, char *s, size_t len);
+
+typedef struct rarch_setting_info
+{
+   int index;
+   int size;
+} rarch_setting_info_t;
+
+typedef struct rarch_setting_group_info
+{
+   const char *name;
+} rarch_setting_group_info_t;
+
+struct rarch_setting
+{
+   enum setting_type    type;
+
+   uint32_t             size;
+   
+   const char           *name;
+   uint32_t             name_hash;
+   const char           *short_description;
+   const char           *group;
+   const char           *subgroup;
+   const char           *parent_group;
+   const char           *values;
+
+   uint32_t             index;
+   unsigned             index_offset;
+
+   double               min;
+   double               max;
+   
+   uint64_t             flags;
+   
+   change_handler_t              change_handler;
+   change_handler_t              read_handler;
+   action_start_handler_t        action_start;
+   action_left_handler_t         action_left;
+   action_right_handler_t        action_right;
+   action_up_handler_t           action_up;
+   action_down_handler_t         action_down;
+   action_cancel_handler_t       action_cancel;
+   action_ok_handler_t           action_ok;
+   action_select_handler_t       action_select;
+   get_string_representation_t   get_string_representation;
+
+   union
+   {
+      bool                       boolean;
+      int                        integer;
+      unsigned int               unsigned_integer;
+      float                      fraction;
+      const char                 *string;
+      const struct retro_keybind *keybind;
+   } default_value;
+   
+   union
+   {
+      bool                 *boolean;
+      int                  *integer;
+      unsigned int         *unsigned_integer;
+      float                *fraction;
+      char                 *string;
+      struct retro_keybind *keybind;
+   } value;
+
+   union
+   {
+      bool           boolean;
+      int            integer;
+      unsigned int   unsigned_integer;
+      float          fraction;
+   } original_value;
+
+   struct
+   {
+      const char     *empty_path;
+   } dir;
+
+   struct
+   {
+      enum           event_command idx;
+      bool           triggered;
+   } cmd_trigger;
+
+   struct
+   {
+      const char     *off_label;
+      const char     *on_label;
+   } boolean;
+
+   unsigned          bind_type;
+   unsigned          browser_selection_type;
+   float             step;
+   const char        *rounding_fraction;
+   bool              enforce_minrange;
+   bool              enforce_maxrange;
+};
+
 enum setting_type menu_setting_get_type(rarch_setting_t *setting)
 {
    if (!setting)
