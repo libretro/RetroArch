@@ -613,7 +613,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
     switch (buttonIndex)
     {
         case 0:
-            generic_menu_iterate(true, MENU_ACTION_OK);
+            generic_menu_iterate(MENU_ACTION_OK);
             break;
     }
 }
