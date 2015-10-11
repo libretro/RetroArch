@@ -563,7 +563,11 @@ static void parse_input(int argc, char *argv[])
    };
 
    global->inited.core.no_content        = false;
+#ifdef HAVE_DYNAMIC
    global->inited.core.type              = CORE_TYPE_DUMMY;
+#else
+   global->inited.core.type              = CORE_TYPE_PLAIN;
+#endif
    *global->subsystem                    = '\0';
    global->has_set.save_path             = false;
    global->has_set.state_path            = false;
@@ -590,7 +594,10 @@ static void parse_input(int argc, char *argv[])
    global->overrides_active              = false;
 
    if (argc < 2)
+   {
+      global->inited.core.type           = CORE_TYPE_DUMMY;
       return;
+   }
 
    /* Make sure we can call parse_input several times ... */
    optind    = 0;
