@@ -6446,6 +6446,14 @@ static bool setting_append_list_input_player_options(
    return true;
 }
 
+bool menu_setting_action_right(rarch_setting_t *setting, bool wraparound)
+{
+   if (!setting || !setting->action_right)
+      return false;
+
+   setting->action_right(setting, wraparound);
+   return true;
+}
 
 void menu_setting_free(rarch_setting_t *list)
 {
@@ -6702,4 +6710,3 @@ error:
 
    return NULL;
 }
-

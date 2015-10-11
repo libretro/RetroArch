@@ -308,6 +308,8 @@ unsigned setting_get_index_offset(rarch_setting_t *setting);
 
 void *setting_get_ptr(rarch_setting_t *setting);
 
+bool menu_setting_action_right(rarch_setting_t *setting, bool wraparound);
+
 #ifdef __cplusplus
 }
 #endif
