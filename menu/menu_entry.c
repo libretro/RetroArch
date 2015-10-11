@@ -162,7 +162,7 @@ struct string_list *menu_entry_enum_values(uint32_t i)
 void menu_entry_enum_set_value_with_string(uint32_t i, const char *s)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   setting_set_with_string_representation(setting, s);
+   menu_setting_set_with_string_representation(setting, s);
 }
 
 int32_t menu_entry_bind_index(uint32_t i)
@@ -247,8 +247,7 @@ int menu_entry_pathdir_set_value(uint32_t i, const char *s)
    if (menu_setting_get_type(cbs->setting) != ST_DIR)
       return -1;
 
-   setting_set_with_string_representation(cbs->setting, menu_path);
-
+   menu_setting_set_with_string_representation(cbs->setting, menu_path);
    menu_setting_generic(cbs->setting, false);
 
    menu_list_flush_stack(menu_list, NULL, 49);
@@ -285,7 +284,7 @@ void menu_entry_get_value(uint32_t i, char *s, size_t len)
 void menu_entry_set_value(uint32_t i, const char *s)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   setting_set_with_string_representation(setting, s);
+   menu_setting_set_with_string_representation(setting, s);
 }
 
 uint32_t menu_entry_num_has_range(uint32_t i)

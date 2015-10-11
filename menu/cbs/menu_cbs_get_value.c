@@ -927,7 +927,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       strlcpy(s, core_opt ? core_opt : "", len);
    }
    else
-      setting_get_label(list, s,
+      menu_setting_get_label(list, s,
             len, w, type, label, entry_label, i);
 
    strlcpy(s2, path, len2);

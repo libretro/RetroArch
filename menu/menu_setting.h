@@ -119,7 +119,7 @@ rarch_setting_t *menu_setting_find(const char *label);
  * Set a settings' value with a string. It is assumed
  * that the string has been properly formatted.
  **/
-int setting_set_with_string_representation(
+int menu_setting_set_with_string_representation(
       rarch_setting_t* setting, const char *value);
 
 /**
@@ -130,10 +130,10 @@ int setting_set_with_string_representation(
  *
  * Get a setting value's string representation.
  **/
-void setting_get_string_representation(void *data, char *s, size_t len);
+void menu_setting_get_string_representation(void *data, char *s, size_t len);
 
 /**
- * setting_get_label:
+ * menu_setting_get_label:
  * @list               : File list on which to perform the search
  * @s                  : String for the type to be represented on-screen as
  *                       a label.
@@ -147,7 +147,7 @@ void setting_get_string_representation(void *data, char *s, size_t len);
  *
  * Get associated label of a setting.
  **/
-void setting_get_label(void *data, char *s,
+void menu_setting_get_label(void *data, char *s,
       size_t len, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx);
 
@@ -191,7 +191,7 @@ unsigned menu_setting_get_bind_type(rarch_setting_t *setting);
 
 uint32_t menu_setting_get_index(rarch_setting_t *setting);
 
-unsigned setting_get_index_offset(rarch_setting_t *setting);
+unsigned menu_setting_get_index_offset(rarch_setting_t *setting);
 
 void *setting_get_ptr(rarch_setting_t *setting);
 

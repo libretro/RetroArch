@@ -637,7 +637,7 @@ static int generic_action_ok(const char *path,
 
             if (cbs)
             {
-               setting_set_with_string_representation(cbs->setting, action_path);
+               menu_setting_set_with_string_representation(cbs->setting, action_path);
                ret = menu_setting_generic(cbs->setting, false);
             }
          }

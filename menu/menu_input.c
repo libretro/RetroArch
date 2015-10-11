@@ -332,9 +332,7 @@ void menu_input_st_uint_callback(void *userdata, const char *str)
       menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
 
       setting = menu_setting_find(label);
-
-      if (setting)
-         setting_set_with_string_representation(setting, str);
+      menu_setting_set_with_string_representation(setting, str);
    }
 
    menu_input_key_end_line();
@@ -378,7 +376,7 @@ void menu_input_st_string_callback(void *userdata, const char *str)
 
       if (setting)
       {
-         setting_set_with_string_representation(setting, str);
+         menu_setting_set_with_string_representation(setting, str);
          menu_setting_generic(setting, false);
       }
       else
@@ -605,7 +603,7 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
    if (!setting)
       return -1;
 
-   index_offset = setting_get_index_offset(setting);
+   index_offset = menu_setting_get_index_offset(setting);
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
 
@@ -688,7 +686,7 @@ int menu_input_set_input_device_bind_mode(void *data,
    if (!setting)
       return -1;
 
-   index_offset = setting_get_index_offset(setting);
+   index_offset = menu_setting_get_index_offset(setting);
    bind_port    = settings->input.joypad_map[index_offset];
 
    if (menu_input_set_bind_mode_common(setting, type) == -1)

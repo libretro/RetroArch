@@ -564,7 +564,7 @@ static void setting_reset_setting(rarch_setting_t* setting)
          if (setting->default_value.string)
          {
             if (menu_setting_get_type(setting) == ST_STRING)
-               setting_set_with_string_representation(setting, setting->default_value.string);
+               menu_setting_set_with_string_representation(setting, setting->default_value.string);
             else
                fill_pathname_expand_special(setting->value.string,
                      setting->default_value.string, setting->size);
@@ -597,14 +597,14 @@ static void setting_reset_setting(rarch_setting_t* setting)
 
 
 /**
- * setting_set_with_string_representation:
+ * menu_setting_set_with_string_representation:
  * @setting            : pointer to setting
  * @value              : value for the setting (string)
  *
  * Set a settings' value with a string. It is assumed
  * that the string has been properly formatted.
  **/
-int setting_set_with_string_representation(rarch_setting_t* setting,
+int menu_setting_set_with_string_representation(rarch_setting_t* setting,
       const char* value)
 {
    double min, max;
@@ -721,7 +721,7 @@ void setting_get_string_representation(void *data, char *s, size_t len)
       setting->get_string_representation(setting, s, len);
 }
 
-unsigned setting_get_index_offset(rarch_setting_t *setting)
+unsigned menu_setting_get_index_offset(rarch_setting_t *setting)
 {
    if (!setting)
       return 0;
@@ -746,7 +746,7 @@ static int setting_action_start_bind_device(void *data)
    if (!setting || !settings)
       return -1;
 
-   index_offset = setting_get_index_offset(setting);
+   index_offset = menu_setting_get_index_offset(setting);
 
    settings->input.joypad_map[index_offset] = index_offset;
    return 0;
@@ -842,7 +842,7 @@ static int setting_action_start_libretro_device_type(void *data)
    if (setting_generic_action_start_default(setting) != 0)
       return -1;
 
-   index_offset = setting_get_index_offset(setting);
+   index_offset = menu_setting_get_index_offset(setting);
    port         = index_offset;
 
    devices[types++] = RETRO_DEVICE_NONE;
@@ -1105,7 +1105,7 @@ static int setting_action_left_bind_device(void *data, bool wraparound)
    if (!setting)
       return -1;
 
-   index_offset = setting_get_index_offset(setting);
+   index_offset = menu_setting_get_index_offset(setting);
 
    p = &settings->input.joypad_map[index_offset];
 
@@ -1127,7 +1127,7 @@ static int setting_action_right_bind_device(void *data, bool wraparound)
    if (!setting)
       return -1;
 
-   index_offset = setting_get_index_offset(setting);
+   index_offset = menu_setting_get_index_offset(setting);
 
    p = &settings->input.joypad_map[index_offset];
 
@@ -1144,7 +1144,7 @@ static int setting_bool_action_toggle_default(void *data, bool wraparound)
    if (!setting)
       return -1;
 
-   setting_set_with_string_representation(setting,
+   menu_setting_set_with_string_representation(setting,
          *setting->value.boolean ? "false" : "true");
 
    return 0;
@@ -1473,7 +1473,7 @@ static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparoun
    if (!settings || !setting)
       return -1;
 
-   index_offset = setting_get_index_offset(setting);
+   index_offset = menu_setting_get_index_offset(setting);
 
    if(config_save_autoconf_profile(settings->input.device_names[index_offset], index_offset))
       menu_display_msg_queue_push("Autoconf file saved successfully", 1, 100, true);
@@ -1719,7 +1719,7 @@ static void setting_get_string_representation_st_bind(void *data,
    if (!setting)
       return;
 
-   index_offset = setting_get_index_offset(setting);
+   index_offset = menu_setting_get_index_offset(setting);
    keybind      = (const struct retro_keybind*)setting->value.keybind;
    auto_bind    = (const struct retro_keybind*)
       input_get_auto_bind(index_offset, keybind->id);
@@ -1782,7 +1782,7 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
    if (!setting)
       return;
 
-   index_offset = setting_get_index_offset(setting);
+   index_offset = menu_setting_get_index_offset(setting);
 
    if (index_offset < system->num_ports)
       desc = libretro_find_controller_description(
@@ -1831,7 +1831,7 @@ static void setting_get_string_representation_uint_analog_dpad_mode(void *data,
 
    if (setting)
    {
-      unsigned index_offset = setting_get_index_offset(setting);
+      unsigned index_offset = menu_setting_get_index_offset(setting);
       strlcpy(s, modes[settings->input.analog_dpad_mode
             [index_offset] % ANALOG_DPAD_LAST], len);
    }
@@ -2402,7 +2402,7 @@ static void get_string_representation_bind_device(void * data, char *s,
    if (!setting)
       return;
 
-   index_offset = setting_get_index_offset(setting);
+   index_offset = menu_setting_get_index_offset(setting);
    map          = settings->input.joypad_map[index_offset];
 
    if (map < settings->input.max_users)
@@ -2424,7 +2424,7 @@ static void get_string_representation_bind_device(void * data, char *s,
 
 
 /**
- * setting_get_label:
+ * menu_setting_get_label:
  * @list               : File list on which to perform the search
  * @s                  : String for the type to be represented on-screen as
  *                       a label.
@@ -2438,7 +2438,7 @@ static void get_string_representation_bind_device(void * data, char *s,
  *
  * Get associated label of a setting.
  **/
-void setting_get_label(void *data, char *s,
+void menu_setting_get_label(void *data, char *s,
       size_t len, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx)
 {
@@ -2565,7 +2565,7 @@ static void general_write_handler(void *data)
                   menu_hash_to_str(MENU_LABEL_HELP), sizeof(info.label));
 
             menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
-            setting_set_with_string_representation(setting, "false");
+            menu_setting_set_with_string_representation(setting, "false");
          }
          break;
       case MENU_LABEL_AUDIO_MAX_TIMING_SKEW:
@@ -2635,7 +2635,7 @@ static void general_write_handler(void *data)
          if (*setting->value.boolean && global->console.screen.pal_enable)
             rarch_cmd = EVENT_CMD_REINIT;
          else
-            setting_set_with_string_representation(setting, "false");
+            menu_setting_set_with_string_representation(setting, "false");
          break;
       case MENU_LABEL_SYSTEM_BGM_ENABLE:
          if (*setting->value.boolean)
