@@ -284,6 +284,8 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 
 enum setting_type menu_setting_get_type(rarch_setting_t *setting);
 
+enum setting_type menu_setting_get_browser_selection_type(rarch_setting_t *setting);
+
 const char *menu_setting_get_values(rarch_setting_t *setting);
 
 const char *menu_setting_get_name(rarch_setting_t *setting);

@@ -2189,8 +2189,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
    }
 
    path_is_compressed = path_is_compressed_file(info->path);
-   push_dir           = (info->setting
-         && info->setting->browser_selection_type == ST_DIR);
+   push_dir           = (menu_setting_get_browser_selection_type(info->setting) == ST_DIR);
 
    filter_ext = settings->menu.navigation.browser.filter.supported_extensions_enable;
 

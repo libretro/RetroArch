@@ -51,6 +51,13 @@ enum setting_type menu_setting_get_type(rarch_setting_t *setting)
    return setting->type;
 }
 
+enum setting_type menu_setting_get_browser_selection_type(rarch_setting_t *setting)
+{
+   if (!setting)
+      return ST_NONE;
+   return setting->browser_selection_type;
+}
+
 static void menu_settings_info_list_free(rarch_setting_info_t *list_info)
 {
    if (list_info)

@@ -1731,7 +1731,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   if (cbs->setting && cbs->setting->browser_selection_type == ST_DIR)
+   if (menu_setting_get_browser_selection_type(cbs->setting) == ST_DIR)
    {
       cbs->action_ok = action_ok_push_generic_list;
       return 0;

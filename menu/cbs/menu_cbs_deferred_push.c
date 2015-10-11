@@ -358,7 +358,9 @@ static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned typ
          break;
       case PUSH_DEFAULT:
          info->setting      = menu_setting_find(info->label);
-         if (info->setting && info->setting->browser_selection_type == ST_DIR) {}
+         if (menu_setting_get_browser_selection_type(info->setting) == ST_DIR)
+         {
+         }
          else if (global->menu.info.valid_extensions)
          {
             if (*global->menu.info.valid_extensions)
