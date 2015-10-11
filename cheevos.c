@@ -135,8 +135,8 @@ typedef struct
   int         active;
   int         modified;
 
-  cheevos_condset_t*  condsets;
-  unsigned    count;
+  cheevos_condset_t* condsets;
+  unsigned count;
 }
 cheevo_t;
 
@@ -548,8 +548,11 @@ static inline const char* dupstr( const cheevos_field_t* field )
 
 static int new_cheevo( cheevos_readud_t* ud )
 {
-  int flags = strtol( ud->flags.string, NULL, 10 );
+  const cheevos_condset_t* end;
+  unsigned set;
+  cheevos_condset_t* condset;
   cheevo_t* cheevo;
+  int flags = strtol( ud->flags.string, NULL, 10 );
 
   if ( flags == 3 )
   {
@@ -566,27 +569,33 @@ static int new_cheevo( cheevos_readud_t* ud )
   cheevo->author = dupstr( &ud->author );
   cheevo->badge = dupstr( &ud->badge );
   cheevo->points = strtol( ud->points.string, NULL, 10 );
+  cheevo->dirty = 0;
   cheevo->active = flags == 3;
   cheevo->modified = 0;
 
   if ( !cheevo->title || !cheevo->description || !cheevo->author || !cheevo->badge )
   {
+    free( (void*)cheevo->title );
+    free( (void*)cheevo->description );
+    free( (void*)cheevo->author );
+    free( (void*)cheevo->badge );
     return -1;
   }
 
   cheevo->count = count_cond_sets( ud->memaddr.string );
-  cheevo->condsets = (cheevos_condset_t*)malloc( cheevo->count * sizeof( cheevos_condset_t ) );
-
-  if ( !cheevo->condsets )
-  {
-    return -1;
-  }
 
   if ( cheevo->count )
   {
-    const cheevos_condset_t* end = cheevo->condsets + cheevo->count;
-    unsigned set = 0;
-    cheevos_condset_t* condset;
+    cheevo->condsets = (cheevos_condset_t*)malloc( cheevo->count * sizeof( cheevos_condset_t ) );
+
+    if ( !cheevo->condsets )
+    {
+      return -1;
+    }
+
+    memset( (void*)cheevo->condsets, 0, cheevo->count * sizeof( cheevos_condset_t ) );
+    end = cheevo->condsets + cheevo->count;
+    set = 0;
 
     for ( condset = cheevo->condsets; condset < end; condset++ )
     {
@@ -601,6 +610,7 @@ static int new_cheevo( cheevos_readud_t* ud )
           return -1;
         }
 
+        memset( (void*)condset->conds, 0, condset->count * sizeof( cheevos_cond_t ) );
         condset->expression = dupstr( &ud->memaddr );
         parse_memaddr( condset->conds, ud->memaddr.string );
       }
@@ -729,9 +739,13 @@ int cheevos_load( const char* json )
   {
     free( (void*)core_cheevos.cheevos );
     free( (void*)unofficial_cheevos.cheevos );
+    core_cheevos.count = unofficial_cheevos.count = 0;
 
     return -1;
   }
+
+  memset( (void*)core_cheevos.cheevos, 0, core_count * sizeof( cheevo_t ) );
+  memset( (void*)unofficial_cheevos.cheevos, 0, unofficial_count * sizeof( cheevo_t ) );
 
   /* Load the achievements. */
 
@@ -842,7 +856,7 @@ static int test_condition( cheevos_cond_t* cond )
   }
 }
 
-static int test_cond_set( const cheevos_condset_t* condset, int* dirty_conds, int* reset_read, int match_any )
+static int test_cond_set( const cheevos_condset_t* condset, int* dirty_conds, int* reset_conds, int match_any )
 {
   int cond_valid = 0;
   int set_valid = 1;
@@ -894,7 +908,7 @@ static int test_cond_set( const cheevos_condset_t* condset, int* dirty_conds, in
       {
         /* Not a hit-based requirement: ignore any additional logic! */
       }
-      else if ( cond->curr_hits >= cond->req_hits )
+      else if ( cond->curr_hits < cond->req_hits )
       {
         /* Not entirely valid yet! */
         cond_valid = 0;
@@ -919,7 +933,7 @@ static int test_cond_set( const cheevos_condset_t* condset, int* dirty_conds, in
 
       if ( cond_valid )
       {
-        *reset_read = 1; /* Resets all hits found so far */
+        *reset_conds = 1; /* Resets all hits found so far */
         set_valid = 0;   /* Cannot be valid if we've hit a reset condition. */
         break;           /* No point processing any further reset conditions. */
       }
@@ -961,7 +975,7 @@ static int reset_cond_set( cheevos_condset_t* condset, int deltas )
 static int test_cheevo( cheevo_t* cheevo )
 {
   int dirty_conds = 0;
-  int reset_read = 0;
+  int reset_conds = 0;
   int ret_val = 0;
   int dirty;
   int ret_val_sub_cond = cheevo->count == 1;
@@ -970,14 +984,14 @@ static int test_cheevo( cheevo_t* cheevo )
 
   if ( condset < end )
   {
-    ret_val = test_cond_set( condset, &dirty_conds, &reset_read, 0 );
+    ret_val = test_cond_set( condset, &dirty_conds, &reset_conds, 0 );
     if ( ret_val ) RARCH_LOG( "%s\n", condset->expression );
     condset++;
   }
 
   while ( condset < end )
   {
-    int res = test_cond_set( condset, &dirty_conds, &reset_read, 0 );
+    int res = test_cond_set( condset, &dirty_conds, &reset_conds, 0 );
     ret_val_sub_cond |= res;
     if ( res ) RARCH_LOG( "%s\n", condset->expression );
     condset++;
@@ -985,10 +999,10 @@ static int test_cheevo( cheevo_t* cheevo )
 
   if ( dirty_conds )
   {
-    cheevo->dirty |= dirty_conds;
+    cheevo->dirty |= CHEEVOS_DIRTY_CONDITIONS;
   }
 
-  if ( reset_read )
+  if ( reset_conds )
   {
     dirty = 0;
 
