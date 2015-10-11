@@ -397,8 +397,12 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          }
          return true;
       case MENU_DISPLAY_CTL_UPDATE_PENDING:
-         if (menu_animation_ctl(MENU_ANIMATION_CTL_IS_ACTIVE, NULL) || (frame_buf && frame_buf->dirty))
-            return true;
+         {
+            bool ptr;
+            menu_display_ctl(MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG, &ptr);
+            if (menu_animation_ctl(MENU_ANIMATION_CTL_IS_ACTIVE, NULL) || ptr)
+               return true;
+         }
          return false;
       case MENU_DISPLAY_CTL_SET_VIEWPORT:
          video_driver_get_size(&width, &height);
@@ -413,7 +417,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
       case MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG:
          {
             bool *ptr = (bool*)data;
-            if (!ptr)
+            if (!ptr || !frame_buf)
                return false;
             *ptr = frame_buf->dirty;
          }
