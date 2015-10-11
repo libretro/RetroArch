@@ -314,6 +314,7 @@
 					"-DHAVE_XMB",
 					"-DHAVE_FILTERS_BUILTIN",
 				);
+				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
 				WRAPPER_EXTENSION = app;
@@ -380,6 +381,7 @@
 					"-DHAVE_XMB",
 					"-DHAVE_FILTERS_BUILTIN",
 				);
+				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
 				WRAPPER_EXTENSION = app;
