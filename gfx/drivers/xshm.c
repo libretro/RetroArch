@@ -44,7 +44,9 @@ typedef struct xshm
 	unsigned int width;
 	unsigned int height;
 	unsigned int pitch;
+#if 0
 	videoformat bpp;
+#endif
 	
 	XShmSegmentInfo shmInfo;
 	XImage* image;
