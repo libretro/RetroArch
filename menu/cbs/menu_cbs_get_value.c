@@ -26,6 +26,12 @@
 #include "../../system.h"
 #include "../../intl/intl.h"
 
+#ifndef BIND_ACTION_GET_VALUE
+#define BIND_ACTION_GET_VALUE(cbs, name) \
+   cbs->action_get_value = name; \
+   cbs->action_get_value_ident = #name;
+#endif
+
 const char axis_labels[4][128] = {
    RETRO_LBL_ANALOG_LEFT_X,
    RETRO_LBL_ANALOG_LEFT_Y,
@@ -938,52 +944,52 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
    {
       case MENU_LABEL_SAVE_STATE:
       case MENU_LABEL_LOAD_STATE:
-         cbs->action_get_value =
-            menu_action_setting_disp_set_label_state;
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_state);
          break;
       case MENU_LABEL_INPUT_MENU_TOGGLE_GAMEPAD_COMBO:
-         cbs->action_get_value =
-            menu_action_setting_disp_set_label_menu_toggle_gamepad_combo;
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_menu_toggle_gamepad_combo);
          break;
       case MENU_LABEL_CHEAT_NUM_PASSES:
-         cbs->action_get_value =
-            menu_action_setting_disp_set_label_cheat_num_passes;
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_cheat_num_passes);
          break;
       case MENU_LABEL_REMAP_FILE_LOAD:
-         cbs->action_get_value =
-            menu_action_setting_disp_set_label_remap_file_load;
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_remap_file_load);
          break;
       case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
-         cbs->action_get_value =
-            menu_action_setting_disp_set_label_shader_filter_pass;
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_shader_filter_pass);
          break;
       case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
-         cbs->action_get_value =
-            menu_action_setting_disp_set_label_shader_scale_pass;
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_shader_scale_pass);
          break;
       case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
-         cbs->action_get_value =
-            menu_action_setting_disp_set_label_shader_num_passes;
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_shader_num_passes);
          break;
       case MENU_LABEL_VIDEO_SHADER_PASS:
-         cbs->action_get_value =
-            menu_action_setting_disp_set_label_shader_pass;
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_shader_pass);
          break;
       case MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
-         cbs->action_get_value =
-            menu_action_setting_disp_set_label_shader_default_filter;
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_shader_default_filter);
          break;
       case MENU_LABEL_VIDEO_FILTER:
-         cbs->action_get_value =
-            menu_action_setting_disp_set_label_filter;
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_filter);
          break;
       case MENU_LABEL_CONFIGURATIONS:
-         cbs->action_get_value =
-            menu_action_setting_disp_set_label_configurations;
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_configurations);
          break;
       case MENU_LABEL_SCREEN_RESOLUTION:
-         cbs->action_get_value =
-            menu_action_setting_disp_set_label_menu_video_resolution;
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_menu_video_resolution);
          break;
       case MENU_LABEL_CONTENT_COLLECTION_LIST:
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
@@ -1009,8 +1015,8 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
       case MENU_LABEL_CORE_INFORMATION:
       case MENU_LABEL_SYSTEM_INFORMATION:
       case MENU_LABEL_DEBUG_INFORMATION:
-         cbs->action_get_value =
-            menu_action_setting_disp_set_label_menu_more;
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_menu_more);
          break;
       default:
          return - 1;
@@ -1024,117 +1030,125 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
 {
    if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
-      cbs->action_get_value =
-         menu_action_setting_disp_set_label_input_desc;
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+         menu_action_setting_disp_set_label_input_desc);
+   }
    else if (type >= MENU_SETTINGS_CHEAT_BEGIN
          && type <= MENU_SETTINGS_CHEAT_END)
-      cbs->action_get_value =
-         menu_action_setting_disp_set_label_cheat;
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+         menu_action_setting_disp_set_label_cheat);
+   }
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
-      cbs->action_get_value =
-         menu_action_setting_disp_set_label_perf_counters;
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+         menu_action_setting_disp_set_label_perf_counters);
+   }
    else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
-      cbs->action_get_value =
-         menu_action_setting_disp_set_label_libretro_perf_counters;
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+         menu_action_setting_disp_set_label_libretro_perf_counters);
+   }
    else
    {
       switch (type)
       {
          case MENU_FILE_CORE:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_core;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_core);
             break;
          case MENU_FILE_PLAIN:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_plain;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_plain);
             break;
          case MENU_FILE_MOVIE:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_movie;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_movie);
             break;
          case MENU_FILE_MUSIC:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_music;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_music);
             break;
          case MENU_FILE_IMAGE:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_image;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_image);
             break;
          case MENU_FILE_IMAGEVIEWER:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_imageviewer;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_imageviewer);
             break;
          case MENU_FILE_USE_DIRECTORY:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_use_directory;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_use_directory);
             break;
          case MENU_FILE_DIRECTORY:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_directory;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_directory);
             break;
          case MENU_FILE_CARCHIVE:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_carchive;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_carchive);
             break;
          case MENU_FILE_OVERLAY:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_overlay;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_overlay);
             break;
          case MENU_FILE_FONT:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_font;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_font);
             break;
          case MENU_FILE_SHADER:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_shader;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_shader);
             break;
          case MENU_FILE_SHADER_PRESET:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_shader_preset;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_shader_preset);
             break;
          case MENU_FILE_CONFIG:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_config;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_config);
             break;
          case MENU_FILE_IN_CARCHIVE:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_in_carchive;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_in_carchive);
             break;
          case MENU_FILE_VIDEOFILTER:
          case MENU_FILE_AUDIOFILTER:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_filter;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_filter);
             break;
          case MENU_FILE_DOWNLOAD_CORE:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_url_core;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_url_core);
             break;
          case MENU_FILE_RDB:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_rdb;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_rdb);
             break;
          case MENU_FILE_CURSOR:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_cursor;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_cursor);
             break;
          case MENU_FILE_CHEAT:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_file_cheat;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_cheat);
             break;
          case MENU_SETTING_SUBGROUP:
          case MENU_SETTINGS_CUSTOM_BIND_ALL:
          case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_more;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_more);
             break;
          case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
-            cbs->action_get_value =
-               menu_action_setting_disp_set_label_menu_disk_index;
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_disk_index);
             break;
          default:
-            cbs->action_get_value = menu_action_setting_disp_set_label;
+            BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label);
             break;
       }
    }
@@ -1153,15 +1167,15 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
    if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
-      cbs->action_get_value =
-         menu_action_setting_disp_set_label_shader_parameter;
+      BIND_ACTION_GET_VALUE(cbs,
+         menu_action_setting_disp_set_label_shader_parameter);
       return 0;
    }
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
    {
-      cbs->action_get_value =
-         menu_action_setting_disp_set_label_shader_preset_parameter;
+      BIND_ACTION_GET_VALUE(cbs,
+         menu_action_setting_disp_set_label_shader_preset_parameter);
       return 0;
    }
 
