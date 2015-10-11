@@ -353,7 +353,7 @@ void menu_input_st_hex_callback(void *userdata, const char *str)
 
       if (setting)
       {
-         unsigned *ptr = setting_get_ptr(setting);
+         unsigned *ptr = (unsigned*)setting_get_ptr(setting);
          if (str[0] == '#')
             str++;
          *ptr = strtoul(str, NULL, 16);

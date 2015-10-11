@@ -143,7 +143,7 @@ unsigned menu_entry_get_type_new(uint32_t i)
 uint32_t menu_entry_get_bool_value(uint32_t i)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   bool *ptr                = setting_get_ptr(setting);
+   bool *ptr                = (bool*)setting_get_ptr(setting);
    if (!ptr)
       return 0;
    return *ptr;
