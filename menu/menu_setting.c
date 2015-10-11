@@ -570,23 +570,6 @@ static void setting_reset_setting(rarch_setting_t* setting)
                      setting->default_value.string, setting->size);
          }
          break;
-#if 0
-         /* TODO */
-      case ST_ACTION:
-         break;
-      case ST_HEX:
-         break;
-      case ST_GROUP:
-         break;
-      case ST_SUB_GROUP:
-         break;
-      case ST_END_GROUP:
-         break;
-      case ST_END_SUB_GROUP:
-         break;
-      case ST_NONE:
-         break;
-#endif
       default:
          break;
    }
@@ -680,20 +663,7 @@ int menu_setting_set_with_string_representation(rarch_setting_t* setting,
          else if (!strcmp(value, "false"))
             *setting->value.boolean = false;
          break;
-         /* TODO */
-      case ST_HEX:
-         break;
-      case ST_GROUP:
-         break;
-      case ST_SUB_GROUP:
-         break;
-      case ST_END_GROUP:
-         break;
-      case ST_END_SUB_GROUP:
-         break;
-      case ST_NONE:
-         break;
-      case ST_BIND:
+      default:
          break;
    }
 
