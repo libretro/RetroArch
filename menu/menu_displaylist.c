@@ -2297,9 +2297,9 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
       {
          case MENU_LABEL_CONTENT_COLLECTION_LIST:
             if (is_dir)
-                continue;
-
-            file_type = MENU_FILE_PLAYLIST_COLLECTION;
+               file_type = MENU_FILE_DIRECTORY;
+            else
+               file_type = MENU_FILE_PLAYLIST_COLLECTION;
             break;
          case MENU_LABEL_CORE_LIST:
 #ifdef HAVE_LIBRETRO_MANAGEMENT
