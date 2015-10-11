@@ -25,25 +25,12 @@
 #define DEBUG_LOG
 #endif
 
-static void menu_cbs_init_log(int ret,
-      const char *bind_label, const char *label, const char *elem0, const char *elem1,
-      unsigned type)
+static void menu_cbs_init_log(const char *entry_label, const char *bind_label, const char *label)
 {
-   switch (ret)
-   {
-      case 0:
 #ifdef DEBUG_LOG
-         RARCH_WARN("Found %s bind (label: [%s], elem0: [%s], elem1: [%s], type: [%d]).\n",
-               bind_label, label, elem0, elem1, type);
+   if (label && label[0] != '\0')
+      RARCH_LOG("[%s]\t\t\tFound %s bind : [%s]\n", entry_label, bind_label, label);
 #endif
-         break;
-      default:
-#ifdef DEBUG_LOG
-         RARCH_WARN("Could not find %s bind (label: [%s], elem0: [%s], elem1: [%s], type: [%d]).\n",
-               bind_label, label, elem0, elem1, type);
-#endif
-         break;
-   }
 }
 
 void menu_cbs_init(void *data,
@@ -52,6 +39,7 @@ void menu_cbs_init(void *data,
 {
    char elem0[PATH_MAX_LENGTH];
    char elem1[PATH_MAX_LENGTH];
+   const char *repr_label       = NULL;
    rarch_setting_t *setting     = NULL;
    struct string_list *str_list = NULL;
    const char *menu_label       = NULL;
@@ -96,65 +84,97 @@ void menu_cbs_init(void *data,
    label_hash      = menu_hash_calculate(label);
    menu_label_hash = menu_hash_calculate(menu_label);
 
+#ifdef DEBUG_LOG
+   RARCH_LOG("\n");
+#endif
+
+   repr_label = (label && label[0] != '\0') ? label : path;
+
    ret = menu_cbs_init_bind_ok(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
 
-   menu_cbs_init_log(ret, "OK", label, elem0, elem1, type);
+   menu_cbs_init_log(repr_label, "OK", cbs->action_ok_ident);
 
    ret = menu_cbs_init_bind_cancel(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_cbs_init_log(ret, "CANCEL", label, elem0, elem1, type);
+   menu_cbs_init_log(repr_label, "CANCEL", cbs->action_cancel_ident);
 
    ret = menu_cbs_init_bind_scan(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_cbs_init_log(ret, "SCAN", label, elem0, elem1, type);
+#if 0
+   menu_cbs_init_log(repr_label, "SCAN", cbs->action_scan_ident);
+#endif
 
    ret = menu_cbs_init_bind_start(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_cbs_init_log(ret, "START", label, elem0, elem1, type);
+#if 0
+   menu_cbs_init_log(repr_label, "START", cbs->action_start_ident);
+#endif
 
    ret = menu_cbs_init_bind_select(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_cbs_init_log(ret, "SELECT", label, elem0, elem1, type);
+#if 0
+   menu_cbs_init_log(repr_label, "SELECT", cbs->action_select_ident);
+#endif
 
    ret = menu_cbs_init_bind_info(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_cbs_init_log(ret, "INFO", label, elem0, elem1, type);
+#if 0
+   menu_cbs_init_log(repr_label, "INFO", cbs->action_info_ident);
+#endif
 
    ret = menu_cbs_init_bind_content_list_switch(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_cbs_init_log(ret, "CONTENT SWITCH", label, elem0, elem1, type);
+#if 0
+   menu_cbs_init_log(repr_label, "CONTENT SWITCH", cbs->action_content_switch_ident);
+#endif
 
    ret = menu_cbs_init_bind_up(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_cbs_init_log(ret, "UP", label, elem0, elem1, type);
+#if 0
+   menu_cbs_init_log(repr_label, "UP", cbs->action_up_ident);
+#endif
 
    ret = menu_cbs_init_bind_down(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_cbs_init_log(ret, "DOWN", label, elem0, elem1, type);
+#if 0
+   menu_cbs_init_log(repr_label, "DOWN", cbs->action_down_ident);
+#endif
 
    ret = menu_cbs_init_bind_left(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
 
-   menu_cbs_init_log(ret, "LEFT", label, elem0, elem1, type);
+#if 0
+   menu_cbs_init_log(repr_label, "LEFT", cbs->action_left_ident);
+#endif
 
    ret = menu_cbs_init_bind_right(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
 
-   menu_cbs_init_log(ret, "RIGHT", label, elem0, elem1, type);
+#if 0
+   menu_cbs_init_log(repr_label, "RIGHT", cbs->action_right_ident);
+#endif
 
    ret = menu_cbs_init_bind_deferred_push(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_cbs_init_log(ret, "DEFERRED PUSH", label, elem0, elem1, type);
+#if 0
+   menu_cbs_init_log(repr_label, "DEFERRED PUSH", cbs->deferred_push_ident);
+#endif
 
    ret = menu_cbs_init_bind_refresh(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_cbs_init_log(ret, "REFRESH", label, elem0, elem1, type);
+#if 0
+   menu_cbs_init_log(repr_label, "REFRESH", cbs->action_refresh_ident);
+#endif
 
    ret = menu_cbs_init_bind_get_string_representation(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_cbs_init_log(ret, "REPRESENTATION", label, elem0, elem1, type);
+#if 0
+   menu_cbs_init_log(repr_label, "REPRESENTATION", cbs->action_representation_ident);
+#endif
 
    ret = menu_cbs_init_bind_title(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
-   menu_cbs_init_log(ret, "TITLE", label, elem0, elem1, type);
+#if 0
+   menu_cbs_init_log(repr_label, "TITLE", cbs->action_title_ident);
+#endif
 
    ret = menu_driver_bind_init(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
