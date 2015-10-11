@@ -83,8 +83,6 @@ typedef struct menu_input
    {
       int16_t x;
       int16_t y;
-      int16_t screen_x;
-      int16_t screen_y;
       bool    left;
       bool    right;
       bool    oldleft;
@@ -784,14 +782,10 @@ int menu_input_bind_iterate(char *s, size_t len)
 
 static int menu_input_mouse(unsigned *action)
 {
-   unsigned fb_width, fb_height;
    video_viewport_t vp;
    const struct retro_keybind *binds[MAX_USERS];
    menu_input_t *menu_input  = menu_input_get_ptr();
    settings_t *settings      = config_get_ptr();
-
-   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,  &fb_width);
-   menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &fb_height);
 
    if (!settings->menu.mouse.enable
 #ifdef HAVE_OVERLAY
@@ -832,23 +826,10 @@ static int menu_input_mouse(unsigned *action)
          0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP);
    menu_input->mouse.hwheeldown = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
          0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN);
-   menu_input->mouse.screen_x   = input_driver_state(binds, 0, RARCH_DEVICE_MOUSE_SCREEN,
+   menu_input->mouse.x   = input_driver_state(binds, 0, RARCH_DEVICE_MOUSE_SCREEN,
          0, RETRO_DEVICE_ID_MOUSE_X);
-   menu_input->mouse.screen_y   = input_driver_state(binds, 0, RARCH_DEVICE_MOUSE_SCREEN,
+   menu_input->mouse.y   = input_driver_state(binds, 0, RARCH_DEVICE_MOUSE_SCREEN,
          0, RETRO_DEVICE_ID_MOUSE_Y);
-
-
-   menu_input->mouse.x         = ((int)menu_input->mouse.screen_x * (int)fb_width) / (int)vp.width;
-   menu_input->mouse.y         = ((int)menu_input->mouse.screen_y * (int)fb_height) / (int)vp.height;
-
-   if (menu_input->mouse.x < 5)
-      menu_input->mouse.x       = 5;
-   if (menu_input->mouse.y < 5)
-      menu_input->mouse.y       = 5;
-   if (menu_input->mouse.x > (int)fb_width - 5)
-      menu_input->mouse.x       = fb_width - 5;
-   if (menu_input->mouse.y > (int)fb_height - 5)
-      menu_input->mouse.y       = fb_height - 5;
 
    if (
          menu_input->mouse.left          ||
