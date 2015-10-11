@@ -275,13 +275,16 @@ bool win32_suppress_screensaver(void *data, bool enable)
    return false;
 #else
    typedef HANDLE (WINAPI * PowerCreateRequestPtr)(REASON_CONTEXT *context);
+   typedef BOOL   (WINAPI * PowerSetRequestPtr)(HANDLE PowerRequest, POWER_REQUEST_TYPE RequestType);
    HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll");
    PowerCreateRequestPtr powerCreateRequest =
      (PowerCreateRequestPtr)GetProcAddress(kernel32, "PowerCreateRequest");
+   PowerSetRequestPtr    powerSetRequest =
+     (PowerSetRequestPtr)GetProcAddress(kernel32, "PowerSetRequest");
 
    if(enable)
    {
-      if(powerCreateRequest)
+      if(powerCreateRequest && powerSetRequest)
       {
          /* Windows 7, 8, 10 codepath */
          POWER_REQUEST_CONTEXT RequestContext;
@@ -293,7 +296,7 @@ bool win32_suppress_screensaver(void *data, bool enable)
 
          Request = PowerCreateRequest(&RequestContext);
 
-        PowerSetRequest( Request, PowerRequestDisplayRequired);
+         powerSetRequest( Request, PowerRequestDisplayRequired);
          return true;
       }
      else
