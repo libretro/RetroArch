@@ -787,16 +787,6 @@ static int menu_input_mouse(unsigned *action)
    menu_input_t *menu_input  = menu_input_get_ptr();
    settings_t *settings      = config_get_ptr();
 
-   if (!settings->menu.mouse.enable
-#ifdef HAVE_OVERLAY
-       || (settings->input.overlay_enable && input_overlay_is_alive())
-#endif
-      )
-   {
-      memset(&menu_input->mouse, 0, sizeof(menu_input->mouse));
-      return 0;
-   }
-
    if (!video_driver_viewport_info(&vp))
       return -1;
 
@@ -851,17 +841,10 @@ static int menu_input_pointer(unsigned *action)
    int pointer_device, pointer_x, pointer_y;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    menu_input_t *menu_input  = menu_input_get_ptr();
-   settings_t *settings      = config_get_ptr();
    driver_t *driver          = driver_get_ptr();
 
    menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,  &fb_width);
    menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &fb_height);
-
-   if (!settings->menu.pointer.enable)
-   {
-      memset(&menu_input->pointer, 0, sizeof(menu_input->pointer));
-      return 0;
-   }
 
    pointer_device = driver->menu_ctx->set_texture?
         RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
@@ -1215,6 +1198,7 @@ void menu_input_post_iterate(int *ret, unsigned action)
 
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 {
+   bool mouse_enabled;
    float delta_time;
    unsigned         ret                    = MENU_ACTION_NOOP;
    static bool initial_held                = true;
@@ -1313,12 +1297,22 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       ret = MENU_ACTION_INFO;
    else if (trigger_input & (UINT64_C(1) << RARCH_MENU_TOGGLE))
       ret = MENU_ACTION_TOGGLE;
-
-   if (settings->menu.mouse.enable)
+    
+   mouse_enabled = settings->menu.mouse.enable;
+#ifdef HAVE_OVERLAY
+   mouse_enabled = mouse_enabled ||
+    !(settings->input.overlay_enable && input_overlay_is_alive());
+#endif
+    
+   if (mouse_enabled)
       menu_input_mouse(&ret);
+   else
+      memset(&menu_input->mouse, 0, sizeof(menu_input->mouse));
 
    if (settings->menu.pointer.enable)
       menu_input_pointer(&ret);
+   else
+      memset(&menu_input->pointer, 0, sizeof(menu_input->pointer));
 
    return ret;
 }
