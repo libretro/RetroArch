@@ -17,6 +17,12 @@
 #include "../menu_navigation.h"
 #include "../menu_cbs.h"
 
+#ifndef BIND_ACTION_DOWN
+#define BIND_ACTION_DOWN(cbs, name) \
+   cbs->action_down = name; \
+   cbs->action_down_ident = #name;
+#endif
+
 static int action_bind_down_generic(unsigned type, const char *label)
 {
    size_t scroll_accel   = 0;
@@ -45,7 +51,7 @@ int menu_cbs_init_bind_down(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   cbs->action_down = action_bind_down_generic;
+   BIND_ACTION_DOWN(cbs, action_bind_down_generic);
 
    return -1;
 }

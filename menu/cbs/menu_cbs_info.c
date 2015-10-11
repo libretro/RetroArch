@@ -19,6 +19,12 @@
 #include "../menu_cbs.h"
 #include "../menu_hash.h"
 
+#ifndef BIND_ACTION_INFO
+#define BIND_ACTION_INFO(cbs, name) \
+   cbs->action_info = name; \
+   cbs->action_info_ident = #name;
+#endif
+
 static int action_info_default(unsigned type, const char *label)
 {
    size_t selection             = 0;
@@ -47,7 +53,7 @@ int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   cbs->action_info = action_info_default;
+   BIND_ACTION_INFO(cbs, action_info_default);
 
    return -1;
 }

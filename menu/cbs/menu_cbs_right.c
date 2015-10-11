@@ -26,6 +26,11 @@
 #include "../../general.h"
 #include "../../retroarch.h"
 
+#ifndef BIND_ACTION_RIGHT
+#define BIND_ACTION_RIGHT(cbs, name) \
+   cbs->action_right = name; \
+   cbs->action_right_ident = #name;
+#endif
 
 #ifdef HAVE_SHADER_MANAGER
 static int generic_shader_action_parameter_right(
@@ -360,26 +365,36 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
 {
    if (type >= MENU_SETTINGS_CHEAT_BEGIN
          && type <= MENU_SETTINGS_CHEAT_END)
-      cbs->action_right = action_right_cheat;
+   {
+      BIND_ACTION_RIGHT(cbs, action_right_cheat);
+   }
 #ifdef HAVE_SHADER_MANAGER
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-      cbs->action_right = shader_action_parameter_right;
+   {
+      BIND_ACTION_RIGHT(cbs, shader_action_parameter_right);
+   }
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
-      cbs->action_right = shader_action_parameter_preset_right;
+   {
+      BIND_ACTION_RIGHT(cbs, shader_action_parameter_preset_right);
+   }
 #endif
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
-      cbs->action_right = action_right_input_desc;
+   {
+      BIND_ACTION_RIGHT(cbs, action_right_input_desc);
+   }
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
-      cbs->action_right = core_setting_right;
+   {
+      BIND_ACTION_RIGHT(cbs, core_setting_right);
+   }
    else
    {
       switch (type)
       {
          case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
-            cbs->action_right = disk_options_disk_idx_right;
+            BIND_ACTION_RIGHT(cbs, disk_options_disk_idx_right);
             break;
          case MENU_FILE_PLAIN:
          case MENU_FILE_DIRECTORY:
@@ -413,15 +428,15 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
             {
                case MENU_VALUE_HORIZONTAL_MENU:
                case MENU_VALUE_MAIN_MENU:
-                  cbs->action_right = action_right_mainmenu;
+                  BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
                   break;
                default:
-                  cbs->action_right = action_right_scroll;
+                  BIND_ACTION_RIGHT(cbs, action_right_scroll);
                   break;
             }
          case MENU_SETTING_ACTION:
          case MENU_FILE_CONTENTLIST_ENTRY:
-            cbs->action_right = action_right_mainmenu;
+            BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
             break;
          default:
             return -1;
@@ -443,7 +458,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
 
       if ((parent_group_hash == MENU_LABEL_SETTINGS) && (menu_setting_get_type(cbs->setting) == ST_GROUP))
       {
-         cbs->action_right = action_right_scroll;
+         BIND_ACTION_RIGHT(cbs, action_right_scroll);
          return 0;
       }
    }
@@ -461,44 +476,46 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       if (label_hash != label_setting_hash)
          continue;
 
-      cbs->action_right = bind_right_generic;
+      BIND_ACTION_RIGHT(cbs, bind_right_generic);
       return 0;
    }
 
    if (strstr(label, "rdb_entry"))
-      cbs->action_right = action_right_scroll;
+   {
+      BIND_ACTION_RIGHT(cbs, action_right_scroll);
+   }
    else
    {
       switch (label_hash)
       {
          case MENU_LABEL_SAVESTATE:
          case MENU_LABEL_LOADSTATE:
-            cbs->action_right = action_right_save_state;
+            BIND_ACTION_RIGHT(cbs, action_right_save_state);
             break;
          case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
-            cbs->action_right = action_right_shader_scale_pass;
+            BIND_ACTION_RIGHT(cbs, action_right_shader_scale_pass);
             break;
          case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
-            cbs->action_right = action_right_shader_filter_pass;
+            BIND_ACTION_RIGHT(cbs, action_right_shader_filter_pass);
             break;
          case MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
-            cbs->action_right = action_right_shader_filter_default;
+            BIND_ACTION_RIGHT(cbs, action_right_shader_filter_default);
             break;
          case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
-            cbs->action_right = action_right_shader_num_passes;
+            BIND_ACTION_RIGHT(cbs, action_right_shader_num_passes);
             break;
          case MENU_LABEL_CHEAT_NUM_PASSES:
-            cbs->action_right = action_right_cheat_num_passes;
+            BIND_ACTION_RIGHT(cbs, action_right_cheat_num_passes);
             break;
          case MENU_LABEL_SCREEN_RESOLUTION:
-            cbs->action_right = action_right_video_resolution;
+            BIND_ACTION_RIGHT(cbs, action_right_video_resolution);
             break;
          case MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
             switch (menu_label_hash)
             {
                case MENU_VALUE_HORIZONTAL_MENU:
                case MENU_VALUE_MAIN_MENU:
-                  cbs->action_right = action_right_mainmenu;
+                  BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
                   break;
             }
          default:
@@ -517,7 +534,7 @@ int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   cbs->action_right = bind_right_generic;
+   BIND_ACTION_RIGHT(cbs, bind_right_generic);
 
    if (menu_cbs_init_bind_right_compare_label(cbs, label, label_hash, menu_label_hash, elem0) == 0)
       return 0;

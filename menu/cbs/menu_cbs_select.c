@@ -20,6 +20,12 @@
 
 #include "../../runloop_data.h"
 
+#ifndef BIND_ACTION_SELECT
+#define BIND_ACTION_SELECT(cbs, name) \
+   cbs->action_select = name; \
+   cbs->action_select_ident = #name;
+#endif
+
 static int action_select_default(const char *path, const char *label, unsigned type,
       size_t idx)
 {
@@ -126,27 +132,35 @@ static int menu_cbs_init_bind_select_compare_type(
 {
    if (type >= MENU_SETTINGS_CHEAT_BEGIN
          && type <= MENU_SETTINGS_CHEAT_END)
-      cbs->action_select = action_select_cheat;
+   {
+      BIND_ACTION_SELECT(cbs, action_select_cheat);
+   }
 #ifdef HAVE_SHADER_MANAGER
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-      cbs->action_select = shader_action_parameter_select;
+   {
+      BIND_ACTION_SELECT(cbs, shader_action_parameter_select);
+   }
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
-      cbs->action_select = shader_action_parameter_preset_select;
+   {
+      BIND_ACTION_SELECT(cbs, shader_action_parameter_preset_select);
+   }
 #endif
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
-      cbs->action_select = action_select_input_desc;
+   {
+      BIND_ACTION_SELECT(cbs, action_select_input_desc);
+   }
    else
    {
       switch (type)
       {
          case MENU_FILE_DIRECTORY:
-            cbs->action_select = action_select_directory;
+            BIND_ACTION_SELECT(cbs, action_select_directory);
             break;
          case MENU_FILE_USE_DIRECTORY:
-            cbs->action_select = action_select_path_use_directory;
+            BIND_ACTION_SELECT(cbs, action_select_path_use_directory);
             break;
          default:
             return -1;
@@ -170,11 +184,11 @@ int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   cbs->action_select = action_select_default;
+   BIND_ACTION_SELECT(cbs, action_select_default);
 
    if ((type >= MENU_SETTINGS_CORE_OPTION_START))
    {
-      cbs->action_select = action_select_core_setting;
+      BIND_ACTION_SELECT(cbs, action_select_core_setting);
       return 0;
    }
 

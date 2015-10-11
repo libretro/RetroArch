@@ -23,6 +23,12 @@
 
 #include "../../runloop_data.h"
 
+#ifndef BIND_ACTION_SCAN
+#define BIND_ACTION_SCAN(cbs, name) \
+   cbs->action_scan = name; \
+   cbs->action_scan_ident = #name;
+#endif
+
 int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -70,11 +76,11 @@ static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
    switch (type)
    {
       case MENU_FILE_DIRECTORY:
-         cbs->action_scan = action_scan_directory;
+         BIND_ACTION_SCAN(cbs, action_scan_directory);
          break;
       case MENU_FILE_CARCHIVE:
       case MENU_FILE_PLAIN:
-         cbs->action_scan = action_scan_file;
+         BIND_ACTION_SCAN(cbs, action_scan_file);
          break;
       default:
          return -1;
@@ -91,7 +97,7 @@ int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   cbs->action_scan = NULL;
+   BIND_ACTION_SCAN(cbs, NULL);
 
    menu_cbs_init_bind_scan_compare_type(cbs, type);
 
