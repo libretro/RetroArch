@@ -108,10 +108,30 @@ static int clock_gettime(int clk_ik, struct timespec *t)
 #include "frontend/drivers/platform_linux.h"
 #endif
 
-const struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
-const struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
-unsigned perf_ptr_rarch;
-unsigned perf_ptr_libretro;
+static struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
+static struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
+static unsigned perf_ptr_rarch;
+static unsigned perf_ptr_libretro;
+
+struct retro_perf_counter **retro_get_perf_counter_rarch(void)
+{
+   return perf_counters_rarch;
+}
+
+struct retro_perf_counter **retro_get_perf_counter_libretro(void)
+{
+   return perf_counters_libretro;
+}
+
+unsigned retro_get_perf_count_rarch(void)
+{
+   return perf_ptr_rarch;
+}
+
+unsigned retro_get_perf_count_libretro(void)
+{
+   return perf_ptr_libretro;
+}
 
 void rarch_perf_register(struct retro_perf_counter *perf)
 {
@@ -140,8 +160,7 @@ void retro_perf_clear(void)
    memset(perf_counters_libretro, 0, sizeof(perf_counters_libretro));
 }
 
-static void log_counters(
-      const struct retro_perf_counter **counters, unsigned num)
+static void log_counters(struct retro_perf_counter **counters, unsigned num)
 {
    unsigned i;
    for (i = 0; i < num; i++)

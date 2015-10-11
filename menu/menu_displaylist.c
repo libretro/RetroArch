@@ -232,7 +232,7 @@ static void menu_list_refresh(file_list_t *list)
 
 static void menu_displaylist_push_perfcounter(
       menu_displaylist_info_t *info,
-      const struct retro_perf_counter **counters,
+      struct retro_perf_counter **counters,
       unsigned num, unsigned id)
 {
    unsigned i;
@@ -2674,9 +2674,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
          menu_displaylist_push_perfcounter(info,
                (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
-               perf_counters_libretro : perf_counters_rarch,
+               retro_get_perf_counter_libretro() : retro_get_perf_counter_rarch(),
                (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
-               perf_ptr_libretro : perf_ptr_rarch ,
+               retro_get_perf_count_libretro()   : retro_get_perf_count_rarch(),
                (type == DISPLAYLIST_PERFCOUNTERS_CORE) ?
                MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN :
                MENU_SETTINGS_PERF_COUNTERS_BEGIN);

@@ -65,8 +65,7 @@ static int generic_action_start_performance_counters(struct retro_perf_counter *
 
 static int action_start_performance_counters_core(unsigned type, const char *label)
 {
-   struct retro_perf_counter **counters = (struct retro_perf_counter**)
-      perf_counters_libretro;
+   struct retro_perf_counter **counters = retro_get_perf_counter_libretro();
    unsigned offset = type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN;
 
    return generic_action_start_performance_counters(counters, offset, type, label);
@@ -75,8 +74,7 @@ static int action_start_performance_counters_core(unsigned type, const char *lab
 static int action_start_performance_counters_frontend(unsigned type,
       const char *label)
 {
-   struct retro_perf_counter **counters = (struct retro_perf_counter**)
-      perf_counters_rarch;
+   struct retro_perf_counter **counters = retro_get_perf_counter_rarch();
    unsigned offset = type - MENU_SETTINGS_PERF_COUNTERS_BEGIN;
    return generic_action_start_performance_counters(counters, offset, type, label);
 }

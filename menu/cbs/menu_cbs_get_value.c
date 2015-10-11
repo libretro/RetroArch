@@ -424,7 +424,7 @@ static void menu_action_setting_disp_set_label_cheat(
 }
 
 static void menu_action_setting_disp_set_label_perf_counters_common(
-      const struct retro_perf_counter **counters,
+      struct retro_perf_counter **counters,
       unsigned offset, char *s, size_t len
       )
 {
@@ -445,7 +445,7 @@ static void menu_action_setting_disp_set_label_perf_counters_common(
 }
 
 static void general_disp_set_label_perf_counters(
-      const struct retro_perf_counter **counters,
+      struct retro_perf_counter **counters,
       unsigned offset,
       char *s, size_t len,
       char *s2, size_t len2,
@@ -470,8 +470,7 @@ static void menu_action_setting_disp_set_label_perf_counters(
       const char *path,
       char *s2, size_t len2)
 {
-   const struct retro_perf_counter **counters =
-      (const struct retro_perf_counter **)perf_counters_rarch;
+   struct retro_perf_counter **counters = retro_get_perf_counter_rarch();
    unsigned offset = type - MENU_SETTINGS_PERF_COUNTERS_BEGIN;
    general_disp_set_label_perf_counters(counters, offset, s, len,
          s2, len, path, w);
@@ -486,8 +485,7 @@ static void menu_action_setting_disp_set_label_libretro_perf_counters(
       const char *path,
       char *s2, size_t len2)
 {
-   const struct retro_perf_counter **counters =
-      (const struct retro_perf_counter **)perf_counters_libretro;
+   struct retro_perf_counter **counters = retro_get_perf_counter_libretro();
    unsigned offset = type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN;
    general_disp_set_label_perf_counters(counters, offset, s, len,
          s2, len, path, w);
