@@ -793,7 +793,6 @@ static int menu_input_mouse(unsigned *action)
    video_viewport_t vp;
    const struct retro_keybind *binds[MAX_USERS];
    menu_input_t *menu_input  = menu_input_get_ptr();
-   settings_t *settings      = config_get_ptr();
 
    if (!video_driver_viewport_info(&vp))
       return -1;
