@@ -43,6 +43,17 @@ enum menu_action
    MENU_ACTION_SCROLL_UP,
    MENU_ACTION_TOGGLE
 };
+
+enum menu_mouse_action
+{
+   MOUSE_ACTION_NONE = 0,
+   MOUSE_ACTION_BUTTON_L,
+   MOUSE_ACTION_BUTTON_L_TOGGLE,
+   MOUSE_ACTION_BUTTON_L_SET_NAVIGATION,
+   MOUSE_ACTION_BUTTON_R,
+   MOUSE_ACTION_WHEEL_UP,
+   MOUSE_ACTION_WHEEL_DOWN
+};
  
 enum menu_input_pointer_state
 {
@@ -79,16 +90,6 @@ enum menu_input_ctl_state
    MENU_INPUT_CTL_SEARCH_START
 };
 
-enum mouse_action
-{
-   MOUSE_ACTION_NONE = 0,
-   MOUSE_ACTION_BUTTON_L,
-   MOUSE_ACTION_BUTTON_L_TOGGLE,
-   MOUSE_ACTION_BUTTON_L_SET_NAVIGATION,
-   MOUSE_ACTION_BUTTON_R,
-   MOUSE_ACTION_WHEEL_UP,
-   MOUSE_ACTION_WHEEL_DOWN
-};
 
 enum menu_input_bind_mode
 {

@@ -92,10 +92,11 @@ static void jsonx_parse_object( state_t* state )
 
    while ( *state->json != '}' )
    {
+      const char *name = NULL;
       if ( *state->json != '"' )
          longjmp( state->env, JSONSAX_MISSING_KEY );
 
-      const char* name = ++state->json;
+      name = ++state->json;
 
       for ( ;; )
       {
