@@ -256,7 +256,7 @@ int generic_menu_iterate(enum menu_action action)
             if (setting)
             {
                char needle[PATH_MAX_LENGTH];
-               strlcpy(needle, setting->name, sizeof(needle));
+               strlcpy(needle, menu_setting_get_name(setting), sizeof(needle));
                label_hash       = menu_hash_calculate(needle);
             }
 

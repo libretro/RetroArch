@@ -438,7 +438,8 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
 
    if (cbs->setting)
    {
-      uint32_t parent_group_hash = menu_hash_calculate(cbs->setting->parent_group);
+      const char *parent_group   = menu_setting_get_parent_group(cbs->setting);
+      uint32_t parent_group_hash = menu_hash_calculate(parent_group);
 
       if ((parent_group_hash == MENU_LABEL_SETTINGS) && (menu_setting_get_type(cbs->setting) == ST_GROUP))
       {

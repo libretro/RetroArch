@@ -267,6 +267,13 @@ const char *menu_setting_get_name(rarch_setting_t *setting)
    return setting->name;
 }
 
+const char *menu_setting_get_parent_group(rarch_setting_t *setting)
+{
+   if (!setting)
+      return NULL;
+   return setting->parent_group;
+}
+
 const char *menu_setting_get_short_description(rarch_setting_t *setting)
 {
    if (!setting)
@@ -6364,6 +6371,7 @@ static bool setting_append_list_input_player_options(
 
    return true;
 }
+
 
 void menu_setting_free(rarch_setting_t *list)
 {
