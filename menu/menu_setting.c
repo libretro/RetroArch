@@ -721,7 +721,7 @@ void setting_get_string_representation(void *data, char *s, size_t len)
       setting->get_string_representation(setting, s, len);
 }
 
-uint32_t setting_get_index_offset(rarch_setting_t *setting)
+unsigned setting_get_index_offset(rarch_setting_t *setting)
 {
    if (!setting)
       return 0;
