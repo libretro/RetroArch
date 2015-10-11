@@ -46,8 +46,10 @@ static const char *wrap_mode_to_str(enum gfx_wrap_type type)
       case RARCH_WRAP_MIRRORED_REPEAT:
          return "mirrored_repeat";
       default:
-         return "???";
+         break;
    }
+
+   return "???";
 }
 
 #define WRAP_MODE_CLAMP_TO_BORDER      0x3676ed11U
@@ -377,11 +379,10 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       struct video_shader *shader)
 {
    unsigned i;
-   struct video_shader_parameter *param = NULL;
+   struct video_shader_parameter *param = 
+      &shader->parameters[shader->num_parameters];
 
    shader->num_parameters = 0;
-   param = (struct video_shader_parameter*)
-      &shader->parameters[shader->num_parameters];
 
    /* Find all parameters in our shaders. */
 
@@ -404,7 +405,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
          if (ret < 5)
             continue;
 
-         param->id[63] = '\0';
+         param->id[63]   = '\0';
          param->desc[63] = '\0';
 
          if (ret == 5)
@@ -494,7 +495,6 @@ static bool video_shader_parse_imports(config_file_t *conf,
       unsigned mask           = 0;
       unsigned equal          = 0;
       struct state_tracker_uniform_info *var = 
-         (struct state_tracker_uniform_info*)
          &shader->variable[shader->variables];
 
       strlcpy(var->id, id, sizeof(var->id));
@@ -647,8 +647,10 @@ static const char *scale_type_to_str(enum gfx_scale_type type)
       case RARCH_SCALE_ABSOLUTE:
          return "absolute";
       default:
-         return "?";
+         break;
    }
+
+   return "?";
 }
 
 static void shader_write_scale_dim(config_file_t *conf, const char *dim,
@@ -707,10 +709,11 @@ static const char *import_semantic_to_str(enum state_tracker_type type)
          return "transition_previous";
       case RARCH_STATE_PYTHON:
          return "python";
-
       default:
-         return "?";
+         break;
    }
+
+   return "?";
 }
 
 /**
