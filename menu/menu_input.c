@@ -353,9 +353,10 @@ void menu_input_st_hex_callback(void *userdata, const char *str)
 
       if (setting)
       {
+         unsigned *ptr = setting_get_ptr(setting);
          if (str[0] == '#')
             str++;
-         *setting->value.unsigned_integer = strtoul(str, NULL, 16);
+         *ptr = strtoul(str, NULL, 16);
       }
    }
 
@@ -594,6 +595,7 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
       enum menu_input_bind_mode type)
 {
    size_t selection;
+   unsigned index_offset, bind_type;
    menu_displaylist_info_t info  = {0};
    struct retro_keybind *keybind = NULL;
    settings_t     *settings      = config_get_ptr();
@@ -603,6 +605,8 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
    if (!setting)
       return -1;
 
+   index_offset = setting_get_index_offset(setting);
+
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
 
    switch (type)
@@ -610,15 +614,17 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
       case MENU_INPUT_BIND_NONE:
          return -1;
       case MENU_INPUT_BIND_SINGLE:
-         keybind = (struct retro_keybind*)setting->value.keybind;
+         keybind = (struct retro_keybind*)setting_get_ptr(setting);
 
          if (!keybind)
             return -1;
 
-         menu_input->binds.begin  = setting->bind_type;
-         menu_input->binds.last   = setting->bind_type;
+         bind_type                = menu_setting_get_bind_type(setting);
+
+         menu_input->binds.begin  = bind_type;
+         menu_input->binds.last   = bind_type;
          menu_input->binds.target = keybind;
-         menu_input->binds.user   = setting->index_offset;
+         menu_input->binds.user   = index_offset;
 
          info.list          = menu_list->menu_stack;
          info.type          = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
@@ -630,7 +636,7 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
          break;
       case MENU_INPUT_BIND_ALL:
          menu_input->binds.target = &settings->input.binds
-            [setting->index_offset][0];
+            [index_offset][0];
          menu_input->binds.begin  = MENU_SETTINGS_BIND_BEGIN;
          menu_input->binds.last   = MENU_SETTINGS_BIND_LAST;
 
@@ -674,14 +680,16 @@ int menu_input_set_keyboard_bind_mode(void *data,
 int menu_input_set_input_device_bind_mode(void *data,
       enum menu_input_bind_mode type)
 {
+   unsigned index_offset;
    menu_input_t *menu_input  = menu_input_get_ptr();
-   rarch_setting_t  *setting = (rarch_setting_t*)data;
    settings_t *settings      = config_get_ptr();
+   rarch_setting_t  *setting = (rarch_setting_t*)data;
 
    if (!setting)
       return -1;
 
-   bind_port = settings->input.joypad_map[setting->index_offset];
+   index_offset = setting_get_index_offset(setting);
+   bind_port    = settings->input.joypad_map[index_offset];
 
    if (menu_input_set_bind_mode_common(setting, type) == -1)
       return -1;

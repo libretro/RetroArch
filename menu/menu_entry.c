@@ -143,7 +143,10 @@ unsigned menu_entry_get_type_new(uint32_t i)
 uint32_t menu_entry_get_bool_value(uint32_t i)
 {
    rarch_setting_t *setting = menu_entry_get_setting(i);
-   return *setting->value.boolean;
+   bool *ptr                = setting_get_ptr(setting);
+   if (!ptr)
+      return 0;
+   return *ptr;
 }
 
 struct string_list *menu_entry_enum_values(uint32_t i)

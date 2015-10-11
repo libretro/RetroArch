@@ -137,7 +137,7 @@ typedef struct rarch_setting
    const char           *values;
 
    uint32_t             index;
-   uint32_t             index_offset;
+   unsigned             index_offset;
 
    double               min;
    double               max;
@@ -300,7 +300,13 @@ double menu_setting_get_min(rarch_setting_t *setting);
 
 double menu_setting_get_max(rarch_setting_t *setting);
 
+unsigned menu_setting_get_bind_type(rarch_setting_t *setting);
+
 uint32_t menu_setting_get_index(rarch_setting_t *setting);
+
+unsigned setting_get_index_offset(rarch_setting_t *setting);
+
+void *setting_get_ptr(rarch_setting_t *setting);
 
 #ifdef __cplusplus
 }

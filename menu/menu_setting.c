@@ -383,6 +383,34 @@ int menu_setting_set(unsigned type, const char *label,
    return ret;
 }
 
+void *setting_get_ptr(rarch_setting_t *setting)
+{
+   if (!setting)
+      return NULL;
+
+   switch (menu_setting_get_type(setting))
+   {
+      case ST_BOOL:
+         return setting->value.boolean;
+      case ST_INT:
+         return setting->value.integer;
+      case ST_UINT:
+         return setting->value.unsigned_integer;
+      case ST_FLOAT:
+         return setting->value.fraction;
+      case ST_BIND:
+         return setting->value.keybind;
+      case ST_STRING:
+      case ST_PATH:
+      case ST_DIR:
+         return setting->value.string;
+      default:
+         break;
+   }
+
+   return NULL;
+}
+
 /**
  * setting_reset_setting:
  * @setting            : pointer to setting
@@ -423,6 +451,7 @@ static void setting_reset_setting(rarch_setting_t* setting)
                      setting->default_value.string, setting->size);
          }
          break;
+#if 0
          /* TODO */
       case ST_ACTION:
          break;
@@ -437,6 +466,9 @@ static void setting_reset_setting(rarch_setting_t* setting)
       case ST_END_SUB_GROUP:
          break;
       case ST_NONE:
+         break;
+#endif
+      default:
          break;
    }
 
@@ -570,9 +602,12 @@ void setting_get_string_representation(void *data, char *s, size_t len)
       setting->get_string_representation(setting, s, len);
 }
 
-/**
- ******* ACTION START CALLBACK FUNCTIONS *******
-**/
+uint32_t setting_get_index_offset(rarch_setting_t *setting)
+{
+   if (!setting)
+      return 0;
+   return setting->index_offset;
+}
 
 /**
  * setting_action_start_savestates:
@@ -585,15 +620,19 @@ void setting_get_string_representation(void *data, char *s, size_t len)
  **/
 static int setting_action_start_bind_device(void *data)
 {
+   uint32_t index_offset;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
-   if (!setting)
+   if (!setting || !settings)
       return -1;
 
-   settings->input.joypad_map[setting->index_offset] = setting->index_offset;
+   index_offset = setting_get_index_offset(setting);
+
+   settings->input.joypad_map[index_offset] = index_offset;
    return 0;
 }
+
 
 static int setting_action_start_custom_viewport_width(void *data)
 {
@@ -674,7 +713,8 @@ static int setting_action_start_analog_dpad_mode(void *data)
 
 static int setting_action_start_libretro_device_type(void *data)
 {
-   unsigned current_device, devices[128], types = 0, port = 0;
+   unsigned index_offset, current_device;
+   unsigned devices[128], types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
    rarch_setting_t   *setting  = (rarch_setting_t*)data;
    settings_t        *settings = config_get_ptr();
@@ -683,7 +723,8 @@ static int setting_action_start_libretro_device_type(void *data)
    if (setting_generic_action_start_default(setting) != 0)
       return -1;
 
-   port = setting->index_offset;
+   index_offset = setting_get_index_offset(setting);
+   port         = index_offset;
 
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
@@ -738,8 +779,16 @@ static int setting_string_action_start_generic(void *data)
    return 0;
 }
 
+unsigned menu_setting_get_bind_type(rarch_setting_t *setting)
+{
+   if (!setting)
+      return 0;
+   return setting->bind_type;
+}
+
 static int setting_bind_action_start(void *data)
 {
+   unsigned bind_type;
    struct retro_keybind *keybind   = NULL;
    rarch_setting_t *setting        = (rarch_setting_t*)data;
    struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
@@ -765,7 +814,8 @@ static int setting_bind_action_start(void *data)
    if (!def_binds)
       return -1;
 
-   keybind->key = def_binds[setting->bind_type - MENU_SETTINGS_BIND_BEGIN].key;
+   bind_type    = menu_setting_get_bind_type(setting);
+   keybind->key = def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN].key;
 
    return 0;
 }
@@ -928,6 +978,7 @@ static int setting_action_right_libretro_device_type(
 
 static int setting_action_left_bind_device(void *data, bool wraparound)
 {
+   unsigned index_offset;
    unsigned               *p = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
@@ -935,7 +986,9 @@ static int setting_action_left_bind_device(void *data, bool wraparound)
    if (!setting)
       return -1;
 
-   p = &settings->input.joypad_map[setting->index_offset];
+   index_offset = setting_get_index_offset(setting);
+
+   p = &settings->input.joypad_map[index_offset];
 
    if ((*p) >= settings->input.max_users)
       *p = settings->input.max_users - 1;
@@ -947,6 +1000,7 @@ static int setting_action_left_bind_device(void *data, bool wraparound)
 
 static int setting_action_right_bind_device(void *data, bool wraparound)
 {
+   unsigned index_offset;
    unsigned               *p = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
@@ -954,7 +1008,9 @@ static int setting_action_right_bind_device(void *data, bool wraparound)
    if (!setting)
       return -1;
 
-   p = &settings->input.joypad_map[setting->index_offset];
+   index_offset = setting_get_index_offset(setting);
+
+   p = &settings->input.joypad_map[index_offset];
 
    if (*p < settings->input.max_users)
       (*p)++;
@@ -1289,6 +1345,7 @@ static int setting_action_ok_bind_all(void *data, bool wraparound)
 
 static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparound)
 {
+   unsigned index_offset;
    settings_t    *settings   = config_get_ptr();
    rarch_setting_t *setting  = (rarch_setting_t*)data;
 
@@ -1297,7 +1354,9 @@ static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparoun
    if (!settings || !setting)
       return -1;
 
-   if(config_save_autoconf_profile(settings->input.device_names[setting->index_offset], setting->index_offset))
+   index_offset = setting_get_index_offset(setting);
+
+   if(config_save_autoconf_profile(settings->input.device_names[index_offset], index_offset))
       menu_display_msg_queue_push("Autoconf file saved successfully", 1, 100, true);
    else
       menu_display_msg_queue_push("Error saving autoconf file", 1, 100, true);
@@ -1533,16 +1592,18 @@ static void setting_get_string_representation_st_string(void *data,
 static void setting_get_string_representation_st_bind(void *data,
       char *s, size_t len)
 {
+   unsigned index_offset;
    rarch_setting_t *setting              = (rarch_setting_t*)data;
    const struct retro_keybind* keybind   = NULL;
    const struct retro_keybind* auto_bind = NULL;
 
    if (!setting)
       return;
-   
-   keybind   = (const struct retro_keybind*)setting->value.keybind;
-   auto_bind = (const struct retro_keybind*)
-      input_get_auto_bind(setting->index_offset, keybind->id);
+
+   index_offset = setting_get_index_offset(setting);
+   keybind      = (const struct retro_keybind*)setting->value.keybind;
+   auto_bind    = (const struct retro_keybind*)
+      input_get_auto_bind(index_offset, keybind->id);
 
    input_get_bind_string(s, keybind, auto_bind, len);
 }
@@ -1592,6 +1653,7 @@ static void setting_get_string_representation_uint_aspect_ratio_index(void *data
 static void setting_get_string_representation_uint_libretro_device(void *data,
       char *s, size_t len)
 {
+   unsigned index_offset;
    const struct retro_controller_description *desc = NULL;
    const char *name = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
@@ -1601,11 +1663,13 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
    if (!setting)
       return;
 
-   if (setting->index_offset < system->num_ports)
+   index_offset = setting_get_index_offset(setting);
+
+   if (index_offset < system->num_ports)
       desc = libretro_find_controller_description(
-            &system->ports[setting->index_offset],
+            &system->ports[index_offset],
             settings->input.libretro_device
-            [setting->index_offset]);
+            [index_offset]);
 
    if (desc)
       name = desc->desc;
@@ -1614,8 +1678,7 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
    {
       /* Find generic name. */
 
-      switch (settings->input.libretro_device
-            [setting->index_offset])
+      switch (settings->input.libretro_device[index_offset])
       {
          case RETRO_DEVICE_NONE:
             name = menu_hash_to_str(MENU_VALUE_NONE);
@@ -1646,10 +1709,13 @@ static void setting_get_string_representation_uint_analog_dpad_mode(void *data,
    modes[1] = menu_hash_to_str(MENU_VALUE_LEFT_ANALOG);
    modes[2] = menu_hash_to_str(MENU_VALUE_RIGHT_ANALOG);
 
+
    if (setting)
+   {
+      unsigned index_offset = setting_get_index_offset(setting);
       strlcpy(s, modes[settings->input.analog_dpad_mode
-            [setting->index_offset] % ANALOG_DPAD_LAST],
-            len);
+            [index_offset] % ANALOG_DPAD_LAST], len);
+   }
 }
 
 #ifdef HAVE_THREADS
@@ -2210,14 +2276,15 @@ static rarch_setting_t setting_string_setting_options(enum setting_type type,
 static void get_string_representation_bind_device(void * data, char *s,
       size_t len)
 {
-   unsigned map = 0;
+   unsigned index_offset, map = 0;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
    if (!setting)
       return;
 
-   map = settings->input.joypad_map[setting->index_offset];
+   index_offset = setting_get_index_offset(setting);
+   map          = settings->input.joypad_map[index_offset];
 
    if (map < settings->input.max_users)
    {
