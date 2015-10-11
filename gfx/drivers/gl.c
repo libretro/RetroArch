@@ -1742,6 +1742,7 @@ static bool gl_frame(void *data, const void *frame,
 
    feedback_info              = gl->tex_info;
 
+#ifdef HAVE_FBO
    if (gl->fbo_feedback_enable)
    {
       const struct gfx_fbo_rect *rect = &gl->fbo_rect[gl->fbo_feedback_pass];
@@ -1756,6 +1757,7 @@ static bool gl_frame(void *data, const void *frame,
 
       set_texture_coords(feedback_info.coord, xamt, yamt);
    }
+#endif
 
    glClear(GL_COLOR_BUFFER_BIT);
 
