@@ -23,6 +23,7 @@
 
 #endif
 
+#include <file/file_list.h>
 #include <file/file_path.h>
 #include <file/config_file.h>
 
@@ -34,6 +35,7 @@
 #include "menu_input.h"
 #include "menu_hash.h"
 
+#include "../command_event.h"
 #include "../driver.h"
 #include "../general.h"
 #include "../gfx/video_monitor.h"
@@ -2436,12 +2438,13 @@ static void get_string_representation_bind_device(void * data, char *s,
  *
  * Get associated label of a setting.
  **/
-void setting_get_label(file_list_t *list, char *s,
+void setting_get_label(void *data, char *s,
       size_t len, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx)
 {
-   rarch_setting_t *setting      = NULL;
-   if (!label)
+   rarch_setting_t *setting = NULL;
+   file_list_t *list        = (file_list_t*)data;
+   if (!list || !label)
       return;
 
    setting = menu_setting_find(list->list[idx].label);

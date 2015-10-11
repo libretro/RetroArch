@@ -21,10 +21,6 @@
 #include <stdlib.h>
 #include <boolean.h>
 
-#include <file/file_list.h>
-
-#include "../command_event.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -151,7 +147,7 @@ void setting_get_string_representation(void *data, char *s, size_t len);
  *
  * Get associated label of a setting.
  **/
-void setting_get_label(file_list_t *list, char *s,
+void setting_get_label(void *data, char *s,
       size_t len, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx);
 
