@@ -563,7 +563,7 @@ static void parse_input(int argc, char *argv[])
    };
 
    global->inited.core.no_content        = false;
-   global->inited.core.type              = CORE_TYPE_PLAIN;
+   global->inited.core.type              = CORE_TYPE_DUMMY;
    *global->subsystem                    = '\0';
    global->has_set.save_path             = false;
    global->has_set.state_path            = false;
@@ -588,12 +588,6 @@ static void parse_input(int argc, char *argv[])
    *global->name.ips                     = '\0';
 
    global->overrides_active              = false;
-
-   if (argc < 2)
-   {
-      global->inited.core.type           = CORE_TYPE_DUMMY;
-      return;
-   }
 
    /* Make sure we can call parse_input several times ... */
    optind    = 0;
@@ -710,6 +704,7 @@ static void parse_input(int argc, char *argv[])
                strlcpy(settings->libretro, optarg,
                      sizeof(settings->libretro));
                global->has_set.libretro = true;
+               global->inited.core.type = CORE_TYPE_PLAIN;
             }
             break;
 #endif
