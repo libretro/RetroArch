@@ -1172,7 +1172,7 @@ static void zarch_context_reset(void)
    zui_font(menu);
 }
 
-static int zarch_iterate(bool render_this_frame, enum menu_action action)
+static int zarch_iterate(enum menu_action action)
 {
    zui_t *zui           = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
@@ -1185,11 +1185,8 @@ static int zarch_iterate(bool render_this_frame, enum menu_action action)
    if (!zui)
       return -1;
 
-   if (render_this_frame)
-   {
-      BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
-      BIT64_SET(menu->state, MENU_STATE_BLIT);
-   }
+   BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
+   BIT64_SET(menu->state, MENU_STATE_BLIT);
 
    switch (action)
    {
@@ -1208,7 +1205,6 @@ static int zarch_iterate(bool render_this_frame, enum menu_action action)
       default:
          break;
    }
-
 
    if (zui->time_to_exit)
    {

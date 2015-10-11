@@ -108,7 +108,7 @@ typedef struct menu_ctx_driver
 {
    void  (*set_texture)(void);
    void  (*render_messagebox)(const char *msg);
-   int   (*iterate)(bool render, enum menu_action action);
+   int   (*iterate)(enum menu_action action);
    void  (*render)(void);
    void  (*frame)(void);
    void* (*init)(void);
@@ -219,7 +219,7 @@ size_t  menu_driver_list_get_selection(void);
 
 bool menu_environment_cb(menu_environ_cb_t type, void *data);
 
-int menu_driver_iterate(bool render, enum menu_action action);
+int menu_driver_iterate(enum menu_action action);
 
 int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,

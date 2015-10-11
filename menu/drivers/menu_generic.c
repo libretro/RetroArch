@@ -202,7 +202,7 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
  *
  * Returns: 0 on success, -1 if we need to quit out of the loop. 
  **/
-int generic_menu_iterate(bool render_this_frame, enum menu_action action)
+int generic_menu_iterate(enum menu_action action)
 {
    size_t selection;
    menu_entry_t entry;
@@ -227,8 +227,7 @@ int generic_menu_iterate(bool render_this_frame, enum menu_action action)
 
    if (action != MENU_ACTION_NOOP || menu_entries_needs_refresh() || menu_display_ctl(MENU_DISPLAY_CTL_UPDATE_PENDING, NULL))
    {
-      if (render_this_frame)
-         BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
+      BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
    }
 
    switch (iterate_type)
@@ -299,8 +298,7 @@ int generic_menu_iterate(bool render_this_frame, enum menu_action action)
          break;
    }
 
-   if (render_this_frame)
-      BIT64_SET(menu->state, MENU_STATE_BLIT);
+   BIT64_SET(menu->state, MENU_STATE_BLIT);
 
    if (BIT64_GET(menu->state, MENU_STATE_POP_STACK))
    {
