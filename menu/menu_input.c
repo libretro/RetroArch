@@ -320,8 +320,6 @@ void menu_input_key_start_line(const char *label,
    menu_input->keyboard.buffer        = input_keyboard_start_line(menu, cb);
 }
 
-
-
 void menu_input_st_uint_callback(void *userdata, const char *str)
 {
    if (str && *str)
@@ -421,9 +419,7 @@ void menu_input_st_cheat_callback(void *userdata, const char *str)
    menu_input_key_end_line();
 }
 
-
-
-static void menu_input_poll_bind_state(struct menu_bind_state *state, unsigned port)
+static void menu_input_key_bind_poll_bind_state(struct menu_bind_state *state, unsigned port)
 {
    unsigned b, a, h;
    const input_device_driver_t *joypad = input_driver_get_joypad_driver();
@@ -462,7 +458,8 @@ static void menu_input_poll_bind_state(struct menu_bind_state *state, unsigned p
    }
 }
 
-static void menu_input_poll_bind_get_rested_axes(struct menu_bind_state *state, unsigned port)
+static void menu_input_key_bind_poll_bind_get_rested_axes(
+      struct menu_bind_state *state, unsigned port)
 {
    unsigned a;
    const input_device_driver_t *joypad = input_driver_get_joypad_driver();
@@ -477,7 +474,7 @@ static void menu_input_poll_bind_get_rested_axes(struct menu_bind_state *state, 
          input_joypad_axis_raw(joypad, port, a);
 }
 
-static bool menu_input_poll_find_trigger_pad(struct menu_bind_state *state,
+static bool menu_input_key_bind_poll_find_trigger_pad(struct menu_bind_state *state,
       struct menu_bind_state *new_state, unsigned p)
 {
    unsigned a, b, h;
@@ -549,7 +546,7 @@ static bool menu_input_poll_find_trigger_pad(struct menu_bind_state *state,
    return false;
 }
 
-static bool menu_input_poll_find_trigger(struct menu_bind_state *state,
+static bool menu_input_key_bind_poll_find_trigger(struct menu_bind_state *state,
       struct menu_bind_state *new_state)
 {
    unsigned i;
@@ -560,7 +557,7 @@ static bool menu_input_poll_find_trigger(struct menu_bind_state *state,
 
    for (i = 0; i < settings->input.max_users; i++)
    {
-      if (!menu_input_poll_find_trigger_pad(state, new_state, i))
+      if (!menu_input_key_bind_poll_find_trigger_pad(state, new_state, i))
          continue;
 
       /* Update the joypad mapping automatically.
@@ -573,7 +570,7 @@ static bool menu_input_poll_find_trigger(struct menu_bind_state *state,
    return false;
 }
 
-static bool menu_input_custom_bind_keyboard_cb(void *data, unsigned code)
+static bool menu_input_key_bind_custom_bind_keyboard_cb(void *data, unsigned code)
 {
    menu_input_t *menu_input = menu_input_get_ptr();
 
@@ -589,7 +586,7 @@ static bool menu_input_custom_bind_keyboard_cb(void *data, unsigned code)
    return (menu_input->binds.begin <= menu_input->binds.last);
 }
 
-static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
+static int menu_input_key_bind_set_mode_common(rarch_setting_t  *setting,
       enum menu_input_bind_mode type)
 {
    size_t selection;
@@ -651,7 +648,7 @@ static int menu_input_set_bind_mode_common(rarch_setting_t  *setting,
    return 0;
 }
 
-static int menu_input_set_timeout(void)
+static int menu_input_key_bind_set_timeout(void)
 {
    menu_handle_t       *menu = menu_driver_get_ptr();
    menu_input_t  *menu_input = menu_input_get_ptr();
@@ -659,7 +656,7 @@ static int menu_input_set_timeout(void)
    menu_input->binds.timeout_end   = retro_get_time_usec() +
       MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
    input_keyboard_wait_keys(menu,
-         menu_input_custom_bind_keyboard_cb);
+         menu_input_key_bind_custom_bind_keyboard_cb);
 
    return 0;
 }
@@ -669,10 +666,10 @@ int menu_input_key_bind_set_keyboard_mode(void *data,
 {
    rarch_setting_t  *setting = (rarch_setting_t*)data;
 
-   if (!setting || menu_input_set_bind_mode_common(setting, type) == -1)
+   if (!setting || menu_input_key_bind_set_mode_common(setting, type) == -1)
       return -1;
 
-   return menu_input_set_timeout();
+   return menu_input_key_bind_set_timeout();
 }
 
 int menu_input_key_bind_set_device_mode(void *data,
@@ -689,11 +686,11 @@ int menu_input_key_bind_set_device_mode(void *data,
    index_offset = menu_setting_get_index_offset(setting);
    bind_port    = settings->input.joypad_map[index_offset];
 
-   if (menu_input_set_bind_mode_common(setting, type) == -1)
+   if (menu_input_key_bind_set_mode_common(setting, type) == -1)
       return -1;
 
-   menu_input_poll_bind_get_rested_axes(&menu_input->binds, bind_port);
-   menu_input_poll_bind_state(&menu_input->binds, bind_port);
+   menu_input_key_bind_poll_bind_get_rested_axes(&menu_input->binds, bind_port);
+   menu_input_key_bind_poll_bind_state(&menu_input->binds, bind_port);
 
    return 0;
 }
@@ -775,10 +772,10 @@ int menu_input_key_bind_iterate(char *s, size_t len)
    binds = menu_input->binds;
 
    input_driver_keyboard_mapping_set_block(true);
-   menu_input_poll_bind_state(&binds, bind_port);
+   menu_input_key_bind_poll_bind_state(&binds, bind_port);
 
    if ((binds.skip && !menu_input->binds.skip) ||
-         menu_input_poll_find_trigger(&menu_input->binds, &binds))
+         menu_input_key_bind_poll_find_trigger(&menu_input->binds, &binds))
    {
       input_driver_keyboard_mapping_set_block(false);
 
