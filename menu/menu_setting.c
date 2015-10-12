@@ -6566,7 +6566,6 @@ bool menu_setting_action_right(rarch_setting_t *setting, bool wraparound)
 void menu_setting_free(rarch_setting_t *list)
 {
    rarch_setting_t *setting = list;
-   uint64_t flags = menu_setting_get_flags(setting);
 
    if (!list)
       return;
