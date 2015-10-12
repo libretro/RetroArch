@@ -154,7 +154,7 @@ void apple_rarch_exited(void)
 static int waiting_argc;
 static char** waiting_argv;
 
-@implementation RetroArch
+@implementation RetroArch_OSX
 
 @synthesize window = _window;
 
@@ -439,7 +439,7 @@ void apple_display_alert(const char *message, const char *title)
     [alert setMessageText:(*title) ? BOXSTRING(title) : BOXSTRING("RetroArch")];
     [alert setInformativeText:BOXSTRING(message)];
     [alert setAlertStyle:NSInformationalAlertStyle];
-    [alert beginSheetModalForWindow:((RetroArch*)[[NSApplication sharedApplication] delegate]).window
+    [alert beginSheetModalForWindow:((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window
                       modalDelegate:apple_platform
                      didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
                         contextInfo:nil];

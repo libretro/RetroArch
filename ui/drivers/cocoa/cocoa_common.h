@@ -95,7 +95,7 @@ void get_ios_version(int *major, int *minor);
 
 @end
 
-@interface RetroArch : NSObject
+@interface RetroArch_OSX : NSObject
 {
    NSWindow* _window;
 }
