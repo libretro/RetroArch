@@ -311,8 +311,6 @@ extern void action_ok_push_quick_menu(void);
                         action_ok_push_quick_menu();
                  }
              }
-             else
-                 [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
          }
      }];
 #else
@@ -341,8 +339,6 @@ extern void action_ok_push_quick_menu(void);
 
          if (core_name)
             ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
-         else
-            [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
       }
    }];
 #else
