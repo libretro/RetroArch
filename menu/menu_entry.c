@@ -69,7 +69,6 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
    if (setting)
    {
       enum setting_type setting_type = menu_setting_get_type(setting);
-      const char            *values  = menu_setting_get_values(setting);
 
       switch (setting_type)
       {
