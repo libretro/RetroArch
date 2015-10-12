@@ -664,7 +664,7 @@ static int menu_input_set_timeout(void)
    return 0;
 }
 
-int menu_input_set_keyboard_bind_mode(void *data,
+int menu_input_key_bind_set_keyboard_mode(void *data,
       enum menu_input_bind_mode type)
 {
    rarch_setting_t  *setting = (rarch_setting_t*)data;
@@ -698,7 +698,7 @@ int menu_input_set_input_device_bind_mode(void *data,
    return 0;
 }
 
-static int menu_input_bind_iterate_keyboard(int64_t current, int timeout)
+static int menu_input_key_bind_iterate_keyboard(int64_t current, int timeout)
 {
    bool           timed_out = false;
    menu_input_t *menu_input = menu_input_get_ptr();
@@ -735,7 +735,7 @@ static int menu_input_bind_iterate_keyboard(int64_t current, int timeout)
    return 0;
 }
 
-int menu_input_bind_iterate(char *s, size_t len)
+int menu_input_key_bind_iterate(char *s, size_t len)
 {
    struct menu_bind_state binds;
    menu_input_t *menu_input     = menu_input_get_ptr();
@@ -753,7 +753,7 @@ int menu_input_bind_iterate(char *s, size_t len)
             menu_input->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
             timeout,
             menu_hash_to_str(MENU_VALUE_SECONDS));
-      return menu_input_bind_iterate_keyboard(current, timeout);
+      return menu_input_key_bind_iterate_keyboard(current, timeout);
    }
    else
       snprintf(s, len,

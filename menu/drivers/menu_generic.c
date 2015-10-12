@@ -240,7 +240,7 @@ int generic_menu_iterate(enum menu_action action)
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          break;
       case ITERATE_TYPE_BIND:
-         if (menu_input_bind_iterate(menu->menu_state.msg, sizeof(menu->menu_state.msg)))
+         if (menu_input_key_bind_iterate(menu->menu_state.msg, sizeof(menu->menu_state.msg)))
          {
             menu_list_pop_stack(menu_list, &selection);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);

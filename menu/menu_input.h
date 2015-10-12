@@ -105,6 +105,10 @@ void menu_input_key_start_line(const char *label,
       const char *label_setting, unsigned type, unsigned idx,
       input_keyboard_line_complete_t cb);
 
+int menu_input_key_bind_iterate(char *s, size_t len);
+
+int menu_input_key_bind_set_keyboard_mode(void *data, enum menu_input_bind_mode type);
+
 void menu_input_st_uint_callback(void *userdata, const char *str);
 void menu_input_st_hex_callback(void *userdata, const char *str);
 
@@ -112,13 +116,9 @@ void menu_input_st_string_callback(void *userdata, const char *str);
 
 void menu_input_st_cheat_callback(void *userdata, const char *str);
 
-int menu_input_bind_iterate(char *s, size_t len);
-
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_state);
 
 void menu_input_post_iterate(int *ret, unsigned action);
-
-int menu_input_set_keyboard_bind_mode(void *data, enum menu_input_bind_mode type);
 
 int menu_input_set_input_device_bind_mode(void *data, enum menu_input_bind_mode type);
 

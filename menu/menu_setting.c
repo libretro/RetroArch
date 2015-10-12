@@ -1429,7 +1429,7 @@ static int setting_action_ok_bind_all(void *data, bool wraparound)
       return -1;
 
    if (global->menu.bind_mode_keyboard)
-      menu_input_set_keyboard_bind_mode(data, MENU_INPUT_BIND_ALL);
+      menu_input_key_bind_set_keyboard_mode(data, MENU_INPUT_BIND_ALL);
    else
       menu_input_set_input_device_bind_mode(data, MENU_INPUT_BIND_ALL);
 
@@ -1576,7 +1576,7 @@ static int setting_bind_action_ok(void *data, bool wraparound)
    (void)wraparound;
 
    if (global->menu.bind_mode_keyboard)
-      menu_input_set_keyboard_bind_mode(data, MENU_INPUT_BIND_SINGLE);
+      menu_input_key_bind_set_keyboard_mode(data, MENU_INPUT_BIND_SINGLE);
    else
       menu_input_set_input_device_bind_mode(data, MENU_INPUT_BIND_SINGLE);
 
