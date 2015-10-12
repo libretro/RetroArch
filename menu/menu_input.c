@@ -675,7 +675,7 @@ int menu_input_key_bind_set_keyboard_mode(void *data,
    return menu_input_set_timeout();
 }
 
-int menu_input_set_input_device_bind_mode(void *data,
+int menu_input_key_bind_set_device_mode(void *data,
       enum menu_input_bind_mode type)
 {
    unsigned index_offset;
