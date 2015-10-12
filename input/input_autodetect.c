@@ -112,6 +112,7 @@ static void input_autoconfigure_joypad_add(
       config_file_t *conf,
       autoconfig_params_t *params)
 {
+   bool block_osd_spam;
    char msg[PATH_MAX_LENGTH] = {0};
    char display_name[PATH_MAX_LENGTH] = {0};
    char device_type[PATH_MAX_LENGTH] = {0};
@@ -120,13 +121,13 @@ static void input_autoconfigure_joypad_add(
    config_get_array(conf, "input_device_display_name", display_name, sizeof(display_name));
    config_get_array(conf, "input_device_type", device_type, sizeof(device_type));
 
-   /* This will be the case if input driver is reinitialized.
-    * No reason to spam autoconfigure messages every time. */
-   bool block_osd_spam = settings &&
-     settings->input.autoconfigured[params->idx] && *params->name;
-
    if (!settings)
       return;
+
+   /* This will be the case if input driver is reinitialized.
+    * No reason to spam autoconfigure messages every time. */
+   block_osd_spam = settings->input.autoconfigured[params->idx]
+      && *params->name;
 
    settings->input.autoconfigured[params->idx] = true;
    input_autoconfigure_joypad_conf(conf,

@@ -142,6 +142,9 @@ void fill_pathname_abbreviate_special(char *out_path,
 #if !defined(RARCH_CONSOLE)
 void fill_pathname_application_path(char *buf, size_t size)
 {
+#ifdef __APPLE__
+  CFBundleRef bundle = CFBundleGetMainBundle();
+#endif
    size_t i;
    (void)i;
 
@@ -152,7 +155,6 @@ void fill_pathname_application_path(char *buf, size_t size)
    DWORD ret = GetModuleFileName(GetModuleHandle(NULL), buf, size - 1);
    buf[ret] = '\0';
 #elif defined(__APPLE__)
-   CFBundleRef bundle = CFBundleGetMainBundle();
    if (bundle)
    {
       CFURLRef bundle_url = CFBundleCopyBundleURL(bundle);
