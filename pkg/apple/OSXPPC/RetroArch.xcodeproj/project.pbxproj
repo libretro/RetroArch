@@ -13,7 +13,7 @@
 		7AEFCD871921295E00FB5B6A /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 7AEFCD861921295E00FB5B6A /* griffin.c */; };
 		962EE0E2178B3DF6004224FF /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 962EE0E1178B3DF6004224FF /* IOKit.framework */; };
 		96355CE31788E72A0010DBFA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96355CE21788E72A0010DBFA /* Cocoa.framework */; };
-		967894931788ECDB00D6CA69 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 9678948F1788ECDB00D6CA69 /* InfoPlist.strings */; };
+		967894931788ECDB00D6CA69 /* ../OSX/en.lproj/InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 9678948F1788ECDB00D6CA69 /* ../OSX/en.lproj/InfoPlist.strings */; };
 		967894A41788F0C200D6CA69 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A21788F0C200D6CA69 /* CoreAudio.framework */; };
 		967894A51788F0C200D6CA69 /* CoreAudioKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A31788F0C200D6CA69 /* CoreAudioKit.framework */; };
 		967894A71788F0D900D6CA69 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A61788F0D900D6CA69 /* OpenGL.framework */; };
