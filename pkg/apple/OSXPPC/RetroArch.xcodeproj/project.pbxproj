@@ -19,7 +19,7 @@
 		967894A71788F0D900D6CA69 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A61788F0D900D6CA69 /* OpenGL.framework */; };
 		967894A91788F0E500D6CA69 /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A81788F0E500D6CA69 /* AudioUnit.framework */; };
 		967894E9178A2EB400D6CA69 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 967894E8178A2EB400D6CA69 /* modules */; };
-		C15874EF178F2094001171D4 /* RetroArch.icns in Resources */ = {isa = PBXBuildFile; fileRef = C15874EE178F2094001171D4 /* RetroArch.icns */; };
+		C15874EF178F2094001171D4 /* re3troarch.icns in Resources */ = {isa = PBXBuildFile; fileRef = C15874EE178F2094001171D4 /* re3troarch.icns */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,7 +40,7 @@
 		967894A61788F0D900D6CA69 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/OpenGL.framework; sourceTree = SYSTEM_DEVELOPER_DIR; };
 		967894A81788F0E500D6CA69 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/AudioUnit.framework; sourceTree = SYSTEM_DEVELOPER_DIR; };
 		967894E8178A2EB400D6CA69 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = "<group>"; };
-		C15874EE178F2094001171D4 /* RetroArch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = RetroArch.icns; path = OSX/RetroArch.icns; sourceTree = "<group>"; };
+		C15874EE178F2094001171D4 /* re3troarch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = re3troarch.icns; path = ../../../media/retroarch.icns; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -122,7 +122,7 @@
 				7A868DD11AC85A8500B0EDDB /* MainMenu.xib */,
 				7A868DD31AC85A8500B0EDDB /* Settings.xib */,
 				967894E8178A2EB400D6CA69 /* modules */,
-				C15874EE178F2094001171D4 /* RetroArch.icns */,
+				C15874EE178F2094001171D4 /* re3troarch.icns */,
 			);
 			name = Assets;
 			sourceTree = "<group>";
@@ -178,7 +178,7 @@
 			files = (
 				967894931788ECDB00D6CA69 /* ../OSX/en.lproj/InfoPlist.strings in Resources */,
 				967894E9178A2EB400D6CA69 /* modules in Resources */,
-				C15874EF178F2094001171D4 /* RetroArch.icns in Resources */,
+				C15874EF178F2094001171D4 /* re3troarch.icns in Resources */,
 				7A868DD51AC85A8500B0EDDB /* MainMenu.xib in Resources */,
 				7A868DD61AC85A8500B0EDDB /* Settings.xib in Resources */,
 			);
