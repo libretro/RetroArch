@@ -1479,7 +1479,7 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
    if (!target)
       return -1;
 
-   menu_input_set_binds_minmax(
+   menu_input_key_bind_set_min_max(
          MENU_SETTINGS_BIND_BEGIN, MENU_SETTINGS_BIND_LAST);
 
    for (i = MENU_SETTINGS_BIND_BEGIN;

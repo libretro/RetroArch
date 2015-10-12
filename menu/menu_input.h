@@ -111,6 +111,8 @@ int menu_input_key_bind_set_keyboard_mode(void *data, enum menu_input_bind_mode 
 
 int menu_input_key_bind_set_device_mode(void *data, enum menu_input_bind_mode type);
 
+void menu_input_key_bind_set_min_max(unsigned min, unsigned max);
+
 void menu_input_st_uint_callback(void *userdata, const char *str);
 void menu_input_st_hex_callback(void *userdata, const char *str);
 
@@ -128,7 +130,6 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state);
 
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data);
 
-void menu_input_set_binds_minmax(unsigned min, unsigned max);
 
 void menu_input_free(void);
 

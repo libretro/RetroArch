@@ -698,6 +698,17 @@ int menu_input_key_bind_set_device_mode(void *data,
    return 0;
 }
 
+void menu_input_key_bind_set_min_max(unsigned min, unsigned max)
+{
+   menu_input_t *menu_input  = menu_input_get_ptr();
+
+   if (!menu_input)
+      return;
+
+   menu_input->binds.begin = min;
+   menu_input->binds.last  = max;
+}
+
 static int menu_input_key_bind_iterate_keyboard(int64_t current, int timeout)
 {
    bool           timed_out = false;
@@ -1164,16 +1175,6 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
    return ret;
 }
 
-void menu_input_set_binds_minmax(unsigned min, unsigned max)
-{
-   menu_input_t *menu_input  = menu_input_get_ptr();
-
-   if (!menu_input)
-      return;
-
-   menu_input->binds.begin = min;
-   menu_input->binds.last  = max;
-}
 
 void menu_input_post_iterate(int *ret, unsigned action)
 {
