@@ -563,7 +563,7 @@ static void parse_input(int argc, char *argv[])
    };
 
    global->inited.core.no_content        = false;
-   global->inited.core.type              = CORE_TYPE_DUMMY;
+   global->inited.core.type              = CORE_TYPE_PLAIN;
    *global->subsystem                    = '\0';
    global->has_set.save_path             = false;
    global->has_set.state_path            = false;
@@ -588,6 +588,12 @@ static void parse_input(int argc, char *argv[])
    *global->name.ips                     = '\0';
 
    global->overrides_active              = false;
+
+   if (argc < 2)
+   {
+      global->inited.core.type           = CORE_TYPE_DUMMY;
+      return;
+   }
 
    /* Make sure we can call parse_input several times ... */
    optind    = 0;
@@ -785,6 +791,7 @@ static void parse_input(int argc, char *argv[])
             break;
          
          case RA_OPT_MENU:
+            global->inited.core.type        = CORE_TYPE_DUMMY;
             break;
 
 #ifdef HAVE_NETPLAY
@@ -875,8 +882,6 @@ static void parse_input(int argc, char *argv[])
       }
    }
 
-   global->inited.core.type       = CORE_TYPE_PLAIN;
-   /* TODO: clean out this dead code */
    if (global->inited.core.type == CORE_TYPE_DUMMY)
    {
       if (optind < argc)
@@ -890,10 +895,7 @@ static void parse_input(int argc, char *argv[])
    else if (*global->subsystem && optind < argc)
       set_special_paths(argv + optind, argc - optind);
    else
-   {
       global->inited.core.no_content = true;
-      global->inited.core.type       = CORE_TYPE_DUMMY;
-   }
 
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
@@ -1566,4 +1568,3 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
             sizeof(settings->libretro));
    return -1;
 }
-
