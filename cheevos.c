@@ -1321,41 +1321,13 @@ int cheevos_get_by_game_id( const char** json, unsigned game_id )
   return 0;
 }
 
-#define CHEEVOS_EIGHT_MB ( 8 * 1024 * 1024 )
-
-int cheevos_get_by_content( const char** json, const void* data, size_t size, unsigned flags )
+static unsigned cheevos_get_game_id( unsigned char* hash )
 {
   MD5_CTX ctx;
-  char buffer[ 4096 ];
-  size_t len;
-  unsigned char hash[ 16 ];
   char request[ 256 ];
+  const char* json;
   char game_id[ 16 ];
   int res;
-
-  MD5_Init( &ctx );
-  MD5_Update( &ctx, data, size );
-
-  if ( ( flags & CHEEVOS_FLAGS_IS_SNES ) && size < CHEEVOS_EIGHT_MB )
-  {
-    size = CHEEVOS_EIGHT_MB - size;
-    memset( (void*)buffer, 0, sizeof( buffer ) );
-
-    while ( size )
-    {
-      len = sizeof( buffer );
-
-      if ( len > size )
-      {
-        len = size;
-      }
-
-      MD5_Update( &ctx, (void*)buffer, len );
-      size -= len;
-    }
-  }
-
-  MD5_Final( hash, &ctx );
 
   snprintf(
     request, sizeof( request ),
@@ -1369,23 +1341,69 @@ int cheevos_get_by_content( const char** json, const void* data, size_t size, un
 
   request[ sizeof( request ) - 1 ] = 0;
 
-  *json = cheevos_http_get( request, NULL );
+  json = cheevos_http_get( request, NULL );
 
-  if ( !*json )
+  if ( !json )
   {
     return -1;
   }
 
-  res = cheevos_get_value( *json, 0xb4960eecU /* GameID */, game_id, sizeof( game_id ) );
-  free( (void*)*json );
+  res = cheevos_get_value( json, 0xb4960eecU /* GameID */, game_id, sizeof( game_id ) );
+  free( (void*)json );
 
-  if ( !res )
+  return res ? 0 : strtoul( game_id, NULL, 10 );
+}
+
+#define CHEEVOS_EIGHT_MB ( 8 * 1024 * 1024 )
+
+int cheevos_get_by_content( const char** json, const void* data, size_t size )
+{
+  MD5_CTX ctx, saved_ctx;
+  char buffer[ 4096 ];
+  size_t len;
+  unsigned char hash[ 16 ];
+  char request[ 256 ];
+  unsigned game_id;
+  int res;
+
+  MD5_Init( &ctx );
+  MD5_Update( &ctx, data, size );
+  saved_ctx = ctx;
+  MD5_Final( hash, &ctx );
+
+  game_id = cheevos_get_game_id( hash );
+
+  if ( !game_id )
   {
-    RARCH_LOG( "game id is %s\n", game_id );
-    res = cheevos_get_by_game_id( json, strtoul( game_id, NULL, 10 ) );
+    /* If the content is a SNES game, continue MD5 with zeroes. */
+    size = CHEEVOS_EIGHT_MB - size;
+    memset( (void*)buffer, 0, sizeof( buffer ) );
+
+    while ( size )
+    {
+      len = sizeof( buffer );
+
+      if ( len > size )
+      {
+        len = size;
+      }
+
+      MD5_Update( &saved_ctx, (void*)buffer, len );
+      size -= len;
+    }
+
+    MD5_Final( hash, &saved_ctx );
+
+    game_id = cheevos_get_game_id( hash );
+
+    if ( !game_id )
+    {
+      return -1;
+    }
   }
 
-  return res;
+  RARCH_LOG( "cheevos game id is %u\n", game_id );
+  return cheevos_get_by_game_id( json, game_id );
 }
 
 #else /* HAVE_CHEEVOS */

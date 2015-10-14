@@ -515,7 +515,7 @@ static bool load_content(const struct retro_subsystem_info *special,
    {
       if (*content->elems[0].data)
       {
-         if ( cheevos_get_by_content(&json, info->data, info->size, CHEEVOS_FLAGS_IS_SNES) == 0 )
+         if ( cheevos_get_by_content(&json, info->data, info->size) == 0 )
          {
             cheevos_load(json);
             free((void*)json);
