@@ -21,13 +21,25 @@ typedef struct
 {
   unsigned char enable;
   unsigned char test_unofficial;
+  const char*   username;
+  const char*   password;
+  /* These are used by the implementation, do not touch. */
+  char          token[ 20 ];
+  unsigned      game_id;
 }
 cheevos_config_t;
+
+enum
+{
+  CHEEVOS_FLAGS_IS_SNES = 1 << 0, /* forces * mb padded with zeroes */
+};
 
 extern cheevos_config_t cheevos_config;
 
 int  cheevos_load( const char* json );
 void cheevos_test( void );
 void cheevos_unload( void );
+int  cheevos_get_by_game_id( const char** json, unsigned game_id );
+int  cheevos_get_by_content( const char** json, const void* data, size_t size, unsigned flags );
 
 #endif /* __RARCH_CHEEVOS_H */

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -44,6 +44,7 @@
 #include "movie.h"
 #include "patch.h"
 #include "system.h"
+#include "cheevos.h"
 
 /**
  * read_content_file:
@@ -77,7 +78,7 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
    /* Attempt to apply a patch. */
    if (!global->patch.block_patch)
       patch_content(&ret_buf, length);
-   
+
 #ifdef HAVE_ZLIB
    global->content_crc = zlib_crc32_calculate(ret_buf, *length);
 
@@ -164,7 +165,7 @@ bool save_state(const char *path)
    if (!data)
       return false;
 
-   RARCH_LOG("%s: %d %s.\n", 
+   RARCH_LOG("%s: %d %s.\n",
          msg_hash_to_str(MSG_STATE_SIZE),
          (int)size,
          msg_hash_to_str(MSG_BYTES));
@@ -174,7 +175,7 @@ bool save_state(const char *path)
       ret = retro_write_file(path, data, size);
 
    if (!ret)
-      RARCH_ERR("%s \"%s\".\n", 
+      RARCH_ERR("%s \"%s\".\n",
             msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
             path);
 
@@ -451,7 +452,7 @@ static bool load_content_need_fullpath(
 /**
  * load_content:
  * @special          : subsystem of content to be loaded. Can be NULL.
- * content           : 
+ * content           :
  *
  * Load content file (for libretro core).
  *
@@ -462,6 +463,7 @@ static bool load_content(const struct retro_subsystem_info *special,
 {
    unsigned i;
    bool ret = true;
+   const char* json = NULL;
    struct string_list* additional_path_allocs = string_list_new();
    struct retro_game_info *info = (struct retro_game_info*)
       calloc(content->size, sizeof(*info));
@@ -487,7 +489,7 @@ static bool load_content(const struct retro_subsystem_info *special,
       }
 
       info[i].path = NULL;
-      
+
       if (*path)
          info[i].path = path;
 
@@ -510,7 +512,18 @@ static bool load_content(const struct retro_subsystem_info *special,
    if (special)
       ret = core.retro_load_game_special(special->id, info, content->size);
    else
+   {
+      if (*content->elems[0].data)
+      {
+         if ( cheevos_get_by_content(&json, info->data, info->size, CHEEVOS_FLAGS_IS_SNES) == 0 )
+         {
+            cheevos_load(json);
+            free((void*)json);
+         }
+      }
+
       ret = core.retro_load_game(*content->elems[0].data ? info : NULL);
+   }
 
    if (!ret)
       RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));

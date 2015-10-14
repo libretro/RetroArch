@@ -21,19 +21,12 @@
 #include <ctype.h>
 
 #include <formats/jsonsax.h>
+#include <net/net_http.h>
+#include <rhash.h>
 #include <retro_log.h>
 
 #include "cheevos.h"
 #include "dynamic.h"
-
-#if 0
-
-curl -v "http://retroachievements.org/dorequest.php?r=login&u=leiradel&p=####"
-curl -v "http://retroachievements.org/dorequest.php?r=gameid&u=leiradel&m=c320cba1be26f303ba6f60d39ec39855"
-curl -v "http://retroachievements.org/dorequest.php?r=patch&u=leiradel&g=228&f=3&l=1&t=9YtR63TDb2BB0vlN"
-curl "http://i.retroachievements.org/Badge/05506.png"
-
-#endif
 
 enum
 {
@@ -160,69 +153,16 @@ cheevos_config_t cheevos_config =
 {
   /* enable          */ 1,
   /* test_unofficial */ 0,
+  /* username        */ "libretro",
+  /* password        */ "l1br3tro3456",
+  /* token           */ { 0 },
+  /* game_id         */ 0,
 };
 
 #ifdef HAVE_CHEEVOS
 
 static cheevoset_t core_cheevos = { NULL, 0 };
 static cheevoset_t unofficial_cheevos = { NULL, 0 };
-
-#ifdef HAVE_SMW_CHEEVOS
-
-/*****************************************************************************
-Achievements for SNES' Super Mario World.
-*****************************************************************************/
-
-static const char* cheevos_smw_json =
-  "{\"Success\":true,\"PatchData\":{\"ID\":228,\"Title\":\"Super Mario World\",\"ConsoleID\":3,\"ForumTopicID\":135,\"Flags\":0,\"ImageIcon\":\"/Images/000284.png\",\"ImageTitle\":\"/Images/000021.png\",\"ImageIngame\":\"/Images/000022.png\",\"ImageBoxArt\":\"/Images/000138.png\",\"Publisher\":\"Nintendo\",\"Developer\":\"Nintendo EAD\",\"Genre\":\"Platforming\",\"Released\":\"JP 1990 , NA 1991 Europe 1992\",\"IsFinal\":false,\"ConsoleName\":\"SNES\",\"RichPresencePatch\":\"Lookup:LevelName\r\n0x0=Title Screen\r\n0x14=Yellow Switch Palace\r\n0x28=Yoshi's House\r\n0x29=Yoshi's Island 1\r\n0x2a=Yoshi's Island 2\r\n0x27=Yoshi's Island 3\r\n0x26=Yoshi's Island 4\r\n0x25=#1 Iggy's Castle\r\n0x15=Donut Plains 1\r\n0x9=Donut Plains 2\r\n0x8=Green Switch Palace\r\n0x4=Donut Ghost House\r\n0x3=Top Secret Area\r\n0x5=Donut Plains 3\r\n0x6=Donut Plains 4\r\n0x7=#2 Morton's Castle\r\n0xa=Donut Secret 1\r\n0x13=Donut Secret House\r\n0x2f=Donut Secret 2\r\n0x3e=Vanilla Dome 1\r\n0x3c=Vanilla Dome 2\r\n0x3f=Red Switch Palace\r\n0x2b=Vanilla Ghost House\r\n0x2e=Vanilla Dome 3\r\n0x3d=Vanilla Dome 4\r\n0x40=#3 Lemmy's Castle\r\n0x2d=Vanilla Secret 1\r\n0x1=Vanilla Secret 2\r\n0x2=Vanilla Secret 3\r\n0xb=Vanilla Fortress\r\n0xc=Butter Bridge 1\r\n0xd=Butter Bridge 2\r\n0xe=#4 Ludwig's Castle\r\n0xf=Cheese Bridge Area\r\n0x10=Cookie Mountain\r\n0x11=Soda Lake\r\n0x41=Forest Ghost House\r\n0x42=Forest of Illusion 1\r\n0x43=Forest of Illusion 4\r\n0x44=Forest of Illusion 2\r\n0x45=Blue Switch Palace\r\n0x46=Forest Secret Area\r\n0x47=Forest of Illusion 3\r\n0x1f=Forest Fortress\r\n0x20=#5 Roy's Castle\r\n0x21=Choco-Ghost House\r\n0x22=Chocolate Island 1\r\n0x23=Chocolate Island 3\r\n0x24=Chocolate Island 2\r\n0x1b=Chocolate Fortress\r\n0x1d=Chocolate Island 4\r\n0x1c=Chocolate Island 5\r\n0x1a=#6 Wendy's Castle\r\n0x18=Sunken Ghost Ship\r\n0x3b=Chocolate Secret\r\n0x3a=Valley of Bowser 1\r\n0x39=Valley of Bowser 2\r\n0x38=Valley Ghost House\r\n0x37=Valley of Bowser 3\r\n0x33=Valley of Bowser 4\r\n0x34=#7 Larry's Castle\r\n0x35=Valley Fortress\r\n0x31=Front Door\r\n0x32=Back Door\r\n0x58=Star World 1\r\n0x54=Star World 2\r\n0x56=Star World 3\r\n0x59=Star World 4\r\n0x5a=Star World 5\r\n0x4e=Gnarly\r\n0x4f=Tubular\r\n0x50=Way Cool\r\n0x51=Awesome\r\n0x4c=Groovy\r\n0x4b=Mondo\r\n0x4a=Outrageous\r\n0x49=Funky\r\n\r\nFormat:Lives\r\nFormatType=VALUE\r\n\r\nDisplay:\r\n@LevelName(0xh0013bf), @Lives(0xh0dbe_v+1) live(s)\",\"Achievements\":["
-  "{\"ID\":4874,\"MemAddr\":\"0xH000019=2\",\"Title\":\"I Believe I Can Fly\",\"Description\":\"Collect a feather\",\"Points\":5,\"Author\":\"UNHchabo\",\"Modified\":1434153343,\"Created\":1391908064,\"BadgeName\":\"05506\",\"Flags\":3},"
-  "{\"ID\":4933,\"MemAddr\":\"0xH0018c2>0\",\"Title\":\"Floating Through the Clouds\",\"Description\":\"Hijack a Lakitu cloud\",\"Points\":10,\"Author\":\"UNHchabo\",\"Modified\":1441035935,\"Created\":1392010935,\"BadgeName\":\"00085\",\"Flags\":5},"
-  "{\"ID\":4934,\"MemAddr\":\"0xH0013c7=4\",\"Title\":\"Yellow Yoshi\",\"Description\":\"Ride a yellow Yoshi\",\"Points\":10,\"Author\":\"UNHchabo\",\"Modified\":1410734527,\"Created\":1392011140,\"BadgeName\":\"00085\",\"Flags\":5},"
-  "{\"ID\":4935,\"MemAddr\":\"0xH0013c7=6\",\"Title\":\"Blue Yoshi\",\"Description\":\"Ride a blue Yoshi\",\"Points\":10,\"Author\":\"UNHchabo\",\"Modified\":1410735517,\"Created\":1392011155,\"BadgeName\":\"00085\",\"Flags\":5},"
-  "{\"ID\":4936,\"MemAddr\":\"0xH0013c7=8\",\"Title\":\"Red Yoshi\",\"Description\":\"Ride a red Yoshi\",\"Points\":10,\"Author\":\"UNHchabo\",\"Modified\":1410735526,\"Created\":1392011190,\"BadgeName\":\"00085\",\"Flags\":5},"
-  "{\"ID\":4937,\"MemAddr\":\"0xH000dbe>=98_0xH000019=1\",\"Title\":\"Mushroom Collector\",\"Description\":\"Get 99 lives, and become Super Mario\",\"Points\":10,\"Author\":\"UNHchabo\",\"Modified\":1392018537,\"Created\":1392018537,\"BadgeName\":\"00085\",\"Flags\":5},"
-  "{\"ID\":5756,\"MemAddr\":\"0xH0013c5>0\",\"Title\":\"Shoot the Moon!\",\"Description\":\"Collect a 3-Up\",\"Points\":10,\"Author\":\"UNHchabo\",\"Modified\":1393710657,\"Created\":1393710657,\"BadgeName\":\"05505\",\"Flags\":5},"
-  "{\"ID\":341,\"MemAddr\":\"0x1420=1\",\"Title\":\"Unleash the Dragon\",\"Description\":\"Collect 5 Dragon Coins in a level\",\"Points\":10,\"Author\":\"Scott\",\"Modified\":1367266589,\"Created\":1367266583,\"BadgeName\":\"00549\",\"Flags\":3},"
-  "{\"ID\":342,\"MemAddr\":\"0xH000dc1=1_0xH0013bf>0\",\"Title\":\"Giddy Up!\",\"Description\":\"Catch a ride with a friend\",\"Points\":10,\"Author\":\"Scott\",\"Modified\":1376974455,\"Created\":1367266931,\"BadgeName\":\"00550\",\"Flags\":3},"
-  "{\"ID\":340,\"MemAddr\":\"0xH0dbf=99\",\"Title\":\"Rich Mario\",\"Description\":\"Collect 99 coins!\",\"Points\":10,\"Author\":\"Scott\",\"Modified\":1367254980,\"Created\":1367254976,\"BadgeName\":\"00547\",\"Flags\":3},"
-  "{\"ID\":1706,\"MemAddr\":\"0xH001900=80\",\"Title\":\"Maximum Finish\",\"Description\":\"Cross the finish line at the end of the stage and collect the max 50 stars\",\"Points\":10,\"Author\":\"jackolantern\",\"Modified\":1372762549,\"Created\":1372674230,\"BadgeName\":\"02014\",\"Flags\":3},"
-  "{\"ID\":2246,\"MemAddr\":\"0xH000f31=0(20)_R:0xH000f31!=0_0xH000f32=0(20)_R:0xH000f32!=0_0xH000f33=0(20)_R:0xH000f33!=0_0xH000dbe>d0xH000dbe(8)_0xH001411=1(20)_R:0xH001411=0\",\"Title\":\"Perfect Bonus Stage\",\"Description\":\"Score 8 Extra Lives on the Bonus Game\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1376611582,\"Created\":1376582613,\"BadgeName\":\"02739\",\"Flags\":3},"
-  "{\"ID\":2199,\"MemAddr\":\"0xH001f28=1_0xH001f27=1_0xH001f29=1_0xH001f2a=1\",\"Title\":\"Filling all the blocks in\",\"Description\":\"Hit the buttons in all four coloured switch palaces.\",\"Points\":20,\"Author\":\"jackolantern\",\"Modified\":1376552794,\"Created\":1376514114,\"BadgeName\":\"02720\",\"Flags\":3},"
-  "{\"ID\":2253,\"MemAddr\":\"0xH0013bf=37_0xH000dd5=1\",\"Title\":\"Iggy Koopa\",\"Description\":\"Defeat Iggy Koopa of Castle #1\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1425959554,\"Created\":1376616356,\"BadgeName\":\"00562\",\"Flags\":3},"
-  "{\"ID\":347,\"MemAddr\":\"0xH0013bf=7_0xH000dd5=1\",\"Title\":\"Morton Koopa Jr\",\"Description\":\"Defeat Morton Koopa Jr of Castle #2\",\"Points\":10,\"Author\":\"Scott\",\"Modified\":1425959561,\"Created\":1367322700,\"BadgeName\":\"00562\",\"Flags\":3},"
-  "{\"ID\":2261,\"MemAddr\":\"0xH0013bf=64_0xH000dd5=1\",\"Title\":\"Lemmy Koopa\",\"Description\":\"Defeat Lemmy Koopa of Castle #3\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1425959153,\"Created\":1376652522,\"BadgeName\":\"00562\",\"Flags\":3},"
-  "{\"ID\":2262,\"MemAddr\":\"0xH0013bf=14_0xH000dd5=1\",\"Title\":\"Ludwig von Koopa\",\"Description\":\"Defeat Ludwig von Koopa of Castle #4\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1425959133,\"Created\":1376653163,\"BadgeName\":\"00562\",\"Flags\":3},"
-  "{\"ID\":2306,\"MemAddr\":\"0xH0013bf=32_0xH000dd5=1\",\"Title\":\"Roy Koopa\",\"Description\":\"Defeat Roy Koopa of Castle #5\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1425956637,\"Created\":1376938808,\"BadgeName\":\"00562\",\"Flags\":3},"
-  "{\"ID\":2309,\"MemAddr\":\"0xH0013bf=26_0xH000906=1.400._R:0xH0013bf!=26\",\"Title\":\"Wendy O. Koopa\",\"Description\":\"Defeat Wendy O. Koopa of Castle #6\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1390938088,\"Created\":1376939582,\"BadgeName\":\"00562\",\"Flags\":3},"
-  "{\"ID\":2342,\"MemAddr\":\"0xH0013bf=52_0xH000dd5=1\",\"Title\":\"Larry Koopa\",\"Description\":\"Defeat Larry Koopa of Castle #7\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1425959095,\"Created\":1376970283,\"BadgeName\":\"00562\",\"Flags\":3},"
-  "{\"ID\":2250,\"MemAddr\":\"0xH0013bf=11(20)_0xH000906=1(20)_R:0xH001411!=1\",\"Title\":\"Reznor\",\"Description\":\"Defeat the Reznor atop Vanilla Dome\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1376615087,\"Created\":1376615073,\"BadgeName\":\"02742\",\"Flags\":3},"
-  "{\"ID\":2307,\"MemAddr\":\"0xH0013bf=31(20)_0xH000906=1(20)_R:0xH001411!=1\",\"Title\":\"Reznor Again?\",\"Description\":\"Defeat the Reznor in the clearing of the Forest of Illusion\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1376938847,\"Created\":1376938811,\"BadgeName\":\"02742\",\"Flags\":3},"
-  "{\"ID\":2308,\"MemAddr\":\"0xH0013bf=27(20)_0xH000906=1(20)_R:0xH001411!=1\",\"Title\":\"Reznor, do you ever give up?\",\"Description\":\"Defeat the Reznor at the center of Chocolate Island\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1376938850,\"Created\":1376938815,\"BadgeName\":\"02742\",\"Flags\":3},"
-  "{\"ID\":2338,\"MemAddr\":\"0xH0013bf=53(20)_0xH000906=1(20)_R:0xH001411!=1\",\"Title\":\"Reznor...\",\"Description\":\"Defeat the Reznor in Bowsers Valley\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1376969439,\"Created\":1376969412,\"BadgeName\":\"02742\",\"Flags\":3},"
-  "{\"ID\":2275,\"MemAddr\":\"0xH0013bf=49_R:0xH0013bf!=49_0xH0013f9=3_R:0xH0013f9!=3_0xH0013ef=1_R:0xH0013ef!=1\",\"Title\":\"King Bowser Koopa\",\"Description\":\"Beat Bowser and Save the Princess (Front Door!)\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1390856575,\"Created\":1376742802,\"BadgeName\":\"02764\",\"Flags\":3},"
-  "{\"ID\":2276,\"MemAddr\":\"0xH0013bf=49_R:0xH0013bf!=49_0xH0013f9=3_R:0xH0013f9!=3_0xH0013ef=1_R:0xH0013ef!=1_0xH000019=0_R:0xH000019!=0\",\"Title\":\"Baby's First Kiss\",\"Description\":\"Get the Princess Kiss as Little Mario (Front Door!)\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1390856597,\"Created\":1376742805,\"BadgeName\":\"02765\",\"Flags\":3},"
-  "{\"ID\":2277,\"MemAddr\":\"0xH0013bf=49_R:0xH0013bf!=49_0xH0013f9=3_R:0xH0013f9!=3_0xH0013ef=1_R:0xH0013ef!=1_0xH000019=3_R:0xH000019!=3\",\"Title\":\"Burning Bowser\",\"Description\":\"Get the Princess Kiss as Fire Mario (Front Door!)\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1390856617,\"Created\":1376742808,\"BadgeName\":\"02766\",\"Flags\":3},"
-  "{\"ID\":2278,\"MemAddr\":\"0xH0013bf=49_R:0xH0013bf!=49_0xH0013f9=3_R:0xH0013f9!=3_0xH0013ef=1_R:0xH0013ef!=1_0xH000019=2_R:0xH000019!=2\",\"Title\":\"Flying Finish\",\"Description\":\"Get the Princess Kiss as Cape Mario (Front Door!)\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1390856673,\"Created\":1376742811,\"BadgeName\":\"02767\",\"Flags\":3},"
-  "{\"ID\":2299,\"MemAddr\":\"0xH000020=168_R:0xH000020!=168_0xH00001e=248_R:0xH00001e!=248_0xH0013c3=0_R:0xH0013c3!=0_0xH0013bf=19_R:0xH0013bf!=19_0xH001411=0\",\"Title\":\"The Big Boo\",\"Description\":\"Defeat the Big Boo in Donut Secret House\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1378767596,\"Created\":1376918022,\"BadgeName\":\"02797\",\"Flags\":3},"
-  "{\"ID\":2298,\"MemAddr\":\"0xH0013c3=6\",\"Title\":\"To the Stars!\",\"Description\":\"Reach the Star Road\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1376918072,\"Created\":1376918019,\"BadgeName\":\"02798\",\"Flags\":3},"
-  "{\"ID\":2264,\"MemAddr\":\"0xH000007=114_R:0xH000007!=114_0xH000008=121_R:0xH000008!=121_0xH0013c3=3_R:0xH0013c3!=3_0xH001411=0\",\"Title\":\"I could've sworn...\",\"Description\":\"Get lost in the Forest of Illusion\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1376941372,\"Created\":1376657732,\"BadgeName\":\"02753\",\"Flags\":3},"
-  "{\"ID\":2305,\"MemAddr\":\"0xH00001e=169_0xH000020=28_0xH0013c3=0_0xH001411=0\",\"Title\":\"Chocolate Donut\",\"Description\":\"Walk in a circle on Chocolate Island\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1376945561,\"Created\":1376938805,\"BadgeName\":\"02806\",\"Flags\":3},"
-  "{\"ID\":2300,\"MemAddr\":\"0xH0013c3=5\",\"Title\":\"Mario's Special Place\",\"Description\":\"Get to the challenging Special Stages\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1376918077,\"Created\":1376918026,\"BadgeName\":\"02800\",\"Flags\":3},"
-  "{\"ID\":2302,\"MemAddr\":\"0xH0013c3=5(1)_0xH0013c3=1(1)_R:0xH0013c3=6_R:0xH0013c3=0_R:0xH001f79=0\",\"Title\":\"Change of Scenery\",\"Description\":\"Clear the Special Zone and change the seasons in Mushroom Kingdom\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1376929315,\"Created\":1376929303,\"BadgeName\":\"02803\",\"Flags\":3},"
-  "{\"ID\":2252,\"MemAddr\":\"0xH0013f3=1(20)_0xH001411=1(20)_R:0xH001411=0_0xH000019=0(20)_R:0xH000019!=0(20)\",\"Title\":\"Too Much Pasta\",\"Description\":\"Let Little Mario load up on mama Luigi's Famous P(asta)-gas!\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1376651934,\"Created\":1376615082,\"BadgeName\":\"02744\",\"Flags\":3},"
-  "{\"ID\":2251,\"MemAddr\":\"0xH0013f3=1(20)_0xH001411=1(20)_R:0xH001411=0_0xH000019!=0_R:0xH000019=0\",\"Title\":\"Another kind of flying\",\"Description\":\"Send Mario flying with P-gas\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1376617016,\"Created\":1376615078,\"BadgeName\":\"02743\",\"Flags\":3},"
-  "{\"ID\":2263,\"MemAddr\":\"0xH001697=12_0xH0013bf=66_R:0xH001697=0\",\"Title\":\"Bother the Wigglers\",\"Description\":\"Jump on yellow Wigglers in Forest of Illusion 12 times in a row for a surprise!\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1379674609,\"Created\":1376655155,\"BadgeName\":\"02752\",\"Flags\":3},"
-  "{\"ID\":2274,\"MemAddr\":\"0xH0013bf=49_R:0xH0013bf!=49_0xH0013f9=3_R:0xH0013f9!=3_0xH001f2e=11_R:0xH001f2e!=11_0xH0013ef=1_R:0xH0013ef!=1\",\"Title\":\"Shortest Route\",\"Description\":\"Clear the fewest stages possible and beat the game\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1376742834,\"Created\":1376742799,\"BadgeName\":\"02768\",\"Flags\":3},"
-  "{\"ID\":2297,\"MemAddr\":\"0xH001f2e=0.1._0xH001f2e=1.1._0xH001f2e=2.1._0xH001f2e=3.1._0xH001f2e=4.1._0xH001f2e=5.1._0xH001f2e=6.1._0xH001f2e=7.1._0xH001f2e=8.1._0xH001f2e=9.1._0xH001f2e=10.1._0xH001f2e=11.1._0xH0013f9=3_R:0xH000dbe<d0xH000dbe_0xH0013bf=49_R:0xH001f79=0_R:0xH001f2e<d0xH001f2e_0xH0013ef=1\",\"Title\":\"Starman Challenge\",\"Description\":\"Clear the game without dying (One session)\",\"Points\":20,\"Author\":\"Jaarl\",\"Modified\":1438387321,\"Created\":1376918015,\"BadgeName\":\"02772\",\"Flags\":3},"
-  "{\"ID\":2345,\"MemAddr\":\"0xH0013ef=1_0xH0013f9=3_0xH0013bf=50\",\"Title\":\"Backdooring Bowser\",\"Description\":\"Beat Bowser through the Back Door\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1390856810,\"Created\":1376973534,\"BadgeName\":\"02842\",\"Flags\":3},"
-  "{\"ID\":2303,\"MemAddr\":\"R:0xH001411=1_R:0xH0013c3!=5_0xH0013c3=5(7200)\",\"Title\":\"That oh so familiar tune\",\"Description\":\"Find the secret in the Special Zone\",\"Points\":10,\"Author\":\"Jaarl\",\"Modified\":1379674614,\"Created\":1376929305,\"BadgeName\":\"02804\",\"Flags\":3},"
-  "{\"ID\":2304,\"MemAddr\":\"0xH001f2e=96(1)_0xH001f2e=95(1)\",\"Title\":\"All Exits\",\"Description\":\"100% Clear the game\",\"Points\":25,\"Author\":\"Jaarl\",\"Modified\":1376929320,\"Created\":1376929308,\"BadgeName\":\"02805\",\"Flags\":3},"
-  "{\"ID\":2985,\"MemAddr\":\"0x0018f2=3598_0xH0013bf=31\",\"Title\":\"The Investigator\",\"Description\":\"Access secret area in the forest fortress\",\"Points\":10,\"Author\":\"mrvsonic87\",\"Modified\":1380239596,\"Created\":1379656738,\"BadgeName\":\"03447\",\"Flags\":3},"
-  "{ \"Author\":\"leiradel\",\"BadgeName\":\"05506\",\"Created\":1391908064,\"Description\":\"Collect a mushroom\",\"Flags\":3,\"ID\":4874,\"MemAddr\":\"0xH000019=1\",\"Modified\":1434153343,\"Points\":5,\"Title\":\"Get High!\"},"
-  "{ \"Author\":\"leiradel\",\"BadgeName\":\"05506\",\"Created\":1391908064,\"Description\":\"Collect a flower\",\"Flags\":3,\"ID\":4874,\"MemAddr\":\"0xH000019=3\",\"Modified\":1434153343,\"Points\":5,\"Title\":\"Is This Nettle?\"}"
-  "],\"Leaderboards\":[]}}";
-
-#endif /* HAVE_SMW_CHEEVOS */
 
 /*****************************************************************************
 Supporting functions.
@@ -314,12 +254,13 @@ static int count_cheevos( const char* json, unsigned* core_count, unsigned* unof
     NULL
   };
 
+  int res;
   cheevos_countud_t ud;
   ud.in_cheevos = 0;
   ud.core_count = 0;
   ud.unofficial_count = 0;
 
-  int res = jsonsax_parse( json, &handlers, (void*)&ud );
+  res = jsonsax_parse( json, &handlers, (void*)&ud );
 
   *core_count = ud.core_count;
   *unofficial_count = ud.unofficial_count;
@@ -1094,16 +1035,6 @@ static void test_cheevo_set( const cheevoset_t* set )
 
 void cheevos_test( void )
 {
-#ifdef HAVE_SMW_CHEEVOS
-  static int init = 1;
-
-  if ( init )
-  {
-    cheevos_load( cheevos_smw_json );
-    init = 0;
-  }
-#endif
-
   if ( cheevos_config.enable )
   {
     test_cheevo_set( &core_cheevos );
@@ -1153,6 +1084,310 @@ void cheevos_unload( void )
   free_cheevo_set( &unofficial_cheevos );
 }
 
+/*****************************************************************************
+Load achievements from retroachievements.org.
+*****************************************************************************/
+
+static const char* cheevos_http_get( const char* url, size_t* size )
+{
+#ifdef HAVE_NETWORKING
+
+  struct http_connection_t* conn;
+  struct http_t* http;
+  uint8_t* data;
+  size_t length;
+  char* result;
+
+  RARCH_LOG( "HTTP GET %s\n", url );
+  conn = net_http_connection_new( url );
+
+  if ( !conn )
+  {
+    return NULL;
+  }
+
+  while ( !net_http_connection_iterate( conn ) )
+  {
+    /* nothing */
+  }
+
+  if ( !net_http_connection_done( conn ) )
+  {
+error1:
+    net_http_connection_free( conn );
+    return NULL;
+  }
+
+  http = net_http_new( conn );
+
+  if ( !http )
+  {
+    goto error1;
+  }
+
+  while ( !net_http_update( http, NULL, NULL ) )
+  {
+    /* nothing */
+  }
+
+  data = net_http_data( http, &length, false );
+
+  if ( data )
+  {
+    result = (char*)malloc( length + 1 );
+    memcpy( (void*)result, (void*)data, length );
+    result[ length ] = 0;
+  }
+  else
+  {
+    result = NULL;
+  }
+
+  net_http_delete( http );
+  net_http_connection_free( conn );
+
+  RARCH_LOG( "HTTP result is %s\n", result );
+
+  if ( size )
+  {
+    *size = length;
+  }
+
+  return (char*)result;
+
+#else /* HAVE_NETWORKING */
+
+  RARCH_LOG( "HTTP GET %s\n", url );
+  RARCH_ERROR( "Network unavailable\n" );
+
+  if ( size )
+  {
+    *size = 0;
+  }
+
+  return NULL;
+
+#endif /* HAVE_NETWORKING */
+}
+
+typedef struct
+{
+  unsigned    key_hash;
+  int         is_key;
+  const char* value;
+  size_t      length;
+}
+cheevo_getvalueud_t;
+
+static int getvalue__json_key( void* userdata, const char* name, size_t length )
+{
+  cheevo_getvalueud_t* ud = (cheevo_getvalueud_t*)userdata;
+
+  ud->is_key = cheevos_djb2( name, length ) == ud->key_hash;
+  return 0;
+}
+
+static int getvalue__json_string( void* userdata, const char* string, size_t length )
+{
+  cheevo_getvalueud_t* ud = (cheevo_getvalueud_t*)userdata;
+
+  if ( ud->is_key )
+  {
+    ud->value = string;
+    ud->length = length;
+    ud->is_key = 0;
+  }
+
+  return 0;
+}
+
+static int getvalue__json_boolean( void* userdata, int istrue )
+{
+  cheevo_getvalueud_t* ud = (cheevo_getvalueud_t*)userdata;
+
+  if ( ud->is_key )
+  {
+    ud->value = istrue ? "true" : "false";
+    ud->length = istrue ? 4 : 5;
+    ud->is_key = 0;
+  }
+
+  return 0;
+}
+
+static int getvalue__json_null( void* userdata )
+{
+  cheevo_getvalueud_t* ud = (cheevo_getvalueud_t*)userdata;
+
+  if ( ud->is_key )
+  {
+    ud->value = "null";
+    ud->length = 4;
+    ud->is_key = 0;
+  }
+
+  return 0;
+}
+
+static int cheevos_get_value( const char* json, unsigned key_hash, char* value, size_t length )
+{
+  static const jsonsax_handlers_t handlers =
+  {
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    getvalue__json_key,
+    NULL,
+    getvalue__json_string,
+    getvalue__json_string, /* number */
+    getvalue__json_boolean,
+    getvalue__json_null
+  };
+
+  cheevo_getvalueud_t ud;
+
+  ud.key_hash = key_hash;
+  ud.is_key = 0;
+  ud.length = 0;
+  *value = 0;
+
+  if ( jsonsax_parse( json, &handlers, (void*)&ud ) == JSONSAX_OK && ud.length < length )
+  {
+    strncpy( value, ud.value, length );
+    value[ ud.length ] = 0;
+    return 0;
+  }
+
+  return -1;
+}
+
+static int cheevos_login( void )
+{
+  int res = 0;
+  char request[ 256 ];
+  const char* json;
+  cheevo_getvalueud_t ud;
+
+  if ( cheevos_config.token[ 0 ] == 0 )
+  {
+    cheevos_config.token[ 0 ] = 0;
+
+    snprintf(
+      request, sizeof( request ),
+      "http://retroachievements.org/dorequest.php?r=login&u=%s&p=%s",
+      cheevos_config.username, cheevos_config.password
+    );
+
+    request[ sizeof( request ) - 1 ] = 0;
+
+    json = cheevos_http_get( request, NULL );
+
+    if ( !json )
+    {
+      return -1;
+    }
+
+    res = cheevos_get_value( json, 0x0e2dbd26U /* Token */, cheevos_config.token, sizeof( cheevos_config.token ) );
+  }
+
+  RARCH_LOG( "cheevos user token is %s\n", cheevos_config.token );
+  return res;
+}
+
+int cheevos_get_by_game_id( const char** json, unsigned game_id )
+{
+  char request[ 256 ];
+
+  cheevos_login();
+
+  snprintf(
+    request, sizeof( request ),
+    "http://retroachievements.org/dorequest.php?r=patch&u=%s&g=%u&f=3&l=1&t=%s",
+    cheevos_config.username, game_id, cheevos_config.token
+  );
+
+  request[ sizeof( request ) - 1 ] = 0;
+
+  *json = cheevos_http_get( request, NULL );
+
+  if ( !*json )
+  {
+    return -1;
+  }
+
+  return 0;
+}
+
+#define CHEEVOS_EIGHT_MB ( 8 * 1024 * 1024 )
+
+int cheevos_get_by_content( const char** json, const void* data, size_t size, unsigned flags )
+{
+  MD5_CTX ctx;
+  char buffer[ 4096 ];
+  size_t len;
+  unsigned char hash[ 16 ];
+  char request[ 256 ];
+  char game_id[ 16 ];
+  int res;
+
+  MD5_Init( &ctx );
+  MD5_Update( &ctx, data, size );
+
+  if ( ( flags & CHEEVOS_FLAGS_IS_SNES ) && size < CHEEVOS_EIGHT_MB )
+  {
+    size = CHEEVOS_EIGHT_MB - size;
+    memset( (void*)buffer, 0, sizeof( buffer ) );
+
+    while ( size )
+    {
+      len = sizeof( buffer );
+
+      if ( len > size )
+      {
+        len = size;
+      }
+
+      MD5_Update( &ctx, (void*)buffer, len );
+      size -= len;
+    }
+  }
+
+  MD5_Final( hash, &ctx );
+
+  snprintf(
+    request, sizeof( request ),
+    "http://retroachievements.org/dorequest.php?r=gameid&u=%s&m=%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+    cheevos_config.username,
+    hash[ 0 ], hash[ 1 ], hash[ 2 ], hash[ 3 ],
+    hash[ 4 ], hash[ 5 ], hash[ 6 ], hash[ 7 ],
+    hash[ 8 ], hash[ 9 ], hash[ 10 ], hash[ 11 ],
+    hash[ 12 ], hash[ 13 ], hash[ 14 ], hash[ 15 ]
+  );
+
+  request[ sizeof( request ) - 1 ] = 0;
+
+  *json = cheevos_http_get( request, NULL );
+
+  if ( !*json )
+  {
+    return -1;
+  }
+
+  res = cheevos_get_value( *json, 0xb4960eecU /* GameID */, game_id, sizeof( game_id ) );
+  free( (void*)*json );
+
+  if ( !res )
+  {
+    RARCH_LOG( "game id is %s\n", game_id );
+    res = cheevos_get_by_game_id( json, strtoul( game_id, NULL, 10 ) );
+  }
+
+  return res;
+}
+
 #else /* HAVE_CHEEVOS */
 
 int cheevos_load( const char* json )
@@ -1166,6 +1401,18 @@ void cheevos_test( void )
 
 void cheevos_unload( void )
 {
+}
+
+int cheevos_get_by_game_id( const char** json, unsigned game_id )
+{
+  *json = "{}";
+  return -1;
+}
+
+int cheevos_get_by_content( const char** json, const void* data, size_t size, unsigned flags )
+{
+  *json = "{}";
+  return -1;
 }
 
 #endif /* HAVE_CHEEVOS */
