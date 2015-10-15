@@ -23,6 +23,7 @@
 #include <formats/jsonsax.h>
 #include <net/net_http.h>
 #include <rhash.h>
+#include <performance.h>
 #include <runloop.h>
 #include <retro_log.h>
 
@@ -983,7 +984,7 @@ static int test_cheevo( cheevo_t* cheevo )
   if ( condset < end )
   {
     ret_val = test_cond_set( condset, &dirty_conds, &reset_conds, 0 );
-    if ( ret_val ) RARCH_LOG( "%s\n", condset->expression );
+    if ( ret_val ) RARCH_LOG( "CHEEVOS %s\n", condset->expression );
     condset++;
   }
 
@@ -991,7 +992,7 @@ static int test_cheevo( cheevo_t* cheevo )
   {
     int res = test_cond_set( condset, &dirty_conds, &reset_conds, 0 );
     ret_val_sub_cond |= res;
-    if ( res ) RARCH_LOG( "%s\n", condset->expression );
+    if ( res ) RARCH_LOG( "CHEEVOS %s\n", condset->expression );
     condset++;
   }
 
@@ -1027,8 +1028,8 @@ static void test_cheevo_set( const cheevoset_t* set )
   {
     if ( cheevo->active && test_cheevo( cheevo ) )
     {
-      RARCH_LOG( "ACHIEVEMENT! %s\n", cheevo->title );
-      RARCH_LOG( "ACHIEVEMENT! %s\n", cheevo->description );
+      RARCH_LOG( "CHEEVOS %s\n", cheevo->title );
+      RARCH_LOG( "CHEEVOS %s\n", cheevo->description );
 
       rarch_main_msg_queue_push( cheevo->title, 0, 3 * 60, false );
       rarch_main_msg_queue_push( cheevo->description, 0, 5 * 60, false );
@@ -1103,7 +1104,7 @@ static const char* cheevos_http_get( const char* url, size_t* size )
   size_t length;
   char* result;
 
-  RARCH_LOG( "HTTP GET %s\n", url );
+  RARCH_LOG( "CHEEVOS http get %s\n", url );
   conn = net_http_connection_new( url );
 
   if ( !conn )
@@ -1151,7 +1152,7 @@ error1:
   net_http_delete( http );
   net_http_connection_free( conn );
 
-  RARCH_LOG( "HTTP result is %s\n", result );
+  RARCH_LOG( "CHEEVOS http result is %s\n", result );
 
   if ( size )
   {
@@ -1162,8 +1163,8 @@ error1:
 
 #else /* HAVE_NETWORKING */
 
-  RARCH_LOG( "HTTP GET %s\n", url );
-  RARCH_ERROR( "Network unavailable\n" );
+  RARCH_LOG( "CHEEVOS http get %s\n", url );
+  RARCH_ERROR( "CHEEVOS Network unavailable\n" );
 
   if ( size )
   {
@@ -1298,7 +1299,7 @@ static int cheevos_login( void )
     res = cheevos_get_value( json, 0x0e2dbd26U /* Token */, cheevos_config.token, sizeof( cheevos_config.token ) );
   }
 
-  RARCH_LOG( "cheevos user token is %s\n", cheevos_config.token );
+  RARCH_LOG( "CHEEVOS user token is %s\n", cheevos_config.token );
   return res;
 }
 
@@ -1407,7 +1408,7 @@ int cheevos_get_by_content( const char** json, const void* data, size_t size )
     }
   }
 
-  RARCH_LOG( "cheevos game id is %u\n", game_id );
+  RARCH_LOG( "CHEEVOS game id is %u\n", game_id );
   return cheevos_get_by_game_id( json, game_id );
 }
 
