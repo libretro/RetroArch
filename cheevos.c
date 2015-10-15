@@ -22,12 +22,13 @@
 #include <formats/jsonsax.h>
 #include <net/net_http.h>
 #include <rhash.h>
-#include <performance.h>
-#include <runloop.h>
 #include <retro_log.h>
 
 #include "cheevos.h"
+
 #include "dynamic.h"
+#include "runloop.h"
+#include "performance.h"
 
 enum
 {
