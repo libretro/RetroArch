@@ -42,12 +42,24 @@ else ifneq (,$(findstring osx,$(platform)))
    TARGET := $(TARGET_NAME)_libretro.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
-else ifeq ($(platform), ios)
+else ifneq (,$(findstring ios,$(platform)))
    TARGET := $(TARGET_NAME)_libretro_ios.dylib
 	fpic := -fPIC
 	SHARED := -dynamiclib
+
+ifeq ($(IOSSDK),)
+   IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
+endif
+
 	DEFINES := -DIOS
-	CC = clang -arch armv7 -isysroot $(IOSSDK)
+	CC = cc -arch armv7 -isysroot $(IOSSDK)
+ifeq ($(platform),ios9)
+CC     += -miphoneos-version-min=8.0
+CFLAGS += -miphoneos-version-min=8.0
+else
+CC     += -miphoneos-version-min=5.0
+CFLAGS += -miphoneos-version-min=5.0
+endif
 else ifneq (,$(findstring qnx,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro_qnx.so
    fpic := -fPIC
