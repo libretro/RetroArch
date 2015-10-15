@@ -298,8 +298,8 @@ static unsigned prefix_to_comp_size( char prefix )
 
 static unsigned read_hits( const char** memaddr )
 {
-   const char* str = *memaddr;
    char* end;
+   const char* str = *memaddr;
    unsigned num_hits = 0;
 
    if ( *str == '(' || *str == '.' )
@@ -314,8 +314,8 @@ static unsigned read_hits( const char** memaddr )
 
 static unsigned parse_operator( const char** memaddr )
 {
-   const char* str = *memaddr;
    unsigned char op;
+   const char* str = *memaddr;
 
    if ( *str == '=' && str[ 1 ] == '=' )
    {
