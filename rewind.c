@@ -106,7 +106,8 @@ void *state_manager_raw_alloc(size_t len, uint16_t uniq)
 {
    size_t  len16 = (len + sizeof(uint16_t) - 1) & ~sizeof(uint16_t);
 
-   uint16_t *ret = (uint16_t*)calloc(len16 + sizeof(uint16_t) * 4 + 16, 1);
+   uint16_t *ret = (uint16_t*) memalign_alloc(16, len16 + sizeof(uint16_t) * 4 + 16);
+   memset(ret,0,len16+2*4+16);
 
    /* Force in a different byte at the end, so we don't need to check 
     * bounds in the innermost loop (it's expensive).
@@ -344,6 +345,7 @@ void state_manager_raw_decompress(const void *patch,
       {
          uint32_t numunchanged = patch16[0] | (patch16[1] << 16);
 
+
          if (!numunchanged)
             break;
          patch16 += 2;
@@ -424,8 +426,8 @@ void state_manager_free(state_manager_t *state)
       return;
 
    free(state->data);
-   free(state->thisblock);
-   free(state->nextblock);
+    memalign_free(state->thisblock);
+    memalign_free(state->nextblock);
    free(state);
 }
 
