@@ -23,6 +23,7 @@
 #include <formats/jsonsax.h>
 #include <net/net_http.h>
 #include <rhash.h>
+#include <runloop.h>
 #include <retro_log.h>
 
 #include "cheevos.h"
@@ -1028,6 +1029,10 @@ static void test_cheevo_set( const cheevoset_t* set )
     {
       RARCH_LOG( "ACHIEVEMENT! %s\n", cheevo->title );
       RARCH_LOG( "ACHIEVEMENT! %s\n", cheevo->description );
+
+      rarch_main_msg_queue_push( cheevo->title, 0, 3 * 60, false );
+      rarch_main_msg_queue_push( cheevo->description, 0, 5 * 60, false );
+
       cheevo->active = 0;
     }
   }
