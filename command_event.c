@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -21,6 +21,7 @@
 #include "performance.h"
 #include "dynamic.h"
 #include "content.h"
+#include "cheevos.h"
 #include "screenshot.h"
 #include "msg_hash.h"
 #include "retroarch.h"
@@ -221,7 +222,7 @@ static void event_disk_control_set_eject(bool new_state, bool print_log)
    char msg[PATH_MAX_LENGTH] = {0};
    bool error                = false;
    rarch_system_info_t *info = rarch_system_info_get_ptr();
-   const struct retro_disk_control_callback *control = 
+   const struct retro_disk_control_callback *control =
       info ? (const struct retro_disk_control_callback*)&info->disk_control : NULL;
 
    if (!control || !control->get_num_images)
@@ -279,7 +280,7 @@ static void event_disk_control_set_index(unsigned idx)
    unsigned num_disks;
    char msg[PATH_MAX_LENGTH] = {0};
    rarch_system_info_t                      *info    = rarch_system_info_get_ptr();
-   const struct retro_disk_control_callback *control = 
+   const struct retro_disk_control_callback *control =
       info ? (const struct retro_disk_control_callback*)&info->disk_control : NULL;
    bool error = false;
 
@@ -534,6 +535,11 @@ static void event_deinit_core(bool reinit)
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
+#ifdef HAVE_CHEEVOS
+   /* Unload the achievements from memory. */
+   cheevos_unload();
+#endif
+
    core.retro_unload_game();
    core.retro_deinit();
 
@@ -687,7 +693,7 @@ static bool event_init_content(void)
 
    /* No content to be loaded for dummy core,
     * just successfully exit. */
-   if (global->inited.core.type == CORE_TYPE_DUMMY) 
+   if (global->inited.core.type == CORE_TYPE_DUMMY)
       return true;
 
    if (!global->inited.core.no_content)
@@ -732,7 +738,7 @@ static bool event_init_core(void)
       if (config_load_override())
          global->overrides_active = true;
       else
-         global->overrides_active = false; 
+         global->overrides_active = false;
    }
 
    /* reset video format to libretro's default */
@@ -745,7 +751,7 @@ static bool event_init_core(void)
       config_load_remap();
 
    /* per-core saves: reset redirection paths */
-   if((settings->sort_savestates_enable || settings->sort_savefiles_enable) && !global->inited.core.no_content) 
+   if((settings->sort_savestates_enable || settings->sort_savefiles_enable) && !global->inited.core.no_content)
       set_paths_redirect(global->name.base);
 
    rarch_ctl(RARCH_ACTION_STATE_VERIFY_API_VERSION, NULL);
@@ -770,7 +776,7 @@ static bool event_save_auto_state(void)
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   if (!settings->savestate_auto_save || 
+   if (!settings->savestate_auto_save ||
          (global->inited.core.type == CORE_TYPE_DUMMY) ||
        global->inited.core.no_content)
        return false;
@@ -1081,7 +1087,7 @@ bool event_command(enum event_command cmd)
 #endif
          break;
       case EVENT_CMD_LOAD_STATE:
-         /* Immutable - disallow savestate load when 
+         /* Immutable - disallow savestate load when
           * we absolutely cannot change game state. */
          if (global->bsv.movie)
             return false;
@@ -1166,7 +1172,7 @@ bool event_command(enum event_command cmd)
          {
             const struct retro_hw_render_callback *hw_render =
                (const struct retro_hw_render_callback*)video_driver_callback();
-            const input_driver_t *input     = driver ? 
+            const input_driver_t *input     = driver ?
                (const input_driver_t*)driver->input : NULL;
 
             driver->video_cache_context     = hw_render->cache_context;
@@ -1602,7 +1608,7 @@ bool event_command(enum event_command cmd)
          if (!video_driver_has_windowed())
             return false;
 
-         /* If we go fullscreen we drop all drivers and 
+         /* If we go fullscreen we drop all drivers and
           * reinitialize to be safe. */
          settings->video.fullscreen = !settings->video.fullscreen;
          event_command(EVENT_CMD_REINIT);
@@ -1648,7 +1654,7 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_DISK_EJECT_TOGGLE:
          if (system && system->disk_control.get_num_images)
          {
-            const struct retro_disk_control_callback *control = 
+            const struct retro_disk_control_callback *control =
                (const struct retro_disk_control_callback*)
                &system->disk_control;
 
@@ -1663,7 +1669,7 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_DISK_NEXT:
          if (system && system->disk_control.get_num_images)
          {
-            const struct retro_disk_control_callback *control = 
+            const struct retro_disk_control_callback *control =
                (const struct retro_disk_control_callback*)
                &system->disk_control;
 
@@ -1683,7 +1689,7 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_DISK_PREV:
          if (system && system->disk_control.get_num_images)
          {
-            const struct retro_disk_control_callback *control = 
+            const struct retro_disk_control_callback *control =
                (const struct retro_disk_control_callback*)
                &system->disk_control;
 
