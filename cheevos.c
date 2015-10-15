@@ -1057,11 +1057,7 @@ static const char* cheevos_http_get( const char* url, size_t* size )
    while ( !net_http_connection_iterate( conn ) ) { }
 
    if ( !net_http_connection_done( conn ) )
-   {
-error1:
-      net_http_connection_free( conn );
-      return NULL;
-   }
+      goto error;
 
    http = net_http_new( conn );
 
@@ -1089,6 +1085,10 @@ error1:
       *size = length;
 
    return (char*)result;
+
+error1:
+   net_http_connection_free( conn );
+   return NULL;
 
 #else /* HAVE_NETWORKING */
 
