@@ -1379,13 +1379,13 @@ int cheevos_get_by_content( const char** json, const void* data, size_t size )
 
   game_id = cheevos_get_game_id( hash );
 
-  if ( !game_id )
+  if ( !game_id && size < CHEEVOS_EIGHT_MB )
   {
-    /* If the content is a SNES game, continue MD5 with zeroes. */
+    /* Maybe the content is a SNES game, continue MD5 with zeroes up to 8 MB. */
     size = CHEEVOS_EIGHT_MB - size;
     memset( (void*)buffer, 0, sizeof( buffer ) );
 
-    while ( size )
+    do
     {
       len = sizeof( buffer );
 
@@ -1397,6 +1397,7 @@ int cheevos_get_by_content( const char** json, const void* data, size_t size )
       MD5_Update( &saved_ctx, (void*)buffer, len );
       size -= len;
     }
+    while ( size );
 
     MD5_Final( hash, &saved_ctx );
 
