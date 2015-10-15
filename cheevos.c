@@ -1433,7 +1433,7 @@ int cheevos_get_by_game_id( const char** json, unsigned game_id )
   return -1;
 }
 
-int cheevos_get_by_content( const char** json, const void* data, size_t size, unsigned flags )
+int cheevos_get_by_content( const char** json, const void* data, size_t size )
 {
   *json = "{}";
   return -1;
