@@ -17,20 +17,6 @@
 #ifndef __RARCH_CHEEVOS_H
 #define __RARCH_CHEEVOS_H
 
-typedef struct
-{
-  unsigned char enable;
-  unsigned char test_unofficial;
-  const char*   username;
-  const char*   password;
-  /* These are used by the implementation, do not touch. */
-  char          token[ 20 ];
-  unsigned      game_id;
-}
-cheevos_config_t;
-
-extern cheevos_config_t cheevos_config;
-
 int  cheevos_load( const char* json );
 void cheevos_test( void );
 void cheevos_unload( void );

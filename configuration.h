@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -246,7 +246,7 @@ typedef struct settings
       bool input_descriptor_hide_unbound;
 
       char remapping_path[PATH_MAX_LENGTH];
-      
+
       unsigned menu_toggle_gamepad_combo;
       bool back_as_menu_toggle_enable;
    } input;
@@ -281,6 +281,16 @@ typedef struct settings
       bool builtin_mediaplayer_enable;
       bool builtin_imageviewer_enable;
    } multimedia;
+
+#ifdef HAVE_CHEEVOS
+   struct
+   {
+      bool enable;
+      bool test_unofficial;
+      char user_name[32];
+      char password[32];
+   } cheevos;
+#endif
 
    int state_slot;
 
