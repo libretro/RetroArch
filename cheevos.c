@@ -155,8 +155,6 @@ cheevos_config_t cheevos_config =
    /* game_id         */ 0,
 };
 
-#ifdef HAVE_CHEEVOS
-
 static cheevoset_t core_cheevos = { NULL, 0 };
 static cheevoset_t unofficial_cheevos = { NULL, 0 };
 
@@ -1329,32 +1327,3 @@ int cheevos_get_by_content( const char** json, const void* data, size_t size )
    RARCH_LOG( "CHEEVOS game id is %u\n", game_id );
    return cheevos_get_by_game_id( json, game_id );
 }
-
-#else /* HAVE_CHEEVOS */
-
-int cheevos_load( const char* json )
-{
-   return -1;
-}
-
-void cheevos_test(void)
-{
-}
-
-void cheevos_unload(void)
-{
-}
-
-int cheevos_get_by_game_id( const char** json, unsigned game_id )
-{
-   *json = "{}";
-   return -1;
-}
-
-int cheevos_get_by_content( const char** json, const void* data, size_t size )
-{
-   *json = "{}";
-   return -1;
-}
-
-#endif /* HAVE_CHEEVOS */

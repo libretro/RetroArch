@@ -463,7 +463,6 @@ static bool load_content(const struct retro_subsystem_info *special,
 {
    unsigned i;
    bool ret = true;
-   const char* json = NULL;
    struct string_list* additional_path_allocs = string_list_new();
    struct retro_game_info *info = (struct retro_game_info*)
       calloc(content->size, sizeof(*info));
@@ -513,14 +512,21 @@ static bool load_content(const struct retro_subsystem_info *special,
       ret = core.retro_load_game_special(special->id, info, content->size);
    else
    {
+#ifdef HAVE_CHEEVOS
+      /* Load the achievements into memory if the game has content. */
+
       if (*content->elems[0].data)
       {
+
+         const char *json = NULL;
+
          if ( cheevos_get_by_content(&json, info->data, info->size) == 0 )
          {
             cheevos_load(json);
             free((void*)json);
          }
       }
+#endif
 
       ret = core.retro_load_game(*content->elems[0].data ? info : NULL);
    }

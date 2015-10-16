@@ -26,6 +26,10 @@
 #include "retroarch.h"
 #include "dir_list_special.h"
 
+#ifdef HAVE_CHEEVOS
+#include "cheevos.h"
+#endif
+
 #include "runloop_data.h"
 #include "configuration.h"
 #include "input/input_remapping.h"
@@ -533,6 +537,11 @@ static void event_deinit_core(bool reinit)
 {
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
+
+#ifdef HAVE_CHEEVOS
+   /* Unload the achievements from memory. */
+   cheevos_unload();
+#endif
 
    core.retro_unload_game();
    core.retro_deinit();

@@ -824,13 +824,8 @@ endif
 
 # Retro Achievements
 
-OBJ += cheevos.o libretro-common/utils/md5.o
-
 ifeq ($(HAVE_CHEEVOS), 1)
-  ifeq ($(HAVE_SMW_CHEEVOS), 1)
-    DEFINES += -DHAVE_SMW_CHEEVOS
-  endif
-
+	OBJ += cheevos.o libretro-common/utils/md5.o
   DEFINES += -DHAVE_CHEEVOS
 endif
 
