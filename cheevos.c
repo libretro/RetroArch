@@ -523,7 +523,7 @@ typedef struct
 }
 cheevos_readud_t;
 
-static inline const char* dupstr( const cheevos_field_t* field )
+static INLINE const char* dupstr( const cheevos_field_t* field )
 {
   char* string = (char*)malloc( field->length + 1 );
 
@@ -711,6 +711,7 @@ int cheevos_load( const char* json )
   /* Count the number of achievements in the JSON file. */
 
   unsigned core_count, unofficial_count;
+  cheevos_readud_t ud;
 
   if ( count_cheevos( json, &core_count, &unofficial_count ) != JSONSAX_OK )
   {
@@ -739,7 +740,6 @@ int cheevos_load( const char* json )
 
   /* Load the achievements. */
 
-  cheevos_readud_t ud;
   ud.in_cheevos = 0;
   ud.field = NULL;
   ud.core_count = 0;
@@ -1302,12 +1302,11 @@ static int cheevos_get_value( const char* json, unsigned key_hash, char* value, 
 
 static int cheevos_login( void )
 {
-  int res = 0;
   char request[ 256 ];
   const char* json;
-  cheevo_getvalueud_t ud;
+  int res;
 
-  if ( token[ 0 ] == 0 )
+  if ( !token[ 0 ] )
   {
     snprintf(
       request, sizeof( request ),
@@ -1316,19 +1315,23 @@ static int cheevos_login( void )
     );
 
     request[ sizeof( request ) - 1 ] = 0;
-
     json = cheevos_http_get( request, NULL );
 
-    if ( !json )
+    if ( json )
     {
-      return -1;
-    }
+      res = cheevos_get_value( json, 0x0e2dbd26U /* Token */, token, sizeof( token ) );
+      free( (void*)json );
 
-    res = cheevos_get_value( json, 0x0e2dbd26U /* Token */, token, sizeof( token ) );
+      if ( !res )
+      {
+        RARCH_LOG( "CHEEVOS user token is '%s'\n", token );
+        return 0;
+      }
+    }
   }
 
-  RARCH_LOG( "CHEEVOS user token is %s\n", token );
-  return res;
+  RARCH_LOG( "CHEEVOS error getting user token\n" );
+  return -1;
 }
 
 int cheevos_get_by_game_id( const char** json, unsigned game_id )
@@ -1344,20 +1347,20 @@ int cheevos_get_by_game_id( const char** json, unsigned game_id )
   );
 
   request[ sizeof( request ) - 1 ] = 0;
-
   *json = cheevos_http_get( request, NULL );
 
-  if ( !*json )
+  if ( *json )
   {
-    return -1;
+    RARCH_LOG( "CHEEVOS got achievements for game id %u\n", game_id );
+    return 0;
   }
 
-  return 0;
+  RARCH_LOG( "CHEEVOS error getting achievements for game id %u\n", game_id );
+  return -1;
 }
 
 static unsigned cheevos_get_game_id( unsigned char* hash )
 {
-  MD5_CTX ctx;
   char request[ 256 ];
   const char* json;
   char game_id[ 16 ];
@@ -1374,18 +1377,22 @@ static unsigned cheevos_get_game_id( unsigned char* hash )
   );
 
   request[ sizeof( request ) - 1 ] = 0;
-
   json = cheevos_http_get( request, NULL );
 
-  if ( !json )
+  if ( json )
   {
-    return 0;
+    res = cheevos_get_value( json, 0xb4960eecU /* GameID */, game_id, sizeof( game_id ) );
+    free( (void*)json );
+
+    if ( !res )
+    {
+      RARCH_LOG( "CHEEVOS got game id %s\n", game_id );
+      return strtoul( game_id, NULL, 10 );
+    }
   }
 
-  res = cheevos_get_value( json, 0xb4960eecU /* GameID */, game_id, sizeof( game_id ) );
-  free( (void*)json );
-
-  return res ? 0 : strtoul( game_id, NULL, 10 );
+  RARCH_LOG( "CHEEVOS error getting game_id\n" );
+  return 0;
 }
 
 #define CHEEVOS_EIGHT_MB ( 8 * 1024 * 1024 )
@@ -1430,13 +1437,7 @@ int cheevos_get_by_content( const char** json, const void* data, size_t size )
     MD5_Final( hash, &saved_ctx );
 
     game_id = cheevos_get_game_id( hash );
-
-    if ( !game_id )
-    {
-      return -1;
-    }
   }
 
-  RARCH_LOG( "CHEEVOS game id is %u\n", game_id );
   return cheevos_get_by_game_id( json, game_id );
 }
