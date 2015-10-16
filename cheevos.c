@@ -739,9 +739,50 @@ int cheevos_load( const char* json )
   Test all the achievements (call once per frame).
  *****************************************************************************/
 
-static unsigned get_var_value( cheevos_var_t* var )
+static const uint8_t* get_memory( unsigned offset )
 {
    uint8_t* memory;
+   size_t size = core.retro_get_memory_size( RETRO_MEMORY_SYSTEM_RAM );
+
+   if ( offset < size )
+   {
+      memory = (uint8_t*)core.retro_get_memory_data( RETRO_MEMORY_SYSTEM_RAM );
+      return memory + offset;
+   }
+
+   offset -= size;
+   size = core.retro_get_memory_size( RETRO_MEMORY_SAVE_RAM );
+
+   if ( offset < size )
+   {
+      memory = (uint8_t*)core.retro_get_memory_data( RETRO_MEMORY_SAVE_RAM );
+      return memory + offset;
+   }
+
+   offset -= size;
+   size    = core.retro_get_memory_size( RETRO_MEMORY_VIDEO_RAM );
+
+   if ( offset < size )
+   {
+      memory = (uint8_t*)core.retro_get_memory_data( RETRO_MEMORY_VIDEO_RAM );
+      return memory + offset;
+   }
+
+   offset -= size;
+   size = core.retro_get_memory_size( RETRO_MEMORY_RTC );
+
+   if ( offset < size )
+   {
+      memory = (uint8_t*)core.retro_get_memory_data( RETRO_MEMORY_RTC );
+      return memory + offset;
+   }
+
+   return NULL;
+}
+
+static unsigned get_var_value( cheevos_var_t* var )
+{
+   const uint8_t* memory;
    unsigned previous = var->previous;
    unsigned live_val = 0;
 
@@ -751,8 +792,7 @@ static unsigned get_var_value( cheevos_var_t* var )
    if ( var->type == CHEEVOS_VAR_TYPE_ADDRESS || var->type == CHEEVOS_VAR_TYPE_DELTA_MEM )
    {
       /* TODO Check with Scott if the bank id is needed */
-      /* memory = (uint8_t*)core.retro_get_memory_data( var->bank_id ); */
-      memory = (uint8_t*)core.retro_get_memory_data( RETRO_MEMORY_SYSTEM_RAM );
+      memory = (uint8_t*)get_memory( var->value );
       live_val = memory[ var->value ];
 
       if ( var->size >= CHEEVOS_VAR_SIZE_BIT_0 && var->size <= CHEEVOS_VAR_SIZE_BIT_7 )
@@ -763,12 +803,12 @@ static unsigned get_var_value( cheevos_var_t* var )
          live_val = ( live_val >> 4 ) & 0x0f;
       else if ( var->size == CHEEVOS_VAR_SIZE_EIGHT_BITS ) { }
       else if ( var->size == CHEEVOS_VAR_SIZE_SIXTEEN_BITS )
-         live_val |= memory[ var->value + 1 ] << 8;
+         live_val |= memory[ 1 ] << 8;
       else if ( var->size == CHEEVOS_VAR_SIZE_THIRTYTWO_BITS )
       {
-         live_val |= memory[ var->value + 1 ] << 8;
-         live_val |= memory[ var->value + 2 ] << 16;
-         live_val |= memory[ var->value + 3 ] << 24;
+         live_val |= memory[ 1 ] << 8;
+         live_val |= memory[ 2 ] << 16;
+         live_val |= memory[ 3 ] << 24;
       }
 
       if ( var->type == CHEEVOS_VAR_TYPE_DELTA_MEM )
@@ -1015,7 +1055,6 @@ static void free_cheevo( const cheevo_t* cheevo )
    free( (void*)cheevo->author );
    free( (void*)cheevo->badge );
    free_condset( cheevo->condsets );
-   free( (void*)cheevo );
 }
 
 static void free_cheevo_set( const cheevoset_t* set )
@@ -1272,7 +1311,7 @@ static unsigned cheevos_get_game_id( unsigned char* hash )
    json = cheevos_http_get( request, NULL );
 
    if ( !json )
-      return -1;
+      return 0;
 
    res = cheevos_get_value( json, 0xb4960eecU /* GameID */, game_id, sizeof( game_id ) );
    free( (void*)json );
