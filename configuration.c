@@ -595,6 +595,13 @@ static void config_set_defaults(void)
    settings->location.allow                         = false;
    settings->camera.allow                           = false;
 
+#ifdef HAVE_CHEEVOS
+   settings->cheevos.enable                         = true;
+   settings->cheevos.test_unofficial                = false;
+   *settings->cheevos.user_name                     = '\0';
+   *settings->cheevos.password                      = '\0';
+#endif
+
    settings->input.autoconfig_descriptor_label_show = true;
    settings->input.back_as_menu_toggle_enable       = true;
    settings->input.input_descriptor_label_show      = input_descriptor_label_show;
@@ -1459,6 +1466,13 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_STRING_BASE(conf, settings, camera.device, "camera_device");
    CONFIG_GET_BOOL_BASE(conf, settings, camera.allow, "camera_allow");
+
+#ifdef HAVE_CHEEVOS
+   CONFIG_GET_BOOL_BASE(conf, settings, cheevos.enable, "cheevos_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, cheevos.test_unofficial, "cheevos_test_unofficial");
+   CONFIG_GET_STRING_BASE(conf, settings, cheevos.user_name, "cheevos_user_name");
+   CONFIG_GET_STRING_BASE(conf, settings, cheevos.password, "cheevos_password");
+#endif
 
    CONFIG_GET_BOOL_BASE(conf, settings, location.allow, "location_allow");
    CONFIG_GET_STRING_BASE(conf, settings, video.driver, "video_driver");
@@ -2541,6 +2555,14 @@ bool config_save_file(const char *path)
          settings->network.buildbot_auto_extract_archive);
    config_set_string(conf, "camera_device", settings->camera.device);
    config_set_bool(conf, "camera_allow", settings->camera.allow);
+
+#ifdef HAVE_CHEEVOS
+   config_set_bool(conf, "cheevos_enable", settings->cheevos.enable);
+   config_set_bool(conf, "cheevos_test_unofficial", settings->cheevos.test_unofficial);
+   config_set_string(conf, "cheevos_user_name", settings->cheevos.user_name);
+   config_set_string(conf, "cheevos_password", settings->cheevos.password);
+#endif
+
    config_set_bool(conf, "audio_rate_control", settings->audio.rate_control);
    config_set_float(conf, "audio_rate_control_delta",
          settings->audio.rate_control_delta);

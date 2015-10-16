@@ -282,6 +282,16 @@ typedef struct settings
       bool builtin_imageviewer_enable;
    } multimedia;
 
+#ifdef HAVE_CHEEVOS
+   struct
+   {
+      bool enable;
+      bool test_unofficial;
+      char user_name[32];
+      char password[32];
+   } cheevos;
+#endif
+
    int state_slot;
 
    bool bundle_assets_extract_enable;
