@@ -29,6 +29,7 @@ platform=ctr
 EXT=a
 mkdir -p ../pkg/3ds/cia
 mkdir -p ../pkg/3ds/3ds
+mkdir -p ../pkg/3ds/3dsx
 
 # Emscripten
 elif [ $PLATFORM = "emscripten" ] ; then
@@ -170,9 +171,10 @@ for f in *_${platform}.${EXT} ; do
       mv -f ../retroarch_${platform}.velf ../pkg/${platform}/${name}_libretro_${platform}.velf
    elif [ $PLATFORM = "ctr" ] ; then
       mv -f ../retroarch_3ds.cia ../pkg/3ds/cia/${name}_libretro.cia
-      mkdir -p ../pkg/3ds/3ds/${name}_libretro
-      mv -f ../retroarch_3ds.3dsx ../pkg/3ds/3ds/${name}_libretro/${name}_libretro.3dsx
-      mv -f ../retroarch_3ds.smdh ../pkg/3ds/3ds/${name}_libretro/${name}_libretro.smdh
+      mv -f ../retroarch_3ds.3ds ../pkg/3ds/3ds/${name}_libretro.3ds
+      mkdir -p ../pkg/3ds/3dsx/${name}_libretro
+      mv -f ../retroarch_3ds.3dsx ../pkg/3ds/3dsx/${name}_libretro/${name}_libretro.3dsx
+      mv -f ../retroarch_3ds.smdh ../pkg/3ds/3dsx/${name}_libretro/${name}_libretro.smdh
    elif [ $PLATFORM = "ngc" ] ; then
       mv -f ../retroarch_${platform}.dol ../pkg/${platform}/${name}_libretro_${platform}.dol
    elif [ $PLATFORM = "wii" ] ; then
@@ -190,7 +192,6 @@ for f in *_${platform}.${EXT} ; do
       rm -f ../retroarch_${platform}.velf ../retroarch_${platform}.elf
    elif [ $PLATFORM = "ctr" ] ; then
       rm -f ../retroarch_3ds.elf
-      rm -f ../retroarch_3ds.rsf
       rm -f ../retroarch_3ds.bnr
       rm -f ../retroarch_3ds.icn
    elif [ $PLATFORM = "ngc" ] ; then
