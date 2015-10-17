@@ -138,12 +138,7 @@ int menu_entries_get_title(char *s, size_t len)
  * one level deep in the menu hierarchy). */
 bool menu_entries_show_back(void)
 {
-   menu_list_t *menu_list    = menu_list_get_ptr();
-
-   if (!menu_list)
-      return false;
-
-   return (menu_list_get_stack_size(menu_list) > 1);
+   return (menu_entries_get_stack_size() > 1);
 }
 
 /* Sets 's' to the name of the current core 
@@ -320,4 +315,12 @@ void menu_entries_pop_stack(size_t *ptr)
    menu_list_t *menu_list         = menu_list_get_ptr();
    if (menu_list)
       menu_list_pop_stack(menu_list, ptr);
+}
+
+size_t menu_entries_get_stack_size(void)
+{
+   menu_list_t *menu_list         = menu_list_get_ptr();
+   if (!menu_list)
+      return 0;
+   return menu_list_get_stack_size(menu_list);
 }
