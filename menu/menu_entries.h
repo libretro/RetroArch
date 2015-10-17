@@ -28,6 +28,12 @@
 extern "C" {
 #endif
 
+typedef enum
+{
+   MENU_LIST_PLAIN = 0,
+   MENU_LIST_HORIZONTAL
+} menu_list_type_t;
+
 typedef struct menu_file_list_cbs
 {
    rarch_setting_t *setting;
@@ -93,6 +99,8 @@ typedef struct menu_file_list_cbs
 
 } menu_file_list_cbs_t;
 
+typedef struct menu_list menu_list_t;
+
 typedef struct menu_entries menu_entries_t;
 
 void menu_entries_set_start(size_t i);
@@ -144,6 +152,30 @@ void menu_entries_flush_stack(const char *needle, unsigned final_type);
 size_t menu_entries_get_stack_size(void);
 
 size_t menu_entries_get_size(void);
+
+void menu_list_get_at_offset(const file_list_t *list, size_t idx,
+      const char **path, const char **label, unsigned *file_type,
+      size_t *entry_idx);
+
+menu_list_t *menu_list_get_ptr(void);
+
+void *menu_list_get_userdata_at_offset(const file_list_t *list, size_t idx);
+
+menu_file_list_cbs_t *menu_list_get_actiondata_at_offset(const file_list_t *list, size_t idx);
+
+void menu_list_get_last(const file_list_t *list,
+      const char **path, const char **label,
+      unsigned *file_type, size_t *entry_idx);
+
+void menu_list_clear(file_list_t *list);
+
+void menu_list_get_alt_at_offset(const file_list_t *list, size_t idx,
+      const char **alt);
+
+void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
+      const char *alt);
+
+void menu_list_refresh(file_list_t *list);
 
 #ifdef __cplusplus
 }

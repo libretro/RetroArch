@@ -23,7 +23,6 @@
 #include <retro_miscellaneous.h>
 #include "menu_displaylist.h"
 #include "menu_entries.h"
-#include "menu_list.h"
 #include "menu_input.h"
 #include "menu_navigation.h"
 #include "menu_setting.h"
