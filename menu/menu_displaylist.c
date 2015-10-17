@@ -2496,6 +2496,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
                "", 0, 0, 0);
 #endif
+         need_refresh = true;
+         need_push    = true;
          break;
       case DISPLAYLIST_HELP_SCREEN_LIST:
          menu_list_push(info->list,
