@@ -2000,7 +2000,6 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
    size_t i, list_size;
    struct string_list *str_list = NULL;
    int                   device = 0;
-   menu_list_t *menu_list       = menu_list_get_ptr();
    global_t *global             = global_get_ptr();
    settings_t *settings         = config_get_ptr();
    uint32_t hash_label          = menu_hash_calculate(info->label);
