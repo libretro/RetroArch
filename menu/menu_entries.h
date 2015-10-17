@@ -70,6 +70,8 @@ void menu_entries_new_list(menu_entries_t *entries, unsigned flags);
 void menu_entries_get_last_stack(const char **path, const char **label,
       unsigned *file_type, size_t *entry_idx);
 
+void menu_entries_pop_stack(size_t *ptr);
+
 #ifdef __cplusplus
 }
 #endif

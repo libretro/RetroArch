@@ -492,7 +492,7 @@ static int action_ok_playlist_entry(const char *path,
       {
          case MENU_LABEL_COLLECTION:
          case MENU_LABEL_RDB_ENTRY_START_CONTENT:
-            menu_list_pop_stack(menu_list, &selection);
+            menu_entries_pop_stack(&selection);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
             break;
          default:
@@ -852,8 +852,7 @@ static int action_ok_core_deferred_set(const char *path,
    size_t selection;
    char core_display_name[PATH_MAX_LENGTH];
    menu_handle_t               *menu = menu_driver_get_ptr();
-   menu_list_t            *menu_list = menu_list_get_ptr();
-   if (!menu || !menu_list)
+   if (!menu)
       return -1;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return -1;
@@ -872,7 +871,7 @@ static int action_ok_core_deferred_set(const char *path,
 
    content_playlist_write_file(menu->playlist);
 
-   menu_list_pop_stack(menu_list, &selection);
+   menu_entries_pop_stack(&selection);
    menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
 
    return -1;
