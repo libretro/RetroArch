@@ -163,7 +163,9 @@ void menu_list_flush_stack(menu_list_t *list,
       size_t new_selection_ptr;
 
       menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
-      menu_list_pop(list->menu_stack, &new_selection_ptr);
+
+      menu_list_pop_stack(list, &new_selection_ptr);
+
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
 
       menu_list_get_last(list->menu_stack,
