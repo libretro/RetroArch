@@ -560,7 +560,7 @@ static int new_cheevo( cheevos_readud_t* ud )
   cheevo->badge = dupstr( &ud->badge );
   cheevo->points = strtol( ud->points.string, NULL, 10 );
   cheevo->dirty = 0;
-  cheevo->active = flags == 3;
+  cheevo->active = 1; /* flags == 3; */
   cheevo->modified = 0;
 
   if ( !cheevo->title || !cheevo->description || !cheevo->author || !cheevo->badge )
@@ -1328,9 +1328,10 @@ static int cheevos_login( void )
         return 0;
       }
     }
+
+    RARCH_LOG( "CHEEVOS error getting user token\n" );
   }
 
-  RARCH_LOG( "CHEEVOS error getting user token\n" );
   return -1;
 }
 
@@ -1338,24 +1339,26 @@ int cheevos_get_by_game_id( const char** json, unsigned game_id )
 {
   char request[ 256 ];
 
-  cheevos_login();
-
-  snprintf(
-    request, sizeof( request ),
-    "http://retroachievements.org/dorequest.php?r=patch&u=%s&g=%u&f=3&l=1&t=%s",
-    config_get_ptr()->cheevos.user_name, game_id, token
-  );
-
-  request[ sizeof( request ) - 1 ] = 0;
-  *json = cheevos_http_get( request, NULL );
-
-  if ( *json )
+  if ( !cheevos_login() )
   {
-    RARCH_LOG( "CHEEVOS got achievements for game id %u\n", game_id );
-    return 0;
+    snprintf(
+      request, sizeof( request ),
+      "http://retroachievements.org/dorequest.php?r=patch&u=%s&g=%u&f=3&l=1&t=%s",
+      config_get_ptr()->cheevos.user_name, game_id, token
+    );
+
+    request[ sizeof( request ) - 1 ] = 0;
+    *json = cheevos_http_get( request, NULL );
+
+    if ( *json )
+    {
+      RARCH_LOG( "CHEEVOS got achievements for game id %u\n", game_id );
+      return 0;
+    }
+
+    RARCH_LOG( "CHEEVOS error getting achievements for game id %u\n", game_id );
   }
 
-  RARCH_LOG( "CHEEVOS error getting achievements for game id %u\n", game_id );
   return -1;
 }
 
@@ -1439,5 +1442,5 @@ int cheevos_get_by_content( const char** json, const void* data, size_t size )
     game_id = cheevos_get_game_id( hash );
   }
 
-  return cheevos_get_by_game_id( json, game_id );
+  return game_id ? cheevos_get_by_game_id( json, game_id ) : -1;
 }
