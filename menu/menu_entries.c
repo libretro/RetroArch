@@ -308,6 +308,13 @@ void menu_entries_get_last_stack(const char **path, const char **label,
       menu_list_get_last_stack(menu_list, path, label, file_type, entry_idx);
 }
 
+void menu_entries_flush_stack(const char *needle, unsigned final_type)
+{
+   menu_list_t *menu_list         = menu_list_get_ptr();
+   if (menu_list)
+      menu_list_flush_stack(menu_list, needle, final_type);
+}
+
 void menu_entries_pop_stack(size_t *ptr)
 {
    menu_list_t *menu_list         = menu_list_get_ptr();

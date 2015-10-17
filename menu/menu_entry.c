@@ -221,7 +221,6 @@ void menu_entry_pathdir_get_value(uint32_t i, char *s, size_t len)
 int menu_entry_pathdir_set_value(uint32_t i, const char *s)
 {
    const char *menu_path     = NULL;
-   menu_list_t *menu_list    = menu_list_get_ptr();
    menu_file_list_cbs_t *cbs = menu_entries_get_last_stack_actiondata();
 
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL);
@@ -235,7 +234,7 @@ int menu_entry_pathdir_set_value(uint32_t i, const char *s)
    menu_setting_set_with_string_representation(cbs->setting, menu_path);
    menu_setting_generic(cbs->setting, false);
 
-   menu_list_flush_stack(menu_list, NULL, 49);
+   menu_entries_flush_stack(NULL, 49);
 
    return 0;
 }

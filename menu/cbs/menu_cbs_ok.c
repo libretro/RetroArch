@@ -313,8 +313,7 @@ int generic_action_ok_displaylist_push(const char *path,
 int action_ok_push_quick_menu(void)
 {
    bool msg_force               = true;
-   menu_list_t *menu_list       = menu_list_get_ptr();
-   menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
+   menu_entries_flush_stack(NULL, MENU_SETTINGS);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
 
    generic_action_ok_displaylist_push("",
@@ -433,7 +432,6 @@ static int action_ok_playlist_entry(const char *path,
    content_playlist_t *playlist = g_defaults.history;
    bool is_history              = true;
    menu_handle_t *menu          = menu_driver_get_ptr();
-   menu_list_t *menu_list       = menu_list_get_ptr();
    uint32_t hash_label          = menu_hash_calculate(label);
 
    if (!menu)
@@ -496,7 +494,7 @@ static int action_ok_playlist_entry(const char *path,
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
             break;
          default:
-            menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
+            menu_entries_flush_stack(NULL, MENU_SETTINGS);
             break;
       }
 
@@ -543,7 +541,6 @@ static int generic_action_ok(const char *path,
    global_t                  *global = global_get_ptr();
    menu_handle_t               *menu = menu_driver_get_ptr();
    settings_t              *settings = config_get_ptr();
-   menu_list_t       *menu_list      = menu_list_get_ptr();
 
    if (!menu)
       goto error;
@@ -659,7 +656,7 @@ static int generic_action_ok(const char *path,
          break;
    }
 
-   menu_list_flush_stack(menu_list, flush_char, flush_type);
+   menu_entries_flush_stack(flush_char, flush_type);
 
    return ret;
 

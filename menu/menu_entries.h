@@ -139,6 +139,8 @@ menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void);
 
 void menu_entries_pop_stack(size_t *ptr);
 
+void menu_entries_flush_stack(const char *needle, unsigned final_type);
+
 #ifdef __cplusplus
 }
 #endif
