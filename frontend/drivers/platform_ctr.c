@@ -70,6 +70,9 @@ void __system_allocateHeaps() {
 
    svcGetSystemInfo(&mem_used, 0, 1);
 
+   // For n3DS running with 124MB, only 110MB appears actually available
+   app_memory = app_memory > 0x6E00000 ? 0x6E00000 : app_memory;
+
    heap_size        = (app_memory - mem_used - linear_heap_size - 0x10000) & 0xFFFFF000;
 
 	// Allocate the application heap

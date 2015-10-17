@@ -6,22 +6,20 @@ GRIFFIN_BUILD      = 1
 WHOLE_ARCHIVE_LINK = 0
 BIG_STACK          = 0
 BUILD_3DSX         = 1
+BUILD_3DS          = 1
 BUILD_CIA          = 1
 
-APP_TITLE         = Retroarch 3DS
-APP_DESCRIPTION   = Retroarch 3DS
-APP_AUTHOR        = Team Libretro
-APP_PRODUCT_CODE  = RETROARCH-3DS
-APP_UNIQUE_ID     = 0xBAC00
-APP_ICON          = ctr/default.png
-APP_BANNER        = ctr/libretro_banner.png
-APP_AUDIO         = ctr/silent.wav
-APP_CIA_RSF       = ctr/tools/template-cia.rsf
-APP_3DS_RSF       = ctr/tools/template-3ds.rsf
-
-
-O3DS_80MB_APPMEM  = 0
-N3DS_178MB_APPMEM = 0
+APP_TITLE           = Retroarch 3DS
+APP_DESCRIPTION     = Retroarch 3DS
+APP_AUTHOR          = Team Libretro
+APP_PRODUCT_CODE    = RETROARCH-3DS
+APP_UNIQUE_ID       = 0xBAC00
+APP_ICON            = ctr/default.png
+APP_BANNER          = ctr/libretro_banner.png
+APP_AUDIO           = ctr/silent.wav
+APP_RSF             = ctr/tools/template.rsf
+APP_SYSTEM_MODE     = 64MB
+APP_SYSTEM_MODE_EXT = 124MB
 
 
 ifeq ($(BIG_STACK),1)
@@ -32,22 +30,6 @@ endif
 CTR_LINEAR_HEAP_SIZE  = 0xD00000
 
 include ctr/Makefile.cores
-
-ifeq ($(O3DS_80MB_APPMEM), 1)
-APP_SYSTEM_MODE     = 3
-else
-APP_SYSTEM_MODE     = 0
-endif
-
-ifeq ($(N3DS_178MB_APPMEM), 1)
-APP_SYSTEM_MODE_EXT = 2
-#we can't have both :(
-APP_SYSTEM_MODE    = 0
-else
-APP_SYSTEM_MODE_EXT = 1
-endif
-
-
 
 CONFIG_OBJECT = ctr/ctr_config_$(CTR_STACK_SIZE)_$(CTR_LINEAR_HEAP_SIZE).o
 
@@ -229,7 +211,7 @@ else
 	OBJS += menu/intl/menu_hash_pt.o
 	OBJS += menu/intl/menu_hash_us.o
 	OBJS += menu/drivers/null.o
-   OBJS += menu/drivers/menu_generic.o
+	OBJS += menu/drivers/menu_generic.o
 	OBJS += menu/drivers/rgui.o
 	OBJS += command_event.o
 	OBJS += deps/zlib/adler32.o
@@ -272,6 +254,7 @@ APP_AUTHOR        := $(shell echo "$(APP_AUTHOR)" | cut -c1-128)
 APP_PRODUCT_CODE  := $(shell echo $(APP_PRODUCT_CODE) | cut -c1-16)
 APP_UNIQUE_ID     := $(shell echo $(APP_UNIQUE_ID) | cut -c1-7)
 
+MAKEROM_ARGS_COMMON = -rsf $(APP_RSF) -exefslogo -elf $(TARGET).elf -icon $(TARGET).icn -banner $(TARGET).bnr -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(APP_PRODUCT_CODE)" -DAPP_UNIQUE_ID=$(APP_UNIQUE_ID) -DAPP_SYSTEM_MODE=$(APP_SYSTEM_MODE) -DAPP_SYSTEM_MODE_EXT=$(APP_SYSTEM_MODE_EXT)
 
 INCDIRS := -I$(CTRULIB)/include
 LIBDIRS := -L. -L$(CTRULIB)/lib
@@ -328,6 +311,10 @@ ifeq ($(BUILD_3DSX), 1)
 TARGET_3DSX := $(TARGET).3dsx $(TARGET).smdh
 endif
 
+ifeq ($(BUILD_3DS), 1)
+TARGET_3DS := $(TARGET).3ds
+endif
+
 ifeq ($(BUILD_CIA), 1)
 TARGET_CIA := $(TARGET).cia
 endif
@@ -336,7 +323,7 @@ endif
 
 all: $(TARGET)
 
-$(TARGET): $(TARGET_3DSX) $(TARGET_CIA)
+$(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA)
 $(TARGET).3dsx: $(TARGET).elf
 $(TARGET).elf: $(OBJS) libretro_ctr.a
 
@@ -414,13 +401,18 @@ $(TARGET).bnr: $(APP_BANNER) $(APP_AUDIO)
 $(TARGET).icn: $(APP_ICON)
 	$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_TITLE)" -p "$(APP_AUTHOR)" -i $(APP_ICON) -o $@
 
-$(TARGET).cia: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_CIA_RSF)
-	$(MAKEROM) -f cia -o $@ -rsf $(APP_CIA_RSF) -target t -exefslogo -elf $(TARGET).elf -icon $(TARGET).icn -banner $(TARGET).bnr -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(APP_PRODUCT_CODE)" -DAPP_UNIQUE_ID=$(APP_UNIQUE_ID) -DAPP_SYSTEM_MODE=$(APP_SYSTEM_MODE) -DAPP_SYSTEM_MODE_EXT=$(APP_SYSTEM_MODE_EXT)
+$(TARGET).3ds: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
+	$(MAKEROM) -f cci -o $@ $(MAKEROM_ARGS_COMMON) -DAPP_ENCRYPTED=true
+
+$(TARGET).cia: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
+	$(MAKEROM) -f cia -o $@ $(MAKEROM_ARGS_COMMON) -DAPP_ENCRYPTED=false
+
 
 clean:
 	rm -f $(OBJS)
 	rm -f $(TARGET).3dsx
 	rm -f $(TARGET).elf
+	rm -f $(TARGET).3ds
 	rm -f $(TARGET).cia
 	rm -f $(TARGET).bnr
 	rm -f $(TARGET).icn
