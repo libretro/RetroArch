@@ -2184,7 +2184,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
          {
             const char *dir = NULL;
 
-            menu_list_get_last_stack(menu_list, &dir, NULL, NULL, NULL);
+            menu_entries_get_last_stack(&dir, NULL, NULL, NULL);
 
             list_size = file_list_get_size(info->list);
 
@@ -2877,7 +2877,7 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    menu_displaylist_info_t info = {0};
    menu_list_t *_menu_list      = menu_list_get_ptr();
 
-   menu_list_get_last_stack(_menu_list, &path, &label, &type, NULL);
+   menu_entries_get_last_stack(&path, &label, &type, NULL);
 
    info.list      = list;
    info.menu_list = menu_list;
