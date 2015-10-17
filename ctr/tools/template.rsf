@@ -140,6 +140,7 @@ AccessControlInfo:
    - cfg:u
    - fs:USER
    - gsp::Gpu
+   - gsp::Lcd
    - hid:USER
    - ndm:u
    - pxi:dev
