@@ -18,6 +18,8 @@
 #define _MENU_LIST_H
 
 #include <stddef.h>
+
+#include <boolean.h>
 #include <file/file_list.h>
 
 #include "menu_entries.h"
@@ -49,7 +51,7 @@ menu_list_t *menu_list_new(void);
 void menu_list_flush_stack(menu_list_t *list,
       const char *needle, unsigned final_type);
 
-void menu_list_pop_stack(menu_list_t *list, size_t *directory_ptr);
+bool menu_list_pop_stack(menu_list_t *list, size_t *directory_ptr);
 
 void menu_list_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type,

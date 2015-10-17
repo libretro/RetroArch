@@ -164,27 +164,30 @@ void menu_list_flush_stack(menu_list_t *list,
 
       menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
 
-      menu_list_pop_stack(list, &new_selection_ptr);
+      if (menu_list_pop_stack(list, &new_selection_ptr))
+      {
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
 
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
-
-      menu_list_get_last(list->menu_stack,
-            &path, &label, &type, &entry_idx);
+         menu_list_get_last(list->menu_stack,
+               &path, &label, &type, &entry_idx);
+      }
    }
 }
 
-void menu_list_pop_stack(menu_list_t *list, size_t *directory_ptr)
+bool menu_list_pop_stack(menu_list_t *list, size_t *directory_ptr)
 {
    if (!list)
-      return;
+      return false;
 
    if (menu_list_get_stack_size(list) <= 1)
-      return;
+      return false;
 
    menu_driver_list_cache(MENU_LIST_PLAIN, 0);
 
    menu_list_pop(list->menu_stack, directory_ptr);
    menu_entries_set_refresh(false);
+
+   return true;
 }
 
 
