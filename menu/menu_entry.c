@@ -49,9 +49,8 @@ int menu_entry_go_back(void)
 
 static rarch_setting_t *menu_entry_get_setting(uint32_t i)
 {
-   menu_list_t *menu_list    = menu_list_get_ptr();
-   menu_file_list_cbs_t *cbs = menu_list_get_actiondata_at_offset
-      (menu_list->selection_buf,i);
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   menu_file_list_cbs_t *cbs  = menu_list_get_actiondata_at_offset(selection_buf, i);
 
    if (!cbs)
       return NULL;
@@ -305,16 +304,13 @@ float menu_entry_num_max(uint32_t i)
 void menu_entry_get(menu_entry_t *entry, size_t i,
       void *userdata, bool use_representation)
 {
-   const char *path          = NULL;
-   const char *entry_label   = NULL;
-   menu_file_list_cbs_t *cbs = NULL;
-   file_list_t *list         = NULL;
-   menu_list_t *menu_list    = menu_list_get_ptr();
+   const char *path           = NULL;
+   const char *entry_label    = NULL;
+   menu_file_list_cbs_t *cbs  = NULL;
+   file_list_t *list          = NULL;
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
 
-   if (!menu_list)
-      return;
-   
-   list = userdata ? (file_list_t*)userdata : menu_list->selection_buf;
+   list = userdata ? (file_list_t*)userdata : selection_buf;
 
    if (!list)
       return;
@@ -327,7 +323,9 @@ void menu_entry_get(menu_entry_t *entry, size_t i,
    if (cbs && cbs->action_get_value && use_representation)
    {
       const char *label         = NULL;
+      menu_list_t *menu_list    = menu_list_get_ptr();
       menu_list_get_last_stack(menu_list, NULL, &label, NULL, NULL);
+
       cbs->action_get_value(list,
             &entry->spacing, entry->type, i, label,
             entry->value,  sizeof(entry->value), 
@@ -372,9 +370,9 @@ int menu_entry_select(uint32_t i)
 
 int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
 {
-   int ret                   = 0;
-   menu_list_t *menu_list    = menu_list_get_ptr();
-   menu_file_list_cbs_t *cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
+   int ret                    = 0;
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   menu_file_list_cbs_t *cbs  = menu_list_get_actiondata_at_offset(selection_buf, i);
 
    switch (action)
    {
@@ -434,13 +432,15 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
          break;
    }
 
-   cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, i);
+   cbs = menu_list_get_actiondata_at_offset(selection_buf, i);
 
    if (menu_entries_needs_refresh())
    {
       if (cbs && cbs->action_refresh)
       {
-         cbs->action_refresh(menu_list->selection_buf, menu_list->menu_stack);
+         file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
+
+         cbs->action_refresh(selection_buf, menu_stack);
          menu_entries_unset_refresh(false);
       }
    }
