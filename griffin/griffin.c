@@ -79,13 +79,15 @@ CHEATS
 /*============================================================
 ACHIEVEMENTS
 ============================================================ */
-#if defined(HAVE_CHEEVOS) && !defined(HAVE_NETPLAY)
+#if defined(HAVE_CHEEVOS)
+#if !defined(HAVE_NETPLAY)
 #include "../libretro-common/net/net_http.c"
 #endif
 
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../libretro-common/utils/md5.c"
 #include "../cheevos.c"
+#endif
 
 /*============================================================
 UI COMMON CONTEXT
