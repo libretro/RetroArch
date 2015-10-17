@@ -74,11 +74,8 @@ void menu_cbs_init(void *data,
    if (str_list && str_list->size > 1)
       strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
 
-   if (str_list)
-   {
-      string_list_free(str_list);
-      str_list = NULL;
-   }
+   if (!label || !menu_label)
+      goto error;
 
    label_hash      = menu_hash_calculate(label);
    menu_label_hash = menu_hash_calculate(menu_label);
@@ -152,4 +149,8 @@ void menu_cbs_init(void *data,
    ret = menu_driver_bind_init(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
 
    (void)ret;
+
+error:
+   string_list_free(str_list);
+   str_list = NULL;
 }
