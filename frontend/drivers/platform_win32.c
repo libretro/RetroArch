@@ -217,7 +217,7 @@ static int frontend_win32_parse_drive_list(void *data)
    {
       drive[0] = 'A' + i;
       if (drives & (1 << i))
-         menu_list_push(list,
+         menu_entries_push(list,
                drive, "", MENU_FILE_DIRECTORY, 0, 0);
    }
 

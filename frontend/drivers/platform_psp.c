@@ -346,14 +346,14 @@ static int frontend_psp_parse_drive_list(void *data)
    file_list_t *list = (file_list_t*)data;
 
 #ifdef VITA
-   menu_list_push(list,
+   menu_entries_push(list,
          "cache0:/", "", MENU_FILE_DIRECTORY, 0, 0);
 #else
-   menu_list_push(list,
+   menu_entries_push(list,
          "ms0:/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          "ef0:/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          "host0:/", "", MENU_FILE_DIRECTORY, 0, 0);
 #endif
 #endif

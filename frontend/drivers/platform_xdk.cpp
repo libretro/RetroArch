@@ -388,18 +388,18 @@ static int frontend_xdk_parse_drive_list(void *data)
    file_list_t *list = (file_list_t*)data;
 
 #if defined(_XBOX1)
-   menu_list_push(list,
+   menu_entries_push(list,
          "C:", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          "D:", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          "E:", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          "F:", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          "G:", "", MENU_FILE_DIRECTORY, 0, 0);
 #elif defined(_XBOX360)
-   menu_list_push(list,
+   menu_entries_push(list,
          "game:", "", MENU_FILE_DIRECTORY, 0, 0);
 #endif
 #endif

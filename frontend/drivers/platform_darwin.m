@@ -606,9 +606,9 @@ static int frontend_darwin_parse_drive_list(void *data)
 
    CFSearchPathForDirectoriesInDomains(CFDocumentDirectory, CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
 
-   menu_list_push(list,
+   menu_entries_push(list,
          home_dir_buf, "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list, "/", "",
+   menu_entries_push(list, "/", "",
          MENU_FILE_DIRECTORY, 0, 0);
 
    ret = 0;

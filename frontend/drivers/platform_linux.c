@@ -2078,14 +2078,14 @@ static int frontend_android_parse_drive_list(void *data)
    file_list_t *list = (file_list_t*)data;
 
    // MENU_FILE_DIRECTORY is not working with labels, placeholders for now
-   menu_list_push(list,
+   menu_entries_push(list,
          app_dir, "Application Dir", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          ext_dir, "External Application Dir", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          sdcard_dir, "Internal Memory", MENU_FILE_DIRECTORY, 0, 0);
 
-   menu_list_push(list, "/", "",
+   menu_entries_push(list, "/", "",
          MENU_FILE_DIRECTORY, 0, 0);
 
    return 0;
