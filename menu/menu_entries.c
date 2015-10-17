@@ -438,22 +438,19 @@ void menu_entries_get(size_t i, menu_entry_t *entry)
    const char *path          = NULL;
    const char *entry_label   = NULL;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_entries_t *entries   = menu_entries_get_ptr();
-
-   if (!entries || !entries->menu_list)
-      return;
+   file_list_t *selection_buf= menu_entries_get_selection_buf_ptr();
 
    menu_entries_get_last_stack(NULL, &label, NULL, NULL);
 
    entry->path[0] = entry->value[0] = entry->label[0] = '\0';
 
-   menu_list_get_at_offset(entries->menu_list->selection_buf, i,
+   menu_list_get_at_offset(selection_buf, i,
          &path, &entry_label, &entry->type, &entry->entry_idx);
 
-   cbs = menu_list_get_actiondata_at_offset(entries->menu_list->selection_buf, i);
+   cbs = menu_list_get_actiondata_at_offset(selection_buf, i);
 
    if (cbs && cbs->action_get_value)
-      cbs->action_get_value(entries->menu_list->selection_buf,
+      cbs->action_get_value(selection_buf,
             &entry->spacing, entry->type, i, label,
             entry->value,  sizeof(entry->value),
             entry_label, path,
