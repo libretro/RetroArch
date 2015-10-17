@@ -184,6 +184,22 @@ int menu_entries_get_core_title(char *s, size_t len)
    return 0;
 }
 
+file_list_t *menu_entries_get_menu_stack_ptr(void)
+{
+   menu_list_t *menu_list = menu_list_get_ptr();
+   if (!menu_list)
+      return NULL;
+   return menu_list->menu_stack;
+}
+
+file_list_t *menu_entries_get_selection_buf_ptr(void)
+{
+   menu_list_t *menu_list = menu_list_get_ptr();
+   if (!menu_list)
+      return NULL;
+   return menu_list->selection_buf;
+}
+
 bool menu_entries_needs_refresh(void)
 {
    menu_entries_t *entries   = menu_entries_get_ptr();

@@ -175,12 +175,12 @@ static void menu_input_key_end_line(void)
 static void menu_input_search_callback(void *userdata, const char *str)
 {
    size_t idx = 0;
-   menu_list_t *menu_list = menu_list_get_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
 
-   if (!menu_list)
+   if (!selection_buf)
       return;
 
-   if (str && *str && file_list_search(menu_list->selection_buf, str, &idx))
+   if (str && *str && file_list_search(selection_buf, str, &idx))
    {
       bool scroll = true;
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
@@ -593,14 +593,16 @@ static int menu_input_key_bind_set_mode_common(rarch_setting_t  *setting,
    unsigned index_offset, bind_type;
    menu_displaylist_info_t info  = {0};
    struct retro_keybind *keybind = NULL;
+   file_list_t *menu_stack       = NULL;
    settings_t     *settings      = config_get_ptr();
-   menu_list_t        *menu_list = menu_list_get_ptr();
    menu_input_t      *menu_input = menu_input_get_ptr();
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr();
 
    if (!setting)
       return -1;
 
    index_offset = menu_setting_get_index_offset(setting);
+   menu_stack   = menu_entries_get_menu_stack_ptr();
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
 
@@ -609,7 +611,7 @@ static int menu_input_key_bind_set_mode_common(rarch_setting_t  *setting,
       case MENU_INPUT_BIND_NONE:
          return -1;
       case MENU_INPUT_BIND_SINGLE:
-         keybind = (struct retro_keybind*)setting_get_ptr(setting);
+         keybind    = (struct retro_keybind*)setting_get_ptr(setting);
 
          if (!keybind)
             return -1;
@@ -621,9 +623,9 @@ static int menu_input_key_bind_set_mode_common(rarch_setting_t  *setting,
          menu_input->binds.target = keybind;
          menu_input->binds.user   = index_offset;
 
-         info.list          = menu_list->menu_stack;
-         info.type          = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
-         info.directory_ptr = selection;
+         info.list                = menu_stack;
+         info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
+         info.directory_ptr       = selection;
          strlcpy(info.label,
                menu_hash_to_str(MENU_LABEL_CUSTOM_BIND), sizeof(info.label));
 
@@ -635,9 +637,9 @@ static int menu_input_key_bind_set_mode_common(rarch_setting_t  *setting,
          menu_input->binds.begin  = MENU_SETTINGS_BIND_BEGIN;
          menu_input->binds.last   = MENU_SETTINGS_BIND_LAST;
 
-         info.list          = menu_list->menu_stack;
-         info.type          = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
-         info.directory_ptr = selection;
+         info.list                = menu_stack;
+         info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
+         info.directory_ptr       = selection;
          strlcpy(info.label,
                menu_hash_to_str(MENU_LABEL_CUSTOM_BIND_ALL),
                sizeof(info.label));
@@ -645,6 +647,7 @@ static int menu_input_key_bind_set_mode_common(rarch_setting_t  *setting,
          menu_displaylist_push_list(&info, DISPLAYLIST_INFO);
          break;
    }
+
    return 0;
 }
 
@@ -1176,17 +1179,17 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
 void menu_input_post_iterate(int *ret, unsigned action)
 {
    size_t selection;
-   menu_file_list_cbs_t *cbs = NULL;
-   menu_entry_t entry        = {{0}};
-   menu_input_t *menu_input  = menu_input_get_ptr();
-   menu_list_t *menu_list    = menu_list_get_ptr();
-   settings_t *settings      = config_get_ptr();
+   menu_file_list_cbs_t *cbs  = NULL;
+   menu_entry_t entry         = {{0}};
+   menu_input_t *menu_input   = menu_input_get_ptr();
+   settings_t *settings       = config_get_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
-   cbs = menu_list_get_actiondata_at_offset
-      (menu_list->selection_buf, selection);
+   if (selection_buf)
+      cbs = menu_list_get_actiondata_at_offset(selection_buf, selection);
 
    menu_entry_get(&entry, selection, NULL, false);
 
