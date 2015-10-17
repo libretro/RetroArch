@@ -1403,7 +1403,6 @@ static void xmb_render(void)
    xmb_handle_t      *xmb   = NULL;
    settings_t   *settings   = config_get_ptr();
    menu_handle_t    *menu   = menu_driver_get_ptr();
-   menu_list_t *menu_list   = menu_list_get_ptr();
 
    if (!menu)
       return;
@@ -1422,7 +1421,7 @@ static void xmb_render(void)
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
-   end     = menu_list_get_size(menu_list);
+   end     = menu_entries_get_size();
 
    if (settings->menu.pointer.enable || settings->menu.mouse.enable)
    {

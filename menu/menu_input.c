@@ -942,7 +942,6 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    unsigned header_height;
    settings_t *settings     = config_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
-   menu_list_t *menu_list   = menu_list_get_ptr();
 
    *input_mouse = MOUSE_ACTION_NONE;
 
@@ -981,7 +980,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
          {
             BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L_TOGGLE);
          }
-         else if (menu_input->mouse.ptr <= menu_list_get_size(menu_list)-1)
+         else if (menu_input->mouse.ptr <= (menu_entries_get_size() - 1))
          {
             BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L_SET_NAVIGATION);
          }
@@ -1080,7 +1079,6 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
    unsigned header_height;
    size_t selection;
    int ret                  = 0;
-   menu_list_t *menu_list   = menu_list_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
    settings_t *settings     = config_get_ptr();
 
@@ -1142,7 +1140,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
                menu_entries_pop_stack(&selection);
                menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
             }
-            else if (menu_input->pointer.ptr <= menu_list_get_size(menu_list)-1)
+            else if (menu_input->pointer.ptr <= (menu_entries_get_size() - 1))
             {
                menu_input->pointer.oldpressed[0] = false;
                ret = pointer_tap(cbs, entry, action);

@@ -212,13 +212,12 @@ int generic_menu_iterate(enum menu_action action)
    uint32_t label_hash        = 0;
    uint32_t hash              = 0;
    menu_handle_t *menu        = menu_driver_get_ptr();
-   menu_list_t *menu_list     = menu_list_get_ptr();
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
 
    menu_entries_get_last_stack(NULL, &label, NULL, NULL);
 
-   if (!menu || !menu_list)
+   if (!menu)
       return 0;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;
@@ -275,7 +274,7 @@ int generic_menu_iterate(enum menu_action action)
           *
           * We need to fix this entire mess, mouse controls should not rely on a 
           * hack like this in order to work. */
-         selection = max(min(selection, menu_list_get_size(menu_list)-1), 0);
+         selection = max(min(selection, (menu_entries_get_size() - 1)), 0);
 
          menu_entry_get(&entry,    selection, NULL, false);
          ret = menu_entry_action(&entry, selection, (enum menu_action)action);

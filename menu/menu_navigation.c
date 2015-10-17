@@ -58,11 +58,9 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
    settings_t          *settings   = config_get_ptr();
    menu_navigation_t        *nav   = menu_navigation_get_ptr();
-   menu_list_t          *menu_list = menu_list_get_ptr();
-   size_t          menu_list_size  = menu_list_get_size(menu_list);
+   size_t          menu_list_size  = menu_entries_get_size();
    size_t selection                = nav->selection_ptr;
 
-   (void)menu_list;
    (void)settings;
 
    switch (state)

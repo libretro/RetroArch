@@ -27,15 +27,12 @@ static int action_bind_up_generic(unsigned type, const char *label)
 {
    size_t scroll_accel   = 0;
    unsigned scroll_speed  = 0;
-   menu_list_t *menu_list = menu_list_get_ptr();
-   if (!menu_list)
-      return -1;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
       return -1;
 
    scroll_speed = (max(scroll_accel, 2) - 2) / 4 + 1;
 
-   if (menu_list_get_size(menu_list) <= 0)
+   if (menu_entries_get_size() <= 0)
       return 0;
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, &scroll_speed);

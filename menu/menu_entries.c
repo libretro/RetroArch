@@ -78,8 +78,7 @@ size_t menu_entries_get_start(void)
 /* Returns the last index (+1) of the menu entry list. */
 size_t menu_entries_get_end(void)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
-   return menu_list_get_size(entries->menu_list);
+   return menu_entries_get_size();
 }
 
 /* Get an entry from the top of the menu stack */
@@ -323,4 +322,12 @@ size_t menu_entries_get_stack_size(void)
    if (!menu_list)
       return 0;
    return menu_list_get_stack_size(menu_list);
+}
+
+size_t menu_entries_get_size(void)
+{
+   menu_list_t *menu_list         = menu_list_get_ptr();
+   if (!menu_list)
+      return 0;
+   return menu_list_get_size(menu_list);
 }

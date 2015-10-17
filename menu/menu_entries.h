@@ -143,6 +143,8 @@ void menu_entries_flush_stack(const char *needle, unsigned final_type);
 
 size_t menu_entries_get_stack_size(void);
 
+size_t menu_entries_get_size(void);
+
 #ifdef __cplusplus
 }
 #endif
