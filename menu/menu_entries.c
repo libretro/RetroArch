@@ -94,7 +94,7 @@ void menu_entries_get(size_t i, menu_entry_t *entry)
    if (!entries || !entries->menu_list)
       return;
 
-   menu_list_get_last_stack(entries->menu_list, NULL, &label, NULL, NULL);
+   menu_entries_get_last_stack(NULL, &label, NULL, NULL);
 
    entry->path[0] = entry->value[0] = entry->label[0] = '\0';
 
@@ -119,18 +119,18 @@ void menu_entries_get(size_t i, menu_entry_t *entry)
 /* Sets title to what the name of the current menu should be. */
 int menu_entries_get_title(char *s, size_t len)
 {
+   unsigned menu_type        = 0;
    const char *path          = NULL;
    const char *label         = NULL;
-   unsigned menu_type        = 0;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_entries_t *entries   = menu_entries_get_ptr();
+   menu_list_t *menu_list    = menu_list_get_ptr();
    
-   if (!entries->menu_list)
+   if (!menu_list)
       return -1;
 
-   cbs = (menu_file_list_cbs_t*)menu_list_get_last_stack_actiondata(entries->menu_list);
+   cbs = (menu_file_list_cbs_t*)menu_list_get_last_stack_actiondata(menu_list);
 
-   menu_list_get_last_stack(entries->menu_list, &path, &label, &menu_type, NULL);
+   menu_entries_get_last_stack(&path, &label, &menu_type, NULL);
 
    if (cbs && cbs->action_get_title)
       return cbs->action_get_title(path, label, menu_type, s, len);
@@ -141,12 +141,12 @@ int menu_entries_get_title(char *s, size_t len)
  * one level deep in the menu hierarchy). */
 bool menu_entries_show_back(void)
 {
-   menu_entries_t *entries   = menu_entries_get_ptr();
+   menu_list_t *menu_list    = menu_list_get_ptr();
 
-   if (!entries->menu_list)
+   if (!menu_list)
       return false;
 
-   return (menu_list_get_stack_size(entries->menu_list) > 1);
+   return (menu_list_get_stack_size(menu_list) > 1);
 }
 
 /* Sets 's' to the name of the current core 
