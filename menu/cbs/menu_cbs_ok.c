@@ -283,6 +283,12 @@ int generic_action_ok_displaylist_push(const char *path,
          info_path                          = settings->libretro_directory;
          info_label                         = menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST_SET);
          break;
+      case ACTION_OK_DL_ACCOUNTS_LIST:
+         info.directory_ptr = idx;
+         info.type          = type;
+         info_path          = path;
+         info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_ACCOUNTS_LIST);
+         break;
       case ACTION_OK_DL_CONTENT_SETTINGS:
          dl_type            = DISPLAYLIST_CONTENT_SETTINGS;
          info.list          = menu_list->selection_buf;
@@ -1541,6 +1547,13 @@ static int action_ok_open_archive_detect_core(const char *path,
          ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE);
 }
 
+static int action_ok_push_accounts_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+         ACTION_OK_DL_ACCOUNTS_LIST);
+}
+
 static int action_ok_open_archive(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1837,6 +1850,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
       case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
          BIND_ACTION_OK(cbs, action_ok_shader_parameters);
+         break;
+      case MENU_LABEL_ACCOUNTS_LIST:
+         BIND_ACTION_OK(cbs, action_ok_push_accounts_list);
          break;
       case MENU_LABEL_SHADER_OPTIONS:
       case MENU_VALUE_INPUT_SETTINGS:

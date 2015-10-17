@@ -21,7 +21,7 @@
 #include "menu_hash.h"
 #include "menu_cbs.h"
 
-#if 0
+#if 1
 #define DEBUG_LOG
 #endif
 

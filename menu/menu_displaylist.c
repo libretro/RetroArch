@@ -2421,6 +2421,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_INFORMATION_LIST:
       case DISPLAYLIST_ADD_CONTENT_LIST:
       case DISPLAYLIST_LOAD_CONTENT_LIST:
+      case DISPLAYLIST_ACCOUNTS_LIST:
       case DISPLAYLIST_OPTIONS:
       case DISPLAYLIST_OPTIONS_CHEATS:
       case DISPLAYLIST_OPTIONS_REMAPPINGS:
@@ -2483,6 +2484,18 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
             menu_entries_set_refresh(false);
          }
+         break;
+      case DISPLAYLIST_ACCOUNTS_LIST:
+#ifdef HAVE_CHEEVOS
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS),
+               menu_hash_to_str(MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS),
+               MENU_SETTING_ACTION, 0, 0);
+#else
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
+               "", 0, 0, 0);
+#endif
          break;
       case DISPLAYLIST_HELP_SCREEN_LIST:
          menu_list_push(info->list,

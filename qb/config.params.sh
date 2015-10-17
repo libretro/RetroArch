@@ -1,6 +1,7 @@
 HAVE_LIBRETRODB=yes     # Disable libretrodb
 HAVE_RGUI=yes           # Disable RGUI
 HAVE_GLUI=auto          # Enable GLUI menu
+HAVE_CHEEVOS=no         # Enable Cheevos (achievements)
 HAVE_XMB=auto           # Enable XMB menu
 HAVE_DYNAMIC=yes        # Disable dynamic loading of libretro library
 HAVE_SDL=auto           # SDL support

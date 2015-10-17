@@ -5847,6 +5847,13 @@ static bool setting_append_list_user_options(
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
+   CONFIG_ACTION(
+         menu_hash_to_str(MENU_LABEL_ACCOUNTS_LIST),
+         menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_LIST),
+         group_info.name,
+         subgroup_info.name,
+         parent_group);
+
    CONFIG_STRING(
          settings->username,
          menu_hash_to_str(MENU_LABEL_NETPLAY_NICKNAME),
