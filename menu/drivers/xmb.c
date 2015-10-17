@@ -282,11 +282,12 @@ static size_t xmb_list_get_size(void *data, menu_list_type_t type)
 
 static void *xmb_list_get_entry(void *data, menu_list_type_t type, unsigned i)
 {
-   size_t list_size       = 0;
-   menu_handle_t *menu    = (menu_handle_t*)data;
-   xmb_handle_t *xmb      = menu ? (xmb_handle_t*)menu->userdata : NULL;
-   menu_list_t *menu_list = menu_list_get_ptr();
-   void *ptr              = NULL;
+   void *ptr               = NULL;
+   size_t list_size        = 0;
+   menu_handle_t *menu     = (menu_handle_t*)data;
+   xmb_handle_t *xmb       = menu ? (xmb_handle_t*)menu->userdata : NULL;
+   menu_list_t *menu_list  = menu_list_get_ptr();
+   file_list_t *menu_stack = menu_entries_get_menu_stack_ptr();
 
    switch (type)
    {
@@ -294,7 +295,7 @@ static void *xmb_list_get_entry(void *data, menu_list_type_t type, unsigned i)
          if (menu_list)
             list_size  = menu_list_get_stack_size(menu_list);
          if (i < list_size)
-            ptr = (void*)&menu_list->menu_stack->list[i];
+            ptr = (void*)&menu_stack->list[i];
          break;
       case MENU_LIST_HORIZONTAL:
          if (xmb && xmb->horizontal_list)
@@ -555,10 +556,10 @@ static void xmb_update_boxart(xmb_handle_t *xmb, unsigned i)
 {
    menu_entry_t entry;
    char path[PATH_MAX_LENGTH] = {0};
-   settings_t *settings   = config_get_ptr();
-   menu_list_t *menu_list = menu_list_get_ptr();
+   settings_t *settings       = config_get_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
 
-   menu_entry_get(&entry, i, menu_list->selection_buf, true);
+   menu_entry_get(&entry, i, selection_buf, true);
 
    fill_pathname_join(path, settings->boxarts_directory, entry.path, sizeof(path));
    strlcat(path, ".png", sizeof(path));
@@ -911,9 +912,10 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 {
    size_t selection;
    int dir = -1;
-   menu_handle_t    *menu = menu_driver_get_ptr();
-   menu_list_t *menu_list = menu_list_get_ptr();
-   settings_t *settings   = config_get_ptr();
+   menu_handle_t        *menu = menu_driver_get_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   settings_t     *settings   = config_get_ptr();
+
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
@@ -937,7 +939,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 
    xmb_list_switch_old(xmb, xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
-   xmb_list_switch_new(xmb, menu_list->selection_buf, dir, selection);
+   xmb_list_switch_new(xmb, selection_buf, dir, selection);
    xmb->categories.active.idx_old = xmb->categories.selection_ptr;
 
    if (settings->menu.boxart_enable)
@@ -1016,9 +1018,9 @@ static int xmb_environ(menu_environ_cb_t type, void *data)
 static void xmb_list_open(xmb_handle_t *xmb)
 {
    size_t selection;
-   int                dir = 0;
-   menu_handle_t    *menu = menu_driver_get_ptr();
-   menu_list_t *menu_list = menu_list_get_ptr();
+   int                    dir = 0;
+   menu_handle_t        *menu = menu_driver_get_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
 
    if (!menu)
       return;
@@ -1036,7 +1038,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
 
    xmb_list_open_old(xmb, xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
-   xmb_list_open_new(xmb, menu_list->selection_buf,
+   xmb_list_open_new(xmb, selection_buf,
          dir, selection);
 
    switch (xmb->depth)
@@ -1509,8 +1511,9 @@ static void xmb_frame(void)
    gl_t *gl                                = NULL;
    const struct font_renderer *font_driver = NULL;
    menu_handle_t   *menu                   = menu_driver_get_ptr();
-   menu_list_t *menu_list                  = menu_list_get_ptr();
    settings_t   *settings                  = config_get_ptr();
+   file_list_t *selection_buf              = menu_entries_get_selection_buf_ptr();
+   file_list_t *menu_stack                 = menu_entries_get_menu_stack_ptr();
 
    if (!menu)
       return;
@@ -1583,8 +1586,8 @@ static void xmb_frame(void)
          &item_color[0], width, height);
 
    xmb_draw_items(xmb, gl,
-         menu_list->selection_buf,
-         menu_list->menu_stack,
+         selection_buf,
+         menu_stack,
          selection,
          xmb->categories.selection_ptr,
          &item_color[0], width, height);
@@ -1719,7 +1722,7 @@ static void xmb_layout(menu_handle_t *menu, xmb_handle_t *xmb)
    size_t selection;
    float scale_factor;
    unsigned width, height, i, current, end, new_header_height;
-   menu_list_t *menu_list = menu_list_get_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
@@ -1776,7 +1779,7 @@ static void xmb_layout(menu_handle_t *menu, xmb_handle_t *xmb)
       float ia = xmb->item.passive.alpha;
       float iz = xmb->item.passive.zoom;
       xmb_node_t *node = (xmb_node_t*)menu_list_get_userdata_at_offset(
-            menu_list->selection_buf, i);
+            selection_buf, i);
 
       if (!node)
          continue;
@@ -2380,7 +2383,8 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
    size_t stack_size, list_size, selection;
    xmb_handle_t      *xmb = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
-   menu_list_t *menu_list = menu_list_get_ptr();
+   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
 
    if (!menu)
       return;
@@ -2392,8 +2396,8 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
-   xmb_list_deep_copy(menu, menu_list->selection_buf, xmb->selection_buf_old);
-   xmb_list_deep_copy(menu, menu_list->menu_stack, xmb->menu_stack_old);
+   xmb_list_deep_copy(menu, selection_buf, xmb->selection_buf_old);
+   xmb_list_deep_copy(menu, menu_stack, xmb->menu_stack_old);
    xmb->selection_ptr_old = selection;
 
    switch (type)
@@ -2420,24 +2424,24 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
             return;
          }
 
-         stack_size = menu_list->menu_stack->size;
+         stack_size = menu_stack->size;
 
-         if (menu_list->menu_stack->list[stack_size - 1].label)
-            free(menu_list->menu_stack->list[stack_size - 1].label);
-         menu_list->menu_stack->list[stack_size - 1].label = NULL;
+         if (menu_stack->list[stack_size - 1].label)
+            free(menu_stack->list[stack_size - 1].label);
+         menu_stack->list[stack_size - 1].label = NULL;
 
          if (xmb->categories.selection_ptr == 0)
          {
-            menu_list->menu_stack->list[stack_size - 1].label = 
+            menu_stack->list[stack_size - 1].label = 
                strdup(menu_hash_to_str(MENU_VALUE_MAIN_MENU));
-            menu_list->menu_stack->list[stack_size - 1].type = 
+            menu_stack->list[stack_size - 1].type = 
                MENU_SETTINGS;
          }
          else
          {
-            menu_list->menu_stack->list[stack_size - 1].label = 
+            menu_stack->list[stack_size - 1].label = 
                strdup(menu_hash_to_str(MENU_VALUE_HORIZONTAL_MENU));
-            menu_list->menu_stack->list[stack_size - 1].type = 
+            menu_stack->list[stack_size - 1].type = 
                MENU_SETTING_HORIZONTAL_MENU;
          }
          break;
