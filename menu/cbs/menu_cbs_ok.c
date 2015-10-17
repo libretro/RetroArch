@@ -58,6 +58,8 @@ int generic_action_ok_displaylist_push(const char *path,
    global_t                 *global  = global_get_ptr();
    settings_t            *settings   = config_get_ptr();
    menu_list_t            *menu_list = menu_list_get_ptr();
+   file_list_t        *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t           *menu_stack = menu_entries_get_menu_stack_ptr();
    menu_handle_t            *menu    = menu_driver_get_ptr();
 
    if (!menu_list)
@@ -69,7 +71,7 @@ int generic_action_ok_displaylist_push(const char *path,
    if (path && menu_path)
       fill_pathname_join(action_path, menu_path, path, sizeof(action_path));
 
-   info.list          = menu_list->menu_stack;
+   info.list          = menu_stack;
 
    switch (action_type)
    {
@@ -297,10 +299,10 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_CONTENT_SETTINGS:
          dl_type            = DISPLAYLIST_CONTENT_SETTINGS;
-         info.list          = menu_list->selection_buf;
+         info.list          = selection_buf;
          info_path          = menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS);
          info_label         = menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS);
-         menu_entries_push(menu_list->menu_stack,
+         menu_entries_push(menu_stack,
                info_path, info_label, 0, 0, 0);
          break;
    }
@@ -917,15 +919,11 @@ static int generic_action_ok_file_load(const char *path,
 {
    char new_path[PATH_MAX_LENGTH];
    const char *menu_path    = NULL;
-   menu_list_t   *menu_list = menu_list_get_ptr();
+   file_list_t *menu_stack  = menu_entries_get_menu_stack_ptr();
 
    (void)id;
 
-   if (!menu_list)
-      return -1;
-
-   menu_list_get_last(menu_list->menu_stack,
-         &menu_path, NULL, NULL, NULL);
+   menu_list_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
 
    fill_pathname_join(new_path, menu_path, path,
          sizeof(new_path));
@@ -973,13 +971,9 @@ static int action_ok_file_load(const char *path,
    const char *menu_path    = NULL;
    rarch_setting_t *setting = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
-   menu_list_t   *menu_list = menu_list_get_ptr();
+   file_list_t  *menu_stack = menu_entries_get_menu_stack_ptr();
 
-   if (!menu_list)
-      return -1;
-
-   menu_list_get_last(menu_list->menu_stack,
-         &menu_path, &menu_label, NULL, NULL);
+   menu_list_get_last(menu_stack, &menu_path, &menu_label, NULL, NULL);
 
    strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
@@ -1316,9 +1310,8 @@ static int action_ok_rdb_entry_submenu(const char *path,
    int len                         = 0;
    struct string_list *str_list    = NULL;
    struct string_list *str_list2   = NULL;
-   menu_list_t          *menu_list = menu_list_get_ptr();
 
-   if (!menu_list || !label)
+   if (!label)
       return -1;
 
    str_list = string_split(label, "|");
@@ -1600,11 +1593,10 @@ static int action_ok_load_archive_detect_core(const char *path,
    int ret                  = 0;
    global_t      *global    = global_get_ptr();
    menu_handle_t *menu      = menu_driver_get_ptr();
-   menu_list_t *menu_list   = menu_list_get_ptr();
    const char *menu_path    = menu ? menu->scratch2_buf : NULL;
    const char *content_path = menu ? menu->scratch_buf  : NULL;
 
-   if (!menu || !menu_list)
+   if (!menu)
       return -1;
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
