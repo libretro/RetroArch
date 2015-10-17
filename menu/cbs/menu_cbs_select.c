@@ -30,14 +30,14 @@ static int action_select_default(const char *path, const char *label, unsigned t
       size_t idx)
 {
    menu_entry_t entry;
-   int ret                   = 0;
-   enum menu_action action   = MENU_ACTION_NOOP;
-   menu_file_list_cbs_t *cbs = NULL;
-   menu_list_t    *menu_list = menu_list_get_ptr();
+   int ret                    = 0;
+   enum menu_action action    = MENU_ACTION_NOOP;
+   menu_file_list_cbs_t *cbs  = NULL;
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
 
    menu_entry_get(&entry, idx, NULL, false);
 
-   cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, idx);
+   cbs = menu_list_get_actiondata_at_offset(selection_buf, idx);
 
    if (!cbs)
       return -1;
