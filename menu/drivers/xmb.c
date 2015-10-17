@@ -576,10 +576,11 @@ static void xmb_selection_pointer_changed(bool allow_animations)
    size_t selection;
    unsigned i, end, tag, height, skip;
    int threshold = 0;
-   xmb_handle_t    *xmb   = NULL;
-   menu_handle_t    *menu = menu_driver_get_ptr();
-   menu_list_t *menu_list = menu_list_get_ptr();
-   settings_t *settings = config_get_ptr();
+   xmb_handle_t        *xmb   = NULL;
+   menu_handle_t        *menu = menu_driver_get_ptr();
+   menu_list_t     *menu_list = menu_list_get_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   settings_t       *settings = config_get_ptr();
 
    if (!menu)
       return;
@@ -606,8 +607,7 @@ static void xmb_selection_pointer_changed(bool allow_animations)
       float iy, real_iy;
       float ia = xmb->item.passive.alpha;
       float iz = xmb->item.passive.zoom;
-      xmb_node_t *node = (xmb_node_t*)menu_list_get_userdata_at_offset(
-            menu_list->selection_buf, i);
+      xmb_node_t *node = (xmb_node_t*)menu_list_get_userdata_at_offset(selection_buf, i);
 
       if (!node)
          continue;
