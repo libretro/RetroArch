@@ -646,7 +646,7 @@ static int generic_action_ok(const char *path,
          flush_char = NULL;
          flush_type = 49;
          {
-            menu_file_list_cbs_t *cbs = menu_list_get_last_stack_actiondata(menu_list);
+            menu_file_list_cbs_t *cbs = menu_entries_get_last_stack_actiondata();
 
             if (cbs)
             {

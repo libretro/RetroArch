@@ -220,14 +220,11 @@ void menu_entry_pathdir_get_value(uint32_t i, char *s, size_t len)
 
 int menu_entry_pathdir_set_value(uint32_t i, const char *s)
 {
-   menu_file_list_cbs_t *cbs = NULL;
    const char *menu_path     = NULL;
    menu_list_t *menu_list    = menu_list_get_ptr();
-
-   (void)s;
+   menu_file_list_cbs_t *cbs = menu_entries_get_last_stack_actiondata();
 
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL);
-   cbs = (menu_file_list_cbs_t*)menu_list_get_last_stack_actiondata(menu_list);
 
    if (!cbs || !cbs->setting)
       return -1;

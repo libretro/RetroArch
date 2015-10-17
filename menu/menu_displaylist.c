@@ -2875,7 +2875,6 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    uint32_t          hash_label = 0;
    unsigned type                = 0;
    menu_displaylist_info_t info = {0};
-   menu_list_t *_menu_list      = menu_list_get_ptr();
 
    menu_entries_get_last_stack(&path, &label, &type, NULL);
 
@@ -2899,10 +2898,9 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
          return menu_displaylist_push_list(&info, DISPLAYLIST_HORIZONTAL);
    }
 
-   cbs = (menu_file_list_cbs_t*)
-      menu_list_get_last_stack_actiondata(_menu_list);
+   cbs = menu_entries_get_last_stack_actiondata();
 
-   if (cbs->action_deferred_push)
+   if (cbs && cbs->action_deferred_push)
       return cbs->action_deferred_push(&info);
 
    return 0;

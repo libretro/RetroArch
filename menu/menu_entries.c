@@ -122,13 +122,10 @@ int menu_entries_get_title(char *s, size_t len)
    unsigned menu_type        = 0;
    const char *path          = NULL;
    const char *label         = NULL;
-   menu_file_list_cbs_t *cbs = NULL;
-   menu_list_t *menu_list    = menu_list_get_ptr();
+   menu_file_list_cbs_t *cbs = menu_entries_get_last_stack_actiondata();
    
-   if (!menu_list)
+   if (!cbs)
       return -1;
-
-   cbs = (menu_file_list_cbs_t*)menu_list_get_last_stack_actiondata(menu_list);
 
    menu_entries_get_last_stack(&path, &label, &menu_type, NULL);
 
@@ -293,6 +290,14 @@ void menu_entries_push(file_list_t *list, const char *path, const char *label,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {
    menu_list_push(list, path, label, type, directory_ptr, entry_idx);
+}
+
+menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
+{
+   menu_list_t *menu_list         = menu_list_get_ptr();
+   if (!menu_list)
+      return NULL;
+   return (menu_file_list_cbs_t*)menu_list_get_last_stack_actiondata(menu_list);
 }
 
 void menu_entries_get_last_stack(const char **path, const char **label,
