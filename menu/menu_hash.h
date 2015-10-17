@@ -22,9 +22,16 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_ACCOUNTS_CHEEVOS_PASSWORD                                   0x45cf62e3U
+#define MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD                             0xe5a73d05U
+
+#define MENU_LABEL_ACCOUNTS_CHEEVOS_USERNAME                                   0x2bf153f0U
+#define MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME                             0xcbc92e12U
+
 #define MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS                                 0xe6b7c16cU
 #define MENU_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS                           0x7d247a6dU
 
+#define MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST                              0x1322324cU
 #define MENU_LABEL_DEFERRED_ACCOUNTS_LIST                                      0x3d2b8860U
 #define MENU_LABEL_ACCOUNTS_LIST                                               0x774c15a0U
 #define MENU_LABEL_VALUE_ACCOUNTS_LIST                                         0x86e551a1U

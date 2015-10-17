@@ -26,8 +26,14 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_ACCOUNTS_CHEEVOS_USERNAME:
+         return "accounts_cheevos_username";
+      case MENU_LABEL_ACCOUNTS_CHEEVOS_PASSWORD:
+         return "accounts_cheevos_password";
       case MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
          return "retro_achievements";
+      case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
+         return "deferred_accounts_cheevos_list";
       case MENU_LABEL_DEFERRED_ACCOUNTS_LIST:
          return "deferred_accounts_list";
       case MENU_LABEL_ACCOUNTS_LIST:
@@ -656,6 +662,10 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME:
+         return "Username";
+      case MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD:
+         return "Password";
       case MENU_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS:
          return "Retro Achievements";
       case MENU_LABEL_VALUE_ACCOUNTS_LIST:

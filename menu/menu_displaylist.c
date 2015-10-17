@@ -2422,6 +2422,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_ADD_CONTENT_LIST:
       case DISPLAYLIST_LOAD_CONTENT_LIST:
       case DISPLAYLIST_ACCOUNTS_LIST:
+      case DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST:
       case DISPLAYLIST_OPTIONS:
       case DISPLAYLIST_OPTIONS_CHEATS:
       case DISPLAYLIST_OPTIONS_REMAPPINGS:
@@ -2491,6 +2492,24 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS),
                menu_hash_to_str(MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS),
                MENU_SETTING_ACTION, 0, 0);
+#else
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
+               "", 0, 0, 0);
+#endif
+         need_refresh = true;
+         need_push    = true;
+         break;
+      case DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST:
+#ifdef HAVE_CHEEVOS
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME),
+               menu_hash_to_str(MENU_LABEL_ACCOUNTS_CHEEVOS_USERNAME),
+               0, 0, 0);
+         menu_list_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD),
+               menu_hash_to_str(MENU_LABEL_ACCOUNTS_CHEEVOS_PASSWORD),
+               0, 0, 0);
 #else
          menu_list_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),

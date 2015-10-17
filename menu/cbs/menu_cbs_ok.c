@@ -289,6 +289,12 @@ int generic_action_ok_displaylist_push(const char *path,
          info_path          = path;
          info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_ACCOUNTS_LIST);
          break;
+      case ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST:
+         info.directory_ptr = idx;
+         info.type          = type;
+         info_path          = path;
+         info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST);
+         break;
       case ACTION_OK_DL_CONTENT_SETTINGS:
          dl_type            = DISPLAYLIST_CONTENT_SETTINGS;
          info.list          = menu_list->selection_buf;
@@ -1554,6 +1560,13 @@ static int action_ok_push_accounts_list(const char *path,
          ACTION_OK_DL_ACCOUNTS_LIST);
 }
 
+static int action_ok_push_accounts_cheevos_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+         ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST);
+}
+
 static int action_ok_open_archive(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1853,6 +1866,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          break;
       case MENU_LABEL_ACCOUNTS_LIST:
          BIND_ACTION_OK(cbs, action_ok_push_accounts_list);
+         break;
+      case MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
+         BIND_ACTION_OK(cbs, action_ok_push_accounts_cheevos_list);
          break;
       case MENU_LABEL_SHADER_OPTIONS:
       case MENU_VALUE_INPUT_SETTINGS:
