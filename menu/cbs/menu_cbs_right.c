@@ -159,7 +159,8 @@ static int action_right_mainmenu(unsigned type, const char *label,
    size_t selection          = 0;
    menu_file_list_cbs_t *cbs = NULL;
    unsigned        push_list = 0;
-   menu_list_t    *menu_list = menu_list_get_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *menu_stack   = menu_entries_get_menu_stack_ptr();
    unsigned           action = MENU_ACTION_RIGHT;
    size_t          list_size = menu_driver_list_get_size(MENU_LIST_PLAIN);
 
@@ -174,7 +175,7 @@ static int action_right_mainmenu(unsigned type, const char *label,
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
 
-   cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, selection);
+   cbs = menu_list_get_actiondata_at_offset(selection_buf, selection);
 
    switch (push_list)
    {
@@ -182,8 +183,7 @@ static int action_right_mainmenu(unsigned type, const char *label,
          menu_driver_list_cache(MENU_LIST_HORIZONTAL, action);
 
          if (cbs && cbs->action_content_list_switch)
-            return cbs->action_content_list_switch(
-                  menu_list->selection_buf, menu_list->menu_stack,
+            return cbs->action_content_list_switch(selection_buf, menu_stack,
                   "", "", 0);
          break;
       case 2:
