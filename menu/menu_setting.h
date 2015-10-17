@@ -99,6 +99,8 @@ typedef struct rarch_setting rarch_setting_t;
 
 int menu_setting_generic(rarch_setting_t *setting, bool wraparound);
 
+int menu_setting_set_flags(rarch_setting_t *setting);
+
 int menu_setting_set(unsigned type, const char *label,
       unsigned action, bool wraparound);
 

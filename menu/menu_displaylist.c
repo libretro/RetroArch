@@ -1572,32 +1572,6 @@ static void menu_displaylist_realloc_settings(menu_entries_t *entries, unsigned 
    menu_entries_new_list(entries, flags);
 }
 
-static int menu_setting_set_flags(rarch_setting_t *setting)
-{
-   uint64_t flags = menu_setting_get_flags(setting);
-   if (!setting)
-      return 0;
-
-   if (flags & SD_FLAG_IS_DRIVER)
-      return MENU_SETTING_DRIVER;
-
-   switch (menu_setting_get_type(setting))
-   {
-      case ST_ACTION:
-         return MENU_SETTING_ACTION;
-      case ST_PATH:
-         return MENU_FILE_PATH;
-      case ST_GROUP:
-         return MENU_SETTING_GROUP;
-      case ST_SUB_GROUP:
-         return MENU_SETTING_SUBGROUP;
-      default:
-         break;
-   }
-
-   return 0;
-}
-
 static int menu_displaylist_parse_settings(menu_handle_t *menu,
       menu_displaylist_info_t *info, unsigned setting_flags)
 {
