@@ -57,16 +57,11 @@ int generic_action_ok_displaylist_push(const char *path,
    const char          *info_path    = NULL;
    global_t                 *global  = global_get_ptr();
    settings_t            *settings   = config_get_ptr();
-   menu_list_t            *menu_list = menu_list_get_ptr();
    file_list_t        *selection_buf = menu_entries_get_selection_buf_ptr();
    file_list_t           *menu_stack = menu_entries_get_menu_stack_ptr();
    menu_handle_t            *menu    = menu_driver_get_ptr();
 
-   if (!menu_list)
-      return -1;
-
-   menu_list_get_last_stack(menu_list,
-         &menu_path, &menu_label, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
 
    if (path && menu_path)
       fill_pathname_join(action_path, menu_path, path, sizeof(action_path));
@@ -335,14 +330,12 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx, const char *pa
    const char *menu_label   = NULL;
    int ret                  = 0;
    menu_handle_t *menu      = menu_driver_get_ptr();
-   menu_list_t *menu_list   = menu_list_get_ptr();
    global_t *global         = global_get_ptr();
 
    if (!menu)
       return -1;
 
-   menu_list_get_last_stack(menu_list,
-         &menu_path, &menu_label, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
 
    strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
@@ -552,10 +545,10 @@ static int generic_action_ok(const char *path,
    settings_t              *settings = config_get_ptr();
    menu_list_t       *menu_list      = menu_list_get_ptr();
 
-   if (!menu || !menu_list)
+   if (!menu)
       goto error;
 
-   menu_list_get_last_stack(menu_list, &menu_path, NULL,
+   menu_entries_get_last_stack(&menu_path, NULL,
          NULL, NULL);
 
    fill_pathname_join(action_path, menu_path, path, sizeof(action_path));

@@ -229,8 +229,7 @@ int menu_entry_pathdir_set_value(uint32_t i, const char *s)
 
    (void)s;
 
-   menu_list_get_last_stack(menu_list,
-         &menu_path, NULL, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL);
    cbs = (menu_file_list_cbs_t*)menu_list_get_last_stack_actiondata(menu_list);
 
    if (!cbs || !cbs->setting)
@@ -323,8 +322,7 @@ void menu_entry_get(menu_entry_t *entry, size_t i,
    if (cbs && cbs->action_get_value && use_representation)
    {
       const char *label         = NULL;
-      menu_list_t *menu_list    = menu_list_get_ptr();
-      menu_list_get_last_stack(menu_list, NULL, &label, NULL, NULL);
+      menu_entries_get_last_stack(NULL, &label, NULL, NULL);
 
       cbs->action_get_value(list,
             &entry->spacing, entry->type, i, label,

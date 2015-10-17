@@ -36,15 +36,15 @@ int action_scan_file(const char *path,
    const char *menu_label         = NULL;
    const char *menu_path          = NULL;
    menu_handle_t *menu            = menu_driver_get_ptr();
-   menu_list_t *menu_list         = menu_list_get_ptr();
-   if (!menu || !menu_list)
+   if (!menu)
       return -1;
 
-   menu_list_get_last_stack(menu_list, &menu_path, &menu_label, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
 
    fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
 
-   rarch_main_data_msg_queue_push(DATA_TYPE_DB, fullpath, "cb_db_scan_file", 0, 1, true);
+   rarch_main_data_msg_queue_push(DATA_TYPE_DB, fullpath,
+         "cb_db_scan_file", 0, 1, true);
    return 0;
 }
 
@@ -55,18 +55,18 @@ int action_scan_directory(const char *path,
    const char *menu_label         = NULL;
    const char *menu_path          = NULL;
    menu_handle_t *menu            = menu_driver_get_ptr();
-   menu_list_t *menu_list         = menu_list_get_ptr();
-   if (!menu || !menu_list)
+   if (!menu)
       return -1;
 
-   menu_list_get_last_stack(menu_list, &menu_path, &menu_label, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
 
    strlcpy(fullpath, menu_path, sizeof(fullpath));
 
    if (path)
       fill_pathname_join(fullpath, fullpath, path, sizeof(fullpath));
 
-   rarch_main_data_msg_queue_push(DATA_TYPE_DB, fullpath, "cb_db_scan_folder", 0, 1, true);
+   rarch_main_data_msg_queue_push(DATA_TYPE_DB, fullpath,
+         "cb_db_scan_folder", 0, 1, true);
    return 0;
 }
 

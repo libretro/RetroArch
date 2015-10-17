@@ -294,3 +294,11 @@ void menu_entries_push(file_list_t *list, const char *path, const char *label,
 {
    menu_list_push(list, path, label, type, directory_ptr, entry_idx);
 }
+
+void menu_entries_get_last_stack(const char **path, const char **label,
+      unsigned *file_type, size_t *entry_idx)
+{
+   menu_list_t *menu_list         = menu_list_get_ptr();
+   if (menu_list)
+      menu_list_get_last_stack(menu_list, path, label, file_type, entry_idx);
+}

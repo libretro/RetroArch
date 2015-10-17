@@ -216,7 +216,7 @@ int generic_menu_iterate(enum menu_action action)
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
 
-   menu_list_get_last_stack(menu_list, NULL, &label, NULL, NULL);
+   menu_entries_get_last_stack(NULL, &label, NULL, NULL);
 
    if (!menu || !menu_list)
       return 0;
