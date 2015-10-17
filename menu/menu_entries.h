@@ -52,6 +52,9 @@ void menu_entries_set_refresh(bool nonblocking);
 
 void menu_entries_unset_refresh(bool nonblocking);
 
+void menu_entries_push(file_list_t *list, const char *path, const char *label,
+      unsigned type, size_t directory_ptr, size_t entry_idx);
+
 bool menu_entries_init(void *data);
 
 void menu_entries_free(void);

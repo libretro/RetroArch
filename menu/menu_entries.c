@@ -272,3 +272,9 @@ void menu_entries_new_list(menu_entries_t *entries, unsigned flags)
       return;
    entries->list_settings      = menu_setting_new(flags);
 }
+
+void menu_entries_push(file_list_t *list, const char *path, const char *label,
+      unsigned type, size_t directory_ptr, size_t entry_idx)
+{
+   menu_list_push(list, path, label, type, directory_ptr, entry_idx);
+}
