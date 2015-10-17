@@ -207,12 +207,14 @@ int generic_menu_iterate(enum menu_action action)
    size_t selection;
    menu_entry_t entry;
    enum action_iterate_type iterate_type;
-   const char *label         = NULL;
-   int ret                   = 0;
-   uint32_t label_hash       = 0;
-   uint32_t hash             = 0;
-   menu_handle_t *menu       = menu_driver_get_ptr();
-   menu_list_t *menu_list    = menu_list_get_ptr();
+   const char *label          = NULL;
+   int ret                    = 0;
+   uint32_t label_hash        = 0;
+   uint32_t hash              = 0;
+   menu_handle_t *menu        = menu_driver_get_ptr();
+   menu_list_t *menu_list     = menu_list_get_ptr();
+   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
 
    menu_list_get_last_stack(menu_list, NULL, &label, NULL, NULL);
 
@@ -250,7 +252,7 @@ int generic_menu_iterate(enum menu_action action)
          break;
       case ITERATE_TYPE_INFO:
          {
-            menu_file_list_cbs_t *cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, selection);
+            menu_file_list_cbs_t *cbs = menu_list_get_actiondata_at_offset(selection_buf, selection);
             rarch_setting_t *setting  = cbs->setting;
 
             if (setting)
@@ -288,7 +290,7 @@ int generic_menu_iterate(enum menu_action action)
          {
             menu_displaylist_info_t info = {0};
 
-            info.list = menu_list->menu_stack;
+            info.list = menu_stack;
             strlcpy(info.label,
                   menu_hash_to_str(MENU_LABEL_HELP),
                   sizeof(info.label));
@@ -366,19 +368,15 @@ int menu_iterate_render(void)
 bool generic_menu_init_list(void *data)
 {
    menu_displaylist_info_t info = {0};
-   menu_handle_t   *menu  = (menu_handle_t*)data;
-   menu_list_t *menu_list = menu_list_get_ptr();
+   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
 
-   if (!menu || !menu_list)
-      return false;
-
-   info.list  = menu_list->selection_buf;
+   info.list  = selection_buf;
    info.type  = MENU_SETTINGS;
    info.flags = SL_FLAG_MAIN_MENU | SL_FLAG_MAIN_MENU_SETTINGS;
    strlcpy(info.label, menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));
 
-   menu_entries_push(menu_list->menu_stack,
-         info.path, info.label, info.type, info.flags, 0);
+   menu_entries_push(menu_stack, info.path, info.label, info.type, info.flags, 0);
    menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
 
    return true;
