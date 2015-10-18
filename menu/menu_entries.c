@@ -250,7 +250,9 @@ static int menu_list_elem_get_first_char(
    int ret;
    const char *path = NULL;
 
-   file_list_get_alt_at_offset(list, offset, &path);
+   menu_entries_get_at_offset(list, offset,
+         NULL, NULL, NULL, NULL, &path);
+
    ret = tolower((int)*path);
 
    /* "Normalize" non-alphabetical entries so they
