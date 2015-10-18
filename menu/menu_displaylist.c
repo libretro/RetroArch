@@ -2811,7 +2811,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       file_list_sort_on_alt(info->list);
    
    if (need_refresh)
-      menu_list_refresh(info->list);
+      menu_entries_refresh(info->list);
 
    if (need_push)
    {

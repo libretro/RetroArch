@@ -264,7 +264,7 @@ static int menu_list_elem_get_first_char(
    return ret;
 }
 
-static void menu_list_build_scroll_indices(file_list_t *list)
+static void menu_entries_build_scroll_indices(file_list_t *list)
 {
    int current;
    bool current_is_dir;
@@ -303,7 +303,7 @@ static void menu_list_build_scroll_indices(file_list_t *list)
  *
  * Ensure it doesn't overflow.
  **/
-void menu_list_refresh(file_list_t *list)
+void menu_entries_refresh(file_list_t *list)
 {
    size_t list_size, selection;
    menu_list_t   *menu_list = menu_list_get_ptr();
@@ -312,7 +312,7 @@ void menu_list_refresh(file_list_t *list)
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
-   menu_list_build_scroll_indices(list);
+   menu_entries_build_scroll_indices(list);
 
    list_size = menu_list_get_size(menu_list);
 

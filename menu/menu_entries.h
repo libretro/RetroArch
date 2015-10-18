@@ -172,7 +172,7 @@ void menu_entries_clear(file_list_t *list);
 void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
       const char *alt);
 
-void menu_list_refresh(file_list_t *list);
+void menu_entries_refresh(file_list_t *list);
 
 rarch_setting_t *menu_entries_get_setting(uint32_t i);
 
