@@ -151,7 +151,6 @@ typedef struct settings
          unsigned override_value;
       } dpi;
 
-      bool collapse_subgroups_enable;
       bool show_advanced_settings;
 #ifdef HAVE_THREADS
       bool threaded_data_runloop_enable;

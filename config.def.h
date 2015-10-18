@@ -497,7 +497,6 @@ static const bool overlay_hide_in_menu = true;
 #ifdef HAVE_MENU
 static bool default_block_config_read = true;
 
-static bool collapse_subgroups_enable = true;
 static bool show_advanced_settings    = true;
 static const uint32_t menu_entry_normal_color = 0xffffffff;
 static const uint32_t menu_entry_hover_color  = 0xff64ff64;

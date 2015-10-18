@@ -2400,57 +2400,18 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          setting            = menu_setting_find(menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS));
          flags              = menu_setting_get_flags(setting);
 
-         if (settings->menu.collapse_subgroups_enable)
+         for (; menu_setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
          {
-            for (; menu_setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
+            const char *short_description  = menu_setting_get_short_description(setting);
+            const char *name               = menu_setting_get_name(setting);
+
+            if (menu_setting_get_type(setting) == ST_GROUP)
             {
-               const char *short_description  = menu_setting_get_short_description(setting);
-               const char *name               = menu_setting_get_name(setting);
-
-               if (menu_setting_get_type(setting) == ST_GROUP)
-               {
-                  if (flags & SD_FLAG_ADVANCED &&
-                        !settings->menu.show_advanced_settings)
-                     continue;
-                  menu_entries_push(info->list, short_description,
-                        name, menu_setting_set_flags(setting), 0, 0);
-               }
-            }
-         }
-         else
-         {
-            for (; menu_setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
-            {
-               char group_label[PATH_MAX_LENGTH];
-               const char *short_description  = menu_setting_get_short_description(setting);
-               const char *name               = menu_setting_get_name(setting);
-
-               switch (menu_setting_get_type(setting))
-               {
-                  case ST_GROUP:
-                     strlcpy(group_label, name, sizeof(group_label));
-                     break;
-                  case ST_SUB_GROUP:
-                     {
-                        char subgroup_label[PATH_MAX_LENGTH];
-                        char new_label[PATH_MAX_LENGTH], new_path[PATH_MAX_LENGTH];
-
-                        strlcpy(subgroup_label, name, sizeof(group_label));
-                        strlcpy(new_label, group_label, sizeof(new_label));
-                        strlcat(new_label, "|", sizeof(new_label));
-                        strlcat(new_label, subgroup_label, sizeof(new_label));
-
-                        strlcpy(new_path, group_label, sizeof(new_path));
-                        strlcat(new_path, " - ", sizeof(new_path));
-                        strlcat(new_path, short_description, sizeof(new_path));
-
-                        menu_entries_push(info->list, new_path,
-                              new_label, MENU_SETTING_SUBGROUP, 0, 0);
-                     }
-                     break;
-                  default:
-                     break;
-               }
+               if (flags & SD_FLAG_ADVANCED &&
+                     !settings->menu.show_advanced_settings)
+                  continue;
+               menu_entries_push(info->list, short_description,
+                     name, menu_setting_set_flags(setting), 0, 0);
             }
          }
 

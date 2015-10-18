@@ -573,7 +573,6 @@ static void config_set_defaults(void)
    settings->menu.dynamic_wallpaper_enable     = false;
    settings->menu.boxart_enable                = false;
    *settings->menu.wallpaper                   = '\0';
-   settings->menu.collapse_subgroups_enable    = collapse_subgroups_enable;
    settings->menu.show_advanced_settings       = show_advanced_settings;
    settings->menu.entry_normal_color           = menu_entry_normal_color;
    settings->menu.entry_hover_color            = menu_entry_hover_color;
@@ -1287,8 +1286,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings,
          menu.navigation.browser.filter.supported_extensions_enable,
          "menu_navigation_browser_filter_supported_extensions_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.collapse_subgroups_enable,
-         "menu_collapse_subgroups_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.show_advanced_settings,
          "menu_show_advanced_settings");
    CONFIG_GET_HEX_BASE(conf, settings, menu.entry_normal_color,
@@ -2644,8 +2641,6 @@ bool config_save_file(const char *path)
    config_set_bool(conf,
          "menu_navigation_browser_filter_supported_extensions_enable",
          settings->menu.navigation.browser.filter.supported_extensions_enable);
-   config_set_bool(conf, "menu_collapse_subgroups_enable",
-         settings->menu.collapse_subgroups_enable);
    config_set_bool(conf, "menu_show_advanced_settings",
          settings->menu.show_advanced_settings);
    config_set_hex(conf, "menu_entry_normal_color",

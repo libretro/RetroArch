@@ -172,11 +172,6 @@ static int deferred_push_settings(menu_displaylist_info_t *info)
    return menu_displaylist_push_list(info, DISPLAYLIST_SETTINGS_ALL);
 }
 
-static int deferred_push_settings_subgroup(menu_displaylist_info_t *info)
-{
-   return menu_displaylist_push_list(info, DISPLAYLIST_SETTINGS_SUBGROUP);
-}
-
 static int deferred_push_category(menu_displaylist_info_t *info)
 {
 
@@ -769,21 +764,6 @@ int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       return -1;
 
    BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_default);
-
-   if (cbs->setting)
-   {
-      const char *parent_group   = menu_setting_get_parent_group(cbs->setting);
-      uint32_t parent_group_hash = menu_hash_calculate(parent_group);
-
-      if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && menu_setting_get_type(cbs->setting) == ST_GROUP)
-      {
-         if (!settings->menu.collapse_subgroups_enable)
-         {
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_settings_subgroup);
-            return 0;
-         }
-      }
-   }
 
    if (menu_cbs_init_bind_deferred_push_compare_label(cbs, label, label_hash) == 0)
       return 0;
