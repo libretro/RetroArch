@@ -1459,36 +1459,66 @@ static void menu_displaylist_realloc_settings(menu_entries_t *entries, unsigned 
    menu_entries_new_list(entries, flags);
 }
 
+enum 
+{
+   PARSE_NONE      = (1 << 0),
+   PARSE_GROUP     = (1 << 1),
+   PARSE_SUB_GROUP = (1 << 2)
+};
+
 static int menu_displaylist_parse_settings(menu_handle_t *menu,
       menu_displaylist_info_t *info, unsigned setting_flags,
-      const char *info_label)
+      const char *info_label, unsigned parse_type)
 {
    uint64_t flags;
-   size_t             count = 0;
-   rarch_setting_t *setting = NULL;
-   settings_t *settings     = config_get_ptr();
+   enum setting_type precond;
+   size_t             count  = 0;
+   rarch_setting_t *setting  = NULL;
+   settings_t *settings      = config_get_ptr();
 
    menu_displaylist_realloc_settings(menu->entries, setting_flags);
 
-   setting                  = menu_setting_find(info_label);
-   flags                    = menu_setting_get_flags(setting);
+   setting                   = menu_setting_find(info_label);
+   flags                     = menu_setting_get_flags(setting);
 
    if (!setting)
       return -1;
+   
+   switch (parse_type)
+   {
+      case PARSE_GROUP:
+      case PARSE_SUB_GROUP:
+         precond = ST_NONE;
+         break;
+      default:
+         precond = ST_END_GROUP;
+         break;
+   }
 
-
-   for (; menu_setting_get_type(setting) != ST_END_GROUP; menu_settings_list_increment(&setting))
+   for (; menu_setting_get_type(setting) != precond; menu_settings_list_increment(&setting))
    {
       const char *short_description = menu_setting_get_short_description(setting);
       const char *name              = menu_setting_get_name(setting);
+      enum setting_type type        = menu_setting_get_type(setting);
 
-      switch (menu_setting_get_type(setting))
+      switch (parse_type)
       {
-         case ST_GROUP:
-         case ST_SUB_GROUP:
-         case ST_END_SUB_GROUP:
+         case PARSE_NONE:
+            switch (type)
+            {
+               case ST_GROUP:
+               case ST_SUB_GROUP:
+               case ST_END_SUB_GROUP:
+                  continue;
+               default:
+                  break;
+            }
+            break;
+         case PARSE_GROUP:
+            if (type == ST_GROUP)
+               break;
             continue;
-         default:
+         case PARSE_SUB_GROUP:
             break;
       }
 
@@ -2327,34 +2357,15 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_SETTINGS:
          info->flags = SL_FLAG_SETTINGS_GROUP_ALL;
-         ret = menu_displaylist_parse_settings(menu, info, info->flags, info->label);
+         ret = menu_displaylist_parse_settings(menu, info, info->flags, info->label, PARSE_NONE);
          need_push    = true;
          break;
       case DISPLAYLIST_MAIN_MENU:
-         ret = menu_displaylist_parse_settings(menu, info, info->flags, info->label);
+         ret = menu_displaylist_parse_settings(menu, info, info->flags, info->label, PARSE_NONE);
          need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_ALL:
-         menu_displaylist_realloc_settings(menu->entries, SL_FLAG_SETTINGS_GROUP_ALL);
-
-         setting            = menu_setting_find(menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS));
-         flags              = menu_setting_get_flags(setting);
-
-         for (; menu_setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
-         {
-            const char *short_description  = menu_setting_get_short_description(setting);
-            const char *name               = menu_setting_get_name(setting);
-
-            if (menu_setting_get_type(setting) == ST_GROUP)
-            {
-               if (flags & SD_FLAG_ADVANCED &&
-                     !settings->menu.show_advanced_settings)
-                  continue;
-               menu_entries_push(info->list, short_description,
-                     name, menu_setting_set_flags(setting), 0, 0);
-            }
-         }
-
+         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL, info->label, PARSE_GROUP);
          need_push    = true;
          break;
       case DISPLAYLIST_HORIZONTAL:
