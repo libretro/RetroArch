@@ -197,13 +197,13 @@ static void menu_list_flush_stack(menu_list_t *list,
 
       menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
 
-      if (menu_list_pop_stack(list, &new_selection_ptr))
-      {
-         menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
+      if (!menu_list_pop_stack(list, &new_selection_ptr))
+         break;
 
-         menu_list_get_last(list->menu_stack,
-               &path, &label, &type, &entry_idx);
-      }
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
+
+      menu_list_get_last(list->menu_stack,
+            &path, &label, &type, &entry_idx);
    }
 }
 
