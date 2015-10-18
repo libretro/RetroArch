@@ -296,8 +296,8 @@ void menu_entry_get(menu_entry_t *entry, size_t i,
    if (!list)
       return;
 
-   menu_list_get_at_offset(list, i, &path, &entry_label, &entry->type,
-         &entry->entry_idx);
+   menu_entries_get_at_offset(list, i, &path, &entry_label, &entry->type,
+         &entry->entry_idx, NULL);
 
    cbs = menu_list_get_actiondata_at_offset(list, i);
 

@@ -153,9 +153,9 @@ size_t menu_entries_get_stack_size(void);
 
 size_t menu_entries_get_size(void);
 
-void menu_list_get_at_offset(const file_list_t *list, size_t idx,
+void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type,
-      size_t *entry_idx);
+      size_t *entry_idx, const char **alt);
 
 menu_list_t *menu_list_get_ptr(void);
 
@@ -168,9 +168,6 @@ void menu_list_get_last(const file_list_t *list,
       unsigned *file_type, size_t *entry_idx);
 
 void menu_entries_clear(file_list_t *list);
-
-void menu_list_get_alt_at_offset(const file_list_t *list, size_t idx,
-      const char **alt);
 
 void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
       const char *alt);

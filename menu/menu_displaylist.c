@@ -2193,7 +2193,8 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
                unsigned type                      = 0;
                const char *path                   = NULL;
 
-               menu_list_get_at_offset(info->list, i, &path, NULL, &type, NULL);
+               menu_entries_get_at_offset(info->list, i, &path, NULL, &type, NULL,
+                     NULL);
 
                if (type != MENU_FILE_CORE)
                   continue;

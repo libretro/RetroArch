@@ -235,7 +235,7 @@ void file_list_get_label_at_offset(const file_list_t *list, size_t idx,
 void file_list_set_alt_at_offset(file_list_t *list, size_t idx,
       const char *alt)
 {
-   if (!list)
+   if (!list || !alt)
       return;
 
    if (list->list[idx].alt)

@@ -98,11 +98,12 @@ static size_t menu_list_get_stack_size(menu_list_t *list)
    return file_list_get_size(list->menu_stack);
 }
 
-void menu_list_get_at_offset(const file_list_t *list, size_t idx,
+void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type,
-      size_t *entry_idx)
+      size_t *entry_idx, const char **alt)
 {
    file_list_get_at_offset(list, idx, path, label, file_type, entry_idx);
+   file_list_get_alt_at_offset(list, idx, alt);
 }
 
 void menu_list_get_last(const file_list_t *list,
@@ -214,12 +215,6 @@ void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
    file_list_set_alt_at_offset(list, idx, alt);
 }
 
-void menu_list_get_alt_at_offset(const file_list_t *list, size_t idx,
-      const char **alt)
-{
-   file_list_get_alt_at_offset(list, idx, alt);
-}
-
 /**
  * menu_list_elem_is_dir:
  * @list                     : File list handle.
@@ -234,7 +229,7 @@ static bool menu_list_elem_is_dir(file_list_t *list,
 {
    unsigned type     = 0;
 
-   menu_list_get_at_offset(list, offset, NULL, NULL, &type, NULL);
+   menu_entries_get_at_offset(list, offset, NULL, NULL, &type, NULL, NULL);
 
    return type == MENU_FILE_DIRECTORY;
 }
@@ -255,7 +250,7 @@ static int menu_list_elem_get_first_char(
    int ret;
    const char *path = NULL;
 
-   menu_list_get_alt_at_offset(list, offset, &path);
+   file_list_get_alt_at_offset(list, offset, &path);
    ret = tolower((int)*path);
 
    /* "Normalize" non-alphabetical entries so they
@@ -398,8 +393,8 @@ void menu_entries_get(size_t i, menu_entry_t *entry)
 
    entry->path[0] = entry->value[0] = entry->label[0] = '\0';
 
-   menu_list_get_at_offset(selection_buf, i,
-         &path, &entry_label, &entry->type, &entry->entry_idx);
+   menu_entries_get_at_offset(selection_buf, i,
+         &path, &entry_label, &entry->type, &entry->entry_idx, NULL);
 
    cbs = menu_list_get_actiondata_at_offset(selection_buf, i);
 
