@@ -678,3 +678,13 @@ size_t menu_entries_get_size(void)
       return 0;
    return menu_list_get_size(menu_list);
 }
+
+rarch_setting_t *menu_entries_get_setting(uint32_t i)
+{
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   menu_file_list_cbs_t *cbs  = menu_list_get_actiondata_at_offset(selection_buf, i);
+
+   if (!cbs)
+      return NULL;
+   return cbs->setting;
+}

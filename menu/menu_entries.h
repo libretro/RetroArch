@@ -177,6 +177,8 @@ void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
 
 void menu_list_refresh(file_list_t *list);
 
+rarch_setting_t *menu_entries_get_setting(uint32_t i);
+
 #ifdef __cplusplus
 }
 #endif
