@@ -708,6 +708,12 @@ int cheevos_load( const char* json )
     NULL
   };
 
+  if ( !config_get_ptr()->cheevos.enable )
+  {
+    /* Just return OK if cheevos are disabled. */
+    return 0;
+  }
+  
   /* Count the number of achievements in the JSON file. */
 
   unsigned core_count, unofficial_count;
@@ -745,13 +751,13 @@ int cheevos_load( const char* json )
   ud.core_count = 0;
   ud.unofficial_count = 0;
 
-  if ( jsonsax_parse( json, &handlers, (void*)&ud ) == JSONSAX_OK )
+  if ( !jsonsax_parse( json, &handlers, (void*)&ud ) == JSONSAX_OK )
   {
-    return 0;
+    cheevos_unload();
+    return -1;
   }
 
-  cheevos_unload();
-  return -1;
+  return 0;
 }
 
 /*****************************************************************************
@@ -1339,6 +1345,12 @@ int cheevos_get_by_game_id( const char** json, unsigned game_id )
 {
   char request[ 256 ];
 
+  if ( !config_get_ptr()->cheevos.enable )
+  {
+    /* Just return OK if cheevos are disabled. */
+    return 0;
+  }
+  
   if ( !cheevos_login() )
   {
     snprintf(
@@ -1410,6 +1422,12 @@ int cheevos_get_by_content( const char** json, const void* data, size_t size )
   unsigned game_id;
   int res;
 
+  if ( !config_get_ptr()->cheevos.enable )
+  {
+    /* Just return OK if cheevos are disabled. */
+    return 0;
+  }
+  
   MD5_Init( &ctx );
   MD5_Update( &ctx, data, size );
   saved_ctx = ctx;
