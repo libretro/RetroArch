@@ -596,7 +596,7 @@ static void config_set_defaults(void)
    settings->camera.allow                           = false;
 
 #ifdef HAVE_CHEEVOS
-   settings->cheevos.enable                         = true;
+   settings->cheevos.enable                         = false;
    settings->cheevos.test_unofficial                = false;
    *settings->cheevos.user_name                     = '\0';
    *settings->cheevos.password                      = '\0';
