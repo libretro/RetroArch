@@ -73,7 +73,7 @@ struct rarch_setting
    enum setting_type    type;
 
    uint32_t             size;
-   
+
    const char           *name;
    uint32_t             name_hash;
    const char           *short_description;
@@ -87,9 +87,9 @@ struct rarch_setting
 
    double               min;
    double               max;
-   
+
    uint64_t             flags;
-   
+
    change_handler_t              change_handler;
    change_handler_t              read_handler;
    action_start_handler_t        action_start;
@@ -111,7 +111,7 @@ struct rarch_setting
       const char                 *string;
       const struct retro_keybind *keybind;
    } default_value;
-   
+
    union
    {
       bool                 *boolean;
@@ -662,7 +662,7 @@ int menu_setting_set_with_string_representation(rarch_setting_t* setting,
                   *setting->value.unsigned_integer = max;
             }
          }
-         break;      
+         break;
       case ST_FLOAT:
          sscanf(value, "%f", setting->value.fraction);
          if (flags & SD_FLAG_HAS_RANGE)
@@ -848,7 +848,7 @@ static int setting_action_start_libretro_device_type(void *data)
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
 
-   /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+   /* Only push RETRO_DEVICE_ANALOG as default if we use an
     * older core which doesn't use SET_CONTROLLER_INFO. */
    if (!system->num_ports)
       devices[types++] = RETRO_DEVICE_ANALOG;
@@ -997,7 +997,7 @@ static int setting_action_left_libretro_device_type(
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
 
-   /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+   /* Only push RETRO_DEVICE_ANALOG as default if we use an
     * older core which doesn't use SET_CONTROLLER_INFO. */
    if (!system->num_ports)
       devices[types++] = RETRO_DEVICE_ANALOG;
@@ -1055,7 +1055,7 @@ static int setting_action_right_libretro_device_type(
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
 
-   /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+   /* Only push RETRO_DEVICE_ANALOG as default if we use an
     * older core which doesn't use SET_CONTROLLER_INFO. */
    if (!system->num_ports)
       devices[types++] = RETRO_DEVICE_ANALOG;
@@ -1385,7 +1385,7 @@ static int setting_fraction_action_right_default(
    if (!setting)
       return -1;
 
-   *setting->value.fraction = 
+   *setting->value.fraction =
       *setting->value.fraction + setting->step;
 
    if (setting->enforce_maxrange)
@@ -1493,7 +1493,7 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
 
    target = (struct retro_keybind*)
       &settings->input.binds[setting->index_offset][0];
-   def_binds =  (setting->index_offset) ? 
+   def_binds =  (setting->index_offset) ?
       retro_keybinds_rest : retro_keybinds_1;
 
    if (!target)
@@ -2115,7 +2115,7 @@ static rarch_setting_t setting_bool_setting(const char* name,
  * @change_handler     : Function callback for change handler function pointer.
  * @read_handler       : Function callback for read handler function pointer.
  *
- * Initializes a setting of type ST_INT. 
+ * Initializes a setting of type ST_INT.
  *
  * Returns: setting of type ST_INT.
  **/
@@ -2163,7 +2163,7 @@ static rarch_setting_t setting_int_setting(const char* name,
  * @change_handler     : Function callback for change handler function pointer.
  * @read_handler       : Function callback for read handler function pointer.
  *
- * Initializes a setting of type ST_UINT. 
+ * Initializes a setting of type ST_UINT.
  *
  * Returns: setting of type ST_UINT.
  **/
@@ -2257,7 +2257,7 @@ static rarch_setting_t setting_hex_setting(const char* name,
  * @group              : Group that the setting belongs to.
  * @subgroup           : Subgroup that the setting belongs to.
  *
- * Initializes a setting of type ST_BIND. 
+ * Initializes a setting of type ST_BIND.
  *
  * Returns: setting of type ST_BIND.
  **/
@@ -2304,7 +2304,7 @@ static rarch_setting_t setting_bind_setting(const char* name,
  * @change_handler     : Function callback for change handler function pointer.
  * @read_handler       : Function callback for read handler function pointer.
  *
- * Initializes a string setting (of type @type). 
+ * Initializes a string setting (of type @type).
  *
  * Returns: String setting of type @type.
  **/
@@ -2367,7 +2367,7 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
  * @change_handler     : Function callback for change handler function pointer.
  * @read_handler       : Function callback for read handler function pointer.
  *
- * Initializes a string options list setting. 
+ * Initializes a string options list setting.
  *
  * Returns: string option list setting.
  **/
@@ -2434,7 +2434,7 @@ static void get_string_representation_bind_device(void * data, char *s,
  * Get associated label of a setting.
  **/
 void menu_setting_get_label(void *data, char *s,
-      size_t len, unsigned *w, unsigned type, 
+      size_t len, unsigned *w, unsigned type,
       const char *menu_label, const char *label, unsigned idx)
 {
    rarch_setting_t *setting = NULL;
@@ -2551,7 +2551,7 @@ static void general_write_handler(void *data)
          if (*setting->value.boolean)
          {
             info.list          = menu_stack;
-            info.type          = 0; 
+            info.type          = 0;
             info.directory_ptr = 0;
             strlcpy(info.label,
                   menu_hash_to_str(MENU_LABEL_HELP), sizeof(info.label));
@@ -2634,7 +2634,7 @@ static void general_write_handler(void *data)
          {
 #if defined(__CELLOS_LV2__) && (CELL_SDK_VERSION > 0x340000)
             cellSysutilEnableBgmPlayback();
-#endif         
+#endif
          }
          else
          {
@@ -2968,14 +2968,14 @@ static bool setting_append_list_driver_options(
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
-   
+
    START_GROUP(group_info, menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS), parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name,
          subgroup_info, parent_group);
-   
+
    CONFIG_STRING_OPTIONS(
          settings->input.driver,
          menu_hash_to_str(MENU_LABEL_INPUT_DRIVER),
@@ -3326,7 +3326,7 @@ static bool setting_append_list_saving_options(
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_AUTOSAVE_INIT);
    menu_settings_list_current_add_range(list, list_info, 0, 0, 10, true, false);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-   (*list)[list_info->index - 1].get_string_representation = 
+   (*list)[list_info->index - 1].get_string_representation =
       &setting_get_string_representation_uint_autosave_interval;
 #endif
 
@@ -3418,7 +3418,7 @@ static bool setting_append_list_logging_options(
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 3, 1.0, true, true);
-   (*list)[list_info->index - 1].get_string_representation = 
+   (*list)[list_info->index - 1].get_string_representation =
       &setting_get_string_representation_uint_libretro_log_level;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
@@ -3683,7 +3683,7 @@ static bool setting_append_list_video_options(
    rarch_setting_group_info_t subgroup_info = {0};
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
-    
+
    (void)global;
 
    START_GROUP(group_info, menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS), parent_group);
@@ -3729,7 +3729,7 @@ static bool setting_append_list_video_options(
          general_read_handler);
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
    menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, false);
-   (*list)[list_info->index - 1].get_string_representation = 
+   (*list)[list_info->index - 1].get_string_representation =
       &setting_get_string_representation_uint_video_monitor_index;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
@@ -3795,7 +3795,7 @@ static bool setting_append_list_video_options(
    (*list)[list_info->index - 1].action_start  = &setting_action_start_video_refresh_rate_auto;
    (*list)[list_info->index - 1].action_ok     = &setting_action_ok_video_refresh_rate_auto;
    (*list)[list_info->index - 1].action_select = &setting_action_ok_video_refresh_rate_auto;
-   (*list)[list_info->index - 1].get_string_representation = 
+   (*list)[list_info->index - 1].get_string_representation =
       &setting_get_string_representation_st_float_video_refresh_rate_auto;
 
    if (!strcmp(settings->video.driver, "gl"))
@@ -3867,7 +3867,7 @@ static bool setting_append_list_video_options(
          true,
          true);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-   (*list)[list_info->index - 1].get_string_representation = 
+   (*list)[list_info->index - 1].get_string_representation =
       &setting_get_string_representation_uint_aspect_ratio_index;
 
    CONFIG_INT(
@@ -4044,7 +4044,7 @@ static bool setting_append_list_video_options(
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-   (*list)[list_info->index - 1].get_string_representation = 
+   (*list)[list_info->index - 1].get_string_representation =
       &setting_get_string_representation_uint_video_rotation;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
@@ -4476,7 +4476,7 @@ static bool setting_append_list_audio_options(
          settings->audio.latency,
          menu_hash_to_str(MENU_LABEL_AUDIO_LATENCY),
          menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_LATENCY),
-         g_defaults.settings.out_latency ? 
+         g_defaults.settings.out_latency ?
          g_defaults.settings.out_latency : out_latency,
          group_info.name,
          subgroup_info.name,
@@ -4847,7 +4847,7 @@ static bool setting_append_list_input_options(
       (*list)[list_info->index - 1].action_right  = &setting_action_right_libretro_device_type;
       (*list)[list_info->index - 1].action_select = &setting_action_right_libretro_device_type;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_libretro_device_type;
-      (*list)[list_info->index - 1].get_string_representation = 
+      (*list)[list_info->index - 1].get_string_representation =
          &setting_get_string_representation_uint_libretro_device;
 
       CONFIG_UINT(
@@ -4866,7 +4866,7 @@ static bool setting_append_list_input_options(
       (*list)[list_info->index - 1].action_right  = &setting_action_right_analog_dpad_mode;
       (*list)[list_info->index - 1].action_select = &setting_action_right_analog_dpad_mode;
       (*list)[list_info->index - 1].action_start = &setting_action_start_analog_dpad_mode;
-      (*list)[list_info->index - 1].get_string_representation = 
+      (*list)[list_info->index - 1].get_string_representation =
          &setting_get_string_representation_uint_analog_dpad_mode;
 
       CONFIG_ACTION(
@@ -5122,7 +5122,7 @@ static bool setting_append_list_menu_options(
    START_GROUP(group_info,
          menu_hash_to_str(MENU_LABEL_VALUE_MENU_SETTINGS),
          parent_group);
-   
+
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
@@ -5402,13 +5402,13 @@ static bool setting_append_list_multimedia_options(
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
-    
+
    (void)settings;
 
    START_GROUP(group_info,
          menu_hash_to_str(MENU_LABEL_VALUE_MULTIMEDIA_SETTINGS),
          parent_group);
-   
+
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
@@ -5494,7 +5494,7 @@ static bool setting_append_list_ui_options(
          parent_group,
          general_write_handler,
          general_read_handler);
-   
+
    CONFIG_BOOL(
          settings->ui.companion_start_on_boot,
          menu_hash_to_str(MENU_LABEL_UI_COMPANION_START_ON_BOOT),
@@ -5658,7 +5658,7 @@ static bool setting_append_list_core_updater_options(
          settings->network.buildbot_url,
          menu_hash_to_str(MENU_LABEL_CORE_UPDATER_BUILDBOT_URL),
          menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL),
-         buildbot_server_url, 
+         buildbot_server_url,
          group_info.name,
          subgroup_info.name,
          parent_group,
@@ -5670,7 +5670,7 @@ static bool setting_append_list_core_updater_options(
          settings->network.buildbot_assets_url,
          menu_hash_to_str(MENU_LABEL_BUILDBOT_ASSETS_URL),
          menu_hash_to_str(MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL),
-         buildbot_assets_server_url, 
+         buildbot_assets_server_url,
          group_info.name,
          subgroup_info.name,
          parent_group,
@@ -5780,7 +5780,7 @@ static bool setting_append_list_netplay_options(
          parent_group,
          general_write_handler,
          general_read_handler);
-   
+
    CONFIG_UINT(
          global->netplay.sync_frames,
          menu_hash_to_str(MENU_LABEL_NETPLAY_DELAY_FRAMES),
@@ -5832,7 +5832,7 @@ static bool setting_append_list_netplay_options(
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-    
+
    CONFIG_UINT(
          settings->network_cmd_port,
          menu_hash_to_str(MENU_LABEL_NETWORK_CMD_PORT),
@@ -5844,7 +5844,7 @@ static bool setting_append_list_netplay_options(
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-    
+
    CONFIG_BOOL(
          settings->stdin_cmd_enable,
          menu_hash_to_str(MENU_LABEL_STDIN_CMD_ENABLE),
@@ -5933,7 +5933,7 @@ static bool setting_append_list_accounts_options(
          parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
-
+#ifdef HAVE_CHEEVOS
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_STRING(
@@ -5969,7 +5969,7 @@ static bool setting_append_list_accounts_options(
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-
+#endif
    END_SUB_GROUP(list, list_info, parent_group);
    END_GROUP(list, list_info, parent_group);
 
@@ -6031,7 +6031,7 @@ static bool setting_append_list_user_options(
          true,
          true);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-   (*list)[list_info->index - 1].get_string_representation = 
+   (*list)[list_info->index - 1].get_string_representation =
       &setting_get_string_representation_uint_user_language;
 
    END_SUB_GROUP(list, list_info, parent_group);
@@ -6589,7 +6589,7 @@ static bool setting_append_list_input_player_options(
       char label[PATH_MAX_LENGTH];
       char name[PATH_MAX_LENGTH];
       bool do_add = true;
-      const struct input_bind_map* keybind = 
+      const struct input_bind_map* keybind =
          (const struct input_bind_map*)&input_config_bind_map[i];
 
       if (!keybind || keybind->meta)
@@ -6605,7 +6605,7 @@ static bool setting_append_list_input_player_options(
          )
       {
          if (system->input_desc_btn[user][i])
-            strlcat(label, 
+            strlcat(label,
                   system->input_desc_btn[user][i],
                   sizeof(label));
          else
@@ -6740,7 +6740,7 @@ rarch_setting_t *menu_setting_new(unsigned mask)
       if (!setting_append_list_logging_options(&list, list_info, root))
          goto error;
    }
-   
+
    if (mask & SL_FLAG_SETTINGS_SAVING_OPTIONS)
    {
       if (!setting_append_list_saving_options(&list, list_info, root))
@@ -6812,7 +6812,7 @@ rarch_setting_t *menu_setting_new(unsigned mask)
       if (!setting_append_list_overlay_options(&list, list_info, root))
          goto error;
    }
-   
+
    if (mask & SL_FLAG_SETTINGS_MENU_OPTIONS)
    {
       if (!setting_append_list_menu_options(&list, list_info, root))
@@ -6912,4 +6912,3 @@ error:
 
    return NULL;
 }
-
