@@ -1460,7 +1460,8 @@ static void menu_displaylist_realloc_settings(menu_entries_t *entries, unsigned 
 }
 
 static int menu_displaylist_parse_settings(menu_handle_t *menu,
-      menu_displaylist_info_t *info, unsigned setting_flags)
+      menu_displaylist_info_t *info, unsigned setting_flags,
+      const char *info_label)
 {
    uint64_t flags;
    size_t             count = 0;
@@ -1469,7 +1470,7 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
 
    menu_displaylist_realloc_settings(menu->entries, setting_flags);
 
-   setting                  = menu_setting_find(info->label);
+   setting                  = menu_setting_find(info_label);
    flags                    = menu_setting_get_flags(setting);
 
    if (!setting)
@@ -2326,9 +2327,11 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_SETTINGS:
          info->flags = SL_FLAG_SETTINGS_GROUP_ALL;
-         /* fall-through */
+         ret = menu_displaylist_parse_settings(menu, info, info->flags, info->label);
+         need_push    = true;
+         break;
       case DISPLAYLIST_MAIN_MENU:
-         ret = menu_displaylist_parse_settings(menu, info, info->flags);
+         ret = menu_displaylist_parse_settings(menu, info, info->flags, info->label);
          need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_ALL:
