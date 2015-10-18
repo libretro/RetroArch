@@ -83,7 +83,7 @@ void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned durati
 #ifdef HAVE_OPENGL
 #include "../gfx/drivers/gl_common.h"
 
-void menu_video_draw_frame(
+void menu_display_draw_frame(
       unsigned x, unsigned y,
       unsigned width, unsigned height,
       const void *shader,
@@ -93,7 +93,7 @@ void menu_video_draw_frame(
       GLuint texture
       );
 
-void menu_video_frame_background(
+void menu_display_frame_background(
       menu_handle_t *menu,
       settings_t *settings,
       gl_t *gl,

@@ -483,7 +483,7 @@ void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned durati
 }
 
 #ifdef HAVE_OPENGL
-void menu_video_draw_frame(
+void menu_display_draw_frame(
       unsigned x, unsigned y,
       unsigned width, unsigned height,
       const void *shader_data,
@@ -511,7 +511,7 @@ void menu_video_draw_frame(
       glDisable(GL_BLEND);
 }
 
-void menu_video_frame_background(
+void menu_display_frame_background(
       menu_handle_t *menu,
       settings_t *settings,
       gl_t *gl,
@@ -546,7 +546,7 @@ void menu_video_frame_background(
       && texture)
       coords.color = (const float*)coord_color2;
 
-   menu_video_draw_frame(0, 0, width, height,
+   menu_display_draw_frame(0, 0, width, height,
          gl->shader, &coords,
          &gl->mvp_no_rot, true, texture);
 

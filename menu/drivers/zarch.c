@@ -996,7 +996,7 @@ static void zarch_frame(void)
    if (zui->set->menu.mouse.enable)
       zarch_draw_cursor(gl, zui->mouse.x, zui->mouse.y);
 
-   menu_video_frame_background(menu, settings,
+   menu_display_frame_background(menu, settings,
          gl, zui->width, zui->height,
          zui->textures.bg.id, 0.75f, false,
          &coord_color[0],   &coord_color2[0],

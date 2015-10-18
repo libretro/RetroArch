@@ -365,7 +365,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = (const float*)color;
 
-   menu_video_draw_frame(
+   menu_display_draw_frame(
          x,
          height - y,
          xmb->icon.size,
@@ -399,7 +399,7 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = color;
 
-   menu_video_draw_frame(
+   menu_display_draw_frame(
          x,
          height - y,
          xmb->icon.size,
@@ -430,7 +430,7 @@ static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb, GRfloat *color, unsigne
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = (const float*)color;
 
-   menu_video_draw_frame(
+   menu_display_draw_frame(
          x,
          height - y,
          xmb->boxart_size,
@@ -1387,7 +1387,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb,
 
    xmb_draw_icon_begin(gl);
 
-   menu_video_draw_frame(
+   menu_display_draw_frame(
          x,
          height - y,
          xmb->cursor.size,
@@ -1546,7 +1546,7 @@ static void xmb_frame(void)
    coord_color[3]  = coord_color[7]  = coord_color[11]  = coord_color[15]  = (0.75f > xmb->alpha) ? xmb->alpha : 0.75f;
    coord_color2[3] = coord_color2[7] = coord_color2[11] = coord_color2[15] = xmb->alpha;
 
-   menu_video_frame_background(menu, settings,
+   menu_display_frame_background(menu, settings,
          gl, width, height, xmb->textures.bg.id, xmb->alpha, false, &coord_color[0],
          &coord_color2[0], &rmb_vertex[0], &rmb_tex_coord[0]);
 
@@ -1653,7 +1653,7 @@ static void xmb_frame(void)
 
    if (render_background)
    {
-      menu_video_frame_background(menu, settings, gl,
+      menu_display_frame_background(menu, settings, gl,
             width, height,
             xmb->textures.bg.id, xmb->alpha, true,
             &coord_color[0], &coord_color2[0],

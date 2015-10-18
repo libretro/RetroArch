@@ -114,7 +114,7 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
    coords.lut_tex_coord = glui_tex_coords;
    coords.color         = coord_color;
 
-   menu_video_draw_frame(
+   menu_display_draw_frame(
          x,
          height - y - h,
          w,
@@ -445,7 +445,8 @@ static void glui_frame(void)
          highlight_bg[i] = 0.1f;
       }
    }
-   menu_video_frame_background(menu, settings,
+
+   menu_display_frame_background(menu, settings,
          gl, width, height,
          glui->textures.bg.id, 0.75f, false,
          &coord_color[0],   &coord_color2[0],
