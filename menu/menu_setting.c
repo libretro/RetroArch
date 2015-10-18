@@ -5915,6 +5915,67 @@ static bool setting_append_list_playlist_options(
    return true;
 }
 
+static bool setting_append_list_accounts_options(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
+{
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
+   settings_t *settings = config_get_ptr();
+
+   START_GROUP(group_info,
+#if 0
+         menu_hash_to_str(MENU_LABEL_VALUE_USER_SETTINGS),
+#else
+         "Accounts",
+#endif
+         parent_group);
+
+   parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
+
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
+
+   CONFIG_STRING(
+         settings->cheevos.username,
+#if 0
+         menu_hash_to_str(MENU_LABEL_CHEEVOS_USERNAME),
+         menu_hash_to_str(MENU_LABEL_VALUE_CHEEVOS_USERNAME),
+#else
+         "cheevos_username",
+         "Username",
+#endif
+         "",
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+   CONFIG_STRING(
+         settings->cheevos.username,
+#if 0
+         menu_hash_to_str(MENU_LABEL_CHEEVOS_USERNAME),
+         menu_hash_to_str(MENU_LABEL_VALUE_CHEEVOS_USERNAME),
+#else
+         "cheevos_password",
+         "Password",
+#endif
+         "",
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
+
+   return true;
+}
+
 static bool setting_append_list_user_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -6806,6 +6867,12 @@ rarch_setting_t *menu_setting_new(unsigned mask)
    if (mask & SL_FLAG_SETTINGS_USER_OPTIONS)
    {
       if (!setting_append_list_user_options(&list, list_info, root))
+         goto error;
+   }
+
+   if (mask & SL_FLAG_SETTINGS_SUB_ACCOUNTS_OPTIONS)
+   {
+      if (!setting_append_list_accounts_options(&list, list_info, root))
          goto error;
    }
 

@@ -1317,7 +1317,7 @@ static int cheevos_login( void )
     snprintf(
       request, sizeof( request ),
       "http://retroachievements.org/dorequest.php?r=login&u=%s&p=%s",
-      config_get_ptr()->cheevos.user_name, config_get_ptr()->cheevos.password
+      config_get_ptr()->cheevos.username, config_get_ptr()->cheevos.password
     );
 
     request[ sizeof( request ) - 1 ] = 0;
@@ -1356,7 +1356,7 @@ int cheevos_get_by_game_id( const char** json, unsigned game_id )
     snprintf(
       request, sizeof( request ),
       "http://retroachievements.org/dorequest.php?r=patch&u=%s&g=%u&f=3&l=1&t=%s",
-      config_get_ptr()->cheevos.user_name, game_id, token
+      config_get_ptr()->cheevos.username, game_id, token
     );
 
     request[ sizeof( request ) - 1 ] = 0;
@@ -1384,7 +1384,7 @@ static unsigned cheevos_get_game_id( unsigned char* hash )
   snprintf(
     request, sizeof( request ),
     "http://retroachievements.org/dorequest.php?r=gameid&u=%s&m=%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
-    config_get_ptr()->cheevos.user_name,
+    config_get_ptr()->cheevos.username,
     hash[ 0 ], hash[ 1 ], hash[ 2 ], hash[ 3 ],
     hash[ 4 ], hash[ 5 ], hash[ 6 ], hash[ 7 ],
     hash[ 8 ], hash[ 9 ], hash[ 10 ], hash[ 11 ],

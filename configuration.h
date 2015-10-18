@@ -286,7 +286,7 @@ typedef struct settings
    {
       bool enable;
       bool test_unofficial;
-      char user_name[32];
+      char username[32];
       char password[32];
    } cheevos;
 #endif
