@@ -113,13 +113,6 @@ void menu_list_get_last(const file_list_t *list,
       file_list_get_last(list, path, label, file_type, entry_idx);
 }
 
-static void menu_list_get_last_stack(const menu_list_t *list,
-      const char **path, const char **label,
-      unsigned *file_type, size_t *entry_idx)
-{
-   menu_list_get_last(list->menu_stack, path, label, file_type, entry_idx);
-}
-
 void *menu_list_get_userdata_at_offset(const file_list_t *list, size_t idx)
 {
    if (!list)
@@ -134,13 +127,6 @@ menu_file_list_cbs_t *menu_list_get_actiondata_at_offset(
       return NULL;
    return (menu_file_list_cbs_t*)
       file_list_get_actiondata_at_offset(list, idx);
-}
-
-static menu_file_list_cbs_t *menu_list_get_last_stack_actiondata(const menu_list_t *list)
-{
-   if (!list)
-      return NULL;
-   return (menu_file_list_cbs_t*)file_list_get_last_actiondata(list->menu_stack);
 }
 
 static INLINE int menu_list_flush_stack_type(
@@ -630,7 +616,7 @@ menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
    menu_list_t *menu_list         = menu_list_get_ptr();
    if (!menu_list)
       return NULL;
-   return (menu_file_list_cbs_t*)menu_list_get_last_stack_actiondata(menu_list);
+   return (menu_file_list_cbs_t*)file_list_get_last_actiondata(menu_list->menu_stack);
 }
 
 void menu_entries_get_last_stack(const char **path, const char **label,
@@ -638,7 +624,7 @@ void menu_entries_get_last_stack(const char **path, const char **label,
 {
    menu_list_t *menu_list         = menu_list_get_ptr();
    if (menu_list)
-      menu_list_get_last_stack(menu_list, path, label, file_type, entry_idx);
+      menu_list_get_last(menu_list->menu_stack, path, label, file_type, entry_idx);
 }
 
 void menu_entries_flush_stack(const char *needle, unsigned final_type)
