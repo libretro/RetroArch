@@ -596,7 +596,6 @@ static int menu_input_key_bind_set_mode_common(rarch_setting_t  *setting,
    file_list_t *menu_stack       = NULL;
    settings_t     *settings      = config_get_ptr();
    menu_input_t      *menu_input = menu_input_get_ptr();
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr();
 
    if (!setting)
       return -1;
