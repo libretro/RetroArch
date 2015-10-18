@@ -2324,12 +2324,10 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_entries_push(info->list, info->path, info->label, info->type, info->directory_ptr, 0);
          menu->push_help_screen = false;
          break;
-      case DISPLAYLIST_MAIN_MENU:
-         ret = menu_displaylist_parse_settings(menu, info, info->flags);
-         need_push    = true;
-         break;
       case DISPLAYLIST_SETTINGS:
          info->flags = SL_FLAG_SETTINGS_GROUP_ALL;
+         /* fall-through */
+      case DISPLAYLIST_MAIN_MENU:
          ret = menu_displaylist_parse_settings(menu, info, info->flags);
          need_push    = true;
          break;
