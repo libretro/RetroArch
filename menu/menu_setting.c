@@ -5577,6 +5577,29 @@ static bool setting_append_list_menu_file_browser_options(
    return true;
 }
 
+static bool setting_append_list_cheevos_options(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
+{
+#ifdef HAVE_CHEEVOS
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
+   settings_t *settings = config_get_ptr();
+
+   START_GROUP(group_info,
+         //menu_hash_to_str(MENU_LABEL_VALUE_CHEEVOS_SETTINGS),
+         "Retro Achievements",
+         parent_group);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
+
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
+#endif
+
+   return true;
+}
+
 static bool setting_append_list_core_updater_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -6721,6 +6744,12 @@ rarch_setting_t *menu_setting_new(unsigned mask)
    if (mask & SL_FLAG_PLAYLIST_OPTIONS)
    {
       if (!setting_append_list_playlist_options(&list, list_info, root))
+         goto error;
+   }
+
+   if (mask & SL_FLAG_CHEEVOS_OPTIONS)
+   {
+      if (!setting_append_list_cheevos_options(&list, list_info, root))
          goto error;
    }
 
