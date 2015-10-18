@@ -1534,7 +1534,7 @@ static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *
       }
    }
 
-   menu_displaylist_realloc_settings(menu->entries, SL_FLAG_ALL_SETTINGS);
+   menu_displaylist_realloc_settings(menu->entries, SL_FLAG_SETTINGS_GROUP_ALL);
 
    info->setting = menu_setting_find(elem0);
 
@@ -2386,7 +2386,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS:
-         info->flags = SL_FLAG_ALL_SETTINGS;
+         info->flags = SL_FLAG_SETTINGS_GROUP_ALL;
          ret = menu_displaylist_parse_settings(menu, info, info->flags);
          need_push    = true;
          break;
@@ -2395,7 +2395,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_ALL:
-         menu_displaylist_realloc_settings(menu->entries, SL_FLAG_ALL_SETTINGS);
+         menu_displaylist_realloc_settings(menu->entries, SL_FLAG_SETTINGS_GROUP_ALL);
 
          setting            = menu_setting_find(menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS));
          flags              = menu_setting_get_flags(setting);
@@ -2891,7 +2891,7 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    switch (hash_label)
    {
       case MENU_VALUE_MAIN_MENU:
-         info.flags = SL_FLAG_MAIN_MENU | SL_FLAG_MAIN_MENU_SETTINGS;
+         info.flags = SL_FLAG_MAIN_MENU | SL_FLAG_SETTINGS;
          return menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
       case MENU_VALUE_HORIZONTAL_MENU:
          return menu_displaylist_push_list(&info, DISPLAYLIST_HORIZONTAL);
