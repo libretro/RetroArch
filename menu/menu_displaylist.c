@@ -2292,7 +2292,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_CONTENT_HISTORY:
       case DISPLAYLIST_ARCHIVE_ACTION:
       case DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE:
-         menu_list_clear(info->list);
+         menu_entries_clear(info->list);
          break;
    }
 
