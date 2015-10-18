@@ -43,8 +43,6 @@ int menu_entry_go_back(void)
    return 0;
 }
 
-
-
 enum menu_entry_type menu_entry_get_type(uint32_t i)
 {
    rarch_setting_t *setting  = menu_entries_get_setting(i);

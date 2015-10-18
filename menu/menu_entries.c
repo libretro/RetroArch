@@ -233,6 +233,7 @@ static void menu_list_push(file_list_t *list,
    size_t idx;
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
    menu_file_list_cbs_t *cbs       = NULL;
+   rarch_setting_t *setting        = NULL;
    if (!list || !label)
       return;
 
@@ -251,7 +252,12 @@ static void menu_list_push(file_list_t *list,
       return;
 
    file_list_set_actiondata(list, idx, cbs);
-   menu_cbs_init(list, path, label, type, idx);
+
+   setting = menu_setting_find(label);
+
+   cbs->setting = (setting) ? setting : NULL;
+
+   menu_cbs_init(list, cbs, path, label, type, idx);
 }
 
 void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,

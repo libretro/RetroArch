@@ -34,32 +34,21 @@ static void menu_cbs_init_log(const char *entry_label, const char *bind_label, c
 }
 
 void menu_cbs_init(void *data,
+      menu_file_list_cbs_t *cbs,
       const char *path, const char *label,
       unsigned type, size_t idx)
 {
    char elem0[PATH_MAX_LENGTH];
    char elem1[PATH_MAX_LENGTH];
    const char *repr_label       = NULL;
-   rarch_setting_t *setting     = NULL;
    struct string_list *str_list = NULL;
    const char *menu_label       = NULL;
-   menu_file_list_cbs_t *cbs    = NULL;
    int ret                      = 0;
    uint32_t label_hash          = 0;
    uint32_t menu_label_hash     = 0;
    file_list_t *list            = (file_list_t*)data;
    if (!list)
       return;
-
-   cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(list, idx);
-
-   if (!cbs)
-      return;
-
-   setting = menu_setting_find(label);
-
-   if (setting)
-      cbs->setting = setting;
 
    elem0[0] = '\0';
    elem1[0] = '\0';
