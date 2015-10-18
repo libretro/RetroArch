@@ -207,9 +207,6 @@ static void menu_list_flush_stack(menu_list_t *list,
    }
 }
 
-
-
-
 void menu_list_clear(file_list_t *list)
 {
    unsigned i;
@@ -223,38 +220,6 @@ void menu_list_clear(file_list_t *list)
 
    if (list)
       file_list_clear(list);
-}
-
-static void menu_list_push(file_list_t *list,
-      const char *path, const char *label,
-      unsigned type, size_t directory_ptr,
-      size_t entry_idx)
-{
-   size_t idx;
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   menu_file_list_cbs_t *cbs       = NULL;
-   if (!list || !label)
-      return;
-
-   file_list_push(list, path, label, type, directory_ptr, entry_idx);
-
-   idx = list->size - 1;
-
-   if (driver->list_insert)
-      driver->list_insert(list, path, label, idx);
-
-   file_list_free_actiondata(list, idx);
-   cbs = (menu_file_list_cbs_t*)
-      calloc(1, sizeof(menu_file_list_cbs_t));
-
-   if (!cbs)
-      return;
-
-   file_list_set_actiondata(list, idx, cbs);
-
-   cbs->setting = menu_setting_find(label);
-
-   menu_cbs_init(list, cbs, path, label, type, idx);
 }
 
 void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
@@ -633,7 +598,31 @@ void menu_entries_new_list(menu_entries_t *entries, unsigned flags)
 void menu_entries_push(file_list_t *list, const char *path, const char *label,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {
-   menu_list_push(list, path, label, type, directory_ptr, entry_idx);
+   size_t idx;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+   menu_file_list_cbs_t *cbs       = NULL;
+   if (!list || !label)
+      return;
+
+   file_list_push(list, path, label, type, directory_ptr, entry_idx);
+
+   idx = list->size - 1;
+
+   if (driver->list_insert)
+      driver->list_insert(list, path, label, idx);
+
+   file_list_free_actiondata(list, idx);
+   cbs = (menu_file_list_cbs_t*)
+      calloc(1, sizeof(menu_file_list_cbs_t));
+
+   if (!cbs)
+      return;
+
+   file_list_set_actiondata(list, idx, cbs);
+
+   cbs->setting = menu_setting_find(label);
+
+   menu_cbs_init(list, cbs, path, label, type, idx);
 }
 
 menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
