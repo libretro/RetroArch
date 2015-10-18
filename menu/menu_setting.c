@@ -5597,6 +5597,24 @@ static bool setting_append_list_cheevos_options(
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
+         settings->cheevos.enable,
+#if 0
+         menu_hash_to_str(MENU_LABEL_CHEEVOS_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_CHEEVOS_ENABLE),
+#else
+         "cheevos_enable",
+         "Enable",
+#endif
+         false,
+         menu_hash_to_str(MENU_VALUE_OFF),
+         menu_hash_to_str(MENU_VALUE_ON),
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
          settings->cheevos.test_unofficial,
 #if 0
          menu_hash_to_str(MENU_LABEL_CHEEVOS_TEST_UNOFFICIAL),
