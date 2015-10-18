@@ -5936,6 +5936,8 @@ static bool setting_append_list_accounts_options(
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
+#ifdef HAVE_CHEEVOS
+
    CONFIG_STRING(
          settings->cheevos.username,
 #if 0
@@ -5969,6 +5971,7 @@ static bool setting_append_list_accounts_options(
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+#endif
 
    END_SUB_GROUP(list, list_info, parent_group);
    END_GROUP(list, list_info, parent_group);
