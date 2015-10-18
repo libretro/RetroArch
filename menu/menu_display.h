@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <boolean.h>
 
+#include <gfx/math/matrix_4x4.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

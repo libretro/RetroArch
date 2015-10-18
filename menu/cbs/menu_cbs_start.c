@@ -25,6 +25,8 @@
 #include "../../retroarch.h"
 #include "../../performance.h"
 
+#include "../../gfx/video_shader_driver.h"
+
 #include "../../input/input_remapping.h"
 
 #ifndef BIND_ACTION_START
