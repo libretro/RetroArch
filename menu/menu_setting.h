@@ -90,8 +90,8 @@ enum setting_list_flags
    SL_FLAG_SETTINGS_FRAME_THROTTLE_OPTIONS          =  (1 << 26),
    SL_FLAG_SETTINGS_LOGGING_OPTIONS                 =  (1 << 27),
    SL_FLAG_SETTINGS_SAVING_OPTIONS                  =  (1 << 28),
-   SL_FLAG_SETTINGS_ALL                             =  (1 << 29),
-   SL_FLAG_SETTINGS_SUB_ACCOUNTS_OPTIONS            =  (1 << 30),
+   SL_FLAG_SETTINGS_SUB_ACCOUNTS_OPTIONS            =  (1 << 29),
+   SL_FLAG_SETTINGS_ALL                             =  (1 << 30),
    SL_FLAG_ALLOW_EMPTY_LIST                         =  (1 << 31)
 };
 

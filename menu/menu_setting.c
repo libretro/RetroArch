@@ -5956,7 +5956,7 @@ static bool setting_append_list_accounts_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_STRING(
-         settings->cheevos.username,
+         settings->cheevos.password,
 #if 0
          menu_hash_to_str(MENU_LABEL_CHEEVOS_USERNAME),
          menu_hash_to_str(MENU_LABEL_VALUE_CHEEVOS_USERNAME),

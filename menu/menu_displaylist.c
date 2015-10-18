@@ -2306,14 +2306,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST:
 #ifdef HAVE_CHEEVOS
-         menu_entries_push(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME),
-               menu_hash_to_str(MENU_LABEL_ACCOUNTS_CHEEVOS_USERNAME),
-               0, 0, 0);
-         menu_entries_push(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD),
-               menu_hash_to_str(MENU_LABEL_ACCOUNTS_CHEEVOS_PASSWORD),
-               0, 0, 0);
+         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+               "Accounts", PARSE_NONE);
 #else
          menu_entries_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
