@@ -35,7 +35,7 @@
 #include "../menu_entries.h"
 #include "../menu_input.h"
 #include "../menu_setting.h"
-#include "../menu_video.h"
+#include "../menu_display.h"
 
 #include "../../gfx/video_context_driver.h"
 

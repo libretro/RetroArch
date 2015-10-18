@@ -80,6 +80,35 @@ void menu_display_timedate(char *s, size_t len, unsigned time_mode);
 void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
       bool flush);
 
+#ifdef HAVE_OPENGL
+#include "../gfx/drivers/gl_common.h"
+
+void menu_video_draw_frame(
+      unsigned x, unsigned y,
+      unsigned width, unsigned height,
+      const void *shader,
+      struct gfx_coords *coords,
+      math_matrix_4x4 *mat, 
+      bool blend,
+      GLuint texture
+      );
+
+void menu_video_frame_background(
+      menu_handle_t *menu,
+      settings_t *settings,
+      gl_t *gl,
+      unsigned width, unsigned height,
+      GLuint texture,
+      float handle_alpha,
+      bool force_transparency,
+      GRfloat *color,
+      GRfloat *color2,
+      const GRfloat *vertex,
+      const GRfloat *tex_coord);
+#endif
+
+const char *menu_video_get_ident(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -32,7 +32,6 @@
 #include "../menu_animation.h"
 #include "../menu_hash.h"
 #include "../menu_display.h"
-#include "../menu_video.h"
 
 #include "../../gfx/video_texture.h"
 

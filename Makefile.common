@@ -415,7 +415,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_navigation.o  \
           menu/menu_setting.o \
           menu/menu_shader.o \
-          menu/menu_video.o \
           menu/menu_cbs.o \
           menu/cbs/menu_cbs_ok.o \
           menu/cbs/menu_cbs_cancel.o \

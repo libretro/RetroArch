@@ -18,7 +18,7 @@
 #include <string/string_list.h>
 
 #include "menu.h"
-#include "menu_video.h"
+#include "menu_display.h"
 #include "../general.h"
 
 static bool menu_alive = false;

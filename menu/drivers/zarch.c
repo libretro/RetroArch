@@ -40,7 +40,6 @@
 #include "../../gfx/video_thread_wrapper.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
-#include "../menu_video.h"
 
 const GLfloat ZUI_NORMAL[] = {
    1, 1, 1, 1,
