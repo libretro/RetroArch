@@ -1509,63 +1509,6 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
    return 0;
 }
 
-static int menu_displaylist_parse_settings_in_subgroup(menu_displaylist_info_t *info)
-{
-   char elem0[PATH_MAX_LENGTH]  = {0};
-   char elem1[PATH_MAX_LENGTH]  = {0};
-   menu_handle_t          *menu = menu_driver_get_ptr();
-
-   if (!menu)
-      return -1;
-
-   if (info->label[0] != '\0')
-   {
-      struct string_list *str_list = string_split(info->label, "|");
-
-      if (str_list)
-      {
-         if (str_list->size > 0)
-            strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-         if (str_list->size > 1)
-            strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
-
-         string_list_free(str_list);
-         str_list = NULL;
-      }
-   }
-
-   menu_displaylist_realloc_settings(menu->entries, SL_FLAG_SETTINGS_GROUP_ALL);
-
-   info->setting = menu_setting_find(elem0);
-
-   if (!info->setting)
-      return -1;
-
-   while (1)
-   {
-      const char *name = menu_setting_get_name(info->setting);
-
-      if (menu_setting_get_type(info->setting) == ST_SUB_GROUP)
-      {
-         if ((strlen(name) != 0) && !strcmp(name, elem1))
-            break;
-      }
-      menu_settings_list_increment(&info->setting);
-   }
-
-   menu_settings_list_increment(&info->setting);
-
-   for (; menu_setting_get_type(info->setting) != ST_END_SUB_GROUP; menu_settings_list_increment(&info->setting))
-   {
-      const char *name              = menu_setting_get_name(info->setting);
-      const char *short_description = menu_setting_get_short_description(info->setting);
-      menu_entries_push(info->list, short_description,
-            name, menu_setting_set_flags(info->setting), 0, 0);
-   }
-
-   return 0;
-}
-
 static int menu_displaylist_sort_playlist(const content_playlist_entry_t *a,
       const content_playlist_entry_t *b)
 {
@@ -2242,7 +2185,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_MAIN_MENU:
       case DISPLAYLIST_SETTINGS:
       case DISPLAYLIST_SETTINGS_ALL:
-      case DISPLAYLIST_SETTINGS_SUBGROUP:
       case DISPLAYLIST_HORIZONTAL:
       case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
       case DISPLAYLIST_CONTENT_SETTINGS:
@@ -2389,10 +2331,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_SETTINGS:
          info->flags = SL_FLAG_SETTINGS_GROUP_ALL;
          ret = menu_displaylist_parse_settings(menu, info, info->flags);
-         need_push    = true;
-         break;
-      case DISPLAYLIST_SETTINGS_SUBGROUP:
-         ret = menu_displaylist_parse_settings_in_subgroup(info);
          need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_ALL:
