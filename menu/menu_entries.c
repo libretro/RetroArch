@@ -39,13 +39,6 @@ struct menu_entries
    rarch_setting_t *list_settings;
 };
 
-static size_t menu_list_get_size(menu_list_t *list)
-{
-   if (!list)
-      return 0;
-   return file_list_get_size(list->selection_buf);
-}
-
 static void menu_list_free_list(file_list_t *list)
 {
    unsigned i;
@@ -114,14 +107,14 @@ void menu_entries_get_last(const file_list_t *list,
       file_list_get_last(list, path, label, file_type, entry_idx);
 }
 
-void *menu_list_get_userdata_at_offset(const file_list_t *list, size_t idx)
+void *menu_entries_get_userdata_at_offset(const file_list_t *list, size_t idx)
 {
    if (!list)
       return NULL;
    return (menu_file_list_cbs_t*)file_list_get_userdata_at_offset(list, idx);
 }
 
-menu_file_list_cbs_t *menu_list_get_actiondata_at_offset(
+menu_file_list_cbs_t *menu_entries_get_actiondata_at_offset(
       const file_list_t *list, size_t idx)
 {
    if (!list)
@@ -306,15 +299,14 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
 void menu_entries_refresh(file_list_t *list)
 {
    size_t list_size, selection;
-   menu_list_t   *menu_list = menu_list_get_ptr();
-   if (!menu_list || !list)
+   if (!list)
       return;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
    menu_entries_build_scroll_indices(list);
 
-   list_size = menu_list_get_size(menu_list);
+   list_size = menu_entries_get_size();
 
    if ((selection >= list_size) && list_size)
    {
@@ -398,7 +390,7 @@ void menu_entries_get(size_t i, menu_entry_t *entry)
    menu_entries_get_at_offset(selection_buf, i,
          &path, &entry_label, &entry->type, &entry->entry_idx, NULL);
 
-   cbs = menu_list_get_actiondata_at_offset(selection_buf, i);
+   cbs = menu_entries_get_actiondata_at_offset(selection_buf, i);
 
    if (cbs && cbs->action_get_value)
       cbs->action_get_value(selection_buf,
@@ -641,13 +633,13 @@ size_t menu_entries_get_size(void)
    menu_list_t *menu_list         = menu_list_get_ptr();
    if (!menu_list)
       return 0;
-   return menu_list_get_size(menu_list);
+   return file_list_get_size(menu_list->selection_buf);
 }
 
 rarch_setting_t *menu_entries_get_setting(uint32_t i)
 {
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
-   menu_file_list_cbs_t *cbs  = menu_list_get_actiondata_at_offset(selection_buf, i);
+   menu_file_list_cbs_t *cbs  = menu_entries_get_actiondata_at_offset(selection_buf, i);
 
    if (!cbs)
       return NULL;

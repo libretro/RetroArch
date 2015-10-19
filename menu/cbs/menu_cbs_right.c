@@ -172,7 +172,7 @@ static int action_right_mainmenu(unsigned type, const char *label,
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
 
-   cbs = menu_list_get_actiondata_at_offset(selection_buf, selection);
+   cbs = menu_entries_get_actiondata_at_offset(selection_buf, selection);
 
    switch (push_list)
    {

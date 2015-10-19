@@ -251,7 +251,7 @@ int generic_menu_iterate(enum menu_action action)
          break;
       case ITERATE_TYPE_INFO:
          {
-            menu_file_list_cbs_t *cbs = menu_list_get_actiondata_at_offset(selection_buf, selection);
+            menu_file_list_cbs_t *cbs = menu_entries_get_actiondata_at_offset(selection_buf, selection);
             rarch_setting_t *setting  = cbs->setting;
 
             if (setting)

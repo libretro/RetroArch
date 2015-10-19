@@ -516,7 +516,7 @@ int menu_setting_set(unsigned type, const char *label,
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;
 
-   cbs = menu_list_get_actiondata_at_offset(selection_buf, selection);
+   cbs = menu_entries_get_actiondata_at_offset(selection_buf, selection);
 
    if (!cbs)
       return 0;

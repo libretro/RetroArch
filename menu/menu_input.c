@@ -1185,7 +1185,7 @@ void menu_input_post_iterate(int *ret, unsigned action)
       return;
 
    if (selection_buf)
-      cbs = menu_list_get_actiondata_at_offset(selection_buf, selection);
+      cbs = menu_entries_get_actiondata_at_offset(selection_buf, selection);
 
    menu_entry_get(&entry, selection, NULL, false);
 

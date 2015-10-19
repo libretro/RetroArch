@@ -603,7 +603,7 @@ static void xmb_selection_pointer_changed(bool allow_animations)
       float iy, real_iy;
       float ia = xmb->item.passive.alpha;
       float iz = xmb->item.passive.zoom;
-      xmb_node_t *node = (xmb_node_t*)menu_list_get_userdata_at_offset(selection_buf, i);
+      xmb_node_t *node = (xmb_node_t*)menu_entries_get_userdata_at_offset(selection_buf, i);
 
       if (!node)
          continue;
@@ -656,7 +656,7 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
    {
       float ia = 0;
       float real_y;
-      xmb_node_t *node = (xmb_node_t*)menu_list_get_userdata_at_offset(list, i);
+      xmb_node_t *node = (xmb_node_t*)menu_entries_get_userdata_at_offset(list, i);
 
       if (!node)
          continue;
@@ -701,7 +701,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       float ia;
       float real_y;
       xmb_node_t *node = (xmb_node_t*)
-         menu_list_get_userdata_at_offset(list, i);
+         menu_entries_get_userdata_at_offset(list, i);
 
       if (!node)
          continue;
@@ -773,7 +773,7 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, unsigned i)
 static xmb_node_t* xmb_get_userdata_from_horizontal_list(
       xmb_handle_t *xmb, unsigned i)
 {
-   return (xmb_node_t*)menu_list_get_actiondata_at_offset(xmb->horizontal_list, i);
+   return (xmb_node_t*)menu_entries_get_actiondata_at_offset(xmb->horizontal_list, i);
 }
 
 static void xmb_push_animations(xmb_node_t *node, float ia, float ix)
@@ -795,7 +795,7 @@ static void xmb_list_switch_old(xmb_handle_t *xmb,
    for (i = 0; i < end; i++)
    {
       xmb_node_t *node = (xmb_node_t*)
-         menu_list_get_userdata_at_offset(list, i);
+         menu_entries_get_userdata_at_offset(list, i);
       float ia         = 0;
 
       if (!node)
@@ -836,7 +836,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
    for (i = 0; i < end; i++)
    {
       xmb_node_t *node = (xmb_node_t*)
-         menu_list_get_userdata_at_offset(list, i);
+         menu_entries_get_userdata_at_offset(list, i);
       float ia         = 0.5;
 
       if (!node)
@@ -1195,7 +1195,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       menu_entry_t entry          = {{0}};
       GRuint texture_switch       = 0;
       GRuint         icon         = 0;
-      xmb_node_t *   node         = (xmb_node_t*)menu_list_get_userdata_at_offset(list, i);
+      xmb_node_t *   node         = (xmb_node_t*)menu_entries_get_userdata_at_offset(list, i);
       uint32_t hash_label         = 0;
       uint32_t hash_value         = 0;
       bool do_draw_text           = false;
@@ -1773,7 +1773,7 @@ static void xmb_layout(menu_handle_t *menu, xmb_handle_t *xmb)
    {
       float ia = xmb->item.passive.alpha;
       float iz = xmb->item.passive.zoom;
-      xmb_node_t *node = (xmb_node_t*)menu_list_get_userdata_at_offset(
+      xmb_node_t *node = (xmb_node_t*)menu_entries_get_userdata_at_offset(
             selection_buf, i);
 
       if (!node)

@@ -155,9 +155,9 @@ void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
 
 menu_list_t *menu_list_get_ptr(void);
 
-void *menu_list_get_userdata_at_offset(const file_list_t *list, size_t idx);
+void *menu_entries_get_userdata_at_offset(const file_list_t *list, size_t idx);
 
-menu_file_list_cbs_t *menu_list_get_actiondata_at_offset(const file_list_t *list, size_t idx);
+menu_file_list_cbs_t *menu_entries_get_actiondata_at_offset(const file_list_t *list, size_t idx);
 
 void menu_entries_get_last(const file_list_t *list,
       const char **path, const char **label,
@@ -165,7 +165,7 @@ void menu_entries_get_last(const file_list_t *list,
 
 void menu_entries_clear(file_list_t *list);
 
-void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
+void menu_entries_set_alt_at_offset(file_list_t *list, size_t idx,
       const char *alt);
 
 void menu_entries_refresh(file_list_t *list);

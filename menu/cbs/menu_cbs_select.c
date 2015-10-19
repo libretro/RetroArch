@@ -37,7 +37,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
 
    menu_entry_get(&entry, idx, NULL, false);
 
-   cbs = menu_list_get_actiondata_at_offset(selection_buf, idx);
+   cbs = menu_entries_get_actiondata_at_offset(selection_buf, idx);
 
    if (!cbs)
       return -1;
