@@ -2825,23 +2825,18 @@ static bool setting_append_list_main_menu_options(
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings  = config_get_ptr();
-   global_t *global      = global_get_ptr();
-   const char *main_menu = menu_hash_to_str(MENU_VALUE_MAIN_MENU);
 
    (void)settings;
 
-   START_GROUP(group_info,main_menu, parent_group);
+   START_GROUP(group_info, menu_hash_to_str(MENU_VALUE_MAIN_MENU), parent_group);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
-   if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
-   {
-      CONFIG_ACTION(
-            menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS),
-            menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS),
-            group_info.name,
-            subgroup_info.name,
-            parent_group);
-   }
+   CONFIG_ACTION(
+         menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS),
+         menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS),
+         group_info.name,
+         subgroup_info.name,
+         parent_group);
 
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
    CONFIG_ACTION(

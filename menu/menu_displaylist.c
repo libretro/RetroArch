@@ -2349,7 +2349,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          need_push    = true;
          break;
       case DISPLAYLIST_MAIN_MENU:
-         ret = menu_displaylist_parse_settings(menu, info, info->label, PARSE_NONE);
+         ret = menu_displaylist_parse_settings(menu, info, menu_hash_to_str(MENU_VALUE_MAIN_MENU), PARSE_NONE);
          need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_ALL:
