@@ -123,34 +123,32 @@ menu_file_list_cbs_t *menu_entries_get_actiondata_at_offset(
       file_list_get_actiondata_at_offset(list, idx);
 }
 
-static INLINE int menu_list_flush_stack_type(
+static INLINE int menu_entries_flush_stack_type(
       const char *needle, const char *label,
       unsigned type, unsigned final_type)
 {
    return needle ? strcmp(needle, label) : (type != final_type);
 }
 
-static void menu_list_pop(file_list_t *list, size_t *directory_ptr)
-{
-   if (list->size != 0)
-      menu_driver_list_free(list, list->size - 1, list->size - 1);
-
-   file_list_pop(list, directory_ptr);
-
-   menu_driver_list_set_selection(list);
-}
-
 static bool menu_list_pop_stack(menu_list_t *list, size_t *directory_ptr)
 {
+   file_list_t *menu_list = NULL;
    if (!list)
       return false;
+
+   menu_list = list->menu_stack;
 
    if (menu_list_get_stack_size(list) <= 1)
       return false;
 
    menu_driver_list_cache(MENU_LIST_PLAIN, 0);
 
-   menu_list_pop(list->menu_stack, directory_ptr);
+   if (menu_list->size != 0)
+      menu_driver_list_free(menu_list, menu_list->size - 1, menu_list->size - 1);
+
+   file_list_pop(menu_list, directory_ptr);
+   menu_driver_list_set_selection(menu_list);
+
    menu_entries_set_refresh(false);
 
    return true;
@@ -170,7 +168,7 @@ static void menu_list_flush_stack(menu_list_t *list,
    menu_entries_get_last(list->menu_stack,
          &path, &label, &type, &entry_idx);
 
-   while (menu_list_flush_stack_type(
+   while (menu_entries_flush_stack_type(
             needle, label, type, final_type) != 0)
    {
       size_t new_selection_ptr;
