@@ -40,6 +40,7 @@ extern "C" {
 #define MENU_LABEL_DEFERRED_ACCOUNTS_LIST                                      0x3d2b8860U
 #define MENU_LABEL_ACCOUNTS_LIST                                               0x774c15a0U
 #define MENU_LABEL_VALUE_ACCOUNTS_LIST                                         0x86e551a1U
+#define MENU_LABEL_VALUE_ACCOUNTS_LIST_END                                     0x3d559522U
 
 #define MENU_LABEL_DEBUG_PANEL_ENABLE                                          0xbad176a1U
 #define MENU_LABEL_VALUE_DEBUG_PANEL_ENABLE                                    0x15042803U

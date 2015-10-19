@@ -2274,16 +2274,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          }
          break;
       case DISPLAYLIST_ACCOUNTS_LIST:
-#ifdef HAVE_CHEEVOS
-         menu_entries_push(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS),
-               menu_hash_to_str(MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS),
-               MENU_SETTING_ACTION, 0, 0);
-#else
-         menu_entries_push(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
-               "", 0, 0, 0);
-#endif
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_LIST_END),
+               PARSE_NONE);
          need_refresh = true;
          need_push    = true;
          break;

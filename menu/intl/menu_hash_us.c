@@ -676,6 +676,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Retro Achievements";
       case MENU_LABEL_VALUE_ACCOUNTS_LIST:
          return "Accounts";
+      case MENU_LABEL_VALUE_ACCOUNTS_LIST_END:
+         return "Accounts List Endpoint";
       case MENU_LABEL_VALUE_DEBUG_PANEL_ENABLE:
          return "Debug Panel Enable";
       case MENU_LABEL_VALUE_HELP_SCANNING_CONTENT:

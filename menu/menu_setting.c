@@ -5905,6 +5905,40 @@ static bool setting_append_list_playlist_options(
    return true;
 }
 
+static bool setting_append_list_accounts_options(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
+{
+   rarch_setting_group_info_t group_info    = {0};
+   rarch_setting_group_info_t subgroup_info = {0};
+   settings_t *settings = config_get_ptr();
+
+   START_GROUP(group_info,
+         menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_LIST_END),
+         parent_group);
+
+   parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
+
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
+
+   (void)subgroup_info;
+
+#ifdef HAVE_CHEEVOS
+   CONFIG_ACTION(
+         menu_hash_to_str(MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS),
+         menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS),
+         group_info.name,
+         subgroup_info.name,
+         parent_group);
+#endif
+
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
+
+   return true;
+}
+
 #ifdef HAVE_CHEEVOS
 static bool setting_append_list_accounts_cheevos_options(
       rarch_setting_t **list,
@@ -6784,6 +6818,9 @@ rarch_setting_t *menu_setting_new(void)
       goto error;
 
    if (!setting_append_list_user_options(&list, list_info, root))
+      goto error;
+
+   if (!setting_append_list_accounts_options(&list, list_info, root))
       goto error;
 
 #ifdef HAVE_CHEEVOS
