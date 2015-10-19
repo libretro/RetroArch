@@ -167,7 +167,7 @@ void menu_setting_free(rarch_setting_t *list);
  * Returns: settings list composed of all requested
  * settings on success, otherwise NULL.
  **/
-rarch_setting_t* menu_setting_new(unsigned mask);
+rarch_setting_t* menu_setting_new(void);
 
 bool menu_setting_is_of_path_type(rarch_setting_t *setting);
 

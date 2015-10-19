@@ -541,6 +541,8 @@ bool menu_entries_init(void *data)
    if (!(entries->menu_list = (menu_list_t*)menu_list_new()))
       goto error;
 
+   entries->list_settings      = menu_setting_new();
+
    return true;
 
 error:
@@ -558,24 +560,12 @@ void menu_entries_free(void)
    if (!entries)
       return;
 
-   menu_setting_free(entries->list_settings);
+   if (entries->list_settings)
+      menu_setting_free(entries->list_settings);
    entries->list_settings = NULL;
 
    menu_list_free(entries->menu_list);
    entries->menu_list     = NULL;
-}
-
-void menu_entries_free_list(menu_entries_t *entries)
-{
-   if (entries && entries->list_settings)
-      menu_setting_free(entries->list_settings);
-}
-
-void menu_entries_new_list(menu_entries_t *entries, unsigned flags)
-{
-   if (!entries)
-      return;
-   entries->list_settings      = menu_setting_new(flags);
 }
 
 void menu_entries_push(file_list_t *list, const char *path, const char *label,

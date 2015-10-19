@@ -1453,12 +1453,6 @@ static int deferred_push_video_shader_parameters_common(
 }
 #endif
 
-static void menu_displaylist_realloc_settings(menu_entries_t *entries, unsigned flags)
-{
-   menu_entries_free_list(entries);
-   menu_entries_new_list(entries, flags);
-}
-
 enum 
 {
    PARSE_NONE         = (1 << 0),
@@ -1468,7 +1462,7 @@ enum
 };
 
 static int menu_displaylist_parse_settings(menu_handle_t *menu,
-      menu_displaylist_info_t *info, unsigned setting_flags,
+      menu_displaylist_info_t *info, 
       const char *info_label, unsigned parse_type)
 {
    uint64_t flags;
@@ -1476,8 +1470,6 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
    size_t             count  = 0;
    rarch_setting_t *setting  = NULL;
    settings_t *settings      = config_get_ptr();
-
-   menu_displaylist_realloc_settings(menu->entries, setting_flags);
 
    setting                   = menu_setting_find(info_label);
    flags                     = menu_setting_get_flags(setting);
@@ -2306,8 +2298,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST:
 #ifdef HAVE_CHEEVOS
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
-               "Accounts", PARSE_NONE);
+         ret = menu_displaylist_parse_settings(menu, info, "Accounts", PARSE_NONE);
 #else
          menu_entries_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
@@ -2354,39 +2345,39 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_SETTINGS:
          info->flags = SL_FLAG_SETTINGS_GROUP_ALL;
-         ret = menu_displaylist_parse_settings(menu, info, info->flags, info->label, PARSE_NONE);
+         ret = menu_displaylist_parse_settings(menu, info, info->label, PARSE_NONE);
          need_push    = true;
          break;
       case DISPLAYLIST_MAIN_MENU:
-         ret = menu_displaylist_parse_settings(menu, info, info->flags, info->label, PARSE_NONE);
+         ret = menu_displaylist_parse_settings(menu, info, info->label, PARSE_NONE);
          need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_ALL:
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS),          PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_CORE_SETTINGS),            PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_CONFIGURATION_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_SAVING_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_LOGGING_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_REWIND_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_RECORDING_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_INPUT_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS),   PARSE_ONLY_GROUP);
          {
             unsigned user;
@@ -2396,31 +2387,31 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             {
                snprintf(group_lbl[user], sizeof(group_lbl[user]),
                      menu_hash_to_str(MENU_LABEL_VALUE_INPUT_USER_BINDS), user + 1);
-               ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+               ret = menu_displaylist_parse_settings(menu, info, 
                      group_lbl[user],   PARSE_ONLY_GROUP);
             }
          }
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_MENU_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_UI_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                "Retro Achievements",   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_NETWORK_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_PLAYLIST_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_USER_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_DIRECTORY_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, SL_FLAG_SETTINGS_GROUP_ALL,
+         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_PRIVACY_SETTINGS),   PARSE_ONLY_GROUP);
          need_push    = true;
          break;
