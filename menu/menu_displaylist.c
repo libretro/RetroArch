@@ -2182,15 +2182,6 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
    return 0;
 }
 
-static void menu_driver_populate_entries(const char *path,
-      const char *label, unsigned k)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->populate_entries)
-      driver->populate_entries(path, label, k);
-}
-
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    size_t i, list_size;
@@ -2809,10 +2800,12 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
    if (need_push)
    {
+      const menu_ctx_driver_t *menu_driver = menu_ctx_driver_get_ptr();
       driver_t *driver                = driver_get_ptr();
       const ui_companion_driver_t *ui = ui_companion_get_ptr();
 
-      menu_driver_populate_entries(info->path, info->label, info->type);
+      if (menu_driver->populate_entries)
+         menu_driver->populate_entries(info->path, info->label, info->type);
 
       if (ui && driver)
          ui->notify_list_loaded(driver->ui_companion_data,
