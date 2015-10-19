@@ -2425,19 +2425,20 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
             free(menu_stack->list[stack_size - 1].label);
          menu_stack->list[stack_size - 1].label = NULL;
 
-         if (xmb->categories.selection_ptr == 0)
+         switch (xmb->categories.selection_ptr)
          {
-            menu_stack->list[stack_size - 1].label = 
-               strdup(menu_hash_to_str(MENU_VALUE_MAIN_MENU));
-            menu_stack->list[stack_size - 1].type = 
-               MENU_SETTINGS;
-         }
-         else
-         {
-            menu_stack->list[stack_size - 1].label = 
-               strdup(menu_hash_to_str(MENU_VALUE_HORIZONTAL_MENU));
-            menu_stack->list[stack_size - 1].type = 
-               MENU_SETTING_HORIZONTAL_MENU;
+            case 0:
+               menu_stack->list[stack_size - 1].label = 
+                  strdup(menu_hash_to_str(MENU_VALUE_MAIN_MENU));
+               menu_stack->list[stack_size - 1].type = 
+                  MENU_SETTINGS;
+               break;
+            default:
+               menu_stack->list[stack_size - 1].label = 
+                  strdup(menu_hash_to_str(MENU_VALUE_HORIZONTAL_MENU));
+               menu_stack->list[stack_size - 1].type = 
+                  MENU_SETTING_HORIZONTAL_MENU;
+               break;
          }
          break;
    }
