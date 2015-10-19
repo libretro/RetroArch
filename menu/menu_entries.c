@@ -111,7 +111,7 @@ void *menu_entries_get_userdata_at_offset(const file_list_t *list, size_t idx)
 {
    if (!list)
       return NULL;
-   return (menu_file_list_cbs_t*)file_list_get_userdata_at_offset(list, idx);
+   return file_list_get_userdata_at_offset(list, idx);
 }
 
 menu_file_list_cbs_t *menu_entries_get_actiondata_at_offset(
