@@ -2186,6 +2186,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    size_t i, list_size;
    int ret                     = 0;
+   bool need_parse_generic     = false;
    bool need_sort              = false;
    bool need_refresh           = false;
    bool need_push              = false;
@@ -2270,6 +2271,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
             menu_entries_set_refresh(false);
          }
+         need_parse_generic = true;
          break;
       case DISPLAYLIST_ACCOUNTS_LIST:
 #ifdef HAVE_CHEEVOS
@@ -2681,6 +2683,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          info->type_default = MENU_FILE_RDB;
          strlcpy(info->exts, "rdb", sizeof(info->exts));
          strlcpy(info->path, settings->content_database, sizeof(info->path));
+         need_parse_generic = true;
          break;
       case DISPLAYLIST_ARCHIVE_ACTION:
          menu_entries_push(info->list,
@@ -2708,92 +2711,91 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          info->type_default = MENU_FILE_CURSOR;
          strlcpy(info->exts, "dbc", sizeof(info->exts));
          strlcpy(info->path, settings->cursor_directory, sizeof(info->path));
+         need_parse_generic = true;
          break;
       case DISPLAYLIST_DATABASE_PLAYLISTS:
          info->type_default = MENU_FILE_PLAIN;
          strlcpy(info->exts, "lpl", sizeof(info->exts));
+         need_parse_generic = true;
          break;
       case DISPLAYLIST_CORES:
          info->type_default = MENU_FILE_PLAIN;
          strlcpy(info->exts, EXT_EXECUTABLES, sizeof(info->exts));
+         need_parse_generic = true;
          break;
       case DISPLAYLIST_CONFIG_FILES:
          info->type_default = MENU_FILE_CONFIG;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
+         need_parse_generic = true;
          break;
       case DISPLAYLIST_SHADER_PRESET:
          info->type_default = MENU_FILE_SHADER_PRESET;
          strlcpy(info->exts, "cgp|glslp", sizeof(info->exts));
+         need_parse_generic = true;
          break;
       case DISPLAYLIST_SHADER_PASS:
          info->type_default = MENU_FILE_SHADER;
          strlcpy(info->exts, "cg|glsl", sizeof(info->exts));
+         need_parse_generic = true;
          break;
       case DISPLAYLIST_VIDEO_FILTERS:
          info->type_default = MENU_FILE_VIDEOFILTER;
          strlcpy(info->exts, "filt", sizeof(info->exts));
+         need_parse_generic = true;
          break;
       case DISPLAYLIST_IMAGES:
          info->type_default = MENU_FILE_IMAGE;
          strlcpy(info->exts, "png", sizeof(info->exts));
+         need_parse_generic = true;
          break;
       case DISPLAYLIST_AUDIO_FILTERS:
          info->type_default = MENU_FILE_AUDIOFILTER;
          strlcpy(info->exts, "dsp", sizeof(info->exts));
+         need_parse_generic = true;
          break;
       case DISPLAYLIST_CHEAT_FILES:
          info->type_default = MENU_FILE_CHEAT;
          strlcpy(info->exts, "cht", sizeof(info->exts));
+         need_parse_generic = true;
          break;
       case DISPLAYLIST_CONTENT_HISTORY:
          info->type_default = MENU_FILE_PLAIN;
          strlcpy(info->exts, "lpl", sizeof(info->exts));
+         need_parse_generic = true;
          break;
       case DISPLAYLIST_FONTS:
          info->type_default = MENU_FILE_FONT;
          strlcpy(info->exts, "ttf", sizeof(info->exts));
+         need_parse_generic = true;
          break;
       case DISPLAYLIST_OVERLAYS:
          info->type_default = MENU_FILE_OVERLAY;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
+         need_parse_generic = true;
          break;
       case DISPLAYLIST_RECORD_CONFIG_FILES:
          info->type_default = MENU_FILE_RECORD_CONFIG;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
+         need_parse_generic = true;
          break;
       case DISPLAYLIST_REMAP_FILES:
          info->type_default = MENU_FILE_REMAP;
          strlcpy(info->exts, "rmp", sizeof(info->exts));
+         need_parse_generic = true;
+         break;
+      case DISPLAYLIST_CORES_DETECTED:
+      case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
+         need_parse_generic = true;
          break;
    }
 
-   switch (type)
+   if (need_parse_generic)
    {
-      case DISPLAYLIST_DATABASES:
-      case DISPLAYLIST_DEFAULT:
-      case DISPLAYLIST_CORES:
-      case DISPLAYLIST_CORES_DETECTED:
-      case DISPLAYLIST_SHADER_PASS:
-      case DISPLAYLIST_SHADER_PRESET:
-      case DISPLAYLIST_DATABASE_CURSORS:
-      case DISPLAYLIST_DATABASE_PLAYLISTS:
-      case DISPLAYLIST_VIDEO_FILTERS:
-      case DISPLAYLIST_AUDIO_FILTERS:
-      case DISPLAYLIST_IMAGES:
-      case DISPLAYLIST_OVERLAYS:
-      case DISPLAYLIST_FONTS:
-      case DISPLAYLIST_CHEAT_FILES:
-      case DISPLAYLIST_REMAP_FILES:
-      case DISPLAYLIST_RECORD_CONFIG_FILES:
-      case DISPLAYLIST_CONFIG_FILES:
-      case DISPLAYLIST_CONTENT_HISTORY:
-      case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
-         if (menu_displaylist_parse_generic(info, &need_sort) == 0)
-         {
-            need_refresh = true;
-            need_push    = true;
-         }
-         break;
+      if (menu_displaylist_parse_generic(info, &need_sort) == 0)
+      {
+         need_refresh = true;
+         need_push    = true;
+      }
    }
 
    if (need_sort)
