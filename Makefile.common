@@ -820,13 +820,6 @@ ifeq ($(HAVE_ZLIB_DEFLATE),1)
 DEFINES += -DHAVE_ZLIB_DEFLATE
 endif
 
-# Retro Achievements
-
-ifeq ($(HAVE_CHEEVOS), 1)
-	OBJ += cheevos.o libretro-common/utils/md5.o
-  DEFINES += -DHAVE_CHEEVOS
-endif
-
 # Camera
 
 ifeq ($(HAVE_V4L2),1)
@@ -834,7 +827,7 @@ ifeq ($(HAVE_V4L2),1)
    DEFINES += -DHAVE_V4L2
 endif
 
-# Netplay
+# Things that depend on network availability
 
 ifeq ($(HAVE_NETWORKING), 1)
    DEFINES += -DHAVE_NETWORKING
@@ -846,9 +839,18 @@ ifeq ($(HAVE_NETWORKING), 1)
       LIBS += -lws2_32
    endif
 
+   # Netplay
+
    ifeq ($(HAVE_NETPLAY), 1)
       DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD
       OBJ += netplay.o
+   endif
+
+   # Retro Achievements
+   
+   ifeq ($(HAVE_CHEEVOS), 1)
+      DEFINES += -DHAVE_CHEEVOS
+      OBJ += cheevos.o libretro-common/utils/md5.o
    endif
 endif
 
