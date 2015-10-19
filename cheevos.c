@@ -1175,8 +1175,12 @@ error1:
   if ( data )
   {
     result = (char*)malloc( length + 1 );
-    memcpy( (void*)result, (void*)data, length );
-    result[ length ] = 0;
+    
+    if ( result )
+    {
+      memcpy( (void*)result, (void*)data, length );
+      result[ length ] = 0;
+    }
   }
   else
   {
