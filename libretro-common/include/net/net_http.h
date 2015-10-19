@@ -21,6 +21,8 @@
 #include <boolean.h>
 #include <string.h>
 
+#include <performance.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,6 +59,9 @@ uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error);
 
 /* Cleans up all memory. */
 void net_http_delete(struct http_t *state);
+
+/* Does a HTTP GET and returns whatever the server sends back. */
+int net_http_get(const char **result, size_t *size, const char *url, retro_time_t *timeout);
 
 #ifdef __cplusplus
 }
