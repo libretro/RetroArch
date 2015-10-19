@@ -5910,11 +5910,10 @@ static bool setting_append_list_accounts_options(
       rarch_setting_info_t *list_info,
       const char *parent_group)
 {
+#ifdef HAVE_CHEEVOS
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
-#ifdef HAVE_CHEEVOS
    settings_t *settings = config_get_ptr();
-#endif
 
    START_GROUP(group_info,
 #if 0
@@ -5927,8 +5926,6 @@ static bool setting_append_list_accounts_options(
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
-
-#ifdef HAVE_CHEEVOS
 
    CONFIG_STRING(
          settings->cheevos.username,
@@ -5963,10 +5960,10 @@ static bool setting_append_list_accounts_options(
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-#endif
 
    END_SUB_GROUP(list, list_info, parent_group);
    END_GROUP(list, list_info, parent_group);
+#endif
 
    return true;
 }
