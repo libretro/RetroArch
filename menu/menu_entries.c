@@ -207,7 +207,7 @@ void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
 }
 
 /**
- * menu_list_elem_is_dir:
+ * menu_entries_elem_is_dir:
  * @list                     : File list handle.
  * @offset                   : Offset index of element.
  *
@@ -215,7 +215,7 @@ void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
  *
  * Returns: true (1) if entry is a directory, otherwise false (0).
  **/
-static bool menu_list_elem_is_dir(file_list_t *list,
+static bool menu_entries_elem_is_dir(file_list_t *list,
       unsigned offset)
 {
    unsigned type     = 0;
@@ -226,7 +226,7 @@ static bool menu_list_elem_is_dir(file_list_t *list,
 }
 
 /**
- * menu_list_elem_get_first_char:
+ * menu_entries_elem_get_first_char:
  * @list                     : File list handle.
  * @offset                   : Offset index of element.
  *
@@ -235,7 +235,7 @@ static bool menu_list_elem_is_dir(file_list_t *list,
  *
  * Returns: first character of element in file list.
  **/
-static int menu_list_elem_get_first_char(
+static int menu_entries_elem_get_first_char(
       file_list_t *list, unsigned offset)
 {
    int ret;
@@ -267,13 +267,13 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
    menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES, NULL);
    menu_navigation_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &scroll_value);
 
-   current        = menu_list_elem_get_first_char(list, 0);
-   current_is_dir = menu_list_elem_is_dir(list, 0);
+   current        = menu_entries_elem_get_first_char(list, 0);
+   current_is_dir = menu_entries_elem_is_dir(list, 0);
 
    for (i = 1; i < list->size; i++)
    {
-      int first   = menu_list_elem_get_first_char(list, i);
-      bool is_dir = menu_list_elem_is_dir(list, i);
+      int first   = menu_entries_elem_get_first_char(list, i);
+      bool is_dir = menu_entries_elem_is_dir(list, i);
 
       if ((current_is_dir && !is_dir) || (first > current))
          menu_navigation_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &i);
