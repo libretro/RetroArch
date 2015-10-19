@@ -1132,8 +1132,6 @@ Load achievements from retroachievements.org.
 
 static const char* cheevos_http_get( const char* url, size_t* size )
 {
-#ifdef HAVE_NETWORKING
-
   struct http_connection_t* conn;
   struct http_t* http;
   uint8_t* data;
@@ -1196,20 +1194,6 @@ error1:
   }
 
   return (char*)result;
-
-#else /* HAVE_NETWORKING */
-
-  RARCH_LOG( "CHEEVOS http get %s\n", url );
-  RARCH_ERROR( "CHEEVOS Network unavailable\n" );
-
-  if ( size )
-  {
-    *size = 0;
-  }
-
-  return NULL;
-
-#endif /* HAVE_NETWORKING */
 }
 
 typedef struct
