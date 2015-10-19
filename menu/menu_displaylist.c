@@ -2391,8 +2391,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_VALUE_UI_SETTINGS),   PARSE_ONLY_GROUP);
          ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, 
-               "Retro Achievements",   PARSE_ONLY_GROUP);
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS),  PARSE_ONLY_GROUP);
          ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS),   PARSE_ONLY_GROUP);
          ret = menu_displaylist_parse_settings(menu, info, 
