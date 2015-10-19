@@ -2844,7 +2844,6 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    switch (hash_label)
    {
       case MENU_VALUE_MAIN_MENU:
-         info.flags = SL_FLAG_MAIN_MENU | SL_FLAG_SETTINGS;
          return menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
       case MENU_VALUE_HORIZONTAL_MENU:
          return menu_displaylist_push_list(&info, DISPLAYLIST_HORIZONTAL);
