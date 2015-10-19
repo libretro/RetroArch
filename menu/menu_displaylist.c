@@ -2538,7 +2538,11 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 #endif
          break;
       case DISPLAYLIST_PLAYLIST_COLLECTION:
-         if (!strcmp(info->path, "content_history.lpl")) { }
+         if (!strcmp(info->path, "content_history.lpl"))
+         {
+            menu_displaylist_push_list(info, DISPLAYLIST_HISTORY);
+            return 0;
+         }
          else
          {
             char path_playlist[PATH_MAX_LENGTH];
@@ -2565,8 +2569,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                need_refresh = true;
                need_push    = true;
             }
-            break;
          }
+         break;
       case DISPLAYLIST_HISTORY:
          {
             char path_playlist[PATH_MAX_LENGTH];
