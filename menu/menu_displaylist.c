@@ -2341,23 +2341,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS),          PARSE_ONLY_GROUP);
          ret = menu_displaylist_parse_settings(menu, info, 
-               menu_hash_to_str(MENU_LABEL_VALUE_CORE_SETTINGS),            PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, 
-               menu_hash_to_str(MENU_LABEL_VALUE_CONFIGURATION_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, 
-               menu_hash_to_str(MENU_LABEL_VALUE_SAVING_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, 
-               menu_hash_to_str(MENU_LABEL_VALUE_LOGGING_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, 
-               menu_hash_to_str(MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, 
-               menu_hash_to_str(MENU_LABEL_VALUE_REWIND_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, 
-               menu_hash_to_str(MENU_LABEL_VALUE_RECORDING_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS),   PARSE_ONLY_GROUP);
-         ret = menu_displaylist_parse_settings(menu, info, 
-               menu_hash_to_str(MENU_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS),   PARSE_ONLY_GROUP);
          ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_SETTINGS),   PARSE_ONLY_GROUP);
          ret = menu_displaylist_parse_settings(menu, info, 
@@ -2376,6 +2360,22 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                      group_lbl[user],   PARSE_ONLY_GROUP);
             }
          }
+         ret = menu_displaylist_parse_settings(menu, info, 
+               menu_hash_to_str(MENU_LABEL_VALUE_CORE_SETTINGS),            PARSE_ONLY_GROUP);
+         ret = menu_displaylist_parse_settings(menu, info, 
+               menu_hash_to_str(MENU_LABEL_VALUE_CONFIGURATION_SETTINGS),   PARSE_ONLY_GROUP);
+         ret = menu_displaylist_parse_settings(menu, info, 
+               menu_hash_to_str(MENU_LABEL_VALUE_SAVING_SETTINGS),   PARSE_ONLY_GROUP);
+         ret = menu_displaylist_parse_settings(menu, info, 
+               menu_hash_to_str(MENU_LABEL_VALUE_LOGGING_SETTINGS),   PARSE_ONLY_GROUP);
+         ret = menu_displaylist_parse_settings(menu, info, 
+               menu_hash_to_str(MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS),   PARSE_ONLY_GROUP);
+         ret = menu_displaylist_parse_settings(menu, info, 
+               menu_hash_to_str(MENU_LABEL_VALUE_REWIND_SETTINGS),   PARSE_ONLY_GROUP);
+         ret = menu_displaylist_parse_settings(menu, info, 
+               menu_hash_to_str(MENU_LABEL_VALUE_RECORDING_SETTINGS),   PARSE_ONLY_GROUP);
+         ret = menu_displaylist_parse_settings(menu, info, 
+               menu_hash_to_str(MENU_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS),   PARSE_ONLY_GROUP);
          ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_SETTINGS),   PARSE_ONLY_GROUP);
          ret = menu_displaylist_parse_settings(menu, info, 
