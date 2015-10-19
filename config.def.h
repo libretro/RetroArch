@@ -653,7 +653,7 @@ static const unsigned rewind_buffer_size = 20 << 20; /* 20MiB */
 static const unsigned rewind_granularity = 1;
 
 /* Pause gameplay when gameplay loses focus. */
-static const bool pause_nonactive = false;
+static const bool pause_nonactive = true;
 
 /* Saves non-volatile SRAM at a regular interval.
  * It is measured in seconds. A value of 0 disables autosave. */
