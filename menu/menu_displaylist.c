@@ -2195,6 +2195,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    global_t          *global   = global_get_ptr();
    settings_t      *settings   = config_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
+#ifdef HAVE_SHADER_MANAGER
+   struct video_shader *shader = video_shader_driver_get_current_shader();
+#endif
 
    switch (type)
    {
@@ -2454,25 +2457,20 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_SHADER_PARAMETERS:
       case DISPLAYLIST_SHADER_PARAMETERS_PRESET:
 #ifdef HAVE_SHADER_MANAGER
+         if (shader)
+            ret = deferred_push_video_shader_parameters_common(info, shader,
+                  (type == DISPLAYLIST_SHADER_PARAMETERS)
+                  ? MENU_SETTINGS_SHADER_PARAMETER_0 : MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
+                  );
+         else
          {
-            struct video_shader *shader = video_shader_driver_get_current_shader();
-            if (!shader)
-            {
-               menu_entries_push(info->list,
-                     menu_hash_to_str(MENU_LABEL_VALUE_NO_SHADER_PARAMETERS),
-                     "", 0, 0, 0);
-               ret = 0;
-            }
-            else
-            {
-               ret = deferred_push_video_shader_parameters_common(info, shader,
-                     (type == DISPLAYLIST_SHADER_PARAMETERS)
-                     ? MENU_SETTINGS_SHADER_PARAMETER_0 : MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
-                     );
-            }
-
-            need_push = true;
+            menu_entries_push(info->list,
+                  menu_hash_to_str(MENU_LABEL_VALUE_NO_SHADER_PARAMETERS),
+                  "", 0, 0, 0);
+            ret = 0;
          }
+
+         need_push = true;
 #endif
          break;
       case DISPLAYLIST_PERFCOUNTERS_CORE:
