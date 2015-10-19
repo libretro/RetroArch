@@ -1161,7 +1161,7 @@ static void decode_thread(void *data)
       AVCodecContext *actx_active;
       AVCodecContext *sctx_active;
 #ifdef HAVE_SSA
-      ASS_Track *ass_track_active
+      ASS_Track *ass_track_active;
 #endif
 
       slock_lock(fifo_lock);
