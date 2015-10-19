@@ -2344,7 +2344,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu->push_help_screen = false;
          break;
       case DISPLAYLIST_SETTINGS:
-         info->flags = SL_FLAG_SETTINGS_GROUP_ALL;
          ret = menu_displaylist_parse_settings(menu, info, info->label, PARSE_NONE);
          need_push    = true;
          break;
