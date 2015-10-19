@@ -2193,13 +2193,11 @@ static void menu_driver_populate_entries(const char *path,
 
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
-   uint64_t flags;
    size_t i, list_size;
    int ret                     = 0;
    bool need_sort              = false;
    bool need_refresh           = false;
    bool need_push              = false;
-   rarch_setting_t    *setting = NULL;
    menu_handle_t       *menu   = menu_driver_get_ptr();
    global_t          *global   = global_get_ptr();
    settings_t      *settings   = config_get_ptr();

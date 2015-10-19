@@ -5912,7 +5912,9 @@ static bool setting_append_list_accounts_options(
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
+#ifdef HAVE_CHEEVOS
    settings_t *settings = config_get_ptr();
+#endif
 
    START_GROUP(group_info,
 #if 0
