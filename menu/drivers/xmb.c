@@ -860,10 +860,10 @@ static void xmb_set_title(xmb_handle_t *xmb)
    else
    {
       const char *path = NULL;
-      file_list_get_at_offset(
+      menu_entries_get_at_offset(
             xmb->horizontal_list,
             xmb->categories.selection_ptr - 1,
-            &path, NULL, NULL, NULL);
+            &path, NULL, NULL, NULL, NULL);
 
       if (!path)
          return;
@@ -2264,7 +2264,7 @@ static void xmb_list_insert(file_list_t *list,
    if (!list || !xmb)
       return;
 
-   node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+   node = (xmb_node_t*)menu_entries_get_userdata_at_offset(list, i);
 
    if (!node)
       node = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
@@ -2305,7 +2305,7 @@ static void xmb_list_clear(file_list_t *list)
    for (i = 0; i < size; ++i)
    {
       float *subjects[5];
-      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+      xmb_node_t *node = (xmb_node_t*)menu_entries_get_userdata_at_offset(list, i);
 
       if (!node)
          continue;
@@ -2329,7 +2329,7 @@ static void xmb_list_deep_copy(menu_handle_t *menu, const file_list_t *src, file
 
    for (i = 0; i < size; ++i)
    {
-      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(dst, i);
+      xmb_node_t *node = (xmb_node_t*)menu_entries_get_userdata_at_offset(dst, i);
 
       if (node)
       {
@@ -2354,8 +2354,8 @@ static void xmb_list_deep_copy(menu_handle_t *menu, const file_list_t *src, file
 
    for (i = 0; i < size; ++i)
    {
-      void *src_udata = file_list_get_userdata_at_offset(src, i);
-      void *src_adata = file_list_get_actiondata_at_offset(src, i);
+      void *src_udata = menu_entries_get_userdata_at_offset(src, i);
+      void *src_adata = (void*)menu_entries_get_actiondata_at_offset(src, i);
 
       if (src_udata)
       {
