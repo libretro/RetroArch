@@ -101,20 +101,14 @@ const char* config_get_menu_driver_options(void)
    for (i = 0; menu_driver_find_handle(i); i++)
    {
       const char *opt = menu_driver_find_ident(i);
-      options_len += strlen(opt) + 1;
+      options_len    += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
 
    options = (char*)calloc(options_len, sizeof(char));
 
-   if (!options)
-   {
-      string_list_free(options_l);
-      options_l = NULL;
-      return NULL;
-   }
-
-   string_list_join_concat(options, options_len, options_l, "|");
+   if (options)
+      string_list_join_concat(options, options_len, options_l, "|");
 
    string_list_free(options_l);
    options_l = NULL;
