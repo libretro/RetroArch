@@ -580,7 +580,7 @@ DYNAMIC
 CORES
 ============================================================ */
 #ifdef HAVE_FFMPEG
-#include "../cores/ffmpeg_core.c"
+#include "../cores/libretro-ffmpeg/ffmpeg_core.c"
 #endif
 
 #include "../cores/dynamic_dummy.c"

@@ -35,12 +35,11 @@ extern "C" {
 #include <rthreads/rthreads.h>
 #include <queues/fifo_buffer.h>
 
+#include "libretro.h"
 #ifdef RARCH_INTERNAL
 #include "internal_cores.h"
-#include "../libretro.h"
 #define CORE_PREFIX(s) libretro_ffmpeg_##s
 #else
-#include "libretro.h"
 #define CORE_PREFIX(s) s
 #endif
 
