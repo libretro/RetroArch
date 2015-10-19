@@ -1963,7 +1963,7 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
    return 0;
 }
 
-static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *need_sort)
+static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *need_sort, bool horizontal)
 {
    bool path_is_compressed, push_dir, filter_ext;
    size_t i, list_size;
@@ -2092,8 +2092,10 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
       switch (hash_label)
       {
          case MENU_LABEL_CONTENT_COLLECTION_LIST:
-            if (is_dir)
+            if (is_dir && !horizontal)
                file_type = MENU_FILE_DIRECTORY;
+            else if (is_dir && horizontal)
+               continue;
             else
                file_type = MENU_FILE_PLAYLIST_COLLECTION;
             break;
@@ -2788,10 +2790,13 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_CONFIG_FILES:
       case DISPLAYLIST_CONTENT_HISTORY:
       case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
-         if (menu_displaylist_parse_generic(info, &need_sort) == 0)
          {
-            need_refresh = true;
-            need_push    = true;
+            bool horizontal = (type == DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL);
+            if (menu_displaylist_parse_generic(info, &need_sort, horizontal) == 0)
+            {
+               need_refresh = true;
+               need_push    = true;
+            }
          }
          break;
    }
