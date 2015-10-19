@@ -200,7 +200,7 @@ void menu_entries_clear(file_list_t *list)
       file_list_clear(list);
 }
 
-void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
+void menu_entries_set_alt_at_offset(file_list_t *list, size_t idx,
       const char *alt)
 {
    file_list_set_alt_at_offset(list, idx, alt);

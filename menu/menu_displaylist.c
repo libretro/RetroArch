@@ -102,7 +102,7 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 
             if (core_info_get_display_name(
                      core_path, display_name, sizeof(display_name)))
-               menu_list_set_alt_at_offset(list, j, display_name);
+               menu_entries_set_alt_at_offset(list, j, display_name);
          }
       }
       j++;
@@ -2174,7 +2174,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool *n
 
                if (core_info_list_get_display_name(global->core_info.list,
                         core_path, display_name, sizeof(display_name)))
-                  menu_list_set_alt_at_offset(info->list, i, display_name);
+                  menu_entries_set_alt_at_offset(info->list, i, display_name);
             }
             *need_sort = true;
          }
@@ -2644,7 +2644,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                      menu_entries_push(info->list, core_info[i].path,
                            menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST_OK),
                            MENU_FILE_CORE, 0, 0);
-                  menu_list_set_alt_at_offset(info->list, i,
+                  menu_entries_set_alt_at_offset(info->list, i,
                         core_info[i].display_name);
                }
             }
