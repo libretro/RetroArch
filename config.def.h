@@ -750,9 +750,9 @@ static char buildbot_server_url[] = "";
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/ios/latest/";
 #elif defined(OSX)
 #if defined(__x86_64__)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/osx-x86_64/latest/";
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/osx/x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/osx-i386/latest/";
+static char buildbot_server_url[] = "http://bot.libretro.com/nightly/apple/osx/x86/latest/";
 #else
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/osx-ppc/latest/";
 #endif
@@ -875,4 +875,3 @@ static const struct retro_keybind retro_keybinds_rest[] = {
 #endif
 
 #endif
-
