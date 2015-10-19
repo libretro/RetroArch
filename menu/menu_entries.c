@@ -106,7 +106,7 @@ void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
    file_list_get_alt_at_offset(list, idx, alt);
 }
 
-void menu_list_get_last(const file_list_t *list,
+void menu_entries_get_last(const file_list_t *list,
       const char **path, const char **label,
       unsigned *file_type, size_t *entry_idx)
 {
@@ -174,7 +174,7 @@ static void menu_list_flush_stack(menu_list_t *list,
       return;
 
    menu_entries_set_refresh(false);
-   menu_list_get_last(list->menu_stack,
+   menu_entries_get_last(list->menu_stack,
          &path, &label, &type, &entry_idx);
 
    while (menu_list_flush_stack_type(
@@ -189,7 +189,7 @@ static void menu_list_flush_stack(menu_list_t *list,
 
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
 
-      menu_list_get_last(list->menu_stack,
+      menu_entries_get_last(list->menu_stack,
             &path, &label, &type, &entry_idx);
    }
 }
@@ -611,7 +611,7 @@ void menu_entries_get_last_stack(const char **path, const char **label,
 {
    menu_list_t *menu_list         = menu_list_get_ptr();
    if (menu_list)
-      menu_list_get_last(menu_list->menu_stack, path, label, file_type, entry_idx);
+      menu_entries_get_last(menu_list->menu_stack, path, label, file_type, entry_idx);
 }
 
 void menu_entries_flush_stack(const char *needle, unsigned final_type)

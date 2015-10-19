@@ -912,7 +912,7 @@ static int generic_action_ok_file_load(const char *path,
 
    (void)id;
 
-   menu_list_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
+   menu_entries_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
 
    fill_pathname_join(new_path, menu_path, path,
          sizeof(new_path));
@@ -962,7 +962,7 @@ static int action_ok_file_load(const char *path,
    menu_handle_t *menu      = menu_driver_get_ptr();
    file_list_t  *menu_stack = menu_entries_get_menu_stack_ptr();
 
-   menu_list_get_last(menu_stack, &menu_path, &menu_label, NULL, NULL);
+   menu_entries_get_last(menu_stack, &menu_path, &menu_label, NULL, NULL);
 
    strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
