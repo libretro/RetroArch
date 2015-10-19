@@ -22,6 +22,11 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_CHEEVOS_USERNAME                                            0x6ce57e31U
+#define MENU_LABEL_CHEEVOS_PASSWORD                                            0x86c38d24U
+
+#define MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS                             0xe0b53ce3U
+
 #define MENU_LABEL_ACCOUNTS_CHEEVOS_PASSWORD                                   0x45cf62e3U
 #define MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD                             0xe5a73d05U
 

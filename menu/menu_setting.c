@@ -5905,22 +5905,18 @@ static bool setting_append_list_playlist_options(
    return true;
 }
 
-static bool setting_append_list_accounts_options(
+#ifdef HAVE_CHEEVOS
+static bool setting_append_list_accounts_cheevos_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       const char *parent_group)
 {
-#ifdef HAVE_CHEEVOS
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info,
-#if 0
-         menu_hash_to_str(MENU_LABEL_VALUE_USER_SETTINGS),
-#else
-         "Accounts",
-#endif
+         menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS),
          parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
@@ -5929,11 +5925,10 @@ static bool setting_append_list_accounts_options(
 
    CONFIG_STRING(
          settings->cheevos.username,
-#if 0
          menu_hash_to_str(MENU_LABEL_CHEEVOS_USERNAME),
+#if 0
          menu_hash_to_str(MENU_LABEL_VALUE_CHEEVOS_USERNAME),
 #else
-         "cheevos_username",
          "Username",
 #endif
          "",
@@ -5946,11 +5941,10 @@ static bool setting_append_list_accounts_options(
 
    CONFIG_STRING(
          settings->cheevos.password,
+         menu_hash_to_str(MENU_LABEL_CHEEVOS_PASSWORD),
 #if 0
-         menu_hash_to_str(MENU_LABEL_CHEEVOS_USERNAME),
-         menu_hash_to_str(MENU_LABEL_VALUE_CHEEVOS_USERNAME),
+         menu_hash_to_str(MENU_LABEL_VALUE_CHEEVOS_PASSWORD),
 #else
-         "cheevos_password",
          "Password",
 #endif
          "",
@@ -5963,10 +5957,10 @@ static bool setting_append_list_accounts_options(
 
    END_SUB_GROUP(list, list_info, parent_group);
    END_GROUP(list, list_info, parent_group);
-#endif
 
    return true;
 }
+#endif
 
 static bool setting_append_list_user_options(
       rarch_setting_t **list,
@@ -6792,8 +6786,10 @@ rarch_setting_t *menu_setting_new(void)
    if (!setting_append_list_user_options(&list, list_info, root))
       goto error;
 
-   if (!setting_append_list_accounts_options(&list, list_info, root))
+#ifdef HAVE_CHEEVOS
+   if (!setting_append_list_accounts_cheevos_options(&list, list_info, root))
       goto error;
+#endif
 
    if (!setting_append_list_directory_options(&list, list_info, root))
       goto error;
