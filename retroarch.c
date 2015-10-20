@@ -46,6 +46,7 @@
 #include "performance.h"
 #include "cheats.h"
 #include "system.h"
+#include "retro_file.h"
 
 #include "git_version.h"
 
@@ -1494,6 +1495,15 @@ void rarch_playlist_load_content(void *data, unsigned idx)
 
    content_playlist_get_index(playlist,
          idx, &path, NULL, &core_path, NULL, NULL, NULL);
+
+   RFILE *fp = retro_fopen(path, RFILE_MODE_READ, -1);
+   if (!fp)
+   {
+      rarch_main_msg_queue_push("File could not be loaded.\n", 1, 100, true);
+      RARCH_LOG("File at %s failed to load.\n", path);
+      return;
+   }
+   retro_fclose(fp);
 
    strlcpy(settings->libretro, core_path, sizeof(settings->libretro));
 
