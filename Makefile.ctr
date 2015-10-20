@@ -27,7 +27,7 @@ CTR_STACK_SIZE        = 0x400000
 else
 CTR_STACK_SIZE        = 0x100000
 endif
-CTR_LINEAR_HEAP_SIZE  = 0xE00000
+CTR_LINEAR_HEAP_SIZE  = 0x600000
 
 include ctr/Makefile.cores
 
@@ -178,9 +178,7 @@ else
 	OBJS += menu/menu_entry.o
 	OBJS += menu/menu_entries.o
 	OBJS += menu/menu_setting.o
-	OBJS += menu/menu_list.o
 	OBJS += menu/menu_cbs.o
-	OBJS += menu/menu_video.o
 	OBJS += menu/cbs/menu_cbs_ok.o
 	OBJS += menu/cbs/menu_cbs_cancel.o
 	OBJS += menu/cbs/menu_cbs_select.o

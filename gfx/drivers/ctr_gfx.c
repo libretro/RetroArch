@@ -258,12 +258,12 @@ static void* ctr_init(const video_info_t* video,
    ctr->vp.full_height      = CTR_TOP_FRAMEBUFFER_HEIGHT;
 
 
-   ctr->display_list_size = 0x40000;
+   ctr->display_list_size = 0x400;
    ctr->display_list = linearAlloc(ctr->display_list_size * sizeof(uint32_t));
    GPU_Reset(NULL, ctr->display_list, ctr->display_list_size);
 
-   ctr->texture_width = 1024;
-   ctr->texture_height = 512;
+   ctr->texture_width = video->input_scale * RARCH_SCALE_BASE;
+   ctr->texture_height = video->input_scale * RARCH_SCALE_BASE;
    ctr->texture_linear =
          linearMemAlign(ctr->texture_width * ctr->texture_height * sizeof(uint32_t), 128);
    ctr->texture_swizzled =
@@ -281,9 +281,9 @@ static void* ctr_init(const video_info_t* video,
    ctr->menu.texture_width = 512;
    ctr->menu.texture_height = 512;
    ctr->menu.texture_linear =
-         linearMemAlign(ctr->texture_width * ctr->texture_height * sizeof(uint16_t), 128);
+         linearMemAlign(ctr->menu.texture_width * ctr->menu.texture_height * sizeof(uint16_t), 128);
    ctr->menu.texture_swizzled =
-         linearMemAlign(ctr->texture_width * ctr->texture_height * sizeof(uint16_t), 128);
+         linearMemAlign(ctr->menu.texture_width * ctr->menu.texture_height * sizeof(uint16_t), 128);
 
    ctr->menu.frame_coords = linearAlloc(sizeof(ctr_vertex_t));
 
@@ -459,6 +459,11 @@ static bool ctr_frame(void* data, const void* frame,
       frames = 0;
    }
 
+//   extern u32 __linear_heap_size;
+//   extern u32 gpuCmdBufOffset;
+//   extern u32 heap_size;
+//   printf("0x%08X 0x%08X 0x%08X\r", heap_size, gpuCmdBufOffset, (__linear_heap_size - linearSpaceFree() +0x3FF) & ~0x3FF);
+//   printf("fps: %8.4f frames: %i (%X)\r", fps, total_frames++, (__linear_heap_size - linearSpaceFree()));
    printf("fps: %8.4f frames: %i\r", fps, total_frames++);
    fflush(stdout);
 
@@ -506,7 +511,7 @@ static bool ctr_frame(void* data, const void* frame,
          GSPGPU_FlushDataCache(NULL, ctr->texture_linear,
                                ctr->texture_width * ctr->texture_height * sizeof(uint16_t));
 
-         ctrGuCopyImage(false, ctr->texture_linear, ctr->texture_width, ctr->menu.texture_height, CTRGU_RGB565, false,
+         ctrGuCopyImage(false, ctr->texture_linear, ctr->texture_width, ctr->texture_height, CTRGU_RGB565, false,
                         ctr->texture_swizzled, ctr->texture_width, CTRGU_RGB565,  true);
 
       }
