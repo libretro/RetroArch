@@ -536,7 +536,6 @@ static void event_init_controllers(void)
 static void event_deinit_core(bool reinit)
 {
    global_t *global     = global_get_ptr();
-   settings_t *settings = config_get_ptr();
 
 #ifdef HAVE_CHEEVOS
    /* Unload the achievements from memory. */

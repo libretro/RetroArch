@@ -5912,7 +5912,6 @@ static bool setting_append_list_accounts_options(
 {
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
-   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info,
          menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_LIST_END),
