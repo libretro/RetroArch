@@ -164,6 +164,7 @@ AccessControlInfo:
    - nim:aoc
    - nwm::UDS
    - ptm:u
+   - ptm:sysm
    - qtm:u
    - soc:U
    - ssl:C
