@@ -1129,6 +1129,89 @@ void cheevos_unload( void )
 Load achievements from retroachievements.org.
 *****************************************************************************/
 
+static int cheevos_http_get(const char **result, size_t *size, const char *url, retro_time_t *timeout)
+{
+   struct http_connection_t* conn = NULL;
+   struct http_t* http = NULL;
+   int ret = -1;
+   retro_time_t t0;
+   uint8_t* data;
+   size_t length;
+   char* res;
+   
+   *result = NULL;
+   t0 = retro_get_time_usec();
+   conn = net_http_connection_new(url);
+   
+    /* Error creating the connection descriptor. */
+   if (!conn)
+      goto error;
+   
+   /* Don't bother with timeouts here, it's just a string scan. */
+   while (!net_http_connection_iterate(conn)) {}
+   
+   /* Error finishing the connection descriptor. */
+   if (!net_http_connection_done(conn))
+      goto error;
+   
+   http = net_http_new(conn);
+   
+   /* Error connecting to the endpoint. */
+   if (!http)
+      goto error;
+   
+   while (!net_http_update(http, NULL, NULL))
+   {
+      /* Timeout error. */
+      if (timeout && (retro_get_time_usec() - t0) > *timeout)
+         goto error;
+   }
+   
+   data = net_http_data(http, &length, false);
+   
+   if (data)
+   {
+      res = (char*)malloc(length + 1);
+      
+      /* Allocation error. */
+      if ( !res )
+         goto error;
+      
+      memcpy((void*)res, (void*)data, length);
+      res[length] = 0;
+      *result = res;
+   }
+   else
+   {
+      length = 0;
+      *result = NULL;
+   }
+   
+   if (size)
+      *size = length;
+   
+   ret = 0;
+   
+error:
+   if ( http )
+      net_http_delete( http );
+   
+   if ( conn )
+      net_http_connection_free( conn );
+   
+   if (timeout)
+   {
+      t0 = retro_get_time_usec() - t0;
+      
+      if (t0 < *timeout)
+         *timeout -= t0;
+      else
+         *timeout = 0;
+   }
+   
+   return ret;
+}
+
 typedef struct
 {
   unsigned    key_hash;
@@ -1239,7 +1322,7 @@ static int cheevos_login( retro_time_t* timeout )
 
     request[ sizeof( request ) - 1 ] = 0;
 
-    if ( !net_http_get( &json, NULL, request, timeout ) )
+    if ( !cheevos_http_get( &json, NULL, request, timeout ) )
     {
       res = cheevos_get_value( json, 0x0e2dbd26U /* Token */, token, sizeof( token ) );
       free( (void*)json );
@@ -1277,7 +1360,7 @@ static int cheevos_get_by_game_id( const char** json, unsigned game_id, retro_ti
 
     request[ sizeof( request ) - 1 ] = 0;
 
-    if ( !net_http_get( json, NULL, request, timeout ) )
+    if ( !cheevos_http_get( json, NULL, request, timeout ) )
     {
       RARCH_LOG( "CHEEVOS got achievements for game id %u\n", game_id );
       return 0;
@@ -1308,7 +1391,7 @@ static unsigned cheevos_get_game_id( unsigned char* hash, retro_time_t* timeout 
 
   request[ sizeof( request ) - 1 ] = 0;
 
-  if ( !net_http_get( &json, NULL, request, timeout ) )
+  if ( !cheevos_http_get( &json, NULL, request, timeout ) )
   {
     res = cheevos_get_value( json, 0xb4960eecU /* GameID */, game_id, sizeof( game_id ) );
     free( (void*)json );
