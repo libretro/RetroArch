@@ -21,8 +21,6 @@
 #include <boolean.h>
 #include <string.h>
 
-#include <performance.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
