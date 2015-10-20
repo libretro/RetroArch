@@ -31,6 +31,14 @@
 
 #define CTRGU_SIZE(W,H)            (((u32)(W)&0xFFFF)|((u32)(H)<<16))
 
+
+/* from ctrulib/great-refactor */
+#define GPU_TEVOP_RGB_SRC_G     0x8
+#define GPU_TEVOP_RGB_SRC_B     0xC
+#define GPU_TEVOP_RGB_SRC_ALPHA 0x2
+#define GPU_MULTIPLY_ADD        0x8
+/*******************************/
+
 /* DMA flags */
 #define CTRGU_DMA_VFLIP            (1 << 0)
 #define CTRGU_DMA_L_TO_T           (1 << 1)
