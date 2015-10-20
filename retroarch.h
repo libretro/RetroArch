@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -89,7 +89,7 @@ enum rarch_ctl_state
       /* Validates CPU features for given processor architecture.
        *
        * Make sure we haven't compiled for something we cannot run.
-       * Ideally, code would get swapped out depending on CPU support, 
+       * Ideally, code would get swapped out depending on CPU support,
        * but this will do for now. */
    RARCH_ACTION_STATE_VALIDATE_CPU_FEATURES,
 
@@ -135,7 +135,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data);
 /**
  * rarch_main_init:
  * @argc                 : Count of (commandline) arguments.
- * @argv                 : (Commandline) arguments. 
+ * @argv                 : (Commandline) arguments.
  *
  * Initializes RetroArch.
  *
@@ -183,7 +183,7 @@ void rarch_playlist_load_content(void *data, unsigned index);
  *
  * Gets deferred core.
  *
- * Returns: 0 if there are multiple deferred cores and a 
+ * Returns: 0 if there are multiple deferred cores and a
  * selection needs to be made from a list, otherwise
  * returns -1 and fills in @s with path to core.
  **/
@@ -207,8 +207,8 @@ int rarch_info_get_capabilities(enum rarch_capabilities type, char *s, size_t le
 
 enum rarch_content_type rarch_path_is_media_type(const char *path);
 
-extern char orig_savestate_dir[PATH_MAX_LENGTH];
-extern char orig_savefile_dir[PATH_MAX_LENGTH];
+extern char current_savestate_dir[PATH_MAX_LENGTH];
+extern char current_savefile_dir[PATH_MAX_LENGTH];
 extern bool orig_system_dir_empty;
 
 #ifdef __cplusplus

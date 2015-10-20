@@ -88,13 +88,13 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
  * @load_no_content              : If true, core should be able to auto-start
  *                                 without any content loaded.
  *
- * Sets environment callback in order to get statically known 
+ * Sets environment callback in order to get statically known
  * information from it.
  *
  * Fetched via environment callbacks instead of
  * retro_get_system_info(), as this info is part of extensions.
  *
- * Should only be called once right after core load to 
+ * Should only be called once right after core load to
  * avoid overwriting the "real" environ callback.
  *
  * For statically linked cores, pass retro_set_environment as argument.
@@ -120,7 +120,7 @@ static dylib_t libretro_get_system_info_lib(const char *path,
 {
    dylib_t lib = dylib_load(path);
    void (*proc)(struct retro_system_info*);
-   
+
    if (!lib)
       return NULL;
 
@@ -246,7 +246,7 @@ libretro_find_controller_description(
 /**
  * load_symbols:
  * @type                        : Type of core to be loaded.
- *                                If CORE_TYPE_DUMMY, will 
+ *                                If CORE_TYPE_DUMMY, will
  *                                load dummy symbols.
  *
  * Setup libretro callback symbols.
@@ -277,8 +277,8 @@ static void load_symbols(enum rarch_core_type type)
                rarch_fail(1, "init_libretro_sym()");
             }
 
-            /* Need to use absolute path for this setting. It can be 
-             * saved to content history, and a relative path would 
+            /* Need to use absolute path for this setting. It can be
+             * saved to content history, and a relative path would
              * break in that scenario. */
             path_resolve_realpath(settings->libretro,
                   sizeof(settings->libretro));
@@ -459,7 +459,7 @@ void libretro_get_current_core_pathname(char *name, size_t size)
       return;
 
    core.retro_get_system_info(&info);
-   id = info.library_name ? info.library_name : 
+   id = info.library_name ? info.library_name :
       msg_hash_to_str(MSG_UNKNOWN);
 
    if (!id || strlen(id) >= size)
@@ -484,7 +484,7 @@ void libretro_get_current_core_pathname(char *name, size_t size)
 /**
  * init_libretro_sym:
  * @type                        : Type of core to be loaded.
- *                                If CORE_TYPE_DUMMY, will 
+ *                                If CORE_TYPE_DUMMY, will
  *                                load dummy symbols.
  *
  * Initializes libretro symbols and
@@ -725,10 +725,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
-         *(const char**)data = *global->dir.savefile ?
-            global->dir.savefile : NULL;
+         *(const char**)data = *current_savefile_dir ?
+            current_savefile_dir : NULL;
          RARCH_LOG("Environ SAVE_DIRECTORY: \"%s\".\n",
-               global->dir.savefile);
+               current_savefile_dir);
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:
@@ -746,7 +746,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT:
       {
-         enum retro_pixel_format pix_fmt = 
+         enum retro_pixel_format pix_fmt =
             *(const enum retro_pixel_format*)data;
 
          switch (pix_fmt)
@@ -860,7 +860,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
       {
-         const struct retro_keyboard_callback *info = 
+         const struct retro_keyboard_callback *info =
             (const struct retro_keyboard_callback*)data;
 
          RARCH_LOG("Environ SET_KEYBOARD_CALLBACK.\n");
@@ -871,7 +871,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE:
          RARCH_LOG("Environ SET_DISK_CONTROL_INTERFACE.\n");
-         system->disk_control = 
+         system->disk_control =
             *(const struct retro_disk_control_callback*)data;
          break;
 
@@ -879,7 +879,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_HW_RENDER | RETRO_ENVIRONMENT_EXPERIMENTAL:
       {
          struct retro_hw_render_callback *hw_render = video_driver_callback();
-         struct retro_hw_render_callback *cb = 
+         struct retro_hw_render_callback *cb =
             (struct retro_hw_render_callback*)data;
 
          RARCH_LOG("Environ SET_HW_RENDER.\n");
@@ -966,13 +966,13 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
-      /* FIXME - PS3 audio driver needs to be fixed so that threaded 
-       * audio works correctly (audio is already on a thread for PS3 
+      /* FIXME - PS3 audio driver needs to be fixed so that threaded
+       * audio works correctly (audio is already on a thread for PS3
        * audio driver so that's probably the problem) */
 #if defined(HAVE_THREADS) && !defined(__CELLOS_LV2__)
       case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK:
       {
-         const struct retro_audio_callback *info = 
+         const struct retro_audio_callback *info =
             (const struct retro_audio_callback*)data;
          RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
 
@@ -991,13 +991,13 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK:
       {
-         const struct retro_frame_time_callback *info = 
+         const struct retro_frame_time_callback *info =
             (const struct retro_frame_time_callback*)data;
 
          RARCH_LOG("Environ SET_FRAME_TIME_CALLBACK.\n");
 
 #ifdef HAVE_NETPLAY
-         /* retro_run() will be called in very strange and 
+         /* retro_run() will be called in very strange and
           * mysterious ways, have to disable it. */
          if (global->netplay.enable)
             return false;
@@ -1009,7 +1009,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE:
       {
-         struct retro_rumble_interface *iface = 
+         struct retro_rumble_interface *iface =
             (struct retro_rumble_interface*)data;
 
          RARCH_LOG("Environ GET_RUMBLE_INTERFACE.\n");
@@ -1032,7 +1032,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE:
       {
-         struct retro_sensor_interface *iface = 
+         struct retro_sensor_interface *iface =
             (struct retro_sensor_interface*)data;
 
          RARCH_LOG("Environ GET_SENSOR_INTERFACE.\n");
@@ -1114,7 +1114,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
       {
          unsigned i, j;
-         const struct retro_subsystem_info *info = 
+         const struct retro_subsystem_info *info =
             (const struct retro_subsystem_info*)data;
 
          RARCH_LOG("Environ SET_SUBSYSTEM_INFO.\n");
@@ -1149,7 +1149,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_CONTROLLER_INFO:
       {
          unsigned i, j;
-         const struct retro_controller_info *info = 
+         const struct retro_controller_info *info =
             (const struct retro_controller_info*)data;
 
          RARCH_LOG("Environ SET_CONTROLLER_INFO.\n");
@@ -1177,9 +1177,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_GEOMETRY:
       {
          struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-         const struct retro_game_geometry *in_geom = 
+         const struct retro_game_geometry *in_geom =
             (const struct retro_game_geometry*)data;
-         struct retro_game_geometry *geom = av_info ? 
+         struct retro_game_geometry *geom = av_info ?
             (struct retro_game_geometry*)&av_info->geometry : NULL;
 
          if (!geom)
@@ -1199,10 +1199,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             RARCH_LOG("SET_GEOMETRY: %ux%u, aspect: %.3f.\n",
                   geom->base_width, geom->base_height, geom->aspect_ratio);
 
-            /* Forces recomputation of aspect ratios if 
+            /* Forces recomputation of aspect ratios if
              * using core-dependent aspect ratios. */
             event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
-            
+
             /* TODO: Figure out what to do, if anything, with recording. */
          }
          break;
@@ -1253,4 +1253,3 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
    return true;
 }
-
