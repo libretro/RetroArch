@@ -898,6 +898,8 @@ static int test_cond_set( const cheevos_condset_t* condset, int* dirty_conds, in
   int pause_active = 0;
   const cheevos_cond_t* end = condset->conds + condset->count;
   cheevos_cond_t* cond;
+    
+  (void)pause_active;
 
   /* Now, read all Pause conditions, and if any are true, do not process further (retain old state) */
   for ( cond = condset->conds; cond < end; cond++ )
@@ -1419,6 +1421,9 @@ int cheevos_get_by_content( const char** json, const void* data, size_t size )
   char request[ 256 ];
   unsigned game_id;
   int res;
+    
+  (void)request;
+  (void)res;
 
   if ( !config_get_ptr()->cheevos.enable )
   {
