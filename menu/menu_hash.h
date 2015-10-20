@@ -554,6 +554,7 @@ extern "C" {
 #define MENU_VALUE_CRC                                                         0x0b88671dU
 #define MENU_VALUE_MORE                                                        0x0b877cafU
 #define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
+#define MENU_VALUE_SETTINGS_TAB                                                0x6548d16dU
 #define MENU_VALUE_MAIN_MENU                                                   0x1625971fU   
 #define MENU_LABEL_VALUE_SETTINGS                                              0x8aca3ff6U
 #define MENU_VALUE_INPUT_SETTINGS                                              0xddd30846U
