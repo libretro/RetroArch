@@ -734,6 +734,7 @@ NETPLAY
 #include "../netplay.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_http.c"
+#include "../net_http_special.c"
 #include "../tasks/task_http.c"
 #endif
 
