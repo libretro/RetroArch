@@ -258,16 +258,17 @@ static void* ctr_init(const video_info_t* video,
    ctr->vp.full_height      = CTR_TOP_FRAMEBUFFER_HEIGHT;
 
 
-   ctr->display_list_size = 0x40000;
+   ctr->display_list_size = 0x400;
    ctr->display_list = linearAlloc(ctr->display_list_size * sizeof(uint32_t));
    GPU_Reset(NULL, ctr->display_list, ctr->display_list_size);
 
-   ctr->texture_width = 1024;
-   ctr->texture_height = 512;
+   ctr->rgb32 = video->rgb32;
+   ctr->texture_width = video->input_scale * RARCH_SCALE_BASE;
+   ctr->texture_height = video->input_scale * RARCH_SCALE_BASE;
    ctr->texture_linear =
-         linearMemAlign(ctr->texture_width * ctr->texture_height * sizeof(uint32_t), 128);
+         linearMemAlign(ctr->texture_width * ctr->texture_height * (ctr->rgb32? 4:2), 128);
    ctr->texture_swizzled =
-         linearMemAlign(ctr->texture_width * ctr->texture_height * sizeof(uint32_t), 128);
+         linearMemAlign(ctr->texture_width * ctr->texture_height * (ctr->rgb32? 4:2), 128);
 
    ctr->frame_coords = linearAlloc(sizeof(ctr_vertex_t));
    ctr->frame_coords->x0 = 0;
@@ -281,9 +282,9 @@ static void* ctr_init(const video_info_t* video,
    ctr->menu.texture_width = 512;
    ctr->menu.texture_height = 512;
    ctr->menu.texture_linear =
-         linearMemAlign(ctr->texture_width * ctr->texture_height * sizeof(uint16_t), 128);
+         linearMemAlign(ctr->menu.texture_width * ctr->menu.texture_height * sizeof(uint16_t), 128);
    ctr->menu.texture_swizzled =
-         linearMemAlign(ctr->texture_width * ctr->texture_height * sizeof(uint16_t), 128);
+         linearMemAlign(ctr->menu.texture_width * ctr->menu.texture_height * sizeof(uint16_t), 128);
 
    ctr->menu.frame_coords = linearAlloc(sizeof(ctr_vertex_t));
 
@@ -365,7 +366,8 @@ static void* ctr_init(const video_info_t* video,
 
    ctr->keep_aspect   = true;
    ctr->should_resize = true;
-   ctr->smooth        = true;
+   ctr->smooth        = video->smooth;
+   ctr->vsync         = video->vsync;
    ctr->lcd_buttom_on = true;
 
    ctr->empty_framebuffer = linearAlloc(320 * 240 * 2);
@@ -459,6 +461,11 @@ static bool ctr_frame(void* data, const void* frame,
       frames = 0;
    }
 
+//   extern u32 __linear_heap_size;
+//   extern u32 gpuCmdBufOffset;
+//   extern u32 heap_size;
+//   printf("0x%08X 0x%08X 0x%08X\r", heap_size, gpuCmdBufOffset, (__linear_heap_size - linearSpaceFree() +0x3FF) & ~0x3FF);
+//   printf("fps: %8.4f frames: %i (%X)\r", fps, total_frames++, (__linear_heap_size - linearSpaceFree()));
    printf("fps: %8.4f frames: %i\r", fps, total_frames++);
    fflush(stdout);
 
@@ -488,37 +495,36 @@ static bool ctr_frame(void* data, const void* frame,
          && !((pitch) & 0xF))                                            /* 16-byte aligned */
       {
          /* can copy the buffer directly with the GPU */
-         ctrGuCopyImage(false, frame, pitch / 2, height, CTRGU_RGB565, false,
-                        ctr->texture_swizzled, ctr->texture_width, CTRGU_RGB565,  true);
+         ctrGuCopyImage(false, frame, pitch / (ctr->rgb32? 4: 2), height, ctr->rgb32 ? CTRGU_RGBA8: CTRGU_RGB565, false,
+                        ctr->texture_swizzled, ctr->texture_width, ctr->rgb32 ? CTRGU_RGBA8: CTRGU_RGB565,  true);
       }
       else
       {
          int i;
-         uint16_t      *dst = (uint16_t*)ctr->texture_linear;
+         uint8_t      *dst = (uint8_t*)ctr->texture_linear;
          const uint8_t *src = frame;
 
          for (i = 0; i < height; i++)
          {
-            memcpy(dst, src, width * sizeof(uint16_t));
-            dst += ctr->texture_width;
+            memcpy(dst, src, width * (ctr->rgb32? 4: 2));
+            dst += ctr->texture_width * (ctr->rgb32? 4: 2);
             src += pitch;
          }
          GSPGPU_FlushDataCache(NULL, ctr->texture_linear,
-                               ctr->texture_width * ctr->texture_height * sizeof(uint16_t));
+                               ctr->texture_width * ctr->texture_height * (ctr->rgb32? 4: 2));
 
-         ctrGuCopyImage(false, ctr->texture_linear, ctr->texture_width, ctr->menu.texture_height, CTRGU_RGB565, false,
-                        ctr->texture_swizzled, ctr->texture_width, CTRGU_RGB565,  true);
+         ctrGuCopyImage(false, ctr->texture_linear, ctr->texture_width, ctr->texture_height, ctr->rgb32 ? CTRGU_RGBA8: CTRGU_RGB565, false,
+                        ctr->texture_swizzled, ctr->texture_width, ctr->rgb32 ? CTRGU_RGBA8: CTRGU_RGB565,  true);
 
       }
 
    }
 
-
    ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(ctr->texture_swizzled), ctr->texture_width, ctr->texture_height,
                   (ctr->smooth? GPU_TEXTURE_MAG_FILTER(GPU_LINEAR)  | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR)
                               : GPU_TEXTURE_MAG_FILTER(GPU_NEAREST) | GPU_TEXTURE_MIN_FILTER(GPU_NEAREST)) |
                   GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
-                  GPU_RGB565);
+                  ctr->rgb32 ? GPU_RGBA8: GPU_RGB565);
 
    ctr->frame_coords->u = width;
    ctr->frame_coords->v = height;
@@ -526,7 +532,48 @@ static bool ctr_frame(void* data, const void* frame,
 
    ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->frame_coords));
    ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->scale_vector, 1);
+
+   /* ARGB --> RGBA */
+   if (ctr->rgb32)
+   {
+      GPU_SetTexEnv(0,
+                    GPU_TEVSOURCES(GPU_TEXTURE0, GPU_CONSTANT, 0),
+                    GPU_TEVSOURCES(GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, 0),
+                    GPU_TEVOPERANDS(GPU_TEVOP_RGB_SRC_G, 0, 0),
+                    GPU_TEVOPERANDS(0, 0, 0),
+                    GPU_MODULATE, GPU_MODULATE,
+                    0x0000FF);
+      GPU_SetTexEnv(1,
+                    GPU_TEVSOURCES(GPU_TEXTURE0, GPU_CONSTANT, GPU_PREVIOUS),
+                    GPU_TEVSOURCES(GPU_PREVIOUS, GPU_PREVIOUS, 0),
+                    GPU_TEVOPERANDS(GPU_TEVOP_RGB_SRC_B, 0, 0),
+                    GPU_TEVOPERANDS(0, 0, 0),
+                    GPU_MULTIPLY_ADD, GPU_MODULATE,
+                    0x00FF00);
+      GPU_SetTexEnv(2,
+                    GPU_TEVSOURCES(GPU_TEXTURE0, GPU_CONSTANT, GPU_PREVIOUS),
+                    GPU_TEVSOURCES(GPU_PREVIOUS, GPU_PREVIOUS, 0),
+                    GPU_TEVOPERANDS(GPU_TEVOP_RGB_SRC_ALPHA, 0, 0),
+                    GPU_TEVOPERANDS(0, 0, 0),
+                    GPU_MULTIPLY_ADD, GPU_MODULATE,
+                    0xFF0000);
+   }
+
    GPU_DrawArray(GPU_UNKPRIM, 0, 1);
+
+   /* restore */
+   if (ctr->rgb32)
+   {
+      GPU_SetTexEnv(0,
+                    GPU_TEVSOURCES(GPU_TEXTURE0, GPU_PRIMARY_COLOR, 0),
+                    GPU_TEVSOURCES(GPU_TEXTURE0, GPU_PRIMARY_COLOR, 0),
+                    GPU_TEVOPERANDS(0, 0, 0),
+                    GPU_TEVOPERANDS(0, 0, 0),
+                    GPU_MODULATE, GPU_MODULATE,
+                    0xFFFFFFFF);
+      GPU_SetTexEnv(1, GPU_PREVIOUS,GPU_PREVIOUS, 0, 0, 0, 0, 0);
+      GPU_SetTexEnv(2, GPU_PREVIOUS,GPU_PREVIOUS, 0, 0, 0, 0, 0);
+   }
 
    if (ctr->menu_texture_enable)
    {

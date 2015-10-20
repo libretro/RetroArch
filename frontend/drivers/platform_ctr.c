@@ -34,7 +34,6 @@
 #include "../../file_ext.h"
 #else
 #include "../../menu/menu.h"
-#include "../../menu/menu_list.h"
 #endif
 
 const char* elf_path_cst = "sdmc:/retroarch/test.3dsx";
@@ -50,7 +49,7 @@ extern char* fake_heap_start;
 extern char* fake_heap_end;
 u32 __linear_heap;
 u32 __heapBase;
-static u32 heap_size;
+u32 heap_size;
 extern u32 linear_heap_size;
 
 extern void (*__system_retAddr)(void);
