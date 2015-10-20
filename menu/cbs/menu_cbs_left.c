@@ -339,7 +339,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
 
       if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && (menu_setting_get_type(cbs->setting) == ST_GROUP))
       {
-         BIND_ACTION_LEFT(cbs, action_left_scroll);
+         BIND_ACTION_LEFT(cbs, action_left_mainmenu);
          return 0;
       }
    }
