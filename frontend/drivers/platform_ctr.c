@@ -249,6 +249,7 @@ static void frontend_ctr_init(void *data)
    APT_SetAppCpuTimeLimit(NULL, 80);
    gfxInitDefault();
 #endif
+   osSetSpeedupEnable(true);
    gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);
    csndInit();
    initCfgu();
