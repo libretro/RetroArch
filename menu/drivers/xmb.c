@@ -952,7 +952,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 {
    unsigned j;
-   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
+   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + 1;
 
    for (j = 0; j <= list_size; j++)
    {
