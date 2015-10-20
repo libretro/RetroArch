@@ -22,6 +22,7 @@
 #endif
 
 #include <string.h>
+#include <math.h>
 
 #include <windows.h>
 #include <commdlg.h>
@@ -430,7 +431,7 @@ static bool gfx_ctx_wgl_init(void *data)
    return true;
 }
 
-static bool set_fullscreen(unsigned width, unsigned height, char *dev_name)
+static bool set_fullscreen(unsigned width, unsigned height, unsigned refresh, char *dev_name)
 {
    DEVMODE devmode;
 
@@ -438,9 +439,10 @@ static bool set_fullscreen(unsigned width, unsigned height, char *dev_name)
    devmode.dmSize       = sizeof(DEVMODE);
    devmode.dmPelsWidth  = width;
    devmode.dmPelsHeight = height;
-   devmode.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT;
+   devmode.dmDisplayFrequency = refresh;
+   devmode.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
 
-   RARCH_LOG("[WGL]: Setting fullscreen to %ux%u on device %s.\n", width, height, dev_name);
+   RARCH_LOG("[WGL]: Setting fullscreen to %ux%u @ %uHz on device %s.\n", width, height, refresh, dev_name);
    return ChangeDisplaySettingsEx(dev_name, &devmode, NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_SUCCESSFUL;
 }
 
@@ -470,6 +472,8 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
    MSG msg;
    RECT mon_rect;
    MONITORINFOEX current_mon;
+   float refresh_mod;
+   unsigned refresh;
    bool windowed_full;
    RECT rect   = {0};
    HMONITOR hm_to_use = NULL;
@@ -481,6 +485,14 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
    mon_rect        = current_mon.rcMonitor;
    g_resize_width  = width;
    g_resize_height = height;
+
+   /* Windows only reports the refresh rates for modelines as 
+    * an integer, so video.refresh_rate needs to be rounded. Also, account 
+    * for black frame insertion using video.refresh_rate set to half
+    * of the display refresh rate. */
+   refresh_mod = settings->video.black_frame_insertion ? 2.0f : 1.0f;
+   refresh = round(settings->video.refresh_rate * refresh_mod);
+
    windowed_full   = settings->video.windowed_fullscreen;
 
    if (fullscreen)
@@ -495,7 +507,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
       {
          style = WS_POPUP | WS_VISIBLE;
 
-         if (!set_fullscreen(width, height, current_mon.szDevice))
+         if (!set_fullscreen(width, height, refresh, current_mon.szDevice))
             goto error;
 
          /* Display settings might have changed, get new coordinates. */
