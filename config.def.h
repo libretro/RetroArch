@@ -747,14 +747,16 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/androi
 static char buildbot_server_url[] = "";
 #endif
 #elif defined(IOS)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/ios/latest/";
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/ios/latest/";
+#elif defined(IOS9)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/ios9/latest/";
 #elif defined(OSX)
 #if defined(__x86_64__)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/osx/x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__)
 static char buildbot_server_url[] = "http://bot.libretro.com/nightly/apple/osx/x86/latest/";
 #else
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/osx-ppc/latest/";
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/osx/ppc/latest/";
 #endif
 #elif defined(_WIN32) && !defined(_XBOX)
 #if defined(__x86_64__)
@@ -765,6 +767,8 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/win-x8
 #elif defined(__linux__)
 #if defined(__x86_64__)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/x86_64/latest/";
+#elif defined(__i386__) || defined(__i486__) || defined(__i686__)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/x86/latest/";
 #else
 static char buildbot_server_url[] = "";
 #endif
