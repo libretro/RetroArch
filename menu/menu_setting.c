@@ -3682,6 +3682,19 @@ static bool setting_append_list_video_options(
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
+   CONFIG_BOOL(
+         settings->ui.suspend_screensaver_enable,
+         menu_hash_to_str(MENU_LABEL_SUSPEND_SCREENSAVER_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE),
+         true,
+         menu_hash_to_str(MENU_VALUE_OFF),
+         menu_hash_to_str(MENU_VALUE_ON),
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+
    CONFIG_BOOL(settings->fps_show,
          menu_hash_to_str(MENU_LABEL_FPS_SHOW),
          menu_hash_to_str(MENU_LABEL_VALUE_FPS_SHOW),
@@ -5512,18 +5525,6 @@ static bool setting_append_list_ui_options(
          general_write_handler,
          general_read_handler);
 
-   CONFIG_BOOL(
-         settings->ui.suspend_screensaver_enable,
-         menu_hash_to_str(MENU_LABEL_SUSPEND_SCREENSAVER_ENABLE),
-         menu_hash_to_str(MENU_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE),
-         true,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
 
    END_SUB_GROUP(list, list_info, parent_group);
    END_GROUP(list, list_info, parent_group);
