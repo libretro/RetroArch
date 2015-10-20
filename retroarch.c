@@ -54,8 +54,9 @@
 #include "menu/menu_hash.h"
 #endif
 
-char orig_savestate_dir[PATH_MAX_LENGTH];
-char orig_savefile_dir[PATH_MAX_LENGTH];
+char current_savestate_dir[PATH_MAX_LENGTH];
+char current_savefile_dir[PATH_MAX_LENGTH];
+
 
 /* Descriptive names for options without short variant. Please keep the name in
    sync with the option name. Order does not matter. */
@@ -333,62 +334,66 @@ void set_paths_redirect(const char *path)
       /* per-core saves: append the library_name to the save location */
       if (settings->sort_savefiles_enable && global->dir.savefile[0] != '\0')
       {
-         strlcpy(orig_savefile_dir,global->dir.savefile,
-               sizeof(orig_savefile_dir));
-         fill_pathname_dir(
-               global->dir.savefile,
+         fill_pathname_join(
+               current_savefile_dir,
                global->dir.savefile,
                info->info.library_name,
                sizeof(global->dir.savefile));
 
          /* If path doesn't exist, try to create it,
           * if everything fails revert to the original path. */
-         if(!path_is_directory(global->dir.savefile) && global->dir.savefile[0] != '\0')
+         if(!path_is_directory(current_savefile_dir) && current_savefile_dir[0] != '\0')
          {
-            path_mkdir(global->dir.savefile);
-            if(!path_is_directory(global->dir.savefile))
+            path_mkdir(current_savefile_dir);
+            if(!path_is_directory(current_savefile_dir))
             {
-               RARCH_LOG("Reverting savefile directory to %s\n", orig_savefile_dir);
-               strlcpy(global->dir.savefile,
-                     orig_savefile_dir,
-                     sizeof(global->dir.savefile));
+               RARCH_LOG("Reverting savefile directory to %s\n", global->dir.savefile);
+               strlcpy(current_savefile_dir,
+                     global->dir.savefile,
+                     sizeof(current_savefile_dir));
             }
          }
       }
+      else
+         strlcpy(current_savefile_dir,
+               global->dir.savefile,
+               sizeof(current_savefile_dir));
 
       /* per-core states: append the library_name to the save location */
       if (settings->sort_savestates_enable && global->dir.savestate[0] != '\0')
       {
-         strlcpy(orig_savestate_dir,
-               global->dir.savestate,
-               sizeof(orig_savestate_dir));
-         fill_pathname_dir(global->dir.savestate,
+         fill_pathname_join(
+               current_savestate_dir,
                global->dir.savestate,
                info->info.library_name,
                sizeof(global->dir.savestate));
 
          /* If path doesn't exist, try to create it.
           * If everything fails, revert to the original path. */
-         if(!path_is_directory(global->dir.savestate) && global->dir.savestate[0] != '\0')
+         if(!path_is_directory(current_savestate_dir) && current_savestate_dir[0] != '\0')
          {
-            path_mkdir(global->dir.savestate);
-            if(!path_is_directory(global->dir.savestate))
+            path_mkdir(current_savestate_dir);
+            if(!path_is_directory(current_savestate_dir))
             {
-               RARCH_LOG("Reverting savestate directory to %s\n", orig_savestate_dir);
-               strlcpy(global->dir.savestate,
-                     orig_savestate_dir,
-                     sizeof(global->dir.savestate));
+               RARCH_LOG("Reverting savestate directory to %s\n", global->dir.savestate);
+               strlcpy(current_savestate_dir,
+                     global->dir.savestate,
+                     sizeof(current_savestate_dir));
             }
          }
       }
+      else
+         strlcpy(current_savestate_dir,
+               global->dir.savestate,
+               sizeof(current_savestate_dir));
    }
 
-   if(path_is_directory(global->dir.savefile))
-      strlcpy(global->name.savefile, global->dir.savefile,
+   if(path_is_directory(current_savefile_dir))
+      strlcpy(global->name.savefile, current_savefile_dir,
             sizeof(global->name.savefile));
 
-   if(path_is_directory(global->dir.savestate))
-      strlcpy(global->name.savestate, global->dir.savestate,
+   if(path_is_directory(current_savestate_dir))
+      strlcpy(global->name.savestate, current_savestate_dir,
             sizeof(global->name.savestate));
 
    if (path_is_directory(global->name.savefile))
@@ -789,7 +794,7 @@ static void parse_input(int argc, char *argv[])
             FreeConsole();
 #endif
             break;
-         
+
          case RA_OPT_MENU:
             global->inited.core.type        = CORE_TYPE_DUMMY;
             break;
@@ -1057,7 +1062,7 @@ void rarch_main_alloc(void)
 /**
  * rarch_main_new:
  *
- * Will teardown drivers and clears all 
+ * Will teardown drivers and clears all
  * internal state of the program.
  * If @inited is true, will initialize all
  * drivers again after teardown.
@@ -1099,7 +1104,7 @@ void rarch_init_system_av_info(void)
 /**
  * rarch_main_init:
  * @argc                 : Count of (commandline) arguments.
- * @argv                 : (Commandline) arguments. 
+ * @argv                 : (Commandline) arguments.
  *
  * Initializes the program.
  *
@@ -1512,7 +1517,7 @@ void rarch_playlist_load_content(void *data, unsigned idx)
  *
  * Gets deferred core.
  *
- * Returns: 0 if there are multiple deferred cores and a 
+ * Returns: 0 if there are multiple deferred cores and a
  * selection needs to be made from a list, otherwise
  * returns -1 and fills in @s with path to core.
  **/
