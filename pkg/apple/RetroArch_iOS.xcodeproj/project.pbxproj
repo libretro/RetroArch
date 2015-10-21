@@ -154,25 +154,12 @@
 		83D632D719ECFCC4009E3161 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
-				84F9A9C31A87E1AA003AF12F /* Database */,
 				83EB675F19EEAF050096F441 /* modules */,
-				84F9A9BD1A87E0A2003AF12F /* autoconfig */,
-				84F9A9BF1A87E0C6003AF12F /* overlays */,
 				83D632DB19ECFCC4009E3161 /* ic_pause.png */,
 				83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */,
 			);
 			name = Assets;
 			path = Resources;
-			sourceTree = "<group>";
-		};
-		84F9A9C31A87E1AA003AF12F /* Database */ = {
-			isa = PBXGroup;
-			children = (
-				84F9A9C11A87E180003AF12F /* cht */,
-				84F9A9C41A87E1D0003AF12F /* cursors */,
-				84F9A9C61A87E1E8003AF12F /* rdb */,
-			);
-			name = Database;
 			sourceTree = "<group>";
 		};
 		96AFAE1A16C1D4EA009DE44C = {
