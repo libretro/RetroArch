@@ -277,7 +277,7 @@ static void* ctr_init(const video_info_t* video,
    ctr->frame_coords->y1 = CTR_TOP_FRAMEBUFFER_HEIGHT;
    ctr->frame_coords->u = CTR_TOP_FRAMEBUFFER_WIDTH;
    ctr->frame_coords->v = CTR_TOP_FRAMEBUFFER_HEIGHT;
-   GSPGPU_FlushDataCache(NULL, (u8*)ctr->frame_coords, sizeof(ctr_vertex_t));
+   GSPGPU_FlushDataCache(ctr->frame_coords, sizeof(ctr_vertex_t));
 
    ctr->menu.texture_width = 512;
    ctr->menu.texture_height = 512;
@@ -294,7 +294,7 @@ static void* ctr_init(const video_info_t* video,
    ctr->menu.frame_coords->y1 = CTR_TOP_FRAMEBUFFER_HEIGHT;
    ctr->menu.frame_coords->u = CTR_TOP_FRAMEBUFFER_WIDTH - 80;
    ctr->menu.frame_coords->v = CTR_TOP_FRAMEBUFFER_HEIGHT;
-   GSPGPU_FlushDataCache(NULL, (u8*)ctr->menu.frame_coords, sizeof(ctr_vertex_t));
+   GSPGPU_FlushDataCache(ctr->menu.frame_coords, sizeof(ctr_vertex_t));
 
    ctr_set_scale_vector(&ctr->scale_vector,
                         CTR_TOP_FRAMEBUFFER_WIDTH, CTR_TOP_FRAMEBUFFER_HEIGHT,
@@ -510,7 +510,7 @@ static bool ctr_frame(void* data, const void* frame,
             dst += ctr->texture_width * (ctr->rgb32? 4: 2);
             src += pitch;
          }
-         GSPGPU_FlushDataCache(NULL, ctr->texture_linear,
+         GSPGPU_FlushDataCache(ctr->texture_linear,
                                ctr->texture_width * ctr->texture_height * (ctr->rgb32? 4: 2));
 
          ctrGuCopyImage(false, ctr->texture_linear, ctr->texture_width, ctr->texture_height, ctr->rgb32 ? CTRGU_RGBA8: CTRGU_RGB565, false,
@@ -528,7 +528,7 @@ static bool ctr_frame(void* data, const void* frame,
 
    ctr->frame_coords->u = width;
    ctr->frame_coords->v = height;
-   GSPGPU_FlushDataCache(NULL, (u8*)ctr->frame_coords, sizeof(ctr_vertex_t));
+   GSPGPU_FlushDataCache(ctr->frame_coords, sizeof(ctr_vertex_t));
 
    ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->frame_coords));
    ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->scale_vector, 1);
@@ -559,7 +559,7 @@ static bool ctr_frame(void* data, const void* frame,
                     0xFF0000);
    }
 
-   GPU_DrawArray(GPU_UNKPRIM, 0, 1);
+   GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
 
    /* restore */
    if (ctr->rgb32)
@@ -578,7 +578,7 @@ static bool ctr_frame(void* data, const void* frame,
    if (ctr->menu_texture_enable)
    {
 
-      GSPGPU_FlushDataCache(NULL, ctr->menu.texture_linear,
+      GSPGPU_FlushDataCache(ctr->menu.texture_linear,
                             ctr->menu.texture_width * ctr->menu.texture_height * sizeof(uint16_t));
 
       ctrGuCopyImage(false, ctr->menu.texture_linear, ctr->menu.texture_width, ctr->menu.texture_height, CTRGU_RGBA4444,false,
@@ -592,7 +592,7 @@ static bool ctr_frame(void* data, const void* frame,
 
       ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->menu.frame_coords));
       ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->menu.scale_vector, 1);
-      GPU_DrawArray(GPU_UNKPRIM, 0, 1);
+      GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
    }
 
    GPU_FinishDrawing();
@@ -694,7 +694,7 @@ static void ctr_set_texture_frame(void* data, const void* frame, bool rgb32,
    ctr->menu.frame_coords->y1 = ctr->menu.frame_coords->y0 + height;
    ctr->menu.frame_coords->u = width;
    ctr->menu.frame_coords->v = height;
-   GSPGPU_FlushDataCache(NULL, (u8*)ctr->menu.frame_coords, sizeof(ctr_vertex_t));
+   GSPGPU_FlushDataCache(ctr->menu.frame_coords, sizeof(ctr_vertex_t));
 }
 
 static void ctr_set_texture_enable(void* data, bool state, bool full_screen)

@@ -121,8 +121,8 @@ static void *ctr_audio_init(const char *device, unsigned rate, unsigned latency)
 
    ctr->pos                  = 0;
 
-   GSPGPU_FlushDataCache(NULL, (u8*)ctr->l_paddr, CTR_AUDIO_SIZE);
-   GSPGPU_FlushDataCache(NULL, (u8*)ctr->r_paddr, CTR_AUDIO_SIZE);
+   GSPGPU_FlushDataCache(ctr->l_paddr, CTR_AUDIO_SIZE);
+   GSPGPU_FlushDataCache(ctr->r_paddr, CTR_AUDIO_SIZE);
    csndPlaySound_custom(0x8, SOUND_LOOPMODE(CSND_LOOPMODE_NORMAL)| SOUND_FORMAT(CSND_ENCODING_PCM16),
                  1.0, -1.0, ctr->l, ctr->l, CTR_AUDIO_SIZE);
 
@@ -196,8 +196,8 @@ static ssize_t ctr_audio_write(void *data, const void *buf, size_t size)
       ctr->pos &= CTR_AUDIO_COUNT_MASK;
    }
 
-   GSPGPU_FlushDataCache(NULL, (u8*)ctr->l, CTR_AUDIO_SIZE);
-   GSPGPU_FlushDataCache(NULL, (u8*)ctr->r, CTR_AUDIO_SIZE);
+   GSPGPU_FlushDataCache(ctr->l, CTR_AUDIO_SIZE);
+   GSPGPU_FlushDataCache(ctr->r, CTR_AUDIO_SIZE);
 
    retro_perf_stop(&ctraudio_f);
 
