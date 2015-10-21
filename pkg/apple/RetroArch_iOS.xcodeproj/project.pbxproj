@@ -84,11 +84,6 @@
 		83D632DB19ECFCC4009E3161 /* ic_pause.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = iOS/Resources/ic_pause.png; sourceTree = SOURCE_ROOT; };
 		83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = iOS/Resources/PauseIndicatorView.xib; sourceTree = SOURCE_ROOT; };
 		83EB675F19EEAF050096F441 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iOS/modules; sourceTree = SOURCE_ROOT; };
-		84F9A9BD1A87E0A2003AF12F /* autoconfig */ = {isa = PBXFileReference; lastKnownFileType = folder; name = autoconfig; path = ../../media/autoconfig; sourceTree = SOURCE_ROOT; };
-		84F9A9BF1A87E0C6003AF12F /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../../media/overlays; sourceTree = SOURCE_ROOT; };
-		84F9A9C11A87E180003AF12F /* cht */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cht; path = ../../media/libretrodb/cht; sourceTree = SOURCE_ROOT; };
-		84F9A9C41A87E1D0003AF12F /* cursors */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cursors; path = ../../media/libretrodb/cursors; sourceTree = SOURCE_ROOT; };
-		84F9A9C61A87E1E8003AF12F /* rdb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = rdb; path = ../../media/libretrodb/rdb; sourceTree = SOURCE_ROOT; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		963C3C33186E3DED00A6EB1E /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
