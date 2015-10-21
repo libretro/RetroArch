@@ -97,6 +97,8 @@ enum
    XMB_TEXTURE_LAST
 };
 
+#define XMB_SYSTEM_TAB_END XMB_TEXTURE_SETTINGS
+
 struct xmb_texture_item
 {
    GRuint id;
@@ -889,11 +891,16 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *me
       float iz                    = xmb->categories.passive.zoom;
       xmb_node_t *node            = &xmb->main_menu_node;
 
-      if (j == 1)
-         node = &xmb->settings_tab_node;
-
-      if (j > 1)
-         node = xmb_get_userdata_from_horizontal_list(xmb, j - 2);
+      switch (j)
+      {
+         case XMB_TEXTURE_SETTINGS:
+            node = &xmb->settings_tab_node;
+            break;
+         default:
+            if (j > XMB_SYSTEM_TAB_END)
+               node = xmb_get_userdata_from_horizontal_list(xmb, j - 2);
+            break;
+      }
 
       if (!node)
          continue;
@@ -959,11 +966,16 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
       float ia          = 0;
       xmb_node_t *node  = &xmb->main_menu_node;
 
-      if (j == 1)
-         node = &xmb->settings_tab_node;
-
-      if (j > 1)
-         node = xmb_get_userdata_from_horizontal_list(xmb, j - 2);
+      switch (j)
+      {
+         case XMB_TEXTURE_SETTINGS:
+            node = &xmb->settings_tab_node;
+            break;
+         default:
+            if (j > XMB_SYSTEM_TAB_END)
+               node = xmb_get_userdata_from_horizontal_list(xmb, j - 2);
+            break;
+      }
 
       if (!node)
          continue;
@@ -1179,7 +1191,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    if (!list || !list->size || !menu)
       return;
 
-   if (cat_selection_ptr > 1)
+   if (cat_selection_ptr > XMB_SYSTEM_TAB_END)
       core_node = xmb_get_userdata_from_horizontal_list(xmb, cat_selection_ptr - 2);
 
    end = file_list_get_size(list);
@@ -1476,7 +1488,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
       if (i == 1)
          node = &xmb->settings_tab_node;
 
-      if (i > 1)
+      if (i > XMB_SYSTEM_TAB_END)
          node = xmb_get_userdata_from_horizontal_list(xmb, i - 2);
 
       if (!node)
@@ -1989,7 +2001,7 @@ static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
       if (i == 1)
          node = &xmb->settings_tab_node;
 
-      if (i > 1)
+      if (i > XMB_SYSTEM_TAB_END)
          node = xmb_get_userdata_from_horizontal_list(xmb, i - 2);
 
       if (!node)
@@ -2450,13 +2462,13 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
 
          switch (xmb->categories.selection_ptr)
          {
-            case 0:
+            case XMB_TEXTURE_MAIN_MENU:
                menu_stack->list[stack_size - 1].label = 
                   strdup(menu_hash_to_str(MENU_VALUE_MAIN_MENU));
                menu_stack->list[stack_size - 1].type = 
                   MENU_SETTINGS;
                break;
-            case 1:
+            case XMB_TEXTURE_SETTINGS:
                menu_stack->list[stack_size - 1].label = 
                   strdup(menu_hash_to_str(MENU_VALUE_SETTINGS_TAB));
                menu_stack->list[stack_size - 1].type = 
