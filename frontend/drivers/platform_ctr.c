@@ -72,7 +72,8 @@ void __system_allocateHeaps() {
    // For n3DS running with 124MB, only 110MB appears actually available
    app_memory = app_memory > 0x6E00000 ? 0x6E00000 : app_memory;
 
-   heap_size        = (app_memory - mem_used - linear_heap_size - 0x10000) & 0xFFFFF000;
+   heap_size = (app_memory - mem_used - linear_heap_size - 0x10000) & 0xFFFFF000;
+   heap_size = heap_size > 0x6000000? 0x6000000 : heap_size;
 
 	// Allocate the application heap
 	__heapBase = 0x08000000;
