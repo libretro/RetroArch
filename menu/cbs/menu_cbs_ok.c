@@ -46,6 +46,7 @@ int generic_action_ok_displaylist_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
+   int ret;
    char tmp[PATH_MAX_LENGTH];
    char action_path[PATH_MAX_LENGTH];
    unsigned dl_type                  = DISPLAYLIST_GENERIC;
@@ -307,7 +308,12 @@ int generic_action_ok_displaylist_push(const char *path,
    if (info_path)
       strlcpy(info.path, info_path, sizeof(info.path));
 
-   return menu_displaylist_push_list(&info, dl_type);
+   ret = menu_displaylist_push_list(&info, dl_type);
+   if (ret != 0)
+      return -1;
+
+   menu_displaylist_push_list_process(&info);
+   return 0;
 }
 
 int action_ok_push_quick_menu(void)

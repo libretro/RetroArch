@@ -116,6 +116,8 @@ typedef struct menu_displaylist_info
 
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type);
 
+void menu_displaylist_push_list_process(menu_displaylist_info_t *info);
+
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list);
 
 int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info, 

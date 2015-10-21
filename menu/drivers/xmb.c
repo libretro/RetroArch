@@ -1717,7 +1717,8 @@ static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
    strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
    strlcpy(info.exts, "lpl", sizeof(info.exts));
 
-   menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL);
+   if (menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL) == 0)
+      menu_displaylist_push_list_process(&info);
 }
 
 static void xmb_font(menu_handle_t *menu)
@@ -2556,7 +2557,11 @@ static void xmb_toggle(bool menu_on)
 
 static int deferred_push_content_actions(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS);
+   int ret = menu_displaylist_push_list(info, DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS);
+   if (ret != 0)
+      return ret;
+   menu_displaylist_push_list_process(info);
+   return 0;
 }
 
 static int xmb_list_bind_init_compare_label(menu_file_list_cbs_t *cbs,

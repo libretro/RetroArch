@@ -344,7 +344,8 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             strlcpy(info.path,  setting->default_value.string, sizeof(info.path));
             strlcpy(info.label, name, sizeof(info.label));
 
-            menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+            if (menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC) == 0)
+               menu_displaylist_push_list_process(&info);
          }
          /* fall-through. */
       case ST_BOOL:
@@ -2556,7 +2557,8 @@ static void general_write_handler(void *data)
             strlcpy(info.label,
                   menu_hash_to_str(MENU_LABEL_HELP), sizeof(info.label));
 
-            menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC);
+            if (menu_displaylist_push_list(&info, DISPLAYLIST_GENERIC) == 0)
+               menu_displaylist_push_list_process(&info);
             menu_setting_set_with_string_representation(setting, "false");
          }
          break;

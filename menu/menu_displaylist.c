@@ -2532,7 +2532,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_PLAYLIST_COLLECTION:
          if (!strcmp(info->path, "content_history.lpl"))
          {
-            menu_displaylist_push_list(info, DISPLAYLIST_HISTORY);
+            if (menu_displaylist_push_list(info, DISPLAYLIST_HISTORY) == 0)
+               menu_displaylist_push_list_process(info);
             return 0;
          }
          else
@@ -2791,9 +2792,18 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
    }
 
+
+   return ret;
+}
+
+void menu_displaylist_push_list_process(menu_displaylist_info_t *info)
+{
+   if (!info)
+      return;
+
    if (info->need_sort)
       file_list_sort_on_alt(info->list);
-   
+
    if (info->need_refresh)
       menu_entries_refresh(info->list);
 
@@ -2810,8 +2820,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          ui->notify_list_loaded(driver->ui_companion_data,
                info->list, info->menu_list);
    }
-
-   return ret;
 }
 
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
@@ -2839,11 +2847,20 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    switch (hash_label)
    {
       case MENU_VALUE_MAIN_MENU:
-         return menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
+         if (menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU) != 0)
+            return -1;
+         menu_displaylist_push_list_process(&info);
+         return 0;
       case MENU_VALUE_SETTINGS_TAB:
-         return menu_displaylist_push_list(&info, DISPLAYLIST_SETTINGS_ALL);
+         if (menu_displaylist_push_list(&info, DISPLAYLIST_SETTINGS_ALL) != 0)
+            return -1;
+         menu_displaylist_push_list_process(&info);
+         return 0;
       case MENU_VALUE_HORIZONTAL_MENU:
-         return menu_displaylist_push_list(&info, DISPLAYLIST_HORIZONTAL);
+         if (menu_displaylist_push_list(&info, DISPLAYLIST_HORIZONTAL) != 0)
+            return -1;
+         menu_displaylist_push_list_process(&info);
+         return 0;
    }
 
    cbs = menu_entries_get_last_stack_actiondata();
