@@ -32,10 +32,8 @@
 		5037009B1ACA18E400A51A37 /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
 		5037009F1ACA18E400A51A37 /* ic_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DB19ECFCC4009E3161 /* ic_pause.png */; };
 		503700A01ACA18E400A51A37 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
-		503700A11ACA18E400A51A37 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* Media.xcassets */; };
 		503700A21ACA18E400A51A37 /* PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */; };
 		503700A31ACA18E400A51A37 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* modules */; };
-		503700A41ACA18E400A51A37 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BB1A87E068003AF12F /* assets */; };
 		503700A51ACA18E400A51A37 /* autoconfig in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BD1A87E0A2003AF12F /* autoconfig */; };
 		503700A61ACA18E400A51A37 /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BF1A87E0C6003AF12F /* overlays */; };
 		503700A71ACA18E400A51A37 /* cht in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C11A87E180003AF12F /* cht */; };
@@ -50,11 +48,9 @@
 		50D00E8E19D117C400EBA71E /* cc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */; };
 		50E7189F184B88AA001956CE /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50E7189E184B88AA001956CE /* CoreVideo.framework */; };
 		696012F219F3389A006A1088 /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 696012F119F3389A006A1088 /* CoreText.framework */; };
-		69D31DE41A547EC800EF4C92 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* Media.xcassets */; };
 		83D632E219ECFCC4009E3161 /* ic_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DB19ECFCC4009E3161 /* ic_pause.png */; };
 		83D632E519ECFCC4009E3161 /* PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */; };
 		83EB676019EEAF050096F441 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* modules */; };
-		84F9A9BC1A87E068003AF12F /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BB1A87E068003AF12F /* assets */; };
 		84F9A9BE1A87E0A2003AF12F /* autoconfig in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BD1A87E0A2003AF12F /* autoconfig */; };
 		84F9A9C01A87E0C6003AF12F /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BF1A87E0C6003AF12F /* overlays */; };
 		84F9A9C51A87E1D0003AF12F /* cursors in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C41A87E1D0003AF12F /* cursors */; };
@@ -85,11 +81,9 @@
 		50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; name = cc_resampler_neon.S; path = ../../audio/drivers_resampler/cc_resampler_neon.S; sourceTree = SOURCE_ROOT; };
 		50E7189E184B88AA001956CE /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		696012F119F3389A006A1088 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
-		69D31DE31A547EC800EF4C92 /* Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = iOS/Resources/Media.xcassets; sourceTree = SOURCE_ROOT; };
 		83D632DB19ECFCC4009E3161 /* ic_pause.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = iOS/Resources/ic_pause.png; sourceTree = SOURCE_ROOT; };
 		83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = iOS/Resources/PauseIndicatorView.xib; sourceTree = SOURCE_ROOT; };
 		83EB675F19EEAF050096F441 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iOS/modules; sourceTree = SOURCE_ROOT; };
-		84F9A9BB1A87E068003AF12F /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = assets; path = ../../media/assets; sourceTree = SOURCE_ROOT; };
 		84F9A9BD1A87E0A2003AF12F /* autoconfig */ = {isa = PBXFileReference; lastKnownFileType = folder; name = autoconfig; path = ../../media/autoconfig; sourceTree = SOURCE_ROOT; };
 		84F9A9BF1A87E0C6003AF12F /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../../media/overlays; sourceTree = SOURCE_ROOT; };
 		84F9A9C11A87E180003AF12F /* cht */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cht; path = ../../media/libretrodb/cht; sourceTree = SOURCE_ROOT; };
@@ -162,12 +156,10 @@
 			children = (
 				84F9A9C31A87E1AA003AF12F /* Database */,
 				83EB675F19EEAF050096F441 /* modules */,
-				84F9A9BB1A87E068003AF12F /* assets */,
 				84F9A9BD1A87E0A2003AF12F /* autoconfig */,
 				84F9A9BF1A87E0C6003AF12F /* overlays */,
 				83D632DB19ECFCC4009E3161 /* ic_pause.png */,
 				83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */,
-				69D31DE31A547EC800EF4C92 /* Media.xcassets */,
 			);
 			name = Assets;
 			path = Resources;
@@ -365,10 +357,8 @@
 			files = (
 				5037009F1ACA18E400A51A37 /* ic_pause.png in Resources */,
 				503700A01ACA18E400A51A37 /* InfoPlist.strings in Resources */,
-				503700A11ACA18E400A51A37 /* Media.xcassets in Resources */,
 				503700A21ACA18E400A51A37 /* PauseIndicatorView.xib in Resources */,
 				503700A31ACA18E400A51A37 /* modules in Resources */,
-				503700A41ACA18E400A51A37 /* assets in Resources */,
 				503700A51ACA18E400A51A37 /* autoconfig in Resources */,
 				503700A61ACA18E400A51A37 /* overlays in Resources */,
 				503700A71ACA18E400A51A37 /* cht in Resources */,
@@ -383,10 +373,8 @@
 			files = (
 				83D632E219ECFCC4009E3161 /* ic_pause.png in Resources */,
 				967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */,
-				69D31DE41A547EC800EF4C92 /* Media.xcassets in Resources */,
 				83D632E519ECFCC4009E3161 /* PauseIndicatorView.xib in Resources */,
 				83EB676019EEAF050096F441 /* modules in Resources */,
-				84F9A9BC1A87E068003AF12F /* assets in Resources */,
 				84F9A9BE1A87E0A2003AF12F /* autoconfig in Resources */,
 				84F9A9C01A87E0C6003AF12F /* overlays in Resources */,
 				84F9A9C81A87E250003AF12F /* cht in Resources */,
