@@ -114,6 +114,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type);
 
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list);
 
+int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info, 
+      const char *info_label, unsigned parse_type);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1461,8 +1461,7 @@ enum
    PARSE_SUB_GROUP    = (1 << 3)
 };
 
-static int menu_displaylist_parse_settings(menu_handle_t *menu,
-      menu_displaylist_info_t *info, 
+int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info, 
       const char *info_label, unsigned parse_type)
 {
    uint64_t flags;
@@ -1470,6 +1469,7 @@ static int menu_displaylist_parse_settings(menu_handle_t *menu,
    size_t             count  = 0;
    rarch_setting_t *setting  = NULL;
    settings_t *settings      = config_get_ptr();
+   menu_handle_t *menu       = (menu_handle_t*)data;
 
    setting                   = menu_setting_find(info_label);
    flags                     = menu_setting_get_flags(setting);
