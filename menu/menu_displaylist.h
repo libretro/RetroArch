@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 
+#include <boolean.h>
 #include <retro_miscellaneous.h>
 #include <file/file_list.h>
 
@@ -96,6 +97,9 @@ enum
 
 typedef struct menu_displaylist_info
 {
+   bool need_sort;
+   bool need_refresh;
+   bool need_push;
    file_list_t *list;
    file_list_t *menu_list;
    char path[PATH_MAX_LENGTH];
