@@ -36,11 +36,6 @@
 		503700A21ACA18E400A51A37 /* PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */; };
 		503700A31ACA18E400A51A37 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* modules */; };
 		503700A41ACA18E400A51A37 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BB1A87E068003AF12F /* assets */; };
-		503700A51ACA18E400A51A37 /* autoconfig in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BD1A87E0A2003AF12F /* autoconfig */; };
-		503700A61ACA18E400A51A37 /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BF1A87E0C6003AF12F /* overlays */; };
-		503700A71ACA18E400A51A37 /* cht in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C11A87E180003AF12F /* cht */; };
-		503700A81ACA18E400A51A37 /* cursors in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C41A87E1D0003AF12F /* cursors */; };
-		503700A91ACA18E400A51A37 /* rdb in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C61A87E1E8003AF12F /* rdb */; };
 		5040F0501AE47ED4006F6972 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
 		5040F0511AE47EE2006F6972 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
 		5041BAF41A9D40D000A77A33 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 963C3C33186E3DED00A6EB1E /* GameController.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
@@ -55,11 +50,6 @@
 		83D632E519ECFCC4009E3161 /* PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */; };
 		83EB676019EEAF050096F441 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* modules */; };
 		84F9A9BC1A87E068003AF12F /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BB1A87E068003AF12F /* assets */; };
-		84F9A9BE1A87E0A2003AF12F /* autoconfig in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BD1A87E0A2003AF12F /* autoconfig */; };
-		84F9A9C01A87E0C6003AF12F /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BF1A87E0C6003AF12F /* overlays */; };
-		84F9A9C51A87E1D0003AF12F /* cursors in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C41A87E1D0003AF12F /* cursors */; };
-		84F9A9C71A87E1E8003AF12F /* rdb in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C61A87E1E8003AF12F /* rdb */; };
-		84F9A9C81A87E250003AF12F /* cht in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C11A87E180003AF12F /* cht */; };
 		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
 		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
 		967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
@@ -90,11 +80,6 @@
 		83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = iOS/Resources/PauseIndicatorView.xib; sourceTree = SOURCE_ROOT; };
 		83EB675F19EEAF050096F441 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iOS/modules; sourceTree = SOURCE_ROOT; };
 		84F9A9BB1A87E068003AF12F /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = assets; path = ../../media/assets; sourceTree = SOURCE_ROOT; };
-		84F9A9BD1A87E0A2003AF12F /* autoconfig */ = {isa = PBXFileReference; lastKnownFileType = folder; name = autoconfig; path = ../../media/autoconfig; sourceTree = SOURCE_ROOT; };
-		84F9A9BF1A87E0C6003AF12F /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../../media/overlays; sourceTree = SOURCE_ROOT; };
-		84F9A9C11A87E180003AF12F /* cht */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cht; path = ../../media/libretrodb/cht; sourceTree = SOURCE_ROOT; };
-		84F9A9C41A87E1D0003AF12F /* cursors */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cursors; path = ../../media/libretrodb/cursors; sourceTree = SOURCE_ROOT; };
-		84F9A9C61A87E1E8003AF12F /* rdb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = rdb; path = ../../media/libretrodb/rdb; sourceTree = SOURCE_ROOT; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		963C3C33186E3DED00A6EB1E /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
@@ -160,27 +145,14 @@
 		83D632D719ECFCC4009E3161 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
-				84F9A9C31A87E1AA003AF12F /* Database */,
 				83EB675F19EEAF050096F441 /* modules */,
 				84F9A9BB1A87E068003AF12F /* assets */,
-				84F9A9BD1A87E0A2003AF12F /* autoconfig */,
-				84F9A9BF1A87E0C6003AF12F /* overlays */,
 				83D632DB19ECFCC4009E3161 /* ic_pause.png */,
 				83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */,
 				69D31DE31A547EC800EF4C92 /* Media.xcassets */,
 			);
 			name = Assets;
 			path = Resources;
-			sourceTree = "<group>";
-		};
-		84F9A9C31A87E1AA003AF12F /* Database */ = {
-			isa = PBXGroup;
-			children = (
-				84F9A9C11A87E180003AF12F /* cht */,
-				84F9A9C41A87E1D0003AF12F /* cursors */,
-				84F9A9C61A87E1E8003AF12F /* rdb */,
-			);
-			name = Database;
 			sourceTree = "<group>";
 		};
 		96AFAE1A16C1D4EA009DE44C = {
@@ -369,11 +341,6 @@
 				503700A21ACA18E400A51A37 /* PauseIndicatorView.xib in Resources */,
 				503700A31ACA18E400A51A37 /* modules in Resources */,
 				503700A41ACA18E400A51A37 /* assets in Resources */,
-				503700A51ACA18E400A51A37 /* autoconfig in Resources */,
-				503700A61ACA18E400A51A37 /* overlays in Resources */,
-				503700A71ACA18E400A51A37 /* cht in Resources */,
-				503700A81ACA18E400A51A37 /* cursors in Resources */,
-				503700A91ACA18E400A51A37 /* rdb in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -387,11 +354,6 @@
 				83D632E519ECFCC4009E3161 /* PauseIndicatorView.xib in Resources */,
 				83EB676019EEAF050096F441 /* modules in Resources */,
 				84F9A9BC1A87E068003AF12F /* assets in Resources */,
-				84F9A9BE1A87E0A2003AF12F /* autoconfig in Resources */,
-				84F9A9C01A87E0C6003AF12F /* overlays in Resources */,
-				84F9A9C81A87E250003AF12F /* cht in Resources */,
-				84F9A9C51A87E1D0003AF12F /* cursors in Resources */,
-				84F9A9C71A87E1E8003AF12F /* rdb in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
