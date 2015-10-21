@@ -334,9 +334,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 
    CFSearchPathForDirectoriesInDomains(CFDocumentDirectory, CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
 
-#ifdef OSX
    strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
-#endif
    fill_pathname_join(g_defaults.dir.shader, home_dir_buf, "shaders_glsl", sizeof(g_defaults.dir.shader));
    fill_pathname_join(g_defaults.dir.core, home_dir_buf, "cores", sizeof(g_defaults.dir.core));
    fill_pathname_join(g_defaults.dir.core_info, home_dir_buf, "info", sizeof(g_defaults.dir.core_info));
@@ -360,23 +358,22 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dir.audio_filter, home_dir_buf, "audio_filters", sizeof(g_defaults.dir.audio_filter));
    fill_pathname_join(g_defaults.dir.video_filter, home_dir_buf, "video_filters", sizeof(g_defaults.dir.video_filter));
    fill_pathname_join(g_defaults.dir.playlist, home_dir_buf, "playlists", sizeof(g_defaults.dir.playlist));
+#if defined(RELEASE_BUILD)
+    fill_pathname_join(g_defaults.dir.remap, bundle_path_buf, "Contents/Resources/remaps", sizeof(g_defaults.dir.remap));
+    fill_pathname_join(g_defaults.dir.playlist, bundle_path_buf, "Contents/Resources/playlists", sizeof(g_defaults.dir.playlist));
+    fill_pathname_join(g_defaults.dir.shader, bundle_path_buf, "Contents/Resources/shaders", sizeof(g_defaults.dir.shader));
+    fill_pathname_join(g_defaults.dir.core, bundle_path_buf, "Contents/Resources/cores", sizeof(g_defaults.dir.core));
+    fill_pathname_join(g_defaults.dir.core_info, bundle_path_buf, "Contents/Resources/info", sizeof(g_defaults.dir.core_info));
+    fill_pathname_join(g_defaults.dir.overlay, bundle_path_buf, "Contents/Resources/overlays", sizeof(g_defaults.dir.overlay));
+    fill_pathname_join(g_defaults.dir.autoconfig, bundle_path_buf, "Contents/Resources/autoconfig", sizeof(g_defaults.dir.autoconfig));
+    fill_pathname_join(g_defaults.dir.core_assets, bundle_path_buf, "Contents/Resources/downloads", sizeof(g_defaults.dir.core_assets));
+    fill_pathname_join(g_defaults.dir.assets, bundle_path_buf, "Contents/Resources/assets", sizeof(g_defaults.dir.assets));
+    fill_pathname_join(g_defaults.dir.menu_config, bundle_path_buf, "Contents/Resources/configs", sizeof(g_defaults.dir.menu_config));
+    fill_pathname_join(g_defaults.path.config, g_defaults.dir.menu_config, "retroarch.cfg", sizeof(g_defaults.path.config));
+    fill_pathname_join(g_defaults.dir.database, bundle_path_buf, "Contents/Resources/rdb", sizeof(g_defaults.dir.database));
+    fill_pathname_join(g_defaults.dir.cursor, bundle_path_buf, "Contents/Resources/cursors", sizeof(g_defaults.dir.cursor));
+    fill_pathname_join(g_defaults.dir.cheats, bundle_path_buf, "Contents/Resources/cht", sizeof(g_defaults.dir.cheats));
 #endif
-#ifdef RELEASE_BUILD
-   fill_pathname_join(g_defaults.dir.remap, bundle_path_buf, "Contents/Resources/remaps", sizeof(g_defaults.dir.remap));
-   fill_pathname_join(g_defaults.dir.playlist, bundle_path_buf, "Contents/Resources/playlists", sizeof(g_defaults.dir.playlist));
-   fill_pathname_join(g_defaults.dir.shader, bundle_path_buf, "Contents/Resources/shaders", sizeof(g_defaults.dir.shader));
-   fill_pathname_join(g_defaults.dir.core, bundle_path_buf, "Contents/Resources/cores", sizeof(g_defaults.dir.core));
-   fill_pathname_join(g_defaults.dir.core_info, bundle_path_buf, "Contents/Resources/info", sizeof(g_defaults.dir.core_info));
-   fill_pathname_join(g_defaults.dir.overlay, bundle_path_buf, "Contents/Resources/overlays", sizeof(g_defaults.dir.overlay));
-   fill_pathname_join(g_defaults.dir.autoconfig, bundle_path_buf, "Contents/Resources/autoconfig", sizeof(g_defaults.dir.autoconfig));
-   fill_pathname_join(g_defaults.dir.core_assets, bundle_path_buf, "Contents/Resources/downloads", sizeof(g_defaults.dir.core_assets));
-   fill_pathname_join(g_defaults.dir.assets, bundle_path_buf, "Contents/Resources/assets", sizeof(g_defaults.dir.assets));
-   fill_pathname_join(g_defaults.dir.menu_config, bundle_path_buf, "Contents/Resources/configs", sizeof(g_defaults.dir.menu_config));
-   fill_pathname_join(g_defaults.path.config, g_defaults.dir.menu_config, "retroarch.cfg", sizeof(g_defaults.path.config));
-   fill_pathname_join(g_defaults.dir.database, bundle_path_buf, "Contents/Resources/rdb", sizeof(g_defaults.dir.database));
-   fill_pathname_join(g_defaults.dir.cursor, bundle_path_buf, "Contents/Resources/cursors", sizeof(g_defaults.dir.cursor));
-   fill_pathname_join(g_defaults.dir.cheats, bundle_path_buf, "Contents/Resources/cht", sizeof(g_defaults.dir.cheats));
-   
 #endif
 
    CFTemporaryDirectory(temp_dir, sizeof(temp_dir));
