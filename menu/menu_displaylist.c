@@ -1577,7 +1577,7 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
    settings_t      *settings           = config_get_ptr();
    menu_handle_t        *menu          = menu_driver_get_ptr();
    struct item_file *item              = (struct item_file*)
-      menu_driver_list_get_entry(MENU_LIST_HORIZONTAL, menu_driver_list_get_selection() - 2);
+      menu_driver_list_get_entry(MENU_LIST_HORIZONTAL, menu_driver_list_get_selection() - 3);
 
    if (!item)
       return -1;
@@ -2929,6 +2929,11 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
          return 0;
       case MENU_VALUE_SETTINGS_TAB:
          if (menu_displaylist_push_list(&info, DISPLAYLIST_SETTINGS_ALL) != 0)
+            return -1;
+         menu_displaylist_push_list_process(&info);
+         return 0;
+      case MENU_VALUE_HISTORY_TAB:
+         if (menu_displaylist_push_list(&info, DISPLAYLIST_HISTORY) != 0)
             return -1;
          menu_displaylist_push_list_process(&info);
          return 0;
