@@ -1411,6 +1411,10 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_QUIT_RETROARCH:
          rarch_ctl(RARCH_ACTION_STATE_FORCE_QUIT, NULL);
          break;
+      case EVENT_CMD_SHUTDOWN:
+         /* TODO shutdown the system */
+         rarch_ctl(RARCH_ACTION_STATE_FORCE_QUIT, NULL);
+         break;
       case EVENT_CMD_RESUME:
          rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
          break;

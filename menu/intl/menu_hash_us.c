@@ -532,6 +532,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "settings";
       case MENU_LABEL_QUIT_RETROARCH:
          return "quit_retroarch";
+      case MENU_LABEL_SHUTDOWN:
+         return "shutdown";
       case MENU_LABEL_HELP:
          return "help";
       case MENU_LABEL_SAVE_NEW_CONFIG:
@@ -1178,6 +1180,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Settings";
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
          return "Quit RetroArch";
+      case MENU_LABEL_VALUE_SHUTDOWN:
+         return "Shutdown";
       case MENU_LABEL_VALUE_HELP:
          return "help";
       case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:

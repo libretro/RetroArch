@@ -2687,6 +2687,10 @@ static int xmb_list_push(menu_displaylist_info_t *info, unsigned type)
          menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_QUIT_RETROARCH), PARSE_ACTION);
 #endif
+
+         /*menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_SHUTDOWN), PARSE_ACTION);*/
+
          info->need_push    = true;
          ret = 0;
          break;

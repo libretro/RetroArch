@@ -486,6 +486,8 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Réglages";
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
          return "Quitter RetroArch";
+      case MENU_LABEL_VALUE_SHUTDOWN:
+         return "Éteindre";
       case MENU_LABEL_VALUE_HELP:
          return "Aide";
       case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:
