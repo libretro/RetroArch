@@ -65,6 +65,7 @@ enum
 {
    XMB_TEXTURE_MAIN_MENU = 0,
    XMB_TEXTURE_SETTINGS,
+   XMB_TEXTURE_HISTORY,
    XMB_TEXTURE_SETTING,
    XMB_TEXTURE_SUBSETTING,
    XMB_TEXTURE_ARROW,
@@ -100,10 +101,11 @@ enum
 enum
 {
    XMB_SYSTEM_TAB_MAIN = 0,
-   XMB_SYSTEM_TAB_SETTINGS
+   XMB_SYSTEM_TAB_SETTINGS,
+   XMB_SYSTEM_TAB_HISTORY
 };
 
-#define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_SETTINGS
+#define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_HISTORY
 
 struct xmb_texture_item
 {
@@ -232,6 +234,7 @@ typedef struct xmb_handle
 
    xmb_node_t main_menu_node;
    xmb_node_t settings_tab_node;
+   xmb_node_t history_tab_node;
    bool prevent_populate;
 
    gfx_font_raster_block_t raster_block;
@@ -768,7 +771,7 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, unsigned i)
    node->alpha = xmb->categories.passive.alpha;
    node->zoom  = xmb->categories.passive.zoom;
 
-   if ((i + 1) == xmb->categories.active.idx)
+   if ((i + 2) == xmb->categories.active.idx)
    {
       node->alpha = xmb->categories.active.alpha;
       node->zoom  = xmb->categories.active.zoom;
@@ -865,31 +868,36 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 
 static void xmb_set_title(xmb_handle_t *xmb)
 {
-   if (xmb->categories.selection_ptr == 0)
-      menu_entries_get_title(xmb->title_name, sizeof(xmb->title_name));
-   else if (xmb->categories.selection_ptr == 1)
-      menu_entries_get_title(xmb->title_name, sizeof(xmb->title_name));
-   else
+   switch (xmb->categories.selection_ptr)
    {
-      const char *path = NULL;
-      menu_entries_get_at_offset(
-            xmb->horizontal_list,
-            xmb->categories.selection_ptr - 2,
-            &path, NULL, NULL, NULL, NULL);
+      case 0:
+      case 1:
+      case 2:
+         menu_entries_get_title(xmb->title_name, sizeof(xmb->title_name));
+         break;
+      default:
+         {
+            const char *path = NULL;
+            menu_entries_get_at_offset(
+                  xmb->horizontal_list,
+                  xmb->categories.selection_ptr - 3,
+                  &path, NULL, NULL, NULL, NULL);
 
-      if (!path)
-         return;
+            if (!path)
+               return;
 
-      strlcpy(xmb->title_name, path, sizeof(xmb->title_name));
+            strlcpy(xmb->title_name, path, sizeof(xmb->title_name));
 
-      path_remove_extension(xmb->title_name);
+            path_remove_extension(xmb->title_name);
+         }
+         break;
    }
 }
 
 static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 {
    unsigned j;
-   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + 1;
+   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + 2;
 
    for (j = 0; j <= list_size; j++)
    {
@@ -897,16 +905,18 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *me
       float iz                    = xmb->categories.passive.zoom;
       xmb_node_t *node            = NULL;
       
-
       switch (j)
       {
          case XMB_SYSTEM_TAB_SETTINGS:
             node = &xmb->settings_tab_node;
             break;
+         case XMB_SYSTEM_TAB_HISTORY:
+            node = &xmb->history_tab_node;
+            break;
          default:
             node = &xmb->main_menu_node;
             if (j > XMB_SYSTEM_TAB_END)
-               node = xmb_get_userdata_from_horizontal_list(xmb, j - 2);
+               node = xmb_get_userdata_from_horizontal_list(xmb, j - 3);
             break;
       }
 
@@ -967,7 +977,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 {
    unsigned j;
-   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + 1;
+   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + 2;
 
    for (j = 0; j <= list_size; j++)
    {
@@ -979,10 +989,13 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
          case XMB_SYSTEM_TAB_SETTINGS:
             node = &xmb->settings_tab_node;
             break;
+         case XMB_SYSTEM_TAB_HISTORY:
+            node = &xmb->history_tab_node;
+            break;
          default:
             node = &xmb->main_menu_node;
             if (j > XMB_SYSTEM_TAB_END)
-               node = xmb_get_userdata_from_horizontal_list(xmb, j - 2);
+               node = xmb_get_userdata_from_horizontal_list(xmb, j - 3);
             break;
       }
 
@@ -1201,7 +1214,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       return;
 
    if (cat_selection_ptr > XMB_SYSTEM_TAB_END)
-      core_node = xmb_get_userdata_from_horizontal_list(xmb, cat_selection_ptr - 2);
+      core_node = xmb_get_userdata_from_horizontal_list(xmb, cat_selection_ptr - 3);
 
    end = file_list_get_size(list);
 
@@ -1488,7 +1501,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
       GRfloat *color)
 {
    unsigned i;
-   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + 1;
+   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + 2;
 
    for (i = 0; i <= list_size; i++)
    {
@@ -1499,10 +1512,13 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
          case XMB_SYSTEM_TAB_SETTINGS:
             node = &xmb->settings_tab_node;
             break;
+         case XMB_SYSTEM_TAB_HISTORY:
+            node = &xmb->history_tab_node;
+            break;
          default:
             node = &xmb->main_menu_node;
             if (i > XMB_SYSTEM_TAB_END)
-               node = xmb_get_userdata_from_horizontal_list(xmb, i - 2);
+               node = xmb_get_userdata_from_horizontal_list(xmb, i - 3);
             break;
       }
 
@@ -2008,7 +2024,7 @@ static bool xmb_load_image(void *data, menu_image_type_t type)
 static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 {
    unsigned i;
-   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + 1;
+   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + 2;
 
    for (i = 0; i <= list_size; i++)
    {
@@ -2019,10 +2035,13 @@ static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
          case XMB_SYSTEM_TAB_SETTINGS:
             node = &xmb->settings_tab_node;
             break;
+         case XMB_SYSTEM_TAB_HISTORY:
+            node = &xmb->history_tab_node;
+            break;
          default:
             node = &xmb->main_menu_node;
             if (i > XMB_SYSTEM_TAB_END)
-               node = xmb_get_userdata_from_horizontal_list(xmb, i - 2);
+               node = xmb_get_userdata_from_horizontal_list(xmb, i - 3);
             break;
       }
 
@@ -2119,6 +2138,9 @@ static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
             break;
          case XMB_TEXTURE_SETTINGS:
             fill_pathname_join(path, iconpath, "settings.png",   sizeof(path));
+            break;
+         case XMB_TEXTURE_HISTORY:
+            fill_pathname_join(path, iconpath, "history.png",   sizeof(path));
             break;
          case XMB_TEXTURE_SETTING:
             fill_pathname_join(path, iconpath, "setting.png", sizeof(path));
@@ -2227,6 +2249,10 @@ static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
    xmb->settings_tab_node.icon  = xmb->textures.list[XMB_TEXTURE_SETTINGS].id;
    xmb->settings_tab_node.alpha = xmb->categories.active.alpha;
    xmb->settings_tab_node.zoom  = xmb->categories.active.zoom;
+
+   xmb->history_tab_node.icon  = xmb->textures.list[XMB_TEXTURE_HISTORY].id;
+   xmb->history_tab_node.alpha = xmb->categories.active.alpha;
+   xmb->history_tab_node.zoom  = xmb->categories.active.zoom;
 }
 
 static void xmb_context_reset_background(const char *iconpath)
@@ -2469,7 +2495,7 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
                break;
          }
 
-         list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + 1;
+         list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + 2;
          if (xmb->categories.selection_ptr > list_size)
          {
             xmb->categories.selection_ptr = list_size;
@@ -2495,6 +2521,12 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
                   strdup(menu_hash_to_str(MENU_VALUE_SETTINGS_TAB));
                menu_stack->list[stack_size - 1].type = 
                   MENU_SETTINGS_TAB;
+               break;
+            case XMB_SYSTEM_TAB_HISTORY:
+               menu_stack->list[stack_size - 1].label = 
+                  strdup(menu_hash_to_str(MENU_VALUE_HISTORY_TAB));
+               menu_stack->list[stack_size - 1].type = 
+                  MENU_HISTORY_TAB;
                break;
             default:
                menu_stack->list[stack_size - 1].label = 
