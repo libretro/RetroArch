@@ -329,6 +329,14 @@ void set_paths_redirect(const char *path)
             (info->info.library_name[0] != '\0'))
          ? msg_hash_calculate(info->info.library_name) : 0);
 
+         /* Initialize current save directories with the values from the config */
+         strlcpy(current_savefile_dir,
+               global->dir.savefile,
+               sizeof(current_savefile_dir));
+         strlcpy(current_savestate_dir,
+               global->dir.savestate,
+               sizeof(current_savestate_dir));
+
    if(global_library_name_hash != 0 &&
          (global_library_name_hash != MENU_VALUE_NO_CORE))
    {
@@ -355,10 +363,6 @@ void set_paths_redirect(const char *path)
             }
          }
       }
-      else
-         strlcpy(current_savefile_dir,
-               global->dir.savefile,
-               sizeof(current_savefile_dir));
 
       /* per-core states: append the library_name to the save location */
       if (settings->sort_savestates_enable && global->dir.savestate[0] != '\0')
@@ -383,10 +387,6 @@ void set_paths_redirect(const char *path)
             }
          }
       }
-      else
-         strlcpy(current_savestate_dir,
-               global->dir.savestate,
-               sizeof(current_savestate_dir));
    }
 
    if(path_is_directory(current_savefile_dir))
@@ -1504,7 +1504,7 @@ void rarch_playlist_load_content(void *data, unsigned idx)
    {
       path_tolower[i] = tolower(path_tolower[i]);
    }
-   
+
    if (strstr(path_tolower, ".zip"))
    {
       strstr(path_tolower, ".zip")[4] = '\0';
