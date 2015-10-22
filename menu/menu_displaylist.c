@@ -1973,7 +1973,10 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
 
       menu_displaylist_parse_settings(menu, info,
             key_type, PARSE_ONLY_UINT);
+   }
 
+   for (p = 0; p < settings->input.max_users; p++)
+   {
       for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 4; retro_id++)
       {
          char desc_label[64];
