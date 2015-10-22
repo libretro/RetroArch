@@ -912,7 +912,6 @@ static int setting_bind_action_start(void *data)
    struct retro_keybind *keybind   = NULL;
    rarch_setting_t *setting        = (rarch_setting_t*)data;
    struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
-   global_t                *global = global_get_ptr();
 
    if (!setting)
       return -1;
@@ -1478,7 +1477,6 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
    const struct retro_keybind *def_binds = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t    *settings   = config_get_ptr();
-   global_t      *global     = global_get_ptr();
 
    (void)wraparound;
 
@@ -1582,7 +1580,6 @@ static int setting_action_action_ok(void *data, bool wraparound)
 
 static int setting_bind_action_ok(void *data, bool wraparound)
 {
-   global_t      *global     = global_get_ptr();
    (void)wraparound;
 
    menu_input_key_bind_set_mode(data, MENU_INPUT_BIND_SINGLE);
@@ -4637,7 +4634,6 @@ static bool setting_append_list_input_options(
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info,
          menu_hash_to_str(MENU_LABEL_VALUE_INPUT_SETTINGS),
