@@ -2357,7 +2357,44 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          info->need_push    = true;
          break;
       case DISPLAYLIST_MAIN_MENU:
-         ret = menu_displaylist_parse_settings(menu, info, menu_hash_to_str(MENU_VALUE_MAIN_MENU), PARSE_NONE);
+         if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
+            menu_displaylist_parse_settings(menu, info,
+                  menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS), PARSE_ACTION);
+
+#if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_CORE_LIST), PARSE_ACTION);
+#endif
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_LIST), PARSE_ACTION);
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_HISTORY), PARSE_ACTION);
+#if defined(HAVE_NETWORKING)
+#if defined(HAVE_LIBRETRODB)
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_ADD_CONTENT_LIST), PARSE_ACTION);
+#endif
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_ONLINE_UPDATER), PARSE_ACTION);
+#endif
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_SETTINGS), PARSE_ACTION);
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_INFORMATION_LIST), PARSE_ACTION);
+#ifndef HAVE_DYNAMIC
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_RESTART_RETROARCH), PARSE_ACTION);
+#endif
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_CONFIGURATIONS), PARSE_ACTION);
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_SAVE_NEW_CONFIG), PARSE_ACTION);
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_HELP_LIST), PARSE_ACTION);
+#if !defined(IOS)
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_QUIT_RETROARCH), PARSE_ACTION);
+#endif
          info->need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_ALL:
