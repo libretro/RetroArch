@@ -1305,6 +1305,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input, retr
    else if (trigger_input & (UINT64_C(1) << RARCH_MENU_TOGGLE))
       ret = MENU_ACTION_TOGGLE;
 
+#if 0
    unsigned j;
    for (j = 0; j < 64; j++)
    {
@@ -1314,6 +1315,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input, retr
       else
          RARCH_LOG("Button %d pressed on keyboard\n", j);
    }
+#endif
 
    mouse_enabled = settings->menu.mouse.enable;
 #ifdef HAVE_OVERLAY
