@@ -32,6 +32,14 @@ extern "C" {
 #define COLLECTION_SIZE 99999
 #endif
 
+enum 
+{
+   PARSE_NONE         = (1 << 0),
+   PARSE_GROUP        = (1 << 1),
+   PARSE_ONLY_GROUP   = (1 << 2),
+   PARSE_SUB_GROUP    = (1 << 3)
+};
+
 enum
 {
    DISPLAYLIST_NONE = 0,

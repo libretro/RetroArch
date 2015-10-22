@@ -2590,6 +2590,31 @@ static int xmb_list_bind_init(menu_file_list_cbs_t *cbs,
    return -1;
 }
 
+static bool xmb_menu_init_list(void *data)
+{
+   int ret;
+   menu_displaylist_info_t info = {0};
+   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   menu_handle_t *menu        = (menu_handle_t*)data;
+
+   info.list  = selection_buf;
+   info.type  = MENU_SETTINGS;
+   info.flags = SL_FLAG_MAIN_MENU | SL_FLAG_SETTINGS;
+   strlcpy(info.label, menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));
+
+   menu_entries_push(menu_stack, info.path, info.label, info.type, info.flags, 0);
+
+   menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
+   info.need_push = true;
+
+   (void)ret;
+
+   menu_displaylist_push_list_process(&info);
+
+   return true;
+}
+
 menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_render_messagebox_internal,
@@ -2609,7 +2634,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_navigation_pointer_changed,
    xmb_navigation_alphabet,
    xmb_navigation_alphabet,
-   generic_menu_init_list,
+   xmb_menu_init_list,
    xmb_list_insert,
    xmb_list_free,
    xmb_list_clear,

@@ -1453,14 +1453,6 @@ static int deferred_push_video_shader_parameters_common(
 }
 #endif
 
-enum 
-{
-   PARSE_NONE         = (1 << 0),
-   PARSE_GROUP        = (1 << 1),
-   PARSE_ONLY_GROUP   = (1 << 2),
-   PARSE_SUB_GROUP    = (1 << 3)
-};
-
 int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info, 
       const char *info_label, unsigned parse_type)
 {
