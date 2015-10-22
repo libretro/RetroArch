@@ -421,7 +421,8 @@ void menu_input_st_cheat_callback(void *userdata, const char *str)
    menu_input_key_end_line();
 }
 
-static void menu_input_key_bind_poll_bind_state(struct menu_bind_state *state, unsigned port)
+static void menu_input_key_bind_poll_bind_state(struct menu_bind_state *state, unsigned port,
+      bool timed_out)
 {
    unsigned b, a, h;
    const input_device_driver_t *joypad = input_driver_get_joypad_driver();
@@ -430,7 +431,7 @@ static void menu_input_key_bind_poll_bind_state(struct menu_bind_state *state, u
       return;
 
    memset(state->state, 0, sizeof(state->state));
-   state->skip = input_driver_state(NULL, 0,
+   state->skip = timed_out || input_driver_state(NULL, 0,
          RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
 
    if (!joypad)
@@ -654,28 +655,28 @@ static int menu_input_key_bind_set_mode_common(rarch_setting_t  *setting,
    return 0;
 }
 
-static int menu_input_key_bind_set_timeout(void)
+static void menu_input_key_bind_set_timeout(void)
 {
    menu_handle_t       *menu = menu_driver_get_ptr();
    menu_input_t  *menu_input = menu_input_get_ptr();
 
    menu_input->binds.timeout_end   = retro_get_time_usec() +
       MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-   input_keyboard_wait_keys(menu,
-         menu_input_key_bind_custom_bind_keyboard_cb);
-
-   return 0;
 }
 
 int menu_input_key_bind_set_keyboard_mode(void *data,
       enum menu_input_bind_mode type)
 {
+   menu_handle_t       *menu = menu_driver_get_ptr();
    rarch_setting_t  *setting = (rarch_setting_t*)data;
 
    if (!setting || menu_input_key_bind_set_mode_common(setting, type) == -1)
       return -1;
 
-   return menu_input_key_bind_set_timeout();
+   menu_input_key_bind_set_timeout();
+   input_keyboard_wait_keys(menu,
+         menu_input_key_bind_custom_bind_keyboard_cb);
+   return 0;
 }
 
 int menu_input_key_bind_set_device_mode(void *data,
@@ -696,7 +697,9 @@ int menu_input_key_bind_set_device_mode(void *data,
       return -1;
 
    menu_input_key_bind_poll_bind_get_rested_axes(&menu_input->binds, bind_port);
-   menu_input_key_bind_poll_bind_state(&menu_input->binds, bind_port);
+   menu_input_key_bind_poll_bind_state(&menu_input->binds, bind_port, false);
+
+   menu_input_key_bind_set_timeout();
 
    return 0;
 }
@@ -712,26 +715,13 @@ void menu_input_key_bind_set_min_max(unsigned min, unsigned max)
    menu_input->binds.last  = max;
 }
 
-static int menu_input_key_bind_iterate_keyboard(int64_t current, int timeout)
+static int menu_input_key_bind_iterate_keyboard(int64_t current, int timeout, bool timed_out)
 {
-   bool           timed_out = false;
    menu_input_t *menu_input = menu_input_get_ptr();
    driver_t         *driver = driver_get_ptr();
 
    if (!menu_input)
       return -1;
-
-   if (timeout <= 0)
-   {
-      /* Could be unsafe, but whatever. */
-      menu_input->binds.target->key = RETROK_UNKNOWN;
-
-      menu_input->binds.begin++;
-      menu_input->binds.target++;
-      menu_input->binds.timeout_end = retro_get_time_usec() +
-         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-      timed_out = true;
-   }
 
    /* binds.begin is updated in keyboard_press callback. */
    if (menu_input->binds.begin > menu_input->binds.last)
@@ -752,12 +742,25 @@ static int menu_input_key_bind_iterate_keyboard(int64_t current, int timeout)
 int menu_input_key_bind_iterate(char *s, size_t len)
 {
    struct menu_bind_state binds;
+   bool               timed_out = false;
    menu_input_t *menu_input     = menu_input_get_ptr();
    driver_t *driver             = driver_get_ptr();
    global_t *global             = global_get_ptr();
    bool bind_mode_kb            = global ? global->menu.bind_mode_keyboard : false;
    int64_t current              = retro_get_time_usec();
    int timeout                  = (menu_input->binds.timeout_end - current) / 1000000;
+
+   if (timeout <= 0)
+   {
+      if (!bind_mode_kb)
+         input_driver_keyboard_mapping_set_block(false);
+
+      menu_input->binds.begin++;
+      menu_input->binds.target++;
+      menu_input->binds.timeout_end = retro_get_time_usec() +
+         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+      timed_out = true;
+   }
 
    if (bind_mode_kb)
    {
@@ -767,18 +770,20 @@ int menu_input_key_bind_iterate(char *s, size_t len)
             menu_input->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
             timeout,
             menu_hash_to_str(MENU_VALUE_SECONDS));
-      return menu_input_key_bind_iterate_keyboard(current, timeout);
+      return menu_input_key_bind_iterate_keyboard(current, timeout, timed_out);
    }
    else
       snprintf(s, len,
-            "[%s]\npress joypad\n(RETURN to skip)",
+            "[%s]\npress joypad\n(timeout %d %s)",
             input_config_bind_map[
-            menu_input->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
+            menu_input->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
+            timeout,
+            menu_hash_to_str(MENU_VALUE_SECONDS));
 
    binds = menu_input->binds;
 
    input_driver_keyboard_mapping_set_block(true);
-   menu_input_key_bind_poll_bind_state(&binds, bind_port);
+   menu_input_key_bind_poll_bind_state(&binds, bind_port, timed_out);
 
    if ((binds.skip && !menu_input->binds.skip) ||
          menu_input_key_bind_poll_find_trigger(&menu_input->binds, &binds))
@@ -794,6 +799,8 @@ int menu_input_key_bind_iterate(char *s, size_t len)
          return 1;
 
       binds.target++;
+      binds.timeout_end = retro_get_time_usec() +
+         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
    }
    menu_input->binds = binds;
 
