@@ -1475,14 +1475,18 @@ int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info,
       case PARSE_SUB_GROUP:
          precond = ST_NONE;
          break;
+      case PARSE_ACTION:
+         precond = ST_ACTION;
+         break;
       case PARSE_ONLY_GROUP:
       default:
          precond = ST_END_GROUP;
          break;
    }
 
-   for (; menu_setting_get_type(setting) != precond; menu_settings_list_increment(&setting))
+   for (;;)
    {
+      bool time_to_exit             = false;
       const char *short_description = menu_setting_get_short_description(setting);
       const char *name              = menu_setting_get_name(setting);
       enum setting_type type        = menu_setting_get_type(setting);
@@ -1495,7 +1499,7 @@ int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info,
                case ST_GROUP:
                case ST_SUB_GROUP:
                case ST_END_SUB_GROUP:
-                  continue;
+                  goto loop;
                default:
                   break;
             }
@@ -1504,18 +1508,41 @@ int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info,
          case PARSE_ONLY_GROUP:
             if (type == ST_GROUP)
                break;
-            continue;
+            goto loop;
          case PARSE_SUB_GROUP:
             break;
+         case PARSE_ACTION:
+            if (type == ST_ACTION)
+               break;
+            goto loop;
       }
 
       if (flags & SD_FLAG_ADVANCED &&
             !settings->menu.show_advanced_settings)
-         continue;
+         goto loop;
 
       menu_entries_push(info->list, short_description,
             name, menu_setting_set_flags(setting), 0, 0);
       count++;
+      
+loop:
+      switch (parse_type)
+      {
+         case PARSE_NONE:
+         case PARSE_GROUP:
+         case PARSE_ONLY_GROUP:
+         case PARSE_SUB_GROUP:
+            if (menu_setting_get_type(setting) == precond)
+               time_to_exit = true;
+            break;
+         case PARSE_ACTION:
+            time_to_exit = true;
+            break;
+      }
+
+      if (time_to_exit)
+         break;
+      menu_settings_list_increment(&setting);
    }
 
    if (count == 0)
