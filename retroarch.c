@@ -1486,7 +1486,7 @@ void rarch_playlist_load_content(void *data, unsigned idx)
 {
    const char *path             = NULL;
    const char *core_path        = NULL;
-   char *path_check		= NULL;
+   char *path_check             = NULL;
    char *path_tolower           = NULL;
    RFILE *fp                    = NULL;
    content_playlist_t *playlist = (content_playlist_t*)data;
