@@ -2592,7 +2592,52 @@ static int xmb_list_bind_init(menu_file_list_cbs_t *cbs,
 
 static int xmb_list_push(menu_displaylist_info_t *info, unsigned type)
 {
-   return -1;
+   int ret = -1;
+   menu_handle_t       *menu   = menu_driver_get_ptr();
+
+   switch (type)
+   {
+      case DISPLAYLIST_MAIN_MENU:
+         menu_entries_clear(info->list);
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS), PARSE_ACTION);
+#if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_CORE_LIST), PARSE_ACTION);
+#endif
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_LIST), PARSE_ACTION);
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_HISTORY), PARSE_ACTION);
+#if defined(HAVE_NETWORKING)
+#if defined(HAVE_LIBRETRODB)
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_ADD_CONTENT_LIST), PARSE_ACTION);
+#endif
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_ONLINE_UPDATER), PARSE_ACTION);
+#endif
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_INFORMATION_LIST), PARSE_ACTION);
+#ifndef HAVE_DYNAMIC
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_RESTART_RETROARCH), PARSE_ACTION);
+#endif
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_CONFIGURATIONS), PARSE_ACTION);
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_SAVE_NEW_CONFIG), PARSE_ACTION);
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_HELP_LIST), PARSE_ACTION);
+#if !defined(IOS)
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_QUIT_RETROARCH), PARSE_ACTION);
+#endif
+         info->need_push    = true;
+         ret = 0;
+         break;
+   }
+   return ret;
 }
 
 static bool xmb_menu_init_list(void *data)

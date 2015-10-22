@@ -1521,6 +1521,7 @@ int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info,
             !settings->menu.show_advanced_settings)
          goto loop;
 
+
       menu_entries_push(info->list, short_description,
             name, menu_setting_set_flags(setting), 0, 0);
       count++;

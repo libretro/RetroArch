@@ -104,7 +104,9 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
 #endif
       }
    }
+#if 0
    RARCH_LOG("Autodetect: configuration file: %s score: %d\n", conf->path, score);
+#endif
    return score;
 }
 
@@ -158,7 +160,9 @@ static void input_autoconfigure_joypad_add(
           rarch_main_msg_queue_push(msg, 0, 60, false);
    }
 
+#if 0
    RARCH_LOG("Autodetect: %s\n", msg);
+#endif
 }
 
 #if defined(HAVE_BUILTIN_AUTOCONFIG)
