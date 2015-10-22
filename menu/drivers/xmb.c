@@ -97,7 +97,13 @@ enum
    XMB_TEXTURE_LAST
 };
 
-#define XMB_SYSTEM_TAB_END XMB_TEXTURE_SETTINGS
+enum
+{
+   XMB_SYSTEM_TAB_MAIN = 0,
+   XMB_SYSTEM_TAB_SETTINGS
+};
+
+#define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_SETTINGS
 
 struct xmb_texture_item
 {
@@ -893,7 +899,7 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *me
 
       switch (j)
       {
-         case XMB_TEXTURE_SETTINGS:
+         case XMB_SYSTEM_TAB_SETTINGS:
             node = &xmb->settings_tab_node;
             break;
          default:
@@ -968,7 +974,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
 
       switch (j)
       {
-         case XMB_TEXTURE_SETTINGS:
+         case XMB_SYSTEM_TAB_SETTINGS:
             node = &xmb->settings_tab_node;
             break;
          default:
@@ -2463,13 +2469,13 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
 
          switch (xmb->categories.selection_ptr)
          {
-            case XMB_TEXTURE_MAIN_MENU:
+            case XMB_SYSTEM_TAB_MAIN:
                menu_stack->list[stack_size - 1].label = 
                   strdup(menu_hash_to_str(MENU_VALUE_MAIN_MENU));
                menu_stack->list[stack_size - 1].type = 
                   MENU_SETTINGS;
                break;
-            case XMB_TEXTURE_SETTINGS:
+            case XMB_SYSTEM_TAB_SETTINGS:
                menu_stack->list[stack_size - 1].label = 
                   strdup(menu_hash_to_str(MENU_VALUE_SETTINGS_TAB));
                menu_stack->list[stack_size - 1].type = 
