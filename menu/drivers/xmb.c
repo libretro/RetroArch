@@ -895,7 +895,8 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *me
    {
       float ia                    = xmb->categories.passive.alpha;
       float iz                    = xmb->categories.passive.zoom;
-      xmb_node_t *node            = &xmb->main_menu_node;
+      xmb_node_t *node            = NULL;
+      
 
       switch (j)
       {
@@ -903,6 +904,7 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *me
             node = &xmb->settings_tab_node;
             break;
          default:
+            node = &xmb->main_menu_node;
             if (j > XMB_SYSTEM_TAB_END)
                node = xmb_get_userdata_from_horizontal_list(xmb, j - 2);
             break;
@@ -970,7 +972,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
    for (j = 0; j <= list_size; j++)
    {
       float ia          = 0;
-      xmb_node_t *node  = &xmb->main_menu_node;
+      xmb_node_t *node  = NULL;
 
       switch (j)
       {
@@ -978,6 +980,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
             node = &xmb->settings_tab_node;
             break;
          default:
+            node = &xmb->main_menu_node;
             if (j > XMB_SYSTEM_TAB_END)
                node = xmb_get_userdata_from_horizontal_list(xmb, j - 2);
             break;
@@ -1489,13 +1492,19 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
 
    for (i = 0; i <= list_size; i++)
    {
-      xmb_node_t *node = &xmb->main_menu_node;
+      xmb_node_t *node = NULL;
 
-      if (i == 1)
-         node = &xmb->settings_tab_node;
-
-      if (i > XMB_SYSTEM_TAB_END)
-         node = xmb_get_userdata_from_horizontal_list(xmb, i - 2);
+      switch (i)
+      {
+         case XMB_SYSTEM_TAB_SETTINGS:
+            node = &xmb->settings_tab_node;
+            break;
+         default:
+            node = &xmb->main_menu_node;
+            if (i > XMB_SYSTEM_TAB_END)
+               node = xmb_get_userdata_from_horizontal_list(xmb, i - 2);
+            break;
+      }
 
       if (!node)
          continue;
@@ -2005,11 +2014,17 @@ static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
    {
       xmb_node_t *node = &xmb->main_menu_node;
 
-      if (i == 1)
-         node = &xmb->settings_tab_node;
-
-      if (i > XMB_SYSTEM_TAB_END)
-         node = xmb_get_userdata_from_horizontal_list(xmb, i - 2);
+      switch (i)
+      {
+         case XMB_SYSTEM_TAB_SETTINGS:
+            node = &xmb->settings_tab_node;
+            break;
+         default:
+            node = &xmb->main_menu_node;
+            if (i > XMB_SYSTEM_TAB_END)
+               node = xmb_get_userdata_from_horizontal_list(xmb, i - 2);
+            break;
+      }
 
       if (!node)
          continue;
