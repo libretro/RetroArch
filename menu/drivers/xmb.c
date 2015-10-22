@@ -1192,6 +1192,8 @@ static GRuint xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_SETTING].id;
       case MENU_SETTING_GROUP:
          return xmb->textures.list[XMB_TEXTURE_SETTING].id;
+      case MENU_INFO_MESSAGE:
+         return xmb->textures.list[XMB_TEXTURE_CORE_INFO].id;
    }
 
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING].id;
@@ -1279,9 +1281,6 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       {
          case MENU_LABEL_CORE_OPTIONS:
             icon = xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS].id;
-            break;
-         case MENU_LABEL_CORE_INFORMATION:
-            icon = xmb->textures.list[XMB_TEXTURE_CORE_INFO].id;
             break;
          case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
             icon = xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS].id;
