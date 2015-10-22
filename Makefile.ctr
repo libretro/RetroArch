@@ -28,10 +28,11 @@ else
 CTR_STACK_SIZE        = 0x100000
 endif
 CTR_LINEAR_HEAP_SIZE  = 0x600000
+CTR_MAX_HEAP_SIZE     = 0x6000000
 
 include ctr/Makefile.cores
 
-CONFIG_OBJECT = ctr/ctr_config_$(CTR_STACK_SIZE)_$(CTR_LINEAR_HEAP_SIZE).o
+CONFIG_OBJECT = ctr/ctr_config_$(CTR_STACK_SIZE)_$(CTR_LINEAR_HEAP_SIZE)_$(CTR_MAX_HEAP_SIZE).o
 
 OBJS :=
 OBJS += gfx/drivers/ctr_sprite.o
@@ -289,6 +290,11 @@ ifneq ($(CTR_LINEAR_HEAP_SIZE),)
    CFLAGS += -DCTR_LINEAR_HEAP_SIZE=$(CTR_LINEAR_HEAP_SIZE)
 endif
 
+ifneq ($(CTR_MAX_HEAP_SIZE),)
+   CFLAGS += -DCTR_MAX_HEAP_SIZE=$(CTR_MAX_HEAP_SIZE)
+endif
+
+
 CFLAGS += -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include
 
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE -DSINC_LOWEST_QUALITY
@@ -300,7 +306,7 @@ CFLAGS += -DHAVE_ZLIB -DHAVE_RPNG -DWANT_ZLIB -DHAVE_BUILTIN_AUTOCONFIG
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
 ASFLAGS	:=	-g $(ARCH) -O3
-LDFLAGS   =	-specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS   =	-specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 CFLAGS   += -std=gnu99 -ffast-math
 
@@ -392,7 +398,7 @@ $(CONFIG_OBJECT): ctr/ctr_config.c
 %.3dsx: %.elf
 	-3dsxtool $< $@ $(_3DSXFLAGS)
 
-%.elf:
+%.elf: ctr/3dsx_custom_crt0.o
 	$(LD) $(LDFLAGS) $(OBJS) $(LIBDIRS) $(LIBS) -o $@
 	$(NM) -CSn $@ > $(notdir $*.lst)
 
@@ -419,6 +425,7 @@ clean:
 	rm -f $(TARGET).icn
 	rm -f *_shader_shbin.h
 	rm -f ctr/ctr_config_*.o
+	rm -f ctr/3dsx_custom_crt0.o
 
 .PHONY: clean
 

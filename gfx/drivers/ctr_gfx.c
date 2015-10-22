@@ -463,8 +463,8 @@ static bool ctr_frame(void* data, const void* frame,
 
 //   extern u32 __linear_heap_size;
 //   extern u32 gpuCmdBufOffset;
-//   extern u32 heap_size;
-//   printf("0x%08X 0x%08X 0x%08X\r", heap_size, gpuCmdBufOffset, (__linear_heap_size - linearSpaceFree() +0x3FF) & ~0x3FF);
+//   extern u32 __heap_size;
+//   printf("0x%08X 0x%08X 0x%08X\r", __heap_size, gpuCmdBufOffset, (__linear_heap_size - linearSpaceFree() +0x3FF) & ~0x3FF);
 //   printf("fps: %8.4f frames: %i (%X)\r", fps, total_frames++, (__linear_heap_size - linearSpaceFree()));
    printf("fps: %8.4f frames: %i\r", fps, total_frames++);
    fflush(stdout);
