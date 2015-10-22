@@ -865,6 +865,7 @@ menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    NULL,
    NULL,
+   NULL,
    glui_list_set_selection,
    NULL,
    glui_load_image,

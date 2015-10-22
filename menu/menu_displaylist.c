@@ -2188,6 +2188,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    struct video_shader *shader = video_shader_driver_get_current_shader();
 #endif
 
+   if (menu_driver_list_push(info, type))
+      return 0;
+
    switch (type)
    {
       case DISPLAYLIST_HELP_SCREEN_LIST:

@@ -2590,6 +2590,11 @@ static int xmb_list_bind_init(menu_file_list_cbs_t *cbs,
    return -1;
 }
 
+static int xmb_list_push(menu_displaylist_info_t *info, unsigned type)
+{
+   return -1;
+}
+
 static bool xmb_menu_init_list(void *data)
 {
    int ret;
@@ -2638,6 +2643,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_list_free,
    xmb_list_clear,
    xmb_list_cache,
+   xmb_list_push,
    xmb_list_get_selection,
    xmb_list_get_size,
    xmb_list_get_entry,

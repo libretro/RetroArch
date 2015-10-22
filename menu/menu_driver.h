@@ -129,6 +129,7 @@ typedef struct menu_ctx_driver
    void  (*list_free)(file_list_t *list, size_t, size_t);
    void  (*list_clear)(file_list_t *list);
    void  (*list_cache)(menu_list_type_t, unsigned);
+   int   (*list_push)(menu_displaylist_info_t*, unsigned);
    size_t(*list_get_selection)(void *data);
    size_t(*list_get_size)(void *data, menu_list_type_t type);
    void *(*list_get_entry)(void *data, menu_list_type_t type, unsigned i);
@@ -213,6 +214,8 @@ const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void);
 void  menu_driver_context_destroy(void);
 
 bool menu_driver_alive(void);
+
+bool menu_driver_list_push(menu_displaylist_info_t *info, unsigned type);
 
 size_t  menu_driver_list_get_selection(void);
 
