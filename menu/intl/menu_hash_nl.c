@@ -598,7 +598,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_BOXART:
          return "Boxart weergeven";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
-         return "Core Invoer Remapping Opties";
+         return "Core Invoer Opties";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Shader Opties";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:

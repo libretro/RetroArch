@@ -1259,7 +1259,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_BOXART:
          return "Display Boxart";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
-         return "Core Input Remapping Options";
+         return "Core Input Options";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Shader Options";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:

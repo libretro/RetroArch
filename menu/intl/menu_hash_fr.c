@@ -566,7 +566,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Fond d'écran dynamique";
       case MENU_LABEL_VALUE_BOXART:
          return "Afficher les vignettes";
-      case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
+      case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS: /* TODO/FIXME */
          return "Options de remap d'entrées du coeur";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Options de shaders";

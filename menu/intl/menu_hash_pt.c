@@ -551,7 +551,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "Papel de Parede Dinâmico";
       case MENU_LABEL_VALUE_BOXART:
          return "Mostrar Boxart";
-      case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
+      case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS: /* TODO/FIXME */
          return "Opções de Remapeamento de Controlador de Core";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Opções de Shaders";

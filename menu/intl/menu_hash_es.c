@@ -610,7 +610,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Fondo de pantalla dinámico";
       case MENU_LABEL_VALUE_BOXART:
          return "Mostrar carátula";
-      case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
+      case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS: /* FIXME/UPDATE */
          return "Opciones de reasignación de entrada para el núcleo";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Opciones de shaders";
