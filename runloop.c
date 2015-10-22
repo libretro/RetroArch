@@ -913,10 +913,6 @@ int rarch_main_iterate(unsigned *sleep_ms)
       }
    }
 
-   trigger_input = input & ~old_input;
-
-   rarch_main_cmd_get_state(driver, settings, &cmd, input, old_input, trigger_input);
-
    if (system->frame_time.callback)
    {
       /* Updates frame timing if frame timing callback is in use by the core.
@@ -940,6 +936,9 @@ int rarch_main_iterate(unsigned *sleep_ms)
 
       system->frame_time.callback(delta);
    }
+
+   trigger_input = input & ~old_input;
+   rarch_main_cmd_get_state(driver, settings, &cmd, input, old_input, trigger_input);
 
    if (cmd.overlay_next_pressed)
       event_command(EVENT_CMD_OVERLAY_NEXT);
