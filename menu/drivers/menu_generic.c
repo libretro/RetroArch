@@ -372,7 +372,6 @@ bool generic_menu_init_list(void *data)
 
    info.list  = selection_buf;
    info.type  = MENU_SETTINGS;
-   info.flags = SL_FLAG_MAIN_MENU | SL_FLAG_SETTINGS;
    strlcpy(info.label, menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));
 
    menu_entries_push(menu_stack, info.path, info.label, info.type, info.flags, 0);
