@@ -1511,7 +1511,7 @@ void rarch_playlist_load_content(void *data, unsigned idx)
    }
    else if (strstr(path_tolower, ".7z"))
    {
-      *(strstr(path_tolower, ".7z")[3] = '\0';
+      strstr(path_tolower, ".7z")[3] = '\0';
    }
 
    path_check = (char *)calloc(strlen(path_tolower) + 1, sizeof(char));
