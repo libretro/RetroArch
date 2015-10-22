@@ -171,7 +171,6 @@ typedef struct global
    struct
    {
       struct retro_system_info info;
-      bool bind_mode_keyboard;
    } menu;
 #endif
 

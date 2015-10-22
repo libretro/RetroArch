@@ -600,9 +600,6 @@ extern "C" {
 #define MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND                               0x7051d870U
 #define MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND                         0xc26ddec5U
 
-#define MENU_LABEL_INPUT_BIND_MODE                                             0x90281b55U
-#define MENU_LABEL_VALUE_INPUT_BIND_MODE                                       0xe06b25c7U
-
 #define MENU_LABEL_NETWORK_CMD_ENABLE                                          0xfdf03a08U
 #define MENU_LABEL_VALUE_NETWORK_CMD_ENABLE                                    0xb822b7a1U
 #define MENU_LABEL_NETWORK_CMD_PORT                                            0xc1b9e0a6U

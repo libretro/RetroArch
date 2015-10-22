@@ -97,8 +97,6 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "system_bgm_enable";
       case MENU_LABEL_AUDIO_BLOCK_FRAMES:
          return "audio_block_frames";
-      case MENU_LABEL_INPUT_BIND_MODE:
-         return "input_bind_mode";
       case MENU_LABEL_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
          return "autoconfig_descriptor_label_show";
       case MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:

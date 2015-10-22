@@ -99,8 +99,6 @@ const char *menu_hash_to_str_pl(uint32_t hash)
          return "RetroKeyboard";
       case MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Block Frames";
-      case MENU_LABEL_VALUE_INPUT_BIND_MODE:
-         return "Tryb bindowania";
       case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
          return "Wy¶wietl opisy przycisków autokonfiguracji";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:

@@ -79,6 +79,8 @@ typedef struct menu_input
 {
    struct menu_bind_state binds;
 
+   bool bind_mode_keyboard;
+
    uint64_t devices_mask;
 
    struct
@@ -670,7 +672,6 @@ int menu_input_key_bind_set_mode(void *data,
    menu_input_t  *menu_input = menu_input_get_ptr();
    rarch_setting_t  *setting = (rarch_setting_t*)data;
    settings_t *settings      = config_get_ptr();
-   global_t *global          = global_get_ptr();
    bool joypad_pressed = BIT64_GET(menu_input->devices_mask, settings->menu_ok_btn);
 
    if (!setting)
@@ -689,11 +690,11 @@ int menu_input_key_bind_set_mode(void *data,
 
       menu_input_key_bind_set_timeout();
 
-      global->menu.bind_mode_keyboard = false;
+      menu_input->bind_mode_keyboard = false;
       return 0;
    }
 
-   global->menu.bind_mode_keyboard = true;
+   menu_input->bind_mode_keyboard = true;
 
    menu_input_key_bind_set_timeout();
    input_keyboard_wait_keys(menu,
@@ -742,8 +743,7 @@ int menu_input_key_bind_iterate(char *s, size_t len)
    bool               timed_out = false;
    menu_input_t *menu_input     = menu_input_get_ptr();
    driver_t *driver             = driver_get_ptr();
-   global_t *global             = global_get_ptr();
-   bool bind_mode_kb            = global ? global->menu.bind_mode_keyboard : false;
+   bool bind_mode_kb            = menu_input->bind_mode_keyboard;
    int64_t current              = retro_get_time_usec();
    int timeout                  = (menu_input->binds.timeout_end - current) / 1000000;
 
