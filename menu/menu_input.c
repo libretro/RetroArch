@@ -79,6 +79,8 @@ typedef struct menu_input
 {
    struct menu_bind_state binds;
 
+   uint64_t devices_mask;
+
    struct
    {
       int16_t x;
@@ -1200,7 +1202,7 @@ void menu_input_post_iterate(int *ret, unsigned action)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
 }
 
-unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
+unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input, retro_input_t *devices)
 {
    bool mouse_enabled;
    float delta_time;
@@ -1265,6 +1267,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
    menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
 
    menu_input->delay.count += delta_time / IDEAL_DT;
+   menu_input->devices_mask = *devices;
 
    if (menu_input->keyboard.display)
    {
@@ -1301,7 +1304,17 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       ret = MENU_ACTION_INFO;
    else if (trigger_input & (UINT64_C(1) << RARCH_MENU_TOGGLE))
       ret = MENU_ACTION_TOGGLE;
-    
+
+   unsigned j;
+   for (j = 0; j < 64; j++)
+   {
+      bool joypad_pressed = BIT64_GET(*devices, j);
+      if (joypad_pressed)
+         RARCH_LOG("Button %d pressed on gamepad\n", j);
+      else
+         RARCH_LOG("Button %d pressed on keyboard\n", j);
+   }
+
    mouse_enabled = settings->menu.mouse.enable;
 #ifdef HAVE_OVERLAY
    mouse_enabled = mouse_enabled ||
@@ -1320,4 +1333,3 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 
    return ret;
 }
-

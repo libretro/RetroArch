@@ -655,12 +655,12 @@ static bool check_block_hotkey(driver_t *driver, settings_t *settings,
  * Returns: Input sample containg a mask of all pressed keys.
  */
 static INLINE retro_input_t input_keys_pressed(driver_t *driver,
-      settings_t *settings, global_t *global)
+      settings_t *settings, global_t *global, uint64_t *devices)
 {
    unsigned i;
    const struct retro_keybind *binds[MAX_USERS];
-   retro_input_t ret           = 0;
-   enum input_device_type type = INPUT_DEVICE_TYPE_NONE;
+   retro_input_t             ret = 0;
+   enum input_device_type device = INPUT_DEVICE_TYPE_NONE;
 
    for (i = 0; i < MAX_USERS; i++)
       binds[i] = settings->input.binds[i];
@@ -672,7 +672,8 @@ static INLINE retro_input_t input_keys_pressed(driver_t *driver,
 
    driver->block_libretro_input = check_block_hotkey(driver,
          settings, driver->input->key_pressed(
-            driver->input_data, RARCH_ENABLE_HOTKEY, &type));
+            driver->input_data, RARCH_ENABLE_HOTKEY, &device));
+
 
    for (i = 0; i < settings->input.max_users; i++)
    {
@@ -691,7 +692,7 @@ static INLINE retro_input_t input_keys_pressed(driver_t *driver,
                i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
    }
 
-   ret = input_driver_keys_pressed();
+   ret = input_driver_keys_pressed(devices);
 
    for (i = 0; i < settings->input.max_users; i++)
    {
@@ -891,10 +892,11 @@ int rarch_main_iterate(unsigned *sleep_ms)
    event_cmd_state_t    cmd;
    retro_time_t current, target, to_sleep_ms;
    static retro_input_t last_input = 0;
+   uint64_t devices                = 0;
    driver_t *driver                = driver_get_ptr();
    settings_t *settings            = config_get_ptr();
    global_t   *global              = global_get_ptr();
-   retro_input_t input             = input_keys_pressed(driver, settings, global);
+   retro_input_t input             = input_keys_pressed(driver, settings, global, &devices);
    rarch_system_info_t *system     = rarch_system_info_get_ptr();
    retro_input_t old_input         = last_input;
    last_input                      = input;
@@ -979,7 +981,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
 #ifdef HAVE_MENU
    if (menu_driver_alive())
    {
-      if (menu_driver_iterate((enum menu_action)menu_input_frame(input, trigger_input)) == -1)
+      if (menu_driver_iterate((enum menu_action)menu_input_frame(input, trigger_input, &devices)) == -1)
          rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
 
       if (!input && settings->menu.pause_libretro)
