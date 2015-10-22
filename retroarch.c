@@ -1522,6 +1522,8 @@ void rarch_playlist_load_content(void *data, unsigned idx)
    {
       rarch_main_msg_queue_push("File could not be loaded.\n", 1, 100, true);
       RARCH_LOG("File at %s failed to load.\n", path_check);
+      free(path_tolower);
+      free(path_check);
       return;
    }
    retro_fclose(fp);
