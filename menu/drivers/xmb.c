@@ -2664,8 +2664,6 @@ static int xmb_list_push(menu_displaylist_info_t *info, unsigned type)
 #endif
          menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_LIST), PARSE_ACTION);
-         menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_HISTORY), PARSE_ACTION);
 #if defined(HAVE_NETWORKING)
 #if defined(HAVE_LIBRETRODB)
          menu_displaylist_parse_settings(menu, info,
