@@ -121,9 +121,9 @@ rarch_setting_t *menu_setting_get_ptr(void);
 
 bool menu_entries_needs_refresh(void);
 
-void menu_entries_set_refresh(bool nonblocking);
+void menu_entries_set_refresh(void);
 
-void menu_entries_unset_refresh(bool nonblocking);
+void menu_entries_unset_refresh(void);
 
 file_list_t *menu_entries_get_selection_buf_ptr(void);
 

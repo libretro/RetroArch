@@ -2262,7 +2262,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
             menu_entries_push(info->list, info->path, info->label, info->type, info->directory_ptr, 0);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
-            menu_entries_set_refresh(false);
+            menu_entries_set_refresh();
          }
          break;
       case DISPLAYLIST_ACCOUNTS_LIST:

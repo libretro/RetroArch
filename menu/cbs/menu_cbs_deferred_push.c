@@ -278,7 +278,7 @@ static int cb_net_generic(void *data_, size_t len)
    core_len      = len;
    ret           = 0;
 
-   menu_entries_unset_refresh(true);
+   menu_entries_unset_refresh();
 
 end:
    return ret;

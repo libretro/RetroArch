@@ -32,7 +32,6 @@ struct menu_entries
 {
    /* Flagged when menu entries need to be refreshed */
    bool need_refresh;
-   bool nonblocking_refresh;
 
    size_t begin;
    menu_list_t *menu_list;
@@ -149,7 +148,7 @@ static bool menu_list_pop_stack(menu_list_t *list, size_t *directory_ptr)
    file_list_pop(menu_list, directory_ptr);
    menu_driver_list_set_selection(menu_list);
 
-   menu_entries_set_refresh(false);
+   menu_entries_set_refresh();
 
    return true;
 }
@@ -164,7 +163,7 @@ static void menu_list_flush_stack(menu_list_t *list,
    if (!list)
       return;
 
-   menu_entries_set_refresh(false);
+   menu_entries_set_refresh();
    menu_entries_get_last(list->menu_stack,
          &path, &label, &type, &entry_idx);
 
@@ -483,35 +482,25 @@ bool menu_entries_needs_refresh(void)
 {
    menu_entries_t *entries   = menu_entries_get_ptr();
 
-   if (!entries || entries->nonblocking_refresh)
+   if (!entries)
       return false;
    if (entries->need_refresh)
       return true;
    return false;
 }
 
-void menu_entries_set_refresh(bool nonblocking)
+void menu_entries_set_refresh(void)
 {
    menu_entries_t *entries   = menu_entries_get_ptr();
    if (entries)
-   {
-      if (nonblocking)
-         entries->nonblocking_refresh = true;
-      else
-         entries->need_refresh        = true;
-   }
+      entries->need_refresh        = true;
 }
 
-void menu_entries_unset_refresh(bool nonblocking)
+void menu_entries_unset_refresh(void)
 {
    menu_entries_t *entries   = menu_entries_get_ptr();
    if (entries)
-   {
-      if (nonblocking)
-         entries->nonblocking_refresh = false;
-      else
-         entries->need_refresh        = false;
-   }
+      entries->need_refresh        = false;
 }
 
 bool menu_entries_init(void *data)

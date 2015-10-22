@@ -251,7 +251,7 @@ static int action_left_cheat_num_passes(unsigned type, const char *label,
 
    if (cheat_manager_get_size(cheat))
       new_size = cheat_manager_get_size(cheat) - 1;
-   menu_entries_set_refresh(false);
+   menu_entries_set_refresh();
    cheat_manager_realloc(cheat, new_size);
 
    return 0;
@@ -272,7 +272,7 @@ static int action_left_shader_num_passes(unsigned type, const char *label,
 
    if (shader->passes)
       shader->passes--;
-   menu_entries_set_refresh(false);
+   menu_entries_set_refresh();
    video_shader_resolve_parameters(NULL, menu->shader);
 
 #endif
