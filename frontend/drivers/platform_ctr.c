@@ -41,6 +41,8 @@ const char* elf_path_cst = "sdmc:/retroarch/test.3dsx";
 #ifndef DEBUG_HOLD
 void wait_for_input(void);
 #define DEBUG_HOLD() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);wait_for_input();}while(0)
+#define DEBUG_VAR(X) printf( "%-20s: 0x%08X\n", #X, (u32)(X))
+#define DEBUG_VAR64(X) printf( #X"\r\t\t\t\t : 0x%016llX\n", (u64)(X))
 #endif
 
 #define CTR_APPMEMALLOC_PTR ((u32*)0x1FF80040)
@@ -49,8 +51,10 @@ extern char* fake_heap_start;
 extern char* fake_heap_end;
 u32 __linear_heap;
 u32 __heapBase;
-u32 heap_size;
-extern u32 linear_heap_size;
+extern u32 __linear_heap_size;
+extern u32 __heap_size;
+extern u32 __linear_heap_size_hbl;
+extern u32 __heap_size_hbl;
 
 extern void (*__system_retAddr)(void);
 
@@ -62,29 +66,35 @@ void __system_allocateHeaps() {
    extern unsigned int __service_ptr;
    u32 tmp=0;
    int64_t mem_used;
-   u32 app_memory = 0x04000000;
-
-   if(!__service_ptr)
-      app_memory = *CTR_APPMEMALLOC_PTR;
+   u32 mem_available;
+   u32 app_memory;
 
    svcGetSystemInfo(&mem_used, 0, 1);
 
-   // For n3DS running with 124MB, only 110MB appears actually available
-   app_memory = app_memory > 0x6E00000 ? 0x6E00000 : app_memory;
+   if(__service_ptr)
+   {
+      app_memory = mem_used + __linear_heap_size_hbl + __heap_size_hbl;
+      app_memory = app_memory < 0x04000000 ? 0x04000000 : app_memory;
+   }
+   else
+      app_memory = *CTR_APPMEMALLOC_PTR;
 
-   heap_size = (app_memory - mem_used - linear_heap_size - 0x10000) & 0xFFFFF000;
-   heap_size = heap_size > 0x6000000? 0x6000000 : heap_size;
+   mem_available = (app_memory - mem_used - __linear_heap_size - 0x10000) & 0xFFFFF000;
+
+   __heap_size = __heap_size > mem_available ?  mem_available : __heap_size;
+   __heap_size = __heap_size > 0x6000000 ? 0x6000000 : __heap_size;
+
+//   __linear_heap_size = (app_memory - mem_used - __heap_size - 0x10000) & 0xFFFFF000;
 
 	// Allocate the application heap
 	__heapBase = 0x08000000;
-	svcControlMemory(&tmp, __heapBase, 0x0, heap_size, MEMOP_ALLOC, MEMPERM_READ | MEMPERM_WRITE);
+	svcControlMemory(&tmp, __heapBase, 0x0, __heap_size, MEMOP_ALLOC, MEMPERM_READ | MEMPERM_WRITE);
 
 	// Allocate the linear heap
-	svcControlMemory(&__linear_heap, 0x0, 0x0, linear_heap_size, MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
+	svcControlMemory(&__linear_heap, 0x0, 0x0, __linear_heap_size, MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
 	// Set up newlib heap
 	fake_heap_start = (char*)__heapBase;
-	fake_heap_end = fake_heap_start + heap_size;
-
+	fake_heap_end = fake_heap_start + __heap_size;
 }
 
 void __attribute__((noreturn)) __libctru_exit(int rc)
@@ -92,10 +102,10 @@ void __attribute__((noreturn)) __libctru_exit(int rc)
 	u32 tmp=0;
 
 	// Unmap the linear heap
-	svcControlMemory(&tmp, __linear_heap, 0x0, linear_heap_size, MEMOP_FREE, 0x0);
+	svcControlMemory(&tmp, __linear_heap, 0x0, __linear_heap_size, MEMOP_FREE, 0x0);
 
 	// Unmap the application heap
-	svcControlMemory(&tmp, __heapBase, 0x0, heap_size, MEMOP_FREE, 0x0);
+	svcControlMemory(&tmp, __heapBase, 0x0, __heap_size, MEMOP_FREE, 0x0);
 
 	// Close some handles
 	__destroy_handle_list();

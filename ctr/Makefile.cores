@@ -206,7 +206,8 @@ else ifeq ($(LIBRETRO), fb_alpha_neo)
 	#APP_AUDIO           = ctr/silent.wav
 	APP_SYSTEM_MODE     = 80MB
 	#APP_SYSTEM_MODE_EXT = Legacy
-	#CTR_LINEAR_HEAP_SIZE  = 0x600000
+   CTR_LINEAR_HEAP_SIZE  = 0x3A0000
+   CTR_MAX_HEAP_SIZE     = 0xC00000
 
 else ifeq ($(LIBRETRO), fb_alpha_cps1)
 	APP_TITLE           = Final Burn Alpha - CPS-1
