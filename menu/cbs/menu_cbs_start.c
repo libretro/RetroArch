@@ -229,7 +229,7 @@ static int action_start_shader_num_passes(unsigned type, const char *label)
    if (shader->passes)
       shader->passes = 0;
 
-   menu_entries_set_refresh();
+   menu_entries_set_refresh(false);
    video_shader_resolve_parameters(NULL, menu->shader);
 #endif
    return 0;
@@ -245,7 +245,7 @@ static int action_start_cheat_num_passes(unsigned type, const char *label)
 
    if (cheat_manager_get_size(cheat))
    {
-      menu_entries_set_refresh();
+      menu_entries_set_refresh(false);
       cheat_manager_realloc(cheat, 0);
    }
 
