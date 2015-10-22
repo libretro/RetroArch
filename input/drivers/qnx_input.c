@@ -786,16 +786,21 @@ static int16_t qnx_input_state(void *data,
    return 0;
 }
 
-static bool qnx_input_key_pressed(void *data, int key)
+static bool qnx_input_key_pressed(void *data, int key, enum input_device_type *device)
 {
    qnx_input_t *qnx     = (qnx_input_t*)data;
    settings_t *settings = config_get_ptr();
+   bool joypad_pressed  = input_joypad_pressed(qnx->joypad, 0, settings->input.binds[0], key);
 
-   return input_joypad_pressed(qnx->joypad, 0, settings->input.binds[0], key);
+   if (joypad_pressed)
+      *device = INPUT_DEVICE_TYPE_JOYPAD;
+
+   return joypad_pressed;
 }
 
-static bool qnx_input_meta_key_pressed(void *data, int key)
+static bool qnx_input_meta_key_pressed(void *data, int key, enum input_device_type *device)
 {
+   (void)device;
    return false;
 }
 
@@ -864,7 +869,7 @@ input_driver_t input_qnx = {
    qnx_input_poll,
    qnx_input_state,
    qnx_input_key_pressed,
-   NULL,
+   qnx_input_meta_key_pressed,
    qnx_input_free_input,
    NULL,
    NULL,

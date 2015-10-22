@@ -67,7 +67,7 @@ error:
    return NULL;
 }
 
-static bool rwebinput_key_pressed__(void *data, int key)
+static bool rwebinput_key_pressed(void *data, int key, enum input_device_type *device)
 {
    unsigned sym;
    bool ret;
@@ -79,13 +79,17 @@ static bool rwebinput_key_pressed__(void *data, int key)
    sym = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
    ret = rwebinput->state.keys[sym >> 3] & (1 << (sym & 7));
 
+   if (ret)
+      *device = INPUT_DEVICE_TYPE_KEYBOARD;
+
    return ret;
 }
 
-static bool rwebinput_meta_key_pressed(void *data, int key)
+static bool rwebinput_meta_key_pressed(void *data, int key, enum input_device_type *device)
 {
    (void)data;
    (void)key;
+   (void)device;
    return false;
 }
 
@@ -95,7 +99,7 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
    if (id < RARCH_BIND_LIST_END)
    {
       const struct retro_keybind *bind = &binds[id];
-      return bind->valid && rwebinput_key_pressed__(rwebinput, binds[id].key);
+      return bind->valid && rwebinput_key_pressed(rwebinput, binds[id].key);
    }
 
    return false;
@@ -145,7 +149,8 @@ static int16_t rwebinput_analog_pressed(rwebinput_input_t *rwebinput,
 static int16_t rwebinput_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
+   enum input_device_type device = INPUT_DEVICE_TYPE_NONE;
+   rwebinput_input_t *rwebinput  = (rwebinput_input_t*)data;
 
    switch (device)
    {
@@ -156,7 +161,7 @@ static int16_t rwebinput_input_state(void *data, const struct retro_keybind **bi
          return rwebinput_analog_pressed(rwebinput, binds[port], idx, id);
 
       case RETRO_DEVICE_KEYBOARD:
-         return rwebinput_key_pressed(rwebinput, id);
+         return rwebinput_key_pressed(rwebinput, id, &device);
 
       case RETRO_DEVICE_MOUSE:
          return rwebinput_mouse_state(rwebinput, id);

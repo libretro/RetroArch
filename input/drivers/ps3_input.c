@@ -174,16 +174,22 @@ static void* ps3_input_init(void)
    return ps3;
 }
 
-static bool ps3_input_key_pressed(void *data, int key)
+static bool ps3_input_key_pressed(void *data, int key, enum input_device_type *device)
 {
    ps3_input_t *ps3     = (ps3_input_t*)data;
    settings_t *settings = config_get_ptr();
+   bool joypad_pressed  = input_joypad_pressed(ps3->joypad, 0, settings->input.binds[0], key);
 
-   return input_joypad_pressed(ps3->joypad, 0, settings->input.binds[0], key);
+   if (joypad_pressed)
+      *device = INPUT_DEVICE_TYPE_JOYPAD;
+
+   return joypad_pressed;
 }
 
-static bool ps3_input_meta_key_pressed(void *data, int key)
+static bool ps3_input_meta_key_pressed(void *data, int key, enum input_device_type *device)
 {
+   (void)device;
+
    return false;
 }
 

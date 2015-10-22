@@ -41,18 +41,20 @@ static int16_t nullinput_input_state(void *data,
    return 0;
 }
 
-static bool nullinput_input_key_pressed(void *data, int key)
+static bool nullinput_input_key_pressed(void *data, int key, enum input_device_type *device)
 {
    (void)data;
    (void)key;
+   (void)device;
 
    return false;
 }
 
-static bool nullinput_input_meta_key_pressed(void *data, int key)
+static bool nullinput_input_meta_key_pressed(void *data, int key, enum input_device_type *device)
 {
    (void)data;
    (void)key;
+   (void)device;
 
    return false;
 }

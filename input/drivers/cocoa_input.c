@@ -396,16 +396,25 @@ static int16_t cocoa_input_state(void *data,
    return 0;
 }
 
-static bool cocoa_input_key_pressed(void *data, int key)
+static bool cocoa_input_key_pressed(void *data, int key, enum input_device_type *device)
 {
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
-   settings_t *settings = config_get_ptr();
-   return cocoa_input_is_pressed(apple, 0, settings->input.binds[0], key) ||
-      input_joypad_pressed(apple->joypad, 0, settings->input.binds[0], key);
+   settings_t *settings      = config_get_ptr();
+   bool keyboard_pressed     = cocoa_input_is_pressed(apple, 0, settings->input.binds[0], key);
+   bool joypad_pressed       = input_joypad_pressed(apple->joypad, 0, settings->input.binds[0], key);
+
+   if (keyboard_pressed)
+      *device = INPUT_DEVICE_TYPE_KEYBOARD;
+   if (joypad_pressed)
+      *device = INPUT_DEVICE_TYPE_JOYPAD;
+
+   return keyboard_pressed || joypad_pressed;
 }
 
-static bool cocoa_input_meta_key_pressed(void *data, int key)
+static bool cocoa_input_meta_key_pressed(void *data, int key, enum input_device_type *device)
 {
+   (void)device;
+
    return false;
 }
 

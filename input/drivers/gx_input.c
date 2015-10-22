@@ -93,16 +93,22 @@ static void gx_input_poll(void *data)
       gx->joypad->poll();
 }
 
-static bool gx_input_key_pressed(void *data, int key)
+static bool gx_input_key_pressed(void *data, int key, enum input_device_type *device)
 {
    settings_t *settings = config_get_ptr();
    gx_input_t *gx       = (gx_input_t*)data;
-   return input_joypad_pressed(gx->joypad, 0, settings->input.binds[0], key);
+   bool joypad_pressed  = input_joypad_pressed(gx->joypad, 0, settings->input.binds[0], key);
+
+   if (joypad_pressed)
+      *device = INPUT_DEVICE_TYPE_JOYPAD;
+
+   return joypad_pressed;
 }
 
-static bool gx_input_meta_key_pressed(void *data, int key)
+static bool gx_input_meta_key_pressed(void *data, int key, enum input_device_type *device)
 {
-   return (BIT64_GET(lifecycle_state, key));
+   bool meta_pressed = BIT64_GET(lifecycle_state, key);
+   return meta_pressed;
 }
 
 static uint64_t gx_input_get_capabilities(void *data)

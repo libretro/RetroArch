@@ -207,12 +207,13 @@ retro_input_t input_driver_keys_pressed(void)
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
    {
       bool state = false;
+      enum input_device_type type = INPUT_DEVICE_TYPE_NONE;
       if ((!driver->block_libretro_input && ((key < RARCH_FIRST_META_KEY)))
             || !driver->block_hotkey)
-         state = input->key_pressed(driver->input_data, key);
+         state = input->key_pressed(driver->input_data, key, &type);
 
       if (key >= RARCH_FIRST_META_KEY)
-         state |= input->meta_key_pressed(driver->input_data, key);
+         state |= input->meta_key_pressed(driver->input_data, key, &type);
 
 #ifdef HAVE_OVERLAY
       state |= input_overlay_key_pressed(key);

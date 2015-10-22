@@ -39,6 +39,13 @@ extern "C" {
 
 typedef uint64_t retro_input_t;
 
+enum input_device_type
+{
+   INPUT_DEVICE_TYPE_NONE = 0,
+   INPUT_DEVICE_TYPE_KEYBOARD,
+   INPUT_DEVICE_TYPE_JOYPAD
+};
+
 struct retro_keybind
 {
    bool valid;
@@ -67,8 +74,8 @@ typedef struct input_driver
    int16_t (*input_state)(void *data,
          const struct retro_keybind **retro_keybinds,
          unsigned port, unsigned device, unsigned index, unsigned id);
-   bool (*key_pressed)(void *data, int key);
-   bool (*meta_key_pressed)(void *data, int key);
+   bool (*key_pressed)(void *data, int key, enum input_device_type *device);
+   bool (*meta_key_pressed)(void *data, int key, enum input_device_type *device);
    void (*free)(void *data);
    bool (*set_sensor_state)(void *data, unsigned port,
          enum retro_sensor_action action, unsigned rate);

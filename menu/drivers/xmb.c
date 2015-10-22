@@ -2671,7 +2671,6 @@ static bool xmb_menu_init_list(void *data)
    menu_displaylist_info_t info = {0};
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
-   menu_handle_t *menu        = (menu_handle_t*)data;
 
    strlcpy(info.label, menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));
 

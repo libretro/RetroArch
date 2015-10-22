@@ -1456,15 +1456,11 @@ static int deferred_push_video_shader_parameters_common(
 int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info, 
       const char *info_label, unsigned parse_type)
 {
-   uint64_t flags;
    enum setting_type precond;
    size_t             count  = 0;
-   rarch_setting_t *setting  = NULL;
    settings_t *settings      = config_get_ptr();
-   menu_handle_t *menu       = (menu_handle_t*)data;
-
-   setting                   = menu_setting_find(info_label);
-   flags                     = menu_setting_get_flags(setting);
+   rarch_setting_t *setting  = menu_setting_find(info_label);
+   uint64_t flags            = menu_setting_get_flags(setting);
 
 
    if (!setting)

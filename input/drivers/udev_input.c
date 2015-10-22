@@ -596,17 +596,24 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
    return 0;
 }
 
-static bool udev_input_key_pressed(void *data, int key)
+static bool udev_input_key_pressed(void *data, int key, enum input_device_type *device)
 {
-   udev_input_t *udev   = (udev_input_t*)data;
-   settings_t *settings = config_get_ptr();
+   udev_input_t *udev    = (udev_input_t*)data;
+   settings_t *settings  = config_get_ptr();
+   bool keyboard_pressed = udev_input_is_pressed(udev, settings->input.binds[0], key);
+   bool joypad_pressed   = input_joypad_pressed(udev->joypad, 0, settings->input.binds[0], key);
 
-   return udev_input_is_pressed(udev, settings->input.binds[0], key) ||
-      input_joypad_pressed(udev->joypad, 0, settings->input.binds[0], key);
+   if (keyboard_pressed)
+      *device = INPUT_DEVICE_TYPE_KEYBOARD;
+   if (joypad_pressed)
+      *device = INPUT_DEVICE_TYPE_JOYPAD;
+
+   return keyboard_pressed || joypad_pressed;
 }
 
-static bool udev_input_meta_key_pressed(void *data, int key)
+static bool udev_input_meta_key_pressed(void *data, int key, enum input_device_type *device)
 {
+   (void)device;
    return false;
 }
 

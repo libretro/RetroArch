@@ -88,16 +88,22 @@ static void *xdk_input_init(void)
    return xdk;
 }
 
-static bool xdk_input_key_pressed(void *data, int key)
+static bool xdk_input_key_pressed(void *data, int key, enum input_device_type *device)
 {
    xdk_input_t *xdk     = (xdk_input_t*)data;
    settings_t *settings = config_get_ptr();
 
-   return input_joypad_pressed(xdk->joypad, 0, settings->input.binds[0], key);
+   bool joypad_pressed  = input_joypad_pressed(xdk->joypad, 0, settings->input.binds[0], key);
+
+   if (joypad_pressed)
+      *device = INPUT_DEVICE_TYPE_JOYPAD;
+
+   return joypad_pressed;
 }
 
-static bool xdk_input_meta_key_pressed(void *data, int key)
+static bool xdk_input_meta_key_pressed(void *data, int key, enum input_device_type *device)
 {
+   (void)device;
    return false;
 }
 

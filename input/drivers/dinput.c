@@ -351,14 +351,23 @@ static bool dinput_keyboard_pressed(struct dinput_input *di, unsigned key)
 
 static bool dinput_is_pressed(struct dinput_input *di,
       const struct retro_keybind *binds,
-      unsigned port, unsigned id)
+      unsigned port, unsigned id, enum input_device_type *device)
 {
    const struct retro_keybind *bind = &binds[id];
+   bool joypad_pressed              = false;
+   bool keyboard_pressed            = false;
    if (id >= RARCH_BIND_LIST_END)
       return false;
 
-   return (!di->blocked && dinput_keyboard_pressed(di, bind->key)) || 
-      input_joypad_pressed(di->joypad, port, binds, id);
+   keyboard_pressed = !di->blocked && dinput_keyboard_pressed(di, bind->key);
+   joypad_pressed   = input_joypad_pressed(di->joypad, port, binds, id);
+
+   if (keyboard_pressed)
+      *device = INPUT_DEVICE_TYPE_KEYBOARD;
+   if (joypad_pressed)
+      *device = INPUT_DEVICE_TYPE_JOYPAD;
+
+   return keyboard_pressed || joypad_pressed;
 }
 
 static int16_t dinput_pressed_analog(struct dinput_input *di,
@@ -385,15 +394,15 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
    return pressed_plus + pressed_minus;
 }
 
-static bool dinput_key_pressed(void *data, int key)
+static bool dinput_key_pressed(void *data, int key, enum input_device_type *device)
 {
    settings_t *settings = config_get_ptr();
-   return dinput_is_pressed((struct dinput_input*)data,
-         settings->input.binds[0], 0, key);
+   return dinput_is_pressed((struct dinput_input*)data, settings->input.binds[0], 0, key, device);
 }
 
-static bool dinput_meta_key_pressed(void *data, int key)
+static bool dinput_meta_key_pressed(void *data, int key, enum input_device_type *device)
 {
+   (void)device;
    return false;
 }
 
