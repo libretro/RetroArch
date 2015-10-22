@@ -107,9 +107,7 @@ void menu_input_key_start_line(const char *label,
 
 int menu_input_key_bind_iterate(char *s, size_t len);
 
-int menu_input_key_bind_set_keyboard_mode(void *data, enum menu_input_bind_mode type);
-
-int menu_input_key_bind_set_device_mode(void *data, enum menu_input_bind_mode type);
+int menu_input_key_bind_set_mode(void *data, enum menu_input_bind_mode type);
 
 void menu_input_key_bind_set_min_max(unsigned min, unsigned max);
 

@@ -664,43 +664,41 @@ static void menu_input_key_bind_set_timeout(void)
       MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
 }
 
-int menu_input_key_bind_set_keyboard_mode(void *data,
+int menu_input_key_bind_set_mode(void *data,
       enum menu_input_bind_mode type)
 {
    menu_handle_t       *menu = menu_driver_get_ptr();
+   menu_input_t  *menu_input = menu_input_get_ptr();
    rarch_setting_t  *setting = (rarch_setting_t*)data;
+   settings_t *settings      = config_get_ptr();
+   global_t *global          = global_get_ptr();
+   bool joypad_pressed = BIT64_GET(menu_input->devices_mask, settings->menu_ok_btn);
 
-   if (!setting || menu_input_key_bind_set_mode_common(setting, type) == -1)
+   if (!setting)
       return -1;
+   if (menu_input_key_bind_set_mode_common(setting, type) == -1)
+      return -1;
+
+
+   if (joypad_pressed)
+   {
+      unsigned index_offset = menu_setting_get_index_offset(setting);
+      bind_port    = settings->input.joypad_map[index_offset];
+
+      menu_input_key_bind_poll_bind_get_rested_axes(&menu_input->binds, bind_port);
+      menu_input_key_bind_poll_bind_state(&menu_input->binds, bind_port, false);
+
+      menu_input_key_bind_set_timeout();
+
+      global->menu.bind_mode_keyboard = false;
+      return 0;
+   }
+
+   global->menu.bind_mode_keyboard = true;
 
    menu_input_key_bind_set_timeout();
    input_keyboard_wait_keys(menu,
          menu_input_key_bind_custom_bind_keyboard_cb);
-   return 0;
-}
-
-int menu_input_key_bind_set_device_mode(void *data,
-      enum menu_input_bind_mode type)
-{
-   unsigned index_offset;
-   menu_input_t *menu_input  = menu_input_get_ptr();
-   settings_t *settings      = config_get_ptr();
-   rarch_setting_t  *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   index_offset = menu_setting_get_index_offset(setting);
-   bind_port    = settings->input.joypad_map[index_offset];
-
-   if (menu_input_key_bind_set_mode_common(setting, type) == -1)
-      return -1;
-
-   menu_input_key_bind_poll_bind_get_rested_axes(&menu_input->binds, bind_port);
-   menu_input_key_bind_poll_bind_state(&menu_input->binds, bind_port, false);
-
-   menu_input_key_bind_set_timeout();
-
    return 0;
 }
 

@@ -921,12 +921,8 @@ static int setting_bind_action_start(void *data)
    if (!keybind)
       return -1;
 
-   if (!global->menu.bind_mode_keyboard)
-   {
-      keybind->joykey = NO_BTN;
-      keybind->joyaxis = AXIS_NONE;
-      return 0;
-   }
+   keybind->joykey = NO_BTN;
+   keybind->joyaxis = AXIS_NONE;
 
    if (setting->index_offset)
       def_binds = (struct retro_keybind*)retro_keybinds_rest;
@@ -1449,10 +1445,7 @@ static int setting_action_ok_bind_all(void *data, bool wraparound)
    if (!global)
       return -1;
 
-   if (global->menu.bind_mode_keyboard)
-      menu_input_key_bind_set_keyboard_mode(data, MENU_INPUT_BIND_ALL);
-   else
-      menu_input_key_bind_set_device_mode(data, MENU_INPUT_BIND_ALL);
+   menu_input_key_bind_set_mode(data, MENU_INPUT_BIND_ALL);
 
    return 0;
 }
@@ -1506,13 +1499,9 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
    for (i = MENU_SETTINGS_BIND_BEGIN;
          i <= MENU_SETTINGS_BIND_LAST; i++, target++)
    {
-      if (global->menu.bind_mode_keyboard)
-         target->key = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
-      else
-      {
-         target->joykey = NO_BTN;
-         target->joyaxis = AXIS_NONE;
-      }
+      target->key = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
+      target->joykey = NO_BTN;
+      target->joyaxis = AXIS_NONE;
    }
 
    return 0;
@@ -1596,10 +1585,7 @@ static int setting_bind_action_ok(void *data, bool wraparound)
    global_t      *global     = global_get_ptr();
    (void)wraparound;
 
-   if (global->menu.bind_mode_keyboard)
-      menu_input_key_bind_set_keyboard_mode(data, MENU_INPUT_BIND_SINGLE);
-   else
-      menu_input_key_bind_set_device_mode(data, MENU_INPUT_BIND_SINGLE);
+   menu_input_key_bind_set_mode(data, MENU_INPUT_BIND_SINGLE);
 
    return 0;
 }
@@ -4777,19 +4763,6 @@ static bool setting_append_list_input_options(
          group_info.name,
          subgroup_info,
          parent_group);
-
-   CONFIG_BOOL(
-         global->menu.bind_mode_keyboard,
-         menu_hash_to_str(MENU_LABEL_INPUT_BIND_MODE),
-         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_BIND_MODE),
-         false,
-         menu_hash_to_str(MENU_VALUE_RETROPAD),
-         menu_hash_to_str(MENU_VALUE_RETROKEYBOARD),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
 
    for (user = 0; user < settings->input.max_users; user ++)
    {
