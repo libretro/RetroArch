@@ -853,7 +853,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       menu_entries_push(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
             menu_hash_to_str(MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
-            0, 0, 0);
+            MENU_INFO_MESSAGE, 0, 0);
       return 0;
    }
 
