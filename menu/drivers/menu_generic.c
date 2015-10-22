@@ -370,11 +370,13 @@ bool generic_menu_init_list(void *data)
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
 
-   info.list  = selection_buf;
    strlcpy(info.label, menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));
 
    menu_entries_push(menu_stack, info.path, info.label, info.type, info.flags, 0);
+
+   info.list  = selection_buf;
    menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
+
    menu_displaylist_push_list_process(&info);
 
    return true;
