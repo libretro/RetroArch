@@ -1488,6 +1488,7 @@ void rarch_playlist_load_content(void *data, unsigned idx)
    const char *core_path        = NULL;
    char *path_check		= NULL;
    char *path_tolower		= NULL;
+   RFILE *fp			= NULL;
    content_playlist_t *playlist = (content_playlist_t*)data;
    menu_handle_t *menu          = menu_driver_get_ptr();
    settings_t  *settings        = config_get_ptr();
@@ -1516,7 +1517,7 @@ void rarch_playlist_load_content(void *data, unsigned idx)
    path_check = (char *)calloc(strlen(path_tolower) + 1, sizeof(char));
    strncpy(path_check, path, strlen(path_tolower));
 
-   RFILE *fp = retro_fopen(path_check, RFILE_MODE_READ, -1);
+   fp = retro_fopen(path_check, RFILE_MODE_READ, -1);
    if (!fp)
    {
       rarch_main_msg_queue_push("File could not be loaded.\n", 1, 100, true);
