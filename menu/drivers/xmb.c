@@ -2614,14 +2614,18 @@ static int xmb_list_bind_init(menu_file_list_cbs_t *cbs,
 static int xmb_list_push(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = -1;
-   menu_handle_t       *menu   = menu_driver_get_ptr();
+   menu_handle_t *menu   = menu_driver_get_ptr();
+   global_t    *global   = global_get_ptr();
 
    switch (type)
    {
       case DISPLAYLIST_MAIN_MENU:
          menu_entries_clear(info->list);
-         menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS), PARSE_ACTION);
+
+         if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
+            menu_displaylist_parse_settings(menu, info,
+                  menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS), PARSE_ACTION);
+
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
          menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_CORE_LIST), PARSE_ACTION);
