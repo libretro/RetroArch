@@ -1466,6 +1466,7 @@ int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info,
    setting                   = menu_setting_find(info_label);
    flags                     = menu_setting_get_flags(setting);
 
+
    if (!setting)
       return -1;
    
@@ -1477,6 +1478,9 @@ int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info,
          break;
       case PARSE_ACTION:
          precond = ST_ACTION;
+         break;
+      case PARSE_ONLY_UINT:
+         precond = ST_UINT;
          break;
       case PARSE_ONLY_GROUP:
       default:
@@ -1515,6 +1519,10 @@ int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info,
             if (type == ST_ACTION)
                break;
             goto loop;
+         case PARSE_ONLY_UINT:
+            if (type == ST_UINT)
+               break;
+            goto loop;
       }
 
       if (flags & SD_FLAG_ADVANCED &&
@@ -1536,6 +1544,7 @@ loop:
             if (menu_setting_get_type(setting) == precond)
                time_to_exit = true;
             break;
+         case PARSE_ONLY_UINT:
          case PARSE_ACTION:
             time_to_exit = true;
             break;
@@ -1937,6 +1946,7 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
    unsigned p, retro_id;
    settings_t        *settings = config_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
+   menu_handle_t       *menu   = menu_driver_get_ptr();
 
    menu_entries_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_REMAP_FILE_LOAD),
@@ -1957,6 +1967,13 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
 
    for (p = 0; p < settings->input.max_users; p++)
    {
+      char key_type[PATH_MAX_LENGTH];
+      snprintf(key_type, sizeof(key_type),
+               "input_libretro_device_p%u", p + 1);
+
+      menu_displaylist_parse_settings(menu, info,
+            key_type, PARSE_ONLY_UINT);
+
       for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 4; retro_id++)
       {
          char desc_label[64];

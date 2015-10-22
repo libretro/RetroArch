@@ -37,8 +37,9 @@ enum
    PARSE_NONE         = (1 << 0),
    PARSE_GROUP        = (1 << 1),
    PARSE_ACTION       = (1 << 2),
-   PARSE_ONLY_GROUP   = (1 << 3),
-   PARSE_SUB_GROUP    = (1 << 4)
+   PARSE_ONLY_UINT    = (1 << 3),
+   PARSE_ONLY_GROUP   = (1 << 4),
+   PARSE_SUB_GROUP    = (1 << 5)
 };
 
 enum
