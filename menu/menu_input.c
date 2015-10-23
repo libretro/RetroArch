@@ -829,7 +829,7 @@ static int menu_input_mouse(unsigned *action)
          0, RETRO_DEVICE_ID_MOUSE_Y);
 
    if (
-         menu_input->mouse.left          ||
+         menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON)          ||
          menu_input->mouse.wheelup       ||
          menu_input->mouse.wheeldown     ||
          menu_input->mouse.hwheelup      ||
@@ -951,7 +951,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
       return 0;
    }
 
-   if (menu_input->mouse.left)
+   if (menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON))
    {
       if (!menu_input->mouse.oldleft)
       {
@@ -980,7 +980,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    else
       menu_input->mouse.oldleft = false;
 
-   if (menu_input->mouse.right)
+   if (menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON))
    {
       if (!menu_input->mouse.oldright)
       {
@@ -1059,6 +1059,10 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
          return menu->mouse.x;
       case MENU_MOUSE_Y_AXIS:
          return menu->mouse.y;
+      case MENU_MOUSE_LEFT_BUTTON:
+         return menu->mouse.left;
+      case MENU_MOUSE_RIGHT_BUTTON:
+         return menu->mouse.right;
    }
 
    return 0;

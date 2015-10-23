@@ -108,10 +108,6 @@ typedef struct zarch_handle
 
    struct
    {
-      bool    left;
-      bool    right;
-      bool    oldleft;
-      bool    oldright;
       int    wheel;
    } mouse;
 
@@ -237,8 +233,6 @@ static void zui_begin(void)
 
 
    /* why do i need this? */
-   zui->mouse.left  = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
-   zui->mouse.right = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
    zui->mouse.wheel = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN) -
          input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
 
@@ -262,7 +256,7 @@ static void zui_finish(zui_t *zui,
    if (!gl)
       return;
 
-   if (!zui->mouse.left)
+   if (!menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON))
       zui->item.active = 0;
    else if (zui->item.active == 0)
       zui->item.active = -1;
@@ -295,16 +289,6 @@ static bool check_hit(zui_t *zui, int x1, int y1, int x2, int y2)
    return ((mouse_x >= x1) && (mouse_x <= x2) && (mouse_y >= y1) && (mouse_y <= y2));
 }
 
-static bool mouse_down(zui_t *zui)
-{
-   return zui->mouse.left;
-}
-
-static bool mouse_up(zui_t *zui)
-{
-   return !mouse_down(zui);
-}
-
 static bool check_button_down(zui_t *zui, unsigned id, int x1, int y1, int x2, int y2)
 {
    bool result = false;
@@ -313,7 +297,7 @@ static bool check_button_down(zui_t *zui, unsigned id, int x1, int y1, int x2, i
    if (inside)
       zui->item.hot = id;
 
-   if (zui->item.hot == id && mouse_down(zui))
+   if (zui->item.hot == id && menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON))
    {
       result = true;
       zui->item.active = id;
@@ -330,7 +314,7 @@ static bool check_button_up(zui_t *zui, unsigned id, int x1, int y1, int x2, int
    if (inside)
       zui->item.hot = id;
 
-   if (zui->item.active == id && mouse_up(zui))
+   if (zui->item.active == id && !menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON))
    {
       if (zui->item.hot == id)
          result = true;
