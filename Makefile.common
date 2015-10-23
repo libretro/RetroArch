@@ -392,6 +392,10 @@ ifeq ($(HAVE_XMB), 1)
 endif
 endif
 
+ifeq ($(HAVE_LAKKA), 1)
+   DEFINES += -DHAVE_LAKKA
+endif
+
 ifeq ($(HAVE_MENU_COMMON), 1)
    ifeq ($(PSEUDOLOC), 1)
       PSEUDO_NS := pseudo

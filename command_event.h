@@ -117,6 +117,8 @@ enum event_command
    EVENT_CMD_RESTART_RETROARCH,
    /* Force-quit RetroArch. */
    EVENT_CMD_QUIT_RETROARCH,
+   /* Shutdown the OS */
+   EVENT_CMD_SHUTDOWN,
    /* Resume RetroArch when in menu. */
    EVENT_CMD_RESUME,
    /* Toggles pause. */

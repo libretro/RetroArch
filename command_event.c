@@ -1019,7 +1019,7 @@ bool event_command(enum event_command cmd)
    driver_t  *driver    = driver_get_ptr();
    global_t  *global    = global_get_ptr();
    settings_t *settings = config_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   rarch_system_info_t *info = rarch_system_info_get_ptr();
 
    (void)i;
 
@@ -1411,6 +1411,11 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_QUIT_RETROARCH:
          rarch_ctl(RARCH_ACTION_STATE_FORCE_QUIT, NULL);
          break;
+      case EVENT_CMD_SHUTDOWN:
+         rarch_main_msg_queue_push("Shutting down...", 1, 180, true);
+         rarch_ctl(RARCH_ACTION_STATE_FORCE_QUIT, NULL);
+         system("shutdown -P now");
+         break;
       case EVENT_CMD_RESUME:
          rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
          break;
@@ -1638,11 +1643,11 @@ bool event_command(enum event_command cmd)
          global->log_file = NULL;
          break;
       case EVENT_CMD_DISK_EJECT_TOGGLE:
-         if (system && system->disk_control.get_num_images)
+         if (info && info->disk_control.get_num_images)
          {
             const struct retro_disk_control_callback *control =
                (const struct retro_disk_control_callback*)
-               &system->disk_control;
+               &info->disk_control;
 
             if (control)
                event_check_disk_eject(control);
@@ -1653,11 +1658,11 @@ bool event_command(enum event_command cmd)
                   1, 120, true);
          break;
       case EVENT_CMD_DISK_NEXT:
-         if (system && system->disk_control.get_num_images)
+         if (info && info->disk_control.get_num_images)
          {
             const struct retro_disk_control_callback *control =
                (const struct retro_disk_control_callback*)
-               &system->disk_control;
+               &info->disk_control;
 
             if (!control)
                return false;
@@ -1673,11 +1678,11 @@ bool event_command(enum event_command cmd)
                   1, 120, true);
          break;
       case EVENT_CMD_DISK_PREV:
-         if (system && system->disk_control.get_num_images)
+         if (info && info->disk_control.get_num_images)
          {
             const struct retro_disk_control_callback *control =
                (const struct retro_disk_control_callback*)
-               &system->disk_control;
+               &info->disk_control;
 
             if (!control)
                return false;
