@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
+
 /* Win32/WGL context. */
 
 /* necessary for mingw32 multimon defines: */
@@ -491,7 +493,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
     * for black frame insertion using video.refresh_rate set to half
     * of the display refresh rate, as well as higher vsync swap intervals. */
    refresh_mod = settings->video.black_frame_insertion ? 2.0f : 1.0f;
-   refresh = round(settings->video.refresh_rate * refresh_mod * settings->video.swap_interval);
+   refresh     = roundf(settings->video.refresh_rate * refresh_mod * settings->video.swap_interval);
 
    windowed_full   = settings->video.windowed_fullscreen;
 
