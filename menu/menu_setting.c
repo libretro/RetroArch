@@ -6751,14 +6751,8 @@ rarch_setting_t *menu_setting_new(void)
    if (!setting_append_list_audio_options(&list, list_info, root))
       goto error;
 
-   {
-      unsigned user;
-      settings_t      *settings = config_get_ptr();
-
-      if (!setting_append_list_input_options(&list, list_info, root))
-         goto error;
-
-   }
+   if (!setting_append_list_input_options(&list, list_info, root))
+      goto error;
 
    if (!setting_append_list_input_hotkey_options(&list, list_info, root))
       goto error;
