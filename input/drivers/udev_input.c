@@ -600,15 +600,20 @@ static bool udev_input_key_pressed(void *data, int key, enum input_device_type *
 {
    udev_input_t *udev    = (udev_input_t*)data;
    settings_t *settings  = config_get_ptr();
-   bool keyboard_pressed = udev_input_is_pressed(udev, settings->input.binds[0], key);
-   bool joypad_pressed   = input_joypad_pressed(udev->joypad, 0, settings->input.binds[0], key);
 
-   if (keyboard_pressed)
+   if (udev_input_is_pressed(udev, settings->input.binds[0], key))
+   {
       *device = INPUT_DEVICE_TYPE_KEYBOARD;
-   if (joypad_pressed)
-      *device = INPUT_DEVICE_TYPE_JOYPAD;
+      return true;
+   }
 
-   return keyboard_pressed || joypad_pressed;
+   if (input_joypad_pressed(udev->joypad, 0, settings->input.binds[0], key))
+   {
+      *device = INPUT_DEVICE_TYPE_JOYPAD;
+      return true;
+   }
+
+   return false;
 }
 
 static bool udev_input_meta_key_pressed(void *data, int key, enum input_device_type *device)
