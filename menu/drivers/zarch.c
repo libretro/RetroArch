@@ -108,8 +108,6 @@ typedef struct zarch_handle
 
    struct
    {
-      int16_t x;
-      int16_t y;
       bool    left;
       bool    right;
       bool    oldleft;
@@ -244,9 +242,6 @@ static void zui_begin(void)
    zui->mouse.wheel = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN) -
          input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
 
-   zui->mouse.x = input_driver_state(binds, 0, RARCH_DEVICE_MOUSE_SCREEN, 0, RETRO_DEVICE_ID_MOUSE_X);
-   zui->mouse.y = input_driver_state(binds, 0, RARCH_DEVICE_MOUSE_SCREEN, 0, RETRO_DEVICE_ID_MOUSE_Y);
-
    zui->ca.coords.vertices = 0;
 
    zui->tmp_block.carr.coords.vertices = 0;
@@ -294,10 +289,10 @@ static void zui_finish(zui_t *zui,
 
 static bool check_hit(zui_t *zui, int x1, int y1, int x2, int y2)
 {
-   unsigned mx = zui->mouse.x;
-   unsigned my = zui->mouse.y;
+   int16_t  mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+   int16_t  mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-   return ((mx >= x1) && (mx <= x2) && (my >= y1) && (my <= y2));
+   return ((mouse_x >= x1) && (mouse_x <= x2) && (mouse_y >= y1) && (mouse_y <= y2));
 }
 
 static bool mouse_down(zui_t *zui)
@@ -458,8 +453,10 @@ static void zui_snow(zui_t *zui)
 
       if (p->alive)
       {
+         int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+
          p->y += p->yspeed;
-         p->x += scalef(zui->mouse.x, 0, zui->width, -0.3, 0.3) + p->xspeed;
+         p->x += scalef(mouse_x, 0, zui->width, -0.3, 0.3) + p->xspeed;
 
          p->alive = p->y >= 0 && p->y < (int)zui->height && p->x >= 0 && p->x < (int)zui->width;
       }
@@ -994,7 +991,7 @@ static void zarch_frame(void)
    gl                   = (gl_t*)video_driver_get_ptr(NULL);
 
    if (zui->set->menu.mouse.enable)
-      zarch_draw_cursor(gl, zui->mouse.x, zui->mouse.y);
+      zarch_draw_cursor(gl, menu_input_mouse_state(MENU_MOUSE_X_AXIS), menu_input_mouse_state(MENU_MOUSE_Y_AXIS));
 
    menu_display_frame_background(menu, settings,
          gl, zui->width, zui->height,
