@@ -1206,7 +1206,7 @@ void menu_input_post_iterate(int *ret, unsigned action)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
 }
 
-unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input, retro_input_t *devices)
+unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_input, retro_input_t *devices)
 {
    bool mouse_enabled;
    float delta_time;

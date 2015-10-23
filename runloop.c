@@ -981,7 +981,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
 #ifdef HAVE_MENU
    if (menu_driver_alive())
    {
-      if (menu_driver_iterate((enum menu_action)menu_input_frame(input, trigger_input, &devices)) == -1)
+      if (menu_driver_iterate((enum menu_action)menu_input_frame_retropad(input, trigger_input, &devices)) == -1)
          rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
 
       if (!input && settings->menu.pause_libretro)
