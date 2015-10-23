@@ -1946,12 +1946,16 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
 
    for (p = 0; p < settings->input.max_users; p++)
    {
-      char key_type[PATH_MAX_LENGTH];
+      char key_type[PATH_MAX_LENGTH], key_analog[PATH_MAX_LENGTH];
       snprintf(key_type, sizeof(key_type),
                "input_libretro_device_p%u", p + 1);
+      snprintf(key_analog, sizeof(key_analog),
+               "input_player%u_analog_dpad_mode", p + 1);
 
       menu_displaylist_parse_settings(menu, info,
             key_type, PARSE_ONLY_UINT);
+      menu_displaylist_parse_settings(menu, info,
+            key_analog, PARSE_ONLY_UINT);
    }
 
    menu_entries_push(info->list,
