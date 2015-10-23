@@ -1206,9 +1206,32 @@ void menu_input_post_iterate(int *ret, unsigned action)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
 }
 
+unsigned menu_input_frame_pointer(void)
+{
+   unsigned ret                            = MENU_ACTION_NOOP;
+   settings_t *settings                    = config_get_ptr();
+   menu_input_t *menu_input                = menu_input_get_ptr();
+   bool mouse_enabled                      = settings->menu.mouse.enable;
+#ifdef HAVE_OVERLAY
+   if (!mouse_enabled)
+      mouse_enabled = !(settings->input.overlay_enable && input_overlay_is_alive());
+#endif
+    
+   if (mouse_enabled)
+      menu_input_mouse(&ret);
+   else
+      memset(&menu_input->mouse, 0, sizeof(menu_input->mouse));
+
+   if (settings->menu.pointer.enable)
+      menu_input_pointer(&ret);
+   else
+      memset(&menu_input->pointer, 0, sizeof(menu_input->pointer));
+
+   return ret;
+}
+
 unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_input, retro_input_t *devices)
 {
-   bool mouse_enabled;
    float delta_time;
    unsigned         ret                    = MENU_ACTION_NOOP;
    static bool initial_held                = true;
@@ -1320,22 +1343,6 @@ unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_in
          RARCH_LOG("Button %d pressed on keyboard\n", j);
    }
 #endif
-
-   mouse_enabled = settings->menu.mouse.enable;
-#ifdef HAVE_OVERLAY
-   mouse_enabled = mouse_enabled ||
-    !(settings->input.overlay_enable && input_overlay_is_alive());
-#endif
-    
-   if (mouse_enabled)
-      menu_input_mouse(&ret);
-   else
-      memset(&menu_input->mouse, 0, sizeof(menu_input->mouse));
-
-   if (settings->menu.pointer.enable)
-      menu_input_pointer(&ret);
-   else
-      memset(&menu_input->pointer, 0, sizeof(menu_input->pointer));
 
    return ret;
 }

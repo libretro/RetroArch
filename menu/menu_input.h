@@ -41,7 +41,9 @@ enum menu_action
    MENU_ACTION_START,
    MENU_ACTION_SCROLL_DOWN,
    MENU_ACTION_SCROLL_UP,
-   MENU_ACTION_TOGGLE
+   MENU_ACTION_TOGGLE,
+   MENU_ACTION_POINTER_MOVED,
+   MENU_ACTION_POINTER_PRESSED
 };
 
 enum menu_mouse_action
@@ -117,6 +119,8 @@ void menu_input_st_hex_callback(void *userdata, const char *str);
 void menu_input_st_string_callback(void *userdata, const char *str);
 
 void menu_input_st_cheat_callback(void *userdata, const char *str);
+
+unsigned menu_input_frame_pointer(void);
 
 unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_state, retro_input_t *devices_mask);
 
