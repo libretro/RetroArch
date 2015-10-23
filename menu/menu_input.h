@@ -100,6 +100,24 @@ enum menu_input_bind_mode
    MENU_INPUT_BIND_ALL
 };
 
+typedef struct menu_input_mouse
+{
+   int16_t x;
+   int16_t y;
+   bool    left;
+   bool    right;
+   bool    oldleft;
+   bool    oldright;
+   bool    wheelup;
+   bool    wheeldown;
+   bool    hwheelup;
+   bool    hwheeldown;
+   bool    scrollup;
+   bool    scrolldown;
+   unsigned ptr;
+   uint64_t state;
+} menu_input_mouse_t;
+
 void menu_input_key_event(bool down, unsigned keycode, uint32_t character,
       uint16_t key_modifiers);
 

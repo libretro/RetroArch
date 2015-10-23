@@ -83,23 +83,7 @@ typedef struct menu_input
 
    uint64_t devices_mask;
 
-   struct
-   {
-      int16_t x;
-      int16_t y;
-      bool    left;
-      bool    right;
-      bool    oldleft;
-      bool    oldright;
-      bool    wheelup;
-      bool    wheeldown;
-      bool    hwheelup;
-      bool    hwheeldown;
-      bool    scrollup;
-      bool    scrolldown;
-      unsigned ptr;
-      uint64_t state;
-   } mouse;
+   menu_input_mouse_t mouse;
 
    struct
    {
