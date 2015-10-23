@@ -86,6 +86,7 @@ ACHIEVEMENTS
 
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../libretro-common/utils/md5.c"
+#include "../http_get.c"
 #include "../cheevos.c"
 #endif
 

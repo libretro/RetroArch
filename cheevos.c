@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C)      2015 - Andre Leiradella
+ *  Copyright (C) 2015 - Andre Leiradella
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -20,7 +20,6 @@
 
 #include <configuration.h>
 #include <formats/jsonsax.h>
-#include <net/net_http.h>
 #include <rhash.h>
 #include <performance.h>
 #include <runloop.h>
@@ -28,7 +27,7 @@
 
 #include "cheevos.h"
 #include "dynamic.h"
-#include "net_http_special.h"
+#include "http_get.h"
 
 enum
 {
@@ -705,6 +704,9 @@ int cheevos_load( const char* json )
     NULL
   };
 
+  unsigned core_count, unofficial_count;
+  cheevos_readud_t ud;
+
   if ( !config_get_ptr()->cheevos.enable )
   {
     /* Just return OK if cheevos are disabled. */
@@ -712,9 +714,6 @@ int cheevos_load( const char* json )
   }
   
   /* Count the number of achievements in the JSON file. */
-
-  unsigned core_count, unofficial_count;
-  cheevos_readud_t ud;
 
   if ( count_cheevos( json, &core_count, &unofficial_count ) != JSONSAX_OK )
   {
@@ -1239,7 +1238,7 @@ static int cheevos_login( retro_time_t* timeout )
 
     request[ sizeof( request ) - 1 ] = 0;
 
-    if ( !net_http_get( &json, NULL, request, timeout ) )
+    if ( !http_get( &json, NULL, request, timeout ) )
     {
       res = cheevos_get_value( json, 0x0e2dbd26U /* Token */, token, sizeof( token ) );
       free( (void*)json );
@@ -1277,7 +1276,7 @@ static int cheevos_get_by_game_id( const char** json, unsigned game_id, retro_ti
 
     request[ sizeof( request ) - 1 ] = 0;
 
-    if ( !net_http_get( json, NULL, request, timeout ) )
+    if ( !http_get( json, NULL, request, timeout ) )
     {
       RARCH_LOG( "CHEEVOS got achievements for game id %u\n", game_id );
       return 0;
@@ -1308,7 +1307,7 @@ static unsigned cheevos_get_game_id( unsigned char* hash, retro_time_t* timeout 
 
   request[ sizeof( request ) - 1 ] = 0;
 
-  if ( !net_http_get( &json, NULL, request, timeout ) )
+  if ( !http_get( &json, NULL, request, timeout ) )
   {
     res = cheevos_get_value( json, 0xb4960eecU /* GameID */, game_id, sizeof( game_id ) );
     free( (void*)json );

@@ -13,15 +13,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_CHEEVOS_H
-#define __RARCH_CHEEVOS_H
+#ifndef __RARCH_HTTP_GET_H
+#define __RARCH_HTTP_GET_H
 
-int  cheevos_load( const char *json );
+#include <stdlib.h>
 
-void cheevos_test( void );
+#include <performance.h>
 
-void cheevos_unload( void );
+int http_get(const char **result, size_t *size, const char *url, retro_time_t *timeout);
 
-int  cheevos_get_by_content( const char **json, const void *data, size_t size );
-
-#endif /* __RARCH_CHEEVOS_H */
+#endif /* __RARCH_HTTP_GET_H */
