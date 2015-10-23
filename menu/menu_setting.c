@@ -3162,6 +3162,16 @@ static bool setting_append_list_main_menu_options(
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_QUIT_RETROARCH);
 #endif
 
+#if defined(HAVE_LAKKA)
+   CONFIG_ACTION(
+         menu_hash_to_str(MENU_LABEL_SHUTDOWN),
+         menu_hash_to_str(MENU_LABEL_VALUE_SHUTDOWN),
+         group_info.name,
+         subgroup_info.name,
+         parent_group);
+   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_SHUTDOWN);
+#endif
+
    for (user = 0; user < MAX_USERS; user++)
       setting_append_list_input_player_options(list, list_info, parent_group, user);
 
