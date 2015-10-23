@@ -38,6 +38,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "retro_achievements";
       case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
          return "deferred_accounts_cheevos_list";
+      case MENU_LABEL_DEFERRED_USER_BINDS_LIST:
+         return "deferred_user_binds_list";
       case MENU_LABEL_DEFERRED_ACCOUNTS_LIST:
          return "deferred_accounts_list";
       case MENU_LABEL_ACCOUNTS_LIST:

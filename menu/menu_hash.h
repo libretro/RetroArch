@@ -22,6 +22,8 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_DEFERRED_USER_BINDS_LIST                                    0x28c5750eU
+
 #define MENU_LABEL_CHEEVOS_USERNAME                                            0x6ce57e31U
 #define MENU_LABEL_CHEEVOS_PASSWORD                                            0x86c38d24U
 

@@ -34,12 +34,13 @@ extern "C" {
 
 enum 
 {
-   PARSE_NONE         = (1 << 0),
-   PARSE_GROUP        = (1 << 1),
-   PARSE_ACTION       = (1 << 2),
-   PARSE_ONLY_UINT    = (1 << 3),
-   PARSE_ONLY_GROUP   = (1 << 4),
-   PARSE_SUB_GROUP    = (1 << 5)
+   PARSE_NONE           = (1 << 0),
+   PARSE_GROUP          = (1 << 1),
+   PARSE_ACTION         = (1 << 2),
+   PARSE_ONLY_UINT      = (1 << 3),
+   PARSE_ONLY_GROUP     = (1 << 4),
+   PARSE_ONLY_SUB_GROUP = (1 << 5),
+   PARSE_SUB_GROUP      = (1 << 6)
 };
 
 enum
@@ -88,6 +89,7 @@ enum
    DISPLAYLIST_SHADER_PARAMETERS_PRESET,
    DISPLAYLIST_SYSTEM_INFO,
    DISPLAYLIST_DEBUG_INFO,
+   DISPLAYLIST_USER_BINDS_LIST,
    DISPLAYLIST_ACCOUNTS_LIST,
    DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST,
    DISPLAYLIST_LOAD_CONTENT_LIST,

@@ -71,6 +71,12 @@ int generic_action_ok_displaylist_push(const char *path,
 
    switch (action_type)
    {
+      case ACTION_OK_DL_USER_BINDS_LIST:
+         info.type          = type;
+         info.directory_ptr = idx; 
+         info_path          = label;
+         info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_USER_BINDS_LIST);
+         break;
       case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
       case ACTION_OK_DL_OPEN_ARCHIVE:
          if (menu)
@@ -1548,6 +1554,13 @@ static int action_ok_push_accounts_list(const char *path,
          ACTION_OK_DL_ACCOUNTS_LIST);
 }
 
+static int action_ok_push_user_binds_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+         ACTION_OK_DL_USER_BINDS_LIST);
+}
+
 static int action_ok_push_accounts_cheevos_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1747,6 +1760,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
    if (elem0[0] != '\0' && (is_rdb_entry(elem0_hash) == 0))
    {
       BIND_ACTION_OK(cbs, action_ok_rdb_entry_submenu);
+      return 0;
+   }
+
+   if (strstr(elem0, "_input_binds_list"))
+   {
+      BIND_ACTION_OK(cbs, action_ok_push_user_binds_list);
       return 0;
    }
 

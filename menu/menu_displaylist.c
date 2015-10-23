@@ -2251,6 +2251,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_INFORMATION_LIST:
       case DISPLAYLIST_ADD_CONTENT_LIST:
       case DISPLAYLIST_LOAD_CONTENT_LIST:
+      case DISPLAYLIST_USER_BINDS_LIST:
       case DISPLAYLIST_ACCOUNTS_LIST:
       case DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST:
       case DISPLAYLIST_OPTIONS:
@@ -2314,6 +2315,17 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             menu_entries_push(info->list, info->path, info->label, info->type, info->directory_ptr, 0);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
             menu_entries_set_refresh(false);
+         }
+         break;
+      case DISPLAYLIST_USER_BINDS_LIST:
+         {
+            char lbl[PATH_MAX_LENGTH];
+            snprintf(lbl, sizeof(lbl),
+                  "Input User %.1s Binds", info->path);
+            ret = menu_displaylist_parse_settings(menu, info,
+                  lbl, PARSE_NONE);
+            info->need_refresh = true;
+            info->need_push    = true;
          }
          break;
       case DISPLAYLIST_ACCOUNTS_LIST:
@@ -2428,18 +2440,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_VALUE_INPUT_SETTINGS),   PARSE_ONLY_GROUP);
          ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS),   PARSE_ONLY_GROUP);
-         {
-            unsigned user;
-            char group_lbl[MAX_USERS][PATH_MAX_LENGTH];
-
-            for (user = 0; user < settings->input.max_users; user++)
-            {
-               snprintf(group_lbl[user], sizeof(group_lbl[user]),
-                     menu_hash_to_str(MENU_LABEL_VALUE_INPUT_USER_BINDS), user + 1);
-               ret = menu_displaylist_parse_settings(menu, info, 
-                     group_lbl[user],   PARSE_ONLY_GROUP);
-            }
-         }
          ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_CORE_SETTINGS),            PARSE_ONLY_GROUP);
          ret = menu_displaylist_parse_settings(menu, info, 
