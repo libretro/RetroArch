@@ -159,7 +159,7 @@ copy-media-files:
 	@cp -r $(RMENU_IMG_DIR)/*.png pkg/ps3/USRDIR/cores/borders/Menu/
 
 create-shaders:
-	make -f Makefile.shaders deploy-ps3
+	make -f Makefile.griffin platform=ps3 shaders-deploy
 
 pkg: $(PPU_TARGET)  create-shaders copy-media-files create-npdrm-salamander create-npdrm-core
 	$(MAKE_PACKAGE_NPDRM) pkg/ps3/package.conf pkg/ps3
