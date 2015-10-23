@@ -880,7 +880,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
             const char *path = NULL;
             menu_entries_get_at_offset(
                   xmb->horizontal_list,
-                  xmb->categories.selection_ptr - 3,
+                  xmb->categories.selection_ptr - (XMB_SYSTEM_TAB_END + 1),
                   &path, NULL, NULL, NULL, NULL);
 
             if (!path)
@@ -916,7 +916,7 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *me
          default:
             node = &xmb->main_menu_node;
             if (j > XMB_SYSTEM_TAB_END)
-               node = xmb_get_userdata_from_horizontal_list(xmb, j - 3);
+               node = xmb_get_userdata_from_horizontal_list(xmb, j - (XMB_SYSTEM_TAB_END + 1));
             break;
       }
 
@@ -995,7 +995,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
          default:
             node = &xmb->main_menu_node;
             if (j > XMB_SYSTEM_TAB_END)
-               node = xmb_get_userdata_from_horizontal_list(xmb, j - 3);
+               node = xmb_get_userdata_from_horizontal_list(xmb, j - (XMB_SYSTEM_TAB_END + 1));
             break;
       }
 
@@ -1216,7 +1216,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       return;
 
    if (cat_selection_ptr > XMB_SYSTEM_TAB_END)
-      core_node = xmb_get_userdata_from_horizontal_list(xmb, cat_selection_ptr - 3);
+      core_node = xmb_get_userdata_from_horizontal_list(xmb, cat_selection_ptr - (XMB_SYSTEM_TAB_END + 1));
 
    end = file_list_get_size(list);
 
@@ -1517,7 +1517,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
          default:
             node = &xmb->main_menu_node;
             if (i > XMB_SYSTEM_TAB_END)
-               node = xmb_get_userdata_from_horizontal_list(xmb, i - 3);
+               node = xmb_get_userdata_from_horizontal_list(xmb, i - (XMB_SYSTEM_TAB_END + 1));
             break;
       }
 
@@ -2040,7 +2040,7 @@ static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
          default:
             node = &xmb->main_menu_node;
             if (i > XMB_SYSTEM_TAB_END)
-               node = xmb_get_userdata_from_horizontal_list(xmb, i - 3);
+               node = xmb_get_userdata_from_horizontal_list(xmb, i - (XMB_SYSTEM_TAB_END + 1));
             break;
       }
 
