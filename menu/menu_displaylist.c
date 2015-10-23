@@ -1944,6 +1944,16 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
    rarch_system_info_t *system = rarch_system_info_get_ptr();
    menu_handle_t       *menu   = menu_driver_get_ptr();
 
+   for (p = 0; p < settings->input.max_users; p++)
+   {
+      char key_type[PATH_MAX_LENGTH];
+      snprintf(key_type, sizeof(key_type),
+               "input_libretro_device_p%u", p + 1);
+
+      menu_displaylist_parse_settings(menu, info,
+            key_type, PARSE_ONLY_UINT);
+   }
+
    menu_entries_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_REMAP_FILE_LOAD),
          menu_hash_to_str(MENU_LABEL_REMAP_FILE_LOAD),
@@ -1960,16 +1970,6 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
          menu_hash_to_str(MENU_LABEL_VALUE_REMAP_FILE_SAVE_GAME),
          menu_hash_to_str(MENU_LABEL_REMAP_FILE_SAVE_GAME),
          MENU_SETTING_ACTION, 0, 0);
-
-   for (p = 0; p < settings->input.max_users; p++)
-   {
-      char key_type[PATH_MAX_LENGTH];
-      snprintf(key_type, sizeof(key_type),
-               "input_libretro_device_p%u", p + 1);
-
-      menu_displaylist_parse_settings(menu, info,
-            key_type, PARSE_ONLY_UINT);
-   }
 
    for (p = 0; p < settings->input.max_users; p++)
    {
