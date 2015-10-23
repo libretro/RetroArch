@@ -75,6 +75,24 @@ struct menu_bind_state
    bool skip;
 };
 
+typedef struct menu_input_mouse
+{
+   int16_t x;
+   int16_t y;
+   bool    left;
+   bool    right;
+   bool    oldleft;
+   bool    oldright;
+   bool    wheelup;
+   bool    wheeldown;
+   bool    hwheelup;
+   bool    hwheeldown;
+   bool    scrollup;
+   bool    scrolldown;
+   unsigned ptr;
+   uint64_t state;
+} menu_input_mouse_t;
+
 typedef struct menu_input
 {
    struct menu_bind_state binds;
