@@ -14,7 +14,7 @@
     </initialWindow>
     <category>core.games</category>
     <asset path="../../media/assets">assets</asset>
-    <asset path="icon.png">icon.png</asset>
+    <asset path="../../media/retroarch-96x96.png">icon.png</asset>
     <asset path=".././media/overlays">overlays</asset>
     <asset path="lib">lib</asset>
     <asset path="../../retroarch.cfg">retroarch.cfg</asset>
