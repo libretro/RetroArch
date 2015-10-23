@@ -91,12 +91,14 @@ static void* xenon360_input_init(void)
 static bool xenon360_input_key_pressed(void *data, int key, enum input_device_type *device)
 {
    (void)device;
-   bool joypad_pressed = (lifecycle_state & (UINT64_C(1) << key));
 
-   if (joypad_pressed)
+   if (lifecycle_state & (UINT64_C(1) << key))
+   {
       *device = INPUT_DEVICE_TYPE_JOYPAD;
+      return true;
+   }
 
-   return joypad_pressed;
+   return false;
 }
 
 static bool xenon360_input_meta_key_pressed(void *data, int key, enum input_device_type *device)

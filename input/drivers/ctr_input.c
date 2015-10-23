@@ -87,22 +87,25 @@ static bool ctr_input_key_pressed(void *data, int key, enum input_device_type *d
 {
    settings_t *settings = config_get_ptr();
    ctr_input_t *ctr     = (ctr_input_t*)data;
-   bool joypad_pressed  = input_joypad_pressed(ctr->joypad, 0, settings->input.binds[0], key);
 
-   if (joypad_pressed)
+   if (input_joypad_pressed(ctr->joypad, 0, settings->input.binds[0], key))
+   {
       *device = INPUT_DEVICE_TYPE_JOYPAD;
+      return true;
+   }
 
-   return joypad_pressed;
+   return false;
 }
 
 static bool ctr_input_meta_key_pressed(void *data, int key, enum input_device_type *device)
 {
-   bool meta_pressed = BIT64_GET(lifecycle_state, key);
-
-   if (meta_pressed)
+   if (BIT64_GET(lifecycle_state, key))
+   {
       *device = INPUT_DEVICE_TYPE_JOYPAD;
+      return true;
+   }
 
-   return meta_pressed;
+   return false;
 }
 
 static uint64_t ctr_input_get_capabilities(void *data)
