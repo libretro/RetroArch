@@ -2133,7 +2133,11 @@ static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
       switch(i)
       {
          case XMB_TEXTURE_MAIN_MENU:
-            fill_pathname_join(path, iconpath, "main-menu.png", sizeof(path));
+#if defined(HAVE_LAKKA)
+            fill_pathname_join(path, iconpath, "lakka.png", sizeof(path));
+#else
+            fill_pathname_join(path, iconpath, "retroarch.png", sizeof(path));
+#endif
             break;
          case XMB_TEXTURE_SETTINGS:
             fill_pathname_join(path, iconpath, "settings.png",   sizeof(path));
