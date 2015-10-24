@@ -158,13 +158,15 @@ static int action_right_mainmenu(unsigned type, const char *label,
    unsigned        push_list = 0;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
    file_list_t *menu_stack   = menu_entries_get_menu_stack_ptr();
+   settings_t      *settings = config_get_ptr();
    unsigned           action = MENU_ACTION_RIGHT;
    size_t          list_size = menu_driver_list_get_size(MENU_LIST_PLAIN);
 
    if (list_size == 1)
    {
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
-      if (menu_driver_list_get_selection() != (menu_driver_list_get_size(MENU_LIST_HORIZONTAL) + 3))
+      if (menu_driver_list_get_selection() != (menu_driver_list_get_size(MENU_LIST_HORIZONTAL) + 3)
+         || settings->menu.navigation.wraparound.horizontal_enable)
          push_list = 1;
    }
    else

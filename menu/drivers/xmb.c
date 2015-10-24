@@ -2442,6 +2442,7 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
    size_t stack_size, list_size, selection;
    xmb_handle_t      *xmb = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
+   settings_t   *settings = config_get_ptr();
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
 
@@ -2459,6 +2460,8 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
    xmb_list_deep_copy(menu, menu_stack, xmb->menu_stack_old);
    xmb->selection_ptr_old = selection;
 
+   list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
+
    switch (type)
    {
       case MENU_LIST_PLAIN:
@@ -2469,18 +2472,23 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
          switch (action)
          {
             case MENU_ACTION_LEFT:
-               xmb->categories.selection_ptr--;
+               if (xmb->categories.selection_ptr == 0)
+               {
+                  xmb->categories.selection_ptr = list_size;
+                  xmb->categories.active.idx = list_size - 1;
+               }
+               else
+                  xmb->categories.selection_ptr--;
                break;
             default:
-               xmb->categories.selection_ptr++;
+               if (xmb->categories.selection_ptr == list_size)
+               {
+                  xmb->categories.selection_ptr = 0;
+                  xmb->categories.active.idx = 1;
+               }
+               else
+                  xmb->categories.selection_ptr++;
                break;
-         }
-
-         list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
-         if (xmb->categories.selection_ptr > list_size)
-         {
-            xmb->categories.selection_ptr = list_size;
-            return;
          }
 
          stack_size = menu_stack->size;
