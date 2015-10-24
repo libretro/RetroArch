@@ -87,9 +87,17 @@ const GLfloat ZUI_BG_HILITE[] = {
    0.22, 0.60, 0.74, 1,
 };
 
+const GLfloat ZUI_BG_PAD_HILITE[] = {
+   0.22, 0.60, 0.44, 1,
+   0.22, 0.60, 0.44, 1,
+   0.22, 0.60, 0.44, 1,
+   0.22, 0.60, 0.44, 1,
+};
+
 
 typedef struct zarch_handle
 {
+   size_t entries_selection;
    bool rendering;
    menu_handle_t *menu;
    math_matrix_4x4 mvp;
@@ -481,7 +489,7 @@ static bool zui_button(zui_t *zui, int x1, int y1, const char *label)
    return zui_button_full(zui, x1, y1, x1 + zui_strwidth(zui->fb_buf, label, 1.0) + 24, y1 + 64, label);
 }
 
-static bool zui_list_item(zui_t *zui, int x1, int y1, const char *label)
+static bool zui_list_item(zui_t *zui, int x1, int y1, const char *label, bool selected)
 {
    char title_buf[PATH_MAX_LENGTH];
    unsigned ticker_size;
@@ -494,6 +502,8 @@ static bool zui_list_item(zui_t *zui, int x1, int y1, const char *label)
 
    if (zui->item.active == id || zui->item.hot == id)
       bg = ZUI_BG_HILITE;
+   else if (selected)
+      bg = ZUI_BG_PAD_HILITE;
 
    zui_push_quad(zui, bg, x1, y1, x2, y2);
 
@@ -503,7 +513,7 @@ static bool zui_list_item(zui_t *zui, int x1, int y1, const char *label)
          ticker_size,
          *frame_count / 50,
          label,
-         (bg == ZUI_BG_HILITE));
+         (bg == ZUI_BG_HILITE || bg == ZUI_BG_PAD_HILITE));
 
    zui_draw_text(zui, ZUI_FG_NORMAL, 12, y1 + 35, title_buf);
 
@@ -593,7 +603,7 @@ static int render_lay_root(zui_t *zui)
          menu_entry_t entry;
          menu_entries_get(i, &entry);
 
-         if (zui_list_item(zui, 0, tabbed.tabline_size + i * 54, entry.path))
+         if (zui_list_item(zui, 0, tabbed.tabline_size + i * 54, entry.path, zui->entries_selection == i))
          {
             zui->pending_action_ok.enable      = true;
             zui->pending_action_ok.idx         = i;
@@ -643,7 +653,7 @@ static int render_lay_root(zui_t *zui)
 
       if (zui->load_dlist)
       {
-         if (zui_list_item(zui, 0, tabbed.tabline_size + 73, "^ .."))
+         if (zui_list_item(zui, 0, tabbed.tabline_size + 73, " ..", false /* TODO/FIXME */))
          {
             path_basedir(zui->load_cwd);
             if (zui->load_cwd[strlen(zui->load_cwd)-1] == '/'
@@ -699,7 +709,7 @@ static int render_lay_root(zui_t *zui)
                if (path_is_directory(path))
                   strncat(label, "/", sizeof(label)-1);
 
-               if (zui_list_item(zui, 0, tabbed.tabline_size + 73 + j * 54, label))
+               if (zui_list_item(zui, 0, tabbed.tabline_size + 73 + j * 54, label, zui->entries_selection == i))
                {
                   if (path_is_directory(path))
                   {
@@ -838,7 +848,7 @@ static void zui_render(void)
                   if (j > 10)
                      break;
 
-                  if (zui_list_item(zui, 0, 54 + j * 54, zui->pick_cores[i].display_name))
+                  if (zui_list_item(zui, 0, 54 + j * 54, zui->pick_cores[i].display_name, zui->entries_selection == i))
                   {
                      int ret =zui_load_content(zui, i);
 
@@ -854,7 +864,7 @@ static void zui_render(void)
             }
             else
             {
-               zui_list_item(zui, 0, 54, "Content unsupported");
+               zui_list_item(zui, 0, 54, "Content unsupported", false /* TODO/FIXME */);
             }
          }
          break;
@@ -1120,7 +1130,6 @@ static void zarch_context_reset(void)
 static int zarch_iterate(enum menu_action action)
 {
    int ret = 0;
-   size_t selection;
    menu_entry_t entry;
    zui_t *zui           = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
@@ -1132,7 +1141,7 @@ static int zarch_iterate(enum menu_action action)
 
    if (!zui)
       return -1;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &zui->entries_selection))
       return 0;
 
    BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
@@ -1143,9 +1152,9 @@ static int zarch_iterate(enum menu_action action)
     *
     * We need to fix this entire mess, mouse controls should not rely on a 
     * hack like this in order to work. */
-   selection = max(min(selection, (menu_entries_get_size() - 1)), 0);
+   zui->entries_selection = max(min(zui->entries_selection, (menu_entries_get_size() - 1)), 0);
 
-   menu_entry_get(&entry,    selection, NULL, false);
+   menu_entry_get(&entry,    zui->entries_selection, NULL, false);
 
    if (zui->pending_action_ok.enable)
    {
@@ -1154,7 +1163,7 @@ static int zarch_iterate(enum menu_action action)
       action = MENU_ACTION_OK;
    }
 
-   ret = menu_entry_action(&entry, selection, (enum menu_action)action);
+   ret = menu_entry_action(&entry, zui->entries_selection, (enum menu_action)action);
 
    if (zui->time_to_exit)
    {
