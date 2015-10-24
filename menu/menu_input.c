@@ -846,17 +846,6 @@ static int menu_input_mouse(unsigned *action)
    menu_input->mouse.y   = input_driver_state(binds, 0, RARCH_DEVICE_MOUSE_SCREEN,
          0, RETRO_DEVICE_ID_MOUSE_Y);
 
-   if (
-         menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON)          ||
-         menu_input->mouse.wheelup       ||
-         menu_input->mouse.wheeldown     ||
-         menu_input->mouse.hwheelup      ||
-         menu_input->mouse.hwheeldown    ||
-         menu_input->mouse.scrollup      ||
-         menu_input->mouse.scrolldown
-      )
-      menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
-
    return 0;
 }
 
@@ -886,16 +875,6 @@ static int menu_input_pointer(unsigned *action)
 
    menu_input->pointer.x = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
    menu_input->pointer.y = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
-
-   if (
-         menu_input->pointer.pressed[0]    ||
-         menu_input->pointer.oldpressed[0] ||
-         menu_input->pointer.back          ||
-         menu_input->pointer.dragging      ||
-         (menu_input->pointer.dy != 0)     ||
-         (menu_input->pointer.dx != 0)
-      )
-      menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    return 0;
 }
