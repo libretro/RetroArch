@@ -981,17 +981,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
 #ifdef HAVE_MENU
    if (menu_driver_alive())
    {
-      int ret2 = 0;
-      enum menu_action action = (enum menu_action)menu_input_frame_retropad(input, trigger_input, &devices);
-      /* Process RetroPad */
-      int ret = menu_driver_iterate(action);
-
-      action = (enum menu_action)menu_input_frame_pointer();
-
-      if (action != MENU_ACTION_NOOP)
-         ret2 = menu_driver_iterate(action);
-
-      if (ret == -1 || ret2 == -1)
+      if (menu_driver_iterate((enum menu_action)menu_input_frame_retropad(input, trigger_input, &devices)) == -1)
          rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
 
       if (!input && settings->menu.pause_libretro)

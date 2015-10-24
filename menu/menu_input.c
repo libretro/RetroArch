@@ -1203,9 +1203,9 @@ void menu_input_post_iterate(int *ret, unsigned action)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
 }
 
-unsigned menu_input_frame_pointer(void)
+static unsigned menu_input_frame_pointer(unsigned *data)
 {
-   unsigned ret                            = MENU_ACTION_NOOP;
+   unsigned ret                            = *data;
    settings_t *settings                    = config_get_ptr();
    menu_input_t *menu_input                = menu_input_get_ptr();
    bool mouse_enabled                      = settings->menu.mouse.enable;
@@ -1341,5 +1341,5 @@ unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_in
    }
 #endif
 
-   return ret;
+   return menu_input_frame_pointer(&ret);
 }
