@@ -761,19 +761,69 @@ static int zui_load_content(zui_t *zui, unsigned i)
    return ret;
 }
 
-static void zui_render(void)
+static void zarch_draw_cursor(gl_t *gl, float x, float y)
 {
-   zui_t *zui           = NULL;
+}
+
+static void zarch_get_message(const char *message)
+{
+
+}
+
+static void zarch_render(void)
+{
+   int bottom;
+   unsigned width, height;
+   zui_t         *zarch = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
-   driver_t     *driver = (driver_t*)driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
-   if (!menu || !driver)
+   if (!menu || !menu->userdata)
+      return;
+    
+   (void)settings;
+   (void)bottom;
+   (void)zarch;
+
+   video_driver_get_size(&width, &height);
+
+}
+
+static void zarch_frame(void)
+{
+   unsigned i;
+   GRfloat coord_color[16];
+   GRfloat coord_color2[16];
+   zui_t *zui           = NULL;
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   gl_t *gl             = (gl_t*)video_driver_get_ptr(NULL);
+   
+   if (!menu || !gl)
       return;
 
+   (void)driver;
+   
    zui      = (zui_t*)menu->userdata;
+   zui->menu = menu;
 
-   if (!zui || zui->rendering)
-      return;
+   video_driver_get_size(&zui->width, &zui->height);
+
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &zui->fb_buf);
+
+   for (i = 0; i < 16; i++)
+   {
+      coord_color[i]  = 0;
+      coord_color2[i] = 2.0f;
+
+      if (i == 3 || i == 7 || i == 11 || i == 15)
+      {
+         coord_color[i]  = 0.10f;
+         coord_color2[i] = 0.10f;
+      }
+   }
 
    zui->rendering = true;
    zui->hash      = 0;
@@ -854,73 +904,6 @@ static void zui_render(void)
          }
          break;
    }
-
-}
-
-static void zarch_draw_cursor(gl_t *gl, float x, float y)
-{
-}
-
-static void zarch_get_message(const char *message)
-{
-
-}
-
-static void zarch_render(void)
-{
-   int bottom;
-   unsigned width, height;
-   zui_t         *zarch = NULL;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
-
-   if (!menu || !menu->userdata)
-      return;
-    
-   (void)settings;
-   (void)bottom;
-   (void)zarch;
-
-   video_driver_get_size(&width, &height);
-
-}
-
-static void zarch_frame(void)
-{
-   unsigned i;
-   GRfloat coord_color[16];
-   GRfloat coord_color2[16];
-   zui_t *zui           = NULL;
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   gl_t *gl             = (gl_t*)video_driver_get_ptr(NULL);
-   
-   if (!menu || !gl)
-      return;
-
-   (void)driver;
-   
-   zui      = (zui_t*)menu->userdata;
-   zui->menu = menu;
-
-   video_driver_get_size(&zui->width, &zui->height);
-
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &zui->fb_buf);
-
-   for (i = 0; i < 16; i++)
-   {
-      coord_color[i]  = 0;
-      coord_color2[i] = 2.0f;
-
-      if (i == 3 || i == 7 || i == 11 || i == 15)
-      {
-         coord_color[i]  = 0.10f;
-         coord_color2[i] = 0.10f;
-      }
-   }
-   zui_render();
 
    /* fetch it again in case the pointer was invalidated by a core load */
    gl                   = (gl_t*)video_driver_get_ptr(NULL);
