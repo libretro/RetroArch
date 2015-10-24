@@ -2649,6 +2649,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             char path_playlist[PATH_MAX_LENGTH];
             content_playlist_t *playlist        = g_defaults.history;
 
+            if (!playlist)
+               event_command(EVENT_CMD_HISTORY_INIT);
+
             strlcpy(path_playlist, "history", sizeof(path_playlist));
 
             ret = menu_displaylist_parse_playlist(info, playlist, path_playlist, true);

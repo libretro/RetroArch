@@ -35,6 +35,7 @@
 #include "../menu_animation.h"
 #include "../menu_entry.h"
 #include "../menu_display.h"
+#include "../menu_hash.h"
 #include "../../runloop_data.h"
 
 #include "../../gfx/video_thread_wrapper.h"
@@ -589,30 +590,17 @@ static void render_lay_root(zui_t *zui)
 
    if (zui_tab(zui, &tabbed, "Recent"))
    {
-      unsigned size = min(zui->height/30-2, content_playlist_size(g_defaults.history));
-      unsigned i    = 0;
+      size_t    end = menu_entries_get_end();
+      unsigned size = min(zui->height/30-2, end);
+      unsigned    i = menu_entries_get_start();
 
-      for (i = 0; i < size; ++i)
+      for (; i < size; ++i)
       {
-         const char *path      = NULL;
-         const char *label     = NULL;
-         const char *core_name = NULL;
-         const char *crc32     = NULL;
+         menu_entry_t entry;
+         menu_entries_get(i, &entry);
 
-         content_playlist_get_index(g_defaults.history, i,
-               &path, &label, NULL, &core_name, &crc32, NULL);
-
-         if (!label)
+         if (zui_list_item(zui, 0, tabbed.tabline_size + i * 54, entry.path))
          {
-            if (path)
-               label = path_basename(path);
-            else
-               label = core_name;
-         }
-
-         if (zui_list_item(zui, 0, tabbed.tabline_size + i * 54, label))
-         {
-            RARCH_LOG("Gets here, label: %s, path: %s.\n", core_name, path);
          }
       }
    }
@@ -1164,7 +1152,33 @@ static int zarch_iterate(enum menu_action action)
       return -1;
    }
 
+
    return 0;
+}
+
+static bool zarch_menu_init_list(void *data)
+{
+   int ret;
+   menu_displaylist_info_t info = {0};
+   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+
+   strlcpy(info.label, menu_hash_to_str(MENU_VALUE_HISTORY_TAB), sizeof(info.label));
+
+   menu_entries_push(menu_stack, info.path, info.label, info.type, info.flags, 0);
+
+   event_command(EVENT_CMD_HISTORY_INIT);
+
+   info.list  = selection_buf;
+   menu_displaylist_push_list(&info, DISPLAYLIST_HISTORY);
+
+   info.need_push = true;
+
+   (void)ret;
+
+   menu_displaylist_push_list_process(&info);
+
+   return true;
 }
 
 menu_ctx_driver_t menu_ctx_zarch = {
@@ -1186,7 +1200,7 @@ menu_ctx_driver_t menu_ctx_zarch = {
    NULL,
    NULL,
    NULL,
-   NULL,
+   zarch_menu_init_list,
    NULL,
    NULL,
    NULL,
