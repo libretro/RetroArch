@@ -204,9 +204,8 @@ static void zui_begin(void)
    zui_t *zui           = NULL;
    driver_t     *driver = (driver_t*)driver_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
-   gl_t            *gl  = (gl_t*)video_driver_get_ptr(NULL);
 
-   if (!gl || !menu)
+   if (!menu)
       return;
 
    zui      = (zui_t*)menu->userdata;
@@ -218,11 +217,6 @@ static void zui_begin(void)
    zui->hash      = 0;
    zui->item.hot  = 0;
 
-   glViewport(0, 0, zui->width, zui->height);
-
-   if (gl && gl->shader && gl->shader->set_mvp)
-      gl->shader->set_mvp(gl, &zui->mvp);
-
    /* why do i need this? */
    zui->mouse.wheel = menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN) - 
       menu_input_mouse_state(MENU_MOUSE_WHEEL_UP);
@@ -231,8 +225,6 @@ static void zui_begin(void)
 
    zui->tmp_block.carr.coords.vertices = 0;
    menu_display_font_bind_block(zui->menu, driver->font_osd_driver, &zui->tmp_block);
-
-
 }
 
 static void zui_finish(zui_t *zui,
@@ -258,7 +250,7 @@ static void zui_finish(zui_t *zui,
          width,
          height,
          gl->shader, (struct gfx_coords*)&zui->ca,
-         NULL, true, texture, zui->ca.coords.vertices,
+         &zui->mvp, true, texture, zui->ca.coords.vertices,
          MENU_DISPLAY_PRIM_TRIANGLES);
 
    menu_display_font_flush_block(zui->menu, driver->font_osd_driver);
