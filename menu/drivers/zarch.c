@@ -91,7 +91,6 @@ const GLfloat ZUI_BG_HILITE[] = {
 typedef struct zarch_handle
 {
    bool rendering;
-   settings_t *set;
    menu_handle_t *menu;
    math_matrix_4x4 mvp;
    unsigned width;
@@ -582,7 +581,8 @@ static void render_lay_settings(zui_t *zui)
 static int render_lay_root(zui_t *zui)
 {
    static zui_tabbed_t tabbed = {~0};
-   global_t *global = global_get_ptr();
+   global_t     *global = global_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    zui_tabbed_begin(zui, &tabbed, 0, 0);
 
@@ -613,7 +613,7 @@ static int render_lay_root(zui_t *zui)
 
       if (!zui->load_cwd)
       {
-         zui->load_cwd = strdup(zui->set->menu_content_directory);
+         zui->load_cwd = strdup(settings->menu_content_directory);
          if (zui->load_cwd[strlen(zui->load_cwd)-1] == '/'
 #ifdef _WIN32
             || (zui->load_cwd[strlen(zui->load_cwd)-1] == '\\')
@@ -913,7 +913,6 @@ static void zarch_frame(void)
    (void)driver;
    
    zui      = (zui_t*)menu->userdata;
-   zui->set = config_get_ptr();
    zui->menu = menu;
 
    video_driver_get_size(&zui->width, &zui->height);
@@ -937,7 +936,7 @@ static void zarch_frame(void)
    /* fetch it again in case the pointer was invalidated by a core load */
    gl                   = (gl_t*)video_driver_get_ptr(NULL);
 
-   if (zui->set->menu.mouse.enable)
+   if (settings->menu.mouse.enable)
       zarch_draw_cursor(gl, menu_input_mouse_state(MENU_MOUSE_X_AXIS), menu_input_mouse_state(MENU_MOUSE_Y_AXIS));
 
    menu_display_frame_background(menu, settings,
