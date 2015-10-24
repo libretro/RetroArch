@@ -1014,43 +1014,40 @@ error:
 
 static void zarch_free(void *data)
 {
-   gl_t *gl                                = NULL;
-   const struct font_renderer *font_driver = NULL;
    menu_handle_t *menu                     = (menu_handle_t*)data;
    driver_t      *driver                   = driver_get_ptr();
    zui_t        *zarch                     = (zui_t*)menu->userdata;
+   const struct font_renderer *font_driver = 
+      (const struct font_renderer*)driver->font_osd_driver;
 
    if (!zarch || !menu)
       return;
 
    gfx_coord_array_free(&zarch->tmp_block.carr);
 
-   gl = (gl_t*)video_driver_get_ptr(NULL);
-
-   font_driver = gl ? (const struct font_renderer*)driver->font_osd_driver : NULL;
-
-   if (font_driver && font_driver->bind_block)
-      font_driver->bind_block(driver->font_osd_data, NULL);
-
    if (menu->userdata)
       free(menu->userdata);
+   menu->userdata = NULL;
+
+   if (font_driver->bind_block)
+      font_driver->bind_block(driver->font_osd_data, NULL);
+
 }
 
 static void zarch_context_bg_destroy(zui_t *zarch)
 {
+   if (zarch->textures.bg.id)
+      glDeleteTextures(1, (const GLuint*)&zarch->textures.bg.id);
 }
 
 static void zarch_context_destroy(void)
 {
-   zui_t        *zarch   = NULL;
-   gl_t          *gl     = (gl_t*)video_driver_get_ptr(NULL);
    menu_handle_t *menu   = menu_driver_get_ptr();
    driver_t      *driver = driver_get_ptr();
+   zui_t        *zarch   = menu ? (zui_t*)menu->userdata : NULL;
     
-   if (!menu || !menu->userdata || !gl || !driver)
+   if (!menu || !zarch || !driver)
       return;
-
-   zarch = (zui_t*)menu->userdata;
 
    menu_display_free_main_font();
 
@@ -1075,16 +1072,27 @@ static bool zarch_load_image(void *data, menu_image_type_t type)
    zui_t        *zarch = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
 
-   if (!menu || !menu->userdata)
+   if (!menu)
       return false;
    
    zarch = (zui_t*)menu->userdata;
-   
-   zarch_context_bg_destroy(zarch);
 
-   zarch->textures.bg.id   = video_texture_load(data,
-         TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
-   zarch_allocate_white_texture(zarch);
+   if (!zarch || !data)
+      return false;
+
+   switch (type)
+   {
+      case MENU_IMAGE_NONE:
+         break;
+      case MENU_IMAGE_WALLPAPER:
+         zarch_context_bg_destroy(zarch);
+         zarch->textures.bg.id   = video_texture_load(data,
+               TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+         zarch_allocate_white_texture(zarch);
+         break;
+      case MENU_IMAGE_BOXART:
+         break;
+   }
 
    return true;
 }
