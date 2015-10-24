@@ -943,8 +943,7 @@ static void zarch_frame(void)
          &zarch_vertexes[0], &zarch_tex_coords[0], 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
-   if (gl && gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+   gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
