@@ -1478,6 +1478,12 @@ int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info,
       case PARSE_ONLY_UINT:
          precond = ST_UINT;
          break;
+      case PARSE_ONLY_BOOL:
+         precond = ST_BOOL;
+         break;
+      case PARSE_ONLY_FLOAT:
+         precond = ST_FLOAT;
+         break;
       case PARSE_ONLY_GROUP:
       default:
          precond = ST_END_GROUP;
@@ -1519,6 +1525,14 @@ int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info,
             if (type == ST_UINT)
                break;
             goto loop;
+         case PARSE_ONLY_BOOL:
+            if (type == ST_BOOL)
+               break;
+            goto loop;
+         case PARSE_ONLY_FLOAT:
+            if (type == ST_FLOAT)
+               break;
+            goto loop;
       }
 
       if (flags & SD_FLAG_ADVANCED &&
@@ -1540,6 +1554,8 @@ loop:
             if (menu_setting_get_type(setting) == precond)
                time_to_exit = true;
             break;
+         case PARSE_ONLY_FLOAT:
+         case PARSE_ONLY_BOOL:
          case PARSE_ONLY_UINT:
          case PARSE_ACTION:
             time_to_exit = true;
@@ -2285,6 +2301,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_DATABASE_PLAYLISTS:
       case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
       case DISPLAYLIST_VIDEO_FILTERS:
+      case DISPLAYLIST_INPUT_SETTINGS_LIST:
       case DISPLAYLIST_AUDIO_FILTERS:
       case DISPLAYLIST_IMAGES:
       case DISPLAYLIST_OVERLAYS:
@@ -2429,6 +2446,48 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 #endif
          info->need_push    = true;
          break;
+      case DISPLAYLIST_INPUT_SETTINGS_LIST:
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_INPUT_MAX_USERS), PARSE_ONLY_UINT);
+#ifdef ANDROID
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABELINPUT_BACK_AS_MENU_TOGGLE_ENABLE), PARSE_ONLY_BOOL);
+#endif
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_INPUT_MENU_TOGGLE_GAMEPAD_COMBO), PARSE_ONLY_UINT);
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_INPUT_REMAP_BINDS_ENABLE), PARSE_ONLY_BOOL);
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_INPUT_AUTODETECT_ENABLE), PARSE_ONLY_BOOL);
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW), PARSE_ONLY_BOOL);
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW), PARSE_ONLY_BOOL);
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND), PARSE_ONLY_BOOL);
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_INPUT_AXIS_THRESHOLD), PARSE_ONLY_FLOAT);
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_INPUT_TURBO_PERIOD), PARSE_ONLY_UINT);
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_INPUT_TURBO_PERIOD), PARSE_ONLY_UINT);
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_INPUT_DUTY_CYCLE), PARSE_ONLY_UINT);
+
+         {
+            unsigned user;
+            for (user = 0; user < settings->input.max_users; user++)
+            {
+               char binds_list[PATH_MAX_LENGTH];
+               snprintf(binds_list,  sizeof(binds_list), "%d_input_binds_list", user + 1);
+               menu_displaylist_parse_settings(menu, info,
+                     binds_list, PARSE_ACTION);
+            }
+         }
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
       case DISPLAYLIST_SETTINGS_ALL:
          ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS),          PARSE_ONLY_GROUP);
@@ -2437,7 +2496,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_SETTINGS),   PARSE_ONLY_GROUP);
          ret = menu_displaylist_parse_settings(menu, info, 
-               menu_hash_to_str(MENU_LABEL_VALUE_INPUT_SETTINGS),   PARSE_ONLY_GROUP);
+               menu_hash_to_str(MENU_LABEL_INPUT_SETTINGS),   PARSE_ACTION);
          ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS),   PARSE_ONLY_GROUP);
          ret = menu_displaylist_parse_settings(menu, info, 

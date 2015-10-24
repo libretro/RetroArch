@@ -42,8 +42,14 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "deferred_user_binds_list";
       case MENU_LABEL_DEFERRED_ACCOUNTS_LIST:
          return "deferred_accounts_list";
+      case MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST:
+         return "deferred_input_settings_list";
       case MENU_LABEL_ACCOUNTS_LIST:
          return "accounts_list";
+      case MENU_LABEL_INPUT_SETTINGS_BEGIN:
+         return "input_settings_begin";
+      case MENU_LABEL_INPUT_SETTINGS:
+         return "input_settings";
       case MENU_LABEL_DEBUG_PANEL_ENABLE:
          return "debug_panel_enable";
       case MENU_LABEL_HELP_SCANNING_CONTENT:

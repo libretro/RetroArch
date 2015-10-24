@@ -22,6 +22,12 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_INPUT_SETTINGS                                              0x78b4a7c5U
+
+#define MENU_LABEL_INPUT_SETTINGS_BEGIN                                        0xddee308bU
+
+#define MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST                                0x050bec60U
+
 #define MENU_LABEL_DEFERRED_USER_BINDS_LIST                                    0x28c5750eU
 
 #define MENU_LABEL_CHEEVOS_USERNAME                                            0x6ce57e31U

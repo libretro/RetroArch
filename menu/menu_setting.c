@@ -3172,6 +3172,13 @@ static bool setting_append_list_main_menu_options(
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_SHUTDOWN);
 #endif
 
+   CONFIG_ACTION(
+         menu_hash_to_str(MENU_LABEL_INPUT_SETTINGS),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_SETTINGS),
+         group_info.name,
+         subgroup_info.name,
+         parent_group);
+
    for (user = 0; user < MAX_USERS; user++)
       setting_append_list_input_player_options(list, list_info, parent_group, user);
 
@@ -4880,7 +4887,7 @@ static bool setting_append_list_input_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info,
-         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_SETTINGS),
+         menu_hash_to_str(MENU_LABEL_INPUT_SETTINGS_BEGIN),
          parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
@@ -5029,6 +5036,7 @@ static bool setting_append_list_input_options(
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1, 0, 1, true, false);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
          settings->input.turbo_duty_cycle,
@@ -5041,6 +5049,7 @@ static bool setting_append_list_input_options(
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1, 0, 1, true, false);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    END_SUB_GROUP(list, list_info, parent_group);
 
