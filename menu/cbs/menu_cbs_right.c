@@ -164,7 +164,7 @@ static int action_right_mainmenu(unsigned type, const char *label,
    if (list_size == 1)
    {
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
-      if (menu_driver_list_get_selection() != (menu_driver_list_get_size(MENU_LIST_HORIZONTAL) + 2))
+      if (menu_driver_list_get_selection() != (menu_driver_list_get_size(MENU_LIST_HORIZONTAL) + 3))
          push_list = 1;
    }
    else

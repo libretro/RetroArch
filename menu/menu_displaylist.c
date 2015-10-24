@@ -1593,7 +1593,7 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
    settings_t      *settings           = config_get_ptr();
    menu_handle_t        *menu          = menu_driver_get_ptr();
    struct item_file *item              = (struct item_file*)
-      menu_driver_list_get_entry(MENU_LIST_HORIZONTAL, menu_driver_list_get_selection() - 3);
+      menu_driver_list_get_entry(MENU_LIST_HORIZONTAL, menu_driver_list_get_selection() - 4);
 
    if (!item)
       return -1;
@@ -1808,6 +1808,22 @@ static int menu_displaylist_parse_add_content_list(menu_displaylist_info_t *info
    menu_entries_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_SCAN_FILE),
          menu_hash_to_str(MENU_LABEL_SCAN_FILE),
+         MENU_SETTING_ACTION, 0, 0);
+#endif
+
+   return 0;
+}
+
+static int menu_displaylist_parse_scan_directory_list(menu_displaylist_info_t *info)
+{
+   global_t *global            = global_get_ptr();
+
+   (void)global;
+
+#ifdef HAVE_LIBRETRODB
+   menu_entries_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_SCAN_DIRECTORY),
+         menu_hash_to_str(MENU_LABEL_SCAN_DIRECTORY),
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
@@ -2266,6 +2282,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_CONTENT_SETTINGS:
       case DISPLAYLIST_INFORMATION_LIST:
       case DISPLAYLIST_ADD_CONTENT_LIST:
+      case DISPLAYLIST_SCAN_DIRECTORY_LIST:
       case DISPLAYLIST_LOAD_CONTENT_LIST:
       case DISPLAYLIST_USER_BINDS_LIST:
       case DISPLAYLIST_ACCOUNTS_LIST:
@@ -2565,6 +2582,12 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_ADD_CONTENT_LIST:
          ret = menu_displaylist_parse_add_content_list(info);
+
+         info->need_push    = true;
+         info->need_refresh = true;
+         break;
+      case DISPLAYLIST_SCAN_DIRECTORY_LIST:
+         ret = menu_displaylist_parse_scan_directory_list(info);
 
          info->need_push    = true;
          info->need_refresh = true;
@@ -3000,6 +3023,11 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
          return 0;
       case MENU_VALUE_HISTORY_TAB:
          if (menu_displaylist_push_list(&info, DISPLAYLIST_HISTORY) != 0)
+            return -1;
+         menu_displaylist_push_list_process(&info);
+         return 0;
+      case MENU_VALUE_ADD_TAB:
+         if (menu_displaylist_push_list(&info, DISPLAYLIST_SCAN_DIRECTORY_LIST) != 0)
             return -1;
          menu_displaylist_push_list_process(&info);
          return 0;

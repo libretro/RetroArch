@@ -477,6 +477,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
                case MENU_VALUE_HORIZONTAL_MENU:
                case MENU_VALUE_MAIN_MENU:
                case MENU_VALUE_HISTORY_TAB:
+               case MENU_VALUE_ADD_TAB:
                   BIND_ACTION_LEFT(cbs, action_left_mainmenu);
                   break;
                default:
