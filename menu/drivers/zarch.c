@@ -253,9 +253,6 @@ static void zui_finish(zui_t *zui,
       zui->item.active = -1;
 
    glViewport(x, y, width, height);
-#if 0
-   glBindTexture(GL_TEXTURE_2D, texture);
-#endif
    glBindTexture(GL_TEXTURE_2D, 0);
 
    gl->shader->set_coords(&zui->ca);
@@ -473,9 +470,6 @@ static void zui_snow(zui_t *zui)
 static bool zui_button_full(zui_t *zui, int x1, int y1, int x2, int y2, const char *label)
 {
    unsigned id = zui_hash(zui, label);
-#if 0
-   int x2      = x1 + zui_strwidth(zui->fb_buf, label, 1.0) + 16;
-#endif
    bool active = check_button_up(zui, id, x1, y1, x2, y2);
    const GLfloat *bg = ZUI_BG_PANEL;
 
@@ -497,11 +491,11 @@ static bool zui_list_item(zui_t *zui, int x1, int y1, const char *label)
 {
    char title_buf[PATH_MAX_LENGTH];
    unsigned ticker_size;
-   unsigned id = zui_hash(zui, label);
-   int x2      = x1 + zui->width - 290 - 40;
-   int y2      = y1 + 50;
-   bool active = check_button_up(zui, id, x1, y1, x2, y2);
-   const GLfloat *bg = ZUI_BG_PANEL;
+   unsigned           id = zui_hash(zui, label);
+   int                x2 = x1 + zui->width - 290 - 40;
+   int                y2 = y1 + 50;
+   bool           active = check_button_up(zui, id, x1, y1, x2, y2);
+   const GLfloat     *bg = ZUI_BG_PANEL;
    uint64_t *frame_count = video_driver_get_frame_count();
 
    if (zui->item.active == id || zui->item.hot == id)
@@ -533,8 +527,8 @@ static bool zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label)
 {
    bool active;
    int x1, y1, x2, y2;
-   unsigned id = zui_hash(zui, label);
-   int width   = tab->tab_width;
+   unsigned       id = zui_hash(zui, label);
+   int         width = tab->tab_width;
    const GLfloat *bg = ZUI_BG_PANEL;
 
    if (!width)
@@ -600,10 +594,10 @@ static void render_lay_root(zui_t *zui)
 
       for (i = 0; i < size; ++i)
       {
-         const char *path = NULL;
-         const char *label = NULL;
+         const char *path      = NULL;
+         const char *label     = NULL;
          const char *core_name = NULL;
-         const char *crc32 = NULL;
+         const char *crc32     = NULL;
 
          content_playlist_get_index(g_defaults.history, i,
                &path, &label, NULL, &core_name, &crc32, NULL);
@@ -681,8 +675,8 @@ static void render_lay_root(zui_t *zui)
          {
             unsigned size = zui->load_dlist->size;
             unsigned i, j = 1;
-
             unsigned skip = 0;
+
             for (i = 0; i < size; ++i)
             {
                const char *basename = path_basename(zui->load_dlist->elems[i].data);
@@ -884,10 +878,8 @@ static void zui_render(void)
 
 static void zarch_draw_cursor(gl_t *gl, float x, float y)
 {
-#if 0
-   zarch_render_quad(gl, x-5, y-5, 10, 10, 1, 1, 1, 1);
-#endif
 }
+
 static void zarch_get_message(const char *message)
 {
 
@@ -917,20 +909,15 @@ static void zarch_frame(void)
    unsigned i;
    GRfloat coord_color[16];
    GRfloat coord_color2[16];
+   zui_t *zui           = NULL;
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
-   zui_t *zui           = NULL;
-   gl_t *gl             = NULL;
+   gl_t *gl             = (gl_t*)video_driver_get_ptr(NULL);
    
-   if (!menu)
+   if (!menu || !gl)
       return;
 
-   gl                   = (gl_t*)video_driver_get_ptr(NULL);
-
-   if (!gl)
-      return;
-    
    (void)driver;
    
    zui      = (zui_t*)menu->userdata;
@@ -1039,7 +1026,7 @@ static void zarch_free(void *data)
    const struct font_renderer *font_driver = NULL;
    menu_handle_t *menu                     = (menu_handle_t*)data;
    driver_t      *driver                   = driver_get_ptr();
-   zui_t *zarch                     = (zui_t*)menu->userdata;
+   zui_t        *zarch                     = (zui_t*)menu->userdata;
 
    if (!zarch || !menu)
       return;
@@ -1063,8 +1050,8 @@ static void zarch_context_bg_destroy(zui_t *zarch)
 
 static void zarch_context_destroy(void)
 {
+   zui_t        *zarch   = NULL;
    gl_t          *gl     = (gl_t*)video_driver_get_ptr(NULL);
-   zui_t *zarch   = NULL;
    menu_handle_t *menu   = menu_driver_get_ptr();
    driver_t      *driver = driver_get_ptr();
     
@@ -1093,7 +1080,7 @@ static void zarch_allocate_white_texture(zui_t *zarch)
 
 static bool zarch_load_image(void *data, menu_image_type_t type)
 {
-   zui_t *zarch = NULL;
+   zui_t        *zarch = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu || !menu->userdata)
@@ -1112,7 +1099,7 @@ static bool zarch_load_image(void *data, menu_image_type_t type)
 
 static void zarch_context_reset(void)
 {
-   zui_t *zui   = NULL;
+   zui_t          *zui   = NULL;
    menu_handle_t *menu   = menu_driver_get_ptr();
    settings_t *settings  = config_get_ptr();
    const char *font_path = NULL;
