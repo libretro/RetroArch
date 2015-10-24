@@ -544,9 +544,9 @@ static bool zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label, bool selec
    y1                = tab->y;
    x2                = x1 + width;
    y2                = y1 + 60;
-   active            = check_button_up(zui, id, x1, y1, x2, y2) || selected;
+   active            = check_button_up(zui, id, x1, y1, x2, y2);
 
-   if (zui->item.active == id || tab->active == ~0)
+   if (zui->item.active == id || tab->active == ~0 || selected)
       tab->active    = id;
 
    if (selected)
@@ -562,7 +562,7 @@ static bool zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label, bool selec
    else
       tab->x         = x2;
 
-   return (active || (tab->active == id));
+   return (active || (tab->active == id) || selected);
 }
 
 
