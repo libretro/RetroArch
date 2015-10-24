@@ -913,6 +913,11 @@ static void zarch_frame(void)
 
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
+   if (!menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON))
+      zui->item.active = 0;
+   else if (zui->item.active == 0)
+      zui->item.active = -1;
+
    menu_display_draw_frame(
          0,
          0,
@@ -1177,10 +1182,6 @@ static int zarch_iterate(enum menu_action action)
    if (perform_action)
       ret = menu_entry_action(&entry, zui->entries_selection, act);
 
-   if (!menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON))
-      zui->item.active = 0;
-   else if (zui->item.active == 0)
-      zui->item.active = -1;
 
    if (zui->time_to_exit)
    {
