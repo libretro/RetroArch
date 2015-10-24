@@ -134,8 +134,9 @@ int16_t menu_input_pointer_state(enum menu_input_pointer_state state);
 
 int16_t menu_input_mouse_state(enum menu_input_mouse_state state);
 
-bool menu_input_ctl(enum menu_input_ctl_state state, void *data);
+bool menu_input_mouse_check_hitbox(int x1, int y1, int x2, int y2);
 
+bool menu_input_ctl(enum menu_input_ctl_state state, void *data);
 
 void menu_input_free(void);
 

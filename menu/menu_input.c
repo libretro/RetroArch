@@ -1064,6 +1064,14 @@ int16_t menu_input_pointer_state(enum menu_input_pointer_state state)
    return 0;
 }
 
+bool menu_input_mouse_check_hitbox(int x1, int y1, int x2, int y2)
+{
+   int16_t  mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+   int16_t  mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+
+   return ((mouse_x >= x1) && (mouse_x <= x2) && (mouse_y >= y1) && (mouse_y <= y2));
+}
+
 int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
 {
    menu_input_t *menu = menu_input_get_ptr();

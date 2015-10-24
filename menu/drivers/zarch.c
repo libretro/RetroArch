@@ -281,18 +281,10 @@ static void zui_finish(zui_t *zui,
    zui->rendering = false;
 }
 
-static bool check_hitbox(zui_t *zui, int x1, int y1, int x2, int y2)
-{
-   int16_t  mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-   int16_t  mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-
-   return ((mouse_x >= x1) && (mouse_x <= x2) && (mouse_y >= y1) && (mouse_y <= y2));
-}
-
 static bool check_button_down(zui_t *zui, unsigned id, int x1, int y1, int x2, int y2)
 {
    bool result = false;
-   bool inside = check_hitbox(zui, x1, y1, x2, y2);
+   bool inside = menu_input_mouse_check_hitbox(x1, y1, x2, y2);
 
    if (inside)
       zui->item.hot = id;
@@ -309,7 +301,7 @@ static bool check_button_down(zui_t *zui, unsigned id, int x1, int y1, int x2, i
 static bool check_button_up(zui_t *zui, unsigned id, int x1, int y1, int x2, int y2)
 {
    bool result = false;
-   bool inside = check_hitbox(zui, x1, y1, x2, y2);
+   bool inside = menu_input_mouse_check_hitbox(x1, y1, x2, y2);
 
    if (inside)
       zui->item.hot = id;
