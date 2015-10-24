@@ -138,7 +138,6 @@ typedef struct zarch_handle
          GRuint id;
          char path[PATH_MAX_LENGTH];
       } bg;
-      GRuint white;
    } textures;
 
    /* LAY_PICK_CORE */
@@ -903,7 +902,6 @@ static void zui_render(void)
          break;
    }
 
-   zui_finish(zui, 0, 0, zui->width, zui->height, true, zui->textures.white);
 }
 
 static void zarch_draw_cursor(gl_t *gl, float x, float y)
@@ -985,6 +983,8 @@ static void zarch_frame(void)
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+
+   zui_finish(zui, 0, 0, zui->width, zui->height, true, 0);
 
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
@@ -1092,19 +1092,6 @@ static void zarch_context_destroy(void)
    zarch_context_bg_destroy(zarch);
 }
 
-static void zarch_allocate_white_texture(zui_t *zarch)
-{
-   struct texture_image ti;
-   static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
-
-   ti.width  = 1;
-   ti.height = 1;
-   ti.pixels = (uint32_t*)&white_data;
-
-   zarch->textures.white   = video_texture_load(&ti,
-         TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_NEAREST);
-}
-
 static bool zarch_load_image(void *data, menu_image_type_t type)
 {
    zui_t        *zarch = NULL;
@@ -1126,7 +1113,6 @@ static bool zarch_load_image(void *data, menu_image_type_t type)
          zarch_context_bg_destroy(zarch);
          zarch->textures.bg.id   = video_texture_load(data,
                TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
-         zarch_allocate_white_texture(zarch);
          break;
       case MENU_IMAGE_BOXART:
          break;
@@ -1152,7 +1138,6 @@ static void zarch_context_reset(void)
       RARCH_WARN("Failed to load font.");
 
    zarch_context_bg_destroy(zui);
-   zarch_allocate_white_texture(zui);
 
    rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE,
          settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
