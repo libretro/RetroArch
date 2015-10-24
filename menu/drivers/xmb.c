@@ -2665,40 +2665,40 @@ static int xmb_list_push(menu_displaylist_info_t *info, unsigned type)
 
          if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
             menu_displaylist_parse_settings(menu, info,
-                  menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS), PARSE_ACTION);
+                  menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS), PARSE_ACTION, false);
 
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
          menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_CORE_LIST), PARSE_ACTION);
+               menu_hash_to_str(MENU_LABEL_CORE_LIST), PARSE_ACTION, false);
 #endif
          menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_LIST), PARSE_ACTION);
+               menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_LIST), PARSE_ACTION, false);
 #if defined(HAVE_NETWORKING)
 #if defined(HAVE_LIBRETRODB)
          menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_ADD_CONTENT_LIST), PARSE_ACTION);
+               menu_hash_to_str(MENU_LABEL_ADD_CONTENT_LIST), PARSE_ACTION, false);
 #endif
          menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_ONLINE_UPDATER), PARSE_ACTION);
+               menu_hash_to_str(MENU_LABEL_ONLINE_UPDATER), PARSE_ACTION, false);
 #endif
          menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_INFORMATION_LIST), PARSE_ACTION);
+               menu_hash_to_str(MENU_LABEL_INFORMATION_LIST), PARSE_ACTION, false);
 #ifndef HAVE_DYNAMIC
          menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_RESTART_RETROARCH), PARSE_ACTION);
+               menu_hash_to_str(MENU_LABEL_RESTART_RETROARCH), PARSE_ACTION, false);
 #endif
          menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_CONFIGURATIONS), PARSE_ACTION);
+               menu_hash_to_str(MENU_LABEL_CONFIGURATIONS), PARSE_ACTION, false);
          menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_SAVE_NEW_CONFIG), PARSE_ACTION);
+               menu_hash_to_str(MENU_LABEL_SAVE_NEW_CONFIG), PARSE_ACTION, false);
          menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_HELP_LIST), PARSE_ACTION);
+               menu_hash_to_str(MENU_LABEL_HELP_LIST), PARSE_ACTION, false);
 #if !defined(IOS)
          menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_QUIT_RETROARCH), PARSE_ACTION);
+               menu_hash_to_str(MENU_LABEL_QUIT_RETROARCH), PARSE_ACTION, false);
 #endif
          menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_SHUTDOWN), PARSE_ACTION);
+               menu_hash_to_str(MENU_LABEL_SHUTDOWN), PARSE_ACTION, false);
          info->need_push    = true;
          ret = 0;
          break;

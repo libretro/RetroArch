@@ -136,7 +136,7 @@ void menu_displaylist_push_list_process(menu_displaylist_info_t *info);
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list);
 
 int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info, 
-      const char *info_label, unsigned parse_type);
+      const char *info_label, unsigned parse_type, bool add_empty_entry);
 
 #ifdef __cplusplus
 }
