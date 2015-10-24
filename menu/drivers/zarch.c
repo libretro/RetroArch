@@ -201,13 +201,12 @@ static float zui_strwidth(void *fb_buf, const char *text, float scale)
 
 static void zui_begin(void)
 {
-   const struct retro_keybind *binds[MAX_USERS];
    zui_t *zui           = NULL;
    driver_t     *driver = (driver_t*)driver_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
-   gl_t            *gl  = NULL;
+   gl_t            *gl  = (gl_t*)video_driver_get_ptr(NULL);
 
-   if (!menu)
+   if (!gl || !menu)
       return;
 
    zui      = (zui_t*)menu->userdata;
@@ -215,22 +214,14 @@ static void zui_begin(void)
    if (!zui || !driver)
       return;
 
-   gl                   = (gl_t*)video_driver_get_ptr(NULL);
-
-   if (!gl)
-      return;
-
    zui->rendering = true;
-
-   zui->hash = 0;
-   zui->item.hot = 0;
+   zui->hash      = 0;
+   zui->item.hot  = 0;
 
    glViewport(0, 0, zui->width, zui->height);
 
-
    if (gl && gl->shader && gl->shader->set_mvp)
       gl->shader->set_mvp(gl, &zui->mvp);
-
 
    /* why do i need this? */
    zui->mouse.wheel = menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN) - 
@@ -858,6 +849,7 @@ static void zui_render(void)
             {
                unsigned i, j = 0;
                zui->pick_first += zui->mouse.wheel;
+
                zui->pick_first = min(max(zui->pick_first, 0), zui->pick_supported - 5);
 
                for (i = zui->pick_first; i < zui->pick_supported; ++i)
