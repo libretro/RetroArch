@@ -100,6 +100,11 @@ typedef struct zarch_handle
    bool time_to_exit;
 
    struct {
+      bool enable;
+      size_t idx;
+   } pending_action_ok;
+
+   struct {
       unsigned active;
       unsigned hot;
    } item;
@@ -590,8 +595,9 @@ static int render_lay_root(zui_t *zui)
 
          if (zui_list_item(zui, 0, tabbed.tabline_size + i * 54, entry.path))
          {
-            menu_entry_action(&entry, i, MENU_ACTION_OK);
-            return 1;
+            zui->pending_action_ok.enable      = true;
+            zui->pending_action_ok.idx         = i;
+            return 0;
          }
       }
    }
@@ -1140,6 +1146,13 @@ static int zarch_iterate(enum menu_action action)
    selection = max(min(selection, (menu_entries_get_size() - 1)), 0);
 
    menu_entry_get(&entry,    selection, NULL, false);
+
+   if (zui->pending_action_ok.enable)
+   {
+      menu_entry_get(&entry, zui->pending_action_ok.idx, NULL, false);
+      zui->pending_action_ok.enable = false;
+      action = MENU_ACTION_OK;
+   }
 
    ret = menu_entry_action(&entry, selection, (enum menu_action)action);
 
