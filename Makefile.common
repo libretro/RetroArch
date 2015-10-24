@@ -851,11 +851,13 @@ ifeq ($(HAVE_NETWORKING), 1)
       OBJ += netplay.o
    endif
 
-   # Retro Achievements
+   # Retro Achievements (also depends on threads)
    
    ifeq ($(HAVE_CHEEVOS), 1)
-      DEFINES += -DHAVE_CHEEVOS
-      OBJ += cheevos.o libretro-common/utils/md5.o
+      ifeq ($(HAVE_THREADS), 1)
+         DEFINES += -DHAVE_CHEEVOS
+         OBJ += cheevos.o http_get.o libretro-common/utils/md5.o
+      endif
    endif
 endif
 
