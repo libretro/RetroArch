@@ -1024,6 +1024,8 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb,
       free(xmb->horizontal_list);
    xmb->horizontal_list = NULL;
 
+   xmb->prevent_populate = true;
+
    xmb_init_horizontal_list(menu, xmb);
    xmb_context_reset_horizontal_list(xmb, menu, themepath);
 }
