@@ -579,7 +579,7 @@ static void render_lay_settings(zui_t *zui)
       layout = LAY_HOME;
 }
 
-static void render_lay_root(zui_t *zui)
+static int render_lay_root(zui_t *zui)
 {
    static zui_tabbed_t tabbed = {~0};
    global_t *global = global_get_ptr();
@@ -601,6 +601,8 @@ static void render_lay_root(zui_t *zui)
 
          if (zui_list_item(zui, 0, tabbed.tabline_size + i * 54, entry.path))
          {
+            menu_entry_action(&entry, i, MENU_ACTION_OK);
+            return 1;
          }
       }
    }
@@ -744,8 +746,9 @@ static void render_lay_root(zui_t *zui)
       /* STUB/FIXME */
    }
 
-
    zui_push_quad(zui, ZUI_BG_HILITE, 0, 60, zui->width - 290 - 40, 60+4);
+
+   return 0;
 }
 
 void render_sidebar(zui_t *zui)
@@ -803,7 +806,8 @@ static void zui_render(void)
    {
       case LAY_HOME:
          render_sidebar(zui);
-         render_lay_root(zui);
+         if (render_lay_root(zui) == 1)
+            return;
          break;
       case LAY_SETTINGS:
          render_lay_settings(zui);
