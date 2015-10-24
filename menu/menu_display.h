@@ -92,7 +92,8 @@ void menu_display_draw_frame(
       struct gfx_coords *coords,
       math_matrix_4x4 *mat, 
       bool blend,
-      GLuint texture
+      GLuint texture,
+      size_t vertex_count
       );
 
 void menu_display_frame_background(
@@ -106,7 +107,8 @@ void menu_display_frame_background(
       GRfloat *color,
       GRfloat *color2,
       const GRfloat *vertex,
-      const GRfloat *tex_coord);
+      const GRfloat *tex_coord,
+      size_t vertex_count);
 #endif
 
 const char *menu_video_get_ident(void);

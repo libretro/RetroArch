@@ -490,7 +490,8 @@ void menu_display_draw_frame(
       struct gfx_coords *coords,
       math_matrix_4x4 *mat, 
       bool blend,
-      GLuint texture
+      GLuint texture,
+      size_t vertex_count
       )
 {
    const shader_backend_t *shader = (const shader_backend_t*)shader_data;
@@ -505,7 +506,7 @@ void menu_display_draw_frame(
    if (blend)
       glEnable(GL_BLEND);
 
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, vertex_count);
 
    if (blend)
       glDisable(GL_BLEND);
@@ -523,13 +524,14 @@ void menu_display_frame_background(
       GRfloat *coord_color,
       GRfloat *coord_color2,
       const GRfloat *vertex,
-      const GRfloat *tex_coord)
+      const GRfloat *tex_coord,
+      size_t vertex_count)
 {
    struct gfx_coords coords;
 
    global_t *global = global_get_ptr();
 
-   coords.vertices      = 4;
+   coords.vertices      = vertex_count;
    coords.vertex        = vertex;
    coords.tex_coord     = tex_coord;
    coords.lut_tex_coord = tex_coord;
@@ -548,7 +550,7 @@ void menu_display_frame_background(
 
    menu_display_draw_frame(0, 0, width, height,
          gl->shader, &coords,
-         &gl->mvp_no_rot, true, texture);
+         &gl->mvp_no_rot, true, texture, vertex_count);
 
    gl->coords.color = gl->white_color_ptr;
 }

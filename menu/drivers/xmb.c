@@ -383,7 +383,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
          height - y,
          xmb->icon.size,
          xmb->icon.size,
-         gl->shader, &coords, &mymat, false, texture);
+         gl->shader, &coords, &mymat, false, texture, 4);
 }
 
 static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
@@ -417,7 +417,7 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
          height - y,
          xmb->icon.size,
          xmb->icon.size,
-         gl->shader, &coords, mymat, false, texture);
+         gl->shader, &coords, mymat, false, texture, 4);
 }
 
 static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb, GRfloat *color, unsigned width, unsigned height)
@@ -448,7 +448,7 @@ static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb, GRfloat *color, unsigne
          height - y,
          xmb->boxart_size,
          xmb->boxart_size,
-         gl->shader, &coords, &mymat, false, xmb->boxart);
+         gl->shader, &coords, &mymat, false, xmb->boxart, 4);
 }
 
 static void xmb_draw_text(menu_handle_t *menu,
@@ -1435,7 +1435,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb,
          height - y,
          xmb->cursor.size,
          xmb->cursor.size,
-         gl->shader, &coords, &mymat, true, xmb->textures.list[XMB_TEXTURE_POINTER].id);
+         gl->shader, &coords, &mymat, true, xmb->textures.list[XMB_TEXTURE_POINTER].id, 4);
 }
 
 static void xmb_render(void)
@@ -1603,7 +1603,7 @@ static void xmb_frame(void)
 
    menu_display_frame_background(menu, settings,
          gl, width, height, xmb->textures.bg.id, xmb->alpha, false, &coord_color[0],
-         &coord_color2[0], &rmb_vertex[0], &rmb_tex_coord[0]);
+         &coord_color2[0], &rmb_vertex[0], &rmb_tex_coord[0], 4);
 
    xmb_draw_text(menu, xmb,
          xmb->title_name, xmb->margins.title.left,
@@ -1712,7 +1712,7 @@ static void xmb_frame(void)
             width, height,
             xmb->textures.bg.id, xmb->alpha, true,
             &coord_color[0], &coord_color2[0],
-            &rmb_vertex[0], &rmb_tex_coord[0]);
+            &rmb_vertex[0], &rmb_tex_coord[0], 4);
       xmb_frame_messagebox(msg);
    }
 

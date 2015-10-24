@@ -943,7 +943,7 @@ static void zarch_frame(void)
          gl, zui->width, zui->height,
          zui->textures.bg.id, 0.75f, false,
          &coord_color[0],   &coord_color2[0],
-         &zarch_vertexes[0], &zarch_tex_coords[0]);
+         &zarch_vertexes[0], &zarch_tex_coords[0], 4);
 
    if (gl && gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
