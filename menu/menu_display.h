@@ -58,6 +58,13 @@ enum menu_display_ctl_state
    MENU_DISPLAY_CTL_SET_FONT_FB
 };
 
+enum menu_display_prim_type
+{
+   MENU_DISPLAY_PRIM_NONE = 0,
+   MENU_DISPLAY_PRIM_TRIANGLESTRIP,
+   MENU_DISPLAY_PRIM_TRIANGLES
+};
+
 void menu_display_free(void);
 
 bool menu_display_init(void);
@@ -93,7 +100,8 @@ void menu_display_draw_frame(
       math_matrix_4x4 *mat, 
       bool blend,
       GLuint texture,
-      size_t vertex_count
+      size_t vertex_count,
+      enum menu_display_prim_type prim_type
       );
 
 void menu_display_frame_background(
@@ -108,7 +116,9 @@ void menu_display_frame_background(
       GRfloat *color2,
       const GRfloat *vertex,
       const GRfloat *tex_coord,
-      size_t vertex_count);
+      size_t vertex_count,
+      enum menu_display_prim_type prim_type
+      );
 #endif
 
 const char *menu_video_get_ident(void);

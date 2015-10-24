@@ -483,6 +483,22 @@ void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned durati
 }
 
 #ifdef HAVE_OPENGL
+static GLenum menu_display_prim_to_gl_enum(enum menu_display_prim_type prim_type)
+{
+   switch (prim_type)
+   {
+      case MENU_DISPLAY_PRIM_TRIANGLESTRIP:
+         return GL_TRIANGLE_STRIP;
+      case MENU_DISPLAY_PRIM_TRIANGLES:
+         return GL_TRIANGLES;
+      case MENU_DISPLAY_PRIM_NONE:
+      default:
+         break;
+   }
+
+   return 0;
+}
+
 void menu_display_draw_frame(
       unsigned x, unsigned y,
       unsigned width, unsigned height,
@@ -491,7 +507,8 @@ void menu_display_draw_frame(
       math_matrix_4x4 *mat, 
       bool blend,
       GLuint texture,
-      size_t vertex_count
+      size_t vertex_count,
+      enum menu_display_prim_type prim_type
       )
 {
    const shader_backend_t *shader = (const shader_backend_t*)shader_data;
@@ -506,7 +523,7 @@ void menu_display_draw_frame(
    if (blend)
       glEnable(GL_BLEND);
 
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, vertex_count);
+   glDrawArrays(menu_display_prim_to_gl_enum(prim_type), 0, vertex_count);
 
    if (blend)
       glDisable(GL_BLEND);
@@ -525,7 +542,8 @@ void menu_display_frame_background(
       GRfloat *coord_color2,
       const GRfloat *vertex,
       const GRfloat *tex_coord,
-      size_t vertex_count)
+      size_t vertex_count,
+      enum menu_display_prim_type prim_type)
 {
    struct gfx_coords coords;
 
@@ -550,7 +568,7 @@ void menu_display_frame_background(
 
    menu_display_draw_frame(0, 0, width, height,
          gl->shader, &coords,
-         &gl->mvp_no_rot, true, texture, vertex_count);
+         &gl->mvp_no_rot, true, texture, vertex_count, prim_type);
 
    gl->coords.color = gl->white_color_ptr;
 }

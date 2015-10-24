@@ -120,7 +120,8 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
          w,
          h,
          gl->shader, &coords,
-         &gl->mvp_no_rot, true, glui->textures.white, 4);
+         &gl->mvp_no_rot, true, glui->textures.white, 4,
+         MENU_DISPLAY_PRIM_TRIANGLESTRIP );
 
    gl->coords.color     = gl->white_color_ptr;
 }
@@ -450,7 +451,8 @@ static void glui_frame(void)
          gl, width, height,
          glui->textures.bg.id, 0.75f, false,
          &coord_color[0],   &coord_color2[0],
-         &glui_vertexes[0], &glui_tex_coords[0], 4);
+         &glui_vertexes[0], &glui_tex_coords[0], 4,
+         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    menu_entries_get_title(title, sizeof(title));
 

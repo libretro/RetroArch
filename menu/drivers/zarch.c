@@ -252,19 +252,16 @@ static void zui_finish(zui_t *zui,
    else if (zui->item.active == 0)
       zui->item.active = -1;
 
-   glViewport(x, y, width, height);
-   glBindTexture(GL_TEXTURE_2D, 0);
-
-   gl->shader->set_coords(&zui->ca);
-
-   glEnable(GL_BLEND);
-   glDrawArrays(GL_TRIANGLES, 0, zui->ca.coords.vertices);
+   menu_display_draw_frame(
+         x,
+         y,
+         width,
+         height,
+         gl->shader, (struct gfx_coords*)&zui->ca,
+         NULL, true, 0, zui->ca.coords.vertices,
+         MENU_DISPLAY_PRIM_TRIANGLES);
 
    menu_display_font_flush_block(zui->menu, driver->font_osd_driver);
-
-   glDisable(GL_BLEND);
-
-   gl->shader->set_mvp(gl, &gl->mvp_no_rot);
 
    zui->rendering = false;
 }
@@ -943,7 +940,8 @@ static void zarch_frame(void)
          gl, zui->width, zui->height,
          zui->textures.bg.id, 0.75f, false,
          &coord_color[0],   &coord_color2[0],
-         &zarch_vertexes[0], &zarch_tex_coords[0], 4);
+         &zarch_vertexes[0], &zarch_tex_coords[0], 4,
+         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    if (gl && gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
