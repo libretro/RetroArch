@@ -213,34 +213,6 @@ static float zui_strwidth(void *fb_buf, const char *text, float scale)
    return driver->font_osd_driver->get_message_width(fb_buf, text, strlen(text), scale);
 }
 
-static void zui_begin(void)
-{
-   zui_t *zui           = NULL;
-   driver_t     *driver = (driver_t*)driver_get_ptr();
-   menu_handle_t *menu  = menu_driver_get_ptr();
-
-   if (!menu)
-      return;
-
-   zui      = (zui_t*)menu->userdata;
-
-   if (!zui || !driver)
-      return;
-
-   zui->rendering = true;
-   zui->hash      = 0;
-   zui->item.hot  = 0;
-
-   /* why do i need this? */
-   zui->mouse.wheel = menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN) - 
-      menu_input_mouse_state(MENU_MOUSE_WHEEL_UP);
-
-   zui->ca.coords.vertices = 0;
-
-   zui->tmp_block.carr.coords.vertices = 0;
-   menu_display_font_bind_block(zui->menu, driver->font_osd_driver, &zui->tmp_block);
-}
-
 static void zui_finish(zui_t *zui,
       unsigned x, unsigned y,
       unsigned width, unsigned height,
@@ -822,10 +794,11 @@ static int zui_load_content(zui_t *zui, unsigned i)
 
 static void zui_render(void)
 {
-   menu_handle_t *menu  = menu_driver_get_ptr();
    zui_t *zui           = NULL;
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   driver_t     *driver = (driver_t*)driver_get_ptr();
 
-   if (!menu)
+   if (!menu || !driver)
       return;
 
    zui      = (zui_t*)menu->userdata;
@@ -833,7 +806,18 @@ static void zui_render(void)
    if (!zui || zui->rendering)
       return;
 
-   zui_begin();
+   zui->rendering = true;
+   zui->hash      = 0;
+   zui->item.hot  = 0;
+
+   /* why do i need this? */
+   zui->mouse.wheel = menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN) - 
+      menu_input_mouse_state(MENU_MOUSE_WHEEL_UP);
+
+   zui->ca.coords.vertices = 0;
+
+   zui->tmp_block.carr.coords.vertices = 0;
+   menu_display_font_bind_block(zui->menu, driver->font_osd_driver, &zui->tmp_block);
 
    zui_push_quad(zui, ZUI_BG_SCREEN, 0, 0, zui->width, zui->height);
    zui_snow(zui);
