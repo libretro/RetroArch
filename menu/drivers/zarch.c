@@ -138,6 +138,8 @@ typedef struct zarch_handle
          GRuint id;
          char path[PATH_MAX_LENGTH];
       } bg;
+
+      GRuint white;
    } textures;
 
    /* LAY_PICK_CORE */
@@ -924,7 +926,7 @@ static void zarch_frame(void)
          zui->width,
          zui->height,
          gl->shader, (struct gfx_coords*)&zui->ca,
-         &zui->mvp, true, 0, zui->ca.coords.vertices,
+         &zui->mvp, true, zui->textures.white, zui->ca.coords.vertices,
          MENU_DISPLAY_PRIM_TRIANGLES);
 
    menu_display_frame_background(menu, settings,
@@ -1028,6 +1030,12 @@ static void zarch_context_bg_destroy(zui_t *zarch)
 {
    if (zarch->textures.bg.id)
       glDeleteTextures(1, (const GLuint*)&zarch->textures.bg.id);
+
+   if (zarch->textures.white)
+      glDeleteTextures(1, (const GLuint*)&zarch->textures.white);
+
+   zarch->textures.bg.id = 0;
+   zarch->textures.white = 0;
 }
 
 static void zarch_context_destroy(void)
@@ -1073,6 +1081,19 @@ static bool zarch_load_image(void *data, menu_image_type_t type)
    return true;
 }
 
+static void zarch_allocate_white_texture(zui_t *zui)
+{
+   struct texture_image ti;
+   static const uint32_t data = UINT32_MAX;
+
+   ti.width  = 1;
+   ti.height = 1;
+   ti.pixels = (uint32_t*)&data;
+
+   zui->textures.white = video_texture_load(&ti,
+         TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_NEAREST);
+}
+
 static void zarch_context_reset(void)
 {
    zui_t          *zui   = NULL;
@@ -1093,6 +1114,8 @@ static void zarch_context_reset(void)
 
    rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE,
          settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
+
+   zarch_allocate_white_texture(zui);
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE, &zui->font_size);
    zui_font(menu);
