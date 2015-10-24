@@ -928,13 +928,6 @@ static void zarch_frame(void)
    if (settings->menu.mouse.enable)
       zarch_draw_cursor(gl, menu_input_mouse_state(MENU_MOUSE_X_AXIS), menu_input_mouse_state(MENU_MOUSE_Y_AXIS));
 
-   menu_display_frame_background(menu, settings,
-         gl, zui->width, zui->height,
-         zui->textures.bg.id, 0.75f, false,
-         &coord_color[0],   &coord_color2[0],
-         &zarch_vertexes[0], &zarch_tex_coords[0], 4,
-         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
-
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    menu_display_draw_frame(
@@ -945,6 +938,13 @@ static void zarch_frame(void)
          gl->shader, (struct gfx_coords*)&zui->ca,
          &zui->mvp, true, 0, zui->ca.coords.vertices,
          MENU_DISPLAY_PRIM_TRIANGLES);
+
+   menu_display_frame_background(menu, settings,
+         gl, zui->width, zui->height,
+         zui->textures.bg.id, 0.75f, false,
+         &coord_color[0],   &coord_color2[0],
+         &zarch_vertexes[0], &zarch_tex_coords[0], 4,
+         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    menu_display_font_flush_block(zui->menu, driver->font_osd_driver);
 
