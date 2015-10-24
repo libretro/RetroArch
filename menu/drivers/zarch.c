@@ -1166,6 +1166,7 @@ static int zarch_iterate(enum menu_action action)
    int ret = 0;
    menu_entry_t entry;
    zui_t *zui           = NULL;
+   static ssize_t header_selection_last = 0;
    menu_handle_t *menu  = menu_driver_get_ptr();
    enum menu_action act = (enum menu_action)action;
    bool perform_action  = true;
@@ -1204,13 +1205,14 @@ static int zarch_iterate(enum menu_action action)
       case MENU_ACTION_UP:
          if (zui->entries_selection == 0)
          {
-            zui->header_selection = 0;
+            zui->header_selection = header_selection_last;
             perform_action = false;
             break;
          }
       case MENU_ACTION_DOWN:
          if (zui->header_selection != -1)
          {
+            header_selection_last  = zui->header_selection;
             zui->header_selection  = -1;
             zui->entries_selection = 0;
             perform_action = false;
