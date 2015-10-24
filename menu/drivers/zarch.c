@@ -213,33 +213,6 @@ static float zui_strwidth(void *fb_buf, const char *text, float scale)
    return driver->font_osd_driver->get_message_width(fb_buf, text, strlen(text), scale);
 }
 
-static void zui_finish(zui_t *zui,
-      unsigned x, unsigned y,
-      unsigned width, unsigned height,
-      bool blend,
-      GLuint texture)
-{
-   driver_t *driver = (driver_t*)driver_get_ptr();
-   gl_t         *gl = (gl_t*)video_driver_get_ptr(NULL);
-
-   if (!gl)
-      return;
-
-
-   menu_display_draw_frame(
-         x,
-         y,
-         width,
-         height,
-         gl->shader, (struct gfx_coords*)&zui->ca,
-         &zui->mvp, true, texture, zui->ca.coords.vertices,
-         MENU_DISPLAY_PRIM_TRIANGLES);
-
-   menu_display_font_flush_block(zui->menu, driver->font_osd_driver);
-
-   zui->rendering = false;
-}
-
 static bool check_button_down(zui_t *zui, unsigned id, int x1, int y1, int x2, int y2)
 {
    bool result = false;
@@ -964,7 +937,18 @@ static void zarch_frame(void)
 
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-   zui_finish(zui, 0, 0, zui->width, zui->height, true, 0);
+   menu_display_draw_frame(
+         0,
+         0,
+         zui->width,
+         zui->height,
+         gl->shader, (struct gfx_coords*)&zui->ca,
+         &zui->mvp, true, 0, zui->ca.coords.vertices,
+         MENU_DISPLAY_PRIM_TRIANGLES);
+
+   menu_display_font_flush_block(zui->menu, driver->font_osd_driver);
+
+   zui->rendering = false;
 
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
