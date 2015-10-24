@@ -1081,6 +1081,10 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
          return menu->mouse.left;
       case MENU_MOUSE_RIGHT_BUTTON:
          return menu->mouse.right;
+      case MENU_MOUSE_WHEEL_UP:
+         return menu->mouse.wheelup;
+      case MENU_MOUSE_WHEEL_DOWN:
+         return menu->mouse.wheeldown;
    }
 
    return 0;

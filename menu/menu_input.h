@@ -70,7 +70,9 @@ enum menu_input_mouse_state
    MENU_MOUSE_X_AXIS = 0,
    MENU_MOUSE_Y_AXIS,
    MENU_MOUSE_LEFT_BUTTON,
-   MENU_MOUSE_RIGHT_BUTTON
+   MENU_MOUSE_RIGHT_BUTTON,
+   MENU_MOUSE_WHEEL_UP,
+   MENU_MOUSE_WHEEL_DOWN
 };
 
 enum menu_input_ctl_state

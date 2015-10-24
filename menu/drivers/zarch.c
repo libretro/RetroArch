@@ -233,8 +233,8 @@ static void zui_begin(void)
 
 
    /* why do i need this? */
-   zui->mouse.wheel = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN) -
-         input_driver_state(binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
+   zui->mouse.wheel = menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN) - 
+      menu_input_mouse_state(MENU_MOUSE_WHEEL_UP);
 
    zui->ca.coords.vertices = 0;
 
