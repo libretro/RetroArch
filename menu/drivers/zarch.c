@@ -258,7 +258,7 @@ static void zui_finish(zui_t *zui,
          width,
          height,
          gl->shader, (struct gfx_coords*)&zui->ca,
-         NULL, true, 0, zui->ca.coords.vertices,
+         NULL, true, texture, zui->ca.coords.vertices,
          MENU_DISPLAY_PRIM_TRIANGLES);
 
    menu_display_font_flush_block(zui->menu, driver->font_osd_driver);
