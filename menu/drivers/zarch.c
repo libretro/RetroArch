@@ -1113,6 +1113,9 @@ static void zarch_context_reset(void)
 
 static int zarch_iterate(enum menu_action action)
 {
+   int ret = 0;
+   size_t selection;
+   menu_entry_t entry;
    zui_t *zui           = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
 
@@ -1123,27 +1126,22 @@ static int zarch_iterate(enum menu_action action)
 
    if (!zui)
       return -1;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return 0;
 
    BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
    BIT64_SET(menu->state, MENU_STATE_BLIT);
 
-   switch (action)
-   {
-      case MENU_ACTION_UP:
-         zui->load_dlist_first--;
-         break;
-      case MENU_ACTION_DOWN:
-         zui->load_dlist_first++;
-         break;
-      case MENU_ACTION_LEFT:
-         zui->load_dlist_first -= 5;
-         break;
-      case MENU_ACTION_RIGHT:
-         zui->load_dlist_first += 5;
-         break;
-      default:
-         break;
-   }
+   /* FIXME: Crappy hack, needed for mouse controls to not be completely broken
+    * in case we press back.
+    *
+    * We need to fix this entire mess, mouse controls should not rely on a 
+    * hack like this in order to work. */
+   selection = max(min(selection, (menu_entries_get_size() - 1)), 0);
+
+   menu_entry_get(&entry,    selection, NULL, false);
+
+   ret = menu_entry_action(&entry, selection, (enum menu_action)action);
 
    if (zui->time_to_exit)
    {
@@ -1152,8 +1150,7 @@ static int zarch_iterate(enum menu_action action)
       return -1;
    }
 
-
-   return 0;
+   return ret;
 }
 
 static bool zarch_menu_init_list(void *data)
