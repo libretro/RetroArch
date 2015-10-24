@@ -27,7 +27,7 @@
 
 #include "cheevos.h"
 #include "dynamic.h"
-#include "http_get.h"
+#include "net_http_special.h"
 
 enum
 {
@@ -1238,7 +1238,7 @@ static int cheevos_login( retro_time_t* timeout )
 
     request[ sizeof( request ) - 1 ] = 0;
 
-    if ( !http_get( &json, NULL, request, timeout ) )
+    if ( !net_http_get( &json, NULL, request, timeout ) )
     {
       res = cheevos_get_value( json, 0x0e2dbd26U /* Token */, token, sizeof( token ) );
       free( (void*)json );
@@ -1276,7 +1276,7 @@ static int cheevos_get_by_game_id( const char** json, unsigned game_id, retro_ti
 
     request[ sizeof( request ) - 1 ] = 0;
 
-    if ( !http_get( json, NULL, request, timeout ) )
+    if ( !net_http_get( json, NULL, request, timeout ) )
     {
       RARCH_LOG( "CHEEVOS got achievements for game id %u\n", game_id );
       return 0;
@@ -1307,7 +1307,7 @@ static unsigned cheevos_get_game_id( unsigned char* hash, retro_time_t* timeout 
 
   request[ sizeof( request ) - 1 ] = 0;
 
-  if ( !http_get( &json, NULL, request, timeout ) )
+  if ( !net_http_get( &json, NULL, request, timeout ) )
   {
     res = cheevos_get_value( json, 0xb4960eecU /* GameID */, game_id, sizeof( game_id ) );
     free( (void*)json );

@@ -86,7 +86,7 @@ ACHIEVEMENTS
 
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../libretro-common/utils/md5.c"
-#include "../http_get.c"
+#include "../net_http_special.c"
 #include "../cheevos.c"
 #endif
 
@@ -735,7 +735,6 @@ NETPLAY
 #include "../netplay.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_http.c"
-#include "../net_http_special.c"
 #include "../tasks/task_http.c"
 #endif
 
