@@ -127,6 +127,8 @@ typedef struct xmb_handle
    float alpha;
    GRuint boxart;
    float boxart_size;
+   char background_file_path[PATH_MAX_LENGTH];
+
 
    struct
    {
@@ -262,6 +264,27 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb,
 static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb);
 static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
       menu_handle_t *menu, const char *themepath);
+
+static void xmb_fill_default_background_path(xmb_handle_t *xmb, char *path, size_t size)
+{
+    char mediapath[PATH_MAX_LENGTH] = {0};
+    char themepath[PATH_MAX_LENGTH] = {0};
+    char iconpath[PATH_MAX_LENGTH]  = {0};
+    settings_t *settings = config_get_ptr();
+    
+    strlcpy(xmb->icon.dir, "png", sizeof(xmb->icon.dir));
+    
+    fill_pathname_join(mediapath, settings->assets_directory,
+                       "xmb", sizeof(mediapath));
+    fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
+    fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
+    fill_pathname_slash(iconpath, sizeof(iconpath));
+    
+    fill_pathname_join(path, iconpath, "bg.png", size);
+    
+    if (*settings->menu.wallpaper)
+        strlcpy(path, settings->menu.wallpaper, size);
+}
 
 static size_t xmb_list_get_selection(void *data)
 {
@@ -844,10 +867,17 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
       }
 
       strlcat(path, ".png", sizeof(path));
-
-      if (path_file_exists(path))
-         rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, path,
-               "cb_menu_wallpaper", 0, 1, true);
+     
+      if (!path_file_exists(path))
+          xmb_fill_default_background_path(xmb, path, sizeof(path));
+       
+       if(strcmp(path, xmb->background_file_path) != 0) {
+           if(path_file_exists(path)) {
+               rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, path,
+                                          "cb_menu_wallpaper", 0, 1, true);
+               strlcpy(xmb->background_file_path, path, sizeof(xmb->background_file_path));
+           }
+       }
    }
 
    end = file_list_get_size(list);
@@ -2275,6 +2305,7 @@ static void xmb_context_reset(void)
       return;
 
    strlcpy(xmb->icon.dir, "png", sizeof(xmb->icon.dir));
+   xmb_fill_default_background_path(xmb, xmb->background_file_path, sizeof(xmb->background_file_path));
 
    fill_pathname_join(mediapath, settings->assets_directory,
          "xmb", sizeof(mediapath));
