@@ -850,16 +850,16 @@ static void zarch_frame(void)
    switch (layout)
    {
       case LAY_HOME:
-         if (zarch_zui_render_sidebar(zui)  == 1)
+         if (zarch_zui_render_sidebar(zui))
             return;
-         if (zarch_zui_render_lay_root(zui) == 1)
+         if (zarch_zui_render_lay_root(zui))
             return;
          break;
       case LAY_SETTINGS:
          zarch_zui_render_lay_settings(zui);
          break;
       case LAY_PICK_CORE:
-         if (zarch_zui_render_sidebar(zui) == 1)
+         if (zarch_zui_render_sidebar(zui))
             return;
          if (zui->pick_supported == 1)
          {
