@@ -4854,7 +4854,7 @@ static bool setting_append_list_input_hotkey_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info,
-         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS),
+         menu_hash_to_str(MENU_LABEL_INPUT_HOTKEY_BINDS_BEGIN),
          parent_group);
 
    parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
@@ -5061,6 +5061,13 @@ static bool setting_append_list_input_options(
    END_SUB_GROUP(list, list_info, parent_group);
 
    START_SUB_GROUP(list, list_info, "Binds", group_info.name, subgroup_info, parent_group);
+
+   CONFIG_ACTION(
+         menu_hash_to_str(MENU_LABEL_INPUT_HOTKEY_BINDS),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS),
+         group_info.name,
+         subgroup_info.name,
+         parent_group);
 
    for (user = 0; user < MAX_USERS; user++)
    {

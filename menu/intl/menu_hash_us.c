@@ -46,6 +46,12 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "deferred_input_settings_list";
       case MENU_LABEL_ACCOUNTS_LIST:
          return "accounts_list";
+      case MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
+         return "deferred_input_hotkey_binds";
+      case MENU_LABEL_INPUT_HOTKEY_BINDS:
+         return "input_hotkey_binds";
+      case MENU_LABEL_INPUT_HOTKEY_BINDS_BEGIN:
+         return "input_hotkey_binds_begin";
       case MENU_LABEL_INPUT_SETTINGS_BEGIN:
          return "input_settings_begin";
       case MENU_LABEL_PLAYLIST_SETTINGS_BEGIN:

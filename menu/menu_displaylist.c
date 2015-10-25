@@ -33,6 +33,7 @@
 #include "../config.features.h"
 #include "../git_version.h"
 #include "../file_ext.h"
+#include "../input/input_common.h"
 
 #ifdef __linux__
 #include "../frontend/drivers/platform_linux.h"
@@ -1478,6 +1479,9 @@ int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info,
       case PARSE_ONLY_UINT:
          precond = ST_UINT;
          break;
+      case PARSE_ONLY_BIND:
+         precond = ST_BIND;
+         break;
       case PARSE_ONLY_BOOL:
          precond = ST_BOOL;
          break;
@@ -1525,6 +1529,10 @@ int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info,
             if (type == ST_UINT)
                break;
             goto loop;
+         case PARSE_ONLY_BIND:
+            if (type == ST_BIND)
+               break;
+            goto loop;
          case PARSE_ONLY_BOOL:
             if (type == ST_BOOL)
                break;
@@ -1554,6 +1562,7 @@ loop:
             if (menu_setting_get_type(setting) == precond)
                time_to_exit = true;
             break;
+         case PARSE_ONLY_BIND:
          case PARSE_ONLY_FLOAT:
          case PARSE_ONLY_BOOL:
          case PARSE_ONLY_UINT:
@@ -2330,6 +2339,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_DATABASE_PLAYLISTS:
       case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
       case DISPLAYLIST_VIDEO_FILTERS:
+      case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
       case DISPLAYLIST_PLAYLIST_SETTINGS_LIST:
       case DISPLAYLIST_AUDIO_FILTERS:
@@ -2483,6 +2493,21 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_CONTENT_HISTORY_SIZE), PARSE_ONLY_UINT, false);
          info->need_push    = true;
          break;
+      case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
+         {
+            unsigned i;
+
+            for (i = 0; i < RARCH_BIND_LIST_END; i++)
+            {
+               const struct input_bind_map* keybind = (const struct input_bind_map*)
+                  &input_config_bind_map[i];
+               ret = menu_displaylist_parse_settings(menu, info,
+                     keybind->base, PARSE_ONLY_BIND, false);
+               (void)ret;
+            }
+         }
+         info->need_push    = true;
+         break;
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
          ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_INPUT_MAX_USERS), PARSE_ONLY_UINT, false);
@@ -2510,6 +2535,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_INPUT_TURBO_PERIOD), PARSE_ONLY_UINT, false);
          ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_INPUT_DUTY_CYCLE), PARSE_ONLY_UINT, false);
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_INPUT_HOTKEY_BINDS), PARSE_ACTION, false);
 
          {
             unsigned user;

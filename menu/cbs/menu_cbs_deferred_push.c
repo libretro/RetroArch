@@ -84,6 +84,11 @@ static int deferred_push_playlist_settings_list(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_PLAYLIST_SETTINGS_LIST);
 }
 
+static int deferred_push_input_hotkey_binds_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST);
+}
+
 static int deferred_push_accounts_cheevos_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST);
@@ -581,6 +586,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *
             break;
          case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_settings_list);
+            break;
+         case MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_hotkey_binds_list);
             break;
          case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_cheevos_list);

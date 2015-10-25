@@ -22,6 +22,8 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_INPUT_HOTKEY_BINDS_BEGIN                                    0x5a56139bU
+
 #define MENU_LABEL_INPUT_SETTINGS                                              0x78b4a7c5U
 
 #define MENU_LABEL_PLAYLIST_SETTINGS_BEGIN                                     0x80a8d2cbU
@@ -188,6 +190,8 @@ extern "C" {
 #define MENU_LABEL_VIDEO_MESSAGE_POS_Y                                         0xa133c369U
 #define MENU_LABEL_VALUE_VIDEO_MESSAGE_POS_Y                                   0x4f2559beU
 
+#define MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST                            0x10b41d97U
+#define MENU_LABEL_INPUT_HOTKEY_BINDS                                          0x1b7ef2d7U
 #define MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS                                    0x1cb39c19U
 
 #define MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS                               0x573b8837U
