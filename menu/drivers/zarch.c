@@ -463,7 +463,8 @@ static bool zarch_zui_button(zui_t *zui, int x1, int y1, const char *label)
    return zarch_zui_button_full(zui, x1, y1, x1 + zarch_zui_strwidth(zui->fb_buf, label, 1.0) + 24, y1 + 64, label);
 }
 
-static bool zarch_zui_list_item(zui_t *zui, int x1, int y1, const char *label, bool selected)
+static bool zarch_zui_list_item(zui_t *zui, int x1, int y1,
+      const char *label, bool selected, const char *entry)
 {
    char title_buf[PATH_MAX_LENGTH];
    unsigned ticker_size;
@@ -489,6 +490,9 @@ static bool zarch_zui_list_item(zui_t *zui, int x1, int y1, const char *label, b
 
    zarch_zui_push_quad(zui, bg, x1, y1, x2, y2);
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 12, y1 + 35, title_buf);
+
+   if (entry)
+      zarch_zui_draw_text(zui, ZUI_FG_NORMAL, x2 - 200, y1 + 35, entry);
 
    return active;
 }
@@ -575,10 +579,12 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
       for (i = zui->recent_dlist_first; i < size; ++i)
       {
          menu_entry_t entry;
+         int                x2 = 12 + zui->width - 290 - 50;
+
          menu_entries_get(i, &entry);
 
          if (zarch_zui_list_item(zui, 0, tabbed->tabline_size + j * 54,
-                  entry.path, zui->entries_selection == i))
+                  entry.path, zui->entries_selection == i, entry.value))
          {
             zui->pending_action_ok.enable      = true;
             zui->pending_action_ok.idx         = i;
@@ -638,7 +644,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
 
       if (zui->load_dlist)
       {
-         if (zarch_zui_list_item(zui, 0, tabbed->tabline_size + 73, " ..", false /* TODO/FIXME */))
+         if (zarch_zui_list_item(zui, 0, tabbed->tabline_size + 73, " ..", false, NULL /* TODO/FIXME */))
          {
             path_basedir(zui->load_cwd);
             if (zui->load_cwd[strlen(zui->load_cwd)-1] == '/'
@@ -695,7 +701,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
                   strncat(label, "/", sizeof(label)-1);
 
                if (zarch_zui_list_item(zui, 0, tabbed->tabline_size + 73 + j * 54,
-                        label, zui->entries_selection == i))
+                        label, zui->entries_selection == i, NULL))
                {
                   if (path_is_directory(path))
                   {
@@ -937,7 +943,7 @@ static void zarch_frame(void)
                      break;
 
                   if (zarch_zui_list_item(zui, 0, 54 + j * 54,
-                           zui->pick_cores[i].display_name, zui->entries_selection == i))
+                           zui->pick_cores[i].display_name, zui->entries_selection == i, NULL))
                   {
                      int ret = zarch_zui_load_content(zui, i);
 
@@ -953,7 +959,7 @@ static void zarch_frame(void)
             }
             else
             {
-               zarch_zui_list_item(zui, 0, 54, "Content unsupported", false /* TODO/FIXME */);
+               zarch_zui_list_item(zui, 0, 54, "Content unsupported", false, NULL /* TODO/FIXME */);
             }
          }
          break;
