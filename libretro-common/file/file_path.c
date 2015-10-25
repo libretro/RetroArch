@@ -35,8 +35,8 @@
 
 #include <file/file_path.h>
 
-#include <compat/strl.h>
 #ifndef __MACH__
+#include <compat/strl.h>
 #include <compat/posix_string.h>
 #endif
 #include <retro_assert.h>
