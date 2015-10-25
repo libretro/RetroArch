@@ -1484,6 +1484,7 @@ void rarch_main_deinit(void)
  **/
 void rarch_playlist_load_content(void *data, unsigned idx)
 {
+   unsigned i;
    const char *path             = NULL;
    const char *core_path        = NULL;
    char *path_check             = NULL;
@@ -1500,19 +1501,15 @@ void rarch_playlist_load_content(void *data, unsigned idx)
          idx, &path, NULL, &core_path, NULL, NULL, NULL);
 
    path_tolower = strdup(path);
-   for (int i = 0; i < strlen(path_tolower); ++i)
-   {
+
+   for (i = 0; i < strlen(path_tolower); ++i)
       path_tolower[i] = tolower(path_tolower[i]);
-   }
+
 
    if (strstr(path_tolower, ".zip"))
-   {
       strstr(path_tolower, ".zip")[4] = '\0';
-   }
    else if (strstr(path_tolower, ".7z"))
-   {
       strstr(path_tolower, ".7z")[3] = '\0';
-   }
 
    path_check = (char *)calloc(strlen(path_tolower) + 1, sizeof(char));
    strncpy(path_check, path, strlen(path_tolower));

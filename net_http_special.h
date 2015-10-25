@@ -18,14 +18,6 @@
 
 #include "libretro.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 int net_http_get(const char **result, size_t *size, const char *url, retro_time_t *timeout);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
