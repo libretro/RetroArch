@@ -216,6 +216,30 @@ static float zarch_zui_strwidth(void *fb_buf, const char *text, float scale)
    return driver->font_osd_driver->get_message_width(fb_buf, text, strlen(text), scale);
 }
 
+enum zarch_zui_input_state
+{
+    MENU_ZARCH_X = 0,
+    MENU_ZARCH_Y,
+    MENU_ZARCH_PRESSED
+};
+
+static int16_t zarch_zui_input_state(enum zarch_zui_input_state state)
+{
+    switch (state)
+    {
+        case MENU_ZARCH_X:
+            break;
+        case MENU_ZARCH_Y:
+            break;
+        case MENU_ZARCH_PRESSED:
+            if (menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON))
+                return 1;
+            break;
+    }
+    
+    return 0;
+}
+
 static bool zarch_zui_check_button_down(zui_t *zui, unsigned id, int x1, int y1, int x2, int y2)
 {
    bool result = false;
@@ -224,7 +248,7 @@ static bool zarch_zui_check_button_down(zui_t *zui, unsigned id, int x1, int y1,
    if (inside)
       zui->item.hot = id;
 
-   if (zui->item.hot == id && menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON))
+   if (zui->item.hot == id && zarch_zui_input_state(MENU_ZARCH_PRESSED))
    {
       result = true;
       zui->item.active = id;
@@ -241,7 +265,7 @@ static bool zarch_zui_check_button_up(zui_t *zui, unsigned id, int x1, int y1, i
    if (inside)
       zui->item.hot = id;
 
-   if (zui->item.active == id && !menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON))
+   if (zui->item.active == id && !zarch_zui_input_state(MENU_ZARCH_PRESSED))
    {
       if (zui->item.hot == id)
          result = true;
@@ -920,7 +944,7 @@ static void zarch_frame(void)
 
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-   if (!menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON))
+   if (!zarch_zui_input_state(MENU_ZARCH_PRESSED))
       zui->item.active = 0;
    else if (zui->item.active == 0)
       zui->item.active = -1;
