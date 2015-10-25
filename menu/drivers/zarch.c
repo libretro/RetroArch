@@ -564,7 +564,7 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
    if (zarch_zui_tab(zui, tabbed, "Recent", (zui->header_selection == 0)))
    {
       size_t    end = menu_entries_get_end();
-      unsigned size = min(zui->height/30-2, end);
+      unsigned size = menu_entries_get_size();
       unsigned i, j = 0;
 
       zui->recent_dlist_first += zui->mouse.wheel;
