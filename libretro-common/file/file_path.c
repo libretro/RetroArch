@@ -41,10 +41,6 @@
 #include <retro_stat.h>
 #include <retro_miscellaneous.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * path_mkdir:
  * @dir                : directory
@@ -643,7 +639,3 @@ void fill_short_pathname_representation(char* out_rep,
    else
       strlcpy(out_rep, path_short, size);
 }
-
-#ifdef __cplusplus
-}
-#endif
