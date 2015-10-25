@@ -72,6 +72,10 @@
 #include <retro_miscellaneous.h>
 #include <boolean.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum stat_mode
 {
    IS_DIRECTORY = 0,
@@ -211,3 +215,7 @@ bool mkdir_norecurse(const char *dir)
       printf("mkdir(%s) error: %s.\n", dir, strerror(errno));
    return ret == 0;
 }
+
+#ifdef __cplusplus
+}
+#endif
