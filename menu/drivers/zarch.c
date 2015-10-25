@@ -108,6 +108,7 @@ typedef struct zarch_handle
    gfx_font_raster_block_t tmp_block;
    unsigned hash;
    bool time_to_exit;
+   bool time_to_quit;
 
    struct {
       bool enable;
@@ -725,7 +726,7 @@ static int zarch_zui_render_lay_root(zui_t *zui)
    return 0;
 }
 
-static void zarch_zui_render_sidebar(zui_t *zui)
+static int zarch_zui_render_sidebar(zui_t *zui)
 {
    int width, x1, y1;
    static zui_tabbed_t tabbed = {~0};
@@ -744,7 +745,12 @@ static void zarch_zui_render_sidebar(zui_t *zui)
    y1 += 64;
 
    if (zarch_zui_button_full(zui, x1, y1, x1 + width, y1 + 64, "Exit"))
-      exit(0);
+   {
+      zui->time_to_quit = true;
+      return 1;
+   }
+
+   return 0;
 }
 
 static int zarch_zui_load_content(zui_t *zui, unsigned i)
@@ -841,7 +847,8 @@ static void zarch_frame(void)
    switch (layout)
    {
       case LAY_HOME:
-         zarch_zui_render_sidebar(zui);
+         if (zarch_zui_render_sidebar(zui)  == 1)
+            return;
          if (zarch_zui_render_lay_root(zui) == 1)
             return;
          break;
@@ -849,7 +856,8 @@ static void zarch_frame(void)
          zarch_zui_render_lay_settings(zui);
          break;
       case LAY_PICK_CORE:
-         zarch_zui_render_sidebar(zui);
+         if (zarch_zui_render_sidebar(zui) == 1)
+            return;
          if (zui->pick_supported == 1)
          {
             int ret = zarch_zui_load_content(zui, 0);
@@ -1199,6 +1207,13 @@ static int zarch_iterate(enum menu_action action)
    {
       zui->time_to_exit = false;
       return -1;
+   }
+   if (zui->time_to_quit)
+   {
+      zui->time_to_quit = false;
+      if (!event_command(EVENT_CMD_QUIT))
+         return -1;
+      return 0;
    }
 
    return ret;
