@@ -43,6 +43,10 @@ extern "C" {
 #define CORE_PREFIX(s) s
 #endif
 
+#ifndef PIX_FMT_RGB32
+#define PIX_FMT_RGB32 AV_PIX_FMT_RGB32
+#endif
+
 static bool reset_triggered;
 static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 {

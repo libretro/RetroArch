@@ -63,6 +63,26 @@ extern "C" {
 #include "../../audio/audio_utils.h"
 #include "../record_driver.h"
 
+#ifndef PIX_FMT_RGB32
+#define PIX_FMT_RGB32 AV_PIX_FMT_RGB32
+#endif
+
+#ifndef PIX_FMT_BGR24
+#define PIX_FMT_BGR24 AV_PIX_FMT_BGR24
+#endif
+
+#ifndef PIX_FMT_RGB565
+#define PIX_FMT_RGB565 AV_PIX_FMT_RGB565
+#endif
+
+#ifndef PIX_FMT_NONE
+#define PIX_FMT_NONE AV_PIX_FMT_NONE
+#endif
+
+#ifndef PixelFormat
+#define PixelFormat AVPixelFormat
+#endif
+
 #if LIBAVUTIL_VERSION_INT <= AV_VERSION_INT(52, 9, 0)
 #define av_frame_alloc avcodec_alloc_frame
 #define av_frame_free avcodec_free_frame
