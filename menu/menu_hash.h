@@ -24,6 +24,9 @@ extern "C" {
 
 #define MENU_LABEL_INPUT_SETTINGS                                              0x78b4a7c5U
 
+#define MENU_LABEL_PLAYLIST_SETTINGS_BEGIN                                     0x80a8d2cbU
+#define MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST                             0x9518e0c7U
+
 #define MENU_LABEL_INPUT_SETTINGS_BEGIN                                        0xddee308bU
 
 #define MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST                                0x050bec60U
@@ -813,7 +816,7 @@ extern "C" {
 #define MENU_LABEL_UI_SETTINGS                                                 0xf8da6ef4U
 #define MENU_LABEL_VALUE_UI_SETTINGS                                           0x76ebdc06U
 #define MENU_LABEL_PATCH_SETTINGS                                              0xa78b0986U
-#define MENU_LABEL_PLAYLIST_SETTINGS                                           0x4d276288U
+#define MENU_LABEL_PLAYLIST_SETTINGS                                           0xdb3e0e07U
 #define MENU_LABEL_VALUE_PLAYLIST_SETTINGS                                     0x4d276288U
 #define MENU_LABEL_CORE_UPDATER_SETTINGS                                       0x124ad454U
 #define MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS                                 0x124ad454U

@@ -3179,6 +3179,13 @@ static bool setting_append_list_main_menu_options(
          subgroup_info.name,
          parent_group);
 
+   CONFIG_ACTION(
+         menu_hash_to_str(MENU_LABEL_PLAYLIST_SETTINGS),
+         menu_hash_to_str(MENU_LABEL_VALUE_PLAYLIST_SETTINGS),
+         group_info.name,
+         subgroup_info.name,
+         parent_group);
+
    for (user = 0; user < MAX_USERS; user++)
       setting_append_list_input_player_options(list, list_info, parent_group, user);
 
@@ -5962,7 +5969,7 @@ static bool setting_append_list_playlist_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info,
-         menu_hash_to_str(MENU_LABEL_VALUE_PLAYLIST_SETTINGS),
+         menu_hash_to_str(MENU_LABEL_PLAYLIST_SETTINGS_BEGIN),
          parent_group);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 

@@ -48,6 +48,12 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "accounts_list";
       case MENU_LABEL_INPUT_SETTINGS_BEGIN:
          return "input_settings_begin";
+      case MENU_LABEL_PLAYLIST_SETTINGS_BEGIN:
+         return "playlist_settings_begin";
+      case MENU_LABEL_PLAYLIST_SETTINGS:
+         return "playlist_settings";
+      case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
+         return "deferred_playlist_settings";
       case MENU_LABEL_INPUT_SETTINGS:
          return "input_settings";
       case MENU_LABEL_DEBUG_PANEL_ENABLE:
@@ -1513,7 +1519,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_NETWORK_SETTINGS:
          return "Network";
       case MENU_LABEL_VALUE_PLAYLIST_SETTINGS:
-         return "Playlist";
+         return "Playlists";
       case MENU_LABEL_VALUE_USER_SETTINGS:
          return "User";
       case MENU_LABEL_VALUE_DIRECTORY_SETTINGS:

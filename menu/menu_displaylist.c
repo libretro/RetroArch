@@ -2477,6 +2477,11 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          info->need_push    = true;
          break;
       case DISPLAYLIST_PLAYLIST_SETTINGS_LIST:
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_HISTORY_LIST_ENABLE), PARSE_ONLY_BOOL, false);
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_CONTENT_HISTORY_SIZE), PARSE_ONLY_UINT, false);
+         info->need_push    = true;
          break;
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
          ret = menu_displaylist_parse_settings(menu, info,
@@ -2562,7 +2567,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_NETWORK_SETTINGS),   PARSE_ONLY_GROUP, false);
          ret = menu_displaylist_parse_settings(menu, info, 
-               menu_hash_to_str(MENU_LABEL_VALUE_PLAYLIST_SETTINGS),   PARSE_ONLY_GROUP, false);
+               menu_hash_to_str(MENU_LABEL_PLAYLIST_SETTINGS),   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings(menu, info, 
                menu_hash_to_str(MENU_LABEL_VALUE_USER_SETTINGS),   PARSE_ONLY_GROUP, false);
          ret = menu_displaylist_parse_settings(menu, info, 
