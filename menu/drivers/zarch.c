@@ -42,25 +42,25 @@
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
 
-const GLfloat ZUI_NORMAL[] = {
+const GRfloat ZUI_NORMAL[] = {
    1, 1, 1, 1,
    1, 1, 1, 1,
    1, 1, 1, 1,
    1, 1, 1, 1,
 };
-const GLfloat ZUI_HILITE[] = {
+const GRfloat ZUI_HILITE[] = {
    1, 0, 0, 1,
    1, 0, 0, 1,
    1, 0, 0, 1,
    1, 0, 0, 1,
 };
-const GLfloat ZUI_PRESS[] = {
+const GRfloat ZUI_PRESS[] = {
    0, 1, 0, 1,
    0, 1, 0, 1,
    0, 1, 0, 1,
    0, 1, 0, 1,
 };
-const GLfloat ZUI_BARBG[] = {
+const GRfloat ZUI_BARBG[] = {
    0, 0, 1, 1,
    0, 0, 1, 1,
    0, 0, 1, 1,
@@ -68,26 +68,26 @@ const GLfloat ZUI_BARBG[] = {
 };
 
 const uint32_t ZUI_FG_NORMAL = ~0;
-const GLfloat ZUI_BG_PANEL[] = {
+const GRfloat ZUI_BG_PANEL[] = {
    0, 0, 0, 0.25,
    0, 0, 0, 0.25,
    0, 0, 0, 0.25,
    0, 0, 0, 0.25,
 };
-const GLfloat ZUI_BG_SCREEN[] = {
+const GRfloat ZUI_BG_SCREEN[] = {
    0.07, 0.19, 0.26, 0.75,
    0.07, 0.19, 0.26, 0.75,
    0.15, 0.31, 0.47, 0.75,
    0.15, 0.31, 0.47, 0.75,
 };
-const GLfloat ZUI_BG_HILITE[] = {
+const GRfloat ZUI_BG_HILITE[] = {
    0.22, 0.60, 0.74, 1,
    0.22, 0.60, 0.74, 1,
    0.22, 0.60, 0.74, 1,
    0.22, 0.60, 0.74, 1,
 };
 
-const GLfloat ZUI_BG_PAD_HILITE[] = {
+const GRfloat ZUI_BG_PAD_HILITE[] = {
    0.30, 0.76, 0.93, 1,
    0.30, 0.76, 0.93, 1,
    0.30, 0.76, 0.93, 1,
@@ -284,12 +284,12 @@ static void zarch_zui_draw_text(zui_t *zui, uint32_t color, int x, int y, const 
    video_driver_set_osd_msg(text, &params, zui->fb_buf);
 }
 
-static void zarch_zui_push_quad(zui_t *zui, const GLfloat *colors, int x1, int y1,
+static void zarch_zui_push_quad(zui_t *zui, const GRfloat *colors, int x1, int y1,
       int x2, int y2)
 {
    gfx_coords_t coords;
-   GLfloat vertex[8];
-   GLfloat tex_coord[8];
+   GRfloat vertex[8];
+   GRfloat tex_coord[8];
 
    tex_coord[0] = 0;
    tex_coord[1] = 1;
@@ -384,8 +384,8 @@ static void zarch_zui_snow(zui_t *zui)
    for (i = 0; i < NPARTICLES; ++i)
    {
       unsigned j;
-      GLfloat alpha;
-      GLfloat colors[16];
+      GRfloat alpha;
+      GRfloat colors[16];
       part_t *p = &particles[i];
 
       if (!p->alive)
@@ -410,7 +410,7 @@ static bool zarch_zui_button_full(zui_t *zui, int x1, int y1, int x2, int y2, co
 {
    unsigned       id = zarch_zui_hash(zui, label);
    bool       active = zarch_zui_check_button_up(zui, id, x1, y1, x2, y2);
-   const GLfloat *bg = ZUI_BG_PANEL;
+   const GRfloat *bg = ZUI_BG_PANEL;
 
    if (zui->item.active == id || zui->item.hot == id)
       bg = ZUI_BG_HILITE;
@@ -434,7 +434,7 @@ static bool zarch_zui_list_item(zui_t *zui, int x1, int y1, const char *label, b
    int                x2 = x1 + zui->width - 290 - 40;
    int                y2 = y1 + 50;
    bool           active = zarch_zui_check_button_up(zui, id, x1, y1, x2, y2);
-   const GLfloat     *bg = ZUI_BG_PANEL;
+   const GRfloat     *bg = ZUI_BG_PANEL;
    uint64_t *frame_count = video_driver_get_frame_count();
 
    if (zui->item.active == id || zui->item.hot == id)
@@ -470,7 +470,7 @@ static bool zarch_zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label, bool
    int x1, y1, x2, y2;
    unsigned       id = zarch_zui_hash(zui, label);
    int         width = tab->tab_width;
-   const GLfloat *bg = ZUI_BG_PANEL;
+   const GRfloat *bg = ZUI_BG_PANEL;
 
    if (!width)
       width          = zarch_zui_strwidth(zui->fb_buf, label, 1.0) + 24;
