@@ -2091,7 +2091,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
             menu_hash_to_str(MENU_LABEL_USE_THIS_DIRECTORY),
             MENU_FILE_USE_DIRECTORY, 0 ,0);
 
-   if (!horizontal)
+   if (!horizontal && hash_label != MENU_LABEL_CORE_LIST)
    {
       char out_dir[PATH_MAX_LENGTH];
       fill_pathname_parent_dir(out_dir, info->path, sizeof(out_dir));
