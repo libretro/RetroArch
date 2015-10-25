@@ -1971,6 +1971,9 @@ static void xmb_free(void *data)
 
 static void xmb_context_bg_destroy(xmb_handle_t *xmb)
 {
+   if (!xmb)
+      return;
+
    video_texture_unload((uintptr_t*)&xmb->textures.bg.id);
 }
 
