@@ -166,7 +166,7 @@ static int action_right_mainmenu(unsigned type, const char *label,
    {
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
       if (menu_driver_list_get_selection() != (menu_driver_list_get_size(MENU_LIST_HORIZONTAL) + 3)
-         || settings->menu.navigation.wraparound.horizontal_enable)
+         || settings->menu.navigation.wraparound.enable)
          push_list = 1;
    }
    else

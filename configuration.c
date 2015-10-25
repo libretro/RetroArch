@@ -582,8 +582,7 @@ static void config_set_defaults(void)
    settings->menu.dpi.override_value           = menu_dpi_override_value;
 
    settings->menu.navigation.wraparound.setting_enable                  = true;
-   settings->menu.navigation.wraparound.horizontal_enable               = true;
-   settings->menu.navigation.wraparound.vertical_enable                 = true;
+   settings->menu.navigation.wraparound.enable                          = true;
    settings->menu.navigation.browser.filter.supported_extensions_enable = true;
 #endif
 
@@ -1279,10 +1278,8 @@ static bool config_load_file(const char *path, bool set_defaults)
          "menu_dynamic_wallpaper_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.boxart_enable,
          "menu_boxart_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.wraparound.horizontal_enable,
-         "menu_navigation_wraparound_horizontal_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.wraparound.vertical_enable,
-         "menu_navigation_wraparound_vertical_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.wraparound.enable,
+         "menu_navigation_wraparound_enable");
    CONFIG_GET_BOOL_BASE(conf, settings,
          menu.navigation.browser.filter.supported_extensions_enable,
          "menu_navigation_browser_filter_supported_extensions_enable");
@@ -2634,10 +2631,8 @@ bool config_save_file(const char *path)
          settings->menu_config_directory : "default");
    config_set_bool(conf, "rgui_show_start_screen",
          settings->menu_show_start_screen);
-   config_set_bool(conf, "menu_navigation_wraparound_horizontal_enable",
-         settings->menu.navigation.wraparound.horizontal_enable);
-   config_set_bool(conf, "menu_navigation_wraparound_vertical_enable",
-         settings->menu.navigation.wraparound.vertical_enable);
+   config_set_bool(conf, "menu_navigation_wraparound_enable",
+         settings->menu.navigation.wraparound.enable);
    config_set_bool(conf,
          "menu_navigation_browser_filter_supported_extensions_enable",
          settings->menu.navigation.browser.filter.supported_extensions_enable);

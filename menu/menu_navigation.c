@@ -97,7 +97,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             }
             else
             {
-               if (settings->menu.navigation.wraparound.vertical_enable)
+               if (settings->menu.navigation.wraparound.enable)
                {
                   bool pending_push = false;
                   menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
@@ -129,7 +129,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             else
             {
                idx  = menu_list_size - 1;
-               if (!settings->menu.navigation.wraparound.vertical_enable)
+               if (!settings->menu.navigation.wraparound.enable)
                   idx = 0;
             }
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);

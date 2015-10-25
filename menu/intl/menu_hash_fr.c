@@ -498,10 +498,8 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "URL du buildbot des coeurs";
       case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "URL du buildbot des assets";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "Saut-retour horizontal";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "Saut-retour vertical";
+      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND:
+         return "Saut-retour";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "Filtrer par extentions supportées";
       case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:

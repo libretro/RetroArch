@@ -141,7 +141,7 @@ static int action_left_mainmenu(unsigned type, const char *label,
    {
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
       if (menu_driver_list_get_selection() != 0
-         || settings->menu.navigation.wraparound.horizontal_enable)
+         || settings->menu.navigation.wraparound.enable)
          push_list = 1;
    }
    else

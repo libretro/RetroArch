@@ -493,10 +493,8 @@ const char *menu_hash_to_str_pl(uint32_t hash)
          return "URL rdzeni buildbota";
       case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "URL assetów buildbota";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "Zawijanie nawigacji poziomo";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "Zawijanie nawigacji pionowo";
+      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND:
+         return "Zawijanie nawigacji";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "Filtruj wed³ug wspieranych rozszerzeñ";
       case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:

@@ -481,10 +481,8 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "URL Buildbot de Cores";
       case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "URL Buildbot de Recursos (Assets)";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "Navegação Circular Horizontal";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "Navegação Circular Vertical";
+      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND:
+         return "Navegação Circular";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "Filtrar por Extensões Suportadas";
       case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:

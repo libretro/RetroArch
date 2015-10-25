@@ -552,10 +552,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "core_updater_buildbot_url";
       case MENU_LABEL_BUILDBOT_ASSETS_URL:
          return "buildbot_assets_url";
-      case MENU_LABEL_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "menu_navigation_wraparound_vertical_enable";
-      case MENU_LABEL_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "menu_navigation_wraparound_horizontal_enable";
+      case MENU_LABEL_NAVIGATION_WRAPAROUND:
+         return "menu_navigation_wraparound_enable";
       case MENU_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "menu_navigation_browser_filter_supported_extensions_enable";
       case MENU_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
@@ -1198,10 +1196,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Buildbot Cores URL";
       case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "Buildbot Assets URL";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "Navigation Wrap-Around Horizontal";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "Navigation Wrap-Around Vertical";
+      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND:
+         return "Navigation Wrap-Around";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "Filter by supported extensions";
       case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:

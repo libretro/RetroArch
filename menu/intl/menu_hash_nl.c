@@ -527,10 +527,8 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "Buildbot Cores URL";
       case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "Buildbot Assets URL";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "Navigation Wrap-Around Horizontaal";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "Navigation Wrap-Around Verticaal";
+      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND:
+         return "Navigatie Wrap-Around";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "Filter op ondersteunde extensies";
       case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:

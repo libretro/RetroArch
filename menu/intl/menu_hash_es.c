@@ -540,10 +540,8 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "URL de núcleos de Buildbot";
       case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "URL de recursos de Buildbot";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "Seguir navegación: horizontalmente";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "Seguir navegación: verticalmente";
+      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND:
+         return "Seguir navegación";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "Filtrar por extensiones compatibles";
       case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:

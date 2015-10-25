@@ -5318,23 +5318,9 @@ static bool setting_append_list_menu_options(
    START_SUB_GROUP(list, list_info, "Navigation", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
-         settings->menu.navigation.wraparound.horizontal_enable,
-         menu_hash_to_str(MENU_LABEL_NAVIGATION_WRAPAROUND_HORIZONTAL),
-         menu_hash_to_str(MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL),
-         true,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-   CONFIG_BOOL(
-         settings->menu.navigation.wraparound.vertical_enable,
-         menu_hash_to_str(MENU_LABEL_NAVIGATION_WRAPAROUND_VERTICAL),
-         menu_hash_to_str(MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL),
+         settings->menu.navigation.wraparound.enable,
+         menu_hash_to_str(MENU_LABEL_NAVIGATION_WRAPAROUND),
+         menu_hash_to_str(MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND),
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),

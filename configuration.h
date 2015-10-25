@@ -132,8 +132,7 @@ typedef struct settings
       {
          struct
          {
-            bool horizontal_enable;
-            bool vertical_enable;
+            bool enable;
             bool setting_enable;
          } wraparound;
          struct
