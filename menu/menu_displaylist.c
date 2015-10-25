@@ -2331,6 +2331,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
       case DISPLAYLIST_VIDEO_FILTERS:
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
+      case DISPLAYLIST_PLAYLIST_SETTINGS_LIST:
       case DISPLAYLIST_AUDIO_FILTERS:
       case DISPLAYLIST_IMAGES:
       case DISPLAYLIST_OVERLAYS:
@@ -2474,6 +2475,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_QUIT_RETROARCH), PARSE_ACTION, false);
 #endif
          info->need_push    = true;
+         break;
+      case DISPLAYLIST_PLAYLIST_SETTINGS_LIST:
          break;
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
          ret = menu_displaylist_parse_settings(menu, info,
