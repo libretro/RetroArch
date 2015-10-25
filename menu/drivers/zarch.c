@@ -221,7 +221,7 @@ enum zarch_zui_input_state
     MENU_ZARCH_MOUSE_X = 0,
     MENU_ZARCH_MOUSE_Y,
     MENU_POINTER_ZARCH_X,
-    MENU_ZARCH_POINTER_Y,
+    MENU_POINTER_ZARCH_Y,
     MENU_ZARCH_PRESSED
 };
 
@@ -233,11 +233,13 @@ static int16_t zarch_zui_input_state(enum zarch_zui_input_state state)
             return menu_input_mouse_state(MENU_MOUSE_X_AXIS);
         case MENU_ZARCH_MOUSE_Y:
             return menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+        case MENU_POINTER_ZARCH_X:
+            return menu_input_pointer_state(MENU_POINTER_X_AXIS);
+        case MENU_POINTER_ZARCH_Y:
+            return menu_input_pointer_state(MENU_POINTER_Y_AXIS);
         case MENU_ZARCH_PRESSED:
             if (menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON) || menu_input_pointer_state(MENU_POINTER_PRESSED))
                 return 1;
-            break;
-        default:
             break;
     }
     
