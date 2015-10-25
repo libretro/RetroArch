@@ -143,6 +143,10 @@ typedef struct zarch_handle
       GRuint white;
    } textures;
 
+   /* LAY_ROOT's "Recent" */
+
+   int  recent_dlist_first;
+
    /* LAY_PICK_CORE */
    int pick_first;
    char pick_content[PATH_MAX_LENGTH];
@@ -557,20 +561,31 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
    {
       size_t    end = menu_entries_get_end();
       unsigned size = min(zui->height/30-2, end);
-      unsigned    i = menu_entries_get_start();
+      unsigned i, j = 0;
 
-      for (; i < size; ++i)
+      zui->recent_dlist_first += zui->mouse.wheel;
+
+      if (zui->recent_dlist_first < 0)
+         zui->recent_dlist_first = 0;
+      else if (zui->recent_dlist_first > size - 5)
+         zui->recent_dlist_first = size - 5;
+
+      zui->recent_dlist_first = min(max(zui->recent_dlist_first, 0), size - 5);
+
+      for (i = zui->recent_dlist_first; i < size; ++i)
       {
          menu_entry_t entry;
          menu_entries_get(i, &entry);
 
-         if (zarch_zui_list_item(zui, 0, tabbed->tabline_size + i * 54,
+         if (zarch_zui_list_item(zui, 0, tabbed->tabline_size + j * 54,
                   entry.path, zui->entries_selection == i))
          {
             zui->pending_action_ok.enable      = true;
             zui->pending_action_ok.idx         = i;
             return 1;
          }
+
+         j++;
       }
    }
 
