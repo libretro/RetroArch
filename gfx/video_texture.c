@@ -122,9 +122,18 @@ unsigned video_texture_load(void *data,
    return video_texture_png_load(data, type, filter_type);
 }
 
-void video_texture_unload(uintptr_t *id)
+#ifdef HAVE_OPENGL
+static void video_texture_gl_unload(uintptr_t *id)
 {
    if (id)
       glDeleteTextures(1, (const GLuint*)id);
    *id = 0;
+}
+#endif
+
+void video_texture_unload(uintptr_t *id)
+{
+#ifdef HAVE_OPENGL
+   video_texture_gl_unload(id);
+#endif
 }
