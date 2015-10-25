@@ -443,8 +443,6 @@ static bool zarch_zui_list_item(zui_t *zui, int x1, int y1, const char *label, b
    else if (selected)
       bg = ZUI_BG_PAD_HILITE;
 
-   zarch_zui_push_quad(zui, bg, x1, y1, x2, y2);
-
    ticker_size = x2 / 14;
 
    menu_animation_ticker_str(title_buf,
@@ -453,6 +451,7 @@ static bool zarch_zui_list_item(zui_t *zui, int x1, int y1, const char *label, b
          label,
          (bg == ZUI_BG_HILITE || bg == ZUI_BG_PAD_HILITE));
 
+   zarch_zui_push_quad(zui, bg, x1, y1, x2, y2);
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 12, y1 + 35, title_buf);
 
    return active;
@@ -1126,6 +1125,7 @@ static void zarch_context_reset(void)
 static int zarch_iterate(enum menu_action action)
 {
    int ret = 0;
+   size_t entries_selection = 0;
    menu_entry_t entry;
    zui_t *zui           = NULL;
    static ssize_t header_selection_last = 0;
@@ -1159,54 +1159,59 @@ static int zarch_iterate(enum menu_action action)
    {
       menu_entry_get(&entry, zui->pending_action_ok.idx, NULL, false);
       zui->pending_action_ok.enable = false;
-      action = MENU_ACTION_OK;
+      
+      act               = MENU_ACTION_OK;
+      entries_selection = zui->pending_action_ok.idx;
+      zui->pending_action_ok.idx = 0;
    }
-
-   switch (act)
+   else
    {
-      case MENU_ACTION_UP:
-         if (zui->entries_selection == 0)
-         {
-            zui->header_selection = header_selection_last;
-            perform_action = false;
+      switch (act)
+      {
+         case MENU_ACTION_UP:
+            if (zui->entries_selection == 0)
+            {
+               zui->header_selection = header_selection_last;
+               perform_action = false;
+            }
             break;
-         }
-      case MENU_ACTION_DOWN:
-         if (zui->header_selection != -1)
-         {
-            header_selection_last  = zui->header_selection;
-            zui->header_selection  = -1;
-            zui->entries_selection = 0;
-            perform_action = false;
-         }
-         break;
-      case MENU_ACTION_LEFT:
-         if (zui->header_selection > 0)
-         {
-            zui->header_selection--;
-            zui->entries_selection = 0;
-            perform_action = false;
-         }
-         break;
-      case MENU_ACTION_RIGHT:
-         if (zui->header_selection > -1 && 
-               zui->header_selection < (ZUI_MAX_MAINMENU_TABS-1))
-         {
-            zui->header_selection++;
-            zui->entries_selection = 0;
-            perform_action = false;
-         }
-         break;
-      default:
-         break;
+         case MENU_ACTION_DOWN:
+            if (zui->header_selection != -1)
+            {
+               header_selection_last  = zui->header_selection;
+               zui->header_selection  = -1;
+               zui->entries_selection = 0;
+               perform_action = false;
+            }
+            break;
+         case MENU_ACTION_LEFT:
+            if (zui->header_selection > 0)
+            {
+               zui->header_selection--;
+               zui->entries_selection = 0;
+               perform_action = false;
+            }
+            break;
+         case MENU_ACTION_RIGHT:
+            if (zui->header_selection > -1 && 
+                  zui->header_selection < (ZUI_MAX_MAINMENU_TABS-1))
+            {
+               zui->header_selection++;
+               zui->entries_selection = 0;
+               perform_action = false;
+            }
+            break;
+         default:
+            break;
+      }
+      entries_selection = zui->entries_selection;
    }
 
    if (zui->header_selection != -1)
       perform_action = false;
 
    if (perform_action)
-      ret = menu_entry_action(&entry, zui->entries_selection, act);
-
+      ret = menu_entry_action(&entry, entries_selection, act);
 
    if (zui->time_to_exit)
    {
