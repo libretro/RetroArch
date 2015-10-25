@@ -948,7 +948,7 @@ static void zarch_frame(void)
 
 static void *zarch_init(void)
 {
-   int tmpi;
+   int unused;
    zui_t *zui                              = NULL;
    const video_driver_t *video_driver      = NULL;
    menu_handle_t                     *menu = NULL;
@@ -980,11 +980,13 @@ static void *zarch_init(void)
 
    zui                  = (zui_t*)menu->userdata;
 
-   tmpi = 1000;
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &tmpi);
+   unused = 1000;
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &unused);
 
-   tmpi = 28;
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE, &tmpi);
+   unused = 28;
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE, &unused);
+
+   (void)unused;
 
    zui->header_height  = 1000; /* dpi / 3; */
    zui->font_size       = 28;
