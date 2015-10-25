@@ -1023,14 +1023,8 @@ static void zarch_free(void *data)
 
 static void zarch_context_bg_destroy(zui_t *zarch)
 {
-   if (zarch->textures.bg.id)
-      glDeleteTextures(1, (const GLuint*)&zarch->textures.bg.id);
-
-   if (zarch->textures.white)
-      glDeleteTextures(1, (const GLuint*)&zarch->textures.white);
-
-   zarch->textures.bg.id = 0;
-   zarch->textures.white = 0;
+   video_texture_unload((uintptr_t*)&zarch->textures.bg.id);
+   video_texture_unload((uintptr_t*)&zarch->textures.white);
 }
 
 static void zarch_context_destroy(void)

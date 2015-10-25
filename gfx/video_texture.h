@@ -33,6 +33,8 @@ unsigned video_texture_load(void *data,
       enum texture_backend_type type,
       enum texture_filter_type  filter_type);
 
+void video_texture_unload(uintptr_t *id);
+
 #ifdef __cplusplus
 }
 #endif

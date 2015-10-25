@@ -680,16 +680,11 @@ static void glui_free(void *data)
 
 static void glui_context_bg_destroy(glui_handle_t *glui)
 {
-   if (glui)
-   {
-      if (glui->textures.bg.id)
-         glDeleteTextures(1, (const GLuint*)&glui->textures.bg.id);
-      if (glui->textures.white)
-         glDeleteTextures(1, (const GLuint*)&glui->textures.white);
+   if (!glui)
+      return;
 
-      glui->textures.bg.id = 0;
-      glui->textures.white = 0;
-   }
+   video_texture_unload((uintptr_t*)&glui->textures.bg.id);
+   video_texture_unload((uintptr_t*)&glui->textures.white);
 }
 
 static void glui_context_destroy(void)
