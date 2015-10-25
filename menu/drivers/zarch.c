@@ -218,8 +218,10 @@ static float zarch_zui_strwidth(void *fb_buf, const char *text, float scale)
 
 enum zarch_zui_input_state
 {
-    MENU_ZARCH_X = 0,
-    MENU_ZARCH_Y,
+    MENU_ZARCH_MOUSE_X = 0,
+    MENU_ZARCH_MOUSE_Y,
+    MENU_POINTER_ZARCH_X,
+    MENU_ZARCH_POINTER_Y,
     MENU_ZARCH_PRESSED
 };
 
@@ -227,13 +229,15 @@ static int16_t zarch_zui_input_state(enum zarch_zui_input_state state)
 {
     switch (state)
     {
-        case MENU_ZARCH_X:
-            break;
-        case MENU_ZARCH_Y:
-            break;
+        case MENU_ZARCH_MOUSE_X:
+            return menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+        case MENU_ZARCH_MOUSE_Y:
+            return menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
         case MENU_ZARCH_PRESSED:
             if (menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON) || menu_input_pointer_state(MENU_POINTER_PRESSED))
                 return 1;
+            break;
+        default:
             break;
     }
     
@@ -381,7 +385,7 @@ static void zarch_zui_snow(zui_t *zui)
 
       if (p->alive)
       {
-         int16_t mouse_x  = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+         int16_t mouse_x  = zarch_zui_input_state(MENU_ZARCH_MOUSE_X);
 
          p->y            += p->yspeed;
          p->x            += zarch_zui_scalef(mouse_x, 0, zui->width, -0.3, 0.3) + p->xspeed;
@@ -942,7 +946,8 @@ static void zarch_frame(void)
    gl                   = (gl_t*)video_driver_get_ptr(NULL);
 
    if (settings->menu.mouse.enable)
-      zarch_zui_draw_cursor(gl, menu_input_mouse_state(MENU_MOUSE_X_AXIS), menu_input_mouse_state(MENU_MOUSE_Y_AXIS));
+      zarch_zui_draw_cursor(gl, zarch_zui_input_state(MENU_ZARCH_MOUSE_X), zarch_zui_input_state(MENU_ZARCH_MOUSE_Y));
+         
 
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
