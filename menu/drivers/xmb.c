@@ -2441,7 +2441,6 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
    size_t stack_size, list_size, selection;
    xmb_handle_t      *xmb = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
-   settings_t   *settings = config_get_ptr();
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
 
