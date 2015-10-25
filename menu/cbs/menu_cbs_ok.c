@@ -244,7 +244,7 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_PARENT_DIRECTORY_PUSH:
          {
-            char parent_dir[PATH_MAX];
+            char parent_dir[PATH_MAX_LENGTH];
 
             fill_pathname_parent_dir(parent_dir, action_path, sizeof(parent_dir));
             fill_pathname_parent_dir(parent_dir, parent_dir, sizeof(parent_dir));
