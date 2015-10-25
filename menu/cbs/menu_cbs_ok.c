@@ -242,6 +242,19 @@ int generic_action_ok_displaylist_push(const char *path,
          strlcpy(menu->scratch_buf, path, sizeof(menu->scratch_buf));
          strlcpy(menu->scratch2_buf, menu_path, sizeof(menu->scratch2_buf));
          break;
+      case ACTION_OK_DL_PARENT_DIRECTORY_PUSH:
+         {
+            char parent_dir[PATH_MAX];
+
+            fill_pathname_parent_dir(parent_dir, action_path, sizeof(parent_dir));
+            fill_pathname_parent_dir(parent_dir, parent_dir, sizeof(parent_dir));
+
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_path          = parent_dir;
+            info_label         = menu_label;
+         }
+         break;
       case ACTION_OK_DL_DIRECTORY_PUSH:
          info.type          = type;
          info.directory_ptr = idx;
@@ -1388,6 +1401,13 @@ static int action_ok_shader_parameters(const char *path,
          entry_idx, ACTION_OK_DL_SHADER_PARAMETERS);
 }
 
+int action_ok_parent_directory_push(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_PARENT_DIRECTORY_PUSH);
+}
+
 int action_ok_directory_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2089,6 +2109,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_FILE_CONFIG:
             BIND_ACTION_OK(cbs, action_ok_config_load);
+            break;
+         case MENU_FILE_PARENT_DIRECTORY:
+            BIND_ACTION_OK(cbs, action_ok_parent_directory_push);
             break;
          case MENU_FILE_DIRECTORY:
             BIND_ACTION_OK(cbs, action_ok_directory_push);

@@ -735,6 +735,19 @@ static void menu_action_setting_disp_set_label_menu_file_directory(
          path, "(DIR)", s2, len2);
 }
 
+static void menu_action_setting_disp_set_label_menu_file_parent_directory(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   menu_action_setting_generic_disp_set_label(w, s, len,
+         path, NULL, s2, len2);
+}
+
 static void menu_action_setting_disp_set_label_menu_file_carchive(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1093,6 +1106,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          case MENU_FILE_DIRECTORY:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_directory);
+            break;
+         case MENU_FILE_PARENT_DIRECTORY:
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_menu_file_parent_directory);
             break;
          case MENU_FILE_CARCHIVE:
             BIND_ACTION_GET_VALUE(cbs,

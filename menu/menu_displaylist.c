@@ -2082,6 +2082,17 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
             menu_hash_to_str(MENU_LABEL_USE_THIS_DIRECTORY),
             MENU_FILE_USE_DIRECTORY, 0 ,0);
 
+   {
+      char out_dir[PATH_MAX_LENGTH];
+      fill_pathname_parent_dir(out_dir, info->path, sizeof(out_dir));
+
+      if (out_dir[0] != '\0')
+      {
+         menu_entries_push(info->list, "..", info->path,
+               MENU_FILE_PARENT_DIRECTORY, 0, 0);
+      }
+   }
+
    if (!str_list)
    {
       const char *str = path_is_compressed
