@@ -352,25 +352,25 @@ static void zarch_zui_snow(zui_t *zui)
 
    for (i = 0; i < NPARTICLES; ++i)
    {
-      part_t *p = &particles[i];
+      part_t *p = (part_t*)&particles[i];
 
       if (p->alive)
       {
-         int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+         int16_t mouse_x  = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
 
-         p->y += p->yspeed;
-         p->x += zarch_zui_scalef(mouse_x, 0, zui->width, -0.3, 0.3) + p->xspeed;
+         p->y            += p->yspeed;
+         p->x            += zarch_zui_scalef(mouse_x, 0, zui->width, -0.3, 0.3) + p->xspeed;
 
-         p->alive = p->y >= 0 && p->y < (int)zui->height && p->x >= 0 && p->x < (int)zui->width;
+         p->alive         = p->y >= 0 && p->y < (int)zui->height && p->x >= 0 && p->x < (int)zui->width;
       }
       else if (max_gen > 0 && timeout <= 0)
       {
          p->xspeed = zarch_zui_randf(-0.2, 0.2);
          p->yspeed = zarch_zui_randf(1, 2);
-         p->y = 0;
-         p->x = rand() % (int)zui->width;
-         p->alpha = (float)rand() / (float)RAND_MAX;
-         p->alive = true;
+         p->y      = 0;
+         p->x      = rand() % (int)zui->width;
+         p->alpha  = (float)rand() / (float)RAND_MAX;
+         p->alive  = true;
 
          max_gen--;
       }
@@ -459,8 +459,8 @@ static bool zarch_zui_list_item(zui_t *zui, int x1, int y1, const char *label, b
 
 static void zarch_zui_tabbed_begin(zui_t *zui, zui_tabbed_t *tab, int x, int y)
 {
-   tab->x = x;
-   tab->y = y;
+   tab->x            = x;
+   tab->y            = y;
    tab->tabline_size = 60 + 4;
 }
 
@@ -505,16 +505,15 @@ static void zarch_zui_render_lay_settings(zui_t *zui)
 {
    int width, x1, y1;
    static zui_tabbed_t tabbed = {~0};
-   tabbed.vertical = true;
-   tabbed.tab_width = 100;
+   tabbed.vertical            = true;
+   tabbed.tab_width           = 100;
 
    zarch_zui_tabbed_begin(zui, &tabbed, zui->width - 100, 20);
 
-   width = 290;
-   x1    = zui->width - width - 20;
-   y1    = 20;
-
-   y1 += 64;
+   width                      = 290;
+   x1                         = zui->width - width - 20;
+   y1                         = 20;
+   y1                        += 64;
 
    if (zarch_zui_button_full(zui, x1, y1, x1 + width, y1 + 64, "Back"))
       layout = LAY_HOME;
