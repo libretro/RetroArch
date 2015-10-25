@@ -232,7 +232,7 @@ static int16_t zarch_zui_input_state(enum zarch_zui_input_state state)
         case MENU_ZARCH_Y:
             break;
         case MENU_ZARCH_PRESSED:
-            if (menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON))
+            if (menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON) || menu_input_pointer_state(MENU_POINTER_PRESSED))
                 return 1;
             break;
     }
@@ -387,6 +387,8 @@ static void zarch_zui_snow(zui_t *zui)
          p->x            += zarch_zui_scalef(mouse_x, 0, zui->width, -0.3, 0.3) + p->xspeed;
 
          p->alive         = p->y >= 0 && p->y < (int)zui->height && p->x >= 0 && p->x < (int)zui->width;
+
+
       }
       else if (max_gen > 0 && timeout <= 0)
       {

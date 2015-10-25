@@ -62,7 +62,8 @@ enum menu_input_pointer_state
    MENU_POINTER_X_AXIS = 0,
    MENU_POINTER_Y_AXIS,
    MENU_POINTER_DELTA_X_AXIS,
-   MENU_POINTER_DELTA_Y_AXIS
+   MENU_POINTER_DELTA_Y_AXIS,
+   MENU_POINTER_PRESSED
 };
 
 enum menu_input_mouse_state

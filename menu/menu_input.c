@@ -1038,6 +1038,8 @@ int16_t menu_input_pointer_state(enum menu_input_pointer_state state)
          return menu->pointer.dx;
       case MENU_POINTER_DELTA_Y_AXIS:
          return menu->pointer.dy;
+      case MENU_POINTER_PRESSED:
+         return menu->pointer.pressed[0];
    }
 
    return 0;
