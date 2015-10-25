@@ -1467,7 +1467,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 #ifdef HAVE_CHEEVOS
    CONFIG_GET_BOOL_BASE(conf, settings, cheevos.enable, "cheevos_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, cheevos.test_unofficial, "cheevos_test_unofficial");
-   CONFIG_GET_STRING_BASE(conf, settings, cheevos.username, "cheevos_user_name");
+   CONFIG_GET_STRING_BASE(conf, settings, cheevos.username, "cheevos_username");
    CONFIG_GET_STRING_BASE(conf, settings, cheevos.password, "cheevos_password");
 #endif
 
