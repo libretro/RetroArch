@@ -601,9 +601,7 @@ FILE
 #include "../content.c"
 #include "../libretro-common/file/file_path.c"
 #include "../file_path_special.c"
-#ifndef IOS
 #include "../libretro-common/file/dir_list.c"
-#endif
 #include "../libretro-common/file/retro_dirent.c"
 #include "../libretro-common/file/retro_file.c"
 #include "../libretro-common/file/retro_stat.c"
