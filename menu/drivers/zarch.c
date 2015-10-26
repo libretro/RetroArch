@@ -325,16 +325,6 @@ static void zarch_zui_push_quad(unsigned width, unsigned height,
 {
    gfx_coords_t coords;
    GRfloat vertex[8];
-   GRfloat tex_coord[8];
-
-   tex_coord[0] = 0;
-   tex_coord[1] = 1;
-   tex_coord[2] = 1;
-   tex_coord[3] = 1;
-   tex_coord[4] = 0;
-   tex_coord[5] = 0;
-   tex_coord[6] = 1;
-   tex_coord[7] = 0;
 
    vertex[0] = x1 / (float)width;
    vertex[1] = y1 / (float)height;
@@ -347,8 +337,8 @@ static void zarch_zui_push_quad(unsigned width, unsigned height,
 
    coords.color         = colors;
    coords.vertex        = vertex;
-   coords.tex_coord     = tex_coord;
-   coords.lut_tex_coord = tex_coord;
+   coords.tex_coord     = zarch_tex_coords;
+   coords.lut_tex_coord = zarch_tex_coords;
    coords.vertices      = 3;
 
    gfx_coord_array_add(ca, &coords, 3);
