@@ -6599,7 +6599,7 @@ static bool setting_append_list_directory_options(
 
 
    CONFIG_DIR(
-         settings->extraction_directory,
+         settings->cache_directory,
          menu_hash_to_str(MENU_LABEL_CACHE_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_CACHE_DIRECTORY),
          "",

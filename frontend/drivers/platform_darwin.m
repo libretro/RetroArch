@@ -377,7 +377,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 #endif
 
    CFTemporaryDirectory(temp_dir, sizeof(temp_dir));
-   strlcpy(g_defaults.dir.extraction, temp_dir, sizeof(g_defaults.dir.extraction));
+   strlcpy(g_defaults.dir.cache, temp_dir, sizeof(g_defaults.dir.cache));
 
    path_mkdir(bundle_path_buf);
 

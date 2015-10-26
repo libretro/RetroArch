@@ -404,15 +404,15 @@ static bool load_content_need_fullpath(
    RARCH_LOG("Compressed file in case of need_fullpath."
          "Now extracting to temporary directory.\n");
 
-   strlcpy(new_basedir, settings->extraction_directory,
+   strlcpy(new_basedir, settings->cache_directory,
          sizeof(new_basedir));
 
    if ((!strcmp(new_basedir, "")) ||
          !path_is_directory(new_basedir))
    {
-      RARCH_WARN("Tried extracting to extraction directory, but "
-            "extraction directory was not set or found. "
-            "Setting extraction directory to directory "
+      RARCH_WARN("Tried extracting to cache directory, but "
+            "cache directory was not set or found. "
+            "Setting cache directory to directory "
             "derived by basename...\n");
       fill_pathname_basedir(new_basedir, path,
             sizeof(new_basedir));
@@ -658,8 +658,8 @@ bool init_content_file(void)
 
          if (!zlib_extract_first_content_file(temporary_content,
                   sizeof(temporary_content), valid_ext,
-                  *settings->extraction_directory ?
-                  settings->extraction_directory : NULL))
+                  *settings->cache_directory ?
+                  settings->cache_directory : NULL))
          {
             RARCH_ERR("Failed to extract content from zipped file: %s.\n",
                   temporary_content);

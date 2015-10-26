@@ -315,7 +315,7 @@ typedef struct settings
    char screenshot_directory[PATH_MAX_LENGTH];
    char system_directory[PATH_MAX_LENGTH];
 
-   char extraction_directory[PATH_MAX_LENGTH];
+   char cache_directory[PATH_MAX_LENGTH];
    char playlist_directory[PATH_MAX_LENGTH];
 
    bool history_list_enable;

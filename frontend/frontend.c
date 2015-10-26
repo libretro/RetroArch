@@ -158,8 +158,8 @@ static void check_defaults_dirs(void)
       path_mkdir(g_defaults.dir.menu_config);
    if (*g_defaults.dir.content_history)
       path_mkdir(g_defaults.dir.content_history);
-   if (*g_defaults.dir.extraction)
-      path_mkdir(g_defaults.dir.extraction);
+   if (*g_defaults.dir.cache)
+      path_mkdir(g_defaults.dir.cache);
    if (*g_defaults.dir.database)
       path_mkdir(g_defaults.dir.database);
    if (*g_defaults.dir.cursor)

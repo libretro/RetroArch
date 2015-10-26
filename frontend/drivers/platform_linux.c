@@ -1782,8 +1782,8 @@ static void frontend_linux_get_env(int *argc,
 
             fill_pathname_join(g_defaults.dir.assets, app_dir,
                   "assets", sizeof(g_defaults.dir.assets));
-            fill_pathname_join(g_defaults.dir.extraction, app_dir,
-                  "tmp", sizeof(g_defaults.dir.extraction));
+            fill_pathname_join(g_defaults.dir.cache, app_dir,
+                  "tmp", sizeof(g_defaults.dir.cache));
             fill_pathname_join(g_defaults.dir.shader, app_dir,
                   "shaders", sizeof(g_defaults.dir.shader));
             fill_pathname_join(g_defaults.dir.overlay, app_dir,

@@ -96,7 +96,7 @@ struct defaults
       char playlist[PATH_MAX_LENGTH];
       char content_history[PATH_MAX_LENGTH];
       char remap[PATH_MAX_LENGTH];
-      char extraction[PATH_MAX_LENGTH];
+      char cache[PATH_MAX_LENGTH];
       char wallpapers[PATH_MAX_LENGTH];
       char database[PATH_MAX_LENGTH];
       char cursor[PATH_MAX_LENGTH];

@@ -703,7 +703,7 @@ static void config_set_defaults(void)
    *settings->resampler_directory = '\0';
    *settings->screenshot_directory = '\0';
    *settings->system_directory = '\0';
-   *settings->extraction_directory = '\0';
+   *settings->cache_directory = '\0';
    *settings->input_remapping_directory = '\0';
    *settings->input.autoconfig_dir = '\0';
    *settings->input.overlay = '\0';
@@ -752,9 +752,9 @@ static void config_set_defaults(void)
    if (*g_defaults.dir.remap)
       strlcpy(settings->input_remapping_directory,
             g_defaults.dir.remap, sizeof(settings->input_remapping_directory));
-   if (*g_defaults.dir.extraction)
-      strlcpy(settings->extraction_directory,
-            g_defaults.dir.extraction, sizeof(settings->extraction_directory));
+   if (*g_defaults.dir.cache)
+      strlcpy(settings->cache_directory,
+            g_defaults.dir.cache, sizeof(settings->cache_directory));
    if (*g_defaults.dir.audio_filter)
       strlcpy(settings->audio.filter_dir,
             g_defaults.dir.audio_filter, sizeof(settings->audio.filter_dir));
@@ -1524,8 +1524,8 @@ static bool config_load_file(const char *path, bool set_defaults)
          sizeof(settings->input.remapping_path));
    config_get_path(conf, "resampler_directory", settings->resampler_directory,
          sizeof(settings->resampler_directory));
-   config_get_path(conf, "extraction_directory", settings->extraction_directory,
-         sizeof(settings->extraction_directory));
+   config_get_path(conf, "cache_directory", settings->cache_directory,
+         sizeof(settings->cache_directory));
    config_get_path(conf, "input_remapping_directory", settings->input_remapping_directory,
          sizeof(settings->input_remapping_directory));
    config_get_path(conf, "core_assets_directory", settings->core_assets_directory,
@@ -2585,8 +2585,8 @@ bool config_save_file(const char *path)
    config_set_path(conf, "system_directory",
          *settings->system_directory ?
          settings->system_directory : "default");
-   config_set_path(conf, "extraction_directory",
-         settings->extraction_directory);
+   config_set_path(conf, "cache_directory",
+         settings->cache_directory);
    config_set_path(conf, "input_remapping_directory",
          settings->input_remapping_directory);
    config_set_path(conf, "input_remapping_path",
