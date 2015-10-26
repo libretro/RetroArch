@@ -24,12 +24,15 @@
 #include <file/file_path.h>
 #include <file/dir_list.h>
 #include <compat/posix_string.h>
+#include <compat/strl.h>
 #include <retro_log.h>
 #include <retro_stat.h>
 
 #include "menu_generic.h"
 
 #include "../../config.def.h"
+
+#include "../../dir_list_special.h"
 
 #include "../menu.h"
 #include "../menu_animation.h"
@@ -591,6 +594,7 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
 
 static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
 {
+   char parent_dir[PATH_MAX_LENGTH];
    settings_t *settings = config_get_ptr();
    global_t     *global = global_get_ptr();
 
@@ -599,15 +603,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
       unsigned cwd_offset;
 
       if (!zui->load_cwd)
-      {
          zui->load_cwd = strdup(settings->menu_content_directory);
-         if (zui->load_cwd[strlen(zui->load_cwd)-1] == '/'
-#ifdef _WIN32
-               || (zui->load_cwd[strlen(zui->load_cwd)-1] == '\\')
-#endif
-            )
-            zui->load_cwd[strlen(zui->load_cwd)-1] = 0;
-      }
 
       if (!zui->load_dlist)
       {
@@ -616,37 +612,32 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
          zui->load_dlist_first = 0;
       }
 
-      cwd_offset = min(strlen(zui->load_cwd), 30);
+      cwd_offset = min(strlen(zui->load_cwd), 60);
 
       zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 15, tabbed->tabline_size + 5 + 41, &zui->load_cwd[strlen(zui->load_cwd) - cwd_offset]);
 
       if (zarch_zui_button(zui, zui->width - 290 - 129, tabbed->tabline_size + 5, "Home"))
       {
-         char tmp[PATH_MAX_LENGTH];
-
-         fill_pathname_expand_special(tmp, "~", sizeof(tmp));
-
-         free(zui->load_cwd);
-         zui->load_cwd = strdup(tmp);
-
+         if (zui->load_cwd)
+            free(zui->load_cwd);
          dir_list_free(zui->load_dlist);
+         zui->load_cwd   = NULL;
          zui->load_dlist = NULL;
       }
 
+      fill_pathname_parent_dir(parent_dir, zui->load_cwd, sizeof(parent_dir));
+
       if (zui->load_dlist)
       {
-         if (zarch_zui_list_item(zui, 0, tabbed->tabline_size + 73, " ..", false, NULL /* TODO/FIXME */))
+         if (parent_dir[0] != '\0' &&
+               zarch_zui_list_item(zui, 0, tabbed->tabline_size + 73, " ..", false, NULL /* TODO/FIXME */))
          {
-            path_basedir(zui->load_cwd);
-            if (zui->load_cwd[strlen(zui->load_cwd)-1] == '/'
-#ifdef _WIN32
-                  || (zui->load_cwd[strlen(zui->load_cwd)-1] == '\\')
-#endif
-               )
-               zui->load_cwd[strlen(zui->load_cwd)-1] = 0;
-
             dir_list_free(zui->load_dlist);
+            free(zui->load_cwd);
             zui->load_dlist = NULL;
+            zui->load_cwd   = NULL;
+
+            zui->load_cwd = strdup(parent_dir);
          }
          else
          {
