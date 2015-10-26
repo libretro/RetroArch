@@ -86,11 +86,11 @@ struct hostent *gethostbyname(const char *name)
    return &ent;
 }
 
-int rarch_epoll_fd;
+int retro_epoll_fd;
 
 #endif
 
-int getaddrinfo_rarch(const char *node, const char *service,
+int getaddrinfo_retro(const char *node, const char *service,
       const struct addrinfo *hints,
       struct addrinfo **res)
 {
@@ -144,7 +144,7 @@ error:
 #endif
 }
 
-void freeaddrinfo_rarch(struct addrinfo *res)
+void freeaddrinfo_retro(struct addrinfo *res)
 {
 #ifdef HAVE_SOCKET_LEGACY
    free(res->ai_addr);
@@ -193,10 +193,10 @@ int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
    ev.events = PSP2_NET_EPOLLIN | PSP2_NET_EPOLLHUP;
    ev.data.fd = nfds;
 
-   if((sceNetEpollControl(rarch_epoll_fd, PSP2_NET_EPOLL_CTL_ADD, nfds, &ev)))
+   if((sceNetEpollControl(retro_epoll_fd, PSP2_NET_EPOLL_CTL_ADD, nfds, &ev)))
    {
-      int ret = sceNetEpollWait(rarch_epoll_fd, &ev, 1, 0);
-      sceNetEpollControl(rarch_epoll_fd, PSP2_NET_EPOLL_CTL_DEL, nfds, NULL);
+      int ret = sceNetEpollWait(retro_epoll_fd, &ev, 1, 0);
+      sceNetEpollControl(retro_epoll_fd, PSP2_NET_EPOLL_CTL_DEL, nfds, NULL);
       return ret;
    }
    return 0;
@@ -286,8 +286,8 @@ bool network_init(void)
       //printf("Net is already initialized.\n");
    }
    
-   rarch_epoll_fd = sceNetEpollCreate("epoll", 0);
-   //printf("Epoll %x\n",rarch_epoll_fd);
+   retro_epoll_fd = sceNetEpollCreate("epoll", 0);
+   //printf("Epoll %x\n",retro_epoll_fd);
 #else
    signal(SIGPIPE, SIG_IGN); /* Do not like SIGPIPE killing our app. */
 #endif

@@ -165,7 +165,7 @@ static void gl_cg_reset_attrib(cg_shader_data_t *cg)
       return;
 
    /* Add sanity check that we did not overflow. */
-   rarch_assert(cg->cg_attrib_idx <= ARRAY_SIZE(cg->cg_attribs));
+   retro_assert(cg->cg_attrib_idx <= ARRAY_SIZE(cg->cg_attribs));
 
    for (i = 0; i < cg->cg_attrib_idx; i++)
       cgGLDisableClientState(cg->cg_attribs[i]);

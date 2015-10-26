@@ -645,9 +645,9 @@ void rarch_main_data_nbio_init_msg_queue(void)
       return;
 
    if (!nbio->msg_queue)
-      rarch_assert(nbio->msg_queue       = msg_queue_new(8));
+      retro_assert(nbio->msg_queue       = msg_queue_new(8));
    if (!nbio->image.msg_queue)
-      rarch_assert(nbio->image.msg_queue = msg_queue_new(8));
+      retro_assert(nbio->image.msg_queue = msg_queue_new(8));
 }
 
 void rarch_main_data_nbio_uninit(void)

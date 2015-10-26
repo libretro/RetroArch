@@ -133,7 +133,7 @@ void find_record_driver(void)
       driver->recording = (const record_driver_t*)record_driver_find_handle(0);
 
       if (!driver->recording)
-         rarch_fail(1, "find_record_driver()");
+         retro_fail(1, "find_record_driver()");
    }
 }
 

@@ -291,7 +291,7 @@ static void vg_copy_frame(void *data, const void *frame,
       bool                new_egl = gfx_ctx_image_buffer_write(vg,
             frame, width, height, pitch, (vg->mTexType == VG_sXRGB_8888), 0, &img);
 
-      rarch_assert(img != EGL_NO_IMAGE_KHR);
+      retro_assert(img != EGL_NO_IMAGE_KHR);
 
       if (new_egl)
       {

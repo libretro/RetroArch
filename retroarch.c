@@ -284,7 +284,7 @@ static void set_special_paths(char **argv, unsigned num_content)
    set_basename(argv[0]);
 
    global->subsystem_fullpaths = string_list_new();
-   rarch_assert(global->subsystem_fullpaths);
+   retro_assert(global->subsystem_fullpaths);
 
    attr.i = 0;
 
@@ -637,7 +637,7 @@ static void parse_input(int argc, char *argv[])
             {
                RARCH_ERR("Connect device to a valid port.\n");
                print_help(argv[0]);
-               rarch_fail(1, "parse_input()");
+               retro_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = id;
             global->has_set.libretro_device[port - 1] = true;
@@ -650,7 +650,7 @@ static void parse_input(int argc, char *argv[])
             {
                RARCH_ERR("Connect dualanalog to a valid port.\n");
                print_help(argv[0]);
-               rarch_fail(1, "parse_input()");
+               retro_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = RETRO_DEVICE_ANALOG;
             global->has_set.libretro_device[port - 1] = true;
@@ -683,7 +683,7 @@ static void parse_input(int argc, char *argv[])
             {
                RARCH_ERR("Disconnect device from a valid port.\n");
                print_help(argv[0]);
-               rarch_fail(1, "parse_input()");
+               retro_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = RETRO_DEVICE_NONE;
             global->has_set.libretro_device[port - 1] = true;
@@ -741,7 +741,7 @@ static void parse_input(int argc, char *argv[])
             {
                RARCH_ERR("Invalid argument in --sram-mode.\n");
                print_help(argv[0]);
-               rarch_fail(1, "parse_input()");
+               retro_fail(1, "parse_input()");
             }
             break;
 
@@ -823,7 +823,7 @@ static void parse_input(int argc, char *argv[])
             if (network_cmd_send(optarg))
                exit(0);
             else
-               rarch_fail(1, "network_cmd_send()");
+               retro_fail(1, "network_cmd_send()");
             break;
 #endif
 
@@ -839,7 +839,7 @@ static void parse_input(int argc, char *argv[])
             {
                RARCH_ERR("Wrong format for --size.\n");
                print_help(argv[0]);
-               rarch_fail(1, "parse_input()");
+               retro_fail(1, "parse_input()");
             }
             break;
          }
@@ -880,11 +880,11 @@ static void parse_input(int argc, char *argv[])
 
          case '?':
             print_help(argv[0]);
-            rarch_fail(1, "parse_input()");
+            retro_fail(1, "parse_input()");
 
          default:
             RARCH_ERR("Error parsing arguments.\n");
-            rarch_fail(1, "parse_input()");
+            retro_fail(1, "parse_input()");
       }
    }
 
@@ -893,7 +893,7 @@ static void parse_input(int argc, char *argv[])
       if (optind < argc)
       {
          RARCH_ERR("--menu was used, but content file was passed as well.\n");
-         rarch_fail(1, "parse_input()");
+         retro_fail(1, "parse_input()");
       }
    }
    else if (!*global->subsystem && optind < argc)
@@ -924,7 +924,7 @@ static void rarch_init_savefile_paths(void)
    event_command(EVENT_CMD_SAVEFILES_DEINIT);
 
    global->savefiles = string_list_new();
-   rarch_assert(global->savefiles);
+   retro_assert(global->savefiles);
 
    if (*global->subsystem)
    {
@@ -1301,7 +1301,7 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
 
 #define FAIL_CPU(simd_type) do { \
    RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
-   rarch_fail(1, "validate_cpu_features()"); \
+   retro_fail(1, "validate_cpu_features()"); \
 } while(0)
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
@@ -1571,7 +1571,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    {
       /* In case of a compressed archive, we have to join with a hash */
       /* We are going to write at the position of dir: */
-      rarch_assert(strlen(dir) < strlen(s));
+      retro_assert(strlen(dir) < strlen(s));
       s[strlen(dir)] = '#';
    }
 #endif

@@ -233,7 +233,7 @@ bool main_load_content(int argc, char **argv, void *args,
    (void)rarch_argv_ptr;
    (void)ret;
 
-   rarch_assert(wrap_args);
+   retro_assert(wrap_args);
 
    if (environ_get)
       environ_get(rarch_argc_ptr, rarch_argv_ptr, args, wrap_args);

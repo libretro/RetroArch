@@ -709,7 +709,7 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
       hints.ai_flags = AI_PASSIVE;
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
-   if (getaddrinfo_rarch(server, port_buf, &hints, &res) < 0)
+   if (getaddrinfo_retro(server, port_buf, &hints, &res) < 0)
       return false;
 
    if (!res)
@@ -735,7 +735,7 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
    }
 
    if (res)
-      freeaddrinfo_rarch(res);
+      freeaddrinfo_retro(res);
 
    if (!ret)
       RARCH_ERR("Failed to set up netplay sockets.\n");
@@ -761,7 +761,7 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
 
-   if (getaddrinfo_rarch(server, port_buf, &hints, &netplay->addr) < 0)
+   if (getaddrinfo_retro(server, port_buf, &hints, &netplay->addr) < 0)
       return false;
 
    if (!netplay->addr)
@@ -792,7 +792,7 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
          netplay->udp_fd = -1;
       }
 
-      freeaddrinfo_rarch(netplay->addr);
+      freeaddrinfo_retro(netplay->addr);
       netplay->addr = NULL;
    }
 
@@ -1340,7 +1340,7 @@ void netplay_free(netplay_t *netplay)
    }
 
    if (netplay->addr)
-      freeaddrinfo_rarch(netplay->addr);
+      freeaddrinfo_retro(netplay->addr);
 
    free(netplay);
 }
@@ -1711,7 +1711,7 @@ bool init_netplay(void)
 #include <ctype.h>
 #include <string.h>
 
-#define addrinfo addrinfo_rarch__
+#define addrinfo addrinfo_retro__
 
 #ifdef _XBOX
 /* TODO - implement h_length and h_addrtype */

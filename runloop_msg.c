@@ -114,10 +114,10 @@ void rarch_main_msg_queue_init(void)
       return;
 
    g_msg_queue = msg_queue_new(8);
-   rarch_assert(g_msg_queue);
+   retro_assert(g_msg_queue);
 
 #ifdef HAVE_THREADS
    mq_lock = slock_new();
-   rarch_assert(mq_lock);
+   retro_assert(mq_lock);
 #endif
 }

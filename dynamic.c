@@ -43,7 +43,7 @@
 #define SYMBOL(x) do { \
    function_t func = dylib_proc(lib_handle, #x); \
    memcpy(&core.x, &func, sizeof(func)); \
-   if (core.x == NULL) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); rarch_fail(1, "init_libretro_sym()"); } \
+   if (core.x == NULL) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retro_fail(1, "init_libretro_sym()"); } \
 } while (0)
 
 static dylib_t lib_handle;
@@ -268,13 +268,13 @@ static void load_symbols(enum rarch_core_type type)
                RARCH_ERR("Serious problem. RetroArch wants to load libretro cores dyamically, but it is already linked.\n");
                RARCH_ERR("This could happen if other modules RetroArch depends on link against libretro directly.\n");
                RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
-               rarch_fail(1, "init_libretro_sym()");
+               retro_fail(1, "init_libretro_sym()");
             }
 
             if (!*settings->libretro)
             {
                RARCH_ERR("RetroArch is built for dynamic libretro cores, but libretro_path is not set. Cannot continue.\n");
-               rarch_fail(1, "init_libretro_sym()");
+               retro_fail(1, "init_libretro_sym()");
             }
 
             /* Need to use absolute path for this setting. It can be
@@ -291,7 +291,7 @@ static void load_symbols(enum rarch_core_type type)
                RARCH_ERR("Failed to open libretro core: \"%s\"\n",
                      settings->libretro);
                RARCH_ERR("Error(s): %s\n", dylib_error());
-               rarch_fail(1, "load_dynamic()");
+               retro_fail(1, "load_dynamic()");
             }
 #endif
          }
@@ -494,7 +494,7 @@ void init_libretro_sym(enum rarch_core_type type)
 {
    /* Guarantee that we can do "dirty" casting.
     * Every OS that this program supports should pass this. */
-   rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
+   retro_assert(sizeof(void*) == sizeof(void (*)(void)));
 
    load_symbols(type);
 }

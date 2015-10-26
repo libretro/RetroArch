@@ -137,7 +137,7 @@ void find_menu_driver(void)
       driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(0);
 
       if (!driver->menu_ctx)
-         rarch_fail(1, "find_menu_driver()");
+         retro_fail(1, "find_menu_driver()");
    }
 }
 
@@ -200,11 +200,11 @@ void init_menu(void)
    }
 
    if (!(driver->menu = (menu_handle_t*)menu_init(driver->menu_ctx)))
-      rarch_fail(1, "init_menu()");
+      retro_fail(1, "init_menu()");
 
    if (driver->menu_ctx->lists_init)
       if (!driver->menu_ctx->lists_init(driver->menu))
-         rarch_fail(1, "init_menu()");
+         retro_fail(1, "init_menu()");
 }
 
 

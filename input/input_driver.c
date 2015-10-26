@@ -165,7 +165,7 @@ void find_input_driver(void)
       driver->input = (const input_driver_t*)input_driver_find_handle(0);
 
       if (!driver->input)
-         rarch_fail(1, "find_input_driver()");
+         retro_fail(1, "find_input_driver()");
    }
 }
 

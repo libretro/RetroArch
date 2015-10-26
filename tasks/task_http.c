@@ -468,7 +468,7 @@ void rarch_main_data_http_init_msg_queue(void)
       return;
 
    if (!http->msg_queue)
-      rarch_assert(http->msg_queue       = msg_queue_new(8));
+      retro_assert(http->msg_queue       = msg_queue_new(8));
 }
 
 

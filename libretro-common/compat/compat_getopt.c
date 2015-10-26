@@ -164,7 +164,7 @@ static void shuffle_block(char **begin, char **last, char **end)
    ptrdiff_t    len = last - begin;
    const char **tmp = (const char**)calloc(len, sizeof(const char*));
 
-   rarch_assert(tmp);
+   retro_assert(tmp);
 
    memcpy(tmp, begin, len * sizeof(const char*));
    memmove(begin, last, (end - last) * sizeof(const char*));
@@ -207,7 +207,7 @@ int getopt_long(int argc, char *argv[],
       long_index = 0;
    }
 
-   rarch_assert(short_index == 0 || long_index == 0);
+   retro_assert(short_index == 0 || long_index == 0);
 
    if (short_index == 0)
       return parse_short(optstring, &argv[optind]);

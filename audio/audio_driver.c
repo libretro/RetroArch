@@ -283,7 +283,7 @@ void find_audio_driver(void)
       driver->audio = (const audio_driver_t*)audio_driver_find_handle(0);
 
       if (!driver->audio)
-         rarch_fail(1, "find_audio_driver()");
+         retro_fail(1, "find_audio_driver()");
    }
 }
 
@@ -349,7 +349,7 @@ void init_audio(void)
       settings->slowmotion_ratio;
 
    /* Used for recording even if audio isn't enabled. */
-   rarch_assert(audio_data.conv_outsamples =
+   retro_assert(audio_data.conv_outsamples =
          (int16_t*)malloc(outsamples_max * sizeof(int16_t)));
 
    if (!audio_data.conv_outsamples)
@@ -361,7 +361,7 @@ void init_audio(void)
 
    /* Needs to be able to hold full content of a full max_bufsamples
     * in addition to its own. */
-   rarch_assert(audio_data.rewind_buf = (int16_t*)
+   retro_assert(audio_data.rewind_buf = (int16_t*)
          malloc(max_bufsamples * sizeof(int16_t)));
 
    if (!audio_data.rewind_buf)
@@ -386,7 +386,7 @@ void init_audio(void)
                driver->audio))
       {
          RARCH_ERR("Cannot open threaded audio driver ... Exiting ...\n");
-         rarch_fail(1, "init_audio()");
+         retro_fail(1, "init_audio()");
       }
    }
    else
@@ -433,7 +433,7 @@ void init_audio(void)
       driver->audio_active = false;
    }
 
-   rarch_assert(audio_data.data = (float*)
+   retro_assert(audio_data.data = (float*)
          malloc(max_bufsamples * sizeof(float)));
 
    if (!audio_data.data)
@@ -441,9 +441,9 @@ void init_audio(void)
 
    audio_data.data_ptr = 0;
 
-   rarch_assert(settings->audio.out_rate <
+   retro_assert(settings->audio.out_rate <
          audio_data.in_rate * AUDIO_MAX_RATIO);
-   rarch_assert(audio_data.outsamples = (float*)
+   retro_assert(audio_data.outsamples = (float*)
          malloc(outsamples_max * sizeof(float)));
 
    if (!audio_data.outsamples)

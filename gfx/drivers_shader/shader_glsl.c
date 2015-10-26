@@ -490,7 +490,7 @@ static void gl_glsl_reset_attrib(glsl_shader_data_t *glsl)
    unsigned i;
 
    /* Add sanity check that we did not overflow. */
-   rarch_assert(glsl->gl_attrib_index <= ARRAY_SIZE(glsl->gl_attribs));
+   retro_assert(glsl->gl_attrib_index <= ARRAY_SIZE(glsl->gl_attribs));
 
    for (i = 0; i < glsl->gl_attrib_index; i++)
       glDisableVertexAttribArray(glsl->gl_attribs[i]);
@@ -507,7 +507,7 @@ static void gl_glsl_set_vbo(GLfloat **buffer, size_t *buffer_elems,
       {
          GLfloat *new_buffer = (GLfloat*)
             realloc(*buffer, elems * sizeof(GLfloat));
-         rarch_assert(new_buffer);
+         retro_assert(new_buffer);
          *buffer = new_buffer;
       }
 

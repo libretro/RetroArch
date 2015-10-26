@@ -130,7 +130,7 @@ void find_location_driver(void)
       driver->location = (const location_driver_t*)location_driver_find_handle(0);
 
       if (!driver->location)
-         rarch_fail(1, "find_location_driver()");
+         retro_fail(1, "find_location_driver()");
    }
 }
 

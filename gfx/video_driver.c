@@ -228,7 +228,7 @@ void find_video_driver(void)
       driver->video = (const video_driver_t*)video_driver_find_handle(0);
 
       if (!driver->video)
-         rarch_fail(1, "find_video_driver()");
+         retro_fail(1, "find_video_driver()");
    }
 }
 
@@ -409,7 +409,7 @@ static void init_video_input(const input_driver_t *tmp)
       /* This should never really happen as tmp (driver.input) is always
        * found before this in find_driver_input(), or we have aborted
        * in a similar fashion anyways. */
-      rarch_fail(1, "init_video_input()");
+      retro_fail(1, "init_video_input()");
    }
 
    driver->input_data = input_driver_init();
@@ -418,7 +418,7 @@ static void init_video_input(const input_driver_t *tmp)
       return;
 
    RARCH_ERR("Cannot initialize input driver. Exiting ...\n");
-   rarch_fail(1, "init_video_input()");
+   retro_fail(1, "init_video_input()");
 }
 
 void uninit_video_input(void)
@@ -472,7 +472,7 @@ void init_video(void)
    if (!geom)
    {
       RARCH_ERR("AV geometry not initialized, cannot initialize video driver.\n");
-      rarch_fail(1, "init_video()");
+      retro_fail(1, "init_video()");
    }
 
    max_dim   = max(geom->max_width, geom->max_height);
@@ -532,7 +532,7 @@ void init_video(void)
    if (!init_video_pixel_converter(RARCH_SCALE_BASE * scale))
    {
       RARCH_ERR("Failed to initialize pixel converter.\n");
-      rarch_fail(1, "init_video()");
+      retro_fail(1, "init_video()");
    }
 
    video.width        = width;
@@ -565,7 +565,7 @@ void init_video(void)
                driver->video, &video))
       {
          RARCH_ERR("Cannot open threaded video driver ... Exiting ...\n");
-         rarch_fail(1, "init_video()");
+         retro_fail(1, "init_video()");
       }
    }
    else
@@ -576,7 +576,7 @@ void init_video(void)
    if (!driver->video_data)
    {
       RARCH_ERR("Cannot open video driver ... Exiting ...\n");
-      rarch_fail(1, "init_video()");
+      retro_fail(1, "init_video()");
    }
 
    driver->video_poke = NULL;

@@ -389,7 +389,7 @@ static bool preprocess_image(void *data)
       }
    }
 
-   rarch_assert(buf.index < v4l->n_buffers);
+   retro_assert(buf.index < v4l->n_buffers);
 
    process_image(v4l, (const uint8_t*)v4l->buffers[buf.index].start);
 

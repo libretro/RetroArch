@@ -730,7 +730,7 @@ static void rarch_main_iterate_linefeed_overlay(driver_t *driver,
 }
 #endif
 
-bool rarch_main_verbosity(void)
+bool retro_main_verbosity(void)
 {
    global_t *global = global_get_ptr();
    if (!global)
@@ -738,7 +738,7 @@ bool rarch_main_verbosity(void)
    return global->verbosity;
 }
 
-FILE *rarch_main_log_file(void)
+FILE *retro_main_log_file(void)
 {
    global_t *global = global_get_ptr();
    if (!global)

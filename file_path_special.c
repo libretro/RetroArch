@@ -52,7 +52,7 @@ void fill_pathname_expand_special(char *out_path,
       if (home)
       {
          size_t src_size = strlcpy(out_path, home, size);
-         rarch_assert(src_size < size);
+         retro_assert(src_size < size);
 
          out_path  += src_size;
          size -= src_size;
@@ -74,7 +74,7 @@ void fill_pathname_expand_special(char *out_path,
       path_basedir(application_dir);
 
       src_size   = strlcpy(out_path, application_dir, size);
-      rarch_assert(src_size < size);
+      retro_assert(src_size < size);
 
       out_path  += src_size;
       size      -= src_size;
@@ -82,7 +82,7 @@ void fill_pathname_expand_special(char *out_path,
    }
 #endif
 
-   rarch_assert(strlcpy(out_path, in_path, size) < size);
+   retro_assert(strlcpy(out_path, in_path, size) < size);
 }
 
 
@@ -117,16 +117,17 @@ void fill_pathname_abbreviate_special(char *out_path,
    {
       if (*candidates[i] && strstr(in_path, candidates[i]) == in_path)
       {
-         size_t src_size = strlcpy(out_path, notations[i], size);
-         rarch_assert(src_size < size);
+         size_t src_size  = strlcpy(out_path, notations[i], size);
+
+         retro_assert(src_size < size);
       
-         out_path += src_size;
-         size     -= src_size;
-         in_path  += strlen(candidates[i]);
+         out_path        += src_size;
+         size            -= src_size;
+         in_path         += strlen(candidates[i]);
       
          if (!path_char_is_slash(*in_path))
          {
-            rarch_assert(strlcpy(out_path, path_default_slash(), size) < size);
+            retro_assert(strlcpy(out_path, path_default_slash(), size) < size);
             out_path++;
             size--;
          }
@@ -136,7 +137,7 @@ void fill_pathname_abbreviate_special(char *out_path,
    }
 #endif
 
-   rarch_assert(strlcpy(out_path, in_path, size) < size);
+   retro_assert(strlcpy(out_path, in_path, size) < size);
 }
 
 #if !defined(RARCH_CONSOLE)
@@ -163,7 +164,7 @@ void fill_pathname_application_path(char *buf, size_t size)
       CFRelease(bundle_path);
       CFRelease(bundle_url);
       
-      rarch_assert(strlcat(buf, "nobin", size) < size);
+      retro_assert(strlcat(buf, "nobin", size) < size);
       return;
    }
 #elif defined(__HAIKU__)

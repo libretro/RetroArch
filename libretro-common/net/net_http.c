@@ -82,7 +82,7 @@ static int net_http_new_socket(const char *domain, int port)
    hints.ai_socktype = SOCK_STREAM;
    hints.ai_flags    = 0;
    
-   if (getaddrinfo_rarch(domain, portstr, &hints, &addr) < 0)
+   if (getaddrinfo_retro(domain, portstr, &hints, &addr) < 0)
       return -1;
    if (!addr)
       return -1;
@@ -98,12 +98,12 @@ static int net_http_new_socket(const char *domain, int port)
 #endif
    if (connect(fd, addr->ai_addr, addr->ai_addrlen) != 0)
    {
-      freeaddrinfo_rarch(addr);
+      freeaddrinfo_retro(addr);
       socket_close(fd);
       return -1;
    }
 
-   freeaddrinfo_rarch(addr);
+   freeaddrinfo_retro(addr);
 
    if (!socket_nonblock(fd))
    {

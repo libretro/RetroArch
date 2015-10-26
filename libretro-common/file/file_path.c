@@ -218,13 +218,13 @@ void fill_pathname(char *out_path, const char *in_path,
    char tmp_path[PATH_MAX_LENGTH] = {0};
    char *tok                      = NULL;
 
-   rarch_assert(strlcpy(tmp_path, in_path,
+   retro_assert(strlcpy(tmp_path, in_path,
             sizeof(tmp_path)) < sizeof(tmp_path));
    if ((tok = (char*)strrchr(path_basename(tmp_path), '.')))
       *tok = '\0';
 
-   rarch_assert(strlcpy(out_path, tmp_path, size) < size);
-   rarch_assert(strlcat(out_path, replace, size) < size);
+   retro_assert(strlcpy(out_path, tmp_path, size) < size);
+   retro_assert(strlcat(out_path, replace, size) < size);
 }
 
 /**
@@ -244,8 +244,8 @@ void fill_pathname(char *out_path, const char *in_path,
 void fill_pathname_noext(char *out_path, const char *in_path,
       const char *replace, size_t size)
 {
-   rarch_assert(strlcpy(out_path, in_path, size) < size);
-   rarch_assert(strlcat(out_path, replace, size) < size);
+   retro_assert(strlcpy(out_path, in_path, size) < size);
+   retro_assert(strlcat(out_path, replace, size) < size);
 }
 
 static char *find_last_slash(const char *str)
@@ -279,10 +279,10 @@ void fill_pathname_slash(char *path, size_t size)
    {
       char join_str[2];
       strlcpy(join_str, last_slash, sizeof(join_str));
-      rarch_assert(strlcat(path, join_str, size) < size);
+      retro_assert(strlcat(path, join_str, size) < size);
    }
    else if (!last_slash)
-      rarch_assert(strlcat(path, path_default_slash(), size) < size);
+      retro_assert(strlcat(path, path_default_slash(), size) < size);
 }
 
 /**
@@ -309,8 +309,8 @@ void fill_pathname_dir(char *in_dir, const char *in_basename,
 
    fill_pathname_slash(in_dir, size);
    base = path_basename(in_basename);
-   rarch_assert(strlcat(in_dir, base, size) < size);
-   rarch_assert(strlcat(in_dir, replace, size) < size);
+   retro_assert(strlcat(in_dir, base, size) < size);
+   retro_assert(strlcat(in_dir, replace, size) < size);
 }
 
 /**
@@ -348,7 +348,7 @@ void fill_pathname_base(char *out, const char *in_path, size_t size)
       ptr = ptr_bak;
 #endif
 
-   rarch_assert(strlcpy(out, ptr, size) < size);
+   retro_assert(strlcpy(out, ptr, size) < size);
 }
 
 /**
@@ -364,7 +364,7 @@ void fill_pathname_base(char *out, const char *in_path, size_t size)
 void fill_pathname_basedir(char *out_dir,
       const char *in_path, size_t size)
 {
-   rarch_assert(strlcpy(out_dir, in_path, size) < size);
+   retro_assert(strlcpy(out_dir, in_path, size) < size);
    path_basedir(out_dir);
 }
 
@@ -380,7 +380,7 @@ void fill_pathname_basedir(char *out_dir,
 void fill_pathname_parent_dir(char *out_dir,
       const char *in_dir, size_t size)
 {
-   rarch_assert(strlcpy(out_dir, in_dir, size) < size);
+   retro_assert(strlcpy(out_dir, in_dir, size) < size);
    path_parent_dir(out_dir);
 }
 
@@ -518,7 +518,7 @@ void path_resolve_realpath(char *buf, size_t size)
    if (!_fullpath(buf, tmp, size))
       strlcpy(buf, tmp, size);
 #else
-   rarch_assert(size >= PATH_MAX_LENGTH);
+   retro_assert(size >= PATH_MAX_LENGTH);
 
    /* NOTE: realpath() expects at least PATH_MAX_LENGTH bytes in buf.
     * Technically, PATH_MAX_LENGTH needn't be defined, but we rely on it anyways.
@@ -547,13 +547,13 @@ void fill_pathname_resolve_relative(char *out_path,
 {
    if (path_is_absolute(in_path))
    {
-      rarch_assert(strlcpy(out_path, in_path, size) < size);
+      retro_assert(strlcpy(out_path, in_path, size) < size);
       return;
    }
 
-   rarch_assert(strlcpy(out_path, in_refpath, size) < size);
+   retro_assert(strlcpy(out_path, in_refpath, size) < size);
    path_basedir(out_path);
-   rarch_assert(strlcat(out_path, in_path, size) < size);
+   retro_assert(strlcat(out_path, in_path, size) < size);
 }
 
 /**
@@ -570,12 +570,12 @@ void fill_pathname_resolve_relative(char *out_path,
 void fill_pathname_join(char *out_path,
       const char *dir, const char *path, size_t size)
 {
-   rarch_assert(strlcpy(out_path, dir, size) < size);
+   retro_assert(strlcpy(out_path, dir, size) < size);
 
    if (*out_path)
       fill_pathname_slash(out_path, size);
 
-   rarch_assert(strlcat(out_path, path, size) < size);
+   retro_assert(strlcat(out_path, path, size) < size);
 }
 
 /**
@@ -593,12 +593,12 @@ void fill_pathname_join_delim(char *out_path, const char *dir,
       const char *path, const char delim, size_t size)
 {
    size_t copied = strlcpy(out_path, dir, size);
-   rarch_assert(copied < size+1);
+   retro_assert(copied < size+1);
 
    out_path[copied]   = delim;
    out_path[copied+1] = '\0';
 
-   rarch_assert(strlcat(out_path, path, size) < size);
+   retro_assert(strlcat(out_path, path, size) < size);
 }
 
 /**
@@ -635,7 +635,7 @@ void fill_short_pathname_representation(char* out_rep,
        * We check whether something is actually
        * after the hash to avoid going over the buffer.
        */
-      rarch_assert(strlen(last_hash) > 1);
+      retro_assert(strlen(last_hash) > 1);
       strlcpy(out_rep, last_hash + 1, size);
    }
    else

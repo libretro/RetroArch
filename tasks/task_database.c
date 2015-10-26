@@ -606,7 +606,7 @@ void rarch_main_data_db_init_msg_queue(void)
       return;
    
    if (!db->msg_queue)
-      rarch_assert(db->msg_queue         = msg_queue_new(8));
+      retro_assert(db->msg_queue         = msg_queue_new(8));
 }
 
 msg_queue_t *rarch_main_data_db_get_msg_queue_ptr(void)

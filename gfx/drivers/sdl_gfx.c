@@ -242,6 +242,7 @@ static void sdl_gfx_set_handles(void)
 static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
    unsigned full_x, full_y;
+   const SDL_VideoInfo *video_info = NULL;
    sdl_video_t *vid = NULL;
    settings_t *settings = config_get_ptr();
 
@@ -261,8 +262,8 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    if (!vid)
       return NULL;
 
-   const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
-   rarch_assert(video_info);
+   video_info = SDL_GetVideoInfo();
+   retro_assert(video_info);
    full_x = video_info->current_w;
    full_y = video_info->current_h;
    RARCH_LOG("[SDL]: Detecting desktop resolution %ux%u.\n", full_x, full_y);

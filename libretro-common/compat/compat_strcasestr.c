@@ -41,7 +41,7 @@ static int casencmp(const char *a, const char *b, size_t n)
    return 0;
 }
 
-char *strcasestr_rarch__(const char *haystack, const char *needle)
+char *strcasestr_retro__(const char *haystack, const char *needle)
 {
    size_t i, hay_len, needle_len, search_off;
 

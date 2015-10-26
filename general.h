@@ -140,13 +140,13 @@ static INLINE float db_to_gain(float db)
 }
 
 /**
- * rarch_fail:
+ * retro_fail:
  * @error_code  : Error code.
  * @error       : Error message to show.
  *
  * Sanely kills the program.
  **/
-static INLINE void rarch_fail(int error_code, const char *error)
+static INLINE void retro_fail(int error_code, const char *error)
 {
    global_t *global = global_get_ptr();
 
@@ -156,7 +156,7 @@ static INLINE void rarch_fail(int error_code, const char *error)
    /* We cannot longjmp unless we're in rarch_main_init().
     * If not, something went very wrong, and we should 
     * just exit right away. */
-   rarch_assert(global->inited.error);
+   retro_assert(global->inited.error);
 
    strlcpy(global->error_string, error, sizeof(global->error_string));
    longjmp(global->error_sjlj_context, error_code);

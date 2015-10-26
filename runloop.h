@@ -347,7 +347,7 @@ void rarch_main_msg_queue_init(void);
 
 bool rarch_main_verbosity(void);
 
-FILE *rarch_main_log_file(void);
+FILE *retro_main_log_file(void);
 
 bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data);
 

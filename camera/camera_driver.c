@@ -137,7 +137,7 @@ void find_camera_driver(void)
       driver->camera = (const camera_driver_t*)camera_driver_find_handle(0);
        
       if (!driver->camera)
-         rarch_fail(1, "find_camera_driver()");
+         retro_fail(1, "find_camera_driver()");
    }
 }
 

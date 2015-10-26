@@ -183,7 +183,7 @@ static INLINE bool isagain(int bytes)
 #ifdef HAVE_SOCKET_LEGACY
 
 #define sockaddr_storage sockaddr_in
-#define addrinfo addrinfo_rarch__
+#define addrinfo addrinfo_retro__
 
 struct addrinfo
 {
@@ -205,11 +205,11 @@ struct addrinfo
 
 #endif
 
-int getaddrinfo_rarch(const char *node, const char *service,
+int getaddrinfo_retro(const char *node, const char *service,
       const struct addrinfo *hints,
       struct addrinfo **res);
 
-void freeaddrinfo_rarch(struct addrinfo *res);
+void freeaddrinfo_retro(struct addrinfo *res);
 
 bool socket_nonblock(int fd);
 

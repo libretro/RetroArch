@@ -608,8 +608,8 @@ static void config_set_defaults(void)
    settings->input.max_users                        = input_max_users;
    settings->input.menu_toggle_gamepad_combo        = menu_toggle_gamepad_combo;
 
-   rarch_assert(sizeof(settings->input.binds[0]) >= sizeof(retro_keybinds_1));
-   rarch_assert(sizeof(settings->input.binds[1]) >= sizeof(retro_keybinds_rest));
+   retro_assert(sizeof(settings->input.binds[0]) >= sizeof(retro_keybinds_1));
+   retro_assert(sizeof(settings->input.binds[1]) >= sizeof(retro_keybinds_rest));
 
    memcpy(settings->input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
 
@@ -635,7 +635,7 @@ static void config_set_defaults(void)
       for (j = 0; j < RARCH_BIND_LIST_END; j++)
       {
          if (settings->input.binds[i][j].valid)
-            rarch_assert(j == settings->input.binds[i][j].id);
+            retro_assert(j == settings->input.binds[i][j].id);
       }
 
    settings->input.axis_threshold                  = axis_threshold;
@@ -2177,7 +2177,8 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
          break;
 
       default:
-         rarch_assert(0);
+         retro_assert(0);
+         break;
    }
 
    snprintf(config, sizeof(config), "h%u%s", hat, dir);

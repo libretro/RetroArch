@@ -897,7 +897,7 @@ static int action_ok_core_deferred_set(const char *path,
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return -1;
 
-   rarch_assert(menu->playlist != NULL);
+   retro_assert(menu->playlist != NULL);
 
    core_info_get_name(path, core_display_name, sizeof(core_display_name));
 

@@ -179,7 +179,7 @@ static void event_init_movie(void)
          RARCH_ERR("%s: \"%s\".\n",
                msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE),
                global->bsv.movie_start_path);
-         rarch_fail(1, "event_init_movie()");
+         retro_fail(1, "event_init_movie()");
       }
 
       global->bsv.movie_playback = true;

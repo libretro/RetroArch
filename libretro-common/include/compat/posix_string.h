@@ -33,7 +33,7 @@ extern "C" {
 
 #ifdef _WIN32
 #undef strtok_r
-#define strtok_r(str, delim, saveptr) rarch_strtok_r__(str, delim, saveptr)
+#define strtok_r(str, delim, saveptr) retro_strtok_r__(str, delim, saveptr)
 
 char *strtok_r(char *str, const char *delim, char **saveptr);
 #endif
@@ -42,9 +42,9 @@ char *strtok_r(char *str, const char *delim, char **saveptr);
 #undef strcasecmp
 #undef strdup
 #undef isblank
-#define strcasecmp(a, b) rarch_strcasecmp__(a, b)
-#define strdup(orig) rarch_strdup__(orig)
-#define isblank(c) rarch_isblank__(c)
+#define strcasecmp(a, b) retro_strcasecmp__(a, b)
+#define strdup(orig)     retro_strdup__(orig)
+#define isblank(c)       retro_isblank__(c)
 int strcasecmp(const char *a, const char *b);
 char *strdup(const char *orig);
 int isblank(int c);

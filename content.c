@@ -441,7 +441,7 @@ static bool load_content_need_fullpath(
     * The following part takes care of cleanup of the unzipped files
     * after exit.
     */
-   rarch_assert(global->temporary_content != NULL);
+   retro_assert(global->temporary_content != NULL);
    string_list_append(global->temporary_content,
          new_path, attributes);
 

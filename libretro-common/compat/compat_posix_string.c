@@ -39,7 +39,7 @@
 
 #include <string.h>
 
-int rarch_strcasecmp__(const char *a, const char *b)
+int retro_strcasecmp__(const char *a, const char *b)
 {
    while (*a && *b)
    {
@@ -56,7 +56,7 @@ int rarch_strcasecmp__(const char *a, const char *b)
    return tolower(*a) - tolower(*b);
 }
 
-char *rarch_strdup__(const char *orig)
+char *retro_strdup__(const char *orig)
 {
    size_t len = strlen(orig) + 1;
    char *ret  = (char*)malloc(len);
@@ -67,12 +67,12 @@ char *rarch_strdup__(const char *orig)
    return ret;
 }
 
-int rarch_isblank__(int c)
+int retro_isblank__(int c)
 {
    return (c == ' ') || (c == '\t');
 }
 
-char *rarch_strtok_r__(char *str, const char *delim, char **saveptr)
+char *retro_strtok_r__(char *str, const char *delim, char **saveptr)
 {
    char *first = NULL;
    if (!saveptr || !delim)

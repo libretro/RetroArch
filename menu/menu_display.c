@@ -105,7 +105,7 @@ bool menu_display_init(void)
    if (!disp)
       return false;
 
-   rarch_assert(disp->msg_queue = msg_queue_new(8));
+   retro_assert(disp->msg_queue = msg_queue_new(8));
 
    return true;
 }
