@@ -235,7 +235,8 @@ struct string_list *string_list_new_special(enum string_list_type type,
 
 error:
    string_list_free(s);
-   s = NULL;
+   s    = NULL;
+   *len = 0;
    return NULL;
 }
 
