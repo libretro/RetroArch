@@ -150,7 +150,20 @@ const char *string_list_special_new(enum string_list_type type)
             string_list_append(s, opt, attr);
          }
          break;
-      case STRING_LIST_CORES:
+      case STRING_LIST_CORES_PATHS:
+         for (i = 0; i < core_info_list_num_info_files(global->core_info.list); i++)
+         {
+            const core_info_t *info = (const core_info_t*)&global->core_info.list->list[i];
+            const char *opt         = info ? info->path : NULL;
+
+            if (!opt)
+               goto end;
+
+            len                    += strlen(opt) + 1;
+            string_list_append(s, opt, attr);
+         }
+         break; 
+      case STRING_LIST_CORES_NAMES:
          for (i = 0; i < core_info_list_num_info_files(global->core_info.list); i++)
          {
             const core_info_t *info = (const core_info_t*)&global->core_info.list->list[i];
