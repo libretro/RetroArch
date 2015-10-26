@@ -19,7 +19,8 @@
 enum string_list_type
 {
    STRING_LIST_NONE = 0,
-   STRING_LIST_MENU_DRIVERS
+   STRING_LIST_MENU_DRIVERS,
+   STRING_LIST_CAMERA_DRIVERS
 };
 
 const char *string_list_special_new(enum string_list_type type);

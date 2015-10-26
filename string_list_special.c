@@ -22,6 +22,10 @@
 #include "menu/menu_driver.h"
 #endif
 
+#ifdef HAVE_CAMERA
+#include "camera/camera_driver.h"
+#endif
+
 const char *string_list_special_new(enum string_list_type type)
 {
    union string_list_elem_attr attr;
@@ -42,6 +46,17 @@ const char *string_list_special_new(enum string_list_type type)
          for (i = 0; menu_driver_find_handle(i); i++)
          {
             const char *opt  = menu_driver_find_ident(i);
+            len             += strlen(opt) + 1;
+
+            string_list_append(s, opt, attr);
+         }
+         break;
+#endif
+      case STRING_LIST_CAMERA_DRIVERS:
+#ifdef HAVE_CAMERA
+         for (i = 0; camera_driver_find_handle(i); i++)
+         {
+            const char *opt  = camera_driver_find_ident(i);
             len             += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);

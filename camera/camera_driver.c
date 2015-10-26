@@ -15,10 +15,10 @@
  */
 
 #include <string.h>
-#include <string/string_list.h>
 
 #include "camera_driver.h"
 #include "../general.h"
+#include "../string_list_special.h"
 
 static const camera_driver_t *camera_drivers[] = {
 #ifdef HAVE_V4L2
@@ -80,39 +80,7 @@ const char *camera_driver_find_ident(int idx)
  **/
 const char* config_get_camera_driver_options(void)
 {
-   union string_list_elem_attr attr;
-   unsigned i;
-   char *options = NULL;
-   int options_len = 0;
-   struct string_list *options_l = string_list_new();
-
-   attr.i = 0;
-
-   if (!options_l)
-      return NULL;
-
-   for (i = 0; camera_driver_find_handle(i); i++)
-   {
-      const char *opt = camera_driver_find_ident(i);
-      options_len += strlen(opt) + 1;
-      string_list_append(options_l, opt, attr);
-   }
-
-   options = (char*)calloc(options_len, sizeof(char));
-
-   if (!options)
-   {
-      string_list_free(options_l);
-      options_l = NULL;
-      return NULL;
-   }
-
-   string_list_join_concat(options, options_len, options_l, "|");
-
-   string_list_free(options_l);
-   options_l = NULL;
-
-   return options;
+   return string_list_special_new(STRING_LIST_CAMERA_DRIVERS);
 }
 
 void find_camera_driver(void)
