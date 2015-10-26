@@ -373,7 +373,7 @@ static float zarch_zui_scalef(float val, float oldmin, float oldmax, float newmi
 
 #define NPARTICLES 100
 
-static void zarch_zui_snow(zui_t *zui, int width, int height)
+static void zarch_zui_snow(gfx_coord_array_t *ca, int width, int height)
 {
    static part_t particles[NPARTICLES];
    static bool initialized = false;
@@ -438,7 +438,7 @@ static void zarch_zui_snow(zui_t *zui, int width, int height)
             colors[j] = alpha;
       }
 
-      zarch_zui_push_quad(zui->width, zui->height, colors, &zui->ca, p->x-2, p->y-2, p->x+2, p->y+2);
+      zarch_zui_push_quad(width, height, colors, ca, p->x-2, p->y-2, p->x+2, p->y+2);
 
       j++;
    }
@@ -898,7 +898,7 @@ static void zarch_frame(void)
    menu_display_font_bind_block(zui->menu, font_driver, &zui->tmp_block);
 
    zarch_zui_push_quad(zui->width, zui->height, ZUI_BG_SCREEN, &zui->ca, 0, 0, zui->width, zui->height);
-   zarch_zui_snow(zui, zui->width, zui->height);
+   zarch_zui_snow(&zui->ca, zui->width, zui->height);
 
    switch (layout)
    {
