@@ -39,7 +39,7 @@
 #include "audio/audio_resampler_driver.h"
 #include "record/record_driver.h"
 
-const char *string_list_special_new(enum string_list_type type)
+const char *string_list_special_new(enum string_list_type type, void *data)
 {
    union string_list_elem_attr attr;
    unsigned i;
@@ -49,6 +49,8 @@ const char *string_list_special_new(enum string_list_type type)
    struct string_list *s = string_list_new();
 
    attr.i = 0;
+
+   (void)data;
 
    if (!s)
       return NULL;

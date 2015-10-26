@@ -81,7 +81,7 @@ const char *hid_driver_find_ident(int idx)
  **/
 const char* config_get_hid_driver_options(void)
 {
-   return string_list_special_new(STRING_LIST_INPUT_HID_DRIVERS);
+   return string_list_special_new(STRING_LIST_INPUT_HID_DRIVERS, NULL);
 }
 #endif
 

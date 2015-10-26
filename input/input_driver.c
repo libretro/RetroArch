@@ -108,7 +108,7 @@ const char *input_driver_find_ident(int idx)
  **/
 const char* config_get_input_driver_options(void)
 {
-   return string_list_special_new(STRING_LIST_INPUT_DRIVERS);
+   return string_list_special_new(STRING_LIST_INPUT_DRIVERS, NULL);
 }
 
 void find_input_driver(void)

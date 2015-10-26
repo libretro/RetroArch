@@ -151,7 +151,7 @@ const char *video_driver_find_ident(int idx)
  **/
 const char* config_get_video_driver_options(void)
 {
-   return string_list_special_new(STRING_LIST_VIDEO_DRIVERS);
+   return string_list_special_new(STRING_LIST_VIDEO_DRIVERS, NULL);
 }
 
 void find_video_driver(void)

@@ -76,7 +76,7 @@ const void *record_driver_find_handle(int idx)
  **/
 const char* config_get_record_driver_options(void)
 {
-   return string_list_special_new(STRING_LIST_RECORD_DRIVERS);
+   return string_list_special_new(STRING_LIST_RECORD_DRIVERS, NULL);
 }
 
 void find_record_driver(void)

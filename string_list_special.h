@@ -33,6 +33,6 @@ enum string_list_type
    STRING_LIST_CORES_NAMES
 };
 
-const char *string_list_special_new(enum string_list_type type);
+const char *string_list_special_new(enum string_list_type type, void *data);
 
 #endif
