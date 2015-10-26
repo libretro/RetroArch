@@ -39,7 +39,7 @@ OBJS = frontend/frontend_salamander.o \
 		 libretro-common/string/string_list.o \
 		 libretro-common/file/dir_list.o \
 		 libretro-common/file/retro_dirent.o \
-		 libretro-common/compat/compat.o \
+		 libretro-common/compat/compat_strl.o \
 		 libretro-common/file/config_file.o \
 		 libretro-common/file/retro_file.o \
 		 libretro-common/file/retro_stat.o \

@@ -42,7 +42,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 else
 	OBJS += libretro-common/file/file_extract.o
 	OBJS += performance.o
-	OBJS += libretro-common/compat/compat.o
+	OBJS += libretro-common/compat/compat_strl.o
 	OBJS += libretro-common/compat/compat_fnmatch.o
 	OBJS += libretro-common/memmap/memalign.o
 	OBJS += libretro-common/file/config_file.o
