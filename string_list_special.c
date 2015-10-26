@@ -26,6 +26,8 @@
 #include "camera/camera_driver.h"
 #endif
 
+#include "audio/audio_driver.h"
+
 const char *string_list_special_new(enum string_list_type type)
 {
    union string_list_elem_attr attr;
@@ -63,6 +65,15 @@ const char *string_list_special_new(enum string_list_type type)
          }
          break;
 #endif
+      case STRING_LIST_AUDIO_DRIVERS:
+         for (i = 0; audio_driver_find_handle(i); i++)
+         {
+            const char *opt = audio_driver_find_ident(i);
+            len             += strlen(opt) + 1;
+
+            string_list_append(s, opt, attr);
+         }
+         break;
       case STRING_LIST_NONE:
       default:
          goto end;
