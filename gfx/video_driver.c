@@ -16,13 +16,12 @@
 
 #include <string.h>
 
-#include <string/string_list.h>
-
 #include "video_thread_wrapper.h"
 #include "video_pixel_converter.h"
 #include "video_monitor.h"
 #include "../general.h"
 #include "../performance.h"
+#include "../string_list_special.h"
 
 #ifndef MEASURE_FRAME_TIME_SAMPLES_COUNT
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
@@ -152,39 +151,7 @@ const char *video_driver_find_ident(int idx)
  **/
 const char* config_get_video_driver_options(void)
 {
-   union string_list_elem_attr attr;
-   unsigned i;
-   char *options = NULL;
-   int options_len = 0;
-   struct string_list *options_l = string_list_new();
-
-   attr.i = 0;
-
-   if (!options_l)
-      return NULL;
-
-   for (i = 0; video_driver_find_handle(i); i++)
-   {
-      const char *opt = video_driver_find_ident(i);
-      options_len += strlen(opt) + 1;
-      string_list_append(options_l, opt, attr);
-   }
-
-   options = (char*)calloc(options_len, sizeof(char));
-
-   if (!options)
-   {
-      string_list_free(options_l);
-      options_l = NULL;
-      return NULL;
-   }
-
-   string_list_join_concat(options, options_len, options_l, "|");
-
-   string_list_free(options_l);
-   options_l = NULL;
-
-   return options;
+   return string_list_special_new(STRING_LIST_VIDEO_DRIVERS);
 }
 
 void find_video_driver(void)
