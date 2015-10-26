@@ -26,6 +26,8 @@
 #include "camera/camera_driver.h"
 #endif
 
+#include "gfx/video_driver.h"
+#include "input/input_driver.h"
 #include "audio/audio_driver.h"
 
 const char *string_list_special_new(enum string_list_type type)
@@ -78,6 +80,15 @@ const char *string_list_special_new(enum string_list_type type)
          for (i = 0; video_driver_find_handle(i); i++)
          {
             const char *opt  = video_driver_find_ident(i);
+            len             += strlen(opt) + 1;
+
+            string_list_append(s, opt, attr);
+         }
+         break;
+      case STRING_LIST_INPUT_DRIVERS:
+         for (i = 0; input_driver_find_handle(i); i++)
+         {
+            const char *opt  = input_driver_find_ident(i);
             len             += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
