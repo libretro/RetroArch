@@ -333,7 +333,8 @@ static int playlist_association_right(unsigned type, const char *label,
    unsigned idx     = type - MENU_SETTINGS_PLAYLIST_ASSOCIATION_START;
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
-   (void)label;
+   (void)system;
+   (void)idx;
 
    return 0;
 }
