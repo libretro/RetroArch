@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2015 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (compat.c).
+ * The following license statement only applies to this file (compat_getopt.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -22,14 +22,12 @@
 
 #include <ctype.h>
 
-#ifndef HAVE_GETOPT_LONG
 #include <string.h>
 #include <boolean.h>
 #include <stddef.h>
 #include <stdlib.h>
 
 #include <retro_miscellaneous.h>
-#endif
 
 #include <compat/getopt.h>
 #include <compat/strl.h>
@@ -38,7 +36,6 @@
 
 #include <retro_assert.h>
 
-#ifndef HAVE_GETOPT_LONG
 char *optarg;
 int optind, opterr, optopt;
 
@@ -111,7 +108,8 @@ static int parse_short(const char *optstring, char * const *argv)
 
       return optarg ? opt[0] : '?';
    }
-   else if (embedded_arg)
+
+   if (embedded_arg)
    {
       /* If we see additional characters, 
        * and they don't take arguments, this 
@@ -119,11 +117,9 @@ static int parse_short(const char *optstring, char * const *argv)
       memmove(&argv[0][1], &argv[0][2], strlen(&argv[0][2]) + 1);
       return opt[0];
    }
-   else
-   {
-      optind++;
-      return opt[0];
-   }
+
+   optind++;
+   return opt[0];
 }
 
 static int parse_long(const struct option *longopts, char * const *argv)
@@ -215,161 +211,8 @@ int getopt_long(int argc, char *argv[],
 
    if (short_index == 0)
       return parse_short(optstring, &argv[optind]);
-   else if (long_index == 0)
+   if (long_index == 0)
       return parse_long(longopts, &argv[optind]);
-   else
-      return '?';
+
+   return '?';
 }
-
-#endif
-
-#ifndef HAVE_STRCASESTR
-/* Pretty much strncasecmp. */
-static int casencmp(const char *a, const char *b, size_t n)
-{
-   size_t i;
-
-   for (i = 0; i < n; i++)
-   {
-      int a_lower = tolower(a[i]);
-      int b_lower = tolower(b[i]);
-      if (a_lower != b_lower)
-         return a_lower - b_lower;
-   }
-
-   return 0;
-}
-
-char *strcasestr_rarch__(const char *haystack, const char *needle)
-{
-   size_t i, hay_len, needle_len, search_off;
-
-   hay_len = strlen(haystack);
-   needle_len = strlen(needle);
-   if (needle_len > hay_len)
-      return NULL;
-
-   search_off = hay_len - needle_len;
-   for (i = 0; i <= search_off; i++)
-      if (!casencmp(haystack + i, needle, needle_len))
-         return (char*)haystack + i;
-
-   return NULL;
-}
-#endif
-
-#ifndef HAVE_STRL
-
-/* Implementation of strlcpy()/strlcat() based on OpenBSD. */
-
-size_t strlcpy(char *dest, const char *source, size_t size)
-{
-   size_t src_size = 0;
-   size_t n = size;
-
-   if (n)
-      while (--n && (*dest++ = *source++)) src_size++;
-
-   if (!n)
-   {
-      if (size) *dest = '\0';
-      while (*source++) src_size++;
-   }
-
-   return src_size;
-}
-
-size_t strlcat(char *dest, const char *source, size_t size)
-{
-   size_t len = strlen(dest);
-
-   dest += len;
-
-   if (len > size)
-      size = 0;
-   else
-      size -= len;
-
-   return len + strlcpy(dest, source, size);
-}
-
-#endif
-
-#ifdef _WIN32
-
-#undef strcasecmp
-#undef strdup
-#undef isblank
-#undef strtok_r
-#include <ctype.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <compat/strl.h>
-
-#include <string.h>
-
-int rarch_strcasecmp__(const char *a, const char *b)
-{
-   while (*a && *b)
-   {
-      int a_ = tolower(*a);
-      int b_ = tolower(*b);
-
-      if (a_ != b_)
-         return a_ - b_;
-
-      a++;
-      b++;
-   }
-
-   return tolower(*a) - tolower(*b);
-}
-
-char *rarch_strdup__(const char *orig)
-{
-   size_t len = strlen(orig) + 1;
-   char *ret  = (char*)malloc(len);
-   if (!ret)
-      return NULL;
-
-   strlcpy(ret, orig, len);
-   return ret;
-}
-
-int rarch_isblank__(int c)
-{
-   return (c == ' ') || (c == '\t');
-}
-
-char *rarch_strtok_r__(char *str, const char *delim, char **saveptr)
-{
-   char *first = NULL;
-   if (!saveptr || !delim)
-      return NULL;
-
-   if (str)
-      *saveptr = str;
-
-   do
-   {
-      char *ptr = NULL;
-      first = *saveptr;
-      while (*first && strchr(delim, *first))
-         *first++ = '\0';
-
-      if (*first == '\0')
-         return NULL;
-
-      ptr = first + 1;
-
-      while (*ptr && !strchr(delim, *ptr))
-         ptr++;
-
-      *saveptr = ptr + (*ptr ? 1 : 0);
-      *ptr     = '\0';
-   } while (strlen(first) == 0);
-
-   return first;
-}
-
-#endif

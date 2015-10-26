@@ -22,9 +22,7 @@
 #define HAVE_COMPRESSION
 #endif
 
-#if defined(_MSC_VER)
 #include <compat/posix_string.h>
-#endif
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
 #include "../netlogger.c"
@@ -53,7 +51,18 @@ PERFORMANCE
 /*============================================================
 COMPATIBILITY
 ============================================================ */
-#include "../compat/compat.c"
+#ifndef HAVE_GETOPT_LONG
+#include "../compat/compat_getopt.c"
+#endif
+
+#ifndef HAVE_STRCASESTR
+#include "../compat/compat_strcasestr.c"
+#endif
+
+#ifndef HAVE_STRL
+#include "../compat/compat_strl.c"
+#endif
+
 #include "../libretro-common/compat/compat_fnmatch.c"
 #include "../libretro-common/memmap/memalign.c"
 

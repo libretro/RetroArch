@@ -173,8 +173,8 @@ OBJ += frontend/frontend.o \
        patch.o \
        libretro-common/queues/fifo_buffer.o \
        core_options.o \
-       libretro-common/compat/compat.o \
        libretro-common/compat/compat_fnmatch.o \
+		 libretro-common/compat/compat_posix_string.o \
        cheats.o \
        core_info.o \
        libretro-common/file/config_file.o \
@@ -209,6 +209,17 @@ OBJ += frontend/frontend.o \
        record/drivers/record_null.o \
        performance.o
 
+ifneq ($(HAVE_GETOPT_LONG), 1)
+OBJ += libretro-common/compat/compat_getopt.o
+endif
+
+ifneq ($(HAVE_STRCASESTR), 1)
+OBJ += libretro-common/compat/compat_strcasestr.o
+endif
+
+ifneq ($(HAVE_STRL), 1)
+OBJ += libretro-common/compat/compat_strl.o
+endif
 
 OBJ += gfx/image/image.o
 

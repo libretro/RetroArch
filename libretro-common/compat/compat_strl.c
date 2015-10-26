@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2015 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (strl.h).
+ * The following license statement only applies to this file (compat_strl.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,39 +20,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __LIBRETRO_SDK_COMPAT_STRL_H
-#define __LIBRETRO_SDK_COMPAT_STRL_H
+#include <ctype.h>
 
-#include <string.h>
-#include <stddef.h>
+#include <compat/strl.h>
+#include <compat/posix_string.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../../../config.h"
-#endif
+#include <retro_assert.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/* Implementation of strlcpy()/strlcat() based on OpenBSD. */
 
-#ifdef __MACH__
-#define HAVE_STRL
-#endif
+size_t strlcpy(char *dest, const char *source, size_t size)
+{
+   size_t src_size = 0;
+   size_t n = size;
 
-#ifndef HAVE_STRL
-/* Avoid possible naming collisions during link since 
- * we prefer to use the actual name. */
-#define strlcpy(dst, src, size) strlcpy_rarch__(dst, src, size)
+   if (n)
+      while (--n && (*dest++ = *source++)) src_size++;
 
-#define strlcat(dst, src, size) strlcat_rarch__(dst, src, size)
+   if (!n)
+   {
+      if (size) *dest = '\0';
+      while (*source++) src_size++;
+   }
 
-size_t strlcpy(char *dest, const char *source, size_t size);
-size_t strlcat(char *dest, const char *source, size_t size);
-
-#endif
-
-#ifdef __cplusplus
+   return src_size;
 }
-#endif
 
-#endif
+size_t strlcat(char *dest, const char *source, size_t size)
+{
+   size_t len = strlen(dest);
 
+   dest += len;
+
+   if (len > size)
+      size = 0;
+   else
+      size -= len;
+
+   return len + strlcpy(dest, source, size);
+}

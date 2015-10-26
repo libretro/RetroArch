@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2015 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (strl.h).
+ * The following license statement only applies to this file (compat_strcasestr.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,39 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __LIBRETRO_SDK_COMPAT_STRL_H
-#define __LIBRETRO_SDK_COMPAT_STRL_H
+#include <ctype.h>
 
-#include <string.h>
-#include <stddef.h>
+#include <compat/strcasestr.h>
+#include <retro_assert.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../../../config.h"
-#endif
+/* Pretty much strncasecmp. */
+static int casencmp(const char *a, const char *b, size_t n)
+{
+   size_t i;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+   for (i = 0; i < n; i++)
+   {
+      int a_lower = tolower(a[i]);
+      int b_lower = tolower(b[i]);
+      if (a_lower != b_lower)
+         return a_lower - b_lower;
+   }
 
-#ifdef __MACH__
-#define HAVE_STRL
-#endif
-
-#ifndef HAVE_STRL
-/* Avoid possible naming collisions during link since 
- * we prefer to use the actual name. */
-#define strlcpy(dst, src, size) strlcpy_rarch__(dst, src, size)
-
-#define strlcat(dst, src, size) strlcat_rarch__(dst, src, size)
-
-size_t strlcpy(char *dest, const char *source, size_t size);
-size_t strlcat(char *dest, const char *source, size_t size);
-
-#endif
-
-#ifdef __cplusplus
+   return 0;
 }
-#endif
 
-#endif
+char *strcasestr_rarch__(const char *haystack, const char *needle)
+{
+   size_t i, hay_len, needle_len, search_off;
 
+   hay_len = strlen(haystack);
+   needle_len = strlen(needle);
+   if (needle_len > hay_len)
+      return NULL;
+
+   search_off = hay_len - needle_len;
+   for (i = 0; i <= search_off; i++)
+      if (!casencmp(haystack + i, needle, needle_len))
+         return (char*)haystack + i;
+
+   return NULL;
+}
