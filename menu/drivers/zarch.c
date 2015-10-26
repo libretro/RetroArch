@@ -603,6 +603,17 @@ static void zarch_zui_render_lay_root_load_free(zui_t *zui)
    zui->load_dlist = NULL;
 }
 
+static void zarch_zui_render_lay_root_load_set_new_path(zui_t *zui, const char *newpath)
+{
+   if (!zui)
+      return;
+
+   free(zui->load_cwd);
+   zui->load_cwd = strdup(newpath);
+   dir_list_free(zui->load_dlist);
+   zui->load_dlist = NULL;
+}
+
 static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
 {
    char parent_dir[PATH_MAX_LENGTH];
@@ -620,7 +631,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
       {
          zui->load_dlist = dir_list_new(zui->load_cwd, global->core_info.current->supported_extensions, true, true);
          dir_list_sort(zui->load_dlist, true);
-         zui->load_dlist_first = 0;
+         zui->load_dlist_first  = 0;
       }
 
       cwd_offset = min(strlen(zui->load_cwd), 60);
@@ -636,12 +647,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
          if (parent_dir[0] != '\0' &&
                zarch_zui_list_item(zui, 0, tabbed->tabline_size + 73, " ..", false, NULL /* TODO/FIXME */))
          {
-            dir_list_free(zui->load_dlist);
-            free(zui->load_cwd);
-            zui->load_dlist = NULL;
-            zui->load_cwd   = NULL;
-
-            zui->load_cwd = strdup(parent_dir);
+            zarch_zui_render_lay_root_load_set_new_path(zui, parent_dir);
          }
          else
          {
@@ -690,22 +696,17 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
                {
                   if (path_is_directory(path))
                   {
-                     free(zui->load_cwd);
-                     zui->load_cwd = strdup(path);
-                     dir_list_free(zui->load_dlist);
-                     zui->load_dlist = NULL;
+                     zarch_zui_render_lay_root_load_set_new_path(zui, path);
                      break;
                   }
-                  else
-                  {
-                     zui->pick_cores     = NULL;
-                     zui->pick_supported = 0;
-                     strncpy(zui->pick_content, path, sizeof(zui->pick_content)-1);
-                     core_info_list_get_supported_cores(global->core_info.list, path,
-                           &zui->pick_cores, &zui->pick_supported);
-                     layout = LAY_PICK_CORE;
-                     break;
-                  }
+
+                  zui->pick_cores     = NULL;
+                  zui->pick_supported = 0;
+                  strncpy(zui->pick_content, path, sizeof(zui->pick_content)-1);
+                  core_info_list_get_supported_cores(global->core_info.list, path,
+                        &zui->pick_cores, &zui->pick_supported);
+                  layout = LAY_PICK_CORE;
+                  break;
                }
                j++;
             }
