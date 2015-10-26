@@ -227,8 +227,8 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "Systeem/BIOS Map";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Cheat Bestand Map";
-      case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
-         return "Archief uitpakken Map";
+      case MENU_LABEL_VALUE_CACHE_DIRECTORY:
+         return "Cache Map";
       case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Audio Filter Map";
       case MENU_LABEL_VALUE_VIDEO_SHADER_DIR:

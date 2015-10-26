@@ -191,7 +191,7 @@ const char *menu_hash_to_str_pl(uint32_t hash)
          return "Katalog systemu";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Katalog z plikami cheatów";
-      case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
+      case MENU_LABEL_VALUE_CACHE_DIRECTORY: /* UPDATE/FIXME */
          return "Katalog do wypakowywania archiwów";
       case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Katalog filtrów audio";

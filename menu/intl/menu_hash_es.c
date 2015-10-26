@@ -238,7 +238,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Carpeta de sistema/BIOS";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Carpeta de archivos de trucos";
-      case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
+      case MENU_LABEL_VALUE_CACHE_DIRECTORY: /* FIXME/UPDATE */
          return "Carpeta de extracción";
       case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Carpeta de filtros de sonido";

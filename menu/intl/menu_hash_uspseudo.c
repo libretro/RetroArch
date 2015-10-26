@@ -171,8 +171,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "content_database_path";
       case MENU_LABEL_SYSTEM_DIRECTORY:
          return "system_directory";
-      case MENU_LABEL_EXTRACTION_DIRECTORY:
-         return "extraction_directory";
+      case MENU_LABEL_CACHE_DIRECTORY:
+         return "cache_directory";
       case MENU_LABEL_CHEAT_DATABASE_PATH:
          return "cheat_database_path";
       case MENU_LABEL_AUDIO_FILTER_DIR:
@@ -847,7 +847,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Sýstem/BÌÓS Dir";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Çheåt Fíle Dir";
-      case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
+      case MENU_LABEL_VALUE_CACHE_DIRECTORY: /* FIXME/UPDATE */
          return "Extractiòn Dir";
       case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Áûdio Filter Ðïr";

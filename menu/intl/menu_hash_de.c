@@ -181,7 +181,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "System/BIOS-Verzeichnis";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Cheat-Datei-Verzeichnis";
-      case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
+      case MENU_LABEL_VALUE_CACHE_DIRECTORY: /* FIXME/UPDATE */
          return "Entpack-Verzeichnis";
       case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Audio-Filter-Verzeichnis";

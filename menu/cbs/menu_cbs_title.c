@@ -444,7 +444,7 @@ static int action_get_title_assets_directory(const char *path, const char *label
 static int action_get_title_extraction_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "EXTRACTION DIR", path, len);
+   return fill_title(s, "CACHE DIR", path, len);
 }
 
 static int action_get_title_menu(const char *path, const char *label, 
@@ -537,7 +537,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_JOYPAD_AUTOCONFIG_DIR:
          BIND_ACTION_GET_TITLE(cbs, action_get_title_autoconfig_directory);
          break;
-      case MENU_LABEL_EXTRACTION_DIRECTORY:
+      case MENU_LABEL_CACHE_DIRECTORY:
          BIND_ACTION_GET_TITLE(cbs, action_get_title_extraction_directory);
          break;
       case MENU_LABEL_SYSTEM_DIRECTORY:

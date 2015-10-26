@@ -789,8 +789,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_SYSTEM_DIRECTORY                                      0x20da683fU
 #define MENU_LABEL_ASSETS_DIRECTORY                                            0xde1ae8ecU
 #define MENU_LABEL_VALUE_ASSETS_DIRECTORY                                      0xc94e558dU
-#define MENU_LABEL_EXTRACTION_DIRECTORY                                        0x33b55ffaU
-#define MENU_LABEL_VALUE_EXTRACTION_DIRECTORY                                  0x20a7bc9bU
+#define MENU_LABEL_CACHE_DIRECTORY                                             0x851dfb8dU
+#define MENU_LABEL_VALUE_CACHE_DIRECTORY                                       0x20a7bc9bU
 #define MENU_LABEL_JOYPAD_AUTOCONFIG_DIR                                       0x2f4822d8U
 #define MENU_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR                                 0x8bb1c2c9U
 #define MENU_LABEL_INPUT_AUTODETECT_ENABLE                                     0xb1e07facU
