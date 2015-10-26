@@ -157,6 +157,8 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
          "remaps", sizeof(g_defaults.dir.remap));
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
          "retroarch.cfg", sizeof(g_defaults.path.config));
+   
+   *argc = 0;
 
 #ifndef IS_SALAMANDER
 #if 0
