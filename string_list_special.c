@@ -30,6 +30,7 @@
 #include "location/location_driver.h"
 #endif
 
+#include "general.h"
 #include "gfx/video_driver.h"
 #include "input/input_driver.h"
 #include "input/input_hid_driver.h"
@@ -44,6 +45,7 @@ const char *string_list_special_new(enum string_list_type type)
    unsigned i;
    char         *options = NULL;
    int               len = 0;
+   global_t *global      = global_get_ptr();
    struct string_list *s = string_list_new();
 
    attr.i = 0;
@@ -148,6 +150,19 @@ const char *string_list_special_new(enum string_list_type type)
             string_list_append(s, opt, attr);
          }
          break;
+      case STRING_LIST_CORES:
+         for (i = 0; i < core_info_list_num_info_files(global->core_info.list); i++)
+         {
+            const core_info_t *info = (const core_info_t*)&global->core_info.list->list[i];
+            const char *opt         = info ? info->display_name : NULL;
+
+            if (!opt)
+               goto end;
+
+            len                    += strlen(opt) + 1;
+            string_list_append(s, opt, attr);
+         }
+         break; 
       case STRING_LIST_NONE:
       default:
          goto end;

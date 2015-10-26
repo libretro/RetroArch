@@ -28,7 +28,8 @@ enum string_list_type
    STRING_LIST_INPUT_DRIVERS,
    STRING_LIST_INPUT_JOYPAD_DRIVERS,
    STRING_LIST_INPUT_HID_DRIVERS,
-   STRING_LIST_RECORD_DRIVERS
+   STRING_LIST_RECORD_DRIVERS,
+   STRING_LIST_CORES
 };
 
 const char *string_list_special_new(enum string_list_type type);
