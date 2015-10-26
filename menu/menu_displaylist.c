@@ -2509,7 +2509,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                   path_remove_extension(path_base);
                   menu_entries_push(info->list,
                         path_base,
-                        str_list->elems[i].data, MENU_FILE_PLAYLIST_ASSOCIATION, 0, 0);
+                        str_list->elems[i].data, MENU_SETTINGS_PLAYLIST_ASSOCIATION_START + i, 0, 0);
                }
                string_list_free(str_list);
             }

@@ -303,6 +303,17 @@ static int action_left_video_resolution(unsigned type, const char *label,
    return 0;
 }
 
+static int playlist_association_left(unsigned type, const char *label,
+      bool wraparound)
+{
+   unsigned idx     = type - MENU_SETTINGS_PLAYLIST_ASSOCIATION_START;
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
+
+   (void)label;
+
+   return 0;
+}
+
 static int core_setting_left(unsigned type, const char *label,
       bool wraparound)
 {
@@ -433,6 +444,10 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {
       BIND_ACTION_LEFT(cbs, action_left_input_desc);
+   }
+   else if ((type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START))
+   {
+      BIND_ACTION_LEFT(cbs, playlist_association_left);
    }
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
    {

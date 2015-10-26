@@ -938,7 +938,11 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
          break;
    }
 
-   if (type >= MENU_SETTINGS_CORE_OPTION_START)
+   if (type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START)
+   {
+      strlcpy(s, "N/A", len);
+   }
+   else if (type >= MENU_SETTINGS_CORE_OPTION_START)
    {
       const char *core_opt = NULL;
       if (!system)
