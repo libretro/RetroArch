@@ -2401,6 +2401,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_entries_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
                "", 0, 0, 0);
+         ret = 0;
 #endif
          info->need_refresh = true;
          info->need_push    = true;
