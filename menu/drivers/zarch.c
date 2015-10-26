@@ -625,10 +625,9 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
          zui->load_dlist = NULL;
       }
 
-      fill_pathname_parent_dir(parent_dir, zui->load_cwd, sizeof(parent_dir));
-
       if (zui->load_dlist)
       {
+         fill_pathname_parent_dir(parent_dir, zui->load_cwd, sizeof(parent_dir));
          if (parent_dir[0] != '\0' &&
                zarch_zui_list_item(zui, 0, tabbed->tabline_size + 73, " ..", false, NULL /* TODO/FIXME */))
          {
