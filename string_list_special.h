@@ -23,7 +23,8 @@ enum string_list_type
    STRING_LIST_CAMERA_DRIVERS,
    STRING_LIST_AUDIO_DRIVERS,
    STRING_LIST_VIDEO_DRIVERS,
-   STRING_LIST_INPUT_DRIVERS
+   STRING_LIST_INPUT_DRIVERS,
+   STRING_LIST_INPUT_JOYPAD_DRIVERS
 };
 
 const char *string_list_special_new(enum string_list_type type);
