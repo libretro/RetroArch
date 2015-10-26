@@ -34,6 +34,7 @@
 #include "../git_version.h"
 #include "../file_ext.h"
 #include "../input/input_common.h"
+#include "../dir_list_special.h"
 
 #ifdef __linux__
 #include "../frontend/drivers/platform_linux.h"
@@ -2492,6 +2493,27 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_HISTORY_LIST_ENABLE), PARSE_ONLY_BOOL, false);
          ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_CONTENT_HISTORY_SIZE), PARSE_ONLY_UINT, false);
+         {
+            struct string_list *str_list = dir_list_new_special(settings->playlist_directory, DIR_LIST_COLLECTIONS);
+            if (str_list)
+            {
+               unsigned i;
+
+               for (i = 0; i < str_list->size; i++)
+               {
+                  char path_base[PATH_MAX_LENGTH];
+                  const char *path            = path_basename(str_list->elems[i].data);
+
+                  strlcpy(path_base, path, sizeof(path_base));
+
+                  path_remove_extension(path_base);
+                  menu_entries_push(info->list,
+                        path_base,
+                        str_list->elems[i].data, 0, 0, 0);
+               }
+               string_list_free(str_list);
+            }
+         }
          info->need_push    = true;
          break;
       case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
