@@ -319,8 +319,8 @@ static void zarch_zui_draw_text(zui_t *zui, uint32_t color, int x, int y, const 
    video_driver_set_osd_msg(text, &params, zui->fb_buf);
 }
 
-static void zarch_zui_push_quad(zui_t *zui, unsigned width, unsigned height,
-      const GRfloat *colors, int x1, int y1,
+static void zarch_zui_push_quad(unsigned width, unsigned height,
+      const GRfloat *colors, gfx_coord_array_t *ca, int x1, int y1,
       int x2, int y2)
 {
    gfx_coords_t coords;
@@ -351,14 +351,14 @@ static void zarch_zui_push_quad(zui_t *zui, unsigned width, unsigned height,
    coords.lut_tex_coord = tex_coord;
    coords.vertices      = 3;
 
-   gfx_coord_array_add(&zui->ca, &coords, 3);
+   gfx_coord_array_add(ca, &coords, 3);
 
    coords.color         += 4;
    coords.vertex        += 2;
    coords.tex_coord     += 2;
    coords.lut_tex_coord += 2;
 
-   gfx_coord_array_add(&zui->ca, &coords, 3);
+   gfx_coord_array_add(ca, &coords, 3);
 }
 
 static float zarch_zui_randf(float min, float max)
@@ -438,7 +438,7 @@ static void zarch_zui_snow(zui_t *zui, int width, int height)
             colors[j] = alpha;
       }
 
-      zarch_zui_push_quad(zui, zui->width, zui->height, colors, p->x-2, p->y-2, p->x+2, p->y+2);
+      zarch_zui_push_quad(zui->width, zui->height, colors, &zui->ca, p->x-2, p->y-2, p->x+2, p->y+2);
 
       j++;
    }
@@ -453,7 +453,7 @@ static bool zarch_zui_button_full(zui_t *zui, int x1, int y1, int x2, int y2, co
    if (zui->item.active == id || zui->item.hot == id)
       bg = ZUI_BG_HILITE;
 
-   zarch_zui_push_quad(zui, zui->width, zui->height,  bg, x1, y1, x2, y2);
+   zarch_zui_push_quad(zui->width, zui->height,  bg, &zui->ca,  x1, y1, x2, y2);
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, x1+12, y1 + 41, label);
 
    return active;
@@ -489,7 +489,7 @@ static bool zarch_zui_list_item(zui_t *zui, int x1, int y1,
          label,
          (bg == ZUI_BG_HILITE || bg == ZUI_BG_PAD_HILITE));
 
-   zarch_zui_push_quad(zui, zui->width, zui->height, bg, x1, y1, x2, y2);
+   zarch_zui_push_quad(zui->width, zui->height, bg, &zui->ca, x1, y1, x2, y2);
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 12, y1 + 35, title_buf);
 
    if (entry)
@@ -530,7 +530,7 @@ static bool zarch_zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label, bool
    else if (tab->active == id || zui->item.active == id || zui->item.hot == id)
       bg             = ZUI_BG_HILITE;
 
-   zarch_zui_push_quad(zui, zui->width, zui->height,  bg, x1+0, y1+0, x2, y2);
+   zarch_zui_push_quad(zui->width, zui->height,  bg, &zui->ca, x1+0, y1+0, x2, y2);
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, x1+12, y1 + 41, label);
 
    if (tab->vertical)
@@ -774,7 +774,7 @@ static int zarch_zui_render_lay_root(zui_t *zui)
    if (zarch_zui_render_lay_root_downloads(zui, &tabbed))
       return 0;
 
-   zarch_zui_push_quad(zui, zui->width, zui->height, ZUI_BG_HILITE, 0, 60, zui->width - 290 - 40, 60+4);
+   zarch_zui_push_quad(zui->width, zui->height, ZUI_BG_HILITE, &zui->ca, 0, 60, zui->width - 290 - 40, 60+4);
 
    return 0;
 }
@@ -897,7 +897,7 @@ static void zarch_frame(void)
 
    menu_display_font_bind_block(zui->menu, font_driver, &zui->tmp_block);
 
-   zarch_zui_push_quad(zui, zui->width, zui->height, ZUI_BG_SCREEN, 0, 0, zui->width, zui->height);
+   zarch_zui_push_quad(zui->width, zui->height, ZUI_BG_SCREEN, &zui->ca, 0, 0, zui->width, zui->height);
    zarch_zui_snow(zui, zui->width, zui->height);
 
    switch (layout)
