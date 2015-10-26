@@ -26,10 +26,15 @@
 #include "camera/camera_driver.h"
 #endif
 
+#ifdef HAVE_LOCATION
+#include "location/location_driver.h"
+#endif
+
 #include "gfx/video_driver.h"
 #include "input/input_driver.h"
 #include "input/input_joypad_driver.h"
 #include "audio/audio_driver.h"
+#include "record/record_driver.h"
 
 const char *string_list_special_new(enum string_list_type type)
 {
@@ -48,7 +53,6 @@ const char *string_list_special_new(enum string_list_type type)
    {
       case STRING_LIST_MENU_DRIVERS:
 #ifdef HAVE_MENU
-#ifndef IS_JOYCONFIG
          for (i = 0; menu_driver_find_handle(i); i++)
          {
             const char *opt  = menu_driver_find_ident(i);
@@ -57,7 +61,6 @@ const char *string_list_special_new(enum string_list_type type)
             string_list_append(s, opt, attr);
          }
          break;
-#endif
 #endif
       case STRING_LIST_CAMERA_DRIVERS:
 #ifdef HAVE_CAMERA
@@ -70,8 +73,17 @@ const char *string_list_special_new(enum string_list_type type)
          }
          break;
 #endif
+      case STRING_LIST_LOCATION_DRIVERS:
+#ifdef HAVE_LOCATION
+         for (i = 0; location_driver_find_handle(i); i++)
+         {
+            const char *opt  = location_driver_find_ident(i);
+            options_len     += strlen(opt) + 1;
+            string_list_append(options_l, opt, attr);
+         }
+         break;
+#endif
       case STRING_LIST_AUDIO_DRIVERS:
-#ifndef IS_JOYCONFIG
          for (i = 0; audio_driver_find_handle(i); i++)
          {
             const char *opt  = audio_driver_find_ident(i);
@@ -79,10 +91,8 @@ const char *string_list_special_new(enum string_list_type type)
 
             string_list_append(s, opt, attr);
          }
-#endif
          break;
       case STRING_LIST_VIDEO_DRIVERS:
-#ifndef IS_JOYCONFIG
          for (i = 0; video_driver_find_handle(i); i++)
          {
             const char *opt  = video_driver_find_ident(i);
@@ -90,10 +100,8 @@ const char *string_list_special_new(enum string_list_type type)
 
             string_list_append(s, opt, attr);
          }
-#endif
          break;
       case STRING_LIST_INPUT_DRIVERS:
-#ifndef IS_JOYCONFIG
          for (i = 0; input_driver_find_handle(i); i++)
          {
             const char *opt  = input_driver_find_ident(i);
@@ -101,12 +109,20 @@ const char *string_list_special_new(enum string_list_type type)
 
             string_list_append(s, opt, attr);
          }
-#endif
          break;
       case STRING_LIST_INPUT_JOYPAD_DRIVERS:
          for (i = 0; joypad_driver_find_handle(i); i++)
          {
             const char *opt  = joypad_driver_find_ident(i);
+            len             += strlen(opt) + 1;
+
+            string_list_append(s, opt, attr);
+         }
+         break;
+      case STRING_LIST_RECORD_DRIVERS:
+         for (i = 0; record_driver_find_handle(i); i++)
+         {
+            const char *opt  = record_driver_find_ident(i);
             len             += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);

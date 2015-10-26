@@ -15,9 +15,9 @@
  */
 
 #include <string.h>
-#include <string/string_list.h>
 
 #include "../general.h"
+#include "../string_list_special.h"
 
 static const location_driver_t *location_drivers[] = {
 #ifdef ANDROID
@@ -73,39 +73,7 @@ const char *location_driver_find_ident(int idx)
  **/
 const char* config_get_location_driver_options(void)
 {
-   union string_list_elem_attr attr;
-   unsigned i;
-   char *options = NULL;
-   int options_len = 0;
-   struct string_list *options_l = string_list_new();
-
-   attr.i = 0;
-
-   if (!options_l)
-      return NULL;
-
-   for (i = 0; location_driver_find_handle(i); i++)
-   {
-      const char *opt = location_driver_find_ident(i);
-      options_len += strlen(opt) + 1;
-      string_list_append(options_l, opt, attr);
-   }
-
-   options = (char*)calloc(options_len, sizeof(char));
-
-   if (!options)
-   {
-      string_list_free(options_l);
-      options_l = NULL;
-      return NULL;
-   }
-
-   string_list_join_concat(options, options_len, options_l, "|");
-
-   string_list_free(options_l);
-   options_l = NULL;
-
-   return options;
+   return string_list_special_new(STRING_LIST_LOCATION_DRIVERS);
 }
 
 void find_location_driver(void)

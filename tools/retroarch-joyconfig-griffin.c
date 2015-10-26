@@ -24,8 +24,6 @@
 #include "../libretro-common/file/retro_file.c"
 #include "../libretro-common/file/retro_stat.c"
 
-#include "../string_list_special.c"
-
 #if defined(__linux) && !defined(ANDROID)
 #include "../input/drivers/linuxraw_input.c"
 #include "../input/drivers_joypad/linuxraw_joypad.c"
