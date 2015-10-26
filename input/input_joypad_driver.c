@@ -109,7 +109,7 @@ const char *joypad_driver_find_ident(int idx)
  **/
 const char* config_get_joypad_driver_options(void)
 {
-   return string_list_special_new(STRING_LIST_INPUT_JOYPAD_DRIVERS, NULL);
+   return char_list_new_special(STRING_LIST_INPUT_JOYPAD_DRIVERS, NULL);
 }
 #endif
 

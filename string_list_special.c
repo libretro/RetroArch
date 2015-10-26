@@ -14,7 +14,6 @@
  */
 
 #include <string.h>
-#include <string/string_list.h>
 
 #include "string_list_special.h"
 
@@ -39,20 +38,24 @@
 #include "audio/audio_resampler_driver.h"
 #include "record/record_driver.h"
 
-const char *string_list_special_new(enum string_list_type type, void *data)
+struct string_list *string_list_new_special(enum string_list_type type,
+      void *data, unsigned *len)
 {
    union string_list_elem_attr attr;
    unsigned i;
    size_t list_size;
-   char         *options = NULL;
    const core_info_t *core_info = NULL;
-   int               len = 0;
    global_t *global      = global_get_ptr();
    struct string_list *s = string_list_new();
 
    attr.i = 0;
 
    (void)data;
+
+   if (!len)
+      return NULL;
+
+   *len = 0;
 
    if (!s)
       return NULL;
@@ -64,7 +67,7 @@ const char *string_list_special_new(enum string_list_type type, void *data)
          for (i = 0; menu_driver_find_handle(i); i++)
          {
             const char *opt  = menu_driver_find_ident(i);
-            len             += strlen(opt) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -75,7 +78,7 @@ const char *string_list_special_new(enum string_list_type type, void *data)
          for (i = 0; camera_driver_find_handle(i); i++)
          {
             const char *opt  = camera_driver_find_ident(i);
-            len             += strlen(opt) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -86,7 +89,7 @@ const char *string_list_special_new(enum string_list_type type, void *data)
          for (i = 0; location_driver_find_handle(i); i++)
          {
             const char *opt  = location_driver_find_ident(i);
-            options_len     += strlen(opt) + 1;
+            *len            += strlen(opt) + 1;
             string_list_append(options_l, opt, attr);
          }
          break;
@@ -95,7 +98,7 @@ const char *string_list_special_new(enum string_list_type type, void *data)
          for (i = 0; audio_driver_find_handle(i); i++)
          {
             const char *opt  = audio_driver_find_ident(i);
-            len             += strlen(opt) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -104,7 +107,7 @@ const char *string_list_special_new(enum string_list_type type, void *data)
          for (i = 0; audio_resampler_driver_find_handle(i); i++)
          {
             const char *opt  = audio_resampler_driver_find_ident(i);
-            len             += strlen(opt) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -113,7 +116,7 @@ const char *string_list_special_new(enum string_list_type type, void *data)
          for (i = 0; video_driver_find_handle(i); i++)
          {
             const char *opt  = video_driver_find_ident(i);
-            len             += strlen(opt) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -122,7 +125,7 @@ const char *string_list_special_new(enum string_list_type type, void *data)
          for (i = 0; input_driver_find_handle(i); i++)
          {
             const char *opt  = input_driver_find_ident(i);
-            len             += strlen(opt) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -131,7 +134,7 @@ const char *string_list_special_new(enum string_list_type type, void *data)
          for (i = 0; hid_driver_find_handle(i); i++)
          {
             const char *opt  = hid_driver_find_ident(i);
-            len             += strlen(opt) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -140,7 +143,7 @@ const char *string_list_special_new(enum string_list_type type, void *data)
          for (i = 0; joypad_driver_find_handle(i); i++)
          {
             const char *opt  = joypad_driver_find_ident(i);
-            len             += strlen(opt) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -149,7 +152,7 @@ const char *string_list_special_new(enum string_list_type type, void *data)
          for (i = 0; record_driver_find_handle(i); i++)
          {
             const char *opt  = record_driver_find_ident(i);
-            len             += strlen(opt) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -159,7 +162,7 @@ const char *string_list_special_new(enum string_list_type type, void *data)
                (const char*)data, &core_info, &list_size);
 
          if (list_size == 0)
-            goto end;
+            goto error;
 
          for (i = 0; i < list_size; i++)
          {
@@ -168,9 +171,9 @@ const char *string_list_special_new(enum string_list_type type, void *data)
             opt              = info ? info->path : NULL;
 
             if (!opt)
-               goto end;
+               goto error;
 
-            len                    += strlen(opt) + 1;
+            *len           += strlen(opt) + 1;
             string_list_append(s, opt, attr);
          }
          break;
@@ -182,9 +185,9 @@ const char *string_list_special_new(enum string_list_type type, void *data)
             opt              = core_info ? core_info->path : NULL;
 
             if (!opt)
-               goto end;
+               goto error;
 
-            len                    += strlen(opt) + 1;
+            *len            += strlen(opt) + 1;
             string_list_append(s, opt, attr);
          }
          break; 
@@ -193,7 +196,7 @@ const char *string_list_special_new(enum string_list_type type, void *data)
                (const char*)data, &core_info, &list_size);
 
          if (list_size == 0)
-            goto end;
+            goto error;
 
          for (i = 0; i < list_size; i++)
          {
@@ -202,9 +205,9 @@ const char *string_list_special_new(enum string_list_type type, void *data)
             opt              = info ? info->display_name : NULL;
 
             if (!opt)
-               goto end;
+               goto error;
 
-            len                    += strlen(opt) + 1;
+            *len            += strlen(opt) + 1;
             string_list_append(s, opt, attr);
          }
          break;
@@ -217,23 +220,32 @@ const char *string_list_special_new(enum string_list_type type, void *data)
             opt              = core_info ? core_info->display_name : NULL;
 
             if (!opt)
-               goto end;
+               goto error;
 
-            len                    += strlen(opt) + 1;
+            *len            += strlen(opt) + 1;
             string_list_append(s, opt, attr);
          }
          break; 
       case STRING_LIST_NONE:
       default:
-         goto end;
+         goto error;
    }
 
-   options = (char*)calloc(len, sizeof(char));
+   return s;
 
-   if (options)
+error:
+   return NULL;
+}
+
+const char *char_list_new_special(enum string_list_type type, void *data)
+{
+   unsigned len;
+   struct string_list *s = string_list_new_special(type, data, &len);
+   char         *options = (len > 0) ? (char*)calloc(len, sizeof(char)): NULL;
+
+   if (options && s)
       string_list_join_concat(options, len, s, "|");
 
-end:
    string_list_free(s);
    s = NULL;
 

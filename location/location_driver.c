@@ -73,7 +73,7 @@ const char *location_driver_find_ident(int idx)
  **/
 const char* config_get_location_driver_options(void)
 {
-   return string_list_special_new(STRING_LIST_LOCATION_DRIVERS, NULL);
+   return char_list_new_special(STRING_LIST_LOCATION_DRIVERS, NULL);
 }
 
 void find_location_driver(void)

@@ -99,7 +99,7 @@ const char *audio_resampler_driver_find_ident(int idx)
  **/
 const char* config_get_audio_resampler_driver_options(void)
 {
-   return string_list_special_new(STRING_LIST_AUDIO_RESAMPLER_DRIVERS, NULL);
+   return char_list_new_special(STRING_LIST_AUDIO_RESAMPLER_DRIVERS, NULL);
 }
 #endif
 

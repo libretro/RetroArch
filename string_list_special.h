@@ -16,6 +16,8 @@
 #ifndef _STRING_LIST_SPECIAL_H
 #define _STRING_LIST_SPECIAL_H
 
+#include <string/string_list.h>
+
 enum string_list_type
 {
    STRING_LIST_NONE = 0,
@@ -35,6 +37,9 @@ enum string_list_type
    STRING_LIST_CORES_NAMES
 };
 
-const char *string_list_special_new(enum string_list_type type, void *data);
+struct string_list *string_list_new_special(enum string_list_type type,
+      void *data, unsigned *len);
+
+const char *char_list_new_special(enum string_list_type type, void *data);
 
 #endif
