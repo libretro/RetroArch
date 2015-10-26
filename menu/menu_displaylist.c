@@ -2281,7 +2281,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
 
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
-   size_t i, list_size;
+   size_t i;
    int ret                     = 0;
    menu_handle_t       *menu   = menu_driver_get_ptr();
    global_t          *global   = global_get_ptr();
@@ -2853,7 +2853,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             size_t cores_names_size;
             unsigned cores_paths_len;
             size_t cores_paths_size;
-            const core_info_t *core_info = NULL;
             struct string_list *cores_names = string_list_new_special(STRING_LIST_SUPPORTED_CORES_NAMES,
                   (void*)menu->deferred_path, &cores_names_len, &cores_names_size);
             struct string_list *cores_paths = string_list_new_special(STRING_LIST_SUPPORTED_CORES_PATHS,

@@ -557,7 +557,6 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
 {
    if (zarch_zui_tab(zui, tabbed, "Recent", (zui->header_selection == 0)))
    {
-      size_t    end = menu_entries_get_end();
       unsigned size = menu_entries_get_size();
       unsigned i, j = 0;
 
@@ -573,7 +572,6 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
       for (i = zui->recent_dlist_first; i < size; ++i)
       {
          menu_entry_t entry;
-         int                x2 = 12 + zui->width - 290 - 50;
 
          menu_entries_get(i, &entry);
 
