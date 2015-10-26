@@ -32,8 +32,10 @@
 
 #include "gfx/video_driver.h"
 #include "input/input_driver.h"
+#include "input/input_hid_driver.h"
 #include "input/input_joypad_driver.h"
 #include "audio/audio_driver.h"
+#include "audio/audio_resampler_driver.h"
 #include "record/record_driver.h"
 
 const char *string_list_special_new(enum string_list_type type)
@@ -92,6 +94,15 @@ const char *string_list_special_new(enum string_list_type type)
             string_list_append(s, opt, attr);
          }
          break;
+      case STRING_LIST_AUDIO_RESAMPLER_DRIVERS:
+         for (i = 0; audio_resampler_driver_find_handle(i); i++)
+         {
+            const char *opt  = audio_resampler_driver_find_ident(i);
+            len             += strlen(opt) + 1;
+
+            string_list_append(s, opt, attr);
+         }
+         break;
       case STRING_LIST_VIDEO_DRIVERS:
          for (i = 0; video_driver_find_handle(i); i++)
          {
@@ -105,6 +116,15 @@ const char *string_list_special_new(enum string_list_type type)
          for (i = 0; input_driver_find_handle(i); i++)
          {
             const char *opt  = input_driver_find_ident(i);
+            len             += strlen(opt) + 1;
+
+            string_list_append(s, opt, attr);
+         }
+         break;
+      case STRING_LIST_INPUT_HID_DRIVERS:
+         for (i = 0; hid_driver_find_handle(i); i++)
+         {
+            const char *opt  = hid_driver_find_ident(i);
             len             += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
