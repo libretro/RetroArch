@@ -43,7 +43,9 @@ const char *string_list_special_new(enum string_list_type type, void *data)
 {
    union string_list_elem_attr attr;
    unsigned i;
+   size_t list_size;
    char         *options = NULL;
+   const core_info_t *core_info = NULL;
    int               len = 0;
    global_t *global      = global_get_ptr();
    struct string_list *s = string_list_new();
@@ -152,11 +154,32 @@ const char *string_list_special_new(enum string_list_type type, void *data)
             string_list_append(s, opt, attr);
          }
          break;
+      case STRING_LIST_SUPPORTED_CORES_PATHS:
+         core_info_list_get_supported_cores(global->core_info.list,
+               (const char*)data, &core_info, &list_size);
+
+         if (list_size == 0)
+            goto end;
+
+         for (i = 0; i < list_size; i++)
+         {
+            const char *opt  = NULL;
+            const core_info_t *info = (const core_info_t*)&core_info[i];
+            opt              = info ? info->path : NULL;
+
+            if (!opt)
+               goto end;
+
+            len                    += strlen(opt) + 1;
+            string_list_append(s, opt, attr);
+         }
+         break;
       case STRING_LIST_CORES_PATHS:
          for (i = 0; i < core_info_list_num_info_files(global->core_info.list); i++)
          {
-            const core_info_t *info = (const core_info_t*)&global->core_info.list->list[i];
-            const char *opt         = info ? info->path : NULL;
+            const char *opt  = NULL;
+            core_info        = (const core_info_t*)&global->core_info.list->list[i];
+            opt              = core_info ? core_info->path : NULL;
 
             if (!opt)
                goto end;
@@ -165,11 +188,33 @@ const char *string_list_special_new(enum string_list_type type, void *data)
             string_list_append(s, opt, attr);
          }
          break; 
+      case STRING_LIST_SUPPORTED_CORES_NAMES:
+         core_info_list_get_supported_cores(global->core_info.list,
+               (const char*)data, &core_info, &list_size);
+
+         if (list_size == 0)
+            goto end;
+
+         for (i = 0; i < list_size; i++)
+         {
+            const char *opt  = NULL;
+            const core_info_t *info  = (const core_info_t*)&core_info[i];
+            opt              = info ? info->display_name : NULL;
+
+            if (!opt)
+               goto end;
+
+            len                    += strlen(opt) + 1;
+            string_list_append(s, opt, attr);
+         }
+         break;
+         break;
       case STRING_LIST_CORES_NAMES:
          for (i = 0; i < core_info_list_num_info_files(global->core_info.list); i++)
          {
-            const core_info_t *info = (const core_info_t*)&global->core_info.list->list[i];
-            const char *opt         = info ? info->display_name : NULL;
+            const char *opt  = NULL;
+            core_info        = (const core_info_t*)&global->core_info.list->list[i];
+            opt              = core_info ? core_info->display_name : NULL;
 
             if (!opt)
                goto end;
