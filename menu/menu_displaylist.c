@@ -2495,7 +2495,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_CONTENT_HISTORY_SIZE), PARSE_ONLY_UINT, false);
          {
-            struct string_list *str_list = dir_list_new_special(settings->playlist_directory, DIR_LIST_COLLECTIONS);
+            struct string_list *str_list = dir_list_new_special(settings->playlist_directory, DIR_LIST_COLLECTIONS, NULL);
             if (str_list && str_list->size)
             {
                unsigned i;

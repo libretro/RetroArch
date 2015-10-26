@@ -651,7 +651,7 @@ static void event_set_savestate_auto_index(void)
    fill_pathname_base(state_base, global->name.savestate,
          sizeof(state_base));
 
-   if (!(dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN)))
+   if (!(dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL)))
       return;
 
    for (i = 0; i < dir_list->size; i++)
@@ -1502,7 +1502,7 @@ bool event_command(enum event_command cmd)
          if (!*settings->video.shader_dir)
             return false;
 
-         global->shader_dir.list = dir_list_new_special(NULL, DIR_LIST_SHADERS);
+         global->shader_dir.list = dir_list_new_special(NULL, DIR_LIST_SHADERS, NULL);
 
          if (!global->shader_dir.list || global->shader_dir.list->size == 0)
          {

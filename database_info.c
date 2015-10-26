@@ -392,7 +392,7 @@ database_info_handle_t *database_info_dir_init(const char *dir,
    if (!db)
       return NULL;
 
-   db->list           = dir_list_new_special(dir, DIR_LIST_CORE_INFO);
+   db->list           = dir_list_new_special(dir, DIR_LIST_CORE_INFO, NULL);
 
    if (!db->list)
       goto error;

@@ -19,7 +19,7 @@
 #include "file_ext.h"
 #include "configuration.h"
 
-struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_type type)
+struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_type type, const char *filter)
 {
    const char *dir   = NULL;
    const char *exts  = NULL;
@@ -54,7 +54,7 @@ struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_ty
          break;
       case DIR_LIST_PLAIN:
          dir  = input_dir;
-         exts = NULL;
+         exts = filter;
          break;
       case DIR_LIST_NONE:
       default:

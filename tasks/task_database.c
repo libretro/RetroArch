@@ -543,7 +543,7 @@ void rarch_main_data_db_iterate(bool is_thread)
    {
       case DATABASE_STATUS_ITERATE_BEGIN:
          if (db_state && !db_state->list)
-            db_state->list = dir_list_new_special(NULL, DIR_LIST_DATABASES);
+            db_state->list = dir_list_new_special(NULL, DIR_LIST_DATABASES, NULL);
          db->status = DATABASE_STATUS_ITERATE_START;
          break;
       case DATABASE_STATUS_ITERATE_START:
