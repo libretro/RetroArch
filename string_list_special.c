@@ -234,6 +234,8 @@ struct string_list *string_list_new_special(enum string_list_type type,
    return s;
 
 error:
+   string_list_free(s);
+   s = NULL;
    return NULL;
 }
 
