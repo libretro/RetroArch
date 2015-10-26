@@ -592,6 +592,17 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
    return 0;
 }
 
+static void zarch_zui_render_lay_root_load_free(zui_t *zui)
+{
+   if (!zui)
+      return;
+
+   free(zui->load_cwd);
+   dir_list_free(zui->load_dlist);
+   zui->load_cwd   = NULL;
+   zui->load_dlist = NULL;
+}
+
 static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
 {
    char parent_dir[PATH_MAX_LENGTH];
@@ -617,13 +628,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
       zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 15, tabbed->tabline_size + 5 + 41, &zui->load_cwd[strlen(zui->load_cwd) - cwd_offset]);
 
       if (zarch_zui_button(zui, zui->width - 290 - 129, tabbed->tabline_size + 5, "Home"))
-      {
-         if (zui->load_cwd)
-            free(zui->load_cwd);
-         dir_list_free(zui->load_dlist);
-         zui->load_cwd   = NULL;
-         zui->load_dlist = NULL;
-      }
+         zarch_zui_render_lay_root_load_free(zui);
 
       if (zui->load_dlist)
       {
@@ -647,10 +652,9 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
             for (i = 0; i < size; ++i)
             {
                const char *basename = path_basename(zui->load_dlist->elems[i].data);
-               if (basename[0] == '.')
-                  skip++;
-               else
+               if (basename[0] != '.')
                   break;
+               skip++;
             }
 
             zui->load_dlist_first += zui->mouse.wheel;
