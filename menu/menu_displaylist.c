@@ -35,6 +35,7 @@
 #include "../file_ext.h"
 #include "../input/input_common.h"
 #include "../dir_list_special.h"
+#include "../string_list_special.h"
 
 #ifdef __linux__
 #include "../frontend/drivers/platform_linux.h"
@@ -2848,11 +2849,17 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          info->need_push    = true;
 
          {
+            unsigned cores_names_len;
+            size_t cores_names_size;
+            unsigned cores_paths_len;
+            size_t cores_paths_size;
             const core_info_t *core_info = NULL;
-            core_info_list_get_supported_cores(global->core_info.list,
-                  menu->deferred_path, &core_info, &list_size);
+            struct string_list *cores_names = string_list_new_special(STRING_LIST_SUPPORTED_CORES_NAMES,
+                  (void*)menu->deferred_path, &cores_names_len, &cores_names_size);
+            struct string_list *cores_paths = string_list_new_special(STRING_LIST_SUPPORTED_CORES_PATHS,
+                  (void*)menu->deferred_path, &cores_paths_len, &cores_paths_size);
 
-            if (list_size == 0)
+            if (cores_names_size == 0)
             {
                menu_entries_push(info->list,
                      menu_hash_to_str(MENU_LABEL_VALUE_NO_CORES_AVAILABLE),
@@ -2861,18 +2868,21 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             }
             else
             {
-               for (i = 0; i < list_size; i++)
+               for (i = 0; i < cores_names_size; i++)
                {
                   if (type == DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
-                     menu_entries_push(info->list, core_info[i].path, "",
+                     menu_entries_push(info->list, cores_paths->elems[i].data, "",
                            MENU_FILE_CORE, 0, 0);
                   else
-                     menu_entries_push(info->list, core_info[i].path,
+                     menu_entries_push(info->list, cores_paths->elems[i].data,
                            menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST_OK),
                            MENU_FILE_CORE, 0, 0);
                   menu_entries_set_alt_at_offset(info->list, i,
-                        core_info[i].display_name);
+                        cores_names->elems[i].data);
                }
+
+               string_list_free(cores_names);
+               string_list_free(cores_paths);
             }
          }
          break;

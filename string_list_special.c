@@ -39,11 +39,10 @@
 #include "record/record_driver.h"
 
 struct string_list *string_list_new_special(enum string_list_type type,
-      void *data, unsigned *len)
+      void *data, unsigned *len, size_t *list_size)
 {
    union string_list_elem_attr attr;
    unsigned i;
-   size_t list_size;
    const core_info_t *core_info = NULL;
    global_t *global      = global_get_ptr();
    struct string_list *s = string_list_new();
@@ -159,12 +158,12 @@ struct string_list *string_list_new_special(enum string_list_type type,
          break;
       case STRING_LIST_SUPPORTED_CORES_PATHS:
          core_info_list_get_supported_cores(global->core_info.list,
-               (const char*)data, &core_info, &list_size);
+               (const char*)data, &core_info, list_size);
 
-         if (list_size == 0)
+         if (*list_size == 0)
             goto error;
 
-         for (i = 0; i < list_size; i++)
+         for (i = 0; i < *list_size; i++)
          {
             const char *opt  = NULL;
             const core_info_t *info = (const core_info_t*)&core_info[i];
@@ -193,12 +192,12 @@ struct string_list *string_list_new_special(enum string_list_type type,
          break; 
       case STRING_LIST_SUPPORTED_CORES_NAMES:
          core_info_list_get_supported_cores(global->core_info.list,
-               (const char*)data, &core_info, &list_size);
+               (const char*)data, &core_info, list_size);
 
-         if (list_size == 0)
+         if (*list_size == 0)
             goto error;
 
-         for (i = 0; i < list_size; i++)
+         for (i = 0; i < *list_size; i++)
          {
             const char *opt  = NULL;
             const core_info_t *info  = (const core_info_t*)&core_info[i];
@@ -243,7 +242,8 @@ error:
 const char *char_list_new_special(enum string_list_type type, void *data)
 {
    unsigned len;
-   struct string_list *s = string_list_new_special(type, data, &len);
+   size_t list_size;
+   struct string_list *s = string_list_new_special(type, data, &len, &list_size);
    char         *options = (len > 0) ? (char*)calloc(len, sizeof(char)): NULL;
 
    if (options && s)

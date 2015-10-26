@@ -16,6 +16,8 @@
 #ifndef _STRING_LIST_SPECIAL_H
 #define _STRING_LIST_SPECIAL_H
 
+#include <stddef.h>
+
 #include <string/string_list.h>
 
 enum string_list_type
@@ -38,7 +40,7 @@ enum string_list_type
 };
 
 struct string_list *string_list_new_special(enum string_list_type type,
-      void *data, unsigned *len);
+      void *data, unsigned *len, size_t *list_size);
 
 const char *char_list_new_special(enum string_list_type type, void *data);
 
