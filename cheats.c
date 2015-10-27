@@ -23,7 +23,7 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 
-#include "cheevos.h"
+#include "cheats.h"
 #include "general.h"
 #include "runloop.h"
 #include "dynamic.h"
@@ -33,7 +33,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "cheats.h"
+#include "cheevos.h"
 #endif
 
 struct item_cheat
