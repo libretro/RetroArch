@@ -595,9 +595,8 @@ static void xmb_update_boxart(xmb_handle_t *xmb, unsigned i)
    menu_entry_t entry;
    char path[PATH_MAX_LENGTH] = {0};
    settings_t *settings       = config_get_ptr();
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
 
-   menu_entry_get(&entry, i, selection_buf, true);
+   menu_entry_get(&entry, i, NULL, true);
 
    fill_pathname_join(path, settings->boxarts_directory, entry.path, sizeof(path));
    strlcat(path, ".png", sizeof(path));
