@@ -624,7 +624,7 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
       {
          menu_entry_t entry;
 
-         menu_entry_get(&entry, 0, i, NULL, false);
+         menu_entry_get(&entry, 0, i, NULL, true);
 
          if (zarch_zui_list_item(zui, tabbed, 0, tabbed->tabline_size + j * 54,
                   entry.path, i, entry.value))
