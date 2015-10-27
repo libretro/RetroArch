@@ -551,18 +551,15 @@ static bool zarch_zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label, unsi
 
    tab->prev_id      = tab->active_id;
 
-   if (!tab->inited)
-   {
-      tab->active_id = id;
-      tab->inited    = true;
-   }
-
-   if (zui->item.active == id || tab->active_id == ~0)
+   if (zui->item.active == id || tab->active_id == ~0 || !tab->inited)
       tab->active_id    = id;
    else if (id > tab->active_id)
    {
       tab->next_id            = id;
    }
+
+   if (!tab->inited)
+      tab->inited = true;
 
    if (tab->active_id == id || zui->item.active == id || zui->item.hot == id)
       bg             = ZUI_BG_HILITE;
