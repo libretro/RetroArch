@@ -44,7 +44,10 @@
 #include "movie.h"
 #include "patch.h"
 #include "system.h"
+
+#ifdef HAVE_CHEEVOS
 #include "cheevos.h"
+#endif
 
 /**
  * read_content_file:
@@ -517,14 +520,8 @@ static bool load_content(const struct retro_subsystem_info *special,
 
       if (*content->elems[0].data)
       {
-
-         const char *json = NULL;
-
-         if ( cheevos_get_by_content(&json, info->data, info->size) == 0 )
-         {
-            cheevos_load(json);
-            free((void*)json);
-         }
+         cheevos_globals.cheats_were_enabled = cheevos_globals.cheats_are_enabled;
+         cheevos_load(info->data, info->size);
       }
 #endif
 

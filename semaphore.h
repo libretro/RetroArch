@@ -13,21 +13,25 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_CHEEVOS_H
-#define __RARCH_CHEEVOS_H
+#ifndef __RARCH_SEMAPHORE_H
+#define __RARCH_SEMAPHORE_H
 
-typedef struct
-{
-   int cheats_are_enabled;
-   int cheats_were_enabled;
-} cheevos_globals_t;
+typedef struct ssem ssem_t;
 
-extern cheevos_globals_t cheevos_globals;
+/**
+ * ssem_create:
+ * @value                   : initial value for the semaphore
+ *
+ * Create a new semaphore.
+ *
+ * Returns: pointer to new semaphore if successful, otherwise NULL.
+ */
+ssem_t *ssem_new(int value);
 
-int cheevos_load(const void *data, size_t size);
+void ssem_free(ssem_t *semaphore);
 
-void cheevos_test(void);
+void ssem_wait(ssem_t *semaphore);
 
-void cheevos_unload(void);
+void ssem_signal(ssem_t *semaphore);
 
-#endif /* __RARCH_CHEEVOS_H */
+#endif /* __RARCH_SEMAPHORE_H */

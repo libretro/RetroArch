@@ -80,15 +80,9 @@ CONFIG FILE
 #include "../core_options.c"
 
 /*============================================================
-CHEATS
-============================================================ */
-#include "../cheats.c"
-#include "../libretro-common/hash/rhash.c"
-
-/*============================================================
 ACHIEVEMENTS
 ============================================================ */
-#if defined(HAVE_CHEEVOS)
+#if defined(HAVE_CHEEVOS) && defined(HAVE_THREADS)
 #if !defined(HAVE_NETPLAY)
 #include "../libretro-common/net/net_http.c"
 #endif
@@ -96,8 +90,16 @@ ACHIEVEMENTS
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../libretro-common/utils/md5.c"
 #include "../net_http_special.c"
+#include "../semaphore.c"
+#include "../async_job.c"
 #include "../cheevos.c"
 #endif
+
+/*============================================================
+CHEATS
+============================================================ */
+#include "../cheats.c"
+#include "../libretro-common/hash/rhash.c"
 
 /*============================================================
 UI COMMON CONTEXT
