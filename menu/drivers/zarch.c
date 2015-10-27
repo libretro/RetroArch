@@ -816,6 +816,8 @@ static int zarch_zui_render_lay_root(zui_t *zui)
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 300 + 41, item); 
    snprintf(item, sizeof(item), "tab  idx: %d\n", tabbed.active_id);
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 300 + 81, item); 
+   snprintf(item, sizeof(item), "item hot idx: %d\n", zui->item.hot);
+   zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 300 + 111, item); 
 #endif
 
    if (zui->pending_selection == -1)
