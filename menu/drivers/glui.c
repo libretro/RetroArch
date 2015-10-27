@@ -41,6 +41,8 @@ enum
 {
    GLUI_TEXTURE_POINTER = 0,
    GLUI_TEXTURE_BACK,
+   GLUI_TEXTURE_SWITCH_ON,
+   GLUI_TEXTURE_SWITCH_OFF,
    GLUI_TEXTURE_LAST
 };
 
@@ -102,6 +104,12 @@ static void glui_context_reset_textures(glui_handle_t *glui, const char *iconpat
             break;
          case GLUI_TEXTURE_BACK:
             fill_pathname_join(path, iconpath, "back.png",   sizeof(path));
+            break;
+         case GLUI_TEXTURE_SWITCH_ON:
+            fill_pathname_join(path, iconpath, "on.png",   sizeof(path));
+            break;
+         case GLUI_TEXTURE_SWITCH_OFF:
+            fill_pathname_join(path, iconpath, "off.png",   sizeof(path));
             break;
       }
 
@@ -375,15 +383,19 @@ static void glui_render(void)
       menu_entries_set_start(menu->scroll_y / glui->line_height);
 }
 
-static void glui_render_label_value(glui_handle_t *glui,
+static void glui_render_label_value(glui_handle_t *glui, gl_t *gl,
       int y, unsigned width, unsigned height,
-    uint64_t index, uint32_t color, bool selected, const char *label, const char *value)
+      uint64_t index, uint32_t color, bool selected, const char *label,
+      const char *value, GRfloat *pure_white)
 {
    char label_str[PATH_MAX_LENGTH];
    char value_str[PATH_MAX_LENGTH];
    int value_len   = strlen(value);
    int ticker_limit = 0;
    size_t usable_width = 0;
+   GRuint texture_switch = 0;
+   bool do_draw_text = false;
+   uint32_t hash_value = 0;
 
    label_str[0] = '\0';
    value_str[0] = '\0';
@@ -399,14 +411,63 @@ static void glui_render_label_value(glui_handle_t *glui,
    menu_animation_ticker_str(value_str, value_len,    index, value, selected);
 
    glui_blit_line(glui->margin, y, width, height, label_str, color, TEXT_ALIGN_LEFT);
-   glui_blit_line(width - glui->margin, y, width, height, value_str, color, TEXT_ALIGN_RIGHT);
+
+   hash_value = menu_hash_calculate(value);
+
+   switch (hash_value)
+   {
+      case MENU_VALUE_COMP:
+         break;
+      case MENU_VALUE_MORE:
+         break;
+      case MENU_VALUE_CORE:
+         break;
+      case MENU_VALUE_RDB:
+         break;
+      case MENU_VALUE_CURSOR:
+         break;
+      case MENU_VALUE_FILE:
+         break;
+      case MENU_VALUE_DIR:
+         break;
+      case MENU_VALUE_MUSIC:
+         break;
+      case MENU_VALUE_IMAGE:
+         break;
+      case MENU_VALUE_MOVIE:
+         break;
+      case MENU_VALUE_ON:
+         if (glui->textures.list[GLUI_TEXTURE_SWITCH_ON].id)
+            texture_switch = glui->textures.list[GLUI_TEXTURE_SWITCH_ON].id;
+         else
+            do_draw_text = true;
+         break;
+      case MENU_VALUE_OFF:
+         if (glui->textures.list[GLUI_TEXTURE_SWITCH_OFF].id)
+            texture_switch = glui->textures.list[GLUI_TEXTURE_SWITCH_OFF].id;
+         else
+            do_draw_text = true;
+         break;
+      default:
+         do_draw_text = true;
+         break;
+   }
+
+   if (do_draw_text)
+      glui_blit_line(width - glui->margin, y, width, height, value_str, color, TEXT_ALIGN_RIGHT);
+
+   if (texture_switch)
+      glui_draw_icon(gl, glui, texture_switch,
+            width - glui->margin - glui->icon_size, y, width, height, 0, 1, &pure_white[0]);
+
 }
 
-static void glui_render_menu_list(glui_handle_t *glui,
+static void glui_render_menu_list(glui_handle_t *glui, gl_t *gl,
       unsigned width, unsigned height,
       menu_handle_t *menu,
       uint32_t normal_color,
-      uint32_t hover_color)
+      uint32_t hover_color,
+      GRfloat *pure_white)
 {
    unsigned header_height;
    size_t i                = 0;
@@ -439,9 +500,9 @@ static void glui_render_menu_list(glui_handle_t *glui,
 
       entry_selected = selection == i;
 
-      glui_render_label_value(glui, y, width, height, *frame_count / 40,
+      glui_render_label_value(glui, gl, y, width, height, *frame_count / 40,
          entry_selected ? hover_color : normal_color, entry_selected,
-         entry.path, entry.value);
+         entry.path, entry.value, pure_white);
    }
 }
 
@@ -491,6 +552,12 @@ static void glui_frame(void)
       0.89, 0.95, 0.99, 1,
       0.89, 0.95, 0.99, 1,
       0.89, 0.95, 0.99, 1,
+   };
+   GRfloat pure_white[16]=  {
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
    };
    GRfloat white_bg[16]=  {
       0.98, 0.98, 0.98, 1,
@@ -583,7 +650,7 @@ static void glui_frame(void)
 
    menu_display_font_bind_block(menu, font_driver, &glui->list_block);
 
-   glui_render_menu_list(glui, width, height, menu, normal_color, hover_color);
+   glui_render_menu_list(glui, gl, width, height, menu, normal_color, hover_color, &pure_white[0]);
 
    menu_display_font_flush_block(menu, font_driver);
 
@@ -608,7 +675,7 @@ static void glui_frame(void)
 
    if (menu_entries_show_back())
       glui_draw_icon(gl, glui, glui->textures.list[GLUI_TEXTURE_BACK].id,
-         glui->margin/1.5, glui->margin/1.5, width, height, 0, 1, &white_bg[0]);
+         0, 0, width, height, 0, 1, &white_bg[0]);
 
    glui_render_quad(gl,
          0,
@@ -730,7 +797,7 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
 
    glui->line_height            = scale_factor / 3;
    glui->margin                 = scale_factor / 9;
-   glui->icon_size              = scale_factor / 6;
+   glui->icon_size              = scale_factor / 3;
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &new_header_height);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,     &new_font_size);
