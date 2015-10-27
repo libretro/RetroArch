@@ -97,10 +97,10 @@ static menu_list_t *menu_list_new(void)
    list->selection_buf_size   = 1;
 
    for (i = 0; i < list->menu_stack_size; i++)
-   {
       list->menu_stack[i]    = calloc(1, sizeof(*list->menu_stack[i]));
+
+   for (i = 0; i < list->selection_buf_size; i++)
       list->selection_buf[i] = calloc(1, sizeof(*list->selection_buf[i]));
-   }
 
    return list;
 
