@@ -495,7 +495,7 @@ static void glui_render_menu_list(glui_handle_t *glui, gl_t *gl,
       if (y > (int)height || ((y + (int)glui->line_height) < 0))
          continue;
 
-      menu_entries_get(i, &entry);
+      menu_entry_get(&entry, 0, i, NULL, true);
 
       entry_selected = selection == i;
 
