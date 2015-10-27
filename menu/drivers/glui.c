@@ -40,6 +40,7 @@
 enum
 {
    GLUI_TEXTURE_POINTER = 0,
+   GLUI_TEXTURE_BACK,
    GLUI_TEXTURE_LAST
 };
 
@@ -51,6 +52,7 @@ struct glui_texture_item
 typedef struct glui_handle
 {
    unsigned line_height;
+   unsigned icon_size;
    unsigned margin;
    unsigned glyph_width;
    char box_message[PATH_MAX_LENGTH];
@@ -98,6 +100,9 @@ static void glui_context_reset_textures(glui_handle_t *glui, const char *iconpat
          case GLUI_TEXTURE_POINTER:
             fill_pathname_join(path, iconpath, "pointer.png",   sizeof(path));
             break;
+         case GLUI_TEXTURE_BACK:
+            fill_pathname_join(path, iconpath, "back.png",   sizeof(path));
+            break;
       }
 
       if (path[0] == '\0' || !path_file_exists(path))
@@ -112,6 +117,44 @@ static void glui_context_reset_textures(glui_handle_t *glui, const char *iconpat
    }
 }
 
+static void glui_draw_icon(gl_t *gl, glui_handle_t *glui,
+      GRuint texture,
+      float x, float y,
+      unsigned width, unsigned height,
+      float rotation, float scale_factor,
+      GRfloat *color)
+{
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+   if (gl->shader && gl->shader->use)
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+
+   struct gfx_coords coords;
+   math_matrix_4x4 mymat, mrot, mscal;
+
+   matrix_4x4_rotate_z(&mrot, rotation);
+   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+
+   matrix_4x4_scale(&mscal, scale_factor, scale_factor, 1);
+   matrix_4x4_multiply(&mymat, &mscal, &mymat);
+
+   coords.vertices      = 4;
+   coords.vertex        = glui_vertexes;
+   coords.tex_coord     = glui_tex_coords;
+   coords.lut_tex_coord = glui_tex_coords;
+   coords.color         = (const float*)color;
+
+   menu_display_draw_frame(
+         x,
+         height - y - glui->icon_size,
+         glui->icon_size,
+         glui->icon_size,
+         gl->shader, &coords, &mymat, false, texture, 4,
+         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+
+   glDisable(GL_BLEND);
+}
 
 static void glui_blit_line(float x, float y, unsigned width, unsigned height,
       const char *message, uint32_t color, enum text_alignment text_align)
@@ -130,7 +173,7 @@ static void glui_blit_line(float x, float y, unsigned width, unsigned height,
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
 
    params.x           = x / width;
-   params.y           = 1.0f - (y + glui->line_height / 2 + font_size / 2.5) 
+   params.y           = 1.0f - (y + glui->line_height / 2 + font_size / 3) 
       / height;
    params.scale       = 1.0;
    params.color       = color;
@@ -564,8 +607,8 @@ static void glui_frame(void)
          title_color, TEXT_ALIGN_CENTER);
 
    if (menu_entries_show_back())
-      glui_blit_line(glui->margin, 0, width, height, menu_hash_to_str(MENU_VALUE_BACK),
-            title_color, TEXT_ALIGN_LEFT);
+      glui_draw_icon(gl, glui, glui->textures.list[GLUI_TEXTURE_BACK].id,
+         glui->margin/1.5, glui->margin/1.5, width, height, 0, 1, &white_bg[0]);
 
    glui_render_quad(gl,
          0,
@@ -686,7 +729,8 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
    new_font_size                = scale_factor / 9;
 
    glui->line_height            = scale_factor / 3;
-   glui->margin                 = scale_factor / 6;
+   glui->margin                 = scale_factor / 9;
+   glui->icon_size              = scale_factor / 6;
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &new_header_height);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,     &new_font_size);
