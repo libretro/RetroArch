@@ -152,6 +152,7 @@ AccessControlInfo:
    - cam:u
    - cecd:u
    - csnd:SND
+   - dsp::DSP
    - frd:u
    - http:C
    - ir:USER

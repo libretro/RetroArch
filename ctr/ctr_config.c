@@ -15,4 +15,4 @@
 
 int          __stacksize__      = CTR_STACK_SIZE;
 unsigned int __linear_heap_size = CTR_LINEAR_HEAP_SIZE;
-unsigned int __heap_size        = CTR_MAX_HEAP_SIZE;
+unsigned int __heap_size        = CTR_MAX_HEAP_SIZE + CTR_STACK_SIZE;

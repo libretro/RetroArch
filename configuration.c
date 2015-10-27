@@ -121,7 +121,7 @@ const char *config_get_default_audio(void)
          return "psp";
 #endif
       case AUDIO_CTR:
-         return "ctr";
+         return "csnd";
       case AUDIO_RWEBAUDIO:
          return "rwebaudio";
       default:
