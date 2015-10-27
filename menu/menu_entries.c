@@ -628,7 +628,7 @@ void menu_entries_push_selection_buf(file_list_t *list, const char *path, const 
       goto error;
 
    menu_list->selection_buf = selection_buf;
-   menu_list->selection_buf_size++;
+   menu_list->selection_buf_size = menu_list->selection_buf_size + 1;
    menu_list->selection_buf[menu_list->selection_buf_size] = (file_list_t*)calloc(1, sizeof(*menu_list->selection_buf[menu_list->selection_buf_size]));
 
    menu_entries_push(menu_list->selection_buf[menu_list->selection_buf_size], path, label, type, directory_ptr, entry_idx);
@@ -655,7 +655,7 @@ void menu_entries_push_menu_stack(file_list_t *list, const char *path, const cha
       goto error;
 
    menu_list->menu_stack = menu_stack;
-   menu_list->menu_stack_size++;
+   menu_list->menu_stack_size = menu_list->menu_stack_size + 1;
    menu_list->menu_stack[menu_list->menu_stack_size] = (file_list_t*)calloc(1, sizeof(*menu_list->menu_stack[menu_list->menu_stack_size]));
 
    menu_entries_push(menu_list->menu_stack[menu_list->menu_stack_size], path, label, type, directory_ptr, entry_idx);
