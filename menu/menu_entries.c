@@ -109,11 +109,11 @@ error:
    return NULL;
 }
 
-static size_t menu_list_get_stack_size(menu_list_t *list)
+static size_t menu_list_get_stack_size(menu_list_t *list, size_t idx)
 {
    if (!list)
       return 0;
-   return file_list_get_size(list->menu_stack[0]);
+   return file_list_get_size(list->menu_stack[idx]);
 }
 
 void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
@@ -155,15 +155,15 @@ static INLINE int menu_entries_flush_stack_type(
    return needle ? strcmp(needle, label) : (type != final_type);
 }
 
-static bool menu_list_pop_stack(menu_list_t *list, size_t *directory_ptr)
+static bool menu_list_pop_stack(menu_list_t *list, size_t idx, size_t *directory_ptr)
 {
    file_list_t *menu_list = NULL;
    if (!list)
       return false;
 
-   menu_list = list->menu_stack[0];
+   menu_list = list->menu_stack[idx];
 
-   if (menu_list_get_stack_size(list) <= 1)
+   if (menu_list_get_stack_size(list, idx) <= 1)
       return false;
 
    menu_driver_list_cache(MENU_LIST_PLAIN, 0);
@@ -180,7 +180,7 @@ static bool menu_list_pop_stack(menu_list_t *list, size_t *directory_ptr)
 }
 
 static void menu_list_flush_stack(menu_list_t *list,
-      const char *needle, unsigned final_type)
+      size_t idx, const char *needle, unsigned final_type)
 {
    const char *path       = NULL;
    const char *label      = NULL;
@@ -190,7 +190,7 @@ static void menu_list_flush_stack(menu_list_t *list,
       return;
 
    menu_entries_set_refresh(false);
-   menu_entries_get_last(list->menu_stack[0],
+   menu_entries_get_last(list->menu_stack[idx],
          &path, &label, &type, &entry_idx);
 
    while (menu_entries_flush_stack_type(
@@ -200,12 +200,12 @@ static void menu_list_flush_stack(menu_list_t *list,
 
       menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
 
-      if (!menu_list_pop_stack(list, &new_selection_ptr))
+      if (!menu_list_pop_stack(list, idx, &new_selection_ptr))
          break;
 
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
 
-      menu_entries_get_last(list->menu_stack[0],
+      menu_entries_get_last(list->menu_stack[idx],
             &path, &label, &type, &entry_idx);
    }
 }
@@ -450,7 +450,7 @@ int menu_entries_get_title(char *s, size_t len)
  * one level deep in the menu hierarchy). */
 bool menu_entries_show_back(void)
 {
-   return (menu_entries_get_stack_size() > 1);
+   return (menu_entries_get_stack_size(0) > 1);
 }
 
 /* Sets 's' to the name of the current core 
@@ -633,22 +633,22 @@ void menu_entries_flush_stack(const char *needle, unsigned final_type)
 {
    menu_list_t *menu_list         = menu_list_get_ptr();
    if (menu_list)
-      menu_list_flush_stack(menu_list, needle, final_type);
+      menu_list_flush_stack(menu_list, 0, needle, final_type);
 }
 
-void menu_entries_pop_stack(size_t *ptr)
+void menu_entries_pop_stack(size_t *ptr, size_t idx)
 {
    menu_list_t *menu_list         = menu_list_get_ptr();
    if (menu_list)
-      menu_list_pop_stack(menu_list, ptr);
+      menu_list_pop_stack(menu_list, idx, ptr);
 }
 
-size_t menu_entries_get_stack_size(void)
+size_t menu_entries_get_stack_size(size_t idx)
 {
    menu_list_t *menu_list         = menu_list_get_ptr();
    if (!menu_list)
       return 0;
-   return menu_list_get_stack_size(menu_list);
+   return menu_list_get_stack_size(menu_list, idx);
 }
 
 size_t menu_entries_get_size(void)

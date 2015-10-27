@@ -37,7 +37,7 @@ int menu_entry_go_back(void)
    size_t new_selection_ptr;
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
-   menu_entries_pop_stack(&new_selection_ptr);
+   menu_entries_pop_stack(&new_selection_ptr, 0);
    menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
 
    return 0;

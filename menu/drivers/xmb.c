@@ -306,7 +306,7 @@ static size_t xmb_list_get_size(void *data, menu_list_type_t type)
    switch (type)
    {
       case MENU_LIST_PLAIN:
-         list_size  = menu_entries_get_stack_size();
+         list_size  = menu_entries_get_stack_size(0);
          break;
       case MENU_LIST_HORIZONTAL:
          if (xmb && xmb->horizontal_list)
@@ -328,7 +328,7 @@ static void *xmb_list_get_entry(void *data, menu_list_type_t type, unsigned i)
    switch (type)
    {
       case MENU_LIST_PLAIN:
-         list_size  = menu_entries_get_stack_size();
+         list_size  = menu_entries_get_stack_size(0);
          if (i < list_size)
             ptr = (void*)&menu_stack->list[i];
          break;

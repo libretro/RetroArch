@@ -904,7 +904,7 @@ static int menu_input_mouse_frame(
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_R))
    {
-      menu_entries_pop_stack(&selection);
+      menu_entries_pop_stack(&selection, 0);
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
    }
 
@@ -960,7 +960,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 
          if ((unsigned)menu_input->mouse.y < header_height)
          {
-            menu_entries_pop_stack(&selection);
+            menu_entries_pop_stack(&selection, 0);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
             return 0;
          }
@@ -1143,7 +1143,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
          {
             if ((unsigned)menu_input->pointer.start_y < header_height)
             {
-               menu_entries_pop_stack(&selection);
+               menu_entries_pop_stack(&selection, 0);
                menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
             }
             else if (menu_input->pointer.ptr <= (menu_entries_get_size() - 1))
@@ -1169,7 +1169,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       if (!menu_input->pointer.oldback)
       {
          menu_input->pointer.oldback = true;
-         menu_entries_pop_stack(&selection);
+         menu_entries_pop_stack(&selection, 0);
          menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
       }
    }

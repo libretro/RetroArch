@@ -243,7 +243,7 @@ int generic_menu_iterate(enum menu_action action)
       case ITERATE_TYPE_BIND:
          if (menu_input_key_bind_iterate(menu->menu_state.msg, sizeof(menu->menu_state.msg)))
          {
-            menu_entries_pop_stack(&selection);
+            menu_entries_pop_stack(&selection, 0);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
          }
          else
@@ -304,7 +304,7 @@ int generic_menu_iterate(enum menu_action action)
    if (BIT64_GET(menu->state, MENU_STATE_POP_STACK))
    {
       size_t new_selection_ptr = selection;
-      menu_entries_pop_stack(&new_selection_ptr);
+      menu_entries_pop_stack(&new_selection_ptr, 0);
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
    }
    
