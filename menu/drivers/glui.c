@@ -40,6 +40,7 @@
 enum
 {
    GLUI_TEXTURE_POINTER = 0,
+   GLUI_TEXTURE_BACK,
    GLUI_TEXTURE_LAST
 };
 
@@ -51,6 +52,7 @@ struct glui_texture_item
 typedef struct glui_handle
 {
    unsigned line_height;
+   unsigned icon_size;
    unsigned margin;
    unsigned glyph_width;
    char box_message[PATH_MAX_LENGTH];
@@ -98,6 +100,9 @@ static void glui_context_reset_textures(glui_handle_t *glui, const char *iconpat
          case GLUI_TEXTURE_POINTER:
             fill_pathname_join(path, iconpath, "pointer.png",   sizeof(path));
             break;
+         case GLUI_TEXTURE_BACK:
+            fill_pathname_join(path, iconpath, "back.png",   sizeof(path));
+            break;
       }
 
       if (path[0] == '\0' || !path_file_exists(path))
@@ -112,6 +117,44 @@ static void glui_context_reset_textures(glui_handle_t *glui, const char *iconpat
    }
 }
 
+static void glui_draw_icon(gl_t *gl, glui_handle_t *glui,
+      GRuint texture,
+      float x, float y,
+      unsigned width, unsigned height,
+      float rotation, float scale_factor,
+      GRfloat *color)
+{
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+   if (gl->shader && gl->shader->use)
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+
+   struct gfx_coords coords;
+   math_matrix_4x4 mymat, mrot, mscal;
+
+   matrix_4x4_rotate_z(&mrot, rotation);
+   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+
+   matrix_4x4_scale(&mscal, scale_factor, scale_factor, 1);
+   matrix_4x4_multiply(&mymat, &mscal, &mymat);
+
+   coords.vertices      = 4;
+   coords.vertex        = glui_vertexes;
+   coords.tex_coord     = glui_tex_coords;
+   coords.lut_tex_coord = glui_tex_coords;
+   coords.color         = (const float*)color;
+
+   menu_display_draw_frame(
+         x,
+         height - y - glui->icon_size,
+         glui->icon_size,
+         glui->icon_size,
+         gl->shader, &coords, &mymat, false, texture, 4,
+         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+
+   glDisable(GL_BLEND);
+}
 
 static void glui_blit_line(float x, float y, unsigned width, unsigned height,
       const char *message, uint32_t color, enum text_alignment text_align)
@@ -188,13 +231,13 @@ static void glui_draw_scrollbar(gl_t *gl, unsigned width, unsigned height, GRflo
 
    if (content_height >= total_height)
    {
-      int scrollbar_width  = 4;
+      int scrollbar_width  = (header_height / 12);
 
       glui_render_quad(gl,
-            width - scrollbar_width - 4,
-            header_height + y + 4,
+            width - scrollbar_width - (header_height / 12),
+            header_height + y + (header_height / 12),
             scrollbar_width,
-            scrollbar_height - 8,
+            scrollbar_height - (header_height / 6),
             width, height,
             coord_color);
    }
@@ -449,22 +492,34 @@ static void glui_frame(void)
       0.89, 0.95, 0.99, 1,
    };
    GRfloat white_bg[16]=  {
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
+      0.98, 0.98, 0.98, 1,
+      0.98, 0.98, 0.98, 1,
+      0.98, 0.98, 0.98, 1,
+      0.98, 0.98, 0.98, 1,
    };
    GRfloat white_transp_bg[16]=  {
-      1, 1, 1, 0.75,
-      1, 1, 1, 0.75,
-      1, 1, 1, 0.75,
-      1, 1, 1, 0.75,
+      0.98, 0.98, 0.98, 0.75,
+      0.98, 0.98, 0.98, 0.75,
+      0.98, 0.98, 0.98, 0.75,
+      0.98, 0.98, 0.98, 0.75,
    };
    GRfloat grey_bg[16]=  {
       0.78, 0.78, 0.78, 1,
       0.78, 0.78, 0.78, 1,
       0.78, 0.78, 0.78, 1,
       0.78, 0.78, 0.78, 1,
+   };
+   GRfloat shadow_bg[16]=  {
+      0, 0, 0, 0,
+      0, 0, 0, 0,
+      0, 0, 0, 0.2,
+      0, 0, 0, 0.2,
+   };
+   GRfloat shadow_bg2[16]=  {
+      0, 0, 0, 0.2,
+      0, 0, 0, 0.2,
+      0, 0, 0, 0,
+      0, 0, 0, 0,
    };
    unsigned width, height, ticker_limit;
    char msg[PATH_MAX_LENGTH];
@@ -480,8 +535,8 @@ static void glui_frame(void)
    menu_handle_t *menu                     = menu_driver_get_ptr();
    settings_t *settings                    = config_get_ptr();
    uint64_t *frame_count                   = video_driver_get_frame_count();
-   const uint32_t normal_color             = 0x4d4d4eff;
-   const uint32_t hover_color              = 0x000000ff;
+   const uint32_t normal_color             = 0x212121ff;
+   const uint32_t hover_color              = 0x212121ff;
    const uint32_t title_color              = 0xffffffff;
 
    if (!menu || !menu->userdata)
@@ -538,6 +593,11 @@ static void glui_frame(void)
          width, height,
          &blue_bg[0]);
 
+   glui_render_quad(gl, 0, header_height, width,
+         header_height/12,
+         width, height,
+         &shadow_bg[0]);
+
    ticker_limit = (width - glui->margin*2) / glui->glyph_width -
          strlen(menu_hash_to_str(MENU_VALUE_BACK)) * 2;
    menu_animation_ticker_str(title_buf, ticker_limit,
@@ -546,8 +606,8 @@ static void glui_frame(void)
          title_color, TEXT_ALIGN_CENTER);
 
    if (menu_entries_show_back())
-      glui_blit_line(glui->margin, 0, width, height, menu_hash_to_str(MENU_VALUE_BACK),
-            title_color, TEXT_ALIGN_LEFT);
+      glui_draw_icon(gl, glui, glui->textures.list[GLUI_TEXTURE_BACK].id,
+         glui->margin/1.5, glui->margin/1.5, width, height, 0, 1, &white_bg[0]);
 
    glui_render_quad(gl,
          0,
@@ -556,6 +616,14 @@ static void glui_frame(void)
          header_height,
          width, height,
          &blue_bg[0]);
+
+   glui_render_quad(gl,
+         0,
+         height - header_height - (header_height/24),
+         width,
+         (header_height/24),
+         width, height,
+         &shadow_bg2[0]);
 
    glui_draw_scrollbar(gl, width, height, &grey_bg[0]);
 
@@ -629,13 +697,16 @@ static void glui_allocate_white_texture(glui_handle_t *glui)
 static void glui_font(menu_handle_t *menu)
 {
    int font_size;
-   settings_t *settings  = config_get_ptr();
-   const char *font_path = settings->video.font_enable ? settings->video.font_path : NULL;
+   char mediapath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
+   settings_t *settings = config_get_ptr();
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
 
-   if (!menu_display_init_main_font(menu, font_path, font_size))
-      RARCH_ERR("Failed to load font.");
+   fill_pathname_join(mediapath, settings->assets_directory, "glui", sizeof(mediapath));
+   fill_pathname_join(fontpath, mediapath, "Roboto-Regular.ttf", sizeof(fontpath));
+
+   if (!menu_display_init_main_font(menu, fontpath, font_size))
+      RARCH_WARN("Failed to load font.");
 }
 
 static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
@@ -654,10 +725,11 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
    menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
 
    new_header_height            = scale_factor / 3;
-   new_font_size                = scale_factor / 10;
+   new_font_size                = scale_factor / 9;
 
    glui->line_height            = scale_factor / 3;
-   glui->margin                 = scale_factor / 6;
+   glui->margin                 = scale_factor / 9;
+   glui->icon_size              = scale_factor / 6;
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &new_header_height);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,     &new_font_size);
