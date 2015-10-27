@@ -24,8 +24,10 @@
 
 struct menu_list
 {
-   file_list_t *menu_stack;
-   file_list_t *selection_buf;
+   file_list_t **menu_stack;
+   size_t menu_stack_size;
+   file_list_t **selection_buf;
+   size_t selection_buf_size;
 };
 
 struct menu_entries
@@ -52,30 +54,53 @@ static void menu_list_free_list(file_list_t *list)
 
 static void menu_list_free(menu_list_t *menu_list)
 {
+   unsigned i;
    if (!menu_list)
       return;
 
-   menu_list_free_list(menu_list->menu_stack);
-   menu_list_free_list(menu_list->selection_buf);
+   for (i = 0; i < menu_list->menu_stack_size; i++)
+   {
+      menu_list_free_list(menu_list->menu_stack[i]);
+      menu_list->menu_stack[i]    = NULL;
+   }
+   for (i = 0; i < menu_list->selection_buf_size; i++)
+   {
+      menu_list_free_list(menu_list->selection_buf[i]);
+      menu_list->selection_buf[i] = NULL;
+   }
 
-   menu_list->menu_stack    = NULL;
-   menu_list->selection_buf = NULL;
+   free(menu_list->menu_stack);
+   free(menu_list->selection_buf);
 
    free(menu_list);
 }
 
 static menu_list_t *menu_list_new(void)
 {
-   menu_list_t *list = (menu_list_t*)calloc(1, sizeof(*list));
+   unsigned i;
+   menu_list_t           *list = (menu_list_t*)calloc(1, sizeof(*list));
 
    if (!list)
       return NULL;
 
-   list->menu_stack    = (file_list_t*)calloc(1, sizeof(file_list_t));
-   list->selection_buf = (file_list_t*)calloc(1, sizeof(file_list_t));
+   list->menu_stack          = (file_list_t**)calloc(1, sizeof(*list->menu_stack));
 
-   if (!list->menu_stack || !list->selection_buf)
+   if (!list->menu_stack)
       goto error;
+
+   list->selection_buf       = (file_list_t**)calloc(1, sizeof(*list->selection_buf));
+
+   if (!list->selection_buf)
+      goto error;
+
+   list->menu_stack_size      = 1;
+   list->selection_buf_size   = 1;
+
+   for (i = 0; i < 2; i++)
+   {
+      list->menu_stack[0]    = calloc(1, sizeof(*list->menu_stack[0]));
+      list->selection_buf[0] = calloc(1, sizeof(*list->selection_buf[0]));
+   }
 
    return list;
 
@@ -88,7 +113,7 @@ static size_t menu_list_get_stack_size(menu_list_t *list)
 {
    if (!list)
       return 0;
-   return file_list_get_size(list->menu_stack);
+   return file_list_get_size(list->menu_stack[0]);
 }
 
 void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
@@ -136,7 +161,7 @@ static bool menu_list_pop_stack(menu_list_t *list, size_t *directory_ptr)
    if (!list)
       return false;
 
-   menu_list = list->menu_stack;
+   menu_list = list->menu_stack[0];
 
    if (menu_list_get_stack_size(list) <= 1)
       return false;
@@ -165,7 +190,7 @@ static void menu_list_flush_stack(menu_list_t *list,
       return;
 
    menu_entries_set_refresh(false);
-   menu_entries_get_last(list->menu_stack,
+   menu_entries_get_last(list->menu_stack[0],
          &path, &label, &type, &entry_idx);
 
    while (menu_entries_flush_stack_type(
@@ -180,7 +205,7 @@ static void menu_list_flush_stack(menu_list_t *list,
 
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
 
-      menu_entries_get_last(list->menu_stack,
+      menu_entries_get_last(list->menu_stack[0],
             &path, &label, &type, &entry_idx);
    }
 }
@@ -375,11 +400,11 @@ size_t menu_entries_get_end(void)
 /* Get an entry from the top of the menu stack */
 void menu_entries_get(size_t i, menu_entry_t *entry)
 {
-   const char *label         = NULL;
-   const char *path          = NULL;
-   const char *entry_label   = NULL;
-   menu_file_list_cbs_t *cbs = NULL;
-   file_list_t *selection_buf= menu_entries_get_selection_buf_ptr();
+   const char *label          = NULL;
+   const char *path           = NULL;
+   const char *entry_label    = NULL;
+   menu_file_list_cbs_t *cbs  = NULL;
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
 
    menu_entries_get_last_stack(NULL, &label, NULL, NULL);
 
@@ -468,7 +493,7 @@ file_list_t *menu_entries_get_menu_stack_ptr(void)
    menu_list_t *menu_list = menu_list_get_ptr();
    if (!menu_list)
       return NULL;
-   return menu_list->menu_stack;
+   return menu_list->menu_stack[0];
 }
 
 file_list_t *menu_entries_get_selection_buf_ptr(void)
@@ -476,7 +501,7 @@ file_list_t *menu_entries_get_selection_buf_ptr(void)
    menu_list_t *menu_list = menu_list_get_ptr();
    if (!menu_list)
       return NULL;
-   return menu_list->selection_buf;
+   return menu_list->selection_buf[0];
 }
 
 bool menu_entries_needs_refresh(void)
@@ -593,7 +618,7 @@ menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
    menu_list_t *menu_list         = menu_list_get_ptr();
    if (!menu_list)
       return NULL;
-   return (menu_file_list_cbs_t*)file_list_get_last_actiondata(menu_list->menu_stack);
+   return (menu_file_list_cbs_t*)file_list_get_last_actiondata(menu_list->menu_stack[0]);
 }
 
 void menu_entries_get_last_stack(const char **path, const char **label,
@@ -601,7 +626,7 @@ void menu_entries_get_last_stack(const char **path, const char **label,
 {
    menu_list_t *menu_list         = menu_list_get_ptr();
    if (menu_list)
-      menu_entries_get_last(menu_list->menu_stack, path, label, file_type, entry_idx);
+      menu_entries_get_last(menu_list->menu_stack[0], path, label, file_type, entry_idx);
 }
 
 void menu_entries_flush_stack(const char *needle, unsigned final_type)
@@ -631,7 +656,7 @@ size_t menu_entries_get_size(void)
    menu_list_t *menu_list         = menu_list_get_ptr();
    if (!menu_list)
       return 0;
-   return file_list_get_size(menu_list->selection_buf);
+   return file_list_get_size(menu_list->selection_buf[0]);
 }
 
 rarch_setting_t *menu_entries_get_setting(uint32_t i)
