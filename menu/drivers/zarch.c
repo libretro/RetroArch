@@ -45,6 +45,10 @@
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
 
+#if 0
+#define ZARCH_DEBUG
+#endif
+
 const GRfloat ZUI_NORMAL[] = {
    1, 1, 1, 1,
    1, 1, 1, 1,
@@ -472,6 +476,7 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
 {
    char title_buf[PATH_MAX_LENGTH];
    unsigned ticker_size;
+   bool set_active_id    = false;
    unsigned           id = zarch_zui_hash(zui, label);
    int                x2 = x1 + zui->width - 290 - 40;
    int                y2 = y1 + 50;
@@ -481,7 +486,7 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
 
    if (tab->active_id != tab->prev_id)
    {
-      zui->active_id       = item_id;
+      set_active_id = true;
       tab->prev_id         = tab->active_id;
    }
 
@@ -498,9 +503,11 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
    else
    {
       if (zui->active_id != item_id && zui->pending_selection == item_id)
-         zui->active_id         = item_id;
+         set_active_id = true;
    }
 
+   if (set_active_id)
+      zui->active_id         = item_id;
 
    if (zui->item.active == id || zui->item.hot == id)
       bg = ZUI_BG_HILITE;
@@ -804,11 +811,11 @@ static int zarch_zui_render_lay_root(zui_t *zui)
       return 0;
 
    (void)item;
-#if 0
+#ifdef ZARCH_DEBUG
    snprintf(item, sizeof(item), "item id: %d\n", zui->active_id);
-   zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 900 + 41, item); 
-   snprintf(item, sizeof(item), "tab  id: %d\n", tabbed.active_id);
-   zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 900 + 81, item); 
+   zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 300 + 41, item); 
+   snprintf(item, sizeof(item), "tab  idx: %d\n", tabbed.active_id);
+   zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 300 + 81, item); 
 #endif
 
    if (zui->pending_selection == -1)

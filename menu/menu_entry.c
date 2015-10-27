@@ -288,10 +288,11 @@ void menu_entry_get(menu_entry_t *entry, size_t i,
    const char *path           = NULL;
    const char *entry_label    = NULL;
    menu_file_list_cbs_t *cbs  = NULL;
-   file_list_t *list          = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *list          = selection_buf;
 
-   list = userdata ? (file_list_t*)userdata : selection_buf;
+   if (userdata)
+      list = (file_list_t*)userdata;
 
    if (!list)
       return;
