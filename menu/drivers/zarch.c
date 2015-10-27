@@ -179,6 +179,7 @@ typedef struct
    bool vertical;
    int tab_width;
    unsigned tab_selection;
+   bool inited;
 } zui_tabbed_t;
 
 typedef struct
@@ -481,7 +482,7 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
 
    if (tab->active_id != tab->prev_id)
    {
-      zui->active_id      = item_id;
+      zui->active_id       = item_id;
       tab->prev_id         = tab->active_id;
    }
 
@@ -551,8 +552,18 @@ static bool zarch_zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label, unsi
 
    tab->prev_id      = tab->active_id;
 
+   if (!tab->inited)
+   {
+      tab->active_id = id;
+      tab->inited    = true;
+   }
+
    if (zui->item.active == id || tab->active_id == ~0)
       tab->active_id    = id;
+   else if (id > tab->active_id)
+   {
+      tab->next_id            = id;
+   }
 
    if (tab->active_id == id || zui->item.active == id || zui->item.hot == id)
       bg             = ZUI_BG_HILITE;
@@ -575,6 +586,7 @@ static void zarch_zui_render_lay_settings(zui_t *zui)
 {
    int width, x1, y1;
    static zui_tabbed_t tabbed = {~0};
+
    tabbed.vertical            = true;
    tabbed.tab_width           = 100;
 
