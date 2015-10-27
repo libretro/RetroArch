@@ -102,7 +102,6 @@ const GRfloat ZUI_BG_PAD_HILITE[] = {
 typedef struct zarch_handle
 {
    enum menu_action action;
-   unsigned         action_id;
    bool rendering;
    menu_handle_t *menu;
    math_matrix_4x4 mvp;
@@ -790,6 +789,7 @@ static int zarch_zui_render_lay_root_downloads(zui_t *zui, zui_tabbed_t *tabbed)
 
 static int zarch_zui_render_lay_root(zui_t *zui)
 {
+   char item[PATH_MAX_LENGTH];
    static zui_tabbed_t tabbed = {~0};
 
    zarch_zui_tabbed_begin(zui, &tabbed, 0, 0);
@@ -805,6 +805,14 @@ static int zarch_zui_render_lay_root(zui_t *zui)
       return 0;
    if (zarch_zui_render_lay_root_downloads(zui, &tabbed))
       return 0;
+
+   (void)item;
+#if 0
+   snprintf(item, sizeof(item), "item id: %d\n", zui->active_id);
+   zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 900 + 41, item); 
+   snprintf(item, sizeof(item), "tab  id: %d\n", tabbed.active_id);
+   zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 900 + 81, item); 
+#endif
 
    if (zui->pending_selection == -1)
    {
@@ -1243,6 +1251,7 @@ static void zarch_context_reset(void)
 static int zarch_iterate(enum menu_action action)
 {
    int ret = 0;
+   int         action_id;
    menu_entry_t entry;
    zui_t *zui           = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
@@ -1256,21 +1265,24 @@ static int zarch_iterate(enum menu_action action)
 
    if (!zui)
       return -1;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &zui->action_id))
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &action_id))
       return 0;
 
    BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
    BIT64_SET(menu->state, MENU_STATE_BLIT);
 
-   menu_entry_get(&entry,    zui->action_id, NULL, false);
+   menu_entry_get(&entry,    action_id, NULL, false);
 
+   if (action_id >= 0)
+      zui->pending_selection = action_id;
+   
    if (zui->pending_action_ok.enable)
    {
       menu_entry_get(&entry, zui->pending_action_ok.idx, NULL, false);
       zui->pending_action_ok.enable = false;
       
       act               = MENU_ACTION_OK;
-      zui->action_id    = zui->pending_action_ok.idx;
+      action_id    = zui->pending_action_ok.idx;
       zui->pending_action_ok.idx = 0;
    }
    else
@@ -1279,7 +1291,7 @@ static int zarch_iterate(enum menu_action action)
    }
 
    if (perform_action)
-      ret = menu_entry_action(&entry, zui->action_id, act);
+      ret = menu_entry_action(&entry, action_id, act);
 
    if (zui->time_to_exit)
    {
