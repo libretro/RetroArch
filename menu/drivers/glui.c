@@ -380,12 +380,42 @@ static void glui_frame(void)
 {
    unsigned i, header_height;
    bool display_kb;
-   GRfloat coord_color[16];
-   GRfloat coord_color2[16];
-   GRfloat black_bg[16];
-   GRfloat bar_bg[16];
-   GRfloat highlight_bg[16];
-   GRfloat white_bg[16];
+   GRfloat black_bg[16] = {
+      0, 0, 0, 0.75,
+      0, 0, 0, 0.75,
+      0, 0, 0, 0.75,
+      0, 0, 0, 0.75,
+   };
+   GRfloat blue_bg[16] = {
+      0.13, 0.59, 0.95, 1,
+      0.13, 0.59, 0.95, 1,
+      0.13, 0.59, 0.95, 1,
+      0.13, 0.59, 0.95, 1,
+   };
+   GRfloat lightblue_bg[16] = {
+      0.89, 0.95, 0.99, 1,
+      0.89, 0.95, 0.99, 1,
+      0.89, 0.95, 0.99, 1,
+      0.89, 0.95, 0.99, 1,
+   };
+   GRfloat white_bg[16]=  {
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+   };
+   GRfloat white_transp_bg[16]=  {
+      1, 1, 1, 0.75,
+      1, 1, 1, 0.75,
+      1, 1, 1, 0.75,
+      1, 1, 1, 0.75,
+   };
+   GRfloat grey_bg[16]=  {
+      0.62, 0.62, 0.62, 1,
+      0.62, 0.62, 0.62, 1,
+      0.62, 0.62, 0.62, 1,
+      0.62, 0.62, 0.62, 1,
+   };
    unsigned width, height, ticker_limit;
    char msg[PATH_MAX_LENGTH];
    char title[PATH_MAX_LENGTH];
@@ -400,12 +430,9 @@ static void glui_frame(void)
    menu_handle_t *menu                     = menu_driver_get_ptr();
    settings_t *settings                    = config_get_ptr();
    uint64_t *frame_count                   = video_driver_get_frame_count();
-   const uint32_t normal_color             = FONT_COLOR_ARGB_TO_RGBA(
-         settings->menu.entry_normal_color);
-   const uint32_t hover_color              = FONT_COLOR_ARGB_TO_RGBA(
-         settings->menu.entry_hover_color);
-   const uint32_t title_color              = FONT_COLOR_ARGB_TO_RGBA(
-         settings->menu.title_color);
+   const uint32_t normal_color             = 0x000000ff;
+   const uint32_t hover_color              = 0x000000ff;
+   const uint32_t title_color              = 0xffffffff;
 
    if (!menu || !menu->userdata)
       return;
@@ -428,41 +455,16 @@ static void glui_frame(void)
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
-   for (i = 0; i < 16; i++)
-   {
-      coord_color[i]  = 0;
-      coord_color2[i] = 1.0f;
-      black_bg[i]     = 0;
-      bar_bg[i]       = 0.2;
-      highlight_bg[i] = 1;
-      white_bg[i]     = 1;
-
-      if (i == 3 || i == 7 || i == 11 || i == 15)
-      {
-         black_bg[i]     = 0.75f;
-         coord_color[i]  = 0.75f;
-         coord_color2[i] = 0.75f;
-         bar_bg[i]       = 1.00f;
-         highlight_bg[i] = 0.1f;
-      }
-   }
-
    menu_display_frame_background(menu, settings,
          gl, width, height,
-         glui->textures.bg.id, 0.75f, false,
-         &coord_color[0],   &coord_color2[0],
+         glui->textures.bg.id ? glui->textures.bg.id : glui->textures.white, 0.75f, false,
+         &white_transp_bg[0],   &white_bg[0],
          &glui_vertexes[0], &glui_tex_coords[0], 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    menu_entries_get_title(title, sizeof(title));
 
    font_driver = driver->font_osd_driver;
-
-   menu_display_font_bind_block(menu, font_driver, &glui->list_block);
-
-   glui_render_menu_list(glui, width, height, menu, normal_color, hover_color);
-
-   menu_display_font_flush_block(menu, font_driver);
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
@@ -471,14 +473,20 @@ static void glui_frame(void)
          header_height - menu->scroll_y + glui->line_height *
          selection, width, glui->line_height,
          width, height,
-         &highlight_bg[0]);
+         &lightblue_bg[0]);
+
+   menu_display_font_bind_block(menu, font_driver, &glui->list_block);
+
+   glui_render_menu_list(glui, width, height, menu, normal_color, hover_color);
+
+   menu_display_font_flush_block(menu, font_driver);
 
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    glui_render_quad(gl, 0, 0, width,
          header_height,
          width, height,
-         &bar_bg[0]);
+         &blue_bg[0]);
 
    ticker_limit = (width - glui->margin*2) / glui->glyph_width -
          strlen(menu_hash_to_str(MENU_VALUE_BACK)) * 2;
@@ -497,9 +505,9 @@ static void glui_frame(void)
          width,
          header_height,
          width, height,
-         &bar_bg[0]);
+         &blue_bg[0]);
 
-   glui_draw_scrollbar(gl, width, height, &white_bg[0]);
+   glui_draw_scrollbar(gl, width, height, &grey_bg[0]);
 
    if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
       glui_blit_line(
@@ -516,7 +524,7 @@ static void glui_frame(void)
             width - glui->margin,
             height - glui->line_height,
             width, height,
-            timedate, hover_color,
+            timedate, title_color,
             TEXT_ALIGN_RIGHT);
    }
 
