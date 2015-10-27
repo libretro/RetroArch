@@ -305,7 +305,6 @@ static void glui_render(void)
 
    if (settings->menu.mouse.enable)
    {
-      int16_t mouse_x          = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       int16_t mouse_y          = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
       unsigned new_pointer_val = 
@@ -429,7 +428,7 @@ static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui,
 
 static void glui_frame(void)
 {
-   unsigned i, header_height;
+   unsigned header_height;
    bool display_kb;
    GRfloat black_bg[16] = {
       0, 0, 0, 0.75,
