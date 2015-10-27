@@ -191,10 +191,10 @@ static void glui_draw_scrollbar(gl_t *gl, unsigned width, unsigned height, GRflo
       int scrollbar_width  = 4;
 
       glui_render_quad(gl,
-            width - scrollbar_width,
-            header_height + y,
+            width - scrollbar_width - 4,
+            header_height + y + 4,
             scrollbar_width,
-            scrollbar_height,
+            scrollbar_height - 8,
             width, height,
             coord_color);
    }
@@ -462,10 +462,10 @@ static void glui_frame(void)
       1, 1, 1, 0.75,
    };
    GRfloat grey_bg[16]=  {
-      0.62, 0.62, 0.62, 1,
-      0.62, 0.62, 0.62, 1,
-      0.62, 0.62, 0.62, 1,
-      0.62, 0.62, 0.62, 1,
+      0.78, 0.78, 0.78, 1,
+      0.78, 0.78, 0.78, 1,
+      0.78, 0.78, 0.78, 1,
+      0.78, 0.78, 0.78, 1,
    };
    unsigned width, height, ticker_limit;
    char msg[PATH_MAX_LENGTH];
@@ -481,7 +481,7 @@ static void glui_frame(void)
    menu_handle_t *menu                     = menu_driver_get_ptr();
    settings_t *settings                    = config_get_ptr();
    uint64_t *frame_count                   = video_driver_get_frame_count();
-   const uint32_t normal_color             = 0x000000ff;
+   const uint32_t normal_color             = 0x4d4d4eff;
    const uint32_t hover_color              = 0x000000ff;
    const uint32_t title_color              = 0xffffffff;
 
@@ -881,8 +881,6 @@ static void glui_context_reset(void)
    fill_pathname_join(iconpath, settings->assets_directory,
          "glui", sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
-
-   printf("%s\n", iconpath);
 
    glui_layout(menu, glui);
    glui_context_bg_destroy(glui);
