@@ -120,7 +120,8 @@ static const audio_driver_t *audio_drivers[] = {
    &audio_psp,
 #endif   
 #ifdef _3DS
-   &audio_ctr,
+   &audio_ctr_csnd,
+   &audio_ctr_dsp,
 #endif
    &audio_null,
    NULL,

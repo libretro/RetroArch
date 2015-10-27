@@ -87,7 +87,8 @@ else
 	OBJS += audio/drivers_resampler/cc_resampler.o
 	OBJS += camera/drivers/nullcamera.o
 	OBJS += location/drivers/nulllocation.o
-	OBJS += audio/drivers/ctr_audio.o
+	OBJS += audio/drivers/ctr_csnd_audio.o
+   OBJS += audio/drivers/ctr_dsp_audio.o
 	OBJS += audio/drivers/nullaudio.o
 	OBJS += gfx/video_driver.o
 	OBJS += gfx/video_common.o

@@ -29,6 +29,7 @@
 
 #include "../../general.h"
 #include "retroarch.h"
+#include "audio/audio_driver.h"
 
 #ifdef IS_SALAMANDER
 #include "../../file_ext.h"
@@ -40,9 +41,11 @@ const char* elf_path_cst = "sdmc:/retroarch/test.3dsx";
 
 #ifndef DEBUG_HOLD
 void wait_for_input(void);
+void dump_result_value(Result val);
 #define DEBUG_HOLD() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);wait_for_input();}while(0)
 #define DEBUG_VAR(X) printf( "%-20s: 0x%08X\n", #X, (u32)(X))
 #define DEBUG_VAR64(X) printf( #X"\r\t\t\t\t : 0x%016llX\n", (u64)(X))
+#define DEBUG_ERROR(X) do{if(X)dump_result_value(X)}while(0)
 #endif
 
 #define CTR_APPMEMALLOC_PTR ((u32*)0x1FF80040)
@@ -118,8 +121,6 @@ void __attribute__((noreturn)) __libctru_exit(int rc)
 	svcExitProcess();
 }
 
-
-
 static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
@@ -157,6 +158,8 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
          "remaps", sizeof(g_defaults.dir.remap));
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
          "retroarch.cfg", sizeof(g_defaults.path.config));
+
+   *argc=0;
 
 #ifndef IS_SALAMANDER
 #if 0
@@ -222,16 +225,9 @@ static void frontend_ctr_deinit(void *data)
    }
 
    exitCfgu();
-   csndExit();
+   ndspExit();
+   csndExit();   
    gfxExit();
-
-#if 0
-   sdmcExit();
-   fsExit();
-   hidExit();
-   aptExit();
-   srvExit();
-#endif
 #endif
 }
 
@@ -251,21 +247,22 @@ static void frontend_ctr_init(void *data)
    global->verbosity = true;
 
 #if 0
-   srvInit();
-   aptInit();
-   hidInit();
-   fsInit();
-   sdmcInit();
-
    APT_SetAppCpuTimeLimit(NULL, 80);
-   gfxInitDefault();
 #endif
    osSetSpeedupEnable(true);
    gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);
-   csndInit();
-   initCfgu();
    gfxSet3D(false);
    consoleInit(GFX_BOTTOM, NULL);
+   audio_driver_t* dsp_audio_driver = &audio_ctr_dsp;
+   if(csndInit() != 0)
+   {
+      dsp_audio_driver = &audio_ctr_csnd;
+      audio_ctr_csnd = audio_ctr_dsp;
+      audio_ctr_dsp  = audio_null;
+   }
+   if(ndspInit() != 0)
+      *dsp_audio_driver = audio_null;
+   initCfgu();
 #endif
 }
 
@@ -276,6 +273,145 @@ static int frontend_ctr_get_rating(void)
 }
 
 bool select_pressed = false;
+
+typedef union{
+   struct
+   {
+      unsigned description : 10;
+      unsigned module      : 8;
+      unsigned             : 3;
+      unsigned summary     : 6;
+      unsigned level       : 5;
+   };
+   Result val;
+}ctr_result_value;
+
+void dump_result_value(Result val)
+{
+   ctr_result_value res;
+   res.val = val;
+   printf("result      : 0x%08X\n", val);
+   printf("description : %u\n", res.description);
+   printf("module      : %u\n", res.module);
+   printf("summary     : %u\n", res.summary);
+   printf("level       : %u\n", res.level);
+}
+#if 0
+static void ctr_crawl_memory(uint32_t* total_size, uint32_t size)
+{
+   void* tmp = malloc(size);
+   if(tmp)
+      *total_size += size;
+   else
+      size >>= 1;
+
+   if (size > 4)
+      ctr_crawl_memory(total_size, size);
+
+   free(tmp);
+}
+
+void ctr_get_memory_info(uint32_t* available, uint32_t* max_block)
+{
+   *available = 0;
+
+   ctr_crawl_memory(available, 1<<27);
+
+   void* tmp;
+   *max_block = 0;
+   int i;
+   for (i=27; i>2; i--)
+   {
+      tmp = malloc(*max_block + (1 << i));
+      if(tmp)
+      {
+         *max_block += 1 << i;
+         free(tmp);
+      }
+   }
+
+
+}
+
+uint32_t malloc_calls    = 0;
+uint32_t min_malloc_addr = 0xFFFFFFFF;
+uint32_t max_malloc_addr = 0x0;
+
+void* malloc(size_t nbytes)
+{
+  void* ret = _malloc_r (_REENT, nbytes);
+
+  if (ret)
+  {
+     if(max_malloc_addr < ((uint32_t)ret + nbytes))
+        max_malloc_addr = ((uint32_t)ret + nbytes);
+
+     if(min_malloc_addr > (uint32_t)ret)
+        min_malloc_addr = (uint32_t)ret;
+  }
+
+  malloc_calls++;
+  return ret;
+}
+
+void free (void* aptr)
+{
+  _free_r (_REENT, aptr);
+}
+
+uint32_t sbrk_calls = 0;
+uint32_t sbrk_max_incr = 0;
+uint32_t sbrk_total_incr = 0;
+uint32_t sbrk_heap_start = 0;
+uint32_t sbrk_heap_end   = 0;
+
+#include "errno.h"
+extern char *fake_heap_end;
+extern char *fake_heap_start;
+
+/* Register name faking - works in collusion with the linker.  */
+register char * stack_ptr asm ("sp");
+
+void * _sbrk_r (struct _reent *ptr, ptrdiff_t incr) {
+	extern char   end asm ("__end__");	/* Defined by the linker.  */
+	static char * heap_start;
+
+	char *	prev_heap_start;
+	char *	heap_end;
+
+	if (heap_start == NULL) {
+		if (fake_heap_start == NULL) {
+			heap_start = &end;
+		} else {
+			heap_start = fake_heap_start;
+		}
+	}
+
+	prev_heap_start = heap_start;
+
+	if (fake_heap_end == NULL) {
+		heap_end = stack_ptr;
+	} else {
+		heap_end = fake_heap_end;
+	}
+
+	if (heap_start + incr > heap_end) {
+		ptr->_errno = ENOMEM;
+		return (caddr_t) -1;
+	}
+
+	heap_start += incr;
+
+   sbrk_calls++;
+   if ((incr > 0) && (sbrk_max_incr < incr))
+      sbrk_max_incr = incr;
+   sbrk_total_incr += incr;
+   sbrk_heap_start = (uint32_t) heap_start;
+   sbrk_heap_end   = (uint32_t) heap_end;
+
+   return (caddr_t) prev_heap_start;
+}
+#endif
 
 void wait_for_input(void)
 {

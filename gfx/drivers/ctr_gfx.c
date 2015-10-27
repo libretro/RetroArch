@@ -461,12 +461,30 @@ static bool ctr_frame(void* data, const void* frame,
       frames = 0;
    }
 
-//   extern u32 __linear_heap_size;
+#if 0
 //   extern u32 gpuCmdBufOffset;
-//   extern u32 __heap_size;
-//   printf("0x%08X 0x%08X 0x%08X\r", __heap_size, gpuCmdBufOffset, (__linear_heap_size - linearSpaceFree() +0x3FF) & ~0x3FF);
-//   printf("fps: %8.4f frames: %i (%X)\r", fps, total_frames++, (__linear_heap_size - linearSpaceFree()));
-   printf("fps: %8.4f frames: %i\r", fps, total_frames++);
+
+//   if(!(frames & 0x3F))
+//   {
+//      u32 available,max_block;
+//      void ctr_get_memory_info(u32* available, u32* max_block);
+
+//      ctr_get_memory_info(&available, &max_block);
+//      printf(PRINTFPOS(28,0)"u:0x%08X f:0x%08X b:0x%08X\n", __heap_size - available, available, max_block);
+//   }
+
+   extern u32 __linear_heap_size;
+   extern u32 __heap_size;
+
+   extern uint32_t sbrk_calls, sbrk_max_incr, sbrk_total_incr, sbrk_heap_start, sbrk_heap_end;
+   printf(PRINTFPOS(25,0)"c:0x%08X m:0x%08X c:0x%08X\n", sbrk_calls, sbrk_max_incr, sbrk_total_incr);
+   printf(PRINTFPOS(26,0)"s:0x%08X e:0x%08X         \n", sbrk_heap_start, sbrk_heap_end);
+   extern uint32_t malloc_calls, min_malloc_addr, max_malloc_addr;
+   printf(PRINTFPOS(27,0)"n:0x%08X l:0x%08X h:0x%08X\n", malloc_calls, min_malloc_addr, max_malloc_addr);
+   printf(PRINTFPOS(28,0)"0x%08X 0x%08X 0x%08X\r", __heap_size, gpuCmdBufOffset, (__linear_heap_size - linearSpaceFree() +0x3FF) & ~0x3FF);
+#endif
+//   printf(PRINTFPOS(29,0)"fps: %8.4f frames: %i (%X)\r", fps, total_frames++, (__linear_heap_size - linearSpaceFree()));
+   printf(PRINTFPOS(29,0)"fps: %8.4f frames: %i\r", fps, total_frames++);
    fflush(stdout);
 
    rarch_perf_init(&ctrframe_f, "ctrframe_f");

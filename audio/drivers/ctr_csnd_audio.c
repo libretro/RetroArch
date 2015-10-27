@@ -32,26 +32,26 @@ typedef struct
 
    uint32_t playpos;
    uint64_t cpu_ticks_last;
-} ctr_audio_t;
+} ctr_csnd_audio_t;
 
-#define CTR_AUDIO_COUNT       (1u << 11u)
-#define CTR_AUDIO_COUNT_MASK  (CTR_AUDIO_COUNT - 1u)
-#define CTR_AUDIO_SIZE        (CTR_AUDIO_COUNT * sizeof(int16_t))
-#define CTR_AUDIO_SIZE_MASK   (CTR_AUDIO_SIZE  - 1u)
+#define CTR_CSND_AUDIO_COUNT       (1u << 11u)
+#define CTR_CSND_AUDIO_COUNT_MASK  (CTR_CSND_AUDIO_COUNT - 1u)
+#define CTR_CSND_AUDIO_SIZE        (CTR_CSND_AUDIO_COUNT * sizeof(int16_t))
+#define CTR_CSND_AUDIO_SIZE_MASK   (CTR_CSND_AUDIO_SIZE  - 1u)
 
-#define CTR_AUDIO_RATE              32730
+#define CTR_CSND_AUDIO_RATE              32730
 #define CTR_CSND_TICKS_PER_SAMPLE   2048
-#define CTR_CPU_TICKS_PER_SAMPLE    (CTR_CSND_TICKS_PER_SAMPLE * 4)
+#define CTR_CSND_CPU_TICKS_PER_SAMPLE    (CTR_CSND_TICKS_PER_SAMPLE * 4)
 
-static void ctr_audio_update_playpos(ctr_audio_t* ctr)
+static void ctr_csnd_audio_update_playpos(ctr_csnd_audio_t* ctr)
 {
    uint32_t samples_played;
    uint64_t current_tick;
 
    current_tick   = svcGetSystemTick();
-   samples_played = (current_tick - ctr->cpu_ticks_last) / CTR_CPU_TICKS_PER_SAMPLE;
-   ctr->playpos   = (ctr->playpos + samples_played) & CTR_AUDIO_COUNT_MASK;
-   ctr->cpu_ticks_last += samples_played * CTR_CPU_TICKS_PER_SAMPLE;
+   samples_played = (current_tick - ctr->cpu_ticks_last) / CTR_CSND_CPU_TICKS_PER_SAMPLE;
+   ctr->playpos   = (ctr->playpos + samples_played) & CTR_CSND_AUDIO_COUNT_MASK;
+   ctr->cpu_ticks_last += samples_played * CTR_CSND_CPU_TICKS_PER_SAMPLE;
 }
 
 
@@ -96,9 +96,9 @@ Result csndPlaySound_custom(int chn, u32 flags, float vol, float pan, void* data
 	return 0;
 }
 
-static void *ctr_audio_init(const char *device, unsigned rate, unsigned latency)
+static void *ctr_csnd_audio_init(const char *device, unsigned rate, unsigned latency)
 {
-   ctr_audio_t *ctr = (ctr_audio_t*)calloc(1, sizeof(ctr_audio_t));
+   ctr_csnd_audio_t *ctr = (ctr_csnd_audio_t*)calloc(1, sizeof(ctr_csnd_audio_t));
    settings_t *settings = config_get_ptr();
 
    if (!ctr)
@@ -108,26 +108,26 @@ static void *ctr_audio_init(const char *device, unsigned rate, unsigned latency)
    (void)rate;
    (void)latency;
 
-   settings->audio.out_rate  = CTR_AUDIO_RATE;
+   settings->audio.out_rate  = CTR_CSND_AUDIO_RATE;
 
-   ctr->l                    = linearAlloc(CTR_AUDIO_SIZE);
-   ctr->r                    = linearAlloc(CTR_AUDIO_SIZE);
+   ctr->l                    = linearAlloc(CTR_CSND_AUDIO_SIZE);
+   ctr->r                    = linearAlloc(CTR_CSND_AUDIO_SIZE);
 
-   memset(ctr->l, 0, CTR_AUDIO_SIZE);
-   memset(ctr->r, 0, CTR_AUDIO_SIZE);
+   memset(ctr->l, 0, CTR_CSND_AUDIO_SIZE);
+   memset(ctr->r, 0, CTR_CSND_AUDIO_SIZE);
 
    ctr->l_paddr              = osConvertVirtToPhys((u32)ctr->l);
    ctr->r_paddr              = osConvertVirtToPhys((u32)ctr->r);
 
    ctr->pos                  = 0;
 
-   GSPGPU_FlushDataCache(ctr->l_paddr, CTR_AUDIO_SIZE);
-   GSPGPU_FlushDataCache(ctr->r_paddr, CTR_AUDIO_SIZE);
+   GSPGPU_FlushDataCache(ctr->l_paddr, CTR_CSND_AUDIO_SIZE);
+   GSPGPU_FlushDataCache(ctr->r_paddr, CTR_CSND_AUDIO_SIZE);
    csndPlaySound_custom(0x8, SOUND_LOOPMODE(CSND_LOOPMODE_NORMAL)| SOUND_FORMAT(CSND_ENCODING_PCM16),
-                 1.0, -1.0, ctr->l, ctr->l, CTR_AUDIO_SIZE);
+                 1.0, -1.0, ctr->l, ctr->l, CTR_CSND_AUDIO_SIZE);
 
    csndPlaySound_custom(0x9, SOUND_LOOPMODE(CSND_LOOPMODE_NORMAL)| SOUND_FORMAT(CSND_ENCODING_PCM16),
-                 1.0,  1.0, ctr->r, ctr->r, CTR_AUDIO_SIZE);
+                 1.0,  1.0, ctr->r, ctr->r, CTR_CSND_AUDIO_SIZE);
 
    csndExecCmds(true);
    ctr->playpos              = 0;
@@ -137,9 +137,9 @@ static void *ctr_audio_init(const char *device, unsigned rate, unsigned latency)
    return ctr;
 }
 
-static void ctr_audio_free(void *data)
+static void ctr_csnd_audio_free(void *data)
 {
-   ctr_audio_t* ctr = (ctr_audio_t*)data;
+   ctr_csnd_audio_t* ctr = (ctr_csnd_audio_t*)data;
 
 //   csndExit();
    CSND_SetPlayState(0x8, 0);
@@ -152,14 +152,14 @@ static void ctr_audio_free(void *data)
    free(ctr);
 }
 
-static ssize_t ctr_audio_write(void *data, const void *buf, size_t size)
+static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
 {
    int i;
    uint32_t samples_played = 0;
    uint64_t current_tick   = 0;
    static struct retro_perf_counter ctraudio_f = {0};
    const uint16_t *src = buf;
-   ctr_audio_t    *ctr = (ctr_audio_t*)data;
+   ctr_csnd_audio_t    *ctr = (ctr_csnd_audio_t*)data;
 
    (void)data;
    (void)buf;
@@ -169,22 +169,22 @@ static ssize_t ctr_audio_write(void *data, const void *buf, size_t size)
    rarch_perf_init(&ctraudio_f, "ctraudio_f");
    retro_perf_start(&ctraudio_f);
 
-   ctr_audio_update_playpos(ctr);
+   ctr_csnd_audio_update_playpos(ctr);
 
-   if((((ctr->playpos  - ctr->pos) & CTR_AUDIO_COUNT_MASK) < (CTR_AUDIO_COUNT >> 2)) ||
-      (((ctr->pos - ctr->playpos ) & CTR_AUDIO_COUNT_MASK) < (CTR_AUDIO_COUNT >> 4)) ||
-      (((ctr->playpos  - ctr->pos) & CTR_AUDIO_COUNT_MASK) < (size >> 2)))
+   if((((ctr->playpos  - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 2)) ||
+      (((ctr->pos - ctr->playpos ) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 4)) ||
+      (((ctr->playpos  - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK) < (size >> 2)))
    {
       if (ctr->nonblocking)
-         ctr->pos = (ctr->playpos + (CTR_AUDIO_COUNT >> 1)) & CTR_AUDIO_COUNT_MASK;
+         ctr->pos = (ctr->playpos + (CTR_CSND_AUDIO_COUNT >> 1)) & CTR_CSND_AUDIO_COUNT_MASK;
       else
       {
          do{
             /* todo: compute the correct sleep period */
             retro_sleep(1);
-            ctr_audio_update_playpos(ctr);
-         }while (((ctr->playpos - ctr->pos) & CTR_AUDIO_COUNT_MASK) < (CTR_AUDIO_COUNT >> 1)
-                 || (((ctr->pos - ctr->playpos) & CTR_AUDIO_COUNT_MASK) < (CTR_AUDIO_COUNT >> 4)));
+            ctr_csnd_audio_update_playpos(ctr);
+         }while (((ctr->playpos - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 1)
+                 || (((ctr->pos - ctr->playpos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 4)));
       }
    }
 
@@ -193,20 +193,20 @@ static ssize_t ctr_audio_write(void *data, const void *buf, size_t size)
       ctr->l[ctr->pos] = src[i];
       ctr->r[ctr->pos] = src[i + 1];
       ctr->pos++;
-      ctr->pos &= CTR_AUDIO_COUNT_MASK;
+      ctr->pos &= CTR_CSND_AUDIO_COUNT_MASK;
    }
 
-   GSPGPU_FlushDataCache(ctr->l, CTR_AUDIO_SIZE);
-   GSPGPU_FlushDataCache(ctr->r, CTR_AUDIO_SIZE);
+   GSPGPU_FlushDataCache(ctr->l, CTR_CSND_AUDIO_SIZE);
+   GSPGPU_FlushDataCache(ctr->r, CTR_CSND_AUDIO_SIZE);
 
    retro_perf_stop(&ctraudio_f);
 
    return size;
 }
 
-static bool ctr_audio_stop(void *data)
+static bool ctr_csnd_audio_stop(void *data)
 {   
-   ctr_audio_t* ctr = (ctr_audio_t*)data;
+   ctr_csnd_audio_t* ctr = (ctr_csnd_audio_t*)data;
 
    /* using SetPlayState would make tracking the playback
     * position more difficult */
@@ -228,15 +228,15 @@ static bool ctr_audio_stop(void *data)
    return true;
 }
 
-static bool ctr_audio_alive(void *data)
+static bool ctr_csnd_audio_alive(void *data)
 {
-   ctr_audio_t* ctr = (ctr_audio_t*)data;
+   ctr_csnd_audio_t* ctr = (ctr_csnd_audio_t*)data;
    return ctr->playing;
 }
 
-static bool ctr_audio_start(void *data)
+static bool ctr_csnd_audio_start(void *data)
 {
-   ctr_audio_t* ctr = (ctr_audio_t*)data;
+   ctr_csnd_audio_t* ctr = (ctr_csnd_audio_t*)data;
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    /* Prevents restarting audio when the menu
@@ -260,44 +260,44 @@ static bool ctr_audio_start(void *data)
    return true;
 }
 
-static void ctr_audio_set_nonblock_state(void *data, bool state)
+static void ctr_csnd_audio_set_nonblock_state(void *data, bool state)
 {
-   ctr_audio_t* ctr = (ctr_audio_t*)data;
+   ctr_csnd_audio_t* ctr = (ctr_csnd_audio_t*)data;
    if (ctr)
       ctr->nonblocking = state;
 }
 
-static bool ctr_audio_use_float(void *data)
+static bool ctr_csnd_audio_use_float(void *data)
 {
    (void)data;
    return false;
 }
 
-static size_t ctr_audio_write_avail(void *data)
+static size_t ctr_csnd_audio_write_avail(void *data)
 {
-   ctr_audio_t* ctr = (ctr_audio_t*)data;
+   ctr_csnd_audio_t* ctr = (ctr_csnd_audio_t*)data;
 
-   ctr_audio_update_playpos(ctr);
-   return (ctr->playpos - ctr->pos) & CTR_AUDIO_COUNT_MASK;
+   ctr_csnd_audio_update_playpos(ctr);
+   return (ctr->playpos - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK;
 }
 
-static size_t ctr_audio_buffer_size(void *data)
+static size_t ctr_csnd_audio_buffer_size(void *data)
 {
    (void)data;
-   return CTR_AUDIO_COUNT;
+   return CTR_CSND_AUDIO_COUNT;
 }
 
 
-audio_driver_t audio_ctr = {
-   ctr_audio_init,
-   ctr_audio_write,
-   ctr_audio_stop,
-   ctr_audio_start,
-   ctr_audio_alive,
-   ctr_audio_set_nonblock_state,
-   ctr_audio_free,
-   ctr_audio_use_float,
-   "ctr",
-   ctr_audio_write_avail,
-   ctr_audio_buffer_size
+audio_driver_t audio_ctr_csnd = {
+   ctr_csnd_audio_init,
+   ctr_csnd_audio_write,
+   ctr_csnd_audio_stop,
+   ctr_csnd_audio_start,
+   ctr_csnd_audio_alive,
+   ctr_csnd_audio_set_nonblock_state,
+   ctr_csnd_audio_free,
+   ctr_csnd_audio_use_float,
+   "csnd",
+   ctr_csnd_audio_write_avail,
+   ctr_csnd_audio_buffer_size
 };
