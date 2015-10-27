@@ -1,11 +1,12 @@
 TARGET := retroarch_3ds
 LIBRETRO =
 
-DEBUG = 0
-GRIFFIN_BUILD = 1
+DEBUG              = 0
+GRIFFIN_BUILD      = 1
 WHOLE_ARCHIVE_LINK = 0
-BUILD_3DSX = 1
-BUILD_CIA  = 1
+BIG_STACK          = 0
+BUILD_3DSX         = 1
+BUILD_CIA          = 1
 
 APP_TITLE         = Retroarch 3DS
 APP_DESCRIPTION   = Retroarch 3DS
@@ -15,6 +16,16 @@ APP_UNIQUE_ID     = 0xBAC00
 APP_ICON          = ctr/default.png
 APP_BANNER        = ctr/libretro_banner.png
 APP_AUDIO         = ctr/silent.wav
+APP_CIA_RSF       = ctr/tools/template-cia.rsf
+APP_3DS_RSF       = ctr/tools/template-3ds.rsf
+
+
+ifeq ($(BIG_STACK),1)
+CTR_STACK_SIZE        = 0x400000
+else
+CTR_STACK_SIZE        = 0x100000
+endif
+CTR_LINEAR_HEAP_SIZE  = 0x600000
 
 include ctr/Makefile.cores
 
@@ -39,11 +50,10 @@ else
 	OBJS += gfx/drivers_context/gfx_null_ctx.o
 	OBJS += gfx/image/image.o
 	OBJS += gfx/video_texture.o
-	OBJS += libretro-common/formats/tga/tga_decode.o
-	OBJS += libretro-common/formats/png/rpng_fbio.o
-	OBJS += libretro-common/formats/png/rpng_nbio.o
-	OBJS += libretro-common/formats/png/rpng_decode.o
+	OBJS += libretro-common/formats/tga/rtga.o
+	OBJS += libretro-common/formats/png/rpng.o
 	OBJS += libretro-common/formats/png/rpng_encode.o
+	OBJS += libretro-common/formats/bmp/rbmp_encode.o
 	OBJS += gfx/drivers/ctr_gfx.o
 	OBJS += gfx/drivers/nullgfx.o
 	OBJS += gfx/font_renderer_driver.o
@@ -117,6 +127,7 @@ else
 	OBJS += file_path_special.o
 	OBJS += libretro-common/file/dir_list.o
 	OBJS += libretro-common/file/retro_dirent.o
+	OBJS += libretro-common/file/retro_file.o
 	OBJS += dir_list_special.o
 	OBJS += libretro-common/string/string_list.o
 	OBJS += libretro-common/string/stdstring.o
@@ -264,6 +275,14 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_END := -Wl,--no-whole-archive
 endif
 
+ifneq ($(CTR_STACK_SIZE),)
+   CFLAGS += -DCTR_STACK_SIZE=$(CTR_STACK_SIZE)
+endif
+
+ifneq ($(CTR_LINEAR_HEAP_SIZE),)
+   CFLAGS += -DCTR_LINEAR_HEAP_SIZE=$(CTR_LINEAR_HEAP_SIZE)
+endif
+
 CFLAGS += -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include
 
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE -DSINC_LOWEST_QUALITY
@@ -316,13 +335,13 @@ NM      := $(PREFIX)nm
 LD      := $(CXX)
 
 ifneq ($(findstring Linux,$(shell uname -a)),)
-	MAKEROM = ctr/tools/makerom-linux
+	MAKEROM    = ctr/tools/makerom-linux
 	BANNERTOOL = ctr/tools/bannertool-linux
 else ifneq ($(findstring Darwin,$(shell uname -a)),)
-	MAKEROM = ctr/tools/makerom-mac
+	MAKEROM    = ctr/tools/makerom-mac
 	BANNERTOOL = ctr/tools/bannertool-mac
 else
-	MAKEROM = ctr/tools/makerom.exe
+	MAKEROM    = ctr/tools/makerom.exe
 	BANNERTOOL = ctr/tools/bannertool.exe
 endif
 
@@ -369,15 +388,12 @@ $(TARGET).bnr: $(APP_BANNER) $(APP_AUDIO)
 $(TARGET).icn: $(APP_ICON)
 	$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_TITLE)" -p "$(APP_AUTHOR)" -i $(APP_ICON) -o $@
 
-$(TARGET).rsf: ctr/tools/template-cia.rsf
-	cat ctr/tools/template-cia.rsf | sed 's/{APP_TITLE}/$(APP_TITLE)/' | sed 's/{APP_PRODUCT_CODE}/$(APP_PRODUCT_CODE)/' | sed 's/{APP_UNIQUE_ID}/$(APP_UNIQUE_ID)/' > $@
-
 $(TARGET)_stripped.elf: $(TARGET).elf
 	cp $(TARGET).elf $@
 	$(STRIP) $@
 
-$(TARGET).cia: $(TARGET)_stripped.elf $(TARGET).bnr $(TARGET).icn $(TARGET).rsf
-	$(MAKEROM) -f cia -o $@ -rsf $(TARGET).rsf -target t -exefslogo -elf $(TARGET)_stripped.elf -icon $(TARGET).icn -banner $(TARGET).bnr
+$(TARGET).cia: $(TARGET)_stripped.elf $(TARGET).bnr $(TARGET).icn
+	$(MAKEROM) -f cia -o $@ -rsf $(APP_CIA_RSF) -target t -exefslogo -elf $(TARGET)_stripped.elf -icon $(TARGET).icn -banner $(TARGET).bnr -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(APP_PRODUCT_CODE)" -DAPP_UNIQUE_ID=$(APP_UNIQUE_ID)
 
 clean:
 	rm -f $(OBJS)
@@ -387,7 +403,6 @@ clean:
 	rm -f $(TARGET).cia
 	rm -f $(TARGET).bnr
 	rm -f $(TARGET).icn
-	rm -f $(TARGET).rsf
 	rm -f *_shader_shbin.h
 
 .PHONY: clean

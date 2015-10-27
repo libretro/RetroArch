@@ -113,8 +113,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
   menu_entry_get_path(self.i, label, sizeof(label));
   menu_entry_get_value(self.i, buffer, sizeof(buffer));
-  
-  result.selectionStyle = UITableViewCellSelectionStyleNone;
+
   result.textLabel.text = BOXSTRING(label);
 
   if (label[0] == '\0')
@@ -546,20 +545,18 @@ replacementString:(NSString *)string
 - (NSString*)tableView:(UITableView*)tableView
 titleForHeaderInSection:(NSInteger)section
 {
-   if (self.hidesHeaders)
-       return nil;
-   return self.sections[section][0];
+   return nil;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView
  numberOfRowsInSection:(NSInteger)section
 {
-   return [self.sections[section] count] - 1;
+   return [self.sections[section] count];
 }
 
 - (id)itemForIndexPath:(NSIndexPath*)indexPath
 {
-   return self.sections[indexPath.section][indexPath.row + 1];
+   return self.sections[indexPath.section][indexPath.row];
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView
@@ -588,31 +585,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 - (void)reloadData
 {
    [self willReloadData];
-
-   // Here are two options:
-
-   // Option 1. This is like how setting app works, but not exactly.
-   // There is a typedef for the 'withRowAnimation' that has lots of
-   // options, just Google UITableViewRowAnimation
-#if 0
-
-   [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0]
-                 withRowAnimation:UITableViewRowAnimationAutomatic];
-#else
-
-   // Option 2. This is a "bigger" transition, but doesn't look as
-   // much like Settings. It has more options. Just Google
-   // UIViewAnimationOptionTransition
-
-   [UIView transitionWithView:self.tableView
-                     duration:0.40f
-                      options:UIViewAnimationOptionTransitionCrossDissolve
-                   animations:^(void)
-           {
-             [self.tableView reloadData];
-           }
-   completion: nil];
-#endif
+   [self.tableView reloadData];
 }
 
 -(void)renderMessageBox:(NSString *)msg
@@ -625,6 +598,13 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
      
     [message show];
 }
+
+
+-(void)msgQueuePush:(NSString *)msg
+{
+   self.osdmessage.text = msg;
+}
+
 
 - (void)alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
@@ -652,7 +632,17 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (void)viewWillAppear:(BOOL)animated
 {
+   char title_msg[256];
    [self reloadData];
+
+   self.osdmessage = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 300, 44)];
+   self.osdmessage.backgroundColor = [UIColor clearColor];
+
+   UIBarButtonItem *item = [[UIBarButtonItem alloc] initWithCustomView:self.osdmessage];
+   [self setToolbarItems: [NSArray arrayWithObject:item]];
+
+   menu_entries_get_core_title(title_msg, sizeof(title_msg));
+   self.osdmessage.text = BOXSTRING(title_msg);
 }
 
 - (void)willReloadData
@@ -665,15 +655,15 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    everything = [NSMutableArray array];
 
    menu_entries_get_core_title(title_msg, sizeof(title_msg));
-   self.title = BOXSTRING(title_msg);
+   self.osdmessage.text = BOXSTRING(title_msg);
 
    menu_entries_get_title(title, sizeof(title));
-   [everything addObject:BOXSTRING(title)];
+   self.title = BOXSTRING(title);
   
    end = menu_entries_get_end();    
    for (i = menu_entries_get_start(); i < end; i++)
      [everything addObject:[self make_menu_item_for_entry: i]];
-   
+
    self.sections = [NSMutableArray array];
    [self.sections addObject:everything];
 
@@ -756,9 +746,6 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 - (void)menuSelect: (uint32_t) i
 {
   menu_entry_select(i);
-#if 0
-  [self willReloadData];
-#endif
 }
 
 - (void)menuBack

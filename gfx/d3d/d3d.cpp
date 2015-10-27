@@ -1628,12 +1628,13 @@ static bool d3d_frame(void *data, const void *frame,
 {
    unsigned width, height;
    D3DVIEWPORT screen_vp;
-   unsigned i                      = 0;
-   d3d_video_t *d3d                = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr           = (LPDIRECT3DDEVICE)d3d->dev;
-   driver_t *driver                = driver_get_ptr();
-   settings_t *settings            = config_get_ptr();
-   const font_renderer_t *font_ctx = driver->font_osd_driver;
+   static struct retro_perf_counter d3d_frame = {0};
+   unsigned i                          = 0;
+   d3d_video_t *d3d                    = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr               = (LPDIRECT3DDEVICE)d3d->dev;
+   driver_t *driver                    = driver_get_ptr();
+   settings_t *settings                = config_get_ptr();
+   const font_renderer_t *font_ctx     = driver->font_osd_driver;
 
    (void)i;
 
@@ -1642,8 +1643,8 @@ static bool d3d_frame(void *data, const void *frame,
 
    video_driver_get_size(&width, &height);
 
-   RARCH_PERFORMANCE_INIT(d3d_frame);
-   RARCH_PERFORMANCE_START(d3d_frame);
+   rarch_perf_init(&d3d_frame, "d3d_frame");
+   retro_perf_start(&d3d_frame);
 
 #ifndef _XBOX
    /* We cannot recover in fullscreen. */
@@ -1746,7 +1747,7 @@ static bool d3d_frame(void *data, const void *frame,
 #endif
 #endif
 
-   RARCH_PERFORMANCE_STOP(d3d_frame);
+   retro_perf_stop(&d3d_frame);
 
    gfx_ctx_update_window_title(d3d);
 
@@ -1768,11 +1769,12 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
    bool ret                 = true;
    d3d_video_t *d3d         = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
+   static struct retro_perf_counter d3d_read_viewport = {0};
 
    video_driver_get_size(&width, &height);
 
-   RARCH_PERFORMANCE_INIT(d3d_read_viewport);
-   RARCH_PERFORMANCE_START(d3d_read_viewport);
+   rarch_perf_init(&d3d_read_viewport, "d3d_read_viewport");
+   retro_perf_start(&d3d_read_viewport);
 
    (void)data;
    (void)buffer;
@@ -1827,7 +1829,7 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
       ret = false;
 
 end:
-   RARCH_PERFORMANCE_STOP(d3d_read_viewport);
+   retro_perf_stop(&d3d_read_viewport);
    if (target)
       target->Release();
    if (dest)

@@ -35,14 +35,13 @@
 #include <xtl.h>
 #endif
 
-#include <retro_assert.h>
-#include <retro_log.h>
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <compat/msvc.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
+#include <retro_stat.h>
 #include <string/string_list.h>
 #include <rhash.h>
 
@@ -372,18 +371,11 @@ static config_file_t *config_file_new_internal(
       return conf;
 
    if (path_is_directory(path))
-   {
-      RARCH_ERR("%s is not a regular file.\n", path);
-      free(conf);
-      return NULL;
-   }
+      goto error;
 
    conf->path = strdup(path);
    if (!conf->path)
-   {
-      free(conf);
-      return NULL;
-   }
+      goto error;
 
    conf->include_depth = depth;
    file = fopen(path, "r");
@@ -391,8 +383,7 @@ static config_file_t *config_file_new_internal(
    if (!file)
    {
       free(conf->path);
-      free(conf);
-      return NULL;
+      goto error;
    }
 
    while (!feof(file))
@@ -433,9 +424,15 @@ static config_file_t *config_file_new_internal(
       if (list != conf->tail)
          free(list);
    }
+
    fclose(file);
 
    return conf;
+
+error:
+   free(conf);
+
+   return NULL;
 }
 
 config_file_t *config_file_new_from_string(const char *from_string)

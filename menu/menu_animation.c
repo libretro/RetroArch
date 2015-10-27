@@ -650,8 +650,8 @@ void menu_animation_update_time(void)
    menu_animation_t *anim   = disp->animation;
    settings_t *settings     = config_get_ptr();
 
-   anim->cur_time   = rarch_get_time_usec();
-   anim->delta_time = anim->cur_time - anim->old_time;
+   anim->cur_time           = retro_get_time_usec();
+   anim->delta_time         = anim->cur_time - anim->old_time;
 
    if (anim->delta_time >= IDEAL_DT * 4)
       anim->delta_time = IDEAL_DT * 4;

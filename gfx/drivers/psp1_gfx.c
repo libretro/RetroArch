@@ -463,15 +463,17 @@ static bool psp_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg)
 {
-   static char fps_txt[128]      = {0};
-   static char fps_text_buf[128] = {0};
-   psp1_video_t *psp             = (psp1_video_t*)data;
-   settings_t *settings          = config_get_ptr();
 #ifdef DISPLAY_FPS
+   uint32_t diff;
    static uint64_t currentTick,lastTick;
-   static float fps=0.0;
    static int frames;
+   static float fps                        = 0.0;
 #endif
+   static struct retro_perf_counter psp_frame_run = {0};
+   static char fps_txt[128]                = {0};
+   static char fps_text_buf[128]           = {0};
+   psp1_video_t *psp                       = (psp1_video_t*)data;
+   settings_t *settings                    = config_get_ptr();
 
    if (!width || !height)
       return false;
@@ -510,7 +512,7 @@ static bool psp_frame(void *data, const void *frame,
 #ifdef DISPLAY_FPS
    frames++;
    sceRtcGetCurrentTick(&currentTick);
-   uint32_t diff = currentTick - lastTick;
+   diff = currentTick - lastTick;
    if(diff > 1000000)
    {
       fps = (float)frames * 1000000.0 / diff;
@@ -524,8 +526,8 @@ static bool psp_frame(void *data, const void *frame,
 
    psp->draw_buffer = FROM_GU_POINTER(sceGuSwapBuffers());
 
-   RARCH_PERFORMANCE_INIT(psp_frame_run);
-   RARCH_PERFORMANCE_START(psp_frame_run);
+   rarch_perf_init(&psp_frame_run, "psp_frame_run");
+   retro_perf_start(&psp_frame_run);
 
    if (psp->should_resize)
       psp_update_viewport(psp);
@@ -558,7 +560,7 @@ static bool psp_frame(void *data, const void *frame,
 
    sceGuFinish();
 
-   RARCH_PERFORMANCE_STOP(psp_frame_run);
+   retro_perf_stop(&psp_frame_run);
 
    if(psp->menu.active)
    {

@@ -42,6 +42,7 @@ typedef struct ui_companion_driver
    void (*notify_content_loaded)(void *data);
    void (*notify_list_loaded)(void *data, file_list_t *list, file_list_t *menu_list);
    void (*notify_refresh)(void *data);
+   void (*msg_queue_push)(const char *msg, unsigned priority, unsigned duration, bool flush);
    void (*render_messagebox)(const char *msg);
    const char *ident;
 } ui_companion_driver_t;

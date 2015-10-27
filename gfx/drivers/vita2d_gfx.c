@@ -71,7 +71,7 @@ static void *vita2d_gfx_init(const video_info_t *video,
 	RARCH_SCALE_BASE, video->input_scale, RARCH_SCALE_BASE * video->input_scale);
 
    vita2d_init();
-   vita2d_set_clear_color(RGBA8(0x40, 0x40, 0x40, 0xFF));
+   vita2d_set_clear_color(RGBA8(0x00, 0x00, 0x00, 0xFF));
    vita2d_set_vblank_wait(video->vsync);
 
    if (vita->rgb32)
@@ -142,7 +142,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
          vita->width = width;
          vita->height = height;
          vita->texture = vita2d_create_empty_texture_format(width, height, vita->format);
-         vita2d_texture_set_texture_filter(vita->texture,vita->tex_filter);
+         vita2d_texture_set_filters(vita->texture,vita->tex_filter,vita->tex_filter);
       }
       tex_p = vita2d_texture_get_datap(vita->texture);
       stride = vita2d_texture_get_stride(vita->texture);
@@ -424,7 +424,7 @@ static void vita_set_filtering(void *data, unsigned index, bool smooth)
    if (vita)
    {
       vita->tex_filter = smooth? SCE_GXM_TEXTURE_FILTER_LINEAR : SCE_GXM_TEXTURE_FILTER_POINT;
-      vita2d_texture_set_texture_filter(vita->texture,vita->tex_filter);
+      vita2d_texture_set_filters(vita->texture,vita->tex_filter,vita->tex_filter);
    }
 }
 
@@ -499,7 +499,7 @@ static void vita_set_texture_frame(void *data, const void *frame, bool rgb32,
       vita->menu.width = width;
       vita->menu.height = height;
    }
-   vita2d_texture_set_texture_filter(vita->menu.texture,SCE_GXM_TEXTURE_FILTER_LINEAR);
+   vita2d_texture_set_filters(vita->menu.texture,SCE_GXM_TEXTURE_FILTER_LINEAR,SCE_GXM_TEXTURE_FILTER_LINEAR);
    tex_p = vita2d_texture_get_datap(vita->menu.texture);
    stride = vita2d_texture_get_stride(vita->menu.texture);
 

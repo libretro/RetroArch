@@ -20,19 +20,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <file/file_extract.h>
-#include <file/file_path.h>
-#include <compat/strl.h>
-#include <retro_miscellaneous.h>
-#include <string/string_list.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <compat/zlib.h>
+#include <compat/strl.h>
+
+#include <file/file_extract.h>
+#include <file/file_path.h>
+#include <retro_file.h>
+#include <retro_miscellaneous.h>
+#include <string/string_list.h>
 
 /* File backends. Can be fleshed out later, but keep it simple for now.
  * The file is mapped to memory directly (via mmap() or just 
- * plain zlib_read_file()).
+ * plain retro_read_file()).
  */
 
 struct zlib_file_backend
@@ -51,25 +54,13 @@ struct zlib_file_backend
 #define END_OF_CENTRAL_DIR_SIGNATURE 0x06054b50
 #endif
 
-static bool zlib_write_file(const char *path, const void *data, ssize_t size)
-{
-   ssize_t ret   = 0;
-   FILE *file = fopen(path, "wb");
-   if (!file)
-      return false;
-
-   ret = fwrite(data, 1, size, file);
-   fclose(file);
-   return (ret == size);
-}
-
-
 #ifdef HAVE_MMAP
-#include <sys/mman.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
+
+#include <sys/mman.h>
+#include <sys/stat.h>
 
 typedef struct
 {
@@ -153,61 +144,6 @@ typedef struct
    size_t size;
 } zlib_file_data_t;
 
-static int zlib_read_file(const char *path, void **buf, ssize_t *len)
-{
-   long ret                 = 0;
-   ssize_t content_buf_size = 0;
-   void *content_buf        = NULL;
-   FILE *file               = fopen(path, "rb");
-
-   if (!file)
-      goto error;
-
-   if (fseek(file, 0, SEEK_END) != 0)
-      goto error;
-
-   content_buf_size = ftell(file);
-   if (content_buf_size < 0)
-      goto error;
-
-   rewind(file);
-
-   content_buf = malloc(content_buf_size + 1);
-
-   if (!content_buf)
-      goto error;
-
-   if ((ret = fread(content_buf, 1, content_buf_size, file)) < content_buf_size)
-      printf("Didn't read whole file.\n");
-
-   if (!content_buf)
-      goto error;
-
-   *buf    = content_buf;
-
-   /* Allow for easy reading of strings to be safe.
-    * Will only work with sane character formatting (Unix). */
-   ((char*)content_buf)[content_buf_size] = '\0';
-
-   if (fclose(file) != 0)
-      printf("Failed to close file stream.\n");
-
-   if (len)
-      *len = ret;
-
-   return 1;
-
-error:
-   if (file)
-      fclose(file);
-   if (content_buf)
-      free(content_buf);
-   if (len)
-      *len = -1;
-   *buf = NULL;
-   return 0;
-}
-
 static void zlib_file_free(void *handle)
 {
    zlib_file_data_t *data = (zlib_file_data_t*)handle;
@@ -242,7 +178,7 @@ static void *zlib_file_open(const char *path)
    if (!data)
       return NULL;
 
-   read_from_file = zlib_read_file(path, &data->data, &ret);
+   read_from_file = retro_read_file(path, &data->data, &ret);
 
    if (!read_from_file || ret < 0)
    {
@@ -470,7 +406,7 @@ int zlib_inflate_data_to_file(zlib_file_handle_t *handle,
    }
 #endif
 
-   if (!zlib_write_file(path, handle->data, size))
+   if (!retro_write_file(path, handle->data, size))
       GOTO_END_ERROR();
 
 end:
@@ -712,7 +648,7 @@ static int zip_extract_cb(const char *name, const char *valid_exts,
       switch (cmode)
       {
          case ZLIB_MODE_UNCOMPRESSED:
-            data->found_content = zlib_write_file(new_path, cdata, size);
+            data->found_content = retro_write_file(new_path, cdata, size);
             return false;
          case ZLIB_MODE_DEFLATE:
             {
@@ -878,7 +814,7 @@ bool zlib_perform_mode(const char *path, const char *valid_exts,
    switch (cmode)
    {
       case 0: /* Uncompressed */
-         if (!zlib_write_file(path, cdata, size))
+         if (!retro_write_file(path, cdata, size))
             return false;
          break;
 

@@ -16,6 +16,7 @@
  */
 
 #include <file/file_path.h>
+#include <retro_stat.h>
 
 #include "frontend.h"
 #include "../system.h"
@@ -345,7 +346,7 @@ int rarch_main(int argc, char *argv[], void *data)
       ret = rarch_main_iterate(&sleep_ms);
       
       if (ret == 1 && sleep_ms > 0)
-         rarch_sleep(sleep_ms);
+         retro_sleep(sleep_ms);
       rarch_main_data_iterate();
    }while(ret != -1);
 

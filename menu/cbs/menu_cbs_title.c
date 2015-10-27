@@ -617,6 +617,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
       case MENU_LABEL_INFO_SCREEN:
       case MENU_LABEL_SYSTEM_INFORMATION:
+      case MENU_LABEL_DEBUG_INFORMATION:
       case MENU_LABEL_CORE_INFORMATION:
       case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
       case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:

@@ -18,9 +18,13 @@
 #include <string.h>
 #include <string>
 #include <vector>
-#include <retro_inline.h>
+
 #include <Cg/cg.h>
 #include <Cg/cgD3D9.h>
+
+#include <retro_inline.h>
+#include <compat/strl.h>
+
 #include "render_chain_driver.h"
 #include "../video_driver.h"
 #include "../../general.h"
@@ -1166,7 +1170,7 @@ static bool cg_d3d9_renderchain_add_lut(void *data,
 
    info.tex    = lut;
    info.smooth = smooth;
-   strcpy(info.id, id);
+   strlcpy(info.id, id, sizeof(info.id));
    if (!lut)
       return false;
 

@@ -29,6 +29,7 @@
 #include "menu_setting.h"
 
 #include "menu.h"
+#include "menu_display.h"
 #include "menu_input.h"
 #include "menu_hash.h"
 
@@ -982,9 +983,9 @@ static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparoun
       return -1;
 
    if(config_save_autoconf_profile(settings->input.device_names[setting->index_offset], setting->index_offset))
-      rarch_main_msg_queue_push("Autoconf file saved successfully", 1, 100, true);
+      menu_display_msg_queue_push("Autoconf file saved successfully", 1, 100, true);
    else
-      rarch_main_msg_queue_push("Error saving autoconf file", 1, 100, true);
+      menu_display_msg_queue_push("Error saving autoconf file", 1, 100, true);
 
    return 0;
 }
@@ -3873,7 +3874,7 @@ static bool setting_append_list_audio_options(
          parent_group,
          general_write_handler,
          general_read_handler);
-   menu_settings_list_current_add_range(list, list_info, 32, 512, 16.0, true, true);
+   menu_settings_list_current_add_range(list, list_info, 16, 512, 16.0, true, true);
 
    CONFIG_FLOAT(
          settings->audio.rate_control_delta,

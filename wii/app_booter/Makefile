@@ -21,7 +21,9 @@ OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy$(EXE_EXT)
 BIN_TARGET := app_booter.bin
 ELF_TARGET := app_booter.elf
 
-INCLUDE := -I. -I$(DEVKITPRO)/libogc/include -I../../libretro-common/crt/include
+LIBRETRO_COMM_DIR := ../../libretro-common
+
+INCLUDE := -I. -I$(DEVKITPRO)/libogc/include -I$(LIBRETRO_COMM_DIR)/crt/include
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii
 
 MACHDEP := -DHW_RVL -DGEKKO -mno-eabi -mno-sdata -mcpu=750
@@ -30,7 +32,7 @@ CFLAGS += -Wall -O2 -ffreestanding -std=gnu99 $(MACHDEP) $(INCLUDE)
 
 LDFLAGS := -T link.ld
 
-OBJ = crt0.o dolloader.o elfloader.o main.o ../../libretro-common/crt/string.o sync.o
+OBJ = crt0.o main.o $(LIBRETRO_COMM_DIR)/crt/string.o
 
 all: $(BIN_TARGET)
 

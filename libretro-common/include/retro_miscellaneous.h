@@ -50,7 +50,9 @@
 
 #include <limits.h>
 
+#ifdef _MSC_VER
 #include <compat/msvc.h>
+#endif
 #include <retro_inline.h>
 
 #ifndef PATH_MAX_LENGTH
@@ -69,12 +71,12 @@
 #define RARCH_SCALE_BASE 256
 
 /**
- * rarch_sleep:
+ * retro_sleep:
  * @msec         : amount in milliseconds to sleep
  *
  * Sleeps for a specified amount of milliseconds (@msec).
  **/
-static INLINE void rarch_sleep(unsigned msec)
+static INLINE void retro_sleep(unsigned msec)
 {
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    sys_timer_usleep(1000 * msec);

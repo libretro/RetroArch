@@ -43,6 +43,16 @@
          ))
 #endif
 
+#define SWAP64(val)                                             \
+	((((uint64_t)(val) & 0x00000000000000ffULL) << 56)      \
+	 | (((uint64_t)(val) & 0x000000000000ff00ULL) << 40)    \
+	 | (((uint64_t)(val) & 0x0000000000ff0000ULL) << 24)    \
+	 | (((uint64_t)(val) & 0x00000000ff000000ULL) << 8)     \
+	 | (((uint64_t)(val) & 0x000000ff00000000ULL) >> 8)     \
+	 | (((uint64_t)(val) & 0x0000ff0000000000ULL) >> 24)    \
+	 | (((uint64_t)(val) & 0x00ff000000000000ULL) >> 40)    \
+	 | (((uint64_t)(val) & 0xff00000000000000ULL) >> 56))
+
 /**
  * is_little_endian:
  *
@@ -70,6 +80,22 @@ static INLINE uint8_t is_little_endian(void)
 }
 
 /**
+ * swap_if_big64:
+ * @val        : unsigned 64-bit value
+ *
+ * Byteswap unsigned 64-bit value if system is big-endian.
+ *
+ * Returns: Byteswapped value in case system is big-endian,
+ * otherwise returns same value.
+ **/
+static INLINE uint64_t swap_if_big64(uint64_t val)
+{
+   if (is_little_endian())
+      return val;
+   return SWAP64(val);
+}
+
+/**
  * swap_if_big32:
  * @val        : unsigned 32-bit value
  *
@@ -83,6 +109,22 @@ static INLINE uint32_t swap_if_big32(uint32_t val)
    if (is_little_endian())
       return val;
    return SWAP32(val);
+}
+
+/**
+ * swap_if_little64:
+ * @val        : unsigned 64-bit value
+ *
+ * Byteswap unsigned 64-bit value if system is little-endian.
+ *
+ * Returns: Byteswapped value in case system is little-endian,
+ * otherwise returns same value.
+ **/
+static INLINE uint64_t swap_if_little64(uint64_t val)
+{
+   if (is_little_endian())
+      return SWAP64(val);
+   return val;
 }
 
 /**

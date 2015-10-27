@@ -163,6 +163,7 @@ static ssize_t net_http_recv(int fd, bool *error,
 
 struct http_connection_t *net_http_connection_new(const char *url)
 {
+   size_t length;
    char **domain = NULL;
    struct http_connection_t *conn = (struct http_connection_t*)calloc(1, 
          sizeof(struct http_connection_t));
@@ -170,12 +171,13 @@ struct http_connection_t *net_http_connection_new(const char *url)
    if (!conn)
       return NULL;
 
-   conn->urlcopy      = (char*)malloc(strlen(url) + 1);
+   length             = strlen(url) + 1;
+   conn->urlcopy      = (char*)malloc(length);
 
    if (!conn->urlcopy)
       goto error;
 
-   strcpy(conn->urlcopy, url);
+   strlcpy(conn->urlcopy, url, length);
 
    if (strncmp(url, "http://", strlen("http://")) != 0)
       goto error;

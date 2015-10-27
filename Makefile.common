@@ -54,7 +54,7 @@ ifeq ($(TDM_GCC),)
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
-   CFLAGS += -DHAVE_FILE_LOGGER -Ilogger/netlogger
+   CFLAGS += -DHAVE_FILE_LOGGER
 endif
 
 CFLAGS += -I./libretro-common/include
@@ -131,6 +131,8 @@ OBJ += frontend/frontend.o \
 		libretro-common/file/file_list.o \
 		libretro-common/file/dir_list.o \
 		libretro-common/file/retro_dirent.o \
+		libretro-common/file/retro_file.o \
+		libretro-common/file/retro_stat.o \
 		libretro-common/string/string_list.o \
 		libretro-common/string/stdstring.o \
 		libretro-common/memmap/memalign.o \
@@ -210,14 +212,9 @@ OBJ += frontend/frontend.o \
 
 OBJ += gfx/image/image.o
 
-ifneq ($(C89_BUILD), 1)
-ifneq ($(C90_BUILD), 1)
-# stb_image is not a C89/C90-compliant API.
 ifeq ($(HAVE_IMAGEVIEWER), 1)
 DEFINES += -DHAVE_IMAGEVIEWER
 OBJ += cores/image_core.o
-endif
-endif
 endif
 
 # Qt
@@ -237,7 +234,8 @@ OBJ += libretro-db/bintree.o \
 		 libretro-db/rmsgpack.o \
 		 libretro-db/rmsgpack_dom.o \
 		 database_info.o \
-		 tasks/task_database.o 
+		 tasks/task_database.o \
+		 tasks/task_database_cue.o 
 endif
 
 # Miscellaneous
@@ -246,15 +244,10 @@ ifeq ($(HAVE_STDIN_CMD), 1)
    DEFINES += -DHAVE_COMMAND -DHAVE_STDIN_CMD
 endif
 
-ifneq ($(C89_BUILD), 1)
-ifneq ($(C90_BUILD), 1)
-# Python 3.x bindings are not C89/C90-compliant.
 ifeq ($(HAVE_PYTHON), 1)
    DEFINES += $(PYTHON_CFLAGS) -Wno-unused-parameter
    LIBS += $(PYTHON_LIBS)
    OBJ += gfx/video_state_python.o
-endif
-endif
 endif
 
 ifeq ($(HAVE_EMSCRIPTEN), 1)
@@ -315,15 +308,10 @@ ifeq ($(HAVE_JACK),1)
    DEFINES += $(JACK_CFLAGS)
 endif
 
-ifneq ($(C89_BUILD), 1)
-ifneq ($(C90_BUILD), 1)
-# PulseAudio is not a C89/C90-compliant API.
 ifeq ($(HAVE_PULSE), 1)
    OBJ += audio/drivers/pulse.o
    LIBS += $(PULSE_LIBS)
    DEFINES += $(PULSE_CFLAGS)
-endif
-endif
 endif
 
 ifeq ($(HAVE_OSS_LIB), 1)
@@ -474,15 +462,10 @@ endif
 
 #Input
 
-ifneq ($(C89_BUILD), 1)
-ifneq ($(C90_BUILD), 1)
-# Wayland is not a C89/C90-compliant API.
 ifeq ($(HAVE_WAYLAND), 1)
  #OBJ += input/drivers/wayland.o
  DEFINES += $(WAYLAND_CFLAGS)
  LIBS += $(WAYLAND_LIBS)
-endif
-endif
 endif
 
 ifeq ($(HAVE_DINPUT), 1)
@@ -521,17 +504,12 @@ ifeq ($(HAVE_UDEV), 1)
 			 input/drivers_joypad/udev_joypad.o
 endif
 
-ifneq ($(C89_BUILD), 1)
-ifneq ($(C90_BUILD), 1)
-# libusb is not a C89/C90-compliant API.
 ifeq ($(HAVE_LIBUSB), 1)
 	DEFINES += -DHAVE_LIBUSB
 	OBJ += input/drivers_hid/libusb_hid.o
 	LIBS += -lusb-1.0
 	JOYCONFIG_LIBS += -lusb-1.0
 	HAVE_HID = 1
-endif
-endif
 endif
 
 ifeq ($(HAVE_IOHIDMANAGER), 1)
@@ -612,16 +590,11 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
 		endif
    endif
 
-ifneq ($(C89_BUILD), 1)
-ifneq ($(C90_BUILD), 1)
-	# Wayland is not a C89/C90-compliant API.
    ifeq ($(HAVE_WAYLAND), 1)
 	   ifeq ($(HAVE_EGL), 1)
 	     OBJ += gfx/drivers_context/wayland_ctx.o
       endif
    endif
-endif
-endif
 	
    ifeq ($(HAVE_GLES), 1)
       LIBS += $(GLES_LIBS)
@@ -689,7 +662,7 @@ endif
 
 ifeq ($(HAVE_EXYNOS), 1)
    OBJ += gfx/drivers/exynos_gfx.o \
-			 mem/neon/memcpy-neon.o
+			 memory/neon/memcpy-neon.o
    LIBS += $(DRM_LIBS) $(EXYNOS_LIBS)
    DEFINES += $(DRM_CFLAGS) $(EXYNOS_CFLAGS)
 endif
@@ -770,7 +743,6 @@ ifeq ($(HAVE_7ZIP),1)
    OBJ += $(7ZOBJ)
 endif
 
-   OBJ += libretro-common/formats/tga/tga_decode.o
 
 ifeq ($(HAVE_ZLIB), 1)
 	OBJ += libretro-common/file/file_extract.o
@@ -791,11 +763,11 @@ ifdef HAVE_RPNG
 endif
 
 ifeq ($(HAVE_RPNG), 1)
-   OBJ += libretro-common/formats/png/rpng_nbio.o \
-			 libretro-common/formats/png/rpng_fbio.o \
-			 libretro-common/formats/png/rpng_decode.o \
+   OBJ += libretro-common/formats/png/rpng.o \
 			 libretro-common/formats/png/rpng_encode.o
 endif
+OBJ += libretro-common/formats/bmp/rbmp_encode.o \
+		 libretro-common/formats/tga/rtga.o
 
 ifdef HAVE_COMPRESSION
    DEFINES += -DHAVE_COMPRESSION
@@ -874,17 +846,12 @@ endif
 
 # Record
 
-ifneq ($(C89_BUILD), 1)
-ifneq ($(C90_BUILD), 1)
-# ffmpeg and friends are not C89/C90-compliant APIs. 
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/drivers/record_ffmpeg.o \
 			 cores/ffmpeg_core.o
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
    DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS)
 	DEFINES += -DHAVE_FFMPEG -Iffmpeg
-endif
-endif
 endif
 
 ifeq ($(HAVE_COMPRESSION), 1)

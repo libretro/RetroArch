@@ -376,7 +376,7 @@ static bool menu_input_custom_bind_keyboard_cb(void *data, unsigned code)
    menu_input->binds.target->key = (enum retro_key)code;
    menu_input->binds.begin++;
    menu_input->binds.target++;
-   menu_input->binds.timeout_end = rarch_get_time_usec() +
+   menu_input->binds.timeout_end = retro_get_time_usec() +
       MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
 
    return (menu_input->binds.begin <= menu_input->binds.last);
@@ -442,7 +442,7 @@ static int menu_input_set_timeout(void)
    menu_handle_t       *menu = menu_driver_get_ptr();
    menu_input_t  *menu_input = menu_input_get_ptr();
 
-   menu_input->binds.timeout_end   = rarch_get_time_usec() +
+   menu_input->binds.timeout_end   = retro_get_time_usec() +
       MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
    input_keyboard_wait_keys(menu,
          menu_input_custom_bind_keyboard_cb);
@@ -499,7 +499,7 @@ static int menu_input_bind_iterate_keyboard(int64_t current, int timeout)
 
       menu_input->binds.begin++;
       menu_input->binds.target++;
-      menu_input->binds.timeout_end = rarch_get_time_usec() +
+      menu_input->binds.timeout_end = retro_get_time_usec() +
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
       timed_out = true;
    }
@@ -527,7 +527,7 @@ int menu_input_bind_iterate(char *s, size_t len)
    driver_t *driver             = driver_get_ptr();
    global_t *global             = global_get_ptr();
    bool bind_mode_kb            = global ? global->menu.bind_mode_keyboard : false;
-   int64_t current              = rarch_get_time_usec();
+   int64_t current              = retro_get_time_usec();
    int timeout                  = (menu_input->binds.timeout_end - current) / 1000000;
 
    if (bind_mode_kb)

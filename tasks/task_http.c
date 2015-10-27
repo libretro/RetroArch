@@ -21,6 +21,8 @@
 #include <file/file_path.h>
 #include <file/file_extract.h>
 #include <net/net_compat.h>
+#include <retro_file.h>
+#include <retro_stat.h>
 
 #include "../file_ops.h"
 #include "../general.h"
@@ -83,10 +85,7 @@ static int zlib_extract_core_callback(const char *name, const char *valid_exts,
    path_basedir(path);
 
    if (!path_mkdir(path))
-   {
-      RARCH_ERR("Failed to create directory: %s.\n", path);
-      return 0;
-   }
+      goto error;
 
    /* Ignore directories. */
    if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
@@ -98,14 +97,8 @@ static int zlib_extract_core_callback(const char *name, const char *valid_exts,
 
    if (!zlib_perform_mode(path, valid_exts,
             cdata, cmode, csize, size, crc32, userdata))
-   {
-      if (cmode == 0)
-      {
-         RARCH_ERR("Failed to write file: %s.\n", path);
-         return 0;
-      }
       goto error;
-   }
+
    return 1;
 
 error:
@@ -128,7 +121,7 @@ static int cb_generic_download(void *data, size_t len,
    fill_pathname_join(output_path, dir_path,
          core_updater_path, sizeof(output_path));
 
-   if (!write_file(output_path, data, len))
+   if (!retro_write_file(output_path, data, len))
       return -1;
 
    snprintf(msg, sizeof(msg), "%s: %s.",

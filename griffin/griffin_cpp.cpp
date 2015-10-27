@@ -51,7 +51,7 @@ VIDEO CONTEXT
 VIDEO DRIVER
 ============================================================ */
 #ifdef _XBOX
-#include "../xdk/xdk_resources.cpp"
+#include "../frontend/drivers/platform_xdk.cpp"
 #endif
 
 #if defined(HAVE_D3D)

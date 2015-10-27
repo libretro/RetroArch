@@ -14,6 +14,14 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <malloc.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <gccore.h>
+#include <ogcsys.h>
+
+#include <retro_file.h>
 
 #include "../../driver.h"
 #include "../../general.h"
@@ -24,14 +32,8 @@
 #include "../video_monitor.h"
 
 #ifdef HW_RVL
-#include "../../wii/mem2_manager.h"
+#include "../../memory/wii/mem2_manager.h"
 #endif
-
-#include <gccore.h>
-#include <ogcsys.h>
-#include <malloc.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "ppc_asm.h"
 #include "gx_gfx_inl.h"
@@ -600,19 +602,19 @@ static void build_disp_list(void)
 static void gx_efb_screenshot(void)
 {
    int x, y;
-
    uint8_t tga_header[] = {0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x02, 0xE0, 0x01, 0x18, 0x00};
-   FILE *out = fopen("/screenshot.tga", "wb");
+   RFILE *out = retro_fopen("/screenshot.tga", RFILE_MODE_WRITE, -1);
 
    if (!out)
       return;
 
-   fwrite(tga_header, 1, sizeof(tga_header), out);
+   retro_fwrite(out, tga_header, sizeof(tga_header));
 
    for (y = 479; y >= 0; --y)
    {
       uint8_t line[640 * 3];
       unsigned i = 0;
+
       for (x = 0; x < 640; x++)
       {
          GXColor color;
@@ -621,10 +623,10 @@ static void gx_efb_screenshot(void)
          line[i++] = color.g;
          line[i++] = color.r;
       }
-      fwrite(line, 1, sizeof(line), out);
+      retro_fwrite(out, line, sizeof(line));
    }
 
-   fclose(out);
+   retro_fclose(out);
 }
 
 #endif
@@ -1035,15 +1037,16 @@ static bool gx_frame(void *data, const void *frame,
       uint64_t frame_count, unsigned pitch,
       const char *msg)
 {
-   char fps_txt[128]         = {0};
-   char fps_text_buf[128]   = {0};
-   gx_video_t *gx           = (gx_video_t*)data;
-   struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-   u8 clear_efb             = GX_FALSE;
-   settings_t *settings     = config_get_ptr();
+   static struct retro_perf_counter gx_frame = {0};
+   char fps_txt[128]                  = {0};
+   char fps_text_buf[128]             = {0};
+   gx_video_t *gx                     = (gx_video_t*)data;
+   struct __gx_regdef           *__gx = (struct __gx_regdef*)__gxregs;
+   u8                       clear_efb = GX_FALSE;
+   settings_t               *settings = config_get_ptr();
 
-   RARCH_PERFORMANCE_INIT(gx_frame);
-   RARCH_PERFORMANCE_START(gx_frame);
+   rarch_perf_init(&gx_frame, "gx_frame");
+   retro_perf_start(&gx_frame);
 
    if(!gx || (!frame && !gx->menu_texture_enable))
       return true;
@@ -1076,8 +1079,10 @@ static bool gx_frame(void *data, const void *frame,
 
    if (frame)
    {
-      RARCH_PERFORMANCE_INIT(gx_frame_convert);
-      RARCH_PERFORMANCE_START(gx_frame_convert);
+      static struct retro_perf_counter gx_frame_convert = {0};
+
+      rarch_perf_init(&gx_frame_convert, "gx_frame_convert");
+      retro_perf_start(&gx_frame_convert);
 
       if (gx->rgb32)
          convert_texture32(frame, g_tex.data, width, height, pitch);
@@ -1087,7 +1092,7 @@ static bool gx_frame(void *data, const void *frame,
          convert_texture16(frame, g_tex.data, width, height, pitch);
       DCFlushRange(g_tex.data, height * (width << (gx->rgb32 ? 2 : 1)));
 
-      RARCH_PERFORMANCE_STOP(gx_frame_convert);
+      retro_perf_stop(&gx_frame_convert);
    }
 
    if (gx->menu_texture_enable && gx->menu_data)
@@ -1164,7 +1169,7 @@ static bool gx_frame(void *data, const void *frame,
    VISetNextFrameBuffer(g_framebuf[g_current_framebuf]);
    VIFlush();
 
-   RARCH_PERFORMANCE_STOP(gx_frame);
+   retro_perf_stop(&gx_frame);
 
    return true;
 }

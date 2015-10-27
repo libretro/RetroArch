@@ -14,12 +14,14 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <bps/bps.h>
-
 #include <stdint.h>
-#include <boolean.h>
 #include <stddef.h>
 #include <string.h>
+
+#include <bps/bps.h>
+
+#include <boolean.h>
+
 #include "../../dynamic.h"
 #include "../../libretro_private.h"
 

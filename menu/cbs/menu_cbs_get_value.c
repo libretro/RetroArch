@@ -912,6 +912,9 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       case MENU_LABEL_SYSTEM_INFORMATION:
          *w = 2;
          break;
+      case MENU_LABEL_DEBUG_INFORMATION:
+         *w = 2;
+         break;
    }
 
    if (type >= MENU_SETTINGS_CORE_OPTION_START)
@@ -1009,6 +1012,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
       case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
       case MENU_LABEL_CORE_INFORMATION:
       case MENU_LABEL_SYSTEM_INFORMATION:
+      case MENU_LABEL_DEBUG_INFORMATION:
          cbs->action_get_value =
             menu_action_setting_disp_set_label_menu_more;
          break;

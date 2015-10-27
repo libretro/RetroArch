@@ -22,9 +22,9 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
 #include <stddef.h>
 #include <boolean.h>
-#include <stdint.h>
 
 typedef struct state_manager state_manager_t;
 
@@ -67,6 +67,10 @@ size_t state_manager_raw_compress(const void *src, const void *dst, size_t len, 
  * If the given arguments do not match a previous call to state_manager_raw_compress(), anything at all can happen.
  */
 void state_manager_raw_decompress(const void *patch, size_t patchlen, void *data, size_t datalen);
+
+bool state_manager_frame_is_reversed(void);
+
+void state_manager_set_frame_is_reversed(bool value);
 
 #ifdef __cplusplus
 }

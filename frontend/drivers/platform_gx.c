@@ -24,7 +24,7 @@
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
 #include <ogc/mutex.h>
 #include <ogc/cond.h>
-#include "../../wii/mem2_manager.h"
+#include "../../memory/wii/mem2_manager.h"
 #endif
 
 #include <boolean.h>

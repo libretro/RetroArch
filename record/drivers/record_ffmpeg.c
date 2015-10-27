@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <compat/msvc.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -29,12 +28,6 @@
 #ifdef FFEMU_PERF
 #include <time.h>
 #endif
-
-#include <boolean.h>
-#include <queues/fifo_buffer.h>
-#include <rthreads/rthreads.h>
-#include <gfx/scaler/scaler.h>
-#include <file/config_file.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,6 +50,14 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+
+#include <compat/msvc.h>
+
+#include <boolean.h>
+#include <queues/fifo_buffer.h>
+#include <rthreads/rthreads.h>
+#include <gfx/scaler/scaler.h>
+#include <file/config_file.h>
 
 #include "../../general.h"
 #include "../../audio/audio_utils.h"
@@ -1428,4 +1429,3 @@ const record_driver_t ffemu_ffmpeg = {
    ffmpeg_finalize,
    "ffmpeg",
 };
-

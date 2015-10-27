@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -162,42 +161,16 @@ static struct rmsgpack_read_callbacks stub_callbacks = {
 
 int main(void)
 {
-   int fd;
-   /*
-      int fd = open("test.msgpack", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-      int rv = 0;
-      if (fd == -1)
-      {
-      printf("Could not open file: %s", strerror(errno));
-      return errno;
-      }
-      rmsgpack_write_map_header(fd, 2);
-      rmsgpack_write_string(fd, "compact", strlen("compact"));
-      rmsgpack_write_bool(fd, 1);
-      rmsgpack_write_string(fd, "schema", strlen("schema"));
-      rmsgpack_write_array_header(fd, 10);
-      rmsgpack_write_string(fd, "schema", strlen("schema"));
-      rmsgpack_write_uint(fd, 1<<17);
-      rmsgpack_write_int(fd, (1<<17) + 1);
-      rmsgpack_write_int(fd, 4);
-      rmsgpack_write_int(fd, -3);
-      rmsgpack_write_int(fd, -22);
-      rmsgpack_write_int(fd, -35);
-      rmsgpack_write_int(fd, -421421412);
-      rmsgpack_write_int(fd, 4214);
-      rmsgpack_write_int(fd, -4214);
-      rmsgpack_write_uint(fd, 1<<17);
-      close(fd);
-      */
-
    struct stub_state state;
+   RFILE *fd = retro_fopen("test.msgpack", RFILE_MODE_READ, 0);
 
    state.i = 0;
    state.stack[0] = 0;
-   fd = open("test.msgpack", O_RDONLY);
+
    rmsgpack_read(fd, &stub_callbacks, &state);
-   printf("\n");
-   close(fd);
+
+   printf("Test succeeded.\n");
+   retro_fclose(fd);
 
    return 0;
 }

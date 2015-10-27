@@ -131,4 +131,85 @@ else ifeq ($(LIBRETRO), snes9x_next)
 	#APP_BANNER        = ctr/libretro_banner.png
 	#APP_AUDIO         = ctr/silent.wav
 
+else ifeq ($(LIBRETRO), mgba)
+	APP_TITLE         = mGBA Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	APP_AUTHOR        = Jeffrey Pfau
+	APP_PRODUCT_CODE  = RARCH-MGBA
+	APP_UNIQUE_ID     = 0xBAC0E
+	APP_ICON          = ctr/mgba.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), quicknes)
+	APP_TITLE         = QuickNES Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	APP_AUTHOR        = blargg, kode54
+	APP_PRODUCT_CODE  = RARCH-QUICKNES
+	APP_UNIQUE_ID     = 0xBAC0F
+	APP_ICON          = ctr/quicknes.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), fb_alpha_neo)
+	APP_TITLE         = Neo Geo (FB Alpha)
+	#APP_DESCRIPTION   = Retroarch 3DS
+	APP_AUTHOR        = Team FB Alpha
+	APP_PRODUCT_CODE  = RARCH-FBANEOGEO
+	APP_UNIQUE_ID     = 0xBAC10
+	APP_ICON          = ctr/fb_alpha_neo.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), fb_alpha_cps1)
+	APP_TITLE         = Final Burn Alpha - CPS-1
+	#APP_DESCRIPTION   = Retroarch 3DS
+	APP_AUTHOR        = Team FB Alpha
+	APP_PRODUCT_CODE  = RARCH-FBACPS1
+	APP_UNIQUE_ID     = 0xBAC11
+	APP_ICON          = ctr/fb_alpha_cps1.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), fb_alpha_cps2)
+	APP_TITLE         = Final Burn Alpha - CPS-2
+	#APP_DESCRIPTION   = Retroarch 3DS
+	APP_AUTHOR        = Team FB Alpha
+	APP_PRODUCT_CODE  = RARCH-FBACPS2
+	APP_UNIQUE_ID     = 0xBAC12
+	APP_ICON          = ctr/fb_alpha_cps2.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), catsfc_plus)
+	APP_TITLE         = CATSFC Plus Libretro
+	#APP_DESCRIPTION   = Retroarch 3DS
+	#APP_AUTHOR        = Team Libretro
+	APP_PRODUCT_CODE  = RARCH-CATSFCPLUS
+	APP_UNIQUE_ID     = 0xBAC13
+	APP_ICON          = ctr/catsfc_plus.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), mednafen_pce_fast)
+	APP_TITLE         = Mednafen/Beetle PCE FAST
+	#APP_DESCRIPTION   = Retroarch 3DS
+	APP_AUTHOR        = Ryphecha
+	APP_PRODUCT_CODE  = RARCH-M-PCE-FAST
+	APP_UNIQUE_ID     = 0xBAC14
+	APP_ICON          = ctr/mednafen_pce_fast.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+
+else ifeq ($(LIBRETRO), pcsx_rearmed)
+	APP_TITLE         = PCSX ReARMed
+	#APP_DESCRIPTION   = Retroarch 3DS
+	APP_AUTHOR        = PCSX Team, notaz, Exophase
+	APP_PRODUCT_CODE  = RARCH-PCSXRARMD
+	APP_UNIQUE_ID     = 0xBAC15
+	APP_ICON          = ctr/pcsx_rearmed.png
+	#APP_BANNER        = ctr/libretro_banner.png
+	#APP_AUDIO         = ctr/silent.wav
+	BUILD_3DSX        = 0
+
 endif

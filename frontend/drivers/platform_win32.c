@@ -13,12 +13,12 @@
  */
 
 #include <stdint.h>
-#include <boolean.h>
 #include <stddef.h>
 #include <string.h>
 
 #include <windows.h>
 
+#include <boolean.h>
 #include <retro_miscellaneous.h>
 #include <dynamic/dylib.h>
 #include <file/file_list.h>

@@ -1,6 +1,10 @@
 HAVE_FILE_LOGGER=1
 MISSING_DECLS   =0
 
+ifneq ($(C90_BUILD),)
+   C89_BUILD=1
+endif
+
 include config.mk
 
 TARGET = retroarch
@@ -77,9 +81,8 @@ else
       endif
    endif
 
-   ifneq ($(C89_BUILD)$(C90_BUILD),)
-   #looks kinda ugly, but it makes both C89_BUILD and C90_BUILD work and refer to the same thing
-      CFLAGS += -std=c89 -ansi -pedantic -Werror=pedantic
+   ifneq ($(C89_BUILD),)
+      CFLAGS += -std=c89 -ansi -pedantic -Werror=pedantic -Wno-long-long
    endif
 endif
 

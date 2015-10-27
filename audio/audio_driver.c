@@ -594,15 +594,19 @@ void audio_driver_set_nonblocking_state(bool enable)
  **/
 bool audio_driver_flush(const int16_t *data, size_t samples)
 {
-   const void *output_data        = NULL;
-   unsigned output_frames         = 0;
-   size_t   output_size           = sizeof(float);
-   struct resampler_data src_data = {0};
-   struct rarch_dsp_data dsp_data = {0};
-   driver_t  *driver              = driver_get_ptr();
-   const audio_driver_t *audio = driver ? 
+   static struct retro_perf_counter audio_convert_s16 = {0};
+   static struct retro_perf_counter audio_convert_float = {0};
+   static struct retro_perf_counter audio_dsp         = {0};
+   static struct retro_perf_counter resampler_proc    = {0};
+   struct resampler_data src_data              = {0};
+   struct rarch_dsp_data dsp_data              = {0};
+   const void *output_data                     = NULL;
+   unsigned output_frames                      = 0;
+   size_t   output_size                        = sizeof(float);
+   driver_t  *driver                           = driver_get_ptr();
+   const audio_driver_t *audio                 = driver ? 
       (const audio_driver_t*)driver->audio : NULL;
-   settings_t *settings           = config_get_ptr();
+   settings_t *settings                        = config_get_ptr();
 
    if (driver->recording_data)
    {
@@ -619,11 +623,11 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
    if (!driver->audio_active || !audio_data.data)
       return false;
 
-   RARCH_PERFORMANCE_INIT(audio_convert_s16);
-   RARCH_PERFORMANCE_START(audio_convert_s16);
+   rarch_perf_init(&audio_convert_s16, "audio_convert_s16");
+   retro_perf_start(&audio_convert_s16);
    audio_convert_s16_to_float(audio_data.data, data, samples,
          audio_data.volume_gain);
-   RARCH_PERFORMANCE_STOP(audio_convert_s16);
+   retro_perf_stop(&audio_convert_s16);
 
    src_data.data_in               = audio_data.data;
    src_data.input_frames          = samples >> 1;
@@ -633,10 +637,10 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
 
    if (audio_data.dsp)
    {
-      RARCH_PERFORMANCE_INIT(audio_dsp);
-      RARCH_PERFORMANCE_START(audio_dsp);
+      rarch_perf_init(&audio_dsp, "audio_dsp");
+      retro_perf_start(&audio_dsp);
       rarch_dsp_filter_process(audio_data.dsp, &dsp_data);
-      RARCH_PERFORMANCE_STOP(audio_dsp);
+      retro_perf_stop(&audio_dsp);
 
       if (dsp_data.output)
       {
@@ -654,22 +658,22 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
    if (rarch_main_is_slowmotion())
       src_data.ratio *= settings->slowmotion_ratio;
 
-   RARCH_PERFORMANCE_INIT(resampler_proc);
-   RARCH_PERFORMANCE_START(resampler_proc);
+   rarch_perf_init(&resampler_proc, "resampler_proc");
+   retro_perf_start(&resampler_proc);
    rarch_resampler_process(driver->resampler,
          driver->resampler_data, &src_data);
-   RARCH_PERFORMANCE_STOP(resampler_proc);
+   retro_perf_stop(&resampler_proc);
 
    output_data   = audio_data.outsamples;
    output_frames = src_data.output_frames;
 
    if (!audio_data.use_float)
    {
-      RARCH_PERFORMANCE_INIT(audio_convert_float);
-      RARCH_PERFORMANCE_START(audio_convert_float);
+      rarch_perf_init(&audio_convert_float, "audio_convert_float");
+      retro_perf_start(&audio_convert_float);
       audio_convert_float_to_s16(audio_data.conv_outsamples,
             (const float*)output_data, output_frames * 2);
-      RARCH_PERFORMANCE_STOP(audio_convert_float);
+      retro_perf_stop(&audio_convert_float);
 
       output_data = audio_data.conv_outsamples;
       output_size = sizeof(int16_t);

@@ -8,15 +8,14 @@ CFLAGS += -DHAVE_IMLIB2
 LDFLAGS += -lImlib2
 endif
 
-SOURCES_C := 	rpng_fbio.c \
-					rpng_nbio.c \
+SOURCES_C := 	rpng.c \
 					rpng_encode.c \
-					rpng_decode.c \
 					rpng_test.c \
 					../../compat/compat.c \
 					../../file/nbio/nbio_stdio.c \
 					../../file/file_extract.c \
 					../../file/file_path.c \
+					../../file/retro_file.c \
 					../../string/string_list.c
 
 OBJS := $(SOURCES_C:.c=.o)

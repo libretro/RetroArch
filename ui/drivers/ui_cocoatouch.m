@@ -64,7 +64,7 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
    int ret            = rarch_main_iterate(&sleep_ms);
 
    if (ret == 1 && !ui_companion_is_on_foreground() && sleep_ms > 0)
-      rarch_sleep(sleep_ms);
+      retro_sleep(sleep_ms);
    rarch_main_data_iterate();
 
    if (ret == -1)
@@ -265,8 +265,8 @@ enum
    [self.window makeKeyAndVisible];
 
    self.mainmenu = [RAMainMenu new];
-
-   [self pushViewController:self.mainmenu animated:YES];
+   self.mainmenu.last_menu = self.mainmenu;
+   [self pushViewController:self.mainmenu animated:NO];
 
    btpad_set_inquiry_state(false);
     
@@ -400,9 +400,29 @@ static void ui_companion_cocoatouch_event_command(void *data,
    btstack_set_poweron(is_btstack);
 }
 
-- (void)mainMenuRefresh
+- (void)mainMenuRefresh 
 {
   [self.mainmenu reloadData];
+}
+
+- (void)mainMenuPushPop: (bool)pushp
+{
+  if ( pushp ) {
+    self.menu_count++;
+    RAMenuBase* next_menu = [RAMainMenu new];
+    next_menu.last_menu = self.mainmenu;
+    self.mainmenu = next_menu;
+    [self pushViewController:self.mainmenu animated:YES];
+  } else {
+    if ( self.menu_count == 0 ) {
+      [self.mainmenu reloadData];
+    } else {
+      self.menu_count--;
+
+      [self popViewControllerAnimated:YES];
+      self.mainmenu = self.mainmenu.last_menu;      
+    }
+  }
 }
 
 - (void)mainMenuRenderMessageBox:(NSString *)msg
@@ -499,13 +519,33 @@ static void *ui_companion_cocoatouch_init(void)
    return handle;
 }
 
+static size_t old_size = 0;
 static void ui_companion_cocoatouch_notify_list_pushed(void *data,
    file_list_t *list, file_list_t *menu_list)
 {
    RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
+   bool pushp = false;
 
+   size_t new_size = file_list_get_size( menu_list );
+
+   /* FIXME workaround for the double call */
+   if ( old_size == 0 )
+   {
+      old_size = new_size;
+      return;
+   }
+
+   if ( old_size == new_size ) {
+     pushp = false;
+   } else if ( old_size < new_size ) {
+     pushp = true;
+   } else if ( old_size > new_size ) {
+     printf( "notify_list_pushed: old size should not be larger\n" );
+   }
+   old_size = new_size;
+      
    if (ap)
-      [ap mainMenuRefresh];
+     [ap mainMenuPushPop: pushp];
 }
 
 static void ui_companion_cocoatouch_notify_refresh(void *data)
@@ -513,7 +553,7 @@ static void ui_companion_cocoatouch_notify_refresh(void *data)
    RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
 
    if (ap)
-      [ap mainMenuRefresh];
+     [ap mainMenuRefresh];
 }
 
 static void ui_companion_cocoatouch_render_messagebox(const char *msg)
@@ -527,6 +567,17 @@ static void ui_companion_cocoatouch_render_messagebox(const char *msg)
    }
 }
 
+static void ui_companion_cocoatouch_msg_queue_push(const char *msg,
+   unsigned priority, unsigned duration, bool flush)
+{
+   RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
+
+   if (ap && msg)
+   {
+      [ap.mainmenu msgQueuePush: [NSString stringWithUTF8String:msg]];
+   }
+}
+
 const ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_init,
    ui_companion_cocoatouch_deinit,
@@ -536,6 +587,7 @@ const ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_notify_content_loaded,
    ui_companion_cocoatouch_notify_list_pushed,
    ui_companion_cocoatouch_notify_refresh,
+   ui_companion_cocoatouch_msg_queue_push,
    ui_companion_cocoatouch_render_messagebox,
    "cocoatouch",
 };

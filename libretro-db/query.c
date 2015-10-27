@@ -15,9 +15,8 @@
 #include "query.h"
 #include "rmsgpack_dom.h"
 
-#define MAX_ERROR_LEN 256
-#undef  MAX_ARGS
-#define MAX_ARGS 50
+#define MAX_ERROR_LEN   256
+#define QUERY_MAX_ARGS  50
 
 static char tmp_error_buff [MAX_ERROR_LEN] = {0};
 
@@ -25,7 +24,7 @@ struct buffer
 {
    const char *data;
    size_t len;
-   off_t offset;
+   ssize_t offset;
 };
 
 /* Errors */
@@ -36,7 +35,7 @@ static void raise_too_many_arguments(const char **error)
    *error = tmp_error_buff;
 }
 
-static void raise_expected_number(off_t where, const char **error)
+static void raise_expected_number(ssize_t where, const char **error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
 #ifdef _WIN32
@@ -48,7 +47,7 @@ static void raise_expected_number(off_t where, const char **error)
    *error = tmp_error_buff;
 }
 
-static void raise_expected_string(off_t where, const char ** error)
+static void raise_expected_string(ssize_t where, const char ** error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
 #ifdef _WIN32
@@ -60,7 +59,7 @@ static void raise_expected_string(off_t where, const char ** error)
    *error = tmp_error_buff;
 }
 
-static void raise_unexpected_eof(off_t where, const char ** error)
+static void raise_unexpected_eof(ssize_t where, const char ** error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
 #ifdef _WIN32
@@ -79,7 +78,7 @@ static void raise_enomem(const char **error)
    *error = tmp_error_buff;
 }
 
-static void raise_unknown_function(off_t where, const char *name,
+static void raise_unknown_function(ssize_t where, const char *name,
       ssize_t len, const char **error)
 {
    int n = snprintf(tmp_error_buff, MAX_ERROR_LEN,
@@ -94,10 +93,10 @@ static void raise_unknown_function(off_t where, const char *name,
    if (len < (MAX_ERROR_LEN - n - 3))
       strncpy(tmp_error_buff + n, name, len);
 
-   strcpy(tmp_error_buff + n + len, "'");
+   strlcpy(tmp_error_buff + n + len, "'", sizeof(tmp_error_buff));
    *error = tmp_error_buff;
 }
-static void raise_expected_eof(off_t where, char found, const char **error)
+static void raise_expected_eof(ssize_t where, char found, const char **error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
 #ifdef _WIN32
@@ -111,7 +110,7 @@ static void raise_expected_eof(off_t where, char found, const char **error)
    *error = tmp_error_buff;
 }
 
-static void raise_unexpected_char(off_t where, char expected, char found,
+static void raise_unexpected_char(ssize_t where, char expected, char found,
       const char **error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
@@ -654,7 +653,7 @@ static struct buffer parse_method_call(struct buffer buff,
 {
    size_t func_name_len;
    unsigned i;
-   struct argument args[MAX_ARGS];
+   struct argument args[QUERY_MAX_ARGS];
    unsigned argi = 0;
    const char *func_name = NULL;
    struct registered_func *rf = registered_functions;
@@ -690,7 +689,7 @@ static struct buffer parse_method_call(struct buffer buff,
    buff = chomp(buff);
    while (!peek(buff, ")"))
    {
-      if (argi >= MAX_ARGS)
+      if (argi >= QUERY_MAX_ARGS)
       {
          raise_too_many_arguments(error);
          goto clean;
@@ -742,7 +741,7 @@ static struct buffer parse_table(struct buffer buff,
 {
    unsigned i;
    size_t ident_len;
-   struct argument args[MAX_ARGS];
+   struct argument args[QUERY_MAX_ARGS];
    const char *ident_name = NULL;
    unsigned argi = 0;
 
@@ -756,7 +755,7 @@ static struct buffer parse_table(struct buffer buff,
 
    while (!peek(buff, "}"))
    {
-      if (argi >= MAX_ARGS)
+      if (argi >= QUERY_MAX_ARGS)
       {
          raise_too_many_arguments(error);
          goto clean;
@@ -801,7 +800,7 @@ static struct buffer parse_table(struct buffer buff,
 
       buff = chomp(buff);
 
-      if (argi >= MAX_ARGS)
+      if (argi >= QUERY_MAX_ARGS)
       {
          raise_too_many_arguments(error);
          goto clean;
@@ -955,3 +954,4 @@ int libretrodb_query_filter(libretrodb_query_t *q,
    struct rmsgpack_dom_value res = inv.func(*v, inv.argc, inv.argv);
    return (res.type == RDT_BOOL && res.val.bool_);
 }
+

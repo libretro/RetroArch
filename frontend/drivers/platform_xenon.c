@@ -15,9 +15,10 @@
  */
 
 #include <stdint.h>
-#include <boolean.h>
 #include <stddef.h>
 #include <string.h>
+
+#include <time/time.h>
 
 #include <debug.h>
 #include <xenos/xenos.h>
@@ -25,10 +26,11 @@
 #include <input/input.h>
 #include <console/console.h>
 #include <usb/usbmain.h>
-#include <time/time.h>
 #include <ppc/timebase.h>
 #include <xenon_soc/xenon_power.h>
 #include <elf/elf.h>
+
+#include <boolean.h>
 
 #include "../../dynamic.h"
 #include "../../libretro_private.h"

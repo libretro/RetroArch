@@ -40,6 +40,11 @@ static int deferred_push_system_information(menu_displaylist_info_t *info)
    return menu_displaylist_push_list(info, DISPLAYLIST_SYSTEM_INFO);
 }
 
+static int deferred_push_debug_information(menu_displaylist_info_t *info)
+{
+   return menu_displaylist_push_list(info, DISPLAYLIST_DEBUG_INFO);
+}
+
 static int deferred_push_rdb_collection(menu_displaylist_info_t *info)
 {
    return menu_displaylist_push_list(info, DISPLAYLIST_PLAYLIST_COLLECTION);
@@ -306,7 +311,8 @@ static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned typ
    settings_t        *settings = config_get_ptr();
    global_t            *global = global_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
-   menu_handle_t *menu    = menu_driver_get_ptr();
+   menu_handle_t        *menu  = menu_driver_get_ptr();
+   const char          *exts   = core_info_list_get_all_extensions();
 
    switch (id)
    {
@@ -327,9 +333,9 @@ static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned typ
    {
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:
          info->setting      = menu_setting_find(info->label);
-         if (global->core_info.list)
-            strlcpy(info->exts, core_info_list_get_all_extensions(
-                     global->core_info.list), sizeof(info->exts));
+  
+         if (exts)
+            strlcpy(info->exts, exts, sizeof(info->exts));
          else if (global->menu.info.valid_extensions)
          {
             if (*global->menu.info.valid_extensions)
@@ -363,9 +369,8 @@ static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned typ
             strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
          break;
       case PUSH_DETECT_CORE_LIST:
-         if (global->core_info.list)
-            strlcpy(info->exts, core_info_list_get_all_extensions(
-                     global->core_info.list), sizeof(info->exts));
+         if (exts)
+            strlcpy(info->exts, exts, sizeof(info->exts));
          break;
    }
 
@@ -628,6 +633,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *
             break;
          case MENU_LABEL_SYSTEM_INFORMATION:
             cbs->action_deferred_push = deferred_push_system_information;
+         case MENU_LABEL_DEBUG_INFORMATION:
+            cbs->action_deferred_push = deferred_push_debug_information;
             break;
          case MENU_LABEL_CORE_COUNTERS:
             cbs->action_deferred_push = deferred_push_core_counters;

@@ -13,21 +13,24 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <unistd.h>
+
+#include <signal.h>
+#include <sys/ioctl.h>
+
+#include <EGL/egl.h>
+
+/* Includes and defines for framebuffer size retrieval */
+#include <linux/fb.h>
+#include <linux/vt.h>
+
+#include <retro_file.h>
+
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
 #include "../drivers/gl_common.h"
-
-#include <EGL/egl.h>
-#include <signal.h>
-
-/* Includes and defines for framebuffer size retrieval */
-#include <sys/ioctl.h>
-#include <linux/fb.h>
-#include <linux/vt.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 struct fbdev_window native_window;
 static EGLContext g_egl_ctx;
@@ -55,7 +58,9 @@ static void gfx_ctx_mali_fbdev_set_swap_interval(
 
 static void gfx_ctx_mali_fbdev_destroy(void *data)
 {
-   int fd;
+   int fb;
+   RFILE *fd;
+
    (void)data;
 
    if (g_egl_dpy != EGL_NO_DISPLAY)
@@ -82,12 +87,13 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
    g_resize       = false;
 
    /* Clear framebuffer and set cursor on again */
-   fd = open("/dev/tty", O_RDWR);
-   ioctl(fd,VT_ACTIVATE,5);
-   ioctl(fd,VT_ACTIVATE,1);
-   close (fd);
-   system("setterm -cursor on");
+   fd = retro_fopen("/dev/tty", RFILE_MODE_READ_WRITE, -1);
+   fb = retro_get_fd(fd);
 
+   ioctl(fb, VT_ACTIVATE,5);
+   ioctl(fb, VT_ACTIVATE,1);
+   retro_fclose(fd);
+   system("setterm -cursor on");
 }
 
 static void gfx_ctx_mali_fbdev_get_video_size(void *data,
@@ -220,14 +226,15 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
       EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
       EGL_NONE
    };
-   int fb = open("/dev/fb0", O_RDWR, 0);
+   RFILE *fd = retro_fopen("/dev/fb0", RFILE_MODE_READ_WRITE, -1);
+   int fb    = retro_get_fd(fd);
 
    if (ioctl(fb, FBIOGET_VSCREENINFO, &vinfo) < 0)
    {
       RARCH_ERR("Error obtainig framebuffer info.\n");
       goto error;
    }
-   close (fb);
+   retro_fclose(fd);
    
    width                = vinfo.xres;
    height               = vinfo.yres;
@@ -259,6 +266,8 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
    return true;
 
 error:
+   if (fd)
+      retro_fclose(fd);
    RARCH_ERR("[Mali fbdev]: EGL error: %d.\n", eglGetError());
    gfx_ctx_mali_fbdev_destroy(data);
    return false;

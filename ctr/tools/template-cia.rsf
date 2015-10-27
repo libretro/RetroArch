@@ -1,7 +1,7 @@
 BasicInfo:
-  Title                   : "{APP_TITLE}"
+  Title                   : "$(APP_TITLE)"
   CompanyCode             : "00"
-  ProductCode             : "{APP_PRODUCT_CODE}"
+  ProductCode             : "$(APP_PRODUCT_CODE)"
   ContentType             : Application
   Logo                    : Nintendo # Nintendo / Licensed / Distributed / iQue / iQueForSystem
 
@@ -10,7 +10,7 @@ BasicInfo:
   # HostRoot                : "romfs"
 
 TitleInfo:
-  UniqueId                : {APP_UNIQUE_ID}
+  UniqueId                : $(APP_UNIQUE_ID)
   Category                : Application
 
 CardInfo:
@@ -90,6 +90,7 @@ AccessControlInfo:
   Priority                      : 16
    
   MaxCpu                        : 0x9E # Default
+  CpuSpeed                      : 804mhz
   
   DisableDebug                  : false
   EnableForceDebug              : false

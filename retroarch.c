@@ -35,6 +35,7 @@
 #include <compat/getopt.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
+#include <retro_stat.h>
 
 #include "msg_hash.h"
 
@@ -240,7 +241,7 @@ static void set_basename(const char *path)
    global_t *global   = global_get_ptr();
 
    strlcpy(global->path.fullpath, path, sizeof(global->path.fullpath));
-   strlcpy(global->name.base, path, sizeof(global->name.base));
+   strlcpy(global->name.base,     path, sizeof(global->name.base));
 
 #ifdef HAVE_COMPRESSION
    /* Removing extension is a bit tricky for compressed files.
@@ -1122,7 +1123,7 @@ void rarch_verify_api_version(void)
  */
 static void validate_cpu_features(void)
 {
-   uint64_t cpu = rarch_get_cpu_features();
+   uint64_t cpu = retro_get_cpu_features();
    (void)cpu;
 
 #ifdef __SSE__

@@ -173,9 +173,23 @@ int32_t cocoa_input_find_any_key(void)
    return 0;
 }
 
+static int cocoa_input_find_any_button_ret(cocoa_input_data_t *apple,
+   unsigned buttons, unsigned port)
+{
+   unsigned i;
+   if (port == 0 && apple->icade_enabled)
+      BIT32_SET(buttons, apple->icade_buttons);
+
+   if (buttons)
+      for (i = 0; i < 32; i++)
+         if (buttons & (1 << i))
+            return i;
+   return -1;
+}
+
 int32_t cocoa_input_find_any_button(uint32_t port)
 {
-   unsigned i, buttons = 0;
+   int ret;
    driver_t *driver = driver_get_ptr();
    cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
 
@@ -185,14 +199,17 @@ int32_t cocoa_input_find_any_button(uint32_t port)
    if (apple->joypad)
        apple->joypad->poll();
 
-   buttons = apple->buttons[port];
-   if (port == 0 && apple->icade_enabled)
-      BIT32_SET(buttons, apple->icade_buttons);
+   ret = cocoa_input_find_any_button_ret(apple, apple->buttons[port], port);
 
-   if (buttons)
-      for (i = 0; i < 32; i++)
-         if (buttons & (1 << i))
-            return i;
+   if (ret != -1)
+      return ret;
+
+#ifdef HAVE_MFI
+   ret = cocoa_input_find_any_button_ret(apple, apple->mfi_buttons[port], port);
+
+   if (ret != -1)
+      return ret;
+#endif
 
    return -1;
 }

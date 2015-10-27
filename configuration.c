@@ -20,6 +20,7 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
+#include <retro_stat.h>
 
 #include "config.def.h"
 #include "input/input_common.h"
@@ -1630,6 +1631,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, network_cmd_enable, "network_cmd_enable");
    CONFIG_GET_INT_BASE(conf, settings, network_cmd_port, "network_cmd_port");
    CONFIG_GET_BOOL_BASE(conf, settings, stdin_cmd_enable, "stdin_cmd_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, debug_panel_enable, "debug_panel_enable");
 
    CONFIG_GET_PATH_BASE(conf, settings, content_history_directory, "content_history_dir");
 

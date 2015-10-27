@@ -13,6 +13,12 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stdint.h>
+
+#include <EGL/egl.h>
+#include <sys/system_properties.h>
+
+#include <formats/image.h>
 
 #include "../../driver.h"
 #include "../../general.h"
@@ -20,12 +26,7 @@
 #include "../video_monitor.h"
 #include "../drivers/gl_common.h"
 
-#include <EGL/egl.h>
-
-#include "../../frontend/drivers/platform_android.h"
-#include <formats/image.h>
-
-#include <stdint.h>
+#include "../../frontend/drivers/platform_linux.h"
 
 /* forward declaration */
 int system_property_get(const char *name, char *value);

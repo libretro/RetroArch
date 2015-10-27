@@ -215,7 +215,7 @@ void audio_convert_float_to_s16_altivec(int16_t *out,
    }
    audio_convert_float_to_s16_C(out, in, samples_in);
 }
-#elif defined(__ARM_NEON__)
+#elif defined(__ARM_NEON__) && !defined(VITA)
 /* Avoid potential hard-float/soft-float ABI issues. */
 void audio_convert_s16_float_asm(float *out, const int16_t *in,
       size_t samples, const float *gain);
@@ -409,7 +409,7 @@ retro_get_cpu_features_t perf_get_cpu_features_cb;
 static unsigned audio_convert_get_cpu_features(void)
 {
 #ifdef RARCH_INTERNAL
-   return rarch_get_cpu_features();
+   return retro_get_cpu_features();
 #else
    return perf_get_cpu_features_cb();
 #endif
@@ -426,7 +426,7 @@ void audio_convert_init_simd(void)
    unsigned cpu = audio_convert_get_cpu_features();
 
    (void)cpu;
-#if defined(__ARM_NEON__) 
+#if defined(__ARM_NEON__) && !defined(VITA)
    audio_convert_s16_to_float_arm = cpu & RETRO_SIMD_NEON ?
       audio_convert_s16_to_float_neon : audio_convert_s16_to_float_C;
    audio_convert_float_to_s16_arm = cpu & RETRO_SIMD_NEON ?

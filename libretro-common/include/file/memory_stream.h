@@ -23,8 +23,8 @@
 #ifndef _LIBRETRO_SDK_FILE_MEMORY_STREAM_H
 #define _LIBRETRO_SDK_FILE_MEMORY_STREAM_H
 
-#include <stddef.h>
 #include <stdint.h>
+#include <stddef.h>
 
 typedef struct memstream memstream_t;
 

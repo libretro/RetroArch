@@ -15,7 +15,6 @@
  */
 
 #include <stdint.h>
-#include <boolean.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -32,6 +31,7 @@ int scePowerSetArmClockFrequency(int freq);
 #include <pspsdk.h>
 #endif
 
+#include <boolean.h>
 #include <retro_log.h>
 #include <file/file_path.h>
 #ifndef IS_SALAMANDER
@@ -43,12 +43,13 @@ int scePowerSetArmClockFrequency(int freq);
 
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
 #ifndef VITA
-#include "../../psp1/kernel_functions.h"
+#include "../../bootstrap/psp1/kernel_functions.h"
 #endif
 #endif
 
 #ifdef VITA
 PSP2_MODULE_INFO(0, 0, "RetroArch");
+int _newlib_heap_size_user = 64 * 1024 * 1024;
 #else
 PSP_MODULE_INFO("RetroArch", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
@@ -71,6 +72,7 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
    struct rarch_main_wrap *params = NULL;
+   char buf[PATH_MAX_LENGTH]         = {0};
 
    (void)args;
 
@@ -110,9 +112,9 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "playlists", sizeof(g_defaults.dir.playlist));
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
          "retroarch.cfg", sizeof(g_defaults.path.config));
-   fill_pathname_join(g_defaults.dir.cheats, g_defaults.dir.cheats,
+   fill_pathname_join(g_defaults.dir.cheats, g_defaults.dir.port,
          "cheats", sizeof(g_defaults.dir.cheats));
-   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.remap,
+   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
          "remaps", sizeof(g_defaults.dir.remap));
 
 #ifdef VITA

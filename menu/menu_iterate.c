@@ -40,11 +40,11 @@ static int action_iterate_help(char *s, size_t len, const char *label)
             int64_t timeout;
             static bool timer_begin = false;
             static bool timer_end   = false;
-            int64_t current         = rarch_get_time_usec();
+            int64_t current         = retro_get_time_usec();
 
             if (!timer_begin)
             {
-               timeout_end = rarch_get_time_usec() +
+               timeout_end = retro_get_time_usec() +
                   3 /* seconds */ * 1000000;
                timer_begin = true;
                timer_end   = false;
@@ -373,7 +373,6 @@ enum action_iterate_type
    ITERATE_TYPE_DEFAULT = 0,
    ITERATE_TYPE_HELP,
    ITERATE_TYPE_INFO,
-   ITERATE_TYPE_MESSAGE,
    ITERATE_TYPE_VIEWPORT,
    ITERATE_TYPE_BIND
 };
@@ -392,8 +391,6 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
          return ITERATE_TYPE_HELP;
       case MENU_LABEL_INFO_SCREEN:
          return ITERATE_TYPE_INFO;
-      case MENU_LABEL_MESSAGE:
-         return ITERATE_TYPE_MESSAGE;
       case MENU_LABEL_CUSTOM_VIEWPORT_1:
       case MENU_LABEL_CUSTOM_VIEWPORT_2:
          return ITERATE_TYPE_VIEWPORT;
@@ -491,12 +488,6 @@ int menu_iterate(bool render_this_frame, unsigned action)
          menu->state.do_pop_stack    = true;
          menu->state.do_post_iterate = true;
          break;
-      case ITERATE_TYPE_MESSAGE:
-         strlcpy(menu->state.msg, disp->message_contents, sizeof(menu->state.msg));
-         menu->state.pop_selected    = &nav->selection_ptr;
-         menu->state.do_messagebox   = true;
-         menu->state.do_pop_stack    = true;
-         break;
       case ITERATE_TYPE_DEFAULT:
          selected = menu_navigation_get_selection(nav);
          /* FIXME: selected > selection_buf->list->size, i don't know why. */
@@ -555,11 +546,11 @@ int menu_iterate_render(void)
 
    if (menu->state.do_messagebox && menu->state.msg[0] != '\0')
    {
-      const ui_companion_driver_t *ui = ui_companion_get_ptr();
       if (driver->render_messagebox)
          driver->render_messagebox(menu->state.msg);
       if (ui_companion_is_on_foreground())
       {
+         const ui_companion_driver_t *ui = ui_companion_get_ptr();
          if (ui->render_messagebox)
             ui->render_messagebox(menu->state.msg);
       }

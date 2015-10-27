@@ -314,10 +314,12 @@ static bool vg_frame(void *data, const void *frame,
       uint64_t frame_count, unsigned pitch, const char *msg)
 {
    unsigned width, height;
-   vg_t                    *vg = (vg_t*)data;
+   vg_t                           *vg = (vg_t*)data;
+   static struct retro_perf_counter    vg_fr = {0};
+   static struct retro_perf_counter vg_image = {0};
 
-   RARCH_PERFORMANCE_INIT(vg_fr);
-   RARCH_PERFORMANCE_START(vg_fr);
+   rarch_perf_init(&vg_fr, "vg_fr");
+   retro_perf_start(&vg_fr);
 
    video_driver_get_size(&width, &height);
 
@@ -341,10 +343,10 @@ static bool vg_frame(void *data, const void *frame,
    vgClear(0, 0, width, height);
    vgSeti(VG_SCISSORING, VG_TRUE);
 
-   RARCH_PERFORMANCE_INIT(vg_image);
-   RARCH_PERFORMANCE_START(vg_image);
+   rarch_perf_init(&vg_image, "vg_image");
+   retro_perf_start(&vg_image);
    vg_copy_frame(vg, frame, frame_width, frame_height, pitch);
-   RARCH_PERFORMANCE_STOP(vg_image);
+   retro_perf_stop(&vg_image);
 
    vgDrawImage(vg->mImage);
 
@@ -355,7 +357,7 @@ static bool vg_frame(void *data, const void *frame,
 
    gfx_ctx_update_window_title(vg);
 
-   RARCH_PERFORMANCE_STOP(vg_fr);
+   retro_perf_stop(&vg_fr);
 
    gfx_ctx_swap_buffers(vg);
 

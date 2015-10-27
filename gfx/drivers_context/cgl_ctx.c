@@ -18,16 +18,16 @@
    Based on http://fernlightning.com/doku.php?id=randd:xopengl.
  */
 
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+
 #include <ApplicationServices/ApplicationServices.h>
 
 #include <OpenGL/CGLTypes.h>
 #include <OpenGL/CGLCurrent.h>
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
-
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
 
 #include "../../driver.h"
 #include "../../runloop.h"

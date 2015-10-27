@@ -48,6 +48,13 @@ typedef struct psp_audio
 #define AUDIO_BUFFER_SIZE (1u<<13u)
 #define AUDIO_BUFFER_SIZE_MASK (AUDIO_BUFFER_SIZE-1)
 
+#ifdef VITA
+#define PSP_THREAD_STOPPED PSP2_THREAD_STOPPED
+#else
+#define SceKernelThreadInfo SceKernelThreadRunStatus
+#define sceKernelGetThreadInfo sceKernelReferThreadRunStatus
+#endif
+
 static int audioMainLoop(SceSize args, void* argp)
 {
    psp_audio_t* psp = *((psp_audio_t**)argp);
@@ -190,13 +197,12 @@ static bool psp_audio_alive(void *data)
    return psp->running;
 }
 
+
 static bool psp_audio_stop(void *data)
 {
+   SceKernelThreadInfo info;
    SceUInt timeout   = 100000;
    psp_audio_t* psp = (psp_audio_t*)data;
-
-#if defined(VITA)
-   SceKernelThreadInfo info;
 
    info.size = sizeof(SceKernelThreadInfo);
 
@@ -204,22 +210,8 @@ static bool psp_audio_stop(void *data)
             psp->thread, &info) < 0) /* Error */
       return false;
 
-   if (info.status == PSP2_THREAD_STOPPED)
+   if (info.status == PSP_THREAD_STOPPED)
       return false;
-
-#else
-   SceKernelThreadRunStatus runStatus;
-
-   runStatus.size    = sizeof(SceKernelThreadRunStatus);
-
-   if (sceKernelReferThreadRunStatus(
-            psp->thread, &runStatus) < 0) /* Error */
-      return false;
-
-   if (runStatus.status == PSP_THREAD_STOPPED)
-      return false;
-
-#endif
 
    psp->running = false;
 #if defined(VITA)
@@ -233,10 +225,8 @@ static bool psp_audio_stop(void *data)
 
 static bool psp_audio_start(void *data)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
-
-#if defined(VITA)
    SceKernelThreadInfo info;
+   psp_audio_t* psp = (psp_audio_t*)data;
 
    info.size = sizeof(SceKernelThreadInfo);
 
@@ -244,21 +234,8 @@ static bool psp_audio_start(void *data)
             psp->thread, &info) < 0) /* Error */
       return false;
 
-   if (info.status != PSP2_THREAD_STOPPED)
+   if (info.status != PSP_THREAD_STOPPED)
       return false;
-
-#else
-   SceKernelThreadRunStatus runStatus;
-
-   runStatus.size    = sizeof(SceKernelThreadRunStatus);
-
-   if (sceKernelReferThreadRunStatus(
-            psp->thread, &runStatus) < 0) /* Error */
-      return false;
-   if (runStatus.status != PSP_THREAD_STOPPED)
-      return false;
-
-#endif
 
    psp->running = true;
 

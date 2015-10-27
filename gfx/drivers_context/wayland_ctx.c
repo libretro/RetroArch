@@ -14,20 +14,21 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <sys/poll.h>
+#include <signal.h>
+#include <unistd.h>
+
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+
+#include <wayland-client.h>
+#include <wayland-egl.h>
+
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
 #include "../drivers/gl_common.h"
-
-#include <wayland-client.h>
-#include <wayland-egl.h>
-
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-#include <signal.h>
-#include <sys/poll.h>
-#include <unistd.h>
 
 typedef struct gfx_ctx_wayland_data
 {

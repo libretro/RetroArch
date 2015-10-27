@@ -36,7 +36,7 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
    system_platform = win
 endif
 
-PKG_SCRIPT		= ps3/ps3py/pkg.py
+PKG_SCRIPT		= tools/ps3/ps3py/pkg.py
 ifeq ($(shell uname), Linux)
 PKG_FINALIZE         	= package_finalize
 MAKE_SELF_WC		= make_self_wc
@@ -61,7 +61,7 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
    system_platform = win
 endif
 
-PKG_SCRIPT		= ps3/ps3py/pkg.py
+PKG_SCRIPT		= tools/ps3/ps3py/pkg.py
 ifeq ($(shell uname), Linux)
 PKG_FINALIZE         	= package_finalize
 MAKE_SELF_WC		= make_self_wc

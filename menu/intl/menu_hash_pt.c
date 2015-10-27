@@ -1336,24 +1336,32 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
                "implementações de cores libretro.");
          break;
       case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
-         snprintf(s, len,
-               "Taxa de Atualização Automática.\n"
-               " \n"
-               "A taxa de atualização exata de nosso monitor (Hz).\n"
-               "É usada para calcular a taxa de entrada de áudio \n"
-               "com a fórmula: \n"
-               " \n"
-               "audio_input_rate = game input rate * display \n"
-               "refresh rate / game refresh rate\n"
-               " \n"
-               "Se a implementação não informar valores, \n"
-               "valores NTSC serão assumidos por questão de \n"
-               "compatibilidade.\n"
-               " \n"
-               "Esse valor deve ficar próximo de 60Hz para \n"
-               "evitar grande mudanças de pitch. Se o monitor \n"
-               "não rodar a 60Hz, ou algo próximo a isso, desative\n"
-               "o VSync, e deixe-o com valores padrão.");
+         {
+            /* Work around C89 limitations */
+            char u[501];
+            char t[501];
+            snprintf(u, sizeof(u),
+                  "Taxa de Atualização Automática.\n"
+                  " \n"
+                  "A taxa de atualização exata de nosso monitor (Hz).\n"
+                  "É usada para calcular a taxa de entrada de áudio \n"
+                  "com a fórmula: \n"
+                  " \n"
+                  "audio_input_rate = game input rate * display \n"
+                  "refresh rate / game refresh rate\n"
+                  " \n");
+            snprintf(t, sizeof(t),
+                  "Se a implementação não informar valores, \n"
+                  "valores NTSC serão assumidos por questão de \n"
+                  "compatibilidade.\n"
+                  " \n"
+                  "Esse valor deve ficar próximo de 60Hz para \n"
+                  "evitar grande mudanças de pitch. Se o monitor \n"
+                  "não rodar a 60Hz, ou algo próximo a isso, desative\n"
+                  "o VSync, e deixe-o com valores padrão.");
+            strlcat(s, u, len);
+            strlcat(s, t, len);
+         }
          break;
       case MENU_LABEL_VIDEO_ROTATION:
          snprintf(s, len,

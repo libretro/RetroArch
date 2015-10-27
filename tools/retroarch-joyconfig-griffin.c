@@ -21,6 +21,8 @@
 #include "retroarch-joyconfig.c"
 
 #include "../libretro-common/dynamic/dylib.c"
+#include "../libretro-common/file/retro_file.c"
+#include "../libretro-common/file/retro_stat.c"
 
 #if defined(__linux) && !defined(ANDROID)
 #include "../input/drivers/linuxraw_input.c"
@@ -44,8 +46,10 @@
 #include "../input/drivers_joypad/parport_joypad.c"
 #endif
 
+#if __cplusplus || __STDC_VERSION__ >= 199901L
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
 #include "../input/drivers_joypad/sdl_joypad.c"
+#endif
 #endif
 
 #include "../libretro-common/queues/fifo_buffer.c"
@@ -61,7 +65,7 @@
 
 #include "../libretro-common/rthreads/rthreads.c"
 
-#ifndef __STDC_C89__
+#if __cplusplus || __STDC_VERSION__ >= 199901L
 #ifdef HAVE_LIBUSB
 #include "../input/drivers_hid/libusb_hid.c"
 

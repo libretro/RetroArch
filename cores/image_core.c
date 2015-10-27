@@ -17,7 +17,7 @@
 #define STBI_SUPPORT_ZLIB
 #endif
 
-#include "stb_image.h"
+#include "../deps/stb/stb_image.h"
 
 #ifdef RARCH_INTERNAL
 #include "internal_cores.h"

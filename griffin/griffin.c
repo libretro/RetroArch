@@ -27,7 +27,7 @@
 #endif
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
-#include "../logger/netlogger/logger.c"
+#include "../netlogger.c"
 #endif
 
 /*============================================================
@@ -36,7 +36,7 @@ CONSOLE EXTENSIONS
 #ifdef RARCH_CONSOLE
 
 #ifdef HW_DOL
-#include "../ngc/ssaram.c"
+#include "../memory/ngc/ssaram.c"
 #endif
 
 #endif
@@ -48,11 +48,6 @@ CONSOLE EXTENSIONS
 /*============================================================
 PERFORMANCE
 ============================================================ */
-
-#ifdef ANDROID
-#include "../performance/performance_android.c"
-#endif
-
 #include "../performance.c"
 
 /*============================================================
@@ -172,18 +167,17 @@ VIDEO IMAGE
 #include "../gfx/image/image.c"
 #include "../gfx/video_texture.c"
 
-#include "../libretro-common/formats/tga/tga_decode.c"
+#include "../libretro-common/formats/tga/rtga.c"
 
 #ifdef HAVE_IMAGEVIEWER
 #include "../cores/image_core.c"
 #endif
 
 #ifdef HAVE_RPNG
-#include "../libretro-common/formats/png/rpng_fbio.c"
-#include "../libretro-common/formats/png/rpng_nbio.c"
-#include "../libretro-common/formats/png/rpng_decode.c"
+#include "../libretro-common/formats/png/rpng.c"
 #include "../libretro-common/formats/png/rpng_encode.c"
 #endif
+#include "../libretro-common/formats/bmp/rbmp_encode.c"
 
 /*============================================================
 VIDEO DRIVER
@@ -191,8 +185,8 @@ VIDEO DRIVER
 
 #if defined(GEKKO)
 #ifdef HW_RVL
-#include "../wii/vi_encoder.c"
-#include "../wii/mem2_manager.c"
+#include "../gfx/drivers/gx_gfx_vi_encoder.c"
+#include "../memory/wii/mem2_manager.c"
 #endif
 #endif
 
@@ -583,6 +577,8 @@ FILE
 #include "../libretro-common/file/dir_list.c"
 #endif
 #include "../libretro-common/file/retro_dirent.c"
+#include "../libretro-common/file/retro_file.c"
+#include "../libretro-common/file/retro_stat.c"
 #include "../dir_list_special.c"
 #include "../libretro-common/string/string_list.c"
 #include "../libretro-common/string/stdstring.c"
@@ -626,8 +622,6 @@ FRONTEND
 #ifdef HW_RVL
 #include "../frontend/drivers/platform_wii.c"
 #endif
-#elif defined(_XBOX)
-#include "../frontend/drivers/platform_xdk.c"
 #elif defined(PSP) || defined(VITA)
 #include "../frontend/drivers/platform_psp.c"
 #elif defined(_3DS)
@@ -636,9 +630,7 @@ FRONTEND
 #include "../frontend/drivers/platform_xenon.c"
 #elif defined(__QNX__)
 #include "../frontend/drivers/platform_qnx.c"
-#elif defined(ANDROID)
-#include "../frontend/drivers/platform_android.c"
-#elif defined(__linux__) && !defined(ANDROID)
+#elif defined(__linux__)
 #include "../frontend/drivers/platform_linux.c"
 #endif
 #include "../frontend/drivers/platform_null.c"
@@ -733,6 +725,7 @@ DATA RUNLOOP
 #include "../tasks/task_file_transfer.c"
 #ifdef HAVE_LIBRETRODB
 #include "../tasks/task_database.c"
+#include "../tasks/task_database_cue.c"
 #endif
 
 /*============================================================

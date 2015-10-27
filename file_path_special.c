@@ -26,24 +26,14 @@
 #include <time.h>
 #include <errno.h>
 
-#ifdef __HAIKU__
-#include <kernel/image.h>
-#endif
-
 #ifdef _WIN32
 #include <direct.h>
 #else
-#include <unistd.h> /* stat() is defined here */
+#include <unistd.h>
 #endif
 
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
-#endif
-
-#if defined(__CELLOS_LV2__)
-#ifndef S_ISDIR
-#define S_ISDIR(x) (x & 0040000)
-#endif
 #endif
 
 #include <file/file_path.h>
@@ -131,8 +121,8 @@ void fill_pathname_abbreviate_special(char *out_path,
          rarch_assert(src_size < size);
       
          out_path += src_size;
-         size -= src_size;
-         in_path += strlen(candidates[i]);
+         size     -= src_size;
+         in_path  += strlen(candidates[i]);
       
          if (!path_char_is_slash(*in_path))
          {
@@ -193,7 +183,7 @@ void fill_pathname_application_path(char *buf, size_t size)
       char link_path[PATH_MAX_LENGTH] = {0};
 
       *buf      = '\0';
-      pid = getpid(); 
+      pid       = getpid(); 
 
       /* Linux, BSD and Solaris paths. Not standardized. */
       for (i = 0; i < ARRAY_SIZE(exts); i++)
@@ -203,6 +193,7 @@ void fill_pathname_application_path(char *buf, size_t size)
          snprintf(link_path, sizeof(link_path), "/proc/%u/%s",
                (unsigned)pid, exts[i]);
          ret = readlink(link_path, buf, size - 1);
+
          if (ret >= 0)
          {
             buf[ret] = '\0';

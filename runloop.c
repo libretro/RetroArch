@@ -167,10 +167,10 @@ static void check_rewind(settings_t *settings,
 {
    static bool first = true;
 
-   if (global->rewind.frame_is_reverse)
+   if (state_manager_frame_is_reversed())
    {
       audio_driver_frame_is_reverse();
-      global->rewind.frame_is_reverse = false;
+      state_manager_set_frame_is_reversed(false);
    }
 
    if (first)
@@ -188,7 +188,7 @@ static void check_rewind(settings_t *settings,
 
       if (state_manager_pop(global->rewind.state, &buf))
       {
-         global->rewind.frame_is_reverse = true;
+         state_manager_set_frame_is_reversed(true);
          audio_driver_setup_rewind();
 
          rarch_main_msg_queue_push_new(MSG_REWINDING, 0,
@@ -211,13 +211,15 @@ static void check_rewind(settings_t *settings,
 
       if ((cnt == 0) || global->bsv.movie)
       {
+         static struct retro_perf_counter rewind_serialize = {0};
          void *state = NULL;
+
          state_manager_push_where(global->rewind.state, &state);
 
-         RARCH_PERFORMANCE_INIT(rewind_serialize);
-         RARCH_PERFORMANCE_START(rewind_serialize);
+         rarch_perf_init(&rewind_serialize, "rewind_serialize");
+         retro_perf_start(&rewind_serialize);
          pretro_serialize(state, global->rewind.size);
-         RARCH_PERFORMANCE_STOP(rewind_serialize);
+         retro_perf_stop(&rewind_serialize);
 
          state_manager_push_do(global->rewind.state);
       }
@@ -232,8 +234,7 @@ static void check_rewind(settings_t *settings,
  *
  * Checks if slowmotion toggle/hold was being pressed and/or held.
  **/
-static void check_slowmotion(settings_t *settings, global_t *global,
-      bool slowmotion_pressed)
+static void check_slowmotion(settings_t *settings, bool slowmotion_pressed)
 {
    main_is_slowmotion   = slowmotion_pressed;
 
@@ -243,7 +244,7 @@ static void check_slowmotion(settings_t *settings, global_t *global,
    if (settings->video.black_frame_insertion)
       video_driver_cached_frame();
 
-   if (global->rewind.frame_is_reverse)
+   if (state_manager_frame_is_reversed())
       rarch_main_msg_queue_push_new(MSG_SLOW_MOTION_REWIND, 0, 30, true);
    else
       rarch_main_msg_queue_push_new(MSG_SLOW_MOTION, 0, 30, true);
@@ -561,7 +562,7 @@ static int do_state_checks(driver_t *driver, settings_t *settings,
       event_command(EVENT_CMD_LOAD_STATE);
 
    check_rewind(settings, global, cmd->rewind_pressed);
-   check_slowmotion(settings, global, cmd->slowmotion_pressed);
+   check_slowmotion(settings, cmd->slowmotion_pressed);
 
    if (cmd->movie_record)
       check_movie(global);
@@ -632,7 +633,7 @@ static INLINE int time_to_exit(driver_t *driver, global_t *global,
 static void rarch_update_frame_time(driver_t *driver, float slowmotion_ratio,
       rarch_system_info_t *system)
 {
-   retro_time_t current     = rarch_get_time_usec();
+   retro_time_t current     = retro_get_time_usec();
    retro_time_t delta       = current - system->frame_time_last;
    bool is_locked_fps       = (main_is_paused || driver->nonblock_state) | 
       !!driver->recording_data;
@@ -658,7 +659,7 @@ static int rarch_limit_frame_time(float fastforward_ratio, unsigned *sleep_ms)
    if (!fastforward_ratio)
       return 0;
 
-   current                        = rarch_get_time_usec();
+   current                        = retro_get_time_usec();
    target                         = frame_limit_last_time + frame_limit_minimum_time;
    to_sleep_ms                    = (target - current) / 1000;
 
@@ -670,7 +671,7 @@ static int rarch_limit_frame_time(float fastforward_ratio, unsigned *sleep_ms)
       return 1;
    }
    else
-      frame_limit_last_time  = rarch_get_time_usec();
+      frame_limit_last_time  = retro_get_time_usec();
 
    return 0;
 }
@@ -836,7 +837,7 @@ void rarch_main_set_frame_limit_last_time(void)
    if (fastforward_ratio == 0.0f)
       fastforward_ratio = 1.0f;
 
-   frame_limit_last_time                = rarch_get_time_usec();
+   frame_limit_last_time                = retro_get_time_usec();
    frame_limit_minimum_time             = (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
 }
 
@@ -1125,7 +1126,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    }
 
    if ((settings->video.frame_delay > 0) && !driver->nonblock_state)
-      rarch_sleep(settings->video.frame_delay);
+      retro_sleep(settings->video.frame_delay);
 
    /* Run libretro for one frame. */
    pretro_run();

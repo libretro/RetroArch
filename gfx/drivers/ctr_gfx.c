@@ -349,13 +349,14 @@ static bool ctr_frame(void* data, const void* frame,
       uint64_t frame_count,
       unsigned pitch, const char* msg)
 {
-   ctr_video_t* ctr = (ctr_video_t*)data;
-   settings_t* settings = config_get_ptr();
-
+   uint32_t diff;
    static uint64_t currentTick,lastTick;
-   static float fps = 0.0;
+   ctr_video_t       *ctr  = (ctr_video_t*)data;
+   settings_t   *settings  = config_get_ptr();
+   static float        fps = 0.0;
    static int total_frames = 0;
-   static int frames = 0;
+   static int       frames = 0;
+   static struct retro_perf_counter ctrframe_f = {0};
 
    extern bool select_pressed;
 
@@ -390,7 +391,7 @@ static bool ctr_frame(void* data, const void* frame,
    svcClearEvent(gspEvents[GSPEVENT_VBlank0]);
 
    currentTick = svcGetSystemTick();
-   uint32_t diff = currentTick - lastTick;
+   diff        = currentTick - lastTick;
    if(diff > CTR_CPU_TICKS_PER_SECOND)
    {
       fps = (float)frames * ((float) CTR_CPU_TICKS_PER_SECOND / (float) diff);
@@ -401,13 +402,11 @@ static bool ctr_frame(void* data, const void* frame,
    printf("fps: %8.4f frames: %i\r", fps, total_frames++);
    fflush(stdout);
 
-   RARCH_PERFORMANCE_INIT(ctrframe_f);
-   RARCH_PERFORMANCE_START(ctrframe_f);
+   rarch_perf_init(&ctrframe_f, "ctrframe_f");
+   retro_perf_start(&ctrframe_f);
 
    if (ctr->should_resize)
       ctr_update_viewport(ctr);
-
-
 
    ctrGuSetMemoryFill(true, (u32*)CTR_GPU_FRAMEBUFFER, 0x00000000,
                     (u32*)(CTR_GPU_FRAMEBUFFER + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * sizeof(uint32_t)),
@@ -435,8 +434,9 @@ static bool ctr_frame(void* data, const void* frame,
       else
       {
          int i;
-         uint16_t* dst = (uint16_t*)ctr->texture_linear;
-         const uint8_t* src = frame;
+         uint16_t      *dst = (uint16_t*)ctr->texture_linear;
+         const uint8_t *src = frame;
+
          for (i = 0; i < height; i++)
          {
             memcpy(dst, src, width * sizeof(uint16_t));
@@ -496,7 +496,7 @@ static bool ctr_frame(void* data, const void* frame,
                         gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL), 240,400,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
    gfxSwapBuffersGpu();
-   RARCH_PERFORMANCE_STOP(ctrframe_f);
+   retro_perf_stop(&ctrframe_f);
 
    return true;
 }

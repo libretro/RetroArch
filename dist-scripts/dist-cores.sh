@@ -13,8 +13,8 @@ EXT=a
 
 mkdir -p ../pkg/${platform}/cores/
 
-make -C ../${platform}/kernel_functions_prx/ clean || exit 1
-make -C ../${platform}/kernel_functions_prx/ || exit 1
+make -C ../bootstrap/${platform}/kernel_functions_prx/ clean || exit 1
+make -C ../bootstrap/${platform}/kernel_functions_prx/ || exit 1
 cp -f ../kernel_functions.prx ../pkg/${platform}/kernel_functions.prx
 
 # Vita
@@ -158,7 +158,7 @@ for f in *_${platform}.${EXT} ; do
    # Move executable files
    if [ $platform = "ps3" ] ; then
       if [ $PLATFORM = "ode-ps3" ] ; then
-         mv -f ../CORE.SELF ../${platform}/iso/PS3_GAME/USRDIR/cores/"${name}_libretro_${platform}.SELF"
+         mv -f ../CORE.SELF ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/"${name}_libretro_${platform}.SELF"
       else
          mv -f ../CORE.SELF ../pkg/${platform}/USRDIR/cores/"${name}_libretro_${platform}.SELF"
       fi
@@ -227,8 +227,8 @@ elif [ $PLATFORM = "cex-ps3" ] ; then
    rm -rf ../retroarch-salamander_${platform}.elf
    python2 ../ps3/ps3py/pkg.py --contentid UP0001-SSNE10000_00-0000000000000001 ../pkg/${platform} retroarch-${platform}-cfw-$RARCH_VERSION.pkg
 elif [ $PLATFORM = "ode-ps3" ] ; then
-   $SCETOOL_PATH $SCETOOL_FLAGS --encrypt ../retroarch-salamander_${platform}.elf ../${platform}/iso/PS3_GAME/USRDIR/EBOOT.BIN
+   $SCETOOL_PATH $SCETOOL_FLAGS --encrypt ../retroarch-salamander_${platform}.elf ../pkg/${platform}_iso/PS3_GAME/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
 
-   $GENPS3ISO_PATH ../${platform}/iso RetroArch-COBRA-ODE.iso
+   $GENPS3ISO_PATH ../pkg/${platform}_iso/RetroArch-COBRA-ODE.iso
 fi

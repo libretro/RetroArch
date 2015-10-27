@@ -14,9 +14,11 @@
  */
 
 #include <file/file_path.h>
+#include <retro_stat.h>
 
 #include "../menu.h"
 #include "../menu_cbs.h"
+#include "../menu_display.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 #include "../menu_hash.h"
@@ -206,8 +208,8 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_CONFIGURATIONS_LIST:
          info.type          = type;
          info.directory_ptr = idx;
-         if (path)
-            info_path        = path;
+         if (settings->menu_config_directory[0] != '\0')
+            info_path        = settings->menu_config_directory;
          else
             info_path        = label;
          info_label = label;
@@ -554,6 +556,9 @@ static int generic_action_ok(const char *path,
          break;
 
       case ACTION_OK_LOAD_CONFIG_FILE:
+         flush_char = NULL;
+         flush_type = MENU_SETTINGS;
+
          disp->msg_force = true;
 
          if (rarch_replace_config(action_path))
@@ -663,7 +668,7 @@ static int action_ok_cheat_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok(path, label, type, idx, entry_idx,
-         ACTION_OK_LOAD_RECORD_CONFIGFILE, MENU_LABEL_CORE_CHEAT_OPTIONS);
+         ACTION_OK_LOAD_CHEAT_FILE, MENU_LABEL_CORE_CHEAT_OPTIONS);
 }
 
 static int action_ok_record_configfile_load(const char *path,
@@ -763,9 +768,9 @@ static int generic_action_ok_remap_file_save(const char *path,
        path_mkdir(directory);
 
    if(input_remapping_save_file(file))
-      rarch_main_msg_queue_push("Remap file saved successfully", 1, 100, true);
+      menu_display_msg_queue_push("Remap file saved successfully", 1, 100, true);
    else
-      rarch_main_msg_queue_push("Error saving remap file", 1, 100, true);
+      menu_display_msg_queue_push("Error saving remap file", 1, 100, true);
 
    return 0;
 }
@@ -1019,7 +1024,7 @@ static int action_ok_download_generic(const char *path,
          menu_hash_to_str(MENU_LABEL_VALUE_STARTING_DOWNLOAD),
          path);
 
-   rarch_main_msg_queue_push(s2, 1, 90, true);
+   menu_display_msg_queue_push(s2, 1, 90, true);
 
    rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, s,
          type_msg, 0, 1, true);
@@ -1648,7 +1653,7 @@ static int action_ok_video_resolution(const char *path,
       global->console.screen.resolutions.height = height;
 
       snprintf(msg, sizeof(msg),"Applying: %dx%d\n START to reset",width, height);
-      rarch_main_msg_queue_push(msg, 1, 100, true);
+      menu_display_msg_queue_push(msg, 1, 100, true);
    }
 #endif
 
@@ -1802,6 +1807,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
       case MENU_LABEL_CORE_INFORMATION:
       case MENU_LABEL_SYSTEM_INFORMATION:
+      case MENU_LABEL_DEBUG_INFORMATION:
       case MENU_LABEL_DISK_OPTIONS:
       case MENU_LABEL_SETTINGS:
       case MENU_LABEL_FRONTEND_COUNTERS:

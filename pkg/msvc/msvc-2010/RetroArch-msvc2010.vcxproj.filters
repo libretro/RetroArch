@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ResourceCompile Include="..\..\..\media\rarch.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="griffin">
+      <UniqueIdentifier>{9fc175c7-a869-47cf-a0ce-5447d6015ce9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\griffin\griffin.c">
+      <Filter>griffin</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\griffin\griffin_cpp.cpp">
+      <Filter>griffin</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

@@ -158,7 +158,7 @@ static INLINE void rarch_fail(int error_code, const char *error)
     * just exit right away. */
    rarch_assert(global->inited.error);
 
-   strcpy(global->error_string, error);
+   strlcpy(global->error_string, error, sizeof(global->error_string));
    longjmp(global->error_sjlj_context, error_code);
 }
 

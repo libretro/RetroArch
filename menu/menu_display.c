@@ -127,6 +127,8 @@ bool menu_display_init(void *data)
    if (!menu->display.animation)
       return false;
 
+   rarch_assert(menu->display.msg_queue = msg_queue_new(8));
+
    return true;
 }
 
@@ -285,4 +287,10 @@ void menu_display_timedate(char *s, size_t len, unsigned time_mode)
          strftime(s, len, "%H:%M", localtime(&time_));
          break;
    }
+}
+
+void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
+      bool flush)
+{
+   rarch_main_msg_queue_push(msg, prio, duration, flush);
 }

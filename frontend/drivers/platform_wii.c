@@ -18,17 +18,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <fat.h>
 #include <gctypes.h>
 #include <ogc/cache.h>
-#include "../../gfx/drivers/ppc_asm.h"
 #include <ogc/system.h>
 #include <ogc/usbstorage.h>
 #include <sdcard/wiisd_io.h>
 
 #include <retro_log.h>
+#include <retro_file.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
+
+#include "../../gfx/drivers/ppc_asm.h"
 
 #define EXECUTE_ADDR ((uint8_t *) 0x91800000)
 #define BOOTER_ADDR  ((uint8_t *) 0x93000000)
@@ -46,10 +49,9 @@ char gx_rom_path[PATH_MAX_LENGTH];
 static void dol_copy_argv_path(const char *dolpath, const char *argpath)
 {
    char tmp[PATH_MAX_LENGTH];
-   size_t t_len;
+   size_t t_len, len = 0;
    struct __argv *argv = (struct __argv *)ARGS_ADDR;
    char *cmdline = NULL;
-   size_t len = 0;
 
    memset(ARGS_ADDR, 0, sizeof(struct __argv));
 
@@ -113,13 +115,13 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
  * heap memory and are restricted to the stack only. */
 void system_exec_wii(const char *_path, bool should_load_game)
 {
-   FILE *fp;
-   size_t size, booter_size;
-   void *dol;
+   size_t booter_size;
+   ssize_t length;
    char path[PATH_MAX_LENGTH];
    char game_path[PATH_MAX_LENGTH];
+   void *dol = NULL;
 #ifndef IS_SALAMANDER
-   global_t *global = global_get_ptr();
+   global_t *global      = global_get_ptr();
    bool original_verbose = global->verbosity;
    global->verbosity = true;
 #endif
@@ -137,29 +139,11 @@ void system_exec_wii(const char *_path, bool should_load_game)
    }
 
    RARCH_LOG("Attempt to load executable: [%s]\n", path);
-
-   fp = fopen(path, "rb");
-   if (fp == NULL)
+   if (retro_read_file(path, dol, &length) != 1)
    {
       RARCH_ERR("Could not open DOL file %s.\n", path);
       goto exit;
    }
-
-   fseek(fp, 0, SEEK_END);
-   size = ftell(fp);
-   fseek(fp, 0, SEEK_SET);
-
-   /* try to allocate a buffer for it. if we can't, fail. */
-   dol = malloc(size);
-   if (!dol)
-   {
-      RARCH_ERR("Could not execute DOL file %s.\n", path);
-      fclose(fp);
-      goto exit;
-   }
-
-   fread(dol, 1, size, fp);
-   fclose(fp);
 
    fatUnmount("carda:");
    fatUnmount("cardb:");
@@ -169,8 +153,8 @@ void system_exec_wii(const char *_path, bool should_load_game)
    __io_usbstorage.shutdown();
 
    /* don't use memcpy, there might be an overlap. */
-   memmove(EXECUTE_ADDR, dol, size);
-   DCFlushRange(EXECUTE_ADDR, size);
+   memmove(EXECUTE_ADDR, dol, length);
+   DCFlushRange(EXECUTE_ADDR, length);
 
    dol_copy_argv_path(path, should_load_game ? game_path : NULL);
 

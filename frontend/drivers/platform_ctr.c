@@ -13,12 +13,13 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <3ds.h>
-
 #include <stdint.h>
-#include <boolean.h>
 #include <stddef.h>
 #include <string.h>
+
+#include <boolean.h>
+
+#include <3ds.h>
 
 #include <file/file_path.h>
 #ifndef IS_SALAMANDER
@@ -35,14 +36,76 @@
 #include "../../menu/menu_list.h"
 #endif
 
-
-int __stacksize__ = 1*1024*1024;
-
 const char* elf_path_cst = "sdmc:/retroarch/test.3dsx";
 
 void wait_for_input(void);
 
 #define DEBUG_HOLD() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);wait_for_input();}while(0)
+
+#ifndef CTR_STACK_SIZE
+#define CTR_STACK_SIZE         0x100000
+#endif
+
+#ifndef CTR_LINEAR_HEAP_SIZE
+#define CTR_LINEAR_HEAP_SIZE   0x600000
+#endif
+
+int __stacksize__ = CTR_STACK_SIZE;
+
+extern char* fake_heap_start;
+extern char* fake_heap_end;
+u32 __linear_heap;
+u32 __heapBase;
+static u32 __heap_size_local, __linear_heap_size_local;
+
+extern void (*__system_retAddr)(void);
+
+void __destroy_handle_list(void);
+void __appExit();
+void __libc_fini_array(void);
+
+void __system_allocateHeaps() {
+	u32 tmp=0;
+   int64_t mem_used;
+   svcGetSystemInfo(&mem_used, 0, 1);
+
+   __linear_heap_size_local = CTR_LINEAR_HEAP_SIZE;
+   __heap_size_local        = (0x4000000 - mem_used - __linear_heap_size_local - 0x1000) & 0xFFFFF000;
+
+	// Allocate the application heap
+	__heapBase = 0x08000000;
+	svcControlMemory(&tmp, __heapBase, 0x0, __heap_size_local, MEMOP_ALLOC, MEMPERM_READ | MEMPERM_WRITE);
+
+	// Allocate the linear heap
+	svcControlMemory(&__linear_heap, 0x0, 0x0, __linear_heap_size_local, MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
+	// Set up newlib heap
+	fake_heap_start = (char*)__heapBase;
+	fake_heap_end = fake_heap_start + __heap_size_local;
+
+}
+
+void __attribute__((noreturn)) __libctru_exit(int rc)
+{
+	u32 tmp=0;
+
+	// Unmap the linear heap
+	svcControlMemory(&tmp, __linear_heap, 0x0, __linear_heap_size_local, MEMOP_FREE, 0x0);
+
+	// Unmap the application heap
+	svcControlMemory(&tmp, __heapBase, 0x0, __heap_size_local, MEMOP_FREE, 0x0);
+
+	// Close some handles
+	__destroy_handle_list();
+
+	// Jump to the loader if it provided a callback
+	if (__system_retAddr)
+		__system_retAddr();
+
+	// Since above did not jump, end this process
+	svcExitProcess();
+}
+
+
 
 static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
@@ -77,6 +140,8 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
          "system", sizeof(g_defaults.dir.system));
    fill_pathname_join(g_defaults.dir.playlist, g_defaults.dir.core,
          "playlists", sizeof(g_defaults.dir.playlist));
+   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
+         "remaps", sizeof(g_defaults.dir.remap));
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
          "retroarch.cfg", sizeof(g_defaults.path.config));
 
@@ -199,11 +264,31 @@ void wait_for_input(void)
          break;
 
       if (kDown & KEY_SELECT)
-         select_pressed = true;
+         exit(0);
+#if 0
+      select_pressed = true;
+#endif
 
-      rarch_sleep(1);
+      retro_sleep(1);
    }
 }
+
+int usleep (useconds_t us)
+{
+   svcSleepThread((int64_t)us * 1000);
+}
+
+long sysconf(int name)
+{
+   switch(name)
+   {
+   case _SC_NPROCESSORS_ONLN:
+      return 2;
+   }
+
+   return -1;
+}
+
 
 enum frontend_architecture frontend_ctr_get_architecture(void)
 {

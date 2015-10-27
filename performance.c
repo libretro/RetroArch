@@ -20,9 +20,6 @@
 #include "general.h"
 #include "compat/strl.h"
 
-#ifdef ANDROID
-#include "performance/performance_android.h"
-#endif
 
 #if !defined(_WIN32) && !defined(RARCH_CONSOLE)
 #include <unistd.h>
@@ -102,6 +99,10 @@ static int clock_gettime(int clk_ik, struct timespec *t)
 
 #include <string.h>
 
+#if defined(__linux__)
+#include "frontend/drivers/platform_linux.h"
+#endif
+
 const struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
 const struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
 unsigned perf_ptr_rarch;
@@ -169,13 +170,13 @@ void retro_perf_log(void)
 }
 
 /**
- * rarch_get_perf_counter:
+ * retro_get_perf_counter:
  *
  * Gets performance counter.
  *
  * Returns: performance counter.
  **/
-retro_perf_tick_t rarch_get_perf_counter(void)
+retro_perf_tick_t retro_get_perf_counter(void)
 {
    retro_perf_tick_t time_ticks = 0;
 #if defined(__linux__) || defined(__QNX__) || defined(__MACH__)
@@ -228,13 +229,13 @@ retro_perf_tick_t rarch_get_perf_counter(void)
 }
 
 /**
- * rarch_get_time_usec:
+ * retro_get_time_usec:
  *
  * Gets time in microseconds.
  *
  * Returns: time in microseconds.
  **/
-retro_time_t rarch_get_time_usec(void)
+retro_time_t retro_get_time_usec(void)
 {
 #if defined(_WIN32)
    static LARGE_INTEGER freq;
@@ -267,7 +268,7 @@ retro_time_t rarch_get_time_usec(void)
 #elif defined(VITA)
    return sceKernelGetProcessTimeWide();
 #else
-#error "Your platform does not have a timer function implemented in rarch_get_time_usec(). Cannot continue."
+#error "Your platform does not have a timer function implemented in retro_get_time_usec(). Cannot continue."
 #endif
 }
 
@@ -330,7 +331,7 @@ static uint64_t xgetbv_x86(uint32_t idx)
 }
 #endif
 
-#if defined(__ARM_NEON__)
+#if defined(__ARM_NEON__)  
 static void arm_enable_runfast_mode(void)
 {
    /* RunFast mode. Enables flush-to-zero and some
@@ -350,21 +351,19 @@ static void arm_enable_runfast_mode(void)
 #endif
 
 /**
- * rarch_get_cpu_cores:
+ * retro_get_cpu_cores:
  *
  * Gets the amount of available CPU cores.
  *
  * Returns: amount of CPU cores available.
  **/
-unsigned rarch_get_cpu_cores(void)
+unsigned retro_get_cpu_cores(void)
 {
 #if defined(_WIN32) && !defined(_XBOX)
    /* Win32 */
    SYSTEM_INFO sysinfo;
    GetSystemInfo(&sysinfo);
    return sysinfo.dwNumberOfProcessors;
-#elif defined(ANDROID)
-   return android_getCpuCount();
 #elif defined(GEKKO)
    return 1;
 #elif defined(PSP)
@@ -397,6 +396,8 @@ unsigned rarch_get_cpu_cores(void)
          num_cpu = 1;
    }
    return num_cpu;
+#elif defined(__linux__)
+   return linux_get_cpu_count();
 #elif defined(_XBOX360)
    return 3;
 #else
@@ -406,13 +407,13 @@ unsigned rarch_get_cpu_cores(void)
 }
 
 /**
- * rarch_get_cpu_features:
+ * retro_get_cpu_features:
  *
  * Gets CPU features..
  *
  * Returns: bitmask of all CPU features available.
  **/
-uint64_t rarch_get_cpu_features(void)
+uint64_t retro_get_cpu_features(void)
 {
    int flags[4];
    int vendor_shuffle[3];
@@ -504,17 +505,17 @@ uint64_t rarch_get_cpu_features(void)
          cpu |= RETRO_SIMD_MMXEXT;
    }
 
-#elif defined(ANDROID) && defined(ANDROID_ARM)
-   cpu_flags = android_getCpuFeatures();
+#elif defined(__linux__)
+   cpu_flags = linux_get_cpu_features();
 
 #ifdef __ARM_NEON__
-   if (cpu_flags & ANDROID_CPU_ARM_FEATURE_NEON)
+   if (cpu_flags & CPU_ARM_FEATURE_NEON)
    {
       cpu |= RETRO_SIMD_NEON;
       arm_enable_runfast_mode();
    }
 #endif
-   if (cpu_flags & ANDROID_CPU_ARM_FEATURE_VFPv3)
+   if (cpu_flags & CPU_ARM_FEATURE_VFPv3)
       cpu |= RETRO_SIMD_VFPV3;
 
 #elif defined(__ARM_NEON__)
@@ -554,21 +555,31 @@ uint64_t rarch_get_cpu_features(void)
    return cpu;
 }
 
-void rarch_perf_start(struct retro_perf_counter *perf)
+int rarch_perf_init(struct retro_perf_counter *perf, const char *name)
+{
+   perf->ident = name;
+
+   if (!perf->registered)
+      rarch_perf_register(perf);
+
+   return 0;
+}
+
+void retro_perf_start(struct retro_perf_counter *perf)
 {
    global_t *global = global_get_ptr();
    if (!global->perfcnt_enable || !perf)
       return;
 
    perf->call_cnt++;
-   perf->start = rarch_get_perf_counter();
+   perf->start = retro_get_perf_counter();
 }
 
-void rarch_perf_stop(struct retro_perf_counter *perf)
+void retro_perf_stop(struct retro_perf_counter *perf)
 {
    global_t *global = global_get_ptr();
    if (!global->perfcnt_enable || !perf)
       return;
 
-   perf->total += rarch_get_perf_counter() - perf->start;
+   perf->total += retro_get_perf_counter() - perf->start;
 }

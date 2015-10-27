@@ -30,6 +30,7 @@
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
+#include <retro_file.h>
 #include <string/string_list.h>
 #ifdef HAVE_COMPRESSION
 #include <file/file_extract.h>
@@ -200,17 +201,19 @@ static int read_7zip_file(
    SRes res;
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
-   uint16_t *temp  = NULL;
-   size_t tempSize = 0;
-   long outsize    = -1;
-   bool file_found = false;
+   uint8_t *outBuffer   = 0;
+   size_t outBufferSize = 0;
+   uint16_t *temp       = NULL;
+   size_t tempSize      = 0;
+   long outsize         = -1;
+   bool file_found      = false;
 
    /*These are the allocation routines.
     * Currently using the non-standard 7zip choices. */
-   allocImp.Alloc     = SzAlloc;
-   allocImp.Free      = SzFree;
-   allocTempImp.Alloc = SzAllocTemp;
-   allocTempImp.Free  = SzFreeTemp;
+   allocImp.Alloc       = SzAlloc;
+   allocImp.Free        = SzFree;
+   allocTempImp.Alloc   = SzAllocTemp;
+   allocTempImp.Free    = SzFreeTemp;
 
    if (InFile_Open(&archiveStream.file, archive_path))
    {
@@ -235,8 +238,6 @@ static int read_7zip_file(
    {
       uint32_t i;
       uint32_t blockIndex  = 0xFFFFFFFF;
-      uint8_t *outBuffer   = 0;
-      size_t outBufferSize = 0;
 
       for (i = 0; i < db.db.NumFiles; i++)
       {
@@ -246,14 +247,13 @@ static int read_7zip_file(
          size_t outSizeProcessed = 0;
          const CSzFileItem    *f = db.db.Files + i;
 
+         /* We skip over everything which is not a directory. 
+          * FIXME: Why continue then if f->IsDir is true?*/
          if (f->IsDir)
-         {
-            /* We skip over everything which is not a directory. 
-             * FIXME: Why continue then if f->IsDir is true?*/
             continue;
-         }
 
          len = SzArEx_GetFileNameUtf16(&db, i, NULL);
+
          if (len > tempSize)
          {
             free(temp);
@@ -265,6 +265,7 @@ static int read_7zip_file(
                break;
             }
          }
+
          SzArEx_GetFileNameUtf16(&db, i, temp);
          res = ConvertUtf16toCharString(temp,infile);
 
@@ -277,26 +278,25 @@ static int read_7zip_file(
             res = SzArEx_Extract(&db, &lookStream.s, i,&blockIndex,
                   &outBuffer, &outBufferSize,&offset, &outSizeProcessed,
                   &allocImp, &allocTempImp);
+
             if (res != SZ_OK)
-            {
                break; /* This goes to the error section. */
-            }
+
             outsize = outSizeProcessed;
+            
             if (optional_outfile != NULL)
             {
-               FILE* outsink = fopen(optional_outfile,"wb");
-               if (outsink == NULL)
+               const void *ptr = (const void*)(outBuffer + offset);
+
+               if (!retro_write_file(optional_outfile, ptr, outsize))
                {
                   RARCH_ERR("Could not open outfilepath %s.\n",
                         optional_outfile);
-                  IAlloc_Free(&allocImp, outBuffer);
-                  SzArEx_Free(&db, &allocImp);
-                  free(temp);
-                  File_Close(&archiveStream.file);
-                  return -1;
+                  res        = SZ_OK;
+                  file_found = true;
+                  outsize    = -1;
+                  break;
                }
-               fwrite(outBuffer+offset,1,outsize,outsink);
-               fclose(outsink);
             }
             else
             {
@@ -309,14 +309,14 @@ static int read_7zip_file(
                ((char*)(*buf))[outsize] = '\0';
                memcpy(*buf,outBuffer+offset,outsize);
             }
-            IAlloc_Free(&allocImp, outBuffer);
             break;
          }
       }
    }
+
+   IAlloc_Free(&allocImp, outBuffer);
    SzArEx_Free(&db, &allocImp);
    free(temp);
-
    File_Close(&archiveStream.file);
 
    if (res == SZ_OK && file_found == true)
@@ -559,31 +559,27 @@ static int read_zip_file(const char *archive_path,
          else
          {
             char read_buffer[RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX] = {0};
-            FILE* outsink = fopen(optional_outfile,"wb");
+            RFILE* outsink = retro_fopen(optional_outfile, RFILE_MODE_WRITE, -1);
 
-            if (outsink == NULL)
+            if (!outsink)
                goto close;
 
             bytes_read = 0;
 
             do
             {
-               ssize_t fwrite_bytes;
-
                bytes_read = unzReadCurrentFile(zipfile, read_buffer,
                      RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX );
-               fwrite_bytes = fwrite(read_buffer, 1, bytes_read,outsink);
 
-               if (fwrite_bytes == bytes_read)
+               if (retro_fwrite(outsink, read_buffer, bytes_read) == bytes_read)
                   continue;
 
-               /* couldn't write all bytes */
-               RARCH_ERR("Error writing to %s.\n",optional_outfile);
-               fclose(outsink);
+               RARCH_ERR("Error writing to %s.\n", optional_outfile);
+               retro_fclose(outsink);
                goto close;
             } while(bytes_read > 0);
 
-            fclose(outsink);
+            retro_fclose(outsink);
          }
          finished_reading = true;
       }
@@ -618,90 +614,6 @@ error:
 #endif
 
 #endif
-
-/**
- * write_file:
- * @path             : path to file.
- * @data             : contents to write to the file.
- * @size             : size of the contents.
- *
- * Writes data to a file.
- *
- * Returns: true (1) on success, false (0) otherwise.
- */
-bool write_file(const char *path, const void *data, ssize_t size)
-{
-   ssize_t ret   = 0;
-   FILE *file   = fopen(path, "wb");
-   if (!file)
-      return false;
-
-   ret = fwrite(data, 1, size, file);
-   fclose(file);
-   return (ret == size);
-}
-
-/**
- * read_generic_file:
- * @path             : path to file.
- * @buf              : buffer to allocate and read the contents of the
- *                     file into. Needs to be freed manually.
- *
- * Read the contents of a file into @buf.
- *
- * Returns: number of items read, -1 on error.
- */
-static int read_generic_file(const char *path, void **buf, ssize_t *len)
-{
-   size_t bytes_read        = 0;
-   size_t content_buf_size  = 0;
-   void *content_buf        = NULL;
-   FILE *file               = fopen(path, "rb");
-
-   if (!file)
-      goto error;
-
-   if (fseek(file, 0, SEEK_END) != 0)
-      goto error;
-
-   content_buf_size = ftell(file);
-   if (content_buf_size < 0)
-      goto error;
-
-   rewind(file);
-
-   content_buf = malloc(content_buf_size + 1);
-
-   if (!content_buf)
-      goto error;
-
-   if ((bytes_read = fread(content_buf, 1, content_buf_size, file)) < content_buf_size)
-      RARCH_WARN("Didn't read whole file.\n");
-
-   *buf    = content_buf;
-
-   /* Allow for easy reading of strings to be safe.
-    * Will only work with sane character formatting (Unix). */
-   ((char*)content_buf)[content_buf_size] = '\0';
-
-   if (fclose(file) != 0)
-      RARCH_WARN("Failed to close file stream.\n");
-
-   if (len)
-      *len = bytes_read;
-
-   return 1;
-
-error:
-   if (file)
-      fclose(file);
-   if (content_buf)
-      free(content_buf);
-   if (len)
-      *len = -1;
-   *buf = NULL;
-   return 0;
-}
 
 #ifdef HAVE_COMPRESSION
 /* Generic compressed file loader.
@@ -783,7 +695,7 @@ int read_compressed_file(const char * path, void **buf,
  * @length           : Number of items read, -1 on error.
  *
  * Read the contents of a file into @buf. Will call read_compressed_file
- * if path contains a compressed file, otherwise will call read_generic_file.
+ * if path contains a compressed file, otherwise will call retro_read_file().
  *
  * Returns: 1 if file read, 0 on error.
  */
@@ -796,7 +708,7 @@ int read_file(const char *path, void **buf, ssize_t *length)
          return 1;
    }
 #endif
-   return read_generic_file(path, buf, length);
+   return retro_read_file(path, buf, length);
 }
 
 struct string_list *compressed_file_list_new(const char *path,

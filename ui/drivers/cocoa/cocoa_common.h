@@ -19,8 +19,6 @@
 
 #include <Foundation/Foundation.h>
 
-#include "../../core_info.h"
-#include "../../playlist.h"
 #include "../../menu/menu_setting.h"
 #include "../../menu/menu.h"
 
@@ -43,6 +41,8 @@
 @interface RAMenuBase : UITableViewController
 @property (nonatomic) NSMutableArray* sections;
 @property (nonatomic) BOOL hidesHeaders;
+@property (nonatomic) RAMenuBase* last_menu;
+@property (nonatomic) UILabel *osdmessage;
 
 - (id)initWithStyle:(UITableViewStyle)style;
 - (id)itemForIndexPath:(NSIndexPath*)indexPath;
@@ -66,6 +66,7 @@ extern apple_frontend_settings_t apple_frontend_settings;
 @property (nonatomic) UIWindow* window;
 @property (nonatomic) NSString* documentsDirectory;
 @property (nonatomic) RAMenuBase* mainmenu;
+@property (nonatomic) int menu_count;
                       
 + (RetroArch_iOS*)get;
 
@@ -73,6 +74,7 @@ extern apple_frontend_settings_t apple_frontend_settings;
 - (void)toggleUI;
 
 - (void)refreshSystemConfig;
+- (void)mainMenuPushPop: (bool)pushp;
 - (void)mainMenuRefresh;
 @end
 

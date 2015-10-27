@@ -32,6 +32,7 @@
 #define CB_DB_SCAN_FOLDER  0xde2bef8eU
 
 #define HASH_EXTENSION_ZIP 0x0b88c7d8U
+#define HASH_EXTENSION_CUE 0x0b886782U
 
 #ifndef COLLECTION_SIZE
 #define COLLECTION_SIZE 99999
@@ -46,6 +47,7 @@ typedef struct database_state_handle
    uint32_t crc;
    uint8_t *buf;
    char zip_name[PATH_MAX_LENGTH];
+   char serial[4096];
 } database_state_handle_t;
 
 typedef struct db_handle
@@ -119,6 +121,38 @@ static int database_info_iterate_start
    return 0;
 }
 
+static int cue_get_serial(database_state_handle_t *db_state,
+      database_info_handle_t *db, const char *name, char* serial)
+{
+   int rv;
+   char track_path[PATH_MAX_LENGTH];
+   int32_t offset = 0;
+   const char* system_name = NULL;
+
+   rv = find_first_data_track(name, &offset, track_path, PATH_MAX_LENGTH);
+   if (rv < 0)
+   {
+      RARCH_LOG("Could not find valid data track: %s\n", strerror(-rv));
+      return rv;
+   }
+
+   RARCH_LOG("Reading 1st data track...\n");
+
+   if ((rv = detect_system(track_path, offset, &system_name)) < 0)
+      return rv;
+
+   RARCH_LOG("Detected %s media\n", system_name);
+
+   if (strcmp(system_name, "ps1") == 0)
+   {
+      if (detect_ps1_game(track_path, serial) == 0)
+         return 0;
+      RARCH_LOG("Found disk label '%s'\n", serial);
+   }
+
+   return 0;
+}
+
 static int database_info_iterate_playlist(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
@@ -141,6 +175,10 @@ static int database_info_iterate_playlist(
 
          return 1;
 #endif
+      case HASH_EXTENSION_CUE:
+         cue_get_serial(db_state, db, name, db_state->serial);
+         db->type = DATABASE_TYPE_SERIAL_LOOKUP;
+         return 1;
       default:
          {
             ssize_t ret;
@@ -337,6 +375,53 @@ static int database_info_iterate_playlist_zip(
    return 1;
 }
 
+static int database_info_iterate_serial_lookup(
+      database_state_handle_t *db_state,
+      database_info_handle_t *db, const char *name)
+{
+   if (!db_state->list || (unsigned)db_state->list_index == (unsigned)db_state->list->size)
+      return database_info_list_iterate_end_no_match(db_state);
+
+   if (db_state->entry_index == 0)
+   {
+      char query[50] = {0};
+      snprintf(query, sizeof(query), "{'serial': '%s'}", db_state->serial);
+
+      database_info_list_iterate_new(db_state, query);
+   }
+
+   if (db_state->info)
+   {
+      database_info_t *db_info_entry = &db_state->info->list[db_state->entry_index];
+
+      if (db_info_entry && db_info_entry->serial)
+      {
+#if 1
+         RARCH_LOG("serial: %s , entry serial: %s (%s).\n",
+                   db_state->serial, db_info_entry->serial, db_info_entry->name);
+#endif
+         if (db_state->serial == db_info_entry->serial)
+            database_info_list_iterate_found_match(db_state, db, NULL);
+      }
+   }
+
+   db_state->entry_index++;
+
+   if (db_state->entry_index >= db_state->info->count)
+      return database_info_list_iterate_next(db_state);
+
+   if (db_state->list_index < db_state->list->size)
+   {
+      /* Didn't reach the end of the database list yet,
+       * continue iterating. */
+      return 1;
+   }
+
+   if (db_state->info)
+      database_info_list_free(db_state->info);
+   return 0;
+}
+
 static int database_info_iterate(database_state_handle_t *db_state, database_info_handle_t *db)
 {
    const char *name = db ? db->list->elems[db->list_ptr].data : NULL;
@@ -355,6 +440,8 @@ static int database_info_iterate(database_state_handle_t *db_state, database_inf
          return database_info_iterate_playlist(db_state, db, name);
       case DATABASE_TYPE_ITERATE_ZIP:
          return database_info_iterate_playlist_zip(db_state, db, name);
+      case DATABASE_TYPE_SERIAL_LOOKUP:
+         return database_info_iterate_serial_lookup(db_state, db, name);
       case DATABASE_TYPE_CRC_LOOKUP:
          return database_info_iterate_crc_lookup(db_state, db, NULL);
    }
