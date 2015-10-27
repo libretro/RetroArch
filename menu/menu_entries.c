@@ -613,6 +613,33 @@ void menu_entries_push(file_list_t *list, const char *path, const char *label,
    menu_cbs_init(list, cbs, path, label, type, idx);
 }
 
+void menu_entries_push_menu_stack(file_list_t *list, const char *path, const char *label,
+      unsigned type, size_t directory_ptr, size_t entry_idx)
+{
+   file_list_t **menu_stack       = NULL;
+   menu_list_t *menu_list         = menu_list_get_ptr();
+
+   if (!menu_list)
+      return;
+
+   menu_stack = (file_list_t**)realloc(menu_stack, (menu_list->menu_stack_size + 1) * sizeof(file_list_t));
+
+   if (!menu_stack)
+      goto error;
+
+   menu_list->menu_stack = menu_stack;
+   menu_list->menu_stack_size++;
+   menu_list->menu_stack[menu_list->menu_stack_size] = (file_list_t*)calloc(1, sizeof(*menu_list->menu_stack[menu_list->menu_stack_size]));
+
+   menu_entries_push(menu_list->menu_stack[menu_list->menu_stack_size], path, label, type, directory_ptr, entry_idx);
+
+   return;
+
+error:
+   if (list)
+      free(menu_stack);
+}
+
 menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
 {
    menu_list_t *menu_list         = menu_list_get_ptr();

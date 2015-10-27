@@ -168,6 +168,9 @@ void menu_entries_clear(file_list_t *list);
 void menu_entries_set_alt_at_offset(file_list_t *list, size_t idx,
       const char *alt);
 
+void menu_entries_push_menu_stack(file_list_t *list, const char *path, const char *label,
+      unsigned type, size_t directory_ptr, size_t entry_idx);
+
 void menu_entries_refresh(file_list_t *list);
 
 rarch_setting_t *menu_entries_get_setting(uint32_t i);
