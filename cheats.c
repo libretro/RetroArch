@@ -23,13 +23,17 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 
-#include "cheats.h"
+#include "cheevos.h"
 #include "general.h"
 #include "runloop.h"
 #include "dynamic.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
+#ifdef HAVE_CHEEVOS
+#include "cheats.h"
 #endif
 
 struct item_cheat
@@ -75,6 +79,11 @@ void cheat_manager_apply_cheats(cheat_manager_t *handle)
       if (handle->cheats[i].state)
          core.retro_cheat_set(idx++, true, handle->cheats[i].code);
    }
+   
+#ifdef HAVE_CHEEVOS
+   cheevos_globals.cheats_are_enabled = idx != 0;
+   cheevos_globals.cheats_were_enabled |= cheevos_globals.cheats_are_enabled;
+#endif
 }
 
 void cheat_manager_set_code(cheat_manager_t *handle, unsigned i, const char *str)

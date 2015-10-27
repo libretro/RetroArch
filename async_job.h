@@ -13,21 +13,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_CHEEVOS_H
-#define __RARCH_CHEEVOS_H
+#ifndef __RARCH_ASYNC_JOB_H
+#define __RARCH_ASYNC_JOB_H
 
-typedef struct
-{
-   int cheats_are_enabled;
-   int cheats_were_enabled;
-} cheevos_globals_t;
+typedef struct async_job async_job_t;
+typedef void (*async_task_t)(void *payload);
 
-extern cheevos_globals_t cheevos_globals;
+async_job_t *async_job_new(void);
 
-int cheevos_load(const void *data, size_t size);
+void async_job_free(async_job_t *ajob);
 
-void cheevos_test(void);
+int async_job_add(async_job_t *ajob, async_task_t task, void *payload);
 
-void cheevos_unload(void);
-
-#endif /* __RARCH_CHEEVOS_H */
+#endif /* __RARCH_ASYNC_JOB_H */
