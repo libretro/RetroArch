@@ -42,8 +42,8 @@ ifeq ($(GRIFFIN_BUILD), 1)
 else
 	OBJS += libretro-common/file/file_extract.o
 	OBJS += performance.o
-   OBJS += libretro-common/compat/compat_getopt.o
-   OBJS += libretro-common/compat/compat_strcasestr.o
+	OBJS += libretro-common/compat/compat_getopt.o
+	OBJS += libretro-common/compat/compat_strcasestr.o
 	OBJS += libretro-common/compat/compat_strl.o
 	OBJS += libretro-common/compat/compat_fnmatch.o
 	OBJS += libretro-common/memmap/memalign.o
@@ -137,7 +137,7 @@ else
 	OBJS += libretro-common/file/retro_file.o
 	OBJS += libretro-common/file/retro_stat.o
 	OBJS += dir_list_special.o
-   OBJS += string_list_special.o
+	OBJS += string_list_special.o
 	OBJS += libretro-common/string/string_list.o
 	OBJS += libretro-common/string/stdstring.o
 	OBJS += file_ops.o
