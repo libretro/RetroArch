@@ -60,11 +60,17 @@ static void menu_list_free(menu_list_t *menu_list)
 
    for (i = 0; i < menu_list->menu_stack_size; i++)
    {
+      if (!menu_list->menu_stack[i])
+         continue;
+
       menu_list_free_list(menu_list->menu_stack[i]);
       menu_list->menu_stack[i]    = NULL;
    }
    for (i = 0; i < menu_list->selection_buf_size; i++)
    {
+      if (!menu_list->selection_buf[i])
+         continue;
+
       menu_list_free_list(menu_list->selection_buf[i]);
       menu_list->selection_buf[i] = NULL;
    }
@@ -613,14 +619,13 @@ void menu_entries_push(file_list_t *list, const char *path, const char *label,
    menu_cbs_init(list, cbs, path, label, type, idx);
 }
 
-void menu_entries_push_selection_buf(file_list_t *list, const char *path, const char *label,
-      unsigned type, size_t directory_ptr, size_t entry_idx)
+void menu_entries_increment_selection_buf(void)
 {
    file_list_t **selection_buf    = NULL;
    menu_list_t *menu_list         = menu_list_get_ptr();
 
    if (!menu_list)
-      return;
+      return false;
 
    selection_buf = (file_list_t**)realloc(selection_buf, (menu_list->selection_buf_size + 1) * sizeof(file_list_t));
 
@@ -631,23 +636,21 @@ void menu_entries_push_selection_buf(file_list_t *list, const char *path, const 
    menu_list->selection_buf_size = menu_list->selection_buf_size + 1;
    menu_list->selection_buf[menu_list->selection_buf_size] = (file_list_t*)calloc(1, sizeof(*menu_list->selection_buf[menu_list->selection_buf_size]));
 
-   menu_entries_push(menu_list->selection_buf[menu_list->selection_buf_size], path, label, type, directory_ptr, entry_idx);
-
-   return;
+   return true;
 
 error:
-   if (list)
+   if (selection_buf)
       free(selection_buf);
+   return false;
 }
 
-void menu_entries_push_menu_stack(file_list_t *list, const char *path, const char *label,
-      unsigned type, size_t directory_ptr, size_t entry_idx)
+bool menu_entries_increment_menu_stack(void)
 {
    file_list_t **menu_stack       = NULL;
    menu_list_t *menu_list         = menu_list_get_ptr();
 
    if (!menu_list)
-      return;
+      return false;
 
    menu_stack = (file_list_t**)realloc(menu_stack, (menu_list->menu_stack_size + 1) * sizeof(file_list_t));
 
@@ -658,13 +661,12 @@ void menu_entries_push_menu_stack(file_list_t *list, const char *path, const cha
    menu_list->menu_stack_size = menu_list->menu_stack_size + 1;
    menu_list->menu_stack[menu_list->menu_stack_size] = (file_list_t*)calloc(1, sizeof(*menu_list->menu_stack[menu_list->menu_stack_size]));
 
-   menu_entries_push(menu_list->menu_stack[menu_list->menu_stack_size], path, label, type, directory_ptr, entry_idx);
-
-   return;
+   return true;
 
 error:
-   if (list)
+   if (menu_stack)
       free(menu_stack);
+   return false;
 }
 
 menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
