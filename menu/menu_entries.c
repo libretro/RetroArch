@@ -633,8 +633,8 @@ bool menu_entries_increment_selection_buf(void)
       goto error;
 
    menu_list->selection_buf = selection_buf;
-   menu_list->selection_buf_size = menu_list->selection_buf_size + 1;
    menu_list->selection_buf[menu_list->selection_buf_size] = (file_list_t*)calloc(1, sizeof(*menu_list->selection_buf[menu_list->selection_buf_size]));
+   menu_list->selection_buf_size = menu_list->selection_buf_size + 1;
 
    return true;
 
@@ -658,8 +658,8 @@ bool menu_entries_increment_menu_stack(void)
       goto error;
 
    menu_list->menu_stack = menu_stack;
-   menu_list->menu_stack_size = menu_list->menu_stack_size + 1;
    menu_list->menu_stack[menu_list->menu_stack_size] = (file_list_t*)calloc(1, sizeof(*menu_list->menu_stack[menu_list->menu_stack_size]));
+   menu_list->menu_stack_size = menu_list->menu_stack_size + 1;
 
    return true;
 
