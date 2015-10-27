@@ -105,8 +105,10 @@ void rarch_main_data_free(void)
 static void data_runloop_iterate(bool is_thread)
 {
    rarch_main_data_nbio_iterate       (is_thread);
+#ifdef HAVE_MENU
 #ifdef HAVE_RPNG
    rarch_main_data_nbio_image_iterate (is_thread);
+#endif
 #endif
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_iterate       (is_thread);
@@ -226,7 +228,7 @@ void rarch_main_data_iterate(void)
    
    (void)settings;
 #ifdef HAVE_THREADS
-   if (settings->menu.threaded_data_runloop_enable)
+   if (settings->threaded_data_runloop_enable)
    {
       switch (g_data_runloop.thread_code)
       {
@@ -244,7 +246,9 @@ void rarch_main_data_iterate(void)
    rarch_main_data_overlay_image_upload_iterate(false);
 #endif
 #ifdef HAVE_RPNG
+#ifdef HAVE_MENU
    rarch_main_data_nbio_image_upload_iterate(false);
+#endif
 #endif
 #ifdef HAVE_OVERLAY
    rarch_main_data_overlay_iterate    (false);
@@ -261,7 +265,7 @@ void rarch_main_data_iterate(void)
    }
 
 #ifdef HAVE_THREADS
-   if (settings->menu.threaded_data_runloop_enable && g_data_runloop.alive)
+   if (settings->threaded_data_runloop_enable && g_data_runloop.alive)
       return;
 #endif
 
@@ -355,7 +359,7 @@ void rarch_main_data_msg_queue_push(unsigned type,
    msg_queue_push(queue, new_msg, prio, duration);
 
 #ifdef HAVE_THREADS
-   if (settings->menu.threaded_data_runloop_enable)
+   if (settings->threaded_data_runloop_enable)
    {
       if (!g_data_runloop.thread_inited)
          rarch_main_data_thread_init();

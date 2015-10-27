@@ -487,7 +487,7 @@ static void config_set_defaults(void)
       settings->video.threaded           = g_defaults.settings.video_threaded_enable;
 
 #ifdef HAVE_THREADS
-   settings->menu.threaded_data_runloop_enable = threaded_data_runloop_enable;
+   settings->threaded_data_runloop_enable = threaded_data_runloop_enable;
 #endif
    settings->video.shared_context              = video_shared_context;
    settings->video.force_srgb_disable          = false;
@@ -1255,7 +1255,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 
 #ifdef HAVE_MENU
 #ifdef HAVE_THREADS
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.threaded_data_runloop_enable,
+   CONFIG_GET_BOOL_BASE(conf, settings, threaded_data_runloop_enable,
          "threaded_data_runloop_enable");
 #endif
 
@@ -2506,7 +2506,7 @@ bool config_save_file(const char *path)
 #ifdef HAVE_MENU
 #ifdef HAVE_THREADS
    config_set_bool(conf,"threaded_data_runloop_enable",
-         settings->menu.threaded_data_runloop_enable);
+         settings->threaded_data_runloop_enable);
 #endif
 
    config_set_bool(conf, "dpi_override_enable", settings->menu.dpi.override_enable);

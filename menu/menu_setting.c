@@ -5363,7 +5363,7 @@ static bool setting_append_list_menu_options(
 
 #ifdef HAVE_THREADS
    CONFIG_BOOL(
-         settings->menu.threaded_data_runloop_enable,
+         settings->threaded_data_runloop_enable,
          menu_hash_to_str(MENU_LABEL_THREADED_DATA_RUNLOOP_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE),
          threaded_data_runloop_enable,

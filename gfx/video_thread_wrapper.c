@@ -963,7 +963,6 @@ static void thread_set_texture_enable(void *data, bool state, bool full_screen)
    thr->texture.full_screen = full_screen;
    slock_unlock(thr->frame.lock);
 }
-#endif
 
 static void thread_set_osd_msg(void *data, const char *msg,
       const struct font_params *params, void *font)
@@ -978,6 +977,7 @@ static void thread_set_osd_msg(void *data, const char *msg,
    if (thr->poke && thr->poke->set_osd_msg)
       thr->poke->set_osd_msg(thr->driver_data, msg, params, font);
 }
+#endif
 
 static void thread_apply_state_changes(void *data)
 {
@@ -1014,9 +1014,12 @@ static const video_poke_interface_t thread_poke = {
 #if defined(HAVE_MENU)
    thread_set_texture_frame,
    thread_set_texture_enable,
+   thread_set_osd_msg,
+#else
+   NULL,
+   NULL,
 #endif
 
-   thread_set_osd_msg,
    NULL,
    NULL,
 

@@ -320,6 +320,7 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
    return true;
 }
 
+#ifdef HAVE_MENU
 /**
  * menu_update_libretro_info:
  *
@@ -328,7 +329,10 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
 static void menu_update_libretro_info(void)
 {
    global_t *global               = global_get_ptr();
-   struct retro_system_info *info = global ? &global->menu.info : NULL;
+   struct retro_system_info *info = NULL;
+   
+   if (global)
+      info = &global->menu.info;
 
    if (!global || !info)
       return;
@@ -340,6 +344,7 @@ static void menu_update_libretro_info(void)
    event_command(EVENT_CMD_CORE_INFO_INIT);
    event_command(EVENT_CMD_LOAD_CORE_PERSIST);
 }
+#endif
 
 /**
  * init_drivers:

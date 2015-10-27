@@ -413,6 +413,7 @@ static int cb_nbio_default(void *data, size_t len)
 }
 
 #ifdef HAVE_RPNG
+#ifdef HAVE_MENU
 static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
 {
    void *ptr           = NULL;
@@ -476,6 +477,7 @@ static int cb_nbio_image_menu_boxart(void *data, size_t len)
 
    return cb_nbio_generic(nbio, &len);
 }
+#endif
 #endif
 
 static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)

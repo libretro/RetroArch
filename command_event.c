@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <ctype.h>
+
 #include <compat/strl.h>
 
 #include "command_event.h"
@@ -981,6 +983,7 @@ static void event_main_state(unsigned cmd)
    RARCH_LOG("%s\n", msg);
 }
 
+#ifdef HAVE_MENU
 static bool event_update_system_info(struct retro_system_info *_info,
       bool *load_no_content)
 {
@@ -1003,6 +1006,7 @@ static bool event_update_system_info(struct retro_system_info *_info,
 
    return true;
 }
+#endif
 
 /**
  * event_command:
@@ -1052,7 +1056,9 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_LOAD_CORE_DEINIT:
 #ifdef HAVE_DYNAMIC
+#ifdef HAVE_MENU
          libretro_free_system_info(&global->menu.info);
+#endif
 #endif
          break;
       case EVENT_CMD_LOAD_CORE_PERSIST:

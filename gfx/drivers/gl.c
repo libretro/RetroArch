@@ -3341,6 +3341,7 @@ static void gl_apply_state_changes(void *data)
       gl->should_resize = true;
 }
 
+#ifdef HAVE_MENU
 static void gl_set_osd_msg(void *data, const char *msg,
       const struct font_params *params, void *font)
 {
@@ -3368,6 +3369,7 @@ static struct video_shader *gl_get_current_shader(void *data)
    gl_t *gl = (gl_t*)data;
    return (gl && gl->shader) ? gl->shader->get_current_shader() : NULL;
 }
+#endif
 
 static void gl_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
@@ -3402,13 +3404,19 @@ static const video_poke_interface_t gl_poke_interface = {
 #if defined(HAVE_MENU)
    gl_set_texture_frame,
    gl_set_texture_enable,
-#endif
    gl_set_osd_msg,
-
    gl_show_mouse,
+#else
    NULL,
+   NULL,
+   NULL,
+   NULL,
+#endif
 
+   NULL,
+#ifdef HAVE_MENU
    gl_get_current_shader,
+#endif
 };
 
 static void gl_get_poke_interface(void *data,

@@ -746,6 +746,7 @@ FILE *retro_main_log_file(void)
    return global->log_file;
 }
 
+#ifdef HAVE_MENU
 static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
       driver_t *driver, settings_t *settings,
       retro_input_t input, retro_input_t old_input,
@@ -776,6 +777,7 @@ static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
    driver->flushing_input = true;
    return true;
 }
+#endif
 
 static void rarch_main_cmd_get_state(driver_t *driver,
       settings_t *settings, event_cmd_state_t *cmd,
@@ -946,7 +948,11 @@ int rarch_main_iterate(unsigned *sleep_ms)
    if (cmd.overlay_next_pressed)
       event_command(EVENT_CMD_OVERLAY_NEXT);
 
-   if (!main_is_paused || menu_driver_alive())
+   if (!main_is_paused
+#ifdef HAVE_MENU
+         || menu_driver_alive()
+#endif
+         )
    {
       if (cmd.fullscreen_toggle)
          event_command(EVENT_CMD_FULLSCREEN_TOGGLE);

@@ -151,14 +151,15 @@ typedef struct settings
       } dpi;
 
       bool show_advanced_settings;
-#ifdef HAVE_THREADS
-      bool threaded_data_runloop_enable;
-#endif
 
       unsigned entry_normal_color;
       unsigned entry_hover_color;
       unsigned title_color;
    } menu;
+#endif
+
+#ifdef HAVE_THREADS
+   bool threaded_data_runloop_enable;
 #endif
 
    struct

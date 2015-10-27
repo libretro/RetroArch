@@ -50,6 +50,8 @@
 
 #include "git_version.h"
 
+#include "retroarch.h"
+
 #ifdef HAVE_MENU
 #include "menu/menu.h"
 #include "menu/menu_hash.h"
@@ -337,8 +339,11 @@ void set_paths_redirect(const char *path)
                global->dir.savestate,
                sizeof(current_savestate_dir));
 
-   if(global_library_name_hash != 0 &&
-         (global_library_name_hash != MENU_VALUE_NO_CORE))
+   if(global_library_name_hash != 0
+#ifdef HAVE_MENU
+         && (global_library_name_hash != MENU_VALUE_NO_CORE)
+#endif
+         )
    {
       /* per-core saves: append the library_name to the save location */
       if (settings->sort_savefiles_enable && global->dir.savefile[0] != '\0')
@@ -1491,8 +1496,10 @@ void rarch_playlist_load_content(void *data, unsigned idx)
    char *path_tolower           = NULL;
    RFILE *fp                    = NULL;
    content_playlist_t *playlist = (content_playlist_t*)data;
-   menu_handle_t *menu          = menu_driver_get_ptr();
    settings_t  *settings        = config_get_ptr();
+#ifdef HAVE_MENU
+   menu_handle_t *menu          = menu_driver_get_ptr();
+#endif
 
    if (!playlist)
       return;
@@ -1529,8 +1536,10 @@ void rarch_playlist_load_content(void *data, unsigned idx)
 
    strlcpy(settings->libretro, core_path, sizeof(settings->libretro));
 
+#ifdef HAVE_MENU
    if (menu)
       menu->load_no_content = (path) ? false : true;
+#endif
 
    rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)path);
 
@@ -1562,7 +1571,9 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    size_t supported                    = 0;
    settings_t *settings                = config_get_ptr();
    global_t   *global                  = global_get_ptr();
+#ifdef HAVE_MENU
    uint32_t menu_label_hash            = msg_hash_calculate(menu_label);
+#endif
 
    fill_pathname_join(s, dir, path, len);
 
@@ -1580,6 +1591,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
       core_info_list_get_supported_cores(core_info, s, &info,
             &supported);
 
+#ifdef HAVE_MENU
    if (menu_label_hash == MENU_LABEL_LOAD_CONTENT)
    {
       info = (const core_info_t*)&global->core_info.current;
@@ -1591,6 +1603,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
       }
    }
    else
+#endif
       strlcpy(new_core_path, info->path, sizeof(new_core_path));
 
    /* There are multiple deferred cores and a
