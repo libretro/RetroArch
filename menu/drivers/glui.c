@@ -37,6 +37,17 @@
 
 #include "../../runloop_data.h"
 
+enum
+{
+   GLUI_TEXTURE_POINTER = 0,
+   GLUI_TEXTURE_LAST
+};
+
+struct glui_texture_item
+{
+   GRuint id;
+};
+
 typedef struct glui_handle
 {
    unsigned line_height;
@@ -44,13 +55,15 @@ typedef struct glui_handle
    unsigned glyph_width;
    char box_message[PATH_MAX_LENGTH];
 
-   struct
+   struct 
    {
       struct
       {
-         GRuint id;
-         char path[PATH_MAX_LENGTH];
-      } bg;
+         float alpha;
+      } arrow;
+
+      struct glui_texture_item bg;
+      struct glui_texture_item list[GLUI_TEXTURE_LAST];
       GRuint white;
    } textures;
 
@@ -70,6 +83,35 @@ static const GRfloat glui_tex_coords[] = {
    0, 0,
    1, 0
 };
+
+static void glui_context_reset_textures(glui_handle_t *glui, const char *iconpath)
+{
+   unsigned i;
+
+   for (i = 0; i < GLUI_TEXTURE_LAST; i++)
+   {
+      struct texture_image ti     = {0};
+      char path[PATH_MAX_LENGTH]  = {0};
+
+      switch(i)
+      {
+         case GLUI_TEXTURE_POINTER:
+            fill_pathname_join(path, iconpath, "pointer.png",   sizeof(path));
+            break;
+      }
+
+      if (path[0] == '\0' || !path_file_exists(path))
+         continue;
+
+      texture_image_load(&ti, path);
+
+      glui->textures.list[i].id   = video_texture_load(&ti,
+            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+
+      texture_image_free(&ti);
+   }
+}
+
 
 static void glui_blit_line(float x, float y, unsigned width, unsigned height,
       const char *message, uint32_t color, enum text_alignment text_align)
@@ -218,25 +260,6 @@ end:
    string_list_free(list);
 }
 
-static void glui_draw_cursor(glui_handle_t *glui,
-      float x, float y, unsigned width, unsigned height)
-{
-   unsigned new_mouse_ptr = 0;
-   menu_handle_t *menu                = menu_driver_get_ptr();
-   gl_t *gl                           = NULL;
-
-   gl = (gl_t*)video_driver_get_ptr(NULL);
-
-   if (!gl)
-      return;
-
-   new_mouse_ptr = 
-      (y - glui->line_height + menu->scroll_y - 16)
-      / glui->line_height;
-
-   menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &new_mouse_ptr);
-}
-
 static void glui_render(void)
 {
    float delta_time, dt;
@@ -285,7 +308,10 @@ static void glui_render(void)
       int16_t mouse_x          = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       int16_t mouse_y          = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-      glui_draw_cursor(glui, mouse_x, mouse_y, width, height);
+      unsigned new_pointer_val = 
+         (mouse_y - glui->line_height + menu->scroll_y - 16)
+         / glui->line_height;
+      menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &new_pointer_val);
    }
 
    if (menu->scroll_y < 0)
@@ -374,6 +400,31 @@ static void glui_render_menu_list(glui_handle_t *glui,
          entry_selected ? hover_color : normal_color, entry_selected,
          entry.path, entry.value);
    }
+}
+
+static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui,
+      GRfloat *color,
+      float x, float y, unsigned width, unsigned height)
+{
+   struct gfx_coords coords;
+   math_matrix_4x4 mymat, mrot;
+
+   matrix_4x4_rotate_z(&mrot, 0);
+   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+
+   coords.vertices      = 4;
+   coords.vertex        = glui_vertexes;
+   coords.tex_coord     = glui_tex_coords;
+   coords.lut_tex_coord = glui_tex_coords;
+   coords.color         = (const float*)color;
+
+   menu_display_draw_frame(
+         x - 32,
+         height - y - 32,
+         64,
+         64,
+         gl->shader, &coords, &mymat, true, glui->textures.list[GLUI_TEXTURE_POINTER].id, 4,
+         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 }
 
 static void glui_frame(void)
@@ -554,7 +605,8 @@ static void glui_frame(void)
    {
       int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-      glui_render_quad(gl, mouse_x - 5, mouse_y - 5, 10, 10, width, height, &white_bg[0]);
+
+      glui_draw_cursor(gl, glui, &white_bg[0], mouse_x, mouse_y, width, height);
    }
 
    gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
@@ -814,6 +866,7 @@ static void glui_populate_entries(const char *path,
 
 static void glui_context_reset(void)
 {
+   char iconpath[PATH_MAX_LENGTH]  = {0};
    glui_handle_t *glui   = NULL;
    menu_handle_t *menu   = menu_driver_get_ptr();
    settings_t *settings  = config_get_ptr();
@@ -822,10 +875,19 @@ static void glui_context_reset(void)
       return;
 
    glui      = (glui_handle_t*)menu->userdata;
+   if (!glui)
+      return;
+
+   fill_pathname_join(iconpath, settings->assets_directory,
+         "glui", sizeof(iconpath));
+   fill_pathname_slash(iconpath, sizeof(iconpath));
+
+   printf("%s\n", iconpath);
 
    glui_layout(menu, glui);
    glui_context_bg_destroy(glui);
    glui_allocate_white_texture(glui);
+   glui_context_reset_textures(glui, iconpath);
 
    rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE,
          settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
