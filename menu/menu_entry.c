@@ -89,7 +89,7 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
 void menu_entry_get_path(uint32_t i, char *s, size_t len)
 {
    menu_entry_t entry = {{0}};
-   menu_entry_get(&entry, i, NULL, true);
+   menu_entry_get(&entry, 0, i, NULL, true);
 
    strlcpy(s, entry.path, len);
 }
@@ -97,7 +97,7 @@ void menu_entry_get_path(uint32_t i, char *s, size_t len)
 void menu_entry_get_label(uint32_t i, char *s, size_t len)
 {
    menu_entry_t entry = {{0}};
-   menu_entry_get(&entry, i, NULL, true);
+   menu_entry_get(&entry, 0, i, NULL, true);
 
    strlcpy(s, entry.label, len);
 }
@@ -105,7 +105,7 @@ void menu_entry_get_label(uint32_t i, char *s, size_t len)
 unsigned menu_entry_get_spacing(uint32_t i)
 {
    menu_entry_t entry = {{0}};
-   menu_entry_get(&entry, i, NULL, true);
+   menu_entry_get(&entry, 0, i, NULL, true);
 
    return entry.spacing;
 }
@@ -113,7 +113,7 @@ unsigned menu_entry_get_spacing(uint32_t i)
 unsigned menu_entry_get_type_new(uint32_t i)
 {
    menu_entry_t entry = {{0}};
-   menu_entry_get(&entry, i, NULL, true);
+   menu_entry_get(&entry, 0, i, NULL, true);
 
    return entry.type;
 }
@@ -203,7 +203,7 @@ uint32_t menu_entry_pathdir_for_directory(uint32_t i)
 void menu_entry_pathdir_get_value(uint32_t i, char *s, size_t len)
 {
    menu_entry_t entry = {{0}};
-   menu_entry_get(&entry, i, NULL, true);
+   menu_entry_get(&entry, 0, i, NULL, true);
    strlcpy(s, entry.value, len);
 }
 
@@ -242,7 +242,7 @@ void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len)
 void menu_entry_reset(uint32_t i)
 {
    menu_entry_t entry = {{0}};
-   menu_entry_get(&entry, i, NULL, true);
+   menu_entry_get(&entry, 0, i, NULL, true);
 
    menu_entry_action(&entry, i, MENU_ACTION_START);
 }
@@ -250,7 +250,7 @@ void menu_entry_reset(uint32_t i)
 void menu_entry_get_value(uint32_t i, char *s, size_t len)
 {
    menu_entry_t entry = {{0}};
-   menu_entry_get(&entry, i, NULL, true);
+   menu_entry_get(&entry, 0, i, NULL, true);
    strlcpy(s, entry.value, len);
 }
 
@@ -282,13 +282,13 @@ float menu_entry_num_max(uint32_t i)
    return (float)max;
 }
 
-void menu_entry_get(menu_entry_t *entry, size_t i,
-      void *userdata, bool use_representation)
+void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
+      size_t i, void *userdata, bool use_representation)
 {
    const char *path           = NULL;
    const char *entry_label    = NULL;
    menu_file_list_cbs_t *cbs  = NULL;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(stack_idx);
    file_list_t *list          = selection_buf;
 
    if (userdata)
@@ -344,7 +344,7 @@ int menu_entry_select(uint32_t i)
     
    menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &i);
 
-   menu_entry_get(&entry, i, NULL, false);
+   menu_entry_get(&entry, 0, i, NULL, false);
 
    return menu_entry_action(&entry, i, MENU_ACTION_SELECT);
 }
@@ -352,7 +352,7 @@ int menu_entry_select(uint32_t i)
 int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
 {
    int ret                    = 0;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    menu_file_list_cbs_t *cbs  = menu_entries_get_actiondata_at_offset(selection_buf, i);
 
    switch (action)

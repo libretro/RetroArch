@@ -181,7 +181,7 @@ static void menu_input_key_end_line(void)
 static void menu_input_search_callback(void *userdata, const char *str)
 {
    size_t idx = 0;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    if (!selection_buf)
       return;
@@ -1186,7 +1186,7 @@ void menu_input_post_iterate(int *ret, unsigned action)
    menu_entry_t entry         = {{0}};
    menu_input_t *menu_input   = menu_input_get_ptr();
    settings_t *settings       = config_get_ptr();
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
@@ -1194,7 +1194,7 @@ void menu_input_post_iterate(int *ret, unsigned action)
    if (selection_buf)
       cbs = menu_entries_get_actiondata_at_offset(selection_buf, selection);
 
-   menu_entry_get(&entry, selection, NULL, false);
+   menu_entry_get(&entry, 0, selection, NULL, false);
 
    if (settings->menu.mouse.enable)
       *ret  = menu_input_mouse_post_iterate  (&menu_input->mouse.state, cbs, action);

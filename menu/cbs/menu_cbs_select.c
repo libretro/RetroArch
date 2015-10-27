@@ -33,9 +33,9 @@ static int action_select_default(const char *path, const char *label, unsigned t
    int ret                    = 0;
    enum menu_action action    = MENU_ACTION_NOOP;
    menu_file_list_cbs_t *cbs  = NULL;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-   menu_entry_get(&entry, idx, NULL, false);
+   menu_entry_get(&entry, 0, idx, NULL, false);
 
    cbs = menu_entries_get_actiondata_at_offset(selection_buf, idx);
 

@@ -213,7 +213,7 @@ int generic_menu_iterate(enum menu_action action)
    uint32_t hash              = 0;
    menu_handle_t *menu        = menu_driver_get_ptr();
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    menu_entries_get_last_stack(NULL, &label, NULL, NULL);
 
@@ -276,7 +276,7 @@ int generic_menu_iterate(enum menu_action action)
           * hack like this in order to work. */
          selection = max(min(selection, (menu_entries_get_size() - 1)), 0);
 
-         menu_entry_get(&entry,    selection, NULL, false);
+         menu_entry_get(&entry, 0, selection, NULL, false);
          ret = menu_entry_action(&entry, selection, (enum menu_action)action);
 
          if (ret)
@@ -368,7 +368,7 @@ bool generic_menu_init_list(void *data)
 {
    menu_displaylist_info_t info = {0};
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    strlcpy(info.label, menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));
 

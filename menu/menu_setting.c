@@ -512,7 +512,7 @@ int menu_setting_set(unsigned type, const char *label,
    size_t selection;
    int ret                    = 0;
    menu_file_list_cbs_t *cbs  = NULL;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;

@@ -596,7 +596,7 @@ static void xmb_update_boxart(xmb_handle_t *xmb, unsigned i)
    char path[PATH_MAX_LENGTH] = {0};
    settings_t *settings       = config_get_ptr();
 
-   menu_entry_get(&entry, i, NULL, true);
+   menu_entry_get(&entry, 0, i, NULL, true);
 
    fill_pathname_join(path, settings->boxarts_directory, entry.path, sizeof(path));
    strlcat(path, ".png", sizeof(path));
@@ -616,7 +616,7 @@ static void xmb_selection_pointer_changed(bool allow_animations)
    xmb_handle_t        *xmb   = NULL;
    menu_handle_t        *menu = menu_driver_get_ptr();
    menu_list_t     *menu_list = menu_list_get_ptr();
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    settings_t       *settings = config_get_ptr();
 
    if (!menu)
@@ -981,7 +981,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    size_t selection;
    int dir = -1;
    menu_handle_t        *menu = menu_driver_get_ptr();
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    settings_t     *settings   = config_get_ptr();
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
@@ -1087,7 +1087,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
    size_t selection;
    int                    dir = 0;
    menu_handle_t        *menu = menu_driver_get_ptr();
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    if (!menu)
       return;
@@ -1293,7 +1293,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       if (icon_x < -half_size || icon_x > width)
          continue;
 
-      menu_entry_get(&entry, i, list, true);
+      menu_entry_get(&entry, 0, i, list, true);
 
       hash_label = menu_hash_calculate(entry.label);
       hash_value = menu_hash_calculate(entry.value);
@@ -1575,7 +1575,7 @@ static void xmb_frame(void)
    const struct font_renderer *font_driver = NULL;
    menu_handle_t   *menu                   = menu_driver_get_ptr();
    settings_t   *settings                  = config_get_ptr();
-   file_list_t *selection_buf              = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf              = menu_entries_get_selection_buf_ptr(0);
    file_list_t *menu_stack                 = menu_entries_get_menu_stack_ptr();
 
    if (!menu)
@@ -1791,7 +1791,7 @@ static void xmb_layout(menu_handle_t *menu, xmb_handle_t *xmb)
    size_t selection;
    float scale_factor;
    unsigned width, height, i, current, end, new_header_height;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
@@ -2478,7 +2478,7 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
    xmb_handle_t      *xmb = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    if (!menu)
       return;
@@ -2731,7 +2731,7 @@ static bool xmb_menu_init_list(void *data)
    int ret;
    menu_displaylist_info_t info = {0};
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    strlcpy(info.label, menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));
 

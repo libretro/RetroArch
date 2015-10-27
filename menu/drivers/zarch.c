@@ -624,7 +624,7 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
       {
          menu_entry_t entry;
 
-         menu_entries_get(i, &entry);
+         menu_entry_get(&entry, 0, i, NULL, false);
 
          if (zarch_zui_list_item(zui, tabbed, 0, tabbed->tabline_size + j * 54,
                   entry.path, i, entry.value))
@@ -1275,14 +1275,14 @@ static int zarch_iterate(enum menu_action action)
    BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
    BIT64_SET(menu->state, MENU_STATE_BLIT);
 
-   menu_entry_get(&entry,    action_id, NULL, false);
+   menu_entry_get(&entry, 0, action_id, NULL, false);
 
    if (action_id >= 0)
       zui->pending_selection = action_id;
    
    if (zui->pending_action_ok.enable)
    {
-      menu_entry_get(&entry, zui->pending_action_ok.idx, NULL, false);
+      menu_entry_get(&entry, 0, zui->pending_action_ok.idx, NULL, false);
       zui->pending_action_ok.enable = false;
       
       act               = MENU_ACTION_OK;
@@ -1318,7 +1318,13 @@ static bool zarch_menu_init_list(void *data)
    int ret;
    menu_displaylist_info_t info = {0};
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+
+#if 0
+   strlcpy(info.label, menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));
+
+   menu_entries_push(menu_stack, info.path, info.label, info.type, info.flags, 0);
+#endif
 
    strlcpy(info.label, menu_hash_to_str(MENU_VALUE_HISTORY_TAB), sizeof(info.label));
 

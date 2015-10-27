@@ -58,7 +58,7 @@ int generic_action_ok_displaylist_push(const char *path,
    const char          *info_path    = NULL;
    global_t                 *global  = global_get_ptr();
    settings_t            *settings   = config_get_ptr();
-   file_list_t        *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t        *selection_buf = menu_entries_get_selection_buf_ptr(0);
    file_list_t           *menu_stack = menu_entries_get_menu_stack_ptr();
    menu_handle_t            *menu    = menu_driver_get_ptr();
 

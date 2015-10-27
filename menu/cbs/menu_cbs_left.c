@@ -128,7 +128,7 @@ static int action_left_mainmenu(unsigned type, const char *label,
    size_t selection          = 0;
    menu_file_list_cbs_t *cbs = NULL;
    unsigned        push_list = 0;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
    settings_t       *settings = config_get_ptr();
    menu_handle_t       *menu  = menu_driver_get_ptr();

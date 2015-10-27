@@ -404,7 +404,7 @@ void menu_entries_get(size_t i, menu_entry_t *entry)
    const char *path           = NULL;
    const char *entry_label    = NULL;
    menu_file_list_cbs_t *cbs  = NULL;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    menu_entries_get_last_stack(NULL, &label, NULL, NULL);
 
@@ -496,12 +496,12 @@ file_list_t *menu_entries_get_menu_stack_ptr(void)
    return menu_list->menu_stack[0];
 }
 
-file_list_t *menu_entries_get_selection_buf_ptr(void)
+file_list_t *menu_entries_get_selection_buf_ptr(size_t i)
 {
    menu_list_t *menu_list = menu_list_get_ptr();
    if (!menu_list)
       return NULL;
-   return menu_list->selection_buf[0];
+   return menu_list->selection_buf[i];
 }
 
 bool menu_entries_needs_refresh(void)
@@ -661,7 +661,7 @@ size_t menu_entries_get_size(void)
 
 rarch_setting_t *menu_entries_get_setting(uint32_t i)
 {
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr();
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    menu_file_list_cbs_t *cbs  = menu_entries_get_actiondata_at_offset(selection_buf, i);
 
    if (!cbs)
