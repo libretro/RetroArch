@@ -189,6 +189,46 @@ static uint32_t cheevos_djb2(const char* str, size_t length)
    return hash;
 }
 
+#ifdef NDEBUG
+
+#define http_get net_http_get
+
+#else
+
+static int http_get(const char **result, size_t *size, const char *url, retro_time_t *timeout)
+{
+   int ret = net_http_get(result, size, url, timeout);
+   const char *msg;
+   
+   switch (ret)
+   {
+      case NET_HTTP_GET_OK:
+         return ret;
+         
+      case NET_HTTP_GET_MALFORMED_URL:
+         msg = "malformed url";
+         break;
+         
+      case NET_HTTP_GET_CONNECT_ERROR:
+         msg = "connect error";
+         break;
+         
+      case NET_HTTP_GET_TIMEOUT:
+         msg = "timeout";
+         break;
+         
+      default:
+         msg = "?";
+         break;
+   }
+   
+   RARCH_LOG("CHEEVOS error getting %s: %s\n", url, msg);
+   RARCH_LOG("CHEEVOS http result was %s\n", *result ? *result : "(null)");
+   return ret;
+}
+
+#endif
+
 typedef struct
 {
    unsigned    key_hash;
@@ -1118,7 +1158,7 @@ static int cheevos_login(retro_time_t *timeout)
 
    request[sizeof(request) - 1] = 0;
 
-   if (!net_http_get(&json, NULL, request, timeout))
+   if (!http_get(&json, NULL, request, timeout))
    {
       res = cheevos_get_value(json, 0x0e2dbd26U /* Token */, cheevos_locals.token, sizeof(cheevos_locals.token));
       free((void*)json);
@@ -1151,7 +1191,7 @@ static void cheevo_unlocker(void *payload)
       request[sizeof(request) - 1] = 0;
       RARCH_LOG("CHEEVOS awarding achievement %u: %s\n", cheevo->id, request);
 
-      if (!net_http_get(&result, NULL, request, NULL))
+      if (!http_get(&result, NULL, request, NULL))
       {
          RARCH_LOG("CHEEVOS awarded achievement %u: %s\n", cheevo->id, result);
          free((void*)result);
@@ -1258,7 +1298,7 @@ static int cheevos_get_by_game_id(const char **json, unsigned game_id, retro_tim
 
       request[sizeof(request) - 1] = 0;
 
-      if (!net_http_get(json, NULL, request, timeout))
+      if (!http_get(json, NULL, request, timeout))
       {
          RARCH_LOG("CHEEVOS got achievements for game id %u\n", game_id);
          return 0;
@@ -1289,7 +1329,7 @@ static unsigned cheevos_get_game_id(unsigned char *hash, retro_time_t *timeout)
 
    request[sizeof(request) - 1] = 0;
 
-   if (!net_http_get(&json, NULL, request, timeout))
+   if (!http_get(&json, NULL, request, timeout))
    {
       res = cheevos_get_value(json, 0xb4960eecU /* GameID */, game_id, sizeof(game_id));
       free((void*)json);
@@ -1320,7 +1360,7 @@ static int cheevos_playing_activity(unsigned game_id, retro_time_t *timeout)
 
       request[sizeof(request) - 1] = 0;
 
-      if (!net_http_get(&json, NULL, request, timeout))
+      if (!http_get(&json, NULL, request, timeout))
       {
          free((void*)json);
          RARCH_LOG("CHEEVOS posted playing game %u activity\n", game_id);
@@ -1420,7 +1460,7 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
 
       request[sizeof(request) - 1] = 0;
 
-      if (!net_http_get(&json, NULL, request, timeout))
+      if (!http_get(&json, NULL, request, timeout))
       {
          ud.is_element = 0;
          res = jsonsax_parse(json, &handlers, (void*)&ud);

@@ -19,6 +19,7 @@
 
 #include "libretro.h"
 #include "performance.h"
+#include "net_http_special.h"
 
 int net_http_get(const char **result, size_t *size, const char *url, retro_time_t *timeout)
 {
@@ -26,7 +27,7 @@ int net_http_get(const char **result, size_t *size, const char *url, retro_time_
    uint8_t* data;
    size_t length;
    char* res;
-   int ret = -1;
+   int ret = NET_HTTP_GET_OK;
    struct http_connection_t* conn = NULL;
    struct http_t* http = NULL;
 
@@ -43,19 +44,28 @@ int net_http_get(const char **result, size_t *size, const char *url, retro_time_
 
    /* Error finishing the connection descriptor. */
    if (!net_http_connection_done(conn))
+   {
+      ret = NET_HTTP_GET_MALFORMED_URL;
       goto error;
+   }
 
    http = net_http_new(conn);
 
    /* Error connecting to the endpoint. */
    if (!http)
+   {
+      ret = NET_HTTP_GET_CONNECT_ERROR;
       goto error;
+   }
 
    while (!net_http_update(http, NULL, NULL))
    {
       /* Timeout error. */
       if (timeout && (retro_get_time_usec() - t0) > *timeout)
+      {
+         ret = NET_HTTP_GET_TIMEOUT;
          goto error;
+      }
    }
 
    data = net_http_data(http, &length, false);
@@ -80,8 +90,6 @@ int net_http_get(const char **result, size_t *size, const char *url, retro_time_
 
    if (size)
       *size = length;
-
-   ret = 0;
 
 error:
    if ( http )
