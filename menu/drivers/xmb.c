@@ -1458,8 +1458,8 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb,
    xmb_draw_icon_begin(gl);
 
    menu_display_draw_frame(
-         x,
-         height - y,
+         x - (xmb->cursor.size/2),
+         height - y - (xmb->cursor.size/2),
          xmb->cursor.size,
          xmb->cursor.size,
          gl->shader, &coords, &mymat, true, xmb->textures.list[XMB_TEXTURE_POINTER].id, 4,
@@ -1501,7 +1501,7 @@ static void xmb_render(void)
          float item_y1     = xmb->margins.screen.top + xmb_item_y(xmb, i, selection);
          float item_y2     = item_y1 + xmb->icon.size;
          int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
-         int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+         int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS) + (xmb->cursor.size/2);
 
          if (settings->menu.pointer.enable)
          {
@@ -1803,7 +1803,7 @@ static void xmb_layout(menu_handle_t *menu, xmb_handle_t *xmb)
    new_header_height            = 128.0 * scale_factor;
 
    xmb->boxart_size             = 460.0 * scale_factor;
-   xmb->cursor.size             = 48.0;
+   xmb->cursor.size             = 64.0;
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,     &new_font_size);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &new_header_height);
