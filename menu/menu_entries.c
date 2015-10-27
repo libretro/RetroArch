@@ -619,7 +619,7 @@ void menu_entries_push(file_list_t *list, const char *path, const char *label,
    menu_cbs_init(list, cbs, path, label, type, idx);
 }
 
-void menu_entries_increment_selection_buf(void)
+bool menu_entries_increment_selection_buf(void)
 {
    file_list_t **selection_buf    = NULL;
    menu_list_t *menu_list         = menu_list_get_ptr();
