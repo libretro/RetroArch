@@ -59,7 +59,7 @@ int generic_action_ok_displaylist_push(const char *path,
    global_t                 *global  = global_get_ptr();
    settings_t            *settings   = config_get_ptr();
    file_list_t        *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   file_list_t           *menu_stack = menu_entries_get_menu_stack_ptr();
+   file_list_t           *menu_stack = menu_entries_get_menu_stack_ptr(0);
    menu_handle_t            *menu    = menu_driver_get_ptr();
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
@@ -951,7 +951,7 @@ static int generic_action_ok_file_load(const char *path,
 {
    char new_path[PATH_MAX_LENGTH];
    const char *menu_path    = NULL;
-   file_list_t *menu_stack  = menu_entries_get_menu_stack_ptr();
+   file_list_t *menu_stack  = menu_entries_get_menu_stack_ptr(0);
 
    (void)id;
 
@@ -1003,7 +1003,7 @@ static int action_ok_file_load(const char *path,
    const char *menu_path    = NULL;
    rarch_setting_t *setting = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
-   file_list_t  *menu_stack = menu_entries_get_menu_stack_ptr();
+   file_list_t  *menu_stack = menu_entries_get_menu_stack_ptr(0);
 
    menu_entries_get_last(menu_stack, &menu_path, &menu_label, NULL, NULL);
 

@@ -608,7 +608,7 @@ static int menu_input_key_bind_set_mode_common(rarch_setting_t  *setting,
       return -1;
 
    index_offset = menu_setting_get_index_offset(setting);
-   menu_stack   = menu_entries_get_menu_stack_ptr();
+   menu_stack   = menu_entries_get_menu_stack_ptr(0);
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
 

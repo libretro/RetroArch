@@ -323,7 +323,7 @@ static void *xmb_list_get_entry(void *data, menu_list_type_t type, unsigned i)
    size_t list_size        = 0;
    menu_handle_t *menu     = (menu_handle_t*)data;
    xmb_handle_t *xmb       = menu ? (xmb_handle_t*)menu->userdata : NULL;
-   file_list_t *menu_stack = menu_entries_get_menu_stack_ptr();
+   file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
 
    switch (type)
    {
@@ -1576,7 +1576,7 @@ static void xmb_frame(void)
    menu_handle_t   *menu                   = menu_driver_get_ptr();
    settings_t   *settings                  = config_get_ptr();
    file_list_t *selection_buf              = menu_entries_get_selection_buf_ptr(0);
-   file_list_t *menu_stack                 = menu_entries_get_menu_stack_ptr();
+   file_list_t *menu_stack                 = menu_entries_get_menu_stack_ptr(0);
 
    if (!menu)
       return;
@@ -2477,7 +2477,7 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
    size_t stack_size, list_size, selection;
    xmb_handle_t      *xmb = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
+   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    if (!menu)
@@ -2730,7 +2730,7 @@ static bool xmb_menu_init_list(void *data)
 {
    int ret;
    menu_displaylist_info_t info = {0};
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
+   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    strlcpy(info.label, menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));

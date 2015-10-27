@@ -212,7 +212,7 @@ int generic_menu_iterate(enum menu_action action)
    uint32_t label_hash        = 0;
    uint32_t hash              = 0;
    menu_handle_t *menu        = menu_driver_get_ptr();
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
+   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    menu_entries_get_last_stack(NULL, &label, NULL, NULL);
@@ -367,7 +367,7 @@ int menu_iterate_render(void)
 bool generic_menu_init_list(void *data)
 {
    menu_displaylist_info_t info = {0};
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr();
+   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    strlcpy(info.label, menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));

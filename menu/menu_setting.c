@@ -333,7 +333,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
          if (action == MENU_ACTION_OK)
          {
             size_t selection;
-            file_list_t  *menu_stack = menu_entries_get_menu_stack_ptr();
+            file_list_t  *menu_stack = menu_entries_get_menu_stack_ptr(0);
 
             if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
                return -1;
@@ -2488,7 +2488,7 @@ static void general_write_handler(void *data)
    settings_t *settings         = config_get_ptr();
    driver_t *driver             = driver_get_ptr();
    global_t *global             = global_get_ptr();
-   file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr();
+   file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
    rarch_system_info_t *system  = rarch_system_info_get_ptr();
    uint32_t hash                = setting ? menu_hash_calculate(setting->name) : 0;
    uint64_t flags               = menu_setting_get_flags(setting);

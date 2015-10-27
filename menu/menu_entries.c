@@ -488,20 +488,20 @@ int menu_entries_get_core_title(char *s, size_t len)
    return 0;
 }
 
-file_list_t *menu_entries_get_menu_stack_ptr(void)
+file_list_t *menu_entries_get_menu_stack_ptr(size_t idx)
 {
    menu_list_t *menu_list = menu_list_get_ptr();
    if (!menu_list)
       return NULL;
-   return menu_list->menu_stack[0];
+   return menu_list->menu_stack[idx];
 }
 
-file_list_t *menu_entries_get_selection_buf_ptr(size_t i)
+file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
 {
    menu_list_t *menu_list = menu_list_get_ptr();
    if (!menu_list)
       return NULL;
-   return menu_list->selection_buf[i];
+   return menu_list->selection_buf[idx];
 }
 
 bool menu_entries_needs_refresh(void)
