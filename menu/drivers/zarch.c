@@ -1147,14 +1147,15 @@ static void zarch_free(void *data)
 {
    menu_handle_t *menu                     = (menu_handle_t*)data;
    driver_t      *driver                   = driver_get_ptr();
-   zui_t        *zarch                     = (zui_t*)menu->userdata;
+   zui_t        *zui                       = (zui_t*)menu->userdata;
    const struct font_renderer *font_driver = 
       (const struct font_renderer*)driver->font_osd_driver;
 
-   if (!zarch || !menu)
+   if (!zui || !menu)
       return;
 
-   gfx_coord_array_free(&zarch->tmp_block.carr);
+   gfx_coord_array_free(&zui->ca);
+   gfx_coord_array_free(&zui->tmp_block.carr);
 
    if (menu->userdata)
       free(menu->userdata);
@@ -1165,37 +1166,37 @@ static void zarch_free(void *data)
 
 }
 
-static void zarch_context_bg_destroy(zui_t *zarch)
+static void zarch_context_bg_destroy(zui_t *zui)
 {
-   video_texture_unload((uintptr_t*)&zarch->textures.bg.id);
-   video_texture_unload((uintptr_t*)&zarch->textures.white);
+   video_texture_unload((uintptr_t*)&zui->textures.bg.id);
+   video_texture_unload((uintptr_t*)&zui->textures.white);
 }
 
 static void zarch_context_destroy(void)
 {
    menu_handle_t *menu   = menu_driver_get_ptr();
    driver_t      *driver = driver_get_ptr();
-   zui_t        *zarch   = menu ? (zui_t*)menu->userdata : NULL;
+   zui_t        *zui     = menu ? (zui_t*)menu->userdata : NULL;
     
-   if (!menu || !zarch || !driver)
+   if (!menu || !zui || !driver)
       return;
 
    menu_display_free_main_font();
 
-   zarch_context_bg_destroy(zarch);
+   zarch_context_bg_destroy(zui);
 }
 
 static bool zarch_load_image(void *data, menu_image_type_t type)
 {
-   zui_t        *zarch = NULL;
+   zui_t        *zui   = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return false;
    
-   zarch = (zui_t*)menu->userdata;
+   zui = (zui_t*)menu->userdata;
 
-   if (!zarch || !data)
+   if (!zui || !data)
       return false;
 
    switch (type)
@@ -1203,8 +1204,8 @@ static bool zarch_load_image(void *data, menu_image_type_t type)
       case MENU_IMAGE_NONE:
          break;
       case MENU_IMAGE_WALLPAPER:
-         zarch_context_bg_destroy(zarch);
-         zarch->textures.bg.id   = video_texture_load(data,
+         zarch_context_bg_destroy(zui);
+         zui->textures.bg.id   = video_texture_load(data,
                TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
          break;
       case MENU_IMAGE_BOXART:
