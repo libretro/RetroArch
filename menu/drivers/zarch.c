@@ -160,10 +160,10 @@ typedef struct zarch_handle
    int font_size;
    int header_height;
    unsigned pending_selection;
-   unsigned next_selection;
+   unsigned next_id_sel;
+   unsigned prev_id_sel;
+   unsigned active_id_sel;
    bool     next_selection_set;
-   unsigned prev_selection;
-   unsigned selection;
 } zui_t;
 
 typedef struct
@@ -481,30 +481,30 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
 
    if (tab->active_id != tab->prev_id)
    {
-      zui->selection   = item_id;
-      tab->prev_id     = tab->active_id;
+      zui->active_id_sel   = item_id;
+      tab->prev_id         = tab->active_id;
    }
 
    if (zui->pending_selection == -1)
    {
-      if (item_id < zui->selection)
-         zui->prev_selection = item_id;
-      if (item_id > zui->selection && !zui->next_selection_set)
+      if (item_id < zui->active_id_sel)
+         zui->prev_id_sel = item_id;
+      if (item_id > zui->active_id_sel && !zui->next_selection_set)
       {
-         zui->next_selection     = item_id;
+         zui->next_id_sel        = item_id;
          zui->next_selection_set = true;
       }
    }
    else
    {
-      if (zui->selection != item_id && zui->pending_selection == item_id)
-         zui->selection         = item_id;
+      if (zui->active_id_sel != item_id && zui->pending_selection == item_id)
+         zui->active_id_sel         = item_id;
    }
 
 
    if (zui->item.active == id || zui->item.hot == id)
       bg = ZUI_BG_HILITE;
-   else if (zui->selection == item_id)
+   else if (zui->active_id_sel == item_id)
       bg = ZUI_BG_PAD_HILITE;
 
    ticker_size = x2 / 14;
@@ -799,17 +799,17 @@ static int zarch_zui_render_lay_root(zui_t *zui)
       switch (zui->action)
       {
          case MENU_ACTION_UP:
-            if (zui->prev_selection != -1 && zui->prev_selection != zui->selection)
+            if (zui->prev_id_sel != -1 && zui->prev_id_sel != zui->active_id_sel)
             {
-               if (zui->prev_selection < zui->selection)
-                  zui->pending_selection = zui->prev_selection;
+               if (zui->prev_id_sel < zui->active_id_sel)
+                  zui->pending_selection = zui->prev_id_sel;
             }
             break;
          case MENU_ACTION_DOWN:
-            if (zui->next_selection != -1 && zui->next_selection != zui->selection)
+            if (zui->next_id_sel != -1 && zui->next_id_sel != zui->active_id_sel)
             {
-               if (zui->next_selection > zui->selection)
-                  zui->pending_selection = zui->next_selection;
+               if (zui->next_id_sel > zui->active_id_sel) 
+                  zui->pending_selection = zui->next_id_sel;
             }
             break;
          default:
@@ -912,7 +912,7 @@ static int zarch_zui_render_pick_core(zui_t *zui)
    if (!zui->pick_supported)
    {
       zarch_zui_list_item(zui, &tabbed, 0, 54, "Content unsupported", 0, NULL /* TODO/FIXME */);
-      zui->selection = 0;
+      zui->active_id_sel = 0;
       return 1;
    }
 
