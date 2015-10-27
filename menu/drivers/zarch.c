@@ -168,8 +168,9 @@ typedef struct zarch_handle
 
 typedef struct
 {
-   unsigned prev_active;
-   unsigned active;
+   unsigned prev_id;
+   unsigned active_id;
+   unsigned next_id;
    int x, y;
    int width;
    int height; /* unused */
@@ -478,10 +479,10 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
    const GRfloat     *bg = ZUI_BG_PANEL;
    uint64_t *frame_count = video_driver_get_frame_count();
 
-   if (tab->active != tab->prev_active)
+   if (tab->active_id != tab->prev_id)
    {
       zui->selection   = item_id;
-      tab->prev_active = tab->active;
+      tab->prev_id     = tab->active_id;
    }
 
    if (zui->pending_selection == -1)
@@ -533,7 +534,6 @@ static void zarch_zui_tabbed_begin(zui_t *zui, zui_tabbed_t *tab, int x, int y)
 static bool zarch_zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label, unsigned tab_id)
 {
    bool active;
-   bool entered_tab  = false;
    int x1, y1, x2, y2;
    unsigned       id = zarch_zui_hash(zui, label);
    int         width = tab->tab_width;
@@ -549,12 +549,12 @@ static bool zarch_zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label, unsi
    y2                = y1 + 60;
    active            = zarch_zui_check_button_up(zui, id, x1, y1, x2, y2);
 
-   tab->prev_active  = tab->active;
+   tab->prev_id      = tab->active_id;
 
-   if (zui->item.active == id || tab->active == ~0)
-      tab->active    = id;
+   if (zui->item.active == id || tab->active_id == ~0)
+      tab->active_id    = id;
 
-   if (tab->active == id || zui->item.active == id || zui->item.hot == id)
+   if (tab->active_id == id || zui->item.active == id || zui->item.hot == id)
       bg             = ZUI_BG_HILITE;
    else if (selected)
       bg             = ZUI_BG_PAD_HILITE;
@@ -567,10 +567,7 @@ static bool zarch_zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label, unsi
    else
       tab->x         = x2;
 
-   entered_tab = active || (tab->active == id);
-
-
-   return entered_tab;
+   return active || (tab->active_id == id);
 }
 
 
@@ -786,10 +783,6 @@ static int zarch_zui_render_lay_root(zui_t *zui)
    zarch_zui_tabbed_begin(zui, &tabbed, 0, 0);
 
    tabbed.width            = zui->width - 290 - 40;
-#if 0
-   zui->prev_selection     = -1;
-   zui->next_selection     = -1;
-#endif
    zui->next_selection_set = false;
 
    if (zarch_zui_render_lay_root_recent(zui, &tabbed))
