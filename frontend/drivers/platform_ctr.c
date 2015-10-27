@@ -46,6 +46,8 @@ void dump_result_value(Result val);
 #define DEBUG_VAR(X) printf( "%-20s: 0x%08X\n", #X, (u32)(X))
 #define DEBUG_VAR64(X) printf( #X"\r\t\t\t\t : 0x%016llX\n", (u64)(X))
 #define DEBUG_ERROR(X) do{if(X)dump_result_value(X)}while(0)
+#define PRINTFPOS(X,Y) "\x1b["#X";"#Y"H"
+#define PRINTFPOS_STR(X,Y) "\x1b["X";"Y"H"
 #endif
 
 #define CTR_APPMEMALLOC_PTR ((u32*)0x1FF80040)
@@ -238,8 +240,55 @@ static void frontend_ctr_shutdown(bool unused)
    (void)unused;
 }
 
-#define PRINTFPOS(X,Y) "\x1b["#X";"#Y"H"
-#define PRINTFPOS_STR(X,Y) "\x1b["X";"Y"H"
+static void ctr_check_dspfirm(void)
+{
+   FILE* dsp_fp = fopen("sdmc:/3ds/dspfirm.cdc", "rb");
+
+   if(dsp_fp)
+      fclose(dsp_fp);
+   else
+   {
+      uint32_t* code_buffer;
+      uint32_t* ptr;
+      FILE* code_fp;
+      size_t code_size;
+      const uint32_t dsp1_magic = 0x31505344; /* "DSP1" */
+
+      code_fp =fopen("sdmc:/3ds/code.bin", "rb");
+      if(code_fp)
+      {
+         fseek(code_fp, 0, SEEK_END);
+         code_size = ftell(code_fp);
+         fseek(code_fp, 0, SEEK_SET);
+
+         code_buffer = (uint32_t*) malloc(code_size);
+         if(code_buffer)
+         {
+            fread(code_buffer, 1, code_size, code_fp);
+
+            for (ptr = code_buffer + 0x40; ptr < (code_buffer + (code_size >> 2)); ptr++)
+            {
+               if (*ptr == dsp1_magic)
+               {
+                  size_t dspfirm_size = ptr[1];
+                  ptr -= 0x40;
+                  if ((ptr + (dspfirm_size >> 2)) > (code_buffer + (code_size >> 2)))
+                     break;
+
+                  dsp_fp = fopen("sdmc:/3ds/dspfirm.cdc", "wb");
+                  if(!dsp_fp)
+                     break;
+                  fwrite(ptr, 1, dspfirm_size, dsp_fp);
+                  fclose(dsp_fp);
+                  break;
+               }
+            }
+            free(code_buffer);
+         }
+         fclose(code_fp);
+      }
+   }
+}
 
 static void frontend_ctr_init(void *data)
 {
@@ -262,6 +311,7 @@ static void frontend_ctr_init(void *data)
       audio_ctr_csnd = audio_ctr_dsp;
       audio_ctr_dsp  = audio_null;
    }
+   ctr_check_dspfirm();
    if(ndspInit() != 0)
       *dsp_audio_driver = audio_null;
    initCfgu();
