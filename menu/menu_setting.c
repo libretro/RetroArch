@@ -486,11 +486,10 @@ int menu_setting_set_flags(rarch_setting_t *setting)
    if (!setting)
       return 0;
 
-   if (flags & SD_FLAG_IS_DRIVER)
-      return MENU_SETTING_DRIVER;
-
    switch (menu_setting_get_type(setting))
    {
+      case ST_STRING_OPTIONS:
+         return MENU_SETTING_STRING_OPTIONS;
       case ST_ACTION:
          return MENU_SETTING_ACTION;
       case ST_PATH:
