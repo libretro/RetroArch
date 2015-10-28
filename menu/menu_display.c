@@ -514,6 +514,10 @@ void menu_display_draw_frame(
    const shader_backend_t *shader = (const shader_backend_t*)shader_data;
    driver_t *driver = driver_get_ptr();
 
+   /* TODO - edge case */
+   if (height <= 0)
+      height = 1;
+
    glViewport(x, y, width, height);
    glBindTexture(GL_TEXTURE_2D, texture);
 
