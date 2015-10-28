@@ -572,6 +572,7 @@ extern "C" {
 #define MENU_VALUE_SETTINGS_TAB                                                0x6548d16dU
 #define MENU_VALUE_HISTORY_TAB                                                 0xea9b0ceeU
 #define MENU_VALUE_ADD_TAB                                                     0x7fb20225U
+#define MENU_VALUE_PLAYLISTS_TAB                                               0x092d3161U
 #define MENU_VALUE_MAIN_MENU                                                   0x1625971fU   
 #define MENU_LABEL_VALUE_SETTINGS                                              0x8aca3ff6U
 #define MENU_VALUE_INPUT_SETTINGS                                              0xddd30846U

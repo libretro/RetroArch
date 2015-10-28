@@ -49,10 +49,10 @@ enum
 enum
 {
    GLUI_SYSTEM_TAB_MAIN = 0,
-   GLUI_SYSTEM_TAB_SETTINGS
+   GLUI_SYSTEM_TAB_PLAYLISTS
 };
 
-#define GLUI_SYSTEM_TAB_END GLUI_SYSTEM_TAB_SETTINGS
+#define GLUI_SYSTEM_TAB_END GLUI_SYSTEM_TAB_PLAYLISTS
 
 struct glui_texture_item
 {
@@ -1142,11 +1142,11 @@ static void glui_list_cache(menu_list_type_t type, unsigned action)
                menu_stack->list[stack_size - 1].type = 
                   MENU_SETTINGS;
                break;
-            case GLUI_SYSTEM_TAB_SETTINGS:
+            case GLUI_SYSTEM_TAB_PLAYLISTS:
                menu_stack->list[stack_size - 1].label = 
-                  strdup(menu_hash_to_str(MENU_VALUE_SETTINGS_TAB));
+                  strdup(menu_hash_to_str(MENU_VALUE_PLAYLISTS_TAB));
                menu_stack->list[stack_size - 1].type = 
-                  MENU_SETTINGS_TAB;
+                  MENU_PLAYLISTS_TAB;
                break;
          }
          break;

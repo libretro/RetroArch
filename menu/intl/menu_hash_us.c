@@ -780,6 +780,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "History tab";
       case MENU_VALUE_ADD_TAB:
          return "Add tab";
+      case MENU_VALUE_PLAYLISTS_TAB:
+         return "Playlists tab";
       case MENU_LABEL_VALUE_NO_SETTINGS_FOUND:
          return "No settings found.";
       case MENU_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
