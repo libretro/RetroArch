@@ -710,9 +710,20 @@ static void glui_frame(void)
       if (i == glui->categories.selection_ptr)
          tab_color = activetab_color;
 
+      char tab_label[PATH_MAX_LENGTH];
+      switch (i)
+      {
+         case GLUI_SYSTEM_TAB_MAIN:
+            strlcpy(tab_label, menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(tab_label));
+            break;
+         case GLUI_SYSTEM_TAB_PLAYLISTS:
+            strlcpy(tab_label, menu_hash_to_str(MENU_VALUE_PLAYLISTS_TAB), sizeof(tab_label));
+            break;
+      }
+
       glui_blit_line(width / (GLUI_SYSTEM_TAB_END+1) * (i+0.5),
             header_height - header_height/8,
-            width, height, "TAB", tab_color, TEXT_ALIGN_CENTER);
+            width, height, tab_label, tab_color, TEXT_ALIGN_CENTER);
    }
 
    tab_width = width / (GLUI_SYSTEM_TAB_END+1);
