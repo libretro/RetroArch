@@ -138,6 +138,9 @@ static void glui_draw_icon(gl_t *gl, glui_handle_t *glui,
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+   if (gl->shader && gl->shader->use)
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+
    matrix_4x4_rotate_z(&mrot, rotation);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
