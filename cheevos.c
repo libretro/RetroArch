@@ -24,11 +24,11 @@
 #include <performance.h>
 #include <runloop.h>
 #include <retro_log.h>
+#include <rthreads/async_job.h>
 
 #include "cheevos.h"
 #include "dynamic.h"
 #include "net_http_special.h"
-#include "async_job.h"
 
 enum
 {

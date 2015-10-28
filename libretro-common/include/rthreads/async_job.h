@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2015 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (rsemaphore.h).
+ * The following license statement only applies to this file (async_job.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,25 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __LIBRETRO_SDK_SEMAPHORE_H
-#define __LIBRETRO_SDK_SEMAPHORE_H
+#ifndef __LIBRETRO_SDK_ASYNC_JOB_H
+#define __LIBRETRO_SDK_ASYNC_JOB_H
 
-typedef struct ssem ssem_t;
+typedef struct async_job async_job_t;
+typedef void (*async_task_t)(void *payload);
 
-/**
- * ssem_create:
- * @value                   : initial value for the semaphore
- *
- * Create a new semaphore.
- *
- * Returns: pointer to new semaphore if successful, otherwise NULL.
- */
-ssem_t *ssem_new(int value);
+async_job_t *async_job_new(void);
 
-void ssem_free(ssem_t *semaphore);
+void async_job_free(async_job_t *ajob);
 
-void ssem_wait(ssem_t *semaphore);
+int async_job_add(async_job_t *ajob, async_task_t task, void *payload);
 
-void ssem_signal(ssem_t *semaphore);
-
-#endif /* __LIBRETRO_SDK_SEMAPHORE_H */
+#endif /* __LIBRETRO_SDK_ASYNC_JOB_H */
