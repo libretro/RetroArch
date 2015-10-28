@@ -25,6 +25,7 @@
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <retro_inline.h>
+#include <string/stdstring.h>
 
 #include "menu_generic.h"
 
@@ -536,6 +537,8 @@ static void rgui_render(void)
             RGUI_TERM_START_X(fb_width),
             menu_hash_to_str(MENU_VALUE_BACK),
             TITLE_COLOR(settings));
+
+   strlcpy(title_buf, string_to_upper(title_buf), sizeof(title_buf));
 
    blit_line(fb_data, fb_pitch,
          RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width)
