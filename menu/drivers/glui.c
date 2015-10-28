@@ -46,6 +46,14 @@ enum
    GLUI_TEXTURE_LAST
 };
 
+enum
+{
+   GLUI_SYSTEM_TAB_MAIN = 0,
+   GLUI_SYSTEM_TAB_SETTINGS
+};
+
+#define GLUI_SYSTEM_TAB_END GLUI_SYSTEM_TAB_SETTINGS
+
 struct glui_texture_item
 {
    GRuint id;
@@ -70,6 +78,19 @@ typedef struct glui_handle
       struct glui_texture_item list[GLUI_TEXTURE_LAST];
       GRuint white;
    } textures;
+
+   struct
+   {
+      struct
+      {
+         unsigned idx;
+         unsigned idx_old;
+      } active;
+
+      float x_pos;
+      size_t selection_ptr_old;
+      size_t selection_ptr;
+   } categories;
 
    gfx_font_raster_block_t list_block;
 } glui_handle_t;
@@ -1032,6 +1053,94 @@ static int glui_environ(menu_environ_cb_t type, void *data)
    return -1;
 }
 
+static void glui_list_cache(menu_list_type_t type, unsigned action)
+{
+   size_t stack_size, list_size;
+   glui_handle_t      *glui = NULL;
+   menu_handle_t    *menu = menu_driver_get_ptr();
+   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+
+   if (!menu)
+      return;
+
+   glui = (glui_handle_t*)menu->userdata;
+
+   if (!glui)
+      return;
+
+   list_size = GLUI_SYSTEM_TAB_END;
+
+   switch (type)
+   {
+      case MENU_LIST_PLAIN:
+         break;
+      case MENU_LIST_HORIZONTAL:
+         glui->categories.selection_ptr_old = glui->categories.selection_ptr;
+
+         switch (action)
+         {
+            case MENU_ACTION_LEFT:
+               if (glui->categories.selection_ptr == 0)
+               {
+                  glui->categories.selection_ptr = list_size;
+                  glui->categories.active.idx = list_size - 1;
+               }
+               else
+                  glui->categories.selection_ptr--;
+               break;
+            default:
+               if (glui->categories.selection_ptr == list_size)
+               {
+                  glui->categories.selection_ptr = 0;
+                  glui->categories.active.idx = 1;
+               }
+               else
+                  glui->categories.selection_ptr++;
+               break;
+         }
+
+         stack_size = menu_stack->size;
+
+         if (menu_stack->list[stack_size - 1].label)
+            free(menu_stack->list[stack_size - 1].label);
+         menu_stack->list[stack_size - 1].label = NULL;
+
+         switch (glui->categories.selection_ptr)
+         {
+            case GLUI_SYSTEM_TAB_MAIN:
+               menu_stack->list[stack_size - 1].label = 
+                  strdup(menu_hash_to_str(MENU_VALUE_MAIN_MENU));
+               menu_stack->list[stack_size - 1].type = 
+                  MENU_SETTINGS;
+               break;
+            case GLUI_SYSTEM_TAB_SETTINGS:
+               menu_stack->list[stack_size - 1].label = 
+                  strdup(menu_hash_to_str(MENU_VALUE_SETTINGS_TAB));
+               menu_stack->list[stack_size - 1].type = 
+                  MENU_SETTINGS_TAB;
+               break;
+         }
+         break;
+   }
+}
+
+static size_t glui_list_get_size(void *data, menu_list_type_t type)
+{
+   size_t list_size        = 0;
+   menu_handle_t *menu     = (menu_handle_t*)data;
+   glui_handle_t *glui       = menu    ? (glui_handle_t*)menu->userdata : NULL;
+
+   switch (type)
+   {
+      case MENU_LIST_PLAIN:
+         list_size  = menu_entries_get_stack_size(0);
+         break;
+   }
+
+   return list_size;
+}
+
 menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    glui_get_message,
@@ -1055,10 +1164,10 @@ menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    NULL,
    NULL,
+   glui_list_cache,
    NULL,
    NULL,
-   NULL,
-   NULL,
+   glui_list_get_size,
    NULL,
    glui_list_set_selection,
    NULL,
