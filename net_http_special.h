@@ -18,6 +18,14 @@
 
 #include "libretro.h"
 
+enum
+{
+   NET_HTTP_GET_OK = 0,
+   NET_HTTP_GET_MALFORMED_URL,
+   NET_HTTP_GET_CONNECT_ERROR,
+   NET_HTTP_GET_TIMEOUT,
+};
+
 int net_http_get(const char **result, size_t *size, const char *url, retro_time_t *timeout);
 
 #endif
