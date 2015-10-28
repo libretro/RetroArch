@@ -19,6 +19,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <string/stdstring.h>
 #include <limits.h>
 
 #include <retro_log.h>
@@ -721,6 +722,7 @@ static void glui_frame(void)
             break;
       }
 
+      strlcpy(tab_label, string_to_upper(tab_label), sizeof(tab_label));
       glui_blit_line(width / (GLUI_SYSTEM_TAB_END+1) * (i+0.5),
             header_height - header_height/8,
             width, height, tab_label, tab_color, TEXT_ALIGN_CENTER);
