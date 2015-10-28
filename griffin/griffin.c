@@ -90,7 +90,6 @@ ACHIEVEMENTS
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../libretro-common/utils/md5.c"
 #include "../net_http_special.c"
-#include "../ra_semaphore.c"
 #include "../async_job.c"
 #include "../cheevos.c"
 #endif
@@ -733,6 +732,7 @@ THREAD
 #include "../thread/xenon_sdl_threads.c"
 #elif defined(HAVE_THREADS)
 #include "../libretro-common/rthreads/rthreads.c"
+#include "../libretro-common/rthreads/rsemaphore.c"
 #include "../gfx/video_thread_wrapper.c"
 #include "../audio/audio_thread_wrapper.c"
 #include "../autosave.c"

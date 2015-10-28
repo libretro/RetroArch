@@ -27,11 +27,12 @@
 #include <stdlib.h>
 
 #include <rthreads/rthreads.h>
-#include <ra_semaphore.h>
+#include <rthreads/rsemaphore.h>
 
 struct ssem
 {
-   int value, wakeups;
+   int value;
+   int wakeups;
    slock_t *mutex;
    scond_t *cond;
 };
@@ -39,52 +40,54 @@ struct ssem
 ssem_t *ssem_new(int value)
 {
    ssem_t *semaphore = (ssem_t*)malloc(sizeof(*semaphore));
-   
+
    if (semaphore)
    {
       semaphore->value = value;
       semaphore->wakeups = 0;
       semaphore->mutex = slock_new();
-      
+
       if (semaphore->mutex)
       {
          semaphore->cond = scond_new();
-         
+
          if (semaphore->cond)
             return semaphore;
-         
+
          slock_free(semaphore->mutex);
       }
-      
+
       free((void*)semaphore);
    }
-   
+
    return NULL;
 }
 
 void ssem_free(ssem_t *semaphore)
 {
-  scond_free(semaphore->cond);
-  slock_free(semaphore->mutex);
-  free((void*)semaphore);
+   if (!semaphore)
+      return;
+
+   scond_free(semaphore->cond);
+   slock_free(semaphore->mutex);
+   free((void*)semaphore);
 }
 
 void ssem_wait(ssem_t *semaphore)
 {
    slock_lock(semaphore->mutex);
    semaphore->value--;
-   
+
    if (semaphore->value < 0)
    {
       do
       {
          scond_wait(semaphore->cond, semaphore->mutex);
-      }
-      while (semaphore->wakeups < 1);
-      
+      }while (semaphore->wakeups < 1);
+
       semaphore->wakeups--;
    }
-   
+
    slock_unlock(semaphore->mutex);
 }
 
@@ -92,12 +95,12 @@ void ssem_signal(ssem_t *semaphore)
 {
    slock_lock(semaphore->mutex);
    semaphore->value++;
-   
+
    if (semaphore->value <= 0)
    {
       semaphore->wakeups++;
       scond_signal(semaphore->cond);
    }
-   
+
    slock_unlock(semaphore->mutex);
 }

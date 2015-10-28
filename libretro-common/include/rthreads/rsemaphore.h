@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_SEMAPHORE_H
-#define __RARCH_SEMAPHORE_H
+#ifndef __LIBRETRO_SDK_SEMAPHORE_H
+#define __LIBRETRO_SDK_SEMAPHORE_H
 
 typedef struct ssem ssem_t;
 
