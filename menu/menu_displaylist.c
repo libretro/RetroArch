@@ -3110,6 +3110,11 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
             return -1;
          menu_displaylist_push_list_process(&info);
          return 0;
+      case MENU_VALUE_PLAYLISTS_TAB:
+         if (menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS) != 0)
+            return -1;
+         menu_displaylist_push_list_process(&info);
+         return 0;
       case MENU_VALUE_HORIZONTAL_MENU:
          if (menu_displaylist_push_list(&info, DISPLAYLIST_HORIZONTAL) != 0)
             return -1;
