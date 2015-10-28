@@ -303,6 +303,97 @@ static int action_get_core_list(const char *path, const char *label,
    return 0;
 }
 
+static int action_get_online_updater_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_ONLINE_UPDATER), len);
+   return 0;
+}
+
+static int action_get_core_updater_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST), len);
+   return 0;
+}
+
+static int action_get_add_content_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_ADD_CONTENT_LIST), len);
+   return 0;
+}
+
+static int action_get_core_options_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_CORE_OPTIONS), len);
+   return 0;
+}
+
+static int action_get_load_recent_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY), len);
+   return 0;
+}
+
+static int action_get_quick_menu_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS), len);
+   return 0;
+}
+
+static int action_get_input_remapping_options_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS), len);
+   return 0;
+}
+
+static int action_get_shader_options_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_SHADER_OPTIONS), len);
+   return 0;
+}
+
+static int action_get_disk_options_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_DISK_OPTIONS), len);
+   return 0;
+}
+
+static int action_get_frontend_counters_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_FRONTEND_COUNTERS), len);
+   return 0;
+}
+
+static int action_get_core_counters_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_CORE_COUNTERS), len);
+   return 0;
+}
+
+static int action_get_core_cheat_options_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS), len);
+   return 0;
+}
+
+static int action_get_load_content_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT_LIST), len);
+   return 0;
+}
+
 static int action_get_cursor_manager_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
@@ -666,25 +757,50 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_CORE_LIST:
          BIND_ACTION_GET_TITLE(cbs, action_get_core_list);
          break;
-      case MENU_LABEL_MANAGEMENT:
+      case MENU_LABEL_LOAD_CONTENT_LIST:
+         BIND_ACTION_GET_TITLE(cbs, action_get_load_content_list);
+         break;
       case MENU_LABEL_ONLINE_UPDATER:
-      case MENU_LABEL_FRONTEND_COUNTERS:
-      case MENU_LABEL_CORE_COUNTERS:
+         BIND_ACTION_GET_TITLE(cbs, action_get_online_updater_list);
+         break;
+      case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
+         BIND_ACTION_GET_TITLE(cbs, action_get_core_updater_list);
+         break;
+      case MENU_LABEL_ADD_CONTENT_LIST:
+         BIND_ACTION_GET_TITLE(cbs, action_get_add_content_list);
+         break;
+      case MENU_LABEL_CORE_OPTIONS:
+         BIND_ACTION_GET_TITLE(cbs, action_get_core_options_list);
+         break;
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
-      case MENU_LABEL_INFO_SCREEN:
+         BIND_ACTION_GET_TITLE(cbs, action_get_load_recent_list);
+         break;
+      case MENU_LABEL_CONTENT_SETTINGS:
+         BIND_ACTION_GET_TITLE(cbs, action_get_quick_menu_list);
+         break;
+      case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
+         BIND_ACTION_GET_TITLE(cbs, action_get_input_remapping_options_list);
+         break;
+      case MENU_LABEL_CORE_CHEAT_OPTIONS:
+         BIND_ACTION_GET_TITLE(cbs, action_get_core_cheat_options_list);
+         break;
+      case MENU_LABEL_SHADER_OPTIONS:
+         BIND_ACTION_GET_TITLE(cbs, action_get_shader_options_list);
+         break;
+      case MENU_LABEL_DISK_OPTIONS:
+         BIND_ACTION_GET_TITLE(cbs, action_get_disk_options_list);
+         break;
+      case MENU_LABEL_FRONTEND_COUNTERS:
+         BIND_ACTION_GET_TITLE(cbs, action_get_frontend_counters_list);
+         break;
+      case MENU_LABEL_CORE_COUNTERS:
+         BIND_ACTION_GET_TITLE(cbs, action_get_core_counters_list);
+         break;
+      case MENU_LABEL_MANAGEMENT:
       case MENU_LABEL_DEBUG_INFORMATION:
       case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
       case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-      case MENU_LABEL_DISK_OPTIONS:
-      case MENU_LABEL_CORE_OPTIONS:
-      case MENU_LABEL_SHADER_OPTIONS:
-      case MENU_LABEL_CORE_CHEAT_OPTIONS:
-      case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
-      case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
       case MENU_LABEL_CONTENT_COLLECTION_LIST:
-      case MENU_LABEL_LOAD_CONTENT_LIST:
-      case MENU_LABEL_CONTENT_SETTINGS:
-      case MENU_LABEL_ADD_CONTENT_LIST:
          BIND_ACTION_GET_TITLE(cbs, action_get_title_action_generic);
          break;
       case MENU_LABEL_DISK_IMAGE_APPEND:
