@@ -299,115 +299,115 @@ static int action_get_title_action_generic(const char *path, const char *label,
 static int action_get_title_configurations(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "CONFIG", path, len);
+   return fill_title(s, "Config", path, len);
 }
 
 static int action_get_title_content_database_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "DATABASE DIR", path, len);
+   return fill_title(s, "Database Dir", path, len);
 }
 
 static int action_get_title_savestate_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "SAVESTATE DIR", path, len);
+   return fill_title(s, "Savestate Dir", path, len);
 }
 
 static int action_get_title_dynamic_wallpapers_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "DYNAMIC WALLPAPERS DIR", path, len);
+   return fill_title(s, "Dynamic Wallpapers Dir", path, len);
 }
 
 static int action_get_title_core_assets_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "CORE ASSETS DIR", path, len);
+   return fill_title(s, "Core Assets Dir", path, len);
 }
 
 static int action_get_title_config_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "CONFIG DIR", path, len);
+   return fill_title(s, "Config Dir", path, len);
 }
 
 static int action_get_title_input_remapping_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "INPUT REMAPPING DIR", path, len);
+   return fill_title(s, "Input Remapping Dir", path, len);
 }
 
 static int action_get_title_autoconfig_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "AUTOCONFIG DIR", path, len);
+   return fill_title(s, "Autoconfig Dir", path, len);
 }
 
 static int action_get_title_playlist_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "PLAYLIST DIR", path, len);
+   return fill_title(s, "Playlist Dir", path, len);
 }
 
 static int action_get_title_browser_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "BROWSER DIR", path, len);
+   return fill_title(s, "Browser Dir", path, len);
 }
 
 static int action_get_title_content_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "CONTENT DIR", path, len);
+   return fill_title(s, "Content Dir", path, len);
 }
 
 static int action_get_title_screenshot_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "SCREENSHOT DIR", path, len);
+   return fill_title(s, "Screenshot Dir", path, len);
 }
 
 static int action_get_title_cursor_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "CURSOR DIR", path, len);
+   return fill_title(s, "Cursor Dir", path, len);
 }
 
 static int action_get_title_onscreen_overlay_keyboard_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "OSK OVERLAY DIR", path, len);
+   return fill_title(s, "OSK Overlay Dir", path, len);
 }
 
 static int action_get_title_recording_config_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "RECORDING CONFIG DIR", path, len);
+   return fill_title(s, "Recording Config Dir", path, len);
 }
 
 static int action_get_title_recording_output_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "RECORDING OUTPUT DIR", path, len);
+   return fill_title(s, "Recording Output Dir", path, len);
 }
 
 static int action_get_title_video_shader_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "SHADER DIR", path, len);
+   return fill_title(s, "Shader Dir", path, len);
 }
 
 static int action_get_title_audio_filter_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "AUDIO FILTER DIR", path, len);
+   return fill_title(s, "Audio Filter Dir", path, len);
 }
 
 static int action_get_title_video_filter_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "VIDEO FILTER DIR", path, len);
+   return fill_title(s, "Video Filter Dir", path, len);
 }
 
 static int action_get_title_savefile_directory(const char *path, const char *label, 
@@ -419,7 +419,7 @@ static int action_get_title_savefile_directory(const char *path, const char *lab
 static int action_get_title_overlay_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "OVERLAY_DIR", path, len);
+   return fill_title(s, "Overlay Dir", path, len);
 }
 
 static int action_get_title_system_directory(const char *path, const char *label, 
