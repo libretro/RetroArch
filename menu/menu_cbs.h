@@ -194,6 +194,9 @@ int action_scan_directory(const char *path,
 int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx);
 
+int bind_right_generic(unsigned type, const char *label,
+       bool wraparound);
+
 void menu_cbs_init(void *data,
       menu_file_list_cbs_t *cbs,
       const char *path, const char *label,

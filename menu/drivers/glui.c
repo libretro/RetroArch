@@ -132,14 +132,11 @@ static void glui_draw_icon(gl_t *gl, glui_handle_t *glui,
       float rotation, float scale_factor,
       GRfloat *color)
 {
-   glEnable(GL_BLEND);
-   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
-
    struct gfx_coords coords;
    math_matrix_4x4 mymat, mrot, mscal;
+
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
    matrix_4x4_rotate_z(&mrot, rotation);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
@@ -653,6 +650,7 @@ static void glui_frame(void)
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
+   /* highlighted entry */
    glui_render_quad(gl, 0,
          header_height - menu->scroll_y + glui->line_height *
          selection, width, glui->line_height,
@@ -667,11 +665,13 @@ static void glui_frame(void)
 
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
+   /* header */
    glui_render_quad(gl, 0, 0, width,
          header_height,
          width, height,
          &blue_bg[0]);
 
+   /* shadow underneath header */
    glui_render_quad(gl, 0, header_height, width,
          header_height/12,
          width, height,
@@ -689,6 +689,8 @@ static void glui_frame(void)
    ticker_limit = (width - glui->margin*2) / glui->glyph_width;
    menu_animation_ticker_str(title_buf, ticker_limit,
          *frame_count / 100, title, true);
+
+   /* Title */
    glui_blit_line(title_margin, 0, width, height, title_buf,
          title_color, TEXT_ALIGN_LEFT);
 

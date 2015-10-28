@@ -365,7 +365,7 @@ static int disk_options_disk_idx_right(unsigned type, const char *label,
    return 0;
 }
 
-static int bind_right_generic(unsigned type, const char *label,
+int bind_right_generic(unsigned type, const char *label,
        bool wraparound)
 {
    return menu_setting_set(type, label, MENU_ACTION_RIGHT, wraparound);

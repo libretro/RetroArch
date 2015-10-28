@@ -95,6 +95,12 @@ static int action_select_directory(const char *path, const char *label, unsigned
    return action_ok_directory_push(path, label, type, idx, 0 /* ignored */);
 }
 
+static int action_select_driver_setting(const char *path, const char *label, unsigned type,
+      size_t idx)
+{
+   return bind_right_generic(type, label, true);
+}
+
 static int action_select_core_setting(const char *path, const char *label, unsigned type,
       size_t idx)
 {
@@ -185,6 +191,17 @@ int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       return -1;
 
    BIND_ACTION_SELECT(cbs, action_select_default);
+
+   if (cbs->setting)
+   {
+      uint64_t flags = menu_setting_get_flags(cbs->setting);
+
+      if (flags & SD_FLAG_IS_DRIVER)
+      {
+         BIND_ACTION_SELECT(cbs, action_select_driver_setting);
+         return 0;
+      }
+   }
 
    if ((type >= MENU_SETTINGS_CORE_OPTION_START))
    {
