@@ -90,7 +90,7 @@ ACHIEVEMENTS
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../libretro-common/utils/md5.c"
 #include "../net_http_special.c"
-#include "../semaphore.c"
+#include "../ra_semaphore.c"
 #include "../async_job.c"
 #include "../cheevos.c"
 #endif

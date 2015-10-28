@@ -16,7 +16,7 @@
 #include <stdlib.h>
 
 #include <rthreads/rthreads.h>
-#include <semaphore.h>
+#include <ra_semaphore.h>
 #include <async_job.h>
 
 typedef struct async_job_node async_job_node_t;
