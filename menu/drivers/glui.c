@@ -873,15 +873,20 @@ static void glui_context_bg_destroy(glui_handle_t *glui)
 
 static void glui_context_destroy(void)
 {
-   gl_t          *gl     = (gl_t*)video_driver_get_ptr(NULL);
+   unsigned i;
    glui_handle_t *glui   = NULL;
    menu_handle_t *menu   = menu_driver_get_ptr();
-   driver_t      *driver = driver_get_ptr();
 
-   if (!menu || !menu->userdata || !gl || !driver)
+   if (!menu || !menu->userdata)
       return;
 
    glui = (glui_handle_t*)menu->userdata;
+
+   if (!glui)
+      return;
+
+   for (i = 0; i < GLUI_TEXTURE_LAST; i++)
+      video_texture_unload((uintptr_t*)&glui->textures.list[i].id);
 
    menu_display_free_main_font();
 
