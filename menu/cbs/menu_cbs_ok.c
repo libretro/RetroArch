@@ -1068,6 +1068,7 @@ static int action_ok_download_generic(const char *path,
 #ifdef HAVE_NETWORKING
    char s[PATH_MAX_LENGTH];
    char s2[PATH_MAX_LENGTH];
+   char s3[PATH_MAX_LENGTH];
    settings_t *settings            = config_get_ptr();
 
    fill_pathname_join(s, settings->network.buildbot_assets_url,
@@ -1101,7 +1102,7 @@ static int action_ok_download_generic(const char *path,
    else
       strlcpy(s, settings->network.buildbot_url, sizeof(s));
 
-   fill_pathname_join(s, s, path, sizeof(s));
+   fill_pathname_join(s3, s, path, sizeof(s));
 
    strlcpy(core_updater_path, path, sizeof(core_updater_path));
 
@@ -1112,7 +1113,7 @@ static int action_ok_download_generic(const char *path,
 
    menu_display_msg_queue_push(s2, 1, 90, true);
 
-   rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, s,
+   rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, s3,
          type_msg, 0, 1, true);
 #endif
    return 0;
