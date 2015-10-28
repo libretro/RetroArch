@@ -43,7 +43,7 @@ static INLINE void sanitize_to_string(char *s, const char *label, size_t len)
    char new_label[PATH_MAX_LENGTH] = {0};
 
    strlcpy(new_label, label, sizeof(new_label));
-   strlcpy(s, string_to_upper(new_label), len);
+   strlcpy(s, new_label, len);
    replace_chars(s, '_', ' ');
 }
 
@@ -285,12 +285,12 @@ static int action_get_title_group_settings(const char *path, const char *label,
       string_list_free(list_label);
    }
 
-   strlcpy(s, string_to_upper(elem0), len);
+   strlcpy(s, elem0, len);
 
    if (elem1[0] != '\0')
    {
       strlcat(s, " - ", len);
-      strlcat(s, string_to_upper(elem1), len);
+      strlcat(s, elem1, len);
    }
 
    return 0;
@@ -420,43 +420,43 @@ static int action_get_title_video_filter_directory(const char *path, const char 
 static int action_get_title_savefile_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "SAVEFILE DIR", path, len);
+   return fill_title(s, "Savefile Dir", path, len);
 }
 
 static int action_get_title_overlay_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "OVERLAY DIR", path, len);
+   return fill_title(s, "OVERLAY_DIR", path, len);
 }
 
 static int action_get_title_system_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "SYSTEM DIR", path, len);
+   return fill_title(s, "System Dir", path, len);
 }
 
 static int action_get_title_assets_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "ASSETS DIR", path, len);
+   return fill_title(s, "Assets Dir", path, len);
 }
 
 static int action_get_title_extraction_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "CACHE DIR", path, len);
+   return fill_title(s, "Cache Dir", path, len);
 }
 
 static int action_get_title_menu(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "MENU", path, len);
+   return fill_title(s, "Menu", path, len);
 }
 
 static int action_get_title_input_settings(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   strlcpy(s, "INPUT SETTINGS", len);
+   strlcpy(s, "Input Settings", len);
    return 0;
 }
 

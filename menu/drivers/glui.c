@@ -413,43 +413,62 @@ static void glui_render_label_value(glui_handle_t *glui, gl_t *gl,
 
    hash_value = menu_hash_calculate(value);
 
-   switch (hash_value)
+   if (!strcmp(value, "disabled") ||
+         !strcmp(value, "off"))
    {
-      case MENU_VALUE_COMP:
-         break;
-      case MENU_VALUE_MORE:
-         break;
-      case MENU_VALUE_CORE:
-         break;
-      case MENU_VALUE_RDB:
-         break;
-      case MENU_VALUE_CURSOR:
-         break;
-      case MENU_VALUE_FILE:
-         break;
-      case MENU_VALUE_DIR:
-         break;
-      case MENU_VALUE_MUSIC:
-         break;
-      case MENU_VALUE_IMAGE:
-         break;
-      case MENU_VALUE_MOVIE:
-         break;
-      case MENU_VALUE_ON:
-         if (glui->textures.list[GLUI_TEXTURE_SWITCH_ON].id)
-            texture_switch = glui->textures.list[GLUI_TEXTURE_SWITCH_ON].id;
-         else
-            do_draw_text = true;
-         break;
-      case MENU_VALUE_OFF:
-         if (glui->textures.list[GLUI_TEXTURE_SWITCH_OFF].id)
-            texture_switch = glui->textures.list[GLUI_TEXTURE_SWITCH_OFF].id;
-         else
-            do_draw_text = true;
-         break;
-      default:
+      if (glui->textures.list[GLUI_TEXTURE_SWITCH_OFF].id)
+         texture_switch = glui->textures.list[GLUI_TEXTURE_SWITCH_OFF].id;
+      else
          do_draw_text = true;
-         break;
+   }
+   else if (!strcmp(value, "enabled") ||
+         !strcmp(value, "on"))
+   {
+      if (glui->textures.list[GLUI_TEXTURE_SWITCH_ON].id)
+         texture_switch = glui->textures.list[GLUI_TEXTURE_SWITCH_ON].id;
+      else
+         do_draw_text = true;
+   }
+   else
+   {
+      switch (hash_value)
+      {
+         case MENU_VALUE_COMP:
+            break;
+         case MENU_VALUE_MORE:
+            break;
+         case MENU_VALUE_CORE:
+            break;
+         case MENU_VALUE_RDB:
+            break;
+         case MENU_VALUE_CURSOR:
+            break;
+         case MENU_VALUE_FILE:
+            break;
+         case MENU_VALUE_DIR:
+            break;
+         case MENU_VALUE_MUSIC:
+            break;
+         case MENU_VALUE_IMAGE:
+            break;
+         case MENU_VALUE_MOVIE:
+            break;
+         case MENU_VALUE_ON:
+            if (glui->textures.list[GLUI_TEXTURE_SWITCH_ON].id)
+               texture_switch = glui->textures.list[GLUI_TEXTURE_SWITCH_ON].id;
+            else
+               do_draw_text = true;
+            break;
+         case MENU_VALUE_OFF:
+            if (glui->textures.list[GLUI_TEXTURE_SWITCH_OFF].id)
+               texture_switch = glui->textures.list[GLUI_TEXTURE_SWITCH_OFF].id;
+            else
+               do_draw_text = true;
+            break;
+         default:
+            do_draw_text = true;
+            break;
+      }
    }
 
    if (do_draw_text)
@@ -664,11 +683,13 @@ static void glui_frame(void)
          header_height/12,
          width, height,
          &shadow_bg[0]);
+   
 
    ticker_limit = (width - glui->margin*2) / glui->glyph_width -
          strlen(menu_hash_to_str(MENU_VALUE_BACK)) * 2;
    menu_animation_ticker_str(title_buf, ticker_limit,
          *frame_count / 100, title, true);
+   RARCH_LOG("title_msg: %s\n", title_buf);
    glui_blit_line(width / 2, 0, width, height, title_buf,
          title_color, TEXT_ALIGN_CENTER);
 

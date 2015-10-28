@@ -1338,43 +1338,62 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             break;
       }
 
-      switch (hash_value)
+      if (!strcmp(entry.value, "disabled") ||
+            !strcmp(entry.value, "off"))
       {
-         case MENU_VALUE_COMP:
-            break;
-         case MENU_VALUE_MORE:
-            break;
-         case MENU_VALUE_CORE:
-            break;
-         case MENU_VALUE_RDB:
-            break;
-         case MENU_VALUE_CURSOR:
-            break;
-         case MENU_VALUE_FILE:
-            break;
-         case MENU_VALUE_DIR:
-            break;
-         case MENU_VALUE_MUSIC:
-            break;
-         case MENU_VALUE_IMAGE:
-            break;
-         case MENU_VALUE_MOVIE:
-            break;
-         case MENU_VALUE_ON:
-            if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
-               texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id;
-            else
-               do_draw_text = true;
-            break;
-         case MENU_VALUE_OFF:
-            if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
-               texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id;
-            else
-               do_draw_text = true;
-            break;
-         default:
+         if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
+            texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id;
+         else
             do_draw_text = true;
-            break;
+      }
+      else if (!strcmp(entry.value, "enabled") ||
+            !strcmp(entry.value, "on"))
+      {
+         if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
+            texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id;
+         else
+            do_draw_text = true;
+      }
+      else
+      {
+         switch (hash_value)
+         {
+            case MENU_VALUE_COMP:
+               break;
+            case MENU_VALUE_MORE:
+               break;
+            case MENU_VALUE_CORE:
+               break;
+            case MENU_VALUE_RDB:
+               break;
+            case MENU_VALUE_CURSOR:
+               break;
+            case MENU_VALUE_FILE:
+               break;
+            case MENU_VALUE_DIR:
+               break;
+            case MENU_VALUE_MUSIC:
+               break;
+            case MENU_VALUE_IMAGE:
+               break;
+            case MENU_VALUE_MOVIE:
+               break;
+            case MENU_VALUE_ON:
+               if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
+                  texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id;
+               else
+                  do_draw_text = true;
+               break;
+            case MENU_VALUE_OFF:
+               if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
+                  texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id;
+               else
+                  do_draw_text = true;
+               break;
+            default:
+               do_draw_text = true;
+               break;
+         }
       }
 
       ticker_limit = 35;
