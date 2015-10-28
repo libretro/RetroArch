@@ -868,7 +868,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_CHEEVOS), 1)
       ifeq ($(HAVE_THREADS), 1)
          DEFINES += -DHAVE_CHEEVOS
-         OBJ += cheevos.o semaphore.o async_job.o libretro-common/utils/md5.o
+         OBJ += cheevos.o ra_semaphore.o async_job.o libretro-common/utils/md5.o
       endif
    endif
 endif

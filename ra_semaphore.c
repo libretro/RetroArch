@@ -27,7 +27,7 @@
 #include <stdlib.h>
 
 #include <rthreads/rthreads.h>
-#include <semaphore.h>
+#include <ra_semaphore.h>
 
 struct ssem
 {
