@@ -1102,7 +1102,7 @@ static int action_ok_download_generic(const char *path,
    else
       strlcpy(s, settings->network.buildbot_url, sizeof(s));
 
-   fill_pathname_join(s3, s, path, sizeof(s));
+   fill_pathname_join(s3, s, path, sizeof(s3));
 
    strlcpy(core_updater_path, path, sizeof(core_updater_path));
 
