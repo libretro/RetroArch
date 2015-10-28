@@ -56,81 +56,74 @@ static int fill_title(char *s, const char *title, const char *path, size_t len)
 static int action_get_title_disk_image_append(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "DISK APPEND", path, len);
+   return fill_title(s, "Disk Append", path, len);
 }
 
 static int action_get_title_cheat_file_load(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "CHEAT FILE", path, len);
+   return fill_title(s, "Cheat File", path, len);
 }
 
 static int action_get_title_remap_file_load(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "REMAP FILE", path, len);
+   return fill_title(s, "Remap File", path, len);
 }
 
 static int action_get_title_help(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   strlcpy(s, "HELP", len);
-   return 0;
-}
-
-static int action_get_title_help_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   strlcpy(s, "HELP", len);
+   strlcpy(s, "Help", len);
    return 0;
 }
 
 static int action_get_title_overlay(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "OVERLAY", path, len);
+   return fill_title(s, "Overlay", path, len);
 }
 
 static int action_get_title_video_filter(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "VIDEO FILTER", path, len);
+   return fill_title(s, "Video Filter", path, len);
 }
 
 static int action_get_title_cheat_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "CHEAT DIR", path, len);
+   return fill_title(s, "Cheat Dir", path, len);
 }
 
 static int action_get_title_core_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "CORE DIR", path, len);
+   return fill_title(s, "Core Dir", path, len);
 }
 
 static int action_get_title_core_info_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "CORE INFO DIR", path, len);
+   return fill_title(s, "Core Info Dir", path, len);
 }
 
 static int action_get_title_audio_filter(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "AUDIO FILTER", path, len);
+   return fill_title(s, "Audio Filter Dir", path, len);
 }
 
 static int action_get_title_font_path(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "FONT", path, len);
+   return fill_title(s, "Font", path, len);
 }
 
 static int action_get_title_video_shader_preset(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "SHADER PRESET", path, len);
+   return fill_title(s, "Shader Preset", path, len);
 }
 
 static int action_get_title_generic(char *s, size_t len, const char *path,
@@ -155,115 +148,115 @@ static int action_get_title_generic(char *s, size_t len, const char *path,
 static int action_get_title_deferred_database_manager_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "DATABASE SELECTION");
+   return action_get_title_generic(s, len, path, "Database Selection");
 }
 
 static int action_get_title_deferred_cursor_manager_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST");
+   return action_get_title_generic(s, len, path, "Database Cursor List");
 }
 
 static int action_get_title_list_rdb_entry_developer(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: DEVELOPER ");
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Developer ");
 }
 
 static int action_get_title_list_rdb_entry_publisher(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: PUBLISHER ");
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Publisher ");
 }
 
 static int action_get_title_list_rdb_entry_origin(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: ORIGIN ");
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Origin ");
 }
 
 static int action_get_title_list_rdb_entry_franchise(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: FRANCHISE ");
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Franchise ");
 }
 
 static int action_get_title_list_rdb_entry_edge_magazine_rating(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: EDGE MAGAZINE RATING ");
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Edge Magazine Rating ");
 }
 
 static int action_get_title_list_rdb_entry_edge_magazine_issue(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: EDGE MAGAZINE ISSUE ");
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Edge Magazine Issue ");
 }
 
 static int action_get_title_list_rdb_entry_releasedate_by_month(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: RELEASEDATE BY MONTH ");
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Releasedate By Month ");
 }
 
 static int action_get_title_list_rdb_entry_releasedate_by_year(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: RELEASEDATE BY YEAR ");
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Releasedate By Year ");
 }
 
 static int action_get_title_list_rdb_entry_esrb_rating(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: ESRB RATING ");
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: ESRB Rating ");
 }
 
 static int action_get_title_list_rdb_entry_database_info(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "DATABASE INFO ");
+   return action_get_title_generic(s, len, path, "Database Info ");
 }
 
 static int action_get_title_list_rdb_entry_elspa_rating(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: ELSPA RATING ");
+   return action_get_title_generic(s, len, path, "Databsae Cursor List - Filter: ELSPA Rating ");
 }
 
 static int action_get_title_list_rdb_entry_pegi_rating(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: PEGI RATING ");
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: PEGI Rating ");
 }
 
 static int action_get_title_list_rdb_entry_cero_rating(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: CERO RATING ");
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: CERO Rating ");
 }
 
 static int action_get_title_list_rdb_entry_bbfc_rating(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: BBFC RATING ");
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: BBFC Rating ");
 }
 
 static int action_get_title_list_rdb_entry_max_users(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "DATABASE CURSOR LIST - FILTER: MAX USERS ");
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Max Users ");
 }
 
 static int action_get_title_deferred_core_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "DETECTED CORES", path, len);
+   return fill_title(s, "Supported Cores", path, len);
 }
 
 static int action_get_title_default(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   snprintf(s, len, "SELECT FILE %s", path);
+   snprintf(s, len, "Select File %s", path);
    return 0;
 }
 
@@ -643,11 +636,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_REMAP_FILE_LOAD:
          BIND_ACTION_GET_TITLE(cbs, action_get_title_remap_file_load);
          break;
+      case MENU_LABEL_HELP_LIST:
       case MENU_LABEL_HELP:
          BIND_ACTION_GET_TITLE(cbs, action_get_title_help);
-         break;
-      case MENU_LABEL_HELP_LIST:
-         BIND_ACTION_GET_TITLE(cbs, action_get_title_help_list);
          break;
       case MENU_LABEL_INPUT_OVERLAY:
          BIND_ACTION_GET_TITLE(cbs, action_get_title_overlay);
