@@ -25,6 +25,7 @@
 #include <X11/extensions/Xinerama.h>
 #endif
 
+#include "../keyboard_line.h"
 #include "../input_keymaps.h"
 
 /* forward declarations */

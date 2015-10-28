@@ -171,9 +171,11 @@ static void print_help(const char *arg0)
    puts("      --log-file=FILE   Log messages to FILE.");
    puts("      --version         Show version.");
    puts("      --features        Prints available features compiled into program.");
+#ifdef HAVE_MENU
    puts("      --menu            Do not require content or libretro core to be loaded,\n"
         "                        starts directly in menu. If no arguments are passed to\n"
         "                        the program, it is equivalent to using --menu as only argument.");
+#endif
    puts("  -s, --save=PATH       Path for save files (*.srm).");
    puts("  -S, --savestate=PATH  Path for the save state files (*.state).");
    puts("  -f, --fullscreen      Start the program in fullscreen regardless of config settings.");
@@ -1264,8 +1266,10 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
       }
       else
       {
+#ifdef HAVE_MENU
          RARCH_LOG("No content, starting dummy core.\n");
          argv[(*argc)++] = strdup("--menu");
+#endif
       }
    }
 
