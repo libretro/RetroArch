@@ -61,6 +61,7 @@ struct glui_texture_item
 
 typedef struct glui_handle
 {
+   unsigned tabs_height;
    unsigned line_height;
    unsigned icon_size;
    unsigned margin;
@@ -254,7 +255,7 @@ static void glui_draw_scrollbar(gl_t *gl, unsigned width, unsigned height, GRflo
 
    glui                 = (glui_handle_t*)menu->userdata;
    content_height       = menu_entries_get_end() * glui->line_height;
-   total_height         = height - header_height;
+   total_height         = height - header_height - glui->tabs_height;
    scrollbar_height     = total_height / (content_height / total_height) - (header_height / 6);
    y                    = total_height * menu->scroll_y / content_height;
 
@@ -266,7 +267,7 @@ static void glui_draw_scrollbar(gl_t *gl, unsigned width, unsigned height, GRflo
 
       glui_render_quad(gl,
             width - scrollbar_width - (header_height / 12),
-            header_height + y + (header_height / 12),
+            header_height + glui->tabs_height + y + (header_height / 12),
             scrollbar_width,
             scrollbar_height,
             width, height,
@@ -391,12 +392,12 @@ static void glui_render(void)
       menu->scroll_y = 0;
 
    bottom = menu_entries_get_end() * glui->line_height
-      - height + header_height;
+      - height + header_height + glui->tabs_height;
    if (menu->scroll_y > bottom)
       menu->scroll_y = bottom;
 
    if (menu_entries_get_end() * glui->line_height
-         < height - header_height)
+         < height - header_height - glui->tabs_height)
       menu->scroll_y = 0;
 
    if (menu_entries_get_end() < height / glui->line_height)
@@ -532,7 +533,7 @@ static void glui_render_menu_list(glui_handle_t *glui, gl_t *gl,
       if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
          continue;
 
-      y = header_height - menu->scroll_y + (glui->line_height * i);
+      y = header_height + glui->tabs_height - menu->scroll_y + (glui->line_height * i);
 
       if (y > (int)height || ((y + (int)glui->line_height) < 0))
          continue;
@@ -624,7 +625,7 @@ static void glui_frame(void)
       0, 0, 0, 0.2,
       0, 0, 0, 0.2,
    };
-   unsigned width, height, ticker_limit;
+   unsigned width, height, ticker_limit, i, tab_width;
    char msg[PATH_MAX_LENGTH];
    char title[PATH_MAX_LENGTH];
    char title_buf[PATH_MAX_LENGTH];
@@ -640,6 +641,8 @@ static void glui_frame(void)
    const uint32_t normal_color             = 0x212121ff;
    const uint32_t hover_color              = 0x212121ff;
    const uint32_t title_color              = 0xffffffff;
+   const uint32_t activetab_color          = 0xffffffff;
+   const uint32_t passivetab_color         = 0xffffff88;
 
    if (!menu || !menu->userdata)
       return;
@@ -676,7 +679,7 @@ static void glui_frame(void)
 
    /* highlighted entry */
    glui_render_quad(gl, 0,
-         header_height - menu->scroll_y + glui->line_height *
+         header_height + glui->tabs_height - menu->scroll_y + glui->line_height *
          selection, width, glui->line_height,
          width, height,
          &lightblue_bg[0]);
@@ -697,6 +700,30 @@ static void glui_frame(void)
 
    /* shadow underneath header */
    glui_render_quad(gl, 0, header_height, width,
+         glui->tabs_height,
+         width, height,
+         &blue_bg[0]);
+
+   for (i = 0; i <= GLUI_SYSTEM_TAB_END; i++)
+   {
+      uint32_t tab_color = passivetab_color;
+      if (i == glui->categories.selection_ptr)
+         tab_color = activetab_color;
+
+      glui_blit_line(width / (GLUI_SYSTEM_TAB_END+1) * (i+0.5),
+            header_height - header_height/8,
+            width, height, "TAB", tab_color, TEXT_ALIGN_CENTER);
+   }
+
+   tab_width = width / (GLUI_SYSTEM_TAB_END+1);
+   glui_render_quad(gl, glui->categories.selection_ptr * tab_width,
+         header_height + glui->tabs_height - (header_height/16),
+         tab_width,
+         header_height/16,
+         width, height,
+         &pure_white[0]);
+
+   glui_render_quad(gl, 0, header_height + glui->tabs_height, width,
          header_height/12,
          width, height,
          &shadow_bg[0]);
@@ -801,6 +828,7 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
    new_header_height            = scale_factor / 3;
    new_font_size                = scale_factor / 9;
 
+   glui->tabs_height            = scale_factor / 4;
    glui->line_height            = scale_factor / 3;
    glui->margin                 = scale_factor / 9;
    glui->icon_size              = scale_factor / 3;
@@ -1131,12 +1159,12 @@ static size_t glui_list_get_size(void *data, menu_list_type_t type)
    menu_handle_t *menu     = (menu_handle_t*)data;
    glui_handle_t *glui       = menu    ? (glui_handle_t*)menu->userdata : NULL;
 
-   switch (type)
+   /*switch (type)
    {
-      case MENU_LIST_PLAIN:
+      case MENU_LIST_PLAIN:*/
          list_size  = menu_entries_get_stack_size(0);
-         break;
-   }
+         /*break;
+   }*/
 
    return list_size;
 }
