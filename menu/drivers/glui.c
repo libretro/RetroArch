@@ -606,6 +606,7 @@ static void glui_frame(void)
    char title[PATH_MAX_LENGTH];
    char title_buf[PATH_MAX_LENGTH];
    size_t selection;
+   size_t title_margin;
    gl_t *gl                                = NULL;
    glui_handle_t *glui                     = NULL;
    const struct font_renderer *font_driver = NULL;
@@ -674,16 +675,20 @@ static void glui_frame(void)
          width, height,
          &shadow_bg[0]);
 
-   ticker_limit = (width - glui->margin*2) / glui->glyph_width -
-         strlen(menu_hash_to_str(MENU_VALUE_BACK)) * 2;
-   menu_animation_ticker_str(title_buf, ticker_limit,
-         *frame_count / 100, title, true);
-   glui_blit_line(width / 2, 0, width, height, title_buf,
-         title_color, TEXT_ALIGN_CENTER);
+   title_margin = glui->margin;
 
    if (menu_entries_show_back())
+   {
+      title_margin = glui->icon_size;
       glui_draw_icon(gl, glui, glui->textures.list[GLUI_TEXTURE_BACK].id,
          0, 0, width, height, 0, 1, &white_bg[0]);
+   }
+
+   ticker_limit = (width - glui->margin*2) / glui->glyph_width;
+   menu_animation_ticker_str(title_buf, ticker_limit,
+         *frame_count / 100, title, true);
+   glui_blit_line(title_margin, 0, width, height, title_buf,
+         title_color, TEXT_ALIGN_LEFT);
 
    glui_draw_scrollbar(gl, width, height, &grey_bg[0]);
 
