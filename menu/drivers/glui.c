@@ -689,7 +689,6 @@ static void glui_frame(void)
          strlen(menu_hash_to_str(MENU_VALUE_BACK)) * 2;
    menu_animation_ticker_str(title_buf, ticker_limit,
          *frame_count / 100, title, true);
-   RARCH_LOG("title_msg: %s\n", title_buf);
    glui_blit_line(width / 2, 0, width, height, title_buf,
          title_color, TEXT_ALIGN_CENTER);
 
