@@ -233,7 +233,7 @@ static void glui_draw_scrollbar(gl_t *gl, unsigned width, unsigned height, GRflo
 
    glui                 = (glui_handle_t*)menu->userdata;
    content_height       = menu_entries_get_end() * glui->line_height;
-   total_height         = height - header_height * 2;
+   total_height         = height - header_height;
    scrollbar_height     = total_height / (content_height / total_height);
    y                    = total_height * menu->scroll_y / content_height;
 
@@ -368,12 +368,12 @@ static void glui_render(void)
       menu->scroll_y = 0;
 
    bottom = menu_entries_get_end() * glui->line_height
-      - height + header_height * 2;
+      - height + header_height;
    if (menu->scroll_y > bottom)
       menu->scroll_y = bottom;
 
    if (menu_entries_get_end() * glui->line_height
-         < height - header_height*2)
+         < height - header_height)
       menu->scroll_y = 0;
 
    if (menu_entries_get_end() < height / glui->line_height)
@@ -601,18 +601,10 @@ static void glui_frame(void)
       0, 0, 0, 0.2,
       0, 0, 0, 0.2,
    };
-   GRfloat shadow_bg2[16]=  {
-      0, 0, 0, 0.2,
-      0, 0, 0, 0.2,
-      0, 0, 0, 0,
-      0, 0, 0, 0,
-   };
    unsigned width, height, ticker_limit;
    char msg[PATH_MAX_LENGTH];
    char title[PATH_MAX_LENGTH];
    char title_buf[PATH_MAX_LENGTH];
-   char title_msg[PATH_MAX_LENGTH];
-   char timedate[PATH_MAX_LENGTH];
    size_t selection;
    gl_t *gl                                = NULL;
    glui_handle_t *glui                     = NULL;
@@ -638,8 +630,6 @@ static void glui_frame(void)
    msg[0]       = '\0';
    title[0]     = '\0';
    title_buf[0] = '\0';
-   title_msg[0] = '\0';
-   timedate[0]  = '\0';
 
    video_driver_get_size(&width, &height);
 
@@ -683,7 +673,6 @@ static void glui_frame(void)
          header_height/12,
          width, height,
          &shadow_bg[0]);
-   
 
    ticker_limit = (width - glui->margin*2) / glui->glyph_width -
          strlen(menu_hash_to_str(MENU_VALUE_BACK)) * 2;
@@ -696,42 +685,7 @@ static void glui_frame(void)
       glui_draw_icon(gl, glui, glui->textures.list[GLUI_TEXTURE_BACK].id,
          0, 0, width, height, 0, 1, &white_bg[0]);
 
-   glui_render_quad(gl,
-         0,
-         height - header_height,
-         width,
-         header_height,
-         width, height,
-         &blue_bg[0]);
-
-   glui_render_quad(gl,
-         0,
-         height - header_height - (header_height/24),
-         width,
-         (header_height/24),
-         width, height,
-         &shadow_bg2[0]);
-
    glui_draw_scrollbar(gl, width, height, &grey_bg[0]);
-
-   if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
-      glui_blit_line(
-            glui->margin,
-            height - glui->line_height,
-            width, height,
-            title_msg,
-            title_color, TEXT_ALIGN_LEFT);
-
-   if (settings->menu.timedate_enable)
-   {
-      menu_display_timedate(timedate, sizeof(timedate), 0);
-      glui_blit_line(
-            width - glui->margin,
-            height - glui->line_height,
-            width, height,
-            timedate, title_color,
-            TEXT_ALIGN_RIGHT);
-   }
 
    menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
 
