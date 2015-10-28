@@ -38,7 +38,7 @@ struct async_job
    sthread_t* thread;
 };
 
-static void processor(void *userdata)
+static void async_job_processor(void *userdata)
 {
    async_job_t *ajob = (async_job_t*)userdata;
    async_job_node_t *node;
@@ -79,7 +79,7 @@ async_job_t *async_job_new(void)
          
          if (ajob->sem)
          {
-            ajob->thread = sthread_create(processor, (void*)ajob);
+            ajob->thread = sthread_create(async_job_processor, (void*)ajob);
             
             if (ajob->thread)
                return ajob;
@@ -108,30 +108,26 @@ void async_job_free(async_job_t *ajob)
 int async_job_add(async_job_t *ajob, async_task_t task, void *payload)
 {
    async_job_node_t *node = (async_job_node_t*)malloc(sizeof(*node));
-   
-   if (node)
+
+   if (!node)
+      return -1;
+
+   node->task    = task;
+   node->payload = payload;
+   node->next    = NULL;
+
+   slock_lock(ajob->lock);
+
+   if (ajob->first)
    {
-      node->task = task;
-      node->payload = payload;
-      node->next = NULL;
-      
-      slock_lock(ajob->lock);
-      
-      if (ajob->first)
-      {
-         ajob->last->next = node;
-         ajob->last = node;
-      }
-      else
-      {
-         ajob->first = ajob->last = node;
-      }
-      
-      slock_unlock(ajob->lock);
-      ssem_signal(ajob->sem);
-      
-      return 0;
+      ajob->last->next = node;
+      ajob->last       = node;
    }
-   
-   return -1;
+   else
+      ajob->first      = ajob->last = node;
+
+   slock_unlock(ajob->lock);
+   ssem_signal(ajob->sem);
+
+   return 0;
 }
