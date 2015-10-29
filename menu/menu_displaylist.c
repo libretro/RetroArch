@@ -1706,7 +1706,7 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
    else
       menu_entries_push(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
-            "", 0, 0, 0);
+            "", MENU_SETTING_NO_ITEM, 0, 0);
 
    return 0;
 }
