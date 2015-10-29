@@ -552,6 +552,20 @@ int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
       return -1;
 
    BIND_ACTION_RIGHT(cbs, bind_right_generic);
+    
+    if (type == MENU_SETTING_NO_ITEM)
+    {
+        switch (menu_label_hash)
+        {
+            case MENU_VALUE_HORIZONTAL_MENU:
+            case MENU_VALUE_MAIN_MENU:
+            case 153956705: /* TODO/FIXME - dehardcode */
+                BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
+                return 0;
+            default:
+                break;
+        }
+    }
 
    if (menu_cbs_init_bind_right_compare_label(cbs, label, label_hash, menu_label_hash, elem0) == 0)
       return 0;
