@@ -158,6 +158,9 @@ static const char *stock_fragment_legacy =
    "}";
 
 static const char *stock_vertex_modern_blend =
+   "#ifdef GL_ES\n"
+   "precision mediump float;\n"
+   "#endif\n"
    "attribute vec2 TexCoord;\n"
    "attribute vec2 VertexCoord;\n"
    "attribute vec4 Color;\n"
