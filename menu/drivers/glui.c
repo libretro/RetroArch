@@ -783,7 +783,7 @@ static void glui_frame(void)
    {
       title_margin = glui->icon_size;
       glui_draw_icon(gl, glui, glui->textures.list[GLUI_TEXTURE_BACK].id,
-         0, 0, width, height, 0, 1, &white_bg[0]);
+         0, 0, width, height, 0, 1, &pure_white[0]);
    }
 
    ticker_limit = (width - glui->margin*2) / glui->glyph_width;
