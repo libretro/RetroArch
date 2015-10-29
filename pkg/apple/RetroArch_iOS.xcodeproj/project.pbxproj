@@ -554,6 +554,7 @@
 					"-DHAVE_MFI",
 					"-DHAVE_AVFOUNDATION",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch9;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
@@ -669,6 +670,7 @@
 					"-DHAVE_MFI",
 					"-DHAVE_AVFOUNDATION",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch9;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
