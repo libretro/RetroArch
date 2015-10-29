@@ -269,7 +269,7 @@ static void glui_draw_scrollbar(gl_t *gl, unsigned width, unsigned height, GRflo
 
       glui_render_quad(gl,
             width - scrollbar_width - (header_height / 12),
-            header_height + glui->tabs_height + y + (header_height / 12),
+            header_height + y + (header_height / 12),
             scrollbar_width,
             scrollbar_height,
             width, height,
@@ -535,7 +535,7 @@ static void glui_render_menu_list(glui_handle_t *glui, gl_t *gl,
       if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
          continue;
 
-      y = header_height + glui->tabs_height - menu->scroll_y + (glui->line_height * i);
+      y = header_height - menu->scroll_y + (glui->line_height * i);
 
       if (y > (int)height || ((y + (int)glui->line_height) < 0))
          continue;
@@ -681,7 +681,7 @@ static void glui_frame(void)
 
    /* highlighted entry */
    glui_render_quad(gl, 0,
-         header_height + glui->tabs_height - menu->scroll_y + glui->line_height *
+         header_height - menu->scroll_y + glui->line_height *
          selection, width, glui->line_height,
          width, height,
          &lightblue_bg[0]);
@@ -700,8 +700,8 @@ static void glui_frame(void)
          width, height,
          &blue_bg[0]);
 
-   /* shadow underneath header */
-   glui_render_quad(gl, 0, header_height, width,
+   /* tabs background */
+   glui_render_quad(gl, 0, height - glui->tabs_height, width,
          glui->tabs_height,
          width, height,
          &blue_bg[0]);
@@ -728,19 +728,19 @@ static void glui_frame(void)
 
       strlcpy(tab_label, string_to_upper(tab_label), sizeof(tab_label));
       glui_blit_line(width / (GLUI_SYSTEM_TAB_END+1) * (i+0.5),
-            header_height - header_height/8,
+            height - glui->tabs_height - header_height/8,
             width, height, tab_label, tab_color, TEXT_ALIGN_CENTER);
    }
 
    tab_width = width / (GLUI_SYSTEM_TAB_END+1);
    glui_render_quad(gl, glui->categories.selection_ptr * tab_width,
-         header_height + glui->tabs_height - (header_height/16),
+         height - (header_height/16),
          tab_width,
          header_height/16,
          width, height,
          &pure_white[0]);
 
-   glui_render_quad(gl, 0, header_height + glui->tabs_height, width,
+   glui_render_quad(gl, 0, header_height, width,
          header_height/12,
          width, height,
          &shadow_bg[0]);
