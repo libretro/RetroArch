@@ -743,6 +743,11 @@ static void glui_frame(void)
    /* display tabs if depth equal one, if not hide them */
    if (glui_list_get_size(menu, MENU_LIST_PLAIN) == 1)
    {
+      float scale_factor;
+      menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
+
+      glui->tabs_height            = scale_factor / 3;
+
       /* tabs background */
       glui_render_quad(gl, 0, height - glui->tabs_height, width,
             glui->tabs_height,
