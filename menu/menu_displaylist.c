@@ -1929,7 +1929,7 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
 #else
    menu_entries_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
-         "", 0, 0, 0);
+         "", MENU_SETTING_NO_ITEM, 0, 0);
 #endif
 
    return 0;
@@ -2125,7 +2125,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
       {
          menu_entries_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
-               "", 0, 0, 0);
+               "", MENU_SETTING_NO_ITEM, 0, 0);
       }
 
       string_list_free(str_list);
@@ -2402,7 +2402,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 #else
          menu_entries_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
-               "", 0, 0, 0);
+               "", MENU_SETTING_NO_ITEM, 0, 0);
          ret = 0;
 #endif
          info->need_refresh = true;
