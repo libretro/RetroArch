@@ -643,8 +643,8 @@ static void glui_frame(void)
    const uint32_t normal_color             = 0x212121ff;
    const uint32_t hover_color              = 0x212121ff;
    const uint32_t title_color              = 0xffffffff;
-   const uint32_t activetab_color          = 0xffffffff;
-   const uint32_t passivetab_color         = 0xffffff88;
+   const uint32_t activetab_color          = 0x0096f2ff;
+   const uint32_t passivetab_color         = 0x9e9e9eff;
 
    if (!menu || !menu->userdata)
       return;
@@ -704,7 +704,13 @@ static void glui_frame(void)
    glui_render_quad(gl, 0, height - glui->tabs_height, width,
          glui->tabs_height,
          width, height,
-         &blue_bg[0]);
+         &white_bg[0]);
+
+   /* tabs separator */
+   glui_render_quad(gl, 0, height - glui->tabs_height, width,
+         1,
+         width, height,
+         &grey_bg[0]);
 
    for (i = 0; i <= GLUI_SYSTEM_TAB_END; i++)
    {
@@ -738,7 +744,7 @@ static void glui_frame(void)
          tab_width,
          header_height/16,
          width, height,
-         &pure_white[0]);
+         &blue_bg[0]);
 
    glui_render_quad(gl, 0, header_height, width,
          header_height/12,
