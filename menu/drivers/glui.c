@@ -44,6 +44,12 @@ enum
    GLUI_TEXTURE_BACK,
    GLUI_TEXTURE_SWITCH_ON,
    GLUI_TEXTURE_SWITCH_OFF,
+   GLUI_TEXTURE_TAB_MAIN_ACTIVE,
+   GLUI_TEXTURE_TAB_PLAYLISTS_ACTIVE,
+   GLUI_TEXTURE_TAB_SETTINGS_ACTIVE,
+   GLUI_TEXTURE_TAB_MAIN_PASSIVE,
+   GLUI_TEXTURE_TAB_PLAYLISTS_PASSIVE,
+   GLUI_TEXTURE_TAB_SETTINGS_PASSIVE,
    GLUI_TEXTURE_LAST
 };
 
@@ -134,6 +140,24 @@ static void glui_context_reset_textures(glui_handle_t *glui, const char *iconpat
             break;
          case GLUI_TEXTURE_SWITCH_OFF:
             fill_pathname_join(path, iconpath, "off.png",   sizeof(path));
+            break;
+         case GLUI_TEXTURE_TAB_MAIN_ACTIVE:
+            fill_pathname_join(path, iconpath, "main_tab_active.png",   sizeof(path));
+            break;
+         case GLUI_TEXTURE_TAB_PLAYLISTS_ACTIVE:
+            fill_pathname_join(path, iconpath, "playlists_tab_active.png",   sizeof(path));
+            break;
+         case GLUI_TEXTURE_TAB_SETTINGS_ACTIVE:
+            fill_pathname_join(path, iconpath, "settings_tab_active.png",   sizeof(path));
+            break;
+         case GLUI_TEXTURE_TAB_MAIN_PASSIVE:
+            fill_pathname_join(path, iconpath, "main_tab_passive.png",   sizeof(path));
+            break;
+         case GLUI_TEXTURE_TAB_PLAYLISTS_PASSIVE:
+            fill_pathname_join(path, iconpath, "playlists_tab_passive.png",   sizeof(path));
+            break;
+         case GLUI_TEXTURE_TAB_SETTINGS_PASSIVE:
+            fill_pathname_join(path, iconpath, "settings_tab_passive.png",   sizeof(path));
             break;
       }
 
@@ -714,28 +738,30 @@ static void glui_frame(void)
 
    for (i = 0; i <= GLUI_SYSTEM_TAB_END; i++)
    {
-      uint32_t tab_color = passivetab_color;
-      if (i == glui->categories.selection_ptr)
-         tab_color = activetab_color;
-
-      char tab_label[PATH_MAX_LENGTH];
+      unsigned tab_icon = GLUI_TEXTURE_TAB_MAIN_PASSIVE;
       switch (i)
       {
          case GLUI_SYSTEM_TAB_MAIN:
-            strlcpy(tab_label, menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(tab_label));
+            tab_icon = (i == glui->categories.selection_ptr)
+                     ? GLUI_TEXTURE_TAB_MAIN_ACTIVE
+                     : GLUI_TEXTURE_TAB_MAIN_PASSIVE;
             break;
          case GLUI_SYSTEM_TAB_PLAYLISTS:
-            strlcpy(tab_label, menu_hash_to_str(MENU_VALUE_PLAYLISTS_TAB), sizeof(tab_label));
+            tab_icon = (i == glui->categories.selection_ptr)
+                     ? GLUI_TEXTURE_TAB_PLAYLISTS_ACTIVE
+                     : GLUI_TEXTURE_TAB_PLAYLISTS_PASSIVE;
             break;
          case GLUI_SYSTEM_TAB_SETTINGS:
-            strlcpy(tab_label, menu_hash_to_str(MENU_VALUE_SETTINGS_TAB), sizeof(tab_label));
+            tab_icon = (i == glui->categories.selection_ptr)
+                     ? GLUI_TEXTURE_TAB_SETTINGS_ACTIVE
+                     : GLUI_TEXTURE_TAB_SETTINGS_PASSIVE;
             break;
       }
 
-      strlcpy(tab_label, string_to_upper(tab_label), sizeof(tab_label));
-      glui_blit_line(width / (GLUI_SYSTEM_TAB_END+1) * (i+0.5),
-            height - glui->tabs_height - header_height/8,
-            width, height, tab_label, tab_color, TEXT_ALIGN_CENTER);
+      glui_draw_icon(gl, glui, glui->textures.list[tab_icon].id,
+            width / (GLUI_SYSTEM_TAB_END+1) * (i+0.5) - glui->icon_size/2,
+            height - glui->tabs_height,
+            width, height, 0, 1, &pure_white[0]);
    }
 
    tab_width = width / (GLUI_SYSTEM_TAB_END+1);
@@ -851,7 +877,7 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
    new_header_height            = scale_factor / 3;
    new_font_size                = scale_factor / 9;
 
-   glui->tabs_height            = scale_factor / 4;
+   glui->tabs_height            = scale_factor / 3;
    glui->line_height            = scale_factor / 3;
    glui->margin                 = scale_factor / 9;
    glui->icon_size              = scale_factor / 3;
