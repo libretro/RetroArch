@@ -482,7 +482,6 @@ rarch_setting_t *menu_setting_find(const char *label)
 
 int menu_setting_set_flags(rarch_setting_t *setting)
 {
-   uint64_t flags = menu_setting_get_flags(setting);
    if (!setting)
       return 0;
 

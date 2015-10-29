@@ -602,8 +602,6 @@ static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui,
 static size_t glui_list_get_size(void *data, menu_list_type_t type)
 {
    size_t list_size        = 0;
-   menu_handle_t *menu     = (menu_handle_t*)data;
-   glui_handle_t *glui       = menu    ? (glui_handle_t*)menu->userdata : NULL;
 
    /*switch (type)
    {
@@ -685,6 +683,9 @@ static void glui_frame(void)
    const uint32_t title_color              = 0xffffffff;
    const uint32_t activetab_color          = 0x0096f2ff;
    const uint32_t passivetab_color         = 0x9e9e9eff;
+
+   (void)passivetab_color;
+   (void)activetab_color;
 
    if (!menu || !menu->userdata)
       return;
@@ -1166,7 +1167,6 @@ static void glui_list_cache(menu_list_type_t type, unsigned action)
    glui_handle_t      *glui = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    if (!menu)
       return;
