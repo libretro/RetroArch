@@ -44,16 +44,23 @@ enum
    GLUI_TEXTURE_BACK,
    GLUI_TEXTURE_SWITCH_ON,
    GLUI_TEXTURE_SWITCH_OFF,
+   GLUI_TEXTURE_TAB_MAIN_ACTIVE,
+   GLUI_TEXTURE_TAB_PLAYLISTS_ACTIVE,
+   GLUI_TEXTURE_TAB_SETTINGS_ACTIVE,
+   GLUI_TEXTURE_TAB_MAIN_PASSIVE,
+   GLUI_TEXTURE_TAB_PLAYLISTS_PASSIVE,
+   GLUI_TEXTURE_TAB_SETTINGS_PASSIVE,
    GLUI_TEXTURE_LAST
 };
 
 enum
 {
    GLUI_SYSTEM_TAB_MAIN = 0,
-   GLUI_SYSTEM_TAB_PLAYLISTS
+   GLUI_SYSTEM_TAB_PLAYLISTS,
+   GLUI_SYSTEM_TAB_SETTINGS
 };
 
-#define GLUI_SYSTEM_TAB_END GLUI_SYSTEM_TAB_PLAYLISTS
+#define GLUI_SYSTEM_TAB_END GLUI_SYSTEM_TAB_SETTINGS
 
 struct glui_texture_item
 {
@@ -133,6 +140,24 @@ static void glui_context_reset_textures(glui_handle_t *glui, const char *iconpat
             break;
          case GLUI_TEXTURE_SWITCH_OFF:
             fill_pathname_join(path, iconpath, "off.png",   sizeof(path));
+            break;
+         case GLUI_TEXTURE_TAB_MAIN_ACTIVE:
+            fill_pathname_join(path, iconpath, "main_tab_active.png",   sizeof(path));
+            break;
+         case GLUI_TEXTURE_TAB_PLAYLISTS_ACTIVE:
+            fill_pathname_join(path, iconpath, "playlists_tab_active.png",   sizeof(path));
+            break;
+         case GLUI_TEXTURE_TAB_SETTINGS_ACTIVE:
+            fill_pathname_join(path, iconpath, "settings_tab_active.png",   sizeof(path));
+            break;
+         case GLUI_TEXTURE_TAB_MAIN_PASSIVE:
+            fill_pathname_join(path, iconpath, "main_tab_passive.png",   sizeof(path));
+            break;
+         case GLUI_TEXTURE_TAB_PLAYLISTS_PASSIVE:
+            fill_pathname_join(path, iconpath, "playlists_tab_passive.png",   sizeof(path));
+            break;
+         case GLUI_TEXTURE_TAB_SETTINGS_PASSIVE:
+            fill_pathname_join(path, iconpath, "settings_tab_passive.png",   sizeof(path));
             break;
       }
 
@@ -268,7 +293,7 @@ static void glui_draw_scrollbar(gl_t *gl, unsigned width, unsigned height, GRflo
 
       glui_render_quad(gl,
             width - scrollbar_width - (header_height / 12),
-            header_height + glui->tabs_height + y + (header_height / 12),
+            header_height + y + (header_height / 12),
             scrollbar_width,
             scrollbar_height,
             width, height,
@@ -534,7 +559,7 @@ static void glui_render_menu_list(glui_handle_t *glui, gl_t *gl,
       if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
          continue;
 
-      y = header_height + glui->tabs_height - menu->scroll_y + (glui->line_height * i);
+      y = header_height - menu->scroll_y + (glui->line_height * i);
 
       if (y > (int)height || ((y + (int)glui->line_height) < 0))
          continue;
@@ -572,6 +597,22 @@ static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui,
          64,
          gl->shader, &coords, &mymat, true, glui->textures.list[GLUI_TEXTURE_POINTER].id, 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+}
+
+static size_t glui_list_get_size(void *data, menu_list_type_t type)
+{
+   size_t list_size        = 0;
+   menu_handle_t *menu     = (menu_handle_t*)data;
+   glui_handle_t *glui       = menu    ? (glui_handle_t*)menu->userdata : NULL;
+
+   /*switch (type)
+   {
+      case MENU_LIST_PLAIN:*/
+         list_size  = menu_entries_get_stack_size(0);
+         /*break;
+   }*/
+
+   return list_size;
 }
 
 static void glui_frame(void)
@@ -642,8 +683,8 @@ static void glui_frame(void)
    const uint32_t normal_color             = 0x212121ff;
    const uint32_t hover_color              = 0x212121ff;
    const uint32_t title_color              = 0xffffffff;
-   const uint32_t activetab_color          = 0xffffffff;
-   const uint32_t passivetab_color         = 0xffffff88;
+   const uint32_t activetab_color          = 0x0096f2ff;
+   const uint32_t passivetab_color         = 0x9e9e9eff;
 
    if (!menu || !menu->userdata)
       return;
@@ -680,7 +721,7 @@ static void glui_frame(void)
 
    /* highlighted entry */
    glui_render_quad(gl, 0,
-         header_height + glui->tabs_height - menu->scroll_y + glui->line_height *
+         header_height - menu->scroll_y + glui->line_height *
          selection, width, glui->line_height,
          width, height,
          &lightblue_bg[0]);
@@ -699,44 +740,64 @@ static void glui_frame(void)
          width, height,
          &blue_bg[0]);
 
-   /* shadow underneath header */
-   glui_render_quad(gl, 0, header_height, width,
-         glui->tabs_height,
-         width, height,
-         &blue_bg[0]);
-
-   for (i = 0; i <= GLUI_SYSTEM_TAB_END; i++)
+   /* display tabs if depth equal one, if not hide them */
+   if (glui_list_get_size(menu, MENU_LIST_PLAIN) == 1)
    {
-      uint32_t tab_color = passivetab_color;
-      if (i == glui->categories.selection_ptr)
-         tab_color = activetab_color;
+      /* tabs background */
+      glui_render_quad(gl, 0, height - glui->tabs_height, width,
+            glui->tabs_height,
+            width, height,
+            &white_bg[0]);
 
-      char tab_label[PATH_MAX_LENGTH];
-      switch (i)
+      /* tabs separator */
+      glui_render_quad(gl, 0, height - glui->tabs_height, width,
+            1,
+            width, height,
+            &grey_bg[0]);
+
+      for (i = 0; i <= GLUI_SYSTEM_TAB_END; i++)
       {
-         case GLUI_SYSTEM_TAB_MAIN:
-            strlcpy(tab_label, menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(tab_label));
-            break;
-         case GLUI_SYSTEM_TAB_PLAYLISTS:
-            strlcpy(tab_label, menu_hash_to_str(MENU_VALUE_PLAYLISTS_TAB), sizeof(tab_label));
-            break;
+         unsigned tab_icon = GLUI_TEXTURE_TAB_MAIN_PASSIVE;
+         switch (i)
+         {
+            case GLUI_SYSTEM_TAB_MAIN:
+               tab_icon = (i == glui->categories.selection_ptr)
+                        ? GLUI_TEXTURE_TAB_MAIN_ACTIVE
+                        : GLUI_TEXTURE_TAB_MAIN_PASSIVE;
+               break;
+            case GLUI_SYSTEM_TAB_PLAYLISTS:
+               tab_icon = (i == glui->categories.selection_ptr)
+                        ? GLUI_TEXTURE_TAB_PLAYLISTS_ACTIVE
+                        : GLUI_TEXTURE_TAB_PLAYLISTS_PASSIVE;
+               break;
+            case GLUI_SYSTEM_TAB_SETTINGS:
+               tab_icon = (i == glui->categories.selection_ptr)
+                        ? GLUI_TEXTURE_TAB_SETTINGS_ACTIVE
+                        : GLUI_TEXTURE_TAB_SETTINGS_PASSIVE;
+               break;
+         }
+
+         glui_draw_icon(gl, glui, glui->textures.list[tab_icon].id,
+               width / (GLUI_SYSTEM_TAB_END+1) * (i+0.5) - glui->icon_size/2,
+               height - glui->tabs_height,
+               width, height, 0, 1, &pure_white[0]);
       }
 
-      strlcpy(tab_label, string_to_upper(tab_label), sizeof(tab_label));
-      glui_blit_line(width / (GLUI_SYSTEM_TAB_END+1) * (i+0.5),
-            header_height - header_height/8,
-            width, height, tab_label, tab_color, TEXT_ALIGN_CENTER);
+      /* active tab marker */
+      tab_width = width / (GLUI_SYSTEM_TAB_END+1);
+      glui_render_quad(gl, glui->categories.selection_ptr * tab_width,
+            height - (header_height/16),
+            tab_width,
+            header_height/16,
+            width, height,
+            &blue_bg[0]);
+   }
+   else
+   {
+      glui->tabs_height = 0;
    }
 
-   tab_width = width / (GLUI_SYSTEM_TAB_END+1);
-   glui_render_quad(gl, glui->categories.selection_ptr * tab_width,
-         header_height + glui->tabs_height - (header_height/16),
-         tab_width,
-         header_height/16,
-         width, height,
-         &pure_white[0]);
-
-   glui_render_quad(gl, 0, header_height + glui->tabs_height, width,
+   glui_render_quad(gl, 0, header_height, width,
          header_height/12,
          width, height,
          &shadow_bg[0]);
@@ -747,7 +808,7 @@ static void glui_frame(void)
    {
       title_margin = glui->icon_size;
       glui_draw_icon(gl, glui, glui->textures.list[GLUI_TEXTURE_BACK].id,
-         0, 0, width, height, 0, 1, &white_bg[0]);
+         0, 0, width, height, 0, 1, &pure_white[0]);
    }
 
    ticker_limit = (width - glui->margin*2) / glui->glyph_width;
@@ -841,7 +902,7 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
    new_header_height            = scale_factor / 3;
    new_font_size                = scale_factor / 9;
 
-   glui->tabs_height            = scale_factor / 4;
+   glui->tabs_height            = scale_factor / 3;
    glui->line_height            = scale_factor / 3;
    glui->margin                 = scale_factor / 9;
    glui->icon_size              = scale_factor / 3;
@@ -1163,25 +1224,15 @@ static void glui_list_cache(menu_list_type_t type, unsigned action)
                menu_stack->list[stack_size - 1].type = 
                   MENU_PLAYLISTS_TAB;
                break;
+            case GLUI_SYSTEM_TAB_SETTINGS:
+               menu_stack->list[stack_size - 1].label = 
+                  strdup(menu_hash_to_str(MENU_VALUE_SETTINGS_TAB));
+               menu_stack->list[stack_size - 1].type = 
+                  MENU_SETTINGS;
+               break;
          }
          break;
    }
-}
-
-static size_t glui_list_get_size(void *data, menu_list_type_t type)
-{
-   size_t list_size        = 0;
-   menu_handle_t *menu     = (menu_handle_t*)data;
-   glui_handle_t *glui       = menu    ? (glui_handle_t*)menu->userdata : NULL;
-
-   /*switch (type)
-   {
-      case MENU_LIST_PLAIN:*/
-         list_size  = menu_entries_get_stack_size(0);
-         /*break;
-   }*/
-
-   return list_size;
 }
 
 menu_ctx_driver_t menu_ctx_glui = {
