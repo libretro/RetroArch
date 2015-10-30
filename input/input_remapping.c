@@ -33,7 +33,7 @@ bool input_remapping_load_file(const char *path)
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();
 
-   if (!conf)
+   if (!conf ||  path[0] == '\0')
       return false;
 
    strlcpy(settings->input.remapping_path, path,
