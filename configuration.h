@@ -248,6 +248,7 @@ typedef struct settings
       
       unsigned menu_toggle_gamepad_combo;
       bool back_as_menu_toggle_enable;
+      unsigned bind_mode;
    } input;
 
    struct
