@@ -87,7 +87,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0FDA2A911BE1AFA800F2B5DA /* RetroArch iOS9.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RetroArch iOS9.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		0FDA2A911BE1AFA800F2B5DA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FDA2A921BE1AFA800F2B5DA /* RetroArch copy3-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch copy3-Info.plist"; path = "/Users/buildbot/buildbot/ios/retroarch/pkg/apple/RetroArch copy3-Info.plist"; sourceTree = "<absolute>"; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		501232CB192E5FDC0063A359 /* sinc_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_neon.S; path = ../../audio/drivers_resampler/sinc_neon.S; sourceTree = SOURCE_ROOT; };
@@ -226,7 +226,7 @@
 			children = (
 				96AFAE2516C1D4EA009DE44C /* RetroArch.app */,
 				503700AD1ACA18E400A51A37 /* RetroArch copy.app */,
-				0FDA2A911BE1AFA800F2B5DA /* RetroArch iOS9.app */,
+				0FDA2A911BE1AFA800F2B5DA /* RetroArch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -326,7 +326,7 @@
 			);
 			name = "RetroArch iOS9";
 			productName = RetroArch;
-			productReference = 0FDA2A911BE1AFA800F2B5DA /* RetroArch iOS9.app */;
+			productReference = 0FDA2A911BE1AFA800F2B5DA /* RetroArch.app */;
 			productType = "com.apple.product-type.application";
 		};
 		503700861ACA18E400A51A37 /* RetroArch iOS6 */ = {
@@ -555,7 +555,7 @@
 					"-DHAVE_AVFOUNDATION",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch9;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
@@ -671,7 +671,7 @@
 					"-DHAVE_AVFOUNDATION",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch9;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
