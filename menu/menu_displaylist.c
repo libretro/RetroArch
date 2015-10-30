@@ -1842,38 +1842,6 @@ static int menu_displaylist_parse_scan_directory_list(menu_displaylist_info_t *i
    return 0;
 }
 
-static int menu_displaylist_parse_load_content_list(menu_displaylist_info_t *info)
-{
-   global_t *global            = global_get_ptr();
-
-   menu_entries_push(info->list,
-         menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT),
-         menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
-         MENU_SETTING_ACTION, 0, 0);
-
-   if (core_info_list_num_info_files(global->core_info.list))
-   {
-      menu_entries_push(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),
-            menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST),
-            MENU_SETTING_ACTION, 0, 0);
-
-      menu_entries_push(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
-            menu_hash_to_str(MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
-            MENU_SETTING_ACTION, 0, 0);
-   }
-
-#ifdef HAVE_LIBRETRODB
-   menu_entries_push(info->list,
-         menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST),
-         menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
-         MENU_SETTING_ACTION, 0, 0);
-#endif
-
-   return 0;
-}
-
 static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
 {
 #ifdef HAVE_NETWORKING
@@ -2667,7 +2635,30 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          info->need_refresh = true;
          break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:
-         ret = menu_displaylist_parse_load_content_list(info);
+         menu_entries_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT),
+               menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
+               MENU_SETTING_ACTION, 0, 0);
+
+         if (core_info_list_num_info_files(global->core_info.list))
+         {
+            menu_entries_push(info->list,
+                  menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),
+                  menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST),
+                  MENU_SETTING_ACTION, 0, 0);
+
+            menu_entries_push(info->list,
+                  menu_hash_to_str(MENU_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                  menu_hash_to_str(MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                  MENU_SETTING_ACTION, 0, 0);
+         }
+
+#ifdef HAVE_LIBRETRODB
+         menu_entries_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST),
+               menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
+               MENU_SETTING_ACTION, 0, 0);
+#endif
 
          info->need_push    = true;
          info->need_refresh = true;

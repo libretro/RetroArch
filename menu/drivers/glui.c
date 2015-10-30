@@ -1255,6 +1255,39 @@ static int glui_list_push(menu_displaylist_info_t *info, unsigned type)
 
    switch (type)
    {
+      case DISPLAYLIST_LOAD_CONTENT_LIST:
+         menu_entries_clear(info->list);
+         menu_entries_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT),
+               menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
+               MENU_SETTING_ACTION, 0, 0);
+
+         if (core_info_list_num_info_files(global->core_info.list))
+         {
+            menu_entries_push(info->list,
+                  menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),
+                  menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST),
+                  MENU_SETTING_ACTION, 0, 0);
+
+            menu_entries_push(info->list,
+                  menu_hash_to_str(MENU_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                  menu_hash_to_str(MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                  MENU_SETTING_ACTION, 0, 0);
+         }
+
+#ifdef HAVE_LIBRETRODB
+#ifdef RARCH_MOBILE
+         menu_entries_push(info->list,
+               menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST),
+               menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
+               MENU_SETTING_ACTION, 0, 0);
+#endif
+#endif
+
+         info->need_push    = true;
+         info->need_refresh = true;
+         ret = 0;
+         break;
       case DISPLAYLIST_MAIN_MENU:
          menu_entries_clear(info->list);
 
