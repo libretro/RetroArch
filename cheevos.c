@@ -18,17 +18,18 @@
 #include <string.h>
 #include <ctype.h>
 
-#include <configuration.h>
 #include <formats/jsonsax.h>
 #include <rhash.h>
-#include <performance.h>
-#include <runloop.h>
 #include <retro_log.h>
 #include <rthreads/async_job.h>
 
 #include "cheevos.h"
 #include "dynamic.h"
 #include "net_http_special.h"
+
+#include "configuration.h"
+#include "performance.h"
+#include "runloop.h"
 
 enum
 {
