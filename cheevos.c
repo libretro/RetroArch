@@ -1143,17 +1143,30 @@ static int test_cheevo(cheevo_t *cheevo)
 
 static int cheevos_login(retro_time_t *timeout)
 {
+   const char *username;
+   const char *password;
    char request[256];
    const char *json;
    int res;
 
    if (cheevos_locals.token[0])
       return 0;
+   
+   username = config_get_ptr()->cheevos.username;
+   password = config_get_ptr()->cheevos.password;
+   
+   if (!username || !*username || !password || !*password)
+   {
+      rarch_main_msg_queue_push("Missing Retro Achievements account information", 0, 5 * 60, false);
+      rarch_main_msg_queue_push("Please fill in your account information in Settings", 0, 5 * 60, false);
+      RARCH_LOG("CHEEVOS username and/or password not informed\n");
+      return -1;
+   }
 
    snprintf(
       request, sizeof(request),
       "http://retroachievements.org/dorequest.php?r=login&u=%s&p=%s",
-      config_get_ptr()->cheevos.username, config_get_ptr()->cheevos.password
+      username, password
    );
 
    request[sizeof(request) - 1] = 0;
@@ -1170,6 +1183,8 @@ static int cheevos_login(retro_time_t *timeout)
       }
    }
 
+   rarch_main_msg_queue_push("Retro Achievements login error", 0, 5 * 60, false);
+   rarch_main_msg_queue_push("Please make sure your account information is correct", 0, 5 * 60, false);
    RARCH_LOG("CHEEVOS error getting user token\n");
    return -1;
 }
@@ -1316,6 +1331,14 @@ static unsigned cheevos_get_game_id(unsigned char *hash, retro_time_t *timeout)
    const char* json;
    char game_id[16];
    int res;
+   
+   RARCH_LOG(
+      "CHEEVOS getting game id for hash %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
+      hash[ 0], hash[ 1], hash[ 2], hash[ 3],
+      hash[ 4], hash[ 5], hash[ 6], hash[ 7],
+      hash[ 8], hash[ 9], hash[10], hash[11],
+      hash[12], hash[13], hash[14], hash[15]
+   );
 
    snprintf(
       request, sizeof(request),
@@ -1542,7 +1565,11 @@ int cheevos_load(const void *data, size_t size)
          
          free((void*)json);
       }
+      
+      rarch_main_msg_queue_push("Error loading achievements", 0, 5 * 60, false);
    }
+   else
+      rarch_main_msg_queue_push("This game doesn't feature achievements", 0, 5 * 60, false);
    
    cheevos_locals.loaded = 0;
    return -1;
