@@ -361,6 +361,8 @@ static void menu_action_setting_disp_set_label_input_bind_mode(
 {
    settings_t *settings = config_get_ptr();
 
+   *w = 19;
+
    switch (settings->input.bind_mode)
    {
       case 0:

@@ -65,7 +65,7 @@ void gl_load_texture_data(GLuint id,
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
     
-#ifdef IOS
+#ifdef HAVE_OPENGLES2
    if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR)
        filter_type = TEXTURE_FILTER_LINEAR;
    if (filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
