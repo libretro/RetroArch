@@ -76,7 +76,8 @@ static int net_http_new_socket(const char *domain, int port)
    char portstr[16] = {0};
    
    /* Initialize the network. */
-   network_init();
+   if (!network_init())
+      return -1;
 
    snprintf(portstr, sizeof(portstr), "%i", port);
 
