@@ -457,12 +457,28 @@ void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
    switch (mode)
    {
       case ANALOG_DPAD_LSTICK:
-         j = RARCH_ANALOG_LEFT_X_PLUS + 3;
-         inherit_joyaxis = true;
+         /* check if analog left is defined.   *
+          * if plus and minus are equal abort. */
+         if (!((binds[RARCH_ANALOG_LEFT_X_PLUS].joyaxis == 
+               binds[RARCH_ANALOG_LEFT_X_MINUS].joyaxis) || 
+               (binds[RARCH_ANALOG_LEFT_Y_PLUS].joyaxis == 
+               binds[RARCH_ANALOG_LEFT_Y_MINUS].joyaxis)))
+         {
+            j = RARCH_ANALOG_LEFT_X_PLUS + 3;
+            inherit_joyaxis = true;
+         }
          break;
       case ANALOG_DPAD_RSTICK:
-         j = RARCH_ANALOG_RIGHT_X_PLUS + 3;
-         inherit_joyaxis = true;
+         /* check if analog right is defined.  *
+          * if plus and minus are equal abort. */
+         if (!((binds[RARCH_ANALOG_RIGHT_X_PLUS].joyaxis == 
+               binds[RARCH_ANALOG_RIGHT_X_MINUS].joyaxis) || 
+               (binds[RARCH_ANALOG_RIGHT_Y_PLUS].joyaxis == 
+               binds[RARCH_ANALOG_RIGHT_Y_MINUS].joyaxis)))
+         {          
+            j = RARCH_ANALOG_RIGHT_X_PLUS + 3;
+            inherit_joyaxis = true;
+         }
          break;
    }
 
