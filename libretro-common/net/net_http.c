@@ -74,6 +74,10 @@ static int net_http_new_socket(const char *domain, int port)
 #endif
    struct addrinfo hints, *addr = NULL;
    char portstr[16] = {0};
+   
+   /* Initialize the network. */
+   if (!network_init())
+      return -1;
 
    snprintf(portstr, sizeof(portstr), "%i", port);
 

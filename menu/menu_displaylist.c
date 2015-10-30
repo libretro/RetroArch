@@ -1706,7 +1706,7 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
    else
       menu_entries_push(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
-            "", 0, 0, 0);
+            "", MENU_SETTING_NO_ITEM, 0, 0);
 
    return 0;
 }
@@ -1929,7 +1929,7 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
 #else
    menu_entries_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
-         "", 0, 0, 0);
+         "", MENU_SETTING_NO_ITEM, 0, 0);
 #endif
 
    return 0;
@@ -2125,7 +2125,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
       {
          menu_entries_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
-               "", 0, 0, 0);
+               "", MENU_SETTING_NO_ITEM, 0, 0);
       }
 
       string_list_free(str_list);
@@ -2402,7 +2402,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 #else
          menu_entries_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
-               "", 0, 0, 0);
+               "", MENU_SETTING_NO_ITEM, 0, 0);
          ret = 0;
 #endif
          info->need_refresh = true;
@@ -3027,6 +3027,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
          {
             bool horizontal = (type == DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL);
+
             if (menu_displaylist_parse_generic(info, horizontal) == 0)
             {
                info->need_refresh = true;
@@ -3074,6 +3075,7 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    uint32_t          hash_label = 0;
    unsigned type                = 0;
    menu_displaylist_info_t info = {0};
+   settings_t *settings         = config_get_ptr();
 
    menu_entries_get_last_stack(&path, &label, &type, NULL);
 
@@ -3108,6 +3110,31 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
       case MENU_VALUE_ADD_TAB:
          if (menu_displaylist_push_list(&info, DISPLAYLIST_SCAN_DIRECTORY_LIST) != 0)
             return -1;
+         menu_displaylist_push_list_process(&info);
+         return 0;
+      case MENU_VALUE_PLAYLISTS_TAB:
+         info.type = 42;
+         strlcpy(info.exts, "lpl", sizeof(info.exts));
+         strlcpy(info.label, menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
+               sizeof(info.label));
+
+         if (settings->playlist_directory[0] != '\0')
+         {
+            strlcpy(info.path, settings->playlist_directory,
+                  sizeof(info.path));
+            if (menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL) != 0)
+               return -1;
+         }
+         else
+         {
+            menu_entries_clear(info.list);
+            menu_entries_push(info.list,
+                  menu_hash_to_str(MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
+                  menu_hash_to_str(MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
+                  MENU_INFO_MESSAGE, 0, 0);
+            info.need_refresh = true;
+            info.need_push    = true;
+         }
          menu_displaylist_push_list_process(&info);
          return 0;
       case MENU_VALUE_HORIZONTAL_MENU:
