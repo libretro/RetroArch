@@ -312,6 +312,8 @@ static size_t xmb_list_get_size(void *data, menu_list_type_t type)
          if (xmb && xmb->horizontal_list)
             list_size = file_list_get_size(xmb->horizontal_list);
          break;
+      case MENU_LIST_TABS:
+         list_size = XMB_SYSTEM_TAB_END;
    }
 
    return list_size;
@@ -337,6 +339,8 @@ static void *xmb_list_get_entry(void *data, menu_list_type_t type, unsigned i)
             list_size = file_list_get_size(xmb->horizontal_list);
          if (i < list_size)
             ptr = (void*)&xmb->horizontal_list->list[i];
+         break;
+      default:
          break;
    }
 
@@ -2583,6 +2587,8 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
                   MENU_SETTING_HORIZONTAL_MENU;
                break;
          }
+         break;
+      default:
          break;
    }
 }

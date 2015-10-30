@@ -165,7 +165,9 @@ static int action_right_mainmenu(unsigned type, const char *label,
    if (list_size == 1)
    {
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
-      if (menu_driver_list_get_selection() != (menu_driver_list_get_size(MENU_LIST_HORIZONTAL) + 3)
+      if (menu_driver_list_get_selection() != 
+         (menu_driver_list_get_size(MENU_LIST_HORIZONTAL)
+         + menu_driver_list_get_size(MENU_LIST_TABS))
          || settings->menu.navigation.wraparound.enable)
          push_list = 1;
    }
