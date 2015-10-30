@@ -16,6 +16,9 @@
 #ifndef __RARCH_CHEEVOS_H
 #define __RARCH_CHEEVOS_H
 
+#include <stdint.h>
+#include <stdlib.h>
+
 typedef struct
 {
    int cheats_are_enabled;
