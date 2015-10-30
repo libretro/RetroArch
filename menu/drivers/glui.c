@@ -603,12 +603,17 @@ static size_t glui_list_get_size(void *data, menu_list_type_t type)
 {
    size_t list_size        = 0;
 
-   /*switch (type)
+   switch (type)
    {
-      case MENU_LIST_PLAIN:*/
+      case MENU_LIST_PLAIN:
          list_size  = menu_entries_get_stack_size(0);
-         /*break;
-   }*/
+         break;
+      case MENU_LIST_TABS:
+         list_size = GLUI_SYSTEM_TAB_END;
+         break;
+      default:
+         break;
+   }
 
    return list_size;
 }
@@ -1237,6 +1242,8 @@ static void glui_list_cache(menu_list_type_t type, unsigned action)
                break;
          }
          break;
+      default:
+         break;
    }
 }
 
@@ -1300,6 +1307,17 @@ static int glui_list_push(menu_displaylist_info_t *info, unsigned type)
    return ret;
 }
 
+static size_t glui_list_get_selection(void *data)
+{
+   menu_handle_t *menu    = (menu_handle_t*)data;
+   glui_handle_t *glui      = menu ? (glui_handle_t*)menu->userdata : NULL;
+
+   if (!glui)
+      return 0;
+
+   return glui->categories.selection_ptr;
+}
+
 menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    glui_get_message,
@@ -1325,7 +1343,7 @@ menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    glui_list_cache,
    glui_list_push,
-   NULL,
+   glui_list_get_selection,
    glui_list_get_size,
    NULL,
    glui_list_set_selection,
