@@ -1271,6 +1271,10 @@ static int glui_list_push(menu_displaylist_info_t *info, unsigned type)
          menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_ONLINE_UPDATER), PARSE_ACTION, false);
 #endif
+#ifdef RARCH_MOBILE
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_SETTINGS), PARSE_ACTION, false);
+#endif
          menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_INFORMATION_LIST), PARSE_ACTION, false);
 #ifndef HAVE_DYNAMIC
