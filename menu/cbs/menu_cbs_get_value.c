@@ -350,6 +350,33 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
 #endif
 }
 
+static void menu_action_setting_disp_set_label_input_bind_mode(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings = config_get_ptr();
+
+   switch (settings->input.bind_mode)
+   {
+      case 0:
+         strlcpy(s, "Auto", len);
+         break;
+      case 1:
+         strlcpy(s, "RetroKeyboard", len);
+         break;
+      case 2:
+         strlcpy(s, "RetroPad", len);
+         break;
+   }
+
+   strlcpy(s2, menu_hash_to_str(MENU_LABEL_VALUE_INPUT_BIND_MODE), len2);
+}
+
 static void menu_action_setting_disp_set_label_menu_file_core(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -969,6 +996,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
       case MENU_LABEL_LOAD_STATE:
          BIND_ACTION_GET_VALUE(cbs,
             menu_action_setting_disp_set_label_state);
+         break;
+      case MENU_LABEL_INPUT_BIND_MODE:
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_input_bind_mode);
          break;
       case MENU_LABEL_INPUT_MENU_TOGGLE_GAMEPAD_COMBO:
          BIND_ACTION_GET_VALUE(cbs,

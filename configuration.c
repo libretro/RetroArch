@@ -607,6 +607,7 @@ static void config_set_defaults(void)
    settings->input.remap_binds_enable               = true;
    settings->input.max_users                        = input_max_users;
    settings->input.menu_toggle_gamepad_combo        = menu_toggle_gamepad_combo;
+   settings->input.bind_mode                        = 0;
 
    retro_assert(sizeof(settings->input.binds[0]) >= sizeof(retro_keybinds_1));
    retro_assert(sizeof(settings->input.binds[1]) >= sizeof(retro_keybinds_rest));
@@ -1637,6 +1638,8 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_PATH_BASE(conf, settings, content_history_path, "content_history_path");
    CONFIG_GET_INT_BASE(conf, settings, content_history_size, "content_history_size");
 
+   CONFIG_GET_INT_BASE(conf, settings, input.bind_mode, "input_bind_mode");
+
    CONFIG_GET_INT_BASE(conf, settings, input.turbo_period, "input_turbo_period");
    CONFIG_GET_INT_BASE(conf, settings, input.turbo_duty_cycle, "input_duty_cycle");
 
@@ -2465,6 +2468,7 @@ bool config_save_file(const char *path)
    config_set_path(conf,  "cheat_database_path", settings->cheat_database);
    config_set_path(conf,  "cursor_directory", settings->cursor_directory);
    config_set_path(conf,  "content_history_dir", settings->content_history_directory);
+   config_set_int(conf,   "input_bind_mode", settings->input.bind_mode);
    config_set_bool(conf,  "rewind_enable", settings->rewind_enable);
    config_set_int(conf,   "audio_latency", settings->audio.latency);
    config_set_bool(conf,  "audio_sync",    settings->audio.sync);

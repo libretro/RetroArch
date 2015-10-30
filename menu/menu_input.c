@@ -681,6 +681,17 @@ int menu_input_key_bind_set_mode(void *data,
    if (menu_input_key_bind_set_mode_common(setting, type) == -1)
       return -1;
 
+   switch (settings->input.bind_mode)
+   {
+      case 0:
+         break;
+      case 1:
+         joypad_pressed = false;
+         break;
+      case 2:
+         joypad_pressed = true;
+         break;
+   }
 
    if (joypad_pressed)
    {
