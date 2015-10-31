@@ -2248,6 +2248,34 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
    return 0;
 }
 
+bool menu_playlist_find_associated_core(const char *path, char *s, size_t len)
+{
+   bool ret = false;
+   unsigned j;
+   settings_t *settings         = config_get_ptr();
+   struct string_list *existing_core_names = string_split(settings->playlist_names, ";");
+   struct string_list *existing_core_paths = string_split(settings->playlist_cores, ";");
+
+   for (j = 0; j < existing_core_names->size; j++)
+   {
+      if (!strcmp(path, existing_core_names->elems[j].data))
+      {
+         if (existing_core_paths)
+         {
+            const char *existing_core = existing_core_paths->elems[j].data;
+
+            if (existing_core)
+               strlcpy(s, existing_core, len);
+         }
+         break;
+      }
+   }
+
+   string_list_free(existing_core_names);
+   string_list_free(existing_core_paths);
+   return ret;
+}
+
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    size_t i;
@@ -2483,23 +2511,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                   char path_base[PATH_MAX_LENGTH] = {0};
                   char core_path[PATH_MAX_LENGTH] = {0};
                   const char *path                = path_basename(str_list->elems[i].data);
-                  struct string_list *existing_core_names = string_split(settings->playlist_names, ";");
-                  struct string_list *existing_core_paths = string_split(settings->playlist_cores, ";");
-
-                  for (j = 0; j < existing_core_names->size; j++)
-                  {
-                     if (!strcmp(path, existing_core_names->elems[j].data))
-                     {
-                        if (existing_core_paths)
-                        {
-                           const char *existing_core = existing_core_paths->elems[j].data;
-
-                           if (existing_core)
-                              strlcpy(core_path, existing_core, sizeof(core_path));
-                        }
-                        break;
-                     }
-                  }
+                  
+                  if (!menu_playlist_find_associated_core(path, core_path, sizeof(core_path)))
+                     strlcpy(core_path, "DETECT", sizeof(core_path));
 
                   strlcpy(path_base, path, sizeof(path_base));
 
@@ -2514,8 +2528,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                         path_base,
                         str_list->elems[i].data, MENU_SETTINGS_PLAYLIST_ASSOCIATION_START + i, 0, 0);
 
-                  string_list_free(existing_core_names);
-                  string_list_free(existing_core_paths);
                }
 
                strlcpy(settings->playlist_names, new_playlist_names, sizeof(settings->playlist_names));
@@ -3099,6 +3111,7 @@ void menu_displaylist_push_list_process(menu_displaylist_info_t *info)
                info->list, info->menu_list);
    }
 }
+
 
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
 {

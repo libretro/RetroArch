@@ -514,6 +514,7 @@ static int action_ok_playlist_entry(const char *path,
 #if 0
    RARCH_LOG("path: %s, label: %s, core path: %s, core name: %s, idx: %d\n", entry_path, entry_label,
          core_path, core_name, selection_ptr);
+   RARCH_LOG("playlist file: %s\n", menu->db_playlist_file);
 #endif
 
    core_path_hash = core_path ? menu_hash_calculate(core_path) : 0;
@@ -523,7 +524,9 @@ static int action_ok_playlist_entry(const char *path,
          (core_path_hash == MENU_VALUE_DETECT) &&
          (core_name_hash == MENU_VALUE_DETECT)
       )
+   {
       return action_ok_file_load_with_detect_core(entry_path, label, type, selection_ptr, entry_idx);
+   }
 
    rarch_playlist_load_content(playlist, selection_ptr);
 
