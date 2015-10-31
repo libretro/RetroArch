@@ -2265,7 +2265,10 @@ bool menu_playlist_find_associated_core(const char *path, char *s, size_t len)
             const char *existing_core = existing_core_paths->elems[j].data;
 
             if (existing_core)
+            {
                strlcpy(s, existing_core, len);
+               ret = true;
+            }
          }
          break;
       }
