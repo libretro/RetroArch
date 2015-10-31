@@ -2468,8 +2468,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
             if (str_list && str_list->size)
             {
-               unsigned i;
-               char new_playlist_names[PATH_MAX_LENGTH];
+               unsigned i, j;
+               char new_playlist_names[PATH_MAX_LENGTH] = {0};
+               char new_playlist_cores[PATH_MAX_LENGTH] = {0};
                union string_list_elem_attr attr = {0};
                settings_t *settings          = config_get_ptr();
                struct string_list *str_list2  = NULL;
@@ -2479,21 +2480,46 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
                for (i = 0; i < str_list->size; i++)
                {
-                  char path_base[PATH_MAX_LENGTH];
-                  const char *path            = path_basename(str_list->elems[i].data);
+                  char path_base[PATH_MAX_LENGTH] = {0};
+                  char core_path[PATH_MAX_LENGTH] = {0};
+                  const char *path                = path_basename(str_list->elems[i].data);
+                  struct string_list *existing_core_names = string_split(settings->playlist_names, ";");
+                  struct string_list *existing_core_paths = string_split(settings->playlist_cores, ";");
+
+                  for (j = 0; j < existing_core_names->size; j++)
+                  {
+                     if (!strcmp(path, existing_core_names->elems[j].data))
+                     {
+                        if (existing_core_paths)
+                        {
+                           const char *existing_core = existing_core_paths->elems[j].data;
+
+                           if (existing_core)
+                              strlcpy(core_path, existing_core, sizeof(core_path));
+                        }
+                        break;
+                     }
+                  }
 
                   strlcpy(path_base, path, sizeof(path_base));
 
                   strlcat(new_playlist_names, path_base, sizeof(new_playlist_names));
                   strlcat(new_playlist_names, ";", sizeof(new_playlist_names));
 
+                  strlcat(new_playlist_cores, core_path, sizeof(new_playlist_cores));
+                  strlcat(new_playlist_cores, ";", sizeof(new_playlist_cores));
+
                   path_remove_extension(path_base);
                   menu_entries_push(info->list,
                         path_base,
                         str_list->elems[i].data, MENU_SETTINGS_PLAYLIST_ASSOCIATION_START + i, 0, 0);
+
+                  string_list_free(existing_core_names);
+                  string_list_free(existing_core_paths);
                }
 
                strlcpy(settings->playlist_names, new_playlist_names, sizeof(settings->playlist_names));
+               strlcpy(settings->playlist_cores, new_playlist_cores, sizeof(settings->playlist_cores));
                string_list_free(str_list2);
             }
          }
