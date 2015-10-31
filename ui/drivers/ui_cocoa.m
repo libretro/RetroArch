@@ -113,11 +113,18 @@ void apple_rarch_exited(void)
          /* Relative */
          apple->mouse_rel_x = event.deltaX;
          apple->mouse_rel_y = event.deltaY;
+          
+#if MAC_OS_X_VERSION_10_7
+          RAScreen *screen = [RAScreen mainScreen];
+          CGFloat backing_scale_factor = screen.backingScaleFactor;
+#else
+          CGFloat backing_scale_factor = 1.0f;
+#endif
 
          /* Absolute */
          pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
-         apple->touches[0].screen_x = pos.x;
-         apple->touches[0].screen_y = pos.y;
+         apple->touches[0].screen_x = pos.x * backing_scale_factor;
+         apple->touches[0].screen_y = pos.y * backing_scale_factor;
           
           //window is a variable containing your window
           //mouse_pos = [self.window mouseLocationOutsideOfEventStream];
@@ -127,8 +134,8 @@ void apple_rarch_exited(void)
          //mouse_pos = [event locationInWindow];
           //mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:[CocoaView get] ];
         mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow]  fromView:nil];
-          apple->window_pos_x = (int16_t)mouse_pos.x;
-          apple->window_pos_y = (int16_t)mouse_pos.y;
+          apple->window_pos_x = (int16_t)mouse_pos.x * backing_scale_factor;
+          apple->window_pos_y = (int16_t)mouse_pos.y * backing_scale_factor;
       }
          break;
        case NSScrollWheel:
