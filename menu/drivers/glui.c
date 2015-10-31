@@ -713,7 +713,15 @@ static void glui_frame(void)
 
    menu_display_frame_background(menu, settings,
          gl, width, height,
-         glui->textures.bg.id ? glui->textures.bg.id : glui->textures.white, 0.75f, false,
+         glui->textures.white, 0.75f, false,
+         &white_transp_bg[0],   &white_bg[0],
+         &glui_vertexes[0], &glui_tex_coords[0], 4,
+         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+
+   if (glui->textures.bg.id)
+   menu_display_frame_background(menu, settings,
+         gl, width, height,
+         glui->textures.bg.id, 0.75f, true,
          &white_transp_bg[0],   &white_bg[0],
          &glui_vertexes[0], &glui_tex_coords[0], 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
