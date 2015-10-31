@@ -969,7 +969,36 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
 
    if (type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START)
    {
-      strlcpy(s, "N/A", len);
+      char playlist_name_with_ext[PATH_MAX_LENGTH];
+      unsigned i;
+      bool found_matching_core_association = false;
+      settings_t         *settings = config_get_ptr();
+      struct string_list *str_list  = string_split(settings->playlist_names, ";");
+      struct string_list *str_list2 = string_split(settings->playlist_cores, ";");
+
+      strlcpy(playlist_name_with_ext, path, sizeof(playlist_name_with_ext));
+      strlcat(playlist_name_with_ext, ".lpl", sizeof(playlist_name_with_ext));
+
+      for (i = 0; i < str_list->size; i++)
+      {
+         if (!strcmp(str_list->elems[i].data, playlist_name_with_ext))
+         {
+            if (str_list->size != str_list2->size)
+               break;
+
+            if (str_list2->elems[i].data == NULL)
+               break;
+
+            found_matching_core_association = true;
+            strlcpy(s, str_list2->elems[i].data, len);
+         }
+      }
+
+      string_list_free(str_list);
+      string_list_free(str_list2);
+
+      if (!found_matching_core_association)
+         strlcpy(s, "N/A", len);
    }
    else if (type >= MENU_SETTINGS_CORE_OPTION_START)
    {
