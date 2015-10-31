@@ -635,10 +635,10 @@ static void glui_frame(void)
       0.13, 0.59, 0.95, 1,
    };
    GRfloat lightblue_bg[16] = {
-      0.89, 0.95, 0.99, 0.75,
-      0.89, 0.95, 0.99, 0.75,
-      0.89, 0.95, 0.99, 0.75,
-      0.89, 0.95, 0.99, 0.75,
+      0.89, 0.95, 0.99, 1.00,
+      0.89, 0.95, 0.99, 1.00,
+      0.89, 0.95, 0.99, 1.00,
+      0.89, 0.95, 0.99, 1.00,
    };
    GRfloat pure_white[16]=  {
       1, 1, 1, 1,
@@ -688,6 +688,7 @@ static void glui_frame(void)
    const uint32_t title_color              = 0xffffffff;
    const uint32_t activetab_color          = 0x0096f2ff;
    const uint32_t passivetab_color         = 0x9e9e9eff;
+   bool background_rendered                = false;
    bool libretro_running                   = menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
 
    (void)passivetab_color;
@@ -735,12 +736,15 @@ static void glui_frame(void)
    if (!libretro_running)
    {
       if (glui->textures.bg.id)
+      {
+         background_rendered = true;
          menu_display_frame_background(menu, settings,
                gl, width, height,
                glui->textures.bg.id, 0.75f, true,
                &white_transp_bg[0],   &white_bg[0],
                &glui_vertexes[0], &glui_tex_coords[0], 4,
                MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+      }
    }
 
    /* Restore opacity of transposed background in case 
@@ -758,6 +762,20 @@ static void glui_frame(void)
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
+   if (background_rendered || libretro_running)
+   {
+      lightblue_bg[3]  = 0.75;
+      lightblue_bg[7]  = 0.75;
+      lightblue_bg[11] = 0.75;
+      lightblue_bg[15] = 0.75;
+   }
+   else
+   {
+      lightblue_bg[3]  = 1.00;
+      lightblue_bg[7]  = 1.00;
+      lightblue_bg[11] = 1.00;
+      lightblue_bg[15] = 1.00;
+   }
    /* highlighted entry */
    glui_render_quad(gl, 0,
          header_height - menu->scroll_y + glui->line_height *
