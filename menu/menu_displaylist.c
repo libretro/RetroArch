@@ -2499,10 +2499,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
             if (str_list && str_list->size)
             {
-               unsigned i, j;
+               unsigned i;
                char new_playlist_names[PATH_MAX_LENGTH] = {0};
                char new_playlist_cores[PATH_MAX_LENGTH] = {0};
-               union string_list_elem_attr attr = {0};
                settings_t *settings          = config_get_ptr();
                struct string_list *str_list2  = NULL;
 

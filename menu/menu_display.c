@@ -255,7 +255,6 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          return true;
       case MENU_DISPLAY_CTL_LIBRETRO_RUNNING:
          {
-            driver_t *driver     = driver_get_ptr();
             global_t *global     = global_get_ptr();
             if (!settings->menu.pause_libretro)
                if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
