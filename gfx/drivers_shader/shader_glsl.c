@@ -13,12 +13,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
 #include <string.h>
-#include <file/file_path.h>
-#include "../../general.h"
-#include "shader_glsl.h"
+
 #include <compat/strl.h>
 #include <compat/posix_string.h>
+#include <file/file_path.h>
+
+#include "../../general.h"
+#include "shader_glsl.h"
 #include "../video_state_tracker.h"
 #include "../../dynamic.h"
 #include "../../file_ops.h"
@@ -26,8 +29,6 @@
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
-
-#include <stdlib.h>
 
 #ifdef HAVE_OPENGL
 #include "../drivers/gl_common.h"

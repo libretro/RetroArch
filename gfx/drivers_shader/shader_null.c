@@ -14,14 +14,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <boolean.h>
+#include <stdlib.h>
 #include <string.h>
-#include "../../general.h"
+
 #include <compat/strl.h>
 #include <compat/posix_string.h>
+#include <boolean.h>
+#include <gfx/math/matrix_4x4.h>
+
+#include "../../general.h"
 #include "../video_state_tracker.h"
 #include "../../dynamic.h"
-#include <gfx/math/matrix_4x4.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -32,7 +35,6 @@
 #endif
 
 #include "../video_shader_driver.h"
-#include <stdlib.h>
 
 static void shader_null_deinit(void) { }
 static bool shader_null_init(void *data, const char *path) { return true; }

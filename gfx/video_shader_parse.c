@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+
 #include <compat/posix_string.h>
 #include <compat/msvc.h>
 #include <compat/strl.h>

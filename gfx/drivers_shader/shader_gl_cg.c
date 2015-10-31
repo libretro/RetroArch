@@ -20,23 +20,23 @@
 #endif
 
 #include <stdint.h>
-#include "../video_shader_driver.h"
+#include <string.h>
 
 #include <Cg/cg.h>
-
 #ifdef HAVE_OPENGL
-#include "../drivers/gl_common.h"
 #include <Cg/cgGL.h>
-
 #endif
 
-#include <string.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
 #include <rhash.h>
 
+#ifdef HAVE_OPENGL
+#include "../drivers/gl_common.h"
+#endif
+#include "../video_shader_driver.h"
 #include "../../dynamic.h"
 #include "../../rewind.h"
 #include "../video_state_tracker.h"
