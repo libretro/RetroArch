@@ -2465,9 +2465,17 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_CONTENT_HISTORY_SIZE), PARSE_ONLY_UINT, false);
          {
             struct string_list *str_list = dir_list_new_special(settings->playlist_directory, DIR_LIST_COLLECTIONS, NULL);
+            RARCH_LOG("Gets here?\n");
             if (str_list && str_list->size)
             {
                unsigned i;
+               char new_playlist_names[PATH_MAX_LENGTH];
+               union string_list_elem_attr attr = {0};
+               settings_t *settings          = config_get_ptr();
+               struct string_list *str_list2  = NULL;
+
+               if (settings->playlist_names[0] == '\0' && settings->playlist_cores[0] == '\0')
+                  str_list2 = string_split(info->label, ";");
 
                for (i = 0; i < str_list->size; i++)
                {
@@ -2476,12 +2484,17 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
                   strlcpy(path_base, path, sizeof(path_base));
 
+                  strlcat(new_playlist_names, path_base, sizeof(new_playlist_names));
+                  strlcat(new_playlist_names, ";", sizeof(new_playlist_names));
+
                   path_remove_extension(path_base);
                   menu_entries_push(info->list,
                         path_base,
                         str_list->elems[i].data, MENU_SETTINGS_PLAYLIST_ASSOCIATION_START + i, 0, 0);
                }
-               string_list_free(str_list);
+
+               strlcpy(settings->playlist_names, new_playlist_names, sizeof(settings->playlist_names));
+               string_list_free(str_list2);
             }
          }
          info->need_push    = true;

@@ -35,6 +35,9 @@ typedef struct settings
 {
    video_viewport_t video_viewport_custom;
 
+   char playlist_names[PATH_MAX_LENGTH];
+   char playlist_cores[PATH_MAX_LENGTH];
+
    struct
    {
       char driver[32];

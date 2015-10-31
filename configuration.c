@@ -694,6 +694,8 @@ static void config_set_defaults(void)
    *global->record.config_dir = '\0';
 
    *settings->bundle_assets_last_extracted_version = '\0';
+   *settings->playlist_names = '\0';
+   *settings->playlist_cores = '\0';
    *settings->core_options_path = '\0';
    *settings->content_history_path = '\0';
    *settings->content_history_directory = '\0';
@@ -1247,6 +1249,8 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_BOOL_BASE(conf, settings, bundle_assets_extract_enable, "bundle_assets_extract_enable");
    CONFIG_GET_PATH_BASE(conf, settings, bundle_assets_last_extracted_version, "bundle_assets_last_extracted_version");
+   CONFIG_GET_STRING_BASE(conf, settings, playlist_names, "playlist_names");
+   CONFIG_GET_STRING_BASE(conf, settings, playlist_cores, "playlist_cores");
 
    CONFIG_GET_BOOL_BASE(conf, settings, video.windowed_fullscreen, "video_windowed_fullscreen");
    CONFIG_GET_INT_BASE (conf, settings, video.monitor_index, "video_monitor_index");
@@ -2498,6 +2502,8 @@ bool config_save_file(const char *path)
    config_set_bool(conf,  "video_fullscreen", settings->video.fullscreen);
    config_set_bool(conf,  "bundle_assets_extract_enable", settings->bundle_assets_extract_enable);
    config_set_string(conf,  "bundle_assets_last_extracted_version", settings->bundle_assets_last_extracted_version);
+   config_set_string(conf,  "playlist_names", settings->playlist_names);
+   config_set_string(conf,  "playlist_cores", settings->playlist_cores);
    config_set_float(conf, "video_refresh_rate", settings->video.refresh_rate);
    config_set_int(conf,   "video_monitor_index",
          settings->video.monitor_index);
