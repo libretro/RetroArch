@@ -18,9 +18,9 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <bps/bps.h>
-
 #include <boolean.h>
+
+#include <bps/bps.h>
 
 #include "../../dynamic.h"
 #include "../../libretro_private.h"

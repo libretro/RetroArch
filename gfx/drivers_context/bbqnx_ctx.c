@@ -33,10 +33,6 @@
 
 #include "../image/image.h"
 
-#ifdef HAVE_GLSL
-#include "../shader_glsl.h"
-#endif
-
 #define WINDOW_BUFFERS 2
 
 static bool g_use_hw_ctx;
