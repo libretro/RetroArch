@@ -466,6 +466,7 @@ static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t selection;
+   char new_core_path[PATH_MAX_LENGTH];
    uint32_t core_name_hash, core_path_hash;
    const char *entry_path       = NULL;
    const char *entry_label      = NULL;
@@ -525,10 +526,11 @@ static int action_ok_playlist_entry(const char *path,
          (core_name_hash == MENU_VALUE_DETECT)
       )
    {
-      return action_ok_file_load_with_detect_core(entry_path, label, type, selection_ptr, entry_idx);
+      if (!menu_playlist_find_associated_core(menu->db_playlist_file, new_core_path, sizeof(new_core_path)))
+         return action_ok_file_load_with_detect_core(entry_path, label, type, selection_ptr, entry_idx);
    }
 
-   rarch_playlist_load_content(playlist, NULL, selection_ptr);
+   rarch_playlist_load_content(playlist, new_core_path, selection_ptr);
 
    if (is_history)
    {

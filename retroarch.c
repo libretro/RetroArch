@@ -1494,6 +1494,7 @@ void rarch_main_deinit(void)
 void rarch_playlist_load_content(void *data, const char *core_path, unsigned idx)
 {
    unsigned i;
+   char new_core_path[PATH_MAX_LENGTH];
    const char *path             = NULL;
    char *path_check             = NULL;
    char *path_tolower           = NULL;
@@ -1507,8 +1508,11 @@ void rarch_playlist_load_content(void *data, const char *core_path, unsigned idx
    if (!playlist)
       return;
 
+   if (!core_path)
+      core_path = new_core_path;
+
    content_playlist_get_index(playlist,
-         idx, &path, NULL, core_path ? NULL : &core_path, NULL, NULL, NULL);
+         idx, &path, NULL, &core_path, NULL, NULL, NULL);
 
    path_tolower = strdup(path);
 
