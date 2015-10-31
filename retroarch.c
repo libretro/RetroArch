@@ -1491,11 +1491,10 @@ void rarch_main_deinit(void)
  *
  * Initializes core and loads content based on playlist entry.
  **/
-void rarch_playlist_load_content(void *data, unsigned idx)
+void rarch_playlist_load_content(void *data, const char *core_path, unsigned idx)
 {
    unsigned i;
    const char *path             = NULL;
-   const char *core_path        = NULL;
    char *path_check             = NULL;
    char *path_tolower           = NULL;
    RFILE *fp                    = NULL;
@@ -1509,7 +1508,7 @@ void rarch_playlist_load_content(void *data, unsigned idx)
       return;
 
    content_playlist_get_index(playlist,
-         idx, &path, NULL, &core_path, NULL, NULL, NULL);
+         idx, &path, NULL, core_path ? NULL : &core_path, NULL, NULL, NULL);
 
    path_tolower = strdup(path);
 

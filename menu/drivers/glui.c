@@ -688,6 +688,7 @@ static void glui_frame(void)
    const uint32_t title_color              = 0xffffffff;
    const uint32_t activetab_color          = 0x0096f2ff;
    const uint32_t passivetab_color         = 0x9e9e9eff;
+   bool libretro_running                   = menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
 
    (void)passivetab_color;
    (void)activetab_color;
@@ -711,6 +712,18 @@ static void glui_frame(void)
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
+   /* Set opacity of transposed background in case 
+    * libretro_running is true so that the white background
+    * looks better */
+
+   if (libretro_running)
+   {
+      white_transp_bg[3]  = 0.90;
+      white_transp_bg[7]  = 0.90;
+      white_transp_bg[11] = 0.90;
+      white_transp_bg[15] = 0.90;
+   }
+
    menu_display_frame_background(menu, settings,
          gl, width, height,
          glui->textures.white, 0.75f, false,
@@ -718,13 +731,25 @@ static void glui_frame(void)
          &glui_vertexes[0], &glui_tex_coords[0], 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
-   if (glui->textures.bg.id)
-   menu_display_frame_background(menu, settings,
-         gl, width, height,
-         glui->textures.bg.id, 0.75f, true,
-         &white_transp_bg[0],   &white_bg[0],
-         &glui_vertexes[0], &glui_tex_coords[0], 4,
-         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+
+   if (!libretro_running)
+   {
+      if (glui->textures.bg.id)
+         menu_display_frame_background(menu, settings,
+               gl, width, height,
+               glui->textures.bg.id, 0.75f, true,
+               &white_transp_bg[0],   &white_bg[0],
+               &glui_vertexes[0], &glui_tex_coords[0], 4,
+               MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+   }
+
+   /* Restore opacity of transposed background in case 
+    * libretro_running is true */
+
+   white_transp_bg[3]  = 0.30;
+   white_transp_bg[7]  = 0.30;
+   white_transp_bg[11] = 0.30;
+   white_transp_bg[15] = 0.30;
 
    menu_entries_get_title(title, sizeof(title));
 

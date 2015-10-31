@@ -253,22 +253,27 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             disp->font.framebuf = *ptr;
          }
          return true;
-      case MENU_DISPLAY_CTL_LIBRETRO:
-         video_driver_set_texture_enable(true, false);
-
-         if (!settings->menu.pause_libretro)
+      case MENU_DISPLAY_CTL_LIBRETRO_RUNNING:
          {
             driver_t *driver     = driver_get_ptr();
             global_t *global     = global_get_ptr();
+            if (!settings->menu.pause_libretro)
+               if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
+                  return true;
+         }
+         break;
+      case MENU_DISPLAY_CTL_LIBRETRO:
+         video_driver_set_texture_enable(true, false);
 
-            if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
-            {
-               bool block_libretro_input = driver->block_libretro_input;
-               driver->block_libretro_input = true;
-               core.retro_run();
-               driver->block_libretro_input = block_libretro_input;
-               return true;
-            }
+         if (menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL))
+         {
+            driver_t      *driver     = driver_get_ptr();
+            bool block_libretro_input = driver->block_libretro_input;
+
+            driver->block_libretro_input = true;
+            core.retro_run();
+            driver->block_libretro_input = block_libretro_input;
+            return true;
          }
 
          video_driver_cached_frame();
