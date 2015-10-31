@@ -466,7 +466,6 @@ static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t selection;
-   char new_core_path[PATH_MAX_LENGTH];
    uint32_t core_name_hash, core_path_hash;
    const char *entry_path       = NULL;
    const char *entry_label      = NULL;
@@ -526,11 +525,33 @@ static int action_ok_playlist_entry(const char *path,
          (core_name_hash == MENU_VALUE_DETECT)
       )
    {
-      if (!menu_playlist_find_associated_core(menu->db_playlist_file, new_core_path, sizeof(new_core_path)))
+      char new_core_path[PATH_MAX_LENGTH];
+      core_info_t            *core_info = NULL;
+      global_t                  *global = global_get_ptr();
+      const char             *path_base = path_basename(menu->db_playlist_file);
+      bool        found_associated_core = menu_playlist_find_associated_core(
+            path_base, new_core_path, sizeof(new_core_path));
+
+      if (!(core_info = core_info_find(global->core_info.list, new_core_path)))
+         found_associated_core = false;
+
+      if (found_associated_core)
+      {
+         char new_display_name[PATH_MAX_LENGTH];
+
+         strlcpy(new_display_name, core_info->display_name, sizeof(new_display_name));
+         content_playlist_update(menu->playlist, selection_ptr,
+               menu->playlist->entries[selection_ptr].path, menu->playlist->entries[selection_ptr].label,
+               new_core_path , new_display_name,
+               menu->playlist->entries[selection_ptr].crc32,
+               menu->playlist->entries[selection_ptr].db_name);
+         content_playlist_write_file(menu->playlist);
+      }
+      else
          return action_ok_file_load_with_detect_core(entry_path, label, type, selection_ptr, entry_idx);
    }
 
-   rarch_playlist_load_content(playlist, new_core_path, selection_ptr);
+   rarch_playlist_load_content(playlist, selection_ptr);
 
    if (is_history)
    {

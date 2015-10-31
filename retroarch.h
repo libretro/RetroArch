@@ -165,12 +165,11 @@ void rarch_main_deinit(void);
 /**
  * rarch_playlist_load_content:
  * @playlist             : Playlist handle.
- * @path                 : Path to associated core (optional).
  * @idx                  : Index in playlist.
  *
  * Initializes core and loads content based on playlist entry.
  **/
-void rarch_playlist_load_content(void *data, const char *core_path, unsigned index);
+void rarch_playlist_load_content(void *data, unsigned index);
 
 /**
  * rarch_defer_core:
