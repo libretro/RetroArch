@@ -749,6 +749,9 @@ static void config_set_defaults(void)
    global->console.sound.mode = SOUND_MODE_NORMAL;
 #endif
 
+   if (*g_defaults.path.buildbot_server_url)
+      strlcpy(settings->network.buildbot_url,
+            g_defaults.path.buildbot_server_url, sizeof(settings->network.buildbot_url));
    if (*g_defaults.dir.wallpapers)
       strlcpy(settings->dynamic_wallpapers_directory,
             g_defaults.dir.wallpapers, sizeof(settings->dynamic_wallpapers_directory));

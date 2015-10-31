@@ -376,6 +376,13 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 #endif
 #endif
 
+#if TARGET_OS_IPHONE
+    int major, minor;
+    get_ios_version(&major, &minor);
+    if (major > 8)
+       strlcpy(g_defaults.path.buildbot_server_url, "http://buildbot.libretro.com/nightly/apple/ios9/latest/", sizeof(g_defaults.path.buildbot_server_url));
+#endif
+
    CFTemporaryDirectory(temp_dir, sizeof(temp_dir));
    strlcpy(g_defaults.dir.cache, temp_dir, sizeof(g_defaults.dir.cache));
 

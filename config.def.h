@@ -748,8 +748,6 @@ static char buildbot_server_url[] = "";
 #endif
 #elif defined(IOS)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/ios/latest/";
-#elif defined(IOS9)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/ios9/latest/";
 #elif defined(OSX)
 #if defined(__x86_64__)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/osx/x86_64/latest/";

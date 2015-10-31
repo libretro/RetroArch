@@ -107,6 +107,7 @@ struct defaults
    {
       char config[PATH_MAX_LENGTH];
       char core[PATH_MAX_LENGTH];
+      char buildbot_server_url[PATH_MAX_LENGTH];
    } path;
 
    struct
