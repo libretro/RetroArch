@@ -614,7 +614,7 @@ static void xmb_selection_pointer_changed(bool allow_animations)
 
    end       = menu_entries_get_end();
    tag       = (uintptr_t)menu_list;
-   threshold = xmb->icon.size*10;
+   threshold = xmb->icon.size * 16;
 
    video_driver_get_size(NULL, &height);
 
@@ -669,7 +669,7 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i, height = 0;
-   int        threshold = xmb->icon.size * 10;
+   int        threshold = xmb->icon.size * 16;
    size_t           end = 0;
 
    end = file_list_get_size(list);
