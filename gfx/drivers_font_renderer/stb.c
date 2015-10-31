@@ -14,11 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../font_renderer_driver.h"
+#include <ctype.h>
+
 #include <file/file_path.h>
+
+#include "../font_renderer_driver.h"
 #include "../../general.h"
 #include "../../file_ops.h"
-#include <ctype.h>
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STB_RECT_PACK_IMPLEMENTATION

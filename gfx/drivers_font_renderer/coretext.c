@@ -13,11 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../font_renderer_driver.h"
-#include "../../general.h"
-#include <string.h>
-#include <stddef.h>
 #include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
 
 #include <CoreFoundation/CFString.h>
 #ifdef IOS
@@ -26,6 +24,9 @@
 #else
 #include <ApplicationServices/ApplicationServices.h>
 #endif
+
+#include "../font_renderer_driver.h"
+#include "../../general.h"
 
 #define CT_ATLAS_ROWS 16
 #define CT_ATLAS_COLS 16

@@ -14,15 +14,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../font_renderer_driver.h"
-#include <file/file_path.h>
-#include "../../general.h"
-#include <string.h>
-#include <stddef.h>
 #include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
+
+#include "../font_renderer_driver.h"
+#include <file/file_path.h>
+#include "../../general.h"
 
 #define FT_ATLAS_ROWS 16
 #define FT_ATLAS_COLS 16
