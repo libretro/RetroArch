@@ -88,7 +88,7 @@
 
 /* Begin PBXFileReference section */
 		0FDA2A911BE1AFA800F2B5DA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		0FDA2A921BE1AFA800F2B5DA /* RetroArch copy3-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch copy3-Info.plist"; path = "/Users/buildbot/buildbot/ios/retroarch/pkg/apple/RetroArch copy3-Info.plist"; sourceTree = "<absolute>"; };
+		0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch_iOS9-Info.plist"; path = "/Users/buildbot/buildbot/ios/retroarch/pkg/apple/RetroArch_iOS9-Info.plist"; sourceTree = "<absolute>"; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		501232CB192E5FDC0063A359 /* sinc_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_neon.S; path = ../../audio/drivers_resampler/sinc_neon.S; sourceTree = SOURCE_ROOT; };
 		501232CD192E5FE30063A359 /* audio_utils_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = audio_utils_neon.S; path = ../../audio/audio_utils_neon.S; sourceTree = SOURCE_ROOT; };
@@ -215,7 +215,7 @@
 				96AFAE2616C1D4EA009DE44C /* Products */,
 				96AFAE3416C1D4EA009DE44C /* Supporting Files */,
 				503700AE1ACA18E400A51A37 /* Info.plist */,
-				0FDA2A921BE1AFA800F2B5DA /* RetroArch copy3-Info.plist */,
+				0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */,
 			);
 			indentWidth = 3;
 			sourceTree = "<group>";
@@ -509,7 +509,7 @@
 					../../,
 					"../../libretro-common/include",
 				);
-				INFOPLIST_FILE = "RetroArch copy3-Info.plist";
+				INFOPLIST_FILE = "RetroArch_iOS9-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
@@ -580,7 +580,7 @@
 					../../,
 					"../../libretro-common/include",
 				);
-				INFOPLIST_FILE = "RetroArch copy3-Info.plist";
+				INFOPLIST_FILE = "RetroArch_iOS9-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
