@@ -353,6 +353,12 @@ static const bool def_history_list_enable = true;
 
 static const unsigned int def_user_language = 0;
 
+#if (defined(__APPLE__) && defined(__MACH__) && defined(OSX)) || (defined(_WIN32) && !defined(_XBOX))
+static const bool def_mouse_enable = true;
+#else
+static const bool def_mouse_enable = false;
+#endif
+
 /* VIDEO */
 
 #if defined(_XBOX360)

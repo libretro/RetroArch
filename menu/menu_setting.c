@@ -5322,7 +5322,7 @@ static bool setting_append_list_menu_options(
          settings->menu.mouse.enable,
          menu_hash_to_str(MENU_LABEL_MOUSE_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_MOUSE_ENABLE),
-         false,
+         def_mouse_enable,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
          group_info.name,
