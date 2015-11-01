@@ -1422,9 +1422,11 @@ bool event_command(enum event_command cmd)
          rarch_ctl(RARCH_ACTION_STATE_FORCE_QUIT, NULL);
          break;
       case EVENT_CMD_SHUTDOWN:
+#if defined(__linux__) && !defined(ANDROID)
          rarch_main_msg_queue_push("Shutting down...", 1, 180, true);
          rarch_ctl(RARCH_ACTION_STATE_FORCE_QUIT, NULL);
          system("shutdown -P now");
+#endif
          break;
       case EVENT_CMD_RESUME:
          rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);

@@ -210,7 +210,6 @@ struct string_list *string_list_new_special(enum string_list_type type,
             string_list_append(s, opt, attr);
          }
          break;
-         break;
       case STRING_LIST_CORES_NAMES:
          for (i = 0; i < core_info_list_num_info_files(global->core_info.list); i++)
          {

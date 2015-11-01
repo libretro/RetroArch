@@ -1710,7 +1710,6 @@ static int action_ok_load_archive_detect_core(const char *path,
          if (ret == -1)
             action_ok_push_quick_menu();
          return ret;
-   return 0;
       case 0:
          return generic_action_ok_displaylist_push(path, label, type,
                selection, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
