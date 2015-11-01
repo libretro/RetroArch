@@ -659,10 +659,10 @@ static void glui_frame(void)
       0.98, 0.98, 0.98, 1,
    };
    GRfloat white_transp_bg[16]=  {
-      0.98, 0.98, 0.98, 0.30,
-      0.98, 0.98, 0.98, 0.30,
-      0.98, 0.98, 0.98, 0.30,
-      0.98, 0.98, 0.98, 0.30,
+      0.98, 0.98, 0.98, 0.90,
+      0.98, 0.98, 0.98, 0.90,
+      0.98, 0.98, 0.98, 0.90,
+      0.98, 0.98, 0.98, 0.90,
    };
    GRfloat grey_bg[16]=  {
       0.78, 0.78, 0.78, 1,
@@ -725,14 +725,6 @@ static void glui_frame(void)
 
    if (libretro_running)
    {
-      white_transp_bg[3]  = 0.90;
-      white_transp_bg[7]  = 0.90;
-      white_transp_bg[11] = 0.90;
-      white_transp_bg[15] = 0.90;
-   }
-
-   if (libretro_running)
-   {
       menu_display_frame_background(menu, settings,
             gl, width, height,
             glui->textures.white, 0.75f, false,
@@ -747,22 +739,29 @@ static void glui_frame(void)
       if (glui->textures.bg.id)
       {
          background_rendered = true;
+
+         white_transp_bg[3]  = 0.30;
+         white_transp_bg[7]  = 0.30;
+         white_transp_bg[11] = 0.30;
+         white_transp_bg[15] = 0.30;
+
          menu_display_frame_background(menu, settings,
                gl, width, height,
                glui->textures.bg.id, 0.75f, true,
                &white_transp_bg[0],   &white_bg[0],
                &glui_vertexes[0], &glui_tex_coords[0], 4,
                MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+
+         white_transp_bg[3]  = 0.90;
+         white_transp_bg[7]  = 0.90;
+         white_transp_bg[11] = 0.90;
+         white_transp_bg[15] = 0.90;
       }
    }
 
    /* Restore opacity of transposed background in case 
     * libretro_running is true */
 
-   white_transp_bg[3]  = 0.30;
-   white_transp_bg[7]  = 0.30;
-   white_transp_bg[11] = 0.30;
-   white_transp_bg[15] = 0.30;
 
    menu_entries_get_title(title, sizeof(title));
 
