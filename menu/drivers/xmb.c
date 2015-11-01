@@ -399,9 +399,6 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
          y > height + xmb->icon.size)
       return;
 
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
-
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
    coords.tex_coord     = rmb_tex_coord;
