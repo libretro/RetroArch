@@ -483,8 +483,6 @@ static void config_set_defaults(void)
    settings->video.threaded              = video_threaded;
    settings->bundle_assets_extract_enable = bundle_assets_extract_enable;
 
-   if (g_defaults.settings.video_threaded_enable != video_threaded)
-      settings->video.threaded           = g_defaults.settings.video_threaded_enable;
 
 #ifdef HAVE_THREADS
    settings->threaded_data_runloop_enable = threaded_data_runloop_enable;
@@ -748,6 +746,9 @@ static void config_set_defaults(void)
    global->console.screen.resolutions.current.id = 0;
    global->console.sound.mode = SOUND_MODE_NORMAL;
 #endif
+
+   if (g_defaults.settings.video_threaded_enable)
+      settings->video.threaded           = g_defaults.settings.video_threaded_enable;
 
    if (*g_defaults.path.buildbot_server_url)
       strlcpy(settings->network.buildbot_url,
