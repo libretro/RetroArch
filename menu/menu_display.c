@@ -577,8 +577,7 @@ void menu_display_frame_background(
    coords.lut_tex_coord = tex_coord;
    coords.color         = (const float*)coord_color;
 
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+   menu_display_blend_begin(gl);
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
@@ -587,8 +586,6 @@ void menu_display_frame_background(
       && !force_transparency
       && texture)
       coords.color = (const float*)coord_color2;
-   
-   menu_display_blend_begin(gl);
 
    menu_display_draw_frame(0, 0, width, height,
          gl->shader, &coords,

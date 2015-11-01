@@ -919,8 +919,6 @@ static void glui_frame(void)
       glui_draw_cursor(gl, glui, &white_bg[0], mouse_x, mouse_y, width, height);
    }
 
-   gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
-
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
 
