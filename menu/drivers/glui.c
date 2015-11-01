@@ -731,16 +731,19 @@ static void glui_frame(void)
       white_transp_bg[15] = 0.90;
    }
 
-   menu_display_frame_background(menu, settings,
-         gl, width, height,
-         glui->textures.white, 0.75f, false,
-         &white_transp_bg[0],   &white_bg[0],
-         &glui_vertexes[0], &glui_tex_coords[0], 4,
-         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
-
-
-   if (!libretro_running)
+   if (libretro_running)
    {
+      menu_display_frame_background(menu, settings,
+            gl, width, height,
+            glui->textures.white, 0.75f, false,
+            &white_transp_bg[0],   &white_bg[0],
+            &glui_vertexes[0], &glui_tex_coords[0], 4,
+            MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+   }
+   else
+   {
+      menu_display_clear_color(gl, 1.0f, 1.0f, 1.0f, 0.75f);
+
       if (glui->textures.bg.id)
       {
          background_rendered = true;
