@@ -596,6 +596,13 @@ void menu_display_frame_background(
    gl->coords.color = gl->white_color_ptr;
 }
 
+void menu_display_restore_clear_color(void *data)
+{
+   (void)data;
+
+   glClearColor(0.0f, 0.0f, 0.0f, 0.00f);
+}
+
 void menu_display_clear_color(void *data, float r, float g, float b, float a)
 {
    glClearColor(r, g, b, a);

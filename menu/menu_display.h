@@ -124,6 +124,8 @@ void menu_display_frame_background(
       enum menu_display_prim_type prim_type
       );
 
+void menu_display_restore_clear_color(void *data);
+
 void menu_display_clear_color(void *data, float r, float g, float b, float a);
 #endif
 

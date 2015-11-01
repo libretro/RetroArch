@@ -922,6 +922,7 @@ static void glui_frame(void)
       glui_draw_cursor(gl, glui, &white_bg[0], mouse_x, mouse_y, width, height);
    }
 
+   menu_display_restore_clear_color(gl);
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
 
