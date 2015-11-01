@@ -790,9 +790,8 @@ static int menu_input_pointer(unsigned *action)
 
 static int menu_input_mouse_frame(
       menu_file_list_cbs_t *cbs, menu_entry_t *entry,
-      uint64_t input_mouse, unsigned action)
+      uint64_t input_mouse)
 {
-   int ret;
    size_t selection;
    menu_input_t *menu_input = menu_input_get_ptr();
 
@@ -800,8 +799,16 @@ static int menu_input_mouse_frame(
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L))
    {
-      ret = menu_driver_pointer_tap(menu_input->mouse.x, menu_input->mouse.y,
-         menu_input->mouse.ptr, cbs, entry, action);
+      if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_TOGGLE))
+         return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
+
+      if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_SET_NAVIGATION))
+      {
+         size_t idx  = menu_input->mouse.ptr;
+         bool scroll = false;
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+      }
    }
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_R))
@@ -822,7 +829,7 @@ static int menu_input_mouse_frame(
       menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, &decrement_by);
    }
 
-   return ret;
+   return 0;
 }
 
 static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
@@ -1022,9 +1029,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       if (menu_input->pointer.oldpressed[0])
       {
          if (!menu_input->pointer.dragging)
-            ret = menu_driver_pointer_tap(menu_input->pointer.start_x,
-                  menu_input->pointer.start_y, menu_input->pointer.ptr,
-                  cbs, entry, action);
+            ret = menu_driver_pointer_tap(cbs, entry, action);
 
          menu_input->pointer.oldpressed[0] = false;
          menu_input->pointer.start_x       = 0;
@@ -1070,10 +1075,9 @@ void menu_input_post_iterate(int *ret, unsigned action)
    menu_entry_get(&entry, 0, selection, NULL, false);
 
    if (settings->menu.mouse.enable)
-   {
-      *ret  = menu_input_mouse_post_iterate(&menu_input->mouse.state, cbs, action);
-      *ret |= menu_input_mouse_frame(cbs, &entry, menu_input->mouse.state, action);
-   }
+      *ret  = menu_input_mouse_post_iterate  (&menu_input->mouse.state, cbs, action);
+
+   *ret = menu_input_mouse_frame(cbs, &entry, menu_input->mouse.state);
 
    if (settings->menu.pointer.enable)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
