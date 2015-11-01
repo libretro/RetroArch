@@ -40,6 +40,17 @@
 #include "../input/input_remapping.h"
 #include "../input/input_common.h"
 
+enum menu_mouse_action
+{
+   MOUSE_ACTION_NONE = 0,
+   MOUSE_ACTION_BUTTON_L,
+   MOUSE_ACTION_BUTTON_L_TOGGLE,
+   MOUSE_ACTION_BUTTON_L_SET_NAVIGATION,
+   MOUSE_ACTION_BUTTON_R,
+   MOUSE_ACTION_WHEEL_UP,
+   MOUSE_ACTION_WHEEL_DOWN
+};
+
 struct menu_bind_state_port
 {
    bool buttons[MENU_MAX_BUTTONS];
