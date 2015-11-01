@@ -1270,9 +1270,9 @@ static void glui_preswitch_tabs(unsigned action)
 
 static void glui_list_cache(menu_list_type_t type, unsigned action)
 {
-   size_t stack_size, list_size;
+   size_t list_size;
    glui_handle_t      *glui = NULL;
-   menu_handle_t    *menu = menu_driver_get_ptr();
+   menu_handle_t      *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
