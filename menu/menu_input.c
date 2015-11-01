@@ -1029,7 +1029,8 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       if (menu_input->pointer.oldpressed[0])
       {
          if (!menu_input->pointer.dragging)
-            ret = menu_driver_pointer_tap(cbs, entry, action);
+            ret = menu_driver_pointer_tap(menu_input->pointer.start_x,
+                  menu_input->pointer.start_y, menu_input->pointer.ptr, cbs, entry, action);
 
          menu_input->pointer.oldpressed[0] = false;
          menu_input->pointer.start_x       = 0;

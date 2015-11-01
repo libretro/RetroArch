@@ -393,14 +393,15 @@ bool menu_environment_cb(menu_environ_cb_t type, void *data)
    return false;
 }
 
-int menu_driver_pointer_tap(menu_file_list_cbs_t *cbs,
+int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
+      menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
    int ret = 0;
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
    if (driver->pointer_tap)
-      ret = driver->pointer_tap(cbs, entry, action);
+      ret = driver->pointer_tap(x, y, ptr, cbs, entry, action);
 
    return ret;
 }
