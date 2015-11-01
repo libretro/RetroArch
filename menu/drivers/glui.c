@@ -1350,15 +1350,6 @@ static int glui_list_push(menu_displaylist_info_t *info, unsigned type)
                   MENU_SETTING_ACTION, 0, 0);
          }
 
-#ifdef HAVE_LIBRETRODB
-#ifdef RARCH_MOBILE
-         menu_entries_push(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST),
-               menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
-               MENU_SETTING_ACTION, 0, 0);
-#endif
-#endif
-
          info->need_push    = true;
          info->need_refresh = true;
          ret = 0;
@@ -1385,10 +1376,6 @@ static int glui_list_push(menu_displaylist_info_t *info, unsigned type)
 #endif
          menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_ONLINE_UPDATER), PARSE_ACTION, false);
-#endif
-#ifdef RARCH_MOBILE
-         menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_SETTINGS), PARSE_ACTION, false);
 #endif
          menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_INFORMATION_LIST), PARSE_ACTION, false);
