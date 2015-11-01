@@ -530,7 +530,6 @@ void menu_display_draw_frame(
       const void *shader_data,
       struct gfx_coords *coords,
       math_matrix_4x4 *mat, 
-      bool blend,
       GLuint texture,
       size_t vertex_count,
       enum menu_display_prim_type prim_type
@@ -549,13 +548,7 @@ void menu_display_draw_frame(
    shader->set_coords(coords);
    shader->set_mvp(driver->video_data, mat);
 
-   if (blend)
-      glEnable(GL_BLEND);
-
    glDrawArrays(menu_display_prim_to_gl_enum(prim_type), 0, vertex_count);
-
-   if (blend)
-      glDisable(GL_BLEND);
 }
 
 void menu_display_frame_background(
@@ -594,10 +587,14 @@ void menu_display_frame_background(
       && !force_transparency
       && texture)
       coords.color = (const float*)coord_color2;
+   
+   menu_display_draw_icon_blend_begin(gl);
 
    menu_display_draw_frame(0, 0, width, height,
          gl->shader, &coords,
-         &gl->mvp_no_rot, true, texture, vertex_count, prim_type);
+         &gl->mvp_no_rot, texture, vertex_count, prim_type);
+
+   menu_display_draw_icon_blend_end(gl);
 
    gl->coords.color = gl->white_color_ptr;
 }

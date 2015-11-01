@@ -1051,12 +1051,12 @@ static void zarch_frame(void)
       zarch_zui_draw_cursor(gl, zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_X), zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_Y));
          
 
-   gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
-
    if (!zarch_zui_input_state(zui, MENU_ZARCH_PRESSED))
       zui->item.active = 0;
    else if (zui->item.active == 0)
       zui->item.active = -1;
+
+   menu_display_draw_icon_blend_begin(gl);
 
    menu_display_draw_frame(
          0,
@@ -1064,8 +1064,10 @@ static void zarch_frame(void)
          zui->width,
          zui->height,
          gl->shader, (struct gfx_coords*)&zui->ca,
-         &zui->mvp, true, zui->textures.white, zui->ca.coords.vertices,
+         &zui->mvp, zui->textures.white, zui->ca.coords.vertices,
          MENU_DISPLAY_PRIM_TRIANGLES);
+
+   menu_display_draw_icon_blend_end(gl);
 
    menu_display_frame_background(menu, settings,
          gl, zui->width, zui->height,

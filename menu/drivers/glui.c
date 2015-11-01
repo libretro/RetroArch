@@ -202,7 +202,7 @@ static void glui_draw_icon(gl_t *gl, glui_handle_t *glui,
          height - y - glui->icon_size,
          glui->icon_size,
          glui->icon_size,
-         gl->shader, &coords, &mymat, false, texture, 4,
+         gl->shader, &coords, &mymat, texture, 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    menu_display_draw_icon_blend_end(gl);
@@ -251,16 +251,20 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
    coords.lut_tex_coord = glui_tex_coords;
    coords.color         = coord_color;
 
+   menu_display_draw_icon_blend_begin(gl);
+
    menu_display_draw_frame(
          x,
          height - y - h,
          w,
          h,
          gl->shader, &coords,
-         &gl->mvp_no_rot, true, glui->textures.white, 4,
+         &gl->mvp_no_rot, glui->textures.white, 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP );
 
    gl->coords.color     = gl->white_color_ptr;
+
+   menu_display_draw_icon_blend_end(gl);
 }
 
 static void glui_draw_scrollbar(gl_t *gl, unsigned width, unsigned height, GRfloat *coord_color)
@@ -592,7 +596,8 @@ static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui,
          height - y - 32,
          64,
          64,
-         gl->shader, &coords, &mymat, true, glui->textures.list[GLUI_TEXTURE_POINTER].id, 4,
+         gl->shader, &coords, &mymat,
+         glui->textures.list[GLUI_TEXTURE_POINTER].id, 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 }
 

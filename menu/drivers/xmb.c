@@ -378,7 +378,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
          height - y,
          xmb->icon.size,
          xmb->icon.size,
-         gl->shader, &coords, &mymat, false, texture, 4,
+         gl->shader, &coords, &mymat, texture, 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 }
 
@@ -410,7 +410,7 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
          height - y,
          xmb->icon.size,
          xmb->icon.size,
-         gl->shader, &coords, mymat, false, texture, 4,
+         gl->shader, &coords, mymat, texture, 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 }
 
@@ -442,7 +442,7 @@ static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb, GRfloat *color, unsigne
          height - y,
          xmb->boxart_size,
          xmb->boxart_size,
-         gl->shader, &coords, &mymat, false, xmb->boxart, 4,
+         gl->shader, &coords, &mymat, xmb->boxart, 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 }
 
@@ -1447,8 +1447,10 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb,
          height - y - (xmb->cursor.size/2),
          xmb->cursor.size,
          xmb->cursor.size,
-         gl->shader, &coords, &mymat, true, xmb->textures.list[XMB_TEXTURE_POINTER].id, 4,
+         gl->shader, &coords, &mymat, xmb->textures.list[XMB_TEXTURE_POINTER].id, 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+
+   menu_display_draw_icon_blend_end(gl);
 }
 
 static void xmb_render(void)
