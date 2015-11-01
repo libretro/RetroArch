@@ -1224,12 +1224,56 @@ static int glui_environ(menu_environ_cb_t type, void *data)
    return -1;
 }
 
+static void glui_preswitch_tabs(unsigned action)
+{
+   glui_handle_t *glui = NULL;
+   menu_handle_t *menu = menu_driver_get_ptr();
+
+   if (!menu)
+      return;
+
+   glui = (glui_handle_t*)menu->userdata;
+
+   if (!glui)
+      return;
+
+   file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
+   size_t stack_size = menu_stack->size;
+
+   if (menu_stack->list[stack_size - 1].label)
+      free(menu_stack->list[stack_size - 1].label);
+   menu_stack->list[stack_size - 1].label = NULL;
+
+   switch (glui->categories.selection_ptr)
+   {
+      case GLUI_SYSTEM_TAB_MAIN:
+         menu_stack->list[stack_size - 1].label = 
+            strdup(menu_hash_to_str(MENU_VALUE_MAIN_MENU));
+         menu_stack->list[stack_size - 1].type = 
+            MENU_SETTINGS;
+         break;
+      case GLUI_SYSTEM_TAB_PLAYLISTS:
+         menu_stack->list[stack_size - 1].label = 
+            strdup(menu_hash_to_str(MENU_VALUE_PLAYLISTS_TAB));
+         menu_stack->list[stack_size - 1].label = 
+            strdup(menu_hash_to_str(MENU_VALUE_PLAYLISTS_TAB));
+         menu_stack->list[stack_size - 1].type = 
+            MENU_PLAYLISTS_TAB;
+         break;
+      case GLUI_SYSTEM_TAB_SETTINGS:
+         menu_stack->list[stack_size - 1].label = 
+            strdup(menu_hash_to_str(MENU_VALUE_SETTINGS_TAB));
+         menu_stack->list[stack_size - 1].type = 
+            MENU_SETTINGS;
+         break;
+   }
+}
+
 static void glui_list_cache(menu_list_type_t type, unsigned action)
 {
    size_t stack_size, list_size;
    glui_handle_t      *glui = NULL;
    menu_handle_t    *menu = menu_driver_get_ptr();
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
 
    if (!menu)
       return;
@@ -1270,35 +1314,7 @@ static void glui_list_cache(menu_list_type_t type, unsigned action)
                break;
          }
 
-         stack_size = menu_stack->size;
-
-         if (menu_stack->list[stack_size - 1].label)
-            free(menu_stack->list[stack_size - 1].label);
-         menu_stack->list[stack_size - 1].label = NULL;
-
-         switch (glui->categories.selection_ptr)
-         {
-            case GLUI_SYSTEM_TAB_MAIN:
-               menu_stack->list[stack_size - 1].label = 
-                  strdup(menu_hash_to_str(MENU_VALUE_MAIN_MENU));
-               menu_stack->list[stack_size - 1].type = 
-                  MENU_SETTINGS;
-               break;
-            case GLUI_SYSTEM_TAB_PLAYLISTS:
-               menu_stack->list[stack_size - 1].label = 
-                  strdup(menu_hash_to_str(MENU_VALUE_PLAYLISTS_TAB));
-               menu_stack->list[stack_size - 1].label = 
-                  strdup(menu_hash_to_str(MENU_VALUE_PLAYLISTS_TAB));
-               menu_stack->list[stack_size - 1].type = 
-                  MENU_PLAYLISTS_TAB;
-               break;
-            case GLUI_SYSTEM_TAB_SETTINGS:
-               menu_stack->list[stack_size - 1].label = 
-                  strdup(menu_hash_to_str(MENU_VALUE_SETTINGS_TAB));
-               menu_stack->list[stack_size - 1].type = 
-                  MENU_SETTINGS;
-               break;
-         }
+         glui_preswitch_tabs(action);
          break;
       default:
          break;
@@ -1409,6 +1425,65 @@ static size_t glui_list_get_selection(void *data)
    return glui->categories.selection_ptr;
 }
 
+static int glui_pointer_tap(menu_file_list_cbs_t *cbs,
+      menu_entry_t *entry, unsigned action)
+{
+   size_t selection, idx;
+   unsigned header_height, width, height, i;
+   bool scroll                = false;
+   menu_input_t *menu_input   = menu_input_get_ptr();
+   menu_handle_t *menu        = menu_driver_get_ptr();
+   glui_handle_t *glui        = menu ? (glui_handle_t*)menu->userdata : NULL;
+   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+
+   if (!glui)
+      return 0;
+
+   video_driver_get_size(&width, &height);
+
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
+
+   if ((unsigned)menu_input->pointer.start_y < header_height)
+   {
+      menu_entries_pop_stack(&selection, 0);
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+   }
+   else if ((unsigned)menu_input->pointer.start_y > height - glui->tabs_height)
+   {
+      for (i = 0; i <= GLUI_SYSTEM_TAB_END; i++)
+      {
+         unsigned tab_width = width / (GLUI_SYSTEM_TAB_END + 1);
+         unsigned start = tab_width * i;
+
+         if ((unsigned)menu_input->pointer.start_x >= start &&
+               (unsigned)menu_input->pointer.start_x < start + tab_width)
+         {
+            glui->categories.selection_ptr = i;
+
+            glui_preswitch_tabs(action);
+
+            if (cbs && cbs->action_content_list_switch)
+               return cbs->action_content_list_switch(selection_buf, menu_stack,
+                     "", "", 0);
+         }
+      }
+   }
+   else if (menu_input->pointer.ptr <= (menu_entries_get_size() - 1))
+   {
+      if (menu_input->pointer.ptr == selection && cbs && cbs->action_select)
+         return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
+
+      idx  = menu_input->pointer.ptr;
+
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+   }
+
+   return 0;
+}
+
 menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    glui_get_message,
@@ -1443,4 +1518,5 @@ menu_ctx_driver_t menu_ctx_glui = {
    "glui",
    MENU_VIDEO_DRIVER_OPENGL,
    glui_environ,
+   glui_pointer_tap,
 };

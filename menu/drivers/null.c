@@ -57,4 +57,5 @@ menu_ctx_driver_t menu_ctx_null = {
   "null",
   MENU_VIDEO_DRIVER_GENERIC,
   NULL,
+  NULL,
 };

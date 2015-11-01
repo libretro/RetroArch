@@ -1388,4 +1388,5 @@ menu_ctx_driver_t menu_ctx_zarch = {
    "zarch",
    MENU_VIDEO_DRIVER_OPENGL,
    NULL,
+   NULL,
 };
