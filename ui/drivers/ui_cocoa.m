@@ -31,8 +31,6 @@
 
 static id apple_platform;
 
-extern float cocoagl_gfx_ctx_get_native_scale(void);
-
 void apple_rarch_exited(void)
 {
    [[NSApplication sharedApplication] terminate:nil];
@@ -111,12 +109,17 @@ void apple_rarch_exited(void)
       case NSOtherMouseDragged:
       {
          NSPoint pos;
-         NSPoint mouse_pos;
-         CGFloat backing_scale_factor = cocoagl_gfx_ctx_get_native_scale();
+          NSPoint mouse_pos;
          /* Relative */
          apple->mouse_rel_x = event.deltaX;
          apple->mouse_rel_y = event.deltaY;
           
+#if MAC_OS_X_VERSION_10_7
+          RAScreen *screen = [RAScreen mainScreen];
+          CGFloat backing_scale_factor = screen.backingScaleFactor;
+#else
+          CGFloat backing_scale_factor = 1.0f;
+#endif
 
          /* Absolute */
          pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];

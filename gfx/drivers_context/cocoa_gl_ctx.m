@@ -299,7 +299,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
     
    (void)data;
 
-   /* TODO: Maybe iOS users should be able to show/hide the status bar here? */
+   // TODO: Maybe iOS users should be able to show/hide the status bar here?
 
    return true;
 }
@@ -326,19 +326,12 @@ float cocoagl_gfx_ctx_get_native_scale(void)
     if (!screen)
        return 0.0f;
     
-#if TARGET_OS_IPHONE
    if ([screen respondsToSelector:selector])
        return cocoagl_gfx_ctx_get_scale_from_selector(screen, selector, &ret);
-#endif
     
    ret = 1.0f;
-#if TARGET_OS_IPHONE
    if ([screen respondsToSelector:@selector(scale)])
       ret = screen.scale;
-#elif MAC_OS_X_VERSION_10_7
-   if (screen.backingScaleFactor > 1.0f)
-      ret = screen.backingScaleFactor;
-#endif
    return ret;
 }
 
@@ -404,7 +397,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
 #if MAC_OS_X_VERSION_10_7
     float   scale                 = screen.backingScaleFactor;
 #else
-	float    scale                 = 1.0f;
+	float   scale                 = 1.0f;
 #endif
     float   dpi                   = (display_width/ physical_width) * 25.4f * scale;
 #elif defined(HAVE_COCOATOUCH)
