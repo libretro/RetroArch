@@ -790,8 +790,9 @@ static int menu_input_pointer(unsigned *action)
 
 static int menu_input_mouse_frame(
       menu_file_list_cbs_t *cbs, menu_entry_t *entry,
-      uint64_t input_mouse)
+      uint64_t input_mouse, unsigned action)
 {
+   int ret = 0;
    size_t selection;
    menu_input_t *menu_input = menu_input_get_ptr();
 
@@ -799,16 +800,8 @@ static int menu_input_mouse_frame(
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L))
    {
-      if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_TOGGLE))
-         return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
-
-      if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_SET_NAVIGATION))
-      {
-         size_t idx  = menu_input->mouse.ptr;
-         bool scroll = false;
-         menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
-         menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
-      }
+      ret = menu_driver_pointer_tap(menu_input->mouse.x, menu_input->mouse.y,
+         menu_input->mouse.ptr, cbs, entry, action);
    }
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_R))
@@ -829,7 +822,7 @@ static int menu_input_mouse_frame(
       menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, &decrement_by);
    }
 
-   return 0;
+   return ret;
 }
 
 static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
@@ -1078,7 +1071,7 @@ void menu_input_post_iterate(int *ret, unsigned action)
    if (settings->menu.mouse.enable)
       *ret  = menu_input_mouse_post_iterate  (&menu_input->mouse.state, cbs, action);
 
-   *ret = menu_input_mouse_frame(cbs, &entry, menu_input->mouse.state);
+   *ret = menu_input_mouse_frame(cbs, &entry, menu_input->mouse.state, action);
 
    if (settings->menu.pointer.enable)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
