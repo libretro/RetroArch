@@ -40,108 +40,6 @@
 #include "../input/input_remapping.h"
 #include "../input/input_common.h"
 
-#define MENU_MAX_BUTTONS 219
-#define MENU_MAX_AXES 32
-#define MENU_MAX_HATS 4
-
-unsigned bind_port;
-
-struct menu_bind_state_port
-{
-   bool buttons[MENU_MAX_BUTTONS];
-   int16_t axes[MENU_MAX_AXES];
-   uint16_t hats[MENU_MAX_HATS];
-};
-
-struct menu_bind_axis_state
-{
-   /* Default axis state. */
-   int16_t rested_axes[MENU_MAX_AXES];
-   /* Locked axis state. If we configured an axis,
-    * avoid having the same axis state trigger something again right away. */
-   int16_t locked_axes[MENU_MAX_AXES];
-};
-
-struct menu_bind_state
-{
-   struct retro_keybind *target;
-   /* For keyboard binding. */
-   int64_t timeout_end;
-   unsigned begin;
-   unsigned last;
-   unsigned user;
-   struct menu_bind_state_port state[MAX_USERS];
-   struct menu_bind_axis_state axis_state[MAX_USERS];
-   bool skip;
-};
-
-typedef struct menu_input_mouse
-{
-   int16_t x;
-   int16_t y;
-   bool    left;
-   bool    right;
-   bool    oldleft;
-   bool    oldright;
-   bool    wheelup;
-   bool    wheeldown;
-   bool    hwheelup;
-   bool    hwheeldown;
-   bool    scrollup;
-   bool    scrolldown;
-   unsigned ptr;
-   uint64_t state;
-} menu_input_mouse_t;
-
-typedef struct menu_input
-{
-   struct menu_bind_state binds;
-
-   bool bind_mode_keyboard;
-
-   uint64_t devices_mask;
-
-   menu_input_mouse_t mouse;
-
-   struct
-   {
-      int16_t x;
-      int16_t y;
-      int16_t dx;
-      int16_t dy;
-      int16_t old_x;
-      int16_t old_y;
-      int16_t start_x;
-      int16_t start_y;
-      float accel;
-      float accel0;
-      float accel1;
-      bool pressed[2];
-      bool oldpressed[2];
-      bool dragging;
-      bool back;
-      bool oldback;
-      unsigned ptr;
-   } pointer;
-
-   struct
-   {
-      const char **buffer;
-      const char *label;
-      const char *label_setting;
-      bool display;
-      unsigned type;
-      unsigned idx;
-   } keyboard;
-
-   /* Used for key repeat */
-   struct
-   {
-      float timer;
-      float count;
-   } delay;
-} menu_input_t;
-
 static menu_input_t menu_input_state;
 
 void menu_input_free(void)
@@ -149,7 +47,7 @@ void menu_input_free(void)
    memset(&menu_input_state, 0, sizeof(menu_input_t));
 }
 
-static menu_input_t *menu_input_get_ptr(void)
+menu_input_t *menu_input_get_ptr(void)
 {
    return &menu_input_state;
 }
@@ -1012,36 +910,6 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    return 0;
 }
 
-static int pointer_tap(menu_file_list_cbs_t *cbs,
-      menu_entry_t *entry, unsigned action)
-{
-   size_t selection, idx;
-   unsigned header_height;
-   bool scroll              = false;
-   menu_input_t *menu_input = menu_input_get_ptr();
-
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
-
-   if ((unsigned)menu_input->pointer.start_y < header_height)
-   {
-      menu_entries_pop_stack(&selection, 0);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
-   }
-   else if (menu_input->pointer.ptr <= (menu_entries_get_size() - 1))
-   {
-      if (menu_input->pointer.ptr == selection && cbs && cbs->action_select)
-         return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
-
-      idx  = menu_input->pointer.ptr;
-
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
-   }
-
-   return 0;
-}
-
 int16_t menu_input_pointer_state(enum menu_input_pointer_state state)
 {
    menu_input_t *menu = menu_input_get_ptr();
@@ -1161,7 +1029,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       if (menu_input->pointer.oldpressed[0])
       {
          if (!menu_input->pointer.dragging)
-            ret = pointer_tap(cbs, entry, action);
+            ret = menu_driver_pointer_tap(cbs, entry, action);
 
          menu_input->pointer.oldpressed[0] = false;
          menu_input->pointer.start_x       = 0;

@@ -2721,6 +2721,36 @@ static bool xmb_menu_init_list(void *data)
    return true;
 }
 
+static int xmb_pointer_tap(menu_file_list_cbs_t *cbs,
+      menu_entry_t *entry, unsigned action)
+{
+   size_t selection, idx;
+   unsigned header_height;
+   bool scroll              = false;
+   menu_input_t *menu_input = menu_input_get_ptr();
+
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
+
+   if ((unsigned)menu_input->pointer.start_y < header_height)
+   {
+      menu_entries_pop_stack(&selection, 0);
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+   }
+   else if (menu_input->pointer.ptr <= (menu_entries_get_size() - 1))
+   {
+      if (menu_input->pointer.ptr == selection && cbs && cbs->action_select)
+         return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
+
+      idx  = menu_input->pointer.ptr;
+
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+   }
+
+   return 0;
+}
+
 menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_render_messagebox_internal,
@@ -2755,4 +2785,5 @@ menu_ctx_driver_t menu_ctx_xmb = {
    "xmb",
    MENU_VIDEO_DRIVER_OPENGL,
    xmb_environ,
+   xmb_pointer_tap,
 };
