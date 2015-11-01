@@ -25,6 +25,10 @@
 extern "C" {
 #endif
 
+#define MENU_MAX_BUTTONS 219
+#define MENU_MAX_AXES    32
+#define MENU_MAX_HATS    4
+
 enum menu_action
 {
    MENU_ACTION_NOOP = 0,
@@ -104,11 +108,6 @@ enum menu_input_bind_mode
    MENU_INPUT_BIND_ALL
 };
 
-#define MENU_MAX_BUTTONS 219
-#define MENU_MAX_AXES 32
-#define MENU_MAX_HATS 4
-
-unsigned bind_port;
 
 void menu_input_key_event(bool down, unsigned keycode, uint32_t character,
       uint16_t key_modifiers);

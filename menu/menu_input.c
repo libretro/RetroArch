@@ -136,6 +136,7 @@ typedef struct menu_input
    } delay;
 } menu_input_t;
 
+static unsigned     bind_port;
 static menu_input_t menu_input_state;
 
 void menu_input_free(void)
