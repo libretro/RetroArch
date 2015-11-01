@@ -47,7 +47,7 @@ void menu_input_free(void)
    memset(&menu_input_state, 0, sizeof(menu_input_t));
 }
 
-menu_input_t *menu_input_get_ptr(void)
+static menu_input_t *menu_input_get_ptr(void)
 {
    return &menu_input_state;
 }

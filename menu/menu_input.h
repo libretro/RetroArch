@@ -207,8 +207,6 @@ typedef struct menu_input
    } delay;
 } menu_input_t;
 
-menu_input_t *menu_input_get_ptr(void);
-
 void menu_input_key_event(bool down, unsigned keycode, uint32_t character,
       uint16_t key_modifiers);
 
