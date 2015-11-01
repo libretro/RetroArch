@@ -118,7 +118,6 @@ void menu_display_frame_background(
       bool force_transparency,
       GRfloat *color,
       GRfloat *color2,
-      const GRfloat *vertex,
       const GRfloat *tex_coord,
       size_t vertex_count,
       enum menu_display_prim_type prim_type

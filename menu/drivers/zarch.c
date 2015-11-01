@@ -200,13 +200,6 @@ static enum
    LAY_SETTINGS
 } layout = LAY_HOME;
 
-static const GRfloat zarch_vertexes[] = {
-   0, 0,
-   1, 0,
-   0, 1,
-   1, 1
-};
-
 static const GRfloat zarch_tex_coords[] = {
    0, 1,
    1, 1,
@@ -1073,7 +1066,7 @@ static void zarch_frame(void)
          gl, zui->width, zui->height,
          zui->textures.bg.id, 0.75f, false,
          &coord_color[0],   &coord_color2[0],
-         &zarch_vertexes[0], &zarch_tex_coords[0], 4,
+         &zarch_tex_coords[0], 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    menu_display_font_flush_block(zui->menu, driver->font_osd_driver);
