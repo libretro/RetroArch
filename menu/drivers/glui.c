@@ -719,9 +719,6 @@ static void glui_frame(void)
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
-   /* Set opacity of transposed background in case 
-    * libretro_running is true so that the white background
-    * looks better */
 
    if (libretro_running)
    {
@@ -740,6 +737,8 @@ static void glui_frame(void)
       {
          background_rendered = true;
 
+         /* Set new opacity for transposed white background */
+
          white_transp_bg[3]  = 0.30;
          white_transp_bg[7]  = 0.30;
          white_transp_bg[11] = 0.30;
@@ -752,6 +751,8 @@ static void glui_frame(void)
                &glui_vertexes[0], &glui_tex_coords[0], 4,
                MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
+         /* Restore opacity of transposed white background */
+
          white_transp_bg[3]  = 0.90;
          white_transp_bg[7]  = 0.90;
          white_transp_bg[11] = 0.90;
@@ -759,8 +760,6 @@ static void glui_frame(void)
       }
    }
 
-   /* Restore opacity of transposed background in case 
-    * libretro_running is true */
 
 
    menu_entries_get_title(title, sizeof(title));
