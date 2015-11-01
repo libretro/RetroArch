@@ -104,9 +104,9 @@ void menu_display_draw_frame(
       enum menu_display_prim_type prim_type
       );
 
-void menu_display_draw_icon_blend_begin(void *data);
+void menu_display_blend_begin(void *data);
 
-void menu_display_draw_icon_blend_end(void *data);
+void menu_display_blend_end(void *data);
 
 void menu_display_frame_background(
       menu_handle_t *menu,

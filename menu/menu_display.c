@@ -503,7 +503,7 @@ static GLenum menu_display_prim_to_gl_enum(enum menu_display_prim_type prim_type
    return 0;
 }
 
-void menu_display_draw_icon_blend_begin(void *data)
+void menu_display_blend_begin(void *data)
 {
    gl_t *gl = (gl_t*)data;
 
@@ -517,7 +517,7 @@ void menu_display_draw_icon_blend_begin(void *data)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 }
 
-void menu_display_draw_icon_blend_end(void *data)
+void menu_display_blend_end(void *data)
 {
    (void)data;
 
@@ -588,13 +588,13 @@ void menu_display_frame_background(
       && texture)
       coords.color = (const float*)coord_color2;
    
-   menu_display_draw_icon_blend_begin(gl);
+   menu_display_blend_begin(gl);
 
    menu_display_draw_frame(0, 0, width, height,
          gl->shader, &coords,
          &gl->mvp_no_rot, texture, vertex_count, prim_type);
 
-   menu_display_draw_icon_blend_end(gl);
+   menu_display_blend_end(gl);
 
    gl->coords.color = gl->white_color_ptr;
 }
