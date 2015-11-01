@@ -503,6 +503,27 @@ static GLenum menu_display_prim_to_gl_enum(enum menu_display_prim_type prim_type
    return 0;
 }
 
+void menu_display_draw_icon_blend_begin(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+
+   if (!gl)
+      return;
+
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+   if (gl->shader && gl->shader->use)
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+}
+
+void menu_display_draw_icon_blend_end(void *data)
+{
+   (void)data;
+
+   glDisable(GL_BLEND);
+}
+
 void menu_display_draw_frame(
       unsigned x, unsigned y,
       unsigned width, unsigned height,

@@ -183,11 +183,7 @@ static void glui_draw_icon(gl_t *gl, glui_handle_t *glui,
    struct gfx_coords coords;
    math_matrix_4x4 mymat, mrot, mscal;
 
-   glEnable(GL_BLEND);
-   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+   menu_display_draw_icon_blend_begin(gl);
 
    matrix_4x4_rotate_z(&mrot, rotation);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
@@ -209,7 +205,7 @@ static void glui_draw_icon(gl_t *gl, glui_handle_t *glui,
          gl->shader, &coords, &mymat, false, texture, 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
-   glDisable(GL_BLEND);
+   menu_display_draw_icon_blend_end(gl);
 }
 
 static void glui_blit_line(float x, float y, unsigned width, unsigned height,
