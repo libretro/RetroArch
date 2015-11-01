@@ -3045,6 +3045,18 @@ static bool setting_append_list_main_menu_options(
    START_GROUP(group_info, menu_hash_to_str(MENU_VALUE_MAIN_MENU), parent_group);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
+   CONFIG_INT(
+         settings->state_slot,
+         menu_hash_to_str(MENU_LABEL_STATE_SLOT),
+         menu_hash_to_str(MENU_LABEL_VALUE_STATE_SLOT),
+         0,
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   menu_settings_list_current_add_range(list, list_info, -1, 0, 1, true, false);
+
    CONFIG_ACTION(
          menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS),
          menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS),

@@ -1478,6 +1478,9 @@ int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info,
       case PARSE_ACTION:
          precond = ST_ACTION;
          break;
+      case PARSE_ONLY_INT:
+         precond = ST_INT;
+         break;
       case PARSE_ONLY_UINT:
          precond = ST_UINT;
          break;
@@ -1527,6 +1530,10 @@ int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info,
             if (type == ST_ACTION)
                break;
             goto loop;
+         case PARSE_ONLY_INT:
+            if (type == ST_INT)
+               break;
+            goto loop;
          case PARSE_ONLY_UINT:
             if (type == ST_UINT)
                break;
@@ -1567,6 +1574,7 @@ loop:
          case PARSE_ONLY_BIND:
          case PARSE_ONLY_FLOAT:
          case PARSE_ONLY_BOOL:
+         case PARSE_ONLY_INT:
          case PARSE_ONLY_UINT:
          case PARSE_ACTION:
             time_to_exit = true;
@@ -1667,6 +1675,9 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
             menu_hash_to_str(MENU_LABEL_VALUE_TAKE_SCREENSHOT),
             menu_hash_to_str(MENU_LABEL_TAKE_SCREENSHOT),
             MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
+
+      menu_displaylist_parse_settings(menu, info,
+            menu_hash_to_str(MENU_LABEL_STATE_SLOT), PARSE_ONLY_INT, true);
 
       menu_entries_push(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_SAVE_STATE),

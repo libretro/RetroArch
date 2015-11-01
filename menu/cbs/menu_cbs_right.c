@@ -112,14 +112,6 @@ int action_right_input_desc(unsigned type, const char *label,
    return 0;
 }
 
-static int action_right_save_state(unsigned type, const char *label,
-      bool wraparound)
-{
-   event_command(EVENT_CMD_SAVE_STATE_INCREMENT);
-
-   return 0;
-}
-
 static int action_right_scroll(unsigned type, const char *label,
       bool wraparound)
 {
@@ -507,10 +499,6 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
    {
       switch (label_hash)
       {
-         case MENU_LABEL_SAVESTATE:
-         case MENU_LABEL_LOADSTATE:
-            BIND_ACTION_RIGHT(cbs, action_right_save_state);
-            break;
          case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
             BIND_ACTION_RIGHT(cbs, action_right_shader_scale_pass);
             break;

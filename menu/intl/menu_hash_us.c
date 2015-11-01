@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_STATE_SLOT:
+         return "state_slot";
       case MENU_LABEL_CHEEVOS_USERNAME:
          return "cheevos_username";
       case MENU_LABEL_CHEEVOS_PASSWORD:
@@ -684,6 +686,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_STATE_SLOT:
+         return "State Slot";
       case MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS:
          return "Accounts Cheevos";
       case MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME:

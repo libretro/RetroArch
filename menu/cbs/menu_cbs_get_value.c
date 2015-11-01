@@ -1030,8 +1030,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
 {
    switch (label_hash)
    {
-      case MENU_LABEL_SAVE_STATE:
-      case MENU_LABEL_LOAD_STATE:
+      case MENU_LABEL_STATE_SLOT:
          BIND_ACTION_GET_VALUE(cbs,
             menu_action_setting_disp_set_label_state);
          break;
@@ -1107,6 +1106,8 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
       case MENU_LABEL_CORE_INFORMATION:
       case MENU_LABEL_SYSTEM_INFORMATION:
       case MENU_LABEL_DEBUG_INFORMATION:
+      case MENU_LABEL_SAVE_STATE:
+      case MENU_LABEL_LOAD_STATE:
          BIND_ACTION_GET_VALUE(cbs,
             menu_action_setting_disp_set_label_menu_more);
          break;
