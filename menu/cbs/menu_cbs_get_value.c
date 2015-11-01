@@ -997,8 +997,15 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       string_list_free(str_list);
       string_list_free(str_list2);
 
-      if (!found_matching_core_association)
+      if (!strcmp(s, "DETECT") || !found_matching_core_association)
          strlcpy(s, "N/A", len);
+      else
+      {
+         global_t *global = global_get_ptr();
+         char buf[PATH_MAX_LENGTH];
+         if (core_info_list_get_display_name(global->core_info.list, s, buf, sizeof(buf)))
+            strlcpy(s, buf, len);
+      }
    }
    else if (type >= MENU_SETTINGS_CORE_OPTION_START)
    {
