@@ -104,6 +104,13 @@ typedef struct glui_handle
    gfx_font_raster_block_t list_block;
 } glui_handle_t;
 
+static const GRfloat glui_vertexes[] = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
 static const GRfloat glui_tex_coords[] = {
    0, 1,
    1, 1,
@@ -185,6 +192,7 @@ static void glui_draw_icon(gl_t *gl, glui_handle_t *glui,
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
    coords.vertices      = 4;
+   coords.vertex        = glui_vertexes;
    coords.tex_coord     = glui_tex_coords;
    coords.lut_tex_coord = glui_tex_coords;
    coords.color         = (const float*)color;
@@ -238,6 +246,7 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
    glui_handle_t *glui = (glui_handle_t*)menu->userdata;
 
    coords.vertices      = 4;
+   coords.vertex        = glui_vertexes;
    coords.tex_coord     = glui_tex_coords;
    coords.lut_tex_coord = glui_tex_coords;
    coords.color         = coord_color;
@@ -577,6 +586,7 @@ static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui,
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
    coords.vertices      = 4;
+   coords.vertex        = glui_vertexes;
    coords.tex_coord     = glui_tex_coords;
    coords.lut_tex_coord = glui_tex_coords;
    coords.color         = (const float*)color;
@@ -716,7 +726,7 @@ static void glui_frame(void)
             gl, width, height,
             glui->textures.white, 0.75f, false,
             &white_transp_bg[0],   &white_bg[0],
-            &glui_tex_coords[0], 4,
+            &glui_vertexes[0], &glui_tex_coords[0], 4,
             MENU_DISPLAY_PRIM_TRIANGLESTRIP);
    }
    else
@@ -738,7 +748,7 @@ static void glui_frame(void)
                gl, width, height,
                glui->textures.bg.id, 0.75f, true,
                &white_transp_bg[0],   &white_bg[0],
-               &glui_tex_coords[0], 4,
+               &glui_vertexes[0], &glui_tex_coords[0], 4,
                MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
          /* Restore opacity of transposed white background */

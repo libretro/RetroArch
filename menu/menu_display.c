@@ -487,13 +487,6 @@ void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned durati
 }
 
 #ifdef HAVE_OPENGL
-static const GRfloat menu_display_vertex[] = {
-   0, 0,
-   1, 0,
-   0, 1,
-   1, 1,
-};
-
 static GLenum menu_display_prim_to_gl_enum(enum menu_display_prim_type prim_type)
 {
    switch (prim_type)
@@ -549,9 +542,6 @@ void menu_display_draw_frame(
    if (height <= 0)
       height = 1;
 
-   if (!coords->vertex)
-      coords->vertex = menu_display_vertex;
-
    glViewport(x, y, width, height);
    glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -572,6 +562,7 @@ void menu_display_frame_background(
       bool force_transparency,
       GRfloat *coord_color,
       GRfloat *coord_color2,
+      const GRfloat *vertex,
       const GRfloat *tex_coord,
       size_t vertex_count,
       enum menu_display_prim_type prim_type)
@@ -581,7 +572,7 @@ void menu_display_frame_background(
    global_t *global = global_get_ptr();
 
    coords.vertices      = vertex_count;
-   coords.vertex        = menu_display_vertex;
+   coords.vertex        = vertex;
    coords.tex_coord     = tex_coord;
    coords.lut_tex_coord = tex_coord;
    coords.color         = (const float*)coord_color;
