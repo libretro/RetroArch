@@ -1415,13 +1415,12 @@ static size_t glui_list_get_selection(void *data)
    return glui->categories.selection_ptr;
 }
 
-static int glui_pointer_tap(menu_file_list_cbs_t *cbs,
-      menu_entry_t *entry, unsigned action)
+static int glui_pointer_tap(unsigned x, unsigned y, unsigned ptr,
+      menu_file_list_cbs_t *cbs, menu_entry_t *entry, unsigned action)
 {
    size_t selection, idx;
    unsigned header_height, width, height, i;
    bool scroll                = false;
-   menu_input_t *menu_input   = menu_input_get_ptr();
    menu_handle_t *menu        = menu_driver_get_ptr();
    glui_handle_t *glui        = menu ? (glui_handle_t*)menu->userdata : NULL;
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
@@ -1435,20 +1434,19 @@ static int glui_pointer_tap(menu_file_list_cbs_t *cbs,
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
    menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
-   if ((unsigned)menu_input->pointer.start_y < header_height)
+   if (y < header_height)
    {
       menu_entries_pop_stack(&selection, 0);
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
    }
-   else if ((unsigned)menu_input->pointer.start_y > height - glui->tabs_height)
+   else if (y > height - glui->tabs_height)
    {
       for (i = 0; i <= GLUI_SYSTEM_TAB_END; i++)
       {
          unsigned tab_width = width / (GLUI_SYSTEM_TAB_END + 1);
          unsigned start = tab_width * i;
 
-         if ((unsigned)menu_input->pointer.start_x >= start &&
-               (unsigned)menu_input->pointer.start_x < start + tab_width)
+         if (x >= start && x < start + tab_width)
          {
             glui->categories.selection_ptr = i;
 
@@ -1460,12 +1458,12 @@ static int glui_pointer_tap(menu_file_list_cbs_t *cbs,
          }
       }
    }
-   else if (menu_input->pointer.ptr <= (menu_entries_get_size() - 1))
+   else if (ptr <= (menu_entries_get_size() - 1))
    {
-      if (menu_input->pointer.ptr == selection && cbs && cbs->action_select)
+      if (ptr == selection && cbs && cbs->action_select)
          return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
 
-      idx  = menu_input->pointer.ptr;
+      idx = ptr;
 
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
