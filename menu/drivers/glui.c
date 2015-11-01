@@ -591,6 +591,8 @@ static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui,
    coords.lut_tex_coord = glui_tex_coords;
    coords.color         = (const float*)color;
 
+   menu_display_draw_icon_blend_begin(gl);
+
    menu_display_draw_frame(
          x - 32,
          height - y - 32,
@@ -599,6 +601,8 @@ static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui,
          gl->shader, &coords, &mymat,
          glui->textures.list[GLUI_TEXTURE_POINTER].id, 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+
+   menu_display_draw_icon_blend_end(gl);
 }
 
 static size_t glui_list_get_size(void *data, menu_list_type_t type)
