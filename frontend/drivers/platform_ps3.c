@@ -227,7 +227,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       fill_pathname_join(g_defaults.dir.overlay, g_defaults.dir.core,
             "overlays", sizeof(g_defaults.dir.overlay));
       fill_pathname_join(g_defaults.dir.assets,   g_defaults.dir.core,
-            "media", sizeof(g_defaults.dir.assets));
+            "assets", sizeof(g_defaults.dir.assets));
       fill_pathname_join(g_defaults.dir.playlist,   g_defaults.dir.core,
             "playlists", sizeof(g_defaults.dir.playlist));
    }
