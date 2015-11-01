@@ -59,8 +59,10 @@
 #include "../file_path_special.c"
 #include "../libretro-common/string/string_list.c"
 #include "../libretro-common/compat/compat_strl.c"
+#if defined(_WIN32) && !defined(_XBOX)
 #include "../libretro-common/compat/compat_posix_string.c"
 #include "../libretro-common/compat/compat_getopt.c"
+#endif
 
 #include "../input/drivers/nullinput.c"
 #include "../input/drivers_hid/null_hid.c"
