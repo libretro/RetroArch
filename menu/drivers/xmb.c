@@ -344,7 +344,7 @@ static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
    return iy;
 }
 
-static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
+static void xmb_draw_icon(xmb_handle_t *xmb,
       GRuint texture,
       float x, float y,
       unsigned width, unsigned height,
@@ -410,7 +410,7 @@ static void xmb_draw_icon_predone(xmb_handle_t *xmb,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 }
 
-static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb, GRfloat *color, unsigned width, unsigned height)
+static void xmb_draw_boxart(xmb_handle_t *xmb, GRfloat *color, unsigned width, unsigned height)
 {
    struct gfx_coords coords;
    math_matrix_4x4 mymat;
@@ -1175,7 +1175,7 @@ static GRuint xmb_icon_get_id(xmb_handle_t *xmb,
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING].id;
 }
 
-static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
+static void xmb_draw_items(xmb_handle_t *xmb,
       file_list_t *list, file_list_t *stack,
       size_t current, size_t cat_selection_ptr, GRfloat *color,
       unsigned width, unsigned height)
@@ -1382,7 +1382,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       color[3] = color[7] = color[11] = color[15] = (node->alpha > xmb->alpha) ? xmb->alpha : node->alpha;
 
       if (color[3] != 0)
-         xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, width, height, 
+         xmb_draw_icon(xmb, icon, icon_x, icon_y, width, height, 
                0, node->zoom, &color[0]);
 
       /* set alpha components of color */
@@ -1486,7 +1486,7 @@ static void xmb_render(void)
 }
 
 static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
-      menu_handle_t *menu, gl_t *gl, unsigned width, unsigned height,
+      menu_handle_t *menu, unsigned width, unsigned height,
       GRfloat *color)
 {
    unsigned i;
@@ -1505,7 +1505,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
       color[3] = color[7] = color[11] = color[15] = (node->alpha > xmb->alpha) ? xmb->alpha : node->alpha;
 
       if (color[3] != 0)
-         xmb_draw_icon(gl, xmb, node->icon, 
+         xmb_draw_icon(xmb, node->icon, 
                xmb->x + xmb->categories.x_pos + 
                xmb->margins.screen.left + 
                xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
@@ -1603,7 +1603,7 @@ static void xmb_frame(void)
 
    depth = xmb_list_get_size(menu, MENU_LIST_PLAIN);
 
-   xmb_draw_items(xmb, gl,
+   xmb_draw_items(xmb,
          xmb->selection_buf_old,
          xmb->menu_stack_old,
          xmb->selection_ptr_old,
@@ -1611,7 +1611,7 @@ static void xmb_frame(void)
          xmb->categories.selection_ptr_old,
          &item_color[0], width, height);
 
-   xmb_draw_items(xmb, gl,
+   xmb_draw_items(xmb,
          selection_buf,
          menu_stack,
          selection,
@@ -1623,7 +1623,7 @@ static void xmb_frame(void)
    menu_display_blend_begin();
 
    if (settings->menu.boxart_enable && xmb->boxart)
-      xmb_draw_boxart(gl, xmb, &coord_color2[0], width, height);
+      xmb_draw_boxart(xmb, &coord_color2[0], width, height);
 
    /* set alpha components of colors */
    coord_color2[3]  = coord_color2[7]  = coord_color2[11]  = coord_color2[15]  = (1.00f > xmb->alpha) ? xmb->alpha : 1.00f;
@@ -1652,7 +1652,7 @@ static void xmb_frame(void)
             0,
             1, &coord_color2[0]);
 
-   xmb_frame_horizontal_list(xmb, menu, gl, width, height, &item_color[0]);
+   xmb_frame_horizontal_list(xmb, menu, width, height, &item_color[0]);
 
    menu_display_font_flush_block(menu, font_driver);
 

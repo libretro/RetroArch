@@ -173,7 +173,7 @@ static void glui_context_reset_textures(glui_handle_t *glui, const char *iconpat
    }
 }
 
-static void glui_draw_icon(gl_t *gl, glui_handle_t *glui,
+static void glui_draw_icon(glui_handle_t *glui,
       GRuint texture,
       float x, float y,
       unsigned width, unsigned height,
@@ -233,7 +233,7 @@ static void glui_blit_line(float x, float y, unsigned width, unsigned height,
    video_driver_set_osd_msg(message, &params, fb_buf);
 }
 
-static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
+static void glui_render_quad(int x, int y, int w, int h,
       unsigned width, unsigned height,
       GRfloat *coord_color)
 {
@@ -256,14 +256,12 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
          w,
          h,
          &coords, NULL, glui->textures.white,
-         MENU_DISPLAY_PRIM_TRIANGLESTRIP );
-
-   gl->coords.color     = gl->white_color_ptr;
+         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    menu_display_blend_end();
 }
 
-static void glui_draw_scrollbar(gl_t *gl, unsigned width, unsigned height, GRfloat *coord_color)
+static void glui_draw_scrollbar(unsigned width, unsigned height, GRfloat *coord_color)
 {
    unsigned header_height;
    float content_height, total_height, scrollbar_width, scrollbar_height, y;
@@ -287,7 +285,7 @@ static void glui_draw_scrollbar(gl_t *gl, unsigned width, unsigned height, GRflo
       if (scrollbar_height <= header_height / 12)
          scrollbar_height = header_height / 12;
 
-      glui_render_quad(gl,
+      glui_render_quad(
             width - scrollbar_width - (header_height / 12),
             header_height + y + (header_height / 12),
             scrollbar_width,
@@ -428,7 +426,7 @@ static void glui_render(void)
       menu_entries_set_start(menu->scroll_y / glui->line_height);
 }
 
-static void glui_render_label_value(glui_handle_t *glui, gl_t *gl,
+static void glui_render_label_value(glui_handle_t *glui,
       int y, unsigned width, unsigned height,
       uint64_t index, uint32_t color, bool selected, const char *label,
       const char *value, GRfloat *pure_white)
@@ -521,12 +519,12 @@ static void glui_render_label_value(glui_handle_t *glui, gl_t *gl,
       glui_blit_line(width - glui->margin, y, width, height, value_str, color, TEXT_ALIGN_RIGHT);
 
    if (texture_switch)
-      glui_draw_icon(gl, glui, texture_switch,
+      glui_draw_icon(glui, texture_switch,
             width - glui->margin - glui->icon_size, y, width, height, 0, 1, &pure_white[0]);
 
 }
 
-static void glui_render_menu_list(glui_handle_t *glui, gl_t *gl,
+static void glui_render_menu_list(glui_handle_t *glui,
       unsigned width, unsigned height,
       menu_handle_t *menu,
       uint32_t normal_color,
@@ -565,13 +563,13 @@ static void glui_render_menu_list(glui_handle_t *glui, gl_t *gl,
 
       entry_selected = selection == i;
 
-      glui_render_label_value(glui, gl, y, width, height, *frame_count / 40,
+      glui_render_label_value(glui, y, width, height, *frame_count / 40,
          entry_selected ? hover_color : normal_color, entry_selected,
          entry.path, entry.value, pure_white);
    }
 }
 
-static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui,
+static void glui_draw_cursor(glui_handle_t *glui,
       GRfloat *color,
       float x, float y, unsigned width, unsigned height)
 {
@@ -674,7 +672,6 @@ static void glui_frame(void)
    char title_buf[PATH_MAX_LENGTH];
    size_t selection;
    size_t title_margin;
-   gl_t *gl                                = NULL;
    glui_handle_t *glui                     = NULL;
    const struct font_renderer *font_driver = NULL;
    driver_t *driver                        = driver_get_ptr();
@@ -693,11 +690,6 @@ static void glui_frame(void)
    (void)activetab_color;
 
    if (!menu || !menu->userdata)
-      return;
-
-   gl = (gl_t*)video_driver_get_ptr(NULL);
-
-   if (!gl)
       return;
 
    glui = (glui_handle_t*)menu->userdata;
@@ -723,7 +715,7 @@ static void glui_frame(void)
    }
    else
    {
-      menu_display_clear_color(gl, 1.0f, 1.0f, 1.0f, 0.75f);
+      menu_display_clear_color(1.0f, 1.0f, 1.0f, 0.75f);
 
       if (glui->textures.bg.id)
       {
@@ -776,7 +768,7 @@ static void glui_frame(void)
       lightblue_bg[15] = 1.00;
    }
    /* highlighted entry */
-   glui_render_quad(gl, 0,
+   glui_render_quad(0,
          header_height - menu->scroll_y + glui->line_height *
          selection, width, glui->line_height,
          width, height,
@@ -784,14 +776,14 @@ static void glui_frame(void)
 
    menu_display_font_bind_block(menu, font_driver, &glui->list_block);
 
-   glui_render_menu_list(glui, gl, width, height, menu, normal_color, hover_color, &pure_white[0]);
+   glui_render_menu_list(glui, width, height, menu, normal_color, hover_color, &pure_white[0]);
 
    menu_display_font_flush_block(menu, font_driver);
 
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    /* header */
-   glui_render_quad(gl, 0, 0, width,
+   glui_render_quad( 0, 0, width,
          header_height,
          width, height,
          &blue_bg[0]);
@@ -805,13 +797,13 @@ static void glui_frame(void)
       glui->tabs_height            = scale_factor / 3;
 
       /* tabs background */
-      glui_render_quad(gl, 0, height - glui->tabs_height, width,
+      glui_render_quad(0, height - glui->tabs_height, width,
             glui->tabs_height,
             width, height,
             &white_bg[0]);
 
       /* tabs separator */
-      glui_render_quad(gl, 0, height - glui->tabs_height, width,
+      glui_render_quad(0, height - glui->tabs_height, width,
             1,
             width, height,
             &grey_bg[0]);
@@ -838,7 +830,7 @@ static void glui_frame(void)
                break;
          }
 
-         glui_draw_icon(gl, glui, glui->textures.list[tab_icon].id,
+         glui_draw_icon(glui, glui->textures.list[tab_icon].id,
                width / (GLUI_SYSTEM_TAB_END+1) * (i+0.5) - glui->icon_size/2,
                height - glui->tabs_height,
                width, height, 0, 1, &pure_white[0]);
@@ -846,7 +838,7 @@ static void glui_frame(void)
 
       /* active tab marker */
       tab_width = width / (GLUI_SYSTEM_TAB_END+1);
-      glui_render_quad(gl, glui->categories.selection_ptr * tab_width,
+      glui_render_quad(glui->categories.selection_ptr * tab_width,
             height - (header_height/16),
             tab_width,
             header_height/16,
@@ -858,7 +850,7 @@ static void glui_frame(void)
       glui->tabs_height = 0;
    }
 
-   glui_render_quad(gl, 0, header_height, width,
+   glui_render_quad(0, header_height, width,
          header_height/12,
          width, height,
          &shadow_bg[0]);
@@ -868,7 +860,7 @@ static void glui_frame(void)
    if (menu_entries_show_back())
    {
       title_margin = glui->icon_size;
-      glui_draw_icon(gl, glui, glui->textures.list[GLUI_TEXTURE_BACK].id,
+      glui_draw_icon(glui, glui->textures.list[GLUI_TEXTURE_BACK].id,
          0, 0, width, height, 0, 1, &pure_white[0]);
    }
 
@@ -880,7 +872,7 @@ static void glui_frame(void)
    glui_blit_line(title_margin, 0, width, height, title_buf,
          title_color, TEXT_ALIGN_LEFT);
 
-   glui_draw_scrollbar(gl, width, height, &grey_bg[0]);
+   glui_draw_scrollbar(width, height, &grey_bg[0]);
 
    menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
 
@@ -892,14 +884,14 @@ static void glui_frame(void)
 
       if (!str)
          str = "";
-      glui_render_quad(gl, 0, 0, width, height, width, height, &black_bg[0]);
+      glui_render_quad(0, 0, width, height, width, height, &black_bg[0]);
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
       glui_render_messagebox(msg);
    }
 
    if (glui->box_message[0] != '\0')
    {
-      glui_render_quad(gl, 0, 0, width, height, width, height, &black_bg[0]);
+      glui_render_quad(0, 0, width, height, width, height, &black_bg[0]);
       glui_render_messagebox(glui->box_message);
       glui->box_message[0] = '\0';
    }
@@ -909,10 +901,10 @@ static void glui_frame(void)
       int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-      glui_draw_cursor(gl, glui, &white_bg[0], mouse_x, mouse_y, width, height);
+      glui_draw_cursor(glui, &white_bg[0], mouse_x, mouse_y, width, height);
    }
 
-   menu_display_restore_clear_color(gl);
+   menu_display_restore_clear_color();
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
 
