@@ -96,7 +96,6 @@ void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned durati
 void menu_display_draw_frame(
       unsigned x, unsigned y,
       unsigned width, unsigned height,
-      const void *shader,
       struct gfx_coords *coords,
       math_matrix_4x4 *mat, 
       GLuint texture,

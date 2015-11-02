@@ -1063,7 +1063,7 @@ static void zarch_frame(void)
          0,
          zui->width,
          zui->height,
-         gl->shader, (struct gfx_coords*)&zui->ca,
+         (struct gfx_coords*)&zui->ca,
          &zui->mvp, zui->textures.white, zui->ca.coords.vertices,
          MENU_DISPLAY_PRIM_TRIANGLES);
 

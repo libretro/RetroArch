@@ -527,7 +527,6 @@ void menu_display_blend_end(void *data)
 void menu_display_draw_frame(
       unsigned x, unsigned y,
       unsigned width, unsigned height,
-      const void *shader_data,
       struct gfx_coords *coords,
       math_matrix_4x4 *mat, 
       GLuint texture,
@@ -535,8 +534,11 @@ void menu_display_draw_frame(
       enum menu_display_prim_type prim_type
       )
 {
-   const shader_backend_t *shader = (const shader_backend_t*)shader_data;
    driver_t *driver = driver_get_ptr();
+   gl_t         *gl = (gl_t*)video_driver_get_ptr(NULL);
+
+   if (!gl)
+      return;
 
    /* TODO - edge case */
    if (height <= 0)
@@ -545,8 +547,8 @@ void menu_display_draw_frame(
    glViewport(x, y, width, height);
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   shader->set_coords(coords);
-   shader->set_mvp(driver->video_data, mat);
+   gl->shader->set_coords(coords);
+   gl->shader->set_mvp(driver->video_data, mat);
 
    glDrawArrays(menu_display_prim_to_gl_enum(prim_type), 0, vertex_count);
 }
@@ -588,8 +590,8 @@ void menu_display_frame_background(
       coords.color = (const float*)coord_color2;
 
    menu_display_draw_frame(0, 0, width, height,
-         gl->shader, &coords,
-         &gl->mvp_no_rot, texture, vertex_count, prim_type);
+         &coords, &gl->mvp_no_rot,
+         texture, vertex_count, prim_type);
 
    menu_display_blend_end(gl);
 
