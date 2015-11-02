@@ -981,7 +981,7 @@ static void *materialui_init(void)
    if (!menu)
       goto error;
 
-   if (!menu_display_check_compatibility(menu_ctx_materialui.type))
+   if (!menu_display_check_compatibility((enum menu_display_driver_type)menu_ctx_materialui.type))
       goto error;
 
    menu->userdata       = (materialui_handle_t*)calloc(1, sizeof(materialui_handle_t));

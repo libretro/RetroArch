@@ -1088,7 +1088,7 @@ static void *zarch_init(void)
    if (!menu)
       goto error;
 
-   if (!menu_display_check_compatibility(menu_ctx_zarch.type))
+   if (!menu_display_check_compatibility((enum menu_display_driver_type)menu_ctx_zarch.type))
       goto error;
 
    menu->userdata       = (zui_t*)calloc(1, sizeof(zui_t));

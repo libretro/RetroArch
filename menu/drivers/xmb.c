@@ -1826,7 +1826,7 @@ static void *xmb_init(void)
    if (!menu)
       goto error;
 
-   if (!menu_display_check_compatibility(menu_ctx_xmb.type))
+   if (!menu_display_check_compatibility((enum menu_display_driver_type)menu_ctx_xmb.type))
       goto error;
 
    video_driver_get_size(&width, &height);
