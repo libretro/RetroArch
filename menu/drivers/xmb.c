@@ -223,12 +223,6 @@ typedef struct xmb_handle
    gfx_font_raster_block_t raster_block;
 } xmb_handle_t;
 
-static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb,
-      menu_handle_t *menu);
-static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb);
-static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
-      menu_handle_t *menu, const char *themepath);
-
 static void xmb_fill_default_background_path(xmb_handle_t *xmb, char *path, size_t size)
 {
     char mediapath[PATH_MAX_LENGTH] = {0};
@@ -971,6 +965,134 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
    }
 }
 
+static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb,
+      menu_handle_t *menu)
+{
+   unsigned i;
+   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
+
+   for (i = 0; i < list_size; i++)
+   {
+      xmb_node_t *node = xmb_get_userdata_from_horizontal_list(xmb, i);
+
+      if (!node)
+         continue;
+
+      menu_display_texture_unload((uintptr_t*)&node->icon);
+      menu_display_texture_unload((uintptr_t*)&node->content_icon);
+   }
+}
+
+static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
+{
+   menu_displaylist_info_t info = {0};
+   settings_t *settings         = config_get_ptr();
+
+   xmb->horizontal_list     = (file_list_t*)calloc(1, sizeof(file_list_t));
+
+   if (!xmb->horizontal_list)
+      return;
+
+   info.list         = xmb->horizontal_list;
+   info.menu_list    = NULL;
+   info.type         = 0;
+   info.type_default = MENU_FILE_PLAIN;
+   info.flags        = SL_FLAG_ALLOW_EMPTY_LIST;
+   strlcpy(info.label,
+         menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST), sizeof(info.label));
+   strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
+   strlcpy(info.exts, "lpl", sizeof(info.exts));
+
+   if (menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL) == 0)
+      menu_displaylist_push_list_process(&info);
+}
+
+static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
+{
+   unsigned i;
+   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
+
+   for (i = 0; i <= list_size; i++)
+   {
+      xmb_node_t *node = xmb_get_node(xmb, i);
+
+      if (!node)
+         continue;
+
+      node->alpha = 0;
+      node->zoom  = XMB_CATEGORIES_PASSIVE_ZOOM;
+
+      if (i == xmb->categories.active.idx)
+      {
+         node->alpha = XMB_CATEGORIES_ACTIVE_ALPHA;
+         node->zoom  = XMB_CATEGORIES_ACTIVE_ZOOM;
+      }
+      else if (xmb->depth <= 1)
+         node->alpha = XMB_CATEGORIES_PASSIVE_ALPHA;
+   }
+}
+
+static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
+      menu_handle_t *menu, const char *themepath)
+{
+   unsigned i;
+   size_t list_size            = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
+
+   xmb->categories.x_pos = xmb->icon.spacing.horizontal *
+      -(float)xmb->categories.selection_ptr;
+
+   for (i = 0; i < list_size; i++)
+   {
+      char iconpath[PATH_MAX_LENGTH]            = {0};
+      char sysname[PATH_MAX_LENGTH]             = {0};
+      char texturepath[PATH_MAX_LENGTH]         = {0};
+      char content_texturepath[PATH_MAX_LENGTH] = {0};
+      struct texture_image ti                   = {0};
+      const char *path                          = NULL;
+      xmb_node_t *node                          = xmb_get_userdata_from_horizontal_list(xmb, i);
+
+      if (!node)
+      {
+         node = xmb_node_allocate_userdata(xmb, i);
+         if (!node)
+            continue;
+      }
+
+      file_list_get_at_offset(xmb->horizontal_list, i,
+            &path, NULL, NULL, NULL);
+
+      if (!path)
+         continue;
+
+      strlcpy(sysname, path, sizeof(sysname));
+      path_remove_extension(sysname);
+
+      fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
+      fill_pathname_slash(iconpath, sizeof(iconpath));
+
+      fill_pathname_join(texturepath, iconpath, sysname, sizeof(texturepath));
+      strlcat(texturepath, ".png", sizeof(texturepath));
+
+      fill_pathname_join(content_texturepath, iconpath, sysname, sizeof(content_texturepath));
+      strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
+
+      texture_image_load(&ti, texturepath);
+
+      node->icon         = menu_display_texture_load(&ti,
+            TEXTURE_FILTER_MIPMAP_LINEAR);
+
+      texture_image_free(&ti);
+      texture_image_load(&ti, content_texturepath);
+
+      node->content_icon = menu_display_texture_load(&ti,
+            TEXTURE_FILTER_MIPMAP_LINEAR);
+
+      texture_image_free(&ti);
+   }
+
+   xmb_toggle_horizontal_list(xmb, menu);
+}
+
 static void xmb_refresh_horizontal_list(xmb_handle_t *xmb,
       menu_handle_t *menu)
 {
@@ -1682,29 +1804,6 @@ static void xmb_frame(void)
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
 
-static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
-{
-   menu_displaylist_info_t info = {0};
-   settings_t *settings         = config_get_ptr();
-
-   xmb->horizontal_list     = (file_list_t*)calloc(1, sizeof(file_list_t));
-
-   if (!xmb->horizontal_list)
-      return;
-
-   info.list         = xmb->horizontal_list;
-   info.menu_list    = NULL;
-   info.type         = 0;
-   info.type_default = MENU_FILE_PLAIN;
-   info.flags        = SL_FLAG_ALLOW_EMPTY_LIST;
-   strlcpy(info.label,
-         menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST), sizeof(info.label));
-   strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
-   strlcpy(info.exts, "lpl", sizeof(info.exts));
-
-   if (menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL) == 0)
-      menu_displaylist_push_list_process(&info);
-}
 
 static void xmb_font(menu_handle_t *menu)
 {
@@ -1951,91 +2050,7 @@ static bool xmb_load_image(void *data, menu_image_type_t type)
    return true;
 }
 
-static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
-{
-   unsigned i;
-   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
 
-   for (i = 0; i <= list_size; i++)
-   {
-      xmb_node_t *node = xmb_get_node(xmb, i);
-
-      if (!node)
-         continue;
-
-      node->alpha = 0;
-      node->zoom  = XMB_CATEGORIES_PASSIVE_ZOOM;
-
-      if (i == xmb->categories.active.idx)
-      {
-         node->alpha = XMB_CATEGORIES_ACTIVE_ALPHA;
-         node->zoom  = XMB_CATEGORIES_ACTIVE_ZOOM;
-      }
-      else if (xmb->depth <= 1)
-         node->alpha = XMB_CATEGORIES_PASSIVE_ALPHA;
-   }
-}
-
-static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
-      menu_handle_t *menu, const char *themepath)
-{
-   unsigned i;
-   size_t list_size            = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
-
-   xmb->categories.x_pos = xmb->icon.spacing.horizontal *
-      -(float)xmb->categories.selection_ptr;
-
-   for (i = 0; i < list_size; i++)
-   {
-      char iconpath[PATH_MAX_LENGTH]            = {0};
-      char sysname[PATH_MAX_LENGTH]             = {0};
-      char texturepath[PATH_MAX_LENGTH]         = {0};
-      char content_texturepath[PATH_MAX_LENGTH] = {0};
-      struct texture_image ti                   = {0};
-      const char *path                          = NULL;
-      xmb_node_t *node                          = xmb_get_userdata_from_horizontal_list(xmb, i);
-
-      if (!node)
-      {
-         node = xmb_node_allocate_userdata(xmb, i);
-         if (!node)
-            continue;
-      }
-
-      file_list_get_at_offset(xmb->horizontal_list, i,
-            &path, NULL, NULL, NULL);
-
-      if (!path)
-         continue;
-
-      strlcpy(sysname, path, sizeof(sysname));
-      path_remove_extension(sysname);
-
-      fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
-      fill_pathname_slash(iconpath, sizeof(iconpath));
-
-      fill_pathname_join(texturepath, iconpath, sysname, sizeof(texturepath));
-      strlcat(texturepath, ".png", sizeof(texturepath));
-
-      fill_pathname_join(content_texturepath, iconpath, sysname, sizeof(content_texturepath));
-      strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
-
-      texture_image_load(&ti, texturepath);
-
-      node->icon         = menu_display_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR);
-
-      texture_image_free(&ti);
-      texture_image_load(&ti, content_texturepath);
-
-      node->content_icon = menu_display_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR);
-
-      texture_image_free(&ti);
-   }
-
-   xmb_toggle_horizontal_list(xmb, menu);
-}
 
 static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
 {
@@ -2476,23 +2491,6 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
    }
 }
 
-static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb,
-      menu_handle_t *menu)
-{
-   unsigned i;
-   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
-
-   for (i = 0; i < list_size; i++)
-   {
-      xmb_node_t *node = xmb_get_userdata_from_horizontal_list(xmb, i);
-
-      if (!node)
-         continue;
-
-      menu_display_texture_unload((uintptr_t*)&node->icon);
-      menu_display_texture_unload((uintptr_t*)&node->content_icon);
-   }
-}
 
 static void xmb_context_destroy(void)
 {
