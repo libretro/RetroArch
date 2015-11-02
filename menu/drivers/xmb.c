@@ -352,7 +352,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
       GRfloat *color)
 {
    struct gfx_coords coords;
-   math_matrix_4x4 mymat, mrot, mscal;
+   math_matrix_4x4 mymat, mscal;
 
    if (
          x < -xmb->icon.size/2 || 
@@ -361,8 +361,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
          y > height + xmb->icon.size)
       return;
 
-   matrix_4x4_rotate_z(&mrot, rotation);
-   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+   menu_display_matrix_4x4_rotate_z(&mymat, rotation);
 
    matrix_4x4_scale(&mscal, scale_factor, scale_factor, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
@@ -418,15 +417,14 @@ static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb, GRfloat *color, unsigne
 {
    struct gfx_coords coords;
    float x, y;
-   math_matrix_4x4 mymat, mrot, mscal;
+   math_matrix_4x4 mymat, mscal;
 
    y = xmb->margins.screen.top + xmb->icon.size + xmb->boxart_size;
 
    x = xmb->margins.screen.left + xmb->icon.spacing.horizontal +
       xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4;
 
-   matrix_4x4_rotate_z(&mrot, 0);
-   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+   menu_display_matrix_4x4_rotate_z(&mymat, 0);
 
    matrix_4x4_scale(&mscal, 1, 1, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
@@ -1192,7 +1190,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       unsigned width, unsigned height)
 {
    unsigned i, ticker_limit;
-   math_matrix_4x4 mymat, mrot, mscal;
+   math_matrix_4x4 mymat, mscal;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
    uint64_t *frame_count       = video_driver_get_frame_count();
@@ -1207,8 +1205,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
    end = file_list_get_size(list);
 
-   matrix_4x4_rotate_z(&mrot, 0 /* rotation */);
-   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+   menu_display_matrix_4x4_rotate_z(&mymat, 0 /* rotation */);
 
    matrix_4x4_scale(&mscal, 1 /* scale_factor */, 1 /* scale_factor */, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
@@ -1418,7 +1415,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    }
 }
 
-static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb,
+static void xmb_draw_cursor(xmb_handle_t *xmb,
       GRfloat *color,
       float x, float y, unsigned width, unsigned height)
 {
@@ -1537,7 +1534,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
 static void xmb_frame(void)
 {
    size_t selection;
-   math_matrix_4x4 mymat, mrot, mscal;
+   math_matrix_4x4 mymat, mscal;
    unsigned depth, i, width, height;
    char msg[PATH_MAX_LENGTH];
    char title_msg[PATH_MAX_LENGTH];
@@ -1633,8 +1630,7 @@ static void xmb_frame(void)
          xmb->categories.selection_ptr,
          &item_color[0], width, height);
 
-   matrix_4x4_rotate_z(&mrot, 0 /* rotation */);
-   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+   menu_display_matrix_4x4_rotate_z(&mymat, 0 /* rotation */);
 
    matrix_4x4_scale(&mscal, 1 /* scale_factor */, 1 /* scale_factor */, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
@@ -1716,7 +1712,7 @@ static void xmb_frame(void)
       int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-      xmb_draw_cursor(gl, xmb, &coord_color2[0], mouse_x, mouse_y, width, height);
+      xmb_draw_cursor(xmb, &coord_color2[0], mouse_x, mouse_y, width, height);
    }
 
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
