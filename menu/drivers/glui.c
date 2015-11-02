@@ -727,7 +727,7 @@ static void glui_frame(void)
    if (libretro_running)
    {
       menu_display_frame_background(menu, settings,
-            gl, width, height,
+            width, height,
             glui->textures.white, 0.75f, false,
             &white_transp_bg[0],   &white_bg[0],
             &glui_vertexes[0], &glui_tex_coords[0], 4,
@@ -749,7 +749,7 @@ static void glui_frame(void)
          white_transp_bg[15] = 0.30;
 
          menu_display_frame_background(menu, settings,
-               gl, width, height,
+               width, height,
                glui->textures.bg.id, 0.75f, true,
                &white_transp_bg[0],   &white_bg[0],
                &glui_vertexes[0], &glui_tex_coords[0], 4,

@@ -1596,7 +1596,7 @@ static void xmb_frame(void)
    coord_color2[3] = coord_color2[7] = coord_color2[11] = coord_color2[15] = xmb->alpha;
 
    menu_display_frame_background(menu, settings,
-         gl, width, height, xmb->textures.bg.id, xmb->alpha, false, &coord_color[0],
+         width, height, xmb->textures.bg.id, xmb->alpha, false, &coord_color[0],
          &coord_color2[0], &rmb_vertex[0], &rmb_tex_coord[0], 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
@@ -1703,7 +1703,7 @@ static void xmb_frame(void)
 
    if (render_background)
    {
-      menu_display_frame_background(menu, settings, gl,
+      menu_display_frame_background(menu, settings,
             width, height,
             xmb->textures.bg.id, xmb->alpha, true,
             &coord_color[0], &coord_color2[0],

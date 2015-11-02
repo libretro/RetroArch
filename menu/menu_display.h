@@ -109,7 +109,6 @@ void menu_display_blend_end(void);
 void menu_display_frame_background(
       menu_handle_t *menu,
       settings_t *settings,
-      gl_t *gl,
       unsigned width, unsigned height,
       GLuint texture,
       float handle_alpha,

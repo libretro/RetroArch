@@ -887,7 +887,7 @@ static int zarch_zui_load_content(zui_t *zui, unsigned i)
    return ret;
 }
 
-static void zarch_zui_draw_cursor(gl_t *gl, float x, float y)
+static void zarch_zui_draw_cursor(float x, float y)
 {
 }
 
@@ -979,9 +979,8 @@ static void zarch_frame(void)
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
-   gl_t *gl             = (gl_t*)video_driver_get_ptr(NULL);
    
-   if (!menu || !gl)
+   if (!menu)
       return;
 
    (void)driver;
@@ -1044,11 +1043,8 @@ static void zarch_frame(void)
          break;
    }
 
-   /* fetch it again in case the pointer was invalidated by a core load */
-   gl                   = (gl_t*)video_driver_get_ptr(NULL);
-
    if (settings->menu.mouse.enable)
-      zarch_zui_draw_cursor(gl, zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_X), zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_Y));
+      zarch_zui_draw_cursor(zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_X), zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_Y));
          
 
    if (!zarch_zui_input_state(zui, MENU_ZARCH_PRESSED))
@@ -1070,7 +1066,7 @@ static void zarch_frame(void)
    menu_display_blend_end();
 
    menu_display_frame_background(menu, settings,
-         gl, zui->width, zui->height,
+         zui->width, zui->height,
          zui->textures.bg.id, 0.75f, false,
          &coord_color[0],   &coord_color2[0],
          &zarch_vertexes[0], &zarch_tex_coords[0], 4,

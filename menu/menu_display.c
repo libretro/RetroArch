@@ -553,7 +553,6 @@ void menu_display_draw_frame(
 void menu_display_frame_background(
       menu_handle_t *menu,
       settings_t *settings,
-      gl_t *gl,
       unsigned width,
       unsigned height,
       GLuint texture,
@@ -567,8 +566,11 @@ void menu_display_frame_background(
       enum menu_display_prim_type prim_type)
 {
    struct gfx_coords coords;
-
    global_t *global = global_get_ptr();
+   gl_t         *gl = (gl_t*)video_driver_get_ptr(NULL);
+
+   if (!gl)
+      return;
 
    coords.vertices      = vertex_count;
    coords.vertex        = vertex;
