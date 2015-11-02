@@ -488,34 +488,6 @@ void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned durati
    rarch_main_msg_queue_push(msg, prio, duration, flush);
 }
 
-void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
-      float scale_x, float scale_y, float scale_z, bool scale_enable)
-{
-   math_matrix_4x4 matrix_rotated;
-   math_matrix_4x4 matrix_scaled;
-   math_matrix_4x4 *b = NULL;
-   math_matrix_4x4 *matrix = (math_matrix_4x4*)data;
-#ifdef HAVE_OPENGL
-   gl_t           *gl = (gl_t*)video_driver_get_ptr(NULL);
-
-   if (!gl)
-      return;
-
-   b = (math_matrix_4x4*)&gl->mvp_no_rot;
-#endif
-   if (!matrix)
-      return;
-
-   matrix_4x4_rotate_z(&matrix_rotated, rotation);
-   matrix_4x4_multiply(matrix, &matrix_rotated, b);
-
-   if (!scale_enable)
-      return;
-
-   matrix_4x4_scale(&matrix_scaled, scale_x, scale_y, scale_z);
-   matrix_4x4_multiply(matrix, &matrix_scaled, matrix);
-}
-
 #ifdef HAVE_OPENGL
 static const GRfloat gl_vertexes[] = {
    0, 0,
@@ -530,6 +502,16 @@ static const GRfloat gl_tex_coords[] = {
    0, 0,
    1, 0
 };
+
+static math_matrix_4x4 *menu_display_get_default_mvp(void)
+{
+   gl_t           *gl = (gl_t*)video_driver_get_ptr(NULL);
+
+   if (!gl)
+      return NULL;
+
+   return (math_matrix_4x4*)&gl->mvp_no_rot;
+}
 
 const GRfloat *menu_display_get_tex_coords(void)
 {
@@ -690,6 +672,26 @@ void menu_display_texture_unload(uintptr_t *id)
    video_texture_unload(id);
 }
 #endif
+
+void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
+      float scale_x, float scale_y, float scale_z, bool scale_enable)
+{
+   math_matrix_4x4 matrix_rotated;
+   math_matrix_4x4 matrix_scaled;
+   math_matrix_4x4 *matrix = (math_matrix_4x4*)data;
+   math_matrix_4x4 *b = menu_display_get_default_mvp();
+   if (!matrix)
+      return;
+
+   matrix_4x4_rotate_z(&matrix_rotated, rotation);
+   matrix_4x4_multiply(matrix, &matrix_rotated, b);
+
+   if (!scale_enable)
+      return;
+
+   matrix_4x4_scale(&matrix_scaled, scale_x, scale_y, scale_z);
+   matrix_4x4_multiply(matrix, &matrix_scaled, matrix);
+}
 
 static const char *menu_video_get_ident(void)
 {
