@@ -222,7 +222,7 @@ else ifeq ($(LIBRETRO), fmsx)
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
 	
-else ifeq ($(LIBRETRO), fba)
+else ifeq ($(LIBRETRO), fb_alpha)
 	APP_TITLE           = Final Burn Alpha
 	#APP_DESCRIPTION     = Retroarch 3DS
 	APP_AUTHOR          = Team FB Alpha
