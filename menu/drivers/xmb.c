@@ -223,13 +223,6 @@ typedef struct xmb_handle
    gfx_font_raster_block_t raster_block;
 } xmb_handle_t;
 
-static const GRfloat rmb_vertex[] = {
-   0, 0,
-   1, 0,
-   0, 1,
-   1, 1,
-};
-
 static const GRfloat rmb_tex_coord[] = {
    0, 1,
    1, 1,
@@ -363,7 +356,7 @@ static void xmb_draw_icon(xmb_handle_t *xmb,
    menu_display_matrix_4x4_rotate_z(&mymat, rotation, scale_factor, scale_factor, 1, true);
 
    coords.vertices      = 4;
-   coords.vertex        = rmb_vertex;
+   coords.vertex        = NULL;
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = (const float*)color;
@@ -395,7 +388,7 @@ static void xmb_draw_icon_predone(xmb_handle_t *xmb,
       return;
 
    coords.vertices      = 4;
-   coords.vertex        = rmb_vertex;
+   coords.vertex        = NULL;
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = color;
@@ -420,7 +413,7 @@ static void xmb_draw_boxart(xmb_handle_t *xmb, GRfloat *color, unsigned width, u
    menu_display_matrix_4x4_rotate_z(&mymat, 0, 1, 1, 1, true);
 
    coords.vertices      = 4;
-   coords.vertex        = rmb_vertex;
+   coords.vertex        = NULL;
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = (const float*)color;
@@ -1409,7 +1402,7 @@ static void xmb_draw_cursor(xmb_handle_t *xmb,
    struct gfx_coords coords;
 
    coords.vertices      = 4;
-   coords.vertex        = rmb_vertex;
+   coords.vertex        = NULL;
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = (const float*)color;
@@ -1571,7 +1564,7 @@ static void xmb_frame(void)
 
    menu_display_frame_background(
          width, height, xmb->textures.bg.id, xmb->alpha, false, &coord_color[0],
-         &coord_color2[0], &rmb_vertex[0], &rmb_tex_coord[0], 4,
+         &coord_color2[0], NULL, &rmb_tex_coord[0], 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    xmb_draw_text(menu, xmb,
@@ -1677,7 +1670,7 @@ static void xmb_frame(void)
             width, height,
             xmb->textures.bg.id, xmb->alpha, true,
             &coord_color[0], &coord_color2[0],
-            &rmb_vertex[0], &rmb_tex_coord[0], 4,
+            NULL, &rmb_tex_coord[0], 4,
             MENU_DISPLAY_PRIM_TRIANGLESTRIP);
       xmb_frame_messagebox(msg);
    }

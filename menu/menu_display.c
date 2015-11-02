@@ -488,23 +488,6 @@ void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned durati
    rarch_main_msg_queue_push(msg, prio, duration, flush);
 }
 
-#ifdef HAVE_OPENGL
-static GLenum menu_display_prim_to_gl_enum(enum menu_display_prim_type prim_type)
-{
-   switch (prim_type)
-   {
-      case MENU_DISPLAY_PRIM_TRIANGLESTRIP:
-         return GL_TRIANGLE_STRIP;
-      case MENU_DISPLAY_PRIM_TRIANGLES:
-         return GL_TRIANGLES;
-      case MENU_DISPLAY_PRIM_NONE:
-      default:
-         break;
-   }
-
-   return 0;
-}
-
 void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
       float scale_x, float scale_y, float scale_z, bool scale_enable)
 {
@@ -531,6 +514,30 @@ void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
 
    matrix_4x4_scale(&matrix_scaled, scale_x, scale_y, scale_z);
    matrix_4x4_multiply(matrix, &matrix_scaled, matrix);
+}
+
+#ifdef HAVE_OPENGL
+static const GRfloat gl_vertexes[] = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
+static GLenum menu_display_prim_to_gl_enum(enum menu_display_prim_type prim_type)
+{
+   switch (prim_type)
+   {
+      case MENU_DISPLAY_PRIM_TRIANGLESTRIP:
+         return GL_TRIANGLE_STRIP;
+      case MENU_DISPLAY_PRIM_TRIANGLES:
+         return GL_TRIANGLES;
+      case MENU_DISPLAY_PRIM_NONE:
+      default:
+         break;
+   }
+
+   return 0;
 }
 
 void menu_display_blend_begin(void)
@@ -574,6 +581,8 @@ void menu_display_draw_frame(
 
    if (!mat)
       mat = &gl->mvp_no_rot;
+   if (!coords->vertex)
+      coords->vertex = &gl_vertexes[0];
 
    glViewport(x, y, width, height);
    glBindTexture(GL_TEXTURE_2D, texture);
@@ -599,6 +608,7 @@ void menu_display_frame_background(
       size_t vertex_count,
       enum menu_display_prim_type prim_type)
 {
+   const GRfloat *new_vertex;
    struct gfx_coords coords;
    global_t     *global = global_get_ptr();
    settings_t *settings = config_get_ptr();
@@ -607,8 +617,13 @@ void menu_display_frame_background(
    if (!gl)
       return;
 
+   new_vertex = vertex;
+
+   if (!new_vertex)
+      new_vertex = &gl_vertexes[0];
+
    coords.vertices      = vertex_count;
-   coords.vertex        = vertex;
+   coords.vertex        = new_vertex;
    coords.tex_coord     = tex_coord;
    coords.lut_tex_coord = tex_coord;
    coords.color         = (const float*)coord_color;

@@ -102,12 +102,6 @@ typedef struct materialui_handle
    gfx_font_raster_block_t list_block;
 } materialui_handle_t;
 
-static const GRfloat materialui_vertexes[] = {
-   0, 0,
-   1, 0,
-   0, 1,
-   1, 1
-};
 
 static const GRfloat materialui_tex_coords[] = {
    0, 1,
@@ -186,7 +180,7 @@ static void materialui_draw_icon(materialui_handle_t *materialui,
    menu_display_matrix_4x4_rotate_z(&mymat, rotation, scale_factor, scale_factor, 1, true);
 
    coords.vertices      = 4;
-   coords.vertex        = materialui_vertexes;
+   coords.vertex        = NULL;
    coords.tex_coord     = materialui_tex_coords;
    coords.lut_tex_coord = materialui_tex_coords;
    coords.color         = (const float*)color;
@@ -241,7 +235,7 @@ static void materialui_render_quad(int x, int y, int w, int h,
    materialui_handle_t *materialui = (materialui_handle_t*)menu->userdata;
 
    coords.vertices      = 4;
-   coords.vertex        = materialui_vertexes;
+   coords.vertex        = NULL;
    coords.tex_coord     = materialui_tex_coords;
    coords.lut_tex_coord = materialui_tex_coords;
    coords.color         = coord_color;
@@ -574,7 +568,7 @@ static void materialui_draw_cursor(materialui_handle_t *materialui,
    struct gfx_coords coords;
 
    coords.vertices      = 4;
-   coords.vertex        = materialui_vertexes;
+   coords.vertex        = NULL;
    coords.tex_coord     = materialui_tex_coords;
    coords.lut_tex_coord = materialui_tex_coords;
    coords.color         = (const float*)color;
@@ -707,7 +701,7 @@ static void materialui_frame(void)
             width, height,
             materialui->textures.white, 0.75f, false,
             &white_transp_bg[0],   &white_bg[0],
-            &materialui_vertexes[0], &materialui_tex_coords[0], 4,
+            NULL, &materialui_tex_coords[0], 4,
             MENU_DISPLAY_PRIM_TRIANGLESTRIP);
    }
    else
@@ -729,7 +723,7 @@ static void materialui_frame(void)
                width, height,
                materialui->textures.bg.id, 0.75f, true,
                &white_transp_bg[0],   &white_bg[0],
-               &materialui_vertexes[0], &materialui_tex_coords[0], 4,
+               NULL, &materialui_tex_coords[0], 4,
                MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
          /* Restore opacity of transposed white background */
