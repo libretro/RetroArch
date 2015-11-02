@@ -23,6 +23,7 @@
 #include "../gfx/font_renderer_driver.h"
 #include "../gfx/video_context_driver.h"
 #include "../gfx/video_thread_wrapper.h"
+#include "../gfx/video_texture.h"
 
 #include "menu.h"
 #include "menu_animation.h"
@@ -640,6 +641,18 @@ void menu_display_clear_color(float r, float g, float b, float a)
 {
    glClearColor(r, g, b, a);
    glClear(GL_COLOR_BUFFER_BIT);
+}
+
+unsigned menu_display_texture_load(void *data, enum texture_filter_type type)
+{
+   return video_texture_load(data, TEXTURE_BACKEND_OPENGL, type);
+}
+
+void menu_display_texture_unload(uintptr_t *id)
+{
+   if (!id)
+      return;
+   video_texture_unload(id);
 }
 #endif
 

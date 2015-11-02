@@ -38,7 +38,6 @@
 #include "../menu_cbs.h"
 
 #include "../../file_ext.h"
-#include "../../gfx/video_texture.h"
 
 #include "../../runloop_data.h"
 
@@ -1932,7 +1931,7 @@ static void xmb_context_bg_destroy(xmb_handle_t *xmb)
    if (!xmb)
       return;
 
-   video_texture_unload((uintptr_t*)&xmb->textures.bg.id);
+   menu_display_texture_unload((uintptr_t*)&xmb->textures.bg.id);
 }
 
 static bool xmb_load_image(void *data, menu_image_type_t type)
@@ -1954,12 +1953,12 @@ static bool xmb_load_image(void *data, menu_image_type_t type)
          break;
       case MENU_IMAGE_WALLPAPER:
          xmb_context_bg_destroy(xmb);
-         xmb->textures.bg.id   = video_texture_load(data,
-               TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+         xmb->textures.bg.id   = menu_display_texture_load(data,
+               TEXTURE_FILTER_MIPMAP_LINEAR);
          break;
       case MENU_IMAGE_BOXART:
-         xmb->boxart = video_texture_load(data,
-               TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+         xmb->boxart = menu_display_texture_load(data,
+               TEXTURE_FILTER_MIPMAP_LINEAR);
          break;
    }
 
@@ -2037,14 +2036,14 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
 
       texture_image_load(&ti, texturepath);
 
-      node->icon         = video_texture_load(&ti,
-            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+      node->icon         = menu_display_texture_load(&ti,
+            TEXTURE_FILTER_MIPMAP_LINEAR);
 
       texture_image_free(&ti);
       texture_image_load(&ti, content_texturepath);
 
-      node->content_icon = video_texture_load(&ti,
-            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+      node->content_icon = menu_display_texture_load(&ti,
+            TEXTURE_FILTER_MIPMAP_LINEAR);
 
       texture_image_free(&ti);
    }
@@ -2173,8 +2172,8 @@ static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
 
       texture_image_load(&ti, path);
 
-      xmb->textures.list[i].id   = video_texture_load(&ti,
-            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+      xmb->textures.list[i].id   = menu_display_texture_load(&ti,
+            TEXTURE_FILTER_MIPMAP_LINEAR);
 
       texture_image_free(&ti);
    }
@@ -2504,8 +2503,8 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb,
       if (!node)
          continue;
 
-      video_texture_unload((uintptr_t*)&node->icon);
-      video_texture_unload((uintptr_t*)&node->content_icon);
+      menu_display_texture_unload((uintptr_t*)&node->icon);
+      menu_display_texture_unload((uintptr_t*)&node->content_icon);
    }
 }
 
@@ -2524,7 +2523,7 @@ static void xmb_context_destroy(void)
       return;
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
-      video_texture_unload((uintptr_t*)&xmb->textures.list[i].id);
+      menu_display_texture_unload((uintptr_t*)&xmb->textures.list[i].id);
 
    xmb_context_destroy_horizontal_list(xmb, menu);
 

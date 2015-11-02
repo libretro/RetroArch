@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <boolean.h>
 
+#include "../gfx/video_texture.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -132,6 +134,11 @@ void menu_display_clear_color(float r, float g, float b, float a);
 
 void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
       float scale_x, float scale_y, float scale_z, bool scale_enable);
+
+unsigned menu_display_texture_load(void *data,
+      enum texture_filter_type  filter_type);
+
+void menu_display_texture_unload(uintptr_t *id);
 
 bool menu_display_check_compatibility(enum menu_display_driver_type type);
 

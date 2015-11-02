@@ -34,8 +34,6 @@
 #include "../menu_hash.h"
 #include "../menu_display.h"
 
-#include "../../gfx/video_texture.h"
-
 #include "../../runloop_data.h"
 
 enum
@@ -166,8 +164,8 @@ static void materialui_context_reset_textures(materialui_handle_t *materialui, c
 
       texture_image_load(&ti, path);
 
-      materialui->textures.list[i].id   = video_texture_load(&ti,
-            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+      materialui->textures.list[i].id   = menu_display_texture_load(&ti,
+            TEXTURE_FILTER_MIPMAP_LINEAR);
 
       texture_image_free(&ti);
    }
@@ -912,8 +910,8 @@ static void materialui_allocate_white_texture(materialui_handle_t *materialui)
    ti.height = 1;
    ti.pixels = (uint32_t*)&white_data;
 
-   materialui->textures.white   = video_texture_load(&ti,
-         TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_NEAREST);
+   materialui->textures.white   = menu_display_texture_load(&ti,
+         TEXTURE_FILTER_NEAREST);
 }
 
 static void materialui_font(menu_handle_t *menu)
@@ -1029,8 +1027,8 @@ static void materialui_context_bg_destroy(materialui_handle_t *materialui)
    if (!materialui)
       return;
 
-   video_texture_unload((uintptr_t*)&materialui->textures.bg.id);
-   video_texture_unload((uintptr_t*)&materialui->textures.white);
+   menu_display_texture_unload((uintptr_t*)&materialui->textures.bg.id);
+   menu_display_texture_unload((uintptr_t*)&materialui->textures.white);
 }
 
 static void materialui_context_destroy(void)
@@ -1048,7 +1046,7 @@ static void materialui_context_destroy(void)
       return;
 
    for (i = 0; i < GLUI_TEXTURE_LAST; i++)
-      video_texture_unload((uintptr_t*)&materialui->textures.list[i].id);
+      menu_display_texture_unload((uintptr_t*)&materialui->textures.list[i].id);
 
    menu_display_free_main_font();
 
@@ -1072,8 +1070,8 @@ static bool materialui_load_image(void *data, menu_image_type_t type)
       case MENU_IMAGE_WALLPAPER:
          materialui_context_bg_destroy(materialui);
 
-         materialui->textures.bg.id   = video_texture_load(data,
-               TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+         materialui->textures.bg.id   = menu_display_texture_load(data,
+               TEXTURE_FILTER_MIPMAP_LINEAR);
          materialui_allocate_white_texture(materialui);
          break;
       case MENU_IMAGE_BOXART:

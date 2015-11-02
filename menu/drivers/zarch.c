@@ -42,7 +42,6 @@
 #include "../../runloop_data.h"
 
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_texture.h"
 
 #if 0
 #define ZARCH_DEBUG
@@ -1157,8 +1156,8 @@ static void zarch_free(void *data)
 
 static void zarch_context_bg_destroy(zui_t *zui)
 {
-   video_texture_unload((uintptr_t*)&zui->textures.bg.id);
-   video_texture_unload((uintptr_t*)&zui->textures.white);
+   menu_display_texture_unload((uintptr_t*)&zui->textures.bg.id);
+   menu_display_texture_unload((uintptr_t*)&zui->textures.white);
 }
 
 static void zarch_context_destroy(void)
@@ -1194,8 +1193,8 @@ static bool zarch_load_image(void *data, menu_image_type_t type)
          break;
       case MENU_IMAGE_WALLPAPER:
          zarch_context_bg_destroy(zui);
-         zui->textures.bg.id   = video_texture_load(data,
-               TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+         zui->textures.bg.id   = menu_display_texture_load(data,
+               TEXTURE_FILTER_MIPMAP_LINEAR);
          break;
       case MENU_IMAGE_BOXART:
          break;
@@ -1213,8 +1212,8 @@ static void zarch_allocate_white_texture(zui_t *zui)
    ti.height = 1;
    ti.pixels = (uint32_t*)&data;
 
-   zui->textures.white = video_texture_load(&ti,
-         TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_NEAREST);
+   zui->textures.white = menu_display_texture_load(&ti,
+         TEXTURE_FILTER_NEAREST);
 }
 
 static void zarch_context_reset(void)
