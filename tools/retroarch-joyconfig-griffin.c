@@ -22,7 +22,16 @@
 
 #include "../libretro-common/dynamic/dylib.c"
 #include "../libretro-common/file/retro_file.c"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "../libretro-common/file/retro_stat.c"
+
+#ifdef __cplusplus
+}
+#endif
 
 #if defined(__linux) && !defined(ANDROID)
 #include "../input/drivers/linuxraw_input.c"

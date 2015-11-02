@@ -156,7 +156,7 @@ void init_menu(void)
 
    find_menu_driver();
 
-   if (!menu_display_check_compatibility(driver->menu_ctx->type))
+   if (!menu_display_check_compatibility((enum menu_display_driver_type)driver->menu_ctx->type))
       init_menu_fallback();
 
    if (!(driver->menu = (menu_handle_t*)menu_init(driver->menu_ctx)))
