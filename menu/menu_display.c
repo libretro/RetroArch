@@ -656,6 +656,18 @@ void menu_display_texture_unload(uintptr_t *id)
 }
 #endif
 
+static const char *menu_video_get_ident(void)
+{
+#ifdef HAVE_THREADS
+   settings_t *settings = config_get_ptr();
+
+   if (settings->video.threaded)
+      return rarch_threaded_video_get_ident();
+#endif
+
+   return video_driver_get_ident();
+}
+
 bool menu_display_check_compatibility(enum menu_display_driver_type type)
 {
    const char *video_driver = menu_video_get_ident();
@@ -676,17 +688,4 @@ bool menu_display_check_compatibility(enum menu_display_driver_type type)
 
    RARCH_ERR("Cannot initialize menu driver: video driver of type %d is not active.\n", type);
    return false;
-}
-
-
-const char *menu_video_get_ident(void)
-{
-#ifdef HAVE_THREADS
-   settings_t *settings = config_get_ptr();
-
-   if (settings->video.threaded)
-      return rarch_threaded_video_get_ident();
-#endif
-
-   return video_driver_get_ident();
 }

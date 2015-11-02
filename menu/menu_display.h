@@ -142,8 +142,6 @@ void menu_display_texture_unload(uintptr_t *id);
 
 bool menu_display_check_compatibility(enum menu_display_driver_type type);
 
-const char *menu_video_get_ident(void);
-
 #ifdef __cplusplus
 }
 #endif
