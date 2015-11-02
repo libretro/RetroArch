@@ -242,8 +242,13 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
       GRfloat *coord_color)
 {
    struct gfx_coords coords;
+   math_matrix_4x4 mymat, mrot;
+
    menu_handle_t *menu = menu_driver_get_ptr();
    glui_handle_t *glui = (glui_handle_t*)menu->userdata;
+
+   matrix_4x4_rotate_z(&mrot, 0);
+   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
    coords.vertices      = 4;
    coords.vertex        = glui_vertexes;
@@ -258,8 +263,7 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
          height - y - h,
          w,
          h,
-         &coords,
-         &gl->mvp_no_rot, glui->textures.white, 4,
+         &coords, &mymat, glui->textures.white, 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP );
 
    gl->coords.color     = gl->white_color_ptr;
