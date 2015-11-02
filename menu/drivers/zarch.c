@@ -323,7 +323,8 @@ static void zarch_zui_draw_text(zui_t *zui, uint32_t color, int x, int y, const 
 {
    struct font_params params = {0};
 
-   /* need to use height-y because the gl font renderer uses a different mvp */
+   /* need to use height-y because the font renderer 
+    * uses a different model-view-projection (MVP). */
    params.x           = x / (float)zui->width;
    params.y           = (zui->height - y) / (float)zui->height;
    params.scale       = 1.0;
