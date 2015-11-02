@@ -20,8 +20,6 @@
 #include <stdlib.h>
 #include <boolean.h>
 
-#include <gfx/math/matrix_4x4.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -104,7 +102,7 @@ void menu_display_draw_frame(
       unsigned x, unsigned y,
       unsigned width, unsigned height,
       struct gfx_coords *coords,
-      math_matrix_4x4 *mat, 
+      void *matrix_data, 
       GLuint texture,
       enum menu_display_prim_type prim_type
       );

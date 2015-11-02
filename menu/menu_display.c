@@ -17,6 +17,7 @@
 
 #include <queues/message_queue.h>
 #include <retro_miscellaneous.h>
+#include <gfx/math/matrix_4x4.h>
 
 #include "../config.def.h"
 #include "../gfx/font_renderer_driver.h"
@@ -554,13 +555,14 @@ void menu_display_draw_frame(
       unsigned x, unsigned y,
       unsigned width, unsigned height,
       struct gfx_coords *coords,
-      math_matrix_4x4 *mat, 
+      void *matrix_data,
       GLuint texture,
       enum menu_display_prim_type prim_type
       )
 {
-   driver_t *driver = driver_get_ptr();
-   gl_t         *gl = (gl_t*)video_driver_get_ptr(NULL);
+   driver_t     *driver = driver_get_ptr();
+   gl_t             *gl = (gl_t*)video_driver_get_ptr(NULL);
+   math_matrix_4x4 *mat = (math_matrix_4x4*)matrix_data;
 
    if (!gl)
       return;
