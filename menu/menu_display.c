@@ -530,7 +530,6 @@ void menu_display_draw_frame(
       struct gfx_coords *coords,
       math_matrix_4x4 *mat, 
       GLuint texture,
-      size_t vertex_count,
       enum menu_display_prim_type prim_type
       )
 {
@@ -550,7 +549,7 @@ void menu_display_draw_frame(
    gl->shader->set_coords(coords);
    gl->shader->set_mvp(driver->video_data, mat);
 
-   glDrawArrays(menu_display_prim_to_gl_enum(prim_type), 0, vertex_count);
+   glDrawArrays(menu_display_prim_to_gl_enum(prim_type), 0, coords->vertices);
 }
 
 void menu_display_frame_background(
@@ -591,7 +590,7 @@ void menu_display_frame_background(
 
    menu_display_draw_frame(0, 0, width, height,
          &coords, &gl->mvp_no_rot,
-         texture, vertex_count, prim_type);
+         texture, prim_type);
 
    menu_display_blend_end(gl);
 

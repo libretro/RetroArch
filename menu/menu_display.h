@@ -99,7 +99,6 @@ void menu_display_draw_frame(
       struct gfx_coords *coords,
       math_matrix_4x4 *mat, 
       GLuint texture,
-      size_t vertex_count,
       enum menu_display_prim_type prim_type
       );
 

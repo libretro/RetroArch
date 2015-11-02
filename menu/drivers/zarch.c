@@ -1064,7 +1064,7 @@ static void zarch_frame(void)
          zui->width,
          zui->height,
          (struct gfx_coords*)&zui->ca,
-         &zui->mvp, zui->textures.white, zui->ca.coords.vertices,
+         &zui->mvp, zui->textures.white,
          MENU_DISPLAY_PRIM_TRIANGLES);
 
    menu_display_blend_end(gl);

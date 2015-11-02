@@ -202,7 +202,7 @@ static void glui_draw_icon(gl_t *gl, glui_handle_t *glui,
          height - y - glui->icon_size,
          glui->icon_size,
          glui->icon_size,
-         &coords, &mymat, texture, 4,
+         &coords, &mymat, texture,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    menu_display_blend_end(gl);
@@ -263,7 +263,7 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
          height - y - h,
          w,
          h,
-         &coords, &mymat, glui->textures.white, 4,
+         &coords, &mymat, glui->textures.white,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP );
 
    gl->coords.color     = gl->white_color_ptr;
@@ -603,7 +603,7 @@ static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui,
          64,
          64,
          &coords, &mymat,
-         glui->textures.list[GLUI_TEXTURE_POINTER].id, 4,
+         glui->textures.list[GLUI_TEXTURE_POINTER].id,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    menu_display_blend_end(gl);
