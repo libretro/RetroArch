@@ -1533,7 +1533,6 @@ static void xmb_frame(void)
    bool display_kb;
    bool render_background                  = false;
    xmb_handle_t *xmb                       = NULL;
-   gl_t *gl                                = NULL;
    const struct font_renderer *font_driver = NULL;
    menu_handle_t   *menu                   = menu_driver_get_ptr();
    settings_t   *settings                  = config_get_ptr();
@@ -1548,11 +1547,6 @@ static void xmb_frame(void)
    xmb = (xmb_handle_t*)menu->userdata;
 
    if (!xmb)
-      return;
-
-   gl = (gl_t*)video_driver_get_ptr(NULL);
-
-   if (!gl)
       return;
 
    msg[0]       = '\0';
