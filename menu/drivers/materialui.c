@@ -1180,6 +1180,8 @@ static int materialui_environ(menu_environ_cb_t type, void *data)
 
 static void materialui_preswitch_tabs(unsigned action)
 {
+   size_t stack_size               = 0;
+   file_list_t *menu_stack         = NULL;
    materialui_handle_t *materialui = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
 
@@ -1191,8 +1193,8 @@ static void materialui_preswitch_tabs(unsigned action)
    if (!materialui)
       return;
 
-   file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
-   size_t stack_size = menu_stack->size;
+   menu_stack = menu_entries_get_menu_stack_ptr(0);
+   stack_size = menu_stack->size;
 
    if (menu_stack->list[stack_size - 1].label)
       free(menu_stack->list[stack_size - 1].label);
