@@ -671,6 +671,12 @@ void menu_display_texture_unload(uintptr_t *id)
       return;
    video_texture_unload(id);
 }
+#else
+static math_matrix_4x4 *menu_display_get_default_mvp(void)
+{
+   return NULL;
+}
+
 #endif
 
 void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
