@@ -1423,10 +1423,6 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb,
       float x, float y, unsigned width, unsigned height)
 {
    struct gfx_coords coords;
-   math_matrix_4x4 mymat, mrot;
-
-   matrix_4x4_rotate_z(&mrot, 0);
-   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
@@ -1441,7 +1437,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb,
          height - y - (xmb->cursor.size/2),
          xmb->cursor.size,
          xmb->cursor.size,
-         &coords, &mymat, xmb->textures.list[XMB_TEXTURE_POINTER].id,
+         &coords, NULL, xmb->textures.list[XMB_TEXTURE_POINTER].id,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    menu_display_blend_end();
