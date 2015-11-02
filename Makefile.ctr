@@ -1,42 +1,34 @@
 TARGET := retroarch_3ds
 LIBRETRO =
 
-DEBUG              = 0
-GRIFFIN_BUILD      = 1
-WHOLE_ARCHIVE_LINK = 0
-BIG_STACK          = 0
-BUILD_3DSX         = 1
-BUILD_3DS          = 1
-BUILD_CIA          = 1
+DEBUG                = 0
+GRIFFIN_BUILD        = 1
+WHOLE_ARCHIVE_LINK   = 0
+BUILD_3DSX           = 1
+BUILD_3DS            = 1
+BUILD_CIA            = 1
 
-APP_TITLE           = Retroarch 3DS
-APP_DESCRIPTION     = Retroarch 3DS
-APP_AUTHOR          = Team Libretro
-APP_PRODUCT_CODE    = RETROARCH-3DS
-APP_UNIQUE_ID       = 0xBAC00
-APP_ICON            = ctr/default.png
-APP_BANNER          = ctr/libretro_banner.png
-APP_AUDIO           = ctr/silent.wav
-APP_RSF             = ctr/tools/template.rsf
-APP_SYSTEM_MODE     = 64MB
-APP_SYSTEM_MODE_EXT = 124MB
-
-
-ifeq ($(BIG_STACK),1)
-CTR_STACK_SIZE        = 0x400000
-else
-CTR_STACK_SIZE        = 0x100000
-endif
-CTR_LINEAR_HEAP_SIZE  = 0x600000
-CTR_MAX_HEAP_SIZE     = 0x6000000
+APP_TITLE            = Retroarch 3DS
+APP_DESCRIPTION      = Retroarch 3DS
+APP_AUTHOR           = Team Libretro
+APP_PRODUCT_CODE     = RETROARCH-3DS
+APP_UNIQUE_ID        = 0xBAC00
+APP_ICON             = ctr/default.png
+APP_BANNER           = ctr/libretro_banner.png
+APP_AUDIO            = ctr/silent.wav
+APP_RSF              = ctr/tools/template.rsf
+APP_SYSTEM_MODE      = 64MB
+APP_SYSTEM_MODE_EXT  = 124MB
 
 include ctr/Makefile.cores
 
-CONFIG_OBJECT = ctr/ctr_config_$(CTR_STACK_SIZE)_$(CTR_LINEAR_HEAP_SIZE)_$(CTR_MAX_HEAP_SIZE).o
-
 OBJS :=
 OBJS += gfx/drivers/ctr_sprite.o
-OBJS += $(CONFIG_OBJECT)
+OBJS += ctr/stack_adjust.o
+OBJS += ctr/ctr_system.o
+OBJS += ctr/ctr_memory.o
+OBJS += ctr/ctr_linear.o
+
 ifeq ($(GRIFFIN_BUILD), 1)
 	OBJS += griffin/griffin.o
 else
@@ -270,6 +262,7 @@ ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp
 
 CFLAGS	+=	-mword-relocations \
 			-fomit-frame-pointer -ffast-math \
+         -Werror=implicit-function-declaration \
 			$(ARCH)
 
 #CFLAGS	+= -Wall
@@ -285,19 +278,6 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_START := -Wl,--whole-archive
    WHOLE_END := -Wl,--no-whole-archive
 endif
-
-ifneq ($(CTR_STACK_SIZE),)
-   CFLAGS += -DCTR_STACK_SIZE=$(CTR_STACK_SIZE)
-endif
-
-ifneq ($(CTR_LINEAR_HEAP_SIZE),)
-   CFLAGS += -DCTR_LINEAR_HEAP_SIZE=$(CTR_LINEAR_HEAP_SIZE)
-endif
-
-ifneq ($(CTR_MAX_HEAP_SIZE),)
-   CFLAGS += -DCTR_MAX_HEAP_SIZE=$(CTR_MAX_HEAP_SIZE)
-endif
-
 
 CFLAGS += -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include
 
@@ -365,11 +345,6 @@ else
 	BANNERTOOL = ctr/tools/bannertool.exe
 endif
 
-
-$(CONFIG_OBJECT): ctr/ctr_config.c
-	rm -f ctr/ctr_config_*.o
-	$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS)
-
 %.o: %.shader
 	python $(AEMSTRO)/aemstro_as.py $< $(notdir $<).shbin
 	$(DEVKITARM)/bin/bin2s $(notdir $<).shbin | $(PREFIX)as -o $@
@@ -425,6 +400,7 @@ clean:
 	rm -f $(TARGET).elf
 	rm -f $(TARGET).3ds
 	rm -f $(TARGET).cia
+	rm -f $(TARGET).smdh
 	rm -f $(TARGET).bnr
 	rm -f $(TARGET).icn
 	rm -f *_shader_shbin.h

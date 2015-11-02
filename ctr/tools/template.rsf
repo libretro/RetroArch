@@ -174,7 +174,7 @@ AccessControlInfo:
 
 SystemControlInfo:
   RemasterVersion: 2
-  StackSize: 0x40000
+  StackSize: 0x4000
   # Modules that run services listed above should be included below
   # Maximum 48 dependencies
   # If a module is listed that isn't present on the 3DS, the title will get stuck at the logo (3ds waves)
