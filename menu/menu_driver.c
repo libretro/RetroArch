@@ -30,7 +30,7 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_RMENU_XUI)
    &menu_ctx_rmenu_xui,
 #endif
-#if defined(HAVE_GLUI)
+#if defined(HAVE_MATERIALUI)
    &menu_ctx_materialui,
 #endif
 #if defined(HAVE_XMB)

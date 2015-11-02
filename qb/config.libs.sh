@@ -390,17 +390,17 @@ check_lib MMAP "$CLIB" mmap
 
 check_pkgconf PYTHON python3
 
-if [ "$HAVE_GLUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" != 'no' ]; then
+if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" != 'no' ]; then
 	if [ "$HAVE_RGUI" = 'no' ]; then
-		HAVE_GLUI=no
+		HAVE_MATERIALUI=no
 		HAVE_XMB=no
       HAVE_ZARCH=no
-		echo "Notice: RGUI not available, GLUI, XMB and ZARCH will be disabled."
+		echo "Notice: RGUI not available, MaterialUI, XMB and ZARCH will be disabled."
 	elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_GLES" = 'no' ]; then
-		HAVE_GLUI=no
+		HAVE_MATERIALUI=no
 		HAVE_XMB=no
       HAVE_ZARCH=no
-		echo "Notice: GL/GLES not available, XMB, GLUI and ZARCH will be disabled."
+		echo "Notice: GL/GLES not available, XMB, MaterialUI and ZARCH will be disabled."
 	fi
 fi
 

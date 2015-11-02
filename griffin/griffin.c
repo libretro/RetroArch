@@ -833,7 +833,7 @@ MENU
 #include "../menu/drivers/xmb.c"
 #endif
 
-#ifdef HAVE_GLUI
+#ifdef HAVE_MATERIALUI
 #include "../menu/drivers/materialui.c"
 #endif
 
