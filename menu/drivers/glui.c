@@ -673,7 +673,6 @@ static void glui_frame(void)
    size_t selection;
    size_t title_margin;
    glui_handle_t *glui                     = NULL;
-   const struct font_renderer *font_driver = NULL;
    driver_t *driver                        = driver_get_ptr();
    menu_handle_t *menu                     = menu_driver_get_ptr();
    settings_t *settings                    = config_get_ptr();
@@ -744,11 +743,7 @@ static void glui_frame(void)
       }
    }
 
-
-
    menu_entries_get_title(title, sizeof(title));
-
-   font_driver = driver->font_osd_driver;
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
@@ -774,11 +769,11 @@ static void glui_frame(void)
          width, height,
          &lightblue_bg[0]);
 
-   menu_display_font_bind_block(menu, font_driver, &glui->list_block);
+   menu_display_font_bind_block(menu, driver->font_osd_driver, &glui->list_block);
 
    glui_render_menu_list(glui, width, height, menu, normal_color, hover_color, &pure_white[0]);
 
-   menu_display_font_flush_block(menu, font_driver);
+   menu_display_font_flush_block(menu, driver->font_osd_driver);
 
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
@@ -1014,20 +1009,16 @@ error:
 
 static void glui_free(void *data)
 {
-   gl_t *gl                                = NULL;
-   const struct font_renderer *font_driver = NULL;
    menu_handle_t *menu                     = (menu_handle_t*)data;
    driver_t      *driver                   = driver_get_ptr();
    glui_handle_t *glui                     = (glui_handle_t*)menu->userdata;
+   const struct font_renderer *font_driver = driver ? (const struct font_renderer*)
+      driver->font_osd_driver : NULL;
 
    if (!glui || !menu)
       return;
 
    gfx_coord_array_free(&glui->list_block.carr);
-
-   gl = (gl_t*)video_driver_get_ptr(NULL);
-
-   font_driver = gl ? (const struct font_renderer*)driver->font_osd_driver : NULL;
 
    if (font_driver && font_driver->bind_block)
       font_driver->bind_block(driver->font_osd_data, NULL);
