@@ -1570,7 +1570,7 @@ static void xmb_frame(void)
    coord_color[3]  = coord_color[7]  = coord_color[11]  = coord_color[15]  = (0.75f > xmb->alpha) ? xmb->alpha : 0.75f;
    coord_color2[3] = coord_color2[7] = coord_color2[11] = coord_color2[15] = xmb->alpha;
 
-   menu_display_frame_background(menu, settings,
+   menu_display_frame_background(
          width, height, xmb->textures.bg.id, xmb->alpha, false, &coord_color[0],
          &coord_color2[0], &rmb_vertex[0], &rmb_tex_coord[0], 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
@@ -1674,7 +1674,7 @@ static void xmb_frame(void)
 
    if (render_background)
    {
-      menu_display_frame_background(menu, settings,
+      menu_display_frame_background(
             width, height,
             xmb->textures.bg.id, xmb->alpha, true,
             &coord_color[0], &coord_color2[0],
@@ -1821,24 +1821,13 @@ static void xmb_layout(menu_handle_t *menu, xmb_handle_t *xmb)
 static void *xmb_init(void)
 {
    unsigned width, height;
-   menu_handle_t *menu                = NULL;
-   xmb_handle_t *xmb                  = NULL;
-   const video_driver_t *video_driver = NULL;
-   float scale_factor                 = 1;
-   gl_t *gl                           = (gl_t*)
-      video_driver_get_ptr(&video_driver);
-
-   (void)scale_factor;
-
-   if (video_driver != &video_gl || !gl)
-   {
-      RARCH_ERR("Cannot initialize XMB menu driver: GL video driver is not active.\n");
-      return NULL;
-   }
-
-   menu = (menu_handle_t*)calloc(1, sizeof(*menu));
+   xmb_handle_t *xmb          = NULL;
+   menu_handle_t *menu        = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
+      goto error;
+
+   if (!menu_display_check_compatibility(menu_ctx_xmb.type))
       goto error;
 
    video_driver_get_size(&width, &height);

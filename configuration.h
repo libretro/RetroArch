@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_SETTINGS_H__
-#define __RARCH_SETTINGS_H__
+#ifndef __RARCH_CONFIGURATION_H__
+#define __RARCH_CONFIGURATION_H__
 
 #include <stdint.h>
 #include <retro_miscellaneous.h>

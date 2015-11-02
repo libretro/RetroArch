@@ -705,7 +705,7 @@ static void glui_frame(void)
 
    if (libretro_running)
    {
-      menu_display_frame_background(menu, settings,
+      menu_display_frame_background(
             width, height,
             glui->textures.white, 0.75f, false,
             &white_transp_bg[0],   &white_bg[0],
@@ -727,7 +727,7 @@ static void glui_frame(void)
          white_transp_bg[11] = 0.30;
          white_transp_bg[15] = 0.30;
 
-         menu_display_frame_background(menu, settings,
+         menu_display_frame_background(
                width, height,
                glui->textures.bg.id, 0.75f, true,
                &white_transp_bg[0],   &white_bg[0],
@@ -977,17 +977,13 @@ static void glui_layout(menu_handle_t *menu, glui_handle_t *glui)
 static void *glui_init(void)
 {
    glui_handle_t *glui                     = NULL;
-   const video_driver_t *video_driver      = NULL;
-   menu_handle_t                     *menu = NULL;
-   gl_t *gl                                = (gl_t*)
-      video_driver_get_ptr(&video_driver);
-
-   if (video_driver != &video_gl || !gl)
-      goto error;
-
-   menu                 = (menu_handle_t*)calloc(1, sizeof(*menu));
+   menu_handle_t     *menu                 = (menu_handle_t*)
+      calloc(1, sizeof(*menu));
 
    if (!menu)
+      goto error;
+
+   if (!menu_display_check_compatibility(menu_ctx_glui.type))
       goto error;
 
    menu->userdata       = (glui_handle_t*)calloc(1, sizeof(glui_handle_t));

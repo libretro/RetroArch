@@ -26,6 +26,13 @@
 extern "C" {
 #endif
 
+enum menu_display_driver_type
+{
+   MENU_VIDEO_DRIVER_GENERIC = 0,
+   MENU_VIDEO_DRIVER_OPENGL,
+   MENU_VIDEO_DRIVER_DIRECT3D
+};
+
 enum menu_display_ctl_state
 {
    MENU_DISPLAY_CTL_SET_VIEWPORT = 0,
@@ -107,8 +114,6 @@ void menu_display_blend_begin(void);
 void menu_display_blend_end(void);
 
 void menu_display_frame_background(
-      menu_handle_t *menu,
-      settings_t *settings,
       unsigned width, unsigned height,
       GLuint texture,
       float handle_alpha,
@@ -129,6 +134,8 @@ void menu_display_clear_color(float r, float g, float b, float a);
 
 void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
       float scale_x, float scale_y, float scale_z, bool scale_enable);
+
+bool menu_display_check_compatibility(enum menu_display_driver_type type);
 
 const char *menu_video_get_ident(void);
 

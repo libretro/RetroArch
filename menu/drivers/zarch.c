@@ -1065,7 +1065,7 @@ static void zarch_frame(void)
 
    menu_display_blend_end();
 
-   menu_display_frame_background(menu, settings,
+   menu_display_frame_background(
          zui->width, zui->height,
          zui->textures.bg.id, 0.75f, false,
          &coord_color[0],   &coord_color2[0],
@@ -1083,27 +1083,13 @@ static void *zarch_init(void)
 {
    int unused;
    zui_t *zui                              = NULL;
-   const video_driver_t *video_driver      = NULL;
-   menu_handle_t                     *menu = NULL;
    settings_t *settings                    = config_get_ptr();
-   gl_t *gl                                = (gl_t*)
-      video_driver_get_ptr(&video_driver);
-
-   if (video_driver != &video_gl || !gl)
-   {
-      RARCH_ERR("Cannot initialize GLUI menu driver: gl video driver is not active.\n");
-      return NULL;
-   }
-
-   if (settings->menu.mouse.enable)
-   {
-      RARCH_WARN("Forcing menu_mouse_enable=false\n");
-      settings->menu.mouse.enable = false;
-   }
-
-   menu                 = (menu_handle_t*)calloc(1, sizeof(*menu));
+   menu_handle_t *menu                     = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
+      goto error;
+
+   if (!menu_display_check_compatibility(menu_ctx_zarch.type))
       goto error;
 
    menu->userdata       = (zui_t*)calloc(1, sizeof(zui_t));
@@ -1112,6 +1098,12 @@ static void *zarch_init(void)
       goto error;
 
    zui                  = (zui_t*)menu->userdata;
+
+   if (settings->menu.mouse.enable)
+   {
+      RARCH_WARN("Forcing menu_mouse_enable=false\n");
+      settings->menu.mouse.enable = false;
+   }
 
    unused = 1000;
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &unused);

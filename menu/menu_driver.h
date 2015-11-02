@@ -61,13 +61,6 @@ typedef enum
    MENU_HELP_LAST
 } menu_help_type_t;
 
-typedef enum
-{
-   MENU_VIDEO_DRIVER_GENERIC = 0,
-   MENU_VIDEO_DRIVER_OPENGL,
-   MENU_VIDEO_DRIVER_DIRECT3D
-} menu_video_driver_type_t;
-
 typedef struct
 {
    void *userdata;
@@ -140,7 +133,7 @@ typedef struct menu_ctx_driver
          uint32_t label_hash, uint32_t menu_label_hash);
    bool  (*load_image)(void *data, menu_image_type_t type);
    const char *ident;
-   menu_video_driver_type_t type;
+   unsigned type;
    int (*environ_cb)(menu_environ_cb_t type, void *data);
    int (*pointer_tap)(unsigned x, unsigned y, unsigned ptr,
          menu_file_list_cbs_t *cbs,

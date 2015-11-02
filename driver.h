@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __DRIVER__H
-#define __DRIVER__H
+#ifndef __RARCH_DRIVER__H
+#define __RARCH_DRIVER__H
 
 #include <sys/types.h>
 #include <boolean.h>

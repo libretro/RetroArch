@@ -584,8 +584,6 @@ void menu_display_draw_frame(
 }
 
 void menu_display_frame_background(
-      menu_handle_t *menu,
-      settings_t *settings,
       unsigned width,
       unsigned height,
       GLuint texture,
@@ -599,8 +597,9 @@ void menu_display_frame_background(
       enum menu_display_prim_type prim_type)
 {
    struct gfx_coords coords;
-   global_t *global = global_get_ptr();
-   gl_t         *gl = (gl_t*)video_driver_get_ptr(NULL);
+   global_t     *global = global_get_ptr();
+   settings_t *settings = config_get_ptr();
+   gl_t             *gl = (gl_t*)video_driver_get_ptr(NULL);
 
    if (!gl)
       return;
@@ -641,6 +640,33 @@ void menu_display_clear_color(float r, float g, float b, float a)
    glClear(GL_COLOR_BUFFER_BIT);
 }
 #endif
+
+bool menu_display_check_compatibility(enum menu_display_driver_type type)
+{
+   const video_driver_t *video_driver = NULL;
+#ifdef HAVE_OPENGL
+   gl_t *gl = (gl_t*)video_driver_get_ptr(&video_driver);
+#endif
+
+   switch (type)
+   {
+      case MENU_VIDEO_DRIVER_GENERIC:
+         return true;
+      case MENU_VIDEO_DRIVER_OPENGL:
+#ifdef HAVE_OPENGL
+         if (video_driver == &video_gl || gl)
+            return true;
+#endif
+         break;
+      case MENU_VIDEO_DRIVER_DIRECT3D:
+         /* TODO/FIXME */
+         break;
+   }
+
+   RARCH_ERR("Cannot initialize menu driver: video driver of type %d is not active.\n", type);
+   return false;
+}
+
 
 const char *menu_video_get_ident(void)
 {
