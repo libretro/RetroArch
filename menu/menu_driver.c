@@ -149,7 +149,6 @@ const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void)
 
 void init_menu(void)
 {
-   const char *video_driver;
    driver_t *driver     = driver_get_ptr();
 
    if (driver->menu)
@@ -157,21 +156,8 @@ void init_menu(void)
 
    find_menu_driver();
 
-   video_driver = menu_video_get_ident();
-
-   switch (driver->menu_ctx->type)
-   {
-      case MENU_VIDEO_DRIVER_GENERIC:
-         break;
-      case MENU_VIDEO_DRIVER_DIRECT3D:
-         if (video_driver && (strcmp(video_driver, "d3d") != 0))
-            init_menu_fallback();
-         break;
-      case MENU_VIDEO_DRIVER_OPENGL:
-         if (video_driver && (strcmp(video_driver, "gl") != 0))
-            init_menu_fallback();
-         break;
-   }
+   if (!menu_display_check_compatibility(driver->menu_ctx->type))
+      init_menu_fallback();
 
    if (!(driver->menu = (menu_handle_t*)menu_init(driver->menu_ctx)))
       retro_fail(1, "init_menu()");

@@ -658,25 +658,19 @@ void menu_display_texture_unload(uintptr_t *id)
 
 bool menu_display_check_compatibility(enum menu_display_driver_type type)
 {
-   const video_driver_t *video_driver = NULL;
+   const char *video_driver = menu_video_get_ident();
 
    switch (type)
    {
       case MENU_VIDEO_DRIVER_GENERIC:
          return true;
       case MENU_VIDEO_DRIVER_OPENGL:
-#ifdef HAVE_OPENGL
-         {
-            gl_t *gl = (gl_t*)video_driver_get_ptr(&video_driver);
-            if (video_driver == &video_gl || gl)
-               return true;
-         }
-#endif
+         if (!strcmp(video_driver, "gl"))
+            return true;
          break;
       case MENU_VIDEO_DRIVER_DIRECT3D:
-#ifdef HAVE_D3D
-         /* TODO/FIXME */
-#endif
+         if (!strcmp(video_driver, "d3d"))
+            return true;
          break;
    }
 
