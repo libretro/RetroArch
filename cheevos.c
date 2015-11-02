@@ -20,6 +20,7 @@
 
 #include <configuration.h>
 #include <formats/jsonsax.h>
+#include <retro_file.h>
 #include <rhash.h>
 #include <performance.h>
 #include <runloop.h>
@@ -29,6 +30,7 @@
 #include "dynamic.h"
 #include "net_http_special.h"
 #include "async_job.h"
+#include "libretro.h"
 
 enum
 {
@@ -1503,51 +1505,126 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
 
 #define CHEEVOS_EIGHT_MB (8 * 1024 * 1024)
 
-int cheevos_load(const void *data, size_t size)
+static size_t cheevos_eval_md5(const struct retro_game_info *info, MD5_CTX *ctx)
 {
-   const char *json;
-   MD5_CTX ctx, saved_ctx;
-   retro_time_t timeout;
-   char buffer[4096];
-   size_t len;
-   unsigned char hash[16];
-   unsigned game_id;
+   MD5_Init(ctx);
+   
+   if (info->data)
+   {
+      MD5_Update(ctx, info->data, info->size);
+      return info->size;
+   }
+   else
+   {
+      RFILE *file = retro_fopen(info->path, RFILE_MODE_READ, 0);
+      size_t size = 0;
+      
+      if (!file)
+         return 0;
+      
+      for (;;)
+      {
+         uint8_t buffer[4096];
+         ssize_t num_read = retro_fread(file, (void*)buffer, sizeof(buffer));
+         
+         if (num_read <= 0)
+            break;
+         
+         MD5_Update(ctx, (void*)buffer, num_read);
+         size += num_read;
+      }
+      
+      retro_fclose(file);
+      return size;
+   }
+}
 
+static void cheevos_fill_md5(size_t size, size_t total, MD5_CTX *ctx)
+{
+   ssize_t fill = total - size;
+   char buffer[4096];
+   
+   memset((void*)buffer, 0, sizeof(buffer));
+
+   do
+   {
+      ssize_t len = sizeof(buffer);
+
+      if (len > fill)
+         len = fill;
+
+      MD5_Update(ctx, (void*)buffer, len);
+      fill -= len;
+   }
+   while (fill > 0);
+}
+
+typedef unsigned (*cheevos_id_finder_t)(const struct retro_game_info *, retro_time_t);
+
+static unsigned cheevos_find_game_id_generic(const struct retro_game_info *info, retro_time_t timeout)
+{
+   MD5_CTX ctx;
+   uint8_t hash[16];
+   retro_time_t to;
+   size_t size;
+   
+   size = cheevos_eval_md5(info, &ctx);
+   MD5_Final(hash, &ctx);
+   
+   if (!size)
+      return 0;
+   
+   to = timeout;
+   return cheevos_get_game_id(hash, &to);
+}
+
+static unsigned cheevos_find_game_id_snes(const struct retro_game_info *info, retro_time_t timeout)
+{
+   MD5_CTX ctx;
+   uint8_t hash[16];
+   retro_time_t to;
+   size_t size;
+   
+   size = cheevos_eval_md5(info, &ctx);
+   
+   if (!size)
+   {
+      MD5_Final(hash, &ctx);
+      return 0;
+   }
+   
+   cheevos_fill_md5(size, CHEEVOS_EIGHT_MB, &ctx);
+   MD5_Final(hash, &ctx);
+   
+   to = timeout;
+   return cheevos_get_game_id(hash, &to);
+}
+
+int cheevos_load(const struct retro_game_info *info)
+{
+   static const cheevos_id_finder_t finders[] =
+   {
+      cheevos_find_game_id_generic,
+      cheevos_find_game_id_snes
+   };
+   
+   retro_time_t timeout = 5000000;
+   unsigned game_id = 0;
+   int i;
+   const char *json;
+   
    /* Just return OK if cheevos are disabled. */
    if (!config_get_ptr()->cheevos.enable)
       return 0;
-
-   MD5_Init(&ctx);
-   MD5_Update(&ctx, data, size);
-   saved_ctx = ctx;
-   MD5_Final(hash, &ctx);
-
-   timeout = 15000000;
-   game_id = cheevos_get_game_id(hash, &timeout);
-
-   if (!game_id && size < CHEEVOS_EIGHT_MB)
+      
+   for (i = 0; i < sizeof(finders) / sizeof(finders[0]); i++)
    {
-      /* Maybe the content is a SNES game, continue MD5 with zeroes up to 8 MB. */
-      size = CHEEVOS_EIGHT_MB - size;
-      memset((void*)buffer, 0, sizeof(buffer));
-
-      do
-      {
-         len = sizeof(buffer);
-
-         if (len > size)
-            len = size;
-
-         MD5_Update(&saved_ctx, (void*)buffer, len);
-         size -= len;
-      }
-      while (size);
-
-      MD5_Final(hash, &saved_ctx);
-
-      game_id = cheevos_get_game_id(hash, &timeout);
+      game_id = finders[i](info, 5000000);
+      
+      if (game_id)
+         break;
    }
-
+   
    if (game_id)
    {
       cheevos_playing_activity(game_id, &timeout);
