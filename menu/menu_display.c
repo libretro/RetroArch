@@ -644,9 +644,6 @@ void menu_display_clear_color(float r, float g, float b, float a)
 bool menu_display_check_compatibility(enum menu_display_driver_type type)
 {
    const video_driver_t *video_driver = NULL;
-#ifdef HAVE_OPENGL
-   gl_t *gl = (gl_t*)video_driver_get_ptr(&video_driver);
-#endif
 
    switch (type)
    {
@@ -654,12 +651,17 @@ bool menu_display_check_compatibility(enum menu_display_driver_type type)
          return true;
       case MENU_VIDEO_DRIVER_OPENGL:
 #ifdef HAVE_OPENGL
-         if (video_driver == &video_gl || gl)
-            return true;
+         {
+            gl_t *gl = (gl_t*)video_driver_get_ptr(&video_driver);
+            if (video_driver == &video_gl || gl)
+               return true;
+         }
 #endif
          break;
       case MENU_VIDEO_DRIVER_DIRECT3D:
+#ifdef HAVE_D3D
          /* TODO/FIXME */
+#endif
          break;
    }
 
