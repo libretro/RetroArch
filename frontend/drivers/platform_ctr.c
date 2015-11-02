@@ -16,7 +16,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
-#include <unistd.h>
 
 #include <boolean.h>
 
@@ -31,6 +30,8 @@
 #include "retroarch.h"
 #include "audio/audio_driver.h"
 
+#include "ctr/ctr_debug.h"
+
 #ifdef IS_SALAMANDER
 #include "../../file_ext.h"
 #else
@@ -38,90 +39,6 @@
 #endif
 
 const char* elf_path_cst = "sdmc:/retroarch/test.3dsx";
-
-#ifndef DEBUG_HOLD
-void wait_for_input(void);
-void dump_result_value(Result val);
-#define DEBUG_HOLD() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);wait_for_input();}while(0)
-#define DEBUG_VAR(X) printf( "%-20s: 0x%08X\n", #X, (u32)(X))
-#define DEBUG_VAR64(X) printf( #X"\r\t\t\t\t : 0x%016llX\n", (u64)(X))
-#define DEBUG_ERROR(X) do{if(X)dump_result_value(X)}while(0)
-#define PRINTFPOS(X,Y) "\x1b["#X";"#Y"H"
-#define PRINTFPOS_STR(X,Y) "\x1b["X";"Y"H"
-#endif
-
-#define CTR_APPMEMALLOC_PTR ((u32*)0x1FF80040)
-
-extern char* fake_heap_start;
-extern char* fake_heap_end;
-u32 __linear_heap;
-u32 __heapBase;
-extern u32 __linear_heap_size;
-extern u32 __heap_size;
-extern u32 __linear_heap_size_hbl;
-extern u32 __heap_size_hbl;
-
-extern void (*__system_retAddr)(void);
-
-void __destroy_handle_list(void);
-void __appExit();
-void __libc_fini_array(void);
-
-void __system_allocateHeaps() {
-   extern unsigned int __service_ptr;
-   u32 tmp=0;
-   int64_t mem_used;
-   u32 mem_available;
-   u32 app_memory;
-
-   svcGetSystemInfo(&mem_used, 0, 1);
-
-   if(__service_ptr)
-   {
-      app_memory = mem_used + __linear_heap_size_hbl + __heap_size_hbl;
-      app_memory = app_memory < 0x04000000 ? 0x04000000 : app_memory;
-   }
-   else
-      app_memory = *CTR_APPMEMALLOC_PTR;
-
-   mem_available = (app_memory - mem_used - __linear_heap_size - 0x10000) & 0xFFFFF000;
-
-   __heap_size = __heap_size > mem_available ?  mem_available : __heap_size;
-   __heap_size = __heap_size > 0x6000000 ? 0x6000000 : __heap_size;
-
-//   __linear_heap_size = (app_memory - mem_used - __heap_size - 0x10000) & 0xFFFFF000;
-
-	// Allocate the application heap
-	__heapBase = 0x08000000;
-	svcControlMemory(&tmp, __heapBase, 0x0, __heap_size, MEMOP_ALLOC, MEMPERM_READ | MEMPERM_WRITE);
-
-	// Allocate the linear heap
-	svcControlMemory(&__linear_heap, 0x0, 0x0, __linear_heap_size, MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
-	// Set up newlib heap
-	fake_heap_start = (char*)__heapBase;
-	fake_heap_end = fake_heap_start + __heap_size;
-}
-
-void __attribute__((noreturn)) __libctru_exit(int rc)
-{
-	u32 tmp=0;
-
-	// Unmap the linear heap
-	svcControlMemory(&tmp, __linear_heap, 0x0, __linear_heap_size, MEMOP_FREE, 0x0);
-
-	// Unmap the application heap
-	svcControlMemory(&tmp, __heapBase, 0x0, __heap_size, MEMOP_FREE, 0x0);
-
-	// Close some handles
-	__destroy_handle_list();
-
-	// Jump to the loader if it provided a callback
-	if (__system_retAddr)
-		__system_retAddr();
-
-	// Since above did not jump, end this process
-	svcExitProcess();
-}
 
 static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
@@ -161,9 +78,15 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
          "retroarch.cfg", sizeof(g_defaults.path.config));
    
-   *argc = 0;
+#if 0
+   int i;
+   DEBUG_VAR(*argc);
+   for (i=0; i < *argc; i++)
+      DEBUG_STR(argv[i]);
+   DEBUG_HOLD();
+#endif
 
-   *argc=0;
+   *argc = 0;
 
 #ifndef IS_SALAMANDER
 #if 0
@@ -323,190 +246,6 @@ static int frontend_ctr_get_rating(void)
 {
    return 3;
 }
-
-bool select_pressed = false;
-
-typedef union{
-   struct
-   {
-      unsigned description : 10;
-      unsigned module      : 8;
-      unsigned             : 3;
-      unsigned summary     : 6;
-      unsigned level       : 5;
-   };
-   Result val;
-}ctr_result_value;
-
-void dump_result_value(Result val)
-{
-   ctr_result_value res;
-   res.val = val;
-   printf("result      : 0x%08X\n", val);
-   printf("description : %u\n", res.description);
-   printf("module      : %u\n", res.module);
-   printf("summary     : %u\n", res.summary);
-   printf("level       : %u\n", res.level);
-}
-#if 0
-static void ctr_crawl_memory(uint32_t* total_size, uint32_t size)
-{
-   void* tmp = malloc(size);
-   if(tmp)
-      *total_size += size;
-   else
-      size >>= 1;
-
-   if (size > 4)
-      ctr_crawl_memory(total_size, size);
-
-   free(tmp);
-}
-
-void ctr_get_memory_info(uint32_t* available, uint32_t* max_block)
-{
-   *available = 0;
-
-   ctr_crawl_memory(available, 1<<27);
-
-   void* tmp;
-   *max_block = 0;
-   int i;
-   for (i=27; i>2; i--)
-   {
-      tmp = malloc(*max_block + (1 << i));
-      if(tmp)
-      {
-         *max_block += 1 << i;
-         free(tmp);
-      }
-   }
-
-
-}
-
-uint32_t malloc_calls    = 0;
-uint32_t min_malloc_addr = 0xFFFFFFFF;
-uint32_t max_malloc_addr = 0x0;
-
-void* malloc(size_t nbytes)
-{
-  void* ret = _malloc_r (_REENT, nbytes);
-
-  if (ret)
-  {
-     if(max_malloc_addr < ((uint32_t)ret + nbytes))
-        max_malloc_addr = ((uint32_t)ret + nbytes);
-
-     if(min_malloc_addr > (uint32_t)ret)
-        min_malloc_addr = (uint32_t)ret;
-  }
-
-  malloc_calls++;
-  return ret;
-}
-
-void free (void* aptr)
-{
-  _free_r (_REENT, aptr);
-}
-
-uint32_t sbrk_calls = 0;
-uint32_t sbrk_max_incr = 0;
-uint32_t sbrk_total_incr = 0;
-uint32_t sbrk_heap_start = 0;
-uint32_t sbrk_heap_end   = 0;
-
-#include "errno.h"
-extern char *fake_heap_end;
-extern char *fake_heap_start;
-
-/* Register name faking - works in collusion with the linker.  */
-register char * stack_ptr asm ("sp");
-
-void * _sbrk_r (struct _reent *ptr, ptrdiff_t incr) {
-	extern char   end asm ("__end__");	/* Defined by the linker.  */
-	static char * heap_start;
-
-	char *	prev_heap_start;
-	char *	heap_end;
-
-	if (heap_start == NULL) {
-		if (fake_heap_start == NULL) {
-			heap_start = &end;
-		} else {
-			heap_start = fake_heap_start;
-		}
-	}
-
-	prev_heap_start = heap_start;
-
-	if (fake_heap_end == NULL) {
-		heap_end = stack_ptr;
-	} else {
-		heap_end = fake_heap_end;
-	}
-
-	if (heap_start + incr > heap_end) {
-		ptr->_errno = ENOMEM;
-		return (caddr_t) -1;
-	}
-
-	heap_start += incr;
-
-   sbrk_calls++;
-   if ((incr > 0) && (sbrk_max_incr < incr))
-      sbrk_max_incr = incr;
-   sbrk_total_incr += incr;
-   sbrk_heap_start = (uint32_t) heap_start;
-   sbrk_heap_end   = (uint32_t) heap_end;
-
-   return (caddr_t) prev_heap_start;
-}
-#endif
-
-void wait_for_input(void)
-{
-   printf("\n\nPress Start.\n\n");
-   fflush(stdout);
-
-   while(aptMainLoop())
-   {
-      u32 kDown;
-
-      hidScanInput();
-
-      kDown = hidKeysDown();
-
-      if (kDown & KEY_START)
-         break;
-
-      if (kDown & KEY_SELECT)
-         exit(0);
-#if 0
-      select_pressed = true;
-#endif
-
-      retro_sleep(1);
-   }
-}
-
-int usleep (useconds_t us)
-{
-   svcSleepThread((int64_t)us * 1000);
-}
-
-long sysconf(int name)
-{
-   switch(name)
-   {
-   case _SC_NPROCESSORS_ONLN:
-      return 2;
-   }
-
-   return -1;
-}
-
 
 enum frontend_architecture frontend_ctr_get_architecture(void)
 {

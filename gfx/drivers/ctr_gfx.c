@@ -461,30 +461,56 @@ static bool ctr_frame(void* data, const void* frame,
       frames = 0;
    }
 
-#if 0
-//   extern u32 gpuCmdBufOffset;
 
-//   if(!(frames & 0x3F))
-//   {
-//      u32 available,max_block;
-//      void ctr_get_memory_info(u32* available, u32* max_block);
+//#define CTR_INSPECT_MEMORY_USAGE
 
-//      ctr_get_memory_info(&available, &max_block);
-//      printf(PRINTFPOS(28,0)"u:0x%08X f:0x%08X b:0x%08X\n", __heap_size - available, available, max_block);
-//   }
-
+#ifdef CTR_INSPECT_MEMORY_USAGE
+   uint32_t ctr_get_stack_usage(void);
+   void ctr_linear_get_stats(void);
    extern u32 __linear_heap_size;
    extern u32 __heap_size;
 
-   extern uint32_t sbrk_calls, sbrk_max_incr, sbrk_total_incr, sbrk_heap_start, sbrk_heap_end;
-   printf(PRINTFPOS(25,0)"c:0x%08X m:0x%08X c:0x%08X\n", sbrk_calls, sbrk_max_incr, sbrk_total_incr);
-   printf(PRINTFPOS(26,0)"s:0x%08X e:0x%08X         \n", sbrk_heap_start, sbrk_heap_end);
-   extern uint32_t malloc_calls, min_malloc_addr, max_malloc_addr;
-   printf(PRINTFPOS(27,0)"n:0x%08X l:0x%08X h:0x%08X\n", malloc_calls, min_malloc_addr, max_malloc_addr);
-   printf(PRINTFPOS(28,0)"0x%08X 0x%08X 0x%08X\r", __heap_size, gpuCmdBufOffset, (__linear_heap_size - linearSpaceFree() +0x3FF) & ~0x3FF);
-#endif
-//   printf(PRINTFPOS(29,0)"fps: %8.4f frames: %i (%X)\r", fps, total_frames++, (__linear_heap_size - linearSpaceFree()));
+   MemInfo mem_info;
+   PageInfo page_info;
+   u32 query_addr = 0x08000000;
+   printf(PRINTFPOS(0,0));
+   while (query_addr < 0x40000000)
+   {
+      svcQueryMemory(&mem_info, &page_info, query_addr);
+      printf("0x%08X --> 0x%08X (0x%08X) \n", mem_info.base_addr, mem_info.base_addr + mem_info.size, mem_info.size);
+      query_addr = mem_info.base_addr + mem_info.size;
+      if(query_addr == 0x1F000000)
+         query_addr = 0x30000000;
+   }
+//   static u32* dummy_pointer;
+//   if(total_frames == 500)
+//      dummy_pointer = malloc(0x2000000);
+//   if(total_frames == 1000)
+//      free(dummy_pointer);
+
+
+   printf("========================================");
+   printf("0x%08X 0x%08X 0x%08X\n", __heap_size, gpuCmdBufOffset, (__linear_heap_size - linearSpaceFree()));
+   printf("fps: %8.4f frames: %i (%X)\n", fps, total_frames++, (__linear_heap_size - linearSpaceFree()));
+   printf("========================================");
+   u32 app_memory = *((u32*)0x1FF80040);
+   u64 mem_used;
+   svcGetSystemInfo(&mem_used, 0, 1);
+   printf("total mem : 0x%08X          \n", app_memory);
+   printf("used: 0x%08X free: 0x%08X      \n", (u32)mem_used, app_memory - (u32)mem_used);
+   static u32 stack_usage = 0;
+   extern u32 __stack_bottom;
+   if(!(total_frames & 0x3F))
+      stack_usage = ctr_get_stack_usage();
+   printf("stack total:0x%08X used: 0x%08X\n", 0x10000000 - __stack_bottom, stack_usage);
+
+   printf("========================================");
+   ctr_linear_get_stats();
+   printf("========================================");
+
+#else
    printf(PRINTFPOS(29,0)"fps: %8.4f frames: %i\r", fps, total_frames++);
+#endif
    fflush(stdout);
 
    rarch_perf_init(&ctrframe_f, "ctrframe_f");

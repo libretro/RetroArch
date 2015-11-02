@@ -9,9 +9,6 @@ ifeq ($(LIBRETRO), gambatte)
 	APP_ICON            = ctr/gambatte.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	#CTR_LINEAR_HEAP_SIZE  = 0x600000
 
 else ifeq ($(LIBRETRO), gpsp)
 	APP_TITLE           = gpSP Libretro
@@ -22,9 +19,6 @@ else ifeq ($(LIBRETRO), gpsp)
 	APP_ICON            = ctr/gpsp.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	#CTR_LINEAR_HEAP_SIZE  = 0x600000
 
 else ifeq ($(LIBRETRO), fceumm)
 	APP_TITLE           = FCeumm Libretro
@@ -35,9 +29,6 @@ else ifeq ($(LIBRETRO), fceumm)
 	APP_ICON            = ctr/fceumm.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	#CTR_LINEAR_HEAP_SIZE  = 0x600000
 
 else ifeq ($(LIBRETRO), nestopia)
 	APP_TITLE           = Nestopia Libretro
@@ -48,9 +39,6 @@ else ifeq ($(LIBRETRO), nestopia)
 	APP_ICON            = ctr/nestopia.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	CTR_LINEAR_HEAP_SIZE  = 0xE00000
 
 else ifeq ($(LIBRETRO), nxengine)
 	APP_TITLE           = NXengine Libretro
@@ -61,9 +49,6 @@ else ifeq ($(LIBRETRO), nxengine)
 	APP_ICON            = ctr/nxengine.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	#CTR_LINEAR_HEAP_SIZE  = 0x600000
 
 else ifeq ($(LIBRETRO), genesis_plus_gx)
 	APP_TITLE           = Genesis Plus GX Libretro
@@ -74,9 +59,6 @@ else ifeq ($(LIBRETRO), genesis_plus_gx)
 	APP_ICON            = ctr/genesis_plus_gx.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	CTR_LINEAR_HEAP_SIZE  = 0xE00000
 
 else ifeq ($(LIBRETRO), catsfc)
 	APP_TITLE           = CATSFC Libretro
@@ -87,9 +69,6 @@ else ifeq ($(LIBRETRO), catsfc)
 	APP_ICON            = ctr/catsfc.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	#CTR_LINEAR_HEAP_SIZE  = 0x600000
 
 else ifeq ($(LIBRETRO), mednafen_wswan)
 	APP_TITLE           = Mednafen wswan Libretro
@@ -100,9 +79,6 @@ else ifeq ($(LIBRETRO), mednafen_wswan)
 	APP_ICON            = ctr/mednafen_wswan.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	CTR_LINEAR_HEAP_SIZE  = 0xE00000
 
 else ifeq ($(LIBRETRO), mednafen_vb)
 	APP_TITLE           = Mednafen VB Libretro
@@ -113,9 +89,6 @@ else ifeq ($(LIBRETRO), mednafen_vb)
 	APP_ICON            = ctr/mednafen_vb.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	CTR_LINEAR_HEAP_SIZE  = 0xE00000
 
 else ifeq ($(LIBRETRO), mednafen_ngp)
 	APP_TITLE           = Mednafen NGP Libretro
@@ -126,9 +99,6 @@ else ifeq ($(LIBRETRO), mednafen_ngp)
 	APP_ICON            = ctr/mednafen_ngp.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	CTR_LINEAR_HEAP_SIZE  = 0xE00000
 
 else ifeq ($(LIBRETRO), 2048)
 	APP_TITLE           = 2048 Libretro
@@ -139,9 +109,6 @@ else ifeq ($(LIBRETRO), 2048)
 	APP_ICON            = ctr/2048.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	CTR_LINEAR_HEAP_SIZE  = 0xE00000
 
 else ifeq ($(LIBRETRO), picodrive)
 	APP_TITLE           = Picodrive Libretro
@@ -152,9 +119,6 @@ else ifeq ($(LIBRETRO), picodrive)
 	APP_ICON            = ctr/picodrive.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	#CTR_LINEAR_HEAP_SIZE  = 0x600000
 
 else ifeq ($(LIBRETRO), snes9x_next)
 	APP_TITLE           = Snes9x Next Libretro
@@ -165,9 +129,6 @@ else ifeq ($(LIBRETRO), snes9x_next)
 	APP_ICON            = ctr/snes9x_next.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	#CTR_LINEAR_HEAP_SIZE  = 0x600000
 
 else ifeq ($(LIBRETRO), mgba)
 	APP_TITLE           = mGBA Libretro
@@ -178,9 +139,6 @@ else ifeq ($(LIBRETRO), mgba)
 	APP_ICON            = ctr/mgba.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	#CTR_LINEAR_HEAP_SIZE  = 0x600000
 
 else ifeq ($(LIBRETRO), quicknes)
 	APP_TITLE           = QuickNES Libretro
@@ -191,9 +149,6 @@ else ifeq ($(LIBRETRO), quicknes)
 	APP_ICON            = ctr/quicknes.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	#CTR_LINEAR_HEAP_SIZE  = 0x600000
 
 else ifeq ($(LIBRETRO), fb_alpha_neo)
 	APP_TITLE           = Neo Geo (FB Alpha)
@@ -205,9 +160,6 @@ else ifeq ($(LIBRETRO), fb_alpha_neo)
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
 	APP_SYSTEM_MODE     = 80MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-   CTR_LINEAR_HEAP_SIZE  = 0x3A0000
-   CTR_MAX_HEAP_SIZE     = 0xC00000
 
 else ifeq ($(LIBRETRO), fb_alpha_cps1)
 	APP_TITLE           = Final Burn Alpha - CPS-1
@@ -218,9 +170,6 @@ else ifeq ($(LIBRETRO), fb_alpha_cps1)
 	APP_ICON            = ctr/fb_alpha_cps1.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	#CTR_LINEAR_HEAP_SIZE  = 0x600000
 
 else ifeq ($(LIBRETRO), fb_alpha_cps2)
 	APP_TITLE           = Final Burn Alpha - CPS-2
@@ -232,8 +181,6 @@ else ifeq ($(LIBRETRO), fb_alpha_cps2)
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
 	APP_SYSTEM_MODE     = 80MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	#CTR_LINEAR_HEAP_SIZE  = 0x600000
 
 else ifeq ($(LIBRETRO), catsfc_plus)
 	APP_TITLE           = CATSFC Plus Libretro
@@ -244,9 +191,6 @@ else ifeq ($(LIBRETRO), catsfc_plus)
 	APP_ICON            = ctr/catsfc_plus.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	#CTR_LINEAR_HEAP_SIZE  = 0x600000
 
 else ifeq ($(LIBRETRO), mednafen_pce_fast)
 	APP_TITLE           = Mednafen/Beetle PCE FAST
@@ -257,9 +201,6 @@ else ifeq ($(LIBRETRO), mednafen_pce_fast)
 	APP_ICON            = ctr/mednafen_pce_fast.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	#CTR_LINEAR_HEAP_SIZE  = 0x600000
 
 else ifeq ($(LIBRETRO), pcsx_rearmed)
 	APP_TITLE           = PCSX ReARMed
@@ -270,9 +211,6 @@ else ifeq ($(LIBRETRO), pcsx_rearmed)
 	APP_ICON            = ctr/pcsx_rearmed.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	CTR_LINEAR_HEAP_SIZE  = 0xE00000
 	
 else ifeq ($(LIBRETRO), fmsx)
 	APP_TITLE           = fMSX
@@ -283,8 +221,5 @@ else ifeq ($(LIBRETRO), fmsx)
 	APP_ICON            = ctr/fmsx.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-	#APP_SYSTEM_MODE     = 64MB
-	#APP_SYSTEM_MODE_EXT = Legacy
-	CTR_LINEAR_HEAP_SIZE  = 0x1000000
 	
 endif
