@@ -41,7 +41,6 @@
 #include "../menu_hash.h"
 #include "../../runloop_data.h"
 
-#include "../../gfx/video_thread_wrapper.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_texture.h"
 
