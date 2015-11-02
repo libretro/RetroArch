@@ -181,14 +181,11 @@ static void glui_draw_icon(gl_t *gl, glui_handle_t *glui,
       GRfloat *color)
 {
    struct gfx_coords coords;
-   math_matrix_4x4 mymat, mscal;
+   math_matrix_4x4 mymat;
 
    menu_display_blend_begin();
 
-   menu_display_matrix_4x4_rotate_z(&mymat, rotation);
-
-   matrix_4x4_scale(&mscal, scale_factor, scale_factor, 1);
-   matrix_4x4_multiply(&mymat, &mscal, &mymat);
+   menu_display_matrix_4x4_rotate_z(&mymat, rotation, scale_factor, scale_factor, 1, true);
 
    coords.vertices      = 4;
    coords.vertex        = glui_vertexes;

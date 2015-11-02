@@ -127,7 +127,8 @@ void menu_display_clear_color(void *data, float r, float g, float b, float a);
 
 #endif
 
-void menu_display_matrix_4x4_rotate_z(void *data, float rotation);
+void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
+      float scale_x, float scale_y, float scale_z, bool scale_enable);
 
 const char *menu_video_get_ident(void);
 

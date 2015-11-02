@@ -503,9 +503,11 @@ static GLenum menu_display_prim_to_gl_enum(enum menu_display_prim_type prim_type
    return 0;
 }
 
-void menu_display_matrix_4x4_rotate_z(void *data, float rotation)
+void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
+      float scale_x, float scale_y, float scale_z, bool scale_enable)
 {
    math_matrix_4x4 matrix_rotated;
+   math_matrix_4x4 matrix_scaled;
    math_matrix_4x4 *b = NULL;
    math_matrix_4x4 *matrix = (math_matrix_4x4*)data;
 #ifdef HAVE_OPENGL
@@ -521,6 +523,12 @@ void menu_display_matrix_4x4_rotate_z(void *data, float rotation)
 
    matrix_4x4_rotate_z(&matrix_rotated, rotation);
    matrix_4x4_multiply(matrix, &matrix_rotated, b);
+
+   if (!scale_enable)
+      return;
+
+   matrix_4x4_scale(&matrix_scaled, scale_x, scale_y, scale_z);
+   matrix_4x4_multiply(matrix, &matrix_scaled, matrix);
 }
 
 void menu_display_blend_begin(void)

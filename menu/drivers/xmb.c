@@ -352,7 +352,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
       GRfloat *color)
 {
    struct gfx_coords coords;
-   math_matrix_4x4 mymat, mscal;
+   math_matrix_4x4 mymat;
 
    if (
          x < -xmb->icon.size/2 || 
@@ -361,10 +361,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
          y > height + xmb->icon.size)
       return;
 
-   menu_display_matrix_4x4_rotate_z(&mymat, rotation);
-
-   matrix_4x4_scale(&mscal, scale_factor, scale_factor, 1);
-   matrix_4x4_multiply(&mymat, &mscal, &mymat);
+   menu_display_matrix_4x4_rotate_z(&mymat, rotation, scale_factor, scale_factor, 1, true);
 
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
@@ -416,18 +413,12 @@ static void xmb_draw_icon_predone(xmb_handle_t *xmb,
 static void xmb_draw_boxart(gl_t *gl, xmb_handle_t *xmb, GRfloat *color, unsigned width, unsigned height)
 {
    struct gfx_coords coords;
-   float x, y;
-   math_matrix_4x4 mymat, mscal;
-
-   y = xmb->margins.screen.top + xmb->icon.size + xmb->boxart_size;
-
-   x = xmb->margins.screen.left + xmb->icon.spacing.horizontal +
+   math_matrix_4x4 mymat;
+   float y = xmb->margins.screen.top + xmb->icon.size + xmb->boxart_size;
+   float x = xmb->margins.screen.left + xmb->icon.spacing.horizontal +
       xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4;
 
-   menu_display_matrix_4x4_rotate_z(&mymat, 0);
-
-   matrix_4x4_scale(&mscal, 1, 1, 1);
-   matrix_4x4_multiply(&mymat, &mscal, &mymat);
+   menu_display_matrix_4x4_rotate_z(&mymat, 0, 1, 1, 1, true);
 
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
@@ -1190,7 +1181,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       unsigned width, unsigned height)
 {
    unsigned i, ticker_limit;
-   math_matrix_4x4 mymat, mscal;
+   math_matrix_4x4 mymat;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
    uint64_t *frame_count       = video_driver_get_frame_count();
@@ -1205,10 +1196,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
    end = file_list_get_size(list);
 
-   menu_display_matrix_4x4_rotate_z(&mymat, 0 /* rotation */);
-
-   matrix_4x4_scale(&mscal, 1 /* scale_factor */, 1 /* scale_factor */, 1);
-   matrix_4x4_multiply(&mymat, &mscal, &mymat);
+   menu_display_matrix_4x4_rotate_z(&mymat, 0, 1, 1, 1, true);
 
    i = menu_entries_get_start();
 
@@ -1534,7 +1522,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
 static void xmb_frame(void)
 {
    size_t selection;
-   math_matrix_4x4 mymat, mscal;
+   math_matrix_4x4 mymat;
    unsigned depth, i, width, height;
    char msg[PATH_MAX_LENGTH];
    char title_msg[PATH_MAX_LENGTH];
@@ -1630,10 +1618,7 @@ static void xmb_frame(void)
          xmb->categories.selection_ptr,
          &item_color[0], width, height);
 
-   menu_display_matrix_4x4_rotate_z(&mymat, 0 /* rotation */);
-
-   matrix_4x4_scale(&mscal, 1 /* scale_factor */, 1 /* scale_factor */, 1);
-   matrix_4x4_multiply(&mymat, &mscal, &mymat);
+   menu_display_matrix_4x4_rotate_z(&mymat, 0, 1, 1, 1, true);
 
    menu_display_blend_begin();
 
