@@ -660,25 +660,6 @@ void menu_display_clear_color(float r, float g, float b, float a)
    glClear(GL_COLOR_BUFFER_BIT);
 }
 
-unsigned menu_display_texture_load(void *data, enum texture_filter_type type)
-{
-   return video_texture_load(data, TEXTURE_BACKEND_OPENGL, type);
-}
-
-void menu_display_texture_unload(uintptr_t *id)
-{
-   if (!id)
-      return;
-   video_texture_unload(id);
-}
-#else
-static math_matrix_4x4 *menu_display_get_default_mvp(void)
-{
-   return NULL;
-}
-
-#endif
-
 void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
       float scale_x, float scale_y, float scale_z, bool scale_enable)
 {
@@ -698,6 +679,26 @@ void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
    matrix_4x4_scale(&matrix_scaled, scale_x, scale_y, scale_z);
    matrix_4x4_multiply(matrix, &matrix_scaled, matrix);
 }
+
+unsigned menu_display_texture_load(void *data, enum texture_filter_type type)
+{
+   return video_texture_load(data, TEXTURE_BACKEND_OPENGL, type);
+}
+
+void menu_display_texture_unload(uintptr_t *id)
+{
+   if (!id)
+      return;
+   video_texture_unload(id);
+}
+#else
+static math_matrix_4x4 *menu_display_get_default_mvp(void)
+{
+   return NULL;
+}
+
+#endif
+
 
 static const char *menu_video_get_ident(void)
 {
