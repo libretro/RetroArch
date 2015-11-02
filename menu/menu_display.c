@@ -503,6 +503,26 @@ static GLenum menu_display_prim_to_gl_enum(enum menu_display_prim_type prim_type
    return 0;
 }
 
+void menu_display_matrix_4x4_rotate_z(void *data, float rotation)
+{
+   math_matrix_4x4 matrix_rotated;
+   math_matrix_4x4 *b = NULL;
+   math_matrix_4x4 *matrix = (math_matrix_4x4*)data;
+#ifdef HAVE_OPENGL
+   gl_t           *gl = (gl_t*)video_driver_get_ptr(NULL);
+
+   if (!gl)
+      return;
+
+   b = (math_matrix_4x4*)&gl->mvp_no_rot;
+#endif
+   if (!matrix)
+      return;
+
+   matrix_4x4_rotate_z(&matrix_rotated, rotation);
+   matrix_4x4_multiply(matrix, &matrix_rotated, b);
+}
+
 void menu_display_blend_begin(void)
 {
    gl_t         *gl = (gl_t*)video_driver_get_ptr(NULL);
@@ -540,6 +560,9 @@ void menu_display_draw_frame(
    /* TODO - edge case */
    if (height <= 0)
       height = 1;
+
+   if (!mat)
+      mat = &gl->mvp_no_rot;
 
    glViewport(x, y, width, height);
    glBindTexture(GL_TEXTURE_2D, texture);

@@ -124,7 +124,10 @@ void menu_display_frame_background(
 void menu_display_restore_clear_color(void *data);
 
 void menu_display_clear_color(void *data, float r, float g, float b, float a);
+
 #endif
+
+void menu_display_matrix_4x4_rotate_z(void *data, float rotation);
 
 const char *menu_video_get_ident(void);
 

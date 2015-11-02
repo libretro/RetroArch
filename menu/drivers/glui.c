@@ -181,12 +181,11 @@ static void glui_draw_icon(gl_t *gl, glui_handle_t *glui,
       GRfloat *color)
 {
    struct gfx_coords coords;
-   math_matrix_4x4 mymat, mrot, mscal;
+   math_matrix_4x4 mymat, mscal;
 
    menu_display_blend_begin();
 
-   matrix_4x4_rotate_z(&mrot, rotation);
-   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+   menu_display_matrix_4x4_rotate_z(&mymat, rotation);
 
    matrix_4x4_scale(&mscal, scale_factor, scale_factor, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
@@ -242,13 +241,9 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
       GRfloat *coord_color)
 {
    struct gfx_coords coords;
-   math_matrix_4x4 mymat, mrot;
 
    menu_handle_t *menu = menu_driver_get_ptr();
    glui_handle_t *glui = (glui_handle_t*)menu->userdata;
-
-   matrix_4x4_rotate_z(&mrot, 0);
-   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
    coords.vertices      = 4;
    coords.vertex        = glui_vertexes;
@@ -263,7 +258,7 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
          height - y - h,
          w,
          h,
-         &coords, &mymat, glui->textures.white,
+         &coords, NULL, glui->textures.white,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP );
 
    gl->coords.color     = gl->white_color_ptr;
@@ -584,10 +579,6 @@ static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui,
       float x, float y, unsigned width, unsigned height)
 {
    struct gfx_coords coords;
-   math_matrix_4x4 mymat, mrot;
-
-   matrix_4x4_rotate_z(&mrot, 0);
-   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
    coords.vertices      = 4;
    coords.vertex        = glui_vertexes;
@@ -602,7 +593,7 @@ static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui,
          height - y - 32,
          64,
          64,
-         &coords, &mymat,
+         &coords, NULL,
          glui->textures.list[GLUI_TEXTURE_POINTER].id,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
