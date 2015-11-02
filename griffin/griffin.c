@@ -834,7 +834,7 @@ MENU
 #endif
 
 #ifdef HAVE_GLUI
-#include "../menu/drivers/glui.c"
+#include "../menu/drivers/materialui.c"
 #endif
 
 #ifdef HAVE_ZARCH
