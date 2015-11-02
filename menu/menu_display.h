@@ -132,7 +132,7 @@ void menu_display_clear_color(float r, float g, float b, float a);
 
 #endif
 
-const GRfloat *menu_display_get_tex_coords(void);
+const float *menu_display_get_tex_coords(void);
 
 void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
       float scale_x, float scale_y, float scale_z, bool scale_enable);

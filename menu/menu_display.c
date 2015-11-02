@@ -489,14 +489,14 @@ void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned durati
 }
 
 #ifdef HAVE_OPENGL
-static const GRfloat gl_vertexes[] = {
+static const float gl_vertexes[] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const GRfloat gl_tex_coords[] = {
+static const float gl_tex_coords[] = {
    0, 1,
    1, 1,
    0, 0,
@@ -513,7 +513,7 @@ static math_matrix_4x4 *menu_display_get_default_mvp(void)
    return (math_matrix_4x4*)&gl->mvp_no_rot;
 }
 
-const GRfloat *menu_display_get_tex_coords(void)
+const float *menu_display_get_tex_coords(void)
 {
    return &gl_tex_coords[0];
 }
