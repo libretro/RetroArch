@@ -382,7 +382,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 }
 
-static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
+static void xmb_draw_icon_predone(xmb_handle_t *xmb,
       math_matrix_4x4 *mymat,
       GRuint texture,
       float x, float y,
@@ -504,7 +504,6 @@ static void xmb_frame_messagebox(const char *message)
    unsigned i;
    unsigned width, height;
    struct string_list *list = NULL;
-   gl_t *gl                 = NULL;
    xmb_handle_t *xmb        = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
 
@@ -516,11 +515,6 @@ static void xmb_frame_messagebox(const char *message)
    xmb = (xmb_handle_t*)menu->userdata;
 
    if (!xmb)
-      return;
-
-   gl = (gl_t*)video_driver_get_ptr(NULL);
-
-   if (!gl)
       return;
 
    list = string_split(message, "\n");
@@ -1410,7 +1404,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       color[3]  = color[7]  = color[11]  = color[15]  = (node->alpha > xmb->alpha) ? xmb->alpha : node->alpha;
 
       if (texture_switch != 0 && color[3] != 0)
-         xmb_draw_icon_predone(gl, xmb, &mymat,
+         xmb_draw_icon_predone(xmb, &mymat,
                texture_switch,
                node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal
                + xmb->icon.size / 2.0 + xmb->margins.setting.left,
@@ -1658,7 +1652,7 @@ static void xmb_frame(void)
    coord_color2[3]  = coord_color2[7]  = coord_color2[11]  = coord_color2[15]  = (1.00f > xmb->alpha) ? xmb->alpha : 1.00f;
 
    if (settings->menu.timedate_enable && coord_color2[3] != 0)
-      xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
+      xmb_draw_icon_predone(xmb, &mymat, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
             width - xmb->icon.size, xmb->icon.size, width, height, 1, 0, 1, &coord_color2[0]);
 
    /* set alpha components of colors */
@@ -1666,7 +1660,7 @@ static void xmb_frame(void)
       ? xmb->alpha : xmb->textures.arrow.alpha;
 
    if (coord_color2[3] != 0)
-      xmb_draw_icon_predone(gl,
+      xmb_draw_icon_predone(
             xmb,
             &mymat,
             xmb->textures.list[XMB_TEXTURE_ARROW].id,
@@ -2262,16 +2256,11 @@ static void xmb_context_reset(void)
    char mediapath[PATH_MAX_LENGTH] = {0};
    char themepath[PATH_MAX_LENGTH] = {0};
    char iconpath[PATH_MAX_LENGTH]  = {0};
-   gl_t *gl                        = NULL;
    xmb_handle_t *xmb               = NULL;
    menu_handle_t *menu             = menu_driver_get_ptr();
    settings_t *settings            = config_get_ptr();
 
    if (!menu)
-      return;
-
-   gl = (gl_t*)video_driver_get_ptr(NULL);
-   if (!gl)
       return;
 
    xmb = (xmb_handle_t*)menu->userdata;
