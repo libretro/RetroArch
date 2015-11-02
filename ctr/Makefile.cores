@@ -222,4 +222,29 @@ else ifeq ($(LIBRETRO), fmsx)
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
 	
+else ifeq ($(LIBRETRO), fba)
+	APP_TITLE           = Final Burn Alpha
+	#APP_DESCRIPTION     = Retroarch 3DS
+	#APP_AUTHOR          = Team Libretro
+	APP_PRODUCT_CODE    = RARCH-FBAF
+	APP_UNIQUE_ID       = 0xBAC17
+	APP_ICON            = ctr/default.png
+	#APP_BANNER          = ctr/libretro_banner.png
+	#APP_AUDIO           = ctr/silent.wav
+	#APP_SYSTEM_MODE     = 64MB
+	#APP_SYSTEM_MODE_EXT = Legacy
+	#CTR_LINEAR_HEAP_SIZE  = 0x600000
+	
+else ifeq ($(LIBRETRO), mame)
+	APP_TITLE           = MAME
+	#APP_DESCRIPTION     = Retroarch 3DS
+	#APP_AUTHOR          = Team Libretro
+	APP_PRODUCT_CODE    = RARCH-MAME
+	APP_UNIQUE_ID       = 0xBAC18
+	APP_ICON            = ctr/mame.png
+	#APP_BANNER          = ctr/libretro_banner.png
+	#APP_AUDIO           = ctr/silent.wav
+	#APP_SYSTEM_MODE     = 64MB
+	#APP_SYSTEM_MODE_EXT = Legacy
+	#CTR_LINEAR_HEAP_SIZE  = 0x600000
 endif
