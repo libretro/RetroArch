@@ -1456,7 +1456,7 @@ static int deferred_push_video_shader_parameters_common(
 }
 #endif
 
-int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info, 
+int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info,
       const char *info_label, unsigned parse_type, bool add_empty_entry)
 {
    enum setting_type precond;
@@ -1468,7 +1468,7 @@ int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info,
 
    if (!setting)
       return -1;
-   
+
    switch (parse_type)
    {
       case PARSE_GROUP:
@@ -1553,7 +1553,7 @@ int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info,
       menu_entries_push(info->list, short_description,
             name, menu_setting_set_flags(setting), 0, 0);
       count++;
-      
+
 loop:
       switch (parse_type)
       {
@@ -2548,53 +2548,53 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          info->need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_ALL:
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS),          PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_INPUT_SETTINGS),   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_CORE_SETTINGS),            PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_CONFIGURATION_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_SAVING_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_LOGGING_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_REWIND_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_RECORDING_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_MENU_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_UI_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),   PARSE_ONLY_GROUP, false);
          ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS),  PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_NETWORK_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_PLAYLIST_SETTINGS),   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_USER_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_DIRECTORY_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info, 
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_PRIVACY_SETTINGS),   PARSE_ONLY_GROUP, false);
          info->need_push    = true;
          break;
