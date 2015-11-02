@@ -524,6 +524,13 @@ static const GRfloat gl_vertexes[] = {
    1, 1
 };
 
+static const GRfloat gl_tex_coords[] = {
+   0, 1,
+   1, 1,
+   0, 0,
+   1, 0
+};
+
 static GLenum menu_display_prim_to_gl_enum(enum menu_display_prim_type prim_type)
 {
    switch (prim_type)
@@ -583,6 +590,10 @@ void menu_display_draw_frame(
       mat = &gl->mvp_no_rot;
    if (!coords->vertex)
       coords->vertex = &gl_vertexes[0];
+   if (!coords->tex_coord)
+      coords->tex_coord = &gl_tex_coords[0];
+   if (!coords->lut_tex_coord)
+      coords->lut_tex_coord = &gl_tex_coords[0];
 
    glViewport(x, y, width, height);
    glBindTexture(GL_TEXTURE_2D, texture);
@@ -608,8 +619,9 @@ void menu_display_frame_background(
       size_t vertex_count,
       enum menu_display_prim_type prim_type)
 {
-   const GRfloat *new_vertex;
    struct gfx_coords coords;
+   const GRfloat *new_vertex    = NULL;
+   const GRfloat *new_tex_coord = NULL;
    global_t     *global = global_get_ptr();
    settings_t *settings = config_get_ptr();
    gl_t             *gl = (gl_t*)video_driver_get_ptr(NULL);
@@ -617,15 +629,18 @@ void menu_display_frame_background(
    if (!gl)
       return;
 
-   new_vertex = vertex;
+   new_vertex    = vertex;
+   new_tex_coord = tex_coord;
 
    if (!new_vertex)
       new_vertex = &gl_vertexes[0];
+   if (!new_tex_coord)
+      new_tex_coord = &gl_tex_coords[0];
 
    coords.vertices      = vertex_count;
    coords.vertex        = new_vertex;
-   coords.tex_coord     = tex_coord;
-   coords.lut_tex_coord = tex_coord;
+   coords.tex_coord     = new_tex_coord;
+   coords.lut_tex_coord = new_tex_coord;
    coords.color         = (const float*)coord_color;
 
    menu_display_blend_begin();
