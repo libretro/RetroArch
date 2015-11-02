@@ -183,7 +183,7 @@ static void glui_draw_icon(gl_t *gl, glui_handle_t *glui,
    struct gfx_coords coords;
    math_matrix_4x4 mymat, mrot, mscal;
 
-   menu_display_blend_begin(gl);
+   menu_display_blend_begin();
 
    matrix_4x4_rotate_z(&mrot, rotation);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
@@ -205,7 +205,7 @@ static void glui_draw_icon(gl_t *gl, glui_handle_t *glui,
          &coords, &mymat, texture,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
-   menu_display_blend_end(gl);
+   menu_display_blend_end();
 }
 
 static void glui_blit_line(float x, float y, unsigned width, unsigned height,
@@ -256,7 +256,7 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
    coords.lut_tex_coord = glui_tex_coords;
    coords.color         = coord_color;
 
-   menu_display_blend_begin(gl);
+   menu_display_blend_begin();
 
    menu_display_draw_frame(
          x,
@@ -268,7 +268,7 @@ static void glui_render_quad(gl_t *gl, int x, int y, int w, int h,
 
    gl->coords.color     = gl->white_color_ptr;
 
-   menu_display_blend_end(gl);
+   menu_display_blend_end();
 }
 
 static void glui_draw_scrollbar(gl_t *gl, unsigned width, unsigned height, GRfloat *coord_color)
@@ -595,7 +595,7 @@ static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui,
    coords.lut_tex_coord = glui_tex_coords;
    coords.color         = (const float*)color;
 
-   menu_display_blend_begin(gl);
+   menu_display_blend_begin();
 
    menu_display_draw_frame(
          x - 32,
@@ -606,7 +606,7 @@ static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui,
          glui->textures.list[GLUI_TEXTURE_POINTER].id,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
-   menu_display_blend_end(gl);
+   menu_display_blend_end();
 }
 
 static size_t glui_list_get_size(void *data, menu_list_type_t type)

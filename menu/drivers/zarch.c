@@ -1056,7 +1056,7 @@ static void zarch_frame(void)
    else if (zui->item.active == 0)
       zui->item.active = -1;
 
-   menu_display_blend_begin(gl);
+   menu_display_blend_begin();
 
    menu_display_draw_frame(
          0,
@@ -1067,7 +1067,7 @@ static void zarch_frame(void)
          &zui->mvp, zui->textures.white,
          MENU_DISPLAY_PRIM_TRIANGLES);
 
-   menu_display_blend_end(gl);
+   menu_display_blend_end();
 
    menu_display_frame_background(menu, settings,
          gl, zui->width, zui->height,

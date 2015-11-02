@@ -1391,7 +1391,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                TEXT_ALIGN_LEFT,
                width, height);
 
-      menu_display_blend_begin(gl);
+      menu_display_blend_begin();
 
       /* set alpha components of color */
       color[3] = color[7] = color[11] = color[15] = (node->alpha > xmb->alpha) ? xmb->alpha : node->alpha;
@@ -1414,7 +1414,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                0,
                1, &color[0]);
 
-      menu_display_blend_end(gl);
+      menu_display_blend_end();
    }
 }
 
@@ -1434,7 +1434,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb,
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = (const float*)color;
 
-   menu_display_blend_begin(gl);
+   menu_display_blend_begin();
 
    menu_display_draw_frame(
          x - (xmb->cursor.size/2),
@@ -1444,7 +1444,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb,
          &coords, &mymat, xmb->textures.list[XMB_TEXTURE_POINTER].id,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
-   menu_display_blend_end(gl);
+   menu_display_blend_end();
 }
 
 static void xmb_render(void)
@@ -1518,7 +1518,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
       if (!node)
          continue;
 
-      menu_display_blend_begin(gl);
+      menu_display_blend_begin();
 
       /* set alpha components of color */
       color[3] = color[7] = color[11] = color[15] = (node->alpha > xmb->alpha) ? xmb->alpha : node->alpha;
@@ -1534,7 +1534,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
                node->zoom,
                &color[0]);
 
-      menu_display_blend_end(gl);
+      menu_display_blend_end();
    }
 }
 
@@ -1643,7 +1643,7 @@ static void xmb_frame(void)
    matrix_4x4_scale(&mscal, 1 /* scale_factor */, 1 /* scale_factor */, 1);
    matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
-   menu_display_blend_begin(gl);
+   menu_display_blend_begin();
 
    if (settings->menu.boxart_enable && xmb->boxart)
       xmb_draw_boxart(gl, xmb, &coord_color2[0], width, height);
