@@ -310,17 +310,16 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
 
    /* Assume libretro directory exists and check if stat works */
    ret = path_is_directory(settings->libretro_directory);
-   snprintf(tmp, sizeof(tmp), "Test 1: stat directory... %s",  ret ? "passed" : "failed");
+   snprintf(tmp, sizeof(tmp), "- stat directory... %s",  ret ? "passed" : "failed");
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Try to create a "test" subdirectory on top of libretro directory */
-   fill_pathname_join(tmp, settings->libretro_directory, "test", PATH_MAX_LENGTH);
+   fill_pathname_join(tmp, settings->libretro_directory, ".retroarch", PATH_MAX_LENGTH);
    ret = path_mkdir(tmp);
-   snprintf(tmp, sizeof(tmp), "Test 2: create a directory... %s",  ret ? "passed" : "failed");
+   snprintf(tmp, sizeof(tmp), "- create a directory... %s",  ret ? "passed" : "failed");
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
 
    menu_entries_push(info->list, "", "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
@@ -329,33 +328,65 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
    menu_entries_push(info->list, "Savefile Directory", "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    ret = path_is_directory(global->dir.savefile);
-   snprintf(tmp, sizeof(tmp), "Directory exists: %s",  ret ? "true" : "false");
+   snprintf(tmp, sizeof(tmp), "- directory name: %s", global->dir.savefile);
+   menu_entries_push(info->list, tmp, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   snprintf(tmp, sizeof(tmp), "- directory exists: %s",  ret ? "true" : "false");
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if save directory is writable */
-   fill_pathname_join(tmp, global->dir.savefile, "test", PATH_MAX_LENGTH);
+   fill_pathname_join(tmp, global->dir.savefile, ".retroarch", PATH_MAX_LENGTH);
    ret = path_mkdir(tmp);
-   snprintf(tmp, sizeof(tmp), "Directory writable: %s",  ret ? "true" : "false");
+   snprintf(tmp, sizeof(tmp), "- directory writable: %s",  ret ? "true" : "false");
    menu_entries_push(info->list, tmp, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   menu_entries_push(info->list, "", "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if state directory exists */
    menu_entries_push(info->list, "Savestate Directory", "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    ret = path_is_directory(global->dir.savestate);
-   snprintf(tmp, sizeof(tmp), "Directory exists: %s",  ret ? "true" : "false");
+   snprintf(tmp, sizeof(tmp), "- directory name: %s", global->dir.savestate);
+   menu_entries_push(info->list, tmp, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   snprintf(tmp, sizeof(tmp), "- directory exists: %s",  ret ? "true" : "false");
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if save directory is writable */
-   fill_pathname_join(tmp, global->dir.savestate, "test", PATH_MAX_LENGTH);
+   fill_pathname_join(tmp, global->dir.savestate, ".retroarch", PATH_MAX_LENGTH);
    ret = path_mkdir(tmp);
-   snprintf(tmp, sizeof(tmp), "Directory writable: %s",  ret ? "true" : "false");
+   snprintf(tmp, sizeof(tmp), "- directory writable: %s",  ret ? "true" : "false");
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   menu_entries_push(info->list, "", "",
+      MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   /* Check if system directory exists */
+   menu_entries_push(info->list, "System Directory", "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   ret = path_is_directory(settings->system_directory);
+   snprintf(tmp, sizeof(tmp), "- directory name: %s", settings->system_directory);
+   menu_entries_push(info->list, tmp, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   snprintf(tmp, sizeof(tmp), "- directory exists: %s",  ret ? "true" : "false");
+   menu_entries_push(info->list, tmp, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   /* Check if save directory is writable */
+   fill_pathname_join(tmp, settings->system_directory, ".retroarch", PATH_MAX_LENGTH);
+   ret = path_mkdir(tmp);
+   snprintf(tmp, sizeof(tmp), "- directory writable: %s",  ret ? "true" : "false");
+   menu_entries_push(info->list, tmp, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
    return 0;
 }
+
 
 static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 {
