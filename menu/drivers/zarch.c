@@ -198,13 +198,6 @@ static enum
    LAY_SETTINGS
 } layout = LAY_HOME;
 
-static const GRfloat zarch_tex_coords[] = {
-   0, 1,
-   1, 1,
-   0, 0,
-   1, 0
-};
-
 static void zarch_zui_font(menu_handle_t *menu)
 {
    int font_size;
@@ -346,8 +339,8 @@ static void zarch_zui_push_quad(unsigned width, unsigned height,
 
    coords.color         = colors;
    coords.vertex        = vertex;
-   coords.tex_coord     = zarch_tex_coords;
-   coords.lut_tex_coord = zarch_tex_coords;
+   coords.tex_coord     = menu_display_get_tex_coords();
+   coords.lut_tex_coord = menu_display_get_tex_coords();
    coords.vertices      = 3;
 
    gfx_coord_array_add(ca, &coords, 3);
@@ -1061,7 +1054,7 @@ static void zarch_frame(void)
          zui->width, zui->height,
          zui->textures.bg.id, 0.75f, false,
          &coord_color[0],   &coord_color2[0],
-         NULL, &zarch_tex_coords[0], 4,
+         NULL, menu_display_get_tex_coords(), 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    menu_display_font_flush_block(zui->menu, driver->font_osd_driver);

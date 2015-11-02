@@ -531,6 +531,11 @@ static const GRfloat gl_tex_coords[] = {
    1, 0
 };
 
+const GRfloat *menu_display_get_tex_coords(void)
+{
+   return &gl_tex_coords[0];
+}
+
 static GLenum menu_display_prim_to_gl_enum(enum menu_display_prim_type prim_type)
 {
    switch (prim_type)
