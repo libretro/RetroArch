@@ -232,7 +232,7 @@ else ifeq ($(LIBRETRO), fb_alpha)
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
 	
-else ifeq ($(LIBRETRO), mame078)
+else ifeq ($(LIBRETRO), mame2003)
 	APP_TITLE           = MAME
 	#APP_DESCRIPTION     = Retroarch 3DS
 	#APP_AUTHOR          = Team Libretro
