@@ -479,6 +479,9 @@ void menu_display_timedate(char *s, size_t len, unsigned time_mode)
       case 3: /* Time (hours-minutes) */
          strftime(s, len, "%H:%M", localtime(&time_));
          break;
+      case 4: /* Date and time, without year and seconds */
+         strftime(s, len, "%d/%m %H:%M", localtime(&time_));
+         break;
    }
 }
 
