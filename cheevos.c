@@ -21,6 +21,7 @@
 #include <rhash.h>
 #include <retro_log.h>
 #include <rthreads/async_job.h>
+#include <retro_miscellaneous.h>
 
 #include "cheevos.h"
 #include "dynamic.h"
@@ -1505,19 +1506,6 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
 #define CHEEVOS_SIX_MB   (6 * 1024 * 1024)
 #define CHEEVOS_EIGHT_MB (8 * 1024 * 1024)
 
-static INLINE unsigned next_power_of_2(unsigned n)
-{
-   n--;
-   
-   n |= n >> 1;
-   n |= n >> 2;
-   n |= n >> 4;
-   n |= n >> 8;
-   n |= n >> 16;
-   
-   return n + 1;
-}
-
 static size_t cheevos_eval_md5(const struct retro_game_info *info, MD5_CTX *ctx)
 {
    MD5_Init(ctx);
@@ -1678,7 +1666,7 @@ static unsigned cheevos_find_game_id_nes(const struct retro_game_info *info, ret
       return 0;
    
    if (header.rom_size)
-      rom_size = next_power_of_2(header.rom_size) * 16384;
+      rom_size = next_pow2(header.rom_size) * 16384;
    else
       rom_size = 4194304;
    
