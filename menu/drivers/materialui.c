@@ -1193,6 +1193,9 @@ static void materialui_preswitch_tabs(unsigned action)
    if (!materialui)
       return;
 
+   size_t idx  = 0;
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+
    menu_stack = menu_entries_get_menu_stack_ptr(0);
    stack_size = menu_stack->size;
 
