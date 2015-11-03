@@ -1041,6 +1041,8 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
    xmb->categories.x_pos = xmb->icon.spacing.horizontal *
       -(float)xmb->categories.selection_ptr;
 
+   xmb->x = xmb->icon.size * -(xmb->depth*2-2);
+
    for (i = 0; i < list_size; i++)
    {
       char iconpath[PATH_MAX_LENGTH]            = {0};
@@ -1899,6 +1901,35 @@ static void xmb_layout(menu_handle_t *menu, xmb_handle_t *xmb)
       node->label_alpha = ia;
       node->zoom        = iz;
       node->y           = xmb_item_y(xmb, i, current);
+   }
+
+   if (xmb->depth <= 1)
+      return;
+
+   current = xmb->selection_ptr_old;
+   end = file_list_get_size(xmb->selection_buf_old);
+
+   for (i = 0; i < end; i++)
+   {
+      float ia = 0;
+      float iz = XMB_ITEM_PASSIVE_ZOOM;
+      xmb_node_t *node = (xmb_node_t*)menu_entries_get_userdata_at_offset(
+            xmb->selection_buf_old, i);
+
+      if (!node)
+         continue;
+
+      if (i == current)
+      {
+         ia = XMB_ITEM_ACTIVE_ALPHA;
+         iz = XMB_ITEM_ACTIVE_ZOOM;
+      }
+
+      node->alpha       = ia;
+      node->label_alpha = 0;
+      node->zoom        = iz;
+      node->y           = xmb_item_y(xmb, i, current);
+      node->x           = xmb->icon.size * 1 * -2;
    }
 }
 
