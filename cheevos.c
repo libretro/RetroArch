@@ -1505,6 +1505,19 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
 #define CHEEVOS_SIX_MB   (6 * 1024 * 1024)
 #define CHEEVOS_EIGHT_MB (8 * 1024 * 1024)
 
+static INLINE unsigned next_power_of_2(unsigned n)
+{
+   n--;
+   
+   n |= n >> 1;
+   n |= n >> 2;
+   n |= n >> 4;
+   n |= n >> 8;
+   n |= n >> 16;
+   
+   return n + 1;
+}
+
 static size_t cheevos_eval_md5(const struct retro_game_info *info, MD5_CTX *ctx)
 {
    MD5_Init(ctx);
@@ -1624,7 +1637,93 @@ static unsigned cheevos_find_game_id_genesis(const struct retro_game_info *info,
 
 static unsigned cheevos_find_game_id_nes(const struct retro_game_info *info, retro_time_t timeout)
 {
-   return 0;
+   struct
+   {
+      uint8_t id[4]; /* NES^Z */
+      uint8_t rom_size;
+      uint8_t vrom_size;
+      uint8_t rom_type;
+      uint8_t rom_type2;
+      uint8_t reserve[8];
+   } header;
+   
+   size_t rom_size;
+   MD5_CTX ctx;
+   uint8_t hash[16];
+   retro_time_t to;
+   
+   if (info->data)
+   {
+      if (info->size < sizeof(header))
+         return 0;
+      
+      memcpy((void*)&header, info->data, sizeof(header));
+   }
+   else
+   {
+      RFILE *file = retro_fopen(info->path, RFILE_MODE_READ, 0);
+      ssize_t num_read;
+      
+      if (!file)
+         return 0;
+      
+      num_read = retro_fread(file, (void*)&header, sizeof(header));
+      retro_fclose(file);
+      
+      if (num_read < sizeof(header))
+         return 0;
+   }
+   
+   if (header.id[0] != 'N' || header.id[1] != 'E' || header.id[2] != 'S' || header.id[3] != 0x1a)
+      return 0;
+   
+   if (header.rom_size)
+      rom_size = next_power_of_2(header.rom_size) * 16384;
+   else
+      rom_size = 4194304;
+   
+   if (info->data)
+   {
+      if (rom_size + sizeof(header) > info->size)
+         return 0;
+      
+      MD5_Init(&ctx);
+      MD5_Update(&ctx, (void*)((char*)info->data + sizeof(header)), rom_size);
+      MD5_Final(hash, &ctx);
+   }
+   else
+   {
+      RFILE *file = retro_fopen(info->path, RFILE_MODE_READ, 0);
+      
+      if (!file)
+         return 0;
+      
+      MD5_Init(&ctx);
+      retro_fseek(file, sizeof(header), SEEK_SET);
+      
+      for (;;)
+      {
+         uint8_t buffer[4096];
+         ssize_t num_read = retro_fread(file, (void*)buffer, sizeof(buffer));
+         
+         if (num_read <= 0)
+            break;
+         
+         if (num_read >= rom_size)
+         {
+            MD5_Update(&ctx, (void*)buffer, rom_size);
+            break;
+         }
+         
+         MD5_Update(&ctx, (void*)buffer, num_read);
+         rom_size -= num_read;
+      }
+      
+      retro_fclose(file);
+   }
+   
+   to = timeout;
+   return cheevos_get_game_id(hash, &to);
 }
 
 int cheevos_load(const struct retro_game_info *info)
