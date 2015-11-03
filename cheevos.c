@@ -880,10 +880,8 @@ static int cheevos_parse(const char *json)
 Test all the achievements (call once per frame).
 *****************************************************************************/
 
-static const uint8_t *get_memory(unsigned offset)
+static const uint8_t *cheevos_get_memory(unsigned offset)
 {
-   static const uint8_t zeroes[4] = {0};
-   
    size_t size = core.retro_get_memory_size( RETRO_MEMORY_SYSTEM_RAM );
    uint8_t *memory;
 
@@ -920,7 +918,7 @@ static const uint8_t *get_memory(unsigned offset)
       return memory + offset;
    }
 
-   return zeroes;
+   return NULL;
 }
 
 static unsigned get_var_value(cheevos_var_t *var)
@@ -935,26 +933,32 @@ static unsigned get_var_value(cheevos_var_t *var)
    if (var->type == CHEEVOS_VAR_TYPE_ADDRESS || var->type == CHEEVOS_VAR_TYPE_DELTA_MEM)
    {
       /* TODO Check with Scott if the bank id is needed */
-      memory = get_memory(var->value);
-      live_val = memory[0];
-
-      if (var->size >= CHEEVOS_VAR_SIZE_BIT_0 && var->size <= CHEEVOS_VAR_SIZE_BIT_7)
-         live_val = (live_val & (1 << (var->size - CHEEVOS_VAR_SIZE_BIT_0))) != 0;
-      else if (var->size == CHEEVOS_VAR_SIZE_NIBBLE_LOWER)
-         live_val &= 0x0f;
-      else if (var->size == CHEEVOS_VAR_SIZE_NIBBLE_UPPER)
-         live_val = (live_val >> 4) & 0x0f;
-      else if (var->size == CHEEVOS_VAR_SIZE_EIGHT_BITS)
-         ; /* nothing */
-      else if (var->size == CHEEVOS_VAR_SIZE_SIXTEEN_BITS)
-         live_val |= memory[1] << 8;
-      else if (var->size == CHEEVOS_VAR_SIZE_THIRTYTWO_BITS)
+      memory = cheevos_get_memory(var->value);
+      
+      if (memory)
       {
-         live_val |= memory[1] << 8;
-         live_val |= memory[2] << 16;
-         live_val |= memory[3] << 24;
-      }
+         live_val = memory[0];
 
+         if (var->size >= CHEEVOS_VAR_SIZE_BIT_0 && var->size <= CHEEVOS_VAR_SIZE_BIT_7)
+            live_val = (live_val & (1 << (var->size - CHEEVOS_VAR_SIZE_BIT_0))) != 0;
+         else if (var->size == CHEEVOS_VAR_SIZE_NIBBLE_LOWER)
+            live_val &= 0x0f;
+         else if (var->size == CHEEVOS_VAR_SIZE_NIBBLE_UPPER)
+            live_val = (live_val >> 4) & 0x0f;
+         else if (var->size == CHEEVOS_VAR_SIZE_EIGHT_BITS)
+            ; /* nothing */
+         else if (var->size == CHEEVOS_VAR_SIZE_SIXTEEN_BITS)
+            live_val |= memory[1] << 8;
+         else if (var->size == CHEEVOS_VAR_SIZE_THIRTYTWO_BITS)
+         {
+            live_val |= memory[1] << 8;
+            live_val |= memory[2] << 16;
+            live_val |= memory[3] << 24;
+         }
+      }
+      else
+         live_val = 0;
+      
       if (var->type == CHEEVOS_VAR_TYPE_DELTA_MEM)
       {
          var->previous = live_val;
@@ -1741,10 +1745,18 @@ int cheevos_load(const struct retro_game_info *info)
    int i;
    const char *json;
    
+   cheevos_locals.loaded = 0;
+   
    /* Just return OK if cheevos are disabled. */
    if (!config_get_ptr()->cheevos.enable)
       return 0;
-      
+   
+   if (!cheevos_get_memory(0))
+   {
+      rarch_main_msg_queue_push("This core doesn't support achievements", 0, 5 * 60, false);
+      return -1;
+   }
+   
    for (i = 0; i < sizeof(finders) / sizeof(finders[0]); i++)
    {
       game_id = finders[i](info, 5000000);
@@ -1776,6 +1788,5 @@ int cheevos_load(const struct retro_game_info *info)
    else
       rarch_main_msg_queue_push("This game doesn't feature achievements", 0, 5 * 60, false);
    
-   cheevos_locals.loaded = 0;
    return -1;
 }
