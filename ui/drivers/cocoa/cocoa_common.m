@@ -110,9 +110,9 @@ void *glkitview_init(void);
 - (void)viewWillLayoutSubviews
 {
    UIInterfaceOrientation orientation = self.interfaceOrientation;
-   CGRect screenSize = [[UIScreen mainScreen] bounds];
-   float width       = ((int)orientation < 3) ? CGRectGetWidth(screenSize) : CGRectGetHeight(screenSize);
-   float height      = ((int)orientation < 3) ? CGRectGetHeight(screenSize) : CGRectGetWidth(screenSize);
+   CGRect screenSize = [[[UIScreen mainScreen] coordinateSpace] bounds];
+   float width       = CGRectGetWidth(screenSize);
+   float height      = CGRectGetHeight(screenSize);
    float tenpctw     = width / 10.0f;
    float tenpcth     = height / 10.0f;
    
