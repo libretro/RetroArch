@@ -213,6 +213,8 @@ static void ctr_check_dspfirm(void)
    }
 }
 
+void svchax_init(void);
+
 static void frontend_ctr_init(void *data)
 {
 #ifndef IS_SALAMANDER
@@ -224,9 +226,13 @@ static void frontend_ctr_init(void *data)
    APT_SetAppCpuTimeLimit(NULL, 80);
 #endif
    osSetSpeedupEnable(true);
-   gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);
+   gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);   
    gfxSet3D(false);
    consoleInit(GFX_BOTTOM, NULL);
+
+   /* enable access to all service calls when possible. */
+   svchax_init();
+
    audio_driver_t* dsp_audio_driver = &audio_ctr_dsp;
    if(csndInit() != 0)
    {

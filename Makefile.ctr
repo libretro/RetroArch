@@ -28,6 +28,7 @@ OBJS += ctr/stack_adjust.o
 OBJS += ctr/ctr_system.o
 OBJS += ctr/ctr_memory.o
 OBJS += ctr/ctr_linear.o
+OBJS += ctr/ctr_svchax.o
 
 ifeq ($(GRIFFIN_BUILD), 1)
 	OBJS += griffin/griffin.o
