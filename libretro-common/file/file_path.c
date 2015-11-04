@@ -381,7 +381,8 @@ void fill_pathname_basedir(char *out_dir,
 void fill_pathname_parent_dir(char *out_dir,
       const char *in_dir, size_t size)
 {
-   retro_assert(strlcpy(out_dir, in_dir, size) < size);
+   if (out_dir != in_dir)
+      retro_assert(strlcpy(out_dir, in_dir, size) < size);
    path_parent_dir(out_dir);
 }
 
