@@ -26,6 +26,10 @@
 #include "rewind.h"
 #include "performance.h"
 
+/* This makes Valgrind throw errors if a core overflows its savestate size. */
+/* Keep it off unless you're chasing a core bug, it slows things down. */
+#define STRICT_BUF_SIZE 0
+
 #ifndef UINT16_MAX
 #define UINT16_MAX 0xffff
 #endif
@@ -66,6 +70,10 @@ struct state_manager
 
    unsigned entries;
    bool thisblock_valid;
+#if STRICT_BUF_SIZE
+   size_t debugsize;
+   uint8_t *debugblock;
+#endif
 };
 
 /* Format per frame (pseudocode): */
@@ -87,8 +95,6 @@ repeat {
 }
 size thisstart;
 #endif
-
-static bool frame_is_reversed;
 
 size_t state_manager_raw_maxsize(size_t uncomp)
 {
@@ -411,6 +417,11 @@ state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
    state->head = state->data + sizeof(size_t);
    state->tail = state->data + sizeof(size_t);
 
+#if STRICT_BUF_SIZE
+   state->debugsize = state_size;
+   state->debugblock = (uint8_t*)malloc(state_size);
+#endif
+
    return state;
 
 error:
@@ -426,6 +437,9 @@ void state_manager_free(state_manager_t *state)
    free(state->data);
    free(state->thisblock);
    free(state->nextblock);
+#if STRICT_BUF_SIZE
+   free(state->debugblock);
+#endif
    free(state);
 }
 
@@ -478,10 +492,17 @@ void state_manager_push_where(state_manager_t *state, void **data)
    }
    
    *data = state->nextblock;
+#if STRICT_BUF_SIZE
+   *data = state->debugblock;
+#endif
 }
 
 void state_manager_push_do(state_manager_t *state)
 {
+#if STRICT_BUF_SIZE
+   memcpy(state->nextblock, state->debugblock, state->debugsize);
+#endif
+
    static struct retro_perf_counter gen_deltas = {0};
    uint8_t *swap = NULL;
 
@@ -593,6 +614,8 @@ void init_rewind(void)
    core.retro_serialize(state, global->rewind.size);
    state_manager_push_do(global->rewind.state);
 }
+
+static bool frame_is_reversed;
 
 bool state_manager_frame_is_reversed(void)
 {
