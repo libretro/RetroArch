@@ -309,10 +309,11 @@ static int cheevos_get_value(const char *json, unsigned key_hash, char *value, s
 
    ud.key_hash = key_hash;
    ud.is_key = 0;
+   ud.value = NULL;
    ud.length = 0;
    *value = 0;
 
-   if (jsonsax_parse(json, &handlers, (void*)&ud) == JSONSAX_OK && ud.length < length)
+   if (jsonsax_parse(json, &handlers, (void*)&ud) == JSONSAX_OK && ud.value && ud.length < length)
    {
       strncpy(value, ud.value, length);
       value[ud.length] = 0;
