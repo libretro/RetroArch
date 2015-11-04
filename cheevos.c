@@ -882,7 +882,7 @@ Test all the achievements (call once per frame).
 
 static const uint8_t *cheevos_get_memory(unsigned offset)
 {
-   size_t size = core.retro_get_memory_size( RETRO_MEMORY_SYSTEM_RAM );
+   size_t size = core.retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
    uint8_t *memory;
 
    if (offset < size)
@@ -1563,7 +1563,7 @@ static void cheevos_fill_md5(size_t size, size_t total, MD5_CTX *ctx)
    
    memset((void*)buffer, 0, sizeof(buffer));
 
-   do
+   while (fill > 0)
    {
       ssize_t len = sizeof(buffer);
 
@@ -1573,7 +1573,6 @@ static void cheevos_fill_md5(size_t size, size_t total, MD5_CTX *ctx)
       MD5_Update(ctx, (void*)buffer, len);
       fill -= len;
    }
-   while (fill > 0);
 }
 
 typedef unsigned (*cheevos_id_finder_t)(const struct retro_game_info *, retro_time_t);
@@ -1750,6 +1749,7 @@ int cheevos_load(const struct retro_game_info *info)
    
    retro_time_t timeout = 5000000;
    unsigned game_id = 0;
+   size_t memory;
    int i;
    const char *json;
    
@@ -1759,7 +1759,12 @@ int cheevos_load(const struct retro_game_info *info)
    if (!config_get_ptr()->cheevos.enable)
       return 0;
    
-   if (!cheevos_get_memory(0))
+   memory  = core.retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
+   memory += core.retro_get_memory_size(RETRO_MEMORY_VIDEO_RAM);
+   memory += core.retro_get_memory_size(RETRO_MEMORY_RTC);
+   memory += core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+   
+   if (!memory)
    {
       rarch_main_msg_queue_push("This core doesn't support achievements", 0, 5 * 60, false);
       return -1;
