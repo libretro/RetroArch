@@ -69,6 +69,7 @@ typedef struct mui_handle
 {
    unsigned tabs_height;
    unsigned line_height;
+   unsigned shadow_height;
    unsigned icon_size;
    unsigned margin;
    unsigned glyph_width;
@@ -814,7 +815,7 @@ static void mui_frame(void)
    }
 
    mui_render_quad(0, header_height, width,
-         header_height/12,
+         mui->shadow_height,
          width, height,
          &shadow_bg[0]);
 
@@ -914,13 +915,14 @@ static void mui_layout(menu_handle_t *menu, mui_handle_t *mui)
       size proportional to the display width. */
    menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
 
-   new_header_height       = scale_factor / 3;
-   new_font_size           = scale_factor / 9;
+   new_header_height  = scale_factor / 3;
+   new_font_size      = scale_factor / 9;
 
-   mui->tabs_height = scale_factor / 3;
-   mui->line_height = scale_factor / 3;
-   mui->margin      = scale_factor / 9;
-   mui->icon_size   = scale_factor / 3;
+   mui->shadow_height = scale_factor / 36;
+   mui->tabs_height   = scale_factor / 3;
+   mui->line_height   = scale_factor / 3;
+   mui->margin        = scale_factor / 9;
+   mui->icon_size     = scale_factor / 3;
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &new_header_height);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,     &new_font_size);
@@ -1034,7 +1036,7 @@ static bool mui_load_image(void *data, menu_image_type_t type)
       case MENU_IMAGE_WALLPAPER:
          mui_context_bg_destroy(mui);
 
-         mui->textures.bg.id   = menu_display_texture_load(data,
+         mui->textures.bg.id = menu_display_texture_load(data,
                TEXTURE_FILTER_MIPMAP_LINEAR);
          mui_allocate_white_texture(mui);
          break;
