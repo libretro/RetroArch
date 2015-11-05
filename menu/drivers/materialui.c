@@ -925,24 +925,24 @@ static void materialui_layout(menu_handle_t *menu, materialui_handle_t *material
    video_driver_get_size(&width, &height);
 
    /* Mobiles platforms may have very small display metrics coupled to a high
-      resolution, so we should be dpi aware to ensure the entries hitboxes are big
-      enough. On desktops, we just care about readability, with every widget size
-      proportional to the display width. */
+      resolution, so we should be dpi aware to ensure the entries hitboxes are
+      big enough. On desktops, we just care about readability, with every widget
+      size proportional to the display width. */
    menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
 
-   new_header_height            = scale_factor / 3;
-   new_font_size                = scale_factor / 9;
+   new_header_height       = scale_factor / 3;
+   new_font_size           = scale_factor / 9;
 
-   materialui->tabs_height            = scale_factor / 3;
-   materialui->line_height            = scale_factor / 3;
-   materialui->margin                 = scale_factor / 9;
-   materialui->icon_size              = scale_factor / 3;
+   materialui->tabs_height = scale_factor / 3;
+   materialui->line_height = scale_factor / 3;
+   materialui->margin      = scale_factor / 9;
+   materialui->icon_size   = scale_factor / 3;
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &new_header_height);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,     &new_font_size);
 
    /* we assume the average glyph aspect ratio is close to 3:4 */
-   materialui->glyph_width            = new_font_size * 3/4;
+   materialui->glyph_width = new_font_size * 3/4;
 
    materialui_font(menu);
 
@@ -950,7 +950,7 @@ static void materialui_layout(menu_handle_t *menu, materialui_handle_t *material
 
    if (fb_buf) /* calculate a more realistic ticker_limit */
    {
-      driver_t *driver   = driver_get_ptr();
+      driver_t *driver = driver_get_ptr();
       int m_width = driver->font_osd_driver->get_message_width(fb_buf, "a", 1, 1);
 
       if (m_width)
@@ -960,8 +960,8 @@ static void materialui_layout(menu_handle_t *menu, materialui_handle_t *material
 
 static void *materialui_init(void)
 {
-   materialui_handle_t *materialui                     = NULL;
-   menu_handle_t     *menu                 = (menu_handle_t*)
+   materialui_handle_t *materialui = NULL;
+   menu_handle_t             *menu = (menu_handle_t*)
       calloc(1, sizeof(*menu));
 
    if (!menu)
@@ -970,12 +970,12 @@ static void *materialui_init(void)
    if (!menu_display_check_compatibility((enum menu_display_driver_type)menu_ctx_materialui.type))
       goto error;
 
-   menu->userdata       = (materialui_handle_t*)calloc(1, sizeof(materialui_handle_t));
+   menu->userdata = (materialui_handle_t*)calloc(1, sizeof(materialui_handle_t));
 
    if (!menu->userdata)
       goto error;
 
-   materialui                         = (materialui_handle_t*)menu->userdata;
+   materialui = (materialui_handle_t*)menu->userdata;
 
    materialui_layout(menu, materialui);
    materialui_allocate_white_texture(materialui);
@@ -991,7 +991,7 @@ static void materialui_free(void *data)
 {
    menu_handle_t *menu                     = (menu_handle_t*)data;
    driver_t      *driver                   = driver_get_ptr();
-   materialui_handle_t *materialui                     = (materialui_handle_t*)menu->userdata;
+   materialui_handle_t *materialui         = (materialui_handle_t*)menu->userdata;
    const struct font_renderer *font_driver = driver ? (const struct font_renderer*)
       driver->font_osd_driver : NULL;
 
@@ -1070,10 +1070,10 @@ static bool materialui_load_image(void *data, menu_image_type_t type)
 static float materialui_get_scroll(void)
 {
    size_t selection;
-   unsigned width, height;
-   int half = 0;
-   materialui_handle_t *materialui    = NULL;
-   menu_handle_t *menu    = menu_driver_get_ptr();
+   unsigned          width, height = 0;
+   int                        half = 0;
+   materialui_handle_t *materialui = NULL;
+   menu_handle_t             *menu = menu_driver_get_ptr();
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;
@@ -1116,7 +1116,7 @@ static void materialui_navigation_clear(bool pending_push)
       return;
 
    menu_entries_set_start(0);
-   menu->scroll_y      = 0;
+   menu->scroll_y = 0;
 }
 
 static void materialui_navigation_set_last(void)
@@ -1136,20 +1136,20 @@ static void materialui_populate_entries(const char *path,
    if (!menu)
       return;
 
-   menu->scroll_y      = materialui_get_scroll();
+   menu->scroll_y = materialui_get_scroll();
 }
 
 static void materialui_context_reset(void)
 {
    char iconpath[PATH_MAX_LENGTH]  = {0};
-   materialui_handle_t *materialui   = NULL;
+   materialui_handle_t *materialui = NULL;
    menu_handle_t *menu   = menu_driver_get_ptr();
    settings_t *settings  = config_get_ptr();
 
    if (!menu || !menu->userdata || !settings)
       return;
 
-   materialui      = (materialui_handle_t*)menu->userdata;
+   materialui = (materialui_handle_t*)menu->userdata;
    if (!materialui)
       return;
 
@@ -1193,7 +1193,7 @@ static void materialui_preswitch_tabs(unsigned action)
    if (!materialui)
       return;
 
-   size_t idx  = 0;
+   size_t idx = 0;
    menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
 
    menu_stack = menu_entries_get_menu_stack_ptr(0);
@@ -1231,8 +1231,8 @@ static void materialui_preswitch_tabs(unsigned action)
 static void materialui_list_cache(menu_list_type_t type, unsigned action)
 {
    size_t list_size;
-   materialui_handle_t      *materialui = NULL;
-   menu_handle_t      *menu = menu_driver_get_ptr();
+   materialui_handle_t *materialui = NULL;
+   menu_handle_t             *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -1283,8 +1283,8 @@ static void materialui_list_cache(menu_list_type_t type, unsigned action)
 static int materialui_list_push(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = -1;
-   menu_handle_t *menu   = menu_driver_get_ptr();
-   global_t    *global   = global_get_ptr();
+   menu_handle_t *menu = menu_driver_get_ptr();
+   global_t    *global = global_get_ptr();
 
    switch (type)
    {
@@ -1363,7 +1363,7 @@ static int materialui_list_push(menu_displaylist_info_t *info, unsigned type)
 static size_t materialui_list_get_selection(void *data)
 {
    menu_handle_t *menu    = (menu_handle_t*)data;
-   materialui_handle_t *materialui      = menu ? (materialui_handle_t*)menu->userdata : NULL;
+   materialui_handle_t *materialui = menu ? (materialui_handle_t*)menu->userdata : NULL;
 
    if (!materialui)
       return 0;
@@ -1379,7 +1379,7 @@ static int materialui_pointer_tap(unsigned x, unsigned y,
    unsigned header_height, width, height, i;
    bool scroll                = false;
    menu_handle_t *menu        = menu_driver_get_ptr();
-   materialui_handle_t *materialui        = menu ? (materialui_handle_t*)menu->userdata : NULL;
+   materialui_handle_t *materialui = menu ? (materialui_handle_t*)menu->userdata : NULL;
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
