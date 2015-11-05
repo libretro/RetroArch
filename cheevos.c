@@ -1197,7 +1197,7 @@ static int cheevos_login(retro_time_t *timeout)
 
 static void cheevo_unlocker(void *payload)
 {
-   cheevo_t *cheevo = (cheevo_t*)payload;
+   unsigned cheevo_id = (unsigned)(uintptr_t)payload;
    char request[256];
    const char *result;
 
@@ -1206,19 +1206,19 @@ static void cheevo_unlocker(void *payload)
       snprintf(
          request, sizeof(request),
          "http://retroachievements.org/dorequest.php?r=awardachievement&u=%s&t=%s&a=%u&h=%d",
-         config_get_ptr()->cheevos.username, cheevos_locals.token, cheevo->id, 0
+         config_get_ptr()->cheevos.username, cheevos_locals.token, cheevo_id, 0
       );
 
       request[sizeof(request) - 1] = 0;
-      RARCH_LOG("CHEEVOS awarding achievement %u: %s\n", cheevo->id, request);
+      RARCH_LOG("CHEEVOS awarding achievement %u: %s\n", cheevo_id, request);
 
       if (!http_get(&result, NULL, request, NULL))
       {
-         RARCH_LOG("CHEEVOS awarded achievement %u: %s\n", cheevo->id, result);
+         RARCH_LOG("CHEEVOS awarded achievement %u: %s\n", cheevo_id, result);
          free((void*)result);
       }
       else
-         RARCH_LOG("CHEEVOS error awarding achievement %u\n", cheevo->id);
+         RARCH_LOG("CHEEVOS error awarding achievement %u\n", cheevo_id);
    }
 }
 
@@ -1237,7 +1237,7 @@ static void test_cheevo_set(const cheevoset_t *set)
          rarch_main_msg_queue_push(cheevo->title, 0, 3 * 60, false);
          rarch_main_msg_queue_push(cheevo->description, 0, 5 * 60, false);
 
-         async_job_add(cheevos_locals.jobs, cheevo_unlocker, (void*)cheevo);
+         async_job_add(cheevos_locals.jobs, cheevo_unlocker, (void*)(uintptr_t)cheevo->id);
 
          cheevo->active = 0;
       }
@@ -1348,8 +1348,7 @@ static unsigned cheevos_get_game_id(unsigned char *hash, retro_time_t *timeout)
 
    snprintf(
       request, sizeof(request),
-      "http://retroachievements.org/dorequest.php?r=gameid&u=%s&m=%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
-      config_get_ptr()->cheevos.username,
+      "http://retroachievements.org/dorequest.php?r=gameid&m=%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
       hash[ 0], hash[ 1], hash[ 2], hash[ 3],
       hash[ 4], hash[ 5], hash[ 6], hash[ 7],
       hash[ 8], hash[ 9], hash[10], hash[11],
@@ -1374,12 +1373,13 @@ static unsigned cheevos_get_game_id(unsigned char *hash, retro_time_t *timeout)
    return 0;
 }
 
-static int cheevos_playing_activity(unsigned game_id, retro_time_t *timeout)
+static void cheevo_playing(void *payload)
 {
+   unsigned game_id = (unsigned)(uintptr_t)payload;
    char request[256];
    const char* json;
    
-   if (!cheevos_login(timeout))
+   if (!cheevos_login(NULL))
    {
       snprintf(
          request, sizeof(request),
@@ -1389,17 +1389,15 @@ static int cheevos_playing_activity(unsigned game_id, retro_time_t *timeout)
 
       request[sizeof(request) - 1] = 0;
 
-      if (!http_get(&json, NULL, request, timeout))
+      if (!http_get(&json, NULL, request, NULL))
       {
          free((void*)json);
          RARCH_LOG("CHEEVOS posted playing game %u activity\n", game_id);
-         return 0;
+         return;
       }
       else
          RARCH_LOG("CHEEVOS error posting playing game %u activity\n", game_id);
    }
-   
-   return -1;
 }
 
 typedef struct
@@ -1576,8 +1574,6 @@ static void cheevos_fill_md5(size_t size, size_t total, MD5_CTX *ctx)
    }
 }
 
-typedef unsigned (*cheevos_id_finder_t)(const struct retro_game_info *, retro_time_t);
-
 static unsigned cheevos_find_game_id_generic(const struct retro_game_info *info, retro_time_t timeout)
 {
    MD5_CTX ctx;
@@ -1730,28 +1726,56 @@ static unsigned cheevos_find_game_id_nes(const struct retro_game_info *info, ret
    return cheevos_get_game_id(hash, &to);
 }
 
+typedef struct
+{
+   unsigned (*finder)(const struct retro_game_info *, retro_time_t);
+   const char *name;
+   const uint32_t *ext_hashes;
+} cheevos_finder_t;
+
 int cheevos_load(const struct retro_game_info *info)
 {
-   static const cheevos_id_finder_t finders[] =
+   static const uint32_t genesis_exts[] =
    {
-      cheevos_find_game_id_genesis,
-      cheevos_find_game_id_generic,
-      cheevos_find_game_id_snes,
-      cheevos_find_game_id_nes,
+      0x0b888feeU, /* mdx */
+      0x005978b6U, /* md  */
+      0x0b88aa89U, /* smd */
+      0x0b88767fU, /* gen */
+      0x0b8861beU, /* bin */
+      0x0b886782U, /* cue */
+      0x0b8880d0U, /* iso */
+      0x0b88aa98U, /* sms */
+      0x005977f3U, /* gg  */
+      0x0059797fU, /* sg  */
+      0
    };
    
-   static const char *finders_names[] =
+   static const uint32_t snes_exts[] =
    {
-      "Genesis (6Mb padding)",
-      "Generic (plain content)",
-      "SNES (8Mb padding)",
-      "NES (discards VROM)",
+      0x0b88aa88U, /* smc */
+      0x0b8872bbU, /* fig */
+      0x0b88a9a1U, /* sfc */
+      0x0b887623U, /* gd3 */
+      0x0b887627U, /* gd7 */
+      0x0b886bf3U, /* dx2 */
+      0x0b886312U, /* bsx */
+      0x0b88abd2U, /* swc */
+      0
+   };
+   
+   static cheevos_finder_t finders[] =
+   {
+      {cheevos_find_game_id_snes,    "SNES (8Mb padding)",      snes_exts},
+      {cheevos_find_game_id_genesis, "Genesis (6Mb padding)",   genesis_exts},
+      {cheevos_find_game_id_nes,     "NES (discards VROM)",     NULL},
+      {cheevos_find_game_id_generic, "Generic (plain content)", NULL},
    };
    
    retro_time_t timeout = 5000000;
    unsigned game_id = 0;
    size_t memory;
-   int i;
+   struct retro_system_info sysinfo;
+   const char *ext;
    const char *json;
    
    cheevos_locals.loaded = 0;
@@ -1768,40 +1792,82 @@ int cheevos_load(const struct retro_game_info *info)
    if (!memory)
    {
       rarch_main_msg_queue_push("This core doesn't support achievements", 0, 5 * 60, false);
-      return -1;
+      //return -1;
    }
    
-   for (i = 0; i < sizeof(finders) / sizeof(finders[0]); i++)
-   {
-      RARCH_LOG("CHEEVOS trying method %s\n", finders_names[i]);
-      game_id = finders[i](info, 5000000);
-      
-      if (game_id)
-         break;
-   }
+   /* The the supported extensions as a hint to what method we should use. */
    
-   if (game_id)
+   core.retro_get_system_info(&sysinfo);
+   ext = sysinfo.valid_extensions;
+   
+   while (ext)
    {
-      cheevos_playing_activity(game_id, &timeout);
+      const char *end = strchr(ext, '|');
+      unsigned hash;
+      int i, j;
       
-      if (!cheevos_get_by_game_id(&json, game_id, &timeout))
+      if (end)
+         hash = cheevos_djb2(ext, end - ext);
+      else
+         hash = cheevos_djb2(ext, strlen(ext));
+      
+      ext = end + (end != NULL);
+      
+      for (i = 0; i < sizeof(finders) / sizeof(finders[0]); i++)
       {
-         if (!cheevos_parse(json))
+         if (finders[i].ext_hashes)
          {
-            cheevos_deactivate_unlocks(game_id, &timeout);
-            free((void*)json);
-            cheevos_locals.loaded = 1;
-            
-            return 0;
+            for (j = 0; finders[i].ext_hashes[j]; j++)
+            {
+               if (finders[i].ext_hashes[j] == hash)
+               {
+                  RARCH_LOG("CHEEVOS testing %s\n", finders[i].name);
+                  
+                  game_id = finders[i].finder(info, 5000000);
+                  
+                  if (game_id)
+                     goto found;
+                  
+                  break;
+               }
+            }
          }
-         
-         free((void*)json);
       }
       
-      rarch_main_msg_queue_push("Error loading achievements", 0, 5 * 60, false);
+      for (i = 0; i < sizeof(finders) / sizeof(finders[0]); i++)
+      {
+         if (!finders[i].ext_hashes)
+         {
+            RARCH_LOG("CHEEVOS testing %s\n", finders[i].name);
+            
+            game_id = finders[i].finder(info, 5000000);
+            
+            if (game_id)
+               goto found;
+         }
+      }
    }
-   else
-      rarch_main_msg_queue_push("This game doesn't feature achievements", 0, 5 * 60, false);
    
+   rarch_main_msg_queue_push("This game doesn't feature achievements", 0, 5 * 60, false);
+   return -1;
+   
+   found:
+   
+   if (!cheevos_get_by_game_id(&json, game_id, &timeout))
+   {
+      if (!cheevos_parse(json))
+      {
+         cheevos_deactivate_unlocks(game_id, &timeout);
+         free((void*)json);
+         cheevos_locals.loaded = 1;
+         
+         async_job_add(cheevos_locals.jobs, cheevo_playing, (void*)(uintptr_t)game_id);
+         return 0;
+      }
+      
+      free((void*)json);
+   }
+   
+   rarch_main_msg_queue_push("Error loading achievements", 0, 5 * 60, false);
    return -1;
 }
