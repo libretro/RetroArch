@@ -691,7 +691,6 @@ static void mui_frame(void)
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
-
    if (libretro_running)
    {
       menu_display_frame_background(
@@ -750,10 +749,7 @@ static void mui_frame(void)
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    /* header */
-   mui_render_quad( 0, 0, width,
-         header_height,
-         width, height,
-         &blue_bg[0]);
+   mui_render_quad( 0, 0, width, header_height, width, height, &blue_bg[0]);
 
    /* display tabs if depth equal one, if not hide them */
    if (mui_list_get_size(menu, MENU_LIST_PLAIN) == 1)
@@ -761,7 +757,7 @@ static void mui_frame(void)
       float scale_factor;
       menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
 
-      mui->tabs_height            = scale_factor / 3;
+      mui->tabs_height = scale_factor / 3;
 
       /* tabs background */
       mui_render_quad(0, height - mui->tabs_height, width,
