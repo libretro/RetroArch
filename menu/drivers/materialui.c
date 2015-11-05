@@ -213,7 +213,7 @@ static void mui_blit_line(float x, float y, unsigned width, unsigned height,
    video_driver_set_osd_msg(message, &params, fb_buf);
 }
 
-static void mui_render_quad(int x, int y, int w, int h,
+static void mui_render_quad(int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       GRfloat *coord_color)
 {
@@ -338,7 +338,7 @@ end:
 static void mui_render(void)
 {
    float delta_time, dt;
-   int bottom;
+   unsigned bottom;
    unsigned width, height, header_height;
    mui_handle_t *mui    = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
@@ -948,7 +948,7 @@ static void mui_layout(menu_handle_t *menu, mui_handle_t *mui)
    if (fb_buf) /* calculate a more realistic ticker_limit */
    {
       driver_t *driver = driver_get_ptr();
-      int m_width = driver->font_osd_driver->get_message_width(fb_buf, "a", 1, 1);
+      unsigned m_width = driver->font_osd_driver->get_message_width(fb_buf, "a", 1, 1);
 
       if (m_width)
          mui->glyph_width = m_width;
@@ -1067,10 +1067,9 @@ static bool mui_load_image(void *data, menu_image_type_t type)
 static float mui_get_scroll(void)
 {
    size_t selection;
-   unsigned width, height = 0;
-   int half               = 0;
-   mui_handle_t *mui      = NULL;
-   menu_handle_t    *menu = menu_driver_get_ptr();
+   unsigned width, height, half = 0;
+   mui_handle_t *mui            = NULL;
+   menu_handle_t    *menu       = menu_driver_get_ptr();
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;
@@ -1085,7 +1084,7 @@ static float mui_get_scroll(void)
    if (mui->line_height)
       half = (height / mui->line_height) / 2;
 
-   if (selection < (unsigned)half)
+   if (selection < half)
       return 0;
 
    return ((selection + 2 - half) * mui->line_height);
