@@ -958,8 +958,7 @@ static void mui_layout(menu_handle_t *menu, mui_handle_t *mui)
 static void *mui_init(void)
 {
    mui_handle_t   *mui = NULL;
-   menu_handle_t *menu = (menu_handle_t*)
-      calloc(1, sizeof(*menu));
+   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
       goto error;
@@ -988,11 +987,11 @@ static void mui_free(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
    driver_t *driver    = driver_get_ptr();
-   mui_handle_t *mui   = (mui_handle_t*)menu->userdata;
-   const struct font_renderer *font_driver = driver ? (const struct font_renderer*)
-      driver->font_osd_driver : NULL;
+   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
+   const struct font_renderer *font_driver = driver ?
+         (const struct font_renderer*)driver->font_osd_driver : NULL;
 
-   if (!mui || !menu)
+   if (!mui)
       return;
 
    gfx_coord_array_free(&mui->list_block.carr);
@@ -1017,13 +1016,8 @@ static void mui_context_bg_destroy(mui_handle_t *mui)
 static void mui_context_destroy(void)
 {
    unsigned i;
-   mui_handle_t *mui   = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
-
-   if (!menu || !menu->userdata)
-      return;
-
-   mui = (mui_handle_t*)menu->userdata;
+   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
 
    if (!mui)
       return;
@@ -1140,15 +1134,11 @@ static void mui_populate_entries(const char *path,
 static void mui_context_reset(void)
 {
    char iconpath[PATH_MAX_LENGTH] = {0};
-   mui_handle_t *mui              = NULL;
    menu_handle_t *menu            = menu_driver_get_ptr();
+   mui_handle_t *mui              = menu ? (mui_handle_t*)menu->userdata : NULL;
    settings_t *settings           = config_get_ptr();
 
-   if (!menu || !menu->userdata || !settings)
-      return;
-
-   mui = (mui_handle_t*)menu->userdata;
-   if (!mui)
+   if (!mui || !settings)
       return;
 
    fill_pathname_join(iconpath, settings->assets_directory,
@@ -1180,13 +1170,8 @@ static void mui_preswitch_tabs(unsigned action)
 {
    size_t stack_size       = 0;
    file_list_t *menu_stack = NULL;
-   mui_handle_t *mui       = NULL;
    menu_handle_t *menu     = menu_driver_get_ptr();
-
-   if (!menu)
-      return;
-
-   mui = (mui_handle_t*)menu->userdata;
+   mui_handle_t *mui       = menu ? (mui_handle_t*)menu->userdata : NULL;
 
    if (!mui)
       return;
@@ -1229,13 +1214,8 @@ static void mui_preswitch_tabs(unsigned action)
 static void mui_list_cache(menu_list_type_t type, unsigned action)
 {
    size_t list_size;
-   mui_handle_t *mui   = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
-
-   if (!menu)
-      return;
-
-   mui = (mui_handle_t*)menu->userdata;
+   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
 
    if (!mui)
       return;
