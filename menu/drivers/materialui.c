@@ -70,6 +70,7 @@ typedef struct mui_handle
    unsigned tabs_height;
    unsigned line_height;
    unsigned shadow_height;
+   unsigned scrollbar_width;
    unsigned icon_size;
    unsigned margin;
    unsigned glyph_width;
@@ -245,7 +246,7 @@ static void mui_render_quad(int x, int y, unsigned w, unsigned h,
 static void mui_draw_scrollbar(unsigned width, unsigned height, GRfloat *coord_color)
 {
    unsigned header_height;
-   float content_height, total_height, scrollbar_width, scrollbar_height, y;
+   float content_height, total_height, scrollbar_height, scrollbar_margin, y;
    mui_handle_t *mui  = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
 
@@ -254,22 +255,27 @@ static void mui_draw_scrollbar(unsigned width, unsigned height, GRfloat *coord_c
 
    menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
-   mui                 = (mui_handle_t*)menu->userdata;
-   content_height       = menu_entries_get_end() * mui->line_height;
-   total_height         = height - header_height - mui->tabs_height;
-   scrollbar_height     = total_height / (content_height / total_height) - (header_height / 6);
-   y                    = total_height * menu->scroll_y / content_height;
+   mui              = (mui_handle_t*)menu->userdata;
+   content_height   = menu_entries_get_end() * mui->line_height;
+   total_height     = height - header_height - mui->tabs_height;
+   scrollbar_margin = mui->scrollbar_width;
+   scrollbar_height = total_height / (content_height / total_height);
+   y                = total_height * menu->scroll_y / content_height;
+
+   /* apply a margin on the top and bottom of the scrollbar for aestetic */
+   scrollbar_height -= scrollbar_margin * 2;
+   y += scrollbar_margin;
 
    if (content_height >= total_height)
    {
-      scrollbar_width  = (header_height / 12);
-      if (scrollbar_height <= header_height / 12)
-         scrollbar_height = header_height / 12;
+      /* if the scrollbar is extremely short, display it as a square */
+      if (scrollbar_height <= mui->scrollbar_width)
+         scrollbar_height = mui->scrollbar_width;
 
       mui_render_quad(
-            width - scrollbar_width - (header_height / 12),
-            header_height + y + (header_height / 12),
-            scrollbar_width,
+            width - mui->scrollbar_width - scrollbar_margin,
+            header_height + y,
+            mui->scrollbar_width,
             scrollbar_height,
             width, height,
             coord_color);
@@ -915,14 +921,15 @@ static void mui_layout(menu_handle_t *menu, mui_handle_t *mui)
       size proportional to the display width. */
    menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
 
-   new_header_height  = scale_factor / 3;
-   new_font_size      = scale_factor / 9;
+   new_header_height    = scale_factor / 3;
+   new_font_size        = scale_factor / 9;
 
-   mui->shadow_height = scale_factor / 36;
-   mui->tabs_height   = scale_factor / 3;
-   mui->line_height   = scale_factor / 3;
-   mui->margin        = scale_factor / 9;
-   mui->icon_size     = scale_factor / 3;
+   mui->shadow_height   = scale_factor / 36;
+   mui->scrollbar_width = scale_factor / 36;
+   mui->tabs_height     = scale_factor / 3;
+   mui->line_height     = scale_factor / 3;
+   mui->margin          = scale_factor / 9;
+   mui->icon_size       = scale_factor / 3;
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &new_header_height);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,     &new_font_size);
