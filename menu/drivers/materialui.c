@@ -247,15 +247,14 @@ static void mui_draw_scrollbar(unsigned width, unsigned height, GRfloat *coord_c
 {
    unsigned header_height;
    float content_height, total_height, scrollbar_height, scrollbar_margin, y;
-   mui_handle_t *mui  = NULL;
-   menu_handle_t *menu  = menu_driver_get_ptr();
+   menu_handle_t *menu = menu_driver_get_ptr();
+   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
 
-   if (!menu)
+   if (!mui)
       return;
 
    menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
-   mui              = (mui_handle_t*)menu->userdata;
    content_height   = menu_entries_get_end() * mui->line_height;
    total_height     = height - header_height - mui->tabs_height;
    scrollbar_margin = mui->scrollbar_width;
@@ -284,25 +283,18 @@ static void mui_draw_scrollbar(unsigned width, unsigned height, GRfloat *coord_c
 
 static void mui_get_message(const char *message)
 {
-   mui_handle_t *mui = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
+   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
 
-   if (!menu)
+   if (!mui || !message || !*message)
       return;
 
-   if (!message || !*message)
-      return;
-
-   mui = (mui_handle_t*)menu->userdata;
-
-   if (mui)
-      strlcpy(mui->box_message, message, sizeof(mui->box_message));
+   strlcpy(mui->box_message, message, sizeof(mui->box_message));
 }
 
 static void mui_render_messagebox(const char *message)
 {
-   unsigned i;
-   unsigned width, height;
+   unsigned i, width, height;
    uint32_t normal_color;
    int x, y, font_size;
    struct string_list *list = NULL;
@@ -345,18 +337,15 @@ end:
 static void mui_render(void)
 {
    float delta_time, dt;
-   unsigned bottom;
-   unsigned width, height, header_height;
-   mui_handle_t *mui    = NULL;
+   unsigned bottom, width, height, header_height;
    menu_handle_t *menu  = menu_driver_get_ptr();
+   mui_handle_t *mui    = menu ? (mui_handle_t*)menu->userdata : NULL;
    settings_t *settings = config_get_ptr();
 
-   if (!menu || !menu->userdata)
+   if (!mui)
       return;
 
    video_driver_get_size(&width, &height);
-
-   mui = (mui_handle_t*)menu->userdata;
 
    menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
    dt = delta_time / IDEAL_DT;
