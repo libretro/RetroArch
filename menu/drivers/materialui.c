@@ -595,6 +595,14 @@ static size_t mui_list_get_size(void *data, menu_list_type_t type)
    return list_size;
 }
 
+static void bgcolor_setalpha(GRfloat *bg, float alpha)
+{
+   bg[3]  = alpha;
+   bg[7]  = alpha;
+   bg[11] = alpha;
+   bg[15] = alpha;
+}
+
 static void mui_frame(void)
 {
    unsigned header_height;
@@ -702,11 +710,7 @@ static void mui_frame(void)
          background_rendered = true;
 
          /* Set new opacity for transposed white background */
-
-         white_transp_bg[3]  = 0.30;
-         white_transp_bg[7]  = 0.30;
-         white_transp_bg[11] = 0.30;
-         white_transp_bg[15] = 0.30;
+         bgcolor_setalpha(white_transp_bg, 0.30);
 
          menu_display_frame_background(
                width, height,
@@ -716,11 +720,7 @@ static void mui_frame(void)
                MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
          /* Restore opacity of transposed white background */
-
-         white_transp_bg[3]  = 0.90;
-         white_transp_bg[7]  = 0.90;
-         white_transp_bg[11] = 0.90;
-         white_transp_bg[15] = 0.90;
+         bgcolor_setalpha(white_transp_bg, 0.90);
       }
    }
 
@@ -730,19 +730,10 @@ static void mui_frame(void)
       return;
 
    if (background_rendered || libretro_running)
-   {
-      lightblue_bg[3]  = 0.75;
-      lightblue_bg[7]  = 0.75;
-      lightblue_bg[11] = 0.75;
-      lightblue_bg[15] = 0.75;
-   }
+      bgcolor_setalpha(lightblue_bg, 0.75);
    else
-   {
-      lightblue_bg[3]  = 1.00;
-      lightblue_bg[7]  = 1.00;
-      lightblue_bg[11] = 1.00;
-      lightblue_bg[15] = 1.00;
-   }
+      bgcolor_setalpha(lightblue_bg, 1.0);
+
    /* highlighted entry */
    mui_render_quad(0,
          header_height - menu->scroll_y + mui->line_height *
