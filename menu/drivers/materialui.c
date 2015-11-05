@@ -340,9 +340,9 @@ static void mui_render(void)
    float delta_time, dt;
    int bottom;
    unsigned width, height, header_height;
-   mui_handle_t *mui                = NULL;
-   menu_handle_t *menu                = menu_driver_get_ptr();
-   settings_t *settings               = config_get_ptr();
+   mui_handle_t *mui    = NULL;
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (!menu || !menu->userdata)
       return;
@@ -350,7 +350,6 @@ static void mui_render(void)
    video_driver_get_size(&width, &height);
 
    mui = (mui_handle_t*)menu->userdata;
-
 
    menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
    dt = delta_time / IDEAL_DT;
@@ -385,6 +384,7 @@ static void mui_render(void)
       unsigned new_pointer_val = 
          (mouse_y - mui->line_height + menu->scroll_y - 16)
          / mui->line_height;
+
       menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &new_pointer_val);
    }
 
@@ -413,12 +413,12 @@ static void mui_render_label_value(mui_handle_t *mui,
 {
    char label_str[PATH_MAX_LENGTH];
    char value_str[PATH_MAX_LENGTH];
-   int value_len   = strlen(value);
-   int ticker_limit = 0;
-   size_t usable_width = 0;
+   int value_len         = strlen(value);
+   int ticker_limit      = 0;
+   size_t usable_width   = 0;
    GRuint texture_switch = 0;
-   bool do_draw_text = false;
-   uint32_t hash_value = 0;
+   bool do_draw_text     = false;
+   uint32_t hash_value   = 0;
 
    label_str[0] = '\0';
    value_str[0] = '\0';
@@ -438,16 +438,14 @@ static void mui_render_label_value(mui_handle_t *mui,
 
    hash_value = menu_hash_calculate(value);
 
-   if (!strcmp(value, "disabled") ||
-         !strcmp(value, "off"))
+   if (!strcmp(value, "disabled") || !strcmp(value, "off"))
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF].id)
          texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF].id;
       else
          do_draw_text = true;
    }
-   else if (!strcmp(value, "enabled") ||
-         !strcmp(value, "on"))
+   else if (!strcmp(value, "enabled") || !strcmp(value, "on"))
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_ON].id)
          texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON].id;
@@ -505,7 +503,6 @@ static void mui_render_label_value(mui_handle_t *mui,
       mui_draw_icon(mui, texture_switch,
             width - mui->margin - mui->icon_size, y,
             width, height, 0, 1, &pure_white[0]);
-
 }
 
 static void mui_render_menu_list(mui_handle_t *mui,
@@ -581,7 +578,7 @@ static void mui_draw_cursor(mui_handle_t *mui,
 
 static size_t mui_list_get_size(void *data, menu_list_type_t type)
 {
-   size_t list_size        = 0;
+   size_t list_size = 0;
 
    switch (type)
    {
@@ -656,18 +653,18 @@ static void mui_frame(void)
    char title_buf[PATH_MAX_LENGTH];
    size_t selection;
    size_t title_margin;
-   mui_handle_t *mui                     = NULL;
-   driver_t *driver                        = driver_get_ptr();
-   menu_handle_t *menu                     = menu_driver_get_ptr();
-   settings_t *settings                    = config_get_ptr();
-   uint64_t *frame_count                   = video_driver_get_frame_count();
-   const uint32_t normal_color             = 0x212121ff;
-   const uint32_t hover_color              = 0x212121ff;
-   const uint32_t title_color              = 0xffffffff;
-   const uint32_t activetab_color          = 0x0096f2ff;
-   const uint32_t passivetab_color         = 0x9e9e9eff;
-   bool background_rendered                = false;
-   bool libretro_running                   = menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
+   mui_handle_t *mui               = NULL;
+   driver_t *driver                = driver_get_ptr();
+   menu_handle_t *menu             = menu_driver_get_ptr();
+   settings_t *settings            = config_get_ptr();
+   uint64_t *frame_count           = video_driver_get_frame_count();
+   const uint32_t normal_color     = 0x212121ff;
+   const uint32_t hover_color      = 0x212121ff;
+   const uint32_t title_color      = 0xffffffff;
+   const uint32_t activetab_color  = 0x0096f2ff;
+   const uint32_t passivetab_color = 0x9e9e9eff;
+   bool background_rendered        = false;
+   bool libretro_running           = menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
 
    (void)passivetab_color;
    (void)activetab_color;
@@ -960,8 +957,8 @@ static void mui_layout(menu_handle_t *menu, mui_handle_t *mui)
 
 static void *mui_init(void)
 {
-   mui_handle_t *mui = NULL;
-   menu_handle_t             *menu = (menu_handle_t*)
+   mui_handle_t   *mui = NULL;
+   menu_handle_t *menu = (menu_handle_t*)
       calloc(1, sizeof(*menu));
 
    if (!menu)
@@ -989,9 +986,9 @@ error:
 
 static void mui_free(void *data)
 {
-   menu_handle_t *menu                     = (menu_handle_t*)data;
-   driver_t      *driver                   = driver_get_ptr();
-   mui_handle_t *mui         = (mui_handle_t*)menu->userdata;
+   menu_handle_t *menu = (menu_handle_t*)data;
+   driver_t *driver    = driver_get_ptr();
+   mui_handle_t *mui   = (mui_handle_t*)menu->userdata;
    const struct font_renderer *font_driver = driver ? (const struct font_renderer*)
       driver->font_osd_driver : NULL;
 
@@ -1021,7 +1018,7 @@ static void mui_context_destroy(void)
 {
    unsigned i;
    mui_handle_t *mui   = NULL;
-   menu_handle_t *menu   = menu_driver_get_ptr();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu || !menu->userdata)
       return;
@@ -1041,7 +1038,7 @@ static void mui_context_destroy(void)
 
 static bool mui_load_image(void *data, menu_image_type_t type)
 {
-   mui_handle_t *mui = NULL;
+   mui_handle_t *mui   = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu || !menu->userdata)
@@ -1070,10 +1067,10 @@ static bool mui_load_image(void *data, menu_image_type_t type)
 static float mui_get_scroll(void)
 {
    size_t selection;
-   unsigned          width, height = 0;
-   int                        half = 0;
-   mui_handle_t *mui = NULL;
-   menu_handle_t             *menu = menu_driver_get_ptr();
+   unsigned width, height = 0;
+   int half               = 0;
+   mui_handle_t *mui      = NULL;
+   menu_handle_t    *menu = menu_driver_get_ptr();
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;
@@ -1084,11 +1081,13 @@ static float mui_get_scroll(void)
    video_driver_get_size(&width, &height);
 
    mui = (mui_handle_t*)menu->userdata;
+
    if (mui->line_height)
       half = (height / mui->line_height) / 2;
 
    if (selection < (unsigned)half)
       return 0;
+
    return ((selection + 2 - half) * mui->line_height);
 }
 
@@ -1141,10 +1140,10 @@ static void mui_populate_entries(const char *path,
 
 static void mui_context_reset(void)
 {
-   char iconpath[PATH_MAX_LENGTH]  = {0};
-   mui_handle_t *mui = NULL;
-   menu_handle_t *menu   = menu_driver_get_ptr();
-   settings_t *settings  = config_get_ptr();
+   char iconpath[PATH_MAX_LENGTH] = {0};
+   mui_handle_t *mui              = NULL;
+   menu_handle_t *menu            = menu_driver_get_ptr();
+   settings_t *settings           = config_get_ptr();
 
    if (!menu || !menu->userdata || !settings)
       return;
@@ -1180,10 +1179,10 @@ static int mui_environ(menu_environ_cb_t type, void *data)
 
 static void mui_preswitch_tabs(unsigned action)
 {
-   size_t stack_size               = 0;
-   file_list_t *menu_stack         = NULL;
-   mui_handle_t *mui = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   size_t stack_size       = 0;
+   file_list_t *menu_stack = NULL;
+   mui_handle_t *mui       = NULL;
+   menu_handle_t *menu     = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -1231,8 +1230,8 @@ static void mui_preswitch_tabs(unsigned action)
 static void mui_list_cache(menu_list_type_t type, unsigned action)
 {
    size_t list_size;
-   mui_handle_t *mui = NULL;
-   menu_handle_t             *menu = menu_driver_get_ptr();
+   mui_handle_t *mui   = NULL;
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -1362,8 +1361,8 @@ static int mui_list_push(menu_displaylist_info_t *info, unsigned type)
 
 static size_t mui_list_get_selection(void *data)
 {
-   menu_handle_t *menu    = (menu_handle_t*)data;
-   mui_handle_t *mui = menu ? (mui_handle_t*)menu->userdata : NULL;
+   menu_handle_t *menu = (menu_handle_t*)data;
+   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
 
    if (!mui)
       return 0;
@@ -1379,7 +1378,7 @@ static int mui_pointer_tap(unsigned x, unsigned y,
    unsigned header_height, width, height, i;
    bool scroll                = false;
    menu_handle_t *menu        = menu_driver_get_ptr();
-   mui_handle_t *mui = menu ? (mui_handle_t*)menu->userdata : NULL;
+   mui_handle_t *mui          = menu ? (mui_handle_t*)menu->userdata : NULL;
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
