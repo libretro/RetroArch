@@ -38,27 +38,27 @@
 
 enum
 {
-   GLUI_TEXTURE_POINTER = 0,
-   GLUI_TEXTURE_BACK,
-   GLUI_TEXTURE_SWITCH_ON,
-   GLUI_TEXTURE_SWITCH_OFF,
-   GLUI_TEXTURE_TAB_MAIN_ACTIVE,
-   GLUI_TEXTURE_TAB_PLAYLISTS_ACTIVE,
-   GLUI_TEXTURE_TAB_SETTINGS_ACTIVE,
-   GLUI_TEXTURE_TAB_MAIN_PASSIVE,
-   GLUI_TEXTURE_TAB_PLAYLISTS_PASSIVE,
-   GLUI_TEXTURE_TAB_SETTINGS_PASSIVE,
-   GLUI_TEXTURE_LAST
+   MUI_TEXTURE_POINTER = 0,
+   MUI_TEXTURE_BACK,
+   MUI_TEXTURE_SWITCH_ON,
+   MUI_TEXTURE_SWITCH_OFF,
+   MUI_TEXTURE_TAB_MAIN_ACTIVE,
+   MUI_TEXTURE_TAB_PLAYLISTS_ACTIVE,
+   MUI_TEXTURE_TAB_SETTINGS_ACTIVE,
+   MUI_TEXTURE_TAB_MAIN_PASSIVE,
+   MUI_TEXTURE_TAB_PLAYLISTS_PASSIVE,
+   MUI_TEXTURE_TAB_SETTINGS_PASSIVE,
+   MUI_TEXTURE_LAST
 };
 
 enum
 {
-   GLUI_SYSTEM_TAB_MAIN = 0,
-   GLUI_SYSTEM_TAB_PLAYLISTS,
-   GLUI_SYSTEM_TAB_SETTINGS
+   MUI_SYSTEM_TAB_MAIN = 0,
+   MUI_SYSTEM_TAB_PLAYLISTS,
+   MUI_SYSTEM_TAB_SETTINGS
 };
 
-#define GLUI_SYSTEM_TAB_END GLUI_SYSTEM_TAB_SETTINGS
+#define MUI_SYSTEM_TAB_END MUI_SYSTEM_TAB_SETTINGS
 
 struct materialui_texture_item
 {
@@ -82,7 +82,7 @@ typedef struct materialui_handle
       } arrow;
 
       struct materialui_texture_item bg;
-      struct materialui_texture_item list[GLUI_TEXTURE_LAST];
+      struct materialui_texture_item list[MUI_TEXTURE_LAST];
       GRuint white;
    } textures;
 
@@ -106,41 +106,41 @@ static void materialui_context_reset_textures(materialui_handle_t *materialui, c
 {
    unsigned i;
 
-   for (i = 0; i < GLUI_TEXTURE_LAST; i++)
+   for (i = 0; i < MUI_TEXTURE_LAST; i++)
    {
       struct texture_image ti     = {0};
       char path[PATH_MAX_LENGTH]  = {0};
 
       switch(i)
       {
-         case GLUI_TEXTURE_POINTER:
+         case MUI_TEXTURE_POINTER:
             fill_pathname_join(path, iconpath, "pointer.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_BACK:
+         case MUI_TEXTURE_BACK:
             fill_pathname_join(path, iconpath, "back.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_SWITCH_ON:
+         case MUI_TEXTURE_SWITCH_ON:
             fill_pathname_join(path, iconpath, "on.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_SWITCH_OFF:
+         case MUI_TEXTURE_SWITCH_OFF:
             fill_pathname_join(path, iconpath, "off.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_TAB_MAIN_ACTIVE:
+         case MUI_TEXTURE_TAB_MAIN_ACTIVE:
             fill_pathname_join(path, iconpath, "main_tab_active.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_TAB_PLAYLISTS_ACTIVE:
+         case MUI_TEXTURE_TAB_PLAYLISTS_ACTIVE:
             fill_pathname_join(path, iconpath, "playlists_tab_active.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_TAB_SETTINGS_ACTIVE:
+         case MUI_TEXTURE_TAB_SETTINGS_ACTIVE:
             fill_pathname_join(path, iconpath, "settings_tab_active.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_TAB_MAIN_PASSIVE:
+         case MUI_TEXTURE_TAB_MAIN_PASSIVE:
             fill_pathname_join(path, iconpath, "main_tab_passive.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_TAB_PLAYLISTS_PASSIVE:
+         case MUI_TEXTURE_TAB_PLAYLISTS_PASSIVE:
             fill_pathname_join(path, iconpath, "playlists_tab_passive.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_TAB_SETTINGS_PASSIVE:
+         case MUI_TEXTURE_TAB_SETTINGS_PASSIVE:
             fill_pathname_join(path, iconpath, "settings_tab_passive.png",   sizeof(path));
             break;
       }
@@ -441,16 +441,16 @@ static void materialui_render_label_value(materialui_handle_t *materialui,
    if (!strcmp(value, "disabled") ||
          !strcmp(value, "off"))
    {
-      if (materialui->textures.list[GLUI_TEXTURE_SWITCH_OFF].id)
-         texture_switch = materialui->textures.list[GLUI_TEXTURE_SWITCH_OFF].id;
+      if (materialui->textures.list[MUI_TEXTURE_SWITCH_OFF].id)
+         texture_switch = materialui->textures.list[MUI_TEXTURE_SWITCH_OFF].id;
       else
          do_draw_text = true;
    }
    else if (!strcmp(value, "enabled") ||
          !strcmp(value, "on"))
    {
-      if (materialui->textures.list[GLUI_TEXTURE_SWITCH_ON].id)
-         texture_switch = materialui->textures.list[GLUI_TEXTURE_SWITCH_ON].id;
+      if (materialui->textures.list[MUI_TEXTURE_SWITCH_ON].id)
+         texture_switch = materialui->textures.list[MUI_TEXTURE_SWITCH_ON].id;
       else
          do_draw_text = true;
    }
@@ -479,14 +479,14 @@ static void materialui_render_label_value(materialui_handle_t *materialui,
          case MENU_VALUE_MOVIE:
             break;
          case MENU_VALUE_ON:
-            if (materialui->textures.list[GLUI_TEXTURE_SWITCH_ON].id)
-               texture_switch = materialui->textures.list[GLUI_TEXTURE_SWITCH_ON].id;
+            if (materialui->textures.list[MUI_TEXTURE_SWITCH_ON].id)
+               texture_switch = materialui->textures.list[MUI_TEXTURE_SWITCH_ON].id;
             else
                do_draw_text = true;
             break;
          case MENU_VALUE_OFF:
-            if (materialui->textures.list[GLUI_TEXTURE_SWITCH_OFF].id)
-               texture_switch = materialui->textures.list[GLUI_TEXTURE_SWITCH_OFF].id;
+            if (materialui->textures.list[MUI_TEXTURE_SWITCH_OFF].id)
+               texture_switch = materialui->textures.list[MUI_TEXTURE_SWITCH_OFF].id;
             else
                do_draw_text = true;
             break;
@@ -573,7 +573,7 @@ static void materialui_draw_cursor(materialui_handle_t *materialui,
          64,
          64,
          &coords, NULL,
-         materialui->textures.list[GLUI_TEXTURE_POINTER].id,
+         materialui->textures.list[MUI_TEXTURE_POINTER].id,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    menu_display_blend_end();
@@ -589,7 +589,7 @@ static size_t materialui_list_get_size(void *data, menu_list_type_t type)
          list_size  = menu_entries_get_stack_size(0);
          break;
       case MENU_LIST_TABS:
-         list_size = GLUI_SYSTEM_TAB_END;
+         list_size = MUI_SYSTEM_TAB_END;
          break;
       default:
          break;
@@ -787,36 +787,36 @@ static void materialui_frame(void)
             width, height,
             &grey_bg[0]);
 
-      for (i = 0; i <= GLUI_SYSTEM_TAB_END; i++)
+      for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
       {
-         unsigned tab_icon = GLUI_TEXTURE_TAB_MAIN_PASSIVE;
+         unsigned tab_icon = MUI_TEXTURE_TAB_MAIN_PASSIVE;
          switch (i)
          {
-            case GLUI_SYSTEM_TAB_MAIN:
+            case MUI_SYSTEM_TAB_MAIN:
                tab_icon = (i == materialui->categories.selection_ptr)
-                        ? GLUI_TEXTURE_TAB_MAIN_ACTIVE
-                        : GLUI_TEXTURE_TAB_MAIN_PASSIVE;
+                        ? MUI_TEXTURE_TAB_MAIN_ACTIVE
+                        : MUI_TEXTURE_TAB_MAIN_PASSIVE;
                break;
-            case GLUI_SYSTEM_TAB_PLAYLISTS:
+            case MUI_SYSTEM_TAB_PLAYLISTS:
                tab_icon = (i == materialui->categories.selection_ptr)
-                        ? GLUI_TEXTURE_TAB_PLAYLISTS_ACTIVE
-                        : GLUI_TEXTURE_TAB_PLAYLISTS_PASSIVE;
+                        ? MUI_TEXTURE_TAB_PLAYLISTS_ACTIVE
+                        : MUI_TEXTURE_TAB_PLAYLISTS_PASSIVE;
                break;
-            case GLUI_SYSTEM_TAB_SETTINGS:
+            case MUI_SYSTEM_TAB_SETTINGS:
                tab_icon = (i == materialui->categories.selection_ptr)
-                        ? GLUI_TEXTURE_TAB_SETTINGS_ACTIVE
-                        : GLUI_TEXTURE_TAB_SETTINGS_PASSIVE;
+                        ? MUI_TEXTURE_TAB_SETTINGS_ACTIVE
+                        : MUI_TEXTURE_TAB_SETTINGS_PASSIVE;
                break;
          }
 
          materialui_draw_icon(materialui, materialui->textures.list[tab_icon].id,
-               width / (GLUI_SYSTEM_TAB_END+1) * (i+0.5) - materialui->icon_size/2,
+               width / (MUI_SYSTEM_TAB_END+1) * (i+0.5) - materialui->icon_size/2,
                height - materialui->tabs_height,
                width, height, 0, 1, &pure_white[0]);
       }
 
       /* active tab marker */
-      tab_width = width / (GLUI_SYSTEM_TAB_END+1);
+      tab_width = width / (MUI_SYSTEM_TAB_END+1);
       materialui_render_quad(materialui->categories.selection_ptr * tab_width,
             height - (header_height/16),
             tab_width,
@@ -839,7 +839,7 @@ static void materialui_frame(void)
    if (menu_entries_show_back())
    {
       title_margin = materialui->icon_size;
-      materialui_draw_icon(materialui, materialui->textures.list[GLUI_TEXTURE_BACK].id,
+      materialui_draw_icon(materialui, materialui->textures.list[MUI_TEXTURE_BACK].id,
          0, 0, width, height, 0, 1, &pure_white[0]);
    }
 
@@ -1031,7 +1031,7 @@ static void materialui_context_destroy(void)
    if (!materialui)
       return;
 
-   for (i = 0; i < GLUI_TEXTURE_LAST; i++)
+   for (i = 0; i < MUI_TEXTURE_LAST; i++)
       menu_display_texture_unload((uintptr_t*)&materialui->textures.list[i].id);
 
    menu_display_free_main_font();
@@ -1205,13 +1205,13 @@ static void materialui_preswitch_tabs(unsigned action)
 
    switch (materialui->categories.selection_ptr)
    {
-      case GLUI_SYSTEM_TAB_MAIN:
+      case MUI_SYSTEM_TAB_MAIN:
          menu_stack->list[stack_size - 1].label = 
             strdup(menu_hash_to_str(MENU_VALUE_MAIN_MENU));
          menu_stack->list[stack_size - 1].type = 
             MENU_SETTINGS;
          break;
-      case GLUI_SYSTEM_TAB_PLAYLISTS:
+      case MUI_SYSTEM_TAB_PLAYLISTS:
          menu_stack->list[stack_size - 1].label = 
             strdup(menu_hash_to_str(MENU_VALUE_PLAYLISTS_TAB));
          menu_stack->list[stack_size - 1].label = 
@@ -1219,7 +1219,7 @@ static void materialui_preswitch_tabs(unsigned action)
          menu_stack->list[stack_size - 1].type = 
             MENU_PLAYLISTS_TAB;
          break;
-      case GLUI_SYSTEM_TAB_SETTINGS:
+      case MUI_SYSTEM_TAB_SETTINGS:
          menu_stack->list[stack_size - 1].label = 
             strdup(menu_hash_to_str(MENU_VALUE_SETTINGS_TAB));
          menu_stack->list[stack_size - 1].type = 
@@ -1242,7 +1242,7 @@ static void materialui_list_cache(menu_list_type_t type, unsigned action)
    if (!materialui)
       return;
 
-   list_size = GLUI_SYSTEM_TAB_END;
+   list_size = MUI_SYSTEM_TAB_END;
 
    switch (type)
    {
@@ -1398,9 +1398,9 @@ static int materialui_pointer_tap(unsigned x, unsigned y,
    }
    else if (y > height - materialui->tabs_height)
    {
-      for (i = 0; i <= GLUI_SYSTEM_TAB_END; i++)
+      for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
       {
-         unsigned tab_width = width / (GLUI_SYSTEM_TAB_END + 1);
+         unsigned tab_width = width / (MUI_SYSTEM_TAB_END + 1);
          unsigned start = tab_width * i;
 
          if ((x >= start) && (x < (start + tab_width)))
