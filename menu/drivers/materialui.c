@@ -193,20 +193,16 @@ static void materialui_blit_line(float x, float y, unsigned width, unsigned heig
 {
    int font_size;
    void *fb_buf              = NULL;
-   materialui_handle_t *materialui       = NULL;
    struct font_params params = {0};
    menu_handle_t *menu       = menu_driver_get_ptr();
 
    if (!menu)
       return;
 
-   materialui = (materialui_handle_t*)menu->userdata;
-
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
 
    params.x           = x / width;
-   params.y           = 1.0f - (y + materialui->line_height / 2 + font_size / 3) 
-      / height;
+   params.y           = 1.0f - (y + font_size / 3) / height;
    params.scale       = 1.0;
    params.color       = color;
    params.full_screen = true;
@@ -437,7 +433,8 @@ static void materialui_render_label_value(materialui_handle_t *materialui,
    menu_animation_ticker_str(label_str, ticker_limit, index, label, selected);
    menu_animation_ticker_str(value_str, value_len,    index, value, selected);
 
-   materialui_blit_line(materialui->margin, y, width, height, label_str, color, TEXT_ALIGN_LEFT);
+   materialui_blit_line(materialui->margin, y + materialui->line_height / 2,
+         width, height, label_str, color, TEXT_ALIGN_LEFT);
 
    hash_value = menu_hash_calculate(value);
 
@@ -500,11 +497,14 @@ static void materialui_render_label_value(materialui_handle_t *materialui,
    }
 
    if (do_draw_text)
-      materialui_blit_line(width - materialui->margin, y, width, height, value_str, color, TEXT_ALIGN_RIGHT);
+      materialui_blit_line(width - materialui->margin,
+            y + materialui->line_height / 2,
+            width, height, value_str, color, TEXT_ALIGN_RIGHT);
 
    if (texture_switch)
       materialui_draw_icon(materialui, texture_switch,
-            width - materialui->margin - materialui->icon_size, y, width, height, 0, 1, &pure_white[0]);
+            width - materialui->margin - materialui->icon_size, y,
+            width, height, 0, 1, &pure_white[0]);
 
 }
 
@@ -848,8 +848,8 @@ static void materialui_frame(void)
          *frame_count / 100, title, true);
 
    /* Title */
-   materialui_blit_line(title_margin, 0, width, height, title_buf,
-         title_color, TEXT_ALIGN_LEFT);
+   materialui_blit_line(title_margin, header_height / 2, width, height,
+         title_buf, title_color, TEXT_ALIGN_LEFT);
 
    materialui_draw_scrollbar(width, height, &grey_bg[0]);
 
