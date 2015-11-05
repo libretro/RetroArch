@@ -38,37 +38,39 @@
 
 enum
 {
-   GLUI_TEXTURE_POINTER = 0,
-   GLUI_TEXTURE_BACK,
-   GLUI_TEXTURE_SWITCH_ON,
-   GLUI_TEXTURE_SWITCH_OFF,
-   GLUI_TEXTURE_TAB_MAIN_ACTIVE,
-   GLUI_TEXTURE_TAB_PLAYLISTS_ACTIVE,
-   GLUI_TEXTURE_TAB_SETTINGS_ACTIVE,
-   GLUI_TEXTURE_TAB_MAIN_PASSIVE,
-   GLUI_TEXTURE_TAB_PLAYLISTS_PASSIVE,
-   GLUI_TEXTURE_TAB_SETTINGS_PASSIVE,
-   GLUI_TEXTURE_LAST
+   MUI_TEXTURE_POINTER = 0,
+   MUI_TEXTURE_BACK,
+   MUI_TEXTURE_SWITCH_ON,
+   MUI_TEXTURE_SWITCH_OFF,
+   MUI_TEXTURE_TAB_MAIN_ACTIVE,
+   MUI_TEXTURE_TAB_PLAYLISTS_ACTIVE,
+   MUI_TEXTURE_TAB_SETTINGS_ACTIVE,
+   MUI_TEXTURE_TAB_MAIN_PASSIVE,
+   MUI_TEXTURE_TAB_PLAYLISTS_PASSIVE,
+   MUI_TEXTURE_TAB_SETTINGS_PASSIVE,
+   MUI_TEXTURE_LAST
 };
 
 enum
 {
-   GLUI_SYSTEM_TAB_MAIN = 0,
-   GLUI_SYSTEM_TAB_PLAYLISTS,
-   GLUI_SYSTEM_TAB_SETTINGS
+   MUI_SYSTEM_TAB_MAIN = 0,
+   MUI_SYSTEM_TAB_PLAYLISTS,
+   MUI_SYSTEM_TAB_SETTINGS
 };
 
-#define GLUI_SYSTEM_TAB_END GLUI_SYSTEM_TAB_SETTINGS
+#define MUI_SYSTEM_TAB_END MUI_SYSTEM_TAB_SETTINGS
 
-struct materialui_texture_item
+struct mui_texture_item
 {
    GRuint id;
 };
 
-typedef struct materialui_handle
+typedef struct mui_handle
 {
    unsigned tabs_height;
    unsigned line_height;
+   unsigned shadow_height;
+   unsigned scrollbar_width;
    unsigned icon_size;
    unsigned margin;
    unsigned glyph_width;
@@ -81,8 +83,8 @@ typedef struct materialui_handle
          float alpha;
       } arrow;
 
-      struct materialui_texture_item bg;
-      struct materialui_texture_item list[GLUI_TEXTURE_LAST];
+      struct mui_texture_item bg;
+      struct mui_texture_item list[MUI_TEXTURE_LAST];
       GRuint white;
    } textures;
 
@@ -100,47 +102,47 @@ typedef struct materialui_handle
    } categories;
 
    gfx_font_raster_block_t list_block;
-} materialui_handle_t;
+} mui_handle_t;
 
-static void materialui_context_reset_textures(materialui_handle_t *materialui, const char *iconpath)
+static void mui_context_reset_textures(mui_handle_t *mui, const char *iconpath)
 {
    unsigned i;
 
-   for (i = 0; i < GLUI_TEXTURE_LAST; i++)
+   for (i = 0; i < MUI_TEXTURE_LAST; i++)
    {
       struct texture_image ti     = {0};
       char path[PATH_MAX_LENGTH]  = {0};
 
       switch(i)
       {
-         case GLUI_TEXTURE_POINTER:
+         case MUI_TEXTURE_POINTER:
             fill_pathname_join(path, iconpath, "pointer.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_BACK:
+         case MUI_TEXTURE_BACK:
             fill_pathname_join(path, iconpath, "back.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_SWITCH_ON:
+         case MUI_TEXTURE_SWITCH_ON:
             fill_pathname_join(path, iconpath, "on.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_SWITCH_OFF:
+         case MUI_TEXTURE_SWITCH_OFF:
             fill_pathname_join(path, iconpath, "off.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_TAB_MAIN_ACTIVE:
+         case MUI_TEXTURE_TAB_MAIN_ACTIVE:
             fill_pathname_join(path, iconpath, "main_tab_active.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_TAB_PLAYLISTS_ACTIVE:
+         case MUI_TEXTURE_TAB_PLAYLISTS_ACTIVE:
             fill_pathname_join(path, iconpath, "playlists_tab_active.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_TAB_SETTINGS_ACTIVE:
+         case MUI_TEXTURE_TAB_SETTINGS_ACTIVE:
             fill_pathname_join(path, iconpath, "settings_tab_active.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_TAB_MAIN_PASSIVE:
+         case MUI_TEXTURE_TAB_MAIN_PASSIVE:
             fill_pathname_join(path, iconpath, "main_tab_passive.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_TAB_PLAYLISTS_PASSIVE:
+         case MUI_TEXTURE_TAB_PLAYLISTS_PASSIVE:
             fill_pathname_join(path, iconpath, "playlists_tab_passive.png",   sizeof(path));
             break;
-         case GLUI_TEXTURE_TAB_SETTINGS_PASSIVE:
+         case MUI_TEXTURE_TAB_SETTINGS_PASSIVE:
             fill_pathname_join(path, iconpath, "settings_tab_passive.png",   sizeof(path));
             break;
       }
@@ -150,14 +152,14 @@ static void materialui_context_reset_textures(materialui_handle_t *materialui, c
 
       texture_image_load(&ti, path);
 
-      materialui->textures.list[i].id   = menu_display_texture_load(&ti,
+      mui->textures.list[i].id   = menu_display_texture_load(&ti,
             TEXTURE_FILTER_MIPMAP_LINEAR);
 
       texture_image_free(&ti);
    }
 }
 
-static void materialui_draw_icon(materialui_handle_t *materialui,
+static void mui_draw_icon(mui_handle_t *mui,
       GRuint texture,
       float x, float y,
       unsigned width, unsigned height,
@@ -179,34 +181,30 @@ static void materialui_draw_icon(materialui_handle_t *materialui,
 
    menu_display_draw_frame(
          x,
-         height - y - materialui->icon_size,
-         materialui->icon_size,
-         materialui->icon_size,
+         height - y - mui->icon_size,
+         mui->icon_size,
+         mui->icon_size,
          &coords, &mymat, texture,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    menu_display_blend_end();
 }
 
-static void materialui_blit_line(float x, float y, unsigned width, unsigned height,
+static void mui_blit_line(float x, float y, unsigned width, unsigned height,
       const char *message, uint32_t color, enum text_alignment text_align)
 {
    int font_size;
    void *fb_buf              = NULL;
-   materialui_handle_t *materialui       = NULL;
    struct font_params params = {0};
    menu_handle_t *menu       = menu_driver_get_ptr();
 
    if (!menu)
       return;
 
-   materialui = (materialui_handle_t*)menu->userdata;
-
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
 
    params.x           = x / width;
-   params.y           = 1.0f - (y + materialui->line_height / 2 + font_size / 3) 
-      / height;
+   params.y           = 1.0f - (y + font_size / 3) / height;
    params.scale       = 1.0;
    params.color       = color;
    params.full_screen = true;
@@ -217,14 +215,14 @@ static void materialui_blit_line(float x, float y, unsigned width, unsigned heig
    video_driver_set_osd_msg(message, &params, fb_buf);
 }
 
-static void materialui_render_quad(int x, int y, int w, int h,
+static void mui_render_quad(int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       GRfloat *coord_color)
 {
    struct gfx_coords coords;
 
    menu_handle_t *menu = menu_driver_get_ptr();
-   materialui_handle_t *materialui = (materialui_handle_t*)menu->userdata;
+   mui_handle_t *mui = (mui_handle_t*)menu->userdata;
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -239,67 +237,64 @@ static void materialui_render_quad(int x, int y, int w, int h,
          height - y - h,
          w,
          h,
-         &coords, NULL, materialui->textures.white,
+         &coords, NULL, mui->textures.white,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    menu_display_blend_end();
 }
 
-static void materialui_draw_scrollbar(unsigned width, unsigned height, GRfloat *coord_color)
+static void mui_draw_scrollbar(unsigned width, unsigned height, GRfloat *coord_color)
 {
    unsigned header_height;
-   float content_height, total_height, scrollbar_width, scrollbar_height, y;
-   materialui_handle_t *materialui  = NULL;
-   menu_handle_t *menu  = menu_driver_get_ptr();
+   float content_height, total_height, scrollbar_height, scrollbar_margin, y;
+   menu_handle_t *menu = menu_driver_get_ptr();
+   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
 
-   if (!menu)
+   if (!mui)
       return;
 
    menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
-   materialui                 = (materialui_handle_t*)menu->userdata;
-   content_height       = menu_entries_get_end() * materialui->line_height;
-   total_height         = height - header_height - materialui->tabs_height;
-   scrollbar_height     = total_height / (content_height / total_height) - (header_height / 6);
-   y                    = total_height * menu->scroll_y / content_height;
+   content_height   = menu_entries_get_end() * mui->line_height;
+   total_height     = height - header_height - mui->tabs_height;
+   scrollbar_margin = mui->scrollbar_width;
+   scrollbar_height = total_height / (content_height / total_height);
+   y                = total_height * menu->scroll_y / content_height;
+
+   /* apply a margin on the top and bottom of the scrollbar for aestetic */
+   scrollbar_height -= scrollbar_margin * 2;
+   y += scrollbar_margin;
 
    if (content_height >= total_height)
    {
-      scrollbar_width  = (header_height / 12);
-      if (scrollbar_height <= header_height / 12)
-         scrollbar_height = header_height / 12;
+      /* if the scrollbar is extremely short, display it as a square */
+      if (scrollbar_height <= mui->scrollbar_width)
+         scrollbar_height = mui->scrollbar_width;
 
-      materialui_render_quad(
-            width - scrollbar_width - (header_height / 12),
-            header_height + y + (header_height / 12),
-            scrollbar_width,
+      mui_render_quad(
+            width - mui->scrollbar_width - scrollbar_margin,
+            header_height + y,
+            mui->scrollbar_width,
             scrollbar_height,
             width, height,
             coord_color);
    }
 }
 
-static void materialui_get_message(const char *message)
+static void mui_get_message(const char *message)
 {
-   materialui_handle_t *materialui = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
+   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
 
-   if (!menu)
+   if (!mui || !message || !*message)
       return;
 
-   if (!message || !*message)
-      return;
-
-   materialui = (materialui_handle_t*)menu->userdata;
-
-   if (materialui)
-      strlcpy(materialui->box_message, message, sizeof(materialui->box_message));
+   strlcpy(mui->box_message, message, sizeof(mui->box_message));
 }
 
-static void materialui_render_messagebox(const char *message)
+static void mui_render_messagebox(const char *message)
 {
-   unsigned i;
-   unsigned width, height;
+   unsigned i, width, height;
    uint32_t normal_color;
    int x, y, font_size;
    struct string_list *list = NULL;
@@ -330,7 +325,7 @@ static void materialui_render_messagebox(const char *message)
    {
       const char *msg = list->elems[i].data;
       if (msg)
-         materialui_blit_line(x, y + i * font_size,
+         mui_blit_line(x, y + i * font_size,
                width, height,
                msg, normal_color, TEXT_ALIGN_CENTER);
    }
@@ -339,22 +334,18 @@ end:
    string_list_free(list);
 }
 
-static void materialui_render(void)
+static void mui_render(void)
 {
    float delta_time, dt;
-   int bottom;
-   unsigned width, height, header_height;
-   materialui_handle_t *materialui                = NULL;
-   menu_handle_t *menu                = menu_driver_get_ptr();
-   settings_t *settings               = config_get_ptr();
+   unsigned bottom, width, height, header_height;
+   menu_handle_t *menu  = menu_driver_get_ptr();
+   mui_handle_t *mui    = menu ? (mui_handle_t*)menu->userdata : NULL;
+   settings_t *settings = config_get_ptr();
 
-   if (!menu || !menu->userdata)
+   if (!mui)
       return;
 
    video_driver_get_size(&width, &height);
-
-   materialui = (materialui_handle_t*)menu->userdata;
-
 
    menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
    dt = delta_time / IDEAL_DT;
@@ -369,8 +360,8 @@ static void materialui_render(void)
       int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
       float    old_accel_val, new_accel_val;
       unsigned new_pointer_val = 
-         (pointer_y - materialui->line_height + menu->scroll_y - 16)
-         / materialui->line_height;
+         (pointer_y - mui->line_height + menu->scroll_y - 16)
+         / mui->line_height;
 
       menu_input_ctl(MENU_INPUT_CTL_POINTER_ACCEL_READ, &old_accel_val);
       menu_input_ctl(MENU_INPUT_CTL_POINTER_PTR, &new_pointer_val);
@@ -387,73 +378,73 @@ static void materialui_render(void)
       int16_t mouse_y          = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
       unsigned new_pointer_val = 
-         (mouse_y - materialui->line_height + menu->scroll_y - 16)
-         / materialui->line_height;
+         (mouse_y - mui->line_height + menu->scroll_y - 16)
+         / mui->line_height;
+
       menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &new_pointer_val);
    }
 
    if (menu->scroll_y < 0)
       menu->scroll_y = 0;
 
-   bottom = menu_entries_get_end() * materialui->line_height
-      - height + header_height + materialui->tabs_height;
+   bottom = menu_entries_get_end() * mui->line_height
+      - height + header_height + mui->tabs_height;
    if (menu->scroll_y > bottom)
       menu->scroll_y = bottom;
 
-   if (menu_entries_get_end() * materialui->line_height
-         < height - header_height - materialui->tabs_height)
+   if (menu_entries_get_end() * mui->line_height
+         < height - header_height - mui->tabs_height)
       menu->scroll_y = 0;
 
-   if (menu_entries_get_end() < height / materialui->line_height)
+   if (menu_entries_get_end() < height / mui->line_height)
       menu_entries_set_start(0);
    else
-      menu_entries_set_start(menu->scroll_y / materialui->line_height);
+      menu_entries_set_start(menu->scroll_y / mui->line_height);
 }
 
-static void materialui_render_label_value(materialui_handle_t *materialui,
+static void mui_render_label_value(mui_handle_t *mui,
       int y, unsigned width, unsigned height,
       uint64_t index, uint32_t color, bool selected, const char *label,
       const char *value, GRfloat *pure_white)
 {
    char label_str[PATH_MAX_LENGTH];
    char value_str[PATH_MAX_LENGTH];
-   int value_len   = strlen(value);
-   int ticker_limit = 0;
-   size_t usable_width = 0;
+   int value_len         = strlen(value);
+   int ticker_limit      = 0;
+   size_t usable_width   = 0;
    GRuint texture_switch = 0;
-   bool do_draw_text = false;
-   uint32_t hash_value = 0;
+   bool do_draw_text     = false;
+   uint32_t hash_value   = 0;
 
    label_str[0] = '\0';
    value_str[0] = '\0';
 
-   usable_width = width - (materialui->margin * 2);
+   usable_width = width - (mui->margin * 2);
 
-   if (value_len * materialui->glyph_width > usable_width / 2)
-      value_len = (usable_width/2) / materialui->glyph_width;
+   if (value_len * mui->glyph_width > usable_width / 2)
+      value_len = (usable_width/2) / mui->glyph_width;
 
-   ticker_limit = (usable_width / materialui->glyph_width) - (value_len + 2);
+   ticker_limit = (usable_width / mui->glyph_width) - (value_len + 2);
 
    menu_animation_ticker_str(label_str, ticker_limit, index, label, selected);
    menu_animation_ticker_str(value_str, value_len,    index, value, selected);
 
-   materialui_blit_line(materialui->margin, y, width, height, label_str, color, TEXT_ALIGN_LEFT);
+   mui_blit_line(mui->margin, y + mui->line_height / 2,
+         width, height, label_str, color, TEXT_ALIGN_LEFT);
 
    hash_value = menu_hash_calculate(value);
 
-   if (!strcmp(value, "disabled") ||
-         !strcmp(value, "off"))
+   if (!strcmp(value, "disabled") || !strcmp(value, "off"))
    {
-      if (materialui->textures.list[GLUI_TEXTURE_SWITCH_OFF].id)
-         texture_switch = materialui->textures.list[GLUI_TEXTURE_SWITCH_OFF].id;
+      if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF].id)
+         texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF].id;
       else
          do_draw_text = true;
    }
-   else if (!strcmp(value, "enabled") ||
-         !strcmp(value, "on"))
+   else if (!strcmp(value, "enabled") || !strcmp(value, "on"))
    {
-      if (materialui->textures.list[GLUI_TEXTURE_SWITCH_ON].id)
-         texture_switch = materialui->textures.list[GLUI_TEXTURE_SWITCH_ON].id;
+      if (mui->textures.list[MUI_TEXTURE_SWITCH_ON].id)
+         texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON].id;
       else
          do_draw_text = true;
    }
@@ -482,14 +473,14 @@ static void materialui_render_label_value(materialui_handle_t *materialui,
          case MENU_VALUE_MOVIE:
             break;
          case MENU_VALUE_ON:
-            if (materialui->textures.list[GLUI_TEXTURE_SWITCH_ON].id)
-               texture_switch = materialui->textures.list[GLUI_TEXTURE_SWITCH_ON].id;
+            if (mui->textures.list[MUI_TEXTURE_SWITCH_ON].id)
+               texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON].id;
             else
                do_draw_text = true;
             break;
          case MENU_VALUE_OFF:
-            if (materialui->textures.list[GLUI_TEXTURE_SWITCH_OFF].id)
-               texture_switch = materialui->textures.list[GLUI_TEXTURE_SWITCH_OFF].id;
+            if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF].id)
+               texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF].id;
             else
                do_draw_text = true;
             break;
@@ -500,15 +491,17 @@ static void materialui_render_label_value(materialui_handle_t *materialui,
    }
 
    if (do_draw_text)
-      materialui_blit_line(width - materialui->margin, y, width, height, value_str, color, TEXT_ALIGN_RIGHT);
+      mui_blit_line(width - mui->margin,
+            y + mui->line_height / 2,
+            width, height, value_str, color, TEXT_ALIGN_RIGHT);
 
    if (texture_switch)
-      materialui_draw_icon(materialui, texture_switch,
-            width - materialui->margin - materialui->icon_size, y, width, height, 0, 1, &pure_white[0]);
-
+      mui_draw_icon(mui, texture_switch,
+            width - mui->margin - mui->icon_size, y,
+            width, height, 0, 1, &pure_white[0]);
 }
 
-static void materialui_render_menu_list(materialui_handle_t *materialui,
+static void mui_render_menu_list(mui_handle_t *mui,
       unsigned width, unsigned height,
       menu_handle_t *menu,
       uint32_t normal_color,
@@ -525,7 +518,7 @@ static void materialui_render_menu_list(materialui_handle_t *materialui,
 
    menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
-   materialui->list_block.carr.coords.vertices = 0;
+   mui->list_block.carr.coords.vertices = 0;
 
    for (i = menu_entries_get_start(); i < end; i++)
    {
@@ -537,23 +530,23 @@ static void materialui_render_menu_list(materialui_handle_t *materialui,
       if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
          continue;
 
-      y = header_height - menu->scroll_y + (materialui->line_height * i);
+      y = header_height - menu->scroll_y + (mui->line_height * i);
 
-      if ((y - (int)materialui->line_height) > (int)height
-            || ((y + (int)materialui->line_height) < 0))
+      if ((y - (int)mui->line_height) > (int)height
+            || ((y + (int)mui->line_height) < 0))
          continue;
 
       menu_entry_get(&entry, 0, i, NULL, true);
 
       entry_selected = selection == i;
 
-      materialui_render_label_value(materialui, y, width, height, *frame_count / 40,
+      mui_render_label_value(mui, y, width, height, *frame_count / 40,
          entry_selected ? hover_color : normal_color, entry_selected,
          entry.path, entry.value, pure_white);
    }
 }
 
-static void materialui_draw_cursor(materialui_handle_t *materialui,
+static void mui_draw_cursor(mui_handle_t *mui,
       GRfloat *color,
       float x, float y, unsigned width, unsigned height)
 {
@@ -573,15 +566,15 @@ static void materialui_draw_cursor(materialui_handle_t *materialui,
          64,
          64,
          &coords, NULL,
-         materialui->textures.list[GLUI_TEXTURE_POINTER].id,
+         mui->textures.list[MUI_TEXTURE_POINTER].id,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    menu_display_blend_end();
 }
 
-static size_t materialui_list_get_size(void *data, menu_list_type_t type)
+static size_t mui_list_get_size(void *data, menu_list_type_t type)
 {
-   size_t list_size        = 0;
+   size_t list_size = 0;
 
    switch (type)
    {
@@ -589,7 +582,7 @@ static size_t materialui_list_get_size(void *data, menu_list_type_t type)
          list_size  = menu_entries_get_stack_size(0);
          break;
       case MENU_LIST_TABS:
-         list_size = GLUI_SYSTEM_TAB_END;
+         list_size = MUI_SYSTEM_TAB_END;
          break;
       default:
          break;
@@ -598,7 +591,15 @@ static size_t materialui_list_get_size(void *data, menu_list_type_t type)
    return list_size;
 }
 
-static void materialui_frame(void)
+static void bgcolor_setalpha(GRfloat *bg, float alpha)
+{
+   bg[3]  = alpha;
+   bg[7]  = alpha;
+   bg[11] = alpha;
+   bg[15] = alpha;
+}
+
+static void mui_frame(void)
 {
    unsigned header_height;
    bool display_kb;
@@ -656,18 +657,18 @@ static void materialui_frame(void)
    char title_buf[PATH_MAX_LENGTH];
    size_t selection;
    size_t title_margin;
-   materialui_handle_t *materialui                     = NULL;
-   driver_t *driver                        = driver_get_ptr();
-   menu_handle_t *menu                     = menu_driver_get_ptr();
-   settings_t *settings                    = config_get_ptr();
-   uint64_t *frame_count                   = video_driver_get_frame_count();
-   const uint32_t normal_color             = 0x212121ff;
-   const uint32_t hover_color              = 0x212121ff;
-   const uint32_t title_color              = 0xffffffff;
-   const uint32_t activetab_color          = 0x0096f2ff;
-   const uint32_t passivetab_color         = 0x9e9e9eff;
-   bool background_rendered                = false;
-   bool libretro_running                   = menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
+   mui_handle_t *mui               = NULL;
+   driver_t *driver                = driver_get_ptr();
+   menu_handle_t *menu             = menu_driver_get_ptr();
+   settings_t *settings            = config_get_ptr();
+   uint64_t *frame_count           = video_driver_get_frame_count();
+   const uint32_t normal_color     = 0x212121ff;
+   const uint32_t hover_color      = 0x212121ff;
+   const uint32_t title_color      = 0xffffffff;
+   const uint32_t activetab_color  = 0x0096f2ff;
+   const uint32_t passivetab_color = 0x9e9e9eff;
+   bool background_rendered        = false;
+   bool libretro_running           = menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
 
    (void)passivetab_color;
    (void)activetab_color;
@@ -675,7 +676,7 @@ static void materialui_frame(void)
    if (!menu || !menu->userdata)
       return;
 
-   materialui = (materialui_handle_t*)menu->userdata;
+   mui = (mui_handle_t*)menu->userdata;
 
    msg[0]       = '\0';
    title[0]     = '\0';
@@ -686,12 +687,11 @@ static void materialui_frame(void)
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
-
    if (libretro_running)
    {
       menu_display_frame_background(
             width, height,
-            materialui->textures.white, 0.75f, false,
+            mui->textures.white, 0.75f, false,
             &white_transp_bg[0],   &white_bg[0],
             NULL, NULL, 4,
             MENU_DISPLAY_PRIM_TRIANGLESTRIP);
@@ -700,30 +700,22 @@ static void materialui_frame(void)
    {
       menu_display_clear_color(1.0f, 1.0f, 1.0f, 0.75f);
 
-      if (materialui->textures.bg.id)
+      if (mui->textures.bg.id)
       {
          background_rendered = true;
 
          /* Set new opacity for transposed white background */
-
-         white_transp_bg[3]  = 0.30;
-         white_transp_bg[7]  = 0.30;
-         white_transp_bg[11] = 0.30;
-         white_transp_bg[15] = 0.30;
+         bgcolor_setalpha(white_transp_bg, 0.30);
 
          menu_display_frame_background(
                width, height,
-               materialui->textures.bg.id, 0.75f, true,
+               mui->textures.bg.id, 0.75f, true,
                &white_transp_bg[0],   &white_bg[0],
                NULL, NULL, 4,
                MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
          /* Restore opacity of transposed white background */
-
-         white_transp_bg[3]  = 0.90;
-         white_transp_bg[7]  = 0.90;
-         white_transp_bg[11] = 0.90;
-         white_transp_bg[15] = 0.90;
+         bgcolor_setalpha(white_transp_bg, 0.90);
       }
    }
 
@@ -733,91 +725,79 @@ static void materialui_frame(void)
       return;
 
    if (background_rendered || libretro_running)
-   {
-      lightblue_bg[3]  = 0.75;
-      lightblue_bg[7]  = 0.75;
-      lightblue_bg[11] = 0.75;
-      lightblue_bg[15] = 0.75;
-   }
+      bgcolor_setalpha(lightblue_bg, 0.75);
    else
-   {
-      lightblue_bg[3]  = 1.00;
-      lightblue_bg[7]  = 1.00;
-      lightblue_bg[11] = 1.00;
-      lightblue_bg[15] = 1.00;
-   }
+      bgcolor_setalpha(lightblue_bg, 1.0);
+
    /* highlighted entry */
-   materialui_render_quad(0,
-         header_height - menu->scroll_y + materialui->line_height *
-         selection, width, materialui->line_height,
+   mui_render_quad(0,
+         header_height - menu->scroll_y + mui->line_height *
+         selection, width, mui->line_height,
          width, height,
          &lightblue_bg[0]);
 
-   menu_display_font_bind_block(menu, driver->font_osd_driver, &materialui->list_block);
+   menu_display_font_bind_block(menu, driver->font_osd_driver, &mui->list_block);
 
-   materialui_render_menu_list(materialui, width, height, menu, normal_color, hover_color, &pure_white[0]);
+   mui_render_menu_list(mui, width, height, menu, normal_color, hover_color, &pure_white[0]);
 
    menu_display_font_flush_block(menu, driver->font_osd_driver);
 
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    /* header */
-   materialui_render_quad( 0, 0, width,
-         header_height,
-         width, height,
-         &blue_bg[0]);
+   mui_render_quad( 0, 0, width, header_height, width, height, &blue_bg[0]);
 
    /* display tabs if depth equal one, if not hide them */
-   if (materialui_list_get_size(menu, MENU_LIST_PLAIN) == 1)
+   if (mui_list_get_size(menu, MENU_LIST_PLAIN) == 1)
    {
       float scale_factor;
       menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
 
-      materialui->tabs_height            = scale_factor / 3;
+      mui->tabs_height = scale_factor / 3;
 
       /* tabs background */
-      materialui_render_quad(0, height - materialui->tabs_height, width,
-            materialui->tabs_height,
+      mui_render_quad(0, height - mui->tabs_height, width,
+            mui->tabs_height,
             width, height,
             &white_bg[0]);
 
       /* tabs separator */
-      materialui_render_quad(0, height - materialui->tabs_height, width,
+      mui_render_quad(0, height - mui->tabs_height, width,
             1,
             width, height,
             &grey_bg[0]);
 
-      for (i = 0; i <= GLUI_SYSTEM_TAB_END; i++)
+      for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
       {
-         unsigned tab_icon = GLUI_TEXTURE_TAB_MAIN_PASSIVE;
+         unsigned tab_icon = MUI_TEXTURE_TAB_MAIN_PASSIVE;
          switch (i)
          {
-            case GLUI_SYSTEM_TAB_MAIN:
-               tab_icon = (i == materialui->categories.selection_ptr)
-                        ? GLUI_TEXTURE_TAB_MAIN_ACTIVE
-                        : GLUI_TEXTURE_TAB_MAIN_PASSIVE;
+            case MUI_SYSTEM_TAB_MAIN:
+               tab_icon = (i == mui->categories.selection_ptr)
+                        ? MUI_TEXTURE_TAB_MAIN_ACTIVE
+                        : MUI_TEXTURE_TAB_MAIN_PASSIVE;
                break;
-            case GLUI_SYSTEM_TAB_PLAYLISTS:
-               tab_icon = (i == materialui->categories.selection_ptr)
-                        ? GLUI_TEXTURE_TAB_PLAYLISTS_ACTIVE
-                        : GLUI_TEXTURE_TAB_PLAYLISTS_PASSIVE;
+            case MUI_SYSTEM_TAB_PLAYLISTS:
+               tab_icon = (i == mui->categories.selection_ptr)
+                        ? MUI_TEXTURE_TAB_PLAYLISTS_ACTIVE
+                        : MUI_TEXTURE_TAB_PLAYLISTS_PASSIVE;
                break;
-            case GLUI_SYSTEM_TAB_SETTINGS:
-               tab_icon = (i == materialui->categories.selection_ptr)
-                        ? GLUI_TEXTURE_TAB_SETTINGS_ACTIVE
-                        : GLUI_TEXTURE_TAB_SETTINGS_PASSIVE;
+            case MUI_SYSTEM_TAB_SETTINGS:
+               tab_icon = (i == mui->categories.selection_ptr)
+                        ? MUI_TEXTURE_TAB_SETTINGS_ACTIVE
+                        : MUI_TEXTURE_TAB_SETTINGS_PASSIVE;
                break;
          }
 
-         materialui_draw_icon(materialui, materialui->textures.list[tab_icon].id,
-               width / (GLUI_SYSTEM_TAB_END+1) * (i+0.5) - materialui->icon_size/2,
-               height - materialui->tabs_height,
+         mui_draw_icon(mui, mui->textures.list[tab_icon].id,
+               width / (MUI_SYSTEM_TAB_END+1) * (i+0.5) - mui->icon_size/2,
+               height - mui->tabs_height,
                width, height, 0, 1, &pure_white[0]);
       }
 
       /* active tab marker */
-      tab_width = width / (GLUI_SYSTEM_TAB_END+1);
-      materialui_render_quad(materialui->categories.selection_ptr * tab_width,
+      tab_width = width / (MUI_SYSTEM_TAB_END+1);
+      mui_render_quad(mui->categories.selection_ptr * tab_width,
             height - (header_height/16),
             tab_width,
             header_height/16,
@@ -826,32 +806,32 @@ static void materialui_frame(void)
    }
    else
    {
-      materialui->tabs_height = 0;
+      mui->tabs_height = 0;
    }
 
-   materialui_render_quad(0, header_height, width,
-         header_height/12,
+   mui_render_quad(0, header_height, width,
+         mui->shadow_height,
          width, height,
          &shadow_bg[0]);
 
-   title_margin = materialui->margin;
+   title_margin = mui->margin;
 
    if (menu_entries_show_back())
    {
-      title_margin = materialui->icon_size;
-      materialui_draw_icon(materialui, materialui->textures.list[GLUI_TEXTURE_BACK].id,
+      title_margin = mui->icon_size;
+      mui_draw_icon(mui, mui->textures.list[MUI_TEXTURE_BACK].id,
          0, 0, width, height, 0, 1, &pure_white[0]);
    }
 
-   ticker_limit = (width - materialui->margin*2) / materialui->glyph_width;
+   ticker_limit = (width - mui->margin*2) / mui->glyph_width;
    menu_animation_ticker_str(title_buf, ticker_limit,
          *frame_count / 100, title, true);
 
    /* Title */
-   materialui_blit_line(title_margin, 0, width, height, title_buf,
-         title_color, TEXT_ALIGN_LEFT);
+   mui_blit_line(title_margin, header_height / 2, width, height,
+         title_buf, title_color, TEXT_ALIGN_LEFT);
 
-   materialui_draw_scrollbar(width, height, &grey_bg[0]);
+   mui_draw_scrollbar(width, height, &grey_bg[0]);
 
    menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
 
@@ -863,16 +843,16 @@ static void materialui_frame(void)
 
       if (!str)
          str = "";
-      materialui_render_quad(0, 0, width, height, width, height, &black_bg[0]);
+      mui_render_quad(0, 0, width, height, width, height, &black_bg[0]);
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-      materialui_render_messagebox(msg);
+      mui_render_messagebox(msg);
    }
 
-   if (materialui->box_message[0] != '\0')
+   if (mui->box_message[0] != '\0')
    {
-      materialui_render_quad(0, 0, width, height, width, height, &black_bg[0]);
-      materialui_render_messagebox(materialui->box_message);
-      materialui->box_message[0] = '\0';
+      mui_render_quad(0, 0, width, height, width, height, &black_bg[0]);
+      mui_render_messagebox(mui->box_message);
+      mui->box_message[0] = '\0';
    }
 
    if (settings->menu.mouse.enable && (settings->video.fullscreen || !video_driver_has_windowed()))
@@ -880,14 +860,14 @@ static void materialui_frame(void)
       int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-      materialui_draw_cursor(materialui, &white_bg[0], mouse_x, mouse_y, width, height);
+      mui_draw_cursor(mui, &white_bg[0], mouse_x, mouse_y, width, height);
    }
 
    menu_display_restore_clear_color();
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
 
-static void materialui_allocate_white_texture(materialui_handle_t *materialui)
+static void mui_allocate_white_texture(mui_handle_t *mui)
 {
    struct texture_image ti;
    static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
@@ -896,11 +876,11 @@ static void materialui_allocate_white_texture(materialui_handle_t *materialui)
    ti.height = 1;
    ti.pixels = (uint32_t*)&white_data;
 
-   materialui->textures.white   = menu_display_texture_load(&ti,
+   mui->textures.white   = menu_display_texture_load(&ti,
          TEXTURE_FILTER_NEAREST);
 }
 
-static void materialui_font(menu_handle_t *menu)
+static void mui_font(menu_handle_t *menu)
 {
    int font_size;
    char mediapath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
@@ -915,7 +895,7 @@ static void materialui_font(menu_handle_t *menu)
       RARCH_WARN("Failed to load font.");
 }
 
-static void materialui_layout(menu_handle_t *menu, materialui_handle_t *materialui)
+static void mui_layout(menu_handle_t *menu, mui_handle_t *mui)
 {
    void *fb_buf;
    float scale_factor;
@@ -925,60 +905,61 @@ static void materialui_layout(menu_handle_t *menu, materialui_handle_t *material
    video_driver_get_size(&width, &height);
 
    /* Mobiles platforms may have very small display metrics coupled to a high
-      resolution, so we should be dpi aware to ensure the entries hitboxes are big
-      enough. On desktops, we just care about readability, with every widget size
-      proportional to the display width. */
+      resolution, so we should be dpi aware to ensure the entries hitboxes are
+      big enough. On desktops, we just care about readability, with every widget
+      size proportional to the display width. */
    menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
 
-   new_header_height            = scale_factor / 3;
-   new_font_size                = scale_factor / 9;
+   new_header_height    = scale_factor / 3;
+   new_font_size        = scale_factor / 9;
 
-   materialui->tabs_height            = scale_factor / 3;
-   materialui->line_height            = scale_factor / 3;
-   materialui->margin                 = scale_factor / 9;
-   materialui->icon_size              = scale_factor / 3;
+   mui->shadow_height   = scale_factor / 36;
+   mui->scrollbar_width = scale_factor / 36;
+   mui->tabs_height     = scale_factor / 3;
+   mui->line_height     = scale_factor / 3;
+   mui->margin          = scale_factor / 9;
+   mui->icon_size       = scale_factor / 3;
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &new_header_height);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,     &new_font_size);
 
    /* we assume the average glyph aspect ratio is close to 3:4 */
-   materialui->glyph_width            = new_font_size * 3/4;
+   mui->glyph_width = new_font_size * 3/4;
 
-   materialui_font(menu);
+   mui_font(menu);
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &fb_buf);
 
    if (fb_buf) /* calculate a more realistic ticker_limit */
    {
-      driver_t *driver   = driver_get_ptr();
-      int m_width = driver->font_osd_driver->get_message_width(fb_buf, "a", 1, 1);
+      driver_t *driver = driver_get_ptr();
+      unsigned m_width = driver->font_osd_driver->get_message_width(fb_buf, "a", 1, 1);
 
       if (m_width)
-         materialui->glyph_width = m_width;
+         mui->glyph_width = m_width;
    }
 }
 
-static void *materialui_init(void)
+static void *mui_init(void)
 {
-   materialui_handle_t *materialui                     = NULL;
-   menu_handle_t     *menu                 = (menu_handle_t*)
-      calloc(1, sizeof(*menu));
+   mui_handle_t   *mui = NULL;
+   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
       goto error;
 
-   if (!menu_display_check_compatibility((enum menu_display_driver_type)menu_ctx_materialui.type))
+   if (!menu_display_check_compatibility((enum menu_display_driver_type)menu_ctx_mui.type))
       goto error;
 
-   menu->userdata       = (materialui_handle_t*)calloc(1, sizeof(materialui_handle_t));
+   menu->userdata = (mui_handle_t*)calloc(1, sizeof(mui_handle_t));
 
    if (!menu->userdata)
       goto error;
 
-   materialui                         = (materialui_handle_t*)menu->userdata;
+   mui = (mui_handle_t*)menu->userdata;
 
-   materialui_layout(menu, materialui);
-   materialui_allocate_white_texture(materialui);
+   mui_layout(menu, mui);
+   mui_allocate_white_texture(mui);
 
    return menu;
 error:
@@ -987,18 +968,18 @@ error:
    return NULL;
 }
 
-static void materialui_free(void *data)
+static void mui_free(void *data)
 {
-   menu_handle_t *menu                     = (menu_handle_t*)data;
-   driver_t      *driver                   = driver_get_ptr();
-   materialui_handle_t *materialui                     = (materialui_handle_t*)menu->userdata;
-   const struct font_renderer *font_driver = driver ? (const struct font_renderer*)
-      driver->font_osd_driver : NULL;
+   menu_handle_t *menu = (menu_handle_t*)data;
+   driver_t *driver    = driver_get_ptr();
+   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
+   const struct font_renderer *font_driver = driver ?
+         (const struct font_renderer*)driver->font_osd_driver : NULL;
 
-   if (!materialui || !menu)
+   if (!mui)
       return;
 
-   gfx_coord_array_free(&materialui->list_block.carr);
+   gfx_coord_array_free(&mui->list_block.carr);
 
    if (font_driver && font_driver->bind_block)
       font_driver->bind_block(driver->font_osd_data, NULL);
@@ -1008,57 +989,52 @@ static void materialui_free(void *data)
    menu->userdata = NULL;
 }
 
-static void materialui_context_bg_destroy(materialui_handle_t *materialui)
+static void mui_context_bg_destroy(mui_handle_t *mui)
 {
-   if (!materialui)
+   if (!mui)
       return;
 
-   menu_display_texture_unload((uintptr_t*)&materialui->textures.bg.id);
-   menu_display_texture_unload((uintptr_t*)&materialui->textures.white);
+   menu_display_texture_unload((uintptr_t*)&mui->textures.bg.id);
+   menu_display_texture_unload((uintptr_t*)&mui->textures.white);
 }
 
-static void materialui_context_destroy(void)
+static void mui_context_destroy(void)
 {
    unsigned i;
-   materialui_handle_t *materialui   = NULL;
-   menu_handle_t *menu   = menu_driver_get_ptr();
+   menu_handle_t *menu = menu_driver_get_ptr();
+   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
 
-   if (!menu || !menu->userdata)
+   if (!mui)
       return;
 
-   materialui = (materialui_handle_t*)menu->userdata;
-
-   if (!materialui)
-      return;
-
-   for (i = 0; i < GLUI_TEXTURE_LAST; i++)
-      menu_display_texture_unload((uintptr_t*)&materialui->textures.list[i].id);
+   for (i = 0; i < MUI_TEXTURE_LAST; i++)
+      menu_display_texture_unload((uintptr_t*)&mui->textures.list[i].id);
 
    menu_display_free_main_font();
 
-   materialui_context_bg_destroy(materialui);
+   mui_context_bg_destroy(mui);
 }
 
-static bool materialui_load_image(void *data, menu_image_type_t type)
+static bool mui_load_image(void *data, menu_image_type_t type)
 {
-   materialui_handle_t *materialui = NULL;
+   mui_handle_t *mui   = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu || !menu->userdata)
       return false;
 
-   materialui = (materialui_handle_t*)menu->userdata;
+   mui = (mui_handle_t*)menu->userdata;
 
    switch (type)
    {
       case MENU_IMAGE_NONE:
          break;
       case MENU_IMAGE_WALLPAPER:
-         materialui_context_bg_destroy(materialui);
+         mui_context_bg_destroy(mui);
 
-         materialui->textures.bg.id   = menu_display_texture_load(data,
+         mui->textures.bg.id = menu_display_texture_load(data,
                TEXTURE_FILTER_MIPMAP_LINEAR);
-         materialui_allocate_white_texture(materialui);
+         mui_allocate_white_texture(mui);
          break;
       case MENU_IMAGE_BOXART:
          break;
@@ -1067,13 +1043,12 @@ static bool materialui_load_image(void *data, menu_image_type_t type)
    return true;
 }
 
-static float materialui_get_scroll(void)
+static float mui_get_scroll(void)
 {
    size_t selection;
-   unsigned width, height;
-   int half = 0;
-   materialui_handle_t *materialui    = NULL;
-   menu_handle_t *menu    = menu_driver_get_ptr();
+   unsigned width, height, half = 0;
+   mui_handle_t *mui            = NULL;
+   menu_handle_t    *menu       = menu_driver_get_ptr();
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;
@@ -1083,19 +1058,21 @@ static float materialui_get_scroll(void)
 
    video_driver_get_size(&width, &height);
 
-   materialui = (materialui_handle_t*)menu->userdata;
-   if (materialui->line_height)
-      half = (height / materialui->line_height) / 2;
+   mui = (mui_handle_t*)menu->userdata;
 
-   if (selection < (unsigned)half)
+   if (mui->line_height)
+      half = (height / mui->line_height) / 2;
+
+   if (selection < half)
       return 0;
-   return ((selection + 2 - half) * materialui->line_height);
+
+   return ((selection + 2 - half) * mui->line_height);
 }
 
-static void materialui_navigation_set(bool scroll)
+static void mui_navigation_set(bool scroll)
 {
    menu_handle_t *menu  = menu_driver_get_ptr();
-   float     scroll_pos = materialui_get_scroll();
+   float     scroll_pos = mui_get_scroll();
 
    if (!menu || !scroll)
       return;
@@ -1104,69 +1081,65 @@ static void materialui_navigation_set(bool scroll)
          &menu->scroll_y, EASING_IN_OUT_QUAD, -1, NULL);
 }
 
-static void  materialui_list_set_selection(file_list_t *list)
+static void  mui_list_set_selection(file_list_t *list)
 {
-   materialui_navigation_set(true);
+   mui_navigation_set(true);
 }
 
-static void materialui_navigation_clear(bool pending_push)
+static void mui_navigation_clear(bool pending_push)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
 
    menu_entries_set_start(0);
-   menu->scroll_y      = 0;
+   menu->scroll_y = 0;
 }
 
-static void materialui_navigation_set_last(void)
+static void mui_navigation_set_last(void)
 {
-   materialui_navigation_set(true);
+   mui_navigation_set(true);
 }
 
-static void materialui_navigation_alphabet(size_t *unused)
+static void mui_navigation_alphabet(size_t *unused)
 {
-   materialui_navigation_set(true);
+   mui_navigation_set(true);
 }
 
-static void materialui_populate_entries(const char *path,
+static void mui_populate_entries(const char *path,
       const char *label, unsigned i)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
 
-   menu->scroll_y      = materialui_get_scroll();
+   menu->scroll_y = mui_get_scroll();
 }
 
-static void materialui_context_reset(void)
+static void mui_context_reset(void)
 {
-   char iconpath[PATH_MAX_LENGTH]  = {0};
-   materialui_handle_t *materialui   = NULL;
-   menu_handle_t *menu   = menu_driver_get_ptr();
-   settings_t *settings  = config_get_ptr();
+   char iconpath[PATH_MAX_LENGTH] = {0};
+   menu_handle_t *menu            = menu_driver_get_ptr();
+   mui_handle_t *mui              = menu ? (mui_handle_t*)menu->userdata : NULL;
+   settings_t *settings           = config_get_ptr();
 
-   if (!menu || !menu->userdata || !settings)
-      return;
-
-   materialui      = (materialui_handle_t*)menu->userdata;
-   if (!materialui)
+   if (!mui || !settings)
       return;
 
    fill_pathname_join(iconpath, settings->assets_directory,
          "glui", sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
-   materialui_layout(menu, materialui);
-   materialui_context_bg_destroy(materialui);
-   materialui_allocate_white_texture(materialui);
-   materialui_context_reset_textures(materialui, iconpath);
+   mui_layout(menu, mui);
+   mui_context_bg_destroy(mui);
+   mui_allocate_white_texture(mui);
+   mui_context_reset_textures(mui, iconpath);
 
    rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE,
          settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
 }
 
-static int materialui_environ(menu_environ_cb_t type, void *data)
+static int mui_environ(menu_environ_cb_t type, void *data)
 {
    switch (type)
    {
@@ -1178,22 +1151,17 @@ static int materialui_environ(menu_environ_cb_t type, void *data)
    return -1;
 }
 
-static void materialui_preswitch_tabs(unsigned action)
+static void mui_preswitch_tabs(unsigned action)
 {
-   size_t stack_size               = 0;
-   file_list_t *menu_stack         = NULL;
-   materialui_handle_t *materialui = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   size_t stack_size       = 0;
+   file_list_t *menu_stack = NULL;
+   menu_handle_t *menu     = menu_driver_get_ptr();
+   mui_handle_t *mui       = menu ? (mui_handle_t*)menu->userdata : NULL;
 
-   if (!menu)
+   if (!mui)
       return;
 
-   materialui = (materialui_handle_t*)menu->userdata;
-
-   if (!materialui)
-      return;
-
-   size_t idx  = 0;
+   size_t idx = 0;
    menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
 
    menu_stack = menu_entries_get_menu_stack_ptr(0);
@@ -1203,15 +1171,15 @@ static void materialui_preswitch_tabs(unsigned action)
       free(menu_stack->list[stack_size - 1].label);
    menu_stack->list[stack_size - 1].label = NULL;
 
-   switch (materialui->categories.selection_ptr)
+   switch (mui->categories.selection_ptr)
    {
-      case GLUI_SYSTEM_TAB_MAIN:
+      case MUI_SYSTEM_TAB_MAIN:
          menu_stack->list[stack_size - 1].label = 
             strdup(menu_hash_to_str(MENU_VALUE_MAIN_MENU));
          menu_stack->list[stack_size - 1].type = 
             MENU_SETTINGS;
          break;
-      case GLUI_SYSTEM_TAB_PLAYLISTS:
+      case MUI_SYSTEM_TAB_PLAYLISTS:
          menu_stack->list[stack_size - 1].label = 
             strdup(menu_hash_to_str(MENU_VALUE_PLAYLISTS_TAB));
          menu_stack->list[stack_size - 1].label = 
@@ -1219,7 +1187,7 @@ static void materialui_preswitch_tabs(unsigned action)
          menu_stack->list[stack_size - 1].type = 
             MENU_PLAYLISTS_TAB;
          break;
-      case GLUI_SYSTEM_TAB_SETTINGS:
+      case MUI_SYSTEM_TAB_SETTINGS:
          menu_stack->list[stack_size - 1].label = 
             strdup(menu_hash_to_str(MENU_VALUE_SETTINGS_TAB));
          menu_stack->list[stack_size - 1].type = 
@@ -1228,63 +1196,58 @@ static void materialui_preswitch_tabs(unsigned action)
    }
 }
 
-static void materialui_list_cache(menu_list_type_t type, unsigned action)
+static void mui_list_cache(menu_list_type_t type, unsigned action)
 {
    size_t list_size;
-   materialui_handle_t      *materialui = NULL;
-   menu_handle_t      *menu = menu_driver_get_ptr();
+   menu_handle_t *menu = menu_driver_get_ptr();
+   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
 
-   if (!menu)
+   if (!mui)
       return;
 
-   materialui = (materialui_handle_t*)menu->userdata;
-
-   if (!materialui)
-      return;
-
-   list_size = GLUI_SYSTEM_TAB_END;
+   list_size = MUI_SYSTEM_TAB_END;
 
    switch (type)
    {
       case MENU_LIST_PLAIN:
          break;
       case MENU_LIST_HORIZONTAL:
-         materialui->categories.selection_ptr_old = materialui->categories.selection_ptr;
+         mui->categories.selection_ptr_old = mui->categories.selection_ptr;
 
          switch (action)
          {
             case MENU_ACTION_LEFT:
-               if (materialui->categories.selection_ptr == 0)
+               if (mui->categories.selection_ptr == 0)
                {
-                  materialui->categories.selection_ptr = list_size;
-                  materialui->categories.active.idx = list_size - 1;
+                  mui->categories.selection_ptr = list_size;
+                  mui->categories.active.idx = list_size - 1;
                }
                else
-                  materialui->categories.selection_ptr--;
+                  mui->categories.selection_ptr--;
                break;
             default:
-               if (materialui->categories.selection_ptr == list_size)
+               if (mui->categories.selection_ptr == list_size)
                {
-                  materialui->categories.selection_ptr = 0;
-                  materialui->categories.active.idx = 1;
+                  mui->categories.selection_ptr = 0;
+                  mui->categories.active.idx = 1;
                }
                else
-                  materialui->categories.selection_ptr++;
+                  mui->categories.selection_ptr++;
                break;
          }
 
-         materialui_preswitch_tabs(action);
+         mui_preswitch_tabs(action);
          break;
       default:
          break;
    }
 }
 
-static int materialui_list_push(menu_displaylist_info_t *info, unsigned type)
+static int mui_list_push(menu_displaylist_info_t *info, unsigned type)
 {
    int ret = -1;
-   menu_handle_t *menu   = menu_driver_get_ptr();
-   global_t    *global   = global_get_ptr();
+   menu_handle_t *menu = menu_driver_get_ptr();
+   global_t    *global = global_get_ptr();
 
    switch (type)
    {
@@ -1360,18 +1323,18 @@ static int materialui_list_push(menu_displaylist_info_t *info, unsigned type)
    return ret;
 }
 
-static size_t materialui_list_get_selection(void *data)
+static size_t mui_list_get_selection(void *data)
 {
-   menu_handle_t *menu    = (menu_handle_t*)data;
-   materialui_handle_t *materialui      = menu ? (materialui_handle_t*)menu->userdata : NULL;
+   menu_handle_t *menu = (menu_handle_t*)data;
+   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
 
-   if (!materialui)
+   if (!mui)
       return 0;
 
-   return materialui->categories.selection_ptr;
+   return mui->categories.selection_ptr;
 }
 
-static int materialui_pointer_tap(unsigned x, unsigned y, 
+static int mui_pointer_tap(unsigned x, unsigned y, 
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
@@ -1379,11 +1342,11 @@ static int materialui_pointer_tap(unsigned x, unsigned y,
    unsigned header_height, width, height, i;
    bool scroll                = false;
    menu_handle_t *menu        = menu_driver_get_ptr();
-   materialui_handle_t *materialui        = menu ? (materialui_handle_t*)menu->userdata : NULL;
+   mui_handle_t *mui          = menu ? (mui_handle_t*)menu->userdata : NULL;
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-   if (!materialui)
+   if (!mui)
       return 0;
 
    video_driver_get_size(&width, &height);
@@ -1396,18 +1359,18 @@ static int materialui_pointer_tap(unsigned x, unsigned y,
       menu_entries_pop_stack(&selection, 0);
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
    }
-   else if (y > height - materialui->tabs_height)
+   else if (y > height - mui->tabs_height)
    {
-      for (i = 0; i <= GLUI_SYSTEM_TAB_END; i++)
+      for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
       {
-         unsigned tab_width = width / (GLUI_SYSTEM_TAB_END + 1);
+         unsigned tab_width = width / (MUI_SYSTEM_TAB_END + 1);
          unsigned start = tab_width * i;
 
          if ((x >= start) && (x < (start + tab_width)))
          {
-            materialui->categories.selection_ptr = i;
+            mui->categories.selection_ptr = i;
 
-            materialui_preswitch_tabs(action);
+            mui_preswitch_tabs(action);
 
             if (cbs && cbs->action_content_list_switch)
                return cbs->action_content_list_switch(selection_buf, menu_stack,
@@ -1429,39 +1392,39 @@ static int materialui_pointer_tap(unsigned x, unsigned y,
    return 0;
 }
 
-menu_ctx_driver_t menu_ctx_materialui = {
+menu_ctx_driver_t menu_ctx_mui = {
    NULL,
-   materialui_get_message,
+   mui_get_message,
    generic_menu_iterate,
-   materialui_render,
-   materialui_frame,
-   materialui_init,
-   materialui_free,
-   materialui_context_reset,
-   materialui_context_destroy,
-   materialui_populate_entries,
+   mui_render,
+   mui_frame,
+   mui_init,
+   mui_free,
+   mui_context_reset,
+   mui_context_destroy,
+   mui_populate_entries,
    NULL,
-   materialui_navigation_clear,
+   mui_navigation_clear,
    NULL,
    NULL,
-   materialui_navigation_set,
-   materialui_navigation_set_last,
-   materialui_navigation_alphabet,
-   materialui_navigation_alphabet,
+   mui_navigation_set,
+   mui_navigation_set_last,
+   mui_navigation_alphabet,
+   mui_navigation_alphabet,
    generic_menu_init_list,
    NULL,
    NULL,
    NULL,
-   materialui_list_cache,
-   materialui_list_push,
-   materialui_list_get_selection,
-   materialui_list_get_size,
+   mui_list_cache,
+   mui_list_push,
+   mui_list_get_selection,
+   mui_list_get_size,
    NULL,
-   materialui_list_set_selection,
+   mui_list_set_selection,
    NULL,
-   materialui_load_image,
+   mui_load_image,
    "glui",
    MENU_VIDEO_DRIVER_OPENGL,
-   materialui_environ,
-   materialui_pointer_tap,
+   mui_environ,
+   mui_pointer_tap,
 };

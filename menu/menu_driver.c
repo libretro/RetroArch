@@ -31,7 +31,7 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    &menu_ctx_rmenu_xui,
 #endif
 #if defined(HAVE_MATERIALUI)
-   &menu_ctx_materialui,
+   &menu_ctx_mui,
 #endif
 #if defined(HAVE_XMB)
    &menu_ctx_xmb,
