@@ -1775,7 +1775,7 @@ int cheevos_load(const struct retro_game_info *info)
    unsigned game_id = 0;
    size_t memory;
    struct retro_system_info sysinfo;
-   const char *ext;
+   int i;
    const char *json;
    
    cheevos_locals.loaded = 0;
@@ -1798,25 +1798,30 @@ int cheevos_load(const struct retro_game_info *info)
    /* The the supported extensions as a hint to what method we should use. */
    
    core.retro_get_system_info(&sysinfo);
-   ext = sysinfo.valid_extensions;
    
-   while (ext)
+   for (i = 0; i < sizeof(finders) / sizeof(finders[0]); i++)
    {
-      const char *end = strchr(ext, '|');
-      unsigned hash;
-      int i, j;
-      
-      if (end)
-         hash = cheevos_djb2(ext, end - ext);
-      else
-         hash = cheevos_djb2(ext, strlen(ext));
-      
-      ext = end + (end != NULL);
-      
-      for (i = 0; i < sizeof(finders) / sizeof(finders[0]); i++)
+      if (finders[i].ext_hashes)
       {
-         if (finders[i].ext_hashes)
+         const char *ext = sysinfo.valid_extensions;
+         
+         while (ext)
          {
+            const char *end = strchr(ext, '|');
+            unsigned hash;
+            int j;
+            
+            if (end)
+            {
+               hash = cheevos_djb2(ext, end - ext);
+               ext++;
+            }
+            else
+            {
+               hash = cheevos_djb2(ext, strlen(ext));
+               ext = NULL;
+            }
+            
             for (j = 0; finders[i].ext_hashes[j]; j++)
             {
                if (finders[i].ext_hashes[j] == hash)
@@ -1828,23 +1833,24 @@ int cheevos_load(const struct retro_game_info *info)
                   if (game_id)
                      goto found;
                   
+                  ext = NULL; /* force next finder */
                   break;
                }
             }
          }
       }
-      
-      for (i = 0; i < sizeof(finders) / sizeof(finders[0]); i++)
+   }
+   
+   for (i = 0; i < sizeof(finders) / sizeof(finders[0]); i++)
+   {
+      if (!finders[i].ext_hashes)
       {
-         if (!finders[i].ext_hashes)
-         {
-            RARCH_LOG("CHEEVOS testing %s\n", finders[i].name);
-            
-            game_id = finders[i].finder(info, 5000000);
-            
-            if (game_id)
-               goto found;
-         }
+         RARCH_LOG("CHEEVOS testing %s\n", finders[i].name);
+         
+         game_id = finders[i].finder(info, 5000000);
+         
+         if (game_id)
+            goto found;
       }
    }
    
