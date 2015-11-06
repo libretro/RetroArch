@@ -1814,7 +1814,7 @@ int cheevos_load(const struct retro_game_info *info)
             if (end)
             {
                hash = cheevos_djb2(ext, end - ext);
-               ext++;
+               ext = end + 1;
             }
             else
             {
