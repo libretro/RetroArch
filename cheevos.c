@@ -1784,6 +1784,10 @@ int cheevos_load(const struct retro_game_info *info)
    if (!config_get_ptr()->cheevos.enable)
       return 0;
    
+   /* Also return OK if there's no content. */
+   if (!info)
+      return 0;
+   
    memory  = core.retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
    memory += core.retro_get_memory_size(RETRO_MEMORY_VIDEO_RAM);
    memory += core.retro_get_memory_size(RETRO_MEMORY_RTC);
@@ -1792,7 +1796,8 @@ int cheevos_load(const struct retro_game_info *info)
    if (!memory)
    {
       rarch_main_msg_queue_push("This core doesn't support achievements", 0, 5 * 60, false);
-      //return -1;
+      RARCH_LOG("This core doesn't support achievements\n");
+      return -1;
    }
    
    /* The the supported extensions as a hint to what method we should use. */
