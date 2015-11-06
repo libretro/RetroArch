@@ -1792,7 +1792,8 @@ int cheevos_load(const struct retro_game_info *info)
    if (!memory)
    {
       rarch_main_msg_queue_push("This core doesn't support achievements", 0, 5 * 60, false);
-      //return -1;
+      RARCH_LOG("This core doesn't support achievements\n");
+      return -1;
    }
    
    /* The the supported extensions as a hint to what method we should use. */
