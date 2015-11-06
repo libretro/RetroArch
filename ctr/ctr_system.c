@@ -1,5 +1,6 @@
 
 #include <3ds.h>
+#include <sys/iosupport.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -27,11 +28,36 @@ void __libc_fini_array(void);
 void __libctru_init(void (*retAddr)(void));
 void __appInit();
 void __libc_init_array(void);
+void __system_allocateHeaps();
+void __system_initArgv();
 
+void __ctru_exit(int rc);
+int __libctru_gtod(struct _reent *ptr, struct timeval *tp, struct timezone *tz);
+void (*__system_retAddr)(void);
+extern void* __service_ptr;
 
 u32 __stack_bottom;
 u32 __stack_size_extra;
 
+Result __sync_init(void) __attribute__((weak));
+
+void __attribute__((weak)) __libctru_init(void (*retAddr)(void))
+{
+	// Register newlib exit() syscall
+	__syscalls.exit = __ctru_exit;
+    __syscalls.gettod_r = __libctru_gtod;
+
+	__system_retAddr = __service_ptr ? retAddr : NULL;
+
+	if (__sync_init)
+		__sync_init();
+
+	__system_allocateHeaps();
+
+	// Build argc/argv if present
+	__system_initArgv();
+
+}
 void __system_allocateHeaps() {
    u32 tmp=0;
 
