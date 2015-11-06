@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include "ctr_debug.h"
 
 #define CTR_APPMEMALLOC_PTR ((u32*)0x1FF80040)
 
@@ -60,7 +61,7 @@ void __system_allocateHeaps() {
 	svcControlMemory(&__linear_heap, 0x0, 0x0, __linear_heap_size, MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
 	// Set up newlib heap
    extern char* fake_heap_end;
-   fake_heap_end = 0x13F00000;
+   fake_heap_end = (char*)0x13F00000;
 
 }
 
@@ -153,21 +154,38 @@ void __system_initArgv()
 }
 
 
-//void initSystem(void (*retAddr)(void))
-//{
-//   __libctru_init(retAddr);
-//   __appInit();
-//   __libc_init_array();
+void initSystem(void (*retAddr)(void))
+{
+   __libctru_init(retAddr);
+   __appInit();
+   __libc_init_array();
 
-//}
-//void __attribute__((noreturn)) __ctru_exit(int rc)
-//{
-//   __libc_fini_array();
-//   __appExit();
-//   __libctru_exit(rc);
+}
+void __attribute__((noreturn)) __ctru_exit(int rc)
+{
+   __libc_fini_array();
+   __appExit();
+   __libctru_exit(rc);
+
+}
 
 
-//}
+int ctr_request_update(void)
+{
+   gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);
+   gfxSet3D(false);
+   consoleInit(GFX_BOTTOM, NULL);
+
+   printf("\n\nunsupported version\n\n");
+   printf("Please update your playload\n");
+
+   wait_for_input();
+
+   gfxExit();
+
+   return 0;
+}
+
 
 typedef union{
    struct

@@ -24,7 +24,6 @@ include ctr/Makefile.cores
 
 OBJS :=
 OBJS += gfx/drivers/ctr_sprite.o
-OBJS += ctr/stack_adjust.o
 OBJS += ctr/ctr_system.o
 OBJS += ctr/ctr_memory.o
 OBJS += ctr/ctr_linear.o
