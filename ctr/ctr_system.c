@@ -153,22 +153,19 @@ void __system_initArgv()
 	__system_argv[__system_argc] = NULL;
 }
 
-
 void initSystem(void (*retAddr)(void))
 {
    __libctru_init(retAddr);
    __appInit();
    __libc_init_array();
-
 }
+
 void __attribute__((noreturn)) __ctru_exit(int rc)
 {
    __libc_fini_array();
    __appExit();
    __libctru_exit(rc);
-
 }
-
 
 int ctr_request_update(void)
 {

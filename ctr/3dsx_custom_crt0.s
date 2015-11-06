@@ -39,7 +39,7 @@ startup:
 
 	@ System initialization
 	mov r0, r4
-   and r4, sp, #7
+	and r4, sp, #7
 	bl initSystem
 
 	@ Set up argc/argv arguments for main()
@@ -48,10 +48,10 @@ startup:
 	ldr r0, [r0]
 	ldr r1, [r1]
 
-	@ Jump to user code   
+	@ Jump to user code
 	ldr r3, =main
-   cmp r4, #0
-   ldrne r3, =ctr_request_update
+	cmp r4, #0
+	ldrne r3, =ctr_request_update
 	ldr lr, =__ctru_exit
 	bx  r3
 
