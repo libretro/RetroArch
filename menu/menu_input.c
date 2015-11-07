@@ -102,8 +102,6 @@ typedef struct menu_input
 {
    struct menu_bind_state binds;
 
-   bool bind_mode_keyboard;
-
    uint64_t devices_mask;
 
    menu_input_mouse_t mouse;
@@ -665,17 +663,10 @@ static int menu_input_key_bind_set_mode_common(rarch_setting_t  *setting,
    return 0;
 }
 
-static void menu_input_key_bind_set_timeout(void)
-{
-   menu_input_t  *menu_input = menu_input_get_ptr();
-
-   menu_input->binds.timeout_end   = retro_get_time_usec() +
-      MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-}
-
 int menu_input_key_bind_set_mode(void *data,
       enum menu_input_bind_mode type)
 {
+   unsigned index_offset;
    menu_handle_t       *menu = menu_driver_get_ptr();
    menu_input_t  *menu_input = menu_input_get_ptr();
    rarch_setting_t  *setting = (rarch_setting_t*)data;
@@ -687,35 +678,15 @@ int menu_input_key_bind_set_mode(void *data,
    if (menu_input_key_bind_set_mode_common(setting, type) == -1)
       return -1;
 
-   switch (settings->input.bind_mode)
-   {
-      case 0:
-         break;
-      case 1:
-         joypad_pressed = false;
-         break;
-      case 2:
-         joypad_pressed = true;
-         break;
-   }
+   index_offset = menu_setting_get_index_offset(setting);
+   bind_port    = settings->input.joypad_map[index_offset];
 
-   if (joypad_pressed)
-   {
-      unsigned index_offset = menu_setting_get_index_offset(setting);
-      bind_port    = settings->input.joypad_map[index_offset];
+   menu_input_key_bind_poll_bind_get_rested_axes(&menu_input->binds, bind_port);
+   menu_input_key_bind_poll_bind_state(&menu_input->binds, bind_port, false);
 
-      menu_input_key_bind_poll_bind_get_rested_axes(&menu_input->binds, bind_port);
-      menu_input_key_bind_poll_bind_state(&menu_input->binds, bind_port, false);
+   menu_input->binds.timeout_end   = retro_get_time_usec() +
+      MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
 
-      menu_input_key_bind_set_timeout();
-
-      menu_input->bind_mode_keyboard = false;
-      return 0;
-   }
-
-   menu_input->bind_mode_keyboard = true;
-
-   menu_input_key_bind_set_timeout();
    input_keyboard_wait_keys(menu,
          menu_input_key_bind_custom_bind_keyboard_cb);
    return 0;
@@ -732,13 +703,32 @@ void menu_input_key_bind_set_min_max(unsigned min, unsigned max)
    menu_input->binds.last  = max;
 }
 
-static int menu_input_key_bind_iterate_keyboard(int64_t current, int timeout, bool timed_out)
+int menu_input_key_bind_iterate(char *s, size_t len)
 {
-   menu_input_t *menu_input = menu_input_get_ptr();
-   driver_t         *driver = driver_get_ptr();
+   struct menu_bind_state binds;
+   bool               timed_out = false;
+   menu_input_t *menu_input     = menu_input_get_ptr();
+   driver_t *driver             = driver_get_ptr();
+   int64_t current              = retro_get_time_usec();
+   int timeout                  = (menu_input->binds.timeout_end - current) / 1000000;
 
-   if (!menu_input)
-      return -1;
+   if (timeout <= 0)
+   {
+      input_driver_keyboard_mapping_set_block(false);
+
+      menu_input->binds.begin++;
+      menu_input->binds.target++;
+      menu_input->binds.timeout_end = retro_get_time_usec() +
+         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+      timed_out = true;
+   }
+
+   snprintf(s, len,
+         "[%s]\npress keyboard or joypad\n(timeout %d %s)",
+         input_config_bind_map[
+         menu_input->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
+         timeout,
+         menu_hash_to_str(MENU_VALUE_SECONDS));
 
    /* binds.begin is updated in keyboard_press callback. */
    if (menu_input->binds.begin > menu_input->binds.last)
@@ -752,49 +742,6 @@ static int menu_input_key_bind_iterate_keyboard(int64_t current, int timeout, bo
 
       return 1;
    }
-
-   return 0;
-}
-
-int menu_input_key_bind_iterate(char *s, size_t len)
-{
-   struct menu_bind_state binds;
-   bool               timed_out = false;
-   menu_input_t *menu_input     = menu_input_get_ptr();
-   driver_t *driver             = driver_get_ptr();
-   bool bind_mode_kb            = menu_input->bind_mode_keyboard;
-   int64_t current              = retro_get_time_usec();
-   int timeout                  = (menu_input->binds.timeout_end - current) / 1000000;
-
-   if (timeout <= 0)
-   {
-      if (!bind_mode_kb)
-         input_driver_keyboard_mapping_set_block(false);
-
-      menu_input->binds.begin++;
-      menu_input->binds.target++;
-      menu_input->binds.timeout_end = retro_get_time_usec() +
-         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-      timed_out = true;
-   }
-
-   if (bind_mode_kb)
-   {
-      snprintf(s, len,
-            "[%s]\npress keyboard\n(timeout %d %s)",
-            input_config_bind_map[
-            menu_input->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
-            timeout,
-            menu_hash_to_str(MENU_VALUE_SECONDS));
-      return menu_input_key_bind_iterate_keyboard(current, timeout, timed_out);
-   }
-   else
-      snprintf(s, len,
-            "[%s]\npress joypad\n(timeout %d %s)",
-            input_config_bind_map[
-            menu_input->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
-            timeout,
-            menu_hash_to_str(MENU_VALUE_SECONDS));
 
    binds = menu_input->binds;
 
