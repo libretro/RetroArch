@@ -239,6 +239,7 @@ static int action_left_cheat_num_passes(unsigned type, const char *label,
 {
    unsigned new_size = 0;
    global_t *global       = global_get_ptr();
+   menu_handle_t *menu    = menu_driver_get_ptr();
    cheat_manager_t *cheat = global->cheat;
 
    if (!cheat)
@@ -247,6 +248,7 @@ static int action_left_cheat_num_passes(unsigned type, const char *label,
    if (cheat_manager_get_size(cheat))
       new_size = cheat_manager_get_size(cheat) - 1;
    menu_entries_set_refresh(false);
+   menu->prevent_populate = true;
    cheat_manager_realloc(cheat, new_size);
 
    return 0;
@@ -268,6 +270,7 @@ static int action_left_shader_num_passes(unsigned type, const char *label,
    if (shader->passes)
       shader->passes--;
    menu_entries_set_refresh(false);
+   menu->prevent_populate = true;
    video_shader_resolve_parameters(NULL, menu->shader);
 
 #endif

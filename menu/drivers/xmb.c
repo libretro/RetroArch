@@ -218,7 +218,6 @@ typedef struct xmb_handle
    xmb_node_t settings_tab_node;
    xmb_node_t history_tab_node;
    xmb_node_t add_tab_node;
-   bool prevent_populate;
 
    gfx_font_raster_block_t raster_block;
 } xmb_handle_t;
@@ -1113,7 +1112,7 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb,
       free(xmb->horizontal_list);
    xmb->horizontal_list = NULL;
 
-   xmb->prevent_populate = true;
+   menu->prevent_populate = true;
 
    xmb_init_horizontal_list(menu, xmb);
    xmb_context_reset_horizontal_list(xmb, menu, themepath);
@@ -1205,10 +1204,10 @@ static void xmb_populate_entries(const char *path,
    if (!xmb)
       return;
 
-   if (xmb->prevent_populate)
+   if (menu->prevent_populate)
    {
       xmb_selection_pointer_changed(false);
-      xmb->prevent_populate = false;
+      menu->prevent_populate = false;
       return;
    }
 
@@ -1974,7 +1973,7 @@ static void *xmb_init(void)
    xmb->depth                   = 1;
    xmb->old_depth               = 1;
    xmb->alpha                   = 0;
-   xmb->prevent_populate        = false;
+   menu->prevent_populate       = false;
 
    /* TODO/FIXME - we don't use framebuffer at all
     * for XMB, we should refactor this dependency
@@ -2571,7 +2570,7 @@ static void xmb_toggle(bool menu_on)
    menu_animation_push(XMB_DELAY, 1.0f,
          &xmb->alpha, EASING_IN_OUT_QUAD, -1, NULL);
 
-   xmb->prevent_populate = !menu_entries_needs_refresh();
+   menu->prevent_populate = !menu_entries_needs_refresh();
 
    xmb_toggle_horizontal_list(xmb, menu);
 }
