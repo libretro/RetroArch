@@ -99,10 +99,8 @@ const char *menu_hash_to_str_pl(uint32_t hash)
          return "RetroKeyboard";
       case MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Block Frames";
-      case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "Wy¶wietl opisy przycisków autokonfiguracji";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
-         return "Wy¶wietl opisy przycisków dla tego rdzenia";
+         return "Wy¶wietl opisy przycisków dla tego rdzenia"; /* UPDATE/FIXME */
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
          return "Ukryj nieprzypisane przyciski";
       case MENU_LABEL_VALUE_VIDEO_FONT_ENABLE:

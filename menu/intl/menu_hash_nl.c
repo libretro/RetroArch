@@ -135,10 +135,8 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "RetroKeyboard";
       case MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Block Frames";
-      case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "Autoconfig Descriptie Labels Weergeven";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
-         return "Core Input Descriptie Labels Weergeven";
+         return "Descriptie Labels Weergeven";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
          return "Verbergen Niet-gemapte Core Input Descripties";
       case MENU_LABEL_VALUE_VIDEO_FONT_ENABLE:

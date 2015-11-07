@@ -600,7 +600,6 @@ static void config_set_defaults(void)
    *settings->cheevos.password                      = '\0';
 #endif
 
-   settings->input.autoconfig_descriptor_label_show = true;
    settings->input.back_as_menu_toggle_enable       = true;
    settings->input.input_descriptor_label_show      = input_descriptor_label_show;
    settings->input.input_descriptor_hide_unbound    = input_descriptor_hide_unbound;
@@ -1411,7 +1410,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_BASE(conf, settings, input.menu_toggle_gamepad_combo, "input_menu_toggle_gamepad_combo");
    CONFIG_GET_BOOL_BASE(conf, settings, input.input_descriptor_label_show, "input_descriptor_label_show");
    CONFIG_GET_BOOL_BASE(conf, settings, input.input_descriptor_hide_unbound, "input_descriptor_hide_unbound");
-   CONFIG_GET_BOOL_BASE(conf, settings, input.autoconfig_descriptor_label_show, "autoconfig_descriptor_label_show");
 
    CONFIG_GET_BOOL_BASE(conf, settings, ui.companion_start_on_boot, "ui_companion_start_on_boot");
 
@@ -2447,8 +2445,6 @@ bool config_save_file(const char *path)
          settings->input.netplay_client_swap_input);
    config_set_bool(conf, "input_descriptor_label_show",
          settings->input.input_descriptor_label_show);
-   config_set_bool(conf, "autoconfig_descriptor_label_show",
-         settings->input.autoconfig_descriptor_label_show);
    config_set_bool(conf, "input_descriptor_hide_unbound",
          settings->input.input_descriptor_hide_unbound);
    config_set_bool(conf,  "load_dummy_on_core_shutdown",

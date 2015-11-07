@@ -89,8 +89,6 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "RetroTeclado";
       case MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Quadros de Blocos de Áudio";
-      case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "Mostrar Rótulos de Autoconfiguração";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
          return "Mostrar Rótulos de Entradas de Core";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:

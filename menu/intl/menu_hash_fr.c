@@ -102,16 +102,8 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "audio_block_frames";
       case MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Block Frames";
-      case MENU_LABEL_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "autoconfig_descriptor_label_show";
-      case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "Display Autoconfig Descriptor Labels";
-      case MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:
-         return "input_descriptor_label_show";
-      case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
+      case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW: /* FIXME/UPDATE */
          return "Afficher les remaps du coeur";
-      case MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
-         return "input_descriptor_hide_unbound";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
          return "Cacher les remaps non mappés des coeurs";
       case MENU_LABEL_VALUE_VIDEO_FONT_ENABLE:

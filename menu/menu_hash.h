@@ -615,9 +615,6 @@ extern "C" {
 #define MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW                                 0x7eefdf52U
 #define MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW                           0x78d0ea06U
 
-#define MENU_LABEL_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW                            0xde1d9571U
-#define MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW                      0x2748a1bcU
-
 #define MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND                               0x7051d870U
 #define MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND                         0xc26ddec5U
 

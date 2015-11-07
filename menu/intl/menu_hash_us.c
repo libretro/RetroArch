@@ -138,8 +138,6 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "audio_block_frames";
       case MENU_LABEL_INPUT_BIND_MODE:
          return "input_bind_mode";
-      case MENU_LABEL_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "autoconfig_descriptor_label_show";
       case MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:
          return "input_descriptor_label_show";
       case MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
@@ -822,10 +820,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Block Frames";
       case MENU_LABEL_VALUE_INPUT_BIND_MODE:
          return "Bind Mode";
-      case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "Display Autoconfig Descriptor Labels";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
-         return "Display Core Input Descriptor Labels";
+         return "Display Input Descriptor Labels";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
          return "Hide Unbound Core Input Descriptors";
       case MENU_LABEL_VALUE_VIDEO_FONT_ENABLE:

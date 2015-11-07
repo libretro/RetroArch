@@ -368,7 +368,7 @@ static void input_get_bind_string_joykey(char *buf, const char *prefix,
             break;
       }
 
-      if (bind->joykey_label[0] != '\0' && settings->input.autoconfig_descriptor_label_show)
+      if (bind->joykey_label[0] != '\0' && settings->input.input_descriptor_label_show)
          snprintf(buf, size, "%s %s ", prefix, bind->joykey_label);
       else
          snprintf(buf, size, "%sHat #%u %s ", prefix,
@@ -376,7 +376,7 @@ static void input_get_bind_string_joykey(char *buf, const char *prefix,
    }
    else
    {
-      if (bind->joykey_label[0] != '\0' && settings->input.autoconfig_descriptor_label_show)
+      if (bind->joykey_label[0] != '\0' && settings->input.input_descriptor_label_show)
          snprintf(buf, size, "%s%s (btn) ", prefix, bind->joykey_label);
       else
          snprintf(buf, size, "%s%u (btn) ", prefix, (unsigned)bind->joykey);
@@ -400,7 +400,7 @@ static void input_get_bind_string_joyaxis(char *buf, const char *prefix,
       dir = '+';
       axis = AXIS_POS_GET(bind->joyaxis);
    }
-   if (bind->joyaxis_label[0] != '\0' && settings->input.autoconfig_descriptor_label_show)
+   if (bind->joyaxis_label[0] != '\0' && settings->input.input_descriptor_label_show)
       snprintf(buf, size, "%s%s (axis) ", prefix, bind->joyaxis_label);
    else
       snprintf(buf, size, "%s%c%u (axis) ", prefix, dir, axis);
