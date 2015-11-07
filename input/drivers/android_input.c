@@ -858,13 +858,12 @@ static void android_input_poll(void *data)
    int ident;
    driver_t *driver                = driver_get_ptr();
    const input_driver_t *input     = driver ? (const input_driver_t*)driver->input : NULL;
-   enum input_device_type device   = INPUT_DEVICE_TYPE_NONE;
 
    if (!input)
       return;
 
    while ((ident =
-            ALooper_pollAll((input->key_pressed(driver->input_data, RARCH_PAUSE_TOGGLE, &device))
+            ALooper_pollAll((input->key_pressed(driver->input_data, RARCH_PAUSE_TOGGLE))
                ? -1 : 0,
                NULL, NULL, NULL)) >= 0)
    {
