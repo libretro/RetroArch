@@ -117,7 +117,7 @@ void menu_input_st_string_callback(void *userdata, const char *str);
 
 void menu_input_st_cheat_callback(void *userdata, const char *str);
 
-unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_state, retro_input_t *devices_mask);
+unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_state);
 
 void menu_input_post_iterate(int *ret, unsigned action);
 

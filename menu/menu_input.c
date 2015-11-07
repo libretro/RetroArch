@@ -102,8 +102,6 @@ typedef struct menu_input
 {
    struct menu_bind_state binds;
 
-   uint64_t devices_mask;
-
    menu_input_mouse_t mouse;
 
    struct
@@ -671,7 +669,6 @@ int menu_input_key_bind_set_mode(void *data,
    menu_input_t  *menu_input = menu_input_get_ptr();
    rarch_setting_t  *setting = (rarch_setting_t*)data;
    settings_t *settings      = config_get_ptr();
-   bool joypad_pressed = BIT64_GET(menu_input->devices_mask, settings->menu_ok_btn);
 
    if (!setting)
       return -1;
@@ -1156,7 +1153,7 @@ static unsigned menu_input_frame_pointer(unsigned *data)
    return ret;
 }
 
-unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_input, retro_input_t *devices)
+unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_input)
 {
    float delta_time;
    unsigned         ret                    = MENU_ACTION_NOOP;
@@ -1220,7 +1217,6 @@ unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_in
    menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
 
    menu_input->delay.count += delta_time / IDEAL_DT;
-   menu_input->devices_mask = *devices;
 
    if (menu_input->keyboard.display)
    {
@@ -1257,18 +1253,6 @@ unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_in
       ret = MENU_ACTION_INFO;
    else if (trigger_input & (UINT64_C(1) << RARCH_MENU_TOGGLE))
       ret = MENU_ACTION_TOGGLE;
-
-#if 0
-   unsigned j;
-   for (j = 0; j < 64; j++)
-   {
-      bool joypad_pressed = BIT64_GET(*devices, j);
-      if (joypad_pressed)
-         RARCH_LOG("Button %d pressed on gamepad\n", j);
-      else
-         RARCH_LOG("Button %d pressed on keyboard\n", j);
-   }
-#endif
 
    return menu_input_frame_pointer(&ret);
 }
