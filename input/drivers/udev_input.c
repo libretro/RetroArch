@@ -596,29 +596,21 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
    return 0;
 }
 
-static bool udev_input_key_pressed(void *data, int key, enum input_device_type *device)
+static bool udev_input_key_pressed(void *data, int key)
 {
    udev_input_t *udev    = (udev_input_t*)data;
    settings_t *settings  = config_get_ptr();
 
    if (udev_input_is_pressed(udev, settings->input.binds[0], key))
-   {
-      *device = INPUT_DEVICE_TYPE_KEYBOARD;
       return true;
-   }
-
    if (input_joypad_pressed(udev->joypad, 0, settings->input.binds[0], key))
-   {
-      *device = INPUT_DEVICE_TYPE_JOYPAD;
       return true;
-   }
 
    return false;
 }
 
-static bool udev_input_meta_key_pressed(void *data, int key, enum input_device_type *device)
+static bool udev_input_meta_key_pressed(void *data, int key)
 {
-   (void)device;
    return false;
 }
 

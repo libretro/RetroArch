@@ -660,7 +660,6 @@ static INLINE retro_input_t input_keys_pressed(driver_t *driver,
    unsigned i;
    const struct retro_keybind *binds[MAX_USERS];
    retro_input_t             ret = 0;
-   enum input_device_type device = INPUT_DEVICE_TYPE_NONE;
 
    for (i = 0; i < MAX_USERS; i++)
       binds[i] = settings->input.binds[i];
@@ -672,7 +671,7 @@ static INLINE retro_input_t input_keys_pressed(driver_t *driver,
 
    driver->block_libretro_input = check_block_hotkey(driver,
          settings, driver->input->key_pressed(
-            driver->input_data, RARCH_ENABLE_HOTKEY, &device));
+            driver->input_data, RARCH_ENABLE_HOTKEY));
 
 
    for (i = 0; i < settings->input.max_users; i++)

@@ -100,28 +100,20 @@ static void* psp_input_initialize(void)
    return psp;
 }
 
-static bool psp_input_key_pressed(void *data, int key, enum input_device_type *device)
+static bool psp_input_key_pressed(void *data, int key)
 {
    settings_t *settings = config_get_ptr();
    psp_input_t *psp     = (psp_input_t*)data;
 
    if (input_joypad_pressed(psp->joypad, 0, settings->input.binds[0], key))
-   {
-      *device = INPUT_DEVICE_TYPE_JOYPAD;
       return true;
-   }
 
    return false;
 }
 
-static bool psp_input_meta_key_pressed(void *data, int key, enum input_device_type *device)
+static bool psp_input_meta_key_pressed(void *data, int key)
 {
-   bool meta_pressed    = (BIT64_GET(lifecycle_state, key));
-
-   if (meta_pressed)
-      *device = INPUT_DEVICE_TYPE_JOYPAD;
-
-   return meta_pressed;
+   return (BIT64_GET(lifecycle_state, key));
 }
 
 static uint64_t psp_input_get_capabilities(void *data)

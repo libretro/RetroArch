@@ -173,29 +173,22 @@ static int16_t linuxraw_analog_pressed(linuxraw_input_t *linuxraw,
    return pressed_plus + pressed_minus;
 }
 
-static bool linuxraw_input_key_pressed(void *data, int key, enum input_device_type *device)
+static bool linuxraw_input_key_pressed(void *data, int key)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
    settings_t *settings       = config_get_ptr();
 
    if (linuxraw_is_pressed(linuxraw, settings->input.binds[0], key))
-   {
-      *device = INPUT_DEVICE_TYPE_KEYBOARD;
       return true;
-   }
 
    if (input_joypad_pressed(linuxraw->joypad, 0, settings->input.binds[0], key))
-   {
-      *device = INPUT_DEVICE_TYPE_JOYPAD;
       return true;
-   }
 
    return false;
 }
 
-static bool linuxraw_input_meta_key_pressed(void *data, int key, enum input_device_type *device)
+static bool linuxraw_input_meta_key_pressed(void *data, int key)
 {
-   (void)device;
    return false;
 }
 

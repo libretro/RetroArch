@@ -351,23 +351,18 @@ static bool dinput_keyboard_pressed(struct dinput_input *di, unsigned key)
 
 static bool dinput_is_pressed(struct dinput_input *di,
       const struct retro_keybind *binds,
-      unsigned port, unsigned id, enum input_device_type *device)
+      unsigned port, unsigned id)
 {
    const struct retro_keybind *bind = &binds[id];
-   bool joypad_pressed              = false;
-   bool keyboard_pressed            = false;
    if (id >= RARCH_BIND_LIST_END)
       return false;
 
-   keyboard_pressed = !di->blocked && dinput_keyboard_pressed(di, bind->key);
-   joypad_pressed   = input_joypad_pressed(di->joypad, port, binds, id);
+   if (!di->blocked && dinput_keyboard_pressed(di, bind->key))
+      return true;
+   if (input_joypad_pressed(di->joypad, port, binds, id))
+      return true;
 
-   if (keyboard_pressed)
-      *device = INPUT_DEVICE_TYPE_KEYBOARD;
-   if (joypad_pressed)
-      *device = INPUT_DEVICE_TYPE_JOYPAD;
-
-   return keyboard_pressed || joypad_pressed;
+   return false;
 }
 
 static int16_t dinput_pressed_analog(struct dinput_input *di,
@@ -394,15 +389,14 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
    return pressed_plus + pressed_minus;
 }
 
-static bool dinput_key_pressed(void *data, int key, enum input_device_type *device)
+static bool dinput_key_pressed(void *data, int key)
 {
    settings_t *settings = config_get_ptr();
-   return dinput_is_pressed((struct dinput_input*)data, settings->input.binds[0], 0, key, device);
+   return dinput_is_pressed((struct dinput_input*)data, settings->input.binds[0], 0, key);
 }
 
-static bool dinput_meta_key_pressed(void *data, int key, enum input_device_type *device)
+static bool dinput_meta_key_pressed(void *data, int key)
 {
-   (void)device;
    return false;
 }
 
@@ -571,7 +565,7 @@ static int16_t dinput_input_state(void *data,
          return dinput_mouse_state(di, id);
 
       case RARCH_DEVICE_MOUSE_SCREEN:
-	 return dinput_mouse_state_screen(di, id);
+         return dinput_mouse_state_screen(di, id);
 
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:

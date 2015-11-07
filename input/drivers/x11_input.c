@@ -257,24 +257,21 @@ static int16_t x_pressed_analog(x11_input_t *x11,
    return pressed_plus + pressed_minus;
 }
 
-static bool x_input_key_pressed(void *data, int key, enum input_device_type *device)
+static bool x_input_key_pressed(void *data, int key)
 {
    x11_input_t      *x11 = (x11_input_t*)data;
    settings_t *settings  = config_get_ptr();
-   bool keyboard_pressed = x_is_pressed(x11, settings->input.binds[0], key);
-   bool joypad_pressed   = input_joypad_pressed(x11->joypad, 0, settings->input.binds[0], key);
 
-   if (keyboard_pressed)
-      *device = INPUT_DEVICE_TYPE_KEYBOARD;
-   if (joypad_pressed)
-      *device = INPUT_DEVICE_TYPE_JOYPAD;
+   if (x_is_pressed(x11, settings->input.binds[0], key))
+      return true;
+   if (input_joypad_pressed(x11->joypad, 0, settings->input.binds[0], key))
+      return true;
 
-   return keyboard_pressed || joypad_pressed;
+   return false;
 }
 
-static bool x_input_meta_key_pressed(void *data, int key, enum input_device_type *device)
+static bool x_input_meta_key_pressed(void *data, int key)
 {
-   (void)device;
    return false;
 }
 

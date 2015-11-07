@@ -281,7 +281,7 @@ static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *
    return pressed_plus + pressed_minus;
 }
 
-static bool sdl_input_key_pressed(void *data, int key, enum input_device_type *device)
+static bool sdl_input_key_pressed(void *data, int key)
 {
    if (key >= 0 && key < RARCH_BIND_LIST_END)
    {
@@ -290,22 +290,16 @@ static bool sdl_input_key_pressed(void *data, int key, enum input_device_type *d
       const struct retro_keybind *binds = settings->input.binds[0];
 
       if (sdl_is_pressed(sdl, 0, binds, key))
-      {
-         *device = INPUT_DEVICE_TYPE_KEYBOARD;
          return true;
-      }
       if (input_joypad_pressed(sdl->joypad, 0, binds, key))
-      {
-         *device = INPUT_DEVICE_TYPE_JOYPAD;
          return true;
-      }
    }
+
    return false;
 }
 
-static bool sdl_input_meta_key_pressed(void *data, int key, enum input_device_type *device)
+static bool sdl_input_meta_key_pressed(void *data, int key)
 {
-   (void)device;
    return false;
 }
 

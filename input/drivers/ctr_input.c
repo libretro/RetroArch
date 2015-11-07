@@ -83,27 +83,21 @@ static void* ctr_input_initialize(void)
    return ctr;
 }
 
-static bool ctr_input_key_pressed(void *data, int key, enum input_device_type *device)
+static bool ctr_input_key_pressed(void *data, int key)
 {
    settings_t *settings = config_get_ptr();
    ctr_input_t *ctr     = (ctr_input_t*)data;
 
    if (input_joypad_pressed(ctr->joypad, 0, settings->input.binds[0], key))
-   {
-      *device = INPUT_DEVICE_TYPE_JOYPAD;
       return true;
-   }
 
    return false;
 }
 
-static bool ctr_input_meta_key_pressed(void *data, int key, enum input_device_type *device)
+static bool ctr_input_meta_key_pressed(void *data, int key)
 {
    if (BIT64_GET(lifecycle_state, key))
-   {
-      *device = INPUT_DEVICE_TYPE_JOYPAD;
       return true;
-   }
 
    return false;
 }

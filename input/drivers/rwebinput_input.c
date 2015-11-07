@@ -67,29 +67,26 @@ error:
    return NULL;
 }
 
-static bool rwebinput_key_pressed(void *data, int key, enum input_device_type *device)
+static bool rwebinput_key_pressed(void *data, int key)
 {
    unsigned sym;
-   bool ret;
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
    
    if (key >= RETROK_LAST)
       return false;
 
    sym = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
-   ret = rwebinput->state.keys[sym >> 3] & (1 << (sym & 7));
 
-   if (ret)
-      *device = INPUT_DEVICE_TYPE_KEYBOARD;
+   if (rwebinput->state.keys[sym >> 3] & (1 << (sym & 7)))
+      return true;
 
-   return ret;
+   return false;
 }
 
-static bool rwebinput_meta_key_pressed(void *data, int key, enum input_device_type *device)
+static bool rwebinput_meta_key_pressed(void *data, int key)
 {
    (void)data;
    (void)key;
-   (void)device;
    return false;
 }
 

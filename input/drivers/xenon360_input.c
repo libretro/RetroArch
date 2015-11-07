@@ -88,27 +88,17 @@ static void* xenon360_input_init(void)
    return (void*)-1;
 }
 
-static bool xenon360_input_key_pressed(void *data, int key, enum input_device_type *device)
+static bool xenon360_input_key_pressed(void *data, int key)
 {
-   (void)device;
-
    if (lifecycle_state & (UINT64_C(1) << key))
-   {
-      *device = INPUT_DEVICE_TYPE_JOYPAD;
       return true;
-   }
 
    return false;
 }
 
-static bool xenon360_input_meta_key_pressed(void *data, int key, enum input_device_type *device)
+static bool xenon360_input_meta_key_pressed(void *data, int key)
 {
-   bool meta_pressed = (lifecycle_state & (UINT64_C(1) << key));
-
-   if (meta_pressed)
-      *device = INPUT_DEVICE_TYPE_JOYPAD;
-
-   return meta_pressed;
+   return (lifecycle_state & (UINT64_C(1) << key));
 }
 
 static uint64_t xenon360_input_get_capabilities(void *data)
