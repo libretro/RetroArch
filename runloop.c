@@ -655,7 +655,7 @@ static bool check_block_hotkey(driver_t *driver, settings_t *settings,
  * Returns: Input sample containg a mask of all pressed keys.
  */
 static INLINE retro_input_t input_keys_pressed(driver_t *driver,
-      settings_t *settings, global_t *global, uint64_t *devices)
+      settings_t *settings, global_t *global)
 {
    unsigned i;
    const struct retro_keybind *binds[MAX_USERS];
@@ -692,7 +692,7 @@ static INLINE retro_input_t input_keys_pressed(driver_t *driver,
                i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
    }
 
-   ret = input_driver_keys_pressed(devices);
+   ret = input_driver_keys_pressed();
 
    for (i = 0; i < settings->input.max_users; i++)
    {
@@ -894,11 +894,10 @@ int rarch_main_iterate(unsigned *sleep_ms)
    event_cmd_state_t    cmd;
    retro_time_t current, target, to_sleep_ms;
    static retro_input_t last_input = 0;
-   uint64_t devices                = 0;
    driver_t *driver                = driver_get_ptr();
    settings_t *settings            = config_get_ptr();
    global_t   *global              = global_get_ptr();
-   retro_input_t input             = input_keys_pressed(driver, settings, global, &devices);
+   retro_input_t input             = input_keys_pressed(driver, settings, global);
    rarch_system_info_t *system     = rarch_system_info_get_ptr();
    retro_input_t old_input         = last_input;
    last_input                      = input;

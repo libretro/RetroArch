@@ -151,7 +151,7 @@ void find_input_driver(void);
 bool input_driver_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength);
 
-retro_input_t input_driver_keys_pressed(uint64_t *device);
+retro_input_t input_driver_keys_pressed(void);
 
 int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
       unsigned port, unsigned device, unsigned index, unsigned id);

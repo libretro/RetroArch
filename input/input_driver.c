@@ -164,7 +164,7 @@ bool input_driver_set_rumble_state(unsigned port,
    return false;
 }
 
-retro_input_t input_driver_keys_pressed(uint64_t *device_type)
+retro_input_t input_driver_keys_pressed(void)
 {
    int key;
    retro_input_t                ret = 0;
@@ -181,9 +181,6 @@ retro_input_t input_driver_keys_pressed(uint64_t *device_type)
 
       if (key >= RARCH_FIRST_META_KEY)
          state |= input->meta_key_pressed(driver->input_data, key, &device);
-
-      if (device == INPUT_DEVICE_TYPE_JOYPAD)
-         BIT64_SET(*device_type, key);
 
 #ifdef HAVE_OVERLAY
       state |= input_overlay_key_pressed(key);
