@@ -5069,18 +5069,6 @@ static bool setting_append_list_input_options(
    menu_settings_list_current_add_range(list, list_info, 1, 0, 1, true, false);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   CONFIG_UINT(
-         settings->input.bind_mode,
-         menu_hash_to_str(MENU_LABEL_INPUT_BIND_MODE),
-         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_BIND_MODE),
-         0,
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
-
    END_SUB_GROUP(list, list_info, parent_group);
 
    START_SUB_GROUP(list, list_info, "Binds", group_info.name, subgroup_info, parent_group);
