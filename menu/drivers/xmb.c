@@ -1036,12 +1036,14 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
       menu_handle_t *menu, const char *themepath)
 {
    unsigned i;
-   size_t list_size            = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
+   int depth; /* keep this integer */
+   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
 
    xmb->categories.x_pos = xmb->icon.spacing.horizontal *
       -(float)xmb->categories.selection_ptr;
 
-   xmb->x = xmb->icon.size * -(xmb->depth*2-2);
+   depth = (xmb->depth > 1) ? 2 : 1;
+   xmb->x = xmb->icon.size * -(depth*2-2);
 
    for (i = 0; i < list_size; i++)
    {
