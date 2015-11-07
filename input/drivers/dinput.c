@@ -544,12 +544,11 @@ static int16_t dinput_input_state(void *data,
    int16_t ret;
    struct dinput_input *di = (struct dinput_input*)data;
    settings_t *settings    = config_get_ptr();
-   enum input_device_type type = INPUT_DEVICE_TYPE_NONE;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return dinput_is_pressed(di, binds[port], port, id, &type);
+         return dinput_is_pressed(di, binds[port], port, id);
 
       case RETRO_DEVICE_KEYBOARD:
          return dinput_keyboard_pressed(di, id);
