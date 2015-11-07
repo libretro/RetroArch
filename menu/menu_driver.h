@@ -94,6 +94,8 @@ typedef struct
 
    content_playlist_t *playlist;
    char db_playlist_file[PATH_MAX_LENGTH];
+
+   bool prevent_populate; /* xmb hack */
 } menu_handle_t;
 
 typedef struct menu_ctx_driver
