@@ -104,7 +104,7 @@ static void menu_display_gl_draw(
       height = 1;
 
    if (!mat)
-      mat = &gl->mvp_no_rot;
+      mat = (math_matrix_4x4*)menu_display_gl_get_default_mvp();
    if (!coords->vertex)
       coords->vertex = &gl_vertexes[0];
    if (!coords->tex_coord)
@@ -171,7 +171,7 @@ static void menu_display_gl_draw_bg(
       coords.color = (const float*)coord_color2;
 
    menu_display_gl_draw(0, 0, width, height,
-         &coords, &gl->mvp_no_rot,
+         &coords, (math_matrix_4x4*)menu_display_gl_get_default_mvp(),
          (GLuint)texture, prim_type);
 
    menu_display_gl_blend_end();
