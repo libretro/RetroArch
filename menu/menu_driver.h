@@ -53,6 +53,7 @@ typedef enum
    MENU_HELP_WELCOME,
    MENU_HELP_EXTRACT,
    MENU_HELP_CONTROLS,
+   MENU_HELP_CHEEVOS_DESCRIPTION,
    MENU_HELP_LOADING_CONTENT,
    MENU_HELP_WHAT_IS_A_CORE,
    MENU_HELP_CHANGE_VIRTUAL_GAMEPAD,
@@ -68,6 +69,7 @@ typedef struct
    float scroll_y;
 
    bool push_help_screen;
+   unsigned         help_screen_id;
    menu_help_type_t help_screen_type;
 
    bool defer_core;

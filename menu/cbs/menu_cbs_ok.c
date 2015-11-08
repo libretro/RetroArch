@@ -804,10 +804,26 @@ static int action_ok_shader_pass_load(const char *path,
          ACTION_OK_LOAD_SHADER_PASS, MENU_LABEL_SHADER_OPTIONS);
 }
 
+static int  generic_action_ok_help(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx,
+      unsigned id, menu_help_type_t id2)
+{
+   const char *lbl        = menu_hash_to_str(id);
+   menu_handle_t            *menu    = menu_driver_get_ptr();
+   menu->help_screen_type = id2;
+   return generic_action_ok_displaylist_push(path, lbl, type, idx,
+         entry_idx, ACTION_OK_DL_HELP);
+}
+
 static int action_ok_cheevos(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return 0;
+   menu_handle_t *menu    = menu_driver_get_ptr();
+   unsigned new_id        = type - MENU_SETTINGS_CHEEVOS_START;
+
+   menu->help_screen_id   = new_id;
+   return generic_action_ok_help(path, label, type, idx, entry_idx,
+         MENU_LABEL_CHEEVOS_DESCRIPTION, MENU_HELP_CHEEVOS_DESCRIPTION);
 }
 
 static int action_ok_cheat(const char *path,
@@ -1599,16 +1615,6 @@ static int action_ok_rpl_entry(const char *path,
          entry_idx, ACTION_OK_DL_RPL_ENTRY);
 }
 
-static int  generic_action_ok_help(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx,
-      unsigned id, menu_help_type_t id2)
-{
-   const char *lbl        = menu_hash_to_str(id);
-   menu_handle_t            *menu    = menu_driver_get_ptr();
-   menu->help_screen_type = id2;
-   return generic_action_ok_displaylist_push(path, lbl, type, idx,
-         entry_idx, ACTION_OK_DL_HELP);
-}
 
 static int action_ok_open_archive_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)

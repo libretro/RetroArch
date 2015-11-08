@@ -68,6 +68,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "debug_panel_enable";
       case MENU_LABEL_HELP_SCANNING_CONTENT:
          return "help_scanning_content";
+      case MENU_LABEL_CHEEVOS_DESCRIPTION:
+         return "cheevos_description";
       case MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
          return "help_audio_video_troubleshooting";
       case MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
@@ -704,6 +706,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Debug Panel Enable";
       case MENU_LABEL_VALUE_HELP_SCANNING_CONTENT:
          return "Scanning For Content";
+      case MENU_LABEL_VALUE_CHEEVOS_DESCRIPTION:
+         return "Description";
       case MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
          return "Audio/Video Troubleshooting";
       case MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD:

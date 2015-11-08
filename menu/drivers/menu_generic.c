@@ -16,6 +16,7 @@
  */
 
 #include <compat/strl.h>
+#include <retro_log.h>
 
 #include "menu_generic.h"
 
@@ -135,6 +136,11 @@ static int action_iterate_help(char *s, size_t len, const char *label)
                   );
          }
          break;
+      case MENU_HELP_CHEEVOS_DESCRIPTION:
+         RARCH_LOG("id is: %d\n", menu->help_screen_id);
+         menu_hash_get_help(MENU_LABEL_VALUE_WHAT_IS_A_CORE_DESC,
+               s, len);
+         break;
       case MENU_HELP_WHAT_IS_A_CORE:
          menu_hash_get_help(MENU_LABEL_VALUE_WHAT_IS_A_CORE_DESC,
                s, len);
@@ -177,6 +183,7 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
       case MENU_LABEL_HELP_WHAT_IS_A_CORE:
       case MENU_LABEL_HELP_LOADING_CONTENT:
       case MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
+      case MENU_LABEL_CHEEVOS_DESCRIPTION:
       case MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
       case MENU_LABEL_HELP_SCANNING_CONTENT:
          return ITERATE_TYPE_HELP;
