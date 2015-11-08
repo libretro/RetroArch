@@ -20,51 +20,57 @@
 
 #include "../../runloop_data.h"
 
+#ifndef BIND_ACTION_SELECT
+#define BIND_ACTION_SELECT(cbs, name) \
+   cbs->action_select = name; \
+   cbs->action_select_ident = #name;
+#endif
+
 static int action_select_default(const char *path, const char *label, unsigned type,
       size_t idx)
 {
    menu_entry_t entry;
-   int ret                   = 0;
-   enum menu_action action   = MENU_ACTION_NOOP;
-   menu_file_list_cbs_t *cbs = NULL;
-   menu_list_t    *menu_list = menu_list_get_ptr();
+   int ret                    = 0;
+   enum menu_action action    = MENU_ACTION_NOOP;
+   menu_file_list_cbs_t *cbs  = NULL;
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-   menu_entry_get(&entry, idx, NULL, false);
+   menu_entry_get(&entry, 0, idx, NULL, false);
 
-   cbs = menu_list_get_actiondata_at_offset(menu_list->selection_buf, idx);
+   cbs = menu_entries_get_actiondata_at_offset(selection_buf, idx);
+
+   if (!cbs)
+      return -1;
     
-   if (cbs->setting)
+   switch (menu_setting_get_type(cbs->setting))
    {
-       switch (cbs->setting->type)
-       {
-           case ST_BOOL:
-           case ST_INT:
-           case ST_UINT:
-           case ST_FLOAT:
-               action = MENU_ACTION_RIGHT;
-               break;
-           case ST_PATH:
-           case ST_DIR:
-           case ST_ACTION:
-           case ST_STRING:
-           case ST_HEX:
-           case ST_BIND:
-               action = MENU_ACTION_OK;
-               break;
-           default:
-               break;
-       }
+      case ST_BOOL:
+      case ST_INT:
+      case ST_UINT:
+      case ST_FLOAT:
+         action = MENU_ACTION_RIGHT;
+         break;
+      case ST_PATH:
+      case ST_DIR:
+      case ST_ACTION:
+      case ST_STRING:
+      case ST_HEX:
+      case ST_BIND:
+         action = MENU_ACTION_OK;
+         break;
+      default:
+         break;
    }
     
    if (action == MENU_ACTION_NOOP)
    {
-       if (cbs && cbs->action_ok)
+       if (cbs->action_ok)
            action = MENU_ACTION_OK;
        else
        {
-           if (cbs && cbs->action_start)
+           if (cbs->action_start)
                action = MENU_ACTION_START;
-           if (cbs && cbs->action_right)
+           if (cbs->action_right)
                action = MENU_ACTION_RIGHT;
        }
    }
@@ -87,6 +93,12 @@ static int action_select_directory(const char *path, const char *label, unsigned
       size_t idx)
 {
    return action_ok_directory_push(path, label, type, idx, 0 /* ignored */);
+}
+
+static int action_select_driver_setting(const char *path, const char *label, unsigned type,
+      size_t idx)
+{
+   return bind_right_generic(type, label, true);
 }
 
 static int action_select_core_setting(const char *path, const char *label, unsigned type,
@@ -126,27 +138,35 @@ static int menu_cbs_init_bind_select_compare_type(
 {
    if (type >= MENU_SETTINGS_CHEAT_BEGIN
          && type <= MENU_SETTINGS_CHEAT_END)
-      cbs->action_select = action_select_cheat;
+   {
+      BIND_ACTION_SELECT(cbs, action_select_cheat);
+   }
 #ifdef HAVE_SHADER_MANAGER
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-      cbs->action_select = shader_action_parameter_select;
+   {
+      BIND_ACTION_SELECT(cbs, shader_action_parameter_select);
+   }
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
-      cbs->action_select = shader_action_parameter_preset_select;
+   {
+      BIND_ACTION_SELECT(cbs, shader_action_parameter_preset_select);
+   }
 #endif
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
-      cbs->action_select = action_select_input_desc;
+   {
+      BIND_ACTION_SELECT(cbs, action_select_input_desc);
+   }
    else
    {
       switch (type)
       {
          case MENU_FILE_DIRECTORY:
-            cbs->action_select = action_select_directory;
+            BIND_ACTION_SELECT(cbs, action_select_directory);
             break;
          case MENU_FILE_USE_DIRECTORY:
-            cbs->action_select = action_select_path_use_directory;
+            BIND_ACTION_SELECT(cbs, action_select_path_use_directory);
             break;
          default:
             return -1;
@@ -170,11 +190,22 @@ int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   cbs->action_select = action_select_default;
+   BIND_ACTION_SELECT(cbs, action_select_default);
+
+   if (cbs->setting)
+   {
+      uint64_t flags = menu_setting_get_flags(cbs->setting);
+
+      if (flags & SD_FLAG_IS_DRIVER)
+      {
+         BIND_ACTION_SELECT(cbs, action_select_driver_setting);
+         return 0;
+      }
+   }
 
    if ((type >= MENU_SETTINGS_CORE_OPTION_START))
    {
-      cbs->action_select = action_select_core_setting;
+      BIND_ACTION_SELECT(cbs, action_select_core_setting);
       return 0;
    }
 

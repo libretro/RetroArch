@@ -201,6 +201,10 @@ int database_info_build_query(char *s, size_t len,
    return 0;
 }
 
+/*
+ * NOTE: Allocates memory, it is the caller's responsibility to free the
+ * memory after it is no longer required.
+ */
 char *bin_to_hex_alloc(const uint8_t *data, size_t len)
 {
    size_t i;
@@ -210,7 +214,7 @@ char *bin_to_hex_alloc(const uint8_t *data, size_t len)
       return NULL;
    
    for (i = 0; i < len; i++)
-      snprintf(ret+i*2, 3, "%02X", data[i]);
+      snprintf(ret+i * 2, 3, "%02X", data[i]);
    return ret;
 }
 
@@ -366,9 +370,7 @@ static int database_cursor_open(libretrodb_t *db,
 error:
    if (q)
       libretrodb_query_free(q);
-   query = NULL;
    libretrodb_close(db);
-   db    = NULL;
 
    return -1;
 }
@@ -390,7 +392,7 @@ database_info_handle_t *database_info_dir_init(const char *dir,
    if (!db)
       return NULL;
 
-   db->list           = dir_list_new_special(dir, DIR_LIST_CORE_INFO);
+   db->list           = dir_list_new_special(dir, DIR_LIST_CORE_INFO, NULL);
 
    if (!db->list)
       goto error;
@@ -473,18 +475,19 @@ database_info_list_t *database_info_list_new(
 
       if (ret == 0)
       {
-         database_info_t *db_ptr = NULL;
-         database_info = (database_info_t*)
+         database_info_t *db_ptr  = NULL;
+         database_info_t *new_ptr = (database_info_t*)
             realloc(database_info, (k+1) * sizeof(database_info_t));
 
-         if (!database_info)
+         if (!new_ptr)
          {
             database_info_list_free(database_info_list);
             database_info_list = NULL;
             goto end;
          }
 
-         db_ptr = &database_info[k];
+         database_info = new_ptr;
+         db_ptr        = &database_info[k];
 
          if (!db_ptr)
             continue;

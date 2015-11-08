@@ -29,6 +29,7 @@
 #include <rhash.h>
 
 #include "input_overlay.h"
+#include "keyboard_line.h"
 
 #include "../configuration.h"
 #include "input_common.h"

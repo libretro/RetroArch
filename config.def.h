@@ -183,20 +183,20 @@ enum
 #define AUDIO_DEFAULT_DRIVER AUDIO_JACK
 #elif defined(HAVE_COREAUDIO)
 #define AUDIO_DEFAULT_DRIVER AUDIO_COREAUDIO
+#elif defined(HAVE_XAUDIO)
+#define AUDIO_DEFAULT_DRIVER AUDIO_XAUDIO
+#elif defined(HAVE_DSOUND)
+#define AUDIO_DEFAULT_DRIVER AUDIO_DSOUND
 #elif defined(HAVE_AL)
 #define AUDIO_DEFAULT_DRIVER AUDIO_AL
 #elif defined(HAVE_SL)
 #define AUDIO_DEFAULT_DRIVER AUDIO_SL
-#elif defined(HAVE_DSOUND)
-#define AUDIO_DEFAULT_DRIVER AUDIO_DSOUND
 #elif defined(EMSCRIPTEN)
 #define AUDIO_DEFAULT_DRIVER AUDIO_RWEBAUDIO
 #elif defined(HAVE_SDL)
 #define AUDIO_DEFAULT_DRIVER AUDIO_SDL
 #elif defined(HAVE_SDL2)
 #define AUDIO_DEFAULT_DRIVER AUDIO_SDL2
-#elif defined(HAVE_XAUDIO)
-#define AUDIO_DEFAULT_DRIVER AUDIO_XAUDIO
 #elif defined(HAVE_RSOUND)
 #define AUDIO_DEFAULT_DRIVER AUDIO_RSOUND
 #elif defined(HAVE_ROAR)
@@ -353,6 +353,12 @@ static const bool def_history_list_enable = true;
 
 static const unsigned int def_user_language = 0;
 
+#if (defined(__APPLE__) && defined(__MACH__) && defined(OSX)) || (defined(_WIN32) && !defined(_XBOX))
+static const bool def_mouse_enable = true;
+#else
+static const bool def_mouse_enable = false;
+#endif
+
 /* VIDEO */
 
 #if defined(_XBOX360)
@@ -497,7 +503,6 @@ static const bool overlay_hide_in_menu = true;
 #ifdef HAVE_MENU
 static bool default_block_config_read = true;
 
-static bool collapse_subgroups_enable = true;
 static bool show_advanced_settings    = true;
 static const uint32_t menu_entry_normal_color = 0xffffffff;
 static const uint32_t menu_entry_hover_color  = 0xff64ff64;
@@ -582,7 +587,9 @@ static const bool font_enable = true;
  * This value should stay close to 60Hz to avoid large pitch changes.
  * If your monitor does not run at 60Hz, or something close to it,
  * disable VSync, and leave this at its default. */
-#if defined(RARCH_CONSOLE)
+#ifdef _3DS
+static const float refresh_rate = (32730.0 * 8192.0) / 4481134.0 ;
+#elif defined(RARCH_CONSOLE)
 static const float refresh_rate = 60/1.001;
 #else
 static const float refresh_rate = 59.95;
@@ -601,6 +608,8 @@ static const bool audio_enable = true;
 /* Output samplerate. */
 #ifdef GEKKO
 static const unsigned out_rate = 32000;
+#elif defined(_3DS)
+static const unsigned out_rate = 32730;
 #else
 static const unsigned out_rate = 48000;
 #endif
@@ -650,7 +659,7 @@ static const unsigned rewind_buffer_size = 20 << 20; /* 20MiB */
 static const unsigned rewind_granularity = 1;
 
 /* Pause gameplay when gameplay loses focus. */
-static const bool pause_nonactive = false;
+static const bool pause_nonactive = true;
 
 /* Saves non-volatile SRAM at a regular interval.
  * It is measured in seconds. A value of 0 disables autosave. */
@@ -744,14 +753,14 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/androi
 static char buildbot_server_url[] = "";
 #endif
 #elif defined(IOS)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/ios/latest/";
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/ios/latest/";
 #elif defined(OSX)
 #if defined(__x86_64__)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/osx-x86_64/latest/";
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/osx/x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/osx-i386/latest/";
+static char buildbot_server_url[] = "http://bot.libretro.com/nightly/apple/osx/x86/latest/";
 #else
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/osx-ppc/latest/";
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/osx/ppc/latest/";
 #endif
 #elif defined(_WIN32) && !defined(_XBOX)
 #if defined(__x86_64__)
@@ -762,6 +771,8 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/win-x8
 #elif defined(__linux__)
 #if defined(__x86_64__)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/x86_64/latest/";
+#elif defined(__i386__) || defined(__i486__) || defined(__i686__)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/x86/latest/";
 #else
 static char buildbot_server_url[] = "";
 #endif
@@ -872,4 +883,3 @@ static const struct retro_keybind retro_keybinds_rest[] = {
 #endif
 
 #endif
-

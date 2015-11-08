@@ -132,10 +132,6 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Guardado";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
          return "Rebobinado";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
-         return "Asignar esquina superior izquierda";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
-         return "Asignar esquina inferior derecha";
       case MENU_VALUE_SHADER:
          return "Shader";
       case MENU_VALUE_CHEAT:
@@ -150,11 +146,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "RetroKeyboard";
       case MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Bloquear fotogramas";
-      case MENU_LABEL_VALUE_INPUT_BIND_MODE:
-         return "Modo de asignación";
-      case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "Mostrar etiquetas de descripción del autoconfigurado";
-      case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
+      case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW: /* TODO/FIXME */
          return "Mostrar etiquetas de descripción de la entrada del núcleo";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
          return "Ocultar descripciones sin asignar de la entrada del núcleo";
@@ -212,7 +204,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Activar grabación";
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "Activar grabación de GPU";
-      case MENU_LABEL_VALUE_RECORD_PATH:
+      case MENU_LABEL_VALUE_RECORD_PATH: /* FIXME/UPDATE */
          return "Carpeta de grabación";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "Usar carpeta de salida";
@@ -244,7 +236,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Carpeta de sistema/BIOS";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Carpeta de archivos de trucos";
-      case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
+      case MENU_LABEL_VALUE_CACHE_DIRECTORY: /* FIXME/UPDATE */
          return "Carpeta de extracción";
       case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Carpeta de filtros de sonido";
@@ -546,10 +538,8 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "URL de núcleos de Buildbot";
       case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "URL de recursos de Buildbot";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "Seguir navegación: horizontalmente";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "Seguir navegación: verticalmente";
+      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND:
+         return "Seguir navegación";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "Filtrar por extensiones compatibles";
       case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
@@ -614,7 +604,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Fondo de pantalla dinámico";
       case MENU_LABEL_VALUE_BOXART:
          return "Mostrar carátula";
-      case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
+      case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS: /* FIXME/UPDATE */
          return "Opciones de reasignación de entrada para el núcleo";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Opciones de shaders";

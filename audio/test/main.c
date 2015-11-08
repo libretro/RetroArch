@@ -28,14 +28,18 @@
 
 int main(int argc, char *argv[])
 {
-   srand(time(NULL));
    int16_t input_i[1024];
    int16_t output_i[1024 * 8];
 
    float input_f[1024];
    float output_f[1024 * 8];
 
+   double in_rate, out_rate, ratio;
    double ratio_max_deviation = 0.0;
+   const rarch_resampler_t *resampler = NULL;
+   void *re = NULL;
+
+   srand(time(NULL));
 
    if (argc < 3 || argc > 4)
    {
@@ -48,18 +52,16 @@ int main(int argc, char *argv[])
       fprintf(stderr, "Ratio deviation: %.4f.\n", ratio_max_deviation);
    }
 
-   double in_rate = strtod(argv[1], NULL);
-   double out_rate = strtod(argv[2], NULL);
+   in_rate  = strtod(argv[1], NULL);
+   out_rate = strtod(argv[2], NULL);
+   ratio    = out_rate / in_rate;
 
-   double ratio = out_rate / in_rate;
    if (ratio >= 7.99)
    {
       fprintf(stderr, "Ratio is too high.\n");
       return 1;
    }
 
-   const rarch_resampler_t *resampler = NULL;
-   void *re = NULL;
    if (!rarch_resampler_realloc(&re, &resampler, RESAMPLER_IDENT, out_rate / in_rate))
    {
       fprintf(stderr, "Failed to allocate resampler ...\n");
@@ -68,24 +70,26 @@ int main(int argc, char *argv[])
 
    for (;;)
    {
+      size_t output_samples;
+      struct resampler_data data;
+      double uniform, rate_mod;
+
       if (fread(input_i, sizeof(int16_t), 1024, stdin) != 1024)
          break;
 
-      double uniform = (2.0 * rand()) / RAND_MAX - 1.0;
-      double rate_mod = 1.0 + ratio_max_deviation * uniform;
+      uniform = (2.0 * rand()) / RAND_MAX - 1.0;
+      rate_mod = 1.0 + ratio_max_deviation * uniform;
 
       audio_convert_s16_to_float(input_f, input_i, 1024, 1.0f);
 
-      struct resampler_data data = {
-         .data_in = input_f,
-         .data_out = output_f,
-         .input_frames = sizeof(input_f) / (2 * sizeof(float)),
-         .ratio = ratio * rate_mod,
-      };
+      data.data_in = input_f;
+      data.data_out = output_f;
+      data.input_frames = sizeof(input_f) / (2 * sizeof(float));
+      data.ratio = ratio * rate_mod;
 
       rarch_resampler_process(resampler, re, &data);
 
-      size_t output_samples = data.output_frames * 2;
+      output_samples = data.output_frames * 2;
 
       audio_convert_float_to_s16(output_i, output_f, output_samples);
 

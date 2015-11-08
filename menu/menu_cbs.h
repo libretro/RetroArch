@@ -41,6 +41,12 @@ enum
    ACTION_OK_DL_GENERIC,
    ACTION_OK_DL_PUSH_DEFAULT,
    ACTION_OK_DL_DOWNLOADS_DIR,
+   ACTION_OK_DL_INPUT_SETTINGS_LIST,
+   ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST,
+   ACTION_OK_DL_PLAYLIST_SETTINGS_LIST,
+   ACTION_OK_DL_ACCOUNTS_LIST,
+   ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST,
+   ACTION_OK_DL_USER_BINDS_LIST,
    ACTION_OK_DL_CONTENT_LIST,
    ACTION_OK_DL_REMAP_FILE,
    ACTION_OK_DL_RECORD_CONFIGFILE,
@@ -52,10 +58,10 @@ enum
    ACTION_OK_DL_CONFIGURATIONS_LIST,
    ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH,
    ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE,
+   ACTION_OK_DL_PARENT_DIRECTORY_PUSH,
    ACTION_OK_DL_DIRECTORY_PUSH,
    ACTION_OK_DL_DATABASE_MANAGER_LIST,
    ACTION_OK_DL_CURSOR_MANAGER_LIST,
-   ACTION_OK_DL_CUSTOM_VIEWPORT,
    ACTION_OK_DL_CORE_UPDATER_LIST,
    ACTION_OK_DL_CORE_CONTENT_LIST,
    ACTION_OK_DL_DEFERRED_CORE_LIST,
@@ -188,9 +194,15 @@ int action_scan_directory(const char *path,
 int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx);
 
+int bind_right_generic(unsigned type, const char *label,
+       bool wraparound);
+
 void menu_cbs_init(void *data,
+      menu_file_list_cbs_t *cbs,
       const char *path, const char *label,
       unsigned type, size_t idx);
+
+bool menu_playlist_find_associated_core(const char *path, char *s, size_t len);
 
 #ifdef __cplusplus
 }

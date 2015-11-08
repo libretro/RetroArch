@@ -1,138 +1,141 @@
 #include <malloc.h>
 #include <string.h>
 
-#include "djb2.h"
 #include "parser.h"
 
-static void match_any( pr_state_t* parser )
+static void libretrodb_parser_match_any(pr_state_t* parser)
 {
-   switch ( lx_next( &parser->lexer ) )
+   switch (lx_next( &parser->lexer))
    {
       case LX_UNTERMINATED_STRING:
          longjmp( parser->env, PR_UNTERMINATED_STRING );
+         break;
       case LX_INVALID_CHARACTER:
          longjmp( parser->env, PR_INVALID_CHARACTER );
-   }
-}
-
-static void match( pr_state_t* parser, int token )
-{
-   if ( parser->lexer.token != token )
-      longjmp( parser->env, PR_UNEXPECTED_TOKEN );
-
-   match_any( parser );
-}
-
-static void match_tag( pr_state_t* parser, const char* tag )
-{
-   if ( parser->lexer.token != LX_TAG || strncmp( parser->lexer.start, tag, strlen( tag ) ) )
-      longjmp( parser->env, PR_UNEXPECTED_TOKEN );
-
-   match_any( parser );
-}
-
-static void parse_value( pr_state_t* parser, const char* key, unsigned keylen, pr_node_t* node, int isrom )
-{
-   unsigned i;
-
-   if ( isrom && keylen == 4 && !strncmp( key, "name", 4 ) )
-   {
-      key = "rom_name";
-      keylen = 8;
-   }
-
-   for ( i = 0; i < node->count; i++ )
-   {
-      if ( keylen == node->pairs[ i ].key_len && !strncmp( key, node->pairs[ i ].key, keylen ) )
          break;
    }
-
-   if ( i == node->count )
-      node->count++;
-
-   node->pairs[ i ].key = key;
-   node->pairs[ i ].key_len = keylen;
-
-   node->pairs[ i ].value = parser->lexer.start;
-   node->pairs[ i ].value_len = parser->lexer.len;
-
-   if ( parser->lexer.token == LX_STRING || parser->lexer.token == LX_NUMBER || parser->lexer.token == LX_TAG )
-      match_any( parser );
-   else
-      longjmp( parser->env, PR_UNEXPECTED_TOKEN );
 }
 
-static void parse_map( pr_state_t* parser, int skip, int isrom )
+static void libretrodb_parser_match( pr_state_t* parser, int token )
 {
-   pr_node_t   dummy;
-   pr_node_t*  node;
-   unsigned    hash;
-   const char* key;
-   unsigned    keylen;
+   if (parser->lexer.token != token)
+      longjmp( parser->env, PR_UNEXPECTED_TOKEN );
+
+   libretrodb_parser_match_any( parser );
+}
+
+static void libretrodb_parser_match_tag( pr_state_t* parser, const char* tag )
+{
+  if ( parser->lexer.token != LX_TAG || strncmp( parser->lexer.lexeme.str, tag, strlen( tag ) ) )
+    longjmp( parser->env, PR_UNEXPECTED_TOKEN );
+  
+  libretrodb_parser_match_any( parser );
+}
+
+static int libretrodb_parser_cmp_keys( const pr_key_t* key1, const pr_key_t* key2 )
+{
+   if ( !key1 && !key2 )
+      return 1;
+
+   if ( ( key1 && !key2 ) || ( !key1 && key2 ) )
+      return 0;
+
+   if ( key1->key.len != key2->key.len || strncmp( key1->key.str, key2->key.str, key1->key.len ) )
+      return 0;
+
+   return libretrodb_parser_cmp_keys( key1->prev, key2->prev );
+}
+
+static pr_pair_t* libretrodb_parser_find_key( pr_node_t* node, const pr_key_t* key )
+{
+  int i;
+  
+  for ( i = 0; i < node->count; i++ )
+  {
+    const pr_key_t* other = &node->pairs[ i ].key;
+    
+    if (libretrodb_parser_cmp_keys(key, other))
+      return node->pairs + i;
+  }
+  
+  return node->pairs + node->count++;
+}
+
+static void parse_value( pr_state_t* parser, const pr_key_t* key, pr_node_t* node )
+{
+  pr_pair_t* pair = libretrodb_parser_find_key( node, key );
+  int token = parser->lexer.token;
+  
+  pair->key = *key;
+  pair->value = parser->lexer.lexeme;
+  
+  if ( token == LX_STRING || token == LX_NUMBER || token == LX_VERSION || token == LX_TAG )
+    libretrodb_parser_match_any( parser );
+  else
+    longjmp( parser->env, PR_UNEXPECTED_TOKEN );
+}
+
+static void libretrodb_parse_map( pr_state_t* parser, const pr_key_t* prev, int skip )
+{
+   pr_node_t  dummy;
+   pr_node_t* node;
+   pr_key_t   key;
 
    if ( skip )
    {
-      node = &dummy;
       dummy.count = 0;
+      node = &dummy;
    }
    else
       node = parser->node;
 
-   match( parser, LX_LPAREN );
+   libretrodb_parser_match( parser, LX_LPAREN );
 
    while ( parser->lexer.token != LX_RPAREN )
    {
-      if ( parser->lexer.token != LX_TAG )
-         longjmp( parser->env, PR_UNEXPECTED_TOKEN );
+      key.key = parser->lexer.lexeme;
+      key.prev = prev;
+      libretrodb_parser_match( parser, LX_TAG );
 
-      key = parser->lexer.start;
-      keylen = parser->lexer.len;
-
-      hash = djb2( key, keylen );
-
-      match_any( parser );
-
-      switch ( hash )
-      {
-         case 0x0b88a693U: /* rom */
-            parse_map( parser, skip, 1 );
-            break;
-
-         default:
-            parse_value( parser, key, keylen, node, isrom );
-            break;
-      }
+      if ( parser->lexer.token == LX_LPAREN )
+         libretrodb_parse_map( parser, &key, skip );
+      else
+         parse_value( parser, &key, node );
    }
 
-   match_any( parser );
+   libretrodb_parser_match_any( parser );
 }
 
-static void parse_clrmamepro( pr_state_t* parser )
+static void libretrodb_parser_parse_clrmamepro( pr_state_t* parser )
 {
-   match_tag( parser, "clrmamepro" );
-   parse_map( parser, 1, 0 );
+  static const pr_key_t clrmamepro = { { "clrmamepro", 10 }, NULL };
+  
+  libretrodb_parser_match_tag( parser, clrmamepro.key.str );
+  libretrodb_parse_map( parser, &clrmamepro, 1 );
 }
 
-static void parse_game( pr_state_t* parser )
+static void libretrodb_parser_parse_game( pr_state_t* parser )
 {
-   match_tag( parser, "game" );
+   static const pr_key_t game = { { "game", 4 }, NULL };
+
+   libretrodb_parser_match_tag( parser, game.key.str );
 
    pr_node_t* node = (pr_node_t*)malloc( sizeof( pr_node_t ) );
 
    if ( node == NULL )
       longjmp( parser->env, PR_OUT_OF_MEMORY );
 
-   node->count   = 0;
-   parser->node  = node;
+   node->count = 0;
+   parser->node = node;
    *parser->prev = node;
-   parser->prev  = &node->next;
-   parse_map( parser, 0, 0 );
+   parser->prev = &node->next;
+   libretrodb_parse_map( parser, NULL, 0 );
 }
 
 void pr_new( pr_state_t* parser, const char* source, unsigned srclen )
 {
-   lx_new( &parser->lexer, source, srclen );
-   parser->prev  = &parser->first;
+  lx_new( &parser->lexer, source, srclen );
+  parser->prev = &parser->first;
 }
 
 int pr_parse( pr_state_t* parser )
@@ -141,13 +144,14 @@ int pr_parse( pr_state_t* parser )
 
    if ( ( res = setjmp( parser->env ) ) == 0 )
    {
-      match_any( parser );
-      parse_clrmamepro( parser );
+      libretrodb_parser_match_any( parser );
+      libretrodb_parser_parse_clrmamepro( parser );
 
       while ( parser->lexer.token != LX_EOF )
-         parse_game( parser );
+         libretrodb_parser_parse_game( parser );
    }
 
    *parser->prev = NULL;
    return res;
 }
+

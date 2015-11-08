@@ -23,6 +23,7 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../msg_hash.h"
+#include "../string_list_special.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -75,40 +76,7 @@ const void *record_driver_find_handle(int idx)
  **/
 const char* config_get_record_driver_options(void)
 {
-   union string_list_elem_attr attr;
-   unsigned i;
-   char                 *options = NULL;
-   int               options_len = 0;
-   struct string_list *options_l = string_list_new();
-
-   attr.i = 0;
-
-   if (!options_l)
-      return NULL;
-
-   for (i = 0; record_driver_find_handle(i); i++)
-   {
-      const char *opt = record_driver_find_ident(i);
-
-      options_len += strlen(opt) + 1;
-      string_list_append(options_l, opt, attr);
-   }
-
-   options = (char*)calloc(options_len, sizeof(char));
-
-   if (!options)
-   {
-      string_list_free(options_l);
-      options_l = NULL;
-      return NULL;
-   }
-
-   string_list_join_concat(options, options_len, options_l, "|");
-
-   string_list_free(options_l);
-   options_l = NULL;
-
-   return options;
+   return char_list_new_special(STRING_LIST_RECORD_DRIVERS, NULL);
 }
 
 void find_record_driver(void)
@@ -133,7 +101,7 @@ void find_record_driver(void)
       driver->recording = (const record_driver_t*)record_driver_find_handle(0);
 
       if (!driver->recording)
-         rarch_fail(1, "find_record_driver()");
+         retro_fail(1, "find_record_driver()");
    }
 }
 

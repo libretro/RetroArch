@@ -220,9 +220,9 @@ static bool png_process_ihdr(struct png_ihdr *ihdr)
 #ifdef RPNG_TEST
    fprintf(stderr, "IHDR: (%u x %u), bpc = %u, palette = %s, color = %s, alpha = %s, adam7 = %s.\n",
          ihdr->width, ihdr->height,
-         ihdr->depth, ihdr->color_type == PNG_IHDR_COLOR_PLT ? "yes" : "no",
-         ihdr->color_type & PNG_IHDR_COLOR_RGB ? "yes" : "no",
-         ihdr->color_type & PNG_IHDR_COLOR_GRAY_ALPHA ? "yes" : "no",
+         ihdr->depth, (ihdr->color_type == PNG_IHDR_COLOR_PLT) ? "yes" : "no",
+         (ihdr->color_type & PNG_IHDR_COLOR_RGB) ? "yes" : "no",
+         (ihdr->color_type & PNG_IHDR_COLOR_GRAY_ALPHA) ? "yes" : "no",
          ihdr->interlace == 1 ? "yes" : "no");
 #endif
 

@@ -142,7 +142,7 @@ static INLINE uint32_t prev_pow2(uint32_t v)
 typedef struct
 {
    uint32_t data[8];
-} rarch_bits_t;
+} retro_bits_t;
 
 #define BIT_SET(a, bit)   ((a)[(bit) >> 3] |=  (1 << ((bit) & 7)))
 #define BIT_CLEAR(a, bit) ((a)[(bit) >> 3] &= ~(1 << ((bit) & 7)))

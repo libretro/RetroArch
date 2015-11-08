@@ -32,6 +32,10 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_CHEEVOS
+#include "cheevos.h"
+#endif
+
 struct item_cheat
 {
    char *desc;
@@ -68,13 +72,18 @@ void cheat_manager_apply_cheats(cheat_manager_t *handle)
    if (!handle)
       return;
 
-   pretro_cheat_reset();
+   core.retro_cheat_reset();
 
    for (i = 0; i < handle->size; i++)
    {
       if (handle->cheats[i].state)
-         pretro_cheat_set(idx++, true, handle->cheats[i].code);
+         core.retro_cheat_set(idx++, true, handle->cheats[i].code);
    }
+   
+#ifdef HAVE_CHEEVOS
+   cheevos_globals.cheats_are_enabled = idx != 0;
+   cheevos_globals.cheats_were_enabled |= cheevos_globals.cheats_are_enabled;
+#endif
 }
 
 void cheat_manager_set_code(cheat_manager_t *handle, unsigned i, const char *str)
@@ -268,12 +277,13 @@ bool cheat_manager_realloc(cheat_manager_t *handle, unsigned new_size)
 
 void cheat_manager_free(cheat_manager_t *handle)
 {
-   unsigned i;
    if (!handle)
       return;
 
    if (handle->cheats)
    {
+      unsigned i;
+
       for (i = 0; i < handle->size; i++)
       {
          free(handle->cheats[i].desc);

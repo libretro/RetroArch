@@ -16,13 +16,12 @@
 
 #include <string.h>
 
-#include <string/string_list.h>
-
 #include "video_thread_wrapper.h"
 #include "video_pixel_converter.h"
 #include "video_monitor.h"
 #include "../general.h"
 #include "../performance.h"
+#include "../string_list_special.h"
 
 #ifndef MEASURE_FRAME_TIME_SAMPLES_COUNT
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
@@ -106,6 +105,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_SUNXI
    &video_sunxi,
 #endif
+#ifdef HAVE_XSHM
+   &video_xshm,
+#endif
    &video_null,
    NULL,
 };
@@ -149,39 +151,7 @@ const char *video_driver_find_ident(int idx)
  **/
 const char* config_get_video_driver_options(void)
 {
-   union string_list_elem_attr attr;
-   unsigned i;
-   char *options = NULL;
-   int options_len = 0;
-   struct string_list *options_l = string_list_new();
-
-   attr.i = 0;
-
-   if (!options_l)
-      return NULL;
-
-   for (i = 0; video_driver_find_handle(i); i++)
-   {
-      const char *opt = video_driver_find_ident(i);
-      options_len += strlen(opt) + 1;
-      string_list_append(options_l, opt, attr);
-   }
-
-   options = (char*)calloc(options_len, sizeof(char));
-
-   if (!options)
-   {
-      string_list_free(options_l);
-      options_l = NULL;
-      return NULL;
-   }
-
-   string_list_join_concat(options, options_len, options_l, "|");
-
-   string_list_free(options_l);
-   options_l = NULL;
-
-   return options;
+   return char_list_new_special(STRING_LIST_VIDEO_DRIVERS, NULL);
 }
 
 void find_video_driver(void)
@@ -225,7 +195,7 @@ void find_video_driver(void)
       driver->video = (const video_driver_t*)video_driver_find_handle(0);
 
       if (!driver->video)
-         rarch_fail(1, "find_video_driver()");
+         retro_fail(1, "find_video_driver()");
    }
 }
 
@@ -307,7 +277,7 @@ bool video_driver_set_shader(enum rarch_shader_type type,
    driver_t            *driver = driver_get_ptr();
    const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
-   if (video->set_shader)
+   if (video && video->set_shader)
       return video->set_shader(driver->video_data, type, path);
    return false;
 }
@@ -343,6 +313,10 @@ static void init_video_filter(enum retro_pixel_format colfmt)
    }
 
    geom    = av_info ? (struct retro_game_geometry*)&av_info->geometry : NULL;
+
+   if (!geom)
+      return;
+
    width   = geom->max_width;
    height  = geom->max_height;
 
@@ -402,7 +376,7 @@ static void init_video_input(const input_driver_t *tmp)
       /* This should never really happen as tmp (driver.input) is always
        * found before this in find_driver_input(), or we have aborted
        * in a similar fashion anyways. */
-      rarch_fail(1, "init_video_input()");
+      retro_fail(1, "init_video_input()");
    }
 
    driver->input_data = input_driver_init();
@@ -411,7 +385,7 @@ static void init_video_input(const input_driver_t *tmp)
       return;
 
    RARCH_ERR("Cannot initialize input driver. Exiting ...\n");
-   rarch_fail(1, "init_video_input()");
+   retro_fail(1, "init_video_input()");
 }
 
 void uninit_video_input(void)
@@ -461,6 +435,13 @@ void init_video(void)
 
    if (av_info)
       geom      = (const struct retro_game_geometry*)&av_info->geometry;
+
+   if (!geom)
+   {
+      RARCH_ERR("AV geometry not initialized, cannot initialize video driver.\n");
+      retro_fail(1, "init_video()");
+   }
+
    max_dim   = max(geom->max_width, geom->max_height);
    scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
    scale     = max(scale, 1);
@@ -518,7 +499,7 @@ void init_video(void)
    if (!init_video_pixel_converter(RARCH_SCALE_BASE * scale))
    {
       RARCH_ERR("Failed to initialize pixel converter.\n");
-      rarch_fail(1, "init_video()");
+      retro_fail(1, "init_video()");
    }
 
    video.width        = width;
@@ -551,7 +532,7 @@ void init_video(void)
                driver->video, &video))
       {
          RARCH_ERR("Cannot open threaded video driver ... Exiting ...\n");
-         rarch_fail(1, "init_video()");
+         retro_fail(1, "init_video()");
       }
    }
    else
@@ -562,7 +543,7 @@ void init_video(void)
    if (!driver->video_data)
    {
       RARCH_ERR("Cannot open video driver ... Exiting ...\n");
-      rarch_fail(1, "init_video()");
+      retro_fail(1, "init_video()");
    }
 
    driver->video_poke = NULL;
@@ -617,7 +598,7 @@ void video_driver_set_nonblock_state(bool toggle)
    driver_t              *driver = driver_get_ptr();
    const video_driver_t   *video = video_driver_ctx_get_ptr(driver);
 
-   if (video->set_nonblock_state)
+   if (video && video->set_nonblock_state)
       video->set_nonblock_state(driver->video_data, toggle);
 }
 
@@ -627,7 +608,7 @@ bool video_driver_set_viewport(unsigned width, unsigned height,
    driver_t                   *driver = driver_get_ptr();
    const video_driver_t        *video = video_driver_ctx_get_ptr(driver);
 
-   if (video->set_viewport)
+   if (video && video->set_viewport)
    {
       video->set_viewport(driver->video_data, width, height,
             force_fullscreen, allow_rotate);
@@ -641,7 +622,7 @@ bool video_driver_set_rotation(unsigned rotation)
    driver_t                   *driver = driver_get_ptr();
    const video_driver_t        *video = video_driver_ctx_get_ptr(driver);
 
-   if (video->set_rotation)
+   if (video && video->set_rotation)
    {
       video->set_rotation(driver->video_data, rotation);
       return true;
@@ -732,7 +713,7 @@ bool video_driver_viewport_info(struct video_viewport *vp)
    driver_t            *driver = driver_get_ptr();
    const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
-   if (video->viewport_info)
+   if (video && video->viewport_info)
    {
       video->viewport_info(driver->video_data, vp);
       return true;
@@ -745,7 +726,7 @@ bool video_driver_read_viewport(uint8_t *buffer)
    driver_t            *driver = driver_get_ptr();
    const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
-   if (video->read_viewport)
+   if (video && video->read_viewport)
       return video->read_viewport(driver->video_data,
             buffer);
    return false;
@@ -765,7 +746,7 @@ bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
    driver_t            *driver = driver_get_ptr();
    const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
-   if (video->overlay_interface)
+   if (video && video->overlay_interface)
    {
       video->overlay_interface(driver->video_data, iface);
       return true;
@@ -774,13 +755,13 @@ bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
 }
 #endif
 
-void * video_driver_read_frame_raw(unsigned *width,
+void *video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch)
 {
    driver_t            *driver = driver_get_ptr();
    const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
-   if (video->read_frame_raw)
+   if (video && video->read_frame_raw)
       return video->read_frame_raw(driver->video_data, width,
             height, pitch);
    return NULL;
@@ -829,10 +810,13 @@ void video_driver_get_video_output_prev(void)
  **/
 void video_driver_cached_frame(void)
 {
+   bool is_idle;
    driver_t *driver   = driver_get_ptr();
    void *recording    = driver ? driver->recording_data : NULL;
 
-   if (rarch_main_is_idle())
+   rarch_main_ctl(RARCH_MAIN_CTL_IS_IDLE, &is_idle);
+
+   if (is_idle)
       return;
 
    /* Cannot allow recording when pushing duped frames. */
@@ -917,13 +901,15 @@ void video_monitor_adjust_system_rates(void)
    settings_t *settings = config_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
-   if (system)
-      system->force_nonblock = false;
+   if (!system)
+      return;
+
+   system->force_nonblock = false;
 
    if  (av_info)
       info = (const struct retro_system_timing*)&av_info->timing;
 
-   if (info->fps <= 0.0)
+   if (!info || info->fps <= 0.0)
       return;
 
    timing_skew = fabs(1.0f - info->fps / settings->video.refresh_rate);
@@ -1079,7 +1065,6 @@ bool video_monitor_fps_statistics(double *refresh_rate,
 bool video_monitor_get_fps(char *buf, size_t size,
       char *buf_fps, size_t size_fps)
 {
-   static float last_fps;
    retro_time_t        new_time;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
@@ -1091,6 +1076,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
 
    if (video_frame_count)
    {
+      static float last_fps;
       bool ret = false;
       unsigned write_index = video_state.frame_time_samples_count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);

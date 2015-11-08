@@ -30,9 +30,6 @@
 #include "../../gfx/video_viewport.h"
 #include "../../general.h"
 
-/* forward declarations */
-void x_input_poll_wheel(void *data, XButtonEvent *event, bool latch);
-
 typedef struct x11_input
 {
    bool blocked;
@@ -262,10 +259,15 @@ static int16_t x_pressed_analog(x11_input_t *x11,
 
 static bool x_input_key_pressed(void *data, int key)
 {
-   x11_input_t *x11 = (x11_input_t*)data;
-   settings_t *settings = config_get_ptr();
-   return x_is_pressed(x11, settings->input.binds[0], key) ||
-      input_joypad_pressed(x11->joypad, 0, settings->input.binds[0], key);
+   x11_input_t      *x11 = (x11_input_t*)data;
+   settings_t *settings  = config_get_ptr();
+
+   if (x_is_pressed(x11, settings->input.binds[0], key))
+      return true;
+   if (input_joypad_pressed(x11->joypad, 0, settings->input.binds[0], key))
+      return true;
+
+   return false;
 }
 
 static bool x_input_meta_key_pressed(void *data, int key)
@@ -304,11 +306,26 @@ static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
    return 0;
 }
 
+static int16_t x_mouse_state_screen(x11_input_t *x11, unsigned id)
+{
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_MOUSE_X:
+         return x11->mouse_x;
+      case RETRO_DEVICE_ID_MOUSE_Y:
+         return x11->mouse_y;
+      default:
+         break;
+   }
+
+   return x_mouse_state(x11, id);
+}
+
 static int16_t x_pointer_state(x11_input_t *x11,
       unsigned idx, unsigned id, bool screen)
 {
-   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
    bool valid, inside;
+   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
 
    if (idx != 0)
       return 0;
@@ -391,6 +408,8 @@ static int16_t x_input_state(void *data,
 
       case RETRO_DEVICE_MOUSE:
          return x_mouse_state(x11, id);
+      case RARCH_DEVICE_MOUSE_SCREEN:
+         return x_mouse_state_screen(x11, id);
 
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:

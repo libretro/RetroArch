@@ -33,6 +33,32 @@
 extern "C" {
 #endif
 
+enum rarch_main_ctl_state
+{
+   RARCH_MAIN_CTL_IS_IDLE = 0,
+   RARCH_MAIN_CTL_SET_IDLE,
+   RARCH_MAIN_CTL_IS_SLOWMOTION,
+   RARCH_MAIN_CTL_SET_SLOWMOTION,
+   RARCH_MAIN_CTL_IS_PAUSED,
+   RARCH_MAIN_CTL_SET_PAUSED,
+   RARCH_MAIN_CTL_SET_MAX_FRAMES,
+   RARCH_MAIN_CTL_SET_FRAME_LIMIT_LAST_TIME,
+   RARCH_MAIN_CTL_CLEAR_STATE,
+   RARCH_MAIN_CTL_STATE_FREE,
+   RARCH_MAIN_CTL_GLOBAL_FREE,
+   /* Checks for state changes in this frame. */
+   RARCH_MAIN_CTL_CHECK_STATE,
+   RARCH_MAIN_CTL_CHECK_MOVIE,
+   /* Checks if movie is being played. */
+   RARCH_MAIN_CTL_CHECK_MOVIE_PLAYBACK,
+   RARCH_MAIN_CTL_CHECK_MOVIE_INIT,
+   /* Checks if movie is being recorded. */
+   RARCH_MAIN_CTL_CHECK_MOVIE_RECORD,
+   /* Checks if slowmotion toggle/hold was being pressed and/or held. */
+   RARCH_MAIN_CTL_CHECK_SLOWMOTION,
+   RARCH_MAIN_CTL_CHECK_PAUSE_STATE
+};
+
 typedef struct rarch_resolution
 {
    unsigned idx;
@@ -124,7 +150,6 @@ typedef struct global
       char savestate[PATH_MAX_LENGTH];
       char systemdir[PATH_MAX_LENGTH];
 #ifdef HAVE_OVERLAY
-      char overlay[PATH_MAX_LENGTH];
       char osk_overlay[PATH_MAX_LENGTH];
 #endif
    } dir;
@@ -146,7 +171,6 @@ typedef struct global
    struct
    {
       struct retro_system_info info;
-      bool bind_mode_keyboard;
    } menu;
 #endif
 
@@ -321,31 +345,11 @@ void rarch_main_msg_queue_free(void);
 
 void rarch_main_msg_queue_init(void);
 
-void rarch_main_clear_state(void);
-
 bool rarch_main_verbosity(void);
 
-FILE *rarch_main_log_file(void);
+FILE *retro_main_log_file(void);
 
-bool rarch_main_is_idle(void);
-
-bool rarch_main_is_slowmotion(void);
-
-bool rarch_main_is_paused(void);
-
-void rarch_main_set_slowmotion(unsigned enable);
-
-void rarch_main_set_pause(unsigned enable);
-
-void rarch_main_set_frame_limit_last_time(void);
-
-void rarch_main_set_max_frames(unsigned val);
-
-void rarch_main_set_idle(unsigned enable);
-
-void rarch_main_state_free(void);
-
-void rarch_main_global_free(void);
+bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }

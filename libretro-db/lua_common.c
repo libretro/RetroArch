@@ -97,4 +97,3 @@ set_nil:
    rv = 0;
    return rv;
 }
-

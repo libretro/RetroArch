@@ -18,14 +18,57 @@
 #define MAX_ERROR_LEN   256
 #define QUERY_MAX_ARGS  50
 
-static char tmp_error_buff [MAX_ERROR_LEN] = {0};
-
 struct buffer
 {
    const char *data;
    size_t len;
    ssize_t offset;
 };
+
+enum argument_type
+{
+   AT_FUNCTION,
+   AT_VALUE
+};
+
+struct argument;
+
+typedef struct rmsgpack_dom_value (*rarch_query_func)(
+      struct rmsgpack_dom_value input,
+      unsigned argc,
+      const struct argument *argv
+      );
+
+struct invocation
+{
+   rarch_query_func func;
+   unsigned argc;
+   struct argument *argv;
+};
+
+struct argument
+{
+   enum argument_type type;
+   union
+   {
+      struct rmsgpack_dom_value value;
+      struct invocation invocation;
+   } a;
+};
+
+struct query
+{
+   unsigned ref_count;
+   struct invocation root;
+};
+
+struct registered_func
+{
+   const char *name;
+   rarch_query_func func;
+};
+
+static char tmp_error_buff [MAX_ERROR_LEN] = {0};
 
 /* Errors */
 static void raise_too_many_arguments(const char **error)
@@ -123,36 +166,6 @@ static void raise_unexpected_char(ssize_t where, char expected, char found,
    *error = tmp_error_buff;
 }
 
-enum argument_type
-{
-   AT_FUNCTION,
-   AT_VALUE
-};
-
-struct argument;
-
-typedef struct rmsgpack_dom_value (*rarch_query_func)(
-      struct rmsgpack_dom_value input,
-      unsigned argc,
-      const struct argument *argv
-      );
-
-struct invocation
-{
-   rarch_query_func func;
-   unsigned argc;
-   struct argument *argv;
-};
-
-struct argument
-{
-   enum argument_type type;
-   union
-   {
-      struct rmsgpack_dom_value value;
-      struct invocation invocation;
-   } a;
-};
 
 static void argument_free(struct argument *arg)
 {
@@ -168,17 +181,6 @@ static void argument_free(struct argument *arg)
       argument_free(&arg->a.invocation.argv[i]);
 }
 
-struct query
-{
-   unsigned ref_count;
-   struct invocation root;
-};
-
-struct registered_func
-{
-   const char *name;
-   rarch_query_func func;
-};
 
 static struct buffer parse_argument(struct buffer buff, struct argument *arg,
       const char **error);

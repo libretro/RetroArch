@@ -192,7 +192,6 @@ static bool send_chunk(netplay_t *netplay)
  **/
 static bool get_self_input_state(netplay_t *netplay)
 {
-   unsigned i;
    uint32_t state          = 0;
    struct delta_frame *ptr = &netplay->buffer[netplay->self_ptr];
    driver_t *driver        = driver_get_ptr();
@@ -200,6 +199,8 @@ static bool get_self_input_state(netplay_t *netplay)
 
    if (!driver->block_libretro_input && netplay->frame_count > 0)
    {
+      unsigned i;
+
       /* First frame we always give zero input since relying on 
        * input from first frame screws up when we use -F 0. */
       retro_input_state_t cb = netplay->cbs.state_cb;
@@ -708,7 +709,7 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
       hints.ai_flags = AI_PASSIVE;
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
-   if (getaddrinfo_rarch(server, port_buf, &hints, &res) < 0)
+   if (getaddrinfo_retro(server, port_buf, &hints, &res) < 0)
       return false;
 
    if (!res)
@@ -734,7 +735,7 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
    }
 
    if (res)
-      freeaddrinfo_rarch(res);
+      freeaddrinfo_retro(res);
 
    if (!ret)
       RARCH_ERR("Failed to set up netplay sockets.\n");
@@ -760,7 +761,7 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
 
-   if (getaddrinfo_rarch(server, port_buf, &hints, &netplay->addr) < 0)
+   if (getaddrinfo_retro(server, port_buf, &hints, &netplay->addr) < 0)
       return false;
 
    if (!netplay->addr)
@@ -791,7 +792,7 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
          netplay->udp_fd = -1;
       }
 
-      freeaddrinfo_rarch(netplay->addr);
+      freeaddrinfo_retro(netplay->addr);
       netplay->addr = NULL;
    }
 
@@ -827,7 +828,7 @@ static uint32_t implementation_magic_value(void)
    size_t i, len;
    uint32_t res                        = 0;
    const char *ver                     = PACKAGE_VERSION;
-   unsigned api                        = pretro_api_version();
+   unsigned api                        = core.retro_api_version();
    rarch_system_info_t *info           = rarch_system_info_get_ptr();
    const char *lib                     = info ? info->info.library_name : NULL;
 
@@ -904,7 +905,7 @@ static bool send_info(netplay_t *netplay)
    
    header[0] = htonl(global->content_crc);
    header[1] = htonl(implementation_magic_value());
-   header[2] = htonl(pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM));
+   header[2] = htonl(core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM));
 
    if (!socket_send_all_blocking(netplay->fd, header, sizeof(header)))
       return false;
@@ -916,8 +917,8 @@ static bool send_info(netplay_t *netplay)
    }
 
    /* Get SRAM data from User 1. */
-   sram      = pretro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
-   sram_size = pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+   sram      = core.retro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+   sram_size = core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
 
    if (!socket_receive_all_blocking(netplay->fd, sram, sram_size))
    {
@@ -963,7 +964,7 @@ static bool get_info(netplay_t *netplay)
       return false;
    }
 
-   if (pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM) != ntohl(header[2]))
+   if (core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM) != ntohl(header[2]))
    {
       RARCH_ERR("Content SRAM sizes do not correspond.\n");
       return false;
@@ -976,8 +977,8 @@ static bool get_info(netplay_t *netplay)
    }
 
    /* Send SRAM data to our User 2. */
-   sram      = pretro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
-   sram_size = pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+   sram      = core.retro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+   sram_size = core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
 
    if (!socket_send_all_blocking(netplay->fd, sram, sram_size))
    {
@@ -1001,7 +1002,7 @@ static bool get_info(netplay_t *netplay)
 static uint32_t *bsv_header_generate(size_t *size, uint32_t magic)
 {
    uint32_t *header, bsv_header[4] = {0};
-   size_t serialize_size = pretro_serialize_size();
+   size_t serialize_size = core.retro_serialize_size();
    size_t header_size = sizeof(bsv_header) + serialize_size;
    global_t *global = global_get_ptr();
 
@@ -1016,7 +1017,7 @@ static uint32_t *bsv_header_generate(size_t *size, uint32_t magic)
    bsv_header[CRC_INDEX]        = swap_if_big32(global->content_crc);
    bsv_header[STATE_SIZE_INDEX] = swap_if_big32(serialize_size);
 
-   if (serialize_size && !pretro_serialize(header + 4, serialize_size))
+   if (serialize_size && !core.retro_serialize(header + 4, serialize_size))
    {
       free(header);
       return NULL;
@@ -1055,10 +1056,10 @@ static bool bsv_parse_header(const uint32_t *header, uint32_t magic)
    }
 
    in_state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
-   if (in_state_size != pretro_serialize_size())
+   if (in_state_size != core.retro_serialize_size())
    {
       RARCH_ERR("Serialization size mismatch, got 0x%x, expected 0x%x.\n",
-            (unsigned)in_state_size, (unsigned)pretro_serialize_size());
+            (unsigned)in_state_size, (unsigned)core.retro_serialize_size());
       return false;
    }
 
@@ -1096,7 +1097,7 @@ static bool get_info_spectate(netplay_t *netplay)
       return false;
    }
 
-   save_state_size = pretro_serialize_size();
+   save_state_size = core.retro_serialize_size();
    if (!bsv_parse_header(header, implementation_magic_value()))
    {
       RARCH_ERR("Received invalid BSV header from host.\n");
@@ -1117,7 +1118,7 @@ static bool get_info_spectate(netplay_t *netplay)
    }
 
    if (save_state_size)
-      ret = pretro_unserialize(buf, save_state_size);
+      ret = core.retro_unserialize(buf, save_state_size);
 
    free(buf);
    return ret;
@@ -1136,7 +1137,7 @@ static bool init_buffers(netplay_t *netplay)
    if (!netplay->buffer)
       return false;
 
-   netplay->state_size = pretro_serialize_size();
+   netplay->state_size = core.retro_serialize_size();
 
    for (i = 0; i < netplay->buffer_size; i++)
    {
@@ -1339,7 +1340,7 @@ void netplay_free(netplay_t *netplay)
    }
 
    if (netplay->addr)
-      freeaddrinfo_rarch(netplay->addr);
+      freeaddrinfo_retro(netplay->addr);
 
    free(netplay);
 }
@@ -1352,7 +1353,7 @@ void netplay_free(netplay_t *netplay)
  **/
 static void netplay_pre_frame_net(netplay_t *netplay)
 {
-   pretro_serialize(netplay->buffer[netplay->self_ptr].state,
+   core.retro_serialize(netplay->buffer[netplay->self_ptr].state,
          netplay->state_size);
    netplay->can_poll = true;
 
@@ -1394,7 +1395,7 @@ static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
    RARCH_ERR("Connection with host was cut.\n");
    rarch_main_msg_queue_push("Connection with host was cut.", 1, 180, true);
 
-   pretro_set_input_state(netplay->cbs.state_cb);
+   core.retro_set_input_state(netplay->cbs.state_cb);
    return netplay->cbs.state_cb(port, device, idx, id);
 }
 
@@ -1556,17 +1557,17 @@ static void netplay_post_frame_net(netplay_t *netplay)
       netplay->tmp_ptr = netplay->other_ptr;
       netplay->tmp_frame_count = netplay->other_frame_count;
 
-      pretro_unserialize(netplay->buffer[netplay->other_ptr].state,
+      core.retro_unserialize(netplay->buffer[netplay->other_ptr].state,
             netplay->state_size);
 
       while (first || (netplay->tmp_ptr != netplay->self_ptr))
       {
-         pretro_serialize(netplay->buffer[netplay->tmp_ptr].state,
+         core.retro_serialize(netplay->buffer[netplay->tmp_ptr].state,
                netplay->state_size);
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
          lock_autosave();
 #endif
-         pretro_run();
+         core.retro_run();
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
          unlock_autosave();
 #endif
@@ -1710,7 +1711,7 @@ bool init_netplay(void)
 #include <ctype.h>
 #include <string.h>
 
-#define addrinfo addrinfo_rarch__
+#define addrinfo addrinfo_retro__
 
 #ifdef _XBOX
 /* TODO - implement h_length and h_addrtype */

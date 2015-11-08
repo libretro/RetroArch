@@ -126,9 +126,11 @@ static void thread_update_driver_state(thread_video_t *thr)
 /* returns true when thread_loop should quit */
 static bool thread_handle_packet(thread_video_t *thr, const thread_packet_t *incoming)
 {
+#ifdef HAVE_OVERLAY
+   unsigned i;
+#endif
    thread_packet_t pkt = *incoming;
-   bool ret   = false;
-   unsigned i = 0;
+   bool            ret = false;
 
    switch (pkt.type)
    {
@@ -363,7 +365,6 @@ static void thread_loop(void *data)
    for (;;)
    {
       thread_packet_t pkt;
-      bool ret = false;
       bool updated = false;
 
       slock_lock(thr->lock);
@@ -383,10 +384,10 @@ static void thread_loop(void *data)
 
       if (updated)
       {
-         ret = false;
-         bool alive = false;
-         bool focus = false;
-         bool has_windowed = true;
+         bool                 ret = false;
+         bool               alive = false;
+         bool               focus = false;
+         bool        has_windowed = true;
          struct video_viewport vp = {0};
 
          slock_lock(thr->frame.lock);
@@ -414,11 +415,11 @@ static void thread_loop(void *data)
             thr->driver->viewport_info(thr->driver_data, &vp);
 
          slock_lock(thr->lock);
-         thr->alive = alive;
-         thr->focus = focus;
-         thr->has_windowed = has_windowed;
+         thr->alive         = alive;
+         thr->focus         = focus;
+         thr->has_windowed  = has_windowed;
          thr->frame.updated = false;
-         thr->vp = vp;
+         thr->vp            = vp;
          scond_signal(thr->cond_cmd);
          slock_unlock(thr->lock);
       }
@@ -430,10 +431,12 @@ static void thread_loop(void *data)
 
 static bool thread_alive(void *data)
 {
-   bool ret;
+   bool ret, is_paused;
    thread_video_t *thr = (thread_video_t*)data;
 
-   if (rarch_main_is_paused())
+   rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED, &is_paused);
+
+   if (is_paused)
    {
       thread_packet_t pkt = { CMD_ALIVE };
       thread_send_and_wait(thr, &pkt);
@@ -960,7 +963,6 @@ static void thread_set_texture_enable(void *data, bool state, bool full_screen)
    thr->texture.full_screen = full_screen;
    slock_unlock(thr->frame.lock);
 }
-#endif
 
 static void thread_set_osd_msg(void *data, const char *msg,
       const struct font_params *params, void *font)
@@ -975,6 +977,7 @@ static void thread_set_osd_msg(void *data, const char *msg,
    if (thr->poke && thr->poke->set_osd_msg)
       thr->poke->set_osd_msg(thr->driver_data, msg, params, font);
 }
+#endif
 
 static void thread_apply_state_changes(void *data)
 {
@@ -1011,9 +1014,12 @@ static const video_poke_interface_t thread_poke = {
 #if defined(HAVE_MENU)
    thread_set_texture_frame,
    thread_set_texture_enable,
+   thread_set_osd_msg,
+#else
+   NULL,
+   NULL,
 #endif
 
-   thread_set_osd_msg,
    NULL,
    NULL,
 
@@ -1138,10 +1144,10 @@ void *rarch_threaded_video_get_ptr(const video_driver_t **drv)
 const char *rarch_threaded_video_get_ident(void)
 {
    driver_t *driver          = driver_get_ptr();
-   const thread_video_t *thr = (const thread_video_t*)
-      driver->video_data;
+   const thread_video_t *thr = driver ? (const thread_video_t*)
+      driver->video_data : NULL;
 
-   if (!thr)
+   if (!thr || !thr->driver)
       return NULL;
    return thr->driver->ident;
 }

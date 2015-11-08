@@ -15,11 +15,11 @@
  */
 
 #include <string.h>
-#include <string/string_list.h>
 
 #include "menu.h"
-#include "menu_video.h"
+#include "menu_display.h"
 #include "../general.h"
+#include "../string_list_special.h"
 
 static bool menu_alive = false;
 
@@ -30,14 +30,17 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_RMENU_XUI)
    &menu_ctx_rmenu_xui,
 #endif
-#if defined(HAVE_GLUI)
-   &menu_ctx_glui,
+#if defined(HAVE_MATERIALUI)
+   &menu_ctx_mui,
 #endif
 #if defined(HAVE_XMB)
    &menu_ctx_xmb,
 #endif
 #if defined(HAVE_RGUI)
    &menu_ctx_rgui,
+#endif
+#if defined(HAVE_ZARCH)
+   &menu_ctx_zarch,
 #endif
    &menu_ctx_null,
    NULL
@@ -82,41 +85,9 @@ const char *menu_driver_find_ident(int idx)
  * Returns: string listing of all menu driver names,
  * separated by '|'.
  **/
-const char* config_get_menu_driver_options(void)
+const char *config_get_menu_driver_options(void)
 {
-   union string_list_elem_attr attr;
-   unsigned i;
-   char *options = NULL;
-   int options_len = 0;
-   struct string_list *options_l = string_list_new();
-
-   attr.i = 0;
-
-   if (!options_l)
-      return NULL;
-
-   for (i = 0; menu_driver_find_handle(i); i++)
-   {
-      const char *opt = menu_driver_find_ident(i);
-      options_len += strlen(opt) + 1;
-      string_list_append(options_l, opt, attr);
-   }
-
-   options = (char*)calloc(options_len, sizeof(char));
-
-   if (!options)
-   {
-      string_list_free(options_l);
-      options_l = NULL;
-      return NULL;
-   }
-
-   string_list_join_concat(options, options_len, options_l, "|");
-
-   string_list_free(options_l);
-   options_l = NULL;
-
-   return options;
+   return char_list_new_special(STRING_LIST_MENU_DRIVERS, NULL);
 }
 
 void find_menu_driver(void)
@@ -140,7 +111,7 @@ void find_menu_driver(void)
       driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(0);
 
       if (!driver->menu_ctx)
-         rarch_fail(1, "find_menu_driver()");
+         retro_fail(1, "find_menu_driver()");
    }
 }
 
@@ -160,39 +131,6 @@ static void init_menu_fallback(void)
 #endif
 }
 
-void init_menu(void)
-{
-   const char *video_driver;
-   driver_t *driver     = driver_get_ptr();
-
-   if (driver->menu)
-      return;
-
-   find_menu_driver();
-
-   video_driver = menu_video_get_ident();
-
-   switch (driver->menu_ctx->type)
-   {
-      case MENU_VIDEO_DRIVER_GENERIC:
-         break;
-      case MENU_VIDEO_DRIVER_DIRECT3D:
-         if (video_driver && (strcmp(video_driver, "d3d") != 0))
-            init_menu_fallback();
-         break;
-      case MENU_VIDEO_DRIVER_OPENGL:
-         if (video_driver && (strcmp(video_driver, "gl") != 0))
-            init_menu_fallback();
-         break;
-   }
-
-   if (!(driver->menu = (menu_handle_t*)menu_init(driver->menu_ctx)))
-      rarch_fail(1, "init_menu()");
-
-   if (!(menu_displaylist_init(driver->menu)))
-      rarch_fail(1, "init_menu()");
-}
-
 menu_handle_t *menu_driver_get_ptr(void)
 {
    driver_t *driver = driver_get_ptr();
@@ -208,6 +146,27 @@ const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void)
       return NULL;
    return driver->menu_ctx;
 }
+
+void init_menu(void)
+{
+   driver_t *driver     = driver_get_ptr();
+
+   if (driver->menu)
+      return;
+
+   find_menu_driver();
+
+   if (!menu_display_check_compatibility((enum menu_display_driver_type)driver->menu_ctx->type))
+      init_menu_fallback();
+
+   if (!(driver->menu = (menu_handle_t*)menu_init(driver->menu_ctx)))
+      retro_fail(1, "init_menu()");
+
+   if (driver->menu_ctx->lists_init)
+      if (!driver->menu_ctx->lists_init(driver->menu))
+         retro_fail(1, "init_menu()");
+}
+
 
 void  menu_driver_list_free(file_list_t *list, size_t idx, size_t list_size)
 {
@@ -244,6 +203,16 @@ size_t  menu_driver_list_get_selection(void)
    if (driver && driver->list_get_selection)
       return driver->list_get_selection(menu);
    return 0;
+}
+
+bool menu_driver_list_push(menu_displaylist_info_t *info, unsigned type)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->list_push)
+      if (driver->list_push(info, type) == 0)
+         return true;
+   return false;
 }
 
 void menu_driver_list_cache(menu_list_type_t type, unsigned action)
@@ -326,14 +295,64 @@ bool menu_driver_alive(void)
    return menu_alive;
 }
 
-void menu_driver_toggle(bool latch)
+int menu_driver_iterate(enum menu_action action)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->toggle)
-      driver->toggle(latch);
+   if (driver->iterate)
+      return driver->iterate(action);
+   return -1;
+}
+
+void menu_driver_toggle(bool latch)
+{
+   driver_t                     *driver = driver_get_ptr();
+   const menu_ctx_driver_t *menu_driver = menu_ctx_driver_get_ptr();
+   settings_t                 *settings = config_get_ptr();
+   global_t                   *global   = global_get_ptr();
+   rarch_system_info_t          *system = rarch_system_info_get_ptr();
+
+   if (menu_driver->toggle)
+      menu_driver->toggle(latch);
 
    menu_alive = latch;
+
+   if (menu_alive == true)
+   {
+      menu_entries_set_refresh(false);
+
+      /* Menu should always run with vsync on. */
+      event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
+      /* Stop all rumbling before entering the menu. */
+      event_command(EVENT_CMD_RUMBLE_STOP);
+
+      if (settings->menu.pause_libretro)
+         event_command(EVENT_CMD_AUDIO_STOP);
+
+      /* Override keyboard callback to redirect to menu instead.
+       * We'll use this later for something ...
+       * FIXME: This should probably be moved to menu_common somehow. */
+      if (global)
+      {
+         global->frontend_key_event = system->key_event;
+         system->key_event          = menu_input_key_event;
+         system->frame_time_last    = 0;
+      }
+   }
+   else
+   {
+      driver_set_nonblock_state(driver->nonblock_state);
+
+      if (settings && settings->menu.pause_libretro)
+         event_command(EVENT_CMD_AUDIO_START);
+
+      /* Prevent stray input from going to libretro core */
+      driver->flushing_input = true;
+
+      /* Restore libretro keyboard callback. */
+      if (global)
+         system->key_event = global->frontend_key_event;
+   }
 }
 
 bool menu_driver_load_image(void *data, menu_image_type_t type)
@@ -345,7 +364,6 @@ bool menu_driver_load_image(void *data, menu_image_type_t type)
 
    return false;
 }
-
 
 bool menu_environment_cb(menu_environ_cb_t type, void *data)
 {
@@ -359,4 +377,17 @@ bool menu_environment_cb(menu_environ_cb_t type, void *data)
    }
 
    return false;
+}
+
+int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
+      menu_file_list_cbs_t *cbs,
+      menu_entry_t *entry, unsigned action)
+{
+   int ret = 0;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->pointer_tap)
+      ret = driver->pointer_tap(x, y, ptr, cbs, entry, action);
+
+   return ret;
 }

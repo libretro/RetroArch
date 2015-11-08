@@ -29,11 +29,22 @@
 #include "input_overlay.h"
 #endif
 
+#ifndef MAX_USERS
+#define MAX_USERS 16
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef uint64_t retro_input_t;
+
+enum input_device_type
+{
+   INPUT_DEVICE_TYPE_NONE = 0,
+   INPUT_DEVICE_TYPE_KEYBOARD,
+   INPUT_DEVICE_TYPE_JOYPAD
+};
 
 struct retro_keybind
 {

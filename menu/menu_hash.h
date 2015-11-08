@@ -22,6 +22,46 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_VALUE_STATE_SLOT                                            0xa1dec768U
+
+#define MENU_LABEL_STATE_SLOT                                                  0x27b67f67U
+
+#define MENU_LABEL_INPUT_HOTKEY_BINDS_BEGIN                                    0x5a56139bU
+
+#define MENU_LABEL_INPUT_SETTINGS                                              0x78b4a7c5U
+
+#define MENU_LABEL_PLAYLIST_SETTINGS_BEGIN                                     0x80a8d2cbU
+#define MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST                             0x9518e0c7U
+
+#define MENU_LABEL_INPUT_SETTINGS_BEGIN                                        0xddee308bU
+
+#define MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST                                0x050bec60U
+
+#define MENU_LABEL_DEFERRED_USER_BINDS_LIST                                    0x28c5750eU
+
+#define MENU_LABEL_CHEEVOS_USERNAME                                            0x6ce57e31U
+#define MENU_LABEL_CHEEVOS_PASSWORD                                            0x86c38d24U
+
+#define MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS                             0xe0b53ce3U
+
+#define MENU_LABEL_ACCOUNTS_CHEEVOS_PASSWORD                                   0x45cf62e3U
+#define MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD                             0xe5a73d05U
+
+#define MENU_LABEL_ACCOUNTS_CHEEVOS_USERNAME                                   0x2bf153f0U
+#define MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME                             0xcbc92e12U
+
+#define MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS                                 0xe6b7c16cU
+#define MENU_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS                           0x7d247a6dU
+
+#define MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST                              0x1322324cU
+#define MENU_LABEL_DEFERRED_ACCOUNTS_LIST                                      0x3d2b8860U
+#define MENU_LABEL_ACCOUNTS_LIST                                               0x774c15a0U
+#define MENU_LABEL_VALUE_ACCOUNTS_LIST                                         0x86e551a1U
+#define MENU_LABEL_VALUE_ACCOUNTS_LIST_END                                     0x3d559522U
+
+#define MENU_LABEL_DEBUG_PANEL_ENABLE                                          0xbad176a1U
+#define MENU_LABEL_VALUE_DEBUG_PANEL_ENABLE                                    0x15042803U
+
 #define MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG                                  0x72674cdfU
 
 #define MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE                                   0xf3b0f77eU
@@ -154,6 +194,8 @@ extern "C" {
 #define MENU_LABEL_VIDEO_MESSAGE_POS_Y                                         0xa133c369U
 #define MENU_LABEL_VALUE_VIDEO_MESSAGE_POS_Y                                   0x4f2559beU
 
+#define MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST                            0x10b41d97U
+#define MENU_LABEL_INPUT_HOTKEY_BINDS                                          0x1b7ef2d7U
 #define MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS                                    0x1cb39c19U
 
 #define MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS                               0x573b8837U
@@ -531,6 +573,10 @@ extern "C" {
 #define MENU_VALUE_CRC                                                         0x0b88671dU
 #define MENU_VALUE_MORE                                                        0x0b877cafU
 #define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
+#define MENU_VALUE_SETTINGS_TAB                                                0x6548d16dU
+#define MENU_VALUE_HISTORY_TAB                                                 0xea9b0ceeU
+#define MENU_VALUE_ADD_TAB                                                     0x7fb20225U
+#define MENU_VALUE_PLAYLISTS_TAB                                               0x092d3161U
 #define MENU_VALUE_MAIN_MENU                                                   0x1625971fU   
 #define MENU_LABEL_VALUE_SETTINGS                                              0x8aca3ff6U
 #define MENU_VALUE_INPUT_SETTINGS                                              0xddd30846U
@@ -569,9 +615,6 @@ extern "C" {
 #define MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW                                 0x7eefdf52U
 #define MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW                           0x78d0ea06U
 
-#define MENU_LABEL_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW                            0xde1d9571U
-#define MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW                      0x2748a1bcU
-
 #define MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND                               0x7051d870U
 #define MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND                         0xc26ddec5U
 
@@ -606,10 +649,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_VIDEO_SHARED_CONTEXT                                  0x353d3287U
 #define MENU_LABEL_DUMMY_ON_CORE_SHUTDOWN                                      0x78579f70U
 #define MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN                                0xc50126d3U
-#define MENU_LABEL_NAVIGATION_WRAPAROUND_HORIZONTAL                            0x42ba315aU
-#define MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL                      0x2609b62fU
-#define MENU_LABEL_NAVIGATION_WRAPAROUND_VERTICAL                              0x052bcbcaU
-#define MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL                        0xfc3b3bdfU
+#define MENU_LABEL_NAVIGATION_WRAPAROUND                                       0xe76ad251U
+#define MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND                                 0x2609b62fU
 #define MENU_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE       0xea48426bU
 #define MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE 0x94af8500U
 #define MENU_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE                         0x593d2623U
@@ -618,6 +659,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_CLOSE_CONTENT                                         0x2b3d9556U
 #define MENU_LABEL_QUIT_RETROARCH                                              0x84b0bc71U
 #define MENU_LABEL_VALUE_QUIT_RETROARCH                                        0x8e7024f2U
+#define MENU_LABEL_SHUTDOWN                                                    0xfc460361U
+#define MENU_LABEL_VALUE_SHUTDOWN                                              0x740b6741U
 #define MENU_LABEL_DEFERRED_VIDEO_FILTER                                       0x966ad201U
 #define MENU_LABEL_DEFERRED_CORE_LIST_SET                                      0xa6d5fdb4U
 #define MENU_LABEL_VALUE_STARTING_DOWNLOAD                                     0x42e10f03U
@@ -697,10 +740,6 @@ extern "C" {
 #define MENU_LABEL_MESSAGE                                                     0xbe463eeaU
 #define MENU_LABEL_INFO_SCREEN                                                 0xd97853d0U
 #define MENU_LABEL_LOAD_OPEN_ZIP                                               0x8aa3c068U
-#define MENU_LABEL_CUSTOM_VIEWPORT_1                                           0x76c3016fU
-#define MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1                                     0xdeef977eU
-#define MENU_LABEL_CUSTOM_VIEWPORT_2                                           0x76c30170U
-#define MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2                                     0x1d76c99aU
 #define MENU_LABEL_CUSTOM_RATIO                                                0xf038731eU
 #define MENU_LABEL_VALUE_CUSTOM_RATIO                                          0x3c94b73fU
 #define MENU_LABEL_HELP                                                        0x7c97d2eeU
@@ -755,8 +794,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_SYSTEM_DIRECTORY                                      0x20da683fU
 #define MENU_LABEL_ASSETS_DIRECTORY                                            0xde1ae8ecU
 #define MENU_LABEL_VALUE_ASSETS_DIRECTORY                                      0xc94e558dU
-#define MENU_LABEL_EXTRACTION_DIRECTORY                                        0x33b55ffaU
-#define MENU_LABEL_VALUE_EXTRACTION_DIRECTORY                                  0x20a7bc9bU
+#define MENU_LABEL_CACHE_DIRECTORY                                             0x851dfb8dU
+#define MENU_LABEL_VALUE_CACHE_DIRECTORY                                       0x20a7bc9bU
 #define MENU_LABEL_JOYPAD_AUTOCONFIG_DIR                                       0x2f4822d8U
 #define MENU_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR                                 0x8bb1c2c9U
 #define MENU_LABEL_INPUT_AUTODETECT_ENABLE                                     0xb1e07facU
@@ -786,7 +825,7 @@ extern "C" {
 #define MENU_LABEL_UI_SETTINGS                                                 0xf8da6ef4U
 #define MENU_LABEL_VALUE_UI_SETTINGS                                           0x76ebdc06U
 #define MENU_LABEL_PATCH_SETTINGS                                              0xa78b0986U
-#define MENU_LABEL_PLAYLIST_SETTINGS                                           0x4d276288U
+#define MENU_LABEL_PLAYLIST_SETTINGS                                           0xdb3e0e07U
 #define MENU_LABEL_VALUE_PLAYLIST_SETTINGS                                     0x4d276288U
 #define MENU_LABEL_CORE_UPDATER_SETTINGS                                       0x124ad454U
 #define MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS                                 0x124ad454U

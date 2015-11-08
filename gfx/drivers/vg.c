@@ -291,7 +291,7 @@ static void vg_copy_frame(void *data, const void *frame,
       bool                new_egl = gfx_ctx_image_buffer_write(vg,
             frame, width, height, pitch, (vg->mTexType == VG_sXRGB_8888), 0, &img);
 
-      rarch_assert(img != EGL_NO_IMAGE_KHR);
+      retro_assert(img != EGL_NO_IMAGE_KHR);
 
       if (new_egl)
       {
@@ -367,9 +367,8 @@ static bool vg_frame(void *data, const void *frame,
 static bool vg_alive(void *data)
 {
    bool quit;
-   bool ret = false;
    unsigned temp_width = 0, temp_height = 0;
-   vg_t         *vg = (vg_t*)data;
+   vg_t            *vg = (vg_t*)data;
 
    gfx_ctx_check_window(data, &quit,
          &vg->should_resize, &temp_width, &temp_height);

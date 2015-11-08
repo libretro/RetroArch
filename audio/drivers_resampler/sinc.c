@@ -128,7 +128,7 @@ typedef struct rarch_sinc_resampler
 static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
       float *phase_table, int phases, int taps, bool calculate_delta)
 {
-   int i, j, p;
+   int i, j;
    double    window_mod = window_function(0.0); /* Need to normalize w(0) to 1.0. */
    int           stride = calculate_delta ? 2 : 1;
    double     sidelobes = taps / 2.0;
@@ -153,6 +153,7 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
    if (calculate_delta)
    {
       int phase;
+      int p;
 
       for (p = 0; p < phases - 1; p++)
       {

@@ -41,16 +41,8 @@ void main_exit_save_config(void)
 
    if (settings->config_save_on_exit && *global->path.config)
    {
-      /* restore original paths in case per-core organization is enabled */
-      if (settings->sort_savefiles_enable && orig_savefile_dir[0] != '\0')
-         strlcpy(global->dir.savefile, orig_savefile_dir,
-               sizeof(global->dir.savefile));
-      if (settings->sort_savestates_enable && orig_savestate_dir[0] != '\0')
-         strlcpy(global->dir.savestate, orig_savestate_dir,
-               sizeof(global->dir.savestate));
-
       /* Save last core-specific config to the default config location,
-       * needed on consoles for core switching and reusing last good 
+       * needed on consoles for core switching and reusing last good
        * config for new cores.
        */
       config_save_file(global->path.config);
@@ -130,6 +122,10 @@ static void check_defaults_dirs(void)
       path_mkdir(g_defaults.dir.core_assets);
    if (*g_defaults.dir.remap)
       path_mkdir(g_defaults.dir.remap);
+   if (*g_defaults.dir.screenshot)
+      path_mkdir(g_defaults.dir.screenshot);
+   if (*g_defaults.dir.core)
+      path_mkdir(g_defaults.dir.core);
    if (*g_defaults.dir.autoconfig)
       path_mkdir(g_defaults.dir.autoconfig);
    if (*g_defaults.dir.audio_filter)
@@ -162,8 +158,8 @@ static void check_defaults_dirs(void)
       path_mkdir(g_defaults.dir.menu_config);
    if (*g_defaults.dir.content_history)
       path_mkdir(g_defaults.dir.content_history);
-   if (*g_defaults.dir.extraction)
-      path_mkdir(g_defaults.dir.extraction);
+   if (*g_defaults.dir.cache)
+      path_mkdir(g_defaults.dir.cache);
    if (*g_defaults.dir.database)
       path_mkdir(g_defaults.dir.database);
    if (*g_defaults.dir.cursor)
@@ -237,12 +233,10 @@ bool main_load_content(int argc, char **argv, void *args,
    (void)rarch_argv_ptr;
    (void)ret;
 
-   rarch_assert(wrap_args);
+   retro_assert(wrap_args);
 
    if (environ_get)
       environ_get(rarch_argc_ptr, rarch_argv_ptr, args, wrap_args);
-
-   check_defaults_dirs();
 
    if (wrap_args->touched)
    {
@@ -263,6 +257,8 @@ bool main_load_content(int argc, char **argv, void *args,
 
    event_command(EVENT_CMD_RESUME);
 
+   check_defaults_dirs();
+
    if (process_args)
       process_args(rarch_argc_ptr, rarch_argv_ptr);
 
@@ -279,7 +275,7 @@ error:
  * Main function of RetroArch.
  *
  * If HAVE_MAIN is not defined, will contain main loop and will not
- * be exited from until we exit the program. Otherwise, will 
+ * be exited from until we exit the program. Otherwise, will
  * just do initialization.
  *
  * Returns: varies per platform.
@@ -344,7 +340,7 @@ int rarch_main(int argc, char *argv[], void *data)
    do{
       unsigned sleep_ms = 0;
       ret = rarch_main_iterate(&sleep_ms);
-      
+
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
       rarch_main_data_iterate();

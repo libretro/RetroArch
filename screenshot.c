@@ -52,6 +52,79 @@
 #include "config.h"
 #endif
 
+/* Take frame bottom-up. */
+static bool screenshot_dump(const char *folder, const void *frame,
+      unsigned width, unsigned height, int pitch, bool bgr24)
+{
+   bool ret;
+   char filename[PATH_MAX_LENGTH] = {0};
+   char shotname[PATH_MAX_LENGTH] = {0};
+   struct scaler_ctx scaler       = {0};
+   RFILE *file                    = NULL;
+   uint8_t *out_buffer            = NULL;
+   driver_t *driver               = driver_get_ptr();
+
+   (void)file;
+   (void)out_buffer;
+   (void)scaler;
+   (void)driver;
+
+   fill_dated_filename(shotname, IMG_EXT, sizeof(shotname));
+   fill_pathname_join(filename, folder, shotname, sizeof(filename));
+
+#ifdef _XBOX1
+   d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
+   settings_t *settings = config_get_ptr();
+
+   D3DSurface *surf = NULL;
+   d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &surf);
+   ret = XGWriteSurfaceToFile(surf, filename);
+   surf->Release();
+
+   if(ret == S_OK)
+      ret = true;
+   else
+      ret = false;
+#elif defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
+   out_buffer = (uint8_t*)malloc(width * height * 3);
+   if (!out_buffer)
+      return false;
+
+   scaler.in_width    = width;
+   scaler.in_height   = height;
+   scaler.out_width   = width;
+   scaler.out_height  = height;
+   scaler.in_stride   = -pitch;
+   scaler.out_stride  = width * 3;
+   scaler.out_fmt     = SCALER_FMT_BGR24;
+   scaler.scaler_type = SCALER_TYPE_POINT;
+
+   if (bgr24)
+      scaler.in_fmt = SCALER_FMT_BGR24;
+   else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
+      scaler.in_fmt = SCALER_FMT_ARGB8888;
+   else
+      scaler.in_fmt = SCALER_FMT_RGB565;
+
+   scaler_ctx_gen_filter(&scaler);
+   scaler_ctx_scale(&scaler, out_buffer,
+         (const uint8_t*)frame + ((int)height - 1) * pitch);
+   scaler_ctx_gen_reset(&scaler);
+
+   RARCH_LOG("Using RPNG for PNG screenshots.\n");
+   ret = rpng_save_image_bgr24(filename,
+         out_buffer, width, height, width * 3);
+   free(out_buffer);
+#else
+   ret = rbmp_save_image(filename, frame, width, height, pitch, bgr24,
+        (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888) );
+#endif
+   if (!ret)
+      RARCH_ERR("Failed to take screenshot.\n");
+
+   return ret;
+}
+
 static bool take_screenshot_viewport(void)
 {
    char screenshot_path[PATH_MAX_LENGTH] = {0};
@@ -131,6 +204,7 @@ static bool take_screenshot_raw(void)
  **/
 bool take_screenshot(void)
 {
+   bool is_paused;
    bool viewport_read   = false;
    bool ret             = true;
    const char *msg      = NULL;
@@ -205,84 +279,12 @@ bool take_screenshot(void)
       msg = msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
    }
 
-   rarch_main_msg_queue_push(msg, 1, rarch_main_is_paused() ? 1 : 180, true);
+   rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED, &is_paused);
 
-   if (rarch_main_is_paused())
+   rarch_main_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
+
+   if (is_paused)
       video_driver_cached_frame();
-
-   return ret;
-}
-
-
-/* Take frame bottom-up. */
-bool screenshot_dump(const char *folder, const void *frame,
-      unsigned width, unsigned height, int pitch, bool bgr24)
-{
-   char filename[PATH_MAX_LENGTH] = {0};
-   char shotname[PATH_MAX_LENGTH] = {0};
-   struct scaler_ctx scaler       = {0};
-   RFILE *file                    = NULL;
-   uint8_t *out_buffer            = NULL;
-   bool ret                       = false;
-   driver_t *driver               = driver_get_ptr();
-
-   (void)file;
-   (void)out_buffer;
-   (void)scaler;
-   (void)driver;
-
-   fill_dated_filename(shotname, IMG_EXT, sizeof(shotname));
-   fill_pathname_join(filename, folder, shotname, sizeof(filename));
-
-#ifdef _XBOX1
-   d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
-   settings_t *settings = config_get_ptr();
-
-   D3DSurface *surf = NULL;
-   d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &surf);
-   ret = XGWriteSurfaceToFile(surf, filename);
-   surf->Release();
-
-   if(ret == S_OK)
-      ret = true;
-   else
-      ret = false;
-#elif defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
-   out_buffer = (uint8_t*)malloc(width * height * 3);
-   if (!out_buffer)
-      return false;
-
-   scaler.in_width    = width;
-   scaler.in_height   = height;
-   scaler.out_width   = width;
-   scaler.out_height  = height;
-   scaler.in_stride   = -pitch;
-   scaler.out_stride  = width * 3;
-   scaler.out_fmt     = SCALER_FMT_BGR24;
-   scaler.scaler_type = SCALER_TYPE_POINT;
-
-   if (bgr24)
-      scaler.in_fmt = SCALER_FMT_BGR24;
-   else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
-      scaler.in_fmt = SCALER_FMT_ARGB8888;
-   else
-      scaler.in_fmt = SCALER_FMT_RGB565;
-
-   scaler_ctx_gen_filter(&scaler);
-   scaler_ctx_scale(&scaler, out_buffer,
-         (const uint8_t*)frame + ((int)height - 1) * pitch);
-   scaler_ctx_gen_reset(&scaler);
-
-   RARCH_LOG("Using RPNG for PNG screenshots.\n");
-   ret = rpng_save_image_bgr24(filename,
-         out_buffer, width, height, width * 3);
-   free(out_buffer);
-#else
-   ret = rbmp_save_image(filename, frame, width, height, pitch, bgr24,
-        (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888) );
-#endif
-   if (!ret)
-      RARCH_ERR("Failed to take screenshot.\n");
 
    return ret;
 }

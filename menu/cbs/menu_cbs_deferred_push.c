@@ -26,53 +26,97 @@
 
 #include "../../general.h"
 
+#ifndef BIND_ACTION_DEFERRED_PUSH
+#define BIND_ACTION_DEFERRED_PUSH(cbs, name) \
+   cbs->action_deferred_push = name; \
+   cbs->action_deferred_push_ident = #name;
+#endif
+
 /* foward declarations */
 int cb_core_updater_list(void *data_, size_t len);
 int cb_core_content_list(void *data_, size_t len);
 
+static int deferred_push_dlist(menu_displaylist_info_t *info, unsigned val)
+{
+   if (menu_displaylist_push_list(info, val) != 0)
+      return -1;
+   menu_displaylist_push_list_process(info);
+   return 0;
+}
+
 static int deferred_push_core_information(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_CORE_INFO);
+   return deferred_push_dlist(info, DISPLAYLIST_CORE_INFO);
 }
 
 static int deferred_push_system_information(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_SYSTEM_INFO);
+   return deferred_push_dlist(info, DISPLAYLIST_SYSTEM_INFO);
 }
 
 static int deferred_push_debug_information(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_DEBUG_INFO);
+   return deferred_push_dlist(info, DISPLAYLIST_DEBUG_INFO);
 }
 
 static int deferred_push_rdb_collection(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_PLAYLIST_COLLECTION);
+   return deferred_push_dlist(info, DISPLAYLIST_PLAYLIST_COLLECTION);
+}
+
+static int deferred_user_binds_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_USER_BINDS_LIST);
+}
+
+static int deferred_push_accounts_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_ACCOUNTS_LIST);
+}
+
+static int deferred_push_input_settings_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_INPUT_SETTINGS_LIST);
+}
+
+static int deferred_push_playlist_settings_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_PLAYLIST_SETTINGS_LIST);
+}
+
+static int deferred_push_input_hotkey_binds_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST);
+}
+
+static int deferred_push_accounts_cheevos_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST);
 }
 
 static int deferred_push_help(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_HELP_SCREEN_LIST);
+   return deferred_push_dlist(info, DISPLAYLIST_HELP_SCREEN_LIST);
 }
 
 static int deferred_push_rdb_entry_detail(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_ENTRY);
+   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_ENTRY);
 }
 
 static int deferred_push_rpl_entry_actions(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS);
+   return deferred_push_dlist(info, DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS);
 }
 
 static int deferred_push_core_list_deferred(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_CORES_SUPPORTED);
+   return deferred_push_dlist(info, DISPLAYLIST_CORES_SUPPORTED);
 }
 
 static int deferred_push_core_collection_list_deferred(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_CORES_COLLECTION_SUPPORTED);
+   return deferred_push_dlist(info, DISPLAYLIST_CORES_COLLECTION_SUPPORTED);
 }
 
 static int deferred_push_database_manager_list_deferred(menu_displaylist_info_t *info)
@@ -80,7 +124,7 @@ static int deferred_push_database_manager_list_deferred(menu_displaylist_info_t 
    strlcpy(info->path_b,    info->path, sizeof(info->path_b));
    info->path_c[0] = '\0';
 
-   return menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_QUERY);
+   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 }
 
 static int deferred_push_cursor_manager_list_deferred(menu_displaylist_info_t *info)
@@ -108,7 +152,7 @@ static int deferred_push_cursor_manager_list_deferred(menu_displaylist_info_t *i
    strlcpy(info->path,   rdb_path,   sizeof(info->path));
    strlcpy(info->path_c,    query,   sizeof(info->path_c));
 
-   ret = menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_QUERY);
+   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 
 end:
    if (conf)
@@ -132,7 +176,7 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(menu_displ
    strlcpy(info->path_b,    str_list->elems[0].data, sizeof(info->path_b));
    strlcpy(info->path_c,    query, sizeof(info->path_c));
 
-   ret = menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_QUERY);
+   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 
 end:
    if (str_list)
@@ -143,93 +187,87 @@ end:
 
 static int deferred_push_video_shader_preset_parameters(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_SHADER_PARAMETERS_PRESET);
+   return deferred_push_dlist(info, DISPLAYLIST_SHADER_PARAMETERS_PRESET);
 }
 
 static int deferred_push_video_shader_parameters(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_SHADER_PARAMETERS);
+   return deferred_push_dlist(info, DISPLAYLIST_SHADER_PARAMETERS);
 }
 
 static int deferred_push_settings(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_SETTINGS_ALL);
-}
-
-static int deferred_push_settings_subgroup(menu_displaylist_info_t *info)
-{
-   return menu_displaylist_push_list(info, DISPLAYLIST_SETTINGS_SUBGROUP);
+   return deferred_push_dlist(info, DISPLAYLIST_SETTINGS_ALL);
 }
 
 static int deferred_push_category(menu_displaylist_info_t *info)
 {
-
-   return menu_displaylist_push_list(info, DISPLAYLIST_SETTINGS);
+   return deferred_push_dlist(info, DISPLAYLIST_SETTINGS);
 }
 
 static int deferred_push_shader_options(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_OPTIONS_SHADERS);
+   return deferred_push_dlist(info, DISPLAYLIST_OPTIONS_SHADERS);
 }
 
 static int deferred_push_options(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_OPTIONS);
+   return deferred_push_dlist(info, DISPLAYLIST_OPTIONS);
 }
 
 static int deferred_push_content_settings(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_CONTENT_SETTINGS);
+   return deferred_push_dlist(info, DISPLAYLIST_CONTENT_SETTINGS);
 }
 
 static int deferred_push_add_content_list(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_ADD_CONTENT_LIST);
+   return deferred_push_dlist(info, DISPLAYLIST_ADD_CONTENT_LIST);
 }
 
 static int deferred_push_load_content_list(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_LOAD_CONTENT_LIST);
+   return deferred_push_dlist(info, DISPLAYLIST_LOAD_CONTENT_LIST);
 }
 
 static int deferred_push_information_list(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_INFORMATION_LIST);
+   return deferred_push_dlist(info, DISPLAYLIST_INFORMATION_LIST);
 }
 
 static int deferred_push_management_options(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_OPTIONS_MANAGEMENT);
+   return deferred_push_dlist(info, DISPLAYLIST_OPTIONS_MANAGEMENT);
 }
 
 static int deferred_push_core_counters(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_PERFCOUNTERS_CORE);
+   return deferred_push_dlist(info, DISPLAYLIST_PERFCOUNTERS_CORE);
 }
 
 static int deferred_push_frontend_counters(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_PERFCOUNTERS_FRONTEND);
+   return deferred_push_dlist(info, DISPLAYLIST_PERFCOUNTERS_FRONTEND);
 }
 
 static int deferred_push_core_cheat_options(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_OPTIONS_CHEATS);
+   return deferred_push_dlist(info, DISPLAYLIST_OPTIONS_CHEATS);
 }
 
 static int deferred_push_core_input_remapping_options(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_OPTIONS_REMAPPINGS);
+   return deferred_push_dlist(info, DISPLAYLIST_OPTIONS_REMAPPINGS);
 }
 
 static int deferred_push_core_options(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_CORE_OPTIONS);
+   return deferred_push_dlist(info, DISPLAYLIST_CORE_OPTIONS);
 }
 
 static int deferred_push_disk_options(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_OPTIONS_DISK);
+   return deferred_push_dlist(info, DISPLAYLIST_OPTIONS_DISK);
 }
 
 #ifdef HAVE_NETWORKING
@@ -278,23 +316,23 @@ int cb_core_content_list(void *data_, size_t len)
 
 static int deferred_push_core_updater_list(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_CORES_UPDATER);
+   return deferred_push_dlist(info, DISPLAYLIST_CORES_UPDATER);
 }
 
 static int deferred_push_core_content_list(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_CORE_CONTENT);
+   return deferred_push_dlist(info, DISPLAYLIST_CORE_CONTENT);
 }
 #endif
 
 static int deferred_archive_action_detect_core(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE);
+   return deferred_push_dlist(info, DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE);
 }
 
 static int deferred_archive_action(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_ARCHIVE_ACTION);
+   return deferred_push_dlist(info, DISPLAYLIST_ARCHIVE_ACTION);
 }
 
 enum
@@ -358,7 +396,9 @@ static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned typ
          break;
       case PUSH_DEFAULT:
          info->setting      = menu_setting_find(info->label);
-         if (info->setting && info->setting->browser_selection_type == ST_DIR) {}
+         if (menu_setting_get_browser_selection_type(info->setting) == ST_DIR)
+         {
+         }
          else if (global->menu.info.valid_extensions)
          {
             if (*global->menu.info.valid_extensions)
@@ -400,7 +440,7 @@ static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned typ
 #endif
    }
 
-   return menu_displaylist_push_list(info, type);
+   return deferred_push_dlist(info, type);
 }
 
 static int deferred_push_detect_core_list(menu_displaylist_info_t *info)
@@ -425,190 +465,212 @@ static int deferred_push_default(menu_displaylist_info_t *info)
 
 static int deferred_push_history_list(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_HISTORY);
+   return deferred_push_dlist(info, DISPLAYLIST_HISTORY);
 }
 
 int deferred_push_content_list(void *data, void *userdata, const char *path,
       const char *label, unsigned type)
 {
-   menu_list_t *menu_list = menu_list_get_ptr();
-   return action_refresh_default((file_list_t*)data, menu_list->selection_buf);
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   return action_refresh_default((file_list_t*)data, selection_buf);
 }
 
 static int deferred_push_database_manager_list(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_DATABASES);
+   return deferred_push_dlist(info, DISPLAYLIST_DATABASES);
 }
 
 static int deferred_push_cursor_manager_list(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_CURSORS);
+   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_CURSORS);
 }
 
 static int deferred_push_content_collection_list(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_DATABASE_PLAYLISTS);
+   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_PLAYLISTS);
 }
 
 static int deferred_push_core_list(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_CORES);
+   return deferred_push_dlist(info, DISPLAYLIST_CORES);
 }
 
 static int deferred_push_configurations(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_CONFIG_FILES);
+   return deferred_push_dlist(info, DISPLAYLIST_CONFIG_FILES);
 }
 
 static int deferred_push_video_shader_preset(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_SHADER_PRESET);
+   return deferred_push_dlist(info, DISPLAYLIST_SHADER_PRESET);
 }
 
 static int deferred_push_video_shader_pass(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_SHADER_PASS);
+   return deferred_push_dlist(info, DISPLAYLIST_SHADER_PASS);
 }
 
 static int deferred_push_video_filter(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_VIDEO_FILTERS);
+   return deferred_push_dlist(info, DISPLAYLIST_VIDEO_FILTERS);
 }
 
 static int deferred_push_images(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_IMAGES);
+   return deferred_push_dlist(info, DISPLAYLIST_IMAGES);
 }
 
 static int deferred_push_audio_dsp_plugin(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_AUDIO_FILTERS);
+   return deferred_push_dlist(info, DISPLAYLIST_AUDIO_FILTERS);
 }
 
 static int deferred_push_cheat_file_load(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_CHEAT_FILES);
+   return deferred_push_dlist(info, DISPLAYLIST_CHEAT_FILES);
 }
 
 static int deferred_push_remap_file_load(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_REMAP_FILES);
+   return deferred_push_dlist(info, DISPLAYLIST_REMAP_FILES);
 }
 
 static int deferred_push_record_configfile(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_RECORD_CONFIG_FILES);
+   return deferred_push_dlist(info, DISPLAYLIST_RECORD_CONFIG_FILES);
 }
 
 static int deferred_push_input_overlay(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_OVERLAYS);
+   return deferred_push_dlist(info, DISPLAYLIST_OVERLAYS);
 }
 
 static int deferred_push_input_osk_overlay(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_OVERLAYS);
+   return deferred_push_dlist(info, DISPLAYLIST_OVERLAYS);
 }
 
 static int deferred_push_video_font_path(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_FONTS);
+   return deferred_push_dlist(info, DISPLAYLIST_FONTS);
 }
 
 static int deferred_push_content_history_path(menu_displaylist_info_t *info)
 {
-   return menu_displaylist_push_list(info, DISPLAYLIST_CONTENT_HISTORY);
+   return deferred_push_dlist(info, DISPLAYLIST_CONTENT_HISTORY);
 }
 
 static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *cbs, 
       const char *label, uint32_t label_hash)
 {
    if (strstr(label, menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
-      cbs->action_deferred_push = deferred_push_rdb_entry_detail;
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_entry_detail);
+   }
    else if (strstr(label, menu_hash_to_str(MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
-      cbs->action_deferred_push = deferred_push_rpl_entry_actions;
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rpl_entry_actions);
+   }
    else
    {
       switch (label_hash)
       {
+         case MENU_LABEL_DEFERRED_USER_BINDS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_user_binds_list);
+            break;
+         case MENU_LABEL_DEFERRED_ACCOUNTS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_list);
+            break;
+         case MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_settings_list);
+            break;
+         case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_settings_list);
+            break;
+         case MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_hotkey_binds_list);
+            break;
+         case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_cheevos_list);
+            break;
          case MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE:
-            cbs->action_deferred_push = deferred_archive_action_detect_core;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_action_detect_core);
             break;
          case MENU_LABEL_DEFERRED_ARCHIVE_ACTION:
-            cbs->action_deferred_push = deferred_archive_action;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_action);
             break;
          case MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
-            cbs->action_deferred_push = deferred_archive_open_detect_core;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_open_detect_core);
             break;
          case MENU_LABEL_DEFERRED_ARCHIVE_OPEN:
-            cbs->action_deferred_push = deferred_archive_open;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_open);
             break;
          case MENU_LABEL_DEFERRED_CORE_CONTENT_LIST:
 #ifdef HAVE_NETWORKING
-            cbs->action_deferred_push = deferred_push_core_content_list;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_content_list);
 #endif
             break;
          case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
 #ifdef HAVE_NETWORKING
-            cbs->action_deferred_push = deferred_push_core_updater_list;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_updater_list);
 #endif
             break;
          case MENU_LABEL_LOAD_CONTENT_HISTORY:
-            cbs->action_deferred_push = deferred_push_history_list;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_history_list);
             break;
          case MENU_LABEL_DATABASE_MANAGER_LIST:
-            cbs->action_deferred_push = deferred_push_database_manager_list;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list);
             break;
          case MENU_LABEL_CURSOR_MANAGER_LIST:
-            cbs->action_deferred_push = deferred_push_cursor_manager_list;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list);
             break;
          case MENU_LABEL_CHEAT_FILE_LOAD:
-            cbs->action_deferred_push = deferred_push_cheat_file_load;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheat_file_load);
             break;
          case MENU_LABEL_REMAP_FILE_LOAD:
-            cbs->action_deferred_push = deferred_push_remap_file_load;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_remap_file_load);
             break;
          case MENU_LABEL_RECORD_CONFIG:
-            cbs->action_deferred_push = deferred_push_record_configfile;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_record_configfile);
             break;
          case MENU_LABEL_SHADER_OPTIONS:
-            cbs->action_deferred_push = deferred_push_shader_options;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_shader_options);
             break;
          case MENU_LABEL_ONLINE_UPDATER:
-            cbs->action_deferred_push = deferred_push_options;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_options);
             break;
          case MENU_LABEL_CONTENT_SETTINGS:
-            cbs->action_deferred_push = deferred_push_content_settings;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_settings);
             break;
          case MENU_LABEL_ADD_CONTENT_LIST:
-            cbs->action_deferred_push = deferred_push_add_content_list;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_content_list);
             break;
          case MENU_LABEL_LOAD_CONTENT_LIST:
-            cbs->action_deferred_push = deferred_push_load_content_list;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_load_content_list);
             break;
          case MENU_LABEL_INFORMATION_LIST:
-            cbs->action_deferred_push = deferred_push_information_list;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_information_list);
             break;
          case MENU_LABEL_MANAGEMENT:
-            cbs->action_deferred_push = deferred_push_management_options;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_management_options);
             break;
          case MENU_LABEL_HELP_LIST:
-            cbs->action_deferred_push = deferred_push_help;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_help);
             break;
          case MENU_LABEL_DEFERRED_CORE_LIST:
-            cbs->action_deferred_push = deferred_push_core_list_deferred;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list_deferred);
             break;
          case MENU_LABEL_DEFERRED_CORE_LIST_SET:
-            cbs->action_deferred_push = deferred_push_core_collection_list_deferred;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_collection_list_deferred);
             break;
          case MENU_LABEL_DEFERRED_VIDEO_FILTER:
-            cbs->action_deferred_push = deferred_push_video_filter;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_filter);
             break;
          case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
-            cbs->action_deferred_push = deferred_push_database_manager_list_deferred;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list_deferred);
             break;
          case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
-            cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred);
             break;
          case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER:
          case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER:
@@ -626,79 +688,80 @@ static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *
          case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS:
          case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH:
          case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR:
-            cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred_query_subsearch;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_subsearch);
             break;
          case MENU_LABEL_CORE_INFORMATION:
-            cbs->action_deferred_push = deferred_push_core_information;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_information);
             break;
          case MENU_LABEL_SYSTEM_INFORMATION:
-            cbs->action_deferred_push = deferred_push_system_information;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_system_information);
+            break;
          case MENU_LABEL_DEBUG_INFORMATION:
-            cbs->action_deferred_push = deferred_push_debug_information;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_debug_information);
             break;
          case MENU_LABEL_CORE_COUNTERS:
-            cbs->action_deferred_push = deferred_push_core_counters;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_counters);
             break;
          case MENU_LABEL_FRONTEND_COUNTERS:
-            cbs->action_deferred_push = deferred_push_frontend_counters;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_frontend_counters);
             break;
          case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-            cbs->action_deferred_push = deferred_push_video_shader_preset_parameters;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset_parameters);
             break;
          case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
-            cbs->action_deferred_push = deferred_push_video_shader_parameters;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_parameters);
             break;
          case MENU_LABEL_SETTINGS:
-            cbs->action_deferred_push = deferred_push_settings;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_settings);
             break;
          case MENU_LABEL_CORE_OPTIONS:
-            cbs->action_deferred_push = deferred_push_core_options;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_options);
             break;
          case MENU_LABEL_CORE_CHEAT_OPTIONS:
-            cbs->action_deferred_push = deferred_push_core_cheat_options;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_cheat_options);
             break;
          case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
-            cbs->action_deferred_push = deferred_push_core_input_remapping_options;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_input_remapping_options);
             break;
          case MENU_LABEL_CORE_LIST:
-            cbs->action_deferred_push = deferred_push_core_list;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list);
             break;
          case MENU_LABEL_CONTENT_COLLECTION_LIST:
-            cbs->action_deferred_push = deferred_push_content_collection_list;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_collection_list);
             break;
          case MENU_LABEL_CONFIGURATIONS:
-            cbs->action_deferred_push = deferred_push_configurations;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations);
             break;
          case MENU_LABEL_VIDEO_SHADER_PRESET:
-            cbs->action_deferred_push = deferred_push_video_shader_preset;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset);
             break;
          case MENU_LABEL_VIDEO_SHADER_PASS:
-            cbs->action_deferred_push = deferred_push_video_shader_pass;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_pass);
             break;
          case MENU_LABEL_VIDEO_FILTER:
-            cbs->action_deferred_push = deferred_push_video_filter;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_filter);
             break;
          case MENU_LABEL_MENU_WALLPAPER:
-            cbs->action_deferred_push = deferred_push_images;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_images);
             break;
          case MENU_LABEL_AUDIO_DSP_PLUGIN:
-            cbs->action_deferred_push = deferred_push_audio_dsp_plugin;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_dsp_plugin);
             break;
          case MENU_LABEL_INPUT_OVERLAY:
-            cbs->action_deferred_push = deferred_push_input_overlay;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_overlay);
             break;
          case MENU_LABEL_INPUT_OSK_OVERLAY:
-            cbs->action_deferred_push = deferred_push_input_osk_overlay;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_osk_overlay);
             break;
          case MENU_LABEL_VIDEO_FONT_PATH:
-            cbs->action_deferred_push = deferred_push_video_font_path;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_font_path);
             break;
          case MENU_LABEL_CONTENT_HISTORY_PATH:
-            cbs->action_deferred_push = deferred_push_content_history_path;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_history_path);
             break;
          case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
          case MENU_LABEL_DETECT_CORE_LIST:
-            cbs->action_deferred_push = deferred_push_detect_core_list;
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_detect_core_list);
             break;
          default:
             return -1;
@@ -712,11 +775,17 @@ static int menu_cbs_init_bind_deferred_push_compare_type(menu_file_list_cbs_t *c
       uint32_t label_hash)
 {
    if (type == MENU_SETTING_GROUP)
-      cbs->action_deferred_push = deferred_push_category;
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_category);
+   }
    else if (type == MENU_FILE_PLAYLIST_COLLECTION)
-      cbs->action_deferred_push = deferred_push_rdb_collection;
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_collection);
+   }
    else if (type == MENU_SETTING_ACTION_CORE_DISK_OPTIONS)
-      cbs->action_deferred_push = deferred_push_disk_options;
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_disk_options);
+   }
    else
       return -1;
 
@@ -728,26 +797,10 @@ int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
-   settings_t *settings   = config_get_ptr();
-
    if (!cbs)
       return -1;
 
-   cbs->action_deferred_push = deferred_push_default;
-
-   if (cbs->setting)
-   {
-      uint32_t parent_group_hash = menu_hash_calculate(cbs->setting->parent_group);
-
-      if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && cbs->setting->type == ST_GROUP)
-      {
-         if (!settings->menu.collapse_subgroups_enable)
-         {
-            cbs->action_deferred_push = deferred_push_settings_subgroup;
-            return 0;
-         }
-      }
-   }
+   BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_default);
 
    if (menu_cbs_init_bind_deferred_push_compare_label(cbs, label, label_hash) == 0)
       return 0;

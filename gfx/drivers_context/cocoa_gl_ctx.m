@@ -383,8 +383,8 @@ static void cocoagl_gfx_ctx_update_window_title(void *data)
 static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types type,
             float *value)
 {
+   RAScreen *screen = (RAScreen*)get_chosen_screen();
 #if defined(HAVE_COCOA)
-    RAScreen *screen              = [RAScreen mainScreen];
     NSDictionary *description     = [screen deviceDescription];
     NSSize  display_pixel_size    = [[description objectForKey:NSDeviceSize] sizeValue];
     CGSize  display_physical_size = CGDisplayScreenSize(
@@ -402,7 +402,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
     float   dpi                   = (display_width/ physical_width) * 25.4f * scale;
 #elif defined(HAVE_COCOATOUCH)
     float   scale                 = cocoagl_gfx_ctx_get_native_scale();
-    CGRect  screen_rect           = [[UIScreen mainScreen] bounds];
+    CGRect  screen_rect           = [screen bounds];
     
     //float   display_width         = screen_rect.size.width;
     float   display_height        = screen_rect.size.height;

@@ -33,10 +33,6 @@
 
 #include "../image/image.h"
 
-#ifdef HAVE_GLSL
-#include "../shader_glsl.h"
-#endif
-
 #define WINDOW_BUFFERS 2
 
 static bool g_use_hw_ctx;
@@ -391,7 +387,7 @@ static gfx_ctx_proc_t gfx_ctx_qnx_get_proc_address(const char *symbol)
    gfx_ctx_proc_t ret;
    void *sym__;
 
-   rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
+   retro_assert(sizeof(void*) == sizeof(void (*)(void)));
 
    sym__ = eglGetProcAddress(symbol);
    memcpy(&ret, &sym__, sizeof(void*));

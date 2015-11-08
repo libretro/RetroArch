@@ -179,7 +179,10 @@ static bool ps3_input_key_pressed(void *data, int key)
    ps3_input_t *ps3     = (ps3_input_t*)data;
    settings_t *settings = config_get_ptr();
 
-   return input_joypad_pressed(ps3->joypad, 0, settings->input.binds[0], key);
+   if (input_joypad_pressed(ps3->joypad, 0, settings->input.binds[0], key))
+      return true;
+
+   return false;
 }
 
 static bool ps3_input_meta_key_pressed(void *data, int key)

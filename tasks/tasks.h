@@ -73,9 +73,8 @@ void rarch_main_data_nbio_image_upload_iterate(bool is_thread);
 #endif
 
 #ifdef HAVE_LIBRETRODB
-#ifdef HAVE_MENU
 void rarch_main_data_db_iterate(bool is_thread);
-
+#ifdef HAVE_MENU
 bool rarch_main_data_db_pending_scan_finished(void);
 #endif
 
@@ -111,6 +110,8 @@ int detect_system(const char* track_path, int32_t offset,
         const char** system_name);
 
 int detect_ps1_game(const char *track_path, char *game_id);
+
+int detect_psp_game(const char *track_path, char *game_id);
 
 #ifdef __cplusplus
 }

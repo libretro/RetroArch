@@ -258,11 +258,11 @@ void retro_init_libretro_cbs(void *data)
    (void)driver;
    (void)global;
 
-   pretro_set_video_refresh(video_frame);
-   pretro_set_audio_sample(audio_driver_sample);
-   pretro_set_audio_sample_batch(audio_driver_sample_batch);
-   pretro_set_input_state(input_state);
-   pretro_set_input_poll(input_poll);
+   core.retro_set_video_refresh(video_frame);
+   core.retro_set_audio_sample(audio_driver_sample);
+   core.retro_set_audio_sample_batch(audio_driver_sample_batch);
+   core.retro_set_input_state(input_state);
+   core.retro_set_input_poll(input_poll);
 
    retro_set_default_callbacks(cbs);
 
@@ -272,17 +272,17 @@ void retro_init_libretro_cbs(void *data)
 
    if (global->netplay.is_spectate)
    {
-      pretro_set_input_state(
+      core.retro_set_input_state(
             (global->netplay.is_client ?
              input_state_spectate_client : input_state_spectate)
             );
    }
    else
    {
-      pretro_set_video_refresh(video_frame_net);
-      pretro_set_audio_sample(audio_sample_net);
-      pretro_set_audio_sample_batch(audio_sample_batch_net);
-      pretro_set_input_state(input_state_net);
+      core.retro_set_video_refresh(video_frame_net);
+      core.retro_set_audio_sample(audio_sample_net);
+      core.retro_set_audio_sample_batch(audio_sample_batch_net);
+      core.retro_set_input_state(input_state_net);
    }
 #endif
 }
@@ -297,12 +297,12 @@ void retro_set_rewind_callbacks(void)
 {
    if (state_manager_frame_is_reversed())
    {
-      pretro_set_audio_sample(audio_driver_sample_rewind);
-      pretro_set_audio_sample_batch(audio_driver_sample_batch_rewind);
+      core.retro_set_audio_sample(audio_driver_sample_rewind);
+      core.retro_set_audio_sample_batch(audio_driver_sample_batch_rewind);
    }
    else
    {
-      pretro_set_audio_sample(audio_driver_sample);
-      pretro_set_audio_sample_batch(audio_driver_sample_batch);
+      core.retro_set_audio_sample(audio_driver_sample);
+      core.retro_set_audio_sample_batch(audio_driver_sample_batch);
    }
 }

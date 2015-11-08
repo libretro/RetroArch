@@ -28,84 +28,17 @@
 
 #include "../../general.h"
 #include "retroarch.h"
+#include "audio/audio_driver.h"
+
+#include "ctr/ctr_debug.h"
 
 #ifdef IS_SALAMANDER
 #include "../../file_ext.h"
 #else
 #include "../../menu/menu.h"
-#include "../../menu/menu_list.h"
 #endif
 
 const char* elf_path_cst = "sdmc:/retroarch/test.3dsx";
-
-void wait_for_input(void);
-
-#define DEBUG_HOLD() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);wait_for_input();}while(0)
-
-#ifndef CTR_STACK_SIZE
-#define CTR_STACK_SIZE         0x100000
-#endif
-
-#ifndef CTR_LINEAR_HEAP_SIZE
-#define CTR_LINEAR_HEAP_SIZE   0x600000
-#endif
-
-int __stacksize__ = CTR_STACK_SIZE;
-
-extern char* fake_heap_start;
-extern char* fake_heap_end;
-u32 __linear_heap;
-u32 __heapBase;
-static u32 __heap_size_local, __linear_heap_size_local;
-
-extern void (*__system_retAddr)(void);
-
-void __destroy_handle_list(void);
-void __appExit();
-void __libc_fini_array(void);
-
-void __system_allocateHeaps() {
-	u32 tmp=0;
-   int64_t mem_used;
-   svcGetSystemInfo(&mem_used, 0, 1);
-
-   __linear_heap_size_local = CTR_LINEAR_HEAP_SIZE;
-   __heap_size_local        = (0x4000000 - mem_used - __linear_heap_size_local - 0x1000) & 0xFFFFF000;
-
-	// Allocate the application heap
-	__heapBase = 0x08000000;
-	svcControlMemory(&tmp, __heapBase, 0x0, __heap_size_local, MEMOP_ALLOC, MEMPERM_READ | MEMPERM_WRITE);
-
-	// Allocate the linear heap
-	svcControlMemory(&__linear_heap, 0x0, 0x0, __linear_heap_size_local, MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
-	// Set up newlib heap
-	fake_heap_start = (char*)__heapBase;
-	fake_heap_end = fake_heap_start + __heap_size_local;
-
-}
-
-void __attribute__((noreturn)) __libctru_exit(int rc)
-{
-	u32 tmp=0;
-
-	// Unmap the linear heap
-	svcControlMemory(&tmp, __linear_heap, 0x0, __linear_heap_size_local, MEMOP_FREE, 0x0);
-
-	// Unmap the application heap
-	svcControlMemory(&tmp, __heapBase, 0x0, __heap_size_local, MEMOP_FREE, 0x0);
-
-	// Close some handles
-	__destroy_handle_list();
-
-	// Jump to the loader if it provided a callback
-	if (__system_retAddr)
-		__system_retAddr();
-
-	// Since above did not jump, end this process
-	svcExitProcess();
-}
-
-
 
 static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
@@ -144,6 +77,16 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
          "remaps", sizeof(g_defaults.dir.remap));
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
          "retroarch.cfg", sizeof(g_defaults.path.config));
+   
+#if 0
+   int i;
+   DEBUG_VAR(*argc);
+   for (i=0; i < *argc; i++)
+      DEBUG_STR(argv[i]);
+   DEBUG_HOLD();
+#endif
+
+   *argc = 0;
 
 #ifndef IS_SALAMANDER
 #if 0
@@ -181,6 +124,9 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
 
 static void frontend_ctr_deinit(void *data)
 {
+   extern PrintConsole* currentConsole;
+   Handle lcd_handle;
+   u8 not_2DS;
    (void)data;
 #ifndef IS_SALAMANDER
    global_t *global   = global_get_ptr();
@@ -192,18 +138,23 @@ static void frontend_ctr_deinit(void *data)
    global->log_file = NULL;
 #endif
 
-   wait_for_input();
+   if(gfxBottomFramebuffers[0] == (u8*)currentConsole->frameBuffer)
+      wait_for_input();
 
-   csndExit();
+   CFGU_GetModelNintendo2DS(&not_2DS);
+   if(not_2DS && srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
+   {
+      u32 *cmdbuf = getThreadCommandBuffer();
+      cmdbuf[0] = 0x00110040;
+      cmdbuf[1] = 2;
+      svcSendSyncRequest(lcd_handle);
+      svcCloseHandle(lcd_handle);
+   }
+
+   exitCfgu();
+   ndspExit();
+   csndExit();   
    gfxExit();
-
-#if 0
-   sdmcExit();
-   fsExit();
-   hidExit();
-   aptExit();
-   srvExit();
-#endif
 #endif
 }
 
@@ -212,8 +163,57 @@ static void frontend_ctr_shutdown(bool unused)
    (void)unused;
 }
 
-#define PRINTFPOS(X,Y) "\x1b["#X";"#Y"H"
-#define PRINTFPOS_STR(X,Y) "\x1b["X";"Y"H"
+static void ctr_check_dspfirm(void)
+{
+   FILE* dsp_fp = fopen("sdmc:/3ds/dspfirm.cdc", "rb");
+
+   if(dsp_fp)
+      fclose(dsp_fp);
+   else
+   {
+      uint32_t* code_buffer;
+      uint32_t* ptr;
+      FILE* code_fp;
+      size_t code_size;
+      const uint32_t dsp1_magic = 0x31505344; /* "DSP1" */
+
+      code_fp =fopen("sdmc:/3ds/code.bin", "rb");
+      if(code_fp)
+      {
+         fseek(code_fp, 0, SEEK_END);
+         code_size = ftell(code_fp);
+         fseek(code_fp, 0, SEEK_SET);
+
+         code_buffer = (uint32_t*) malloc(code_size);
+         if(code_buffer)
+         {
+            fread(code_buffer, 1, code_size, code_fp);
+
+            for (ptr = code_buffer + 0x40; ptr < (code_buffer + (code_size >> 2)); ptr++)
+            {
+               if (*ptr == dsp1_magic)
+               {
+                  size_t dspfirm_size = ptr[1];
+                  ptr -= 0x40;
+                  if ((ptr + (dspfirm_size >> 2)) > (code_buffer + (code_size >> 2)))
+                     break;
+
+                  dsp_fp = fopen("sdmc:/3ds/dspfirm.cdc", "wb");
+                  if(!dsp_fp)
+                     break;
+                  fwrite(ptr, 1, dspfirm_size, dsp_fp);
+                  fclose(dsp_fp);
+                  break;
+               }
+            }
+            free(code_buffer);
+         }
+         fclose(code_fp);
+      }
+   }
+}
+
+void svchax_init(void);
 
 static void frontend_ctr_init(void *data)
 {
@@ -223,19 +223,28 @@ static void frontend_ctr_init(void *data)
    global->verbosity = true;
 
 #if 0
-   srvInit();
-   aptInit();
-   hidInit();
-   fsInit();
-   sdmcInit();
-
    APT_SetAppCpuTimeLimit(NULL, 80);
-   gfxInitDefault();
 #endif
-   gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);
-   csndInit();
+   gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);   
    gfxSet3D(false);
    consoleInit(GFX_BOTTOM, NULL);
+
+   /* enable access to all service calls when possible. */
+   osSetSpeedupEnable(false);
+   svchax_init();
+   osSetSpeedupEnable(true);
+
+   audio_driver_t* dsp_audio_driver = &audio_ctr_dsp;
+   if(csndInit() != 0)
+   {
+      dsp_audio_driver = &audio_ctr_csnd;
+      audio_ctr_csnd = audio_ctr_dsp;
+      audio_ctr_dsp  = audio_null;
+   }
+   ctr_check_dspfirm();
+   if(ndspInit() != 0)
+      *dsp_audio_driver = audio_null;
+   initCfgu();
 #endif
 }
 
@@ -244,51 +253,6 @@ static int frontend_ctr_get_rating(void)
 {
    return 3;
 }
-
-bool select_pressed = false;
-
-void wait_for_input(void)
-{
-   printf("\n\nPress Start.\n\n");
-   fflush(stdout);
-
-   while(aptMainLoop())
-   {
-      u32 kDown;
-
-      hidScanInput();
-
-      kDown = hidKeysDown();
-
-      if (kDown & KEY_START)
-         break;
-
-      if (kDown & KEY_SELECT)
-         exit(0);
-#if 0
-      select_pressed = true;
-#endif
-
-      retro_sleep(1);
-   }
-}
-
-int usleep (useconds_t us)
-{
-   svcSleepThread((int64_t)us * 1000);
-}
-
-long sysconf(int name)
-{
-   switch(name)
-   {
-   case _SC_NPROCESSORS_ONLN:
-      return 2;
-   }
-
-   return -1;
-}
-
 
 enum frontend_architecture frontend_ctr_get_architecture(void)
 {
@@ -303,7 +267,7 @@ static int frontend_ctr_parse_drive_list(void *data)
    if (!list)
       return -1;
 
-   menu_list_push(list,
+   menu_entries_push(list,
          "sdmc:/", "", MENU_FILE_DIRECTORY, 0, 0);
 #endif
 

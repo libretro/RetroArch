@@ -18,10 +18,11 @@
 #include <ctype.h>
 #include <string.h>
 
-#include <string/string_list.h>
-
 #include "input_hid_driver.h"
 #include "../general.h"
+#ifndef IS_JOYCONFIG
+#include "../string_list_special.h"
+#endif
 
 static hid_driver_t *hid_drivers[] = {
 #if defined(__APPLE__) && defined(IOS)
@@ -70,6 +71,7 @@ const char *hid_driver_find_ident(int idx)
    return drv->ident;
 }
 
+#ifndef IS_JOYCONFIG
 /**
  * config_get_hid_driver_options:
  *
@@ -79,41 +81,9 @@ const char *hid_driver_find_ident(int idx)
  **/
 const char* config_get_hid_driver_options(void)
 {
-   union string_list_elem_attr attr;
-   unsigned i;
-   char                 *options = NULL;
-   int               options_len = 0;
-   struct string_list *options_l = string_list_new();
-
-   attr.i = 0;
-
-   if (!options_l)
-      return NULL;
-
-   for (i = 0; hid_drivers[i]; i++)
-   {
-      const char *opt = hid_drivers[i]->ident;
-
-      options_len += strlen(opt) + 1;
-      string_list_append(options_l, opt, attr);
-   }
-
-   options = (char*)calloc(options_len, sizeof(char));
-
-   if (!options)
-   {
-      string_list_free(options_l);
-      options_l = NULL;
-      return NULL;
-   }
-
-   string_list_join_concat(options, options_len, options_l, "|");
-
-   string_list_free(options_l);
-   options_l = NULL;
-
-   return options;
+   return char_list_new_special(STRING_LIST_INPUT_HID_DRIVERS, NULL);
 }
+#endif
 
 /**
  * input_hid_init_first:

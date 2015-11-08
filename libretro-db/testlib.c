@@ -59,7 +59,7 @@ static void push_rmsgpack_value(lua_State *L, struct rmsgpack_dom_value *value)
 
 static int value_provider(void *ctx, struct rmsgpack_dom_value *out)
 {
-   int rv;
+   int rv       = 0;
    lua_State *L = ctx;
 
    lua_getfield(L, LUA_REGISTRYINDEX, "testlib_get_value");
@@ -85,7 +85,6 @@ static int value_provider(void *ctx, struct rmsgpack_dom_value *out)
 
 static int create_db(lua_State *L)
 {
-   int rv;
    RFILE *dst;
    const char *db_file = luaL_checkstring(L, -2);
 
@@ -103,7 +102,7 @@ static int create_db(lua_State *L)
       lua_error(L);
    }
 
-   rv = libretrodb_create(dst, &value_provider, L);
+   libretrodb_create(dst, &value_provider, L);
    retro_fclose(dst);
 
    return 0;
@@ -168,8 +167,6 @@ static int db_cursor_open(lua_State *L)
 
 static int db_query(lua_State *L)
 {
-   int rv;
-   libretrodb_cursor_t *cursor = NULL;
    libretrodb_t            *db = checkdb(L);
    const char           *query = luaL_checkstring(L, -1);
    const char           *error = NULL;
@@ -183,7 +180,9 @@ static int db_query(lua_State *L)
    }
    else
    {
-      cursor = lua_newuserdata(L, sizeof(libretrodb_t));
+      int rv;
+      libretrodb_cursor_t *cursor = lua_newuserdata(L, sizeof(libretrodb_t));
+
       if ((rv = libretrodb_cursor_open(db, cursor, q)) == 0)
       {
          luaL_getmetatable(L, "RarchDB.Cursor");
@@ -229,6 +228,9 @@ static int cursor_read(lua_State *L)
 static int cursor_iter(lua_State *L)
 {
    libretrodb_cursor_t *cursor = checkcursor(L);
+
+   (void)cursor;
+
    luaL_getmetafield(L, -1, "read");
    lua_pushvalue(L, -2);
    return 2;

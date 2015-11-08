@@ -26,6 +26,46 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_STATE_SLOT:
+         return "state_slot";
+      case MENU_LABEL_CHEEVOS_USERNAME:
+         return "cheevos_username";
+      case MENU_LABEL_CHEEVOS_PASSWORD:
+         return "cheevos_password";
+      case MENU_LABEL_ACCOUNTS_CHEEVOS_USERNAME:
+         return "accounts_cheevos_username";
+      case MENU_LABEL_ACCOUNTS_CHEEVOS_PASSWORD:
+         return "accounts_cheevos_password";
+      case MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
+         return "retro_achievements";
+      case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
+         return "deferred_accounts_cheevos_list";
+      case MENU_LABEL_DEFERRED_USER_BINDS_LIST:
+         return "deferred_user_binds_list";
+      case MENU_LABEL_DEFERRED_ACCOUNTS_LIST:
+         return "deferred_accounts_list";
+      case MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST:
+         return "deferred_input_settings_list";
+      case MENU_LABEL_ACCOUNTS_LIST:
+         return "accounts_list";
+      case MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
+         return "deferred_input_hotkey_binds";
+      case MENU_LABEL_INPUT_HOTKEY_BINDS:
+         return "input_hotkey_binds";
+      case MENU_LABEL_INPUT_HOTKEY_BINDS_BEGIN:
+         return "input_hotkey_binds_begin";
+      case MENU_LABEL_INPUT_SETTINGS_BEGIN:
+         return "input_settings_begin";
+      case MENU_LABEL_PLAYLIST_SETTINGS_BEGIN:
+         return "playlist_settings_begin";
+      case MENU_LABEL_PLAYLIST_SETTINGS:
+         return "playlist_settings";
+      case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
+         return "deferred_playlist_settings";
+      case MENU_LABEL_INPUT_SETTINGS:
+         return "input_settings";
+      case MENU_LABEL_DEBUG_PANEL_ENABLE:
+         return "debug_panel_enable";
       case MENU_LABEL_HELP_SCANNING_CONTENT:
          return "help_scanning_content";
       case MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
@@ -92,18 +132,12 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "load_content";
       case MENU_LABEL_NO_SETTINGS_FOUND:
          return "menu_label_no_settings_found";
-      case MENU_LABEL_CUSTOM_VIEWPORT_1:
-         return "custom_viewport_1";
-      case MENU_LABEL_CUSTOM_VIEWPORT_2:
-         return "custom_viewport_2";
       case MENU_LABEL_SYSTEM_BGM_ENABLE:
          return "system_bgm_enable";
       case MENU_LABEL_AUDIO_BLOCK_FRAMES:
          return "audio_block_frames";
       case MENU_LABEL_INPUT_BIND_MODE:
          return "input_bind_mode";
-      case MENU_LABEL_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "autoconfig_descriptor_label_show";
       case MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:
          return "input_descriptor_label_show";
       case MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
@@ -176,8 +210,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "content_database_path";
       case MENU_LABEL_SYSTEM_DIRECTORY:
          return "system_directory";
-      case MENU_LABEL_EXTRACTION_DIRECTORY:
-         return "extraction_directory";
+      case MENU_LABEL_CACHE_DIRECTORY:
+         return "cache_directory";
       case MENU_LABEL_CHEAT_DATABASE_PATH:
          return "cheat_database_path";
       case MENU_LABEL_AUDIO_FILTER_DIR:
@@ -532,10 +566,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "core_updater_buildbot_url";
       case MENU_LABEL_BUILDBOT_ASSETS_URL:
          return "buildbot_assets_url";
-      case MENU_LABEL_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "menu_navigation_wraparound_vertical_enable";
-      case MENU_LABEL_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "menu_navigation_wraparound_horizontal_enable";
+      case MENU_LABEL_NAVIGATION_WRAPAROUND:
+         return "menu_navigation_wraparound_enable";
       case MENU_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "menu_navigation_browser_filter_supported_extensions_enable";
       case MENU_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
@@ -652,6 +684,22 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_STATE_SLOT:
+         return "State Slot";
+      case MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS:
+         return "Accounts Cheevos";
+      case MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME:
+         return "Username";
+      case MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD:
+         return "Password";
+      case MENU_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS:
+         return "Retro Achievements";
+      case MENU_LABEL_VALUE_ACCOUNTS_LIST:
+         return "Accounts";
+      case MENU_LABEL_VALUE_ACCOUNTS_LIST_END:
+         return "Accounts List Endpoint";
+      case MENU_LABEL_VALUE_DEBUG_PANEL_ENABLE:
+         return "Debug Panel Enable";
       case MENU_LABEL_VALUE_HELP_SCANNING_CONTENT:
          return "Scanning For Content";
       case MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
@@ -730,6 +778,14 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Privacy";
       case MENU_VALUE_HORIZONTAL_MENU:
          return "Horizontal Menu";
+      case MENU_VALUE_SETTINGS_TAB:
+         return "Settings tab";
+      case MENU_VALUE_HISTORY_TAB:
+         return "History tab";
+      case MENU_VALUE_ADD_TAB:
+         return "Add tab";
+      case MENU_VALUE_PLAYLISTS_TAB:
+         return "Playlists tab";
       case MENU_LABEL_VALUE_NO_SETTINGS_FOUND:
          return "No settings found.";
       case MENU_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
@@ -748,10 +804,6 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Saving";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
          return "Rewind";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
-         return "Set Upper-Left Corner";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
-         return "Set Bottom-Right Corner";
       case MENU_VALUE_SHADER:
          return "Shader";
       case MENU_VALUE_CHEAT:
@@ -768,10 +820,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Block Frames";
       case MENU_LABEL_VALUE_INPUT_BIND_MODE:
          return "Bind Mode";
-      case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "Display Autoconfig Descriptor Labels";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
-         return "Display Core Input Descriptor Labels";
+         return "Display Input Descriptor Labels";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
          return "Hide Unbound Core Input Descriptors";
       case MENU_LABEL_VALUE_VIDEO_FONT_ENABLE:
@@ -829,7 +879,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "GPU Record Enable";
       case MENU_LABEL_VALUE_RECORD_PATH:
-         return "Record Path";
+         return "Output File";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "Use Output Dir";
       case MENU_LABEL_VALUE_RECORD_CONFIG:
@@ -860,8 +910,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "System/BIOS Dir";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Cheat File Dir";
-      case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
-         return "Extraction Dir";
+      case MENU_LABEL_VALUE_CACHE_DIRECTORY:
+         return "Cache Dir";
       case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Audio Filter Dir";
       case MENU_LABEL_VALUE_VIDEO_SHADER_DIR:
@@ -1150,6 +1200,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Settings";
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
          return "Quit RetroArch";
+      case MENU_LABEL_VALUE_SHUTDOWN:
+         return "Shutdown";
       case MENU_LABEL_VALUE_HELP:
          return "help";
       case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:
@@ -1162,10 +1214,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Buildbot Cores URL";
       case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "Buildbot Assets URL";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "Navigation Wrap-Around Horizontal";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "Navigation Wrap-Around Vertical";
+      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND:
+         return "Navigation Wrap-Around";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "Filter by supported extensions";
       case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
@@ -1233,7 +1283,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_BOXART:
          return "Display Boxart";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
-         return "Core Input Remapping Options";
+         return "Core Input Options";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Shader Options";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
@@ -1481,7 +1531,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_NETWORK_SETTINGS:
          return "Network";
       case MENU_LABEL_VALUE_PLAYLIST_SETTINGS:
-         return "Playlist";
+         return "Playlists";
       case MENU_LABEL_VALUE_USER_SETTINGS:
          return "User";
       case MENU_LABEL_VALUE_DIRECTORY_SETTINGS:
@@ -1593,7 +1643,7 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                "filebrowser everytime.\n"
                " \n"
                "NOTE: Content for some cores might still not be\n"
-               "scannable. Examples include: PlayStation,\n"
+               "scannable. Examples include: \n"
                "MAME, FBA, and maybe others."
                ,
                menu_hash_to_str(MENU_LABEL_VALUE_ADD_CONTENT_LIST),

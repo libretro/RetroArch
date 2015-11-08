@@ -15,6 +15,7 @@
  */
 
 #include <errno.h>
+#include <ctype.h>
 
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
@@ -49,14 +50,13 @@ static struct magic_entry MAGIC_NUMBERS[] = {
 
 static ssize_t get_token(RFILE *fd, char *token, size_t max_len)
 {
-   int rv;
    char *c       = token;
    ssize_t len   = 0;
    int in_string = 0;
 
    while (1)
    {
-      rv = retro_fread(fd, c, 1);
+      int rv = retro_fread(fd, c, 1);
       if (rv == 0)
          return 0;
 
@@ -125,8 +125,101 @@ static int find_token(RFILE *fd, const char *token)
    return 0;
 }
 
+#ifdef MSB_FIRST
+#define MODETEST_VAL 0x00ffffff
+#else
+#define MODETEST_VAL 0xffffff00
+#endif
+
+static int detect_ps1_game_sub(const char *track_path, char *game_id, int sub_channel_mixed)
+{
+   uint8_t* tmp;
+   uint8_t buffer[2048 * 2];
+   int skip, frame_size, is_mode1, cd_sector;
+   RFILE *fp = retro_fopen(track_path, RFILE_MODE_READ, -1);
+   if (!fp)
+      return 0;
+
+   is_mode1 = 0;
+   retro_fseek(fp, 0, SEEK_END);
+
+   if (!sub_channel_mixed)
+   {
+      if (!(retro_ftell(fp) & 0x7FF))
+      {
+         unsigned int mode_test = 0;
+
+         retro_fseek(fp, 0, SEEK_SET);
+         retro_fread(fp, &mode_test, 4);
+         if (mode_test != MODETEST_VAL)
+            is_mode1 = 1;
+      }
+   }
+
+   skip       = is_mode1? 0: 24;
+   frame_size = sub_channel_mixed? 2448: is_mode1? 2048: 2352;
+
+   retro_fseek(fp, 156 + skip + 16 * frame_size, SEEK_SET);
+   retro_fread(fp, buffer, 6);
+
+   cd_sector = buffer[2] | (buffer[3] << 8) | (buffer[4] << 16);
+   retro_fseek(fp, skip + cd_sector * frame_size, SEEK_SET);
+   retro_fread(fp, buffer, 2048 * 2);
+
+   tmp = buffer;
+   while (tmp < (buffer + 2048 * 2))
+   {
+      if (!*tmp)
+         return 0;
+
+      if (!strncasecmp((const char*)(tmp + 33), "SYSTEM.CNF;1", 12))
+         break;
+
+      tmp += *tmp;
+   }
+   if(tmp >= (buffer + 2048 * 2))
+      return 0;
+
+   cd_sector = tmp[2] | (tmp[3] << 8) | (tmp[4] << 16);
+   retro_fseek(fp, 13 + skip + cd_sector * frame_size, SEEK_SET);
+   retro_fread(fp, buffer, 256);
+
+   tmp = (uint8_t*)strrchr((const char*)buffer, '\\');
+   if(!tmp)
+      tmp = buffer;
+   else
+      tmp++;
+
+   *game_id++ = toupper(*tmp++);
+   *game_id++ = toupper(*tmp++);
+   *game_id++ = toupper(*tmp++);
+   *game_id++ = toupper(*tmp++);
+   *game_id++ = '-';
+   tmp++;
+   *game_id++ = *tmp++;
+   *game_id++ = *tmp++;
+   *game_id++ = *tmp++;
+   tmp++;
+   *game_id++ = *tmp++;
+   *game_id++ = *tmp++;
+   *game_id = 0;
+
+   retro_fclose(fp);
+   return 1;
+}
+
 int detect_ps1_game(const char *track_path, char *game_id)
 {
+   if (detect_ps1_game_sub(track_path, game_id, 0))
+      return 1;
+
+   return detect_ps1_game_sub(track_path, game_id, 1);
+}
+
+int detect_psp_game(const char *track_path, char *game_id)
+{
+   bool rv = false;
+   unsigned pos;
    RFILE *fd = retro_fopen(track_path, RFILE_MODE_READ, -1);
 
    if (!fd)
@@ -135,16 +228,60 @@ int detect_ps1_game(const char *track_path, char *game_id)
       return -errno;
    }
 
-   retro_fseek(fd, 0x9340, SEEK_SET);
-
-   if (retro_fread(fd, game_id, 10) > 0)
+   for (pos = 0; pos < 100000; pos++)
    {
-      game_id[10] = '\0';
-      game_id[4] = '-';
+      retro_fseek(fd, pos, SEEK_SET);
+
+      if (retro_fread(fd, game_id, 5) > 0)
+      {
+         game_id[5] = '\0';
+         if (!strcmp(game_id, "ULES-")
+          || !strcmp(game_id, "ULUS-")
+          || !strcmp(game_id, "ULJS-")
+
+          || !strcmp(game_id, "ULEM-")
+          || !strcmp(game_id, "ULUM-")
+          || !strcmp(game_id, "ULJM-")
+
+          || !strcmp(game_id, "UCES-")
+          || !strcmp(game_id, "UCUS-")
+          || !strcmp(game_id, "UCJS-")
+          || !strcmp(game_id, "UCAS-")
+
+          || !strcmp(game_id, "NPEH-")
+          || !strcmp(game_id, "NPUH-")
+          || !strcmp(game_id, "NPJH-")
+
+          || !strcmp(game_id, "NPEG-")
+          || !strcmp(game_id, "NPUG-")
+          || !strcmp(game_id, "NPJG-")
+          || !strcmp(game_id, "NPHG-")
+
+          || !strcmp(game_id, "NPEZ-")
+          || !strcmp(game_id, "NPUZ-")
+          || !strcmp(game_id, "NPJZ-")
+         )
+         {
+            retro_fseek(fd, pos, SEEK_SET);
+            if (retro_fread(fd, game_id, 10) > 0)
+            {
+#if 0
+               game_id[4] = '-';
+               game_id[8] = game_id[9];
+               game_id[9] = game_id[10];
+#endif
+               game_id[10] = '\0';
+               rv = true;
+            }
+            break;
+         }
+      }
+      else
+         break;
    }
 
    retro_fclose(fd);
-   return 1;
+   return rv;
 }
 
 int detect_system(const char *track_path, int32_t offset,
@@ -178,6 +315,18 @@ int detect_system(const char *track_path, int32_t offset,
       if (memcmp(MAGIC_NUMBERS[i].magic, magic, MAGIC_LEN) == 0)
       {
          *system_name = MAGIC_NUMBERS[i].system_name;
+         rv = 0;
+         goto clean;
+      }
+   }
+
+   retro_fseek(fd, 0x8008, SEEK_SET);
+   if (retro_fread(fd, magic, 8) > 0)
+   {
+      magic[8] = '\0';
+      if (!strcmp(magic, "PSP GAME"))
+      {
+         *system_name = "psp\0";
          rv = 0;
          goto clean;
       }

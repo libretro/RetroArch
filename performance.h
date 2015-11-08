@@ -27,22 +27,19 @@
 extern "C" {
 #endif
 
-#ifdef _WIN32
-#define PERF_LOG_FMT "[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n"
-#else
-#define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
-#endif
-
 #ifndef MAX_COUNTERS
 #define MAX_COUNTERS 64
 #endif
 
-extern const struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
-extern const struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
-extern unsigned perf_ptr_rarch;
-extern unsigned perf_ptr_libretro;
+struct retro_perf_counter **retro_get_perf_counter_rarch(void);
 
-/**
+struct retro_perf_counter **retro_get_perf_counter_libretro(void);
+
+unsigned retro_get_perf_count_rarch(void);
+
+unsigned retro_get_perf_count_libretro(void);
+
+/*
  * retro_get_perf_counter:
  *
  * Gets performance counter.

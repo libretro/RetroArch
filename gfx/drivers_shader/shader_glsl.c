@@ -13,12 +13,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
 #include <string.h>
-#include <file/file_path.h>
-#include "../../general.h"
-#include "shader_glsl.h"
+
 #include <compat/strl.h>
 #include <compat/posix_string.h>
+#include <file/file_path.h>
+
+#include "../../general.h"
+#include "shader_glsl.h"
 #include "../video_state_tracker.h"
 #include "../../dynamic.h"
 #include "../../file_ops.h"
@@ -26,8 +29,6 @@
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
-
-#include <stdlib.h>
 
 #ifdef HAVE_OPENGL
 #include "../drivers/gl_common.h"
@@ -158,6 +159,9 @@ static const char *stock_fragment_legacy =
    "}";
 
 static const char *stock_vertex_modern_blend =
+   "#ifdef GL_ES\n"
+   "precision mediump float;\n"
+   "#endif\n"
    "attribute vec2 TexCoord;\n"
    "attribute vec2 VertexCoord;\n"
    "attribute vec4 Color;\n"
@@ -490,7 +494,7 @@ static void gl_glsl_reset_attrib(glsl_shader_data_t *glsl)
    unsigned i;
 
    /* Add sanity check that we did not overflow. */
-   rarch_assert(glsl->gl_attrib_index <= ARRAY_SIZE(glsl->gl_attribs));
+   retro_assert(glsl->gl_attrib_index <= ARRAY_SIZE(glsl->gl_attribs));
 
    for (i = 0; i < glsl->gl_attrib_index; i++)
       glDisableVertexAttribArray(glsl->gl_attribs[i]);
@@ -507,7 +511,7 @@ static void gl_glsl_set_vbo(GLfloat **buffer, size_t *buffer_elems,
       {
          GLfloat *new_buffer = (GLfloat*)
             realloc(*buffer, elems * sizeof(GLfloat));
-         rarch_assert(new_buffer);
+         retro_assert(new_buffer);
          *buffer = new_buffer;
       }
 
@@ -885,7 +889,7 @@ static bool gl_glsl_init(void *data, const char *path)
    {
       struct state_tracker_info info = {0};
 
-      info.wram      = (uint8_t*)pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+      info.wram      = (uint8_t*)core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
       info.info      = glsl->shader->variable;
       info.info_elem = glsl->shader->variables;
 

@@ -333,13 +333,6 @@ static INLINE GLenum min_filter_to_mag(GLenum type)
 }
 
 #ifdef HAVE_FBO
-static void gl_shader_scale(gl_t *gl, unsigned idx,
-      struct gfx_fbo_scale *scale)
-{
-   scale->valid = false;
-   gl->shader->shader_scale(idx, scale);
-}
-
 /* Compute FBO geometry.
  * When width/height changes or window sizes change, 
  * we have to recalculate geometry of our FBO. */
@@ -635,8 +628,8 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
 
    video_driver_get_size(&width, &height);
 
-   gl_shader_scale(gl, 1, &scale);
-   gl_shader_scale(gl, gl->shader->num_shaders(), &scale_last);
+   video_shader_scale(1, gl->shader, &scale);
+   video_shader_scale(gl->shader->num_shaders(), gl->shader, &scale_last);
 
    /* we always want FBO to be at least initialized on startup for consoles */
    if (gl->shader->num_shaders() == 1 && !scale.valid)
@@ -664,7 +657,7 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
 
    for (i = 1; i < gl->fbo_pass; i++)
    {
-      gl_shader_scale(gl, i + 1, &gl->fbo_scale[i]);
+      video_shader_scale(i + 1, gl->shader, &gl->fbo_scale[i]);
 
       if (!gl->fbo_scale[i].valid)
       {
@@ -865,7 +858,6 @@ static void gl_set_viewport(void *data, unsigned viewport_width,
    }
    else if (gl->keep_aspect && !force_full)
    {
-      float delta;
       float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
@@ -882,6 +874,8 @@ static void gl_set_viewport(void *data, unsigned viewport_width,
       else
 #endif
       {
+         float delta;
+
          if (fabsf(device_aspect - desired_aspect) < 0.0001f)
          {
             /* If the aspect ratios of screen and desired aspect 
@@ -1073,7 +1067,6 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
 {
    unsigned width, height;
    const struct gfx_fbo_rect *prev_rect;
-   const struct gfx_fbo_rect *rect;
    struct gfx_tex_info *fbo_info;
    struct gfx_tex_info fbo_tex_info[GFX_MAX_SHADERS];
    int i;
@@ -1090,8 +1083,9 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
     * and render all passes from FBOs, to another FBO. */
    for (i = 1; i < gl->fbo_pass; i++)
    {
+      const struct gfx_fbo_rect *rect = &gl->fbo_rect[i];
+
       prev_rect = &gl->fbo_rect[i - 1];
-      rect      = &gl->fbo_rect[i];
       fbo_info  = &fbo_tex_info[i - 1];
 
       xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
@@ -1513,6 +1507,7 @@ static INLINE void gl_set_prev_texture(gl_t *gl,
    memcpy(&gl->prev_info[0], tex_info,
          sizeof(*tex_info));
 
+#ifdef HAVE_FBO
    /* Implement feedback by swapping out FBO/textures for FBO pass #N and feedbacks. */
    if (gl->fbo_feedback_enable)
    {
@@ -1523,6 +1518,7 @@ static INLINE void gl_set_prev_texture(gl_t *gl,
       gl->fbo[gl->fbo_feedback_pass] = tmp_fbo;
       gl->fbo_texture[gl->fbo_feedback_pass] = tmp_tex;
    }
+#endif
 }
 
 static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned shader)
@@ -1632,6 +1628,7 @@ static bool gl_frame(void *data, const void *frame,
       uint64_t frame_count,
       unsigned pitch, const char *msg)
 {
+   bool is_slowmotion, is_paused;
    unsigned width, height;
    struct gfx_tex_info feedback_info;
    static struct retro_perf_counter frame_run = {0};
@@ -1745,6 +1742,7 @@ static bool gl_frame(void *data, const void *frame,
 
    feedback_info              = gl->tex_info;
 
+#ifdef HAVE_FBO
    if (gl->fbo_feedback_enable)
    {
       const struct gfx_fbo_rect *rect = &gl->fbo_rect[gl->fbo_feedback_pass];
@@ -1759,6 +1757,7 @@ static bool gl_frame(void *data, const void *frame,
 
       set_texture_coords(feedback_info.coord, xamt, yamt);
    }
+#endif
 
    glClear(GL_COLOR_BUFFER_BIT);
 
@@ -1838,11 +1837,15 @@ static bool gl_frame(void *data, const void *frame,
 #endif
 #endif
 #endif
+   rarch_main_ctl(RARCH_MAIN_CTL_IS_SLOWMOTION, &is_slowmotion);
+   rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED,     &is_paused);
+
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
-   if (settings->video.black_frame_insertion &&
-         !driver->nonblock_state && (!(rarch_main_is_slowmotion()))
-         && !rarch_main_is_paused())
+   if (
+         settings->video.black_frame_insertion
+         && !driver->nonblock_state
+         && !is_slowmotion && !is_paused)
    {
       gfx_ctx_swap_buffers(gl);
       glClear(GL_COLOR_BUFFER_BIT);
@@ -2006,12 +2009,14 @@ static void gl_set_nonblock_state(void *data, bool state)
 static bool resolve_extensions(gl_t *gl, const char *context_ident)
 {
    driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
    const char *vendor   = (const char*)glGetString(GL_VENDOR);
    const char *renderer = (const char*)glGetString(GL_RENDERER);
    const char *version  = (const char*)glGetString(GL_VERSION);
    const struct retro_hw_render_callback *hw_render =
       (const struct retro_hw_render_callback*)video_driver_callback();
+#if defined(HAVE_GL_SYNC) || defined(HAVE_FBO)
+   settings_t *settings = config_get_ptr();
+#endif
     
    (void)vendor;
    (void)renderer;
@@ -2769,10 +2774,9 @@ static bool gl_set_shader(void *data,
 
    if (!gl->shader->init(gl, path))
    {
-      bool ret = false;
+      bool ret = gl->shader->init(gl, NULL);
 
       RARCH_WARN("[GL]: Failed to set multipass shader. Falling back to stock.\n");
-      ret = gl->shader->init(gl, NULL);
 
       if (!ret)
          gl->shader = NULL;
@@ -2975,13 +2979,12 @@ error:
 static void* gl_read_frame_raw(void *data, unsigned *width_p,
 unsigned *height_p, size_t *pitch_p)
 {
-   int i;
-   gl_t *gl        = (gl_t*)data;
-   unsigned width  = gl->last_width[gl->tex_index];
-   unsigned height = gl->last_height[gl->tex_index];
-   size_t pitch    = gl->tex_w * gl->base_size;
+   gl_t *gl             = (gl_t*)data;
+   unsigned width       = gl->last_width[gl->tex_index];
+   unsigned height      = gl->last_height[gl->tex_index];
+   size_t pitch         = gl->tex_w * gl->base_size;
 #ifdef HAVE_FBO
-   void* buffer = NULL;
+   void* buffer         = NULL;
 #endif
    void* buffer_texture = NULL;
 
@@ -3014,6 +3017,8 @@ unsigned *height_p, size_t *pitch_p)
 #ifdef HAVE_FBO
    if (gl->hw_render_use)
    {
+      unsigned i;
+
       for(i = 0; i < height ; i++)
          memcpy((uint8_t*)buffer + i * pitch,
             (uint8_t*)buffer_texture + (height - 1 - i) * pitch, pitch);
@@ -3336,6 +3341,7 @@ static void gl_apply_state_changes(void *data)
       gl->should_resize = true;
 }
 
+#ifdef HAVE_MENU
 static void gl_set_osd_msg(void *data, const char *msg,
       const struct font_params *params, void *font)
 {
@@ -3363,6 +3369,7 @@ static struct video_shader *gl_get_current_shader(void *data)
    gl_t *gl = (gl_t*)data;
    return (gl && gl->shader) ? gl->shader->get_current_shader() : NULL;
 }
+#endif
 
 static void gl_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
@@ -3397,13 +3404,19 @@ static const video_poke_interface_t gl_poke_interface = {
 #if defined(HAVE_MENU)
    gl_set_texture_frame,
    gl_set_texture_enable,
-#endif
    gl_set_osd_msg,
-
    gl_show_mouse,
+#else
    NULL,
+   NULL,
+   NULL,
+   NULL,
+#endif
 
+   NULL,
+#ifdef HAVE_MENU
    gl_get_current_shader,
+#endif
 };
 
 static void gl_get_poke_interface(void *data,

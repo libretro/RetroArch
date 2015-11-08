@@ -75,10 +75,6 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "Saves";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
          return "Retrocesso";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
-         return "Definir Quina Superior Esquerda";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
-         return "Definir Quina Inferior Direita";
       case MENU_VALUE_SHADER:
          return "Shader";
       case MENU_VALUE_CHEAT:
@@ -93,10 +89,6 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "RetroTeclado";
       case MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Quadros de Blocos de Áudio";
-      case MENU_LABEL_VALUE_INPUT_BIND_MODE:
-         return "Modo de Associações";
-      case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "Mostrar Rótulos de Autoconfiguração";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
          return "Mostrar Rótulos de Entradas de Core";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
@@ -155,7 +147,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "Ativar Gravação";
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "Ativar Gravação por GPU";
-      case MENU_LABEL_VALUE_RECORD_PATH:
+      case MENU_LABEL_VALUE_RECORD_PATH: /* FIXME/UPDATE */
          return "Caminho da Gravação";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "Diretório de Saída";
@@ -187,7 +179,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "System/BIOS";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Cheats";
-      case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
+      case MENU_LABEL_VALUE_CACHE_DIRECTORY: /* UPDATE/FIXME */
          return "Descompactação";
       case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Filtros de Áudio";
@@ -487,10 +479,8 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "URL Buildbot de Cores";
       case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "URL Buildbot de Recursos (Assets)";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "Navegação Circular Horizontal";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "Navegação Circular Vertical";
+      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND:
+         return "Navegação Circular";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "Filtrar por Extensões Suportadas";
       case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
@@ -555,7 +545,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "Papel de Parede Dinâmico";
       case MENU_LABEL_VALUE_BOXART:
          return "Mostrar Boxart";
-      case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
+      case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS: /* TODO/FIXME */
          return "Opções de Remapeamento de Controlador de Core";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Opções de Shaders";

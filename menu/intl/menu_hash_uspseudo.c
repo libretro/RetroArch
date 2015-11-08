@@ -93,16 +93,10 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "load_content";
       case MENU_LABEL_NO_SETTINGS_FOUND:
          return "menu_label_no_settings_found";
-      case MENU_LABEL_CUSTOM_VIEWPORT_1:
-         return "custom_viewport_1";
-      case MENU_LABEL_CUSTOM_VIEWPORT_2:
-         return "custom_viewport_2";
       case MENU_LABEL_SYSTEM_BGM_ENABLE:
          return "system_bgm_enable";
       case MENU_LABEL_AUDIO_BLOCK_FRAMES:
          return "audio_block_frames";
-      case MENU_LABEL_INPUT_BIND_MODE:
-         return "input_bind_mode";
       case MENU_LABEL_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
          return "autoconfig_descriptor_label_show";
       case MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:
@@ -177,8 +171,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "content_database_path";
       case MENU_LABEL_SYSTEM_DIRECTORY:
          return "system_directory";
-      case MENU_LABEL_EXTRACTION_DIRECTORY:
-         return "extraction_directory";
+      case MENU_LABEL_CACHE_DIRECTORY:
+         return "cache_directory";
       case MENU_LABEL_CHEAT_DATABASE_PATH:
          return "cheat_database_path";
       case MENU_LABEL_AUDIO_FILTER_DIR:
@@ -533,10 +527,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "core_updater_buildbot_url";
       case MENU_LABEL_BUILDBOT_ASSETS_URL:
          return "buildbot_assets_url";
-      case MENU_LABEL_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "menu_navigation_wraparound_vertical_enable";
-      case MENU_LABEL_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "menu_navigation_wraparound_horizontal_enable";
+      case MENU_LABEL_NAVIGATION_WRAPAROUND:
+         return "menu_navigation_wraparound_enable";
       case MENU_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "menu_navigation_browser_filter_supported_extensions_enable";
       case MENU_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
@@ -747,10 +739,6 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Sàving";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
          return "Rewind";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
-         return "Set Üpper-Left Çorñèr";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
-         return "Sèt Bøttom-Right Çòrner";
       case MENU_VALUE_SHADER:
          return "Shâder";
       case MENU_VALUE_CHEAT:
@@ -827,7 +815,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Rècord Eñable";
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "GPU Réçord Eñable";
-      case MENU_LABEL_VALUE_RECORD_PATH:
+      case MENU_LABEL_VALUE_RECORD_PATH: /* FIXME/UPDATE */
          return "Réçórd Pãth";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "Usè Output Dir";
@@ -859,7 +847,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Sýstem/BÌÓS Dir";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Çheåt Fíle Dir";
-      case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
+      case MENU_LABEL_VALUE_CACHE_DIRECTORY: /* FIXME/UPDATE */
          return "Extractiòn Dir";
       case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Áûdio Filter Ðïr";
@@ -1161,10 +1149,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Bûildbot Corês ÙRL";
       case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "Büildböt Àssets ÚRL";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "Ñavigatiøn Wrap-Aröuñd Horízoñtàl";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "Ñavigation Wrâp-Around Vertical";
+      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND:
+         return "Ñavigatiøn Wrap-Aröuñd";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "Fïltër by sùppörtêd èxtênsioñs";
       case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:

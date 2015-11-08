@@ -207,10 +207,10 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
 
 static void sdl2_gfx_set_handles(sdl2_video_t *vid)
 {
-   driver_t *driver = driver_get_ptr();
-
    /* SysWMinfo headers are broken on OSX. */
 #if defined(_WIN32) || defined(HAVE_X11)
+   driver_t *driver = driver_get_ptr();
+
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
 
@@ -496,7 +496,6 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 {
    char buf[128]     = {0};
    sdl2_video_t *vid = (sdl2_video_t*)data;
-   driver_t *driver  = driver_get_ptr();
 
    if (vid->should_resize)
       sdl_refresh_viewport(vid);
@@ -692,6 +691,7 @@ static void sdl2_poke_apply_state_changes(void *data)
    vid->should_resize = true;
 }
 
+#ifdef HAVE_MENU
 static void sdl2_poke_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
@@ -739,6 +739,7 @@ static void sdl2_grab_mouse_toggle(void *data)
    sdl2_video_t *vid = (sdl2_video_t*)data;
    SDL_SetWindowGrab(vid->window, SDL_GetWindowGrab(vid->window));
 }
+#endif
 
 static video_poke_interface_t sdl2_video_poke_interface = {
    NULL,
@@ -753,10 +754,16 @@ static video_poke_interface_t sdl2_video_poke_interface = {
 #ifdef HAVE_MENU
    sdl2_poke_set_texture_frame,
    sdl2_poke_texture_enable,
-#endif
    sdl2_poke_set_osd_msg,
    sdl2_show_mouse,
    sdl2_grab_mouse_toggle,
+#else
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL<
+#endif
    NULL,
 };
 

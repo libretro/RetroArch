@@ -92,7 +92,6 @@ void core_option_get(core_option_manager_t *opt, struct retro_variable *var)
 static bool parse_variable(core_option_manager_t *opt, size_t idx,
       const struct retro_variable *var)
 {
-   size_t i;
    const char *val_start      = NULL;
    char *value                = NULL;
    char *desc_end             = NULL;
@@ -126,6 +125,8 @@ static bool parse_variable(core_option_manager_t *opt, size_t idx,
 
    if (config_get_string(opt->conf, option->key, &config_val))
    {
+      size_t i;
+
       for (i = 0; i < option->vals->size; i++)
       {
          if (!strcmp(option->vals->elems[i].data, config_val))

@@ -69,12 +69,7 @@ static void adapter_thread(void *data)
    while (!adapter->quitting)
    {
       size_t send_command_size;
-      int tmp;
-      int report_number;
       int size = 0;
-
-      (void)tmp;
-      (void)report_number;
 
       slock_lock(adapter->send_control_lock);
 

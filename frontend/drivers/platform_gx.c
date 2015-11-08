@@ -389,14 +389,14 @@ static int frontend_gx_parse_drive_list(void *data)
 #ifndef IS_SALAMANDER
    file_list_t *list = (file_list_t*)data;
 #ifdef HW_RVL
-   menu_list_push(list,
+   menu_entries_push(list,
          "sd:/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          "usb:/", "", MENU_FILE_DIRECTORY, 0, 0);
 #endif
-   menu_list_push(list,
+   menu_entries_push(list,
          "carda:/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          "cardb:/", "", MENU_FILE_DIRECTORY, 0, 0);
 #endif
 

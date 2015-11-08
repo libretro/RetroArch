@@ -33,7 +33,7 @@ bool input_remapping_load_file(const char *path)
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();
 
-   if (!conf)
+   if (!conf ||  path[0] == '\0')
       return false;
 
    strlcpy(settings->input.remapping_path, path,
@@ -61,8 +61,13 @@ bool input_remapping_load_file(const char *path)
       {
          int key_remap = -1;
 
-         snprintf(key_ident[RARCH_FIRST_CUSTOM_BIND + j], sizeof(key_ident[RARCH_FIRST_CUSTOM_BIND + j]), "%s_%s", buf, key_strings[RARCH_FIRST_CUSTOM_BIND + j]);
-         if (config_get_int(conf, key_ident[RARCH_FIRST_CUSTOM_BIND + j], &key_remap) && key_remap < 4)
+         snprintf(key_ident[RARCH_FIRST_CUSTOM_BIND + j],
+               sizeof(key_ident[RARCH_FIRST_CUSTOM_BIND + j]),
+               "%s_%s",
+               buf,
+               key_strings[RARCH_FIRST_CUSTOM_BIND + j]);
+
+         if (config_get_int(conf, key_ident[RARCH_FIRST_CUSTOM_BIND + j], &key_remap) && (key_remap < 4))
             settings->input.remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] = key_remap;
       }
    }

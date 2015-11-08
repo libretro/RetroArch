@@ -63,6 +63,26 @@ extern "C" {
 #include "../../audio/audio_utils.h"
 #include "../record_driver.h"
 
+#ifndef PIX_FMT_RGB32
+#define PIX_FMT_RGB32 AV_PIX_FMT_RGB32
+#endif
+
+#ifndef PIX_FMT_BGR24
+#define PIX_FMT_BGR24 AV_PIX_FMT_BGR24
+#endif
+
+#ifndef PIX_FMT_RGB565
+#define PIX_FMT_RGB565 AV_PIX_FMT_RGB565
+#endif
+
+#ifndef PIX_FMT_NONE
+#define PIX_FMT_NONE AV_PIX_FMT_NONE
+#endif
+
+#ifndef PixelFormat
+#define PixelFormat AVPixelFormat
+#endif
+
 #if LIBAVUTIL_VERSION_INT <= AV_VERSION_INT(52, 9, 0)
 #define av_frame_alloc avcodec_alloc_frame
 #define av_frame_free avcodec_free_frame
@@ -240,13 +260,13 @@ static void ffmpeg_audio_resolve_format(struct ff_audio_info *audio,
 static void ffmpeg_audio_resolve_sample_rate(ffmpeg_t *handle,
       const AVCodec *codec)
 {
-   unsigned i;
    struct ff_config_param *params = &handle->config;
    struct ffemu_params *param     = &handle->params;
 
    /* We'll have to force resampling to some supported sampling rate. */
    if (codec->supported_samplerates && !params->sample_rate)
    {
+      unsigned i;
       int input_rate = (int)param->samplerate;
 
       /* Favor closest sampling rate, but always prefer ratio > 1.0. */
@@ -280,7 +300,6 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle)
    settings_t *settings = config_get_ptr();
    struct ff_config_param *params = &handle->config;
    struct ff_audio_info *audio    = &handle->audio;
-   struct ff_video_info *video    = &handle->video;
    struct ffemu_params *param     = &handle->params;
    AVCodec *codec                 = avcodec_find_encoder_by_name(
          *params->acodec ? params->acodec : "flac");

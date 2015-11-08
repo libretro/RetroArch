@@ -218,10 +218,9 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
 
 static void sdl_gfx_set_handles(void)
 {
-   driver_t *driver = driver_get_ptr();
-
    /* SysWMinfo headers are broken on OSX. */
 #if defined(_WIN32) || defined(HAVE_X11)
+   driver_t *driver = driver_get_ptr();
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
 
@@ -243,6 +242,7 @@ static void sdl_gfx_set_handles(void)
 static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
    unsigned full_x, full_y;
+   const SDL_VideoInfo *video_info = NULL;
    sdl_video_t *vid = NULL;
    settings_t *settings = config_get_ptr();
 
@@ -262,8 +262,8 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    if (!vid)
       return NULL;
 
-   const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
-   rarch_assert(video_info);
+   video_info = SDL_GetVideoInfo();
+   retro_assert(video_info);
    full_x = video_info->current_w;
    full_y = video_info->current_h;
    RARCH_LOG("[SDL]: Detecting desktop resolution %ux%u.\n", full_x, full_y);
@@ -403,18 +403,18 @@ static bool sdl_gfx_focus(void *data)
 
 static bool sdl_gfx_suppress_screensaver(void *data, bool enable)
 {
+#ifdef HAVE_X11
    driver_t *driver = driver_get_ptr();
 
-   (void)data;
-   (void)enable;
-
-#ifdef HAVE_X11
    if (driver->display_type == RARCH_DISPLAY_X11)
    {
       x11_suspend_screensaver(driver->video_window);
       return true;
    }
 #endif
+
+   (void)data;
+   (void)enable;
 
    return false;
 }
@@ -443,9 +443,7 @@ static void sdl_set_filtering(void *data, unsigned index, bool smooth)
 
 static void sdl_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
-   sdl_video_t *vid = (sdl_video_t*)data;
-   struct retro_system_av_info *av_info = 
-      video_viewport_get_system_av_info();
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
    switch (aspectratio_index)
    {

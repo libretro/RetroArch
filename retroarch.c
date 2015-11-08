@@ -46,16 +46,20 @@
 #include "performance.h"
 #include "cheats.h"
 #include "system.h"
+#include "retro_file.h"
 
 #include "git_version.h"
+
+#include "retroarch.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"
 #include "menu/menu_hash.h"
 #endif
 
-char orig_savestate_dir[PATH_MAX_LENGTH];
-char orig_savefile_dir[PATH_MAX_LENGTH];
+char current_savestate_dir[PATH_MAX_LENGTH];
+char current_savefile_dir[PATH_MAX_LENGTH];
+
 
 /* Descriptive names for options without short variant. Please keep the name in
    sync with the option name. Order does not matter. */
@@ -167,9 +171,11 @@ static void print_help(const char *arg0)
    puts("      --log-file=FILE   Log messages to FILE.");
    puts("      --version         Show version.");
    puts("      --features        Prints available features compiled into program.");
+#ifdef HAVE_MENU
    puts("      --menu            Do not require content or libretro core to be loaded,\n"
         "                        starts directly in menu. If no arguments are passed to\n"
         "                        the program, it is equivalent to using --menu as only argument.");
+#endif
    puts("  -s, --save=PATH       Path for save files (*.srm).");
    puts("  -S, --savestate=PATH  Path for the save state files (*.state).");
    puts("  -f, --fullscreen      Start the program in fullscreen regardless of config settings.");
@@ -282,7 +288,7 @@ static void set_special_paths(char **argv, unsigned num_content)
    set_basename(argv[0]);
 
    global->subsystem_fullpaths = string_list_new();
-   rarch_assert(global->subsystem_fullpaths);
+   retro_assert(global->subsystem_fullpaths);
 
    attr.i = 0;
 
@@ -327,57 +333,75 @@ void set_paths_redirect(const char *path)
             (info->info.library_name[0] != '\0'))
          ? msg_hash_calculate(info->info.library_name) : 0);
 
-   if(
-         global_library_name_hash != 0 &&
-         (global_library_name_hash != MENU_VALUE_NO_CORE))
+         /* Initialize current save directories with the values from the config */
+         strlcpy(current_savefile_dir,
+               global->dir.savefile,
+               sizeof(current_savefile_dir));
+         strlcpy(current_savestate_dir,
+               global->dir.savestate,
+               sizeof(current_savestate_dir));
+
+   if(global_library_name_hash != 0
+#ifdef HAVE_MENU
+         && (global_library_name_hash != MENU_VALUE_NO_CORE)
+#endif
+         )
    {
       /* per-core saves: append the library_name to the save location */
       if (settings->sort_savefiles_enable && global->dir.savefile[0] != '\0')
       {
-         strlcpy(orig_savefile_dir,global->dir.savefile,
-               sizeof(orig_savefile_dir));
-         fill_pathname_dir(
-               global->dir.savefile,
+         fill_pathname_join(
+               current_savefile_dir,
                global->dir.savefile,
                info->info.library_name,
                sizeof(global->dir.savefile));
 
          /* If path doesn't exist, try to create it,
           * if everything fails revert to the original path. */
-         if(!path_is_directory(global->dir.savefile) && global->dir.savestate[0] != '\0')
-            if(!path_mkdir(global->dir.savefile))
-               strlcpy(global->dir.savefile,
-                     orig_savefile_dir,
-                     sizeof(global->dir.savefile));
+         if(!path_is_directory(current_savefile_dir) && current_savefile_dir[0] != '\0')
+         {
+            path_mkdir(current_savefile_dir);
+            if(!path_is_directory(current_savefile_dir))
+            {
+               RARCH_LOG("Reverting savefile directory to %s\n", global->dir.savefile);
+               strlcpy(current_savefile_dir,
+                     global->dir.savefile,
+                     sizeof(current_savefile_dir));
+            }
+         }
       }
 
       /* per-core states: append the library_name to the save location */
-      if (settings->sort_savestates_enable && global->dir.savefile[0] != '\0')
+      if (settings->sort_savestates_enable && global->dir.savestate[0] != '\0')
       {
-         strlcpy(orig_savestate_dir,
-               global->dir.savestate,
-               sizeof(orig_savestate_dir));
-         fill_pathname_dir(global->dir.savestate,
+         fill_pathname_join(
+               current_savestate_dir,
                global->dir.savestate,
                info->info.library_name,
                sizeof(global->dir.savestate));
 
          /* If path doesn't exist, try to create it.
           * If everything fails, revert to the original path. */
-         if(!path_is_directory(global->dir.savestate))
-            if(!path_mkdir(global->dir.savestate))
-               strlcpy(global->dir.savestate,
-                     orig_savestate_dir,
-                     sizeof(global->dir.savestate));
+         if(!path_is_directory(current_savestate_dir) && current_savestate_dir[0] != '\0')
+         {
+            path_mkdir(current_savestate_dir);
+            if(!path_is_directory(current_savestate_dir))
+            {
+               RARCH_LOG("Reverting savestate directory to %s\n", global->dir.savestate);
+               strlcpy(current_savestate_dir,
+                     global->dir.savestate,
+                     sizeof(current_savestate_dir));
+            }
+         }
       }
    }
 
-   if(path_is_directory(global->dir.savefile))
-      strlcpy(global->name.savefile, global->dir.savefile,
+   if(path_is_directory(current_savefile_dir))
+      strlcpy(global->name.savefile, current_savefile_dir,
             sizeof(global->name.savefile));
 
-   if(path_is_directory(global->dir.savestate))
-      strlcpy(global->name.savestate, global->dir.savestate,
+   if(path_is_directory(current_savestate_dir))
+      strlcpy(global->name.savestate, current_savestate_dir,
             sizeof(global->name.savestate));
 
    if (path_is_directory(global->name.savefile))
@@ -620,7 +644,7 @@ static void parse_input(int argc, char *argv[])
             {
                RARCH_ERR("Connect device to a valid port.\n");
                print_help(argv[0]);
-               rarch_fail(1, "parse_input()");
+               retro_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = id;
             global->has_set.libretro_device[port - 1] = true;
@@ -633,7 +657,7 @@ static void parse_input(int argc, char *argv[])
             {
                RARCH_ERR("Connect dualanalog to a valid port.\n");
                print_help(argv[0]);
-               rarch_fail(1, "parse_input()");
+               retro_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = RETRO_DEVICE_ANALOG;
             global->has_set.libretro_device[port - 1] = true;
@@ -666,7 +690,7 @@ static void parse_input(int argc, char *argv[])
             {
                RARCH_ERR("Disconnect device from a valid port.\n");
                print_help(argv[0]);
-               rarch_fail(1, "parse_input()");
+               retro_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = RETRO_DEVICE_NONE;
             global->has_set.libretro_device[port - 1] = true;
@@ -724,7 +748,7 @@ static void parse_input(int argc, char *argv[])
             {
                RARCH_ERR("Invalid argument in --sram-mode.\n");
                print_help(argv[0]);
-               rarch_fail(1, "parse_input()");
+               retro_fail(1, "parse_input()");
             }
             break;
 
@@ -778,7 +802,7 @@ static void parse_input(int argc, char *argv[])
             FreeConsole();
 #endif
             break;
-         
+
          case RA_OPT_MENU:
             global->inited.core.type        = CORE_TYPE_DUMMY;
             break;
@@ -806,7 +830,7 @@ static void parse_input(int argc, char *argv[])
             if (network_cmd_send(optarg))
                exit(0);
             else
-               rarch_fail(1, "network_cmd_send()");
+               retro_fail(1, "network_cmd_send()");
             break;
 #endif
 
@@ -822,7 +846,7 @@ static void parse_input(int argc, char *argv[])
             {
                RARCH_ERR("Wrong format for --size.\n");
                print_help(argv[0]);
-               rarch_fail(1, "parse_input()");
+               retro_fail(1, "parse_input()");
             }
             break;
          }
@@ -833,7 +857,10 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case RA_OPT_MAX_FRAMES:
-            rarch_main_set_max_frames(strtoul(optarg, NULL, 10));
+            {
+               unsigned max_frames = strtoul(optarg, NULL, 10);
+               rarch_main_ctl(RARCH_MAIN_CTL_SET_MAX_FRAMES, &max_frames);
+            }
             break;
 
          case RA_OPT_SUBSYSTEM:
@@ -860,11 +887,11 @@ static void parse_input(int argc, char *argv[])
 
          case '?':
             print_help(argv[0]);
-            rarch_fail(1, "parse_input()");
+            retro_fail(1, "parse_input()");
 
          default:
             RARCH_ERR("Error parsing arguments.\n");
-            rarch_fail(1, "parse_input()");
+            retro_fail(1, "parse_input()");
       }
    }
 
@@ -873,7 +900,7 @@ static void parse_input(int argc, char *argv[])
       if (optind < argc)
       {
          RARCH_ERR("--menu was used, but content file was passed as well.\n");
-         rarch_fail(1, "parse_input()");
+         retro_fail(1, "parse_input()");
       }
    }
    else if (!*global->subsystem && optind < argc)
@@ -904,7 +931,7 @@ static void rarch_init_savefile_paths(void)
    event_command(EVENT_CMD_SAVEFILES_DEINIT);
 
    global->savefiles = string_list_new();
-   rarch_assert(global->savefiles);
+   retro_assert(global->savefiles);
 
    if (*global->subsystem)
    {
@@ -985,28 +1012,6 @@ static void rarch_init_savefile_paths(void)
    }
 }
 
-void rarch_fill_pathnames(void)
-{
-   global_t   *global   = global_get_ptr();
-
-   rarch_init_savefile_paths();
-   strlcpy(global->bsv.movie_path, global->name.savefile,
-         sizeof(global->bsv.movie_path));
-
-   if (!*global->name.base)
-      return;
-
-   if (!*global->name.ups)
-      fill_pathname_noext(global->name.ups, global->name.base, ".ups",
-            sizeof(global->name.ups));
-   if (!*global->name.bps)
-      fill_pathname_noext(global->name.bps, global->name.base, ".bps",
-            sizeof(global->name.bps));
-   if (!*global->name.ips)
-      fill_pathname_noext(global->name.ips, global->name.base, ".ips",
-            sizeof(global->name.ips));
-}
-
 static bool init_state(void)
 {
    driver_t *driver     = driver_get_ptr();
@@ -1058,14 +1063,14 @@ void rarch_main_alloc(void)
 
    event_command(EVENT_CMD_HISTORY_DEINIT);
 
-   rarch_main_clear_state();
+   rarch_main_ctl(RARCH_MAIN_CTL_CLEAR_STATE, NULL);
    rarch_main_data_clear_state();
 }
 
 /**
  * rarch_main_new:
  *
- * Will teardown drivers and clears all 
+ * Will teardown drivers and clears all
  * internal state of the program.
  * If @inited is true, will initialize all
  * drivers again after teardown.
@@ -1085,59 +1090,9 @@ void rarch_main_free(void)
    event_command(EVENT_CMD_DRIVERS_DEINIT);
    event_command(EVENT_CMD_LOG_FILE_DEINIT);
 
-   rarch_main_state_free();
-   rarch_main_global_free();
+   rarch_main_ctl(RARCH_MAIN_CTL_STATE_FREE,  NULL);
+   rarch_main_ctl(RARCH_MAIN_CTL_GLOBAL_FREE, NULL);
    config_free();
-}
-
-/* 
- * rarch_verify_api_version:
- *
- * Compare libretro core API version against API version
- * used by the program.
- *
- * TODO - when libretro v2 gets added, allow for switching
- * between libretro version backend dynamically.
- **/
-void rarch_verify_api_version(void)
-{
-   RARCH_LOG("Version of libretro API: %u\n", pretro_api_version());
-   RARCH_LOG("Compiled against API: %u\n",    RETRO_API_VERSION);
-
-   if (pretro_api_version() != RETRO_API_VERSION)
-      RARCH_WARN("%s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
-}
-
-#define FAIL_CPU(simd_type) do { \
-   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
-   rarch_fail(1, "validate_cpu_features()"); \
-} while(0)
-
-/* validate_cpu_features:
- *
- * Validates CPU features for given processor architecture.
- *
- * Make sure we haven't compiled for something we cannot run.
- * Ideally, code would get swapped out depending on CPU support, 
- * but this will do for now.
- */
-static void validate_cpu_features(void)
-{
-   uint64_t cpu = retro_get_cpu_features();
-   (void)cpu;
-
-#ifdef __SSE__
-   if (!(cpu & RETRO_SIMD_SSE))
-      FAIL_CPU("SSE");
-#endif
-#ifdef __SSE2__
-   if (!(cpu & RETRO_SIMD_SSE2))
-      FAIL_CPU("SSE2");
-#endif
-#ifdef __AVX__
-   if (!(cpu & RETRO_SIMD_AVX))
-      FAIL_CPU("AVX");
-#endif
 }
 
 /**
@@ -1148,17 +1103,16 @@ static void validate_cpu_features(void)
  **/
 void rarch_init_system_av_info(void)
 {
-   struct retro_system_av_info *av_info = 
-      video_viewport_get_system_av_info();
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
-   pretro_get_system_av_info(av_info);
+   core.retro_get_system_av_info(av_info);
    event_command(EVENT_CMD_SET_FRAME_LIMIT);
 }
 
 /**
  * rarch_main_init:
  * @argc                 : Count of (commandline) arguments.
- * @argv                 : (Commandline) arguments. 
+ * @argv                 : (Commandline) arguments.
  *
  * Initializes the program.
  *
@@ -1195,7 +1149,7 @@ int rarch_main_init(int argc, char *argv[])
       RARCH_LOG_OUTPUT("=================================================\n");
    }
 
-   validate_cpu_features();
+   rarch_ctl(RARCH_ACTION_STATE_VALIDATE_CPU_FEATURES, NULL);
    config_load();
 
    {
@@ -1312,8 +1266,10 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
       }
       else
       {
+#ifdef HAVE_MENU
          RARCH_LOG("No content, starting dummy core.\n");
          argv[(*argc)++] = strdup("--menu");
+#endif
       }
    }
 
@@ -1352,38 +1308,44 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
 #endif
 }
 
-void rarch_main_set_state(unsigned cmd)
+#define FAIL_CPU(simd_type) do { \
+   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
+   retro_fail(1, "validate_cpu_features()"); \
+} while(0)
+
+bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
    driver_t *driver     = driver_get_ptr();
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
-   switch (cmd)
+   switch(state)
    {
+      case RARCH_ACTION_STATE_REPLACE_CONFIG:
+         {
+            char *path = (char*)data;
+
+            if (!path)
+               return false;
+
+            /* If config file to be replaced is the same as the
+             * current config file, exit. */
+            if (!strcmp(path, global->path.config))
+               return false;
+
+            if (settings->config_save_on_exit && *global->path.config)
+               config_save_file(global->path.config);
+
+            strlcpy(global->path.config, path, sizeof(global->path.config));
+            global->block_config_read = false;
+            *settings->libretro = '\0'; /* Load core in new config. */
+         }
+         event_command(EVENT_CMD_PREPARE_DUMMY);
+         return true;
       case RARCH_ACTION_STATE_MENU_RUNNING:
 #ifdef HAVE_MENU
          menu_driver_toggle(true);
-
-         /* Menu should always run with vsync on. */
-         event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
-         /* Stop all rumbling before entering the menu. */
-         event_command(EVENT_CMD_RUMBLE_STOP);
-
-         if (settings->menu.pause_libretro)
-            event_command(EVENT_CMD_AUDIO_STOP);
-
-         /* Override keyboard callback to redirect to menu instead.
-          * We'll use this later for something ...
-          * FIXME: This should probably be moved to menu_common somehow. */
-         if (global)
-         {
-            global->frontend_key_event = system->key_event;
-            system->key_event          = menu_input_key_event;
-            system->frame_time_last    = 0;
-         }
-
-         menu_entries_set_refresh(false);
 #endif
 #ifdef HAVE_OVERLAY
          if (settings->input.overlay_hide_in_menu)
@@ -1394,7 +1356,7 @@ void rarch_main_set_state(unsigned cmd)
 #ifdef HAVE_MENU
          /* If content loading fails, we go back to menu. */
          if (!menu_load_content(CORE_TYPE_PLAIN))
-            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING, NULL);
 #endif
          if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)
             driver->frontend_ctx->content_loaded();
@@ -1404,7 +1366,7 @@ void rarch_main_set_state(unsigned cmd)
 #ifdef HAVE_MENU
          /* If content loading fails, we go back to menu. */
          if (!menu_load_content(CORE_TYPE_FFMPEG))
-            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING, NULL);
 #endif
          if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)
             driver->frontend_ctx->content_loaded();
@@ -1414,7 +1376,7 @@ void rarch_main_set_state(unsigned cmd)
 #ifdef HAVE_MENU
          /* If content loading fails, we go back to menu. */
          if (!menu_load_content(CORE_TYPE_IMAGEVIEWER))
-            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING, NULL);
 #endif
          if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)
             driver->frontend_ctx->content_loaded();
@@ -1422,18 +1384,6 @@ void rarch_main_set_state(unsigned cmd)
       case RARCH_ACTION_STATE_MENU_RUNNING_FINISHED:
 #ifdef HAVE_MENU
          menu_driver_toggle(false);
-
-         driver_set_nonblock_state(driver->nonblock_state);
-
-         if (settings && settings->menu.pause_libretro)
-            event_command(EVENT_CMD_AUDIO_START);
-
-         /* Prevent stray input from going to libretro core */
-         driver->flushing_input = true;
-
-         /* Restore libretro keyboard callback. */
-         if (global)
-            system->key_event = global->frontend_key_event;
 #endif
          video_driver_set_texture_enable(false, false);
 #ifdef HAVE_OVERLAY
@@ -1442,17 +1392,63 @@ void rarch_main_set_state(unsigned cmd)
 #endif
          break;
       case RARCH_ACTION_STATE_QUIT:
-	     if (global)
+         if (global)
             system->shutdown = true;
-         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+         rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
          break;
       case RARCH_ACTION_STATE_FORCE_QUIT:
-         rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
+         rarch_ctl(RARCH_ACTION_STATE_QUIT, NULL);
+         break;
+      case RARCH_ACTION_STATE_VALIDATE_CPU_FEATURES:
+         {
+            uint64_t cpu = retro_get_cpu_features();
+            (void)cpu;
+
+#ifdef __SSE__
+            if (!(cpu & RETRO_SIMD_SSE))
+               FAIL_CPU("SSE");
+#endif
+#ifdef __SSE2__
+            if (!(cpu & RETRO_SIMD_SSE2))
+               FAIL_CPU("SSE2");
+#endif
+#ifdef __AVX__
+            if (!(cpu & RETRO_SIMD_AVX))
+               FAIL_CPU("AVX");
+#endif
+         }
+         break;
+      case RARCH_ACTION_STATE_VERIFY_API_VERSION:
+         RARCH_LOG("Version of libretro API: %u\n", core.retro_api_version());
+         RARCH_LOG("Compiled against API: %u\n",    RETRO_API_VERSION);
+
+         if (core.retro_api_version() != RETRO_API_VERSION)
+            RARCH_WARN("%s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
+         break;
+      case RARCH_ACTION_STATE_FILL_PATHNAMES:
+         rarch_init_savefile_paths();
+         strlcpy(global->bsv.movie_path, global->name.savefile,
+               sizeof(global->bsv.movie_path));
+
+         if (!*global->name.base)
+            return false;
+
+         if (!*global->name.ups)
+            fill_pathname_noext(global->name.ups, global->name.base, ".ups",
+                  sizeof(global->name.ups));
+         if (!*global->name.bps)
+            fill_pathname_noext(global->name.bps, global->name.base, ".bps",
+                  sizeof(global->name.bps));
+         if (!*global->name.ips)
+            fill_pathname_noext(global->name.ips, global->name.base, ".ips",
+                  sizeof(global->name.ips));
          break;
       case RARCH_ACTION_STATE_NONE:
       default:
-         break;
+         return false;
    }
+
+   return true;
 }
 
 /**
@@ -1497,11 +1493,17 @@ void rarch_main_deinit(void)
  **/
 void rarch_playlist_load_content(void *data, unsigned idx)
 {
-   const char *path             = NULL;
+   unsigned i;
    const char *core_path        = NULL;
+   const char *path             = NULL;
+   char *path_check             = NULL;
+   char *path_tolower           = NULL;
+   RFILE *fp                    = NULL;
    content_playlist_t *playlist = (content_playlist_t*)data;
-   menu_handle_t *menu          = menu_driver_get_ptr();
    settings_t  *settings        = config_get_ptr();
+#ifdef HAVE_MENU
+   menu_handle_t *menu          = menu_driver_get_ptr();
+#endif
 
    if (!playlist)
       return;
@@ -1509,10 +1511,39 @@ void rarch_playlist_load_content(void *data, unsigned idx)
    content_playlist_get_index(playlist,
          idx, &path, NULL, &core_path, NULL, NULL, NULL);
 
+   path_tolower = strdup(path);
+
+   for (i = 0; i < strlen(path_tolower); ++i)
+      path_tolower[i] = tolower(path_tolower[i]);
+
+
+   if (strstr(path_tolower, ".zip"))
+      strstr(path_tolower, ".zip")[4] = '\0';
+   else if (strstr(path_tolower, ".7z"))
+      strstr(path_tolower, ".7z")[3] = '\0';
+
+   path_check = (char *)calloc(strlen(path_tolower) + 1, sizeof(char));
+   strncpy(path_check, path, strlen(path_tolower));
+
+   fp = retro_fopen(path_check, RFILE_MODE_READ, -1);
+   if (!fp)
+   {
+      rarch_main_msg_queue_push("File could not be loaded.\n", 1, 100, true);
+      RARCH_LOG("File at %s failed to load.\n", path_check);
+      free(path_tolower);
+      free(path_check);
+      return;
+   }
+   retro_fclose(fp);
+   free(path_tolower);
+   free(path_check);
+
    strlcpy(settings->libretro, core_path, sizeof(settings->libretro));
 
+#ifdef HAVE_MENU
    if (menu)
       menu->load_no_content = (path) ? false : true;
+#endif
 
    rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)path);
 
@@ -1531,7 +1562,7 @@ void rarch_playlist_load_content(void *data, unsigned idx)
  *
  * Gets deferred core.
  *
- * Returns: 0 if there are multiple deferred cores and a 
+ * Returns: 0 if there are multiple deferred cores and a
  * selection needs to be made from a list, otherwise
  * returns -1 and fills in @s with path to core.
  **/
@@ -1544,7 +1575,9 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    size_t supported                    = 0;
    settings_t *settings                = config_get_ptr();
    global_t   *global                  = global_get_ptr();
+#ifdef HAVE_MENU
    uint32_t menu_label_hash            = msg_hash_calculate(menu_label);
+#endif
 
    fill_pathname_join(s, dir, path, len);
 
@@ -1553,7 +1586,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    {
       /* In case of a compressed archive, we have to join with a hash */
       /* We are going to write at the position of dir: */
-      rarch_assert(strlen(dir) < strlen(s));
+      retro_assert(strlen(dir) < strlen(s));
       s[strlen(dir)] = '#';
    }
 #endif
@@ -1562,6 +1595,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
       core_info_list_get_supported_cores(core_info, s, &info,
             &supported);
 
+#ifdef HAVE_MENU
    if (menu_label_hash == MENU_LABEL_LOAD_CONTENT)
    {
       info = (const core_info_t*)&global->core_info.current;
@@ -1573,6 +1607,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
       }
    }
    else
+#endif
       strlcpy(new_core_path, info->path, sizeof(new_core_path));
 
    /* There are multiple deferred cores and a
@@ -1586,46 +1621,4 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
       strlcpy(settings->libretro, new_core_path,
             sizeof(settings->libretro));
    return -1;
-}
-
-/**
- * rarch_replace_config:
- * @path                 : Path to config file to replace
- *                         current config file with.
- *
- * Replaces currently loaded configuration file with
- * another one. Will load a dummy core to flush state
- * properly.
- *
- * Quite intrusive and error prone.
- * Likely to have lots of small bugs.
- * Cleanly exit the main loop to ensure that all the tiny details
- * get set properly.
- *
- * This should mitigate most of the smaller bugs.
- *
- * Returns: true (1) if successful, false (0) if @path was the
- * same as the current config file.
- **/
-
-bool rarch_replace_config(const char *path)
-{
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-
-   /* If config file to be replaced is the same as the
-    * current config file, exit. */
-   if (!strcmp(path, global->path.config))
-      return false;
-
-   if (settings->config_save_on_exit && *global->path.config)
-      config_save_file(global->path.config);
-
-   strlcpy(global->path.config, path, sizeof(global->path.config));
-   global->block_config_read = false;
-   *settings->libretro = '\0'; /* Load core in new config. */
-
-   event_command(EVENT_CMD_PREPARE_DUMMY);
-
-   return true;
 }

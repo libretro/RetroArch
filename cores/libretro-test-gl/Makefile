@@ -60,14 +60,26 @@ else ifeq ($(platform), pi)
    CFLAGS += -I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/vmcs_host/linux
    GLES := 1
    LIBS += -L/opt/vc/lib
-else ifeq ($(platform), ios)
+else ifneq (,$(findstring ios,$(platform)))
    TARGET := $(TARGET_NAME)_libretro_ios.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
+
+ifeq ($(IOSSDK),)
+   IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
+endif
+
    GL_LIB := -framework OpenGLES
    DEFINES := -DIOS
    CFLAGS += -DGLES $(DEFINES)
-   CC = clang -arch armv7 -isysroot $(IOSSDK)
+   CC = cc -arch armv7 -isysroot $(IOSSDK)
+ifeq ($(platform),ios9)
+	CC     += -miphoneos-version-min=8.0
+	CFLAGS += -miphoneos-version-min=8.0
+else
+	CC     += -miphoneos-version-min=5.0
+	CFLAGS += -miphoneos-version-min=5.0
+endif
 else ifneq (,$(findstring qnx,$(platform)))
    TARGET := $(TARGET_NAME)_libretro_qnx.so
    fpic := -fPIC

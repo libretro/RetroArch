@@ -119,20 +119,25 @@ static int16_t ctr_joypad_axis(unsigned port_num, uint32_t joyaxis)
    return val;
 }
 
+static int16_t ctr_joypad_fix_range(int16_t val)
+{
+   val = (val > 127)? 127: (val < -127)? -127: val;
+   return val * 256;
+}
+
 static void ctr_joypad_poll(void)
 {
-   int32_t ret;
-   unsigned i, j;
    uint32_t state_tmp;
-   circlePosition state_tmp_analog;
+   circlePosition state_tmp_left_analog, state_tmp_right_analog;
+   touchPosition state_tmp_touch;
 
    hidScanInput();
 
    state_tmp = hidKeysHeld();
-   hidCircleRead(&state_tmp_analog);
+   hidCircleRead(&state_tmp_left_analog);
+   irrstCstickRead(&state_tmp_right_analog);
+   hidTouchRead(&state_tmp_touch);
 
-   analog_state[0][0][0] = analog_state[0][0][1] =
-      analog_state[0][1][0] = analog_state[0][1][1] = 0;
    pad_state = 0;
    pad_state |= (state_tmp & KEY_DLEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
    pad_state |= (state_tmp & KEY_DDOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
@@ -146,18 +151,17 @@ static void ctr_joypad_poll(void)
    pad_state |= (state_tmp & KEY_A) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A) : 0;
    pad_state |= (state_tmp & KEY_R) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R) : 0;
    pad_state |= (state_tmp & KEY_L) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0;
+   pad_state |= (state_tmp & KEY_ZR) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
+   pad_state |= (state_tmp & KEY_ZL) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
 
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] =  (state_tmp_analog.dx * 200);
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = -(state_tmp_analog.dy * 200);
-
-   for (i = 0; i < 2; i++)
-      for (j = 0; j < 2; j++)
-         if (analog_state[0][i][j] == -0x8000)
-            analog_state[0][i][j] = -0x7fff;
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X]  =  ctr_joypad_fix_range(state_tmp_left_analog.dx);
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y]  = -ctr_joypad_fix_range(state_tmp_left_analog.dy);
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] =  ctr_joypad_fix_range(state_tmp_right_analog.dx);
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] = -ctr_joypad_fix_range(state_tmp_right_analog.dy);
 
    BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
-   if(state_tmp & KEY_TOUCH)
+   if((state_tmp & KEY_TOUCH) && (state_tmp_touch.py > 120))
       BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
 
    /* panic button */

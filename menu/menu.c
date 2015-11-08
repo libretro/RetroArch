@@ -18,11 +18,13 @@
 
 #include "menu.h"
 #include "menu_cbs.h"
+#include "menu_display.h"
 #include "menu_hash.h"
 #include "menu_shader.h"
 
 #include "../general.h"
 #include "../frontend/frontend.h"
+#include "../runloop_data.h"
 
 static void menu_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
@@ -86,16 +88,13 @@ static void menu_push_to_history_playlist(void)
  **/
 bool menu_load_content(enum rarch_core_type type)
 {
+   bool msg_force       = true;
    menu_handle_t *menu  = menu_driver_get_ptr();
-   menu_display_t *disp = menu_display_get_ptr();
    driver_t *driver     = driver_get_ptr();
    global_t *global     = global_get_ptr();
 
    /* redraw menu frame */
-   if (disp)
-      disp->msg_force = true;
-
-   menu_iterate(true, MENU_ACTION_NOOP);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
    menu_iterate_render();
 
    if (!(main_load_content(0, NULL, NULL, menu_environment_get,
@@ -107,9 +106,6 @@ bool menu_load_content(enum rarch_core_type type)
       fill_pathname_base(name, global->path.fullpath, sizeof(name));
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
       menu_display_msg_queue_push(msg, 1, 90, false);
-
-      if (disp)
-         disp->msg_force = true;
 
       return false;
    }
@@ -133,8 +129,6 @@ int menu_common_load_content(
 {
    settings_t *settings         = config_get_ptr();
    global_t *global             = global_get_ptr();
-   menu_display_t *disp         = menu_display_get_ptr();
-   menu_list_t *menu_list       = menu_list_get_ptr();
    enum event_command cmd       = EVENT_CMD_NONE;
 
    if (core_path)
@@ -144,9 +138,7 @@ int menu_common_load_content(
    }
 
    if (fullpath)
-   {
       strlcpy(global->path.fullpath, fullpath, sizeof(global->path.fullpath));
-   }
 
    switch (type)
    {
@@ -169,12 +161,6 @@ int menu_common_load_content(
    if (cmd != EVENT_CMD_NONE)
       event_command(cmd);
 
-   menu_list_flush_stack(menu_list, NULL, MENU_SETTINGS);
-   disp->msg_force = true;
-
-   generic_action_ok_displaylist_push("",
-         "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
-
    return -1;
 }
 
@@ -187,8 +173,7 @@ int menu_common_load_content(
 void menu_free(menu_handle_t *menu)
 {
    global_t        *global    = global_get_ptr();
-   menu_display_t    *disp    = menu_display_get_ptr();
-   if (!menu || !disp)
+   if (!menu)
       return;
 
    if (menu->playlist)
@@ -197,14 +182,15 @@ void menu_free(menu_handle_t *menu)
   
    menu_shader_free(menu);
 
+   menu_input_free();
+   menu_navigation_free();
    menu_driver_free(menu);
 
 #ifdef HAVE_DYNAMIC
    libretro_free_system_info(&global->menu.info);
 #endif
 
-   menu_display_free(menu);
-
+   menu_display_free();
    menu_entries_free();
 
    event_command(EVENT_CMD_HISTORY_DEINIT);
@@ -274,7 +260,7 @@ void *menu_init(const void *data)
 
    menu_shader_manager_init(menu);
 
-   if (!menu_display_init(menu))
+   if (!menu_display_init())
       goto error;
 
    return menu;

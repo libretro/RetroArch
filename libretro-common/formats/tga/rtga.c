@@ -33,7 +33,7 @@ bool rtga_image_load_shift(uint8_t *buf,
    const uint8_t            *tmp = NULL;
    struct texture_image *out_img = (struct texture_image*)data;
 
-   if (buf[2] != 2)
+   if (!buf || buf[2] != 2)
    {
       fprintf(stderr, "TGA image is not uncompressed RGB.\n");
       goto error;

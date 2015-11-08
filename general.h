@@ -53,7 +53,7 @@
 #endif
 
 #ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "1.2.2"
+#define PACKAGE_VERSION "1.3.0"
 #endif
 
 #ifdef __cplusplus
@@ -96,7 +96,7 @@ struct defaults
       char playlist[PATH_MAX_LENGTH];
       char content_history[PATH_MAX_LENGTH];
       char remap[PATH_MAX_LENGTH];
-      char extraction[PATH_MAX_LENGTH];
+      char cache[PATH_MAX_LENGTH];
       char wallpapers[PATH_MAX_LENGTH];
       char database[PATH_MAX_LENGTH];
       char cursor[PATH_MAX_LENGTH];
@@ -107,6 +107,7 @@ struct defaults
    {
       char config[PATH_MAX_LENGTH];
       char core[PATH_MAX_LENGTH];
+      char buildbot_server_url[PATH_MAX_LENGTH];
    } path;
 
    struct
@@ -140,13 +141,13 @@ static INLINE float db_to_gain(float db)
 }
 
 /**
- * rarch_fail:
+ * retro_fail:
  * @error_code  : Error code.
  * @error       : Error message to show.
  *
  * Sanely kills the program.
  **/
-static INLINE void rarch_fail(int error_code, const char *error)
+static INLINE void retro_fail(int error_code, const char *error)
 {
    global_t *global = global_get_ptr();
 
@@ -156,7 +157,7 @@ static INLINE void rarch_fail(int error_code, const char *error)
    /* We cannot longjmp unless we're in rarch_main_init().
     * If not, something went very wrong, and we should 
     * just exit right away. */
-   rarch_assert(global->inited.error);
+   retro_assert(global->inited.error);
 
    strlcpy(global->error_string, error, sizeof(global->error_string));
    longjmp(global->error_sjlj_context, error_code);

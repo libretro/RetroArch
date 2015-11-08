@@ -30,11 +30,11 @@
 #endif
 
 #ifdef RARCH_INTERNAL
-#define rarch_assert(cond) do { \
+#define retro_assert(cond) do { \
    if (!(cond)) { RARCH_ERR("Assertion failed at %s:%d.\n", __FILE__, __LINE__); abort(); } \
 } while(0)
 #else
-#define rarch_assert(cond) assert(cond)
+#define retro_assert(cond) assert(cond)
 #endif
 
 #endif

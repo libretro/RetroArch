@@ -293,6 +293,7 @@ error:
 
 static void engine_handle_cmd(void)
 {
+   bool is_paused;
    int8_t cmd;
    struct android_app *android_app = (struct android_app*)g_android;
    driver_t  *driver  = driver_get_ptr();
@@ -330,7 +331,9 @@ static void engine_handle_cmd(void)
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
 
-         if (rarch_main_is_paused())
+         rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED, &is_paused);
+
+         if (is_paused)
             event_command(EVENT_CMD_REINIT);
          break;
 
@@ -356,9 +359,11 @@ static void engine_handle_cmd(void)
 
          if (!system->shutdown)
          {
+            bool boolean = true;
             RARCH_LOG("Pausing RetroArch.\n");
-            rarch_main_set_pause(true);
-            rarch_main_set_idle(true);
+
+            rarch_main_ctl(RARCH_MAIN_CTL_SET_PAUSED, &boolean);
+            rarch_main_ctl(RARCH_MAIN_CTL_SET_IDLE,   &boolean);
          }
          break;
 
@@ -387,16 +392,20 @@ static void engine_handle_cmd(void)
          break;
 
       case APP_CMD_GAINED_FOCUS:
-         rarch_main_set_pause(false);
-         rarch_main_set_idle(false);
+         {
+            bool boolean = false;
 
-         if ((android_app->sensor_state_mask
-                  & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))
-               && android_app->accelerometerSensor == NULL
-               && driver->input_data)
-            android_input_set_sensor_state(driver->input_data, 0,
-                  RETRO_SENSOR_ACCELEROMETER_ENABLE,
-                  android_app->accelerometer_event_rate);
+            rarch_main_ctl(RARCH_MAIN_CTL_SET_PAUSED, &boolean);
+            rarch_main_ctl(RARCH_MAIN_CTL_SET_IDLE,   &boolean);
+
+            if ((android_app->sensor_state_mask
+                     & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))
+                  && android_app->accelerometerSensor == NULL
+                  && driver->input_data)
+               android_input_set_sensor_state(driver->input_data, 0,
+                     RETRO_SENSOR_ACCELEROMETER_ENABLE,
+                     android_app->accelerometer_event_rate);
+         }
          break;
       case APP_CMD_LOST_FOCUS:
          /* Avoid draining battery while app is not being used. */
@@ -729,7 +738,7 @@ static void handle_hotplug(android_input_t *android,
 
    if (settings->input.autodetect_enable)
    {
-      bool      autoconfigured = false;
+      bool      autoconfigured;
       autoconfig_params_t params   = {{0}};
 
       RARCH_LOG("Port %d: %s VID/PID: %d/%d\n", *port, name_buf, params.vid, params.pid);
@@ -743,6 +752,7 @@ static void handle_hotplug(android_input_t *android,
 
       strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
       autoconfigured = input_config_autoconfigure_joypad(&params);
+
       if (autoconfigured)
       {
          if (settings->input.autoconf_binds[*port][RARCH_MENU_TOGGLE].joykey != 0)
@@ -943,8 +953,11 @@ static bool android_input_key_pressed(void *data, int key)
    android_input_t *android = (android_input_t*)data;
    settings_t *settings     = config_get_ptr();
 
-   return input_joypad_pressed(android->joypad,
-            0, settings->input.binds[0], key);
+   if (input_joypad_pressed(android->joypad,
+         0, settings->input.binds[0], key))
+      return true;
+
+   return false;
 }
 
 static bool android_input_meta_key_pressed(void *data, int key)

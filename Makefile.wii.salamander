@@ -51,7 +51,7 @@ OBJ = frontend/frontend_salamander.o \
 		libretro-common/file/retro_file.o \
 		libretro-common/file/retro_dirent.o \
 		libretro-common/file/retro_stat.o \
-		libretro-common/compat/compat.o \
+		libretro-common/compat/compat_strl.o \
 		libretro-common/file/config_file.o \
 		$(APP_BOOTER_DIR)/app_booter.binobj
 

@@ -1,0 +1,216 @@
+BasicInfo:
+  Title                   : $(APP_TITLE)
+  ProductCode             : $(APP_PRODUCT_CODE)
+  Logo                    : Nintendo # Nintendo / Licensed / Distributed / iQue / iQueForSystem
+
+TitleInfo:
+  Category                : Application
+  UniqueId                : $(APP_UNIQUE_ID)
+
+Option:
+  UseOnSD                 : true # true if App is to be installed to SD
+  FreeProductCode         : true # Removes limitations on ProductCode
+  MediaFootPadding        : false # If true CCI files are created with padding
+  EnableCrypt             : $(APP_ENCRYPTED) # Enables encryption for NCCH and CIA
+  EnableCompress          : false # Compresses where applicable (currently only exefs:/.code)
+  
+AccessControlInfo:
+  CoreVersion                   : 2
+
+  # Exheader Format Version
+  DescVersion                   : 2
+  
+  # Minimum Required Kernel Version (below is for 4.5.0)
+  ReleaseKernelMajor            : "02"
+  ReleaseKernelMinor            : "33" 
+
+  # FS:USER Archive Access Permissions
+  # Uncomment as required
+  FileSystemAccess:
+   #- CategorySystemApplication
+   #- CategoryHardwareCheck
+   #- CategoryFileSystemTool
+   - Debug
+   #- TwlCardBackup
+   #- TwlNandData
+   #- Boss
+   - DirectSdmc
+   #- Core
+   #- CtrNandRo
+   #- CtrNandRw
+   #- CtrNandRoWrite
+   #- CategorySystemSettings
+   #- CardBoard
+   #- ExportImportIvs
+   #- DirectSdmcWrite
+   #- SwitchCleanup
+   #- SaveDataMove
+   #- Shop
+   #- Shell
+   #- CategoryHomeMenu
+
+  # Process Settings
+  MemoryType                    : Application # Application/System/Base
+  SystemMode                    : $(APP_SYSTEM_MODE) # 64MB(Default)/96MB/80MB/72MB/32MB
+  IdealProcessor                : 0
+  AffinityMask                  : 1
+  Priority                      : 16
+  MaxCpu                        : 0 # Let system decide
+  HandleTableSize               : 0x200
+  DisableDebug                  : false
+  EnableForceDebug              : false
+  CanWriteSharedPage            : true
+  CanUsePrivilegedPriority      : false
+  CanUseNonAlphabetAndNumber    : true
+  PermitMainFunctionArgument    : true
+  CanShareDeviceMemory          : true
+  RunnableOnSleep               : false
+  SpecialMemoryArrange          : true
+
+  # New3DS Exclusive Process Settings
+  SystemModeExt                 : $(APP_SYSTEM_MODE_EXT) # Legacy(Default)/124MB/178MB  Legacy:Use Old3DS SystemMode
+  CpuSpeed                      : 804MHz # 268MHz(Default)/804MHz
+  EnableL2Cache                 : true # false(default)/true
+  CanAccessCore2                : true 
+
+  # Virtual Address Mappings
+  IORegisterMapping:
+   - 1ff00000-1ff7ffff   # DSP memory
+  MemoryMapping: 
+   - 1f000000-1f5fffff:r # VRAM
+
+  # Accessible SVCs, <Name>:<ID>
+  SystemCallAccess: 
+    ArbitrateAddress: 34
+    Break: 60
+    CancelTimer: 28
+    ClearEvent: 25
+    ClearTimer: 29
+    CloseHandle: 35
+    ConnectToPort: 45
+    ControlMemory: 1
+    CreateAddressArbiter: 33
+    CreateEvent: 23
+    CreateMemoryBlock: 30
+    CreateMutex: 19
+    CreateSemaphore: 21
+    CreateThread: 8
+    CreateTimer: 26
+    DuplicateHandle: 39
+    ExitProcess: 3
+    ExitThread: 9
+    GetCurrentProcessorNumber: 17
+    GetHandleInfo: 41
+    GetProcessId: 53
+    GetProcessIdOfThread: 54
+    GetProcessIdealProcessor: 6
+    GetProcessInfo: 43
+    GetResourceLimit: 56
+    GetResourceLimitCurrentValues: 58
+    GetResourceLimitLimitValues: 57
+    GetSystemInfo: 42
+    GetSystemTick: 40
+    GetThreadContext: 59
+    GetThreadId: 55
+    GetThreadIdealProcessor: 15
+    GetThreadInfo: 44
+    GetThreadPriority: 11
+    MapMemoryBlock: 31
+    OutputDebugString: 61
+    QueryMemory: 2
+    ReleaseMutex: 20
+    ReleaseSemaphore: 22
+    SendSyncRequest1: 46
+    SendSyncRequest2: 47
+    SendSyncRequest3: 48
+    SendSyncRequest4: 49
+    SendSyncRequest: 50
+    SetThreadPriority: 12
+    SetTimer: 27
+    SignalEvent: 24
+    SleepThread: 10
+    UnmapMemoryBlock: 32
+    WaitSynchronization1: 36
+    WaitSynchronizationN: 37
+    Backdoor: 123
+
+  # Service List
+  # Maximum 34 services (32 if firmware is prior to 9.6.0)
+  ServiceAccessControl:
+   - cfg:u
+   - fs:USER
+   - gsp::Gpu
+   - gsp::Lcd
+   - hid:USER
+   - ndm:u
+   - pxi:dev
+   - APT:U
+   - ac:u
+   - act:u
+   - am:net
+   - boss:U
+   - cam:u
+   - cecd:u
+   - csnd:SND
+   - dsp::DSP
+   - frd:u
+   - http:C
+   - ir:USER
+   - ir:u
+   - ir:rst
+   - ldr:ro
+   - mic:u
+   - news:u
+   - nfc:u
+   - nim:aoc
+   - nwm::UDS
+   - ptm:u
+   - ptm:sysm
+   - qtm:u
+   - soc:U
+   - ssl:C
+   - y2r:u
+
+
+SystemControlInfo:
+  RemasterVersion: 2
+  StackSize: 0x4000
+  # Modules that run services listed above should be included below
+  # Maximum 48 dependencies
+  # If a module is listed that isn't present on the 3DS, the title will get stuck at the logo (3ds waves)
+  # So act, nfc and qtm are commented for 4.x support. Uncomment if you need these.
+  # <module name>:<module titleid>
+  Dependency: 
+    ac: 0x0004013000002402
+    #act: 0x0004013000003802
+    am: 0x0004013000001502
+    boss: 0x0004013000003402
+    camera: 0x0004013000001602
+    cecd: 0x0004013000002602
+    cfg: 0x0004013000001702
+    codec: 0x0004013000001802
+    csnd: 0x0004013000002702
+    dlp: 0x0004013000002802
+    dsp: 0x0004013000001a02
+    friends: 0x0004013000003202
+    gpio: 0x0004013000001b02
+    gsp: 0x0004013000001c02
+    hid: 0x0004013000001d02
+    http: 0x0004013000002902
+    i2c: 0x0004013000001e02
+    ir: 0x0004013000003302
+    mcu: 0x0004013000001f02
+    mic: 0x0004013000002002
+    ndm: 0x0004013000002b02
+    news: 0x0004013000003502
+    #nfc: 0x0004013000004002
+    nim: 0x0004013000002c02
+    nwm: 0x0004013000002d02
+    pdn: 0x0004013000002102
+    ps: 0x0004013000003102
+    ptm: 0x0004013000002202
+    #qtm: 0x0004013020004202
+    ro: 0x0004013000003702
+    socket: 0x0004013000002e02
+    spi: 0x0004013000002302
+    ssl: 0x0004013000002f02

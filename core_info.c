@@ -107,7 +107,7 @@ void core_info_get_name(const char *path, char *s, size_t len)
    core_info_t *core_info = NULL;
    core_info_list_t *core_info_list = NULL;
    settings_t *settings = config_get_ptr();
-   struct string_list *contents = dir_list_new_special(NULL, DIR_LIST_CORES);
+   struct string_list *contents = dir_list_new_special(NULL, DIR_LIST_CORES, NULL);
 
    if (!contents)
       return;
@@ -174,7 +174,7 @@ core_info_list_t *core_info_list_new(void)
    core_info_t *core_info = NULL;
    core_info_list_t *core_info_list = NULL;
    settings_t *settings = config_get_ptr();
-   struct string_list *contents = dir_list_new_special(NULL, DIR_LIST_CORES);
+   struct string_list *contents = dir_list_new_special(NULL, DIR_LIST_CORES, NULL);
 
    if (!contents)
       return NULL;
@@ -538,7 +538,7 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
    *num_infos = supported;
 }
 
-static core_info_t *find_core_info(core_info_list_t *list,
+core_info_t *core_info_find(core_info_list_t *list,
       const char *core)
 {
    size_t i;
@@ -579,7 +579,7 @@ void core_info_list_update_missing_firmware(core_info_list_t *core_info_list,
    if (!core_info_list || !core)
       return;
 
-   if (!(info = find_core_info(core_info_list, core)))
+   if (!(info = core_info_find(core_info_list, core)))
       return;
 
    for (i = 0; i < info->firmware_count; i++)
@@ -607,7 +607,7 @@ void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
    *firmware = NULL;
    *num_firmware = 0;
 
-   if (!(info = find_core_info(core_info_list, core)))
+   if (!(info = core_info_find(core_info_list, core)))
       return;
 
    *firmware = info->firmware;

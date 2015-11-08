@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_SETTINGS_H__
-#define __RARCH_SETTINGS_H__
+#ifndef __RARCH_CONFIGURATION_H__
+#define __RARCH_CONFIGURATION_H__
 
 #include <stdint.h>
 #include <retro_miscellaneous.h>
@@ -33,6 +33,11 @@ extern "C" {
 
 typedef struct settings
 {
+   video_viewport_t video_viewport_custom;
+
+   char playlist_names[PATH_MAX_LENGTH];
+   char playlist_cores[PATH_MAX_LENGTH];
+
    struct
    {
       char driver[32];
@@ -130,8 +135,7 @@ typedef struct settings
       {
          struct
          {
-            bool horizontal_enable;
-            bool vertical_enable;
+            bool enable;
             bool setting_enable;
          } wraparound;
          struct
@@ -149,16 +153,16 @@ typedef struct settings
          unsigned override_value;
       } dpi;
 
-      bool collapse_subgroups_enable;
       bool show_advanced_settings;
-#ifdef HAVE_THREADS
-      bool threaded_data_runloop_enable;
-#endif
 
       unsigned entry_normal_color;
       unsigned entry_hover_color;
       unsigned title_color;
    } menu;
+#endif
+
+#ifdef HAVE_THREADS
+   bool threaded_data_runloop_enable;
 #endif
 
    struct
@@ -239,7 +243,6 @@ typedef struct settings
       float overlay_scale;
 
       char autoconfig_dir[PATH_MAX_LENGTH];
-      bool autoconfig_descriptor_label_show;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
 
@@ -280,6 +283,16 @@ typedef struct settings
       bool builtin_imageviewer_enable;
    } multimedia;
 
+#ifdef HAVE_CHEEVOS
+   struct
+   {
+      bool enable;
+      bool test_unofficial;
+      char username[32];
+      char password[32];
+   } cheevos;
+#endif
+
    int state_slot;
 
    bool bundle_assets_extract_enable;
@@ -300,11 +313,12 @@ typedef struct settings
    char cheat_settings_path[PATH_MAX_LENGTH];
    char input_remapping_directory[PATH_MAX_LENGTH];
 
+   char overlay_directory[PATH_MAX_LENGTH];
    char resampler_directory[PATH_MAX_LENGTH];
    char screenshot_directory[PATH_MAX_LENGTH];
    char system_directory[PATH_MAX_LENGTH];
 
-   char extraction_directory[PATH_MAX_LENGTH];
+   char cache_directory[PATH_MAX_LENGTH];
    char playlist_directory[PATH_MAX_LENGTH];
 
    bool history_list_enable;

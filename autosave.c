@@ -75,7 +75,7 @@ static void autosave_thread(void *data)
 
    while (!save->quit)
    {
-      bool differ = false;
+      bool differ;
 
       autosave_lock(save);
       differ = memcmp(save->buffer, save->retro_buffer,

@@ -20,23 +20,21 @@
 #endif
 
 #include <stdint.h>
-#include "../video_shader_driver.h"
+#include <string.h>
 
 #include <Cg/cg.h>
-
 #ifdef HAVE_OPENGL
 #include "../drivers/gl_common.h"
 #include <Cg/cgGL.h>
-
 #endif
 
-#include <string.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
 #include <rhash.h>
 
+#include "../video_shader_driver.h"
 #include "../../dynamic.h"
 #include "../../rewind.h"
 #include "../video_state_tracker.h"
@@ -165,7 +163,7 @@ static void gl_cg_reset_attrib(cg_shader_data_t *cg)
       return;
 
    /* Add sanity check that we did not overflow. */
-   rarch_assert(cg->cg_attrib_idx <= ARRAY_SIZE(cg->cg_attribs));
+   retro_assert(cg->cg_attrib_idx <= ARRAY_SIZE(cg->cg_attribs));
 
    for (i = 0; i < cg->cg_attrib_idx; i++)
       cgGLDisableClientState(cg->cg_attribs[i]);
@@ -581,7 +579,7 @@ static bool gl_cg_load_imports(cg_shader_data_t *cg)
       }
 
       if ((memtype != -1u) && 
-            (cg->shader->variable[i].addr >= pretro_get_memory_size(memtype)))
+            (cg->shader->variable[i].addr >= core.retro_get_memory_size(memtype)))
       {
          RARCH_ERR("Address out of bounds.\n");
          return false;
@@ -589,7 +587,7 @@ static bool gl_cg_load_imports(cg_shader_data_t *cg)
    }
 
    tracker_info.wram = (uint8_t*)
-      pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+      core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
    tracker_info.info      = cg->shader->variable;
    tracker_info.info_elem = cg->shader->variables;
 

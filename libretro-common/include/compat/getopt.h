@@ -36,7 +36,7 @@
 #else
 /* Avoid possible naming collisions during link since we 
  * prefer to use the actual name. */
-#define getopt_long(argc, argv, optstring, longopts, longindex) __getopt_long_rarch(argc, argv, optstring, longopts, longindex)
+#define getopt_long(argc, argv, optstring, longopts, longindex) __getopt_long_retro(argc, argv, optstring, longopts, longindex)
 
 #ifdef __cplusplus
 extern "C" {

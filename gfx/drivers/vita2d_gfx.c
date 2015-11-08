@@ -31,6 +31,24 @@ typedef struct vita_menu_frame
    vita2d_texture *texture;
 } vita_menu_t;
 
+#ifdef HAVE_OVERLAY
+struct vita_overlay_data
+{
+   vita2d_texture *tex;
+   float x;
+   float y; 
+   float w; 
+   float h;
+   float tex_x;
+   float tex_y; 
+   float tex_w; 
+   float tex_h;
+   float alpha_mod;
+   float width;
+   float height;
+};
+#endif
+
 typedef struct vita_video
 {
    vita2d_texture *texture;
@@ -51,20 +69,28 @@ typedef struct vita_video
    bool should_resize;
 
    vita_menu_t menu;
+   
+#ifdef HAVE_OVERLAY
+   struct vita_overlay_data *overlay;
+   unsigned overlays;
+   bool overlay_enable;
+   bool overlay_full_screen;
+#endif
+   
 } vita_video_t;
 
 static void *vita2d_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   void *pspinput = NULL;
-   *input = NULL;
-   *input_data = NULL;
-   (void)video;
-
    vita_video_t *vita = (vita_video_t *)calloc(1, sizeof(vita_video_t));
+   driver_t            *driver = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (!vita)
       return NULL;
+
+   *input         = NULL;
+   *input_data    = NULL;
 
    RARCH_LOG("vita2d_gfx_init: w: %i  h: %i\n", video->width, video->height);
    RARCH_LOG("RARCH_SCALE_BASE: %i input_scale: %i = %i\n",
@@ -100,16 +126,41 @@ static void *vita2d_gfx_init(const video_info_t *video,
 
    if (input && input_data)
    {
-      pspinput = input_psp.init();
-      *input = pspinput ? &input_psp : NULL;
+      void *pspinput = input_psp.init();
+      *input      = pspinput ? &input_psp : NULL;
       *input_data = pspinput;
    }
 
    vita->keep_aspect        = true;
    vita->should_resize      = true;
-
+#ifdef HAVE_OVERLAY
+   vita->overlay_enable           = false;
+#endif
+   if (!font_init_first((const void**)&driver->font_osd_driver, &driver->font_osd_data,
+          vita, *settings->video.font_path 
+          ? settings->video.font_path : NULL, settings->video.font_size,
+          FONT_DRIVER_RENDER_VITA2D))
+   {
+      RARCH_ERR("Font: Failed to initialize font renderer.\n");
+        return false;
+   }
    return vita;
 }
+
+#ifdef HAVE_OVERLAY
+static void vita2d_render_overlay(void *data);
+static void vita2d_free_overlay(vita_video_t *vita)
+{
+   for (unsigned i = 0; i < vita->overlays; i++)
+   {
+      vita2d_free_texture(vita->overlay[i].tex);
+   }
+   free(vita->overlay);
+   vita->overlay = NULL;
+   vita->overlays = 0;
+   //GX_InvalidateTexAll();
+}
+#endif
 
 static void vita2d_gfx_update_viewport(vita_video_t* vita);
 
@@ -117,9 +168,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg)
 {
-   int i, j;
    void *tex_p;
-   unsigned int stride;
    vita_video_t *vita = (vita_video_t *)data;
 
    (void)frame;
@@ -130,6 +179,9 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 
    if (frame)
    {
+      unsigned i, j;
+      unsigned int stride;
+
       if ((width != vita->width || height != vita->height) && vita->texture)
       {
          vita2d_free_texture(vita->texture);
@@ -195,6 +247,11 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       }
    }
 
+#ifdef HAVE_OVERLAY
+   if (vita->overlay_enable)
+      vita2d_render_overlay(vita);
+#endif
+
    if (vita->menu.active && vita->menu.texture)
    {
       if (vita->fullscreen)
@@ -222,7 +279,15 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
          }
       }
    }
-
+   
+   if(msg&&strcmp(msg,"")){
+     driver_t          *driver = driver_get_ptr();
+     const font_renderer_t *font_ctx = driver->font_osd_driver;
+     
+     if (font_ctx->render_msg)
+       font_ctx->render_msg(driver->font_osd_data, msg, NULL);
+   }
+   
    vita2d_end_drawing();
    vita2d_swap_buffers();
 
@@ -316,7 +381,6 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita)
    }
    else if (vita->keep_aspect)
    {
-      float delta;
       float desired_aspect = video_driver_get_aspect_ratio();
       if (vita->rotation == ORIENTATION_VERTICAL ||
             vita->rotation == ORIENTATION_FLIPPED_ROTATED){
@@ -340,6 +404,8 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita)
       else
 #endif
       {
+         float delta;
+
          if ((fabsf(device_aspect - desired_aspect) < 0.0001f))
          {
             /* If the aspect ratios of screen and desired aspect
@@ -552,7 +618,7 @@ static const video_poke_interface_t vita_poke_interface = {
    NULL,
    NULL,
    NULL
-};
+ };
 
 static void vita2d_gfx_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
@@ -560,6 +626,146 @@ static void vita2d_gfx_get_poke_interface(void *data,
    (void)data;
    *iface = &vita_poke_interface;
 }
+
+#ifdef HAVE_OVERLAY
+static void vita2d_overlay_tex_geom(void *data, unsigned image, float x, float y, float w, float h);
+static void vita2d_overlay_vertex_geom(void *data, unsigned image, float x, float y, float w, float h);
+
+static bool vita2d_overlay_load(void *data, const void *image_data, unsigned num_images)
+{
+   unsigned i,j,k;
+   unsigned int stride, pitch;
+   vita_video_t *vita = (vita_video_t*)data;
+   const struct texture_image *images = (const struct texture_image*)image_data;
+
+   vita2d_free_overlay(vita);
+   vita->overlay = (struct vita_overlay_data*)calloc(num_images, sizeof(*vita->overlay));
+   if (!vita->overlay)
+      return false;
+
+   vita->overlays = num_images;
+
+   for (i = 0; i < num_images; i++)
+   {
+      struct vita_overlay_data *o = (struct vita_overlay_data*)&vita->overlay[i];
+      o->width = images[i].width;
+      o->height = images[i].height;
+      o->tex = vita2d_create_empty_texture_format(o->width , o->height, SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB);
+      vita2d_texture_set_filters(o->tex,SCE_GXM_TEXTURE_FILTER_LINEAR,SCE_GXM_TEXTURE_FILTER_LINEAR);
+      stride = vita2d_texture_get_stride(o->tex);
+      stride                     /= 4;
+      uint32_t             *tex32 = vita2d_texture_get_datap(o->tex);
+      const uint32_t     *frame32 = images[i].pixels;
+      pitch = o->width;
+      for (j = 0; j < o->height; j++)
+         for (k = 0; k < o->width; k++)
+            tex32[k + j*stride] = frame32[k + j*pitch];
+      
+      vita2d_overlay_tex_geom(vita, i, 0, 0, 1, 1); /* Default. Stretch to whole screen. */
+      vita2d_overlay_vertex_geom(vita, i, 0, 0, 1, 1);
+      vita->overlay[i].alpha_mod = 1.0f;
+   }
+
+   return true;
+}
+
+static void vita2d_overlay_tex_geom(void *data, unsigned image,
+      float x, float y, float w, float h)
+{
+   vita_video_t *vita = (vita_video_t*)data;
+   struct vita_overlay_data *o;
+   
+   o = NULL;
+
+   if (vita)
+      o = (struct vita_overlay_data*)&vita->overlay[image];
+
+   if (o)
+   {
+      o->tex_x = x;
+      o->tex_y = y;
+      o->tex_w = w*o->width;
+      o->tex_h = h*o->height;
+   }
+}
+
+static void vita2d_overlay_vertex_geom(void *data, unsigned image,
+         float x, float y, float w, float h)
+{
+   vita_video_t *vita = (vita_video_t*)data;
+   struct vita_overlay_data *o;
+   
+   o = NULL;
+   
+   /* Flipped, so we preserve top-down semantics. */
+   /*y = 1.0f - y;
+   h = -h;*/
+
+   if (vita)
+      o = (struct vita_overlay_data*)&vita->overlay[image];
+
+   if (o)
+   {
+      
+      o->w = w*PSP_FB_WIDTH/o->width;
+      o->h = h*PSP_FB_HEIGHT/o->height;
+      o->x = PSP_FB_WIDTH*(1-w)/2+x;
+      o->y = PSP_FB_HEIGHT*(1-h)/2+y;
+   }
+}
+
+static void vita2d_overlay_enable(void *data, bool state)
+{
+   vita_video_t *vita = (vita_video_t*)data;
+   vita->overlay_enable = state;
+}
+
+static void vita2d_overlay_full_screen(void *data, bool enable)
+{
+   vita_video_t *vita = (vita_video_t*)data;
+   vita->overlay_full_screen = enable;
+}
+
+static void vita2d_overlay_set_alpha(void *data, unsigned image, float mod)
+{
+   vita_video_t *vita = (vita_video_t*)data;
+   vita->overlay[image].alpha_mod = mod;
+}
+
+static void vita2d_render_overlay(void *data)
+{
+   vita_video_t *vita = (vita_video_t*)data;
+   for (unsigned i = 0; i < vita->overlays; i++)
+   {
+    vita2d_draw_texture_tint_part_scale(vita->overlay[i].tex, 
+                                              vita->overlay[i].x, 
+                                              vita->overlay[i].y, 
+                                              vita->overlay[i].tex_x, 
+                                              vita->overlay[i].tex_y, 
+                                              vita->overlay[i].tex_w, 
+                                              vita->overlay[i].tex_h, 
+                                              vita->overlay[i].w, 
+                                              vita->overlay[i].h,
+                                              RGBA8(0xFF,0xFF,0xFF,(uint8_t)(vita->overlay[i].alpha_mod * 255.0f)));
+                                              //RGBA8(0x00, 0x00, 0x00, (uint8_t)(vita->overlay[i].alpha_mod * 255.0f)));
+   }
+}
+
+static const video_overlay_interface_t vita2d_overlay_interface = {
+   vita2d_overlay_enable,
+   vita2d_overlay_load,
+   vita2d_overlay_tex_geom,
+   vita2d_overlay_vertex_geom,
+   vita2d_overlay_full_screen,
+   vita2d_overlay_set_alpha,
+};
+
+static void vita2d_get_overlay_interface(void *data, const video_overlay_interface_t **iface)
+{
+   (void)data;
+   *iface = &vita2d_overlay_interface;
+}
+#endif
 
 video_driver_t video_vita2d = {
    vita2d_gfx_init,
@@ -577,9 +783,8 @@ video_driver_t video_vita2d = {
    vita2d_gfx_viewport_info,
    vita2d_gfx_read_viewport,
    NULL, /* read_frame_raw */
-
 #ifdef HAVE_OVERLAY
-  NULL, /* overlay_interface */
+   vita2d_get_overlay_interface,
 #endif
    vita2d_gfx_get_poke_interface,
 };

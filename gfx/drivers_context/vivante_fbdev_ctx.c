@@ -259,7 +259,7 @@ static gfx_ctx_proc_t gfx_ctx_vivante_get_proc_address(const char *symbol)
    gfx_ctx_proc_t ret;
    void *sym__;
 
-   rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
+   retro_assert(sizeof(void*) == sizeof(void (*)(void)));
 
    sym__ = eglGetProcAddress(symbol);
    memcpy(&ret, &sym__, sizeof(void*));

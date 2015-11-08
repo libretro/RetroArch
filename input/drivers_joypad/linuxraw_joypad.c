@@ -129,7 +129,7 @@ static void handle_plugged_pad(void)
 
    while ((rc = read(g_notify, event_buf, event_size)) >= 0)
    {
-      struct inotify_event *event = NULL;
+      struct inotify_event *event = (struct inotify_event*)&event_buf[0];
 
       /* Can read multiple events in one read() call. */
 

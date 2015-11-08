@@ -25,6 +25,10 @@
 #include "video_context_driver.h"
 #include <gfx/math/matrix_4x4.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct shader_backend
 {
    bool (*init)(void *data, const char *path);
@@ -86,6 +90,9 @@ extern const shader_backend_t shader_null_backend;
 
 #endif
 
+void video_shader_scale(unsigned idx,
+      const shader_backend_t *shader,  struct gfx_fbo_scale *scale);
+
 /**
  * shader_ctx_find_driver:
  * @ident                   : Identifier of shader context driver to find.
@@ -106,5 +113,9 @@ const shader_backend_t *shader_ctx_find_driver(const char *ident);
 const shader_backend_t *shader_ctx_init_first(void);
 
 struct video_shader *video_shader_driver_get_current_shader(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

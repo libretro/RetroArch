@@ -72,7 +72,6 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
    struct rarch_main_wrap *params = NULL;
-   char buf[PATH_MAX_LENGTH]         = {0};
 
    (void)args;
 
@@ -96,6 +95,8 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
 #endif
    RARCH_LOG("port dir: [%s]\n", g_defaults.dir.port);
 
+   fill_pathname_join(g_defaults.dir.core_assets, g_defaults.dir.port,
+         "downloads", sizeof(g_defaults.dir.core_assets));
    fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
          "media", sizeof(g_defaults.dir.assets));
    fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
@@ -116,6 +117,11 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "cheats", sizeof(g_defaults.dir.cheats));
    fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
          "remaps", sizeof(g_defaults.dir.remap));
+
+#ifdef VITA
+   fill_pathname_join(g_defaults.dir.overlay, g_defaults.dir.core,
+         "overlays", sizeof(g_defaults.dir.overlay));
+#endif
 
 #ifdef VITA
    params = (struct rarch_main_wrap*)params_data;
@@ -174,7 +180,7 @@ static void frontend_psp_shutdown(bool unused)
 {
    (void)unused;
 #ifdef VITA
-   sceKernelExitProcess(0);
+   return;
 #else
    sceKernelExitGame();
 #endif
@@ -340,14 +346,14 @@ static int frontend_psp_parse_drive_list(void *data)
    file_list_t *list = (file_list_t*)data;
 
 #ifdef VITA
-   menu_list_push(list,
+   menu_entries_push(list,
          "cache0:/", "", MENU_FILE_DIRECTORY, 0, 0);
 #else
-   menu_list_push(list,
+   menu_entries_push(list,
          "ms0:/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          "ef0:/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          "host0:/", "", MENU_FILE_DIRECTORY, 0, 0);
 #endif
 #endif

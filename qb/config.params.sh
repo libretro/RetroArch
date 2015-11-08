@@ -1,6 +1,7 @@
 HAVE_LIBRETRODB=yes     # Disable libretrodb
-HAVE_RGUI=yes           # Disable RGUI
-HAVE_GLUI=auto          # Enable GLUI menu
+HAVE_RGUI=yes           # Disable RGUI menu
+HAVE_MATERIALUI=auto    # Enable MaterialUI menu 
+HAVE_CHEEVOS=no         # Enable Cheevos (achievements)
 HAVE_XMB=auto           # Enable XMB menu
 HAVE_DYNAMIC=yes        # Disable dynamic loading of libretro library
 HAVE_SDL=auto           # SDL support
@@ -66,3 +67,5 @@ HAVE_IMAGEVIEWER=yes    # Built-in image viewer support.
 C89_IMAGEVIEWER=no      # stb_image hates C89
 HAVE_MMAP=auto          # MMAP support
 HAVE_QT=no              # QT companion support
+HAVE_XSHM=auto          # XShm video driver support
+HAVE_CHEEVOS=yes        # Disable Retro Achievements

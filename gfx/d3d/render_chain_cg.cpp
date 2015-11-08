@@ -267,7 +267,6 @@ static void cg_d3d9_renderchain_destroy_stock_shader(void *data)
    if (chain->vStock)
       cgDestroyProgram(chain->vStock);
 }
-#endif
 
 static void renderchain_destroy_shader(void *data, int i)
 {
@@ -281,6 +280,8 @@ static void renderchain_destroy_shader(void *data, int i)
    if (chain->passes[i].vPrg)
       cgDestroyProgram(chain->passes[i].vPrg);
 }
+#endif
+
 
 static void renderchain_set_shader_mvp(void *data, void *shader_data, void *matrix_data)
 {
@@ -1333,8 +1334,7 @@ static void renderchain_blit_to_texture(void *data,
 {
    D3DLOCKED_RECT d3dlr;
    cg_renderchain_t *chain = (cg_renderchain_t*)data;
-   Pass *first          = (Pass*)&chain->passes[0];
-   driver_t *driver     = driver_get_ptr();
+   Pass             *first = (Pass*)&chain->passes[0];
 
    if (first->last_width != width || first->last_height != height)
    {

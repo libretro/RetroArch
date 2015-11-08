@@ -30,9 +30,9 @@
 
 #ifdef ANDROID
 #include <sys/system_properties.h>
-#endif
 #ifdef __arm__
 #include <machine/cpu-features.h>
+#endif
 #endif
 
 #include <boolean.h>
@@ -1229,7 +1229,7 @@ static bool frontend_linux_powerstate_check_apm(
    ssize_t length      = 0;
    char  *buf          = NULL;
    char *str           = NULL;
-   
+
    if (retro_read_file(proc_apm_path, (void**)&buf, &length) != 1)
       goto error;
 
@@ -1517,7 +1517,6 @@ static void frontend_linux_get_env(int *argc,
 {
 #ifdef ANDROID
    int32_t major, minor, rel;
-   int perms = 0;
    char device_model[PROP_VALUE_MAX] = {0};
    char device_id[PROP_VALUE_MAX]    = {0};
    struct rarch_main_wrap      *args = NULL;
@@ -1525,7 +1524,6 @@ static void frontend_linux_get_env(int *argc,
    jobject                       obj = NULL;
    jstring                      jstr = NULL;
    struct android_app   *android_app = (struct android_app*)data;
-   char buf[PATH_MAX_LENGTH]         = {0};
 
    if (!android_app)
       return;
@@ -1748,7 +1746,8 @@ static void frontend_linux_get_env(int *argc,
          (*env)->NewStringUTF(env, "DATADIR"));
 
    if (android_app->getStringExtra && jstr)
-   {      
+   {
+      int perms = 0;
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       *app_dir = '\0';
@@ -1779,10 +1778,12 @@ static void frontend_linux_get_env(int *argc,
          RARCH_LOG("Application location: [%s].\n", app_dir);
          if (args && *app_dir)
          {
+            char buf[PATH_MAX_LENGTH];
+
             fill_pathname_join(g_defaults.dir.assets, app_dir,
                   "assets", sizeof(g_defaults.dir.assets));
-            fill_pathname_join(g_defaults.dir.extraction, app_dir,
-                  "tmp", sizeof(g_defaults.dir.extraction));
+            fill_pathname_join(g_defaults.dir.cache, app_dir,
+                  "tmp", sizeof(g_defaults.dir.cache));
             fill_pathname_join(g_defaults.dir.shader, app_dir,
                   "shaders", sizeof(g_defaults.dir.shader));
             fill_pathname_join(g_defaults.dir.overlay, app_dir,
@@ -1855,6 +1856,11 @@ static void frontend_linux_get_env(int *argc,
                   fill_pathname_join(g_defaults.dir.system,
                         ext_dir, "system", sizeof(g_defaults.dir.system));
                   path_mkdir(g_defaults.dir.system);
+
+                  fill_pathname_join(g_defaults.dir.menu_config,
+                        ext_dir, "config", sizeof(g_defaults.dir.menu_config));
+                  path_mkdir(g_defaults.dir.menu_config);
+
                   break;
                case SDCARD_NOT_WRITABLE:
                   fill_pathname_join(g_defaults.dir.sram,
@@ -1866,6 +1872,10 @@ static void frontend_linux_get_env(int *argc,
                   fill_pathname_join(g_defaults.dir.system,
                         app_dir, "system", sizeof(g_defaults.dir.system));
                   path_mkdir(g_defaults.dir.system);
+
+                  fill_pathname_join(g_defaults.dir.menu_config,
+                        app_dir, "config", sizeof(g_defaults.dir.menu_config));
+                  path_mkdir(g_defaults.dir.menu_config);
                   break;
                case SDCARD_ROOT_WRITABLE:
                default:
@@ -1886,7 +1896,6 @@ static void frontend_linux_get_env(int *argc,
             path_mkdir(buf);
 
             /* create save and system directories in the internal sd too */
-
             fill_pathname_join(buf,
                   ext_dir, "saves", sizeof(buf));
             path_mkdir(buf);
@@ -1926,7 +1935,7 @@ static void frontend_linux_get_env(int *argc,
       g_defaults.settings.video_refresh_rate = 59.65;
 
 #if 0
-   /* Explicitly disable input overlay by default 
+   /* Explicitly disable input overlay by default
     * for gamepad-like/console devices. */
                   if (device_is_game_console(device_model))
                      g_defaults.settings.input_overlay_enable = false;
@@ -1967,21 +1976,10 @@ static void frontend_linux_get_env(int *argc,
                         "overlay", sizeof(g_defaults.dir.overlay));
                   fill_pathname_join(g_defaults.dir.osk_overlay, base_path,
                         "overlay", sizeof(g_defaults.dir.osk_overlay));
-
-                  if(home)
-                  {
-                     fill_pathname_join(g_defaults.dir.screenshot, home,
-                           "Pictures", sizeof(g_defaults.dir.screenshot));
-                     fill_pathname_join(g_defaults.dir.core_assets, home,
-                           "Downloads", sizeof(g_defaults.dir.core_assets));
-                  }
-                  else
-                  {
-                     fill_pathname_join(g_defaults.dir.screenshot, home,
-                           "retroArch/screenshots", sizeof(g_defaults.dir.screenshot));
-                     fill_pathname_join(g_defaults.dir.core_assets, home,
-                           "retroarch/downloads", sizeof(g_defaults.dir.core_assets));
-                  }
+                  fill_pathname_join(g_defaults.dir.core_assets, base_path,
+                        "downloads", sizeof(g_defaults.dir.core_assets));
+                  fill_pathname_join(g_defaults.dir.screenshot, base_path,
+                        "screenshots", sizeof(g_defaults.dir.screenshot));
 #endif
 }
 
@@ -2080,14 +2078,14 @@ static int frontend_android_parse_drive_list(void *data)
    file_list_t *list = (file_list_t*)data;
 
    // MENU_FILE_DIRECTORY is not working with labels, placeholders for now
-   menu_list_push(list,
+   menu_entries_push(list,
          app_dir, "Application Dir", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          ext_dir, "External Application Dir", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          sdcard_dir, "Internal Memory", MENU_FILE_DIRECTORY, 0, 0);
 
-   menu_list_push(list, "/", "",
+   menu_entries_push(list, "/", "",
          MENU_FILE_DIRECTORY, 0, 0);
 
    return 0;

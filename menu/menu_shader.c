@@ -35,7 +35,6 @@ void menu_shader_manager_init(menu_handle_t *menu)
 {
 #ifdef HAVE_SHADER_MANAGER
    uint32_t ext_hash;
-   char preset_path[PATH_MAX_LENGTH];
    const char *ext             = NULL;
    struct video_shader *shader = NULL;
    config_file_t *conf         = NULL;
@@ -99,6 +98,7 @@ void menu_shader_manager_init(menu_handle_t *menu)
          break;
       default:
          {
+            char preset_path[PATH_MAX_LENGTH];
             const char *shader_dir = *settings->video.shader_dir ?
                settings->video.shader_dir : settings->system_directory;
 

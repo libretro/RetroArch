@@ -320,7 +320,7 @@ static gfx_ctx_proc_t android_gfx_ctx_get_proc_address(
    gfx_ctx_proc_t ret;
    void *sym__ = NULL;
 
-   rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
+   retro_assert(sizeof(void*) == sizeof(void (*)(void)));
 
    sym__ = eglGetProcAddress(symbol);
    memcpy(&ret, &sym__, sizeof(void*));

@@ -653,7 +653,8 @@ static bool d3d_construct(d3d_video_t *d3d,
    }
 
    video_monitor_get_fps(buffer, sizeof(buffer), NULL, 0);
-   sprintf(buffer, "%s || Direct3D", buffer);
+
+   strlcat(buffer, " || Direct3D", sizeof(buffer));
 
    d3d->hWnd = CreateWindowEx(0, "RetroArch", buffer,
          info->fullscreen ?
@@ -755,15 +756,15 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
 {
    /* Default to Direct3D9 for now.
    TODO: GL core contexts through ANGLE? */
-   enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
-   unsigned major       = 9;
    unsigned minor       = 0;
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
-
 #if defined(HAVE_D3D8)
-   api                  = GFX_CTX_DIRECT3D8_API;
-   major                = 8;
+   unsigned major       = 8;
+   enum gfx_ctx_api api = GFX_CTX_DIRECT3D8_API;
+#else
+   unsigned major       = 9;
+   enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
 #endif
    return gfx_ctx_init_first(driver->video_data,
          settings->video.context_driver,
@@ -952,7 +953,7 @@ static bool d3d_init_imports(d3d_video_t *d3d)
       return true;
 
    tracker_info.wram      = (uint8_t*)
-      pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+      core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
    tracker_info.info      = d3d->shader.variable;
    tracker_info.info_elem = d3d->shader.variables;
 

@@ -19,6 +19,7 @@
 #include <ctype.h>
 
 #include "../general.h"
+#include "keyboard_line.h"
 
 struct input_keyboard_line
 {

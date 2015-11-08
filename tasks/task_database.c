@@ -28,14 +28,17 @@
 #include "../msg_hash.h"
 #include "../general.h"
 
-#define CB_DB_SCAN_FILE    0x70ce56d2U
-#define CB_DB_SCAN_FOLDER  0xde2bef8eU
+#define CB_DB_SCAN_FILE                0x70ce56d2U
+#define CB_DB_SCAN_FOLDER              0xde2bef8eU
 
-#define HASH_EXTENSION_ZIP 0x0b88c7d8U
-#define HASH_EXTENSION_CUE 0x0b886782U
+#define HASH_EXTENSION_ZIP             0x0b88c7d8U
+#define HASH_EXTENSION_CUE             0x0b886782U
+#define HASH_EXTENSION_CUE_UPPERCASE   0x0b87db22U
+#define HASH_EXTENSION_ISO             0x0b8880d0U
+#define HASH_EXTENSION_ISO_UPPERCASE   0x0b87f470U
 
 #ifndef COLLECTION_SIZE
-#define COLLECTION_SIZE 99999
+#define COLLECTION_SIZE                99999
 #endif
 
 typedef struct database_state_handle
@@ -121,15 +124,39 @@ static int database_info_iterate_start
    return 0;
 }
 
-static int cue_get_serial(database_state_handle_t *db_state,
+static int iso_get_serial(database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name, char* serial)
 {
    int rv;
-   char track_path[PATH_MAX_LENGTH];
    int32_t offset = 0;
    const char* system_name = NULL;
 
-   rv = find_first_data_track(name, &offset, track_path, PATH_MAX_LENGTH);
+   if ((rv = detect_system(name, offset, &system_name)) < 0)
+      return rv;
+
+   if (strcmp(system_name, "psp") == 0)
+   {
+      if (detect_psp_game(name, serial) == 0)
+         return 0;
+      RARCH_LOG("Found disk label '%s'\n", serial);
+   }
+   else if (strcmp(system_name, "ps1") == 0)
+   {
+      if (detect_ps1_game(name, serial) == 0)
+         return 0;
+      RARCH_LOG("Found disk label '%s'\n", serial);
+   }
+
+   return 0;
+}
+
+static int cue_get_serial(database_state_handle_t *db_state,
+      database_info_handle_t *db, const char *name, char* serial)
+{
+   char track_path[PATH_MAX_LENGTH];
+   int32_t offset = 0;
+   int rv = find_first_data_track(name, &offset, track_path, PATH_MAX_LENGTH);
+    
    if (rv < 0)
    {
       RARCH_LOG("Could not find valid data track: %s\n", strerror(-rv));
@@ -138,19 +165,7 @@ static int cue_get_serial(database_state_handle_t *db_state,
 
    RARCH_LOG("Reading 1st data track...\n");
 
-   if ((rv = detect_system(track_path, offset, &system_name)) < 0)
-      return rv;
-
-   RARCH_LOG("Detected %s media\n", system_name);
-
-   if (strcmp(system_name, "ps1") == 0)
-   {
-      if (detect_ps1_game(track_path, serial) == 0)
-         return 0;
-      RARCH_LOG("Found disk label '%s'\n", serial);
-   }
-
-   return 0;
+   return iso_get_serial(db_state, db, track_path, serial);
 }
 
 static int database_info_iterate_playlist(
@@ -176,7 +191,15 @@ static int database_info_iterate_playlist(
          return 1;
 #endif
       case HASH_EXTENSION_CUE:
+      case HASH_EXTENSION_CUE_UPPERCASE:
+         db_state->serial[0] = '\0';
          cue_get_serial(db_state, db, name, db_state->serial);
+         db->type = DATABASE_TYPE_SERIAL_LOOKUP;
+         return 1;
+      case HASH_EXTENSION_ISO:
+      case HASH_EXTENSION_ISO_UPPERCASE:
+         db_state->serial[0] = '\0';
+         iso_get_serial(db_state, db, name, db_state->serial);
          db->type = DATABASE_TYPE_SERIAL_LOOKUP;
          return 1;
       default:
@@ -384,10 +407,16 @@ static int database_info_iterate_serial_lookup(
 
    if (db_state->entry_index == 0)
    {
-      char query[50] = {0};
-      snprintf(query, sizeof(query), "{'serial': '%s'}", db_state->serial);
+      char query[50];
+      char *serial_buf = bin_to_hex_alloc((uint8_t*)db_state->serial, 10 * sizeof(uint8_t));
 
+      if (!serial_buf)
+         return 1;
+
+      snprintf(query, sizeof(query), "{'serial': b'%s'}", serial_buf);
       database_info_list_iterate_new(db_state, query);
+
+      free(serial_buf);
    }
 
    if (db_state->info)
@@ -396,11 +425,11 @@ static int database_info_iterate_serial_lookup(
 
       if (db_info_entry && db_info_entry->serial)
       {
-#if 1
+#if 0
          RARCH_LOG("serial: %s , entry serial: %s (%s).\n",
                    db_state->serial, db_info_entry->serial, db_info_entry->name);
 #endif
-         if (db_state->serial == db_info_entry->serial)
+         if (!strcmp(db_state->serial, db_info_entry->serial))
             database_info_list_iterate_found_match(db_state, db, NULL);
       }
    }
@@ -514,7 +543,7 @@ void rarch_main_data_db_iterate(bool is_thread)
    {
       case DATABASE_STATUS_ITERATE_BEGIN:
          if (db_state && !db_state->list)
-            db_state->list = dir_list_new_special(NULL, DIR_LIST_DATABASES);
+            db_state->list = dir_list_new_special(NULL, DIR_LIST_DATABASES, NULL);
          db->status = DATABASE_STATUS_ITERATE_START;
          break;
       case DATABASE_STATUS_ITERATE_START:
@@ -572,9 +601,12 @@ do_poll:
 void rarch_main_data_db_init_msg_queue(void)
 {
    db_handle_t      *db   = (db_handle_t*)db_ptr;
+
+   if (!db)
+      return;
    
-   if (!db || !db->msg_queue)
-      rarch_assert(db->msg_queue         = msg_queue_new(8));
+   if (!db->msg_queue)
+      retro_assert(db->msg_queue         = msg_queue_new(8));
 }
 
 msg_queue_t *rarch_main_data_db_get_msg_queue_ptr(void)

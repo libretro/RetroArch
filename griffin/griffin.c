@@ -22,9 +22,7 @@
 #define HAVE_COMPRESSION
 #endif
 
-#if defined(_MSC_VER)
 #include <compat/posix_string.h>
-#endif
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
 #include "../netlogger.c"
@@ -53,7 +51,22 @@ PERFORMANCE
 /*============================================================
 COMPATIBILITY
 ============================================================ */
-#include "../compat/compat.c"
+#ifndef HAVE_GETOPT_LONG
+#include "../compat/compat_getopt.c"
+#endif
+
+#ifndef HAVE_STRCASESTR
+#include "../compat/compat_strcasestr.c"
+#endif
+
+#ifndef HAVE_STRL
+#include "../compat/compat_strl.c"
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../compat/compat_posix_string.c"
+#endif
+
 #include "../libretro-common/compat/compat_fnmatch.c"
 #include "../libretro-common/memmap/memalign.c"
 
@@ -69,6 +82,20 @@ CONFIG FILE
 #include "../libretro-common/file/config_file.c"
 #include "../libretro-common/file/config_file_userdata.c"
 #include "../core_options.c"
+
+/*============================================================
+ACHIEVEMENTS
+============================================================ */
+#if defined(HAVE_CHEEVOS) && defined(HAVE_THREADS)
+#if !defined(HAVE_NETPLAY)
+#include "../libretro-common/net/net_http.c"
+#endif
+
+#include "../libretro-common/formats/json/jsonsax.c"
+#include "../libretro-common/utils/md5.c"
+#include "../net_http_special.c"
+#include "../cheevos.c"
+#endif
 
 /*============================================================
 CHEATS
@@ -274,6 +301,11 @@ FONTS
 #include "../gfx/drivers_font/xdk360_fonts.c"
 #endif
 
+#if defined(VITA)
+#include "../vita/stockfont.c"
+#include "../gfx/drivers_font/vita2d_font.c"
+#endif
+
 /*============================================================
 INPUT
 ============================================================ */
@@ -473,7 +505,8 @@ AUDIO
 #elif defined(PSP) || defined(VITA)
 #include "../audio/drivers/psp_audio.c"
 #elif defined(_3DS)
-#include "../audio/drivers/ctr_audio.c"
+#include "../audio/drivers/ctr_csnd_audio.c"
+#include "../audio/drivers/ctr_dsp_audio.c"
 #endif
 
 #ifdef HAVE_DSOUND
@@ -562,7 +595,7 @@ DYNAMIC
 CORES
 ============================================================ */
 #ifdef HAVE_FFMPEG
-#include "../cores/ffmpeg_core.c"
+#include "../cores/libretro-ffmpeg/ffmpeg_core.c"
 #endif
 
 #include "../cores/dynamic_dummy.c"
@@ -573,13 +606,12 @@ FILE
 #include "../content.c"
 #include "../libretro-common/file/file_path.c"
 #include "../file_path_special.c"
-#ifndef IOS
 #include "../libretro-common/file/dir_list.c"
-#endif
 #include "../libretro-common/file/retro_dirent.c"
 #include "../libretro-common/file/retro_file.c"
 #include "../libretro-common/file/retro_stat.c"
 #include "../dir_list_special.c"
+#include "../string_list_special.c"
 #include "../libretro-common/string/string_list.c"
 #include "../libretro-common/string/stdstring.c"
 #include "../file_ops.c"
@@ -703,6 +735,8 @@ THREAD
 #include "../thread/xenon_sdl_threads.c"
 #elif defined(HAVE_THREADS)
 #include "../libretro-common/rthreads/rthreads.c"
+#include "../libretro-common/rthreads/rsemaphore.c"
+#include "../libretro-common/rthreads/async_job.c"
 #include "../gfx/video_thread_wrapper.c"
 #include "../audio/audio_thread_wrapper.c"
 #include "../autosave.c"
@@ -748,9 +782,7 @@ MENU
 #include "../menu/menu_entry.c"
 #include "../menu/menu_entries.c"
 #include "../menu/menu_setting.c"
-#include "../menu/menu_list.c"
 #include "../menu/menu_cbs.c"
-#include "../menu/menu_video.c"
 #include "../menu/cbs/menu_cbs_ok.c"
 #include "../menu/cbs/menu_cbs_cancel.c"
 #include "../menu/cbs/menu_cbs_select.c"
@@ -763,7 +795,6 @@ MENU
 #include "../menu/cbs/menu_cbs_deferred_push.c"
 #include "../menu/cbs/menu_cbs_scan.c"
 #include "../menu/cbs/menu_cbs_get_value.c"
-#include "../menu/menu_iterate.c"
 #include "../menu/cbs/menu_cbs_up.c"
 #include "../menu/cbs/menu_cbs_down.c"
 #include "../menu/cbs/menu_cbs_contentlist_switch.c"
@@ -784,6 +815,7 @@ MENU
 #include "../menu/intl/menu_hash_us.c"
 
 #include "../menu/drivers/null.c"
+#include "../menu/drivers/menu_generic.c"
 #endif
 
 
@@ -801,8 +833,12 @@ MENU
 #include "../menu/drivers/xmb.c"
 #endif
 
-#ifdef HAVE_GLUI
-#include "../menu/drivers/glui.c"
+#ifdef HAVE_MATERIALUI
+#include "../menu/drivers/materialui.c"
+#endif
+
+#ifdef HAVE_ZARCH
+#include "../menu/drivers/zarch.c"
 #endif
 
 #endif

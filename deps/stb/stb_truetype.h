@@ -996,7 +996,7 @@ STBTT_DEF int stbtt_FindGlyphIndex(const stbtt_fontinfo *info, int unicode_codep
    }
    else if (format == 2)
    {
-      rarch_assert(0); /* @TODO: high-byte mapping for japanese/chinese/korean */
+      retro_assert(0); /* @TODO: high-byte mapping for japanese/chinese/korean */
       return 0;
    }
    else if (format == 4)
@@ -1036,7 +1036,7 @@ STBTT_DEF int stbtt_FindGlyphIndex(const stbtt_fontinfo *info, int unicode_codep
          stbtt_uint16 offset, start;
          stbtt_uint16 item = (stbtt_uint16) ((search - endCount) >> 1);
 
-         rarch_assert(unicode_codepoint <= ttUSHORT(data + endCount + 2*item));
+         retro_assert(unicode_codepoint <= ttUSHORT(data + endCount + 2*item));
          start = ttUSHORT(data + index_map + 14 + segcount*2 + 2 + 2*item);
          if (unicode_codepoint < start)
             return 0;
@@ -1074,7 +1074,7 @@ STBTT_DEF int stbtt_FindGlyphIndex(const stbtt_fontinfo *info, int unicode_codep
       return 0; /* not found */
    }
    /* @TODO */
-   rarch_assert(0);
+   retro_assert(0);
    return 0;
 }
 
@@ -1358,7 +1358,7 @@ STBTT_DEF int stbtt_GetGlyphShape(const stbtt_fontinfo *info, int glyph_index, s
          else
          {
             /* @TODO handle matching point */
-            rarch_assert(0);
+            retro_assert(0);
          }
          if (flags & (1<<3))
          {
@@ -1431,7 +1431,7 @@ STBTT_DEF int stbtt_GetGlyphShape(const stbtt_fontinfo *info, int glyph_index, s
    else if (numberOfContours < 0)
    {
       /* @TODO other compound variations? */
-      rarch_assert(0);
+      retro_assert(0);
    }
    else
    {
@@ -1787,7 +1787,7 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap *result, stbtt__edge *e,
             stbtt__active_edge * z = *step;
             if (z->ey <= scan_y) {
                *step = z->next; // delete from list
-               rarch_assert(z->direction);
+               retro_assert(z->direction);
                z->direction = 0;
                stbtt__hheap_free(&hh, z);
             } else {
@@ -2099,7 +2099,7 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap *result, stbtt__edge *e,
          stbtt__active_edge * z = *step;
          if (z->ey <= scan_y_top) {
             *step = z->next; /* delete from list */
-            rarch_assert(z->direction);
+            retro_assert(z->direction);
             z->direction = 0;
             stbtt__hheap_free(&hh, z);
          } else {
@@ -2584,8 +2584,8 @@ STBTT_DEF int stbtt_BakeFontBitmap(
          y = bottom_y, x = 1; /* advance to next row */
       if (y + gh + 1 >= ph) /* check if it fits vertically AFTER potentially moving to next row */
          return -i;
-      rarch_assert(x+gw < pw);
-      rarch_assert(y+gh < ph);
+      retro_assert(x+gw < pw);
+      retro_assert(y+gh < ph);
       stbtt_MakeGlyphBitmap(&f, pixels+x+y*pw, gw,gh,pw, scale,scale, g);
       chardata[i].x0 = (stbtt_int16) x;
       chardata[i].y0 = (stbtt_int16) y;
@@ -2748,8 +2748,8 @@ STBTT_DEF void stbtt_PackEnd  (stbtt_pack_context *spc)
 STBTT_DEF void stbtt_PackSetOversampling(stbtt_pack_context *spc,
       unsigned int h_oversample, unsigned int v_oversample)
 {
-   rarch_assert(h_oversample <= STBTT_MAX_OVERSAMPLE);
-   rarch_assert(v_oversample <= STBTT_MAX_OVERSAMPLE);
+   retro_assert(h_oversample <= STBTT_MAX_OVERSAMPLE);
+   retro_assert(v_oversample <= STBTT_MAX_OVERSAMPLE);
    if (h_oversample <= STBTT_MAX_OVERSAMPLE)
       spc->h_oversample = h_oversample;
    if (v_oversample <= STBTT_MAX_OVERSAMPLE)
@@ -2808,7 +2808,7 @@ static void stbtt__h_prefilter(unsigned char *pixels, int w, int h,
 
       for (; i < w; ++i)
       {
-         rarch_assert(pixels[i] == 0);
+         retro_assert(pixels[i] == 0);
          total -= buffer[i & STBTT__OVER_MASK];
          pixels[i] = (unsigned char) (total / kernel_width);
       }
@@ -2869,7 +2869,7 @@ static void stbtt__v_prefilter(unsigned char *pixels, int w, int h, int stride_i
 
       for (; i < h; ++i)
       {
-         rarch_assert(pixels[i*stride_in_bytes] == 0);
+         retro_assert(pixels[i*stride_in_bytes] == 0);
          total -= buffer[i & STBTT__OVER_MASK];
          pixels[i*stride_in_bytes] = (unsigned char) (total / kernel_width);
       }

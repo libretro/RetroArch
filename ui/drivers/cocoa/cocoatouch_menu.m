@@ -26,6 +26,8 @@
 #include "../../../input/drivers/cocoa_input.h"
 
 #include "../../../menu/menu_entry.h"
+#include "../../../menu/drivers/menu_generic.h"
+#include "../../../runloop_data.h"
 
 // Menu Support
 
@@ -611,7 +613,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
     switch (buttonIndex)
     {
         case 0:
-            menu_iterate(true, MENU_ACTION_OK);
+            generic_menu_iterate(MENU_ACTION_OK);
             break;
     }
 }
@@ -745,7 +747,14 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (void)menuSelect: (uint32_t) i
 {
+  unsigned j;
   menu_entry_select(i);
+    
+  if (!rarch_main_data_active())
+      return;
+    
+  for (j = 0; j < 32; j++)
+     rarch_main_data_iterate();
 }
 
 - (void)menuBack

@@ -75,10 +75,6 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Spielstand-Einstellungen";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
          return "Zurückspul-Einstellungen";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
-         return "Kalibriere obere, linke Ecke";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
-         return "Kalibriere untere, rechte Ecke";
       case MENU_VALUE_SHADER:
          return "Shader";
       case MENU_VALUE_CHEAT:
@@ -93,11 +89,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "RetroKeyboard";
       case MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Warte auf Audio-Frames";
-      case MENU_LABEL_VALUE_INPUT_BIND_MODE:
-         return "Eingabe-Bind-Modus";
-      case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "Zeige Autoconfig-Beschriftungen";
-      case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
+      case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW: /* TODO/FIXME */
          return "Zeige Core-Eingabe-Beschriftungen";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
          return "Verstecke unzugewiesene Core-Eingabe-Beschriftungen";
@@ -155,7 +147,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Aktiviere Aufnahmefunktion";
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "Aktiviere GPU-Aufnahmefunktion";
-      case MENU_LABEL_VALUE_RECORD_PATH:
+      case MENU_LABEL_VALUE_RECORD_PATH: /* FIXME/UPDATE */
          return "Aufnahmepfad";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "Verwende Aufnahme-Ausgabeverzeichnis";
@@ -187,7 +179,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "System/BIOS-Verzeichnis";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Cheat-Datei-Verzeichnis";
-      case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
+      case MENU_LABEL_VALUE_CACHE_DIRECTORY: /* FIXME/UPDATE */
          return "Entpack-Verzeichnis";
       case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Audio-Filter-Verzeichnis";
@@ -489,10 +481,8 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Buildbot-Cores-URL";
       case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "Buildbot-Assets-URL";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "Navigation horizontal umbrechen";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "Navigation vertikal umbrechen";
+      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND:
+         return "Navigation umbrechen";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "Bekannte Dateiendungen filtern";
       case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
@@ -558,7 +548,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
       case MENU_LABEL_VALUE_BOXART:
          return "Zeige Boxart";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
-         return "Core-Input-Remapping-Optionen";
+         return "Core-Input-Optionen";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Shader-Optionen";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:

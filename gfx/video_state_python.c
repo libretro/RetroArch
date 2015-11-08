@@ -33,7 +33,7 @@ static PyObject* py_read_wram(PyObject *self, PyObject *args)
    unsigned addr;
    size_t   max;
    const uint8_t *data = (const uint8_t*)
-      pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+      core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
 
    (void)self;
 
@@ -43,7 +43,7 @@ static PyObject* py_read_wram(PyObject *self, PyObject *args)
       return Py_None;
    }
 
-   max = pretro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
+   max = core.retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
 
    if (!PyArg_ParseTuple(args, "I", &addr))
       return NULL;
@@ -62,7 +62,7 @@ static PyObject* py_read_vram(PyObject *self, PyObject *args)
    unsigned addr;
    size_t max;
    const uint8_t *data = (const uint8_t*)
-      pretro_get_memory_data(RETRO_MEMORY_VIDEO_RAM);
+      core.retro_get_memory_data(RETRO_MEMORY_VIDEO_RAM);
 
    (void)self;
 
@@ -72,7 +72,7 @@ static PyObject* py_read_vram(PyObject *self, PyObject *args)
       return Py_None;
    }
 
-   max = pretro_get_memory_size(RETRO_MEMORY_VIDEO_RAM);
+   max = core.retro_get_memory_size(RETRO_MEMORY_VIDEO_RAM);
 
    if (!PyArg_ParseTuple(args, "I", &addr))
       return NULL;

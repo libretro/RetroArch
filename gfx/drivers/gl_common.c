@@ -64,22 +64,25 @@ void gl_load_texture_data(GLuint id,
    glBindTexture(GL_TEXTURE_2D, id);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
+    
+#if defined(HAVE_OPENGLES2) || defined(HAVE_PSGL) || defined(OSX_PPC)
+   if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR)
+       filter_type = TEXTURE_FILTER_LINEAR;
+   if (filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
+       filter_type = TEXTURE_FILTER_NEAREST;
+#endif
 
    switch (filter_type)
    {
       case TEXTURE_FILTER_MIPMAP_LINEAR:
          min_filter = GL_LINEAR_MIPMAP_NEAREST;
          mag_filter = GL_LINEAR;
-#ifndef HAVE_PSGL
          want_mipmap = true;
-#endif
          break;
       case TEXTURE_FILTER_MIPMAP_NEAREST:
          min_filter = GL_NEAREST_MIPMAP_NEAREST;
          mag_filter = GL_NEAREST;
-#ifndef HAVE_PSGL
          want_mipmap = true;
-#endif
          break;
       case TEXTURE_FILTER_NEAREST:
          min_filter = GL_NEAREST;

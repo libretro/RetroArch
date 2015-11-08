@@ -74,6 +74,7 @@ int cb_core_content_list(void *data_, size_t len);
 static http_handle_t *http_ptr;
 
 #ifdef HAVE_ZLIB
+#ifdef HAVE_MENU
 static int zlib_extract_core_callback(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata)
@@ -106,7 +107,9 @@ error:
    return 0;
 }
 #endif
+#endif
 
+#ifdef HAVE_MENU
 static int cb_generic_download(void *data, size_t len,
       const char *dir_path)
 {
@@ -217,8 +220,8 @@ static int cb_update_databases(void *data, size_t len)
 
 static int cb_update_overlays(void *data, size_t len)
 {
-   global_t                *global       = global_get_ptr();
-   return cb_generic_download(data, len, global->dir.overlay);
+   settings_t              *settings     = config_get_ptr();
+   return cb_generic_download(data, len, settings->overlay_directory);
 }
 
 static int cb_update_cheats(void *data, size_t len)
@@ -226,6 +229,7 @@ static int cb_update_cheats(void *data, size_t len)
    settings_t              *settings     = config_get_ptr();
    return cb_generic_download(data, len, settings->cheat_database);
 }
+#endif
 
 static int rarch_main_data_http_con_iterate_transfer(http_handle_t *http)
 {
@@ -292,6 +296,7 @@ static int cb_http_conn_default(void *data_, size_t len)
 
       switch (label_hash)
       {
+#ifdef HAVE_MENU
          case CB_CORE_UPDATER_DOWNLOAD:
             http->cb = &cb_core_updater_download;
             break;
@@ -327,6 +332,9 @@ static int cb_http_conn_default(void *data_, size_t len)
             break;
          case CB_UPDATE_OVERLAYS:
             http->cb = &cb_update_overlays;
+            break;
+#endif
+         default:
             break;
       }
    }
@@ -402,12 +410,13 @@ error:
  **/
 static int rarch_main_data_http_iterate_transfer(void *data)
 {
-   http_handle_t *http = (http_handle_t*)data;
+   http_handle_t *http  = (http_handle_t*)data;
    size_t pos  = 0, tot = 0;
-   int percent = 0;
 
    if (!net_http_update(http->handle, &pos, &tot))
    {
+      int percent = 0;
+
       if(tot != 0)
          percent = (unsigned long long)pos * 100
             / (unsigned long long)tot;
@@ -467,7 +476,7 @@ void rarch_main_data_http_init_msg_queue(void)
       return;
 
    if (!http->msg_queue)
-      rarch_assert(http->msg_queue       = msg_queue_new(8));
+      retro_assert(http->msg_queue       = msg_queue_new(8));
 }
 
 

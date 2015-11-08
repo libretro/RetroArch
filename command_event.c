@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -12,6 +12,8 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <ctype.h>
 
 #include <compat/strl.h>
 
@@ -25,6 +27,10 @@
 #include "msg_hash.h"
 #include "retroarch.h"
 #include "dir_list_special.h"
+
+#ifdef HAVE_CHEEVOS
+#include "cheevos.h"
+#endif
 
 #include "runloop_data.h"
 #include "configuration.h"
@@ -112,12 +118,12 @@ static void event_init_autosave(void)
       const char *path = global->savefiles->elems[i].data;
       unsigned    type = global->savefiles->elems[i].attr.i;
 
-      if (pretro_get_memory_size(type) <= 0)
+      if (core.retro_get_memory_size(type) <= 0)
          continue;
 
       global->autosave.list[i] = autosave_new(path,
-            pretro_get_memory_data(type),
-            pretro_get_memory_size(type),
+            core.retro_get_memory_data(type),
+            core.retro_get_memory_size(type),
             settings->autosave_interval);
 
       if (!global->autosave.list[i])
@@ -175,7 +181,7 @@ static void event_init_movie(void)
          RARCH_ERR("%s: \"%s\".\n",
                msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE),
                global->bsv.movie_start_path);
-         rarch_fail(1, "event_init_movie()");
+         retro_fail(1, "event_init_movie()");
       }
 
       global->bsv.movie_playback = true;
@@ -221,7 +227,7 @@ static void event_disk_control_set_eject(bool new_state, bool print_log)
    char msg[PATH_MAX_LENGTH] = {0};
    bool error                = false;
    rarch_system_info_t *info = rarch_system_info_get_ptr();
-   const struct retro_disk_control_callback *control = 
+   const struct retro_disk_control_callback *control =
       info ? (const struct retro_disk_control_callback*)&info->disk_control : NULL;
 
    if (!control || !control->get_num_images)
@@ -279,7 +285,7 @@ static void event_disk_control_set_index(unsigned idx)
    unsigned num_disks;
    char msg[PATH_MAX_LENGTH] = {0};
    rarch_system_info_t                      *info    = rarch_system_info_get_ptr();
-   const struct retro_disk_control_callback *control = 
+   const struct retro_disk_control_callback *control =
       info ? (const struct retro_disk_control_callback*)&info->disk_control : NULL;
    bool error = false;
 
@@ -368,7 +374,7 @@ void event_disk_control_append_image(const char *path)
        * started out in a single disk case, and that this way
        * of doing it makes the most sense. */
       rarch_set_paths(path);
-      rarch_fill_pathnames();
+      rarch_ctl(RARCH_ACTION_STATE_FILL_PATHNAMES, NULL);
    }
 
    event_command(EVENT_CMD_AUTOSAVE_INIT);
@@ -513,7 +519,7 @@ static void event_init_controllers(void)
       {
          case RETRO_DEVICE_NONE:
             RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
-            pretro_set_controller_port_device(i, device);
+            core.retro_set_controller_port_device(i, device);
             break;
          case RETRO_DEVICE_JOYPAD:
             break;
@@ -523,7 +529,7 @@ static void event_init_controllers(void)
              * cores needlessly. */
             RARCH_LOG("Connecting %s (ID: %u) to port %u.\n", ident,
                   device, i + 1);
-            pretro_set_controller_port_device(i, device);
+            core.retro_set_controller_port_device(i, device);
             break;
       }
    }
@@ -532,21 +538,17 @@ static void event_init_controllers(void)
 static void event_deinit_core(bool reinit)
 {
    global_t *global     = global_get_ptr();
-   settings_t *settings = config_get_ptr();
 
-   pretro_unload_game();
-   pretro_deinit();
+#ifdef HAVE_CHEEVOS
+   /* Unload the achievements from memory. */
+   cheevos_unload();
+#endif
+
+   core.retro_unload_game();
+   core.retro_deinit();
 
    if (reinit)
       event_command(EVENT_CMD_DRIVERS_DEINIT);
-
-   /* per-core saves: restore the original path so the config is not affected */
-   if(settings->sort_savefiles_enable)
-      strlcpy(global->dir.savefile, orig_savefile_dir,
-            sizeof(global->dir.savefile));
-   if(settings->sort_savestates_enable)
-      strlcpy(global->dir.savestate, orig_savestate_dir,
-            sizeof(global->dir.savestate));
 
   /* auto overrides: reload the original config */
    if(global->overrides_active)
@@ -651,7 +653,7 @@ static void event_set_savestate_auto_index(void)
    fill_pathname_base(state_base, global->name.savestate,
          sizeof(state_base));
 
-   if (!(dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN)))
+   if (!(dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL)))
       return;
 
    for (i = 0; i < dir_list->size; i++)
@@ -687,11 +689,11 @@ static bool event_init_content(void)
 
    /* No content to be loaded for dummy core,
     * just successfully exit. */
-   if (global->inited.core.type == CORE_TYPE_DUMMY) 
+   if (global->inited.core.type == CORE_TYPE_DUMMY)
       return true;
 
    if (!global->inited.core.no_content)
-      rarch_fill_pathnames();
+      rarch_ctl(RARCH_ACTION_STATE_FILL_PATHNAMES, NULL);
 
    if (!init_content_file())
       return false;
@@ -718,38 +720,30 @@ static bool event_init_core(void)
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
-   /* per-core saves: save the original path */
-   if(orig_savefile_dir[0] == '\0')
-      strlcpy(orig_savefile_dir, global->dir.savefile,
-            sizeof(orig_savefile_dir));
-   if(orig_savestate_dir[0] == '\0')
-      strlcpy(orig_savestate_dir, global->dir.savestate,
-            sizeof(orig_savestate_dir));
-
    /* auto overrides: apply overrides */
    if(settings->auto_overrides_enable)
    {
       if (config_load_override())
          global->overrides_active = true;
       else
-         global->overrides_active = false; 
+         global->overrides_active = false;
    }
 
    /* reset video format to libretro's default */
    video_driver_set_pixel_format(RETRO_PIXEL_FORMAT_0RGB1555);
 
-   pretro_set_environment(rarch_environment_cb);
+   core.retro_set_environment(rarch_environment_cb);
 
    /* auto-remap: apply remap files */
    if(settings->auto_remaps_enable)
       config_load_remap();
 
    /* per-core saves: reset redirection paths */
-   if((settings->sort_savestates_enable || settings->sort_savefiles_enable) && !global->inited.core.no_content) 
+   if((settings->sort_savestates_enable || settings->sort_savefiles_enable) && !global->inited.core.no_content)
       set_paths_redirect(global->name.base);
 
-   rarch_verify_api_version();
-   pretro_init();
+   rarch_ctl(RARCH_ACTION_STATE_VERIFY_API_VERSION, NULL);
+   core.retro_init();
 
    global->sram.use = (global->inited.core.type == CORE_TYPE_PLAIN) &&
       !global->inited.core.no_content;
@@ -770,7 +764,7 @@ static bool event_save_auto_state(void)
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   if (!settings->savestate_auto_save || 
+   if (!settings->savestate_auto_save ||
          (global->inited.core.type == CORE_TYPE_DUMMY) ||
        global->inited.core.no_content)
        return false;
@@ -970,7 +964,7 @@ static void event_main_state(unsigned cmd)
    else
       strlcpy(path, global->name.savestate, sizeof(path));
 
-   if (pretro_serialize_size())
+   if (core.retro_serialize_size())
    {
       switch (cmd)
       {
@@ -989,6 +983,7 @@ static void event_main_state(unsigned cmd)
    RARCH_LOG("%s\n", msg);
 }
 
+#ifdef HAVE_MENU
 static bool event_update_system_info(struct retro_system_info *_info,
       bool *load_no_content)
 {
@@ -1011,6 +1006,7 @@ static bool event_update_system_info(struct retro_system_info *_info,
 
    return true;
 }
+#endif
 
 /**
  * event_command:
@@ -1027,7 +1023,7 @@ bool event_command(enum event_command cmd)
    driver_t  *driver    = driver_get_ptr();
    global_t  *global    = global_get_ptr();
    settings_t *settings = config_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   rarch_system_info_t *info = rarch_system_info_get_ptr();
 
    (void)i;
 
@@ -1037,15 +1033,15 @@ bool event_command(enum event_command cmd)
 #ifdef HAVE_DYNAMIC
          event_command(EVENT_CMD_LOAD_CORE);
 #endif
-         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
+         rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT, NULL);
          break;
 #ifdef HAVE_FFMPEG
       case EVENT_CMD_LOAD_CONTENT_FFMPEG:
-         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT_FFMPEG);
+         rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT_FFMPEG, NULL);
          break;
 #endif
       case EVENT_CMD_LOAD_CONTENT_IMAGEVIEWER:
-         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT_IMAGEVIEWER);
+         rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT_IMAGEVIEWER, NULL);
          break;
       case EVENT_CMD_LOAD_CONTENT:
 #ifdef HAVE_DYNAMIC
@@ -1060,7 +1056,9 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_LOAD_CORE_DEINIT:
 #ifdef HAVE_DYNAMIC
+#ifdef HAVE_MENU
          libretro_free_system_info(&global->menu.info);
+#endif
 #endif
          break;
       case EVENT_CMD_LOAD_CORE_PERSIST:
@@ -1081,7 +1079,7 @@ bool event_command(enum event_command cmd)
 #endif
          break;
       case EVENT_CMD_LOAD_STATE:
-         /* Immutable - disallow savestate load when 
+         /* Immutable - disallow savestate load when
           * we absolutely cannot change game state. */
          if (global->bsv.movie)
             return false;
@@ -1104,10 +1102,12 @@ bool event_command(enum event_command cmd)
          global->pending.windowed_scale = 0;
          break;
       case EVENT_CMD_MENU_TOGGLE:
+#ifdef HAVE_MENU
          if (menu_driver_alive())
-            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
          else
-            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING, NULL);
+#endif
          break;
       case EVENT_CMD_CONTROLLERS_INIT:
          event_init_controllers();
@@ -1115,7 +1115,11 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_RESET:
          RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
          rarch_main_msg_queue_push_new(MSG_RESET, 1, 120, true);
-         pretro_reset();
+
+#ifdef HAVE_CHEEVOS
+         cheevos_globals.cheats_were_enabled = cheevos_globals.cheats_are_enabled;
+#endif
+         core.retro_reset();
 
          /* bSNES since v073r01 resets controllers to JOYPAD
           * after a reset, so just enforce it here. */
@@ -1150,7 +1154,7 @@ bool event_command(enum event_command cmd)
 
             *global->path.fullpath = '\0';
 
-            rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
+            rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT, NULL);
          }
          break;
       case EVENT_CMD_UNLOAD_CORE:
@@ -1158,13 +1162,13 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_LOAD_CORE_DEINIT);
          break;
       case EVENT_CMD_QUIT:
-         rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
+         rarch_ctl(RARCH_ACTION_STATE_QUIT, NULL);
          break;
       case EVENT_CMD_REINIT:
          {
             const struct retro_hw_render_callback *hw_render =
                (const struct retro_hw_render_callback*)video_driver_callback();
-            const input_driver_t *input     = driver ? 
+            const input_driver_t *input     = driver ?
                (const input_driver_t*)driver->input : NULL;
 
             driver->video_cache_context     = hw_render->cache_context;
@@ -1176,7 +1180,7 @@ bool event_command(enum event_command cmd)
             input->poll(driver->input_data);
 
 #ifdef HAVE_MENU
-            menu_display_fb_set_dirty();
+            menu_display_ctl(MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG, NULL);
 
             if (menu_driver_alive())
                event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
@@ -1415,10 +1419,17 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_DRIVERS_INIT);
          break;
       case EVENT_CMD_QUIT_RETROARCH:
-         rarch_main_set_state(RARCH_ACTION_STATE_FORCE_QUIT);
+         rarch_ctl(RARCH_ACTION_STATE_FORCE_QUIT, NULL);
+         break;
+      case EVENT_CMD_SHUTDOWN:
+#if defined(__linux__) && !defined(ANDROID)
+         rarch_main_msg_queue_push("Shutting down...", 1, 180, true);
+         rarch_ctl(RARCH_ACTION_STATE_FORCE_QUIT, NULL);
+         system("shutdown -P now");
+#endif
          break;
       case EVENT_CMD_RESUME:
-         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+         rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
          break;
       case EVENT_CMD_RESTART_RETROARCH:
 #if defined(GEKKO) && defined(HW_RVL)
@@ -1439,7 +1450,9 @@ bool event_command(enum event_command cmd)
 #endif
          break;
       case EVENT_CMD_PAUSE_CHECKS:
-         if (rarch_main_is_paused())
+         rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED, &boolean);
+
+         if (boolean)
          {
             RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
             event_command(EVENT_CMD_AUDIO_STOP);
@@ -1454,18 +1467,25 @@ bool event_command(enum event_command cmd)
          }
          break;
       case EVENT_CMD_PAUSE_TOGGLE:
-         rarch_main_set_pause(!rarch_main_is_paused());
+         rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED,  &boolean);
+         boolean = !boolean;
+         rarch_main_ctl(RARCH_MAIN_CTL_SET_PAUSED, &boolean);
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_UNPAUSE:
-         rarch_main_set_pause(false);
+         boolean = false;
+
+         rarch_main_ctl(RARCH_MAIN_CTL_SET_PAUSED, &boolean);
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_PAUSE:
-         rarch_main_set_pause(true);
+         boolean = true;
+
+         rarch_main_ctl(RARCH_MAIN_CTL_SET_PAUSED, &boolean);
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_MENU_PAUSE_LIBRETRO:
+#ifdef HAVE_MENU
          if (menu_driver_alive())
          {
             if (settings->menu.pause_libretro)
@@ -1478,6 +1498,7 @@ bool event_command(enum event_command cmd)
             if (settings->menu.pause_libretro)
                event_command(EVENT_CMD_AUDIO_START);
          }
+#endif
          break;
       case EVENT_CMD_SHADER_DIR_DEINIT:
          if (!global)
@@ -1493,7 +1514,7 @@ bool event_command(enum event_command cmd)
          if (!*settings->video.shader_dir)
             return false;
 
-         global->shader_dir.list = dir_list_new_special(NULL, DIR_LIST_SHADERS);
+         global->shader_dir.list = dir_list_new_special(NULL, DIR_LIST_SHADERS, NULL);
 
          if (!global->shader_dir.list || global->shader_dir.list->size == 0)
          {
@@ -1590,7 +1611,7 @@ bool event_command(enum event_command cmd)
          if (!video_driver_has_windowed())
             return false;
 
-         /* If we go fullscreen we drop all drivers and 
+         /* If we go fullscreen we drop all drivers and
           * reinitialize to be safe. */
          settings->video.fullscreen = !settings->video.fullscreen;
          event_command(EVENT_CMD_REINIT);
@@ -1634,11 +1655,11 @@ bool event_command(enum event_command cmd)
          global->log_file = NULL;
          break;
       case EVENT_CMD_DISK_EJECT_TOGGLE:
-         if (system && system->disk_control.get_num_images)
+         if (info && info->disk_control.get_num_images)
          {
-            const struct retro_disk_control_callback *control = 
+            const struct retro_disk_control_callback *control =
                (const struct retro_disk_control_callback*)
-               &system->disk_control;
+               &info->disk_control;
 
             if (control)
                event_check_disk_eject(control);
@@ -1649,11 +1670,11 @@ bool event_command(enum event_command cmd)
                   1, 120, true);
          break;
       case EVENT_CMD_DISK_NEXT:
-         if (system && system->disk_control.get_num_images)
+         if (info && info->disk_control.get_num_images)
          {
-            const struct retro_disk_control_callback *control = 
+            const struct retro_disk_control_callback *control =
                (const struct retro_disk_control_callback*)
-               &system->disk_control;
+               &info->disk_control;
 
             if (!control)
                return false;
@@ -1669,11 +1690,11 @@ bool event_command(enum event_command cmd)
                   1, 120, true);
          break;
       case EVENT_CMD_DISK_PREV:
-         if (system && system->disk_control.get_num_images)
+         if (info && info->disk_control.get_num_images)
          {
-            const struct retro_disk_control_callback *control = 
+            const struct retro_disk_control_callback *control =
                (const struct retro_disk_control_callback*)
-               &system->disk_control;
+               &info->disk_control;
 
             if (!control)
                return false;
@@ -1721,7 +1742,7 @@ bool event_command(enum event_command cmd)
          event_set_volume(-0.5f);
          break;
       case EVENT_CMD_SET_FRAME_LIMIT:
-         rarch_main_set_frame_limit_last_time();
+         rarch_main_ctl(RARCH_MAIN_CTL_SET_FRAME_LIMIT_LAST_TIME, NULL);
          break;
       case EVENT_CMD_NONE:
       default:

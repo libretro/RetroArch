@@ -33,6 +33,7 @@
 
 #include <file/file_path.h>
 
+#include "../input_common.h"
 #include "../input_joypad.h"
 #include "../input_keymaps.h"
 #include "../../general.h"
@@ -245,7 +246,6 @@ static void udev_handle_mouse(udev_input_t *udev,
                   udev->mouse_whu = 1;
                else if (event->value == -1)
                   udev->mouse_whd = 1;
-               break;
                break;
             default:
                break;
@@ -519,6 +519,45 @@ static int16_t udev_analog_pressed(udev_input_t *udev,
    return pressed_plus + pressed_minus;
 }
 
+static int16_t udev_pointer_state(udev_input_t *udev,
+      unsigned idx, unsigned id, bool screen)
+{
+   bool valid, inside;
+   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
+
+   if (idx != 0)
+      return 0;
+
+   valid = input_translate_coord_viewport(udev->mouse_x, udev->mouse_y,
+         &res_x, &res_y, &res_screen_x, &res_screen_y);
+
+   if (!valid)
+      return 0;
+
+   if (screen)
+   {
+      res_x = res_screen_x;
+      res_y = res_screen_y;
+   }
+
+   inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
+
+   if (!inside)
+      return 0;
+
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_POINTER_X:
+         return res_x;
+      case RETRO_DEVICE_ID_POINTER_Y:
+         return res_y;
+      case RETRO_DEVICE_ID_POINTER_PRESSED:
+         return udev->mouse_l;
+   }
+
+   return 0;
+}
+
 static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
@@ -545,6 +584,11 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
       case RETRO_DEVICE_MOUSE:
          return udev_mouse_state(udev, id);
 
+      case RETRO_DEVICE_POINTER:
+      case RARCH_DEVICE_POINTER_SCREEN:
+         return udev_pointer_state(udev, idx, id,
+               device == RARCH_DEVICE_POINTER_SCREEN);
+
       case RETRO_DEVICE_LIGHTGUN:
          return udev_lightgun_state(udev, id);
    }
@@ -554,11 +598,15 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
 
 static bool udev_input_key_pressed(void *data, int key)
 {
-   udev_input_t *udev   = (udev_input_t*)data;
-   settings_t *settings = config_get_ptr();
+   udev_input_t *udev    = (udev_input_t*)data;
+   settings_t *settings  = config_get_ptr();
 
-   return udev_input_is_pressed(udev, settings->input.binds[0], key) ||
-      input_joypad_pressed(udev->joypad, 0, settings->input.binds[0], key);
+   if (udev_input_is_pressed(udev, settings->input.binds[0], key))
+      return true;
+   if (input_joypad_pressed(udev->joypad, 0, settings->input.binds[0], key))
+      return true;
+
+   return false;
 }
 
 static bool udev_input_meta_key_pressed(void *data, int key)
@@ -633,6 +681,9 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
       if (devnode)
       {
          int fd = open(devnode, O_RDONLY | O_NONBLOCK);
+
+         (void)fd;
+
          RARCH_LOG("[udev] Adding device %s as type %s.\n", devnode, type);
          if (!add_device(udev, devnode, cb))
             RARCH_ERR("[udev] Failed to open device: %s (%s).\n", devnode, strerror(errno));

@@ -237,7 +237,6 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    unsigned modetype, level, viHeightMultiplier, viWidth, tvmode,
             max_width, max_height, i;
    gx_video_t *gx             = (gx_video_t*)data;
-   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
    settings_t *settings       = config_get_ptr();
 
    (void)level;
@@ -395,18 +394,23 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
          gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE 
          ? "interlaced" : "progressive");
 
-   if (frame_buf)
    {
-      frame_buf->height = gx_mode.efbHeight / (gx->double_strike ? 1 : 2);
-      frame_buf->height &= ~3;
-      if (frame_buf->height > 240)
-         frame_buf->height = 240;
+      size_t new_fb_pitch;
+      unsigned new_fb_width;
+      unsigned new_fb_height  = (gx_mode.efbHeight / (gx->double_strike ? 1 : 2)) & ~3;
+      if (new_fb_height > 240)
+         new_fb_height = 240;
 
-      frame_buf->width = gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2);
-      frame_buf->width &= ~3;
-      if (frame_buf->width > 400)
-         frame_buf->width = 400;
-      frame_buf->pitch = frame_buf->width * 2;
+
+      new_fb_width = (gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2)) & ~3;
+      if (new_fb_width > 400)
+         new_fb_width = 400;
+
+      new_fb_pitch = new_fb_width * 2;
+
+      menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,  &new_fb_width);
+      menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &new_fb_height);
+      menu_display_ctl(MENU_DISPLAY_CTL_SET_FB_PITCH, &new_fb_pitch);
    }
 
    if (tvmode == VI_PAL)
@@ -462,15 +466,17 @@ static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 
 static void setup_video_mode(void *data)
 {
-   unsigned i;
    if (!g_framebuf[0])
+   {
+      unsigned i;
       for (i = 0; i < 2; i++)
          g_framebuf[i] = MEM_K0_TO_K1(
                memalign(32, 640 * 576 * VI_DISPLAY_PIX_SZ));
+   }
 
    g_current_framebuf = 0;
-   g_draw_done = true;
-   g_orientation = ORIENTATION_NORMAL;
+   g_draw_done        = true;
+   g_orientation      = ORIENTATION_NORMAL;
    OSInitThreadQueue(&g_video_cond);
 
    VIDEO_GetPreferredMode(&gx_mode);
@@ -485,7 +491,6 @@ static void init_texture(void *data, unsigned width, unsigned height)
    struct __gx_texobj *fb_ptr   = (struct __gx_texobj*)&g_tex.obj;
    struct __gx_texobj *menu_ptr = (struct __gx_texobj*)&menu_tex.obj;
    menu_handle_t *menu          = menu_driver_get_ptr();
-   menu_framebuf_t *frame_buf   = menu_display_fb_get_ptr();
    settings_t *settings         = config_get_ptr();
 
    width &= ~3;
@@ -496,8 +501,8 @@ static void init_texture(void *data, unsigned width, unsigned height)
 
    if (menu)
    {
-      menu_w = frame_buf->width;
-      menu_h = frame_buf->height;
+      menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,  &menu_w);
+      menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &menu_h);
    }
 
    __GX_InitTexObj(fb_ptr, g_tex.data, width, height,
@@ -566,8 +571,8 @@ static void init_vtx(void *data, const video_info_t *video)
       }
    }
 
-   DCFlushRange(g_tex.data, g_tex.width *
-         g_tex.height * video->rgb32 ? 4 : 2);
+   DCFlushRange(g_tex.data, (g_tex.width *
+         g_tex.height * video->rgb32) ? 4 : 2);
 
    gx->rgb32 = video->rgb32;
    gx->scale = video->input_scale;
@@ -837,12 +842,17 @@ static void convert_texture32(const uint32_t *_src, uint32_t *_dst,
 
 static void gx_resize(void *data)
 {
-   gx_video_t *gx = (gx_video_t*)data;
+   unsigned width, height;
    int x = 0, y = 0;
-   unsigned width = gx->vp.full_width, height = gx->vp.full_height;
-   settings_t *settings = config_get_ptr();
-   const global_t *global     = (const global_t*)global_get_ptr();
-   struct video_viewport *custom_vp = video_viewport_get_custom();
+   gx_video_t                   *gx = (gx_video_t*)data;
+   settings_t             *settings = config_get_ptr();
+   const global_t           *global = (const global_t*)global_get_ptr();
+
+   if (!gx)
+      return;
+
+   width  = gx->vp.full_width;
+   height = gx->vp.full_height;
 
 #ifdef HW_RVL
    VIDEO_SetTrapFilter(global->console.softfilter_enable);
@@ -854,20 +864,14 @@ static void gx_resize(void *data)
       float desired_aspect = video_driver_get_aspect_ratio();
       if (desired_aspect == 0.0)
          desired_aspect = 1.0;
-#ifdef HW_RVL
-      float device_aspect = CONF_GetAspectRatio() == CONF_ASPECT_4_3 ?
-         4.0 / 3.0 : 16.0 / 9.0;
-#else
-      float device_aspect = 4.0 / 3.0;
-#endif
       if (g_orientation == ORIENTATION_VERTICAL ||
             g_orientation == ORIENTATION_FLIPPED_ROTATED)
          desired_aspect = 1.0 / desired_aspect;
-      float delta;
 
-#ifdef RARCH_CONSOLE
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
+         struct video_viewport *custom_vp = video_viewport_get_custom();
+
          if (!custom_vp->width || !custom_vp->height)
          {
             custom_vp->x = 0;
@@ -882,8 +886,14 @@ static void gx_resize(void *data)
          height = custom_vp->height;
       }
       else
-#endif
       {
+         float delta;
+#ifdef HW_RVL
+         float device_aspect = CONF_GetAspectRatio() == CONF_ASPECT_4_3 ?
+            4.0 / 3.0 : 16.0 / 9.0;
+#else
+         float device_aspect = 4.0 / 3.0;
+#endif
          if (fabs(device_aspect - desired_aspect) < 0.0001)
          {
             /* If the aspect ratios of screen and desired aspect ratio 
@@ -1097,18 +1107,22 @@ static bool gx_frame(void *data, const void *frame,
 
    if (gx->menu_texture_enable && gx->menu_data)
    {
-      menu_framebuf_t *frame_buf   = menu_display_fb_get_ptr();
+      size_t fb_pitch;
+      unsigned fb_width, fb_height;
 
-      if (frame_buf)
-      {
-         convert_texture16(gx->menu_data, menu_tex.data,
-               frame_buf->width,
-               frame_buf->height,
-               frame_buf->pitch);
-         DCFlushRange(menu_tex.data,
-               frame_buf->width * 
-               frame_buf->pitch);
-      }
+      menu_display_ctl(MENU_DISPLAY_CTL_WIDTH, &fb_width);
+      menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &fb_height);
+      menu_display_ctl(MENU_DISPLAY_CTL_FB_PITCH, &fb_pitch);
+
+      convert_texture16(
+            gx->menu_data,
+            menu_tex.data,
+            fb_width,
+            fb_height,
+            fb_pitch);
+      DCFlushRange(
+            menu_tex.data,
+            fb_width * fb_pitch);
    }
 
    __GX_InvalidateTexAll(__gx);
@@ -1209,9 +1223,9 @@ static bool gx_has_windowed(void *data)
 static void gx_free(void *data)
 {
    driver_t *driver = driver_get_ptr();
+#ifdef HAVE_OVERLAY
    gx_video_t *gx = (gx_video_t*)driver->video_data;
 
-#ifdef HAVE_OVERLAY
    gx_free_overlay(gx);
 #endif
 

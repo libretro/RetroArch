@@ -261,8 +261,7 @@ static bool sdl_is_pressed(sdl_input_t *sdl, unsigned port_num, const struct ret
 {
    if (sdl_key_pressed(binds[key].key))
       return true;
-
-   return input_joypad_pressed(sdl->joypad, port_num, binds, key);
+   return false;
 }
 
 static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *binds,
@@ -284,10 +283,18 @@ static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *
 
 static bool sdl_input_key_pressed(void *data, int key)
 {
-   settings_t *settings = config_get_ptr();
-   const struct retro_keybind *binds = settings->input.binds[0];
    if (key >= 0 && key < RARCH_BIND_LIST_END)
-      return sdl_is_pressed((sdl_input_t*)data, 0, binds, key);
+   {
+      sdl_input_t *sdl     = (sdl_input_t*)data;
+      settings_t *settings = config_get_ptr();
+      const struct retro_keybind *binds = settings->input.binds[0];
+
+      if (sdl_is_pressed(sdl, 0, binds, key))
+         return true;
+      if (input_joypad_pressed(sdl->joypad, 0, binds, key))
+         return true;
+   }
+
    return false;
 }
 
@@ -297,11 +304,22 @@ static bool sdl_input_meta_key_pressed(void *data, int key)
 }
 
 static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct retro_keybind **binds_, 
-      unsigned port_num, unsigned id)
+      unsigned port_num, unsigned id, enum input_device_type *device)
 {
-   const struct retro_keybind *binds = binds_[port_num];
    if (id < RARCH_BIND_LIST_END)
-      return binds[id].valid && sdl_is_pressed(sdl, port_num, binds, id);
+   {
+      const struct retro_keybind *binds = binds_[port_num];
+      if (binds[id].valid && sdl_is_pressed(sdl, port_num, binds, id))
+      {
+         *device = INPUT_DEVICE_TYPE_KEYBOARD;
+         return 1;
+      }
+      if (binds[id].valid && input_joypad_pressed(sdl->joypad, 0, binds, id))
+      {
+         *device = INPUT_DEVICE_TYPE_JOYPAD;
+         return 1;
+      }
+   }
    return 0;
 }
 
@@ -407,12 +425,13 @@ static int16_t sdl_lightgun_device_state(sdl_input_t *sdl, unsigned id)
 static int16_t sdl_input_state(void *data_, const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
+   enum input_device_type type = INPUT_DEVICE_TYPE_NONE;
    sdl_input_t *data = (sdl_input_t*)data_;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return sdl_joypad_device_state(data, binds, port, id);
+         return sdl_joypad_device_state(data, binds, port, id, &type);
       case RETRO_DEVICE_ANALOG:
          return sdl_analog_device_state(data, binds, port, idx, id);
       case RETRO_DEVICE_MOUSE:
@@ -491,12 +510,12 @@ static void sdl_poll_mouse(sdl_input_t *sdl)
 
    SDL_GetMouseState(&sdl->mouse_abs_x, &sdl->mouse_abs_y);
 
-   sdl->mouse_l  = SDL_BUTTON(SDL_BUTTON_LEFT)      & btn ? 1 : 0;
-   sdl->mouse_r  = SDL_BUTTON(SDL_BUTTON_RIGHT)     & btn ? 1 : 0;
-   sdl->mouse_m  = SDL_BUTTON(SDL_BUTTON_MIDDLE)    & btn ? 1 : 0;
+   sdl->mouse_l  = (SDL_BUTTON(SDL_BUTTON_LEFT)      & btn) ? 1 : 0;
+   sdl->mouse_r  = (SDL_BUTTON(SDL_BUTTON_RIGHT)     & btn) ? 1 : 0;
+   sdl->mouse_m  = (SDL_BUTTON(SDL_BUTTON_MIDDLE)    & btn) ? 1 : 0;
 #ifndef HAVE_SDL2
-   sdl->mouse_wu = SDL_BUTTON(SDL_BUTTON_WHEELUP)   & btn ? 1 : 0;
-   sdl->mouse_wd = SDL_BUTTON(SDL_BUTTON_WHEELDOWN) & btn ? 1 : 0;
+   sdl->mouse_wu = (SDL_BUTTON(SDL_BUTTON_WHEELUP)   & btn) ? 1 : 0;
+   sdl->mouse_wd = (SDL_BUTTON(SDL_BUTTON_WHEELDOWN) & btn) ? 1 : 0;
 #endif
 }
 

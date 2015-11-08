@@ -173,7 +173,6 @@ static void frontend_win32_init(void *data)
 		}
 	}
    
-   gfx_set_dwm();
 }
 
 enum frontend_powerstate frontend_win32_get_powerstate(int *seconds, int *percent)
@@ -218,15 +217,21 @@ static int frontend_win32_parse_drive_list(void *data)
    {
       drive[0] = 'A' + i;
       if (drives & (1 << i))
-         menu_list_push(list,
+         menu_entries_push(list,
                drive, "", MENU_FILE_DIRECTORY, 0, 0);
    }
 
    return 0;
 }
 
+static void frontend_win32_environment_get(int *argc, char *argv[],
+      void *args, void *params_data)
+{
+   gfx_set_dwm();
+}
+
 frontend_ctx_driver_t frontend_ctx_win32 = {
-   NULL,						   /* environment_get */
+   frontend_win32_environment_get,
    frontend_win32_init,
    NULL,                           /* deinit */
    NULL,                           /* exitspawn */

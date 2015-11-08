@@ -178,8 +178,13 @@ static bool linuxraw_input_key_pressed(void *data, int key)
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
    settings_t *settings       = config_get_ptr();
 
-   return linuxraw_is_pressed(linuxraw, settings->input.binds[0], key) ||
-      input_joypad_pressed(linuxraw->joypad, 0, settings->input.binds[0], key);
+   if (linuxraw_is_pressed(linuxraw, settings->input.binds[0], key))
+      return true;
+
+   if (input_joypad_pressed(linuxraw->joypad, 0, settings->input.binds[0], key))
+      return true;
+
+   return false;
 }
 
 static bool linuxraw_input_meta_key_pressed(void *data, int key)

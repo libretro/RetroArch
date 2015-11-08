@@ -264,9 +264,6 @@ static void cocoa_input_poll(void *data)
 {
    uint32_t i;
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
-    
-   if (!apple)
-       return;
 
    for (i = 0; i < apple->touch_count; i++)
       input_translate_coord_viewport(
@@ -282,6 +279,9 @@ static void cocoa_input_poll(void *data)
 
    if (apple->icade_enabled)
       BIT32_SET(apple->buttons[0], apple->icade_buttons);
+    
+    apple->mouse_x_last = apple->mouse_rel_x;
+    apple->mouse_y_last = apple->mouse_rel_y;
 }
 
 static int16_t cocoa_mouse_state(cocoa_input_data_t *apple,
@@ -290,9 +290,9 @@ static int16_t cocoa_mouse_state(cocoa_input_data_t *apple,
    switch (id)
    {
       case RETRO_DEVICE_ID_MOUSE_X:
-         return apple->mouse_x;
+           return apple->mouse_rel_x - apple->mouse_x_last;
       case RETRO_DEVICE_ID_MOUSE_Y:
-         return apple->mouse_y;
+         return apple->mouse_rel_y - apple->mouse_y_last;
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          return apple->mouse_buttons & 1;
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
@@ -304,6 +304,22 @@ static int16_t cocoa_mouse_state(cocoa_input_data_t *apple,
    }
 
    return 0;
+}
+
+static int16_t cocoa_mouse_state_screen(cocoa_input_data_t *apple,
+                                        unsigned id)
+{
+    switch (id)
+    {
+        case RETRO_DEVICE_ID_MOUSE_X:
+            return apple->window_pos_x;
+        case RETRO_DEVICE_ID_MOUSE_Y:
+            return apple->window_pos_y;
+        default:
+            break;
+    }
+    
+    return cocoa_mouse_state(apple, id);
 }
 
 static int16_t cocoa_pointer_state(cocoa_input_data_t *apple,
@@ -370,6 +386,8 @@ static int16_t cocoa_input_state(void *data,
          return cocoa_keyboard_state(apple, id);
       case RETRO_DEVICE_MOUSE:
          return cocoa_mouse_state(apple, id);
+       case RARCH_DEVICE_MOUSE_SCREEN:
+           return cocoa_mouse_state_screen(apple, id);
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          return cocoa_pointer_state(apple, device, idx, id);
@@ -381,9 +399,14 @@ static int16_t cocoa_input_state(void *data,
 static bool cocoa_input_key_pressed(void *data, int key)
 {
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
-   settings_t *settings = config_get_ptr();
-   return cocoa_input_is_pressed(apple, 0, settings->input.binds[0], key) ||
-      input_joypad_pressed(apple->joypad, 0, settings->input.binds[0], key);
+   settings_t *settings      = config_get_ptr();
+
+   if (cocoa_input_is_pressed(apple, 0, settings->input.binds[0], key))
+      return true;
+   if (input_joypad_pressed(apple->joypad, 0, settings->input.binds[0], key))
+      return true;
+
+   return false;
 }
 
 static bool cocoa_input_meta_key_pressed(void *data, int key)

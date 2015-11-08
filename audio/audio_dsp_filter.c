@@ -317,4 +317,3 @@ void rarch_dsp_filter_process(rarch_dsp_filter_t *dsp,
    data->output        = output.samples;
    data->output_frames = output.frames;
 }
-

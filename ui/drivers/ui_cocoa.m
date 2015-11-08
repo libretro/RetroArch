@@ -109,14 +109,33 @@ void apple_rarch_exited(void)
       case NSOtherMouseDragged:
       {
          NSPoint pos;
+          NSPoint mouse_pos;
          /* Relative */
-         apple->mouse_x = event.deltaX;
-         apple->mouse_y = event.deltaY;
+         apple->mouse_rel_x = event.deltaX;
+         apple->mouse_rel_y = event.deltaY;
+          
+#if MAC_OS_X_VERSION_10_7
+          RAScreen *screen = [RAScreen mainScreen];
+          CGFloat backing_scale_factor = screen.backingScaleFactor;
+#else
+          CGFloat backing_scale_factor = 1.0f;
+#endif
 
          /* Absolute */
          pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
-         apple->touches[0].screen_x = pos.x;
-         apple->touches[0].screen_y = pos.y;
+         apple->touches[0].screen_x = pos.x * backing_scale_factor;
+         apple->touches[0].screen_y = pos.y * backing_scale_factor;
+          
+          //window is a variable containing your window
+          //mouse_pos = [self.window mouseLocationOutsideOfEventStream];
+          //convert to screen coordinates
+          //mouse_pos = [[self.window convertBaseToScreen:mouse_pos];
+          
+         //mouse_pos = [event locationInWindow];
+          //mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:[CocoaView get] ];
+        mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow]  fromView:nil];
+          apple->window_pos_x = (int16_t)mouse_pos.x * backing_scale_factor;
+          apple->window_pos_y = (int16_t)mouse_pos.y * backing_scale_factor;
       }
          break;
        case NSScrollWheel:
@@ -142,7 +161,7 @@ void apple_rarch_exited(void)
 static int waiting_argc;
 static char** waiting_argv;
 
-@implementation RetroArch
+@implementation RetroArch_OSX
 
 @synthesize window = _window;
 
@@ -191,9 +210,6 @@ static void poll_iteration(void)
 
     if (!apple)
       return;
-
-    apple->mouse_x = 0;
-    apple->mouse_y = 0;
     
     do
     {
@@ -248,6 +264,8 @@ static void poll_iteration(void)
 }
 
 
+extern void action_ok_push_quick_menu(void);
+
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
    if (filenames.count == 1 && [filenames objectAtIndex:0])
@@ -293,12 +311,13 @@ static void poll_iteration(void)
                  
                  if (menu->load_no_content && settings->core.set_supports_no_game_enable)
                  {
+                    int ret = 0;
                      *global->path.fullpath = '\0';
-                     menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
+                     ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
+                     if (ret == -1)
+                        action_ok_push_quick_menu();
                  }
              }
-             else
-                 [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
          }
      }];
 #else
@@ -327,8 +346,6 @@ static void poll_iteration(void)
 
          if (core_name)
             ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
-         else
-            [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
       }
    }];
 #else
@@ -425,7 +442,7 @@ void apple_display_alert(const char *message, const char *title)
     [alert setMessageText:(*title) ? BOXSTRING(title) : BOXSTRING("RetroArch")];
     [alert setInformativeText:BOXSTRING(message)];
     [alert setAlertStyle:NSInformationalAlertStyle];
-    [alert beginSheetModalForWindow:((RetroArch*)[[NSApplication sharedApplication] delegate]).window
+    [alert beginSheetModalForWindow:((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window
                       modalDelegate:apple_platform
                      didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
                         contextInfo:nil];

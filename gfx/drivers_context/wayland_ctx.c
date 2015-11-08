@@ -609,7 +609,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 
-   attr = egl_fill_attribs(attr);
+   attr = egl_fill_attribs(egl_attribs);
 
    wl->g_width = width ? width : DEFAULT_WINDOWED_WIDTH;
    wl->g_height = height ? height : DEFAULT_WINDOWED_HEIGHT;

@@ -25,6 +25,7 @@
 #include <boolean.h>
 
 #include "../driver.h"
+#include "../input/input_driver.h"
 #include "../dynamic.h"
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
@@ -49,9 +50,10 @@
 #define MAX_CHEAT_COUNTERS 100
 #endif
 
-#define MENU_SETTINGS_CORE_INFO_NONE    0xffff
-#define MENU_SETTINGS_CORE_OPTION_NONE  0xffff
-#define MENU_SETTINGS_CORE_OPTION_START 0x10000
+#define MENU_SETTINGS_CORE_INFO_NONE             0xffff
+#define MENU_SETTINGS_CORE_OPTION_NONE           0xffff
+#define MENU_SETTINGS_CORE_OPTION_START          0x10000
+#define MENU_SETTINGS_PLAYLIST_ASSOCIATION_START 0x20000
 
 #define MENU_KEYBOARD_BIND_TIMEOUT_SECONDS 5
 
@@ -59,11 +61,13 @@
 extern "C" {
 #endif
 
+
 typedef enum
 {
    MENU_FILE_NONE = 0,
    MENU_FILE_PLAIN,
    MENU_FILE_DIRECTORY,
+   MENU_FILE_PARENT_DIRECTORY,
    MENU_FILE_PATH,
    MENU_FILE_DEVICE,
    MENU_FILE_CORE,
@@ -93,9 +97,15 @@ typedef enum
    MENU_FILE_CURSOR,
    MENU_FILE_RECORD_CONFIG,
    MENU_FILE_PLAYLIST_COLLECTION,
+   MENU_FILE_PLAYLIST_ASSOCIATION,
    MENU_FILE_MOVIE,
    MENU_FILE_MUSIC,
    MENU_SETTINGS,
+   MENU_SETTINGS_TAB,
+   MENU_HISTORY_TAB,
+   MENU_ADD_TAB,
+   MENU_PLAYLISTS_TAB,
+   MENU_SETTING_NO_ITEM,
    MENU_SETTING_DRIVER,
    MENU_SETTING_ACTION,
    MENU_SETTING_ACTION_RUN,
@@ -110,15 +120,17 @@ typedef enum
    MENU_SETTING_ACTION_LOADSTATE,
    MENU_SETTING_ACTION_SCREENSHOT,
    MENU_SETTING_ACTION_RESET,
+   MENU_SETTING_STRING_OPTIONS,
    MENU_SETTING_GROUP,
    MENU_SETTING_SUBGROUP,
    MENU_SETTING_HORIZONTAL_MENU,
+   MENU_INFO_MESSAGE,
    MENU_FILE_TYPE_T_LAST
 } menu_file_type_t;
 
 typedef enum
 {
-   MENU_SETTINGS_CUSTOM_VIEWPORT       = MENU_FILE_TYPE_T_LAST + 1,
+   MENU_SETTINGS_NONE       = MENU_FILE_TYPE_T_LAST + 1,
    MENU_SETTINGS_SHADER_PARAMETER_0,
    MENU_SETTINGS_SHADER_PARAMETER_LAST = MENU_SETTINGS_SHADER_PARAMETER_0 + (GFX_MAX_PARAMETERS - 1),
    MENU_SETTINGS_SHADER_PRESET_PARAMETER_0,
@@ -172,7 +184,7 @@ void *menu_init(const void *data);
  *
  * Returns: 0 on success, -1 if we need to quit out of the loop.
  **/
-int menu_iterate(bool render_this_frame, unsigned action);
+int menu_iterate(bool render_this_frame, enum menu_action action);
 
 int menu_iterate_render(void);
 
@@ -197,8 +209,6 @@ bool menu_load_content(enum rarch_core_type type);
 
 int menu_common_load_content(const char *core_path, const char *full_path,
       bool persist, enum rarch_core_type type);
-
-void menu_common_push_content_settings(void);
 
 #ifdef __cplusplus
 }

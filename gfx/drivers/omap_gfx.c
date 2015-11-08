@@ -311,8 +311,8 @@ static int omapfb_setup_pages(omapfb_data_t *pdata)
    for (i = 0; i < pdata->num_pages; ++i)
    {
       pdata->pages[i].yoffset = i * pdata->current_state->si.yres;
-      pdata->pages[i].buf = pdata->fb_mem + (i * pdata->fb_framesize);
-      pdata->pages[i].used = false;
+      pdata->pages[i].buf     = (void*)((uint8_t*)pdata->fb_mem + (i * pdata->fb_framesize));
+      pdata->pages[i].used    = false;
    }
 
    pdata->old_page = NULL;
@@ -429,6 +429,10 @@ static int omapfb_alloc_mem(omapfb_data_t *pdata)
 
    if (av_info)
       geom     = &av_info->geometry;
+
+   if (!geom)
+      goto error;
+
    mem_size = geom->max_width * geom->max_height *
       pdata->bpp * pdata->num_pages;
 
@@ -500,7 +504,7 @@ static float omapfb_scaling(omapfb_data_t *pdata, int width, int height)
 
 static int omapfb_setup_plane(omapfb_data_t *pdata, int width, int height)
 {
-   int x, y, w, h;
+   int x, y;
    struct omapfb_plane_info pi = {0};
    float scale = omapfb_scaling(pdata, width, height);
    int w = (int)(scale * width);
@@ -829,19 +833,17 @@ static void omap_init_font(omap_video_t *vid, const char *font_path, unsigned fo
       return;
    }
 
-   {
-      r = settings->video.msg_color_r * 255;
-      g = settings->video.msg_color_g * 255;
-      b = settings->video.msg_color_b * 255;
+   r = settings->video.msg_color_r * 255;
+   g = settings->video.msg_color_g * 255;
+   b = settings->video.msg_color_b * 255;
 
-      r = (r < 0) ? 0 : (r > 255 ? 255 : r);
-      g = (g < 0) ? 0 : (g > 255 ? 255 : g);
-      b = (b < 0) ? 0 : (b > 255 ? 255 : b);
+   r = (r < 0) ? 0 : (r > 255 ? 255 : r);
+   g = (g < 0) ? 0 : (g > 255 ? 255 : g);
+   b = (b < 0) ? 0 : (b > 255 ? 255 : b);
 
-      vid->font_rgb[0] = r;
-      vid->font_rgb[1] = g;
-      vid->font_rgb[2] = b;
-   }
+   vid->font_rgb[0] = r;
+   vid->font_rgb[1] = g;
+   vid->font_rgb[2] = b;
 }
 
 static void omap_render_msg(omap_video_t *vid, const char *msg)

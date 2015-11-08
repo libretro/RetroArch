@@ -86,12 +86,6 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Réglages des sauvegardes";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
          return "Réglages du rembobinage";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
-         return "Modifier le coin haut-gauche";
-      case MENU_LABEL_CUSTOM_VIEWPORT_2:
-         return "custom_viewport_2";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
-         return "Modifier le coin bas-droite";
       case MENU_VALUE_SHADER:
          return "Shader";
       case MENU_VALUE_CHEAT:
@@ -108,18 +102,8 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "audio_block_frames";
       case MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Block Frames";
-      case MENU_LABEL_VALUE_INPUT_BIND_MODE:
-         return "Mode mappage";
-      case MENU_LABEL_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "autoconfig_descriptor_label_show";
-      case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "Display Autoconfig Descriptor Labels";
-      case MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:
-         return "input_descriptor_label_show";
-      case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
+      case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW: /* FIXME/UPDATE */
          return "Afficher les remaps du coeur";
-      case MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
-         return "input_descriptor_hide_unbound";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
          return "Cacher les remaps non mappés des coeurs";
       case MENU_LABEL_VALUE_VIDEO_FONT_ENABLE:
@@ -178,7 +162,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Autoriser les captures vidéo";
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "Captures vidéo via le GPU";
-      case MENU_LABEL_VALUE_RECORD_PATH:
+      case MENU_LABEL_VALUE_RECORD_PATH: /* FIXME/UPDATE */
          return "Chemin de l'enregistrement";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "Utiliser le dossier d'enregistrement";
@@ -210,7 +194,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Dossier système/BIOS";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Dossier des fichiers de triche";
-      case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
+      case MENU_LABEL_VALUE_CACHE_DIRECTORY: /* FIXME/UPDATE */
          return "Dossier d'extraction";
       case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Dossier des filtres audio";
@@ -492,6 +476,8 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Réglages";
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
          return "Quitter RetroArch";
+      case MENU_LABEL_VALUE_SHUTDOWN:
+         return "Éteindre";
       case MENU_LABEL_VALUE_HELP:
          return "Aide";
       case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:
@@ -504,10 +490,8 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "URL du buildbot des coeurs";
       case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "URL du buildbot des assets";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "Saut-retour horizontal";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "Saut-retour vertical";
+      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND:
+         return "Saut-retour";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "Filtrer par extentions supportées";
       case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
@@ -572,7 +556,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Fond d'écran dynamique";
       case MENU_LABEL_VALUE_BOXART:
          return "Afficher les vignettes";
-      case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
+      case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS: /* TODO/FIXME */
          return "Options de remap d'entrées du coeur";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Options de shaders";

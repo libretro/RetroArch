@@ -288,7 +288,7 @@ void audio_convert_s16_to_float_ALLEGREX(float *out,
    /* Make sure the buffer is 16 byte aligned, this should be the 
     * default behaviour of malloc in the PSPSDK.
     * Only the output buffer can be assumed to be 16-byte aligned. */
-   rarch_assert(((uintptr_t)out & 0xf) == 0);
+   retro_assert(((uintptr_t)out & 0xf) == 0);
 #endif
 
    size_t i;
@@ -360,8 +360,8 @@ void audio_convert_float_to_s16_ALLEGREX(int16_t *out,
    /* Make sure the buffers are 16 byte aligned, this should be 
     * the default behaviour of malloc in the PSPSDK.
     * Both buffers are allocated by RetroArch, so can assume alignment. */
-   rarch_assert(((uintptr_t)in  & 0xf) == 0);
-   rarch_assert(((uintptr_t)out & 0xf) == 0);
+   retro_assert(((uintptr_t)in  & 0xf) == 0);
+   retro_assert(((uintptr_t)out & 0xf) == 0);
 #endif
 
    for (i = 0; i + 8 <= samples; i += 8)
@@ -396,7 +396,7 @@ void audio_convert_float_to_s16_ALLEGREX(int16_t *out,
 #ifndef RARCH_INTERNAL
 
 #ifdef __cplusplus
-extern "C" 
+extern "C" {
 #endif
 retro_get_cpu_features_t perf_get_cpu_features_cb;
 
@@ -427,9 +427,9 @@ void audio_convert_init_simd(void)
 
    (void)cpu;
 #if defined(__ARM_NEON__) && !defined(VITA)
-   audio_convert_s16_to_float_arm = cpu & RETRO_SIMD_NEON ?
+   audio_convert_s16_to_float_arm = (cpu & RETRO_SIMD_NEON) ?
       audio_convert_s16_to_float_neon : audio_convert_s16_to_float_C;
-   audio_convert_float_to_s16_arm = cpu & RETRO_SIMD_NEON ?
+   audio_convert_float_to_s16_arm = (cpu & RETRO_SIMD_NEON) ?
       audio_convert_float_to_s16_neon : audio_convert_float_to_s16_C;
 #endif
 }

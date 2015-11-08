@@ -47,9 +47,9 @@
 extern "C"
 #endif
 
-FILE *rarch_main_log_file(void);
+FILE *retro_main_log_file(void);
 
-#define LOG_FILE (rarch_main_log_file())
+#define LOG_FILE (retro_main_log_file())
 
 #else
 #define LOG_FILE (stderr)
@@ -70,13 +70,13 @@ FILE *rarch_main_log_file(void);
 #ifdef __cplusplus
 extern "C" {
 #endif
-bool rarch_main_verbosity(void);
+bool retro_main_verbosity(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#define RARCH_LOG_VERBOSE (rarch_main_verbosity())
+#define RARCH_LOG_VERBOSE (retro_main_verbosity())
 #else
 #define RARCH_LOG_VERBOSE (true)
 #endif

@@ -388,18 +388,18 @@ static int frontend_xdk_parse_drive_list(void *data)
    file_list_t *list = (file_list_t*)data;
 
 #if defined(_XBOX1)
-   menu_list_push(list,
+   menu_entries_push(list,
          "C:", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          "D:", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          "E:", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          "F:", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          "G:", "", MENU_FILE_DIRECTORY, 0, 0);
 #elif defined(_XBOX360)
-   menu_list_push(list,
+   menu_entries_push(list,
          "game:", "", MENU_FILE_DIRECTORY, 0, 0);
 #endif
 #endif
@@ -527,6 +527,7 @@ HRESULT PackedResource::Create(const char *strFilename,
 HRESULT PackedResource::Create(const char *strFilename)
 #endif
 {
+   unsigned i;
    HANDLE hFile;
    DWORD dwNumBytesRead;
    XPR_HEADER xprh;
@@ -617,12 +618,13 @@ HRESULT PackedResource::Create(const char *strFilename)
    {
 #endif
 
-      // Extract resource table from the header data
+      /* Extract resource table from the header data */
       m_dwNumResourceTags = *(DWORD*)(m_pSysMemData + 0);
-      m_pResourceTags = (XBRESOURCE*)(m_pSysMemData + 4);
+      m_pResourceTags     = (XBRESOURCE*)(m_pSysMemData + 4);
 
-      // Patch up the resources
-      for(DWORD i = 0; i < m_dwNumResourceTags; i++)
+      /* Patch up the resources */
+
+      for(i = 0; i < m_dwNumResourceTags; i++)
       {
          m_pResourceTags[i].strName = (char*)(m_pSysMemData + (DWORD)m_pResourceTags[i].strName);
 #ifdef _XBOX360
@@ -639,7 +641,7 @@ HRESULT PackedResource::Create(const char *strFilename)
 #endif
 
 #ifdef _XBOX1
-   // Use user-supplied number of resources and the resource tags
+   /* Use user-supplied number of resources and the resource tags */
    if(dwNumResourceTags != 0 || pResourceTags != NULL)
    {
       m_pResourceTags     = pResourceTags;

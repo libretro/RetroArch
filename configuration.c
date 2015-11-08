@@ -121,7 +121,7 @@ const char *config_get_default_audio(void)
          return "psp";
 #endif
       case AUDIO_CTR:
-         return "ctr";
+         return "csnd";
       case AUDIO_RWEBAUDIO:
          return "rwebaudio";
       default:
@@ -487,7 +487,7 @@ static void config_set_defaults(void)
       settings->video.threaded           = g_defaults.settings.video_threaded_enable;
 
 #ifdef HAVE_THREADS
-   settings->menu.threaded_data_runloop_enable = threaded_data_runloop_enable;
+   settings->threaded_data_runloop_enable = threaded_data_runloop_enable;
 #endif
    settings->video.shared_context              = video_shared_context;
    settings->video.force_srgb_disable          = false;
@@ -573,7 +573,6 @@ static void config_set_defaults(void)
    settings->menu.dynamic_wallpaper_enable     = false;
    settings->menu.boxart_enable                = false;
    *settings->menu.wallpaper                   = '\0';
-   settings->menu.collapse_subgroups_enable    = collapse_subgroups_enable;
    settings->menu.show_advanced_settings       = show_advanced_settings;
    settings->menu.entry_normal_color           = menu_entry_normal_color;
    settings->menu.entry_hover_color            = menu_entry_hover_color;
@@ -583,8 +582,7 @@ static void config_set_defaults(void)
    settings->menu.dpi.override_value           = menu_dpi_override_value;
 
    settings->menu.navigation.wraparound.setting_enable                  = true;
-   settings->menu.navigation.wraparound.horizontal_enable               = true;
-   settings->menu.navigation.wraparound.vertical_enable                 = true;
+   settings->menu.navigation.wraparound.enable                          = true;
    settings->menu.navigation.browser.filter.supported_extensions_enable = true;
 #endif
 
@@ -595,7 +593,13 @@ static void config_set_defaults(void)
    settings->location.allow                         = false;
    settings->camera.allow                           = false;
 
-   settings->input.autoconfig_descriptor_label_show = true;
+#ifdef HAVE_CHEEVOS
+   settings->cheevos.enable                         = false;
+   settings->cheevos.test_unofficial                = false;
+   *settings->cheevos.username                     = '\0';
+   *settings->cheevos.password                      = '\0';
+#endif
+
    settings->input.back_as_menu_toggle_enable       = true;
    settings->input.input_descriptor_label_show      = input_descriptor_label_show;
    settings->input.input_descriptor_hide_unbound    = input_descriptor_hide_unbound;
@@ -603,8 +607,8 @@ static void config_set_defaults(void)
    settings->input.max_users                        = input_max_users;
    settings->input.menu_toggle_gamepad_combo        = menu_toggle_gamepad_combo;
 
-   rarch_assert(sizeof(settings->input.binds[0]) >= sizeof(retro_keybinds_1));
-   rarch_assert(sizeof(settings->input.binds[1]) >= sizeof(retro_keybinds_rest));
+   retro_assert(sizeof(settings->input.binds[0]) >= sizeof(retro_keybinds_1));
+   retro_assert(sizeof(settings->input.binds[1]) >= sizeof(retro_keybinds_rest));
 
    memcpy(settings->input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
 
@@ -630,7 +634,7 @@ static void config_set_defaults(void)
       for (j = 0; j < RARCH_BIND_LIST_END; j++)
       {
          if (settings->input.binds[i][j].valid)
-            rarch_assert(j == settings->input.binds[i][j].id);
+            retro_assert(j == settings->input.binds[i][j].id);
       }
 
    settings->input.axis_threshold                  = axis_threshold;
@@ -688,6 +692,8 @@ static void config_set_defaults(void)
    *global->record.config_dir = '\0';
 
    *settings->bundle_assets_last_extracted_version = '\0';
+   *settings->playlist_names = '\0';
+   *settings->playlist_cores = '\0';
    *settings->core_options_path = '\0';
    *settings->content_history_path = '\0';
    *settings->content_history_directory = '\0';
@@ -698,7 +704,7 @@ static void config_set_defaults(void)
    *settings->resampler_directory = '\0';
    *settings->screenshot_directory = '\0';
    *settings->system_directory = '\0';
-   *settings->extraction_directory = '\0';
+   *settings->cache_directory = '\0';
    *settings->input_remapping_directory = '\0';
    *settings->input.autoconfig_dir = '\0';
    *settings->input.overlay = '\0';
@@ -741,15 +747,18 @@ static void config_set_defaults(void)
    global->console.sound.mode = SOUND_MODE_NORMAL;
 #endif
 
+   if (*g_defaults.path.buildbot_server_url)
+      strlcpy(settings->network.buildbot_url,
+            g_defaults.path.buildbot_server_url, sizeof(settings->network.buildbot_url));
    if (*g_defaults.dir.wallpapers)
       strlcpy(settings->dynamic_wallpapers_directory,
             g_defaults.dir.wallpapers, sizeof(settings->dynamic_wallpapers_directory));
    if (*g_defaults.dir.remap)
       strlcpy(settings->input_remapping_directory,
             g_defaults.dir.remap, sizeof(settings->input_remapping_directory));
-   if (*g_defaults.dir.extraction)
-      strlcpy(settings->extraction_directory,
-            g_defaults.dir.extraction, sizeof(settings->extraction_directory));
+   if (*g_defaults.dir.cache)
+      strlcpy(settings->cache_directory,
+            g_defaults.dir.cache, sizeof(settings->cache_directory));
    if (*g_defaults.dir.audio_filter)
       strlcpy(settings->audio.filter_dir,
             g_defaults.dir.audio_filter, sizeof(settings->audio.filter_dir));
@@ -786,12 +795,12 @@ static void config_set_defaults(void)
 #ifdef HAVE_OVERLAY
    if (*g_defaults.dir.overlay)
    {
-      fill_pathname_expand_special(global->dir.overlay,
-            g_defaults.dir.overlay, sizeof(global->dir.overlay));
+      fill_pathname_expand_special(settings->overlay_directory,
+            g_defaults.dir.overlay, sizeof(settings->overlay_directory));
 #ifdef RARCH_MOBILE
       if (!*settings->input.overlay)
             fill_pathname_join(settings->input.overlay,
-                  global->dir.overlay,
+                  settings->overlay_directory,
                   "gamepads/retropad/retropad.cfg",
                   sizeof(settings->input.overlay));
 #endif
@@ -811,7 +820,7 @@ static void config_set_defaults(void)
    }
    else
       strlcpy(global->dir.osk_overlay,
-            global->dir.overlay, sizeof(global->dir.osk_overlay));
+            settings->overlay_directory, sizeof(global->dir.osk_overlay));
 #endif
 #ifdef HAVE_MENU
    if (*g_defaults.dir.menu_config)
@@ -1189,13 +1198,10 @@ static bool config_load_file(const char *path, bool set_defaults)
    const char *extra_path                = NULL;
    char tmp_str[PATH_MAX_LENGTH]         = {0};
    char tmp_append_path[PATH_MAX_LENGTH] = {0}; /* Don't destroy append_config_path. */
-   int vp_width = 0, vp_height = 0, vp_x = 0, vp_y = 0;
    unsigned msg_color                    = 0;
    config_file_t *conf                   = NULL;
    settings_t *settings                  = config_get_ptr();
    global_t   *global                    = global_get_ptr();
-   video_viewport_t *custom_vp           = (video_viewport_t*)
-      video_viewport_get_custom();
 
    if (path)
    {
@@ -1218,9 +1224,10 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    while (extra_path)
    {
-      bool ret = false;
+      bool ret = config_append_file(conf, extra_path);
+
       RARCH_LOG("Config: appending config \"%s\"\n", extra_path);
-      ret = config_append_file(conf, extra_path);
+
       if (!ret)
          RARCH_ERR("Config: failed to append config \"%s\"\n", extra_path);
       extra_path = strtok_r(NULL, "|", &save);
@@ -1243,6 +1250,8 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_BOOL_BASE(conf, settings, bundle_assets_extract_enable, "bundle_assets_extract_enable");
    CONFIG_GET_PATH_BASE(conf, settings, bundle_assets_last_extracted_version, "bundle_assets_last_extracted_version");
+   CONFIG_GET_STRING_BASE(conf, settings, playlist_names, "playlist_names");
+   CONFIG_GET_STRING_BASE(conf, settings, playlist_cores, "playlist_cores");
 
    CONFIG_GET_BOOL_BASE(conf, settings, video.windowed_fullscreen, "video_windowed_fullscreen");
    CONFIG_GET_INT_BASE (conf, settings, video.monitor_index, "video_monitor_index");
@@ -1252,7 +1261,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 
 #ifdef HAVE_MENU
 #ifdef HAVE_THREADS
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.threaded_data_runloop_enable,
+   CONFIG_GET_BOOL_BASE(conf, settings, threaded_data_runloop_enable,
          "threaded_data_runloop_enable");
 #endif
 
@@ -1275,15 +1284,11 @@ static bool config_load_file(const char *path, bool set_defaults)
          "menu_dynamic_wallpaper_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.boxart_enable,
          "menu_boxart_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.wraparound.horizontal_enable,
-         "menu_navigation_wraparound_horizontal_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.wraparound.vertical_enable,
-         "menu_navigation_wraparound_vertical_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.wraparound.enable,
+         "menu_navigation_wraparound_enable");
    CONFIG_GET_BOOL_BASE(conf, settings,
          menu.navigation.browser.filter.supported_extensions_enable,
          "menu_navigation_browser_filter_supported_extensions_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.collapse_subgroups_enable,
-         "menu_collapse_subgroups_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.show_advanced_settings,
          "menu_show_advanced_settings");
    CONFIG_GET_HEX_BASE(conf, settings, menu.entry_normal_color,
@@ -1369,19 +1374,10 @@ static bool config_load_file(const char *path, bool set_defaults)
 #endif
    CONFIG_GET_INT_BASE(conf, settings, state_slot, "state_slot");
 
-
-   config_get_int(conf, "custom_viewport_width",  &vp_width);
-   config_get_int(conf, "custom_viewport_height", &vp_height);
-   config_get_int(conf, "custom_viewport_x",      &vp_x);
-   config_get_int(conf, "custom_viewport_y",      &vp_y);
-
-   if (custom_vp)
-   {
-      custom_vp->width  = vp_width;
-      custom_vp->height = vp_height;
-      custom_vp->x      = vp_x;
-      custom_vp->y      = vp_y;
-   }
+   CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.width,  "custom_viewport_width");
+   CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.height, "custom_viewport_height");
+   CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.x,      "custom_viewport_x");
+   CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.y,      "custom_viewport_y");
 
    if (config_get_hex(conf, "video_message_color", &msg_color))
    {
@@ -1414,7 +1410,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_BASE(conf, settings, input.menu_toggle_gamepad_combo, "input_menu_toggle_gamepad_combo");
    CONFIG_GET_BOOL_BASE(conf, settings, input.input_descriptor_label_show, "input_descriptor_label_show");
    CONFIG_GET_BOOL_BASE(conf, settings, input.input_descriptor_hide_unbound, "input_descriptor_hide_unbound");
-   CONFIG_GET_BOOL_BASE(conf, settings, input.autoconfig_descriptor_label_show, "autoconfig_descriptor_label_show");
 
    CONFIG_GET_BOOL_BASE(conf, settings, ui.companion_start_on_boot, "ui_companion_start_on_boot");
 
@@ -1470,6 +1465,13 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_STRING_BASE(conf, settings, camera.device, "camera_device");
    CONFIG_GET_BOOL_BASE(conf, settings, camera.allow, "camera_allow");
+
+#ifdef HAVE_CHEEVOS
+   CONFIG_GET_BOOL_BASE(conf, settings, cheevos.enable, "cheevos_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, cheevos.test_unofficial, "cheevos_test_unofficial");
+   CONFIG_GET_STRING_BASE(conf, settings, cheevos.username, "cheevos_username");
+   CONFIG_GET_STRING_BASE(conf, settings, cheevos.password, "cheevos_password");
+#endif
 
    CONFIG_GET_BOOL_BASE(conf, settings, location.allow, "location_allow");
    CONFIG_GET_STRING_BASE(conf, settings, video.driver, "video_driver");
@@ -1527,8 +1529,8 @@ static bool config_load_file(const char *path, bool set_defaults)
          sizeof(settings->input.remapping_path));
    config_get_path(conf, "resampler_directory", settings->resampler_directory,
          sizeof(settings->resampler_directory));
-   config_get_path(conf, "extraction_directory", settings->extraction_directory,
-         sizeof(settings->extraction_directory));
+   config_get_path(conf, "cache_directory", settings->cache_directory,
+         sizeof(settings->cache_directory));
    config_get_path(conf, "input_remapping_directory", settings->input_remapping_directory,
          sizeof(settings->input_remapping_directory));
    config_get_path(conf, "core_assets_directory", settings->core_assets_directory,
@@ -1575,9 +1577,9 @@ static bool config_load_file(const char *path, bool set_defaults)
          sizeof(global->record.config_dir));
 
 #ifdef HAVE_OVERLAY
-   config_get_path(conf, "overlay_directory", global->dir.overlay, sizeof(global->dir.overlay));
-   if (!strcmp(global->dir.overlay, "default"))
-      *global->dir.overlay = '\0';
+   config_get_path(conf, "overlay_directory", settings->overlay_directory, sizeof(settings->overlay_directory));
+   if (!strcmp(settings->overlay_directory, "default"))
+      *settings->overlay_directory = '\0';
 
    config_get_path(conf, "input_overlay", settings->input.overlay, sizeof(settings->input.overlay));
    CONFIG_GET_BOOL_BASE(conf, settings, input.overlay_enable, "input_overlay_enable");
@@ -1846,18 +1848,18 @@ bool config_load_override(void)
    settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *info              = rarch_system_info_get_ptr();
 
+   if (!global || !settings )
+   {
+      RARCH_ERR("Could not obtain global pointer or configuration file pointer to retrieve path of retroarch.cfg.\n");
+      return false;
+   }
+
    /* Early return in case a library isn't loaded */
    if (!info->info.library_name || !strcmp(info->info.library_name,"No Core"))
       return false;
 
    RARCH_LOG("Overrides: core name: %s\n", info->info.library_name);
    RARCH_LOG("Overrides: game name: %s\n", global->name.base);
-
-   if (!global || !settings )
-   {
-      RARCH_ERR("Could not obtain global pointer or configuration file pointer to retrieve path of retroarch.cfg.\n");
-      return false;
-   }
 
    /* Config directory: config_directory.
     * Try config directory setting first,
@@ -2077,8 +2079,6 @@ bool config_load_remap(void)
       input_remapping_set_defaults();
    }
 
-   new_conf = NULL;
-
    /* Create a new config file from core_path */
    new_conf = config_file_new(core_path);
 
@@ -2182,7 +2182,8 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
          break;
 
       default:
-         rarch_assert(0);
+         retro_assert(0);
+         break;
    }
 
    snprintf(config, sizeof(config), "h%u%s", hat, dir);
@@ -2212,7 +2213,6 @@ static void save_keybind_axis(config_file_t *conf, const char *prefix,
       const char *base, const struct retro_keybind *bind, bool save_empty)
 {
    char key[64]    = {0};
-   char config[16] = {0};
    unsigned axis   = 0;
    char dir        = '\0';
 
@@ -2237,6 +2237,7 @@ static void save_keybind_axis(config_file_t *conf, const char *prefix,
 
    if (dir)
    {
+      char config[16];
       snprintf(config, sizeof(config), "%c%u", dir, axis);
       config_set_string(conf, key, config);
    }
@@ -2421,8 +2422,6 @@ bool config_save_file(const char *path)
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
-   const video_viewport_t *custom_vp = (const video_viewport_t*)
-      video_viewport_get_custom();
 
    if (!conf)
       conf = config_file_new(NULL);
@@ -2446,8 +2445,6 @@ bool config_save_file(const char *path)
          settings->input.netplay_client_swap_input);
    config_set_bool(conf, "input_descriptor_label_show",
          settings->input.input_descriptor_label_show);
-   config_set_bool(conf, "autoconfig_descriptor_label_show",
-         settings->input.autoconfig_descriptor_label_show);
    config_set_bool(conf, "input_descriptor_hide_unbound",
          settings->input.input_descriptor_hide_unbound);
    config_set_bool(conf,  "load_dummy_on_core_shutdown",
@@ -2500,6 +2497,8 @@ bool config_save_file(const char *path)
    config_set_bool(conf,  "video_fullscreen", settings->video.fullscreen);
    config_set_bool(conf,  "bundle_assets_extract_enable", settings->bundle_assets_extract_enable);
    config_set_string(conf,  "bundle_assets_last_extracted_version", settings->bundle_assets_last_extracted_version);
+   config_set_string(conf,  "playlist_names", settings->playlist_names);
+   config_set_string(conf,  "playlist_cores", settings->playlist_cores);
    config_set_float(conf, "video_refresh_rate", settings->video.refresh_rate);
    config_set_int(conf,   "video_monitor_index",
          settings->video.monitor_index);
@@ -2512,7 +2511,7 @@ bool config_save_file(const char *path)
 #ifdef HAVE_MENU
 #ifdef HAVE_THREADS
    config_set_bool(conf,"threaded_data_runloop_enable",
-         settings->menu.threaded_data_runloop_enable);
+         settings->threaded_data_runloop_enable);
 #endif
 
    config_set_bool(conf, "dpi_override_enable", settings->menu.dpi.override_enable);
@@ -2556,6 +2555,14 @@ bool config_save_file(const char *path)
          settings->network.buildbot_auto_extract_archive);
    config_set_string(conf, "camera_device", settings->camera.device);
    config_set_bool(conf, "camera_allow", settings->camera.allow);
+
+#ifdef HAVE_CHEEVOS
+   config_set_bool(conf, "cheevos_enable", settings->cheevos.enable);
+   config_set_bool(conf, "cheevos_test_unofficial", settings->cheevos.test_unofficial);
+   config_set_string(conf, "cheevos_username", settings->cheevos.username);
+   config_set_string(conf, "cheevos_password", settings->cheevos.password);
+#endif
+
    config_set_bool(conf, "audio_rate_control", settings->audio.rate_control);
    config_set_float(conf, "audio_rate_control_delta",
          settings->audio.rate_control_delta);
@@ -2583,8 +2590,8 @@ bool config_save_file(const char *path)
    config_set_path(conf, "system_directory",
          *settings->system_directory ?
          settings->system_directory : "default");
-   config_set_path(conf, "extraction_directory",
-         settings->extraction_directory);
+   config_set_path(conf, "cache_directory",
+         settings->cache_directory);
    config_set_path(conf, "input_remapping_directory",
          settings->input_remapping_directory);
    config_set_path(conf, "input_remapping_path",
@@ -2630,15 +2637,11 @@ bool config_save_file(const char *path)
          settings->menu_config_directory : "default");
    config_set_bool(conf, "rgui_show_start_screen",
          settings->menu_show_start_screen);
-   config_set_bool(conf, "menu_navigation_wraparound_horizontal_enable",
-         settings->menu.navigation.wraparound.horizontal_enable);
-   config_set_bool(conf, "menu_navigation_wraparound_vertical_enable",
-         settings->menu.navigation.wraparound.vertical_enable);
+   config_set_bool(conf, "menu_navigation_wraparound_enable",
+         settings->menu.navigation.wraparound.enable);
    config_set_bool(conf,
          "menu_navigation_browser_filter_supported_extensions_enable",
          settings->menu.navigation.browser.filter.supported_extensions_enable);
-   config_set_bool(conf, "menu_collapse_subgroups_enable",
-         settings->menu.collapse_subgroups_enable);
    config_set_bool(conf, "menu_show_advanced_settings",
          settings->menu.show_advanced_settings);
    config_set_hex(conf, "menu_entry_normal_color",
@@ -2658,7 +2661,7 @@ bool config_save_file(const char *path)
 
 #ifdef HAVE_OVERLAY
    config_set_path(conf, "overlay_directory",
-         *global->dir.overlay ? global->dir.overlay : "default");
+         *settings->overlay_directory ? settings->overlay_directory : "default");
    config_set_path(conf, "input_overlay", settings->input.overlay);
    config_set_bool(conf, "input_overlay_enable", settings->input.overlay_enable);
    config_set_bool(conf, "input_overlay_enable_autopreferred", settings->input.overlay_enable_autopreferred);
@@ -2697,13 +2700,13 @@ bool config_save_file(const char *path)
    config_set_int(conf, "current_resolution_id",
          global->console.screen.resolutions.current.id);
    config_set_int(conf, "custom_viewport_width",
-         custom_vp->width);
+         settings->video_viewport_custom.width);
    config_set_int(conf, "custom_viewport_height",
-         custom_vp->height);
+         settings->video_viewport_custom.height);
    config_set_int(conf, "custom_viewport_x",
-         custom_vp->x);
+         settings->video_viewport_custom.x);
    config_set_int(conf, "custom_viewport_y",
-         custom_vp->y);
+         settings->video_viewport_custom.y);
 
 
    config_set_float(conf, "video_font_size", settings->video.font_size);
