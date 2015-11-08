@@ -210,6 +210,9 @@ VIDEO IMAGE
 VIDEO DRIVER
 ============================================================ */
 
+#include "../libretro-common/gfx/math/matrix_4x4.c"
+#include "../libretro-common/gfx/math/matrix_3x3.c"
+
 #if defined(GEKKO)
 #ifdef HW_RVL
 #include "../gfx/drivers/gx_gfx_vi_encoder.c"
@@ -219,7 +222,6 @@ VIDEO DRIVER
 
 #ifdef HAVE_VG
 #include "../gfx/drivers/vg.c"
-#include "../libretro-common/gfx/math/matrix_3x3.c"
 #endif
 
 #ifdef HAVE_OMAP
@@ -227,8 +229,6 @@ VIDEO DRIVER
 #endif
 
 #ifdef HAVE_OPENGL
-#include "../libretro-common/gfx/math/matrix_4x4.c"
-
 #include "../gfx/drivers/gl.c"
 #include "../gfx/drivers/gl_common.c"
 
