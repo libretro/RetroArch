@@ -231,7 +231,7 @@ else ifeq ($(LIBRETRO), fb_alpha)
 	#APP_ICON            = ctr/default.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-   APP_BIG_TEXT_SECTION = 1
+	APP_BIG_TEXT_SECTION = 1
 	
 else ifeq ($(LIBRETRO), mame2003)
 	APP_TITLE           = MAME-2003
@@ -242,7 +242,7 @@ else ifeq ($(LIBRETRO), mame2003)
 	APP_ICON            = ctr/mame.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-   APP_BIG_TEXT_SECTION = 1
+	APP_BIG_TEXT_SECTION = 1
 
 else ifeq ($(LIBRETRO), mame2000)
 	APP_TITLE           = MAME-2000
@@ -253,5 +253,5 @@ else ifeq ($(LIBRETRO), mame2000)
 	APP_ICON            = ctr/mame.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
-   APP_BIG_TEXT_SECTION = 1
+	APP_BIG_TEXT_SECTION = 1
 endif
