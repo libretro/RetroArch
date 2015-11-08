@@ -128,8 +128,10 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Preguntar";
       case MENU_LABEL_VALUE_PRIVACY_SETTINGS:
          return "Privacidad";
+#if 0
       case MENU_VALUE_HORIZONTAL_MENU: /* Don't change. Breaks everything. (Would be: "Menú horizontal") */
          return "Horizontal Menu";
+         /* Don't change these yet. Breaks everything. */
       case MENU_VALUE_SETTINGS_TAB:
          return "Pestaña de ajustes";
       case MENU_VALUE_HISTORY_TAB:
@@ -138,6 +140,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Añadir pestaña";
       case MENU_VALUE_PLAYLISTS_TAB:
          return "Pestaña de listas de reproducción";
+#endif
       case MENU_LABEL_VALUE_NO_SETTINGS_FOUND:
          return "No se ha encontrado una configuración.";
       case MENU_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
