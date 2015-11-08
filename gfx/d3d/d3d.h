@@ -17,7 +17,6 @@
 #ifndef __D3DVIDEO_INTF_H__
 #define __D3DVIDEO_INTF_H__
 
-#include <string>
 #include <vector>
 
 #ifdef HAVE_CONFIG_H
