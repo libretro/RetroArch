@@ -386,6 +386,48 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
    return 0;
 }
 
+static int menu_displaylist_parse_achievement_list(menu_displaylist_info_t *info)
+{
+   char tmp[PATH_MAX_LENGTH];
+
+   settings_t *settings                = config_get_ptr();
+   global_t *global                    = global_get_ptr();
+
+   bool ret;
+
+   /* do these on a loop, process your data and add them to the list */
+
+   /* presentation idea 1: multiline */
+   menu_entries_push(info->list, "Example Achievement 1 Name", "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   menu_entries_push(info->list, "- Example Achievement 1 Description", "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   menu_entries_push(info->list, "- Example Achievement 1 Status", "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   menu_entries_push(info->list, "", "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   /* presentation idea 2: single line, ideally the description would be shown by pressing select */
+   menu_entries_push(info->list, "Locked Achievements:", "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   menu_entries_push(info->list, "Example Achievement 2 Name", "Description",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   menu_entries_push(info->list, "Example Achievement 3 Name", "Description",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   menu_entries_push(info->list, "", "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   menu_entries_push(info->list, "Unlocked Achievements:", "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   menu_entries_push(info->list, "Example Achievement 4 Name", "Description",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   /* it would be cool to be able to show images per-list item (that would also allow showing boxart
+      for a list item in the future), it would make this whole thing nicer
+   */
+
+   return 0;
+}
+
 
 static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 {
@@ -2934,7 +2976,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          info->need_refresh = true;
          break;
       case DISPLAYLIST_ACHIEVEMENT_LIST:
-         menu_displaylist_parse_debug_info(info);
+         menu_displaylist_parse_achievement_list(info);
          info->need_push    = true;
          info->need_refresh = true;
          break;
