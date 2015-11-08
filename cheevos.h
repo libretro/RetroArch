@@ -34,6 +34,8 @@ int cheevos_load(const struct retro_game_info *info);
 
 void cheevos_populate_menu(menu_displaylist_info_t *info);
 
+void cheevos_get_description(unsigned cheevo_ndx, char *str, size_t len);
+
 void cheevos_test(void);
 
 void cheevos_unload(void);

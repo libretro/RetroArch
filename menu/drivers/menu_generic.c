@@ -31,6 +31,7 @@
 #include "../../performance.h"
 #include "../../input/input_autodetect.h"
 #include "../../input/input_common.h"
+#include "../../cheevos.h"
 
 #include "../../runloop.h"
 
@@ -136,11 +137,13 @@ static int action_iterate_help(char *s, size_t len, const char *label)
                   );
          }
          break;
+         
+#ifdef HAVE_CHEEVOS
       case MENU_HELP_CHEEVOS_DESCRIPTION:
-         RARCH_LOG("id is: %d\n", menu->help_screen_id);
-         menu_hash_get_help(MENU_LABEL_VALUE_WHAT_IS_A_CORE_DESC,
-               s, len);
+         cheevos_get_description(menu->help_screen_id, s, len);
          break;
+#endif
+
       case MENU_HELP_WHAT_IS_A_CORE:
          menu_hash_get_help(MENU_LABEL_VALUE_WHAT_IS_A_CORE_DESC,
                s, len);

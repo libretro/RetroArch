@@ -1891,9 +1891,9 @@ int cheevos_load(const struct retro_game_info *info)
 void cheevos_populate_menu(menu_displaylist_info_t *info)
 {
    unsigned i;
-   const cheevo_t *end          = NULL;
-   cheevo_t *cheevo             = NULL;
-   settings_t *settings         = config_get_ptr();
+   const cheevo_t *end;
+   cheevo_t *cheevo;
+   settings_t *settings = config_get_ptr();
    
    menu_entries_push(info->list, "Unlocked Achievements:", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
    menu_entries_push(info->list, "", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
@@ -1912,7 +1912,7 @@ void cheevos_populate_menu(menu_displaylist_info_t *info)
       cheevo = cheevos_locals.unofficial.cheevos;
       end    = cheevos_locals.unofficial.cheevos + cheevos_locals.unofficial.count;
 
-      for (i = 0; cheevo < end; i++, cheevo++)
+      for (i = cheevos_locals.core.count; cheevo < end; i++, cheevo++)
       {
          if (!cheevo->active)
             menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
@@ -1937,10 +1937,26 @@ void cheevos_populate_menu(menu_displaylist_info_t *info)
       cheevo = cheevos_locals.unofficial.cheevos;
       end    = cheevos_locals.unofficial.cheevos + cheevos_locals.unofficial.count;
 
-      for (i = 0; cheevo < end; i++, cheevo++)
+      for (i = cheevos_locals.core.count; cheevo < end; i++, cheevo++)
       {
          if (cheevo->active)
             menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
    }
+}
+
+void cheevos_get_description(unsigned cheevo_ndx, char *str, size_t len)
+{
+   cheevo_t *cheevos;
+   
+   if (cheevo_ndx >= cheevos_locals.core.count)
+   {
+      cheevos = cheevos_locals.unofficial.cheevos;
+      cheevo_ndx -= cheevos_locals.unofficial.count;
+   }
+   else
+      cheevos = cheevos_locals.core.cheevos;
+   
+   strncpy(str, cheevos[cheevo_ndx].description, len);
+   str[len - 1] = 0;
 }
