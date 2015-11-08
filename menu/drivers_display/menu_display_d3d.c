@@ -113,7 +113,7 @@ static void menu_display_d3d_draw(
       height = 1;
 
    if (!mat)
-      mat = menu_display_d3d_get_default_mvp();
+      mat = (math_matrix_4x4*)menu_display_d3d_get_default_mvp();
    if (!coords->vertex)
       coords->vertex = &d3d_vertexes[0];
    if (!coords->tex_coord)
