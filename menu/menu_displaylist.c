@@ -1786,10 +1786,12 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
             menu_hash_to_str(MENU_LABEL_SHADER_OPTIONS),
             MENU_SETTING_ACTION, 0, 0);
 #endif
+#if 0
       menu_entries_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_ACHIEVEMENT_LIST),
          menu_hash_to_str(MENU_LABEL_ACHIEVEMENT_LIST),
          MENU_SETTING_ACTION, 0, 0);
+#endif
    }
    else
       menu_entries_push(info->list,
