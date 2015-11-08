@@ -23,6 +23,7 @@
 
 #include "menu_setting.h"
 #include "menu_entry.h"
+#include "menu_displaylist.h"
 
 #ifdef __cplusplus
 extern "C" {
