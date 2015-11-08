@@ -39,18 +39,13 @@ static void video_texture_png_load_gl(struct texture_image *ti,
 #endif
 
 #ifdef HAVE_D3D
-#include "d3d/d3d.h"
+#include "d3d/d3d_wrapper.h"
 
 static void video_texture_png_load_d3d(struct texture_image *ti,
       enum texture_filter_type filter_type,
       uintptr_t *id)
 {
-   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
-
-   if (!d3d)
-      return;
-
-   id = (uintptr_t*)d3d_texture_new(d3d->dev, NULL,
+   id = (uintptr_t*)d3d_texture_new(NULL, NULL,
          ti->width, ti->height, 1, 
          0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, 0, 0, 0,
          NULL, NULL);

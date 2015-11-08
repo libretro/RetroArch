@@ -60,7 +60,12 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
    LPDIRECT3DTEXTURE buf;
 
    if (!dev)
-      return NULL;
+   {
+      d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
+      if (!d3d->dev)
+         return NULL;
+      dev = d3d->dev;
+   }
 
    if (path)
       hr = D3DXCreateTextureFromFileExA(dev,
