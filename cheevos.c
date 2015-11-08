@@ -1147,12 +1147,13 @@ static int cheevos_login(retro_time_t *timeout)
    char request[256];
    const char *json;
    int res;
+   settings_t *settings         = config_get_ptr();
 
    if (cheevos_locals.token[0])
       return 0;
    
-   username = config_get_ptr()->cheevos.username;
-   password = config_get_ptr()->cheevos.password;
+   username = settings->cheevos.username;
+   password = settings->cheevos.password;
    
    if (!username || !*username || !password || !*password)
    {
@@ -1190,16 +1191,17 @@ static int cheevos_login(retro_time_t *timeout)
 
 static void cheevos_unlocker(void *payload)
 {
-   unsigned cheevo_id = (unsigned)(uintptr_t)payload;
    char request[256];
    const char *result;
+   settings_t *settings         = config_get_ptr();
+   unsigned cheevo_id           = (unsigned)(uintptr_t)payload;
 
    if (!cheevos_login(NULL))
    {
       snprintf(
          request, sizeof(request),
          "http://retroachievements.org/dorequest.php?r=awardachievement&u=%s&t=%s&a=%u&h=%d",
-         config_get_ptr()->cheevos.username, cheevos_locals.token, cheevo_id, 0
+         settings->cheevos.username, cheevos_locals.token, cheevo_id, 0
       );
 
       request[sizeof(request) - 1] = 0;
@@ -1242,11 +1244,12 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
 
 void cheevos_test(void)
 {
-   if (config_get_ptr()->cheevos.enable && !cheevos_globals.cheats_are_enabled && !cheevos_globals.cheats_were_enabled)
+   settings_t *settings         = config_get_ptr();
+   if (settings->cheevos.enable && !cheevos_globals.cheats_are_enabled && !cheevos_globals.cheats_were_enabled)
    {
       cheevos_test_cheevo_set(&cheevos_locals.core);
 
-      if (config_get_ptr()->cheevos.test_unofficial)
+      if (settings->cheevos.test_unofficial)
          cheevos_test_cheevo_set(&cheevos_locals.unofficial);
    }
 }
@@ -1300,9 +1303,10 @@ Load achievements from retroachievements.org.
 static int cheevos_get_by_game_id(const char **json, unsigned game_id, retro_time_t *timeout)
 {
    char request[256];
+   settings_t *settings         = config_get_ptr();
 
    /* Just return OK if cheevos are disabled. */
-   if (!config_get_ptr()->cheevos.enable)
+   if (!settings->cheevos.enable)
       return 0;
 
    if (!cheevos_login(timeout))
@@ -1310,7 +1314,7 @@ static int cheevos_get_by_game_id(const char **json, unsigned game_id, retro_tim
       snprintf(
          request, sizeof(request),
          "http://retroachievements.org/dorequest.php?r=patch&u=%s&g=%u&f=3&l=1&t=%s",
-         config_get_ptr()->cheevos.username, game_id, cheevos_locals.token
+         settings->cheevos.username, game_id, cheevos_locals.token
       );
 
       request[sizeof(request) - 1] = 0;
@@ -1371,16 +1375,17 @@ static unsigned cheevos_get_game_id(unsigned char *hash, retro_time_t *timeout)
 
 static void cheevos_playing(void *payload)
 {
-   unsigned game_id = (unsigned)(uintptr_t)payload;
    char request[256];
    const char* json;
+   unsigned             game_id = (unsigned)(uintptr_t)payload;
+   settings_t *settings         = config_get_ptr();
    
    if (!cheevos_login(NULL))
    {
       snprintf(
          request, sizeof(request),
          "http://retroachievements.org/dorequest.php?r=postactivity&u=%s&t=%s&a=3&m=%u",
-         config_get_ptr()->cheevos.username, cheevos_locals.token, game_id
+         settings->cheevos.username, cheevos_locals.token, game_id
       );
 
       request[sizeof(request) - 1] = 0;
@@ -1475,13 +1480,14 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
    const char* json;
    cheevos_deactivate_t ud;
    int res;
+   settings_t *settings         = config_get_ptr();
    
    if (!cheevos_login(timeout))
    {
       snprintf(
          request, sizeof(request),
          "http://retroachievements.org/dorequest.php?r=unlocks&u=%s&t=%s&g=%u&h=0",
-         config_get_ptr()->cheevos.username, cheevos_locals.token, game_id
+         settings->cheevos.username, cheevos_locals.token, game_id
       );
 
       request[sizeof(request) - 1] = 0;
@@ -1770,17 +1776,18 @@ int cheevos_load(const struct retro_game_info *info)
       {cheevos_find_game_id_generic, "Generic (plain content)", NULL},
    };
    
-   retro_time_t timeout = 5000000;
-   unsigned game_id = 0;
    size_t memory;
    struct retro_system_info sysinfo;
    int i;
    const char *json;
+   retro_time_t timeout         = 5000000;
+   unsigned game_id             = 0;
+   settings_t *settings         = config_get_ptr();
    
    cheevos_locals.loaded = 0;
    
    /* Just return OK if cheevos are disabled. */
-   if (!config_get_ptr()->cheevos.enable)
+   if (!settings->cheevos.enable)
       return 0;
    
    /* Also return OK if there's no content. */
@@ -1884,51 +1891,57 @@ int cheevos_load(const struct retro_game_info *info)
 
 void cheevos_populate_menu(menu_displaylist_info_t *info)
 {
-   const cheevo_t *end;
-   cheevo_t *cheevo;
+   unsigned i;
+   const cheevo_t *end          = NULL;
+   cheevo_t *cheevo             = NULL;
+   settings_t *settings         = config_get_ptr();
    
-   menu_entries_push(info->list, "Unlocked Achievements:", "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   menu_entries_push(info->list, "", "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   menu_entries_push(info->list, "Unlocked Achievements:", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
+   menu_entries_push(info->list, "", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
+
+   cheevo = cheevos_locals.core.cheevos;
+   end    = cheevos_locals.core.cheevos + cheevos_locals.core.count;
    
-   for (cheevo = cheevos_locals.core.cheevos, end = cheevos_locals.core.cheevos + cheevos_locals.core.count; cheevo < end; cheevo++)
+   for (i = 0; cheevo < end; i++, cheevo++)
    {
       if (!cheevo->active)
-      {
-         menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-      }
+         menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
    }
    
-   if (config_get_ptr()->cheevos.test_unofficial)
+   if (settings->cheevos.test_unofficial)
    {
-      for (cheevo = cheevos_locals.unofficial.cheevos, end = cheevos_locals.unofficial.cheevos + cheevos_locals.unofficial.count; cheevo < end; cheevo++)
+      cheevo = cheevos_locals.unofficial.cheevos;
+      end    = cheevos_locals.unofficial.cheevos + cheevos_locals.unofficial.count;
+
+      for (i = 0; cheevo < end; i++, cheevo++)
       {
          if (!cheevo->active)
-         {
-            menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-         }
+            menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
    }
    
-   menu_entries_push(info->list, "", "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   menu_entries_push(info->list, "Locked Achievements:", "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   menu_entries_push(info->list, "", "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   
-   for (cheevo = cheevos_locals.core.cheevos, end = cheevos_locals.core.cheevos + cheevos_locals.core.count; cheevo < end; cheevo++)
+   menu_entries_push(info->list, "", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
+   menu_entries_push(info->list, "Locked Achievements:", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
+   menu_entries_push(info->list, "", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
+
+   cheevo = cheevos_locals.core.cheevos;
+   end = cheevos_locals.core.cheevos + cheevos_locals.core.count;
+
+   for (i = 0; cheevo < end; i++, cheevo++)
    {
       if (cheevo->active)
-      {
-         menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-      }
+         menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
    }
    
-   if (config_get_ptr()->cheevos.test_unofficial)
+   if (settings->cheevos.test_unofficial)
    {
-      for (cheevo = cheevos_locals.unofficial.cheevos, end = cheevos_locals.unofficial.cheevos + cheevos_locals.unofficial.count; cheevo < end; cheevo++)
+      cheevo = cheevos_locals.unofficial.cheevos;
+      end = cheevos_locals.unofficial.cheevos + cheevos_locals.unofficial.count;
+
+      for (i = 0; cheevo < end; i++, cheevo++)
       {
          if (cheevo->active)
-         {
-            menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-         }
+            menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
    }
 }
