@@ -581,11 +581,26 @@ void menu_display_blend_end(void)
 void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
       float scale_x, float scale_y, float scale_z, bool scale_enable)
 {
+   math_matrix_4x4 *matrix, *b;
+   math_matrix_4x4 matrix_rotated;
+   math_matrix_4x4 matrix_scaled;
    menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
-   if (!menu_disp)
+   if (!menu_disp || !menu_disp->get_default_mvp)
       return;
 
-   menu_disp->matrix_4x4_rotate_z(data, rotation, scale_x, scale_y, scale_z, scale_enable);
+   matrix = (math_matrix_4x4*)data;
+   b      = (math_matrix_4x4*)menu_disp->get_default_mvp();
+   if (!matrix)
+      return;
+
+   matrix_4x4_rotate_z(&matrix_rotated, rotation);
+   matrix_4x4_multiply(matrix, &matrix_rotated, b);
+
+   if (!scale_enable)
+      return;
+
+   matrix_4x4_scale(&matrix_scaled, scale_x, scale_y, scale_z);
+   matrix_4x4_multiply(matrix, &matrix_scaled, matrix);
 }
 
 unsigned menu_display_texture_load(void *data,

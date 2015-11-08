@@ -103,8 +103,7 @@ typedef struct menu_display_ctx_driver
 
    void (*clear_color)(float r, float g, float b, float a);
 
-   void (*matrix_4x4_rotate_z)(void *data, float rotation,
-         float scale_x, float scale_y, float scale_z, bool scale_enable);
+   void *(*get_default_mvp)(void);
    const float *(*get_tex_coords)(void);
    unsigned (*texture_load)(void *data, enum texture_filter_type type);
    void (*texture_unload)(uintptr_t *id);

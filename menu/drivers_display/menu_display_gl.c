@@ -17,7 +17,6 @@
 
 #include <queues/message_queue.h>
 #include <retro_miscellaneous.h>
-#include <gfx/math/matrix_4x4.h>
 
 #include "../../config.def.h"
 #include "../../gfx/font_renderer_driver.h"
@@ -42,14 +41,14 @@ static const GLfloat gl_tex_coords[] = {
    1, 0
 };
 
-static math_matrix_4x4 *menu_display_get_default_mvp(void)
+static void *menu_display_gl_get_default_mvp(void)
 {
-   gl_t           *gl = (gl_t*)video_driver_get_ptr(NULL);
+   gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
 
    if (!gl)
       return NULL;
 
-   return (math_matrix_4x4*)&gl->mvp_no_rot;
+   return &gl->mvp_no_rot;
 }
 
 static GLenum menu_display_prim_to_gl_enum(enum menu_display_prim_type prim_type)
@@ -194,26 +193,6 @@ static void menu_display_gl_clear_color(float r, float g, float b, float a)
    glClear(GL_COLOR_BUFFER_BIT);
 }
 
-static void menu_display_gl_matrix_4x4_rotate_z(void *data, float rotation,
-      float scale_x, float scale_y, float scale_z, bool scale_enable)
-{
-   math_matrix_4x4 matrix_rotated;
-   math_matrix_4x4 matrix_scaled;
-   math_matrix_4x4 *matrix = (math_matrix_4x4*)data;
-   math_matrix_4x4 *b = menu_display_get_default_mvp();
-   if (!matrix)
-      return;
-
-   matrix_4x4_rotate_z(&matrix_rotated, rotation);
-   matrix_4x4_multiply(matrix, &matrix_rotated, b);
-
-   if (!scale_enable)
-      return;
-
-   matrix_4x4_scale(&matrix_scaled, scale_x, scale_y, scale_z);
-   matrix_4x4_multiply(matrix, &matrix_scaled, matrix);
-}
-
 static unsigned menu_display_gl_texture_load(void *data, enum texture_filter_type type)
 {
    return video_texture_load(data, TEXTURE_BACKEND_OPENGL, type);
@@ -238,7 +217,7 @@ menu_display_ctx_driver_t menu_display_ctx_gl = {
    menu_display_gl_blend_end,
    menu_display_gl_restore_clear_color,
    menu_display_gl_clear_color,
-   menu_display_gl_matrix_4x4_rotate_z,
+   menu_display_gl_get_default_mvp,
    menu_display_gl_get_tex_coords,
    menu_display_gl_texture_load,
    menu_display_gl_texture_unload,

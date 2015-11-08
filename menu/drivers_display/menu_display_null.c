@@ -17,7 +17,6 @@
 
 #include <queues/message_queue.h>
 #include <retro_miscellaneous.h>
-#include <gfx/math/matrix_4x4.h>
 
 #include "../../config.def.h"
 #include "../../gfx/font_renderer_driver.h"
@@ -26,6 +25,11 @@
 #include "../../gfx/video_texture.h"
 
 #include "../menu_display.h"
+
+static void *menu_display_null_get_default_mvp(void)
+{
+   return NULL;
+}
 
 static void menu_display_null_blend_begin(void)
 {
@@ -69,11 +73,6 @@ static void menu_display_null_clear_color(float r, float g, float b, float a)
 {
 }
 
-static void menu_display_null_matrix_4x4_rotate_z(void *data, float rotation,
-      float scale_x, float scale_y, float scale_z, bool scale_enable)
-{
-}
-
 static unsigned menu_display_null_texture_load(void *data, enum texture_filter_type type)
 {
    return 0;
@@ -96,7 +95,7 @@ menu_display_ctx_driver_t menu_display_ctx_null = {
    menu_display_null_blend_end,
    menu_display_null_restore_clear_color,
    menu_display_null_clear_color,
-   menu_display_null_matrix_4x4_rotate_z,
+   menu_display_null_get_default_mvp,
    menu_display_null_get_tex_coords,
    menu_display_null_texture_load,
    menu_display_null_texture_unload,
