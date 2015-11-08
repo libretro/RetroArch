@@ -60,6 +60,11 @@ typedef struct menu_display
 
 
 static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
+#if 0
+#ifdef HAVE_DIRECT3D
+   &menu_display_ctx_d3d,
+#endif
+#endif
 #ifdef HAVE_OPENGL
    &menu_display_ctx_gl,
 #endif

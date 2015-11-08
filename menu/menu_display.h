@@ -178,6 +178,7 @@ void menu_display_texture_unload(uintptr_t *id);
 const float *menu_display_get_tex_coords(void);
 
 extern menu_display_ctx_driver_t menu_display_ctx_gl;
+extern menu_display_ctx_driver_t menu_display_ctx_d3d;
 extern menu_display_ctx_driver_t menu_display_ctx_null;
 
 #ifdef __cplusplus
