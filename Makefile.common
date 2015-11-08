@@ -450,6 +450,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_display.o \
           menu/menu_displaylist.o \
           menu/menu_animation.o \
+          menu/drivers_display/menu_display_null.o \
           menu/drivers/menu_generic.o \
           menu/drivers/null.o
 endif
@@ -577,6 +578,10 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
           gfx/drivers_font/gl_raster_font.o \
           libretro-common/gfx/math/matrix_4x4.o \
           libretro-common/glsym/rglgen.o
+	
+   ifeq ($(HAVE_MENU_COMMON), 1)
+		OBJ += menu/drivers_display/menu_display_gl.o
+	endif
 
    ifeq ($(HAVE_KMS), 1)
       OBJ += gfx/drivers_context/drm_egl_ctx.o

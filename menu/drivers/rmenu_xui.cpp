@@ -723,7 +723,6 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_list_set_selection,
    NULL,
    "rmenu_xui",
-   MENU_VIDEO_DRIVER_DIRECT3D,
    rmenu_xui_environ,
    NULL,
 };

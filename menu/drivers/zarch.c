@@ -24,6 +24,8 @@
 #include <file/file_path.h>
 #include <file/dir_list.h>
 #include <compat/posix_string.h>
+#include <gfx/math/matrix_4x4.h>
+#include <formats/image.h>
 #include <compat/strl.h>
 #include <retro_log.h>
 #include <retro_stat.h>
@@ -42,6 +44,9 @@
 #include "../../runloop_data.h"
 
 #include "../../gfx/font_driver.h"
+
+#include "../../configuration.h"
+#include "../../runloop.h"
 
 #if 0
 #define ZARCH_DEBUG
@@ -1039,7 +1044,7 @@ static void zarch_frame(void)
 
    menu_display_blend_begin();
 
-   menu_display_draw_frame(
+   menu_display_draw(
          0,
          0,
          zui->width,
@@ -1050,7 +1055,7 @@ static void zarch_frame(void)
 
    menu_display_blend_end();
 
-   menu_display_frame_background(
+   menu_display_draw_bg(
          zui->width, zui->height,
          zui->textures.bg.id, 0.75f, false,
          &coord_color[0],   &coord_color2[0],
@@ -1074,7 +1079,7 @@ static void *zarch_init(void)
    if (!menu)
       goto error;
 
-   if (!menu_display_check_compatibility((enum menu_display_driver_type)menu_ctx_zarch.type))
+   if (!menu_display_driver_init_first())
       goto error;
 
    menu->userdata       = (zui_t*)calloc(1, sizeof(zui_t));
@@ -1359,7 +1364,6 @@ menu_ctx_driver_t menu_ctx_zarch = {
    NULL,
    zarch_load_image,
    "zarch",
-   MENU_VIDEO_DRIVER_OPENGL,
    NULL,
    NULL,
 };

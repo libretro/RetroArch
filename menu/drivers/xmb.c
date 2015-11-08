@@ -22,8 +22,12 @@
 
 #include <file/file_path.h>
 #include <compat/posix_string.h>
+#include <compat/strl.h>
+#include <retro_log.h>
+#include <formats/image.h>
 #include <string/stdstring.h>
 #include <string/string_list.h>
+#include <gfx/math/matrix_4x4.h>
 
 #include "menu_generic.h"
 
@@ -37,8 +41,10 @@
 
 #include "../menu_cbs.h"
 
+#include "../../configuration.h"
 #include "../../file_ext.h"
 
+#include "../../runloop.h"
 #include "../../runloop_data.h"
 
 #ifndef XMB_THEME
@@ -71,8 +77,8 @@ typedef struct
    float zoom;
    float x;
    float y;
-   GRuint icon;
-   GRuint content_icon;
+   uintptr_t icon;
+   uintptr_t content_icon;
 } xmb_node_t;
 
 enum
@@ -125,7 +131,7 @@ enum
 
 struct xmb_texture_item
 {
-   GRuint id;
+   uintptr_t id;
 };
 
 typedef struct xmb_handle
@@ -139,7 +145,7 @@ typedef struct xmb_handle
    char box_message[PATH_MAX_LENGTH];
    float x;
    float alpha;
-   GRuint boxart;
+   uintptr_t boxart;
    float boxart_size;
    char background_file_path[PATH_MAX_LENGTH];
 
@@ -323,11 +329,11 @@ static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
 }
 
 static void xmb_draw_icon(xmb_handle_t *xmb,
-      GRuint texture,
+      uintptr_t texture,
       float x, float y,
       unsigned width, unsigned height,
       float rotation, float scale_factor,
-      GRfloat *color)
+      float *color)
 {
    struct gfx_coords coords;
    math_matrix_4x4 mymat;
@@ -347,7 +353,7 @@ static void xmb_draw_icon(xmb_handle_t *xmb,
    coords.lut_tex_coord = NULL;
    coords.color         = (const float*)color;
 
-   menu_display_draw_frame(
+   menu_display_draw(
          x,
          height - y,
          xmb->icon.size,
@@ -358,11 +364,11 @@ static void xmb_draw_icon(xmb_handle_t *xmb,
 
 static void xmb_draw_icon_predone(xmb_handle_t *xmb,
       math_matrix_4x4 *mymat,
-      GRuint texture,
+      uintptr_t texture,
       float x, float y,
       unsigned width, unsigned height,
       float alpha, float rotation, float scale_factor,
-      GRfloat *color)
+      float *color)
 {
    struct gfx_coords coords;
 
@@ -379,7 +385,7 @@ static void xmb_draw_icon_predone(xmb_handle_t *xmb,
    coords.lut_tex_coord = NULL;
    coords.color         = color;
 
-   menu_display_draw_frame(
+   menu_display_draw(
          x,
          height - y,
          xmb->icon.size,
@@ -388,7 +394,7 @@ static void xmb_draw_icon_predone(xmb_handle_t *xmb,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 }
 
-static void xmb_draw_boxart(xmb_handle_t *xmb, GRfloat *color, unsigned width, unsigned height)
+static void xmb_draw_boxart(xmb_handle_t *xmb, float *color, unsigned width, unsigned height)
 {
    struct gfx_coords coords;
    math_matrix_4x4 mymat;
@@ -404,7 +410,7 @@ static void xmb_draw_boxart(xmb_handle_t *xmb, GRfloat *color, unsigned width, u
    coords.lut_tex_coord = NULL;
    coords.color         = (const float*)color;
 
-   menu_display_draw_frame(
+   menu_display_draw(
          x,
          height - y,
          xmb->boxart_size,
@@ -1219,7 +1225,7 @@ static void xmb_populate_entries(const char *path,
       xmb_list_open(xmb);
 }
 
-static GRuint xmb_icon_get_id(xmb_handle_t *xmb,
+static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       xmb_node_t *core_node, xmb_node_t *node, unsigned type, bool active)
 {
    switch(type)
@@ -1287,7 +1293,7 @@ static GRuint xmb_icon_get_id(xmb_handle_t *xmb,
 
 static void xmb_draw_items(xmb_handle_t *xmb,
       file_list_t *list, file_list_t *stack,
-      size_t current, size_t cat_selection_ptr, GRfloat *color,
+      size_t current, size_t cat_selection_ptr, float *color,
       unsigned width, unsigned height)
 {
    unsigned i, ticker_limit;
@@ -1321,8 +1327,8 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
       const float half_size       = xmb->icon.size / 2.0f;
       menu_entry_t entry          = {{0}};
-      GRuint texture_switch       = 0;
-      GRuint         icon         = 0;
+      uintptr_t texture_switch       = 0;
+      uintptr_t         icon         = 0;
       xmb_node_t *   node         = (xmb_node_t*)menu_entries_get_userdata_at_offset(list, i);
       uint32_t hash_label         = 0;
       uint32_t hash_value         = 0;
@@ -1514,7 +1520,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 }
 
 static void xmb_draw_cursor(xmb_handle_t *xmb,
-      GRfloat *color,
+      float *color,
       float x, float y, unsigned width, unsigned height)
 {
    struct gfx_coords coords;
@@ -1527,7 +1533,7 @@ static void xmb_draw_cursor(xmb_handle_t *xmb,
 
    menu_display_blend_begin();
 
-   menu_display_draw_frame(
+   menu_display_draw(
          x - (xmb->cursor.size/2),
          height - y - (xmb->cursor.size/2),
          xmb->cursor.size,
@@ -1597,7 +1603,7 @@ static void xmb_render(void)
 
 static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
       menu_handle_t *menu, unsigned width, unsigned height,
-      GRfloat *color)
+      float *color)
 {
    unsigned i;
    size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
@@ -1637,9 +1643,9 @@ static void xmb_frame(void)
    char msg[PATH_MAX_LENGTH];
    char title_msg[PATH_MAX_LENGTH];
    char timedate[PATH_MAX_LENGTH];
-   GRfloat item_color[16];
-   GRfloat coord_color[16];
-   GRfloat coord_color2[16];
+   float item_color[16];
+   float coord_color[16];
+   float coord_color2[16];
    bool display_kb;
    bool render_background                  = false;
    xmb_handle_t *xmb                       = NULL;
@@ -1680,7 +1686,7 @@ static void xmb_frame(void)
    coord_color[3]  = coord_color[7]  = coord_color[11]  = coord_color[15]  = (0.75f > xmb->alpha) ? xmb->alpha : 0.75f;
    coord_color2[3] = coord_color2[7] = coord_color2[11] = coord_color2[15] = xmb->alpha;
 
-   menu_display_frame_background(
+   menu_display_draw_bg(
          width, height, xmb->textures.bg.id, xmb->alpha, false, &coord_color[0],
          &coord_color2[0], NULL, NULL, 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
@@ -1784,7 +1790,7 @@ static void xmb_frame(void)
 
    if (render_background)
    {
-      menu_display_frame_background(
+      menu_display_draw_bg(
             width, height,
             xmb->textures.bg.id, xmb->alpha, true,
             &coord_color[0], &coord_color2[0],
@@ -1943,7 +1949,7 @@ static void *xmb_init(void)
    if (!menu)
       goto error;
 
-   if (!menu_display_check_compatibility((enum menu_display_driver_type)menu_ctx_xmb.type))
+   if (!menu_display_driver_init_first())
       goto error;
 
    video_driver_get_size(&width, &height);
@@ -2749,7 +2755,6 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_list_bind_init,
    xmb_load_image,
    "xmb",
-   MENU_VIDEO_DRIVER_OPENGL,
    xmb_environ,
    xmb_pointer_tap,
 };

@@ -139,6 +139,9 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/vc_egl_ctx.c"
 #endif
 
+#ifdef HAVE_MENU
+#include "../menu/drivers_display/menu_display_gl.c"
+#endif
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../gfx/drivers_context/wgl_ctx.c"
@@ -814,6 +817,7 @@ MENU
 #include "../menu/intl/menu_hash_pt.c"
 #include "../menu/intl/menu_hash_us.c"
 
+#include "../menu/drivers_display/menu_display_null.c"
 #include "../menu/drivers/null.c"
 #include "../menu/drivers/menu_generic.c"
 #endif
