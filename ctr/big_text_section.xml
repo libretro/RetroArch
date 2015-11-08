@@ -1,0 +1,44 @@
+<targets selectable="true">
+	<!--   YouTube (USA)-->
+	<title mediatype="1">00040000000B0F00</title>
+	<!--   YouTube (Europe)-->
+	<title mediatype="1">00040000000CCD00</title>
+	<!--   YouTube (Japan)-->
+	<title mediatype="1">00040000000D3000</title>
+	<!--   Monster Hunter 4 Ultimate Special Demo (USA)-->
+	<title mediatype="1">000400000015FA00</title>
+	<!--   Monster Hunter 4 Ultimate Special Demo (Europe)-->
+	<title mediatype="1">000400000015FB00</title>
+	<!--   Monster Hunter 4 Ultimate (USA eShop)-->
+	<title mediatype="1">0004000000126300</title>
+	<!--   Monster Hunter 4 Ultimate (Europe eShop)-->
+	<title mediatype="1">0004000000126100</title>
+	<!--   Monster Hunter 4G (Japan eShop)-->
+	<title mediatype="1">000400000011D700</title>
+	<!--   Monster Hunter 4 Ultimate (USA cartridge)-->
+	<title mediatype="2">0004000000126300</title>
+	<!--   Monster Hunter 4 Ultimate (Europe cartridge)-->
+	<title mediatype="2">0004000000126100</title>
+	<!--   Monster Hunter 4 Ultimate (Japan cartridge)-->
+	<title mediatype="2">000400000011D700</title>
+	<!--   Super Smash Bros. for Nintendo 3DS Demo (USA)-->
+	<title mediatype="1">000400000014E500</title>
+	<!--   Super Smash Bros. for Nintendo 3DS Demo (Europe)-->
+	<title mediatype="1">000400000014E600</title>
+	<!--   Super Smash Bros. for Nintendo 3DS Special Demo (USA)-->
+	<title mediatype="1">000400000014C200</title>
+	<!--   Super Smash Bros. for Nintendo 3DS Special Demo (Europe)-->
+	<title mediatype="1">000400000014C300</title>
+	<!--   Super Smash Bros. for Nintendo 3DS (USA eShop)-->
+	<title mediatype="1">00040000000EDF00</title>
+	<!--   Super Smash Bros. for Nintendo 3DS (Europe eShop)-->
+	<title mediatype="1">00040000000EE000</title>
+	<!--   Dairantou Smash Brothers for Nintendo 3DS (Japan eShop)-->
+	<title mediatype="1">00040000000B8B00</title>
+	<!--   Super Smash Bros. for Nintendo 3DS (USA cartridge)-->
+	<title mediatype="2">00040000000EDF00</title>
+	<!--   Super Smash Bros. for Nintendo 3DS (Europe cartridge)-->
+	<title mediatype="2">00040000000EE000</title>
+	<!--   Dairantou Smash Brothers for Nintendo 3DS (Japan cartridge)-->
+	<title mediatype="2">00040000000B8B00</title>
+</targets>
