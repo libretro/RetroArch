@@ -746,6 +746,10 @@ ifeq ($(HAVE_D3D9), 1)
    DEFINES += -DHAVE_D3D -DHAVE_D3D9
    LIBS += -ld3d9 -ld3dx9 -ldxguid
 
+   #ifeq ($(HAVE_MENU_COMMON), 1)
+		#OBJ += menu/drivers_display/menu_display_d3d.o
+	#endif
+
    ifeq ($(HAVE_CG), 1)
       LIBS += -lcgD3D9
       OBJ  += gfx/d3d/render_chain_cg.o
