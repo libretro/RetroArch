@@ -1139,10 +1139,43 @@ static int cheevos_test_cheevo(cheevo_t *cheevo)
    return ret_val && ret_val_sub_cond;
 }
 
+static void cheevos_url_encode(const char *str, char *encoded, size_t len)
+{
+   while (*str)
+   {
+      if (isalnum(*str) || *str == '-' || *str == '_' || *str == '.' || *str == '~')
+      {
+         if (len >= 2)
+         {
+            *encoded++ = *str++;
+            len--;
+         }
+         else
+            break;
+      }
+      else
+      {
+         if (len >= 4)
+         {
+            sprintf(encoded, "%%%02x", (uint8_t)*str);
+            encoded += 3;
+            str++;
+            len -= 3;
+         }
+         else
+            break;
+      }
+   }
+   
+   *encoded = 0;
+}
+
 static int cheevos_login(retro_time_t *timeout)
 {
    const char *username;
    const char *password;
+   char urle_user[64];
+   char urle_pwd[64];
    char request[256];
    const char *json;
    int res;
@@ -1161,13 +1194,16 @@ static int cheevos_login(retro_time_t *timeout)
       RARCH_LOG("CHEEVOS username and/or password not informed\n");
       return -1;
    }
-
+   
+   cheevos_url_encode(username, urle_user, sizeof(urle_user));
+   cheevos_url_encode(password, urle_pwd, sizeof(urle_pwd));
+   
    snprintf(
       request, sizeof(request),
       "http://retroachievements.org/dorequest.php?r=login&u=%s&p=%s",
-      username, password
+      urle_user, urle_pwd
    );
-
+   
    request[sizeof(request) - 1] = 0;
 
    if (!cheevos_http_get(&json, NULL, request, timeout))
