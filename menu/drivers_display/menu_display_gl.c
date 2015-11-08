@@ -199,7 +199,7 @@ static void menu_display_gl_texture_unload(uintptr_t *id)
 {
    if (!id)
       return;
-   video_texture_unload(id);
+   video_texture_unload(TEXTURE_BACKEND_OPENGL, id);
 }
 
 static const float *menu_display_gl_get_tex_coords(void)

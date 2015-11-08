@@ -219,14 +219,14 @@ static void menu_display_d3d_clear_color(float r, float g, float b, float a)
 
 static unsigned menu_display_d3d_texture_load(void *data, enum texture_filter_type type)
 {
-   return video_texture_load(data, TEXTURE_BACKEND_OPENGL, type);
+   return video_texture_load(data, TEXTURE_BACKEND_DIRECT3D, type);
 }
 
 static void menu_display_d3d_texture_unload(uintptr_t *id)
 {
    if (!id)
       return;
-   video_texture_unload(id);
+   video_texture_unload(TEXTURE_BACKEND_DIRECT3D, id);
 }
 
 static const float *menu_display_d3d_get_tex_coords(void)

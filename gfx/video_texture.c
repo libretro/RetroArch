@@ -25,7 +25,7 @@
 
 static void video_texture_png_load_gl(struct texture_image *ti,
       enum texture_filter_type filter_type,
-      unsigned *id)
+      uintptr_t *id)
 {
    /* Generate the OpenGL texture object */
    glGenTextures(1, (GLuint*)id);
@@ -38,11 +38,30 @@ static void video_texture_png_load_gl(struct texture_image *ti,
 }
 #endif
 
+#ifdef HAVE_D3D
+#include "d3d/d3d.h"
+
+static void video_texture_png_load_d3d(struct texture_image *ti,
+      enum texture_filter_type filter_type,
+      uintptr_t *id)
+{
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
+
+   if (!d3d)
+      return;
+
+   id = (uintptr_t*)d3d_texture_new(d3d->dev, NULL,
+         ti->width, ti->height, 1, 
+         0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, 0, 0, 0,
+         NULL, NULL);
+}
+#endif
+
 static unsigned video_texture_png_load(void *data,
       enum texture_backend_type type,
       enum texture_filter_type  filter_type)
 {
-   unsigned id = 0;
+   uintptr_t id = 0;
 
    if (!data)
       return 0;
@@ -52,6 +71,11 @@ static unsigned video_texture_png_load(void *data,
       case TEXTURE_BACKEND_OPENGL:
 #ifdef HAVE_OPENGL
          video_texture_png_load_gl((struct texture_image*)data, filter_type, &id);
+#endif
+         break;
+      case TEXTURE_BACKEND_DIRECT3D:
+#ifdef HAVE_D3D
+         video_texture_png_load_d3d((struct texture_image*)data, filter_type, &id);
 #endif
          break;
       case TEXTURE_BACKEND_DEFAULT:
@@ -77,6 +101,18 @@ static int video_texture_png_load_wrap_gl_mipmap(void *data)
 static int video_texture_png_load_wrap_gl(void *data)
 {
    return video_texture_png_load(data, TEXTURE_BACKEND_OPENGL,
+         TEXTURE_FILTER_LINEAR);
+}
+
+static int video_texture_png_load_wrap_d3d_mipmap(void *data)
+{
+   return video_texture_png_load(data, TEXTURE_BACKEND_DIRECT3D,
+         TEXTURE_FILTER_MIPMAP_LINEAR);
+}
+
+static int video_texture_png_load_wrap_d3d(void *data)
+{
+   return video_texture_png_load(data, TEXTURE_BACKEND_DIRECT3D,
          TEXTURE_FILTER_LINEAR);
 }
 
@@ -106,6 +142,13 @@ unsigned video_texture_load(void *data,
             else
                pkt.data.custom_command.method = video_texture_png_load_wrap_gl;
             break;
+         case TEXTURE_BACKEND_DIRECT3D:
+            if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR ||
+                  filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
+               pkt.data.custom_command.method = video_texture_png_load_wrap_d3d_mipmap;
+            else
+               pkt.data.custom_command.method = video_texture_png_load_wrap_d3d;
+            break;
          case TEXTURE_BACKEND_DEFAULT:
          default:
             pkt.data.custom_command.method = video_texture_png_load_wrap;
@@ -131,9 +174,21 @@ static void video_texture_gl_unload(uintptr_t *id)
 }
 #endif
 
-void video_texture_unload(uintptr_t *id)
+void video_texture_unload(enum texture_backend_type type, uintptr_t *id)
 {
+   switch (type)
+   {
+      case TEXTURE_BACKEND_OPENGL:
 #ifdef HAVE_OPENGL
-   video_texture_gl_unload(id);
+         video_texture_gl_unload(id);
 #endif
+         break;
+      case TEXTURE_BACKEND_DIRECT3D:
+#ifdef HAVE_D3D
+         d3d_texture_free((LPDIRECT3DTEXTURE)id);
+#endif
+         break;
+      case TEXTURE_BACKEND_DEFAULT:
+         break;
+   }
 }
