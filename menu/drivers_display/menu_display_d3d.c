@@ -13,9 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <time.h>
-
-#include <queues/message_queue.h>
 #include <retro_miscellaneous.h>
 
 #include "../../config.def.h"
