@@ -188,12 +188,6 @@ static uint32_t cheevos_djb2(const char* str, size_t length)
    return hash;
 }
 
-#ifdef NDEBUG
-
-#define http_get net_http_get
-
-#else
-
 static int http_get(const char **result, size_t *size, const char *url, retro_time_t *timeout)
 {
    int ret = net_http_get(result, size, url, timeout);
@@ -225,8 +219,6 @@ static int http_get(const char **result, size_t *size, const char *url, retro_ti
    RARCH_LOG("CHEEVOS http result was %s\n", *result ? *result : "(null)");
    return ret;
 }
-
-#endif
 
 typedef struct
 {
@@ -1218,7 +1210,10 @@ static void cheevo_unlocker(void *payload)
          free((void*)result);
       }
       else
-         RARCH_LOG("CHEEVOS error awarding achievement %u\n", cheevo_id);
+      {
+         RARCH_LOG("CHEEVOS error awarding achievement %u, will retry\n", cheevo_id);
+         async_job_add(cheevos_locals.jobs, cheevo_unlocker, (void*)(uintptr_t)cheevo_id);
+      }
    }
 }
 
@@ -1396,7 +1391,10 @@ static void cheevo_playing(void *payload)
          return;
       }
       else
-         RARCH_LOG("CHEEVOS error posting playing game %u activity\n", game_id);
+      {
+         RARCH_LOG("CHEEVOS error posting playing game %u activity, will retry\n", game_id);
+         async_job_add(cheevos_locals.jobs, cheevo_playing, (void*)(uintptr_t)game_id);
+      }
    }
 }
 
