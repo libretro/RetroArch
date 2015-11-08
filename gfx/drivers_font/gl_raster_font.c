@@ -440,7 +440,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
       x           = settings->video.msg_pos_x;
       y           = settings->video.msg_pos_y;
       scale       = 1.0f;
-      full_screen = false;
+      full_screen = true;
       text_align  = TEXT_ALIGN_LEFT;
 
       color[0]    = settings->video.msg_color_r;
