@@ -823,10 +823,8 @@ MENU
 #include "../menu/drivers_display/menu_display_gl.c"
 #endif
 
-#if 0
 #if defined(HAVE_D3D)
 #include "../menu/drivers_display/menu_display_d3d.c"
-#endif
 #endif
 
 #endif

@@ -48,10 +48,10 @@ static void *menu_display_d3d_get_default_mvp(void)
    if (!d3d)
       return NULL;
 
-   return &d3d->mvp_no_rot;
+   return NULL; /* TODO/FIXME */
 }
 
-static GLenum menu_display_prim_to_d3d_enum(enum menu_display_prim_type prim_type)
+static unsigned menu_display_prim_to_d3d_enum(enum menu_display_prim_type prim_type)
 {
    switch (prim_type)
    {
@@ -129,16 +129,18 @@ static void menu_display_d3d_draw(
    vp.MaxZ   = 1.0f;
 
    d3d_set_viewport(d3d->dev, &vp);
-   d3d_set_texture(d3d->dev, 0, texture);
+   d3d_set_texture(d3d->dev, 0, (LPDIRECT3DTEXTURE9)texture);
 
 #if 0
    gl->shader->set_coords(coords);
    gl->shader->set_mvp(driver->video_data, mat);
 #endif
 
-   d3d_draw_primitive(d3d->dev, menu_display_prim_to_d3d_enum(prim_type), 0, coords->vertices);
+   d3d_draw_primitive(d3d->dev, (D3DPRIMITIVETYPE)menu_display_prim_to_d3d_enum(prim_type), 0, coords->vertices);
 
+#if 0
    gl->coords.color     = gl->white_color_ptr;
+#endif
 }
 
 static void menu_display_d3d_draw_bg(
@@ -194,18 +196,24 @@ static void menu_display_d3d_draw_bg(
 
    menu_display_d3d_blend_end();
 
+#if 0
    gl->coords.color = gl->white_color_ptr;
+#endif
 }
 
 static void menu_display_d3d_restore_clear_color(void)
 {
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
    DWORD clear_color = 0x00000000;
+
    d3d_clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, clear_color, 0, 0);
 }
 
 static void menu_display_d3d_clear_color(float r, float g, float b, float a)
 {
-   DWORD clear_color = D3DCOLOR_ARGB(BYTE_CLAMP(a * 255.0f, r * 255.0f, g * 255.0f, b * 255.0f));
+   d3d_video_t *d3d  = (d3d_video_t*)video_driver_get_ptr(NULL);
+   DWORD clear_color = D3DCOLOR_ARGB(BYTE_CLAMP(a * 255.0f), BYTE_CLAMP(r * 255.0f), BYTE_CLAMP(g * 255.0f), BYTE_CLAMP(b * 255.0f));
+
    d3d_clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, clear_color, 0, 0);
 }
 
