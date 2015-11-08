@@ -569,14 +569,15 @@ endif
 OBJ += gfx/video_context_driver.o \
        gfx/drivers_context/gfx_null_ctx.o \
        gfx/video_state_tracker.o \
-       gfx/video_texture.o
+       gfx/video_texture.o \
+		 libretro-common/gfx/math/matrix_4x4.o \
+		 libretro-common/gfx/math/matrix_3x3.o
 
 ifeq ($(HAVE_GL_CONTEXT), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/drivers/gl.o \
           gfx/drivers/gl_common.o \
           gfx/drivers_font/gl_raster_font.o \
-          libretro-common/gfx/math/matrix_4x4.o \
           libretro-common/glsym/rglgen.o
 	
    ifeq ($(HAVE_MENU_COMMON), 1)
@@ -712,8 +713,7 @@ ifeq ($(HAVE_SUNXI), 1)
 endif
 
 ifeq ($(HAVE_VG), 1)
-   OBJ += gfx/drivers/vg.o \
-          libretro-common/gfx/math/matrix_3x3.o
+   OBJ += gfx/drivers/vg.o
    DEFINES += $(VG_CFLAGS)
    LIBS += $(VG_LIBS)
 endif
