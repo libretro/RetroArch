@@ -574,6 +574,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "core_updater_auto_extract_archive";
       case MENU_LABEL_DEBUG_INFORMATION:
          return "debug_information";
+      case MENU_LABEL_ACHIEVEMENT_LIST:
+         return "achievement_list";
       case MENU_LABEL_SYSTEM_INFORMATION:
          return "system_information";
       case MENU_LABEL_ONLINE_UPDATER:
@@ -1224,6 +1226,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "System Information";
       case MENU_LABEL_VALUE_DEBUG_INFORMATION:
          return "Debug Information";
+      case MENU_LABEL_VALUE_ACHIEVEMENT_LIST:
+         return "Achievement List";
       case MENU_LABEL_VALUE_ONLINE_UPDATER:
          return "Online Updater";
       case MENU_LABEL_VALUE_CORE_INFORMATION:

@@ -1978,6 +1978,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_CORE_INFORMATION:
       case MENU_LABEL_SYSTEM_INFORMATION:
       case MENU_LABEL_DEBUG_INFORMATION:
+      case MENU_LABEL_ACHIEVEMENT_LIST:
       case MENU_LABEL_DISK_OPTIONS:
       case MENU_LABEL_SETTINGS:
       case MENU_LABEL_FRONTEND_COUNTERS:

@@ -1744,6 +1744,10 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
             menu_hash_to_str(MENU_LABEL_SHADER_OPTIONS),
             MENU_SETTING_ACTION, 0, 0);
 #endif
+      menu_entries_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_ACHIEVEMENT_LIST),
+         menu_hash_to_str(MENU_LABEL_ACHIEVEMENT_LIST),
+         MENU_SETTING_ACTION, 0, 0);
    }
    else
       menu_entries_push(info->list,
@@ -2367,6 +2371,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_OPTIONS_DISK:
       case DISPLAYLIST_SYSTEM_INFO:
       case DISPLAYLIST_DEBUG_INFO:
+      case DISPLAYLIST_ACHIEVEMENT_LIST:
       case DISPLAYLIST_CORES:
       case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_CORES_UPDATER:
@@ -2924,6 +2929,11 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          info->need_refresh = true;
          break;
       case DISPLAYLIST_DEBUG_INFO:
+         menu_displaylist_parse_debug_info(info);
+         info->need_push    = true;
+         info->need_refresh = true;
+         break;
+      case DISPLAYLIST_ACHIEVEMENT_LIST:
          menu_displaylist_parse_debug_info(info);
          info->need_push    = true;
          info->need_refresh = true;

@@ -936,6 +936,9 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       case MENU_LABEL_DEBUG_INFORMATION:
          *w = 2;
          break;
+      case MENU_LABEL_ACHIEVEMENT_LIST:
+         *w = 2;
+         break;
    }
 
    if (type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START)
@@ -1073,6 +1076,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
       case MENU_LABEL_CORE_INFORMATION:
       case MENU_LABEL_SYSTEM_INFORMATION:
       case MENU_LABEL_DEBUG_INFORMATION:
+      case MENU_LABEL_ACHIEVEMENT_LIST:
       case MENU_LABEL_SAVE_STATE:
       case MENU_LABEL_LOAD_STATE:
          BIND_ACTION_GET_VALUE(cbs,
