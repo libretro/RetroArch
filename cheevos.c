@@ -1887,32 +1887,8 @@ void cheevos_populate_menu(menu_displaylist_info_t *info)
    const cheevo_t *end;
    cheevo_t *cheevo;
    
-   RARCH_LOG("CHEEVOS POPULATING MENU");
-   
-   menu_entries_push(info->list, "", "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    menu_entries_push(info->list, "Unlocked Achievements:", "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   
-   for (cheevo = cheevos_locals.core.cheevos, end = cheevos_locals.core.cheevos + cheevos_locals.core.count; cheevo < end; cheevo++)
-   {
-      if (cheevo->active)
-      {
-         menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-      }
-   }
-   
-   if (config_get_ptr()->cheevos.test_unofficial)
-   {
-      for (cheevo = cheevos_locals.unofficial.cheevos, end = cheevos_locals.unofficial.cheevos + cheevos_locals.unofficial.count; cheevo < end; cheevo++)
-      {
-         if (cheevo->active)
-         {
-            menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-         }
-      }
-   }
-   
    menu_entries_push(info->list, "", "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   menu_entries_push(info->list, "Locked Achievements:", "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    
    for (cheevo = cheevos_locals.core.cheevos, end = cheevos_locals.core.cheevos + cheevos_locals.core.count; cheevo < end; cheevo++)
    {
@@ -1927,6 +1903,29 @@ void cheevos_populate_menu(menu_displaylist_info_t *info)
       for (cheevo = cheevos_locals.unofficial.cheevos, end = cheevos_locals.unofficial.cheevos + cheevos_locals.unofficial.count; cheevo < end; cheevo++)
       {
          if (!cheevo->active)
+         {
+            menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         }
+      }
+   }
+   
+   menu_entries_push(info->list, "", "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   menu_entries_push(info->list, "Locked Achievements:", "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   menu_entries_push(info->list, "", "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   
+   for (cheevo = cheevos_locals.core.cheevos, end = cheevos_locals.core.cheevos + cheevos_locals.core.count; cheevo < end; cheevo++)
+   {
+      if (cheevo->active)
+      {
+         menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+      }
+   }
+   
+   if (config_get_ptr()->cheevos.test_unofficial)
+   {
+      for (cheevo = cheevos_locals.unofficial.cheevos, end = cheevos_locals.unofficial.cheevos + cheevos_locals.unofficial.count; cheevo < end; cheevo++)
+      {
+         if (cheevo->active)
          {
             menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
          }
