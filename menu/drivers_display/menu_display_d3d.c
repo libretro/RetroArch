@@ -113,7 +113,7 @@ static void menu_display_d3d_draw(
       height = 1;
 
    if (!mat)
-      mat = &gl->mvp_no_rot;
+      mat = menu_display_d3d_get_default_mvp();
    if (!coords->vertex)
       coords->vertex = &d3d_vertexes[0];
    if (!coords->tex_coord)
@@ -189,7 +189,7 @@ static void menu_display_d3d_draw_bg(
       coords.color = (const float*)coord_color2;
 
    menu_display_d3d_draw(0, 0, width, height,
-         &coords, &gl->mvp_no_rot,
+         &coords, (math_matrix_4x4*)menu_display_d3d_get_default_mvp(),
          (GLuint)texture, prim_type);
 
    menu_display_d3d_blend_end();
