@@ -21,17 +21,13 @@
 #include <boolean.h>
 
 #include "../gfx/video_texture.h"
+#include "../gfx/video_context_driver.h"
+#include "../gfx/font_renderer_driver.h"
+#include "../gfx/video_common.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-enum menu_display_driver_type
-{
-   MENU_VIDEO_DRIVER_GENERIC = 0,
-   MENU_VIDEO_DRIVER_OPENGL,
-   MENU_VIDEO_DRIVER_DIRECT3D
-};
 
 enum menu_display_ctl_state
 {
@@ -73,6 +69,49 @@ enum menu_display_prim_type
    MENU_DISPLAY_PRIM_TRIANGLES
 };
 
+enum menu_display_driver_type
+{
+   MENU_VIDEO_DRIVER_GENERIC = 0,
+   MENU_VIDEO_DRIVER_OPENGL,
+   MENU_VIDEO_DRIVER_DIRECT3D
+};
+
+typedef struct menu_display_ctx_driver
+{
+   void (*draw)(unsigned x, unsigned y,
+      unsigned width, unsigned height,
+      struct gfx_coords *coords,
+      void *matrix_data, 
+      uintptr_t texture,
+      enum menu_display_prim_type prim_type
+      );
+   void (*draw_bg)(
+      unsigned width, unsigned height,
+      uintptr_t texture,
+      float handle_alpha,
+      bool force_transparency,
+      float *color,
+      float *color2,
+      const float *vertex,
+      const float *tex_coord,
+      size_t vertex_count,
+      enum menu_display_prim_type prim_type
+      );
+   void (*blend_begin)(void);
+   void (*blend_end)(void);
+   void (*restore_clear_color)(void);
+
+   void (*clear_color)(float r, float g, float b, float a);
+
+   void (*matrix_4x4_rotate_z)(void *data, float rotation,
+         float scale_x, float scale_y, float scale_z, bool scale_enable);
+   const float *(*get_tex_coords)(void);
+   unsigned (*texture_load)(void *data, enum texture_filter_type type);
+   void (*texture_unload)(uintptr_t *id);
+   enum menu_display_driver_type type;
+   const char *ident;
+} menu_display_ctx_driver_t;
+
 void menu_display_free(void);
 
 bool menu_display_init(void);
@@ -97,52 +136,50 @@ void menu_display_timedate(char *s, size_t len, unsigned time_mode);
 void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
       bool flush);
 
-#ifdef HAVE_OPENGL
-#include "../gfx/drivers/gl_common.h"
 
-void menu_display_draw_frame(
-      unsigned x, unsigned y,
+const bool menu_display_driver_init_first(void);
+
+void menu_display_draw(unsigned x, unsigned y,
       unsigned width, unsigned height,
       struct gfx_coords *coords,
       void *matrix_data, 
-      GLuint texture,
+      uintptr_t texture,
       enum menu_display_prim_type prim_type
       );
+
+void menu_display_draw_bg(
+      unsigned width, unsigned height,
+      uintptr_t texture,
+      float handle_alpha,
+      bool force_transparency,
+      float *color,
+      float *color2,
+      const float *vertex,
+      const float *tex_coord,
+      size_t vertex_count,
+      enum menu_display_prim_type prim_type
+      );
+
+void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
+      float scale_x, float scale_y, float scale_z, bool scale_enable);
 
 void menu_display_blend_begin(void);
 
 void menu_display_blend_end(void);
 
-void menu_display_frame_background(
-      unsigned width, unsigned height,
-      GLuint texture,
-      float handle_alpha,
-      bool force_transparency,
-      GRfloat *color,
-      GRfloat *color2,
-      const GRfloat *vertex,
-      const GRfloat *tex_coord,
-      size_t vertex_count,
-      enum menu_display_prim_type prim_type
-      );
+unsigned menu_display_texture_load(void *data,
+      enum texture_filter_type  filter_type);
 
 void menu_display_restore_clear_color(void);
 
 void menu_display_clear_color(float r, float g, float b, float a);
 
-void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
-      float scale_x, float scale_y, float scale_z, bool scale_enable);
-#endif
+void menu_display_texture_unload(uintptr_t *id);
 
 const float *menu_display_get_tex_coords(void);
 
-
-unsigned menu_display_texture_load(void *data,
-      enum texture_filter_type  filter_type);
-
-void menu_display_texture_unload(uintptr_t *id);
-
-bool menu_display_check_compatibility(enum menu_display_driver_type type);
+extern menu_display_ctx_driver_t menu_display_ctx_gl;
+extern menu_display_ctx_driver_t menu_display_ctx_null;
 
 #ifdef __cplusplus
 }

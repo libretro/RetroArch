@@ -115,22 +115,6 @@ void find_menu_driver(void)
    }
 }
 
-static void init_menu_fallback(void)
-{
-#ifdef HAVE_RGUI
-   settings_t *settings = config_get_ptr();
-   driver_t *driver     = driver_get_ptr();
-   int i = find_driver_index("menu_driver", "rgui");
-
-   if (i >= 0)
-   {
-      driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
-      if (settings)
-         strlcpy(settings->menu.driver, "rgui", sizeof(settings->menu.driver));
-   }
-#endif
-}
-
 menu_handle_t *menu_driver_get_ptr(void)
 {
    driver_t *driver = driver_get_ptr();
@@ -155,9 +139,6 @@ void init_menu(void)
       return;
 
    find_menu_driver();
-
-   if (!menu_display_check_compatibility((enum menu_display_driver_type)driver->menu_ctx->type))
-      init_menu_fallback();
 
    if (!(driver->menu = (menu_handle_t*)menu_init(driver->menu_ctx)))
       retro_fail(1, "init_menu()");

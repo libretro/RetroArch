@@ -56,7 +56,6 @@ menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* bind_init */
   NULL,  /* load_image */
   "null",
-  MENU_VIDEO_DRIVER_GENERIC,
   NULL,
   NULL,
 };

@@ -25,6 +25,9 @@
 #include <retro_log.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
+#include <formats/image.h>
+#include <gfx/math/matrix_4x4.h>
+#include <string/string_list.h>
 
 #include "menu_generic.h"
 
@@ -34,6 +37,8 @@
 #include "../menu_hash.h"
 #include "../menu_display.h"
 
+#include "../../configuration.h"
+#include "../../runloop.h"
 #include "../../runloop_data.h"
 
 enum
@@ -62,7 +67,7 @@ enum
 
 struct mui_texture_item
 {
-   GRuint id;
+   uintptr_t id;
 };
 
 typedef struct mui_handle
@@ -85,7 +90,7 @@ typedef struct mui_handle
 
       struct mui_texture_item bg;
       struct mui_texture_item list[MUI_TEXTURE_LAST];
-      GRuint white;
+      uintptr_t white;
    } textures;
 
    struct
@@ -160,11 +165,11 @@ static void mui_context_reset_textures(mui_handle_t *mui, const char *iconpath)
 }
 
 static void mui_draw_icon(mui_handle_t *mui,
-      GRuint texture,
+      uintptr_t texture,
       float x, float y,
       unsigned width, unsigned height,
       float rotation, float scale_factor,
-      GRfloat *color)
+      float *color)
 {
    struct gfx_coords coords;
    math_matrix_4x4 mymat;
@@ -179,7 +184,7 @@ static void mui_draw_icon(mui_handle_t *mui,
    coords.lut_tex_coord = NULL;
    coords.color         = (const float*)color;
 
-   menu_display_draw_frame(
+   menu_display_draw(
          x,
          height - y - mui->icon_size,
          mui->icon_size,
@@ -217,7 +222,7 @@ static void mui_blit_line(float x, float y, unsigned width, unsigned height,
 
 static void mui_render_quad(int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
-      GRfloat *coord_color)
+      float *coord_color)
 {
    struct gfx_coords coords;
 
@@ -232,7 +237,7 @@ static void mui_render_quad(int x, int y, unsigned w, unsigned h,
 
    menu_display_blend_begin();
 
-   menu_display_draw_frame(
+   menu_display_draw(
          x,
          height - y - h,
          w,
@@ -243,7 +248,7 @@ static void mui_render_quad(int x, int y, unsigned w, unsigned h,
    menu_display_blend_end();
 }
 
-static void mui_draw_scrollbar(unsigned width, unsigned height, GRfloat *coord_color)
+static void mui_draw_scrollbar(unsigned width, unsigned height, float *coord_color)
 {
    unsigned header_height;
    float content_height, total_height, scrollbar_height, scrollbar_margin, y;
@@ -405,14 +410,14 @@ static void mui_render(void)
 static void mui_render_label_value(mui_handle_t *mui,
       int y, unsigned width, unsigned height,
       uint64_t index, uint32_t color, bool selected, const char *label,
-      const char *value, GRfloat *pure_white)
+      const char *value, float *pure_white)
 {
    char label_str[PATH_MAX_LENGTH];
    char value_str[PATH_MAX_LENGTH];
    int value_len         = strlen(value);
    int ticker_limit      = 0;
    size_t usable_width   = 0;
-   GRuint texture_switch = 0;
+   uintptr_t texture_switch = 0;
    bool do_draw_text     = false;
    uint32_t hash_value   = 0;
 
@@ -506,7 +511,7 @@ static void mui_render_menu_list(mui_handle_t *mui,
       menu_handle_t *menu,
       uint32_t normal_color,
       uint32_t hover_color,
-      GRfloat *pure_white)
+      float *pure_white)
 {
    unsigned header_height;
    size_t i                = 0;
@@ -547,7 +552,7 @@ static void mui_render_menu_list(mui_handle_t *mui,
 }
 
 static void mui_draw_cursor(mui_handle_t *mui,
-      GRfloat *color,
+      float *color,
       float x, float y, unsigned width, unsigned height)
 {
    struct gfx_coords coords;
@@ -560,7 +565,7 @@ static void mui_draw_cursor(mui_handle_t *mui,
 
    menu_display_blend_begin();
 
-   menu_display_draw_frame(
+   menu_display_draw(
          x - 32,
          height - y - 32,
          64,
@@ -591,7 +596,7 @@ static size_t mui_list_get_size(void *data, menu_list_type_t type)
    return list_size;
 }
 
-static void bgcolor_setalpha(GRfloat *bg, float alpha)
+static void bgcolor_setalpha(float *bg, float alpha)
 {
    bg[3]  = alpha;
    bg[7]  = alpha;
@@ -603,49 +608,49 @@ static void mui_frame(void)
 {
    unsigned header_height;
    bool display_kb;
-   GRfloat black_bg[16] = {
+   float black_bg[16] = {
       0, 0, 0, 0.75,
       0, 0, 0, 0.75,
       0, 0, 0, 0.75,
       0, 0, 0, 0.75,
    };
-   GRfloat blue_bg[16] = {
+   float blue_bg[16] = {
       0.13, 0.59, 0.95, 1,
       0.13, 0.59, 0.95, 1,
       0.13, 0.59, 0.95, 1,
       0.13, 0.59, 0.95, 1,
    };
-   GRfloat lightblue_bg[16] = {
+   float lightblue_bg[16] = {
       0.89, 0.95, 0.99, 1.00,
       0.89, 0.95, 0.99, 1.00,
       0.89, 0.95, 0.99, 1.00,
       0.89, 0.95, 0.99, 1.00,
    };
-   GRfloat pure_white[16]=  {
+   float pure_white[16]=  {
       1, 1, 1, 1,
       1, 1, 1, 1,
       1, 1, 1, 1,
       1, 1, 1, 1,
    };
-   GRfloat white_bg[16]=  {
+   float white_bg[16]=  {
       0.98, 0.98, 0.98, 1,
       0.98, 0.98, 0.98, 1,
       0.98, 0.98, 0.98, 1,
       0.98, 0.98, 0.98, 1,
    };
-   GRfloat white_transp_bg[16]=  {
+   float white_transp_bg[16]=  {
       0.98, 0.98, 0.98, 0.90,
       0.98, 0.98, 0.98, 0.90,
       0.98, 0.98, 0.98, 0.90,
       0.98, 0.98, 0.98, 0.90,
    };
-   GRfloat grey_bg[16]=  {
+   float grey_bg[16]=  {
       0.78, 0.78, 0.78, 1,
       0.78, 0.78, 0.78, 1,
       0.78, 0.78, 0.78, 1,
       0.78, 0.78, 0.78, 1,
    };
-   GRfloat shadow_bg[16]=  {
+   float shadow_bg[16]=  {
       0, 0, 0, 0,
       0, 0, 0, 0,
       0, 0, 0, 0.2,
@@ -689,7 +694,7 @@ static void mui_frame(void)
 
    if (libretro_running)
    {
-      menu_display_frame_background(
+      menu_display_draw_bg(
             width, height,
             mui->textures.white, 0.75f, false,
             &white_transp_bg[0],   &white_bg[0],
@@ -707,7 +712,7 @@ static void mui_frame(void)
          /* Set new opacity for transposed white background */
          bgcolor_setalpha(white_transp_bg, 0.30);
 
-         menu_display_frame_background(
+         menu_display_draw_bg(
                width, height,
                mui->textures.bg.id, 0.75f, true,
                &white_transp_bg[0],   &white_bg[0],
@@ -948,7 +953,7 @@ static void *mui_init(void)
    if (!menu)
       goto error;
 
-   if (!menu_display_check_compatibility((enum menu_display_driver_type)menu_ctx_mui.type))
+   if (!menu_display_driver_init_first())
       goto error;
 
    menu->userdata = (mui_handle_t*)calloc(1, sizeof(mui_handle_t));
@@ -1422,7 +1427,6 @@ menu_ctx_driver_t menu_ctx_mui = {
    NULL,
    mui_load_image,
    "glui",
-   MENU_VIDEO_DRIVER_OPENGL,
    mui_environ,
    mui_pointer_tap,
 };
