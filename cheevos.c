@@ -1903,9 +1903,6 @@ void cheevos_populate_menu(menu_displaylist_info_t *info)
    
    for (i = 0; cheevo < end; i++, cheevo++)
    {
-      if (!cheevo)
-         continue;
-
       if (!cheevo->active)
          menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
    }
@@ -1917,9 +1914,6 @@ void cheevos_populate_menu(menu_displaylist_info_t *info)
 
       for (i = 0; cheevo < end; i++, cheevo++)
       {
-         if (!cheevo)
-            continue;
-
          if (!cheevo->active)
             menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
@@ -1934,10 +1928,8 @@ void cheevos_populate_menu(menu_displaylist_info_t *info)
 
    for (i = 0; cheevo < end; i++, cheevo++)
    {
-      if (!cheevo || !cheevo->active)
-         continue;
-
-      menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+      if (cheevo->active)
+         menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
    }
    
    if (settings->cheevos.test_unofficial)
@@ -1947,10 +1939,8 @@ void cheevos_populate_menu(menu_displaylist_info_t *info)
 
       for (i = 0; cheevo < end; i++, cheevo++)
       {
-         if (!cheevo || !cheevo->active)
-            continue;
-
-         menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+         if (!cheevo->active)
+            menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
    }
 }
