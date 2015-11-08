@@ -1939,7 +1939,7 @@ void cheevos_populate_menu(menu_displaylist_info_t *info)
 
       for (i = 0; cheevo < end; i++, cheevo++)
       {
-         if (!cheevo->active)
+         if (cheevo->active)
             menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
    }
