@@ -804,6 +804,11 @@ static int action_ok_shader_pass_load(const char *path,
          ACTION_OK_LOAD_SHADER_PASS, MENU_LABEL_SHADER_OPTIONS);
 }
 
+static int action_ok_cheevos(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return 0;
+}
 
 static int action_ok_cheat(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -2096,6 +2101,10 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
    {
       BIND_ACTION_OK(cbs, NULL);
+   }
+   else if ((type >= MENU_SETTINGS_CHEEVOS_START))
+   {
+      BIND_ACTION_OK(cbs, action_ok_cheevos);
    }
    else if (type >= MENU_SETTINGS_CHEAT_BEGIN
          && type <= MENU_SETTINGS_CHEAT_END)
