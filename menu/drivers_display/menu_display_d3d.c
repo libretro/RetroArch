@@ -25,14 +25,16 @@
 
 #include "../menu_display.h"
 
-static const float gl_vertexes[] = {
+#define BYTE_CLAMP(i) (int) ((((i) > 255) ? 255 : (((i) < 0) ? 0 : (i))))
+
+static const float d3d_vertexes[] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const float gl_tex_coords[] = {
+static const float d3d_tex_coords[] = {
    0, 1,
    1, 1,
    0, 0,
@@ -113,11 +115,11 @@ static void menu_display_d3d_draw(
    if (!mat)
       mat = &gl->mvp_no_rot;
    if (!coords->vertex)
-      coords->vertex = &gl_vertexes[0];
+      coords->vertex = &d3d_vertexes[0];
    if (!coords->tex_coord)
-      coords->tex_coord = &gl_tex_coords[0];
+      coords->tex_coord = &d3d_tex_coords[0];
    if (!coords->lut_tex_coord)
-      coords->lut_tex_coord = &gl_tex_coords[0];
+      coords->lut_tex_coord = &d3d_tex_coords[0];
 
    vp.X      = x;
    vp.Y      = y;
@@ -157,18 +159,18 @@ static void menu_display_d3d_draw_bg(
    const GLfloat *new_tex_coord = NULL;
    global_t     *global = global_get_ptr();
    settings_t *settings = config_get_ptr();
-   gl_t             *gl = (gl_t*)video_driver_get_ptr(NULL);
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
 
-   if (!gl)
+   if (!d3d)
       return;
 
    new_vertex    = vertex;
    new_tex_coord = tex_coord;
 
    if (!new_vertex)
-      new_vertex = &gl_vertexes[0];
+      new_vertex = &d3d_vertexes[0];
    if (!new_tex_coord)
-      new_tex_coord = &gl_tex_coords[0];
+      new_tex_coord = &d3d_tex_coords[0];
 
    coords.vertices      = vertex_count;
    coords.vertex        = new_vertex;
@@ -221,7 +223,7 @@ static void menu_display_d3d_texture_unload(uintptr_t *id)
 
 static const float *menu_display_d3d_get_tex_coords(void)
 {
-   return &gl_tex_coords[0];
+   return &d3d_tex_coords[0];
 }
 
 menu_display_ctx_driver_t menu_display_ctx_d3d = {
