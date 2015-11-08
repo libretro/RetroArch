@@ -226,19 +226,32 @@ else ifeq ($(LIBRETRO), fb_alpha)
 	APP_TITLE           = Final Burn Alpha
 	#APP_DESCRIPTION     = Retroarch 3DS
 	APP_AUTHOR          = Team FB Alpha
-	APP_PRODUCT_CODE    = RARCH-FBAF
+	APP_PRODUCT_CODE    = RARCH-FBA
 	APP_UNIQUE_ID       = 0xBAC17
 	#APP_ICON            = ctr/default.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
+   APP_BIG_TEXT_SECTION = 1
 	
 else ifeq ($(LIBRETRO), mame2003)
-	APP_TITLE           = MAME
+	APP_TITLE           = MAME-2003
 	#APP_DESCRIPTION     = Retroarch 3DS
 	#APP_AUTHOR          = Team Libretro
-	APP_PRODUCT_CODE    = RARCH-MAME
+	APP_PRODUCT_CODE    = RARCH-MAME2003
 	APP_UNIQUE_ID       = 0xBAC18
 	APP_ICON            = ctr/mame.png
 	#APP_BANNER          = ctr/libretro_banner.png
 	#APP_AUDIO           = ctr/silent.wav
+   APP_BIG_TEXT_SECTION = 1
+
+else ifeq ($(LIBRETRO), mame2000)
+	APP_TITLE           = MAME-2000
+	#APP_DESCRIPTION     = Retroarch 3DS
+	#APP_AUTHOR          = Team Libretro
+	APP_PRODUCT_CODE    = RARCH-MAME2000
+	APP_UNIQUE_ID       = 0xBAC19
+	APP_ICON            = ctr/mame.png
+	#APP_BANNER          = ctr/libretro_banner.png
+	#APP_AUDIO           = ctr/silent.wav
+   APP_BIG_TEXT_SECTION = 1
 endif
