@@ -1904,6 +1904,9 @@ void cheevos_populate_menu(menu_displaylist_info_t *info)
    
    for (i = 0; cheevo < end; i++, cheevo++)
    {
+      if (!cheevo)
+         continue;
+
       if (!cheevo->active)
          menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
    }
@@ -1915,6 +1918,9 @@ void cheevos_populate_menu(menu_displaylist_info_t *info)
 
       for (i = 0; cheevo < end; i++, cheevo++)
       {
+         if (!cheevo)
+            continue;
+
          if (!cheevo->active)
             menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
@@ -1925,23 +1931,27 @@ void cheevos_populate_menu(menu_displaylist_info_t *info)
    menu_entries_push(info->list, "", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
 
    cheevo = cheevos_locals.core.cheevos;
-   end = cheevos_locals.core.cheevos + cheevos_locals.core.count;
+   end    = cheevos_locals.core.cheevos + cheevos_locals.core.count;
 
    for (i = 0; cheevo < end; i++, cheevo++)
    {
-      if (cheevo->active)
-         menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+      if (!cheevo || !cheevo->active)
+         continue;
+
+      menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
    }
    
    if (settings->cheevos.test_unofficial)
    {
       cheevo = cheevos_locals.unofficial.cheevos;
-      end = cheevos_locals.unofficial.cheevos + cheevos_locals.unofficial.count;
+      end    = cheevos_locals.unofficial.cheevos + cheevos_locals.unofficial.count;
 
       for (i = 0; cheevo < end; i++, cheevo++)
       {
-         if (cheevo->active)
-            menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+         if (!cheevo || !cheevo->active)
+            continue;
+
+         menu_entries_push(info->list, cheevo->title, cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
    }
 }
