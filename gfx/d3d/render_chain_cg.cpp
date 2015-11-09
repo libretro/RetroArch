@@ -53,7 +53,7 @@ struct Pass
    CGprogram vPrg, fPrg;
    unsigned last_width, last_height;
    LPDIRECT3DVERTEXDECLARATION vertex_decl;
-   unsigned *attrib_map[MAXD3DDECLLENGTH];
+   std::vector<unsigned> attrib_map;
 };
 
 typedef struct cg_renderchain
@@ -458,12 +458,12 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
    for (i = 0; i < count; i++)
    {
       if (indices[i])
-         pass->attrib_map[i] = 0;
+         pass->attrib_map.push_back(0);
       else
       {
          D3DVERTEXELEMENT elem = DECL_FVF_TEXCOORD(index, 3, tex_index);
 
-         pass->attrib_map[i] = index;
+         pass->attrib_map.push_back(index);
 
          decl[i]     = elem;
 
@@ -722,21 +722,11 @@ static void cg_d3d9_renderchain_clear_passes(cg_renderchain_t *chain)
 
    for (i = 1; i < chain->passes.size(); i++)
    {
-      unsigned j;
       if (chain->passes[i].tex)
          d3d_texture_free(chain->passes[i].tex);
-
-      for (j = 0; j < MAXD3DDECLLENGTH; j++)
-      {
-         if (chain->passes[i].attrib_map[j])
-            free(chain->passes[i].attrib_map[j]);
-         chain->passes[i].attrib_map[j] = NULL;
-      }
-
       d3d_vertex_buffer_free(chain->passes[i].vertex_buf, chain->passes[i].vertex_decl);
       renderchain_destroy_shader(chain, i);
    }
-
 }
 
 static void cg_d3d9_renderchain_clear(cg_renderchain_t *chain)
@@ -796,7 +786,6 @@ void cg_d3d9_renderchain_free(void *data)
    cg_d3d9_renderchain_clear(chain);
    cg_d3d9_renderchain_deinit_shader(chain);
    cg_d3d9_renderchain_destroy_stock_shader(chain);
-
    cg_d3d9_renderchain_deinit(chain);
 }
 
@@ -898,9 +887,6 @@ static bool renderchain_create_first_pass(cg_renderchain_t *chain,
    pass.last_height = 0;
 
    chain->prev.ptr  = 0;
-
-   for (i = 0; i < MAXD3DDECLLENGTH; i++)
-      pass.attrib_map[i] = (unsigned*)calloc(1, sizeof(unsigned));
 
    for (i = 0; i < TEXTURES; i++)
    {
