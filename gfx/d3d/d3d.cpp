@@ -113,12 +113,6 @@ static void d3d_deinitialize(d3d_video_t *d3d)
 #ifndef _XBOX
    d3d->needs_restore = false;
 #endif
-   if (d3d->dev)
-      d3d->dev->Release();
-   if (d3d->g_pD3D)
-      d3d->g_pD3D->Release();
-   d3d->dev    = NULL;
-   d3d->g_pD3D = NULL;
 }
 
 void d3d_make_d3dpp(void *data,
@@ -324,6 +318,8 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
          RARCH_WARN("[D3D]: Attempting to recover from dead state.\n");
 #endif
          d3d_deinitialize(d3d);
+         d3d->g_pD3D->Release();
+         d3d->g_pD3D = NULL;
          ret = d3d_init_base(d3d, info);
          if (ret)
             RARCH_LOG("[D3D]: Recovered from dead state.\n");
@@ -861,6 +857,7 @@ static void d3d_free(void *data)
    if (!d3d)
       return;
 
+   d3d_deinitialize(d3d);
 #ifdef HAVE_OVERLAY
    d3d_free_overlays(d3d);
 #endif
@@ -874,7 +871,10 @@ static void d3d_free(void *data)
 #endif
 
 #endif
-   d3d_deinitialize(d3d);
+   if (d3d->dev)
+      d3d->dev->Release();
+   if (d3d->g_pD3D)
+      d3d->g_pD3D->Release();
 
 #ifdef HAVE_MONITOR
    monitor_last = MonitorFromWindow(d3d->hWnd,
