@@ -234,9 +234,9 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
 
    if (chain->last_width != width || chain->last_height != height)
    {
-      d3d_lockrectangle(chain->tex,
+      d3d_lock_rectangle(chain->tex,
             0, &d3dlr, NULL, chain->tex_h, D3DLOCK_NOSYSLOCK);
-      d3d_lockrectangle_clear(chain->tex,
+      d3d_lock_rectangle_clear(chain->tex,
             0, &d3dlr, NULL, chain->tex_h, D3DLOCK_NOSYSLOCK);
    }
 

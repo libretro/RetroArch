@@ -1552,8 +1552,8 @@ static bool d3d_overlay_load(void *data,
          return false;
       }
 
-      if (SUCCEEDED(overlay->tex->LockRect(0, &d3dlr,
-                  NULL, D3DLOCK_NOSYSLOCK)))
+      if (d3d_lockrectangle(overlay->tex, 0, &d3dlr,
+               NULL, 0, D3DLOCK_NOSYSLOCK))
       {
          uint32_t       *dst = (uint32_t*)(d3dlr.pBits);
          const uint32_t *src = images[i].pixels;
@@ -1561,7 +1561,7 @@ static bool d3d_overlay_load(void *data,
 
          for (y = 0; y < height; y++, dst += pitch, src += width)
             memcpy(dst, src, width << 2);
-         overlay->tex->UnlockRect(0);
+         d3d_unlock_rectangle(overlay->tex);
       }
 
       overlay->tex_w         = width;
@@ -1916,11 +1916,8 @@ static void d3d_set_menu_texture_frame(void *data,
 
    d3d->menu->alpha_mod = alpha;
 
-#ifdef _XBOX
-   d3d->menu->tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-#else
-   if (SUCCEEDED(d3d->menu->tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
-#endif
+   if (d3d_lock_rectangle(d3d->menu->tex, 0, &d3dlr,
+            NULL, 0, D3DLOCK_NOSYSLOCK))
    {
       unsigned h, w;
       if (rgb32)
@@ -1958,8 +1955,9 @@ static void d3d_set_menu_texture_frame(void *data,
          }
       }
 
+
       if (d3d->menu)
-         d3d->menu->tex->UnlockRect(0);
+         d3d_unlock_rectangle(d3d->menu->tex);
    }
 }
 
