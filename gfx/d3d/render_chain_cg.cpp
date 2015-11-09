@@ -89,20 +89,15 @@ static INLINE D3DTEXTUREFILTERTYPE translate_filter(unsigned type)
    switch (type)
    {
       case RARCH_FILTER_UNSPEC:
-         return settings->video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
+         if (!settings->video.smooth)
+            break;
+         /* fall-through */
       case RARCH_FILTER_LINEAR:
          return D3DTEXF_LINEAR;
       case RARCH_FILTER_NEAREST:
-         return D3DTEXF_POINT;
+         break;
    }
 
-   return D3DTEXF_POINT;
-}
-
-static INLINE D3DTEXTUREFILTERTYPE translate_filter(bool smooth)
-{
-   if (smooth)
-      return D3DTEXF_LINEAR;
    return D3DTEXF_POINT;
 }
 
@@ -617,9 +612,9 @@ static void cg_d3d9_renderchain_add_lut(void *data,
 
    d3d_set_texture(chain->dev, index, chain->luts[i].tex);
    d3d_set_sampler_magfilter(chain->dev, index,
-         translate_filter(chain->luts[i].smooth));
+         translate_filter(chain->luts[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
    d3d_set_sampler_minfilter(chain->dev, index, 
-         translate_filter(chain->luts[i].smooth));
+         translate_filter(chain->luts[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
    d3d_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
    d3d_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
    chain->bound_tex.push_back(index);
