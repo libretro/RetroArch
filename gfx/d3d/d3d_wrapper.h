@@ -17,10 +17,12 @@
 #ifndef _D3D_WRAPPER_H
 #define _D3D_WRAPPER_H
 
+#include <boolean.h>
+
 #include "../common/win32_common.h"
 #include "d3d_defines.h"
 
-void d3d_swap(void *data, LPDIRECT3DDEVICE dev);
+bool d3d_swap(void *data, LPDIRECT3DDEVICE dev);
 
 LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
       unsigned length, unsigned usage, unsigned fvf,

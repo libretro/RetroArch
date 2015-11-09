@@ -14,16 +14,26 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "d3d.h"
 #include "d3d_wrapper.h"
-#include "render_chain_driver.h"
 
-void d3d_swap(void *data, LPDIRECT3DDEVICE dev)
+static LPDIRECT3DDEVICE d3d_wrapper_dev;
+
+static bool d3d_restore_device(LPDIRECT3DDEVICE dev)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   if (!dev)
+   {
+      if (!d3d_wrapper_dev)
+         return false;
+      dev = d3d_wrapper_dev;
+   }
+   d3d_wrapper_dev = dev;
+   return true;
+}
 
-   if (!d3d)
-	   return;
+bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
+{
+   if (!d3d_restore_device(dev))
+      return false;
 
 #if defined(_XBOX1)
    D3DDevice_Swap(0);
@@ -33,14 +43,17 @@ void d3d_swap(void *data, LPDIRECT3DDEVICE dev)
    if (dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
    {
       RARCH_ERR("[D3D]: Present() failed.\n");
-      d3d->needs_restore = true;
+      return false;
    }
 #endif
+   return true;
 }
 
 void d3d_set_transform(LPDIRECT3DDEVICE dev,
       D3DTRANSFORMSTATETYPE state, CONST D3DMATRIX *matrix)
 {
+   if (!d3d_restore_device(dev))
+      return;
 #ifdef _XBOX1
    D3DDevice_SetTransform(state, matrix);
 #elif !defined(_XBOX360)
@@ -59,13 +72,8 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
    HRESULT hr;
    LPDIRECT3DTEXTURE buf;
 
-   if (!dev)
-   {
-      d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
-      if (!d3d->dev)
-         return NULL;
-      dev = d3d->dev;
-   }
+   if (!d3d_restore_device(dev))
+      return NULL;
 
    if (path)
       hr = D3DXCreateTextureFromFileExA(dev,
@@ -101,6 +109,9 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
 {
    HRESULT hr;
    LPDIRECT3DVERTEXBUFFER buf;
+
+   if (!d3d_restore_device(dev))
+      return NULL;
 #ifndef _XBOX
    if (usage == 0)
    {
@@ -180,6 +191,8 @@ void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
       LPDIRECT3DVERTEXBUFFER stream_vertbuf, unsigned offset_bytes,
       unsigned stride)
 {
+   if (!d3d_restore_device(dev))
+      return;
 #if defined(HAVE_D3D8)
    IDirect3DDevice8_SetStreamSource(dev, stream_no, stream_vertbuf, stride);
 #elif defined(_XBOX360)
@@ -193,6 +206,8 @@ void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
 void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value)
 {
+   if (!d3d_restore_device(dev))
+      return;
 #if defined(_XBOX1)
    D3D__DirtyFlags |= (D3DDIRTYFLAG_TEXTURE_STATE_0 << sampler);
    D3D__TextureState[sampler][D3DTSS_ADDRESSU] = value;
@@ -206,6 +221,8 @@ void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
 void d3d_set_sampler_address_v(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value)
 {
+   if (!d3d_restore_device(dev))
+      return;
 #if defined(_XBOX1)
    D3D__DirtyFlags |= (D3DDIRTYFLAG_TEXTURE_STATE_0 << sampler);
    D3D__TextureState[sampler][D3DTSS_ADDRESSV] = value;
@@ -219,6 +236,8 @@ void d3d_set_sampler_address_v(LPDIRECT3DDEVICE dev,
 void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value)
 {
+   if (!d3d_restore_device(dev))
+      return;
 #if defined(_XBOX1)
    D3D__DirtyFlags |= (D3DDIRTYFLAG_TEXTURE_STATE_0 << sampler);
    D3D__TextureState[sampler][D3DTSS_MINFILTER] = value;
@@ -232,6 +251,8 @@ void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
 void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value)
 {
+   if (!d3d_restore_device(dev))
+      return;
 #if defined(_XBOX1)
    D3D__DirtyFlags |= (D3DDIRTYFLAG_TEXTURE_STATE_0 << sampler);
    D3D__TextureState[sampler][D3DTSS_MAGFILTER] = value;
@@ -245,6 +266,8 @@ void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
 void d3d_draw_primitive(LPDIRECT3DDEVICE dev,
       D3DPRIMITIVETYPE type, unsigned start, unsigned count)
 {
+   if (!d3d_restore_device(dev))
+      return;
 #if defined(_XBOX1)
    D3DDevice_DrawVertices(type, start, D3DVERTEXCOUNT(type, count));
 #elif defined(_XBOX360)
@@ -262,6 +285,8 @@ void d3d_clear(LPDIRECT3DDEVICE dev,
       unsigned count, const D3DRECT *rects, unsigned flags,
       D3DCOLOR color, float z, unsigned stencil)
 {
+   if (!d3d_restore_device(dev))
+      return;
 #if defined(_XBOX1)
    D3DDevice_Clear(count, rects, flags, color, z, stencil);
 #elif defined(_XBOX360)
@@ -276,6 +301,8 @@ void d3d_lockrectangle_clear(LPDIRECT3DTEXTURE tex,
       unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
       unsigned rectangle_height, unsigned flags)
 {
+   if (!d3d_restore_device(dev))
+      return;
 #if defined(_XBOX)
    D3DTexture_LockRect(tex, level, lock_rect, rect, flags);
    memset(lock_rect->pBits, 0, rectangle_height * lock_rect->Pitch);
@@ -290,7 +317,8 @@ void d3d_lockrectangle_clear(LPDIRECT3DTEXTURE tex,
 
 void d3d_set_viewport(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp)
 {
-   (void)dev;
+   if (!d3d_restore_device(dev))
+      return;
 #if defined(_XBOX360)
    D3DDevice_SetViewport(dev, vp);
 #elif defined(_XBOX1)
@@ -303,6 +331,8 @@ void d3d_set_viewport(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp)
 void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
       LPDIRECT3DTEXTURE tex)
 {
+   if (!d3d_restore_device(dev))
+      return;
 #if defined(_XBOX1)
    D3DDevice_SetTexture(sampler, tex);
 #elif defined(_XBOX360)
@@ -321,6 +351,8 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
 HRESULT d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
       void *data)
 {
+   if (!d3d_restore_device(dev))
+      return -1;
 #if defined(_XBOX1)
    return dev->SetVertexShader(index);
 #elif defined(_XBOX360)
@@ -338,6 +370,8 @@ void d3d_texture_blit(unsigned pixel_size,
       LPDIRECT3DTEXTURE tex, D3DLOCKED_RECT *lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
+   if (!d3d_restore_device(dev))
+      return;
 #ifdef _XBOX
    D3DTexture_LockRect(tex, 0, lr, NULL, D3DLOCK_NOSYSLOCK);
 #if defined(_XBOX360)
@@ -376,6 +410,8 @@ void d3d_enable_blend_func(void *data)
 
    if (!dev)
       return;
+   if (!d3d_restore_device(dev))
+      return;
 
    dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
    dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
@@ -387,6 +423,8 @@ void d3d_enable_alpha_blend_texture_func(void *data)
    LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;
 
    if (!dev)
+      return;
+   if (!d3d_restore_device(dev))
       return;
 
 #ifndef _XBOX360
@@ -405,6 +443,8 @@ void d3d_frame_postprocess(void *data)
 
    if (!dev)
       return;
+   if (!d3d_restore_device(dev))
+      return;
 
    dev->SetFlickerFilter(global->console.screen.flicker_filter_index);
    dev->SetSoftDisplayFilter(global->console.softfilter_enable);
@@ -417,6 +457,8 @@ void d3d_disable_blend_func(void *data)
 
    if (!dev)
       return;
+   if (!d3d_restore_device(dev))
+      return;
 
    dev->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
 }
@@ -428,6 +470,8 @@ void d3d_set_vertex_declaration(void *data, void *vertex_data)
    LPDIRECT3DVERTEXDECLARATION decl = (LPDIRECT3DVERTEXDECLARATION)vertex_data;
 #endif
    if (!dev)
+      return;
+   if (!d3d_restore_device(dev))
       return;
 #ifdef _XBOX1
    d3d_set_vertex_shader(dev, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
