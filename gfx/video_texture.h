@@ -30,6 +30,18 @@ enum texture_backend_type
 extern "C" {
 #endif
 
+#ifdef HAVE_OPENGL
+#include "drivers/gl_common.h"
+
+void gl_load_texture_data(GLuint id,
+      enum gfx_wrap_type wrap_type,
+      enum texture_filter_type filter_type,
+      unsigned alignment,
+      unsigned width, unsigned height,
+      const void *frame,
+      unsigned base_size);
+#endif
+
 unsigned video_texture_load(void *data,
       enum texture_backend_type type,
       enum texture_filter_type  filter_type);
