@@ -717,6 +717,23 @@ static void renderchain_bind_pass(cg_renderchain_t *chain,
    }
 }
 
+static void cg_d3d9_renderchain_clear_passes(cg_renderchain_t *chain)
+{
+   unsigned i;
+   if (chain->passes.size() == 0)
+	   return;
+
+   d3d_vertex_buffer_free(NULL, chain->passes[0].vertex_decl);
+
+   for (i = 1; i < chain->passes.size(); i++)
+   {
+      if (chain->passes[i].tex)
+         d3d_texture_free(chain->passes[i].tex);
+      d3d_vertex_buffer_free(chain->passes[i].vertex_buf, chain->passes[i].vertex_decl);
+      renderchain_destroy_shader(chain, i);
+   }
+}
+
 static void cg_d3d9_renderchain_clear(cg_renderchain_t *chain)
 {
    unsigned i;
@@ -729,21 +746,19 @@ static void cg_d3d9_renderchain_clear(cg_renderchain_t *chain)
          d3d_vertex_buffer_free(chain->prev.vertex_buf[i], NULL);
    }
 
-   d3d_vertex_buffer_free(NULL, chain->passes[0].vertex_decl);
-
-   for (i = 1; i < chain->passes.size(); i++)
-   {
-      if (chain->passes[i].tex)
-         d3d_texture_free(chain->passes[i].tex);
-      d3d_vertex_buffer_free(chain->passes[i].vertex_buf, chain->passes[i].vertex_decl);
-      renderchain_destroy_shader(chain, i);
-   }
+   cg_d3d9_renderchain_clear_passes(chain);
 
    for (i = 0; i < chain->luts.size(); i++)
    {
       if (chain->luts[i].tex)
          d3d_texture_free(chain->luts[i].tex);
    }
+
+#if 0
+   if (chain->tracker)
+      state_tracker_free(chain->tracker);
+   chain->tracker = NULL;
+#endif
 
    chain->passes.clear();
    chain->luts.clear();
@@ -773,11 +788,9 @@ void cg_d3d9_renderchain_free(void *data)
    if (!chain)
       return;
 
-   cg_d3d9_renderchain_deinit_shader(chain);
    cg_d3d9_renderchain_clear(chain);
+   cg_d3d9_renderchain_deinit_shader(chain);
    cg_d3d9_renderchain_destroy_stock_shader(chain);
-   if (chain->tracker)
-      state_tracker_free(chain->tracker);
    cg_d3d9_renderchain_deinit(chain);
 }
 
@@ -805,7 +818,7 @@ static bool cg_d3d9_renderchain_init_shader(void *data,
 
    RARCH_LOG("[D3D]: Created shader context.\n");
 
-   HRESULT ret = cgD3D9SetDevice(d3d->dev);
+   HRESULT ret = cgD3D9SetDevice((IDirect3DDevice9*)d3d->dev);
    if (FAILED(ret))
       return false;
    return true;
