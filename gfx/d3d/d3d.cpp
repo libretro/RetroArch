@@ -90,7 +90,7 @@ static unsigned monitor_count;
 
 static void d3d_deinit_chain(d3d_video_t *d3d)
 {
-   d3d->renderchain_driver->chain_free(d3d);
+   d3d->renderchain_driver->chain_free(d3d->renderchain_data);
 
    d3d->renderchain_driver = NULL;
    d3d->renderchain_data   = NULL;
