@@ -17,8 +17,6 @@
 #include "font_driver.h"
 #include "../general.h"
 
-static enum font_driver_render_api selected_api;
-
 #ifdef HAVE_D3D
 static const font_renderer_t *d3d_font_backends[] = {
 #if defined(_XBOX1)
@@ -118,10 +116,7 @@ bool font_init_first(const void **font_driver, void **font_handle,
    if (font_path && !font_path[0])
       font_path = NULL;
 
-   if (selected_api != FONT_DRIVER_RENDER_DONT_CARE)
-      selected_api = api;
-
-   switch (selected_api)
+   switch (api)
    {
 #ifdef HAVE_D3D
       case FONT_DRIVER_RENDER_DIRECT3D_API:

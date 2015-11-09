@@ -154,7 +154,7 @@ bool menu_display_font_init_first(const void **font_driver,
       pkt.data.font_init.video_data  = video_data;
       pkt.data.font_init.font_path   = font_path;
       pkt.data.font_init.font_size   = font_size;
-      pkt.data.font_init.api         = FONT_DRIVER_RENDER_DONT_CARE;
+      pkt.data.font_init.api         = FONT_DRIVER_RENDER_OPENGL_API;
 
       thr->send_and_wait(thr, &pkt);
 
@@ -162,7 +162,7 @@ bool menu_display_font_init_first(const void **font_driver,
    }
 
    return font_init_first(font_driver, font_handle, video_data,
-         font_path, font_size, FONT_DRIVER_RENDER_DONT_CARE);
+         font_path, font_size, FONT_DRIVER_RENDER_OPENGL_API);
 }
 
 bool menu_display_font_bind_block(void *data, const void *font_data, void *userdata)
