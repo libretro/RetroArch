@@ -151,7 +151,7 @@ static void frontend_ctr_deinit(void *data)
       svcCloseHandle(lcd_handle);
    }
 
-   exitCfgu();
+   cfguExit();
    ndspExit();
    csndExit();   
    gfxExit();
@@ -244,7 +244,7 @@ static void frontend_ctr_init(void *data)
    ctr_check_dspfirm();
    if(ndspInit() != 0)
       *dsp_audio_driver = audio_null;
-   initCfgu();
+   cfguInit();
 #endif
 }
 
