@@ -21,9 +21,13 @@
 #include "video_thread_wrapper.h"
 
 #ifdef HAVE_OPENGL
-#include "drivers/gl_common.h"
 
-static void video_texture_png_load_gl(struct texture_image *ti,
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "drivers/gl_common.h"
+void video_texture_png_load_gl(struct texture_image *ti,
       enum texture_filter_type filter_type,
       uintptr_t *id)
 {
@@ -36,6 +40,11 @@ static void video_texture_png_load_gl(struct texture_image *ti,
          sizeof(uint32_t) /* TODO/FIXME - dehardcode */
          );
 }
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif
 
 #ifdef HAVE_D3D
@@ -111,6 +120,10 @@ static int video_texture_png_load_wrap_d3d(void *data)
          TEXTURE_FILTER_LINEAR);
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 unsigned video_texture_load(void *data,
       enum texture_backend_type type,
       enum texture_filter_type  filter_type)
@@ -159,6 +172,10 @@ unsigned video_texture_load(void *data,
 
    return video_texture_png_load(data, type, filter_type);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef HAVE_OPENGL
 static void video_texture_gl_unload(uintptr_t *id)
