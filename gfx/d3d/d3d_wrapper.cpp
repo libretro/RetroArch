@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_log.h>
+
 #include "d3d_wrapper.h"
 
 static LPDIRECT3DDEVICE d3d_wrapper_dev;
@@ -301,8 +303,6 @@ void d3d_lockrectangle_clear(LPDIRECT3DTEXTURE tex,
       unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
       unsigned rectangle_height, unsigned flags)
 {
-   if (!d3d_restore_device(dev))
-      return;
 #if defined(_XBOX)
    D3DTexture_LockRect(tex, level, lock_rect, rect, flags);
    memset(lock_rect->pBits, 0, rectangle_height * lock_rect->Pitch);
@@ -370,8 +370,6 @@ void d3d_texture_blit(unsigned pixel_size,
       LPDIRECT3DTEXTURE tex, D3DLOCKED_RECT *lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
-   if (!d3d_restore_device(dev))
-      return;
 #ifdef _XBOX
    D3DTexture_LockRect(tex, 0, lr, NULL, D3DLOCK_NOSYSLOCK);
 #if defined(_XBOX360)
