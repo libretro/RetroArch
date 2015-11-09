@@ -416,46 +416,58 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
       unsigned width, unsigned height,
    bool keep, float desired_aspect)
 {
+   int x               = 0;
+   int y               = 0;
+   unsigned new_width  = width;
+   unsigned new_height = height;
    settings_t *settings = config_get_ptr();
 
    if (settings->video.scale_integer)
    {
       struct video_viewport vp = {0};
       video_viewport_get_scaled_integer(&vp, width, height, desired_aspect, keep);
-      d3d_set_viewport(d3d, vp.x, vp.y, vp.width, vp.height);
+      x          = vp.x;
+      y          = vp.y;
+      new_width  = vp.width;
+      new_height = vp.height;
    }
-   else if (!keep)
-      d3d_set_viewport(d3d, 0, 0, width, height);
-   else
+   else if (keep)
    {
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          video_viewport_t *custom = video_viewport_get_custom();
 
          if (custom)
-            d3d_set_viewport(d3d, custom->x, custom->y,
-                  custom->width, custom->height);
+         {
+            x          = custom->x;
+            y          = custom->y;
+            new_width  = custom->width;
+            new_height = custom->height;
+         }
       }
       else
       {
          float device_aspect = ((float)width) / ((float)height);
 
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-            d3d_set_viewport(d3d, 0, 0, width, height);
+         if (fabsf(device_aspect - desired_aspect) < 0.0001f) { }
          else if (device_aspect > desired_aspect)
          {
             float delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            d3d_set_viewport(d3d, int(roundf(width * (0.5f - delta))),
-                  0, unsigned(roundf(2.0f * width * delta)), height);
+            x           = int(roundf(width * (0.5f - delta)));
+            y           = 0;
+            new_width   = unsigned(roundf(2.0f * width * delta));
          }
          else
          {
             float delta = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            d3d_set_viewport(d3d, 0, int(roundf(height * (0.5f - delta))),
-                  width, unsigned(roundf(2.0f * height * delta)));
+            x           = 0;
+            y           = int(roundf(height * (0.5f - delta)));
+            new_height  = unsigned(roundf(2.0f * height * delta));
          }
       }
    }
+
+   d3d_set_viewport(d3d, x, y, new_width, new_height);
 }
 
 static void d3d_set_nonblock_state(void *data, bool state)
@@ -743,8 +755,13 @@ static void d3d_viewport_info(void *data, struct video_viewport *vp)
 static void d3d_set_rotation(void *data, unsigned rot)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   if (d3d)
-      d3d->dev_rotation = rot;
+   struct gfx_ortho ortho = {0, 1, 0, 1, -1, 1};
+
+   if (!d3d)
+      return;
+
+   d3d->dev_rotation = rot;
+   //d3d_set_projection(d3d, &ortho, true);
 }
 
 static void d3d_show_mouse(void *data, bool state)
