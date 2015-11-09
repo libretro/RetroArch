@@ -192,7 +192,10 @@ VIDEO IMAGE
 ============================================================ */
 
 #include "../gfx/image/image.c"
-#include "../gfx/video_texture.c"
+
+#if !defined(_WIN32)
+#include "../gfx/video_texture_c.c"
+#endif
 
 #include "../libretro-common/formats/tga/rtga.c"
 

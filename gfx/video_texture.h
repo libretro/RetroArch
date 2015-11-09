@@ -26,7 +26,7 @@ enum texture_backend_type
    TEXTURE_BACKEND_DIRECT3D
 };
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(_WIN32)
 extern "C" {
 #endif
 
@@ -36,7 +36,7 @@ unsigned video_texture_load(void *data,
 
 void video_texture_unload(enum texture_backend_type type, uintptr_t *id);
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(_WIN32)
 }
 #endif
 

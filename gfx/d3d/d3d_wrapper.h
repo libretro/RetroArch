@@ -22,6 +22,10 @@
 #include "../common/win32_common.h"
 #include "d3d_defines.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev);
 
 LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
@@ -94,5 +98,9 @@ void d3d_set_vertex_declaration(void *data, void *vertex_data);
 void d3d_enable_alpha_blend_texture_func(void *data);
 
 void d3d_frame_postprocess(void *data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
