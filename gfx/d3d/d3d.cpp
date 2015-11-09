@@ -1552,7 +1552,7 @@ static bool d3d_overlay_load(void *data,
          return false;
       }
 
-      if (d3d_lockrectangle(overlay->tex, 0, &d3dlr,
+      if (d3d_lock_rectangle(overlay->tex, 0, &d3dlr,
                NULL, 0, D3DLOCK_NOSYSLOCK))
       {
          uint32_t       *dst = (uint32_t*)(d3dlr.pBits);
