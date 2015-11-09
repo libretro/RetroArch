@@ -1496,9 +1496,6 @@ void rarch_playlist_load_content(void *data, unsigned idx)
    unsigned i;
    const char *core_path        = NULL;
    const char *path             = NULL;
-   char *path_check             = NULL;
-   char *path_tolower           = NULL;
-   RFILE *fp                    = NULL;
    content_playlist_t *playlist = (content_playlist_t*)data;
    settings_t  *settings        = config_get_ptr();
 #ifdef HAVE_MENU
@@ -1513,7 +1510,9 @@ void rarch_playlist_load_content(void *data, unsigned idx)
 
    if (path && path[0] != '\0')
    {
-      path_tolower = strdup(path);
+      RFILE *fp           = NULL;
+      char *path_check    = NULL;
+      char *path_tolower  = strdup(path);
 
       for (i = 0; i < strlen(path_tolower); ++i)
          path_tolower[i] = tolower(path_tolower[i]);
