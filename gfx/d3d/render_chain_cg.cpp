@@ -787,7 +787,7 @@ void cg_d3d9_renderchain_free(void *data)
    cg_d3d9_renderchain_destroy_stock_shader(chain);
    if (chain->tracker)
       state_tracker_free(chain->tracker);
-   cg_d3d9_renderchain_deinit();
+   cg_d3d9_renderchain_deinit(chain);
 }
 
 void *cg_d3d9_renderchain_new(void)
