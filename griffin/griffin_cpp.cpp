@@ -39,6 +39,10 @@ MENU
 #include "../menu/drivers/rmenu_xui.cpp"
 #endif
 
+#if defined(HAVE_D3D)
+#include "../menu/drivers_display/menu_display_d3d.cpp"
+#endif
+
 /*============================================================
 VIDEO CONTEXT
 ============================================================ */
