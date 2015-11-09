@@ -154,8 +154,6 @@ typedef struct
    cheevoset_t unofficial;
 
    char token[32];
-
-   async_job_t *jobs;
 } cheevos_locals_t;
 
 cheevos_locals_t cheevos_locals =
@@ -164,7 +162,6 @@ cheevos_locals_t cheevos_locals =
    {NULL, 0},
    {NULL, 0},
    {0},
-   NULL
 };
 
 cheevos_globals_t cheevos_globals =
@@ -812,8 +809,6 @@ static int cheevos_parse(const char *json)
       NULL
    };
 
-   static int initialize = 1;
-
    unsigned core_count, unofficial_count;
    cheevos_readud_t ud;
    settings_t *settings         = config_get_ptr();
@@ -860,13 +855,7 @@ static int cheevos_parse(const char *json)
       return -1;
    }
    
-   if (initialize)
-   {
-      initialize = 0;
-      cheevos_locals.jobs = async_job_new();
-   }
-
-   return -(cheevos_locals.jobs == NULL);
+   return 0;
 }
 
 /*****************************************************************************
@@ -1228,8 +1217,9 @@ static void cheevos_unlocker(void *payload)
 {
    char request[256];
    const char *result;
-   settings_t *settings         = config_get_ptr();
-   unsigned cheevo_id           = (unsigned)(uintptr_t)payload;
+   settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
+   unsigned cheevo_id   = (unsigned)(uintptr_t)payload;
 
    if (!cheevos_login(NULL))
    {
@@ -1250,13 +1240,14 @@ static void cheevos_unlocker(void *payload)
       else
       {
          RARCH_LOG("CHEEVOS error awarding achievement %u, will retry\n", cheevo_id);
-         async_job_add(cheevos_locals.jobs, cheevos_unlocker, (void*)(uintptr_t)cheevo_id);
+         async_job_add(global->async_jobs, cheevos_unlocker, (void*)(uintptr_t)cheevo_id);
       }
    }
 }
 
 static void cheevos_test_cheevo_set(const cheevoset_t *set)
 {
+   global_t *global    = global_get_ptr();
    const cheevo_t *end = set->cheevos + set->count;
    cheevo_t *cheevo;
 
@@ -1270,7 +1261,7 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
          rarch_main_msg_queue_push(cheevo->title, 0, 3 * 60, false);
          rarch_main_msg_queue_push(cheevo->description, 0, 5 * 60, false);
 
-         async_job_add(cheevos_locals.jobs, cheevos_unlocker, (void*)(uintptr_t)cheevo->id);
+         async_job_add(global->async_jobs, cheevos_unlocker, (void*)(uintptr_t)cheevo->id);
 
          cheevo->active = 0;
       }
@@ -1412,8 +1403,9 @@ static void cheevos_playing(void *payload)
 {
    char request[256];
    const char* json;
-   unsigned             game_id = (unsigned)(uintptr_t)payload;
-   settings_t *settings         = config_get_ptr();
+   global_t *global     = global_get_ptr();
+   unsigned game_id     = (unsigned)(uintptr_t)payload;
+   settings_t *settings = config_get_ptr();
    
    if (!cheevos_login(NULL))
    {
@@ -1434,7 +1426,7 @@ static void cheevos_playing(void *payload)
       else
       {
          RARCH_LOG("CHEEVOS error posting playing game %u activity, will retry\n", game_id);
-         async_job_add(cheevos_locals.jobs, cheevos_playing, (void*)(uintptr_t)game_id);
+         async_job_add(global->async_jobs, cheevos_playing, (void*)(uintptr_t)game_id);
       }
    }
 }
@@ -1815,9 +1807,10 @@ int cheevos_load(const struct retro_game_info *info)
    struct retro_system_info sysinfo;
    int i;
    const char *json;
-   retro_time_t timeout         = 5000000;
-   unsigned game_id             = 0;
-   settings_t *settings         = config_get_ptr();
+   retro_time_t timeout = 5000000;
+   unsigned game_id     = 0;
+   global_t *global     = global_get_ptr();
+   settings_t *settings = config_get_ptr();
    
    cheevos_locals.loaded = 0;
    
@@ -1913,7 +1906,7 @@ int cheevos_load(const struct retro_game_info *info)
          free((void*)json);
          cheevos_locals.loaded = 1;
          
-         async_job_add(cheevos_locals.jobs, cheevos_playing, (void*)(uintptr_t)game_id);
+         async_job_add(global->async_jobs, cheevos_playing, (void*)(uintptr_t)game_id);
          return 0;
       }
       

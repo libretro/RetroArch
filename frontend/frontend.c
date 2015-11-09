@@ -17,6 +17,7 @@
 
 #include <file/file_path.h>
 #include <retro_stat.h>
+#include <rthreads/async_job.h>
 
 #include "frontend.h"
 #include "../system.h"
@@ -285,6 +286,7 @@ int rarch_main(int argc, char *argv[], void *data)
    void *args                      = (void*)data;
    int ret                         = 0;
    settings_t *settings            = NULL;
+   global_t *global                = NULL;
    driver_t *driver                = NULL;
 
    rarch_main_alloc();
@@ -302,6 +304,11 @@ int rarch_main(int argc, char *argv[], void *data)
 
    rarch_main_new();
 
+#ifdef HAVE_THREADS
+   global = global_get_ptr();
+   global->async_jobs = async_job_new();
+#endif
+   
    if (driver->frontend_ctx)
    {
       if (!(ret = (main_load_content(argc, argv, args,
