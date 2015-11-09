@@ -299,20 +299,36 @@ void d3d_clear(LPDIRECT3DDEVICE dev,
 #endif
 }
 
-void d3d_lockrectangle_clear(LPDIRECT3DTEXTURE tex,
+void d3d_lockrectangle(LPDIRECT3DTEXTURE tex,
       unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
       unsigned rectangle_height, unsigned flags)
 {
 #if defined(_XBOX)
    D3DTexture_LockRect(tex, level, lock_rect, rect, flags);
-   memset(lock_rect->pBits, 0, rectangle_height * lock_rect->Pitch);
+   return true;
 #else
    if (SUCCEEDED(tex->LockRect(level, lock_rect, rect, flags)))
-   {
-      memset(lock_rect->pBits, level, rectangle_height * lock_rect->Pitch);
-      tex->UnlockRect(0);
-   }
+      return true;
+   return false;
 #endif
+}
+
+void d3d_unlockrectangle_clear(LPDIRECT3DTEXTURE tex)
+{
+#ifndef _XBOX
+   tex->UnlockRect(0);
+#endif
+}
+
+void d3d_lockrectangle_clear(LPDIRECT3DTEXTURE tex,
+      unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
+      unsigned rectangle_height, unsigned flags)
+{
+#if defined(_XBOX)
+   level = 0;
+#endif
+   memset(lock_rect->pBits, level, rectangle_height * lock_rect->Pitch);
+   d3d_unlockrectangle_clear(tex);
 }
 
 void d3d_set_viewport(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp)
