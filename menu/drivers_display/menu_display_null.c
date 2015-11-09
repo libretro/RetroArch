@@ -88,6 +88,13 @@ static const float *menu_display_null_get_tex_coords(void)
    return &floats[0];
 }
 
+static bool menu_display_null_font_init_first(const void **font_driver,
+      void **font_handle, void *video_data, const char *font_path,
+      float font_size)
+{
+   return true;
+}
+
 menu_display_ctx_driver_t menu_display_ctx_null = {
    menu_display_null_draw,
    menu_display_null_draw_bg,
@@ -99,6 +106,7 @@ menu_display_ctx_driver_t menu_display_ctx_null = {
    menu_display_null_get_tex_coords,
    menu_display_null_texture_load,
    menu_display_null_texture_unload,
+   menu_display_null_font_init_first,
    MENU_VIDEO_DRIVER_GENERIC,
    "menu_display_null",
 };

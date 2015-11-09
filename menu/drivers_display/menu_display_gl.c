@@ -207,6 +207,41 @@ static const float *menu_display_gl_get_tex_coords(void)
    return &gl_tex_coords[0];
 }
 
+static bool menu_display_gl_font_init_first(const void **font_driver,
+      void **font_handle, void *video_data, const char *font_path,
+      float font_size)
+{
+   settings_t *settings = config_get_ptr();
+   const struct retro_hw_render_callback *hw_render =
+      (const struct retro_hw_render_callback*)video_driver_callback();
+
+   if (settings->video.threaded && !hw_render->context_type)
+   {
+      thread_packet_t pkt;
+      driver_t *driver    = driver_get_ptr();
+      thread_video_t *thr = (thread_video_t*)driver->video_data;
+
+      if (!thr)
+         return false;
+
+      pkt.type                       = CMD_FONT_INIT;
+      pkt.data.font_init.method      = font_init_first;
+      pkt.data.font_init.font_driver = (const void**)font_driver;
+      pkt.data.font_init.font_handle = font_handle;
+      pkt.data.font_init.video_data  = video_data;
+      pkt.data.font_init.font_path   = font_path;
+      pkt.data.font_init.font_size   = font_size;
+      pkt.data.font_init.api         = FONT_DRIVER_RENDER_OPENGL_API;
+
+      thr->send_and_wait(thr, &pkt);
+
+      return pkt.data.font_init.return_value;
+   }
+
+   return font_init_first(font_driver, font_handle, video_data,
+         font_path, font_size, FONT_DRIVER_RENDER_OPENGL_API);
+}
+
 menu_display_ctx_driver_t menu_display_ctx_gl = {
    menu_display_gl_draw,
    menu_display_gl_draw_bg,
@@ -218,6 +253,7 @@ menu_display_ctx_driver_t menu_display_ctx_gl = {
    menu_display_gl_get_tex_coords,
    menu_display_gl_texture_load,
    menu_display_gl_texture_unload,
+   menu_display_gl_font_init_first,
    MENU_VIDEO_DRIVER_OPENGL,
    "menu_display_gl",
 };

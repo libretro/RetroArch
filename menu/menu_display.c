@@ -134,6 +134,13 @@ bool menu_display_font_init_first(const void **font_driver,
       void **font_handle, void *video_data, const char *font_path,
       float font_size)
 {
+   menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
+   if (!menu_disp || !menu_disp->font_init_first)
+      return false;
+
+   return menu_disp->font_init_first(font_driver, font_handle, video_data,
+         font_path, font_size);
+
    settings_t *settings = config_get_ptr();
    const struct retro_hw_render_callback *hw_render =
       (const struct retro_hw_render_callback*)video_driver_callback();
@@ -577,8 +584,7 @@ void menu_display_blend_end(void)
    if (!menu_disp || !menu_disp->blend_end)
       return;
 
-   if (menu_disp)
-      menu_disp->blend_end();
+   menu_disp->blend_end();
 }
 
 void menu_display_matrix_4x4_rotate_z(void *data, float rotation,

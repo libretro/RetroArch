@@ -107,6 +107,9 @@ typedef struct menu_display_ctx_driver
    const float *(*get_tex_coords)(void);
    unsigned (*texture_load)(void *data, enum texture_filter_type type);
    void (*texture_unload)(uintptr_t *id);
+   bool (*font_init_first)(const void **font_driver,
+         void **font_handle, void *video_data, const char *font_path,
+         float font_size);
    enum menu_display_driver_type type;
    const char *ident;
 } menu_display_ctx_driver_t;
