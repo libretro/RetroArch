@@ -29,6 +29,7 @@
 #include "../../driver.h"
 #include "../../performance.h"
 #include <gfx/scaler/scaler.h>
+#include <gfx/math/matrix_4x4.h>
 #include <formats/image.h>
 #include <retro_inline.h>
 
