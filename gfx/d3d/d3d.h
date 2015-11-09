@@ -54,6 +54,7 @@
 #include "../font_driver.h"
 #include "../font_renderer_driver.h"
 #include "../video_context_driver.h"
+#include "../video_viewport.h"
 #include "d3d_wrapper.h"
 #include "render_chain_driver.h"
 
@@ -99,6 +100,7 @@ typedef struct d3d_video
    bool should_resize;
    bool quitting;
 
+   struct video_viewport vp;
 #ifdef HAVE_WINDOW
    WNDCLASSEX windowClass;
 #endif
