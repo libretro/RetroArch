@@ -1655,7 +1655,7 @@ static bool d3d_frame(void *data, const void *frame,
    screen_vp.MaxZ = 1;
    screen_vp.Width = width;
    screen_vp.Height = height;
-   d3dr->SetViewport(&screen_vp);
+   d3d_set_viewport(d3dr, &screen_vp);
    d3d_clear(d3dr, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    /* Insert black frame first, so we
