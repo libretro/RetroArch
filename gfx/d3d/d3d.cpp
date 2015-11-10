@@ -56,8 +56,7 @@
 
 /* forward declarations */
 static void d3d_calculate_rect(d3d_video_t *d3d,
-      unsigned width, unsigned height,
-   bool keep, float desired_aspect);
+      unsigned width, unsigned height, float desired_aspect);
 static bool d3d_init_luts(d3d_video_t *d3d);
 static void d3d_set_font_rect(d3d_video_t *d3d,
       const struct font_params *params);
@@ -414,8 +413,7 @@ bool d3d_restore(d3d_video_t *d3d)
 }
 
 static void d3d_calculate_rect(d3d_video_t *d3d,
-      unsigned width, unsigned height,
-   bool keep, float desired_aspect)
+      unsigned width, unsigned height, float desired_aspect)
 {
    int x               = 0;
    int y               = 0;
@@ -426,13 +424,13 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
    if (settings->video.scale_integer)
    {
       struct video_viewport vp = {0};
-      video_viewport_get_scaled_integer(&vp, width, height, desired_aspect, keep);
+      video_viewport_get_scaled_integer(&vp, width, height, desired_aspect, d3d->keep_aspect);
       x          = vp.x;
       y          = vp.y;
       new_width  = vp.width;
       new_height = vp.height;
    }
-   else if (keep)
+   else if (d3d->keep_aspect)
    {
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
@@ -556,7 +554,7 @@ static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    if (!d3d)
       return;
 
-   d3d->video_info.force_aspect = true;
+   d3d->keep_aspect   = true;
    d3d->should_resize = true;
 }
 
@@ -852,6 +850,8 @@ static void *d3d_init(const video_info_t *info,
       RARCH_ERR("[D3D]: Failed to init D3D.\n");
       goto error;
    }
+
+   vid->keep_aspect       = info->force_aspect;
 
 #ifdef _XBOX
    driver->video_data_own = true;
@@ -1679,7 +1679,7 @@ static bool d3d_frame(void *data, const void *frame,
 
    if (d3d->should_resize)
    {
-      d3d_calculate_rect(d3d, width, width, d3d->video_info.force_aspect,
+      d3d_calculate_rect(d3d, width, width,
             video_driver_get_aspect_ratio());
 
       d3d->renderchain_driver->set_final_viewport(d3d,
