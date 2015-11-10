@@ -452,19 +452,19 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
       }
       else
       {
-         float device_aspect = ((float)width) / ((float)height);
+         float delta;
 
          if (fabsf(device_aspect - desired_aspect) < 0.0001f) { }
          else if (device_aspect > desired_aspect)
          {
-            float delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
+            delta       = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
             x           = int(roundf(width * (0.5f - delta)));
             y           = 0;
             new_width   = unsigned(roundf(2.0f * width * delta));
          }
          else
          {
-            float delta = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
+            delta       = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
             x           = 0;
             y           = int(roundf(height * (0.5f - delta)));
             new_height  = unsigned(roundf(2.0f * height * delta));
