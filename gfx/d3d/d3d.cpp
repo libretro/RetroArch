@@ -382,24 +382,8 @@ static void d3d_set_viewport_wrap(void *data,
       bool force_fullscreen,
       bool allow_rotate)
 {
-   D3DVIEWPORT vp_full;
-   LPDIRECT3DDEVICE d3dr;
    d3d_video_t *d3d = (d3d_video_t*)data;
-
-   vp_full.X      = 0;
-   vp_full.Y      = 0;
-   vp_full.Width  = width;
-   vp_full.Height = height;
-   vp_full.MinZ   = 0.0f;
-   vp_full.MaxZ   = 1.0f;
-
-   d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-
-   if (force_fullscreen)
-      d3d_set_viewport(d3dr, &vp_full);
-   else
-      d3d_set_viewport(d3dr, &d3d->final_viewport);
-
+   d3d_calculate_rect(d3d, width, height, force_fullscreen, allow_rotate);
    d3d->renderchain_driver->set_final_viewport(d3d,
             d3d->renderchain_data, &d3d->final_viewport);
 }
