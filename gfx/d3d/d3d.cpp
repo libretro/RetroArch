@@ -55,7 +55,30 @@
 #endif
 
 /* forward declarations */
-static bool d3d_init_luts(d3d_video_t *d3d);
+static bool d3d_init_luts(d3d_video_t *d3d)
+{
+   unsigned i;
+   settings_t *settings = config_get_ptr();
+
+   if (!d3d->renderchain_driver->add_lut)
+      return true;
+
+   for (i = 0; i < d3d->shader.luts; i++)
+   {
+      bool ret = d3d->renderchain_driver->add_lut(
+            d3d->renderchain_data,
+			d3d->shader.lut[i].id, d3d->shader.lut[i].path,
+         d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
+            settings->video.smooth :
+            (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR));
+
+      if (!ret)
+         return ret;
+   }
+
+   return true;
+}
+
 static void d3d_set_font_rect(d3d_video_t *d3d,
       const struct font_params *params);
 static bool d3d_process_shader(d3d_video_t *d3d);
@@ -942,13 +965,14 @@ static RECT d3d_monitor_rect(d3d_video_t *d3d)
 #endif
 
 #ifndef DONT_HAVE_STATE_TRACKER
-#ifndef _XBOX
 static bool d3d_init_imports(d3d_video_t *d3d)
 {
    state_tracker_t *state_tracker = NULL;
    state_tracker_info tracker_info = {0};
 
    if (!d3d->shader.variables)
+      return true;
+   if (!d3d->renderchain_driver->add_state_tracker)
       return true;
 
    tracker_info.wram      = (uint8_t*)
@@ -975,9 +999,9 @@ static bool d3d_init_imports(d3d_video_t *d3d)
    }
 
    d3d->renderchain_driver->add_state_tracker(d3d->renderchain_data, state_tracker);
+
    return true;
 }
-#endif
 #endif
 
 static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
@@ -1306,28 +1330,6 @@ static bool d3d_process_shader(d3d_video_t *d3d)
    return d3d_init_singlepass(d3d);
 }
 
-#ifndef _XBOX
-static bool d3d_init_luts(d3d_video_t *d3d)
-{
-   unsigned i;
-   settings_t *settings = config_get_ptr();
-
-   for (i = 0; i < d3d->shader.luts; i++)
-   {
-      bool ret = d3d->renderchain_driver->add_lut(
-            d3d->renderchain_data,
-			d3d->shader.lut[i].id, d3d->shader.lut[i].path,
-         d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
-            settings->video.smooth :
-            (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR));
-
-      if (!ret)
-         return ret;
-   }
-
-   return true;
-}
-#endif
 
 #ifdef HAVE_OVERLAY
 static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
