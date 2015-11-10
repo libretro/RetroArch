@@ -271,6 +271,19 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    return true;
 }
 
+static void d3d_set_viewport_wrap(void *data,
+      unsigned width, unsigned height,
+      bool force_fullscreen,
+      bool allow_rotate)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_calculate_rect(d3d, width, height, force_fullscreen, allow_rotate);
+
+   if (d3d->renderchain-driver && d3d->renderchain_data)
+      d3d->renderchain_driver->set_final_viewport(d3d,
+            d3d->renderchain_data, &d3d->final_viewport);
+}
+
 static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
 {
    unsigned width, height;
@@ -377,16 +390,6 @@ static void d3d_set_viewport(d3d_video_t *d3d, int x, int y,
    d3d_set_font_rect(d3d, NULL);
 }
 
-static void d3d_set_viewport_wrap(void *data,
-      unsigned width, unsigned height,
-      bool force_fullscreen,
-      bool allow_rotate)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d_calculate_rect(d3d, width, height, force_fullscreen, allow_rotate);
-   d3d->renderchain_driver->set_final_viewport(d3d,
-            d3d->renderchain_data, &d3d->final_viewport);
-}
 
 bool d3d_restore(d3d_video_t *d3d)
 {
