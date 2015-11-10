@@ -52,25 +52,25 @@
 #define ZARCH_DEBUG
 #endif
 
-const GRfloat ZUI_NORMAL[] = {
+const float ZUI_NORMAL[] = {
    1, 1, 1, 1,
    1, 1, 1, 1,
    1, 1, 1, 1,
    1, 1, 1, 1,
 };
-const GRfloat ZUI_HILITE[] = {
+const float ZUI_HILITE[] = {
    1, 0, 0, 1,
    1, 0, 0, 1,
    1, 0, 0, 1,
    1, 0, 0, 1,
 };
-const GRfloat ZUI_PRESS[] = {
+const float ZUI_PRESS[] = {
    0, 1, 0, 1,
    0, 1, 0, 1,
    0, 1, 0, 1,
    0, 1, 0, 1,
 };
-const GRfloat ZUI_BARBG[] = {
+const float ZUI_BARBG[] = {
    0, 0, 1, 1,
    0, 0, 1, 1,
    0, 0, 1, 1,
@@ -78,26 +78,26 @@ const GRfloat ZUI_BARBG[] = {
 };
 
 const uint32_t ZUI_FG_NORMAL = ~0;
-const GRfloat ZUI_BG_PANEL[] = {
+const float ZUI_BG_PANEL[] = {
    0, 0, 0, 0.25,
    0, 0, 0, 0.25,
    0, 0, 0, 0.25,
    0, 0, 0, 0.25,
 };
-const GRfloat ZUI_BG_SCREEN[] = {
+const float ZUI_BG_SCREEN[] = {
    0.07, 0.19, 0.26, 0.75,
    0.07, 0.19, 0.26, 0.75,
    0.15, 0.31, 0.47, 0.75,
    0.15, 0.31, 0.47, 0.75,
 };
-const GRfloat ZUI_BG_HILITE[] = {
+const float ZUI_BG_HILITE[] = {
    0.22, 0.60, 0.74, 1,
    0.22, 0.60, 0.74, 1,
    0.22, 0.60, 0.74, 1,
    0.22, 0.60, 0.74, 1,
 };
 
-const GRfloat ZUI_BG_PAD_HILITE[] = {
+const float ZUI_BG_PAD_HILITE[] = {
    0.30, 0.76, 0.93, 1,
    0.30, 0.76, 0.93, 1,
    0.30, 0.76, 0.93, 1,
@@ -145,11 +145,11 @@ typedef struct zarch_handle
    {
       struct
       {
-         GRuint id;
+         uintptr_t id;
          char path[PATH_MAX_LENGTH];
       } bg;
 
-      GRuint white;
+      uintptr_t white;
    } textures;
 
    /* LAY_ROOT's "Recent" */
@@ -327,11 +327,11 @@ static void zarch_zui_draw_text(zui_t *zui, uint32_t color, int x, int y, const 
 }
 
 static void zarch_zui_push_quad(unsigned width, unsigned height,
-      const GRfloat *colors, gfx_coord_array_t *ca, int x1, int y1,
+      const float *colors, gfx_coord_array_t *ca, int x1, int y1,
       int x2, int y2)
 {
    gfx_coords_t coords;
-   GRfloat vertex[8];
+   float vertex[8];
 
    vertex[0] = x1 / (float)width;
    vertex[1] = y1 / (float)height;
@@ -419,8 +419,8 @@ static void zarch_zui_snow(zui_t *zui, gfx_coord_array_t *ca, int width, int hei
    for (i = 0; i < NPARTICLES; ++i)
    {
       unsigned j;
-      GRfloat alpha;
-      GRfloat colors[16];
+      float alpha;
+      float colors[16];
       part_t *p = &particles[i];
 
       if (!p->alive)
@@ -445,7 +445,7 @@ static bool zarch_zui_button_full(zui_t *zui, int x1, int y1, int x2, int y2, co
 {
    unsigned       id = zarch_zui_hash(zui, label);
    bool       active = zarch_zui_check_button_up(zui, id, x1, y1, x2, y2);
-   const GRfloat *bg = ZUI_BG_PANEL;
+   const float *bg = ZUI_BG_PANEL;
 
    if (zui->item.active == id || zui->item.hot == id)
       bg = ZUI_BG_HILITE;
@@ -471,7 +471,7 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
    int                x2 = x1 + zui->width - 290 - 40;
    int                y2 = y1 + 50;
    bool           active = zarch_zui_check_button_up(zui, id, x1, y1, x2, y2);
-   const GRfloat     *bg = ZUI_BG_PANEL;
+   const float       *bg = ZUI_BG_PANEL;
    uint64_t *frame_count = video_driver_get_frame_count();
 
    if (tab->active_id != tab->prev_id)
@@ -534,7 +534,7 @@ static bool zarch_zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label, unsi
    int x1, y1, x2, y2;
    unsigned       id = zarch_zui_hash(zui, label);
    int         width = tab->tab_width;
-   const GRfloat *bg = ZUI_BG_PANEL;
+   const float   *bg = ZUI_BG_PANEL;
    bool selected     = tab->tab_selection == tab_id; /* TODO/FIXME */
 
    if (!width)
@@ -962,8 +962,8 @@ static int zarch_zui_render_pick_core(zui_t *zui)
 static void zarch_frame(void)
 {
    unsigned i;
-   GRfloat coord_color[16];
-   GRfloat coord_color2[16];
+   float coord_color[16];
+   float coord_color2[16];
    zui_t *zui           = NULL;
    const struct font_renderer *font_driver = NULL;
    driver_t *driver     = driver_get_ptr();

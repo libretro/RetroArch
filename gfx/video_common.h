@@ -22,9 +22,6 @@
 
 #include <boolean.h>
 
-typedef float GRfloat;
-typedef unsigned int GRuint;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
