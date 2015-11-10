@@ -55,6 +55,8 @@
 #endif
 
 /* forward declarations */
+static void d3d_calculate_rect(d3d_video_t *d3d,
+      unsigned width, unsigned height, bool force_full, bool allow_rotate);
 static bool d3d_init_luts(d3d_video_t *d3d);
 static void d3d_set_font_rect(d3d_video_t *d3d,
       const struct font_params *params);
@@ -269,74 +271,6 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    return true;
 }
 
-static void d3d_set_viewport_wrap(void *data,
-      unsigned width, unsigned height,
-      bool force_full,
-      bool allow_rotate)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   int x               = 0;
-   int y               = 0;
-   float device_aspect = (float)width / height;
-   unsigned new_width  = width;
-   unsigned new_height = height;
-   settings_t *settings = config_get_ptr();
-   float desired_aspect = video_driver_get_aspect_ratio();
-
-   video_driver_get_size(&width, &height);
-
-   gfx_ctx_translate_aspect(d3d, &device_aspect, width, height);
-
-   if (settings->video.scale_integer && !force_full)
-   {
-      struct video_viewport vp = {0};
-      video_viewport_get_scaled_integer(&vp, width, height, desired_aspect, d3d->keep_aspect);
-      x          = vp.x;
-      y          = vp.y;
-      new_width  = vp.width;
-      new_height = vp.height;
-   }
-   else if (d3d->keep_aspect && !force_full)
-   {
-      if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom = video_viewport_get_custom();
-
-         if (custom)
-         {
-            x          = custom->x;
-            y          = custom->y;
-            new_width  = custom->width;
-            new_height = custom->height;
-         }
-      }
-      else
-      {
-         float delta;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f) { }
-         else if (device_aspect > desired_aspect)
-         {
-            delta       = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            x           = int(roundf(width * (0.5f - delta)));
-            y           = 0;
-            new_width   = unsigned(roundf(2.0f * width * delta));
-         }
-         else
-         {
-            delta       = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            x           = 0;
-            y           = int(roundf(height * (0.5f - delta)));
-            new_height  = unsigned(roundf(2.0f * height * delta));
-         }
-      }
-   }
-
-   d3d_set_viewport(d3d, x, y, new_width, new_height);
-   d3d->renderchain_driver->set_final_viewport(d3d,
-            d3d->renderchain_data, &d3d->final_viewport);
-}
-
 static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
 {
    unsigned width, height;
@@ -397,7 +331,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
 
    video_driver_get_size(&width, &height);
 
-   d3d_set_viewport_wrap(d3d,
+   d3d_calculate_rect(d3d,
 	   width, height, false, true);
 
    if (!d3d_init_chain(d3d, info))
@@ -443,6 +377,16 @@ static void d3d_set_viewport(d3d_video_t *d3d, int x, int y,
    d3d_set_font_rect(d3d, NULL);
 }
 
+static void d3d_set_viewport_wrap(void *data,
+      unsigned width, unsigned height,
+      bool force_fullscreen,
+      bool allow_rotate)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_calculate_rect(d3d, width, height, force_fullscreen, allow_rotate);
+   d3d->renderchain_driver->set_final_viewport(d3d,
+            d3d->renderchain_data, &d3d->final_viewport);
+}
 
 bool d3d_restore(d3d_video_t *d3d)
 {
@@ -455,6 +399,68 @@ bool d3d_restore(d3d_video_t *d3d)
    return !d3d->needs_restore;
 }
 
+static void d3d_calculate_rect(d3d_video_t *d3d,
+      unsigned width, unsigned height, bool force_full, bool allow_rotate)
+{
+   int x               = 0;
+   int y               = 0;
+   float device_aspect = (float)width / height;
+   unsigned new_width  = width;
+   unsigned new_height = height;
+   settings_t *settings = config_get_ptr();
+   float desired_aspect = video_driver_get_aspect_ratio();
+
+   video_driver_get_size(&width, &height);
+
+   gfx_ctx_translate_aspect(d3d, &device_aspect, width, height);
+
+   if (settings->video.scale_integer && !force_full)
+   {
+      struct video_viewport vp = {0};
+      video_viewport_get_scaled_integer(&vp, width, height, desired_aspect, d3d->keep_aspect);
+      x          = vp.x;
+      y          = vp.y;
+      new_width  = vp.width;
+      new_height = vp.height;
+   }
+   else if (d3d->keep_aspect && !force_full)
+   {
+      if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      {
+         video_viewport_t *custom = video_viewport_get_custom();
+
+         if (custom)
+         {
+            x          = custom->x;
+            y          = custom->y;
+            new_width  = custom->width;
+            new_height = custom->height;
+         }
+      }
+      else
+      {
+         float delta;
+
+         if (fabsf(device_aspect - desired_aspect) < 0.0001f) { }
+         else if (device_aspect > desired_aspect)
+         {
+            delta       = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
+            x           = int(roundf(width * (0.5f - delta)));
+            y           = 0;
+            new_width   = unsigned(roundf(2.0f * width * delta));
+         }
+         else
+         {
+            delta       = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
+            x           = 0;
+            y           = int(roundf(height * (0.5f - delta)));
+            new_height  = unsigned(roundf(2.0f * height * delta));
+         }
+      }
+   }
+
+   d3d_set_viewport(d3d, x, y, new_width, new_height);
+}
 
 static void d3d_set_nonblock_state(void *data, bool state)
 {
@@ -1086,7 +1092,6 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 
    return true;
 }
-
 
 #ifdef _XBOX
 
