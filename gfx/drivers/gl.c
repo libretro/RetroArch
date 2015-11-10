@@ -899,18 +899,16 @@ static void gl_set_viewport(void *data, unsigned viewport_width,
             viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
          }
       }
-
-      gl->vp.x      = x;
-      gl->vp.y      = y;
-      gl->vp.width  = viewport_width;
-      gl->vp.height = viewport_height;
    }
    else
    {
-      gl->vp.x      = gl->vp.y = 0;
-      gl->vp.width  = viewport_width;
-      gl->vp.height = viewport_height;
+      x             = 0;
+      y             = 0;
    }
+   gl->vp.x         = x;
+   gl->vp.y         = y;
+   gl->vp.width     = viewport_width;
+   gl->vp.height    = viewport_height;
 
 #if defined(RARCH_MOBILE)
    /* In portrait mode, we want viewport to gravitate to top of screen. */
