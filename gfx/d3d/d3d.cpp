@@ -1165,16 +1165,7 @@ static bool texture_image_render(d3d_video_t *d3d,
    d3d_set_vertex_shader(d3dr, D3DFVF_CUSTOMVERTEX, NULL);
 
    if (force_fullscreen)
-   {
-      D3DVIEWPORT vp = {0};
-      vp.Width       = w;
-      vp.Height      = h;
-      vp.X           = 0;
-      vp.Y           = 0;
-      vp.MinZ        = 0.0f;
-      vp.MaxZ        = 1.0f;
-      d3d_set_viewport(d3dr, &vp);
-   }
+      d3d_set_viewport_wrap(d3d, w, h, force_fullscreen, false);
    d3d_draw_primitive(d3dr, D3DPT_QUADLIST, 0, 1);
 
    return true;
@@ -1461,18 +1452,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    video_driver_get_size(&width, &height);
 
    if (overlay->fullscreen)
-   {
-      /* Set viewport to full window. */
-      D3DVIEWPORT vp_full = {0};
-
-      vp_full.X           = 0;
-      vp_full.Y           = 0;
-      vp_full.Width       = width;
-      vp_full.Height      = height;
-      vp_full.MinZ        = 0.0f;
-      vp_full.MaxZ        = 1.0f;
-      d3d_set_viewport(d3d->dev, &vp_full);
-   }
+      d3d_set_viewport_wrap(d3d, width, height, true, false);
 
    /* Render overlay. */
    d3d_set_texture(d3d->dev, 0, overlay->tex);
@@ -1653,7 +1633,6 @@ static bool d3d_frame(void *data, const void *frame,
       const char *msg)
 {
    unsigned width, height;
-   D3DVIEWPORT screen_vp;
    static struct retro_perf_counter d3d_frame = {0};
    unsigned i                          = 0;
    d3d_video_t *d3d                    = (d3d_video_t*)data;
@@ -1689,7 +1668,7 @@ static bool d3d_frame(void *data, const void *frame,
 
 	  gfx_ctx_set_resize(d3d, width, height);
 
-      d3d_calculate_rect(d3d, width, width, false, true);
+      d3d_set_viewport_wrap(d3d, width, height, false, true);
 
       d3d->renderchain_driver->set_final_viewport(d3d,
             d3d->renderchain_data, &d3d->final_viewport);
@@ -1697,13 +1676,7 @@ static bool d3d_frame(void *data, const void *frame,
 
    /* render_chain() only clears out viewport,
     * clear out everything. */
-   screen_vp.X       = 0;
-   screen_vp.Y       = 0;
-   screen_vp.MinZ    = 0;
-   screen_vp.MaxZ    = 1;
-   screen_vp.Width   = width;
-   screen_vp.Height  = height;
-   d3d_set_viewport(d3dr, &screen_vp);
+   d3d_set_viewport_wrap(d3d, width, height, false, false);
    d3d_clear(d3dr, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    /* Insert black frame first, so we
