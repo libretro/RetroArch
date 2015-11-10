@@ -1503,11 +1503,12 @@ static void d3d_free_overlays(d3d_video_t *d3d)
 }
 
 static void d3d_overlay_tex_geom(
-      d3d_video_t *d3d,
+      void *data,
       unsigned index,
       float x, float y,
       float w, float h)
 {
+   d3d_video_t *d3d = (d3d_video_t*)data;
    if (!d3d)
       return;
 
@@ -1518,11 +1519,12 @@ static void d3d_overlay_tex_geom(
 }
 
 static void d3d_overlay_vertex_geom(
-      d3d_video_t *d3d,
+      void *data,
       unsigned index,
       float x, float y,
       float w, float h)
 {
+   d3d_video_t *d3d = (d3d_video_t*)data;
    if (!d3d)
       return;
 
