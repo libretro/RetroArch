@@ -399,6 +399,9 @@ static void d3d_set_viewport_wrap(void *data,
       d3d_set_viewport(d3dr, &vp_full);
    else
       d3d_set_viewport(d3dr, &d3d->final_viewport);
+
+   d3d->renderchain_driver->set_final_viewport(d3d,
+            d3d->renderchain_data, &d3d->final_viewport);
 }
 
 bool d3d_restore(d3d_video_t *d3d)
@@ -1670,8 +1673,7 @@ static bool d3d_frame(void *data, const void *frame,
 
       d3d_set_viewport_wrap(d3d, width, height, false, true);
 
-      d3d->renderchain_driver->set_final_viewport(d3d,
-            d3d->renderchain_data, &d3d->final_viewport);
+
    }
 
    /* render_chain() only clears out viewport,
