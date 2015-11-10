@@ -269,34 +269,12 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    return true;
 }
 
-static void d3d_set_viewport(d3d_video_t *d3d, int x, int y,
-      unsigned width, unsigned height)
-{
-   D3DVIEWPORT viewport;
-
-   /* D3D doesn't support negative X/Y viewports ... */
-   if (x < 0)
-      x = 0;
-   if (y < 0)
-      y = 0;
-
-   viewport.X          = x;
-   viewport.Y          = y;
-   viewport.Width      = width;
-   viewport.Height     = height;
-   viewport.MinZ       = 0.0f;
-   viewport.MaxZ       = 1.0f;
-
-   d3d->final_viewport = viewport;
-
-   d3d_set_font_rect(d3d, NULL);
-}
-
-static void d3d_set_viewport_wrap(void *data,
+static void d3d_set_viewport(void *data,
       unsigned width, unsigned height,
       bool force_full,
       bool allow_rotate)
 {
+   D3DVIEWPORT viewport;
    d3d_video_t *d3d = (d3d_video_t*)data;
    int x               = 0;
    int y               = 0;
@@ -355,7 +333,23 @@ static void d3d_set_viewport_wrap(void *data,
       }
    }
 
-   d3d_set_viewport(d3d, x, y, new_width, new_height);
+
+   /* D3D doesn't support negative X/Y viewports ... */
+   if (x < 0)
+      x = 0;
+   if (y < 0)
+      y = 0;
+
+   viewport.X          = x;
+   viewport.Y          = y;
+   viewport.Width      = width;
+   viewport.Height     = height;
+   viewport.MinZ       = 0.0f;
+   viewport.MaxZ       = 1.0f;
+
+   d3d->final_viewport = viewport;
+
+   d3d_set_font_rect(d3d, NULL);
 
    if (d3d->renderchain_driver && d3d->renderchain_data)
       d3d->renderchain_driver->set_final_viewport(d3d,
@@ -427,7 +421,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    }
 
    video_driver_get_size(&width, &height);
-   d3d_set_viewport_wrap(d3d,
+   d3d_set_viewport(d3d,
 	   width, height, false, true);
 
 #if defined(_XBOX360)
@@ -1148,7 +1142,7 @@ static bool texture_image_render(d3d_video_t *d3d,
    d3d_set_vertex_shader(d3dr, D3DFVF_CUSTOMVERTEX, NULL);
 
    if (force_fullscreen)
-      d3d_set_viewport_wrap(d3d, w, h, force_fullscreen, false);
+      d3d_set_viewport(d3d, w, h, force_fullscreen, false);
    d3d_draw_primitive(d3dr, D3DPT_QUADLIST, 0, 1);
 
    return true;
@@ -1435,7 +1429,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    video_driver_get_size(&width, &height);
 
    if (overlay->fullscreen)
-      d3d_set_viewport_wrap(d3d, width, height, true, false);
+      d3d_set_viewport(d3d, width, height, true, false);
 
    /* Render overlay. */
    d3d_set_texture(d3d->dev, 0, overlay->tex);
@@ -1447,7 +1441,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
 
    /* Restore previous state. */
    d3d_disable_blend_func(d3d->dev);
-   d3d_set_viewport(d3d->dev, &d3d->final_viewport);
+   d3d_set_viewport(d3d->dev, width, height, false, false);
 }
 
 static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay)
@@ -1648,17 +1642,13 @@ static bool d3d_frame(void *data, const void *frame,
    if (d3d->should_resize)
    {
       d3d->should_resize = false;
-
-	  gfx_ctx_set_resize(d3d, width, height);
-
-      d3d_set_viewport_wrap(d3d, width, height, false, true);
-
-
+      gfx_ctx_set_resize(d3d, width, height);
+      d3d_set_viewport(d3d, width, height, false, true);
    }
 
    /* render_chain() only clears out viewport,
     * clear out everything. */
-   d3d_set_viewport_wrap(d3d, width, height, false, false);
+   d3d_set_viewport(d3d, width, height, false, false);
    d3d_clear(d3dr, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    /* Insert black frame first, so we
@@ -1993,7 +1983,7 @@ video_driver_t video_d3d = {
    d3d_set_shader,
    d3d_free,
    "d3d",
-   d3d_set_viewport_wrap,
+   d3d_set_viewport,
    d3d_set_rotation,
    d3d_viewport_info,
    d3d_read_viewport,
