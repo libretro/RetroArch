@@ -1270,13 +1270,17 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
 
 void cheevos_test(void)
 {
-   settings_t *settings         = config_get_ptr();
-   if (settings->cheevos.enable && !cheevos_globals.cheats_are_enabled && !cheevos_globals.cheats_were_enabled)
+   if (cheevos_locals.loaded)
    {
-      cheevos_test_cheevo_set(&cheevos_locals.core);
+      settings_t *settings = config_get_ptr();
+      
+      if (settings->cheevos.enable && !cheevos_globals.cheats_are_enabled && !cheevos_globals.cheats_were_enabled)
+      {
+         cheevos_test_cheevo_set(&cheevos_locals.core);
 
-      if (settings->cheevos.test_unofficial)
-         cheevos_test_cheevo_set(&cheevos_locals.unofficial);
+         if (settings->cheevos.test_unofficial)
+            cheevos_test_cheevo_set(&cheevos_locals.unofficial);
+      }
    }
 }
 
