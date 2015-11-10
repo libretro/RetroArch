@@ -1037,17 +1037,18 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       return false;
    }
 
+   if (
+         !d3d->renderchain_driver->init(
 #ifdef _XBOX
-   if (!d3d->renderchain_driver->init(d3d, &d3d->video_info,
-            d3dr, &d3d->final_viewport, &link_info,
-            d3d->video_info.rgb32 ?
-            RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
+            d3d,
 #else
-   if (!d3d->renderchain_driver->init(d3d->renderchain_data, &d3d->video_info,
+            d3d->renderchain_data,
+#endif
+            &d3d->video_info,
             d3dr, &d3d->final_viewport, &link_info,
             d3d->video_info.rgb32 ?
-            RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565))
-#endif
+            RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565)
+      )
    {
       RARCH_ERR("[D3D]: Failed to init render chain.\n");
       return false;
@@ -1501,13 +1502,12 @@ static void d3d_free_overlays(d3d_video_t *d3d)
    d3d->overlays.clear();
 }
 
-static void d3d_overlay_tex_geom(void *data,
+static void d3d_overlay_tex_geom(
+      d3d_video_t *d3d,
       unsigned index,
       float x, float y,
       float w, float h)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-
    if (!d3d)
       return;
 
@@ -1517,13 +1517,12 @@ static void d3d_overlay_tex_geom(void *data,
    d3d->overlays[index].tex_coords.h = h;
 }
 
-static void d3d_overlay_vertex_geom(void *data,
+static void d3d_overlay_vertex_geom(
+      d3d_video_t *d3d,
       unsigned index,
       float x, float y,
       float w, float h)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-
    if (!d3d)
       return;
 
@@ -1740,10 +1739,8 @@ static bool d3d_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_MENU
-#ifndef _XBOX
    if (d3d->menu && d3d->menu->enabled)
       d3d_overlay_render(d3d, d3d->menu);
-#endif
 #endif
 
 #ifdef HAVE_OVERLAY
