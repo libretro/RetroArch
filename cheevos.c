@@ -1702,7 +1702,7 @@ static unsigned cheevos_find_game_id_nes(const struct retro_game_info *info, ret
       num_read = retro_fread(file, (void*)&header, sizeof(header));
       retro_fclose(file);
       
-      if (num_read < sizeof(header))
+      if (num_read < (ssize_t)sizeof(header))
          return 0;
    }
    
@@ -1741,7 +1741,7 @@ static unsigned cheevos_find_game_id_nes(const struct retro_game_info *info, ret
          if (num_read <= 0)
             break;
          
-         if (num_read >= rom_size)
+         if (num_read >= (ssize_t)rom_size)
          {
             MD5_Update(&ctx, (void*)buffer, rom_size);
             break;
@@ -1805,7 +1805,7 @@ int cheevos_load(const struct retro_game_info *info)
    
    size_t memory;
    struct retro_system_info sysinfo;
-   int i;
+   unsigned i;
    const char *json;
    retro_time_t timeout = 5000000;
    unsigned game_id     = 0;
