@@ -56,7 +56,7 @@
 
 /* forward declarations */
 static void d3d_calculate_rect(d3d_video_t *d3d,
-      unsigned width, unsigned height, float desired_aspect);
+      unsigned width, unsigned height, bool force_full, bool allow_rotate);
 static bool d3d_init_luts(d3d_video_t *d3d);
 static void d3d_set_font_rect(d3d_video_t *d3d,
       const struct font_params *params);
@@ -332,7 +332,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    video_driver_get_size(&width, &height);
 
    d3d_calculate_rect(d3d,
-	   width, height, video_driver_get_aspect_ratio());
+	   width, height, false, true);
 
    if (!d3d_init_chain(d3d, info))
    {
@@ -413,15 +413,21 @@ bool d3d_restore(d3d_video_t *d3d)
 }
 
 static void d3d_calculate_rect(d3d_video_t *d3d,
-      unsigned width, unsigned height, float desired_aspect)
+      unsigned width, unsigned height, bool force_full, bool allow_rotate)
 {
    int x               = 0;
    int y               = 0;
+   float device_aspect = (float)width / height;
    unsigned new_width  = width;
    unsigned new_height = height;
    settings_t *settings = config_get_ptr();
+   float desired_aspect = video_driver_get_aspect_ratio();
 
-   if (settings->video.scale_integer)
+   video_driver_get_size(&width, &height);
+
+   gfx_ctx_translate_aspect(d3d, &device_aspect, width, height);
+
+   if (settings->video.scale_integer && !force_full)
    {
       struct video_viewport vp = {0};
       video_viewport_get_scaled_integer(&vp, width, height, desired_aspect, d3d->keep_aspect);
@@ -430,7 +436,7 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
       new_width  = vp.width;
       new_height = vp.height;
    }
-   else if (d3d->keep_aspect)
+   else if (d3d->keep_aspect && !force_full)
    {
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
@@ -1683,8 +1689,7 @@ static bool d3d_frame(void *data, const void *frame,
 
 	  gfx_ctx_set_resize(d3d, width, height);
 
-      d3d_calculate_rect(d3d, width, width, 
-            video_driver_get_aspect_ratio());
+      d3d_calculate_rect(d3d, width, width, false, true);
 
       d3d->renderchain_driver->set_final_viewport(d3d,
             d3d->renderchain_data, &d3d->final_viewport);
