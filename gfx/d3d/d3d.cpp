@@ -279,8 +279,6 @@ static void d3d_set_viewport(void *data,
    int x               = 0;
    int y               = 0;
    float device_aspect = (float)width / height;
-   unsigned new_width  = width;
-   unsigned new_height = height;
    settings_t *settings = config_get_ptr();
    float desired_aspect = video_driver_get_aspect_ratio();
 
@@ -294,8 +292,8 @@ static void d3d_set_viewport(void *data,
       video_viewport_get_scaled_integer(&vp, width, height, desired_aspect, d3d->keep_aspect);
       x          = vp.x;
       y          = vp.y;
-      new_width  = vp.width;
-      new_height = vp.height;
+      width  = vp.width;
+      height = vp.height;
    }
    else if (d3d->keep_aspect && !force_full)
    {
@@ -307,8 +305,8 @@ static void d3d_set_viewport(void *data,
          {
             x          = custom->x;
             y          = custom->y;
-            new_width  = custom->width;
-            new_height = custom->height;
+            width      = custom->width;
+            height     = custom->height;
          }
       }
       else
@@ -321,14 +319,14 @@ static void d3d_set_viewport(void *data,
             delta       = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
             x           = int(roundf(width * (0.5f - delta)));
             y           = 0;
-            new_width   = unsigned(roundf(2.0f * width * delta));
+            width       = unsigned(roundf(2.0f * width * delta));
          }
          else
          {
             delta       = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
             x           = 0;
             y           = int(roundf(height * (0.5f - delta)));
-            new_height  = unsigned(roundf(2.0f * height * delta));
+            height      = unsigned(roundf(2.0f * height * delta));
          }
       }
    }
