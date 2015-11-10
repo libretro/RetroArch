@@ -269,29 +269,6 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    return true;
 }
 
-static void d3d_set_viewport(d3d_video_t *d3d, int x, int y,
-      unsigned width, unsigned height)
-{
-   D3DVIEWPORT viewport;
-
-   /* D3D doesn't support negative X/Y viewports ... */
-   if (x < 0)
-      x = 0;
-   if (y < 0)
-      y = 0;
-
-   viewport.X          = x;
-   viewport.Y          = y;
-   viewport.Width      = width;
-   viewport.Height     = height;
-   viewport.MinZ       = 0.0f;
-   viewport.MaxZ       = 1.0f;
-
-   d3d->final_viewport = viewport;
-
-   d3d_set_font_rect(d3d, NULL);
-}
-
 static void d3d_set_viewport_wrap(void *data,
       unsigned width, unsigned height,
       bool force_full,
@@ -443,6 +420,28 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    return true;
 }
 
+static void d3d_set_viewport(d3d_video_t *d3d, int x, int y,
+      unsigned width, unsigned height)
+{
+   D3DVIEWPORT viewport;
+
+   /* D3D doesn't support negative X/Y viewports ... */
+   if (x < 0)
+      x = 0;
+   if (y < 0)
+      y = 0;
+
+   viewport.X          = x;
+   viewport.Y          = y;
+   viewport.Width      = width;
+   viewport.Height     = height;
+   viewport.MinZ       = 0.0f;
+   viewport.MaxZ       = 1.0f;
+
+   d3d->final_viewport = viewport;
+
+   d3d_set_font_rect(d3d, NULL);
+}
 
 
 bool d3d_restore(d3d_video_t *d3d)
