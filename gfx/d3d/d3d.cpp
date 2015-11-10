@@ -332,7 +332,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    video_driver_get_size(&width, &height);
 
    d3d_calculate_rect(d3d,
-	   width, height, info->force_aspect, video_driver_get_aspect_ratio());
+	   width, height, video_driver_get_aspect_ratio());
 
    if (!d3d_init_chain(d3d, info))
    {
@@ -1679,13 +1679,15 @@ static bool d3d_frame(void *data, const void *frame,
 
    if (d3d->should_resize)
    {
-      d3d_calculate_rect(d3d, width, width,
+      d3d->should_resize = false;
+
+	  gfx_ctx_set_resize(d3d, width, height);
+
+      d3d_calculate_rect(d3d, width, width, 
             video_driver_get_aspect_ratio());
 
       d3d->renderchain_driver->set_final_viewport(d3d,
             d3d->renderchain_data, &d3d->final_viewport);
-
-      d3d->should_resize = false;
    }
 
    /* render_chain() only clears out viewport,
