@@ -28,6 +28,7 @@
 #include "d3d.h"
 #include "../video_viewport.h"
 #include "../video_monitor.h"
+#include "../video_common.h"
 #include "../../dynamic.h"
 #include "render_chain_driver.h"
 
