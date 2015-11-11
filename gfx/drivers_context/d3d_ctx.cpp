@@ -73,18 +73,21 @@ static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
 }
 
 #ifdef HAVE_WINDOW
-LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
-      WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
 {
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
    switch (message)
    {
-      case WM_CREATE:
+      case WM_SYSCOMMAND:
+         /* Prevent screensavers, etc, while running. */
+         switch (wparam)
          {
-            LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lParam;
-            curD3D                = (d3d_video_t*)p_cs->lpCreateParams;
+            case SC_SCREENSAVE:
+            case SC_MONITORPOWER:
+               return 0;
          }
          break;
       case WM_CHAR:
@@ -92,15 +95,27 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
       case WM_KEYUP:
       case WM_SYSKEYUP:
       case WM_SYSKEYDOWN:
-         return win32_handle_keyboard_event(hWnd, message, wParam, lParam);
+         return win32_handle_keyboard_event(hwnd, message, wparam, lparam);
 
+      case WM_CREATE:
+         {
+            LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
+            curD3D                = (d3d_video_t*)p_cs->lpCreateParams;
+         }
+         break;
+
+      case WM_CLOSE:
       case WM_DESTROY:
+      case WM_QUIT:
          d3d_quit = true;
          return 0;
+
       case WM_SIZE:
+         /* Do not send resize message if we minimize. */
+         if (wparam != SIZE_MAXHIDE && wparam != SIZE_MINIMIZED)
          {
-            unsigned new_width  = LOWORD(lParam);
-            unsigned new_height = HIWORD(lParam);
+            unsigned new_width  = LOWORD(lparam);
+            unsigned new_height = HIWORD(lparam);
 
             if (new_width && new_height)
                d3d_resize(driver->video_data, new_width, new_height);
@@ -111,14 +126,14 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
          {
             d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
             HWND        d3dr = d3d->hWnd;
-            LRESULT      ret = win32_menu_loop(d3dr, wParam);
+            LRESULT      ret = win32_menu_loop(d3dr, wparam);
          }
          break;
    }
 
-   if (dinput_handle_message(dinput, message, wParam, lParam))
+   if (dinput_handle_message(dinput, message, wparam, lparam))
       return 0;
-   return DefWindowProc(hWnd, message, wParam, lParam);
+   return DefWindowProc(hwnd, message, wparam, lparam);
 }
 #endif
 
