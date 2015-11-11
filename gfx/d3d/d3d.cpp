@@ -634,7 +634,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 #ifdef HAVE_MONITOR
    bool windowed_full;
    RECT mon_rect;
-   MONITORINFOEX curent_mon;
+   MONITORINFOEX current_mon;
    HMONITOR hm_to_use;
 
    d3d_monitor_rect(d3d, &current_mon, &hm_to_use);
