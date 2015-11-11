@@ -415,10 +415,6 @@ INPUT (HID)
  KEYBOARD EVENT
  ============================================================ */
 
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../input/drivers_keyboard/keyboard_event_win32.c"
-#endif
-
 #ifdef HAVE_X11
 #include "../input/drivers_keyboard/keyboard_event_x11.c"
 #endif

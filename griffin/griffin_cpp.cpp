@@ -33,6 +33,14 @@ AUDIO
 #endif
 
 /*============================================================
+ KEYBOARD EVENT
+ ============================================================ */
+
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../input/drivers_keyboard/keyboard_event_win32.cpp"
+#endif
+
+/*============================================================
 UI COMMON CONTEXT
 ============================================================ */
 #if defined(_WIN32) && !defined(_XBOX)
