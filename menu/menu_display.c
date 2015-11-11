@@ -140,36 +140,6 @@ bool menu_display_font_init_first(const void **font_driver,
 
    return menu_disp->font_init_first(font_driver, font_handle, video_data,
          font_path, font_size);
-
-   settings_t *settings = config_get_ptr();
-   const struct retro_hw_render_callback *hw_render =
-      (const struct retro_hw_render_callback*)video_driver_callback();
-
-   if (settings->video.threaded && !hw_render->context_type)
-   {
-      thread_packet_t pkt;
-      driver_t *driver    = driver_get_ptr();
-      thread_video_t *thr = (thread_video_t*)driver->video_data;
-
-      if (!thr)
-         return false;
-
-      pkt.type                       = CMD_FONT_INIT;
-      pkt.data.font_init.method      = font_init_first;
-      pkt.data.font_init.font_driver = (const void**)font_driver;
-      pkt.data.font_init.font_handle = font_handle;
-      pkt.data.font_init.video_data  = video_data;
-      pkt.data.font_init.font_path   = font_path;
-      pkt.data.font_init.font_size   = font_size;
-      pkt.data.font_init.api         = FONT_DRIVER_RENDER_OPENGL_API;
-
-      thr->send_and_wait(thr, &pkt);
-
-      return pkt.data.font_init.return_value;
-   }
-
-   return font_init_first(font_driver, font_handle, video_data,
-         font_path, font_size, FONT_DRIVER_RENDER_OPENGL_API);
 }
 
 bool menu_display_font_bind_block(void *data, const void *font_data, void *userdata)
