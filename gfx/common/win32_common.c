@@ -57,6 +57,65 @@ PowerClearRequest (
     HANDLE PowerRequest,
     POWER_REQUEST_TYPE RequestType
     );
+
+#ifndef MAX_MONITORS
+#define MAX_MONITORS 9
+#endif
+
+static HMONITOR win32_monitor_last;
+static unsigned win32_monitor_count;
+static HMONITOR win32_monitor_all[MAX_MONITORS];
+
+static BOOL CALLBACK win32_monitor_enum_proc(HMONITOR hMonitor,
+      HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+{
+   win32_monitor_all[win32_monitor_count++] = hMonitor;
+   return TRUE;
+}
+
+void win32_monitor_init(void)
+{
+   win32_monitor_count = 0;
+   EnumDisplayMonitors(NULL, NULL, win32_monitor_enum_proc, 0);
+}
+
+void win32_monitor_from_window(HWND data)
+{
+   win32_monitor_last = MonitorFromWindow(data, MONITOR_DEFAULTTONEAREST);
+}
+
+void win32_monitor_get_info(void)
+{
+   MONITORINFOEX current_mon;
+
+   memset(&current_mon, 0, sizeof(current_mon));
+   current_mon.cbSize = sizeof(MONITORINFOEX);
+
+   GetMonitorInfo(win32_monitor_last, (MONITORINFO*)&current_mon);
+   ChangeDisplaySettingsEx(current_mon.szDevice, NULL, NULL, 0, NULL);
+}
+
+void win32_monitor_info(void *data, void *hm_data)
+{
+   unsigned fs_monitor;
+   settings_t *settings = config_get_ptr();
+   MONITORINFOEX *mon   = (MONITORINFOEX*)data;
+   HMONITOR *hm_to_use  = (HMONITOR*)hm_data;
+
+   if (!win32_monitor_last)
+      win32_monitor_from_window(GetDesktopWindow());
+
+   *hm_to_use = win32_monitor_last;
+   fs_monitor = settings->video.monitor_index;
+
+   if (fs_monitor && fs_monitor <= win32_monitor_count
+         && win32_monitor_all[fs_monitor - 1])
+      *hm_to_use = win32_monitor_all[fs_monitor - 1];
+
+   memset(mon, 0, sizeof(*mon));
+   mon->cbSize = sizeof(MONITORINFOEX);
+   GetMonitorInfo(*hm_to_use, (MONITORINFO*)mon);
+}
 #endif
 
 static bool win32_browser(

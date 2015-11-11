@@ -35,6 +35,14 @@ LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 
 LRESULT win32_menu_loop(HWND handle, WPARAM wparam);
+
+void win32_monitor_init(void);
+
+void win32_monitor_from_window(HWND data);
+
+void win32_monitor_get_info(void);
+
+void win32_monitor_info(void *data, void *hm_data);
 #endif
 
 bool win32_suppress_screensaver(void *data, bool enable);

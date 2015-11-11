@@ -42,8 +42,28 @@
 
 #define IDI_ICON 1
 
-#ifndef MAX_MONITORS
-#define MAX_MONITORS 9
+#ifndef WGL_CONTEXT_MAJOR_VERSION_ARB
+#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
+#endif
+
+#ifndef WGL_CONTEXT_MINOR_VERSION_ARB
+#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
+#endif
+
+#ifndef WGL_CONTEXT_PROFILE_MASK_ARB
+#define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
+#endif
+
+#ifndef WGL_CONTEXT_CORE_PROFILE_BIT_ARB
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x0001
+#endif
+
+#ifndef WGL_CONTEXT_FLAGS_ARB
+#define WGL_CONTEXT_FLAGS_ARB 0x2094
+#endif
+
+#ifndef WGL_CONTEXT_DEBUG_BIT_ARB
+#define WGL_CONTEXT_DEBUG_BIT_ARB 0x0001
 #endif
 
 static bool g_use_hw_ctx;
@@ -51,10 +71,6 @@ static HWND g_hwnd;
 static HGLRC g_hrc;
 static HGLRC g_hw_hrc;
 static HDC g_hdc;
-
-static HMONITOR monitor_wgl_last;
-static HMONITOR monitor_wgl_all[MAX_MONITORS];
-static unsigned monitor_wgl_count;
 
 static unsigned g_major;
 static unsigned g_minor;
@@ -72,8 +88,6 @@ static bool g_resized;
 static dylib_t dll_handle = NULL; /* Handle to OpenGL32.dll */
 
 static bool g_restore_desktop;
-
-static void monitor_info(MONITORINFOEX *mon, HMONITOR *hm_to_use);
 
 static void gfx_ctx_wgl_destroy(void *data);
 
@@ -97,24 +111,6 @@ static void setup_pixel_format(HDC hdc)
    SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
 }
 
-#ifndef WGL_CONTEXT_MAJOR_VERSION_ARB
-#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
-#endif
-#ifndef WGL_CONTEXT_MINOR_VERSION_ARB
-#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
-#endif
-#ifndef WGL_CONTEXT_PROFILE_MASK_ARB
-#define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
-#endif
-#ifndef WGL_CONTEXT_CORE_PROFILE_BIT_ARB
-#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x0001
-#endif
-#ifndef WGL_CONTEXT_FLAGS_ARB
-#define WGL_CONTEXT_FLAGS_ARB 0x2094
-#endif
-#ifndef WGL_CONTEXT_DEBUG_BIT_ARB
-#define WGL_CONTEXT_DEBUG_BIT_ARB 0x0001
-#endif
 
 static void create_gl_context(HWND hwnd)
 {
@@ -382,7 +378,7 @@ static void gfx_ctx_wgl_get_video_size(void *data, unsigned *width, unsigned *he
       MONITORINFOEX current_mon;
       HMONITOR hm_to_use = NULL;
 
-      monitor_info(&current_mon, &hm_to_use);
+      win32_monitor_info(&current_mon, &hm_to_use);
       mon_rect = current_mon.rcMonitor;
       *width  = mon_rect.right - mon_rect.left;
       *height = mon_rect.bottom - mon_rect.top;
@@ -394,13 +390,6 @@ static void gfx_ctx_wgl_get_video_size(void *data, unsigned *width, unsigned *he
    }
 }
 
-static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor,
-      HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
-{
-   monitor_wgl_all[monitor_wgl_count++] = hMonitor;
-   return TRUE;
-}
-
 static bool gfx_ctx_wgl_init(void *data)
 {
    WNDCLASSEX wndclass = {0};
@@ -410,11 +399,10 @@ static bool gfx_ctx_wgl_init(void *data)
    if (g_inited)
       return false;
 
-   g_quit = false;
-   g_restore_desktop = false;
+   g_quit              = false;
+   g_restore_desktop   = false;
 
-   monitor_wgl_count = 0;
-   EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, 0);
+   win32_monitor_init();
 
    wndclass.cbSize = sizeof(wndclass);
    wndclass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
@@ -450,28 +438,6 @@ static bool set_fullscreen(unsigned width, unsigned height, unsigned refresh, ch
    return ChangeDisplaySettingsEx(dev_name, &devmode, NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_SUCCESSFUL;
 }
 
-static void monitor_info(MONITORINFOEX *mon, HMONITOR *hm_to_use)
-{
-   unsigned fs_monitor;
-   settings_t *settings = config_get_ptr();
-
-   if (!monitor_wgl_last)
-      monitor_wgl_last = MonitorFromWindow(
-            GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
-
-   *hm_to_use = monitor_wgl_last;
-   fs_monitor = settings->video.monitor_index;
-
-   if (fs_monitor && fs_monitor <= monitor_wgl_count
-         && monitor_wgl_all[fs_monitor - 1])
-   {
-      *hm_to_use = monitor_wgl_all[fs_monitor - 1];
-   }
-
-   memset(mon, 0, sizeof(*mon));
-   mon->cbSize = sizeof(MONITORINFOEX);
-   GetMonitorInfo(*hm_to_use, (MONITORINFO*)mon);
-}
 
 static bool gfx_ctx_wgl_set_video_mode(void *data,
       unsigned width, unsigned height,
@@ -489,7 +455,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
-   monitor_info(&current_mon, &hm_to_use);
+   win32_monitor_info(&current_mon, &hm_to_use);
 
    mon_rect        = current_mon.rcMonitor;
    g_resize_width  = width;
@@ -617,7 +583,7 @@ static void gfx_ctx_wgl_destroy(void *data)
 
    if (g_hwnd)
    {
-      monitor_wgl_last = MonitorFromWindow(g_hwnd, MONITOR_DEFAULTTONEAREST);
+      win32_monitor_from_window(g_hwnd);
       DestroyWindow(g_hwnd);
       UnregisterClass("RetroArch", GetModuleHandle(NULL));
       g_hwnd = NULL;
@@ -625,11 +591,7 @@ static void gfx_ctx_wgl_destroy(void *data)
 
    if (g_restore_desktop)
    {
-      MONITORINFOEX current_mon;
-      memset(&current_mon, 0, sizeof(current_mon));
-      current_mon.cbSize = sizeof(MONITORINFOEX);
-      GetMonitorInfo(monitor_wgl_last, (MONITORINFO*)&current_mon);
-      ChangeDisplaySettingsEx(current_mon.szDevice, NULL, NULL, 0, NULL);
+      win32_monitor_get_info();
       g_restore_desktop = false;
    }
 
