@@ -239,19 +239,14 @@ static bool renderchain_compile_shaders(cg_renderchain_t *chain,
    return true;
 }
 
-static void renderchain_set_shaders(void *data, void *fragment_data, void *vertex_data)
+static INLINE void renderchain_set_shaders(void *data, CGprogram *fPrg, CGprogram *vPrg)
 {
-   CGprogram *fPrg = (CGprogram*)fragment_data;
-   CGprogram *vPrg = (CGprogram*)vertex_data;
-
    cgD3D9BindProgram(*fPrg);
    cgD3D9BindProgram(*vPrg);
 }
 
-static void cg_d3d9_renderchain_destroy_stock_shader(void *data)
+static void cg_d3d9_renderchain_destroy_stock_shader(cg_renderchain_t *chain)
 {
-   cg_renderchain_t *chain = (cg_renderchain_t*)data;
-
    if (!chain)
       return;
 
@@ -1131,11 +1126,10 @@ static bool cg_d3d9_renderchain_add_pass(void *data, const void *info_data)
    return true;
 }
 
-static bool cg_d3d9_renderchain_add_lut(void *data,
+static bool cg_d3d9_renderchain_add_lut(cg_renderchain_t *chain,
       const char *id, const char *path, bool smooth)
 {
    lut_info info;
-   cg_renderchain_t *chain  = (cg_renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = chain->dev;
    LPDIRECT3DTEXTURE lut = (LPDIRECT3DTEXTURE)
       d3d_texture_new(d3dr,
@@ -1309,13 +1303,13 @@ static void renderchain_set_viewport(void *data, void *viewport_data)
    d3d_set_viewport(d3dr, vp);
 }
 
-static void renderchain_blit_to_texture(void *data,
+static void renderchain_blit_to_texture(
+      cg_renderchain_t *chain,
       const void *frame,
       unsigned width, unsigned height,
       unsigned pitch)
 {
    D3DLOCKED_RECT d3dlr;
-   cg_renderchain_t *chain = (cg_renderchain_t*)data;
    Pass             *first = (Pass*)&chain->passes[0];
 
    if (first->last_width != width || first->last_height != height)
@@ -1330,10 +1324,9 @@ static void renderchain_blit_to_texture(void *data,
          &d3dlr, frame, width, height, pitch);
 }
 
-static void renderchain_unbind_all(void *data)
+static void renderchain_unbind_all(cg_renderchain_t *chain)
 {
    unsigned i;
-   cg_renderchain_t *chain  = (cg_renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
    /* Have to be a bit anal about it.
@@ -1397,13 +1390,15 @@ static void renderchain_render_pass(
    renderchain_unbind_all(chain);
 }
 
-static bool cg_d3d9_renderchain_render(void *chain_data, const void *data,
-      unsigned width, unsigned height, unsigned pitch, unsigned rotation)
+static bool cg_d3d9_renderchain_render(
+      cg_renderchain_t *chain,
+      const void *data,
+      unsigned width, unsigned height,
+      unsigned pitch, unsigned rotation)
 {
    Pass *last_pass;
    LPDIRECT3DSURFACE back_buffer, target;
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
-   cg_renderchain_t *chain  = (cg_renderchain_t*)chain_data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
    renderchain_start_render(chain);
@@ -1527,8 +1522,7 @@ static bool cg_d3d9_renderchain_read_viewport(void *data, uint8_t *buffer)
    LPDIRECT3DSURFACE target = NULL;
    LPDIRECT3DSURFACE dest   = NULL;
    bool ret                 = true;
-   d3d_video_t *d3d         = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
+   d3d_video_t *d3d         = (d3d_video_t*)data; LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
    static struct retro_perf_counter d3d_read_viewport = {0};
 
    video_driver_get_size(&width, &height);
