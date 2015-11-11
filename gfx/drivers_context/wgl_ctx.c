@@ -391,6 +391,23 @@ static void gfx_ctx_wgl_get_video_size(void *data, unsigned *width, unsigned *he
    }
 }
 
+static bool win32_window_init(WNDCLASSEX *wndclass)
+{
+   wndclass->cbSize = sizeof(*wndclass);
+   wndclass->style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+   wndclass->lpfnWndProc = WndProc;
+   wndclass->hInstance = GetModuleHandle(NULL);
+   wndclass->hCursor = LoadCursor(NULL, IDC_ARROW);
+   wndclass->lpszClassName = "RetroArch";
+   wndclass->hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
+   wndclass->hIconSm = (HICON)LoadImage(GetModuleHandle(NULL),
+         MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
+
+   if (!RegisterClassEx(wndclass))
+      return false;
+   return true;
+}
+
 static bool gfx_ctx_wgl_init(void *data)
 {
    WNDCLASSEX wndclass = {0};
@@ -404,19 +421,8 @@ static bool gfx_ctx_wgl_init(void *data)
    g_restore_desktop   = false;
 
    win32_monitor_init();
-
-   wndclass.cbSize = sizeof(wndclass);
-   wndclass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-   wndclass.lpfnWndProc = WndProc;
-   wndclass.hInstance = GetModuleHandle(NULL);
-   wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
-   wndclass.lpszClassName = "RetroArch";
-   wndclass.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
-   wndclass.hIconSm = (HICON)LoadImage(GetModuleHandle(NULL),
-         MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
-
-   if (!RegisterClassEx(&wndclass))
-      return false;
+   if (!win32_window_init(&wndclass))
+	   return false;
 
    if (!wgl_shader_dlg_init())
       RARCH_ERR("[WGL]: wgl_shader_dlg_init() failed.\n");
