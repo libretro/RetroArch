@@ -98,13 +98,13 @@ static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay);
 
 extern LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
         WPARAM wParam, LPARAM lParam);
-static RECT d3d_monitor_rect(d3d_video_t *d3d);
+static void d3d_monitor_rect(d3d_video_t *d3d, MONITORINFOEX *mon, HMONITOR *hm_to_use);
 #endif
 
 #ifdef HAVE_MONITOR
-static HMONITOR monitor_last;
-static HMONITOR monitor_all[MAX_MONITORS];
-static unsigned monitor_count;
+static HMONITOR monitor_d3d_last;
+static HMONITOR monitor_d3d_all[MAX_MONITORS];
+static unsigned monitor_d3d_count;
 #endif
 
 static void d3d_deinit_chain(d3d_video_t *d3d)
@@ -632,9 +632,15 @@ static bool d3d_construct(d3d_video_t *d3d,
 #endif
 
 #ifdef HAVE_MONITOR
-   RECT mon_rect = d3d_monitor_rect(d3d);
+   bool windowed_full;
+   RECT mon_rect;
+   MONITORINFOEX mon;
+   HMONITOR hm_to_use
 
-   bool windowed_full = settings->video.windowed_fullscreen;
+   d3d_monitor_rect(d3d, &mon, &hm_to_use);
+   mon_rect = mon.rcMonitor;
+
+   windowed_full = settings->video.windowed_fullscreen;
 
    full_x = (windowed_full || info->width  == 0) ?
       (mon_rect.right  - mon_rect.left) : info->width;
@@ -887,7 +893,7 @@ static void d3d_free(void *data)
       d3d->g_pD3D->Release();
 
 #ifdef HAVE_MONITOR
-   monitor_last = MonitorFromWindow(d3d->hWnd,
+   monitor_d3d_last = MonitorFromWindow(d3d->hWnd,
          MONITOR_DEFAULTTONEAREST);
    DestroyWindow(d3d->hWnd);
 #endif
@@ -904,39 +910,37 @@ static void d3d_free(void *data)
 static BOOL CALLBACK d3d_monitor_enum_proc(HMONITOR hMonitor,
       HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
-   monitor_all[monitor_count++] = hMonitor;
+   monitor_d3d_all[monitor_d3d_count++] = hMonitor;
    return TRUE;
 }
 
 /* Multi-monitor support. */
-static RECT d3d_monitor_rect(d3d_video_t *d3d)
+static void d3d_monitor_rect(d3d_video_t *d3d, MONITORINFOEX *mon, HMONITOR *hm_to_use)
 {
    unsigned fs_monitor, i;
-   MONITORINFOEX current_mon;
-   HMONITOR hm_to_use;
-   monitor_count        = 0;
+   monitor_d3d_count        = 0;
    settings_t *settings = config_get_ptr();
 
    EnumDisplayMonitors(NULL, NULL, d3d_monitor_enum_proc, 0);
 
-   if (!monitor_last)
-      monitor_last      = MonitorFromWindow(
+   if (!monitor_d3d_last)
+      monitor_d3d_last = MonitorFromWindow(
             GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
 
-   hm_to_use            = monitor_last;
+   *hm_to_use           = monitor_d3d_last;
    fs_monitor           = settings->video.monitor_index;
 
-   if (fs_monitor && fs_monitor <= monitor_count
-         && monitor_all[fs_monitor - 1])
+   if (fs_monitor && fs_monitor <= monitor_d3d_count
+         && monitor_d3d_all[fs_monitor - 1])
    {
-      hm_to_use = monitor_all[fs_monitor - 1];
+      *hm_to_use = monitor_d3d_all[fs_monitor - 1];
       d3d->cur_mon_id = fs_monitor - 1;
    }
    else
    {
-      for (i = 0; i < monitor_count; i++)
+      for (i = 0; i < monitor_d3d_count; i++)
       {
-         if (monitor_all[i] != hm_to_use)
+         if (monitor_d3d_all[i] != *hm_to_use)
             continue;
 
          d3d->cur_mon_id = i;
@@ -944,11 +948,9 @@ static RECT d3d_monitor_rect(d3d_video_t *d3d)
       }
    }
 
-   memset(&current_mon, 0, sizeof(current_mon));
-   current_mon.cbSize = sizeof(MONITORINFOEX);
-   GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
-
-   return current_mon.rcMonitor;
+   memset(mon, 0, sizeof(*mon));
+   mon->cbSize = sizeof(MONITORINFOEX);
+   GetMonitorInfo(*hm_to_use, (MONITORINFO*)mon);
 }
 #endif
 

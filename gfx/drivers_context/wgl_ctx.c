@@ -51,9 +51,11 @@ static HWND g_hwnd;
 static HGLRC g_hrc;
 static HGLRC g_hw_hrc;
 static HDC g_hdc;
-static HMONITOR g_last_hm;
-static HMONITOR g_all_hms[MAX_MONITORS];
-static unsigned g_num_mons;
+
+static HMONITOR monitor_wgl_last;
+static HMONITOR monitor_wgl_all[MAX_MONITORS];
+static unsigned monitor_wgl_count;
+
 static unsigned g_major;
 static unsigned g_minor;
 
@@ -395,7 +397,7 @@ static void gfx_ctx_wgl_get_video_size(void *data, unsigned *width, unsigned *he
 static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor,
       HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
-   g_all_hms[g_num_mons++] = hMonitor;
+   monitor_wgl_all[monitor_wgl_count++] = hMonitor;
    return TRUE;
 }
 
@@ -411,7 +413,7 @@ static bool gfx_ctx_wgl_init(void *data)
    g_quit = false;
    g_restore_desktop = false;
 
-   g_num_mons = 0;
+   monitor_wgl_count = 0;
    EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, 0);
 
    wndclass.cbSize = sizeof(wndclass);
@@ -453,13 +455,18 @@ static void monitor_info(MONITORINFOEX *mon, HMONITOR *hm_to_use)
    unsigned fs_monitor;
    settings_t *settings = config_get_ptr();
 
-   if (!g_last_hm)
-      g_last_hm = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
-   *hm_to_use = g_last_hm;
+   if (!monitor_wgl_last)
+      monitor_wgl_last = MonitorFromWindow(
+            GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
 
+   *hm_to_use = monitor_wgl_last;
    fs_monitor = settings->video.monitor_index;
-   if (fs_monitor && fs_monitor <= g_num_mons && g_all_hms[fs_monitor - 1])
-      *hm_to_use = g_all_hms[fs_monitor - 1];
+
+   if (fs_monitor && fs_monitor <= monitor_wgl_count
+         && monitor_wgl_all[fs_monitor - 1])
+   {
+      *hm_to_use = monitor_wgl_all[fs_monitor - 1];
+   }
 
    memset(mon, 0, sizeof(*mon));
    mon->cbSize = sizeof(MONITORINFOEX);
@@ -610,7 +617,7 @@ static void gfx_ctx_wgl_destroy(void *data)
 
    if (g_hwnd)
    {
-      g_last_hm = MonitorFromWindow(g_hwnd, MONITOR_DEFAULTTONEAREST);
+      monitor_wgl_last = MonitorFromWindow(g_hwnd, MONITOR_DEFAULTTONEAREST);
       DestroyWindow(g_hwnd);
       UnregisterClass("RetroArch", GetModuleHandle(NULL));
       g_hwnd = NULL;
@@ -621,7 +628,7 @@ static void gfx_ctx_wgl_destroy(void *data)
       MONITORINFOEX current_mon;
       memset(&current_mon, 0, sizeof(current_mon));
       current_mon.cbSize = sizeof(MONITORINFOEX);
-      GetMonitorInfo(g_last_hm, (MONITORINFO*)&current_mon);
+      GetMonitorInfo(monitor_wgl_last, (MONITORINFO*)&current_mon);
       ChangeDisplaySettingsEx(current_mon.szDevice, NULL, NULL, 0, NULL);
       g_restore_desktop = false;
    }
