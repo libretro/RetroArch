@@ -1488,14 +1488,14 @@ static bool cg_d3d9_renderchain_render(
    return true;
 }
 
-static void cg_d3d9_renderchain_set_font_rect(void *data,
-      const struct font_params *params)
+static void cg_d3d9_renderchain_set_font_rect(void *data, const void *font_data)
 {
-   settings_t *settings           = config_get_ptr();
-   d3d_video_t *d3d               = (d3d_video_t*)data;
-   float pos_x                    = settings->video.msg_pos_x;
-   float pos_y                    = settings->video.msg_pos_y;
-   float font_size                = settings->video.font_size;
+   settings_t *settings             = config_get_ptr();
+   d3d_video_t *d3d                 = (d3d_video_t*)data;
+   float pos_x                      = settings->video.msg_pos_x;
+   float pos_y                      = settings->video.msg_pos_y;
+   float font_size                  = settings->video.font_size;
+   const struct font_params *params = (const struct font_params*)font_data;
 
    if (params)
    {
