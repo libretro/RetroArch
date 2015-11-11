@@ -635,7 +635,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    bool windowed_full;
    RECT mon_rect;
    MONITORINFOEX mon;
-   HMONITOR hm_to_use
+   HMONITOR hm_to_use;
 
    d3d_monitor_rect(d3d, &mon, &hm_to_use);
    mon_rect = mon.rcMonitor;
