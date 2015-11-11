@@ -404,7 +404,7 @@ static bool gfx_ctx_wgl_init(void *data)
    g_restore_desktop   = false;
 
    win32_monitor_init();
-   if (!win32_window_init(&wndclass))
+   if (!win32_window_init(&wndclass, WndProc))
 	   return false;
 
    if (!wgl_shader_dlg_init())

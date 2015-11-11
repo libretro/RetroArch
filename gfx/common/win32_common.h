@@ -48,7 +48,7 @@ void win32_monitor_get_info(void);
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
 
-bool win32_window_init(WNDCLASSEX *wndclass);
+bool win32_window_init(WNDCLASSEX *wndclass, LRESULT CALLBACK WndProc);
 #endif
 
 bool win32_suppress_screensaver(void *data, bool enable);

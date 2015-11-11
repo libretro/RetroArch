@@ -133,7 +133,7 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
    GetMonitorInfo(*hm_to_use, (MONITORINFO*)mon);
 }
 
-bool win32_window_init(WNDCLASSEX *wndclass)
+bool win32_window_init(WNDCLASSEX *wndclass, LRESULT CALLBACK WndProc)
 {
    wndclass->cbSize = sizeof(*wndclass);
    wndclass->style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
