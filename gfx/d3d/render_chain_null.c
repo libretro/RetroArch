@@ -134,7 +134,6 @@ static void null_renderchain_convert_geometry(
 renderchain_driver_t null_renderchain = {
    null_renderchain_free,
    null_renderchain_new,
-   NULL,
    null_renderchain_init_shader,
    null_renderchain_init_shader_fvf,
    NULL,
