@@ -60,12 +60,8 @@
 
 typedef struct
 {
-   struct Coords
-   {
-      float x, y, w, h;
-   };
-   Coords tex_coords;
-   Coords vert_coords;
+   float tex_coords[4];
+   float vert_coords[4];
    unsigned tex_w, tex_h;
    bool fullscreen;
    bool enabled;

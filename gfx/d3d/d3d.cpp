@@ -602,14 +602,14 @@ static bool d3d_construct(d3d_video_t *d3d,
    if (!d3d->menu)
       return false;
 
-   d3d->menu->tex_coords.x  = 0;
-   d3d->menu->tex_coords.y  = 0;
-   d3d->menu->tex_coords.w  = 1;
-   d3d->menu->tex_coords.h  = 1;
-   d3d->menu->vert_coords.x = 0;
-   d3d->menu->vert_coords.y = 1;
-   d3d->menu->vert_coords.w = 1;
-   d3d->menu->vert_coords.h = -1;
+   d3d->menu->tex_coords[0]  = 0;
+   d3d->menu->tex_coords[1]  = 0;
+   d3d->menu->tex_coords[2]  = 1;
+   d3d->menu->tex_coords[3]  = 1;
+   d3d->menu->vert_coords[0] = 0;
+   d3d->menu->vert_coords[1] = 1;
+   d3d->menu->vert_coords[2] = 1;
+   d3d->menu->vert_coords[3] = -1;
 #endif
 
 #if defined(HAVE_WINDOW) && !defined(_XBOX)
@@ -1335,27 +1335,27 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    overlay_width  = vp.width;
    overlay_height = vp.height;
 
-   vert[0].x      = overlay->vert_coords.x * overlay_width;
-   vert[1].x      = (overlay->vert_coords.x + overlay->vert_coords.w)
+   vert[0].x      = overlay->vert_coords[0] * overlay_width;
+   vert[1].x      = (overlay->vert_coords[0] + overlay->vert_coords[2])
       * overlay_width;
-   vert[2].x      = overlay->vert_coords.x * overlay_width;
-   vert[3].x      = (overlay->vert_coords.x + overlay->vert_coords.w)
+   vert[2].x      = overlay->vert_coords[0] * overlay_width;
+   vert[3].x      = (overlay->vert_coords[0] + overlay->vert_coords[2])
       * overlay_width;
-   vert[0].y      = overlay->vert_coords.y * overlay_height;
-   vert[1].y      = overlay->vert_coords.y * overlay_height;
-   vert[2].y      = (overlay->vert_coords.y + overlay->vert_coords.h)
+   vert[0].y      = overlay->vert_coords[1] * overlay_height;
+   vert[1].y      = overlay->vert_coords[1] * overlay_height;
+   vert[2].y      = (overlay->vert_coords[1] + overlay->vert_coords[3])
       * overlay_height;
-   vert[3].y      = (overlay->vert_coords.y + overlay->vert_coords.h)
+   vert[3].y      = (overlay->vert_coords[1] + overlay->vert_coords[3])
       * overlay_height;
 
-   vert[0].u      = overlay->tex_coords.x;
-   vert[1].u      = overlay->tex_coords.x + overlay->tex_coords.w;
-   vert[2].u      = overlay->tex_coords.x;
-   vert[3].u      = overlay->tex_coords.x + overlay->tex_coords.w;
-   vert[0].v      = overlay->tex_coords.y;
-   vert[1].v      = overlay->tex_coords.y;
-   vert[2].v      = overlay->tex_coords.y + overlay->tex_coords.h;
-   vert[3].v      = overlay->tex_coords.y + overlay->tex_coords.h;
+   vert[0].u      = overlay->tex_coords[0];
+   vert[1].u      = overlay->tex_coords[0] + overlay->tex_coords[2];
+   vert[2].u      = overlay->tex_coords[0];
+   vert[3].u      = overlay->tex_coords[0] + overlay->tex_coords[2];
+   vert[0].v      = overlay->tex_coords[1];
+   vert[1].v      = overlay->tex_coords[1];
+   vert[2].v      = overlay->tex_coords[1] + overlay->tex_coords[3];
+   vert[3].v      = overlay->tex_coords[1] + overlay->tex_coords[3];
 
    /* Align texels and vertices. */
    for (i = 0; i < 4; i++)
@@ -1428,10 +1428,10 @@ static void d3d_overlay_tex_geom(
    if (!d3d)
       return;
 
-   d3d->overlays[index].tex_coords.x = x;
-   d3d->overlays[index].tex_coords.y = y;
-   d3d->overlays[index].tex_coords.w = w;
-   d3d->overlays[index].tex_coords.h = h;
+   d3d->overlays[index].tex_coords[0] = x;
+   d3d->overlays[index].tex_coords[1] = y;
+   d3d->overlays[index].tex_coords[2] = w;
+   d3d->overlays[index].tex_coords[3] = h;
 }
 
 static void d3d_overlay_vertex_geom(
@@ -1444,12 +1444,12 @@ static void d3d_overlay_vertex_geom(
    if (!d3d)
       return;
 
-   y                                  = 1.0f - y;
-   h                                  = -h;
-   d3d->overlays[index].vert_coords.x = x;
-   d3d->overlays[index].vert_coords.y = y;
-   d3d->overlays[index].vert_coords.w = w;
-   d3d->overlays[index].vert_coords.h = h;
+   y                                   = 1.0f - y;
+   h                                   = -h;
+   d3d->overlays[index].vert_coords[0] = x;
+   d3d->overlays[index].vert_coords[1] = y;
+   d3d->overlays[index].vert_coords[2] = w;
+   d3d->overlays[index].vert_coords[3] = h;
 }
 
 static bool d3d_overlay_load(void *data,
