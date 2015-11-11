@@ -48,7 +48,7 @@ static bool null_renderchain_init(void *data,
       void *dev_data,
       const void *final_viewport_data,
       const void *info_data,
-      unsigned fmt
+      bool rgb32
       )
 {
    (void)data;
