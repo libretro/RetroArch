@@ -20,7 +20,6 @@
 
 typedef struct xdk_renderchain
 {
-   void *empty;
    unsigned pixel_size;
    LPDIRECT3DDEVICE dev;
    const video_info_t *video_info;

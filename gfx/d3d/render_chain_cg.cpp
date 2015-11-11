@@ -1306,7 +1306,7 @@ static void renderchain_set_viewport(void *data, void *viewport_data)
       return;
 
    d3dr = (LPDIRECT3DDEVICE)chain->dev;
-   d3dr->SetViewport(vp);
+   d3d_set_viewport(d3dr, vp);
 }
 
 static void renderchain_blit_to_texture(void *data,
