@@ -626,7 +626,6 @@ static bool d3d_construct(d3d_video_t *d3d,
 #ifndef _XBOX
 #ifdef HAVE_WINDOW
    unsigned win_width, win_height;
-   char buffer[128] = {0};
    RECT rect = {0};
 
    video_driver_get_size(&win_width, &win_height);
@@ -639,11 +638,7 @@ static bool d3d_construct(d3d_video_t *d3d,
       win_height  = rect.bottom - rect.top;
    }
 
-   video_monitor_get_fps(buffer, sizeof(buffer), NULL, 0);
-
-   strlcat(buffer, " || Direct3D", sizeof(buffer));
-
-   d3d->hWnd = CreateWindowEx(0, "RetroArch", buffer,
+   d3d->hWnd = CreateWindowEx(0, "RetroArch", "RetroArch",
          info->fullscreen ?
          (WS_EX_TOPMOST | WS_POPUP) : WS_OVERLAPPEDWINDOW,
          info->fullscreen ? mon_rect.left : CW_USEDEFAULT,
@@ -667,21 +662,27 @@ static bool d3d_construct(d3d_video_t *d3d,
 #ifndef _XBOX
 
 #ifdef HAVE_WINDOW
-   if (!info->fullscreen && settings->ui.menubar_enable)
+   if (!info->fullscreen || windowed_full)
    {
-	   RECT rc_temp = {0, 0, (LONG)win_height, 0x7FFF};
+      if (!info->fullscreen && settings->ui.menubar_enable)
+      {
+         RECT rc_temp = {0, 0, (LONG)win_height, 0x7FFF};
 
-	   SetMenu(d3d->hWnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
-	   SendMessage(d3d->hWnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
-	   win_height += rc_temp.top + rect.top;
-	   SetWindowPos(d3d->hWnd, NULL, 0, 0, win_width, win_height, SWP_NOMOVE);
+         SetMenu(d3d->hWnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
+         SendMessage(d3d->hWnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
+         win_height += rc_temp.top + rect.top;
+         SetWindowPos(d3d->hWnd, NULL, 0, 0, win_width, win_height, SWP_NOMOVE);
+      }
+
+      ShowWindow(d3d->hWnd, SW_RESTORE);
+      UpdateWindow(d3d->hWnd);
+      SetForegroundWindow(d3d->hWnd);
+      SetFocus(d3d->hWnd);
    }
-
-   ShowWindow(d3d->hWnd, SW_RESTORE);
-   UpdateWindow(d3d->hWnd);
-   SetForegroundWindow(d3d->hWnd);
-   SetFocus(d3d->hWnd);
 #endif
+
+   win32_show_cursor(!info->fullscreen);
+
 
 #ifdef HAVE_SHADERS
    /* This should only be done once here
