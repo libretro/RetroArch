@@ -48,6 +48,8 @@ static bool widescreen_mode = false;
 static d3d_video_t *curD3D = NULL;
 static bool d3d_quit = false;
 static void *dinput;
+static unsigned g_d3d_resize_width;
+static unsigned g_d3d_resize_height;
 static bool g_d3d_resized;
 
 extern bool d3d_restore(d3d_video_t *data);
@@ -115,8 +117,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message,
          /* Do not send resize message if we minimize. */
          if (wparam != SIZE_MAXHIDE && wparam != SIZE_MINIMIZED)
          {
-            g_resize_width      = LOWORD(lparam);
-            g_resize_height     = HIWORD(lparam);
+            g_d3d_resize_width  = LOWORD(lparam);
+            g_d3d_resize_height = HIWORD(lparam);
             g_d3d_resized       = true;
          }
          return 0;
