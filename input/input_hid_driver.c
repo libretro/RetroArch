@@ -20,9 +20,7 @@
 
 #include "input_hid_driver.h"
 #include "../general.h"
-#ifndef IS_JOYCONFIG
 #include "../string_list_special.h"
-#endif
 
 static hid_driver_t *hid_drivers[] = {
 #if defined(__APPLE__) && defined(IOS)
@@ -71,7 +69,6 @@ const char *hid_driver_find_ident(int idx)
    return drv->ident;
 }
 
-#ifndef IS_JOYCONFIG
 /**
  * config_get_hid_driver_options:
  *
@@ -83,7 +80,6 @@ const char* config_get_hid_driver_options(void)
 {
    return char_list_new_special(STRING_LIST_INPUT_HID_DRIVERS, NULL);
 }
-#endif
 
 /**
  * input_hid_init_first:

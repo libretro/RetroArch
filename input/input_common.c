@@ -339,7 +339,6 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
    }
 }
 
-#if !defined(IS_JOYCONFIG)
 static void input_get_bind_string_joykey(char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
@@ -434,7 +433,6 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind,
    strlcat(buf, keybuf, size);
 #endif
 }
-#endif
 
 /**
  * input_push_analog_dpad:

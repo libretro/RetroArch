@@ -28,7 +28,6 @@ endif
 
 ifeq ($(HAVE_DYLIB), 1)
    DEFINES += -DHAVE_DYLIB
-	JOYCONFIG_LIBS += $(DYLIB_LIB)
 endif
 
 ifeq ($(SCALER_NO_SIMD), 1)
@@ -71,14 +70,12 @@ endif
 ifneq ($(findstring Darwin,$(OS)),)
    OSX := 1
    LIBS += -framework AppKit
-   JOYCONFIG_LIBS += -framework CoreFoundation
 else
    OSX := 0
 endif
 
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
-   JOYCONFIG_LIBS += -lrt -lpthread
    OBJ += input/drivers/linuxraw_input.o \
           input/drivers_joypad/linuxraw_joypad.o \
           frontend/drivers/platform_linux.o
@@ -499,7 +496,6 @@ ifeq ($(HAVE_DINPUT), 1)
    DEFINES += -DHAVE_DINPUT
    OBJ += input/drivers/dinput.o \
           input/drivers_joypad/dinput_joypad.o
-   JOYCONFIG_LIBS += -ldinput8 -ldxguid -lole32
 endif
 
 ifeq ($(HAVE_XINPUT), 1)
@@ -526,7 +522,6 @@ endif
 ifeq ($(HAVE_UDEV), 1)
    DEFINES += $(UDEV_CFLAGS)
    LIBS += $(UDEV_LIBS)
-   JOYCONFIG_LIBS += $(UDEV_LIBS)
    OBJ += input/drivers/udev_input.o \
           input/drivers_joypad/udev_joypad.o
 endif
@@ -535,7 +530,6 @@ ifeq ($(HAVE_LIBUSB), 1)
 	DEFINES += -DHAVE_LIBUSB
 	OBJ += input/drivers_hid/libusb_hid.o
 	LIBS += -lusb-1.0
-	JOYCONFIG_LIBS += -lusb-1.0
 	HAVE_HID = 1
 endif
 
@@ -544,7 +538,6 @@ ifeq ($(HAVE_IOHIDMANAGER), 1)
 	OBJ += input/drivers_hid/iohidmanager_hid.o
 	HAVE_HID = 1
 	LIBS += -framework IOKit
-	JOYCONFIG_LIBS += -framework IOKit
 endif
 
 ifeq ($(HAVE_CORELOCATION), 1)
@@ -674,7 +667,6 @@ ifeq ($(HAVE_SDL), 1)
      OBJ += gfx/drivers_context/sdl_gl_ctx.o
    endif
 
-   JOYCONFIG_LIBS += $(SDL_LIBS)
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
 endif
@@ -689,7 +681,6 @@ ifeq ($(HAVE_SDL2), 1)
      OBJ += gfx/drivers_context/sdl_gl_ctx.o
    endif
 
-   JOYCONFIG_LIBS += $(SDL2_LIBS)
    DEFINES += $(SDL2_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL2_LIBS)
    HAVE_SDL = 0
@@ -927,7 +918,3 @@ ifeq ($(HAVE_COCOA),1)
                ui/drivers/cocoa/cocoa_common.o \
                gfx/drivers_context/cocoa_gl_ctx.o
 endif
-
-
-# Joyconfig binary
-JOYCONFIG_OBJ  += tools/retroarch-joyconfig-griffin.o

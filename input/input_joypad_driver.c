@@ -20,9 +20,7 @@
 
 #include "input_keymaps.h"
 #include "../general.h"
-#ifndef IS_JOYCONFIG
 #include "../string_list_special.h"
-#endif
 
 static input_device_driver_t *joypad_drivers[] = {
 #ifdef __CELLOS_LV2__
@@ -99,7 +97,6 @@ const char *joypad_driver_find_ident(int idx)
    return drv->ident;
 }
 
-#ifndef IS_JOYCONFIG
 /**
  * config_get_joypad_driver_options:
  *
@@ -111,7 +108,6 @@ const char* config_get_joypad_driver_options(void)
 {
    return char_list_new_special(STRING_LIST_INPUT_JOYPAD_DRIVERS, NULL);
 }
-#endif
 
 /**
  * input_joypad_init_driver:

@@ -41,7 +41,7 @@
 #include <compat/posix_string.h>
 #include <compat/strl.h>
 
-#if defined(HAVE_FILE_LOGGER) && defined(RARCH_INTERNAL) && !defined(IS_JOYCONFIG)
+#if defined(HAVE_FILE_LOGGER) && defined(RARCH_INTERNAL)
 
 #ifdef __cplusplus
 extern "C"
