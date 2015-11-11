@@ -1392,7 +1392,7 @@ static void renderchain_render_pass(
 }
 
 static bool cg_d3d9_renderchain_render(
-      void *data
+      void *data,
       const void *frame_data,
       unsigned width, unsigned height,
       unsigned pitch, unsigned rotation)
