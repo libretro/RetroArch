@@ -245,20 +245,7 @@ static void gfx_ctx_wgl_swap_interval(void *data, unsigned interval)
 static void gfx_ctx_wgl_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
-   win32_check_window();
-
-   (void)data;
-   (void)frame_count;
-
-   *quit = g_quit;
-
-   if (g_resized)
-   {
-      *resize = true;
-      *width  = g_resize_width;
-      *height = g_resize_height;
-      g_resized = false;
-   }
+   win32_check_window(quit, resize, width, height);
 }
 
 static void gfx_ctx_wgl_swap_buffers(void *data)
@@ -326,7 +313,7 @@ static bool gfx_ctx_wgl_init(void *data)
    g_restore_desktop   = false;
 
    win32_monitor_init();
-   if (!win32_window_init(&wndclass))
+   if (!win32_window_init(&wndclass, true))
 	   return false;
 
    if (!wgl_shader_dlg_init())

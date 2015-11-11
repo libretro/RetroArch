@@ -56,7 +56,7 @@ void win32_monitor_get_info(void);
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
 
-bool win32_window_init(WNDCLASSEX *wndclass);
+bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen);
 
 void create_gl_context(HWND hwnd);
 #endif
@@ -68,7 +68,8 @@ bool win32_get_metrics(void *data,
 
 void win32_show_cursor(bool state);
 
-void win32_check_window(void);
+void win32_check_window(bool *quit,
+      unsigned *resize, unsigned *width, unsigned *height);
 
 #ifdef __cplusplus
 }

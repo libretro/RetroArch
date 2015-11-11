@@ -88,14 +88,6 @@ static void d3d_free_overlays(d3d_video_t *d3d);
 static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay);
 #endif
 
-#ifdef HAVE_WINDOW
-
-#define IDI_ICON 1
-
-extern LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
-        WPARAM wParam, LPARAM lParam);
-#endif
-
 static void d3d_deinit_chain(d3d_video_t *d3d)
 {
    d3d->renderchain_driver->chain_free(d3d->renderchain_data);
@@ -604,20 +596,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 #if defined(HAVE_WINDOW) && !defined(_XBOX)
    memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
 
-   d3d->windowClass.cbSize        = sizeof(d3d->windowClass);
-   d3d->windowClass.style         = CS_HREDRAW | CS_VREDRAW;
-   d3d->windowClass.lpfnWndProc   = WindowProc;
-   d3d->windowClass.hInstance     = NULL;
-   d3d->windowClass.hCursor       = LoadCursor(NULL, IDC_ARROW);
-   d3d->windowClass.lpszClassName = "RetroArch";
-   d3d->windowClass.hIcon         = LoadIcon(GetModuleHandle(NULL),
-         MAKEINTRESOURCE(IDI_ICON));
-   d3d->windowClass.hIconSm       = (HICON)LoadImage(GetModuleHandle(NULL),
-         MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
-   if (!info->fullscreen)
-      d3d->windowClass.hbrBackground = (HBRUSH)COLOR_WINDOW;
-
-   RegisterClassEx(&d3d->windowClass);
+   win32_window_init(&d3d->windowClass, true);
 #endif
 
 #ifdef HAVE_MONITOR

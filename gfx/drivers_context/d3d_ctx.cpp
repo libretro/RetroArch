@@ -46,11 +46,7 @@ static bool widescreen_mode = false;
 #endif
 
 static d3d_video_t *curD3D = NULL;
-static bool d3d_quit = false;
 static void *dinput;
-static unsigned g_d3d_resize_width;
-static unsigned g_d3d_resize_height;
-static bool g_d3d_resized;
 
 extern bool d3d_restore(d3d_video_t *data);
 
@@ -74,69 +70,6 @@ static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
       d3d_restore(d3d);
    }
 }
-
-#ifdef HAVE_WINDOW
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam)
-{
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
-
-   switch (message)
-   {
-      case WM_SYSCOMMAND:
-         /* Prevent screensavers, etc, while running. */
-         switch (wparam)
-         {
-            case SC_SCREENSAVE:
-            case SC_MONITORPOWER:
-               return 0;
-         }
-         break;
-      case WM_CHAR:
-      case WM_KEYDOWN:
-      case WM_KEYUP:
-      case WM_SYSKEYUP:
-      case WM_SYSKEYDOWN:
-         return win32_handle_keyboard_event(hwnd, message, wparam, lparam);
-
-      case WM_CREATE:
-         {
-            LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
-            curD3D                = (d3d_video_t*)p_cs->lpCreateParams;
-         }
-         break;
-
-      case WM_CLOSE:
-      case WM_DESTROY:
-      case WM_QUIT:
-         d3d_quit = true;
-         return 0;
-
-      case WM_SIZE:
-         /* Do not send resize message if we minimize. */
-         if (wparam != SIZE_MAXHIDE && wparam != SIZE_MINIMIZED)
-         {
-            g_d3d_resize_width  = LOWORD(lparam);
-            g_d3d_resize_height = HIWORD(lparam);
-            g_d3d_resized       = true;
-         }
-         return 0;
-      case WM_COMMAND:
-         if (settings->ui.menubar_enable)
-         {
-            d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
-            HWND        d3dr = d3d->hWnd;
-            LRESULT      ret = win32_menu_loop(d3dr, wparam);
-         }
-         break;
-   }
-
-   if (dinput_handle_message(dinput, message, wparam, lparam))
-      return 0;
-   return DefWindowProc(hwnd, message, wparam, lparam);
-}
-#endif
 
 static void gfx_ctx_d3d_swap_buffers(void *data)
 {
@@ -188,20 +121,7 @@ static void gfx_ctx_d3d_check_window(void *data, bool *quit,
       bool *resize, unsigned *width,
       unsigned *height, unsigned frame_count)
 {
-   win32_check_window();
-
-   (void)data;
-   (void)frame_count;
-
-   *quit = d3d_quit;
-
-   if (g_d3d_resized)
-   {
-      *resize       = true;
-      *width        = g_d3d_resize_width;
-      *height       = g_d3d_resize_height;
-      g_d3d_resized = false;
-   }
+   win32_check_window(quit, resize, width, height);
 }
 
 #ifdef _XBOX
@@ -256,8 +176,6 @@ static bool gfx_ctx_d3d_bind_api(void *data,
 static bool gfx_ctx_d3d_init(void *data)
 {
    (void)data;
-
-   d3d_quit = false;
 
 #ifndef _XBOX
    win32_monitor_init();

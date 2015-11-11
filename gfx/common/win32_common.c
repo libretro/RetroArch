@@ -93,6 +93,8 @@ void win32_monitor_init(void)
 {
    win32_monitor_count = 0;
    EnumDisplayMonitors(NULL, NULL, win32_monitor_enum_proc, 0);
+
+   g_quit              = false;
 }
 
 void win32_monitor_from_window(HWND data, bool destroy)
@@ -149,10 +151,23 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
    GetMonitorInfo(*hm_to_use, (MONITORINFO*)mon);
 }
 
+static const char *win32_video_get_ident(void)
+{
+#ifdef HAVE_THREADS
+   settings_t *settings = config_get_ptr();
+
+   if (settings->video.threaded)
+      return rarch_threaded_video_get_ident();
+#endif
+   return video_driver_get_ident();
+}
+
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings     = config_get_ptr();
+   driver_t   *driver       = driver_get_ptr();
+   const char *video_driver = win32_video_get_ident();
 
    switch (message)
    {
@@ -174,7 +189,13 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
          return win32_handle_keyboard_event(hwnd, message, wparam, lparam);
 
       case WM_CREATE:
-         create_gl_context(hwnd);
+         if (!strcmp(video_driver, "gl"))
+            create_gl_context(hwnd);
+         else if (!strcmp(video_driver, "d3d"))
+         {
+            LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
+            curD3D                = (d3d_video_t*)p_cs->lpCreateParams;
+         }
          return 0;
 
       case WM_CLOSE:
@@ -200,28 +221,36 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	  case WM_COMMAND:
          if (settings->ui.menubar_enable)
          {
-            LRESULT ret = win32_menu_loop(g_hwnd, wparam);
+            HWND d3dr = g_hwnd;
+            if (!strcmp(video_driver, "d3d"))
+            {
+               d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
+               d3dr = d3d->hWnd;
+            }
+            LRESULT ret = win32_menu_loop(d3dr, wparam);
             (void)ret;
          }
          break;
    }
 
-   if (dinput_handle_message(dinput_wgl, message, wparam, lparam))
+   if (dinput_handle_message((!strcmp(video_driver, "gl")) ? dinput_wgl : dinput, message, wparam, lparam))
       return 0;
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
-bool win32_window_init(WNDCLASSEX *wndclass)
+bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen)
 {
-   wndclass->cbSize = sizeof(*wndclass);
-   wndclass->style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-   wndclass->lpfnWndProc = WndProc;
-   wndclass->hInstance = GetModuleHandle(NULL);
-   wndclass->hCursor = LoadCursor(NULL, IDC_ARROW);
+   wndclass->cbSize        = sizeof(WNDCLASSEX);
+   wndclass->style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+   wndclass->lpfnWndProc   = WndProc;
+   wndclass->hInstance     = GetModuleHandle(NULL);
+   wndclass->hCursor       = LoadCursor(NULL, IDC_ARROW);
    wndclass->lpszClassName = "RetroArch";
-   wndclass->hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
-   wndclass->hIconSm = (HICON)LoadImage(GetModuleHandle(NULL),
+   wndclass->hIcon         = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
+   wndclass->hIconSm       = (HICON)LoadImage(GetModuleHandle(NULL),
          MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
+   if (!fullscreen)
+      wndclass->hbrBackground = (HBRUSH)COLOR_WINDOW;
 
    if (!RegisterClassEx(wndclass))
       return false;
@@ -425,7 +454,7 @@ void win32_show_cursor(bool state)
 #endif
 }
 
-void win32_check_window(void)
+void win32_check_window(bool *quit, unsigned *resize, unsigned *width, unsigned *height)
 {
 #ifndef _XBOX
    MSG msg;
@@ -436,6 +465,15 @@ void win32_check_window(void)
       DispatchMessage(&msg);
    }
 #endif
+   *quit = g_quit;
+
+   if (g_resized)
+   {
+      *resize       = true;
+      *width        = g_resize_width;
+      *height       = g_resize_height;
+      g_resized     = false;
+   }
 }
 
 bool win32_suppress_screensaver(void *data, bool enable)
