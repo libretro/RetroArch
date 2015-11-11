@@ -69,7 +69,7 @@ bool win32_get_metrics(void *data,
 void win32_show_cursor(bool state);
 
 void win32_check_window(bool *quit,
-      unsigned *resize, unsigned *width, unsigned *height);
+      bool *resize, unsigned *width, unsigned *height);
 
 #ifdef __cplusplus
 }

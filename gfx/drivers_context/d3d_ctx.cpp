@@ -45,8 +45,8 @@
 static bool widescreen_mode = false;
 #endif
 
-static d3d_video_t *curD3D = NULL;
-static void *dinput;
+void *curD3D = NULL;
+void *dinput;
 
 extern bool d3d_restore(d3d_video_t *data);
 

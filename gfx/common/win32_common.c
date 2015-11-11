@@ -27,9 +27,14 @@
 #include <windows.h>
 #include <commdlg.h>
 #include "../../retroarch.h"
+#include "../video_thread_wrapper.h"
 
 #ifdef HAVE_OPENGL
 #include "../drivers_wm/win32_shader_dlg.h"
+#endif
+
+#ifdef HAVE_D3D
+#include "../d3d/d3d.h"
 #endif
 
 #ifdef __cplusplus
@@ -46,6 +51,8 @@ bool g_quit;
 HWND g_hwnd;
 
 extern void *dinput_wgl;
+extern void *curD3D;
+extern void *dinput;
 
 /* Power Request APIs */
 
@@ -194,7 +201,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
          else if (!strcmp(video_driver, "d3d"))
          {
             LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
-            curD3D                = (d3d_video_t*)p_cs->lpCreateParams;
+            curD3D                = p_cs->lpCreateParams;
          }
          return 0;
 
@@ -454,7 +461,7 @@ void win32_show_cursor(bool state)
 #endif
 }
 
-void win32_check_window(bool *quit, unsigned *resize, unsigned *width, unsigned *height)
+void win32_check_window(bool *quit, bool *resize, unsigned *width, unsigned *height)
 {
 #ifndef _XBOX
    MSG msg;
