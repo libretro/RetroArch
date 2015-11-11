@@ -282,11 +282,13 @@ static void gfx_ctx_d3d_input_driver(void *data,
    (void)data;
 }
 
-static void gfx_ctx_d3d_set_video_mode(void *data,
+static bool gfx_ctx_d3d_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
    win32_show_cursor(!fullscreen);
+
+   return true;
 }
 
 static void gfx_ctx_d3d_get_video_size(void *data,
