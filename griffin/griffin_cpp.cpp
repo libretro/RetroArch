@@ -33,6 +33,18 @@ AUDIO
 #endif
 
 /*============================================================
+UI COMMON CONTEXT
+============================================================ */
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../gfx/common/win32_common.cpp"
+
+#ifdef HAVE_OPENGL
+#include "../gfx/drivers_context/wgl_ctx.cpp"
+#endif
+#endif
+
+
+/*============================================================
 MENU
 ============================================================ */
 #ifdef HAVE_RMENU_XUI

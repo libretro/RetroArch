@@ -28,10 +28,6 @@
 #include "../../driver.h"
 #include "../video_context_driver.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifndef _XBOX
 #include "../drivers_wm/win32_resource.h"
 
@@ -70,9 +66,5 @@ void win32_show_cursor(bool state);
 
 void win32_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
