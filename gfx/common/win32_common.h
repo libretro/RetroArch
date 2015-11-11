@@ -35,6 +35,13 @@ extern "C" {
 #ifndef _XBOX
 #include "../drivers_wm/win32_resource.h"
 
+extern unsigned g_resize_width;
+extern unsigned g_resize_height;
+extern unsigned g_pos_x;
+extern unsigned g_pos_y;
+extern bool g_resized;
+extern bool g_quit;
+
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 
@@ -48,7 +55,9 @@ void win32_monitor_get_info(void);
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
 
-bool win32_window_init(WNDCLASSEX *wndclass, LRESULT CALLBACK WndProc);
+bool win32_window_init(WNDCLASSEX *wndclass);
+
+void create_gl_context(HWND hwnd);
 #endif
 
 bool win32_suppress_screensaver(void *data, bool enable);

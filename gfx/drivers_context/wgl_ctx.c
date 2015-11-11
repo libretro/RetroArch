@@ -75,15 +75,9 @@ static HDC g_hdc;
 static unsigned g_major;
 static unsigned g_minor;
 
-static bool g_quit;
+bool g_quit;
 static bool g_inited;
 static unsigned g_interval;
-
-static unsigned g_resize_width;
-static unsigned g_resize_height;
-static unsigned g_pos_x = CW_USEDEFAULT;
-static unsigned g_pos_y = CW_USEDEFAULT;
-static bool g_resized;
 
 static dylib_t dll_handle = NULL; /* Handle to OpenGL32.dll */
 
@@ -111,8 +105,7 @@ static void setup_pixel_format(HDC hdc)
    SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
 }
 
-
-static void create_gl_context(HWND hwnd)
+void create_gl_context(HWND hwnd)
 {
    bool core_context;
    const struct retro_hw_render_callback *hw_render =
@@ -242,68 +235,6 @@ extern "C"
 bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
 
 static void *dinput_wgl;
-
-static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam)
-{
-   settings_t *settings = config_get_ptr();
-
-   switch (message)
-   {
-      case WM_SYSCOMMAND:
-         /* Prevent screensavers, etc, while running. */
-         switch (wparam)
-         {
-            case SC_SCREENSAVE:
-            case SC_MONITORPOWER:
-               return 0;
-         }
-         break;
-
-      case WM_CHAR:
-      case WM_KEYDOWN:
-      case WM_KEYUP:
-      case WM_SYSKEYUP:
-      case WM_SYSKEYDOWN:
-         return win32_handle_keyboard_event(hwnd, message, wparam, lparam);
-
-      case WM_CREATE:
-         create_gl_context(hwnd);
-         return 0;
-
-      case WM_CLOSE:
-      case WM_DESTROY:
-      case WM_QUIT:
-      {
-         WINDOWPLACEMENT placement;
-         GetWindowPlacement(g_hwnd, &placement);
-         g_pos_x = placement.rcNormalPosition.left;
-         g_pos_y = placement.rcNormalPosition.top;
-         g_quit = true;
-         return 0;
-      }
-      case WM_SIZE:
-         /* Do not send resize message if we minimize. */
-         if (wparam != SIZE_MAXHIDE && wparam != SIZE_MINIMIZED)
-         {
-            g_resize_width  = LOWORD(lparam);
-            g_resize_height = HIWORD(lparam);
-            g_resized = true;
-         }
-         return 0;
-	  case WM_COMMAND:
-         if (settings->ui.menubar_enable)
-         {
-            LRESULT ret = win32_menu_loop(g_hwnd, wparam);
-            (void)ret;
-         }
-         break;
-   }
-
-   if (dinput_handle_message(dinput_wgl, message, wparam, lparam))
-      return 0;
-   return DefWindowProc(hwnd, message, wparam, lparam);
-}
 
 static void gfx_ctx_wgl_swap_interval(void *data, unsigned interval)
 {
