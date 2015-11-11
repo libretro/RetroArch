@@ -1102,7 +1102,7 @@ static bool cg_d3d9_renderchain_add_pass(void *data, const void *info_data)
    if (!cg_d3d9_renderchain_init_shader_fvf(chain, &pass))
       return false;
 
-   pass.vertex_buf = (LPDIRECT3DVERTEXBUFFER)d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex),
+   pass.vertex_buf = d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex),
 	   0, 0, D3DPOOL_DEFAULT, NULL);
 
    if (!pass.vertex_buf)
