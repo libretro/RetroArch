@@ -282,6 +282,13 @@ static void gfx_ctx_d3d_input_driver(void *data,
    (void)data;
 }
 
+static void gfx_ctx_d3d_set_video_mode(void *data,
+      unsigned width, unsigned height,
+      bool fullscreen)
+{
+   win32_show_cursor(!fullscreen);
+}
+
 static void gfx_ctx_d3d_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
@@ -401,7 +408,7 @@ const gfx_ctx_driver_t gfx_ctx_d3d = {
    gfx_ctx_d3d_destroy,
    gfx_ctx_d3d_bind_api,
    gfx_ctx_d3d_swap_interval,
-   NULL,
+   gfx_ctx_d3d_set_video_mode,
    gfx_ctx_d3d_get_video_size,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
