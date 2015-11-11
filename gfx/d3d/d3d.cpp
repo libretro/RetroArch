@@ -577,9 +577,6 @@ static bool d3d_construct(d3d_video_t *d3d,
       void **input_data)
 {
    unsigned full_x, full_y;
-#ifdef HAVE_WINDOW
-   WNDCLASSEX wndclass = {0};
-#endif
    driver_t    *driver         = driver_get_ptr();
    settings_t    *settings     = config_get_ptr();
 
@@ -605,21 +602,22 @@ static bool d3d_construct(d3d_video_t *d3d,
 #endif
 
 #if defined(HAVE_WINDOW) && !defined(_XBOX)
-   wndclass.cbSize        = sizeof(wndclass);
-   wndclass.style         = CS_HREDRAW | CS_VREDRAW;
-   wndclass.lpfnWndProc   = WindowProc;
-   wndclass.hInstance     = NULL;
-   wndclass.hCursor       = LoadCursor(NULL, IDC_ARROW);
-   wndclass.lpszClassName = "RetroArch";
-   wndclass.hIcon         = LoadIcon(GetModuleHandle(NULL),
+   memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
+
+   d3d->windowClass.cbSize        = sizeof(d3d->windowClass);
+   d3d->windowClass.style         = CS_HREDRAW | CS_VREDRAW;
+   d3d->windowClass.lpfnWndProc   = WindowProc;
+   d3d->windowClass.hInstance     = NULL;
+   d3d->windowClass.hCursor       = LoadCursor(NULL, IDC_ARROW);
+   d3d->windowClass.lpszClassName = "RetroArch";
+   d3d->windowClass.hIcon         = LoadIcon(GetModuleHandle(NULL),
          MAKEINTRESOURCE(IDI_ICON));
-   wndclass.hIconSm       = (HICON)LoadImage(GetModuleHandle(NULL),
+   d3d->windowClass.hIconSm       = (HICON)LoadImage(GetModuleHandle(NULL),
          MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
    if (!info->fullscreen)
-      wndclass.hbrBackground = (HBRUSH)COLOR_WINDOW;
+      d3d->windowClass.hbrBackground = (HBRUSH)COLOR_WINDOW;
 
-   if (!RegisterClassEx(&wndclass))
-      return false;
+   RegisterClassEx(&d3d->windowClass);
 #endif
 
 #ifdef HAVE_MONITOR

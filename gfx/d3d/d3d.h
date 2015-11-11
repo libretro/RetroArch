@@ -98,6 +98,9 @@ typedef struct d3d_video
    bool quitting;
 
    struct video_viewport vp;
+#ifdef HAVE_WINDOW
+   WNDCLASSEX windowClass;
+#endif
    HWND hWnd;
    LPDIRECT3D g_pD3D;
    LPDIRECT3DDEVICE dev;
