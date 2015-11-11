@@ -318,7 +318,7 @@ static bool xdk_renderchain_init(void *data,
       void *dev_data,
       const void *final_viewport_data,
       const void *info_data,
-      unsigned fmt
+      bool rgb32
       )
 {
    unsigned width, height;
@@ -328,8 +328,8 @@ static bool xdk_renderchain_init(void *data,
    const video_info_t *video_info  = (const video_info_t*)_video_info;
    const LinkInfo *link_info    = (const LinkInfo*)info_data;
    xdk_renderchain_t *chain     = (xdk_renderchain_t*)d3d->renderchain_data;
+   unsigned fmt                 = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
    (void)final_viewport_data;
-   (void)fmt;
 
    video_driver_get_size(&width, &height);
 

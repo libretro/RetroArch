@@ -924,11 +924,13 @@ static bool cg_d3d9_renderchain_init(void *data,
       const void *_video_info,
       void *dev_,
       const void *final_viewport_,
-      const void *info_data, unsigned fmt)
+      const void *info_data, bool rgb32)
 {
    const LinkInfo *info           = (const LinkInfo*)info_data;
-   cg_renderchain_t *chain        = (cg_renderchain_t*)data;
+   d3d_video_t *d3d               = (d3d_video_t*)data;
+   cg_renderchain_t *chain        = (cg_renderchain_t*)d3d->renderchain_data;
    const video_info_t *video_info = (const video_info_t*)_video_info;
+   unsigned fmt                   = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
 
    if (!chain)
       return false;
@@ -1398,10 +1400,14 @@ static bool cg_d3d9_renderchain_render(
       unsigned pitch, unsigned rotation)
 {
    Pass *last_pass;
+   LPDIRECT3DDEVICE d3dr;
    LPDIRECT3DSURFACE back_buffer, target;
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
-   cg_renderchain_t *chain = (cg_renderchain_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+   d3d_video_t *d3d        = (d3d_video_t*)data;
+   cg_renderchain_t *chain = d3d ? (cg_renderchain_t*)d3d->renderchain_data : NULL;
+
+   if (chain)
+      d3dr   = (LPDIRECT3DDEVICE)chain->dev;
 
    renderchain_start_render(chain);
 

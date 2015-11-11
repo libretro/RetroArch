@@ -53,7 +53,7 @@ typedef struct renderchain_driver
          void *dev_data,
          const void *final_viewport_data,
          const void *info_data,
-         unsigned fmt);
+         bool rgb32);
    void (*set_final_viewport)(void *data,
          void *renderchain_data, const void *viewport_data);
    bool (*add_pass)(void *data, const void *info_data);

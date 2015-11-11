@@ -1032,15 +1032,10 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 
    if (
          !d3d->renderchain_driver->init(
-#ifdef _XBOX
             d3d,
-#else
-            d3d->renderchain_data,
-#endif
             &d3d->video_info,
             d3dr, &d3d->final_viewport, &link_info,
-            d3d->video_info.rgb32 ?
-            RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565)
+            d3d->video_info.rgb32)
       )
    {
       RARCH_ERR("[D3D]: Failed to init render chain.\n");
@@ -1630,11 +1625,7 @@ static bool d3d_frame(void *data, const void *frame,
 
    if (
          !d3d->renderchain_driver->render(
-#ifdef _XBOX
             d3d,
-#else
-            d3d->renderchain_data,
-#endif
             frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
    {
