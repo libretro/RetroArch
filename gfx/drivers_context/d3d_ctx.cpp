@@ -48,6 +48,7 @@ static bool widescreen_mode = false;
 static d3d_video_t *curD3D = NULL;
 static bool d3d_quit = false;
 static void *dinput;
+static bool g_d3d_resized;
 
 extern bool d3d_restore(d3d_video_t *data);
 
@@ -114,11 +115,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message,
          /* Do not send resize message if we minimize. */
          if (wparam != SIZE_MAXHIDE && wparam != SIZE_MINIMIZED)
          {
-            unsigned new_width  = LOWORD(lparam);
-            unsigned new_height = HIWORD(lparam);
-
-            if (new_width && new_height)
-               d3d_resize(driver->video_data, new_width, new_height);
+            g_resize_width      = LOWORD(lparam);
+            g_resize_height     = HIWORD(lparam);
+            g_d3d_resized       = true;
          }
          return 0;
       case WM_COMMAND:
@@ -187,17 +186,20 @@ static void gfx_ctx_d3d_check_window(void *data, bool *quit,
       bool *resize, unsigned *width,
       unsigned *height, unsigned frame_count)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   win32_check_window();
 
    (void)data;
+   (void)frame_count;
 
-   *quit = false;
-   *resize = false;
+   *quit = d3d_quit;
 
-   if (d3d_quit)
-      *quit = true;
-   if (d3d->should_resize)
-      *resize = true;
+   if (g_d3d_resized)
+   {
+      *resize       = true;
+      *width        = g_d3d_resize_width;
+      *height       = g_d3d_resize_height;
+      g_d3d_resized = false;
+   }
 
    win32_check_window();
 }
