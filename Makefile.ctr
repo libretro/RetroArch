@@ -53,8 +53,8 @@ else
 	OBJS += libretro-common/formats/png/rpng.o
 	OBJS += libretro-common/formats/png/rpng_encode.o
 	OBJS += libretro-common/formats/bmp/rbmp_encode.o
-   OBJS += libretro-common/gfx/math/matrix_4x4.o
-   OBJS += libretro-common/gfx/math/matrix_3x3.o
+	OBJS += libretro-common/gfx/math/matrix_4x4.o
+	OBJS += libretro-common/gfx/math/matrix_3x3.o
 	OBJS += gfx/drivers/ctr_gfx.o
 	OBJS += gfx/drivers/nullgfx.o
 	OBJS += gfx/font_renderer_driver.o
@@ -210,7 +210,7 @@ else
 	OBJS += menu/intl/menu_hash_us.o
 	OBJS += menu/drivers/null.o
 	OBJS += menu/drivers/menu_generic.o
-   OBJS += menu/drivers_display/menu_display_null.o
+	OBJS += menu/drivers_display/menu_display_null.o
 	OBJS += menu/drivers/rgui.o
 	OBJS += command_event.o
 	OBJS += deps/zlib/adler32.o
