@@ -202,8 +202,6 @@ static void gfx_ctx_d3d_check_window(void *data, bool *quit,
       *height       = g_d3d_resize_height;
       g_d3d_resized = false;
    }
-
-   win32_check_window();
 }
 
 #ifdef _XBOX
