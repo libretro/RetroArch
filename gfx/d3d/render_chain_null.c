@@ -56,7 +56,7 @@ static bool null_renderchain_init(void *data,
    (void)dev_data;
    (void)final_viewport_data;
    (void)info_data;
-   (void)fmt;
+   (void)rgb32;
 
    return true;
 }
