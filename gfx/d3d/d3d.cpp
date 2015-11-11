@@ -615,8 +615,11 @@ static bool d3d_construct(d3d_video_t *d3d,
 #if defined(HAVE_WINDOW) && !defined(_XBOX)
    memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
 
+   monitor_d3d_count = 0;
+   EnumDisplayMonitors(NULL, NULL, d3d_monitor_enum_proc, 0);
+
    d3d->windowClass.cbSize        = sizeof(d3d->windowClass);
-   d3d->windowClass.style         = CS_HREDRAW | CS_VREDRAW;
+   d3d->windowClass.style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
    d3d->windowClass.lpfnWndProc   = WindowProc;
    d3d->windowClass.hInstance     = NULL;
    d3d->windowClass.hCursor       = LoadCursor(NULL, IDC_ARROW);
@@ -628,7 +631,8 @@ static bool d3d_construct(d3d_video_t *d3d,
    if (!info->fullscreen)
       d3d->windowClass.hbrBackground = (HBRUSH)COLOR_WINDOW;
 
-   RegisterClassEx(&d3d->windowClass);
+   if (!RegisterClassEx(&d3d->windowClass))
+      return false;
 #endif
 
 #ifdef HAVE_MONITOR
@@ -921,7 +925,6 @@ static void d3d_monitor_rect(d3d_video_t *d3d, MONITORINFOEX *mon, HMONITOR *hm_
    monitor_d3d_count        = 0;
    settings_t *settings = config_get_ptr();
 
-   EnumDisplayMonitors(NULL, NULL, d3d_monitor_enum_proc, 0);
 
    if (!monitor_d3d_last)
       monitor_d3d_last = MonitorFromWindow(
