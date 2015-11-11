@@ -63,6 +63,13 @@ static void rarch_disable_ui(void)
    rarch_main_ctl(RARCH_MAIN_CTL_SET_IDLE,   &boolean);
 }
 
+static void ui_companion_cocoatouch_event_command(
+      void *data, enum event_command cmd)
+{
+    (void)data;
+    event_command(cmd);
+}
+
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
     CFRunLoopActivity activity, void *info)
 {
@@ -76,7 +83,7 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 
    if (ret == -1)
    {
-      main_exit_save_config();
+      ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
       main_exit(NULL);
       return;
    }
@@ -320,7 +327,7 @@ enum
 {
    dispatch_async(dispatch_get_main_queue(),
                   ^{
-                      main_exit_save_config();
+                  ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
                   });
    [self showPauseMenu: self];
 }
@@ -368,12 +375,6 @@ enum
    [self.window setRootViewController:self];
 }
 
-static void ui_companion_cocoatouch_event_command(void *data,
-                                                  enum event_command cmd)
-{
-    (void)data;
-    event_command(cmd);
-}
 
 - (void)toggleUI
 {
