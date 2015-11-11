@@ -98,7 +98,7 @@ static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay);
 
 extern LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
         WPARAM wParam, LPARAM lParam);
-static void d3d_monitor_rect(d3d_video_t *d3d, MONITORINFOEX *mon, HMONITOR *hm_to_use);
+static void d3d_monitor_rect(MONITORINFOEX *mon, HMONITOR *hm_to_use, unsigned *mon_id);
 #endif
 
 #ifdef HAVE_MONITOR
@@ -637,7 +637,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    MONITORINFOEX current_mon;
    HMONITOR hm_to_use;
 
-   d3d_monitor_rect(d3d, &current_mon, &hm_to_use);
+   d3d_monitor_rect(&current_mon, &hm_to_use, &d3d->cur_mon_id);
    mon_rect = current_mon.rcMonitor;
 
    windowed_full = settings->video.windowed_fullscreen;
@@ -915,9 +915,9 @@ static BOOL CALLBACK d3d_monitor_enum_proc(HMONITOR hMonitor,
 }
 
 /* Multi-monitor support. */
-static void d3d_monitor_rect(d3d_video_t *d3d, MONITORINFOEX *mon, HMONITOR *hm_to_use)
+static void d3d_monitor_rect(MONITORINFOEX *mon, HMONITOR *hm_to_use, unsigned *mon_id)
 {
-   unsigned fs_monitor, i;
+   unsigned i, fs_monitor;
    monitor_d3d_count        = 0;
    settings_t *settings = config_get_ptr();
 
@@ -934,7 +934,7 @@ static void d3d_monitor_rect(d3d_video_t *d3d, MONITORINFOEX *mon, HMONITOR *hm_
          && monitor_d3d_all[fs_monitor - 1])
    {
       *hm_to_use = monitor_d3d_all[fs_monitor - 1];
-      d3d->cur_mon_id = fs_monitor - 1;
+      *mon_id = fs_monitor - 1;
    }
    else
    {
@@ -943,7 +943,7 @@ static void d3d_monitor_rect(d3d_video_t *d3d, MONITORINFOEX *mon, HMONITOR *hm_
          if (monitor_d3d_all[i] != *hm_to_use)
             continue;
 
-         d3d->cur_mon_id = i;
+         *mon_id = i;
          break;
       }
    }
