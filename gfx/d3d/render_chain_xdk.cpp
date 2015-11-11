@@ -104,7 +104,7 @@ static bool renderchain_create_first_pass(void *data,
    if (!chain->vertex_buf)
       return false;
 
-   chain->tex = (LPDIRECT3DTEXTURE)d3d_texture_new(d3dr, NULL, 
+   chain->tex = d3d_texture_new(d3dr, NULL, 
          chain->tex_w, chain->tex_h, 1, 0,
          info->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
          0, 0, 0, 0, NULL, NULL);

@@ -1470,8 +1470,7 @@ static bool d3d_overlay_load(void *data,
       unsigned height    = images[i].height;
       overlay_t *overlay = (overlay_t*)&d3d->overlays[i];
 
-      overlay->tex       = (LPDIRECT3DTEXTURE)
-         d3d_texture_new(d3d->dev, NULL,
+      overlay->tex       = d3d_texture_new(d3d->dev, NULL,
                   width, height, 1,
                   0,
                   D3DFMT_A8R8G8B8,
@@ -1753,8 +1752,7 @@ static void d3d_set_menu_texture_frame(void *data,
       if (d3d->menu)
 	     d3d_texture_free(d3d->menu->tex);
 
-      d3d->menu->tex = (LPDIRECT3DTEXTURE)
-         d3d_texture_new(d3d->dev, NULL,
+      d3d->menu->tex = d3d_texture_new(d3d->dev, NULL,
             width, height, 1,
             0, D3DFMT_A8R8G8B8,
             D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL);
