@@ -22,7 +22,9 @@
 
 #include <compat/strl.h>
 
+#ifdef HAVE_CHEEVOS
 #include "cheevos.h"
+#endif
 #include "configuration.h"
 #include "performance.h"
 #include "retroarch.h"
