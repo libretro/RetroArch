@@ -461,6 +461,25 @@ static bool xdk_renderchain_reinit(void *data,
    return true;
 }
 
+static void xdk_renderchain_viewport_info(void *data, struct video_viewport *vp)
+{
+   unsigned width, height;
+   d3d_video_t *d3d = (d3d_video_t*)data;
+
+   if (!d3d || !vp)
+      return;
+
+   video_driver_get_size(&width, &height);
+
+   vp->x            = d3d->final_viewport.X;
+   vp->y            = d3d->final_viewport.Y;
+   vp->width        = d3d->final_viewport.Width;
+   vp->height       = d3d->final_viewport.Height;
+
+   vp->full_width   = width;
+   vp->full_height  = height;
+}
+
 renderchain_driver_t xdk_renderchain = {
    xdk_renderchain_free,
    xdk_renderchain_new,
@@ -476,5 +495,6 @@ renderchain_driver_t xdk_renderchain = {
    xdk_renderchain_convert_geometry,
    NULL,
    NULL,
+   xdk_renderchain_viewport_info,
    "xdk",
 };

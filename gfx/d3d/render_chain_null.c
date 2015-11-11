@@ -146,5 +146,6 @@ renderchain_driver_t null_renderchain = {
    null_renderchain_convert_geometry,
    NULL,
    NULL,
+   NULL,
    "null",
 };

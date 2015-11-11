@@ -1594,6 +1594,25 @@ end:
    return ret;
 }
 
+static void cg_d3d9_renderchain_viewport_info(void *data, struct video_viewport *vp)
+{
+   unsigned width, height;
+   d3d_video_t *d3d = (d3d_video_t*)data;
+
+   if (!d3d || !vp)
+      return;
+
+   video_driver_get_size(&width, &height);
+
+   vp->x            = d3d->final_viewport.X;
+   vp->y            = d3d->final_viewport.Y;
+   vp->width        = d3d->final_viewport.Width;
+   vp->height       = d3d->final_viewport.Height;
+
+   vp->full_width   = width;
+   vp->full_height  = height;
+}
+
 renderchain_driver_t cg_d3d9_renderchain = {
    cg_d3d9_renderchain_free,
    cg_d3d9_renderchain_new,
@@ -1609,5 +1628,6 @@ renderchain_driver_t cg_d3d9_renderchain = {
    cg_d3d9_renderchain_convert_geometry,
    cg_d3d9_renderchain_set_font_rect,
    cg_d3d9_renderchain_read_viewport,
+   cg_d3d9_renderchain_viewport_info,
    "cg_d3d9",
 };

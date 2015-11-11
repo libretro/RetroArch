@@ -17,8 +17,9 @@
 #ifndef __D3D_RENDER_CHAIN_H
 #define __D3D_RENDER_CHAIN_H
 
-#include "../video_state_tracker.h"
 #include "../video_shader_parse.h"
+#include "../video_state_tracker.h"
+#include "../video_viewport.h"
 #include "../../libretro.h"
 #include "d3d_defines.h"
 
@@ -68,6 +69,7 @@ typedef struct renderchain_driver
          void *final_viewport);
    void (*set_font_rect)(void *data, const struct font_params *params);
    bool (*read_viewport)(void *data, uint8_t *buffer);
+   void (*viewport_info)(void *data, struct video_viewport *vp);
    const char *ident;
 } renderchain_driver_t;
 

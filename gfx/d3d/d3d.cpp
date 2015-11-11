@@ -736,21 +736,12 @@ static bool d3d_construct(d3d_video_t *d3d,
 
 static void d3d_viewport_info(void *data, struct video_viewport *vp)
 {
-   unsigned width, height;
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_video_t *d3d   = (d3d_video_t*)data;
 
-   if (!d3d || !vp)
-      return;
+   if (!d3d || !d3d->renderchain_driver || !d3d->renderchain_driver->viewport_info)
+      return false;
 
-   video_driver_get_size(&width, &height);
-
-   vp->x            = d3d->final_viewport.X;
-   vp->y            = d3d->final_viewport.Y;
-   vp->width        = d3d->final_viewport.Width;
-   vp->height       = d3d->final_viewport.Height;
-
-   vp->full_width   = width;
-   vp->full_height  = height;
+   d3d->renderchain_driver->viewport_info(d3d, vp);
 }
 
 static void d3d_set_rotation(void *data, unsigned rot)
@@ -762,7 +753,6 @@ static void d3d_set_rotation(void *data, unsigned rot)
       return;
 
    d3d->dev_rotation = rot;
-   //d3d_set_projection(d3d, &ortho, true);
 }
 
 static void d3d_show_mouse(void *data, bool state)
@@ -1299,6 +1289,7 @@ static bool d3d_process_shader(d3d_video_t *d3d)
 #ifdef HAVE_OVERLAY
 static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
 {
+   struct video_viewport vp;
    unsigned width, height;
    void *verts;
    unsigned i;
@@ -1343,9 +1334,11 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
       vert[i].r   = vert[i].g = vert[i].b = 1.0f;
       vert[i].a   = overlay->alpha_mod;
    }
+   
+   d3d_viewport_info(d3d, &vp);
 
-   overlay_width  = d3d->final_viewport.Width;
-   overlay_height = d3d->final_viewport.Height;
+   overlay_width  = vp->Width;
+   overlay_height = vp->Height;
 
    vert[0].x      = overlay->vert_coords.x * overlay_width;
    vert[1].x      = (overlay->vert_coords.x + overlay->vert_coords.w)
