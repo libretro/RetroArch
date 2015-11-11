@@ -132,6 +132,23 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
    mon->cbSize = sizeof(MONITORINFOEX);
    GetMonitorInfo(*hm_to_use, (MONITORINFO*)mon);
 }
+
+bool win32_window_init(WNDCLASSEX *wndclass)
+{
+   wndclass->cbSize = sizeof(*wndclass);
+   wndclass->style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+   wndclass->lpfnWndProc = WndProc;
+   wndclass->hInstance = GetModuleHandle(NULL);
+   wndclass->hCursor = LoadCursor(NULL, IDC_ARROW);
+   wndclass->lpszClassName = "RetroArch";
+   wndclass->hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
+   wndclass->hIconSm = (HICON)LoadImage(GetModuleHandle(NULL),
+         MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
+
+   if (!RegisterClassEx(wndclass))
+      return false;
+   return true;
+}
 #endif
 
 static bool win32_browser(
