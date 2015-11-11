@@ -18,6 +18,8 @@
 
 #if !defined(_XBOX)
 
+#define IDI_ICON 1
+
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0500 //_WIN32_WINNT_WIN2K
 #endif
@@ -30,13 +32,20 @@
 #include "../drivers_wm/win32_shader_dlg.h"
 #endif
 
-#ifndef _XBOX
+#ifdef __cplusplus
+extern "C"
+#endif
+bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
+
 unsigned g_resize_width;
 unsigned g_resize_height;
 unsigned g_pos_x = CW_USEDEFAULT;
 unsigned g_pos_y = CW_USEDEFAULT;
 bool g_resized;
 bool g_quit;
+HWND g_hwnd;
+
+extern void *dinput_wgl;
 
 /* Power Request APIs */
 
@@ -218,7 +227,6 @@ bool win32_window_init(WNDCLASSEX *wndclass)
       return false;
    return true;
 }
-#endif
 
 static bool win32_browser(
       HWND owner,

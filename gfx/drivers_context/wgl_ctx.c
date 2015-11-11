@@ -40,8 +40,6 @@
 #include "../common/win32_common.h"
 #include "../drivers_wm/win32_shader_dlg.h"
 
-#define IDI_ICON 1
-
 #ifndef WGL_CONTEXT_MAJOR_VERSION_ARB
 #define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
 #endif
@@ -67,7 +65,6 @@
 #endif
 
 static bool g_use_hw_ctx;
-static HWND g_hwnd;
 static HGLRC g_hrc;
 static HGLRC g_hw_hrc;
 static HDC g_hdc;
@@ -75,7 +72,6 @@ static HDC g_hdc;
 static unsigned g_major;
 static unsigned g_minor;
 
-bool g_quit;
 static bool g_inited;
 static unsigned g_interval;
 
@@ -229,12 +225,7 @@ void create_gl_context(HWND hwnd)
    }
 }
 
-#ifdef __cplusplus
-extern "C"
-#endif
-bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
-
-static void *dinput_wgl;
+void *dinput_wgl;
 
 static void gfx_ctx_wgl_swap_interval(void *data, unsigned interval)
 {
@@ -335,7 +326,7 @@ static bool gfx_ctx_wgl_init(void *data)
    g_restore_desktop   = false;
 
    win32_monitor_init();
-   if (!win32_window_init(&wndclass, WndProc))
+   if (!win32_window_init(&wndclass))
 	   return false;
 
    if (!wgl_shader_dlg_init())

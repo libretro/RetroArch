@@ -41,6 +41,7 @@ extern unsigned g_pos_x;
 extern unsigned g_pos_y;
 extern bool g_resized;
 extern bool g_quit;
+extern HWND g_hwnd;
 
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
