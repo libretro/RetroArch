@@ -479,9 +479,107 @@ static void xdk_renderchain_viewport_info(void *data, struct video_viewport *vp)
    vp->full_height  = height;
 }
 
+void xdk_renderchain_make_pp(void *data, const video_info_t *info, void *pp)
+{
+   d3d_video_t     *d3d = (d3d_video_t*)data;
+   settings_t *settings = config_get_ptr();
+   /* TODO/FIXME - get rid of global state dependencies. */
+   global_t *global     = global_get_ptr();
+   D3DPRESENT_PARAMETERS *d3dpp = (D3DPRESENT_PARAMETERS*)pp;
+
+   d3dpp->Windowed             = false;
+   d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+
+   if (info->vsync)
+   {
+      switch (settings->video.swap_interval)
+      {
+         default:
+         case 1:
+            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_ONE;
+            break;
+         case 2:
+            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_TWO;
+            break;
+         case 3:
+            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_THREE;
+            break;
+         case 4:
+            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_FOUR;
+            break;
+      }
+   }
+
+   d3dpp->SwapEffect       = D3DSWAPEFFECT_DISCARD;
+   d3dpp->BackBufferCount  = 2;
+   d3dpp->BackBufferFormat =
+#ifdef _XBOX360
+      global->console.screen.gamma_correction ?
+      (D3DFORMAT)MAKESRGBFMT(info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5) :
+#endif
+      info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
+
+   if (!d3dpp->Windowed)
+   {
+      unsigned width          = 0;
+      unsigned height         = 0;
+
+      gfx_ctx_get_video_size(d3d, &width, &height);
+
+      video_driver_set_size_width(width);
+      video_driver_set_size_height(height);
+      video_driver_get_size(&d3dpp->BackBufferWidth, &d3dpp->BackBufferHeight);
+   }
+
+   d3dpp->MultiSampleType         = D3DMULTISAMPLE_NONE;
+   d3dpp->EnableAutoDepthStencil  = FALSE;
+#if defined(_XBOX1)
+   /* Get the "video mode" */
+   DWORD video_mode               = XGetVideoFlags();
+
+   /* Check if we are able to use progressive mode. */
+   if (video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+      d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
+   else
+      d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
+
+   /* Only valid in PAL mode, not valid for HDTV modes. */
+   if (XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
+   {
+      if (video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
+         d3dpp->FullScreen_RefreshRateInHz = 60;
+      else
+         d3dpp->FullScreen_RefreshRateInHz = 50;
+   }
+
+   if (XGetAVPack() == XC_AV_PACK_HDTV)
+   {
+      if (video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+         d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
+      else if (video_mode & XC_VIDEO_FLAGS_HDTV_720p)
+         d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
+      else if (video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
+         d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
+   }
+
+   if (widescreen_mode)
+      d3dpp->Flags |= D3DPRESENTFLAG_WIDESCREEN;
+#elif defined(_XBOX360)
+   if (!widescreen_mode)
+      d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
+
+   if (global->console.screen.gamma_correction)
+      d3dpp->FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
+   else
+      d3dpp->FrontBufferFormat       = D3DFMT_LE_X8R8G8B8;
+   d3dpp->MultiSampleQuality      = 0;
+#endif
+}
+
 renderchain_driver_t xdk_renderchain = {
    xdk_renderchain_free,
    xdk_renderchain_new,
+   xdk_renderchain_make_pp,
    xdk_renderchain_init_shader,
    xdk_renderchain_init_shader_fvf,
    xdk_renderchain_reinit,

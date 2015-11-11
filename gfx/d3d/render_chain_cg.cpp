@@ -1614,9 +1614,49 @@ static void cg_d3d9_renderchain_viewport_info(void *data, struct video_viewport 
    vp->full_height  = height;
 }
 
+static void cg_d3d9_renderchain_make_pp(void *data, const video_info_t *info, void *pp)
+{
+   d3d_video_t     *d3d = (d3d_video_t*)data;
+   settings_t *settings = config_get_ptr();
+   D3DPRESENT_PARAMETERS *d3dpp = (D3DPRESENT_PARAMETERS*)pp;
+
+   d3dpp->Windowed             = false;
+   d3dpp->Windowed             = settings->video.windowed_fullscreen || !info->fullscreen;
+   d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+
+   if (info->vsync)
+   {
+      switch (settings->video.swap_interval)
+      {
+         default:
+         case 1:
+            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_ONE;
+            break;
+         case 2:
+            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_TWO;
+            break;
+         case 3:
+            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_THREE;
+            break;
+         case 4:
+            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_FOUR;
+            break;
+      }
+   }
+
+   d3dpp->SwapEffect       = D3DSWAPEFFECT_DISCARD;
+   d3dpp->BackBufferCount  = 2;
+   d3dpp->hDeviceWindow    = d3d->hWnd;
+   d3dpp->BackBufferFormat = !d3dpp->Windowed ? D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
+
+   if (!d3dpp->Windowed)
+      video_driver_get_size(&d3dpp->BackBufferWidth, &d3dpp->BackBufferHeight);
+}
+
 renderchain_driver_t cg_d3d9_renderchain = {
    cg_d3d9_renderchain_free,
    cg_d3d9_renderchain_new,
+   cg_d3d9_renderchain_make_pp,
    cg_d3d9_renderchain_init_shader,
    cg_d3d9_renderchain_init_shader_fvf,
    NULL,
