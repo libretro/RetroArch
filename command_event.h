@@ -128,6 +128,7 @@ enum event_command
    /* Unpauses retroArch. */
    EVENT_CMD_PAUSE,
    EVENT_CMD_PAUSE_CHECKS,
+   EVENT_CMD_MENU_SAVE_CURRENT_CONFIG,
    EVENT_CMD_MENU_SAVE_CONFIG,
    EVENT_CMD_MENU_PAUSE_LIBRETRO,
    /* Toggles menu on/off. */

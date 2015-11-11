@@ -2654,6 +2654,8 @@ static int xmb_list_push(menu_displaylist_info_t *info, unsigned type)
          menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_CONFIGURATIONS), PARSE_ACTION, false);
          menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_SAVE_CURRENT_CONFIG), PARSE_ACTION, false);
+         menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_SAVE_NEW_CONFIG), PARSE_ACTION, false);
          menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_HELP_LIST), PARSE_ACTION, false);

@@ -894,6 +894,34 @@ static bool event_save_core_config(void)
 }
 
 /**
+ * event_save_current_config:
+ *
+ * Saves current configuration file to disk, and (optionally)
+ * autosave state.
+ **/
+void event_save_current_config(void)
+{
+   settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
+
+   if (settings->config_save_on_exit && *global->path.config)
+   {
+      /* Save last core-specific config to the default config location,
+       * needed on consoles for core switching and reusing last good
+       * config for new cores.
+       */
+      config_save_file(global->path.config);
+
+      /* Flush out the core specific config. */
+      if (*global->path.core_specific_config &&
+            settings->core_specific_config)
+         config_save_file(global->path.core_specific_config);
+   }
+
+   event_command(EVENT_CMD_AUTOSAVE_STATE);
+}
+
+/**
  * event_save_state
  * @path            : Path to state.
  * @s               : Message.
@@ -1439,6 +1467,9 @@ bool event_command(enum event_command cmd)
 #endif
          if (driver->frontend_ctx && driver->frontend_ctx->set_fork)
             driver->frontend_ctx->set_fork(true, false);
+         break;
+      case EVENT_CMD_MENU_SAVE_CURRENT_CONFIG:
+         event_save_current_config();
          break;
       case EVENT_CMD_MENU_SAVE_CONFIG:
          if (!event_save_core_config())

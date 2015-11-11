@@ -1074,6 +1074,9 @@ extern "C" {
 #define MENU_LABEL_VALUE_HELP_SCANNING_CONTENT                                 0x74b36f11U
 #define MENU_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC                            0xac947056U
 
+#define MENU_LABEL_SAVE_CURRENT_CONFIG                                         0x8840ba8bU
+#define MENU_LABEL_VALUE_SAVE_CURRENT_CONFIG                                   0x9a1eb42dU
+
 const char *menu_hash_to_str_de(uint32_t hash);
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len);
 

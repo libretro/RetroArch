@@ -3147,6 +3147,14 @@ static bool setting_append_list_main_menu_options(
          parent_group);
 
    CONFIG_ACTION(
+         menu_hash_to_str(MENU_LABEL_SAVE_CURRENT_CONFIG),
+         menu_hash_to_str(MENU_LABEL_VALUE_SAVE_CURRENT_CONFIG),
+         group_info.name,
+         subgroup_info.name,
+         parent_group);
+   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
+
+   CONFIG_ACTION(
          menu_hash_to_str(MENU_LABEL_SAVE_NEW_CONFIG),
          menu_hash_to_str(MENU_LABEL_VALUE_SAVE_NEW_CONFIG),
          group_info.name,
