@@ -1126,10 +1126,11 @@ static bool cg_d3d9_renderchain_add_pass(void *data, const void *info_data)
    return true;
 }
 
-static bool cg_d3d9_renderchain_add_lut(cg_renderchain_t *chain,
+static bool cg_d3d9_renderchain_add_lut(void *data,
       const char *id, const char *path, bool smooth)
 {
    lut_info info;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = chain->dev;
    LPDIRECT3DTEXTURE lut = (LPDIRECT3DTEXTURE)
       d3d_texture_new(d3dr,
@@ -1391,14 +1392,15 @@ static void renderchain_render_pass(
 }
 
 static bool cg_d3d9_renderchain_render(
-      cg_renderchain_t *chain,
-      const void *data,
+      void *data
+      const void *frame_data,
       unsigned width, unsigned height,
       unsigned pitch, unsigned rotation)
 {
    Pass *last_pass;
    LPDIRECT3DSURFACE back_buffer, target;
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
    renderchain_start_render(chain);
@@ -1409,7 +1411,7 @@ static bool cg_d3d9_renderchain_render(
          &out_width, &out_height,
          current_width, current_height, chain->final_viewport);
 
-   renderchain_blit_to_texture(chain, data, width, height, pitch);
+   renderchain_blit_to_texture(chain, frame_data, width, height, pitch);
 
    /* Grab back buffer. */
    d3dr->GetRenderTarget(0, &back_buffer);
