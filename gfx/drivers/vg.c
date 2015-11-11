@@ -36,7 +36,7 @@ typedef struct
 {
    bool should_resize;
    float mScreenAspect;
-   bool mKeepAspect;
+   bool keep_aspect;
    bool mEglImageBuf;
    unsigned mTextureWidth;
    unsigned mTextureHeight;
@@ -111,8 +111,8 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    gfx_ctx_update_window_title(vg);
 
-   vg->mTexType = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;
-   vg->mKeepAspect = video->force_aspect;
+   vg->mTexType    = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;
+   vg->keep_aspect = video->force_aspect;
 
    unsigned win_width  = video->width;
    unsigned win_height = video->height;
@@ -233,7 +233,7 @@ static void vg_calculate_quad(vg_t *vg)
    video_driver_get_size(&width, &height);
 
    /* set viewport for aspect ratio, taken from the OpenGL driver. */
-   if (vg->mKeepAspect)
+   if (vg->keep_aspect)
    {
       float desired_aspect = video_driver_get_aspect_ratio();
 
