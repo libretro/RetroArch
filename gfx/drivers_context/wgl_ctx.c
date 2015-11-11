@@ -374,11 +374,12 @@ static void gfx_ctx_wgl_get_video_size(void *data, unsigned *width, unsigned *he
 
    if (!g_hwnd)
    {
+      unsigned mon_id;
       RECT mon_rect;
       MONITORINFOEX current_mon;
       HMONITOR hm_to_use = NULL;
 
-      win32_monitor_info(&current_mon, &hm_to_use);
+      win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
       mon_rect = current_mon.rcMonitor;
       *width  = mon_rect.right - mon_rect.left;
       *height = mon_rect.bottom - mon_rect.top;
@@ -446,6 +447,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
    DWORD style;
    MSG msg;
    RECT mon_rect;
+   unsigned mon_id;
    MONITORINFOEX current_mon;
    float refresh_mod;
    unsigned refresh;
@@ -455,7 +457,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
-   win32_monitor_info(&current_mon, &hm_to_use);
+   win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
 
    mon_rect        = current_mon.rcMonitor;
    g_resize_width  = width;

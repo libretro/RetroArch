@@ -97,9 +97,9 @@ void win32_monitor_get_info(void)
    ChangeDisplaySettingsEx(current_mon.szDevice, NULL, NULL, 0, NULL);
 }
 
-void win32_monitor_info(void *data, void *hm_data)
+void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
 {
-   unsigned fs_monitor;
+   unsigned i, fs_monitor;
    settings_t *settings = config_get_ptr();
    MONITORINFOEX *mon   = (MONITORINFOEX*)data;
    HMONITOR *hm_to_use  = (HMONITOR*)hm_data;
@@ -112,7 +112,21 @@ void win32_monitor_info(void *data, void *hm_data)
 
    if (fs_monitor && fs_monitor <= win32_monitor_count
          && win32_monitor_all[fs_monitor - 1])
+   {
       *hm_to_use = win32_monitor_all[fs_monitor - 1];
+      *mon_id    = fs_monitor - 1;
+   }
+   else
+   {
+      for (i = 0; i < win32_monitor_count; i++)
+      {
+         if (win32_monitor_all[i] != *hm_to_use)
+            continue;
+
+         *mon_id = i;
+         break;
+      }
+   }
 
    memset(mon, 0, sizeof(*mon));
    mon->cbSize = sizeof(MONITORINFOEX);
