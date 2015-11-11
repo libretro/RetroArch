@@ -583,8 +583,7 @@ static void gfx_ctx_wgl_destroy(void *data)
 
    if (g_hwnd)
    {
-      win32_monitor_from_window(g_hwnd);
-      DestroyWindow(g_hwnd);
+      win32_monitor_from_window(g_hwnd, true);
       UnregisterClass("RetroArch", GetModuleHandle(NULL));
       g_hwnd = NULL;
    }

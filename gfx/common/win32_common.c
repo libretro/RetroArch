@@ -79,9 +79,11 @@ void win32_monitor_init(void)
    EnumDisplayMonitors(NULL, NULL, win32_monitor_enum_proc, 0);
 }
 
-void win32_monitor_from_window(HWND data)
+void win32_monitor_from_window(HWND data, bool destroy)
 {
    win32_monitor_last = MonitorFromWindow(data, MONITOR_DEFAULTTONEAREST);
+   if (destroy)
+      DestroyWindow(data);
 }
 
 void win32_monitor_get_info(void)
@@ -103,7 +105,7 @@ void win32_monitor_info(void *data, void *hm_data)
    HMONITOR *hm_to_use  = (HMONITOR*)hm_data;
 
    if (!win32_monitor_last)
-      win32_monitor_from_window(GetDesktopWindow());
+      win32_monitor_from_window(GetDesktopWindow(), false);
 
    *hm_to_use = win32_monitor_last;
    fs_monitor = settings->video.monitor_index;

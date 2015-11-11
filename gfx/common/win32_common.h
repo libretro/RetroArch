@@ -18,6 +18,12 @@
 #define WIN32_COMMON_H__
 
 #include <string.h>
+
+#ifndef _XBOX
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #include <boolean.h>
 #include "../../driver.h"
 #include "../video_context_driver.h"
@@ -27,8 +33,6 @@ extern "C" {
 #endif
 
 #ifndef _XBOX
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 #include "../drivers_wm/win32_resource.h"
 
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
@@ -38,7 +42,7 @@ LRESULT win32_menu_loop(HWND handle, WPARAM wparam);
 
 void win32_monitor_init(void);
 
-void win32_monitor_from_window(HWND data);
+void win32_monitor_from_window(HWND data, bool destroy);
 
 void win32_monitor_get_info(void);
 
