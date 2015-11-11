@@ -79,8 +79,6 @@ static bool d3d_init_luts(d3d_video_t *d3d)
    return true;
 }
 
-static void d3d_set_font_rect(d3d_video_t *d3d,
-      const struct font_params *params);
 static bool d3d_process_shader(d3d_video_t *d3d);
 static bool d3d_init_chain(d3d_video_t *d3d,
       const video_info_t *video_info);
@@ -370,11 +368,11 @@ static void d3d_set_viewport(void *data,
 
    d3d->final_viewport = viewport;
 
-   d3d_set_font_rect(d3d, NULL);
-
    if (d3d->renderchain_driver && d3d->renderchain_data)
-      d3d->renderchain_driver->set_final_viewport(d3d,
-            d3d->renderchain_data, &d3d->final_viewport);
+   {
+      if (d3d->renderchain_driver->set_font_rect)
+         d3d->renderchain_driver->set_font_rect(d3d, NULL);
+   }
 }
 
 static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
@@ -576,8 +574,8 @@ static void d3d_set_osd_msg(void *data, const char *msg,
    driver_t          *driver = driver_get_ptr();
    const font_renderer_t *font_ctx = driver->font_osd_driver;
 
-   if (params)
-      d3d_set_font_rect(d3d, params);
+   if (d3d->renderchain_driver->set_font_rect && params)
+      d3d->renderchain_driver->set_font_rect(d3d, params);
 
    if (font_ctx->render_msg)
       font_ctx->render_msg(driver->font_osd_data, msg, params);
@@ -1261,39 +1259,6 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 }
 #endif
 
-static void d3d_set_font_rect(d3d_video_t *d3d,
-      const struct font_params *params)
-{
-   settings_t *settings           = config_get_ptr();
-   float pos_x                    = settings->video.msg_pos_x;
-   float pos_y                    = settings->video.msg_pos_y;
-   float font_size                = settings->video.font_size;
-
-   if (params)
-   {
-      pos_x                       = params->x;
-      pos_y                       = params->y;
-      font_size                  *= params->scale;
-   }
-
-   if (!d3d)
-      return;
-
-   d3d->font_rect.left            = d3d->final_viewport.X +
-      d3d->final_viewport.Width * pos_x;
-   d3d->font_rect.right           = d3d->final_viewport.X +
-      d3d->final_viewport.Width;
-   d3d->font_rect.top             = d3d->final_viewport.Y +
-      (1.0f - pos_y) * d3d->final_viewport.Height - font_size;
-   d3d->font_rect.bottom          = d3d->final_viewport.Height;
-
-   d3d->font_rect_shifted         = d3d->font_rect;
-   d3d->font_rect_shifted.left   -= 2;
-   d3d->font_rect_shifted.right  -= 2;
-   d3d->font_rect_shifted.top    += 2;
-   d3d->font_rect_shifted.bottom += 2;
-}
-
 static bool d3d_init_singlepass(d3d_video_t *d3d)
 {
 #ifndef _XBOX
@@ -1641,9 +1606,12 @@ static bool d3d_frame(void *data, const void *frame,
 
    if (d3d->should_resize)
    {
-      d3d->should_resize = false;
-      gfx_ctx_set_resize(d3d, width, height);
       d3d_set_viewport(d3d, width, height, false, true);
+      if (d3d->renderchain_driver->set_final_viewport)
+         d3d->renderchain_driver->set_final_viewport(d3d,
+               d3d->renderchain_data, &d3d->final_viewport);
+
+      d3d->should_resize = false;
    }
 
    /* render_chain() only clears out viewport,
@@ -1736,82 +1704,12 @@ static bool d3d_frame(void *data, const void *frame,
 
 static bool d3d_read_viewport(void *data, uint8_t *buffer)
 {
-   unsigned width, height;
-#ifndef _XBOX
-   D3DLOCKED_RECT rect;
-   LPDIRECT3DSURFACE target = NULL;
-   LPDIRECT3DSURFACE dest   = NULL;
-#endif
-   bool ret                 = true;
-   d3d_video_t *d3d         = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
-   static struct retro_perf_counter d3d_read_viewport = {0};
+   d3d_video_t *d3d   = (d3d_video_t*)data;
 
-   video_driver_get_size(&width, &height);
+   if (!d3d || !d3d->renderchain_driver || !d3d->renderchain_driver->read_viewport)
+      return false;
 
-   rarch_perf_init(&d3d_read_viewport, "d3d_read_viewport");
-   retro_perf_start(&d3d_read_viewport);
-
-   (void)data;
-   (void)buffer;
-
-#ifdef _XBOX
-   ret = false;
-#else
-   if (FAILED(d3d->d3d_err = d3dr->GetRenderTarget(0, &target)))
-   {
-      ret = false;
-      goto end;
-   }
-
-   if (FAILED(d3d->d3d_err = d3dr->CreateOffscreenPlainSurface(
-               width, height,
-               D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM,
-               &dest, NULL)))
-   {
-      ret = false;
-      goto end;
-   }
-
-   if (FAILED(d3d->d3d_err = d3dr->GetRenderTargetData(target, dest)))
-   {
-      ret = false;
-      goto end;
-   }
-
-   if (SUCCEEDED(dest->LockRect(&rect, NULL, D3DLOCK_READONLY)))
-   {
-      unsigned x, y;
-      unsigned pitchpix       = rect.Pitch / 4;
-      const uint32_t *pixels  = (const uint32_t*)rect.pBits;
-
-      pixels                 += d3d->final_viewport.X;
-      pixels                 += (d3d->final_viewport.Height - 1) * pitchpix;
-      pixels                 -= d3d->final_viewport.Y * pitchpix;
-
-      for (y = 0; y < d3d->final_viewport.Height; y++, pixels -= pitchpix)
-      {
-         for (x = 0; x < d3d->final_viewport.Width; x++)
-         {
-            *buffer++ = (pixels[x] >>  0) & 0xff;
-            *buffer++ = (pixels[x] >>  8) & 0xff;
-            *buffer++ = (pixels[x] >> 16) & 0xff;
-         }
-      }
-
-      dest->UnlockRect();
-   }
-   else
-      ret = false;
-
-end:
-   retro_perf_stop(&d3d_read_viewport);
-   if (target)
-      target->Release();
-   if (dest)
-      dest->Release();
-#endif
-   return ret;
+   return d3d->renderchain_driver->read_viewport(d3d, buffer);
 }
 
 static bool d3d_set_shader(void *data,

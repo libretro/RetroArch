@@ -474,5 +474,7 @@ renderchain_driver_t xdk_renderchain = {
    xdk_renderchain_add_state_tracker,
    xdk_renderchain_render,
    xdk_renderchain_convert_geometry,
+   NULL,
+   NULL,
    "xdk",
 };

@@ -1486,6 +1486,114 @@ static bool cg_d3d9_renderchain_render(void *chain_data, const void *data,
    return true;
 }
 
+static void cg_d3d9_renderchain_set_font_rect(void *data,
+      const struct font_params *params)
+{
+   settings_t *settings           = config_get_ptr();
+   d3d_video_t *d3d               = (d3d_video_t*)data;
+   float pos_x                    = settings->video.msg_pos_x;
+   float pos_y                    = settings->video.msg_pos_y;
+   float font_size                = settings->video.font_size;
+
+   if (params)
+   {
+      pos_x                       = params->x;
+      pos_y                       = params->y;
+      font_size                  *= params->scale;
+   }
+
+   if (!d3d)
+      return;
+
+   d3d->font_rect.left            = d3d->final_viewport.X +
+      d3d->final_viewport.Width * pos_x;
+   d3d->font_rect.right           = d3d->final_viewport.X +
+      d3d->final_viewport.Width;
+   d3d->font_rect.top             = d3d->final_viewport.Y +
+      (1.0f - pos_y) * d3d->final_viewport.Height - font_size;
+   d3d->font_rect.bottom          = d3d->final_viewport.Height;
+
+   d3d->font_rect_shifted         = d3d->font_rect;
+   d3d->font_rect_shifted.left   -= 2;
+   d3d->font_rect_shifted.right  -= 2;
+   d3d->font_rect_shifted.top    += 2;
+   d3d->font_rect_shifted.bottom += 2;
+}
+
+static bool cg_d3d9_renderchain_read_viewport(void *data, uint8_t *buffer)
+{
+   unsigned width, height;
+   D3DLOCKED_RECT rect;
+   LPDIRECT3DSURFACE target = NULL;
+   LPDIRECT3DSURFACE dest   = NULL;
+   bool ret                 = true;
+   d3d_video_t *d3d         = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
+   static struct retro_perf_counter d3d_read_viewport = {0};
+
+   video_driver_get_size(&width, &height);
+
+   rarch_perf_init(&d3d_read_viewport, "d3d_read_viewport");
+   retro_perf_start(&d3d_read_viewport);
+
+   (void)data;
+   (void)buffer;
+
+   if (FAILED(d3d->d3d_err = d3dr->GetRenderTarget(0, &target)))
+   {
+      ret = false;
+      goto end;
+   }
+
+   if (FAILED(d3d->d3d_err = d3dr->CreateOffscreenPlainSurface(
+               width, height,
+               D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM,
+               &dest, NULL)))
+   {
+      ret = false;
+      goto end;
+   }
+
+   if (FAILED(d3d->d3d_err = d3dr->GetRenderTargetData(target, dest)))
+   {
+      ret = false;
+      goto end;
+   }
+
+   if (SUCCEEDED(dest->LockRect(&rect, NULL, D3DLOCK_READONLY)))
+   {
+      unsigned x, y;
+      unsigned pitchpix       = rect.Pitch / 4;
+      const uint32_t *pixels  = (const uint32_t*)rect.pBits;
+
+      pixels                 += d3d->final_viewport.X;
+      pixels                 += (d3d->final_viewport.Height - 1) * pitchpix;
+      pixels                 -= d3d->final_viewport.Y * pitchpix;
+
+      for (y = 0; y < d3d->final_viewport.Height; y++, pixels -= pitchpix)
+      {
+         for (x = 0; x < d3d->final_viewport.Width; x++)
+         {
+            *buffer++ = (pixels[x] >>  0) & 0xff;
+            *buffer++ = (pixels[x] >>  8) & 0xff;
+            *buffer++ = (pixels[x] >> 16) & 0xff;
+         }
+      }
+
+      dest->UnlockRect();
+   }
+   else
+      ret = false;
+
+end:
+   retro_perf_stop(&d3d_read_viewport);
+   if (target)
+      target->Release();
+   if (dest)
+      dest->Release();
+   return ret;
+}
+
 renderchain_driver_t cg_d3d9_renderchain = {
    cg_d3d9_renderchain_free,
    cg_d3d9_renderchain_new,
@@ -1499,5 +1607,7 @@ renderchain_driver_t cg_d3d9_renderchain = {
    cg_d3d9_renderchain_add_state_tracker,
    cg_d3d9_renderchain_render,
    cg_d3d9_renderchain_convert_geometry,
+   cg_d3d9_renderchain_set_font_rect,
+   cg_d3d9_renderchain_read_viewport,
    "cg_d3d9",
 };

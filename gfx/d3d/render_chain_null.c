@@ -144,5 +144,7 @@ renderchain_driver_t null_renderchain = {
    null_renderchain_add_state_tracker,
    null_renderchain_render,
    null_renderchain_convert_geometry,
+   NULL,
+   NULL,
    "null",
 };
