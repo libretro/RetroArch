@@ -39,7 +39,7 @@ extern bool g_resized;
 extern bool g_quit;
 extern HWND g_hwnd;
 
-LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
+extern "C" LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 
 LRESULT win32_menu_loop(HWND handle, WPARAM wparam);
