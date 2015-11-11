@@ -1337,8 +1337,8 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    
    d3d_viewport_info(d3d, &vp);
 
-   overlay_width  = vp->width;
-   overlay_height = vp->height;
+   overlay_width  = vp.width;
+   overlay_height = vp.height;
 
    vert[0].x      = overlay->vert_coords.x * overlay_width;
    vert[1].x      = (overlay->vert_coords.x + overlay->vert_coords.w)
