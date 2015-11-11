@@ -92,19 +92,8 @@ static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay);
 
 #define IDI_ICON 1
 
-#ifndef MAX_MONITORS
-#define MAX_MONITORS 9
-#endif
-
 extern LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
         WPARAM wParam, LPARAM lParam);
-static void d3d_monitor_rect(MONITORINFOEX *mon, HMONITOR *hm_to_use, unsigned *mon_id);
-#endif
-
-#ifdef HAVE_MONITOR
-static HMONITOR monitor_d3d_last;
-static HMONITOR monitor_d3d_all[MAX_MONITORS];
-static unsigned monitor_d3d_count;
 #endif
 
 static void d3d_deinit_chain(d3d_video_t *d3d)
@@ -637,7 +626,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    MONITORINFOEX current_mon;
    HMONITOR hm_to_use;
 
-   d3d_monitor_rect(&current_mon, &hm_to_use, &d3d->cur_mon_id);
+   win32_monitor_info(&current_mon, &hm_to_use, &d3d->cur_mon_id);
    mon_rect = current_mon.rcMonitor;
 
    windowed_full = settings->video.windowed_fullscreen;
@@ -893,9 +882,7 @@ static void d3d_free(void *data)
       d3d->g_pD3D->Release();
 
 #ifdef HAVE_MONITOR
-   monitor_d3d_last = MonitorFromWindow(d3d->hWnd,
-         MONITOR_DEFAULTTONEAREST);
-   DestroyWindow(d3d->hWnd);
+   win32_monitor_from_window(d3d->hWnd, true);
 #endif
 
    if (d3d)
@@ -905,54 +892,6 @@ static void d3d_free(void *data)
    UnregisterClass("RetroArch", GetModuleHandle(NULL));
 #endif
 }
-
-#ifdef HAVE_MONITOR
-static BOOL CALLBACK d3d_monitor_enum_proc(HMONITOR hMonitor,
-      HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
-{
-   monitor_d3d_all[monitor_d3d_count++] = hMonitor;
-   return TRUE;
-}
-
-/* Multi-monitor support. */
-static void d3d_monitor_rect(MONITORINFOEX *mon, HMONITOR *hm_to_use, unsigned *mon_id)
-{
-   unsigned i, fs_monitor;
-   monitor_d3d_count        = 0;
-   settings_t *settings = config_get_ptr();
-
-   EnumDisplayMonitors(NULL, NULL, d3d_monitor_enum_proc, 0);
-
-   if (!monitor_d3d_last)
-      monitor_d3d_last = MonitorFromWindow(
-            GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
-
-   *hm_to_use           = monitor_d3d_last;
-   fs_monitor           = settings->video.monitor_index;
-
-   if (fs_monitor && fs_monitor <= monitor_d3d_count
-         && monitor_d3d_all[fs_monitor - 1])
-   {
-      *hm_to_use = monitor_d3d_all[fs_monitor - 1];
-      *mon_id = fs_monitor - 1;
-   }
-   else
-   {
-      for (i = 0; i < monitor_d3d_count; i++)
-      {
-         if (monitor_d3d_all[i] != *hm_to_use)
-            continue;
-
-         *mon_id = i;
-         break;
-      }
-   }
-
-   memset(mon, 0, sizeof(*mon));
-   mon->cbSize = sizeof(MONITORINFOEX);
-   GetMonitorInfo(*hm_to_use, (MONITORINFO*)mon);
-}
-#endif
 
 #ifndef DONT_HAVE_STATE_TRACKER
 static bool d3d_init_imports(d3d_video_t *d3d)

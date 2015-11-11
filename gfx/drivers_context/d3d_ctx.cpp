@@ -259,6 +259,10 @@ static bool gfx_ctx_d3d_init(void *data)
 
    d3d_quit = false;
 
+#ifndef _XBOX
+   win32_monitor_init();
+#endif
+
    return true;
 }
 
