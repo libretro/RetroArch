@@ -1288,10 +1288,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    unsigned width, height;
    void *verts;
    unsigned i;
-   struct overlay_vertex
-   {
-      float v[9];
-   } vert[4];
+   float vert[4][9];
    float overlay_width, overlay_height;
 #ifndef _XBOX1
    LPDIRECT3DVERTEXDECLARATION vertex_decl;
@@ -1323,11 +1320,11 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
 
    for (i = 0; i < 4; i++)
    {
-      vert[i].v[2]   = 0.5f;
-      vert[i].v[5]   = 1.0f;
-      vert[i].v[6]   = 1.0f;
-      vert[i].v[7]   = 1.0f;
-      vert[i].v[8]   = overlay->alpha_mod;
+      vert[i][2]   = 0.5f;
+      vert[i][5]   = 1.0f;
+      vert[i][6]   = 1.0f;
+      vert[i][7]   = 1.0f;
+      vert[i][8]   = overlay->alpha_mod;
    }
    
    d3d_viewport_info(d3d, &vp);
@@ -1335,33 +1332,33 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    overlay_width  = vp.width;
    overlay_height = vp.height;
 
-   vert[0].v[0]      = overlay->vert_coords[0] * overlay_width;
-   vert[1].v[0]      = (overlay->vert_coords[0] + overlay->vert_coords[2])
+   vert[0][0]      = overlay->vert_coords[0] * overlay_width;
+   vert[1][0]      = (overlay->vert_coords[0] + overlay->vert_coords[2])
       * overlay_width;
-   vert[2].v[0]      = overlay->vert_coords[0] * overlay_width;
-   vert[3].v[0]      = (overlay->vert_coords[0] + overlay->vert_coords[2])
+   vert[2][0]      = overlay->vert_coords[0] * overlay_width;
+   vert[3][0]      = (overlay->vert_coords[0] + overlay->vert_coords[2])
       * overlay_width;
-   vert[0].v[1]      = overlay->vert_coords[1] * overlay_height;
-   vert[1].v[1]      = overlay->vert_coords[1] * overlay_height;
-   vert[2].v[1]      = (overlay->vert_coords[1] + overlay->vert_coords[3])
+   vert[0][1]      = overlay->vert_coords[1] * overlay_height;
+   vert[1][1]      = overlay->vert_coords[1] * overlay_height;
+   vert[2][1]      = (overlay->vert_coords[1] + overlay->vert_coords[3])
       * overlay_height;
-   vert[3].v[1]      = (overlay->vert_coords[1] + overlay->vert_coords[3])
+   vert[3][1]      = (overlay->vert_coords[1] + overlay->vert_coords[3])
       * overlay_height;
 
-   vert[0].v[3]      = overlay->tex_coords[0];
-   vert[1].v[3]      = overlay->tex_coords[0] + overlay->tex_coords[2];
-   vert[2].v[3]      = overlay->tex_coords[0];
-   vert[3].v[3]      = overlay->tex_coords[0] + overlay->tex_coords[2];
-   vert[0].v[4]      = overlay->tex_coords[1];
-   vert[1].v[4]      = overlay->tex_coords[1];
-   vert[2].v[4]      = overlay->tex_coords[1] + overlay->tex_coords[3];
-   vert[3].v[4]      = overlay->tex_coords[1] + overlay->tex_coords[3];
+   vert[0][3]      = overlay->tex_coords[0];
+   vert[1][3]      = overlay->tex_coords[0] + overlay->tex_coords[2];
+   vert[2][3]      = overlay->tex_coords[0];
+   vert[3][3]      = overlay->tex_coords[0] + overlay->tex_coords[2];
+   vert[0][4]      = overlay->tex_coords[1];
+   vert[1][4]      = overlay->tex_coords[1];
+   vert[2][4]      = overlay->tex_coords[1] + overlay->tex_coords[3];
+   vert[3][4]      = overlay->tex_coords[1] + overlay->tex_coords[3];
 
    /* Align texels and vertices. */
    for (i = 0; i < 4; i++)
    {
-      vert[i].v[0]  -= 0.5f;
-      vert[i].v[1]  += 0.5f;
+      vert[i][0]  -= 0.5f;
+      vert[i][1]  += 0.5f;
    }
 
    overlay->vert_buf->Lock(0, sizeof(vert), &verts, 0);
@@ -1377,7 +1374,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
 #endif
 
    d3d_set_stream_source(d3d->dev, 0, overlay->vert_buf,
-         0, sizeof(overlay_vertex));
+         0, sizeof(*vert));
 
    video_driver_get_size(&width, &height);
 
