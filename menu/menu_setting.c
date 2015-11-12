@@ -4515,7 +4515,6 @@ static bool setting_append_list_video_options(
          EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
 #endif
 
-#ifndef HAVE_FILTERS_BUILTIN
    CONFIG_PATH(
          settings->video.softfilter_plugin,
          menu_hash_to_str(MENU_LABEL_VIDEO_FILTER),
@@ -4529,7 +4528,6 @@ static bool setting_append_list_video_options(
    menu_settings_list_current_add_values(list, list_info, "filt");
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
-#endif
 
 #ifdef _XBOX1
    CONFIG_UINT(
