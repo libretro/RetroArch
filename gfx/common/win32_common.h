@@ -34,6 +34,7 @@
 extern unsigned g_resize_width;
 extern unsigned g_resize_height;
 extern bool g_quit;
+extern bool g_inited;
 extern bool g_restore_desktop;
 extern HWND g_hwnd;
 
@@ -56,7 +57,7 @@ void win32_monitor_init(void);
 
 bool win32_set_video_mode(void *data,
       unsigned width, unsigned height,
-      bool fullscreen)
+      bool fullscreen);
 
 bool win32_monitor_set_fullscreen(unsigned width,
       unsigned height, unsigned refresh, char *dev_name);

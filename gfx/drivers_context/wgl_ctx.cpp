@@ -72,7 +72,6 @@ static HDC g_hdc;
 static unsigned g_major;
 static unsigned g_minor;
 
-static bool g_inited;
 static unsigned g_interval;
 
 static dylib_t dll_handle = NULL; /* Handle to OpenGL32.dll */
