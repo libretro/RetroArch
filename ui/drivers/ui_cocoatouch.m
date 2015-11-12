@@ -390,7 +390,6 @@ enum
 
 - (void)refreshSystemConfig
 {
-   settings_t *settings = config_get_ptr();
    bool is_btstack;
     
    /* Get enabled orientations */
@@ -404,8 +403,6 @@ enum
    /* Set bluetooth mode */
    is_btstack     = !(strcmp(apple_frontend_settings.bluetooth_mode, "btstack"));
        
-   cocoa_input_enable_small_keyboard(settings->input.small_keyboard_enable);
-   cocoa_input_enable_icade(settings->input.icade_enable);
    btstack_set_poweron(is_btstack);
 }
 

@@ -126,26 +126,6 @@ const struct apple_key_name_map_entry apple_key_name_map[] =
 };
 
 #if TARGET_OS_IPHONE
-void cocoa_input_enable_small_keyboard(bool on)
-{
-   driver_t *driver = driver_get_ptr();
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
-   if (apple)
-      apple->small_keyboard_enabled = on;
-}
-
-void cocoa_input_enable_icade(bool on)
-{
-   driver_t *driver = driver_get_ptr();
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
-    
-   if (!apple)
-      return;
-
-   apple->icade_enabled = on;
-   apple->icade_buttons = 0;
-}
-
 void cocoa_input_reset_icade_buttons(void)
 {
    driver_t *driver = driver_get_ptr();
@@ -178,9 +158,10 @@ int32_t cocoa_input_find_any_key(void)
 static int cocoa_input_find_any_button_ret(cocoa_input_data_t *apple,
    unsigned buttons, unsigned port)
 {
+   settings_t *settings = config_get_ptr();
    unsigned i;
 #if TARGET_OS_IPHONE
-   if (port == 0 && apple->icade_enabled)
+   if (port == 0 && settings->input.icade_enable)
       BIT32_SET(buttons, apple->icade_buttons);
 #endif
 
@@ -267,6 +248,7 @@ static void *cocoa_input_init(void)
 static void cocoa_input_poll(void *data)
 {
    uint32_t i;
+   settings_t *settings      = config_get_ptr();
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
 
    for (i = 0; i < apple->touch_count; i++)
@@ -282,7 +264,7 @@ static void cocoa_input_poll(void *data)
       apple->joypad->poll();
 
 #if TARGET_OS_IPHONE
-   if (apple->icade_enabled)
+   if (settings->input.icade_enable)
       BIT32_SET(apple->buttons[0], apple->icade_buttons);
 #endif
     
