@@ -678,7 +678,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 
          SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
          SendMessage(g_hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
-         win_height += rc_temp.top + rect.top;
+         g_resize_height = win_height += rc_temp.top + rect.top;
          SetWindowPos(g_hwnd, NULL, 0, 0, win_width, win_height, SWP_NOMOVE);
       }
 
