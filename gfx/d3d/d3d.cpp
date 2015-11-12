@@ -626,18 +626,15 @@ static bool d3d_construct(d3d_video_t *d3d,
 #ifdef HAVE_WINDOW
    DWORD style;
    unsigned win_width, win_height;
-   float refresh_mod;
-   unsigned refresh;
    RECT rect = {0};
-
-   video_driver_get_size(&win_width, &win_height);
-
    /* Windows only reports the refresh rates for modelines as 
     * an integer, so video.refresh_rate needs to be rounded. Also, account 
     * for black frame insertion using video.refresh_rate set to half
     * of the display refresh rate, as well as higher vsync swap intervals. */
-   refresh_mod = settings->video.black_frame_insertion ? 2.0f : 1.0f;
-   refresh     = roundf(settings->video.refresh_rate * refresh_mod * settings->video.swap_interval);
+   float refresh_mod = settings->video.black_frame_insertion ? 2.0f : 1.0f;
+   unsigned refresh     = roundf(settings->video.refresh_rate * refresh_mod * settings->video.swap_interval);
+
+   video_driver_get_size(&win_width, &win_height);
 
    if (info->fullscreen)
    {
@@ -672,19 +669,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 
    win32_window_create(d3d, style, &mon_rect, win_width,
          win_height, info->fullscreen);
-#endif
-#endif
 
-   gfx_ctx_show_mouse(d3d, !info->fullscreen
-#ifdef HAVE_OVERLAY
-         || d3d->overlays_enabled
-#endif
-         );
-
-
-#ifndef _XBOX
-
-#ifdef HAVE_WINDOW
    if (!info->fullscreen || windowed_full)
    {
       if (!info->fullscreen && settings->ui.menubar_enable)
@@ -719,7 +704,6 @@ static bool d3d_construct(d3d_video_t *d3d,
    if (!d3d_process_shader(d3d))
       return false;
 #endif
-
 #endif
 
    d3d->video_info = *info;
