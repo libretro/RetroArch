@@ -115,10 +115,10 @@ static bool renderchain_create_first_pass(void *data,
    d3d_set_sampler_address_u(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    d3d_set_sampler_address_v(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 #ifdef _XBOX1
-   d3dr->SetRenderState(D3DRS_LIGHTING, FALSE);
+   d3d_set_render_state(d3dr, D3DRS_LIGHTING, 0);
 #endif
-   d3dr->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-   d3dr->SetRenderState(D3DRS_ZENABLE, FALSE);
+   d3d_set_render_state(d3dr, D3DRS_CULLMODE, D3DCULL_NONE);
+   d3d_set_render_state(d3dr, D3DRS_ZENABLE, FALSE);
 
    if (!xdk_renderchain_init_shader_fvf(chain, chain))
       return false;

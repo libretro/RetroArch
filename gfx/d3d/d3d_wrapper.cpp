@@ -418,6 +418,18 @@ void d3d_texture_blit(unsigned pixel_size,
 #endif
 }
 
+void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value)
+{
+   LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;
+
+   if (!dev)
+      return;
+   if (!d3d_restore_device(dev))
+      return;
+
+   dev->SetRenderState(state, value);
+}
+
 void d3d_enable_blend_func(void *data)
 {
    LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;
@@ -427,9 +439,9 @@ void d3d_enable_blend_func(void *data)
    if (!d3d_restore_device(dev))
       return;
 
-   dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-   dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-   dev->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
+   d3d_render_state(dev, D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
+   d3d_render_state(dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   d3d_render_state(dev, D3DRS_ALPHABLENDENABLE, true);
 }
 
 void d3d_enable_alpha_blend_texture_func(void *data)
@@ -474,7 +486,7 @@ void d3d_disable_blend_func(void *data)
    if (!d3d_restore_device(dev))
       return;
 
-   dev->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
+   d3d_render_state(dev, D3DRS_ALPHABLENDENABLE, false);
 }
 
 void d3d_set_vertex_declaration(void *data, void *vertex_data)
