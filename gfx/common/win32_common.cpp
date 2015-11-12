@@ -636,7 +636,7 @@ bool win32_set_video_mode(void *data,
    }
 
    if (!win32_window_create(NULL, style, &mon_rect, width, height, fullscreen))
-      goto error;
+      return false;
 
    if (!fullscreen || windowed_full)
    {
