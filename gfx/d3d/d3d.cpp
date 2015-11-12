@@ -667,16 +667,8 @@ static bool d3d_construct(d3d_video_t *d3d,
       win_height  = rect.bottom - rect.top;
    }
 
-   g_hwnd = CreateWindowEx(0, "RetroArch", "RetroArch",
-         style,
-         info->fullscreen ? mon_rect.left : CW_USEDEFAULT,
-         info->fullscreen ? mon_rect.top  : CW_USEDEFAULT,
-         win_width, win_height,
-         NULL, NULL, NULL, d3d);
-
-   driver->display_type  = RARCH_DISPLAY_WIN32;
-   driver->video_display = 0;
-   driver->video_window  = (uintptr_t)g_hwnd;
+   win32_window_create(d3d, style, &mon_rect, win_width,
+         win_height, info->fullscreen);
 #endif
 #endif
 

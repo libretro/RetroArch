@@ -58,6 +58,10 @@ void win32_monitor_init(void);
 
 bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen);
 
+bool win32_window_create(void *data, unsigned style,
+      RECT *mon_rect, unsigned width,
+      unsigned height, bool fullscreen);
+
 bool win32_suppress_screensaver(void *data, bool enable);
 
 bool win32_get_metrics(void *data,

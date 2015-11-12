@@ -401,13 +401,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
       g_resize_height = height = rect.bottom - rect.top;
    }
 
-   g_hwnd = CreateWindowEx(0, "RetroArch", "RetroArch", style,
-         fullscreen ? mon_rect.left : g_pos_x,
-         fullscreen ? mon_rect.top  : g_pos_y,
-         width, height,
-         NULL, NULL, NULL, NULL);
-
-   if (!g_hwnd)
+   if (!win32_window_create(NULL, style, &mon_rect, width, height, fullscreen))
       goto error;
 
    if (!fullscreen || windowed_full)
@@ -442,10 +436,6 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
    p_swap_interval = (BOOL (APIENTRY *)(int))wglGetProcAddress("wglSwapIntervalEXT");
 
    gfx_ctx_wgl_swap_interval(data, g_interval);
-
-   driver->display_type  = RARCH_DISPLAY_WIN32;
-   driver->video_display = 0;
-   driver->video_window  = (uintptr_t)g_hwnd;
 
    return true;
 

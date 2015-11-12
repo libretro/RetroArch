@@ -259,6 +259,28 @@ bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen)
    return true;
 }
 
+bool win32_window_create(void *data, unsigned style,
+      RECT *mon_rect, unsigned width,
+      unsigned height, bool fullscreen)
+{
+#ifndef _XBOX
+   driver_t   *driver       = driver_get_ptr();
+   g_hwnd = CreateWindowEx(0, "RetroArch", "RetroArch",
+         style,
+         info->fullscreen ? mon_rect.left : g_pos_x,
+         info->fullscreen ? mon_rect.top  : g_pos_y,
+         win_width, win_height,
+         NULL, NULL, NULL, data);
+   if (!g_hwnd)
+      return false;
+
+   driver->display_type  = RARCH_DISPLAY_WIN32;
+   driver->video_display = 0;
+   driver->video_window  = (uintptr_t)g_hwnd;
+#endif
+   return true;
+}
+
 static bool win32_browser(
       HWND owner,
       char *filename,
