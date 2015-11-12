@@ -111,7 +111,7 @@ bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
 #ifndef _XBOX1
    const D3DVERTEXELEMENT   *vertex_elements = (const D3DVERTEXELEMENT*)vertex_data;
    LPDIRECT3DVERTEXDECLARATION **vertex_decl = (LPDIRECT3DVERTEXDECLARATION**)decl_data;
-   if (SUCCEEDED(dev->CreateVertexDeclaration(vertex_elements, vertex_decl)))
+   if (SUCCEEDED(dev->CreateVertexDeclaration(vertex_elements, (IDirect3DVertexDeclaration9**)vertex_decl)))
       return true;
 #endif
    return false;
