@@ -34,6 +34,7 @@
 extern unsigned g_resize_width;
 extern unsigned g_resize_height;
 extern bool g_quit;
+extern bool g_restore_desktop;
 extern HWND g_hwnd;
 
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,

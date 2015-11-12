@@ -77,8 +77,6 @@ static unsigned g_interval;
 
 static dylib_t dll_handle = NULL; /* Handle to OpenGL32.dll */
 
-static bool g_restore_desktop;
-
 static void gfx_ctx_wgl_destroy(void *data);
 
 static BOOL (APIENTRY *p_swap_interval)(int);
