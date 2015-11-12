@@ -54,6 +54,10 @@ void create_gl_context(HWND hwnd);
 
 void win32_monitor_init(void);
 
+bool win32_set_video_mode(void *data,
+      unsigned width, unsigned height,
+      bool fullscreen)
+
 bool win32_monitor_set_fullscreen(unsigned width,
       unsigned height, unsigned refresh, char *dev_name);
 
