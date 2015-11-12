@@ -604,6 +604,8 @@ static bool d3d_construct(d3d_video_t *d3d,
 
    win32_monitor_info(&current_mon, &hm_to_use, &d3d->cur_mon_id);
    mon_rect = current_mon.rcMonitor;
+   g_resize_width  = info->width;
+   g_resize_height = info->height;
 
    windowed_full = settings->video.windowed_fullscreen;
 
@@ -642,8 +644,8 @@ static bool d3d_construct(d3d_video_t *d3d,
       if (windowed_full)
       {
          style = WS_EX_TOPMOST | WS_POPUP;
-         win_width  = mon_rect.right - mon_rect.left;
-         win_height = mon_rect.bottom - mon_rect.top;
+         g_resize_width  = win_width  = mon_rect.right - mon_rect.left;
+         g_resize_height = win_height = mon_rect.bottom - mon_rect.top;
       }
       else
       {
@@ -664,8 +666,8 @@ static bool d3d_construct(d3d_video_t *d3d,
       rect.right  = win_width;
       rect.bottom = win_height;
       AdjustWindowRect(&rect, style, FALSE);
-      win_width   = rect.right - rect.left;
-      win_height  = rect.bottom - rect.top;
+      g_resize_width  = win_width   = rect.right - rect.left;
+      g_resize_height = win_height  = rect.bottom - rect.top;
    }
 
    win32_window_create(d3d, style, &mon_rect, win_width,
