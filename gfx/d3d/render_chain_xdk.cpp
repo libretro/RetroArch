@@ -83,7 +83,7 @@ static bool xdk_renderchain_init_shader_fvf(void *data, void *pass_data)
       D3DDECL_END()
    };
 
-   if (FAILED(d3dr->CreateVertexDeclaration(VertexElements, &chain->vertex_decl)))
+   if (!d3d_vertex_declaration_new(d3dr, VertexElements, &chain->vertex_decl))
       return false;
 #endif
 

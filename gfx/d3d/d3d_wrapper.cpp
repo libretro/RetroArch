@@ -117,6 +117,14 @@ bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
    return false;
 }
 
+void d3d_vertex_declaration_free(void *vertex_data)
+{
+#ifndef _XBOX1
+   LPDIRECT3DVERTEXDECLARATION vertex_decl = (LPDIRECT3DVERTEXDECLARATION)vertex_data;
+   vertex_decl->Release();
+#endif
+}
+
 LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
       unsigned length, unsigned usage,
       unsigned fvf, D3DPOOL pool, void *handle)
