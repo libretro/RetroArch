@@ -349,7 +349,7 @@ static void d3d_set_viewport(void *data,
 
    d3d->final_viewport = viewport;
 
-   if (d3d->renderchain_driver && d3d->renderchain_data)
+   if (d3d && d3d->renderchain_driver && d3d->renderchain_data)
    {
       if (d3d->renderchain_driver->set_font_rect)
          d3d->renderchain_driver->set_font_rect(d3d, NULL);
@@ -650,7 +650,7 @@ static bool d3d_construct(d3d_video_t *d3d,
          style = WS_POPUP | WS_VISIBLE;
 
          if (!set_fullscreen(win_width, win_height, refresh, current_mon.szDevice))
-            goto error;
+			 {}
 
          /* Display settings might have changed, get new coordinates. */
          GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
@@ -668,8 +668,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    }
 
    d3d->hWnd = CreateWindowEx(0, "RetroArch", "RetroArch",
-         info->fullscreen ?
-         (WS_EX_TOPMOST | WS_POPUP) : WS_OVERLAPPEDWINDOW,
+         style,
          info->fullscreen ? mon_rect.left : CW_USEDEFAULT,
          info->fullscreen ? mon_rect.top  : CW_USEDEFAULT,
          win_width, win_height,
