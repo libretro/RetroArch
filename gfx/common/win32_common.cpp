@@ -267,9 +267,9 @@ bool win32_window_create(void *data, unsigned style,
    driver_t   *driver       = driver_get_ptr();
    g_hwnd = CreateWindowEx(0, "RetroArch", "RetroArch",
          style,
-         info->fullscreen ? mon_rect.left : g_pos_x,
-         info->fullscreen ? mon_rect.top  : g_pos_y,
-         win_width, win_height,
+         fullscreen ? mon_rect->left : g_pos_x,
+         fullscreen ? mon_rect->top  : g_pos_y,
+         width, height,
          NULL, NULL, NULL, data);
    if (!g_hwnd)
       return false;
