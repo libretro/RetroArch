@@ -105,6 +105,18 @@ void d3d_texture_free(LPDIRECT3DTEXTURE tex)
    tex = NULL;
 }
 
+bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
+      const void *vertex_data, void **decl_data)
+{
+#ifndef _XBOX1
+   const D3DVERTEXELEMENT   *vertex_elements = (const D3DVERTEXELEMENT*)vertex_data;
+   LPDIRECT3DVERTEXDECLARATION **vertex_decl = (LPDIRECT3DVERTEXDECLARATION**)decl_data;
+   if (SUCCEEDED(dev->CreateVertexDeclaration(vertex_elements, vertex_decl)))
+      return true;
+#endif
+   return false;
+}
+
 LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
       unsigned length, unsigned usage,
       unsigned fvf, D3DPOOL pool, void *handle)
