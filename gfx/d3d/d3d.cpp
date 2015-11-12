@@ -1287,7 +1287,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
 
 #ifndef _XBOX1
    d3d->dev->CreateVertexDeclaration(vElems, &vertex_decl);
-   d3d->dev->SetVertexDeclaration(vertex_decl);
+   d3d_set_vertex_declaration(d3d->dev, vertex_decl);
    vertex_decl->Release();
 #endif
 
