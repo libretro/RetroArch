@@ -44,8 +44,8 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
 
 unsigned g_resize_width;
 unsigned g_resize_height;
-unsigned g_pos_x = CW_USEDEFAULT;
-unsigned g_pos_y = CW_USEDEFAULT;
+static unsigned g_pos_x = CW_USEDEFAULT;
+static unsigned g_pos_y = CW_USEDEFAULT;
 bool g_resized;
 bool g_quit;
 HWND g_hwnd;
