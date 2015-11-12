@@ -46,7 +46,7 @@ unsigned g_resize_width;
 unsigned g_resize_height;
 static unsigned g_pos_x = CW_USEDEFAULT;
 static unsigned g_pos_y = CW_USEDEFAULT;
-bool g_resized;
+static bool g_resized;
 bool g_quit;
 HWND g_hwnd;
 

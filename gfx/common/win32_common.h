@@ -33,7 +33,6 @@
 
 extern unsigned g_resize_width;
 extern unsigned g_resize_height;
-extern bool g_resized;
 extern bool g_quit;
 extern HWND g_hwnd;
 
