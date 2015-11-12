@@ -44,7 +44,6 @@ LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
 
 LRESULT win32_menu_loop(HWND handle, WPARAM wparam);
 
-void win32_monitor_init(void);
 
 void win32_monitor_from_window(HWND data, bool destroy);
 
@@ -52,10 +51,12 @@ void win32_monitor_get_info(void);
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
 
-bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen);
-
 void create_gl_context(HWND hwnd);
 #endif
+
+void win32_monitor_init(void);
+
+bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen);
 
 bool win32_suppress_screensaver(void *data, bool enable);
 

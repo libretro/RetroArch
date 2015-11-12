@@ -96,13 +96,6 @@ static BOOL CALLBACK win32_monitor_enum_proc(HMONITOR hMonitor,
    return TRUE;
 }
 
-void win32_monitor_init(void)
-{
-   win32_monitor_count = 0;
-   EnumDisplayMonitors(NULL, NULL, win32_monitor_enum_proc, 0);
-
-   g_quit              = false;
-}
 
 void win32_monitor_from_window(HWND data, bool destroy)
 {
@@ -247,6 +240,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 
 bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen)
 {
+#ifndef _XBOX
    wndclass->cbSize        = sizeof(WNDCLASSEX);
    wndclass->style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
    wndclass->lpfnWndProc   = WndProc;
@@ -261,6 +255,7 @@ bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen)
 
    if (!RegisterClassEx(wndclass))
       return false;
+#endif
    return true;
 }
 
@@ -449,6 +444,16 @@ bool win32_get_metrics(void *data,
 
    return true;
 #endif
+}
+
+void win32_monitor_init(void)
+{
+#ifndef _XBOX
+   win32_monitor_count = 0;
+   EnumDisplayMonitors(NULL, NULL, win32_monitor_enum_proc, 0);
+#endif
+
+   g_quit              = false;
 }
 
 void win32_show_cursor(bool state)

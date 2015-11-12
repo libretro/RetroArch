@@ -593,11 +593,8 @@ static bool d3d_construct(d3d_video_t *d3d,
    d3d->menu->vert_coords[3] = -1;
 #endif
 
-#if defined(HAVE_WINDOW) && !defined(_XBOX)
    memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
-
    win32_window_init(&d3d->windowClass, true);
-#endif
 
 #ifdef HAVE_MONITOR
    bool windowed_full;
