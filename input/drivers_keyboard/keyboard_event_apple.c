@@ -49,6 +49,7 @@ static const unsigned char MAC_NATIVE_TO_HID[128] = {
 #define HIDKEY(X) (X < 128) ? MAC_NATIVE_TO_HID[X] : 0
 #endif
 
+#if TARGET_OS_IPHONE
 static bool handle_small_keyboard(unsigned* code, bool down)
 {
    static uint8_t mapping[128];
@@ -125,8 +126,7 @@ static void handle_icade_event(unsigned keycode)
    driver_t *driver = driver_get_ptr();
    cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
       
-   if (apple->icade_enabled && (keycode < 0x20)
-         && (icade_map[keycode].button >= 0))
+   if ((keycode < 0x20) && (icade_map[keycode].button >= 0))
    {
       const int button = icade_map[keycode].button;
       
@@ -136,6 +136,7 @@ static void handle_icade_event(unsigned keycode)
          BIT32_SET(apple->icade_buttons, button);
    }
 }
+#endif
 
 void cocoa_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
@@ -148,15 +149,14 @@ void cocoa_input_keyboard_event(bool down,
 
    code = HIDKEY(code);
 
+#if TARGET_OS_IPHONE
    if (apple->icade_enabled)
-   {
       handle_icade_event(code);
-      return;
-   }
 
    if (apple->small_keyboard_enabled && 
-      handle_small_keyboard(&code, down))
+         handle_small_keyboard(&code, down))
       character = 0;
+#endif
    
    if (code == 0 || code >= MAX_KEYS)
       return;
