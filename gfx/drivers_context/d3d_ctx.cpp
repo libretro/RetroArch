@@ -91,7 +91,7 @@ static void gfx_ctx_d3d_update_title(void *data)
 #ifndef _XBOX
       d3d_video_t *d3d     = (d3d_video_t*)data;
 
-      SetWindowText(d3d->hWnd, buf);
+      SetWindowText(g_hwnd, buf);
 #endif
    }
 
@@ -138,7 +138,7 @@ static bool gfx_ctx_d3d_has_focus(void *data)
    d3d_video_t *d3d = (d3d_video_t*)data;
    if (!d3d)
       return false;
-   return GetFocus() == d3d->hWnd;
+   return GetFocus() == g_hwnd;
 }
 
 static bool gfx_ctx_d3d_suppress_screensaver(void *data, bool enable)

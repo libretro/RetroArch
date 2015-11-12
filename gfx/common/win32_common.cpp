@@ -225,7 +225,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
             if (!strcmp(video_driver, "d3d"))
             {
                d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
-               d3dr = d3d->hWnd;
+               d3dr = g_hwnd;
             }
             LRESULT ret = win32_menu_loop(d3dr, wparam);
             (void)ret;
