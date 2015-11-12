@@ -55,23 +55,28 @@ typedef struct
    uint32_t key_state[MAX_KEYS];
 
    uint32_t buttons[MAX_USERS];
-   uint32_t mfi_buttons[MAX_USERS];
    int16_t axes[MAX_USERS][4];
    int8_t  hats[NUM_HATS][2];
+
+#if TARGET_OS_IPHONE
+   uint32_t mfi_buttons[MAX_USERS];
 
    bool icade_enabled;
    bool small_keyboard_enabled;
    bool small_keyboard_active;
    uint32_t icade_buttons;
+#endif
     
    const input_device_driver_t *joypad;
 } cocoa_input_data_t;
 
+#if TARGET_OS_IPHONE
 void cocoa_input_enable_icade(bool on);
 
 void cocoa_input_enable_small_keyboard(bool on);
 
 void cocoa_input_reset_icade_buttons(void);
+#endif
 
 #ifdef __cplusplus
 extern "C" {
