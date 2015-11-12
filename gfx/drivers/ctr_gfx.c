@@ -536,7 +536,8 @@ static bool ctr_frame(void* data, const void* frame,
    {
       if(((((u32)(frame)) >= 0x14000000 && ((u32)(frame)) < 0x40000000)) /* frame in linear memory */
          && !((u32)frame & 0x7F)                                         /* 128-byte aligned */
-         && !((pitch) & 0xF))                                            /* 16-byte aligned */
+         && !(pitch & 0xF)                                               /* 16-byte aligned */
+         && (pitch > 0x40))
       {
          /* can copy the buffer directly with the GPU */
          ctrGuCopyImage(false, frame, pitch / (ctr->rgb32? 4: 2), height, ctr->rgb32 ? CTRGU_RGBA8: CTRGU_RGB565, false,
@@ -562,6 +563,12 @@ static bool ctr_frame(void* data, const void* frame,
 
       }
 
+      ctr->frame_coords->u = width;
+      ctr->frame_coords->v = height;
+      GSPGPU_FlushDataCache(ctr->frame_coords, sizeof(ctr_vertex_t));
+
+      ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->frame_coords));
+      ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->scale_vector, 1);
    }
 
    ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(ctr->texture_swizzled), ctr->texture_width, ctr->texture_height,
@@ -569,13 +576,6 @@ static bool ctr_frame(void* data, const void* frame,
                               : GPU_TEXTURE_MAG_FILTER(GPU_NEAREST) | GPU_TEXTURE_MIN_FILTER(GPU_NEAREST)) |
                   GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
                   ctr->rgb32 ? GPU_RGBA8: GPU_RGB565);
-
-   ctr->frame_coords->u = width;
-   ctr->frame_coords->v = height;
-   GSPGPU_FlushDataCache(ctr->frame_coords, sizeof(ctr_vertex_t));
-
-   ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->frame_coords));
-   ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->scale_vector, 1);
 
    /* ARGB --> RGBA */
    if (ctr->rgb32)
