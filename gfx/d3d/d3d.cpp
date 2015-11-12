@@ -622,15 +622,47 @@ static bool d3d_construct(d3d_video_t *d3d,
 
 #ifndef _XBOX
 #ifdef HAVE_WINDOW
+   DWORD style;
    unsigned win_width, win_height;
+   float refresh_mod;
+   unsigned refresh;
    RECT rect = {0};
 
    video_driver_get_size(&win_width, &win_height);
 
-   if (!info->fullscreen)
+   /* Windows only reports the refresh rates for modelines as 
+    * an integer, so video.refresh_rate needs to be rounded. Also, account 
+    * for black frame insertion using video.refresh_rate set to half
+    * of the display refresh rate, as well as higher vsync swap intervals. */
+   refresh_mod = settings->video.black_frame_insertion ? 2.0f : 1.0f;
+   refresh     = roundf(settings->video.refresh_rate * refresh_mod * settings->video.swap_interval);
+
+   if (info->fullscreen)
    {
-      video_driver_get_size((unsigned*)&rect.right, (unsigned*)&rect.bottom);
-      AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
+      if (windowed_full)
+      {
+         style = WS_EX_TOPMOST | WS_POPUP;
+         win_width  = mon_rect.right - mon_rect.left;
+         win_height = mon_rect.bottom - mon_rect.top;
+      }
+      else
+      {
+         style = WS_POPUP | WS_VISIBLE;
+
+         if (!set_fullscreen(win_width, win_height, refresh, current_mon.szDevice))
+            goto error;
+
+         /* Display settings might have changed, get new coordinates. */
+         GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
+         mon_rect = current_mon.rcMonitor;
+      }
+   }
+   else
+   {
+      style = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
+      rect.right  = win_width;
+      rect.bottom = win_height;
+      AdjustWindowRect(&rect, style, FALSE);
       win_width   = rect.right - rect.left;
       win_height  = rect.bottom - rect.top;
    }
