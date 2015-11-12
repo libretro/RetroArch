@@ -475,8 +475,8 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
       }
    }
 
-   if (!d3d_vertex_declaration_new(chain->dev, decl,
-            &pass->vertex_decl))
+   if (FAILED(chain->dev->CreateVertexDeclaration(
+               decl, &pass->vertex_decl)))
       return false;
 
    return true;
@@ -1372,7 +1372,6 @@ static void renderchain_render_pass(
          translate_filter(pass->info.pass->filter));
 
    d3d_set_vertex_declaration(d3dr, pass->vertex_decl);
-
    for (i = 0; i < 4; i++)
       d3d_set_stream_source(d3dr, i,
             pass->vertex_buf, 0, sizeof(Vertex));
