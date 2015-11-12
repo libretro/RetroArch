@@ -285,7 +285,11 @@ bool video_driver_set_shader(enum rarch_shader_type type,
 static void deinit_video_filter(void)
 {
    rarch_softfilter_free(video_state.filter.filter);
+#ifdef _3DS
+   linearFree(video_state.filter.buffer);
+#else
    free(video_state.filter.buffer);
+#endif
    memset(&video_state.filter, 0, sizeof(video_state.filter));
 }
 
@@ -344,7 +348,11 @@ static void init_video_filter(enum retro_pixel_format colfmt)
       sizeof(uint32_t) : sizeof(uint16_t);
 
    /* TODO: Aligned output. */
+#ifdef _3DS
+   video_state.filter.buffer = linearMemAlign(width * height * video_state.filter.out_bpp, 0x80);
+#else
    video_state.filter.buffer = malloc(width * height * video_state.filter.out_bpp);
+#endif
    if (!video_state.filter.buffer)
       goto error;
 
