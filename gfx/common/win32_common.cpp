@@ -617,7 +617,7 @@ bool win32_set_video_mode(void *data,
          style = WS_POPUP | WS_VISIBLE;
 
          if (!win32_monitor_set_fullscreen(width, height, refresh, current_mon.szDevice))
-            goto error;
+            return false;
 
          /* Display settings might have changed, get new coordinates. */
          GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
