@@ -53,6 +53,9 @@ void create_gl_context(HWND hwnd);
 
 void win32_monitor_init(void);
 
+bool win32_monitor_set_fullscreen(unsigned width,
+      unsigned height, unsigned refresh, char *dev_name);
+
 bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen);
 
 bool win32_window_create(void *data, unsigned style,

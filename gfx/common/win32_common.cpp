@@ -478,6 +478,23 @@ void win32_monitor_init(void)
    g_quit              = false;
 }
 
+bool win32_monitor_set_fullscreen(unsigned width, unsigned height, unsigned refresh, char *dev_name)
+{
+#ifndef _XBOX
+   DEVMODE devmode;
+
+   memset(&devmode, 0, sizeof(devmode));
+   devmode.dmSize       = sizeof(DEVMODE);
+   devmode.dmPelsWidth  = width;
+   devmode.dmPelsHeight = height;
+   devmode.dmDisplayFrequency = refresh;
+   devmode.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
+
+   RARCH_LOG("[WGL]: Setting fullscreen to %ux%u @ %uHz on device %s.\n", width, height, refresh, dev_name);
+   return ChangeDisplaySettingsEx(dev_name, &devmode, NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_SUCCESSFUL;
+#endif
+}
+
 void win32_show_cursor(bool state)
 {
 #ifndef _XBOX

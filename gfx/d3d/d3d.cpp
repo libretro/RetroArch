@@ -649,7 +649,8 @@ static bool d3d_construct(d3d_video_t *d3d,
       {
          style = WS_POPUP | WS_VISIBLE;
 
-         if (!set_fullscreen(win_width, win_height, refresh, current_mon.szDevice))
+         if (!win32_monitor_set_fullscreen(win_width, win_height,
+                  refresh, current_mon.szDevice))
 			 {}
 
          /* Display settings might have changed, get new coordinates. */

@@ -322,22 +322,6 @@ static bool gfx_ctx_wgl_init(void *data)
    return true;
 }
 
-static bool set_fullscreen(unsigned width, unsigned height, unsigned refresh, char *dev_name)
-{
-   DEVMODE devmode;
-
-   memset(&devmode, 0, sizeof(devmode));
-   devmode.dmSize       = sizeof(DEVMODE);
-   devmode.dmPelsWidth  = width;
-   devmode.dmPelsHeight = height;
-   devmode.dmDisplayFrequency = refresh;
-   devmode.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
-
-   RARCH_LOG("[WGL]: Setting fullscreen to %ux%u @ %uHz on device %s.\n", width, height, refresh, dev_name);
-   return ChangeDisplaySettingsEx(dev_name, &devmode, NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_SUCCESSFUL;
-}
-
-
 static bool gfx_ctx_wgl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
@@ -382,7 +366,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
       {
          style = WS_POPUP | WS_VISIBLE;
 
-         if (!set_fullscreen(width, height, refresh, current_mon.szDevice))
+         if (!win32_monitor_set_fullscreen(width, height, refresh, current_mon.szDevice))
             goto error;
 
          /* Display settings might have changed, get new coordinates. */
