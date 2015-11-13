@@ -261,8 +261,6 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
    [self.bindTimer invalidate];
    self.bindTimer = nil;
-   
-   cocoa_input_reset_icade_buttons();
 }
 
 - (void)alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex

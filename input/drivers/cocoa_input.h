@@ -61,15 +61,10 @@ typedef struct
 #if TARGET_OS_IPHONE
    uint32_t mfi_buttons[MAX_USERS];
    bool small_keyboard_active;
-   uint32_t icade_buttons;
 #endif
     
    const input_device_driver_t *joypad;
 } cocoa_input_data_t;
-
-#if TARGET_OS_IPHONE
-void cocoa_input_reset_icade_buttons(void);
-#endif
 
 #ifdef __cplusplus
 extern "C" {
