@@ -460,6 +460,10 @@ static void config_set_defaults(void)
    settings->history_list_enable         = def_history_list_enable;
    settings->load_dummy_on_core_shutdown = load_dummy_on_core_shutdown;
 
+#if TARGET_OS_IPHONE
+   settings->input.icade_enable          = true;
+   settings->input.small_keyboard_enable = false;
+#endif
 #ifdef HAVE_FFMPEG
    settings->multimedia.builtin_mediaplayer_enable  = true;
 #else
@@ -1570,6 +1574,11 @@ static bool config_load_file(const char *path, bool set_defaults)
       CONFIG_GET_BOOL_BASE(conf, global, verbosity, "log_verbosity");
 
    CONFIG_GET_BOOL_BASE(conf, global, perfcnt_enable, "perfcnt_enable");
+
+#if TARGET_OS_IPHONE
+   CONFIG_GET_BOOL_BASE(conf, settings, input.small_keyboard_enable, "small_keyboard_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, input.icade_enable,          "icade_enable");
+#endif
 
    config_get_path(conf, "recording_output_directory", global->record.output_dir,
          sizeof(global->record.output_dir));
@@ -2779,6 +2788,11 @@ bool config_save_file(const char *path)
    config_set_int(conf, "libretro_log_level", settings->libretro_log_level);
    config_set_bool(conf, "log_verbosity", global->verbosity);
    config_set_bool(conf, "perfcnt_enable", global->perfcnt_enable);
+
+#if TARGET_OS_IPHONE
+   config_set_bool(conf, "small_keyboard_enable", settings->input.small_keyboard_enable);
+   config_set_bool(conf, "icade_enable", settings->input.icade_enable);
+#endif
 
    config_set_bool(conf, "core_set_supports_no_game_enable",
          settings->core.set_supports_no_game_enable);

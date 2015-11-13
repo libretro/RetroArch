@@ -151,9 +151,11 @@ void cocoa_input_keyboard_event(bool down,
 
 #if TARGET_OS_IPHONE
    if (apple->icade_enabled)
+   {
       handle_icade_event(code);
-
-   if (apple->small_keyboard_enabled && 
+      return;
+   }
+   else if (apple->small_keyboard_enabled && 
          handle_small_keyboard(&code, down))
       character = 0;
 #endif
