@@ -26,10 +26,6 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
-      case MENU_LABEL_INPUT_ICADE_ENABLE:
-         return "input_icade_enable";
-      case MENU_LABEL_INPUT_SMALL_KEYBOARD_ENABLE:
-         return "input_small_keyboard_enable";
       case MENU_LABEL_SAVE_CURRENT_CONFIG:
          return "save_current_config";
       case MENU_LABEL_STATE_SLOT:
@@ -694,10 +690,6 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
-      case MENU_LABEL_VALUE_INPUT_ICADE_ENABLE:
-         return "iCade Enable";
-      case MENU_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE:
-         return "Small Keyboard Enable";
       case MENU_LABEL_VALUE_SAVE_CURRENT_CONFIG:
          return "Save Current Config";
       case MENU_LABEL_VALUE_STATE_SLOT:

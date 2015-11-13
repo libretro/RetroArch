@@ -4929,34 +4929,6 @@ static bool setting_append_list_input_options(
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1, MAX_USERS, 1, true, true);
 
-#if TARGET_OS_IPHONE
-   CONFIG_BOOL(
-         settings->input.icade_enable,
-         menu_hash_to_str(MENU_LABEL_INPUT_ICADE_ENABLE),
-         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_ICADE_ENABLE),
-         true,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-
-   CONFIG_BOOL(
-         settings->input.small_keyboard_enable,
-         menu_hash_to_str(MENU_LABEL_INPUT_SMALL_KEYBOARD_ENABLE),
-         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE),
-         false,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-#endif
-
 #ifdef ANDROID
    CONFIG_BOOL(
          settings->input.back_as_menu_toggle_enable,

@@ -390,8 +390,7 @@ enum
 
 - (void)refreshSystemConfig
 {
-   settings_t *settings = config_get_ptr();
-   bool is_btstack;
+   bool small_keyboard, is_icade, is_btstack;
     
    /* Get enabled orientations */
    apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
@@ -402,10 +401,12 @@ enum
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown;
 
    /* Set bluetooth mode */
+   small_keyboard = !(strcmp(apple_frontend_settings.bluetooth_mode, "small_keyboard"));
+   is_icade       = !(strcmp(apple_frontend_settings.bluetooth_mode, "icade"));
    is_btstack     = !(strcmp(apple_frontend_settings.bluetooth_mode, "btstack"));
        
-   cocoa_input_enable_small_keyboard(settings->input.small_keyboard_enable);
-   cocoa_input_enable_icade(settings->input.icade_enable);
+   cocoa_input_enable_small_keyboard(small_keyboard);
+   cocoa_input_enable_icade(is_icade);
    btstack_set_poweron(is_btstack);
 }
 
