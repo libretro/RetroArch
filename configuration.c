@@ -461,9 +461,10 @@ static void config_set_defaults(void)
    settings->load_dummy_on_core_shutdown = load_dummy_on_core_shutdown;
 
 #if TARGET_OS_IPHONE
-   settings->input.icade_enable          = true;
-   settings->input.small_keyboard_enable = false;
+   settings->input.small_keyboard_enable   = false;
 #endif
+   settings->input.keyboard_gamepad_enable       = true;
+   settings->input.keyboard_gamepad_mapping_type = 1;
 #ifdef HAVE_FFMPEG
    settings->multimedia.builtin_mediaplayer_enable  = true;
 #else
@@ -1576,9 +1577,10 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, global, perfcnt_enable, "perfcnt_enable");
 
 #if TARGET_OS_IPHONE
-   CONFIG_GET_BOOL_BASE(conf, settings, input.small_keyboard_enable, "small_keyboard_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, input.icade_enable,          "icade_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, input.small_keyboard_enable,   "small_keyboard_enable");
 #endif
+   CONFIG_GET_BOOL_BASE(conf, settings, input.keyboard_gamepad_enable, "keyboard_gamepad_enable");
+   CONFIG_GET_INT_BASE(conf, settings, input.keyboard_gamepad_mapping_type, "keyboard_gamepad_mapping_type");
 
    config_get_path(conf, "recording_output_directory", global->record.output_dir,
          sizeof(global->record.output_dir));
@@ -2790,9 +2792,10 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "perfcnt_enable", global->perfcnt_enable);
 
 #if TARGET_OS_IPHONE
-   config_set_bool(conf, "small_keyboard_enable", settings->input.small_keyboard_enable);
-   config_set_bool(conf, "icade_enable", settings->input.icade_enable);
+   config_set_bool(conf, "small_keyboard_enable",   settings->input.small_keyboard_enable);
 #endif
+   config_set_bool(conf, "keyboard_gamepad_enable", settings->input.keyboard_gamepad_enable);
+   config_set_int(conf, "keyboard_gamepad_mapping_type", settings->input.keyboard_gamepad_mapping_type);
 
    config_set_bool(conf, "core_set_supports_no_game_enable",
          settings->core.set_supports_no_game_enable);

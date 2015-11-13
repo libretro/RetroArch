@@ -252,9 +252,10 @@ typedef struct settings
       bool back_as_menu_toggle_enable;
 
 #if TARGET_OS_IPHONE
-      bool icade_enable;
       bool small_keyboard_enable;
 #endif
+      bool keyboard_gamepad_enable;
+      unsigned keyboard_gamepad_mapping_type;
    } input;
 
    struct

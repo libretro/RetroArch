@@ -22,6 +22,9 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE                   0x507c52f3U
+#define MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE                         0x3665cbb0U
+
 #define MENU_LABEL_CHEEVOS_DESCRIPTION                                         0x7e00e0f5U
 
 #define MENU_LABEL_VALUE_CHEEVOS_DESCRIPTION                                   0xab3975d6U

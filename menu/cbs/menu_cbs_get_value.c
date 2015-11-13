@@ -605,6 +605,40 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
       snprintf(s, len, "%u", current + 1);
 }
 
+static void menu_action_setting_disp_set_label_menu_input_keyboard_gamepad_mapping_type(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t         *settings = config_get_ptr();
+   unsigned width = 0, height = 0;
+
+   *w = 19;
+   *s = '\0';
+
+   (void)width;
+   (void)height;
+
+   strlcpy(s2, path, len2);
+
+   switch (settings->input.keyboard_gamepad_mapping_type)
+   {
+      case 0:
+         strlcpy(s, "None", len);
+         break;
+      case 1:
+         strlcpy(s, "iPega PG-9017", len);
+         break;
+      case 2:
+         strlcpy(s, "8-bitty", len);
+         break;
+   }
+}
+
 static void menu_action_setting_disp_set_label_menu_video_resolution(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1051,6 +1085,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
       case MENU_LABEL_SCREEN_RESOLUTION:
          BIND_ACTION_GET_VALUE(cbs,
             menu_action_setting_disp_set_label_menu_video_resolution);
+         break;
+      case MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_menu_input_keyboard_gamepad_mapping_type);
          break;
       case MENU_LABEL_CONTENT_COLLECTION_LIST:
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
