@@ -242,7 +242,7 @@ void cocoa_input_keyboard_event(bool down,
    code = HIDKEY(code);
 
 #if TARGET_OS_IPHONE
-   if (settings->input.icade_enable)
+   if (settings->input.keyboard_gamepad_enable)
    {
       if (handle_icade_event(&code, &down))
          character = 0;
