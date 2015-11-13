@@ -121,9 +121,10 @@ static icade_map_t icade_maps[MAX_ICADE_PROFILES][MAX_ICADE_KEYS];
 
 static bool handle_icade_event(unsigned *code, bool *keydown)
 {
+   settings_t *settings = config_get_ptr();
    static bool initialized = false;
    bool ret = false;
-   unsigned kb_type_idx = 1;
+   unsigned kb_type_idx = settings->input.keyboard_gamepad_mapping_type;
 
    if (!initialized)
    {
