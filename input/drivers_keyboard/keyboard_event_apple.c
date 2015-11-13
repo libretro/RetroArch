@@ -106,35 +106,82 @@ static bool handle_small_keyboard(unsigned* code, bool down)
    return false;
 }
 
-static void handle_icade_event(unsigned keycode)
+extern const struct rarch_key_map rarch_key_map_apple_hid[];
+
+typedef struct icade_map
 {
-   static const struct
+    bool up;
+    enum retro_key key;
+} icade_map_t;
+
+#define MAX_ICADE_PROFILES 2
+#define MAX_ICADE_KEYS     0x100
+
+static icade_map_t icade_maps[MAX_ICADE_PROFILES][MAX_ICADE_KEYS];
+
+static bool handle_icade_event(unsigned *code, bool *keydown)
+{
+    static bool initialized = false;
+    bool ret = false;
+    unsigned kb_type_idx = 1;
+    
+    if (!initialized)
+    {
+        unsigned i;
+        unsigned j = 0;
+        
+        for (j = 0; j < MAX_ICADE_PROFILES; j++)
+        {
+        for (i = 0; i < MAX_ICADE_KEYS; i++)
+        {
+            icade_maps[j][i].key = RETROK_UNKNOWN;
+            icade_maps[j][i].up  = false;
+        }
+        }
+        
+        /* iPega PG-9017 */
+        j = 1;
+        
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_a)].key  = RETROK_LEFT;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_c)].key  = RETROK_RIGHT;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_d)].key  = RETROK_RIGHT;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_e)].key  = RETROK_UP;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_f)].key  = RETROK_z;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_h)].key = RETROK_x;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_i)].key = RETROK_q;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_j)].key = RETROK_a;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_k)].key = RETROK_w;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_m)].key = RETROK_q;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_n)].key = RETROK_a;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_p)].key = RETROK_w;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_q)].key = RETROK_LEFT;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_r)].key = RETROK_x;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_u)].key = RETROK_z;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_w)].key = RETROK_UP;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_x)].key = RETROK_DOWN;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_z)].key = RETROK_DOWN;
+            
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_c)].up   = true;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_e)].up   = true;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_f)].up   = true;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_m)].up  = true;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_n)].up  = true;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_p)].up  = true;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_q)].up  = true;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_r)].up  = true;
+        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_z)].up  = true;
+        
+        initialized = true;
+    }
+
+   if ((*code < 0x20) && (icade_maps[kb_type_idx][*code].key != RETROK_UNKNOWN))
    {
-      bool up;
-      int button;
-   }  icade_map[0x20] =
-   {
-      { false, -1 }, { false, -1 }, { false, -1 }, { false, -1 }, // 0
-      { false,  2 }, { false, -1 }, { true ,  3 }, { false,  3 }, // 4
-      { true ,  0 }, { true,   5 }, { true ,  7 }, { false,  8 }, // 8
-      { false,  6 }, { false,  9 }, { false, 10 }, { false, 11 }, // C
-      { true ,  6 }, { true ,  9 }, { false,  7 }, { true,  10 }, // 0
-      { true ,  2 }, { true ,  8 }, { false, -1 }, { true ,  4 }, // 4
-      { false,  5 }, { true , 11 }, { false,  0 }, { false,  1 }, // 8
-      { false,  4 }, { true ,  1 }, { false, -1 }, { false, -1 }  // C
-   };
-   driver_t *driver = driver_get_ptr();
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
-      
-   if ((keycode < 0x20) && (icade_map[keycode].button >= 0))
-   {
-      const int button = icade_map[keycode].button;
-      
-      if (icade_map[keycode].up)
-         BIT32_CLEAR(apple->icade_buttons, button);
-      else
-         BIT32_SET(apple->icade_buttons, button);
+       *keydown     = icade_maps[kb_type_idx][*code].up ? false : true;
+       ret          = true;
+       *code        = input_keymaps_translate_rk_to_keysym(icade_maps[kb_type_idx][*code].key);
    }
+    
+    return ret;
 }
 #endif
 
@@ -153,8 +200,10 @@ void cocoa_input_keyboard_event(bool down,
 #if TARGET_OS_IPHONE
    if (settings->input.icade_enable)
    {
-      handle_icade_event(code);
-      return;
+      if (handle_icade_event(&code, &down))
+          character = 0;
+      else
+          code      = 0;
    }
    else if (settings->input.small_keyboard_enable)
    {
