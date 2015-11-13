@@ -222,23 +222,11 @@ int32_t cocoa_input_find_any_axis(uint32_t port)
 static int16_t cocoa_input_is_pressed(cocoa_input_data_t *apple, unsigned port_num,
    const struct retro_keybind *binds, unsigned id)
 {
-#if TARGET_OS_IPHONE
-   settings_t *settings = config_get_ptr();
-#endif
-
    if (id < RARCH_BIND_LIST_END)
    {
       const struct retro_keybind *bind = &binds[id];
       unsigned bit = input_keymaps_translate_rk_to_keysym(bind->key);
-      if (!bind->valid)
-         return 0;
-      if (apple->key_state[bit])
-         return 1;
-#if TARGET_OS_IPHONE
-      if (settings->input.icade_enable)
-         if (apple->icade_buttons & (1 << bit))
-            return 1;
-#endif
+      return bind->valid && apple->key_state[bit];
    }
    return 0;
 }
