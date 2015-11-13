@@ -60,6 +60,9 @@ typedef struct
 
 #if TARGET_OS_IPHONE
    uint32_t mfi_buttons[MAX_USERS];
+
+   bool icade_enabled;
+   bool small_keyboard_enabled;
    bool small_keyboard_active;
    uint32_t icade_buttons;
 #endif
@@ -68,6 +71,10 @@ typedef struct
 } cocoa_input_data_t;
 
 #if TARGET_OS_IPHONE
+void cocoa_input_enable_icade(bool on);
+
+void cocoa_input_enable_small_keyboard(bool on);
+
 void cocoa_input_reset_icade_buttons(void);
 #endif
 

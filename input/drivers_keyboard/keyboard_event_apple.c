@@ -142,7 +142,6 @@ void cocoa_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
    driver_t *driver = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
    cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
 
    if (!apple)
@@ -151,16 +150,14 @@ void cocoa_input_keyboard_event(bool down,
    code = HIDKEY(code);
 
 #if TARGET_OS_IPHONE
-   if (settings->input.icade_enable)
+   if (apple->icade_enabled)
    {
       handle_icade_event(code);
       return;
    }
-   else if (settings->input.small_keyboard_enable)
-   {
-      if (handle_small_keyboard(&code, down))
-         character = 0;
-   }
+   else if (apple->small_keyboard_enabled && 
+         handle_small_keyboard(&code, down))
+      character = 0;
 #endif
    
    if (code == 0 || code >= MAX_KEYS)
