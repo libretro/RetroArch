@@ -147,7 +147,6 @@ int32_t cocoa_input_find_any_key(void)
 static int cocoa_input_find_any_button_ret(cocoa_input_data_t *apple,
    unsigned buttons, unsigned port)
 {
-   settings_t *settings = config_get_ptr();
    unsigned i;
 
    if (buttons)
@@ -233,7 +232,6 @@ static void *cocoa_input_init(void)
 static void cocoa_input_poll(void *data)
 {
    uint32_t i;
-   settings_t *settings      = config_get_ptr();
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
 
    for (i = 0; i < apple->touch_count; i++)
