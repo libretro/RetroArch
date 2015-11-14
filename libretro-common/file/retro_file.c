@@ -68,6 +68,7 @@
 #endif
 
 #include <retro_file.h>
+#include <memmap.h>
 
 #if 1
 #define HAVE_BUFFERED_IO 1
@@ -83,6 +84,11 @@ struct RFILE
    unsigned hints;
 #if defined(HAVE_BUFFERED_IO)
    FILE *fp;
+#endif
+#if defined(HAVE_MMAP)
+   uint8_t *mapped;
+   uint64_t mappos;
+   uint64_t mapsize;
 #endif
    int fd;
 #endif
@@ -119,6 +125,13 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 
    stream->hints = mode;
 
+#ifdef HAVE_MMAP
+   if (stream->hints & RFILE_HINT_MMAP && (stream->hints & 0xff) == RFILE_MODE_READ)
+      stream->hints |= RFILE_HINT_UNBUFFERED;
+   else
+#endif
+      stream->hints &= ~RFILE_HINT_MMAP;
+
    switch (mode)
    {
       case RFILE_MODE_READ:
@@ -132,9 +145,9 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 #if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
             mode_str = "rb";
-         else
 #endif
-            flags    = O_RDONLY;
+         /* No "else" here */
+         flags    = O_RDONLY;
 #endif
          break;
       case RFILE_MODE_WRITE:
@@ -148,8 +161,8 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 #if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
             mode_str = "wb";
-         else
 #endif
+         else
             flags    = O_WRONLY | O_CREAT | O_TRUNC | S_IRUSR | S_IWUSR;
 #endif
          break;
@@ -164,8 +177,8 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 #if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
             mode_str = "w+";
-         else
 #endif
+         else
          {
             flags    = O_RDWR;
 #ifdef _WIN32
@@ -194,6 +207,33 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
       stream->fd = open(path, flags);
       if (stream->fd == -1)
          goto error;
+#ifdef HAVE_MMAP
+      if (stream->hints & RFILE_HINT_MMAP)
+      {
+         stream->mappos  = 0;
+         stream->mapped  = NULL;
+         stream->mapsize = 0;
+
+         if (retro_fseek(stream, 0, SEEK_END) != 0)
+            goto error;
+
+         stream->mapsize = retro_ftell(stream);
+         if (stream->mapsize == (uint64_t)-1)
+            goto error;
+
+         retro_frewind(stream);
+
+         stream->mapped = mmap((void*)0, stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0);
+
+         if (stream->mapped == MAP_FAILED)
+         {
+#ifdef RARCH_INTERNAL
+            RARCH_WARN("mmap()ing %s failed: %s\n", path, strerror(errno));
+#endif
+            stream->hints &= ~RFILE_HINT_MMAP;
+         }
+      }
+#endif
    }
 #endif
 
@@ -233,10 +273,46 @@ ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence)
       return fseek(stream->fp, (long)offset, whence);
    else
 #endif
-   {
-      ret = lseek(stream->fd, offset, whence);
-      return ret == -1 ? -1 : 0;
-   }
+#ifdef HAVE_MMAP
+      /* Need to check stream->mapped because this function is called in retro_fopen() */
+      if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
+      {
+         switch (whence)
+         {
+            case SEEK_SET:
+               if (offset < 0)
+                  offset = 0;
+
+               stream->mappos = offset;
+               break;
+
+            case SEEK_CUR:
+               if (offset < 0 && stream->mappos + offset > stream->mappos)
+                  stream->mappos = 0;
+               else
+                  stream->mappos += offset;
+               break;
+
+            case SEEK_END:
+               if (offset < 0)
+                  offset = 0;
+
+               if (stream->mapsize - offset > stream->mapsize)
+                  stream->mappos = 0;
+               else
+                  stream->mappos = stream->mapsize - offset;
+
+               break;
+         }
+
+         return 0;
+      }
+      else
+#endif
+      {
+         ret = lseek(stream->fd, offset, whence);
+         return ret == -1 ? -1 : 0;
+      }
 #endif
 }
 
@@ -257,7 +333,13 @@ ssize_t retro_ftell(RFILE *stream)
       return ftell(stream->fp);
    else
 #endif
-      return lseek(stream->fd, 0, SEEK_CUR);
+#ifdef HAVE_MMAP
+      /* Need to check stream->mapped because this function is called in retro_fopen() */
+      if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
+         return stream->mappos;
+      else
+#endif
+         return lseek(stream->fd, 0, SEEK_CUR);
 #endif
 }
 
@@ -283,7 +365,20 @@ ssize_t retro_fread(RFILE *stream, void *s, size_t len)
       return fread(s, 1, len, stream->fp);
    else
 #endif
-      return read(stream->fd, s, len);
+#ifdef HAVE_MMAP
+      if (stream->hints & RFILE_HINT_MMAP)
+      {
+         if (stream->mappos + len > stream->mapsize)
+            len = stream->mapsize - stream->mappos;
+
+         memcpy(s, &stream->mapped[stream->mappos], len);
+         stream->mappos += len;
+
+         return len;
+      }
+      else
+#endif
+         return read(stream->fd, s, len);
 #endif
 }
 
@@ -304,7 +399,12 @@ ssize_t retro_fwrite(RFILE *stream, const void *s, size_t len)
       return fwrite(s, 1, len, stream->fp);
    else
 #endif
-      return write(stream->fd, s, len);
+#ifdef HAVE_MMAP
+      if (stream->hints & RFILE_HINT_MMAP)
+         return -1;
+      else
+         return write(stream->fd, s, len);
+#endif
 #endif
 }
 
@@ -328,6 +428,11 @@ int retro_fclose(RFILE *stream)
    }
    else
 #endif
+#ifdef HAVE_MMAP
+      if (stream->hints & RFILE_HINT_MMAP)
+         munmap(stream->mapped, stream->mapsize);
+#endif
+
       if (stream->fd > 0)
          close(stream->fd);
 #endif
