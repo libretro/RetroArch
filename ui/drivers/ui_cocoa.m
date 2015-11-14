@@ -43,12 +43,21 @@ void apple_rarch_exited(void)
 
 - (void)sendEvent:(NSEvent *)event
 {
+   unsigned kbt;
    NSEventType event_type;
    cocoa_input_data_t *apple = NULL;
    driver_t *driver = driver_get_ptr();
    if (!driver)
       return;
    [super sendEvent:event];
+    
+    EventRef ce = (EventRef)[event eventRef];
+    if (ce)
+    {
+        GetEventParameter(ce, kEventParamKeyboardType,
+                          typeUInt32, NULL, sizeof(kbt), NULL, &kbt);
+        NSLog(@"kbt is: %d", kbt);
+    }
 
    apple = (cocoa_input_data_t*)driver->input_data;
    event_type = event.type;
@@ -85,11 +94,13 @@ void apple_rarch_exited(void)
             
             for (i = 1; i < ch.length; i++)
                cocoa_input_keyboard_event(event_type == NSKeyDown,
-                     0, [ch characterAtIndex:i], mod, RETRO_DEVICE_KEYBOARD);
+                     0, [ch characterAtIndex:i], mod, RETRO_DEVICE_KEYBOARD,
+                                          (kbt == 44) ? true : false);
          }
          
          cocoa_input_keyboard_event(event_type == NSKeyDown,
-               event.keyCode, character, mod, RETRO_DEVICE_KEYBOARD);
+               (uint32_t)event.keyCode, character, mod, RETRO_DEVICE_KEYBOARD,
+                                    (kbt == 44) ? true : false);
       }
          break;
       case NSFlagsChanged:
@@ -100,7 +111,8 @@ void apple_rarch_exited(void)
          old_flags = new_flags;
 
          cocoa_input_keyboard_event(down, event.keyCode,
-               0, event.modifierFlags, RETRO_DEVICE_KEYBOARD);
+               0, event.modifierFlags, RETRO_DEVICE_KEYBOARD,
+                                    (kbt == 44) ? true : false);
       }
          break;
       case NSMouseMoved:

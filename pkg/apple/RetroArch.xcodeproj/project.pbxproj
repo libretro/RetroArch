@@ -23,6 +23,7 @@
 		500845341B89300700CE6073 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB41A89E737007336C1 /* IOKit.framework */; };
 		5061C8A41AE47E510080AE14 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5061C8A31AE47E510080AE14 /* libz.dylib */; };
 		509F0C9D1AA23AFC00619ECC /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 509F0C9C1AA23AFC00619ECC /* griffin_objc.m */; };
+		50A1B3011BF69A8F007D47CD /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50A1B3001BF69A8F007D47CD /* Carbon.framework */; };
 		840222FC1A889EE2009AB261 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 840222FB1A889EE2009AB261 /* griffin.c */; };
 		84DD5E9F1A88E45B007336C1 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */; };
 		84DD5EA31A89E2AA007336C1 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
@@ -77,10 +78,11 @@
 		089C165DFE840E0CC02AAC07 /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = OSX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1DDD58150DA1D0A300B32029 /* MainMenu.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = MainMenu.xib; path = OSX/en.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
-		5008453A1B89300700CE6073 /* RetroArchCg.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RetroArchCg.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		5008453B1B89300700CE6073 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Info.plist"; path = "/../../pkg/apple/OSX/Info.plist"; sourceTree = SOURCE_ROOT; };
+		5008453A1B89300700CE6073 /* RetroArchCg.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArchCg.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5008453B1B89300700CE6073 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = /../../pkg/apple/OSX/Info.plist; sourceTree = SOURCE_ROOT; };
 		5061C8A31AE47E510080AE14 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		509F0C9C1AA23AFC00619ECC /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../griffin/griffin_objc.m; sourceTree = "<group>"; };
+		50A1B3001BF69A8F007D47CD /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
 		840222FB1A889EE2009AB261 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = /System/Library/Frameworks/CoreVideo.framework; sourceTree = "<absolute>"; };
 		84DD5EA61A89E406007336C1 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = /System/Library/Frameworks/CoreLocation.framework; sourceTree = "<absolute>"; };
@@ -90,7 +92,7 @@
 		84DD5EB21A89E6C0007336C1 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
 		84DD5EB41A89E737007336C1 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = ../../../../../../System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
 		84DD5EB71A89F1C7007336C1 /* retroarch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = retroarch.icns; path = ../../media/retroarch.icns; sourceTree = "<group>"; };
-		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "Info.plist"; path = "OSX/Info.plist"; sourceTree = "<group>"; };
+		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = OSX/Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -99,6 +101,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				50A1B3011BF69A8F007D47CD /* Carbon.framework in Frameworks */,
 				5008452C1B89300700CE6073 /* libz.dylib in Frameworks */,
 				5008452D1B89300700CE6073 /* CoreAudio.framework in Frameworks */,
 				5008452E1B89300700CE6073 /* AudioUnit.framework in Frameworks */,
@@ -204,6 +207,7 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				50A1B3001BF69A8F007D47CD /* Carbon.framework */,
 				5061C8A31AE47E510080AE14 /* libz.dylib */,
 				1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */,
 				1058C7A2FEA54F0111CA2CBB /* Other Frameworks */,
@@ -378,12 +382,12 @@
 					"$(SRCROOT)/../../gfx/inc",
 					"$(SRCROOT)/../../libretro-common/include",
 				);
-				INFOPLIST_FILE = "OSX/Info.plist";
+				INFOPLIST_FILE = OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_CHEEVOS",
+					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_IOHIDMANAGER",
@@ -418,7 +422,7 @@
 					"-DHAVE_LIBRETRODB",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_NAME = "RetroArchCg";
+				PRODUCT_NAME = RetroArchCg;
 			};
 			name = Debug;
 		};
@@ -439,12 +443,12 @@
 					"$(SRCROOT)/../../gfx/inc",
 					"$(SRCROOT)/../../libretro-common/include",
 				);
-				INFOPLIST_FILE = "OSX/Info.plist";
+				INFOPLIST_FILE = OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_CHEEVOS",
+					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_IOHIDMANAGER",
 					"-DHAVE_CORETEXT",
@@ -479,7 +483,7 @@
 					"-DHAVE_LIBRETRODB",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_NAME = "RetroArchCg";
+				PRODUCT_NAME = RetroArchCg;
 			};
 			name = Release;
 		};
@@ -507,7 +511,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_CHEEVOS",
+					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_IOHIDMANAGER",
@@ -567,7 +571,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_CHEEVOS",
+					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_IOHIDMANAGER",
 					"-DHAVE_CORETEXT",
