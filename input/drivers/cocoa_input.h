@@ -71,8 +71,7 @@ extern "C" {
 #endif
 
 void cocoa_input_keyboard_event(bool down, unsigned code,
-      uint32_t character, uint32_t mod, unsigned device,
-        bool ignore_keyboard_gamepad);
+      uint32_t character, uint32_t mod, unsigned device);
 
 #ifdef __cplusplus
 }

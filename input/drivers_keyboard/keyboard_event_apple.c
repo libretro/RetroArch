@@ -105,14 +105,13 @@ static bool handle_small_keyboard(unsigned* code, bool down)
 
    return false;
 }
-#endif
 
 extern const struct rarch_key_map rarch_key_map_apple_hid[];
 
 typedef struct icade_map
 {
-    bool up;
-    enum retro_key key;
+   bool up;
+   enum retro_key key;
 } icade_map_t;
 
 #define MAX_ICADE_PROFILES 3
@@ -122,116 +121,116 @@ static icade_map_t icade_maps[MAX_ICADE_PROFILES][MAX_ICADE_KEYS];
 
 static bool handle_icade_event(unsigned *code, bool *keydown)
 {
-    settings_t *settings = config_get_ptr();
-    static bool initialized = false;
-    bool ret = false;
-    unsigned kb_type_idx = settings->input.keyboard_gamepad_mapping_type;
-    
-    if (!initialized)
-    {
-        unsigned i;
-        unsigned j = 0;
-        
-        for (j = 0; j < MAX_ICADE_PROFILES; j++)
-        {
-            for (i = 0; i < MAX_ICADE_KEYS; i++)
-            {
-                icade_maps[j][i].key = RETROK_UNKNOWN;
-                icade_maps[j][i].up  = false;
-            }
-        }
-        
-        /* iPega PG-9017 */
-        j = 1;
-        
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_a)].key = RETROK_LEFT;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_q)].key = RETROK_LEFT;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_c)].key = RETROK_RIGHT;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_d)].key = RETROK_RIGHT;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_e)].key = RETROK_UP;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_w)].key = RETROK_UP;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_x)].key = RETROK_DOWN;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_z)].key = RETROK_DOWN;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_f)].key = RETROK_z;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_u)].key = RETROK_z;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_i)].key = RETROK_q;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_m)].key = RETROK_q;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_j)].key = RETROK_a;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_n)].key = RETROK_a;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_k)].key = RETROK_w;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_p)].key = RETROK_w;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_h)].key = RETROK_x;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_r)].key = RETROK_x;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_y)].key = RETROK_s;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_t)].key = RETROK_s;
-        
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_e)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_z)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_q)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_c)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_f)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_m)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_t)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_n)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_p)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_r)].up  = true;
-        
-        /* 8-bitty */
-        j = 2;
-        
-        initialized = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_a)].key = RETROK_LEFT;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_q)].key = RETROK_LEFT;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_c)].key = RETROK_RIGHT;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_d)].key = RETROK_RIGHT;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_e)].key = RETROK_UP;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_w)].key = RETROK_UP;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_x)].key = RETROK_DOWN;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_z)].key = RETROK_DOWN;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_h)].key = RETROK_q;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_r)].key = RETROK_q;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_j)].key = RETROK_w;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_n)].key = RETROK_w;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_i)].key = RETROK_a;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_m)].key = RETROK_a;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_k)].key = RETROK_z;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_p)].key = RETROK_z;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_y)].key = RETROK_RSHIFT;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_t)].key = RETROK_RSHIFT;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_u)].key = RETROK_RETURN;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_f)].key = RETROK_RETURN;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_l)].key = RETROK_x;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_v)].key = RETROK_x;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_o)].key = RETROK_s;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_g)].key = RETROK_s;
-        
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_e)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_z)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_q)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_c)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_r)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_n)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_m)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_p)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_t)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_f)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_v)].up  = true;
-        icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_g)].up  = true;
-    }
-    
-    if ((*code < 0x20) && (icade_maps[kb_type_idx][*code].key != RETROK_UNKNOWN))
-    {
-        *keydown     = icade_maps[kb_type_idx][*code].up ? false : true;
-        ret          = true;
-        *code        = input_keymaps_translate_rk_to_keysym(icade_maps[kb_type_idx][*code].key);
-    }
-    
-    return ret;
+   settings_t *settings = config_get_ptr();
+   static bool initialized = false;
+   bool ret = false;
+   unsigned kb_type_idx = settings->input.keyboard_gamepad_mapping_type;
+
+   if (!initialized)
+   {
+      unsigned i;
+      unsigned j = 0;
+
+      for (j = 0; j < MAX_ICADE_PROFILES; j++)
+      {
+         for (i = 0; i < MAX_ICADE_KEYS; i++)
+         {
+            icade_maps[j][i].key = RETROK_UNKNOWN;
+            icade_maps[j][i].up  = false;
+         }
+      }
+
+      /* iPega PG-9017 */
+      j = 1;
+
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_a)].key = RETROK_LEFT;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_q)].key = RETROK_LEFT;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_c)].key = RETROK_RIGHT;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_d)].key = RETROK_RIGHT;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_e)].key = RETROK_UP;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_w)].key = RETROK_UP;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_x)].key = RETROK_DOWN;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_z)].key = RETROK_DOWN;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_f)].key = RETROK_z;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_u)].key = RETROK_z;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_i)].key = RETROK_q;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_m)].key = RETROK_q;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_j)].key = RETROK_a;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_n)].key = RETROK_a;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_k)].key = RETROK_w;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_p)].key = RETROK_w;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_h)].key = RETROK_x;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_r)].key = RETROK_x;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_y)].key = RETROK_s;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_t)].key = RETROK_s;
+
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_e)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_z)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_q)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_c)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_f)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_m)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_t)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_n)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_p)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_r)].up  = true;
+
+      /* 8-bitty */
+      j = 2;
+
+      initialized = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_a)].key = RETROK_LEFT;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_q)].key = RETROK_LEFT;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_c)].key = RETROK_RIGHT;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_d)].key = RETROK_RIGHT;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_e)].key = RETROK_UP;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_w)].key = RETROK_UP;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_x)].key = RETROK_DOWN;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_z)].key = RETROK_DOWN;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_h)].key = RETROK_q;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_r)].key = RETROK_q;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_j)].key = RETROK_w;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_n)].key = RETROK_w;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_i)].key = RETROK_a;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_m)].key = RETROK_a;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_k)].key = RETROK_z;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_p)].key = RETROK_z;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_y)].key = RETROK_RSHIFT;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_t)].key = RETROK_RSHIFT;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_u)].key = RETROK_RETURN;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_f)].key = RETROK_RETURN;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_l)].key = RETROK_x;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_v)].key = RETROK_x;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_o)].key = RETROK_s;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_g)].key = RETROK_s;
+
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_e)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_z)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_q)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_c)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_r)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_n)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_m)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_p)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_t)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_f)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_v)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_g)].up  = true;
+   }
+
+   if ((*code < 0x20) && (icade_maps[kb_type_idx][*code].key != RETROK_UNKNOWN))
+   {
+      *keydown     = icade_maps[kb_type_idx][*code].up ? false : true;
+      ret          = true;
+      *code        = input_keymaps_translate_rk_to_keysym(icade_maps[kb_type_idx][*code].key);
+   }
+
+   return ret;
 }
+#endif
 
 void cocoa_input_keyboard_event(bool down,
-      unsigned code, uint32_t character, uint32_t mod, unsigned device,
-    bool ignore_keyboard_gamepad)
+      unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
    driver_t *driver = driver_get_ptr();
    settings_t *settings = config_get_ptr();
@@ -242,15 +241,14 @@ void cocoa_input_keyboard_event(bool down,
 
    code = HIDKEY(code);
 
-   if (settings->input.keyboard_gamepad_enable && !ignore_keyboard_gamepad)
-   {
-       unsigned orig_code = code;
-        if (handle_icade_event(&code, &down))
-            character = 0;
-        else
-            code      = orig_code;
-    }
 #if TARGET_OS_IPHONE
+   if (settings->input.keyboard_gamepad_enable)
+   {
+      if (handle_icade_event(&code, &down))
+         character = 0;
+      else
+         code      = 0;
+   }
    else if (settings->input.small_keyboard_enable)
    {
       if (handle_small_keyboard(&code, down))
