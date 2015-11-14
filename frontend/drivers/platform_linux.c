@@ -789,10 +789,7 @@ int system_property_get(const char *command, const char *args, char *value)
    pipe = popen(cmd, "r");
 
    if (!pipe)
-   {
-      RARCH_ERR("Could not create pipe.\n");
-      return 0;
-   }
+      goto error;
 
    curpos = value;
 
@@ -814,6 +811,10 @@ int system_property_get(const char *command, const char *args, char *value)
    pclose(pipe);
 
    return length;
+
+error:
+   RARCH_ERR("Could not create pipe.\n");
+   return 0;
 }
 
 static void frontend_android_get_name(char *s, size_t len)
