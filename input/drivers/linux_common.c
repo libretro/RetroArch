@@ -23,34 +23,45 @@ static struct termios oldTerm, newTerm;
 static long oldKbmd                = 0xffff;
 static bool linux_stdin_claimed    = false;
 
+void linux_terminal_flush(void)
+{
+   tcsetattr(0, TCSAFLUSH, &oldTerm);
+}
+
 void linux_terminal_restore_input(void)
 {
-   if (oldKbmd != 0xffff)
-   {
-      ioctl(0, KDSKBMODE, oldKbmd);
-      tcsetattr(0, TCSAFLUSH, &oldTerm);
-      oldKbmd = 0xffff;
-   }
+   if (oldKbmd == 0xffff)
+      return;
+
+   ioctl(0, KDSKBMODE, oldKbmd);
+   linux_terminal_flush();
+   oldKbmd = 0xffff;
 
    linux_stdin_claimed = false;
 }
 
+/* Disables input */
+
 bool linux_terminal_init(void)
 {
-   if (oldKbmd == 0xffff)
-   {
-      tcgetattr(0, &oldTerm);
-      newTerm              = oldTerm;
-      newTerm.c_lflag     &= ~(ECHO | ICANON | ISIG);
-      newTerm.c_iflag     &= ~(ISTRIP | IGNCR | ICRNL | INLCR | IXOFF | IXON);
-      newTerm.c_cc[VMIN]   = 0;
-      newTerm.c_cc[VTIME]  = 0;
+   if (oldKbmd != 0xffff)
+      return false;
 
-      if (ioctl(0, KDGKBMODE, &oldKbmd) != 0)
-         return false;
-   }
+   if (tcgetattr(0, &oldTerm) < 0)
+      return false;
 
-   tcsetattr(0, TCSAFLUSH, &newTerm);
+   newTerm              = oldTerm;
+   newTerm.c_lflag     &= ~(ECHO | ICANON | ISIG);
+   newTerm.c_iflag     &= ~(ISTRIP | IGNCR | ICRNL | INLCR | IXOFF | IXON);
+   newTerm.c_cc[VMIN]   = 0;
+   newTerm.c_cc[VTIME]  = 0;
+
+   /* Be careful about recovering the terminal. */
+   if (ioctl(0, KDGKBMODE, &oldKbmd) < 0)
+      return false;
+
+   if (tcsetattr(0, TCSAFLUSH, &newTerm) < 0)
+      return false;
 
    return true;
 }
