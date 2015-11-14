@@ -26,6 +26,12 @@
 
 #include "apple_keycode.h"
 
+struct apple_key_name_map_entry
+{
+   const char* const keyname;
+   const uint32_t hid_id;
+};
+
 const struct apple_key_name_map_entry apple_key_name_map[] =
 {
    { "left", KEY_Left },
