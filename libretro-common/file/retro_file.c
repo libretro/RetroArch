@@ -163,7 +163,12 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
             mode_str = "wb";
 #endif
          else
-            flags    = O_WRONLY | O_CREAT | O_TRUNC | S_IRUSR | S_IWUSR;
+         {
+            flags    = O_WRONLY | O_CREAT | O_TRUNC;
+#ifndef _WIN32
+            flags   |=  S_IRUSR | S_IWUSR;
+#endif
+         }
 #endif
          break;
       case RFILE_MODE_READ_WRITE:
