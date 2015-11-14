@@ -12,7 +12,7 @@ LUA_CONVERTER_C = \
 		    lua_converter.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
 			 $(LIBRETRO_COMMON_DIR)/file/retro_file.c \
-			 $(LIBRETRO_COMMON_DIR)/compat/compat.c
+			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
 
 LUA_CONVERTER_C_OBJS := $(LUA_CONVERTER_C:.c=.o)
 
@@ -28,7 +28,7 @@ PLAIN_CONVERTER_C = \
 			 $(LIBRETRO_COMMON_DIR)/hash/rhash.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
 			 $(LIBRETRO_COMMON_DIR)/file/retro_file.c \
-			 $(LIBRETRO_COMMON_DIR)/compat/compat.c
+			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
 
 PLAIN_CONVERTER_C_OBJS := $(PLAIN_CONVERTER_C:.c=.o)
 
@@ -41,7 +41,7 @@ RARCHDB_TOOL_C = \
 		   libretrodb.c \
 		   $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
 			$(LIBRETRO_COMMON_DIR)/file/retro_file.c \
-			$(LIBRETRO_COMMON_DIR)/compat/compat.c
+			$(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
 
 RARCHDB_TOOL_OBJS := $(RARCHDB_TOOL_C:.c=.o)
 
@@ -54,7 +54,7 @@ TESTLIB_C = \
 	      rmsgpack_dom.c \
 		   $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
 			$(LIBRETRO_COMMON_DIR)/file/retro_file.c \
-			$(LIBRETRO_COMMON_DIR)/compat/compat.c
+			$(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
 
 TESTLIB_OBJS := $(TESTLIB_C:.c=.o)
 

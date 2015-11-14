@@ -308,6 +308,11 @@ static int database_info_list_iterate_found_match(
 
    content_playlist_write_file(playlist);
    content_playlist_free(playlist);
+
+   database_info_list_free(db_state->info);
+   db_state->info = NULL;
+   db_state->crc  = 0;
+
    return 0;
 }
 
@@ -354,7 +359,7 @@ static int database_info_iterate_crc_lookup(
                    db_state->crc, db_info_entry->crc32, db_info_entry->name);
 #endif
          if (db_state->crc == db_info_entry->crc32)
-            database_info_list_iterate_found_match(db_state, db, zip_entry);
+            return database_info_list_iterate_found_match(db_state, db, zip_entry);
       }
    }
 

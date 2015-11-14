@@ -132,7 +132,7 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 #endif
       stream->hints &= ~RFILE_HINT_MMAP;
 
-   switch (mode)
+   switch (mode & 0xff)
    {
       case RFILE_MODE_READ:
 #if defined(VITA) || defined(PSP)
