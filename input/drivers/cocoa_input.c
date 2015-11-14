@@ -192,7 +192,7 @@ int32_t cocoa_input_find_any_axis(uint32_t port)
    if (apple && apple->joypad)
        apple->joypad->poll();
 
-   for (i = 0; i < 4; i++)
+   for (i = 0; i < 6; i++)
    {
       int16_t value = apple->axes[port][i];
       

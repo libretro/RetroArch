@@ -112,7 +112,7 @@ static int16_t iohidmanager_hid_joypad_axis(void *data, unsigned port, uint32_t 
       return 0;
 #endif
 
-   if (AXIS_NEG_GET(joyaxis) < 4)
+   if (AXIS_NEG_GET(joyaxis) < 6)
    {
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
       val += apple->axes[port][AXIS_NEG_GET(joyaxis)];
@@ -122,7 +122,7 @@ static int16_t iohidmanager_hid_joypad_axis(void *data, unsigned port, uint32_t 
       if (val >= 0)
          val = 0;
    }
-   else if(AXIS_POS_GET(joyaxis) < 4)
+   else if(AXIS_POS_GET(joyaxis) < 6)
    {
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
       val += apple->axes[port][AXIS_POS_GET(joyaxis)];
@@ -198,9 +198,9 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                   default:
                      {
                         int i;
-                        static const uint32_t axis_use_ids[4] = { 48, 49, 50, 53 };
+                        static const uint32_t axis_use_ids[6] = { 48, 49, 50, 51, 52, 53 };
 
-                        for (i = 0; i < 4; i ++)
+                        for (i = 0; i < 6; i ++)
                         {
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
                            CFIndex min   = IOHIDElementGetPhysicalMin(element);

@@ -77,6 +77,9 @@ static void apple_gamecontroller_poll(GCController *controller)
       apple->axes[slot][1] = gp.leftThumbstick.yAxis.value * 32767.0f;
       apple->axes[slot][2] = gp.rightThumbstick.xAxis.value * 32767.0f;
       apple->axes[slot][3] = gp.rightThumbstick.yAxis.value * 32767.0f;
+      apple->axes[slot][4] = gp.rightThumbstick.yAxis.value * 32767.0f;
+      apple->axes[slot][5] = gp.rightThumbstick.yAxis.value * 32767.0f;
+
    }
    else if (controller.gamepad)
    {

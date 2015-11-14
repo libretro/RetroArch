@@ -55,7 +55,7 @@ typedef struct
    uint32_t key_state[MAX_KEYS];
 
    uint32_t buttons[MAX_USERS];
-   int16_t axes[MAX_USERS][4];
+   int16_t axes[MAX_USERS][6];
    int8_t  hats[NUM_HATS][2];
 
 #if TARGET_OS_IPHONE
