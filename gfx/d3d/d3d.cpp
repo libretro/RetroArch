@@ -94,6 +94,10 @@ static void d3d_deinit_chain(d3d_video_t *d3d)
 
    d3d->renderchain_driver = NULL;
    d3d->renderchain_data   = NULL;
+
+#ifndef _XBOX
+   d3d->needs_restore      = false;
+#endif
 }
 
 static void d3d_deinitialize(d3d_video_t *d3d)
@@ -109,10 +113,6 @@ static void d3d_deinitialize(d3d_video_t *d3d)
       font_ctx->free(driver->font_osd_data);
    font_ctx = NULL;
    d3d_deinit_chain(d3d);
-
-#ifndef _XBOX
-   d3d->needs_restore = false;
-#endif
 }
 
 void d3d_make_d3dpp(void *data,
@@ -374,37 +374,12 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
 
       d3d_make_d3dpp(d3d, info, &d3dpp);
 
-      if (d3d->dev->Reset(&d3dpp) != D3D_OK)
+      if (!d3d_reset(d3d->dev, &d3dpp))
       {
-         /* Try to recreate the device completely. */
-#ifndef _XBOX
-         HRESULT res     = d3d->dev->TestCooperativeLevel();
-         const char *err = NULL;
-         switch (res)
-         {
-            case D3DERR_DEVICELOST:
-               err = "DEVICELOST";
-               break;
-
-            case D3DERR_DEVICENOTRESET:
-               err = "DEVICENOTRESET";
-               break;
-
-            case D3DERR_DRIVERINTERNALERROR:
-               err = "DRIVERINTERNALERROR";
-               break;
-
-            default:
-               err = "Unknown";
-         }
-         RARCH_WARN(
-               "[D3D]: Attempting to recover from dead state (%s).\n", err);
-#else
-         RARCH_WARN("[D3D]: Attempting to recover from dead state.\n");
-#endif
          d3d_deinitialize(d3d);
          d3d->g_pD3D->Release();
          d3d->g_pD3D = NULL;
+
          ret = d3d_init_base(d3d, info);
          if (ret)
             RARCH_LOG("[D3D]: Recovered from dead state.\n");

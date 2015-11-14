@@ -517,3 +517,41 @@ void d3d_set_vertex_declaration(void *data, void *vertex_data)
    dev->SetVertexDeclaration(decl);
 #endif
 }
+
+bool d3d_reset(LPDIRECT3DDEVICE dev, D3DPRESENT_PARAMETERS *d3dpp)
+{
+   HRESULT res;
+   const char *err = NULL;
+
+   if (dev->Reset(d3dpp) == D3D_OK)
+      return true;
+
+   /* Try to recreate the device completely. */
+#ifndef _XBOX
+   res     = dev->TestCooperativeLevel();
+
+   switch (res)
+   {
+      case D3DERR_DEVICELOST:
+         err = "DEVICELOST";
+         break;
+
+      case D3DERR_DEVICENOTRESET:
+         err = "DEVICENOTRESET";
+         break;
+
+      case D3DERR_DRIVERINTERNALERROR:
+         err = "DRIVERINTERNALERROR";
+         break;
+
+      default:
+         err = "Unknown";
+   }
+   RARCH_WARN("[D3D]: Attempting to recover from dead state (%s).\n",
+         err);
+#else
+   RARCH_WARN("[D3D]: Attempting to recover from dead state.\n");
+#endif
+
+   return false;
+}
