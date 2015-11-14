@@ -96,13 +96,15 @@ bool dinput_init_context(void)
    CoInitialize(NULL);
 
    /* Who said we shouldn't have same call signature in a COM API? <_< */
+#ifdef __cplusplus
    if (FAILED(DirectInput8Create(
-      GetModuleHandle(NULL), DIRECTINPUT_VERSION,
-#ifndef __cplusplus
-       &
-#endif
-       IID_IDirectInput8,
+      GetModuleHandle(NULL), DIRECTINPUT_VERSION, IID_IDirectInput8,
       (void**)&g_dinput_ctx, NULL)))
+#else
+   if (FAILED(DirectInput8Create(
+      GetModuleHandle(NULL), DIRECTINPUT_VERSION, &IID_IDirectInput8,
+      (void**)&g_dinput_ctx, NULL)))
+#endif
    {
       RARCH_ERR("Failed to init DirectInput.\n");
       return false;
@@ -127,27 +129,30 @@ static void *dinput_init(void)
    if (!di)
       return NULL;
 
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
-#ifndef __cplusplus
-               &
-#endif
-               GUID_SysKeyboard,
-               &di->keyboard, NULL)))
+#ifdef __cplusplus
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, GUID_SysKeyboard, &di->keyboard, NULL)))
    {
       RARCH_ERR("Failed to create keyboard device.\n");
       di->keyboard = NULL;
    }
 
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
-#ifndef __cplusplus
-               &
-#endif
-               GUID_SysMouse,
-               &di->mouse, NULL)))
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, GUID_SysMouse, &di->mouse, NULL)))
    {
       RARCH_ERR("Failed to create mouse device.\n");
       di->mouse = NULL;
    }
+#else
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, &GUID_SysKeyboard, &di->keyboard, NULL)))
+   {
+      RARCH_ERR("Failed to create keyboard device.\n");
+      di->keyboard = NULL;
+   }
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, &GUID_SysMouse, &di->mouse, NULL)))
+   {
+      RARCH_ERR("Failed to create mouse device.\n");
+      di->mouse = NULL;
+   }
+#endif
 
    if (di->keyboard)
    {
