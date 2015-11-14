@@ -469,6 +469,47 @@ int linux_get_cpu_count(void)
     return g_cpuCount;
 }
 
+int system_property_get(const char *command, const char *args, char *value)
+{
+   FILE *pipe;
+   int length                   = 0;
+   char buffer[PATH_MAX_LENGTH] = {0};
+   char cmd[PATH_MAX_LENGTH]    = {0};
+   char *curpos                 = NULL;
+
+   snprintf(cmd, sizeof(cmd), "%s %s", command, args);
+
+   pipe = popen(cmd, "r");
+
+   if (!pipe)
+      goto error;
+
+   curpos = value;
+
+   while (!feof(pipe))
+   {
+      if (fgets(buffer, 128, pipe) != NULL)
+      {
+         int curlen = strlen(buffer);
+
+         memcpy(curpos, buffer, curlen);
+
+         curpos    += curlen;
+         length    += curlen;
+      }
+   }
+
+   *curpos = '\0';
+
+   pclose(pipe);
+
+   return length;
+
+error:
+   RARCH_ERR("Could not create pipe.\n");
+   return 0;
+}
+
 #ifdef ANDROID
 #define SDCARD_ROOT_WRITABLE     1
 #define SDCARD_EXT_DIR_WRITABLE  2
@@ -776,46 +817,6 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
 }
 
 
-int system_property_get(const char *command, const char *args, char *value)
-{
-   FILE *pipe;
-   int length                   = 0;
-   char buffer[PATH_MAX_LENGTH] = {0};
-   char cmd[PATH_MAX_LENGTH]    = {0};
-   char *curpos                 = NULL;
-
-   snprintf(cmd, sizeof(cmd), "%s %s", command, args);
-
-   pipe = popen(cmd, "r");
-
-   if (!pipe)
-      goto error;
-
-   curpos = value;
-
-   while (!feof(pipe))
-   {
-      if (fgets(buffer, 128, pipe) != NULL)
-      {
-         int curlen = strlen(buffer);
-
-         memcpy(curpos, buffer, curlen);
-
-         curpos    += curlen;
-         length    += curlen;
-      }
-   }
-
-   *curpos = '\0';
-
-   pclose(pipe);
-
-   return length;
-
-error:
-   RARCH_ERR("Could not create pipe.\n");
-   return 0;
-}
 
 static void frontend_android_get_name(char *s, size_t len)
 {
