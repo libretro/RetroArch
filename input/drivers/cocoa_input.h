@@ -56,7 +56,7 @@ typedef struct
 
    uint32_t buttons[MAX_USERS];
    uint32_t mfi_buttons[MAX_USERS];
-   int16_t axes[MAX_USERS][4];
+   int16_t axes[MAX_USERS][6];
    int8_t  hats[NUM_HATS][2];
 
    bool icade_enabled;
