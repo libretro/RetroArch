@@ -277,30 +277,30 @@ ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence)
       /* Need to check stream->mapped because this function is called in retro_fopen() */
       if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
       {
+         /* fseek() returns error on under/overflow but allows cursor > EOF for
+            read-only file descriptors. */
          switch (whence)
          {
             case SEEK_SET:
                if (offset < 0)
-                  offset = 0;
+                  return -1;
 
                stream->mappos = offset;
                break;
 
             case SEEK_CUR:
-               if (offset < 0 && stream->mappos + offset > stream->mappos)
-                  stream->mappos = 0;
-               else
-                  stream->mappos += offset;
+               if ((offset < 0 && stream->mappos + offset > stream->mappos) ||
+                   (offset > 0 && stream->mappos + offset < stream->mappos))
+                  return -1;
+
+               stream->mappos += offset;
                break;
 
             case SEEK_END:
-               if (offset < 0)
-                  offset = 0;
+               if (stream->mapsize + offset < stream->mapsize)
+                  return -1;
 
-               if (stream->mapsize - offset > stream->mapsize)
-                  stream->mappos = 0;
-               else
-                  stream->mappos = stream->mapsize - offset;
+               stream->mappos = stream->mapsize + offset;
 
                break;
          }
@@ -368,6 +368,9 @@ ssize_t retro_fread(RFILE *stream, void *s, size_t len)
 #ifdef HAVE_MMAP
       if (stream->hints & RFILE_HINT_MMAP)
       {
+         if (stream->mappos > stream->mapsize)
+            return -1;
+
          if (stream->mappos + len > stream->mapsize)
             len = stream->mapsize - stream->mappos;
 
