@@ -546,16 +546,17 @@ int rmsgpack_read(RFILE *fd,
    }
    else if (type < MPF_NIL)
    {
+      ssize_t read_len = 0;
       tmp_len = type - MPF_FIXSTR;
-      buff = (char *)calloc((size_t)(tmp_len + 1), sizeof(char));
+      buff = (char *)malloc((size_t)(tmp_len + 1) * sizeof(char));
       if (!buff)
          return -ENOMEM;
-      if (retro_fread(fd, buff, (ssize_t)tmp_len) == -1)
+      if ((read_len = retro_fread(fd, buff, (ssize_t)tmp_len)) == -1)
       {
          free(buff);
          goto error;
       }
-      buff[tmp_len] = '\0';
+      buff[read_len] = '\0';
       if (!callbacks->read_string)
       {
          free(buff);
