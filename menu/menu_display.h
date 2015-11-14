@@ -139,7 +139,7 @@ void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned durati
       bool flush);
 
 
-const bool menu_display_driver_init_first(void);
+bool menu_display_driver_init_first(void);
 
 void menu_display_draw(unsigned x, unsigned y,
       unsigned width, unsigned height,

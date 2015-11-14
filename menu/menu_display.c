@@ -215,7 +215,7 @@ static bool menu_display_check_compatibility(enum menu_display_driver_type type)
    return false;
 }
 
-const bool menu_display_driver_init_first(void)
+bool menu_display_driver_init_first(void)
 {
    unsigned i;
    menu_display_t *disp = menu_display_get_ptr();
