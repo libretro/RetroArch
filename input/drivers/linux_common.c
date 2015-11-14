@@ -92,25 +92,26 @@ static void linux_terminal_restore_signal(int sig)
    kill(getpid(), sig);
 }
 
-void linux_terminal_disable_input(void)
+bool linux_terminal_disable_input(void)
 {
    struct sigaction sa = {{0}};
 
    /* Avoid accidentally typing stuff. */
    if (!isatty(0))
-      return;
+      return false;
 
    if (!linux_terminal_init())
    {
       linux_terminal_flush();
-      return;
+      return false;
    }
 
    sa.sa_handler = linux_terminal_restore_signal;
    sa.sa_flags   = SA_RESTART | SA_RESETHAND;
    sigemptyset(&sa.sa_mask);
 
-   /* Trap some fatal signals. */
+   /* Trap some standard termination codes so we 
+    * can restore the keyboard before we lose control. */
    sigaction(SIGABRT, &sa, NULL);
    sigaction(SIGBUS,  &sa, NULL);
    sigaction(SIGFPE,  &sa, NULL);
@@ -119,4 +120,6 @@ void linux_terminal_disable_input(void)
    sigaction(SIGSEGV, &sa, NULL);
 
    atexit(linux_terminal_restore_input);
+
+   return true;
 }

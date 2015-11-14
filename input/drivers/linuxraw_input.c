@@ -37,12 +37,6 @@ typedef struct linuxraw_input
    bool state[0x80];
 } linuxraw_input_t;
 
-static void linuxraw_exit_gracefully(int sig)
-{
-   linux_terminal_restore_input();
-   kill(getpid(), sig);
-}
-
 static void *linuxraw_input_init(void)
 {
    struct sigaction sa         = {{0}};
@@ -64,28 +58,12 @@ static void *linuxraw_input_init(void)
    if (!linuxraw)
       return NULL;
 
-
-   if (!linux_terminal_init())
+   if (!linux_terminal_disable_input())
    {
       linux_terminal_restore_input();
       free(linuxraw);
       return NULL;
    }
-
-   sa.sa_handler = linuxraw_exit_gracefully;
-   sa.sa_flags = SA_RESTART | SA_RESETHAND;
-   sigemptyset(&sa.sa_mask);
-
-   /* Trap some standard termination codes so we 
-    * can restore the keyboard before we lose control. */
-   sigaction(SIGABRT, &sa, NULL);
-   sigaction(SIGBUS,  &sa, NULL);
-   sigaction(SIGFPE,  &sa, NULL);
-   sigaction(SIGILL,  &sa, NULL);
-   sigaction(SIGQUIT, &sa, NULL);
-   sigaction(SIGSEGV, &sa, NULL);
-
-   atexit(linux_terminal_restore_input);
 
    linuxraw->joypad = input_joypad_init_driver(
          settings->input.joypad_driver, linuxraw);
