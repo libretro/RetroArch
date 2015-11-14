@@ -712,9 +712,6 @@ static void disable_terminal_input(void)
       return;
 
    if (!linux_terminal_init())
-      return;
-
-   if (ioctl(0, KDSKBMODE, K_MEDIUMRAW) < 0)
    {
       linux_terminal_flush();
       return;

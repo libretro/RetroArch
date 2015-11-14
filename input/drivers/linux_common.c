@@ -63,6 +63,9 @@ bool linux_terminal_init(void)
    if (tcsetattr(0, TCSAFLUSH, &newTerm) < 0)
       return false;
 
+   if (ioctl(0, KDSKBMODE, K_MEDIUMRAW) < 0)
+      return false;
+
    return true;
 }
 

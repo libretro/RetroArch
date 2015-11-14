@@ -67,12 +67,6 @@ static void *linuxraw_input_init(void)
 
    if (!linux_terminal_init())
    {
-      free(linuxraw);
-      return NULL;
-   }
-
-   if (ioctl(0, KDSKBMODE, K_MEDIUMRAW) != 0)
-   {
       linux_terminal_restore_input();
       free(linuxraw);
       return NULL;
