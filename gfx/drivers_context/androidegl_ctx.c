@@ -29,7 +29,7 @@
 #include "../../frontend/drivers/platform_linux.h"
 
 /* forward declaration */
-int system_property_get(const char *name, char *value);
+int system_property_get(const char *cmd, const char *args, char *value);
 
 typedef struct gfx_ctx_android_data
 {
@@ -387,52 +387,12 @@ static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
          android->g_egl_hw_ctx : android->g_egl_ctx);
 }
 
-static int system_property_get_density(char *value)
-{
-   FILE *pipe;
-   int length = 0;
-   char buffer[PATH_MAX_LENGTH] = {0};
-   char cmd[PATH_MAX_LENGTH]    = {0};
-   char *curpos                 = NULL;
-
-   snprintf(cmd, sizeof(cmd), "wm density");
-
-   pipe = popen(cmd, "r");
-
-   if (!pipe)
-   {
-      RARCH_ERR("Could not create pipe.\n");
-      return 0;
-   }
-
-   curpos = value;
-   
-   while (!feof(pipe))
-   {
-      if (fgets(buffer, 128, pipe) != NULL)
-      {
-         int curlen = strlen(buffer);
-
-         memcpy(curpos, buffer, curlen);
-
-         curpos    += curlen;
-         length    += curlen;
-      }
-   }
-
-   *curpos = '\0';
-
-   pclose(pipe);
-
-   return length;
-}
-
 static void dpi_get_density(char *s, size_t len)
 {
-   system_property_get("ro.sf.lcd_density", s);
+   system_property_get("getprop", "ro.sf.lcd_density", s);
 
    if (s[0] == '\0')
-      system_property_get_density(s);
+      system_property_get("wm", "density", s);
 }
 
 static bool android_gfx_ctx_get_metrics(void *data,

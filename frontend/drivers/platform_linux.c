@@ -776,7 +776,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
 }
 
 
-int system_property_get(const char *name, char *value)
+int system_property_get(const char *command, const char *args, char *value)
 {
    FILE *pipe;
    int length                   = 0;
@@ -784,7 +784,7 @@ int system_property_get(const char *name, char *value)
    char cmd[PATH_MAX_LENGTH]    = {0};
    char *curpos                 = NULL;
 
-   snprintf(cmd, sizeof(cmd), "getprop %s", name);
+   snprintf(cmd, sizeof(cmd), "%s %s", command, args);
 
    pipe = popen(cmd, "r");
 
@@ -818,14 +818,14 @@ int system_property_get(const char *name, char *value)
 
 static void frontend_android_get_name(char *s, size_t len)
 {
-   system_property_get("ro.product.model", s);
+   system_property_get("getprop", "ro.product.model", s);
 }
 
 static void frontend_android_get_version(int32_t *major,
       int32_t *minor, int32_t *rel)
 {
    char os_version_str[PROP_VALUE_MAX] = {0};
-   system_property_get("ro.build.version.release", os_version_str);
+   system_property_get("getprop", "ro.build.version.release", os_version_str);
 
    *major  = 0;
    *minor  = 0;
@@ -851,7 +851,7 @@ static void frontend_android_get_version(int32_t *major,
 static void frontend_android_get_version_sdk(int32_t *sdk)
 {
    char os_version_str[PROP_VALUE_MAX] = {0};
-   system_property_get("ro.build.version.sdk", os_version_str);
+   system_property_get("getprop", "ro.build.version.sdk", os_version_str);
 
    *sdk = 0;
    if (os_version_str[0])
@@ -1456,7 +1456,7 @@ static enum frontend_architecture frontend_linux_get_architecture(void)
    const char *val;
 #ifdef ANDROID
    char abi[PROP_VALUE_MAX] = {0};
-   system_property_get("ro.product.cpu.abi", abi);
+   system_property_get("getprop", "ro.product.cpu.abi", abi);
    val         = abi;
 #else
    struct utsname buffer;
@@ -1916,7 +1916,7 @@ static void frontend_linux_get_env(int *argc,
    }
 
    frontend_android_get_name(device_model, sizeof(device_model));
-   system_property_get("ro.product.id", device_id);
+   system_property_get("getprop", "ro.product.id", device_id);
 
    g_defaults.settings.video_threaded_enable = true;
 
