@@ -40,7 +40,11 @@ enum
 {
    RFILE_MODE_READ = 0,
    RFILE_MODE_WRITE,
-   RFILE_MODE_READ_WRITE
+   RFILE_MODE_READ_WRITE,
+
+   /* There is no garantee these requests will be attended. */
+   RFILE_HINT_UNBUFFERED = 1<<8,
+   RFILE_HINT_MMAP       = 1<<7
 };
 
 RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len);

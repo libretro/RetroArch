@@ -401,7 +401,7 @@ void libretrodb_cursor_close(libretrodb_cursor_t *cursor)
 int libretrodb_cursor_open(libretrodb_t *db, libretrodb_cursor_t *cursor,
       libretrodb_query_t *q)
 {
-   cursor->fd = retro_fopen(db->path, RFILE_MODE_READ, -1);
+   cursor->fd = retro_fopen(db->path, RFILE_MODE_READ | RFILE_HINT_UNBUFFERED, -1);
 
    if (!cursor->fd)
       return -errno;
