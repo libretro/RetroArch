@@ -16,19 +16,21 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <fcntl.h>
+#include <unistd.h>
+
 #include <limits.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
 #include <sys/poll.h>
 #include <sys/epoll.h>
-#include <fcntl.h>
+
 #include <libudev.h>
 #include <linux/types.h>
 #include <linux/input.h>
 #include <linux/kd.h>
-#include <signal.h>
-#include <unistd.h>
 
 #include <file/file_path.h>
 
@@ -697,41 +699,6 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
    return true;
 }
 
-static void restore_terminal_signal(int sig)
-{
-   linux_terminal_restore_input();
-   kill(getpid(), sig);
-}
-
-static void disable_terminal_input(void)
-{
-   struct sigaction sa = {{0}};
-
-   /* Avoid accidentally typing stuff. */
-   if (!isatty(0))
-      return;
-
-   if (!linux_terminal_init())
-   {
-      linux_terminal_flush();
-      return;
-   }
-
-   sa.sa_handler = restore_terminal_signal;
-   sa.sa_flags = SA_RESTART | SA_RESETHAND;
-   sigemptyset(&sa.sa_mask);
-
-   /* Trap some fatal signals. */
-   sigaction(SIGABRT, &sa, NULL);
-   sigaction(SIGBUS,  &sa, NULL);
-   sigaction(SIGFPE,  &sa, NULL);
-   sigaction(SIGILL,  &sa, NULL);
-   sigaction(SIGQUIT, &sa, NULL);
-   sigaction(SIGSEGV, &sa, NULL);
-
-   atexit(linux_terminal_restore_input);
-}
-
 static void *udev_input_init(void)
 {
    settings_t *settings = config_get_ptr();
@@ -847,7 +814,7 @@ static void *udev_input_init(void)
    udev->joypad = input_joypad_init_driver(settings->input.joypad_driver, udev);
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
 
-   disable_terminal_input();
+   linux_terminal_disable_input();
    return udev;
 
 error:

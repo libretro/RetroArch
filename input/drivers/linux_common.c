@@ -13,9 +13,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+
+#include <signal.h>
+
 #include <linux/input.h>
 #include <linux/kd.h>
 #include <termios.h>
+#include <unistd.h>
 
 #include "linux_common.h"
 
@@ -79,4 +84,39 @@ void linux_terminal_claim_stdin(void)
 bool linux_terminal_grab_stdin(void *data)
 {
    return linux_stdin_claimed;
+}
+
+static void linux_terminal_restore_signal(int sig)
+{
+   linux_terminal_restore_input();
+   kill(getpid(), sig);
+}
+
+void linux_terminal_disable_input(void)
+{
+   struct sigaction sa = {{0}};
+
+   /* Avoid accidentally typing stuff. */
+   if (!isatty(0))
+      return;
+
+   if (!linux_terminal_init())
+   {
+      linux_terminal_flush();
+      return;
+   }
+
+   sa.sa_handler = linux_terminal_restore_signal;
+   sa.sa_flags   = SA_RESTART | SA_RESETHAND;
+   sigemptyset(&sa.sa_mask);
+
+   /* Trap some fatal signals. */
+   sigaction(SIGABRT, &sa, NULL);
+   sigaction(SIGBUS,  &sa, NULL);
+   sigaction(SIGFPE,  &sa, NULL);
+   sigaction(SIGILL,  &sa, NULL);
+   sigaction(SIGQUIT, &sa, NULL);
+   sigaction(SIGSEGV, &sa, NULL);
+
+   atexit(linux_terminal_restore_input);
 }

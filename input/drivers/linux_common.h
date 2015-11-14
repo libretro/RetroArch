@@ -28,4 +28,6 @@ void linux_terminal_claim_stdin(void);
 
 bool linux_terminal_grab_stdin(void *data);
 
+void linux_terminal_disable_input(void);
+
 #endif
