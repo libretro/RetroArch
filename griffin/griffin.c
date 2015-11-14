@@ -104,13 +104,6 @@ CHEATS
 #include "../libretro-common/hash/rhash.c"
 
 /*============================================================
-UI COMMON CONTEXT
-============================================================ */
-#if defined(_WIN32)
-#include "../gfx/common/win32_common.c"
-#endif
-
-/*============================================================
 VIDEO CONTEXT
 ============================================================ */
 
@@ -139,12 +132,7 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/vc_egl_ctx.c"
 #endif
 
-#ifdef HAVE_MENU
-#include "../menu/drivers_display/menu_display_gl.c"
-#endif
-
 #if defined(_WIN32) && !defined(_XBOX)
-#include "../gfx/drivers_context/wgl_ctx.c"
 #include "../gfx/drivers_wm/win32_shader_dlg.c"
 #endif
 
@@ -195,7 +183,10 @@ VIDEO IMAGE
 ============================================================ */
 
 #include "../gfx/image/image.c"
-#include "../gfx/video_texture.c"
+
+#if !defined(_WIN32)
+#include "../gfx/video_texture_c.c"
+#endif
 
 #include "../libretro-common/formats/tga/rtga.c"
 
@@ -213,6 +204,9 @@ VIDEO IMAGE
 VIDEO DRIVER
 ============================================================ */
 
+#include "../libretro-common/gfx/math/matrix_4x4.c"
+#include "../libretro-common/gfx/math/matrix_3x3.c"
+
 #if defined(GEKKO)
 #ifdef HW_RVL
 #include "../gfx/drivers/gx_gfx_vi_encoder.c"
@@ -222,7 +216,6 @@ VIDEO DRIVER
 
 #ifdef HAVE_VG
 #include "../gfx/drivers/vg.c"
-#include "../libretro-common/gfx/math/matrix_3x3.c"
 #endif
 
 #ifdef HAVE_OMAP
@@ -230,8 +223,6 @@ VIDEO DRIVER
 #endif
 
 #ifdef HAVE_OPENGL
-#include "../libretro-common/gfx/math/matrix_4x4.c"
-
 #include "../gfx/drivers/gl.c"
 #include "../gfx/drivers/gl_common.c"
 
@@ -376,6 +367,7 @@ INPUT
 #endif
 
 #if defined(__linux__) && !defined(ANDROID)
+#include "../input/drivers/linux_common.c"
 #include "../input/drivers/linuxraw_input.c"
 #include "../input/drivers_joypad/linuxraw_joypad.c"
 #endif
@@ -423,10 +415,6 @@ INPUT (HID)
 /*============================================================
  KEYBOARD EVENT
  ============================================================ */
-
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../input/drivers_keyboard/keyboard_event_win32.c"
-#endif
 
 #ifdef HAVE_X11
 #include "../input/drivers_keyboard/keyboard_event_x11.c"
@@ -817,9 +805,15 @@ MENU
 #include "../menu/intl/menu_hash_pt.c"
 #include "../menu/intl/menu_hash_us.c"
 
-#include "../menu/drivers_display/menu_display_null.c"
 #include "../menu/drivers/null.c"
 #include "../menu/drivers/menu_generic.c"
+
+#include "../menu/drivers_display/menu_display_null.c"
+
+#ifdef HAVE_OPENGL
+#include "../menu/drivers_display/menu_display_gl.c"
+#endif
+
 #endif
 
 

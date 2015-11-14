@@ -2528,6 +2528,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_CONFIGURATIONS), PARSE_ACTION, false);
          menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_SAVE_CURRENT_CONFIG), PARSE_ACTION, false);
+         menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_SAVE_NEW_CONFIG), PARSE_ACTION, false);
          menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_HELP_LIST), PARSE_ACTION, false);
@@ -2605,6 +2607,14 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
          ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_INPUT_MAX_USERS), PARSE_ONLY_UINT, false);
+#if TARGET_OS_IPHONE
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_INPUT_SMALL_KEYBOARD_ENABLE), PARSE_ONLY_BOOL, false);
+#endif
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_INPUT_ICADE_ENABLE), PARSE_ONLY_BOOL, false);
+         ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE), PARSE_ONLY_UINT, false);
 #ifdef ANDROID
          ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_INPUT_BACK_AS_MENU_TOGGLE_ENABLE), PARSE_ONLY_BOOL, false);
@@ -2621,8 +2631,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND), PARSE_ONLY_BOOL, false);
          ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_INPUT_AXIS_THRESHOLD), PARSE_ONLY_FLOAT, false);
-         ret = menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_INPUT_TURBO_PERIOD), PARSE_ONLY_UINT, false);
          ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_INPUT_TURBO_PERIOD), PARSE_ONLY_UINT, false);
          ret = menu_displaylist_parse_settings(menu, info,

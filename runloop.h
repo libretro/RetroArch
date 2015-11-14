@@ -17,6 +17,7 @@
 #define __RETROARCH_RUNLOOP_H
 
 #include <setjmp.h>
+#include <rthreads/async_job.h>
 #include "libretro.h"
 #include "core_info.h"
 #include "core_options.h"
@@ -299,7 +300,11 @@ typedef struct global
       bool flickerfilter_enable;
       bool softfilter_enable;
    } console;
-
+   
+#ifdef HAVE_THREADS
+   async_job_t *async_jobs;
+#endif
+   
    /* If this is non-NULL. RARCH_LOG and friends 
     * will write to this file. */
    FILE *log_file;

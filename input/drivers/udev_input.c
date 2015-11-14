@@ -27,11 +27,12 @@
 #include <linux/types.h>
 #include <linux/input.h>
 #include <linux/kd.h>
-#include <termios.h>
 #include <signal.h>
 #include <unistd.h>
 
 #include <file/file_path.h>
+
+#include "linux_common.h"
 
 #include "../input_common.h"
 #include "../input_joypad.h"
@@ -696,22 +697,9 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
    return true;
 }
 
-static long oldkbmd = 0xffff;
-static struct termios oldterm, newterm;
-
-static void restore_terminal_input(void)
-{
-   if (oldkbmd == 0xffff)
-      return;
-
-   ioctl(0, KDSKBMODE, oldkbmd);
-   tcsetattr(0, TCSAFLUSH, &oldterm);
-   oldkbmd = 0xffff;
-}
-
 static void restore_terminal_signal(int sig)
 {
-   restore_terminal_input();
+   linux_terminal_restore_input();
    kill(getpid(), sig);
 }
 
@@ -720,26 +708,12 @@ static void disable_terminal_input(void)
    struct sigaction sa = {{0}};
 
    /* Avoid accidentally typing stuff. */
-   if (!isatty(0) || oldkbmd != 0xffff)
+   if (!isatty(0))
       return;
 
-   if (tcgetattr(0, &oldterm) < 0)
-      return;
-
-   newterm = oldterm;
-   newterm.c_lflag &= ~(ECHO | ICANON | ISIG);
-   newterm.c_iflag &= ~(ISTRIP | IGNCR | ICRNL | INLCR | IXOFF | IXON);
-   newterm.c_cc[VMIN] = 0;
-   newterm.c_cc[VTIME] = 0;
-
-   /* Be careful about recovering the terminal ... */
-   if (ioctl(0, KDGKBMODE, &oldkbmd) < 0)
-      return;
-   if (tcsetattr(0, TCSAFLUSH, &newterm) < 0)
-      return;
-   if (ioctl(0, KDSKBMODE, K_MEDIUMRAW) < 0)
+   if (!linux_terminal_init())
    {
-      tcsetattr(0, TCSAFLUSH, &oldterm);
+      linux_terminal_flush();
       return;
    }
 
@@ -755,7 +729,7 @@ static void disable_terminal_input(void)
    sigaction(SIGQUIT, &sa, NULL);
    sigaction(SIGSEGV, &sa, NULL);
 
-   atexit(restore_terminal_input);
+   atexit(linux_terminal_restore_input);
 }
 
 static void *udev_input_init(void)
@@ -944,7 +918,7 @@ input_driver_t input_udev = {
    udev_input_get_capabilities,
    "udev",
    udev_input_grab_mouse,
-   NULL,
+   linux_terminal_grab_stdin,
    udev_input_set_rumble,
    udev_input_get_joypad_driver,
    udev_input_keyboard_mapping_is_blocked,

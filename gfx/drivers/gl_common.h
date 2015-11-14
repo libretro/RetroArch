@@ -333,14 +333,6 @@ static INLINE bool gl_check_error(void)
    return false;
 }
 
-void gl_load_texture_data(GLuint id,
-      enum gfx_wrap_type wrap_type,
-      enum texture_filter_type filter_type,
-      unsigned alignment,
-      unsigned width, unsigned height,
-      const void *frame,
-      unsigned base_size);
-
 bool gl_load_luts(const struct video_shader *generic_shader,
       GLuint *lut_textures);
 

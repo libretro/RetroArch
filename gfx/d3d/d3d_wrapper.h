@@ -17,10 +17,16 @@
 #ifndef _D3D_WRAPPER_H
 #define _D3D_WRAPPER_H
 
+#include <boolean.h>
+
 #include "../common/win32_common.h"
 #include "d3d_defines.h"
 
-void d3d_swap(void *data, LPDIRECT3DDEVICE dev);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+bool d3d_swap(void *data, LPDIRECT3DDEVICE dev);
 
 LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
       unsigned length, unsigned usage, unsigned fvf,
@@ -66,9 +72,15 @@ void d3d_clear(LPDIRECT3DDEVICE dev,
       unsigned count, const D3DRECT *rects, unsigned flags,
       D3DCOLOR color, float z, unsigned stencil);
 
-void d3d_lockrectangle_clear(LPDIRECT3DTEXTURE tex,
+bool d3d_lock_rectangle(LPDIRECT3DTEXTURE tex,
       unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
       unsigned rectangle_height, unsigned flags);
+
+void d3d_lock_rectangle_clear(LPDIRECT3DTEXTURE tex,
+      unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
+      unsigned rectangle_height, unsigned flags);
+
+void d3d_unlock_rectangle(LPDIRECT3DTEXTURE tex);
 
 void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
       LPDIRECT3DTEXTURE tex);
@@ -81,6 +93,9 @@ void d3d_texture_blit(unsigned pixel_size,
       D3DLOCKED_RECT *lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch);
 
+bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
+      const void *vertex_data, void **decl_data);
+
 void d3d_set_viewport(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp);
 
 void d3d_enable_blend_func(void *data);
@@ -92,5 +107,11 @@ void d3d_set_vertex_declaration(void *data, void *vertex_data);
 void d3d_enable_alpha_blend_texture_func(void *data);
 
 void d3d_frame_postprocess(void *data);
+
+void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

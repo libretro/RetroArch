@@ -28,10 +28,6 @@
 
 #include <boolean.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * path_is_directory:
  * @path               : path
@@ -57,9 +53,5 @@ int32_t path_get_size(const char *path);
  * Returns: true (1) if directory could be created, otherwise false (0).
  **/
 bool mkdir_norecurse(const char *dir);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

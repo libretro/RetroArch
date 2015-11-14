@@ -60,6 +60,9 @@ typedef struct menu_display
 
 
 static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
+#ifdef HAVE_DIRECT3D
+   &menu_display_ctx_d3d,
+#endif
 #ifdef HAVE_OPENGL
    &menu_display_ctx_gl,
 #endif
@@ -131,35 +134,12 @@ bool menu_display_font_init_first(const void **font_driver,
       void **font_handle, void *video_data, const char *font_path,
       float font_size)
 {
-   settings_t *settings = config_get_ptr();
-   const struct retro_hw_render_callback *hw_render =
-      (const struct retro_hw_render_callback*)video_driver_callback();
+   menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
+   if (!menu_disp || !menu_disp->font_init_first)
+      return false;
 
-   if (settings->video.threaded && !hw_render->context_type)
-   {
-      thread_packet_t pkt;
-      driver_t *driver    = driver_get_ptr();
-      thread_video_t *thr = (thread_video_t*)driver->video_data;
-
-      if (!thr)
-         return false;
-
-      pkt.type                       = CMD_FONT_INIT;
-      pkt.data.font_init.method      = font_init_first;
-      pkt.data.font_init.font_driver = (const void**)font_driver;
-      pkt.data.font_init.font_handle = font_handle;
-      pkt.data.font_init.video_data  = video_data;
-      pkt.data.font_init.font_path   = font_path;
-      pkt.data.font_init.font_size   = font_size;
-      pkt.data.font_init.api         = FONT_DRIVER_RENDER_OPENGL_API;
-
-      thr->send_and_wait(thr, &pkt);
-
-      return pkt.data.font_init.return_value;
-   }
-
-   return font_init_first(font_driver, font_handle, video_data,
-         font_path, font_size, FONT_DRIVER_RENDER_OPENGL_API);
+   return menu_disp->font_init_first(font_driver, font_handle, video_data,
+         font_path, font_size);
 }
 
 bool menu_display_font_bind_block(void *data, const void *font_data, void *userdata)
@@ -235,7 +215,7 @@ static bool menu_display_check_compatibility(enum menu_display_driver_type type)
    return false;
 }
 
-const bool menu_display_driver_init_first(void)
+bool menu_display_driver_init_first(void)
 {
    unsigned i;
    menu_display_t *disp = menu_display_get_ptr();
@@ -574,18 +554,32 @@ void menu_display_blend_end(void)
    if (!menu_disp || !menu_disp->blend_end)
       return;
 
-   if (menu_disp)
-      menu_disp->blend_end();
+   menu_disp->blend_end();
 }
 
 void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
       float scale_x, float scale_y, float scale_z, bool scale_enable)
 {
+   math_matrix_4x4 *matrix, *b;
+   math_matrix_4x4 matrix_rotated;
+   math_matrix_4x4 matrix_scaled;
    menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
-   if (!menu_disp)
+   if (!menu_disp || !menu_disp->get_default_mvp)
       return;
 
-   menu_disp->matrix_4x4_rotate_z(data, rotation, scale_x, scale_y, scale_z, scale_enable);
+   matrix = (math_matrix_4x4*)data;
+   b      = (math_matrix_4x4*)menu_disp->get_default_mvp();
+   if (!matrix)
+      return;
+
+   matrix_4x4_rotate_z(&matrix_rotated, rotation);
+   matrix_4x4_multiply(matrix, &matrix_rotated, b);
+
+   if (!scale_enable)
+      return;
+
+   matrix_4x4_scale(&matrix_scaled, scale_x, scale_y, scale_z);
+   matrix_4x4_multiply(matrix, &matrix_scaled, matrix);
 }
 
 unsigned menu_display_texture_load(void *data,

@@ -21,10 +21,6 @@
 
 #include "menu_hash.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 enum
 {
    ACTION_OK_DL_DEFAULT = 0,
@@ -203,9 +199,5 @@ void menu_cbs_init(void *data,
       unsigned type, size_t idx);
 
 bool menu_playlist_find_associated_core(const char *path, char *s, size_t len);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

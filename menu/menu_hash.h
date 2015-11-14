@@ -22,6 +22,9 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE                   0x507c52f3U
+#define MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE                         0x3665cbb0U
+
 #define MENU_LABEL_CHEEVOS_DESCRIPTION                                         0x7e00e0f5U
 
 #define MENU_LABEL_VALUE_CHEEVOS_DESCRIPTION                                   0xab3975d6U
@@ -1073,6 +1076,15 @@ extern "C" {
 #define MENU_LABEL_HELP_SCANNING_CONTENT                                       0x1dec52b8U
 #define MENU_LABEL_VALUE_HELP_SCANNING_CONTENT                                 0x74b36f11U
 #define MENU_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC                            0xac947056U
+
+#define MENU_LABEL_SAVE_CURRENT_CONFIG                                         0x8840ba8bU
+#define MENU_LABEL_VALUE_SAVE_CURRENT_CONFIG                                   0x9a1eb42dU
+
+#define MENU_LABEL_INPUT_SMALL_KEYBOARD_ENABLE                                 0xe6736fc3U
+#define MENU_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE                           0xc5eefd76U
+
+#define MENU_LABEL_INPUT_ICADE_ENABLE                                          0xcd534dd0U
+#define MENU_LABEL_VALUE_INPUT_ICADE_ENABLE                                    0x67b18ee2U
 
 const char *menu_hash_to_str_de(uint32_t hash);
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len);

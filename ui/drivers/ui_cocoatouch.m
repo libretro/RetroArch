@@ -63,6 +63,13 @@ static void rarch_disable_ui(void)
    rarch_main_ctl(RARCH_MAIN_CTL_SET_IDLE,   &boolean);
 }
 
+static void ui_companion_cocoatouch_event_command(
+      void *data, enum event_command cmd)
+{
+    (void)data;
+    event_command(cmd);
+}
+
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
     CFRunLoopActivity activity, void *info)
 {
@@ -76,7 +83,7 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 
    if (ret == -1)
    {
-      main_exit_save_config();
+      ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
       main_exit(NULL);
       return;
    }
@@ -320,7 +327,7 @@ enum
 {
    dispatch_async(dispatch_get_main_queue(),
                   ^{
-                      main_exit_save_config();
+                  ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
                   });
    [self showPauseMenu: self];
 }
@@ -340,9 +347,7 @@ enum
 
 - (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated
 {
-   cocoa_input_reset_icade_buttons();
    [self setToolbarHidden:![[viewController toolbarItems] count] animated:YES];
-   
    [self refreshSystemConfig];
 }
 
@@ -368,12 +373,6 @@ enum
    [self.window setRootViewController:self];
 }
 
-static void ui_companion_cocoatouch_event_command(void *data,
-                                                  enum event_command cmd)
-{
-    (void)data;
-    event_command(cmd);
-}
 
 - (void)toggleUI
 {
@@ -389,7 +388,7 @@ static void ui_companion_cocoatouch_event_command(void *data,
 
 - (void)refreshSystemConfig
 {
-   bool small_keyboard, is_icade, is_btstack;
+   bool is_btstack;
     
    /* Get enabled orientations */
    apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
@@ -400,12 +399,8 @@ static void ui_companion_cocoatouch_event_command(void *data,
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown;
 
    /* Set bluetooth mode */
-   small_keyboard = !(strcmp(apple_frontend_settings.bluetooth_mode, "small_keyboard"));
-   is_icade       = !(strcmp(apple_frontend_settings.bluetooth_mode, "icade"));
    is_btstack     = !(strcmp(apple_frontend_settings.bluetooth_mode, "btstack"));
        
-   cocoa_input_enable_small_keyboard(small_keyboard);
-   cocoa_input_enable_icade(is_icade);
    btstack_set_poweron(is_btstack);
 }
 

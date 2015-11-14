@@ -18,24 +18,55 @@
 #define WIN32_COMMON_H__
 
 #include <string.h>
-#include <boolean.h>
-#include "../../driver.h"
-#include "../video_context_driver.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #ifndef _XBOX
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#endif
+
+#include <boolean.h>
+#include "../../driver.h"
+#include "../video_context_driver.h"
+
+#ifndef _XBOX
 #include "../drivers_wm/win32_resource.h"
+
+extern unsigned g_resize_width;
+extern unsigned g_resize_height;
+extern bool g_quit;
+extern bool g_inited;
+extern bool g_restore_desktop;
+extern HWND g_hwnd;
 
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 
 LRESULT win32_menu_loop(HWND handle, WPARAM wparam);
+
+
+void win32_monitor_from_window(HWND data, bool destroy);
+
+void win32_monitor_get_info(void);
+
+void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
+
+void create_gl_context(HWND hwnd);
 #endif
+
+void win32_monitor_init(void);
+
+bool win32_set_video_mode(void *data,
+      unsigned width, unsigned height,
+      bool fullscreen);
+
+bool win32_monitor_set_fullscreen(unsigned width,
+      unsigned height, unsigned refresh, char *dev_name);
+
+bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen);
+
+bool win32_window_create(void *data, unsigned style,
+      RECT *mon_rect, unsigned width,
+      unsigned height, bool fullscreen);
 
 bool win32_suppress_screensaver(void *data, bool enable);
 
@@ -44,10 +75,7 @@ bool win32_get_metrics(void *data,
 
 void win32_show_cursor(bool state);
 
-void win32_check_window(void);
-
-#ifdef __cplusplus
-}
-#endif
+void win32_check_window(bool *quit,
+      bool *resize, unsigned *width, unsigned *height);
 
 #endif

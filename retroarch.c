@@ -1496,9 +1496,6 @@ void rarch_playlist_load_content(void *data, unsigned idx)
    unsigned i;
    const char *core_path        = NULL;
    const char *path             = NULL;
-   char *path_check             = NULL;
-   char *path_tolower           = NULL;
-   RFILE *fp                    = NULL;
    content_playlist_t *playlist = (content_playlist_t*)data;
    settings_t  *settings        = config_get_ptr();
 #ifdef HAVE_MENU
@@ -1511,32 +1508,37 @@ void rarch_playlist_load_content(void *data, unsigned idx)
    content_playlist_get_index(playlist,
          idx, &path, NULL, &core_path, NULL, NULL, NULL);
 
-   path_tolower = strdup(path);
-
-   for (i = 0; i < strlen(path_tolower); ++i)
-      path_tolower[i] = tolower(path_tolower[i]);
-
-
-   if (strstr(path_tolower, ".zip"))
-      strstr(path_tolower, ".zip")[4] = '\0';
-   else if (strstr(path_tolower, ".7z"))
-      strstr(path_tolower, ".7z")[3] = '\0';
-
-   path_check = (char *)calloc(strlen(path_tolower) + 1, sizeof(char));
-   strncpy(path_check, path, strlen(path_tolower));
-
-   fp = retro_fopen(path_check, RFILE_MODE_READ, -1);
-   if (!fp)
+   if (path && path[0] != '\0')
    {
-      rarch_main_msg_queue_push("File could not be loaded.\n", 1, 100, true);
-      RARCH_LOG("File at %s failed to load.\n", path_check);
+      RFILE *fp           = NULL;
+      char *path_check    = NULL;
+      char *path_tolower  = strdup(path);
+
+      for (i = 0; i < strlen(path_tolower); ++i)
+         path_tolower[i] = tolower(path_tolower[i]);
+
+
+      if (strstr(path_tolower, ".zip"))
+         strstr(path_tolower, ".zip")[4] = '\0';
+      else if (strstr(path_tolower, ".7z"))
+         strstr(path_tolower, ".7z")[3] = '\0';
+
+      path_check = (char *)calloc(strlen(path_tolower) + 1, sizeof(char));
+      strncpy(path_check, path, strlen(path_tolower));
+
+      fp = retro_fopen(path_check, RFILE_MODE_READ, -1);
+      if (!fp)
+      {
+         rarch_main_msg_queue_push("File could not be loaded.\n", 1, 100, true);
+         RARCH_LOG("File at %s failed to load.\n", path_check);
+         free(path_tolower);
+         free(path_check);
+         return;
+      }
+      retro_fclose(fp);
       free(path_tolower);
       free(path_check);
-      return;
    }
-   retro_fclose(fp);
-   free(path_tolower);
-   free(path_check);
 
    strlcpy(settings->libretro, core_path, sizeof(settings->libretro));
 

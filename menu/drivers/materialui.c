@@ -1158,6 +1158,7 @@ static int mui_environ(menu_environ_cb_t type, void *data)
 
 static void mui_preswitch_tabs(unsigned action)
 {
+   size_t idx              = 0;
    size_t stack_size       = 0;
    file_list_t *menu_stack = NULL;
    menu_handle_t *menu     = menu_driver_get_ptr();
@@ -1166,7 +1167,6 @@ static void mui_preswitch_tabs(unsigned action)
    if (!mui)
       return;
 
-   size_t idx = 0;
    menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
 
    menu_stack = menu_entries_get_menu_stack_ptr(0);
@@ -1309,6 +1309,8 @@ static int mui_list_push(menu_displaylist_info_t *info, unsigned type)
 #endif
          menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_CONFIGURATIONS), PARSE_ACTION, false);
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_SAVE_CURRENT_CONFIG), PARSE_ACTION, false);
          menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_SAVE_NEW_CONFIG), PARSE_ACTION, false);
          menu_displaylist_parse_settings(menu, info,

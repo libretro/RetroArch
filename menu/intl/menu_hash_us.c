@@ -26,6 +26,14 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_INPUT_ICADE_ENABLE:
+         return "input_icade_enable";
+      case MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
+         return "keyboard_gamepad_mapping_type";
+      case MENU_LABEL_INPUT_SMALL_KEYBOARD_ENABLE:
+         return "input_small_keyboard_enable";
+      case MENU_LABEL_SAVE_CURRENT_CONFIG:
+         return "save_current_config";
       case MENU_LABEL_STATE_SLOT:
          return "state_slot";
       case MENU_LABEL_CHEEVOS_USERNAME:
@@ -688,6 +696,14 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_INPUT_ICADE_ENABLE:
+         return "Keyboard Gamepad Mapping Enable";
+      case MENU_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
+         return "Keyboard Gamepad Mapping Type";
+      case MENU_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE:
+         return "Small Keyboard Enable";
+      case MENU_LABEL_VALUE_SAVE_CURRENT_CONFIG:
+         return "Save Current Config";
       case MENU_LABEL_VALUE_STATE_SLOT:
          return "State Slot";
       case MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS:

@@ -438,9 +438,8 @@ static void dpi_get_density(char *s, size_t len)
 static bool android_gfx_ctx_get_metrics(void *data,
 	enum display_metric_types type, float *value)
 {
-   int dpi;
+   static int dpi = -1;
    char density[PROP_VALUE_MAX] = {0};
-   dpi_get_density(density, sizeof(density));
 
    switch (type)
    {
@@ -449,9 +448,13 @@ static bool android_gfx_ctx_get_metrics(void *data,
       case DISPLAY_METRIC_MM_HEIGHT:
          return false;
       case DISPLAY_METRIC_DPI:
-         if (density[0] == '\0')
-            return false;
-         dpi    = atoi(density);
+         if (dpi == -1)
+         {
+            dpi_get_density(density, sizeof(density));
+            if (density[0] == '\0')
+               return false;
+            dpi    = atoi(density);
+         }
          *value = (float)dpi;
          break;
       case DISPLAY_METRIC_NONE:

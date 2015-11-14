@@ -40,38 +40,41 @@
 #include "../common/win32_common.h"
 #include "../drivers_wm/win32_shader_dlg.h"
 
-#define IDI_ICON 1
+#ifndef WGL_CONTEXT_MAJOR_VERSION_ARB
+#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
+#endif
 
-#ifndef MAX_MONITORS
-#define MAX_MONITORS 9
+#ifndef WGL_CONTEXT_MINOR_VERSION_ARB
+#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
+#endif
+
+#ifndef WGL_CONTEXT_PROFILE_MASK_ARB
+#define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
+#endif
+
+#ifndef WGL_CONTEXT_CORE_PROFILE_BIT_ARB
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x0001
+#endif
+
+#ifndef WGL_CONTEXT_FLAGS_ARB
+#define WGL_CONTEXT_FLAGS_ARB 0x2094
+#endif
+
+#ifndef WGL_CONTEXT_DEBUG_BIT_ARB
+#define WGL_CONTEXT_DEBUG_BIT_ARB 0x0001
 #endif
 
 static bool g_use_hw_ctx;
-static HWND g_hwnd;
 static HGLRC g_hrc;
 static HGLRC g_hw_hrc;
 static HDC g_hdc;
-static HMONITOR g_last_hm;
-static HMONITOR g_all_hms[MAX_MONITORS];
-static unsigned g_num_mons;
+
 static unsigned g_major;
 static unsigned g_minor;
 
-static bool g_quit;
-static bool g_inited;
 static unsigned g_interval;
 
-static unsigned g_resize_width;
-static unsigned g_resize_height;
-static unsigned g_pos_x = CW_USEDEFAULT;
-static unsigned g_pos_y = CW_USEDEFAULT;
-static bool g_resized;
-
 static dylib_t dll_handle = NULL; /* Handle to OpenGL32.dll */
-
-static bool g_restore_desktop;
-
-static void monitor_info(MONITORINFOEX *mon, HMONITOR *hm_to_use);
 
 static void gfx_ctx_wgl_destroy(void *data);
 
@@ -95,26 +98,7 @@ static void setup_pixel_format(HDC hdc)
    SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
 }
 
-#ifndef WGL_CONTEXT_MAJOR_VERSION_ARB
-#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
-#endif
-#ifndef WGL_CONTEXT_MINOR_VERSION_ARB
-#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
-#endif
-#ifndef WGL_CONTEXT_PROFILE_MASK_ARB
-#define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
-#endif
-#ifndef WGL_CONTEXT_CORE_PROFILE_BIT_ARB
-#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x0001
-#endif
-#ifndef WGL_CONTEXT_FLAGS_ARB
-#define WGL_CONTEXT_FLAGS_ARB 0x2094
-#endif
-#ifndef WGL_CONTEXT_DEBUG_BIT_ARB
-#define WGL_CONTEXT_DEBUG_BIT_ARB 0x0001
-#endif
-
-static void create_gl_context(HWND hwnd)
+void create_gl_context(HWND hwnd)
 {
    bool core_context;
    const struct retro_hw_render_callback *hw_render =
@@ -238,74 +222,7 @@ static void create_gl_context(HWND hwnd)
    }
 }
 
-#ifdef __cplusplus
-extern "C"
-#endif
-bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
-
-static void *dinput_wgl;
-
-static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam)
-{
-   settings_t *settings = config_get_ptr();
-
-   switch (message)
-   {
-      case WM_SYSCOMMAND:
-         /* Prevent screensavers, etc, while running. */
-         switch (wparam)
-         {
-            case SC_SCREENSAVE:
-            case SC_MONITORPOWER:
-               return 0;
-         }
-         break;
-
-      case WM_CHAR:
-      case WM_KEYDOWN:
-      case WM_KEYUP:
-      case WM_SYSKEYUP:
-      case WM_SYSKEYDOWN:
-         return win32_handle_keyboard_event(hwnd, message, wparam, lparam);
-
-      case WM_CREATE:
-         create_gl_context(hwnd);
-         return 0;
-
-      case WM_CLOSE:
-      case WM_DESTROY:
-      case WM_QUIT:
-      {
-         WINDOWPLACEMENT placement;
-         GetWindowPlacement(g_hwnd, &placement);
-         g_pos_x = placement.rcNormalPosition.left;
-         g_pos_y = placement.rcNormalPosition.top;
-         g_quit = true;
-         return 0;
-      }
-      case WM_SIZE:
-         /* Do not send resize message if we minimize. */
-         if (wparam != SIZE_MAXHIDE && wparam != SIZE_MINIMIZED)
-         {
-            g_resize_width  = LOWORD(lparam);
-            g_resize_height = HIWORD(lparam);
-            g_resized = true;
-         }
-         return 0;
-	  case WM_COMMAND:
-         if (settings->ui.menubar_enable)
-         {
-            LRESULT ret = win32_menu_loop(g_hwnd, wparam);
-            (void)ret;
-         }
-         break;
-   }
-
-   if (dinput_handle_message(dinput_wgl, message, wparam, lparam))
-      return 0;
-   return DefWindowProc(hwnd, message, wparam, lparam);
-}
+void *dinput_wgl;
 
 static void gfx_ctx_wgl_swap_interval(void *data, unsigned interval)
 {
@@ -325,20 +242,7 @@ static void gfx_ctx_wgl_swap_interval(void *data, unsigned interval)
 static void gfx_ctx_wgl_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
-   win32_check_window();
-
-   (void)data;
-   (void)frame_count;
-
-   *quit = g_quit;
-
-   if (g_resized)
-   {
-      *resize = true;
-      *width  = g_resize_width;
-      *height = g_resize_height;
-      g_resized = false;
-   }
+   win32_check_window(quit, resize, width, height);
 }
 
 static void gfx_ctx_wgl_swap_buffers(void *data)
@@ -376,11 +280,12 @@ static void gfx_ctx_wgl_get_video_size(void *data, unsigned *width, unsigned *he
 
    if (!g_hwnd)
    {
+      unsigned mon_id;
       RECT mon_rect;
       MONITORINFOEX current_mon;
       HMONITOR hm_to_use = NULL;
 
-      monitor_info(&current_mon, &hm_to_use);
+      win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
       mon_rect = current_mon.rcMonitor;
       *width  = mon_rect.right - mon_rect.left;
       *height = mon_rect.bottom - mon_rect.top;
@@ -392,13 +297,6 @@ static void gfx_ctx_wgl_get_video_size(void *data, unsigned *width, unsigned *he
    }
 }
 
-static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor,
-      HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
-{
-   g_all_hms[g_num_mons++] = hMonitor;
-   return TRUE;
-}
-
 static bool gfx_ctx_wgl_init(void *data)
 {
    WNDCLASSEX wndclass = {0};
@@ -408,24 +306,12 @@ static bool gfx_ctx_wgl_init(void *data)
    if (g_inited)
       return false;
 
-   g_quit = false;
-   g_restore_desktop = false;
+   g_quit              = false;
+   g_restore_desktop   = false;
 
-   g_num_mons = 0;
-   EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, 0);
-
-   wndclass.cbSize = sizeof(wndclass);
-   wndclass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-   wndclass.lpfnWndProc = WndProc;
-   wndclass.hInstance = GetModuleHandle(NULL);
-   wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
-   wndclass.lpszClassName = "RetroArch";
-   wndclass.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
-   wndclass.hIconSm = (HICON)LoadImage(GetModuleHandle(NULL),
-         MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
-
-   if (!RegisterClassEx(&wndclass))
-      return false;
+   win32_monitor_init();
+   if (!win32_window_init(&wndclass, true))
+	   return false;
 
    if (!wgl_shader_dlg_init())
       RARCH_ERR("[WGL]: wgl_shader_dlg_init() failed.\n");
@@ -433,146 +319,16 @@ static bool gfx_ctx_wgl_init(void *data)
    return true;
 }
 
-static bool set_fullscreen(unsigned width, unsigned height, unsigned refresh, char *dev_name)
-{
-   DEVMODE devmode;
-
-   memset(&devmode, 0, sizeof(devmode));
-   devmode.dmSize       = sizeof(DEVMODE);
-   devmode.dmPelsWidth  = width;
-   devmode.dmPelsHeight = height;
-   devmode.dmDisplayFrequency = refresh;
-   devmode.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
-
-   RARCH_LOG("[WGL]: Setting fullscreen to %ux%u @ %uHz on device %s.\n", width, height, refresh, dev_name);
-   return ChangeDisplaySettingsEx(dev_name, &devmode, NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_SUCCESSFUL;
-}
-
-static void monitor_info(MONITORINFOEX *mon, HMONITOR *hm_to_use)
-{
-   unsigned fs_monitor;
-   settings_t *settings = config_get_ptr();
-
-   if (!g_last_hm)
-      g_last_hm = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
-   *hm_to_use = g_last_hm;
-
-   fs_monitor = settings->video.monitor_index;
-   if (fs_monitor && fs_monitor <= g_num_mons && g_all_hms[fs_monitor - 1])
-      *hm_to_use = g_all_hms[fs_monitor - 1];
-
-   memset(mon, 0, sizeof(*mon));
-   mon->cbSize = sizeof(MONITORINFOEX);
-   GetMonitorInfo(*hm_to_use, (MONITORINFO*)mon);
-}
-
 static bool gfx_ctx_wgl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   DWORD style;
-   MSG msg;
-   RECT mon_rect;
-   MONITORINFOEX current_mon;
-   float refresh_mod;
-   unsigned refresh;
-   bool windowed_full;
-   RECT rect   = {0};
-   HMONITOR hm_to_use = NULL;
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
-
-   monitor_info(&current_mon, &hm_to_use);
-
-   mon_rect        = current_mon.rcMonitor;
-   g_resize_width  = width;
-   g_resize_height = height;
-
-   /* Windows only reports the refresh rates for modelines as 
-    * an integer, so video.refresh_rate needs to be rounded. Also, account 
-    * for black frame insertion using video.refresh_rate set to half
-    * of the display refresh rate, as well as higher vsync swap intervals. */
-   refresh_mod = settings->video.black_frame_insertion ? 2.0f : 1.0f;
-   refresh     = roundf(settings->video.refresh_rate * refresh_mod * settings->video.swap_interval);
-
-   windowed_full   = settings->video.windowed_fullscreen;
-
-   if (fullscreen)
-   {
-      if (windowed_full)
-      {
-         style = WS_EX_TOPMOST | WS_POPUP;
-         g_resize_width  = width  = mon_rect.right - mon_rect.left;
-         g_resize_height = height = mon_rect.bottom - mon_rect.top;
-      }
-      else
-      {
-         style = WS_POPUP | WS_VISIBLE;
-
-         if (!set_fullscreen(width, height, refresh, current_mon.szDevice))
-            goto error;
-
-         /* Display settings might have changed, get new coordinates. */
-         GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
-         mon_rect = current_mon.rcMonitor;
-         g_restore_desktop = true;
-      }
-   }
-   else
-   {
-      style = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
-      rect.right  = width;
-      rect.bottom = height;
-      AdjustWindowRect(&rect, style, FALSE);
-      g_resize_width  = width  = rect.right - rect.left;
-      g_resize_height = height = rect.bottom - rect.top;
-   }
-
-   g_hwnd = CreateWindowEx(0, "RetroArch", "RetroArch", style,
-         fullscreen ? mon_rect.left : g_pos_x,
-         fullscreen ? mon_rect.top  : g_pos_y,
-         width, height,
-         NULL, NULL, NULL, NULL);
-
-   if (!g_hwnd)
-      goto error;
-
-   if (!fullscreen || windowed_full)
-   {
-      if (!fullscreen && settings->ui.menubar_enable)
-      {
-         RECT rc_temp = {0, 0, (LONG)height, 0x7FFF};
-         SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
-         SendMessage(g_hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
-         g_resize_height = height += rc_temp.top + rect.top;
-         SetWindowPos(g_hwnd, NULL, 0, 0, width, height, SWP_NOMOVE);
-      }
-
-      ShowWindow(g_hwnd, SW_RESTORE);
-      UpdateWindow(g_hwnd);
-      SetForegroundWindow(g_hwnd);
-      SetFocus(g_hwnd);
-   }
-
-   win32_show_cursor(!fullscreen);
-
-   /* Wait until GL context is created (or failed to do so ...) */
-   while (!g_inited && !g_quit && GetMessage(&msg, g_hwnd, 0, 0))
-   {
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
-   }
-
-   if (g_quit)
+   if (!win32_set_video_mode(data, width, height, fullscreen))
       goto error;
 
    p_swap_interval = (BOOL (APIENTRY *)(int))wglGetProcAddress("wglSwapIntervalEXT");
 
    gfx_ctx_wgl_swap_interval(data, g_interval);
-
-   driver->display_type  = RARCH_DISPLAY_WIN32;
-   driver->video_display = 0;
-   driver->video_window  = (uintptr_t)g_hwnd;
 
    return true;
 
@@ -610,19 +366,14 @@ static void gfx_ctx_wgl_destroy(void *data)
 
    if (g_hwnd)
    {
-      g_last_hm = MonitorFromWindow(g_hwnd, MONITOR_DEFAULTTONEAREST);
-      DestroyWindow(g_hwnd);
+      win32_monitor_from_window(g_hwnd, true);
       UnregisterClass("RetroArch", GetModuleHandle(NULL));
       g_hwnd = NULL;
    }
 
    if (g_restore_desktop)
    {
-      MONITORINFOEX current_mon;
-      memset(&current_mon, 0, sizeof(current_mon));
-      current_mon.cbSize = sizeof(MONITORINFOEX);
-      GetMonitorInfo(g_last_hm, (MONITORINFO*)&current_mon);
-      ChangeDisplaySettingsEx(current_mon.szDevice, NULL, NULL, 0, NULL);
+      win32_monitor_get_info();
       g_restore_desktop = false;
    }
 

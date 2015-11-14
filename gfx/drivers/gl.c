@@ -19,30 +19,33 @@
 #pragma comment(lib, "opengl32")
 #endif
 
+#include <stdio.h>
+#include <stdint.h>
+#include <math.h>
+#include <string.h>
+
+#include <compat/strl.h>
+
 #include "../../driver.h"
 #include "../../performance.h"
 #include <gfx/scaler/scaler.h>
+#include <gfx/math/matrix_4x4.h>
 #include <formats/image.h>
 #include <retro_inline.h>
 
-#include <stdint.h>
 #include "../../libretro.h"
-#include <stdio.h>
-#include <string.h>
 #include "../../general.h"
 #include "../../retroarch.h"
-#include <math.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "gl_common.h"
 #include "../font_driver.h"
 #include "../video_viewport.h"
 #include "../video_pixel_converter.h"
 #include "../video_context_driver.h"
-#include <compat/strl.h>
+#include "../video_texture.h"
 
 #ifdef HAVE_GLSL
 #include "../drivers_shader/shader_glsl.h"

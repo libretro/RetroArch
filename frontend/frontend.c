@@ -17,6 +17,7 @@
 
 #include <file/file_path.h>
 #include <retro_stat.h>
+#include <rthreads/async_job.h>
 
 #include "frontend.h"
 #include "../system.h"
@@ -27,34 +28,6 @@
 #include "../runloop_data.h"
 
 #define MAX_ARGS 32
-
-/**
- * main_exit_save_config:
- *
- * Saves configuration file to disk, and (optionally)
- * autosave state.
- **/
-void main_exit_save_config(void)
-{
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-
-   if (settings->config_save_on_exit && *global->path.config)
-   {
-      /* Save last core-specific config to the default config location,
-       * needed on consoles for core switching and reusing last good
-       * config for new cores.
-       */
-      config_save_file(global->path.config);
-
-      /* Flush out the core specific config. */
-      if (*global->path.core_specific_config &&
-            settings->core_specific_config)
-         config_save_file(global->path.core_specific_config);
-   }
-
-   event_command(EVENT_CMD_AUTOSAVE_STATE);
-}
 
 /**
  * main_exit:
@@ -72,7 +45,7 @@ void main_exit(void *args)
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
    const ui_companion_driver_t *ui       = ui_companion_get_ptr();
 
-   main_exit_save_config();
+   event_command(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
 
    if (global->inited.main)
    {
@@ -285,6 +258,7 @@ int rarch_main(int argc, char *argv[], void *data)
    void *args                      = (void*)data;
    int ret                         = 0;
    settings_t *settings            = NULL;
+   global_t *global                = NULL;
    driver_t *driver                = NULL;
 
    rarch_main_alloc();
@@ -302,6 +276,11 @@ int rarch_main(int argc, char *argv[], void *data)
 
    rarch_main_new();
 
+#ifdef HAVE_THREADS
+   global = global_get_ptr();
+   global->async_jobs = async_job_new();
+#endif
+   
    if (driver->frontend_ctx)
    {
       if (!(ret = (main_load_content(argc, argv, args,

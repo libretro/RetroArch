@@ -17,6 +17,7 @@
 #include "../drivers/gl_common.h"
 #include "../font_driver.h"
 #include "../video_shader_driver.h"
+#include "../video_texture.h"
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
 
@@ -185,7 +186,7 @@ static void gl_raster_font_free_font(void *data)
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
-   glDeleteTextures(1, &font->tex);
+   video_texture_unload(TEXTURE_BACKEND_OPENGL, (uintptr_t*)&font->tex);
    free(font);
 }
 
@@ -440,7 +441,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
       x           = settings->video.msg_pos_x;
       y           = settings->video.msg_pos_y;
       scale       = 1.0f;
-      full_screen = false;
+      full_screen = true;
       text_align  = TEXT_ALIGN_LEFT;
 
       color[0]    = settings->video.msg_color_r;

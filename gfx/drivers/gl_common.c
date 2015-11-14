@@ -15,6 +15,7 @@
  */
 
 #include "gl_common.h"
+#include "../video_texture.h"
 
 void gl_ff_vertex(const void *data)
 {
@@ -46,68 +47,6 @@ void gl_ff_matrix(const void *data)
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 #endif
-}
-
-void gl_load_texture_data(GLuint id,
-      enum gfx_wrap_type wrap_type,
-      enum texture_filter_type filter_type,
-      unsigned alignment,
-      unsigned width, unsigned height,
-      const void *frame, unsigned base_size)
-{
-   GLint mag_filter, min_filter;
-   bool want_mipmap = false;
-   bool rgb32 = (base_size == (sizeof(uint32_t)));
-   driver_t *driver = driver_get_ptr();
-   GLenum wrap = gl_wrap_type_to_enum(wrap_type);
-
-   glBindTexture(GL_TEXTURE_2D, id);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
-    
-#if defined(HAVE_OPENGLES2) || defined(HAVE_PSGL) || defined(OSX_PPC)
-   if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR)
-       filter_type = TEXTURE_FILTER_LINEAR;
-   if (filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
-       filter_type = TEXTURE_FILTER_NEAREST;
-#endif
-
-   switch (filter_type)
-   {
-      case TEXTURE_FILTER_MIPMAP_LINEAR:
-         min_filter = GL_LINEAR_MIPMAP_NEAREST;
-         mag_filter = GL_LINEAR;
-         want_mipmap = true;
-         break;
-      case TEXTURE_FILTER_MIPMAP_NEAREST:
-         min_filter = GL_NEAREST_MIPMAP_NEAREST;
-         mag_filter = GL_NEAREST;
-         want_mipmap = true;
-         break;
-      case TEXTURE_FILTER_NEAREST:
-         min_filter = GL_NEAREST;
-         mag_filter = GL_NEAREST;
-         break;
-      case TEXTURE_FILTER_LINEAR:
-      default:
-         min_filter = GL_LINEAR;
-         mag_filter = GL_LINEAR;
-         break;
-   }
-
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
-
-   glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-   glTexImage2D(GL_TEXTURE_2D,
-         0,
-         (driver->gfx_use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
-         width, height, 0,
-         (driver->gfx_use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
-         (rgb32) ? RARCH_GL_FORMAT32 : GL_UNSIGNED_SHORT_4_4_4_4, frame);
-
-   if (want_mipmap)
-      glGenerateMipmap(GL_TEXTURE_2D);
 }
 
 bool gl_load_luts(const struct video_shader *shader,

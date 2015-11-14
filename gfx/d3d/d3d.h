@@ -54,17 +54,14 @@
 #include "../font_driver.h"
 #include "../font_renderer_driver.h"
 #include "../video_context_driver.h"
+#include "../video_viewport.h"
 #include "d3d_wrapper.h"
 #include "render_chain_driver.h"
 
 typedef struct
 {
-   struct Coords
-   {
-      float x, y, w, h;
-   };
-   Coords tex_coords;
-   Coords vert_coords;
+   float tex_coords[4];
+   float vert_coords[4];
    unsigned tex_w, tex_h;
    bool fullscreen;
    bool enabled;
@@ -96,13 +93,12 @@ typedef struct gl_shader_backend gl_shader_backend_t;
 typedef struct d3d_video
 {
    uint64_t frame_count;
+   bool keep_aspect;
    bool should_resize;
    bool quitting;
 
-#ifdef HAVE_WINDOW
+   struct video_viewport vp;
    WNDCLASSEX windowClass;
-#endif
-   HWND hWnd;
    LPDIRECT3D g_pD3D;
    LPDIRECT3DDEVICE dev;
    HRESULT d3d_err;

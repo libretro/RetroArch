@@ -3147,6 +3147,14 @@ static bool setting_append_list_main_menu_options(
          parent_group);
 
    CONFIG_ACTION(
+         menu_hash_to_str(MENU_LABEL_SAVE_CURRENT_CONFIG),
+         menu_hash_to_str(MENU_LABEL_VALUE_SAVE_CURRENT_CONFIG),
+         group_info.name,
+         subgroup_info.name,
+         parent_group);
+   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
+
+   CONFIG_ACTION(
          menu_hash_to_str(MENU_LABEL_SAVE_NEW_CONFIG),
          menu_hash_to_str(MENU_LABEL_VALUE_SAVE_NEW_CONFIG),
          group_info.name,
@@ -4507,7 +4515,6 @@ static bool setting_append_list_video_options(
          EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
 #endif
 
-#ifndef HAVE_FILTERS_BUILTIN
    CONFIG_PATH(
          settings->video.softfilter_plugin,
          menu_hash_to_str(MENU_LABEL_VIDEO_FILTER),
@@ -4521,7 +4528,6 @@ static bool setting_append_list_video_options(
    menu_settings_list_current_add_values(list, list_info, "filt");
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
-#endif
 
 #ifdef _XBOX1
    CONFIG_UINT(
@@ -4922,6 +4928,46 @@ static bool setting_append_list_input_options(
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1, MAX_USERS, 1, true, true);
+
+   CONFIG_BOOL(
+         settings->input.keyboard_gamepad_enable,
+         menu_hash_to_str(MENU_LABEL_INPUT_ICADE_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_ICADE_ENABLE),
+         false,
+         menu_hash_to_str(MENU_VALUE_OFF),
+         menu_hash_to_str(MENU_VALUE_ON),
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_UINT(
+         settings->input.keyboard_gamepad_mapping_type,
+         menu_hash_to_str(MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE),
+         1,
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
+
+#if TARGET_OS_IPHONE
+   CONFIG_BOOL(
+         settings->input.small_keyboard_enable,
+         menu_hash_to_str(MENU_LABEL_INPUT_SMALL_KEYBOARD_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE),
+         false,
+         menu_hash_to_str(MENU_VALUE_OFF),
+         menu_hash_to_str(MENU_VALUE_ON),
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+#endif
 
 #ifdef ANDROID
    CONFIG_BOOL(

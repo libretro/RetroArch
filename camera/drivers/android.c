@@ -17,6 +17,7 @@
 
 #include <glsym/glsym.h>
 #include "../../driver.h"
+#include "../../gfx/video_texture.h"
 
 typedef struct android_camera
 {
@@ -149,7 +150,7 @@ static void android_camera_stop(void *data)
          androidcamera->onCameraStop);
    
    if (androidcamera->tex)
-      glDeleteTextures(1, &androidcamera->tex);
+      video_texture_unload(TEXTURE_BACKEND_OPENGL, (uintptr_t*)&androidcamera->tex);
 }
 
 static bool android_camera_poll(void *data,

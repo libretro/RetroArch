@@ -41,7 +41,7 @@
 #include <compat/posix_string.h>
 #include <compat/strl.h>
 
-#if defined(HAVE_FILE_LOGGER) && defined(RARCH_INTERNAL) && !defined(IS_JOYCONFIG)
+#if defined(HAVE_FILE_LOGGER) && defined(RARCH_INTERNAL)
 
 #ifdef __cplusplus
 extern "C"
@@ -217,7 +217,8 @@ static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    __android_log_vprint(prio, PROGRAM_NAME, fmt, ap);
 #else
    fprintf(LOG_FILE, "%s %s :: ", PROGRAM_NAME, tag ? tag : "[INFO]");
-   vfprintf(LOG_FILE, fmt, ap); 
+   vfprintf(LOG_FILE, fmt, ap);
+   fflush(LOG_FILE);
 #endif
 }
 

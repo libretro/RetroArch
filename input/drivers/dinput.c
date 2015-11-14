@@ -79,110 +79,6 @@ struct dinput_input
    struct pointer_status pointer_head;  /* dummy head for easier iteration */
 };
 
-const struct rarch_key_map rarch_key_map_dinput[] = {
-   { DIK_LEFT, RETROK_LEFT },
-   { DIK_RIGHT, RETROK_RIGHT },
-   { DIK_UP, RETROK_UP },
-   { DIK_DOWN, RETROK_DOWN },
-   { DIK_RETURN, RETROK_RETURN },
-   { DIK_TAB, RETROK_TAB },
-   { DIK_INSERT, RETROK_INSERT },
-   { DIK_DELETE, RETROK_DELETE },
-   { DIK_RSHIFT, RETROK_RSHIFT },
-   { DIK_LSHIFT, RETROK_LSHIFT },
-   { DIK_LCONTROL, RETROK_LCTRL },
-   { DIK_END, RETROK_END },
-   { DIK_HOME, RETROK_HOME },
-   { DIK_NEXT, RETROK_PAGEDOWN },
-   { DIK_PRIOR, RETROK_PAGEUP },
-   { DIK_LALT, RETROK_LALT },
-   { DIK_SPACE, RETROK_SPACE },
-   { DIK_ESCAPE, RETROK_ESCAPE },
-   { DIK_BACKSPACE, RETROK_BACKSPACE },
-   { DIK_NUMPADENTER, RETROK_KP_ENTER },
-   { DIK_NUMPADPLUS, RETROK_KP_PLUS },
-   { DIK_NUMPADMINUS, RETROK_KP_MINUS },
-   { DIK_NUMPADSTAR, RETROK_KP_MULTIPLY },
-   { DIK_DIVIDE, RETROK_KP_DIVIDE },
-   { DIK_GRAVE, RETROK_BACKQUOTE },
-   { DIK_PAUSE, RETROK_PAUSE },
-   { DIK_NUMPAD0, RETROK_KP0 },
-   { DIK_NUMPAD1, RETROK_KP1 },
-   { DIK_NUMPAD2, RETROK_KP2 },
-   { DIK_NUMPAD3, RETROK_KP3 },
-   { DIK_NUMPAD4, RETROK_KP4 },
-   { DIK_NUMPAD5, RETROK_KP5 },
-   { DIK_NUMPAD6, RETROK_KP6 },
-   { DIK_NUMPAD7, RETROK_KP7 },
-   { DIK_NUMPAD8, RETROK_KP8 },
-   { DIK_NUMPAD9, RETROK_KP9 },
-   { DIK_0, RETROK_0 },
-   { DIK_1, RETROK_1 },
-   { DIK_2, RETROK_2 },
-   { DIK_3, RETROK_3 },
-   { DIK_4, RETROK_4 },
-   { DIK_5, RETROK_5 },
-   { DIK_6, RETROK_6 },
-   { DIK_7, RETROK_7 },
-   { DIK_8, RETROK_8 },
-   { DIK_9, RETROK_9 },
-   { DIK_F1, RETROK_F1 },
-   { DIK_F2, RETROK_F2 },
-   { DIK_F3, RETROK_F3 },
-   { DIK_F4, RETROK_F4 },
-   { DIK_F5, RETROK_F5 },
-   { DIK_F6, RETROK_F6 },
-   { DIK_F7, RETROK_F7 },
-   { DIK_F8, RETROK_F8 },
-   { DIK_F9, RETROK_F9 },
-   { DIK_F10, RETROK_F10 },
-   { DIK_F11, RETROK_F11 },
-   { DIK_F12, RETROK_F12 },
-   { DIK_A, RETROK_a },
-   { DIK_B, RETROK_b },
-   { DIK_C, RETROK_c },
-   { DIK_D, RETROK_d },
-   { DIK_E, RETROK_e },
-   { DIK_F, RETROK_f },
-   { DIK_G, RETROK_g },
-   { DIK_H, RETROK_h },
-   { DIK_I, RETROK_i },
-   { DIK_J, RETROK_j },
-   { DIK_K, RETROK_k },
-   { DIK_L, RETROK_l },
-   { DIK_M, RETROK_m },
-   { DIK_N, RETROK_n },
-   { DIK_O, RETROK_o },
-   { DIK_P, RETROK_p },
-   { DIK_Q, RETROK_q },
-   { DIK_R, RETROK_r },
-   { DIK_S, RETROK_s },
-   { DIK_T, RETROK_t },
-   { DIK_U, RETROK_u },
-   { DIK_V, RETROK_v },
-   { DIK_W, RETROK_w },
-   { DIK_X, RETROK_x },
-   { DIK_Y, RETROK_y },
-   { DIK_Z, RETROK_z },
-   { DIK_APOSTROPHE, RETROK_QUOTE },
-   { DIK_COMMA, RETROK_COMMA },
-   { DIK_MINUS, RETROK_MINUS },
-   { DIK_SLASH, RETROK_SLASH },
-   { DIK_SEMICOLON, RETROK_SEMICOLON },
-   { DIK_EQUALS, RETROK_EQUALS },
-   { DIK_LBRACKET, RETROK_LEFTBRACKET },
-   { DIK_BACKSLASH, RETROK_BACKSLASH },
-   { DIK_RBRACKET, RETROK_RIGHTBRACKET },
-   { DIK_DECIMAL, RETROK_KP_PERIOD },
-   { DIK_RCONTROL, RETROK_RCTRL },
-   { DIK_RMENU, RETROK_RALT },
-   { DIK_PERIOD, RETROK_PERIOD },
-   { DIK_SCROLL, RETROK_SCROLLOCK },
-   { DIK_CAPSLOCK, RETROK_CAPSLOCK },
-   { DIK_NUMLOCK, RETROK_NUMLOCK },
-   { 0, RETROK_UNKNOWN },
-};
-
 void dinput_destroy_context(void)
 {
    if (!g_dinput_ctx)
@@ -200,15 +96,13 @@ bool dinput_init_context(void)
    CoInitialize(NULL);
 
    /* Who said we shouldn't have same call signature in a COM API? <_< */
-#ifdef __cplusplus
    if (FAILED(DirectInput8Create(
-      GetModuleHandle(NULL), DIRECTINPUT_VERSION, IID_IDirectInput8,
-      (void**)&g_dinput_ctx, NULL)))
-#else
-   if (FAILED(DirectInput8Create(
-      GetModuleHandle(NULL), DIRECTINPUT_VERSION, &IID_IDirectInput8,
-      (void**)&g_dinput_ctx, NULL)))
+      GetModuleHandle(NULL), DIRECTINPUT_VERSION,
+#ifndef __cplusplus
+       &
 #endif
+       IID_IDirectInput8,
+      (void**)&g_dinput_ctx, NULL)))
    {
       RARCH_ERR("Failed to init DirectInput.\n");
       return false;
@@ -233,30 +127,27 @@ static void *dinput_init(void)
    if (!di)
       return NULL;
 
-#ifdef __cplusplus
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, GUID_SysKeyboard, &di->keyboard, NULL)))
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+#ifndef __cplusplus
+               &
+#endif
+               GUID_SysKeyboard,
+               &di->keyboard, NULL)))
    {
       RARCH_ERR("Failed to create keyboard device.\n");
       di->keyboard = NULL;
    }
 
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, GUID_SysMouse, &di->mouse, NULL)))
-   {
-      RARCH_ERR("Failed to create mouse device.\n");
-      di->mouse = NULL;
-   }
-#else
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, &GUID_SysKeyboard, &di->keyboard, NULL)))
-   {
-      RARCH_ERR("Failed to create keyboard device.\n");
-      di->keyboard = NULL;
-   }
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, &GUID_SysMouse, &di->mouse, NULL)))
-   {
-      RARCH_ERR("Failed to create mouse device.\n");
-      di->mouse = NULL;
-   }
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+#ifndef __cplusplus
+               &
 #endif
+               GUID_SysMouse,
+               &di->mouse, NULL)))
+   {
+      RARCH_ERR("Failed to create mouse device.\n");
+      di->mouse = NULL;
+   }
 
    if (di->keyboard)
    {
@@ -473,7 +364,7 @@ static int16_t dinput_mouse_state_screen(struct dinput_input *di, unsigned id)
       case RETRO_DEVICE_ID_MOUSE_Y:
          return di->mouse_y;
       default:
-	 break;
+         break;
    }
 
    return dinput_mouse_state(di, id);
@@ -533,8 +424,10 @@ static int16_t dinput_pointer_state(struct dinput_input *di,
       case RETRO_DEVICE_ID_POINTER_PRESSED:
          return pointer_down;
       default:
-         return 0;
+         break;
    }
+
+   return 0;
 }
 
 static int16_t dinput_input_state(void *data,

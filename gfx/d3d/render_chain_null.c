@@ -48,7 +48,7 @@ static bool null_renderchain_init(void *data,
       void *dev_data,
       const void *final_viewport_data,
       const void *info_data,
-      unsigned fmt
+      bool rgb32
       )
 {
    (void)data;
@@ -56,7 +56,7 @@ static bool null_renderchain_init(void *data,
    (void)dev_data;
    (void)final_viewport_data;
    (void)info_data;
-   (void)fmt;
+   (void)rgb32;
 
    return true;
 }
@@ -144,5 +144,8 @@ renderchain_driver_t null_renderchain = {
    null_renderchain_add_state_tracker,
    null_renderchain_render,
    null_renderchain_convert_geometry,
+   NULL,
+   NULL,
+   NULL,
    "null",
 };

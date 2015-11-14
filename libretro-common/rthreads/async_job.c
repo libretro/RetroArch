@@ -111,8 +111,13 @@ void async_job_free(async_job_t *ajob)
 
 int async_job_add(async_job_t *ajob, async_task_t task, void *payload)
 {
-   async_job_node_t *node = (async_job_node_t*)calloc(1, sizeof(*node));
-
+   async_job_node_t *node;
+   
+   if (!ajob)
+      return -1;
+   
+   node = (async_job_node_t*)calloc(1, sizeof(*node));
+   
    if (!node)
       return -1;
 

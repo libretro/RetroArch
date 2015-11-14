@@ -75,6 +75,8 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
          "playlists", sizeof(g_defaults.dir.playlist));
    fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
          "remaps", sizeof(g_defaults.dir.remap));
+   fill_pathname_join(g_defaults.dir.video_filter, g_defaults.dir.port,
+         "filters", sizeof(g_defaults.dir.remap));
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
          "retroarch.cfg", sizeof(g_defaults.path.config));
    
@@ -151,7 +153,7 @@ static void frontend_ctr_deinit(void *data)
       svcCloseHandle(lcd_handle);
    }
 
-   exitCfgu();
+   cfguExit();
    ndspExit();
    csndExit();   
    gfxExit();
@@ -244,7 +246,7 @@ static void frontend_ctr_init(void *data)
    ctr_check_dspfirm();
    if(ndspInit() != 0)
       *dsp_audio_driver = audio_null;
-   initCfgu();
+   cfguInit();
 #endif
 }
 

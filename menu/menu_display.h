@@ -103,11 +103,13 @@ typedef struct menu_display_ctx_driver
 
    void (*clear_color)(float r, float g, float b, float a);
 
-   void (*matrix_4x4_rotate_z)(void *data, float rotation,
-         float scale_x, float scale_y, float scale_z, bool scale_enable);
+   void *(*get_default_mvp)(void);
    const float *(*get_tex_coords)(void);
    unsigned (*texture_load)(void *data, enum texture_filter_type type);
    void (*texture_unload)(uintptr_t *id);
+   bool (*font_init_first)(const void **font_driver,
+         void **font_handle, void *video_data, const char *font_path,
+         float font_size);
    enum menu_display_driver_type type;
    const char *ident;
 } menu_display_ctx_driver_t;
@@ -137,7 +139,7 @@ void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned durati
       bool flush);
 
 
-const bool menu_display_driver_init_first(void);
+bool menu_display_driver_init_first(void);
 
 void menu_display_draw(unsigned x, unsigned y,
       unsigned width, unsigned height,
@@ -179,6 +181,7 @@ void menu_display_texture_unload(uintptr_t *id);
 const float *menu_display_get_tex_coords(void);
 
 extern menu_display_ctx_driver_t menu_display_ctx_gl;
+extern menu_display_ctx_driver_t menu_display_ctx_d3d;
 extern menu_display_ctx_driver_t menu_display_ctx_null;
 
 #ifdef __cplusplus

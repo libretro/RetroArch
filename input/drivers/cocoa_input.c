@@ -125,35 +125,6 @@ const struct apple_key_name_map_entry apple_key_name_map[] =
    { "nul", 0x00},
 };
 
-void cocoa_input_enable_small_keyboard(bool on)
-{
-   driver_t *driver = driver_get_ptr();
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
-   if (apple)
-      apple->small_keyboard_enabled = on;
-}
-
-void cocoa_input_enable_icade(bool on)
-{
-   driver_t *driver = driver_get_ptr();
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
-    
-   if (!apple)
-      return;
-
-   apple->icade_enabled = on;
-   apple->icade_buttons = 0;
-}
-
-void cocoa_input_reset_icade_buttons(void)
-{
-   driver_t *driver = driver_get_ptr();
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
-    
-   if (apple)
-      apple->icade_buttons = 0;
-}
-
 int32_t cocoa_input_find_any_key(void)
 {
    unsigned i;
@@ -177,8 +148,6 @@ static int cocoa_input_find_any_button_ret(cocoa_input_data_t *apple,
    unsigned buttons, unsigned port)
 {
    unsigned i;
-   if (port == 0 && apple->icade_enabled)
-      BIT32_SET(buttons, apple->icade_buttons);
 
    if (buttons)
       for (i = 0; i < 32; i++)
@@ -277,9 +246,6 @@ static void cocoa_input_poll(void *data)
    if (apple->joypad)
       apple->joypad->poll();
 
-   if (apple->icade_enabled)
-      BIT32_SET(apple->buttons[0], apple->icade_buttons);
-    
     apple->mouse_x_last = apple->mouse_rel_x;
     apple->mouse_y_last = apple->mouse_rel_y;
 }

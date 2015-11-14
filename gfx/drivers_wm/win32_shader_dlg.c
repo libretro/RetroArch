@@ -199,7 +199,7 @@ void shader_dlg_params_reload(void)
          g_shader_dlg.controls[i].type = SHADER_PARAM_CTRL_CHECKBOX;
          g_shader_dlg.controls[i].checkbox.hwnd = CreateWindowEx(0, "BUTTON", shader->parameters[i].desc,
                WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, pos_x, pos_y, SHADER_DLG_CTRL_WIDTH, SHADER_DLG_CHECKBOX_HEIGHT,
-               g_shader_dlg.hwnd, (HMENU)i, NULL, NULL);
+               g_shader_dlg.hwnd, (HMENU)(size_t)i, NULL, NULL);
          SendMessage(g_shader_dlg.controls[i].checkbox.hwnd, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
          pos_y += SHADER_DLG_CHECKBOX_HEIGHT + SHADER_DLG_CTRL_MARGIN;
       }
@@ -215,16 +215,16 @@ void shader_dlg_params_reload(void)
          g_shader_dlg.controls[i].type = SHADER_PARAM_CTRL_TRACKBAR;
          g_shader_dlg.controls[i].trackbar.label_title = CreateWindowEx(0, "STATIC", shader->parameters[i].desc,
                WS_CHILD | WS_VISIBLE | SS_LEFT, pos_x, pos_y, SHADER_DLG_CTRL_WIDTH, SHADER_DLG_LABEL_HEIGHT, g_shader_dlg.hwnd,
-               (HMENU)i, NULL, NULL);
+               (HMENU)(size_t)i, NULL, NULL);
          SendMessage(g_shader_dlg.controls[i].trackbar.label_title, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 
          pos_y += SHADER_DLG_LABEL_HEIGHT;
          g_shader_dlg.controls[i].trackbar.hwnd = CreateWindowEx(0, TRACKBAR_CLASS, "",
                WS_CHILD | WS_VISIBLE | TBS_HORZ | TBS_NOTICKS, pos_x + SHADER_DLG_TRACKBAR_LABEL_WIDTH, pos_y,
-               SHADER_DLG_TRACKBAR_WIDTH, SHADER_DLG_TRACKBAR_HEIGHT, g_shader_dlg.hwnd, (HMENU)i, NULL, NULL);
+               SHADER_DLG_TRACKBAR_WIDTH, SHADER_DLG_TRACKBAR_HEIGHT, g_shader_dlg.hwnd, (HMENU)(size_t)i, NULL, NULL);
 
          g_shader_dlg.controls[i].trackbar.label_val = CreateWindowEx(0, "STATIC", "", WS_CHILD | WS_VISIBLE | SS_LEFT, pos_x,
-               pos_y, SHADER_DLG_TRACKBAR_LABEL_WIDTH, SHADER_DLG_LABEL_HEIGHT, g_shader_dlg.hwnd, (HMENU)i, NULL, NULL);
+               pos_y, SHADER_DLG_TRACKBAR_LABEL_WIDTH, SHADER_DLG_LABEL_HEIGHT, g_shader_dlg.hwnd, (HMENU)(size_t)i, NULL, NULL);
          SendMessage(g_shader_dlg.controls[i].trackbar.label_val, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 
          SendMessage(g_shader_dlg.controls[i].trackbar.hwnd, TBM_SETBUDDY, (WPARAM)TRUE,

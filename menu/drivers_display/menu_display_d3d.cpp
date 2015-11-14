@@ -20,42 +20,44 @@
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/video_thread_wrapper.h"
 #include "../../gfx/video_texture.h"
-#include "../../gfx/drivers/gl_common.h"
+#include "../../gfx/d3d/d3d.h"
+#include "../../gfx/d3d/d3d_wrapper.h"
 
 #include "../menu_display.h"
 
-static const GLfloat gl_vertexes[] = {
+#define BYTE_CLAMP(i) (int) ((((i) > 255) ? 255 : (((i) < 0) ? 0 : (i))))
+
+static const float d3d_vertexes[] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const GLfloat gl_tex_coords[] = {
+static const float d3d_tex_coords[] = {
    0, 1,
    1, 1,
    0, 0,
    1, 0
 };
 
-static void *menu_display_gl_get_default_mvp(void)
+static void *menu_display_d3d_get_default_mvp(void)
 {
-   gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
 
-   if (!gl)
+   if (!d3d)
       return NULL;
 
-   return &gl->mvp_no_rot;
+   return NULL; /* TODO/FIXME */
 }
 
-static GLenum menu_display_prim_to_gl_enum(enum menu_display_prim_type prim_type)
+static unsigned menu_display_prim_to_d3d_enum(enum menu_display_prim_type prim_type)
 {
    switch (prim_type)
    {
-      case MENU_DISPLAY_PRIM_TRIANGLESTRIP:
-         return GL_TRIANGLE_STRIP;
       case MENU_DISPLAY_PRIM_TRIANGLES:
-         return GL_TRIANGLES;
+      case MENU_DISPLAY_PRIM_TRIANGLESTRIP:
+         return D3DPT_TRIANGLESTRIP;
       case MENU_DISPLAY_PRIM_NONE:
       default:
          break;
@@ -64,26 +66,32 @@ static GLenum menu_display_prim_to_gl_enum(enum menu_display_prim_type prim_type
    return 0;
 }
 
-static void menu_display_gl_blend_begin(void)
+static void menu_display_d3d_blend_begin(void)
 {
-   gl_t         *gl = (gl_t*)video_driver_get_ptr(NULL);
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
 
-   if (!gl)
+   if (!d3d)
       return;
 
-   glEnable(GL_BLEND);
-   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+   d3d_enable_blend_func(d3d->dev);
 
+#if 0
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+#endif
 }
 
-static void menu_display_gl_blend_end(void)
+static void menu_display_d3d_blend_end(void)
 {
-   glDisable(GL_BLEND);
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
+
+   if (!d3d)
+      return;
+
+   d3d_disable_blend_func(d3d->dev);
 }
 
-static void menu_display_gl_draw(
+static void menu_display_d3d_draw(
       unsigned x, unsigned y,
       unsigned width, unsigned height,
       struct gfx_coords *coords,
@@ -92,11 +100,12 @@ static void menu_display_gl_draw(
       enum menu_display_prim_type prim_type
       )
 {
+   D3DVIEWPORT vp       = {0};
    driver_t     *driver = driver_get_ptr();
-   gl_t             *gl = (gl_t*)video_driver_get_ptr(NULL);
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
    math_matrix_4x4 *mat = (math_matrix_4x4*)matrix_data;
 
-   if (!gl)
+   if (!d3d)
       return;
 
    /* TODO - edge case */
@@ -104,26 +113,37 @@ static void menu_display_gl_draw(
       height = 1;
 
    if (!mat)
-      mat = (math_matrix_4x4*)menu_display_gl_get_default_mvp();
+      mat = (math_matrix_4x4*)menu_display_d3d_get_default_mvp();
    if (!coords->vertex)
-      coords->vertex = &gl_vertexes[0];
+      coords->vertex = &d3d_vertexes[0];
    if (!coords->tex_coord)
-      coords->tex_coord = &gl_tex_coords[0];
+      coords->tex_coord = &d3d_tex_coords[0];
    if (!coords->lut_tex_coord)
-      coords->lut_tex_coord = &gl_tex_coords[0];
+      coords->lut_tex_coord = &d3d_tex_coords[0];
 
-   glViewport(x, y, width, height);
-   glBindTexture(GL_TEXTURE_2D, (GLuint)texture);
+   vp.X      = x;
+   vp.Y      = y;
+   vp.Width  = width;
+   vp.Height = height;
+   vp.MinZ   = 0.0f;
+   vp.MaxZ   = 1.0f;
 
+   d3d_set_viewport(d3d->dev, &vp);
+   d3d_set_texture(d3d->dev, 0, (LPDIRECT3DTEXTURE9)texture);
+
+#if 0
    gl->shader->set_coords(coords);
    gl->shader->set_mvp(driver->video_data, mat);
+#endif
 
-   glDrawArrays(menu_display_prim_to_gl_enum(prim_type), 0, coords->vertices);
+   d3d_draw_primitive(d3d->dev, (D3DPRIMITIVETYPE)menu_display_prim_to_d3d_enum(prim_type), 0, coords->vertices);
 
+#if 0
    gl->coords.color     = gl->white_color_ptr;
+#endif
 }
 
-static void menu_display_gl_draw_bg(
+static void menu_display_d3d_draw_bg(
       unsigned width,
       unsigned height,
       uintptr_t texture,
@@ -141,18 +161,18 @@ static void menu_display_gl_draw_bg(
    const GLfloat *new_tex_coord = NULL;
    global_t     *global = global_get_ptr();
    settings_t *settings = config_get_ptr();
-   gl_t             *gl = (gl_t*)video_driver_get_ptr(NULL);
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
 
-   if (!gl)
+   if (!d3d)
       return;
 
    new_vertex    = vertex;
    new_tex_coord = tex_coord;
 
    if (!new_vertex)
-      new_vertex = &gl_vertexes[0];
+      new_vertex = &d3d_vertexes[0];
    if (!new_tex_coord)
-      new_tex_coord = &gl_tex_coords[0];
+      new_tex_coord = &d3d_tex_coords[0];
 
    coords.vertices      = vertex_count;
    coords.vertex        = new_vertex;
@@ -160,7 +180,7 @@ static void menu_display_gl_draw_bg(
    coords.lut_tex_coord = new_tex_coord;
    coords.color         = (const float*)coord_color;
 
-   menu_display_gl_blend_begin();
+   menu_display_d3d_blend_begin();
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
@@ -170,44 +190,51 @@ static void menu_display_gl_draw_bg(
       && texture)
       coords.color = (const float*)coord_color2;
 
-   menu_display_gl_draw(0, 0, width, height,
-         &coords, (math_matrix_4x4*)menu_display_gl_get_default_mvp(),
+   menu_display_d3d_draw(0, 0, width, height,
+         &coords, (math_matrix_4x4*)menu_display_d3d_get_default_mvp(),
          (GLuint)texture, prim_type);
 
-   menu_display_gl_blend_end();
+   menu_display_d3d_blend_end();
 
+#if 0
    gl->coords.color = gl->white_color_ptr;
+#endif
 }
 
-static void menu_display_gl_restore_clear_color(void)
+static void menu_display_d3d_restore_clear_color(void)
 {
-   glClearColor(0.0f, 0.0f, 0.0f, 0.00f);
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
+   DWORD clear_color = 0x00000000;
+
+   d3d_clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, clear_color, 0, 0);
 }
 
-static void menu_display_gl_clear_color(float r, float g, float b, float a)
+static void menu_display_d3d_clear_color(float r, float g, float b, float a)
 {
-   glClearColor(r, g, b, a);
-   glClear(GL_COLOR_BUFFER_BIT);
+   d3d_video_t *d3d  = (d3d_video_t*)video_driver_get_ptr(NULL);
+   DWORD clear_color = D3DCOLOR_ARGB(BYTE_CLAMP(a * 255.0f), BYTE_CLAMP(r * 255.0f), BYTE_CLAMP(g * 255.0f), BYTE_CLAMP(b * 255.0f));
+
+   d3d_clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, clear_color, 0, 0);
 }
 
-static unsigned menu_display_gl_texture_load(void *data, enum texture_filter_type type)
+static unsigned menu_display_d3d_texture_load(void *data, enum texture_filter_type type)
 {
-   return video_texture_load(data, TEXTURE_BACKEND_OPENGL, type);
+   return video_texture_load(data, TEXTURE_BACKEND_DIRECT3D, type);
 }
 
-static void menu_display_gl_texture_unload(uintptr_t *id)
+static void menu_display_d3d_texture_unload(uintptr_t *id)
 {
    if (!id)
       return;
-   video_texture_unload(TEXTURE_BACKEND_OPENGL, id);
+   video_texture_unload(TEXTURE_BACKEND_DIRECT3D, id);
 }
 
-static const float *menu_display_gl_get_tex_coords(void)
+static const float *menu_display_d3d_get_tex_coords(void)
 {
-   return &gl_tex_coords[0];
+   return &d3d_tex_coords[0];
 }
 
-static bool menu_display_gl_font_init_first(const void **font_driver,
+static bool menu_display_d3d_font_init_first(const void **font_driver,
       void **font_handle, void *video_data, const char *font_path,
       float font_size)
 {
@@ -231,7 +258,7 @@ static bool menu_display_gl_font_init_first(const void **font_driver,
       pkt.data.font_init.video_data  = video_data;
       pkt.data.font_init.font_path   = font_path;
       pkt.data.font_init.font_size   = font_size;
-      pkt.data.font_init.api         = FONT_DRIVER_RENDER_OPENGL_API;
+      pkt.data.font_init.api         = FONT_DRIVER_RENDER_DIRECT3D_API;
 
       thr->send_and_wait(thr, &pkt);
 
@@ -239,21 +266,21 @@ static bool menu_display_gl_font_init_first(const void **font_driver,
    }
 
    return font_init_first(font_driver, font_handle, video_data,
-         font_path, font_size, FONT_DRIVER_RENDER_OPENGL_API);
+         font_path, font_size, FONT_DRIVER_RENDER_DIRECT3D_API);
 }
 
-menu_display_ctx_driver_t menu_display_ctx_gl = {
-   menu_display_gl_draw,
-   menu_display_gl_draw_bg,
-   menu_display_gl_blend_begin,
-   menu_display_gl_blend_end,
-   menu_display_gl_restore_clear_color,
-   menu_display_gl_clear_color,
-   menu_display_gl_get_default_mvp,
-   menu_display_gl_get_tex_coords,
-   menu_display_gl_texture_load,
-   menu_display_gl_texture_unload,
-   menu_display_gl_font_init_first,
-   MENU_VIDEO_DRIVER_OPENGL,
-   "menu_display_gl",
+menu_display_ctx_driver_t menu_display_ctx_d3d = {
+   menu_display_d3d_draw,
+   menu_display_d3d_draw_bg,
+   menu_display_d3d_blend_begin,
+   menu_display_d3d_blend_end,
+   menu_display_d3d_restore_clear_color,
+   menu_display_d3d_clear_color,
+   menu_display_d3d_get_default_mvp,
+   menu_display_d3d_get_tex_coords,
+   menu_display_d3d_texture_load,
+   menu_display_d3d_texture_unload,
+   menu_display_d3d_font_init_first,
+   MENU_VIDEO_DRIVER_DIRECT3D,
+   "menu_display_d3d",
 };

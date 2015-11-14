@@ -216,6 +216,7 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
       return false;
    }
 
+   filt->threads = threads;
    RARCH_LOG("Using %u threads for softfilter.\n", threads);
 
    filt->packets = (struct softfilter_work_packet*)
@@ -231,7 +232,6 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
       calloc(threads, sizeof(*filt->thread_data));
    if (!filt->thread_data)
       return false;
-   filt->threads = threads;
 
    for (i = 0; i < threads; i++)
    {

@@ -35,7 +35,9 @@ extern "C" {
 #endif
 
 #ifdef __MACH__
+#ifndef HAVE_STRL
 #define HAVE_STRL
+#endif
 #endif
 
 #ifndef HAVE_STRL
