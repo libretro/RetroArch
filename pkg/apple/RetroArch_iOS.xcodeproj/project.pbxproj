@@ -550,6 +550,7 @@
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_ZARCH",
 					"-DHAVE_XMB",
+               "-DHAVE_MEMMAP",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
 					"-DHAVE_AVFOUNDATION",
@@ -623,6 +624,7 @@
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_ZARCH",
 					"-DHAVE_XMB",
+               "-DHAVE_MEMMAP",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
 					"-DHAVE_AVFOUNDATION",
@@ -666,6 +668,7 @@
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_ZARCH",
 					"-DHAVE_XMB",
+               "-DHAVE_MEMMAP",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
 					"-DHAVE_AVFOUNDATION",
@@ -807,6 +810,7 @@
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_ZARCH",
 					"-DHAVE_XMB",
+               "-DHAVE_MEMMAP",
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
@@ -848,6 +852,7 @@
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_ZARCH",
 					"-DHAVE_XMB",
+               "-DHAVE_MEMMAP",
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
 				PRODUCT_NAME = "RetroArch copy";
@@ -1047,6 +1052,7 @@
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_ZARCH",
 					"-DHAVE_XMB",
+               "-DHAVE_MEMMAP",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
 					"-DHAVE_AVFOUNDATION",
@@ -1119,6 +1125,7 @@
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_ZARCH",
 					"-DHAVE_XMB",
+               "-DHAVE_MEMMAP",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
 					"-DHAVE_AVFOUNDATION",
@@ -1162,6 +1169,7 @@
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_ZARCH",
 					"-DHAVE_XMB",
+               "-DHAVE_MEMMAP",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
 					"-DHAVE_AVFOUNDATION",

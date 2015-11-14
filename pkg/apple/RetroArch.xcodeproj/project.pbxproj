@@ -415,6 +415,7 @@
 					"-DHAVE_ZARCH",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+               "-DHAVE_MEMMAP",
 					"-DHAVE_LIBRETRODB",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
@@ -476,6 +477,7 @@
 					"-DHAVE_ZARCH",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+               "-DHAVE_MEMMAP",
 					"-DHAVE_LIBRETRODB",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
@@ -538,6 +540,7 @@
 					"-DHAVE_ZARCH",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+               "-DHAVE_MEMMAP",
 					"-DHAVE_LIBRETRODB",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
@@ -598,6 +601,7 @@
 					"-DHAVE_ZARCH",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+               "-DHAVE_MEMMAP",
 					"-DHAVE_LIBRETRODB",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
