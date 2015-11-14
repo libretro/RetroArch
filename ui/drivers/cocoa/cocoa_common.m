@@ -110,7 +110,7 @@ void *glkitview_init(void);
 - (void)viewWillLayoutSubviews
 {
    float width = 0.0f, height = 0.0f, tenpctw, tenpcth;
-   RAScreen *screen  = (RAScreen*)get_chosen_screen();
+   RAScreen *screen  = (__bridge RAScreen*)get_chosen_screen();
    UIInterfaceOrientation orientation = self.interfaceOrientation;
    CGRect screenSize = [screen bounds];
    SEL selector = NSSelectorFromString(BOXSTRING("coordinateSpace"));

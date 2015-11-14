@@ -31,6 +31,8 @@
 
 static id apple_platform;
 
+void *get_chosen_screen(void);
+
 void apple_rarch_exited(void)
 {
    [[NSApplication sharedApplication] terminate:nil];
@@ -115,7 +117,7 @@ void apple_rarch_exited(void)
          apple->mouse_rel_y = event.deltaY;
           
 #if MAC_OS_X_VERSION_10_7
-          RAScreen *screen = [RAScreen mainScreen];
+          NSScreen *screen = (NSScreen*)get_chosen_screen();
           CGFloat backing_scale_factor = screen.backingScaleFactor;
 #else
           CGFloat backing_scale_factor = 1.0f;
