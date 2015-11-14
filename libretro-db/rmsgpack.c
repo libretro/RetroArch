@@ -458,16 +458,21 @@ error:
 static int read_buff(RFILE *fd, size_t size, char **pbuff, uint64_t *len)
 {
    uint64_t tmp_len = 0;
+   ssize_t read_len = 0;
 
    if (read_uint(fd, &tmp_len, size) == -1)
       return -errno;
 
-   *pbuff = (char *)calloc((size_t)(tmp_len + 1), sizeof(char));
+   *pbuff = (char *)malloc((size_t)(tmp_len + 1) * sizeof(char));
 
-   if (retro_fread(fd, *pbuff, (size_t)tmp_len) == -1)
+   if ((read_len = retro_fread(fd, *pbuff, (size_t)tmp_len)) == -1)
       goto error;
 
-   *len = tmp_len;
+   *len = read_len;
+   (*pbuff)[read_len] = 0;
+
+   /* Throw warning on read_len != tmp_len ? */
+
    return 0;
 
 error:
@@ -546,22 +551,23 @@ int rmsgpack_read(RFILE *fd,
    }
    else if (type < MPF_NIL)
    {
+      ssize_t read_len = 0;
       tmp_len = type - MPF_FIXSTR;
-      buff = (char *)calloc((size_t)(tmp_len + 1), sizeof(char));
+      buff = (char *)malloc((size_t)(tmp_len + 1) * sizeof(char));
       if (!buff)
          return -ENOMEM;
-      if (retro_fread(fd, buff, (ssize_t)tmp_len) == -1)
+      if ((read_len = retro_fread(fd, buff, (ssize_t)tmp_len)) == -1)
       {
          free(buff);
          goto error;
       }
-      buff[tmp_len] = '\0';
+      buff[read_len] = '\0';
       if (!callbacks->read_string)
       {
          free(buff);
          return 0;
       }
-      return callbacks->read_string(buff, (uint32_t)tmp_len, data);
+      return callbacks->read_string(buff, (uint32_t)read_len, data);
    }
    else if (type > MPF_MAP32)
    {

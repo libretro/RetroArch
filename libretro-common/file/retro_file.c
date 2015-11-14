@@ -68,6 +68,7 @@
 #endif
 
 #include <retro_file.h>
+#include <memmap.h>
 
 #if 1
 #define HAVE_BUFFERED_IO 1
@@ -79,9 +80,16 @@ struct RFILE
    SceUID fd;
 #elif defined(__CELLOS_LV2__)
    int fd;
-#elif defined(HAVE_BUFFERED_IO)
-   FILE *fd;
 #else
+   unsigned hints;
+#if defined(HAVE_BUFFERED_IO)
+   FILE *fp;
+#endif
+#if defined(HAVE_MMAP)
+   uint8_t *mapped;
+   uint64_t mappos;
+   uint64_t mapsize;
+#endif
    int fd;
 #endif
 };
@@ -92,9 +100,11 @@ int retro_get_fd(RFILE *stream)
       return -1;
 #if defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__)
    return stream->fd;
-#elif defined(HAVE_BUFFERED_IO)
-   return fileno(stream->fd);
 #else
+#if defined(HAVE_BUFFERED_IO)
+   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+      return fileno(stream->fp);
+#endif
    return stream->fd;
 #endif
 }
@@ -113,6 +123,15 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
    (void)mode_int;
    (void)flags;
 
+   stream->hints = mode;
+
+#ifdef HAVE_MMAP
+   if (stream->hints & RFILE_HINT_MMAP && (stream->hints & 0xff) == RFILE_MODE_READ)
+      stream->hints |= RFILE_HINT_UNBUFFERED;
+   else
+#endif
+      stream->hints &= ~RFILE_HINT_MMAP;
+
    switch (mode)
    {
       case RFILE_MODE_READ:
@@ -122,9 +141,12 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 #elif defined(__CELLOS_LV2__)
          mode_int = 0777;
          flags    = CELL_FS_O_RDONLY;
-#elif defined(HAVE_BUFFERED_IO)
-         mode_str = "rb";
 #else
+#if defined(HAVE_BUFFERED_IO)
+         if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+            mode_str = "rb";
+#endif
+         /* No "else" here */
          flags    = O_RDONLY;
 #endif
          break;
@@ -135,10 +157,13 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 #elif defined(__CELLOS_LV2__)
          mode_int = 0777;
          flags    = CELL_FS_O_CREAT | CELL_FS_O_WRONLY | CELL_FS_O_TRUNC;
-#elif defined(HAVE_BUFFERED_IO)
-         mode_str = "wb";
 #else
-         flags    = O_WRONLY | O_CREAT | O_TRUNC | S_IRUSR | S_IWUSR;
+#if defined(HAVE_BUFFERED_IO)
+         if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+            mode_str = "wb";
+#endif
+         else
+            flags    = O_WRONLY | O_CREAT | O_TRUNC | S_IRUSR | S_IWUSR;
 #endif
          break;
       case RFILE_MODE_READ_WRITE:
@@ -148,13 +173,18 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 #elif defined(__CELLOS_LV2__)
          mode_int = 0777;
          flags    = CELL_FS_O_RDWR;
-#elif defined(HAVE_BUFFERED_IO)
-         mode_str = "w+";
 #else
-         flags    = O_RDWR;
-#ifdef _WIN32
-         flags   |= O_BINARY;
+#if defined(HAVE_BUFFERED_IO)
+         if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+            mode_str = "w+";
 #endif
+         else
+         {
+            flags    = O_RDWR;
+#ifdef _WIN32
+            flags   |= O_BINARY;
+#endif
+         }
 #endif
          break;
    }
@@ -163,16 +193,51 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
    stream->fd = sceIoOpen(path, flags, mode_int);
 #elif defined(__CELLOS_LV2__)
    cellFsOpen(path, flags, &stream->fd, NULL, 0);
-#elif defined(HAVE_BUFFERED_IO)
-   stream->fd = fopen(path, mode_str);
 #else
-   stream->fd = open(path, flags);
+#if defined(HAVE_BUFFERED_IO)
+   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+   {
+      stream->fp = fopen(path, mode_str);
+      if (!stream->fp)
+         goto error;
+   }
+   else
+#endif
+   {
+      stream->fd = open(path, flags);
+      if (stream->fd == -1)
+         goto error;
+#ifdef HAVE_MMAP
+      if (stream->hints & RFILE_HINT_MMAP)
+      {
+         stream->mappos  = 0;
+         stream->mapped  = NULL;
+         stream->mapsize = 0;
+
+         if (retro_fseek(stream, 0, SEEK_END) != 0)
+            goto error;
+
+         stream->mapsize = retro_ftell(stream);
+         if (stream->mapsize == (uint64_t)-1)
+            goto error;
+
+         retro_frewind(stream);
+
+         stream->mapped = mmap((void*)0, stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0);
+
+         if (stream->mapped == MAP_FAILED)
+         {
+#ifdef RARCH_INTERNAL
+            RARCH_WARN("mmap()ing %s failed: %s\n", path, strerror(errno));
+#endif
+            stream->hints &= ~RFILE_HINT_MMAP;
+         }
+      }
+#endif
+   }
 #endif
 
-#if defined(HAVE_BUFFERED_IO)
-   if (!stream->fd)
-      goto error;
-#else
+#if defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__)
    if (stream->fd == -1)
       goto error;
 #endif
@@ -202,13 +267,52 @@ ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence)
    if (cellFsLseek(stream->fd, offset, whence, &pos) != CELL_FS_SUCCEEDED)
       return -1;
    return 0;
-#elif defined(HAVE_BUFFERED_IO)
-   return fseek(stream->fd, (long)offset, whence);
 #else
-   ret = lseek(stream->fd, offset, whence);
-   if (ret == -1)
-      return -1;
-   return 0;
+#if defined(HAVE_BUFFERED_IO)
+   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+      return fseek(stream->fp, (long)offset, whence);
+   else
+#endif
+#ifdef HAVE_MMAP
+      /* Need to check stream->mapped because this function is called in retro_fopen() */
+      if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
+      {
+         /* fseek() returns error on under/overflow but allows cursor > EOF for
+            read-only file descriptors. */
+         switch (whence)
+         {
+            case SEEK_SET:
+               if (offset < 0)
+                  return -1;
+
+               stream->mappos = offset;
+               break;
+
+            case SEEK_CUR:
+               if ((offset < 0 && stream->mappos + offset > stream->mappos) ||
+                   (offset > 0 && stream->mappos + offset < stream->mappos))
+                  return -1;
+
+               stream->mappos += offset;
+               break;
+
+            case SEEK_END:
+               if (stream->mapsize + offset < stream->mapsize)
+                  return -1;
+
+               stream->mappos = stream->mapsize + offset;
+
+               break;
+         }
+
+         return 0;
+      }
+      else
+#endif
+      {
+         ret = lseek(stream->fd, offset, whence);
+         return ret == -1 ? -1 : 0;
+      }
 #endif
 }
 
@@ -223,10 +327,19 @@ ssize_t retro_ftell(RFILE *stream)
    if (cellFsLseek(stream->fd, 0, CELL_FS_SEEK_CUR, &pos) != CELL_FS_SUCCEEDED)
       return -1;
    return 0;
-#elif defined(HAVE_BUFFERED_IO)
-   return ftell(stream->fd);
-#else 
-   return lseek(stream->fd, 0, SEEK_CUR);
+#else
+#if defined(HAVE_BUFFERED_IO)
+   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+      return ftell(stream->fp);
+   else
+#endif
+#ifdef HAVE_MMAP
+      /* Need to check stream->mapped because this function is called in retro_fopen() */
+      if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
+         return stream->mappos;
+      else
+#endif
+         return lseek(stream->fd, 0, SEEK_CUR);
 #endif
 }
 
@@ -246,10 +359,29 @@ ssize_t retro_fread(RFILE *stream, void *s, size_t len)
    if (cellFsRead(stream->fd, s, len, &bytes_written) != CELL_FS_SUCCEEDED)
       return -1;
    return bytes_written;
-#elif defined(HAVE_BUFFERED_IO)
-   return fread(s, 1, len, stream->fd);
 #else
-   return read(stream->fd, s, len);
+#if defined(HAVE_BUFFERED_IO)
+   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+      return fread(s, 1, len, stream->fp);
+   else
+#endif
+#ifdef HAVE_MMAP
+      if (stream->hints & RFILE_HINT_MMAP)
+      {
+         if (stream->mappos > stream->mapsize)
+            return -1;
+
+         if (stream->mappos + len > stream->mapsize)
+            len = stream->mapsize - stream->mappos;
+
+         memcpy(s, &stream->mapped[stream->mappos], len);
+         stream->mappos += len;
+
+         return len;
+      }
+      else
+#endif
+         return read(stream->fd, s, len);
 #endif
 }
 
@@ -264,10 +396,18 @@ ssize_t retro_fwrite(RFILE *stream, const void *s, size_t len)
    if (cellFsWrite(stream->fd, s, len, &bytes_written) != CELL_FS_SUCCEEDED)
       return -1;
    return bytes_written;
-#elif defined(HAVE_BUFFERED_IO)
-   return fwrite(s, 1, len, stream->fd);
 #else
-   return write(stream->fd, s, len);
+#if defined(HAVE_BUFFERED_IO)
+   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+      return fwrite(s, 1, len, stream->fp);
+   else
+#endif
+#ifdef HAVE_MMAP
+      if (stream->hints & RFILE_HINT_MMAP)
+         return -1;
+      else
+         return write(stream->fd, s, len);
+#endif
 #endif
 }
 
@@ -282,12 +422,22 @@ int retro_fclose(RFILE *stream)
 #elif defined(__CELLOS_LV2__)
    if (stream->fd > 0)
       cellFsClose(stream->fd);
-#elif defined(HAVE_BUFFERED_IO)
-   if (stream->fd)
-      fclose(stream->fd);
 #else
-   if (stream->fd > 0)
-      close(stream->fd);
+#if defined(HAVE_BUFFERED_IO)
+   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+   {
+      if (stream->fp)
+         fclose(stream->fp);
+   }
+   else
+#endif
+#ifdef HAVE_MMAP
+      if (stream->hints & RFILE_HINT_MMAP)
+         munmap(stream->mapped, stream->mapsize);
+#endif
+
+      if (stream->fd > 0)
+         close(stream->fd);
 #endif
    free(stream);
 
