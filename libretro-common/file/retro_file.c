@@ -406,8 +406,8 @@ ssize_t retro_fwrite(RFILE *stream, const void *s, size_t len)
       if (stream->hints & RFILE_HINT_MMAP)
          return -1;
       else
-         return write(stream->fd, s, len);
 #endif
+         return write(stream->fd, s, len);
 #endif
 }
 
