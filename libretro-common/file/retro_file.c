@@ -76,12 +76,12 @@
 
 struct RFILE
 {
+   unsigned hints;
 #if defined(PSP) || defined(VITA)
    SceUID fd;
 #elif defined(__CELLOS_LV2__)
    int fd;
 #else
-   unsigned hints;
 #if defined(HAVE_BUFFERED_IO)
    FILE *fp;
 #endif
