@@ -80,47 +80,24 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
          "retroarch.cfg", sizeof(g_defaults.path.config));
    
-#if 0
-   int i;
-   DEBUG_VAR(*argc);
-   for (i=0; i < *argc; i++)
-      DEBUG_STR(argv[i]);
-   DEBUG_HOLD();
-#endif
-
-   *argc = 0;
-
 #ifndef IS_SALAMANDER
-#if 0
-   if (argv[1] && (argv[1][0] != '\0'))
+   /* clean-up argc/argv */
+   if(*argc)
    {
-      static char path[PATH_MAX_LENGTH];
-      struct rarch_main_wrap *args = NULL;
-
-      *path = '\0';
-      args = (struct rarch_main_wrap*)params_data;
-
-      if (args)
+      int i = *argc - 1;
+      *argc = 0;
+      while (i)
       {
-         strlcpy(path, argv[1], sizeof(path));
-
-         args->touched        = true;
-         args->no_content     = false;
-         args->verbose        = false;
-         args->config_path    = NULL;
-         args->sram_path      = NULL;
-         args->state_path     = NULL;
-         args->content_path   = path;
-         args->libretro_path  = NULL;
-
-         RARCH_LOG("argv[0]: %s\n", argv[0]);
-         RARCH_LOG("argv[1]: %s\n", argv[1]);
-         RARCH_LOG("argv[2]: %s\n", argv[2]);
-
-         RARCH_LOG("Auto-start game %s.\n", argv[1]);
+         if(argv[i] && argv[i][0])
+         {
+            argv[1] = argv[i];
+            argv[2] = NULL;
+            *argc = 2;
+            break;
+         }
+         i--;
       }
    }
-#endif
 #endif
 }
 
