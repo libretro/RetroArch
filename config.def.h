@@ -729,7 +729,7 @@ static const unsigned libretro_log_level = 0;
 static const float axis_threshold = 0.5;
 
 /* Describes speed of which turbo-enabled buttons toggle. */
-static const unsigned turbo_period = 6;
+static const unsigned turbo_period = 1;
 static const unsigned turbo_duty_cycle = 3;
 
 /* Enable input auto-detection. Will attempt to autoconfigure
