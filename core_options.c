@@ -238,6 +238,30 @@ bool core_option_flush(core_option_manager_t *opt)
 }
 
 /**
+ * core_option_flush_game_specific:
+ * @opt              : options manager handle
+ * @path             : path for the core options file
+ *
+ * Writes core option key-pair values to a custom file.
+ *
+ * Returns: true (1) if core option values could be
+ * successfully saved to disk, otherwise false (0).
+ **/
+bool core_option_flush_game_specific(core_option_manager_t *opt, char* path)
+{
+   size_t i;
+   for (i = 0; i < opt->size; i++)
+   {
+      struct core_option *option = (struct core_option*)&opt->opts[i];
+
+      if (option)
+         config_set_string(opt->conf, option->key, core_option_get_val(opt, i));
+}
+
+   return config_file_write(opt->conf, path);
+}
+
+/**
  * core_option_size:
  * @opt              : options manager handle
  *
