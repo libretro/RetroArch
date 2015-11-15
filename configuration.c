@@ -2442,6 +2442,8 @@ bool config_save_file(const char *path)
 
    RARCH_LOG("Saving config at path: \"%s\"\n", path);
 
+   config_set_int(conf, "input_turbo_period", settings->input.turbo_period);
+   config_set_int(conf, "input_duty_cycle", settings->input.turbo_duty_cycle);
    config_set_int(conf, "input_max_users", settings->input.max_users);
    config_set_int(conf, "input_menu_toggle_gamepad_combo", settings->input.menu_toggle_gamepad_combo);
    config_set_float(conf, "input_axis_threshold",
