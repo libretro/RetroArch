@@ -3000,6 +3000,12 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          {
             size_t opts = core_option_size(system->core_options);
 
+            if (settings->game_specific_options)
+            {
+               menu_entries_push(info->list,
+                     menu_hash_to_str(MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE), "",
+                     MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0);
+            }
             if (opts == 0)
             {
                menu_entries_push(info->list,

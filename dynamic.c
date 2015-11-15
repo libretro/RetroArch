@@ -590,6 +590,64 @@ static void rarch_log_libretro(enum retro_log_level level,
 }
 
 /**
+ * rarch_game_specific_options:
+ * @cmd                          : Output variable with path to core options file.
+ *
+ * Environment callback function implementation.
+ *
+ * Returns: true (1) if a game specific core options path has been found,
+ * otherwise false (0).
+ **/
+static bool rarch_game_specific_options(char **output)
+{
+   settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
+
+   const char *core_name                  = NULL;
+   const char *game_name                  = NULL;
+   config_file_t *option_file             = NULL;
+   char game_path[PATH_MAX_LENGTH]        = {0};
+   char config_directory[PATH_MAX_LENGTH] = {0};
+
+   /* Config directory: config_directory.
+   * Try config directory setting first,
+   * fallback to the location of the current configuration file. */
+
+   if (settings->menu_config_directory[0] != '\0')
+      strlcpy(config_directory, settings->menu_config_directory, PATH_MAX_LENGTH);
+   else if (global->path.config[0] != '\0')
+      fill_pathname_basedir(config_directory, global->path.config, PATH_MAX_LENGTH);
+   else
+   {
+      RARCH_WARN("Per-game Options: no config directory set\n");
+      return false;
+   }
+
+   core_name = system->info.library_name;
+   game_name = path_basename(global->name.base);
+
+   RARCH_LOG("Per-game Options: core name: %s\n", core_name);
+   RARCH_LOG("Per-game Options: game name: %s\n", game_name);
+
+   /* Concatenate strings into full paths for game_path */
+
+   fill_pathname_join(game_path, config_directory, core_name, PATH_MAX_LENGTH);
+   fill_pathname_join(game_path, game_path, game_name, PATH_MAX_LENGTH);
+   strlcat(game_path, ".opt", PATH_MAX_LENGTH);
+
+   option_file = config_file_new(game_path);
+   if(option_file)
+   {
+      RARCH_LOG("Per-game options: game-specific core options found at %s\n", game_path);
+      *output = game_path;
+      return true;
+   }
+
+   return false;
+}
+
+/**
  * rarch_environment_cb:
  * @cmd                          : Identifier of command.
  * @data                         : Pointer to data.
@@ -663,8 +721,17 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                      "retroarch-core-options.cfg", sizeof(buf));
                options_path = buf;
             }
+            
+            char *game_options_path = NULL;
+            bool ret = false;
+            
+            if (settings->game_specific_options)
+               ret = rarch_game_specific_options(&game_options_path);
 
-            system->core_options = core_option_new(options_path, vars);
+            if(ret)
+               system->core_options = core_option_new(game_options_path, vars);
+            else
+               system->core_options = core_option_new(options_path, vars);
          }
 
          break;

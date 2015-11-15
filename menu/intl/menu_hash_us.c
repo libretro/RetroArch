@@ -308,6 +308,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "slowmotion_ratio";
       case MENU_LABEL_CORE_SPECIFIC_CONFIG:
          return "core_specific_config";
+      case MENU_LABEL_GAME_SPECIFIC_OPTIONS:
+         return "game_specific_options";
       case MENU_LABEL_AUTO_OVERRIDES_ENABLE:
          return "auto_overrides_enable";
       case MENU_LABEL_CONFIG_SAVE_ON_EXIT:
@@ -1016,6 +1018,10 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Slow-Motion Ratio";
       case MENU_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
          return "Configuration Per-Core";
+      case MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS:
+         return "Use per-game core options if available";
+      case MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE:
+         return "Create game-options file";
       case MENU_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
          return "Load Override Files Automatically";
       case MENU_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:

@@ -1241,6 +1241,55 @@ static int action_ok_disk_cycle_tray_status(const char *path,
    return generic_action_ok_command(EVENT_CMD_DISK_EJECT_TOGGLE);
 }
 
+static int action_ok_option_create(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   /* create folder and core options stub file for subsequent runs */
+   settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
+
+   const char *core_name                  = NULL;
+   const char *game_name                  = NULL;
+   config_file_t *option_file             = NULL;
+   char core_path[PATH_MAX_LENGTH]        = {0};
+   char game_path[PATH_MAX_LENGTH]        = {0};
+   char config_directory[PATH_MAX_LENGTH] = {0};
+   char msg[PATH_MAX_LENGTH] = {0};
+
+   /* Config directory: config_directory.
+   * Try config directory setting first,
+   * fallback to the location of the current configuration file. */
+   if (settings->menu_config_directory[0] != '\0')
+      strlcpy(config_directory, settings->menu_config_directory, PATH_MAX_LENGTH);
+   else if (global->path.config[0] != '\0')
+      fill_pathname_basedir(config_directory, global->path.config, PATH_MAX_LENGTH);
+   else
+   {
+      RARCH_WARN("Per-game Options: no config directory set\n");
+      return false;
+   }
+
+   core_name = system->info.library_name;
+   game_name = path_basename(global->name.base);
+
+   /* Concatenate strings into full paths for game_path */
+   fill_pathname_join(core_path, config_directory, core_name, PATH_MAX_LENGTH);
+   fill_pathname_join(game_path, config_directory, core_name, PATH_MAX_LENGTH);
+   fill_pathname_join(game_path, game_path, game_name, PATH_MAX_LENGTH);
+   strlcat(game_path, ".opt", PATH_MAX_LENGTH);
+
+   if (!path_is_directory(core_path))
+      path_mkdir(core_path);
+
+   if(core_option_flush_game_specific(system->core_options,game_path))
+      menu_display_msg_queue_push("Core options file saved successfully", 1, 100, true);
+   else
+      menu_display_msg_queue_push("Error saving core options file", 1, 100, true);
+   return 0;
+}
+
+
 static int action_ok_close_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2310,6 +2359,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS:
             BIND_ACTION_OK(cbs, action_ok_disk_cycle_tray_status);
+            break;
+         case MENU_SETTINGS_CORE_OPTION_CREATE:
+            BIND_ACTION_OK(cbs, action_ok_option_create);
             break;
          default:
             return -1;
