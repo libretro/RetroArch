@@ -22,6 +22,15 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_CHEEVOS_TEST_UNOFFICIAL                                     0xa1ae28f0U
+#define MENU_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL                               0x0698e665U
+
+#define MENU_LABEL_VALUE_ENABLE                                                0xb0d05f8cU
+
+#define MENU_LABEL_VALUE_CHEEVOS_SETTINGS                                      0x1fe3be93U
+
+#define MENU_LABEL_CHEEVOS_ENABLE                                              0x2748f998U
+
 #define MENU_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE                   0x507c52f3U
 #define MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE                         0x3665cbb0U
 

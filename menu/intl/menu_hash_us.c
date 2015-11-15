@@ -26,6 +26,10 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_CHEEVOS_TEST_UNOFFICIAL:
+         return "cheevos_test_unofficial";
+      case MENU_LABEL_CHEEVOS_ENABLE:
+         return "cheevos_enable";
       case MENU_LABEL_INPUT_ICADE_ENABLE:
          return "input_icade_enable";
       case MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
@@ -694,6 +698,10 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
+         return "Test unofficial";
+      case MENU_LABEL_VALUE_CHEEVOS_SETTINGS:
+         return "Retro Achievements";
       case MENU_LABEL_VALUE_INPUT_ICADE_ENABLE:
          return "Keyboard Gamepad Mapping Enable";
       case MENU_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
@@ -1600,6 +1608,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Search:";
       case MENU_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER:
          return "Use Builtin Image Viewer";
+      case MENU_LABEL_VALUE_ENABLE:
+         return "Enable";
       default:
          break;
    }

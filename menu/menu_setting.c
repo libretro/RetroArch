@@ -5731,23 +5731,14 @@ static bool setting_append_list_cheevos_options(
    settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info,
-#if 0
          menu_hash_to_str(MENU_LABEL_VALUE_CHEEVOS_SETTINGS),
-#else
-         "Retro Achievements",
-#endif
          parent_group);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
          settings->cheevos.enable,
-#if 0
          menu_hash_to_str(MENU_LABEL_CHEEVOS_ENABLE),
-         menu_hash_to_str(MENU_LABEL_VALUE_CHEEVOS_ENABLE),
-#else
-         "cheevos_enable",
-         "Enable",
-#endif
+         menu_hash_to_str(MENU_LABEL_VALUE_ENABLE),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -5759,13 +5750,8 @@ static bool setting_append_list_cheevos_options(
 
    CONFIG_BOOL(
          settings->cheevos.test_unofficial,
-#if 0
          menu_hash_to_str(MENU_LABEL_CHEEVOS_TEST_UNOFFICIAL),
          menu_hash_to_str(MENU_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL),
-#else
-         "cheevos_test_unofficial",
-         "Test unofficial",
-#endif
          true,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
@@ -6112,11 +6098,7 @@ static bool setting_append_list_accounts_cheevos_options(
    CONFIG_STRING(
          settings->cheevos.username,
          menu_hash_to_str(MENU_LABEL_CHEEVOS_USERNAME),
-#if 0
-         menu_hash_to_str(MENU_LABEL_VALUE_CHEEVOS_USERNAME),
-#else
-         "Username",
-#endif
+         menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME),
          "",
          group_info.name,
          subgroup_info.name,
@@ -6128,11 +6110,7 @@ static bool setting_append_list_accounts_cheevos_options(
    CONFIG_STRING(
          settings->cheevos.password,
          menu_hash_to_str(MENU_LABEL_CHEEVOS_PASSWORD),
-#if 0
-         menu_hash_to_str(MENU_LABEL_VALUE_CHEEVOS_PASSWORD),
-#else
-         "Password",
-#endif
+         menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD),
          "",
          group_info.name,
          subgroup_info.name,
