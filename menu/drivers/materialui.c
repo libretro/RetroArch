@@ -195,6 +195,38 @@ static void mui_draw_icon(mui_handle_t *mui,
    menu_display_blend_end();
 }
 
+
+static void mui_draw_tab(mui_handle_t *mui,
+      unsigned i,
+      unsigned width, unsigned height,
+      float *pure_white)
+{
+   unsigned tab_icon;
+   switch (i)
+   {
+      case MUI_SYSTEM_TAB_MAIN:
+         tab_icon = (i == mui->categories.selection_ptr)
+            ? MUI_TEXTURE_TAB_MAIN_ACTIVE
+            : MUI_TEXTURE_TAB_MAIN_PASSIVE;
+         break;
+      case MUI_SYSTEM_TAB_PLAYLISTS:
+         tab_icon = (i == mui->categories.selection_ptr)
+            ? MUI_TEXTURE_TAB_PLAYLISTS_ACTIVE
+            : MUI_TEXTURE_TAB_PLAYLISTS_PASSIVE;
+         break;
+      case MUI_SYSTEM_TAB_SETTINGS:
+         tab_icon = (i == mui->categories.selection_ptr)
+            ? MUI_TEXTURE_TAB_SETTINGS_ACTIVE
+            : MUI_TEXTURE_TAB_SETTINGS_PASSIVE;
+         break;
+   }
+
+   mui_draw_icon(mui, mui->textures.list[tab_icon].id,
+         width / (MUI_SYSTEM_TAB_END+1) * (i+0.5) - mui->icon_size/2,
+         height - mui->tabs_height,
+         width, height, 0, 1, &pure_white[0]);
+}
+
 static void mui_blit_line(float x, float y, unsigned width, unsigned height,
       const char *message, uint32_t color, enum text_alignment text_align)
 {
@@ -246,6 +278,44 @@ static void mui_render_quad(int x, int y, unsigned w, unsigned h,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
    menu_display_blend_end();
+}
+
+static void mui_draw_tab_begin(mui_handle_t *mui,
+      unsigned width, unsigned height,
+      float *white_bg, float *grey_bg)
+{
+   float scale_factor;
+   menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
+
+   mui->tabs_height = scale_factor / 3;
+
+   /* tabs background */
+   mui_render_quad(0, height - mui->tabs_height, width,
+         mui->tabs_height,
+         width, height,
+         white_bg);
+
+   /* tabs separator */
+   mui_render_quad(0, height - mui->tabs_height, width,
+         1,
+         width, height,
+         grey_bg);
+}
+
+static void mui_draw_tab_end(mui_handle_t *mui,
+      unsigned width, unsigned height,
+      unsigned header_height,
+      float *blue_bg)
+{
+   /* active tab marker */
+   unsigned tab_width = width / (MUI_SYSTEM_TAB_END+1);
+
+   mui_render_quad(mui->categories.selection_ptr * tab_width,
+         height - (header_height/16),
+         tab_width,
+         header_height/16,
+         width, height,
+         &blue_bg[0]);
 }
 
 static void mui_draw_scrollbar(unsigned width, unsigned height, float *coord_color)
@@ -752,66 +822,17 @@ static void mui_frame(void)
    /* header */
    mui_render_quad( 0, 0, width, header_height, width, height, &blue_bg[0]);
 
+   mui->tabs_height = 0;
+
    /* display tabs if depth equal one, if not hide them */
    if (mui_list_get_size(menu, MENU_LIST_PLAIN) == 1)
    {
-      float scale_factor;
-      menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
-
-      mui->tabs_height = scale_factor / 3;
-
-      /* tabs background */
-      mui_render_quad(0, height - mui->tabs_height, width,
-            mui->tabs_height,
-            width, height,
-            &white_bg[0]);
-
-      /* tabs separator */
-      mui_render_quad(0, height - mui->tabs_height, width,
-            1,
-            width, height,
-            &grey_bg[0]);
+      mui_draw_tab_begin(mui, width, height, &white_bg[0], &grey_bg[0]);
 
       for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
-      {
-         unsigned tab_icon = MUI_TEXTURE_TAB_MAIN_PASSIVE;
-         switch (i)
-         {
-            case MUI_SYSTEM_TAB_MAIN:
-               tab_icon = (i == mui->categories.selection_ptr)
-                        ? MUI_TEXTURE_TAB_MAIN_ACTIVE
-                        : MUI_TEXTURE_TAB_MAIN_PASSIVE;
-               break;
-            case MUI_SYSTEM_TAB_PLAYLISTS:
-               tab_icon = (i == mui->categories.selection_ptr)
-                        ? MUI_TEXTURE_TAB_PLAYLISTS_ACTIVE
-                        : MUI_TEXTURE_TAB_PLAYLISTS_PASSIVE;
-               break;
-            case MUI_SYSTEM_TAB_SETTINGS:
-               tab_icon = (i == mui->categories.selection_ptr)
-                        ? MUI_TEXTURE_TAB_SETTINGS_ACTIVE
-                        : MUI_TEXTURE_TAB_SETTINGS_PASSIVE;
-               break;
-         }
+         mui_draw_tab(mui, i, width, height, &pure_white[0]);
 
-         mui_draw_icon(mui, mui->textures.list[tab_icon].id,
-               width / (MUI_SYSTEM_TAB_END+1) * (i+0.5) - mui->icon_size/2,
-               height - mui->tabs_height,
-               width, height, 0, 1, &pure_white[0]);
-      }
-
-      /* active tab marker */
-      tab_width = width / (MUI_SYSTEM_TAB_END+1);
-      mui_render_quad(mui->categories.selection_ptr * tab_width,
-            height - (header_height/16),
-            tab_width,
-            header_height/16,
-            width, height,
-            &blue_bg[0]);
-   }
-   else
-   {
-      mui->tabs_height = 0;
+      mui_draw_tab_end(mui, width, height, header_height, &blue_bg[0]);
    }
 
    mui_render_quad(0, header_height, width,
