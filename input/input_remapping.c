@@ -21,16 +21,16 @@
 
 /**
  * input_remapping_load_file:
- * @path                     : Path to remapping file (absolute path).
+ * @data                     : Path to config file.
  *
  * Loads a remap file from disk to memory.
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool input_remapping_load_file(const char *path)
+bool input_remapping_load_file(void *data, const char *path)
 {
    unsigned i, j;
-   config_file_t *conf  = config_file_new(path);
+   config_file_t *conf  = (config_file_t*)data;
    settings_t *settings = config_get_ptr();
 
    if (!conf ||  path[0] == '\0')

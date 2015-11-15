@@ -691,7 +691,12 @@ static int generic_action_ok(const char *path,
                sizeof(global->record.config));
          break;
       case ACTION_OK_LOAD_REMAPPING_FILE:
-         input_remapping_load_file(action_path);
+         {
+            config_file_t *conf = config_file_new(action_path);
+
+            if (conf)
+               input_remapping_load_file(conf, action_path);
+         }
          break;
       case ACTION_OK_LOAD_CHEAT_FILE:
          if (global->cheat)

@@ -26,13 +26,13 @@ extern "C" {
 
 /**
  * input_remapping_load_file:
- * @path                     : Path to remapping file (absolute path).
+ * @data                     : Path to config file.
  *
  * Loads a remap file from disk to memory.
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool input_remapping_load_file(const char *path);
+bool input_remapping_load_file(void *data, const char *path);
 
 /**
  * input_remapping_save_file:

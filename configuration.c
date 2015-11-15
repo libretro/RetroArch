@@ -1859,9 +1859,9 @@ bool config_load_override(void)
    settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *info              = rarch_system_info_get_ptr();
 
-   if (!global || !settings )
+   if (!global || !settings || !info)
    {
-      RARCH_ERR("Could not obtain global pointer or configuration file pointer to retrieve path of retroarch.cfg.\n");
+      RARCH_ERR("Could load override config file.\n");
       return false;
    }
 
@@ -1905,6 +1905,8 @@ bool config_load_override(void)
    /* If a core override exists, add its location to append_config_path */
    if (new_conf)
    {
+      config_file_free(new_conf);
+
       if (settings->core_specific_config)
       {
          RARCH_LOG("Overrides: can't use overrides with with per-core configs, disabling overrides\n");
@@ -1912,10 +1914,12 @@ bool config_load_override(void)
       }
       RARCH_LOG("Overrides: core-specific overrides found at %s\n", core_path);
       strlcpy(global->path.append_config, core_path, sizeof(global->path.append_config));
+
       should_append = true;
    }
    else
       RARCH_LOG("Overrides: no core-specific overrides found at %s\n", core_path);
+
 
    /* Create a new config file from game_path */
    new_conf = config_file_new(game_path);
@@ -1923,6 +1927,8 @@ bool config_load_override(void)
    /* If a game override exists, add it's location to append_config_path */
    if (new_conf)
    {
+      config_file_free(new_conf);
+
       RARCH_LOG("Overrides: game-specific overrides found at %s\n", game_path);
       if (should_append)
       {
@@ -2077,7 +2083,7 @@ bool config_load_remap(void)
    if (new_conf)
    {
       RARCH_LOG("Remaps: game-specific remap found at %s\n", game_path);
-      if (input_remapping_load_file(game_path))
+      if (input_remapping_load_file(new_conf, game_path))
       {
          rarch_main_msg_queue_push("Game remap file loaded", 1, 100, true);
          return true;
@@ -2097,7 +2103,7 @@ bool config_load_remap(void)
    if (new_conf)
    {
       RARCH_LOG("Remaps: core-specific remap found at %s\n", core_path);
-      if (input_remapping_load_file(core_path))
+      if (input_remapping_load_file(new_conf, core_path))
       {
          rarch_main_msg_queue_push("Core remap file loaded", 1, 100, true);
          return true;

@@ -782,11 +782,13 @@ static bool event_save_auto_state(void)
 static void event_init_remapping(void)
 {
    settings_t *settings = config_get_ptr();
+   const char   *path   = settings->input.remapping_path;
+   config_file_t *conf  = config_file_new(path);
 
-   if (!settings->input.remap_binds_enable)
+   if (!settings->input.remap_binds_enable || !conf)
       return;
 
-   input_remapping_load_file(settings->input.remapping_path);
+   input_remapping_load_file(conf, path);
 }
 
 /**
