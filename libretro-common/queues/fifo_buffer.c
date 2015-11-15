@@ -25,6 +25,14 @@
 
 #include <queues/fifo_buffer.h>
 
+struct fifo_buffer
+{
+   uint8_t *buffer;
+   size_t bufsize;
+   size_t first;
+   size_t end;
+};
+
 fifo_buffer_t *fifo_new(size_t size)
 {
    fifo_buffer_t *buf = (fifo_buffer_t*)calloc(1, sizeof(*buf));
