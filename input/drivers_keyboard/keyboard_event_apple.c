@@ -239,7 +239,13 @@ static bool handle_icade_event(unsigned *code, bool *keydown)
       icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_p)].key = RETROK_q;
       icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_i)].key = RETROK_w;
       icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_m)].key = RETROK_w;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_l)].key = RETROK_RSHIFT;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_v)].key = RETROK_RSHIFT;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_o)].key = RETROK_RETURN;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_g)].key = RETROK_RETURN;
 
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_v)].up  = true;
+      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_g)].up  = true;
       icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_e)].up  = true;
       icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_z)].up  = true;
       icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_q)].up  = true;
