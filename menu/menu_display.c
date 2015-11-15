@@ -161,7 +161,7 @@ bool menu_display_font_flush_block(void *data, const void *font_data)
       (const struct font_renderer*)font_data;
    menu_handle_t *menu = (menu_handle_t*)data;
    menu_display_t *disp = menu_display_get_ptr();
-   if (!font_driver || !font_driver->flush)
+   if (!font_driver || !font_driver->flush || !disp || !disp->font.buf)
       return false;
 
    font_driver->flush(disp->font.buf);
