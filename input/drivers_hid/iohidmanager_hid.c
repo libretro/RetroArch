@@ -198,7 +198,13 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                   default:
                      {
                         int i;
-                        static const uint32_t axis_use_ids[6] = { 48, 49, 50, 51, 52, 53 };
+                        // +0/-0   =>   Left Stick Horizontal       => 48
+                        // +1/-1   =>   Left Stick Vertical         => 49
+                        // +2/-2   =>   Right Stick Horizontal      => 51
+                        // +3/-3   =>   Right Stick Vertical        => 52
+                        // +4/-4   =>   Left Trigger (if exists)    => 50
+                        // +5/-5   =>   Right Trigger (if exists)   => 53
+                        static const uint32_t axis_use_ids[6] = { 48, 49, 51, 52, 50, 53 };
 
                         for (i = 0; i < 6; i ++)
                         {
