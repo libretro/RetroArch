@@ -310,13 +310,13 @@ ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence)
                break;
          }
 
-         return 0;
+         return stream->mappos;
       }
       else
 #endif
       {
          ret = lseek(stream->fd, offset, whence);
-         return ret == -1 ? -1 : 0;
+         return ret < 0 ? -1 : ret;
       }
 #endif
 }
