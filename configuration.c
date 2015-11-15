@@ -1861,7 +1861,7 @@ bool config_load_override(void)
 
    if (!global || !settings || !info)
    {
-      RARCH_ERR("Could load override config file.\n");
+      RARCH_ERR("Couldn't load override config file.\n");
       return false;
    }
 
