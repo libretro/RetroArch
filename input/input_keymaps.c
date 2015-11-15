@@ -569,6 +569,11 @@ const struct rarch_key_map rarch_key_map_rwebinput[] = {
 #endif
 
 #ifdef HAVE_X11
+
+#ifndef XF68XK_Calculator
+#define XF86XK_Calculator          0x1008FF1D
+#endif
+
 const struct rarch_key_map rarch_key_map_x11[] = {
    { XK_BackSpace, RETROK_BACKSPACE },
    { XK_Tab, RETROK_TAB },
@@ -709,6 +714,7 @@ const struct rarch_key_map rarch_key_map_x11[] = {
    { XK_KP_Down,  RETROK_KP1 },
    { XK_KP_Left,  RETROK_KP2 },
    { XK_KP_Right,  RETROK_KP3 },
+   { XF86XK_Calculator, RETROK_HELP },
 
    { 0, RETROK_UNKNOWN },
 };
