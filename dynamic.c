@@ -721,8 +721,12 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                      "retroarch-core-options.cfg", sizeof(buf));
                options_path = buf;
             }
+            
             char *game_options_path = NULL;
-            bool ret = rarch_game_specific_options(&game_options_path);
+            bool ret = false;
+            
+            if (settings->game_specific_options)
+               ret = rarch_game_specific_options(&game_options_path);
 
             if(ret)
                system->core_options = core_option_new(game_options_path, vars);

@@ -3477,6 +3477,20 @@ static bool setting_append_list_configuration_options(
          general_write_handler,
          general_read_handler);
 
+CONFIG_BOOL(
+      settings->game_specific_options,
+      menu_hash_to_str(MENU_LABEL_GAME_SPECIFIC_OPTIONS),
+      menu_hash_to_str(MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS),
+      default_game_specific_options,
+      menu_hash_to_str(MENU_VALUE_OFF),
+      menu_hash_to_str(MENU_VALUE_ON),
+      group_info.name,
+      subgroup_info.name,
+      parent_group,
+      general_write_handler,
+      general_read_handler);
+         
+
    CONFIG_BOOL(
          settings->auto_overrides_enable,
          menu_hash_to_str(MENU_LABEL_AUTO_OVERRIDES_ENABLE),
