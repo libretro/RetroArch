@@ -305,12 +305,13 @@ bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
    if (!*params->name)
       return ret;
 
-#if defined(HAVE_BUILTIN_AUTOCONFIG)
-   ret = input_autoconfigure_joypad_from_conf_internal(params);
-#endif
-
    if (!ret)
       ret = input_autoconfigure_joypad_from_conf_dir(params);
+
+#if defined(HAVE_BUILTIN_AUTOCONFIG)
+   if (!ret)
+      ret = input_autoconfigure_joypad_from_conf_internal(params);
+#endif
 
    return ret;
 }
