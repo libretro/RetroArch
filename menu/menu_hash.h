@@ -295,6 +295,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_VIDEO_FULLSCREEN                                      0x232743caU
 #define MENU_LABEL_CORE_SPECIFIC_CONFIG                                        0x3c9a55e8U
 #define MENU_LABEL_VALUE_CORE_SPECIFIC_CONFIG                                  0x8b8bec5aU
+#define MENU_LABEL_GAME_SPECIFIC_OPTIONS                                       0x142ec90fU
+#define MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS                                 0x6aed8a05U
 #define MENU_LABEL_AUTO_OVERRIDES_ENABLE                                       0x35ff91b6U
 #define MENU_LABEL_VALUE_AUTO_OVERRIDES_ENABLE                                 0xc21c3a11U
 #define MENU_LABEL_AUTO_REMAPS_ENABLE                                          0x98c8f98bU
