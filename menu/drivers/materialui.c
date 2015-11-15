@@ -726,7 +726,7 @@ static void mui_frame(void)
       0, 0, 0, 0.2,
       0, 0, 0, 0.2,
    };
-   unsigned width, height, ticker_limit, i, tab_width;
+   unsigned width, height, ticker_limit, i;
    char msg[PATH_MAX_LENGTH];
    char title[PATH_MAX_LENGTH];
    char title_buf[PATH_MAX_LENGTH];
