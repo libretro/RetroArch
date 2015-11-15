@@ -227,7 +227,6 @@ static void gx_free_overlay(gx_video_t *gx)
 static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
       bool fullscreen)
 {
-   unsigned i;
    bool progressive;
    unsigned modetype, level, viHeightMultiplier, viWidth, tvmode,
             max_width, max_height, i;
