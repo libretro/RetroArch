@@ -230,10 +230,18 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    if(index >= 0 && current_best > 0)
    {
       conf = config_file_new(list->elems[index].data);
-      RARCH_LOG("Autodetect: selected configuration: %s\n", conf->path);
-      input_autoconfigure_joypad_add(conf, params);
-      config_file_free(conf);
-      ret = 1;
+
+      if (conf)
+      {
+         char conf_path[PATH_MAX_LENGTH];
+
+         config_get_config_path(conf, conf_path, sizeof(conf_path));
+
+         RARCH_LOG("Autodetect: selected configuration: %s\n", conf_path);
+         input_autoconfigure_joypad_add(conf, params);
+         config_file_free(conf);
+         ret = 1;
+      }
    }
    else
       ret = 0;

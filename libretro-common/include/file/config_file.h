@@ -34,34 +34,6 @@ extern "C" {
 
 #include <boolean.h>
 
-struct config_entry_list
-{
-   /* If we got this from an #include,
-    * do not allow overwrite. */
-   bool readonly;
-   char *key;
-   char *value;
-   uint32_t key_hash;
-
-   struct config_entry_list *next;
-};
-
-struct config_include_list
-{
-   char *path;
-   struct config_include_list *next;
-};
-
-struct config_file
-{
-   char *path;
-   struct config_entry_list *entries;
-   struct config_entry_list *tail;
-   unsigned include_depth;
-
-   struct config_include_list *includes;
-};
-
 typedef struct config_file config_file_t;
 
 /* Config file format
@@ -132,11 +104,14 @@ bool config_get_char(config_file_t *conf, const char *entry, char *in);
 bool config_get_string(config_file_t *conf, const char *entry, char **in);
 
 /* Extracts a string to a preallocated buffer. Avoid memory allocation. */
-bool config_get_array(config_file_t *conf, const char *entry, char *in, size_t size);
+bool config_get_array(config_file_t *conf, const char *entry, char *s, size_t len);
 
 /* Extracts a string to a preallocated buffer. Avoid memory allocation.
  * Recognized magic like ~/. Similar to config_get_array() otherwise. */
-bool config_get_path(config_file_t *conf, const char *entry, char *in, size_t size);
+bool config_get_path(config_file_t *conf, const char *entry, char *s, size_t len);
+
+/* Extracts a string to a preallocated buffer. Avoid memory allocation. */
+bool config_get_config_path(config_file_t *conf, char *s, size_t len);
 
 /* Extracts a boolean from config.
  * Valid boolean true are "true" and "1". Valid false are "false" and "0".

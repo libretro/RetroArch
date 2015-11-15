@@ -47,6 +47,34 @@
 
 #define MAX_INCLUDE_DEPTH 16
 
+struct config_entry_list
+{
+   /* If we got this from an #include,
+    * do not allow overwrite. */
+   bool readonly;
+   char *key;
+   char *value;
+   uint32_t key_hash;
+
+   struct config_entry_list *next;
+};
+
+struct config_include_list
+{
+   char *path;
+   struct config_include_list *next;
+};
+
+struct config_file
+{
+   char *path;
+   struct config_entry_list *entries;
+   struct config_entry_list *tail;
+   unsigned include_depth;
+
+   struct config_include_list *includes;
+};
+
 static config_file_t *config_file_new_internal(const char *path, unsigned depth);
 void config_file_free(config_file_t *conf);
 
@@ -660,6 +688,14 @@ bool config_get_string(config_file_t *conf, const char *key, char **str)
       *str = strdup(entry->value);
 
    return entry != NULL;
+}
+
+bool config_get_config_path(config_file_t *conf, char *s, size_t len)
+{
+   if (!conf)
+      return false;
+
+   return strlcpy(s, conf->path, len);
 }
 
 bool config_get_array(config_file_t *conf, const char *key,
