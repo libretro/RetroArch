@@ -409,74 +409,6 @@ end:
    string_list_free(list);
 }
 
-static void mui_font(menu_handle_t *menu)
-{
-   int font_size;
-   char mediapath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
-   settings_t *settings = config_get_ptr();
-
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
-
-   fill_pathname_join(mediapath, settings->assets_directory, "glui", sizeof(mediapath));
-   fill_pathname_join(fontpath, mediapath, "Roboto-Regular.ttf", sizeof(fontpath));
-
-   if (!menu_display_init_main_font(menu, fontpath, font_size))
-      RARCH_WARN("Failed to load font.");
-}
-
-static bool mui_layout(menu_handle_t *menu, mui_handle_t *mui)
-{
-   void *fb_buf;
-   static float old_scale_factor = 0.0f;
-   float scale_factor;
-   int new_font_size;
-   unsigned width, height, new_header_height;
-
-   video_driver_get_size(&width, &height);
-
-   /* Mobiles platforms may have very small display metrics coupled to a high
-      resolution, so we should be dpi aware to ensure the entries hitboxes are
-      big enough. On desktops, we just care about readability, with every widget
-      size proportional to the display width. */
-   menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
-
-   if (old_scale_factor == scale_factor)
-      return false;
-
-   old_scale_factor     = scale_factor;
-
-   new_header_height    = scale_factor / 3;
-   new_font_size        = scale_factor / 9;
-
-   mui->shadow_height   = scale_factor / 36;
-   mui->scrollbar_width = scale_factor / 36;
-   mui->tabs_height     = scale_factor / 3;
-   mui->line_height     = scale_factor / 3;
-   mui->margin          = scale_factor / 9;
-   mui->icon_size       = scale_factor / 3;
-
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &new_header_height);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,     &new_font_size);
-
-   /* we assume the average glyph aspect ratio is close to 3:4 */
-   mui->glyph_width = new_font_size * 3/4;
-
-   mui_font(menu);
-
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &fb_buf);
-
-   if (fb_buf) /* calculate a more realistic ticker_limit */
-   {
-      driver_t *driver = driver_get_ptr();
-      unsigned m_width = driver->font_osd_driver->get_message_width(fb_buf, "a", 1, 1);
-
-      if (m_width)
-         mui->glyph_width = m_width;
-   }
-
-   return true;
-}
-
 static void mui_render(void)
 {
    float delta_time, dt;
@@ -825,9 +757,6 @@ static void mui_frame(void)
    title[0]     = '\0';
    title_buf[0] = '\0';
 
-   if (mui_layout(menu, mui))
-      return;
-
    video_driver_get_size(&width, &height);
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
@@ -960,7 +889,6 @@ static void mui_frame(void)
       mui_draw_cursor(mui, &white_bg[0], mouse_x, mouse_y, width, height);
    }
 
-
    menu_display_restore_clear_color();
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
@@ -978,7 +906,65 @@ static void mui_allocate_white_texture(mui_handle_t *mui)
          TEXTURE_FILTER_NEAREST);
 }
 
+static void mui_font(menu_handle_t *menu)
+{
+   int font_size;
+   char mediapath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
+   settings_t *settings = config_get_ptr();
 
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
+
+   fill_pathname_join(mediapath, settings->assets_directory, "glui", sizeof(mediapath));
+   fill_pathname_join(fontpath, mediapath, "Roboto-Regular.ttf", sizeof(fontpath));
+
+   if (!menu_display_init_main_font(menu, fontpath, font_size))
+      RARCH_WARN("Failed to load font.");
+}
+
+static void mui_layout(menu_handle_t *menu, mui_handle_t *mui)
+{
+   void *fb_buf;
+   float scale_factor;
+   int new_font_size;
+   unsigned width, height, new_header_height;
+
+   video_driver_get_size(&width, &height);
+
+   /* Mobiles platforms may have very small display metrics coupled to a high
+      resolution, so we should be dpi aware to ensure the entries hitboxes are
+      big enough. On desktops, we just care about readability, with every widget
+      size proportional to the display width. */
+   menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
+
+   new_header_height    = scale_factor / 3;
+   new_font_size        = scale_factor / 9;
+
+   mui->shadow_height   = scale_factor / 36;
+   mui->scrollbar_width = scale_factor / 36;
+   mui->tabs_height     = scale_factor / 3;
+   mui->line_height     = scale_factor / 3;
+   mui->margin          = scale_factor / 9;
+   mui->icon_size       = scale_factor / 3;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &new_header_height);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,     &new_font_size);
+
+   /* we assume the average glyph aspect ratio is close to 3:4 */
+   mui->glyph_width = new_font_size * 3/4;
+
+   mui_font(menu);
+
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &fb_buf);
+
+   if (fb_buf) /* calculate a more realistic ticker_limit */
+   {
+      driver_t *driver = driver_get_ptr();
+      unsigned m_width = driver->font_osd_driver->get_message_width(fb_buf, "a", 1, 1);
+
+      if (m_width)
+         mui->glyph_width = m_width;
+   }
+}
 
 static void *mui_init(void)
 {
