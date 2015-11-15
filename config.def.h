@@ -517,6 +517,7 @@ static bool default_core_specific_config = true;
 static bool default_core_specific_config = false;
 #endif
 
+static bool default_game_specific_options = true;
 static bool default_auto_overrides_enable = false;
 static bool default_auto_remaps_enable = false;
 
