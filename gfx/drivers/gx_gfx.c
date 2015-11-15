@@ -227,6 +227,7 @@ static void gx_free_overlay(gx_video_t *gx)
 static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
       bool fullscreen)
 {
+   unsigned i;
    bool progressive;
    unsigned modetype, level, viHeightMultiplier, viWidth, tvmode,
             max_width, max_height, i;
@@ -429,9 +430,11 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    video_viewport_reset_custom();
 
    gx->current_framebuf = 0;
-   for( int i=0; i < GX_RESOLUTIONS_LAST; i++)
+
+   for(i = 0; i < GX_RESOLUTIONS_LAST; i++)
       if(fbWidth == menu_gx_resolutions[i][0] && lines == menu_gx_resolutions[i][1])
 		  menu_current_gx_resolution = i;
+
    RARCH_LOG("GX Resolution Index: %d\n", menu_current_gx_resolution);
 }
 
@@ -515,6 +518,7 @@ static void init_texture(void *data, unsigned width, unsigned height)
 
 static void init_vtx(void *data, const video_info_t *video)
 {
+   Mtx44 m;
    gx_video_t *gx = (gx_video_t*)data;
 
    GX_SetCullMode(GX_CULL_NONE);
@@ -524,7 +528,6 @@ static void init_vtx(void *data, const video_info_t *video)
    GX_SetColorUpdate(GX_TRUE);
    GX_SetAlphaUpdate(GX_FALSE);
 
-   Mtx44 m;
    guOrtho(m, 1, -1, -1, 1, 0.4, 0.6);
    GX_LoadProjectionMtx(m, GX_ORTHOGRAPHIC);
 
@@ -581,10 +584,13 @@ static void init_vtx(void *data, const video_info_t *video)
 
 static void build_disp_list(gx_video_t *gx)
 {
+   unsigned i;
+
    DCInvalidateRange(gx->display_list, sizeof(gx->display_list));
    GX_BeginDispList(gx->display_list, sizeof(gx->display_list));
    GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
-   for (unsigned i = 0; i < 4; i++)
+
+   for (i = 0; i < 4; i++)
    {
       GX_Position1x8(i);
       GX_Color1x8(i);
@@ -636,12 +642,13 @@ static void gx_efb_screenshot(void)
 static void *gx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
+   void *gxinput;
    gx_video_t *gx = (gx_video_t*)calloc(1, sizeof(gx_video_t));
    if (!gx)
       return NULL;
 
-   void *gxinput = input_gx.init();
-   *input = gxinput ? &input_gx : NULL;
+   gxinput     = input_gx.init();
+   *input      = gxinput ? &input_gx : NULL;
    *input_data = gxinput;
 
    VIInit();
@@ -1291,7 +1298,9 @@ static void gx_apply_state_changes(void *data)
 static void gx_viewport_info(void *data, struct video_viewport *vp)
 {
    gx_video_t *gx = (gx_video_t*)data;
-   *vp = gx->vp;
+
+   if (gx)
+      *vp = gx->vp;
 }
 
 static bool gx_read_viewport(void *data, uint8_t *buffer)
