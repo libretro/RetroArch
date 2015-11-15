@@ -415,8 +415,6 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "Granularidade do Retrocesso";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
          return "Carregar Remapeamento";
-      case MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS:
-         return "Salvar Remapeamento Como";
       case MENU_LABEL_VALUE_CUSTOM_RATIO:
          return "Relação de Aspecto Personalizada";
       case MENU_LABEL_VALUE_USE_THIS_DIRECTORY:

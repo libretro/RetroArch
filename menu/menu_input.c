@@ -394,9 +394,6 @@ void menu_input_st_string_callback(void *userdata, const char *str)
             case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
                menu_shader_manager_save_preset(str, false);
                break;
-            case MENU_LABEL_REMAP_FILE_SAVE_AS:
-               input_remapping_save_file(str);
-               break;
             case MENU_LABEL_CHEAT_FILE_SAVE_AS:
                cheat_manager_save(global->cheat, str);
                break;

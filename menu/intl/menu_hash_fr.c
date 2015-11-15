@@ -430,8 +430,6 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Précision du rembobinage";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
          return "Charger un fichier de remap";
-      case MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS:
-         return "Enregistrer un fichier de remap sous...";
       case MENU_LABEL_VALUE_CUSTOM_RATIO:
          return "Forcer une résolution";
       case MENU_LABEL_VALUE_USE_THIS_DIRECTORY:

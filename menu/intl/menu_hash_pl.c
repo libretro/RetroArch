@@ -427,8 +427,6 @@ const char *menu_hash_to_str_pl(uint32_t hash)
          return "P³ynno¶æ przewijania";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
          return "Wczytaj plik remapowania";
-      case MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS:
-         return "Zapisz plik remapowania jako";
       case MENU_LABEL_VALUE_CUSTOM_RATIO:
          return "W³±sny wspó³czynnik";
       case MENU_LABEL_VALUE_USE_THIS_DIRECTORY:

@@ -503,8 +503,6 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Nivel de detalle del rebobinado";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
          return "Cargar archivo de reasignación";
-      case MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS:
-         return "Guardar archivo de reasignación como...";
       case MENU_LABEL_VALUE_CUSTOM_RATIO:
          return "Proporción personalizada";
       case MENU_LABEL_VALUE_USE_THIS_DIRECTORY:

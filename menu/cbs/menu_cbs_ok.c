@@ -850,14 +850,6 @@ static int action_ok_cheat_file_save_as(const char *path,
    return 0;
 }
 
-static int action_ok_remap_file_save_as(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_input_key_start_line("Remapping Filename",
-         label, type, idx, menu_input_st_string_callback);
-   return 0;
-}
-
 enum
 {
    ACTION_OK_REMAP_FILE_SAVE_CORE = 0,
@@ -2031,9 +2023,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          break;
       case MENU_LABEL_CHEAT_FILE_SAVE_AS:
          BIND_ACTION_OK(cbs, action_ok_cheat_file_save_as);
-         break;
-      case MENU_LABEL_REMAP_FILE_SAVE_AS:
-         BIND_ACTION_OK(cbs, action_ok_remap_file_save_as);
          break;
       case MENU_LABEL_REMAP_FILE_SAVE_CORE:
          BIND_ACTION_OK(cbs, action_ok_remap_file_save_core);

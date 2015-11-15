@@ -2022,10 +2022,6 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
          menu_hash_to_str(MENU_LABEL_REMAP_FILE_LOAD),
          MENU_SETTING_ACTION, 0, 0);
    menu_entries_push(info->list,
-         menu_hash_to_str(MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS),
-         menu_hash_to_str(MENU_LABEL_REMAP_FILE_SAVE_AS),
-         MENU_SETTING_ACTION, 0, 0);
-   menu_entries_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_REMAP_FILE_SAVE_CORE),
          menu_hash_to_str(MENU_LABEL_REMAP_FILE_SAVE_CORE),
          MENU_SETTING_ACTION, 0, 0);

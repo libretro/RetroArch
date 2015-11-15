@@ -461,8 +461,6 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "Rewind Granulariteit";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
          return "Laad Remap Bestand";
-      case MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS:
-         return "Remap Bestand Opslaan Als";
       case MENU_LABEL_VALUE_CUSTOM_RATIO:
          return "Handmatige beeldverhouding";
       case MENU_LABEL_VALUE_USE_THIS_DIRECTORY:

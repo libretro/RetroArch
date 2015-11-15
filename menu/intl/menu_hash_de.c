@@ -417,8 +417,6 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Genauigkeit des Zurückspulens (Rewind)";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
          return "Lade Remap-Datei";
-      case MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS:
-         return "Speichere Remap-Datei unter...";
       case MENU_LABEL_VALUE_CUSTOM_RATIO:
          return "Benutzerdefiniertes Verhältnis";
       case MENU_LABEL_VALUE_USE_THIS_DIRECTORY:
