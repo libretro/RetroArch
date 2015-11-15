@@ -63,11 +63,11 @@ typedef struct gx_video
    bool overlay_enable;
    bool overlay_full_screen;
 #endif
+   void *framebuf[2];
 } gx_video_t;
 
 #define SYSMEM1_SIZE 0x01800000
 
-void *g_framebuf[2];
 unsigned g_current_framebuf;
 
 bool g_vsync;
@@ -362,9 +362,9 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    gx->should_resize = true;
 
    VIConfigure(&gx_mode);
-   VIDEO_ClearFrameBuffer(&gx_mode, g_framebuf[0], COLOR_BLACK);
-   VIDEO_ClearFrameBuffer(&gx_mode, g_framebuf[1], COLOR_BLACK);
-   VISetNextFrameBuffer(g_framebuf[0]);
+   VIDEO_ClearFrameBuffer(&gx_mode, gx->framebuf[0], COLOR_BLACK);
+   VIDEO_ClearFrameBuffer(&gx_mode, gx->framebuf[1], COLOR_BLACK);
+   VISetNextFrameBuffer(gx->framebuf[0]);
    VISetPostRetraceCallback(retrace_callback);
    VISetBlack(false);
    VIFlush();
@@ -464,13 +464,13 @@ static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    gx->should_resize = true;
 }
 
-static void setup_video_mode(void *data)
+static void setup_video_mode(gx_video_t *gx)
 {
-   if (!g_framebuf[0])
+   if (!gx->framebuf[0])
    {
       unsigned i;
       for (i = 0; i < 2; i++)
-         g_framebuf[i] = MEM_K0_TO_K1(
+         gx->framebuf[i] = MEM_K0_TO_K1(
                memalign(32, 640 * 576 * VI_DISPLAY_PIX_SZ));
    }
 
@@ -480,7 +480,7 @@ static void setup_video_mode(void *data)
    OSInitThreadQueue(&g_video_cond);
 
    VIDEO_GetPreferredMode(&gx_mode);
-   gx_set_video_mode(data, 0, 0, true);
+   gx_set_video_mode(gx, 0, 0, true);
 }
 
 static void init_texture(void *data, unsigned width, unsigned height)
@@ -1178,9 +1178,9 @@ static bool gx_frame(void *data, const void *frame,
       clear_efb = GX_TRUE;
    }
 
-   __GX_CopyDisp(__gx, g_framebuf[g_current_framebuf], clear_efb);
+   __GX_CopyDisp(__gx, gx->framebuf[g_current_framebuf], clear_efb);
    __GX_Flush(__gx);
-   VISetNextFrameBuffer(g_framebuf[g_current_framebuf]);
+   VISetNextFrameBuffer(gx->framebuf[g_current_framebuf]);
    VIFlush();
 
    retro_perf_stop(&gx_frame);
