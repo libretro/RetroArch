@@ -228,7 +228,7 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
 
          retro_frewind(stream);
 
-         stream->mapped = mmap((void*)0, stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0);
+         stream->mapped = (uint8_t*)mmap((void*)0, stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0);
 
          if (stream->mapped == MAP_FAILED)
          {
