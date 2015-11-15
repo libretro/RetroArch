@@ -236,14 +236,8 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       ret = 1;
    }
    else
-   {
-      char msg[PATH_MAX_LENGTH];
-
-      RARCH_LOG("Autodetect: no profiles found for %s (%d/%d)", params->name, params->vid, params->pid);
-      snprintf(msg, sizeof(msg), "%s (%ld/%ld) not configured", params->name, (long)params->vid, (long)params->pid);
-      rarch_main_msg_queue_push(msg, 0, 60, false);
       ret = 0;
-   }
+
    string_list_free(list);
 
    if (ret == 0)
@@ -312,7 +306,14 @@ bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
    if (!ret)
       ret = input_autoconfigure_joypad_from_conf_internal(params);
 #endif
+   if (!ret)
+   {
+      char msg[PATH_MAX_LENGTH];
 
+      RARCH_LOG("Autodetect: no profiles found for %s (%d/%d)", params->name, params->vid, params->pid);
+      snprintf(msg, sizeof(msg), "%s (%ld/%ld) not configured", params->name, (long)params->vid, (long)params->pid);
+      rarch_main_msg_queue_push(msg, 0, 60, false);
+   }
    return ret;
 }
 
