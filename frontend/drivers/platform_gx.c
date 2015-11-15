@@ -254,17 +254,17 @@ static void frontend_gx_init(void *data)
 #endif
 
 #if defined(DEBUG) && defined(IS_SALAMANDER)
-   VIDEO_Init();
+   VIInit();
    GXRModeObj *rmode = VIDEO_GetPreferredMode(NULL);
    void *xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
    console_init(xfb, 20, 20, rmode->fbWidth,
          rmode->xfbHeight, rmode->fbWidth * VI_DISPLAY_PIX_SZ);
-   VIDEO_Configure(rmode);
-   VIDEO_SetNextFramebuffer(xfb);
-   VIDEO_SetBlack(FALSE);
-   VIDEO_Flush();
-   VIDEO_WaitVSync();
-   VIDEO_WaitVSync();
+   VIConfigure(rmode);
+   VISetNextFramebuffer(xfb);
+   VISetBlack(FALSE);
+   VIFlush();
+   VIWaitForRetrace();
+   VIWaitForRetrace();
 #endif
 
 #ifndef DEBUG
