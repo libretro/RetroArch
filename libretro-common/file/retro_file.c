@@ -217,12 +217,8 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
       {
          stream->mappos  = 0;
          stream->mapped  = NULL;
-         stream->mapsize = 0;
+         stream->mapsize = retro_fseek(stream, 0, SEEK_END);
 
-         if (retro_fseek(stream, 0, SEEK_END) != 0)
-            goto error;
-
-         stream->mapsize = retro_ftell(stream);
          if (stream->mapsize == (uint64_t)-1)
             goto error;
 
