@@ -636,6 +636,9 @@ static void menu_action_setting_disp_set_label_menu_input_keyboard_gamepad_mappi
       case 2:
          strlcpy(s, "8-bitty", len);
          break;
+      case 3:
+         strlcpy(s, "SNES30 8bitdo", len);
+         break;
    }
 }
 
