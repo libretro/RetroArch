@@ -1,7 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *  Copyright (C) 2013-2014 - Jason Fetters
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -13,21 +12,14 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stdint.h>
-#include <unistd.h>
-#include <string.h>
-#include <limits.h>
-#include <errno.h>
 
 #include <boolean.h>
 
 #include <AvailabilityMacros.h>
 #import <GameController/GameController.h>
 
-#include "../drivers/cocoa_input.h"
-#include "../connect/joypad_connection.h"
-
-joypad_connection_t *slots;
+#include "mfi_hid.h"
+#include "../../input/drivers/cocoa_input.h"
 
 enum
 {
@@ -45,7 +37,7 @@ static bool apple_gamecontroller_available(void)
    return true;
 }
 
-static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
+static void apple_gamecontroller_poll(GCController *controller)
 {
    uint32_t slot, pause;
    uint32_t *buttons;
@@ -106,21 +98,21 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
    }
 }
 
-static void apple_gamecontroller_joypad_poll(void)
+void apple_gamecontroller_poll_all(void)
 {
    if (!apple_gamecontroller_available())
       return;
 
    for (GCController *controller in [GCController controllers])
-      apple_gamecontroller_joypad_poll_internal(controller);
+      apple_gamecontroller_poll(controller);
 }
 
-static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
+static void apple_gamecontroller_register(GCGamepad *gamepad)
 {
    driver_t *driver = driver_get_ptr();
    cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
    gamepad.valueChangedHandler = ^(GCGamepad *updateGamepad, GCControllerElement *element) {
-      apple_gamecontroller_joypad_poll_internal(updateGamepad.controller);
+      apple_gamecontroller_poll(updateGamepad.controller);
    };
 
    gamepad.controller.controllerPausedHandler = ^(GCController *controller) {
@@ -134,9 +126,10 @@ static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
             });
 
    };
+
 }
 
-static int32_t apple_gamecontroller_joypad_connect_gcapi(joypad_connection_t *joyconn)
+static int32_t apple_joypad_connect_gcapi(joypad_connection_t *joyconn)
 {
    int pad = pad_connection_find_vacant_pad(joyconn);
 
@@ -151,19 +144,19 @@ static int32_t apple_gamecontroller_joypad_connect_gcapi(joypad_connection_t *jo
    return pad;
 }
 
-static void apple_gamecontroller_joypad_connect(GCController *controller)
+static void apple_gamecontroller_connect(GCController *controller)
 {
-   int32_t slot = apple_gamecontroller_joypad_connect_gcapi(slots);
+   int32_t slot = apple_joypad_connect_gcapi(slots);
 
    controller.playerIndex = (slot >= 0 && slot < MAX_USERS) ? slot : GCCONTROLLER_PLAYER_INDEX_UNSET;
 
    if (controller.playerIndex == GCControllerPlayerIndexUnset)
       return;
 
-   apple_gamecontroller_joypad_register(controller.gamepad);
+   apple_gamecontroller_register(controller.gamepad);
 }
 
-static void apple_gamecontroller_joypad_disconnect(GCController* controller)
+static void apple_gamecontroller_disconnect(GCController* controller)
 {
    unsigned pad = (uint32_t)controller.playerIndex;
    if (pad == GCCONTROLLER_PLAYER_INDEX_UNSET)
@@ -172,116 +165,23 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
    pad_connection_pad_deinit(&slots[pad], pad);
 }
 
-bool apple_gamecontroller_joypad_init(void *data)
+void apple_gamecontroller_init(void)
 {
-   static bool inited = false;
-   if (inited)
-       return true;
    if (!apple_gamecontroller_available())
-      return false;
-
+      return;
 #ifdef __IPHONE_7_0
    [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidConnectNotification
                                                      object:nil
                                                       queue:[NSOperationQueue mainQueue]
                                                  usingBlock:^(NSNotification *note) {
-                                                    apple_gamecontroller_joypad_connect([note object]);
+                                                    apple_gamecontroller_connect([note object]);
                                                  }];
 
-                                                      [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidDisconnectNotification
-                                                                                                        object:nil
-                                                                                                         queue:[NSOperationQueue mainQueue]
-                                                                                                    usingBlock:^(NSNotification *note) {
-                                                                                                       apple_gamecontroller_joypad_disconnect([note object]);
-                                                                                                    } ];
+   [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidDisconnectNotification
+                                                     object:nil
+                                                      queue:[NSOperationQueue mainQueue]
+                                                 usingBlock:^(NSNotification *note) {
+                                                    apple_gamecontroller_disconnect([note object]);
+                                                 } ];
 #endif
-
-   return true;
 }
-
-static void apple_gamecontroller_joypad_destroy(void)
-{
-}
-
-static bool apple_gamecontroller_joypad_button(unsigned port, uint16_t joykey)
-{
-    driver_t *driver          = driver_get_ptr();
-    cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
-    
-    if (joykey == NO_BTN)
-        return false;
-    
-    /* Check hat. */
-    if (GET_HAT_DIR(joykey))
-        return false;
-    
-    /* Check the button. */
-    if ((port < MAX_USERS) && (joykey < 32))
-        return ((apple->mfi_buttons[port] & (1 << joykey)) != 0);
-        ;
-    return false;
-}
-
-static uint64_t apple_gamecontroller_joypad_get_buttons(unsigned port)
-{
-   driver_t           *driver = driver_get_ptr();
-   cocoa_input_data_t *apple  = (cocoa_input_data_t*)driver->input_data;
-   if (!apple)
-      return 0;
-   return apple->mfi_buttons;
-}
-
-static int16_t apple_gamecontroller_joypad_axis(unsigned port, uint32_t joyaxis)
-{
-    driver_t           *driver = driver_get_ptr();
-    cocoa_input_data_t *apple  = (cocoa_input_data_t*)driver->input_data;
-    int16_t               val  = 0;
-    
-    if (joyaxis == AXIS_NONE)
-        return 0;
-    if (!apple)
-        return 0;
-    
-    if (AXIS_NEG_GET(joyaxis) < 4)
-    {
-        val += apple->axes[port][AXIS_NEG_GET(joyaxis)];
-        
-        if (val >= 0)
-            val = 0;
-    }
-    else if(AXIS_POS_GET(joyaxis) < 4)
-    {
-        val += apple->axes[port][AXIS_POS_GET(joyaxis)];
-        
-        if (val <= 0)
-            val = 0;
-    }
-    
-    return val;
-}
-
-static bool apple_gamecontroller_joypad_query_pad(unsigned pad)
-{
-   return pad < MAX_USERS;
-}
-
-static const char *apple_gamecontroller_joypad_name(unsigned pad)
-{
-   if (pad >= MAX_USERS)
-      return NULL;
-
-   return "MFi pad";
-}
-
-input_device_driver_t mfi_joypad = {
-   apple_gamecontroller_joypad_init,
-   apple_gamecontroller_joypad_query_pad,
-   apple_gamecontroller_joypad_destroy,
-   apple_gamecontroller_joypad_button,
-   apple_gamecontroller_joypad_get_buttons,
-   apple_gamecontroller_joypad_axis,
-   apple_gamecontroller_joypad_poll,
-   NULL,
-   apple_gamecontroller_joypad_name,
-   "mfi",
-};

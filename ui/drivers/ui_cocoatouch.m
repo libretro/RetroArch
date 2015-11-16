@@ -28,6 +28,10 @@
 #include "../../menu/menu_setting.h"
 #include "../../retroarch.h"
 
+#ifdef HAVE_MFI
+#include "../../input/drivers_hid/mfi_hid.h"
+#endif
+
 #include "../../input/drivers_hid/btstack_hid.h"
 #include "../../frontend/frontend.h"
 #include "../../runloop_data.h"

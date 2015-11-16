@@ -25,7 +25,6 @@ extern "C" {
 #include <boolean.h>
 
 #include "../libretro.h"
-#include "connect/joypad_connection.h"
 
 typedef struct hid_driver hid_driver_t;
 
@@ -85,23 +84,6 @@ const char* config_get_hid_driver_options(void);
  * Returns: HID driver if found, otherwise NULL.
  **/
 const hid_driver_t *input_hid_init_first(void);
-
-joypad_connection_t *hid_driver_find_slot(unsigned idx);
-
-int hid_driver_slot_new(const char *name, uint16_t vid,
-      uint16_t pid, void *data, send_control_t ptr);
-
-void hid_driver_slot_free(unsigned idx);
-
-bool hid_driver_slot_has_interface(unsigned idx);
-
-void hid_driver_destroy_slots(void);
-
-bool hid_driver_init_slots(unsigned max_users);
-
-void hid_driver_free_slots(void);
-
-int hid_driver_slot_connect(void);
 
 #ifdef __cplusplus
 }

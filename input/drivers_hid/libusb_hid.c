@@ -31,6 +31,7 @@
 typedef struct libusb_hid
 {
    libusb_context *ctx;
+   joypad_connection_t *slots;
    sthread_t *poll_thread;
    int hp; /* libusb_hotplug_callback_handle is just int */
    int quit;
@@ -92,8 +93,8 @@ static void adapter_thread(void *data)
 
       libusb_interrupt_transfer(adapter->handle, adapter->endpoint_in, &adapter->data[1], adapter->endpoint_in_max_size, &size, 1000);
 
-      if (adapter && hid && size)
-         pad_connection_packet(hid_driver_find_slot(adapter->slot), adapter->slot,
+      if (adapter && hid && hid->slots && size)
+         pad_connection_packet(&hid->slots[adapter->slot], adapter->slot,
                adapter->data, size+1);
    }
 }
@@ -269,14 +270,14 @@ static int add_adapter(void *data, struct libusb_device *dev)
       goto error;
    }
 
-   adapter->slot = hid_driver_slot_new(
+   adapter->slot = pad_connection_pad_init(hid->slots,
          device_name, desc.idVendor, desc.idProduct,
          adapter, &libusb_hid_device_send_control);
 
    if (adapter->slot == -1)
       goto error;
 
-   if (!hid_driver_slot_has_interface(adapter->slot))
+   if (!pad_connection_has_interface(hid->slots, adapter->slot))
    {
       RARCH_ERR(" Interface not found (%s).\n", adapter->name);
       goto error;
@@ -350,7 +351,7 @@ static int remove_adapter(void *data, struct libusb_device *dev)
       adapter->next->quitting = true;
       sthread_join(adapter->next->thread);
 
-      hid_driver_slot_free(adapter->slot);
+      pad_connection_pad_deinit(&hid->slots[adapter->slot], adapter->slot);
 
       slock_free(adapter->send_control_lock);
       fifo_free(adapter->send_control_buffer);
@@ -410,7 +411,7 @@ static uint64_t libusb_hid_joypad_get_buttons(void *data, unsigned port)
 {
    libusb_hid_t        *hid   = (libusb_hid_t*)data;
    if (hid)
-      return pad_connection_get_buttons(hid_driver_find_slot(port), port);
+      return pad_connection_get_buttons(&hid->slots[port], port);
    return 0;
 }
 
@@ -437,7 +438,7 @@ static bool libusb_hid_joypad_rumble(void *data, unsigned pad,
    libusb_hid_t        *hid   = (libusb_hid_t*)data;
    if (!hid)
       return false;
-   return pad_connection_rumble(hid_driver_find_slot(pad), pad, effect, strength);
+   return pad_connection_rumble(&hid->slots[pad], pad, effect, strength);
 }
 
 static int16_t libusb_hid_joypad_axis(void *data,
@@ -451,7 +452,7 @@ static int16_t libusb_hid_joypad_axis(void *data,
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      val = pad_connection_get_axis(hid_driver_find_slot(port),
+      val = pad_connection_get_axis(&hid->slots[port],
             port, AXIS_NEG_GET(joyaxis));
 
       if (val >= 0)
@@ -459,7 +460,7 @@ static int16_t libusb_hid_joypad_axis(void *data,
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
-      val = pad_connection_get_axis(hid_driver_find_slot(port),
+      val = pad_connection_get_axis(&hid->slots[port],
             port, AXIS_POS_GET(joyaxis));
 
       if (val <= 0)
@@ -484,7 +485,7 @@ static void libusb_hid_free(void *data)
       sthread_join(hid->poll_thread);
    }
 
-   hid_driver_destroy_slots();
+   pad_connection_destroy(hid->slots);
 
    libusb_hotplug_deregister_callback(hid->ctx, hid->hp);
 
@@ -523,7 +524,9 @@ static void *libusb_hid_init(void)
    if (!libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG))
       goto error;
 
-   if (!hid_driver_init_slots(MAX_USERS))
+   hid->slots = pad_connection_init(MAX_USERS);
+
+   if (!hid->slots)
       goto error;
 
    count = libusb_get_device_list(hid->ctx, &devices);

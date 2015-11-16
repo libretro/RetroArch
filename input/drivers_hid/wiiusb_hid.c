@@ -26,6 +26,7 @@
 
 typedef struct wiiusb_hid
 {
+   joypad_connection_t *slots;
    int hp; /* wiiusb_hotplug_callback_handle is just int */
    int quit;
 } wiiusb_hid_t;
@@ -91,8 +92,8 @@ static void adapter_thread(void *data)
       //RARCH_LOG("%03i %03i %03i %03i\n", adapter->data[0], adapter->data[1], adapter->data[2], adapter->data[3], adapter->data[4]);
       //memmove(&adapter->data[1], &adapter->data[0], 2048);
 
-      if (adapter && hid && && size)
-         pad_connection_packet(hid_driver_find_slot(adapter->slot), adapter->slot,
+      if (adapter && hid && hid->slots && size)
+         pad_connection_packet(&hid->slots[adapter->slot], adapter->slot,
                adapter->data - 1, size+1);
    }
 }
@@ -197,7 +198,7 @@ static int remove_adapter(void *data, usb_device_entry *dev)
       adapter->next->quitting = true;
       sthread_join(adapter->next->thread);
 
-      hid_driver_slot_free(adapter->slot);
+      pad_connection_pad_deinit(&hid->slots[adapter->slot], adapter->slot);
 
       slock_free(adapter->send_control_lock);
       fifo_free(adapter->send_control_buffer);
@@ -299,14 +300,14 @@ static int add_adapter(void *data, usb_device_entry *dev)
       goto error;
    }
 
-   adapter->slot = hid_driver_slot_new(
+   adapter->slot = pad_connection_pad_init(hid->slots,
          device_name, desc.idVendor, desc.idProduct,
          adapter, &wiiusb_hid_device_send_control);
 
    if (adapter->slot == -1)
       goto error;
 
-   if (!hid_driver_slot_has_interface(adapter->slot))
+   if (!pad_connection_has_interface(hid->slots, adapter->slot))
    {
       RARCH_ERR(" Interface not found (%s).\n", adapter->name);
       goto error;
@@ -394,7 +395,7 @@ static uint64_t wiiusb_hid_joypad_get_buttons(void *data, unsigned port)
 {
    wiiusb_hid_t *hid = (wiiusb_hid_t*)data;
    if (hid)
-      return pad_connection_get_buttons(hid_driver_find_slot(port), port);
+      return pad_connection_get_buttons(&hid->slots[port], port);
    return 0;
 }
 
@@ -421,7 +422,7 @@ static bool wiiusb_hid_joypad_rumble(void *data, unsigned pad,
    wiiusb_hid_t		  *hid	= (wiiusb_hid_t*)data;
    if (!hid)
       return false;
-   return pad_connection_rumble(hid_driver_find_slot(pad), pad, effect, strength);
+   return pad_connection_rumble(&hid->slots[pad], pad, effect, strength);
 }
 
 static int16_t wiiusb_hid_joypad_axis(void *data,
@@ -435,7 +436,7 @@ static int16_t wiiusb_hid_joypad_axis(void *data,
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      val = pad_connection_get_axis(hid_driver_find_slot(port),
+      val = pad_connection_get_axis(&hid->slots[port],
             port, AXIS_NEG_GET(joyaxis));
 
       if (val >= 0)
@@ -443,7 +444,7 @@ static int16_t wiiusb_hid_joypad_axis(void *data,
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
-      val = pad_connection_get_axis(hid_driver_find_slot(port),
+      val = pad_connection_get_axis(&hid->slots[port],
             port, AXIS_POS_GET(joyaxis));
 
       if (val <= 0)
@@ -462,7 +463,7 @@ static void wiiusb_hid_free(void *data)
          RARCH_ERR("could not remove device %p\n",
                adapters.next->device);
 
-   hid_driver_destroy_slots();
+   pad_connection_destroy(hid->slots);
 
    // wiiusb_hotplug_deregister_callback(hid->ctx, hid->hp);
 
@@ -483,7 +484,9 @@ static void *wiiusb_hid_init(void)
    if (!hid)
       goto error;
 
-   if (!hid_driver_init_slots(MAX_USERS))
+   hid->slots = pad_connection_init(MAX_USERS);
+
+   if (!hid->slots)
       goto error;
 
    dev_entries = (usb_device_entry *)calloc(MAX_USERS, sizeof(*dev_entries));
