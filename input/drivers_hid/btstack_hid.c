@@ -200,6 +200,8 @@ bool btstack_try_load(void)
 
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
    run_loop_init_ptr(RUN_LOOP_COCOA);
+#else
+   run_loop_init_ptr(RUN_LOOP_POSIX);
 #endif
    bt_register_packet_handler_ptr(btpad_packet_handler);
 
