@@ -1256,7 +1256,6 @@ static int action_ok_option_create(const char *path,
 
    const char *core_name                  = NULL;
    const char *game_name                  = NULL;
-   config_file_t *option_file             = NULL;
    char core_path[PATH_MAX_LENGTH]        = {0};
    char game_path[PATH_MAX_LENGTH]        = {0};
    char config_directory[PATH_MAX_LENGTH] = {0};

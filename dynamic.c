@@ -643,7 +643,7 @@ static bool rarch_game_specific_options(char **output)
       *output = game_path;
       return true;
    }
-
+   config_file_free(option_file);
    return false;
 }
 
