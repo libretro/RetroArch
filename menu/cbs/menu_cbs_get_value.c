@@ -1035,7 +1035,10 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       if (!system)
          return;
 
-      strlcpy(s, global->name.base ? path_basename(global->name.base) : "", len);
+      strlcpy(s, "", len);
+
+      if (global->name.base[0] != '\0')
+         strlcpy(s,  path_basename(global->name.base), len);
    }
    else
       menu_setting_get_label(list, s,
