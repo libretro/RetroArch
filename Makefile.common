@@ -573,6 +573,11 @@ else
 OBJ += gfx/video_texture_c.o
 endif
 
+ifneq ($(findstring Win32,$(OS)),)
+DEFINES += -DHAVE_MMAP
+OBJ     += libretro-common/memmap/memmap.o
+endif
+
 ifeq ($(HAVE_GL_CONTEXT), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/drivers/gl.o \
