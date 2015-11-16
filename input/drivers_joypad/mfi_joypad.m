@@ -70,40 +70,40 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
    {
       GCExtendedGamepad *gp = (GCExtendedGamepad *)controller.extendedGamepad;
 
-      *buttons |= gp.dpad.up.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-      *buttons |= gp.dpad.down.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
-      *buttons |= gp.dpad.left.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-      *buttons |= gp.dpad.right.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-      *buttons |= gp.buttonA.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_B) : 0;
-      *buttons |= gp.buttonB.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_A) : 0;
-      *buttons |= gp.buttonX.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
-      *buttons |= gp.buttonY.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_X) : 0;
-      *buttons |= gp.leftShoulder.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_L) : 0;
-      *buttons |= gp.rightShoulder.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_R) : 0;
-      *buttons |= gp.leftTrigger.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-      *buttons |= gp.rightTrigger.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
-      apple->axes[slot][0] = gp.leftThumbstick.xAxis.value * 32767.0f;
-      apple->axes[slot][1] = gp.leftThumbstick.yAxis.value * 32767.0f;
-      apple->axes[slot][2] = gp.rightThumbstick.xAxis.value * 32767.0f;
-      apple->axes[slot][3] = gp.rightThumbstick.yAxis.value * 32767.0f;
-      apple->axes[slot][4] = gp.rightThumbstick.yAxis.value * 32767.0f;
-      apple->axes[slot][5] = gp.rightThumbstick.yAxis.value * 32767.0f;
+      *buttons             |= gp.dpad.up.pressed         ? (1 << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
+      *buttons             |= gp.dpad.down.pressed       ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
+      *buttons             |= gp.dpad.left.pressed       ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
+      *buttons             |= gp.dpad.right.pressed      ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+      *buttons             |= gp.buttonA.pressed         ? (1 << RETRO_DEVICE_ID_JOYPAD_B)     : 0;
+      *buttons             |= gp.buttonB.pressed         ? (1 << RETRO_DEVICE_ID_JOYPAD_A)     : 0;
+      *buttons             |= gp.buttonX.pressed         ? (1 << RETRO_DEVICE_ID_JOYPAD_Y)     : 0;
+      *buttons             |= gp.buttonY.pressed         ? (1 << RETRO_DEVICE_ID_JOYPAD_X)     : 0;
+      *buttons             |= gp.leftShoulder.pressed    ? (1 << RETRO_DEVICE_ID_JOYPAD_L)     : 0;
+      *buttons             |= gp.rightShoulder.pressed   ? (1 << RETRO_DEVICE_ID_JOYPAD_R)     : 0;
+      *buttons             |= gp.leftTrigger.pressed     ? (1 << RETRO_DEVICE_ID_JOYPAD_L2)    : 0;
+      *buttons             |= gp.rightTrigger.pressed    ? (1 << RETRO_DEVICE_ID_JOYPAD_R2)    : 0;
+      apple->axes[slot][0]  = gp.leftThumbstick.xAxis.value * 32767.0f;
+      apple->axes[slot][1]  = gp.leftThumbstick.yAxis.value * 32767.0f;
+      apple->axes[slot][2]  = gp.rightThumbstick.xAxis.value * 32767.0f;
+      apple->axes[slot][3]  = gp.rightThumbstick.yAxis.value * 32767.0f;
+      apple->axes[slot][4]  = gp.rightThumbstick.yAxis.value * 32767.0f;
+      apple->axes[slot][5]  = gp.rightThumbstick.yAxis.value * 32767.0f;
 
    }
    else if (controller.gamepad)
    {
       GCGamepad *gp = (GCGamepad *)controller.gamepad;
 
-      *buttons |= gp.dpad.up.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-      *buttons |= gp.dpad.down.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
-      *buttons |= gp.dpad.left.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-      *buttons |= gp.dpad.right.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-      *buttons |= gp.buttonA.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_B) : 0;
-      *buttons |= gp.buttonB.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_A) : 0;
-      *buttons |= gp.buttonX.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
-      *buttons |= gp.buttonY.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_X) : 0;
-      *buttons |= gp.leftShoulder.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_L) : 0;
-      *buttons |= gp.rightShoulder.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_R) : 0;
+      *buttons |= gp.dpad.up.pressed       ? (1 << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
+      *buttons |= gp.dpad.down.pressed     ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
+      *buttons |= gp.dpad.left.pressed     ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
+      *buttons |= gp.dpad.right.pressed    ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+      *buttons |= gp.buttonA.pressed       ? (1 << RETRO_DEVICE_ID_JOYPAD_B)     : 0;
+      *buttons |= gp.buttonB.pressed       ? (1 << RETRO_DEVICE_ID_JOYPAD_A)     : 0;
+      *buttons |= gp.buttonX.pressed       ? (1 << RETRO_DEVICE_ID_JOYPAD_Y)     : 0;
+      *buttons |= gp.buttonY.pressed       ? (1 << RETRO_DEVICE_ID_JOYPAD_X)     : 0;
+      *buttons |= gp.leftShoulder.pressed  ? (1 << RETRO_DEVICE_ID_JOYPAD_L)     : 0;
+      *buttons |= gp.rightShoulder.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_R)     : 0;
    }
 }
 
@@ -186,16 +186,15 @@ bool apple_gamecontroller_joypad_init(void *data)
                                                  usingBlock:^(NSNotification *note) {
                                                     apple_gamecontroller_joypad_connect([note object]);
                                                  }];
-
-                                                      [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidDisconnectNotification
-                                                                                                        object:nil
-                                                                                                         queue:[NSOperationQueue mainQueue]
-                                                                                                    usingBlock:^(NSNotification *note) {
-                                                                                                       apple_gamecontroller_joypad_disconnect([note object]);
-                                                                                                    } ];
+   [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidDisconnectNotification
+                                                     object:nil
+                                                      queue:[NSOperationQueue mainQueue]
+                                                 usingBlock:^(NSNotification *note) {
+                                                    apple_gamecontroller_joypad_disconnect([note object]);
+                                                 } ];
 #endif
 
-                                                                                                         return true;
+   return true;
 }
 
 static void apple_gamecontroller_joypad_destroy(void)
