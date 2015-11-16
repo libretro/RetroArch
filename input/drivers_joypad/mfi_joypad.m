@@ -228,7 +228,7 @@ static uint64_t apple_gamecontroller_joypad_get_buttons(unsigned port)
    cocoa_input_data_t *apple  = (cocoa_input_data_t*)driver->input_data;
    if (!apple)
       return 0;
-   return apple->mfi_buttons;
+   return apple->mfi_buttons[port];
 }
 
 static int16_t apple_gamecontroller_joypad_axis(unsigned port, uint32_t joyaxis)

@@ -190,10 +190,14 @@ int32_t cocoa_input_find_any_button(uint32_t port)
       return ret;
 
 #ifdef HAVE_MFI
-   ret = cocoa_input_find_any_button_ret(apple, apple->mfi_buttons[port], port);
+   if (apple && apple->sec_joypad && apple->sec_joypad->get_buttons)
+   {
+      apple->sec_joypad->poll();
+      ret = cocoa_input_find_any_button_ret(apple, apple->sec_joypad->get_buttons(port), port);
 
-   if (ret != -1)
-      return ret;
+      if (ret != -1)
+         return ret;
+   }
 #endif
 
    return -1;
