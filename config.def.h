@@ -339,6 +339,8 @@ static const bool pointer_enable = true;
 static const bool pointer_enable = false;
 #endif
 
+
+
 /* Certain platforms might have assets stored in the bundle that
  * we need to extract to a user-writable directory on first boot.
  *
@@ -744,6 +746,12 @@ static const bool input_descriptor_label_show = true;
 static const bool input_descriptor_hide_unbound = false;
 
 static const unsigned input_max_users = 5;
+
+#ifdef IOS
+static const bool ui_companion_start_on_boot = false;
+#else
+static const bool ui_companion_start_on_boot = true;
+#endif
 
 #if defined(ANDROID)
 #if defined(ANDROID_ARM)

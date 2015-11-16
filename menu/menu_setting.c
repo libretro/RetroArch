@@ -5668,7 +5668,7 @@ static bool setting_append_list_ui_options(
          settings->ui.companion_start_on_boot,
          menu_hash_to_str(MENU_LABEL_UI_COMPANION_START_ON_BOOT),
          menu_hash_to_str(MENU_LABEL_VALUE_UI_COMPANION_START_ON_BOOT),
-         true,
+         ui_companion_start_on_boot,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
          group_info.name,
