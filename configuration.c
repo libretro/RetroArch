@@ -729,6 +729,7 @@ static void config_set_defaults(void)
    *settings->menu_config_directory = '\0';
 #endif
    settings->core_specific_config = default_core_specific_config;
+   settings->game_specific_options = default_game_specific_options;
    settings->auto_overrides_enable = default_auto_overrides_enable;
    settings->auto_remaps_enable = default_auto_remaps_enable;
 
@@ -1749,6 +1750,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_read_keybinds_conf(conf);
 
    CONFIG_GET_BOOL_BASE(conf, settings, core_specific_config, "core_specific_config");
+   CONFIG_GET_BOOL_BASE(conf, settings, game_specific_options, "game_specific_options");
    CONFIG_GET_BOOL_BASE(conf, settings, auto_overrides_enable, "auto_overrides_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, auto_remaps_enable, "auto_remaps_enable");
 
@@ -2787,6 +2789,8 @@ bool config_save_file(const char *path)
 
    config_set_bool(conf, "core_specific_config",
          settings->core_specific_config);
+   config_set_bool(conf, "game_specific_options",
+         settings->game_specific_options);
    config_set_bool(conf, "auto_overrides_enable",
          settings->auto_overrides_enable);
    config_set_bool(conf, "auto_remaps_enable",

@@ -958,6 +958,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
 {
    rarch_system_info_t *system = rarch_system_info_get_ptr();
    uint32_t hash_label  = menu_hash_calculate(label);
+   global_t *global = global_get_ptr();
 
    *s = '\0';
    *w = 19;
@@ -1028,6 +1029,14 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
                type - MENU_SETTINGS_CORE_OPTION_START);
 
       strlcpy(s, core_opt ? core_opt : "", len);
+   }
+   else if (type >= MENU_SETTINGS_CORE_OPTION_CREATE)
+   {
+      const char *core_opt = NULL;
+      if (!system)
+         return;
+
+      strlcpy(s, global->name.base ? path_basename(global->name.base) : "", len);
    }
    else
       menu_setting_get_label(list, s,
