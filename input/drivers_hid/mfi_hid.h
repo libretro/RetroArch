@@ -20,7 +20,4 @@
 
 joypad_connection_t *slots;
 
-void apple_gamecontroller_init(void);
-void apple_gamecontroller_poll_all(void);
-
 #endif
