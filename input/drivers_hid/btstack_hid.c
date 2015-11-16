@@ -146,6 +146,15 @@ extern void btpad_packet_handler(uint8_t packet_type,
 static bool btstack_tested;
 static bool btstack_loaded;
 
+static bool inquiry_off;
+static bool inquiry_running;
+static struct btstack_hid_adapter g_connections[MAX_USERS];
+
+struct btpad_queue_command commands[64];
+static uint32_t insert_position;
+static uint32_t read_position;
+static uint32_t can_run;
+
 static sthread_t *btstack_thread;
 
 #ifdef __APPLE__
@@ -248,15 +257,6 @@ void btstack_set_poweron(bool on)
       btstack_thread = NULL;
    }
 }
-
-static bool inquiry_off;
-static bool inquiry_running;
-static struct btstack_hid_adapter g_connections[MAX_USERS];
-
-struct btpad_queue_command commands[64];
-static uint32_t insert_position;
-static uint32_t read_position;
-static uint32_t can_run;
 
 static void btpad_increment_position(uint32_t *ptr)
 {
