@@ -24,6 +24,7 @@
 #include <AvailabilityMacros.h>
 #import <GameController/GameController.h>
 
+#include "../input_hid_driver.h"
 #include "../drivers/cocoa_input.h"
 #include "../connect/joypad_connection.h"
 

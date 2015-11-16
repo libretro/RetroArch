@@ -787,7 +787,6 @@ static bool btstack_hid_joypad_rumble(void *data, unsigned pad,
 
 static int16_t btstack_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
 {
-   btstack_hid_t         *hid = (btstack_hid_t*)data;
    int16_t               val  = 0;
 
    if (joyaxis == AXIS_NONE)
