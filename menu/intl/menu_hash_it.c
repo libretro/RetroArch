@@ -156,8 +156,13 @@ const char *menu_hash_to_str_it(uint32_t hash)
       case MENU_VALUE_HISTORY_TAB:
          return "History tab";
 #endif
+#if 1
+      case MENU_VALUE_ADD_TAB:
+         return "Add tab";
+#else
       case MENU_VALUE_ADD_TAB:
          return "Aggiungi scheda";
+#endif
 #if 0
       case MENU_VALUE_PLAYLISTS_TAB:
          return "Scheda Playlist";
