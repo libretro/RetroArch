@@ -21,9 +21,6 @@
 #ifdef __APPLE__
 #include <CoreFoundation/CFRunLoop.h>
 #endif
-#ifdef HAVE_MFI
-#include "mfi_hid.h"
-#endif
 
 #include <rthreads/rthreads.h>
 #include <dynamic/dylib.h>
@@ -32,6 +29,8 @@
 #define BUILDING_BTDYNAMIC
 #include "btstack_hid.h"
 #include "../connect/joypad_connection.h"
+
+joypad_connection_t *slots;
 
 typedef struct btstack_hid
 {
