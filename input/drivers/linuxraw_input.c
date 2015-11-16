@@ -259,6 +259,7 @@ input_driver_t input_linuxraw = {
    linux_terminal_grab_stdin,
    linuxraw_set_rumble,
    linuxraw_get_joypad_driver,
+   NULL,
    linuxraw_keyboard_mapping_is_blocked,
    linuxraw_keyboard_mapping_set_block,
 };

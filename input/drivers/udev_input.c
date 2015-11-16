@@ -888,6 +888,7 @@ input_driver_t input_udev = {
    linux_terminal_grab_stdin,
    udev_input_set_rumble,
    udev_input_get_joypad_driver,
+   NULL,
    udev_input_keyboard_mapping_is_blocked,
    udev_input_keyboard_mapping_set_block,
 };
