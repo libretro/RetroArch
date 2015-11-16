@@ -205,9 +205,7 @@ static void cocoagl_gfx_ctx_destroy(void *data)
 
    [GLContextClass clearCurrentContext];
 
-#if defined(HAVE_COCOATOUCH)
-   g_view.context = nil;
-#elif defined(HAVE_COCOA)
+#if defined(HAVE_COCOA)
     [g_context clearDrawable];
     if (g_context)
         [g_context release];
