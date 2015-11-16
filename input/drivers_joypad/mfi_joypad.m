@@ -29,6 +29,7 @@
 
 joypad_connection_t *slots;
 static uint32_t mfi_buttons[MAX_USERS];
+static int16_t  mfi_axes[MAX_USERS][6];
 
 enum
 {
@@ -50,9 +51,7 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
 {
    uint32_t slot, pause;
    uint32_t *buttons;
-   driver_t *driver          = driver_get_ptr();
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
-   if (!apple || !controller)
+   if (!controller)
       return;
 
    slot = (uint32_t)controller.playerIndex;
@@ -60,7 +59,7 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
    pause = mfi_buttons[slot] & (1 << RETRO_DEVICE_ID_JOYPAD_START);
 
    mfi_buttons[slot] = 0;
-   memset(apple->axes[slot], 0, sizeof(apple->axes[0]));
+   memset(mfi_axes[slot], 0, sizeof(mfi_axes[0]));
 
    mfi_buttons[slot] |= pause;
 
@@ -82,12 +81,12 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
       *buttons             |= gp.rightShoulder.pressed   ? (1 << RETRO_DEVICE_ID_JOYPAD_R)     : 0;
       *buttons             |= gp.leftTrigger.pressed     ? (1 << RETRO_DEVICE_ID_JOYPAD_L2)    : 0;
       *buttons             |= gp.rightTrigger.pressed    ? (1 << RETRO_DEVICE_ID_JOYPAD_R2)    : 0;
-      apple->axes[slot][0]  = gp.leftThumbstick.xAxis.value * 32767.0f;
-      apple->axes[slot][1]  = gp.leftThumbstick.yAxis.value * 32767.0f;
-      apple->axes[slot][2]  = gp.rightThumbstick.xAxis.value * 32767.0f;
-      apple->axes[slot][3]  = gp.rightThumbstick.yAxis.value * 32767.0f;
-      apple->axes[slot][4]  = gp.rightThumbstick.yAxis.value * 32767.0f;
-      apple->axes[slot][5]  = gp.rightThumbstick.yAxis.value * 32767.0f;
+      mfi_axes[slot][0]     = gp.leftThumbstick.xAxis.value * 32767.0f;
+      mfi_axes[slot][1]     = gp.leftThumbstick.yAxis.value * 32767.0f;
+      mfi_axes[slot][2]     = gp.rightThumbstick.xAxis.value * 32767.0f;
+      mfi_axes[slot][3]     = gp.rightThumbstick.yAxis.value * 32767.0f;
+      mfi_axes[slot][4]     = gp.rightThumbstick.yAxis.value * 32767.0f;
+      mfi_axes[slot][5]     = gp.rightThumbstick.yAxis.value * 32767.0f;
 
    }
    else if (controller.gamepad)
@@ -223,25 +222,21 @@ static uint64_t apple_gamecontroller_joypad_get_buttons(unsigned port)
 
 static int16_t apple_gamecontroller_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   driver_t           *driver = driver_get_ptr();
-   cocoa_input_data_t *apple  = (cocoa_input_data_t*)driver->input_data;
    int16_t               val  = 0;
 
    if (joyaxis == AXIS_NONE)
       return 0;
-   if (!apple)
-      return 0;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      val += apple->axes[port][AXIS_NEG_GET(joyaxis)];
+      val += mfi_axes[port][AXIS_NEG_GET(joyaxis)];
 
       if (val >= 0)
          val = 0;
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
-      val += apple->axes[port][AXIS_POS_GET(joyaxis)];
+      val += mfi_axes[port][AXIS_POS_GET(joyaxis)];
 
       if (val <= 0)
          val = 0;
