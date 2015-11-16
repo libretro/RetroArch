@@ -25,10 +25,6 @@
 #define MAX_TOUCHES  16
 #define MAX_KEYS     256
 
-#ifndef NUM_HATS
-#define NUM_HATS     4
-#endif
-
 typedef struct
 {
    int16_t screen_x, screen_y;
