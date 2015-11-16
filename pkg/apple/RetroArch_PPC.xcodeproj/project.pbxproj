@@ -313,7 +313,7 @@
 					"-DHAVE_ZARCH",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
-					"-DHAVE_MEMMAP",
+					"-DHAVE_MMAP",
 					"-DHAVE_FILTERS_BUILTIN",
 				);
 				OTHER_LDFLAGS = "-lz";
@@ -382,7 +382,7 @@
 					"-DHAVE_ZARCH",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
-					"-DHAVE_MEMMAP",
+					"-DHAVE_MMAP",
 					"-DHAVE_FILTERS_BUILTIN",
 				);
 				OTHER_LDFLAGS = "-lz";
