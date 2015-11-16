@@ -28,6 +28,7 @@
 #endif
 
 #if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA)
+#include "../input/drivers/cocoa_input.m"
 #include "../gfx/drivers_context/cocoa_gl_ctx.m"
 #include "../ui/drivers/cocoa/cocoa_common.m"
 

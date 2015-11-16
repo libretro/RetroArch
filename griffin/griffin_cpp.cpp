@@ -32,12 +32,6 @@ AUDIO
 #include "../audio/drivers/xaudio.cpp"
 #endif
 
-/*============================================================
- INPUT
- ============================================================ */
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
-#include "../input/drivers/cocoa_input.m"
-#endif
 
 /*============================================================
  KEYBOARD EVENT
