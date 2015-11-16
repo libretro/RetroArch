@@ -62,10 +62,7 @@ typedef struct
    bool small_keyboard_active;
 #endif
     
-#ifdef HAVE_MFI
-   uint32_t mfi_buttons[MAX_USERS];
    const input_device_driver_t *sec_joypad;
-#endif
    const input_device_driver_t *joypad;
 } cocoa_input_data_t;
 

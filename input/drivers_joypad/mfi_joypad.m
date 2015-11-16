@@ -28,6 +28,7 @@
 #include "../connect/joypad_connection.h"
 
 joypad_connection_t *slots;
+static uint32_t mfi_buttons[MAX_USERS];
 
 enum
 {
@@ -56,14 +57,14 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
 
    slot = (uint32_t)controller.playerIndex;
    /* retain the start (pause) value */
-   pause = apple->mfi_buttons[slot] & (1 << RETRO_DEVICE_ID_JOYPAD_START);
+   pause = mfi_buttons[slot] & (1 << RETRO_DEVICE_ID_JOYPAD_START);
 
-   apple->mfi_buttons[slot] = 0;
+   mfi_buttons[slot] = 0;
    memset(apple->axes[slot], 0, sizeof(apple->axes[0]));
 
-   apple->mfi_buttons[slot] |= pause;
+   mfi_buttons[slot] |= pause;
 
-   buttons = &apple->mfi_buttons[slot];
+   buttons = &mfi_buttons[slot];
 
    if (controller.extendedGamepad)
    {
@@ -127,10 +128,10 @@ static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
 
       uint32_t slot = (uint32_t)controller.playerIndex;
 
-      apple->mfi_buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_START);
+      mfi_buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_START);
 
       dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            apple->mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
+            mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
             });
 
    };
@@ -205,9 +206,6 @@ static void apple_gamecontroller_joypad_destroy(void)
 
 static bool apple_gamecontroller_joypad_button(unsigned port, uint16_t joykey)
 {
-   driver_t *driver          = driver_get_ptr();
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
-
    if (joykey == NO_BTN)
       return false;
 
@@ -217,18 +215,14 @@ static bool apple_gamecontroller_joypad_button(unsigned port, uint16_t joykey)
 
    /* Check the button. */
    if ((port < MAX_USERS) && (joykey < 32))
-      return ((apple->mfi_buttons[port] & (1 << joykey)) != 0);
+      return ((mfi_buttons[port] & (1 << joykey)) != 0);
    ;
    return false;
 }
 
 static uint64_t apple_gamecontroller_joypad_get_buttons(unsigned port)
 {
-   driver_t           *driver = driver_get_ptr();
-   cocoa_input_data_t *apple  = (cocoa_input_data_t*)driver->input_data;
-   if (!apple)
-      return 0;
-   return apple->mfi_buttons[port];
+   return mfi_buttons[port];
 }
 
 static int16_t apple_gamecontroller_joypad_axis(unsigned port, uint32_t joyaxis)
