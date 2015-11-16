@@ -198,7 +198,9 @@ bool btstack_try_load(void)
       }
    }
 
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
    run_loop_init_ptr(RUN_LOOP_COCOA);
+#endif
    bt_register_packet_handler_ptr(btpad_packet_handler);
 
    btstack_loaded = true;
