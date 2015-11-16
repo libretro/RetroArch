@@ -138,12 +138,6 @@ static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
 
 static void apple_gamecontroller_joypad_connect(GCController *controller)
 {
-<<<<<<< HEAD
-   if (controller.playerIndex == GCControllerPlayerIndexUnset)
-      return;
-
-   apple_gamecontroller_joypad_register(controller.gamepad);
-=======
     signed desired_index = (int32_t)controller.playerIndex;
     desired_index = (desired_index >= 0 && desired_index < MAX_MFI_CONTROLLERS) 
        ? desired_index : 0;
@@ -174,7 +168,6 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
 
        apple_gamecontroller_joypad_register(controller.gamepad);
     }
->>>>>>> upstream/master
 }
 
 static void apple_gamecontroller_joypad_disconnect(GCController* controller)
@@ -183,11 +176,8 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
     
    if (pad == GCCONTROLLER_PLAYER_INDEX_UNSET)
       return;
-<<<<<<< HEAD
-=======
 
    mfi_controllers[pad] = 0;
->>>>>>> upstream/master
 }
 
 bool apple_gamecontroller_joypad_init(void *data)
