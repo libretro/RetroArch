@@ -211,8 +211,13 @@ int32_t cocoa_input_find_any_axis(uint32_t port)
 
    for (i = 0; i < 6; i++)
    {
-      int16_t value = apple->axes[port][i];
+      int16_t value = apple->joypad ? apple->joypad->axis(port, i) : 0;
       
+      if (abs(value) > 0x4000)
+         return (value < 0) ? -(i + 1) : i + 1;
+
+      value = apple->sec_joypad ? apple->sec_joypad->axis(port, i) : value;
+
       if (abs(value) > 0x4000)
          return (value < 0) ? -(i + 1) : i + 1;
    }
