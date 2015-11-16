@@ -1257,6 +1257,7 @@ static int action_ok_option_create(const char *path,
    const char *core_name                  = NULL;
    const char *game_name                  = NULL;
    config_file_t *option_file             = NULL;
+   char core_path[PATH_MAX_LENGTH]        = {0};
    char game_path[PATH_MAX_LENGTH]        = {0};
    char config_directory[PATH_MAX_LENGTH] = {0};
    char msg[PATH_MAX_LENGTH] = {0};
@@ -1278,11 +1279,13 @@ static int action_ok_option_create(const char *path,
    game_name = path_basename(global->name.base);
 
    /* Concatenate strings into full paths for game_path */
+   fill_pathname_join(core_path, config_directory, core_name, PATH_MAX_LENGTH);
    fill_pathname_join(game_path, config_directory, core_name, PATH_MAX_LENGTH);
    fill_pathname_join(game_path, game_path, game_name, PATH_MAX_LENGTH);
    strlcat(game_path, ".opt", PATH_MAX_LENGTH);
 
-   const struct retro_variable *vars;
+   if (!path_is_directory(core_path))
+      path_mkdir(core_path);
 
    if(core_option_flush_game_specific(system->core_options,game_path))
       menu_display_msg_queue_push("Core options file saved successfully", 1, 100, true);
