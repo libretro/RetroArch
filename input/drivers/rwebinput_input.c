@@ -268,6 +268,7 @@ input_driver_t input_rwebinput = {
    NULL,
    rwebinput_set_rumble,
    NULL,
+   NULL,
    rwebinput_keyboard_mapping_is_blocked,
    rwebinput_keyboard_mapping_set_block,
 };

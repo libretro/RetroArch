@@ -877,6 +877,7 @@ input_driver_t input_qnx = {
    NULL,
    qnx_input_set_rumble,
    qnx_input_get_joypad_driver,
+   NULL,
    qnx_input_keyboard_mapping_is_blocked,
    qnx_input_keyboard_mapping_set_block,
 };

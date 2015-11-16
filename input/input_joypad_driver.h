@@ -57,6 +57,7 @@ extern input_device_driver_t hid_joypad;
 extern input_device_driver_t android_joypad;
 extern input_device_driver_t qnx_joypad;
 extern input_device_driver_t null_joypad;
+extern input_device_driver_t mfi_joypad;
 
 /**
  * joypad_driver_find_handle:

@@ -46,5 +46,5 @@
 #endif
 
 #ifdef HAVE_MFI
-#include "../input/drivers_hid/mfi_hid.m"
+#include "../input/drivers_joypad/mfi_joypad.m"
 #endif

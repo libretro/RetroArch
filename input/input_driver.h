@@ -88,6 +88,7 @@ typedef struct input_driver
    bool (*set_rumble)(void *data, unsigned port,
          enum retro_rumble_effect effect, uint16_t state);
    const input_device_driver_t *(*get_joypad_driver)(void *data);
+   const input_device_driver_t *(*get_sec_joypad_driver)(void *data);
    bool (*keyboard_mapping_is_blocked)(void *data);
    void (*keyboard_mapping_set_block)(void *data, bool value);
 } input_driver_t;
@@ -159,6 +160,8 @@ int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
 uint64_t input_driver_get_capabilities(void);
 
 const input_device_driver_t * input_driver_get_joypad_driver(void);
+
+const input_device_driver_t * input_driver_get_sec_joypad_driver(void);
 
 bool input_driver_grab_mouse(bool state);
 

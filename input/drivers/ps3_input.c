@@ -284,6 +284,7 @@ input_driver_t input_ps3 = {
    NULL,
    ps3_input_set_rumble,
    ps3_input_get_joypad_driver,
+   NULL,
    ps3_input_keyboard_mapping_is_blocked,
    ps3_input_keyboard_mapping_set_block,
 };

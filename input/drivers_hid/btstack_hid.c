@@ -764,11 +764,7 @@ static uint64_t btstack_hid_joypad_get_buttons(void *data, unsigned port)
 
 static bool btstack_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 {
-   driver_t *driver          = driver_get_ptr();
    uint64_t buttons          = btstack_hid_joypad_get_buttons(data, port);
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
-#endif
 
    if (joykey == NO_BTN)
       return false;
@@ -779,11 +775,7 @@ static bool btstack_hid_joypad_button(void *data, unsigned port, uint16_t joykey
 
    /* Check the button. */
    if ((port < MAX_USERS) && (joykey < 32))
-      return ((buttons & (1 << joykey)) != 0)
-#ifdef HAVE_MFI
-         || ((apple->mfi_buttons[port] & (1 << joykey)) != 0)
-#endif
-         ;
+      return ((buttons & (1 << joykey)) != 0);
    return false;
 }
 
@@ -798,25 +790,14 @@ static bool btstack_hid_joypad_rumble(void *data, unsigned pad,
 
 static int16_t btstack_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
 {
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
-   driver_t           *driver = driver_get_ptr();
-   cocoa_input_data_t *apple  = (cocoa_input_data_t*)driver->input_data;
-#endif
    btstack_hid_t         *hid = (btstack_hid_t*)data;
    int16_t               val  = 0;
 
    if (joyaxis == AXIS_NONE)
       return 0;
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
-    if (!apple)
-        return 0;
-#endif
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
-      val += apple->axes[port][AXIS_NEG_GET(joyaxis)];
-#endif
       val += pad_connection_get_axis(&hid->slots[port], port, AXIS_NEG_GET(joyaxis));
 
       if (val >= 0)
@@ -824,9 +805,6 @@ static int16_t btstack_hid_joypad_axis(void *data, unsigned port, uint32_t joyax
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
-      val += apple->axes[port][AXIS_POS_GET(joyaxis)];
-#endif
       val += pad_connection_get_axis(&hid->slots[port], port, AXIS_POS_GET(joyaxis));
 
       if (val <= 0)
@@ -872,9 +850,6 @@ error:
 static void btstack_hid_poll(void *data)
 {
    (void)data;
-#ifdef HAVE_MFI
-    apple_gamecontroller_poll_all();
-#endif
 }
 
 hid_driver_t btstack_hid = {

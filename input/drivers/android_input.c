@@ -1121,6 +1121,7 @@ input_driver_t input_android = {
    NULL,
    android_input_set_rumble,
    android_input_get_joypad_driver,
+   NULL,
    android_input_keyboard_mapping_is_blocked,
    android_input_keyboard_mapping_set_block,
 };

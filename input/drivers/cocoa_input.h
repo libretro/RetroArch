@@ -59,10 +59,13 @@ typedef struct
    int8_t  hats[NUM_HATS][2];
 
 #if TARGET_OS_IPHONE
-   uint32_t mfi_buttons[MAX_USERS];
    bool small_keyboard_active;
 #endif
     
+#ifdef HAVE_MFI
+   uint32_t mfi_buttons[MAX_USERS];
+   const input_device_driver_t *mfi_joypad;
+#endif
    const input_device_driver_t *joypad;
 } cocoa_input_data_t;
 

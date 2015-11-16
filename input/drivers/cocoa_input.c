@@ -142,6 +142,11 @@ int32_t cocoa_input_find_any_key(void)
     
    if (apple->joypad)
        apple->joypad->poll();
+    
+#ifdef HAVE_MFI
+    if (apple->mfi_joypad)
+        apple->mfi_joypad->poll();
+#endif
 
    for (i = 0; apple_key_name_map[i].hid_id; i++)
       if (apple->key_state[apple_key_name_map[i].hid_id])
@@ -173,6 +178,11 @@ int32_t cocoa_input_find_any_button(uint32_t port)
     
    if (apple->joypad)
        apple->joypad->poll();
+    
+#ifdef HAVE_MFI
+   if (apple->mfi_joypad)
+       apple->mfi_joypad->poll();
+#endif
 
    ret = cocoa_input_find_any_button_ret(apple, apple->buttons[port], port);
 
@@ -197,6 +207,11 @@ int32_t cocoa_input_find_any_axis(uint32_t port)
     
    if (apple && apple->joypad)
        apple->joypad->poll();
+    
+#ifdef HAVE_MFI
+   if (apple && apple->mfi_joypad)
+       apple->mfi_joypad->poll();
+#endif
 
    for (i = 0; i < 6; i++)
    {
@@ -232,6 +247,10 @@ static void *cocoa_input_init(void)
 
    apple->joypad = input_joypad_init_driver(settings->input.joypad_driver, apple);
     
+#ifdef HAVE_MFI
+   apple->mfi_joypad = input_joypad_init_driver("mfi", apple);
+#endif
+    
    return apple;
 }
 
@@ -251,6 +270,11 @@ static void cocoa_input_poll(void *data)
 
    if (apple->joypad)
       apple->joypad->poll();
+    
+#ifdef HAVE_MFI
+   if (apple->mfi_joypad)
+       apple->mfi_joypad->poll();
+#endif
 
     apple->mouse_x_last = apple->mouse_rel_x;
     apple->mouse_y_last = apple->mouse_rel_y;
@@ -350,10 +374,19 @@ static int16_t cocoa_input_state(void *data,
    {
       case RETRO_DEVICE_JOYPAD:
          return cocoa_input_is_pressed(apple, port, binds[port], id) ||
-            input_joypad_pressed(apple->joypad, port, binds[port], id);
+            input_joypad_pressed(apple->joypad, port, binds[port], id)
+#ifdef HAVE_MFI
+           || input_joypad_pressed(apple->mfi_joypad, port, binds[port], id)
+#endif
+           ;
       case RETRO_DEVICE_ANALOG:
          return input_joypad_analog(apple->joypad, port,
+               idx, id, binds[port])
+#ifdef HAVE_MFI
+           || input_joypad_analog(apple->mfi_joypad, port,
                idx, id, binds[port]);
+#endif
+           ;
       case RETRO_DEVICE_KEYBOARD:
          return cocoa_keyboard_state(apple, id);
       case RETRO_DEVICE_MOUSE:
@@ -377,6 +410,10 @@ static bool cocoa_input_key_pressed(void *data, int key)
       return true;
    if (input_joypad_pressed(apple->joypad, 0, settings->input.binds[0], key))
       return true;
+#ifdef HAVE_MFI
+    if (input_joypad_pressed(apple->mfi_joypad, 0, settings->input.binds[0], key))
+        return true;
+#endif
 
    return false;
 }
@@ -396,6 +433,11 @@ static void cocoa_input_free(void *data)
    if (apple->joypad)
       apple->joypad->destroy();
     
+#ifdef HAVE_MFI
+   if (apple->mfi_joypad)
+       apple->mfi_joypad->destroy();
+#endif
+    
    free(apple);
 }
 
@@ -407,6 +449,11 @@ static bool cocoa_input_set_rumble(void *data,
    if (apple && apple->joypad)
       return input_joypad_set_rumble(apple->joypad,
             port, effect, strength);
+#ifdef HAVE_MFI
+    if (apple && apple->mfi_joypad)
+        return input_joypad_set_rumble(apple->mfi_joypad,
+            port, effect, strength);
+#endif
    return false;
 }
 
@@ -428,6 +475,17 @@ static void cocoa_input_grab_mouse(void *data, bool state)
    (void)data;
    (void)state;
 }
+
+#ifdef HAVE_MFI
+static const input_device_driver_t *cocoa_input_get_sec_joypad_driver(void *data)
+{
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
+    
+   if (apple && apple->mfi_joypad)
+      return apple->mfi_joypad;
+   return NULL;
+}
+#endif
 
 static const input_device_driver_t *cocoa_input_get_joypad_driver(void *data)
 {
@@ -469,6 +527,11 @@ input_driver_t input_cocoa = {
    NULL,
    cocoa_input_set_rumble,
    cocoa_input_get_joypad_driver,
+#ifdef HAVE_MFI
+   cocoa_input_get_sec_joypad_driver,
+#else
+   NULL,
+#endif
    cocoa_input_keyboard_mapping_is_blocked,
    cocoa_input_keyboard_mapping_set_block,
 };

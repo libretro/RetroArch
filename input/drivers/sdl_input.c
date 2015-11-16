@@ -444,6 +444,7 @@ input_driver_t input_sdl = {
    NULL,
    sdl_set_rumble,
    sdl_get_joypad_driver,
+   NULL,
    sdl_keyboard_mapping_is_blocked,
    sdl_keyboard_mapping_set_block,
 };

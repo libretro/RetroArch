@@ -295,9 +295,10 @@ enum
   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
                                              true, 0, rarch_draw_observer, 0);
   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
-
+    
 #ifdef HAVE_MFI
-   apple_gamecontroller_init();
+    extern bool apple_gamecontroller_joypad_init(void *data);
+    apple_gamecontroller_joypad_init(NULL);
 #endif
 }
 

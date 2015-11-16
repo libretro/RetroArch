@@ -176,6 +176,7 @@ input_driver_t input_gx = {
    NULL,
    gx_input_set_rumble,
    gx_input_get_joypad_driver,
+   NULL,
    gx_input_keyboard_mapping_is_blocked,
    gx_input_keyboard_mapping_set_block,
 };

@@ -184,6 +184,7 @@ input_driver_t input_psp = {
    NULL,
    psp_input_set_rumble,
    psp_input_get_joypad_driver,
+   NULL,
    psp_input_keyboard_mapping_is_blocked,
    psp_input_keyboard_mapping_set_block,
 };

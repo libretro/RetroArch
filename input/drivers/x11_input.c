@@ -444,6 +444,7 @@ input_driver_t input_x = {
    NULL,
    x_set_rumble,
    x_get_joypad_driver,
+   NULL,
    x_keyboard_mapping_is_blocked,
    x_keyboard_mapping_set_block,
 };

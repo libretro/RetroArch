@@ -165,6 +165,7 @@ input_driver_t input_ctr = {
    NULL,
    ctr_input_set_rumble,
    ctr_input_get_joypad_driver,
+   NULL,
    ctr_input_keyboard_mapping_is_blocked,
    ctr_input_keyboard_mapping_set_block,
 };

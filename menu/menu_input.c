@@ -424,11 +424,42 @@ void menu_input_st_cheat_callback(void *userdata, const char *str)
    menu_input_key_end_line();
 }
 
+static void menu_input_key_bind_poll_bind_state_internal(const input_device_driver_t *joypad,
+    struct menu_bind_state *state, unsigned port, bool timed_out)
+{
+   unsigned b, a, h;
+    if (!joypad)
+        return;
+    
+    if (joypad->poll)
+        joypad->poll();
+    
+    /* poll only the relevant port */
+    /* for (i = 0; i < settings->input.max_users; i++) */
+    for (b = 0; b < MENU_MAX_BUTTONS; b++)
+        state->state[port].buttons[b] = input_joypad_button_raw(joypad, port, b);
+    
+    for (a = 0; a < MENU_MAX_AXES; a++)
+        state->state[port].axes[a] = input_joypad_axis_raw(joypad, port, a);
+    
+    for (h = 0; h < MENU_MAX_HATS; h++)
+    {
+        if (input_joypad_hat_raw(joypad, port, HAT_UP_MASK, h))
+            state->state[port].hats[h] |= HAT_UP_MASK;
+        if (input_joypad_hat_raw(joypad, port, HAT_DOWN_MASK, h))
+            state->state[port].hats[h] |= HAT_DOWN_MASK;
+        if (input_joypad_hat_raw(joypad, port, HAT_LEFT_MASK, h))
+            state->state[port].hats[h] |= HAT_LEFT_MASK;
+        if (input_joypad_hat_raw(joypad, port, HAT_RIGHT_MASK, h))
+            state->state[port].hats[h] |= HAT_RIGHT_MASK;
+    }
+}
+
 static void menu_input_key_bind_poll_bind_state(struct menu_bind_state *state, unsigned port,
       bool timed_out)
 {
-   unsigned b, a, h;
    const input_device_driver_t *joypad = input_driver_get_joypad_driver();
+   const input_device_driver_t *sec_joypad = input_driver_get_sec_joypad_driver();
 
    if (!state)
       return;
@@ -436,48 +467,33 @@ static void menu_input_key_bind_poll_bind_state(struct menu_bind_state *state, u
    memset(state->state, 0, sizeof(state->state));
    state->skip = timed_out || input_driver_state(NULL, 0,
          RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
-
-   if (!joypad)
-      return;
-
-   if (joypad->poll)
-      joypad->poll();
-
-   /* poll only the relevant port */
-   /* for (i = 0; i < settings->input.max_users; i++) */
-   for (b = 0; b < MENU_MAX_BUTTONS; b++)
-      state->state[port].buttons[b] = input_joypad_button_raw(joypad, port, b);
-
-   for (a = 0; a < MENU_MAX_AXES; a++)
-      state->state[port].axes[a] = input_joypad_axis_raw(joypad, port, a);
-
-   for (h = 0; h < MENU_MAX_HATS; h++)
-   {
-      if (input_joypad_hat_raw(joypad, port, HAT_UP_MASK, h))
-         state->state[port].hats[h] |= HAT_UP_MASK;
-      if (input_joypad_hat_raw(joypad, port, HAT_DOWN_MASK, h))
-         state->state[port].hats[h] |= HAT_DOWN_MASK;
-      if (input_joypad_hat_raw(joypad, port, HAT_LEFT_MASK, h))
-         state->state[port].hats[h] |= HAT_LEFT_MASK;
-      if (input_joypad_hat_raw(joypad, port, HAT_RIGHT_MASK, h))
-         state->state[port].hats[h] |= HAT_RIGHT_MASK;
-   }
+    
+   menu_input_key_bind_poll_bind_state_internal(joypad, state, port, timed_out);
+    
+   if (sec_joypad)
+      menu_input_key_bind_poll_bind_state_internal(sec_joypad, state, port, timed_out);
 }
 
 static void menu_input_key_bind_poll_bind_get_rested_axes(
       struct menu_bind_state *state, unsigned port)
 {
    unsigned a;
-   const input_device_driver_t *joypad = input_driver_get_joypad_driver();
+   const input_device_driver_t     *joypad = input_driver_get_joypad_driver();
+   const input_device_driver_t *sec_joypad = input_driver_get_sec_joypad_driver();
 
    if (!state || !joypad)
       return;
 
    /* poll only the relevant port */
-   /*for (i = 0; i < settings->input.max_users; i++)*/
    for (a = 0; a < MENU_MAX_AXES; a++)
-      state->axis_state[port].rested_axes[a] =
-         input_joypad_axis_raw(joypad, port, a);
+      state->axis_state[port].rested_axes[a] = input_joypad_axis_raw(joypad, port, a);
+    
+   if (sec_joypad)
+   {
+        /* poll only the relevant port */
+        for (a = 0; a < MENU_MAX_AXES; a++)
+            state->axis_state[port].rested_axes[a] = input_joypad_axis_raw(sec_joypad, port, a);
+   }
 }
 
 static bool menu_input_key_bind_poll_find_trigger_pad(struct menu_bind_state *state,

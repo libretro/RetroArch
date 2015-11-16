@@ -24,7 +24,6 @@
 #include <AvailabilityMacros.h>
 #import <GameController/GameController.h>
 
-#include "mfi_hid.h"
 #include "../drivers/cocoa_input.h"
 #include "../connect/joypad_connection.h"
 
@@ -121,7 +120,7 @@ static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
    driver_t *driver = driver_get_ptr();
    cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
    gamepad.valueChangedHandler = ^(GCGamepad *updateGamepad, GCControllerElement *element) {
-      apple_gamecontroller_poll(updateGamepad.controller);
+      apple_gamecontroller_joypad_poll_internal(updateGamepad.controller);
    };
 
    gamepad.controller.controllerPausedHandler = ^(GCController *controller) {
@@ -173,8 +172,11 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
    pad_connection_pad_deinit(&slots[pad], pad);
 }
 
-static bool linuxraw_joypad_init(void *data)
+bool apple_gamecontroller_joypad_init(void *data)
 {
+   static bool inited = false;
+   if (inited)
+       return true;
    if (!apple_gamecontroller_available())
       return false;
 
@@ -194,100 +196,92 @@ static bool linuxraw_joypad_init(void *data)
                                                                                                     } ];
 #endif
 
-                                                                                                         return true;
+   return true;
 }
 
-static void linuxraw_joypad_destroy(void)
+static void apple_gamecontroller_joypad_destroy(void)
 {
-   unsigned i;
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      if (linuxraw_pads[i].fd >= 0)
-         close(linuxraw_pads[i].fd);
-   }
-
-   memset(linuxraw_pads, 0, sizeof(linuxraw_pads));
-
-   for (i = 0; i < MAX_USERS; i++)
-      linuxraw_pads[i].fd = -1;
-
-   if (g_notify >= 0)
-      close(g_notify);
-   g_notify = -1;
-
-   if (g_epoll >= 0)
-      close(g_epoll);
-   g_epoll = -1;
-
-   g_hotplug = false;
 }
 
-static bool linuxraw_joypad_button(unsigned port, uint16_t joykey)
+static bool apple_gamecontroller_joypad_button(unsigned port, uint16_t joykey)
 {
-   const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)&linuxraw_pads[port];
-   if (!pad)
-      return false;
-   return joykey < NUM_BUTTONS && BIT64_GET(pad->buttons, joykey);
+    driver_t *driver          = driver_get_ptr();
+    cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
+    
+    if (joykey == NO_BTN)
+        return false;
+    
+    /* Check hat. */
+    if (GET_HAT_DIR(joykey))
+        return false;
+    
+    /* Check the button. */
+    if ((port < MAX_USERS) && (joykey < 32))
+        return ((apple->mfi_buttons[port] & (1 << joykey)) != 0);
+        ;
+    return false;
 }
 
-static uint64_t linuxraw_joypad_get_buttons(unsigned port)
+static uint64_t apple_gamecontroller_joypad_get_buttons(unsigned port)
 {
-   const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)&linuxraw_pads[port];
-   if (!pad)
+   driver_t           *driver = driver_get_ptr();
+   cocoa_input_data_t *apple  = (cocoa_input_data_t*)driver->input_data;
+   if (!apple)
       return 0;
-   return pad->buttons;
+   return apple->mfi_buttons;
 }
 
-static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)
+static int16_t apple_gamecontroller_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   int16_t val = 0;
-   const struct linuxraw_joypad *pad = NULL;
-
-   if (joyaxis == AXIS_NONE)
-      return 0;
-
-   pad = (const struct linuxraw_joypad*)&linuxraw_pads[port];
-
-   if (AXIS_NEG_GET(joyaxis) < NUM_AXES)
-   {
-      val = pad->axes[AXIS_NEG_GET(joyaxis)];
-      if (val > 0)
-         val = 0;
-      /* Kernel returns values in range [-0x7fff, 0x7fff]. */
-   }
-   else if (AXIS_POS_GET(joyaxis) < NUM_AXES)
-   {
-      val = pad->axes[AXIS_POS_GET(joyaxis)];
-      if (val < 0)
-         val = 0;
-   }
-
-   return val;
+    driver_t           *driver = driver_get_ptr();
+    cocoa_input_data_t *apple  = (cocoa_input_data_t*)driver->input_data;
+    int16_t               val  = 0;
+    
+    if (joyaxis == AXIS_NONE)
+        return 0;
+    if (!apple)
+        return 0;
+    
+    if (AXIS_NEG_GET(joyaxis) < 4)
+    {
+        val += apple->axes[port][AXIS_NEG_GET(joyaxis)];
+        
+        if (val >= 0)
+            val = 0;
+    }
+    else if(AXIS_POS_GET(joyaxis) < 4)
+    {
+        val += apple->axes[port][AXIS_POS_GET(joyaxis)];
+        
+        if (val <= 0)
+            val = 0;
+    }
+    
+    return val;
 }
 
-static bool linuxraw_joypad_query_pad(unsigned pad)
+static bool apple_gamecontroller_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_USERS && linuxraw_pads[pad].fd >= 0;
+   return pad < MAX_USERS;
 }
 
-static const char *linuxraw_joypad_name(unsigned pad)
+static const char *apple_gamecontroller_joypad_name(unsigned pad)
 {
    if (pad >= MAX_USERS)
       return NULL;
 
-   return *linuxraw_pads[pad].ident ? linuxraw_pads[pad].ident : NULL;
+   return "MFi pad";
 }
 
-input_device_driver_t linuxraw_mfi = {
-   linuxraw_joypad_init,
-   linuxraw_joypad_query_pad,
-   linuxraw_joypad_destroy,
-   linuxraw_joypad_button,
-   linuxraw_joypad_get_buttons,
-   linuxraw_joypad_axis,
+input_device_driver_t mfi_joypad = {
+   apple_gamecontroller_joypad_init,
+   apple_gamecontroller_joypad_query_pad,
+   apple_gamecontroller_joypad_destroy,
+   apple_gamecontroller_joypad_button,
+   apple_gamecontroller_joypad_get_buttons,
+   apple_gamecontroller_joypad_axis,
    apple_gamecontroller_joypad_poll,
    NULL,
-   linuxraw_joypad_name,
+   apple_gamecontroller_joypad_name,
    "mfi",
 };

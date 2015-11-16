@@ -191,6 +191,7 @@ input_driver_t input_xinput = {
    NULL,
    xdk_input_set_rumble,
    xdk_input_get_joypad_driver,
+   NULL,
    xdk_keyboard_mapping_is_blocked,
    xdk_keyboard_mapping_set_block,
 };

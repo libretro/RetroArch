@@ -62,6 +62,9 @@ static input_device_driver_t *joypad_drivers[] = {
 #ifdef __QNX__
    &qnx_joypad,
 #endif
+#ifdef HAVE_MFI
+   &mfi_joypad,
+#endif
    &hid_joypad,
    &null_joypad,
    NULL,

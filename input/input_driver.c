@@ -216,6 +216,16 @@ const input_device_driver_t *input_driver_get_joypad_driver(void)
    return NULL;
 }
 
+const input_device_driver_t *input_driver_get_sec_joypad_driver(void)
+{
+    driver_t            *driver = driver_get_ptr();
+    const input_driver_t *input = input_get_ptr(driver);
+    
+    if (input->get_sec_joypad_driver)
+        return input->get_sec_joypad_driver(driver->input_data);
+    return NULL;
+}
+
 uint64_t input_driver_get_capabilities(void)
 {
    driver_t            *driver = driver_get_ptr();

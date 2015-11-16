@@ -110,4 +110,5 @@ input_driver_t input_null = {
    nullinput_set_rumble,
    NULL,
    NULL,
+   NULL,
 };

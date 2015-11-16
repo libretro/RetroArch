@@ -750,6 +750,7 @@ input_driver_t input_dinput = {
    NULL,
    dinput_set_rumble,
    dinput_get_joypad_driver,
+   NULL,
    dinput_keyboard_mapping_is_blocked,
    dinput_keyboard_mapping_set_block,
 };
