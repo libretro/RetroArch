@@ -118,8 +118,6 @@ static void apple_gamecontroller_joypad_poll(void)
 
 static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
 {
-   driver_t *driver = driver_get_ptr();
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
    gamepad.valueChangedHandler = ^(GCGamepad *updateGamepad, GCControllerElement *element) {
       apple_gamecontroller_joypad_poll_internal(updateGamepad.controller);
    };
