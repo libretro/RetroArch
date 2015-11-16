@@ -2129,6 +2129,7 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
                menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_SETTINGS),
                menu_hash_to_str(MENU_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
                );
+         break;
       default:
          if (s[0] == '\0')
             strlcpy(s, menu_hash_to_str(MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
