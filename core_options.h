@@ -63,6 +63,18 @@ bool core_option_updated(core_option_manager_t *opt);
 bool core_option_flush(core_option_manager_t *opt);
 
 /**
+ * core_option_flush_game_specific:
+ * @opt              : options manager handle
+ * @path             : path for the core options file
+ *
+ * Writes core option key-pair values to a custom file.
+ *
+ * Returns: true (1) if core option values could be
+ * successfully saved to disk, otherwise false (0).
+ **/
+bool core_option_flush_game_specific(core_option_manager_t *opt, char* path);
+
+/**
  * core_option_free:
  * @opt              : options manager handle
  *
