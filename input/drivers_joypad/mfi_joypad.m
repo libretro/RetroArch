@@ -139,24 +139,31 @@ static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
 static void apple_gamecontroller_joypad_connect(GCController *controller)
 {
     signed desired_index = (int32_t)controller.playerIndex;
-    desired_index = (desired_index >= 0 && desired_index < MAX_MFI_CONTROLLERS) ? desired_index : 0;
+    desired_index = (desired_index >= 0 && desired_index < MAX_MFI_CONTROLLERS) 
+       ? desired_index : 0;
     
-    if (mfi_controllers[desired_index] != controller.hash) { // prevent same controller getting set twice
-        
-        // desired slot is unused, take it
-        if (!mfi_controllers[desired_index]) {
+    /* prevent same controller getting set twice */
+    if (mfi_controllers[desired_index] != controller.hash)
+    {
+        /* desired slot is unused, take it */
+        if (!mfi_controllers[desired_index])
+        {
             controller.playerIndex = desired_index;
             mfi_controllers[desired_index] = controller.hash;
         }
-        
-        // find a new slot for this controller that's unused
-        else {
-            for (int i = 0; i < MAX_MFI_CONTROLLERS; ++i)
-                if (!mfi_controllers[i]) {
-                    mfi_controllers[i] = controller.hash;
-                    controller.playerIndex = i;
-                    break;
-                }
+        else
+        {
+           /* find a new slot for this controller that's unused */
+           unsigned i;
+           for (i = 0; i < MAX_MFI_CONTROLLERS; ++i)
+           {
+              if (mfi_controllers[i])
+                 continue;
+
+              mfi_controllers[i] = controller.hash;
+              controller.playerIndex = i;
+              break;
+           }
         }
 
        apple_gamecontroller_joypad_register(controller.gamepad);
@@ -169,8 +176,8 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
     
    if (pad == GCCONTROLLER_PLAYER_INDEX_UNSET)
       return;
-    else
-        mfi_controllers[pad] = 0;
+
+   mfi_controllers[pad] = 0;
 }
 
 bool apple_gamecontroller_joypad_init(void *data)
@@ -215,6 +222,7 @@ static bool apple_gamecontroller_joypad_button(unsigned port, uint16_t joykey)
    /* Check the button. */
    if ((port < MAX_USERS) && (joykey < 32))
       return ((mfi_buttons[port] & (1 << joykey)) != 0);
+
    return false;
 }
 
