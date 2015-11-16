@@ -31,7 +31,7 @@
 static uint32_t mfi_buttons[MAX_USERS];
 static int16_t  mfi_axes[MAX_USERS][6];
 
-static GCController* mfi_controllers[MAX_MFI_CONTROLLERS];
+static uint32_t mfi_controllers[MAX_MFI_CONTROLLERS];
 
 enum
 {
@@ -139,30 +139,25 @@ static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
 static void apple_gamecontroller_joypad_connect(GCController *controller)
 {
     signed desired_index = (int32_t)controller.playerIndex;
-    desired_index = (desired_index >= 0 && desired_index < MAX_MFI_CONTROLLERS) 
-       ? desired_index : GCCONTROLLER_PLAYER_INDEX_UNSET;
-
-    /* prevent same controller getting set twice */
-    if (mfi_controllers[desired_index] != controller)
-    { 
-       /* desired slot is unused, take it */
-       if (!mfi_controllers[desired_index])
-       {
-          controller.playerIndex = desired_index;
-          mfi_controllers[desired_index] = controller;
-       }
-       /* find a new slot for this controller that's unused */
-       else if (desired_index == GCCONTROLLER_PLAYER_INDEX_UNSET || mfi_controllers[desired_index])
-       {
-          unsigned i;
-          for (i = 0; i < MAX_MFI_CONTROLLERS; ++i)
-             if (!mfi_controllers[i])
-             {
-                mfi_controllers[i] = controller;
-                controller.playerIndex = i;
-                break;
-             }
-       }
+    desired_index = (desired_index >= 0 && desired_index < MAX_MFI_CONTROLLERS) ? desired_index : 0;
+    
+    if (mfi_controllers[desired_index] != controller.hash) { // prevent same controller getting set twice
+        
+        // desired slot is unused, take it
+        if (!mfi_controllers[desired_index]) {
+            controller.playerIndex = desired_index;
+            mfi_controllers[desired_index] = controller.hash;
+        }
+        
+        // find a new slot for this controller that's unused
+        else {
+            for (int i = 0; i < MAX_MFI_CONTROLLERS; ++i)
+                if (!mfi_controllers[i]) {
+                    mfi_controllers[i] = controller.hash;
+                    controller.playerIndex = i;
+                    break;
+                }
+        }
 
        apple_gamecontroller_joypad_register(controller.gamepad);
     }
@@ -174,8 +169,8 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
     
    if (pad == GCCONTROLLER_PLAYER_INDEX_UNSET)
       return;
-
-   mfi_controllers[pad] = NULL;
+    else
+        mfi_controllers[pad] = 0;
 }
 
 bool apple_gamecontroller_joypad_init(void *data)
@@ -183,7 +178,6 @@ bool apple_gamecontroller_joypad_init(void *data)
    static bool inited = false;
    if (inited)
       return true;
-
    if (!apple_gamecontroller_available())
       return false;
 
