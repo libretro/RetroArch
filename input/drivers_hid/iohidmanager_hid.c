@@ -18,7 +18,6 @@
 #include <IOKit/hid/IOHIDKeys.h>
 
 #include "../connect/joypad_connection.h"
-#include "../drivers/cocoa_input.h"
 #include "../input_autodetect.h"
 #include "../input_hid_driver.h"
 
@@ -207,7 +206,6 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
          {
             case kIOHIDElementTypeInput_Button:
                {
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
                   CFIndex state = IOHIDValueGetIntegerValue(value);
                   unsigned   id = use - 1;
 
@@ -215,7 +213,6 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                      BIT64_SET(hid->buttons[adapter->slot], id);
                   else
                      BIT64_CLEAR(hid->buttons[adapter->slot], id);
-#endif
                }
                break;
          }
