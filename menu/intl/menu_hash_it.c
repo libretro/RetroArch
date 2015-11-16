@@ -142,14 +142,34 @@ const char *menu_hash_to_str_it(uint32_t hash)
       case MENU_VALUE_HORIZONTAL_MENU: /* Don't change. Breaks everything. (Would be: "Menú orizzontale") */
          return "Horizontal Menu";
          /* Don't change these yet. Breaks everything. */
+#if 0
 	  case MENU_VALUE_SETTINGS_TAB:
          return "Settaggi scheda";
+#else
+      case MENU_VALUE_SETTINGS_TAB:
+         return "Settings tab";
+#endif
+#if 0
       case MENU_VALUE_HISTORY_TAB:
          return "Cronologia scheda";
+#else
+      case MENU_VALUE_HISTORY_TAB:
+         return "History tab";
+#endif
+#if 1
+      case MENU_VALUE_ADD_TAB:
+         return "Add tab";
+#else
       case MENU_VALUE_ADD_TAB:
          return "Aggiungi scheda";
+#endif
+#if 0
       case MENU_VALUE_PLAYLISTS_TAB:
          return "Scheda Playlist";
+#else
+      case MENU_VALUE_PLAYLISTS_TAB:
+         return "Playlists tab";
+#endif
       case MENU_LABEL_VALUE_NO_SETTINGS_FOUND:
          return "Nessun settaggio trovato.";
       case MENU_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
