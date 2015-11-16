@@ -591,7 +591,7 @@ static void config_set_defaults(void)
    settings->menu.navigation.browser.filter.supported_extensions_enable = true;
 #endif
 
-   settings->ui.companion_start_on_boot             = true;
+   settings->ui.companion_start_on_boot             = ui_companion_start_on_boot;
    settings->ui.menubar_enable                      = true;
    settings->ui.suspend_screensaver_enable          = true;
 
