@@ -533,10 +533,8 @@ void btpad_packet_handler(uint8_t packet_type,
 
                      /* TODO: Where did I get 672 for MTU? */
 
-                     bt_send_cmd_ptr(l2cap_register_service_ptr,
-                           PSM_HID_CONTROL, 672);  
-                     bt_send_cmd_ptr(l2cap_register_service_ptr,
-                           PSM_HID_INTERRUPT, 672);
+                     bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_CONTROL,   672);  
+                     bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_INTERRUPT, 672);
                      btpad_queue_hci_inquiry(cmd, HCI_INQUIRY_LAP, 3, 1);
 
                      btpad_queue_run(1);
@@ -623,12 +621,18 @@ void btpad_packet_handler(uint8_t packet_type,
                      RARCH_LOG("[BTpad]: L2CAP channel opened: (PSM: %02X)\n", psm);
                      connection->handle         = handle;
 
-                     if (psm == PSM_HID_CONTROL)
-                        connection->channels[0] = channel_id;
-                     else if (psm == PSM_HID_INTERRUPT)
-                        connection->channels[1] = channel_id;
-                     else
-                        RARCH_LOG("[BTpad]: Got unknown L2CAP PSM, ignoring (PSM: %02X).\n", psm);
+                     switch (psm)
+                     {
+                        case PSM_HID_CONTROL:
+                           connection->channels[0] = channel_id;
+                           break;
+                        case PSM_HID_INTERRUPT:
+                           connection->channels[1] = channel_id;
+                           break;
+                        default:
+                           RARCH_LOG("[BTpad]: Got unknown L2CAP PSM, ignoring (PSM: %02X).\n", psm);
+                           break;
+                     }
 
                      if (connection->channels[0] && connection->channels[1])
                      {
