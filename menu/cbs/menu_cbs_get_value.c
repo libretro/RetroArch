@@ -1032,7 +1032,6 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
    }
    else if (type >= MENU_SETTINGS_CORE_OPTION_CREATE)
    {
-      const char *core_opt = NULL;
       if (!system)
          return;
 

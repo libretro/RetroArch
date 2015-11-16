@@ -1259,7 +1259,6 @@ static int action_ok_option_create(const char *path,
    char core_path[PATH_MAX_LENGTH]        = {0};
    char game_path[PATH_MAX_LENGTH]        = {0};
    char config_directory[PATH_MAX_LENGTH] = {0};
-   char msg[PATH_MAX_LENGTH] = {0};
 
    /* Config directory: config_directory.
    * Try config directory setting first,
