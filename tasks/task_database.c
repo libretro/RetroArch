@@ -435,7 +435,7 @@ static int database_info_iterate_serial_lookup(
                    db_state->serial, db_info_entry->serial, db_info_entry->name);
 #endif
          if (!strcmp(db_state->serial, db_info_entry->serial))
-            database_info_list_iterate_found_match(db_state, db, NULL);
+            return database_info_list_iterate_found_match(db_state, db, NULL);
       }
    }
 
