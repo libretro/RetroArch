@@ -1028,7 +1028,10 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       core_opt = core_option_get_val(system->core_options,
                type - MENU_SETTINGS_CORE_OPTION_START);
 
-      strlcpy(s, core_opt ? core_opt : "", len);
+      strlcpy(s, "", len);
+
+      if (core_opt)
+         strlcpy(s, core_opt, len);
    }
    else if (type >= MENU_SETTINGS_CORE_OPTION_CREATE)
    {
