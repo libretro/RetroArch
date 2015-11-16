@@ -22,13 +22,6 @@
 
 #define MOD_MAP_SIZE 5
 
-/* forward declarations */
-void handle_xkb(
-      struct xkb_state *xkb_state, 
-      xkb_mod_index_t *mod_map_idx,
-      uint16_t *mod_map_bit,
-      int code, int value);
-
 /* FIXME: Don't handle composed and dead-keys properly. 
  * Waiting for support in libxkbcommon ... */
 void handle_xkb(
