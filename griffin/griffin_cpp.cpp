@@ -33,9 +33,15 @@ AUDIO
 #endif
 
 /*============================================================
+ INPUT
+ ============================================================ */
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+#include "../input/drivers/cocoa_input.m"
+#endif
+
+/*============================================================
  KEYBOARD EVENT
  ============================================================ */
-
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../input/drivers_keyboard/keyboard_event_win32.cpp"
 #endif
