@@ -214,7 +214,6 @@ static bool apple_gamecontroller_joypad_button(unsigned port, uint16_t joykey)
    /* Check the button. */
    if ((port < MAX_USERS) && (joykey < 32))
       return ((mfi_buttons[port] & (1 << joykey)) != 0);
-   ;
    return false;
 }
 
