@@ -122,6 +122,8 @@ static int find_token(RFILE *fd, const char *token)
          return -1;
    }
 
+   free(tmp_token);
+
    return 0;
 }
 
