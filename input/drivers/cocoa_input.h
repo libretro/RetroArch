@@ -43,10 +43,10 @@ typedef struct
    uint32_t touch_count;
 
    uint32_t mouse_buttons;
-    int16_t mouse_x_last;
-    int16_t mouse_y_last;
-    int16_t window_pos_x;
-    int16_t window_pos_y;
+   int16_t mouse_x_last;
+   int16_t mouse_y_last;
+   int16_t window_pos_x;
+   int16_t window_pos_y;
    int16_t mouse_rel_x;
    int16_t mouse_rel_y;
    int16_t mouse_wu;
@@ -54,13 +54,12 @@ typedef struct
 
    uint32_t key_state[MAX_KEYS];
 
-   uint32_t buttons[MAX_USERS];
    int8_t  hats[NUM_HATS][2];
 
 #if TARGET_OS_IPHONE
    bool small_keyboard_active;
 #endif
-    
+
    const input_device_driver_t *sec_joypad;
    const input_device_driver_t *joypad;
 } cocoa_input_data_t;
