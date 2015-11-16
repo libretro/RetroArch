@@ -400,8 +400,7 @@ enum
 
 #ifdef HAVE_BTSTACK
    /* Set bluetooth mode */
-   if (!(strcmp(apple_frontend_settings.bluetooth_mode, "btstack")))
-      btstack_set_poweron(is_btstack);
+   btstack_set_poweron(!(strcmp(apple_frontend_settings.bluetooth_mode, "btstack")));
 #endif
 }
 
