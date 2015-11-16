@@ -28,9 +28,12 @@
 #include "../../menu/menu_setting.h"
 #include "../../retroarch.h"
 
-#include "../../input/drivers_hid/btstack_hid.h"
 #include "../../frontend/frontend.h"
 #include "../../runloop_data.h"
+
+#ifdef HAVE_BTSTACK
+#include "../../input/drivers_hid/btstack_hid.h"
+#endif
 
 static char msg_old[PATH_MAX_LENGTH];
 static id apple_platform;
@@ -280,7 +283,9 @@ enum
    self.mainmenu.last_menu = self.mainmenu;
    [self pushViewController:self.mainmenu animated:NO];
 
+#ifdef HAVE_BTSTACK
    btpad_set_inquiry_state(false);
+#endif
     
    [self refreshSystemConfig];
    [self showGameView];
@@ -385,8 +390,6 @@ enum
 
 - (void)refreshSystemConfig
 {
-   bool is_btstack;
-    
    /* Get enabled orientations */
    apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
    
@@ -395,10 +398,11 @@ enum
    else if (!strcmp(apple_frontend_settings.orientations, "portrait"))
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown;
 
+#ifdef HAVE_BTSTACK
    /* Set bluetooth mode */
-   is_btstack     = !(strcmp(apple_frontend_settings.bluetooth_mode, "btstack"));
-       
-   btstack_set_poweron(is_btstack);
+   if (!(strcmp(apple_frontend_settings.bluetooth_mode, "btstack")))
+      btstack_set_poweron(is_btstack);
+#endif
 }
 
 - (void)mainMenuRefresh 
@@ -457,7 +461,9 @@ void apple_rarch_exited(void)
     if (!ap)
         return;
     [ap showPauseMenu:ap];
+#ifdef HAVE_BTSTACK
     btpad_set_inquiry_state(true);
+#endif
 }
 
 typedef struct ui_companion_cocoatouch

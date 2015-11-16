@@ -553,6 +553,7 @@
                "-DHAVE_MEMMAP",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
+					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch9;
@@ -627,6 +628,7 @@
                "-DHAVE_MEMMAP",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
+					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
@@ -671,6 +673,7 @@
                "-DHAVE_MEMMAP",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
+					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch9;
@@ -1055,6 +1058,7 @@
                "-DHAVE_MEMMAP",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
+					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1128,6 +1132,7 @@
                "-DHAVE_MEMMAP",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
+					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
@@ -1172,6 +1177,7 @@
                "-DHAVE_MEMMAP",
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
+					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";

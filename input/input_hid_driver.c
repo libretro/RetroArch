@@ -23,7 +23,7 @@
 #include "../string_list_special.h"
 
 static hid_driver_t *hid_drivers[] = {
-#if defined(__APPLE__) && defined(IOS)
+#if defined(HAVE_BTSTACK)
    &btstack_hid,
 #endif
 #if defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
