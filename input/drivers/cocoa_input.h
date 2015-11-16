@@ -53,9 +53,6 @@ typedef struct
    int16_t mouse_wd;
 
    uint32_t key_state[MAX_KEYS];
-
-   int8_t  hats[NUM_HATS][2];
-
 #if TARGET_OS_IPHONE
    bool small_keyboard_active;
 #endif
