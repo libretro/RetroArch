@@ -28,9 +28,6 @@
 #include "../keyboard_line.h"
 #include "../input_keymaps.h"
 
-/* forward declarations */
-void x11_handle_key_event(XEvent *event, XIC ic, bool filter);
-
 static INLINE unsigned leading_ones(uint8_t c)
 {
    unsigned ones = 0;
