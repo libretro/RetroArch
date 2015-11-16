@@ -21,9 +21,6 @@
 #ifdef __APPLE__
 #include <CoreFoundation/CFRunLoop.h>
 #endif
-#ifdef HAVE_MFI
-#include "mfi_hid.h"
-#endif
 
 #include <rthreads/rthreads.h>
 #include <dynamic/dylib.h>
@@ -35,7 +32,7 @@
 
 typedef struct btstack_hid
 {
-   joypad_connection_t *slots;
+   void *empty;
 } btstack_hid_t;
 
 enum btpad_state
@@ -517,7 +514,7 @@ void btpad_packet_handler(uint8_t packet_type,
 
             if (     connection->channels[0] == channel 
                   || connection->channels[1] == channel)
-               pad_connection_packet(&slots[connection->slot], connection->slot, packet, size);
+               pad_connection_packet(hid_driver_find_slot(connection->slot), connection->slot, packet, size);
          }
          break;
       case HCI_EVENT_PACKET:
@@ -695,7 +692,7 @@ void btpad_packet_handler(uint8_t packet_type,
 
                   RARCH_LOG("[BTpad]: Got %.200s.\n", (char*)&packet[9]);
 
-                  connection->slot  = pad_connection_pad_init(&slots[connection->slot],
+                  connection->slot  = pad_connection_pad_init(hid_driver_find_slot(connection->slot),
                         (char*)packet + 9, 0, 0, connection, &btpad_connection_send_control);
                   connection->state = BTPAD_CONNECTED;
                }
@@ -720,7 +717,7 @@ void btpad_packet_handler(uint8_t packet_type,
                      {
                         connection->handle = 0;
 
-                        pad_connection_pad_deinit(&slots[connection->slot], connection->slot);
+                        pad_connection_pad_deinit(hid_driver_find_slot(connection->slot), connection->slot);
                         btpad_close_connection(connection);
                      }
                   }
@@ -758,7 +755,7 @@ static uint64_t btstack_hid_joypad_get_buttons(void *data, unsigned port)
 {
    btstack_hid_t        *hid   = (btstack_hid_t*)data;
    if (hid)
-      return pad_connection_get_buttons(&hid->slots[port], port);
+      return pad_connection_get_buttons(hid_driver_find_slot(port), port);
    return 0;
 }
 
@@ -785,7 +782,7 @@ static bool btstack_hid_joypad_rumble(void *data, unsigned pad,
    btstack_hid_t        *hid   = (btstack_hid_t*)data;
    if (!hid)
       return false;
-   return pad_connection_rumble(&hid->slots[pad], pad, effect, strength);
+   return pad_connection_rumble(hid_driver_find_slot(pad), pad, effect, strength);
 }
 
 static int16_t btstack_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
@@ -798,14 +795,14 @@ static int16_t btstack_hid_joypad_axis(void *data, unsigned port, uint32_t joyax
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      val += pad_connection_get_axis(&hid->slots[port], port, AXIS_NEG_GET(joyaxis));
+      val += pad_connection_get_axis(hid_driver_find_slot(port), port, AXIS_NEG_GET(joyaxis));
 
       if (val >= 0)
          val = 0;
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
-      val += pad_connection_get_axis(&hid->slots[port], port, AXIS_POS_GET(joyaxis));
+      val += pad_connection_get_axis(hid_driver_find_slot(port), port, AXIS_POS_GET(joyaxis));
 
       if (val <= 0)
          val = 0;
@@ -821,7 +818,7 @@ static void btstack_hid_free(void *data)
    if (!hid)
       return;
 
-   pad_connection_destroy(hid->slots);
+   hid_driver_destroy_slots();
 
    if (hid)
       free(hid);
@@ -834,9 +831,7 @@ static void *btstack_hid_init(void)
    if (!hid)
       goto error;
 
-   hid->slots = pad_connection_init(MAX_USERS);
-
-   if (!hid->slots)
+   if (!hid_driver_init_slots(MAX_USERS))
       goto error;
 
    return hid;

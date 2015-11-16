@@ -27,8 +27,6 @@
 #include "../drivers/cocoa_input.h"
 #include "../connect/joypad_connection.h"
 
-joypad_connection_t *slots;
-
 enum
 {
    GCCONTROLLER_PLAYER_INDEX_UNSET = -1,
@@ -136,24 +134,9 @@ static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
    };
 }
 
-static int32_t apple_gamecontroller_joypad_connect_gcapi(joypad_connection_t *joyconn)
-{
-   int pad = pad_connection_find_vacant_pad(joyconn);
-
-   if (pad >= 0 && pad < MAX_USERS)
-   {
-      joypad_connection_t *s = (joypad_connection_t*)&joyconn[pad];
-
-      if (s)
-         s->connected = true;
-   }
-
-   return pad;
-}
-
 static void apple_gamecontroller_joypad_connect(GCController *controller)
 {
-   int32_t slot = apple_gamecontroller_joypad_connect_gcapi(slots);
+   int32_t slot = hid_driver_slot_connect();
 
    controller.playerIndex = (slot >= 0 && slot < MAX_USERS) ? slot : GCCONTROLLER_PLAYER_INDEX_UNSET;
 
@@ -169,7 +152,7 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
    if (pad == GCCONTROLLER_PLAYER_INDEX_UNSET)
       return;
 
-   pad_connection_pad_deinit(&slots[pad], pad);
+   hid_driver_slot_free(pad);
 }
 
 bool apple_gamecontroller_joypad_init(void *data)

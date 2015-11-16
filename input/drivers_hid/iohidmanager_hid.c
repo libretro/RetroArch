@@ -25,7 +25,6 @@
 typedef struct apple_hid
 {
    IOHIDManagerRef ptr;
-   joypad_connection_t *slots;
 } iohidmanager_hid_t;
 
 struct iohidmanager_hid_adapter
@@ -54,7 +53,7 @@ static uint64_t iohidmanager_hid_joypad_get_buttons(void *data, unsigned port)
 {
    iohidmanager_hid_t        *hid   = (iohidmanager_hid_t*)data;
    if (hid)
-      return pad_connection_get_buttons(&hid->slots[port], port);
+      return pad_connection_get_buttons(hid_driver_find_slot(port), port);
    return 0;
 }
 
@@ -93,7 +92,7 @@ static bool iohidmanager_hid_joypad_rumble(void *data, unsigned pad,
    iohidmanager_hid_t        *hid   = (iohidmanager_hid_t*)data;
    if (!hid)
       return false;
-   return pad_connection_rumble(&hid->slots[pad], pad, effect, strength);
+   return pad_connection_rumble(hid_driver_find_slot(pad), pad, effect, strength);
 }
 
 static int16_t iohidmanager_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
@@ -117,7 +116,7 @@ static int16_t iohidmanager_hid_joypad_axis(void *data, unsigned port, uint32_t 
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
       val += apple->axes[port][AXIS_NEG_GET(joyaxis)];
 #endif
-      val += pad_connection_get_axis(&hid->slots[port], port, AXIS_NEG_GET(joyaxis));
+      val += pad_connection_get_axis(hid_driver_find_slot(port), port, AXIS_NEG_GET(joyaxis));
 
       if (val >= 0)
          val = 0;
@@ -127,7 +126,7 @@ static int16_t iohidmanager_hid_joypad_axis(void *data, unsigned port, uint32_t 
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
       val += apple->axes[port][AXIS_POS_GET(joyaxis)];
 #endif
-      val += pad_connection_get_axis(&hid->slots[port], port, AXIS_POS_GET(joyaxis));
+      val += pad_connection_get_axis(hid_driver_find_slot(port), port, AXIS_POS_GET(joyaxis));
 
       if (val <= 0)
          val = 0;
@@ -156,7 +155,7 @@ static void iohidmanager_hid_device_report(void *data,
    iohidmanager_hid_t *hid = driver ? (iohidmanager_hid_t*)driver->hid_data : NULL;
 
    if (adapter)
-      pad_connection_packet(&hid->slots[adapter->slot], adapter->slot,
+      pad_connection_packet(hid_driver_find_slot(adapter->slot), adapter->slot,
             adapter->data, reportLength + 1);
 }
 
@@ -268,7 +267,7 @@ static void iohidmanager_hid_device_remove(void *data, IOReturn result, void* se
       memset(apple->axes[adapter->slot], 0, sizeof(apple->axes));
 #endif
 
-      pad_connection_pad_deinit(&hid->slots[adapter->slot], adapter->slot);
+      pad_connection_pad_deinit(hid_driver_find_slot(adapter->slot), adapter->slot);
       free(adapter);
    }
 }
@@ -363,13 +362,13 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
    dev_vid = iohidmanager_hid_device_get_vendor_id  (device);
    dev_pid = iohidmanager_hid_device_get_product_id (device);
 
-   adapter->slot = pad_connection_pad_init(hid->slots,
+   adapter->slot = hid_driver_slot_new(
          adapter->name, dev_vid, dev_pid, adapter, &iohidmanager_hid_device_send_control);
 
    if (adapter->slot == -1)
        return;
 
-   if (pad_connection_has_interface(hid->slots, adapter->slot))
+   if (hid_driver_slot_has_interface(adapter->slot))
       IOHIDDeviceRegisterInputReportCallback(device,
             adapter->data + 1, sizeof(adapter->data) - 1,
             iohidmanager_hid_device_report, adapter);
@@ -469,8 +468,7 @@ static void *iohidmanager_hid_init(void)
 
    if (!hid_apple)
       goto error;
-   hid_apple->slots = pad_connection_init(MAX_USERS);
-   if (!hid_apple->slots)
+   if (!hid_driver_init_slots(MAX_USERS);
       goto error;
    if (iohidmanager_hid_manager_init(hid_apple) == -1)
       goto error;
@@ -480,9 +478,7 @@ static void *iohidmanager_hid_init(void)
    return hid_apple;
 
 error:
-   if (hid_apple->slots)
-      free(hid_apple->slots);
-   hid_apple->slots = NULL;
+   hid_driver_free_slots();
    if (hid_apple)
       free(hid_apple);
    return NULL;
@@ -495,7 +491,7 @@ static void iohidmanager_hid_free(void *data)
    if (!hid_apple || !hid_apple->ptr)
       return;
 
-   pad_connection_destroy(hid_apple->slots);
+   hid_driver_destroy_slots();
    iohidmanager_hid_manager_free(hid_apple);
 
    if (hid_apple)
