@@ -23,6 +23,13 @@
 
 typedef void (*send_control_t)(void *data, uint8_t *buf, size_t size);
 
+struct joypad_connection
+{
+    bool connected;
+    struct pad_connection_interface *iface;
+    void* data;
+};
+
 typedef struct pad_connection_interface
 {
    void*    (*init)(void *data, uint32_t slot, send_control_t ptr);
@@ -34,16 +41,11 @@ typedef struct pad_connection_interface
    int16_t  (*get_axis)(void *data, unsigned axis);
 } pad_connection_interface_t;
 
+typedef struct joypad_connection joypad_connection_t;
+
 extern pad_connection_interface_t pad_connection_wii;
 extern pad_connection_interface_t pad_connection_ps3;
 extern pad_connection_interface_t pad_connection_ps4;
-
-typedef struct joypad_connection
-{
-    bool connected;
-    struct pad_connection_interface *iface;
-    void* data;
-} joypad_connection_t;
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char* name, uint16_t vid, uint16_t pid,
