@@ -1859,20 +1859,28 @@ bool config_load_override(void)
    bool should_append                     = false;
    global_t *global                       = global_get_ptr();
    settings_t *settings                   = config_get_ptr();
-   rarch_system_info_t *info              = rarch_system_info_get_ptr();
+   rarch_system_info_t *system              = rarch_system_info_get_ptr();
 
-   if (!global || !settings || !info)
+   if (!global || !settings || !system)
    {
       RARCH_ERR("Couldn't load override config file.\n");
       return false;
    }
 
    /* Early return in case a library isn't loaded */
-   if (!info->info.library_name[0] != '\0' || !strcmp(info->info.library_name,"No Core"))
+   if (!system->info.library_name[0] != '\0' || !strcmp(system->info.library_name,"No Core"))
       return false;
 
-   RARCH_LOG("Overrides: core name: %s\n", info->info.library_name);
-   RARCH_LOG("Overrides: game name: %s\n", global->name.base);
+   core_name = system ? system->info.library_name : NULL;
+   game_name = global ? path_basename(global->name.base) : NULL;
+
+   if (!core_name  || !game_name)
+      return false;
+   if (core_name[0] == '\0' || game_name == '\0')
+      return false;
+
+   RARCH_LOG("Overrides: core name: %s\n", core_name);
+   RARCH_LOG("Overrides: game name: %s\n", game_name);
 
    /* Config directory: config_directory.
     * Try config directory setting first,
@@ -1888,9 +1896,6 @@ bool config_load_override(void)
    }
 
    RARCH_LOG("Overrides: config directory: %s\n", config_directory);
-
-   core_name = info->info.library_name;
-   game_name = path_basename(global->name.base);
 
    /* Concatenate strings into full paths for core_path, game_path */
    fill_pathname_join(core_path, config_directory, core_name, PATH_MAX_LENGTH);
@@ -2046,14 +2051,22 @@ bool config_load_remap(void)
    char game_path[PATH_MAX_LENGTH]         = {0};    /* final path for game-specific configuration (prefix+suffix) */
    global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
-   rarch_system_info_t *info               = rarch_system_info_get_ptr();
+   rarch_system_info_t *system               = rarch_system_info_get_ptr();
 
    /* Early return in case a library isn't loaded or remapping is disabled */
-   if (!info->info.library_name || !strcmp(info->info.library_name,"No Core"))
+   if (!system->info.library_name || !strcmp(system->info.library_name,"No Core"))
       return false;
 
-   RARCH_LOG("Remaps: core name: %s\n", info->info.library_name);
-   RARCH_LOG("Remaps: game name: %s\n", global->name.base);
+   core_name = system ? system->info.library_name : NULL;
+   game_name = global ? path_basename(global->name.base) : NULL;
+
+   if (!core_name  || !game_name)
+      return false;
+   if (core_name[0] == '\0' || game_name == '\0')
+      return false;
+
+   RARCH_LOG("Remaps: core name: %s\n", core_name);
+   RARCH_LOG("Remaps: game name: %s\n", game_name);
 
    /* Remap directory: remap_directory.
     * Try remap directory setting, no fallbacks defined */
@@ -2065,9 +2078,6 @@ bool config_load_remap(void)
       return false;
    }
    RARCH_LOG("Remaps: remap directory: %s\n", remap_directory);
-
-   core_name = info->info.library_name;
-   game_name = path_basename(global->name.base);
 
    /* Concatenate strings into full paths for core_path, game_path */
    fill_pathname_join(core_path, remap_directory, core_name, PATH_MAX_LENGTH);
