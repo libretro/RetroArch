@@ -50,13 +50,7 @@
 #ifdef __APPLE__
 #include "drivers/apple_keycode.h"
 
-struct apple_key_name_map_entry
-{
-   const char* const keyname;
-   const uint32_t hid_id;
-};
-
-const apple_key_name_map_entry_t apple_key_name_map[] =
+const struct apple_key_name_map_entry apple_key_name_map[] =
 {
    { "left", KEY_Left },
    { "right", KEY_Right },

@@ -38,9 +38,13 @@ struct input_key_map
 };
 
 #ifdef __APPLE__
-typedef struct apple_key_name_map_entry apple_key_name_map_entry_t;
-
-const apple_key_name_map_entry_t apple_key_name_map[];
+struct apple_key_name_map_entry
+{
+   const char* const keyname;
+   const uint32_t hid_id;
+};
+    
+extern const struct apple_key_name_map_entry apple_key_name_map[];
 #endif
 
 extern const struct input_key_map input_config_key_map[];
