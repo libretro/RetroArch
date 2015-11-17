@@ -105,16 +105,6 @@ void d3d_texture_free(LPDIRECT3DTEXTURE tex)
    tex = NULL;
 }
 
-void d3d_vertex_declaration_free(void *data)
-{
-   LPDIRECT3DVERTEXDECLARATION *vertex_decl = (LPDIRECT3DVERTEXDECLARATION*)data;
-
-   if (!vertex_decl)
-      return;
-
-   vertex_decl->Release();
-}
-
 bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
       const void *vertex_data, void **decl_data)
 {

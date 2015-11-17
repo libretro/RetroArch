@@ -1249,11 +1249,9 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    d3d_enable_blend_func(d3d->dev);
 
 #ifndef _XBOX1
-   if (d3d_vertex_declaration_new(d3d->dev, vElems, &vertex_decl))
-   {
-      d3d_set_vertex_declaration(d3d->dev, vertex_decl);
-      d3d_vertex_declaration_free(vertex_decl);
-   }
+   d3d->dev->CreateVertexDeclaration(vElems, &vertex_decl);
+   d3d_set_vertex_declaration(d3d->dev, vertex_decl);
+   vertex_decl->Release();
 #endif
 
    d3d_set_stream_source(d3d->dev, 0, overlay->vert_buf,
