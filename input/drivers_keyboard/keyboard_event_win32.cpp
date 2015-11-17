@@ -50,32 +50,34 @@ LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
                RETRO_DEVICE_KEYBOARD);
          return TRUE;
 
-      case WM_KEYDOWN:
-         /* DirectInput uses scancodes directly. */
-         input_keyboard_event(true, keycode, 0, mod,
-               RETRO_DEVICE_KEYBOARD);
-         return 0;
-
       case WM_KEYUP:
-         /* DirectInput uses scancodes directly. */
-         input_keyboard_event(false, keycode, 0, mod,
-               RETRO_DEVICE_KEYBOARD);
-         return 0;
-
       case WM_SYSKEYUP:
-         input_keyboard_event(false, keycode, 0, mod,
-               RETRO_DEVICE_KEYBOARD);
-         return 0;
-
+      case WM_KEYDOWN:
       case WM_SYSKEYDOWN:
-         input_keyboard_event(true, keycode, 0, mod,
-               RETRO_DEVICE_KEYBOARD);
-
-         switch (wparam)
          {
-            case VK_F10:
-            case VK_MENU:
-            case VK_RSHIFT:
+            bool keydown = false;
+            switch (message)
+            {
+               case WM_KEYDOWN:
+               case WM_SYSKEYDOWN:
+                  keydown = true;
+                  break;
+            }
+            /* DirectInput uses scancodes directly. */
+            input_keyboard_event(keydown, keycode, 0, mod,
+                  RETRO_DEVICE_KEYBOARD);
+
+            switch (wparam)
+            {
+               case VK_F10:
+               case VK_MENU:
+               case VK_RSHIFT:
+                  if (message == WM_SYSKEYDOWN)
+                     return 0;
+                  break;
+            }
+
+            if (message != WM_SYSKEYDOWN)
                return 0;
          }
          break;
