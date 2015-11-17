@@ -355,8 +355,8 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\griffin\griffin.c" />
-    <ClCompile Include="..\..\griffin\griffin_cpp.cpp" />
+    <ClCompile Include="..\..\..\griffin\griffin.c" />
+    <ClCompile Include="..\..\..\griffin\griffin_cpp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\360\rarch.ttf">
