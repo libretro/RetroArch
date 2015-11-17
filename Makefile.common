@@ -365,7 +365,7 @@ ifeq ($(HAVE_NEON),1)
    OBJ += audio/audio_utils_neon.o
 endif
 
-# XMB and GLUI are always enabled if supported and not explicitly disabled
+# XMB and MaterialUI are always enabled if supported and not explicitly disabled
 ifeq ($(HAVE_RGUI)$(HAVE_GL_CONTEXT), 11)
    ifeq ($(HAVE_ZARCH),)
       HAVE_ZARCH = 1
