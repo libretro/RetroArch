@@ -26,18 +26,7 @@
 
 #include "../general.h"
 
-#if 0
-enum
-{
-   AUTODETECT_MATCH_NONE = 0,
-   AUTODETECT_MATCH_VID,
-   AUTODETECT_MATCH_PID,
-   AUTODETECT_MATCH_IDENT,
-   AUTODETECT_MATCH_DRIVER,
-   AUTODETECT_MATCH_NAME
-};
-#endif
-bool remote_is_bound = false;
+static bool remote_is_bound = false;
 
 static void input_autoconfigure_joypad_conf(config_file_t *conf,
       struct retro_keybind *binds)

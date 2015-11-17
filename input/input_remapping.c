@@ -104,8 +104,8 @@ bool input_remapping_save_file(const char *path)
    if (!conf)
    {
       conf = config_file_new(NULL);
-	  if (!conf)
-	     return false;
+      if (!conf)
+         return false;
    }
 
    for (i = 0; i < settings->input.max_users; i++)
