@@ -49,7 +49,7 @@ static unsigned g_pos_x = CW_USEDEFAULT;
 static unsigned g_pos_y = CW_USEDEFAULT;
 static bool g_resized;
 bool g_inited;
-bool g_quit;
+static bool g_quit;
 static HWND g_hwnd;
 
 extern void *dinput_wgl;

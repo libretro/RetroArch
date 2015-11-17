@@ -33,7 +33,6 @@
 
 extern unsigned g_resize_width;
 extern unsigned g_resize_height;
-extern bool g_quit;
 extern bool g_inited;
 extern bool g_restore_desktop;
 
