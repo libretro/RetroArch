@@ -25,7 +25,7 @@
 
 #include "../../general.h"
 
-#include "linux_common.h"
+#include "../common/linux_common.h"
 #include "../input_keymaps.h"
 #include "../input_common.h"
 #include "../input_joypad.h"

@@ -372,7 +372,7 @@ INPUT
 #endif
 
 #if defined(__linux__) && !defined(ANDROID)
-#include "../input/drivers/linux_common.c"
+#include "../input/common/linux_common.c"
 #include "../input/drivers/linuxraw_input.c"
 #include "../input/drivers_joypad/linuxraw_joypad.c"
 #endif
