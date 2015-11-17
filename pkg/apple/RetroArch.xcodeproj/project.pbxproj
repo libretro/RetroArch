@@ -375,7 +375,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../..",
-					"$(SRCROOT)/../../gfx/inc",
+					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 				);
 				INFOPLIST_FILE = "OSX/Info.plist";
@@ -437,7 +437,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../..",
-					"$(SRCROOT)/../../gfx/inc",
+					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 				);
 				INFOPLIST_FILE = "OSX/Info.plist";
@@ -501,7 +501,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../..",
-					"$(SRCROOT)/../../gfx/inc",
+					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
@@ -562,7 +562,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../..",
-					"$(SRCROOT)/../../gfx/inc",
+					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
