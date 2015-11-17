@@ -36,6 +36,13 @@ struct input_key_map
    const char *str;
    enum retro_key key;
 };
+
+#ifdef __APPLE__
+typedef struct apple_key_name_map_entry apple_key_name_map_entry_t;
+
+const apple_key_name_map_entry_t apple_key_name_map[];
+#endif
+
 extern const struct input_key_map input_config_key_map[];
 
 extern const struct rarch_key_map rarch_key_map_x11[];
