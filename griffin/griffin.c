@@ -301,7 +301,6 @@ FONTS
 #endif
 
 #if defined(VITA)
-#include "../vita/stockfont.c"
 #include "../gfx/drivers_font/vita2d_font.c"
 #endif
 
