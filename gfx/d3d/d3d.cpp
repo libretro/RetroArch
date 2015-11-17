@@ -250,9 +250,29 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    d3d->cur_mon_id = 0;
 #endif
 
-   if (!d3d_create_device(d3d->cur_mon_id, &d3dpp, d3d->g_pD3D, &d3d->dev,
-            win32_get_window()))
-      return false;
+   if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
+            d3d->cur_mon_id,
+            D3DDEVTYPE_HAL,
+            win32_get_window(),
+            D3DCREATE_HARDWARE_VERTEXPROCESSING,
+            &d3dpp,
+            &d3d->dev)))
+   {
+      RARCH_WARN("[D3D]: Failed to init device with hardware vertex processing (code: 0x%x). Trying to fall back to software vertex processing.\n",
+                 (unsigned)d3d->d3d_err);
+
+      if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
+                  d3d->cur_mon_id,
+                  D3DDEVTYPE_HAL,
+                  win32_get_window(),
+                  D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+                  &d3dpp,
+                  &d3d->dev)))
+      {
+         RARCH_ERR("Failed to initialize device.\n");
+         return false;
+      }
+   }
 
    return true;
 }

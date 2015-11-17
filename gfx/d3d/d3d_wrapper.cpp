@@ -32,38 +32,6 @@ static bool d3d_restore_device(LPDIRECT3DDEVICE dev)
    return true;
 }
 
-bool d3d_create_device(unsigned monitor_id, D3DPRESENT_PARAMETERS *d3dpp,
-      LPDIRECT3D adapter, LPDIRECT3DDEVICE dev, HWND window)
-{
-   HRESULT err;
-
-   if (FAILED(err = adapter->CreateDevice(
-               monitor_id,
-               D3DDEVTYPE_HAL,
-               window,
-               D3DCREATE_HARDWARE_VERTEXPROCESSING,
-               d3dpp,
-               dev)))
-   {
-      RARCH_WARN("[D3D]: Failed to init device with hardware vertex processing (code: 0x%x). Trying to fall back to software vertex processing.\n",
-            (unsigned)err);
-
-      if (FAILED(err = adapter->CreateDevice(
-                  monitor_id,
-                  D3DDEVTYPE_HAL,
-                  window,
-                  D3DCREATE_SOFTWARE_VERTEXPROCESSING,
-                  d3dpp,
-                  dev)))
-      {
-         RARCH_ERR("Failed to initialize device.\n");
-         return false;
-      }
-   }
-
-   return true;
-}
-
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 {
    if (!d3d_restore_device(dev))
