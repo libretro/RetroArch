@@ -26,6 +26,8 @@
 #ifndef __XBOX_INTERNAL_H__
 #define __XBOX_INTERNAL_H__
 
+#include "../../defines/d3d_defines.h"
+
 #ifdef _XBOX360
 
 #define AURORA_LAUNCHDATA_APPID             'AUOA'
@@ -987,8 +989,6 @@ extern "C"
 }
 
 #endif
-
-DWORD XBResource_SizeOf( LPDIRECT3DRESOURCE pResource );
 
 //structure member offsets matter
 struct XBRESOURCE
