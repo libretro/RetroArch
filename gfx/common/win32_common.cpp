@@ -245,9 +245,14 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
-bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen)
+bool win32_window_init(void *data, bool fullscreen)
 {
 #ifndef _XBOX
+   WNDCLASSEX *wndclass    = (WNDCLASSEX*)data;
+
+   if (!wndclass)
+      return false;
+
    wndclass->cbSize        = sizeof(WNDCLASSEX);
    wndclass->style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
    wndclass->lpfnWndProc   = WndProc;
