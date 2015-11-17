@@ -582,10 +582,10 @@ static void rmenu_xui_render(void)
 	end = menu_entries_get_end();
 	for (i = 0; i < end; i++)
    {
-      char entry_path[PATH_MAX_LENGTH]  = {0};
-      char entry_value[PATH_MAX_LENGTH] = {0};
-      char msg_right[PATH_MAX_LENGTH]   = {0};
-      wchar_t msg_left[PATH_MAX_LENGTH] = {0};
+      char entry_path[PATH_MAX_LENGTH]     = {0};
+      char entry_value[PATH_MAX_LENGTH]    = {0};
+      wchar_t msg_right[PATH_MAX_LENGTH]   = {0};
+      wchar_t msg_left[PATH_MAX_LENGTH]    = {0};
 
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
@@ -609,7 +609,7 @@ static void rmenu_xui_render(void)
 
 		if (!str)
 			str = "";
-		snprintf(msg, sizeof(msg), "%s\n%s", menu->keyboard.label, str);
+      snprintf(msg, sizeof(msg), "%s\n%s", label, str);
 		rmenu_xui_render_messagebox(msg);			
 	}
 }
