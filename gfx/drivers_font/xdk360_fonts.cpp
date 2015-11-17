@@ -19,7 +19,374 @@
 #include "../font_driver.h"
 #include "../d3d/d3d.h"
 #include "../../general.h"
-#include "../../frontend/drivers/platform_xdk.h"
+
+#ifdef _XBOX360
+struct XPR_HEADER
+{
+   DWORD dwMagic;
+   DWORD dwHeaderSize;
+   DWORD dwDataSize;
+};
+#endif
+
+/* structure member offsets matter */
+struct XBRESOURCE
+{
+#if defined(_XBOX1)
+   char *strName;
+   DWORD dwOffset;
+#elif defined(_XBOX360)
+   DWORD dwType;
+   DWORD dwOffset;
+   DWORD dwSize;
+   char *strName;
+#endif
+};
+
+enum
+{
+   RESOURCETYPE_USERDATA       = ( ( 'U' << 24 ) | ( 'S' << 16 ) | ( 'E' << 8 ) | ( 'R' ) ),
+   RESOURCETYPE_TEXTURE        = ( ( 'T' << 24 ) | ( 'X' << 16 ) | ( '2' << 8 ) | ( 'D' ) ),
+   RESOURCETYPE_VERTEXBUFFER   = ( ( 'V' << 24 ) | ( 'B' << 16 ) | ( 'U' << 8 ) | ( 'F' ) ),
+   RESOURCETYPE_INDEXBUFFER    = ( ( 'I' << 24 ) | ( 'B' << 16 ) | ( 'U' << 8 ) | ( 'F' ) ),
+   RESOURCETYPE_EOF            = 0xffffffff
+};
+
+class PackedResource
+{
+   protected:
+      BYTE*       m_pSysMemData;        // Alloc'ed memory for resource headers etc.
+      DWORD       m_dwSysMemDataSize;
+
+      BYTE*       m_pVidMemData;        // Alloc'ed memory for resource data, etc.
+      DWORD       m_dwVidMemDataSize;
+
+      XBRESOURCE* m_pResourceTags;     // Tags to associate names with the resources
+      DWORD       m_dwNumResourceTags; // Number of resource tags
+      BOOL m_bInitialized;       // Resource is fully initialized
+
+   public:
+      // Loads the resources out of the specified bundle
+#if defined(_XBOX1)
+      HRESULT Create( const char *strFilename, DWORD dwNumResourceTags = 0L, 
+            XBRESOURCE* pResourceTags = NULL );
+#elif defined(_XBOX360)
+      HRESULT Create( const char * strFilename );
+#endif
+
+      void Destroy();
+
+      BOOL    Initialized() const;
+
+#ifdef _XBOX360
+      // Retrieves the resource tags
+      void GetResourceTags( DWORD* pdwNumResourceTags, XBRESOURCE** ppResourceTags );
+#endif
+
+      // Helper function to make sure a resource is registered
+      LPDIRECT3DRESOURCE RegisterResource( LPDIRECT3DRESOURCE pResource ) const
+      {
+#ifdef _XBOX1
+         // Register the resource, if it has not yet been registered. We mark
+         // a resource as registered by upping it's reference count.
+         if( pResource && ( pResource->Common & D3DCOMMON_REFCOUNT_MASK ) == 1 )
+         {
+            // Special case CPU-copy push buffers (which live in system memory)
+            if( ( pResource->Common & D3DCOMMON_TYPE_PUSHBUFFER ) &&
+                  ( pResource->Common & D3DPUSHBUFFER_RUN_USING_CPU_COPY ) )
+               pResource->Data += (DWORD)m_pSysMemData;
+            else
+               pResource->Register( m_pVidMemData );
+
+            pResource->AddRef();
+         }
+#endif
+         return pResource;
+      }
+
+      // Functions to retrieve resources by their offset
+      void *GetData( DWORD dwOffset ) const
+      { return &m_pSysMemData[dwOffset]; }
+
+      LPDIRECT3DRESOURCE GetResource( DWORD dwOffset ) const
+      { return RegisterResource( (LPDIRECT3DRESOURCE)GetData(dwOffset) ); }
+
+      LPDIRECT3DTEXTURE GetTexture( DWORD dwOffset ) const
+      { return (LPDIRECT3DTEXTURE)GetResource( dwOffset ); }
+
+      LPDIRECT3DVERTEXBUFFER GetVertexBuffer( DWORD dwOffset ) const
+      { return (LPDIRECT3DVERTEXBUFFER)GetResource( dwOffset ); }
+
+      // Functions to retrieve resources by their name
+      void *GetData( const char* strName ) const;
+
+      LPDIRECT3DRESOURCE GetResource( const char* strName ) const
+      { return RegisterResource( (LPDIRECT3DRESOURCE)GetData( strName ) ); }
+
+      LPDIRECT3DTEXTURE GetTexture( const char* strName ) const
+      { return (LPDIRECT3DTEXTURE)GetResource( strName ); }
+
+      LPDIRECT3DVERTEXBUFFER GetVertexBuffer( const char* strName ) const
+      { return (LPDIRECT3DVERTEXBUFFER)GetResource( strName ); }
+
+      // Constructor/destructor
+      PackedResource();
+      ~PackedResource();
+};
+
+#define XPR0_MAGIC_VALUE 0x30525058
+#define XPR1_MAGIC_VALUE 0x31525058
+#define XPR2_MAGIC_VALUE 0x58505232
+
+PackedResource::PackedResource()
+{
+   m_pSysMemData = NULL;
+   m_dwSysMemDataSize = 0L;
+   m_pVidMemData = NULL;
+   m_dwVidMemDataSize = 0L;
+   m_pResourceTags = NULL;
+   m_dwNumResourceTags = 0L;
+   m_bInitialized = FALSE;
+}
+
+
+PackedResource::~PackedResource()
+{
+   Destroy();
+}
+
+void *PackedResource::GetData(const char *strName) const
+{
+   if (m_pResourceTags == NULL || strName == NULL)
+      return NULL;
+
+#if defined(_XBOX1)
+   for (DWORD i=0; m_pResourceTags[i].strName; i++)
+#elif defined(_XBOX360)
+      for (DWORD i = 0; i < m_dwNumResourceTags; i++)
+#endif
+      {
+         if (!strcasecmp(strName, m_pResourceTags[i].strName))
+            return &m_pSysMemData[m_pResourceTags[i].dwOffset];
+      }
+
+   return NULL;
+}
+
+static INLINE void* AllocateContiguousMemory(DWORD Size, DWORD Alignment)
+{
+#if defined(_XBOX1)
+   return D3D_AllocContiguousMemory(Size, Alignment);
+#elif defined(_XBOX360)
+   return XMemAlloc(Size, MAKE_XALLOC_ATTRIBUTES(0, 0, 0, 0, eXALLOCAllocatorId_GameMax,
+            Alignment, XALLOC_MEMPROTECT_WRITECOMBINE, 0, XALLOC_MEMTYPE_PHYSICAL));
+#endif
+}
+
+static INLINE void FreeContiguousMemory(void* pData)
+{
+#if defined(_XBOX1)
+   return D3D_FreeContiguousMemory(pData);
+#elif defined(_XBOX360)
+   return XMemFree(pData, MAKE_XALLOC_ATTRIBUTES(0, 0, 0, 0, eXALLOCAllocatorId_GameMax,
+            0, 0, 0, XALLOC_MEMTYPE_PHYSICAL));
+#endif
+}
+
+#ifdef _XBOX1
+char g_strMediaPath[512] = "D:\\Media\\";
+
+static HRESULT FindMediaFile(char *strPath, const char *strFilename, size_t strPathsize)
+{
+   if(strFilename == NULL || strPath == NULL)
+      return E_INVALIDARG;
+
+   strlcpy(strPath, strFilename, strPathsize);
+
+   if(strFilename[1] != ':')
+      snprintf(strPath, strPathsize, "%s%s", g_strMediaPath, strFilename);
+
+   HANDLE hFile = CreateFile(strPath, GENERIC_READ, FILE_SHARE_READ, NULL, 
+         OPEN_EXISTING, 0, NULL);
+
+   if (hFile == INVALID_HANDLE_VALUE)
+      return 0x82000004;
+
+   CloseHandle(hFile);
+
+   return S_OK;
+}
+
+#endif
+
+#if defined(_XBOX1)
+HRESULT PackedResource::Create(const char *strFilename,
+      DWORD dwNumResourceTags, XBRESOURCE* pResourceTags)
+#elif defined(_XBOX360)
+HRESULT PackedResource::Create(const char *strFilename)
+#endif
+{
+   unsigned i;
+   HANDLE hFile;
+   DWORD dwNumBytesRead;
+   XPR_HEADER xprh;
+   bool retval;
+#ifdef _XBOX1
+   BOOL bHasResourceOffsetsTable = FALSE;
+   char strResourcePath[512];
+
+   if (FAILED(FindMediaFile(strResourcePath, strFilename, sizeof(strResourcePath))))
+      return E_FAIL;
+   strFilename = strResourcePath;
+#endif
+
+   hFile = CreateFile(strFilename, GENERIC_READ, FILE_SHARE_READ, NULL,
+         OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
+   if (hFile == INVALID_HANDLE_VALUE)
+      return E_FAIL;
+
+   retval = ReadFile(hFile, &xprh, sizeof(XPR_HEADER), &dwNumBytesRead, NULL);
+
+#if defined(_XBOX1)
+   if(xprh.dwMagic == XPR0_MAGIC_VALUE)
+      bHasResourceOffsetsTable = FALSE;
+   else if(xprh.dwMagic == XPR1_MAGIC_VALUE)
+      bHasResourceOffsetsTable = TRUE;
+   else
+#elif defined(_XBOX360)
+      if(!retval)
+      {
+         CloseHandle(hFile);
+         return E_FAIL;
+      }
+
+   if (xprh.dwMagic != XPR2_MAGIC_VALUE)
+#endif
+   {
+      CloseHandle(hFile);
+      return E_FAIL;
+   }
+
+   // Compute memory requirements
+#if defined(_XBOX1)
+   m_dwSysMemDataSize = xprh.dwHeaderSize - sizeof(XPR_HEADER);
+   m_dwVidMemDataSize = xprh.dwTotalSize - xprh.dwHeaderSize;
+#elif defined(_XBOX360)
+   m_dwSysMemDataSize = xprh.dwHeaderSize;
+   m_dwVidMemDataSize = xprh.dwDataSize;
+#endif
+
+   // Allocate memory
+   m_pSysMemData = (BYTE*)malloc(m_dwSysMemDataSize);
+   if (m_pSysMemData == NULL)
+   {
+      m_dwSysMemDataSize = 0;
+      return E_FAIL;
+   }
+
+   m_pVidMemData = (BYTE*)AllocateContiguousMemory(m_dwVidMemDataSize,
+#if defined(_XBOX1)
+         D3DTEXTURE_ALIGNMENT
+#elif defined(_XBOX360)
+         XALLOC_PHYSICAL_ALIGNMENT_4K
+#endif
+     );
+
+   if(m_pVidMemData == NULL)
+   {
+      m_dwSysMemDataSize = 0;
+      m_dwVidMemDataSize = 0;
+      free(m_pSysMemData);
+      m_pSysMemData = NULL;
+      return E_FAIL;
+   }
+
+   // Read in the data from the file
+   if( !ReadFile( hFile, m_pSysMemData, m_dwSysMemDataSize, &dwNumBytesRead, NULL) ||
+         !ReadFile( hFile, m_pVidMemData, m_dwVidMemDataSize, &dwNumBytesRead, NULL))
+   {
+      CloseHandle( hFile);
+      return E_FAIL;
+   }
+
+   // Done with the file
+   CloseHandle( hFile);
+
+#ifdef _XBOX1
+   if (bHasResourceOffsetsTable)
+   {
+#endif
+
+      /* Extract resource table from the header data */
+      m_dwNumResourceTags = *(DWORD*)(m_pSysMemData + 0);
+      m_pResourceTags     = (XBRESOURCE*)(m_pSysMemData + 4);
+
+      /* Patch up the resources */
+
+      for(i = 0; i < m_dwNumResourceTags; i++)
+      {
+         m_pResourceTags[i].strName = (char*)(m_pSysMemData + (DWORD)m_pResourceTags[i].strName);
+#ifdef _XBOX360
+         if((m_pResourceTags[i].dwType & 0xffff0000) == (RESOURCETYPE_TEXTURE & 0xffff0000))
+         {
+            D3DTexture *pTexture = (D3DTexture*)&m_pSysMemData[m_pResourceTags[i].dwOffset];
+            XGOffsetBaseTextureAddress(pTexture, m_pVidMemData, m_pVidMemData);
+         }
+#endif
+      }
+
+#ifdef _XBOX1
+   }
+#endif
+
+#ifdef _XBOX1
+   /* Use user-supplied number of resources and the resource tags */
+   if(dwNumResourceTags != 0 || pResourceTags != NULL)
+   {
+      m_pResourceTags     = pResourceTags;
+      m_dwNumResourceTags = dwNumResourceTags;
+   }
+#endif
+
+   m_bInitialized = TRUE;
+
+   return S_OK;
+}
+
+#ifdef _XBOX360
+void PackedResource::GetResourceTags(DWORD* pdwNumResourceTags,
+      XBRESOURCE** ppResourceTags)
+{
+   if (pdwNumResourceTags)
+      (*pdwNumResourceTags) = m_dwNumResourceTags;
+
+   if (ppResourceTags)
+      (*ppResourceTags) = m_pResourceTags;
+}
+#endif
+
+void PackedResource::Destroy()
+{
+   free(m_pSysMemData);
+   m_pSysMemData = NULL;
+   m_dwSysMemDataSize = 0L;
+
+   if (m_pVidMemData != NULL)
+      FreeContiguousMemory(m_pVidMemData);
+
+   m_pVidMemData = NULL;
+   m_dwVidMemDataSize = 0L;
+
+   m_pResourceTags = NULL;
+   m_dwNumResourceTags = 0L;
+
+   m_bInitialized = FALSE;
+}
+
+BOOL PackedResource::Initialized() const
+{
+   return m_bInitialized;
+}
 
 #define FONT_SCALE(d3d) ((d3d->resolution_hd_enable) ? 2 : 1)
 
