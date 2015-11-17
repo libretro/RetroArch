@@ -26,6 +26,7 @@
 
 #include <file/file_path.h>
 #include <string/string_list.h>
+#include <queues/message_queue.h>
 
 #include "menu_generic.h"
 
@@ -424,7 +425,7 @@ static void rmenu_xui_frame(void)
    if (!d3dr)
       return;
 
-   menu_display_set_viewport(menu);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
    app.RunFrame();
    XuiTimersRun();
@@ -450,7 +451,7 @@ static void rmenu_xui_frame(void)
 
    XuiRenderEnd( app.GetDC() );
 
-   menu_display_unset_viewport(menu);
+   menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
 
 static void blit_line(int x, int y, const char *message, bool green)
@@ -459,9 +460,9 @@ static void blit_line(int x, int y, const char *message, bool green)
 
 static void rmenu_xui_render_background(void)
 {
-   global_t *global = global_get_ptr();
+   bool libretro_running           = menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
 
-	if (global->content_is_init)
+	if (libretro_running)
 		XuiElementSetShow(m_background, FALSE);
 	else
 		XuiElementSetShow(m_background, TRUE);
@@ -554,8 +555,8 @@ static void rmenu_xui_render(void)
       )
 		return;
 
-   menu_display_fb_unset_dirty();
-   menu_animation_clear_active();
+   menu_display_ctl(MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG, NULL);
+   menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 
 	rmenu_xui_render_background();
 
