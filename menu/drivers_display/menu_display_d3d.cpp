@@ -149,16 +149,16 @@ static void menu_display_d3d_draw_bg(
       uintptr_t texture,
       float handle_alpha,
       bool force_transparency,
-      GLfloat *coord_color,
-      GLfloat *coord_color2,
+      float *coord_color,
+      float *coord_color2,
       const float *vertex,
       const float *tex_coord,
       size_t vertex_count,
       enum menu_display_prim_type prim_type)
 {
    struct gfx_coords coords;
-   const GLfloat *new_vertex    = NULL;
-   const GLfloat *new_tex_coord = NULL;
+   const float *new_vertex    = NULL;
+   const float *new_tex_coord = NULL;
    global_t     *global = global_get_ptr();
    settings_t *settings = config_get_ptr();
    d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
@@ -192,7 +192,7 @@ static void menu_display_d3d_draw_bg(
 
    menu_display_d3d_draw(0, 0, width, height,
          &coords, (math_matrix_4x4*)menu_display_d3d_get_default_mvp(),
-         (GLuint)texture, prim_type);
+         (uintptr_t)texture, prim_type);
 
    menu_display_d3d_blend_end();
 
