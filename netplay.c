@@ -1397,7 +1397,7 @@ void netplay_flip_users(netplay_t *netplay)
    if(command)
    {
       netplay->flip       ^= true;
-      netplay->flip_frame  = true;
+      netplay->flip_frame  = flip_frame;
    }
 }
 
