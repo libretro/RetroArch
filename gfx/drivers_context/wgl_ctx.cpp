@@ -397,12 +397,7 @@ static void gfx_ctx_wgl_input_driver(void *data,
 
 static bool gfx_ctx_wgl_has_focus(void *data)
 {
-   (void)data;
-
-   if (!g_inited)
-      return false;
-
-   return GetFocus() == g_hwnd;
+   return win32_has_focus();
 }
 
 static bool gfx_ctx_wgl_suppress_screensaver(void *data, bool enable)

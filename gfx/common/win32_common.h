@@ -75,6 +75,8 @@ bool win32_get_metrics(void *data,
 
 void win32_show_cursor(bool state);
 
+bool win32_has_focus(void *data);
+
 void win32_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height);
 

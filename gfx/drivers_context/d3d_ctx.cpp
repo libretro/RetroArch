@@ -124,21 +124,9 @@ static void gfx_ctx_d3d_check_window(void *data, bool *quit,
    win32_check_window(quit, resize, width, height);
 }
 
-#ifdef _XBOX
-static HANDLE GetFocus(void)
-{
-   driver_t *driver = driver_get_ptr();
-   d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
-   return d3d->hWnd;
-}
-#endif
-
 static bool gfx_ctx_d3d_has_focus(void *data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   if (!d3d)
-      return false;
-   return GetFocus() == g_hwnd;
+   return win32_has_focus();
 }
 
 static bool gfx_ctx_d3d_suppress_screensaver(void *data, bool enable)

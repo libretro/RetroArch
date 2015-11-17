@@ -670,3 +670,18 @@ bool win32_set_video_mode(void *data,
 
    return true;
 }
+
+#ifdef _XBOX
+static HANDLE GetFocus(void)
+{
+   return g_hwnd;
+}
+#endif
+
+bool win32_has_focus(void *data)
+{
+   if (!g_inited)
+      return false;
+
+   return GetFocus() == g_hwnd;
+}
