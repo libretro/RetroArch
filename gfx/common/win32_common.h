@@ -49,7 +49,7 @@ void win32_monitor_get_info(void);
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
 
-void create_gl_context(HWND hwnd);
+bool create_gl_context(HWND hwnd);
 #endif
 
 void win32_monitor_init(void);

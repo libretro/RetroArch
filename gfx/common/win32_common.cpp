@@ -192,7 +192,10 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 
       case WM_CREATE:
          if (!strcmp(video_driver, "gl"))
-            create_gl_context(hwnd);
+         {
+            if (create_gl_context(hwnd))
+               g_quit = true;
+         }
          else if (!strcmp(video_driver, "d3d"))
          {
             LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
