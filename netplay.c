@@ -292,6 +292,14 @@ static bool netplay_get_cmd(netplay_t *netplay)
 
          return netplay_cmd_ack(netplay);
 
+      case NETPLAY_CMD_SPECTATE:
+         RARCH_ERR("NETPLAY_CMD_SPECTATE is not implemented yet");
+         return netplay_cmd_nak(netplay);
+
+      case NETPLAY_CMD_LOAD_SAVESTATE:
+         RARCH_ERR("NETPLAY_CMD_LOAD_SAVESTATE is not implemented yet");
+         return netplay_cmd_nak(netplay);
+
       default:
          break;
    }
