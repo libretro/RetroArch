@@ -678,7 +678,7 @@ static HANDLE GetFocus(void)
 }
 #endif
 
-bool win32_has_focus(void *data)
+bool win32_has_focus(void)
 {
    if (!g_inited)
       return false;
