@@ -402,7 +402,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\360\Arial_12.rdf">
+    <CustomBuild Include="..\..\360\Arial_12.rdf">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">Bundler %(FullPath) /o $(OutDir)media\Arial_12.xpr</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">Bundler %(FullPath) /o $(OutDir)media\Arial_12.xpr</Command>
