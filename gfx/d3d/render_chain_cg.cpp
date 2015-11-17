@@ -1280,7 +1280,7 @@ static void renderchain_set_vertices(
          vert[i].y     += 0.5f;
       }
 
-      verts             = d3d_vertex_buffer_lock(pass->vertex_buf);
+      verts             = d3d_vertex_buffer_lock(pass->vertex_buf, sizeof(vert));
       memcpy(verts, vert, sizeof(vert));
       d3d_vertex_buffer_unlock(pass->vertex_buf);
    }

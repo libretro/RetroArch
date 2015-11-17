@@ -1032,7 +1032,7 @@ static bool texture_image_render(d3d_video_t *d3d,
    };
 
    /* Load the existing vertices */
-   verts = d3d_vertex_buffer_lock(d3dv);
+   verts = d3d_vertex_buffer_lock(d3dv, sizeof(newVerts));
 
    if (!verts)
       return false;
@@ -1242,7 +1242,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
       vert[i][1]  += 0.5f;
    }
 
-   overlay->vert_buf->Lock(0, sizeof(vert), &verts, 0);
+   d3d_vertex_buffer_lock(overlay->vert_buf, sizeof(vert));
    memcpy(verts, vert, sizeof(vert));
    d3d_vertex_buffer_unlock(overlay->vert_buf);
 

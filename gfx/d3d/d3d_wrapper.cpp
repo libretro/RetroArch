@@ -176,16 +176,15 @@ void d3d_vertex_buffer_unlock(LPDIRECT3DVERTEXBUFFER vertbuf)
 #endif
 }
 
-void *d3d_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER vertbuf)
+void *d3d_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER vertbuf, size_t len)
 {
    void *buf;
-
 #if defined(_XBOX1)
    buf = (void*)D3DVertexBuffer_Lock2(vertbuf, 0);
 #elif defined(_XBOX360)
    buf = D3DVertexBuffer_Lock(vertbuf, 0, 0, 0);
 #else
-   vertbuf->Lock(0, sizeof(buf), &buf, 0);
+   vertbuf->Lock(0, len, &buf, 0);
 #endif
 
    if (!buf)

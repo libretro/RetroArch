@@ -70,9 +70,7 @@ typedef struct
    bool enabled;
    float alpha_mod;
    LPDIRECT3DTEXTURE tex;
-#ifdef HAVE_D3D9
    LPDIRECT3DVERTEXBUFFER vert_buf;
-#endif
 } overlay_t;
 
 #ifdef _XBOX

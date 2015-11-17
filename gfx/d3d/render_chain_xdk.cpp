@@ -202,7 +202,7 @@ static void renderchain_set_vertices(void *data, unsigned pass,
          vert[i].y    += 0.5f / ((float)chain->tex_h);
       }
 
-      verts = d3d_vertex_buffer_lock(chain->vertex_buf);
+      verts = d3d_vertex_buffer_lock(chain->vertex_buf, sizeof(vert));
       memcpy(verts, vert, sizeof(vert));
       d3d_vertex_buffer_unlock(chain->vertex_buf);
    }
