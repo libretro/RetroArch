@@ -1386,7 +1386,8 @@ error: ;
 void netplay_flip_users(netplay_t *netplay)
 {
    assert(netplay);
-   uint32_t flip_frame_net = htonl(netplay->frame_count + 2 * UDP_FRAME_PACKETS);
+   uint32_t flip_frame = netplay->frame_count + 2 * UDP_FRAME_PACKETS;
+   uint32_t flip_frame_net = htonl(flip_frame);
    bool command = netplay_command(
       netplay, NETPLAY_CMD_FLIP_PLAYERS,
       &flip_frame_net, sizeof flip_frame_net,
