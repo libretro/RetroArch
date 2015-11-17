@@ -65,12 +65,17 @@ ifeq ($(HAVE_FILE_LOGGER), 1)
 CFLAGS		+= -DHAVE_FILE_LOGGER
 endif
 
-CFLAGS += -std=gnu99 -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_RARCH_EXEC -DGEKKO -Wno-char-subscripts 
+CFLAGS += -std=gnu99 -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_RARCH_EXEC -DGEKKO -Wno-char-subscripts
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
 else
    CFLAGS += -O3
+endif
+
+ifeq ($(USBGECKO), 1)
+LIBS += -ldb
+CFLAGS += -DUSBGECKO
 endif
 
 all: $(DOL_TARGET)
@@ -100,4 +105,3 @@ clean:
 	$(MAKE) -C $(APP_BOOTER_DIR) clean
 
 .PHONY: clean
-
