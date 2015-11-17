@@ -57,6 +57,9 @@
 #include "../video_viewport.h"
 #include "d3d_wrapper.h"
 #include "render_chain_driver.h"
+#ifdef _XBOX
+#include "../../defines/xdk_defines.h"
+#endif
 
 typedef struct
 {

@@ -16,6 +16,6 @@
 #ifndef _XDK_DEFINES_H
 #define _XDK_DEFINES_H
 
-typedef HANDLE HWCLASSEX;
+typedef HANDLE WNDCLASSEX;
 
 #endif
