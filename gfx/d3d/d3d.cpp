@@ -41,7 +41,7 @@
 
 #include "../../performance.h"
 
-#include "d3d_defines.h"
+#include "../../defines/d3d_defines.h"
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 
@@ -57,12 +57,15 @@
 /* forward declarations */
 static bool d3d_init_luts(d3d_video_t *d3d)
 {
+#ifndef _XBOX
    unsigned i;
+#endif
    settings_t *settings = config_get_ptr();
 
    if (!d3d->renderchain_driver->add_lut)
       return true;
 
+#ifndef _XBOX
    for (i = 0; i < d3d->shader.luts; i++)
    {
       bool ret = d3d->renderchain_driver->add_lut(
@@ -75,6 +78,7 @@ static bool d3d_init_luts(d3d_video_t *d3d)
       if (!ret)
          return ret;
    }
+#endif
 
    return true;
 }
@@ -85,6 +89,8 @@ static bool d3d_init_chain(d3d_video_t *d3d,
 
 #ifdef HAVE_OVERLAY
 static void d3d_free_overlays(d3d_video_t *d3d);
+#endif
+#ifdef HAVE_MENU
 static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay);
 #endif
 
@@ -161,7 +167,7 @@ void d3d_make_d3dpp(void *data,
 #endif
       info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
 #else
-   d3dpp->hDeviceWindow    = g_hwnd;
+   d3dpp->hDeviceWindow    = win32_get_window();
    d3dpp->BackBufferFormat = !d3dpp->Windowed ? D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
 #endif
 
@@ -247,7 +253,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
             d3d->cur_mon_id,
             D3DDEVTYPE_HAL,
-            g_hwnd,
+            win32_get_window(),
             D3DCREATE_HARDWARE_VERTEXPROCESSING,
             &d3dpp,
             &d3d->dev)))
@@ -258,7 +264,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
       if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
                   d3d->cur_mon_id,
                   D3DDEVTYPE_HAL,
-                  g_hwnd,
+                  win32_get_window(),
                   D3DCREATE_SOFTWARE_VERTEXPROCESSING,
                   &d3dpp,
                   &d3d->dev)))
@@ -647,20 +653,22 @@ static bool d3d_construct(d3d_video_t *d3d,
 
    if (!info->fullscreen || windowed_full)
    {
+      HWND window = win32_get_window();
+
       if (!info->fullscreen && settings->ui.menubar_enable)
       {
          RECT rc_temp = {0, 0, (LONG)win_height, 0x7FFF};
 
-         SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
-         SendMessage(g_hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
+         SetMenu(window, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
+         SendMessage(window, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
          g_resize_height = win_height += rc_temp.top + rect.top;
-         SetWindowPos(g_hwnd, NULL, 0, 0, win_width, win_height, SWP_NOMOVE);
+         SetWindowPos(window, NULL, 0, 0, win_width, win_height, SWP_NOMOVE);
       }
 
-      ShowWindow(g_hwnd, SW_RESTORE);
-      UpdateWindow(g_hwnd);
-      SetForegroundWindow(g_hwnd);
-      SetFocus(g_hwnd);
+      ShowWindow(window, SW_RESTORE);
+      UpdateWindow(window);
+      SetForegroundWindow(window);
+      SetFocus(window);
    }
 #endif
 
@@ -819,7 +827,8 @@ error:
 
 static void d3d_free(void *data)
 {
-   d3d_video_t            *d3d = (d3d_video_t*)data;
+   d3d_video_t   *d3d = (d3d_video_t*)data;
+   HWND        window = win32_get_window();
 
    if (!d3d)
       return;
@@ -843,16 +852,12 @@ static void d3d_free(void *data)
    if (d3d->g_pD3D)
       d3d->g_pD3D->Release();
 
-#ifdef HAVE_MONITOR
-   win32_monitor_from_window(g_hwnd, true);
-#endif
+   win32_monitor_from_window(window, true);
 
    if (d3d)
       delete d3d;
 
-#ifndef _XBOX
-   UnregisterClass("RetroArch", GetModuleHandle(NULL));
-#endif
+   win32_destroy_window();
 }
 
 #ifndef DONT_HAVE_STATE_TRACKER
@@ -993,10 +998,6 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 
 #ifdef _XBOX
 
-#ifdef HAVE_RMENU
-extern struct texture_image *menu_texture;
-#endif
-
 #ifdef _XBOX1
 #include <formats/image.h>
 
@@ -1054,28 +1055,6 @@ static bool texture_image_render(d3d_video_t *d3d,
    d3d_draw_primitive(d3dr, D3DPT_QUADLIST, 0, 1);
 
    return true;
-}
-#endif
-
-#ifdef HAVE_MENU
-static void d3d_draw_texture(d3d_video_t *d3d)
-{
-   if (!d3d)
-      return;
-
-#if defined(HAVE_RMENU)
-   menu_texture->x = 0;
-   menu_texture->y = 0;
-
-   if (d3d->menu->enabled)
-   {
-      d3d_enable_blend_func(d3d->dev);
-      texture_image_render(d3d, menu_texture,
-            menu_texture->x, menu_texture->y,
-         d3d->screen_width, d3d->screen_height, true);
-      d3d_disable_blend_func(d3d->dev);
-   }
-#endif
 }
 #endif
 
@@ -1183,8 +1162,7 @@ static bool d3d_process_shader(d3d_video_t *d3d)
    return d3d_init_singlepass(d3d);
 }
 
-
-#ifdef HAVE_OVERLAY
+#ifdef HAVE_MENU
 static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
 {
    struct video_viewport vp;
@@ -1305,7 +1283,9 @@ static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay)
    d3d_texture_free(overlay->tex);
    d3d_vertex_buffer_free(overlay->vert_buf, NULL);
 }
+#endif
 
+#ifdef HAVE_OVERLAY
 static void d3d_free_overlays(d3d_video_t *d3d)
 {
    unsigned i;
@@ -1468,6 +1448,7 @@ static bool d3d_frame(void *data, const void *frame,
    LPDIRECT3DDEVICE d3dr               = (LPDIRECT3DDEVICE)d3d->dev;
    driver_t *driver                    = driver_get_ptr();
    settings_t *settings                = config_get_ptr();
+   HWND window                         = win32_get_window();
    const font_renderer_t *font_ctx     = driver->font_osd_driver;
 
    (void)i;
@@ -1480,11 +1461,9 @@ static bool d3d_frame(void *data, const void *frame,
    rarch_perf_init(&d3d_frame, "d3d_frame");
    retro_perf_start(&d3d_frame);
 
-#ifndef _XBOX
    /* We cannot recover in fullscreen. */
-   if (d3d->needs_restore && IsIconic(g_hwnd))
+   if (d3d->needs_restore && IsIconic(window))
       return true;
-#endif
    if (d3d->needs_restore && !d3d_restore(d3d))
    {
       RARCH_ERR("[D3D]: Failed to restore.\n");
@@ -1566,12 +1545,6 @@ static bool d3d_frame(void *data, const void *frame,
 #ifdef HAVE_MENU
    if (menu_driver_alive())
       menu_driver_frame();
-
-#ifdef _XBOX
-   /* TODO - should be refactored. */
-   if (d3d && d3d->menu->enabled)
-      d3d_draw_texture(d3d);
-#endif
 #endif
 
    retro_perf_stop(&d3d_frame);

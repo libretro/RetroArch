@@ -34,7 +34,7 @@
 
 #include <file/file_path.h>
 
-#include "linux_common.h"
+#include "../common/linux_common.h"
 
 #include "../input_common.h"
 #include "../input_joypad.h"
@@ -43,15 +43,6 @@
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
-#endif
-
-#ifdef HAVE_XKBCOMMON
-/* We need libxkbcommon to translate raw evdev events to characters
- * which can be passed to keyboard callback in a sensible way. */
-#include <xkbcommon/xkbcommon.h>
-
-#define MOD_MAP_SIZE 5
-
 #endif
 
 typedef struct udev_input udev_input_t;
@@ -90,13 +81,6 @@ struct udev_input
    struct udev *udev;
    struct udev_monitor *monitor;
 
-#ifdef HAVE_XKBCOMMON
-   struct xkb_context *xkb_ctx;
-   struct xkb_keymap *xkb_map;
-   struct xkb_state *xkb_state;
-   xkb_mod_index_t *mod_map_idx;
-   uint16_t        *mod_map_bit;
-#endif
 
    const input_device_driver_t *joypad;
    uint8_t key_state[(KEY_MAX + 7) / 8];
@@ -111,11 +95,11 @@ struct udev_input
 };
 
 #ifdef HAVE_XKBCOMMON
-void handle_xkb(
-      struct xkb_state *xkb_state, 
-      xkb_mod_index_t *mod_map_idx,
-      uint16_t *mod_map_bit,
-      int code, int value);
+int  init_xkb(void);
+
+void free_xkb(void);
+
+void handle_xkb(int code, int value);
 #endif
 
 static void udev_handle_keyboard(udev_input_t *udev,
@@ -130,7 +114,7 @@ static void udev_handle_keyboard(udev_input_t *udev,
             BIT_CLEAR(udev->key_state, event->code);
 
 #ifdef HAVE_XKBCOMMON
-         handle_xkb(udev->xkb_state, udev->mod_map_idx, udev->mod_map_bit, event->code, event->value);
+         handle_xkb(event->code, event->value);
 #endif
          break;
 
@@ -644,16 +628,7 @@ static void udev_input_free(void *data)
       udev_unref(udev->udev);
 
 #ifdef HAVE_XKBCOMMON
-   if (udev->mod_map_idx)
-      free(udev->mod_map_idx);
-   if (udev->mod_map_bit)
-      free(udev->mod_map_bit);
-   if (udev->xkb_map)
-      xkb_keymap_unref(udev->xkb_map);
-   if (udev->xkb_ctx)
-      xkb_context_unref(udev->xkb_ctx);
-   if (udev->xkb_state)
-      xkb_state_unref(udev->xkb_state);
+   free_xkb();
 #endif
 
    free(udev);
@@ -722,63 +697,8 @@ static void *udev_input_init(void)
    }
 
 #ifdef HAVE_XKBCOMMON
-   udev->mod_map_idx = (xkb_mod_index_t *)calloc(MOD_MAP_SIZE, sizeof(xkb_mod_index_t));
-
-   if (!udev->mod_map_idx)
+   if (init_xkb() == -1)
       goto error;
-
-   udev->mod_map_bit = (uint16_t*)calloc(MOD_MAP_SIZE, sizeof(uint16_t));
-
-   if (!udev->mod_map_bit)
-      goto error;
-
-   udev->xkb_ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-   if (udev->xkb_ctx)
-   {
-      struct string_list *list = NULL;
-      struct xkb_rule_names rule = {0};
-
-      rule.rules = "evdev";
-
-      if (*settings->input.keyboard_layout)
-      {
-         list = string_split(settings->input.keyboard_layout, ":");
-         if (list && list->size >= 2)
-            rule.variant = list->elems[1].data;
-         if (list && list->size >= 1)
-            rule.layout = list->elems[0].data;
-      }
-
-      udev->xkb_map = xkb_keymap_new_from_names(udev->xkb_ctx, &rule, XKB_MAP_COMPILE_NO_FLAGS);
-      if (list)
-         string_list_free(list);
-   }
-   if (udev->xkb_map)
-   {
-      xkb_mod_index_t *map_idx = (xkb_mod_index_t*)&udev->mod_map_idx[0];
-      uint16_t        *map_bit = (uint16_t*)&udev->mod_map_bit[0];
-
-      udev->xkb_state = xkb_state_new(udev->xkb_map);
-
-      *map_idx = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CAPS);
-      map_idx++;
-      *map_bit = RETROKMOD_CAPSLOCK;
-      map_bit++;
-      *map_idx = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_SHIFT);
-      map_idx++;
-      *map_bit = RETROKMOD_SHIFT;
-      map_bit++;
-      *map_idx = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CTRL);
-      map_idx++;
-      *map_bit = RETROKMOD_CTRL;
-      map_bit++;
-      *map_idx = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_ALT);
-      map_idx++;
-      *map_bit = RETROKMOD_ALT;
-      map_bit++;
-      *map_idx = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_LOGO);
-      *map_bit = RETROKMOD_META;
-   }
 #endif
 
    udev->epfd = epoll_create(32);

@@ -15,6 +15,7 @@
  */
 
 #include <file/file_path.h>
+#include <formats/image.h>
 
 #include "video_texture.h"
 #include "video_pixel_converter.h"

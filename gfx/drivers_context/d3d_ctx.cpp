@@ -84,14 +84,13 @@ static void gfx_ctx_d3d_update_title(void *data)
    char buf[128]        = {0};
    char buffer_fps[128] = {0};
    settings_t *settings = config_get_ptr();
+   HWND         window  = win32_get_window();
 
    if (video_monitor_get_fps(buf, sizeof(buf),
             buffer_fps, sizeof(buffer_fps)))
    {
 #ifndef _XBOX
-      d3d_video_t *d3d     = (d3d_video_t*)data;
-
-      SetWindowText(g_hwnd, buf);
+      SetWindowText(window, buf);
 #endif
    }
 
@@ -124,21 +123,9 @@ static void gfx_ctx_d3d_check_window(void *data, bool *quit,
    win32_check_window(quit, resize, width, height);
 }
 
-#ifdef _XBOX
-static HANDLE GetFocus(void)
-{
-   driver_t *driver = driver_get_ptr();
-   d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
-   return d3d->hWnd;
-}
-#endif
-
 static bool gfx_ctx_d3d_has_focus(void *data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   if (!d3d)
-      return false;
-   return GetFocus() == g_hwnd;
+   return win32_has_focus();
 }
 
 static bool gfx_ctx_d3d_suppress_screensaver(void *data, bool enable)
@@ -312,7 +299,7 @@ static void gfx_ctx_d3d_swap_interval(void *data, unsigned interval)
    unsigned d3d_interval = interval ? 
       D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 
-   d3d_render_state(d3d->dev, XBOX_PRESENTATIONINTERVAL, d3d_interval);
+   d3d_set_render_state(d3d->dev, XBOX_PRESENTATIONINTERVAL, d3d_interval);
 #else
    d3d_restore(d3d);
 #endif

@@ -520,7 +520,9 @@ void d3d_set_vertex_declaration(void *data, void *vertex_data)
 
 bool d3d_reset(LPDIRECT3DDEVICE dev, D3DPRESENT_PARAMETERS *d3dpp)
 {
+#ifndef _XBOX
    HRESULT res;
+#endif
    const char *err = NULL;
 
    if (dev->Reset(d3dpp) == D3D_OK)

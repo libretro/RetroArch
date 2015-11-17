@@ -38,7 +38,7 @@
 #endif
 #endif
 
-#include "d3d_defines.h"
+#include "../../defines/d3d_defines.h"
 
 #ifdef _XBOX1
 #include <xfont.h>
@@ -57,6 +57,9 @@
 #include "../video_viewport.h"
 #include "d3d_wrapper.h"
 #include "render_chain_driver.h"
+#ifdef _XBOX
+#include "../../defines/xdk_defines.h"
+#endif
 
 typedef struct
 {
@@ -139,10 +142,6 @@ typedef struct d3d_video
 
 void d3d_make_d3dpp(void *data,
       const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
-
-#ifndef _XBOX
-extern "C" bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
-#endif
 
 #endif
 

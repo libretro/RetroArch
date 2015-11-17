@@ -49,8 +49,8 @@ static unsigned g_pos_x = CW_USEDEFAULT;
 static unsigned g_pos_y = CW_USEDEFAULT;
 static bool g_resized;
 bool g_inited;
-bool g_quit;
-HWND g_hwnd;
+static bool g_quit;
+static HWND g_hwnd;
 
 extern void *dinput_wgl;
 extern void *curD3D;
@@ -101,9 +101,11 @@ static BOOL CALLBACK win32_monitor_enum_proc(HMONITOR hMonitor,
 
 void win32_monitor_from_window(HWND data, bool destroy)
 {
+#ifndef _XBOX
    win32_monitor_last = MonitorFromWindow(data, MONITOR_DEFAULTTONEAREST);
    if (destroy)
       DestroyWindow(data);
+#endif
 }
 
 void win32_monitor_get_info(void)
@@ -192,7 +194,10 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 
       case WM_CREATE:
          if (!strcmp(video_driver, "gl"))
-            create_gl_context(hwnd);
+         {
+            if (create_gl_context(hwnd))
+               g_quit = true;
+         }
          else if (!strcmp(video_driver, "d3d"))
          {
             LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
@@ -669,4 +674,43 @@ bool win32_set_video_mode(void *data,
 #endif
 
    return true;
+}
+
+#ifdef _XBOX
+static HANDLE GetFocus(void)
+{
+   return g_hwnd;
+}
+
+BOOL IsIconic(HWND hwnd)
+{
+   return FALSE;
+}
+#endif
+
+bool win32_has_focus(void)
+{
+   if (!g_inited)
+      return false;
+
+   return GetFocus() == g_hwnd;
+}
+
+HWND win32_get_window(void)
+{
+   return g_hwnd;
+}
+
+void win32_window_reset(void)
+{
+   g_quit              = false;
+   g_restore_desktop   = false;
+}
+
+void win32_destroy_window(void)
+{
+#ifndef _XBOX
+   UnregisterClass("RetroArch", GetModuleHandle(NULL));
+#endif
+   g_hwnd = NULL;
 }

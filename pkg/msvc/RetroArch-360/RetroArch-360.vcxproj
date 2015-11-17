@@ -113,9 +113,9 @@
       <MinimalRebuild>true</MinimalRebuild>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PreprocessorDefinitions>_DEBUG;_XBOX;HAVE_XINPUT2;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE;HAVE_RMENU_XUI;HAVE_MENU;HAVE_NETPLAY;HAVE_NETWORKING;HAVE_NETWORKING;HAVE_SOCKET_LEGACY;HAVE_ZLIB;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_D3D9;HAVE_D3D;RARCH_INTERNAL;MSB_FIRST;_XBOX360;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_XAUDIO;WANT_RPNG;HAVE_THREADS;HAVE_BUILTIN_AUTOCONFIG;HAVE_FILTERS_BUILTIN</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_XBOX;DONT_HAVE_STATE_TRACKER;HAVE_XINPUT2;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE;HAVE_RMENU_XUI;HAVE_MENU;HAVE_NETPLAY;HAVE_NETWORKING;HAVE_NETWORKING;HAVE_SOCKET_LEGACY;HAVE_ZLIB;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_D3D9;HAVE_D3D;RARCH_INTERNAL;MSB_FIRST;_XBOX360;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_XAUDIO;WANT_RPNG;HAVE_THREADS;HAVE_BUILTIN_AUTOCONFIG;HAVE_FILTERS_BUILTIN</PreprocessorDefinitions>
       <CallAttributedProfiling>Callcap</CallAttributedProfiling>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\deps\zlib;$(SolutionDir)\..\libretro-common\include;$(SolutionDir)\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\deps\zlib;$(SolutionDir)\..\..\libretro-common\include;$(SolutionDir)\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -152,9 +152,9 @@
       <PREfast>AnalyzeOnly</PREfast>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PreprocessorDefinitions>_DEBUG;_XBOX;%(PreprocessorDefinitions);HAVE_XINPUT2;_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE;HAVE_RMENU_XUI;HAVE_MENU;HAVE_ZLIB;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_D3D9;HAVE_D3D;RARCH_INTERNAL;MSB_FIRST;_XBOX360;WANT_ZLIB;SINC_LOWER_QUALITY;WANT_RPNG;HAVE_THREADS;HAVE_BUILTIN_AUTOCONFIG;HAVE_FILTERS_BUILTIN</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_XBOX;%(PreprocessorDefinitions);DONT_HAVE_STATE_TRACKER;HAVE_XINPUT2;_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE;HAVE_RMENU_XUI;HAVE_MENU;HAVE_ZLIB;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_D3D9;HAVE_D3D;RARCH_INTERNAL;MSB_FIRST;_XBOX360;WANT_ZLIB;SINC_LOWER_QUALITY;WANT_RPNG;HAVE_THREADS;HAVE_BUILTIN_AUTOCONFIG;HAVE_FILTERS_BUILTIN</PreprocessorDefinitions>
       <CallAttributedProfiling>Callcap</CallAttributedProfiling>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\deps\zlib;$(SolutionDir)\..\libretro-common\include;$(SolutionDir)\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\deps\zlib;$(SolutionDir)\..\..\libretro-common\include;$(SolutionDir)\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -192,9 +192,9 @@
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;%(PreprocessorDefinitions);HAVE_XINPUT2;_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE;HAVE_RMENU_XUI;HAVE_MENU;HAVE_ZLIB;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_D3D9;HAVE_D3D;RARCH_INTERNAL;MSB_FIRST;_XBOX360;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_XAUDIO;WANT_RPNG;HAVE_THREADS;HAVE_BUILTIN_AUTOCONFIG;HAVE_FILTERS_BUILTIN</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;%(PreprocessorDefinitions);DONT_HAVE_STATE_TRACKER;HAVE_XINPUT2;_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE;HAVE_RMENU_XUI;HAVE_MENU;HAVE_ZLIB;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_D3D9;HAVE_D3D;RARCH_INTERNAL;MSB_FIRST;_XBOX360;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_XAUDIO;WANT_RPNG;HAVE_THREADS;HAVE_BUILTIN_AUTOCONFIG;HAVE_FILTERS_BUILTIN</PreprocessorDefinitions>
       <CallAttributedProfiling>Callcap</CallAttributedProfiling>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\deps\zlib;$(SolutionDir)\..\libretro-common\include;$(SolutionDir)\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\deps\zlib;$(SolutionDir)\..\..\libretro-common\include;$(SolutionDir)\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -237,8 +237,8 @@
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;FASTCAP;%(PreprocessorDefinitions);HAVE_XINPUT2;_CRT_SECURE_NO_WARNINGS;HAVE_ZLIB;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_D3D9;HAVE_D3D;RARCH_INTERNAL;MSB_FIRST;_XBOX360;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_RMENU_XUI;HAVE_MENU;HAVE_XAUDIO;WANT_RPNG;HAVE_THREADS;HAVE_BUILTIN_AUTOCONFIG;HAVE_FILTERS_BUILTIN</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\deps\zlib;$(SolutionDir)\..\libretro-common\include;$(SolutionDir)\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;FASTCAP;%(PreprocessorDefinitions);DONT_HAVE_STATE_TRACKER;HAVE_XINPUT2;_CRT_SECURE_NO_WARNINGS;HAVE_ZLIB;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_D3D9;HAVE_D3D;RARCH_INTERNAL;MSB_FIRST;_XBOX360;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_RMENU_XUI;HAVE_MENU;HAVE_XAUDIO;WANT_RPNG;HAVE_THREADS;HAVE_BUILTIN_AUTOCONFIG;HAVE_FILTERS_BUILTIN</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\deps\zlib;$(SolutionDir)\..\..\libretro-common\include;$(SolutionDir)\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -279,8 +279,8 @@
       <ExceptionHandling>false</ExceptionHandling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;%(PreprocessorDefinitions);HAVE_XINPUT2;_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE=1;HAVE_NETPLAY;HAVE_NETWORKING;HAVE_SOCKET_LEGACY;HAVE_ZLIB;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_D3D9;HAVE_D3D;RARCH_INTERNAL;MSB_FIRST;_XBOX360;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_RMENU_XUI;HAVE_MENU;HAVE_XAUDIO;WANT_RPNG;HAVE_THREADS;HAVE_BUILTIN_AUTOCONFIG;HAVE_FILTERS_BUILTIN</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\deps\zlib;$(SolutionDir)\..\libretro-common\include;$(SolutionDir)\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;%(PreprocessorDefinitions);DONT_HAVE_STATE_TRACKER;HAVE_XINPUT2;_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE=1;HAVE_NETPLAY;HAVE_NETWORKING;HAVE_SOCKET_LEGACY;HAVE_ZLIB;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_D3D9;HAVE_D3D;RARCH_INTERNAL;MSB_FIRST;_XBOX360;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_RMENU_XUI;HAVE_MENU;HAVE_XAUDIO;WANT_RPNG;HAVE_THREADS;HAVE_BUILTIN_AUTOCONFIG;HAVE_FILTERS_BUILTIN</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\deps\zlib;$(SolutionDir)\..\..\libretro-common\include;$(SolutionDir)\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -321,8 +321,8 @@
       <ExceptionHandling>false</ExceptionHandling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;LTCG;%(PreprocessorDefinitions);HAVE_XINPUT2;_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE;HAVE_RMENU_XUI;HAVE_MENU;HAVE_NETPLAY;HAVE_NETWORKING;HAVE_SOCKET_LEGACY;HAVE_ZLIB;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_D3D9;HAVE_D3D;RARCH_INTERNAL;MSB_FIRST;_XBOX360;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_XAUDIO;WANT_RPNG;HAVE_THREADS;HAVE_BUILTIN_AUTOCONFIG;HAVE_FILTERS_BUILTIN</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\deps\zlib;$(SolutionDir)\..\libretro-common\include;$(SolutionDir)\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;LTCG;%(PreprocessorDefinitions);DONT_HAVE_STATE_TRACKER;HAVE_XINPUT2;_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE;HAVE_RMENU_XUI;HAVE_MENU;HAVE_NETPLAY;HAVE_NETWORKING;HAVE_SOCKET_LEGACY;HAVE_ZLIB;HAVE_RARCH_EXEC;HAVE_LIBRETRO_MANAGEMENT;D3DCOMPILE_USEVOIDS;HAVE_GRIFFIN;HAVE_HLSL;HAVE_D3D9;HAVE_D3D;RARCH_INTERNAL;MSB_FIRST;_XBOX360;WANT_ZLIB;SINC_LOWER_QUALITY;HAVE_XAUDIO;WANT_RPNG;HAVE_THREADS;HAVE_BUILTIN_AUTOCONFIG;HAVE_FILTERS_BUILTIN</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\deps\zlib;$(SolutionDir)\..\..\libretro-common\include;$(SolutionDir)\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -355,11 +355,11 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\griffin\griffin.c" />
-    <ClCompile Include="..\..\griffin\griffin_cpp.cpp" />
+    <ClCompile Include="..\..\..\griffin\griffin.c" />
+    <ClCompile Include="..\..\..\griffin\griffin_cpp.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\media\360\rarch.ttf">
+    <CustomBuild Include="..\..\360\rarch.ttf">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">copy %(FullPath) $(OutDir)media\rarch.ttf</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\rarch.ttf;%(Outputs)</Outputs>
@@ -368,7 +368,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\media\360\rarch_scene_skin.xui">
+    <CustomBuild Include="..\..\360\rarch_scene_skin.xui">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_scene_skin.xui" "$(OutDir)media\rarch_scene_skin.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_scene_skin.xui" "$(OutDir)media\rarch_scene_skin.xur"</Command>
@@ -385,7 +385,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\media\360\sd\rarch_main.xui">
+    <CustomBuild Include="..\..\360\sd\rarch_main.xui">
       <FileType>Document</FileType>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\rarch_main.xur;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\rarch_main.xur;</Outputs>
@@ -402,7 +402,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\media\360\Arial_12.rdf">
+    <CustomBuild Include="..\..\360\Arial_12.rdf">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">Bundler %(FullPath) /o $(OutDir)media\Arial_12.xpr</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">Bundler %(FullPath) /o $(OutDir)media\Arial_12.xpr</Command>
@@ -419,7 +419,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\media\360\hd\rarch_main.xui">
+    <CustomBuild Include="..\..\360\hd\rarch_main.xui">
       <FileType>Document</FileType>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\rarch_main.xur;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\rarch_main.xur;</Outputs>

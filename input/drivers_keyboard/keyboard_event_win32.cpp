@@ -25,7 +25,8 @@ LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
 {
    unsigned scancode = (lparam >> 16) & 0xff;
    unsigned keycode = input_keymaps_translate_keysym_to_rk(scancode);
-   uint16_t mod = 0;
+   uint16_t mod     = 0;
+   bool keydown     = true;
 
    if (GetKeyState(VK_SHIFT)   & 0x80)
       mod |= RETROKMOD_SHIFT;
@@ -46,38 +47,37 @@ LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
        * WM_CHAR and WM_KEYDOWN properly.
        */
       case WM_CHAR:
-         input_keyboard_event(true, RETROK_UNKNOWN, wparam, mod,
+         input_keyboard_event(keydown, RETROK_UNKNOWN, wparam, mod,
                RETRO_DEVICE_KEYBOARD);
          return TRUE;
 
-      case WM_KEYDOWN:
-         /* DirectInput uses scancodes directly. */
-         input_keyboard_event(true, keycode, 0, mod,
-               RETRO_DEVICE_KEYBOARD);
-         return 0;
-
       case WM_KEYUP:
-         /* DirectInput uses scancodes directly. */
-         input_keyboard_event(false, keycode, 0, mod,
-               RETRO_DEVICE_KEYBOARD);
-         return 0;
-
       case WM_SYSKEYUP:
-         input_keyboard_event(false, keycode, 0, mod,
-               RETRO_DEVICE_KEYBOARD);
-         return 0;
-
+      case WM_KEYDOWN:
       case WM_SYSKEYDOWN:
-         input_keyboard_event(true, keycode, 0, mod,
+         /* Key released? */
+         if (message == WM_KEYUP || message == WM_SYSKEYUP)
+            keydown = false;
+
+         /* DirectInput uses scancodes directly. */
+         input_keyboard_event(keydown, keycode, 0, mod,
                RETRO_DEVICE_KEYBOARD);
 
-         switch (wparam)
+         if (message == WM_SYSKEYDOWN)
          {
-            case VK_F10:
-            case VK_MENU:
-            case VK_RSHIFT:
-               return 0;
+            switch (wparam)
+            {
+               case VK_F10:
+               case VK_MENU:
+               case VK_RSHIFT:
+                  return 0;
+               default:
+                  break;
+            }
          }
+         else
+            return 0;
+
          break;
    }
 

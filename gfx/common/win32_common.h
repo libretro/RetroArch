@@ -28,30 +28,31 @@
 #include "../../driver.h"
 #include "../video_context_driver.h"
 
+#ifdef _XBOX
+#include "../../defines/xdk_defines.h"
+#endif
+
 #ifndef _XBOX
 #include "../drivers_wm/win32_resource.h"
 
 extern unsigned g_resize_width;
 extern unsigned g_resize_height;
-extern bool g_quit;
 extern bool g_inited;
 extern bool g_restore_desktop;
-extern HWND g_hwnd;
 
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 
 LRESULT win32_menu_loop(HWND handle, WPARAM wparam);
 
-
-void win32_monitor_from_window(HWND data, bool destroy);
-
 void win32_monitor_get_info(void);
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
 
-void create_gl_context(HWND hwnd);
+bool create_gl_context(HWND hwnd);
 #endif
+
+void win32_monitor_from_window(HWND data, bool destroy);
 
 void win32_monitor_init(void);
 
@@ -75,7 +76,19 @@ bool win32_get_metrics(void *data,
 
 void win32_show_cursor(bool state);
 
+HWND win32_get_window(void);
+
+bool win32_has_focus(void);
+
 void win32_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height);
+
+void win32_window_reset(void);
+
+void win32_destroy_window(void);
+
+#ifdef _XBOX
+BOOL IsIconic(HWND hwnd);
+#endif
 
 #endif

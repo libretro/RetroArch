@@ -545,6 +545,9 @@ static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
          nbio->cb = &cb_nbio_image_menu_boxart;
          break;
 #endif
+	  case 0:
+      default:
+         break;
    }
 
    nbio_begin_read(handle);

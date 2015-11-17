@@ -26,8 +26,8 @@
 
 #include "../../driver.h"
 #include "../../runloop.h"
-#include "../drivers/gl_common.h"
 #include "../video_monitor.h"
+#include "../common/gl_common.h"
 #include "../common/x11_common.h"
 
 #ifndef EGL_OPENGL_ES3_BIT_KHR

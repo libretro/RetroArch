@@ -106,8 +106,6 @@ static bool handle_small_keyboard(unsigned* code, bool down)
    return false;
 }
 
-extern const struct rarch_key_map rarch_key_map_apple_hid[];
-
 typedef struct icade_map
 {
    bool up;

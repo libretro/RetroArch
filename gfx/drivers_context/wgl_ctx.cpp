@@ -35,9 +35,11 @@
 #include "../../dynamic.h"
 #include "../../runloop.h"
 #include "../video_context_driver.h"
-#include "../drivers/gl_common.h"
 #include "../video_monitor.h"
+
+#include "../common/gl_common.h"
 #include "../common/win32_common.h"
+
 #include "../drivers_wm/win32_shader_dlg.h"
 
 #ifndef WGL_CONTEXT_MAJOR_VERSION_ARB
@@ -98,8 +100,9 @@ static void setup_pixel_format(HDC hdc)
    SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
 }
 
-void create_gl_context(HWND hwnd)
+bool create_gl_context(HWND hwnd)
 {
+   bool quit;
    bool core_context;
    const struct retro_hw_render_callback *hw_render =
       (const struct retro_hw_render_callback*)video_driver_callback();
@@ -136,11 +139,11 @@ void create_gl_context(HWND hwnd)
             if (!wglShareLists(g_hrc, g_hw_hrc))
             {
                RARCH_LOG("[WGL]: Failed to share contexts.\n");
-               g_quit = true;
+               quit = true;
             }
          }
          else
-            g_quit = true;
+            quit = true;
       }
    }
 
@@ -149,12 +152,12 @@ void create_gl_context(HWND hwnd)
       if (wglMakeCurrent(g_hdc, g_hrc))
          g_inited = true;
       else
-         g_quit = true;
+         quit     = true;
    }
    else
    {
-      g_quit = true;
-      return;
+      quit        = true;
+      return true;
    }
 
    if (core_context || debug)
@@ -202,7 +205,7 @@ void create_gl_context(HWND hwnd)
             wglDeleteContext(g_hrc);
             g_hrc = context;
             if (!wglMakeCurrent(g_hdc, g_hrc))
-               g_quit = true;
+               quit = true;
          }
          else
             RARCH_ERR("[WGL]: Failed to create core context. Falling back to legacy context.\n");
@@ -213,13 +216,15 @@ void create_gl_context(HWND hwnd)
             if (!g_hw_hrc)
             {
                RARCH_ERR("[WGL]: Failed to create shared context.\n");
-               g_quit = true;
+               quit = true;
             }
          }
       }
       else
          RARCH_ERR("[WGL]: wglCreateContextAttribsARB not supported.\n");
    }
+
+   return quit;
 }
 
 void *dinput_wgl;
@@ -264,12 +269,13 @@ static void gfx_ctx_wgl_update_window_title(void *data)
    char buf[128]        = {0};
    char buf_fps[128]    = {0};
    settings_t *settings = config_get_ptr();
+   HWND         window  = win32_get_window();
 
    (void)data;
 
    if (video_monitor_get_fps(buf, sizeof(buf),
             buf_fps, sizeof(buf_fps)))
-      SetWindowText(g_hwnd, buf);
+      SetWindowText(window, buf);
    if (settings->fps_show)
       rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
@@ -277,8 +283,9 @@ static void gfx_ctx_wgl_update_window_title(void *data)
 static void gfx_ctx_wgl_get_video_size(void *data, unsigned *width, unsigned *height)
 {
    (void)data;
+   HWND         window  = win32_get_window();
 
-   if (!g_hwnd)
+   if (!window)
    {
       unsigned mon_id;
       RECT mon_rect;
@@ -306,9 +313,7 @@ static bool gfx_ctx_wgl_init(void *data)
    if (g_inited)
       return false;
 
-   g_quit              = false;
-   g_restore_desktop   = false;
-
+   win32_window_reset();
    win32_monitor_init();
    if (!win32_window_init(&wndclass, true))
 	   return false;
@@ -340,6 +345,7 @@ error:
 static void gfx_ctx_wgl_destroy(void *data)
 {
    driver_t *driver = driver_get_ptr();
+   HWND     window  = win32_get_window();
 
    (void)data;
 
@@ -358,17 +364,16 @@ static void gfx_ctx_wgl_destroy(void *data)
       }
    }
 
-   if (g_hwnd && g_hdc)
+   if (window && g_hdc)
    {
-      ReleaseDC(g_hwnd, g_hdc);
+      ReleaseDC(window, g_hdc);
       g_hdc = NULL;
    }
 
-   if (g_hwnd)
+   if (window)
    {
-      win32_monitor_from_window(g_hwnd, true);
-      UnregisterClass("RetroArch", GetModuleHandle(NULL));
-      g_hwnd = NULL;
+      win32_monitor_from_window(window, true);
+      win32_destroy_window();
    }
 
    if (g_restore_desktop)
@@ -395,12 +400,7 @@ static void gfx_ctx_wgl_input_driver(void *data,
 
 static bool gfx_ctx_wgl_has_focus(void *data)
 {
-   (void)data;
-
-   if (!g_inited)
-      return false;
-
-   return GetFocus() == g_hwnd;
+   return win32_has_focus();
 }
 
 static bool gfx_ctx_wgl_suppress_screensaver(void *data, bool enable)

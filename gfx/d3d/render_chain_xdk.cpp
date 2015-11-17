@@ -216,7 +216,8 @@ static void renderchain_set_vertices(void *data, unsigned pass,
          d3d->shader->use(d3d, pass);
       if (d3d->shader->set_params)
          d3d->shader->set_params(d3d, vert_width, vert_height, chain->tex_w,
-               chain->tex_h, width, height, frame_count, NULL, NULL, NULL, 0);
+               chain->tex_h, width, height, frame_count,
+               NULL, NULL, NULL, NULL, 0);
    }
 #endif
 #endif
@@ -342,11 +343,14 @@ static bool xdk_renderchain_init(void *data,
    if (!renderchain_create_first_pass(d3d, video_info))
       return false;
 
+#if 0
+   /* TODO/FIXME */
    if (global->console.screen.viewports.custom_vp.width == 0)
       global->console.screen.viewports.custom_vp.width = width;
 
    if (global->console.screen.viewports.custom_vp.height == 0)
       global->console.screen.viewports.custom_vp.height = height;
+#endif
 
    return true;
 }
@@ -371,12 +375,12 @@ static bool xdk_renderchain_render(void *data, const void *frame,
    LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
    settings_t *settings     = config_get_ptr();
    xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
-   uint64_t frame_count     = video_driver_get_frame_count();
+   uint64_t *frame_count    = video_driver_get_frame_count();
 
    video_driver_get_size(&width, &height);
 
    renderchain_blit_to_texture(chain, frame, frame_width, frame_height, pitch);
-   renderchain_set_vertices(d3d, 1, frame_width, frame_height, frame_count);
+   renderchain_set_vertices(d3d, 1, frame_width, frame_height, *frame_count);
 
    d3d_set_texture(d3dr, 0, chain->tex);
    d3d_set_viewport(chain->dev, &d3d->final_viewport);
@@ -392,18 +396,6 @@ static bool xdk_renderchain_render(void *data, const void *frame,
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
    renderchain_set_mvp(d3d, width, height, d3d->dev_rotation);
 
-   return true;
-}
-
-static bool xdk_renderchain_add_lut(void *data,
-      const char *id, const char *path, bool smooth)
-{
-   (void)data;
-   (void)id;
-   (void)path;
-   (void)smooth;
-
-   /* stub */
    return true;
 }
 
@@ -488,7 +480,7 @@ renderchain_driver_t xdk_renderchain = {
    xdk_renderchain_init,
    xdk_renderchain_set_final_viewport,
    xdk_renderchain_add_pass,
-   xdk_renderchain_add_lut,
+   NULL,
    xdk_renderchain_add_state_tracker,
    xdk_renderchain_render,
    xdk_renderchain_convert_geometry,

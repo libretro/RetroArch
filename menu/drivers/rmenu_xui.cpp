@@ -26,11 +26,13 @@
 
 #include <file/file_path.h>
 #include <string/string_list.h>
+#include <queues/message_queue.h>
 
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
 #include "../menu.h"
+#include "../menu_animation.h"
 #include "../menu_entry.h"
 #include "../menu_entries.h"
 #include "../menu_input.h"
@@ -424,7 +426,7 @@ static void rmenu_xui_frame(void)
    if (!d3dr)
       return;
 
-   menu_display_set_viewport(menu);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
    app.RunFrame();
    XuiTimersRun();
@@ -450,7 +452,7 @@ static void rmenu_xui_frame(void)
 
    XuiRenderEnd( app.GetDC() );
 
-   menu_display_unset_viewport(menu);
+   menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
 
 static void blit_line(int x, int y, const char *message, bool green)
@@ -459,9 +461,9 @@ static void blit_line(int x, int y, const char *message, bool green)
 
 static void rmenu_xui_render_background(void)
 {
-   global_t *global = global_get_ptr();
+   bool libretro_running           = menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
 
-	if (global->content_is_init)
+	if (libretro_running)
 		XuiElementSetShow(m_background, FALSE);
 	else
 		XuiElementSetShow(m_background, TRUE);
@@ -540,7 +542,7 @@ static void rmenu_xui_render(void)
    const char *label           = NULL;
 	unsigned menu_type          = 0;
    menu_handle_t *menu         = menu_driver_get_ptr();
-   uint64_t frame_count        = video_driver_get_frame_count();
+   uint64_t *frame_count       = video_driver_get_frame_count();
 
    menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,     &fb_width);
    menu_display_ctl(MENU_DISPLAY_CTL_MSG_FORCE, &msg_force);
@@ -554,8 +556,8 @@ static void rmenu_xui_render(void)
       )
 		return;
 
-   menu_display_fb_unset_dirty();
-   menu_animation_clear_active();
+   menu_display_ctl(MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG, NULL);
+   menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 
 	rmenu_xui_render_background();
 
@@ -564,7 +566,8 @@ static void rmenu_xui_render(void)
       menu_entries_get_title(title, sizeof(title));
 		mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
 		XuiTextElementSetText(m_menutitle, strw_buffer);
-		menu_animation_ticker_str(title, RXUI_TERM_WIDTH(fb_width) - 3, (unsigned int)frame_count / 15, title, true);
+		menu_animation_ticker_str(title, RXUI_TERM_WIDTH(fb_width) - 3,
+            (unsigned int)*frame_count / 15, title, true);
 	}
 
 	if (XuiHandleIsValid(m_menutitle))
@@ -579,10 +582,10 @@ static void rmenu_xui_render(void)
 	end = menu_entries_get_end();
 	for (i = 0; i < end; i++)
    {
-      char entry_path[PATH_MAX_LENGTH]  = {0};
-      char entry_value[PATH_MAX_LENGTH] = {0};
-      char msg_right[PATH_MAX_LENGTH]   = {0};
-      wchar_t msg_left[PATH_MAX_LENGTH] = {0};
+      char entry_path[PATH_MAX_LENGTH]     = {0};
+      char entry_value[PATH_MAX_LENGTH]    = {0};
+      wchar_t msg_right[PATH_MAX_LENGTH]   = {0};
+      wchar_t msg_left[PATH_MAX_LENGTH]    = {0};
 
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
@@ -606,7 +609,7 @@ static void rmenu_xui_render(void)
 
 		if (!str)
 			str = "";
-		snprintf(msg, sizeof(msg), "%s\n%s", menu->keyboard.label, str);
+      snprintf(msg, sizeof(msg), "%s\n%s", label, str);
 		rmenu_xui_render_messagebox(msg);			
 	}
 }
@@ -685,6 +688,7 @@ static int rmenu_xui_environ(menu_environ_cb_t type, void *data)
 {
    switch (type)
    {
+      case 0:
       default:
          return -1;
    }
@@ -721,6 +725,7 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    NULL,
    rmenu_xui_list_set_selection,
+   NULL,
    NULL,
    "rmenu_xui",
    rmenu_xui_environ,

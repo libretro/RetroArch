@@ -43,7 +43,7 @@
 
 #include "../../driver.h"
 #include "../../runloop.h"
-#include "../drivers/gl_common.h"
+#include "../common/gl_common.h"
 #include "../video_monitor.h"
 
 #ifdef HAVE_CONFIG_H

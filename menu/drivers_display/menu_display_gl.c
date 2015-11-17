@@ -20,7 +20,7 @@
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/video_thread_wrapper.h"
 #include "../../gfx/video_texture.h"
-#include "../../gfx/drivers/gl_common.h"
+#include "../../gfx/common/gl_common.h"
 
 #include "../menu_display.h"
 

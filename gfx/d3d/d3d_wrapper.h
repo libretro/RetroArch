@@ -20,7 +20,7 @@
 #include <boolean.h>
 
 #include "../common/win32_common.h"
-#include "d3d_defines.h"
+#include "../../defines/d3d_defines.h"
 
 #ifdef __cplusplus
 extern "C" {

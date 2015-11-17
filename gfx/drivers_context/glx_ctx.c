@@ -21,8 +21,9 @@
 
 #include "../../driver.h"
 #include "../../runloop.h"
-#include "../drivers/gl_common.h"
 #include "../video_monitor.h"
+
+#include "../common/gl_common.h"
 #include "../common/x11_common.h"
 
 static int (*g_pglSwapInterval)(int);

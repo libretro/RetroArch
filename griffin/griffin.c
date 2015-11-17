@@ -228,8 +228,8 @@ VIDEO DRIVER
 #endif
 
 #ifdef HAVE_OPENGL
+#include "../gfx/common/gl_common.c"
 #include "../gfx/drivers/gl.c"
-#include "../gfx/drivers/gl_common.c"
 
 #ifndef HAVE_PSGL
 #include "../libretro-common/glsym/rglgen.c"
@@ -301,7 +301,6 @@ FONTS
 #endif
 
 #if defined(VITA)
-#include "../vita/stockfont.c"
 #include "../gfx/drivers_font/vita2d_font.c"
 #endif
 
@@ -372,7 +371,7 @@ INPUT
 #endif
 
 #if defined(__linux__) && !defined(ANDROID)
-#include "../input/drivers/linux_common.c"
+#include "../input/common/linux_common.c"
 #include "../input/drivers/linuxraw_input.c"
 #include "../input/drivers_joypad/linuxraw_joypad.c"
 #endif

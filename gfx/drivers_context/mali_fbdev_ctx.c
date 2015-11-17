@@ -30,7 +30,7 @@
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
-#include "../drivers/gl_common.h"
+#include "../common/gl_common.h"
 
 struct fbdev_window native_window;
 static EGLContext g_egl_ctx;

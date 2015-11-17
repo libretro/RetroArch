@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 #ifdef HAVE_OPENGL
-#include "drivers/gl_common.h"
+#include "common/gl_common.h"
 
 void gl_load_texture_data(GLuint id,
       enum gfx_wrap_type wrap_type,

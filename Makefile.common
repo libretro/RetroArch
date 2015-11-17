@@ -77,7 +77,7 @@ endif
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
    OBJ += input/drivers/linuxraw_input.o \
-			 input/drivers/linux_common.o \
+			 input/common/linux_common.o \
           input/drivers_joypad/linuxraw_joypad.o \
           frontend/drivers/platform_linux.o
 endif
@@ -365,7 +365,7 @@ ifeq ($(HAVE_NEON),1)
    OBJ += audio/audio_utils_neon.o
 endif
 
-# XMB and GLUI are always enabled if supported and not explicitly disabled
+# XMB and MaterialUI are always enabled if supported and not explicitly disabled
 ifeq ($(HAVE_RGUI)$(HAVE_GL_CONTEXT), 11)
    ifeq ($(HAVE_ZARCH),)
       HAVE_ZARCH = 1
@@ -572,7 +572,7 @@ OBJ += gfx/video_texture_c.o
 ifeq ($(HAVE_GL_CONTEXT), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/drivers/gl.o \
-          gfx/drivers/gl_common.o \
+          gfx/common/gl_common.o \
           gfx/drivers_font/gl_raster_font.o \
           libretro-common/glsym/rglgen.o
 	
@@ -703,7 +703,7 @@ endif
 
 ifeq ($(HAVE_SUNXI), 1)
    OBJ += gfx/drivers/sunxi_gfx.o \
-          gfx/pixman/pixman-arm-neon-asm.o
+          gfx/include/pixman/pixman-arm-neon-asm.o
 endif
 
 ifeq ($(HAVE_VG), 1)

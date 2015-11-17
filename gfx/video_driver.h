@@ -53,7 +53,7 @@ typedef struct video_info
    bool smooth;
    /* Maximum input size: RARCH_SCALE_BASE * input_scale */
    unsigned input_scale;
-   /* Use 32bit RGBA rather than native XBGR1555. */
+   /* Use 32bit RGBA rather than native RGB565/XBGR1555. */
    bool rgb32;
 } video_info_t;
 
