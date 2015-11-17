@@ -84,10 +84,6 @@ static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
          "\\Device\\%s", szDevice);
    snprintf(szDestinationDrive, sizeof(szDestinationDrive),
          "\\??\\%s", szDrive);
-   RARCH_LOG("xbox_io_mount() - source device: %s.\n",
-         szSourceDevice);
-   RARCH_LOG("xbox_io_mount() - destination drive: %s.\n",
-         szDestinationDrive);
 
    STRING DeviceName =
    {
@@ -157,25 +153,16 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    unsigned long license_mask;
    DWORD volume_device_type;
 
-   if (XContentGetLicenseMask(&license_mask, NULL) != ERROR_SUCCESS)
-      RARCH_LOG("RetroArch was launched as a standalone DVD, or using DVD emulation, or from the development area of the HDD.\n");
-   else
+   if (XContentGetLicenseMask(&license_mask, NULL) == ERROR_SUCCESS)
    {
       XContentQueryVolumeDeviceType("GAME",&volume_device_type, NULL);
 
       switch(volume_device_type)
       {
-         case XCONTENTDEVICETYPE_HDD:
-            RARCH_LOG("RetroArch was launched from a content package on HDD.\n");
-            break;
-         case XCONTENTDEVICETYPE_MU:
-            RARCH_LOG("RetroArch was launched from a content package on USB or Memory Unit.\n");
-            break;
-         case XCONTENTDEVICETYPE_ODD:
-            RARCH_LOG("RetroArch was launched from a content package on Optical Disc Drive.\n");
-            break;
-         default:
-            RARCH_LOG("RetroArch was launched from a content package on an unknown device type.\n");
+         case XCONTENTDEVICETYPE_HDD: /* Launched from content package on HDD */
+         case XCONTENTDEVICETYPE_MU:  /* Launched from content package on USB/Memory Unit. */
+         case XCONTENTDEVICETYPE_ODD: /* Launched from content package on Optial Disc Drive. */
+         default:                     /* Launched from content package on unknown device. */
             break;
       }
    }
@@ -221,22 +208,18 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 
    if (XGetLaunchInfo(&launch_type, &ptr) == ERROR_SUCCESS)
    {
+      char *extracted_path = NULL;
       if (launch_type == LDT_FROM_DEBUGGER_CMDLINE)
-      {
-         RARCH_LOG("Launched from commandline debugger.\n");
          goto exit;
-      }
-      else
-      {
-         char *extracted_path = (char*)&ptr.Data;
 
-         if (extracted_path && extracted_path[0] != '\0'
+      extracted_path = (char*)&ptr.Data;
+
+      if (extracted_path && extracted_path[0] != '\0'
             && (strstr(extracted_path, "Pool") == NULL)
             /* Hack. Unknown problem */)
-         {
-            strlcpy(path, extracted_path, sizeof(path));
-            RARCH_LOG("Auto-start game %s.\n", path);
-         }
+      {
+         /* Auto-start game */
+         strlcpy(path, extracted_path, sizeof(path));
       }
    }
 #elif defined(_XBOX360)
@@ -252,15 +235,13 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 	  {
 		  if (xbox_io_mount("aurora:", aurora->SystemPath) >= 0)
 			  sprintf_s(extracted_path, dwLaunchDataSize, "aurora:%s%s", aurora->RelativePath, aurora->Exectutable);
-		  else
-			  RARCH_LOG("Failed to mount %s as aurora:.\n", aurora->SystemPath);
 	  }
 	  else
 		  sprintf_s(extracted_path, dwLaunchDataSize, "%s", pLaunchData);
       if (extracted_path && extracted_path[0] != '\0')
       {
+         /* Auto-start game */
          strlcpy(path, extracted_path, sizeof(path));
-         RARCH_LOG("Auto-start game %s.\n", path);
       }
 
       if (pLaunchData)
@@ -273,6 +254,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 
          if (args)
          {
+            /* Auto-start game. */
             args->touched        = true;
             args->no_content     = false;
             args->verbose        = false;
@@ -281,8 +263,6 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
             args->state_path     = NULL;
             args->content_path   = path;
             args->libretro_path  = NULL;
-
-            RARCH_LOG("Auto-start game %s.\n", path);
          }
    }
 #endif
@@ -336,7 +316,6 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
 #endif
    (void)should_load_game;
 
-   RARCH_LOG("Attempt to load executable: [%s].\n", path);
 #ifdef IS_SALAMANDER
    if (path[0] != '\0')
       XLaunchNewImage(path, NULL);
