@@ -27,7 +27,6 @@ typedef struct xdk_renderchain
    LPDIRECT3DVERTEXBUFFER vertex_buf;
    unsigned last_width;
    unsigned last_height;
-   std::vector<lut_info> luts;
 #ifdef HAVE_D3D9
    LPDIRECT3DVERTEXDECLARATION vertex_decl;
 #else
@@ -217,7 +216,8 @@ static void renderchain_set_vertices(void *data, unsigned pass,
          d3d->shader->use(d3d, pass);
       if (d3d->shader->set_params)
          d3d->shader->set_params(d3d, vert_width, vert_height, chain->tex_w,
-               chain->tex_h, width, height, frame_count, NULL, NULL, NULL, 0);
+               chain->tex_h, width, height, frame_count,
+               NULL, NULL, NULL, NULL, 0);
    }
 #endif
 #endif
@@ -343,11 +343,14 @@ static bool xdk_renderchain_init(void *data,
    if (!renderchain_create_first_pass(d3d, video_info))
       return false;
 
+#if 0
+   /* TODO/FIXME */
    if (global->console.screen.viewports.custom_vp.width == 0)
       global->console.screen.viewports.custom_vp.width = width;
 
    if (global->console.screen.viewports.custom_vp.height == 0)
       global->console.screen.viewports.custom_vp.height = height;
+#endif
 
    return true;
 }
