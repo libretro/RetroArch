@@ -85,6 +85,8 @@ static bool d3d_init_chain(d3d_video_t *d3d,
 
 #ifdef HAVE_OVERLAY
 static void d3d_free_overlays(d3d_video_t *d3d);
+#endif
+#ifdef HAVE_MENU
 static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay);
 #endif
 
@@ -1182,8 +1184,7 @@ static bool d3d_process_shader(d3d_video_t *d3d)
    return d3d_init_singlepass(d3d);
 }
 
-
-#ifdef HAVE_OVERLAY
+#ifdef HAVE_MENU
 static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
 {
    struct video_viewport vp;
@@ -1304,7 +1305,9 @@ static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay)
    d3d_texture_free(overlay->tex);
    d3d_vertex_buffer_free(overlay->vert_buf, NULL);
 }
+#endif
 
+#ifdef HAVE_OVERLAY
 static void d3d_free_overlays(d3d_video_t *d3d)
 {
    unsigned i;
