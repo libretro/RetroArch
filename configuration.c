@@ -1871,8 +1871,16 @@ bool config_load_override(void)
    if (!system->info.library_name[0] != '\0' || !strcmp(system->info.library_name,"No Core"))
       return false;
 
-   RARCH_LOG("Overrides: core name: %s\n", system->info.library_name);
-   RARCH_LOG("Overrides: game name: %s\n", global->name.base);
+   core_name = system ? system->info.library_name : NULL;
+   game_name = global ? path_basename(global->name.base) : NULL;
+
+   if (!core_name  || !game_name)
+      return false;
+   if (core_name[0] == '\0' || game_name == '\0')
+      return false;
+
+   RARCH_LOG("Overrides: core name: %s\n", core_name);
+   RARCH_LOG("Overrides: game name: %s\n", game_name);
 
    /* Config directory: config_directory.
     * Try config directory setting first,
@@ -1888,14 +1896,6 @@ bool config_load_override(void)
    }
 
    RARCH_LOG("Overrides: config directory: %s\n", config_directory);
-
-   core_name = system ? system->info.library_name : NULL;
-   game_name = global ? path_basename(global->name.base) : NULL;
-
-   if (!core_name  || !game_name)
-      return false;
-   if (core_name[0] == '\0' || game_name == '\0')
-      return false;
 
    /* Concatenate strings into full paths for core_path, game_path */
    fill_pathname_join(core_path, config_directory, core_name, PATH_MAX_LENGTH);
@@ -2057,8 +2057,16 @@ bool config_load_remap(void)
    if (!system->info.library_name || !strcmp(system->info.library_name,"No Core"))
       return false;
 
-   RARCH_LOG("Remaps: core name: %s\n", system->info.library_name);
-   RARCH_LOG("Remaps: game name: %s\n", global->name.base);
+   core_name = system ? system->info.library_name : NULL;
+   game_name = global ? path_basename(global->name.base) : NULL;
+
+   if (!core_name  || !game_name)
+      return false;
+   if (core_name[0] == '\0' || game_name == '\0')
+      return false;
+
+   RARCH_LOG("Remaps: core name: %s\n", core_name);
+   RARCH_LOG("Remaps: game name: %s\n", game_name);
 
    /* Remap directory: remap_directory.
     * Try remap directory setting, no fallbacks defined */
@@ -2070,14 +2078,6 @@ bool config_load_remap(void)
       return false;
    }
    RARCH_LOG("Remaps: remap directory: %s\n", remap_directory);
-
-   core_name = system ? system->info.library_name : NULL;
-   game_name = global ? path_basename(global->name.base) : NULL;
-
-   if (!core_name  || !game_name)
-      return false;
-   if (core_name[0] == '\0' || game_name == '\0')
-      return false;
 
    /* Concatenate strings into full paths for core_path, game_path */
    fill_pathname_join(core_path, remap_directory, core_name, PATH_MAX_LENGTH);
