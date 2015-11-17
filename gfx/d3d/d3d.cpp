@@ -63,6 +63,7 @@ static bool d3d_init_luts(d3d_video_t *d3d)
    if (!d3d->renderchain_driver->add_lut)
       return true;
 
+#ifndef _XBOX
    for (i = 0; i < d3d->shader.luts; i++)
    {
       bool ret = d3d->renderchain_driver->add_lut(
@@ -75,6 +76,7 @@ static bool d3d_init_luts(d3d_video_t *d3d)
       if (!ret)
          return ret;
    }
+#endif
 
    return true;
 }
