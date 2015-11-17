@@ -266,12 +266,13 @@ static void gfx_ctx_wgl_update_window_title(void *data)
    char buf[128]        = {0};
    char buf_fps[128]    = {0};
    settings_t *settings = config_get_ptr();
+   HWND         window  = win32_get_window();
 
    (void)data;
 
    if (video_monitor_get_fps(buf, sizeof(buf),
             buf_fps, sizeof(buf_fps)))
-      SetWindowText(g_hwnd, buf);
+      SetWindowText(window, buf);
    if (settings->fps_show)
       rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
@@ -279,8 +280,9 @@ static void gfx_ctx_wgl_update_window_title(void *data)
 static void gfx_ctx_wgl_get_video_size(void *data, unsigned *width, unsigned *height)
 {
    (void)data;
+   HWND         window  = win32_get_window();
 
-   if (!g_hwnd)
+   if (!window)
    {
       unsigned mon_id;
       RECT mon_rect;
@@ -342,6 +344,7 @@ error:
 static void gfx_ctx_wgl_destroy(void *data)
 {
    driver_t *driver = driver_get_ptr();
+   HWND     window  = win32_get_window();
 
    (void)data;
 
@@ -360,15 +363,15 @@ static void gfx_ctx_wgl_destroy(void *data)
       }
    }
 
-   if (g_hwnd && g_hdc)
+   if (window && g_hdc)
    {
-      ReleaseDC(g_hwnd, g_hdc);
+      ReleaseDC(window, g_hdc);
       g_hdc = NULL;
    }
 
-   if (g_hwnd)
+   if (window)
    {
-      win32_monitor_from_window(g_hwnd, true);
+      win32_monitor_from_window(window, true);
       UnregisterClass("RetroArch", GetModuleHandle(NULL));
       g_hwnd = NULL;
    }

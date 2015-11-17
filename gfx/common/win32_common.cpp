@@ -685,3 +685,8 @@ bool win32_has_focus(void)
 
    return GetFocus() == g_hwnd;
 }
+
+HWND win32_get_window(void)
+{
+   return g_hwnd;
+}

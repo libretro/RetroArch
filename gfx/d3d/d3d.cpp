@@ -161,7 +161,7 @@ void d3d_make_d3dpp(void *data,
 #endif
       info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
 #else
-   d3dpp->hDeviceWindow    = g_hwnd;
+   d3dpp->hDeviceWindow    = win32_get_window();
    d3dpp->BackBufferFormat = !d3dpp->Windowed ? D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
 #endif
 
@@ -247,7 +247,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
             d3d->cur_mon_id,
             D3DDEVTYPE_HAL,
-            g_hwnd,
+            win32_get_window(),
             D3DCREATE_HARDWARE_VERTEXPROCESSING,
             &d3dpp,
             &d3d->dev)))
@@ -258,7 +258,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
       if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
                   d3d->cur_mon_id,
                   D3DDEVTYPE_HAL,
-                  g_hwnd,
+                  win32_get_window(),
                   D3DCREATE_SOFTWARE_VERTEXPROCESSING,
                   &d3dpp,
                   &d3d->dev)))
@@ -647,20 +647,22 @@ static bool d3d_construct(d3d_video_t *d3d,
 
    if (!info->fullscreen || windowed_full)
    {
+      HWND window = win32_get_window();
+
       if (!info->fullscreen && settings->ui.menubar_enable)
       {
          RECT rc_temp = {0, 0, (LONG)win_height, 0x7FFF};
 
-         SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
-         SendMessage(g_hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
+         SetMenu(window, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
+         SendMessage(window, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
          g_resize_height = win_height += rc_temp.top + rect.top;
-         SetWindowPos(g_hwnd, NULL, 0, 0, win_width, win_height, SWP_NOMOVE);
+         SetWindowPos(window, NULL, 0, 0, win_width, win_height, SWP_NOMOVE);
       }
 
-      ShowWindow(g_hwnd, SW_RESTORE);
-      UpdateWindow(g_hwnd);
-      SetForegroundWindow(g_hwnd);
-      SetFocus(g_hwnd);
+      ShowWindow(window, SW_RESTORE);
+      UpdateWindow(window);
+      SetForegroundWindow(window);
+      SetFocus(window);
    }
 #endif
 
@@ -819,7 +821,8 @@ error:
 
 static void d3d_free(void *data)
 {
-   d3d_video_t            *d3d = (d3d_video_t*)data;
+   d3d_video_t   *d3d = (d3d_video_t*)data;
+   HWND        window = win32_get_window();
 
    if (!d3d)
       return;
@@ -844,7 +847,7 @@ static void d3d_free(void *data)
       d3d->g_pD3D->Release();
 
 #ifdef HAVE_MONITOR
-   win32_monitor_from_window(g_hwnd, true);
+   win32_monitor_from_window(window, true);
 #endif
 
    if (d3d)
@@ -1468,6 +1471,7 @@ static bool d3d_frame(void *data, const void *frame,
    LPDIRECT3DDEVICE d3dr               = (LPDIRECT3DDEVICE)d3d->dev;
    driver_t *driver                    = driver_get_ptr();
    settings_t *settings                = config_get_ptr();
+   HWND window                         = win32_get_window();
    const font_renderer_t *font_ctx     = driver->font_osd_driver;
 
    (void)i;
@@ -1482,7 +1486,7 @@ static bool d3d_frame(void *data, const void *frame,
 
 #ifndef _XBOX
    /* We cannot recover in fullscreen. */
-   if (d3d->needs_restore && IsIconic(g_hwnd))
+   if (d3d->needs_restore && IsIconic(window))
       return true;
 #endif
    if (d3d->needs_restore && !d3d_restore(d3d))
