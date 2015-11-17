@@ -32,6 +32,7 @@
 
 #include "../menu_driver.h"
 #include "../menu.h"
+#include "../menu_animation.h"
 #include "../menu_entry.h"
 #include "../menu_entries.h"
 #include "../menu_input.h"
@@ -541,7 +542,7 @@ static void rmenu_xui_render(void)
    const char *label           = NULL;
 	unsigned menu_type          = 0;
    menu_handle_t *menu         = menu_driver_get_ptr();
-   uint64_t frame_count        = video_driver_get_frame_count();
+   uint64_t *frame_count       = video_driver_get_frame_count();
 
    menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,     &fb_width);
    menu_display_ctl(MENU_DISPLAY_CTL_MSG_FORCE, &msg_force);
@@ -565,7 +566,8 @@ static void rmenu_xui_render(void)
       menu_entries_get_title(title, sizeof(title));
 		mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
 		XuiTextElementSetText(m_menutitle, strw_buffer);
-		menu_animation_ticker_str(title, RXUI_TERM_WIDTH(fb_width) - 3, (unsigned int)frame_count / 15, title, true);
+		menu_animation_ticker_str(title, RXUI_TERM_WIDTH(fb_width) - 3,
+            (unsigned int)*frame_count / 15, title, true);
 	}
 
 	if (XuiHandleIsValid(m_menutitle))
