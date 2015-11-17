@@ -1159,7 +1159,7 @@ static bool cg_d3d9_renderchain_add_lut(void *data,
    d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
    d3d_set_texture(d3dr, 0, NULL);
 
-   chain->luts[chain->luts_count] = malloc(sizeof(lut_info));
+   chain->luts[chain->luts_count] = (lut_info*)malloc(sizeof(lut_info));
 
    if (!chain->luts[chain->luts_count])
       return false;
