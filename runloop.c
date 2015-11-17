@@ -996,6 +996,11 @@ int rarch_main_iterate(unsigned *sleep_ms)
    }
 #endif
 
+#ifdef HAVE_NETPLAY
+   if (driver->netplay_data)
+      netplay_pre_frame((netplay_t*)driver->netplay_data);
+#endif
+
    if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_STATE, &cmd))
    {
       /* RetroArch has been paused. */
@@ -1006,11 +1011,6 @@ int rarch_main_iterate(unsigned *sleep_ms)
 
 #if defined(HAVE_THREADS)
    lock_autosave();
-#endif
-
-#ifdef HAVE_NETPLAY
-   if (driver->netplay_data)
-      netplay_pre_frame((netplay_t*)driver->netplay_data);
 #endif
 
    if (global->bsv.movie)

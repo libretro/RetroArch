@@ -18,6 +18,7 @@
 #pragma comment(lib, "ws2_32")
 #endif
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -30,6 +31,7 @@
 #include "dynamic.h"
 #include "msg_hash.h"
 #include "system.h"
+#include "runloop.h"
 
 struct delta_frame
 {
@@ -112,6 +114,19 @@ struct netplay
     * well after flip_frame before allowing another flip. */
    bool flip;
    uint32_t flip_frame;
+
+   /* Netplay pausing
+    */
+   bool pause;
+   uint32_t pause_frame;
+};
+
+enum {
+   CMD_OPT_ALLOWED_IN_SPECTATE_MODE = 0x1,
+   CMD_OPT_REQUIRE_ACK              = 0x2,
+   CMD_OPT_HOST_ONLY                = 0x4,
+   CMD_OPT_CLIENT_ONLY              = 0x8,
+   CMD_OPT_REQUIRE_SYNC             = 0x10,
 };
 
 /**
@@ -125,6 +140,17 @@ static void warn_hangup(void)
    rarch_main_msg_queue_push("Netplay has disconnected. Will continue without connection.", 0, 480, false);
 }
 
+/**
+ * check_netplay_synched:
+ * @netplay: pointer to the netplay object.
+ * Checks to see if the host and client have synchronized states. Returns true
+ * on success and false on failure.
+ */
+bool check_netplay_synched(netplay_t* netplay)
+{
+   assert(netplay);
+   return netplay->frame_count < (netplay->flip_frame + 2 * UDP_FRAME_PACKETS);
+}
 
 /**
  * netplay_should_skip:
@@ -300,8 +326,39 @@ static bool netplay_get_cmd(netplay_t *netplay)
 
          return netplay_cmd_ack(netplay);
 
-      default:
-         break;
+      case NETPLAY_CMD_SPECTATE:
+         RARCH_ERR("NETPLAY_CMD_SPECTATE unimplemented.\n");
+         return netplay_cmd_nak(netplay);
+
+      case NETPLAY_CMD_DISCONNECT:
+         warn_hangup();
+         return netplay_cmd_ack(netplay);
+
+      case NETPLAY_CMD_LOAD_SAVESTATE:
+         RARCH_ERR("NETPLAY_CMD_LOAD_SAVESTATE unimplemented.\n");
+         return netplay_cmd_nak(netplay);
+
+      case NETPLAY_CFG_SWAP_INPUT:
+         RARCH_ERR("NETPLAY_CFG_SWAP_INPUT unimplemented.\n");
+         return netplay_cmd_nak(netplay);
+
+      case NETPLAY_CFG_DELAY_FRAMES:
+         RARCH_ERR("NETPLAY_CFG_DELAY_FRAMES unimplemented.\n");
+         return netplay_cmd_nak(netplay);
+
+      case NETPLAY_CFG_CHEATS:
+         RARCH_ERR("NETPLAY_CFG_CHEATS unimplemented.\n");
+         return netplay_cmd_nak(netplay);
+
+      case NETPLAY_CMD_PAUSE:
+         event_command(EVENT_CMD_PAUSE);
+         return netplay_cmd_ack(netplay);
+
+      case NETPLAY_CMD_RESUME:
+         event_command(EVENT_CMD_UNPAUSE);
+         return netplay_cmd_ack(netplay);
+
+      default: break;
    }
 
    RARCH_ERR("Unknown netplay command received.\n");
@@ -1244,7 +1301,7 @@ error:
    return NULL;
 }
 
-static bool netplay_send_cmd(netplay_t *netplay, uint32_t cmd,
+static bool netplay_send_raw_cmd(netplay_t *netplay, uint32_t cmd,
       const void *data, size_t size)
 {
    cmd = (cmd << 16) | (size & 0xffff);
@@ -1260,6 +1317,62 @@ static bool netplay_send_cmd(netplay_t *netplay, uint32_t cmd,
 }
 
 /**
+ * netplay_command:
+ * @netplay                : pointer to netplay object
+ * @cmd                    : command to send
+ * @data                   : data to send as argument
+ * @sz                     : size of data
+ * @flags                  : flags of CMD_OPT_*
+ * @command_str            : name of action
+ * @success_msg            : message to display upon success
+ * 
+ * Sends a single netplay command and waits for response.
+ */
+void netplay_command(netplay_t* netplay, enum netplay_cmd cmd,
+                     void* data, size_t sz,
+                     uint32_t flags,
+                     const char* command_str,
+                     const char* success_msg)
+{
+   assert(netplay);
+   const char* msg         = NULL;
+
+   bool allowed_spectate   = !!(flags & CMD_OPT_ALLOWED_IN_SPECTATE_MODE);
+   bool host_only          = !!(flags & CMD_OPT_HOST_ONLY);
+   bool require_sync       = !!(flags & CMD_OPT_REQUIRE_SYNC);
+
+   if (netplay->spectate && !allowed_spectate)
+   {
+      msg = "Cannot %s in spectate mode.";
+      goto error; 
+   }
+
+   if (host_only && netplay->port == 0)
+   {
+      msg = "Cannot %s as a client.";
+      goto error;
+   }
+
+   if(require_sync && check_netplay_synched(netplay))
+   {
+      msg = "Cannot %s while host and client are not in sync.";
+      goto error;
+   }
+
+   if(netplay_send_raw_cmd(netplay, cmd, data, sz)) {
+      if(netplay_get_response(netplay))
+         rarch_main_msg_queue_push(success_msg, 1, 180, false);
+      else msg = "Failed to send command \"%s\"";
+   }
+
+error: ;
+   char m[256];
+   snprintf(m, 255, msg, command_str);
+   RARCH_WARN("%s\n", m);
+   rarch_main_msg_queue_push(m, 1, 180, false);
+}
+
+/**
  * netplay_flip_users:
  * @netplay              : pointer to netplay object
  *
@@ -1267,51 +1380,13 @@ static bool netplay_send_cmd(netplay_t *netplay, uint32_t cmd,
  **/
 void netplay_flip_users(netplay_t *netplay)
 {
-   uint32_t flip_frame     = netplay->frame_count + 2 * UDP_FRAME_PACKETS;
-   uint32_t flip_frame_net = htonl(flip_frame);
-   const char *msg         = NULL;
-
-   if (netplay->spectate)
-   {
-      msg = "Cannot flip users in spectate mode.";
-      goto error;
-   }
-
-   if (netplay->port == 0)
-   {
-      msg = "Cannot flip users if you're not the host.";
-      goto error;
-   }
-
-   /* Make sure both clients are definitely synced up. */
-   if (netplay->frame_count < (netplay->flip_frame + 2 * UDP_FRAME_PACKETS))
-   {
-      msg = "Cannot flip users yet. Wait a second or two before attempting flip.";
-      goto error;
-   }
-
-   if (netplay_send_cmd(netplay, NETPLAY_CMD_FLIP_PLAYERS,
-            &flip_frame_net, sizeof(flip_frame_net))
-         && netplay_get_response(netplay))
-   {
-      RARCH_LOG("Netplay users are flipped.\n");
-      rarch_main_msg_queue_push("Netplay users are flipped.", 1, 180, false);
-
-      /* Queue up a flip well enough in the future. */
-      netplay->flip ^= true;
-      netplay->flip_frame = flip_frame;
-   }
-   else
-   {
-      msg = "Failed to flip users.";
-      goto error;
-   }
-
-   return;
-
-error:
-   RARCH_WARN("%s\n", msg);
-   rarch_main_msg_queue_push(msg, 1, 180, false);
+   assert(netplay);
+   uint32_t flip_frame_net = htonl(netplay->frame_count + 2 * UDP_FRAME_PACKETS);
+   netplay_command(
+      netplay, NETPLAY_CMD_FLIP_PLAYERS,
+      &flip_frame_net, sizeof flip_frame_net,
+      CMD_OPT_HOST_ONLY | CMD_OPT_REQUIRE_SYNC,
+      "flip users", "Succesfully flipped users.\n");
 }
 
 /**

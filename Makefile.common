@@ -567,11 +567,7 @@ OBJ += gfx/video_context_driver.o \
 		 libretro-common/gfx/math/matrix_4x4.o \
 		 libretro-common/gfx/math/matrix_3x3.o
 
-ifneq ($(findstring Win32,$(OS)),)
-OBJ += gfx/video_texture.o
-else
 OBJ += gfx/video_texture_c.o
-endif
 
 ifeq ($(HAVE_GL_CONTEXT), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
