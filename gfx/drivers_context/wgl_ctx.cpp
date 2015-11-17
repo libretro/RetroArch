@@ -313,9 +313,7 @@ static bool gfx_ctx_wgl_init(void *data)
    if (g_inited)
       return false;
 
-   g_quit              = false;
-   g_restore_desktop   = false;
-
+   win32_window_reset();
    win32_monitor_init();
    if (!win32_window_init(&wndclass, true))
 	   return false;

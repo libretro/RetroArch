@@ -694,6 +694,12 @@ HWND win32_get_window(void)
    return g_hwnd;
 }
 
+void win32_window_reset(void)
+{
+   g_quit              = false;
+   g_restore_desktop   = false;
+}
+
 void win32_destroy_window(void)
 {
 #ifndef _XBOX
