@@ -107,12 +107,14 @@ void d3d_texture_free(LPDIRECT3DTEXTURE tex)
 
 void d3d_vertex_declaration_free(void *data)
 {
+#ifndef _XBOX1
    LPDIRECT3DVERTEXDECLARATION *vertex_decl = (LPDIRECT3DVERTEXDECLARATION*)data;
 
    if (!vertex_decl)
       return;
 
    vertex_decl->Release();
+#endif
 }
 
 bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
