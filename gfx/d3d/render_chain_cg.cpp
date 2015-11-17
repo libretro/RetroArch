@@ -719,6 +719,7 @@ static void cg_d3d9_renderchain_clear_passes(cg_renderchain_t *chain)
    {
       if (chain->passes[i].tex)
          d3d_texture_free(chain->passes[i].tex);
+      chain->passes[i].tex = NULL;
       d3d_vertex_buffer_free(chain->passes[i].vertex_buf, chain->passes[i].vertex_decl);
       renderchain_destroy_shader(chain, i);
    }
@@ -742,6 +743,7 @@ static void cg_d3d9_renderchain_clear(cg_renderchain_t *chain)
    {
       if (chain->luts[i].tex)
          d3d_texture_free(chain->luts[i].tex);
+	  chain->luts[i].tex = NULL;
    }
 
 #if 0
@@ -749,9 +751,6 @@ static void cg_d3d9_renderchain_clear(cg_renderchain_t *chain)
       state_tracker_free(chain->tracker);
    chain->tracker = NULL;
 #endif
-
-   chain->passes.clear();
-   chain->luts.clear();
 }
 
 static void cg_d3d9_renderchain_deinit_shader(cg_renderchain_t *chain)
