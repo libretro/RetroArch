@@ -68,7 +68,9 @@ static void data_runloop_thread_deinit(void)
 
       slock_free(g_data_runloop.lock);
       slock_free(g_data_runloop.cond_lock);
+#ifdef HAVE_OVERLAY
       rarch_main_data_overlay_thread_uninit();
+#endif
       scond_free(g_data_runloop.cond);
    }
 }
