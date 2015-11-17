@@ -201,7 +201,15 @@ static bool get_self_input_state(netplay_t *netplay)
       /* First frame we always give zero input since relying on 
        * input from first frame screws up when we use -F 0. */
       retro_input_state_t cb = netplay->cbs.state_cb;
-      for (i = 0; i < RARCH_FIRST_META_KEY; i++)
+      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+      {
+         int16_t tmp = cb(settings->input.netplay_client_swap_input ?
+               0 : !netplay->port,
+               RETRO_DEVICE_JOYPAD, 0, i);
+         state |= tmp ? 1 << i : 0;
+      }
+
+      for (i = RARCH_FIRST_CUSTOM_BIND; i < RARCH_FIRST_META_KEY; i++)
       {
          int16_t tmp = cb(settings->input.netplay_client_swap_input ?
                0 : !netplay->port,
