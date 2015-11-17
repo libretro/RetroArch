@@ -157,7 +157,7 @@ bool create_gl_context(HWND hwnd)
    else
    {
       quit        = true;
-      return;
+      return true;
    }
 
    if (core_context || debug)
