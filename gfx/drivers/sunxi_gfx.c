@@ -13,20 +13,21 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <signal.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+#include <sys/mman.h>
+#include <sys/ioctl.h>
+#include <linux/fb.h>
+
+#include <rthreads/rthreads.h>
+
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../video_viewport.h"
 #include "../video_monitor.h"
 #include "../font_renderer_driver.h"
-
-/* Specific includes for the driver */
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <linux/fb.h>
-#include <signal.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <rthreads/rthreads.h>
 
 #define NUMPAGES 2
 

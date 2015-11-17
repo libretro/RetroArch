@@ -707,7 +707,7 @@ endif
 
 ifeq ($(HAVE_SUNXI), 1)
    OBJ += gfx/drivers/sunxi_gfx.o \
-          gfx/pixman/pixman-arm-neon-asm.o
+          gfx/include/pixman/pixman-arm-neon-asm.o
 endif
 
 ifeq ($(HAVE_VG), 1)
