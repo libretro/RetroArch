@@ -27,6 +27,7 @@ typedef struct xdk_renderchain
    LPDIRECT3DVERTEXBUFFER vertex_buf;
    unsigned last_width;
    unsigned last_height;
+   std::vector<lut_info> luts;
 #ifdef HAVE_D3D9
    LPDIRECT3DVERTEXDECLARATION vertex_decl;
 #else
@@ -395,18 +396,6 @@ static bool xdk_renderchain_render(void *data, const void *frame,
    return true;
 }
 
-static bool xdk_renderchain_add_lut(void *data,
-      const char *id, const char *path, bool smooth)
-{
-   (void)data;
-   (void)id;
-   (void)path;
-   (void)smooth;
-
-   /* stub */
-   return true;
-}
-
 static bool xdk_renderchain_add_pass(void *data, const void *info_data)
 {
    (void)data;
@@ -488,7 +477,7 @@ renderchain_driver_t xdk_renderchain = {
    xdk_renderchain_init,
    xdk_renderchain_set_final_viewport,
    xdk_renderchain_add_pass,
-   xdk_renderchain_add_lut,
+   NULL,
    xdk_renderchain_add_state_tracker,
    xdk_renderchain_render,
    xdk_renderchain_convert_geometry,
