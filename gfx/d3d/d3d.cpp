@@ -57,7 +57,9 @@
 /* forward declarations */
 static bool d3d_init_luts(d3d_video_t *d3d)
 {
+#ifndef _XBOX
    unsigned i;
+#endif
    settings_t *settings = config_get_ptr();
 
    if (!d3d->renderchain_driver->add_lut)
