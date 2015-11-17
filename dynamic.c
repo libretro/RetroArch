@@ -610,10 +610,19 @@ static bool rarch_game_specific_options(char **output)
    char game_path[PATH_MAX_LENGTH]        = {0};
    char config_directory[PATH_MAX_LENGTH] = {0};
 
+   core_name = system->info.library_name;
+   game_name = path_basename(global->name.base);
+
+   if (core_name[0] == '\0' || game_name == '\0')
+      return false;
+
+   RARCH_LOG("Per-game Options: core name: %s\n", core_name);
+   RARCH_LOG("Per-game Options: game name: %s\n", game_name);
+
+
    /* Config directory: config_directory.
    * Try config directory setting first,
    * fallback to the location of the current configuration file. */
-
    if (settings->menu_config_directory[0] != '\0')
       strlcpy(config_directory, settings->menu_config_directory, PATH_MAX_LENGTH);
    else if (global->path.config[0] != '\0')
@@ -624,14 +633,8 @@ static bool rarch_game_specific_options(char **output)
       return false;
    }
 
-   core_name = system->info.library_name;
-   game_name = path_basename(global->name.base);
-
-   RARCH_LOG("Per-game Options: core name: %s\n", core_name);
-   RARCH_LOG("Per-game Options: game name: %s\n", game_name);
 
    /* Concatenate strings into full paths for game_path */
-
    fill_pathname_join(game_path, config_directory, core_name, PATH_MAX_LENGTH);
    fill_pathname_join(game_path, game_path, game_name, PATH_MAX_LENGTH);
    strlcat(game_path, ".opt", PATH_MAX_LENGTH);
