@@ -38,29 +38,29 @@ const char *menu_hash_to_str_it(uint32_t hash)
    switch (hash)
    {
       case MENU_LABEL_VALUE_INPUT_ICADE_ENABLE:
-         return "Keyboard Gamepad Mapping Enable";
+         return "Abilita mappatura gamepad tastiera";
       case MENU_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
-         return "Keyboard Gamepad Mapping Type";
+         return "Tipologia di mappatura gamepad tastiera";
       case MENU_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE:
-         return "Small Keyboard Enable";
+         return "Abilita tastiera ridotta";
       case MENU_LABEL_VALUE_SAVE_CURRENT_CONFIG:
-         return "Save Current Config";
+         return "Salva configurazione attuale";
       case MENU_LABEL_VALUE_STATE_SLOT:
-         return "State Slot";
+         return "Slot di stato";
       case MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS:
-         return "Accounts Cheevos";
+         return "Obiettivi dell'account";
       case MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME:
-         return "Username";
+         return "Nome utente";
       case MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD:
          return "Password";
       case MENU_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS:
-         return "Retro Achievements";
+         return "Retro Obiettivi";
       case MENU_LABEL_VALUE_ACCOUNTS_LIST:
-         return "Accounts";
+         return "Account";
       case MENU_LABEL_VALUE_ACCOUNTS_LIST_END:
-         return "Accounts List Endpoint";
+         return "Lista degli account";
       case MENU_LABEL_VALUE_DEBUG_PANEL_ENABLE:
-         return "Debug Panel Enable";
+         return "Abilita pannello di debug";
       case MENU_LABEL_VALUE_HELP_SCANNING_CONTENT:
          return "Scansiona per contenuto";
 	  case MENU_LABEL_VALUE_CHEEVOS_DESCRIPTION:
@@ -587,15 +587,15 @@ const char *menu_hash_to_str_it(uint32_t hash)
       case MENU_LABEL_VALUE_HELP:
          return "Aiuto";
       case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:
-         return "Salva Configurazione";
+         return "Salva nuova configurazione";
       case MENU_LABEL_VALUE_RESTART_CONTENT:
          return "Riavvia contenuto";
       case MENU_LABEL_VALUE_CORE_UPDATER_LIST:
          return "Aggiorna i core";
       case MENU_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
-         return "Buildbot Cores URL";
+         return "Indirizzo Buildbot Core";
       case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
-         return "Buildbot Assets URL";
+         return "Indirizzo Buildbot Assets";
       case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND:
          return "Navigazione avvolgente";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
@@ -1424,7 +1424,7 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                "Quando applichi gli shader, i settaggi del menù \n"
                "degli shader sono salvati ad un file temporaneo (sia \n"
                "menu.cgp che menu.glslp) e caricati. Il file \n"
-               "rimane do che RetroArch esce. Il file è \n"
+               "rimane dopo che RetroArch esce. Il file è \n"
                "salvato alla Directory Shader."
                );
          break;
