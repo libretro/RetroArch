@@ -59,7 +59,7 @@ struct xaudio2 : public IXAudio2VoiceCallback
    STDMETHOD_(void, OnBufferStart) (void *) {}
    STDMETHOD_(void, OnBufferEnd) (void *) 
    {
-      InterlockedDecrement(&buffers);
+      InterlockedDecrement((LONG volatile*)&buffers);
       SetEvent(hEvent);
    }
    STDMETHOD_(void, OnLoopEnd) (void *) {}
@@ -219,7 +219,7 @@ static size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_)
          if (FAILED(handle->pSourceVoice->SubmitSourceBuffer(&xa2buffer, NULL)))
             return 0;
 
-         InterlockedIncrement(&handle->buffers);
+         InterlockedIncrement((LONG volatile*)&handle->buffers);
          handle->bufptr       = 0;
          handle->write_buffer = (handle->write_buffer + 1) & MAX_BUFFERS_MASK;
       }
