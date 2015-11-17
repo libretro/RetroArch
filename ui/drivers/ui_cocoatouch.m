@@ -37,6 +37,9 @@ static CFRunLoopObserverRef iterate_observer;
 
 /* forward declaration */
 void apple_rarch_exited(void);
+#ifdef HAVE_BTSTACK
+void btpad_set_inquiry_state(bool on);
+#endif
 
 static void rarch_enable_ui(void)
 {
