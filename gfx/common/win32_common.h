@@ -36,6 +36,7 @@ extern unsigned g_resize_height;
 extern bool g_quit;
 extern bool g_inited;
 extern bool g_restore_desktop;
+extern HWND g_hwnd;
 
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
@@ -78,17 +79,5 @@ bool win32_has_focus(void);
 
 void win32_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height);
-
-#ifdef _XBOX
-BOOL SetWindowText(HWND hWnd, LPCTSTR lpString);
-
-BOOL IsIconic(HWND hWnd);
-#endif
-
-void win32_state_set(bool *quit, bool *restore_desktop, bool *inited);
-
-uintptr_t win32_get_handle(void);
-
-void win32_destroy(void);
 
 #endif

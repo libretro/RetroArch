@@ -103,7 +103,6 @@ static void setup_pixel_format(HDC hdc)
 void create_gl_context(HWND hwnd)
 {
    bool core_context;
-   bool about_to_quit = true;
    const struct retro_hw_render_callback *hw_render =
       (const struct retro_hw_render_callback*)video_driver_callback();
    driver_t *driver = driver_get_ptr();
@@ -139,27 +138,24 @@ void create_gl_context(HWND hwnd)
             if (!wglShareLists(g_hrc, g_hw_hrc))
             {
                RARCH_LOG("[WGL]: Failed to share contexts.\n");
-               win32_state_set(&about_to_quit, NULL, NULL);
+               g_quit = true;
             }
          }
          else
-            win32_state_set(&about_to_quit, NULL, NULL);
+            g_quit = true;
       }
    }
 
    if (g_hrc)
    {
       if (wglMakeCurrent(g_hdc, g_hrc))
-      {
-         bool inited = true;
-         win32_state_set(NULL, NULL, &inited);
-      }
+         g_inited = true;
       else
-         win32_state_set(&about_to_quit, NULL, NULL);
+         g_quit = true;
    }
    else
    {
-      win32_state_set(&about_to_quit, NULL, NULL);
+      g_quit = true;
       return;
    }
 
@@ -208,7 +204,7 @@ void create_gl_context(HWND hwnd)
             wglDeleteContext(g_hrc);
             g_hrc = context;
             if (!wglMakeCurrent(g_hdc, g_hrc))
-               win32_state_set(&about_to_quit, NULL, NULL);
+               g_quit = true;
          }
          else
             RARCH_ERR("[WGL]: Failed to create core context. Falling back to legacy context.\n");
@@ -219,7 +215,7 @@ void create_gl_context(HWND hwnd)
             if (!g_hw_hrc)
             {
                RARCH_ERR("[WGL]: Failed to create shared context.\n");
-               win32_state_set(&about_to_quit, NULL, NULL);
+               g_quit = true;
             }
          }
       }
@@ -270,13 +266,12 @@ static void gfx_ctx_wgl_update_window_title(void *data)
    char buf[128]        = {0};
    char buf_fps[128]    = {0};
    settings_t *settings = config_get_ptr();
-   HWND handle          = (HWND)win32_get_handle();
 
    (void)data;
 
    if (video_monitor_get_fps(buf, sizeof(buf),
             buf_fps, sizeof(buf_fps)))
-      SetWindowText(handle, buf);
+      SetWindowText(g_hwnd, buf);
    if (settings->fps_show)
       rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
@@ -284,9 +279,8 @@ static void gfx_ctx_wgl_update_window_title(void *data)
 static void gfx_ctx_wgl_get_video_size(void *data, unsigned *width, unsigned *height)
 {
    (void)data;
-   HWND handle          = (HWND)win32_get_handle();
 
-   if (!handle)
+   if (!g_hwnd)
    {
       unsigned mon_id;
       RECT mon_rect;
@@ -307,8 +301,6 @@ static void gfx_ctx_wgl_get_video_size(void *data, unsigned *width, unsigned *he
 
 static bool gfx_ctx_wgl_init(void *data)
 {
-   bool about_to_quit   = false;
-   bool restore_desktop = false;
    WNDCLASSEX wndclass = {0};
 
    (void)data;
@@ -316,7 +308,8 @@ static bool gfx_ctx_wgl_init(void *data)
    if (g_inited)
       return false;
 
-   win32_state_set(&about_to_quit, &restore_desktop, NULL);
+   g_quit              = false;
+   g_restore_desktop   = false;
 
    win32_monitor_init();
    if (!win32_window_init(&wndclass, true))
@@ -348,9 +341,7 @@ error:
 
 static void gfx_ctx_wgl_destroy(void *data)
 {
-   bool not_inited  = false;
    driver_t *driver = driver_get_ptr();
-   HWND handle      = (HWND)win32_get_handle();
 
    (void)data;
 
@@ -369,26 +360,26 @@ static void gfx_ctx_wgl_destroy(void *data)
       }
    }
 
-   if (handle && g_hdc)
+   if (g_hwnd && g_hdc)
    {
-      ReleaseDC(handle, g_hdc);
+      ReleaseDC(g_hwnd, g_hdc);
       g_hdc = NULL;
    }
 
-   if (handle)
+   if (g_hwnd)
    {
-      win32_monitor_from_window(handle, true);
-      win32_destroy();
+      win32_monitor_from_window(g_hwnd, true);
+      UnregisterClass("RetroArch", GetModuleHandle(NULL));
+      g_hwnd = NULL;
    }
 
    if (g_restore_desktop)
    {
-      bool restore_desktop = false;
       win32_monitor_get_info();
-      win32_state_set(NULL, &restore_desktop, NULL);
+      g_restore_desktop = false;
    }
 
-   win32_state_set(NULL, NULL, &not_inited);
+   g_inited = false;
    g_major = g_minor = 0;
    p_swap_interval = NULL;
 }

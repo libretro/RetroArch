@@ -50,7 +50,7 @@ static unsigned g_pos_y = CW_USEDEFAULT;
 static bool g_resized;
 bool g_inited;
 bool g_quit;
-static HWND g_hwnd;
+HWND g_hwnd;
 
 extern void *dinput_wgl;
 extern void *curD3D;
@@ -678,46 +678,10 @@ static HANDLE GetFocus(void)
 }
 #endif
 
-uintptr_t win32_get_handle(void)
-{
-   return (uintptr_t)GetFocus();
-}
-
 bool win32_has_focus(void)
 {
    if (!g_inited)
       return false;
 
-   return win32_get_handle() == g_hwnd;
-}
-
-#ifdef _XBOX
-/* stub */
-BOOL SetWindowText(HWND hWnd, LPCTSTR lpString)
-{
-   return TRUE;
-}
-
-BOOL IsIconic(HWND hWnd)
-{
-   return FALSE;
-}
-#endif
-
-void win32_state_set(bool *quit, bool *restore_desktop, bool *inited)
-{
-   if (*quit)
-      g_quit            = *quit;
-   if (*restore_desktop)
-      g_restore_desktop = *restore_desktop;
-   if (*inited)
-      g_inited          = *inited;
-}
-
-void win32_destroy(void)
-{
-#ifndef _XBOX
-   UnregisterClass("RetroArch", GetModuleHandle(NULL));
-#endif
-   g_hwnd = NULL;
+   return GetFocus() == g_hwnd;
 }
