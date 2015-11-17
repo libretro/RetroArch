@@ -36,7 +36,6 @@ extern unsigned g_resize_height;
 extern bool g_quit;
 extern bool g_inited;
 extern bool g_restore_desktop;
-extern HWND g_hwnd;
 
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
@@ -81,5 +80,7 @@ bool win32_has_focus(void);
 
 void win32_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height);
+
+void win32_destroy_window(void);
 
 #endif

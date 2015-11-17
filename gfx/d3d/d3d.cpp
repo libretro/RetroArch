@@ -853,9 +853,7 @@ static void d3d_free(void *data)
    if (d3d)
       delete d3d;
 
-#ifndef _XBOX
-   UnregisterClass("RetroArch", GetModuleHandle(NULL));
-#endif
+   win32_destroy_window();
 }
 
 #ifndef DONT_HAVE_STATE_TRACKER

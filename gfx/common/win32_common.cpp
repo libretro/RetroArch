@@ -50,7 +50,7 @@ static unsigned g_pos_y = CW_USEDEFAULT;
 static bool g_resized;
 bool g_inited;
 bool g_quit;
-HWND g_hwnd;
+static HWND g_hwnd;
 
 extern void *dinput_wgl;
 extern void *curD3D;
@@ -689,4 +689,12 @@ bool win32_has_focus(void)
 HWND win32_get_window(void)
 {
    return g_hwnd;
+}
+
+void win32_destroy_window(void)
+{
+#ifndef _XBOX
+   UnregisterClass("RetroArch", GetModuleHandle(NULL));
+#endif
+   g_hwnd = NULL;
 }
