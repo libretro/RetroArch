@@ -46,10 +46,6 @@ struct delta_frame
 #define UDP_FRAME_PACKETS 16
 #define MAX_SPECTATORS 16
 
-#define NETPLAY_CMD_ACK 0
-#define NETPLAY_CMD_NAK 1
-#define NETPLAY_CMD_FLIP_PLAYERS 2
-
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
 
@@ -128,6 +124,7 @@ static void warn_hangup(void)
    RARCH_WARN("Netplay has disconnected. Will continue without connection ...\n");
    rarch_main_msg_queue_push("Netplay has disconnected. Will continue without connection.", 0, 480, false);
 }
+
 
 /**
  * netplay_should_skip:
@@ -208,7 +205,7 @@ static bool get_self_input_state(netplay_t *netplay)
       {
          int16_t tmp = cb(settings->input.netplay_client_swap_input ?
                0 : !netplay->port,
-               RETRO_DEVICE_JOYPAD, 0, i);
+               RETRO_DEVICE_ANALOG, 0, i);
          state |= tmp ? 1 << i : 0;
       }
    }

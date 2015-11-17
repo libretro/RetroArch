@@ -26,6 +26,15 @@
 
 typedef struct netplay netplay_t;
 
+enum netplay_cmd
+{
+   NETPLAY_CMD_ACK = 0x0000,           /**< Acknowlegement response */
+   NETPLAY_CMD_NAK = 0x0001,           /**< Failed acknowlegement response */
+   NETPLAY_CMD_FLIP_PLAYERS = 0x0002,  /**< Swap inputs between p1 and p2. */
+   NETPLAY_CMD_SPECTATE = 0x0003,      /**< Toggle spectate/join mode [PLANNED] */
+   NETPLAY_CMD_LOAD_SAVESTATE = 0x0004 /**< Load a save state between players [PLANNED] */
+};
+
 void input_poll_net(void);
 
 int16_t input_state_net(unsigned port, unsigned device,
