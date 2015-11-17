@@ -359,7 +359,7 @@
     <ClCompile Include="..\..\griffin\griffin_cpp.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\360\rarch.ttf">
+    <CustomBuild Include="..\..\360\rarch.ttf">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">copy %(FullPath) $(OutDir)media\rarch.ttf</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\rarch.ttf;%(Outputs)</Outputs>
@@ -368,7 +368,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\360\rarch_scene_skin.xui">
+    <CustomBuild Include="..\..\360\rarch_scene_skin.xui">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_scene_skin.xui" "$(OutDir)media\rarch_scene_skin.xur"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_scene_skin.xui" "$(OutDir)media\rarch_scene_skin.xur"</Command>
@@ -385,7 +385,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\360\sd\rarch_main.xui">
+    <CustomBuild Include="..\..\360\sd\rarch_main.xui">
       <FileType>Document</FileType>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">$(OutDir)media\sd\rarch_main.xur;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\sd\rarch_main.xur;</Outputs>
@@ -419,7 +419,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\360\hd\rarch_main.xui">
+    <CustomBuild Include="..\..\360\hd\rarch_main.xui">
       <FileType>Document</FileType>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">$(OutDir)media\hd\rarch_main.xur;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">$(OutDir)media\hd\rarch_main.xur;</Outputs>
