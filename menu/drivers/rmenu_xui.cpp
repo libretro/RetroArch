@@ -727,7 +727,6 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_list_set_selection,
    NULL,
    NULL,
-   NULL,
    "rmenu_xui",
    rmenu_xui_environ,
    NULL,
