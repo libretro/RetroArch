@@ -275,7 +275,9 @@ void cocoa_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
    driver_t *driver = driver_get_ptr();
+#if TARGET_OS_IPHONE
    settings_t *settings = config_get_ptr();
+#endif
    cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
 
    if (!apple)

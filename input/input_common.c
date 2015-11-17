@@ -170,8 +170,8 @@ void input_config_parse_key(config_file_t *conf,
       const char *prefix, const char *btn,
       struct retro_keybind *bind)
 {
-   char tmp[64] = {0};
-   char key[64] = {0};
+   char tmp[64];
+   char key[64];
    fill_pathname_join_delim(key, prefix, btn, '_', sizeof(key));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
@@ -182,8 +182,10 @@ const char *input_config_get_prefix(unsigned user, bool meta)
 {
    if (user == 0)
       return meta ? "input" : bind_user_prefix[user];
-   else if (user != 0 && !meta)
+
+   if (user != 0 && !meta)
       return bind_user_prefix[user];
+
    /* Don't bother with meta bind for anyone else than first user. */
    return NULL;
 }

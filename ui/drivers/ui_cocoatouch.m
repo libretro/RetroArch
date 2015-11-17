@@ -31,16 +31,15 @@
 #include "../../frontend/frontend.h"
 #include "../../runloop_data.h"
 
-#ifdef HAVE_BTSTACK
-#include "../../input/drivers_hid/btstack_hid.h"
-#endif
-
 static char msg_old[PATH_MAX_LENGTH];
 static id apple_platform;
 static CFRunLoopObserverRef iterate_observer;
 
 /* forward declaration */
 void apple_rarch_exited(void);
+#ifdef HAVE_BTSTACK
+void btpad_set_inquiry_state(bool on);
+#endif
 
 static void rarch_enable_ui(void)
 {
@@ -397,11 +396,6 @@ enum
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskLandscape;
    else if (!strcmp(apple_frontend_settings.orientations, "portrait"))
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown;
-
-#ifdef HAVE_BTSTACK
-   /* Set bluetooth mode */
-   btstack_set_poweron(!(strcmp(apple_frontend_settings.bluetooth_mode, "btstack")));
-#endif
 }
 
 - (void)mainMenuRefresh 
