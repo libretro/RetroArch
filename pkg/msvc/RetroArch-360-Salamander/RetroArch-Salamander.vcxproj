@@ -262,7 +262,7 @@
     </Deploy>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\libretro-common\compat\compat.c">
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_strl.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>
