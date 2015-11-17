@@ -84,16 +84,13 @@ static void gfx_ctx_d3d_update_title(void *data)
    char buf[128]        = {0};
    char buffer_fps[128] = {0};
    settings_t *settings = config_get_ptr();
+   HWND         handle  = (HWND)win32_get_handle();
+
+   (void)handle;
 
    if (video_monitor_get_fps(buf, sizeof(buf),
             buffer_fps, sizeof(buffer_fps)))
-   {
-#ifndef _XBOX
-      d3d_video_t *d3d     = (d3d_video_t*)data;
-
-      SetWindowText(g_hwnd, buf);
-#endif
-   }
+      SetWindowText(handle, buf);
 
    if (settings->fps_show)
    {
