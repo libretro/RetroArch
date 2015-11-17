@@ -22,7 +22,7 @@
 #include <boolean.h>
 
 #include <AvailabilityMacros.h>
-#import <GameController/GameController.h>
+#import "../include/GameController/GameController.h"
 
 #ifndef MAX_MFI_CONTROLLERS
 #define MAX_MFI_CONTROLLERS 4
@@ -56,16 +56,13 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
    if (!controller)
       return;
 
-   slot = (uint32_t)controller.playerIndex;
+   slot               = (uint32_t)controller.playerIndex;
+   buttons            = &mfi_buttons[slot];
    /* retain the start (pause) value */
-   pause = mfi_buttons[slot] & (1 << RETRO_DEVICE_ID_JOYPAD_START);
-
-   mfi_buttons[slot] = 0;
+   pause              = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_START);
+   *buttons           = 0 | pause;
+    
    memset(mfi_axes[slot], 0, sizeof(mfi_axes[0]));
-
-   mfi_buttons[slot] |= pause;
-
-   buttons = &mfi_buttons[slot];
 
    if (controller.extendedGamepad)
    {
@@ -125,8 +122,7 @@ static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
 
    gamepad.controller.controllerPausedHandler = ^(GCController *controller) {
 
-      uint32_t slot = (uint32_t)controller.playerIndex;
-
+      uint32_t slot      = (uint32_t)controller.playerIndex;
       mfi_buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_START);
 
       dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
@@ -139,7 +135,7 @@ static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
 static void apple_gamecontroller_joypad_connect(GCController *controller)
 {
     signed desired_index = (int32_t)controller.playerIndex;
-    desired_index = (desired_index >= 0 && desired_index < MAX_MFI_CONTROLLERS) 
+    desired_index        = (desired_index >= 0 && desired_index < MAX_MFI_CONTROLLERS)
        ? desired_index : 0;
     
     /* prevent same controller getting set twice */
@@ -155,6 +151,7 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
         {
            /* find a new slot for this controller that's unused */
            unsigned i;
+            
            for (i = 0; i < MAX_MFI_CONTROLLERS; ++i)
            {
               if (mfi_controllers[i])
