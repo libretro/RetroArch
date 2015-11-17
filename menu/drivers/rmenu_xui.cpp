@@ -688,6 +688,7 @@ static int rmenu_xui_environ(menu_environ_cb_t type, void *data)
 {
    switch (type)
    {
+      case 0:
       default:
          return -1;
    }
@@ -724,6 +725,8 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    NULL,
    rmenu_xui_list_set_selection,
+   NULL,
+   NULL,
    NULL,
    "rmenu_xui",
    rmenu_xui_environ,
