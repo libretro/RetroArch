@@ -28,8 +28,11 @@
 #include "../../driver.h"
 #include "../video_context_driver.h"
 
-#ifndef _XBOX
+#ifdef _XBOX
 #include "../../defines/xdk_defines.h"
+#endif
+
+#ifndef _XBOX
 #include "../drivers_wm/win32_resource.h"
 
 extern unsigned g_resize_width;
