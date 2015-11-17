@@ -28,11 +28,21 @@ typedef struct netplay netplay_t;
 
 enum netplay_cmd
 {
-   NETPLAY_CMD_ACK = 0x0000,           /**< Acknowlegement response */
-   NETPLAY_CMD_NAK = 0x0001,           /**< Failed acknowlegement response */
-   NETPLAY_CMD_FLIP_PLAYERS = 0x0002,  /**< Swap inputs between p1 and p2. */
-   NETPLAY_CMD_SPECTATE = 0x0003,      /**< Toggle spectate/join mode [PLANNED] */
-   NETPLAY_CMD_LOAD_SAVESTATE = 0x0004 /**< Load a save state between players [PLANNED] */
+/* misc. commands */
+   NETPLAY_CMD_ACK            = 0x0000, /**< Acknowlegement response                */
+   NETPLAY_CMD_NAK            = 0x0001, /**< Failed acknowlegement response         */
+   NETPLAY_CMD_FLIP_PLAYERS   = 0x0002, /**< Swap inputs between p1 and p2.         */
+   NETPLAY_CMD_SPECTATE       = 0x0003, /**< Toggle spectate/join mode              */
+   NETPLAY_CMD_DISCONNECT     = 0x0004, /**< Gracefully disconnects from host.      */
+/* loading and synchronization */
+   NETPLAY_CMD_LOAD_SAVESTATE = 0x0012, /** Send a savestate for the client to load */
+/* configuration synchronization */
+   NETPLAY_CFG_SWAP_INPUT     = 0x0020, /**< input.netplay_client_swap_input        */
+   NETPLAY_CFG_DELAY_FRAMES   = 0x0021, /**< netplay.sync_frames                    */
+   NETPLAY_CFG_CHEATS         = 0x0022, /**< Sends the cheats enabled on the host.  */
+/* controlling game playback */
+   NETPLAY_CMD_PAUSE          = 0x0030, /**< Pauses the game, takes no args.  */
+   NETPLAY_CMD_RESUME         = 0x0031, /**< Resumes the game, takes no args. */
 };
 
 void input_poll_net(void);
@@ -121,4 +131,3 @@ bool init_netplay(void);
 void deinit_netplay(void);
 
 #endif
-
