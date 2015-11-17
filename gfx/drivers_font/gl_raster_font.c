@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../drivers/gl_common.h"
+#include "../common/gl_common.h"
 #include "../font_driver.h"
 #include "../video_shader_driver.h"
 #include "../video_texture.h"

@@ -36,10 +36,11 @@
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../video_context_driver.h"
-#include "../drivers/gl_common.h"
 #include "../video_monitor.h"
-#include "../common/win32_common.h"
 #include "win32_shader_dlg.h"
+
+#include "../common/gl_common.h"
+#include "../common/win32_common.h"
 
 #define IDI_ICON 1
 

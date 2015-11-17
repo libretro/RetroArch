@@ -228,8 +228,8 @@ VIDEO DRIVER
 #endif
 
 #ifdef HAVE_OPENGL
+#include "../gfx/common/gl_common.c"
 #include "../gfx/drivers/gl.c"
-#include "../gfx/drivers/gl_common.c"
 
 #ifndef HAVE_PSGL
 #include "../libretro-common/glsym/rglgen.c"

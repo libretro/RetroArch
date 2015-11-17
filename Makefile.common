@@ -576,7 +576,7 @@ endif
 ifeq ($(HAVE_GL_CONTEXT), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/drivers/gl.o \
-          gfx/drivers/gl_common.o \
+          gfx/common/gl_common.o \
           gfx/drivers_font/gl_raster_font.o \
           libretro-common/glsym/rglgen.o
 	

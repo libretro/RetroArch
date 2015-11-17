@@ -31,7 +31,7 @@
 #endif
 
 #ifdef HAVE_OPENGL
-#include "../drivers/gl_common.h"
+#include "../common/gl_common.h"
 #endif
 
 #include "../video_shader_driver.h"

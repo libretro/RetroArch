@@ -35,9 +35,11 @@
 #include "../../dynamic.h"
 #include "../../runloop.h"
 #include "../video_context_driver.h"
-#include "../drivers/gl_common.h"
 #include "../video_monitor.h"
+
+#include "../common/gl_common.h"
 #include "../common/win32_common.h"
+
 #include "../drivers_wm/win32_shader_dlg.h"
 
 #ifndef WGL_CONTEXT_MAJOR_VERSION_ARB

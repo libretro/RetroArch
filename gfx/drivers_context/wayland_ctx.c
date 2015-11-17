@@ -28,7 +28,7 @@
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
-#include "../drivers/gl_common.h"
+#include "../common/gl_common.h"
 
 typedef struct gfx_ctx_wayland_data
 {

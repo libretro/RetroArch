@@ -24,7 +24,7 @@
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
-#include "../drivers/gl_common.h"
+#include "../common/gl_common.h"
 
 #include "../../frontend/drivers/platform_linux.h"
 
