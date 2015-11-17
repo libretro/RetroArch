@@ -1868,7 +1868,7 @@ bool config_load_override(void)
    }
 
    /* Early return in case a library isn't loaded */
-   if (!info->info.library_name || !strcmp(info->info.library_name,"No Core"))
+   if (!info->info.library_name[0] != '\0' || !strcmp(info->info.library_name,"No Core"))
       return false;
 
    RARCH_LOG("Overrides: core name: %s\n", info->info.library_name);

@@ -64,33 +64,37 @@ typedef struct gx_video
    bool overlay_full_screen;
 #endif
    void *framebuf[2];
-   unsigned current_framebuf;
-   uint32_t orientation;
-   bool vsync;
-   uint8_t fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
-   unsigned old_width;
-   unsigned old_height;
-   uint8_t display_list[1024] ATTRIBUTE_ALIGN(32);
-   size_t display_list_size;
-   GXRModeObj mode;
-   struct
-   {
-      uint32_t data[240 * 200];
-      GXTexObj obj;
-   } menu_tex ATTRIBUTE_ALIGN(32);
-   struct
-   {
-      uint32_t *data; /* needs to be resizable. */
-      unsigned width;
-      unsigned height;
-      GXTexObj obj;
-   } tex;
 } gx_video_t;
 
 #define SYSMEM1_SIZE 0x01800000
 
+unsigned g_current_framebuf;
+
+bool g_vsync;
 OSCond g_video_cond;
 volatile bool g_draw_done;
+uint32_t g_orientation;
+
+static struct
+{
+   uint32_t *data; /* needs to be resizable. */
+   unsigned width;
+   unsigned height;
+   GXTexObj obj;
+} g_tex;
+
+static struct
+{
+   uint32_t data[240 * 200];
+   GXTexObj obj;
+} menu_tex ATTRIBUTE_ALIGN(32);
+
+uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
+uint8_t display_list[1024] ATTRIBUTE_ALIGN(32);
+uint16_t gx_width, gx_height;
+size_t display_list_size;
+GXRModeObj gx_mode;
+unsigned gx_old_width, gx_old_height;
 
 static u8 _gxtexmode0ids[8] = {0x80,0x81,0x82,0x83,0xA0,0xA1,0xA2,0xA3};
 static u8 _gxtexmode1ids[8] = {0x84,0x85,0x86,0x87,0xA4,0xA5,0xA6,0xA7};
@@ -164,7 +168,7 @@ enum
 
 static unsigned menu_current_gx_resolution = GX_RESOLUTIONS_448_448;
 
-static unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
+unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
    { 512, 192 },
    { 598, 200 },
    { 640, 200 },
@@ -205,6 +209,8 @@ static unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
    { 608, 480 },
    { 640, 480 },
 };
+
+extern unsigned menu_current_gx_resolution;
 
 static void retrace_callback(u32 retrace_count)
 {
@@ -306,100 +312,97 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    if (fbWidth > max_width)
       fbWidth = max_width;
 
-   gx->mode.viTVMode = VI_TVMODE(tvmode, modetype);
-   gx->mode.fbWidth = fbWidth;
-   gx->mode.efbHeight = min(lines, 480);
+   gx_mode.viTVMode = VI_TVMODE(tvmode, modetype);
+   gx_mode.fbWidth = fbWidth;
+   gx_mode.efbHeight = min(lines, 480);
 
    if (modetype == VI_NON_INTERLACE && lines > max_height / 2)
-      gx->mode.xfbHeight = max_height / 2;
+      gx_mode.xfbHeight = max_height / 2;
    else if (modetype != VI_NON_INTERLACE && lines > max_height)
-      gx->mode.xfbHeight = max_height;
+      gx_mode.xfbHeight = max_height;
    else
-      gx->mode.xfbHeight = lines;
+      gx_mode.xfbHeight = lines;
 
-   gx->mode.viWidth = viWidth;
-   gx->mode.viHeight = gx->mode.xfbHeight * viHeightMultiplier;
-   gx->mode.viXOrigin = (max_width - gx->mode.viWidth) / 2;
-   gx->mode.viYOrigin = 
-      (max_height - gx->mode.viHeight) / (2 * viHeightMultiplier);
-   gx->mode.xfbMode = modetype == VI_INTERLACE ? VI_XFBMODE_DF : VI_XFBMODE_SF;
-   gx->mode.field_rendering = GX_FALSE;
-   gx->mode.aa = GX_FALSE;
+   gx_mode.viWidth = viWidth;
+   gx_mode.viHeight = gx_mode.xfbHeight * viHeightMultiplier;
+   gx_mode.viXOrigin = (max_width - gx_mode.viWidth) / 2;
+   gx_mode.viYOrigin = 
+      (max_height - gx_mode.viHeight) / (2 * viHeightMultiplier);
+   gx_mode.xfbMode = modetype == VI_INTERLACE ? VI_XFBMODE_DF : VI_XFBMODE_SF;
+   gx_mode.field_rendering = GX_FALSE;
+   gx_mode.aa = GX_FALSE;
 
    for (i = 0; i < 12; i++)
-   {
-      gx->mode.sample_pattern[i][0] = 6;
-      gx->mode.sample_pattern[i][1] = 6;
-   }
+      gx_mode.sample_pattern[i][0] = gx_mode.sample_pattern[i][1] = 6;
 
    if (modetype == VI_INTERLACE)
    {
-      gx->mode.vfilter[0] = 8;
-      gx->mode.vfilter[1] = 8;
-      gx->mode.vfilter[2] = 10;
-      gx->mode.vfilter[3] = 12;
-      gx->mode.vfilter[4] = 10;
-      gx->mode.vfilter[5] = 8;
-      gx->mode.vfilter[6] = 8;
+      gx_mode.vfilter[0] = 8;
+      gx_mode.vfilter[1] = 8;
+      gx_mode.vfilter[2] = 10;
+      gx_mode.vfilter[3] = 12;
+      gx_mode.vfilter[4] = 10;
+      gx_mode.vfilter[5] = 8;
+      gx_mode.vfilter[6] = 8;
    }
    else
    {
-      gx->mode.vfilter[0] = 0;
-      gx->mode.vfilter[1] = 0;
-      gx->mode.vfilter[2] = 21;
-      gx->mode.vfilter[3] = 22;
-      gx->mode.vfilter[4] = 21;
-      gx->mode.vfilter[5] = 0;
-      gx->mode.vfilter[6] = 0;
+      gx_mode.vfilter[0] = 0;
+      gx_mode.vfilter[1] = 0;
+      gx_mode.vfilter[2] = 21;
+      gx_mode.vfilter[3] = 22;
+      gx_mode.vfilter[4] = 21;
+      gx_mode.vfilter[5] = 0;
+      gx_mode.vfilter[6] = 0;
    }
 
-   gx->vp.full_width  = gx->mode.fbWidth;
-   gx->vp.full_height = gx->mode.xfbHeight;
-   gx->double_strike  = (modetype == VI_NON_INTERLACE);
-   gx->should_resize  = true;
+   gx->vp.full_width = gx_mode.fbWidth;
+   gx->vp.full_height = gx_mode.xfbHeight;
+   gx->double_strike = (modetype == VI_NON_INTERLACE);
+   gx->should_resize = true;
 
-   VIConfigure(&gx->mode);
-   VIDEO_ClearFrameBuffer(&gx->mode, gx->framebuf[0], COLOR_BLACK);
-   VIDEO_ClearFrameBuffer(&gx->mode, gx->framebuf[1], COLOR_BLACK);
+   VIConfigure(&gx_mode);
+   VIDEO_ClearFrameBuffer(&gx_mode, gx->framebuf[0], COLOR_BLACK);
+   VIDEO_ClearFrameBuffer(&gx_mode, gx->framebuf[1], COLOR_BLACK);
    VISetNextFrameBuffer(gx->framebuf[0]);
    VISetPostRetraceCallback(retrace_callback);
    VISetBlack(false);
    VIFlush();
 
-   GX_SetViewportJitter(0, 0, gx->mode.fbWidth, gx->mode.efbHeight, 0, 1, 1);
-   GX_SetDispCopySrc(0, 0, gx->mode.fbWidth, gx->mode.efbHeight);
+   GX_SetViewportJitter(0, 0, gx_mode.fbWidth, gx_mode.efbHeight, 0, 1, 1);
+   GX_SetDispCopySrc(0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
 
-   f32 y_scale = GX_GetYScaleFactor(gx->mode.efbHeight, gx->mode.xfbHeight);
-   u16 xfbWidth = VIPadFrameBufferWidth(gx->mode.fbWidth);
+   f32 y_scale = GX_GetYScaleFactor(gx_mode.efbHeight, gx_mode.xfbHeight);
+   u16 xfbWidth = VIPadFrameBufferWidth(gx_mode.fbWidth);
    u16 xfbHeight = GX_SetDispCopyYScale(y_scale);
    (void)xfbHeight;
    GX_SetDispCopyDst(xfbWidth, xfbHeight);
 
-   GX_SetCopyFilter(gx->mode.aa, gx->mode.sample_pattern,
-         (gx->mode.xfbMode == VI_XFBMODE_SF) ? GX_FALSE : settings->video.vfilter,
-         gx->mode.vfilter);
+   GX_SetCopyFilter(gx_mode.aa, gx_mode.sample_pattern,
+         (gx_mode.xfbMode == VI_XFBMODE_SF) ? GX_FALSE : settings->video.vfilter,
+         gx_mode.vfilter);
    GXColor color = { 0, 0, 0, 0xff };
    GX_SetCopyClear(color, GX_MAX_Z24);
-   GX_SetFieldMode(gx->mode.field_rendering,
-         (gx->mode.viHeight == 2 * gx->mode.xfbHeight) ? GX_ENABLE : GX_DISABLE);
+   GX_SetFieldMode(gx_mode.field_rendering,
+         (gx_mode.viHeight == 2 * gx_mode.xfbHeight) ? GX_ENABLE : GX_DISABLE);
    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
    GX_InvalidateTexAll();
    GX_Flush();
    _CPU_ISR_Restore(level);
 
-   RARCH_LOG("GX Resolution: %dx%d (%s)\n", gx->mode.fbWidth,
-         gx->mode.efbHeight, (gx->mode.viTVMode & 3) == VI_INTERLACE 
+   RARCH_LOG("GX Resolution: %dx%d (%s)\n", gx_mode.fbWidth,
+         gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE 
          ? "interlaced" : "progressive");
 
    {
       size_t new_fb_pitch;
       unsigned new_fb_width;
-      unsigned new_fb_height  = (gx->mode.efbHeight / (gx->double_strike ? 1 : 2)) & ~3;
+      unsigned new_fb_height  = (gx_mode.efbHeight / (gx->double_strike ? 1 : 2)) & ~3;
       if (new_fb_height > 240)
          new_fb_height = 240;
 
 
-      new_fb_width = (gx->mode.fbWidth / (gx->mode.fbWidth < 400 ? 1 : 2)) & ~3;
+      new_fb_width = (gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2)) & ~3;
       if (new_fb_width > 400)
          new_fb_width = 400;
 
@@ -428,12 +431,10 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    /* custom viewports for older resolutions will most likely be corrupted, reset them */
    video_viewport_reset_custom();
 
-   gx->current_framebuf = 0;
-
-   for(i = 0; i < GX_RESOLUTIONS_LAST; i++)
+   g_current_framebuf = 0;
+   for( int i=0; i < GX_RESOLUTIONS_LAST; i++)
       if(fbWidth == menu_gx_resolutions[i][0] && lines == menu_gx_resolutions[i][1])
 		  menu_current_gx_resolution = i;
-
    RARCH_LOG("GX Resolution Index: %d\n", menu_current_gx_resolution);
 }
 
@@ -473,12 +474,12 @@ static void setup_video_mode(gx_video_t *gx)
                memalign(32, 640 * 576 * VI_DISPLAY_PIX_SZ));
    }
 
-   gx->current_framebuf = 0;
-   g_draw_done          = true;
-   gx->orientation      = ORIENTATION_NORMAL;
+   g_current_framebuf = 0;
+   g_draw_done        = true;
+   g_orientation      = ORIENTATION_NORMAL;
    OSInitThreadQueue(&g_video_cond);
 
-   VIDEO_GetPreferredMode(&gx->mode);
+   VIDEO_GetPreferredMode(&gx_mode);
    gx_set_video_mode(gx, 0, 0, true);
 }
 
@@ -487,8 +488,8 @@ static void init_texture(void *data, unsigned width, unsigned height)
    unsigned g_filter, menu_w, menu_h;
    struct __gx_regdef *__gx     = (struct __gx_regdef*)__gxregs;
    gx_video_t *gx               = (gx_video_t*)data;
-   struct __gx_texobj *fb_ptr   = (struct __gx_texobj*)&gx->tex.obj;
-   struct __gx_texobj *menu_ptr = (struct __gx_texobj*)&gx->menu_tex.obj;
+   struct __gx_texobj *fb_ptr   = (struct __gx_texobj*)&g_tex.obj;
+   struct __gx_texobj *menu_ptr = (struct __gx_texobj*)&menu_tex.obj;
    menu_handle_t *menu          = menu_driver_get_ptr();
    settings_t *settings         = config_get_ptr();
 
@@ -504,12 +505,12 @@ static void init_texture(void *data, unsigned width, unsigned height)
       menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &menu_h);
    }
 
-   __GX_InitTexObj(fb_ptr, gx->tex.data, width, height,
+   __GX_InitTexObj(fb_ptr, g_tex.data, width, height,
          (gx->rgb32) ? GX_TF_RGBA8 : gx->menu_texture_enable ? 
          GX_TF_RGB5A3 : GX_TF_RGB565,
          GX_CLAMP, GX_CLAMP, GX_FALSE);
    __GX_InitTexObjFilterMode(fb_ptr, g_filter, g_filter);
-   __GX_InitTexObj(menu_ptr, gx->menu_tex.data, menu_w, menu_h,
+   __GX_InitTexObj(menu_ptr, menu_tex.data, menu_w, menu_h,
          GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
    __GX_InitTexObjFilterMode(menu_ptr, g_filter, g_filter);
    __GX_InvalidateTexAll(__gx);
@@ -517,7 +518,6 @@ static void init_texture(void *data, unsigned width, unsigned height)
 
 static void init_vtx(void *data, const video_info_t *video)
 {
-   Mtx44 m;
    gx_video_t *gx = (gx_video_t*)data;
 
    GX_SetCullMode(GX_CULL_NONE);
@@ -527,6 +527,7 @@ static void init_vtx(void *data, const video_info_t *video)
    GX_SetColorUpdate(GX_TRUE);
    GX_SetAlphaUpdate(GX_FALSE);
 
+   Mtx44 m;
    guOrtho(m, 1, -1, -1, 1, 0.4, 0.6);
    GX_LoadProjectionMtx(m, GX_ORTHOGRAPHIC);
 
@@ -557,46 +558,43 @@ static void init_vtx(void *data, const video_info_t *video)
          gx->rgb32 != video->rgb32)
    {
       RARCH_LOG("[GX] reallocate texture\n");
-      free(gx->tex.data);
-      gx->tex.data = memalign(32,
+      free(g_tex.data);
+      g_tex.data = memalign(32,
             RARCH_SCALE_BASE * RARCH_SCALE_BASE * video->input_scale *
             video->input_scale * (video->rgb32 ? 4 : 2));
-      gx->tex.width = gx->tex.height = RARCH_SCALE_BASE * video->input_scale;
+      g_tex.width = g_tex.height = RARCH_SCALE_BASE * video->input_scale;
 
-      if (!gx->tex.data)
+      if (!g_tex.data)
       {
          RARCH_ERR("[GX] Error allocating video texture\n");
          exit(1);
       }
    }
 
-   DCFlushRange(gx->tex.data, (gx->tex.width *
-         gx->tex.height * video->rgb32) ? 4 : 2);
+   DCFlushRange(g_tex.data, (g_tex.width *
+         g_tex.height * video->rgb32) ? 4 : 2);
 
    gx->rgb32 = video->rgb32;
    gx->scale = video->input_scale;
    gx->should_resize = true;
 
-   init_texture(data, gx->tex.width, gx->tex.height);
+   init_texture(data, g_tex.width, g_tex.height);
    GX_Flush();
 }
 
-static void build_disp_list(gx_video_t *gx)
+static void build_disp_list(void)
 {
-   unsigned i;
-
-   DCInvalidateRange(gx->display_list, sizeof(gx->display_list));
-   GX_BeginDispList(gx->display_list, sizeof(gx->display_list));
+   DCInvalidateRange(display_list, sizeof(display_list));
+   GX_BeginDispList(display_list, sizeof(display_list));
    GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
-
-   for (i = 0; i < 4; i++)
+   for (unsigned i = 0; i < 4; i++)
    {
       GX_Position1x8(i);
       GX_Color1x8(i);
       GX_TexCoord1x8(i);
    }
    GX_End();
-   gx->display_list_size = GX_EndDispList();
+   display_list_size = GX_EndDispList();
 }
 
 #if 0
@@ -641,28 +639,26 @@ static void gx_efb_screenshot(void)
 static void *gx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   void *gxinput;
    gx_video_t *gx = (gx_video_t*)calloc(1, sizeof(gx_video_t));
    if (!gx)
       return NULL;
 
-   gxinput     = input_gx.init();
-   *input      = gxinput ? &input_gx : NULL;
+   void *gxinput = input_gx.init();
+   *input = gxinput ? &input_gx : NULL;
    *input_data = gxinput;
 
    VIInit();
-   GX_Init(gx->fifo, sizeof(gx->fifo));
-   gx->vsync = video->vsync;
+   GX_Init(gx_fifo, sizeof(gx_fifo));
+   g_vsync = video->vsync;
 
    setup_video_mode(gx);
    init_vtx(gx, video);
-   build_disp_list(gx);
+   build_disp_list();
 
-   gx->vp.full_width  = gx->mode.fbWidth;
-   gx->vp.full_height = gx->mode.xfbHeight;
-   gx->should_resize  = true;
-   gx->old_width      = 0;
-   gx->old_height     = 0;
+   gx->vp.full_width = gx_mode.fbWidth;
+   gx->vp.full_height = gx_mode.xfbHeight;
+   gx->should_resize = true;
+   gx_old_width = gx_old_height = 0;
 
    return gx;
 }
@@ -846,10 +842,7 @@ static void convert_texture32(const uint32_t *_src, uint32_t *_dst,
 
 static void gx_resize(void *data)
 {
-   Mtx44 m1, m2;
-   unsigned degrees;
    unsigned width, height;
-   float top = 1, bottom = -1, left = -1, right = 1;
    int x = 0, y = 0;
    gx_video_t                   *gx = (gx_video_t*)data;
    settings_t             *settings = config_get_ptr();
@@ -866,13 +859,13 @@ static void gx_resize(void *data)
 #endif
    GX_SetDispCopyGamma(global->console.screen.gamma_correction);
 
-   if (gx->keep_aspect && gx->mode.efbHeight >= 240) /* ignore this for custom resolutions */
+   if (gx->keep_aspect && gx_mode.efbHeight >= 240) /* ignore this for custom resolutions */
    {
       float desired_aspect = video_driver_get_aspect_ratio();
       if (desired_aspect == 0.0)
          desired_aspect = 1.0;
-      if (gx->orientation == ORIENTATION_VERTICAL ||
-            gx->orientation == ORIENTATION_FLIPPED_ROTATED)
+      if (g_orientation == ORIENTATION_VERTICAL ||
+            g_orientation == ORIENTATION_FLIPPED_ROTATED)
          desired_aspect = 1.0 / desired_aspect;
 
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
@@ -895,10 +888,11 @@ static void gx_resize(void *data)
       else
       {
          float delta;
-         float device_aspect = 4.0 / 3.0;
 #ifdef HW_RVL
-         if (CONF_GetAspectRatio() != CONF_ASPECT_4_3)
-            device_aspect = 16.0 / 9.0;
+         float device_aspect = CONF_GetAspectRatio() == CONF_ASPECT_4_3 ?
+            4.0 / 3.0 : 16.0 / 9.0;
+#else
+         float device_aspect = 4.0 / 3.0;
 #endif
          if (fabs(device_aspect - desired_aspect) < 0.0001)
          {
@@ -928,11 +922,14 @@ static void gx_resize(void *data)
 
    GX_SetViewportJitter(x, y, width, height, 0, 1, 1);
 
+   Mtx44 m1, m2;
+   float top = 1, bottom = -1, left = -1, right = 1;
 
    guOrtho(m1, top, bottom, left, right, 0, 1);
    GX_LoadPosMtxImm(m1, GX_PNMTX1);
 
-   switch(gx->orientation)
+   unsigned degrees;
+   switch(g_orientation)
    {
       case ORIENTATION_VERTICAL:
          degrees = 90;
@@ -953,14 +950,12 @@ static void gx_resize(void *data)
    GX_LoadPosMtxImm(m1, GX_PNMTX0);
 
    init_texture(data, 4, 4);
-   gx->old_width     = 0;
-   gx->old_height    = 0;
+   gx_old_width = gx_old_height = 0;
    gx->should_resize = false;
 }
 
 static void gx_blit_line(unsigned x, unsigned y, const char *message)
 {
-   unsigned h;
    driver_t *driver = driver_get_ptr();
    gx_video_t *gx = (gx_video_t*)driver->video_data;
 
@@ -977,14 +972,14 @@ static void gx_blit_line(unsigned x, unsigned y, const char *message)
       .a = 0xff
    };
 
+   unsigned h;
 
    if (!*message)
       return;
 
-   bool double_width = gx->mode.fbWidth > 400;
-   unsigned width    = (double_width ? 2 : 1);
-   unsigned height   = FONT_HEIGHT * (gx->double_strike ? 1 : 2);
-
+   bool double_width = gx_mode.fbWidth > 400;
+   unsigned width = (double_width ? 2 : 1);
+   unsigned height = FONT_HEIGHT * (gx->double_strike ? 1 : 2);
    for (h = 0; h < height; h++)
    {
       GX_PokeARGB(x, y + h, b);
@@ -998,11 +993,9 @@ static void gx_blit_line(unsigned x, unsigned y, const char *message)
 
    while (*message)
    {
-      unsigned j, i, h;
-
-      for (j = 0; j < FONT_HEIGHT; j++)
+      for (unsigned j = 0; j < FONT_HEIGHT; j++)
       {
-         for (i = 0; i < FONT_WIDTH; i++)
+         for (unsigned i = 0; i < FONT_WIDTH; i++)
          {
             GXColor c;
             uint8_t     rem = 1 << ((i + j * FONT_WIDTH) & 7);
@@ -1035,7 +1028,7 @@ static void gx_blit_line(unsigned x, unsigned y, const char *message)
          }
       }
 
-      for (h = 0; h < height; h++)
+      for (unsigned h = 0; h < height; h++)
       {
          GX_PokeARGB(x + (FONT_WIDTH * width), y + h, b);
          if (double_width)
@@ -1077,21 +1070,21 @@ static bool gx_frame(void *data, const void *frame,
       clear_efb = GX_TRUE;
    }
 
-   while (((gx->vsync || gx->menu_texture_enable)) && !g_draw_done)
+   while (((g_vsync || gx->menu_texture_enable)) && !g_draw_done)
       OSSleepThread(g_video_cond);
 
-   width  = min(gx->tex.width, width);
-   height = min(gx->tex.height, height);
+   width = min(g_tex.width, width);
+   height = min(g_tex.height, height);
 
-   if (width != gx->old_width || height != gx->old_height)
+   if (width != gx_old_width || height != gx_old_height)
    {
       init_texture(data, width, height);
-      gx->old_width  = width;
-      gx->old_height = height;
+      gx_old_width = width;
+      gx_old_height = height;
    }
 
    g_draw_done = false;
-   gx->current_framebuf ^= 1;
+   g_current_framebuf ^= 1;
 
 
    if (frame)
@@ -1102,12 +1095,12 @@ static bool gx_frame(void *data, const void *frame,
       retro_perf_start(&gx_frame_convert);
 
       if (gx->rgb32)
-         convert_texture32(frame, gx->tex.data, width, height, pitch);
+         convert_texture32(frame, g_tex.data, width, height, pitch);
       else if (gx->menu_texture_enable)
-         convert_texture16_conv(frame, gx->tex.data, width, height, pitch);
+         convert_texture16_conv(frame, g_tex.data, width, height, pitch);
       else
-         convert_texture16(frame, gx->tex.data, width, height, pitch);
-      DCFlushRange(gx->tex.data, height * (width << (gx->rgb32 ? 2 : 1)));
+         convert_texture16(frame, g_tex.data, width, height, pitch);
+      DCFlushRange(g_tex.data, height * (width << (gx->rgb32 ? 2 : 1)));
 
       retro_perf_stop(&gx_frame_convert);
    }
@@ -1123,26 +1116,26 @@ static bool gx_frame(void *data, const void *frame,
 
       convert_texture16(
             gx->menu_data,
-            gx->menu_tex.data,
+            menu_tex.data,
             fb_width,
             fb_height,
             fb_pitch);
       DCFlushRange(
-            gx->menu_tex.data,
+            menu_tex.data,
             fb_width * fb_pitch);
    }
 
    __GX_InvalidateTexAll(__gx);
 
    __GX_SetCurrentMtx(__gx, GX_PNMTX0);
-   __GX_LoadTexObj(&gx->tex.obj, GX_TEXMAP0);
-   __GX_CallDispList(__gx, gx->display_list, gx->display_list_size);
+   __GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
+   __GX_CallDispList(__gx, display_list, display_list_size);
 
    if (gx->menu_texture_enable)
    {
       __GX_SetCurrentMtx(__gx, GX_PNMTX1);
-      GX_LoadTexObj(&gx->menu_tex.obj, GX_TEXMAP0);
-      __GX_CallDispList(__gx, gx->display_list, gx->display_list_size);
+      GX_LoadTexObj(&menu_tex.obj, GX_TEXMAP0);
+      __GX_CallDispList(__gx, display_list, display_list_size);
    }
 
 #ifdef HAVE_OVERLAY
@@ -1185,9 +1178,9 @@ static bool gx_frame(void *data, const void *frame,
       clear_efb = GX_TRUE;
    }
 
-   __GX_CopyDisp(__gx, gx->framebuf[gx->current_framebuf], clear_efb);
+   __GX_CopyDisp(__gx, gx->framebuf[g_current_framebuf], clear_efb);
    __GX_Flush(__gx);
-   VISetNextFrameBuffer(gx->framebuf[gx->current_framebuf]);
+   VISetNextFrameBuffer(gx->framebuf[g_current_framebuf]);
    VIFlush();
 
    retro_perf_stop(&gx_frame);
@@ -1197,10 +1190,8 @@ static bool gx_frame(void *data, const void *frame,
 
 static void gx_set_nonblock_state(void *data, bool state)
 {
-   gx_video_t *gx = (gx_video_t*)data;
-
-   if (gx)
-      gx->vsync = !state;
+   (void)data;
+   g_vsync = !state;
 }
 
 static bool gx_alive(void *data)
@@ -1251,7 +1242,7 @@ static void gx_free(void *data)
 static void gx_set_rotation(void *data, unsigned orientation)
 {
    gx_video_t *gx = (gx_video_t*)data;
-   gx->orientation = orientation;
+   g_orientation = orientation;
 
    if (gx)
       gx->should_resize = true;
@@ -1297,9 +1288,7 @@ static void gx_apply_state_changes(void *data)
 static void gx_viewport_info(void *data, struct video_viewport *vp)
 {
    gx_video_t *gx = (gx_video_t*)data;
-
-   if (gx)
-      *vp = gx->vp;
+   *vp = gx->vp;
 }
 
 static bool gx_read_viewport(void *data, uint8_t *buffer)
@@ -1380,7 +1369,7 @@ static bool gx_overlay_load(void *data, const void *image_data, unsigned num_ima
       GX_InitTexObj(&o->tex, images[i].pixels, images[i].width,
             images[i].height,
             GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
-      GX_InitTexObjFilterMode(&gx->tex.obj, GX_LINEAR, GX_LINEAR);
+      GX_InitTexObjFilterMode(&g_tex.obj, GX_LINEAR, GX_LINEAR);
       DCFlushRange(images[i].pixels, images[i].width *
             images[i].height * sizeof(uint32_t));
       gx_overlay_tex_geom(gx, i, 0, 0, 1, 1); /* Default. Stretch to whole screen. */
@@ -1395,9 +1384,11 @@ static bool gx_overlay_load(void *data, const void *image_data, unsigned num_ima
 static void gx_overlay_tex_geom(void *data, unsigned image,
       float x, float y, float w, float h)
 {
-   struct gx_overlay_data *o = NULL;
    gx_video_t *gx = (gx_video_t*)data;
+   struct gx_overlay_data *o;
    
+   o = NULL;
+
    if (gx)
       o = (struct gx_overlay_data*)&gx->overlay[image];
 
@@ -1418,7 +1409,9 @@ static void gx_overlay_vertex_geom(void *data, unsigned image,
          float x, float y, float w, float h)
 {
    gx_video_t *gx = (gx_video_t*)data;
-   struct gx_overlay_data *o = NULL;
+   struct gx_overlay_data *o;
+   
+   o = NULL;
    
    /* Flipped, so we preserve top-down semantics. */
    y = 1.0f - y;
@@ -1466,7 +1459,6 @@ static void gx_overlay_set_alpha(void *data, unsigned image, float mod)
 
 static void gx_render_overlay(void *data)
 {
-   unsigned i;
    gx_video_t *gx = (gx_video_t*)data;
 
    GX_SetCurrentMtx(GX_PNMTX1);
@@ -1474,7 +1466,7 @@ static void gx_render_overlay(void *data)
    GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
    GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
 
-   for (i = 0; i < gx->overlays; i++)
+   for (unsigned i = 0; i < gx->overlays; i++)
    {
       GX_LoadTexObj(&gx->overlay[i].tex, GX_TEXMAP0);
 
