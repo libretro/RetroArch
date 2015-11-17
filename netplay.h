@@ -40,7 +40,6 @@ enum netplay_cmd
    NETPLAY_CFG_SWAP_INPUT     = 0x0020, /**< input.netplay_client_swap_input        */
    NETPLAY_CFG_DELAY_FRAMES   = 0x0021, /**< netplay.sync_frames                    */
    NETPLAY_CFG_CHEATS         = 0x0022, /**< Sends the cheats enabled on the host.  */
-   NETPLAY_CFG_CONTENT_TYPE   = 0x0023, /**< Right now, only games.                 */
 /* controlling game playback */
    NETPLAY_CMD_PAUSE          = 0x0030, /**< Pauses the game, takes no args.  */
    NETPLAY_CMD_RESUME         = 0x0031, /**< Resumes the game, takes no args. */
