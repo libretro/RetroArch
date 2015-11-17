@@ -38,7 +38,7 @@
 #endif
 #endif
 
-#include "d3d_defines.h"
+#include "../../defines/d3d_defines.h"
 
 #ifdef _XBOX1
 #include <xfont.h>

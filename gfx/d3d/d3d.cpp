@@ -41,7 +41,7 @@
 
 #include "../../performance.h"
 
-#include "d3d_defines.h"
+#include "../../defines/d3d_defines.h"
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 

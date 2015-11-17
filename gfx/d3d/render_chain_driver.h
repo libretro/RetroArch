@@ -21,7 +21,7 @@
 #include "../video_state_tracker.h"
 #include "../video_viewport.h"
 #include "../../libretro.h"
-#include "d3d_defines.h"
+#include "../../defines/d3d_defines.h"
 
 #ifdef __cplusplus
 extern "C" {
