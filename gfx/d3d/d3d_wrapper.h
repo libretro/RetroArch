@@ -32,7 +32,7 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
       unsigned length, unsigned usage, unsigned fvf,
       D3DPOOL pool, void *handle);
 
-void *d3d_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER vertbuf, size_t len);
+void *d3d_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER vertbuf);
 void d3d_vertex_buffer_unlock(LPDIRECT3DVERTEXBUFFER vertbuf);
 
 void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration);
