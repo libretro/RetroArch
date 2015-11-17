@@ -128,7 +128,6 @@ static void rmenu_render(void)
    char title_buf[256]           = {0};
    char title_msg[64]            = {0};
    menu_handle_t *menu           = menu_driver_get_ptr();
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr();
    uint64_t *frame_count         = video_driver_get_frame_count();
    size_t  entries_end           = menu_entries_get_end();
 
@@ -150,11 +149,8 @@ static void rmenu_render(void)
          && !msg_force)
       return;
 
-   menu_display_fb_unset_dirty();
-   menu_animation_clear_active();
-
-   if (!selection_buf)
-      return;
+   menu_display_ctl(MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG, NULL);
+   menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 
    begin = (selection >= (ENTRIES_HEIGHT / 2)) ? 
       (selection - (ENTRIES_HEIGHT / 2)) : 0;
