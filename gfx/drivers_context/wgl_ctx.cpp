@@ -100,9 +100,8 @@ static void setup_pixel_format(HDC hdc)
    SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
 }
 
-bool create_gl_context(HWND hwnd)
+void create_gl_context(HWND hwnd, bool *quit)
 {
-   bool quit;
    bool core_context;
    const struct retro_hw_render_callback *hw_render =
       (const struct retro_hw_render_callback*)video_driver_callback();
@@ -139,11 +138,11 @@ bool create_gl_context(HWND hwnd)
             if (!wglShareLists(g_hrc, g_hw_hrc))
             {
                RARCH_LOG("[WGL]: Failed to share contexts.\n");
-               quit = true;
+               *quit = true;
             }
          }
          else
-            quit = true;
+            *quit = true;
       }
    }
 
@@ -152,12 +151,12 @@ bool create_gl_context(HWND hwnd)
       if (wglMakeCurrent(g_hdc, g_hrc))
          g_inited = true;
       else
-         quit     = true;
+         *quit     = true;
    }
    else
    {
-      quit        = true;
-      return true;
+      *quit        = true;
+      return;
    }
 
    if (core_context || debug)
@@ -205,7 +204,7 @@ bool create_gl_context(HWND hwnd)
             wglDeleteContext(g_hrc);
             g_hrc = context;
             if (!wglMakeCurrent(g_hdc, g_hrc))
-               quit = true;
+               *quit = true;
          }
          else
             RARCH_ERR("[WGL]: Failed to create core context. Falling back to legacy context.\n");
@@ -216,15 +215,13 @@ bool create_gl_context(HWND hwnd)
             if (!g_hw_hrc)
             {
                RARCH_ERR("[WGL]: Failed to create shared context.\n");
-               quit = true;
+               *quit = true;
             }
          }
       }
       else
          RARCH_ERR("[WGL]: wglCreateContextAttribsARB not supported.\n");
    }
-
-   return quit;
 }
 
 void *dinput_wgl;

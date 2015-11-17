@@ -195,8 +195,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
       case WM_CREATE:
          if (!strcmp(video_driver, "gl"))
          {
-            if (create_gl_context(hwnd))
-               g_quit = true;
+            create_gl_context(hwnd, &g_quit);
          }
          else if (!strcmp(video_driver, "d3d"))
          {
