@@ -372,12 +372,12 @@ static bool xdk_renderchain_render(void *data, const void *frame,
    LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
    settings_t *settings     = config_get_ptr();
    xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
-   uint64_t frame_count     = video_driver_get_frame_count();
+   uint64_t *frame_count    = video_driver_get_frame_count();
 
    video_driver_get_size(&width, &height);
 
    renderchain_blit_to_texture(chain, frame, frame_width, frame_height, pitch);
-   renderchain_set_vertices(d3d, 1, frame_width, frame_height, frame_count);
+   renderchain_set_vertices(d3d, 1, frame_width, frame_height, *frame_count);
 
    d3d_set_texture(d3dr, 0, chain->tex);
    d3d_set_viewport(chain->dev, &d3d->final_viewport);
