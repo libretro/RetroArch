@@ -846,7 +846,7 @@ static void gx_resize(void *data)
    int x = 0, y = 0;
    gx_video_t                   *gx = (gx_video_t*)data;
    settings_t             *settings = config_get_ptr();
-   const global_t           *global = (const global_t*)global_get_ptr();
+   const global_t           *global = global_get_ptr();
 
    if (!gx)
       return;
