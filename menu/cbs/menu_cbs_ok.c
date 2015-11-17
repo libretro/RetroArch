@@ -1246,10 +1246,10 @@ static int action_ok_disk_cycle_tray_status(const char *path,
    return generic_action_ok_command(EVENT_CMD_DISK_EJECT_TOGGLE);
 }
 
+/* creates folder and core options stub file for subsequent runs */
 static int action_ok_option_create(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   /* create folder and core options stub file for subsequent runs */
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
@@ -1273,8 +1273,13 @@ static int action_ok_option_create(const char *path,
       return false;
    }
 
-   core_name = system->info.library_name;
-   game_name = path_basename(global->name.base);
+   core_name = system ? system->info.library_name : NULL;
+   game_name = global ? path_basename(global->name.base) : NULL;
+
+   if (!core_name  || !game_name)
+      return false;
+   if (core_name[0] == '\0' || game_name == '\0')
+      return false;
 
    /* Concatenate strings into full paths for game_path */
    fill_pathname_join(core_path, config_directory, core_name, PATH_MAX_LENGTH);
