@@ -846,9 +846,7 @@ static void d3d_free(void *data)
    if (d3d->g_pD3D)
       d3d->g_pD3D->Release();
 
-#ifdef HAVE_MONITOR
    win32_monitor_from_window(window, true);
-#endif
 
    if (d3d)
       delete d3d;
@@ -1482,11 +1480,9 @@ static bool d3d_frame(void *data, const void *frame,
    rarch_perf_init(&d3d_frame, "d3d_frame");
    retro_perf_start(&d3d_frame);
 
-#ifndef _XBOX
    /* We cannot recover in fullscreen. */
    if (d3d->needs_restore && IsIconic(window))
       return true;
-#endif
    if (d3d->needs_restore && !d3d_restore(d3d))
    {
       RARCH_ERR("[D3D]: Failed to restore.\n");

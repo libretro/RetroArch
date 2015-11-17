@@ -101,9 +101,11 @@ static BOOL CALLBACK win32_monitor_enum_proc(HMONITOR hMonitor,
 
 void win32_monitor_from_window(HWND data, bool destroy)
 {
+#ifndef _XBOX
    win32_monitor_last = MonitorFromWindow(data, MONITOR_DEFAULTTONEAREST);
    if (destroy)
       DestroyWindow(data);
+#endif
 }
 
 void win32_monitor_get_info(void)
@@ -678,6 +680,11 @@ bool win32_set_video_mode(void *data,
 static HANDLE GetFocus(void)
 {
    return g_hwnd;
+}
+
+BOOL IsIconic(HWND hwnd)
+{
+   return FALSE;
 }
 #endif
 
