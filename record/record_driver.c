@@ -29,6 +29,8 @@
 #include "../config.h"
 #endif
 
+static bool recording_enable;
+
 static const record_driver_t *record_drivers[] = {
 #ifdef HAVE_FFMPEG
    &ffemu_ffmpeg,
@@ -243,6 +245,16 @@ bool recording_deinit(void)
    return true;
 }
 
+bool *recording_is_enabled(void)
+{
+   return &recording_enable;
+}
+
+void recording_set_state(bool state)
+{
+   recording_enable = state;
+}
+
 /**
  * recording_init:
  *
@@ -260,8 +272,9 @@ bool recording_init(void)
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
    const struct retro_hw_render_callback *hw_render = 
       (const struct retro_hw_render_callback*)video_driver_callback();
+   bool *recording_enabled              = recording_is_enabled();
 
-   if (!global->record.enable)
+   if (!*recording_enabled)
       return false;
 
    if (global->inited.core.type == CORE_TYPE_DUMMY)

@@ -2684,7 +2684,7 @@ static void general_write_handler(void *data)
 
 #define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, OFF, ON, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!menu_settings_list_append(list, list_info, setting_bool_setting  (NAME, SHORT, &TARGET, DEF, OFF, ON, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))return false; \
+   if (!menu_settings_list_append(list, list_info, setting_bool_setting  (NAME, SHORT, TARGET, DEF, OFF, ON, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))return false; \
 }
 
 #define CONFIG_INT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
@@ -3388,7 +3388,7 @@ static bool setting_append_list_core_options(
          parent_group);
 
    CONFIG_BOOL(
-         settings->video.shared_context,
+         &settings->video.shared_context,
          menu_hash_to_str(MENU_LABEL_VIDEO_SHARED_CONTEXT),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SHARED_CONTEXT),
          false,
@@ -3402,7 +3402,7 @@ static bool setting_append_list_core_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
-         settings->load_dummy_on_core_shutdown,
+         &settings->load_dummy_on_core_shutdown,
          menu_hash_to_str(MENU_LABEL_DUMMY_ON_CORE_SHUTDOWN),
          menu_hash_to_str(MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN),
          load_dummy_on_core_shutdown,
@@ -3416,7 +3416,7 @@ static bool setting_append_list_core_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
-         settings->core.set_supports_no_game_enable,
+         &settings->core.set_supports_no_game_enable,
          menu_hash_to_str(MENU_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE),
          true,
@@ -3452,7 +3452,8 @@ static bool setting_append_list_configuration_options(
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info,
          parent_group);
 
-   CONFIG_BOOL(settings->config_save_on_exit,
+   CONFIG_BOOL(
+         &settings->config_save_on_exit,
          menu_hash_to_str(MENU_LABEL_CONFIG_SAVE_ON_EXIT),
          menu_hash_to_str(MENU_LABEL_VALUE_CONFIG_SAVE_ON_EXIT),
          config_save_on_exit,
@@ -3465,7 +3466,7 @@ static bool setting_append_list_configuration_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         settings->core_specific_config,
+         &settings->core_specific_config,
          menu_hash_to_str(MENU_LABEL_CORE_SPECIFIC_CONFIG),
          menu_hash_to_str(MENU_LABEL_VALUE_CORE_SPECIFIC_CONFIG),
          default_core_specific_config,
@@ -3477,22 +3478,22 @@ static bool setting_append_list_configuration_options(
          general_write_handler,
          general_read_handler);
 
-CONFIG_BOOL(
-      settings->game_specific_options,
-      menu_hash_to_str(MENU_LABEL_GAME_SPECIFIC_OPTIONS),
-      menu_hash_to_str(MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS),
-      default_game_specific_options,
-      menu_hash_to_str(MENU_VALUE_OFF),
-      menu_hash_to_str(MENU_VALUE_ON),
-      group_info.name,
-      subgroup_info.name,
-      parent_group,
-      general_write_handler,
-      general_read_handler);
-         
+   CONFIG_BOOL(
+         &settings->game_specific_options,
+         menu_hash_to_str(MENU_LABEL_GAME_SPECIFIC_OPTIONS),
+         menu_hash_to_str(MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS),
+         default_game_specific_options,
+         menu_hash_to_str(MENU_VALUE_OFF),
+         menu_hash_to_str(MENU_VALUE_ON),
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+
 
    CONFIG_BOOL(
-         settings->auto_overrides_enable,
+         &settings->auto_overrides_enable,
          menu_hash_to_str(MENU_LABEL_AUTO_OVERRIDES_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_AUTO_OVERRIDES_ENABLE),
          default_auto_overrides_enable,
@@ -3505,7 +3506,7 @@ CONFIG_BOOL(
          general_read_handler);
 
    CONFIG_BOOL(
-         settings->auto_remaps_enable,
+         &settings->auto_remaps_enable,
          menu_hash_to_str(MENU_LABEL_AUTO_REMAPS_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_AUTO_REMAPS_ENABLE),
          default_auto_remaps_enable,
@@ -3540,7 +3541,7 @@ static bool setting_append_list_saving_options(
          parent_group);
 
    CONFIG_BOOL(
-         settings->sort_savefiles_enable,
+         &settings->sort_savefiles_enable,
          menu_hash_to_str(MENU_LABEL_SORT_SAVEFILES_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_SORT_SAVEFILES_ENABLE),
          default_sort_savefiles_enable,
@@ -3553,7 +3554,7 @@ static bool setting_append_list_saving_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         settings->sort_savestates_enable,
+         &settings->sort_savestates_enable,
          menu_hash_to_str(MENU_LABEL_SORT_SAVESTATES_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_SORT_SAVESTATES_ENABLE),
          default_sort_savestates_enable,
@@ -3566,7 +3567,7 @@ static bool setting_append_list_saving_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         settings->block_sram_overwrite,
+         &settings->block_sram_overwrite,
          menu_hash_to_str(MENU_LABEL_BLOCK_SRAM_OVERWRITE),
          menu_hash_to_str(MENU_LABEL_VALUE_BLOCK_SRAM_OVERWRITE),
          block_sram_overwrite,
@@ -3598,7 +3599,7 @@ static bool setting_append_list_saving_options(
 #endif
 
    CONFIG_BOOL(
-         settings->savestate_auto_index,
+         &settings->savestate_auto_index,
          menu_hash_to_str(MENU_LABEL_SAVESTATE_AUTO_INDEX),
          menu_hash_to_str(MENU_LABEL_VALUE_SAVESTATE_AUTO_INDEX),
          savestate_auto_index,
@@ -3611,7 +3612,7 @@ static bool setting_append_list_saving_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         settings->savestate_auto_save,
+         &settings->savestate_auto_save,
          menu_hash_to_str(MENU_LABEL_SAVESTATE_AUTO_SAVE),
          menu_hash_to_str(MENU_LABEL_VALUE_SAVESTATE_AUTO_SAVE),
          savestate_auto_save,
@@ -3624,7 +3625,7 @@ static bool setting_append_list_saving_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         settings->savestate_auto_load,
+         &settings->savestate_auto_load,
          menu_hash_to_str(MENU_LABEL_SAVESTATE_AUTO_LOAD),
          menu_hash_to_str(MENU_LABEL_VALUE_SAVESTATE_AUTO_LOAD),
          savestate_auto_load,
@@ -3661,7 +3662,7 @@ static bool setting_append_list_logging_options(
          parent_group);
 
    CONFIG_BOOL(
-         global->verbosity,
+         &global->verbosity,
          menu_hash_to_str(MENU_LABEL_LOG_VERBOSITY),
          menu_hash_to_str(MENU_LABEL_VALUE_LOG_VERBOSITY),
          false,
@@ -3675,7 +3676,8 @@ static bool setting_append_list_logging_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
 
-   CONFIG_UINT(settings->libretro_log_level,
+   CONFIG_UINT(
+         settings->libretro_log_level,
          menu_hash_to_str(MENU_LABEL_LIBRETRO_LOG_LEVEL),
          menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_LOG_LEVEL),
          libretro_log_level,
@@ -3689,7 +3691,8 @@ static bool setting_append_list_logging_options(
       &setting_get_string_representation_uint_libretro_log_level;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   CONFIG_BOOL(settings->debug_panel_enable,
+   CONFIG_BOOL(
+         &settings->debug_panel_enable,
          menu_hash_to_str(MENU_LABEL_DEBUG_PANEL_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_DEBUG_PANEL_ENABLE),
          false,
@@ -3707,7 +3710,8 @@ static bool setting_append_list_logging_options(
    START_SUB_GROUP(list, list_info, "Performance Counters", group_info.name, subgroup_info,
          parent_group);
 
-   CONFIG_BOOL(global->perfcnt_enable,
+   CONFIG_BOOL(
+         &global->perfcnt_enable,
          menu_hash_to_str(MENU_LABEL_PERFCNT_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_PERFCNT_ENABLE),
          false,
@@ -3792,7 +3796,7 @@ static bool setting_append_list_rewind_options(
 
 
    CONFIG_BOOL(
-         settings->rewind_enable,
+         &settings->rewind_enable,
          menu_hash_to_str(MENU_LABEL_REWIND_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_REWIND_ENABLE),
          rewind_enable,
@@ -3855,7 +3859,7 @@ static bool setting_append_list_recording_options(
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
-         global->record.enable,
+         recording_is_enabled(),
          menu_hash_to_str(MENU_LABEL_RECORD_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_RECORD_ENABLE),
          false,
@@ -3893,7 +3897,7 @@ static bool setting_append_list_recording_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_BOOL(
-         global->record.use_output_dir,
+         &global->record.use_output_dir,
          menu_hash_to_str(MENU_LABEL_RECORD_USE_OUTPUT_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY),
          false,
@@ -3910,7 +3914,7 @@ static bool setting_append_list_recording_options(
    START_SUB_GROUP(list, list_info, "Miscellaneous", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
-         settings->video.post_filter_record,
+         &settings->video.post_filter_record,
          menu_hash_to_str(MENU_LABEL_VIDEO_POST_FILTER_RECORD),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_POST_FILTER_RECORD),
          post_filter_record,
@@ -3923,7 +3927,7 @@ static bool setting_append_list_recording_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         settings->video.gpu_record,
+         &settings->video.gpu_record,
          menu_hash_to_str(MENU_LABEL_VIDEO_GPU_RECORD),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_GPU_RECORD),
          gpu_record,
@@ -3960,7 +3964,7 @@ static bool setting_append_list_video_options(
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
-         settings->ui.suspend_screensaver_enable,
+         &settings->ui.suspend_screensaver_enable,
          menu_hash_to_str(MENU_LABEL_SUSPEND_SCREENSAVER_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE),
          true,
@@ -3972,7 +3976,7 @@ static bool setting_append_list_video_options(
          general_write_handler,
          general_read_handler);
 
-   CONFIG_BOOL(settings->fps_show,
+   CONFIG_BOOL(&settings->fps_show,
          menu_hash_to_str(MENU_LABEL_FPS_SHOW),
          menu_hash_to_str(MENU_LABEL_VALUE_FPS_SHOW),
          fps_show,
@@ -4017,7 +4021,7 @@ static bool setting_append_list_video_options(
    if (video_driver_has_windowed())
    {
       CONFIG_BOOL(
-            settings->video.fullscreen,
+            &settings->video.fullscreen,
             menu_hash_to_str(MENU_LABEL_VIDEO_FULLSCREEN),
             menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FULLSCREEN),
             fullscreen,
@@ -4035,7 +4039,7 @@ static bool setting_append_list_video_options(
    if (video_driver_has_windowed())
    {
       CONFIG_BOOL(
-            settings->video.windowed_fullscreen,
+            &settings->video.windowed_fullscreen,
             menu_hash_to_str(MENU_LABEL_VIDEO_WINDOWED_FULLSCREEN),
             menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN),
             windowed_fullscreen,
@@ -4081,7 +4085,7 @@ static bool setting_append_list_video_options(
    if (!strcmp(settings->video.driver, "gl"))
    {
       CONFIG_BOOL(
-            settings->video.force_srgb_disable,
+            &settings->video.force_srgb_disable,
             menu_hash_to_str(MENU_LABEL_VIDEO_FORCE_SRGB_DISABLE),
             menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE),
             false,
@@ -4099,7 +4103,7 @@ static bool setting_append_list_video_options(
    END_SUB_GROUP(list, list_info, parent_group);
    START_SUB_GROUP(list, list_info, "Aspect", group_info.name, subgroup_info, parent_group);
    CONFIG_BOOL(
-         settings->video.force_aspect,
+         &settings->video.force_aspect,
          menu_hash_to_str(MENU_LABEL_VIDEO_FORCE_ASPECT),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FORCE_ASPECT),
          force_aspect,
@@ -4112,7 +4116,7 @@ static bool setting_append_list_video_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         settings->video.aspect_ratio_auto,
+         &settings->video.aspect_ratio_auto,
          menu_hash_to_str(MENU_LABEL_VIDEO_ASPECT_RATIO_AUTO),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO),
          aspect_ratio_auto,
@@ -4242,7 +4246,7 @@ static bool setting_append_list_video_options(
 #endif
 
    CONFIG_BOOL(
-         settings->video.scale_integer,
+         &settings->video.scale_integer,
          menu_hash_to_str(MENU_LABEL_VIDEO_SCALE_INTEGER),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SCALE_INTEGER),
          scale_integer,
@@ -4272,7 +4276,7 @@ static bool setting_append_list_video_options(
    menu_settings_list_current_add_range(list, list_info, 640, 720, 2, true, true);
 
    CONFIG_BOOL(
-         settings->video.vfilter,
+         &settings->video.vfilter,
          menu_hash_to_str(MENU_LABEL_VIDEO_VFILTER),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_VFILTER),
          video_vfilter,
@@ -4286,7 +4290,7 @@ static bool setting_append_list_video_options(
 #endif
 
    CONFIG_BOOL(
-         settings->video.smooth,
+         &settings->video.smooth,
          menu_hash_to_str(MENU_LABEL_VIDEO_SMOOTH),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SMOOTH),
          video_smooth,
@@ -4300,7 +4304,7 @@ static bool setting_append_list_video_options(
 
 #if defined(__CELLOS_LV2__)
    CONFIG_BOOL(
-         global->console.screen.pal60_enable,
+         &global->console.screen.pal60_enable,
          menu_hash_to_str(MENU_LABEL_PAL60_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_PAL60_ENABLE),
          false,
@@ -4365,7 +4369,7 @@ static bool setting_append_list_video_options(
 
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    CONFIG_BOOL(
-         settings->video.threaded,
+         &settings->video.threaded,
          menu_hash_to_str(MENU_LABEL_VIDEO_THREADED),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_THREADED),
          video_threaded,
@@ -4381,7 +4385,7 @@ static bool setting_append_list_video_options(
 #endif
 
    CONFIG_BOOL(
-         settings->video.vsync,
+         &settings->video.vsync,
          menu_hash_to_str(MENU_LABEL_VIDEO_VSYNC),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_VSYNC),
          vsync,
@@ -4408,7 +4412,7 @@ static bool setting_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
-         settings->video.hard_sync,
+         &settings->video.hard_sync,
          menu_hash_to_str(MENU_LABEL_VIDEO_HARD_SYNC),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_HARD_SYNC),
          hard_sync,
@@ -4448,7 +4452,7 @@ static bool setting_append_list_video_options(
 
 #if !defined(RARCH_MOBILE)
    CONFIG_BOOL(
-         settings->video.black_frame_insertion,
+         &settings->video.black_frame_insertion,
          menu_hash_to_str(MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION),
          black_frame_insertion,
@@ -4470,7 +4474,7 @@ static bool setting_append_list_video_options(
          parent_group);
 
    CONFIG_BOOL(
-         settings->video.gpu_screenshot,
+         &settings->video.gpu_screenshot,
          menu_hash_to_str(MENU_LABEL_VIDEO_GPU_SCREENSHOT),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_GPU_SCREENSHOT),
          gpu_screenshot,
@@ -4484,7 +4488,7 @@ static bool setting_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
-         settings->video.allow_rotate,
+         &settings->video.allow_rotate,
          menu_hash_to_str(MENU_LABEL_VIDEO_ALLOW_ROTATE),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_ALLOW_ROTATE),
          allow_rotate,
@@ -4498,7 +4502,7 @@ static bool setting_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
-         settings->video.crop_overscan,
+         &settings->video.crop_overscan,
          menu_hash_to_str(MENU_LABEL_VIDEO_CROP_OVERSCAN),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_CROP_OVERSCAN),
          crop_overscan,
@@ -4512,7 +4516,7 @@ static bool setting_append_list_video_options(
 
 #if defined(_XBOX1) || defined(HW_RVL)
    CONFIG_BOOL(
-         global->console.softfilter_enable,
+         &global->console.softfilter_enable,
          menu_hash_to_str(MENU_LABEL_VIDEO_SOFT_FILTER),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SOFT_FILTER),
          false,
@@ -4581,7 +4585,7 @@ static bool setting_append_list_font_options(
 
 #ifndef RARCH_CONSOLE
    CONFIG_BOOL(
-         settings->video.font_enable,
+         &settings->video.font_enable,
          menu_hash_to_str(MENU_LABEL_VIDEO_FONT_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FONT_ENABLE),
          font_enable,
@@ -4671,7 +4675,7 @@ static bool setting_append_list_audio_options(
    (void)global;
 
    CONFIG_BOOL(
-         settings->audio.enable,
+         &settings->audio.enable,
          menu_hash_to_str(MENU_LABEL_AUDIO_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_ENABLE),
          audio_enable,
@@ -4685,7 +4689,7 @@ static bool setting_append_list_audio_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
-         settings->audio.mute_enable,
+         &settings->audio.mute_enable,
          menu_hash_to_str(MENU_LABEL_AUDIO_MUTE),
          menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_MUTE),
          false,
@@ -4712,7 +4716,7 @@ static bool setting_append_list_audio_options(
 
 #ifdef __CELLOS_LV2__
    CONFIG_BOOL(
-         global->console.sound.system_bgm_enable,
+         &global->console.sound.system_bgm_enable,
          menu_hash_to_str(MENU_LABEL_SYSTEM_BGM_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_BGM_ENABLE),
          false,
@@ -4738,7 +4742,7 @@ static bool setting_append_list_audio_options(
          parent_group);
 
    CONFIG_BOOL(
-         settings->audio.sync,
+         &settings->audio.sync,
          menu_hash_to_str(MENU_LABEL_AUDIO_SYNC),
          menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_SYNC),
          audio_sync,
@@ -4944,7 +4948,7 @@ static bool setting_append_list_input_options(
    menu_settings_list_current_add_range(list, list_info, 1, MAX_USERS, 1, true, true);
 
    CONFIG_BOOL(
-         settings->input.keyboard_gamepad_enable,
+         &settings->input.keyboard_gamepad_enable,
          menu_hash_to_str(MENU_LABEL_INPUT_ICADE_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_INPUT_ICADE_ENABLE),
          false,
@@ -4970,7 +4974,7 @@ static bool setting_append_list_input_options(
 
 #if TARGET_OS_IPHONE
    CONFIG_BOOL(
-         settings->input.small_keyboard_enable,
+         &settings->input.small_keyboard_enable,
          menu_hash_to_str(MENU_LABEL_INPUT_SMALL_KEYBOARD_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE),
          false,
@@ -4985,7 +4989,7 @@ static bool setting_append_list_input_options(
 
 #ifdef ANDROID
    CONFIG_BOOL(
-         settings->input.back_as_menu_toggle_enable,
+         &settings->input.back_as_menu_toggle_enable,
          menu_hash_to_str(MENU_LABEL_INPUT_BACK_AS_MENU_TOGGLE_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_INPUT_BACK_AS_MENU_TOGGLE_ENABLE),
          back_as_menu_toggle_enable,
@@ -5011,7 +5015,7 @@ static bool setting_append_list_input_options(
    menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
 
    CONFIG_BOOL(
-         settings->input.remap_binds_enable,
+         &settings->input.remap_binds_enable,
          menu_hash_to_str(MENU_LABEL_INPUT_REMAP_BINDS_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE),
          true,
@@ -5024,7 +5028,7 @@ static bool setting_append_list_input_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         settings->input.autodetect_enable,
+         &settings->input.autodetect_enable,
          menu_hash_to_str(MENU_LABEL_INPUT_AUTODETECT_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_INPUT_AUTODETECT_ENABLE),
          input_autodetect_enable,
@@ -5037,7 +5041,7 @@ static bool setting_append_list_input_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         settings->input.input_descriptor_label_show,
+         &settings->input.input_descriptor_label_show,
          menu_hash_to_str(MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW),
          menu_hash_to_str(MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW),
          true,
@@ -5051,7 +5055,7 @@ static bool setting_append_list_input_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
-         settings->input.input_descriptor_hide_unbound,
+         &settings->input.input_descriptor_hide_unbound,
          menu_hash_to_str(MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND),
          menu_hash_to_str(MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND),
          input_descriptor_hide_unbound,
@@ -5171,7 +5175,7 @@ static bool setting_append_list_overlay_options(
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
-         settings->input.overlay_enable,
+         &settings->input.overlay_enable,
          menu_hash_to_str(MENU_LABEL_INPUT_OVERLAY_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_INPUT_OVERLAY_ENABLE),
          true,
@@ -5185,7 +5189,7 @@ static bool setting_append_list_overlay_options(
    (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
    CONFIG_BOOL(
-         settings->input.overlay_enable_autopreferred,
+         &settings->input.overlay_enable_autopreferred,
          menu_hash_to_str(MENU_LABEL_OVERLAY_AUTOLOAD_PREFERRED),
          menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED),
          true,
@@ -5199,7 +5203,7 @@ static bool setting_append_list_overlay_options(
    (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
    CONFIG_BOOL(
-         settings->input.overlay_hide_in_menu,
+         &settings->input.overlay_hide_in_menu,
          menu_hash_to_str(MENU_LABEL_INPUT_OVERLAY_HIDE_IN_MENU),
          menu_hash_to_str(MENU_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU),
          overlay_hide_in_menu,
@@ -5213,7 +5217,7 @@ static bool setting_append_list_overlay_options(
    (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
    CONFIG_BOOL(
-         settings->osk.enable,
+         &settings->osk.enable,
          menu_hash_to_str(MENU_LABEL_INPUT_OSK_OVERLAY_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE),
          true,
@@ -5324,7 +5328,7 @@ static bool setting_append_list_menu_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_BOOL(
-         settings->menu.dynamic_wallpaper_enable,
+         &settings->menu.dynamic_wallpaper_enable,
          menu_hash_to_str(MENU_LABEL_DYNAMIC_WALLPAPER),
          menu_hash_to_str(MENU_LABEL_VALUE_DYNAMIC_WALLPAPER),
          true,
@@ -5338,7 +5342,7 @@ static bool setting_append_list_menu_options(
 
 
    CONFIG_BOOL(
-         settings->menu.pause_libretro,
+         &settings->menu.pause_libretro,
          menu_hash_to_str(MENU_LABEL_PAUSE_LIBRETRO),
          menu_hash_to_str(MENU_LABEL_VALUE_PAUSE_LIBRETRO),
          true,
@@ -5353,7 +5357,7 @@ static bool setting_append_list_menu_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    CONFIG_BOOL(
-         settings->menu.mouse.enable,
+         &settings->menu.mouse.enable,
          menu_hash_to_str(MENU_LABEL_MOUSE_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_MOUSE_ENABLE),
          def_mouse_enable,
@@ -5366,7 +5370,7 @@ static bool setting_append_list_menu_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         settings->menu.pointer.enable,
+         &settings->menu.pointer.enable,
          menu_hash_to_str(MENU_LABEL_POINTER_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_POINTER_ENABLE),
          pointer_enable,
@@ -5389,7 +5393,7 @@ static bool setting_append_list_menu_options(
    START_SUB_GROUP(list, list_info, "Navigation", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
-         settings->menu.navigation.wraparound.enable,
+         &settings->menu.navigation.wraparound.enable,
          menu_hash_to_str(MENU_LABEL_NAVIGATION_WRAPAROUND),
          menu_hash_to_str(MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND),
          true,
@@ -5406,7 +5410,7 @@ static bool setting_append_list_menu_options(
    START_SUB_GROUP(list, list_info, "Settings View", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
-         settings->menu.show_advanced_settings,
+         &settings->menu.show_advanced_settings,
          menu_hash_to_str(MENU_LABEL_SHOW_ADVANCED_SETTINGS),
          menu_hash_to_str(MENU_LABEL_VALUE_SHOW_ADVANCED_SETTINGS),
          show_advanced_settings,
@@ -5420,7 +5424,7 @@ static bool setting_append_list_menu_options(
 
 #ifdef HAVE_THREADS
    CONFIG_BOOL(
-         settings->threaded_data_runloop_enable,
+         &settings->threaded_data_runloop_enable,
          menu_hash_to_str(MENU_LABEL_THREADED_DATA_RUNLOOP_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE),
          threaded_data_runloop_enable,
@@ -5480,7 +5484,7 @@ static bool setting_append_list_menu_options(
    START_SUB_GROUP(list, list_info, "Display", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
-         settings->menu.dpi.override_enable,
+         &settings->menu.dpi.override_enable,
          menu_hash_to_str(MENU_LABEL_DPI_OVERRIDE_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_DPI_OVERRIDE_ENABLE),
          menu_dpi_override_enable,
@@ -5505,7 +5509,7 @@ static bool setting_append_list_menu_options(
    menu_settings_list_current_add_range(list, list_info, 72, 999, 1, true, true);
 
    CONFIG_BOOL(
-         settings->menu_show_start_screen,
+         &settings->menu_show_start_screen,
          menu_hash_to_str(MENU_LABEL_RGUI_SHOW_START_SCREEN),
          menu_hash_to_str(MENU_LABEL_VALUE_RGUI_SHOW_START_SCREEN),
          menu_show_start_screen,
@@ -5518,7 +5522,7 @@ static bool setting_append_list_menu_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         settings->menu.boxart_enable,
+         &settings->menu.boxart_enable,
          menu_hash_to_str(MENU_LABEL_BOXART),
          menu_hash_to_str(MENU_LABEL_VALUE_BOXART),
          true,
@@ -5531,7 +5535,7 @@ static bool setting_append_list_menu_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         settings->menu.timedate_enable,
+         &settings->menu.timedate_enable,
          menu_hash_to_str(MENU_LABEL_TIMEDATE_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_TIMEDATE_ENABLE),
          true,
@@ -5544,7 +5548,7 @@ static bool setting_append_list_menu_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         settings->menu.core_enable,
+         &settings->menu.core_enable,
          menu_hash_to_str(MENU_LABEL_CORE_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_CORE_ENABLE),
          true,
@@ -5584,7 +5588,7 @@ static bool setting_append_list_multimedia_options(
 
    if (strcmp(settings->record.driver, "null") != 0)
       CONFIG_BOOL(
-            settings->multimedia.builtin_mediaplayer_enable,
+            &settings->multimedia.builtin_mediaplayer_enable,
             menu_hash_to_str(MENU_LABEL_USE_BUILTIN_PLAYER),
             menu_hash_to_str(MENU_LABEL_VALUE_USE_BUILTIN_PLAYER),
             true,
@@ -5599,7 +5603,7 @@ static bool setting_append_list_multimedia_options(
 
 #ifdef HAVE_IMAGEVIEWER
    CONFIG_BOOL(
-         settings->multimedia.builtin_imageviewer_enable,
+         &settings->multimedia.builtin_imageviewer_enable,
          menu_hash_to_str(MENU_LABEL_USE_BUILTIN_IMAGE_VIEWER),
          menu_hash_to_str(MENU_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER),
          true,
@@ -5637,7 +5641,7 @@ static bool setting_append_list_ui_options(
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
-         settings->video.disable_composition,
+         &settings->video.disable_composition,
          menu_hash_to_str(MENU_LABEL_VIDEO_DISABLE_COMPOSITION),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION),
          disable_composition,
@@ -5652,7 +5656,7 @@ static bool setting_append_list_ui_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    CONFIG_BOOL(
-         settings->pause_nonactive,
+         &settings->pause_nonactive,
          menu_hash_to_str(MENU_LABEL_PAUSE_NONACTIVE),
          menu_hash_to_str(MENU_LABEL_VALUE_PAUSE_NONACTIVE),
          pause_nonactive,
@@ -5665,7 +5669,7 @@ static bool setting_append_list_ui_options(
          general_read_handler);
    
    CONFIG_BOOL(
-         settings->ui.companion_start_on_boot,
+         &settings->ui.companion_start_on_boot,
          menu_hash_to_str(MENU_LABEL_UI_COMPANION_START_ON_BOOT),
          menu_hash_to_str(MENU_LABEL_VALUE_UI_COMPANION_START_ON_BOOT),
          ui_companion_start_on_boot,
@@ -5679,7 +5683,7 @@ static bool setting_append_list_ui_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
-         settings->ui.menubar_enable,
+         &settings->ui.menubar_enable,
          menu_hash_to_str(MENU_LABEL_UI_MENUBAR_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_UI_MENUBAR_ENABLE),
          true,
@@ -5716,7 +5720,7 @@ static bool setting_append_list_menu_file_browser_options(
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
-         settings->menu.navigation.browser.filter.supported_extensions_enable,
+         &settings->menu.navigation.browser.filter.supported_extensions_enable,
          menu_hash_to_str(MENU_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
          true,
@@ -5750,7 +5754,7 @@ static bool setting_append_list_cheevos_options(
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
-         settings->cheevos.enable,
+         &settings->cheevos.enable,
          menu_hash_to_str(MENU_LABEL_CHEEVOS_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_ENABLE),
          false,
@@ -5763,7 +5767,7 @@ static bool setting_append_list_cheevos_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         settings->cheevos.test_unofficial,
+         &settings->cheevos.test_unofficial,
          menu_hash_to_str(MENU_LABEL_CHEEVOS_TEST_UNOFFICIAL),
          menu_hash_to_str(MENU_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL),
          true,
@@ -5822,7 +5826,7 @@ static bool setting_append_list_core_updater_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_BOOL(
-         settings->network.buildbot_auto_extract_archive,
+         &settings->network.buildbot_auto_extract_archive,
          menu_hash_to_str(MENU_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE),
          menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE),
          true,
@@ -5861,7 +5865,7 @@ static bool setting_append_list_netplay_options(
    START_SUB_GROUP(list, list_info, "Netplay", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
-         global->netplay.enable,
+         &global->netplay.enable,
          menu_hash_to_str(MENU_LABEL_NETPLAY_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_ENABLE),
          false,
@@ -5874,7 +5878,7 @@ static bool setting_append_list_netplay_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         settings->input.netplay_client_swap_input,
+         &settings->input.netplay_client_swap_input,
          menu_hash_to_str(MENU_LABEL_NETPLAY_CLIENT_SWAP_INPUT),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT),
          netplay_client_swap_input,
@@ -5899,7 +5903,7 @@ static bool setting_append_list_netplay_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_BOOL(
-         global->netplay.is_client,
+         &global->netplay.is_client,
          menu_hash_to_str(MENU_LABEL_NETPLAY_MODE),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_MODE),
          false,
@@ -5912,7 +5916,7 @@ static bool setting_append_list_netplay_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         global->netplay.is_spectate,
+         &global->netplay.is_spectate,
          menu_hash_to_str(MENU_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE),
          false,
@@ -5963,7 +5967,7 @@ static bool setting_append_list_netplay_options(
 
 #if defined(HAVE_NETWORK_CMD)
    CONFIG_BOOL(
-         settings->network_cmd_enable,
+         &settings->network_cmd_enable,
          menu_hash_to_str(MENU_LABEL_NETWORK_CMD_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_NETWORK_CMD_ENABLE),
          network_cmd_enable,
@@ -5989,7 +5993,7 @@ static bool setting_append_list_netplay_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
     
    CONFIG_BOOL(
-         settings->stdin_cmd_enable,
+         &settings->stdin_cmd_enable,
          menu_hash_to_str(MENU_LABEL_STDIN_CMD_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_STDIN_CMD_ENABLE),
          stdin_cmd_enable,
@@ -6028,7 +6032,7 @@ static bool setting_append_list_playlist_options(
    START_SUB_GROUP(list, list_info, "History", group_info.name, subgroup_info, parent_group);
 
    CONFIG_BOOL(
-         settings->history_list_enable,
+         &settings->history_list_enable,
          menu_hash_to_str(MENU_LABEL_HISTORY_LIST_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_HISTORY_LIST_ENABLE),
          true,
@@ -6675,7 +6679,7 @@ static bool setting_append_list_privacy_options(
    if (strcmp(settings->camera.driver, "null") != 0)
    {
       CONFIG_BOOL(
-            settings->camera.allow,
+            &settings->camera.allow,
             menu_hash_to_str(MENU_LABEL_CAMERA_ALLOW),
             menu_hash_to_str(MENU_LABEL_VALUE_CAMERA_ALLOW),
             false,
@@ -6691,7 +6695,7 @@ static bool setting_append_list_privacy_options(
    if (strcmp(settings->location.driver, "null") != 0)
    {
       CONFIG_BOOL(
-            settings->location.allow,
+            &settings->location.allow,
             menu_hash_to_str(MENU_LABEL_LOCATION_ALLOW),
             menu_hash_to_str(MENU_LABEL_VALUE_LOCATION_ALLOW),
             false,

@@ -160,6 +160,10 @@ void find_record_driver(void);
  **/
 bool recording_init(void);
 
+bool *recording_is_enabled(void);
+
+void recording_set_state(bool state);
+
 #ifdef __cplusplus
 }
 #endif

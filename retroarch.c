@@ -704,7 +704,12 @@ static void parse_input(int argc, char *argv[])
          case 'r':
             strlcpy(global->record.path, optarg,
                   sizeof(global->record.path));
-            global->record.enable = true;
+            {
+               bool *recording_enabled = recording_is_enabled();
+
+               if (recording_enabled)
+                  *recording_enabled = true;
+            }
             break;
 
 #ifdef HAVE_DYNAMIC

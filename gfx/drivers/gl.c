@@ -2186,17 +2186,19 @@ static void gl_init_pbo_readback(gl_t *gl)
 {
    unsigned i;
    struct scaler_ctx *scaler = NULL;
-   global_t   *global   = global_get_ptr();
-   settings_t *settings = config_get_ptr();
+   settings_t *settings      = config_get_ptr();
+   bool *recording_enabled   = recording_is_enabled();
 
    (void)scaler;
+
    /* Only bother with this if we're doing GPU recording.
-    * Check global->recording_enable and not 
+    * Check recording_is_enabled() and not 
     * driver.recording_data, because recording is 
     * not initialized yet.
     */
    gl->pbo_readback_enable = settings->video.gpu_record 
-      && global->record.enable;
+      && *recording_enabled;
+
    if (!gl->pbo_readback_enable)
       return;
 

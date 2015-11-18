@@ -239,7 +239,6 @@ typedef struct global
    {
       char path[PATH_MAX_LENGTH];
       char config[PATH_MAX_LENGTH];
-      bool enable;
       unsigned width;
       unsigned height;
 
