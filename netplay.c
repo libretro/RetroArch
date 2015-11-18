@@ -100,12 +100,14 @@ struct netplay
    unsigned timeout_cnt;
 
    /* Spectating. */
-   bool spectate;
-   bool spectate_client;
-   int spectate_fds[MAX_SPECTATORS];
-   uint16_t *spectate_input;
-   size_t spectate_input_ptr;
-   size_t spectate_input_size;
+   struct {
+      bool enabled;
+      bool client;
+      int fds[MAX_SPECTATORS];
+      uint16_t *input;
+      size_t input_ptr;
+      size_t input_sz;
+   } spectate;
 
    /* User flipping
     * Flipping state. If ptr >= flip_frame, we apply the flip.
@@ -284,7 +286,8 @@ static bool netplay_get_response(netplay_t *netplay)
 
 static bool netplay_get_cmd(netplay_t *netplay)
 {
-   uint32_t cmd, flip_frame;
+   uint32_t cmd;
+   uint32_t flip_frame;
    size_t cmd_size;
 
    if (!socket_receive_all_blocking(netplay->fd, &cmd, sizeof(cmd)))
@@ -300,7 +303,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
       case NETPLAY_CMD_FLIP_PLAYERS:
          if (cmd_size != sizeof(uint32_t))
          {
-            RARCH_ERR("CMD_FLIP_PLAYERS has unexpected command size.\n");
+            RARCH_ERR("CMD_FLIP_PLAYERS recieved an unexpected command size.\n");
             return netplay_cmd_nak(netplay);
          }
 
@@ -336,18 +339,6 @@ static bool netplay_get_cmd(netplay_t *netplay)
 
       case NETPLAY_CMD_LOAD_SAVESTATE:
          RARCH_ERR("NETPLAY_CMD_LOAD_SAVESTATE unimplemented.\n");
-         return netplay_cmd_nak(netplay);
-
-      case NETPLAY_CFG_SWAP_INPUT:
-         RARCH_ERR("NETPLAY_CFG_SWAP_INPUT unimplemented.\n");
-         return netplay_cmd_nak(netplay);
-
-      case NETPLAY_CFG_DELAY_FRAMES:
-         RARCH_ERR("NETPLAY_CFG_DELAY_FRAMES unimplemented.\n");
-         return netplay_cmd_nak(netplay);
-
-      case NETPLAY_CFG_CHEATS:
-         RARCH_ERR("NETPLAY_CFG_CHEATS unimplemented.\n");
          return netplay_cmd_nak(netplay);
 
       case NETPLAY_CMD_PAUSE:
@@ -784,7 +775,7 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
    while (tmp_info)
    {
       int fd;
-      if ((fd = init_tcp_connection(tmp_info, server, netplay->spectate,
+      if ((fd = init_tcp_connection(tmp_info, server, netplay->spectate.enabled,
                (struct sockaddr*)&netplay->other_addr,
                sizeof(netplay->other_addr))) >= 0)
       {
@@ -866,9 +857,9 @@ static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
    if (!network_init())
       return false;
 
-   if (!init_tcp_socket(netplay, server, port, netplay->spectate))
+   if (!init_tcp_socket(netplay, server, port, netplay->spectate.enabled))
       return false;
-   if (!netplay->spectate && !init_udp_socket(netplay, server, port))
+   if (!netplay->spectate.enabled && !init_udp_socket(netplay, server, port))
       return false;
 
    return true;
@@ -1243,12 +1234,12 @@ netplay_t *netplay_new(const char *server, uint16_t port,
    if (!netplay)
       return NULL;
 
-   netplay->fd              = -1;
-   netplay->udp_fd          = -1;
-   netplay->cbs             = *cb;
-   netplay->port            = server ? 0 : 1;
-   netplay->spectate        = spectate;
-   netplay->spectate_client = server != NULL;
+   netplay->fd                = -1;
+   netplay->udp_fd            = -1;
+   netplay->cbs               = *cb;
+   netplay->port              = server ? 0 : 1;
+   netplay->spectate.enabled  = spectate;
+   netplay->spectate.client   = server != NULL;
    strlcpy(netplay->nick, nick, sizeof(netplay->nick));
 
    if (!init_socket(netplay, server, port))
@@ -1266,7 +1257,7 @@ netplay_t *netplay_new(const char *server, uint16_t port,
       }
 
       for (i = 0; i < MAX_SPECTATORS; i++)
-         netplay->spectate_fds[i] = -1;
+         netplay->spectate.fds[i] = -1;
    }
    else
    {
@@ -1341,7 +1332,7 @@ bool netplay_command(netplay_t* netplay, enum netplay_cmd cmd,
    bool host_only          = !!(flags & CMD_OPT_HOST_ONLY);
    bool require_sync       = !!(flags & CMD_OPT_REQUIRE_SYNC);
 
-   if (netplay->spectate && !allowed_spectate)
+   if (netplay->spectate.enabled && !allowed_spectate)
    {
       msg = "Cannot %s in spectate mode.";
       goto error; 
@@ -1386,7 +1377,8 @@ error: ;
 void netplay_flip_users(netplay_t *netplay)
 {
    assert(netplay);
-   uint32_t flip_frame_net = htonl(netplay->frame_count + 2 * UDP_FRAME_PACKETS);
+   uint32_t flip_frame = netplay->frame_count + 2 * UDP_FRAME_PACKETS;
+   uint32_t flip_frame_net = htonl(flip_frame);
    bool command = netplay_command(
       netplay, NETPLAY_CMD_FLIP_PLAYERS,
       &flip_frame_net, sizeof flip_frame_net,
@@ -1396,7 +1388,7 @@ void netplay_flip_users(netplay_t *netplay)
    if(command)
    {
       netplay->flip       ^= true;
-      netplay->flip_frame  = true;
+      netplay->flip_frame  = flip_frame;
    }
 }
 
@@ -1412,13 +1404,13 @@ void netplay_free(netplay_t *netplay)
 
    socket_close(netplay->fd);
 
-   if (netplay->spectate)
+   if (netplay->spectate.enabled)
    {
       for (i = 0; i < MAX_SPECTATORS; i++)
-         if (netplay->spectate_fds[i] >= 0)
-            socket_close(netplay->spectate_fds[i]);
+         if (netplay->spectate.fds[i] >= 0)
+            socket_close(netplay->spectate.fds[i]);
 
-      free(netplay->spectate_input);
+      free(netplay->spectate.input);
    }
    else
    {
@@ -1453,15 +1445,15 @@ static void netplay_pre_frame_net(netplay_t *netplay)
 
 static void netplay_set_spectate_input(netplay_t *netplay, int16_t input)
 {
-   if (netplay->spectate_input_ptr >= netplay->spectate_input_size)
+   if (netplay->spectate.input_ptr >= netplay->spectate.input_sz)
    {
-      netplay->spectate_input_size++;
-      netplay->spectate_input_size *= 2;
-      netplay->spectate_input = (uint16_t*)realloc(netplay->spectate_input,
-            netplay->spectate_input_size * sizeof(uint16_t));
+      netplay->spectate.input_sz++;
+      netplay->spectate.input_sz *= 2;
+      netplay->spectate.input = (uint16_t*)realloc(netplay->spectate.input,
+            netplay->spectate.input_sz * sizeof(uint16_t));
    }
 
-   netplay->spectate_input[netplay->spectate_input_ptr++] = swap_if_big16(input);
+   netplay->spectate.input[netplay->spectate.input_ptr++] = swap_if_big16(input);
 }
 
 int16_t input_state_spectate(unsigned port, unsigned device,
@@ -1515,7 +1507,7 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
    fd_set fds;
    struct timeval tmp_tv = {0};
 
-   if (netplay->spectate_client)
+   if (netplay->spectate.client)
       return;
 
    FD_ZERO(&fds);
@@ -1538,7 +1530,7 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
    idx = -1;
    for (i = 0; i < MAX_SPECTATORS; i++)
    {
-      if (netplay->spectate_fds[i] == -1)
+      if (netplay->spectate.fds[i] == -1)
       {
          idx = i;
          break;
@@ -1589,7 +1581,7 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
    }
 
    free(header);
-   netplay->spectate_fds[idx] = new_fd;
+   netplay->spectate.fds[idx] = new_fd;
 
 #ifndef HAVE_SOCKET_LEGACY
    log_connection(&their_addr, idx, netplay->other_nick);
@@ -1605,7 +1597,7 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
  **/
 void netplay_pre_frame(netplay_t *netplay)
 {
-   if (netplay->spectate)
+   if (netplay->spectate.enabled)
       netplay_pre_frame_spectate(netplay);
    else
       netplay_pre_frame_net(netplay);
@@ -1684,19 +1676,19 @@ static void netplay_post_frame_spectate(netplay_t *netplay)
 {
    unsigned i;
 
-   if (netplay->spectate_client)
+   if (netplay->spectate.client)
       return;
 
    for (i = 0; i < MAX_SPECTATORS; i++)
    {
       char msg[PATH_MAX_LENGTH] = {0};
 
-      if (netplay->spectate_fds[i] == -1)
+      if (netplay->spectate.fds[i] == -1)
          continue;
 
-      if (socket_send_all_blocking(netplay->spectate_fds[i],
-               netplay->spectate_input,
-               netplay->spectate_input_ptr * sizeof(int16_t)))
+      if (socket_send_all_blocking(netplay->spectate.fds[i],
+               netplay->spectate.input,
+               netplay->spectate.input_ptr * sizeof(int16_t)))
          continue;
 
       RARCH_LOG("Client (#%u) disconnected ...\n", i);
@@ -1704,12 +1696,12 @@ static void netplay_post_frame_spectate(netplay_t *netplay)
       snprintf(msg, sizeof(msg), "Client (#%u) disconnected.", i);
       rarch_main_msg_queue_push(msg, 1, 180, false);
 
-      socket_close(netplay->spectate_fds[i]);
-      netplay->spectate_fds[i] = -1;
+      socket_close(netplay->spectate.fds[i]);
+      netplay->spectate.fds[i] = -1;
       break;
    }
 
-   netplay->spectate_input_ptr = 0;
+   netplay->spectate.input_ptr = 0;
 }
 
 /**
@@ -1722,7 +1714,7 @@ static void netplay_post_frame_spectate(netplay_t *netplay)
  **/
 void netplay_post_frame(netplay_t *netplay)
 {
-   if (netplay->spectate)
+   if (netplay->spectate.enabled)
       netplay_post_frame_spectate(netplay);
    else
       netplay_post_frame_net(netplay);
