@@ -334,7 +334,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 
    CFSearchPathForDirectoriesInDomains(CFDocumentDirectory, CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
 
-   strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
+   strlcat(home_dir_buf, "/", sizeof(home_dir_buf));
    fill_pathname_join(g_defaults.dir.shader, home_dir_buf, "shaders_glsl", sizeof(g_defaults.dir.shader));
    fill_pathname_join(g_defaults.dir.core, home_dir_buf, "cores", sizeof(g_defaults.dir.core));
    fill_pathname_join(g_defaults.dir.core_info, home_dir_buf, "info", sizeof(g_defaults.dir.core_info));
