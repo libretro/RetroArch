@@ -23,7 +23,7 @@
 #include "../../gfx/video_thread_wrapper.h"
 #include "../../gfx/video_texture.h"
 #include "../../gfx/d3d/d3d.h"
-#include "../../gfx/d3d/d3d_wrapper.h"
+#include "../../gfx/common/d3d_common.h"
 
 #include "../menu_display.h"
 

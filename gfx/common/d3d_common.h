@@ -1,5 +1,4 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -14,12 +13,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _D3D_WRAPPER_H
-#define _D3D_WRAPPER_H
+#ifndef _D3D_COMMON_H
+#define _D3D_COMMON_H
 
 #include <boolean.h>
 
-#include "../common/win32_common.h"
+#include "win32_common.h"
 #include "../../defines/d3d_defines.h"
 
 #ifdef __cplusplus

@@ -110,7 +110,7 @@ void video_texture_png_load_gl(struct texture_image *ti,
 #endif
 
 #ifdef HAVE_D3D
-#include "d3d/d3d_wrapper.h"
+#include "common/d3d_common.h"
 
 static void video_texture_png_load_d3d(struct texture_image *ti,
       enum texture_filter_type filter_type,

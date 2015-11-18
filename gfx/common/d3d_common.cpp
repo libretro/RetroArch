@@ -1,5 +1,4 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -16,7 +15,7 @@
 
 #include <retro_log.h>
 
-#include "d3d_wrapper.h"
+#include "d3d_common.h"
 
 static LPDIRECT3DDEVICE d3d_wrapper_dev;
 

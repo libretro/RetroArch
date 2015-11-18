@@ -82,7 +82,7 @@ VIDEO DRIVER
 #endif
 
 #if defined(HAVE_D3D)
-#include "../gfx/d3d/d3d_wrapper.cpp"
+#include "../gfx/common/d3d_common.cpp"
 #include "../gfx/d3d/d3d.cpp"
 #ifdef _XBOX
 #include "../gfx/d3d/render_chain_xdk.cpp"

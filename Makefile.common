@@ -738,7 +738,7 @@ ifeq ($(HAVE_D3D9), 1)
    OBJ += gfx/d3d/d3d.o \
           gfx/d3d/render_chain_null.o \
           gfx/d3d/render_chain_driver.o \
-          gfx/d3d/d3d_wrapper.o \
+          gfx/common/d3d_common.o \
           gfx/drivers_font/d3d_w32_font.o \
           gfx/drivers_context/d3d_ctx.o
    DEFINES += -DHAVE_D3D -DHAVE_D3D9

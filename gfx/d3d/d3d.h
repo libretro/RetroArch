@@ -55,7 +55,7 @@
 #include "../font_renderer_driver.h"
 #include "../video_context_driver.h"
 #include "../video_viewport.h"
-#include "d3d_wrapper.h"
+#include "../common/d3d_common.h"
 #include "render_chain_driver.h"
 #ifdef _XBOX
 #include "../../defines/xdk_defines.h"

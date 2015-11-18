@@ -24,7 +24,7 @@
 #endif
 #include <formats/tga.h>
 #ifdef _XBOX1
-#include "../d3d/d3d_wrapper.h"
+#include "../common/d3d_common.h"
 #endif
 #include "../../file_ops.h"
 
