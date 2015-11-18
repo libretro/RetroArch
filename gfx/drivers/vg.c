@@ -15,13 +15,16 @@
  */
 
 #include <math.h>
+
 #include <VG/openvg.h>
 #include <VG/vgext.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#include "../video_context_driver.h"
-#include <gfx/math/matrix_3x3.h>
+
 #include <retro_inline.h>
+#include <gfx/math/matrix_3x3.h>
+
+#include "../video_context_driver.h"
 #include "../../libretro.h"
 #include "../../general.h"
 #include "../../retroarch.h"

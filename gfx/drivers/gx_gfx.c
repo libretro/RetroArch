@@ -35,9 +35,7 @@
 #include "../../memory/wii/mem2_manager.h"
 #endif
 
-#include "ppc_asm.h"
 #include "gx_gfx_inl.h"
-#include "../../defines/gx_defines.h"
 
 struct gx_overlay_data
 {

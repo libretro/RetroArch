@@ -44,19 +44,9 @@
 
 #include <retro_miscellaneous.h>
 
-#include "../../gfx/drivers/ppc_asm.h"
+#include "../../defines/gx_defines.h"
 
-/****************************************************************************
- *  I2C driver by Hector Martin (marcan)
- *
- ****************************************************************************/
-
-#define _SHIFTL(v, s, w)	\
-    ((u32) (((u32)(v) & ((0x01 << (w)) - 1)) << (s)))
-#define _SHIFTR(v, s, w)	\
-    ((u32)(((u32)(v) >> (s)) & ((0x01 << (w)) - 1)))
-
-extern void udelay(int us);
+void udelay(int us);
 
 static u32 i2cIdentFirst = 0;
 static u32 i2cIdentFlag = 1;
@@ -111,7 +101,7 @@ static u32 __sendSlaveAddress(u8 addr)
    __viSetSCL(1);
    udelay(2);
 
-   if(i2cIdentFlag==1 && __viGetSDA()!=0)
+   if ((i2cIdentFlag == 1) && __viGetSDA()!=0)
       return 0;
 
    __viSetSDA(i2cIdentFlag^1);
@@ -134,12 +124,12 @@ void VIDEO_SetTrapFilter(bool enable)
    u8 addr    = 0xe0;
    u32 len    = 2;
 
-   buf[0] = reg;
-   buf[1] = data;
+   buf[0]     = reg;
+   buf[1]     = data;
 
-   val = buf;
+   val        = buf;
 
-   if(i2cIdentFirst==0)
+   if(i2cIdentFirst == 0)
    {
       __viOpenI2C(0);
       udelay(4);
@@ -160,7 +150,9 @@ void VIDEO_SetTrapFilter(bool enable)
    udelay(4);
 
    ret = __sendSlaveAddress(addr);
-   if(ret==0) {
+
+   if(ret == 0)
+   {
       _CPU_ISR_Restore(level);
       goto end;
    }
@@ -172,7 +164,7 @@ void VIDEO_SetTrapFilter(bool enable)
       for(j=0;j<8;j++)
       {
          u32 chan = i2cIdentFlag;
-         if(c&0x80) {}
+         if(c & 0x80) {}
          else
             chan ^= 1;
 
@@ -190,7 +182,7 @@ void VIDEO_SetTrapFilter(bool enable)
       __viSetSCL(1);
       udelay(2);
 
-      if(i2cIdentFlag==1 && __viGetSDA()!=0)
+      if((i2cIdentFlag == 1) && __viGetSDA()!=0)
       {
          _CPU_ISR_Restore(level);
          goto end;

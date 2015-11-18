@@ -1,5 +1,7 @@
 #include <retro_inline.h>
 
+#include "../../defines/gx_defines.h"
+
 #define STRUCT_REGDEF_SIZE		1440
 #define WGPIPE (0xCC008000)
 
@@ -30,9 +32,6 @@
 #define GX_LOAD_XF_REGS(x, n) \
    FIFO_PUTU8(0x10); \
    FIFO_PUTU32((((((n) & 0xffff)-1)<<16)|((x) & 0xffff)))
-
-#define _SHIFTL(v, s, w) ((u32) (((u32)(v) & ((0x01 << (w)) - 1)) << (s)))
-#define _SHIFTR(v, s, w) ((u32)(((u32)(v) >> (s)) & ((0x01 << (w)) - 1)))
 
 extern u8 __gxregs[];
 
@@ -361,11 +360,10 @@ static void __SETVCDATTR(struct __gx_regdef *__gx, u8 attr,u8 type)
 #ifdef HW_DOL
 static INLINE void __GX_UpdateBPMask(struct __gx_regdef *__gx)
 {
-   u32 i, nbmp, nres;
+   u32 i;
    u8 ntexmap;
-
-   nbmp = _SHIFTR(__gx->genMode,16,3);
-   nres = 0;
+   u32 nbmp = _SHIFTR(__gx->genMode,16,3);
+   u32 nres = 0;
 
    for(i = 0; i < nbmp; i++)
    {
@@ -426,11 +424,13 @@ static INLINE void __GX_SetTexCoordGen(struct __gx_regdef *__gx)
       GX_LOAD_XF_REG(0x103f,(__gx->genMode&0xf));
    }
 
-   i = 0;
+   i        = 0;
    texcoord = 0x1040;
-   mask = _SHIFTR(__gx->dirtyState,16,8);
-   while(mask) {
-      if(mask&0x0001) {
+   mask     = _SHIFTR(__gx->dirtyState,16,8);
+   while(mask)
+   {
+      if(mask&0x0001)
+      {
          GX_LOAD_XF_REG(texcoord,__gx->texCoordGen[i]);
          GX_LOAD_XF_REG((texcoord+0x10),__gx->texCoordGen2[i]);
       }
@@ -442,16 +442,12 @@ static INLINE void __GX_SetTexCoordGen(struct __gx_regdef *__gx)
 
 static void __SetSURegs(struct __gx_regdef *__gx, u8 texmap,u8 texcoord)
 {
-   u32 reg;
-   u16 wd, ht;
-   u8 wrap_s,wrap_t;
+   u16 wd     = __gx->texMapSize[texmap] & 0x3ff;
+   u16 ht     = _SHIFTR(__gx->texMapSize[texmap],10,10);
+   u8  wrap_s = __gx->texMapWrap[texmap] & 3;
+   u8  wrap_t = _SHIFTR(__gx->texMapWrap[texmap],2,2);
+   u32 reg    = (texcoord & 0x7);
 
-   wd = __gx->texMapSize[texmap] & 0x3ff;
-   ht = _SHIFTR(__gx->texMapSize[texmap],10,10);
-   wrap_s = __gx->texMapWrap[texmap] & 3;
-   wrap_t = _SHIFTR(__gx->texMapWrap[texmap],2,2);
-
-   reg = (texcoord & 0x7);
    __gx->suSsize[reg] = (__gx->suSsize[reg] & ~0x0000ffff)|wd;
    __gx->suTsize[reg] = (__gx->suTsize[reg]&~0x0000ffff)|ht;
    __gx->suSsize[reg] = (__gx->suSsize[reg]&~0x00010000)|(_SHIFTL(wrap_s,16,1));
@@ -463,14 +459,13 @@ static void __SetSURegs(struct __gx_regdef *__gx, u8 texmap,u8 texcoord)
 
 static INLINE void __GX_SetSUTexRegs(struct __gx_regdef *__gx)
 {
-   u32 i, indtev, dirtev, tevreg, tevm, texcm;
+   u32 i, texcm;
    u8 texcoord, texmap;
+   u32 dirtev = (_SHIFTR(__gx->genMode,10,4))+1;
+   u32 indtev = _SHIFTR(__gx->genMode,16,3);
 
-   dirtev = (_SHIFTR(__gx->genMode,10,4))+1;
-   indtev = _SHIFTR(__gx->genMode,16,3);
-
-   //indirect texture order
-   for(i = 0;i < indtev; i++)
+   /* Indirect texture order */
+   for(i = 0; i < indtev; i++)
    {
       switch(i)
       {
@@ -502,10 +497,11 @@ static INLINE void __GX_SetSUTexRegs(struct __gx_regdef *__gx)
          __SetSURegs(__gx, texmap,texcoord);
    }
 
-   //direct texture order
+   /* Direct texture order */
    for(i = 0; i < dirtev; i++)
    {
-      tevreg = 3+(_SHIFTR(i,1,3));
+      u32 tevm;
+      u32 tevreg = 3+(_SHIFTR(i,1,3));
       texmap = (__gx->tevTexMap[i] & 0xff);
 
       if(i & 1)
@@ -515,7 +511,7 @@ static INLINE void __GX_SetSUTexRegs(struct __gx_regdef *__gx)
 
       tevm = _SHIFTL(1,i,1);
       texcm = _SHIFTL(1,texcoord,1);
-      if(texmap!=0xff && (__gx->tevTexCoordEnable&tevm) && !(__gx->texCoordManually & texcm))
+      if(texmap!=0xff && (__gx->tevTexCoordEnable & tevm) && !(__gx->texCoordManually & texcm))
       {
          __SetSURegs(__gx, texmap,texcoord);
       }
@@ -576,9 +572,8 @@ static void __GX_SetDirtyState(struct __gx_regdef *__gx)
 
 static void __GX_SendFlushPrim(struct __gx_regdef *__gx)
 {
-   u32 tmp,tmp2,cnt;
-
-   tmp = (__gx->xfFlush*__gx->xfFlushExp);
+   u32 tmp2,cnt;
+   u32 tmp = (__gx->xfFlush*__gx->xfFlushExp);
 
    FIFO_PUTU8(0x98);
    FIFO_PUTU16(__gx->xfFlush);
@@ -755,14 +750,16 @@ static INLINE void __GX_SetViewportJitter(f32 xOrig,f32 yOrig,f32 wd,f32 ht,f32 
    static f32 Xfactor = 0.5;
    static f32 Yfactor = 342.0;
    static f32 Zfactor = 16777215.0;
-   if(!field) yOrig -= Xfactor;
+
+   if(!field)
+      yOrig -= Xfactor;
    x0 = wd*Xfactor;
    y0 = (-ht)*Xfactor;
    x1 = (xOrig+(wd*Xfactor))+Yfactor;
    y1 = (yOrig+(ht*Xfactor))+Yfactor;
-   n = Zfactor*nearZ;
-   f = Zfactor*farZ;
-   z = f-n;
+   n  = Zfactor*nearZ;
+   f  = Zfactor*farZ;
+   z  = f-n;
    GX_LOAD_XF_REGS(0x101a,6);
    FIFO_PUTF32(x0);
    FIFO_PUTF32(y0);

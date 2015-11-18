@@ -9,7 +9,7 @@
 #include <retro_inline.h>
 
 #include "mem2_manager.h"
-#include "../../gfx/drivers/ppc_asm.h"
+#include "../../defines/gx_defines.h"
 
 /* Forbid the use of MEM2 through malloc */
 uint32_t MALLOC_MEM2 = 0;
