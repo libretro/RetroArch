@@ -388,9 +388,11 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
       case ID_M_FULL_SCREEN:
          cmd = EVENT_CMD_FULLSCREEN_TOGGLE;
          break;
+#ifndef _XBOX
       case ID_M_SHADER_PARAMETERS:
          shader_dlg_show(owner);
          break;
+#endif
       case ID_M_MOUSE_GRAB:
          cmd = EVENT_CMD_GRAB_MOUSE_TOGGLE;
          break;
