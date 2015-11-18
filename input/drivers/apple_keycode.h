@@ -158,12 +158,4 @@ enum
 
 #include "../input_common.h"
 
-struct apple_key_name_map_entry
-{
-   const char* const keyname;
-   const uint32_t hid_id;
-};
-
-extern const struct apple_key_name_map_entry apple_key_name_map[];
-
 #endif

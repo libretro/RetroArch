@@ -15,8 +15,10 @@
  */
 
 #include "shader_hlsl.h"
+
 #include "../video_shader_parse.h"
 #include "../d3d/d3d.h"
+#include "../../rewind.h"
 
 static const char *stock_hlsl_program =
       "void main_vertex\n"
@@ -107,15 +109,16 @@ static void hlsl_set_params(void *data, unsigned width, unsigned height,
       unsigned frame_counter,
       const void *_info,
       const void *_prev_info,
+      const void *_feedback_info,
       const void *_fbo_info, unsigned fbo_info_cnt)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
    const struct gfx_tex_info *info = (const struct gfx_tex_info*)_info;
    const struct gfx_tex_info *prev_info = (const struct gfx_tex_info*)_prev_info;
+   (void)_feedback_info;
    const struct gfx_tex_info *fbo_info = (const struct gfx_tex_info*)_fbo_info;
    driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
    hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver->video_shader_data;
 
    if (!hlsl)
@@ -133,13 +136,13 @@ static void hlsl_set_params(void *data, unsigned width, unsigned height,
    set_param_2f(hlsl->prg[hlsl->active_idx].tex_size_f, tex_size, hlsl->prg[hlsl->active_idx].f_ctable);
    set_param_2f(hlsl->prg[hlsl->active_idx].out_size_f, out_size, hlsl->prg[hlsl->active_idx].f_ctable);
    set_param_1f(hlsl->prg[hlsl->active_idx].frame_cnt_f, frame_cnt, hlsl->prg[hlsl->active_idx].f_ctable);
-   set_param_1f(hlsl->prg[hlsl->active_idx].frame_dir_f, global->rewind.frame_is_reverse ? -1.0 : 1.0, hlsl->prg[hlsl->active_idx].f_ctable);
+   set_param_1f(hlsl->prg[hlsl->active_idx].frame_dir_f, state_manager_frame_is_reversed() ? -1.0 : 1.0, hlsl->prg[hlsl->active_idx].f_ctable);
 
    set_param_2f(hlsl->prg[hlsl->active_idx].vid_size_v, ori_size, hlsl->prg[hlsl->active_idx].v_ctable);
    set_param_2f(hlsl->prg[hlsl->active_idx].tex_size_v, tex_size, hlsl->prg[hlsl->active_idx].v_ctable);
    set_param_2f(hlsl->prg[hlsl->active_idx].out_size_v, out_size, hlsl->prg[hlsl->active_idx].v_ctable);
    set_param_1f(hlsl->prg[hlsl->active_idx].frame_cnt_v, frame_cnt, hlsl->prg[hlsl->active_idx].v_ctable);
-   set_param_1f(hlsl->prg[hlsl->active_idx].frame_dir_v, global->rewind.frame_is_reverse ? -1.0 : 1.0, hlsl->prg[hlsl->active_idx].v_ctable);
+   set_param_1f(hlsl->prg[hlsl->active_idx].frame_dir_v, state_manager_frame_is_reversed() ? -1.0 : 1.0, hlsl->prg[hlsl->active_idx].v_ctable);
 
    /* TODO - set lookup textures/FBO textures/state parameters/etc */
 }
@@ -477,6 +480,12 @@ static bool hlsl_mipmap_input(unsigned idx)
    return false;
 }
 
+static bool hlsl_get_feedback_pass(unsigned *idx)
+{
+   (void)idx;
+   return false;
+}
+
 static struct video_shader *hlsl_get_current_shader(void)
 {
    return NULL;
@@ -494,6 +503,7 @@ const shader_backend_t hlsl_backend = {
    NULL,              /* hlsl_set_coords */
    hlsl_set_mvp,
    NULL,              /* hlsl_get_prev_textures */
+   hlsl_get_feedback_pass,
    hlsl_mipmap_input,
    hlsl_get_current_shader,
 

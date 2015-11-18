@@ -14,9 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../drivers/gl_common.h"
+#include "../common/gl_common.h"
 #include "../font_driver.h"
 #include "../video_shader_driver.h"
+#include "../video_texture.h"
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
 
@@ -47,13 +48,96 @@ typedef struct
    gfx_font_raster_block_t *block;
 } gl_raster_t;
 
+static void gl_raster_font_free_font(void *data);
+
+static bool gl_raster_font_upload_atlas(gl_raster_t *font,
+      const struct font_atlas *atlas,
+      unsigned width, unsigned height)
+{
+   unsigned i, j;
+   GLint  gl_internal = GL_LUMINANCE_ALPHA;
+   GLenum gl_format   = GL_LUMINANCE_ALPHA;
+   size_t ncomponents = 2;
+   uint8_t       *tmp = NULL;
+   struct retro_hw_render_callback *cb = video_driver_callback();
+   bool ancient = false; /* add a check here if needed */
+   bool modern = font->gl->core_context ||
+         (cb->context_type == RETRO_HW_CONTEXT_OPENGL &&
+          cb->version_major >= 3);
+	
+   (void)modern;
+
+   if (ancient)
+   {
+      gl_internal = gl_format = GL_RGBA;
+      ncomponents = 4;
+   }
+#ifdef HAVE_OPENGLES
+   (void)modern;
+#elif defined(GL_VERSION_3_0)
+   else if (modern)
+   {
+      GLint swizzle[] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
+      glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+
+      gl_internal = GL_R8;
+      gl_format   = GL_RED;
+      ncomponents = 1;
+   }
+#endif
+
+   tmp = (uint8_t*)calloc(height, width * ncomponents);
+
+   if (!tmp)
+      return false;
+
+   for (i = 0; i < atlas->height; ++i)
+   {
+      const uint8_t *src = &atlas->buffer[i * atlas->width];
+      uint8_t       *dst = &tmp[i * width * ncomponents];
+
+      switch (ncomponents)
+      {
+         case 1:
+            memcpy(dst, src, atlas->width);
+            src += atlas->width;
+            break;
+         case 2:
+            for (j = 0; j < atlas->width; ++j)
+            {
+               *dst++ = 0xff;
+               *dst++ = *src++;
+            }
+            break;
+         case 4:
+            for (j = 0; j < atlas->width; ++j)
+            {
+               *dst++ = 0xff;
+               *dst++ = 0xff;
+               *dst++ = 0xff;
+               *dst++ = *src++;
+            }
+            break;
+         default:
+            RARCH_ERR("Unsupported number of components: %u\n", (unsigned)ncomponents);
+            free(tmp);
+            return false;
+      }
+   }
+
+   glTexImage2D(GL_TEXTURE_2D, 0, gl_internal, width, height,
+         0, gl_format, GL_UNSIGNED_BYTE, tmp);
+
+   free(tmp);
+
+   return true;
+}
+
 static void *gl_raster_font_init_font(void *data,
       const char *font_path, float font_size)
 {
-   unsigned width, height;
-   uint8_t *tmp_buffer;
    const struct font_atlas *atlas = NULL;
-   gl_raster_t *font = (gl_raster_t*)calloc(1, sizeof(*font));
+   gl_raster_t   *font = (gl_raster_t*)calloc(1, sizeof(*font));
 
    if (!font)
       return NULL;
@@ -63,7 +147,7 @@ static void *gl_raster_font_init_font(void *data,
    if (!font_renderer_create_default(&font->font_driver,
             &font->font_data, font_path, font_size))
    {
-      RARCH_WARN("Couldn't init font renderer.\n");
+      RARCH_WARN("Couldn't initialize font renderer.\n");
       free(font);
       return NULL;
    }
@@ -75,44 +159,22 @@ static void *gl_raster_font_init_font(void *data,
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-   atlas = font->font_driver->get_atlas(font->font_data);
+   atlas            = font->font_driver->get_atlas(font->font_data);
+   font->tex_width  = next_pow2(atlas->width);;
+   font->tex_height = next_pow2(atlas->height);;
 
-   width = next_pow2(atlas->width);
-   height = next_pow2(atlas->height);
-
-   /* Ideally, we'd use single component textures, but the 
-    * difference in ways to do that between core GL and GLES/legacy GL
-    * is too great to bother going down that route. */
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
-         0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-   tmp_buffer = (uint8_t*)malloc(atlas->width * atlas->height * 4);
-
-   if (tmp_buffer)
-   {
-      unsigned i;
-      uint8_t       *dst = tmp_buffer;
-      const uint8_t *src = atlas->buffer;
-
-      for (i = 0; i < atlas->width * atlas->height; i++)
-      {
-         *dst++ = 0xff;
-         *dst++ = 0xff;
-         *dst++ = 0xff;
-         *dst++ = *src++;
-      }
-
-      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, atlas->width,
-            atlas->height, GL_RGBA, GL_UNSIGNED_BYTE, tmp_buffer);
-      free(tmp_buffer);
-   }
-
-   font->tex_width  = width;
-   font->tex_height = height;
+   if (!gl_raster_font_upload_atlas(font, atlas, font->tex_width, font->tex_height))
+      goto error;
 
    glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
 
    return font;
+
+error:
+   gl_raster_font_free_font(font);
+   font = NULL;
+
+   return NULL;
 }
 
 static void gl_raster_font_free_font(void *data)
@@ -124,7 +186,7 @@ static void gl_raster_font_free_font(void *data)
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
-   glDeleteTextures(1, &font->tex);
+   video_texture_unload(TEXTURE_BACKEND_OPENGL, (uintptr_t*)&font->tex);
    free(font);
 }
 
@@ -379,7 +441,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
       x           = settings->video.msg_pos_x;
       y           = settings->video.msg_pos_y;
       scale       = 1.0f;
-      full_screen = false;
+      full_screen = true;
       text_align  = TEXT_ALIGN_LEFT;
 
       color[0]    = settings->video.msg_color_r;

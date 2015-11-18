@@ -17,24 +17,8 @@
 #ifndef __RARCH_GENERAL_H
 #define __RARCH_GENERAL_H
 
-#include <boolean.h>
 #include <stdint.h>
 #include <limits.h>
-#include <compat/strl.h>
-#include <retro_inline.h>
-#include <retro_miscellaneous.h>
-#include "configuration.h"
-#include "driver.h"
-#include "playlist.h"
-#include "runloop.h"
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "1.2.2"
-#endif
 
 /* Platform-specific headers */
 
@@ -46,11 +30,30 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
+#endif
+
+#include <boolean.h>
+#include <compat/strl.h>
 #include <compat/posix_string.h>
+#include <retro_inline.h>
+#include <retro_assert.h>
+#include <retro_miscellaneous.h>
+
+#include "configuration.h"
+#include "driver.h"
+#include "playlist.h"
+#include "runloop.h"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
 #ifdef HAVE_COMMAND
 #include "command.h"
+#endif
+
+#ifndef PACKAGE_VERSION
+#define PACKAGE_VERSION "1.3.0"
 #endif
 
 #ifdef __cplusplus
@@ -71,33 +74,41 @@ enum sound_mode_enums
 
 struct defaults
 {
-   char core_assets_dir[PATH_MAX_LENGTH];
-   char menu_config_dir[PATH_MAX_LENGTH];
-   char config_path[PATH_MAX_LENGTH];
-   char core_path[PATH_MAX_LENGTH];
-   char autoconfig_dir[PATH_MAX_LENGTH];
-   char audio_filter_dir[PATH_MAX_LENGTH];
-   char video_filter_dir[PATH_MAX_LENGTH];
-   char assets_dir[PATH_MAX_LENGTH];
-   char core_dir[PATH_MAX_LENGTH];
-   char core_info_dir[PATH_MAX_LENGTH];
-   char overlay_dir[PATH_MAX_LENGTH];
-   char osk_overlay_dir[PATH_MAX_LENGTH];
-   char port_dir[PATH_MAX_LENGTH];
-   char shader_dir[PATH_MAX_LENGTH];
-   char savestate_dir[PATH_MAX_LENGTH];
-   char resampler_dir[PATH_MAX_LENGTH];
-   char sram_dir[PATH_MAX_LENGTH];
-   char screenshot_dir[PATH_MAX_LENGTH];
-   char system_dir[PATH_MAX_LENGTH];
-   char playlist_dir[PATH_MAX_LENGTH];
-   char content_history_dir[PATH_MAX_LENGTH];
-   char remap_dir[PATH_MAX_LENGTH];
-   char extraction_dir[PATH_MAX_LENGTH];
-   char wallpapers_dir[PATH_MAX_LENGTH];
-   char database_dir[PATH_MAX_LENGTH];
-   char cursor_dir[PATH_MAX_LENGTH];
-   char cheats_dir[PATH_MAX_LENGTH];
+   struct
+   {
+      char core_assets[PATH_MAX_LENGTH];
+      char menu_config[PATH_MAX_LENGTH];
+      char autoconfig[PATH_MAX_LENGTH];
+      char audio_filter[PATH_MAX_LENGTH];
+      char video_filter[PATH_MAX_LENGTH];
+      char assets[PATH_MAX_LENGTH];
+      char core[PATH_MAX_LENGTH];
+      char core_info[PATH_MAX_LENGTH];
+      char overlay[PATH_MAX_LENGTH];
+      char osk_overlay[PATH_MAX_LENGTH];
+      char port[PATH_MAX_LENGTH];
+      char shader[PATH_MAX_LENGTH];
+      char savestate[PATH_MAX_LENGTH];
+      char resampler[PATH_MAX_LENGTH];
+      char sram[PATH_MAX_LENGTH];
+      char screenshot[PATH_MAX_LENGTH];
+      char system[PATH_MAX_LENGTH];
+      char playlist[PATH_MAX_LENGTH];
+      char content_history[PATH_MAX_LENGTH];
+      char remap[PATH_MAX_LENGTH];
+      char cache[PATH_MAX_LENGTH];
+      char wallpapers[PATH_MAX_LENGTH];
+      char database[PATH_MAX_LENGTH];
+      char cursor[PATH_MAX_LENGTH];
+      char cheats[PATH_MAX_LENGTH];
+   } dir;
+
+   struct
+   {
+      char config[PATH_MAX_LENGTH];
+      char core[PATH_MAX_LENGTH];
+      char buildbot_server_url[PATH_MAX_LENGTH];
+   } path;
 
    struct
    {
@@ -130,13 +141,13 @@ static INLINE float db_to_gain(float db)
 }
 
 /**
- * rarch_fail:
+ * retro_fail:
  * @error_code  : Error code.
  * @error       : Error message to show.
  *
  * Sanely kills the program.
  **/
-static INLINE void rarch_fail(int error_code, const char *error)
+static INLINE void retro_fail(int error_code, const char *error)
 {
    global_t *global = global_get_ptr();
 
@@ -146,10 +157,9 @@ static INLINE void rarch_fail(int error_code, const char *error)
    /* We cannot longjmp unless we're in rarch_main_init().
     * If not, something went very wrong, and we should 
     * just exit right away. */
-   rarch_assert(global->error_in_init);
+   retro_assert(global->inited.error);
 
-   strlcpy(global->error_string, error,
-         sizeof(global->error_string));
+   strlcpy(global->error_string, error, sizeof(global->error_string));
    longjmp(global->error_sjlj_context, error_code);
 }
 

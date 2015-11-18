@@ -6,7 +6,9 @@
 
 #include "Types.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
 MY_CPU_LE means that CPU is LITTLE ENDIAN.
@@ -118,8 +120,8 @@ Stop_Compiling_Bad_Endian
 
 #define GetBe16(p) (((uint16_t)((const uint8_t *)(p))[0] << 8) | ((const uint8_t *)(p))[1])
 
-Bool CPU_Is_InOrder();
-
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1,525 +1,343 @@
 /*
- **********************************************************************
- ** md5.h -- Header file for implementation of MD5                   **
- ** RSA Data Security, Inc. MD5 Message Digest Algorithm             **
- ** Created: 2/17/90 RLR                                             **
- ** Revised: 12/27/90 SRD,AJ,BSK,JT Reference C version              **
- ** Revised (for MD5): RLR 4/27/91                                   **
- **   -- G modified to have y&~z instead of y&z                      **
- **   -- FF, GG, HH modified to add in last register done            **
- **   -- Access pattern: round 2 works mod 5, round 3 works mod 3    **
- **   -- distinct additive constant for each step                    **
- **   -- round 4 added, working mod 7                                **
- **********************************************************************
+ * This is an OpenSSL-compatible implementation of the RSA Data Security, Inc.
+ * MD5 Message-Digest Algorithm (RFC 1321).
+ *
+ * Homepage:
+ * http://openwall.info/wiki/people/solar/software/public-domain-source-code/md5
+ *
+ * Author:
+ * Alexander Peslyak, better known as Solar Designer <solar at openwall.com>
+ *
+ * This software was written by Alexander Peslyak in 2001.  No copyright is
+ * claimed, and the software is hereby placed in the public domain.
+ * In case this attempt to disclaim copyright and place the software in the
+ * public domain is deemed null and void, then the software is
+ * Copyright (c) 2001 Alexander Peslyak and it is hereby released to the
+ * general public under the following terms:
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted.
+ *
+ * There's ABSOLUTELY NO WARRANTY, express or implied.
+ *
+ * (This is a heavily cut-down "BSD license".)
+ *
+ * This differs from Colin Plumb's older public domain implementation in that
+ * no exactly 32-bit integer data type is required (any 32-bit or wider
+ * unsigned integer data type will do), there's no compile-time endianness
+ * configuration, and the function prototypes match OpenSSL's.  No code from
+ * Colin Plumb's implementation has been reused; this comment merely compares
+ * the properties of the two independent implementations.
+ *
+ * The primary goals of this implementation are portability and ease of use.
+ * It is meant to be fast, but not as fast as possible.  Some known
+ * optimizations are not included to reduce source code size and avoid
+ * compile-time configuration.
  */
 
-/*
- **********************************************************************
- ** Copyright (C) 1990, RSA Data Security, Inc. All rights reserved. **
- **                                                                  **
- ** License to copy and use this software is granted provided that   **
- ** it is identified as the "RSA Data Security, Inc. MD5 Message     **
- ** Digest Algorithm" in all material mentioning or referencing this **
- ** software or this function.                                       **
- **                                                                  **
- ** License is also granted to make and use derivative works         **
- ** provided that such works are identified as "derived from the RSA **
- ** Data Security, Inc. MD5 Message Digest Algorithm" in all         **
- ** material mentioning or referencing the derived work.             **
- **                                                                  **
- ** RSA Data Security, Inc. makes no representations concerning      **
- ** either the merchantability of this software or the suitability   **
- ** of this software for any particular purpose.  It is provided "as **
- ** is" without express or implied warranty of any kind.             **
- **                                                                  **
- ** These notices must be retained in any copies of any part of this **
- ** documentation and/or software.                                   **
- **********************************************************************
- */
-
-/* typedef a 32 bit type */
-typedef unsigned long int UINT4;
-
-/* Data structure for MD5 (Message Digest) computation */
-typedef struct
-{
-   UINT4 i[2];                   /* number of _bits_ handled mod 2^64 */
-   UINT4 buf[4];                                    /* scratch buffer */
-   unsigned char in[64];                              /* input buffer */
-   unsigned char digest[16];     /* actual digest after MD5Final call */
-} MD5_CTX;
-
-/*
- **********************************************************************
- ** End of md5.h                                                     **
- ******************************* (cut) ********************************
- */
-
-/*
- **********************************************************************
- ** md5.c                                                            **
- ** RSA Data Security, Inc. MD5 Message Digest Algorithm             **
- ** Created: 2/17/90 RLR                                             **
- ** Revised: 1/91 SRD,AJ,BSK,JT Reference C Version                  **
- **********************************************************************
- */
-
-/*
- **********************************************************************
- ** Copyright (C) 1990, RSA Data Security, Inc. All rights reserved. **
- **                                                                  **
- ** License to copy and use this software is granted provided that   **
- ** it is identified as the "RSA Data Security, Inc. MD5 Message     **
- ** Digest Algorithm" in all material mentioning or referencing this **
- ** software or this function.                                       **
- **                                                                  **
- ** License is also granted to make and use derivative works         **
- ** provided that such works are identified as "derived from the RSA **
- ** Data Security, Inc. MD5 Message Digest Algorithm" in all         **
- ** material mentioning or referencing the derived work.             **
- **                                                                  **
- ** RSA Data Security, Inc. makes no representations concerning      **
- ** either the merchantability of this software or the suitability   **
- ** of this software for any particular purpose.  It is provided "as **
- ** is" without express or implied warranty of any kind.             **
- **                                                                  **
- ** These notices must be retained in any copies of any part of this **
- ** documentation and/or software.                                   **
- **********************************************************************
- */
-
-/* -- include the following line if the md5.h header file is separate -- */
-/* #include "md5.h" */
-
-static unsigned char PADDING[64] = {
-  0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-/* F, G and H are basic MD5 functions: selection, majority, parity */
-#define F(x, y, z) (((x) & (y)) | ((~x) & (z)))
-#define G(x, y, z) (((x) & (z)) | ((y) & (~z)))
-#define H(x, y, z) ((x) ^ (y) ^ (z))
-#define I(x, y, z) ((y) ^ ((x) | (~z))) 
-
-/* ROTATE_LEFT rotates x left n bits */
-#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32-(n))))
-
-/* FF, GG, HH, and II transformations for rounds 1, 2, 3, and 4 */
-/* Rotation is separate from addition to prevent recomputation */
-#define FF(a, b, c, d, x, s, ac) \
-  {(a) += F ((b), (c), (d)) + (x) + (UINT4)(ac); \
-   (a) = ROTATE_LEFT ((a), (s)); \
-   (a) += (b); \
-  }
-#define GG(a, b, c, d, x, s, ac) \
-  {(a) += G ((b), (c), (d)) + (x) + (UINT4)(ac); \
-   (a) = ROTATE_LEFT ((a), (s)); \
-   (a) += (b); \
-  }
-#define HH(a, b, c, d, x, s, ac) \
-  {(a) += H ((b), (c), (d)) + (x) + (UINT4)(ac); \
-   (a) = ROTATE_LEFT ((a), (s)); \
-   (a) += (b); \
-  }
-#define II(a, b, c, d, x, s, ac) \
-  {(a) += I ((b), (c), (d)) + (x) + (UINT4)(ac); \
-   (a) = ROTATE_LEFT ((a), (s)); \
-   (a) += (b); \
-  }
-
-void MD5Init(MD5_CTX *mdContext)
-{
-   mdContext->i[0] = mdContext->i[1] = (UINT4)0;
-
-   /* Load magic initialization constants.
-   */
-   mdContext->buf[0] = (UINT4)0x67452301;
-   mdContext->buf[1] = (UINT4)0xefcdab89;
-   mdContext->buf[2] = (UINT4)0x98badcfe;
-   mdContext->buf[3] = (UINT4)0x10325476;
-}
-
-/* Basic MD5 step. Transform buf based on in.
- */
-static void Transform (UINT4 *buf, UINT4 *in)
-{
-   UINT4 a = buf[0], b = buf[1], c = buf[2], d = buf[3];
-
-   /* Round 1 */
-#define S11 7
-#define S12 12
-#define S13 17
-#define S14 22
-   FF ( a, b, c, d, in[ 0], S11, 3614090360); /* 1 */
-   FF ( d, a, b, c, in[ 1], S12, 3905402710); /* 2 */
-   FF ( c, d, a, b, in[ 2], S13,  606105819); /* 3 */
-   FF ( b, c, d, a, in[ 3], S14, 3250441966); /* 4 */
-   FF ( a, b, c, d, in[ 4], S11, 4118548399); /* 5 */
-   FF ( d, a, b, c, in[ 5], S12, 1200080426); /* 6 */
-   FF ( c, d, a, b, in[ 6], S13, 2821735955); /* 7 */
-   FF ( b, c, d, a, in[ 7], S14, 4249261313); /* 8 */
-   FF ( a, b, c, d, in[ 8], S11, 1770035416); /* 9 */
-   FF ( d, a, b, c, in[ 9], S12, 2336552879); /* 10 */
-   FF ( c, d, a, b, in[10], S13, 4294925233); /* 11 */
-   FF ( b, c, d, a, in[11], S14, 2304563134); /* 12 */
-   FF ( a, b, c, d, in[12], S11, 1804603682); /* 13 */
-   FF ( d, a, b, c, in[13], S12, 4254626195); /* 14 */
-   FF ( c, d, a, b, in[14], S13, 2792965006); /* 15 */
-   FF ( b, c, d, a, in[15], S14, 1236535329); /* 16 */
-
-   /* Round 2 */
-#define S21 5
-#define S22 9
-#define S23 14
-#define S24 20
-   GG ( a, b, c, d, in[ 1], S21, 4129170786); /* 17 */
-   GG ( d, a, b, c, in[ 6], S22, 3225465664); /* 18 */
-   GG ( c, d, a, b, in[11], S23,  643717713); /* 19 */
-   GG ( b, c, d, a, in[ 0], S24, 3921069994); /* 20 */
-   GG ( a, b, c, d, in[ 5], S21, 3593408605); /* 21 */
-   GG ( d, a, b, c, in[10], S22,   38016083); /* 22 */
-   GG ( c, d, a, b, in[15], S23, 3634488961); /* 23 */
-   GG ( b, c, d, a, in[ 4], S24, 3889429448); /* 24 */
-   GG ( a, b, c, d, in[ 9], S21,  568446438); /* 25 */
-   GG ( d, a, b, c, in[14], S22, 3275163606); /* 26 */
-   GG ( c, d, a, b, in[ 3], S23, 4107603335); /* 27 */
-   GG ( b, c, d, a, in[ 8], S24, 1163531501); /* 28 */
-   GG ( a, b, c, d, in[13], S21, 2850285829); /* 29 */
-   GG ( d, a, b, c, in[ 2], S22, 4243563512); /* 30 */
-   GG ( c, d, a, b, in[ 7], S23, 1735328473); /* 31 */
-   GG ( b, c, d, a, in[12], S24, 2368359562); /* 32 */
-
-   /* Round 3 */
-#define S31 4
-#define S32 11
-#define S33 16
-#define S34 23
-   HH ( a, b, c, d, in[ 5], S31, 4294588738); /* 33 */
-   HH ( d, a, b, c, in[ 8], S32, 2272392833); /* 34 */
-   HH ( c, d, a, b, in[11], S33, 1839030562); /* 35 */
-   HH ( b, c, d, a, in[14], S34, 4259657740); /* 36 */
-   HH ( a, b, c, d, in[ 1], S31, 2763975236); /* 37 */
-   HH ( d, a, b, c, in[ 4], S32, 1272893353); /* 38 */
-   HH ( c, d, a, b, in[ 7], S33, 4139469664); /* 39 */
-   HH ( b, c, d, a, in[10], S34, 3200236656); /* 40 */
-   HH ( a, b, c, d, in[13], S31,  681279174); /* 41 */
-   HH ( d, a, b, c, in[ 0], S32, 3936430074); /* 42 */
-   HH ( c, d, a, b, in[ 3], S33, 3572445317); /* 43 */
-   HH ( b, c, d, a, in[ 6], S34,   76029189); /* 44 */
-   HH ( a, b, c, d, in[ 9], S31, 3654602809); /* 45 */
-   HH ( d, a, b, c, in[12], S32, 3873151461); /* 46 */
-   HH ( c, d, a, b, in[15], S33,  530742520); /* 47 */
-   HH ( b, c, d, a, in[ 2], S34, 3299628645); /* 48 */
-
-   /* Round 4 */
-#define S41 6
-#define S42 10
-#define S43 15
-#define S44 21
-   II ( a, b, c, d, in[ 0], S41, 4096336452); /* 49 */
-   II ( d, a, b, c, in[ 7], S42, 1126891415); /* 50 */
-   II ( c, d, a, b, in[14], S43, 2878612391); /* 51 */
-   II ( b, c, d, a, in[ 5], S44, 4237533241); /* 52 */
-   II ( a, b, c, d, in[12], S41, 1700485571); /* 53 */
-   II ( d, a, b, c, in[ 3], S42, 2399980690); /* 54 */
-   II ( c, d, a, b, in[10], S43, 4293915773); /* 55 */
-   II ( b, c, d, a, in[ 1], S44, 2240044497); /* 56 */
-   II ( a, b, c, d, in[ 8], S41, 1873313359); /* 57 */
-   II ( d, a, b, c, in[15], S42, 4264355552); /* 58 */
-   II ( c, d, a, b, in[ 6], S43, 2734768916); /* 59 */
-   II ( b, c, d, a, in[13], S44, 1309151649); /* 60 */
-   II ( a, b, c, d, in[ 4], S41, 4149444226); /* 61 */
-   II ( d, a, b, c, in[11], S42, 3174756917); /* 62 */
-   II ( c, d, a, b, in[ 2], S43,  718787259); /* 63 */
-   II ( b, c, d, a, in[ 9], S44, 3951481745); /* 64 */
-
-   buf[0] += a;
-   buf[1] += b;
-   buf[2] += c;
-   buf[3] += d;
-}
-
-void MD5Update (MD5_CTX *mdContext,
-      unsigned char *inBuf, unsigned int inLen)
-{
-   UINT4 in[16];
-   int mdi;
-   unsigned int i, ii;
-
-   /* compute number of bytes mod 64 */
-   mdi = (int)((mdContext->i[0] >> 3) & 0x3F);
-
-   /* update number of bits */
-   if ((mdContext->i[0] + ((UINT4)inLen << 3)) < mdContext->i[0])
-      mdContext->i[1]++;
-   mdContext->i[0] += ((UINT4)inLen << 3);
-   mdContext->i[1] += ((UINT4)inLen >> 29);
-
-   while (inLen--)
-   {
-      /* add new character to buffer, increment mdi */
-      mdContext->in[mdi++] = *inBuf++;
-
-      /* transform if necessary */
-      if (mdi == 0x40)
-      {
-         for (i = 0, ii = 0; i < 16; i++, ii += 4)
-            in[i] = (((UINT4)mdContext->in[ii+3]) << 24) |
-               (((UINT4)mdContext->in[ii+2]) << 16) |
-               (((UINT4)mdContext->in[ii+1]) << 8) |
-               ((UINT4)mdContext->in[ii]);
-         Transform (mdContext->buf, in);
-         mdi = 0;
-      }
-   }
-}
-
-void MD5Final (MD5_CTX *mdContext)
-{
-   UINT4 in[16];
-   int mdi;
-   unsigned int i, ii;
-   unsigned int padLen;
-
-   /* save number of bits */
-   in[14] = mdContext->i[0];
-   in[15] = mdContext->i[1];
-
-   /* compute number of bytes mod 64 */
-   mdi = (int)((mdContext->i[0] >> 3) & 0x3F);
-
-   /* pad out to 56 mod 64 */
-   padLen = (mdi < 56) ? (56 - mdi) : (120 - mdi);
-   MD5Update (mdContext, PADDING, padLen);
-
-   /* append length in bits and transform */
-   for (i = 0, ii = 0; i < 14; i++, ii += 4)
-      in[i] = (((UINT4)mdContext->in[ii+3]) << 24) |
-         (((UINT4)mdContext->in[ii+2]) << 16) |
-         (((UINT4)mdContext->in[ii+1]) << 8) |
-         ((UINT4)mdContext->in[ii]);
-   Transform (mdContext->buf, in);
-
-   /* store buffer in digest */
-   for (i = 0, ii = 0; i < 4; i++, ii += 4) {
-      mdContext->digest[ii] = (unsigned char)(mdContext->buf[i] & 0xFF);
-      mdContext->digest[ii+1] =
-         (unsigned char)((mdContext->buf[i] >> 8) & 0xFF);
-      mdContext->digest[ii+2] =
-         (unsigned char)((mdContext->buf[i] >> 16) & 0xFF);
-      mdContext->digest[ii+3] =
-         (unsigned char)((mdContext->buf[i] >> 24) & 0xFF);
-   }
-}
-
-
-/*
- **********************************************************************
- ** End of md5.c                                                     **
- ******************************* (cut) ********************************
- */
-
-/*
- **********************************************************************
- ** md5driver.c -- sample routines to test                           **
- ** RSA Data Security, Inc. MD5 message digest algorithm.            **
- ** Created: 2/16/90 RLR                                             **
- ** Updated: 1/91 SRD                                                **
- **********************************************************************
- */
-
-/*
- **********************************************************************
- ** Copyright (C) 1990, RSA Data Security, Inc. All rights reserved. **
- **                                                                  **
- ** RSA Data Security, Inc. makes no representations concerning      **
- ** either the merchantability of this software or the suitability   **
- ** of this software for any particular purpose.  It is provided "as **
- ** is" without express or implied warranty of any kind.             **
- **                                                                  **
- ** These notices must be retained in any copies of any part of this **
- ** documentation and/or software.                                   **
- **********************************************************************
- */
-
-#include <stdio.h>
-#include <sys/types.h>
-#include <time.h>
 #include <string.h>
 
-/* -- include the following file if the file md5.h is separate -- */
-/* #include "md5.h" */
+#include "rhash.h"
 
-/* Prints message digest buffer in mdContext as 32 hexadecimal digits.
-   Order is from low-order byte to high-order byte of digest.
-   Each byte is printed with high-order hexadecimal digit first.
+/*
+ * The basic MD5 functions.
+ *
+ * F and G are optimized compared to their RFC 1321 definitions for
+ * architectures that lack an AND-NOT instruction, just like in Colin Plumb's
+ * implementation.
  */
-static void MDPrint(MD5_CTX *mdContext)
-{
-   int i;
+#define MD5_F(x, y, z)			((z) ^ ((x) & ((y) ^ (z))))
+#define MD5_G(x, y, z)			((y) ^ ((z) & ((x) ^ (y))))
+#define MD5_H(x, y, z)			(((x) ^ (y)) ^ (z))
+#define MD5_H2(x, y, z)			((x) ^ ((y) ^ (z)))
+#define MD5_I(x, y, z)			((y) ^ ((x) | ~(z)))
 
-   for (i = 0; i < 16; i++)
-      printf ("%02x", mdContext->digest[i]);
+/*
+ * The MD5 transformation for all four rounds.
+ */
+#define MD5_STEP(f, a, b, c, d, x, t, s) \
+	(a) += f((b), (c), (d)) + (x) + (t); \
+	(a) = (((a) << (s)) | (((a) & 0xffffffff) >> (32 - (s)))); \
+	(a) += (b);
+
+/*
+ * MD5_SET reads 4 input bytes in little-endian byte order and stores them
+ * in a properly aligned word in host byte order.
+ *
+ * The check for little-endian architectures that tolerate unaligned
+ * memory accesses is just an optimization.  Nothing will break if it
+ * doesn't work.
+ */
+#if defined(__i386__) || defined(__x86_64__) || defined(__vax__)
+#define MD5_SET(n) \
+	(*(MD5_u32plus *)&ptr[(n) * 4])
+#define MD5_GET(n) \
+	MD5_SET(n)
+#else
+#define MD5_SET(n) \
+	(ctx->block[(n)] = \
+	(MD5_u32plus)ptr[(n) * 4] | \
+	((MD5_u32plus)ptr[(n) * 4 + 1] << 8) | \
+	((MD5_u32plus)ptr[(n) * 4 + 2] << 16) | \
+	((MD5_u32plus)ptr[(n) * 4 + 3] << 24))
+#define MD5_GET(n) \
+	(ctx->block[(n)])
+#endif
+
+/*
+ * This processes one or more 64-byte data blocks, but does NOT update
+ * the bit counters.  There are no alignment requirements.
+ */
+static const void *MD5_body(MD5_CTX *ctx, const void *data, unsigned long size)
+{
+	const unsigned char *ptr;
+	MD5_u32plus a, b, c, d;
+	MD5_u32plus saved_a, saved_b, saved_c, saved_d;
+
+	ptr = (const unsigned char *)data;
+
+	a = ctx->a;
+	b = ctx->b;
+	c = ctx->c;
+	d = ctx->d;
+
+	do {
+		saved_a = a;
+		saved_b = b;
+		saved_c = c;
+		saved_d = d;
+
+/* Round 1 */
+		MD5_STEP(MD5_F, a, b, c, d, MD5_SET(0), 0xd76aa478, 7)
+		MD5_STEP(MD5_F, d, a, b, c, MD5_SET(1), 0xe8c7b756, 12)
+		MD5_STEP(MD5_F, c, d, a, b, MD5_SET(2), 0x242070db, 17)
+		MD5_STEP(MD5_F, b, c, d, a, MD5_SET(3), 0xc1bdceee, 22)
+		MD5_STEP(MD5_F, a, b, c, d, MD5_SET(4), 0xf57c0faf, 7)
+		MD5_STEP(MD5_F, d, a, b, c, MD5_SET(5), 0x4787c62a, 12)
+		MD5_STEP(MD5_F, c, d, a, b, MD5_SET(6), 0xa8304613, 17)
+		MD5_STEP(MD5_F, b, c, d, a, MD5_SET(7), 0xfd469501, 22)
+		MD5_STEP(MD5_F, a, b, c, d, MD5_SET(8), 0x698098d8, 7)
+		MD5_STEP(MD5_F, d, a, b, c, MD5_SET(9), 0x8b44f7af, 12)
+		MD5_STEP(MD5_F, c, d, a, b, MD5_SET(10), 0xffff5bb1, 17)
+		MD5_STEP(MD5_F, b, c, d, a, MD5_SET(11), 0x895cd7be, 22)
+		MD5_STEP(MD5_F, a, b, c, d, MD5_SET(12), 0x6b901122, 7)
+		MD5_STEP(MD5_F, d, a, b, c, MD5_SET(13), 0xfd987193, 12)
+		MD5_STEP(MD5_F, c, d, a, b, MD5_SET(14), 0xa679438e, 17)
+		MD5_STEP(MD5_F, b, c, d, a, MD5_SET(15), 0x49b40821, 22)
+
+/* Round 2 */
+		MD5_STEP(MD5_G, a, b, c, d, MD5_GET(1), 0xf61e2562, 5)
+		MD5_STEP(MD5_G, d, a, b, c, MD5_GET(6), 0xc040b340, 9)
+		MD5_STEP(MD5_G, c, d, a, b, MD5_GET(11), 0x265e5a51, 14)
+		MD5_STEP(MD5_G, b, c, d, a, MD5_GET(0), 0xe9b6c7aa, 20)
+		MD5_STEP(MD5_G, a, b, c, d, MD5_GET(5), 0xd62f105d, 5)
+		MD5_STEP(MD5_G, d, a, b, c, MD5_GET(10), 0x02441453, 9)
+		MD5_STEP(MD5_G, c, d, a, b, MD5_GET(15), 0xd8a1e681, 14)
+		MD5_STEP(MD5_G, b, c, d, a, MD5_GET(4), 0xe7d3fbc8, 20)
+		MD5_STEP(MD5_G, a, b, c, d, MD5_GET(9), 0x21e1cde6, 5)
+		MD5_STEP(MD5_G, d, a, b, c, MD5_GET(14), 0xc33707d6, 9)
+		MD5_STEP(MD5_G, c, d, a, b, MD5_GET(3), 0xf4d50d87, 14)
+		MD5_STEP(MD5_G, b, c, d, a, MD5_GET(8), 0x455a14ed, 20)
+		MD5_STEP(MD5_G, a, b, c, d, MD5_GET(13), 0xa9e3e905, 5)
+		MD5_STEP(MD5_G, d, a, b, c, MD5_GET(2), 0xfcefa3f8, 9)
+		MD5_STEP(MD5_G, c, d, a, b, MD5_GET(7), 0x676f02d9, 14)
+		MD5_STEP(MD5_G, b, c, d, a, MD5_GET(12), 0x8d2a4c8a, 20)
+
+/* Round 3 */
+		MD5_STEP(MD5_H, a, b, c, d, MD5_GET(5), 0xfffa3942, 4)
+		MD5_STEP(MD5_H2, d, a, b, c, MD5_GET(8), 0x8771f681, 11)
+		MD5_STEP(MD5_H, c, d, a, b, MD5_GET(11), 0x6d9d6122, 16)
+		MD5_STEP(MD5_H2, b, c, d, a, MD5_GET(14), 0xfde5380c, 23)
+		MD5_STEP(MD5_H, a, b, c, d, MD5_GET(1), 0xa4beea44, 4)
+		MD5_STEP(MD5_H2, d, a, b, c, MD5_GET(4), 0x4bdecfa9, 11)
+		MD5_STEP(MD5_H, c, d, a, b, MD5_GET(7), 0xf6bb4b60, 16)
+		MD5_STEP(MD5_H2, b, c, d, a, MD5_GET(10), 0xbebfbc70, 23)
+		MD5_STEP(MD5_H, a, b, c, d, MD5_GET(13), 0x289b7ec6, 4)
+		MD5_STEP(MD5_H2, d, a, b, c, MD5_GET(0), 0xeaa127fa, 11)
+		MD5_STEP(MD5_H, c, d, a, b, MD5_GET(3), 0xd4ef3085, 16)
+		MD5_STEP(MD5_H2, b, c, d, a, MD5_GET(6), 0x04881d05, 23)
+		MD5_STEP(MD5_H, a, b, c, d, MD5_GET(9), 0xd9d4d039, 4)
+		MD5_STEP(MD5_H2, d, a, b, c, MD5_GET(12), 0xe6db99e5, 11)
+		MD5_STEP(MD5_H, c, d, a, b, MD5_GET(15), 0x1fa27cf8, 16)
+		MD5_STEP(MD5_H2, b, c, d, a, MD5_GET(2), 0xc4ac5665, 23)
+
+/* Round 4 */
+		MD5_STEP(MD5_I, a, b, c, d, MD5_GET(0), 0xf4292244, 6)
+		MD5_STEP(MD5_I, d, a, b, c, MD5_GET(7), 0x432aff97, 10)
+		MD5_STEP(MD5_I, c, d, a, b, MD5_GET(14), 0xab9423a7, 15)
+		MD5_STEP(MD5_I, b, c, d, a, MD5_GET(5), 0xfc93a039, 21)
+		MD5_STEP(MD5_I, a, b, c, d, MD5_GET(12), 0x655b59c3, 6)
+		MD5_STEP(MD5_I, d, a, b, c, MD5_GET(3), 0x8f0ccc92, 10)
+		MD5_STEP(MD5_I, c, d, a, b, MD5_GET(10), 0xffeff47d, 15)
+		MD5_STEP(MD5_I, b, c, d, a, MD5_GET(1), 0x85845dd1, 21)
+		MD5_STEP(MD5_I, a, b, c, d, MD5_GET(8), 0x6fa87e4f, 6)
+		MD5_STEP(MD5_I, d, a, b, c, MD5_GET(15), 0xfe2ce6e0, 10)
+		MD5_STEP(MD5_I, c, d, a, b, MD5_GET(6), 0xa3014314, 15)
+		MD5_STEP(MD5_I, b, c, d, a, MD5_GET(13), 0x4e0811a1, 21)
+		MD5_STEP(MD5_I, a, b, c, d, MD5_GET(4), 0xf7537e82, 6)
+		MD5_STEP(MD5_I, d, a, b, c, MD5_GET(11), 0xbd3af235, 10)
+		MD5_STEP(MD5_I, c, d, a, b, MD5_GET(2), 0x2ad7d2bb, 15)
+		MD5_STEP(MD5_I, b, c, d, a, MD5_GET(9), 0xeb86d391, 21)
+
+		a += saved_a;
+		b += saved_b;
+		c += saved_c;
+		d += saved_d;
+
+		ptr += 64;
+	} while (size -= 64);
+
+	ctx->a = a;
+	ctx->b = b;
+	ctx->c = c;
+	ctx->d = d;
+
+	return ptr;
 }
 
-/* size of test block */
-#define TEST_BLOCK_SIZE 1000
-
-/* number of blocks to process */
-#define TEST_BLOCKS 10000
-
-/* number of test bytes = TEST_BLOCK_SIZE * TEST_BLOCKS */
-static long TEST_BYTES = (long)TEST_BLOCK_SIZE * (long)TEST_BLOCKS;
-
-/* A time trial routine, to measure the speed of MD5.
-   Measures wall time required to digest TEST_BLOCKS * TEST_BLOCK_SIZE
-   characters.
- */
-static void MDTimeTrial(void)
+void MD5_Init(MD5_CTX *ctx)
 {
-   MD5_CTX mdContext;
-   time_t endTime, startTime;
-   unsigned char data[TEST_BLOCK_SIZE];
-   unsigned int i;
+	ctx->a = 0x67452301;
+	ctx->b = 0xefcdab89;
+	ctx->c = 0x98badcfe;
+	ctx->d = 0x10325476;
 
-   /* initialize test data */
-   for (i = 0; i < TEST_BLOCK_SIZE; i++)
-      data[i] = (unsigned char)(i & 0xFF);
-
-   /* start timer */
-   printf ("MD5 time trial. Processing %ld characters...\n", TEST_BYTES);
-   time (&startTime);
-
-   /* digest data in TEST_BLOCK_SIZE byte blocks */
-   MD5Init (&mdContext);
-   for (i = TEST_BLOCKS; i > 0; i--)
-      MD5Update (&mdContext, data, TEST_BLOCK_SIZE);
-   MD5Final (&mdContext);
-
-   /* stop timer, get time difference */
-   time (&endTime);
-   MDPrint (&mdContext);
-   printf (" is digest of test input.\n");
-   printf
-      ("Seconds to process test input: %ld\n", (long)(endTime-startTime));
-   printf
-      ("Characters processed per second: %ld\n",
-       TEST_BYTES/(endTime-startTime));
+	ctx->lo = 0;
+	ctx->hi = 0;
 }
 
-/* Computes the message digest for string inString.
-   Prints out message digest, a space, the string (in quotes) and a
-   carriage return.
- */
-static void MDString(char *inString)
+void MD5_Update(MD5_CTX *ctx, const void *data, unsigned long size)
 {
-   MD5_CTX mdContext;
-   unsigned int len = strlen (inString);
+	MD5_u32plus saved_lo;
+	unsigned long used, available;
 
-   MD5Init (&mdContext);
-   MD5Update (&mdContext, inString, len);
-   MD5Final (&mdContext);
-   MDPrint (&mdContext);
-   printf (" \"%s\"\n\n", inString);
+	saved_lo = ctx->lo;
+	if ((ctx->lo = (saved_lo + size) & 0x1fffffff) < saved_lo)
+		ctx->hi++;
+	ctx->hi += size >> 29;
+
+	used = saved_lo & 0x3f;
+
+	if (used) {
+		available = 64 - used;
+
+		if (size < available) {
+			memcpy(&ctx->buffer[used], data, size);
+			return;
+		}
+
+		memcpy(&ctx->buffer[used], data, available);
+		data = (const unsigned char *)data + available;
+		size -= available;
+		MD5_body(ctx, ctx->buffer, 64);
+	}
+
+	if (size >= 64) {
+		data = MD5_body(ctx, data, size & ~(unsigned long)0x3f);
+		size &= 0x3f;
+	}
+
+	memcpy(ctx->buffer, data, size);
 }
 
-/* Computes the message digest for a specified file.
-   Prints out message digest, a space, the file name, and a carriage
-   return.
- */
-static void MDFile (char *filename)
+void MD5_Final(unsigned char *result, MD5_CTX *ctx)
 {
-   FILE *inFile = fopen (filename, "rb");
-   MD5_CTX mdContext;
-   int bytes;
-   unsigned char data[1024];
+	unsigned long used, available;
 
-   if (inFile == NULL)
-   {
-      printf ("%s can't be opened.\n", filename);
-      return;
-   }
+	used = ctx->lo & 0x3f;
 
-   MD5Init (&mdContext);
-   while ((bytes = fread (data, 1, 1024, inFile)) != 0)
-      MD5Update (&mdContext, data, bytes);
-   MD5Final (&mdContext);
-   MDPrint (&mdContext);
-   printf (" %s\n", filename);
-   fclose (inFile);
+	ctx->buffer[used++] = 0x80;
+
+	available = 64 - used;
+
+	if (available < 8) {
+		memset(&ctx->buffer[used], 0, available);
+		MD5_body(ctx, ctx->buffer, 64);
+		used = 0;
+		available = 64;
+	}
+
+	memset(&ctx->buffer[used], 0, available - 8);
+
+	ctx->lo <<= 3;
+	ctx->buffer[56] = ctx->lo;
+	ctx->buffer[57] = ctx->lo >> 8;
+	ctx->buffer[58] = ctx->lo >> 16;
+	ctx->buffer[59] = ctx->lo >> 24;
+	ctx->buffer[60] = ctx->hi;
+	ctx->buffer[61] = ctx->hi >> 8;
+	ctx->buffer[62] = ctx->hi >> 16;
+	ctx->buffer[63] = ctx->hi >> 24;
+
+	MD5_body(ctx, ctx->buffer, 64);
+
+	result[0] = ctx->a;
+	result[1] = ctx->a >> 8;
+	result[2] = ctx->a >> 16;
+	result[3] = ctx->a >> 24;
+	result[4] = ctx->b;
+	result[5] = ctx->b >> 8;
+	result[6] = ctx->b >> 16;
+	result[7] = ctx->b >> 24;
+	result[8] = ctx->c;
+	result[9] = ctx->c >> 8;
+	result[10] = ctx->c >> 16;
+	result[11] = ctx->c >> 24;
+	result[12] = ctx->d;
+	result[13] = ctx->d >> 8;
+	result[14] = ctx->d >> 16;
+	result[15] = ctx->d >> 24;
+
+	memset(ctx, 0, sizeof(*ctx));
 }
 
-/* Writes the message digest of the data from stdin onto stdout,
-   followed by a carriage return.
- */
-static void MDFilter(void)
-{
-   MD5_CTX mdContext;
-   int bytes;
-   unsigned char data[16];
+#ifdef MD5_BUILD_UTILITY
 
-   MD5Init (&mdContext);
-   while ((bytes = fread (data, 1, 16, stdin)) != 0)
-      MD5Update (&mdContext, data, bytes);
-   MD5Final (&mdContext);
-   MDPrint (&mdContext);
-   printf ("\n");
-}
-
-/* Runs a standard suite of test data.
- */
-static void MDTestSuite(void)
-{
-   printf ("MD5 test suite results:\n\n");
-   MDString ("");
-   MDString ("a");
-   MDString ("abc");
-   MDString ("message digest");
-   MDString ("abcdefghijklmnopqrstuvwxyz");
-   MDString
-      ("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
-   MDString
-      ("1234567890123456789012345678901234567890\
-       1234567890123456789012345678901234567890");
-   /* Contents of file foo are "abc" */
-   MDFile ("foo");
-}
+#include <stdio.h>
 
 int main (int argc, char *argv[])
 {
-   int i;
-
    /* For each command line argument in turn:
     ** filename          -- prints message digest and name of file
-    ** -sstring          -- prints message digest and contents of string
-    ** -t                -- prints time trial statistics for 1M characters
-    ** -x                -- execute a standard suite of test data
-    ** (no args)         -- writes messages digest of stdin onto stdout
     */
-   if (argc == 1)
-      MDFilter ();
-   else
-      for (i = 1; i < argc; i++)
-         if (argv[i][0] == '-' && argv[i][1] == 's')
-            MDString (argv[i] + 2);
-         else if (!strcmp (argv[i], "-t"))
-            MDTimeTrial ();
-         else if (!strcmp (argv[i], "-x"))
-            MDTestSuite ();
-         else MDFile (argv[i]);
+   int i;
+   MD5_CTX ctx;
+   FILE* file;
+   size_t numread;
+   char buffer[16384];
+   unsigned char result[16];
 
-  return 0;
+   for (i = 1; i < argc; i++)
+   {
+      MD5_Init(&ctx);
+      file = fopen(argv[i], "rb");
+
+      if (file)
+      {
+         do
+         {
+            numread = fread((void*)buffer, 1, sizeof(buffer), file);
+
+            if (numread)
+            {
+               MD5_Update(&ctx,(void*)buffer, numread);
+            }
+         }
+         while (numread);
+
+         fclose(file);
+         MD5_Final(result, &ctx);
+         printf("%02x%02x%02x%02x%02x%02x%02x%02x"
+			          "%02x%02x%02x%02x%02x%02x%02x%02x %s\n",
+			          result[ 0 ], result[ 1 ], result[ 2 ], result[ 3 ],
+                result[ 4 ], result[ 5 ], result[ 6 ], result[ 7 ],
+                result[ 8 ], result[ 9 ], result[ 10 ], result[ 11 ],
+                result[ 12 ], result[ 13 ], result[ 14 ], result[ 15 ],
+                argv[i]);
+      }
+   }
+
+   return 0;
 }
 
-/*
- **********************************************************************
- ** End of md5driver.c                                               **
- ******************************* (cut) ********************************
- */
+#endif

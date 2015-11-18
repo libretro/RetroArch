@@ -14,13 +14,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "input_common.h"
-#include "input_keymaps.h"
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
 
 #include <file/file_path.h>
+
+#include "input_common.h"
+#include "input_keymaps.h"
 
 #include "../general.h"
 #ifdef HAVE_CONFIG_H
@@ -169,8 +170,8 @@ void input_config_parse_key(config_file_t *conf,
       const char *prefix, const char *btn,
       struct retro_keybind *bind)
 {
-   char tmp[64] = {0};
-   char key[64] = {0};
+   char tmp[64];
+   char key[64];
    fill_pathname_join_delim(key, prefix, btn, '_', sizeof(key));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
@@ -181,8 +182,10 @@ const char *input_config_get_prefix(unsigned user, bool meta)
 {
    if (user == 0)
       return meta ? "input" : bind_user_prefix[user];
-   else if (user != 0 && !meta)
+
+   if (user != 0 && !meta)
       return bind_user_prefix[user];
+
    /* Don't bother with meta bind for anyone else than first user. */
    return NULL;
 }
@@ -211,8 +214,8 @@ static enum retro_key find_rk_bind(const char *str)
  **/
 enum retro_key input_translate_str_to_rk(const char *str)
 {
-   if (strlen(str) == 1 && isalpha(*str))
-      return (enum retro_key)(RETROK_a + (tolower(*str) - (int)'a'));
+   if (strlen(str) == 1 && isalpha((int)*str))
+      return (enum retro_key)(RETROK_a + (tolower((int)*str) - (int)'a'));
    return find_rk_bind(str);
 }
 
@@ -243,7 +246,7 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
    if (!bind || !str)
       return;
 
-   if (!isdigit(*str))
+   if (!isdigit((int)*str))
       return;
 
    hat = strtoul(str, &dir, 0);
@@ -338,7 +341,6 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
    }
 }
 
-#if !defined(IS_JOYCONFIG)
 static void input_get_bind_string_joykey(char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
@@ -367,7 +369,7 @@ static void input_get_bind_string_joykey(char *buf, const char *prefix,
             break;
       }
 
-      if (bind->joykey_label[0] != '\0' && settings->input.autoconfig_descriptor_label_show)
+      if (bind->joykey_label[0] != '\0' && settings->input.input_descriptor_label_show)
          snprintf(buf, size, "%s %s ", prefix, bind->joykey_label);
       else
          snprintf(buf, size, "%sHat #%u %s ", prefix,
@@ -375,7 +377,7 @@ static void input_get_bind_string_joykey(char *buf, const char *prefix,
    }
    else
    {
-      if (bind->joykey_label[0] != '\0' && settings->input.autoconfig_descriptor_label_show)
+      if (bind->joykey_label[0] != '\0' && settings->input.input_descriptor_label_show)
          snprintf(buf, size, "%s%s (btn) ", prefix, bind->joykey_label);
       else
          snprintf(buf, size, "%s%u (btn) ", prefix, (unsigned)bind->joykey);
@@ -399,7 +401,7 @@ static void input_get_bind_string_joyaxis(char *buf, const char *prefix,
       dir = '+';
       axis = AXIS_POS_GET(bind->joyaxis);
    }
-   if (bind->joyaxis_label[0] != '\0' && settings->input.autoconfig_descriptor_label_show)
+   if (bind->joyaxis_label[0] != '\0' && settings->input.input_descriptor_label_show)
       snprintf(buf, size, "%s%s (axis) ", prefix, bind->joyaxis_label);
    else
       snprintf(buf, size, "%s%c%u (axis) ", prefix, dir, axis);
@@ -433,7 +435,6 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind,
    strlcat(buf, keybuf, size);
 #endif
 }
-#endif
 
 /**
  * input_push_analog_dpad:
@@ -456,12 +457,28 @@ void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
    switch (mode)
    {
       case ANALOG_DPAD_LSTICK:
-         j = RARCH_ANALOG_LEFT_X_PLUS + 3;
-         inherit_joyaxis = true;
+         /* check if analog left is defined.   *
+          * if plus and minus are equal abort. */
+         if (!((binds[RARCH_ANALOG_LEFT_X_PLUS].joyaxis == 
+               binds[RARCH_ANALOG_LEFT_X_MINUS].joyaxis) || 
+               (binds[RARCH_ANALOG_LEFT_Y_PLUS].joyaxis == 
+               binds[RARCH_ANALOG_LEFT_Y_MINUS].joyaxis)))
+         {
+            j = RARCH_ANALOG_LEFT_X_PLUS + 3;
+            inherit_joyaxis = true;
+         }
          break;
       case ANALOG_DPAD_RSTICK:
-         j = RARCH_ANALOG_RIGHT_X_PLUS + 3;
-         inherit_joyaxis = true;
+         /* check if analog right is defined.  *
+          * if plus and minus are equal abort. */
+         if (!((binds[RARCH_ANALOG_RIGHT_X_PLUS].joyaxis == 
+               binds[RARCH_ANALOG_RIGHT_X_MINUS].joyaxis) || 
+               (binds[RARCH_ANALOG_RIGHT_Y_PLUS].joyaxis == 
+               binds[RARCH_ANALOG_RIGHT_Y_MINUS].joyaxis)))
+         {          
+            j = RARCH_ANALOG_RIGHT_X_PLUS + 3;
+            inherit_joyaxis = true;
+         }
          break;
    }
 

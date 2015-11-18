@@ -146,7 +146,7 @@ static const dspfilter_get_implementation_t dsp_plugs_builtin[] = {
 static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 {
    unsigned i;
-   dspfilter_simd_mask_t mask = rarch_get_cpu_features();
+   dspfilter_simd_mask_t mask = retro_get_cpu_features();
 
    (void)list;
 
@@ -170,7 +170,7 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 {
    unsigned i;
-   dspfilter_simd_mask_t mask = rarch_get_cpu_features();
+   dspfilter_simd_mask_t mask = retro_get_cpu_features();
 
    for (i = 0; i < list->size; i++)
    {
@@ -242,12 +242,12 @@ rarch_dsp_filter_t *rarch_dsp_filter_new(
 #if !defined(HAVE_FILTERS_BUILTIN) && defined(HAVE_DYLIB)
    fill_pathname_basedir(basedir, filter_config, sizeof(basedir));
 
-   plugs = dir_list_new(basedir, EXT_EXECUTABLES, false);
+   plugs = dir_list_new(basedir, EXT_EXECUTABLES, false, false);
    if (!plugs)
       goto error;
 #endif
 
-#if defined(HAVE_DYLIB)
+#if defined(HAVE_DYLIB) || defined(HAVE_FILTERS_BUILTIN)
    if (!append_plugs(dsp, plugs))
       goto error;
 #endif
@@ -317,4 +317,3 @@ void rarch_dsp_filter_process(rarch_dsp_filter_t *dsp,
    data->output        = output.samples;
    data->output_frames = output.frames;
 }
-

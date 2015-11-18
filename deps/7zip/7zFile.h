@@ -16,7 +16,9 @@
 
 #include "Types.h"
 
-EXTERN_C_BEGIN
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* ---------- File ---------- */
 
@@ -78,6 +80,8 @@ typedef struct
 
 void FileOutStream_CreateVTable(CFileOutStream *p);
 
-EXTERN_C_END
+#ifdef __cplusplus
+}
+#endif
 
 #endif

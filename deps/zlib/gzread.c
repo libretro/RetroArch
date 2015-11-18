@@ -249,7 +249,7 @@ local int gz_fetch(gz_statep state)
 /* Skip len uncompressed bytes of output.  Return -1 on error, 0 on success. */
 local int gz_skip(gz_statep state, z_off64_t len)
 {
-   unsigned n;
+   unsigned n = 0;
 
    /* skip over len bytes or reach end-of-file, whichever comes first */
    while (len)
@@ -276,7 +276,6 @@ local int gz_skip(gz_statep state, z_off64_t len)
    return 0;
 }
 
-/* -- see zlib.h -- */
 int ZEXPORT gzread(gzFile file, voidp buf, unsigned len)
 {
    unsigned got, n;
@@ -368,7 +367,6 @@ int ZEXPORT gzread(gzFile file, voidp buf, unsigned len)
    return (int)got;
 }
 
-/* -- see zlib.h -- */
 #ifdef Z_PREFIX_SET
 #  undef z_gzgetc
 #else
@@ -407,7 +405,6 @@ int ZEXPORT gzgetc_(gzFile file)
    return gzgetc(file);
 }
 
-/* -- see zlib.h -- */
 int ZEXPORT gzungetc(int c, gzFile file)
 {
    gz_statep state;
@@ -465,7 +462,6 @@ int ZEXPORT gzungetc(int c, gzFile file)
    return c;
 }
 
-/* -- see zlib.h -- */
 char * ZEXPORT gzgets(gzFile file, char *buf, int len)
 {
    unsigned left, n;
@@ -526,7 +522,6 @@ char * ZEXPORT gzgets(gzFile file, char *buf, int len)
    return str;
 }
 
-/* -- see zlib.h -- */
 int ZEXPORT gzdirect(gzFile file)
 {
    gz_statep state;
@@ -545,7 +540,6 @@ int ZEXPORT gzdirect(gzFile file)
    return state->direct;
 }
 
-/* -- see zlib.h -- */
 int gzclose_r(gzFile file)
 {
    int ret, err;

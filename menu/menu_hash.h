@@ -22,6 +22,91 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_CHEEVOS_TEST_UNOFFICIAL                                     0xa1ae28f0U
+#define MENU_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL                               0x0698e665U
+
+#define MENU_LABEL_VALUE_ENABLE                                                0xb0d05f8cU
+
+#define MENU_LABEL_VALUE_CHEEVOS_SETTINGS                                      0x1fe3be93U
+
+#define MENU_LABEL_CHEEVOS_ENABLE                                              0x2748f998U
+
+#define MENU_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE                   0x507c52f3U
+#define MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE                         0x3665cbb0U
+
+#define MENU_LABEL_CHEEVOS_DESCRIPTION                                         0x7e00e0f5U
+
+#define MENU_LABEL_VALUE_CHEEVOS_DESCRIPTION                                   0xab3975d6U
+
+#define MENU_LABEL_VALUE_STATE_SLOT                                            0xa1dec768U
+
+#define MENU_LABEL_STATE_SLOT                                                  0x27b67f67U
+
+#define MENU_LABEL_INPUT_HOTKEY_BINDS_BEGIN                                    0x5a56139bU
+
+#define MENU_LABEL_INPUT_SETTINGS                                              0x78b4a7c5U
+
+#define MENU_LABEL_PLAYLIST_SETTINGS_BEGIN                                     0x80a8d2cbU
+#define MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST                             0x9518e0c7U
+
+#define MENU_LABEL_INPUT_SETTINGS_BEGIN                                        0xddee308bU
+
+#define MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST                                0x050bec60U
+
+#define MENU_LABEL_DEFERRED_USER_BINDS_LIST                                    0x28c5750eU
+
+#define MENU_LABEL_CHEEVOS_USERNAME                                            0x6ce57e31U
+#define MENU_LABEL_CHEEVOS_PASSWORD                                            0x86c38d24U
+
+#define MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS                             0xe0b53ce3U
+
+#define MENU_LABEL_ACCOUNTS_CHEEVOS_PASSWORD                                   0x45cf62e3U
+#define MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD                             0xe5a73d05U
+
+#define MENU_LABEL_ACCOUNTS_CHEEVOS_USERNAME                                   0x2bf153f0U
+#define MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME                             0xcbc92e12U
+
+#define MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS                                 0xe6b7c16cU
+#define MENU_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS                           0x7d247a6dU
+
+#define MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST                              0x1322324cU
+#define MENU_LABEL_DEFERRED_ACCOUNTS_LIST                                      0x3d2b8860U
+#define MENU_LABEL_ACCOUNTS_LIST                                               0x774c15a0U
+#define MENU_LABEL_VALUE_ACCOUNTS_LIST                                         0x86e551a1U
+#define MENU_LABEL_VALUE_ACCOUNTS_LIST_END                                     0x3d559522U
+
+#define MENU_LABEL_DEBUG_PANEL_ENABLE                                          0xbad176a1U
+#define MENU_LABEL_VALUE_DEBUG_PANEL_ENABLE                                    0x15042803U
+
+#define MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG                                  0x72674cdfU
+
+#define MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE                                   0xf3b0f77eU
+#define MENU_LABEL_HELP_WHAT_IS_A_CORE                                         0x83fcbc44U
+
+#define MENU_LABEL_HELP_LOADING_CONTENT                                        0x231d8245U
+#define MENU_LABEL_VALUE_HELP_LOADING_CONTENT                                  0x70bab027U
+
+#define MENU_LABEL_HELP_LIST                                                   0x006af669U
+#define MENU_LABEL_VALUE_HELP_LIST                                             0x6c57426aU
+
+#define MENU_LABEL_VALUE_HELP_CONTROLS                                         0xe5c9f6a2U
+#define MENU_LABEL_HELP_CONTROLS                                               0x04859221U
+
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS                                   0x7c05810eU
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP                         0x8c2f7b00U
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN                       0x55f0f413U
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM                           0x40e50edbU
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK                              0xd834d89eU
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_START                             0xe00df0fbU
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO                              0xd838e6f9U
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU                       0x98159c23U
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT                              0xd83d6830U
+#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD                   0xe408c2ffU
+
+#define MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT                                0xec5a348bU
+
+#define MENU_LABEL_WELCOME_TO_RETROARCH                                        0xbcff0b3cU
+
 #define MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE                         0xdc9c0064U
 #define MENU_LABEL_DEFERRED_ARCHIVE_ACTION                                     0x7faf0284U
 #define MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE                           0xd9452498U
@@ -125,6 +210,8 @@ extern "C" {
 #define MENU_LABEL_VIDEO_MESSAGE_POS_Y                                         0xa133c369U
 #define MENU_LABEL_VALUE_VIDEO_MESSAGE_POS_Y                                   0x4f2559beU
 
+#define MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST                            0x10b41d97U
+#define MENU_LABEL_INPUT_HOTKEY_BINDS                                          0x1b7ef2d7U
 #define MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS                                    0x1cb39c19U
 
 #define MENU_LABEL_VALUE_FRAME_THROTTLE_SETTINGS                               0x573b8837U
@@ -217,6 +304,9 @@ extern "C" {
 #define MENU_LABEL_VALUE_VIDEO_FULLSCREEN                                      0x232743caU
 #define MENU_LABEL_CORE_SPECIFIC_CONFIG                                        0x3c9a55e8U
 #define MENU_LABEL_VALUE_CORE_SPECIFIC_CONFIG                                  0x8b8bec5aU
+#define MENU_LABEL_GAME_SPECIFIC_OPTIONS                                       0x142ec90fU
+#define MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS                                 0x6aed8a05U
+#define MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE                          0xf8d2456cU
 #define MENU_LABEL_AUTO_OVERRIDES_ENABLE                                       0x35ff91b6U
 #define MENU_LABEL_VALUE_AUTO_OVERRIDES_ENABLE                                 0xc21c3a11U
 #define MENU_LABEL_AUTO_REMAPS_ENABLE                                          0x98c8f98bU
@@ -314,8 +404,6 @@ extern "C" {
 #define MENU_LABEL_VALUE_DYNAMIC_WALLPAPER                                     0x66928c32U
 #define MENU_LABEL_VALUE_BOXART                                                0x716441ebU
 #define MENU_LABEL_BOXART                                                      0xa269b0afU
-#define MENU_LABEL_PAL60_ENABLE                                                0x62bc416eU
-#define MENU_LABEL_SYSTEM_BGM_ENABLE                                           0x9287a1c5U
 
 #define MENU_LABEL_FASTFORWARD_RATIO                                           0x3a0c2706U
 #define MENU_LABEL_VALUE_FASTFORWARD_RATIO                                     0x3c719749U
@@ -353,8 +441,6 @@ extern "C" {
 #define MENU_LABEL_INPUT_PLAYER3_JOYPAD_INDEX                                  0x71571e71U
 #define MENU_LABEL_INPUT_PLAYER4_JOYPAD_INDEX                                  0xac975812U
 #define MENU_LABEL_INPUT_PLAYER5_JOYPAD_INDEX                                  0xe7d791b3U
-
-#define MENU_LABEL_LIBRETRO_DIR_PATH                                           0x1af1eb72U
 
 #define MENU_LABEL_AUDIO_DEVICE                                                0x2574eac6U
 #define MENU_LABEL_VALUE_AUDIO_DEVICE                                          0xcacf3707U
@@ -421,7 +507,6 @@ extern "C" {
 #define MENU_LABEL_VALUE_SAVEFILE_DIRECTORY                                    0x418b1929U
 #define MENU_LABEL_SAVESTATE_DIRECTORY                                         0x90551289U
 #define MENU_LABEL_VALUE_SAVESTATE_DIRECTORY                                   0xe6e0732aU
-#define MENU_LABEL_ASSETS_DIRECTORY                                            0xde1ae8ecU
 #define MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY                                0x62f975b8U
 #define MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY                          0x0a3a407aU
 #define MENU_LABEL_BOXARTS_DIRECTORY                                           0x9e2bdbddU
@@ -437,7 +522,6 @@ extern "C" {
 #define MENU_LABEL_VALUE_INPUT_AXIS_THRESHOLD                                  0x3fb34697U
 #define MENU_LABEL_INPUT_TURBO_PERIOD                                          0xf7a97482U
 #define MENU_LABEL_VALUE_INPUT_TURBO_PERIOD                                    0x9207b594U
-#define MENU_LABEL_INPUT_AUTODETECT_ENABLE                                     0xb1e07facU
 
 #define MENU_LABEL_VIDEO_GAMMA                                                 0x08a951beU
 #define MENU_LABEL_VALUE_VIDEO_GAMMA                                           0xc7da99dfU
@@ -508,6 +592,10 @@ extern "C" {
 #define MENU_VALUE_CRC                                                         0x0b88671dU
 #define MENU_VALUE_MORE                                                        0x0b877cafU
 #define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
+#define MENU_VALUE_SETTINGS_TAB                                                0x6548d16dU
+#define MENU_VALUE_HISTORY_TAB                                                 0xea9b0ceeU
+#define MENU_VALUE_ADD_TAB                                                     0x7fb20225U
+#define MENU_VALUE_PLAYLISTS_TAB                                               0x092d3161U
 #define MENU_VALUE_MAIN_MENU                                                   0x1625971fU   
 #define MENU_LABEL_VALUE_SETTINGS                                              0x8aca3ff6U
 #define MENU_VALUE_INPUT_SETTINGS                                              0xddd30846U
@@ -546,9 +634,6 @@ extern "C" {
 #define MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW                                 0x7eefdf52U
 #define MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW                           0x78d0ea06U
 
-#define MENU_LABEL_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW                            0xde1d9571U
-#define MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW                      0x2748a1bcU
-
 #define MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND                               0x7051d870U
 #define MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND                         0xc26ddec5U
 
@@ -579,15 +664,12 @@ extern "C" {
 #define MENU_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL                             0x1bc80956U
 #define MENU_LABEL_BUILDBOT_ASSETS_URL                                         0x1895c71eU
 #define MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL                                   0xaa0327a0U
-#define MENU_LABEL_RECORD_CONFIG                                               0x11c3daf9U
 #define MENU_LABEL_VIDEO_SHARED_CONTEXT                                        0x7d7dad16U
 #define MENU_LABEL_VALUE_VIDEO_SHARED_CONTEXT                                  0x353d3287U
 #define MENU_LABEL_DUMMY_ON_CORE_SHUTDOWN                                      0x78579f70U
 #define MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN                                0xc50126d3U
-#define MENU_LABEL_NAVIGATION_WRAPAROUND_HORIZONTAL                            0x42ba315aU
-#define MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL                      0x2609b62fU
-#define MENU_LABEL_NAVIGATION_WRAPAROUND_VERTICAL                              0x052bcbcaU
-#define MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL                        0xfc3b3bdfU
+#define MENU_LABEL_NAVIGATION_WRAPAROUND                                       0xe76ad251U
+#define MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND                                 0x2609b62fU
 #define MENU_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE       0xea48426bU
 #define MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE 0x94af8500U
 #define MENU_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE                         0x593d2623U
@@ -596,6 +678,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_CLOSE_CONTENT                                         0x2b3d9556U
 #define MENU_LABEL_QUIT_RETROARCH                                              0x84b0bc71U
 #define MENU_LABEL_VALUE_QUIT_RETROARCH                                        0x8e7024f2U
+#define MENU_LABEL_SHUTDOWN                                                    0xfc460361U
+#define MENU_LABEL_VALUE_SHUTDOWN                                              0x740b6741U
 #define MENU_LABEL_DEFERRED_VIDEO_FILTER                                       0x966ad201U
 #define MENU_LABEL_DEFERRED_CORE_LIST_SET                                      0xa6d5fdb4U
 #define MENU_LABEL_VALUE_STARTING_DOWNLOAD                                     0x42e10f03U
@@ -618,9 +702,9 @@ extern "C" {
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING          0x0a8e67f0U
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS            0xbfcba816U
 #define MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL                                   0xc35416c0U
+#define MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS                                  0x358a7494U
 #define MENU_LABEL_DEFERRED_CORE_LIST                                          0xf157d289U
 #define MENU_LABEL_DEFERRED_CORE_UPDATER_LIST                                  0xc315f682U
-#define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
 #define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
 #define MENU_LABEL_CORE_LIST                                                   0xa22bb14dU
 #define MENU_LABEL_VALUE_CORE_LIST                                             0x0e17fd4eU
@@ -635,9 +719,12 @@ extern "C" {
 #define MENU_LABEL_CORE_COUNTERS                                               0x64cc83e0U
 #define MENU_LABEL_LOAD_CONTENT_HISTORY                                        0xfe1d79e5U
 #define MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY                                  0x5b362286U
-#define MENU_LABEL_INFO_SCREEN                                                 0xd97853d0U
 #define MENU_LABEL_SYSTEM_INFORMATION                                          0x206ebf0fU
+#define MENU_LABEL_DEBUG_INFORMATION                                           0xeb0d82b1U
+#define MENU_LABEL_ACHIEVEMENT_LIST                                            0x7b90fc49U
 #define MENU_LABEL_VALUE_SYSTEM_INFORMATION                                    0xa62fd7f0U
+#define MENU_LABEL_VALUE_DEBUG_INFORMATION                                     0xd8569f92U
+#define MENU_LABEL_VALUE_ACHIEVEMENT_LIST                                      0xf066ac4aU
 #define MENU_LABEL_CORE_INFORMATION                                            0xb638e0d3U
 #define MENU_LABEL_VALUE_CORE_INFORMATION                                      0x781981b4U
 #define MENU_LABEL_VALUE_VIDEO_SHADER_PARAMETERS                               0x5ace99b3U
@@ -674,10 +761,6 @@ extern "C" {
 #define MENU_LABEL_MESSAGE                                                     0xbe463eeaU
 #define MENU_LABEL_INFO_SCREEN                                                 0xd97853d0U
 #define MENU_LABEL_LOAD_OPEN_ZIP                                               0x8aa3c068U
-#define MENU_LABEL_CUSTOM_VIEWPORT_1                                           0x76c3016fU
-#define MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1                                     0xdeef977eU
-#define MENU_LABEL_CUSTOM_VIEWPORT_2                                           0x76c30170U
-#define MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2                                     0x1d76c99aU
 #define MENU_LABEL_CUSTOM_RATIO                                                0xf038731eU
 #define MENU_LABEL_VALUE_CUSTOM_RATIO                                          0x3c94b73fU
 #define MENU_LABEL_HELP                                                        0x7c97d2eeU
@@ -696,12 +779,10 @@ extern "C" {
 #define MENU_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY                            0x93a44152U
 #define MENU_LABEL_RECORDING_CONFIG_DIRECTORY                                  0x3c3f274bU
 #define MENU_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY                            0x1f7d918dU
-#define MENU_LABEL_VIDEO_FONT_PATH                                             0xd0de729eU
 #define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
 #define MENU_LABEL_VALUE_VIDEO_FILTER                                          0xc1690382U
 #define MENU_LABEL_PAL60_ENABLE                                                0x62bc416eU
 #define MENU_LABEL_VALUE_PAL60_ENABLE                                          0x05a5bc9aU
-#define MENU_LABEL_MENU_WALLPAPER                                              0x3b84de01U
 #define MENU_LABEL_CONTENT_HISTORY_PATH                                        0x6f22fb9dU
 #define MENU_LABEL_AUDIO_DSP_PLUGIN                                            0x4a69572bU
 #define MENU_LABEL_VALUE_AUDIO_DSP_PLUGIN                                      0x1c9f180dU
@@ -714,7 +795,6 @@ extern "C" {
 #define MENU_LABEL_CORE_ASSETS_DIRECTORY                                       0x8ba5ee54U
 #define MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY                                 0x319b6c96U
 #define MENU_LABEL_CONTENT_DIRECTORY                                           0x7738dc14U
-#define MENU_LABEL_SCREENSHOT_DIRECTORY                                        0x552612d7U
 #define MENU_LABEL_VALUE_SCREENSHOT_DIRECTORY                                  0x42186f78U
 #define MENU_LABEL_INPUT_REMAPPING_DIRECTORY                                   0x5233c20bU
 #define MENU_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY                             0xe81058adU
@@ -724,26 +804,23 @@ extern "C" {
 #define MENU_LABEL_VALUE_VIDEO_FILTER_DIR                                      0xbb865957U
 #define MENU_LABEL_AUDIO_FILTER_DIR                                            0x4bd96ebaU
 #define MENU_LABEL_VALUE_AUDIO_FILTER_DIR                                      0x509bb77cU
-#define MENU_LABEL_SAVESTATE_DIRECTORY                                         0x90551289U
 #define MENU_LABEL_LIBRETRO_DIR_PATH                                           0x1af1eb72U
 #define MENU_LABEL_VALUE_LIBRETRO_DIR_PATH                                     0xf606d103U
 #define MENU_LABEL_LIBRETRO_INFO_PATH                                          0xe552b25fU
 #define MENU_LABEL_VALUE_LIBRETRO_INFO_PATH                                    0x3f39960fU
 #define MENU_LABEL_RGUI_CONFIG_DIRECTORY                                       0x0cb3e005U
 #define MENU_LABEL_VALUE_RGUI_CONFIG_DIRECTORY                                 0x20eb5170U
-#define MENU_LABEL_SAVEFILE_DIRECTORY                                          0x92773488U
 #define MENU_LABEL_OVERLAY_DIRECTORY                                           0xc4ed3d1bU
 #define MENU_LABEL_VALUE_OVERLAY_DIRECTORY                                     0xdb8925bcU
-#define MENU_LABEL_SYSTEM_DIRECTORY                                            0x35a6fb9eU
 #define MENU_LABEL_VALUE_SYSTEM_DIRECTORY                                      0x20da683fU
 #define MENU_LABEL_ASSETS_DIRECTORY                                            0xde1ae8ecU
 #define MENU_LABEL_VALUE_ASSETS_DIRECTORY                                      0xc94e558dU
-#define MENU_LABEL_EXTRACTION_DIRECTORY                                        0x33b55ffaU
-#define MENU_LABEL_VALUE_EXTRACTION_DIRECTORY                                  0x20a7bc9bU
+#define MENU_LABEL_CACHE_DIRECTORY                                             0x851dfb8dU
+#define MENU_LABEL_VALUE_CACHE_DIRECTORY                                       0x20a7bc9bU
 #define MENU_LABEL_JOYPAD_AUTOCONFIG_DIR                                       0x2f4822d8U
 #define MENU_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR                                 0x8bb1c2c9U
-#define MENU_LABEL_VALUE_INPUT_AUTODETECT_ENABLE                               0xf5209bdbU
 #define MENU_LABEL_INPUT_AUTODETECT_ENABLE                                     0xb1e07facU
+#define MENU_LABEL_VALUE_INPUT_AUTODETECT_ENABLE                               0xf5209bdbU
 #define MENU_LABEL_VALUE_DRIVER_SETTINGS                                       0x81cd2d62U
 #define MENU_LABEL_VALUE_CORE_SETTINGS                                         0xcddea047U
 #define MENU_LABEL_VALUE_CONFIGURATION_SETTINGS                                0x5a1558ceU
@@ -769,7 +846,7 @@ extern "C" {
 #define MENU_LABEL_UI_SETTINGS                                                 0xf8da6ef4U
 #define MENU_LABEL_VALUE_UI_SETTINGS                                           0x76ebdc06U
 #define MENU_LABEL_PATCH_SETTINGS                                              0xa78b0986U
-#define MENU_LABEL_PLAYLIST_SETTINGS                                           0x4d276288U
+#define MENU_LABEL_PLAYLIST_SETTINGS                                           0xdb3e0e07U
 #define MENU_LABEL_VALUE_PLAYLIST_SETTINGS                                     0x4d276288U
 #define MENU_LABEL_CORE_UPDATER_SETTINGS                                       0x124ad454U
 #define MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS                                 0x124ad454U
@@ -820,13 +897,10 @@ extern "C" {
 #define MENU_LABEL_TAKE_SCREENSHOT                                             0x6786e867U
 #define MENU_LABEL_VALUE_TAKE_SCREENSHOT                                       0xab767128U
 #define MENU_LABEL_FILE_LOAD_OR_RESUME                                         0x952941f4U
-#define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
 #define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
 #define MENU_LABEL_VALUE_CONFIGURATIONS                                        0xce036cfdU
 #define MENU_LABEL_VALUE_CHEAT_FILE_SAVE_AS                                    0xf2498a2dU
 #define MENU_LABEL_CHEAT_FILE_SAVE_AS                                          0x1f58dccaU
-#define MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS                                    0x3ce7a81dU
-#define MENU_LABEL_REMAP_FILE_SAVE_AS                                          0xcebf7f3aU
 #define MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS                                 0x3d6e5ce5U
 #define MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS                           0x405d77b2U
 #define MENU_LABEL_VALUE_REMAP_FILE_SAVE_CORE                                  0xd9891572U
@@ -998,6 +1072,29 @@ extern "C" {
 
 #define MENU_LABEL_VALUE_OPEN_ARCHIVE                                          0x96da22b9U
 #define MENU_LABEL_VALUE_LOAD_ARCHIVE                                          0xe19ca6c7U
+
+#define MENU_LABEL_VALUE_WHAT_IS_A_CORE_DESC                                   0xc832957eU
+
+#define MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD                                 0x6e66ef07U
+#define MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD                           0x27ed0204U
+#define MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC                      0x9d0e79dbU
+
+#define MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING                            0xd44d395cU
+#define MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING                      0xd0e5c3ffU
+#define MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC                 0x60031d7aU
+
+#define MENU_LABEL_HELP_SCANNING_CONTENT                                       0x1dec52b8U
+#define MENU_LABEL_VALUE_HELP_SCANNING_CONTENT                                 0x74b36f11U
+#define MENU_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC                            0xac947056U
+
+#define MENU_LABEL_SAVE_CURRENT_CONFIG                                         0x8840ba8bU
+#define MENU_LABEL_VALUE_SAVE_CURRENT_CONFIG                                   0x9a1eb42dU
+
+#define MENU_LABEL_INPUT_SMALL_KEYBOARD_ENABLE                                 0xe6736fc3U
+#define MENU_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE                           0xc5eefd76U
+
+#define MENU_LABEL_INPUT_ICADE_ENABLE                                          0xcd534dd0U
+#define MENU_LABEL_VALUE_INPUT_ICADE_ENABLE                                    0x67b18ee2U
 
 const char *menu_hash_to_str_de(uint32_t hash);
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len);

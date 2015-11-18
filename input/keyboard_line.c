@@ -18,10 +18,8 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "keyboard_line.h"
 #include "../general.h"
-#include "../driver.h"
-#include "../retroarch.h"
+#include "keyboard_line.h"
 
 struct input_keyboard_line
 {
@@ -124,7 +122,7 @@ bool input_keyboard_line_event(
          state->size--;
       }
    }
-   else if (isprint(c))
+   else if (isprint((int)c))
    {
       /* Handle left/right here when suitable */
 

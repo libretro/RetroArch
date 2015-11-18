@@ -22,9 +22,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+
 #include <file/file_list.h>
 #include <compat/strcasestr.h>
-#include <compat/posix_string.h>
 
 void file_list_push(file_list_t *list,
       const char *path, const char *label,
@@ -131,8 +131,7 @@ void file_list_free(file_list_t *list)
    if (list->list)
       free(list->list);
    list->list = NULL;
-   if (list)
-      free(list);
+   free(list);
 }
 
 void file_list_clear(file_list_t *list)
@@ -236,7 +235,7 @@ void file_list_get_label_at_offset(const file_list_t *list, size_t idx,
 void file_list_set_alt_at_offset(file_list_t *list, size_t idx,
       const char *alt)
 {
-   if (!list)
+   if (!list || !alt)
       return;
 
    if (list->list[idx].alt)

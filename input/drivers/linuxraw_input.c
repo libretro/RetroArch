@@ -19,20 +19,16 @@
 #include <sys/ioctl.h>
 #include <linux/input.h>
 #include <linux/kd.h>
-#include <termios.h>
 #include <signal.h>
 
 #include <boolean.h>
 
 #include "../../general.h"
 
+#include "../common/linux_common.h"
 #include "../input_keymaps.h"
 #include "../input_common.h"
 #include "../input_joypad.h"
-
-static long oldKbmd                = 0xffff;
-static bool linuxraw_stdin_claimed = false;
-static struct termios oldTerm, newTerm;
 
 typedef struct linuxraw_input
 {
@@ -40,25 +36,6 @@ typedef struct linuxraw_input
    const input_device_driver_t *joypad;
    bool state[0x80];
 } linuxraw_input_t;
-
-
-static void linuxraw_reset_kbmd(void)
-{
-   if (oldKbmd != 0xffff)
-   {
-      ioctl(0, KDSKBMODE, oldKbmd);
-      tcsetattr(0, TCSAFLUSH, &oldTerm);
-      oldKbmd = 0xffff;
-   }
-
-   linuxraw_stdin_claimed = false;
-}
-
-static void linuxraw_exit_gracefully(int sig)
-{
-   linuxraw_reset_kbmd();
-   kill(getpid(), sig);
-}
 
 static void *linuxraw_input_init(void)
 {
@@ -71,7 +48,7 @@ static void *linuxraw_input_init(void)
    if (!isatty(0))
       return NULL;
 
-   if (linuxraw_stdin_claimed)
+   if (linux_terminal_grab_stdin(NULL))
    {
       RARCH_WARN("stdin is already used for content loading. Cannot use stdin for input.\n");
       return NULL;
@@ -81,60 +58,20 @@ static void *linuxraw_input_init(void)
    if (!linuxraw)
       return NULL;
 
-   if (oldKbmd == 0xffff)
+   if (!linux_terminal_disable_input())
    {
-      tcgetattr(0, &oldTerm);
-      newTerm              = oldTerm;
-      newTerm.c_lflag     &= ~(ECHO | ICANON | ISIG);
-      newTerm.c_iflag     &= ~(ISTRIP | IGNCR | ICRNL | INLCR | IXOFF | IXON);
-      newTerm.c_cc[VMIN]   = 0;
-      newTerm.c_cc[VTIME]  = 0;
-
-      if (ioctl(0, KDGKBMODE, &oldKbmd) != 0)
-      {
-         free(linuxraw);
-         return NULL;
-      }
-   }
-
-   tcsetattr(0, TCSAFLUSH, &newTerm);
-
-   if (ioctl(0, KDSKBMODE, K_MEDIUMRAW) != 0)
-   {
-      linuxraw_reset_kbmd();
+      linux_terminal_restore_input();
       free(linuxraw);
       return NULL;
    }
-
-   sa.sa_handler = linuxraw_exit_gracefully;
-   sa.sa_flags = SA_RESTART | SA_RESETHAND;
-   sigemptyset(&sa.sa_mask);
-
-   /* Trap some standard termination codes so we 
-    * can restore the keyboard before we lose control. */
-   sigaction(SIGABRT, &sa, NULL);
-   sigaction(SIGBUS,  &sa, NULL);
-   sigaction(SIGFPE,  &sa, NULL);
-   sigaction(SIGILL,  &sa, NULL);
-   sigaction(SIGQUIT, &sa, NULL);
-   sigaction(SIGSEGV, &sa, NULL);
-
-   atexit(linuxraw_reset_kbmd);
 
    linuxraw->joypad = input_joypad_init_driver(
          settings->input.joypad_driver, linuxraw);
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
 
-   /* We need to disable use of stdin command interface if 
-    * stdin is supposed to be used for input. */
-   linuxraw_stdin_claimed = true; 
+   linux_terminal_claim_stdin();
 
    return linuxraw;
-}
-
-static bool linuxraw_grab_stdin(void *data)
-{
-   return linuxraw_stdin_claimed;
 }
 
 static bool linuxraw_key_pressed(linuxraw_input_t *linuxraw, int key)
@@ -178,8 +115,13 @@ static bool linuxraw_input_key_pressed(void *data, int key)
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
    settings_t *settings       = config_get_ptr();
 
-   return linuxraw_is_pressed(linuxraw, settings->input.binds[0], key) ||
-      input_joypad_pressed(linuxraw->joypad, 0, settings->input.binds[0], key);
+   if (linuxraw_is_pressed(linuxraw, settings->input.binds[0], key))
+      return true;
+
+   if (input_joypad_pressed(linuxraw->joypad, 0, settings->input.binds[0], key))
+      return true;
+
+   return false;
 }
 
 static bool linuxraw_input_meta_key_pressed(void *data, int key)
@@ -220,7 +162,7 @@ static void linuxraw_input_free(void *data)
    if (linuxraw->joypad)
       linuxraw->joypad->destroy();
 
-   linuxraw_reset_kbmd();
+   linux_terminal_restore_input();
    free(data);
 }
 
@@ -314,9 +256,10 @@ input_driver_t input_linuxraw = {
    linuxraw_get_capabilities,
    "linuxraw",
    linuxraw_grab_mouse,
-   linuxraw_grab_stdin,
+   linux_terminal_grab_stdin,
    linuxraw_set_rumble,
    linuxraw_get_joypad_driver,
+   NULL,
    linuxraw_keyboard_mapping_is_blocked,
    linuxraw_keyboard_mapping_set_block,
 };

@@ -25,18 +25,14 @@
 #include <retro_log.h>
 #include <boolean.h>
 
-#include "libretro_version_1.h"
 #include "libretro.h"
-#include "dynamic.h"
 #include "general.h"
 #include "runloop.h"
 #include "runloop_data.h"
 #include "retroarch.h"
+#include "rewind.h"
 #include "performance.h"
-#include "input/keyboard_line.h"
 #include "input/input_remapping.h"
-#include "audio/audio_driver.h"
-#include "audio/audio_utils.h"
 #include "record/record_driver.h"
 #include "gfx/video_pixel_converter.h"
 
@@ -56,6 +52,7 @@
 static void video_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
+   uint64_t *frame_count  = NULL;
    unsigned output_width  = 0;
    unsigned output_height = 0;
    unsigned  output_pitch = 0;
@@ -105,41 +102,13 @@ static void video_frame(const void *data, unsigned width,
       pitch  = output_pitch;
    }
 
-   if (!video->frame(driver->video_data, data, width, height, pitch, driver->current_msg))
+   frame_count = video_driver_get_frame_count();
+
+   if (!video->frame(driver->video_data, data, width, height, *frame_count,
+            pitch, driver->current_msg))
       driver->video_active = false;
-}
 
-/**
- * input_apply_turbo:
- * @port                 : user number
- * @id                   : identifier of the key
- * @res                  : boolean return value. FIXME/TODO: to be refactored.
- *
- * Apply turbo button if activated.
- *
- * If turbo button is held, all buttons pressed except
- * for D-pad will go into a turbo mode. Until the button is
- * released again, the input state will be modulated by a 
- * periodic pulse defined by the configured duty cycle. 
- *
- * Returns: 1 (true) if turbo button is enabled for this
- * key ID, otherwise the value of @res will be returned.
- *
- **/
-static bool input_apply_turbo(unsigned port, unsigned id, bool res)
-{
-   settings_t *settings           = config_get_ptr();
-   global_t *global               = global_get_ptr();
-
-   if (res && global->turbo_frame_enable[port])
-      global->turbo_enable[port] |= (1 << id);
-   else if (!res)
-      global->turbo_enable[port] &= ~(1 << id);
-
-   if (global->turbo_enable[port] & (1 << id))
-      return res && ((global->turbo_count % settings->input.turbo_period)
-            < settings->input.turbo_duty_cycle);
-   return res;
+   *frame_count = *frame_count + 1;
 }
 
 /**
@@ -183,7 +152,7 @@ static int16_t input_state(unsigned port, unsigned device,
    if (settings->input.remap_binds_enable)
       input_remapping_state(port, &device, &idx, &id);
 
-   if (!driver->block_libretro_input)
+   if (!driver->flushing_input && !driver->block_libretro_input)
    {
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
          res = input->input_state(driver->input_data, libretro_input_binds, port, device, idx, id);
@@ -193,14 +162,30 @@ static int16_t input_state(unsigned port, unsigned device,
 #endif
    }
 
-   /* flushing_input will be cleared in rarch_main_iterate. */
-   if (driver->flushing_input)
-      res = 0;
-
    /* Don't allow turbo for D-pad. */
    if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP ||
             id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
-      res = input_apply_turbo(port, id, res);
+   {
+      /*
+       * Apply turbo button if activated.
+       *
+       * If turbo button is held, all buttons pressed except
+       * for D-pad will go into a turbo mode. Until the button is
+       * released again, the input state will be modulated by a 
+       * periodic pulse defined by the configured duty cycle. 
+       */
+      if (res && global->turbo.frame_enable[port])
+         global->turbo.enable[port] |= (1 << id);
+      else if (!res)
+         global->turbo.enable[port] &= ~(1 << id);
+
+      if (global->turbo.enable[port] & (1 << id))
+      {
+         /* if turbo button is enabled for this key ID */
+         res = res && ((global->turbo.count % settings->input.turbo_period)
+               < settings->input.turbo_duty_cycle);
+      }
+   }
 
    if (global->bsv.movie && !global->bsv.movie_playback)
       bsv_movie_set_input(global->bsv.movie, res);
@@ -220,9 +205,9 @@ static void input_poll(void)
    const input_driver_t *input     = driver ? 
       (const input_driver_t*)driver->input : NULL;
 
-   input->poll(driver->input_data);
+   (void)settings;
 
-   (void)driver;
+   input->poll(driver->input_data);
 
 #ifdef HAVE_OVERLAY
    input_poll_overlay(settings->input.overlay_opacity);
@@ -273,11 +258,11 @@ void retro_init_libretro_cbs(void *data)
    (void)driver;
    (void)global;
 
-   pretro_set_video_refresh(video_frame);
-   pretro_set_audio_sample(audio_driver_sample);
-   pretro_set_audio_sample_batch(audio_driver_sample_batch);
-   pretro_set_input_state(input_state);
-   pretro_set_input_poll(input_poll);
+   core.retro_set_video_refresh(video_frame);
+   core.retro_set_audio_sample(audio_driver_sample);
+   core.retro_set_audio_sample_batch(audio_driver_sample_batch);
+   core.retro_set_input_state(input_state);
+   core.retro_set_input_poll(input_poll);
 
    retro_set_default_callbacks(cbs);
 
@@ -285,19 +270,19 @@ void retro_init_libretro_cbs(void *data)
    if (!driver->netplay_data)
       return;
 
-   if (global->netplay_is_spectate)
+   if (global->netplay.is_spectate)
    {
-      pretro_set_input_state(
-            (global->netplay_is_client ?
+      core.retro_set_input_state(
+            (global->netplay.is_client ?
              input_state_spectate_client : input_state_spectate)
             );
    }
    else
    {
-      pretro_set_video_refresh(video_frame_net);
-      pretro_set_audio_sample(audio_sample_net);
-      pretro_set_audio_sample_batch(audio_sample_batch_net);
-      pretro_set_input_state(input_state_net);
+      core.retro_set_video_refresh(video_frame_net);
+      core.retro_set_audio_sample(audio_sample_net);
+      core.retro_set_audio_sample_batch(audio_sample_batch_net);
+      core.retro_set_input_state(input_state_net);
    }
 #endif
 }
@@ -310,16 +295,14 @@ void retro_init_libretro_cbs(void *data)
  **/
 void retro_set_rewind_callbacks(void)
 {
-   global_t *global = global_get_ptr();
-
-   if (global->rewind.frame_is_reverse)
+   if (state_manager_frame_is_reversed())
    {
-      pretro_set_audio_sample(audio_driver_sample_rewind);
-      pretro_set_audio_sample_batch(audio_driver_sample_batch_rewind);
+      core.retro_set_audio_sample(audio_driver_sample_rewind);
+      core.retro_set_audio_sample_batch(audio_driver_sample_batch_rewind);
    }
    else
    {
-      pretro_set_audio_sample(audio_driver_sample);
-      pretro_set_audio_sample_batch(audio_driver_sample_batch);
+      core.retro_set_audio_sample(audio_driver_sample);
+      core.retro_set_audio_sample_batch(audio_driver_sample_batch);
    }
 }

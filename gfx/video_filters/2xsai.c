@@ -228,8 +228,8 @@ static void twoxsai_generic_xrgb8888(unsigned width, unsigned height,
       int first, int last, uint32_t *src, 
       unsigned src_stride, uint32_t *dst, unsigned dst_stride)
 {
-   unsigned nextline, finish;
-   nextline = (last) ? 0 : src_stride;
+   unsigned finish;
+   unsigned nextline = (last) ? 0 : src_stride;
 
    for (; height; height--)
    {
@@ -260,8 +260,8 @@ static void twoxsai_generic_rgb565(unsigned width, unsigned height,
       int first, int last, uint16_t *src, 
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
-   unsigned nextline, finish;
-   nextline = (last) ? 0 : src_stride;
+   unsigned finish;
+   unsigned nextline = (last) ? 0 : src_stride;
 
    for (; height; height--)
    {
@@ -326,8 +326,9 @@ static void twoxsai_generic_packets(void *data,
       const void *input, unsigned width,
       unsigned height, size_t input_stride)
 {
-   struct filter_data *filt = (struct filter_data*)data;
    unsigned i;
+   struct filter_data *filt = (struct filter_data*)data;
+
    for (i = 0; i < filt->threads; i++)
    {
       struct softfilter_thread_data *thr = 

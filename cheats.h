@@ -23,22 +23,9 @@
 extern "C" {
 #endif
 
-struct item_cheat
-{
-   char *desc;
-   bool state;
-   char *code;
-};
-
-struct cheat_manager
-{
-   struct item_cheat *cheats;
-   unsigned ptr;
-   unsigned size;
-   unsigned buf_size;
-};
-
 typedef struct cheat_manager cheat_manager_t;
+
+unsigned cheat_manager_get_size(cheat_manager_t *handle);
 
 cheat_manager_t *cheat_manager_new(unsigned size);
 
@@ -56,6 +43,8 @@ bool cheat_manager_save(cheat_manager_t *handle, const char *path);
 
 bool cheat_manager_realloc(cheat_manager_t *handle, unsigned new_size);
 
+void cheat_manager_set_code(cheat_manager_t *handle, unsigned index, const char *str);
+
 void cheat_manager_free(cheat_manager_t *handle);
 
 void cheat_manager_index_next(cheat_manager_t *handle);
@@ -67,6 +56,16 @@ void cheat_manager_toggle(cheat_manager_t *handle);
 void cheat_manager_apply_cheats(cheat_manager_t *handle);
 
 void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx);
+
+void cheat_manager_toggle_index(cheat_manager_t *handle, unsigned i);
+
+unsigned cheat_manager_get_buf_size(cheat_manager_t *handle);
+
+const char *cheat_manager_get_desc(cheat_manager_t *handle, unsigned i);
+
+const char *cheat_manager_get_code(cheat_manager_t *handle, unsigned i);
+
+bool cheat_manager_get_code_state(cheat_manager_t *handle, unsigned i);
 
 #ifdef __cplusplus
 }

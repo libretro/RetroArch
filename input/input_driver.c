@@ -15,18 +15,15 @@
  */
 
 #include <string.h>
-#include <string/string_list.h>
-#include "input_driver.h"
-#include "../driver.h"
-#include "../general.h"
-#include "../libretro.h"
 
+#include "../general.h"
+#include "../string_list_special.h"
 
 static const input_driver_t *input_drivers[] = {
 #ifdef __CELLOS_LV2__
    &input_ps3,
 #endif
-#if defined(SN_TARGET_PSP2) || defined(PSP)
+#if defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
    &input_psp,
 #endif
 #if defined(_3DS)
@@ -111,39 +108,7 @@ const char *input_driver_find_ident(int idx)
  **/
 const char* config_get_input_driver_options(void)
 {
-   union string_list_elem_attr attr;
-   unsigned i;
-   char *options = NULL;
-   int options_len = 0;
-   struct string_list *options_l = string_list_new();
-
-   attr.i = 0;
-
-   if (!options_l)
-      return NULL;
-
-   for (i = 0; input_driver_find_handle(i); i++)
-   {
-      const char *opt = input_driver_find_ident(i);
-      options_len += strlen(opt) + 1;
-      string_list_append(options_l, opt, attr);
-   }
-
-   options = (char*)calloc(options_len, sizeof(char));
-
-   if (!options)
-   {
-      string_list_free(options_l);
-      options_l = NULL;
-      return NULL;
-   }
-
-   string_list_join_concat(options, options_len, options_l, "|");
-
-   string_list_free(options_l);
-   options_l = NULL;
-
-   return options;
+   return char_list_new_special(STRING_LIST_INPUT_DRIVERS, NULL);
 }
 
 void find_input_driver(void)
@@ -167,7 +132,7 @@ void find_input_driver(void)
       driver->input = (const input_driver_t*)input_driver_find_handle(0);
 
       if (!driver->input)
-         rarch_fail(1, "find_input_driver()");
+         retro_fail(1, "find_input_driver()");
    }
 }
 
@@ -249,6 +214,16 @@ const input_device_driver_t *input_driver_get_joypad_driver(void)
    if (input->get_joypad_driver)
       return input->get_joypad_driver(driver->input_data);
    return NULL;
+}
+
+const input_device_driver_t *input_driver_get_sec_joypad_driver(void)
+{
+    driver_t            *driver = driver_get_ptr();
+    const input_driver_t *input = input_get_ptr(driver);
+    
+    if (input->get_sec_joypad_driver)
+        return input->get_sec_joypad_driver(driver->input_data);
+    return NULL;
 }
 
 uint64_t input_driver_get_capabilities(void)

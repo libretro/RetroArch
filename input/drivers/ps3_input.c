@@ -21,7 +21,7 @@
 
 #include <sdk_version.h>
 
-#include "../../ps3/sdk_defines.h"
+#include "../../defines/ps3_defines.h"
 
 #include "../../driver.h"
 #include "../../libretro.h"
@@ -179,7 +179,10 @@ static bool ps3_input_key_pressed(void *data, int key)
    ps3_input_t *ps3     = (ps3_input_t*)data;
    settings_t *settings = config_get_ptr();
 
-   return input_joypad_pressed(ps3->joypad, 0, settings->input.binds[0], key);
+   if (input_joypad_pressed(ps3->joypad, 0, settings->input.binds[0], key))
+      return true;
+
+   return false;
 }
 
 static bool ps3_input_meta_key_pressed(void *data, int key)
@@ -281,6 +284,7 @@ input_driver_t input_ps3 = {
    NULL,
    ps3_input_set_rumble,
    ps3_input_get_joypad_driver,
+   NULL,
    ps3_input_keyboard_mapping_is_blocked,
    ps3_input_keyboard_mapping_set_block,
 };

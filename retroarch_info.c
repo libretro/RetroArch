@@ -26,7 +26,7 @@ int rarch_info_get_capabilities(enum rarch_capabilities type, char *s, size_t le
    {
       case RARCH_CAPABILITIES_CPU:
          {
-            uint64_t cpu = rarch_get_cpu_features();
+            uint64_t cpu = retro_get_cpu_features();
 
             if (cpu & RETRO_SIMD_MMX)
                strlcat(s, "MMX ", len);

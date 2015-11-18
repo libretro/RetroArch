@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 
+#include <boolean.h>
 #include <retro_miscellaneous.h>
 #include <file/file_list.h>
 
@@ -27,16 +28,35 @@
 extern "C" {
 #endif
 
+#ifndef COLLECTION_SIZE
+#define COLLECTION_SIZE 99999
+#endif
+
+enum 
+{
+   PARSE_NONE           = (1 << 0),
+   PARSE_GROUP          = (1 << 1),
+   PARSE_ACTION         = (1 << 2),
+   PARSE_ONLY_INT       = (1 << 3),
+   PARSE_ONLY_UINT      = (1 << 4),
+   PARSE_ONLY_BOOL      = (1 << 5),
+   PARSE_ONLY_FLOAT     = (1 << 6),
+   PARSE_ONLY_BIND      = (1 << 7),
+   PARSE_ONLY_GROUP     = (1 << 8),
+   PARSE_ONLY_SUB_GROUP = (1 << 9),
+   PARSE_SUB_GROUP      = (1 << 10)
+};
+
 enum
 {
    DISPLAYLIST_NONE = 0,
    DISPLAYLIST_INFO,
    DISPLAYLIST_HELP,
+   DISPLAYLIST_HELP_SCREEN_LIST,
    DISPLAYLIST_MAIN_MENU,
    DISPLAYLIST_GENERIC,
    DISPLAYLIST_SETTINGS,
    DISPLAYLIST_SETTINGS_ALL,
-   DISPLAYLIST_SETTINGS_SUBGROUP,
    DISPLAYLIST_HORIZONTAL,
    DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS,
    DISPLAYLIST_HISTORY,
@@ -72,6 +92,14 @@ enum
    DISPLAYLIST_SHADER_PARAMETERS,
    DISPLAYLIST_SHADER_PARAMETERS_PRESET,
    DISPLAYLIST_SYSTEM_INFO,
+   DISPLAYLIST_DEBUG_INFO,
+   DISPLAYLIST_ACHIEVEMENT_LIST,
+   DISPLAYLIST_USER_BINDS_LIST,
+   DISPLAYLIST_ACCOUNTS_LIST,
+   DISPLAYLIST_INPUT_SETTINGS_LIST,
+   DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST,
+   DISPLAYLIST_PLAYLIST_SETTINGS_LIST,
+   DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST,
    DISPLAYLIST_LOAD_CONTENT_LIST,
    DISPLAYLIST_INFORMATION_LIST,
    DISPLAYLIST_CONTENT_SETTINGS,
@@ -82,6 +110,7 @@ enum
    DISPLAYLIST_OPTIONS_DISK,
    DISPLAYLIST_OPTIONS_SHADERS,
    DISPLAYLIST_ADD_CONTENT_LIST,
+   DISPLAYLIST_SCAN_DIRECTORY_LIST,
    DISPLAYLIST_ARCHIVE_ACTION,
    DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE,
    DISPLAYLIST_CORE_CONTENT
@@ -89,6 +118,9 @@ enum
 
 typedef struct menu_displaylist_info
 {
+   bool need_sort;
+   bool need_refresh;
+   bool need_push;
    file_list_t *list;
    file_list_t *menu_list;
    char path[PATH_MAX_LENGTH];
@@ -105,17 +137,12 @@ typedef struct menu_displaylist_info
 
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type);
 
+void menu_displaylist_push_list_process(menu_displaylist_info_t *info);
+
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list);
 
-/**
- * menu_displaylist_init:
- * @menu                     : Menu handle.
- *
- * Creates and initializes menu display list.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool menu_displaylist_init(void *data);
+int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info, 
+      const char *info_label, unsigned parse_type, bool add_empty_entry);
 
 #ifdef __cplusplus
 }

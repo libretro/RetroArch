@@ -15,22 +15,19 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+
 #include <file/file_extract.h>
+#include <retro_endianness.h>
 
-#include "file_ext.h"
 #include "dir_list_special.h"
-
 #include "database_info.h"
-#include "file_ops.h"
 #include "msg_hash.h"
 #include "general.h"
-#include "runloop.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#include <stdint.h>
 
 #define DB_QUERY_ENTRY                          0x1c310956U
 #define DB_QUERY_ENTRY_PUBLISHER                0x125e594dU
@@ -204,7 +201,11 @@ int database_info_build_query(char *s, size_t len,
    return 0;
 }
 
-static char *bin_to_hex_alloc(const uint8_t *data, size_t len)
+/*
+ * NOTE: Allocates memory, it is the caller's responsibility to free the
+ * memory after it is no longer required.
+ */
+char *bin_to_hex_alloc(const uint8_t *data, size_t len)
 {
    size_t i;
    char *ret = (char*)malloc(len * 2 + 1);
@@ -213,7 +214,7 @@ static char *bin_to_hex_alloc(const uint8_t *data, size_t len)
       return NULL;
    
    for (i = 0; i < len; i++)
-      snprintf(ret+i*2, 3, "%02X", data[i]);
+      snprintf(ret+i * 2, 3, "%02X", data[i]);
    return ret;
 }
 
@@ -369,9 +370,7 @@ static int database_cursor_open(libretrodb_t *db,
 error:
    if (q)
       libretrodb_query_free(q);
-   query = NULL;
    libretrodb_close(db);
-   db    = NULL;
 
    return -1;
 }
@@ -393,7 +392,7 @@ database_info_handle_t *database_info_dir_init(const char *dir,
    if (!db)
       return NULL;
 
-   db->list           = dir_list_new_special(dir, DIR_LIST_CORE_INFO);
+   db->list           = dir_list_new_special(dir, DIR_LIST_CORE_INFO, NULL);
 
    if (!db->list)
       goto error;
@@ -450,15 +449,18 @@ void database_info_free(database_info_handle_t *db)
 database_info_list_t *database_info_list_new(
       const char *rdb_path, const char *query)
 {
-   libretrodb_t db;
-   libretrodb_cursor_t cur;
    int ret                                  = 0;
    unsigned k                               = 0;
    database_info_t *database_info           = NULL;
    database_info_list_t *database_info_list = NULL;
+   libretrodb_t *db                         = libretrodb_new();
+   libretrodb_cursor_t *cur                 = libretrodb_cursor_new();
 
-   if ((database_cursor_open(&db, &cur, rdb_path, query) != 0))
-      return NULL;
+   if (!db || !cur)
+      goto end;
+
+   if ((database_cursor_open(db, cur, rdb_path, query) != 0))
+      goto end;
 
    database_info_list = (database_info_list_t*)
       calloc(1, sizeof(*database_info_list));
@@ -469,22 +471,23 @@ database_info_list_t *database_info_list_new(
    while (ret != -1)
    {
       database_info_t db_info = {0};
-      ret = database_cursor_iterate(&cur, &db_info);
+      ret = database_cursor_iterate(cur, &db_info);
 
       if (ret == 0)
       {
-         database_info_t *db_ptr = NULL;
-         database_info = (database_info_t*)
+         database_info_t *db_ptr  = NULL;
+         database_info_t *new_ptr = (database_info_t*)
             realloc(database_info, (k+1) * sizeof(database_info_t));
 
-         if (!database_info)
+         if (!new_ptr)
          {
             database_info_list_free(database_info_list);
             database_info_list = NULL;
             goto end;
          }
 
-         db_ptr = &database_info[k];
+         database_info = new_ptr;
+         db_ptr        = &database_info[k];
 
          if (!db_ptr)
             continue;
@@ -499,7 +502,12 @@ database_info_list_t *database_info_list_new(
    database_info_list->count = k;
 
 end:
-   database_cursor_close(&db, &cur);
+   database_cursor_close(db, cur);
+
+   if (db)
+      libretrodb_free(db);
+   if (cur)
+      libretrodb_cursor_free(cur);
 
    return database_info_list;
 }

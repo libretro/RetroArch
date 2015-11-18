@@ -13,12 +13,12 @@
  */
 
 #include <stdint.h>
-#include <boolean.h>
 #include <stddef.h>
 #include <string.h>
 
 #include <windows.h>
 
+#include <boolean.h>
 #include <retro_miscellaneous.h>
 #include <dynamic/dylib.h>
 #include <file/file_list.h>
@@ -27,7 +27,6 @@
 #include "../../general.h"
 #include "../../menu/menu.h"
 
-#if defined(_WIN32)
 /* We only load this library once, so we let it be 
  * unloaded at application shutdown, since unloading 
  * it early seems to cause issues on some systems.
@@ -95,7 +94,6 @@ static void gfx_set_dwm(void)
       RARCH_ERR("Failed to set composition state ...\n");
    dwm_composition_disabled = settings->video.disable_composition;
 }
-#endif
 
 static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 {
@@ -175,7 +173,6 @@ static void frontend_win32_init(void *data)
 		}
 	}
    
-   gfx_set_dwm();
 }
 
 enum frontend_powerstate frontend_win32_get_powerstate(int *seconds, int *percent)
@@ -220,15 +217,21 @@ static int frontend_win32_parse_drive_list(void *data)
    {
       drive[0] = 'A' + i;
       if (drives & (1 << i))
-         menu_list_push(list,
+         menu_entries_push(list,
                drive, "", MENU_FILE_DIRECTORY, 0, 0);
    }
 
    return 0;
 }
 
-const frontend_ctx_driver_t frontend_ctx_win32 = {
-   NULL,						   /* environment_get */
+static void frontend_win32_environment_get(int *argc, char *argv[],
+      void *args, void *params_data)
+{
+   gfx_set_dwm();
+}
+
+frontend_ctx_driver_t frontend_ctx_win32 = {
+   frontend_win32_environment_get,
    frontend_win32_init,
    NULL,                           /* deinit */
    NULL,                           /* exitspawn */

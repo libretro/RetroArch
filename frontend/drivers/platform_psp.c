@@ -14,35 +14,50 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+
+#ifdef VITA
+#include <psp2/moduleinfo.h>
+#include <psp2/power.h>
+
+int scePowerSetArmClockFrequency(int freq);
+#else
 #include <pspkernel.h>
 #include <pspdebug.h>
 #include <pspfpu.h>
 #include <psppower.h>
 #include <pspsdk.h>
+#endif
 
-#include <stdint.h>
 #include <boolean.h>
-#include <stddef.h>
-#include <string.h>
-
+#include <retro_log.h>
 #include <file/file_path.h>
 #ifndef IS_SALAMANDER
 #include <file/file_list.h>
 #endif
 
-#include "../../gfx/drivers/psp_sdk_defines.h"
+#include "../../defines/psp_defines.h"
 #include "../../general.h"
 
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
-#include "../../psp1/kernel_functions.h"
+#ifndef VITA
+#include "../../bootstrap/psp1/kernel_functions.h"
+#endif
 #endif
 
-PSP_MODULE_INFO("RetroArch PSP", 0, 1, 1);
+#ifdef VITA
+PSP2_MODULE_INFO(0, 0, "RetroArch");
+int _newlib_heap_size_user = 64 * 1024 * 1024;
+#else
+PSP_MODULE_INFO("RetroArch", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
 #ifdef BIG_STACK
 PSP_MAIN_THREAD_STACK_SIZE_KB(4*1024);
 #endif
 PSP_HEAP_SIZE_MAX();
+#endif
 
 char eboot_path[512];
 
@@ -56,41 +71,62 @@ static bool exitspawn_start_game = false;
 static void frontend_psp_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
+   struct rarch_main_wrap *params = NULL;
+
    (void)args;
+
 #ifndef IS_SALAMANDER
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
+#ifndef VITA
    global_t *global  = global_get_ptr();
    global->log_file = fopen("ms0:/retroarch-log.txt", "w");
 #endif
 #endif
+#endif
 
+#ifdef VITA
+   strlcpy(eboot_path, "cache0:/retroarch/", sizeof(eboot_path));
+   strlcpy(g_defaults.dir.port, eboot_path, sizeof(g_defaults.dir.port));
+#else
    strlcpy(eboot_path, argv[0], sizeof(eboot_path));
+   fill_pathname_basedir(g_defaults.dir.port, argv[0], sizeof(g_defaults.dir.port));
+#endif
+   RARCH_LOG("port dir: [%s]\n", g_defaults.dir.port);
 
-   fill_pathname_basedir(g_defaults.port_dir, argv[0], sizeof(g_defaults.port_dir));
-   RARCH_LOG("port dir: [%s]\n", g_defaults.port_dir);
+   fill_pathname_join(g_defaults.dir.core_assets, g_defaults.dir.port,
+         "downloads", sizeof(g_defaults.dir.core_assets));
+   fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
+         "media", sizeof(g_defaults.dir.assets));
+   fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
+         "cores", sizeof(g_defaults.dir.core));
+   fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.port,
+         "cores", sizeof(g_defaults.dir.core_info));
+   fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.core,
+         "savestates", sizeof(g_defaults.dir.savestate));
+   fill_pathname_join(g_defaults.dir.sram, g_defaults.dir.core,
+         "savefiles", sizeof(g_defaults.dir.sram));
+   fill_pathname_join(g_defaults.dir.system, g_defaults.dir.core,
+         "system", sizeof(g_defaults.dir.system));
+   fill_pathname_join(g_defaults.dir.playlist, g_defaults.dir.core,
+         "playlists", sizeof(g_defaults.dir.playlist));
+   fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
+         "retroarch.cfg", sizeof(g_defaults.path.config));
+   fill_pathname_join(g_defaults.dir.cheats, g_defaults.dir.port,
+         "cheats", sizeof(g_defaults.dir.cheats));
+   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
+         "remaps", sizeof(g_defaults.dir.remap));
 
-   fill_pathname_join(g_defaults.assets_dir, g_defaults.port_dir,
-         "media", sizeof(g_defaults.assets_dir));
-   fill_pathname_join(g_defaults.core_dir, g_defaults.port_dir,
-         "cores", sizeof(g_defaults.core_dir));
-   fill_pathname_join(g_defaults.core_info_dir, g_defaults.port_dir,
-         "cores", sizeof(g_defaults.core_info_dir));
-   fill_pathname_join(g_defaults.savestate_dir, g_defaults.core_dir,
-         "savestates", sizeof(g_defaults.savestate_dir));
-   fill_pathname_join(g_defaults.sram_dir, g_defaults.core_dir,
-         "savefiles", sizeof(g_defaults.sram_dir));
-   fill_pathname_join(g_defaults.system_dir, g_defaults.core_dir,
-         "system", sizeof(g_defaults.system_dir));
-   fill_pathname_join(g_defaults.playlist_dir, g_defaults.core_dir,
-         "playlists", sizeof(g_defaults.playlist_dir));
-   fill_pathname_join(g_defaults.config_path, g_defaults.port_dir,
-         "retroarch.cfg", sizeof(g_defaults.config_path));
-   fill_pathname_join(g_defaults.cheats_dir, g_defaults.cheats_dir,
-         "cheats", sizeof(g_defaults.cheats_dir));
-   fill_pathname_join(g_defaults.remap_dir, g_defaults.remap_dir,
-         "remaps", sizeof(g_defaults.remap_dir));
+#ifdef VITA
+   fill_pathname_join(g_defaults.dir.overlay, g_defaults.dir.core,
+         "overlays", sizeof(g_defaults.dir.overlay));
+#endif
+
+#ifdef VITA
+   params = (struct rarch_main_wrap*)params_data;
+   params->verbose = true;
+#endif
 
 #ifndef IS_SALAMANDER
    if (argv[1] && (argv[1][0] != '\0'))
@@ -143,9 +179,14 @@ static void frontend_psp_deinit(void *data)
 static void frontend_psp_shutdown(bool unused)
 {
    (void)unused;
+#ifdef VITA
+   return;
+#else
    sceKernelExitGame();
+#endif
 }
 
+#ifndef VITA
 static int exit_callback(int arg1, int arg2, void *common)
 {
    frontend_psp_deinit(NULL);
@@ -172,23 +213,35 @@ static int setup_callback(void)
 
    return thread_id;
 }
+#endif
 
 static void frontend_psp_init(void *data)
 {
 #ifndef IS_SALAMANDER
+#ifndef VITA
    (void)data;
-   //initialize debug screen
-   pspDebugScreenInit(); 
+
+   /* TODO/FIXME - Err on the safe side for now and
+    * assume these aren't there with the PSP2/Vita SDKs.
+    */
+
+   /* initialize debug screen */
+   pspDebugScreenInit();
    pspDebugScreenClear();
-   
+
    setup_callback();
-   
-   pspFpuSetEnable(0);//disable FPU exceptions
+
+   pspFpuSetEnable(0); /* disable FPU exceptions */
    scePowerSetClockFrequency(333,333,166);
+#else
+   scePowerSetArmClockFrequency(444);
+#endif
 #endif
 
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
+#ifndef VITA
    pspSdkLoadStartModule("kernel_functions.prx", PSP_MEMORY_PARTITION_KERNEL);
+#endif
 #endif
 }
 
@@ -205,10 +258,10 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
 #ifndef IS_SALAMANDER
    global_t *global   = global_get_ptr();
 
-   if (should_load_game && global->fullpath[0] != '\0')
+   if (should_load_game && global->path.fullpath[0] != '\0')
    {
       argp[args] = '\0';
-      strlcat(argp + args, global->fullpath, sizeof(argp) - args);
+      strlcat(argp + args, global->path.fullpath, sizeof(argp) - args);
       args += strlen(argp + args) + 1;
    }
 #endif
@@ -240,26 +293,35 @@ static void frontend_psp_exitspawn(char *s, size_t len)
 
 static int frontend_psp_get_rating(void)
 {
+#ifdef VITA
+   return 6; /* Go with a conservative figure for now. */
+#else
    return 4;
+#endif
 }
 
 static enum frontend_powerstate frontend_psp_get_powerstate(int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
+#ifndef VITA
    int battery                  = scePowerIsBatteryExist();
+#endif
    int plugged                  = scePowerIsPowerOnline();
    int charging                 = scePowerIsBatteryCharging();
 
    *percent = scePowerGetBatteryLifePercent();
    *seconds = scePowerGetBatteryLifeTime() * 60;
 
+#ifndef VITA
    if (!battery)
    {
       ret = FRONTEND_POWERSTATE_NO_SOURCE;
       *seconds = -1;
       *percent = -1;
    }
-   else if (charging)
+   else
+#endif
+   if (charging)
       ret = FRONTEND_POWERSTATE_CHARGING;
    else if (plugged)
       ret = FRONTEND_POWERSTATE_CHARGED;
@@ -271,7 +333,11 @@ static enum frontend_powerstate frontend_psp_get_powerstate(int *seconds, int *p
 
 enum frontend_architecture frontend_psp_get_architecture(void)
 {
+#ifdef VITA
+   return FRONTEND_ARCH_ARM;
+#else
    return FRONTEND_ARCH_MIPS;
+#endif
 }
 
 static int frontend_psp_parse_drive_list(void *data)
@@ -279,18 +345,23 @@ static int frontend_psp_parse_drive_list(void *data)
 #ifndef IS_SALAMANDER
    file_list_t *list = (file_list_t*)data;
 
-   menu_list_push(list,
+#ifdef VITA
+   menu_entries_push(list,
+         "cache0:/", "", MENU_FILE_DIRECTORY, 0, 0);
+#else
+   menu_entries_push(list,
          "ms0:/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          "ef0:/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
+   menu_entries_push(list,
          "host0:/", "", MENU_FILE_DIRECTORY, 0, 0);
+#endif
 #endif
 
    return 0;
 }
 
-const frontend_ctx_driver_t frontend_ctx_psp = {
+frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_get_environment_settings,
    frontend_psp_init,
    frontend_psp_deinit,
@@ -306,5 +377,9 @@ const frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_get_architecture,
    frontend_psp_get_powerstate,
    frontend_psp_parse_drive_list,
+#ifdef VITA
+   "vita",
+#else
    "psp",
+#endif
 };

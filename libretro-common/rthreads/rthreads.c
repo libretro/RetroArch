@@ -20,8 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <rthreads/rthreads.h>
 #include <stdlib.h>
+
+#include <rthreads/rthreads.h>
 
 #if defined(_WIN32)
 #ifdef _XBOX
@@ -383,6 +384,7 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    return ret == WAIT_OBJECT_0;
 #else
    int ret;
+   int64_t seconds, remainder;
    struct timespec now = {0};
 
 #ifdef __MACH__
@@ -413,11 +415,11 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    clock_gettime(CLOCK_REALTIME, &now);
 #endif
 
-   now.tv_sec += timeout_us / 1000000;
-   now.tv_nsec += timeout_us * 1000;
+   seconds      = timeout_us / INT64_C(1000000);
+   remainder    = timeout_us % INT64_C(1000000);
 
-   now.tv_sec += now.tv_nsec / 1000000000;
-   now.tv_nsec = now.tv_nsec % 1000000000;
+   now.tv_sec  += seconds;
+   now.tv_nsec += remainder * INT64_C(1000);
 
    ret = pthread_cond_timedwait(&cond->cond, &lock->lock, &now);
    return (ret == 0);

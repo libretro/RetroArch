@@ -50,7 +50,6 @@ typedef struct sdl2_tex
 
 typedef struct _sdl2_video
 {
-   uint64_t frame_count;
    SDL_Window *window;
    SDL_Renderer *renderer;
 
@@ -208,10 +207,10 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
 
 static void sdl2_gfx_set_handles(sdl2_video_t *vid)
 {
-   driver_t *driver = driver_get_ptr();
-
    /* SysWMinfo headers are broken on OSX. */
 #if defined(_WIN32) || defined(HAVE_X11)
+   driver_t *driver = driver_get_ptr();
+
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
 
@@ -341,11 +340,12 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
        || target->rgb32 != rgb32 || target->pitch != pitch)
    {
       unsigned format;
+      static struct retro_perf_counter sdl_create_texture = {0};
 
       sdl_tex_zero(target);
 
-      RARCH_PERFORMANCE_INIT(sdl_create_texture);
-      RARCH_PERFORMANCE_START(sdl_create_texture);
+      rarch_perf_init(&sdl_create_texture, "sdl_create_texture");
+      retro_perf_start(&sdl_create_texture);
 
       if (menu)
          format = rgb32 ? SDL_PIXELFORMAT_ARGB8888 : SDL_PIXELFORMAT_RGBA4444;
@@ -359,7 +359,7 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
       target->tex = SDL_CreateTexture(vid->renderer, format,
                                       SDL_TEXTUREACCESS_STREAMING, width, height);
 
-      RARCH_PERFORMANCE_STOP(sdl_create_texture);
+      retro_perf_stop(&sdl_create_texture);
 
       if (!target->tex)
       {
@@ -491,25 +491,27 @@ static void check_window(sdl2_video_t *vid)
 }
 
 static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
-                           unsigned height, unsigned pitch, const char *msg)
+      unsigned height, uint64_t frame_count,
+      unsigned pitch, const char *msg)
 {
    char buf[128]     = {0};
    sdl2_video_t *vid = (sdl2_video_t*)data;
-   driver_t *driver  = driver_get_ptr();
 
    if (vid->should_resize)
       sdl_refresh_viewport(vid);
 
    if (frame)
    {
+      static struct retro_perf_counter sdl_copy_frame = {0};
+
       sdl_refresh_input_size(vid, false, vid->video.rgb32, width, height, pitch);
 
-      RARCH_PERFORMANCE_INIT(sdl_copy_frame);
-      RARCH_PERFORMANCE_START(sdl_copy_frame);
+      rarch_perf_init(&sdl_copy_frame, "sdl_copy_frame");
+      retro_perf_start(&sdl_copy_frame);
 
       SDL_UpdateTexture(vid->frame.tex, NULL, frame, pitch);
 
-      RARCH_PERFORMANCE_STOP(sdl_copy_frame);
+      retro_perf_stop(&sdl_copy_frame);
    }
 
    SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL, vid->rotation, NULL, SDL_FLIP_NONE);
@@ -529,8 +531,6 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (video_monitor_get_fps(buf, sizeof(buf), NULL, 0))
       SDL_SetWindowTitle(vid->window, buf);
-
-   vid->frame_count++;
 
    return true;
 }
@@ -607,7 +607,9 @@ static void sdl2_gfx_free(void *data)
 static void sdl2_gfx_set_rotation(void *data, unsigned rotation)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
-   vid->rotation = 270 * rotation;
+
+   if (vid)
+      vid->rotation = 270 * rotation;
 }
 
 static void sdl2_gfx_viewport_info(void *data, struct video_viewport *vp)
@@ -620,9 +622,10 @@ static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer)
 {
    SDL_Surface *surf = NULL, *bgr24 = NULL;
    sdl2_video_t *vid = (sdl2_video_t*)data;
+   static struct retro_perf_counter sdl2_gfx_read_viewport = {0};
 
-   RARCH_PERFORMANCE_INIT(sdl2_gfx_read_viewport);
-   RARCH_PERFORMANCE_START(sdl2_gfx_read_viewport);
+   rarch_perf_init(&sdl2_gfx_read_viewport, "sdl2_gfx_read_viewport");
+   retro_perf_start(&sdl2_gfx_read_viewport);
 
    video_driver_cached_frame();
 
@@ -637,7 +640,7 @@ static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer)
 
    memcpy(buffer, bgr24->pixels, bgr24->h * bgr24->pitch);
 
-   RARCH_PERFORMANCE_STOP(sdl2_gfx_read_viewport);
+   retro_perf_stop(&sdl2_gfx_read_viewport);
 
    return true;
 }
@@ -688,6 +691,7 @@ static void sdl2_poke_apply_state_changes(void *data)
    vid->should_resize = true;
 }
 
+#ifdef HAVE_MENU
 static void sdl2_poke_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
@@ -695,15 +699,17 @@ static void sdl2_poke_set_texture_frame(void *data, const void *frame, bool rgb3
 
    if (frame)
    {
+      static struct retro_perf_counter copy_texture_frame = {0};
+
       sdl_refresh_input_size(vid, true, rgb32, width, height,
                              width * (rgb32 ? 4 : 2));
 
-      RARCH_PERFORMANCE_INIT(copy_texture_frame);
-      RARCH_PERFORMANCE_START(copy_texture_frame);
+      rarch_perf_init(&copy_texture_frame, "copy_texture_frame");
+      retro_perf_start(&copy_texture_frame);
 
       SDL_UpdateTexture(vid->menu.tex, NULL, frame, vid->menu.pitch);
 
-      RARCH_PERFORMANCE_STOP(copy_texture_frame);
+      retro_perf_stop(&copy_texture_frame);
    }
 }
 
@@ -733,17 +739,9 @@ static void sdl2_grab_mouse_toggle(void *data)
    sdl2_video_t *vid = (sdl2_video_t*)data;
    SDL_SetWindowGrab(vid->window, SDL_GetWindowGrab(vid->window));
 }
-
-static uint64_t sdl2_get_frame_count(void *data)
-{
-   sdl2_video_t *vid = (sdl2_video_t*)data;
-   if (!vid)
-      return 0;
-   return vid->frame_count;
-}
+#endif
 
 static video_poke_interface_t sdl2_video_poke_interface = {
-   sdl2_get_frame_count,
    NULL,
    sdl2_poke_set_filtering,
    NULL, /* get_video_output_size */
@@ -756,10 +754,16 @@ static video_poke_interface_t sdl2_video_poke_interface = {
 #ifdef HAVE_MENU
    sdl2_poke_set_texture_frame,
    sdl2_poke_texture_enable,
-#endif
    sdl2_poke_set_osd_msg,
    sdl2_show_mouse,
    sdl2_grab_mouse_toggle,
+#else
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL<
+#endif
    NULL,
 };
 

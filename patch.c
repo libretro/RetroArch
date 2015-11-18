@@ -518,42 +518,42 @@ error:
 static bool try_bps_patch(uint8_t **buf, ssize_t *size)
 {
    global_t *global = global_get_ptr();
-   bool allow_bps   = !global->ups_pref && !global->ips_pref;
+   bool allow_bps   = !global->patch.ups_pref && !global->patch.ips_pref;
 
    if (!allow_bps)
       return false;
-   if (global->bps_name[0] == '\0')
+   if (global->name.bps[0] == '\0')
       return false;
 
-   return apply_patch_content(buf, size, "BPS", global->bps_name,
+   return apply_patch_content(buf, size, "BPS", global->name.bps,
          bps_apply_patch);
 }
 
 static bool try_ups_patch(uint8_t **buf, ssize_t *size)
 {
    global_t *global = global_get_ptr();
-   bool allow_ups   = !global->bps_pref && !global->ips_pref;
+   bool allow_ups   = !global->patch.bps_pref && !global->patch.ips_pref;
 
    if (!allow_ups)
       return false;
-   if (global->ups_name[0] == '\0')
+   if (global->name.ups[0] == '\0')
       return false;
 
-   return apply_patch_content(buf, size, "UPS", global->ups_name,
+   return apply_patch_content(buf, size, "UPS", global->name.ups,
          ups_apply_patch);
 }
 
 static bool try_ips_patch(uint8_t **buf, ssize_t *size)
 {
    global_t *global = global_get_ptr();
-   bool allow_ips   = !global->ups_pref && !global->bps_pref;
+   bool allow_ips   = !global->patch.ups_pref && !global->patch.bps_pref;
 
    if (!allow_ips)
       return false;
-   if (global->ips_name[0] == '\0')
+   if (global->name.ips[0] == '\0')
       return false;
 
-   return apply_patch_content(buf, size, "IPS", global->ips_name,
+   return apply_patch_content(buf, size, "IPS", global->name.ips,
          ips_apply_patch);
 }
 
@@ -569,7 +569,7 @@ void patch_content(uint8_t **buf, ssize_t *size)
 {
    global_t *global = global_get_ptr();
 
-   if (global->ips_pref + global->bps_pref + global->ups_pref > 1)
+   if (global->patch.ips_pref + global->patch.bps_pref + global->patch.ups_pref > 1)
    {
       RARCH_WARN("Several patches are explicitly defined, ignoring all ...\n");
       return;

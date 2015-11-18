@@ -109,15 +109,13 @@ static void lq2x_generic_rgb565(unsigned width, unsigned height,
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
    unsigned x, y;
-   uint16_t *out0, *out1;
-   out0 = (uint16_t*)dst;
-   out1 = (uint16_t*)(dst + dst_stride);
+   uint16_t *out0 = (uint16_t*)dst;
+   uint16_t *out1 = (uint16_t*)(dst + dst_stride);
 
    for(y = 0; y < height; y++)
    {
-      int prevline, nextline;
-      prevline = (y == 0 ? 0 : src_stride);
-      nextline = (y == height - 1 || last) ? 0 : src_stride;
+      int prevline = (y == 0 ? 0 : src_stride);
+      int nextline = (y == height - 1 || last) ? 0 : src_stride;
 
       for(x = 0; x < width; x++)
       {
@@ -156,9 +154,8 @@ static void lq2x_generic_xrgb8888(unsigned width, unsigned height,
       unsigned src_stride, uint32_t *dst, unsigned dst_stride)
 {
    unsigned x, y;
-   uint32_t *out0, *out1;
-   out0 = (uint32_t*)dst;
-   out1 = (uint32_t*)(dst + dst_stride);
+   uint32_t *out0 = (uint32_t*)dst;
+   uint32_t *out1 = (uint32_t*)(dst + dst_stride);
 
    for(y = 0; y < height; y++)
    {

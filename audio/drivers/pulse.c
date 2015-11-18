@@ -13,13 +13,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <string.h>
+
+#include <pulse/pulseaudio.h>
+
+#include <boolean.h>
+#include <retro_endianness.h>
 
 #include "../../driver.h"
 #include "../../general.h"
-#include <pulse/pulseaudio.h>
-#include <boolean.h>
-#include <string.h>
-#include <stdint.h>
 
 typedef struct
 {

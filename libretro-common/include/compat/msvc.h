@@ -25,6 +25,13 @@
 
 #ifdef _MSC_VER
 
+/* Pre-MSVC 2015 compilers don't implement snprintf in a cross-platform manner. */
+#if _MSC_VER < 1900
+#ifndef snprintf
+#define snprintf _snprintf
+#endif
+#endif
+
 #undef UNICODE /* Do not bother with UNICODE at this time. */
 #include <direct.h>
 #include <stddef.h>
@@ -42,7 +49,6 @@ typedef int ssize_t;
 #endif
 
 #define mkdir(dirname, unused) _mkdir(dirname)
-#define snprintf _snprintf
 #define strtoull _strtoui64
 #undef strcasecmp
 #define strcasecmp _stricmp

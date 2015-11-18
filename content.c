@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -33,6 +33,8 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <file/file_extract.h>
+#include <retro_file.h>
+#include <retro_stat.h>
 
 #include "msg_hash.h"
 #include "content.h"
@@ -42,6 +44,10 @@
 #include "movie.h"
 #include "patch.h"
 #include "system.h"
+
+#ifdef HAVE_CHEEVOS
+#include "cheevos.h"
+#endif
 
 /**
  * read_content_file:
@@ -73,9 +79,9 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
       return true;
 
    /* Attempt to apply a patch. */
-   if (!global->block_patch)
+   if (!global->patch.block_patch)
       patch_content(&ret_buf, length);
-   
+
 #ifdef HAVE_ZLIB
    global->content_crc = zlib_crc32_calculate(ret_buf, *length);
 
@@ -118,7 +124,7 @@ static void dump_to_file_desperate(const void *data,
    strftime(timebuf, sizeof(timebuf), "%Y-%m-%d-%H-%M-%S", localtime(&time_));
    strlcat(path, timebuf, sizeof(path));
 
-   if (write_file(path, data, size))
+   if (retro_write_file(path, data, size))
       RARCH_WARN("Succeeded in saving RAM data to \"%s\".\n", path);
    else
       goto error;
@@ -148,7 +154,7 @@ bool save_state(const char *path)
 {
    bool ret    = false;
    void *data  = NULL;
-   size_t size = pretro_serialize_size();
+   size_t size = core.retro_serialize_size();
 
    RARCH_LOG("%s: \"%s\".\n",
          msg_hash_to_str(MSG_SAVING_STATE),
@@ -162,17 +168,17 @@ bool save_state(const char *path)
    if (!data)
       return false;
 
-   RARCH_LOG("%s: %d %s.\n", 
+   RARCH_LOG("%s: %d %s.\n",
          msg_hash_to_str(MSG_STATE_SIZE),
          (int)size,
          msg_hash_to_str(MSG_BYTES));
-   ret = pretro_serialize(data, size);
+   ret = core.retro_serialize(data, size);
 
    if (ret)
-      ret = write_file(path, data, size);
+      ret = retro_write_file(path, data, size);
 
    if (!ret)
-      RARCH_ERR("%s \"%s\".\n", 
+      RARCH_ERR("%s \"%s\".\n",
             msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
             path);
 
@@ -234,7 +240,7 @@ bool load_state(const char *path)
    }
 
    for (i = 0; i < num_blocks; i++)
-      blocks[i].size = pretro_get_memory_size(blocks[i].type);
+      blocks[i].size = core.retro_get_memory_size(blocks[i].type);
 
    for (i = 0; i < num_blocks; i++)
       if (blocks[i].size)
@@ -245,20 +251,20 @@ bool load_state(const char *path)
    {
       if (blocks[i].data)
       {
-         const void *ptr = pretro_get_memory_data(blocks[i].type);
+         const void *ptr = core.retro_get_memory_data(blocks[i].type);
          if (ptr)
             memcpy(blocks[i].data, ptr, blocks[i].size);
       }
    }
 
-   ret = pretro_unserialize(buf, size);
+   ret = core.retro_unserialize(buf, size);
 
    /* Flush back. */
    for (i = 0; i < num_blocks; i++)
    {
       if (blocks[i].data)
       {
-         void *ptr = pretro_get_memory_data(blocks[i].type);
+         void *ptr = core.retro_get_memory_data(blocks[i].type);
          if (ptr)
             memcpy(ptr, blocks[i].data, blocks[i].size);
       }
@@ -283,8 +289,8 @@ void load_ram_file(const char *path, int type)
    ssize_t rc;
    bool ret    = false;
    void *buf   = NULL;
-   size_t size = pretro_get_memory_size(type);
-   void *data  = pretro_get_memory_data(type);
+   size_t size = core.retro_get_memory_size(type);
+   void *data  = core.retro_get_memory_data(type);
 
    if (size == 0 || !data)
       return;
@@ -324,15 +330,15 @@ void load_ram_file(const char *path, int type)
  */
 void save_ram_file(const char *path, int type)
 {
-   size_t size = pretro_get_memory_size(type);
-   void *data  = pretro_get_memory_data(type);
+   size_t size = core.retro_get_memory_size(type);
+   void *data  = core.retro_get_memory_data(type);
 
    if (!data)
       return;
-   if (size <= 0)
+   if (size == 0)
       return;
 
-   if (!write_file(path, data, size))
+   if (!retro_write_file(path, data, size))
    {
       RARCH_ERR("%s.\n",
             msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
@@ -401,15 +407,15 @@ static bool load_content_need_fullpath(
    RARCH_LOG("Compressed file in case of need_fullpath."
          "Now extracting to temporary directory.\n");
 
-   strlcpy(new_basedir, settings->extraction_directory,
+   strlcpy(new_basedir, settings->cache_directory,
          sizeof(new_basedir));
 
    if ((!strcmp(new_basedir, "")) ||
          !path_is_directory(new_basedir))
    {
-      RARCH_WARN("Tried extracting to extraction directory, but "
-            "extraction directory was not set or found. "
-            "Setting extraction directory to directory "
+      RARCH_WARN("Tried extracting to cache directory, but "
+            "cache directory was not set or found. "
+            "Setting cache directory to directory "
             "derived by basename...\n");
       fill_pathname_basedir(new_basedir, path,
             sizeof(new_basedir));
@@ -438,7 +444,7 @@ static bool load_content_need_fullpath(
     * The following part takes care of cleanup of the unzipped files
     * after exit.
     */
-   rarch_assert(global->temporary_content != NULL);
+   retro_assert(global->temporary_content != NULL);
    string_list_append(global->temporary_content,
          new_path, attributes);
 
@@ -449,7 +455,7 @@ static bool load_content_need_fullpath(
 /**
  * load_content:
  * @special          : subsystem of content to be loaded. Can be NULL.
- * content           : 
+ * content           :
  *
  * Load content file (for libretro core).
  *
@@ -485,7 +491,7 @@ static bool load_content(const struct retro_subsystem_info *special,
       }
 
       info[i].path = NULL;
-      
+
       if (*path)
          info[i].path = path;
 
@@ -506,9 +512,18 @@ static bool load_content(const struct retro_subsystem_info *special,
    }
 
    if (special)
-      ret = pretro_load_game_special(special->id, info, content->size);
+      ret = core.retro_load_game_special(special->id, info, content->size);
    else
-      ret = pretro_load_game(*content->elems[0].data ? info : NULL);
+   {
+      ret = core.retro_load_game(*content->elems[0].data ? info : NULL);
+      
+#ifdef HAVE_CHEEVOS
+      /* Load the achievements into memory if the game has content. */
+
+      cheevos_globals.cheats_were_enabled = cheevos_globals.cheats_are_enabled;
+      cheevos_load(*content->elems[0].data ? info : NULL);
+#endif
+   }
 
    if (!ret)
       RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
@@ -610,7 +625,7 @@ bool init_content_file(void)
       attr.i |= system->info.need_fullpath << 1;
       attr.i |= (!system->no_content) << 2;
       string_list_append(content,
-            (global->libretro_no_content && settings->core.set_supports_no_game_enable) ? "" : global->fullpath, attr);
+            (global->inited.core.no_content && settings->core.set_supports_no_game_enable) ? "" : global->path.fullpath, attr);
    }
 
 #ifdef HAVE_ZLIB
@@ -637,8 +652,8 @@ bool init_content_file(void)
 
          if (!zlib_extract_first_content_file(temporary_content,
                   sizeof(temporary_content), valid_ext,
-                  *settings->extraction_directory ?
-                  settings->extraction_directory : NULL))
+                  *settings->cache_directory ?
+                  settings->cache_directory : NULL))
          {
             RARCH_ERR("Failed to extract content from zipped file: %s.\n",
                   temporary_content);
@@ -655,7 +670,7 @@ bool init_content_file(void)
    ret = load_content(special, content);
 
 error:
-   global->content_is_init = (ret) ? true : false;
+   global->inited.content = (ret) ? true : false;
 
    if (content)
       string_list_free(content);

@@ -20,8 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <string/stdstring.h>
 #include <ctype.h>
+
+#include <string/stdstring.h>
 
 bool string_is_empty(const char *data)
 {

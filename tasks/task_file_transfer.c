@@ -19,6 +19,7 @@
 #include <formats/image.h>
 #include <formats/rpng.h>
 #include <compat/strl.h>
+#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <queues/message_queue.h>
 #include <string/string_list.h>
@@ -55,12 +56,11 @@ typedef struct nbio_image_handle
    bool is_finished;
    transfer_cb_t  cb;
 #ifdef HAVE_RPNG
-   struct rpng_t *handle;
+   rpng_t *handle;
 #endif
    unsigned processing_pos_increment;
    unsigned pos_increment;
    uint64_t frame_count;
-   uint64_t processing_frame_count;
    int processing_final_state;
    msg_queue_t *msg_queue;
    unsigned status;
@@ -80,15 +80,9 @@ typedef struct nbio_handle
 
 static nbio_handle_t *nbio_ptr;
 
-void *rarch_main_data_nbio_get_ptr(void)
-{
-   return nbio_ptr;
-}
-
 msg_queue_t *rarch_main_data_nbio_get_msg_queue_ptr(void)
 {
-   nbio_handle_t         *nbio  = (nbio_handle_t*)
-      rarch_main_data_nbio_get_ptr();
+   nbio_handle_t         *nbio  = (nbio_handle_t*)nbio_ptr;
    if (!nbio)
       return NULL;
    return nbio->msg_queue;
@@ -96,8 +90,7 @@ msg_queue_t *rarch_main_data_nbio_get_msg_queue_ptr(void)
 
 void *rarch_main_data_nbio_get_handle(void)
 {
-   nbio_handle_t         *nbio  = (nbio_handle_t*)
-      rarch_main_data_nbio_get_ptr();
+   nbio_handle_t         *nbio  = (nbio_handle_t*)nbio_ptr;
    if (!nbio)
       return NULL;
    return nbio->handle;
@@ -105,8 +98,7 @@ void *rarch_main_data_nbio_get_handle(void)
 
 msg_queue_t *rarch_main_data_nbio_image_get_msg_queue_ptr(void)
 {
-   nbio_handle_t         *nbio  = (nbio_handle_t*)
-      rarch_main_data_nbio_get_ptr();
+   nbio_handle_t         *nbio  = (nbio_handle_t*)nbio_ptr;
    if (!nbio)
       return NULL;
 #ifdef HAVE_RPNG
@@ -118,8 +110,7 @@ msg_queue_t *rarch_main_data_nbio_image_get_msg_queue_ptr(void)
 
 void *rarch_main_data_nbio_image_get_handle(void)
 {
-   nbio_handle_t         *nbio  = (nbio_handle_t*)
-      rarch_main_data_nbio_get_ptr();
+   nbio_handle_t         *nbio  = (nbio_handle_t*)nbio_ptr;
    if (!nbio)
       return NULL;
 #ifdef HAVE_RPNG
@@ -188,14 +179,12 @@ static int cb_image_menu_boxart_upload(void *data, size_t len)
 
 static int cb_image_menu_generic(nbio_handle_t *nbio)
 {
-   unsigned width, height;
+   unsigned width = 0, height = 0;
    int retval;
    if (!nbio)
       return -1;
 
-   if (  !nbio->image.handle->has_ihdr || 
-         !nbio->image.handle->has_idat || 
-         !nbio->image.handle->has_iend)
+   if (!rpng_is_valid(nbio->image.handle))
       return -1;
 
    retval = rpng_nbio_load_image_argb_process(nbio->image.handle,
@@ -273,13 +262,8 @@ static int rarch_main_data_image_iterate_transfer(nbio_handle_t *nbio)
 
    for (i = 0; i < nbio->image.pos_increment; i++)
    {
-      unsigned ret;
-      if (!rpng_nbio_load_image_argb_iterate(
-               nbio->image.handle->buff_data,
-               nbio->image.handle, &ret))
+      if (!rpng_nbio_load_image_argb_iterate(nbio->image.handle))
          goto error;
-
-      nbio->image.handle->buff_data += ret;
    }
 
    nbio->image.frame_count++;
@@ -291,7 +275,7 @@ error:
 
 static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
 {
-   unsigned i, width, height;
+   unsigned i, width = 0, height = 0;
    int retval = 0;
 
    if (!nbio)
@@ -309,8 +293,6 @@ static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
          break;
    }
 
-   nbio->image.processing_frame_count++;
-
    if (retval == IMAGE_PROCESS_NEXT)
       return 0;
 
@@ -327,7 +309,6 @@ static int rarch_main_data_image_iterate_parse_free(nbio_handle_t *nbio)
 
    nbio->image.handle                 = NULL;
    nbio->image.frame_count            = 0;
-   nbio->image.processing_frame_count = 0;
 
    msg_queue_clear(nbio->image.msg_queue);
 
@@ -336,26 +317,29 @@ static int rarch_main_data_image_iterate_parse_free(nbio_handle_t *nbio)
 
 static int rarch_main_data_image_iterate_process_transfer_parse(nbio_handle_t *nbio)
 {
-   size_t len = 0;
    if (nbio->image.handle && nbio->image.cb)
+   {
+      size_t len = 0;
       nbio->image.cb(nbio, len);
+   }
 
    return 0;
 }
 
 static int rarch_main_data_image_iterate_transfer_parse(nbio_handle_t *nbio)
 {
-   size_t len = 0;
    if (nbio->image.handle && nbio->image.cb)
+   {
+      size_t len = 0;
       nbio->image.cb(nbio, len);
+   }
 
    return 0;
 }
 
 void rarch_main_data_nbio_image_iterate(bool is_thread)
 {
-   nbio_handle_t         *nbio  = (nbio_handle_t*)
-      rarch_main_data_nbio_get_ptr();
+   nbio_handle_t         *nbio  = (nbio_handle_t*)nbio_ptr;
    nbio_image_handle_t   *image = nbio    ? &nbio->image   : NULL;
 
    if (!image || !nbio)
@@ -389,8 +373,7 @@ void rarch_main_data_nbio_image_iterate(bool is_thread)
 
 void rarch_main_data_nbio_image_upload_iterate(bool is_thread)
 {
-   nbio_handle_t         *nbio  = (nbio_handle_t*)
-      rarch_main_data_nbio_get_ptr();
+   nbio_handle_t         *nbio  = (nbio_handle_t*)nbio_ptr;
    nbio_image_handle_t   *image = nbio    ? &nbio->image   : NULL;
 
    if (!image || !nbio)
@@ -430,6 +413,7 @@ static int cb_nbio_default(void *data, size_t len)
 }
 
 #ifdef HAVE_RPNG
+#ifdef HAVE_MENU
 static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
 {
    void *ptr           = NULL;
@@ -451,7 +435,7 @@ static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
       return -1;
    }
 
-   nbio->image.handle->buff_data        = (uint8_t*)ptr;
+   rpng_set_buf_ptr(nbio->image.handle, (uint8_t*)ptr);
    nbio->image.pos_increment            = (*len / 2) ? (*len / 2) : 1;
    nbio->image.processing_pos_increment = (*len / 4) ?  (*len / 4) : 1;
 
@@ -475,7 +459,7 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
    if (!nbio || !data)
       return -1;
    
-   nbio->image.handle = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
+   nbio->image.handle = rpng_alloc();
    nbio->image.cb     = &cb_image_menu_wallpaper;
 
    return cb_nbio_generic(nbio, &len);
@@ -488,16 +472,18 @@ static int cb_nbio_image_menu_boxart(void *data, size_t len)
    if (!nbio || !data)
       return -1;
    
-   nbio->image.handle = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
+   nbio->image.handle = rpng_alloc();
    nbio->image.cb     = &cb_image_menu_boxart;
 
    return cb_nbio_generic(nbio, &len);
 }
 #endif
+#endif
 
 static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
 {
-   char elem0[PATH_MAX_LENGTH]  = {0};
+   char elem0[PATH_MAX_LENGTH];
+   unsigned elem0_hash          = 0;
    uint32_t cb_type_hash        = 0;
    struct nbio_t* handle        = NULL;
    struct string_list *str_list = NULL;
@@ -517,26 +503,23 @@ static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
 
    str_list                     = string_split(path, "|"); 
 
-   if (!str_list)
+   if (!str_list || (str_list->size < 1))
       goto error;
 
-   if (str_list->size > 0)
-   {
-      unsigned elem0_hash = 0;
-      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-      elem0_hash = djb2_calculate(elem0);
+   strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+   elem0_hash = djb2_calculate(elem0);
 
-      /* TODO/FIXME - should be able to deal with this
-       * in a better way. */
-      switch(elem0_hash)
-      {
-         case CB_MENU_WALLPAPER:
-         case CB_MENU_BOXART:
-            goto error;
-         default:
-            break;
-      }
+   /* TODO/FIXME - should be able to deal with this
+    * in a better way. */
+   switch(elem0_hash)
+   {
+      case CB_MENU_WALLPAPER:
+      case CB_MENU_BOXART:
+         goto error;
+      default:
+         break;
    }
+
    if (str_list->size > 1)
       cb_type_hash = djb2_calculate(str_list->elems[1].data);
 
@@ -562,6 +545,9 @@ static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
          nbio->cb = &cb_nbio_image_menu_boxart;
          break;
 #endif
+	  case 0:
+      default:
+         break;
    }
 
    nbio_begin_read(handle);
@@ -617,21 +603,21 @@ static int rarch_main_data_nbio_iterate_parse_free(nbio_handle_t *nbio)
 
 static int rarch_main_data_nbio_iterate_parse(nbio_handle_t *nbio)
 {
-   int len = 0;
-
    if (!nbio)
       return -1;
 
    if (nbio->cb)
+   {
+      int len = 0;
       nbio->cb(nbio, len);
+   }
 
    return 0;
 }
 
 void rarch_main_data_nbio_iterate(bool is_thread)
 {
-   nbio_handle_t         *nbio  = (nbio_handle_t*)
-      rarch_main_data_nbio_get_ptr();
+   nbio_handle_t         *nbio  = (nbio_handle_t*)nbio_ptr;
    if (!nbio)
       return;
 
@@ -659,15 +645,14 @@ void rarch_main_data_nbio_iterate(bool is_thread)
 
 void rarch_main_data_nbio_init_msg_queue(void)
 {
-   nbio_handle_t         *nbio  = (nbio_handle_t*)
-      rarch_main_data_nbio_get_ptr();
+   nbio_handle_t         *nbio  = (nbio_handle_t*)nbio_ptr;
    if (!nbio)
       return;
 
    if (!nbio->msg_queue)
-      rarch_assert(nbio->msg_queue       = msg_queue_new(8));
+      retro_assert(nbio->msg_queue       = msg_queue_new(8));
    if (!nbio->image.msg_queue)
-      rarch_assert(nbio->image.msg_queue = msg_queue_new(8));
+      retro_assert(nbio->image.msg_queue = msg_queue_new(8));
 }
 
 void rarch_main_data_nbio_uninit(void)

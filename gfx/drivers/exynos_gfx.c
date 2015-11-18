@@ -181,7 +181,6 @@ static INLINE unsigned align_common(unsigned i, unsigned j)
 /* Find the index of a compatible DRM device. */
 static int exynos_get_device_index(void)
 {
-   int fd;
    drmVersionPtr ver;
    char buf[32]       = {0};
    int index          = 0;
@@ -189,6 +188,8 @@ static int exynos_get_device_index(void)
 
    while (!found)
    {
+      int fd;
+
       snprintf(buf, sizeof(buf), "/dev/dri/card%d", index);
 
       fd = open(buf, O_RDWR);
@@ -370,10 +371,14 @@ static int exynos_realloc_buffer(struct exynos_data *pdata,
       enum exynos_buffer_type type, unsigned size)
 {
    struct exynos_bo *buf = pdata->buf[type];
-   unsigned i;
+
+   if (!buf)
+      return -1;
 
    if (size > buf->size)
    {
+      unsigned i;
+
 #if (EXYNOS_GFX_DEBUG_LOG == 1)
       RARCH_LOG("[video_exynos]: reallocating %s buffer (%u -> %u bytes)\n",
             exynos_buffer_name(type), buf->size, size);
@@ -1405,7 +1410,7 @@ static void exynos_gfx_free(void *data)
 }
 
 static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
-      unsigned height, unsigned pitch, const char *msg)
+      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg)
 {
    struct exynos_video *vid = data;
    struct exynos_page *page = NULL;
@@ -1471,8 +1476,6 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (exynos_flip(vid->data, page) != 0)
       goto fail;
-
-   vid->frame_count++;
 
    return true;
 
@@ -1625,16 +1628,7 @@ static void exynos_show_mouse(void *data, bool state)
    (void)state;
 }
 
-static uint64_t exynos_get_frame_count(void *data)
-{
-   struct exynos_video *vid = data;
-   if (!vid)
-      return 0;
-   return vid->frame_count;
-}
-
 static const video_poke_interface_t exynos_poke_interface = {
-   exynos_get_frame_count,
    NULL, /* set_video_mode */
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */

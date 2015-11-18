@@ -14,7 +14,6 @@
  */
 
 #include "input_remapping.h"
-
 #include <file/config_file.h>
 #include <file/file_path.h>
 
@@ -22,19 +21,19 @@
 
 /**
  * input_remapping_load_file:
- * @path                     : Path to remapping file (absolute path).
+ * @data                     : Path to config file.
  *
  * Loads a remap file from disk to memory.
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool input_remapping_load_file(const char *path)
+bool input_remapping_load_file(void *data, const char *path)
 {
    unsigned i, j;
-   config_file_t *conf  = config_file_new(path);
+   config_file_t *conf  = (config_file_t*)data;
    settings_t *settings = config_get_ptr();
 
-   if (!conf)
+   if (!conf ||  path[0] == '\0')
       return false;
 
    strlcpy(settings->input.remapping_path, path,
@@ -62,8 +61,13 @@ bool input_remapping_load_file(const char *path)
       {
          int key_remap = -1;
 
-         snprintf(key_ident[RARCH_FIRST_CUSTOM_BIND + j], sizeof(key_ident[RARCH_FIRST_CUSTOM_BIND + j]), "%s_%s", buf, key_strings[RARCH_FIRST_CUSTOM_BIND + j]);
-         if (config_get_int(conf, key_ident[RARCH_FIRST_CUSTOM_BIND + j], &key_remap) && key_remap < 4)
+         snprintf(key_ident[RARCH_FIRST_CUSTOM_BIND + j],
+               sizeof(key_ident[RARCH_FIRST_CUSTOM_BIND + j]),
+               "%s_%s",
+               buf,
+               key_strings[RARCH_FIRST_CUSTOM_BIND + j]);
+
+         if (config_get_int(conf, key_ident[RARCH_FIRST_CUSTOM_BIND + j], &key_remap) && (key_remap < 4))
             settings->input.remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] = key_remap;
       }
    }
@@ -100,8 +104,8 @@ bool input_remapping_save_file(const char *path)
    if (!conf)
    {
       conf = config_file_new(NULL);
-	  if (!conf)
-	     return false;
+      if (!conf)
+         return false;
    }
 
    for (i = 0; i < settings->input.max_users; i++)

@@ -22,16 +22,31 @@
 enum texture_backend_type
 {
    TEXTURE_BACKEND_DEFAULT = 0,
-   TEXTURE_BACKEND_OPENGL
+   TEXTURE_BACKEND_OPENGL,
+   TEXTURE_BACKEND_DIRECT3D
 };
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#ifdef HAVE_OPENGL
+#include "common/gl_common.h"
+
+void gl_load_texture_data(GLuint id,
+      enum gfx_wrap_type wrap_type,
+      enum texture_filter_type filter_type,
+      unsigned alignment,
+      unsigned width, unsigned height,
+      const void *frame,
+      unsigned base_size);
+#endif
+
 unsigned video_texture_load(void *data,
       enum texture_backend_type type,
       enum texture_filter_type  filter_type);
+
+void video_texture_unload(enum texture_backend_type type, uintptr_t *id);
 
 #ifdef __cplusplus
 }

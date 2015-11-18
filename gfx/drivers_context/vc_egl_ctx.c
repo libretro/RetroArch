@@ -14,21 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../driver.h"
-#include "../../runloop.h"
-#include "../video_context_driver.h"
-#include "../drivers/gl_common.h"
-#include "../video_monitor.h"
-#include <retro_inline.h>
-
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
-
+#include <stdint.h>
 #include <errno.h>
 #include <signal.h>
-#include <stdint.h>
 #include <unistd.h>
+
 #include <sched.h>
 
 #include <EGL/egl.h>
@@ -36,6 +26,18 @@
 #include <EGL/eglext_brcm.h>
 #include <VG/openvg.h>
 #include <bcm_host.h>
+
+#include <retro_inline.h>
+
+#include "../../driver.h"
+#include "../../runloop.h"
+#include "../video_context_driver.h"
+#include "../common/gl_common.h"
+#include "../video_monitor.h"
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
 
 static bool g_use_hw_ctx;
 static EGLContext g_egl_hw_ctx;
@@ -128,7 +130,7 @@ static void gfx_ctx_vc_update_window_title(void *data)
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
    if (settings->fps_show)
-      msg_queue_push(buf_fps, 1, 1, false);
+      rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static void gfx_ctx_vc_get_video_size(void *data,

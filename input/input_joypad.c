@@ -14,10 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "input_joypad.h"
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
+
+#include "input_joypad.h"
 
 #include "../general.h"
 #ifdef HAVE_CONFIG_H

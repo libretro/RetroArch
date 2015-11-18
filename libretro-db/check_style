@@ -1,7 +1,0 @@
-#!/bin/bash
-uncrustify -c uncrustify.cfg *.c *.h
-for f in *.uncrustify; do
-	source_file=$(basename "$f" .uncrustify);
-	cmp "$source_file" "$f" || (read -p "Style violations in '$source_file'" && vimdiff "$source_file" "$f");
-done;
-rm -f *.uncrustify

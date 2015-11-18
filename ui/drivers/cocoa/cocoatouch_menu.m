@@ -26,6 +26,8 @@
 #include "../../../input/drivers/cocoa_input.h"
 
 #include "../../../menu/menu_entry.h"
+#include "../../../menu/drivers/menu_generic.h"
+#include "../../../runloop_data.h"
 
 // Menu Support
 
@@ -113,8 +115,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
   menu_entry_get_path(self.i, label, sizeof(label));
   menu_entry_get_value(self.i, buffer, sizeof(buffer));
-  
-  result.selectionStyle = UITableViewCellSelectionStyleNone;
+
   result.textLabel.text = BOXSTRING(label);
 
   if (label[0] == '\0')
@@ -165,7 +166,6 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
 - (void)handleBooleanSwitch:(UISwitch*)swt
 {
-  menu_entry_set_bool_value(self.i, swt.on ? true : false);
   [self.main menuSelect: self.i];
 }
 
@@ -261,8 +261,6 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
    [self.bindTimer invalidate];
    self.bindTimer = nil;
-   
-   cocoa_input_reset_icade_buttons();
 }
 
 - (void)alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
@@ -300,71 +298,11 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 @interface RAMenuItemPathDir : RAMenuItemBase
 @end
 
-@interface RADirectoryItem : NSObject
-@property (nonatomic) NSString* path;
-@property (nonatomic) bool isDirectory;
-@end
-
-@interface RADirectoryList : RAMenuBase<UIActionSheetDelegate>
-@property (nonatomic, weak) RADirectoryItem* selectedItem;
-
-@property (nonatomic, copy) void (^chooseAction)(RADirectoryList* list, RADirectoryItem* item);
-@property (nonatomic, copy) NSString* path;
-@property (nonatomic, copy) NSString* extensions;
-
-@property (nonatomic) bool allowBlank;
-@property (nonatomic) bool forDirectory;
-
-- (id)initWithPath:(NSString*)path extensions:(const char*)extensions action:(void (^)(RADirectoryList* list, RADirectoryItem* item))action;
-- (void)browseTo:(NSString*)path;
-@end
-
 @implementation RAMenuItemPathDir
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView
                   ofController:(UIViewController*)controller
 {
-   char pathdir[PATH_MAX_LENGTH], pathdir_ext[PATH_MAX_LENGTH];
-   NSString *path;
-   RADirectoryList* list;
-   RAMenuItemPathDir __weak* weakSelf = self;
-
-   menu_entry_pathdir_selected(self.i);
-   menu_entry_pathdir_get_value(self.i, pathdir, sizeof(pathdir));
-   menu_entry_pathdir_extensions(self.i, pathdir_ext, sizeof(pathdir_ext));
-
-   path = BOXSTRING(pathdir);
-   
-   if ( menu_entry_get_type(self.i) == MENU_ENTRY_PATH )
-     path = [path stringByDeletingLastPathComponent];
-      
-   list =
-     [[RADirectoryList alloc]
-            initWithPath:path
-              extensions:pathdir_ext
-                  action:^(RADirectoryList* list, RADirectoryItem* item) {
-         const char *newval = "";
-         if (item) {
-           if (list.forDirectory && !item.isDirectory)
-             return;
-
-           newval = [item.path UTF8String];
-         } else {
-           if (!list.allowBlank)
-             return;
-         }
-
-         menu_entry_pathdir_set_value(self.i, newval);
-         [[list navigationController] popViewControllerAnimated:YES];
-         menu_entry_select(self.i);
-         [weakSelf.parentTable reloadData];
-       }];
-
-   list.allowBlank = menu_entry_pathdir_allow_empty(self.i);
-   // JM: Is this just Dir vs Path?
-   list.forDirectory = menu_entry_pathdir_for_directory(self.i);
-   
-   [controller.navigationController pushViewController:list animated:YES];
 }
 
 @end
@@ -373,12 +311,26 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 @end
 
 @implementation RAMenuItemPath
+
+- (void)wasSelectedOnTableView:(UITableView*)tableView
+                  ofController:(UIViewController*)controller
+{
+  [self.main menuSelect: self.i];
+}
+
 @end
 
 @interface RAMenuItemDir : RAMenuItemPathDir
 @end
 
 @implementation RAMenuItemDir
+
+- (void)wasSelectedOnTableView:(UITableView*)tableView
+                  ofController:(UIViewController*)controller
+{
+  [self.main menuSelect: self.i];
+}
+
 @end
 
 @interface RANumberFormatter : NSNumberFormatter<UITextFieldDelegate>
@@ -593,26 +545,29 @@ replacementString:(NSString *)string
 - (NSString*)tableView:(UITableView*)tableView
 titleForHeaderInSection:(NSInteger)section
 {
-   if (self.hidesHeaders)
-       return nil;
-   return self.sections[section][0];
+   return nil;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView
  numberOfRowsInSection:(NSInteger)section
 {
-   return [self.sections[section] count] - 1;
+   return [self.sections[section] count];
 }
 
 - (id)itemForIndexPath:(NSIndexPath*)indexPath
 {
-   return self.sections[indexPath.section][indexPath.row + 1];
+   return self.sections[indexPath.section][indexPath.row];
 }
 
 - (UITableViewCell*)tableView:(UITableView *)tableView
         cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
    return [[self itemForIndexPath:indexPath] cellForTableView:tableView];
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    return UITableViewAutomaticDimension;
 }
 
 - (void)tableView:(UITableView *)tableView
@@ -630,30 +585,35 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 - (void)reloadData
 {
    [self willReloadData];
+   [self.tableView reloadData];
+}
 
-   // Here are two options:
+-(void)renderMessageBox:(NSString *)msg
+{
+    UIAlertView *message = [[UIAlertView alloc] initWithTitle:@"Help"
+                                                      message:msg
+                                                     delegate:self
+                                            cancelButtonTitle:@"OK"
+                                            otherButtonTitles:nil];
+     
+    [message show];
+}
 
-   // Option 1. This is like how setting app works, but not exactly.
-   // There is a typedef for the 'withRowAnimation' that has lots of
-   // options, just Google UITableViewRowAnimation
 
-   [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0]
-                 withRowAnimation:UITableViewRowAnimationAutomatic];
+-(void)msgQueuePush:(NSString *)msg
+{
+   self.osdmessage.text = msg;
+}
 
-   // Optione 2. This is a "bigger" transistion, but doesn't look as
-   // much like Settings. It has more options. Just Google
-   // UIViewAnimationOptionTransition
 
-   /*
-   [UIView transitionWithView:self.tableView
-                     duration:0.35f
-                      options:UIViewAnimationOptionTransitionCurlUp
-                   animations:^(void)
-           {
-             [self.tableView reloadData];
-           }
-   completion: nil];
-   */
+- (void)alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    switch (buttonIndex)
+    {
+        case 0:
+            generic_menu_iterate(MENU_ACTION_OK);
+            break;
+    }
 }
 
 @end
@@ -672,7 +632,17 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (void)viewWillAppear:(BOOL)animated
 {
+   char title_msg[256];
    [self reloadData];
+
+   self.osdmessage = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 300, 44)];
+   self.osdmessage.backgroundColor = [UIColor clearColor];
+
+   UIBarButtonItem *item = [[UIBarButtonItem alloc] initWithCustomView:self.osdmessage];
+   [self setToolbarItems: [NSArray arrayWithObject:item]];
+
+   menu_entries_get_core_title(title_msg, sizeof(title_msg));
+   self.osdmessage.text = BOXSTRING(title_msg);
 }
 
 - (void)willReloadData
@@ -685,15 +655,15 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    everything = [NSMutableArray array];
 
    menu_entries_get_core_title(title_msg, sizeof(title_msg));
-   self.title = BOXSTRING(title_msg);
+   self.osdmessage.text = BOXSTRING(title_msg);
 
    menu_entries_get_title(title, sizeof(title));
-   [everything addObject:BOXSTRING(title)];
+   self.title = BOXSTRING(title);
   
    end = menu_entries_get_end();    
    for (i = menu_entries_get_start(); i < end; i++)
      [everything addObject:[self make_menu_item_for_entry: i]];
-   
+
    self.sections = [NSMutableArray array];
    [self.sections addObject:everything];
 
@@ -730,40 +700,59 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (RAMenuItemBase*)make_menu_item_for_entry: (uint32_t) i
 {
-  RAMenuItemBase *me = nil;
-  switch (menu_entry_get_type(i)) {
-  case MENU_ENTRY_ACTION:
-    me = [RAMenuItemAction new]; break;
-  case MENU_ENTRY_BOOL:
-    me = [RAMenuItemBool new]; break;
-  case MENU_ENTRY_INT:
-    me = [RAMenuItemInt new]; break;
-  case MENU_ENTRY_UINT:
-    me = [RAMenuItemUInt new]; break;
-  case MENU_ENTRY_FLOAT:
-    me = [RAMenuItemFloat new]; break;
-  case MENU_ENTRY_PATH:
-    me = [RAMenuItemPath new]; break;
-  case MENU_ENTRY_DIR:
-    me = [RAMenuItemDir new]; break;
-  case MENU_ENTRY_STRING:
-    me = [RAMenuItemString new]; break;
-  case MENU_ENTRY_HEX:
-    me = [RAMenuItemHex new]; break;
-  case MENU_ENTRY_BIND:
-    me = [RAMenuItemBind new]; break;
-  case MENU_ENTRY_ENUM:
-    me = [RAMenuItemEnum new]; break;
-  };
+   RAMenuItemBase *me = nil;
+   switch (menu_entry_get_type(i))
+   {
+      case MENU_ENTRY_ACTION:
+         me = [RAMenuItemAction new];
+         break;
+      case MENU_ENTRY_BOOL:
+         me = [RAMenuItemBool new];
+         break;
+      case MENU_ENTRY_INT:
+         me = [RAMenuItemInt new];
+         break;
+      case MENU_ENTRY_UINT:
+         me = [RAMenuItemUInt new];
+         break;
+      case MENU_ENTRY_FLOAT:
+         me = [RAMenuItemFloat new];
+         break;
+      case MENU_ENTRY_PATH:
+         me = [RAMenuItemPath new];
+         break;
+      case MENU_ENTRY_DIR:
+         me = [RAMenuItemDir new];
+         break;
+      case MENU_ENTRY_STRING:
+         me = [RAMenuItemString new];
+         break;
+      case MENU_ENTRY_HEX:
+         me = [RAMenuItemHex new];
+         break;
+      case MENU_ENTRY_BIND:
+         me = [RAMenuItemBind new];
+         break;
+      case MENU_ENTRY_ENUM:
+         me = [RAMenuItemEnum new];
+         break;
+   };
 
-  [me initialize:self idx:i];
+   [me initialize:self idx:i];
 
-  return me;
+   return me;
 }
 
 - (void)menuSelect: (uint32_t) i
 {
+  unsigned j;
   menu_entry_select(i);
+    
+  if (!rarch_main_data_active())
+      return;
+    
+  for (j = 0; j < 32; j++)
+     rarch_main_data_iterate();
 }
 
 - (void)menuBack

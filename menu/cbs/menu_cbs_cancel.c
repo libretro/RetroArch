@@ -16,7 +16,6 @@
 #include <file/file_path.h>
 #include "../menu.h"
 #include "../menu_cbs.h"
-#include "../menu_entry.h"
 
 static int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx)

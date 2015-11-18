@@ -14,13 +14,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "movie.h"
-#include <rhash.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <rhash.h>
+#include <retro_endianness.h>
+
 #include "general.h"
-#include "dynamic.h"
 
 struct bsv_movie
 {
@@ -90,8 +91,8 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
          return false;
       }
 
-      if (pretro_serialize_size() == state_size)
-         pretro_unserialize(handle->state, state_size);
+      if (core.retro_serialize_size() == state_size)
+         core.retro_unserialize(handle->state, state_size);
       else
          RARCH_WARN("Movie format seems to have a different serializer version. Will most likely fail.\n");
    }
@@ -118,7 +119,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
     * BSV1 in a HEX editor, big-endian. */
    header[MAGIC_INDEX]      = swap_if_little32(BSV_MAGIC);
    header[CRC_INDEX]        = swap_if_big32(global->content_crc);
-   state_size               = pretro_serialize_size();
+   state_size               = core.retro_serialize_size();
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
 
    fwrite(header, 4, sizeof(uint32_t), handle->file);
@@ -132,7 +133,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
       if (!handle->state)
          return false;
 
-      pretro_serialize(handle->state, state_size);
+      core.retro_serialize(handle->state, state_size);
       fwrite(handle->state, 1, state_size, handle->file);
    }
 
@@ -245,7 +246,7 @@ void bsv_movie_frame_rewind(bsv_movie_t *handle)
          /* If recording, we simply reset
           * the starting point. Nice and easy. */
          fseek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
-         pretro_serialize(handle->state, handle->state_size);
+         core.retro_serialize(handle->state, handle->state_size);
          fwrite(handle->state, 1, handle->state_size, handle->file);
       }
       else

@@ -14,9 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../driver.h"
-#include "../../runloop.h"
-#include "../../ps3/sdk_defines.h"
+#include <stdint.h>
+
+#ifndef __PSL1GHT__
+#include <sys/spu_initialize.h>
+#endif
 
 #ifdef HAVE_LIBDBGFONT
 #ifndef __PSL1GHT__
@@ -24,21 +26,16 @@
 #endif
 #endif
 
+#include "../../driver.h"
+#include "../../runloop.h"
+#include "../../defines/ps3_defines.h"
+#include "../common/gl_common.h"
+#include "../video_context_driver.h"
 #include "../video_monitor.h"
-
-#ifndef __PSL1GHT__
-#include <sys/spu_initialize.h>
-#endif
-
-#include <stdint.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#include "../drivers/gl_common.h"
-
-#include "../video_context_driver.h"
 
 typedef struct gfx_ctx_ps3_data
 {

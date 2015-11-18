@@ -20,19 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <file/config_file.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
-#include <compat/strl.h>
-#include <compat/posix_string.h>
-#include <compat/msvc.h>
-#include <file/file_path.h>
-#include <retro_miscellaneous.h>
-#include <string/string_list.h>
-#include <rhash.h>
 
 #if !defined(_WIN32) && !defined(__CELLOS_LV2__) && !defined(_XBOX)
 #include <sys/param.h> /* PATH_MAX */
@@ -43,8 +35,45 @@
 #include <xtl.h>
 #endif
 
+#include <retro_miscellaneous.h>
+#include <compat/strl.h>
+#include <compat/posix_string.h>
+#include <compat/msvc.h>
+#include <file/config_file.h>
+#include <file/file_path.h>
+#include <retro_stat.h>
+#include <string/string_list.h>
+#include <rhash.h>
+
 #define MAX_INCLUDE_DEPTH 16
 
+struct config_entry_list
+{
+   /* If we got this from an #include,
+    * do not allow overwrite. */
+   bool readonly;
+   char *key;
+   char *value;
+   uint32_t key_hash;
+
+   struct config_entry_list *next;
+};
+
+struct config_include_list
+{
+   char *path;
+   struct config_include_list *next;
+};
+
+struct config_file
+{
+   char *path;
+   struct config_entry_list *entries;
+   struct config_entry_list *tail;
+   unsigned include_depth;
+
+   struct config_include_list *includes;
+};
 
 static config_file_t *config_file_new_internal(const char *path, unsigned depth);
 void config_file_free(config_file_t *conf);
@@ -90,7 +119,7 @@ static char *extract_value(char *line, bool is_value)
 
    if (is_value)
    {
-      while (isspace(*line))
+      while (isspace((int)*line))
          line++;
 
       /* If we don't have an equal sign here,
@@ -101,7 +130,7 @@ static char *extract_value(char *line, bool is_value)
       line++;
    }
 
-   while (isspace(*line))
+   while (isspace((int)*line))
       line++;
 
    /* We have a full string. Read until next ". */
@@ -305,10 +334,10 @@ static bool parse_line(config_file_t *conf,
    }
 
    /* Skips to first character. */
-   while (isspace(*line))
+   while (isspace((int)*line))
       line++;
 
-   while (isgraph(*line))
+   while (isgraph((int)*line))
    {
       if (idx == cur_size)
       {
@@ -370,18 +399,11 @@ static config_file_t *config_file_new_internal(
       return conf;
 
    if (path_is_directory(path))
-   {
-      RARCH_ERR("%s is not a regular file.\n", path);
-      free(conf);
-      return NULL;
-   }
+      goto error;
 
    conf->path = strdup(path);
    if (!conf->path)
-   {
-      free(conf);
-      return NULL;
-   }
+      goto error;
 
    conf->include_depth = depth;
    file = fopen(path, "r");
@@ -389,8 +411,7 @@ static config_file_t *config_file_new_internal(
    if (!file)
    {
       free(conf->path);
-      free(conf);
-      return NULL;
+      goto error;
    }
 
    while (!feof(file))
@@ -431,9 +452,15 @@ static config_file_t *config_file_new_internal(
       if (list != conf->tail)
          free(list);
    }
+
    fclose(file);
 
    return conf;
+
+error:
+   free(conf);
+
+   return NULL;
 }
 
 config_file_t *config_file_new_from_string(const char *from_string)
@@ -661,6 +688,14 @@ bool config_get_string(config_file_t *conf, const char *key, char **str)
       *str = strdup(entry->value);
 
    return entry != NULL;
+}
+
+bool config_get_config_path(config_file_t *conf, char *s, size_t len)
+{
+   if (!conf)
+      return false;
+
+   return strlcpy(s, conf->path, len);
 }
 
 bool config_get_array(config_file_t *conf, const char *key,

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<qnx xmlns="http://www.qnx.com/schemas/application/1.0">
+
+    <id>com.RetroArch</id>
+    <name>RetroArch</name>
+    <versionNumber>1.2.2</versionNumber>
+    <buildId>1</buildId>
+    <description>Cross-platform entertainment system</description>
+    <author>Team Libretro</author>
+    <initialWindow>
+        <autoOrients>true</autoOrients>
+        <systemChrome>none</systemChrome>
+        <transparent>false</transparent>
+    </initialWindow>
+    <category>core.games</category>
+    <asset path="../../media/assets">assets</asset>
+    <asset path="../../media/retroarch-96x96.png">icon.png</asset>
+    <asset path=".././media/overlays">overlays</asset>
+    <asset path="lib">lib</asset>
+    <asset path="../../retroarch.cfg">retroarch.cfg</asset>
+    <configuration name="Device-Debug">
+       <platformArchitecture>armle-v7</platformArchitecture>
+       <asset path="Device-Debug/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
+    </configuration>
+    <configuration name="Device-Release">
+       <platformArchitecture>armle-v7</platformArchitecture>
+       <asset path="Device-Release/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
+    </configuration>
+    <configuration name="Device-Profile">
+       <platformArchitecture>armle-v7</platformArchitecture>
+       <asset path="Device-Profile/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
+    </configuration>
+    <configuration name="Device-Coverage">
+       <platformArchitecture>armle-v7</platformArchitecture>
+       <asset path="Device-Coverage/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
+    </configuration>
+    <configuration name="Simulator-Debug">
+       <platformArchitecture>x86</platformArchitecture>
+       <asset path="Simulator-Debug/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
+    </configuration>
+    <configuration name="Simulator-Profile">
+       <platformArchitecture>x86</platformArchitecture>
+       <asset path="Simulator-Profile/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
+    </configuration>
+    <configuration name="Simulator-Coverage">
+       <platformArchitecture>x86</platformArchitecture>
+       <asset path="Simulator-Coverage/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
+    </configuration>
+
+    <icon>
+       <image>icon.png</image>
+    </icon>
+
+    <permission>access_shared</permission>
+    <permission>use_gamepad</permission>
+
+    <!-- Ensure that shared libraries in the package are found at run-time. -->
+    <env var="LD_LIBRARY_PATH" value="app/native/lib"/>
+
+</qnx>

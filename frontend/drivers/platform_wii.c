@@ -18,10 +18,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <fat.h>
 #include <gctypes.h>
 #include <ogc/cache.h>
-#include "../../gfx/drivers/ppc_asm.h"
 #include <ogc/system.h>
 #include <ogc/usbstorage.h>
 #include <sdcard/wiisd_io.h>
@@ -29,6 +29,8 @@
 #include <retro_log.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
+
+#include "../../gfx/drivers/ppc_asm.h"
 
 #define EXECUTE_ADDR ((uint8_t *) 0x91800000)
 #define BOOTER_ADDR  ((uint8_t *) 0x93000000)
@@ -132,7 +134,7 @@ void system_exec_wii(const char *_path, bool should_load_game)
 #ifdef IS_SALAMANDER
       strlcpy(game_path, gx_rom_path, sizeof(game_path));
 #else
-      strlcpy(game_path, global->fullpath, sizeof(game_path));
+      strlcpy(game_path, global->path.fullpath, sizeof(game_path));
 #endif
    }
 

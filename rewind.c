@@ -16,14 +16,19 @@
  */
 
 #define __STDC_LIMIT_MACROS
-#include "rewind.h"
-#include "performance.h"
 #include <stdlib.h>
 #include <string.h>
+
 #include <retro_inline.h>
-#include "dynamic.h"
+
 #include "general.h"
 #include "msg_hash.h"
+#include "rewind.h"
+#include "performance.h"
+
+/* This makes Valgrind throw errors if a core overflows its savestate size. */
+/* Keep it off unless you're chasing a core bug, it slows things down. */
+#define STRICT_BUF_SIZE 0
 
 #ifndef UINT16_MAX
 #define UINT16_MAX 0xffff
@@ -42,6 +47,34 @@
 #ifndef CPU_X86
 #define NO_UNALIGNED_MEM
 #endif
+
+struct state_manager
+{
+   uint8_t *data;
+   size_t capacity;
+   /* Reading and writing is done here here. */
+   uint8_t *head;
+   /* If head comes close to this, discard a frame. */
+   uint8_t *tail;
+
+   uint8_t *thisblock;
+   uint8_t *nextblock;
+
+   /* This one is rounded up from reset::blocksize. */
+   size_t blocksize;
+
+   /* size_t + (blocksize + 131071) / 131072 * 
+    * (blocksize + u16 + u16) + u16 + u32 + size_t
+    * (yes, the math is a bit ugly). */
+   size_t maxcompsize;
+
+   unsigned entries;
+   bool thisblock_valid;
+#if STRICT_BUF_SIZE
+   size_t debugsize;
+   uint8_t *debugblock;
+#endif
+};
 
 /* Format per frame (pseudocode): */
 #if 0
@@ -68,7 +101,7 @@ size_t state_manager_raw_maxsize(size_t uncomp)
    /* bytes covered by a compressed block */
    const int maxcblkcover = UINT16_MAX * sizeof(uint16_t);
    /* uncompressed size, rounded to 16 bits */
-   size_t uncomp16        = (uncomp + sizeof(uint16_t) - 1) & ~sizeof(uint16_t);
+   size_t uncomp16        = (uncomp + sizeof(uint16_t) - 1) & -sizeof(uint16_t);
    /* number of blocks */
    size_t maxcblks        = (uncomp + maxcblkcover - 1) / maxcblkcover;
    return uncomp16 + maxcblks * sizeof(uint16_t) * 2 /* two u16 overhead per block */ + sizeof(uint16_t) *
@@ -77,7 +110,7 @@ size_t state_manager_raw_maxsize(size_t uncomp)
 
 void *state_manager_raw_alloc(size_t len, uint16_t uniq)
 {
-   size_t  len16 = (len + sizeof(uint16_t) - 1) & ~sizeof(uint16_t);
+   size_t  len16 = (len + sizeof(uint16_t) - 1) & -sizeof(uint16_t);
 
    uint16_t *ret = (uint16_t*)calloc(len16 + sizeof(uint16_t) * 4 + 16, 1);
 
@@ -294,11 +327,12 @@ void state_manager_raw_decompress(const void *patch,
    
    for (;;)
    {
-      uint16_t i;
       uint16_t numchanged = *(patch16++);
 
       if (numchanged)
       {
+         uint16_t i;
+
          out16 += *patch16++;
 
          /* We could do memcpy, but it seems that memcpy has a 
@@ -360,29 +394,6 @@ static INLINE size_t read_size_t(const void *ptr)
    return ret;
 }
 
-struct state_manager
-{
-   uint8_t *data;
-   size_t capacity;
-   /* Reading and writing is done here here. */
-   uint8_t *head;
-   /* If head comes close to this, discard a frame. */
-   uint8_t *tail;
-
-   uint8_t *thisblock;
-   uint8_t *nextblock;
-
-   /* This one is rounded up from reset::blocksize. */
-   size_t blocksize;
-
-   /* size_t + (blocksize + 131071) / 131072 * 
-    * (blocksize + u16 + u16) + u16 + u32 + size_t
-    * (yes, the math is a bit ugly). */
-   size_t maxcompsize;
-
-   unsigned entries;
-   bool thisblock_valid;
-};
 
 state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
 {
@@ -406,6 +417,11 @@ state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
    state->head = state->data + sizeof(size_t);
    state->tail = state->data + sizeof(size_t);
 
+#if STRICT_BUF_SIZE
+   state->debugsize = state_size;
+   state->debugblock = (uint8_t*)malloc(state_size);
+#endif
+
    return state;
 
 error:
@@ -421,6 +437,9 @@ void state_manager_free(state_manager_t *state)
    free(state->data);
    free(state->thisblock);
    free(state->nextblock);
+#if STRICT_BUF_SIZE
+   free(state->debugblock);
+#endif
    free(state);
 }
 
@@ -473,10 +492,18 @@ void state_manager_push_where(state_manager_t *state, void **data)
    }
    
    *data = state->nextblock;
+#if STRICT_BUF_SIZE
+   *data = state->debugblock;
+#endif
 }
 
 void state_manager_push_do(state_manager_t *state)
 {
+#if STRICT_BUF_SIZE
+   memcpy(state->nextblock, state->debugblock, state->debugsize);
+#endif
+
+   static struct retro_perf_counter gen_deltas = {0};
    uint8_t *swap = NULL;
 
    if (state->thisblock_valid)
@@ -501,8 +528,8 @@ recheckcapacity:;
          goto recheckcapacity;
       }
 
-      RARCH_PERFORMANCE_INIT(gen_deltas);
-      RARCH_PERFORMANCE_START(gen_deltas);
+      rarch_perf_init(&gen_deltas, "gen_deltas");
+      retro_perf_start(&gen_deltas);
 
       oldb = state->thisblock;
       newb = state->nextblock;
@@ -521,7 +548,7 @@ recheckcapacity:;
       write_size_t(state->head, compressed-state->data);
       state->head = compressed;
 
-      RARCH_PERFORMANCE_STOP(gen_deltas);
+      retro_perf_stop(&gen_deltas);
    }
    else
       state->thisblock_valid = true;
@@ -552,16 +579,8 @@ void state_manager_capacity(state_manager_t *state,
 void init_rewind(void)
 {
    void *state          = NULL;
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
-
-   (void)driver;
-
-#ifdef HAVE_NETPLAY
-   if (driver->netplay_data)
-      return;
-#endif
 
    if (!settings->rewind_enable || global->rewind.state)
       return;
@@ -572,7 +591,7 @@ void init_rewind(void)
       return;
    }
 
-   global->rewind.size = pretro_serialize_size();
+   global->rewind.size = core.retro_serialize_size();
 
    if (!global->rewind.size)
    {
@@ -592,6 +611,18 @@ void init_rewind(void)
       RARCH_WARN("%s.\n", msg_hash_to_str(MSG_REWIND_INIT_FAILED));
 
    state_manager_push_where(global->rewind.state, &state);
-   pretro_serialize(state, global->rewind.size);
+   core.retro_serialize(state, global->rewind.size);
    state_manager_push_do(global->rewind.state);
+}
+
+static bool frame_is_reversed;
+
+bool state_manager_frame_is_reversed(void)
+{
+   return frame_is_reversed;
+}
+
+void state_manager_set_frame_is_reversed(bool value)
+{
+   frame_is_reversed = value;
 }

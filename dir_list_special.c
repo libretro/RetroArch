@@ -19,13 +19,12 @@
 #include "file_ext.h"
 #include "configuration.h"
 
-struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_type type)
+struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_type type, const char *filter)
 {
    const char *dir   = NULL;
    const char *exts  = NULL;
    bool include_dirs = false;
 
-   global_t                *global = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
    (void)input_dir;
@@ -39,11 +38,15 @@ struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_ty
          break;
       case DIR_LIST_CORE_INFO:
          dir  = input_dir;
-         exts = (global->core_info) ? core_info_list_get_all_extensions(global->core_info) : NULL;
+         exts = core_info_list_get_all_extensions();
          break;
       case DIR_LIST_SHADERS:
          dir  = settings->video.shader_dir;
          exts = "cg|cgp|glsl|glslp";
+         break;
+      case DIR_LIST_COLLECTIONS:
+         dir  = settings->playlist_directory;
+         exts = "lpl";
          break;
       case DIR_LIST_DATABASES:
          dir  = settings->content_database;
@@ -51,12 +54,12 @@ struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_ty
          break;
       case DIR_LIST_PLAIN:
          dir  = input_dir;
-         exts = NULL;
+         exts = filter;
          break;
       case DIR_LIST_NONE:
       default:
          return NULL;
    }
 
-   return dir_list_new(dir, exts, include_dirs);
+   return dir_list_new(dir, exts, include_dirs, false);
 }

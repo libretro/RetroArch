@@ -51,7 +51,7 @@ CFLAGS += $(RARCH_DEFINES)
 EXTRA_TARGETS = EBOOT.PBP
 PSP_EBOOT_TITLE = RetroArch PSP1
 
-PSP_OBJECTS = griffin/griffin.o psp1/kernel_functions.o
+PSP_OBJECTS = griffin/griffin.o bootstrap/psp1/kernel_functions.o
 
 OBJS = $(PSP_OBJECTS)
 

@@ -14,22 +14,23 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <unistd.h>
+
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+
+#include <emscripten/emscripten.h>
+
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../video_context_driver.h"
-#include "../drivers/gl_common.h"
+#include "../common/gl_common.h"
 #include "../video_monitor.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
-
-#include <stdint.h>
-#include <unistd.h>
-
-#include <emscripten/emscripten.h>
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
 
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;

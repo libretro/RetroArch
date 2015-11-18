@@ -700,7 +700,7 @@ typedef void (APIENTRYP RGLSYMGLCOPYCOLORTABLEPROC) (GLenum target, GLenum inter
 typedef void (APIENTRYP RGLSYMGLGETCOLORTABLEPROC) (GLenum target, GLenum format, GLenum type, void *table);
 typedef void (APIENTRYP RGLSYMGLGETCOLORTABLEPARAMETERFVPROC) (GLenum target, GLenum pname, GLfloat *params);
 typedef void (APIENTRYP RGLSYMGLGETCOLORTABLEPARAMETERIVPROC) (GLenum target, GLenum pname, GLint *params);
-typedef void (APIENTRYP RGLSYMGLCOLORSUBTABLEPROC) (GLenum target, GLsizei start, GLsizei count, GLenum format, GLenum type, const void *data);
+typedef void (APIENTRYP RGLSYMGLCOLORSUBTABLEPROC) (GLenum target, GLsizei start, GLsizei count, GLenum format, GLenum type, const GLvoid *data);
 typedef void (APIENTRYP RGLSYMGLCOPYCOLORSUBTABLEPROC) (GLenum target, GLsizei start, GLint x, GLint y, GLsizei width);
 typedef void (APIENTRYP RGLSYMGLCONVOLUTIONFILTER1DPROC) (GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const void *image);
 typedef void (APIENTRYP RGLSYMGLCONVOLUTIONFILTER2DPROC) (GLenum target, GLenum internalformat, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *image);

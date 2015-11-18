@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -26,7 +26,7 @@
 #include "config.h"
 #endif
 
-enum 
+enum
 {
    VIDEO_GL = 0,
    VIDEO_XVIDEO,
@@ -37,7 +37,7 @@ enum
    VIDEO_XENON360,
    VIDEO_XDK_D3D,
    VIDEO_PSP1,
-   VIDEO_VITA,
+   VIDEO_VITA2D,
    VIDEO_CTR,
    VIDEO_D3D9,
    VIDEO_VG,
@@ -66,7 +66,7 @@ enum
    AUDIO_XENON360,
    AUDIO_WII,
    AUDIO_RWEBAUDIO,
-   AUDIO_PSP1,
+   AUDIO_PSP,
    AUDIO_CTR,
    AUDIO_NULL,
 
@@ -124,7 +124,7 @@ enum
    MENU_RGUI,
    MENU_RMENU,
    MENU_RMENU_XUI,
-   MENU_GLUI,
+   MENU_MATERIALUI,
    MENU_XMB,
 
    RECORD_FFMPEG,
@@ -143,8 +143,8 @@ enum
 #define VIDEO_DEFAULT_DRIVER VIDEO_D3D9
 #elif defined(HAVE_VG)
 #define VIDEO_DEFAULT_DRIVER VIDEO_VG
-#elif defined(SN_TARGET_PSP2)
-#define VIDEO_DEFAULT_DRIVER VIDEO_VITA
+#elif defined(HAVE_VITA2D)
+#define VIDEO_DEFAULT_DRIVER VIDEO_VITA2D
 #elif defined(PSP)
 #define VIDEO_DEFAULT_DRIVER VIDEO_PSP1
 #elif defined(_3DS)
@@ -167,8 +167,8 @@ enum
 #define AUDIO_DEFAULT_DRIVER AUDIO_XENON360
 #elif defined(GEKKO)
 #define AUDIO_DEFAULT_DRIVER AUDIO_WII
-#elif defined(PSP)
-#define AUDIO_DEFAULT_DRIVER AUDIO_PSP1
+#elif defined(PSP) || defined(VITA)
+#define AUDIO_DEFAULT_DRIVER AUDIO_PSP
 #elif defined(_3DS)
 #define AUDIO_DEFAULT_DRIVER AUDIO_CTR
 #elif defined(HAVE_ALSA) && defined(HAVE_VIDEOCORE)
@@ -183,20 +183,20 @@ enum
 #define AUDIO_DEFAULT_DRIVER AUDIO_JACK
 #elif defined(HAVE_COREAUDIO)
 #define AUDIO_DEFAULT_DRIVER AUDIO_COREAUDIO
+#elif defined(HAVE_XAUDIO)
+#define AUDIO_DEFAULT_DRIVER AUDIO_XAUDIO
+#elif defined(HAVE_DSOUND)
+#define AUDIO_DEFAULT_DRIVER AUDIO_DSOUND
 #elif defined(HAVE_AL)
 #define AUDIO_DEFAULT_DRIVER AUDIO_AL
 #elif defined(HAVE_SL)
 #define AUDIO_DEFAULT_DRIVER AUDIO_SL
-#elif defined(HAVE_DSOUND)
-#define AUDIO_DEFAULT_DRIVER AUDIO_DSOUND
 #elif defined(EMSCRIPTEN)
 #define AUDIO_DEFAULT_DRIVER AUDIO_RWEBAUDIO
 #elif defined(HAVE_SDL)
 #define AUDIO_DEFAULT_DRIVER AUDIO_SDL
 #elif defined(HAVE_SDL2)
 #define AUDIO_DEFAULT_DRIVER AUDIO_SDL2
-#elif defined(HAVE_XAUDIO)
-#define AUDIO_DEFAULT_DRIVER AUDIO_XAUDIO
 #elif defined(HAVE_RSOUND)
 #define AUDIO_DEFAULT_DRIVER AUDIO_RSOUND
 #elif defined(HAVE_ROAR)
@@ -231,7 +231,7 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_DINPUT
 #elif defined(__CELLOS_LV2__)
 #define INPUT_DEFAULT_DRIVER INPUT_PS3
-#elif (defined(SN_TARGET_PSP2) || defined(PSP))
+#elif defined(PSP) || defined(VITA)
 #define INPUT_DEFAULT_DRIVER INPUT_PSP
 #elif defined(_3DS)
 #define INPUT_DEFAULT_DRIVER INPUT_CTR
@@ -265,7 +265,7 @@ enum
 #define JOYPAD_DEFAULT_DRIVER JOYPAD_GX
 #elif defined(_XBOX)
 #define JOYPAD_DEFAULT_DRIVER JOYPAD_XDK
-#elif defined(PSP)
+#elif defined(PSP) || defined(VITA)
 #define JOYPAD_DEFAULT_DRIVER JOYPAD_PSP
 #elif defined(_3DS)
 #define JOYPAD_DEFAULT_DRIVER JOYPAD_CTR
@@ -318,7 +318,9 @@ enum
 #elif defined(HAVE_RMENU_XUI)
 #define MENU_DEFAULT_DRIVER MENU_RMENU_XUI
 #elif defined(IOS) || defined(ANDROID) || defined(__CELLOS_LV2__)
-#define MENU_DEFAULT_DRIVER MENU_GLUI
+#define MENU_DEFAULT_DRIVER MENU_MATERIALUI
+#elif defined(MAC_OS_X_VERSION_10_6)
+#define MENU_DEFAULT_DRIVER MENU_XMB
 #else
 #define MENU_DEFAULT_DRIVER MENU_RGUI
 #endif
@@ -337,6 +339,8 @@ static const bool pointer_enable = true;
 static const bool pointer_enable = false;
 #endif
 
+
+
 /* Certain platforms might have assets stored in the bundle that
  * we need to extract to a user-writable directory on first boot.
  *
@@ -350,6 +354,12 @@ static bool bundle_assets_extract_enable = false;
 static const bool def_history_list_enable = true;
 
 static const unsigned int def_user_language = 0;
+
+#if (defined(__APPLE__) && defined(__MACH__) && defined(OSX)) || (defined(_WIN32) && !defined(_XBOX))
+static const bool def_mouse_enable = true;
+#else
+static const bool def_mouse_enable = false;
+#endif
 
 /* VIDEO */
 
@@ -371,7 +381,7 @@ static const float scale = 3.0;
 static const bool fullscreen = false;
 
 /* To use windowed mode or not when going fullscreen. */
-static const bool windowed_fullscreen = true; 
+static const bool windowed_fullscreen = true;
 
 /* Which monitor to prefer. 0 is any monitor, 1 and up selects
  * specific monitors, 1 being the first monitor. */
@@ -412,8 +422,8 @@ static const unsigned hard_sync_frames = 0;
 static const unsigned frame_delay = 0;
 
 /* Inserts a black frame inbetween frames.
- * Useful for 120 Hz monitors who want to play 60 Hz material with eliminated 
- * ghosting. video_refresh_rate should still be configured as if it 
+ * Useful for 120 Hz monitors who want to play 60 Hz material with eliminated
+ * ghosting. video_refresh_rate should still be configured as if it
  * is a 60 Hz monitor (divide refresh rate by 2).
  */
 static bool black_frame_insertion = false;
@@ -423,7 +433,7 @@ static bool black_frame_insertion = false;
  */
 static unsigned swap_interval = 1;
 
-/* Threaded video. Will possibly increase performance significantly 
+/* Threaded video. Will possibly increase performance significantly
  * at the cost of worse synchronization and latency.
  */
 static const bool video_threaded = false;
@@ -452,7 +462,7 @@ static const bool video_vfilter = true;
 static const bool video_smooth = true;
 
 /* On resize and fullscreen, rendering area will stay 4:3 */
-static const bool force_aspect = true; 
+static const bool force_aspect = true;
 
 /* Enable use of shaders. */
 #ifdef RARCH_CONSOLE
@@ -495,7 +505,6 @@ static const bool overlay_hide_in_menu = true;
 #ifdef HAVE_MENU
 static bool default_block_config_read = true;
 
-static bool collapse_subgroups_enable = true;
 static bool show_advanced_settings    = true;
 static const uint32_t menu_entry_normal_color = 0xffffffff;
 static const uint32_t menu_entry_hover_color  = 0xff64ff64;
@@ -510,6 +519,7 @@ static bool default_core_specific_config = true;
 static bool default_core_specific_config = false;
 #endif
 
+static bool default_game_specific_options = false;
 static bool default_auto_overrides_enable = false;
 static bool default_auto_remaps_enable = false;
 
@@ -544,7 +554,7 @@ static const float font_size = 1.0f;
 static const float font_size = 32;
 #endif
 
-/* Offset for where messages will be placed on-screen. 
+/* Offset for where messages will be placed on-screen.
  * Values are in range [0.0, 1.0]. */
 static const float message_pos_offset_x = 0.05;
 #if defined(_XBOX1)
@@ -572,21 +582,23 @@ static const bool font_enable = true;
 
 /* The accurate refresh rate of your monitor (Hz).
  * This is used to calculate audio input rate with the formula:
- * audio_input_rate = game_input_rate * display_refresh_rate / 
+ * audio_input_rate = game_input_rate * display_refresh_rate /
  * game_refresh_rate.
  *
  * If the implementation does not report any values,
  * NTSC defaults will be assumed for compatibility.
  * This value should stay close to 60Hz to avoid large pitch changes.
- * If your monitor does not run at 60Hz, or something close to it, 
+ * If your monitor does not run at 60Hz, or something close to it,
  * disable VSync, and leave this at its default. */
-#if defined(RARCH_CONSOLE)
-static const float refresh_rate = 60/1.001; 
+#ifdef _3DS
+static const float refresh_rate = (32730.0 * 8192.0) / 4481134.0 ;
+#elif defined(RARCH_CONSOLE)
+static const float refresh_rate = 60/1.001;
 #else
-static const float refresh_rate = 59.95; 
+static const float refresh_rate = 59.95;
 #endif
 
-/* Allow games to set rotation. If false, rotation requests are 
+/* Allow games to set rotation. If false, rotation requests are
  * honored, but ignored.
  * Used for setups where one manually rotates the monitor. */
 static const bool allow_rotate = true;
@@ -597,12 +609,18 @@ static const bool allow_rotate = true;
 static const bool audio_enable = true;
 
 /* Output samplerate. */
+#ifdef GEKKO
+static const unsigned out_rate = 32000;
+#elif defined(_3DS)
+static const unsigned out_rate = 32730;
+#else
 static const unsigned out_rate = 48000;
+#endif
 
 /* Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults. */
 static const char *audio_device = NULL;
 
-/* Desired audio latency in milliseconds. Might not be honored 
+/* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
 static const int out_latency = 64;
 
@@ -616,7 +634,7 @@ static const bool rate_control = true;
 static const bool rate_control = false;
 #endif
 
-/* Rate control delta. Defines how much rate_control 
+/* Rate control delta. Defines how much rate_control
  * is allowed to adjust input rate. */
 static const float rate_control_delta = 0.005;
 
@@ -632,11 +650,11 @@ static const float audio_volume = 0.0;
 /* Enables displaying the current frames per second. */
 static const bool fps_show = false;
 
-/* Enables use of rewind. This will incur some memory footprint 
+/* Enables use of rewind. This will incur some memory footprint
  * depending on the save state buffer. */
 static const bool rewind_enable = false;
 
-/* The buffer size for the rewind buffer. This needs to be about 
+/* The buffer size for the rewind buffer. This needs to be about
  * 15-20MB per minute. Very game dependant. */
 static const unsigned rewind_buffer_size = 20 << 20; /* 20MiB */
 
@@ -644,13 +662,13 @@ static const unsigned rewind_buffer_size = 20 << 20; /* 20MiB */
 static const unsigned rewind_granularity = 1;
 
 /* Pause gameplay when gameplay loses focus. */
-static const bool pause_nonactive = false;
+static const bool pause_nonactive = true;
 
 /* Saves non-volatile SRAM at a regular interval.
  * It is measured in seconds. A value of 0 disables autosave. */
 static const unsigned autosave_interval = 0;
 
-/* When being client over netplay, use keybinds for 
+/* When being client over netplay, use keybinds for
  * user 1 rather than user 2. */
 static const bool netplay_client_swap_input = true;
 
@@ -658,15 +676,15 @@ static const bool netplay_client_swap_input = true;
  * This could potentially lead to buggy games. */
 static const bool block_sram_overwrite = false;
 
-/* When saving savestates, state index is automatically 
+/* When saving savestates, state index is automatically
  * incremented before saving.
- * When the content is loaded, state index will be set 
+ * When the content is loaded, state index will be set
  * to the highest existing value. */
 static const bool savestate_auto_index = false;
 
 /* Automatically saves a savestate at the end of RetroArch's lifetime.
  * The path is $SRAM_PATH.auto.
- * RetroArch will automatically load any savestate with this path on 
+ * RetroArch will automatically load any savestate with this path on
  * startup if savestate_auto_load is set. */
 static const bool savestate_auto_save = false;
 static const bool savestate_auto_load = false;
@@ -675,10 +693,7 @@ static const bool savestate_auto_load = false;
 static const float slowmotion_ratio = 3.0;
 
 /* Maximum fast forward ratio. */
-static const float fastforward_ratio = 1.0;
-
-/* Throttle fast forward. */
-static const bool fastforward_ratio_throttle_enable = false;
+static const float fastforward_ratio = 0.0;
 
 /* Enable stdin/network command interface. */
 static const bool network_cmd_enable = false;
@@ -724,13 +739,19 @@ static const unsigned turbo_duty_cycle = 3;
  * gamepads, plug-and-play style. */
 static const bool input_autodetect_enable = true;
 
-/* Show the input descriptors set by the core instead 
+/* Show the input descriptors set by the core instead
  * of the default ones. */
 static const bool input_descriptor_label_show = true;
 
 static const bool input_descriptor_hide_unbound = false;
 
 static const unsigned input_max_users = 5;
+
+#ifdef IOS
+static const bool ui_companion_start_on_boot = false;
+#else
+static const bool ui_companion_start_on_boot = true;
+#endif
 
 #if defined(ANDROID)
 #if defined(ANDROID_ARM)
@@ -741,14 +762,14 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/androi
 static char buildbot_server_url[] = "";
 #endif
 #elif defined(IOS)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/ios/latest/";
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/ios/latest/";
 #elif defined(OSX)
 #if defined(__x86_64__)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/osx-x86_64/latest/";
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/osx/x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/osx-i386/latest/";
+static char buildbot_server_url[] = "http://bot.libretro.com/nightly/apple/osx/x86/latest/";
 #else
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/osx-ppc/latest/";
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/osx/ppc/latest/";
 #endif
 #elif defined(_WIN32) && !defined(_XBOX)
 #if defined(__x86_64__)
@@ -759,6 +780,8 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/win-x8
 #elif defined(__linux__)
 #if defined(__x86_64__)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/x86_64/latest/";
+#elif defined(__i386__) || defined(__i486__) || defined(__i686__)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/x86/latest/";
 #else
 static char buildbot_server_url[] = "";
 #endif
@@ -869,4 +892,3 @@ static const struct retro_keybind retro_keybinds_rest[] = {
 #endif
 
 #endif
-

@@ -15,7 +15,12 @@
 
 #include "../menu.h"
 #include "../menu_cbs.h"
-#include "../menu_cbs.h"
+
+#ifndef BIND_ACTION_CONTENT_LIST_SWITCH
+#define BIND_ACTION_CONTENT_LIST_SWITCH(cbs, name) \
+   cbs->action_content_list_switch = name; \
+   cbs->action_content_list_switch_ident = #name;
+#endif
 
 int menu_cbs_init_bind_content_list_switch(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
@@ -25,7 +30,7 @@ int menu_cbs_init_bind_content_list_switch(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   cbs->action_content_list_switch = deferred_push_content_list;
+   BIND_ACTION_CONTENT_LIST_SWITCH(cbs, deferred_push_content_list);
 
    return -1;
 }

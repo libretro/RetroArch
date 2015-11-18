@@ -17,91 +17,32 @@
 #ifndef _MENU_NAVIGATION_H
 #define _MENU_NAVIGATION_H
 
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct menu_navigation
+enum menu_navigation_ctl_state
 {
-   struct
-   {
-      /* Quick jumping indices with L/R.
-       * Rebuilt when parsing directory. */
-      struct
-      {
-         size_t list[2 * (26 + 2) + 1];
-         unsigned size;
-      } indices;
-      unsigned acceleration;
-   } scroll;
-   size_t selection_ptr;
-} menu_navigation_t;
+   MENU_NAVIGATION_CTL_CLEAR = 0,
+   MENU_NAVIGATION_CTL_INCREMENT,
+   MENU_NAVIGATION_CTL_DECREMENT,
+   MENU_NAVIGATION_CTL_SET,
+   MENU_NAVIGATION_CTL_SET_LAST,
+   MENU_NAVIGATION_CTL_DESCEND_ALPHABET,
+   MENU_NAVIGATION_CTL_ASCEND_ALPHABET,
+   MENU_NAVIGATION_CTL_SET_SELECTION,
+   MENU_NAVIGATION_CTL_GET_SELECTION,
+   MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES,
+   MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX,
+   MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL,
+   MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL
+};
 
-menu_navigation_t *menu_navigation_get_ptr(void);
+bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data);
 
-/**
- * menu_navigation_clear:
- * @pending_push          : pending push ?
- *
- * Clears the navigation pointer.
- **/
-void menu_navigation_clear(menu_navigation_t *nav, bool pending_push);
-
-/**
- * menu_navigation_decrement:
- *
- * Decrement the navigation pointer.
- **/
-void menu_navigation_decrement(menu_navigation_t *nav, unsigned scroll_speed);
-
-/**
- * menu_navigation_increment:
- *
- * Increment the navigation pointer.
- **/
-void menu_navigation_increment(menu_navigation_t *nav, unsigned scroll_speed);
-
-/**
- * menu_navigation_set:      
- * @idx                   : index to set navigation pointer to.
- * @scroll                : should we scroll when needed?
- *
- * Sets navigation pointer to index @idx.
- **/
-void menu_navigation_set(menu_navigation_t *nav, size_t i, bool scroll);
-
-/**
- * menu_navigation_set_last:
- *
- * Sets navigation pointer to last index.
- **/
-void menu_navigation_set_last(menu_navigation_t *nav);
-
-/**
- * menu_navigation_descend_alphabet:
- * @ptr_out               : Amount of indices to 'scroll' to get
- *                          to the next entry.
- *
- * Descends alphabet.
- * E.g.:
- * If navigation points to an entry called 'Beta',
- * navigation pointer will be set to an entry called 'Alpha'.
- **/
-void menu_navigation_descend_alphabet(menu_navigation_t *nav, size_t *ptr_out);
-
-/**
- * menu_navigation_ascends_alphabet:
- * @ptr_out               : Amount of indices to 'scroll' to get
- *                          to the next entry.
- *
- * Ascends alphabet.
- * E.g.:
- * If navigation points to an entry called 'Alpha',
- * navigation pointer will be set to an entry called 'Beta'.
- **/
-void menu_navigation_ascend_alphabet(menu_navigation_t *nav, size_t *ptr_out);
-
-ssize_t menu_navigation_get_current_selection(void);
+void menu_navigation_free(void);
 
 #ifdef __cplusplus
 }

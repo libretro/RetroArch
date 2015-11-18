@@ -14,15 +14,25 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <compat/msvc.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <assert.h>
+
+#ifdef FFEMU_PERF
+#include <time.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 #include <libavcodec/avcodec.h>
 #include <libavutil/mathematics.h>
 #include <libavutil/avutil.h>
@@ -36,25 +46,41 @@ extern "C" {
 #include <libavutil/avconfig.h>
 #include <libavutil/pixdesc.h>
 #include <libswscale/swscale.h>
+
 #ifdef __cplusplus
 }
 #endif
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <compat/msvc.h>
+
 #include <boolean.h>
 #include <queues/fifo_buffer.h>
 #include <rthreads/rthreads.h>
-#include "../../general.h"
 #include <gfx/scaler/scaler.h>
 #include <file/config_file.h>
+
+#include "../../general.h"
 #include "../../audio/audio_utils.h"
 #include "../record_driver.h"
-#include <assert.h>
 
-#ifdef FFEMU_PERF
-#include <time.h>
+#ifndef PIX_FMT_RGB32
+#define PIX_FMT_RGB32 AV_PIX_FMT_RGB32
+#endif
+
+#ifndef PIX_FMT_BGR24
+#define PIX_FMT_BGR24 AV_PIX_FMT_BGR24
+#endif
+
+#ifndef PIX_FMT_RGB565
+#define PIX_FMT_RGB565 AV_PIX_FMT_RGB565
+#endif
+
+#ifndef PIX_FMT_NONE
+#define PIX_FMT_NONE AV_PIX_FMT_NONE
+#endif
+
+#ifndef PixelFormat
+#define PixelFormat AVPixelFormat
 #endif
 
 #if LIBAVUTIL_VERSION_INT <= AV_VERSION_INT(52, 9, 0)
@@ -234,13 +260,13 @@ static void ffmpeg_audio_resolve_format(struct ff_audio_info *audio,
 static void ffmpeg_audio_resolve_sample_rate(ffmpeg_t *handle,
       const AVCodec *codec)
 {
-   unsigned i;
    struct ff_config_param *params = &handle->config;
    struct ffemu_params *param     = &handle->params;
 
    /* We'll have to force resampling to some supported sampling rate. */
    if (codec->supported_samplerates && !params->sample_rate)
    {
+      unsigned i;
       int input_rate = (int)param->samplerate;
 
       /* Favor closest sampling rate, but always prefer ratio > 1.0. */
@@ -274,7 +300,6 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle)
    settings_t *settings = config_get_ptr();
    struct ff_config_param *params = &handle->config;
    struct ff_audio_info *audio    = &handle->audio;
-   struct ff_video_info *video    = &handle->video;
    struct ffemu_params *param     = &handle->params;
    AVCodec *codec                 = avcodec_find_encoder_by_name(
          *params->acodec ? params->acodec : "flac");
@@ -1423,4 +1448,3 @@ const record_driver_t ffemu_ffmpeg = {
    ffmpeg_finalize,
    "ffmpeg",
 };
-

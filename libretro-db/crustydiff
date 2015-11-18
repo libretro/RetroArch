@@ -1,2 +1,0 @@
-#!/bin/sh
-uncrustify -c uncrustify.cfg "$1" && vimdiff "$1" "$1.uncrustify"

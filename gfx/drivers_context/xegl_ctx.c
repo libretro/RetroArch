@@ -18,16 +18,17 @@
 * Should be its own file as it has lots of X11 stuff baked into it as well.
 */
 
-#include "../../driver.h"
-#include "../../runloop.h"
-#include "../drivers/gl_common.h"
-#include "../video_monitor.h"
-#include "../common/x11_common.h"
-
-#include <signal.h>
 #include <stdint.h>
+#include <signal.h>
+
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+
+#include "../../driver.h"
+#include "../../runloop.h"
+#include "../video_monitor.h"
+#include "../common/gl_common.h"
+#include "../common/x11_common.h"
 
 #ifndef EGL_OPENGL_ES3_BIT_KHR
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
@@ -387,10 +388,10 @@ static EGLint *xegl_fill_attribs(EGLint *attr)
                (const struct retro_hw_render_callback*)video_driver_callback();
             unsigned version = g_major * 1000 + g_minor;
             bool core        = version >= 3001;
-            bool debug       = hw_render->debug_context;
-
 #ifdef GL_DEBUG
-            debug = true;
+            bool debug = true;
+#else
+            bool debug       = hw_render->debug_context;
 #endif
 
             if (core)
@@ -471,7 +472,6 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    sigaction(SIGTERM, &sa, NULL);
 
    windowed_full = settings->video.windowed_fullscreen;
-   true_full = false;
 
    attr = egl_attribs;
    attr = xegl_fill_attribs(attr);

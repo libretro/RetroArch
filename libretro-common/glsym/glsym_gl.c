@@ -20,8 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <glsym/glsym.h>
 #include <stddef.h>
+
+#include <glsym/glsym.h>
 
 #define SYM(x) { "gl" #x, &(gl##x) }
 

@@ -23,7 +23,7 @@ Debug
 Release
 ipch
 *.user
-/wii/app_booter/app_booter.bin
+/bootstrap/gx/wii/app_booter/app_booter.bin
 *.zip
 RetroArch-w32/
 RetroArch-w64/
@@ -46,6 +46,7 @@ DerivedData
 apple/tmp
 apple/*.mobileprovision
 apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
+menu/driverspzarch.c
 /Cg/
 /GL/
 /SDL/
@@ -62,12 +63,12 @@ apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
 /obj-w32/
 
 # Android
-/android/phoenix/obj/
-/android/phoenix/assets/
-/android/phoenix/libs/
-/android/phoenix/bin/
-/android/phoenix/gen/
-/android/phoenix/local.properties
+/pkg/android/phoenix/obj/
+/pkg/android/phoenix/assets/
+/pkg/android/phoenix/libs/
+/pkg/android/phoenix/bin/
+/pkg/android/phoenix/gen/
+/pkg/android/phoenix/local.properties
 
 # Cloned by libretro-fetch.sh
 /media/assets/
@@ -76,8 +77,8 @@ apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
 /media/shaders_cg/
 /media/libretrodb/
 
-apple/iOS/build/
-apple/iOS/modules/
+pkg/apple/iOS/build/
+pkg/apple/iOS/modules/
 
 obj-unix/
 .vagrant/

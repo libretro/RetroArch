@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+
 #include <net/net_http.h>
 #include <net/net_compat.h>
 #include <compat/strl.h>
@@ -67,10 +68,16 @@ static int net_http_new_socket(const char *domain, int port)
 {
    int fd;
 #ifndef _WIN32
+#ifndef VITA
    struct timeval timeout;
+#endif
 #endif
    struct addrinfo hints, *addr = NULL;
    char portstr[16] = {0};
+   
+   /* Initialize the network. */
+   if (!network_init())
+      return -1;
 
    snprintf(portstr, sizeof(portstr), "%i", port);
 
@@ -78,8 +85,8 @@ static int net_http_new_socket(const char *domain, int port)
    hints.ai_family   = AF_UNSPEC;
    hints.ai_socktype = SOCK_STREAM;
    hints.ai_flags    = 0;
-
-   if (getaddrinfo_rarch(domain, portstr, &hints, &addr) < 0)
+   
+   if (getaddrinfo_retro(domain, portstr, &hints, &addr) < 0)
       return -1;
    if (!addr)
       return -1;
@@ -87,19 +94,20 @@ static int net_http_new_socket(const char *domain, int port)
    fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 
 #ifndef _WIN32
+#ifndef VITA
    timeout.tv_sec=4;
    timeout.tv_usec=0;
    setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof timeout);
 #endif
-
+#endif
    if (connect(fd, addr->ai_addr, addr->ai_addrlen) != 0)
    {
-      freeaddrinfo_rarch(addr);
+      freeaddrinfo_retro(addr);
       socket_close(fd);
       return -1;
    }
 
-   freeaddrinfo_rarch(addr);
+   freeaddrinfo_retro(addr);
 
    if (!socket_nonblock(fd))
    {
@@ -162,6 +170,7 @@ static ssize_t net_http_recv(int fd, bool *error,
 
 struct http_connection_t *net_http_connection_new(const char *url)
 {
+   size_t length;
    char **domain = NULL;
    struct http_connection_t *conn = (struct http_connection_t*)calloc(1, 
          sizeof(struct http_connection_t));
@@ -169,12 +178,13 @@ struct http_connection_t *net_http_connection_new(const char *url)
    if (!conn)
       return NULL;
 
-   conn->urlcopy      = (char*)malloc(strlen(url) + 1);
+   length             = strlen(url) + 1;
+   conn->urlcopy      = (char*)malloc(length);
 
    if (!conn->urlcopy)
       goto error;
 
-   strcpy(conn->urlcopy, url);
+   strlcpy(conn->urlcopy, url, length);
 
    if (strncmp(url, "http://", strlen("http://")) != 0)
       goto error;
@@ -191,8 +201,7 @@ error:
    if (conn->urlcopy)
       free(conn->urlcopy);
    conn->urlcopy = NULL;
-   if (conn)
-      free(conn);
+   free(conn);
    return NULL;
 }
 
@@ -226,7 +235,7 @@ bool net_http_connection_done(struct http_connection_t *conn)
    if (*conn->scan == ':')
    {
 
-      if (!isdigit(conn->scan[1]))
+      if (!isdigit((int)conn->scan[1]))
          return false;
 
       conn->port = strtoul(conn->scan + 1, &conn->scan, 10);

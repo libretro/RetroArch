@@ -26,6 +26,41 @@
 
 typedef struct netplay netplay_t;
 
+/* TODO: most of this, actually */
+/* /!\ WARNING: A command identifier cannot exceed 16 bytes in length. */
+enum netplay_cmd
+{
+/* misc. commands */
+   NETPLAY_CMD_ACK            = 0x0000, /**< Acknowlegement response                   */
+   NETPLAY_CMD_NAK            = 0x0001, /**< Failed acknowlegement response            */
+   NETPLAY_CMD_FLIP_PLAYERS   = 0x0002, /**< Swap inputs between p1 and p2.            */
+   NETPLAY_CMD_SPECTATE       = 0x0003, /**< Toggle spectate/join mode                 */
+   NETPLAY_CMD_DISCONNECT     = 0x0004, /**< Gracefully disconnects from host.         */
+
+   NETPLAY_CMD_CFG            = 0x0005, /**< Sends multiple config requests over, See
+                                             enum netplay_cmd_cfg.                     */
+
+   NETPLAY_CMD_CFG_ACK        = 0x0006, /**< CMD_CFG streamlines sending multiple
+                                             configurations. This acknowledges
+                                             each one individually.                    */
+
+/* loading and synchronization */
+   NETPLAY_CMD_LOAD_SAVESTATE = 0x0012, /** Send a savestate for the client to load    */
+   NETPLAY_CMD_CHEATS         = 0x0013, /** Sends over cheats enabled on client.       */
+/* controlling game playback */
+   NETPLAY_CMD_PAUSE          = 0x0030, /**< Pauses the game, takes no args.           */
+   NETPLAY_CMD_RESUME         = 0x0031, /**< Resumes the game, takes no args.          */
+};
+
+/* These are the configurations sent by NETPLAY_CMD_CFG. */
+enum netplay_cmd_cfg
+{
+   NETPLAY_CFG_NICK           = 0x0001, /**< nickname                               */
+   NETPLAY_CFG_SWAP_INPUT     = 0x0002, /**< input.netplay_client_swap_input        */
+   NETPLAY_CFG_DELAY_FRAMES   = 0x0004, /**< netplay.sync_frames                    */
+   NETPLAY_CFG_PLAYER_SLOT    = 0x0008, /**< For more than 2 players.               */
+};
+
 void input_poll_net(void);
 
 int16_t input_state_net(unsigned port, unsigned device,
@@ -112,4 +147,3 @@ bool init_netplay(void);
 void deinit_netplay(void);
 
 #endif
-

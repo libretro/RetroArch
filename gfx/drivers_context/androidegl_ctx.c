@@ -13,22 +13,23 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stdint.h>
+
+#include <EGL/egl.h>
+#include <sys/system_properties.h>
+
+#include <formats/image.h>
 
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
-#include "../drivers/gl_common.h"
+#include "../common/gl_common.h"
 
-#include <EGL/egl.h>
-
-#include "../../frontend/drivers/platform_android.h"
-#include <formats/image.h>
-
-#include <stdint.h>
+#include "../../frontend/drivers/platform_linux.h"
 
 /* forward declaration */
-int system_property_get(const char *name, char *value);
+int system_property_get(const char *cmd, const char *args, char *value);
 
 typedef struct gfx_ctx_android_data
 {
@@ -319,7 +320,7 @@ static gfx_ctx_proc_t android_gfx_ctx_get_proc_address(
    gfx_ctx_proc_t ret;
    void *sym__ = NULL;
 
-   rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
+   retro_assert(sizeof(void*) == sizeof(void (*)(void)));
 
    sym__ = eglGetProcAddress(symbol);
    memcpy(&ret, &sym__, sizeof(void*));
@@ -386,60 +387,19 @@ static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
          android->g_egl_hw_ctx : android->g_egl_ctx);
 }
 
-static int system_property_get_density(char *value)
-{
-   FILE *pipe;
-   int length = 0;
-   char buffer[PATH_MAX_LENGTH] = {0};
-   char cmd[PATH_MAX_LENGTH]    = {0};
-   char *curpos                 = NULL;
-
-   snprintf(cmd, sizeof(cmd), "wm density");
-
-   pipe = popen(cmd, "r");
-
-   if (!pipe)
-   {
-      RARCH_ERR("Could not create pipe.\n");
-      return 0;
-   }
-
-   curpos = value;
-   
-   while (!feof(pipe))
-   {
-      if (fgets(buffer, 128, pipe) != NULL)
-      {
-         int curlen = strlen(buffer);
-
-         memcpy(curpos, buffer, curlen);
-
-         curpos    += curlen;
-         length    += curlen;
-      }
-   }
-
-   *curpos = '\0';
-
-   pclose(pipe);
-
-   return length;
-}
-
 static void dpi_get_density(char *s, size_t len)
 {
-   system_property_get("ro.sf.lcd_density", s);
+   system_property_get("getprop", "ro.sf.lcd_density", s);
 
    if (s[0] == '\0')
-      system_property_get_density(s);
+      system_property_get("wm", "density", s);
 }
 
 static bool android_gfx_ctx_get_metrics(void *data,
 	enum display_metric_types type, float *value)
 {
-   int dpi;
+   static int dpi = -1;
    char density[PROP_VALUE_MAX] = {0};
-   dpi_get_density(density, sizeof(density));
 
    switch (type)
    {
@@ -448,9 +408,13 @@ static bool android_gfx_ctx_get_metrics(void *data,
       case DISPLAY_METRIC_MM_HEIGHT:
          return false;
       case DISPLAY_METRIC_DPI:
-         if (density[0] == '\0')
-            return false;
-         dpi    = atoi(density);
+         if (dpi == -1)
+         {
+            dpi_get_density(density, sizeof(density));
+            if (density[0] == '\0')
+               return false;
+            dpi    = atoi(density);
+         }
          *value = (float)dpi;
          break;
       case DISPLAY_METRIC_NONE:

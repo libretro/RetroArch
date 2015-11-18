@@ -23,11 +23,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+
 #include <file/memory_stream.h>
 
-static uint8_t* g_buffer = NULL;
-static size_t g_size = 0;
-
+static uint8_t* g_buffer     = NULL;
+static size_t g_size         = 0;
 static size_t last_file_size = 0;
 
 struct memstream
@@ -100,14 +100,21 @@ size_t memstream_write(memstream_t *stream, const void *data, size_t bytes)
 int memstream_seek(memstream_t *stream, int offset, int whence)
 {
    size_t ptr;
-   if (whence == SEEK_SET)
-      ptr = offset;
-   else if (whence == SEEK_CUR)
-      ptr = stream->m_ptr + offset;
-   else if (whence == SEEK_END)
-      ptr = stream->m_size + offset;
-   else
-      return -1;
+
+   switch (whence)
+   {
+      case SEEK_SET:
+         ptr = offset;
+         break;
+      case SEEK_CUR:
+         ptr = stream->m_ptr + offset;
+         break;
+      case SEEK_END:
+         ptr = stream->m_size + offset;
+         break;
+      default:
+         return -1;
+   }
 
    if (ptr <= stream->m_size)
    {

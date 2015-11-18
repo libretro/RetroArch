@@ -132,7 +132,7 @@ local int gz_comp(gz_statep state, int flush)
 local int gz_zero(gz_statep state, z_off64_t len)
 {
     int first;
-    unsigned n;
+    unsigned n     = 0;
     z_streamp strm = &(state->strm);
 
     /* consume whatever's left in the input buffer */
@@ -158,7 +158,6 @@ local int gz_zero(gz_statep state, z_off64_t len)
     return 0;
 }
 
-/* -- see zlib.h -- */
 int ZEXPORT gzwrite(gzFile file, voidpc buf, unsigned len)
 {
     unsigned put = len;
@@ -235,7 +234,6 @@ int ZEXPORT gzwrite(gzFile file, voidpc buf, unsigned len)
     return (int)put;
 }
 
-/* -- see zlib.h -- */
 int ZEXPORT gzputc(gzFile file, int c)
 {
     unsigned have;
@@ -281,7 +279,6 @@ int ZEXPORT gzputc(gzFile file, int c)
     return c & 0xff;
 }
 
-/* -- see zlib.h -- */
 int ZEXPORT gzputs(gzFile file, const char *str)
 {
     int ret;
@@ -296,7 +293,6 @@ int ZEXPORT gzputs(gzFile file, const char *str)
 #if defined(STDC) || defined(Z_HAVE_STDARG_H)
 #include <stdarg.h>
 
-/* -- see zlib.h -- */
 int ZEXPORTVA gzvprintf(gzFile file, const char *format, va_list va)
 {
     int size, len;
@@ -372,7 +368,6 @@ int ZEXPORTVA gzprintf(gzFile file, const char *format, ...)
 
 #else /* !STDC && !Z_HAVE_STDARG_H */
 
-/* -- see zlib.h -- */
 int ZEXPORTVA gzprintf (gzFile file, const char *format, int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, int a9, int a10,
                        int a11, int a12, int a13, int a14, int a15, int a16, int a17, int a18, int a19, int a20)
 {
@@ -447,7 +442,6 @@ int ZEXPORTVA gzprintf (gzFile file, const char *format, int a1, int a2, int a3,
 
 #endif
 
-/* -- see zlib.h -- */
 int ZEXPORT gzflush(gzFile file, int flush)
 {
     gz_statep state;
@@ -477,7 +471,6 @@ int ZEXPORT gzflush(gzFile file, int flush)
     return state->err;
 }
 
-/* -- see zlib.h -- */
 int ZEXPORT gzsetparams(gzFile file, int level, int strategy)
 {
     gz_statep state;
@@ -516,7 +509,6 @@ int ZEXPORT gzsetparams(gzFile file, int level, int strategy)
     return Z_OK;
 }
 
-/* -- see zlib.h -- */
 int gzclose_w(gzFile file)
 {
     int ret = Z_OK;

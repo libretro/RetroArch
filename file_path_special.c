@@ -20,55 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <file/file_path.h>
 #include <stdlib.h>
 #include <boolean.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
-#include <compat/strl.h>
-#include <compat/posix_string.h>
-#include <retro_miscellaneous.h>
 
-#ifdef __HAIKU__
-#include <kernel/image.h>
-#endif
-
-#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
-#include <unistd.h> /* stat() is defined here */
-#endif
-
-#if defined(__CELLOS_LV2__)
-
-#ifndef S_ISDIR
-#define S_ISDIR(x) (x & 0040000)
-#endif
-
-#endif
-
-#if defined(_WIN32)
-#ifdef _MSC_VER
-#define setmode _setmode
-#endif
-#ifdef _XBOX
-#include <xtl.h>
-#define INVALID_FILE_ATTRIBUTES -1
-#else
-#include <io.h>
-#include <fcntl.h>
+#ifdef _WIN32
 #include <direct.h>
-#include <windows.h>
-#endif
 #else
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
 #include <unistd.h>
 #endif
 
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #endif
+
+#include <file/file_path.h>
+#include <compat/strl.h>
+#include <compat/posix_string.h>
+#include <retro_assert.h>
+#include <retro_miscellaneous.h>
 
 void fill_pathname_expand_special(char *out_path,
       const char *in_path, size_t size)
@@ -80,7 +52,7 @@ void fill_pathname_expand_special(char *out_path,
       if (home)
       {
          size_t src_size = strlcpy(out_path, home, size);
-         rarch_assert(src_size < size);
+         retro_assert(src_size < size);
 
          out_path  += src_size;
          size -= src_size;
@@ -102,7 +74,7 @@ void fill_pathname_expand_special(char *out_path,
       path_basedir(application_dir);
 
       src_size   = strlcpy(out_path, application_dir, size);
-      rarch_assert(src_size < size);
+      retro_assert(src_size < size);
 
       out_path  += src_size;
       size      -= src_size;
@@ -110,7 +82,7 @@ void fill_pathname_expand_special(char *out_path,
    }
 #endif
 
-   rarch_assert(strlcpy(out_path, in_path, size) < size);
+   retro_assert(strlcpy(out_path, in_path, size) < size);
 }
 
 
@@ -145,16 +117,17 @@ void fill_pathname_abbreviate_special(char *out_path,
    {
       if (*candidates[i] && strstr(in_path, candidates[i]) == in_path)
       {
-         size_t src_size = strlcpy(out_path, notations[i], size);
-         rarch_assert(src_size < size);
+         size_t src_size  = strlcpy(out_path, notations[i], size);
+
+         retro_assert(src_size < size);
       
-         out_path += src_size;
-         size -= src_size;
-         in_path += strlen(candidates[i]);
+         out_path        += src_size;
+         size            -= src_size;
+         in_path         += strlen(candidates[i]);
       
          if (!path_char_is_slash(*in_path))
          {
-            rarch_assert(strlcpy(out_path, path_default_slash(), size) < size);
+            retro_assert(strlcpy(out_path, path_default_slash(), size) < size);
             out_path++;
             size--;
          }
@@ -164,12 +137,15 @@ void fill_pathname_abbreviate_special(char *out_path,
    }
 #endif
 
-   rarch_assert(strlcpy(out_path, in_path, size) < size);
+   retro_assert(strlcpy(out_path, in_path, size) < size);
 }
 
 #if !defined(RARCH_CONSOLE)
 void fill_pathname_application_path(char *buf, size_t size)
 {
+#ifdef __APPLE__
+  CFBundleRef bundle = CFBundleGetMainBundle();
+#endif
    size_t i;
    (void)i;
 
@@ -180,7 +156,6 @@ void fill_pathname_application_path(char *buf, size_t size)
    DWORD ret = GetModuleFileName(GetModuleHandle(NULL), buf, size - 1);
    buf[ret] = '\0';
 #elif defined(__APPLE__)
-   CFBundleRef bundle = CFBundleGetMainBundle();
    if (bundle)
    {
       CFURLRef bundle_url = CFBundleCopyBundleURL(bundle);
@@ -189,7 +164,7 @@ void fill_pathname_application_path(char *buf, size_t size)
       CFRelease(bundle_path);
       CFRelease(bundle_url);
       
-      rarch_assert(strlcat(buf, "nobin", size) < size);
+      retro_assert(strlcat(buf, "nobin", size) < size);
       return;
    }
 #elif defined(__HAIKU__)
@@ -211,7 +186,7 @@ void fill_pathname_application_path(char *buf, size_t size)
       char link_path[PATH_MAX_LENGTH] = {0};
 
       *buf      = '\0';
-      pid = getpid(); 
+      pid       = getpid(); 
 
       /* Linux, BSD and Solaris paths. Not standardized. */
       for (i = 0; i < ARRAY_SIZE(exts); i++)
@@ -221,6 +196,7 @@ void fill_pathname_application_path(char *buf, size_t size)
          snprintf(link_path, sizeof(link_path), "/proc/%u/%s",
                (unsigned)pid, exts[i]);
          ret = readlink(link_path, buf, size - 1);
+
          if (ret >= 0)
          {
             buf[ret] = '\0';

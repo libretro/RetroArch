@@ -19,6 +19,7 @@
 #include <boolean.h>
 #include <stddef.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <sys/utsname.h>
 
@@ -49,6 +50,10 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu.h"
+#endif
+
+#if 1
+#define RELEASE_BUILD
 #endif
 
 typedef enum
@@ -329,37 +334,57 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 
    CFSearchPathForDirectoriesInDomains(CFDocumentDirectory, CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
 
-#ifdef OSX
    strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
-#endif
-
-   fill_pathname_join(g_defaults.core_dir, home_dir_buf, "modules", sizeof(g_defaults.core_dir));
-   fill_pathname_join(g_defaults.core_info_dir, home_dir_buf, "info", sizeof(g_defaults.core_info_dir));
-   fill_pathname_join(g_defaults.overlay_dir, home_dir_buf, "overlays", sizeof(g_defaults.overlay_dir));
-   fill_pathname_join(g_defaults.autoconfig_dir, home_dir_buf, "autoconfig/hid", sizeof(g_defaults.autoconfig_dir));
-   fill_pathname_join(g_defaults.core_assets_dir, home_dir_buf, "downloads", sizeof(g_defaults.core_assets_dir));
-   fill_pathname_join(g_defaults.assets_dir, home_dir_buf, "assets", sizeof(g_defaults.assets_dir));
-   fill_pathname_join(g_defaults.system_dir, home_dir_buf, ".RetroArch", sizeof(g_defaults.system_dir));
-   strlcpy(g_defaults.menu_config_dir, g_defaults.system_dir, sizeof(g_defaults.menu_config_dir));
-   fill_pathname_join(g_defaults.config_path, g_defaults.menu_config_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
-   fill_pathname_join(g_defaults.database_dir, home_dir_buf, "rdb", sizeof(g_defaults.database_dir));
-   fill_pathname_join(g_defaults.cursor_dir, home_dir_buf, "cursors", sizeof(g_defaults.cursor_dir));
-   fill_pathname_join(g_defaults.cheats_dir, home_dir_buf, "cht", sizeof(g_defaults.cheats_dir));
-   strlcpy(g_defaults.sram_dir, g_defaults.system_dir, sizeof(g_defaults.sram_dir));
-   strlcpy(g_defaults.savestate_dir, g_defaults.system_dir, sizeof(g_defaults.savestate_dir));
-
-   CFTemporaryDirectory(temp_dir, sizeof(temp_dir));
-   strlcpy(g_defaults.extraction_dir, temp_dir, sizeof(g_defaults.extraction_dir));
-
-   fill_pathname_join(g_defaults.shader_dir, home_dir_buf, "shaders_glsl", sizeof(g_defaults.shader_dir));
-
+   fill_pathname_join(g_defaults.dir.shader, home_dir_buf, "shaders_glsl", sizeof(g_defaults.dir.shader));
+   fill_pathname_join(g_defaults.dir.core, home_dir_buf, "cores", sizeof(g_defaults.dir.core));
+   fill_pathname_join(g_defaults.dir.core_info, home_dir_buf, "info", sizeof(g_defaults.dir.core_info));
+   fill_pathname_join(g_defaults.dir.overlay, home_dir_buf, "overlays", sizeof(g_defaults.dir.overlay));
+   fill_pathname_join(g_defaults.dir.autoconfig, home_dir_buf, "autoconfig", sizeof(g_defaults.dir.autoconfig));
+   fill_pathname_join(g_defaults.dir.core_assets, home_dir_buf, "downloads", sizeof(g_defaults.dir.core_assets));
+   fill_pathname_join(g_defaults.dir.assets, home_dir_buf, "assets", sizeof(g_defaults.dir.assets));
+   fill_pathname_join(g_defaults.dir.system, home_dir_buf, "system", sizeof(g_defaults.dir.system));
+   fill_pathname_join(g_defaults.dir.menu_config, home_dir_buf, "configs", sizeof(g_defaults.dir.menu_config));
+   fill_pathname_join(g_defaults.path.config, g_defaults.dir.menu_config, "retroarch.cfg", sizeof(g_defaults.path.config));
+   fill_pathname_join(g_defaults.dir.database, home_dir_buf, "rdb", sizeof(g_defaults.dir.database));
+   fill_pathname_join(g_defaults.dir.cursor, home_dir_buf, "cursors", sizeof(g_defaults.dir.cursor));
+   fill_pathname_join(g_defaults.dir.cheats, home_dir_buf, "cht", sizeof(g_defaults.dir.cheats));
+   fill_pathname_join(g_defaults.dir.sram, home_dir_buf, "saves", sizeof(g_defaults.dir.sram));
+   fill_pathname_join(g_defaults.dir.savestate, home_dir_buf, "states", sizeof(g_defaults.dir.savestate));
+   fill_pathname_join(g_defaults.dir.remap, home_dir_buf, "remaps", sizeof(g_defaults.dir.remap));
 #if defined(OSX)
 #ifdef HAVE_CG
-   fill_pathname_join(g_defaults.shader_dir, home_dir_buf, "shaders_cg", sizeof(g_defaults.shader_dir));
+   fill_pathname_join(g_defaults.dir.shader, home_dir_buf, "shaders_cg", sizeof(g_defaults.dir.shader));
 #endif
-   fill_pathname_join(g_defaults.audio_filter_dir, home_dir_buf, "audio_filters", sizeof(g_defaults.audio_filter_dir));
-   fill_pathname_join(g_defaults.video_filter_dir, home_dir_buf, "video_filters", sizeof(g_defaults.video_filter_dir));
+   fill_pathname_join(g_defaults.dir.audio_filter, home_dir_buf, "audio_filters", sizeof(g_defaults.dir.audio_filter));
+   fill_pathname_join(g_defaults.dir.video_filter, home_dir_buf, "video_filters", sizeof(g_defaults.dir.video_filter));
+   fill_pathname_join(g_defaults.dir.playlist, home_dir_buf, "playlists", sizeof(g_defaults.dir.playlist));
+#if defined(RELEASE_BUILD)
+    fill_pathname_join(g_defaults.dir.remap, bundle_path_buf, "Contents/Resources/remaps", sizeof(g_defaults.dir.remap));
+    fill_pathname_join(g_defaults.dir.playlist, bundle_path_buf, "Contents/Resources/playlists", sizeof(g_defaults.dir.playlist));
+    fill_pathname_join(g_defaults.dir.shader, bundle_path_buf, "Contents/Resources/shaders", sizeof(g_defaults.dir.shader));
+    fill_pathname_join(g_defaults.dir.core, bundle_path_buf, "Contents/Resources/cores", sizeof(g_defaults.dir.core));
+    fill_pathname_join(g_defaults.dir.core_info, bundle_path_buf, "Contents/Resources/info", sizeof(g_defaults.dir.core_info));
+    fill_pathname_join(g_defaults.dir.overlay, bundle_path_buf, "Contents/Resources/overlays", sizeof(g_defaults.dir.overlay));
+    fill_pathname_join(g_defaults.dir.autoconfig, bundle_path_buf, "Contents/Resources/autoconfig", sizeof(g_defaults.dir.autoconfig));
+    fill_pathname_join(g_defaults.dir.core_assets, bundle_path_buf, "Contents/Resources/downloads", sizeof(g_defaults.dir.core_assets));
+    fill_pathname_join(g_defaults.dir.assets, bundle_path_buf, "Contents/Resources/assets", sizeof(g_defaults.dir.assets));
+    fill_pathname_join(g_defaults.dir.menu_config, bundle_path_buf, "Contents/Resources/configs", sizeof(g_defaults.dir.menu_config));
+    fill_pathname_join(g_defaults.path.config, g_defaults.dir.menu_config, "retroarch.cfg", sizeof(g_defaults.path.config));
+    fill_pathname_join(g_defaults.dir.database, bundle_path_buf, "Contents/Resources/rdb", sizeof(g_defaults.dir.database));
+    fill_pathname_join(g_defaults.dir.cursor, bundle_path_buf, "Contents/Resources/cursors", sizeof(g_defaults.dir.cursor));
+    fill_pathname_join(g_defaults.dir.cheats, bundle_path_buf, "Contents/Resources/cht", sizeof(g_defaults.dir.cheats));
 #endif
+#endif
+
+#if TARGET_OS_IPHONE
+    int major, minor;
+    get_ios_version(&major, &minor);
+    if (major > 8)
+       strlcpy(g_defaults.path.buildbot_server_url, "http://buildbot.libretro.com/nightly/apple/ios9/latest/", sizeof(g_defaults.path.buildbot_server_url));
+#endif
+
+   CFTemporaryDirectory(temp_dir, sizeof(temp_dir));
+   strlcpy(g_defaults.dir.cache, temp_dir, sizeof(g_defaults.dir.cache));
 
    path_mkdir(bundle_path_buf);
 
@@ -367,10 +392,10 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
       RARCH_ERR("Failed to create or access base directory: %s\n", bundle_path_buf);
    else
    {
-      path_mkdir(g_defaults.system_dir);
+      path_mkdir(g_defaults.dir.system);
 
-      if (access(g_defaults.system_dir, 0755) != 0)
-         RARCH_ERR("Failed to create or access system directory: %s.\n", g_defaults.system_dir);
+      if (access(g_defaults.dir.system, 0755) != 0)
+         RARCH_ERR("Failed to create or access system directory: %s.\n", g_defaults.dir.system);
    }
 
    CFRelease(bundle_path);
@@ -569,24 +594,36 @@ static int frontend_darwin_parse_drive_list(void *data)
 #if TARGET_OS_IPHONE
 #ifdef HAVE_MENU
    file_list_t *list = (file_list_t*)data;
+   CFURLRef bundle_url;
+   CFStringRef bundle_path;
+   char bundle_path_buf[PATH_MAX_LENGTH] = {0};
+   char home_dir_buf[PATH_MAX_LENGTH]    = {0};
+   CFBundleRef bundle = CFBundleGetMainBundle();
 
-   menu_list_push(list,
-         "/var/mobile/Documents/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         "/var/mobile/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list,
-         g_defaults.core_dir, "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_list_push(list, "/", "",
+   bundle_url  = CFBundleCopyBundleURL(bundle);
+   bundle_path = CFURLCopyPath(bundle_url);
+
+   CFStringGetCString(bundle_path, bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
+   (void)home_dir_buf;
+
+   CFSearchPathForDirectoriesInDomains(CFDocumentDirectory, CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
+
+   menu_entries_push(list,
+         home_dir_buf, "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_entries_push(list, "/", "",
          MENU_FILE_DIRECTORY, 0, 0);
 
    ret = 0;
+
+   CFRelease(bundle_path);
+   CFRelease(bundle_url);
 #endif
 #endif
 
    return ret;
 }
 
-const frontend_ctx_driver_t frontend_ctx_darwin = {
+frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_environment_settings,
    NULL,                         /* init */
    NULL,                         /* deinit */

@@ -41,183 +41,6 @@ typedef struct sdl_input
    int mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd, mouse_wl, mouse_wr;
 } sdl_input_t;
 
-const struct rarch_key_map rarch_key_map_sdl[] = {
-   { SDLK_BACKSPACE, RETROK_BACKSPACE },
-   { SDLK_TAB, RETROK_TAB },
-   { SDLK_CLEAR, RETROK_CLEAR },
-   { SDLK_RETURN, RETROK_RETURN },
-   { SDLK_PAUSE, RETROK_PAUSE },
-   { SDLK_ESCAPE, RETROK_ESCAPE },
-   { SDLK_SPACE, RETROK_SPACE },
-   { SDLK_EXCLAIM, RETROK_EXCLAIM },
-   { SDLK_QUOTEDBL, RETROK_QUOTEDBL },
-   { SDLK_HASH, RETROK_HASH },
-   { SDLK_DOLLAR, RETROK_DOLLAR },
-   { SDLK_AMPERSAND, RETROK_AMPERSAND },
-   { SDLK_QUOTE, RETROK_QUOTE },
-   { SDLK_LEFTPAREN, RETROK_LEFTPAREN },
-   { SDLK_RIGHTPAREN, RETROK_RIGHTPAREN },
-   { SDLK_ASTERISK, RETROK_ASTERISK },
-   { SDLK_PLUS, RETROK_PLUS },
-   { SDLK_COMMA, RETROK_COMMA },
-   { SDLK_MINUS, RETROK_MINUS },
-   { SDLK_PERIOD, RETROK_PERIOD },
-   { SDLK_SLASH, RETROK_SLASH },
-   { SDLK_0, RETROK_0 },
-   { SDLK_1, RETROK_1 },
-   { SDLK_2, RETROK_2 },
-   { SDLK_3, RETROK_3 },
-   { SDLK_4, RETROK_4 },
-   { SDLK_5, RETROK_5 },
-   { SDLK_6, RETROK_6 },
-   { SDLK_7, RETROK_7 },
-   { SDLK_8, RETROK_8 },
-   { SDLK_9, RETROK_9 },
-   { SDLK_COLON, RETROK_COLON },
-   { SDLK_SEMICOLON, RETROK_SEMICOLON },
-   { SDLK_LESS, RETROK_LESS },
-   { SDLK_EQUALS, RETROK_EQUALS },
-   { SDLK_GREATER, RETROK_GREATER },
-   { SDLK_QUESTION, RETROK_QUESTION },
-   { SDLK_AT, RETROK_AT },
-   { SDLK_LEFTBRACKET, RETROK_LEFTBRACKET },
-   { SDLK_BACKSLASH, RETROK_BACKSLASH },
-   { SDLK_RIGHTBRACKET, RETROK_RIGHTBRACKET },
-   { SDLK_CARET, RETROK_CARET },
-   { SDLK_UNDERSCORE, RETROK_UNDERSCORE },
-   { SDLK_BACKQUOTE, RETROK_BACKQUOTE },
-   { SDLK_a, RETROK_a },
-   { SDLK_b, RETROK_b },
-   { SDLK_c, RETROK_c },
-   { SDLK_d, RETROK_d },
-   { SDLK_e, RETROK_e },
-   { SDLK_f, RETROK_f },
-   { SDLK_g, RETROK_g },
-   { SDLK_h, RETROK_h },
-   { SDLK_i, RETROK_i },
-   { SDLK_j, RETROK_j },
-   { SDLK_k, RETROK_k },
-   { SDLK_l, RETROK_l },
-   { SDLK_m, RETROK_m },
-   { SDLK_n, RETROK_n },
-   { SDLK_o, RETROK_o },
-   { SDLK_p, RETROK_p },
-   { SDLK_q, RETROK_q },
-   { SDLK_r, RETROK_r },
-   { SDLK_s, RETROK_s },
-   { SDLK_t, RETROK_t },
-   { SDLK_u, RETROK_u },
-   { SDLK_v, RETROK_v },
-   { SDLK_w, RETROK_w },
-   { SDLK_x, RETROK_x },
-   { SDLK_y, RETROK_y },
-   { SDLK_z, RETROK_z },
-   { SDLK_DELETE, RETROK_DELETE },
-#ifdef HAVE_SDL2
-   { SDLK_KP_0, RETROK_KP0 },
-   { SDLK_KP_1, RETROK_KP1 },
-   { SDLK_KP_2, RETROK_KP2 },
-   { SDLK_KP_3, RETROK_KP3 },
-   { SDLK_KP_4, RETROK_KP4 },
-   { SDLK_KP_5, RETROK_KP5 },
-   { SDLK_KP_6, RETROK_KP6 },
-   { SDLK_KP_7, RETROK_KP7 },
-   { SDLK_KP_8, RETROK_KP8 },
-   { SDLK_KP_9, RETROK_KP9 },
-#else
-   { SDLK_KP0, RETROK_KP0 },
-   { SDLK_KP1, RETROK_KP1 },
-   { SDLK_KP2, RETROK_KP2 },
-   { SDLK_KP3, RETROK_KP3 },
-   { SDLK_KP4, RETROK_KP4 },
-   { SDLK_KP5, RETROK_KP5 },
-   { SDLK_KP6, RETROK_KP6 },
-   { SDLK_KP7, RETROK_KP7 },
-   { SDLK_KP8, RETROK_KP8 },
-   { SDLK_KP9, RETROK_KP9 },
-#endif
-   { SDLK_KP_PERIOD, RETROK_KP_PERIOD },
-   { SDLK_KP_DIVIDE, RETROK_KP_DIVIDE },
-   { SDLK_KP_MULTIPLY, RETROK_KP_MULTIPLY },
-   { SDLK_KP_MINUS, RETROK_KP_MINUS },
-   { SDLK_KP_PLUS, RETROK_KP_PLUS },
-   { SDLK_KP_ENTER, RETROK_KP_ENTER },
-   { SDLK_KP_EQUALS, RETROK_KP_EQUALS },
-   { SDLK_UP, RETROK_UP },
-   { SDLK_DOWN, RETROK_DOWN },
-   { SDLK_RIGHT, RETROK_RIGHT },
-   { SDLK_LEFT, RETROK_LEFT },
-   { SDLK_INSERT, RETROK_INSERT },
-   { SDLK_HOME, RETROK_HOME },
-   { SDLK_END, RETROK_END },
-   { SDLK_PAGEUP, RETROK_PAGEUP },
-   { SDLK_PAGEDOWN, RETROK_PAGEDOWN },
-   { SDLK_F1, RETROK_F1 },
-   { SDLK_F2, RETROK_F2 },
-   { SDLK_F3, RETROK_F3 },
-   { SDLK_F4, RETROK_F4 },
-   { SDLK_F5, RETROK_F5 },
-   { SDLK_F6, RETROK_F6 },
-   { SDLK_F7, RETROK_F7 },
-   { SDLK_F8, RETROK_F8 },
-   { SDLK_F9, RETROK_F9 },
-   { SDLK_F10, RETROK_F10 },
-   { SDLK_F11, RETROK_F11 },
-   { SDLK_F12, RETROK_F12 },
-   { SDLK_F13, RETROK_F13 },
-   { SDLK_F14, RETROK_F14 },
-   { SDLK_F15, RETROK_F15 },
-#ifdef HAVE_SDL2
-   { SDLK_NUMLOCKCLEAR, RETROK_NUMLOCK },
-#else
-   { SDLK_NUMLOCK, RETROK_NUMLOCK },
-#endif
-   { SDLK_CAPSLOCK, RETROK_CAPSLOCK },
-#ifdef HAVE_SDL2
-   { SDLK_SCROLLLOCK, RETROK_SCROLLOCK },
-#else
-   { SDLK_SCROLLOCK, RETROK_SCROLLOCK },
-#endif
-   { SDLK_RSHIFT, RETROK_RSHIFT },
-   { SDLK_LSHIFT, RETROK_LSHIFT },
-   { SDLK_RCTRL, RETROK_RCTRL },
-   { SDLK_LCTRL, RETROK_LCTRL },
-   { SDLK_RALT, RETROK_RALT },
-   { SDLK_LALT, RETROK_LALT },
-#ifdef HAVE_SDL2
-   /* { ?, RETROK_RMETA }, */
-   /* { ?, RETROK_LMETA }, */
-   { SDLK_LGUI, RETROK_LSUPER },
-   { SDLK_RGUI, RETROK_RSUPER },
-#else
-   { SDLK_RMETA, RETROK_RMETA },
-   { SDLK_LMETA, RETROK_LMETA },
-   { SDLK_LSUPER, RETROK_LSUPER },
-   { SDLK_RSUPER, RETROK_RSUPER },
-#endif
-   { SDLK_MODE, RETROK_MODE },
-#ifndef HAVE_SDL2
-   { SDLK_COMPOSE, RETROK_COMPOSE },
-#endif
-   { SDLK_HELP, RETROK_HELP },
-#ifdef HAVE_SDL2
-   { SDLK_PRINTSCREEN, RETROK_PRINT },
-#else
-   { SDLK_PRINT, RETROK_PRINT },
-#endif
-   { SDLK_SYSREQ, RETROK_SYSREQ },
-   { SDLK_PAUSE, RETROK_BREAK },
-   { SDLK_MENU, RETROK_MENU },
-   { SDLK_POWER, RETROK_POWER },
-
-#ifndef HAVE_SDL2
-   { SDLK_EURO, RETROK_EURO },
-#endif
-   { SDLK_UNDO, RETROK_UNDO },
-
-   { 0, RETROK_UNKNOWN },
-};
-
 static void *sdl_input_init(void)
 {
    settings_t *settings;
@@ -261,8 +84,7 @@ static bool sdl_is_pressed(sdl_input_t *sdl, unsigned port_num, const struct ret
 {
    if (sdl_key_pressed(binds[key].key))
       return true;
-
-   return input_joypad_pressed(sdl->joypad, port_num, binds, key);
+   return false;
 }
 
 static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *binds,
@@ -284,10 +106,18 @@ static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *
 
 static bool sdl_input_key_pressed(void *data, int key)
 {
-   settings_t *settings = config_get_ptr();
-   const struct retro_keybind *binds = settings->input.binds[0];
    if (key >= 0 && key < RARCH_BIND_LIST_END)
-      return sdl_is_pressed((sdl_input_t*)data, 0, binds, key);
+   {
+      sdl_input_t *sdl     = (sdl_input_t*)data;
+      settings_t *settings = config_get_ptr();
+      const struct retro_keybind *binds = settings->input.binds[0];
+
+      if (sdl_is_pressed(sdl, 0, binds, key))
+         return true;
+      if (input_joypad_pressed(sdl->joypad, 0, binds, key))
+         return true;
+   }
+
    return false;
 }
 
@@ -297,11 +127,22 @@ static bool sdl_input_meta_key_pressed(void *data, int key)
 }
 
 static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct retro_keybind **binds_, 
-      unsigned port_num, unsigned id)
+      unsigned port_num, unsigned id, enum input_device_type *device)
 {
-   const struct retro_keybind *binds = binds_[port_num];
    if (id < RARCH_BIND_LIST_END)
-      return binds[id].valid && sdl_is_pressed(sdl, port_num, binds, id);
+   {
+      const struct retro_keybind *binds = binds_[port_num];
+      if (binds[id].valid && sdl_is_pressed(sdl, port_num, binds, id))
+      {
+         *device = INPUT_DEVICE_TYPE_KEYBOARD;
+         return 1;
+      }
+      if (binds[id].valid && input_joypad_pressed(sdl->joypad, 0, binds, id))
+      {
+         *device = INPUT_DEVICE_TYPE_JOYPAD;
+         return 1;
+      }
+   }
    return 0;
 }
 
@@ -407,12 +248,13 @@ static int16_t sdl_lightgun_device_state(sdl_input_t *sdl, unsigned id)
 static int16_t sdl_input_state(void *data_, const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
+   enum input_device_type type = INPUT_DEVICE_TYPE_NONE;
    sdl_input_t *data = (sdl_input_t*)data_;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return sdl_joypad_device_state(data, binds, port, id);
+         return sdl_joypad_device_state(data, binds, port, id, &type);
       case RETRO_DEVICE_ANALOG:
          return sdl_analog_device_state(data, binds, port, idx, id);
       case RETRO_DEVICE_MOUSE:
@@ -491,12 +333,12 @@ static void sdl_poll_mouse(sdl_input_t *sdl)
 
    SDL_GetMouseState(&sdl->mouse_abs_x, &sdl->mouse_abs_y);
 
-   sdl->mouse_l  = SDL_BUTTON(SDL_BUTTON_LEFT)      & btn ? 1 : 0;
-   sdl->mouse_r  = SDL_BUTTON(SDL_BUTTON_RIGHT)     & btn ? 1 : 0;
-   sdl->mouse_m  = SDL_BUTTON(SDL_BUTTON_MIDDLE)    & btn ? 1 : 0;
+   sdl->mouse_l  = (SDL_BUTTON(SDL_BUTTON_LEFT)      & btn) ? 1 : 0;
+   sdl->mouse_r  = (SDL_BUTTON(SDL_BUTTON_RIGHT)     & btn) ? 1 : 0;
+   sdl->mouse_m  = (SDL_BUTTON(SDL_BUTTON_MIDDLE)    & btn) ? 1 : 0;
 #ifndef HAVE_SDL2
-   sdl->mouse_wu = SDL_BUTTON(SDL_BUTTON_WHEELUP)   & btn ? 1 : 0;
-   sdl->mouse_wd = SDL_BUTTON(SDL_BUTTON_WHEELDOWN) & btn ? 1 : 0;
+   sdl->mouse_wu = (SDL_BUTTON(SDL_BUTTON_WHEELUP)   & btn) ? 1 : 0;
+   sdl->mouse_wd = (SDL_BUTTON(SDL_BUTTON_WHEELDOWN) & btn) ? 1 : 0;
 #endif
 }
 
@@ -602,6 +444,7 @@ input_driver_t input_sdl = {
    NULL,
    sdl_set_rumble,
    sdl_get_joypad_driver,
+   NULL,
    sdl_keyboard_mapping_is_blocked,
    sdl_keyboard_mapping_set_block,
 };

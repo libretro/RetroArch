@@ -85,10 +85,6 @@ const char *menu_hash_to_str_pl(uint32_t hash)
          return "Ustawienia zapisywania";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
          return "Ustawienia przewijania";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
-         return "Ustaw lewy górny róg";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
-         return "Ustaw prawy dolny róg";
       case MENU_VALUE_SHADER:
          return "Shader";
       case MENU_VALUE_CHEAT:
@@ -103,12 +99,8 @@ const char *menu_hash_to_str_pl(uint32_t hash)
          return "RetroKeyboard";
       case MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Block Frames";
-      case MENU_LABEL_VALUE_INPUT_BIND_MODE:
-         return "Tryb bindowania";
-      case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "Wy¶wietl opisy przycisków autokonfiguracji";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
-         return "Wy¶wietl opisy przycisków dla tego rdzenia";
+         return "Wy¶wietl opisy przycisków dla tego rdzenia"; /* UPDATE/FIXME */
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
          return "Ukryj nieprzypisane przyciski";
       case MENU_LABEL_VALUE_VIDEO_FONT_ENABLE:
@@ -165,7 +157,7 @@ const char *menu_hash_to_str_pl(uint32_t hash)
          return "W³±cz nagrywanie";
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "W³±cz nagrywanie z u¿yciem GPU";
-      case MENU_LABEL_VALUE_RECORD_PATH:
+      case MENU_LABEL_VALUE_RECORD_PATH: /* FIXME/UPDATE */
          return "¦cie¿ka nagrywania";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "U¿ywaj katalogu wyj¶ciowego nagrywania";
@@ -197,7 +189,7 @@ const char *menu_hash_to_str_pl(uint32_t hash)
          return "Katalog systemu";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Katalog z plikami cheatów";
-      case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
+      case MENU_LABEL_VALUE_CACHE_DIRECTORY: /* UPDATE/FIXME */
          return "Katalog do wypakowywania archiwów";
       case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Katalog filtrów audio";
@@ -435,8 +427,6 @@ const char *menu_hash_to_str_pl(uint32_t hash)
          return "P³ynno¶æ przewijania";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
          return "Wczytaj plik remapowania";
-      case MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS:
-         return "Zapisz plik remapowania jako";
       case MENU_LABEL_VALUE_CUSTOM_RATIO:
          return "W³±sny wspó³czynnik";
       case MENU_LABEL_VALUE_USE_THIS_DIRECTORY:
@@ -499,10 +489,8 @@ const char *menu_hash_to_str_pl(uint32_t hash)
          return "URL rdzeni buildbota";
       case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "URL assetów buildbota";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "Zawijanie nawigacji poziomo";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "Zawijanie nawigacji pionowo";
+      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND:
+         return "Zawijanie nawigacji";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "Filtruj wed³ug wspieranych rozszerzeñ";
       case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:

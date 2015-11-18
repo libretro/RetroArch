@@ -77,7 +77,6 @@ struct dispmanx_surface
 
 struct dispmanx_video
 {
-   uint64_t frame_count;
    DISPMANX_DISPLAY_HANDLE_T display;
    DISPMANX_UPDATE_HANDLE_T update;
    uint32_t vc_image_ptr;
@@ -395,7 +394,7 @@ static void *dispmanx_gfx_init(const video_info_t *video,
 }
 
 static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
-      unsigned height, unsigned pitch, const char *msg)
+      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg)
 {
    struct dispmanx_video *_dispvars = data;
 
@@ -435,7 +434,6 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
 
    /* Update main surface: locate free page, blit and flip. */
    dispmanx_surface_update(_dispvars, frame, _dispvars->main_surface);
-   _dispvars->frame_count++;
    return true;
 }
 
@@ -554,12 +552,6 @@ static bool dispmanx_gfx_read_viewport(void *data, uint8_t *buffer)
    return true;
 }
 
-static uint64_t dispmanx_gfx_get_frame_count(void *data)
-{
-   struct dispmanx_video *_dispvars = data;
-   return _dispvars->frame_count;
-}
-
 static void dispmanx_set_aspect_ratio (void *data, unsigned aspect_ratio_idx) 
 {
    struct dispmanx_video *_dispvars = data;
@@ -602,7 +594,6 @@ static void dispmanx_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
 }
 
 static const video_poke_interface_t dispmanx_poke_interface = {
-   dispmanx_gfx_get_frame_count,
    NULL, /* set_video_mode */
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */
@@ -630,7 +621,6 @@ static void dispmanx_gfx_get_poke_interface(void *data,
 static void dispmanx_gfx_free(void *data)
 {
    struct dispmanx_video *_dispvars = data;
-   int i;
    dispmanx_surface_free(_dispvars, &_dispvars->main_surface);
    dispmanx_surface_free(_dispvars, &_dispvars->back_surface);
    if (_dispvars->menu_surface != NULL) 

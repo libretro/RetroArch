@@ -1,5 +1,5 @@
 #include "../gfx/drivers_wm/win32_resource.h"
-1                       ICON                    "retroarch-icon.ico"
+1                       ICON                    "icon_light.ico"
 2                       24                      "rarch.manifest"
 
 IDR_MENU MENU

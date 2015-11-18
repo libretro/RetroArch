@@ -18,6 +18,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include "general.h"
+#include "system.h"
 
 #include <file/file_path.h>
 #include <rthreads/rthreads.h>
@@ -27,7 +29,7 @@
 
 struct Wimp* wimp;
 char* args[] = {""};
-
+settings_t *settings;
 
 typedef struct ui_companion_qt
 {
@@ -38,11 +40,14 @@ typedef struct ui_companion_qt
 
 static void qt_thread(void *data)
 {
-   ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
 
+   ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
    wimp = ctrWimp(0, NULL);
    if(wimp)
+   {
+      GetSettings(wimp, settings);
       CreateMainWindow(wimp);
+   }
 
    return;
 }
@@ -63,16 +68,11 @@ static void ui_companion_qt_deinit(void *data)
 static void *ui_companion_qt_init(void)
 {
    ui_companion_qt_t *handle = (ui_companion_qt_t*)calloc(1, sizeof(*handle));
-
-   fflush(stdout);
-
-
    if (!handle)
       return NULL;
-
+   settings = config_get_ptr();
    handle->lock   = slock_new();
    handle->thread = sthread_create(qt_thread, handle);
-
    if (!handle->thread)
    {
       slock_free(handle->lock);
@@ -87,8 +87,6 @@ static int ui_companion_qt_iterate(void *data, unsigned action)
 {
    (void)data;
    (void)action;
-   printf("Test");
-   fflush(stdout);
    return 0;
 }
 
@@ -130,5 +128,8 @@ const ui_companion_driver_t ui_companion_qt = {
    ui_companion_qt_event_command,
    ui_companion_qt_notify_content_loaded,
    ui_companion_qt_notify_list_pushed,
+   NULL,
+   NULL,
+   NULL,
    "qt",
 };

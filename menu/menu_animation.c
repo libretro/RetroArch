@@ -19,18 +19,45 @@
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 
-#include "menu_display.h"
 #include "menu_animation.h"
 #include "../configuration.h"
-#include "../runloop.h"
 #include "../performance.h"
 
-menu_animation_t *menu_animation_get_ptr(void)
+struct tween
 {
-   menu_display_t *disp = menu_display_get_ptr();
-   if (!disp)
-      return NULL;
-   return disp->animation;
+   bool        alive;
+   float       duration;
+   float       running_since;
+   float       initial_value;
+   float       target_value;
+   float       *subject;
+   int         tag;
+   easing_cb   easing;
+   tween_cb    cb;
+};
+
+struct menu_animation
+{
+   struct tween *list;
+
+   size_t capacity;
+   size_t size;
+   size_t first_dead;
+   bool is_active;
+
+   /* Delta timing */
+   float delta_time;
+   retro_time_t cur_time;
+   retro_time_t old_time;
+};
+
+typedef struct menu_animation menu_animation_t;
+
+static menu_animation_t menu_animation_state;
+
+static menu_animation_t *menu_animation_get_ptr(void)
+{
+   return &menu_animation_state;
 }
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
@@ -261,69 +288,71 @@ static float easing_out_in_bounce(float t, float b, float c, float d)
    return easing_in_bounce((t * 2) - d, b + c / 2, c / 2, d);
 }
 
-void menu_animation_free(menu_animation_t *anim)
+static int menu_animation_iterate(menu_animation_t *anim, unsigned idx, float dt, unsigned *active_tweens)
 {
-   size_t i;
+   struct tween    *tween = anim ? &anim->list[idx] : NULL;
 
-   if (!anim)
-      return;
+   if (!tween || !tween->alive)
+      return -1;
 
-   for (i = 0; i < anim->size; i++)
+   tween->running_since += dt;
+
+   *tween->subject = tween->easing(
+            tween->running_since,
+            tween->initial_value,
+            tween->target_value - tween->initial_value,
+            tween->duration);
+
+   if (tween->running_since >= tween->duration)
    {
-      if (anim->list[i].subject)
-         anim->list[i].subject = NULL;
+      *tween->subject = tween->target_value;
+      tween->alive    = false;
+
+      if (idx < anim->first_dead)
+         anim->first_dead = idx;
+
+      if (tween->cb)
+         tween->cb();
    }
 
-   free(anim->list);
-   free(anim);
+   if (tween->running_since < tween->duration)
+      *active_tweens += 1;
+
+   return 0;
 }
 
-void menu_animation_kill_by_subject(menu_animation_t *animation,
-      size_t count, const void *subjects)
+static void menu_animation_ticker_generic(uint64_t idx,
+      size_t max_width, size_t *offset, size_t *width)
 {
-   unsigned i, j, killed = 0;
-   float **sub = (float**)subjects;
+   int ticker_period, phase, phase_left_stop;
+   int phase_left_moving, phase_right_stop;
+   int left_offset, right_offset;
 
-   for (i = 0; i < animation->size; ++i)
-   {
-      if (!animation->list[i].alive)
-         continue;
+   *offset = 0;
 
-      for (j = 0; j < count; ++j)
-      {
-         if (animation->list[i].subject == sub[j])
-         {
-            animation->list[i].alive   = false;
-            animation->list[i].subject = NULL;
-
-            if (i < animation->first_dead)
-               animation->first_dead = i;
-
-            killed++;
-            break;
-         }
-      }
-   }
-}
-
-void menu_animation_kill_by_tag(menu_animation_t *anim, int tag)
-{
-   unsigned i;
-
-   if (tag == -1)
+   if (*width <= max_width)
       return;
 
-   for (i = 0; i < anim->size; ++i)
-   {
-      if (anim->list[i].tag == tag)
-      {
-         anim->list[i].alive   = false;
-         anim->list[i].subject = NULL;
+   ticker_period     = 2 * (*width - max_width) + 4;
+   phase             = idx % ticker_period;
 
-         if (i < anim->first_dead)
-            anim->first_dead = i;
-      }
-   }
+   phase_left_stop   = 2;
+   phase_left_moving = phase_left_stop + (*width - max_width);
+   phase_right_stop  = phase_left_moving + 2;
+
+   left_offset       = phase - phase_left_stop;
+   right_offset      = (*width - max_width) - (phase - phase_right_stop);
+
+   if (phase < phase_left_stop)
+      *offset = 0;
+   else if (phase < phase_left_moving)
+      *offset = -left_offset;
+   else if (phase < phase_right_stop)
+      *offset = -(*width - max_width);
+   else
+      *offset = -right_offset;
+
+   *width = max_width;
 }
 
 static void menu_animation_push_internal(menu_animation_t *anim, const struct tween *t)
@@ -347,13 +376,80 @@ static void menu_animation_push_internal(menu_animation_t *anim, const struct tw
    *target = *t;
 }
 
-bool menu_animation_push(menu_animation_t *anim,
-      float duration,
-      float target_value, float* subject,
-      enum menu_animation_easing_type easing_enum,
-      int tag, tween_cb cb)
+void menu_animation_free(void)
+{
+   size_t i;
+   menu_animation_t *anim = menu_animation_get_ptr();
+
+   if (!anim)
+      return;
+
+   for (i = 0; i < anim->size; i++)
+   {
+      if (anim->list[i].subject)
+         anim->list[i].subject = NULL;
+   }
+
+   free(anim->list);
+
+   memset(&menu_animation_state, 0, sizeof(menu_animation_t));
+}
+
+void menu_animation_kill_by_subject(size_t count, const void *subjects)
+{
+   unsigned i, j, killed = 0;
+   float **sub = (float**)subjects;
+   menu_animation_t *anim = menu_animation_get_ptr();
+
+   for (i = 0; i < anim->size; ++i)
+   {
+      if (!anim->list[i].alive)
+         continue;
+
+      for (j = 0; j < count; ++j)
+      {
+         if (anim->list[i].subject == sub[j])
+         {
+            anim->list[i].alive   = false;
+            anim->list[i].subject = NULL;
+
+            if (i < anim->first_dead)
+               anim->first_dead = i;
+
+            killed++;
+            break;
+         }
+      }
+   }
+}
+
+void menu_animation_kill_by_tag(int tag)
+{
+   unsigned i;
+   menu_animation_t *anim = menu_animation_get_ptr();
+
+   if (tag == -1)
+      return;
+
+   for (i = 0; i < anim->size; ++i)
+   {
+      if (anim->list[i].tag == tag)
+      {
+         anim->list[i].alive   = false;
+         anim->list[i].subject = NULL;
+
+         if (i < anim->first_dead)
+            anim->first_dead = i;
+      }
+   }
+}
+
+
+bool menu_animation_push(float duration, float target_value, float* subject,
+      enum menu_animation_easing_type easing_enum, int tag, tween_cb cb)
 {
    struct tween t;
+   menu_animation_t *anim = menu_animation_get_ptr();
 
    if (!subject)
       return false;
@@ -490,95 +586,6 @@ bool menu_animation_push(menu_animation_t *anim,
    return true;
 }
 
-static int menu_animation_iterate(
-      menu_animation_t *anim, unsigned idx,
-      float dt, unsigned *active_tweens)
-{
-   struct tween *tween = &anim->list[idx];
-
-   if (!tween->alive)
-      return -1;
-
-   tween->running_since += dt;
-
-   *tween->subject = tween->easing(
-            tween->running_since,
-            tween->initial_value,
-            tween->target_value - tween->initial_value,
-            tween->duration);
-
-   if (tween->running_since >= tween->duration)
-   {
-      *tween->subject = tween->target_value;
-      tween->alive    = false;
-
-      if (idx < anim->first_dead)
-         anim->first_dead = idx;
-
-      if (tween->cb)
-         tween->cb();
-   }
-
-   if (tween->running_since < tween->duration)
-      *active_tweens += 1;
-
-   return 0;
-}
-
-bool menu_animation_update(menu_animation_t *anim, float dt)
-{
-   unsigned i;
-   unsigned active_tweens = 0;
-
-   for(i = 0; i < anim->size; i++)
-      menu_animation_iterate(anim, i, dt, &active_tweens);
-
-   if (!active_tweens)
-   {
-      anim->size = 0;
-      anim->first_dead = 0;
-      return false;
-   }
-
-   anim->is_active = true;
-
-   return true;
-}
-
-void menu_animation_ticker_generic(uint64_t idx, int max_width,
-      int *offset, int *width)
-{
-   int ticker_period, phase, phase_left_stop;
-   int phase_left_moving, phase_right_stop;
-   int left_offset, right_offset;
-
-   *offset = 0;
-
-   if (*width <= max_width)
-      return;
-
-   ticker_period     = 2 * (*width - max_width) + 4;
-   phase             = idx % ticker_period;
-
-   phase_left_stop   = 2;
-   phase_left_moving = phase_left_stop + (*width - max_width);
-   phase_right_stop  = phase_left_moving + 2;
-
-   left_offset       = phase - phase_left_stop;
-   right_offset      = (*width - max_width) - (phase - phase_right_stop);
-
-   if (phase < phase_left_stop)
-      *offset = 0;
-   else if (phase < phase_left_moving)
-      *offset = -left_offset;
-   else if (phase < phase_right_stop)
-      *offset = -(*width - max_width);
-   else
-      *offset = -right_offset;
-
-   *width = max_width;
-}
-
 /**
  * menu_animation_ticker_str:
  * @s                        : buffer to write new message line to.
@@ -594,10 +601,10 @@ void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
       const char *str, bool selected)
 {
    menu_animation_t *anim = menu_animation_get_ptr();
-   int            str_len = strlen(str);
-   int             offset = 0;
+   size_t           str_len = strlen(str);
+   size_t           offset = 0;
 
-   if (str_len <= len)
+   if ((size_t)str_len <= len)
    {
       strlcpy(s, str, len + 1);
       return;
@@ -617,24 +624,76 @@ void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
    anim->is_active = true;
 }
 
-void menu_animation_update_time(menu_animation_t *anim)
+bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 {
-   static retro_time_t last_clock_update = 0;
-   settings_t *settings = config_get_ptr();
+   menu_animation_t *anim   = menu_animation_get_ptr();
 
-   anim->cur_time   = rarch_get_time_usec();
-   anim->delta_time = anim->cur_time - anim->old_time;
+   if (!anim)
+      return false;
 
-   if (anim->delta_time >= IDEAL_DT * 4)
-      anim->delta_time = IDEAL_DT * 4;
-   if (anim->delta_time <= IDEAL_DT / 4)
-      anim->delta_time = IDEAL_DT / 4;
-   anim->old_time      = anim->cur_time;
-
-   if (((anim->cur_time - last_clock_update) > 1000000) 
-         && settings->menu.timedate_enable)
+   switch (state)
    {
-      anim->label.is_updated = true;
-      last_clock_update = anim->cur_time;
+      case MENU_ANIMATION_CTL_IS_ACTIVE:
+         return anim->is_active;
+      case MENU_ANIMATION_CTL_CLEAR_ACTIVE:
+         anim->is_active           = false;
+         return true;
+      case MENU_ANIMATION_CTL_SET_ACTIVE:
+         anim->is_active           = true;
+         return true;
+      case MENU_ANIMATION_CTL_DELTA_TIME:
+         {
+            float *ptr = (float*)data;
+            if (!ptr)
+               return false;
+            *ptr = anim->delta_time;
+         }
+         return true;
+      case MENU_ANIMATION_CTL_UPDATE_TIME:
+         {
+            static retro_time_t last_clock_update = 0;
+            settings_t *settings     = config_get_ptr();
+
+            anim->cur_time           = retro_get_time_usec();
+            anim->delta_time         = anim->cur_time - anim->old_time;
+
+            if (anim->delta_time >= IDEAL_DT * 4)
+               anim->delta_time = IDEAL_DT * 4;
+            if (anim->delta_time <= IDEAL_DT / 4)
+               anim->delta_time = IDEAL_DT / 4;
+            anim->old_time      = anim->cur_time;
+
+            if (((anim->cur_time - last_clock_update) > 1000000) 
+                  && settings->menu.timedate_enable)
+            {
+               anim->is_active           = true;
+               last_clock_update = anim->cur_time;
+            }
+         }
+         return true;
+      case MENU_ANIMATION_CTL_UPDATE:
+         {
+            unsigned i;
+            unsigned active_tweens = 0;
+            float *dt = (float*)data;
+
+            if (!dt)
+               return false;
+
+            for(i = 0; i < anim->size; i++)
+               menu_animation_iterate(anim, i, *dt, &active_tweens);
+
+            if (!active_tweens)
+            {
+               anim->size = 0;
+               anim->first_dead = 0;
+               return false;
+            }
+
+            anim->is_active = true;
+         }
+         return true;
    }
+
+   return false;
 }

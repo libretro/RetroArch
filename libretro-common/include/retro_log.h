@@ -41,15 +41,15 @@
 #include <compat/posix_string.h>
 #include <compat/strl.h>
 
-#if defined(HAVE_FILE_LOGGER) && defined(RARCH_INTERNAL) && !defined(IS_JOYCONFIG)
+#if defined(HAVE_FILE_LOGGER) && defined(RARCH_INTERNAL)
 
 #ifdef __cplusplus
 extern "C"
 #endif
 
-FILE *rarch_main_log_file(void);
+FILE *retro_main_log_file(void);
 
-#define LOG_FILE (rarch_main_log_file())
+#define LOG_FILE (retro_main_log_file())
 
 #else
 #define LOG_FILE (stderr)
@@ -70,19 +70,111 @@ FILE *rarch_main_log_file(void);
 #ifdef __cplusplus
 extern "C" {
 #endif
-bool rarch_main_verbosity(void);
+bool retro_main_verbosity(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#define RARCH_LOG_VERBOSE (rarch_main_verbosity())
+#define RARCH_LOG_VERBOSE (retro_main_verbosity())
 #else
 #define RARCH_LOG_VERBOSE (true)
 #endif
 
-#if defined(RARCH_CONSOLE) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
-#include <logger_override.h>
+#if TARGET_OS_IPHONE && defined(RARCH_INTERNAL) && !TARGET_IPHONE_SIMULATOR
+static aslclient asl_client;
+static int asl_inited = 0;
+#endif
+
+#if defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
+
+#define BUFSIZE	(64 * 1024)
+#define TCPDUMP_STACKSIZE	(16 * 1024)
+#define TCPDUMP_PRIO	(2048)
+
+void logger_init (void);
+void logger_shutdown (void);
+void logger_send (const char *__format,...);
+void logger_send_v(const char *__format, va_list args);
+
+#ifdef IS_SALAMANDER
+
+#define RARCH_LOG(...) do { \
+   logger_send("RetroArch Salamander: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_LOG_V(tag, fmt, vp) do { \
+   logger_send("RetroArch Salamander: " tag); \
+   logger_send_v(fmt, vp); \
+} while (0)
+
+#define RARCH_LOG_OUTPUT(...) do { \
+   logger_send("RetroArch Salamander [OUTPUT] :: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
+   logger_send("RetroArch Salamander [OUTPUT] :: " tag); \
+   logger_send_v(fmt, vp); \
+} while (0)
+
+#define RARCH_ERR(...) do { \
+   logger_send("RetroArch Salamander [ERROR] :: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_ERR_V(tag, fmt, vp) do { \
+   logger_send("RetroArch Salamander [ERROR] :: " tag); \
+   logger_send_v(fmt, vp); \
+} while (0)
+
+#define RARCH_WARN(...) do { \
+   logger_send("RetroArch Salamander [WARN] :: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_WARN_V(tag, fmt, vp) do { \
+   logger_send("RetroArch Salamander [WARN] :: " tag); \
+   logger_send_v(fmt, vp); \
+} while (0)
+
+#else
+
+#define RARCH_LOG(...) do { \
+   logger_send("RetroArch: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_LOG_V(tag, fmt, vp) do { \
+   logger_send("RetroArch: " tag); \
+   logger_send_v(fmt, vp); \
+} while (0)
+
+#define RARCH_ERR(...) do { \
+   logger_send("RetroArch [ERROR] :: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_ERR_V(tag, fmt, vp) do { \
+   logger_send("RetroArch [ERROR] :: " tag); \
+   logger_send_v(fmt, vp); \
+} while (0)
+
+#define RARCH_WARN(...) do { \
+   logger_send("RetroArch [WARN] :: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_WARN_V(tag, fmt, vp) do { \
+   logger_send("RetroArch [WARN] :: " tag); \
+   logger_send_v(fmt, vp); \
+} while (0)
+
+#define RARCH_LOG_OUTPUT(...) do { \
+   logger_send("RetroArch [OUTPUT] :: " __VA_ARGS__); \
+} while(0)
+
+#define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
+   logger_send("RetroArch [OUTPUT] :: " tag); \
+   logger_send_v(fmt, vp); \
+} while (0)
+
+#endif
+
 #else
 static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
@@ -92,11 +184,16 @@ static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #if TARGET_IPHONE_SIMULATOR
    vprintf(fmt, ap);
 #else
+   if (!asl_inited)
+   {
+      asl_client = asl_open("RetroArch", "com.apple.console", ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
+      asl_inited = 1;
+   }
    aslmsg msg = asl_new(ASL_TYPE_MSG);
    asl_set(msg, ASL_KEY_READ_UID, "-1");
    if (tag)
-      asl_log(NULL, msg, ASL_LEVEL_NOTICE, "%s", tag);
-   asl_vlog(NULL, msg, ASL_LEVEL_NOTICE, fmt, ap);
+      asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s", tag);
+   asl_vlog(asl_client, msg, ASL_LEVEL_NOTICE, fmt, ap);
    asl_free(msg);
 #endif
 #elif defined(_XBOX1)
@@ -120,7 +217,8 @@ static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    __android_log_vprint(prio, PROGRAM_NAME, fmt, ap);
 #else
    fprintf(LOG_FILE, "%s %s :: ", PROGRAM_NAME, tag ? tag : "[INFO]");
-   vfprintf(LOG_FILE, fmt, ap); 
+   vfprintf(LOG_FILE, fmt, ap);
+   fflush(LOG_FILE);
 #endif
 }
 

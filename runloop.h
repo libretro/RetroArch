@@ -17,6 +17,7 @@
 #define __RETROARCH_RUNLOOP_H
 
 #include <setjmp.h>
+#include <rthreads/async_job.h>
 #include "libretro.h"
 #include "core_info.h"
 #include "core_options.h"
@@ -27,35 +28,37 @@
 #include "cheats.h"
 #include "dynamic.h"
 #include "system.h"
+#include "performance.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* All libretro runloop-related globals go here. */
-
-typedef struct runloop
+enum rarch_main_ctl_state
 {
-   /* Lifecycle state checks. */
-   bool is_paused;
-   bool is_idle;
-   bool ui_companion_is_on_foreground;
-   bool is_slowmotion;
-
-   struct
-   {
-      struct
-      {
-         unsigned max;
-      } video;
-
-      struct
-      {
-         retro_time_t minimum_time;
-         retro_time_t last_time;
-      } limit;
-   } frames;
-} runloop_t;
+   RARCH_MAIN_CTL_IS_IDLE = 0,
+   RARCH_MAIN_CTL_SET_IDLE,
+   RARCH_MAIN_CTL_IS_SLOWMOTION,
+   RARCH_MAIN_CTL_SET_SLOWMOTION,
+   RARCH_MAIN_CTL_IS_PAUSED,
+   RARCH_MAIN_CTL_SET_PAUSED,
+   RARCH_MAIN_CTL_SET_MAX_FRAMES,
+   RARCH_MAIN_CTL_SET_FRAME_LIMIT_LAST_TIME,
+   RARCH_MAIN_CTL_CLEAR_STATE,
+   RARCH_MAIN_CTL_STATE_FREE,
+   RARCH_MAIN_CTL_GLOBAL_FREE,
+   /* Checks for state changes in this frame. */
+   RARCH_MAIN_CTL_CHECK_STATE,
+   RARCH_MAIN_CTL_CHECK_MOVIE,
+   /* Checks if movie is being played. */
+   RARCH_MAIN_CTL_CHECK_MOVIE_PLAYBACK,
+   RARCH_MAIN_CTL_CHECK_MOVIE_INIT,
+   /* Checks if movie is being recorded. */
+   RARCH_MAIN_CTL_CHECK_MOVIE_RECORD,
+   /* Checks if slowmotion toggle/hold was being pressed and/or held. */
+   RARCH_MAIN_CTL_CHECK_SLOWMOTION,
+   RARCH_MAIN_CTL_CHECK_PAUSE_STATE
+};
 
 typedef struct rarch_resolution
 {
@@ -74,45 +77,65 @@ typedef struct global
 
    struct string_list *temporary_content;
 
-   core_info_list_t *core_info;
-   core_info_t *core_info_current;
+   struct
+   {
+      core_info_list_t *list;
+      core_info_t *current;
+   } core_info;
 
    uint32_t content_crc;
 
-   char gb_rom_path[PATH_MAX_LENGTH];
-   char bsx_rom_path[PATH_MAX_LENGTH];
-   char sufami_rom_path[2][PATH_MAX_LENGTH];
-   bool has_set_input_descriptors;
-   bool has_set_save_path;
-   bool has_set_state_path;
-   bool has_set_libretro_device[MAX_USERS];
-   bool has_set_libretro;
-   bool has_set_libretro_directory;
-   bool has_set_verbosity;
+   struct
+   {
+      char gb_rom[PATH_MAX_LENGTH];
+      char bsx_rom[PATH_MAX_LENGTH];
+      char sufami_rom[2][PATH_MAX_LENGTH];
+      /* Config associated with global "default" config. */
+      char config[PATH_MAX_LENGTH];
+      char append_config[PATH_MAX_LENGTH];
+      char input_config[PATH_MAX_LENGTH];
+#ifdef HAVE_FILE_LOGGER
+      char default_log[PATH_MAX_LENGTH];
+#endif
+      char fullpath[PATH_MAX_LENGTH];
+      /* Config file associated with per-core configs. */
+      char core_specific_config[PATH_MAX_LENGTH];
+   } path;
 
-   bool has_set_netplay_mode;
-   bool has_set_username;
-   bool has_set_netplay_ip_address;
-   bool has_set_netplay_delay_frames;
-   bool has_set_netplay_ip_port;
+   struct
+   {
+      bool input_descriptors;
+      bool save_path;
+      bool state_path;
+      bool libretro_device[MAX_USERS];
+      bool libretro;
+      bool libretro_directory;
+      bool verbosity;
 
-   bool has_set_ups_pref;
-   bool has_set_bps_pref;
-   bool has_set_ips_pref;
+      bool netplay_mode;
+      bool username;
+      bool netplay_ip_address;
+      bool netplay_delay_frames;
+      bool netplay_ip_port;
+
+      bool ups_pref;
+      bool bps_pref;
+      bool ips_pref;
+   } has_set;
+
    
    bool overrides_active;
 
-   /* Config associated with global "default" config. */
-   char config_path[PATH_MAX_LENGTH];
-   char append_config_path[PATH_MAX_LENGTH];
-   char input_config_path[PATH_MAX_LENGTH];
-
-#ifdef HAVE_FILE_LOGGER
-   char default_log_file[PATH_MAX_LENGTH];
-#endif
-   
-   char basename[PATH_MAX_LENGTH];
-   char fullpath[PATH_MAX_LENGTH];
+   struct
+   {
+      char base[PATH_MAX_LENGTH];
+      char savefile[PATH_MAX_LENGTH];
+      char savestate[PATH_MAX_LENGTH];
+      char cheatfile[PATH_MAX_LENGTH];
+      char ups[PATH_MAX_LENGTH];
+      char bps[PATH_MAX_LENGTH];
+      char ips[PATH_MAX_LENGTH];
+   } name;
 
    /* A list of save types and associated paths for all content. */
    struct string_list *savefiles;
@@ -121,26 +144,24 @@ typedef struct global
    char subsystem[PATH_MAX_LENGTH];
    struct string_list *subsystem_fullpaths;
 
-   char savefile_name[PATH_MAX_LENGTH];
-   char savestate_name[PATH_MAX_LENGTH];
-   char cheatfile_name[PATH_MAX_LENGTH];
-
-   /* Used on reentrancy to use a savestate dir. */
-   char savefile_dir[PATH_MAX_LENGTH];
-   char savestate_dir[PATH_MAX_LENGTH];
-
+   struct
+   {
+      /* Used on reentrancy to use a savestate dir. */
+      char savefile[PATH_MAX_LENGTH];
+      char savestate[PATH_MAX_LENGTH];
+      char systemdir[PATH_MAX_LENGTH];
 #ifdef HAVE_OVERLAY
-   char overlay_dir[PATH_MAX_LENGTH];
-   char osk_overlay_dir[PATH_MAX_LENGTH];
+      char osk_overlay[PATH_MAX_LENGTH];
 #endif
+   } dir;
 
-   bool block_patch;
-   bool ups_pref;
-   bool bps_pref;
-   bool ips_pref;
-   char ups_name[PATH_MAX_LENGTH];
-   char bps_name[PATH_MAX_LENGTH];
-   char ips_name[PATH_MAX_LENGTH];
+   struct
+   {
+      bool block_patch;
+      bool ups_pref;
+      bool bps_pref;
+      bool ips_pref;
+   } patch;
 
    struct
    {
@@ -151,7 +172,6 @@ typedef struct global
    struct
    {
       struct retro_system_info info;
-      bool bind_mode_keyboard;
    } menu;
 #endif
 
@@ -162,7 +182,6 @@ typedef struct global
       /* Rewind support. */
       state_manager_t *state;
       size_t size;
-      bool frame_is_reverse;
    } rewind;
 
    struct
@@ -180,28 +199,39 @@ typedef struct global
       bool movie_end;
    } bsv;
 
-   bool sram_load_disable;
-   bool sram_save_disable;
-   bool use_sram;
-
+   struct
+   {
+      bool load_disable;
+      bool save_disable;
+      bool use;
+   } sram;
 
    /* Turbo support. */
-   bool turbo_frame_enable[MAX_USERS];
-   uint16_t turbo_enable[MAX_USERS];
-   unsigned turbo_count;
+   struct
+   {
+      bool frame_enable[MAX_USERS];
+      uint16_t enable[MAX_USERS];
+      unsigned count;
+   } turbo;
 
    /* Autosave support. */
-   autosave_t **autosave;
-   unsigned num_autosave;
+   struct
+   {
+      autosave_t **list;
+      unsigned num;
+   } autosave;
 
 #ifdef HAVE_NETPLAY
    /* Netplay. */
-   char netplay_server[PATH_MAX_LENGTH];
-   bool netplay_enable;
-   bool netplay_is_client;
-   bool netplay_is_spectate;
-   unsigned netplay_sync_frames;
-   unsigned netplay_port;
+   struct
+   {
+      char server[PATH_MAX_LENGTH];
+      bool enable;
+      bool is_client;
+      bool is_spectate;
+      unsigned sync_frames;
+      unsigned port;
+   } netplay;
 #endif
 
    /* Recording. */
@@ -270,27 +300,31 @@ typedef struct global
       bool flickerfilter_enable;
       bool softfilter_enable;
    } console;
-
+   
+#ifdef HAVE_THREADS
+   async_job_t *async_jobs;
+#endif
+   
    /* If this is non-NULL. RARCH_LOG and friends 
     * will write to this file. */
    FILE *log_file;
 
-   bool main_is_init;
-   bool content_is_init;
-   bool error_in_init;
-   char error_string[PATH_MAX_LENGTH];
+   struct
+   {
+      bool main;
+      bool content;
+      bool error;
+      struct
+      {
+         bool no_content;
+         enum rarch_core_type type;
+      } core;
+   } inited;
+
    jmp_buf error_sjlj_context;
-
-   bool libretro_no_content;
-   enum rarch_core_type core_type;
-
-   /* Config file associated with per-core configs. */
-   char core_specific_config_path[PATH_MAX_LENGTH];
-
+   char error_string[PATH_MAX_LENGTH];
    retro_keyboard_event_t frontend_key_event;
 } global_t;
-
-runloop_t *rarch_main_get_ptr(void);
 
 global_t *global_get_ptr(void);
 
@@ -302,7 +336,7 @@ global_t *global_get_ptr(void);
  * Returns: 0 on successful run, 1 if we have to wait until button input in order
  * to wake up the loop, -1 if we forcibly quit out of the RetroArch iteration loop. 
  **/
-int rarch_main_iterate(void);
+int rarch_main_iterate(unsigned *sleep_ms);
 
 void rarch_main_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);
@@ -316,17 +350,11 @@ void rarch_main_msg_queue_free(void);
 
 void rarch_main_msg_queue_init(void);
 
-void rarch_main_clear_state(void);
-
 bool rarch_main_verbosity(void);
 
-FILE *rarch_main_log_file(void);
+FILE *retro_main_log_file(void);
 
-bool rarch_main_is_idle(void);
-
-void rarch_main_state_free(void);
-
-void rarch_main_global_free(void);
+bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }

@@ -1,9 +1,10 @@
 /* gcc -O3 -o crc32 crc32.c -lz */
 
 #include <stdio.h>
-#include <zlib.h>
 #include <errno.h>
 #include <string.h>
+
+#include <compat/zlib.h>
 
 int main(int argc, const char* argv[])
 {

@@ -15,16 +15,14 @@
  */
 
 #include <string.h>
-#include <string/string_list.h>
-#include "audio_driver.h"
+
 #include "audio_monitor.h"
+#include "audio_driver.h"
 #include "audio_utils.h"
 #include "audio_thread_wrapper.h"
-#include "../driver.h"
+
 #include "../general.h"
-#include "../retroarch.h"
-#include "../runloop.h"
-#include "../performance.h"
+#include "../string_list_special.h"
 
 #ifndef AUDIO_BUFFER_FREE_SAMPLES_COUNT
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
@@ -118,11 +116,12 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef EMSCRIPTEN
    &audio_rwebaudio,
 #endif
-#ifdef PSP
-   &audio_psp1,
+#if defined(PSP) || defined(VITA)
+   &audio_psp,
 #endif   
 #ifdef _3DS
-   &audio_ctr,
+   &audio_ctr_csnd,
+   &audio_ctr_dsp,
 #endif
    &audio_null,
    NULL,
@@ -225,42 +224,9 @@ const char *audio_driver_find_ident(int idx)
  *
  * Returns: string listing of all audio driver names, separated by '|'.
  **/
-const char* config_get_audio_driver_options(void)
+const char *config_get_audio_driver_options(void)
 {
-   union string_list_elem_attr attr;
-   unsigned i;
-   char *options   = NULL;
-   int options_len = 0;
-   struct string_list *options_l = string_list_new();
-
-   attr.i = 0;
-
-   if (!options_l)
-      return NULL;
-
-   for (i = 0; audio_driver_find_handle(i); i++)
-   {
-      const char *opt = audio_driver_find_ident(i);
-
-      options_len += strlen(opt) + 1;
-      string_list_append(options_l, opt, attr);
-   }
-
-   options = (char*)calloc(options_len, sizeof(char));
-
-   if (!options)
-   {
-      options = NULL;
-      goto end;
-   }
-
-   string_list_join_concat(options, options_len, options_l, "|");
-
-end:
-   string_list_free(options_l);
-   options_l = NULL;
-
-   return options;
+   return char_list_new_special(STRING_LIST_AUDIO_DRIVERS, NULL);
 }
 
 void find_audio_driver(void)
@@ -285,7 +251,7 @@ void find_audio_driver(void)
       driver->audio = (const audio_driver_t*)audio_driver_find_handle(0);
 
       if (!driver->audio)
-         rarch_fail(1, "find_audio_driver()");
+         retro_fail(1, "find_audio_driver()");
    }
 }
 
@@ -351,7 +317,7 @@ void init_audio(void)
       settings->slowmotion_ratio;
 
    /* Used for recording even if audio isn't enabled. */
-   rarch_assert(audio_data.conv_outsamples =
+   retro_assert(audio_data.conv_outsamples =
          (int16_t*)malloc(outsamples_max * sizeof(int16_t)));
 
    if (!audio_data.conv_outsamples)
@@ -363,7 +329,7 @@ void init_audio(void)
 
    /* Needs to be able to hold full content of a full max_bufsamples
     * in addition to its own. */
-   rarch_assert(audio_data.rewind_buf = (int16_t*)
+   retro_assert(audio_data.rewind_buf = (int16_t*)
          malloc(max_bufsamples * sizeof(int16_t)));
 
    if (!audio_data.rewind_buf)
@@ -388,7 +354,7 @@ void init_audio(void)
                driver->audio))
       {
          RARCH_ERR("Cannot open threaded audio driver ... Exiting ...\n");
-         rarch_fail(1, "init_audio()");
+         retro_fail(1, "init_audio()");
       }
    }
    else
@@ -435,7 +401,7 @@ void init_audio(void)
       driver->audio_active = false;
    }
 
-   rarch_assert(audio_data.data = (float*)
+   retro_assert(audio_data.data = (float*)
          malloc(max_bufsamples * sizeof(float)));
 
    if (!audio_data.data)
@@ -443,9 +409,9 @@ void init_audio(void)
 
    audio_data.data_ptr = 0;
 
-   rarch_assert(settings->audio.out_rate <
+   retro_assert(settings->audio.out_rate <
          audio_data.in_rate * AUDIO_MAX_RATIO);
-   rarch_assert(audio_data.outsamples = (float*)
+   retro_assert(audio_data.outsamples = (float*)
          malloc(outsamples_max * sizeof(float)));
 
    if (!audio_data.outsamples)
@@ -596,16 +562,20 @@ void audio_driver_set_nonblocking_state(bool enable)
  **/
 bool audio_driver_flush(const int16_t *data, size_t samples)
 {
-   const void *output_data        = NULL;
-   unsigned output_frames         = 0;
-   size_t   output_size           = sizeof(float);
-   struct resampler_data src_data = {0};
-   struct rarch_dsp_data dsp_data = {0};
-   runloop_t *runloop             = rarch_main_get_ptr();
-   driver_t  *driver              = driver_get_ptr();
-   const audio_driver_t *audio = driver ? 
+   bool is_slowmotion, is_paused;
+   static struct retro_perf_counter audio_convert_s16 = {0};
+   static struct retro_perf_counter audio_convert_float = {0};
+   static struct retro_perf_counter audio_dsp         = {0};
+   static struct retro_perf_counter resampler_proc    = {0};
+   struct resampler_data src_data              = {0};
+   struct rarch_dsp_data dsp_data              = {0};
+   const void *output_data                     = NULL;
+   unsigned output_frames                      = 0;
+   size_t   output_size                        = sizeof(float);
+   driver_t  *driver                           = driver_get_ptr();
+   const audio_driver_t *audio                 = driver ? 
       (const audio_driver_t*)driver->audio : NULL;
-   settings_t *settings           = config_get_ptr();
+   settings_t *settings                        = config_get_ptr();
 
    if (driver->recording_data)
    {
@@ -617,16 +587,18 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
          driver->recording->push_audio(driver->recording_data, &ffemu_data);
    }
 
-   if (runloop->is_paused || settings->audio.mute_enable)
+   rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED, &is_paused);
+
+   if (is_paused || settings->audio.mute_enable)
       return true;
    if (!driver->audio_active || !audio_data.data)
       return false;
 
-   RARCH_PERFORMANCE_INIT(audio_convert_s16);
-   RARCH_PERFORMANCE_START(audio_convert_s16);
+   rarch_perf_init(&audio_convert_s16, "audio_convert_s16");
+   retro_perf_start(&audio_convert_s16);
    audio_convert_s16_to_float(audio_data.data, data, samples,
          audio_data.volume_gain);
-   RARCH_PERFORMANCE_STOP(audio_convert_s16);
+   retro_perf_stop(&audio_convert_s16);
 
    src_data.data_in               = audio_data.data;
    src_data.input_frames          = samples >> 1;
@@ -636,10 +608,10 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
 
    if (audio_data.dsp)
    {
-      RARCH_PERFORMANCE_INIT(audio_dsp);
-      RARCH_PERFORMANCE_START(audio_dsp);
+      rarch_perf_init(&audio_dsp, "audio_dsp");
+      retro_perf_start(&audio_dsp);
       rarch_dsp_filter_process(audio_data.dsp, &dsp_data);
-      RARCH_PERFORMANCE_STOP(audio_dsp);
+      retro_perf_stop(&audio_dsp);
 
       if (dsp_data.output)
       {
@@ -654,25 +626,28 @@ bool audio_driver_flush(const int16_t *data, size_t samples)
       audio_driver_readjust_input_rate();
 
    src_data.ratio = audio_data.src_ratio;
-   if (runloop->is_slowmotion)
+
+   rarch_main_ctl(RARCH_MAIN_CTL_IS_SLOWMOTION, &is_slowmotion);
+
+   if (is_slowmotion)
       src_data.ratio *= settings->slowmotion_ratio;
 
-   RARCH_PERFORMANCE_INIT(resampler_proc);
-   RARCH_PERFORMANCE_START(resampler_proc);
+   rarch_perf_init(&resampler_proc, "resampler_proc");
+   retro_perf_start(&resampler_proc);
    rarch_resampler_process(driver->resampler,
          driver->resampler_data, &src_data);
-   RARCH_PERFORMANCE_STOP(resampler_proc);
+   retro_perf_stop(&resampler_proc);
 
    output_data   = audio_data.outsamples;
    output_frames = src_data.output_frames;
 
    if (!audio_data.use_float)
    {
-      RARCH_PERFORMANCE_INIT(audio_convert_float);
-      RARCH_PERFORMANCE_START(audio_convert_float);
+      rarch_perf_init(&audio_convert_float, "audio_convert_float");
+      retro_perf_start(&audio_convert_float);
       audio_convert_float_to_s16(audio_data.conv_outsamples,
             (const float*)output_data, output_frames * 2);
-      RARCH_PERFORMANCE_STOP(audio_convert_float);
+      retro_perf_stop(&audio_convert_float);
 
       output_data = audio_data.conv_outsamples;
       output_size = sizeof(int16_t);
@@ -811,17 +786,17 @@ void audio_driver_frame_is_reverse(void)
 void audio_monitor_adjust_system_rates(void)
 {
    float timing_skew;
-   settings_t *settings = config_get_ptr();
-   struct retro_system_av_info *av_info = 
-      video_viewport_get_system_av_info();
-   const struct retro_system_timing *info = 
-      av_info ? (const struct retro_system_timing*)&av_info->timing : NULL;
+   settings_t                   *settings = config_get_ptr();
+   const struct retro_system_timing *info = NULL;
+   struct retro_system_av_info   *av_info = video_viewport_get_system_av_info();
+   
+   if (av_info)
+      info = (const struct retro_system_timing*)&av_info->timing;
 
-   if (info->sample_rate <= 0.0)
+   if (!info || info->sample_rate <= 0.0)
       return;
 
-   timing_skew                 = fabs(1.0f - info->fps / 
-                                 settings->video.refresh_rate);
+   timing_skew        = fabs(1.0f - info->fps / settings->video.refresh_rate);
    audio_data.in_rate = info->sample_rate;
 
    if (timing_skew <= settings->audio.max_timing_skew)

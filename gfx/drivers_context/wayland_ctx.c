@@ -14,20 +14,21 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../driver.h"
-#include "../../general.h"
-#include "../../runloop.h"
-#include "../video_monitor.h"
-#include "../drivers/gl_common.h"
+#include <sys/poll.h>
+#include <signal.h>
+#include <unistd.h>
+
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
 
 #include <wayland-client.h>
 #include <wayland-egl.h>
 
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-#include <signal.h>
-#include <sys/poll.h>
-#include <unistd.h>
+#include "../../driver.h"
+#include "../../general.h"
+#include "../../runloop.h"
+#include "../video_monitor.h"
+#include "../common/gl_common.h"
 
 typedef struct gfx_ctx_wayland_data
 {
@@ -608,7 +609,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 
-   attr = egl_fill_attribs(attr);
+   attr = egl_fill_attribs(egl_attribs);
 
    wl->g_width = width ? width : DEFAULT_WINDOWED_WIDTH;
    wl->g_height = height ? height : DEFAULT_WINDOWED_HEIGHT;

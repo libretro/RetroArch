@@ -31,6 +31,8 @@
 
 static id apple_platform;
 
+void *get_chosen_screen(void);
+
 void apple_rarch_exited(void)
 {
    [[NSApplication sharedApplication] terminate:nil];
@@ -109,14 +111,33 @@ void apple_rarch_exited(void)
       case NSOtherMouseDragged:
       {
          NSPoint pos;
+          NSPoint mouse_pos;
          /* Relative */
-         apple->mouse_x = event.deltaX;
-         apple->mouse_y = event.deltaY;
+         apple->mouse_rel_x = event.deltaX;
+         apple->mouse_rel_y = event.deltaY;
+          
+#if MAC_OS_X_VERSION_10_7
+          NSScreen *screen = (NSScreen*)get_chosen_screen();
+          CGFloat backing_scale_factor = screen.backingScaleFactor;
+#else
+          CGFloat backing_scale_factor = 1.0f;
+#endif
 
          /* Absolute */
          pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
-         apple->touches[0].screen_x = pos.x;
-         apple->touches[0].screen_y = pos.y;
+         apple->touches[0].screen_x = pos.x * backing_scale_factor;
+         apple->touches[0].screen_y = pos.y * backing_scale_factor;
+          
+          //window is a variable containing your window
+          //mouse_pos = [self.window mouseLocationOutsideOfEventStream];
+          //convert to screen coordinates
+          //mouse_pos = [[self.window convertBaseToScreen:mouse_pos];
+          
+         //mouse_pos = [event locationInWindow];
+          //mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:[CocoaView get] ];
+        mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow]  fromView:nil];
+          apple->window_pos_x = (int16_t)mouse_pos.x * backing_scale_factor;
+          apple->window_pos_y = (int16_t)mouse_pos.y * backing_scale_factor;
       }
          break;
        case NSScrollWheel:
@@ -142,7 +163,7 @@ void apple_rarch_exited(void)
 static int waiting_argc;
 static char** waiting_argv;
 
-@implementation RetroArch
+@implementation RetroArch_OSX
 
 @synthesize window = _window;
 
@@ -154,6 +175,7 @@ static char** waiting_argv;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
+   unsigned i;
    apple_platform = self;
    
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
@@ -167,6 +189,15 @@ static char** waiting_argv;
    [[self.window contentView] addSubview:[CocoaView get]];
    [self.window makeFirstResponder:[CocoaView get]];
 
+    for (i = 0; i < waiting_argc; i++)
+    {
+        if (!strcmp(waiting_argv[i], "-NSDocumentRevisionsDebugMode"))
+        {
+            waiting_argv[i]   = NULL;
+            waiting_argv[i+1] = NULL;
+            waiting_argc -= 2;
+        }
+    }
    if (rarch_main(waiting_argc, waiting_argv, NULL))
       apple_rarch_exited();
 
@@ -181,9 +212,6 @@ static void poll_iteration(void)
 
     if (!apple)
       return;
-
-    apple->mouse_x = 0;
-    apple->mouse_y = 0;
     
     do
     {
@@ -198,32 +226,25 @@ static void poll_iteration(void)
     int ret = 0;
     while (ret != -1)
     {
-        poll_iteration();
-        ret = rarch_main_iterate();
-        rarch_main_data_iterate();
-        while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
+       unsigned sleep_ms = 0;
+       poll_iteration();
+       ret = rarch_main_iterate(&sleep_ms);
+       if (ret == 1 && sleep_ms > 0)
+          retro_sleep(sleep_ms);
+       rarch_main_data_iterate();
+       while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
     }
     
     main_exit(NULL);
 }
 
-- (void) apple_start_iteration
-{
-    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
-}
-
-- (void) apple_stop_iteration
-{
-}
-
 - (void)applicationDidBecomeActive:(NSNotification *)notification
 {
-   [self apple_start_iteration];
+   [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
 }
 
 - (void)applicationWillResignActive:(NSNotification *)notification
 {
-   [self apple_stop_iteration];
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
@@ -236,7 +257,7 @@ static void poll_iteration(void)
    NSApplicationTerminateReply reply = NSTerminateNow;
    global_t *global = global_get_ptr();
 
-   if (global && global->main_is_init)
+   if (global && global->inited.main)
       reply = NSTerminateCancel;
 
    ui_companion_event_command(EVENT_CMD_QUIT);
@@ -244,6 +265,8 @@ static void poll_iteration(void)
    return reply;
 }
 
+
+extern void action_ok_push_quick_menu(void);
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
@@ -254,7 +277,7 @@ static void poll_iteration(void)
       const char *core_name = global ? global->menu.info.library_name : NULL;
 		
 		if (global)
-         strlcpy(global->fullpath, __core.UTF8String, sizeof(global->fullpath));
+         strlcpy(global->path.fullpath, __core.UTF8String, sizeof(global->path.fullpath));
 
       if (core_name)
          ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
@@ -266,6 +289,43 @@ static void poll_iteration(void)
       apple_display_alert("Cannot open multiple files", "RetroArch");
       [sender replyToOpenOrPrint:NSApplicationDelegateReplyFailure];
    }
+}
+
+- (IBAction)openCore:(id)sender {
+    NSOpenPanel* panel = (NSOpenPanel*)[NSOpenPanel openPanel];
+#if defined(MAC_OS_X_VERSION_10_6)
+    [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
+     {
+         [[NSApplication sharedApplication] stopModal];
+         
+         if (result == NSOKButton && panel.URL)
+         {
+             menu_handle_t *menu  = menu_driver_get_ptr();
+             global_t *global     = global_get_ptr();
+             settings_t *settings = config_get_ptr();
+             NSURL *url = (NSURL*)panel.URL;
+             NSString *__core = url.path;
+             
+             if (__core)
+             {
+                 strlcpy(settings->libretro, __core.UTF8String, sizeof(settings->libretro));
+                 ui_companion_event_command(EVENT_CMD_LOAD_CORE);
+                 
+                 if (menu->load_no_content && settings->core.set_supports_no_game_enable)
+                 {
+                    int ret = 0;
+                     *global->path.fullpath = '\0';
+                     ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
+                     if (ret == -1)
+                        action_ok_push_quick_menu();
+                 }
+             }
+         }
+     }];
+#else
+    [panel beginSheetForDirectory:nil file:nil modalForWindopw:[self window] modalDelegate:self didEndSelector:@selector(didEndSaveSheet:returnCode:contextInfo:) contextInfo:NULL];
+#endif
+    [[NSApplication sharedApplication] runModalForWindow:panel];
 }
 
 - (void)openDocument:(id)sender
@@ -284,12 +344,10 @@ static void poll_iteration(void)
          const char *core_name = global ? global->menu.info.library_name : NULL;
 			
 			if (global)
-            strlcpy(global->fullpath, __core.UTF8String, sizeof(global->fullpath));
+            strlcpy(global->path.fullpath, __core.UTF8String, sizeof(global->path.fullpath));
 
          if (core_name)
             ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
-         else
-            [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
       }
    }];
 #else
@@ -374,17 +432,8 @@ static void poll_iteration(void)
 
 int main(int argc, char *argv[])
 {
-   int i;
-   for (i = 0; i < argc; i ++)
-   {
-      if (!strcmp(argv[i], "--"))
-      {
-         waiting_argc = argc - i;
-         waiting_argv = argv + i;
-         break;
-      }
-   }
-
+   waiting_argc = argc;
+   waiting_argv = argv;
    return NSApplicationMain(argc, (const char **) argv);
 }
 
@@ -395,7 +444,7 @@ void apple_display_alert(const char *message, const char *title)
     [alert setMessageText:(*title) ? BOXSTRING(title) : BOXSTRING("RetroArch")];
     [alert setInformativeText:BOXSTRING(message)];
     [alert setAlertStyle:NSInformationalAlertStyle];
-    [alert beginSheetModalForWindow:((RetroArch*)[[NSApplication sharedApplication] delegate]).window
+    [alert beginSheetModalForWindow:((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window
                       modalDelegate:apple_platform
                      didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
                         contextInfo:nil];
@@ -466,5 +515,8 @@ const ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_event_command,
    ui_companion_cocoa_notify_content_loaded,
    ui_companion_cocoa_notify_list_pushed,
+   NULL,
+   NULL,
+   NULL,
    "cocoa",
 };

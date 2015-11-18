@@ -32,7 +32,9 @@
 #elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
 #include <unistd.h>
 #elif defined(PSP)
-#include <pspthreadman.h>
+#include <pspthreadman.h> 
+#elif defined(VITA)
+#include <psp2/kernel/threadmgr.h>
 #elif defined(_3DS)
 #include <3ds.h>
 #else
@@ -45,12 +47,13 @@
 #elif defined(_WIN32) && defined(_XBOX)
 #include <Xtl.h>
 #endif
-#include <compat/msvc.h>
 
-#include <retro_log.h>
-#include <retro_inline.h>
-#include <retro_endianness.h>
 #include <limits.h>
+
+#ifdef _MSC_VER
+#include <compat/msvc.h>
+#endif
+#include <retro_inline.h>
 
 #ifndef PATH_MAX_LENGTH
 #define PATH_MAX_LENGTH 4096
@@ -64,29 +67,20 @@
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
-#ifdef RARCH_INTERNAL
-#define rarch_assert(cond) do { \
-   if (!(cond)) { RARCH_ERR("Assertion failed at %s:%d.\n", __FILE__, __LINE__); abort(); } \
-} while(0)
-#else
-#include <assert.h>
-#define rarch_assert(cond) assert(cond)
-#endif
-
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #define RARCH_SCALE_BASE 256
 
 /**
- * rarch_sleep:
+ * retro_sleep:
  * @msec         : amount in milliseconds to sleep
  *
  * Sleeps for a specified amount of milliseconds (@msec).
  **/
-static INLINE void rarch_sleep(unsigned msec)
+static INLINE void retro_sleep(unsigned msec)
 {
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    sys_timer_usleep(1000 * msec);
-#elif defined(PSP)
+#elif defined(PSP) || defined(VITA)
    sceKernelDelayThread(1000 * msec);
 #elif defined(_3DS)
    svcSleepThread(1000000 * (s64)msec);
@@ -148,7 +142,7 @@ static INLINE uint32_t prev_pow2(uint32_t v)
 typedef struct
 {
    uint32_t data[8];
-} rarch_bits_t;
+} retro_bits_t;
 
 #define BIT_SET(a, bit)   ((a)[(bit) >> 3] |=  (1 << ((bit) & 7)))
 #define BIT_CLEAR(a, bit) ((a)[(bit) >> 3] &= ~(1 << ((bit) & 7)))

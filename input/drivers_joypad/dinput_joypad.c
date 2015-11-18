@@ -14,15 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <dinput.h>
-
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 #include <windowsx.h>
 
-#include <retro_log.h>
+#include <dinput.h>
+
 #include <boolean.h>
+#include <retro_log.h>
 
 #include "../../general.h"
 #include "../input_autodetect.h"
@@ -197,7 +197,9 @@ static const char *dinput_joypad_friendly_name(unsigned pad)
 
 static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 {
+#ifdef HAVE_XINPUT
    bool is_xinput_pad;
+#endif
    LPDIRECTINPUTDEVICE8 *pad = NULL;
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
@@ -235,10 +237,6 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    RARCH_LOG("Device #%u PID: {%04lX} VID:{%04lX}\n", g_joypad_cnt, g_pads[g_joypad_cnt].pid, g_pads[g_joypad_cnt].vid);
 
 #ifdef HAVE_XINPUT
-#if 0
-   is_xinput_pad = g_xinput_block_pads
-      && name_is_xinput_pad(inst->tszProductName);
-#endif
    is_xinput_pad = g_xinput_block_pads
       && guid_is_xinput_device(&inst->guidProduct);
 
@@ -278,7 +276,9 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
       settings->input.vid[g_joypad_cnt] = params.vid;
    }
 
+#ifdef HAVE_XINPUT
 enum_iteration_done:
+#endif
    g_joypad_cnt++;
    return DIENUM_CONTINUE;
 }

@@ -14,12 +14,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "autosave.h"
-#include <rthreads/rthreads.h>
-#include <stdlib.h>
-#include <boolean.h>
-#include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <boolean.h>
+
+#include <rthreads/rthreads.h>
+
 #include "general.h"
 
 struct autosave
@@ -73,7 +75,7 @@ static void autosave_thread(void *data)
 
    while (!save->quit)
    {
-      bool differ = false;
+      bool differ;
 
       autosave_lock(save);
       differ = memcmp(save->buffer, save->retro_buffer,
@@ -196,10 +198,10 @@ void lock_autosave(void)
    unsigned i;
    global_t *global = global_get_ptr();
 
-   for (i = 0; i < global->num_autosave; i++)
+   for (i = 0; i < global->autosave.num; i++)
    {
-      if (global->autosave[i])
-         autosave_lock(global->autosave[i]);
+      if (global->autosave.list[i])
+         autosave_lock(global->autosave.list[i]);
    }
 }
 
@@ -213,10 +215,10 @@ void unlock_autosave(void)
    unsigned i;
    global_t *global = global_get_ptr();
 
-   for (i = 0; i < global->num_autosave; i++)
+   for (i = 0; i < global->autosave.num; i++)
    {
-      if (global->autosave[i])
-         autosave_unlock(global->autosave[i]);
+      if (global->autosave.list[i])
+         autosave_unlock(global->autosave.list[i]);
    }
 }
 

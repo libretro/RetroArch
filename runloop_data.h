@@ -48,8 +48,6 @@ void rarch_main_data_free(void);
 
 void rarch_main_data_init_queues(void);
 
-void rarch_main_data_init(void);
-
 bool rarch_main_data_active(void);
 
 #ifdef __cplusplus

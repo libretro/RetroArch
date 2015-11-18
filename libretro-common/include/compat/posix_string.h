@@ -23,31 +23,35 @@
 #ifndef __LIBRETRO_SDK_COMPAT_POSIX_STRING_H
 #define __LIBRETRO_SDK_COMPAT_POSIX_STRING_H
 
-#ifdef _WIN32
-
+#ifdef _MSC_VER
 #include <compat/msvc.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#ifdef _WIN32
+#undef strtok_r
+#define strtok_r(str, delim, saveptr) retro_strtok_r__(str, delim, saveptr)
+
+char *strtok_r(char *str, const char *delim, char **saveptr);
+#endif
+
+#ifdef _MSC_VER
 #undef strcasecmp
 #undef strdup
 #undef isblank
-#undef strtok_r
-#define strcasecmp(a, b) rarch_strcasecmp__(a, b)
-#define strdup(orig) rarch_strdup__(orig)
-#define isblank(c) rarch_isblank__(c)
-#define strtok_r(str, delim, saveptr) rarch_strtok_r__(str, delim, saveptr)
+#define strcasecmp(a, b) retro_strcasecmp__(a, b)
+#define strdup(orig)     retro_strdup__(orig)
+#define isblank(c)       retro_isblank__(c)
 int strcasecmp(const char *a, const char *b);
 char *strdup(const char *orig);
 int isblank(int c);
-char *strtok_r(char *str, const char *delim, char **saveptr);
+#endif
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-#endif
-

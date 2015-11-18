@@ -41,6 +41,8 @@ enum event_command
    EVENT_CMD_UNLOAD_CORE,
    EVENT_CMD_LOAD_STATE,
    EVENT_CMD_SAVE_STATE,
+   EVENT_CMD_SAVE_STATE_DECREMENT,
+   EVENT_CMD_SAVE_STATE_INCREMENT,
    /* Takes screenshot. */
    EVENT_CMD_TAKE_SCREENSHOT,
    /* Initializes dummy core. */
@@ -115,6 +117,8 @@ enum event_command
    EVENT_CMD_RESTART_RETROARCH,
    /* Force-quit RetroArch. */
    EVENT_CMD_QUIT_RETROARCH,
+   /* Shutdown the OS */
+   EVENT_CMD_SHUTDOWN,
    /* Resume RetroArch when in menu. */
    EVENT_CMD_RESUME,
    /* Toggles pause. */
@@ -124,6 +128,7 @@ enum event_command
    /* Unpauses retroArch. */
    EVENT_CMD_PAUSE,
    EVENT_CMD_PAUSE_CHECKS,
+   EVENT_CMD_MENU_SAVE_CURRENT_CONFIG,
    EVENT_CMD_MENU_SAVE_CONFIG,
    EVENT_CMD_MENU_PAUSE_LIBRETRO,
    /* Toggles menu on/off. */
@@ -149,6 +154,8 @@ enum event_command
    EVENT_CMD_CHEATS_INIT,
    /* Deinitializes cheats. */
    EVENT_CMD_CHEATS_DEINIT,
+   /* Apply cheats. */
+   EVENT_CMD_CHEATS_APPLY,
    /* Deinitializes network system. */
    EVENT_CMD_NETWORK_DEINIT,
    /* Initializes network system. */
@@ -196,6 +203,7 @@ enum event_command
    EVENT_CMD_REMAPPING_DEINIT,
    EVENT_CMD_VOLUME_UP,
    EVENT_CMD_VOLUME_DOWN,
+   EVENT_CMD_SET_FRAME_LIMIT,
    EVENT_CMD_DATA_RUNLOOP_FREE
 };
 

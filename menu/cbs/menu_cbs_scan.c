@@ -14,12 +14,20 @@
  */
 
 #include <file/file_path.h>
+#include <compat/strl.h>
+
 #include "../menu.h"
 #include "../menu_cbs.h"
 #include "../menu_entry.h"
 #include "../menu_setting.h"
 
 #include "../../runloop_data.h"
+
+#ifndef BIND_ACTION_SCAN
+#define BIND_ACTION_SCAN(cbs, name) \
+   cbs->action_scan = name; \
+   cbs->action_scan_ident = #name;
+#endif
 
 int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx)
@@ -28,15 +36,15 @@ int action_scan_file(const char *path,
    const char *menu_label         = NULL;
    const char *menu_path          = NULL;
    menu_handle_t *menu            = menu_driver_get_ptr();
-   menu_list_t *menu_list         = menu_list_get_ptr();
-   if (!menu || !menu_list)
+   if (!menu)
       return -1;
 
-   menu_list_get_last_stack(menu_list, &menu_path, &menu_label, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
 
    fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
 
-   rarch_main_data_msg_queue_push(DATA_TYPE_DB, fullpath, "cb_db_scan_file", 0, 1, true);
+   rarch_main_data_msg_queue_push(DATA_TYPE_DB, fullpath,
+         "cb_db_scan_file", 0, 1, true);
    return 0;
 }
 
@@ -47,18 +55,18 @@ int action_scan_directory(const char *path,
    const char *menu_label         = NULL;
    const char *menu_path          = NULL;
    menu_handle_t *menu            = menu_driver_get_ptr();
-   menu_list_t *menu_list         = menu_list_get_ptr();
-   if (!menu || !menu_list)
+   if (!menu)
       return -1;
 
-   menu_list_get_last_stack(menu_list, &menu_path, &menu_label, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
 
    strlcpy(fullpath, menu_path, sizeof(fullpath));
 
    if (path)
       fill_pathname_join(fullpath, fullpath, path, sizeof(fullpath));
 
-   rarch_main_data_msg_queue_push(DATA_TYPE_DB, fullpath, "cb_db_scan_folder", 0, 1, true);
+   rarch_main_data_msg_queue_push(DATA_TYPE_DB, fullpath,
+         "cb_db_scan_folder", 0, 1, true);
    return 0;
 }
 
@@ -68,11 +76,11 @@ static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
    switch (type)
    {
       case MENU_FILE_DIRECTORY:
-         cbs->action_scan = action_scan_directory;
+         BIND_ACTION_SCAN(cbs, action_scan_directory);
          break;
       case MENU_FILE_CARCHIVE:
       case MENU_FILE_PLAIN:
-         cbs->action_scan = action_scan_file;
+         BIND_ACTION_SCAN(cbs, action_scan_file);
          break;
       default:
          return -1;
@@ -89,7 +97,7 @@ int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   cbs->action_scan = NULL;
+   BIND_ACTION_SCAN(cbs, NULL);
 
    menu_cbs_init_bind_scan_compare_type(cbs, type);
 

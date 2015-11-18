@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -76,17 +76,17 @@ typedef struct frontend_ctx_driver
    const struct video_driver *(*get_video_driver)(void);
 } frontend_ctx_driver_t;
 
-extern const frontend_ctx_driver_t frontend_ctx_gx;
-extern const frontend_ctx_driver_t frontend_ctx_ps3;
-extern const frontend_ctx_driver_t frontend_ctx_xdk;
-extern const frontend_ctx_driver_t frontend_ctx_qnx;
-extern const frontend_ctx_driver_t frontend_ctx_darwin;
-extern const frontend_ctx_driver_t frontend_ctx_android;
-extern const frontend_ctx_driver_t frontend_ctx_linux;
-extern const frontend_ctx_driver_t frontend_ctx_psp;
-extern const frontend_ctx_driver_t frontend_ctx_ctr;
-extern const frontend_ctx_driver_t frontend_ctx_win32;
-extern const frontend_ctx_driver_t frontend_ctx_null;
+extern frontend_ctx_driver_t frontend_ctx_gx;
+extern frontend_ctx_driver_t frontend_ctx_ps3;
+extern frontend_ctx_driver_t frontend_ctx_xdk;
+extern frontend_ctx_driver_t frontend_ctx_qnx;
+extern frontend_ctx_driver_t frontend_ctx_darwin;
+extern frontend_ctx_driver_t frontend_ctx_linux;
+extern frontend_ctx_driver_t frontend_ctx_psp;
+extern frontend_ctx_driver_t frontend_ctx_ctr;
+extern frontend_ctx_driver_t frontend_ctx_win32;
+extern frontend_ctx_driver_t frontend_ctx_xenon;
+extern frontend_ctx_driver_t frontend_ctx_null;
 
 /**
  * frontend_ctx_find_driver:
@@ -96,18 +96,18 @@ extern const frontend_ctx_driver_t frontend_ctx_null;
  *
  * Returns: pointer to driver if successful, otherwise NULL.
  **/
-const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident);
+frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident);
 
-const frontend_ctx_driver_t *frontend_get_ptr(void);
+frontend_ctx_driver_t *frontend_get_ptr(void);
 
 /**
  * frontend_ctx_init_first:
  *
  * Finds first suitable driver and initialize.
  *
- * Returns: pointer to first suitable driver, otherwise NULL. 
+ * Returns: pointer to first suitable driver, otherwise NULL.
  **/
-const frontend_ctx_driver_t *frontend_ctx_init_first(void);
+frontend_ctx_driver_t *frontend_ctx_init_first(void);
 
 int frontend_driver_parse_drive_list(void *data);
 

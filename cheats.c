@@ -14,22 +14,56 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "cheats.h"
-#include "general.h"
-#include "runloop.h"
-#include "dynamic.h"
+#include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
+
 #include <file/config_file.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 
+#include "cheats.h"
+#include "general.h"
+#include "runloop.h"
+#include "dynamic.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include <stdlib.h>
-#include <stddef.h>
-#include <string.h>
+#ifdef HAVE_CHEEVOS
+#include "cheevos.h"
+#endif
+
+struct item_cheat
+{
+   char *desc;
+   bool state;
+   char *code;
+};
+
+struct cheat_manager
+{
+   struct item_cheat *cheats;
+   unsigned ptr;
+   unsigned size;
+   unsigned buf_size;
+};
+
+unsigned cheat_manager_get_buf_size(cheat_manager_t *handle)
+{
+   if (!handle)
+      return 0;
+   return handle->buf_size;
+}
+
+unsigned cheat_manager_get_size(cheat_manager_t *handle)
+{
+   if (!handle)
+      return 0;
+   return handle->size;
+}
 
 void cheat_manager_apply_cheats(cheat_manager_t *handle)
 {
@@ -38,13 +72,26 @@ void cheat_manager_apply_cheats(cheat_manager_t *handle)
    if (!handle)
       return;
 
-   pretro_cheat_reset();
+   core.retro_cheat_reset();
 
    for (i = 0; i < handle->size; i++)
    {
       if (handle->cheats[i].state)
-         pretro_cheat_set(idx++, true, handle->cheats[i].code);
+         core.retro_cheat_set(idx++, true, handle->cheats[i].code);
    }
+   
+#ifdef HAVE_CHEEVOS
+   cheevos_globals.cheats_are_enabled = idx != 0;
+   cheevos_globals.cheats_were_enabled |= cheevos_globals.cheats_are_enabled;
+#endif
+}
+
+void cheat_manager_set_code(cheat_manager_t *handle, unsigned i, const char *str)
+{
+   if (!handle)
+      return;
+   handle->cheats[i].code  = strdup(str);
+   handle->cheats[i].state = true;
 }
 
 /**
@@ -230,12 +277,13 @@ bool cheat_manager_realloc(cheat_manager_t *handle, unsigned new_size)
 
 void cheat_manager_free(cheat_manager_t *handle)
 {
-   unsigned i;
    if (!handle)
       return;
 
    if (handle->cheats)
    {
+      unsigned i;
+
       for (i = 0; i < handle->size; i++)
       {
          free(handle->cheats[i].desc);
@@ -264,6 +312,14 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
    RARCH_LOG("%s\n", msg);
 }
 
+void cheat_manager_toggle_index(cheat_manager_t *handle, unsigned i)
+{
+   if (!handle)
+      return;
+
+   handle->cheats[i].state = !handle->cheats[i].state;
+   cheat_manager_update(handle, i);
+}
 
 void cheat_manager_toggle(cheat_manager_t *handle)
 {
@@ -295,4 +351,25 @@ void cheat_manager_index_prev(cheat_manager_t *handle)
       handle->ptr--;
 
    cheat_manager_update(handle, handle->ptr);
+}
+
+const char *cheat_manager_get_code(cheat_manager_t *handle, unsigned i)
+{
+   if (!handle)
+      return NULL;
+   return handle->cheats[i].code;
+}
+
+const char *cheat_manager_get_desc(cheat_manager_t *handle, unsigned i)
+{
+   if (!handle)
+      return NULL;
+   return handle->cheats[i].desc;
+}
+
+bool cheat_manager_get_code_state(cheat_manager_t *handle, unsigned i)
+{
+   if (!handle)
+      return false;
+   return handle->cheats[i].state;
 }

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -47,6 +47,54 @@
 #include <xtl.h>
 #include <io.h>
 
+#elif defined(GEKKO)
+
+#include <network.h>
+
+#elif defined(VITA)
+
+#include <psp2/net/net.h>
+#include <psp2/net/netctl.h>
+
+#define sockaddr_in SceNetSockaddrIn
+#define sockaddr SceNetSockaddr
+#define sendto sceNetSendto
+#define recvfrom sceNetRecvfrom
+#define socket(a,b,c) sceNetSocket("unknown",a,b,c)
+#define bind sceNetBind
+#define accept sceNetAccept
+#define setsockopt sceNetSetsockopt
+#define connect sceNetConnect
+#define listen sceNetListen
+#define send sceNetSend
+#define recv sceNetRecv
+#define MSG_DONTWAIT PSP2_NET_MSG_DONTWAIT
+#define AF_INET PSP2_NET_AF_INET
+#define AF_UNSPEC 0
+#define INADDR_ANY PSP2_NET_INADDR_ANY
+#define INADDR_NONE 0xffffffff
+#define SOCK_STREAM PSP2_NET_SOCK_STREAM
+#define SOCK_DGRAM PSP2_NET_SOCK_DGRAM
+#define SOL_SOCKET PSP2_NET_SOL_SOCKET
+#define SO_REUSEADDR PSP2_NET_SO_REUSEADDR
+#define SO_SNDBUF PSP2_NET_SO_SNDBUF
+#define SO_SNDTIMEO PSP2_NET_SO_SNDTIMEO
+#define SO_NBIO PSP2_NET_SO_NBIO
+#define htonl sceNetHtonl
+#define ntohl sceNetNtohl
+#define htons sceNetHtons
+#define socklen_t unsigned int
+
+struct hostent
+{
+	char *h_name;
+	char **h_aliases;
+	int  h_addrtype;
+	int  h_length;
+	char **h_addr_list;
+	char *h_addr;
+};
+
 #else
 #include <sys/select.h>
 #include <sys/types.h>
@@ -60,11 +108,12 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <fcntl.h>
-#include <errno.h>
 
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <cell/sysmodule.h>
 #include <netex/net.h>
+#include <netex/libnetctl.h>
+#include <sys/timer.h>
 
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK SYS_NET_EWOULDBLOCK
@@ -76,6 +125,21 @@
 
 #endif
 
+#include <errno.h>
+
+#ifdef GEKKO
+#define sendto(s, msg, len, flags, addr, tolen) net_sendto(s, msg, len, 0, addr, 8)
+#define socket(domain, type, protocol) net_socket(domain, type, protocol)
+
+static INLINE int inet_pton(int af, const char *src, void *dst)
+{
+   if (af != AF_INET)
+      return -1;
+
+   return inet_aton (src, dst);
+}
+#endif
+
 static INLINE bool isagain(int bytes)
 {
 #if defined(_WIN32)
@@ -84,6 +148,8 @@ static INLINE bool isagain(int bytes)
    if (WSAGetLastError() != WSAEWOULDBLOCK)
       return false;
    return true;
+#elif defined(VITA)
+	 return (bytes<0 && (bytes == PSP2_NET_ERROR_EAGAIN || bytes == PSP2_NET_ERROR_EWOULDBLOCK));
 #else
    return (bytes < 0 && (errno == EAGAIN || errno == EWOULDBLOCK));
 #endif
@@ -92,7 +158,7 @@ static INLINE bool isagain(int bytes)
 #ifdef _XBOX
 #define socklen_t int
 
-#ifndef h_addr 
+#ifndef h_addr
 #define h_addr h_addr_list[0] /* for backward compatibility */
 #endif
 
@@ -117,7 +183,7 @@ static INLINE bool isagain(int bytes)
 #ifdef HAVE_SOCKET_LEGACY
 
 #define sockaddr_storage sockaddr_in
-#define addrinfo addrinfo_rarch__
+#define addrinfo addrinfo_retro__
 
 struct addrinfo
 {
@@ -139,11 +205,11 @@ struct addrinfo
 
 #endif
 
-int getaddrinfo_rarch(const char *node, const char *service,
+int getaddrinfo_retro(const char *node, const char *service,
       const struct addrinfo *hints,
       struct addrinfo **res);
 
-void freeaddrinfo_rarch(struct addrinfo *res);
+void freeaddrinfo_retro(struct addrinfo *res);
 
 bool socket_nonblock(int fd);
 
@@ -173,4 +239,3 @@ bool network_init(void);
 void network_deinit(void);
 
 #endif
-

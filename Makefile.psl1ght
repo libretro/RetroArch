@@ -14,8 +14,8 @@ LD = $(PS3DEV)/ppu/bin/ppu-ld
 CONTENT_ID_FULL		= UP0001-SSNE10000_00-0000000000000001
 
 ELF_TARGET := retroarch_psl1ght.elf
-EBOOT_PATH		= ps3/pkg/USRDIR/EBOOT.BIN
-CORE_PATH		= ps3/pkg/USRDIR/cores/CORE.SELF
+EBOOT_PATH		= pkg/ps3/USRDIR/EBOOT.BIN
+CORE_PATH		= pkg/ps3/USRDIR/cores/CORE.SELF
 
 INCLUDE := -I. -I$(PS3DEV)/ppu/include -Ideps/zlib -Ips3/gcmgl/include/export -Ips3/include
 LIBDIRS := -L$(PS3DEV)/ppu/lib -L$(PS3DEV)/portlibs/ppu/lib -L.
@@ -36,7 +36,7 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
    system_platform = win
 endif
 
-PKG_SCRIPT		= ps3/ps3py/pkg.py
+PKG_SCRIPT		= tools/ps3/ps3py/pkg.py
 ifeq ($(shell uname), Linux)
 PKG_FINALIZE         	= package_finalize
 MAKE_SELF_WC		= make_self_wc
@@ -61,7 +61,7 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
    system_platform = win
 endif
 
-PKG_SCRIPT		= ps3/ps3py/pkg.py
+PKG_SCRIPT		= tools/ps3/ps3py/pkg.py
 ifeq ($(shell uname), Linux)
 PKG_FINALIZE         	= package_finalize
 MAKE_SELF_WC		= make_self_wc
@@ -119,10 +119,10 @@ create-core:
 	$(MAKE_SELF_WC) $(ELF_TARGET) $(CORE_PATH)
 
 pkg: $(ELF_TARGET) create-npdrm-core
-	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
+	$(MAKE_PACKAGE_NPDRM) pkg/ps3/package.conf ps3/pkg
 
 pkg-signed: $(ELF_TARGET) create-core
-	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION).pkg
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) pkg/ps3 retroarch-ps3-cfw-$(RARCH_VERSION).pkg
 
 clean:
 	rm -f $(ELF_TARGET)

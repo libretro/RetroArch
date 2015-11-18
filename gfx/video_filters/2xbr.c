@@ -106,7 +106,6 @@ static unsigned twoxbr_generic_threads(void *data)
 
 static void SetupFormat(void * data)
 {
-   uint16_t r, g, b, y, u, v;
    uint32_t c;
    struct filter_data *filt = (struct filter_data*)data;
 
@@ -210,12 +209,12 @@ static void SetupFormat(void * data)
 
    for (c = 0; c < 65536; c++)
    {
-      r = filt->tbl_5_to_8[(c &   RED_MASK565) >> 11];
-      g = filt->tbl_6_to_8[(c & GREEN_MASK565) >>  5];
-      b = filt->tbl_5_to_8[(c &  BLUE_MASK565)      ];
-      y = ((r << 4) + (g << 5) + (b << 2));
-      u = (   -r  - (g << 1) + (b << 2));
-      v = ((r << 1) - (g << 1) - (b >> 1));
+      uint16_t r = filt->tbl_5_to_8[(c &   RED_MASK565) >> 11];
+      uint16_t g = filt->tbl_6_to_8[(c & GREEN_MASK565) >>  5];
+      uint16_t b = filt->tbl_5_to_8[(c &  BLUE_MASK565)      ];
+      uint16_t y = ((r << 4) + (g << 5) + (b << 2));
+      uint16_t u = (   -r  - (g << 1) + (b << 2));
+      uint16_t v = ((r << 1) - (g << 1) - (b >> 1));
       filt->RGBtoYUV[c] = y + u + v;
    }
 }
@@ -617,16 +616,13 @@ static void twoxbr_generic_rgb565(void *data, unsigned width, unsigned height,
       int first, int last, uint16_t *src,
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
-   uint16_t pg_red_mask, pg_green_mask, pg_blue_mask, pg_lbmask;
-   unsigned nextline, finish;
+   unsigned finish;
    struct filter_data *filt = (struct filter_data*)data;
-
-   pg_red_mask   = RED_MASK565;
-   pg_green_mask = GREEN_MASK565;
-   pg_blue_mask  = BLUE_MASK565;
-   pg_lbmask     = PG_LBMASK565;
-   nextline = (last) ? 0 : src_stride;
-   
+   uint16_t pg_red_mask     = RED_MASK565;
+   uint16_t pg_green_mask   = GREEN_MASK565;
+   uint16_t pg_blue_mask    = BLUE_MASK565;
+   uint16_t pg_lbmask       = PG_LBMASK565;
+   unsigned nextline        = (last) ? 0 : src_stride;
  
    for (; height; height--)
    {
@@ -711,8 +707,9 @@ static void twoxbr_generic_packets(void *data,
       const void *input, unsigned width,
       unsigned height, size_t input_stride)
 {
-   struct filter_data *filt = (struct filter_data*)data;
    unsigned i;
+   struct filter_data *filt = (struct filter_data*)data;
+
    for (i = 0; i < filt->threads; i++)
    {
       struct softfilter_thread_data *thr = 
@@ -720,6 +717,7 @@ static void twoxbr_generic_packets(void *data,
  
       unsigned y_start = (height * i) / filt->threads;
       unsigned y_end = (height * (i + 1)) / filt->threads;
+
       thr->out_data = (uint8_t*)output + y_start * 
          TWOXBR_SCALE * output_stride;
       thr->in_data = (const uint8_t*)input + y_start * input_stride;

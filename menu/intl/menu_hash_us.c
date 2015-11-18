@@ -26,6 +26,74 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_CHEEVOS_TEST_UNOFFICIAL:
+         return "cheevos_test_unofficial";
+      case MENU_LABEL_CHEEVOS_ENABLE:
+         return "cheevos_enable";
+      case MENU_LABEL_INPUT_ICADE_ENABLE:
+         return "input_icade_enable";
+      case MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
+         return "keyboard_gamepad_mapping_type";
+      case MENU_LABEL_INPUT_SMALL_KEYBOARD_ENABLE:
+         return "input_small_keyboard_enable";
+      case MENU_LABEL_SAVE_CURRENT_CONFIG:
+         return "save_current_config";
+      case MENU_LABEL_STATE_SLOT:
+         return "state_slot";
+      case MENU_LABEL_CHEEVOS_USERNAME:
+         return "cheevos_username";
+      case MENU_LABEL_CHEEVOS_PASSWORD:
+         return "cheevos_password";
+      case MENU_LABEL_ACCOUNTS_CHEEVOS_USERNAME:
+         return "accounts_cheevos_username";
+      case MENU_LABEL_ACCOUNTS_CHEEVOS_PASSWORD:
+         return "accounts_cheevos_password";
+      case MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
+         return "retro_achievements";
+      case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
+         return "deferred_accounts_cheevos_list";
+      case MENU_LABEL_DEFERRED_USER_BINDS_LIST:
+         return "deferred_user_binds_list";
+      case MENU_LABEL_DEFERRED_ACCOUNTS_LIST:
+         return "deferred_accounts_list";
+      case MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST:
+         return "deferred_input_settings_list";
+      case MENU_LABEL_ACCOUNTS_LIST:
+         return "accounts_list";
+      case MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
+         return "deferred_input_hotkey_binds";
+      case MENU_LABEL_INPUT_HOTKEY_BINDS:
+         return "input_hotkey_binds";
+      case MENU_LABEL_INPUT_HOTKEY_BINDS_BEGIN:
+         return "input_hotkey_binds_begin";
+      case MENU_LABEL_INPUT_SETTINGS_BEGIN:
+         return "input_settings_begin";
+      case MENU_LABEL_PLAYLIST_SETTINGS_BEGIN:
+         return "playlist_settings_begin";
+      case MENU_LABEL_PLAYLIST_SETTINGS:
+         return "playlist_settings";
+      case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
+         return "deferred_playlist_settings";
+      case MENU_LABEL_INPUT_SETTINGS:
+         return "input_settings";
+      case MENU_LABEL_DEBUG_PANEL_ENABLE:
+         return "debug_panel_enable";
+      case MENU_LABEL_HELP_SCANNING_CONTENT:
+         return "help_scanning_content";
+      case MENU_LABEL_CHEEVOS_DESCRIPTION:
+         return "cheevos_description";
+      case MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
+         return "help_audio_video_troubleshooting";
+      case MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
+         return "help_change_virtual_gamepad";
+      case MENU_LABEL_HELP_WHAT_IS_A_CORE:
+         return "help_what_is_a_core";
+      case MENU_LABEL_HELP_LOADING_CONTENT:
+         return "help_loading_content";
+      case MENU_LABEL_HELP_LIST:
+         return "help_list";
+      case MENU_LABEL_HELP_CONTROLS:
+         return "help_controls";
       case MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
          return "deferred_archive_open_detect_core";
       case MENU_LABEL_DEFERRED_ARCHIVE_OPEN:
@@ -78,18 +146,12 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "load_content";
       case MENU_LABEL_NO_SETTINGS_FOUND:
          return "menu_label_no_settings_found";
-      case MENU_LABEL_CUSTOM_VIEWPORT_1:
-         return "custom_viewport_1";
-      case MENU_LABEL_CUSTOM_VIEWPORT_2:
-         return "custom_viewport_2";
       case MENU_LABEL_SYSTEM_BGM_ENABLE:
          return "system_bgm_enable";
       case MENU_LABEL_AUDIO_BLOCK_FRAMES:
          return "audio_block_frames";
       case MENU_LABEL_INPUT_BIND_MODE:
          return "input_bind_mode";
-      case MENU_LABEL_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "autoconfig_descriptor_label_show";
       case MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:
          return "input_descriptor_label_show";
       case MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
@@ -162,8 +224,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "content_database_path";
       case MENU_LABEL_SYSTEM_DIRECTORY:
          return "system_directory";
-      case MENU_LABEL_EXTRACTION_DIRECTORY:
-         return "extraction_directory";
+      case MENU_LABEL_CACHE_DIRECTORY:
+         return "cache_directory";
       case MENU_LABEL_CHEAT_DATABASE_PATH:
          return "cheat_database_path";
       case MENU_LABEL_AUDIO_FILTER_DIR:
@@ -250,6 +312,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "slowmotion_ratio";
       case MENU_LABEL_CORE_SPECIFIC_CONFIG:
          return "core_specific_config";
+      case MENU_LABEL_GAME_SPECIFIC_OPTIONS:
+         return "game_specific_options";
       case MENU_LABEL_AUTO_OVERRIDES_ENABLE:
          return "auto_overrides_enable";
       case MENU_LABEL_CONFIG_SAVE_ON_EXIT:
@@ -454,8 +518,6 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "rewind_granularity";
       case MENU_LABEL_REMAP_FILE_LOAD:
          return "remap_file_load";
-      case MENU_LABEL_REMAP_FILE_SAVE_AS:
-         return "remap_file_save_as";
       case MENU_LABEL_CUSTOM_RATIO:
          return "custom_ratio";
       case MENU_LABEL_USE_THIS_DIRECTORY:
@@ -518,14 +580,16 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "core_updater_buildbot_url";
       case MENU_LABEL_BUILDBOT_ASSETS_URL:
          return "buildbot_assets_url";
-      case MENU_LABEL_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "menu_navigation_wraparound_vertical_enable";
-      case MENU_LABEL_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "menu_navigation_wraparound_horizontal_enable";
+      case MENU_LABEL_NAVIGATION_WRAPAROUND:
+         return "menu_navigation_wraparound_enable";
       case MENU_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "menu_navigation_browser_filter_supported_extensions_enable";
       case MENU_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "core_updater_auto_extract_archive";
+      case MENU_LABEL_DEBUG_INFORMATION:
+         return "debug_information";
+      case MENU_LABEL_ACHIEVEMENT_LIST:
+         return "achievement_list";
       case MENU_LABEL_SYSTEM_INFORMATION:
          return "system_information";
       case MENU_LABEL_ONLINE_UPDATER:
@@ -636,6 +700,70 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
+         return "Test unofficial";
+      case MENU_LABEL_VALUE_CHEEVOS_SETTINGS:
+         return "Retro Achievements";
+      case MENU_LABEL_VALUE_INPUT_ICADE_ENABLE:
+         return "Keyboard Gamepad Mapping Enable";
+      case MENU_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
+         return "Keyboard Gamepad Mapping Type";
+      case MENU_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE:
+         return "Small Keyboard Enable";
+      case MENU_LABEL_VALUE_SAVE_CURRENT_CONFIG:
+         return "Save Current Config";
+      case MENU_LABEL_VALUE_STATE_SLOT:
+         return "State Slot";
+      case MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS:
+         return "Accounts Cheevos";
+      case MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME:
+         return "Username";
+      case MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD:
+         return "Password";
+      case MENU_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS:
+         return "Retro Achievements";
+      case MENU_LABEL_VALUE_ACCOUNTS_LIST:
+         return "Accounts";
+      case MENU_LABEL_VALUE_ACCOUNTS_LIST_END:
+         return "Accounts List Endpoint";
+      case MENU_LABEL_VALUE_DEBUG_PANEL_ENABLE:
+         return "Debug Panel Enable";
+      case MENU_LABEL_VALUE_HELP_SCANNING_CONTENT:
+         return "Scanning For Content";
+      case MENU_LABEL_VALUE_CHEEVOS_DESCRIPTION:
+         return "Description";
+      case MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
+         return "Audio/Video Troubleshooting";
+      case MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD:
+         return "Changing Virtual Gamepad Overlay";
+      case MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE:
+         return "What Is A Core?";
+      case MENU_LABEL_VALUE_HELP_LOADING_CONTENT:
+         return "Loading Content";
+      case MENU_LABEL_VALUE_HELP_LIST:
+         return "Help";
+      case MENU_LABEL_VALUE_HELP_CONTROLS:
+         return "Basic Menu Controls";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS:
+         return "Basic menu controls";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP:
+         return "Scroll Up";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN:
+         return "Scroll Down";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM:
+         return "Confirm/OK";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK:
+         return "Back";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_START:
+         return "Defaults";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO:
+         return "Info";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU:
+         return "Toggle Menu";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT:
+         return "Quit";
+      case MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD:
+         return "Toggle Keyboard";
       case MENU_LABEL_VALUE_OPEN_ARCHIVE:
          return "Open Archive As Folder";
       case MENU_LABEL_VALUE_LOAD_ARCHIVE:
@@ -680,6 +808,14 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Privacy";
       case MENU_VALUE_HORIZONTAL_MENU:
          return "Horizontal Menu";
+      case MENU_VALUE_SETTINGS_TAB:
+         return "Settings tab";
+      case MENU_VALUE_HISTORY_TAB:
+         return "History tab";
+      case MENU_VALUE_ADD_TAB:
+         return "Add tab";
+      case MENU_VALUE_PLAYLISTS_TAB:
+         return "Playlists tab";
       case MENU_LABEL_VALUE_NO_SETTINGS_FOUND:
          return "No settings found.";
       case MENU_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
@@ -698,10 +834,6 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Saving";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
          return "Rewind";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
-         return "Set Upper-Left Corner";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
-         return "Set Bottom-Right Corner";
       case MENU_VALUE_SHADER:
          return "Shader";
       case MENU_VALUE_CHEAT:
@@ -718,10 +850,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Block Frames";
       case MENU_LABEL_VALUE_INPUT_BIND_MODE:
          return "Bind Mode";
-      case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "Display Autoconfig Descriptor Labels";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
-         return "Display Core Input Descriptor Labels";
+         return "Display Input Descriptor Labels";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
          return "Hide Unbound Core Input Descriptors";
       case MENU_LABEL_VALUE_VIDEO_FONT_ENABLE:
@@ -779,7 +909,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "GPU Record Enable";
       case MENU_LABEL_VALUE_RECORD_PATH:
-         return "Record Path";
+         return "Output File";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "Use Output Dir";
       case MENU_LABEL_VALUE_RECORD_CONFIG:
@@ -810,8 +940,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "System/BIOS Dir";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Cheat File Dir";
-      case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
-         return "Extraction Dir";
+      case MENU_LABEL_VALUE_CACHE_DIRECTORY:
+         return "Cache Dir";
       case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Audio Filter Dir";
       case MENU_LABEL_VALUE_VIDEO_SHADER_DIR:
@@ -896,6 +1026,10 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Slow-Motion Ratio";
       case MENU_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
          return "Configuration Per-Core";
+      case MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS:
+         return "Use per-game core options if available";
+      case MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE:
+         return "Create game-options file";
       case MENU_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
          return "Load Override Files Automatically";
       case MENU_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
@@ -1048,8 +1182,6 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Rewind Granularity";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
          return "Load Remap File";
-      case MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS:
-         return "Save Remap File As";
       case MENU_LABEL_VALUE_CUSTOM_RATIO:
          return "Custom Ratio";
       case MENU_LABEL_VALUE_USE_THIS_DIRECTORY:
@@ -1100,8 +1232,10 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Settings";
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
          return "Quit RetroArch";
+      case MENU_LABEL_VALUE_SHUTDOWN:
+         return "Shutdown";
       case MENU_LABEL_VALUE_HELP:
-         return "Help";
+         return "help";
       case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:
          return "Save New Config";
       case MENU_LABEL_VALUE_RESTART_CONTENT:
@@ -1112,16 +1246,18 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Buildbot Cores URL";
       case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "Buildbot Assets URL";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "Navigation Wrap-Around Horizontal";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "Navigation Wrap-Around Vertical";
+      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND:
+         return "Navigation Wrap-Around";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "Filter by supported extensions";
       case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Automatically extract downloaded archive";
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
          return "System Information";
+      case MENU_LABEL_VALUE_DEBUG_INFORMATION:
+         return "Debug Information";
+      case MENU_LABEL_VALUE_ACHIEVEMENT_LIST:
+         return "Achievement List";
       case MENU_LABEL_VALUE_ONLINE_UPDATER:
          return "Online Updater";
       case MENU_LABEL_VALUE_CORE_INFORMATION:
@@ -1181,7 +1317,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_BOXART:
          return "Display Boxart";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
-         return "Core Input Remapping Options";
+         return "Core Input Options";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Shader Options";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
@@ -1429,7 +1565,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_NETWORK_SETTINGS:
          return "Network";
       case MENU_LABEL_VALUE_PLAYLIST_SETTINGS:
-         return "Playlist";
+         return "Playlists";
       case MENU_LABEL_VALUE_USER_SETTINGS:
          return "User";
       case MENU_LABEL_VALUE_DIRECTORY_SETTINGS:
@@ -1478,6 +1614,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Search:";
       case MENU_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER:
          return "Use Builtin Image Viewer";
+      case MENU_LABEL_VALUE_ENABLE:
+         return "Enable";
       default:
          break;
    }
@@ -1492,6 +1630,83 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC:
+         {
+            /* Work around C89 limitations */
+            char u[501];
+            char t[501];
+
+            strlcpy(t, 
+                  "RetroArch relies on an unique form of\n"
+                  "audio/video synchronization where it needs to be\n"
+                  "calibrated against the refresh rate of your\n"
+                  "display for best performance results.\n"
+                  " \n"
+                  "If you experience any audio crackling or video\n"
+                  "tearing, usually it means that you need to\n"
+                  "calibrate the settings. Some choices below:\n"
+                  " \n", sizeof(t));
+            snprintf(u, sizeof(u),
+                  "a) Go to '%s' -> '%s', and enable\n"
+                  "'Threaded Video'. Refresh rate will not matter\n"
+                  "in this mode, framerate will be higher,\n"
+                  "but video might be less smooth.\n"
+                  "b) Go to '%s' -> '%s', and look at\n"
+                  "'%s'. Let it run for\n"
+                  "2048 frames, then press 'OK'.",
+                  menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
+                  menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS),
+                  menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
+                  menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SETTINGS),
+                  menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO));
+            strlcat(s, t, len);
+            strlcat(s, u, len);
+         }
+         break;
+      case MENU_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
+         snprintf(s, len,
+               "To scan for content, go to '%s' and\n"
+               "select either '%s' or %s'.\n"
+               " \n"
+               "Files will be compared to database entries.\n"
+               "If there is a match, it will add an entry\n"
+               "to a collection.\n"
+               " \n"
+               "You can then easily access this content by\n"
+               "going to '%s' ->\n"
+               "'%s'\n"
+               "instead of having to go through the\n"
+               "filebrowser everytime.\n"
+               " \n"
+               "NOTE: Content for some cores might still not be\n"
+               "scannable. Examples include: \n"
+               "MAME, FBA, and maybe others."
+               ,
+               menu_hash_to_str(MENU_LABEL_VALUE_ADD_CONTENT_LIST),
+               menu_hash_to_str(MENU_LABEL_VALUE_SCAN_DIRECTORY),
+               menu_hash_to_str(MENU_LABEL_VALUE_SCAN_FILE),
+               menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT_LIST),
+               menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST)
+               );
+         break;
+      case MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG:
+         snprintf(s, len,
+               "You can use the following controls below \n"
+               "on either your gamepad or keyboard in order\n"
+               "to control the menu: \n"
+               " \n"
+               );
+         break;
+      case MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:
+         strlcpy(s, "Extracting, please wait...\n", len);
+         break;
+      case MENU_LABEL_WELCOME_TO_RETROARCH:
+         snprintf(s, len,
+               "Welcome to RetroArch\n"
+               "\n"
+               "For further information, go to Help.\n"
+               );
+         break;
       case MENU_LABEL_INPUT_DRIVER:
          driver_hash = menu_hash_calculate(settings->input.driver);
 
@@ -1543,18 +1758,17 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                "Browse for content. \n"
                " \n"
                "To load content, you need a \n"
-               "libretro core to use, and a \n"
-               "content file. \n"
+               "'Core' to use, and a content file.\n"
                " \n"
                "To control where the menu starts \n"
                " to browse for content, set  \n"
-               "Browser Directory. If not set,  \n"
-               "it will start in root. \n"
+               "'File Browser Directory'. \n"
+               "If not set, it will start in root. \n"
                " \n"
                "The browser will filter out \n"
                "extensions for the last core set \n"
-               "in 'Core', and use that core when \n"
-               "content is loaded."
+               "in 'Load Core', and use that core \n"
+               "when content is loaded."
                );
          break;
       case MENU_LABEL_CORE_LIST:
@@ -2426,6 +2640,52 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                "Positive X axis is right. \n"
                "Positive Y axis is down.");
          break;
+      case MENU_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
+         snprintf(s, len,
+               "RetroArch by itself does nothing. \n"
+               " \n"
+               "To make it do things, you need to \n"
+               "load a program into it. \n"
+               "\n"
+               "We call such a program 'Libretro core', \n"
+               "or 'core' in short. \n"
+               " \n"
+               "To load a core, select one from\n"
+               "'Load Core'.\n"
+               " \n"
+#ifdef HAVE_NETWORKING
+               "You can obtain cores in several ways: \n"
+               "* Download them by going to\n"
+               "'%s' -> '%s'.\n"
+               "* Manually move them over to\n"
+               "'%s'.",
+               menu_hash_to_str(MENU_LABEL_VALUE_ONLINE_UPDATER),
+               menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
+               menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH)
+#else
+               "You can obtain cores by\n"
+               "manually moving them over to\n"
+               "'%s'.",
+               menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH)
+#endif
+               );
+         break;
+      case MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
+         snprintf(s, len,
+               "You can change the virtual gamepad overlay\n"
+               "by going to '%s' -> '%s'."
+               " \n"
+               "From there you can change the overlay,\n"
+               "change the size and opacity of the buttons, etc.\n"
+               " \n"
+               "NOTE: By default, virtual gamepad overlays are\n"
+               "hidden when in the menu.\n"
+               "If you'd like to change this behavior,\n"
+               "you can set '%s' to false.",
+               menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
+               menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_SETTINGS),
+               menu_hash_to_str(MENU_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
+               );
       default:
          if (s[0] == '\0')
             strlcpy(s, menu_hash_to_str(MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);

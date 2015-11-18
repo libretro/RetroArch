@@ -20,25 +20,23 @@
 #endif
 
 #include <stdint.h>
-#include "../video_shader_driver.h"
+#include <string.h>
 
 #include <Cg/cg.h>
-
 #ifdef HAVE_OPENGL
-#include "../drivers/gl_common.h"
+#include "../common/gl_common.h"
 #include <Cg/cgGL.h>
-
 #endif
 
-#include <string.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
 #include <rhash.h>
 
+#include "../video_shader_driver.h"
 #include "../../dynamic.h"
-
+#include "../../rewind.h"
 #include "../video_state_tracker.h"
 
 #if 0
@@ -139,6 +137,7 @@ struct cg_program
 
    struct cg_fbo_params fbo[GFX_MAX_SHADERS];
    struct cg_fbo_params orig;
+   struct cg_fbo_params feedback;
    struct cg_fbo_params prev[PREV_TEXTURES];
 };
 
@@ -152,7 +151,7 @@ typedef struct cg_shader_data
    struct video_shader *shader;
    state_tracker_t *state_tracker;
    GLuint lut_textures[GFX_MAX_TEXTURES];
-   CGparameter cg_attribs[PREV_TEXTURES + 1 + 4 + GFX_MAX_SHADERS];
+   CGparameter cg_attribs[PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
    char cg_alias_define[GFX_MAX_SHADERS][128];
    CGcontext cgCtx;
 } cg_shader_data_t;
@@ -164,7 +163,7 @@ static void gl_cg_reset_attrib(cg_shader_data_t *cg)
       return;
 
    /* Add sanity check that we did not overflow. */
-   rarch_assert(cg->cg_attrib_idx <= ARRAY_SIZE(cg->cg_attribs));
+   retro_assert(cg->cg_attrib_idx <= ARRAY_SIZE(cg->cg_attribs));
 
    for (i = 0; i < cg->cg_attrib_idx; i++)
       cgGLDisableClientState(cg->cg_attribs[i]);
@@ -222,22 +221,49 @@ fallback:
 #define set_param_1f(param, x) \
    if (param) cgGLSetParameter1f(param, x)
 
+static void gl_cg_set_texture_info(cg_shader_data_t *cg, const struct cg_fbo_params *params, const struct gfx_tex_info *info)
+{
+   CGparameter param = params->tex;
+   if (param)
+   {
+      cgGLSetTextureParameter(param, info->tex);
+      cgGLEnableTextureParameter(param);
+   }
+
+   set_param_2f(params->vid_size_v,
+         info->input_size[0], info->input_size[1]);
+   set_param_2f(params->vid_size_f,
+         info->input_size[0], info->input_size[1]);
+   set_param_2f(params->tex_size_v,
+         info->tex_size[0],   info->tex_size[1]);
+   set_param_2f(params->tex_size_f,
+         info->tex_size[0],   info->tex_size[1]);
+
+   if (params->coord)
+   {
+      cgGLSetParameterPointer(params->coord, 2,
+            GL_FLOAT, 0, info->coord);
+      cgGLEnableClientState(params->coord);
+      cg->cg_attribs[cg->cg_attrib_idx++] = params->coord;
+   }
+}
+
 static void gl_cg_set_params(void *data, unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height,
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
       const void *_info,
       const void *_prev_info,
+      const void *_feedback_info,
       const void *_fbo_info,
       unsigned fbo_info_cnt)
 {
    unsigned i;
-   CGparameter param;
    const struct gfx_tex_info *info = (const struct gfx_tex_info*)_info;
    const struct gfx_tex_info *prev_info = (const struct gfx_tex_info*)_prev_info;
+   const struct gfx_tex_info *feedback_info = (const struct gfx_tex_info*)_feedback_info;
    const struct gfx_tex_info *fbo_info = (const struct gfx_tex_info*)_fbo_info;
    driver_t *driver = driver_get_ptr();
-   global_t *global = global_get_ptr();
    cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
 
    (void)data;
@@ -250,13 +276,13 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
    set_param_2f(cg->prg[cg->active_idx].tex_size_f, tex_width, tex_height);
    set_param_2f(cg->prg[cg->active_idx].out_size_f, out_width, out_height);
    set_param_1f(cg->prg[cg->active_idx].frame_dir_f,
-         global->rewind.frame_is_reverse ? -1.0 : 1.0);
+         state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
    set_param_2f(cg->prg[cg->active_idx].vid_size_v, width, height);
    set_param_2f(cg->prg[cg->active_idx].tex_size_v, tex_width, tex_height);
    set_param_2f(cg->prg[cg->active_idx].out_size_v, out_width, out_height);
    set_param_1f(cg->prg[cg->active_idx].frame_dir_v,
-         global->rewind.frame_is_reverse ? -1.0 : 1.0);
+         state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
    if (cg->prg[cg->active_idx].frame_cnt_f || cg->prg[cg->active_idx].frame_cnt_v)
    {
@@ -269,57 +295,14 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
    }
 
    /* Set orig texture. */
-   param = cg->prg[cg->active_idx].orig.tex;
-   if (param)
-   {
-      cgGLSetTextureParameter(param, info->tex);
-      cgGLEnableTextureParameter(param);
-   }
+   gl_cg_set_texture_info(cg, &cg->prg[cg->active_idx].orig, info);
 
-   set_param_2f(cg->prg[cg->active_idx].orig.vid_size_v,
-         info->input_size[0], info->input_size[1]);
-   set_param_2f(cg->prg[cg->active_idx].orig.vid_size_f,
-         info->input_size[0], info->input_size[1]);
-   set_param_2f(cg->prg[cg->active_idx].orig.tex_size_v,
-         info->tex_size[0],   info->tex_size[1]);
-   set_param_2f(cg->prg[cg->active_idx].orig.tex_size_f,
-         info->tex_size[0],   info->tex_size[1]);
-
-   if (cg->prg[cg->active_idx].orig.coord)
-   {
-      cgGLSetParameterPointer(cg->prg[cg->active_idx].orig.coord, 2,
-            GL_FLOAT, 0, info->coord);
-      cgGLEnableClientState(cg->prg[cg->active_idx].orig.coord);
-      cg->cg_attribs[cg->cg_attrib_idx++] = cg->prg[cg->active_idx].orig.coord;
-   }
+   /* Set feedback texture. */
+   gl_cg_set_texture_info(cg, &cg->prg[cg->active_idx].feedback, feedback_info);
 
    /* Set prev textures. */
    for (i = 0; i < PREV_TEXTURES; i++)
-   {
-      param = cg->prg[cg->active_idx].prev[i].tex;
-      if (param)
-      {
-         cgGLSetTextureParameter(param, prev_info[i].tex);
-         cgGLEnableTextureParameter(param);
-      }
-
-      set_param_2f(cg->prg[cg->active_idx].prev[i].vid_size_v,
-            prev_info[i].input_size[0], prev_info[i].input_size[1]);
-      set_param_2f(cg->prg[cg->active_idx].prev[i].vid_size_f,
-            prev_info[i].input_size[0], prev_info[i].input_size[1]);
-      set_param_2f(cg->prg[cg->active_idx].prev[i].tex_size_v,
-            prev_info[i].tex_size[0],   prev_info[i].tex_size[1]);
-      set_param_2f(cg->prg[cg->active_idx].prev[i].tex_size_f,
-            prev_info[i].tex_size[0],   prev_info[i].tex_size[1]);
-
-      if (cg->prg[cg->active_idx].prev[i].coord)
-      {
-         cgGLSetParameterPointer(cg->prg[cg->active_idx].prev[i].coord, 
-               2, GL_FLOAT, 0, prev_info[i].coord);
-         cgGLEnableClientState(cg->prg[cg->active_idx].prev[i].coord);
-         cg->cg_attribs[cg->cg_attrib_idx++] = cg->prg[cg->active_idx].prev[i].coord;
-      }
-   }
+      gl_cg_set_texture_info(cg, &cg->prg[cg->active_idx].prev[i], &prev_info[i]);
 
    /* Set lookup textures. */
    for (i = 0; i < cg->shader->luts; i++)
@@ -348,32 +331,7 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
    if (cg->active_idx)
    {
       for (i = 0; i < fbo_info_cnt; i++)
-      {
-         if (cg->prg[cg->active_idx].fbo[i].tex)
-         {
-            cgGLSetTextureParameter(
-                  cg->prg[cg->active_idx].fbo[i].tex, fbo_info[i].tex);
-            cgGLEnableTextureParameter(cg->prg[cg->active_idx].fbo[i].tex);
-         }
-
-         set_param_2f(cg->prg[cg->active_idx].fbo[i].vid_size_v,
-               fbo_info[i].input_size[0], fbo_info[i].input_size[1]);
-         set_param_2f(cg->prg[cg->active_idx].fbo[i].vid_size_f,
-               fbo_info[i].input_size[0], fbo_info[i].input_size[1]);
-
-         set_param_2f(cg->prg[cg->active_idx].fbo[i].tex_size_v,
-               fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
-         set_param_2f(cg->prg[cg->active_idx].fbo[i].tex_size_f,
-               fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
-
-         if (cg->prg[cg->active_idx].fbo[i].coord)
-         {
-            cgGLSetParameterPointer(cg->prg[cg->active_idx].fbo[i].coord,
-                  2, GL_FLOAT, 0, fbo_info[i].coord);
-            cgGLEnableClientState(cg->prg[cg->active_idx].fbo[i].coord);
-            cg->cg_attribs[cg->cg_attrib_idx++] = cg->prg[cg->active_idx].fbo[i].coord;
-         }
-      }
+         gl_cg_set_texture_info(cg, &cg->prg[cg->active_idx].fbo[i], &fbo_info[i]);
    }
 
    /* #pragma parameters. */
@@ -621,7 +579,7 @@ static bool gl_cg_load_imports(cg_shader_data_t *cg)
       }
 
       if ((memtype != -1u) && 
-            (cg->shader->variable[i].addr >= pretro_get_memory_size(memtype)))
+            (cg->shader->variable[i].addr >= core.retro_get_memory_size(memtype)))
       {
          RARCH_ERR("Address out of bounds.\n");
          return false;
@@ -629,7 +587,7 @@ static bool gl_cg_load_imports(cg_shader_data_t *cg)
    }
 
    tracker_info.wram = (uint8_t*)
-      pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+      core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
    tracker_info.info      = cg->shader->variable;
    tracker_info.info_elem = cg->shader->variables;
 
@@ -849,6 +807,13 @@ static void set_program_attributes(cg_shader_data_t *cg, unsigned i)
    cg->prg[i].orig.tex_size_v = cgGetNamedParameter(cg->prg[i].vprg, "ORIG.texture_size");
    cg->prg[i].orig.tex_size_f = cgGetNamedParameter(cg->prg[i].fprg, "ORIG.texture_size");
    cg->prg[i].orig.coord = cgGetNamedParameter(cg->prg[i].vprg, "ORIG.tex_coord");
+
+   cg->prg[i].feedback.tex = cgGetNamedParameter(cg->prg[i].fprg, "FEEDBACK.texture");
+   cg->prg[i].feedback.vid_size_v = cgGetNamedParameter(cg->prg[i].vprg, "FEEDBACK.video_size");
+   cg->prg[i].feedback.vid_size_f = cgGetNamedParameter(cg->prg[i].fprg, "FEEDBACK.video_size");
+   cg->prg[i].feedback.tex_size_v = cgGetNamedParameter(cg->prg[i].vprg, "FEEDBACK.texture_size");
+   cg->prg[i].feedback.tex_size_f = cgGetNamedParameter(cg->prg[i].fprg, "FEEDBACK.texture_size");
+   cg->prg[i].feedback.coord = cgGetNamedParameter(cg->prg[i].vprg, "FEEDBACK.tex_coord");
 
    if (i > 1)
    {
@@ -1081,6 +1046,18 @@ static unsigned gl_cg_get_prev_textures(void)
    return max_prev;
 }
 
+static bool gl_cg_get_feedback_pass(unsigned *pass)
+{
+   driver_t *driver = driver_get_ptr();
+   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
+
+   if (!cg || cg->shader->feedback_pass < 0)
+      return false;
+
+   *pass = cg->shader->feedback_pass;
+   return true;
+}
+
 static bool gl_cg_mipmap_input(unsigned idx)
 {
    driver_t *driver = driver_get_ptr();
@@ -1111,6 +1088,7 @@ const shader_backend_t gl_cg_backend = {
    gl_cg_set_coords,
    gl_cg_set_mvp,
    gl_cg_get_prev_textures,
+   gl_cg_get_feedback_pass,
    gl_cg_mipmap_input,
    gl_cg_get_current_shader,
 

@@ -16,10 +16,17 @@
 #include "../menu.h"
 #include "../menu_cbs.h"
 #include "../menu_hash.h"
-#include "../menu_displaylist.h"
 
-static int action_refresh_default(file_list_t *list, file_list_t *menu_list)
+#ifndef BIND_ACTION_REFRESH
+#define BIND_ACTION_REFRESH(cbs, name) \
+   cbs->action_refresh = name; \
+   cbs->action_refresh_ident = #name;
+#endif
+
+int action_refresh_default(file_list_t *list, file_list_t *menu_list)
 {
+   if (!menu_list)
+      return -1;
    return menu_displaylist_push(list, menu_list);
 }
 
@@ -34,10 +41,10 @@ int menu_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
    switch (label_hash)
    {
       case MENU_VALUE_MAIN_MENU:
-         cbs->action_refresh = NULL;
+         BIND_ACTION_REFRESH(cbs, NULL);
          break;
       default:
-         cbs->action_refresh = action_refresh_default;
+         BIND_ACTION_REFRESH(cbs, action_refresh_default);
          break;
    }
 

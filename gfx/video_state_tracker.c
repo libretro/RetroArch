@@ -273,10 +273,10 @@ static const unsigned buttons[] = {
 static void state_tracker_update_input(state_tracker_t *tracker)
 {
    unsigned i;
-   const struct retro_keybind *binds[MAX_USERS];;
-   uint16_t state[2] = {0};
+   const struct retro_keybind *binds[MAX_USERS];
    settings_t *settings = config_get_ptr();
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   uint16_t state[2]    = {0};
 
    /* Only bind for up to two players for now. */
    for (i = 0; i < MAX_USERS; i++)

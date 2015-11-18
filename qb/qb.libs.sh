@@ -134,18 +134,19 @@ check_pkgconf()	#$1 = HAVE_$1	$2 = package	$3 = version	$4 = critical error mess
 	}
 }
 
-check_header()	#$1 = HAVE_$1	$2 = header file
+check_header()	#$1 = HAVE_$1	$2..$5 = header files
 {	tmpval="$(eval echo \$HAVE_$1)"
 	[ "$tmpval" = 'no' ] && return 0
-	ECHOBUF="Checking presence of header file $2"
+	CHECKHEADER="$2"
 #	echo -n "Checking presence of header file $2"
-	cat << EOF > "$TEMP_C"
-#include<$2>
-int main(void) { return 0; }
-EOF
+	echo "#include <$2>" > "$TEMP_C"
+	[ "$3" != "" ] && CHECKHEADER="$3" && echo "#include <$3>" >> "$TEMP_C"
+	[ "$4" != "" ] && CHECKHEADER="$4" && echo "#include <$4>" >> "$TEMP_C"
+	[ "$5" != "" ] && CHECKHEADER="$5" && echo "#include <$5>" >> "$TEMP_C"
+	echo "int main(void) { return 0; }" >> "$TEMP_C"
 	answer='no'
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS >>config.log 2>&1 && answer='yes'
-	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
+	eval HAVE_$1="$answer"; echo "Checking presence of header file $CHECKHEADER ... $answer"
 	rm "$TEMP_C" "$TEMP_EXE" >/dev/null 2>&1
 	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && {
 		echo "Build assumed that $2 exists, but cannot locate. Exiting ..."
@@ -212,7 +213,11 @@ create_config_header()
 
 		while [ "$1" ]; do
 			case $(eval echo \$HAVE_$1) in
-				'yes') echo "#define HAVE_$1 1";;
+				'yes')
+					if [ "$(eval echo \$C89_$1)" = "no" ]; then echo "#if __cplusplus || __STDC_VERSION__ >= 199901L"; fi
+					echo "#define HAVE_$1 1"
+					if [ "$(eval echo \$C89_$1)" = "no" ]; then echo "#endif"; fi
+					;;
 				'no') echo "/* #undef HAVE_$1 */";;
 			esac
 			shift
@@ -247,7 +252,11 @@ create_config_make()
 
 		while [ "$1" ]; do
 			case $(eval echo \$HAVE_$1) in
-				'yes') echo "HAVE_$1 = 1";;
+				'yes')
+					if [ "$(eval echo \$C89_$1)" = "no" ]; then echo "ifneq (\$(C89_BUILD),1)"; fi
+					echo "HAVE_$1 = 1"
+					if [ "$(eval echo \$C89_$1)" = "no" ]; then echo "endif"; fi
+					;;
 				'no') echo "HAVE_$1 = 0";;
 			esac
 			

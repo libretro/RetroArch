@@ -21,14 +21,36 @@
  */
 
 #include <string.h>
+#include <stdio.h>
 #include <dynamic/dylib.h>
 
 #ifdef NEED_DYNAMIC
 
 #ifdef _WIN32
+#include <compat/posix_string.h>
 #include <windows.h>
 #else
 #include <dlfcn.h>
+#endif
+
+#ifdef _WIN32
+static char last_dyn_error[512];
+
+static void set_dl_error(void)
+{
+   DWORD err = GetLastError();
+
+   if (FormatMessage(FORMAT_MESSAGE_IGNORE_INSERTS |
+            FORMAT_MESSAGE_FROM_SYSTEM,
+            NULL,
+            err,
+            MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
+            last_dyn_error,
+            sizeof(last_dyn_error) - 1,
+            NULL) == 0)
+      snprintf(last_dyn_error, sizeof(last_dyn_error) - 1,
+            "unknown error %lu", err);
+}
 #endif
 
 /**
@@ -42,24 +64,50 @@
 dylib_t dylib_load(const char *path)
 {
 #ifdef _WIN32
-   dylib_t lib = LoadLibrary(path);
+   int prevmode = SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
+   dylib_t lib  = LoadLibrary(path);
+
+   SetErrorMode(prevmode);
+
+   if (!lib)
+   {
+      set_dl_error();
+      return NULL;
+   }
+   last_dyn_error[0] = 0;
 #else
    dylib_t lib = dlopen(path, RTLD_LAZY);
 #endif
    return lib;
 }
 
+char *dylib_error(void)
+{
+#ifdef _WIN32
+   if (last_dyn_error[0])
+      return last_dyn_error;
+   return NULL;
+#else
+   return (char*)dlerror();
+#endif
+}
+
 function_t dylib_proc(dylib_t lib, const char *proc)
 {
    function_t sym;
-   void *ptr_sym = NULL;
-
-   (void)ptr_sym;
 
 #ifdef _WIN32
    sym = (function_t)GetProcAddress(lib ?
          (HMODULE)lib : GetModuleHandle(NULL), proc);
+   if (!sym)
+   {
+      set_dl_error();
+      return NULL;
+   }
+   last_dyn_error[0] = 0;
 #else
+   void *ptr_sym = NULL;
+
    if (lib)
       ptr_sym = dlsym(lib, proc);
    else
@@ -89,7 +137,9 @@ function_t dylib_proc(dylib_t lib, const char *proc)
 void dylib_close(dylib_t lib)
 {
 #ifdef _WIN32
-   FreeLibrary((HMODULE)lib);
+   if (!FreeLibrary((HMODULE)lib))
+      set_dl_error();
+   last_dyn_error[0] = 0;
 #else
 #ifndef NO_DLCLOSE
    dlclose(lib);

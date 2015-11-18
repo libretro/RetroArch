@@ -36,6 +36,26 @@ enum connect_ps4_dpad_states
 
 struct ps4buttons
 {
+#ifdef MSB_FIRST
+   uint8_t triangle      : 1;
+   uint8_t circle        : 1;
+   uint8_t cross         : 1;
+   uint8_t square        : 1;
+   uint8_t dpad          : 4;
+
+   uint8_t r3            : 1;
+   uint8_t l3            : 1;
+   uint8_t options       : 1;
+   uint8_t share         : 1;
+   uint8_t r2            : 1;
+   uint8_t l2            : 1;
+   uint8_t r1            : 1;
+   uint8_t l1            : 1;
+
+   uint8_t reportcounter : 6;
+   uint8_t touchpad      : 1;
+   uint8_t ps            : 1;
+#else
    uint8_t dpad          : 4;
    uint8_t square        : 1;
    uint8_t cross         : 1;
@@ -54,6 +74,7 @@ struct ps4buttons
    uint8_t ps            : 1;
    uint8_t touchpad      : 1;
    uint8_t reportcounter : 6;
+#endif
 }__attribute__((packed));
 
 struct ps4

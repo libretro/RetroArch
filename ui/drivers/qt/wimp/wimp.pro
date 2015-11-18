@@ -20,3 +20,7 @@ HEADERS +=\
 
 RESOURCES += \
     qml.qrc
+
+
+INCLUDEPATH += $$PWD/../../../../
+INCLUDEPATH += $$PWD/../../../../libretro-common/include/

@@ -1,6 +1,5 @@
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
@@ -20,100 +19,93 @@ function binary(s) if s ~= nil then return {binary = s} else return nil end end 
 function uint(s) if s ~= nil then return {uint = s} else return nil end end \
 ";
 
-static int call_init(
-        lua_State * L,
-        int argc,
-        const char ** argv
-) {
-	int rv = -1;
-	int i;
+static int call_init(lua_State * L, int argc, const char ** argv)
+{
+   int rv = -1;
+   int i;
 
-	lua_getglobal(L, "init");
-	for (i = 0; i < argc; i++) {
-		lua_pushstring(L, argv[i]);
-	}
+   lua_getglobal(L, "init");
+   for (i = 0; i < argc; i++)
+      lua_pushstring(L, argv[i]);
 
-	if (lua_pcall(L, argc, 0, 0) != 0) {
-		printf(
-		        "error running function `init': %s\n",
-		        lua_tostring(L, -1)
-		);
-	}
+   if (lua_pcall(L, argc, 0, 0) != 0)
+   {
+      printf(
+            "error running function `init': %s\n",
+            lua_tostring(L, -1)
+            );
+   }
 
-	return rv;
+   return rv;
 }
 
-static int value_provider(
-        void * ctx,
-        struct rmsgpack_dom_value * out
-) {
-	int rv;
-	lua_State * L = ctx;
+static int value_provider(void * ctx, struct rmsgpack_dom_value *out)
+{
+   int rv        = 0;
+   lua_State * L = ctx;
 
-	lua_getglobal(L, "get_value");
+   lua_getglobal(L, "get_value");
 
-	if (lua_pcall(L, 0, 1, 0) != 0) {
-		printf(
-		        "error running function `get_value': %s\n",
-		        lua_tostring(L, -1)
-		);
-	}
+   if (lua_pcall(L, 0, 1, 0) != 0)
+   {
+      printf(
+            "error running function `get_value': %s\n",
+            lua_tostring(L, -1)
+            );
+   }
 
-	if (lua_isnil(L, -1)) {
-		rv = 1;
-	} else if (lua_istable(L, -1)) {
-		rv = libretrodb_lua_to_rmsgpack_value(L, -1, out);
-	} else {
-		printf("function `get_value' must return a table or nil\n");
-	}
-	lua_pop(L, 1);
-	return rv;
+   if (lua_isnil(L, -1))
+      rv = 1;
+   else if (lua_istable(L, -1))
+      rv = libretrodb_lua_to_rmsgpack_value(L, -1, out);
+   else
+      printf("function `get_value' must return a table or nil\n");
+   lua_pop(L, 1);
+   return rv;
 }
 
-int main(
-        int argc,
-        char ** argv
-){
-	const char * db_file;
-	const char * lua_file;
-	int dst = -1;
-	int rv = 0;
+int main(int argc, char ** argv)
+{
+   lua_State *L;
+   const char *db_file;
+   const char *lua_file;
+   RFILE *dst;
+   int rv = 0;
 
-	if (argc < 3) {
-		printf("usage:\n%s <db file> <lua file> [args ...]\n", argv[0]);
-		return 1;
-	}
+   if (argc < 3)
+   {
+      printf("usage:\n%s <db file> <lua file> [args ...]\n", argv[0]);
+      return 1;
+   }
 
-	db_file = argv[1];
-	lua_file = argv[2];
+   db_file  = argv[1];
+   lua_file = argv[2];
+   L        = luaL_newstate();
 
-	lua_State * L = luaL_newstate();
-	luaL_openlibs(L);
-	luaL_dostring(L, LUA_COMMON);
+   luaL_openlibs(L);
+   luaL_dostring(L, LUA_COMMON);
 
-	if (luaL_dofile(L, lua_file) != 0) {
-		return 1;
-	}
+   if (luaL_dofile(L, lua_file) != 0)
+      return 1;
 
-	call_init(L, argc - 2, (const char **) argv + 2);
+   call_init(L, argc - 2, (const char **) argv + 2);
 
-	dst = open(db_file, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-	if (dst == -1) {
-		printf(
-		        "Could not open destination file '%s': %s\n",
-		        db_file,
-		        strerror(errno)
-		);
-		rv = errno;
-		goto clean;
-	}
+   dst = retro_fopen(db_file, RFILE_MODE_WRITE, -1);
+   if (!dst)
+   {
+      printf(
+            "Could not open destination file '%s': %s\n",
+            db_file,
+            strerror(errno)
+            );
+      rv = errno;
+      goto clean;
+   }
 
-	rv = libretrodb_create(dst, &value_provider, L);
+   rv = libretrodb_create(dst, &value_provider, L);
+
 clean:
-	lua_close(L);
-	if (dst != -1) {
-		close(dst);
-	}
-	return rv;
+   lua_close(L);
+   retro_fclose(dst);
+   return rv;
 }
-

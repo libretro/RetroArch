@@ -14,16 +14,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "input_hid_driver.h"
-#include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <string/string_list.h>
-#include "../driver.h"
+#include <string.h>
+
+#include "input_hid_driver.h"
 #include "../general.h"
+#include "../string_list_special.h"
 
 static hid_driver_t *hid_drivers[] = {
-#if defined(__APPLE__) && defined(IOS)
+#if defined(HAVE_BTSTACK)
    &btstack_hid,
 #endif
 #if defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
@@ -31,6 +31,9 @@ static hid_driver_t *hid_drivers[] = {
 #endif
 #ifdef HAVE_LIBUSB
    &libusb_hid,
+#endif
+#ifdef HW_RVL
+   &wiiusb_hid,
 #endif
    &null_hid,
    NULL,
@@ -75,40 +78,7 @@ const char *hid_driver_find_ident(int idx)
  **/
 const char* config_get_hid_driver_options(void)
 {
-   union string_list_elem_attr attr;
-   unsigned i;
-   char                 *options = NULL;
-   int               options_len = 0;
-   struct string_list *options_l = string_list_new();
-
-   attr.i = 0;
-
-   if (!options_l)
-      return NULL;
-
-   for (i = 0; hid_drivers[i]; i++)
-   {
-      const char *opt = hid_drivers[i]->ident;
-
-      options_len += strlen(opt) + 1;
-      string_list_append(options_l, opt, attr);
-   }
-
-   options = (char*)calloc(options_len, sizeof(char));
-
-   if (!options)
-   {
-      string_list_free(options_l);
-      options_l = NULL;
-      return NULL;
-   }
-
-   string_list_join_concat(options, options_len, options_l, "|");
-
-   string_list_free(options_l);
-   options_l = NULL;
-
-   return options;
+   return char_list_new_special(STRING_LIST_INPUT_HID_DRIVERS, NULL);
 }
 
 /**

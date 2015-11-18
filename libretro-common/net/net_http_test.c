@@ -9,7 +9,7 @@
 int main(void)
 {
    char   *data;
-   http_t *http1, *http2, *http3;
+   http_t *http1, *http3;
    size_t len, pos = 0, tot = 0;
 
    if (!network_init())

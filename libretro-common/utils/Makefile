@@ -2,7 +2,7 @@ compiler    := gcc
 extra_flags :=
 use_neon    := 0
 release	   := release
-DYLIB	      := 
+DYLIB	      :=
 
 ifeq ($(platform),)
 platform = unix
@@ -48,7 +48,7 @@ ifeq ($(platform), unix)
 DYLIB =
 else ifeq ($(platform), osx)
 compiler := $(CC)
-DYLIB = 
+DYLIB =
 ldflags := -dynamiclib
 else
 extra_flags += -static-libgcc -static-libstdc++
@@ -59,19 +59,27 @@ CC      := $(compiler)
 CXX     := $(subst CC,++,$(compiler))
 flags   := -fPIC $(extra_flags) -I../../libretro-common/include
 asflags := -fPIC  $(extra_flags)
-objects :=
 LDFLAGS := -lz
-flags   += -std=c99
+flags   += -std=c99 -DMD5_BUILD_UTILITY
 
 
 ifeq (1,$(use_neon))
 ASMFLAGS := -INEON/asm
 asflags += -mfpu=neon
 endif
-           
-objects += crc32$(DYLIB) djb2$(DYLIB) md5$(DYLIB) sha1$(DYLIB)
 
-all: build;
+OBJS += djb2.o md5.o sha1.o crc32.o
+UTILS += djb2$(DYLIB) md5$(DYLIB) sha1$(DYLIB) crc32$(DYLIB)
+
+all: djb2$(DYLIB) md5$(DYLIB) sha1$(DYLIB) crc32$(DYLIB)
+
+djb2$(DYLIB): djb2.o
+
+md5$(DYLIB): md5.o
+
+sha1$(DYLIB): sha1.o
+
+crc32$(DYLIB): crc32.o
 
 %.o: %.S
 	$(CC) -c -o $@ $(asflags) $(LDFLAGS)  $(ASMFLAGS)  $<
@@ -82,11 +90,9 @@ all: build;
 %.$(DYLIB): %.o
 	$(CC) -o $@ $(ldflags) $(flags) $^
 
-build: $(objects)
-
 clean:
 	rm -f *.o
-	rm -f *.$(DYLIB)
+	rm -f djb2$(DYLIB) md5$(DYLIB) sha1$(DYLIB) crc32$(DYLIB)
 
 strip:
 	strip -s *.$(DYLIB)

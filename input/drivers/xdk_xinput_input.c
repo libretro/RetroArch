@@ -93,7 +93,10 @@ static bool xdk_input_key_pressed(void *data, int key)
    xdk_input_t *xdk     = (xdk_input_t*)data;
    settings_t *settings = config_get_ptr();
 
-   return input_joypad_pressed(xdk->joypad, 0, settings->input.binds[0], key);
+   if (input_joypad_pressed(xdk->joypad, 0, settings->input.binds[0], key))
+      return true;
+
+   return false;
 }
 
 static bool xdk_input_meta_key_pressed(void *data, int key)
@@ -188,6 +191,7 @@ input_driver_t input_xinput = {
    NULL,
    xdk_input_set_rumble,
    xdk_input_get_joypad_driver,
+   NULL,
    xdk_keyboard_mapping_is_blocked,
    xdk_keyboard_mapping_set_block,
 };

@@ -14,11 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../font_renderer_driver.h"
+#include <ctype.h>
+
 #include <file/file_path.h>
+
+#include "../font_renderer_driver.h"
 #include "../../general.h"
 #include "../../file_ops.h"
-#include <ctype.h>
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STB_RECT_PACK_IMPLEMENTATION
@@ -57,19 +59,27 @@ static void font_renderer_stb_free(void *data)
 }
 
 static bool font_renderer_stb_create_atlas(stb_font_renderer_t *self,
-      uint8_t *font_data, float font_size)
+      uint8_t *font_data, float font_size, unsigned width, unsigned height)
 {
    int i;
    stbtt_pack_context pc = {NULL};
    stbtt_packedchar   chardata[256];
 
-   self->atlas.width  = self->atlas.height = 512;
+   if (width > 2048 || height > 2048)
+   {
+      RARCH_WARN("[stb] Font atlas too big: %ux%u\n", width, height);
+      goto error;
+   }
 
-alloc_atlas:
-   self->atlas.buffer = (uint8_t*)calloc(self->atlas.height, self->atlas.width);
+   if (self->atlas.buffer)
+      free(self->atlas.buffer);
+
+   self->atlas.buffer = (uint8_t*)calloc(height, width);
+   self->atlas.width  = width;
+   self->atlas.height = height;
 
    if (!self->atlas.buffer)
-      return false;
+      goto error;
 
    stbtt_PackBegin(&pc, self->atlas.buffer,
          self->atlas.width, self->atlas.height,
@@ -91,34 +101,46 @@ alloc_atlas:
       g->width          = c->x1 - c->x0;
       g->height         = c->y1 - c->y0;
 
-      /* make sure important characters fit */
-      if (isprint(i) && !isspace(i) && (!g->width || !g->height))
+      /* Make sure important characters fit */
+      if (isalnum(i) && (!g->width || !g->height))
       {
-         if (i != 160)
-         {
-            /* increase atlas by 20% in all directions */
-            self->atlas.width  *= 1.2;
-            self->atlas.height *= 1.2;
+         int new_width  = width  * 1.2;
+         int new_height = height * 1.2;
 
-            free(self->atlas.buffer);
-            goto alloc_atlas;
-            break;
+         /* Limit growth to 2048x2048 unless we already reached that */
+         if (width < 2048 || height < 2048)
+         {
+            new_width  = min(new_width,  2048);
+            new_height = min(new_height, 2048);
          }
+
+         return font_renderer_stb_create_atlas(self, font_data, font_size,
+               new_width, new_height);
       }
    }
 
    return true;
+
+error:
+   self->atlas.width = self->atlas.height = 0;
+
+   if (self->atlas.buffer)
+      free(self->atlas.buffer);
+
+   self->atlas.buffer = NULL;
+
+   return false;
 }
 
 static void *font_renderer_stb_init(const char *font_path, float font_size)
 {
-   uint8_t *font_data = NULL;
    int ascent, descent, line_gap;
    stbtt_fontinfo info;
+   uint8_t *font_data = NULL;
    stb_font_renderer_t *self = (stb_font_renderer_t*) calloc(1, sizeof(*self));
 
-   /* prevent warnings */
-   (void)rect_width_compare;
+   /* See https://github.com/nothings/stb/blob/master/stb_truetype.h#L539 */
+   font_size = STBTT_POINT_SIZE(font_size);
 
    if (!self)
       goto error;
@@ -126,14 +148,14 @@ static void *font_renderer_stb_init(const char *font_path, float font_size)
    if (!read_file(font_path, (void**)&font_data, NULL))
       goto error;
 
-   if (!font_renderer_stb_create_atlas(self, font_data, font_size))
+   if (!font_renderer_stb_create_atlas(self, font_data, font_size, 512, 512))
       goto error;
 
    if (!stbtt_InitFont(&info, font_data, stbtt_GetFontOffsetForIndex(font_data, 0)))
       goto error;
 
    stbtt_GetFontVMetrics(&info, &ascent, &descent, &line_gap);
-   self->line_height  = ascent - descent;// + line_gap;
+   self->line_height  = ascent - descent;
 
    if (font_size < 0)
       self->line_height *= stbtt_ScaleForMappingEmToPixels(&info, -font_size);
@@ -162,6 +184,8 @@ static const char *font_renderer_stb_get_default_font(void)
       "/Library/Fonts/Microsoft/Candara.ttf",
       "/Library/Fonts/Verdana.ttf",
       "/Library/Fonts/Tahoma.ttf",
+      "/Library/Fonts/Andale Mono.ttf",
+      "/Library/Fonts/Courier New.ttf",
 #elif defined(__ANDROID_API__)
       "/system/fonts/DroidSansMono.ttf",
       "/system/fonts/CutiveMono.ttf",

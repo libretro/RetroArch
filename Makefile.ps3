@@ -6,7 +6,7 @@ CELL_BUILD_TOOLS	= SNC
 CELL_GPU_TYPE	   	= RSX
 CELL_PSGL_VERSION	= ultra-opt
 
-RMENU_IMG_DIR  := media/rmenu
+ASSETS_DIR  := media/assets
 
 # options
 DOWNLOAD_SHADERS	= 1
@@ -30,11 +30,11 @@ include $(CELL_MK_DIR)/sdk.makedef.mk
 PPU_TARGET		= retroarch_ps3.elf
 SALAMANDER_TARGET	= retroarch-salamander_ps3.elf
 
-EBOOT_PATH		= ps3/pkg/USRDIR/EBOOT.BIN
-CORE_PATH		= ps3/pkg/USRDIR/cores/CORE.SELF
+EBOOT_PATH		= pkg/ps3/USRDIR/EBOOT.BIN
+CORE_PATH		= pkg/ps3/USRDIR/cores/CORE.SELF
 
 LDDIRS = -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt
-INCDIRS = -I. -Ips3 -Icommon -Ideps/zlib -Ilibretro-common/include
+INCDIRS = -I. -Idefines -Ideps/zlib -Ilibretro-common/include
 
 # system platform
 system_platform = unix
@@ -47,7 +47,7 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
    system_platform = win
 endif
 
-PKG_SCRIPT		= ps3/ps3py/pkg.py
+PKG_SCRIPT		= tools/ps3/ps3py/pkg.py
 ifeq ($(shell uname), Linux)
 PKG_FINALIZE         	= package_finalize
 MAKE_SELF_WC		= make_self_wc
@@ -68,7 +68,7 @@ ifeq ($(HAVE_RLAUNCH), 1)
 	DEFINES += -DHAVE_RLAUNCH
 endif
 
-DEFINES += -DHAVE_MENU -DHAVE_RGUI -DHAVE_GLUI -DRARCH_INTERNAL -DMSB_FIRST -DHAVE_OVERLAY -DHAVE_STB_FONT
+DEFINES += -DHAVE_MENU -DHAVE_RGUI -DHAVE_MATERIALUI -DRARCH_INTERNAL -DMSB_FIRST -DHAVE_OVERLAY -DHAVE_STB_FONT
 
 ifeq ($(HAVE_GCMGL), 1)
 DEFINES			+= -DHAVE_GCMGL
@@ -116,7 +116,6 @@ endif
 
 ifeq ($(HAVE_LOGGER), 1)
 DEFINES			+= -DHAVE_LOGGER
-INCDIRS        +=  -Ilogger/netlogger
 endif
 
 PPU_CFLAGS := $(PPU_OPTIMIZE_LV) $(INCDIRS) $(DEFINES)
@@ -157,28 +156,29 @@ create-salamander:
 	$(MAKE_SELF) $(SALAMANDER_TARGET) $(EBOOT_PATH) $(CONTENT_ID_FULL)
 
 copy-media-files:
-	@cp -r $(RMENU_IMG_DIR)/*.png ps3/pkg/USRDIR/cores/borders/Menu/
+	@cp -r $(ASSETS_DIR)/glui pkg/ps3/USRDIR/cores/assets
+	@cp -r $(ASSETS_DIR)/xmb  pkg/ps3/USRDIR/cores/assets
 
 create-shaders:
-	make -f Makefile.shaders deploy-ps3
+	make -f Makefile.griffin platform=ps3 shaders-deploy
 
 pkg: $(PPU_TARGET)  create-shaders copy-media-files create-npdrm-salamander create-npdrm-core
-	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
+	$(MAKE_PACKAGE_NPDRM) pkg/ps3/package.conf pkg/ps3
 
 pkg-signed: $(PPU_TARGET)  create-shaders copy-media-files create-salamander create-core
-	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION).pkg
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) pkg/ps3 retroarch-ps3-cfw-$(RARCH_VERSION).pkg
 
 pkg-signed-standalone: $(PPU_TARGET)  create-shaders copy-media-files create-core
 	$(MAKE_SELF) $(PPU_TARGET) $(EBOOT_PATH) $(CONTENT_ID)
-	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION).pkg
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) pkg/ps3 retroarch-ps3-cfw-$(RARCH_VERSION).pkg
 
 pkg-signed-cfw: $(PPU_TARGET)  create-shaders copy-media-files create-salamander create-core
-	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) pkg/ps3 retroarch-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
 	$(PKG_FINALIZE) retroarch-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
 
 pkg-signed-cfw-standalone: $(PPU_TARGET)  create-shaders copy-media-files create-core
 	$(MAKE_SELF) $(PPU_TARGET) $(EBOOT_PATH) $(CONTENT_ID)
-	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) ps3/pkg/ retroarch-ps3-cfw-$(RARCH_VERSION).pkg
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) pkg/ps3 retroarch-ps3-cfw-$(RARCH_VERSION).pkg
 	$(PKG_FINALIZE) retroarch-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
 
 clean-selfs:

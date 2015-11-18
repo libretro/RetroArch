@@ -20,30 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdlib.h>
+
 #include <file/dir_list.h>
 #include <file/file_path.h>
-#include <compat/strl.h>
-#include <compat/posix_string.h>
+#include <string/string_list.h>
 
-#if defined(_WIN32)
-#ifdef _MSC_VER
-#define setmode _setmode
-#endif
-#ifdef _XBOX
-#include <xtl.h>
-#define INVALID_FILE_ATTRIBUTES -1
-#else
-#include <io.h>
-#include <fcntl.h>
-#include <direct.h>
-#include <windows.h>
-#endif
-#else
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <unistd.h>
-#endif
+#include <compat/strl.h>
+#include <retro_dirent.h>
 
 #include <retro_miscellaneous.h>
 
@@ -96,46 +80,16 @@ void dir_list_free(struct string_list *list)
    string_list_free(list);
 }
 
-#ifndef _WIN32
-/**
- *
- * dirent_is_directory:
- * @path         : path to the directory entry.
- * @entry        : pointer to the directory entry.
- *
- * Is the directory listing entry a directory?
- *
- * Returns: true if directory listing entry is
- * a directory, false if not.
- */
-
-static bool dirent_is_directory(const char *path,
-      const struct dirent *entry)
-{
-#if defined(PSP)
-   return (entry->d_stat.st_attr & FIO_SO_IFDIR) == FIO_SO_IFDIR;
-#elif defined(DT_DIR)
-   if (entry->d_type == DT_DIR)
-      return true;
-   else if (entry->d_type == DT_UNKNOWN /* This can happen on certain file systems. */
-         || entry->d_type == DT_LNK)
-      return path_is_directory(path);
-   return false;
-#else /* dirent struct doesn't have d_type, do it the slow way ... */
-   return path_is_directory(path);
-#endif
-}
-#endif
-
 /**
  * parse_dir_entry:
- * @name         : name of the directory listing entry.
- * @file_path    : file path of the directory listing entry.
- * @is_dir       : is the directory listing a directory?
- * @include_dirs : include directories as part of the finished directory listing?
- * @list         : pointer to directory listing.
- * @ext_list     : pointer to allowed file extensions listing.
- * @file_ext     : file extension of the directory listing entry.
+ * @name               : name of the directory listing entry.
+ * @file_path          : file path of the directory listing entry.
+ * @is_dir             : is the directory listing a directory?
+ * @include_dirs       : include directories as part of the finished directory listing?
+ * @include_compressed : Include compressed files, even if not part of ext_list.
+ * @list               : pointer to directory listing.
+ * @ext_list           : pointer to allowed file extensions listing.
+ * @file_ext           : file extension of the directory listing entry.
  *
  * Parses a directory listing.
  *
@@ -143,7 +97,7 @@ static bool dirent_is_directory(const char *path,
  * continue to the next entry in the directory listing.
  **/
 static int parse_dir_entry(const char *name, char *file_path,
-      bool is_dir, bool include_dirs,
+      bool is_dir, bool include_dirs, bool include_compressed,
       struct string_list *list, struct string_list *ext_list,
       const char *file_ext)
 {
@@ -166,7 +120,9 @@ static int parse_dir_entry(const char *name, char *file_path,
    if (!strcmp(name, ".") || !strcmp(name, ".."))
       return 1;
 
-   if (!is_compressed_file && !is_dir && ext_list && !supported_by_core)
+   if (!is_dir && ext_list &&
+           ((!is_compressed_file && !supported_by_core) ||
+            (!supported_by_core && !include_compressed)))
       return 1;
 
    if (is_dir)
@@ -192,9 +148,10 @@ static int parse_dir_entry(const char *name, char *file_path,
 
 /**
  * dir_list_new:
- * @dir          : directory path.
- * @ext          : allowed extensions of file directory entries to include.
- * @include_dirs : include directories as part of the finished directory listing?
+ * @dir                : directory path.
+ * @ext                : allowed extensions of file directory entries to include.
+ * @include_dirs       : include directories as part of the finished directory listing?
+ * @include_compressed : Only include files which match ext. Do not try to match compressed files, etc.
  *
  * Create a directory listing.
  *
@@ -202,20 +159,11 @@ static int parse_dir_entry(const char *name, char *file_path,
  * NULL in case of error. Has to be freed manually.
  **/
 struct string_list *dir_list_new(const char *dir,
-      const char *ext, bool include_dirs)
+      const char *ext, bool include_dirs, bool include_compressed)
 {
-#ifdef _WIN32
-   WIN32_FIND_DATA ffd;
-   HANDLE hFind = INVALID_HANDLE_VALUE;
-#else
-   DIR *directory = NULL;
-   const struct dirent *entry = NULL;
-#endif
-   char path_buf[PATH_MAX_LENGTH] = {0};
+   struct RDIR *entry             = NULL;
    struct string_list *ext_list   = NULL;
    struct string_list *list       = NULL;
-
-   (void)path_buf;
 
    if (!(list = string_list_new()))
       return NULL;
@@ -223,59 +171,26 @@ struct string_list *dir_list_new(const char *dir,
    if (ext)
       ext_list = string_split(ext, "|");
 
-#ifdef _WIN32
-   snprintf(path_buf, sizeof(path_buf), "%s\\*", dir);
+   entry = retro_opendir(dir);
 
-   hFind = FindFirstFile(path_buf, &ffd);
-   if (hFind == INVALID_HANDLE_VALUE)
+   if (!entry)
       goto error;
 
-   do
+   if (retro_dirent_error(entry))
+      goto error;
+
+   while (retro_readdir(entry))
    {
+      char file_path[PATH_MAX_LENGTH];
       int ret                         = 0;
-      char file_path[PATH_MAX_LENGTH] = {0};
-      const char *name                = ffd.cFileName;
+      const char *name                = retro_dirent_get_name(entry);
+      bool is_dir                     = retro_dirent_is_dir(entry, file_path);
       const char *file_ext            = path_get_extension(name);
-      bool is_dir                     = ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
 
-      ret = parse_dir_entry(name, file_path, is_dir,
-            include_dirs, list, ext_list, file_ext);
-
-      if (ret == -1)
-         goto error;
-
-      if (ret == 1)
-         continue;
-   }while (FindNextFile(hFind, &ffd) != 0);
-
-   FindClose(hFind);
-   string_list_free(ext_list);
-   return list;
-
-error:
-   if (hFind != INVALID_HANDLE_VALUE)
-      FindClose(hFind);
-#else
-   directory = opendir(dir);
-   if (!directory)
-      goto error;
-
-   while ((entry = readdir(directory)))
-   {
-      int ret                         = 0;
-      char file_path[PATH_MAX_LENGTH] = {0};
-      const char *name                = entry->d_name;
-      const char *file_ext            = path_get_extension(name);
-      bool is_dir                     = false;
-
-      fill_pathname_join(file_path, dir, name, sizeof(file_path));
-
-      is_dir = dirent_is_directory(file_path, entry);
-
-      ret = parse_dir_entry(name, file_path, is_dir,
-            include_dirs, list, ext_list, file_ext);
+      ret    = parse_dir_entry(name, file_path, is_dir,
+            include_dirs, include_compressed, list, ext_list, file_ext);
 
       if (ret == -1)
          goto error;
@@ -284,17 +199,14 @@ error:
          continue;
    }
 
-   closedir(directory);
+   retro_closedir(entry);
 
    string_list_free(ext_list);
    return list;
 
 error:
+   retro_closedir(entry);
 
-   if (directory)
-      closedir(directory);
-
-#endif
    string_list_free(list);
    string_list_free(ext_list);
    return NULL;

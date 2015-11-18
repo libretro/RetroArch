@@ -75,10 +75,6 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Spielstand-Einstellungen";
       case MENU_LABEL_VALUE_REWIND_SETTINGS:
          return "Zurückspul-Einstellungen";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_1:
-         return "Kalibriere obere, linke Ecke";
-      case MENU_LABEL_VALUE_CUSTOM_VIEWPORT_2:
-         return "Kalibriere untere, rechte Ecke";
       case MENU_VALUE_SHADER:
          return "Shader";
       case MENU_VALUE_CHEAT:
@@ -93,11 +89,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "RetroKeyboard";
       case MENU_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Warte auf Audio-Frames";
-      case MENU_LABEL_VALUE_INPUT_BIND_MODE:
-         return "Eingabe-Bind-Modus";
-      case MENU_LABEL_VALUE_AUTOCONFIG_DESCRIPTOR_LABEL_SHOW:
-         return "Zeige Autoconfig-Beschriftungen";
-      case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
+      case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW: /* TODO/FIXME */
          return "Zeige Core-Eingabe-Beschriftungen";
       case MENU_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
          return "Verstecke unzugewiesene Core-Eingabe-Beschriftungen";
@@ -155,7 +147,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Aktiviere Aufnahmefunktion";
       case MENU_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "Aktiviere GPU-Aufnahmefunktion";
-      case MENU_LABEL_VALUE_RECORD_PATH:
+      case MENU_LABEL_VALUE_RECORD_PATH: /* FIXME/UPDATE */
          return "Aufnahmepfad";
       case MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "Verwende Aufnahme-Ausgabeverzeichnis";
@@ -187,7 +179,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "System/BIOS-Verzeichnis";
       case MENU_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Cheat-Datei-Verzeichnis";
-      case MENU_LABEL_VALUE_EXTRACTION_DIRECTORY:
+      case MENU_LABEL_VALUE_CACHE_DIRECTORY: /* FIXME/UPDATE */
          return "Entpack-Verzeichnis";
       case MENU_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Audio-Filter-Verzeichnis";
@@ -425,8 +417,6 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Genauigkeit des Zurückspulens (Rewind)";
       case MENU_LABEL_VALUE_REMAP_FILE_LOAD:
          return "Lade Remap-Datei";
-      case MENU_LABEL_VALUE_REMAP_FILE_SAVE_AS:
-         return "Speichere Remap-Datei unter...";
       case MENU_LABEL_VALUE_CUSTOM_RATIO:
          return "Benutzerdefiniertes Verhältnis";
       case MENU_LABEL_VALUE_USE_THIS_DIRECTORY:
@@ -489,10 +479,8 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Buildbot-Cores-URL";
       case MENU_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "Buildbot-Assets-URL";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_HORIZONTAL:
-         return "Navigation horizontal umbrechen";
-      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND_VERTICAL:
-         return "Navigation vertikal umbrechen";
+      case MENU_LABEL_VALUE_NAVIGATION_WRAPAROUND:
+         return "Navigation umbrechen";
       case MENU_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "Bekannte Dateiendungen filtern";
       case MENU_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
@@ -558,7 +546,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
       case MENU_LABEL_VALUE_BOXART:
          return "Zeige Boxart";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
-         return "Core-Input-Remapping-Optionen";
+         return "Core-Input-Optionen";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
          return "Shader-Optionen";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
@@ -868,26 +856,35 @@ int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
          switch (driver_hash)
          {
             case MENU_LABEL_INPUT_DRIVER_UDEV:
-               snprintf(s, len,
-                     "udev-Eingabetreiber. \n"
-                     " \n"
-                     "Dieser Treiber kann ohne X ausgeführt werden. \n"
-                     " \n"
-                     "Er verwende die neue evdev-Joypad-API \n"
-                     "für die Joystick-Unterstützung und unterstützt \n"
-                     "auch Hotplugging und Force-Feedback (wenn das \n"
-                     "Gerät dies unterstützt). \n"
-                     " \n"
-                     "Der Treiber liest evdev-Ereigniss für Tastatur- \n"
-                     "Unterstützung und kann auch mit  Tastatur-Callbacks, \n"
-                     "Mäusen und Touchpads umgehen. \n"
-                     " \n"
-                     "Standardmäßig sind die /dev/input-Dateien in den \n"
-                     "meisten Linux-Distribution nur für den Root- \n"
-                     "Benutzer lesbar (mode 600). Du kannst eine udev- \n"
-                     "Regel erstellen, die auch den Zugriff für andere \n"
-                     "Benutzer erlaubt."
-                     );
+               {
+                  /* Work around C89 limitations */
+                  char u[501];
+                  char t[501];
+
+                  snprintf(t, sizeof(t),
+                        "udev-Eingabetreiber. \n"
+                        " \n"
+                        "Dieser Treiber kann ohne X ausgeführt werden. \n"
+                        " \n"
+                        "Er verwende die neue evdev-Joypad-API \n"
+                        "für die Joystick-Unterstützung und unterstützt \n"
+                        "auch Hotplugging und Force-Feedback (wenn das \n"
+                        "Gerät dies unterstützt). \n"
+                        " \n"
+                        );
+                  snprintf(u, sizeof(u),
+                        "Der Treiber liest evdev-Ereigniss für Tastatur- \n"
+                        "Unterstützung und kann auch mit  Tastatur-Callbacks, \n"
+                        "Mäusen und Touchpads umgehen. \n"
+                        " \n"
+                        "Standardmäßig sind die /dev/input-Dateien in den \n"
+                        "meisten Linux-Distribution nur für den Root- \n"
+                        "Benutzer lesbar (mode 600). Du kannst eine udev- \n"
+                        "Regel erstellen, die auch den Zugriff für andere \n"
+                        "Benutzer erlaubt.");
+                  strlcat(s, t, len);
+                  strlcat(s, u, len);
+               }
                break;
             case MENU_LABEL_INPUT_DRIVER_LINUXRAW:
                snprintf(s, len,

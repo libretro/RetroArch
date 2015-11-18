@@ -20,12 +20,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "../menu_driver.h"
+#include "../menu_display.h"
 #include "../menu.h"
 #include "../../general.h"
 
 menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* set_texture */
   NULL,  /* render_messagebox */
+  NULL,  /* iterate */
   NULL,  /* render */
   NULL,  /* frame */
   NULL,  /* init */
@@ -41,10 +43,12 @@ menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* navigation_set_last */
   NULL,  /* navigation_descend_alphabet */
   NULL,  /* navigation_ascend_alphabet */
+  NULL,  /* lists_init */
   NULL,  /* list_insert */
   NULL,  /* list_delete */
   NULL,  /* list_clear */
   NULL,  /* list_cache */
+  NULL,  /* list_push */
   NULL,  /* list_get_selection */
   NULL,  /* list_get_size */
   NULL,  /* list_get_entry */

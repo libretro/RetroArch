@@ -22,7 +22,6 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <fcntl.h>
 #ifdef _WIN32
 #include <io.h>
 #else
@@ -31,6 +30,7 @@
 #include <rhash.h>
 #include <retro_miscellaneous.h>
 #include <retro_endianness.h>
+#include <retro_file.h>
 
 #define LSL32(x, n) ((uint32_t)(x) << (n))
 #define LSR32(x, n) ((uint32_t)(x) >> (n))
@@ -80,7 +80,6 @@ static void sha256_block(struct sha256_ctx *p)
    unsigned i;
    uint32_t s0, s1;
    uint32_t a, b, c, d, e, f, g, h;
-   uint32_t t1, t2, maj, ch;
 
    for (i = 0; i < 16; i++) 
       p->w[i] = load32be(p->in.u32 + i);
@@ -97,15 +96,23 @@ static void sha256_block(struct sha256_ctx *p)
 
    for (i = 0; i < 64; i++) 
    {
+      uint32_t t1, t2, maj, ch;
+
       s0 = ROR32(a, 2) ^ ROR32(a, 13) ^ ROR32(a, 22);
       maj = (a & b) ^ (a & c) ^ (b & c);
-      t2 = s0 + maj;
-      s1 = ROR32(e, 6) ^ ROR32(e, 11) ^ ROR32(e, 25);
-      ch = (e & f) ^ (~e & g);
-      t1 = h + s1 + ch + T_K[i] + p->w[i];
+      t2  = s0 + maj;
+      s1  = ROR32(e, 6) ^ ROR32(e, 11) ^ ROR32(e, 25);
+      ch  = (e & f) ^ (~e & g);
+      t1  = h + s1 + ch + T_K[i] + p->w[i];
 
-      h = g; g = f; f = e; e = d + t1;
-      d = c; c = b; b = a; a = t1 + t2;
+      h   = g;
+      g   = f;
+      f   = e;
+      e   = d + t1;
+      d   = c;
+      c   = b;
+      b   = a;
+      a   = t1 + t2;
    }
 
    p->h[0] += a; p->h[1] += b; p->h[2] += c; p->h[3] += d;
@@ -118,20 +125,20 @@ static void sha256_block(struct sha256_ctx *p)
 static void sha256_chunk(struct sha256_ctx *p,
       const uint8_t *s, unsigned len) 
 {
-   unsigned l;
-
    p->len += len;
 
    while (len) 
    {
-      l         = 64 - p->inlen;
-      l         = (len < l) ? len : l;
+      unsigned l = 64 - p->inlen;
+
+      if (len < l)
+         l       = len;
 
       memcpy(p->in.u8 + p->inlen, s, l);
 
-      s        += l;
-      p->inlen += l;
-      len      -= l;
+      s         += l;
+      p->inlen  += l;
+      len       -= l;
 
       if (p->inlen == 64) 
          sha256_block(p);
@@ -504,16 +511,16 @@ int sha1_calculate(const char *path, char *result)
    unsigned char buff[4096] = {0};
    SHA1Context sha;
    int rv = 1;
-   int fd = open(path, O_RDONLY);
+   RFILE *fd = retro_fopen(path, RFILE_MODE_READ, -1);
 
-   if (fd < 0)
+   if (!fd)
       goto error;
 
    SHA1Reset(&sha);
 
    do
    {
-      rv = read(fd, buff, 4096);
+      rv = retro_fread(fd, buff, 4096);
       if (rv < 0)
          goto error;
 
@@ -529,12 +536,12 @@ int sha1_calculate(const char *path, char *result)
          sha.Message_Digest[2],
          sha.Message_Digest[3], sha.Message_Digest[4]);
 
-   close(fd);
+   retro_fclose(fd);
    return 0;
 
 error:
-   if (fd >= 0)
-      close(fd);
+   if (fd)
+      retro_fclose(fd);
    return -1;
 }
 

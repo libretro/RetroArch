@@ -22,8 +22,10 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include <string/string_list.h>
 #include <string.h>
+
+#include <string/string_list.h>
+#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
@@ -58,7 +60,7 @@ void string_list_free(struct string_list *list)
 static bool string_list_capacity(struct string_list *list, size_t cap)
 {
    struct string_list_elem *new_data = NULL;
-   rarch_assert(cap > list->size);
+   retro_assert(cap > list->size);
 
    new_data = (struct string_list_elem*)
       realloc(list->elems, cap * sizeof(*new_data));
@@ -140,7 +142,7 @@ void string_list_set(struct string_list *list,
       unsigned idx, const char *str)
 {
    free(list->elems[idx].data);
-   rarch_assert(list->elems[idx].data = strdup(str));
+   retro_assert(list->elems[idx].data = strdup(str));
 }
 
 /**
@@ -158,9 +160,9 @@ void string_list_join_concat(char *buffer, size_t size,
 {
    size_t i, len = strlen(buffer);
 
-   rarch_assert(len < size);
+   retro_assert(len < size);
    buffer += len;
-   size -= len;
+   size   -= len;
 
    for (i = 0; i < list->size; i++)
    {

@@ -23,7 +23,7 @@ ifneq ($(NATIVE_ZLIB),)
 endif
 
 LIBS    :=
-LDFLAGS := -L. --no-heap-copy -s USE_ZLIB=1 `-s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 \
+LDFLAGS := -L. --no-heap-copy -s USE_ZLIB=1 -s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 \
            -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_load_state', '_cmd_take_screenshot']" \
            --js-library emscripten/library_rwebaudio.js \
            --js-library emscripten/library_rwebinput.js \
@@ -116,4 +116,3 @@ clean:
 	rm -f *.d
 
 .PHONY: all clean
-

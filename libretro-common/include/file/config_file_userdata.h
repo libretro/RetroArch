@@ -24,6 +24,7 @@
 #define _LIBRETRO_SDK_CONFIG_FILE_USERDATA_H
 
 #include <string.h>
+
 #include "config_file.h"
 
 struct config_file_userdata

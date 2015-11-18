@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef __MSG_HASH_H
 #define __MSG_HASH_H
 

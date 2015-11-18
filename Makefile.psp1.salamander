@@ -26,10 +26,10 @@ endif
 
 CFLAGS += $(RARCH_DEFINES)
 
-EXTRA_TARGETS = EBOOT.PBP
+EXTRA_TARGETS   = EBOOT.PBP
 PSP_EBOOT_TITLE = RetroArch
-PSP_EBOOT_ICON = psp1/ICON0.PNG
-PSP_EBOOT_PIC1 = psp1/PIC1.PNG
+PSP_EBOOT_ICON  = pkg/psp1/ICON0.PNG
+PSP_EBOOT_PIC1  = pkg/psp1/PIC1.PNG
 
 OBJS = frontend/frontend_salamander.o \
 		 frontend/frontend_driver.o \
@@ -38,10 +38,13 @@ OBJS = frontend/frontend_salamander.o \
 		 libretro-common/file/file_path.o \
 		 libretro-common/string/string_list.o \
 		 libretro-common/file/dir_list.o \
-		 libretro-common/compat/compat.o \
+		 libretro-common/file/retro_dirent.o \
+		 libretro-common/compat/compat_strl.o \
 		 libretro-common/file/config_file.o \
+		 libretro-common/file/retro_file.o \
+		 libretro-common/file/retro_stat.o \
 		 libretro-common/hash/rhash.o \
-		 psp1/kernel_functions.o 
+		 bootstrap/psp1/kernel_functions.o 
 
 PSPSDK=$(shell psp-config --pspsdk-path)
 include $(PSPSDK)/lib/build.mak

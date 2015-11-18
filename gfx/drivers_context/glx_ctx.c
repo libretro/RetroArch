@@ -14,15 +14,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <signal.h>
+
+#include <GL/glx.h>
+
 #include "../../driver.h"
 #include "../../runloop.h"
-#include "../drivers/gl_common.h"
 #include "../video_monitor.h"
-#include "../common/x11_common.h"
 
-#include <signal.h>
-#include <stdint.h>
-#include <GL/glx.h>
+#include "../common/gl_common.h"
+#include "../common/x11_common.h"
 
 static int (*g_pglSwapInterval)(int);
 static int (*g_pglSwapIntervalSGI)(int);

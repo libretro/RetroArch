@@ -24,17 +24,17 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
-#include <sys/mman.h>
 #include <sys/ioctl.h>
 
 #include <asm/types.h>
 #include <linux/videodev2.h>
 
+#include <memmap.h>
 #include <retro_miscellaneous.h>
 #include <gfx/scaler/scaler.h>
+#include <retro_stat.h>
 
 #include <compat/strl.h>
 
@@ -63,13 +63,14 @@ typedef struct video4linux
    char dev_name[PATH_MAX_LENGTH];
 } video4linux_t;
 
-static void process_image(video4linux_t *v4l,
-      const uint8_t *buffer_yuv)
+static void process_image(video4linux_t *v4l, const uint8_t *buffer_yuv)
 {
-   RARCH_PERFORMANCE_INIT(yuv_convert_direct);
-   RARCH_PERFORMANCE_START(yuv_convert_direct);
+   static struct retro_perf_counter yuv_convert_direct = {0};
+
+   rarch_perf_init(&yuv_convert_direct, "yuv_convert_direct");
+   retro_perf_start(&yuv_convert_direct);
    scaler_ctx_scale(&v4l->scaler, v4l->buffer_output, buffer_yuv);
-   RARCH_PERFORMANCE_STOP(yuv_convert_direct);
+   retro_perf_stop(&yuv_convert_direct);
 }
 
 static int xioctl(int fd, int request, void *args)
@@ -95,7 +96,7 @@ static bool init_mmap(void *data)
    req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
    req.memory = V4L2_MEMORY_MMAP;
 
-   if (xioctl(v4l->fd, VIDIOC_REQBUFS, &req) == -1)
+   if (xioctl(v4l->fd, (uint8_t)VIDIOC_REQBUFS, &req) == -1)
    {
       if (errno == EINVAL)
          RARCH_ERR("%s does not support memory mapping.\n", v4l->dev_name);
@@ -128,7 +129,7 @@ static bool init_mmap(void *data)
       buf.memory = V4L2_MEMORY_MMAP;
       buf.index = v4l->n_buffers;
 
-      if (xioctl(v4l->fd, VIDIOC_QUERYBUF, &buf) == -1)
+      if (xioctl(v4l->fd, (uint8_t)VIDIOC_QUERYBUF, &buf) == -1)
       {
          RARCH_ERR("Error - xioctl VIDIOC_QUERYBUF.\n");
          return false;
@@ -158,7 +159,7 @@ static bool init_device(void *data)
    struct v4l2_format fmt;
    video4linux_t *v4l = (video4linux_t*)data;
 
-   if (xioctl(v4l->fd, VIDIOC_QUERYCAP, &cap) < 0)
+   if (xioctl(v4l->fd, (uint8_t)VIDIOC_QUERYCAP, &cap) < 0)
    {
       if (errno == EINVAL)
          RARCH_ERR("%s is no V4L2 device.\n", v4l->dev_name);
@@ -183,7 +184,7 @@ static bool init_device(void *data)
    memset(&cropcap, 0, sizeof(cropcap));
    cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-   if (xioctl(v4l->fd, VIDIOC_CROPCAP, &cropcap) == 0)
+   if (xioctl(v4l->fd, (uint8_t)VIDIOC_CROPCAP, &cropcap) == 0)
    {
       crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
       crop.c = cropcap.defrect;
@@ -199,7 +200,7 @@ static bool init_device(void *data)
    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
    fmt.fmt.pix.field = V4L2_FIELD_NONE;
 
-   if (xioctl(v4l->fd, VIDIOC_S_FMT, &fmt) < 0)
+   if (xioctl(v4l->fd, (uint8_t)VIDIOC_S_FMT, &fmt) < 0)
    {
       RARCH_ERR("Error - VIDIOC_S_FMT\n");
       return false;
@@ -259,7 +260,7 @@ static bool v4l_start(void *data)
       buf.memory = V4L2_MEMORY_MMAP;
       buf.index = i;
 
-      if (xioctl(v4l->fd, VIDIOC_QBUF, &buf) == -1)
+      if (xioctl(v4l->fd, (uint8_t)VIDIOC_QBUF, &buf) == -1)
       {
          RARCH_ERR("Error - VIDIOC_QBUF.\n");
          return false;
@@ -299,7 +300,6 @@ static void v4l_free(void *data)
 static void *v4l_init(const char *device, uint64_t caps,
       unsigned width, unsigned height)
 {
-   struct stat st;
    video4linux_t *v4l = NULL;
 
    if ((caps & (UINT64_C(1) << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER)) == 0)
@@ -319,14 +319,7 @@ static void *v4l_init(const char *device, uint64_t caps,
    v4l->height = height;
    v4l->ready  = false;
 
-   if (stat(v4l->dev_name, &st) == -1)
-   {
-      RARCH_ERR("Cannot identify '%s' : %d, %s\n", v4l->dev_name,
-            errno, strerror(errno));
-      goto error;
-   }
-
-   if (!S_ISCHR(st.st_mode))
+   if (!path_is_character_special(v4l->dev_name))
    {
       RARCH_ERR("%s is no device.\n", v4l->dev_name);
       goto error;
@@ -384,7 +377,7 @@ static bool preprocess_image(void *data)
    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
    buf.memory = V4L2_MEMORY_MMAP;
 
-   if (xioctl(v4l->fd, VIDIOC_DQBUF, &buf) == -1)
+   if (xioctl(v4l->fd, (uint8_t)VIDIOC_DQBUF, &buf) == -1)
    {
       switch (errno)
       {
@@ -396,11 +389,11 @@ static bool preprocess_image(void *data)
       }
    }
 
-   rarch_assert(buf.index < v4l->n_buffers);
+   retro_assert(buf.index < v4l->n_buffers);
 
    process_image(v4l, (const uint8_t*)v4l->buffers[buf.index].start);
 
-   if (xioctl(v4l->fd, VIDIOC_QBUF, &buf) == -1)
+   if (xioctl(v4l->fd, (uint8_t)VIDIOC_QBUF, &buf) == -1)
       RARCH_ERR("VIDIOC_QBUF\n");
 
    return true;

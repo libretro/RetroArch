@@ -42,7 +42,7 @@ ifeq (debug,$(build))
 extra_flags += -O0 -g
 endif
 
-ldflags := -shared -Wl,--version-script=link.T
+ldflags := $(LDFLAGS) -shared -Wl,--version-script=link.T
 
 ifeq ($(platform), unix)
 DYLIB = so
@@ -57,8 +57,8 @@ endif
 
 CC      := $(compiler)
 CXX     := $(subst CC,++,$(compiler))
-flags   := -fPIC $(extra_flags) -I../../libretro-common/include
-asflags := -fPIC  $(extra_flags)
+flags   := $(CFLAGS) -fPIC $(extra_flags) -I../../libretro-common/include
+asflags := $(ASFLAGS) -fPIC  $(extra_flags)
 objects :=
 flags   += -std=c99
 

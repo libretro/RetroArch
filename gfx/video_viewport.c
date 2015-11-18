@@ -14,10 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "video_viewport.h"
 #include "../general.h"
-
-static video_viewport_t video_viewport_custom;
 
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "4:3",           1.3333f },
@@ -123,7 +120,10 @@ void video_viewport_set_config(void)
    {
       struct retro_game_geometry *geom = &av_info->geometry;
 
-      if (geom && geom->aspect_ratio > 0.0f && settings->video.aspect_ratio_auto)
+      if (!geom)
+         return;
+
+      if (geom->aspect_ratio > 0.0f && settings->video.aspect_ratio_auto)
          aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
       else
       {
@@ -231,7 +231,8 @@ struct retro_system_av_info *video_viewport_get_system_av_info(void)
 
 struct video_viewport *video_viewport_get_custom(void)
 {
-   return &video_viewport_custom;
+   settings_t *settings = config_get_ptr();
+   return &settings->video_viewport_custom;
 }
 
 void video_viewport_reset_custom(void)

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<qnx xmlns="http://www.qnx.com/schemas/application/1.0">
+    <id>com.RetroArch</id>
+    <name>RetroArch</name>
+    <versionNumber>1.0.0</versionNumber>
+    <buildId>1</buildId>
+    <description>Cross-platform entertainment system</description>
+    <author>Team Libretro</author>
+    <initialWindow>
+        <aspectRatio>landscape</aspectRatio>
+        <autoOrients>true</autoOrients>
+        <systemChrome>none</systemChrome>
+        <transparent>false</transparent>
+    </initialWindow>
+    <category>core.games</category>
+    <asset path="../../media/retroarch-96x96.png">icon.png</asset>
+    <asset path="lib">lib</asset>
+    <asset path="../../media/overlays">overlays</asset>
+    <asset path="../../retroarch.cfg">retroarch.cfg</asset>
+    <configuration name="Device-Debug">
+       <platformArchitecture>armle-v7</platformArchitecture>
+       <asset path="Device-Debug/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
+    </configuration>
+    <configuration name="Device-Release">
+       <platformArchitecture>armle-v7</platformArchitecture>
+       <asset path="Device-Release/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
+    </configuration>
+    <configuration name="Device-Profile">
+       <platformArchitecture>armle-v7</platformArchitecture>
+       <asset path="Device-Profile/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
+    </configuration>
+    <configuration name="Device-Coverage">
+       <platformArchitecture>armle-v7</platformArchitecture>
+       <asset path="Device-Coverage/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
+    </configuration>
+
+    <icon>
+        <image>icon.png</image>
+    </icon>
+
+    <!--  The splash screen that will appear when your application is launching. Should be 1024x600. -->
+    <!-- <splashscreen></splashscreen> -->
+    <action system="true">run_native</action>
+
+    <action>access_shared</action>
+    <!--  <action>record_audio</action> -->
+    <!--  <action>read_geolocation</action> -->
+    <!--  <action>use_camera</action> -->
+    <!--  <action>access_internet</action> -->
+    <!--  <action>play_audio</action> -->
+    <!--  <action>post_notification</action> -->
+    <!--  <action>set_audio_volume</action> -->
+    <!--  <action>read_device_identifying_information</action> -->
+
+    <env var="LD_LIBRARY_PATH" value="app/native/lib"/>
+    
+</qnx>

@@ -15,7 +15,6 @@
 
 /* Bog-standard windowed SINC implementation. */
 
-#include "../audio_resampler_driver.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -24,7 +23,12 @@
 #ifdef __SSE__
 #include <xmmintrin.h>
 #endif
+
 #include <retro_inline.h>
+#include <filters.h>
+#include <memalign.h>
+
+#include "../audio_resampler_driver.h"
 
 /* Rough SNR values for upsampling:
  * LOWEST: 40 dB
@@ -113,44 +117,10 @@ typedef struct rarch_sinc_resampler
    float *main_buffer;
 } rarch_sinc_resampler_t;
 
-static INLINE double sinc(double val)
-{
-   if (fabs(val) < 0.00001)
-      return 1.0;
-   return sin(val) / val;
-}
-
 #if defined(SINC_WINDOW_LANCZOS)
-#define window_function(idx)  (sinc(M_PI * (idx)))
+#define window_function(idx)  (lanzcos_window_function(idx))
 #elif defined(SINC_WINDOW_KAISER)
-/* Modified Bessel function of first order.
- * Check Wiki for mathematical definition ... */
-static INLINE double besseli0(double x)
-{
-   unsigned i;
-   double sum            = 0.0;
-   double factorial      = 1.0;
-   double factorial_mult = 0.0;
-   double x_pow          = 1.0;
-   double two_div_pow    = 1.0;
-   double x_sqr          = x * x;
-
-   /* Approximate. This is an infinite sum.
-    * Luckily, it converges rather fast. */
-   for (i = 0; i < 18; i++)
-   {
-      sum += x_pow * two_div_pow / (factorial * factorial);
-
-      factorial_mult += 1.0;
-      x_pow *= x_sqr;
-      two_div_pow *= 0.25;
-      factorial *= factorial_mult;
-   }
-
-   return sum;
-}
-
-#define window_function(idx) (besseli0(SINC_WINDOW_KAISER_BETA * sqrt(1 - (idx) * (idx))))
+#define window_function(idx)  (kaiser_window_function(idx, SINC_WINDOW_KAISER_BETA))
 #else
 #error "No SINC window function defined."
 #endif
@@ -158,7 +128,7 @@ static INLINE double besseli0(double x)
 static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
       float *phase_table, int phases, int taps, bool calculate_delta)
 {
-   int i, j, p;
+   int i, j;
    double    window_mod = window_function(0.0); /* Need to normalize w(0) to 1.0. */
    int           stride = calculate_delta ? 2 : 1;
    double     sidelobes = taps / 2.0;
@@ -183,6 +153,7 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
    if (calculate_delta)
    {
       int phase;
+      int p;
 
       for (p = 0; p < phases - 1; p++)
       {
@@ -210,30 +181,6 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
          phase_table[(phase * stride + 1) * taps + j] = delta;
       }
    }
-}
-
-/* No memalign() for us on Win32 ... */
-static void *aligned_alloc__(size_t boundary, size_t size)
-{
-   void **place;
-   uintptr_t addr = 0;
-   void *ptr = malloc(boundary + size + sizeof(uintptr_t));
-
-   if (!ptr)
-      return NULL;
-
-   addr           = ((uintptr_t)ptr + sizeof(uintptr_t) + boundary) 
-                    & ~(boundary - 1);
-   place          = (void**)addr;
-   place[-1]      = ptr;
-
-   return (void*)addr;
-}
-
-static void aligned_free__(void *ptr)
-{
-   void **p = (void**)ptr;
-   free(p[-1]);
 }
 
 #if !(defined(__AVX__) && ENABLE_AVX) && !defined(__SSE__)
@@ -388,7 +335,7 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
    /* movehl { X, R, X, L } == { X, R, X, R } */
    _mm_store_ss(out_buffer + 1, _mm_movehl_ps(sum, sum));
 }
-#elif defined(__ARM_NEON__)
+#elif defined(__ARM_NEON__) && !defined(VITA)
 
 #if SINC_COEFF_LERP
 #error "NEON asm does not support SINC lerp."
@@ -462,7 +409,7 @@ static void resampler_sinc_free(void *re)
 {
    rarch_sinc_resampler_t *resampler = (rarch_sinc_resampler_t*)re;
    if (resampler)
-      aligned_free__(resampler->main_buffer);
+      memalign_free(resampler->main_buffer);
    free(resampler);
 }
 
@@ -480,7 +427,7 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    (void)config;
 
    re->taps = TAPS;
-   cutoff = CUTOFF;
+   cutoff   = CUTOFF;
 
    /* Downsampling, must lower cutoff, and extend number of 
     * taps accordingly to keep same stopband attenuation. */
@@ -491,7 +438,7 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    }
 
    /* Be SIMD-friendly. */
-#if (defined(__AVX__) && ENABLE_AVX) || defined(__ARM_NEON__)
+#if (defined(__AVX__) && ENABLE_AVX) || (defined(__ARM_NEON__)&& !defined(VITA))
    re->taps = (re->taps + 7) & ~7;
 #else
    re->taps = (re->taps + 3) & ~3;
@@ -503,8 +450,7 @@ static void *resampler_sinc_new(const struct resampler_config *config,
 #endif
    elems = phase_elems + 4 * re->taps;
 
-   re->main_buffer = (float*)
-      aligned_alloc__(128, sizeof(float) * elems);
+   re->main_buffer = (float*)memalign_alloc(128, sizeof(float) * elems);
    if (!re->main_buffer)
       goto error;
 
@@ -515,7 +461,7 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    init_sinc_table(re, cutoff, re->phase_table,
          1 << PHASE_BITS, re->taps, SINC_COEFF_LERP);
 
-#if defined(__ARM_NEON__)
+#if defined(__ARM_NEON__) && !defined(VITA)
    process_sinc_func = mask & RESAMPLER_SIMD_NEON 
       ? process_sinc_neon : process_sinc_C;
 #endif
@@ -535,4 +481,3 @@ rarch_resampler_t sinc_resampler = {
    "sinc",
    "sinc"
 };
-

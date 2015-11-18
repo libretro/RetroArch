@@ -17,20 +17,25 @@
 #include "../menu_navigation.h"
 #include "../menu_cbs.h"
 
+#ifndef BIND_ACTION_DOWN
+#define BIND_ACTION_DOWN(cbs, name) \
+   cbs->action_down = name; \
+   cbs->action_down_ident = #name;
+#endif
+
 static int action_bind_down_generic(unsigned type, const char *label)
 {
+   size_t scroll_accel   = 0;
    unsigned scroll_speed  = 0;
-   menu_navigation_t *nav = menu_navigation_get_ptr();
-   menu_list_t *menu_list = menu_list_get_ptr();
-   if (!menu_list || !nav)
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
       return -1;
 
-   scroll_speed = (max(nav->scroll.acceleration, 2) - 2) / 4 + 1;
+   scroll_speed = (max(scroll_accel, 2) - 2) / 4 + 1;
 
-   if (menu_list_get_size(menu_list) <= 0)
+   if (menu_entries_get_size() <= 0)
       return 0;
 
-   menu_navigation_increment(nav, scroll_speed);
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, &scroll_speed);
 
    return 0;
 }
@@ -43,7 +48,7 @@ int menu_cbs_init_bind_down(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   cbs->action_down = action_bind_down_generic;
+   BIND_ACTION_DOWN(cbs, action_bind_down_generic);
 
    return -1;
 }

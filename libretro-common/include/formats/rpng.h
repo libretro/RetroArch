@@ -33,90 +33,27 @@
 extern "C" {
 #endif
 
-struct idat_buffer
-{
-   uint8_t *data;
-   size_t size;
-};
-
-struct png_chunk
-{
-   uint32_t size;
-   char type[4];
-   uint8_t *data;
-};
-
-struct png_ihdr
-{
-   uint32_t width;
-   uint32_t height;
-   uint8_t depth;
-   uint8_t color_type;
-   uint8_t compression;
-   uint8_t filter;
-   uint8_t interlace;
-};
-
-struct rpng_process_t
-{
-   bool initialized;
-   bool inflate_initialized;
-   bool adam7_pass_initialized;
-   bool pass_initialized;
-   uint32_t *data;
-   uint32_t *palette;
-   struct png_ihdr ihdr;
-   uint8_t *prev_scanline;
-   uint8_t *decoded_scanline;
-   uint8_t *inflate_buf;
-   size_t restore_buf_size;
-   size_t adam7_restore_buf_size;
-   size_t data_restore_buf_size;
-   size_t inflate_buf_size;
-   unsigned bpp;
-   unsigned pitch;
-   unsigned h;
-   struct
-   {
-      unsigned width;
-      unsigned height;
-      size_t   size;
-      unsigned pos;
-   } pass;
-   void *stream;
-   zlib_file_handle_t handle;
-};
-
-struct rpng_t
-{
-   struct rpng_process_t process;
-   bool has_ihdr;
-   bool has_idat;
-   bool has_iend;
-   bool has_plte;
-   struct idat_buffer idat_buf;
-   struct png_ihdr ihdr;
-   uint8_t *buff_data;
-   uint32_t palette[256];
-};
+typedef struct rpng rpng_t;
 
 bool rpng_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height);
 
-struct rpng_t *rpng_nbio_load_image_argb_init(const char *path);
+rpng_t *rpng_nbio_load_image_argb_init(const char *path);
 
-void rpng_nbio_load_image_free(struct rpng_t *rpng);
+bool rpng_is_valid(rpng_t *rpng);
 
-bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
-      struct rpng_t *rpng, unsigned *ret);
+bool rpng_set_buf_ptr(rpng_t *rpng, uint8_t *data);
 
-int rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
+rpng_t *rpng_alloc(void);
+
+void rpng_nbio_load_image_free(rpng_t *rpng);
+
+bool rpng_nbio_load_image_argb_iterate(rpng_t *rpng);
+
+int rpng_nbio_load_image_argb_process(rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height);
 
-int rpng_load_image_argb_process_inflate_init(struct rpng_t *rpng,
-      uint32_t **data, unsigned *width, unsigned *height);
-
-bool rpng_nbio_load_image_argb_start(struct rpng_t *rpng);
+bool rpng_nbio_load_image_argb_start(rpng_t *rpng);
 
 #ifdef HAVE_ZLIB_DEFLATE
 bool rpng_save_image_argb(const char *path, const uint32_t *data,

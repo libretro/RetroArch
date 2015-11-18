@@ -19,7 +19,6 @@
 #include <string.h>
 
 #ifndef _WIN32
-#include <fcntl.h>
 #include <unistd.h>
 #endif
 
@@ -82,7 +81,7 @@ static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
 
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
-   if (getaddrinfo_rarch(NULL, port_buf, &hints, &res) < 0)
+   if (getaddrinfo_retro(NULL, port_buf, &hints, &res) < 0)
       goto error;
 
    handle->net_fd = socket(res->ai_family,
@@ -101,12 +100,12 @@ static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
       goto error;
    }
 
-   freeaddrinfo_rarch(res);
+   freeaddrinfo_retro(res);
    return true;
 
 error:
    if (res)
-      freeaddrinfo_rarch(res);
+      freeaddrinfo_retro(res);
    return false;
 }
 #endif
@@ -133,28 +132,29 @@ rarch_cmd_t *rarch_cmd_new(bool stdin_enable,
    if (!handle)
       return NULL;
 
+   (void)network_enable;
+   (void)port;
+   (void)stdin_enable;
+
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
    handle->net_fd = -1;
    if (network_enable && !cmd_init_network(handle, port))
       goto error;
-#else
-   (void)network_enable;
-   (void)port;
 #endif
 
 #ifdef HAVE_STDIN_CMD
    handle->stdin_enable = stdin_enable;
    if (stdin_enable && !cmd_init_stdin(handle))
       goto error;
-#else
-   (void)stdin_enable;
 #endif
 
    return handle;
 
+#if (defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)) || defined(HAVE_STDIN_CMD)
 error:
    rarch_cmd_free(handle);
    return NULL;
+#endif
 }
 
 void rarch_cmd_free(rarch_cmd_t *handle)
@@ -560,7 +560,7 @@ static bool send_udp_packet(const char *host,
    hints.ai_socktype = SOCK_DGRAM;
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
-   if (getaddrinfo_rarch(host, port_buf, &hints, &res) < 0)
+   if (getaddrinfo_retro(host, port_buf, &hints, &res) < 0)
       return false;
 
    /* Send to all possible targets.
@@ -592,7 +592,7 @@ static bool send_udp_packet(const char *host,
    }
 
 end:
-   freeaddrinfo_rarch(res);
+   freeaddrinfo_retro(res);
    if (fd >= 0)
       socket_close(fd);
    return ret;

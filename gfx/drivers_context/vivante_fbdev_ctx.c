@@ -14,14 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <signal.h>
+
+#include <EGL/egl.h>
+
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
-#include "../drivers/gl_common.h"
-
-#include <EGL/egl.h>
-#include <signal.h>
+#include "../common/gl_common.h"
 
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
@@ -40,11 +41,8 @@ static void sighandler(int sig)
 static void gfx_ctx_vivante_set_swap_interval(void *data, unsigned interval)
 {
    (void)data;
-
-   if (!g_egl_dpy)
-      return;
-
-   eglSwapInterval(g_egl_dpy, interval);
+   if (g_egl_dpy)
+      eglSwapInterval(g_egl_dpy, interval);
 }
 
 static void gfx_ctx_vivante_destroy(void *data)
@@ -215,8 +213,8 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
    if (!height || !fullscreen)
       height = 1024;
 
-   g_width = width;
-   g_height = height;
+   g_width    = width;
+   g_height   = height;
 
    window     = fbCreateWindow(fbGetDisplayByIndex(0), 0, 0, 0, 0);
    g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, window, 0);
@@ -261,7 +259,7 @@ static gfx_ctx_proc_t gfx_ctx_vivante_get_proc_address(const char *symbol)
    gfx_ctx_proc_t ret;
    void *sym__;
 
-   rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
+   retro_assert(sizeof(void*) == sizeof(void (*)(void)));
 
    sym__ = eglGetProcAddress(symbol);
    memcpy(&ret, &sym__, sizeof(void*));

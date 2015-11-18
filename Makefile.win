@@ -14,7 +14,7 @@ HAVE_STDIN_CMD = 1
 HAVE_COMMAND = 1
 HAVE_THREADS = 1
 HAVE_RGUI = 1
-HAVE_GLUI = 1
+HAVE_MATERIALUI = 1
 HAVE_7ZIP = 1
 HAVE_ZLIB_DEFLATE = 1
 HAVE_PYTHON = 0
@@ -127,9 +127,9 @@ else
 endif
 
 CFLAGS += -Wall -Wno-unused-result -Wno-unused-variable -I.
-CXXFLAGS += -Wall -Wno-unused-result -Wno-unused-variable -I. -std=c++0x -D__STDC_CONSTANT_MACROS
+CXXFLAGS += -Wall -Wno-unused-result -Wno-unused-variable -I. -std=c++98 -D__STDC_CONSTANT_MACROS
 ifeq ($(CXX_BUILD), 1)
-   CFLAGS += -std=c++0x -xc++ -D__STDC_CONSTANT_MACROS
+   CFLAGS += -std=c++98 -xc++ -D__STDC_CONSTANT_MACROS
 else
    ifneq ($(GNU90_BUILD), 1)
       CFLAGS += -std=gnu99
@@ -147,25 +147,26 @@ $(TARGET): $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 	$(Q)$(CXX) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LDCXXFLAGS)
 
+#those mkdir shenanigans are really ugly, but I can't find any better solution
 $(OBJDIR)/%.o: %.c
-	@mkdir -p $(dir $@)
+	@-mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@)) || echo .
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 .FORCE:
 
 $(OBJDIR)/git_version.o: git_version.c .FORCE
-	@mkdir -p $(dir $@)
+	@-mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@)) || echo .
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
-$(OBJDIR)/%.o: %.cpp
-	@mkdir -p $(dir $@)
+$(OBJDIR)/%.o: %.cpp | $(dir $@)
+	@-mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@)) || echo .
 	@$(if $(Q), $(shell echo echo CXX $<),)
 	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 $(OBJDIR)/%.o: %.rc $(HEADERS)
-	@mkdir -p $(dir $@)
+	@-mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@)) || echo .
 	@$(if $(Q), $(shell echo echo WINDRES $<),)
 	$(Q)$(WINDRES) -o $@ $<
 

@@ -16,6 +16,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_assert.h>
 #include <queues/message_queue.h>
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
@@ -61,6 +62,10 @@ void rarch_main_msg_queue_push_new(uint32_t hash, unsigned prio, unsigned durati
 void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
       bool flush)
 {
+   settings_t *settings;
+   settings = config_get_ptr();
+   if(!settings->video.font_enable)
+      return;
    if (!g_msg_queue)
       return;
 
@@ -75,6 +80,13 @@ void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration
 #ifdef HAVE_THREADS
    slock_unlock(mq_lock);
 #endif
+
+   if (ui_companion_is_on_foreground())
+   {
+      const ui_companion_driver_t *ui = ui_companion_get_ptr();
+      if (ui->msg_queue_push)
+         ui->msg_queue_push(msg, prio, duration, flush);
+   }
 }
 
 void rarch_main_msg_queue_free(void)
@@ -102,10 +114,10 @@ void rarch_main_msg_queue_init(void)
       return;
 
    g_msg_queue = msg_queue_new(8);
-   rarch_assert(g_msg_queue);
+   retro_assert(g_msg_queue);
 
 #ifdef HAVE_THREADS
    mq_lock = slock_new();
-   rarch_assert(mq_lock);
+   retro_assert(mq_lock);
 #endif
 }

@@ -7,10 +7,6 @@
 
 #include "rmsgpack_dom.h"
 
-int libretrodb_lua_to_rmsgpack_value(
-        lua_State * L,
-        int index,
-        struct rmsgpack_dom_value * out
-);
+int libretrodb_lua_to_rmsgpack_value(lua_State *L, int index, struct rmsgpack_dom_value *out);
 
 #endif

@@ -150,6 +150,10 @@ struct video_shader
    char script_path[PATH_MAX_LENGTH];
    char *script; /* Dynamically allocated. Must be free'd. Only used by XML. */
    char script_class[512];
+
+   /* If < 0, no feedback pass is used. Otherwise,
+    * the FBO after pass #N is passed a texture to next frame. */
+   int feedback_pass;
 };
 
 /** 

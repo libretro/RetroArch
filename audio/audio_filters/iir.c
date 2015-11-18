@@ -61,30 +61,34 @@ static void iir_free(void *data)
 static void iir_process(void *data, struct dspfilter_output *output,
       const struct dspfilter_input *input)
 {
+   float b0, b1, b2, a0, a1, a2;
+   float xn1_l, xn2_l, yn1_l, yn2_l;
+   float xn1_r, xn2_r, yn1_r, yn2_r;
    unsigned i;
+   float *out;
    struct iir_data *iir = (struct iir_data*)data;
 
    output->samples = input->samples;
    output->frames  = input->frames;
 
-   float *out = output->samples;
+   out = output->samples;
 
-   float b0 = iir->b0;
-   float b1 = iir->b1;
-   float b2 = iir->b2;
-   float a0 = iir->a0;
-   float a1 = iir->a1;
-   float a2 = iir->a2;
+   b0 = iir->b0;
+   b1 = iir->b1;
+   b2 = iir->b2;
+   a0 = iir->a0;
+   a1 = iir->a1;
+   a2 = iir->a2;
 
-   float xn1_l = iir->l.xn1;
-   float xn2_l = iir->l.xn2;
-   float yn1_l = iir->l.yn1;
-   float yn2_l = iir->l.yn2;
+   xn1_l = iir->l.xn1;
+   xn2_l = iir->l.xn2;
+   yn1_l = iir->l.yn1;
+   yn2_l = iir->l.yn2;
 
-   float xn1_r = iir->r.xn1;
-   float xn2_r = iir->r.xn2;
-   float yn1_r = iir->r.yn1;
-   float yn2_r = iir->r.yn2;
+   xn1_r = iir->r.xn1;
+   xn2_r = iir->r.xn2;
+   yn1_r = iir->r.yn1;
+   yn2_r = iir->r.yn2;
 
    for (i = 0; i < input->frames; i++, out += 2)
    {
@@ -155,15 +159,15 @@ static void iir_filter_init(struct iir_data *iir,
       float sample_rate, float freq, float qual, float gain, enum IIRFilter filter_type)
 {
 	double omega = 2.0 * M_PI * freq / sample_rate;
-   double cs = cos(omega);
-   double sn = sin(omega);
+   double cs    = cos(omega);
+   double sn    = sin(omega);
    double a1pha = sn / (2.0 * qual);
-   double A = exp(log(10.0) * gain / 40.0);
-   double beta = sqrt(A + A);
+   double A     = exp(log(10.0) * gain / 40.0);
+   double beta  = sqrt(A + A);
 
-   float b0 = 0.0, b1 = 0.0, b2 = 0.0, a0 = 0.0, a1 = 0.0, a2 = 0.0;
+   float b0     = 0.0, b1 = 0.0, b2 = 0.0, a0 = 0.0, a1 = 0.0, a2 = 0.0;
 
-   // Set up filter coefficients according to type
+   /* Set up filter coefficients according to type */
    switch (filter_type)
    {
       case LPF:
@@ -216,6 +220,7 @@ static void iir_filter_init(struct iir_data *iir,
          break;
       case RIAA_phono: /* http://www.dsprelated.com/showmessage/73300/3.php */
       {
+         double y, b_re, a_re, b_im, a_im, g;
          float b[3], a[3];
 
          if ((int)sample_rate == 44100)
@@ -247,21 +252,22 @@ static void iir_filter_init(struct iir_data *iir,
             make_poly_from_roots(poles, 2, a);
          }
          
-         b0 = b[0];
-         b1 = b[1];
-         b2 = b[2];
-         a0 = a[0];
-         a1 = a[1];
-         a2 = a[2];
+         b0    = b[0];
+         b1    = b[1];
+         b2    = b[2];
+         a0    = a[0];
+         a1    = a[1];
+         a2    = a[2];
+
 
          /* Normalise to 0dB at 1kHz (Thanks to Glenn Davis) */
-         double y = 2.0 * M_PI * 1000.0 / sample_rate;
-         double b_re = b0 + b1 * cos(-y) + b2 * cos(-2.0 * y);
-         double a_re = a0 + a1 * cos(-y) + a2 * cos(-2.0 * y);
-         double b_im = b1 * sin(-y) + b2 * sin(-2.0 * y);
-         double a_im = a1 * sin(-y) + a2 * sin(-2.0 * y);
-         double g = 1.0 / sqrt((sqr(b_re) + sqr(b_im)) / (sqr(a_re) + sqr(a_im)));
-         b0 *= g; b1 *= g; b2 *= g;
+         y     = 2.0 * M_PI * 1000.0 / sample_rate;
+         b_re  = b0 + b1 * cos(-y) + b2 * cos(-2.0 * y);
+         a_re  = a0 + a1 * cos(-y) + a2 * cos(-2.0 * y);
+         b_im  = b1 * sin(-y) + b2 * sin(-2.0 * y);
+         a_im  = a1 * sin(-y) + a2 * sin(-2.0 * y);
+         g     = 1.0 / sqrt((sqr(b_re) + sqr(b_im)) / (sqr(a_re) + sqr(a_im)));
+         b0   *= g; b1 *= g; b2 *= g;
          break;
       }
       case PEQ: 
@@ -296,6 +302,7 @@ static void iir_filter_init(struct iir_data *iir,
          a1pha = sn / (2.0 * 0.4845);
          A = exp(log(10.0) * -9.477 / 40.0);
          beta = sqrt(A + A);
+         (void)a1pha;
       case HSH:
          b0 = A * ((A + 1.0) + (A - 1.0) * cs + beta * sn);
          b1 = -2.0 * A * ((A - 1.0) + (A + 1.0) * cs);
@@ -319,19 +326,20 @@ static void iir_filter_init(struct iir_data *iir,
 static void *iir_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
+   float freq, qual, gain;
+   enum IIRFilter filter;
+   char *type = NULL;
    struct iir_data *iir = (struct iir_data*)calloc(1, sizeof(*iir));
    if (!iir)
       return NULL;
 
-   float freq, qual, gain;
    config->get_float(userdata, "frequency", &freq, 1024.0f);
    config->get_float(userdata, "quality", &qual, 0.707f);
    config->get_float(userdata, "gain", &gain, 0.0f);
 
-   char *type = NULL;
    config->get_string(userdata, "type", &type, "LPF");
 
-   enum IIRFilter filter = str_to_type(type);
+   filter = str_to_type(type);
    config->free(type);
 
    iir_filter_init(iir, info->input_rate, freq, qual, gain, filter);

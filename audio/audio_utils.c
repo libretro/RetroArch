@@ -215,7 +215,7 @@ void audio_convert_float_to_s16_altivec(int16_t *out,
    }
    audio_convert_float_to_s16_C(out, in, samples_in);
 }
-#elif defined(__ARM_NEON__)
+#elif defined(__ARM_NEON__) && !defined(VITA)
 /* Avoid potential hard-float/soft-float ABI issues. */
 void audio_convert_s16_float_asm(float *out, const int16_t *in,
       size_t samples, const float *gain);
@@ -288,7 +288,7 @@ void audio_convert_s16_to_float_ALLEGREX(float *out,
    /* Make sure the buffer is 16 byte aligned, this should be the 
     * default behaviour of malloc in the PSPSDK.
     * Only the output buffer can be assumed to be 16-byte aligned. */
-   rarch_assert(((uintptr_t)out & 0xf) == 0);
+   retro_assert(((uintptr_t)out & 0xf) == 0);
 #endif
 
    size_t i;
@@ -360,8 +360,8 @@ void audio_convert_float_to_s16_ALLEGREX(int16_t *out,
    /* Make sure the buffers are 16 byte aligned, this should be 
     * the default behaviour of malloc in the PSPSDK.
     * Both buffers are allocated by RetroArch, so can assume alignment. */
-   rarch_assert(((uintptr_t)in  & 0xf) == 0);
-   rarch_assert(((uintptr_t)out & 0xf) == 0);
+   retro_assert(((uintptr_t)in  & 0xf) == 0);
+   retro_assert(((uintptr_t)out & 0xf) == 0);
 #endif
 
    for (i = 0; i + 8 <= samples; i += 8)
@@ -396,7 +396,7 @@ void audio_convert_float_to_s16_ALLEGREX(int16_t *out,
 #ifndef RARCH_INTERNAL
 
 #ifdef __cplusplus
-extern "C" 
+extern "C" {
 #endif
 retro_get_cpu_features_t perf_get_cpu_features_cb;
 
@@ -409,7 +409,7 @@ retro_get_cpu_features_t perf_get_cpu_features_cb;
 static unsigned audio_convert_get_cpu_features(void)
 {
 #ifdef RARCH_INTERNAL
-   return rarch_get_cpu_features();
+   return retro_get_cpu_features();
 #else
    return perf_get_cpu_features_cb();
 #endif
@@ -426,10 +426,10 @@ void audio_convert_init_simd(void)
    unsigned cpu = audio_convert_get_cpu_features();
 
    (void)cpu;
-#if defined(__ARM_NEON__) 
-   audio_convert_s16_to_float_arm = cpu & RETRO_SIMD_NEON ?
+#if defined(__ARM_NEON__) && !defined(VITA)
+   audio_convert_s16_to_float_arm = (cpu & RETRO_SIMD_NEON) ?
       audio_convert_s16_to_float_neon : audio_convert_s16_to_float_C;
-   audio_convert_float_to_s16_arm = cpu & RETRO_SIMD_NEON ?
+   audio_convert_float_to_s16_arm = (cpu & RETRO_SIMD_NEON) ?
       audio_convert_float_to_s16_neon : audio_convert_float_to_s16_C;
 #endif
 }

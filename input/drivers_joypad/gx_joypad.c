@@ -17,20 +17,10 @@
 
 #include "../input_autodetect.h"
 
-#if 0
-#ifdef HW_RVL
-#include <gccore.h>
-#include <ogc/pad.h>
-#include <wiiuse/wpad.h>
-#else
-#include <cafe/pads/wpad/wpad.h>
-#endif
-#else
 #include <gccore.h>
 #include <ogc/pad.h>
 #ifdef HW_RVL
 #include <wiiuse/wpad.h>
-#endif
 #endif
 
 #ifdef GEKKO

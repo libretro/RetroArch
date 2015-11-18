@@ -14,15 +14,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../font_renderer_driver.h"
-#include <file/file_path.h>
-#include "../../general.h"
-#include <string.h>
-#include <stddef.h>
 #include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
+
+#include "../font_renderer_driver.h"
+#include <file/file_path.h>
+#include "../../general.h"
 
 #define FT_ATLAS_ROWS 16
 #define FT_ATLAS_COLS 16
@@ -131,7 +132,6 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle)
    /* Blit our texture atlas. */
    for (i = 0; i < FT_ATLAS_SIZE; i++)
    {
-      unsigned r, c;
       uint8_t *dst      = NULL;
       unsigned offset_x = (i % FT_ATLAS_COLS) * max_width;
       unsigned offset_y = (i / FT_ATLAS_COLS) * max_height;
@@ -144,6 +144,7 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle)
 
       if (buffer[i])
       {
+         unsigned r, c;
          const uint8_t *src = (const uint8_t*)buffer[i];
 
          for (r = 0; r < handle->glyphs[i].height;
@@ -209,6 +210,7 @@ static const char *font_paths[] = {
    "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf",
    "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+   "/usr/share/fonts/TTF/Vera.ttf",
 #endif
    "osd-font.ttf", /* Magic font to search for, useful for distribution. */
 };

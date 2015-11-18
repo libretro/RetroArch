@@ -56,29 +56,32 @@ static void chorus_process(void *data, struct dspfilter_output *output,
 
    for (i = 0; i < input->frames; i++, out += 2)
    {
+      unsigned delay_int;
+      float delay_frac, l_a, l_b, r_a, r_b;
+      float chorus_l, chorus_r;
       float in[2] = { out[0], out[1] };
-
       float delay = ch->delay + ch->depth * sin((2.0 * M_PI * ch->lfo_ptr++) / ch->lfo_period);
+
       delay *= ch->input_rate;
       if (ch->lfo_ptr >= ch->lfo_period)
          ch->lfo_ptr = 0;
 
-      unsigned delay_int = (unsigned)delay;
+      delay_int = (unsigned)delay;
       if (delay_int >= CHORUS_MAX_DELAY - 1)
          delay_int = CHORUS_MAX_DELAY - 2;
-      float delay_frac = delay - delay_int;
+      delay_frac = delay - delay_int;
 
       ch->old[0][ch->old_ptr] = in[0];
       ch->old[1][ch->old_ptr] = in[1];
 
-      float l_a = ch->old[0][(ch->old_ptr - delay_int - 0) & CHORUS_DELAY_MASK];
-      float l_b = ch->old[0][(ch->old_ptr - delay_int - 1) & CHORUS_DELAY_MASK];
-      float r_a = ch->old[1][(ch->old_ptr - delay_int - 0) & CHORUS_DELAY_MASK];
-      float r_b = ch->old[1][(ch->old_ptr - delay_int - 1) & CHORUS_DELAY_MASK];
+      l_a = ch->old[0][(ch->old_ptr - delay_int - 0) & CHORUS_DELAY_MASK];
+      l_b = ch->old[0][(ch->old_ptr - delay_int - 1) & CHORUS_DELAY_MASK];
+      r_a = ch->old[1][(ch->old_ptr - delay_int - 0) & CHORUS_DELAY_MASK];
+      r_b = ch->old[1][(ch->old_ptr - delay_int - 1) & CHORUS_DELAY_MASK];
 
-      // Lerp introduces aliasing of the chorus component, but doing full polyphase here is probably overkill.
-      float chorus_l = l_a * (1.0f - delay_frac) + l_b * delay_frac;
-      float chorus_r = r_a * (1.0f - delay_frac) + r_b * delay_frac;
+      /* Lerp introduces aliasing of the chorus component, but doing full polyphase here is probably overkill. */
+      chorus_l = l_a * (1.0f - delay_frac) + l_b * delay_frac;
+      chorus_r = r_a * (1.0f - delay_frac) + r_b * delay_frac;
 
       out[0] = ch->mix_dry * in[0] + ch->mix_wet * chorus_l;
       out[1] = ch->mix_dry * in[1] + ch->mix_wet * chorus_r;
@@ -90,11 +93,11 @@ static void chorus_process(void *data, struct dspfilter_output *output,
 static void *chorus_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
+   float delay, depth, lfo_freq, drywet;
    struct chorus_data *ch = (struct chorus_data*)calloc(1, sizeof(*ch));
    if (!ch)
       return NULL;
 
-   float delay, depth, lfo_freq, drywet;
    config->get_float(userdata, "delay_ms", &delay, 25.0f);
    config->get_float(userdata, "depth_ms", &depth, 1.0f);
    config->get_float(userdata, "lfo_freq", &lfo_freq, 0.5f);

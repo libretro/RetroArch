@@ -14,13 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "core_options.h"
 #include <string.h>
+
 #include <file/config_file.h>
 #include <file/dir_list.h>
 #include <compat/posix_string.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
+
+#include "core_options.h"
 
 struct core_option
 {
@@ -90,7 +92,6 @@ void core_option_get(core_option_manager_t *opt, struct retro_variable *var)
 static bool parse_variable(core_option_manager_t *opt, size_t idx,
       const struct retro_variable *var)
 {
-   size_t i;
    const char *val_start      = NULL;
    char *value                = NULL;
    char *desc_end             = NULL;
@@ -124,6 +125,8 @@ static bool parse_variable(core_option_manager_t *opt, size_t idx,
 
    if (config_get_string(opt->conf, option->key, &config_val))
    {
+      size_t i;
+
       for (i = 0; i < option->vals->size; i++)
       {
          if (!strcmp(option->vals->elems[i].data, config_val))
@@ -232,6 +235,30 @@ bool core_option_flush(core_option_manager_t *opt)
    }
 
    return config_file_write(opt->conf, opt->conf_path);
+}
+
+/**
+ * core_option_flush_game_specific:
+ * @opt              : options manager handle
+ * @path             : path for the core options file
+ *
+ * Writes core option key-pair values to a custom file.
+ *
+ * Returns: true (1) if core option values could be
+ * successfully saved to disk, otherwise false (0).
+ **/
+bool core_option_flush_game_specific(core_option_manager_t *opt, char* path)
+{
+   size_t i;
+   for (i = 0; i < opt->size; i++)
+   {
+      struct core_option *option = (struct core_option*)&opt->opts[i];
+
+      if (option)
+         config_set_string(opt->conf, option->key, core_option_get_val(opt, i));
+}
+
+   return config_file_write(opt->conf, path);
 }
 
 /**

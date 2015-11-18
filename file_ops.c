@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
+ *  Copyright (C) 2014-2015 - Timo Strunk
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,136 +15,500 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "file_ops.h"
-#include <file/file_path.h>
+#include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
-#include <boolean.h>
+#include <sys/types.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
+
+#include <boolean.h>
+
 #include <compat/strl.h>
 #include <compat/posix_string.h>
+#include <retro_assert.h>
 #include <retro_miscellaneous.h>
-
+#include <file/file_path.h>
+#include <retro_file.h>
+#include <string/string_list.h>
 #ifdef HAVE_COMPRESSION
 #include <file/file_extract.h>
 #endif
+#include <encodings/utf.h>
 
+#include "file_ops.h"
+
+#ifdef HAVE_COMPRESSION
 #ifdef HAVE_7ZIP
-#include "decompress/7zip_support.h"
+#include "deps/7zip/7z.h"
+#include "deps/7zip/7zAlloc.h"
+#include "deps/7zip/7zCrc.h"
+#include "deps/7zip/7zFile.h"
+#include "deps/7zip/7zVersion.h"
+
+static ISzAlloc g_Alloc = { SzAlloc, SzFree };
+
+static int Buf_EnsureSize(CBuf *dest, size_t size)
+{
+   if (dest->size >= size)
+      return 1;
+   Buf_Free(dest, &g_Alloc);
+   return Buf_Create(dest, size, &g_Alloc);
+}
+
+static bool ConvertUtf16toCharString(const uint16_t *s, char *outstring)
+{
+   CBuf buf;
+   bool res;
+   size_t out_chars = 0;
+   int len = 0;
+
+   Buf_Init(&buf);
+
+   for (len = 0; s[len] != '\0'; len++);
+
+   utf16_conv_utf8(NULL, &out_chars, s, len);
+   out_chars += 1;
+
+   if (!Buf_EnsureSize(&buf, out_chars))
+   {
+      res = SZ_ERROR_MEM;
+      goto end;
+   }
+
+   res = utf16_conv_utf8(buf.data, &out_chars, s, len);
+   buf.data[out_chars] = 0;
+
+   if (res == SZ_OK)
+      strncpy(outstring, (const char*)buf.data, PATH_MAX_LENGTH);
+
+end:
+   Buf_Free(&buf, &g_Alloc);
+   return res;
+}
+
+/* Extract the relative path relative_path from a 7z archive 
+ * archive_path and allocate a buf for it to write it in.
+ * If optional_outfile is set, extract to that instead and don't alloc buffer.
+ */
+static int read_7zip_file(
+      const char *archive_path,
+      const char *relative_path, void **buf,
+      const char *optional_outfile)
+{
+   CFileInStream archiveStream;
+   CLookToRead lookStream;
+   CSzArEx db;
+   SRes res;
+   ISzAlloc allocImp;
+   ISzAlloc allocTempImp;
+   uint8_t *output      = 0;
+   size_t output_size   = 0;
+   uint16_t *temp       = NULL;
+   long outsize         = -1;
+   bool file_found      = false;
+
+   /*These are the allocation routines.
+    * Currently using the non-standard 7zip choices. */
+   allocImp.Alloc       = SzAlloc;
+   allocImp.Free        = SzFree;
+   allocTempImp.Alloc   = SzAllocTemp;
+   allocTempImp.Free    = SzFreeTemp;
+
+   if (InFile_Open(&archiveStream.file, archive_path))
+   {
+      RARCH_ERR("Could not open %s as 7z archive\n.",archive_path);
+      return -1;
+   }
+   else
+   {
+      RARCH_LOG_OUTPUT("Openend archive %s. Now trying to extract %s\n",
+            archive_path,relative_path);
+   }
+
+   FileInStream_CreateVTable(&archiveStream);
+   LookToRead_CreateVTable(&lookStream, False);
+   lookStream.realStream = &archiveStream.s;
+   LookToRead_Init(&lookStream);
+   CrcGenerateTable();
+   SzArEx_Init(&db);
+   res = SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp);
+
+   if (res == SZ_OK)
+   {
+      uint32_t i;
+      size_t temp_size     = 0;
+      uint32_t block_index = 0xFFFFFFFF;
+
+      for (i = 0; i < db.db.NumFiles; i++)
+      {
+         size_t len;
+         char infile[PATH_MAX_LENGTH] = {0};
+         size_t offset           = 0;
+         size_t outSizeProcessed = 0;
+         const CSzFileItem    *f = db.db.Files + i;
+
+         /* We skip over everything which is not a directory. 
+          * FIXME: Why continue then if f->IsDir is true?*/
+         if (f->IsDir)
+            continue;
+
+         len = SzArEx_GetFileNameUtf16(&db, i, NULL);
+
+         if (len > temp_size)
+         {
+            free(temp);
+            temp_size = len;
+            temp = (uint16_t *)malloc(temp_size * sizeof(temp[0]));
+            if (temp == 0)
+            {
+               res = SZ_ERROR_MEM;
+               break;
+            }
+         }
+
+         SzArEx_GetFileNameUtf16(&db, i, temp);
+         res = ConvertUtf16toCharString(temp,infile) ? SZ_OK : SZ_ERROR_FAIL;
+
+         if (!strcmp(infile, relative_path))
+         {
+            /* C LZMA SDK does not support chunked extraction - see here:
+             * sourceforge.net/p/sevenzip/discussion/45798/thread/6fb59aaf/
+             * */
+            file_found = true;
+            res = SzArEx_Extract(&db, &lookStream.s, i, &block_index,
+                  &output, &output_size, &offset, &outSizeProcessed,
+                  &allocImp, &allocTempImp);
+
+            if (res != SZ_OK)
+               break; /* This goes to the error section. */
+
+            outsize = outSizeProcessed;
+            
+            if (optional_outfile != NULL)
+            {
+               const void *ptr = (const void*)(output + offset);
+
+               if (!retro_write_file(optional_outfile, ptr, outsize))
+               {
+                  RARCH_ERR("Could not open outfilepath %s.\n",
+                        optional_outfile);
+                  res        = SZ_OK;
+                  file_found = true;
+                  outsize    = -1;
+                  break;
+               }
+            }
+            else
+            {
+               /*We could either use the 7Zip allocated buffer,
+                * or create our own and use it.
+                * We would however need to realloc anyways, because RetroArch
+                * expects a \0 at the end, therefore we allocate new,
+                * copy and free the old one. */
+               *buf = malloc(outsize + 1);
+               ((char*)(*buf))[outsize] = '\0';
+               memcpy(*buf,output + offset,outsize);
+            }
+            break;
+         }
+      }
+   }
+
+   IAlloc_Free(&allocImp, output);
+   SzArEx_Free(&db, &allocImp);
+   free(temp);
+   File_Close(&archiveStream.file);
+
+   if (res == SZ_OK && file_found == true)
+      return outsize;
+
+   /* Error handling */
+   if (!file_found)
+      RARCH_ERR("File %s not found in %s\n",relative_path,archive_path);
+   else if (res == SZ_ERROR_UNSUPPORTED)
+      RARCH_ERR("7Zip decoder doesn't support this archive\n");
+   else if (res == SZ_ERROR_MEM)
+      RARCH_ERR("7Zip decoder could not allocate memory\n");
+   else if (res == SZ_ERROR_CRC)
+      RARCH_ERR("7Zip decoder encountered a CRC error in the archive\n");
+   else
+      RARCH_ERR("\nUnspecified error in 7-ZIP archive, error number was: #%d\n", res);
+   return -1;
+}
+
+static struct string_list *compressed_7zip_file_list_new(
+      const char *path, const char* ext)
+{
+   CFileInStream archiveStream;
+   CLookToRead lookStream;
+   CSzArEx db;
+   SRes res;
+   ISzAlloc allocImp;
+   ISzAlloc allocTempImp;
+   uint16_t *temp               = NULL;
+   size_t temp_size             = 0;
+   long outsize                 = -1;
+
+   struct string_list *ext_list = NULL;
+   struct string_list     *list = string_list_new();
+
+   if (!list)
+      return NULL;
+
+   if (ext)
+      ext_list = string_split(ext, "|");
+
+   (void)outsize;
+
+   /* These are the allocation routines - currently using 
+    * the non-standard 7zip choices. */
+   allocImp.Alloc     = SzAlloc;
+   allocImp.Free      = SzFree;
+   allocTempImp.Alloc = SzAllocTemp;
+   allocTempImp.Free  = SzFreeTemp;
+
+   if (InFile_Open(&archiveStream.file, path))
+   {
+      RARCH_ERR("Could not open %s as 7z archive.\n",path);
+      goto error;
+   }
+
+   FileInStream_CreateVTable(&archiveStream);
+   LookToRead_CreateVTable(&lookStream, False);
+   lookStream.realStream = &archiveStream.s;
+   LookToRead_Init(&lookStream);
+   CrcGenerateTable();
+   SzArEx_Init(&db);
+   res = SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp);
+
+   if (res == SZ_OK)
+   {
+      uint32_t i;
+
+      for (i = 0; i < db.db.NumFiles; i++)
+      {
+         union string_list_elem_attr attr;
+         const char *file_ext         = NULL;
+         char infile[PATH_MAX_LENGTH] = {0};
+         size_t offset                = 0;
+         size_t outSizeProcessed      = 0;
+         size_t                   len = 0;
+         bool supported_by_core       = false;
+         const CSzFileItem         *f = db.db.Files + i;
+
+         (void)offset;
+         (void)outSizeProcessed;
+
+         /* we skip over everything, which is a directory. */
+         if (f->IsDir)
+            continue;
+
+         len = SzArEx_GetFileNameUtf16(&db, i, NULL);
+
+         if (len > temp_size)
+         {
+            free(temp);
+            temp_size = len;
+            temp      = (uint16_t *)malloc(temp_size * sizeof(temp[0]));
+
+            if (temp == 0)
+            {
+               res = SZ_ERROR_MEM;
+               break;
+            }
+         }
+         SzArEx_GetFileNameUtf16(&db, i, temp);
+         res      = ConvertUtf16toCharString(temp, infile) ? SZ_OK : SZ_ERROR_FAIL;
+         file_ext = path_get_extension(infile);
+
+         if (string_list_find_elem_prefix(ext_list, ".", file_ext))
+            supported_by_core = true;
+
+         /*
+          * Currently we only support files without subdirs in the archives.
+          * Folders are not supported (differences between win and lin.
+          * Archives within archives should imho never be supported.
+          */
+
+         if (!supported_by_core)
+            continue;
+
+         attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
+
+         if (!string_list_append(list, infile, attr))
+            goto error;
+
+      }
+   }
+   SzArEx_Free(&db, &allocImp);
+   free(temp);
+   File_Close(&archiveStream.file);
+
+   if (res != SZ_OK)
+   {
+      /* Error handling */
+      if (res == SZ_ERROR_UNSUPPORTED)
+         RARCH_ERR("7Zip decoder doesn't support this archive. \n");
+      else if (res == SZ_ERROR_MEM)
+         RARCH_ERR("7Zip decoder could not allocate memory. \n");
+      else if (res == SZ_ERROR_CRC)
+         RARCH_ERR("7Zip decoder encountered a CRC error in the archive. \n");
+      else
+         RARCH_ERR(
+               "\nUnspecified error in 7-ZIP archive, error number was: #%d. \n",
+               res);
+      goto error;
+   }
+
+   string_list_free(ext_list);
+   return list;
+
+error:
+   RARCH_ERR("Failed to open compressed_file: \"%s\"\n", path);
+   SzArEx_Free(&db, &allocImp);
+   free(temp);
+   File_Close(&archiveStream.file);
+   string_list_free(list);
+   string_list_free(ext_list);
+   return NULL;
+}
 #endif
 
 #ifdef HAVE_ZLIB
-#include "decompress/zip_support.h"
-#endif
+#include "deps/zlib/unzip.h"
 
-#ifdef __HAIKU__
-#include <kernel/image.h>
-#endif
+#define RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX 16384
 
-#if defined(_WIN32)
-#ifdef _MSC_VER
-#define setmode _setmode
-#endif
-#ifdef _XBOX
-#include <xtl.h>
-#define INVALID_FILE_ATTRIBUTES -1
-#else
-#include <io.h>
-#include <fcntl.h>
-#include <direct.h>
-#include <windows.h>
-#endif
-#else
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <unistd.h>
-#endif
-
-/**
- * write_file:
- * @path             : path to file.
- * @data             : contents to write to the file.
- * @size             : size of the contents.
+/* Extract the relative path relative_path from a 
+ * zip archive archive_path and allocate a buf for it to write it in. */
+/* This code is inspired by:
+ * stackoverflow.com/questions/10440113/simple-way-to-unzip-a-zip-file-using-zlib
  *
- * Writes data to a file.
- *
- * Returns: true (1) on success, false (0) otherwise.
+ * optional_outfile if not NULL will be used to extract the file. buf will be 0
+ * then.
  */
-bool write_file(const char *path, const void *data, ssize_t size)
+
+static int read_zip_file(const char *archive_path,
+      const char *relative_path, void **buf,
+      const char* optional_outfile)
 {
-   ssize_t ret   = 0;
-   FILE *file   = fopen(path, "wb");
-   if (!file)
-      return false;
+   uLong i;
+   unz_global_info global_info;
+   ssize_t    bytes_read = -1;
+   bool finished_reading = false;
+   unzFile      *zipfile = (unzFile*)unzOpen(archive_path);
 
-   ret = fwrite(data, 1, size, file);
-   fclose(file);
-   return (ret == size);
-}
+   if (!zipfile)
+      return -1;
 
-/**
- * read_generic_file:
- * @path             : path to file.
- * @buf              : buffer to allocate and read the contents of the
- *                     file into. Needs to be freed manually.
- *
- * Read the contents of a file into @buf.
- *
- * Returns: number of items read, -1 on error.
- */
-static int read_generic_file(const char *path, void **buf, ssize_t *len)
-{
-   long ret                 = 0;
-   ssize_t content_buf_size = 0;
-   void *content_buf        = NULL;
-   FILE *file               = fopen(path, "rb");
-
-   if (!file)
+   /* Get info about the zip file */
+   if (unzGetGlobalInfo(zipfile, &global_info) != UNZ_OK)
       goto error;
 
-   if (fseek(file, 0, SEEK_END) != 0)
-      goto error;
+   for ( i = 0; i < global_info.number_entry; ++i )
+   {
+      /* Get info about current file. */
+      unz_file_info file_info;
+      char filename[PATH_MAX_LENGTH] = {0};
+      char last_char = ' ';
 
-   content_buf_size = ftell(file);
-   if (content_buf_size < 0)
-      goto error;
+      if (unzGetCurrentFileInfo(
+               zipfile,
+               &file_info,
+               filename,
+               PATH_MAX_LENGTH,
+               NULL, 0, NULL, 0 ) != UNZ_OK )
+         goto error;
 
-   rewind(file);
+      /* Check if this entry is a directory or file. */
+      last_char = filename[strlen(filename)-1];
 
-   content_buf = malloc(content_buf_size + 1);
+      /* We skip directories */
+      if ( last_char == '/' || last_char == '\\' ) { }
+      else if (!strcmp(filename, relative_path))
+      {
+         /* We found the correct file in the zip, 
+          * now extract it to *buf. */
+         if (unzOpenCurrentFile(zipfile) != UNZ_OK )
+            goto error;
 
-   if (!content_buf)
-      goto error;
+         if (optional_outfile == 0)
+         {
+            /* Allocate outbuffer */
+            *buf       = malloc(file_info.uncompressed_size + 1 );
+            bytes_read = unzReadCurrentFile(zipfile, *buf, file_info.uncompressed_size);
 
-   if ((ret = fread(content_buf, 1, content_buf_size, file)) < content_buf_size)
-      RARCH_WARN("Didn't read whole file.\n");
+            if (bytes_read != (ssize_t)file_info.uncompressed_size)
+            {
+               RARCH_ERR(
+                     "Tried to read %d bytes, but only got %d of file %s in ZIP %s.\n",
+                     (unsigned int) file_info.uncompressed_size, (int)bytes_read,
+                     relative_path, archive_path);
+               free(*buf);
+               goto close;
+            }
+            ((char*)(*buf))[file_info.uncompressed_size] = '\0';
+         }
+         else
+         {
+            char read_buffer[RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX] = {0};
+            RFILE* outsink = retro_fopen(optional_outfile, RFILE_MODE_WRITE, -1);
 
-   *buf    = content_buf;
+            if (!outsink)
+               goto close;
 
-   /* Allow for easy reading of strings to be safe.
-    * Will only work with sane character formatting (Unix). */
-   ((char*)content_buf)[content_buf_size] = '\0';
+            bytes_read = 0;
 
-   if (fclose(file) != 0)
-      RARCH_WARN("Failed to close file stream.\n");
+            do
+            {
+               bytes_read = unzReadCurrentFile(zipfile, read_buffer,
+                     RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX );
 
-   if (len)
-      *len = ret;
+               if (retro_fwrite(outsink, read_buffer, bytes_read) == bytes_read)
+                  continue;
 
-   return 1;
+               RARCH_ERR("Error writing to %s.\n", optional_outfile);
+               retro_fclose(outsink);
+               goto close;
+            } while(bytes_read > 0);
 
+            retro_fclose(outsink);
+         }
+         finished_reading = true;
+      }
+
+      unzCloseCurrentFile(zipfile);
+
+      if (finished_reading)
+         break;
+
+      if ((i + 1) < global_info.number_entry)
+      {
+         if (unzGoToNextFile(zipfile) == UNZ_OK)
+            continue;
+
+         goto error;
+      }
+   }
+
+   unzClose(zipfile);
+
+   if(!finished_reading)
+      return -1;
+
+   return bytes_read;
+
+close:
+   unzCloseCurrentFile(zipfile);
 error:
-   if (file)
-      fclose(file);
-   if (content_buf)
-      free(content_buf);
-   if (len)
-      *len = -1;
-   *buf = NULL;
-   return 0;
+   unzClose(zipfile);
+   return -1;
 }
+#endif
+
+#endif
 
 #ifdef HAVE_COMPRESSION
 /* Generic compressed file loader.
@@ -175,8 +540,7 @@ int read_compressed_file(const char * path, void **buf,
    strlcpy(archive_path, path, sizeof(archive_path));
 
    archive_found = (char*)strchr(archive_path,'#');
-
-   rarch_assert(archive_found != NULL);
+   retro_assert(archive_found != NULL);
 
    /* We assure that there is something after the '#' symbol. */
    if (strlen(archive_found) <= 1)
@@ -195,7 +559,9 @@ int read_compressed_file(const char * path, void **buf,
    /* We split the string in two, by putting a \0, where the hash was: */
    *archive_found  = '\0';
    archive_found  += 1;
+#if defined(HAVE_7ZIP) || defined(HAVE_ZLIB)
    file_ext        = path_get_extension(archive_path);
+#endif
 
 #ifdef HAVE_7ZIP
    if (strcasecmp(file_ext,"7z") == 0)
@@ -225,7 +591,7 @@ int read_compressed_file(const char * path, void **buf,
  * @length           : Number of items read, -1 on error.
  *
  * Read the contents of a file into @buf. Will call read_compressed_file
- * if path contains a compressed file, otherwise will call read_generic_file.
+ * if path contains a compressed file, otherwise will call retro_read_file().
  *
  * Returns: 1 if file read, 0 on error.
  */
@@ -238,14 +604,16 @@ int read_file(const char *path, void **buf, ssize_t *length)
          return 1;
    }
 #endif
-   return read_generic_file(path, buf, length);
+   return retro_read_file(path, buf, length);
 }
 
 struct string_list *compressed_file_list_new(const char *path,
       const char* ext)
 {
 #ifdef HAVE_COMPRESSION
+#if defined(HAVE_7ZIP) || defined(HAVE_ZLIB)
    const char* file_ext = path_get_extension(path);
+#endif
 #ifdef HAVE_7ZIP
    if (strcasecmp(file_ext,"7z") == 0)
       return compressed_7zip_file_list_new(path,ext);
@@ -254,7 +622,6 @@ struct string_list *compressed_file_list_new(const char *path,
    if (strcasecmp(file_ext,"zip") == 0)
       return zlib_get_file_list(path, ext);
 #endif
-
 #endif
    return NULL;
 }

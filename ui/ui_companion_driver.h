@@ -41,6 +41,9 @@ typedef struct ui_companion_driver
    void (*event_command)(void *data, enum event_command action);
    void (*notify_content_loaded)(void *data);
    void (*notify_list_loaded)(void *data, file_list_t *list, file_list_t *menu_list);
+   void (*notify_refresh)(void *data);
+   void (*msg_queue_push)(const char *msg, unsigned priority, unsigned duration, bool flush);
+   void (*render_messagebox)(const char *msg);
    const char *ident;
 } ui_companion_driver_t;
 
@@ -69,6 +72,10 @@ const ui_companion_driver_t *ui_companion_get_ptr(void);
  * Returns: pointer to first suitable driver, otherwise NULL. 
  **/
 const ui_companion_driver_t *ui_companion_init_first(void);
+
+bool ui_companion_is_on_foreground(void);
+
+void ui_companion_set_foreground(unsigned enable);
 
 void ui_companion_event_command(enum event_command action);
 

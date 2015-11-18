@@ -149,6 +149,8 @@ void recording_dump_frame(const void *data, unsigned width,
 
 bool recording_deinit(void);
 
+void find_record_driver(void);
+
 /**
  * recording_init:
  *

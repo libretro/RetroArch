@@ -81,12 +81,11 @@ struct filter_data
 
 static INLINE unsigned max_component_xrgb8888(uint32_t color)
 {
-   unsigned red, green, blue, max;
-   red = red_xrgb8888(color);
-   green = green_xrgb8888(color);
-   blue = blue_xrgb8888(color);
+   unsigned red   = red_xrgb8888(color);
+   unsigned green = green_xrgb8888(color);
+   unsigned blue  = blue_xrgb8888(color);
+   unsigned max   = red;
 
-   max = red;
    max = (green > max) ? green : max;
    max = (blue > max)  ? blue : max;
    return max;
@@ -94,12 +93,11 @@ static INLINE unsigned max_component_xrgb8888(uint32_t color)
 
 static INLINE unsigned max_component_rgb565(uint32_t color)
 {
-   unsigned red, green, blue, max;
-   red = red_rgb565(color);
-   green = green_rgb565(color);
-   blue = blue_rgb565(color);
+   unsigned red   = red_rgb565(color);
+   unsigned green = green_rgb565(color);
+   unsigned blue  = blue_rgb565(color);
+   unsigned max   = red;
 
-   max = red;
    max = (green > max) ? green : max;
    max = (blue > max)  ? blue : max;
    return max;
@@ -326,12 +324,12 @@ static void phosphor2x_generic_xrgb8888(void *data,
 
    for (y = 0; y < height; y++)
    {
-      uint32_t *out_line, *scan_out;
+      uint32_t *scan_out;
       unsigned x;
       const uint32_t *in_line = (const uint32_t*)(src + y * (src_stride));
 
       /* output in a scanlines fashion. */
-      out_line = (uint32_t*)(dst + y * (dst_stride) * 2);
+      uint32_t *out_line = (uint32_t*)(dst + y * (dst_stride) * 2);
 
       /* Bilinear stretch horizontally. */
       blit_linear_line_xrgb8888(out_line, in_line, width);
@@ -377,7 +375,7 @@ static void phosphor2x_generic_rgb565(void *data,
       uint16_t *scan_out;
       unsigned x;
       /* Output in a scanlines fashion. */
-      uint16_t *out_line = (uint16_t*)(dst + y * (dst_stride) * 2);
+      uint16_t      *out_line = (uint16_t*)(dst + y * (dst_stride) * 2);
       const uint16_t *in_line = (const uint16_t*)(src + y * (src_stride));
 
       /* Bilinear stretch horizontally. */

@@ -14,13 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../driver.h"
 #include <stdlib.h>
 #include <boolean.h>
-#include "../../general.h"
-#include <retro_inline.h>
 
 #include <xenon_sound/sound.h>
+
+#include <retro_inline.h>
+
+#include "../../driver.h"
+#include "../../general.h"
 
 #define SOUND_FREQUENCY 48000
 #define MAX_BUFFER 2048

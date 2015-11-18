@@ -14,12 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../driver.h"
 #include <stdlib.h>
-#include <boolean.h>
-#include "../../general.h"
 #include <string.h>
-#include <retro_inline.h>
 
 #ifdef GEKKO
 #include <gccore.h>
@@ -28,7 +24,12 @@
 #include <cafe/ai.h>
 #endif
 
-#include "../../gfx/drivers/gx_sdk_defines.h"
+#include <boolean.h>
+#include <retro_inline.h>
+
+#include "../../driver.h"
+#include "../../general.h"
+#include "../../defines/gx_defines.h"
 
 #define CHUNK_FRAMES 64
 #define CHUNK_SIZE (CHUNK_FRAMES * sizeof(uint32_t))

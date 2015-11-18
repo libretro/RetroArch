@@ -18,6 +18,8 @@
 #define _INPUT_AUTODETECT_H
 
 #include <stdint.h>
+
+#include <boolean.h>
 #include <retro_miscellaneous.h>
 
 typedef struct autoconfig_params

@@ -34,10 +34,9 @@
 
 typedef struct
 {
-   uint64_t frame_count;
    bool should_resize;
    float mScreenAspect;
-   bool mKeepAspect;
+   bool keep_aspect;
    bool mEglImageBuf;
    unsigned mTextureWidth;
    unsigned mTextureHeight;
@@ -112,8 +111,8 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    gfx_ctx_update_window_title(vg);
 
-   vg->mTexType = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;
-   vg->mKeepAspect = video->force_aspect;
+   vg->mTexType    = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;
+   vg->keep_aspect = video->force_aspect;
 
    unsigned win_width  = video->width;
    unsigned win_height = video->height;
@@ -234,7 +233,7 @@ static void vg_calculate_quad(vg_t *vg)
    video_driver_get_size(&width, &height);
 
    /* set viewport for aspect ratio, taken from the OpenGL driver. */
-   if (vg->mKeepAspect)
+   if (vg->keep_aspect)
    {
       float desired_aspect = video_driver_get_aspect_ratio();
 
@@ -292,7 +291,7 @@ static void vg_copy_frame(void *data, const void *frame,
       bool                new_egl = gfx_ctx_image_buffer_write(vg,
             frame, width, height, pitch, (vg->mTexType == VG_sXRGB_8888), 0, &img);
 
-      rarch_assert(img != EGL_NO_IMAGE_KHR);
+      retro_assert(img != EGL_NO_IMAGE_KHR);
 
       if (new_egl)
       {
@@ -311,13 +310,16 @@ static void vg_copy_frame(void *data, const void *frame,
 }
 
 static bool vg_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, unsigned pitch, const char *msg)
+      unsigned frame_width, unsigned frame_height,
+      uint64_t frame_count, unsigned pitch, const char *msg)
 {
    unsigned width, height;
-   vg_t                    *vg = (vg_t*)data;
+   vg_t                           *vg = (vg_t*)data;
+   static struct retro_perf_counter    vg_fr = {0};
+   static struct retro_perf_counter vg_image = {0};
 
-   RARCH_PERFORMANCE_INIT(vg_fr);
-   RARCH_PERFORMANCE_START(vg_fr);
+   rarch_perf_init(&vg_fr, "vg_fr");
+   retro_perf_start(&vg_fr);
 
    video_driver_get_size(&width, &height);
 
@@ -341,10 +343,10 @@ static bool vg_frame(void *data, const void *frame,
    vgClear(0, 0, width, height);
    vgSeti(VG_SCISSORING, VG_TRUE);
 
-   RARCH_PERFORMANCE_INIT(vg_image);
-   RARCH_PERFORMANCE_START(vg_image);
+   rarch_perf_init(&vg_image, "vg_image");
+   retro_perf_start(&vg_image);
    vg_copy_frame(vg, frame, frame_width, frame_height, pitch);
-   RARCH_PERFORMANCE_STOP(vg_image);
+   retro_perf_stop(&vg_image);
 
    vgDrawImage(vg->mImage);
 
@@ -355,11 +357,9 @@ static bool vg_frame(void *data, const void *frame,
 
    gfx_ctx_update_window_title(vg);
 
-   RARCH_PERFORMANCE_STOP(vg_fr);
+   retro_perf_stop(&vg_fr);
 
    gfx_ctx_swap_buffers(vg);
-
-   vg->frame_count++;
 
    return true;
 }
@@ -367,9 +367,8 @@ static bool vg_frame(void *data, const void *frame,
 static bool vg_alive(void *data)
 {
    bool quit;
-   bool ret = false;
    unsigned temp_width = 0, temp_height = 0;
-   vg_t         *vg = (vg_t*)data;
+   vg_t            *vg = (vg_t*)data;
 
    gfx_ctx_check_window(data, &quit,
          &vg->should_resize, &temp_width, &temp_height);

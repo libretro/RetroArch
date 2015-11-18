@@ -14,12 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "SDL.h"
+
 #include "../../driver.h"
 #include "../../runloop.h"
-#include "../drivers/gl_common.h"
+#include "../common/gl_common.h"
 #include "../video_monitor.h"
-
-#include "SDL.h"
 
 static enum gfx_ctx_api g_api = GFX_CTX_OPENGL_API;
 static unsigned       g_major = 2;
@@ -130,11 +130,9 @@ static void sdl_ctx_destroy(void *data)
 static bool sdl_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major,
                              unsigned minor)
 {
+#ifdef HAVE_SDL2
    unsigned profile;
 
-   (void)data;
-
-#ifdef HAVE_SDL2
    if (api != GFX_CTX_OPENGL_API && api != GFX_CTX_OPENGL_ES_API)
       return false;
 
@@ -255,10 +253,9 @@ static void sdl_ctx_get_video_size(void *data,
 
    if (!sdl->g_win)
    {
-      int i = settings->video.monitor_index;
-
 #ifdef HAVE_SDL2
       SDL_DisplayMode mode = {0};
+      int i = settings->video.monitor_index;
 
       if (SDL_GetCurrentDisplayMode(i, &mode) < 0)
          RARCH_WARN("[SDL_GL]: Failed to get display #%i mode: %s\n", i,
@@ -369,9 +366,9 @@ static void sdl_ctx_set_resize(void *data, unsigned width, unsigned height)
 static bool sdl_ctx_has_focus(void *data)
 {
    unsigned flags;
-   driver_t *driver = driver_get_ptr();
 
 #ifdef HAVE_SDL2
+   driver_t        *driver = driver_get_ptr();
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver->video_context_data;
    flags = (SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS);
    return (SDL_GetWindowFlags(sdl->g_win) & flags) == flags;

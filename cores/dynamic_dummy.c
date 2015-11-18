@@ -15,10 +15,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../libretro.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "internal_cores.h"
+#include "../libretro.h"
 
 static uint16_t *frame_buf;
 

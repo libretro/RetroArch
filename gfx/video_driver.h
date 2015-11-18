@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -53,7 +53,7 @@ typedef struct video_info
    bool smooth;
    /* Maximum input size: RARCH_SCALE_BASE * input_scale */
    unsigned input_scale;
-   /* Use 32bit RGBA rather than native XBGR1555. */
+   /* Use 32bit RGBA rather than native RGB565/XBGR1555. */
    bool rgb32;
 } video_info_t;
 
@@ -100,7 +100,6 @@ enum texture_filter_type
 
 typedef struct video_poke_interface
 {
-   uint64_t (*get_frame_count)(void *data);
    void (*set_video_mode)(void *data, unsigned width, unsigned height, bool fullscreen);
    void (*set_filtering)(void *data, unsigned index, bool smooth);
    void (*get_video_output_size)(void *data, unsigned *width, unsigned *height);
@@ -118,7 +117,6 @@ typedef struct video_poke_interface
 #endif
    /* Enable or disable rendering. */
    void (*set_texture_enable)(void *data, bool enable, bool full_screen);
-
    void (*set_osd_msg)(void *data, const char *msg,
          const struct font_params *params, void *font);
 
@@ -131,15 +129,15 @@ typedef struct video_poke_interface
 typedef struct video_driver
 {
    /* Should the video driver act as an input driver as well?
-    * The video initialization might preinitialize an input driver 
-    * to override the settings in case the video driver relies on 
+    * The video initialization might preinitialize an input driver
+    * to override the settings in case the video driver relies on
     * input driver for event handling. */
    void *(*init)(const video_info_t *video, const input_driver_t **input,
-         void **input_data); 
+         void **input_data);
 
    /* msg is for showing a message on the screen along with the video frame. */
    bool (*frame)(void *data, const void *frame, unsigned width,
-         unsigned height, unsigned pitch, const char *msg);
+         unsigned height, uint64_t frame_count, unsigned pitch, const char *msg);
 
    /* Should we care about syncing to vblank? Fast forwarding. */
    void (*set_nonblock_state)(void *data, bool toggle);
@@ -192,7 +190,7 @@ typedef struct video_driver
 
 extern video_driver_t video_gl;
 extern video_driver_t video_psp1;
-extern video_driver_t video_vita;
+extern video_driver_t video_vita2d;
 extern video_driver_t video_ctr;
 extern video_driver_t video_d3d;
 extern video_driver_t video_gx;
@@ -206,6 +204,7 @@ extern video_driver_t video_omap;
 extern video_driver_t video_exynos;
 extern video_driver_t video_dispmanx;
 extern video_driver_t video_sunxi;
+extern video_driver_t video_xshm;
 extern video_driver_t video_null;
 
 enum rarch_display_type
@@ -252,7 +251,7 @@ void find_video_driver(void);
  * video_driver_get_ptr:
  * @drv                : real video driver will be set to this.
  *
- * Use this if you need the real video driver 
+ * Use this if you need the real video driver
  * and driver data pointers.
  *
  * Returns: video driver's userdata.
@@ -339,8 +338,6 @@ void video_driver_set_size_width(unsigned width);
 
 void video_driver_set_size_height(unsigned width);
 
-uint64_t video_driver_get_frame_count(void);
-
 float video_driver_get_aspect_ratio(void);
 
 void video_driver_set_aspect_ratio_value(float value);
@@ -383,6 +380,8 @@ void video_driver_cached_frame_get(const void **data, unsigned *width,
       unsigned *height, size_t *pitch);
 
 bool video_driver_cached_frame_has_valid_fb(void);
+
+uint64_t *video_driver_get_frame_count(void);
 
 #ifdef __cplusplus
 }

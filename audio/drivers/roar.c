@@ -13,13 +13,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <stdlib.h>
+
+#include <errno.h>
+
+#include <roaraudio.h>
+
+#include <boolean.h>
 
 #include "../../driver.h"
-#include <stdlib.h>
-#include <roaraudio.h>
-#include <errno.h>
-#include <stdint.h>
-#include <boolean.h>
 #include "../../general.h"
 
 typedef struct
@@ -55,7 +58,6 @@ static void *ra_init(const char *device, unsigned rate, unsigned latency)
 static ssize_t ra_write(void *data, const void *buf, size_t size)
 {
    int err;
-   ssize_t rc;
    size_t written = 0;
    roar_t *roar = (roar_t*)data;
 
@@ -64,6 +66,7 @@ static ssize_t ra_write(void *data, const void *buf, size_t size)
 
    while (written < size)
    {
+      ssize_t rc;
       size_t write_amt = size - written;
 
       if ((rc = roar_vs_write(roar->vss, (const char*)buf + written, write_amt, &err)) < (ssize_t)write_amt)
@@ -120,7 +123,6 @@ static void ra_free(void *data)
 
 static bool ra_use_float(void *data)
 {
-   alsa_t *alsa = (alsa_t*)data;
    return false;
 }
 

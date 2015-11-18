@@ -38,7 +38,7 @@
 #endif
 #endif
 
-#include "d3d_defines.h"
+#include "../../defines/d3d_defines.h"
 
 #ifdef _XBOX1
 #include <xfont.h>
@@ -54,17 +54,17 @@
 #include "../font_driver.h"
 #include "../font_renderer_driver.h"
 #include "../video_context_driver.h"
+#include "../video_viewport.h"
 #include "d3d_wrapper.h"
 #include "render_chain_driver.h"
+#ifdef _XBOX
+#include "../../defines/xdk_defines.h"
+#endif
 
 typedef struct
 {
-   struct Coords
-   {
-      float x, y, w, h;
-   };
-   Coords tex_coords;
-   Coords vert_coords;
+   float tex_coords[4];
+   float vert_coords[4];
    unsigned tex_w, tex_h;
    bool fullscreen;
    bool enabled;
@@ -96,13 +96,12 @@ typedef struct gl_shader_backend gl_shader_backend_t;
 typedef struct d3d_video
 {
    uint64_t frame_count;
+   bool keep_aspect;
    bool should_resize;
    bool quitting;
 
-#ifdef HAVE_WINDOW
+   struct video_viewport vp;
    WNDCLASSEX windowClass;
-#endif
-   HWND hWnd;
    LPDIRECT3D g_pD3D;
    LPDIRECT3DDEVICE dev;
    HRESULT d3d_err;
@@ -143,10 +142,6 @@ typedef struct d3d_video
 
 void d3d_make_d3dpp(void *data,
       const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
-
-#ifndef _XBOX
-extern "C" bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
-#endif
 
 #endif
 

@@ -21,6 +21,8 @@
 #include <file/file_path.h>
 #include <file/file_extract.h>
 #include <net/net_compat.h>
+#include <retro_file.h>
+#include <retro_stat.h>
 
 #include "../file_ops.h"
 #include "../general.h"
@@ -71,27 +73,20 @@ int cb_core_content_list(void *data_, size_t len);
 
 static http_handle_t *http_ptr;
 
-void *rarch_main_data_http_get_ptr(void)
-{
-   return http_ptr;
-}
-
 #ifdef HAVE_ZLIB
+#ifdef HAVE_MENU
 static int zlib_extract_core_callback(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata)
 {
-   char path[PATH_MAX_LENGTH] = {0};
+   char path[PATH_MAX_LENGTH];
 
    /* Make directory */
    fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
    path_basedir(path);
 
    if (!path_mkdir(path))
-   {
-      RARCH_ERR("Failed to create directory: %s.\n", path);
-      return 0;
-   }
+      goto error;
 
    /* Ignore directories. */
    if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
@@ -103,14 +98,8 @@ static int zlib_extract_core_callback(const char *name, const char *valid_exts,
 
    if (!zlib_perform_mode(path, valid_exts,
             cdata, cmode, csize, size, crc32, userdata))
-   {
-      if (cmode == 0)
-      {
-         RARCH_ERR("Failed to write file: %s.\n", path);
-         return 0;
-      }
       goto error;
-   }
+
    return 1;
 
 error:
@@ -118,13 +107,15 @@ error:
    return 0;
 }
 #endif
+#endif
 
+#ifdef HAVE_MENU
 static int cb_generic_download(void *data, size_t len,
       const char *dir_path)
 {
+   char msg[PATH_MAX_LENGTH];
+   char output_path[PATH_MAX_LENGTH];
    const char             *file_ext      = NULL;
-   char output_path[PATH_MAX_LENGTH]     = {0};
-   char msg[PATH_MAX_LENGTH]             = {0};
    settings_t              *settings     = config_get_ptr();
 
    if (!data)
@@ -133,7 +124,7 @@ static int cb_generic_download(void *data, size_t len,
    fill_pathname_join(output_path, dir_path,
          core_updater_path, sizeof(output_path));
 
-   if (!write_file(output_path, data, len))
+   if (!retro_write_file(output_path, data, len))
       return -1;
 
    snprintf(msg, sizeof(msg), "%s: %s.",
@@ -152,7 +143,7 @@ static int cb_generic_download(void *data, size_t len,
    {
       if (!zlib_parse_file(output_path, NULL, zlib_extract_core_callback,
                (void*)dir_path))
-         RARCH_LOG(msg_hash_to_str(MSG_COULD_NOT_PROCESS_ZIP_FILE));
+         RARCH_LOG("%s\n", msg_hash_to_str(MSG_COULD_NOT_PROCESS_ZIP_FILE));
 
       if (path_file_exists(output_path))
          remove(output_path);
@@ -229,8 +220,8 @@ static int cb_update_databases(void *data, size_t len)
 
 static int cb_update_overlays(void *data, size_t len)
 {
-   global_t                *global       = global_get_ptr();
-   return cb_generic_download(data, len, global->overlay_dir);
+   settings_t              *settings     = config_get_ptr();
+   return cb_generic_download(data, len, settings->overlay_directory);
 }
 
 static int cb_update_cheats(void *data, size_t len)
@@ -238,6 +229,7 @@ static int cb_update_cheats(void *data, size_t len)
    settings_t              *settings     = config_get_ptr();
    return cb_generic_download(data, len, settings->cheat_database);
 }
+#endif
 
 static int rarch_main_data_http_con_iterate_transfer(http_handle_t *http)
 {
@@ -304,6 +296,7 @@ static int cb_http_conn_default(void *data_, size_t len)
 
       switch (label_hash)
       {
+#ifdef HAVE_MENU
          case CB_CORE_UPDATER_DOWNLOAD:
             http->cb = &cb_core_updater_download;
             break;
@@ -340,6 +333,9 @@ static int cb_http_conn_default(void *data_, size_t len)
          case CB_UPDATE_OVERLAYS:
             http->cb = &cb_update_overlays;
             break;
+#endif
+         default:
+            break;
       }
    }
 
@@ -361,7 +357,7 @@ static int cb_http_conn_default(void *data_, size_t len)
  **/
 static int rarch_main_data_http_iterate_poll(http_handle_t *http)
 {
-   char elem0[PATH_MAX_LENGTH]  = {0};
+   char elem0[PATH_MAX_LENGTH];
    struct string_list *str_list = NULL;
    const char *url              = msg_queue_pull(http->msg_queue);
 
@@ -374,11 +370,10 @@ static int rarch_main_data_http_iterate_poll(http_handle_t *http)
 
    str_list                     = string_split(url, "|");
 
-   if (!str_list)
-      return -1;
+   if (!str_list || (str_list->size < 1))
+      goto error;
 
-   if (str_list->size > 0)
-      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+   strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
 
    http->connection.handle = net_http_connection_new(elem0);
 
@@ -398,6 +393,11 @@ static int rarch_main_data_http_iterate_poll(http_handle_t *http)
    string_list_free(str_list);
    
    return 0;
+
+error:
+   if (str_list)
+      string_list_free(str_list);
+   return -1;
 }
 
 /**
@@ -410,19 +410,20 @@ static int rarch_main_data_http_iterate_poll(http_handle_t *http)
  **/
 static int rarch_main_data_http_iterate_transfer(void *data)
 {
-   http_handle_t *http = (http_handle_t*)data;
+   http_handle_t *http  = (http_handle_t*)data;
    size_t pos  = 0, tot = 0;
-   int percent = 0;
 
    if (!net_http_update(http->handle, &pos, &tot))
    {
+      int percent = 0;
+
       if(tot != 0)
          percent = (unsigned long long)pos * 100
             / (unsigned long long)tot;
 
       if (percent > 0)
       {
-         char tmp[PATH_MAX_LENGTH] = {0};
+         char tmp[PATH_MAX_LENGTH];
          snprintf(tmp, sizeof(tmp), "%s: %d%%",
                msg_hash_to_str(MSG_DOWNLOAD_PROGRESS),
                percent);
@@ -437,8 +438,7 @@ static int rarch_main_data_http_iterate_transfer(void *data)
 
 void rarch_main_data_http_iterate(bool is_thread)
 {
-   http_handle_t     *http = (http_handle_t*)
-      rarch_main_data_http_get_ptr();
+   http_handle_t     *http = (http_handle_t*)http_ptr;
    if (!http)
       return;
 
@@ -471,20 +471,18 @@ void rarch_main_data_http_iterate(bool is_thread)
 
 void rarch_main_data_http_init_msg_queue(void)
 {
-   http_handle_t     *http = (http_handle_t*)
-      rarch_main_data_http_get_ptr();
+   http_handle_t     *http = (http_handle_t*)http_ptr;
    if (!http)
       return;
 
    if (!http->msg_queue)
-      rarch_assert(http->msg_queue       = msg_queue_new(8));
+      retro_assert(http->msg_queue       = msg_queue_new(8));
 }
 
 
 msg_queue_t *rarch_main_data_http_get_msg_queue_ptr(void)
 {
-   http_handle_t     *http = (http_handle_t*)
-      rarch_main_data_http_get_ptr();
+   http_handle_t     *http = (http_handle_t*)http_ptr;
    if (!http)
       return NULL;
    return http->msg_queue;
@@ -492,8 +490,7 @@ msg_queue_t *rarch_main_data_http_get_msg_queue_ptr(void)
 
 void *rarch_main_data_http_get_handle(void)
 {
-   http_handle_t     *http = (http_handle_t*)
-      rarch_main_data_http_get_ptr();
+   http_handle_t     *http = (http_handle_t*)http_ptr;
    if (!http)
       return NULL;
    if (http->handle == NULL)
@@ -503,8 +500,7 @@ void *rarch_main_data_http_get_handle(void)
 
 void *rarch_main_data_http_conn_get_handle(void)
 {
-   http_handle_t     *http = (http_handle_t*)
-      rarch_main_data_http_get_ptr();
+   http_handle_t     *http = (http_handle_t*)http_ptr;
    if (!http)
       return NULL;
    if (http->connection.handle == NULL)

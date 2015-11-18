@@ -67,8 +67,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
 
    if (pad != -1)
    {
-      unsigned i;
-      joypad_connection_t* s = (joypad_connection_t*)&joyconn[pad];
+      joypad_connection_t *s = (joypad_connection_t*)&joyconn[pad];
 
       static const struct
       {
@@ -89,6 +88,8 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
 
       if (s)
       {
+         unsigned i;
+
          for (i = 0; name && pad_map[i].name; i++)
          {
             const char *name_match = strstr(name, pad_map[i].name);
@@ -105,7 +106,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       }
    }
 
-   return -1;
+   return pad;
 }
 
 void pad_connection_pad_deinit(joypad_connection_t *joyconn, uint32_t pad)

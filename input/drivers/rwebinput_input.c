@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <boolean.h>
 
+#include "../input_joypad.h"
 #include "../input_autodetect.h"
 #include "../input_common.h"
 #include "../input_keymaps.h"
@@ -26,7 +27,6 @@
 
 #include "../../general.h"
 #include "../keyboard_line.h"
-#include "../input_joypad.h"
 
 typedef struct rwebinput_state
 {
@@ -35,13 +35,12 @@ typedef struct rwebinput_state
    int mouse_y;
    char mouse_l;
    char mouse_r;
+   bool blocked;
 } rwebinput_state_t;
 
 int RWebInputInit(void);
 rwebinput_state_t *RWebInputPoll(int context);
 void RWebInputDestroy(int context);
-
-static bool uninited = false;
 
 typedef struct rwebinput_input
 {
@@ -69,22 +68,26 @@ error:
    return NULL;
 }
 
-static bool rwebinput_key_pressed(rwebinput_input_t *rwebinput, int key)
+static bool rwebinput_key_pressed(void *data, int key)
 {
    unsigned sym;
-   bool ret;
+   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
    
    if (key >= RETROK_LAST)
       return false;
 
    sym = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
-   ret = rwebinput->state.keys[sym >> 3] & (1 << (sym & 7));
 
-   return ret;
+   if (rwebinput->state.keys[sym >> 3] & (1 << (sym & 7)))
+      return true;
+
+   return false;
 }
 
-static bool rwebinput_meta_key_pressed(rwebinput_input_t *rwebinput, int key)
+static bool rwebinput_meta_key_pressed(void *data, int key)
 {
+   (void)data;
+   (void)key;
    return false;
 }
 
@@ -144,7 +147,8 @@ static int16_t rwebinput_analog_pressed(rwebinput_input_t *rwebinput,
 static int16_t rwebinput_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
+   enum input_device_type device = INPUT_DEVICE_TYPE_NONE;
+   rwebinput_input_t *rwebinput  = (rwebinput_input_t*)data;
 
    switch (device)
    {
@@ -155,7 +159,7 @@ static int16_t rwebinput_input_state(void *data, const struct retro_keybind **bi
          return rwebinput_analog_pressed(rwebinput, binds[port], idx, id);
 
       case RETRO_DEVICE_KEYBOARD:
-         return rwebinput_key_pressed(rwebinput, id);
+         return rwebinput_key_pressed(rwebinput, id, &device);
 
       case RETRO_DEVICE_MOUSE:
          return rwebinput_mouse_state(rwebinput, id);
@@ -167,7 +171,6 @@ static int16_t rwebinput_input_state(void *data, const struct retro_keybind **bi
 static void rwebinput_input_free(void *data)
 {
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
-   uninited = true;
 
    if (!rwebinput)
       return;
@@ -240,7 +243,7 @@ static bool rwebinput_keyboard_mapping_is_blocked(void *data)
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
    if (!rwebinput)
       return false;
-   return rwebinput->blocked;
+   return rwebinput->state.blocked;
 }
 
 static void rwebinput_keyboard_mapping_set_block(void *data, bool value)
@@ -248,7 +251,7 @@ static void rwebinput_keyboard_mapping_set_block(void *data, bool value)
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
    if (!rwebinput)
       return;
-   rwebinput->blocked = value;
+   rwebinput->state.blocked = value;
 }
 
 input_driver_t input_rwebinput = {
@@ -265,6 +268,8 @@ input_driver_t input_rwebinput = {
    rwebinput_grab_mouse,
    NULL,
    rwebinput_set_rumble,
+   NULL,
+   NULL,
    rwebinput_keyboard_mapping_is_blocked,
    rwebinput_keyboard_mapping_set_block,
 };

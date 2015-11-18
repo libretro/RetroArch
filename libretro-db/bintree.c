@@ -1,25 +1,32 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <stdio.h>
+
 #include <retro_inline.h>
 
 #include "bintree.h"
 
-static void *NIL_NODE = &NIL_NODE;
-
-static struct bintree_node *new_nil_node(struct bintree_node *parent);
-
-void bintree_new(struct bintree *t, bintree_cmp_func cmp,
-      void *ctx)
+struct bintree_node
 {
-   t->root = new_nil_node(NULL);
-   t->cmp  = cmp;
-   t->ctx  = ctx;
-}
+   void *value;
+   struct bintree_node *parent;
+   struct bintree_node *left;
+   struct bintree_node *right;
+};
+
+struct bintree
+{
+   struct bintree_node *root;
+   bintree_cmp_func cmp;
+   void *ctx;
+};
+
+static void *NIL_NODE = &NIL_NODE;
 
 static struct bintree_node *new_nil_node(struct bintree_node *parent)
 {
-   struct bintree_node *node = (struct bintree_node *)calloc(1, sizeof(struct bintree_node));
+   struct bintree_node *node = (struct bintree_node *)
+      calloc(1, sizeof(struct bintree_node));
 
    if (!node)
       return NULL;
@@ -35,8 +42,7 @@ static INLINE int is_nil(const struct bintree_node *node)
    return (node == NULL) || (node->value == NIL_NODE);
 }
 
-static int insert(struct bintree *t, struct bintree_node *root,
-      void *value)
+static int insert(bintree_t *t, struct bintree_node *root, void *value)
 {
    int cmp_res = 0;
 
@@ -73,10 +79,6 @@ static int insert(struct bintree *t, struct bintree_node *root,
    return -EINVAL;
 }
 
-int bintree_insert(struct bintree *t, void *value)
-{
-   return insert(t, t->root, value);
-}
 
 static int _bintree_iterate(struct bintree_node *n,
       bintree_iter_cb cb, void *ctx)
@@ -96,12 +98,6 @@ static int _bintree_iterate(struct bintree_node *n,
    return 0;
 }
 
-int bintree_iterate(const struct bintree *t, bintree_iter_cb cb,
-      void *ctx)
-{
-   return _bintree_iterate(t->root, cb, ctx);
-}
-
 static void bintree_free_node(struct bintree_node *n)
 {
    if (!n)
@@ -119,7 +115,32 @@ static void bintree_free_node(struct bintree_node *n)
    free(n);
 }
 
-void bintree_free(struct bintree *t)
+int bintree_insert(bintree_t *t, void *value)
+{
+   return insert(t, t->root, value);
+}
+
+int bintree_iterate(const bintree_t *t, bintree_iter_cb cb,
+      void *ctx)
+{
+   return _bintree_iterate(t->root, cb, ctx);
+}
+
+bintree_t *bintree_new(bintree_cmp_func cmp, void *ctx)
+{
+   bintree_t *t = (bintree_t*)calloc(1, sizeof(*t));
+
+   if (!t)
+      return NULL;
+
+   t->root = new_nil_node(NULL);
+   t->cmp  = cmp;
+   t->ctx  = ctx;
+
+   return t;
+}
+
+void bintree_free(bintree_t *t)
 {
    bintree_free_node(t->root);
 }

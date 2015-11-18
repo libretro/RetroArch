@@ -353,7 +353,7 @@ fi
 
 check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
-[ "$HAVE_X11" = "no" ] && HAVE_XEXT=no && HAVE_XF86VM=no && HAVE_XINERAMA=no
+[ "$HAVE_X11" = "no" ] && HAVE_XEXT=no && HAVE_XF86VM=no && HAVE_XINERAMA=no && HAVE_XSHM=no
 
 check_pkgconf WAYLAND wayland-egl
 
@@ -377,24 +377,30 @@ if [ "$HAVE_UDEV" != "no" ]; then
    fi
 fi
 
+check_header XSHM X11/Xlib.h X11/extensions/XShm.h
+
 check_header PARPORT linux/parport.h
 check_header PARPORT linux/ppdev.h
 
-check_lib STRL "$CLIB" strlcpy
+if [ "$OS" != 'Win32' ]; then
+   check_lib STRL "$CLIB" strlcpy
+fi
 check_lib STRCASESTR "$CLIB" strcasestr
 check_lib MMAP "$CLIB" mmap
 
 check_pkgconf PYTHON python3
 
-if [ "$HAVE_GLUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ]; then
+if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" != 'no' ]; then
 	if [ "$HAVE_RGUI" = 'no' ]; then
-		HAVE_GLUI=no
+		HAVE_MATERIALUI=no
 		HAVE_XMB=no
-		echo "Notice: RGUI not available, GLUI and XMB will be disabled."
+      HAVE_ZARCH=no
+		echo "Notice: RGUI not available, MaterialUI, XMB and ZARCH will be disabled."
 	elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_GLES" = 'no' ]; then
-		HAVE_GLUI=no
+		HAVE_MATERIALUI=no
 		HAVE_XMB=no
-		echo "Notice: GL/GLES not available, XMB and GLUI will be disabled."
+      HAVE_ZARCH=no
+		echo "Notice: GL/GLES not available, XMB, MaterialUI and ZARCH will be disabled."
 	fi
 fi
 
@@ -404,6 +410,6 @@ add_define_make OS "$OS"
 
 # Creates config.mk and config.h.
 add_define_make GLOBAL_CONFIG_DIR "$GLOBAL_CONFIG_DIR"
-VARS="RGUI LAKKA GLUI XMB ALSA OSS OSS_BSD OSS_LIB AL RSOUND ROAR JACK COREAUDIO CORETEXT PULSE SDL SDL2 D3D9 DINPUT LIBUSB XINPUT DSOUND XAUDIO OPENGL EXYNOS DISPMANX SUNXI OMAP GLES GLES3 VG EGL KMS GBM DRM DYLIB GETOPT_LONG THREADS CG LIBXML2 ZLIB DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL SWSCALE FREETYPE STB_FONT XKBCOMMON XVIDEO X11 XEXT XF86VM XINERAMA WAYLAND MALI_FBDEV VIVANTE_FBDEV NETWORKING NETPLAY NETWORK_CMD STDIN_CMD COMMAND SOCKET_LEGACY FBO STRL STRCASESTR MMAP PYTHON FFMPEG_ALLOC_CONTEXT3 FFMPEG_AVCODEC_OPEN2 FFMPEG_AVIO_OPEN FFMPEG_AVFORMAT_WRITE_HEADER FFMPEG_AVFORMAT_NEW_STREAM FFMPEG_AVCODEC_ENCODE_AUDIO2 SWRESAMPLE FFMPEG_AVCODEC_ENCODE_VIDEO2 BSV_MOVIE VIDEOCORE NEON FLOATHARD FLOATSOFTFP UDEV V4L2 AV_CHANNEL_LAYOUT 7ZIP PARPORT IMAGEVIEWER COCOA AVFOUNDATION CORELOCATION IOHIDMANAGER LIBRETRODB"
+VARS=$(eval set | grep ^HAVE_ | sed s/=.*// | sed s/^HAVE_//)
 create_config_make config.mk $VARS
 create_config_header config.h $VARS

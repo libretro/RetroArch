@@ -65,8 +65,6 @@ unsigned menu_entry_get_type_new(uint32_t i);
 
 uint32_t menu_entry_get_bool_value(uint32_t i);
 
-void menu_entry_set_bool_value(uint32_t i, bool new_val);
-
 struct string_list *menu_entry_enum_values(uint32_t i);
 
 void menu_entry_enum_set_value_with_string(uint32_t i, const char *s);
@@ -103,14 +101,10 @@ float menu_entry_num_min(uint32_t i);
 
 float menu_entry_num_max(uint32_t i);
 
-int menu_entry_get_current_id(bool use_representation);
-
 bool menu_entry_is_currently_selected(unsigned id);
 
-void menu_entry_get(menu_entry_t *entry, size_t i,
-      void *userdata, bool use_representation);
-
-int menu_entry_iterate(unsigned action);
+void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
+      size_t i, void *userdata, bool use_representation);
 
 int menu_entry_select(uint32_t i);
 

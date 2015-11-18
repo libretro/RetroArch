@@ -16,38 +16,33 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <fcntl.h>
+#include <unistd.h>
+
 #include <limits.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
 #include <sys/poll.h>
 #include <sys/epoll.h>
-#include <fcntl.h>
+
 #include <libudev.h>
 #include <linux/types.h>
 #include <linux/input.h>
 #include <linux/kd.h>
-#include <termios.h>
-#include <signal.h>
-#include <unistd.h>
 
 #include <file/file_path.h>
 
+#include "../common/linux_common.h"
+
+#include "../input_common.h"
 #include "../input_joypad.h"
 #include "../input_keymaps.h"
 #include "../../general.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
-#endif
-
-#ifdef HAVE_XKBCOMMON
-/* We need libxkbcommon to translate raw evdev events to characters
- * which can be passed to keyboard callback in a sensible way. */
-#include <xkbcommon/xkbcommon.h>
-
-#define MOD_MAP_SIZE 5
-
 #endif
 
 typedef struct udev_input udev_input_t;
@@ -86,13 +81,6 @@ struct udev_input
    struct udev *udev;
    struct udev_monitor *monitor;
 
-#ifdef HAVE_XKBCOMMON
-   struct xkb_context *xkb_ctx;
-   struct xkb_keymap *xkb_map;
-   struct xkb_state *xkb_state;
-   xkb_mod_index_t *mod_map_idx;
-   uint16_t        *mod_map_bit;
-#endif
 
    const input_device_driver_t *joypad;
    uint8_t key_state[(KEY_MAX + 7) / 8];
@@ -107,11 +95,11 @@ struct udev_input
 };
 
 #ifdef HAVE_XKBCOMMON
-void handle_xkb(
-      struct xkb_state *xkb_state, 
-      xkb_mod_index_t *mod_map_idx,
-      uint16_t *mod_map_bit,
-      int code, int value);
+int  init_xkb(void);
+
+void free_xkb(void);
+
+void handle_xkb(int code, int value);
 #endif
 
 static void udev_handle_keyboard(udev_input_t *udev,
@@ -126,7 +114,7 @@ static void udev_handle_keyboard(udev_input_t *udev,
             BIT_CLEAR(udev->key_state, event->code);
 
 #ifdef HAVE_XKBCOMMON
-         handle_xkb(udev->xkb_state, udev->mod_map_idx, udev->mod_map_bit, event->code, event->value);
+         handle_xkb(event->code, event->value);
 #endif
          break;
 
@@ -245,7 +233,6 @@ static void udev_handle_mouse(udev_input_t *udev,
                   udev->mouse_whu = 1;
                else if (event->value == -1)
                   udev->mouse_whd = 1;
-               break;
                break;
             default:
                break;
@@ -519,6 +506,45 @@ static int16_t udev_analog_pressed(udev_input_t *udev,
    return pressed_plus + pressed_minus;
 }
 
+static int16_t udev_pointer_state(udev_input_t *udev,
+      unsigned idx, unsigned id, bool screen)
+{
+   bool valid, inside;
+   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
+
+   if (idx != 0)
+      return 0;
+
+   valid = input_translate_coord_viewport(udev->mouse_x, udev->mouse_y,
+         &res_x, &res_y, &res_screen_x, &res_screen_y);
+
+   if (!valid)
+      return 0;
+
+   if (screen)
+   {
+      res_x = res_screen_x;
+      res_y = res_screen_y;
+   }
+
+   inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
+
+   if (!inside)
+      return 0;
+
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_POINTER_X:
+         return res_x;
+      case RETRO_DEVICE_ID_POINTER_Y:
+         return res_y;
+      case RETRO_DEVICE_ID_POINTER_PRESSED:
+         return udev->mouse_l;
+   }
+
+   return 0;
+}
+
 static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
@@ -545,6 +571,11 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
       case RETRO_DEVICE_MOUSE:
          return udev_mouse_state(udev, id);
 
+      case RETRO_DEVICE_POINTER:
+      case RARCH_DEVICE_POINTER_SCREEN:
+         return udev_pointer_state(udev, idx, id,
+               device == RARCH_DEVICE_POINTER_SCREEN);
+
       case RETRO_DEVICE_LIGHTGUN:
          return udev_lightgun_state(udev, id);
    }
@@ -554,11 +585,15 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
 
 static bool udev_input_key_pressed(void *data, int key)
 {
-   udev_input_t *udev   = (udev_input_t*)data;
-   settings_t *settings = config_get_ptr();
+   udev_input_t *udev    = (udev_input_t*)data;
+   settings_t *settings  = config_get_ptr();
 
-   return udev_input_is_pressed(udev, settings->input.binds[0], key) ||
-      input_joypad_pressed(udev->joypad, 0, settings->input.binds[0], key);
+   if (udev_input_is_pressed(udev, settings->input.binds[0], key))
+      return true;
+   if (input_joypad_pressed(udev->joypad, 0, settings->input.binds[0], key))
+      return true;
+
+   return false;
 }
 
 static bool udev_input_meta_key_pressed(void *data, int key)
@@ -593,16 +628,7 @@ static void udev_input_free(void *data)
       udev_unref(udev->udev);
 
 #ifdef HAVE_XKBCOMMON
-   if (udev->mod_map_idx)
-      free(udev->mod_map_idx);
-   if (udev->mod_map_bit)
-      free(udev->mod_map_bit);
-   if (udev->xkb_map)
-      xkb_keymap_unref(udev->xkb_map);
-   if (udev->xkb_ctx)
-      xkb_context_unref(udev->xkb_ctx);
-   if (udev->xkb_state)
-      xkb_state_unref(udev->xkb_state);
+   free_xkb();
 #endif
 
    free(udev);
@@ -633,6 +659,9 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
       if (devnode)
       {
          int fd = open(devnode, O_RDONLY | O_NONBLOCK);
+
+         (void)fd;
+
          RARCH_LOG("[udev] Adding device %s as type %s.\n", devnode, type);
          if (!add_device(udev, devnode, cb))
             RARCH_ERR("[udev] Failed to open device: %s (%s).\n", devnode, strerror(errno));
@@ -643,68 +672,6 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
 
    udev_enumerate_unref(enumerate);
    return true;
-}
-
-static long oldkbmd = 0xffff;
-static struct termios oldterm, newterm;
-
-static void restore_terminal_input(void)
-{
-   if (oldkbmd == 0xffff)
-      return;
-
-   ioctl(0, KDSKBMODE, oldkbmd);
-   tcsetattr(0, TCSAFLUSH, &oldterm);
-   oldkbmd = 0xffff;
-}
-
-static void restore_terminal_signal(int sig)
-{
-   restore_terminal_input();
-   kill(getpid(), sig);
-}
-
-static void disable_terminal_input(void)
-{
-   struct sigaction sa = {{0}};
-
-   /* Avoid accidentally typing stuff. */
-   if (!isatty(0) || oldkbmd != 0xffff)
-      return;
-
-   if (tcgetattr(0, &oldterm) < 0)
-      return;
-
-   newterm = oldterm;
-   newterm.c_lflag &= ~(ECHO | ICANON | ISIG);
-   newterm.c_iflag &= ~(ISTRIP | IGNCR | ICRNL | INLCR | IXOFF | IXON);
-   newterm.c_cc[VMIN] = 0;
-   newterm.c_cc[VTIME] = 0;
-
-   /* Be careful about recovering the terminal ... */
-   if (ioctl(0, KDGKBMODE, &oldkbmd) < 0)
-      return;
-   if (tcsetattr(0, TCSAFLUSH, &newterm) < 0)
-      return;
-   if (ioctl(0, KDSKBMODE, K_MEDIUMRAW) < 0)
-   {
-      tcsetattr(0, TCSAFLUSH, &oldterm);
-      return;
-   }
-
-   sa.sa_handler = restore_terminal_signal;
-   sa.sa_flags = SA_RESTART | SA_RESETHAND;
-   sigemptyset(&sa.sa_mask);
-
-   /* Trap some fatal signals. */
-   sigaction(SIGABRT, &sa, NULL);
-   sigaction(SIGBUS,  &sa, NULL);
-   sigaction(SIGFPE,  &sa, NULL);
-   sigaction(SIGILL,  &sa, NULL);
-   sigaction(SIGQUIT, &sa, NULL);
-   sigaction(SIGSEGV, &sa, NULL);
-
-   atexit(restore_terminal_input);
 }
 
 static void *udev_input_init(void)
@@ -730,63 +697,8 @@ static void *udev_input_init(void)
    }
 
 #ifdef HAVE_XKBCOMMON
-   udev->mod_map_idx = (xkb_mod_index_t *)calloc(MOD_MAP_SIZE, sizeof(xkb_mod_index_t));
-
-   if (!udev->mod_map_idx)
+   if (init_xkb() == -1)
       goto error;
-
-   udev->mod_map_bit = (uint16_t*)calloc(MOD_MAP_SIZE, sizeof(uint16_t));
-
-   if (!udev->mod_map_bit)
-      goto error;
-
-   udev->xkb_ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-   if (udev->xkb_ctx)
-   {
-      struct string_list *list = NULL;
-      struct xkb_rule_names rule = {0};
-
-      rule.rules = "evdev";
-
-      if (*settings->input.keyboard_layout)
-      {
-         list = string_split(settings->input.keyboard_layout, ":");
-         if (list && list->size >= 2)
-            rule.variant = list->elems[1].data;
-         if (list && list->size >= 1)
-            rule.layout = list->elems[0].data;
-      }
-
-      udev->xkb_map = xkb_keymap_new_from_names(udev->xkb_ctx, &rule, XKB_MAP_COMPILE_NO_FLAGS);
-      if (list)
-         string_list_free(list);
-   }
-   if (udev->xkb_map)
-   {
-      xkb_mod_index_t *map_idx = (xkb_mod_index_t*)&udev->mod_map_idx[0];
-      uint16_t        *map_bit = (uint16_t*)&udev->mod_map_bit[0];
-
-      udev->xkb_state = xkb_state_new(udev->xkb_map);
-
-      *map_idx = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CAPS);
-      map_idx++;
-      *map_bit = RETROKMOD_CAPSLOCK;
-      map_bit++;
-      *map_idx = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_SHIFT);
-      map_idx++;
-      *map_bit = RETROKMOD_SHIFT;
-      map_bit++;
-      *map_idx = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CTRL);
-      map_idx++;
-      *map_bit = RETROKMOD_CTRL;
-      map_bit++;
-      *map_idx = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_ALT);
-      map_idx++;
-      *map_bit = RETROKMOD_ALT;
-      map_bit++;
-      *map_idx = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_LOGO);
-      *map_bit = RETROKMOD_META;
-   }
 #endif
 
    udev->epfd = epoll_create(32);
@@ -822,7 +734,7 @@ static void *udev_input_init(void)
    udev->joypad = input_joypad_init_driver(settings->input.joypad_driver, udev);
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
 
-   disable_terminal_input();
+   linux_terminal_disable_input();
    return udev;
 
 error:
@@ -893,9 +805,10 @@ input_driver_t input_udev = {
    udev_input_get_capabilities,
    "udev",
    udev_input_grab_mouse,
-   NULL,
+   linux_terminal_grab_stdin,
    udev_input_set_rumble,
    udev_input_get_joypad_driver,
+   NULL,
    udev_input_keyboard_mapping_is_blocked,
    udev_input_keyboard_mapping_set_block,
 };

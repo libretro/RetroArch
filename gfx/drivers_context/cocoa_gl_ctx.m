@@ -27,6 +27,9 @@
 #elif defined(HAVE_COCOATOUCH)
 #include <GLKit/GLKit.h>
 #endif
+
+#include <retro_assert.h>
+
 #import "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../video_context_driver.h"
 #include "../video_monitor.h"
@@ -117,7 +120,7 @@ void cocoagl_bind_game_view_fbo(void)
 }
 #endif
 
-static RAScreen* get_chosen_screen(void)
+void *get_chosen_screen(void)
 {
 #if defined(HAVE_COCOA) && !defined(MAC_OS_X_VERSION_10_6)
 	return [RAScreen mainScreen];
@@ -126,11 +129,11 @@ static RAScreen* get_chosen_screen(void)
    if (settings->video.monitor_index >= RAScreen.screens.count)
    {
       RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
-      return RAScreen.mainScreen;
+      return (__bridge void*)RAScreen.mainScreen;
    }
 	
    NSArray *screens = [RAScreen screens];
-   return (RAScreen*)[screens objectAtIndex:settings->video.monitor_index];
+   return ((__bridge void*)[screens objectAtIndex:settings->video.monitor_index]);
 #endif
 }
 
@@ -151,7 +154,9 @@ static bool cocoagl_gfx_ctx_init(void *data)
     
 #if defined(HAVE_COCOA)
     CocoaView *g_view = (CocoaView*)nsview_get_ptr();
-	[g_view setWantsBestResolutionOpenGLSurface:YES];
+#if MAC_OS_X_VERSION_10_7
+    [g_view setWantsBestResolutionOpenGLSurface:YES];
+#endif
     NSOpenGLPixelFormatAttribute attributes [] = {
         NSOpenGLPFAColorSize, 24,
         NSOpenGLPFADoubleBuffer,
@@ -200,9 +205,7 @@ static void cocoagl_gfx_ctx_destroy(void *data)
 
    [GLContextClass clearCurrentContext];
 
-#if defined(HAVE_COCOATOUCH)
-   g_view.context = nil;
-#elif defined(HAVE_COCOA)
+#if defined(HAVE_COCOA)
     [g_context clearDrawable];
     if (g_context)
         [g_context release];
@@ -314,7 +317,7 @@ float cocoagl_gfx_ctx_get_native_scale(void)
 {
     static float ret = 0.0f;
     SEL selector = NSSelectorFromString(BOXSTRING("nativeScale"));
-    RAScreen *screen = (RAScreen*)get_chosen_screen();
+    RAScreen *screen = (__bridge RAScreen*)get_chosen_screen();
     
     if (ret != 0.0f)
        return ret;
@@ -332,7 +335,7 @@ float cocoagl_gfx_ctx_get_native_scale(void)
 
 static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* height)
 {
-   RAScreen *screen = (RAScreen*)get_chosen_screen();
+   RAScreen *screen = (__bridge RAScreen*)get_chosen_screen();
    CGRect size = screen.bounds;
    float screenscale = cocoagl_gfx_ctx_get_native_scale();
 	
@@ -378,8 +381,8 @@ static void cocoagl_gfx_ctx_update_window_title(void *data)
 static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types type,
             float *value)
 {
+   RAScreen *screen = (__bridge RAScreen*)get_chosen_screen();
 #if defined(HAVE_COCOA)
-    RAScreen *screen              = [RAScreen mainScreen];
     NSDictionary *description     = [screen deviceDescription];
     NSSize  display_pixel_size    = [[description objectForKey:NSDeviceSize] sizeValue];
     CGSize  display_physical_size = CGDisplayScreenSize(
@@ -389,7 +392,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
     float   display_height        = display_pixel_size.height;
     float   physical_width        = display_physical_size.width;
     float   physical_height       = display_physical_size.height;
-#if MAC_OS_X_VERSION_10_6
+#if MAC_OS_X_VERSION_10_7
     float   scale                 = screen.backingScaleFactor;
 #else
 	float   scale                 = 1.0f;
@@ -397,7 +400,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
     float   dpi                   = (display_width/ physical_width) * 25.4f * scale;
 #elif defined(HAVE_COCOATOUCH)
     float   scale                 = cocoagl_gfx_ctx_get_native_scale();
-    CGRect  screen_rect           = [[UIScreen mainScreen] bounds];
+    CGRect  screen_rect           = [screen bounds];
     
     //float   display_width         = screen_rect.size.width;
     float   display_height        = screen_rect.size.height;

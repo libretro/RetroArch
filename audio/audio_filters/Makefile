@@ -42,7 +42,7 @@ ifeq (debug,$(build))
    extra_flags += -O0 -g
 endif
 
-ldflags := -shared -lm -Wl,--version-script=link.T
+ldflags := $(LDFLAGS) -shared -lm -Wl,--version-script=link.T
 
 ifeq ($(platform), unix)
    DYLIB = so
@@ -57,8 +57,8 @@ endif
 
 CC      := $(compiler) -Wall
 CXX     := $(subst CC,++,$(compiler)) -std=gnu++0x -Wall
-flags   := -fPIC $(extra_flags) -I../../libretro-common/include
-asflags := -fPIC  $(extra_flags)
+flags   := $(CFLAGS) -fPIC $(extra_flags) -I../../libretro-common/include
+asflags := $(ASFLAGS) -fPIC  $(extra_flags)
 objects :=
 
 ifeq (1,$(use_neon))

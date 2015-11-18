@@ -46,145 +46,6 @@ typedef struct x11_input
    bool grab_mouse;
 } x11_input_t;
 
-const struct rarch_key_map rarch_key_map_x11[] = {
-   { XK_BackSpace, RETROK_BACKSPACE },
-   { XK_Tab, RETROK_TAB },
-   { XK_Clear, RETROK_CLEAR },
-   { XK_Return, RETROK_RETURN },
-   { XK_Pause, RETROK_PAUSE },
-   { XK_Escape, RETROK_ESCAPE },
-   { XK_space, RETROK_SPACE },
-   { XK_exclam, RETROK_EXCLAIM },
-   { XK_quotedbl, RETROK_QUOTEDBL },
-   { XK_numbersign, RETROK_HASH },
-   { XK_dollar, RETROK_DOLLAR },
-   { XK_ampersand, RETROK_AMPERSAND },
-   { XK_apostrophe, RETROK_QUOTE },
-   { XK_parenleft, RETROK_LEFTPAREN },
-   { XK_parenright, RETROK_RIGHTPAREN },
-   { XK_asterisk, RETROK_ASTERISK },
-   { XK_plus, RETROK_PLUS },
-   { XK_comma, RETROK_COMMA },
-   { XK_minus, RETROK_MINUS },
-   { XK_period, RETROK_PERIOD },
-   { XK_slash, RETROK_SLASH },
-   { XK_0, RETROK_0 },
-   { XK_1, RETROK_1 },
-   { XK_2, RETROK_2 },
-   { XK_3, RETROK_3 },
-   { XK_4, RETROK_4 },
-   { XK_5, RETROK_5 },
-   { XK_6, RETROK_6 },
-   { XK_7, RETROK_7 },
-   { XK_8, RETROK_8 },
-   { XK_9, RETROK_9 },
-   { XK_colon, RETROK_COLON },
-   { XK_semicolon, RETROK_SEMICOLON },
-   { XK_less, RETROK_LESS },
-   { XK_equal, RETROK_EQUALS },
-   { XK_greater, RETROK_GREATER },
-   { XK_question, RETROK_QUESTION },
-   { XK_at, RETROK_AT },
-   { XK_bracketleft, RETROK_LEFTBRACKET },
-   { XK_backslash, RETROK_BACKSLASH },
-   { XK_bracketright, RETROK_RIGHTBRACKET },
-   { XK_dead_circumflex, RETROK_CARET },
-   { XK_underscore, RETROK_UNDERSCORE },
-   { XK_grave, RETROK_BACKQUOTE },
-   { XK_a, RETROK_a },
-   { XK_b, RETROK_b },
-   { XK_c, RETROK_c },
-   { XK_d, RETROK_d },
-   { XK_e, RETROK_e },
-   { XK_f, RETROK_f },
-   { XK_g, RETROK_g },
-   { XK_h, RETROK_h },
-   { XK_i, RETROK_i },
-   { XK_j, RETROK_j },
-   { XK_k, RETROK_k },
-   { XK_l, RETROK_l },
-   { XK_m, RETROK_m },
-   { XK_n, RETROK_n },
-   { XK_o, RETROK_o },
-   { XK_p, RETROK_p },
-   { XK_q, RETROK_q },
-   { XK_r, RETROK_r },
-   { XK_s, RETROK_s },
-   { XK_t, RETROK_t },
-   { XK_u, RETROK_u },
-   { XK_v, RETROK_v },
-   { XK_w, RETROK_w },
-   { XK_x, RETROK_x },
-   { XK_y, RETROK_y },
-   { XK_z, RETROK_z },
-   { XK_Delete, RETROK_DELETE },
-   { XK_KP_0, RETROK_KP0 },
-   { XK_KP_1, RETROK_KP1 },
-   { XK_KP_2, RETROK_KP2 },
-   { XK_KP_3, RETROK_KP3 },
-   { XK_KP_4, RETROK_KP4 },
-   { XK_KP_5, RETROK_KP5 },
-   { XK_KP_6, RETROK_KP6 },
-   { XK_KP_7, RETROK_KP7 },
-   { XK_KP_8, RETROK_KP8 },
-   { XK_KP_9, RETROK_KP9 },
-   { XK_KP_Decimal, RETROK_KP_PERIOD },
-   { XK_KP_Divide, RETROK_KP_DIVIDE },
-   { XK_KP_Multiply, RETROK_KP_MULTIPLY },
-   { XK_KP_Subtract, RETROK_KP_MINUS },
-   { XK_KP_Add, RETROK_KP_PLUS },
-   { XK_KP_Enter, RETROK_KP_ENTER },
-   { XK_KP_Equal, RETROK_KP_EQUALS },
-   { XK_Up, RETROK_UP },
-   { XK_Down, RETROK_DOWN },
-   { XK_Right, RETROK_RIGHT },
-   { XK_Left, RETROK_LEFT },
-   { XK_Insert, RETROK_INSERT },
-   { XK_Home, RETROK_HOME },
-   { XK_End, RETROK_END },
-   { XK_Page_Up, RETROK_PAGEUP },
-   { XK_Page_Down, RETROK_PAGEDOWN },
-   { XK_F1, RETROK_F1 },
-   { XK_F2, RETROK_F2 },
-   { XK_F3, RETROK_F3 },
-   { XK_F4, RETROK_F4 },
-   { XK_F5, RETROK_F5 },
-   { XK_F6, RETROK_F6 },
-   { XK_F7, RETROK_F7 },
-   { XK_F8, RETROK_F8 },
-   { XK_F9, RETROK_F9 },
-   { XK_F10, RETROK_F10 },
-   { XK_F11, RETROK_F11 },
-   { XK_F12, RETROK_F12 },
-   { XK_F13, RETROK_F13 },
-   { XK_F14, RETROK_F14 },
-   { XK_F15, RETROK_F15 },
-   { XK_Num_Lock, RETROK_NUMLOCK },
-   { XK_Caps_Lock, RETROK_CAPSLOCK },
-   { XK_Scroll_Lock, RETROK_SCROLLOCK },
-   { XK_Shift_R, RETROK_RSHIFT },
-   { XK_Shift_L, RETROK_LSHIFT },
-   { XK_Control_R, RETROK_RCTRL },
-   { XK_Control_L, RETROK_LCTRL },
-   { XK_Alt_R, RETROK_RALT },
-   { XK_Alt_L, RETROK_LALT },
-   { XK_Meta_R, RETROK_RMETA },
-   { XK_Meta_L, RETROK_LMETA },
-   { XK_Super_L, RETROK_LSUPER },
-   { XK_Super_R, RETROK_RSUPER },
-   { XK_Mode_switch, RETROK_MODE },
-   { XK_Multi_key, RETROK_COMPOSE },
-   { XK_Help, RETROK_HELP },
-   { XK_Print, RETROK_PRINT },
-   { XK_Sys_Req, RETROK_SYSREQ },
-   { XK_Break, RETROK_BREAK },
-   { XK_Menu, RETROK_MENU },
-   /*{ ?, RETROK_POWER },*/
-   { XK_EuroSign, RETROK_EURO },
-   { XK_Undo, RETROK_UNDO },
-
-   { 0, RETROK_UNKNOWN },
-};
 
 static void *x_input_init(void)
 {
@@ -259,10 +120,15 @@ static int16_t x_pressed_analog(x11_input_t *x11,
 
 static bool x_input_key_pressed(void *data, int key)
 {
-   x11_input_t *x11 = (x11_input_t*)data;
-   settings_t *settings = config_get_ptr();
-   return x_is_pressed(x11, settings->input.binds[0], key) ||
-      input_joypad_pressed(x11->joypad, 0, settings->input.binds[0], key);
+   x11_input_t      *x11 = (x11_input_t*)data;
+   settings_t *settings  = config_get_ptr();
+
+   if (x_is_pressed(x11, settings->input.binds[0], key))
+      return true;
+   if (input_joypad_pressed(x11->joypad, 0, settings->input.binds[0], key))
+      return true;
+
+   return false;
 }
 
 static bool x_input_meta_key_pressed(void *data, int key)
@@ -301,11 +167,26 @@ static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
    return 0;
 }
 
+static int16_t x_mouse_state_screen(x11_input_t *x11, unsigned id)
+{
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_MOUSE_X:
+         return x11->mouse_x;
+      case RETRO_DEVICE_ID_MOUSE_Y:
+         return x11->mouse_y;
+      default:
+         break;
+   }
+
+   return x_mouse_state(x11, id);
+}
+
 static int16_t x_pointer_state(x11_input_t *x11,
       unsigned idx, unsigned id, bool screen)
 {
-   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
    bool valid, inside;
+   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
 
    if (idx != 0)
       return 0;
@@ -388,6 +269,8 @@ static int16_t x_input_state(void *data,
 
       case RETRO_DEVICE_MOUSE:
          return x_mouse_state(x11, id);
+      case RARCH_DEVICE_MOUSE_SCREEN:
+         return x_mouse_state_screen(x11, id);
 
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
@@ -561,6 +444,7 @@ input_driver_t input_x = {
    NULL,
    x_set_rumble,
    x_get_joypad_driver,
+   NULL,
    x_keyboard_mapping_is_blocked,
    x_keyboard_mapping_set_block,
 };

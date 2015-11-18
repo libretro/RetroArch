@@ -39,26 +39,43 @@ LIBS := -lfat -lwiiuse -logc -lbte
 
 APP_BOOTER_DIR = wii/app_booter
 
-OBJ = frontend/frontend_salamander.o frontend/frontend_driver.o frontend/drivers/platform_gx.o frontend/drivers/platform_wii.o frontend/drivers/platform_null.o libretro-common/file/file_path.o libretro-common/hash/rhash.o libretro-common/string/string_list.o libretro-common/file/dir_list.o libretro-common/compat/compat.o libretro-common/file/config_file.o $(APP_BOOTER_DIR)/app_booter.binobj
+OBJ = frontend/frontend_salamander.o \
+		frontend/frontend_driver.o \
+		frontend/drivers/platform_gx.o \
+		frontend/drivers/platform_wii.o \
+		frontend/drivers/platform_null.o \
+		libretro-common/file/file_path.o \
+		libretro-common/hash/rhash.o \
+		libretro-common/string/string_list.o \
+		libretro-common/file/dir_list.o \
+		libretro-common/file/retro_file.o \
+		libretro-common/file/retro_dirent.o \
+		libretro-common/file/retro_stat.o \
+		libretro-common/compat/compat_strl.o \
+		libretro-common/file/config_file.o \
+		$(APP_BOOTER_DIR)/app_booter.binobj
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
 CFLAGS          += -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
-CFLAGS          += -Ilogger/netlogger
-OBJ             += logger/netlogger/logger.o
+OBJ             += logger/netlogger.o
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
 CFLAGS		+= -DHAVE_FILE_LOGGER
-CFLAGS          += -Ilogger/netlogger
 endif
 
-CFLAGS += -std=gnu99 -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_RARCH_EXEC -DGEKKO -Wno-char-subscripts 
+CFLAGS += -std=gnu99 -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_RARCH_EXEC -DGEKKO -Wno-char-subscripts
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
 else
    CFLAGS += -O3
+endif
+
+ifeq ($(USBGECKO), 1)
+LIBS += -ldb
+CFLAGS += -DUSBGECKO
 endif
 
 all: $(DOL_TARGET)
@@ -79,7 +96,7 @@ $(APP_BOOTER_DIR)/app_booter.bin:
 	$(MAKE) -C $(APP_BOOTER_DIR)
 
 pkg: all
-	cp -r $(DOL_TARGET) wii/pkg/boot.dol
+	cp -r $(DOL_TARGET) pkg/wii/boot.dol
 
 clean:
 	rm -f $(DOL_TARGET)
@@ -88,4 +105,3 @@ clean:
 	$(MAKE) -C $(APP_BOOTER_DIR) clean
 
 .PHONY: clean
-

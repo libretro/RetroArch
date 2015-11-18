@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -23,18 +23,20 @@
 #include <sceerror.h>
 #include <kernel.h>
 #include <ctrl.h>
+#elif defined(VITA)
+#include <psp2/ctrl.h>
 #elif defined(PSP)
 #include <pspctrl.h>
 #endif
 
-#include "../../gfx/drivers/psp_sdk_defines.h"
+#include "../../defines/psp_defines.h"
 
 #include "../../driver.h"
 #include "../../libretro.h"
 #include "../../general.h"
 #include "../input_common.h"
 #ifdef HAVE_KERNEL_PRX
-#include "../../psp1/kernel_functions.h"
+#include "../../bootstrap/psp1/kernel_functions.h"
 #endif
 
 #define MAX_PADS 1
@@ -91,7 +93,7 @@ static void* psp_input_initialize(void)
    psp_input_t *psp = (psp_input_t*)calloc(1, sizeof(*psp));
    if (!psp)
       return NULL;
-   
+
    psp->joypad = input_joypad_init_driver(
          settings->input.joypad_driver, psp);
 
@@ -103,7 +105,10 @@ static bool psp_input_key_pressed(void *data, int key)
    settings_t *settings = config_get_ptr();
    psp_input_t *psp     = (psp_input_t*)data;
 
-   return input_joypad_pressed(psp->joypad, 0, settings->input.binds[0], key);
+   if (input_joypad_pressed(psp->joypad, 0, settings->input.binds[0], key))
+      return true;
+
+   return false;
 }
 
 static bool psp_input_meta_key_pressed(void *data, int key)
@@ -169,12 +174,17 @@ input_driver_t input_psp = {
    NULL,
    NULL,
    psp_input_get_capabilities,
+#ifdef VITA
+   "vita",
+#else
    "psp",
+#endif
 
    psp_input_grab_mouse,
    NULL,
    psp_input_set_rumble,
    psp_input_get_joypad_driver,
+   NULL,
    psp_input_keyboard_mapping_is_blocked,
    psp_input_keyboard_mapping_set_block,
 };

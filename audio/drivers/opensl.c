@@ -14,14 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../driver.h"
-#include "../../general.h"
-#include <rthreads/rthreads.h>
-
 #include <SLES/OpenSLES.h>
 #ifdef ANDROID
 #include <SLES/OpenSLES_Android.h>
 #endif
+
+#include <rthreads/rthreads.h>
+
+#include "../../driver.h"
+#include "../../general.h"
 
 /* Helper macros, COM-style. */
 #define SLObjectItf_Realize(a, ...) ((*(a))->Realize(a, __VA_ARGS__))

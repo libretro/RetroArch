@@ -14,14 +14,27 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "x11_common.h"
 #include <stdlib.h>
 #include <string.h>
-#include <X11/Xatom.h>
 #include <math.h>
+
 #include <sys/types.h>
 #include <sys/wait.h>
+
+#include <X11/Xatom.h>
+
+#include "x11_common.h"
 #include "../../general.h"
+
+static Atom XA_NET_WM_STATE;
+static Atom XA_NET_WM_STATE_FULLSCREEN;
+static Atom XA_NET_MOVERESIZE_WINDOW;
+
+#define XA_INIT(x) XA##x = XInternAtom(dpy, #x, False)
+#define _NET_WM_STATE_ADD 1
+#define MOVERESIZE_GRAVITY_CENTER 5
+#define MOVERESIZE_X_SHIFT 8
+#define MOVERESIZE_Y_SHIFT 9
 
 static void x11_hide_mouse(Display *dpy, Window win)
 {
@@ -53,16 +66,6 @@ void x11_show_mouse(Display *dpy, Window win, bool state)
    else
       x11_hide_mouse(dpy, win);
 }
-
-static Atom XA_NET_WM_STATE;
-static Atom XA_NET_WM_STATE_FULLSCREEN;
-static Atom XA_NET_MOVERESIZE_WINDOW;
-
-#define XA_INIT(x) XA##x = XInternAtom(dpy, #x, False)
-#define _NET_WM_STATE_ADD 1
-#define MOVERESIZE_GRAVITY_CENTER 5
-#define MOVERESIZE_X_SHIFT 8
-#define MOVERESIZE_Y_SHIFT 9
 
 void x11_windowed_fullscreen(Display *dpy, Window win)
 {

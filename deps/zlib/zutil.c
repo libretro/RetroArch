@@ -5,12 +5,12 @@
 
 /* @(#) $Id$ */
 
-#include "zutil.h"
+#include <compat/zutil.h>
 #ifndef Z_SOLO
 #  include "gzguts.h"
 #endif
 
-char * const z_errmsg[10] = {
+char z_errmsg[10][21] = {
    "need dictionary",     /* Z_NEED_DICT       2  */
    "stream end",          /* Z_STREAM_END      1  */
    "",                    /* Z_OK              0  */

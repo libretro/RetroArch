@@ -14,12 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../general.h"
-#include "../../driver.h"
-
 #define ALSA_PCM_NEW_HW_PARAMS_API
 #define ALSA_PCM_NEW_SW_PARAMS_API
 #include <sys/asoundlib.h>
+
+#include "../../general.h"
+#include "../../driver.h"
 
 #define MAX_FRAG_SIZE 3072
 #define DEFAULT_RATE 48000
@@ -222,8 +222,7 @@ static int check_pcm_status(void *data, int channel_type)
 
 static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 {
-   alsa_t *alsa = (alsa_t*)data;
-   snd_pcm_channel_status_t cstatus = {0};
+   alsa_t              *alsa = (alsa_t*)data;
    snd_pcm_sframes_t written = 0;
 
    while (size)
@@ -233,10 +232,11 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
       {
          memcpy(alsa->buffer[alsa->buffer_index] + 
                alsa->buffer_ptr, buf, avail_write);
-         alsa->buffer_ptr += avail_write;
-         buf            += avail_write;
-         size           -= avail_write;
-         written        += avail_write;
+
+         alsa->buffer_ptr      += avail_write;
+         buf                    = (void*)((uint8_t*)buf + avail_write);
+         size                  -= avail_write;
+         written               += avail_write;
       }
 
       if (alsa->buffer_ptr >= alsa->buf_size)
@@ -245,7 +245,7 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
                alsa->buffer[alsa->buffer_index], alsa->buf_size);
 
          alsa->buffer_index = (alsa->buffer_index + 1) % alsa->buf_count;
-         alsa->buffer_ptr = 0;
+         alsa->buffer_ptr   = 0;
 
          if (frames <= 0)
          {

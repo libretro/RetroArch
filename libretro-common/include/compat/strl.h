@@ -34,12 +34,18 @@
 extern "C" {
 #endif
 
+#ifdef __MACH__
+#ifndef HAVE_STRL
+#define HAVE_STRL
+#endif
+#endif
+
 #ifndef HAVE_STRL
 /* Avoid possible naming collisions during link since 
  * we prefer to use the actual name. */
-#define strlcpy(dst, src, size) strlcpy_rarch__(dst, src, size)
+#define strlcpy(dst, src, size) strlcpy_retro__(dst, src, size)
 
-#define strlcat(dst, src, size) strlcat_rarch__(dst, src, size)
+#define strlcat(dst, src, size) strlcat_retro__(dst, src, size)
 
 size_t strlcpy(char *dest, const char *source, size_t size);
 size_t strlcat(char *dest, const char *source, size_t size);

@@ -19,22 +19,33 @@
 #include "../menu_cbs.h"
 #include "../menu_hash.h"
 
+#ifndef BIND_ACTION_INFO
+#define BIND_ACTION_INFO(cbs, name) \
+   cbs->action_info = name; \
+   cbs->action_info_ident = #name;
+#endif
+
 static int action_info_default(unsigned type, const char *label)
 {
+   int ret;
+   size_t selection             = 0;
    menu_displaylist_info_t info = {0};
-   menu_navigation_t *nav       = menu_navigation_get_ptr();
-   menu_list_t *menu_list       = menu_list_get_ptr();
+   file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
 
-   if (!menu_list)
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;
 
-   info.list          = menu_list->menu_stack;
-   info.directory_ptr = nav->selection_ptr;
+   info.list          = menu_stack;
+   info.directory_ptr = selection;
    strlcpy(info.label,
          menu_hash_to_str(MENU_LABEL_INFO_SCREEN),
         sizeof(info.label));
 
-   return menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
+   ret = menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
+   if (ret != 0)
+      return ret;
+   menu_displaylist_push_list_process(&info);
+   return 0;
 }
 
 int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
@@ -45,7 +56,7 @@ int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   cbs->action_info = action_info_default;
+   BIND_ACTION_INFO(cbs, action_info_default);
 
    return -1;
 }

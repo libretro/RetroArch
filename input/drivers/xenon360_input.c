@@ -90,7 +90,10 @@ static void* xenon360_input_init(void)
 
 static bool xenon360_input_key_pressed(void *data, int key)
 {
-   return (lifecycle_state & (UINT64_C(1) << key));
+   if (lifecycle_state & (UINT64_C(1) << key))
+      return true;
+
+   return false;
 }
 
 static bool xenon360_input_meta_key_pressed(void *data, int key)
@@ -98,7 +101,7 @@ static bool xenon360_input_meta_key_pressed(void *data, int key)
    return (lifecycle_state & (UINT64_C(1) << key));
 }
 
-static uint64_t xenon360_get_capabilities(void *data)
+static uint64_t xenon360_input_get_capabilities(void *data)
 {
    uint64_t caps = 0;
 
@@ -139,6 +142,7 @@ input_driver_t input_xenon360 = {
    xenon360_input_grab_mouse,
    NULL,
    xenon360_input_set_rumble,
+   NULL,
    NULL,
    NULL,
 };

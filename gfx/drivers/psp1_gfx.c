@@ -22,7 +22,7 @@
 #include <psprtc.h>
 
 #include <retro_inline.h>
-#include "psp_sdk_defines.h"
+#include "../../defines/psp_defines.h"
 #include "../../general.h"
 #include "../../driver.h"
 #include "../video_viewport.h"
@@ -85,7 +85,6 @@ typedef struct psp1_menu_frame
 
 typedef struct psp1_video
 {
-   uint64_t frame_count;
    void* main_dList;
    void* frame_dList;
    void* draw_buffer;
@@ -456,25 +455,25 @@ static void *psp_init(const video_info_t *video,
    psp->hw_render          = false;
 
    return psp;
-error:
-   RARCH_ERR("PSP1 video could not be initialized.\n");
-   return (void*)-1;
 }
 
 //#define DISPLAY_FPS
 
 static bool psp_frame(void *data, const void *frame,
-      unsigned width, unsigned height, unsigned pitch, const char *msg)
+      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned pitch, const char *msg)
 {
-   static char fps_txt[128]      = {0};
-   static char fps_text_buf[128] = {0};
-   psp1_video_t *psp             = (psp1_video_t*)data;
-   settings_t *settings          = config_get_ptr();
 #ifdef DISPLAY_FPS
+   uint32_t diff;
    static uint64_t currentTick,lastTick;
-   static float fps=0.0;
    static int frames;
+   static float fps                        = 0.0;
 #endif
+   static struct retro_perf_counter psp_frame_run = {0};
+   static char fps_txt[128]                = {0};
+   static char fps_text_buf[128]           = {0};
+   psp1_video_t *psp                       = (psp1_video_t*)data;
+   settings_t *settings                    = config_get_ptr();
 
    if (!width || !height)
       return false;
@@ -513,7 +512,7 @@ static bool psp_frame(void *data, const void *frame,
 #ifdef DISPLAY_FPS
    frames++;
    sceRtcGetCurrentTick(&currentTick);
-   uint32_t diff = currentTick - lastTick;
+   diff = currentTick - lastTick;
    if(diff > 1000000)
    {
       fps = (float)frames * 1000000.0 / diff;
@@ -526,10 +525,9 @@ static bool psp_frame(void *data, const void *frame,
 #endif
 
    psp->draw_buffer = FROM_GU_POINTER(sceGuSwapBuffers());
-   psp->frame_count++;
 
-   RARCH_PERFORMANCE_INIT(psp_frame_run);
-   RARCH_PERFORMANCE_START(psp_frame_run);
+   rarch_perf_init(&psp_frame_run, "psp_frame_run");
+   retro_perf_start(&psp_frame_run);
 
    if (psp->should_resize)
       psp_update_viewport(psp);
@@ -562,7 +560,7 @@ static bool psp_frame(void *data, const void *frame,
 
    sceGuFinish();
 
-   RARCH_PERFORMANCE_STOP(psp_frame_run);
+   retro_perf_stop(&psp_frame_run);
 
    if(psp->menu.active)
    {
@@ -646,7 +644,7 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
 
 #ifdef DEBUG
    /* psp->menu.frame buffer size is (480 * 272)*2 Bytes */
-   rarch_assert((width*height) < (480 * 272));
+   retro_assert((width*height) < (480 * 272));
 #endif
 
    psp_set_screen_coords(psp->menu.frame_coords, 0, 0,
@@ -708,8 +706,6 @@ static void psp_update_viewport(psp1_video_t* psp)
    }
    else if (psp->keep_aspect)
    {
-      float delta;
-      float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
@@ -727,6 +723,9 @@ static void psp_update_viewport(psp1_video_t* psp)
       else
 #endif
       {
+         float delta;
+         float desired_aspect = video_driver_get_aspect_ratio();
+
          if ((fabsf(device_aspect - desired_aspect) < 0.0001f)
                || (fabsf((16.0/9.0) - desired_aspect) < 0.02f))
          {
@@ -838,16 +837,7 @@ static void psp_viewport_info(void *data, struct video_viewport *vp)
       *vp = psp->vp;
 }
 
-static uint64_t psp_get_frame_count(void *data)
-{
-   psp1_video_t *psp = (psp1_video_t*)data;
-   if (!psp)
-      return 0;
-   return psp->frame_count;
-}
-
 static const video_poke_interface_t psp_poke_interface = {
-   psp_get_frame_count,
    NULL,
    psp_set_filtering,
    NULL, /* get_video_output_size */

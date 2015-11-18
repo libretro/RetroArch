@@ -27,18 +27,23 @@
 #include <string.h>
 
 #include <retro_log.h>
+#include <retro_file.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
 
+#include <formats/rbmp.h>
+
 #if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
 #include <formats/rpng.h>
+#define IMG_EXT "png"
+#else
+#define IMG_EXT "bmp"
 #endif
 
 #include "general.h"
 #include "msg_hash.h"
 #include "gfx/scaler/scaler.h"
 #include "retroarch.h"
-#include "runloop.h"
 #include "screenshot.h"
 #include "gfx/video_driver.h"
 #include "gfx/video_viewport.h"
@@ -47,136 +52,78 @@
 #include "config.h"
 #endif
 
-#if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
-#define IMG_EXT "png"
-#else
-#define IMG_EXT "bmp"
-
-static bool write_header_bmp(FILE *file, unsigned width, unsigned height)
+/* Take frame bottom-up. */
+static bool screenshot_dump(const char *folder, const void *frame,
+      unsigned width, unsigned height, int pitch, bool bgr24)
 {
-   unsigned line_size  = (width * 3 + 3) & ~3;
-   unsigned size       = line_size * height + 54;
-   unsigned size_array = line_size * height;
+   bool ret;
+   char filename[PATH_MAX_LENGTH] = {0};
+   char shotname[PATH_MAX_LENGTH] = {0};
+   struct scaler_ctx scaler       = {0};
+   RFILE *file                    = NULL;
+   uint8_t *out_buffer            = NULL;
+   driver_t *driver               = driver_get_ptr();
 
-   /* Generic BMP stuff. */
-   const uint8_t header[] = {
-      'B', 'M',
-      (uint8_t)(size >> 0), (uint8_t)(size >> 8),
-      (uint8_t)(size >> 16), (uint8_t)(size >> 24),
-      0, 0, 0, 0,
-      54, 0, 0, 0,
-      40, 0, 0, 0,
-      (uint8_t)(width >> 0), (uint8_t)(width >> 8),
-      (uint8_t)(width >> 16), (uint8_t)(width >> 24),
-      (uint8_t)(height >> 0), (uint8_t)(height >> 8),
-      (uint8_t)(height >> 16), (uint8_t)(height >> 24),
-      1, 0,
-      24, 0,
-      0, 0, 0, 0,
-      (uint8_t)(size_array >> 0), (uint8_t)(size_array >> 8),
-      (uint8_t)(size_array >> 16), (uint8_t)(size_array >> 24),
-      19, 11, 0, 0,
-      19, 11, 0, 0,
-      0, 0, 0, 0,
-      0, 0, 0, 0
-   };
+   (void)file;
+   (void)out_buffer;
+   (void)scaler;
+   (void)driver;
 
-   return fwrite(header, 1, sizeof(header), file) == sizeof(header);
-}
+   fill_dated_filename(shotname, IMG_EXT, sizeof(shotname));
+   fill_pathname_join(filename, folder, shotname, sizeof(filename));
 
-static void dump_lines_file(FILE *file, uint8_t **lines,
-      size_t line_size, unsigned height)
-{
-   unsigned i;
+#ifdef _XBOX1
+   d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
+   settings_t *settings = config_get_ptr();
 
-   for (i = 0; i < height; i++)
-      fwrite(lines[i], 1, line_size, file);
-}
+   D3DSurface *surf = NULL;
+   d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &surf);
+   ret = XGWriteSurfaceToFile(surf, filename);
+   surf->Release();
 
-static void dump_line_bgr(uint8_t *line, const uint8_t *src, unsigned width)
-{
-   memcpy(line, src, width * 3);
-}
+   if(ret == S_OK)
+      ret = true;
+   else
+      ret = false;
+#elif defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
+   out_buffer = (uint8_t*)malloc(width * height * 3);
+   if (!out_buffer)
+      return false;
 
-static void dump_line_16(uint8_t *line, const uint16_t *src, unsigned width)
-{
-   unsigned i;
+   scaler.in_width    = width;
+   scaler.in_height   = height;
+   scaler.out_width   = width;
+   scaler.out_height  = height;
+   scaler.in_stride   = -pitch;
+   scaler.out_stride  = width * 3;
+   scaler.out_fmt     = SCALER_FMT_BGR24;
+   scaler.scaler_type = SCALER_TYPE_POINT;
 
-   for (i = 0; i < width; i++)
-   {
-      uint16_t pixel = *src++;
-      uint8_t b = (pixel >>  0) & 0x1f;
-      uint8_t g = (pixel >>  5) & 0x3f;
-      uint8_t r = (pixel >> 11) & 0x1f;
-      *line++   = (b << 3) | (b >> 2);
-      *line++   = (g << 2) | (g >> 4);
-      *line++   = (r << 3) | (r >> 2);
-   }
-}
-
-static void dump_line_32(uint8_t *line, const uint32_t *src, unsigned width)
-{
-   unsigned i;
-
-   for (i = 0; i < width; i++)
-   {
-      uint32_t pixel = *src++;
-      *line++ = (pixel >>  0) & 0xff;
-      *line++ = (pixel >>  8) & 0xff;
-      *line++ = (pixel >> 16) & 0xff;
-   }
-}
-
-static void dump_content(FILE *file, const void *frame,
-      int width, int height, int pitch, bool bgr24)
-{
-   size_t line_size;
-   int i, j;
-   union
-   {
-      const uint8_t *u8;
-      const uint16_t *u16;
-      const uint32_t *u32;
-   } u;
-   uint8_t **lines = (uint8_t**)calloc(height, sizeof(uint8_t*));
-
-   if (!lines)
-      return;
-
-   u.u8      = (const uint8_t*)frame;
-   line_size = (width * 3 + 3) & ~3;
-
-   for (i = 0; i < height; i++)
-   {
-      lines[i] = (uint8_t*)calloc(1, line_size);
-      if (!lines[i])
-         goto end;
-   }
-
-   if (bgr24) /* BGR24 byte order. Can directly copy. */
-   {
-      for (j = 0; j < height; j++, u.u8 += pitch)
-         dump_line_bgr(lines[j], u.u8, width);
-   }
+   if (bgr24)
+      scaler.in_fmt = SCALER_FMT_BGR24;
    else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
-   {
-      for (j = 0; j < height; j++, u.u8 += pitch)
-         dump_line_32(lines[j], u.u32, width);
-   }
-   else /* RGB565 */
-   {
-      for (j = 0; j < height; j++, u.u8 += pitch)
-         dump_line_16(lines[j], u.u16, width);
-   }
+      scaler.in_fmt = SCALER_FMT_ARGB8888;
+   else
+      scaler.in_fmt = SCALER_FMT_RGB565;
 
-   dump_lines_file(file, lines, line_size, height);
+   scaler_ctx_gen_filter(&scaler);
+   scaler_ctx_scale(&scaler, out_buffer,
+         (const uint8_t*)frame + ((int)height - 1) * pitch);
+   scaler_ctx_gen_reset(&scaler);
 
-end:
-   for (i = 0; i < height; i++)
-      free(lines[i]);
-   free(lines);
-}
+   RARCH_LOG("Using RPNG for PNG screenshots.\n");
+   ret = rpng_save_image_bgr24(filename,
+         out_buffer, width, height, width * 3);
+   free(out_buffer);
+#else
+   ret = rbmp_save_image(filename, frame, width, height, pitch, bgr24,
+        (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888) );
 #endif
+   if (!ret)
+      RARCH_ERR("Failed to take screenshot.\n");
+
+   return ret;
+}
 
 static bool take_screenshot_viewport(void)
 {
@@ -203,7 +150,7 @@ static bool take_screenshot_viewport(void)
 
    if (!*settings->screenshot_directory)
    {
-      fill_pathname_basedir(screenshot_path, global->basename,
+      fill_pathname_basedir(screenshot_path, global->name.base,
             sizeof(screenshot_path));
       screenshot_dir = screenshot_path;
    }
@@ -237,7 +184,7 @@ static bool take_screenshot_raw(void)
 
    if (!*settings->screenshot_directory)
    {
-      fill_pathname_basedir(screenshot_path, global->basename,
+      fill_pathname_basedir(screenshot_path, global->name.base,
             sizeof(screenshot_path));
       screenshot_dir = screenshot_path;
    }
@@ -257,10 +204,10 @@ static bool take_screenshot_raw(void)
  **/
 bool take_screenshot(void)
 {
+   bool is_paused;
    bool viewport_read   = false;
    bool ret             = true;
    const char *msg      = NULL;
-   runloop_t *runloop   = rarch_main_get_ptr();
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
@@ -268,7 +215,7 @@ bool take_screenshot(void)
       (const struct retro_hw_render_callback*)video_driver_callback();
 
    /* No way to infer screenshot directory. */
-   if ((!*settings->screenshot_directory) && (!*global->basename))
+   if ((!*settings->screenshot_directory) && (!*global->name.base))
       return false;
 
    viewport_read = (settings->video.gpu_screenshot ||
@@ -332,102 +279,12 @@ bool take_screenshot(void)
       msg = msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
    }
 
-   rarch_main_msg_queue_push(msg, 1, runloop->is_paused ? 1 : 180, true);
+   rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED, &is_paused);
 
-   if (runloop->is_paused)
+   rarch_main_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
+
+   if (is_paused)
       video_driver_cached_frame();
 
    return ret;
 }
-
-
-/* Take frame bottom-up. */
-bool screenshot_dump(const char *folder, const void *frame,
-      unsigned width, unsigned height, int pitch, bool bgr24)
-{
-   char filename[PATH_MAX_LENGTH] = {0};
-   char shotname[PATH_MAX_LENGTH] = {0};
-   struct scaler_ctx scaler       = {0};
-   FILE *file                     = NULL;
-   uint8_t *out_buffer            = NULL;
-   bool ret                       = false;
-   driver_t *driver               = driver_get_ptr();
-
-   (void)file;
-   (void)out_buffer;
-   (void)scaler;
-   (void)driver;
-
-   fill_dated_filename(shotname, IMG_EXT, sizeof(shotname));
-   fill_pathname_join(filename, folder, shotname, sizeof(filename));
-
-#ifdef _XBOX1
-   d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
-   settings_t *settings = config_get_ptr();
-
-   D3DSurface *surf = NULL;
-   d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &surf);
-   ret = XGWriteSurfaceToFile(surf, filename);
-   surf->Release();
-
-   if(ret == S_OK)
-   {
-      RARCH_LOG("Screenshot saved: %s.\n", filename);
-      rarch_main_msg_queue_push("Screenshot saved.", 1, 30, false);
-      return true;
-   }
-
-   ret = false;
-#elif defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
-   out_buffer = (uint8_t*)malloc(width * height * 3);
-   if (!out_buffer)
-      return false;
-
-   scaler.in_width    = width;
-   scaler.in_height   = height;
-   scaler.out_width   = width;
-   scaler.out_height  = height;
-   scaler.in_stride   = -pitch;
-   scaler.out_stride  = width * 3;
-   scaler.out_fmt     = SCALER_FMT_BGR24;
-   scaler.scaler_type = SCALER_TYPE_POINT;
-
-   if (bgr24)
-      scaler.in_fmt = SCALER_FMT_BGR24;
-   else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
-      scaler.in_fmt = SCALER_FMT_ARGB8888;
-   else
-      scaler.in_fmt = SCALER_FMT_RGB565;
-
-   scaler_ctx_gen_filter(&scaler);
-   scaler_ctx_scale(&scaler, out_buffer,
-         (const uint8_t*)frame + ((int)height - 1) * pitch);
-   scaler_ctx_gen_reset(&scaler);
-
-   RARCH_LOG("Using RPNG for PNG screenshots.\n");
-   ret = rpng_save_image_bgr24(filename,
-         out_buffer, width, height, width * 3);
-   if (!ret)
-      RARCH_ERR("Failed to take screenshot.\n");
-   free(out_buffer);
-#else
-   file = fopen(filename, "wb");
-   if (!file)
-   {
-      RARCH_ERR("Failed to open file \"%s\" for screenshot.\n", filename);
-      return false;
-   }
-
-   ret = write_header_bmp(file, width, height);
-
-   if (ret)
-      dump_content(file, frame, width, height, pitch, bgr24);
-   else
-      RARCH_ERR("Failed to write image header.\n");
-
-   fclose(file);
-#endif
-
-   return ret;
-}
-

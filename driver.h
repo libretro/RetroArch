@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __DRIVER__H
-#define __DRIVER__H
+#ifndef __RARCH_DRIVER__H
+#define __RARCH_DRIVER__H
 
 #include <sys/types.h>
 #include <boolean.h>
@@ -61,6 +61,10 @@ extern "C" {
 #define AUDIO_CHUNK_SIZE_NONBLOCKING 2048
 
 #define AUDIO_MAX_RATIO 16
+
+/* Specialized _MOUSE that targets the full screen regardless of viewport.
+ */
+#define RARCH_DEVICE_MOUSE_SCREEN (RETRO_DEVICE_MOUSE | 0x10000)
 
 /* Specialized _POINTER that targets the full screen regardless of viewport.
  * Should not be used by a libretro implementation as coordinates returned
@@ -194,7 +198,7 @@ enum
 
 typedef struct driver
 {
-   const frontend_ctx_driver_t *frontend_ctx;
+   frontend_ctx_driver_t *frontend_ctx;
    const ui_companion_driver_t *ui_companion;
    const audio_driver_t *audio;
    const video_driver_t *video;

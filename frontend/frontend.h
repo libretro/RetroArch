@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <boolean.h>
+#include "frontend_driver.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,14 +37,6 @@ extern "C" {
  **/
 void main_exit(void *args);
     
-/**
- * main_exit_save_config:
- *
- * Saves configuration file to disk, and (optionally)
- * autosave state.
- **/
-void main_exit_save_config(void);
-
 /**
  * main_entry:
  *

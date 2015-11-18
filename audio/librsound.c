@@ -46,6 +46,7 @@
 #define NETWORK_COMPAT_HEADERS 1
 #endif
 
+
 #ifdef NETWORK_COMPAT_HEADERS
 #include <sys/socket.h>
 #include <netdb.h>
@@ -71,6 +72,7 @@
 
 #include <compat/strl.h>
 #include <retro_inline.h>
+#include <retro_miscellaneous.h>
 
 /* 
  ****************************************************************************   
@@ -151,7 +153,6 @@ static int rsnd_send_info_query(rsound_t *rd);
 static int rsnd_update_server_info(rsound_t *rd);
 
 static int rsnd_poll(struct pollfd *fd, int numfd, int timeout);
-static void rsnd_sleep(int msec);
 
 static void rsnd_cb_thread(void *thread_data);
 static void rsnd_thread(void *thread_data);
@@ -361,12 +362,12 @@ static int rsnd_send_header_info(rsound_t *rd)
 #define LSB16(x) if ( !rsnd_is_little_endian() ) { rsnd_swap_endian_16(&(x)); }
 #define LSB32(x) if ( !rsnd_is_little_endian() ) { rsnd_swap_endian_32(&(x)); }
 
-   // Here we embed in the rest of the WAV header for it to be somewhat valid
+   /* Here we embed in the rest of the WAV header for it to be somewhat valid */
 
-   strcpy(header, "RIFF");
+   strlcpy(header, "RIFF", sizeof(header));
    SET32(header, 4, 0);
-   strcpy(header+8, "WAVE");
-   strcpy(header+12, "fmt ");
+   strlcpy(header+8, "WAVE", sizeof(header));
+   strlcpy(header+12, "fmt ", sizeof(header));
 
    temp32 = 16;
    LSB32(temp32);
@@ -412,15 +413,15 @@ static int rsnd_send_header_info(rsound_t *rd)
    LSB16(temp_bits);
    SET16(header, FRAMESIZE, temp_bits);
 
-   strcpy(header+36, "data");
+   strlcpy(header+36, "data", sizeof(header));
 
-   // Do not care about cksize here (impossible to know beforehand). It is used by
-   // the server for format.
+   /* Do not care about cksize here (impossible to know beforehand).
+    * It is used by the server for format. */
 
    LSB16(temp_format);
    SET16(header, FORMAT, temp_format);
 
-   // End static header
+   /* End static header */
 
    if ( rsnd_send_chunk(rd->conn.socket, header, HEADER_SIZE, 1) != HEADER_SIZE )
    {
@@ -464,7 +465,7 @@ static int rsnd_get_backend_info ( rsound_t *rd )
       rd->backend_info.chunk_size = MAX_CHUNK_SIZE;
 
    /* Assumes a default buffer size should it cause problems of being too small */
-   if ( rd->buffer_size <= 0 || rd->buffer_size < rd->backend_info.chunk_size * 2 )
+   if ( rd->buffer_size == 0 || rd->buffer_size < rd->backend_info.chunk_size * 2 )
       rd->buffer_size = rd->backend_info.chunk_size * 32;
 
    if ( rd->fifo_buffer != NULL )
@@ -746,27 +747,6 @@ static int64_t rsnd_get_time_usec(void)
 #endif
 }
 
-static void rsnd_sleep(int msec)
-{
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   sys_timer_usleep(1000 * msec);
-#elif defined(PSP)
-   sceKernelDelayThread(1000 * msec);
-#elif defined(_WIN32)
-   Sleep(msec);
-#elif defined(XENON)
-   udelay(1000 * msec);
-#elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
-   usleep(1000 * msec);
-#else
-   struct timespec tv = {0};
-   tv.tv_sec = msec / 1000;
-   tv.tv_nsec = (msec % 1000) * 1000000;
-   nanosleep(&tv, NULL);
-#endif
-}
-
-
 /* Calculates how many bytes there are in total in the virtual buffer. This is calculated client side.
    It should be accurate enough unless we have big problems with buffer underruns.
    This function is called by rsd_delay() to determine the latency. 
@@ -1022,9 +1002,6 @@ static int rsnd_send_info_query(rsound_t *rd)
 // In that case, we read the packet.
 static int rsnd_update_server_info(rsound_t *rd)
 {
-
-   ssize_t rc;
-
    long long int client_ptr = -1;
    long long int serv_ptr = -1;
    char temp[RSD_PROTO_MAXSIZE + 1] = {0};
@@ -1032,6 +1009,7 @@ static int rsnd_update_server_info(rsound_t *rd)
    // We read until we have the last (most recent) data in the network buffer.
    for (;;)
    {
+      ssize_t rc;
       const char *substr;
       char *tmpstr;
       memset(temp, 0, sizeof(temp));
@@ -1259,7 +1237,7 @@ static void rsnd_cb_thread(void *thread_data)
                // The network might do things in large chunks, so it may request large amounts of data in short periods of time.
                // This breaks when the caller cannot buffer up big buffers beforehand, so do short sleeps inbetween.
                // This is somewhat dirty, but I cannot see a better solution
-               rsnd_sleep(1);
+               retro_sleep(1);
             }
          }
       }
@@ -1335,24 +1313,21 @@ int rsd_stop(rsound_t *rd)
 
 size_t rsd_write( rsound_t *rsound, const void* buf, size_t size)
 {
+   size_t max_write, written = 0;
    assert(rsound != NULL);
    if ( !rsound->ready_for_data )
       return 0;
 
-   size_t result;
-   size_t max_write = (rsound->buffer_size - rsound->backend_info.chunk_size)/2;
-
-   size_t written = 0;
-   size_t write_size;
+   max_write = (rsound->buffer_size - rsound->backend_info.chunk_size)/2;
 
    /* Makes sure that we can handle arbitrary large write sizes */
 
    while ( written < size )
    {
-      write_size = (size - written) > max_write ? max_write : (size - written); 
-      result = rsnd_fill_buffer(rsound, (const char*)buf + written, write_size);
+      size_t write_size = (size - written) > max_write ? max_write : (size - written); 
+      size_t     result = rsnd_fill_buffer(rsound, (const char*)buf + written, write_size);
 
-      if ( result <= 0 )
+      if (result == 0)
       {
          rsd_stop(rsound);
          return 0;
@@ -1371,10 +1346,7 @@ int rsd_start(rsound_t *rsound)
    assert(rsound->port != NULL);
 
    if ( rsnd_create_connection(rsound) < 0 )
-   {
       return -1;
-   }
-
 
    return 0;
 }
@@ -1526,7 +1498,7 @@ void rsd_delay_wait(rsound_t *rd)
       {
          int64_t sleep_ms = latency_ms - rd->max_latency;
          RSD_DEBUG("[RSound] Delay wait: %d ms.\n", (int)sleep_ms);
-         rsnd_sleep((int)sleep_ms);
+         retro_sleep((int)sleep_ms);
       }
    }
 }

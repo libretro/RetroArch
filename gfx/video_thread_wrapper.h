@@ -23,6 +23,10 @@
 #include <rthreads/rthreads.h>
 #include "font_driver.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum thread_cmd
 {
    CMD_NONE = 0,
@@ -58,6 +62,7 @@ enum thread_cmd
 
    CMD_DUMMY = INT_MAX
 };
+
 
 typedef struct
 {
@@ -213,6 +218,7 @@ typedef struct thread_video
       unsigned pitch;
       bool updated;
       bool within_thread;
+      uint64_t count;
       char msg[PATH_MAX_LENGTH];
    } frame;
 
@@ -253,5 +259,10 @@ bool rarch_threaded_video_init(
  **/
 void *rarch_threaded_video_get_ptr(const video_driver_t **drv);
 
+const char *rarch_threaded_video_get_ident(void);
+
+#ifdef __cplusplus
+}
 #endif
 
+#endif

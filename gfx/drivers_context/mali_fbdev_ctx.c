@@ -13,21 +13,24 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <unistd.h>
+
+#include <signal.h>
+#include <sys/ioctl.h>
+
+#include <EGL/egl.h>
+
+/* Includes and defines for framebuffer size retrieval */
+#include <linux/fb.h>
+#include <linux/vt.h>
+
+#include <retro_file.h>
+
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
-#include "../drivers/gl_common.h"
-
-#include <EGL/egl.h>
-#include <signal.h>
-
-/* Includes and defines for framebuffer size retrieval */
-#include <sys/ioctl.h>
-#include <linux/fb.h>
-#include <linux/vt.h>
-#include <fcntl.h>
-#include <unistd.h>
+#include "../common/gl_common.h"
 
 struct fbdev_window native_window;
 static EGLContext g_egl_ctx;
@@ -55,7 +58,9 @@ static void gfx_ctx_mali_fbdev_set_swap_interval(
 
 static void gfx_ctx_mali_fbdev_destroy(void *data)
 {
-   int fd;
+   int fb;
+   RFILE *fd;
+
    (void)data;
 
    if (g_egl_dpy != EGL_NO_DISPLAY)
@@ -82,12 +87,13 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
    g_resize       = false;
 
    /* Clear framebuffer and set cursor on again */
-   fd = open("/dev/tty", O_RDWR);
-   ioctl(fd,VT_ACTIVATE,5);
-   ioctl(fd,VT_ACTIVATE,1);
-   close (fd);
-   system("setterm -cursor on");
+   fd = retro_fopen("/dev/tty", RFILE_MODE_READ_WRITE, -1);
+   fb = retro_get_fd(fd);
 
+   ioctl(fb, VT_ACTIVATE,5);
+   ioctl(fb, VT_ACTIVATE,1);
+   retro_fclose(fd);
+   system("setterm -cursor on");
 }
 
 static void gfx_ctx_mali_fbdev_get_video_size(void *data,
@@ -111,6 +117,7 @@ static bool gfx_ctx_mali_fbdev_init(void *data)
    EGLint num_config;
    EGLint egl_version_major, egl_version_minor;
    EGLint format;
+   struct sigaction sa = {{0}};
    static const EGLint attribs[] = {
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -120,15 +127,14 @@ static bool gfx_ctx_mali_fbdev_init(void *data)
       EGL_ALPHA_SIZE, 8,
       EGL_NONE
    };
-   struct sigaction sa = {{0}};
+
+   (void)data;
 
    sa.sa_handler = gfx_ctx_mali_fbdev_sighandler;
    sa.sa_flags   = SA_RESTART;
    sigemptyset(&sa.sa_mask);
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
-
-   (void)data;
 
    /* Disable cursor blinking so it's not visible in RetroArch. */
    system("setterm -cursor off");
@@ -147,8 +153,8 @@ static bool gfx_ctx_mali_fbdev_init(void *data)
       goto error;
    }
 
-   RARCH_LOG("[Mali fbdev]: EGL version: %d.%d\n", egl_version_major, egl_version_minor);
-
+   RARCH_LOG("[Mali fbdev]: EGL version: %d.%d\n",
+         egl_version_major, egl_version_minor);
 
    if (!eglChooseConfig(g_egl_dpy, attribs, &g_egl_config, 1, &num_config))
    {
@@ -167,7 +173,6 @@ error:
 static void gfx_ctx_mali_fbdev_swap_buffers(void *data)
 {
    (void)data;
-
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
@@ -221,14 +226,15 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
       EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
       EGL_NONE
    };
-   int fb = open("/dev/fb0", O_RDWR, 0);
+   RFILE *fd = retro_fopen("/dev/fb0", RFILE_MODE_READ_WRITE, -1);
+   int fb    = retro_get_fd(fd);
 
    if (ioctl(fb, FBIOGET_VSCREENINFO, &vinfo) < 0)
    {
       RARCH_ERR("Error obtainig framebuffer info.\n");
       goto error;
    }
-   close (fb);
+   retro_fclose(fd);
    
    width                = vinfo.xres;
    height               = vinfo.yres;
@@ -260,6 +266,8 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
    return true;
 
 error:
+   if (fd)
+      retro_fclose(fd);
    RARCH_ERR("[Mali fbdev]: EGL error: %d.\n", eglGetError());
    gfx_ctx_mali_fbdev_destroy(data);
    return false;
@@ -278,7 +286,7 @@ static gfx_ctx_proc_t gfx_ctx_mali_fbdev_get_proc_address(const char *symbol)
    gfx_ctx_proc_t ret;
    void *sym__        = NULL;
 
-   rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
+   retro_assert(sizeof(void*) == sizeof(void (*)(void)));
 
    sym__ = eglGetProcAddress(symbol);
    memcpy(&ret, &sym__, sizeof(void*));

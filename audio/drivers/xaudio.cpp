@@ -14,14 +14,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../driver.h"
-#include <stdint.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stddef.h>
-#include <compat/msvc.h>
-#include <boolean.h>
 #include <stdlib.h>
+#include <boolean.h>
+
+#include <compat/msvc.h>
+
 #include "xaudio.h"
+
+#include "../../driver.h"
 #include "../../general.h"
 
 typedef struct xaudio2 xaudio2_t;
@@ -56,7 +59,7 @@ struct xaudio2 : public IXAudio2VoiceCallback
    STDMETHOD_(void, OnBufferStart) (void *) {}
    STDMETHOD_(void, OnBufferEnd) (void *) 
    {
-      InterlockedDecrement(&buffers);
+      InterlockedDecrement((LONG volatile*)&buffers);
       SetEvent(hEvent);
    }
    STDMETHOD_(void, OnLoopEnd) (void *) {}
@@ -71,7 +74,7 @@ struct xaudio2 : public IXAudio2VoiceCallback
    IXAudio2SourceVoice *pSourceVoice;
    HANDLE hEvent;
 
-   volatile long buffers;
+   unsigned long volatile buffers;
    unsigned bufsize;
    unsigned bufptr;
    unsigned write_buffer;
@@ -216,7 +219,7 @@ static size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_)
          if (FAILED(handle->pSourceVoice->SubmitSourceBuffer(&xa2buffer, NULL)))
             return 0;
 
-         InterlockedIncrement(&handle->buffers);
+         InterlockedIncrement((LONG volatile*)&handle->buffers);
          handle->bufptr       = 0;
          handle->write_buffer = (handle->write_buffer + 1) & MAX_BUFFERS_MASK;
       }

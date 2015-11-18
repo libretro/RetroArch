@@ -34,9 +34,9 @@ int CreateMainWindow(Wimp* p)
     return p->CreateMainWindow();
 }
 
-void SetTitle(Wimp*p, char* title)
+void GetSettings(Wimp* p, settings_t *s)
 {
-    return p->SetTitle(title);
+    return p->GetSettings(s);
 }
 
 #ifdef __cplusplus

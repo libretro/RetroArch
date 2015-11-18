@@ -14,12 +14,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+
+#include <boolean.h>
+
 #include "../font_renderer_driver.h"
 #include "bitmap.h"
-#include <string.h>
-#include <stdlib.h>
-#include <math.h>
-#include <boolean.h>
 
 #define BMP_ATLAS_COLS 16
 #define BMP_ATLAS_ROWS 16

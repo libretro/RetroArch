@@ -123,20 +123,20 @@ make
 
 <b>Mac</b><br/>
 - Prerequisites: [XCode](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0CB4QFjAA&url=https%3A%2F%2Fitunes.apple.com%2Fus%2Fapp%2Fxcode%2Fid497799835%3Fmt%3D12&ei=ZmfeVNPtIILVoASBnoCYBw&usg=AFQjCNGrxKmVtXUdvUU3MhqZhP4MHT6Gtg&sig2=RIXKsWQ79YTQBt_lK5fdKA&bvm=bv.85970519,d.cGU), [Cg](https://developer.nvidia.com/cg-toolkit-download).
-- You can open the project (**apple/RetroArch.xcodeproj**) in the Xcode IDE and build (**&#8984;-B**) and run (**&#8984;-R**) it there. Or you can use the command line...
+- You can open the project (**pkg/apple/RetroArch.xcodeproj**) in the Xcode IDE and build (**&#8984;-B**) and run (**&#8984;-R**) it there. Or you can use the command line...
 - Debug:
 ```bash
 # Build
-xcodebuild -target RetroArch -configuration Debug -project apple/RetroArch.xcodeproj
+xcodebuild -target RetroArch -configuration Debug -project pkg/apple/RetroArch.xcodeproj
 # Run
-open ./apple/build/Debug/RetroArch.app/
+open ./pkg/apple/build/Debug/RetroArch.app/
 ```
 - Release:
 ```bash
 # Build
-xcodebuild -target RetroArch -configuration Release -project apple/RetroArch.xcodeproj
+xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch.xcodeproj
 # Run
-open ./apple/build/Release/RetroArch.app/
+open ./pkg/apple/build/Release/RetroArch.app/
 ```
 
 <b>PC</b><br/>
@@ -150,15 +150,7 @@ RetroArch PS3 needs to be compiled in the following order:
 
 <tt>make -f Makefile.ps3.salamander</tt>
 
-2) Compile the RGL video driver
-
-<tt>make -f Makefile.ps3.rgl</tt>
-
-3) Compile RetroArch as a library
-
-<tt>make -f Makefile.ps3.retroarch</tt>
-
-4) Finally, compile RetroArch packed together with the GUI:
+2) Finally, compile RetroArch packed together with the GUI:
 
 <tt>make -f Makefile.ps3</tt>
 
@@ -186,9 +178,9 @@ You will need Microsoft Visual Studio 2010 installed (or higher) in order to com
 
 The solution file can be found at the following location:
 
-<tt>msvc-360/RetroArch-360.sln</tt>
+<tt>pkg/msvc-360/RetroArch-360.sln</tt>
 
-NOTE: A pre-existing libretro library needs to be present in the `msvc-360/RetroArch-360/Release` directory in order to link RetroArch 360. This file needs to be
+NOTE: A pre-existing libretro library needs to be present in the `pkg/msvc-360/RetroArch-360/Release` directory in order to link RetroArch 360. This file needs to be
 called <em><b>`libretro_xdk360.lib`</b></em>.
 
 <b> Xbox 360 (Libxenon)</b><br />

@@ -14,7 +14,12 @@ HEADERS += \
     wrapper.h
 
 
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../release -lwimp
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../wimp/build/release/ -lwimp.dll
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../wimp/build/debug/ -lwimp.dll
+else:unix: LIBS += -L$$PWD/../wimp/build/ -lwimp.dll
 
-win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/../release/libwimp.dll.a
-else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/../release/wimp.lib
+INCLUDEPATH += $$PWD/../wimp/build/release
+DEPENDPATH += $$PWD/../wimp/build/release
+
+INCLUDEPATH += $$PWD/../../../../
+INCLUDEPATH += $$PWD/../../../../libretro-common/include/

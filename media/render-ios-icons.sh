@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-DEST=${1:-../apple/iOS/Resources/Media.xcassets/AppIcon.appiconset}
+DEST=${1:-../pkg/apple/iOS/Resources/Media.xcassets/AppIcon.appiconset}
 
 for pt in 29 40 57 60 50 72 76 ; do
     for scale in 1 2 3 ; do

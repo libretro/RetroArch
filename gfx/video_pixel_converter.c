@@ -117,9 +117,10 @@ bool video_pixel_frame_scale(const void *data,
       unsigned width, unsigned height,
       size_t pitch)
 {
+   static struct retro_perf_counter video_frame_conv = {0};
    video_pixel_scaler_t *scaler = scaler_get_ptr();
 
-   RARCH_PERFORMANCE_INIT(video_frame_conv);
+   rarch_perf_init(&video_frame_conv, "video_frame_conv");
 
    if (!data)
       return false;
@@ -128,7 +129,7 @@ bool video_pixel_frame_scale(const void *data,
    if (data == RETRO_HW_FRAME_BUFFER_VALID)
       return false;
 
-   RARCH_PERFORMANCE_START(video_frame_conv);
+   retro_perf_start(&video_frame_conv);
 
    scaler->scaler->in_width      = width;
    scaler->scaler->in_height     = height;
@@ -139,7 +140,7 @@ bool video_pixel_frame_scale(const void *data,
 
    scaler_ctx_scale(scaler->scaler, scaler->scaler_out, data);
 
-   RARCH_PERFORMANCE_STOP(video_frame_conv);
+   retro_perf_stop(&video_frame_conv);
 
    return true;
 }

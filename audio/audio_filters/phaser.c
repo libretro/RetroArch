@@ -53,12 +53,12 @@ static void phaser_process(void *data, struct dspfilter_output *output,
 {
    unsigned i, c;
    int s;
-   float m[2], tmp[2];
+   float m[2], tmp[2], *out;
    struct phaser_data *ph = (struct phaser_data*)data;
 
    output->samples = input->samples;
    output->frames  = input->frames;
-   float *out = output->samples;
+   out             = output->samples;
 
    for (i = 0; i < input->frames; i++, out += 2)
    {
@@ -95,11 +95,10 @@ static void phaser_process(void *data, struct dspfilter_output *output,
 static void *phaser_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
+   float lfo_freq, lfo_start_phase;
    struct phaser_data *ph = (struct phaser_data*)calloc(1, sizeof(*ph));
    if (!ph)
       return NULL;
-
-   float lfo_freq, lfo_start_phase;
 
    config->get_float(userdata, "lfo_freq", &lfo_freq, 0.4f);
    config->get_float(userdata, "lfo_start_phase", &lfo_start_phase, 0.0f);

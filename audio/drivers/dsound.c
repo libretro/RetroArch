@@ -14,14 +14,28 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if defined(_MSC_VER) && !defined(_XBOX)
-#pragma comment(lib, "dsound")
-#pragma comment(lib, "dxguid")
+#include <stdint.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
+
+#ifndef _XBOX
+#include <windows.h>
+#include <mmreg.h>
+#include <mmsystem.h>
 #endif
+
+#include <dsound.h>
+
+#include <boolean.h>
 
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <rthreads/rthreads.h>
+#include <queues/fifo_buffer.h>
+
+#include "../../driver.h"
+#include "../../general.h"
 
 #ifdef _XBOX
 #define DSERR_BUFFERLOST                MAKE_DSHRESULT(150)
@@ -29,21 +43,11 @@
 #define DSERR_PRIOLEVELNEEDED           MAKE_DSHRESULT(70)
 #endif
 
-#include "../../driver.h"
-#include <stdlib.h>
-#include <boolean.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
-
-#ifndef _XBOX
-// Need these includes in MinGW-w64 4.9 it seems ...
-#include <mmreg.h>
-#include <mmsystem.h>
+#if defined(_MSC_VER) && !defined(_XBOX)
+#pragma comment(lib, "dsound")
+#pragma comment(lib, "dxguid")
 #endif
-#include <dsound.h>
-#include <queues/fifo_buffer.h>
-#include "../../general.h"
+
 
 typedef struct dsound
 {
@@ -83,7 +87,7 @@ struct audio_lock
    DWORD size2;
 };
 
-static INLINE bool grab_region(dsound_t *ds, DWORD write_ptr,
+static INLINE bool grab_region(dsound_t *ds, uint32_t write_ptr,
       struct audio_lock *region)
 {
    const char *err;
@@ -118,16 +122,11 @@ static INLINE bool grab_region(dsound_t *ds, DWORD write_ptr,
          break;
 
       default:
-         err = NULL;
+         return true;
    }
 
-   if (err)
-   {
-      RARCH_WARN("[DirectSound error]: %s\n", err);
-      return false;
-   }
-
-   return true;
+   RARCH_WARN("[DirectSound error]: %s\n", err);
+   return false;
 }
 
 static INLINE void release_region(dsound_t *ds, const struct audio_lock *region)
@@ -167,7 +166,7 @@ static void dsound_thread(void *data)
           * but it is not guaranteed to work, so use high 
           * priority sleeping patterns.
           */
-         rarch_sleep(1);
+         retro_sleep(1);
          continue;
       }
 

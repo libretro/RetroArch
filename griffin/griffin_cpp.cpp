@@ -32,11 +32,35 @@ AUDIO
 #include "../audio/drivers/xaudio.cpp"
 #endif
 
+
+/*============================================================
+ KEYBOARD EVENT
+ ============================================================ */
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../input/drivers_keyboard/keyboard_event_win32.cpp"
+#endif
+
+/*============================================================
+UI COMMON CONTEXT
+============================================================ */
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../gfx/common/win32_common.cpp"
+
+#ifdef HAVE_OPENGL
+#include "../gfx/drivers_context/wgl_ctx.cpp"
+#endif
+#endif
+
+
 /*============================================================
 MENU
 ============================================================ */
 #ifdef HAVE_RMENU_XUI
 #include "../menu/drivers/rmenu_xui.cpp"
+#endif
+
+#if defined(HAVE_D3D)
+#include "../menu/drivers_display/menu_display_d3d.cpp"
 #endif
 
 /*============================================================
@@ -51,7 +75,10 @@ VIDEO CONTEXT
 VIDEO DRIVER
 ============================================================ */
 #ifdef _XBOX
-#include "../xdk/xdk_resources.cpp"
+#include "../frontend/drivers/platform_xdk.cpp"
+#endif
+#ifdef _WIN32
+#include "../gfx/video_texture.cpp"
 #endif
 
 #if defined(HAVE_D3D)
@@ -71,4 +98,8 @@ FONTS
 
 #if defined(HAVE_D3D9) && !defined(_XBOX)
 #include "../gfx/drivers_font/d3d_w32_font.cpp"
+#endif
+
+#if defined(_XBOX360)
+#include "../gfx/drivers_font/xdk360_fonts.cpp"
 #endif

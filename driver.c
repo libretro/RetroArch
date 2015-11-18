@@ -14,11 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "driver.h"
+#include <compat/posix_string.h>
+
 #include "general.h"
-#include "retroarch.h"
 #include "msg_hash.h"
-#include "compat/posix_string.h"
 #include "gfx/video_monitor.h"
 #include "audio/audio_monitor.h"
 
@@ -32,35 +31,21 @@
 #include "config.h"
 #endif
 
-static driver_t *g_driver = NULL;
+static driver_t g_driver;
 
 void driver_free(void)
 {
-   if (g_driver)
-      free(g_driver);
-
-   g_driver = NULL;
-}
-
-static driver_t *driver_new(void)
-{
-   driver_t *driver = (driver_t*)calloc(1, sizeof(driver_t));
-
-   if (!driver)
-      return NULL;
-
-   return driver;
+   memset(&g_driver, 0, sizeof(g_driver));
 }
 
 void driver_clear_state(void)
 {
    driver_free();
-   g_driver  = driver_new();
 }
 
 driver_t *driver_get_ptr(void)
 {
-   return g_driver;
+   return &g_driver;
 }
 
 #define HASH_LOCATION_DRIVER           0x09189689U
@@ -335,6 +320,7 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
    return true;
 }
 
+#ifdef HAVE_MENU
 /**
  * menu_update_libretro_info:
  *
@@ -343,7 +329,10 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
 static void menu_update_libretro_info(void)
 {
    global_t *global               = global_get_ptr();
-   struct retro_system_info *info = global ? &global->menu.info : NULL;
+   struct retro_system_info *info = NULL;
+   
+   if (global)
+      info = &global->menu.info;
 
    if (!global || !info)
       return;
@@ -355,6 +344,7 @@ static void menu_update_libretro_info(void)
    event_command(EVENT_CMD_CORE_INFO_INIT);
    event_command(EVENT_CMD_LOAD_CORE_PERSIST);
 }
+#endif
 
 /**
  * init_drivers:

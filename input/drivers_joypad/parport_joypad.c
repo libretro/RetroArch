@@ -12,18 +12,19 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include "../input_autodetect.h"
-#include "../../general.h"
-#include <unistd.h>
 #include <stdint.h>
 #include <string.h>
+#include <unistd.h>
 #include <limits.h>
 #include <errno.h>
+
 #include <linux/parport.h>
 #include <linux/ppdev.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+
+#include "../input_autodetect.h"
+#include "../../general.h"
 
 /* Linux parport driver does not support reading the control register
    Other platforms may support up to 17 buttons */
@@ -309,14 +310,14 @@ static bool parport_joypad_init(void *data)
 static void parport_joypad_destroy(void)
 {
    unsigned i;
-   struct parport_joypad *pad = NULL;
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      pad = (struct parport_joypad*)&parport_pads[i];
+      struct parport_joypad *pad = (struct parport_joypad*)&parport_pads[i];
       if (pad->fd >= 0)
          parport_free_pad(pad);
    }
+
    memset(parport_pads, 0, sizeof(parport_pads));
    for (i = 0; i < MAX_USERS; i++)
       parport_pads[i].fd = -1;

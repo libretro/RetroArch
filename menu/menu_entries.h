@@ -19,26 +19,91 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "menu_navigation.h"
-#include "menu_list.h"
+#include <boolean.h>
+
 #include "menu_setting.h"
 #include "menu_entry.h"
+#include "menu_displaylist.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct menu_entries
+typedef enum
 {
-   /* Flagged when menu entries need to be refreshed */
-   bool need_refresh;
-   bool nonblocking_refresh;
+   MENU_LIST_PLAIN = 0,
+   MENU_LIST_HORIZONTAL,
+   MENU_LIST_TABS
+} menu_list_type_t;
 
-   size_t begin;
-   menu_list_t *menu_list;
-   rarch_setting_t *list_settings;
-   menu_navigation_t navigation;
-} menu_entries_t;
+typedef struct menu_file_list_cbs
+{
+   rarch_setting_t *setting;
+
+   int (*action_iterate)(const char *label, unsigned action);
+   const char *action_iterate_ident;
+
+   int (*action_deferred_push)(menu_displaylist_info_t *info);
+   const char *action_deferred_push_ident;
+
+   int (*action_select)(const char *path, const char *label, unsigned type,
+         size_t idx);
+   const char *action_select_ident;
+
+   int (*action_get_title)(const char *path, const char *label,
+         unsigned type, char *s, size_t len);
+   const char *action_get_title_ident;
+
+   int (*action_ok)(const char *path, const char *label, unsigned type,
+         size_t idx, size_t entry_idx);
+   const char *action_ok_ident;
+
+   int (*action_cancel)(const char *path, const char *label, unsigned type,
+         size_t idx);
+   const char *action_cancel_ident;
+
+   int (*action_scan)(const char *path, const char *label, unsigned type,
+         size_t idx);
+   const char *action_scan_ident;
+
+   int (*action_start)(unsigned type,  const char *label);
+   const char *action_start_ident;
+
+   int (*action_info)(unsigned type,  const char *label);
+   const char *action_info_ident;
+
+   int (*action_content_list_switch)(void *data, void *userdata, const char
+         *path, const char *label, unsigned type);
+   const char *action_content_list_switch_ident;
+
+   int (*action_left)(unsigned type, const char *label, bool wraparound);
+   const char *action_left_ident;
+
+   int (*action_right)(unsigned type, const char *label, bool wraparound);
+   const char *action_right_ident;
+
+   int (*action_refresh)(file_list_t *list, file_list_t *menu_list);
+   const char *action_refresh_ident;
+
+   int (*action_up)(unsigned type, const char *label);
+   const char *action_up_ident;
+
+   int (*action_down)(unsigned type, const char *label);
+   const char *action_down_ident;
+
+   void (*action_get_value)(file_list_t* list,
+         unsigned *w, unsigned type, unsigned i,
+         const char *label, char *s, size_t len,
+         const char *entry_label,
+         const char *path,
+         char *path_buf, size_t path_buf_size);
+   const char *action_get_value_ident;
+
+} menu_file_list_cbs_t;
+
+typedef struct menu_list menu_list_t;
+
+typedef struct menu_entries menu_entries_t;
 
 void menu_entries_set_start(size_t i);
 
@@ -52,21 +117,69 @@ int menu_entries_get_title(char *title, size_t title_len);
 
 bool menu_entries_show_back(void);
 
-void menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
+int menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 
-menu_entries_t *menu_entries_get_ptr(void);
-
-int menu_entries_refresh(unsigned action);
+rarch_setting_t *menu_setting_get_ptr(void);
 
 bool menu_entries_needs_refresh(void);
 
-void menu_entries_set_refresh(void);
+void menu_entries_set_refresh(bool nonblocking);
 
-void menu_entries_unset_refresh(void);
+void menu_entries_unset_refresh(bool nonblocking);
 
-void menu_entries_set_nonblocking_refresh(void);
+file_list_t *menu_entries_get_selection_buf_ptr(size_t idx);
 
-void menu_entries_unset_nonblocking_refresh(void);
+file_list_t *menu_entries_get_menu_stack_ptr(size_t idx);
+
+void menu_entries_push(file_list_t *list, const char *path, const char *label,
+      unsigned type, size_t directory_ptr, size_t entry_idx);
+
+bool menu_entries_init(void *data);
+
+void menu_entries_free(void);
+
+void menu_entries_get_last_stack(const char **path, const char **label,
+      unsigned *file_type, size_t *entry_idx);
+
+menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void);
+
+void menu_entries_pop_stack(size_t *ptr, size_t idx);
+
+void menu_entries_flush_stack(const char *needle, unsigned final_type);
+
+size_t menu_entries_get_stack_size(size_t idx);
+
+size_t menu_entries_get_size(void);
+
+void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
+      const char **path, const char **label, unsigned *file_type,
+      size_t *entry_idx, const char **alt);
+
+menu_list_t *menu_list_get_ptr(void);
+
+void *menu_entries_get_userdata_at_offset(const file_list_t *list, size_t idx);
+
+menu_file_list_cbs_t *menu_entries_get_actiondata_at_offset(const file_list_t *list, size_t idx);
+
+void menu_entries_get_last(const file_list_t *list,
+      const char **path, const char **label,
+      unsigned *file_type, size_t *entry_idx);
+
+void menu_entries_clear(file_list_t *list);
+
+void menu_entries_set_alt_at_offset(file_list_t *list, size_t idx,
+      const char *alt);
+
+bool menu_entries_increment_selection_buf(void);
+
+bool menu_entries_increment_menu_stack(void);
+
+void menu_entries_push_selection_buf(file_list_t *list, const char *path, const char *label,
+      unsigned type, size_t directory_ptr, size_t entry_idx);
+
+void menu_entries_refresh(file_list_t *list);
+
+rarch_setting_t *menu_entries_get_setting(uint32_t i);
 
 #ifdef __cplusplus
 }

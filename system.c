@@ -66,7 +66,7 @@ void rarch_system_info_init(void)
 {
    rarch_system_info_t *system    = rarch_system_info_get_ptr();
 
-   pretro_get_system_info(&system->info);
+   core.retro_get_system_info(&system->info);
 
    if (!system->info.library_name)
       system->info.library_name = msg_hash_to_str(MSG_UNKNOWN);

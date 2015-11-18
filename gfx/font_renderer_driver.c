@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "font_renderer_driver.h"
 #include "../general.h"
 
 #ifdef HAVE_CONFIG_H

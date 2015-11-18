@@ -8,120 +8,22 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "libretrodb.h"
-
-#include "rmsgpack_dom.h"
 #include <compat/fnmatch.h>
 #include <compat/strl.h>
 
-#define MAX_ERROR_LEN 256
-#undef  MAX_ARGS
-#define MAX_ARGS 50
+#include "libretrodb.h"
+#include "query.h"
+#include "rmsgpack_dom.h"
 
-static char tmp_error_buff [MAX_ERROR_LEN] = {0};
+#define MAX_ERROR_LEN   256
+#define QUERY_MAX_ARGS  50
 
 struct buffer
 {
    const char *data;
    size_t len;
-   off_t offset;
+   ssize_t offset;
 };
-
-/* Errors */
-static void raise_too_many_arguments(const char **error)
-{
-   strlcpy(tmp_error_buff, 
-         "Too many arguments in function call.", sizeof(tmp_error_buff));
-   *error = tmp_error_buff;
-}
-
-static void raise_expected_number(off_t where, const char **error)
-{
-   snprintf(tmp_error_buff, MAX_ERROR_LEN,
-#ifdef _WIN32
-         "%I64u::Expected number",
-#else
-         "%llu::Expected number",
-#endif
-         (unsigned long long)where);
-   *error = tmp_error_buff;
-}
-
-static void raise_expected_string(off_t where, const char ** error)
-{
-   snprintf(tmp_error_buff, MAX_ERROR_LEN,
-#ifdef _WIN32
-         "%I64u::Expected string",
-#else
-         "%llu::Expected string",
-#endif
-         (unsigned long long)where);
-   *error = tmp_error_buff;
-}
-
-static void raise_unexpected_eof(off_t where, const char ** error)
-{
-   snprintf(tmp_error_buff, MAX_ERROR_LEN,
-#ifdef _WIN32
-         "%I64u::Unexpected EOF",
-#else
-         "%llu::Unexpected EOF",
-#endif
-         (unsigned long long)where
-         );
-   *error = tmp_error_buff;
-}
-
-static void raise_enomem(const char **error)
-{
-   strlcpy(tmp_error_buff, "Out of memory", sizeof(tmp_error_buff));
-   *error = tmp_error_buff;
-}
-
-static void raise_unknown_function(off_t where, const char *name,
-      ssize_t len, const char **error)
-{
-   int n = snprintf(tmp_error_buff, MAX_ERROR_LEN,
-#ifdef _WIN32
-         "%I64u::Unknown function '",
-#else
-         "%llu::Unknown function '",
-#endif
-         (unsigned long long)where
-         );
-
-   if (len < (MAX_ERROR_LEN - n - 3))
-      strncpy(tmp_error_buff + n, name, len);
-
-   strcpy(tmp_error_buff + n + len, "'");
-   *error = tmp_error_buff;
-}
-static void raise_expected_eof(off_t where, char found, const char **error)
-{
-   snprintf(tmp_error_buff, MAX_ERROR_LEN,
-#ifdef _WIN32
-         "%I64u::Expected EOF found '%c'",
-#else
-         "%llu::Expected EOF found '%c'",
-#endif
-         (unsigned long long)where,
-         found
-         );
-   *error = tmp_error_buff;
-}
-
-static void raise_unexpected_char(off_t where, char expected, char found,
-      const char **error)
-{
-   snprintf(tmp_error_buff, MAX_ERROR_LEN,
-#ifdef _WIN32
-         "%I64u::Expected '%c' found '%c'",
-#else
-         "%llu::Expected '%c' found '%c'",
-#endif
-         (unsigned long long)where, expected, found);
-   *error = tmp_error_buff;
-}
 
 enum argument_type
 {
@@ -154,6 +56,117 @@ struct argument
    } a;
 };
 
+struct query
+{
+   unsigned ref_count;
+   struct invocation root;
+};
+
+struct registered_func
+{
+   const char *name;
+   rarch_query_func func;
+};
+
+static char tmp_error_buff [MAX_ERROR_LEN] = {0};
+
+/* Errors */
+static void raise_too_many_arguments(const char **error)
+{
+   strlcpy(tmp_error_buff, 
+         "Too many arguments in function call.", sizeof(tmp_error_buff));
+   *error = tmp_error_buff;
+}
+
+static void raise_expected_number(ssize_t where, const char **error)
+{
+   snprintf(tmp_error_buff, MAX_ERROR_LEN,
+#ifdef _WIN32
+         "%I64u::Expected number",
+#else
+         "%llu::Expected number",
+#endif
+         (unsigned long long)where);
+   *error = tmp_error_buff;
+}
+
+static void raise_expected_string(ssize_t where, const char ** error)
+{
+   snprintf(tmp_error_buff, MAX_ERROR_LEN,
+#ifdef _WIN32
+         "%I64u::Expected string",
+#else
+         "%llu::Expected string",
+#endif
+         (unsigned long long)where);
+   *error = tmp_error_buff;
+}
+
+static void raise_unexpected_eof(ssize_t where, const char ** error)
+{
+   snprintf(tmp_error_buff, MAX_ERROR_LEN,
+#ifdef _WIN32
+         "%I64u::Unexpected EOF",
+#else
+         "%llu::Unexpected EOF",
+#endif
+         (unsigned long long)where
+         );
+   *error = tmp_error_buff;
+}
+
+static void raise_enomem(const char **error)
+{
+   strlcpy(tmp_error_buff, "Out of memory", sizeof(tmp_error_buff));
+   *error = tmp_error_buff;
+}
+
+static void raise_unknown_function(ssize_t where, const char *name,
+      ssize_t len, const char **error)
+{
+   int n = snprintf(tmp_error_buff, MAX_ERROR_LEN,
+#ifdef _WIN32
+         "%I64u::Unknown function '",
+#else
+         "%llu::Unknown function '",
+#endif
+         (unsigned long long)where
+         );
+
+   if (len < (MAX_ERROR_LEN - n - 3))
+      strncpy(tmp_error_buff + n, name, len);
+
+   strlcpy(tmp_error_buff + n + len, "'", sizeof(tmp_error_buff));
+   *error = tmp_error_buff;
+}
+static void raise_expected_eof(ssize_t where, char found, const char **error)
+{
+   snprintf(tmp_error_buff, MAX_ERROR_LEN,
+#ifdef _WIN32
+         "%I64u::Expected EOF found '%c'",
+#else
+         "%llu::Expected EOF found '%c'",
+#endif
+         (unsigned long long)where,
+         found
+         );
+   *error = tmp_error_buff;
+}
+
+static void raise_unexpected_char(ssize_t where, char expected, char found,
+      const char **error)
+{
+   snprintf(tmp_error_buff, MAX_ERROR_LEN,
+#ifdef _WIN32
+         "%I64u::Expected '%c' found '%c'",
+#else
+         "%llu::Expected '%c' found '%c'",
+#endif
+         (unsigned long long)where, expected, found);
+   *error = tmp_error_buff;
+}
+
+
 static void argument_free(struct argument *arg)
 {
    unsigned i;
@@ -168,17 +181,6 @@ static void argument_free(struct argument *arg)
       argument_free(&arg->a.invocation.argv[i]);
 }
 
-struct query
-{
-   unsigned ref_count;
-   struct invocation root;
-};
-
-struct registered_func
-{
-   const char *name;
-   rarch_query_func func;
-};
 
 static struct buffer parse_argument(struct buffer buff, struct argument *arg,
       const char **error);
@@ -414,7 +416,7 @@ struct registered_func registered_functions[100] = {
 
 static struct buffer chomp(struct buffer buff)
 {
-   for (; (unsigned)buff.offset < buff.len && isspace(buff.data[buff.offset]); buff.offset++);
+   for (; (unsigned)buff.offset < buff.len && isspace((int)buff.data[buff.offset]); buff.offset++);
    return buff;
 }
 
@@ -575,7 +577,7 @@ static struct buffer parse_integer(struct buffer buff,
       raise_expected_number(buff.offset, error);
    else
    {
-      while (isdigit(buff.data[buff.offset]))
+      while (isdigit((int)buff.data[buff.offset]))
          buff.offset++;
    }
    return buff;
@@ -605,7 +607,7 @@ static struct buffer parse_value(struct buffer buff,
    }
    else if (peek(buff, "b") || peek(buff, "\"") || peek(buff, "'"))
       buff = parse_string(buff, value, error);
-   else if (isdigit(buff.data[buff.offset]))
+   else if (isdigit((int)buff.data[buff.offset]))
       buff = parse_integer(buff, value, error);
    return buff;
 }
@@ -628,7 +630,7 @@ static struct buffer get_ident(struct buffer buff,
 
    if (*error)
       goto clean;
-   if (!isalpha(c))
+   if (!isalpha((int)c))
       return buff;
 
    buff.offset++;
@@ -637,7 +639,7 @@ static struct buffer get_ident(struct buffer buff,
 
    while (!*error)
    {
-      if (!(isalpha(c) || isdigit(c) || c == '_'))
+      if (!(isalpha((int)c) || isdigit((int)c) || c == '_'))
          break;
       buff.offset++;
       *len = *len + 1;
@@ -653,7 +655,7 @@ static struct buffer parse_method_call(struct buffer buff,
 {
    size_t func_name_len;
    unsigned i;
-   struct argument args[MAX_ARGS];
+   struct argument args[QUERY_MAX_ARGS];
    unsigned argi = 0;
    const char *func_name = NULL;
    struct registered_func *rf = registered_functions;
@@ -689,7 +691,7 @@ static struct buffer parse_method_call(struct buffer buff,
    buff = chomp(buff);
    while (!peek(buff, ")"))
    {
-      if (argi >= MAX_ARGS)
+      if (argi >= QUERY_MAX_ARGS)
       {
          raise_too_many_arguments(error);
          goto clean;
@@ -741,7 +743,7 @@ static struct buffer parse_table(struct buffer buff,
 {
    unsigned i;
    size_t ident_len;
-   struct argument args[MAX_ARGS];
+   struct argument args[QUERY_MAX_ARGS];
    const char *ident_name = NULL;
    unsigned argi = 0;
 
@@ -755,13 +757,13 @@ static struct buffer parse_table(struct buffer buff,
 
    while (!peek(buff, "}"))
    {
-      if (argi >= MAX_ARGS)
+      if (argi >= QUERY_MAX_ARGS)
       {
          raise_too_many_arguments(error);
          goto clean;
       }
 
-      if (isalpha(buff.data[buff.offset]))
+      if (isalpha((int)buff.data[buff.offset]))
       {
          buff = get_ident(buff, &ident_name, &ident_len, error);
 
@@ -800,7 +802,7 @@ static struct buffer parse_table(struct buffer buff,
 
       buff = chomp(buff);
 
-      if (argi >= MAX_ARGS)
+      if (argi >= QUERY_MAX_ARGS)
       {
          raise_too_many_arguments(error);
          goto clean;
@@ -854,7 +856,7 @@ static struct buffer parse_argument(struct buffer buff,
    buff = chomp(buff);
 
    if (
-         isalpha(buff.data[buff.offset])
+         isalpha((int)buff.data[buff.offset])
          && !(
             peek(buff, "nil")
             || peek(buff, "true")
@@ -920,7 +922,7 @@ void *libretrodb_query_compile(libretrodb_t *db,
       if (*error)
          goto clean;
    }
-   else if (isalpha(buff.data[buff.offset]))
+   else if (isalpha((int)buff.data[buff.offset]))
       buff = parse_method_call(buff, &q->root, error);
 
    buff = expect_eof(buff, error);
@@ -954,3 +956,4 @@ int libretrodb_query_filter(libretrodb_query_t *q,
    struct rmsgpack_dom_value res = inv.func(*v, inv.argc, inv.argv);
    return (res.type == RDT_BOOL && res.val.bool_);
 }
+

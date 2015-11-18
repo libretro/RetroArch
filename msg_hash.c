@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
+
 #include <rhash.h>
 
 #include "msg_hash.h"

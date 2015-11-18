@@ -1,0 +1,172 @@
+diff --git a/gfx/drivers_context/cocoa_gl_ctx.m b/gfx/drivers_context/cocoa_gl_ctx.m
+index e67725f..868d874 100644
+--- a/gfx/drivers_context/cocoa_gl_ctx.m
++++ b/gfx/drivers_context/cocoa_gl_ctx.m
+@@ -83,6 +83,7 @@ static NSOpenGLPixelFormat* g_format;
+ 
+ static unsigned g_minor = 0;
+ static unsigned g_major = 0;
++static bool g_is_inited = false;
+ 
+ /* forward declaration */
+ void *nsview_get_ptr(void);
+@@ -152,6 +153,9 @@ static bool cocoagl_gfx_ctx_init(void *data)
+ {
+    (void)data;
+     
++    if (g_is_inited)
++        return true;
++    
+ #if defined(HAVE_COCOA)
+     CocoaView *g_view = (CocoaView*)nsview_get_ptr();
+ #if MAC_OS_X_VERSION_10_7
+@@ -196,6 +200,11 @@ static bool cocoagl_gfx_ctx_init(void *data)
+     [g_context makeCurrentContext];
+    // Make sure the view was created
+    [CocoaView get];
++#if defined(HAVE_COCOA)
++    [NSApp setDelegate:g_view];
++#endif
++    
++    g_is_inited = true;
+    return true;
+ }
+ 
+@@ -221,6 +230,8 @@ static void cocoagl_gfx_ctx_destroy(void *data)
+ #endif
+    [GLContextClass clearCurrentContext];
+    g_context = nil;
++    
++    g_is_inited = false;
+ }
+ 
+ static bool cocoagl_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
+diff --git a/pkg/apple/OSX/Info.plist b/pkg/apple/OSX/Info.plist
+index 8d59658..af95482 100644
+--- a/pkg/apple/OSX/Info.plist
++++ b/pkg/apple/OSX/Info.plist
+@@ -41,8 +41,6 @@
+ 	<true/>
+ 	<key>NSHumanReadableCopyright</key>
+ 	<string>Copyright © 2015 RetroArch. All rights reserved.</string>
+-	<key>NSMainNibFile</key>
+-	<string>MainMenu</string>
+ 	<key>NSPrincipalClass</key>
+ 	<string>RApplication</string>
+ </dict>
+diff --git a/pkg/apple/RetroArch.xcodeproj/project.pbxproj b/pkg/apple/RetroArch.xcodeproj/project.pbxproj
+index a7c1b57..e48f0bf 100644
+--- a/pkg/apple/RetroArch.xcodeproj/project.pbxproj
++++ b/pkg/apple/RetroArch.xcodeproj/project.pbxproj
+@@ -7,9 +7,7 @@
+ 	objects = {
+ 
+ /* Begin PBXBuildFile section */
+-		1DDD58160DA1D0A300B32029 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1DDD58140DA1D0A300B32029 /* MainMenu.xib */; };
+ 		500845251B89300700CE6073 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
+-		500845261B89300700CE6073 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1DDD58140DA1D0A300B32029 /* MainMenu.xib */; };
+ 		500845271B89300700CE6073 /* retroarch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 84DD5EB71A89F1C7007336C1 /* retroarch.icns */; };
+ 		500845291B89300700CE6073 /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 509F0C9C1AA23AFC00619ECC /* griffin_objc.m */; };
+ 		5008452A1B89300700CE6073 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 840222FB1A889EE2009AB261 /* griffin.c */; };
+@@ -75,7 +73,6 @@
+ 
+ /* Begin PBXFileReference section */
+ 		089C165DFE840E0CC02AAC07 /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = OSX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+-		1DDD58150DA1D0A300B32029 /* MainMenu.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = MainMenu.xib; path = OSX/en.lproj/MainMenu.xib; sourceTree = "<group>"; };
+ 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
+ 		5008453A1B89300700CE6073 /* RetroArch copy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RetroArch copy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+ 		5008453B1B89300700CE6073 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Info.plist"; path = "/../../pkg/apple/OSX/Info.plist"; sourceTree = SOURCE_ROOT; };
+@@ -196,7 +193,6 @@
+ 				84DD5EB71A89F1C7007336C1 /* retroarch.icns */,
+ 				8D1107310486CEB800E47090 /* Info.plist */,
+ 				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
+-				1DDD58140DA1D0A300B32029 /* MainMenu.xib */,
+ 			);
+ 			name = Resources;
+ 			sourceTree = "<group>";
+@@ -301,7 +297,6 @@
+ 			buildActionMask = 2147483647;
+ 			files = (
+ 				500845251B89300700CE6073 /* InfoPlist.strings in Resources */,
+-				500845261B89300700CE6073 /* MainMenu.xib in Resources */,
+ 				500845271B89300700CE6073 /* retroarch.icns in Resources */,
+ 			);
+ 			runOnlyForDeploymentPostprocessing = 0;
+@@ -311,7 +306,6 @@
+ 			buildActionMask = 2147483647;
+ 			files = (
+ 				8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */,
+-				1DDD58160DA1D0A300B32029 /* MainMenu.xib in Resources */,
+ 				84DD5EB81A89F1C7007336C1 /* retroarch.icns in Resources */,
+ 			);
+ 			runOnlyForDeploymentPostprocessing = 0;
+@@ -348,14 +342,6 @@
+ 			name = InfoPlist.strings;
+ 			sourceTree = "<group>";
+ 		};
+-		1DDD58140DA1D0A300B32029 /* MainMenu.xib */ = {
+-			isa = PBXVariantGroup;
+-			children = (
+-				1DDD58150DA1D0A300B32029 /* MainMenu.xib */,
+-			);
+-			name = MainMenu.xib;
+-			sourceTree = "<group>";
+-		};
+ /* End PBXVariantGroup section */
+ 
+ /* Begin XCBuildConfiguration section */
+diff --git a/ui/drivers/ui_cocoa.m b/ui/drivers/ui_cocoa.m
+index 5dde6f9..37cd066 100644
+--- a/ui/drivers/ui_cocoa.m
++++ b/ui/drivers/ui_cocoa.m
+@@ -421,10 +421,50 @@ extern void action_ok_push_quick_menu(void);
+ 
+ @end
+ 
++static void setup_appkit(void)
++{
++   [NSAutoreleasePool new];
++   [NSApplication sharedApplication];
++    
++   /* Might be Snow Leopard (10.6) only and up */
++   [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
++    
++   id menubar = [[NSMenu new] autorelease];
++   id appMenuItem = [[NSMenuItem new] autorelease];
++
++   [menubar addItem:appMenuItem];
++   [NSApp setMainMenu:menubar];
++    
++    /* Add 'Quit' to menu */
++    id appMenu = [[NSMenu new] autorelease];
++    id appName = [[NSProcessInfo processInfo] processName];
++    id quitTitle = BOXSTRING("Quit");
++    id quitMenuItem = [[[NSMenuItem alloc] initWithTitle:quitTitle
++    action:@selector(terminate:) keyEquivalent:BOXSTRING("q")] autorelease];
++    [appMenu addItem:quitMenuItem];
++    [appMenuItem setSubmenu:appMenu];
++    
++    /* Create a window and activate the application */
++    id window = [[[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 200, 200) styleMask:NSTitledWindowMask backing:NSBackingStoreBuffered defer:NO] autorelease];
++    [window cascadeTopLeftFromPoint:NSMakePoint(20,20)];
++    [window setTitle:appName];
++    [window makeKeyAndOrderFront:nil];
++    
++    cocoagl_gfx_ctx_init(NULL);
++    [window setContentView:(CocoaView*)nsview_get_ptr()];
++    
++    /* Start the application */
++    [NSApp activateIgnoringOtherApps:YES]; /* Brings application to front on startup */
++    [NSApp run];
++}
++
+ int main(int argc, char *argv[])
+ {
+    waiting_argc = argc;
+    waiting_argv = argv;
++    
++   setup_appkit();
++    
+    return NSApplicationMain(argc, (const char **) argv);
+ }
+ 

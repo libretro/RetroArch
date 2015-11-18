@@ -16,6 +16,7 @@
 #include "../menu.h"
 #include "../menu_cbs.h"
 #include "../menu_input.h"
+#include "../menu_display.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 #include "../menu_hash.h"
@@ -24,7 +25,15 @@
 #include "../../retroarch.h"
 #include "../../performance.h"
 
+#include "../../gfx/video_shader_driver.h"
+
 #include "../../input/input_remapping.h"
+
+#ifndef BIND_ACTION_START
+#define BIND_ACTION_START(cbs, name) \
+   cbs->action_start = name; \
+   cbs->action_start_ident = #name;
+#endif
 
 static int action_start_remap_file_load(unsigned type, const char *label)
 {
@@ -50,21 +59,32 @@ static int action_start_video_filter_file_load(unsigned type, const char *label)
    return 0;
 }
 
-static int action_start_performance_counters_core(unsigned type, const char *label)
+static int generic_action_start_performance_counters(struct retro_perf_counter **counters,
+      unsigned offset, unsigned type, const char *label)
 {
-   struct retro_perf_counter **counters = (struct retro_perf_counter**)
-      perf_counters_libretro;
-   unsigned offset = type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN;
-
-   (void)label;
-
    if (counters[offset])
    {
-      counters[offset]->total = 0;
+      counters[offset]->total    = 0;
       counters[offset]->call_cnt = 0;
    }
 
    return 0;
+}
+
+static int action_start_performance_counters_core(unsigned type, const char *label)
+{
+   struct retro_perf_counter **counters = retro_get_perf_counter_libretro();
+   unsigned offset = type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN;
+
+   return generic_action_start_performance_counters(counters, offset, type, label);
+}
+
+static int action_start_performance_counters_frontend(unsigned type,
+      const char *label)
+{
+   struct retro_perf_counter **counters = retro_get_perf_counter_rarch();
+   unsigned offset = type - MENU_SETTINGS_PERF_COUNTERS_BEGIN;
+   return generic_action_start_performance_counters(counters, offset, type, label);
 }
 
 static int action_start_input_desc(unsigned type, const char *label)
@@ -209,7 +229,7 @@ static int action_start_shader_num_passes(unsigned type, const char *label)
    if (shader->passes)
       shader->passes = 0;
 
-   menu_entries_set_refresh();
+   menu_entries_set_refresh(false);
    video_shader_resolve_parameters(NULL, menu->shader);
 #endif
    return 0;
@@ -223,28 +243,10 @@ static int action_start_cheat_num_passes(unsigned type, const char *label)
    if (!cheat)
       return -1;
 
-   if (cheat->size)
+   if (cheat_manager_get_size(cheat))
    {
-      menu_entries_set_refresh();
+      menu_entries_set_refresh(false);
       cheat_manager_realloc(cheat, 0);
-   }
-
-   return 0;
-}
-
-static int action_start_performance_counters_frontend(unsigned type,
-      const char *label)
-{
-   struct retro_perf_counter **counters = (struct retro_perf_counter**)
-      perf_counters_rarch;
-   unsigned offset = type - MENU_SETTINGS_PERF_COUNTERS_BEGIN;
-
-   (void)label;
-
-   if (counters[offset])
-   {
-      counters[offset]->total = 0;
-      counters[offset]->call_cnt = 0;
    }
 
    return 0;
@@ -255,8 +257,6 @@ static int action_start_core_setting(unsigned type,
 {
    unsigned idx           = type - MENU_SETTINGS_CORE_OPTION_START;
    rarch_system_info_t *system = rarch_system_info_get_ptr();
-
-   (void)label;
 
    if (system)
       core_option_set_default(system->core_options, idx);
@@ -284,7 +284,7 @@ static int action_start_video_resolution(
       global->console.screen.resolutions.height = height;
 
       snprintf(msg, sizeof(msg),"Resetting to: %dx%d",width, height);
-      rarch_main_msg_queue_push(msg, 1, 100, true);
+      menu_display_msg_queue_push(msg, 1, 100, true);
    }
 
    return 0;
@@ -295,34 +295,34 @@ static int action_start_lookup_setting(unsigned type, const char *label)
    return menu_setting_set(type, label, MENU_ACTION_START, false);
 }
 
-int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs,
+static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs,
       uint32_t hash)
 {
    switch (hash)
    {
       case MENU_LABEL_REMAP_FILE_LOAD:
-         cbs->action_start = action_start_remap_file_load;
+         BIND_ACTION_START(cbs, action_start_remap_file_load);
          break;
       case MENU_LABEL_VIDEO_FILTER:
-         cbs->action_start = action_start_video_filter_file_load;
+         BIND_ACTION_START(cbs, action_start_video_filter_file_load);
          break;
       case MENU_LABEL_VIDEO_SHADER_PASS:
-         cbs->action_start = action_start_shader_pass;
+         BIND_ACTION_START(cbs, action_start_shader_pass);
          break;
       case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
-         cbs->action_start = action_start_shader_scale_pass;
+         BIND_ACTION_START(cbs, action_start_shader_scale_pass);
          break;
       case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
-         cbs->action_start = action_start_shader_filter_pass;
+         BIND_ACTION_START(cbs, action_start_shader_filter_pass);
          break;
       case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
-         cbs->action_start = action_start_shader_num_passes;
+         BIND_ACTION_START(cbs, action_start_shader_num_passes);
          break;
       case MENU_LABEL_CHEAT_NUM_PASSES:
-         cbs->action_start = action_start_cheat_num_passes;
+         BIND_ACTION_START(cbs, action_start_cheat_num_passes);
          break;
       case MENU_LABEL_SCREEN_RESOLUTION:
-         cbs->action_start = action_start_video_resolution;		 
+         BIND_ACTION_START(cbs, action_start_video_resolution);
       default:
          return -1;
    }
@@ -335,23 +335,37 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
 {
    if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-      cbs->action_start = action_start_shader_action_parameter;
+   {
+      BIND_ACTION_START(cbs, action_start_shader_action_parameter);
+   }
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
-      cbs->action_start = action_start_shader_action_preset_parameter;
+   {
+      BIND_ACTION_START(cbs, action_start_shader_action_preset_parameter);
+   }
    else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
          type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
-      cbs->action_start = action_start_performance_counters_core;
+   {
+      BIND_ACTION_START(cbs, action_start_performance_counters_core);
+   }
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
-      cbs->action_start = action_start_input_desc;
+   {
+      BIND_ACTION_START(cbs, action_start_input_desc);
+   }
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN &&
          type <= MENU_SETTINGS_PERF_COUNTERS_END)
-      cbs->action_start = action_start_performance_counters_frontend;
+   {
+      BIND_ACTION_START(cbs, action_start_performance_counters_frontend);
+   }
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
-      cbs->action_start = action_start_core_setting;
+   {
+      BIND_ACTION_START(cbs, action_start_core_setting);
+   }
    else if (type == MENU_LABEL_SCREEN_RESOLUTION)
-      cbs->action_start = action_start_video_resolution;
+   {
+      BIND_ACTION_START(cbs, action_start_video_resolution);
+   }
    else
       return -1;
 
@@ -366,7 +380,7 @@ int menu_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   cbs->action_start = action_start_lookup_setting;
+   BIND_ACTION_START(cbs, action_start_lookup_setting);
    
    if (menu_cbs_init_bind_start_compare_label(cbs, label_hash) == 0)
       return 0;

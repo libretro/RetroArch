@@ -1,8 +1,236 @@
 TARGET := retroarch_3ds
+LIBRETRO =
+
+DEBUG                = 0
+GRIFFIN_BUILD        = 1
+WHOLE_ARCHIVE_LINK   = 0
+BUILD_3DSX           = 1
+BUILD_3DS            = 1
+BUILD_CIA            = 1
+
+APP_TITLE            = Retroarch 3DS
+APP_DESCRIPTION      = Retroarch 3DS
+APP_AUTHOR           = Team Libretro
+APP_PRODUCT_CODE     = RETROARCH-3DS
+APP_UNIQUE_ID        = 0xBAC00
+APP_ICON             = ctr/default.png
+APP_BANNER           = ctr/libretro_banner.png
+APP_AUDIO            = ctr/silent.wav
+APP_RSF              = ctr/tools/template.rsf
+APP_SYSTEM_MODE      = 64MB
+APP_SYSTEM_MODE_EXT  = 124MB
+APP_BIG_TEXT_SECTION = 0
+
+include ctr/Makefile.cores
+
 OBJS :=
-OBJS += gfx/drivers/ctr_sprite.o griffin/griffin.o
-#NO_SMDH = 1
-DEBUG = 0
+OBJS += gfx/drivers/ctr_sprite.o
+OBJS += ctr/ctr_system.o
+OBJS += ctr/ctr_memory.o
+OBJS += ctr/ctr_linear.o
+OBJS += ctr/ctr_svchax.o
+
+ifeq ($(GRIFFIN_BUILD), 1)
+	OBJS += griffin/griffin.o
+else
+	OBJS += libretro-common/file/file_extract.o
+	OBJS += performance.o
+	OBJS += libretro-common/compat/compat_getopt.o
+	OBJS += libretro-common/compat/compat_strcasestr.o
+	OBJS += libretro-common/compat/compat_strl.o
+	OBJS += libretro-common/compat/compat_fnmatch.o
+	OBJS += libretro-common/memmap/memalign.o
+	OBJS += libretro-common/file/config_file.o
+	OBJS += libretro-common/file/config_file_userdata.o
+	OBJS += core_options.o
+	OBJS += cheats.o
+	OBJS += libretro-common/hash/rhash.o
+	OBJS += gfx/video_context_driver.o
+	OBJS += gfx/drivers_context/gfx_null_ctx.o
+	OBJS += gfx/image/image.o
+	OBJS += gfx/video_texture.o
+	OBJS += libretro-common/formats/tga/rtga.o
+	OBJS += libretro-common/formats/png/rpng.o
+	OBJS += libretro-common/formats/png/rpng_encode.o
+	OBJS += libretro-common/formats/bmp/rbmp_encode.o
+	OBJS += libretro-common/gfx/math/matrix_4x4.o
+	OBJS += libretro-common/gfx/math/matrix_3x3.o
+	OBJS += gfx/drivers/ctr_gfx.o
+	OBJS += gfx/drivers/nullgfx.o
+	OBJS += gfx/font_renderer_driver.o
+	OBJS += gfx/drivers_font_renderer/bitmapfont.o
+	OBJS += gfx/font_driver.o
+	OBJS += input/input_autodetect.o
+	OBJS += input/input_joypad_driver.o
+	OBJS += input/input_joypad.o
+	OBJS += input/input_hid_driver.o
+	OBJS += input/input_common.o
+	OBJS += input/input_keymaps.o
+	OBJS += input/input_remapping.o
+	OBJS += input/input_sensor.o
+	OBJS += input/keyboard_line.o
+	OBJS += input/drivers/ctr_input.o
+	OBJS += input/drivers_joypad/ctr_joypad.o
+	OBJS += input/autoconf/builtin_ctr.o
+	OBJS += input/drivers/nullinput.o
+	OBJS += input/drivers_joypad/null_joypad.o
+	OBJS += input/drivers_joypad/hid_joypad.o
+	OBJS += input/drivers_hid/null_hid.o
+	OBJS += gfx/video_state_tracker.o
+	OBJS += libretro-common/queues/fifo_buffer.o
+	OBJS += audio/audio_resampler_driver.o
+	OBJS += audio/drivers_resampler/sinc.o
+	OBJS += audio/drivers_resampler/nearest.o
+	OBJS += audio/drivers_resampler/cc_resampler.o
+	OBJS += camera/drivers/nullcamera.o
+	OBJS += location/drivers/nulllocation.o
+	OBJS += audio/drivers/ctr_csnd_audio.o
+	OBJS += audio/drivers/ctr_dsp_audio.o
+	OBJS += audio/drivers/nullaudio.o
+	OBJS += gfx/video_driver.o
+	OBJS += gfx/video_common.o
+	OBJS += gfx/video_pixel_converter.o
+	OBJS += gfx/video_viewport.o
+	OBJS += input/input_driver.o
+	OBJS += audio/audio_driver.o
+	OBJS += camera/camera_driver.o
+	OBJS += location/location_driver.o
+	OBJS += menu/menu_driver.o
+	OBJS += driver.o
+	OBJS += libretro-common/gfx/scaler/scaler_filter.o
+	OBJS += libretro-common/gfx/scaler/pixconv.o
+	OBJS += libretro-common/gfx/scaler/scaler.o
+	OBJS += libretro-common/gfx/scaler/scaler_int.o
+	OBJS += gfx/video_filters/2xsai.o
+	OBJS += gfx/video_filters/super2xsai.o
+	OBJS += gfx/video_filters/supereagle.o
+	OBJS += gfx/video_filters/2xbr.o
+	OBJS += gfx/video_filters/darken.o
+	OBJS += gfx/video_filters/epx.o
+	OBJS += gfx/video_filters/scale2x.o
+	OBJS += gfx/video_filters/blargg_ntsc_snes.o
+	OBJS += gfx/video_filters/lq2x.o
+	OBJS += gfx/video_filters/phosphor2x.o
+	OBJS += audio/audio_filters/echo.o
+	OBJS += audio/audio_filters/eq.o
+	OBJS += audio/audio_filters/chorus.o
+	OBJS += audio/audio_filters/iir.o
+	OBJS += audio/audio_filters/panning.o
+	OBJS += audio/audio_filters/phaser.o
+	OBJS += audio/audio_filters/reverb.o
+	OBJS += audio/audio_filters/wahwah.o
+	OBJS += libretro-common/dynamic/dylib.o
+	OBJS += dynamic.o
+	OBJS += gfx/video_filter.o
+	OBJS += audio/audio_dsp_filter.o
+	OBJS += cores/dynamic_dummy.o
+	OBJS += content.o
+	OBJS += libretro-common/file/file_path.o
+	OBJS += file_path_special.o
+	OBJS += libretro-common/file/dir_list.o
+	OBJS += libretro-common/file/retro_dirent.o
+	OBJS += libretro-common/file/retro_file.o
+	OBJS += libretro-common/file/retro_stat.o
+	OBJS += dir_list_special.o
+	OBJS += string_list_special.o
+	OBJS += libretro-common/string/string_list.o
+	OBJS += libretro-common/string/stdstring.o
+	OBJS += file_ops.o
+	OBJS += libretro-common/file/nbio/nbio_stdio.o
+	OBJS += libretro-common/file/file_list.o
+	OBJS += libretro-common/queues/message_queue.o
+	OBJS += patch.o
+	OBJS += configuration.o
+	OBJS += rewind.o
+	OBJS += frontend/frontend_driver.o
+	OBJS += frontend/drivers/platform_ctr.o
+	OBJS += frontend/drivers/platform_null.o
+	OBJS += core_info.o
+	OBJS += ui/ui_companion_driver.o
+	OBJS += ui/drivers/ui_null.o
+	OBJS += frontend/frontend.o
+	OBJS += libretro_version_1.o
+	OBJS += retroarch.o
+	OBJS += retroarch_info.o
+	OBJS += runloop.o
+	OBJS += runloop_data.o
+	OBJS += runloop_msg.o
+	OBJS += system.o
+	OBJS += msg_hash.o
+	OBJS += intl/msg_hash_de.o
+	OBJS += intl/msg_hash_es.o
+	OBJS += intl/msg_hash_eo.o
+	OBJS += intl/msg_hash_fr.o
+	OBJS += intl/msg_hash_it.o
+	OBJS += intl/msg_hash_nl.o
+	OBJS += intl/msg_hash_pt.o
+	OBJS += intl/msg_hash_pl.o
+	OBJS += intl/msg_hash_us.o
+	OBJS += movie.o
+	OBJS += record/record_driver.o
+	OBJS += record/drivers/record_null.o
+	OBJS += tasks/task_file_transfer.o
+	OBJS += screenshot.o
+	OBJS += playlist.o
+	OBJS += menu/menu.o
+	OBJS += menu/menu_hash.o
+	OBJS += menu/menu_input.o
+	OBJS += menu/menu_entry.o
+	OBJS += menu/menu_entries.o
+	OBJS += menu/menu_setting.o
+	OBJS += menu/menu_cbs.o
+	OBJS += menu/cbs/menu_cbs_ok.o
+	OBJS += menu/cbs/menu_cbs_cancel.o
+	OBJS += menu/cbs/menu_cbs_select.o
+	OBJS += menu/cbs/menu_cbs_start.o
+	OBJS += menu/cbs/menu_cbs_info.o
+	OBJS += menu/cbs/menu_cbs_refresh.o
+	OBJS += menu/cbs/menu_cbs_left.o
+	OBJS += menu/cbs/menu_cbs_right.o
+	OBJS += menu/cbs/menu_cbs_title.o
+	OBJS += menu/cbs/menu_cbs_deferred_push.o
+	OBJS += menu/cbs/menu_cbs_scan.o
+	OBJS += menu/cbs/menu_cbs_get_value.o
+	OBJS += menu/cbs/menu_cbs_up.o
+	OBJS += menu/cbs/menu_cbs_down.o
+	OBJS += menu/cbs/menu_cbs_contentlist_switch.o
+	OBJS += menu/menu_shader.o
+	OBJS += menu/menu_navigation.o
+	OBJS += menu/menu_display.o
+	OBJS += menu/menu_displaylist.o
+	OBJS += menu/menu_animation.o
+	OBJS += menu/intl/menu_hash_de.o
+	OBJS += menu/intl/menu_hash_es.o
+	OBJS += menu/intl/menu_hash_eo.o
+	OBJS += menu/intl/menu_hash_fr.o
+	OBJS += menu/intl/menu_hash_it.o
+	OBJS += menu/intl/menu_hash_nl.o
+	OBJS += menu/intl/menu_hash_pl.o
+	OBJS += menu/intl/menu_hash_pt.o
+	OBJS += menu/intl/menu_hash_us.o
+	OBJS += menu/drivers/null.o
+	OBJS += menu/drivers/menu_generic.o
+	OBJS += menu/drivers_display/menu_display_null.o
+	OBJS += menu/drivers/rgui.o
+	OBJS += command_event.o
+	OBJS += deps/zlib/adler32.o
+	OBJS += deps/zlib/compress.o
+	OBJS += deps/zlib/crc32.o
+	OBJS += deps/zlib/deflate.o
+	OBJS += deps/zlib/gzclose.o
+	OBJS += deps/zlib/gzlib.o
+	OBJS += deps/zlib/gzread.o
+	OBJS += deps/zlib/gzwrite.o
+	OBJS += deps/zlib/inffast.o
+	OBJS += deps/zlib/inflate.o
+	OBJS += deps/zlib/inftrees.o
+	OBJS += deps/zlib/trees.o
+	OBJS += deps/zlib/uncompr.o
+	OBJS += deps/zlib/zutil.o
+	OBJS += deps/zlib/ioapi.o
+	OBJS += deps/zlib/unzip.o
+	OBJS += audio/audio_utils.o
+endif
 
 
 ifeq ($(strip $(DEVKITARM)),)
@@ -17,14 +245,28 @@ ifeq ($(strip $(AEMSTRO)),)
 $(error "Please set AEMSTRO in your environment. export AEMSTRO=<path to>aemstro")
 endif
 
+ifeq ($(wildcard $(CTRULIB)/include/3ds/ndsp),)
+$(error "Please update ctrulib to the great-refactor branch")
+endif
+
+
+APP_TITLE         := $(shell echo "$(APP_TITLE)" | cut -c1-128)
+APP_DESCRIPTION   := $(shell echo "$(APP_DESCRIPTION)" | cut -c1-256)
+APP_AUTHOR        := $(shell echo "$(APP_AUTHOR)" | cut -c1-128)
+APP_PRODUCT_CODE  := $(shell echo $(APP_PRODUCT_CODE) | cut -c1-16)
+APP_UNIQUE_ID     := $(shell echo $(APP_UNIQUE_ID) | cut -c1-7)
+
+MAKEROM_ARGS_COMMON = -rsf $(APP_RSF) -exefslogo -elf $(TARGET).elf -icon $(TARGET).icn -banner $(TARGET).bnr -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(APP_PRODUCT_CODE)" -DAPP_UNIQUE_ID=$(APP_UNIQUE_ID) -DAPP_SYSTEM_MODE=$(APP_SYSTEM_MODE) -DAPP_SYSTEM_MODE_EXT=$(APP_SYSTEM_MODE_EXT)
+
 INCDIRS := -I$(CTRULIB)/include
 LIBDIRS := -L. -L$(CTRULIB)/lib
 
 
-ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard
+ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp
 
 CFLAGS	+=	-mword-relocations \
 			-fomit-frame-pointer -ffast-math \
+         -Werror=implicit-function-declaration \
 			$(ARCH)
 
 #CFLAGS	+= -Wall
@@ -35,6 +277,12 @@ ifeq ($(DEBUG), 1)
 else
    CFLAGS	+= -O3
 endif
+
+ifeq ($(WHOLE_ARCHIVE_LINK), 1)
+   WHOLE_START := -Wl,--whole-archive
+   WHOLE_END := -Wl,--no-whole-archive
+endif
+
 CFLAGS += -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include
 
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE -DSINC_LOWEST_QUALITY
@@ -45,45 +293,39 @@ CFLAGS += -DHAVE_ZLIB -DHAVE_RPNG -DWANT_ZLIB -DHAVE_BUILTIN_AUTOCONFIG
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
-ASFLAGS	:=	-g $(ARCH)
-LDFLAGS   =	-specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+ASFLAGS	:=	-g $(ARCH) -O3
+LDFLAGS   =	-specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+
 CFLAGS   += -std=gnu99 -ffast-math
 
 
-LIBS	:= -lretro_ctr -lctru -lm
+LIBS	:= $(WHOLE_START) -lretro_ctr $(WHOLE_END) -lctru -lm
 
 
+ifeq ($(BUILD_3DSX), 1)
+TARGET_3DSX := $(TARGET).3dsx $(TARGET).smdh
+endif
+
+ifeq ($(BUILD_3DS), 1)
+TARGET_3DS := $(TARGET).3ds
+endif
+
+ifeq ($(BUILD_CIA), 1)
+TARGET_CIA := $(TARGET).cia
+endif
 
 .PHONY: $(BUILD) clean all
 
-#---------------------------------------------------------------------------------
 all: $(TARGET)
 
-clean:
-	rm -f $(OBJS)
-	rm -f $(TARGET).3dsx
-	rm -f $(TARGET).elf
+$(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA)
+$(TARGET).3dsx: $(TARGET).elf
+$(TARGET).elf: $(OBJS) libretro_ctr.a
 
+ctr_sprite_shader_shbin.h: gfx/drivers/ctr_sprite.o
+gfx/drivers/ctr_gfx.c: ctr_sprite_shader_shbin.h
+griffin/griffin.o: gfx/drivers/ctr_gfx.c
 
-$(TARGET): $(TARGET).3dsx
-$(TARGET).3dsx	:	$(TARGET).elf
-$(TARGET).elf	:	$(OBJS)
-
-ifeq ($(strip $(APP_TITLE)),)
-APP_TITLE	:=	$(notdir $(TARGET))
-endif
-
-ifeq ($(strip $(APP_DESCRIPTION)),)
-APP_DESCRIPTION	:=	Built with devkitARM & libctru
-endif
-
-ifeq ($(strip $(APP_AUTHOR)),)
-APP_AUTHOR	:=	Unspecified Author
-endif
-
-ifeq ($(strip $(APP_ICON)),)
-APP_ICON	:=	$(CTRULIB)/default_icon.png
-endif
 
 PREFIX		:=	$(DEVKITARM)/bin/arm-none-eabi-
 
@@ -96,12 +338,20 @@ STRIP   := $(PREFIX)strip
 NM      := $(PREFIX)nm
 LD      := $(CXX)
 
+ifneq ($(findstring Linux,$(shell uname -a)),)
+	MAKEROM    = ctr/tools/makerom-linux
+	BANNERTOOL = ctr/tools/bannertool-linux
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+	MAKEROM    = ctr/tools/makerom-mac
+	BANNERTOOL = ctr/tools/bannertool-mac
+else
+	MAKEROM    = ctr/tools/makerom.exe
+	BANNERTOOL = ctr/tools/bannertool.exe
+endif
 
 %.o: %.shader
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
 	python $(AEMSTRO)/aemstro_as.py $< $(notdir $<).shbin
-	bin2s $(notdir $<).shbin | $(PREFIX)as -o $@
+	$(DEVKITARM)/bin/bin2s $(notdir $<).shbin | $(PREFIX)as -o $@
 	echo "extern const u8" `(echo $(notdir $<).shbin | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(notdir $<).shbin | tr . _)`.h
 	echo "extern const u8" `(echo $(notdir $<).shbin | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(notdir $<).shbin | tr . _)`.h
 	echo "extern const u32" `(echo $(notdir $<).shbin | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> `(echo $(notdir $<).shbin | tr . _)`.h
@@ -125,22 +375,46 @@ LD      := $(CXX)
 
 %.vsh:
 
-#---------------------------------------------------------------------------------
-%.smdh: $(APP_ICON) $(MAKEFILE_LIST)
-	@echo building ... $(notdir $@)
+$(TARGET).smdh: $(APP_ICON)
 	smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
 
-#---------------------------------------------------------------------------------
-%.3dsx: %.elf
-	@echo building ... $(notdir $@)
-	3dsxtool $< $@ $(_3DSXFLAGS)
+$(TARGET).3dsx: $(TARGET).elf
+ifeq ($(APP_BIG_TEXT_SECTION), 1)
+	cp ctr/big_text_section.xml $(TARGET).xml
+else
+	rm -f $(TARGET).xml
+endif
+	-3dsxtool $< $@ $(_3DSXFLAGS)
 
-#---------------------------------------------------------------------------------
-%.elf: .FORCE
-	@echo linking $(notdir $@)
+$(TARGET).elf: ctr/3dsx_custom_crt0.o
 	$(LD) $(LDFLAGS) $(OBJS) $(LIBDIRS) $(LIBS) -o $@
 	$(NM) -CSn $@ > $(notdir $*.lst)
 
+$(TARGET).bnr: $(APP_BANNER) $(APP_AUDIO)
+	$(BANNERTOOL) makebanner -i "$(APP_BANNER)" -a "$(APP_AUDIO)" -o $@
 
-.PHONY: .FORCE
+$(TARGET).icn: $(APP_ICON)
+	$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_TITLE)" -p "$(APP_AUTHOR)" -i $(APP_ICON) -o $@
+
+$(TARGET).3ds: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
+	$(MAKEROM) -f cci -o $@ $(MAKEROM_ARGS_COMMON) -DAPP_ENCRYPTED=true
+
+$(TARGET).cia: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
+	$(MAKEROM) -f cia -o $@ $(MAKEROM_ARGS_COMMON) -DAPP_ENCRYPTED=false
+
+
+clean:
+	rm -f $(OBJS)
+	rm -f $(TARGET).3dsx
+	rm -f $(TARGET).elf
+	rm -f $(TARGET).3ds
+	rm -f $(TARGET).cia
+	rm -f $(TARGET).smdh
+	rm -f $(TARGET).bnr
+	rm -f $(TARGET).icn
+	rm -f *_shader_shbin.h
+	rm -f ctr/ctr_config_*.o
+	rm -f ctr/3dsx_custom_crt0.o
+
+.PHONY: clean
 

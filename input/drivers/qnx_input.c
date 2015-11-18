@@ -149,7 +149,7 @@ static void qnx_process_gamepad_event(
    *state_cur = 0;
 
    for (i = 0; i < 20; i++)
-      *state_cur |= (controller->buttons & (1 << i) ? (1 << i) : 0);
+      *state_cur |= ((controller->buttons & (1 << i)) ? (1 << i) : 0);
 
    if (controller->analogCount > 0)
       screen_get_event_property_iv(screen_event,
@@ -791,7 +791,10 @@ static bool qnx_input_key_pressed(void *data, int key)
    qnx_input_t *qnx     = (qnx_input_t*)data;
    settings_t *settings = config_get_ptr();
 
-   return input_joypad_pressed(qnx->joypad, 0, settings->input.binds[0], key);
+   if (input_joypad_pressed(qnx->joypad, 0, settings->input.binds[0], key))
+      return true;
+
+   return false;
 }
 
 static bool qnx_input_meta_key_pressed(void *data, int key)
@@ -864,7 +867,7 @@ input_driver_t input_qnx = {
    qnx_input_poll,
    qnx_input_state,
    qnx_input_key_pressed,
-   NULL,
+   qnx_input_meta_key_pressed,
    qnx_input_free_input,
    NULL,
    NULL,
@@ -874,6 +877,7 @@ input_driver_t input_qnx = {
    NULL,
    qnx_input_set_rumble,
    qnx_input_get_joypad_driver,
+   NULL,
    qnx_input_keyboard_mapping_is_blocked,
    qnx_input_keyboard_mapping_set_block,
 };

@@ -20,7 +20,6 @@
 
 typedef struct xdk_renderchain
 {
-   void *empty;
    unsigned pixel_size;
    LPDIRECT3DDEVICE dev;
    const video_info_t *video_info;
@@ -105,7 +104,7 @@ static bool renderchain_create_first_pass(void *data,
    if (!chain->vertex_buf)
       return false;
 
-   chain->tex = (LPDIRECT3DTEXTURE)d3d_texture_new(d3dr, NULL, 
+   chain->tex = d3d_texture_new(d3dr, NULL, 
          chain->tex_w, chain->tex_h, 1, 0,
          info->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
          0, 0, 0, 0, NULL, NULL);
@@ -116,10 +115,10 @@ static bool renderchain_create_first_pass(void *data,
    d3d_set_sampler_address_u(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    d3d_set_sampler_address_v(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 #ifdef _XBOX1
-   d3dr->SetRenderState(D3DRS_LIGHTING, FALSE);
+   d3d_set_render_state(d3dr, D3DRS_LIGHTING, 0);
 #endif
-   d3dr->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-   d3dr->SetRenderState(D3DRS_ZENABLE, FALSE);
+   d3d_set_render_state(d3dr, D3DRS_CULLMODE, D3DCULL_NONE);
+   d3d_set_render_state(d3dr, D3DRS_ZENABLE, FALSE);
 
    if (!xdk_renderchain_init_shader_fvf(chain, chain))
       return false;
@@ -135,6 +134,9 @@ static void renderchain_set_vertices(void *data, unsigned pass,
    xdk_renderchain_t *chain = d3d ? (xdk_renderchain_t*)d3d->renderchain_data : NULL;
 
    video_driver_get_size(&width, &height);
+
+   if (!chain)
+      return;
 
    if (chain->last_width != vert_width || chain->last_height != vert_height)
    {
@@ -214,7 +216,8 @@ static void renderchain_set_vertices(void *data, unsigned pass,
          d3d->shader->use(d3d, pass);
       if (d3d->shader->set_params)
          d3d->shader->set_params(d3d, vert_width, vert_height, chain->tex_w,
-               chain->tex_h, width, height, frame_count, NULL, NULL, NULL, 0);
+               chain->tex_h, width, height, frame_count,
+               NULL, NULL, NULL, NULL, 0);
    }
 #endif
 #endif
@@ -231,7 +234,9 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
 
    if (chain->last_width != width || chain->last_height != height)
    {
-      d3d_lockrectangle_clear(chain->tex,
+      d3d_lock_rectangle(chain->tex,
+            0, &d3dlr, NULL, chain->tex_h, D3DLOCK_NOSYSLOCK);
+      d3d_lock_rectangle_clear(chain->tex,
             0, &d3dlr, NULL, chain->tex_h, D3DLOCK_NOSYSLOCK);
    }
 
@@ -286,9 +291,11 @@ void *xdk_renderchain_new(void)
 
 static bool xdk_renderchain_init_shader(void *data, void *renderchain_data)
 {
-   const char *shader_path = NULL;
    d3d_video_t        *d3d = (d3d_video_t*)data;
+#if defined(HAVE_HLSL)
+   const char *shader_path = NULL;
    settings_t *settings    = config_get_ptr();
+#endif
 
    if (!d3d)
       return false;
@@ -312,7 +319,7 @@ static bool xdk_renderchain_init(void *data,
       void *dev_data,
       const void *final_viewport_data,
       const void *info_data,
-      unsigned fmt
+      bool rgb32
       )
 {
    unsigned width, height;
@@ -322,8 +329,8 @@ static bool xdk_renderchain_init(void *data,
    const video_info_t *video_info  = (const video_info_t*)_video_info;
    const LinkInfo *link_info    = (const LinkInfo*)info_data;
    xdk_renderchain_t *chain     = (xdk_renderchain_t*)d3d->renderchain_data;
+   unsigned fmt                 = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
    (void)final_viewport_data;
-   (void)fmt;
 
    video_driver_get_size(&width, &height);
 
@@ -336,11 +343,14 @@ static bool xdk_renderchain_init(void *data,
    if (!renderchain_create_first_pass(d3d, video_info))
       return false;
 
+#if 0
+   /* TODO/FIXME */
    if (global->console.screen.viewports.custom_vp.width == 0)
       global->console.screen.viewports.custom_vp.width = width;
 
    if (global->console.screen.viewports.custom_vp.height == 0)
       global->console.screen.viewports.custom_vp.height = height;
+#endif
 
    return true;
 }
@@ -365,12 +375,12 @@ static bool xdk_renderchain_render(void *data, const void *frame,
    LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
    settings_t *settings     = config_get_ptr();
    xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
-   uint64_t frame_count     = video_driver_get_frame_count();
+   uint64_t *frame_count    = video_driver_get_frame_count();
 
    video_driver_get_size(&width, &height);
 
    renderchain_blit_to_texture(chain, frame, frame_width, frame_height, pitch);
-   renderchain_set_vertices(d3d, 1, frame_width, frame_height, frame_count);
+   renderchain_set_vertices(d3d, 1, frame_width, frame_height, *frame_count);
 
    d3d_set_texture(d3dr, 0, chain->tex);
    d3d_set_viewport(chain->dev, &d3d->final_viewport);
@@ -386,20 +396,6 @@ static bool xdk_renderchain_render(void *data, const void *frame,
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
    renderchain_set_mvp(d3d, width, height, d3d->dev_rotation);
 
-   return true;
-}
-
-static bool xdk_renderchain_add_lut(void *data,
-      const char *id, const char *path, bool smooth)
-{
-   xdk_renderchain_t *chain = (xdk_renderchain_t*)data;
-
-   (void)data;
-   (void)id;
-   (void)path;
-   (void)smooth;
-
-   /* stub */
    return true;
 }
 
@@ -456,6 +452,25 @@ static bool xdk_renderchain_reinit(void *data,
    return true;
 }
 
+static void xdk_renderchain_viewport_info(void *data, struct video_viewport *vp)
+{
+   unsigned width, height;
+   d3d_video_t *d3d = (d3d_video_t*)data;
+
+   if (!d3d || !vp)
+      return;
+
+   video_driver_get_size(&width, &height);
+
+   vp->x            = d3d->final_viewport.X;
+   vp->y            = d3d->final_viewport.Y;
+   vp->width        = d3d->final_viewport.Width;
+   vp->height       = d3d->final_viewport.Height;
+
+   vp->full_width   = width;
+   vp->full_height  = height;
+}
+
 renderchain_driver_t xdk_renderchain = {
    xdk_renderchain_free,
    xdk_renderchain_new,
@@ -465,9 +480,12 @@ renderchain_driver_t xdk_renderchain = {
    xdk_renderchain_init,
    xdk_renderchain_set_final_viewport,
    xdk_renderchain_add_pass,
-   xdk_renderchain_add_lut,
+   NULL,
    xdk_renderchain_add_state_tracker,
    xdk_renderchain_render,
    xdk_renderchain_convert_geometry,
+   NULL,
+   NULL,
+   xdk_renderchain_viewport_info,
    "xdk",
 };

@@ -1,0 +1,67 @@
+#!/usr/bin/make -f
+
+# Copyright (C) 2010 Hunter Kaller
+# Copyright (C) 2014 Sergio Benjamim
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+%:
+	dh $@ --parallel
+
+ARCH=$(shell dpkg-architecture -qDEB_HOST_ARCH)
+
+ifeq ($(ARCH), $(filter $(ARCH), amd64 i386))
+CONFIG_EXTRA_FLAGS=--enable-sse
+else ifeq ($(ARCH),armhf)
+CONFIG_EXTRA_FLAGS=--disable-vg --disable-cg --enable-gles --enable-neon --enable-floathard
+endif
+
+override_dh_auto_configure:
+	# See ./configure --help for valid flags
+	# disable flags (i.e. --disable-ffmpeg for example) if there is no package relative to the feature in Build-Depends
+	./configure --prefix=/usr --disable-ffmpeg $(CONFIG_EXTRA_FLAGS)
+
+override_dh_auto_build:
+	dh_auto_build --
+	# SoftFilters
+	dh_auto_build -- -C gfx/video_filters/
+	# Audio DSP plugins
+	dh_auto_build -- -C audio/audio_filters/
+
+override_dh_auto_install:
+	# Add here commands to install the package into debian/retroarch.
+	$(MAKE) DESTDIR=$(CURDIR)/debian/retroarch PREFIX=/usr install
+	cp $(CURDIR)/retroarch.cfg $(CURDIR)/debian/retroarch/etc/
+ifeq ($(ARCH),armhf)
+	rm -f $(CURDIR)/debian/retroarch/usr/bin/retroarch-cg2glsl
+endif
+	
+	# SoftFilters
+	cd $(CURDIR)/gfx/video_filters/ && \
+		cp *.so $(CURDIR)/debian/retroarch/usr/lib/retroarch/filters/video/ && \
+		cp *.filt $(CURDIR)/debian/retroarch/usr/lib/retroarch/filters/video/
+	# Audio DSP plugins
+	cd $(CURDIR)/audio/audio_filters/ && \
+		cp *.so $(CURDIR)/debian/retroarch/usr/lib/retroarch/filters/audio/ && \
+		cp *.dsp $(CURDIR)/debian/retroarch/usr/lib/retroarch/filters/audio/
+
+override_dh_auto_clean:
+	touch config.mk
+	dh_auto_clean --
+	dh_auto_clean -- -C gfx/video_filters/ clean
+	dh_auto_clean -- -C audio/audio_filters/ clean

@@ -31,9 +31,10 @@ extern "C" {
 
 /**
  * dir_list_new:
- * @dir          : directory path.
- * @ext          : allowed extensions of file directory entries to include.
- * @include_dirs : include directories as part of the finished directory listing?
+ * @dir                : directory path.
+ * @ext                : allowed extensions of file directory entries to include.
+ * @include_dirs       : include directories as part of the finished directory listing?
+ * @include_compressed : include compressed files, even when not part of ext.
  *
  * Create a directory listing.
  *
@@ -41,7 +42,7 @@ extern "C" {
  * NULL in case of error. Has to be freed manually.
  **/
 struct string_list *dir_list_new(const char *dir, const char *ext,
-      bool include_dirs);
+      bool include_dirs, bool include_compressed);
 
 /**
  * dir_list_sort:
