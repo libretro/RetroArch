@@ -256,25 +256,25 @@ static void check_shader_dir(global_t *global,
    const char *ext             = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
 
-   if (!global || !global->shader_dir.list)
+   if (!global || !global->dir.shader_dir.list)
       return;
 
    if (pressed_next)
    {
-      global->shader_dir.ptr = (global->shader_dir.ptr + 1) %
-         global->shader_dir.list->size;
+      global->dir.shader_dir.ptr = (global->dir.shader_dir.ptr + 1) %
+         global->dir.shader_dir.list->size;
    }
    else if (pressed_prev)
    {
-      if (global->shader_dir.ptr == 0)
-         global->shader_dir.ptr = global->shader_dir.list->size - 1;
+      if (global->dir.shader_dir.ptr == 0)
+         global->dir.shader_dir.ptr = global->dir.shader_dir.list->size - 1;
       else
-         global->shader_dir.ptr--;
+         global->dir.shader_dir.ptr--;
    }
    else
       return;
 
-   shader   = global->shader_dir.list->elems[global->shader_dir.ptr].data;
+   shader   = global->dir.shader_dir.list->elems[global->dir.shader_dir.ptr].data;
    ext      = path_get_extension(shader);
    ext_hash = msg_hash_calculate(ext);
 
@@ -294,7 +294,7 @@ static void check_shader_dir(global_t *global,
 
    snprintf(msg, sizeof(msg), "%s #%u: \"%s\".",
          msg_hash_to_str(MSG_SHADER),
-         (unsigned)global->shader_dir.ptr, shader);
+         (unsigned)global->dir.shader_dir.ptr, shader);
    rarch_main_msg_queue_push(msg, 1, 120, true);
    RARCH_LOG("%s \"%s\".\n",
          msg_hash_to_str(MSG_APPLYING_SHADER),

@@ -60,6 +60,42 @@ enum rarch_main_ctl_state
    RARCH_MAIN_CTL_CHECK_PAUSE_STATE
 };
 
+typedef struct rarch_dir_list
+{
+   struct string_list *list;
+   size_t ptr;
+} rarch_dir_list_t;
+
+typedef struct rarch_dir
+{
+   /* Used on reentrancy to use a savestate dir. */
+   char savefile[PATH_MAX_LENGTH];
+   char savestate[PATH_MAX_LENGTH];
+   char systemdir[PATH_MAX_LENGTH];
+#ifdef HAVE_OVERLAY
+   char osk_overlay[PATH_MAX_LENGTH];
+#endif
+   rarch_dir_list_t shader_dir;
+   rarch_dir_list_t filter_dir;
+} rarch_dir_t;
+
+typedef struct rarch_path
+{
+   char gb_rom[PATH_MAX_LENGTH];
+   char bsx_rom[PATH_MAX_LENGTH];
+   char sufami_rom[2][PATH_MAX_LENGTH];
+   /* Config associated with global "default" config. */
+   char config[PATH_MAX_LENGTH];
+   char append_config[PATH_MAX_LENGTH];
+   char input_config[PATH_MAX_LENGTH];
+#ifdef HAVE_FILE_LOGGER
+   char default_log[PATH_MAX_LENGTH];
+#endif
+   char fullpath[PATH_MAX_LENGTH];
+   /* Config file associated with per-core configs. */
+   char core_specific_config[PATH_MAX_LENGTH];
+} rarch_path_t;
+
 typedef struct rarch_resolution
 {
    unsigned idx;
@@ -85,22 +121,7 @@ typedef struct global
 
    uint32_t content_crc;
 
-   struct
-   {
-      char gb_rom[PATH_MAX_LENGTH];
-      char bsx_rom[PATH_MAX_LENGTH];
-      char sufami_rom[2][PATH_MAX_LENGTH];
-      /* Config associated with global "default" config. */
-      char config[PATH_MAX_LENGTH];
-      char append_config[PATH_MAX_LENGTH];
-      char input_config[PATH_MAX_LENGTH];
-#ifdef HAVE_FILE_LOGGER
-      char default_log[PATH_MAX_LENGTH];
-#endif
-      char fullpath[PATH_MAX_LENGTH];
-      /* Config file associated with per-core configs. */
-      char core_specific_config[PATH_MAX_LENGTH];
-   } path;
+   rarch_path_t path;
 
    struct
    {
@@ -144,16 +165,7 @@ typedef struct global
    char subsystem[PATH_MAX_LENGTH];
    struct string_list *subsystem_fullpaths;
 
-   struct
-   {
-      /* Used on reentrancy to use a savestate dir. */
-      char savefile[PATH_MAX_LENGTH];
-      char savestate[PATH_MAX_LENGTH];
-      char systemdir[PATH_MAX_LENGTH];
-#ifdef HAVE_OVERLAY
-      char osk_overlay[PATH_MAX_LENGTH];
-#endif
-   } dir;
+   rarch_dir_t dir;
 
    struct
    {
@@ -250,17 +262,6 @@ typedef struct global
       bool use_output_dir;
    } record;
 
-   struct
-   {
-      struct string_list *list;
-      size_t ptr;
-   } shader_dir;
-
-   struct
-   {
-      struct string_list *list;
-      size_t ptr;
-   } filter_dir;
 
    cheat_manager_t *cheat;
 

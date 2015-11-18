@@ -1537,9 +1537,9 @@ bool event_command(enum event_command cmd)
          if (!global)
             break;
 
-         dir_list_free(global->shader_dir.list);
-         global->shader_dir.list = NULL;
-         global->shader_dir.ptr  = 0;
+         dir_list_free(global->dir.shader_dir.list);
+         global->dir.shader_dir.list = NULL;
+         global->dir.shader_dir.ptr  = 0;
          break;
       case EVENT_CMD_SHADER_DIR_INIT:
          event_command(EVENT_CMD_SHADER_DIR_DEINIT);
@@ -1547,21 +1547,21 @@ bool event_command(enum event_command cmd)
          if (!*settings->video.shader_dir)
             return false;
 
-         global->shader_dir.list = dir_list_new_special(NULL, DIR_LIST_SHADERS, NULL);
+         global->dir.shader_dir.list = dir_list_new_special(NULL, DIR_LIST_SHADERS, NULL);
 
-         if (!global->shader_dir.list || global->shader_dir.list->size == 0)
+         if (!global->dir.shader_dir.list || global->dir.shader_dir.list->size == 0)
          {
             event_command(EVENT_CMD_SHADER_DIR_DEINIT);
             return false;
          }
 
-         global->shader_dir.ptr  = 0;
-         dir_list_sort(global->shader_dir.list, false);
+         global->dir.shader_dir.ptr  = 0;
+         dir_list_sort(global->dir.shader_dir.list, false);
 
-         for (i = 0; i < global->shader_dir.list->size; i++)
+         for (i = 0; i < global->dir.shader_dir.list->size; i++)
             RARCH_LOG("%s \"%s\"\n",
                   msg_hash_to_str(MSG_FOUND_SHADER),
-                  global->shader_dir.list->elems[i].data);
+                  global->dir.shader_dir.list->elems[i].data);
          break;
       case EVENT_CMD_SAVEFILES:
          event_save_files();
