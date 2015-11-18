@@ -117,8 +117,6 @@ typedef struct timer
 
 bool btstack_try_load(void);
 
-void btstack_set_poweron(bool on);
-
 #ifndef BUILDING_BTDYNAMIC
 #define BTDIMPORT extern
 #else
@@ -733,9 +731,6 @@ static struct
    {0, 0}
 };
 
-extern void btpad_packet_handler(uint8_t packet_type,
-      uint16_t channel, uint8_t *packet, uint16_t size);
-
 static bool btstack_tested;
 static bool btstack_loaded;
 
@@ -764,7 +759,252 @@ static void *btstack_get_handle(void)
    return NULL;
 }
 
-bool btstack_try_load(void)
+static void btpad_packet_handler(uint8_t packet_type,
+      uint16_t channel, uint8_t *packet, uint16_t size)
+{
+   unsigned i;
+   bd_addr_t event_addr;
+   struct btpad_queue_command* cmd = &commands[insert_position];
+
+   switch (packet_type)
+   {
+      case L2CAP_DATA_PACKET:
+         for (i = 0; i < MAX_USERS; i ++)
+         {
+            struct btstack_hid_adapter *connection = &g_connections[i];
+
+            if (!connection || connection->state != BTPAD_CONNECTED)
+               continue;
+
+            if (     connection->channels[0] == channel 
+                  || connection->channels[1] == channel)
+               pad_connection_packet(&slots[connection->slot], connection->slot, packet, size);
+         }
+         break;
+      case HCI_EVENT_PACKET:
+         switch (packet[0])
+         {
+            case BTSTACK_EVENT_STATE:
+               RARCH_LOG("[BTstack]: HCI State %d.\n", packet[2]);
+
+               switch (packet[2])
+               {                  
+                  case HCI_STATE_WORKING:
+                     btpad_queue_reset();
+                     btpad_queue_hci_read_bd_addr(cmd);
+
+                     /* TODO: Where did I get 672 for MTU? */
+
+                     bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_CONTROL,   672);  
+                     bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_INTERRUPT, 672);
+                     btpad_queue_hci_inquiry(cmd, HCI_INQUIRY_LAP, 3, 1);
+
+                     btpad_queue_run(1);
+                     break;
+
+                  case HCI_STATE_HALTING:
+                     btpad_close_all_connections();
+                     break;                  
+               }
+               break;
+
+            case HCI_EVENT_COMMAND_STATUS:
+               btpad_queue_run(packet[3]);
+               break;
+
+            case HCI_EVENT_COMMAND_COMPLETE:
+               btpad_queue_run(packet[2]);
+
+               if (COMMAND_COMPLETE_EVENT(packet, (*hci_read_bd_addr_ptr)))
+               {
+                  bt_flip_addr_ptr(event_addr, &packet[6]);
+                  if (!packet[5])
+                     RARCH_LOG("[BTpad]: Local address is %s.\n",
+                           bd_addr_to_str_ptr(event_addr));
+                  else
+                     RARCH_LOG("[BTpad]: Failed to get local address (Status: %02X).\n",
+                           packet[5]);
+               }
+               break;
+
+            case HCI_EVENT_INQUIRY_RESULT:
+               if (packet[2])
+               {
+                  struct btstack_hid_adapter* connection = NULL;
+
+                  bt_flip_addr_ptr(event_addr, &packet[3]);
+
+                  connection = btpad_find_empty_connection();
+
+                  if (!connection)
+                     return;
+
+                  RARCH_LOG("[BTpad]: Inquiry found device\n");
+                  memset(connection, 0, sizeof(struct btstack_hid_adapter));
+
+                  memcpy(connection->address, event_addr, sizeof(bd_addr_t));
+                  connection->has_address = true;
+                  connection->state       = BTPAD_CONNECTING;
+
+                  bt_send_cmd_ptr(l2cap_create_channel_ptr, connection->address, PSM_HID_CONTROL);
+                  bt_send_cmd_ptr(l2cap_create_channel_ptr, connection->address, PSM_HID_INTERRUPT);
+               }
+               break;
+
+            case HCI_EVENT_INQUIRY_COMPLETE:
+               /* This must be turned off during gameplay 
+                * as it causes a ton of lag. */
+               inquiry_running = !inquiry_off;
+
+               if (inquiry_running)
+                  btpad_queue_hci_inquiry(cmd, HCI_INQUIRY_LAP, 3, 1);
+               break;
+
+            case L2CAP_EVENT_CHANNEL_OPENED:
+               {
+                  uint16_t handle, psm, channel_id;
+                  struct btstack_hid_adapter *connection = NULL;
+
+                  bt_flip_addr_ptr(event_addr, &packet[3]);
+
+                  handle             = READ_BT_16(packet, 9);
+                  psm                = READ_BT_16(packet, 11);
+                  channel_id         = READ_BT_16(packet, 13);
+                  connection         = btpad_find_connection_for(handle, event_addr);
+
+                  if (!packet[2])
+                  {
+                     if (!connection)
+                     {
+                        RARCH_LOG("[BTpad]: Got L2CAP 'Channel Opened' event for unrecognized device.\n");
+                        break;
+                     }
+
+                     RARCH_LOG("[BTpad]: L2CAP channel opened: (PSM: %02X)\n", psm);
+                     connection->handle         = handle;
+
+                     switch (psm)
+                     {
+                        case PSM_HID_CONTROL:
+                           connection->channels[0] = channel_id;
+                           break;
+                        case PSM_HID_INTERRUPT:
+                           connection->channels[1] = channel_id;
+                           break;
+                        default:
+                           RARCH_LOG("[BTpad]: Got unknown L2CAP PSM, ignoring (PSM: %02X).\n", psm);
+                           break;
+                     }
+
+                     if (connection->channels[0] && connection->channels[1])
+                     {
+                        RARCH_LOG("[BTpad]: Got both L2CAP channels, requesting name.\n");
+                        btpad_queue_hci_remote_name_request(cmd, connection->address, 0, 0, 0);
+                     }
+                  }
+                  else
+                     RARCH_LOG("[BTpad]: Got failed L2CAP 'Channel Opened' event (PSM: %02X, Status: %02X).\n", psm, packet[2]);
+               }
+               break;
+
+            case L2CAP_EVENT_INCOMING_CONNECTION:
+               {
+                  uint16_t handle, psm, channel_id;
+                  struct btstack_hid_adapter* connection = NULL;
+
+                  bt_flip_addr_ptr(event_addr, &packet[2]);
+
+                  handle     = READ_BT_16(packet, 8);
+                  psm        = READ_BT_16(packet, 10);
+                  channel_id = READ_BT_16(packet, 12);
+
+                  connection = btpad_find_connection_for(handle, event_addr);
+
+                  if (!connection)
+                  {
+                     connection = btpad_find_empty_connection();
+                     if (!connection)
+                        break;
+
+                     RARCH_LOG("[BTpad]: Got new incoming connection\n");
+
+                     memset(connection, 0,
+                           sizeof(struct btstack_hid_adapter));
+
+                     memcpy(connection->address, event_addr,
+                           sizeof(bd_addr_t));
+                     connection->has_address = true;
+                     connection->handle = handle;
+                     connection->state = BTPAD_CONNECTING;
+                  }
+
+                  RARCH_LOG("[BTpad]: Incoming L2CAP connection (PSM: %02X).\n",
+                        psm);
+                  bt_send_cmd_ptr(l2cap_accept_connection_ptr, channel_id);
+               }
+               break;
+
+            case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
+               {
+                  struct btstack_hid_adapter *connection = NULL;
+
+                  bt_flip_addr_ptr(event_addr, &packet[3]);
+
+                  connection = btpad_find_connection_for(0, event_addr);
+
+                  if (!connection)
+                  {
+                     RARCH_LOG("[BTpad]: Got unexpected remote name, ignoring.\n");
+                     break;
+                  }
+
+                  RARCH_LOG("[BTpad]: Got %.200s.\n", (char*)&packet[9]);
+
+                  connection->slot  = pad_connection_pad_init(&slots[connection->slot],
+                        (char*)packet + 9, 0, 0, connection, &btpad_connection_send_control);
+                  connection->state = BTPAD_CONNECTED;
+               }
+               break;
+
+            case HCI_EVENT_PIN_CODE_REQUEST:
+               RARCH_LOG("[BTpad]: Sending Wiimote PIN.\n");
+
+               bt_flip_addr_ptr(event_addr, &packet[2]);
+               btpad_queue_hci_pin_code_request_reply(cmd, event_addr, &packet[2]);
+               break;
+
+            case HCI_EVENT_DISCONNECTION_COMPLETE:
+               {
+                  const uint32_t handle = READ_BT_16(packet, 3);
+
+                  if (!packet[2])
+                  {
+                     struct btstack_hid_adapter* connection = btpad_find_connection_for(handle, 0);
+
+                     if (connection)
+                     {
+                        connection->handle = 0;
+
+                        pad_connection_pad_deinit(&slots[connection->slot], connection->slot);
+                        btpad_close_connection(connection);
+                     }
+                  }
+                  else
+                     RARCH_LOG("[BTpad]: Got failed 'Disconnection Complete' event (Status: %02X).\n", packet[2]);
+               }
+               break;
+
+            case L2CAP_EVENT_SERVICE_REGISTERED:
+               if (packet[2])
+                  RARCH_LOG("[BTpad]: Got failed 'Service Registered' event (PSM: %02X, Status: %02X).\n",
+                        READ_BT_16(packet, 3), packet[2]);
+               break;
+         }
+         break;
+   }
+}
+
+static bool btstack_try_load(void)
 {
    unsigned i;
    void *handle   = NULL;
@@ -838,7 +1078,7 @@ static void btstack_thread_func(void* data)
 #endif
 }
 
-void btstack_set_poweron(bool on)
+static void btstack_set_poweron(bool on)
 {
    if (!btstack_try_load())
       return;
@@ -1094,250 +1334,6 @@ static void btpad_close_all_connections(void)
 #endif
 }
 
-void btpad_packet_handler(uint8_t packet_type,
-      uint16_t channel, uint8_t *packet, uint16_t size)
-{
-   unsigned i;
-   bd_addr_t event_addr;
-   struct btpad_queue_command* cmd = &commands[insert_position];
-
-   switch (packet_type)
-   {
-      case L2CAP_DATA_PACKET:
-         for (i = 0; i < MAX_USERS; i ++)
-         {
-            struct btstack_hid_adapter *connection = &g_connections[i];
-
-            if (!connection || connection->state != BTPAD_CONNECTED)
-               continue;
-
-            if (     connection->channels[0] == channel 
-                  || connection->channels[1] == channel)
-               pad_connection_packet(&slots[connection->slot], connection->slot, packet, size);
-         }
-         break;
-      case HCI_EVENT_PACKET:
-         switch (packet[0])
-         {
-            case BTSTACK_EVENT_STATE:
-               RARCH_LOG("[BTstack]: HCI State %d.\n", packet[2]);
-
-               switch (packet[2])
-               {                  
-                  case HCI_STATE_WORKING:
-                     btpad_queue_reset();
-                     btpad_queue_hci_read_bd_addr(cmd);
-
-                     /* TODO: Where did I get 672 for MTU? */
-
-                     bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_CONTROL,   672);  
-                     bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_INTERRUPT, 672);
-                     btpad_queue_hci_inquiry(cmd, HCI_INQUIRY_LAP, 3, 1);
-
-                     btpad_queue_run(1);
-                     break;
-
-                  case HCI_STATE_HALTING:
-                     btpad_close_all_connections();
-                     break;                  
-               }
-               break;
-
-            case HCI_EVENT_COMMAND_STATUS:
-               btpad_queue_run(packet[3]);
-               break;
-
-            case HCI_EVENT_COMMAND_COMPLETE:
-               btpad_queue_run(packet[2]);
-
-               if (COMMAND_COMPLETE_EVENT(packet, (*hci_read_bd_addr_ptr)))
-               {
-                  bt_flip_addr_ptr(event_addr, &packet[6]);
-                  if (!packet[5])
-                     RARCH_LOG("[BTpad]: Local address is %s.\n",
-                           bd_addr_to_str_ptr(event_addr));
-                  else
-                     RARCH_LOG("[BTpad]: Failed to get local address (Status: %02X).\n",
-                           packet[5]);
-               }
-               break;
-
-            case HCI_EVENT_INQUIRY_RESULT:
-               if (packet[2])
-               {
-                  struct btstack_hid_adapter* connection = NULL;
-
-                  bt_flip_addr_ptr(event_addr, &packet[3]);
-
-                  connection = btpad_find_empty_connection();
-
-                  if (!connection)
-                     return;
-
-                  RARCH_LOG("[BTpad]: Inquiry found device\n");
-                  memset(connection, 0, sizeof(struct btstack_hid_adapter));
-
-                  memcpy(connection->address, event_addr, sizeof(bd_addr_t));
-                  connection->has_address = true;
-                  connection->state       = BTPAD_CONNECTING;
-
-                  bt_send_cmd_ptr(l2cap_create_channel_ptr, connection->address, PSM_HID_CONTROL);
-                  bt_send_cmd_ptr(l2cap_create_channel_ptr, connection->address, PSM_HID_INTERRUPT);
-               }
-               break;
-
-            case HCI_EVENT_INQUIRY_COMPLETE:
-               /* This must be turned off during gameplay 
-                * as it causes a ton of lag. */
-               inquiry_running = !inquiry_off;
-
-               if (inquiry_running)
-                  btpad_queue_hci_inquiry(cmd, HCI_INQUIRY_LAP, 3, 1);
-               break;
-
-            case L2CAP_EVENT_CHANNEL_OPENED:
-               {
-                  uint16_t handle, psm, channel_id;
-                  struct btstack_hid_adapter *connection = NULL;
-
-                  bt_flip_addr_ptr(event_addr, &packet[3]);
-
-                  handle             = READ_BT_16(packet, 9);
-                  psm                = READ_BT_16(packet, 11);
-                  channel_id         = READ_BT_16(packet, 13);
-                  connection         = btpad_find_connection_for(handle, event_addr);
-
-                  if (!packet[2])
-                  {
-                     if (!connection)
-                     {
-                        RARCH_LOG("[BTpad]: Got L2CAP 'Channel Opened' event for unrecognized device.\n");
-                        break;
-                     }
-
-                     RARCH_LOG("[BTpad]: L2CAP channel opened: (PSM: %02X)\n", psm);
-                     connection->handle         = handle;
-
-                     switch (psm)
-                     {
-                        case PSM_HID_CONTROL:
-                           connection->channels[0] = channel_id;
-                           break;
-                        case PSM_HID_INTERRUPT:
-                           connection->channels[1] = channel_id;
-                           break;
-                        default:
-                           RARCH_LOG("[BTpad]: Got unknown L2CAP PSM, ignoring (PSM: %02X).\n", psm);
-                           break;
-                     }
-
-                     if (connection->channels[0] && connection->channels[1])
-                     {
-                        RARCH_LOG("[BTpad]: Got both L2CAP channels, requesting name.\n");
-                        btpad_queue_hci_remote_name_request(cmd, connection->address, 0, 0, 0);
-                     }
-                  }
-                  else
-                     RARCH_LOG("[BTpad]: Got failed L2CAP 'Channel Opened' event (PSM: %02X, Status: %02X).\n", psm, packet[2]);
-               }
-               break;
-
-            case L2CAP_EVENT_INCOMING_CONNECTION:
-               {
-                  uint16_t handle, psm, channel_id;
-                  struct btstack_hid_adapter* connection = NULL;
-
-                  bt_flip_addr_ptr(event_addr, &packet[2]);
-
-                  handle     = READ_BT_16(packet, 8);
-                  psm        = READ_BT_16(packet, 10);
-                  channel_id = READ_BT_16(packet, 12);
-
-                  connection = btpad_find_connection_for(handle, event_addr);
-
-                  if (!connection)
-                  {
-                     connection = btpad_find_empty_connection();
-                     if (!connection)
-                        break;
-
-                     RARCH_LOG("[BTpad]: Got new incoming connection\n");
-
-                     memset(connection, 0,
-                           sizeof(struct btstack_hid_adapter));
-
-                     memcpy(connection->address, event_addr,
-                           sizeof(bd_addr_t));
-                     connection->has_address = true;
-                     connection->handle = handle;
-                     connection->state = BTPAD_CONNECTING;
-                  }
-
-                  RARCH_LOG("[BTpad]: Incoming L2CAP connection (PSM: %02X).\n",
-                        psm);
-                  bt_send_cmd_ptr(l2cap_accept_connection_ptr, channel_id);
-               }
-               break;
-
-            case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
-               {
-                  struct btstack_hid_adapter *connection = NULL;
-
-                  bt_flip_addr_ptr(event_addr, &packet[3]);
-
-                  connection = btpad_find_connection_for(0, event_addr);
-
-                  if (!connection)
-                  {
-                     RARCH_LOG("[BTpad]: Got unexpected remote name, ignoring.\n");
-                     break;
-                  }
-
-                  RARCH_LOG("[BTpad]: Got %.200s.\n", (char*)&packet[9]);
-
-                  connection->slot  = pad_connection_pad_init(&slots[connection->slot],
-                        (char*)packet + 9, 0, 0, connection, &btpad_connection_send_control);
-                  connection->state = BTPAD_CONNECTED;
-               }
-               break;
-
-            case HCI_EVENT_PIN_CODE_REQUEST:
-               RARCH_LOG("[BTpad]: Sending Wiimote PIN.\n");
-
-               bt_flip_addr_ptr(event_addr, &packet[2]);
-               btpad_queue_hci_pin_code_request_reply(cmd, event_addr, &packet[2]);
-               break;
-
-            case HCI_EVENT_DISCONNECTION_COMPLETE:
-               {
-                  const uint32_t handle = READ_BT_16(packet, 3);
-
-                  if (!packet[2])
-                  {
-                     struct btstack_hid_adapter* connection = btpad_find_connection_for(handle, 0);
-
-                     if (connection)
-                     {
-                        connection->handle = 0;
-
-                        pad_connection_pad_deinit(&slots[connection->slot], connection->slot);
-                        btpad_close_connection(connection);
-                     }
-                  }
-                  else
-                     RARCH_LOG("[BTpad]: Got failed 'Disconnection Complete' event (Status: %02X).\n", packet[2]);
-               }
-               break;
-
-            case L2CAP_EVENT_SERVICE_REGISTERED:
-               if (packet[2])
-                  RARCH_LOG("[BTpad]: Got failed 'Service Registered' event (PSM: %02X, Status: %02X).\n",
-                        READ_BT_16(packet, 3), packet[2]);
-               break;
-         }
-         break;
-   }
-}
 
 
 static bool btstack_hid_joypad_query(void *data, unsigned pad)
@@ -1423,6 +1419,7 @@ static void btstack_hid_free(void *data)
 
    pad_connection_destroy(hid->slots);
    btpad_set_inquiry_state(true);
+   btstack_set_poweron(false);
 
    if (hid)
       free(hid);
