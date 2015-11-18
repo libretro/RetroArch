@@ -29,7 +29,7 @@
 #endif
 
 static uint32_t mfi_buttons[MAX_USERS];
-static int16_t  mfi_axes[MAX_USERS][6];
+static int16_t  mfi_axes[MAX_USERS][4];
 
 static uint32_t mfi_controllers[MAX_MFI_CONTROLLERS];
 
@@ -84,8 +84,6 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
       mfi_axes[slot][1]     = gp.leftThumbstick.yAxis.value * 32767.0f;
       mfi_axes[slot][2]     = gp.rightThumbstick.xAxis.value * 32767.0f;
       mfi_axes[slot][3]     = gp.rightThumbstick.yAxis.value * 32767.0f;
-      mfi_axes[slot][4]     = gp.rightThumbstick.yAxis.value * 32767.0f;
-      mfi_axes[slot][5]     = gp.rightThumbstick.yAxis.value * 32767.0f;
 
    }
    else if (controller.gamepad)
@@ -230,25 +228,45 @@ static uint64_t apple_gamecontroller_joypad_get_buttons(unsigned port)
 
 static int16_t apple_gamecontroller_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   int16_t               val  = 0;
+   int16_t val   = 0;
+   int16_t axis = -1;
+   bool is_neg  = false;
+   bool is_pos  = false;
 
    if (joyaxis == AXIS_NONE)
       return 0;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      val += mfi_axes[port][AXIS_NEG_GET(joyaxis)];
-
-      if (val >= 0)
-         val = 0;
+      axis  = AXIS_NEG_GET(joyaxis);
+      is_neg = true;
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
-      val += mfi_axes[port][AXIS_POS_GET(joyaxis)];
-
-      if (val <= 0)
-         val = 0;
+      axis  = AXIS_POS_GET(joyaxis);
+      is_pos = true;
    }
+    
+   switch (axis)
+   {
+      case 0:
+         val = mfi_axes[port][0];
+         break;
+      case 1:
+         val = mfi_axes[port][1];
+         break;
+      case 2:
+         val = mfi_axes[port][2];
+         break;
+      case 3:
+         val = mfi_axes[port][3];
+         break;
+   }
+    
+   if (is_neg && val > 0)
+      val = 0;
+   else if (is_pos && val < 0)
+      val = 0;
 
    return val;
 }
