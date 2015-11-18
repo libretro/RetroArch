@@ -351,16 +351,12 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
-bool wgl_shader_dlg_init(void)
+bool win32_shader_dlg_init(void)
 {
    static bool inited = false;
    const video_driver_t* vid_drv;
    int pos_y;
    HFONT hFont;
-
-   video_driver_get_ptr(&vid_drv);
-   if(vid_drv != &video_gl)
-      return false;
 
    if (g_shader_dlg.hwnd)
       return true;
@@ -372,7 +368,6 @@ bool wgl_shader_dlg_init(void)
 
       comm_ctrl_init.dwSize = sizeof(comm_ctrl_init);
       comm_ctrl_init.dwICC  = ICC_BAR_CLASSES;
-
 
       if (!InitCommonControlsEx(&comm_ctrl_init))
          return false;

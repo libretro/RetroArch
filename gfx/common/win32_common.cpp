@@ -28,13 +28,10 @@
 #include <commdlg.h>
 #include "../../retroarch.h"
 #include "../video_thread_wrapper.h"
-
-#ifdef HAVE_OPENGL
 #include "../drivers_wm/win32_shader_dlg.h"
-#endif
 
 #ifdef HAVE_D3D
-#include "../d3d/d3d.h"
+#include "d3d_common.h"
 #endif
 
 #ifdef __cplusplus
@@ -229,10 +226,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
          {
             HWND d3dr = g_hwnd;
             if (!strcmp(video_driver, "d3d"))
-            {
-               d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
                d3dr = g_hwnd;
-            }
             LRESULT ret = win32_menu_loop(d3dr, wparam);
             (void)ret;
          }
@@ -261,6 +255,9 @@ bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen)
 
    if (!RegisterClassEx(wndclass))
       return false;
+
+   if (!win32_shader_dlg_init())
+      RARCH_ERR("[WGL]: wgl_shader_dlg_init() failed.\n");
 #endif
    return true;
 }
@@ -391,11 +388,9 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
       case ID_M_FULL_SCREEN:
          cmd = EVENT_CMD_FULLSCREEN_TOGGLE;
          break;
-#ifdef HAVE_OPENGL
       case ID_M_SHADER_PARAMETERS:
          shader_dlg_show(owner);
          break;
-#endif
       case ID_M_MOUSE_GRAB:
          cmd = EVENT_CMD_GRAB_MOUSE_TOGGLE;
          break;

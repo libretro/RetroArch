@@ -40,8 +40,6 @@
 #include "../common/gl_common.h"
 #include "../common/win32_common.h"
 
-#include "../drivers_wm/win32_shader_dlg.h"
-
 #ifndef WGL_CONTEXT_MAJOR_VERSION_ARB
 #define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
 #endif
@@ -314,9 +312,6 @@ static bool gfx_ctx_wgl_init(void *data)
    win32_monitor_init();
    if (!win32_window_init(&wndclass, true))
 	   return false;
-
-   if (!wgl_shader_dlg_init())
-      RARCH_ERR("[WGL]: wgl_shader_dlg_init() failed.\n");
 
    return true;
 }

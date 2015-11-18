@@ -9,7 +9,7 @@ extern "C" {
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-bool wgl_shader_dlg_init(void);
+bool win32_shader_dlg_init(void);
 void shader_dlg_show(HWND parent_hwnd);
 void shader_dlg_params_reload(void);
 
