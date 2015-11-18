@@ -276,8 +276,7 @@ extern void action_ok_push_quick_menu(void);
       NSString *__core = [filenames objectAtIndex:0];
       const char *core_name = global ? global->menu.info.library_name : NULL;
 		
-		if (global)
-         strlcpy(global->path.fullpath, __core.UTF8String, sizeof(global->path.fullpath));
+      rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, __core.UTF8String);
 
       if (core_name)
          ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
@@ -308,17 +307,17 @@ extern void action_ok_push_quick_menu(void);
              
              if (__core)
              {
-                 strlcpy(settings->libretro, __core.UTF8String, sizeof(settings->libretro));
-                 ui_companion_event_command(EVENT_CMD_LOAD_CORE);
-                 
-                 if (menu->load_no_content && settings->core.set_supports_no_game_enable)
-                 {
-                    int ret = 0;
-                     *global->path.fullpath = '\0';
-                     ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
-                     if (ret == -1)
-                        action_ok_push_quick_menu();
-                 }
+                rarch_main_ctl(RARCH_MAIN_CTL_SET_LIBRETRO_PATH, __core.UTF8String);
+                ui_companion_event_command(EVENT_CMD_LOAD_CORE);
+
+                if (menu->load_no_content && settings->core.set_supports_no_game_enable)
+                {
+                   int ret = 0;
+                   *global->path.fullpath = '\0';
+                   ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
+                   if (ret == -1)
+                      action_ok_push_quick_menu();
+                }
              }
          }
      }];
@@ -343,8 +342,7 @@ extern void action_ok_push_quick_menu(void);
          NSString *__core = url.path;
          const char *core_name = global ? global->menu.info.library_name : NULL;
 			
-			if (global)
-            strlcpy(global->path.fullpath, __core.UTF8String, sizeof(global->path.fullpath));
+         rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, __core.UTF8String);
 
          if (core_name)
             ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);

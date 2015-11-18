@@ -636,7 +636,7 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_CORE:
          flush_char = NULL;
          flush_type = MENU_SETTINGS;
-         strlcpy(settings->libretro, action_path, sizeof(settings->libretro));
+         rarch_main_ctl(RARCH_MAIN_CTL_SET_LIBRETRO_PATH, action_path);
          event_command(EVENT_CMD_LOAD_CORE);
 
 #if defined(HAVE_DYNAMIC)
@@ -1346,8 +1346,7 @@ static int action_ok_file_load_or_resume(const char *path,
    if (!strcmp(menu->deferred_path, global->path.fullpath))
       return generic_action_ok_command(EVENT_CMD_RESUME);
 
-   strlcpy(global->path.fullpath,
-         menu->deferred_path, sizeof(global->path.fullpath));
+   rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, menu->deferred_path);
    event_command(EVENT_CMD_LOAD_CORE);
    rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT, NULL);
 

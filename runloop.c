@@ -317,6 +317,22 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_MAIN_CTL_SET_LIBRETRO_PATH:
+         {
+            const char *fullpath = (const char*)data;
+            if (!fullpath)
+               return false;
+            strlcpy(settings->libretro, fullpath, sizeof(settings->libretro));
+         }
+         break;
+      case RARCH_MAIN_CTL_SET_CONTENT_PATH:
+         {
+            const char *fullpath = (const char*)data;
+            if (!fullpath)
+               return false;
+            strlcpy(global->path.fullpath, fullpath, sizeof(global->path.fullpath));
+         }
+         break;
       case RARCH_MAIN_CTL_CHECK_STATE:
          {
             event_cmd_state_t *cmd    = (event_cmd_state_t*)data;

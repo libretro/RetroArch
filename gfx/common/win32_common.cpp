@@ -320,9 +320,6 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
    enum event_command cmd         = EVENT_CMD_NONE;
    bool do_wm_close     = false;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-
-   (void)global;
 
 	switch (mode)
    {
@@ -352,11 +349,11 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                switch (mode)
                {
                   case ID_M_LOAD_CORE:
-                     strlcpy(settings->libretro, win32_file, sizeof(settings->libretro));
+                     rarch_main_ctl(RARCH_MAIN_CTL_SET_LIBRETRO_PATH, win32_file);
                      cmd = EVENT_CMD_LOAD_CORE;
                      break;
                   case ID_M_LOAD_CONTENT:
-                     strlcpy(global->path.fullpath, win32_file, sizeof(global->path.fullpath));
+                     rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, win32_file);
                      cmd = EVENT_CMD_LOAD_CONTENT;
                      do_wm_close = true;
                      break;
@@ -411,6 +408,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
       default:
          if (mode >= ID_M_WINDOW_SCALE_1X && mode <= ID_M_WINDOW_SCALE_10X)
          {
+            global_t   *global   = global_get_ptr();
             unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
             global->pending.windowed_scale = idx;
             cmd = EVENT_CMD_RESIZE_WINDOWED_SCALE;

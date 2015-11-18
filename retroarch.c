@@ -246,7 +246,7 @@ static void set_basename(const char *path)
    char *dst          = NULL;
    global_t *global   = global_get_ptr();
 
-   strlcpy(global->path.fullpath, path, sizeof(global->path.fullpath));
+   rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, (void*)path);
    strlcpy(global->name.base,     path, sizeof(global->name.base));
 
 #ifdef HAVE_COMPRESSION
@@ -725,8 +725,7 @@ static void parse_input(int argc, char *argv[])
             }
             else
             {
-               strlcpy(settings->libretro, optarg,
-                     sizeof(settings->libretro));
+               rarch_main_ctl(RARCH_MAIN_CTL_SET_LIBRETRO_PATH, optarg);
                global->has_set.libretro = true;
             }
             break;
@@ -1545,7 +1544,7 @@ void rarch_playlist_load_content(void *data, unsigned idx)
       free(path_check);
    }
 
-   strlcpy(settings->libretro, core_path, sizeof(settings->libretro));
+   rarch_main_ctl(RARCH_MAIN_CTL_SET_LIBRETRO_PATH, (void*)core_path);
 
 #ifdef HAVE_MENU
    if (menu)
@@ -1622,10 +1621,9 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    if (supported != 1)
       return 0;
 
-   strlcpy(global->path.fullpath, s, sizeof(global->path.fullpath));
+   rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, s);
 
    if (path_file_exists(new_core_path))
-      strlcpy(settings->libretro, new_core_path,
-            sizeof(settings->libretro));
+      rarch_main_ctl(RARCH_MAIN_CTL_SET_LIBRETRO_PATH, new_core_path);
    return -1;
 }

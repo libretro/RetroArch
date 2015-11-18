@@ -127,18 +127,16 @@ int menu_common_load_content(
       const char *core_path, const char *fullpath,
       bool persist, enum rarch_core_type type)
 {
-   settings_t *settings         = config_get_ptr();
-   global_t *global             = global_get_ptr();
    enum event_command cmd       = EVENT_CMD_NONE;
 
    if (core_path)
    {
-      strlcpy(settings->libretro, core_path, sizeof(settings->libretro));
+      rarch_main_ctl(RARCH_MAIN_CTL_SET_LIBRETRO_PATH, (void*)core_path);
       event_command(EVENT_CMD_LOAD_CORE);
    }
 
    if (fullpath)
-      strlcpy(global->path.fullpath, fullpath, sizeof(global->path.fullpath));
+      rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, (void*)fullpath);
 
    switch (type)
    {

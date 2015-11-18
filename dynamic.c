@@ -1284,11 +1284,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_LIBRETRO_PATH:
          RARCH_LOG("Environ (Private) SET_LIBRETRO_PATH.\n");
 
-         if (path_file_exists((const char*)data))
-            strlcpy(settings->libretro, (const char*)data,
-                  sizeof(settings->libretro));
-         else
+         if (!path_file_exists((const char*)data))
             return false;
+         rarch_main_ctl(RARCH_MAIN_CTL_SET_LIBRETRO_PATH, data);
          break;
 
       case RETRO_ENVIRONMENT_EXEC:
@@ -1297,8 +1295,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          {
             *global->path.fullpath = '\0';
             if (data)
-               strlcpy(global->path.fullpath, (const char*)data,
-                     sizeof(global->path.fullpath));
+               rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, data);
          }
 
 #if defined(RARCH_CONSOLE)
