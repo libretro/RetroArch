@@ -93,9 +93,134 @@ static int glx_nul_handler(Display *dpy, XErrorEvent *event)
 }
 
 static void gfx_ctx_glx_get_video_size(void *data,
-      unsigned *width, unsigned *height);
+      unsigned *width, unsigned *height)
+{
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
 
-static void gfx_ctx_glx_destroy(void *data);
+   if (!glx)
+      return;
+
+   (void)data;
+
+   if (!glx->g_dpy || glx->g_win == None)
+   {
+      Display *dpy = (Display*)XOpenDisplay(NULL);
+      *width  = 0;
+      *height = 0;
+
+      if (dpy)
+      {
+         int screen = DefaultScreen(dpy);
+         *width  = DisplayWidth(dpy, screen);
+         *height = DisplayHeight(dpy, screen);
+         XCloseDisplay(dpy);
+      }
+   }
+   else
+   {
+      XWindowAttributes target;
+      XGetWindowAttributes(glx->g_dpy, glx->g_win, &target);
+
+      *width  = target.width;
+      *height = target.height;
+   }
+}
+
+static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
+{
+   driver_t *driver = driver_get_ptr();
+
+   if (!glx)
+      return;
+
+   x11_destroy_input_context(&glx->g_xim, &glx->g_xic);
+
+   if (glx->g_dpy && glx->g_ctx)
+   {
+
+      glFinish();
+      glXMakeContextCurrent(glx->g_dpy, None, None, NULL);
+
+      if (!driver->video_cache_context)
+      {
+         if (glx->g_hw_ctx)
+            glXDestroyContext(glx->g_dpy, glx->g_hw_ctx);
+         glXDestroyContext(glx->g_dpy, glx->g_ctx);
+         glx->g_ctx = NULL;
+         glx->g_hw_ctx = NULL;
+      }
+   }
+
+   if (glx->g_win)
+   {
+      glXDestroyWindow(glx->g_dpy, glx->g_glx_win);
+      glx->g_glx_win = 0;
+
+      /* Save last used monitor for later. */
+#ifdef HAVE_XINERAMA
+      {
+         XWindowAttributes target;
+         Window child;
+
+         int x = 0, y = 0;
+         XGetWindowAttributes(glx->g_dpy, glx->g_win, &target);
+         XTranslateCoordinates(glx->g_dpy, glx->g_win, DefaultRootWindow(glx->g_dpy),
+               target.x, target.y, &x, &y, &child);
+
+         glx->g_screen = x11_get_xinerama_monitor(glx->g_dpy, x, y,
+               target.width, target.height);
+
+         RARCH_LOG("[GLX]: Saved monitor #%u.\n", glx->g_screen);
+      }
+#endif
+
+      XUnmapWindow(glx->g_dpy, glx->g_win);
+      XDestroyWindow(glx->g_dpy, glx->g_win);
+      glx->g_win = None;
+   }
+
+   if (glx->g_cmap)
+   {
+      XFreeColormap(glx->g_dpy, glx->g_cmap);
+      glx->g_cmap = None;
+   }
+
+   if (glx->g_should_reset_mode)
+   {
+      x11_exit_fullscreen(glx->g_dpy, &glx->g_desktop_mode);
+      glx->g_should_reset_mode = false;
+   }
+
+   if (!driver->video_cache_context && glx->g_dpy)
+   {
+      XCloseDisplay(glx->g_dpy);
+      glx->g_dpy = NULL;
+   }
+
+   g_pglSwapInterval = NULL;
+   g_pglSwapIntervalSGI = NULL;
+   g_pglSwapIntervalEXT = NULL;
+   g_major = g_minor = 0;
+   glx->g_core_es = false;
+}
+
+static void gfx_ctx_glx_destroy(void *data)
+{
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
+
+   if (!glx)
+      return;
+   
+   (void)data;
+
+   ctx_glx_destroy_resources(glx);
+
+   if (driver->video_context_data)
+      free(driver->video_context_data);
+   driver->video_context_data = NULL;
+}
 
 static void gfx_ctx_glx_swap_interval(void *data, unsigned interval)
 {
@@ -220,119 +345,6 @@ static void gfx_ctx_glx_update_window_title(void *data)
       rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 
-static void gfx_ctx_glx_get_video_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
-
-   if (!glx)
-      return;
-
-   (void)data;
-
-   if (!glx->g_dpy || glx->g_win == None)
-   {
-      Display *dpy = (Display*)XOpenDisplay(NULL);
-      *width  = 0;
-      *height = 0;
-
-      if (dpy)
-      {
-         int screen = DefaultScreen(dpy);
-         *width  = DisplayWidth(dpy, screen);
-         *height = DisplayHeight(dpy, screen);
-         XCloseDisplay(dpy);
-      }
-   }
-   else
-   {
-      XWindowAttributes target;
-      XGetWindowAttributes(glx->g_dpy, glx->g_win, &target);
-
-      *width  = target.width;
-      *height = target.height;
-   }
-}
-
-static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
-{
-   driver_t *driver = driver_get_ptr();
-
-   if (!glx)
-      return;
-
-   x11_destroy_input_context(&glx->g_xim, &glx->g_xic);
-
-   if (glx->g_dpy && glx->g_ctx)
-   {
-
-      glFinish();
-      glXMakeContextCurrent(glx->g_dpy, None, None, NULL);
-
-      if (!driver->video_cache_context)
-      {
-         if (glx->g_hw_ctx)
-            glXDestroyContext(glx->g_dpy, glx->g_hw_ctx);
-         glXDestroyContext(glx->g_dpy, glx->g_ctx);
-         glx->g_ctx = NULL;
-         glx->g_hw_ctx = NULL;
-      }
-   }
-
-   if (glx->g_win)
-   {
-      glXDestroyWindow(glx->g_dpy, glx->g_glx_win);
-      glx->g_glx_win = 0;
-
-      /* Save last used monitor for later. */
-#ifdef HAVE_XINERAMA
-      {
-         XWindowAttributes target;
-         Window child;
-
-         int x = 0, y = 0;
-         XGetWindowAttributes(glx->g_dpy, glx->g_win, &target);
-         XTranslateCoordinates(glx->g_dpy, glx->g_win, DefaultRootWindow(glx->g_dpy),
-               target.x, target.y, &x, &y, &child);
-
-         glx->g_screen = x11_get_xinerama_monitor(glx->g_dpy, x, y,
-               target.width, target.height);
-
-         RARCH_LOG("[GLX]: Saved monitor #%u.\n", glx->g_screen);
-      }
-#endif
-
-      XUnmapWindow(glx->g_dpy, glx->g_win);
-      XDestroyWindow(glx->g_dpy, glx->g_win);
-      glx->g_win = None;
-   }
-
-   if (glx->g_cmap)
-   {
-      XFreeColormap(glx->g_dpy, glx->g_cmap);
-      glx->g_cmap = None;
-   }
-
-   if (glx->g_should_reset_mode)
-   {
-      x11_exit_fullscreen(glx->g_dpy, &glx->g_desktop_mode);
-      glx->g_should_reset_mode = false;
-   }
-
-   if (!driver->video_cache_context && glx->g_dpy)
-   {
-      XCloseDisplay(glx->g_dpy);
-      glx->g_dpy = NULL;
-   }
-
-   g_pglSwapInterval = NULL;
-   g_pglSwapIntervalSGI = NULL;
-   g_pglSwapIntervalEXT = NULL;
-   g_major = g_minor = 0;
-   glx->g_core_es = false;
-}
-
 static bool gfx_ctx_glx_init(void *data)
 {
    static const int visual_attribs[] = {
@@ -421,7 +433,6 @@ error:
 
    return false;
 }
-
 
 static bool gfx_ctx_glx_set_video_mode(void *data,
       unsigned width, unsigned height,
@@ -670,22 +681,6 @@ error:
    return false;
 }
 
-static void gfx_ctx_glx_destroy(void *data)
-{
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
-
-   if (!glx)
-      return;
-   
-   (void)data;
-
-   ctx_glx_destroy_resources(glx);
-
-   if (driver->video_context_data)
-      free(driver->video_context_data);
-   driver->video_context_data = NULL;
-}
 
 static void gfx_ctx_glx_input_driver(void *data,
       const input_driver_t **input, void **input_data)
