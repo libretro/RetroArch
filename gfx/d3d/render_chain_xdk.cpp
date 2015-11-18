@@ -325,11 +325,11 @@ static bool xdk_renderchain_init(void *data,
    unsigned width, height;
    d3d_video_t *d3d             = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr        = (LPDIRECT3DDEVICE)d3d->dev;
-   global_t *global             = global_get_ptr();
    const video_info_t *video_info  = (const video_info_t*)_video_info;
    const LinkInfo *link_info    = (const LinkInfo*)info_data;
    xdk_renderchain_t *chain     = (xdk_renderchain_t*)d3d->renderchain_data;
    unsigned fmt                 = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   struct video_viewport *custom_vp = video_viewport_get_custom();
    (void)final_viewport_data;
 
    video_driver_get_size(&width, &height);
@@ -343,14 +343,12 @@ static bool xdk_renderchain_init(void *data,
    if (!renderchain_create_first_pass(d3d, video_info))
       return false;
 
-#if 0
-   /* TODO/FIXME */
-   if (global->console.screen.viewports.custom_vp.width == 0)
-      global->console.screen.viewports.custom_vp.width = width;
+   /* FIXME */
+   if (custom_vp->width == 0)
+      custom_vp->width = width;
 
-   if (global->console.screen.viewports.custom_vp.height == 0)
-      global->console.screen.viewports.custom_vp.height = height;
-#endif
+   if (custom_vp->height == 0)
+      custom_vp->height = height;
 
    return true;
 }
