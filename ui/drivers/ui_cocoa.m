@@ -371,7 +371,6 @@ extern void action_ok_push_quick_menu(void);
 {
    enum event_command cmd;
    unsigned sender_tag = (unsigned)[sender tag];
-   global_t *global = global_get_ptr();
    
    switch (sender_tag)
    {
@@ -413,7 +412,7 @@ extern void action_ok_push_quick_menu(void);
    if (sender_tag >= 10 && sender_tag <= 19)
    {
       unsigned idx = (sender_tag - (10-1));
-      global->pending.windowed_scale = idx;
+      rarch_main_ctl(RARCH_MAIN_CTL_SET_WINDOWED_SCALE, &idx);
       cmd = EVENT_CMD_RESIZE_WINDOWED_SCALE;
    }
 

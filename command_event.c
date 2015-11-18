@@ -1124,15 +1124,18 @@ bool event_command(enum event_command cmd)
          event_main_state(cmd);
          break;
       case EVENT_CMD_RESIZE_WINDOWED_SCALE:
-         if (global->pending.windowed_scale == 0)
-            return false;
+         {
+            unsigned idx = 0;
+            if (global->pending.windowed_scale == 0)
+               return false;
 
-         settings->video.scale = global->pending.windowed_scale;
+            settings->video.scale = global->pending.windowed_scale;
 
-         if (!settings->video.fullscreen)
-            event_command(EVENT_CMD_REINIT);
+            if (!settings->video.fullscreen)
+               event_command(EVENT_CMD_REINIT);
 
-         global->pending.windowed_scale = 0;
+            rarch_main_ctl(RARCH_MAIN_CTL_SET_WINDOWED_SCALE, &idx);
+         }
          break;
       case EVENT_CMD_MENU_TOGGLE:
 #ifdef HAVE_MENU

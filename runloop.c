@@ -317,6 +317,14 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_MAIN_CTL_SET_WINDOWED_SCALE:
+         {
+            unsigned *idx = (unsigned*)data;
+            if (!idx)
+               return false;
+            global->pending.windowed_scale = *idx;
+         }
+         break;
       case RARCH_MAIN_CTL_SET_LIBRETRO_PATH:
          {
             const char *fullpath = (const char*)data;
