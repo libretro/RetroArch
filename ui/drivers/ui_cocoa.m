@@ -276,7 +276,7 @@ extern void action_ok_push_quick_menu(void);
       NSString *__core = [filenames objectAtIndex:0];
       const char *core_name = global ? global->menu.info.library_name : NULL;
 		
-      rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, __core.UTF8String);
+      rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
 
       if (core_name)
          ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
@@ -306,7 +306,7 @@ extern void action_ok_push_quick_menu(void);
              
              if (__core)
              {
-                rarch_main_ctl(RARCH_MAIN_CTL_SET_LIBRETRO_PATH, __core.UTF8String);
+                rarch_main_ctl(RARCH_MAIN_CTL_SET_LIBRETRO_PATH, (void*)__core.UTF8String);
                 ui_companion_event_command(EVENT_CMD_LOAD_CORE);
 
                 if (menu->load_no_content && settings->core.set_supports_no_game_enable)
@@ -341,7 +341,7 @@ extern void action_ok_push_quick_menu(void);
          NSString *__core = url.path;
          const char *core_name = global ? global->menu.info.library_name : NULL;
 			
-         rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, __core.UTF8String);
+         rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
 
          if (core_name)
             ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
