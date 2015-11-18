@@ -261,6 +261,7 @@ static int16_t cocoa_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
+   int16_t ret;
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
 
    if (!apple || !apple->joypad)
@@ -276,13 +277,14 @@ static int16_t cocoa_input_state(void *data,
 #endif
            ;
       case RETRO_DEVICE_ANALOG:
-         return input_joypad_analog(apple->joypad, port,
-               idx, id, binds[port])
 #ifdef HAVE_MFI
-           || input_joypad_analog(apple->sec_joypad, port,
+         ret = input_joypad_analog(apple->sec_joypad, port,
                idx, id, binds[port]);
+         if (!ret)
 #endif
-           ;
+            ret = input_joypad_analog(apple->joypad, port,
+                  idx, id, binds[port]);
+         return ret;
       case RETRO_DEVICE_KEYBOARD:
          return cocoa_keyboard_state(apple, id);
       case RETRO_DEVICE_MOUSE:
