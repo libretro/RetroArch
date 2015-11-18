@@ -604,7 +604,7 @@ int rmsgpack_read(RFILE *fd,
       case _MPF_UINT16:
       case _MPF_UINT32:
       case _MPF_UINT64:
-         tmp_len  = UINT32_C(1) << (type - _MPF_UINT8);
+         tmp_len  = UINT64_C(1) << (type - _MPF_UINT8);
          tmp_uint = 0;
          if (read_uint(fd, &tmp_uint, (size_t)tmp_len) == -1)
             goto error;
@@ -616,7 +616,7 @@ int rmsgpack_read(RFILE *fd,
       case _MPF_INT16:
       case _MPF_INT32:
       case _MPF_INT64:
-         tmp_len = UINT32_C(1) << (type - _MPF_INT8);
+         tmp_len = UINT64_C(1) << (type - _MPF_INT8);
          tmp_int = 0;
          if (read_int(fd, &tmp_int, (size_t)tmp_len) == -1)
             goto error;
