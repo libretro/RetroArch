@@ -771,6 +771,44 @@ static void btpad_connection_send_control(void *data,
       bt_send_l2cap_ptr(connection->channels[0], data_buf, size);
 }
 
+static void btpad_queue_process_cmd(struct btpad_queue_command *cmd)
+{
+    if (!cmd)
+        return;
+    
+    if (cmd->command == btstack_set_power_mode_ptr)
+        bt_send_cmd_ptr(
+                        cmd->command,
+                        cmd->btstack_set_power_mode.on);
+    else if (cmd->command == hci_read_bd_addr_ptr)
+        bt_send_cmd_ptr(cmd->command);
+    else if (cmd->command == hci_disconnect_ptr)
+        bt_send_cmd_ptr(
+                        cmd->command,
+                        cmd->hci_disconnect.handle,
+                        cmd->hci_disconnect.reason);
+    else if (cmd->command == hci_inquiry_ptr)
+        bt_send_cmd_ptr(
+                        cmd->command,
+                        cmd->hci_inquiry.lap,
+                        cmd->hci_inquiry.length,
+                        cmd->hci_inquiry.num_responses);
+    else if (cmd->command == hci_remote_name_request_ptr)
+        bt_send_cmd_ptr(
+                        cmd->command,
+                        cmd->hci_remote_name_request.bd_addr,
+                        cmd->hci_remote_name_request.page_scan_repetition_mode,
+                        cmd->hci_remote_name_request.reserved,
+                        cmd->hci_remote_name_request.clock_offset);
+    
+    else if (cmd->command == hci_pin_code_request_reply_ptr)
+        bt_send_cmd_ptr(
+                        cmd->command,
+                        cmd->hci_pin_code_request_reply.bd_addr,
+                        6,
+                        cmd->hci_pin_code_request_reply.pin);
+}
+
 static void btpad_queue_process(void)
 {
    for (; can_run && (insert_position != read_position); can_run--)
@@ -926,44 +964,6 @@ static struct btstack_hid_adapter *btpad_find_connection_for(
    }
 
    return 0;
-}
-
-static void btpad_queue_process_cmd(struct btpad_queue_command *cmd)
-{
-   if (!cmd)
-      return;
-
-   if (cmd->command == btstack_set_power_mode_ptr)
-      bt_send_cmd_ptr(
-            cmd->command,
-            cmd->btstack_set_power_mode.on);
-   else if (cmd->command == hci_read_bd_addr_ptr)
-      bt_send_cmd_ptr(cmd->command);
-   else if (cmd->command == hci_disconnect_ptr)
-      bt_send_cmd_ptr(
-            cmd->command,
-            cmd->hci_disconnect.handle,
-            cmd->hci_disconnect.reason);
-   else if (cmd->command == hci_inquiry_ptr)
-      bt_send_cmd_ptr(
-            cmd->command,
-            cmd->hci_inquiry.lap,
-            cmd->hci_inquiry.length,
-            cmd->hci_inquiry.num_responses);
-   else if (cmd->command == hci_remote_name_request_ptr)
-      bt_send_cmd_ptr(
-            cmd->command,
-            cmd->hci_remote_name_request.bd_addr,
-            cmd->hci_remote_name_request.page_scan_repetition_mode,
-            cmd->hci_remote_name_request.reserved,
-            cmd->hci_remote_name_request.clock_offset);
-
-   else if (cmd->command == hci_pin_code_request_reply_ptr)
-      bt_send_cmd_ptr(
-            cmd->command,
-            cmd->hci_pin_code_request_reply.bd_addr,
-            6,
-            cmd->hci_pin_code_request_reply.pin);
 }
 
 
