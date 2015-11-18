@@ -37,9 +37,6 @@ static CFRunLoopObserverRef iterate_observer;
 
 /* forward declaration */
 void apple_rarch_exited(void);
-#ifdef HAVE_BTSTACK
-void btpad_set_inquiry_state(bool on);
-#endif
 
 static void rarch_enable_ui(void)
 {
@@ -282,10 +279,6 @@ enum
    self.mainmenu.last_menu = self.mainmenu;
    [self pushViewController:self.mainmenu animated:NO];
 
-#ifdef HAVE_BTSTACK
-   btpad_set_inquiry_state(false);
-#endif
-    
    [self refreshSystemConfig];
    [self showGameView];
 
@@ -454,9 +447,6 @@ void apple_rarch_exited(void)
     if (!ap)
         return;
     [ap showPauseMenu:ap];
-#ifdef HAVE_BTSTACK
-    btpad_set_inquiry_state(true);
-#endif
 }
 
 typedef struct ui_companion_cocoatouch

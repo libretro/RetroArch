@@ -623,8 +623,6 @@ void bt_send_rfcomm(uint16_t rfcom_cid, uint8_t *data, uint16_t len);
 
 /* custom functions */
 
-void btpad_set_inquiry_state(bool on);
-
 joypad_connection_t *slots;
 
 typedef struct btstack_hid
@@ -1025,7 +1023,7 @@ static void btpad_connection_send_control(void *data,
       bt_send_l2cap_ptr(connection->channels[0], data_buf, size);
 }
 
-void btpad_set_inquiry_state(bool on)
+static void btpad_set_inquiry_state(bool on)
 {
    inquiry_off = !on;
 
@@ -1424,6 +1422,7 @@ static void btstack_hid_free(void *data)
       return;
 
    pad_connection_destroy(hid->slots);
+   btpad_set_inquiry_state(true);
 
    if (hid)
       free(hid);
@@ -1442,6 +1441,7 @@ static void *btstack_hid_init(void)
       goto error;
 
    btstack_set_poweron(false);
+   btpad_set_inquiry_state(false);
 
    return hid;
 
