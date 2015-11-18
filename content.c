@@ -621,11 +621,14 @@ bool init_content_file(void)
    }
    else
    {
+      char *fullpath = NULL;
+      rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
+
       attr.i  = system->info.block_extract;
       attr.i |= system->info.need_fullpath << 1;
       attr.i |= (!system->no_content) << 2;
       string_list_append(content,
-            (global->inited.core.no_content && settings->core.set_supports_no_game_enable) ? "" : global->path.fullpath, attr);
+            (global->inited.core.no_content && settings->core.set_supports_no_game_enable) ? "" : fullpath, attr);
    }
 
 #ifdef HAVE_ZLIB

@@ -1769,12 +1769,15 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
    const char *core_path           = NULL;
    const char *core_name           = NULL;
    const char *db_name             = NULL;
+   char *fullpath                  = NULL;
 
    if (!menu)
       return -1;
 
+   rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
+
    if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY)
-      && !strcmp(menu->deferred_path, global->path.fullpath))
+      && !strcmp(menu->deferred_path, fullpath))
       menu_displaylist_parse_load_content_settings(info);
    else
       menu_entries_push(info->list, "Run", "collection",

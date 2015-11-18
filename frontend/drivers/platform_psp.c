@@ -256,12 +256,13 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
    args = strlen(argp) + 1;
 
 #ifndef IS_SALAMANDER
-   global_t *global   = global_get_ptr();
+   char *fullpath = NULL;
+   rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
 
-   if (should_load_game && global->path.fullpath[0] != '\0')
+   if (should_load_game && fullpath[0] != '\0')
    {
       argp[args] = '\0';
-      strlcat(argp + args, global->path.fullpath, sizeof(argp) - args);
+      strlcat(argp + args, fullpath, sizeof(argp) - args);
       args += strlen(argp + args) + 1;
    }
 #endif

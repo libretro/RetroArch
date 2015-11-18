@@ -359,6 +359,7 @@ static int frontend_ps3_exec_exitspawn(const char *path,
 static void frontend_ps3_exec(const char *path, bool should_load_game)
 {
 #ifndef IS_SALAMANDER
+   char *fullpath        = NULL;
    global_t      *global = global_get_ptr();
    bool original_verbose = global->verbosity;
 
@@ -370,10 +371,12 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
 
 #ifndef IS_SALAMANDER
-   if (should_load_game && global->path.fullpath[0] != '\0')
+   rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
+
+   if (should_load_game && fullpath[0] != '\0')
    {
       char game_path[256];
-      strlcpy(game_path, global->path.fullpath, sizeof(game_path));
+      strlcpy(game_path, fullpath, sizeof(game_path));
 
       const char * const spawn_argv[] = {
          game_path,

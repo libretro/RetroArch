@@ -300,7 +300,6 @@ extern void action_ok_push_quick_menu(void);
          if (result == NSOKButton && panel.URL)
          {
              menu_handle_t *menu  = menu_driver_get_ptr();
-             global_t *global     = global_get_ptr();
              settings_t *settings = config_get_ptr();
              NSURL *url = (NSURL*)panel.URL;
              NSString *__core = url.path;
@@ -313,7 +312,7 @@ extern void action_ok_push_quick_menu(void);
                 if (menu->load_no_content && settings->core.set_supports_no_game_enable)
                 {
                    int ret = 0;
-                   *global->path.fullpath = '\0';
+                   rarch_main_ctl(RARCH_MAIN_CTL_CLEAR_CONTENT_PATH, NULL);
                    ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
                    if (ret == -1)
                       action_ok_push_quick_menu();

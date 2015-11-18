@@ -134,7 +134,9 @@ void system_exec_wii(const char *_path, bool should_load_game)
 #ifdef IS_SALAMANDER
       strlcpy(game_path, gx_rom_path, sizeof(game_path));
 #else
-      strlcpy(game_path, global->path.fullpath, sizeof(game_path));
+      char *fullpath = NULL;
+      rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
+      strlcpy(game_path, fullpath, sizeof(game_path));
 #endif
    }
 

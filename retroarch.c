@@ -1162,7 +1162,10 @@ int rarch_main_init(int argc, char *argv[])
       if (settings && (settings->multimedia.builtin_mediaplayer_enable ||
             settings->multimedia.builtin_imageviewer_enable))
       {
-         switch (rarch_path_is_media_type(global->path.fullpath))
+         char *fullpath = NULL;
+         rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
+
+         switch (rarch_path_is_media_type(fullpath))
          {
             case RARCH_CONTENT_MOVIE:
             case RARCH_CONTENT_MUSIC:
@@ -1501,7 +1504,6 @@ void rarch_playlist_load_content(void *data, unsigned idx)
    const char *core_path        = NULL;
    const char *path             = NULL;
    content_playlist_t *playlist = (content_playlist_t*)data;
-   settings_t  *settings        = config_get_ptr();
 #ifdef HAVE_MENU
    menu_handle_t *menu          = menu_driver_get_ptr();
 #endif
@@ -1579,7 +1581,6 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    char new_core_path[PATH_MAX_LENGTH] = {0};
    const core_info_t *info             = NULL;
    size_t supported                    = 0;
-   settings_t *settings                = config_get_ptr();
    global_t   *global                  = global_get_ptr();
 #ifdef HAVE_MENU
    uint32_t menu_label_hash            = msg_hash_calculate(menu_label);

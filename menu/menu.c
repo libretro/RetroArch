@@ -33,9 +33,12 @@ static void menu_environment_get(int *argc, char *argv[],
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
+   char *fullpath       = NULL;
     
    if (!wrap_args)
       return;
+
+   rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
 
    wrap_args->no_content       = menu->load_no_content;
    if (!global->has_set.verbosity)
@@ -44,7 +47,7 @@ static void menu_environment_get(int *argc, char *argv[],
    wrap_args->config_path      = *global->path.config   ? global->path.config   : NULL;
    wrap_args->sram_path        = *global->dir.savefile  ? global->dir.savefile  : NULL;
    wrap_args->state_path       = *global->dir.savestate ? global->dir.savestate : NULL;
-   wrap_args->content_path     = *global->path.fullpath ? global->path.fullpath : NULL;
+   wrap_args->content_path     = *fullpath              ? fullpath              : NULL;
 
    if (!global->has_set.libretro)
       wrap_args->libretro_path = *settings->libretro ? settings->libretro : NULL;
@@ -55,22 +58,25 @@ static void menu_push_to_history_playlist(void)
 {
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
+   char *fullpath       = NULL;
 
    if (!settings->history_list_enable)
       return;
 
-   if (*global->path.fullpath)
+   rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
+
+   if (*fullpath)
    {
       char tmp[PATH_MAX_LENGTH];
       char str[PATH_MAX_LENGTH];
 
-      fill_pathname_base(tmp, global->path.fullpath, sizeof(tmp));
+      fill_pathname_base(tmp, fullpath, sizeof(tmp));
       snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
       menu_display_msg_queue_push(str, 1, 1, false);
    }
 
    content_playlist_push(g_defaults.history,
-         global->path.fullpath,
+         fullpath,
          NULL,
          settings->libretro,
          global->menu.info.library_name,
@@ -91,8 +97,9 @@ bool menu_load_content(enum rarch_core_type type)
    bool msg_force       = true;
    menu_handle_t *menu  = menu_driver_get_ptr();
    driver_t *driver     = driver_get_ptr();
-   global_t *global     = global_get_ptr();
+   char *fullpath       = NULL;
 
+   rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
    /* redraw menu frame */
    menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
    menu_iterate_render();
@@ -103,7 +110,7 @@ bool menu_load_content(enum rarch_core_type type)
       char name[PATH_MAX_LENGTH] = {0};
       char msg[PATH_MAX_LENGTH]  = {0};
 
-      fill_pathname_base(name, global->path.fullpath, sizeof(name));
+      fill_pathname_base(name, fullpath, sizeof(name));
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
       menu_display_msg_queue_push(msg, 1, 90, false);
 
@@ -114,7 +121,7 @@ bool menu_load_content(enum rarch_core_type type)
 
    event_command(EVENT_CMD_HISTORY_INIT);
 
-   if (*global->path.fullpath || (menu && menu->load_no_content))
+   if (*fullpath || (menu && menu->load_no_content))
       menu_push_to_history_playlist();
 
    event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);

@@ -320,26 +320,32 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
    if (path[0] != '\0')
       XLaunchNewImage(path, NULL);
 #else
+#ifdef _XBOX
+   char *fullpath = NULL;
+   menu-display_ctl(MENU_DISPLAY_CTL_GET_CONTENT_PATH, &fullpath);
+
 #if defined(_XBOX1)
    LAUNCH_DATA ptr;
    memset(&ptr, 0, sizeof(ptr));
 
-   if (should_load_game && global->path.fullpath[0] != '\0')
-      snprintf((char*)ptr.Data, sizeof(ptr.Data), "%s", global->path.fullpath);
+
+   if (should_load_game && fullpath[0] != '\0')
+      snprintf((char*)ptr.Data, sizeof(ptr.Data), "%s", fullpath);
 
    if (path[0] != '\0')
       XLaunchNewImage(path, ptr.Data[0] != '\0' ? &ptr : NULL);
 #elif defined(_XBOX360)
    char game_path[1024] = {0};
 
-   if (should_load_game && global->path.fullpath[0] != '\0')
+   if (should_load_game && fullpath[0] != '\0')
    {
-      strlcpy(game_path, global->path.fullpath, sizeof(game_path));
+      strlcpy(game_path, fullpath, sizeof(game_path));
       XSetLaunchData(game_path, MAX_LAUNCH_DATA_SIZE);
    }
 
    if (path[0] != '\0')
       XLaunchNewImage(path, NULL);
+#endif
 #endif
 #endif
 #ifndef IS_SALAMANDER

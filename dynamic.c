@@ -779,8 +779,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
          if (settings->system_directory[0] == '\0')
          {
-            RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",global->path.fullpath);
-            fill_pathname_basedir(global->dir.systemdir, global->path.fullpath,
+            char *fullpath = NULL;
+            rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
+
+            RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n", fullpath);
+            fill_pathname_basedir(global->dir.systemdir, fullpath,
                   sizeof(global->dir.systemdir));
 
             *(const char**)data = global->dir.systemdir;
@@ -1291,28 +1294,32 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_EXEC:
       case RETRO_ENVIRONMENT_EXEC_ESCAPE:
-         if (global->path.fullpath != data)
          {
-            *global->path.fullpath = '\0';
-            if (data)
-               rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, data);
-         }
+            char *fullpath = NULL;
+            rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
+
+            if (fullpath != data)
+            {
+               rarch_main_ctl(RARCH_MAIN_CTL_CLEAR_CONTENT_PATH, NULL);
+               if (data)
+                  rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, data);
+            }
 
 #if defined(RARCH_CONSOLE)
-         if (driver->frontend_ctx && driver->frontend_ctx->set_fork)
-            driver->frontend_ctx->set_fork(true, true);
+            if (driver->frontend_ctx && driver->frontend_ctx->set_fork)
+               driver->frontend_ctx->set_fork(true, true);
 #elif defined(HAVE_DYNAMIC)
-         rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT, NULL);
+            rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT, NULL);
 #endif
 
-         if (cmd == RETRO_ENVIRONMENT_EXEC_ESCAPE)
-         {
-            RARCH_LOG("Environ (Private) EXEC_ESCAPE.\n");
-            global->exec = true;
+            if (cmd == RETRO_ENVIRONMENT_EXEC_ESCAPE)
+            {
+               RARCH_LOG("Environ (Private) EXEC_ESCAPE.\n");
+               global->exec = true;
+            }
+            else
+               RARCH_LOG("Environ (Private) EXEC.\n");
          }
-         else
-            RARCH_LOG("Environ (Private) EXEC.\n");
-
          break;
 
       default:

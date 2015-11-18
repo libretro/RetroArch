@@ -1074,15 +1074,18 @@ bool event_command(enum event_command cmd)
          rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT_IMAGEVIEWER, NULL);
          break;
       case EVENT_CMD_LOAD_CONTENT:
+         {
 #ifdef HAVE_DYNAMIC
-         event_command(EVENT_CMD_LOAD_CONTENT_PERSIST);
+            event_command(EVENT_CMD_LOAD_CONTENT_PERSIST);
 #else
-         rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH,
-               (void*)settings->libretro);
-         rarch_environment_cb(RETRO_ENVIRONMENT_EXEC,
-               (void*)global->path.fullpath);
-         event_command(EVENT_CMD_QUIT);
+            char *fullpath = NULL;
+            rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
+            rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH,
+                  (void*)settings->libretro);
+            rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)fullpath);
+            event_command(EVENT_CMD_QUIT);
 #endif
+         }
          break;
       case EVENT_CMD_LOAD_CORE_DEINIT:
 #ifdef HAVE_DYNAMIC
@@ -1182,7 +1185,7 @@ bool event_command(enum event_command cmd)
 #endif
             rarch_main_data_deinit();
 
-            *global->path.fullpath = '\0';
+            rarch_main_ctl(RARCH_MAIN_CTL_CLEAR_CONTENT_PATH, NULL);
 
             rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT, NULL);
          }
@@ -1462,13 +1465,15 @@ bool event_command(enum event_command cmd)
          rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
          break;
       case EVENT_CMD_RESTART_RETROARCH:
+         {
 #if defined(GEKKO) && defined(HW_RVL)
-         fill_pathname_join(global->path.fullpath, g_defaults.dir.core,
-               SALAMANDER_FILE,
-               sizeof(global->path.fullpath));
+            char new_path[PATH_MAX_LENGTH];
+            fill_pathname_join(new_path, g_defaults.dir.core, SALAMANDER_FILE, sizeof(new_path));
+            rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, new_path);
 #endif
-         if (driver->frontend_ctx && driver->frontend_ctx->set_fork)
-            driver->frontend_ctx->set_fork(true, false);
+            if (driver->frontend_ctx && driver->frontend_ctx->set_fork)
+               driver->frontend_ctx->set_fork(true, false);
+         }
          break;
       case EVENT_CMD_MENU_SAVE_CURRENT_CONFIG:
          event_save_current_config();
