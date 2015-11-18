@@ -103,13 +103,6 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
    return false;
 }
 
-static bool rwebinput_key_pressed(void *data, int key)
-{
-   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
-   settings_t         *settings = config_get_ptr();
-   return rwebinput_is_pressed(rwebinput, settings->input.binds[0], key);
-}
-
 static int16_t rwebinput_mouse_state(rwebinput_input_t *rwebinput, unsigned id)
 {
    switch (id)
@@ -147,7 +140,6 @@ static int16_t rwebinput_analog_pressed(rwebinput_input_t *rwebinput,
 static int16_t rwebinput_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   enum input_device_type device = INPUT_DEVICE_TYPE_NONE;
    rwebinput_input_t *rwebinput  = (rwebinput_input_t*)data;
 
    switch (device)
@@ -159,7 +151,7 @@ static int16_t rwebinput_input_state(void *data, const struct retro_keybind **bi
          return rwebinput_analog_pressed(rwebinput, binds[port], idx, id);
 
       case RETRO_DEVICE_KEYBOARD:
-         return rwebinput_key_pressed(rwebinput, id, &device);
+         return rwebinput_key_pressed(rwebinput, id);
 
       case RETRO_DEVICE_MOUSE:
          return rwebinput_mouse_state(rwebinput, id);
