@@ -190,12 +190,14 @@ bool egl_init_context(NativeDisplayType display,
    g_egl_dpy = eglGetDisplay(display);
    if (!g_egl_dpy)
    {
-      RARCH_ERR("[KMS/EGL]: Couldn't get EGL display.\n");
+      RARCH_ERR("[EGL]: Couldn't get EGL display.\n");
       return false;
    }
 
    if (!eglInitialize(g_egl_dpy, major, minor))
       return false;
+
+   RARCH_LOG("[EGL]: EGL version: %d.%d\n", *major, *minor);
 
    if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_egl_config, 1, n) || *n != 1)
       return false;

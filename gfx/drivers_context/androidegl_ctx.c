@@ -36,7 +36,7 @@ static bool g_es3;
 static bool android_gfx_ctx_init(void *data)
 {
    int var;
-   EGLint num_config, egl_version_major, egl_version_minor;
+   EGLint n, major, minor;
    EGLint format;
    EGLint context_attributes[] = {
       EGL_CONTEXT_CLIENT_VERSION, g_es3 ? 3 : 2,
@@ -58,23 +58,8 @@ static bool android_gfx_ctx_init(void *data)
 
    RARCH_LOG("Android EGL: GLES version = %d.\n", g_es3 ? 3 : 2);
 
-   g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-
-   if (!g_egl_dpy)
-   {
-      RARCH_ERR("[Android/EGL]: Couldn't get EGL display.\n");
-      goto error;
-   }
-
-   if (!eglInitialize(g_egl_dpy,
-            &egl_version_major, &egl_version_minor))
-      goto error;
-
-   RARCH_LOG("[ANDROID/EGL]: EGL version: %d.%d\n",
-         egl_version_major, egl_version_minor);
-
-   if (!eglChooseConfig(g_egl_dpy,
-            attribs, &g_egl_config, 1, &num_config))
+   if (!egl_init_context(EGL_DEFAULT_DISPLAY,
+            &major, &minor, &n, attribs))
       goto error;
 
    var = eglGetConfigAttrib(g_egl_dpy, g_egl_config,
