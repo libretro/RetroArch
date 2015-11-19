@@ -60,7 +60,7 @@ struct string_list
  *
  * Returns: true (1) if element could be found, otherwise false (0).
  */
-bool string_list_find_elem(const struct string_list *list, const char *elem);
+int string_list_find_elem(const struct string_list *list, const char *elem);
 
 /**
  * string_list_find_elem_prefix:
