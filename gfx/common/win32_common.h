@@ -33,7 +33,7 @@
 #endif
 
 #ifndef _XBOX
-#include "../drivers_wm/win32_resource.h"
+#include "../../ui/drivers/ui_win32_resource.h"
 
 extern unsigned g_resize_width;
 extern unsigned g_resize_height;
