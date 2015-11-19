@@ -457,7 +457,7 @@ void x11_get_video_size(unsigned *width, unsigned *height)
    }
 }
 
-bool x11_has_focus(void)
+bool x11_has_focus(void *data)
 {
    Window win;
    int rev;

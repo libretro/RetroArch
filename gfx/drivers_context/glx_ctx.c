@@ -611,11 +611,6 @@ static void gfx_ctx_glx_input_driver(void *data,
    *input_data  = xinput;
 }
 
-static bool gfx_ctx_glx_has_focus(void *data)
-{
-   return x11_has_focus();
-}
-
 static bool gfx_ctx_glx_suppress_screensaver(void *data, bool enable)
 {
    driver_t *driver = driver_get_ptr();
@@ -665,11 +660,6 @@ static bool gfx_ctx_glx_bind_api(void *data, enum gfx_ctx_api api,
 
 static void gfx_ctx_glx_show_mouse(void *data, bool state)
 {
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
-
-   (void)data;
-
    x11_show_mouse(g_x11_dpy, g_x11_win, state);
 }
 
@@ -694,12 +684,6 @@ static void gfx_ctx_glx_bind_hw_render(void *data, bool enable)
          glx->g_glx_win, enable ? glx->g_hw_ctx : glx->g_ctx);
 }
 
-static bool gfx_ctx_glx_get_metrics(void *data,
-	enum display_metric_types type, float *value)
-{
-   return x11_get_metrics(data, type, value);
-}
-
 const gfx_ctx_driver_t gfx_ctx_glx = {
    gfx_ctx_glx_init,
    gfx_ctx_glx_destroy,
@@ -710,12 +694,12 @@ const gfx_ctx_driver_t gfx_ctx_glx = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   gfx_ctx_glx_get_metrics,
+   x11_get_metrics,
    NULL,
    gfx_ctx_glx_update_window_title,
    gfx_ctx_glx_check_window,
    gfx_ctx_glx_set_resize,
-   gfx_ctx_glx_has_focus,
+   x11_has_focus,
    gfx_ctx_glx_suppress_screensaver,
    gfx_ctx_glx_has_windowed,
    gfx_ctx_glx_swap_buffers,
