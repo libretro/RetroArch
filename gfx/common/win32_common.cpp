@@ -30,6 +30,7 @@
 #include "../video_thread_wrapper.h"
 #include "../drivers_wm/win32_shader_dlg.h"
 
+extern "C" LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
 extern "C" bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
 extern "C" bool win32_browser(
       HWND owner,
@@ -281,126 +282,6 @@ bool win32_window_create(void *data, unsigned style,
    driver->video_window  = (uintptr_t)g_hwnd;
 #endif
    return true;
-}
-
-LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
-{
-   WPARAM mode         = wparam & 0xffff;
-   enum event_command cmd         = EVENT_CMD_NONE;
-   bool do_wm_close     = false;
-   settings_t *settings = config_get_ptr();
-
-	switch (mode)
-   {
-      case ID_M_LOAD_CORE:
-      case ID_M_LOAD_CONTENT:
-         {
-            char win32_file[PATH_MAX_LENGTH] = {0};
-            const char *extensions  = NULL;
-            const char *title       = NULL;
-            const char *initial_dir = NULL;
-
-            if      (mode == ID_M_LOAD_CORE)
-            {
-               extensions  = "All Files\0*.*\0 Libretro core(.dll)\0*.dll\0";
-               title       = "Load Core";
-               initial_dir = settings->libretro_directory;
-            }
-            else if (mode == ID_M_LOAD_CONTENT)
-            {
-               extensions  = "All Files\0*.*\0\0";
-               title       = "Load Content";
-               initial_dir = settings->menu_content_directory;
-            }
-
-            if (win32_browser(owner, win32_file, extensions, title, initial_dir))
-            {
-               switch (mode)
-               {
-                  case ID_M_LOAD_CORE:
-                     rarch_main_ctl(RARCH_MAIN_CTL_SET_LIBRETRO_PATH, win32_file);
-                     cmd = EVENT_CMD_LOAD_CORE;
-                     break;
-                  case ID_M_LOAD_CONTENT:
-                     rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, win32_file);
-                     cmd = EVENT_CMD_LOAD_CONTENT;
-                     do_wm_close = true;
-                     break;
-               }
-            }
-         }
-         break;
-      case ID_M_RESET:
-         cmd = EVENT_CMD_RESET;
-         break;
-      case ID_M_MUTE_TOGGLE:
-         cmd = EVENT_CMD_AUDIO_MUTE_TOGGLE;
-         break;
-      case ID_M_MENU_TOGGLE:
-         cmd = EVENT_CMD_MENU_TOGGLE;
-         break;
-      case ID_M_PAUSE_TOGGLE:
-         cmd = EVENT_CMD_PAUSE_TOGGLE;
-         break;
-      case ID_M_LOAD_STATE:
-         cmd = EVENT_CMD_LOAD_STATE;
-         break;
-      case ID_M_SAVE_STATE:
-         cmd = EVENT_CMD_SAVE_STATE;
-         break;
-      case ID_M_DISK_CYCLE:
-         cmd = EVENT_CMD_DISK_EJECT_TOGGLE;
-         break;
-      case ID_M_DISK_NEXT:
-         cmd = EVENT_CMD_DISK_NEXT;
-         break;
-      case ID_M_DISK_PREV:
-         cmd = EVENT_CMD_DISK_PREV;
-         break;
-      case ID_M_FULL_SCREEN:
-         cmd = EVENT_CMD_FULLSCREEN_TOGGLE;
-         break;
-#ifndef _XBOX
-      case ID_M_SHADER_PARAMETERS:
-         shader_dlg_show(owner);
-         break;
-#endif
-      case ID_M_MOUSE_GRAB:
-         cmd = EVENT_CMD_GRAB_MOUSE_TOGGLE;
-         break;
-      case ID_M_TAKE_SCREENSHOT:
-         cmd = EVENT_CMD_TAKE_SCREENSHOT;
-         break;
-      case ID_M_QUIT:
-         do_wm_close = true;
-         break;
-      default:
-         if (mode >= ID_M_WINDOW_SCALE_1X && mode <= ID_M_WINDOW_SCALE_10X)
-         {
-            unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
-            rarch_main_ctl(RARCH_MAIN_CTL_SET_WINDOWED_SCALE, &idx);
-            cmd = EVENT_CMD_RESIZE_WINDOWED_SCALE;
-         }
-         else if (mode == ID_M_STATE_INDEX_AUTO)
-         {
-            signed idx = -1;
-            settings->state_slot = idx;
-         }
-         else if (mode >= (ID_M_STATE_INDEX_AUTO+1) && mode <= (ID_M_STATE_INDEX_AUTO+10))
-         {
-            signed idx = (mode - (ID_M_STATE_INDEX_AUTO+1));
-            settings->state_slot = idx;
-         }
-         break;
-   }
-
-	if (cmd != EVENT_CMD_NONE)
-		event_command(cmd);
-
-	if (do_wm_close)
-		PostMessage(owner, WM_CLOSE, 0, 0);
-	
-	return 0L;
 }
 #endif
 
