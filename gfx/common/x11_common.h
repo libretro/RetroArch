@@ -75,5 +75,7 @@ void x11_get_video_size(void *data, unsigned *width, unsigned *height);
 
 bool x11_has_focus(void *data);
 
+bool x11_alive(void *data);
+
 #endif
 

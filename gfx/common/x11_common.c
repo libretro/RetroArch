@@ -377,22 +377,10 @@ bool x11_get_metrics(void *data,
 
 void x_input_poll_wheel(void *data, XButtonEvent *event, bool latch);
 
-void x11_check_window(void *data, bool *quit,
-   bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+bool x11_alive(void *data)
 {
    XEvent event;
    driver_t *driver    = driver_get_ptr();
-   unsigned new_width  = *width;
-   unsigned new_height = *height;
-
-   x11_get_video_size(data, &new_width, &new_height);
-
-   if (new_width != *width || new_height != *height)
-   {
-      *resize = true;
-      *width  = new_width;
-      *height = new_height;
-   }
 
    while (XPending(g_x11_dpy))
    {
@@ -439,6 +427,26 @@ void x11_check_window(void *data, bool *quit,
             break;
       }
    }
+
+   return !g_x11_quit;
+}
+
+void x11_check_window(void *data, bool *quit,
+   bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+{
+   unsigned new_width  = *width;
+   unsigned new_height = *height;
+
+   x11_get_video_size(data, &new_width, &new_height);
+
+   if (new_width != *width || new_height != *height)
+   {
+      *resize = true;
+      *width  = new_width;
+      *height = new_height;
+   }
+
+   x11_alive(data);
 
    *quit = g_x11_quit;
 }

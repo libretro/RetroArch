@@ -39,16 +39,10 @@
 
 typedef struct xv
 {
-   Display *display;
    GC gc;
-   Window window;
    Colormap colormap;
    XShmSegmentInfo shminfo;
    XIM xim;
-   XIC xic;
-
-   Atom quit_atom;
-   bool focus;
 
    XvPortID port;
    int depth;
@@ -83,17 +77,16 @@ typedef struct xv
 static void xv_set_nonblock_state(void *data, bool state)
 {
    xv_t *xv = (xv_t*)data;
-   Atom atom = XInternAtom(xv->display, "XV_SYNC_TO_VBLANK", true);
+   Atom atom = XInternAtom(g_x11_dpy, "XV_SYNC_TO_VBLANK", true);
    if (atom != None && xv->port)
-      XvSetPortAttribute(xv->display, xv->port, atom, !state);
+      XvSetPortAttribute(g_x11_dpy, xv->port, atom, !state);
    else
       RARCH_WARN("Failed to set SYNC_TO_VBLANK attribute.\n");
 }
 
-static volatile sig_atomic_t g_quit = 0;
 static void xvideo_sighandler(int sig)
 {
-   g_quit = 1;
+   g_x11_quit = 1;
 }
 
 static INLINE void calculate_yuv(uint8_t *y, uint8_t *u, uint8_t *v, unsigned r, unsigned g, unsigned b)
@@ -319,7 +312,7 @@ static bool adaptor_set_format(xv_t *xv, Display *dpy,
    int i;
    unsigned j;
    int format_count;
-   XvImageFormatValues *format = XvListImageFormats(xv->display, port, &format_count);
+   XvImageFormatValues *format = XvListImageFormats(g_x11_dpy, port, &format_count);
 
    if (!format)
       return false;
@@ -432,14 +425,14 @@ static void *xv_init(const video_info_t *video,
 
    XInitThreads();
 
-   xv->display = XOpenDisplay(NULL);
+   g_x11_dpy = XOpenDisplay(NULL);
    
    av_info = video_viewport_get_system_av_info();
 
    if (av_info)
       geom        = &av_info->geometry;
 
-   if (!XShmQueryExtension(xv->display))
+   if (!XShmQueryExtension(g_x11_dpy))
    {
       RARCH_ERR("XVideo: XShm extension not found.\n");
       goto error;
@@ -449,8 +442,8 @@ static void *xv_init(const video_info_t *video,
 
    /* Find an appropriate Xv port. */
    xv->port = 0;
-   XvQueryAdaptors(xv->display,
-         DefaultRootWindow(xv->display), &adaptor_count, &adaptor_info);
+   XvQueryAdaptors(g_x11_dpy,
+         DefaultRootWindow(g_x11_dpy), &adaptor_count, &adaptor_info);
 
    for (i = 0; i < adaptor_count; i++)
    {
@@ -463,7 +456,7 @@ static void *xv_init(const video_info_t *video,
          continue;
       if (!(adaptor_info[i].type & XvImageMask))
          continue;
-      if (!adaptor_set_format(xv, xv->display, adaptor_info[i].base_id, video))
+      if (!adaptor_set_format(xv, g_x11_dpy, adaptor_info[i].base_id, video))
          continue;
 
       xv->port     = adaptor_info[i].base_id;
@@ -482,10 +475,10 @@ static void *xv_init(const video_info_t *video,
    }
 
    visualtemplate.visualid = xv->visualid;
-   visualtemplate.screen   = DefaultScreen(xv->display);
+   visualtemplate.screen   = DefaultScreen(g_x11_dpy);
    visualtemplate.depth    = xv->depth;
    visualtemplate.visual   = 0;
-   visualinfo              = XGetVisualInfo(xv->display, VisualIDMask | 
+   visualinfo              = XGetVisualInfo(g_x11_dpy, VisualIDMask | 
          VisualScreenMask | VisualDepthMask, &visualtemplate, &visualmatches);
 
    if (!visualinfo)
@@ -497,8 +490,8 @@ static void *xv_init(const video_info_t *video,
       goto error;
    }
 
-   xv->colormap = XCreateColormap(xv->display,
-         DefaultRootWindow(xv->display), visualinfo->visual, AllocNone);
+   xv->colormap = XCreateColormap(g_x11_dpy,
+         DefaultRootWindow(g_x11_dpy), visualinfo->visual, AllocNone);
 
    attributes.colormap     = xv->colormap;
    attributes.border_pixel = 0;
@@ -507,38 +500,38 @@ static void *xv_init(const video_info_t *video,
 
    width      = video->fullscreen ? ( (video->width  == 0) ? geom->base_width : video->width) : video->width;
    height     = video->fullscreen ? ((video->height == 0) ? geom->base_height : video->height) : video->height;
-   xv->window = XCreateWindow(xv->display, DefaultRootWindow(xv->display),
+   g_x11_win = XCreateWindow(g_x11_dpy, DefaultRootWindow(g_x11_dpy),
          0, 0, width, height,
          0, xv->depth, InputOutput, visualinfo->visual,
          CWColormap | CWBorderPixel | CWEventMask, &attributes);
 
    XFree(visualinfo);
-   XSetWindowBackground(xv->display, xv->window, 0);
+   XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
-   XMapWindow(xv->display, xv->window);
+   XMapWindow(g_x11_dpy, g_x11_win);
 
    if (video_monitor_get_fps(buf, sizeof(buf), NULL, 0))
-      XStoreName(xv->display, xv->window, buf);
+      XStoreName(g_x11_dpy, g_x11_win, buf);
 
-   x11_set_window_attr(xv->display, xv->window);
+   x11_set_window_attr(g_x11_dpy, g_x11_win);
 
    if (video->fullscreen)
    {
-      x11_windowed_fullscreen(xv->display, xv->window);
-      x11_show_mouse(xv->display, xv->window, false);
+      x11_windowed_fullscreen(g_x11_dpy, g_x11_win);
+      x11_show_mouse(g_x11_dpy, g_x11_win, false);
    }
 
-   xv->gc = XCreateGC(xv->display, xv->window, 0, 0);
+   xv->gc = XCreateGC(g_x11_dpy, g_x11_win, 0, 0);
 
    /* Set colorkey to auto paint, so that Xv video output is always visible. */
-   atom = XInternAtom(xv->display, "XV_AUTOPAINT_COLORKEY", true);
+   atom = XInternAtom(g_x11_dpy, "XV_AUTOPAINT_COLORKEY", true);
    if (atom != None)
-      XvSetPortAttribute(xv->display, xv->port, atom, 1);
+      XvSetPortAttribute(g_x11_dpy, xv->port, atom, 1);
 
    xv->width  = geom->max_width;
    xv->height = geom->max_height;
 
-   xv->image = XvShmCreateImage(xv->display, xv->port, xv->fourcc,
+   xv->image = XvShmCreateImage(g_x11_dpy, xv->port, xv->fourcc,
          NULL, xv->width, xv->height, &xv->shminfo);
 
    if (!xv->image)
@@ -553,17 +546,17 @@ static void *xv_init(const video_info_t *video,
    xv->shminfo.shmaddr  = xv->image->data = (char*)shmat(xv->shminfo.shmid, NULL, 0);
    xv->shminfo.readOnly = false;
 
-   if (!XShmAttach(xv->display, &xv->shminfo))
+   if (!XShmAttach(g_x11_dpy, &xv->shminfo))
    {
       RARCH_ERR("XVideo: XShmAttach failed.\n");
       goto error;
    }
-   XSync(xv->display, False);
+   XSync(g_x11_dpy, False);
    memset(xv->image->data, 128, xv->image->data_size);
 
-   xv->quit_atom = XInternAtom(xv->display, "WM_DELETE_WINDOW", False);
-   if (xv->quit_atom)
-      XSetWMProtocols(xv->display, xv->window, &xv->quit_atom, 1);
+   g_x11_quit_atom = XInternAtom(g_x11_dpy, "WM_DELETE_WINDOW", False);
+   if (g_x11_quit_atom)
+      XSetWMProtocols(g_x11_dpy, g_x11_win, &g_x11_quit_atom, 1);
 
    sa.sa_handler = xvideo_sighandler;
    sa.sa_flags   = SA_RESTART;
@@ -572,11 +565,11 @@ static void *xv_init(const video_info_t *video,
    sigaction(SIGTERM, &sa, NULL);
 
    xv_set_nonblock_state(xv, !video->vsync);
-   xv->focus = true;
+   g_x11_has_focus = true;
 
    driver->display_type  = RARCH_DISPLAY_X11;
-   driver->video_display = (uintptr_t)xv->display;
-   driver->video_window  = (Window)xv->window;
+   driver->video_display = (uintptr_t)g_x11_dpy;
+   driver->video_window  = (Window)g_x11_win;
 
    if (input && input_data)
    {
@@ -593,10 +586,10 @@ static void *xv_init(const video_info_t *video,
    init_yuv_tables(xv);
    xv_init_font(xv, settings->video.font_path, settings->video.font_size);
 
-   if (!x11_create_input_context(xv->display, xv->window, &xv->xim, &xv->xic))
+   if (!x11_create_input_context(g_x11_dpy, g_x11_win, &xv->xim, &g_x11_xic))
       goto error;
 
-   XGetWindowAttributes(xv->display, xv->window, &target);
+   XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
    calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
    xv->vp.full_width = target.width;
    xv->vp.full_height = target.height;
@@ -618,13 +611,13 @@ static bool check_resize(xv_t *xv, unsigned width, unsigned height)
       xv->width  = width << 1;
       xv->height = height << 1;
 
-      XShmDetach(xv->display, &xv->shminfo);
+      XShmDetach(g_x11_dpy, &xv->shminfo);
       shmdt(xv->shminfo.shmaddr);
       shmctl(xv->shminfo.shmid, IPC_RMID, NULL);
       XFree(xv->image);
 
       memset(&xv->shminfo, 0, sizeof(xv->shminfo));
-      xv->image = XvShmCreateImage(xv->display, xv->port, xv->fourcc, NULL, xv->width, xv->height, &xv->shminfo);
+      xv->image = XvShmCreateImage(g_x11_dpy, xv->port, xv->fourcc, NULL, xv->width, xv->height, &xv->shminfo);
       if (xv->image == None)
       {
          RARCH_ERR("Failed to create image.\n");
@@ -644,12 +637,12 @@ static bool check_resize(xv_t *xv, unsigned width, unsigned height)
       xv->shminfo.shmaddr  = xv->image->data = (char*)shmat(xv->shminfo.shmid, NULL, 0);
       xv->shminfo.readOnly = false;
 
-      if (!XShmAttach(xv->display, &xv->shminfo))
+      if (!XShmAttach(g_x11_dpy, &xv->shminfo))
       {
          RARCH_ERR("Failed to reattch XvShm image.\n");
          return false;
       }
-      XSync(xv->display, False);
+      XSync(g_x11_dpy, False);
       memset(xv->image->data, 128, xv->image->data_size);
    }
    return true;
@@ -780,7 +773,7 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
    if (!check_resize(xv, width, height))
       return false;
 
-   XGetWindowAttributes(xv->display, xv->window, &target);
+   XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
    xv->render_func(xv, frame, width, height, pitch);
 
    calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
@@ -790,64 +783,16 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
    if (msg)
       xv_render_msg(xv, msg, width << 1, height << 1);
 
-   XvShmPutImage(xv->display, xv->port, xv->window, xv->gc, xv->image,
+   XvShmPutImage(g_x11_dpy, xv->port, g_x11_win, xv->gc, xv->image,
          0, 0, width << 1, height << 1,
          xv->vp.x, xv->vp.y, xv->vp.width, xv->vp.height,
          true);
-   XSync(xv->display, False);
+   XSync(g_x11_dpy, False);
 
    if (video_monitor_get_fps(buf, sizeof(buf), NULL, 0))
-      XStoreName(xv->display, xv->window, buf);
+      XStoreName(g_x11_dpy, g_x11_win, buf);
 
    return true;
-}
-
-void x_input_poll_wheel(void *data, XButtonEvent *event, bool latch);
-
-static bool xv_alive(void *data)
-{
-   XEvent event;
-   xv_t *xv         = (xv_t*)data;
-   driver_t *driver = driver_get_ptr();
-
-   while (XPending(xv->display))
-   {
-      bool filter;
-      XNextEvent(xv->display, &event);
-      filter = XFilterEvent(&event, xv->window);
-
-      switch (event.type)
-      {
-         case ClientMessage:
-            if ((Atom)event.xclient.data.l[0] == xv->quit_atom)
-               return false;
-            break;
-         case DestroyNotify:
-            return false;
-         case MapNotify: /* Find something that works better. */
-            xv->focus = true;
-            break;
-         case UnmapNotify:
-            xv->focus = false;
-            break;
-
-         case ButtonPress:
-            x_input_poll_wheel(driver->input_data, &event.xbutton, true);
-            break;
-         case ButtonRelease:
-            break;
-
-         case KeyPress:
-         case KeyRelease:
-            x11_handle_key_event(&event, xv->xic, filter);
-            break;
-
-         default:
-            break;
-      }
-   }
-
-   return !g_quit;
 }
 
 static bool xv_focus(void *data)
@@ -855,7 +800,7 @@ static bool xv_focus(void *data)
    xv_t *xv = (xv_t*)data;
    if (!xv)
       return false;
-   return xv->focus;
+   return g_x11_has_focus;
 }
 
 static bool xv_suppress_screensaver(void *data, bool enable)
@@ -889,18 +834,18 @@ static void xv_free(void *data)
    if (!xv)
       return;
 
-   x11_destroy_input_context(&xv->xim, &xv->xic);
-   XShmDetach(xv->display, &xv->shminfo);
+   x11_destroy_input_context(&xv->xim, &g_x11_xic);
+   XShmDetach(g_x11_dpy, &xv->shminfo);
    shmdt(xv->shminfo.shmaddr);
    shmctl(xv->shminfo.shmid, IPC_RMID, NULL);
    XFree(xv->image);
 
-   if (xv->window)
-      XUnmapWindow(xv->display, xv->window);
+   if (g_x11_win)
+      XUnmapWindow(g_x11_dpy, g_x11_win);
    if (xv->colormap)
-      XFreeColormap(xv->display, xv->colormap);
+      XFreeColormap(g_x11_dpy, xv->colormap);
 
-   XCloseDisplay(xv->display);
+   XCloseDisplay(g_x11_dpy);
 
    free(xv->ytable);
    free(xv->utable);
@@ -953,7 +898,7 @@ video_driver_t video_xvideo = {
    xv_init,
    xv_frame,
    xv_set_nonblock_state,
-   xv_alive,
+   x11_alive,
    xv_focus,
    xv_suppress_screensaver,
    xv_has_windowed,
