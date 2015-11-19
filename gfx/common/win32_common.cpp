@@ -30,7 +30,16 @@
 #include "../video_thread_wrapper.h"
 #include "../drivers_wm/win32_shader_dlg.h"
 
-extern "C" LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
+#ifndef _MSC_VER
+extern "C" {
+#endif
+
+LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
+
+#ifndef _MSC_VER
+}
+#endif
+
 extern "C" bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
 extern "C" bool win32_browser(
       HWND owner,
