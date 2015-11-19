@@ -124,9 +124,7 @@ static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
       }
 #endif
 
-      XUnmapWindow(g_x11_dpy, g_x11_win);
-      XDestroyWindow(g_x11_dpy, g_x11_win);
-      g_x11_win = None;
+      x11_window_destroy(false);
    }
 
    if (glx->g_cmap)

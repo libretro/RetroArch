@@ -548,3 +548,12 @@ void x11_input_ctx_destroy(void)
 {
    x11_destroy_input_context(&g_x11_xim, &g_x11_xic);
 }
+
+void x11_window_destroy(bool fullscreen)
+{
+   if (g_x11_win)
+      XUnmapWindow(g_x11_dpy, g_x11_win);
+   if (!fullscreen)
+      XDestroyWindow(g_x11_dpy, g_x11_win);
+   g_x11_win = 0;
+}

@@ -85,5 +85,7 @@ bool x11_input_ctx_new(void);
 
 void x11_input_ctx_destroy(void);
 
+void x11_window_destroy(bool fullscreen);
+
 #endif
 

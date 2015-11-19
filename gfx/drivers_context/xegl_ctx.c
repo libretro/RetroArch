@@ -533,9 +533,7 @@ static void gfx_ctx_xegl_destroy(void *data)
       RARCH_LOG("[X/EGL]: Saved monitor #%u.\n", g_screen);
 #endif
 
-      XUnmapWindow(g_x11_dpy, g_x11_win);
-      XDestroyWindow(g_x11_dpy, g_x11_win);
-      g_x11_win = None;
+      x11_window_destroy(false);
    }
 
    if (g_cmap)

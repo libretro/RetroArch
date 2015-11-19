@@ -826,8 +826,7 @@ static void xv_free(void *data)
    shmctl(xv->shminfo.shmid, IPC_RMID, NULL);
    XFree(xv->image);
 
-   if (g_x11_win)
-      XUnmapWindow(g_x11_dpy, g_x11_win);
+   x11_window_destroy(true);
    if (xv->colormap)
       XFreeColormap(g_x11_dpy, xv->colormap);
 
