@@ -173,11 +173,32 @@ static void egl_sighandler(int sig)
 
 void egl_install_sighandlers(void)
 {
-   struct sigaction sa = {{0}};
+   struct sigaction sa;
 
-   sa.sa_handler = egl_sighandler;
-   sa.sa_flags   = SA_RESTART;
+   sa.sa_sigaction = NULL;
+   sa.sa_handler   = egl_sighandler;
+   sa.sa_flags     = SA_RESTART;
    sigemptyset(&sa.sa_mask);
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
+}
+
+bool egl_init_context(NativeDisplayType display,
+      EGLint *major, EGLint *minor,
+     EGLint *n, const EGLint *attrib_ptr)
+{
+   g_egl_dpy = eglGetDisplay(display);
+   if (!g_egl_dpy)
+   {
+      RARCH_ERR("[KMS/EGL]: Couldn't get EGL display.\n");
+      return false;
+   }
+
+   if (!eglInitialize(g_egl_dpy, major, minor))
+      return false;
+
+   if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_egl_config, 1, n) || *n != 1)
+      return false;
+
+   return true;
 }

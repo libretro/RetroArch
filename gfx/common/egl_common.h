@@ -51,4 +51,8 @@ void egl_get_video_size(void *data, unsigned *width, unsigned *height);
 
 void egl_install_sighandlers(void);
 
+bool egl_init_context(NativeDisplayType display,
+      EGLint *major, EGLint *minor,
+     EGLint *n, const EGLint *attrib_ptr);
+
 #endif

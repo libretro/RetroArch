@@ -722,17 +722,8 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       goto error;
    }
 
-   g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)drm->g_gbm_dev);
-   if (!g_egl_dpy)
-   {
-      RARCH_ERR("[KMS/EGL]: Couldn't get EGL display.\n");
-      goto error;
-   }
-
-   if (!eglInitialize(g_egl_dpy, &major, &minor))
-      goto error;
-
-   if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_egl_config, 1, &n) || n != 1)
+   if (!egl_init_context((EGLNativeDisplayType)drm->g_gbm_dev, &major,
+            &minor, &n, attrib_ptr))
       goto error;
 
    attr = egl_fill_attribs(egl_attribs);
