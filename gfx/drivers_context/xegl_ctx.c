@@ -33,7 +33,6 @@
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
 #endif
 
-static Colormap g_cmap;
 static unsigned g_screen;
 
 static bool g_use_hw_ctx;
@@ -337,7 +336,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    if (!vi)
       goto error;
 
-   swa.colormap = g_cmap = XCreateColormap(g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
+   swa.colormap = g_x11_cmap = XCreateColormap(g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
          vi->visual, AllocNone);
    swa.event_mask = StructureNotifyMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | KeyReleaseMask;
    swa.override_redirect = fullscreen ? True : False;
@@ -536,11 +535,7 @@ static void gfx_ctx_xegl_destroy(void *data)
       x11_window_destroy(false);
    }
 
-   if (g_cmap)
-   {
-      XFreeColormap(g_x11_dpy, g_cmap);
-      g_cmap = None;
-   }
+   x11_colormap_destroy();
 
    if (g_should_reset_mode)
    {

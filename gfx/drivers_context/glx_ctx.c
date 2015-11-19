@@ -39,7 +39,6 @@ typedef struct gfx_ctx_glx_data
    bool g_is_double;
 
    GLXWindow g_glx_win;
-   Colormap g_cmap;
 
    unsigned g_screen;
    unsigned g_interval;
@@ -127,11 +126,7 @@ static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
       x11_window_destroy(false);
    }
 
-   if (glx->g_cmap)
-   {
-      XFreeColormap(g_x11_dpy, glx->g_cmap);
-      glx->g_cmap = None;
-   }
+   x11_colormap_destroy();
 
    if (glx->g_should_reset_mode)
    {
@@ -323,7 +318,7 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    if (!vi)
       goto error;
 
-   swa.colormap = glx->g_cmap = XCreateColormap(g_x11_dpy,
+   swa.colormap = g_x11_cmap = XCreateColormap(g_x11_dpy,
          RootWindow(g_x11_dpy, vi->screen), vi->visual, AllocNone);
    swa.event_mask = StructureNotifyMask | KeyPressMask | KeyReleaseMask |
       ButtonReleaseMask | ButtonPressMask;

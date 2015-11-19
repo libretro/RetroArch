@@ -40,6 +40,7 @@ extern bool g_x11_has_focus;
 extern Window   g_x11_win;
 extern Display *g_x11_dpy;
 extern bool g_x11_true_full;
+extern Colormap g_x11_cmap;
 
 void x11_show_mouse(Display *dpy, Window win, bool state);
 void x11_windowed_fullscreen(Display *dpy, Window win);
@@ -86,6 +87,8 @@ bool x11_input_ctx_new(void);
 void x11_input_ctx_destroy(void);
 
 void x11_window_destroy(bool fullscreen);
+
+void x11_colormap_destroy(void);
 
 #endif
 

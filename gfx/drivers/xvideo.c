@@ -42,7 +42,6 @@
 typedef struct xv
 {
    GC gc;
-   Colormap colormap;
    XShmSegmentInfo shminfo;
 
    XvPortID port;
@@ -485,10 +484,10 @@ static void *xv_init(const video_info_t *video,
       goto error;
    }
 
-   xv->colormap = XCreateColormap(g_x11_dpy,
+   g_x11_cmap = XCreateColormap(g_x11_dpy,
          DefaultRootWindow(g_x11_dpy), visualinfo->visual, AllocNone);
 
-   attributes.colormap     = xv->colormap;
+   attributes.colormap     = g_x11_cmap;
    attributes.border_pixel = 0;
    attributes.event_mask   = StructureNotifyMask | KeyPressMask | 
       KeyReleaseMask | ButtonReleaseMask | ButtonPressMask | DestroyNotify | ClientMessage;
@@ -827,8 +826,7 @@ static void xv_free(void *data)
    XFree(xv->image);
 
    x11_window_destroy(true);
-   if (xv->colormap)
-      XFreeColormap(g_x11_dpy, xv->colormap);
+   x11_colormap_destroy();
 
    XCloseDisplay(g_x11_dpy);
 

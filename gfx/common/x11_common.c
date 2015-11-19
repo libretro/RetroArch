@@ -30,6 +30,7 @@
 static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
+Colormap g_x11_cmap;
 Atom g_x11_quit_atom;
 static volatile sig_atomic_t g_x11_quit;
 bool g_x11_has_focus;
@@ -555,5 +556,14 @@ void x11_window_destroy(bool fullscreen)
       XUnmapWindow(g_x11_dpy, g_x11_win);
    if (!fullscreen)
       XDestroyWindow(g_x11_dpy, g_x11_win);
-   g_x11_win = 0;
+   g_x11_win = None;
+}
+
+void x11_colormap_destroy(void)
+{
+   if (!g_x11_cmap)
+      return;
+
+   XFreeColormap(g_x11_dpy, g_x11_cmap);
+   g_x11_cmap = None;
 }
