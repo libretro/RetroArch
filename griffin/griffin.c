@@ -137,10 +137,6 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/vc_egl_ctx.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../gfx/drivers_wm/win32_shader_dlg.c"
-#endif
-
 #endif
 
 #if defined(HAVE_X11)
