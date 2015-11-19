@@ -89,8 +89,10 @@ bool config_get_int(config_file_t *conf, const char *entry, int *in);
 /* Extracts an uint from config file. */
 bool config_get_uint(config_file_t *conf, const char *entry, unsigned *in);
 
+#ifndef C89_BUILD
 /* Extracts an uint64 from config file. */
 bool config_get_uint64(config_file_t *conf, const char *entry, uint64_t *in);
+#endif
 
 /* Extracts an unsigned int from config file treating input as hex. */
 bool config_get_hex(config_file_t *conf, const char *entry, unsigned *in);

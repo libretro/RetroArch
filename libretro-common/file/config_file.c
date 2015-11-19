@@ -617,6 +617,7 @@ bool config_get_int(config_file_t *conf, const char *key, int *in)
    return entry != NULL && errno == 0;
 }
 
+#ifndef C89_BUILD
 bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
@@ -632,6 +633,7 @@ bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
 
    return entry != NULL && errno == 0;
 }
+#endif
 
 bool config_get_uint(config_file_t *conf, const char *key, unsigned *in)
 {
