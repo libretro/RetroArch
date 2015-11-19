@@ -755,7 +755,6 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
       unsigned pitch, const char *msg)
 {
    XWindowAttributes target;
-   char buf[128]             = {0};
    xv_t *xv                  = (xv_t*)data;
 
    if (!frame)
@@ -780,8 +779,7 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
          true);
    XSync(g_x11_dpy, False);
 
-   if (video_monitor_get_fps(buf, sizeof(buf), NULL, 0))
-      XStoreName(g_x11_dpy, g_x11_win, buf);
+   x11_update_window_title(NULL);
 
    return true;
 }

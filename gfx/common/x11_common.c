@@ -25,6 +25,7 @@
 
 #include "x11_common.h"
 #include "../../general.h"
+#include "../video_monitor.h"
 
 static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
@@ -520,4 +521,17 @@ bool x11_connect(void)
    }
 
    return true;
+}
+
+void x11_update_window_title(void *data)
+{
+   char buf[128]           = {0};
+   char buf_fps[128]       = {0};
+   settings_t *settings    = config_get_ptr();
+
+   if (video_monitor_get_fps(buf, sizeof(buf),
+            buf_fps, sizeof(buf_fps)))
+      XStoreName(g_x11_dpy, g_x11_win, buf);
+   if (settings->fps_show)
+      rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }

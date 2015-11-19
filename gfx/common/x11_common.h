@@ -80,5 +80,7 @@ void x11_install_sighandlers(void);
 
 bool x11_connect(void);
 
+void x11_update_window_title(void *data);
+
 #endif
 

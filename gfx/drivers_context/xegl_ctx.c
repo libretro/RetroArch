@@ -26,7 +26,6 @@
 
 #include "../../driver.h"
 #include "../../runloop.h"
-#include "../video_monitor.h"
 #include "../common/gl_common.h"
 #include "../common/x11_common.h"
 
@@ -132,22 +131,6 @@ static void gfx_ctx_xegl_set_resize(void *data,
    (void)width;
    (void)height;
 }
-
-static void gfx_ctx_xegl_update_window_title(void *data)
-{
-   char buf[128]        = {0};
-   char buf_fps[128]    = {0};
-   settings_t *settings = config_get_ptr();
-
-   (void)data;
-
-   if (video_monitor_get_fps(buf, sizeof(buf),
-            buf_fps, sizeof(buf_fps)))
-      XStoreName(g_x11_dpy, g_x11_win, buf);
-   if (settings->fps_show)
-      rarch_main_msg_queue_push(buf_fps, 1, 1, false);
-}
-
 
 #define XEGL_ATTRIBS_BASE \
 EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
@@ -687,7 +670,7 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    NULL, /* get_video_output_next */
    x11_get_metrics,
    NULL,
-   gfx_ctx_xegl_update_window_title,
+   x11_update_window_title,
    x11_check_window,
    gfx_ctx_xegl_set_resize,
    gfx_ctx_xegl_has_focus,

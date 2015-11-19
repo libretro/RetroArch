@@ -21,7 +21,6 @@
 
 #include "../../driver.h"
 #include "../../runloop.h"
-#include "../video_monitor.h"
 
 #include "../common/gl_common.h"
 #include "../common/x11_common.h"
@@ -216,21 +215,6 @@ static void gfx_ctx_glx_set_resize(void *data,
    (void)data;
    (void)width;
    (void)height;
-}
-
-static void gfx_ctx_glx_update_window_title(void *data)
-{
-   char buf[128]           = {0};
-   char buf_fps[128]       = {0};
-   driver_t *driver        = driver_get_ptr();
-   settings_t *settings    = config_get_ptr();
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
-
-   if (video_monitor_get_fps(buf, sizeof(buf),
-            buf_fps, sizeof(buf_fps)))
-      XStoreName(g_x11_dpy, g_x11_win, buf);
-   if (settings->fps_show)
-      rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static bool gfx_ctx_glx_init(void *data)
@@ -655,7 +639,7 @@ const gfx_ctx_driver_t gfx_ctx_glx = {
    NULL, /* get_video_output_next */
    x11_get_metrics,
    NULL,
-   gfx_ctx_glx_update_window_title,
+   x11_update_window_title,
    x11_check_window,
    gfx_ctx_glx_set_resize,
    x11_has_focus,
