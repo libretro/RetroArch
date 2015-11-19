@@ -31,53 +31,26 @@
 /* forward declaration */
 int system_property_get(const char *cmd, const char *args, char *value);
 
-typedef struct gfx_ctx_android_data
-{
-   void *empty;
-} gfx_ctx_android_data_t;
-
 static bool g_es3;
 
 static void android_gfx_ctx_set_swap_interval(void *data, unsigned interval)
 {
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_android_data_t *android = NULL;
-   
-   android = (gfx_ctx_android_data_t*)driver->video_context_data;
-
-   (void)data;
-   if (!android)
-      return;
-
    eglSwapInterval(g_egl_dpy, interval);
 }
 
 static void android_gfx_ctx_destroy(void *data)
 {
-   driver_t *driver = driver_get_ptr();
-   
    egl_destroy();
-
-   if (driver->video_context_data)
-      free(driver->video_context_data);
-   driver->video_context_data = NULL;
 }
 
 static void android_gfx_ctx_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
    EGLint gl_width, gl_height;
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_android_data_t *android = NULL;
    
-   android = (gfx_ctx_android_data_t*)
-      driver->video_context_data;
-
    *width  = 0;
    *height = 0;
 
-   if (!android)
-      return;
    if (!g_egl_dpy)
       return;
 
@@ -107,17 +80,9 @@ static bool android_gfx_ctx_init(void *data)
       EGL_ALPHA_SIZE, 8,
       EGL_NONE
    };
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_android_data_t *android = NULL;
    struct android_app *android_app = (struct android_app*)g_android;
    
    if (!android_app)
-      return false;
-
-   android = (gfx_ctx_android_data_t*)
-      calloc(1, sizeof(gfx_ctx_android_data_t));
-
-   if (!android)
       return false;
 
    RARCH_LOG("Android EGL: GLES version = %d.\n", g_es3 ? 3 : 2);
@@ -179,15 +144,10 @@ static bool android_gfx_ctx_init(void *data)
             g_egl_surf, g_egl_ctx))
       goto error;
 
-   driver->video_context_data = android;
-
    return true;
 
 error:
    egl_destroy();
-
-   if (android)
-      free(android);
 
    return false;
 }

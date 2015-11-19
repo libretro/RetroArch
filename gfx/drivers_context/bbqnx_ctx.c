@@ -45,7 +45,6 @@ static enum gfx_ctx_api g_api;
 
 static void gfx_ctx_qnx_set_swap_interval(void *data, unsigned interval)
 {
-   (void)data;
    eglSwapInterval(g_egl_dpy, interval);
 }
 
