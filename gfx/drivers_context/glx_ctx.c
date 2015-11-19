@@ -206,23 +206,6 @@ static void gfx_ctx_glx_swap_interval(void *data, unsigned interval)
    }
 }
 
-static void gfx_ctx_glx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
-{
-   unsigned new_width = *width, new_height = *height;
-
-   x11_get_video_size(data, &new_width, &new_height);
-
-   if (new_width != *width || new_height != *height)
-   {
-      *resize = true;
-      *width  = new_width;
-      *height = new_height;
-   }
-
-   x11_check_window(quit);
-}
-
 static void gfx_ctx_glx_swap_buffers(void *data)
 {
    driver_t *driver = driver_get_ptr();
@@ -690,7 +673,7 @@ const gfx_ctx_driver_t gfx_ctx_glx = {
    x11_get_metrics,
    NULL,
    gfx_ctx_glx_update_window_title,
-   gfx_ctx_glx_check_window,
+   x11_check_window,
    gfx_ctx_glx_set_resize,
    x11_has_focus,
    gfx_ctx_glx_suppress_screensaver,

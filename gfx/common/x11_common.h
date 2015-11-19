@@ -68,7 +68,8 @@ void x11_handle_key_event(XEvent *event, XIC ic, bool filter);
 bool x11_get_metrics(void *data,
       enum display_metric_types type, float *value);
 
-void x11_check_window(bool *quit);
+void x11_check_window(void *data, bool *quit,
+   bool *resize, unsigned *width, unsigned *height, unsigned frame_count);
 
 void x11_get_video_size(void *data, unsigned *width, unsigned *height);
 
