@@ -68,14 +68,8 @@ static void gfx_ctx_mali_fbdev_get_video_size(void *data,
 {
    (void)data;
 
-   *width  = 0;
-   *height = 0;
-
-   if (g_egl_dpy != EGL_NO_DISPLAY && g_egl_surf != EGL_NO_SURFACE)
-   {
-      *width  = g_width;
-      *height = g_height;
-   }
+   *width  = g_width;
+   *height = g_height;
 }
 
 static bool gfx_ctx_mali_fbdev_init(void *data)
