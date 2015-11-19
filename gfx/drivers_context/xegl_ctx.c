@@ -34,14 +34,11 @@
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
 #endif
 
-static Display *g_dpy;
-static Window   g_win;
 static Colormap g_cmap;
 static bool g_true_full;
 static unsigned g_screen;
 
 static XIM g_xim;
-static XIC g_xic;
 
 static bool g_use_hw_ctx;
 static EGLContext g_egl_hw_ctx;
@@ -69,7 +66,7 @@ static Bool egl_wait_notify(Display *d, XEvent *e, char *arg)
 {
    (void)d;
    (void)e;
-   return e->type == MapNotify && e->xmap.window == g_win;
+   return e->type == MapNotify && e->xmap.window == g_x11_win;
 }
 
 static int egl_nul_handler(Display *dpy, XErrorEvent *event)
@@ -153,33 +150,33 @@ static void gfx_ctx_xegl_check_window(void *data, bool *quit,
       *height = new_height;
    }
 
-   while (XPending(g_dpy))
+   while (XPending(g_x11_dpy))
    {
       bool filter;
 
       /* Can get events from older windows. Check this. */
-      XNextEvent(g_dpy, &event);
-      filter = XFilterEvent(&event, g_win);
+      XNextEvent(g_x11_dpy, &event);
+      filter = XFilterEvent(&event, g_x11_win);
 
       switch (event.type)
       {
          case ClientMessage:
-            if (event.xclient.window == g_win && (Atom)event.xclient.data.l[0] == g_x11_quit_atom)
+            if (event.xclient.window == g_x11_win && (Atom)event.xclient.data.l[0] == g_x11_quit_atom)
                g_x11_quit = true;
             break;
 
          case DestroyNotify:
-            if (event.xdestroywindow.window == g_win)
+            if (event.xdestroywindow.window == g_x11_win)
                g_x11_quit = true;
             break;
 
          case MapNotify:
-            if (event.xmap.window == g_win)
+            if (event.xmap.window == g_x11_win)
                g_x11_has_focus = true;
             break;
 
          case UnmapNotify:
-            if (event.xunmap.window == g_win)
+            if (event.xunmap.window == g_x11_win)
                g_x11_has_focus = false;
             break;
 
@@ -192,8 +189,8 @@ static void gfx_ctx_xegl_check_window(void *data, bool *quit,
 
          case KeyPress:
          case KeyRelease:
-            if (event.xkey.window == g_win)
-               x11_handle_key_event(&event, g_xic, filter);
+            if (event.xkey.window == g_x11_win)
+               x11_handle_key_event(&event, g_x11_xic, filter);
             break;
       }
    }
@@ -225,7 +222,7 @@ static void gfx_ctx_xegl_update_window_title(void *data)
 
    if (video_monitor_get_fps(buf, sizeof(buf),
             buf_fps, sizeof(buf_fps)))
-      XStoreName(g_dpy, g_win, buf);
+      XStoreName(g_x11_dpy, g_x11_win, buf);
    if (settings->fps_show)
       rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
@@ -235,7 +232,7 @@ static void gfx_ctx_xegl_get_video_size(void *data,
 {
    (void)data;
 
-   if (!g_dpy || g_win == None)
+   if (!g_x11_dpy || g_x11_win == None)
    {
       Display *dpy = XOpenDisplay(NULL);
       if (dpy)
@@ -254,7 +251,7 @@ static void gfx_ctx_xegl_get_video_size(void *data,
    else
    {
       XWindowAttributes target;
-      XGetWindowAttributes(g_dpy, g_win, &target);
+      XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
 
       *width  = target.width;
       *height = target.height;
@@ -329,16 +326,16 @@ static bool gfx_ctx_xegl_init(void *data)
 
    g_x11_quit = 0;
 
-   /* Keep one g_dpy alive the entire process lifetime.
+   /* Keep one g_x11_dpy alive the entire process lifetime.
     * This is necessary for nVidia's EGL implementation for now. */
-   if (!g_dpy)
+   if (!g_x11_dpy)
    {
-      g_dpy = XOpenDisplay(NULL);
-      if (!g_dpy)
+      g_x11_dpy = XOpenDisplay(NULL);
+      if (!g_x11_dpy)
          goto error;
    }
 
-   g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)g_dpy);
+   g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)g_x11_dpy);
    if (g_egl_dpy == EGL_NO_DISPLAY)
    {
       RARCH_ERR("[X/EGL]: EGL display not available.\n");
@@ -478,18 +475,18 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
    temp.visualid = vid;
 
-   vi = XGetVisualInfo(g_dpy, VisualIDMask, &temp, &num_visuals);
+   vi = XGetVisualInfo(g_x11_dpy, VisualIDMask, &temp, &num_visuals);
    if (!vi)
       goto error;
 
-   swa.colormap = g_cmap = XCreateColormap(g_dpy, RootWindow(g_dpy, vi->screen),
+   swa.colormap = g_cmap = XCreateColormap(g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
          vi->visual, AllocNone);
    swa.event_mask = StructureNotifyMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | KeyReleaseMask;
    swa.override_redirect = fullscreen ? True : False;
 
    if (fullscreen && !windowed_full)
    {
-      if (x11_enter_fullscreen(g_dpy, width, height, &g_desktop_mode))
+      if (x11_enter_fullscreen(g_x11_dpy, width, height, &g_desktop_mode))
       {
          g_should_reset_mode = true;
          true_full = true;
@@ -507,7 +504,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       unsigned new_width  = width;
       unsigned new_height = height;
 
-      if (x11_get_xinerama_coord(g_dpy, g_screen, &x_off, &y_off, &new_width, &new_height))
+      if (x11_get_xinerama_coord(g_x11_dpy, g_screen, &x_off, &y_off, &new_width, &new_height))
          RARCH_LOG("[X/EGL]: Using Xinerama on screen #%u.\n", g_screen);
       else
          RARCH_LOG("[X/EGL]: Xinerama is not active on screen.\n");
@@ -523,11 +520,11 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    RARCH_LOG("[X/EGL]: X = %d, Y = %d, W = %u, H = %u.\n",
          x_off, y_off, width, height);
 
-   g_win = XCreateWindow(g_dpy, RootWindow(g_dpy, vi->screen),
+   g_x11_win = XCreateWindow(g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
          x_off, y_off, width, height, 0,
          vi->depth, InputOutput, vi->visual, 
          CWBorderPixel | CWColormap | CWEventMask | (true_full ? CWOverrideRedirect : 0), &swa);
-   XSetWindowBackground(g_dpy, g_win, 0);
+   XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
    g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, EGL_NO_CONTEXT,
          attr != egl_attribs ? egl_attribs : NULL);
@@ -547,7 +544,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          goto error;
    }
 
-   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, (EGLNativeWindowType)g_win, NULL);
+   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, (EGLNativeWindowType)g_x11_win, NULL);
    if (!g_egl_surf)
       goto error;
 
@@ -556,33 +553,33 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
    RARCH_LOG("[X/EGL]: Current context: %p.\n", (void*)eglGetCurrentContext());
 
-   x11_set_window_attr(g_dpy, g_win);
+   x11_set_window_attr(g_x11_dpy, g_x11_win);
 
    if (fullscreen)
-      x11_show_mouse(g_dpy, g_win, false);
+      x11_show_mouse(g_x11_dpy, g_x11_win, false);
 
    if (true_full)
    {
       RARCH_LOG("[X/EGL]: Using true fullscreen.\n");
-      XMapRaised(g_dpy, g_win);
+      XMapRaised(g_x11_dpy, g_x11_win);
    }
    else if (fullscreen) 
    {
       /* We attempted true fullscreen, but failed.
        * Attempt using windowed fullscreen. */
-      XMapRaised(g_dpy, g_win);
+      XMapRaised(g_x11_dpy, g_x11_win);
       RARCH_LOG("[X/EGL]: Using windowed fullscreen.\n");
 
       /* We have to move the window to the screen we 
        * want to go fullscreen on first.
        * x_off and y_off usually get ignored in XCreateWindow().
        */
-      x11_move_window(g_dpy, g_win, x_off, y_off, width, height);
-      x11_windowed_fullscreen(g_dpy, g_win);
+      x11_move_window(g_x11_dpy, g_x11_win, x_off, y_off, width, height);
+      x11_windowed_fullscreen(g_x11_dpy, g_x11_win);
    }
    else
    {
-      XMapWindow(g_dpy, g_win);
+      XMapWindow(g_x11_dpy, g_x11_win);
 
       /* If we want to map the window on a different screen, 
        * we'll have to do it by force.
@@ -591,14 +588,14 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
        * x_off and y_off usually get ignored in XCreateWindow().
        */
       if (g_screen)
-         x11_move_window(g_dpy, g_win, x_off, y_off, width, height);
+         x11_move_window(g_x11_dpy, g_x11_win, x_off, y_off, width, height);
    }
 
-   XIfEvent(g_dpy, &event, egl_wait_notify, NULL);
+   XIfEvent(g_x11_dpy, &event, egl_wait_notify, NULL);
 
-   g_x11_quit_atom = XInternAtom(g_dpy, "WM_DELETE_WINDOW", False);
+   g_x11_quit_atom = XInternAtom(g_x11_dpy, "WM_DELETE_WINDOW", False);
    if (g_x11_quit_atom)
-      XSetWMProtocols(g_dpy, g_win, &g_x11_quit_atom, 1);
+      XSetWMProtocols(g_x11_dpy, g_x11_win, &g_x11_quit_atom, 1);
 
    gfx_ctx_xegl_swap_interval(data, g_interval);
 
@@ -606,20 +603,20 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
     * so override errors for this call.
     */
    old_handler = XSetErrorHandler(egl_nul_handler);
-   XSetInputFocus(g_dpy, g_win, RevertToNone, CurrentTime);
-   XSync(g_dpy, False);
+   XSetInputFocus(g_x11_dpy, g_x11_win, RevertToNone, CurrentTime);
+   XSync(g_x11_dpy, False);
    XSetErrorHandler(old_handler);
 
    XFree(vi);
    g_x11_has_focus = true;
    g_inited    = true;
 
-   if (!x11_create_input_context(g_dpy, g_win, &g_xim, &g_xic))
+   if (!x11_create_input_context(g_x11_dpy, g_x11_win, &g_xim, &g_x11_xic))
       goto error;
 
    driver->display_type  = RARCH_DISPLAY_X11;
-   driver->video_display = (uintptr_t)g_dpy;
-   driver->video_window  = (uintptr_t)g_win;
+   driver->video_display = (uintptr_t)g_x11_dpy;
+   driver->video_window  = (uintptr_t)g_x11_win;
    g_true_full = true_full;
 
    return true;
@@ -636,7 +633,7 @@ static void gfx_ctx_xegl_destroy(void *data)
 {
    (void)data;
 
-   x11_destroy_input_context(&g_xim, &g_xic);
+   x11_destroy_input_context(&g_xim, &g_x11_xic);
 
    if (g_egl_dpy)
    {
@@ -661,7 +658,7 @@ static void gfx_ctx_xegl_destroy(void *data)
    g_egl_dpy     = NULL;
    g_egl_config  = 0;
 
-   if (g_win)
+   if (g_x11_win)
    {
       /* Save last used monitor for later. */
 #ifdef HAVE_XINERAMA
@@ -669,34 +666,34 @@ static void gfx_ctx_xegl_destroy(void *data)
       Window child;
 
       int x = 0, y = 0;
-      XGetWindowAttributes(g_dpy, g_win, &target);
-      XTranslateCoordinates(g_dpy, g_win, RootWindow(g_dpy, DefaultScreen(g_dpy)),
+      XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
+      XTranslateCoordinates(g_x11_dpy, g_x11_win, RootWindow(g_x11_dpy, DefaultScreen(g_x11_dpy)),
             target.x, target.y, &x, &y, &child);
 
-      g_screen = x11_get_xinerama_monitor(g_dpy, x, y,
+      g_screen = x11_get_xinerama_monitor(g_x11_dpy, x, y,
             target.width, target.height);
 
       RARCH_LOG("[X/EGL]: Saved monitor #%u.\n", g_screen);
 #endif
 
-      XUnmapWindow(g_dpy, g_win);
-      XDestroyWindow(g_dpy, g_win);
-      g_win = None;
+      XUnmapWindow(g_x11_dpy, g_x11_win);
+      XDestroyWindow(g_x11_dpy, g_x11_win);
+      g_x11_win = None;
    }
 
    if (g_cmap)
    {
-      XFreeColormap(g_dpy, g_cmap);
+      XFreeColormap(g_x11_dpy, g_cmap);
       g_cmap = None;
    }
 
    if (g_should_reset_mode)
    {
-      x11_exit_fullscreen(g_dpy, &g_desktop_mode);
+      x11_exit_fullscreen(g_x11_dpy, &g_desktop_mode);
       g_should_reset_mode = false;
    }
 
-   /* Do not close g_dpy. We'll keep one for the entire application 
+   /* Do not close g_x11_dpy. We'll keep one for the entire application 
     * lifecycle to work-around nVidia EGL limitations.
     */
    g_inited = false;
@@ -723,9 +720,9 @@ static bool gfx_ctx_xegl_has_focus(void *data)
    if (!g_inited)
       return false;
 
-   XGetInputFocus(g_dpy, &win, &rev);
+   XGetInputFocus(g_x11_dpy, &win, &rev);
 
-   return (win == g_win && g_x11_has_focus) || g_true_full;
+   return (win == g_x11_win && g_x11_has_focus) || g_true_full;
 }
 
 static bool gfx_ctx_xegl_suppress_screensaver(void *data, bool enable)
@@ -791,7 +788,7 @@ static bool gfx_ctx_xegl_bind_api(void *data,
 static void gfx_ctx_xegl_show_mouse(void *data, bool state)
 {
    (void)data;
-   x11_show_mouse(g_dpy, g_win, state);
+   x11_show_mouse(g_x11_dpy, g_x11_win, state);
 }
 
 static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)

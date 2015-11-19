@@ -32,6 +32,9 @@ static Atom XA_NET_MOVERESIZE_WINDOW;
 Atom g_x11_quit_atom;
 volatile sig_atomic_t g_x11_quit;
 bool g_x11_has_focus;
+Window   g_x11_win;
+XIC g_x11_xic;
+Display *g_x11_dpy;
 
 #define XA_INIT(x) XA##x = XInternAtom(dpy, #x, False)
 #define _NET_WM_STATE_ADD 1

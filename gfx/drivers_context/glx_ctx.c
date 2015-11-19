@@ -40,8 +40,6 @@ typedef struct gfx_ctx_glx_data
    bool g_should_reset_mode;
    bool g_is_double;
 
-   Display *g_dpy;
-   Window   g_win;
    GLXWindow g_glx_win;
    Colormap g_cmap;
 
@@ -49,7 +47,6 @@ typedef struct gfx_ctx_glx_data
    unsigned g_interval;
 
    XIM g_xim;
-   XIC g_xic;
 
    GLXContext g_ctx, g_hw_ctx;
    GLXFBConfig g_fbc;
@@ -79,7 +76,7 @@ static Bool glx_wait_notify(Display *d, XEvent *e, char *arg)
 
    if (!glx)
       return false;
-   return (e->type == MapNotify) && (e->xmap.window == glx->g_win);
+   return (e->type == MapNotify) && (e->xmap.window == g_x11_win);
 }
 
 static int glx_nul_handler(Display *dpy, XErrorEvent *event)
@@ -100,7 +97,7 @@ static void gfx_ctx_glx_get_video_size(void *data,
 
    (void)data;
 
-   if (!glx->g_dpy || glx->g_win == None)
+   if (!g_x11_dpy || g_x11_win == None)
    {
       Display *dpy = (Display*)XOpenDisplay(NULL);
       *width  = 0;
@@ -117,7 +114,7 @@ static void gfx_ctx_glx_get_video_size(void *data,
    else
    {
       XWindowAttributes target;
-      XGetWindowAttributes(glx->g_dpy, glx->g_win, &target);
+      XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
 
       *width  = target.width;
       *height = target.height;
@@ -131,27 +128,27 @@ static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
    if (!glx)
       return;
 
-   x11_destroy_input_context(&glx->g_xim, &glx->g_xic);
+   x11_destroy_input_context(&glx->g_xim, &g_x11_xic);
 
-   if (glx->g_dpy && glx->g_ctx)
+   if (g_x11_dpy && glx->g_ctx)
    {
 
       glFinish();
-      glXMakeContextCurrent(glx->g_dpy, None, None, NULL);
+      glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
 
       if (!driver->video_cache_context)
       {
          if (glx->g_hw_ctx)
-            glXDestroyContext(glx->g_dpy, glx->g_hw_ctx);
-         glXDestroyContext(glx->g_dpy, glx->g_ctx);
+            glXDestroyContext(g_x11_dpy, glx->g_hw_ctx);
+         glXDestroyContext(g_x11_dpy, glx->g_ctx);
          glx->g_ctx = NULL;
          glx->g_hw_ctx = NULL;
       }
    }
 
-   if (glx->g_win)
+   if (g_x11_win)
    {
-      glXDestroyWindow(glx->g_dpy, glx->g_glx_win);
+      glXDestroyWindow(g_x11_dpy, glx->g_glx_win);
       glx->g_glx_win = 0;
 
       /* Save last used monitor for later. */
@@ -161,38 +158,38 @@ static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
          Window child;
 
          int x = 0, y = 0;
-         XGetWindowAttributes(glx->g_dpy, glx->g_win, &target);
-         XTranslateCoordinates(glx->g_dpy, glx->g_win, DefaultRootWindow(glx->g_dpy),
+         XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
+         XTranslateCoordinates(g_x11_dpy, g_x11_win, DefaultRootWindow(g_x11_dpy),
                target.x, target.y, &x, &y, &child);
 
-         glx->g_screen = x11_get_xinerama_monitor(glx->g_dpy, x, y,
+         glx->g_screen = x11_get_xinerama_monitor(g_x11_dpy, x, y,
                target.width, target.height);
 
          RARCH_LOG("[GLX]: Saved monitor #%u.\n", glx->g_screen);
       }
 #endif
 
-      XUnmapWindow(glx->g_dpy, glx->g_win);
-      XDestroyWindow(glx->g_dpy, glx->g_win);
-      glx->g_win = None;
+      XUnmapWindow(g_x11_dpy, g_x11_win);
+      XDestroyWindow(g_x11_dpy, g_x11_win);
+      g_x11_win = None;
    }
 
    if (glx->g_cmap)
    {
-      XFreeColormap(glx->g_dpy, glx->g_cmap);
+      XFreeColormap(g_x11_dpy, glx->g_cmap);
       glx->g_cmap = None;
    }
 
    if (glx->g_should_reset_mode)
    {
-      x11_exit_fullscreen(glx->g_dpy, &glx->g_desktop_mode);
+      x11_exit_fullscreen(g_x11_dpy, &glx->g_desktop_mode);
       glx->g_should_reset_mode = false;
    }
 
-   if (!driver->video_cache_context && glx->g_dpy)
+   if (!driver->video_cache_context && g_x11_dpy)
    {
-      XCloseDisplay(glx->g_dpy);
-      glx->g_dpy = NULL;
+      XCloseDisplay(g_x11_dpy);
+      g_x11_dpy = NULL;
    }
 
    g_pglSwapInterval = NULL;
@@ -229,7 +226,7 @@ static void gfx_ctx_glx_swap_interval(void *data, unsigned interval)
    if (g_pglSwapIntervalEXT)
    {
       RARCH_LOG("[GLX]: glXSwapIntervalEXT(%u)\n", glx->g_interval);
-      g_pglSwapIntervalEXT(glx->g_dpy, glx->g_glx_win, glx->g_interval);
+      g_pglSwapIntervalEXT(g_x11_dpy, glx->g_glx_win, glx->g_interval);
    }
    else if (g_pglSwapInterval)
    {
@@ -266,32 +263,32 @@ static void gfx_ctx_glx_check_window(void *data, bool *quit,
       *height = new_height;
    }
 
-   while (XPending(glx->g_dpy))
+   while (XPending(g_x11_dpy))
    {
       bool filter;
-      XNextEvent(glx->g_dpy, &event);
-      filter = XFilterEvent(&event, glx->g_win);
+      XNextEvent(g_x11_dpy, &event);
+      filter = XFilterEvent(&event, g_x11_win);
 
       switch (event.type)
       {
          case ClientMessage:
-            if (event.xclient.window == glx->g_win &&
+            if (event.xclient.window == g_x11_win &&
                   (Atom)event.xclient.data.l[0] == g_x11_quit_atom)
                g_x11_quit = true;
             break;
 
          case DestroyNotify:
-            if (event.xdestroywindow.window == glx->g_win)
+            if (event.xdestroywindow.window == g_x11_win)
                g_x11_quit = true;
             break;
 
          case MapNotify:
-            if (event.xmap.window == glx->g_win)
+            if (event.xmap.window == g_x11_win)
                g_x11_has_focus = true;
             break;
 
          case UnmapNotify:
-            if (event.xunmap.window == glx->g_win)
+            if (event.xunmap.window == g_x11_win)
                g_x11_has_focus = false;
             break;
          case ButtonPress:
@@ -301,7 +298,7 @@ static void gfx_ctx_glx_check_window(void *data, bool *quit,
             break;
          case KeyPress:
          case KeyRelease:
-            x11_handle_key_event(&event, glx->g_xic, filter);
+            x11_handle_key_event(&event, g_x11_xic, filter);
             break;
       }
    }
@@ -316,7 +313,7 @@ static void gfx_ctx_glx_swap_buffers(void *data)
    (void)data;
 
    if (glx->g_is_double)
-      glXSwapBuffers(glx->g_dpy, glx->g_glx_win);
+      glXSwapBuffers(g_x11_dpy, glx->g_glx_win);
 }
 
 static void gfx_ctx_glx_set_resize(void *data,
@@ -337,7 +334,7 @@ static void gfx_ctx_glx_update_window_title(void *data)
 
    if (video_monitor_get_fps(buf, sizeof(buf),
             buf_fps, sizeof(buf_fps)))
-      XStoreName(glx->g_dpy, glx->g_win, buf);
+      XStoreName(g_x11_dpy, g_x11_win, buf);
    if (settings->fps_show)
       rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
@@ -371,13 +368,13 @@ static bool gfx_ctx_glx_init(void *data)
 
    g_x11_quit = 0;
 
-   if (!glx->g_dpy)
-      glx->g_dpy = XOpenDisplay(NULL);
+   if (!g_x11_dpy)
+      g_x11_dpy = XOpenDisplay(NULL);
 
-   if (!glx->g_dpy)
+   if (!g_x11_dpy)
       goto error;
 
-   glXQueryVersion(glx->g_dpy, &major, &minor);
+   glXQueryVersion(g_x11_dpy, &major, &minor);
 
    /* GLX 1.3+ minimum required. */
    if ((major * 1000 + minor) < 1003)
@@ -403,7 +400,7 @@ static bool gfx_ctx_glx_init(void *data)
    if ((glx->g_core_es || glx->g_debug) && !glx_create_context_attribs)
       goto error;
 
-   fbcs = glXChooseFBConfig(glx->g_dpy, DefaultScreen(glx->g_dpy),
+   fbcs = glXChooseFBConfig(g_x11_dpy, DefaultScreen(g_x11_dpy),
          visual_attribs, &nelements);
 
    if (!fbcs)
@@ -458,19 +455,19 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    windowed_full = settings->video.windowed_fullscreen;
    true_full = false;
 
-   vi = glXGetVisualFromFBConfig(glx->g_dpy, glx->g_fbc);
+   vi = glXGetVisualFromFBConfig(g_x11_dpy, glx->g_fbc);
    if (!vi)
       goto error;
 
-   swa.colormap = glx->g_cmap = XCreateColormap(glx->g_dpy,
-         RootWindow(glx->g_dpy, vi->screen), vi->visual, AllocNone);
+   swa.colormap = glx->g_cmap = XCreateColormap(g_x11_dpy,
+         RootWindow(g_x11_dpy, vi->screen), vi->visual, AllocNone);
    swa.event_mask = StructureNotifyMask | KeyPressMask | KeyReleaseMask |
       ButtonReleaseMask | ButtonPressMask;
    swa.override_redirect = fullscreen ? True : False;
 
    if (fullscreen && !windowed_full)
    {
-      if (x11_enter_fullscreen(glx->g_dpy, width, height, &glx->g_desktop_mode))
+      if (x11_enter_fullscreen(g_x11_dpy, width, height, &glx->g_desktop_mode))
       {
          glx->g_should_reset_mode = true;
          true_full = true;
@@ -488,7 +485,7 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
       unsigned new_width  = width;
       unsigned new_height = height;
 
-      if (x11_get_xinerama_coord(glx->g_dpy, glx->g_screen,
+      if (x11_get_xinerama_coord(g_x11_dpy, glx->g_screen,
                &x_off, &y_off, &new_width, &new_height))
          RARCH_LOG("[GLX]: Using Xinerama on screen #%u.\n", glx->g_screen);
       else
@@ -505,45 +502,45 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    RARCH_LOG("[GLX]: X = %d, Y = %d, W = %u, H = %u.\n",
          x_off, y_off, width, height);
 
-   glx->g_win = XCreateWindow(glx->g_dpy, RootWindow(glx->g_dpy, vi->screen),
+   g_x11_win = XCreateWindow(g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
          x_off, y_off, width, height, 0,
          vi->depth, InputOutput, vi->visual, 
          CWBorderPixel | CWColormap | CWEventMask | (true_full ? CWOverrideRedirect : 0), &swa);
-   XSetWindowBackground(glx->g_dpy, glx->g_win, 0);
+   XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
-   glx->g_glx_win = glXCreateWindow(glx->g_dpy, glx->g_fbc, glx->g_win, 0);
+   glx->g_glx_win = glXCreateWindow(g_x11_dpy, glx->g_fbc, g_x11_win, 0);
 
-   x11_set_window_attr(glx->g_dpy, glx->g_win);
+   x11_set_window_attr(g_x11_dpy, g_x11_win);
 
    if (fullscreen)
-      x11_show_mouse(glx->g_dpy, glx->g_win, false);
+      x11_show_mouse(g_x11_dpy, g_x11_win, false);
 
    if (true_full)
    {
       RARCH_LOG("[GLX]: Using true fullscreen.\n");
-      XMapRaised(glx->g_dpy, glx->g_win);
+      XMapRaised(g_x11_dpy, g_x11_win);
    }
    else if (fullscreen) /* We attempted true fullscreen, but failed. Attempt using windowed fullscreen. */
    {
-      XMapRaised(glx->g_dpy, glx->g_win);
+      XMapRaised(g_x11_dpy, g_x11_win);
       RARCH_LOG("[GLX]: Using windowed fullscreen.\n");
       /* We have to move the window to the screen we want to go fullscreen on first.
        * x_off and y_off usually get ignored in XCreateWindow().
        */
-      x11_move_window(glx->g_dpy, glx->g_win, x_off, y_off, width, height);
-      x11_windowed_fullscreen(glx->g_dpy, glx->g_win);
+      x11_move_window(g_x11_dpy, g_x11_win, x_off, y_off, width, height);
+      x11_windowed_fullscreen(g_x11_dpy, g_x11_win);
    }
    else
    {
-      XMapWindow(glx->g_dpy, glx->g_win);
+      XMapWindow(g_x11_dpy, g_x11_win);
       /* If we want to map the window on a different screen, we'll have to do it by force.
        * Otherwise, we should try to let the window manager sort it out.
        * x_off and y_off usually get ignored in XCreateWindow(). */
       if (glx->g_screen)
-         x11_move_window(glx->g_dpy, glx->g_win, x_off, y_off, width, height);
+         x11_move_window(g_x11_dpy, g_x11_win, x_off, y_off, width, height);
    }
 
-   XIfEvent(glx->g_dpy, &event, glx_wait_notify, NULL);
+   XIfEvent(g_x11_dpy, &event, glx_wait_notify, NULL);
 
    if (!glx->g_ctx)
    {
@@ -580,21 +577,21 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
          }
 
          *aptr = None;
-         glx->g_ctx = glx_create_context_attribs(glx->g_dpy, glx->g_fbc, NULL, True, attribs);
+         glx->g_ctx = glx_create_context_attribs(g_x11_dpy, glx->g_fbc, NULL, True, attribs);
          if (glx->g_use_hw_ctx)
          {
             RARCH_LOG("[GLX]: Creating shared HW context.\n");
-            glx->g_hw_ctx = glx_create_context_attribs(glx->g_dpy, glx->g_fbc, glx->g_ctx, True, attribs);
+            glx->g_hw_ctx = glx_create_context_attribs(g_x11_dpy, glx->g_fbc, glx->g_ctx, True, attribs);
             if (!glx->g_hw_ctx)
                RARCH_ERR("[GLX]: Failed to create new shared context.\n");
          }
       }
       else
       {
-         glx->g_ctx = glXCreateNewContext(glx->g_dpy, glx->g_fbc, GLX_RGBA_TYPE, 0, True);
+         glx->g_ctx = glXCreateNewContext(g_x11_dpy, glx->g_fbc, GLX_RGBA_TYPE, 0, True);
          if (glx->g_use_hw_ctx)
          {
-            glx->g_hw_ctx = glXCreateNewContext(glx->g_dpy, glx->g_fbc, GLX_RGBA_TYPE, glx->g_ctx, True);
+            glx->g_hw_ctx = glXCreateNewContext(g_x11_dpy, glx->g_fbc, GLX_RGBA_TYPE, glx->g_ctx, True);
             if (!glx->g_hw_ctx)
                RARCH_ERR("[GLX]: Failed to create new shared context.\n");
          }
@@ -612,14 +609,14 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
       RARCH_LOG("[GLX]: Using cached GL context.\n");
    }
 
-   glXMakeContextCurrent(glx->g_dpy, glx->g_glx_win, glx->g_glx_win, glx->g_ctx);
-   XSync(glx->g_dpy, False);
+   glXMakeContextCurrent(g_x11_dpy, glx->g_glx_win, glx->g_glx_win, glx->g_ctx);
+   XSync(g_x11_dpy, False);
 
-   g_x11_quit_atom = XInternAtom(glx->g_dpy, "WM_DELETE_WINDOW", False);
+   g_x11_quit_atom = XInternAtom(g_x11_dpy, "WM_DELETE_WINDOW", False);
    if (g_x11_quit_atom)
-      XSetWMProtocols(glx->g_dpy, glx->g_win, &g_x11_quit_atom, 1);
+      XSetWMProtocols(g_x11_dpy, g_x11_win, &g_x11_quit_atom, 1);
 
-   glXGetConfig(glx->g_dpy, vi, GLX_DOUBLEBUFFER, &val);
+   glXGetConfig(g_x11_dpy, vi, GLX_DOUBLEBUFFER, &val);
    glx->g_is_double = val;
 
    if (glx->g_is_double)
@@ -649,19 +646,19 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
 
    /* This can blow up on some drivers. It's not fatal, so override errors for this call. */
    old_handler = XSetErrorHandler(glx_nul_handler);
-   XSetInputFocus(glx->g_dpy, glx->g_win, RevertToNone, CurrentTime);
-   XSync(glx->g_dpy, False);
+   XSetInputFocus(g_x11_dpy, g_x11_win, RevertToNone, CurrentTime);
+   XSync(g_x11_dpy, False);
    XSetErrorHandler(old_handler);
 
    XFree(vi);
    g_x11_has_focus = true;
 
-   if (!x11_create_input_context(glx->g_dpy, glx->g_win, &glx->g_xim, &glx->g_xic))
+   if (!x11_create_input_context(g_x11_dpy, g_x11_win, &glx->g_xim, &g_x11_xic))
       goto error;
 
    driver->display_type  = RARCH_DISPLAY_X11;
-   driver->video_display = (uintptr_t)glx->g_dpy;
-   driver->video_window  = (uintptr_t)glx->g_win;
+   driver->video_display = (uintptr_t)g_x11_dpy;
+   driver->video_window  = (uintptr_t)g_x11_win;
    glx->g_true_full = true_full;
 
    return true;
@@ -699,9 +696,9 @@ static bool gfx_ctx_glx_has_focus(void *data)
 
    (void)data;
 
-   XGetInputFocus(glx->g_dpy, &win, &rev);
+   XGetInputFocus(g_x11_dpy, &win, &rev);
 
-   return (win == glx->g_win && g_x11_has_focus) || glx->g_true_full;
+   return (win == g_x11_win && g_x11_has_focus) || glx->g_true_full;
 }
 
 static bool gfx_ctx_glx_suppress_screensaver(void *data, bool enable)
@@ -758,7 +755,7 @@ static void gfx_ctx_glx_show_mouse(void *data, bool state)
 
    (void)data;
 
-   x11_show_mouse(glx->g_dpy, glx->g_win, state);
+   x11_show_mouse(g_x11_dpy, g_x11_win, state);
 }
 
 static void gfx_ctx_glx_bind_hw_render(void *data, bool enable)
@@ -773,12 +770,12 @@ static void gfx_ctx_glx_bind_hw_render(void *data, bool enable)
 
    glx->g_use_hw_ctx = enable;
 
-   if (!glx->g_dpy)
+   if (!g_x11_dpy)
       return;
    if (!glx->g_glx_win)
       return;
 
-   glXMakeContextCurrent(glx->g_dpy, glx->g_glx_win,
+   glXMakeContextCurrent(g_x11_dpy, glx->g_glx_win,
          glx->g_glx_win, enable ? glx->g_hw_ctx : glx->g_ctx);
 }
 

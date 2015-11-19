@@ -38,6 +38,9 @@
 extern Atom g_x11_quit_atom;
 extern volatile sig_atomic_t g_x11_quit;
 extern bool g_x11_has_focus;
+extern Window   g_x11_win;
+extern XIC g_x11_xic;
+extern Display *g_x11_dpy;
 
 void x11_show_mouse(Display *dpy, Window win, bool state);
 void x11_windowed_fullscreen(Display *dpy, Window win);
