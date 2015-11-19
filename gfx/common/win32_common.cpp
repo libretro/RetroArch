@@ -30,10 +30,6 @@
 #include "../video_thread_wrapper.h"
 #include "../drivers_wm/win32_shader_dlg.h"
 
-#ifdef HAVE_D3D
-#include "d3d_common.h"
-#endif
-
 #ifdef __cplusplus
 extern "C"
 #endif
