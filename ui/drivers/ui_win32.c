@@ -376,17 +376,10 @@ bool win32_shader_dlg_init(void)
       if (!InitCommonControlsEx(&comm_ctrl_init))
          return false;
 
-      wc_shader_dlg.cbSize = sizeof(wc_shader_dlg);
-      wc_shader_dlg.style = CS_HREDRAW | CS_VREDRAW | CS_CLASSDC | CS_OWNDC;
       wc_shader_dlg.lpfnWndProc = ShaderDlgWndProc;
-      wc_shader_dlg.hInstance = GetModuleHandle(NULL);
-      wc_shader_dlg.hCursor = LoadCursor(NULL, IDC_ARROW);
-      wc_shader_dlg.lpszClassName = "Shader Dialog";
-      wc_shader_dlg.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
-      wc_shader_dlg.hIconSm = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
       wc_shader_dlg.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
 
-      if (!RegisterClassEx(&wc_shader_dlg))
+      if (!win32_window_init(&wc_shader_dlg, true, "Shader Dialog"))
          return false;
 
       inited = true;

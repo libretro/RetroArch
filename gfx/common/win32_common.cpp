@@ -261,14 +261,18 @@ bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen, const char *class_
    if (!fullscreen)
       wndclass->hbrBackground = (HBRUSH)COLOR_WINDOW;
 
-   if (class_name != NULL)
+   if (class_name == NULL)
       wndclass->lpfnWndProc   = WndProc;
+   else
+      wndclass->style         |= CS_CLASSDC;
 
    if (!RegisterClassEx(wndclass))
       return false;
 
+   /* This is non-NULL when we want a window for shader dialogs, 
+    * therefore early return here */
    /* TODO/FIXME - this is ugly. Find a better way */
-   if (class_name != NULL) /* this is non-NULL when we want a window for shader dialogs, abort here */
+   if (class_name != NULL) 
       return true;
 
    if (!win32_shader_dlg_init())
