@@ -21,7 +21,7 @@
 #include "../../config.h"
 #endif
 
-#include "../video_context_driver.h"
+#include <signal.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -32,6 +32,11 @@
 #endif
 
 #include <boolean.h>
+
+#include "../video_context_driver.h"
+
+Atom g_x11_quit_atom;
+volatile sig_atomic_t g_x11_quit;
 
 void x11_show_mouse(Display *dpy, Window win, bool state);
 void x11_windowed_fullscreen(Display *dpy, Window win);

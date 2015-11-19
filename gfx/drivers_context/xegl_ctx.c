@@ -37,7 +37,6 @@
 static Display *g_dpy;
 static Window   g_win;
 static Colormap g_cmap;
-static Atom g_quit_atom;
 static bool g_has_focus;
 static bool g_true_full;
 static unsigned g_screen;
@@ -55,7 +54,6 @@ static EGLConfig g_egl_config;
 static XF86VidModeModeInfo g_desktop_mode;
 static bool g_should_reset_mode;
 
-static volatile sig_atomic_t g_quit;
 static bool g_inited;
 static unsigned g_interval;
 static enum gfx_ctx_api g_api;
@@ -65,7 +63,7 @@ static unsigned g_minor;
 static void egl_sighandler(int sig)
 {
    (void)sig;
-   g_quit = 1;
+   g_x11_quit = 1;
 }
 
 static Bool egl_wait_notify(Display *d, XEvent *e, char *arg)
@@ -167,13 +165,13 @@ static void gfx_ctx_xegl_check_window(void *data, bool *quit,
       switch (event.type)
       {
          case ClientMessage:
-            if (event.xclient.window == g_win && (Atom)event.xclient.data.l[0] == g_quit_atom)
-               g_quit = true;
+            if (event.xclient.window == g_win && (Atom)event.xclient.data.l[0] == g_x11_quit_atom)
+               g_x11_quit = true;
             break;
 
          case DestroyNotify:
             if (event.xdestroywindow.window == g_win)
-               g_quit = true;
+               g_x11_quit = true;
             break;
 
          case MapNotify:
@@ -201,7 +199,7 @@ static void gfx_ctx_xegl_check_window(void *data, bool *quit,
       }
    }
 
-   *quit = g_quit;
+   *quit = g_x11_quit;
 }
 
 static void gfx_ctx_xegl_swap_buffers(void *data)
@@ -330,7 +328,7 @@ static bool gfx_ctx_xegl_init(void *data)
          attrib_ptr = NULL;
    }
 
-   g_quit = 0;
+   g_x11_quit = 0;
 
    /* Keep one g_dpy alive the entire process lifetime.
     * This is necessary for nVidia's EGL implementation for now. */
@@ -599,9 +597,9 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
    XIfEvent(g_dpy, &event, egl_wait_notify, NULL);
 
-   g_quit_atom = XInternAtom(g_dpy, "WM_DELETE_WINDOW", False);
-   if (g_quit_atom)
-      XSetWMProtocols(g_dpy, g_win, &g_quit_atom, 1);
+   g_x11_quit_atom = XInternAtom(g_dpy, "WM_DELETE_WINDOW", False);
+   if (g_x11_quit_atom)
+      XSetWMProtocols(g_dpy, g_win, &g_x11_quit_atom, 1);
 
    gfx_ctx_xegl_swap_interval(data, g_interval);
 

@@ -29,6 +29,8 @@
 static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
+Atom g_quit_atom;
+volatile sig_atomic_t g_quit;
 
 #define XA_INIT(x) XA##x = XInternAtom(dpy, #x, False)
 #define _NET_WM_STATE_ADD 1

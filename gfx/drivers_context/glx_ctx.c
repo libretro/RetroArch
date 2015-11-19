@@ -59,8 +59,6 @@ typedef struct gfx_ctx_glx_data
 
 } gfx_ctx_glx_data_t;
 
-static Atom g_quit_atom;
-static volatile sig_atomic_t g_quit;
 static unsigned g_major;
 static unsigned g_minor;
 
@@ -69,7 +67,7 @@ static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
 static void glx_sighandler(int sig)
 {
    (void)sig;
-   g_quit = 1;
+   g_x11_quit = 1;
 }
 
 static Bool glx_wait_notify(Display *d, XEvent *e, char *arg)
@@ -279,13 +277,13 @@ static void gfx_ctx_glx_check_window(void *data, bool *quit,
       {
          case ClientMessage:
             if (event.xclient.window == glx->g_win &&
-                  (Atom)event.xclient.data.l[0] == g_quit_atom)
-               g_quit = true;
+                  (Atom)event.xclient.data.l[0] == g_x11_quit_atom)
+               g_x11_quit = true;
             break;
 
          case DestroyNotify:
             if (event.xdestroywindow.window == glx->g_win)
-               g_quit = true;
+               g_x11_quit = true;
             break;
 
          case MapNotify:
@@ -309,7 +307,7 @@ static void gfx_ctx_glx_check_window(void *data, bool *quit,
       }
    }
 
-   *quit = g_quit;
+   *quit = g_x11_quit;
 }
 
 static void gfx_ctx_glx_swap_buffers(void *data)
@@ -372,7 +370,7 @@ static bool gfx_ctx_glx_init(void *data)
 
    XInitThreads();
 
-   g_quit = 0;
+   g_x11_quit = 0;
 
    if (!glx->g_dpy)
       glx->g_dpy = XOpenDisplay(NULL);
@@ -618,9 +616,9 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    glXMakeContextCurrent(glx->g_dpy, glx->g_glx_win, glx->g_glx_win, glx->g_ctx);
    XSync(glx->g_dpy, False);
 
-   g_quit_atom = XInternAtom(glx->g_dpy, "WM_DELETE_WINDOW", False);
-   if (g_quit_atom)
-      XSetWMProtocols(glx->g_dpy, glx->g_win, &g_quit_atom, 1);
+   g_x11_quit_atom = XInternAtom(glx->g_dpy, "WM_DELETE_WINDOW", False);
+   if (g_x11_quit_atom)
+      XSetWMProtocols(glx->g_dpy, glx->g_win, &g_x11_quit_atom, 1);
 
    glXGetConfig(glx->g_dpy, vi, GLX_DOUBLEBUFFER, &val);
    glx->g_is_double = val;
