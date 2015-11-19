@@ -49,7 +49,7 @@ enum netplay_cmd
    NETPLAY_CMD_CHEATS         = 0x0013, /** Sends over cheats enabled on client.       */
 /* controlling game playback */
    NETPLAY_CMD_PAUSE          = 0x0030, /**< Pauses the game, takes no args.           */
-   NETPLAY_CMD_RESUME         = 0x0031, /**< Resumes the game, takes no args.          */
+   NETPLAY_CMD_RESUME         = 0x0031  /**< Resumes the game, takes no args.          */
 };
 
 /* These are the configurations sent by NETPLAY_CMD_CFG. */
@@ -58,7 +58,7 @@ enum netplay_cmd_cfg
    NETPLAY_CFG_NICK           = 0x0001, /**< nickname                               */
    NETPLAY_CFG_SWAP_INPUT     = 0x0002, /**< input.netplay_client_swap_input        */
    NETPLAY_CFG_DELAY_FRAMES   = 0x0004, /**< netplay.sync_frames                    */
-   NETPLAY_CFG_PLAYER_SLOT    = 0x0008, /**< For more than 2 players.               */
+   NETPLAY_CFG_PLAYER_SLOT    = 0x0008  /**< For more than 2 players.               */
 };
 
 void input_poll_net(void);

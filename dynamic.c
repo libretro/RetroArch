@@ -716,6 +716,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          }
 
          {
+            char *game_options_path           = NULL;
+            bool ret                          = false;
             const struct retro_variable *vars = (const struct retro_variable*)data;
             char buf[PATH_MAX_LENGTH]         = {0};
             const char *options_path          = settings->core_options_path;
@@ -727,8 +729,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                options_path = buf;
             }
             
-            char *game_options_path = NULL;
-            bool ret = false;
             
             if (settings->game_specific_options)
                ret = rarch_game_specific_options(&game_options_path);
