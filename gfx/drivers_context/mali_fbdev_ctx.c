@@ -152,7 +152,7 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
 
    if (ioctl(fb, FBIOGET_VSCREENINFO, &vinfo) < 0)
    {
-      RARCH_ERR("Error obtainig framebuffer info.\n");
+      RARCH_ERR("Error obtaining framebuffer info.\n");
       goto error;
    }
    retro_fclose(fd);
@@ -166,15 +166,15 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
    native_window.width  = vinfo.xres;
    native_window.height = vinfo.yres;
 
-   if ((g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, &native_window, 0)) == EGL_NO_SURFACE)
+   if (!egl_create_context(attribs))
    {
-      RARCH_ERR("eglCreateWindowSurface failed.\n");
+      egl_report_error();
       goto error;
    }
 
-   if ((g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, 0, attribs)) == EGL_NO_CONTEXT)
+   if ((g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, &native_window, 0)) == EGL_NO_SURFACE)
    {
-      RARCH_ERR("eglCreateContext failed.\n");
+      RARCH_ERR("eglCreateWindowSurface failed.\n");
       goto error;
    }
 
@@ -253,5 +253,6 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    NULL,
    NULL,
    "mali-fbdev",
+   egl_bind_hw_render,
 };
 

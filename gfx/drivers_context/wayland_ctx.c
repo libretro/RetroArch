@@ -499,21 +499,10 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    wl_shell_surface_set_class(wl->g_shell_surf, "RetroArch");
    wl_shell_surface_set_title(wl->g_shell_surf, "RetroArch");
 
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, EGL_NO_CONTEXT,
-         attr != egl_attribs ? egl_attribs : NULL);
-
-   RARCH_LOG("[Wayland/EGL]: Created context: %p.\n", (void*)g_egl_ctx);
-   if (g_egl_ctx == EGL_NO_CONTEXT)
-      goto error;
-
-   if (g_use_hw_ctx)
+   if (!egl_create_context((attr != egl_attribs) ? egl_attribs : NULL))
    {
-      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_egl_config, g_egl_ctx,
-            attr != egl_attribs ? egl_attribs : NULL);
-      RARCH_LOG("[Wayland/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
-
-      if (g_egl_hw_ctx == EGL_NO_CONTEXT)
-         goto error;
+      egl_report_error();
+      goto error;
    }
 
    g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config,
