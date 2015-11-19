@@ -849,7 +849,7 @@ static int cheevos_parse(const char *json)
    ud.core_count = 0;
    ud.unofficial_count = 0;
 
-   if (!jsonsax_parse(json, &handlers, (void*)&ud) == JSONSAX_OK)
+   if (jsonsax_parse(json, &handlers, (void*)&ud) != JSONSAX_OK)
    {
       cheevos_unload();
       return -1;
