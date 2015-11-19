@@ -56,14 +56,6 @@ static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
 
 static Bool glx_wait_notify(Display *d, XEvent *e, char *arg)
 {
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
-
-   (void)d;
-   (void)e;
-
-   if (!glx)
-      return false;
    return (e->type == MapNotify) && (e->xmap.window == g_x11_win);
 }
 
