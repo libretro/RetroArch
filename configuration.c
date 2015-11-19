@@ -1867,7 +1867,7 @@ bool config_load_override(void)
    }
 
    /* Early return in case a library isn't loaded */
-   if (!system->info.library_name[0] != '\0' || !strcmp(system->info.library_name,"No Core"))
+   if (system->info.library_name[0] != '\0' || !strcmp(system->info.library_name,"No Core"))
       return false;
 
    core_name = system ? system->info.library_name : NULL;
