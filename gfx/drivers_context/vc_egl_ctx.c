@@ -171,6 +171,7 @@ static void gfx_ctx_vc_destroy(void *data);
 
 static bool gfx_ctx_vc_init(void *data)
 {
+   VC_DISPMANX_ALPHA_T alpha;
    EGLint num_config;
    static EGL_DISPMANX_WINDOW_T nativewindow;
 
@@ -277,7 +278,6 @@ static bool gfx_ctx_vc_init(void *data)
    vc_dispmanx_display_get_info(dispman_display, &dispman_modeinfo);
    dispman_update = vc_dispmanx_update_start(0);
 
-   VC_DISPMANX_ALPHA_T alpha;
    alpha.flags = DISPMANX_FLAGS_ALPHA_FIXED_ALL_PIXELS;
    alpha.opacity = 255;
    alpha.mask = 0;
