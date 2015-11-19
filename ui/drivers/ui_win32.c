@@ -42,7 +42,7 @@
 #include <file/file_path.h>
 
 #ifdef HAVE_MENU
-#include "../../menu_hash.h"
+#include "../../menu/menu_hash.h"
 #endif
 
 #include "../ui_companion_driver.h"
