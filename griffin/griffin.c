@@ -673,7 +673,7 @@ UI
 #include "../ui/drivers/ui_qt.c"
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX)
 #include "../ui/drivers/ui_win32.c"
 #endif
 

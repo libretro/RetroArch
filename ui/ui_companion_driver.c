@@ -26,7 +26,7 @@
 static bool main_ui_companion_is_on_foreground;
 
 static const ui_companion_driver_t *ui_companion_drivers[] = {
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(_XBOX)
    &ui_companion_win32,
 #endif
 #ifdef HAVE_COCOA
