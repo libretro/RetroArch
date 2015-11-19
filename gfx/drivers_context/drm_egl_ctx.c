@@ -173,7 +173,7 @@ static void page_flip_handler(int fd, unsigned frame,
    *(bool*)data = false;
 }
 
-static void wait_flip(bool block)
+static bool wait_flip(bool block)
 {
    int timeout = 0;
    struct pollfd fds = {0};
@@ -208,7 +208,7 @@ static void wait_flip(bool block)
    }
 
    if (waiting_for_flip)
-      return;
+      return true;
 
    /* Page flip has taken place. */
 
@@ -216,6 +216,8 @@ static void wait_flip(bool block)
    gbm_surface_release_buffer(drm->g_gbm_surface, drm->g_bo);
    /* This buffer is being shown now. */
    drm->g_bo = drm->g_next_bo; 
+
+   return false;
 }
 
 static void queue_flip(void)
@@ -248,32 +250,28 @@ static void gfx_ctx_drm_egl_swap_buffers(void *data)
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
    driver->video_context_data;
 
-   (void)data;
-
    egl_swap_buffers(data);
 
    /* I guess we have to wait for flip to have taken 
     * place before another flip can be queued up. */
    if (waiting_for_flip)
    {
-      wait_flip(g_interval);
-
       /* We are still waiting for a flip 
        * (nonblocking mode, just drop the frame).
        */
-      if (waiting_for_flip)
+      if (wait_flip(g_interval))
          return;
    }
 
    queue_flip();
 
+   if (gbm_surface_has_free_buffers(drm->g_gbm_surface))
+      return;
+
    /* We have to wait for this flip to finish. 
     * This shouldn't happen as we have triple buffered page-flips. */
-   if (!gbm_surface_has_free_buffers(drm->g_gbm_surface))
-   {
-      RARCH_WARN("[KMS/EGL]: Triple buffering is not working correctly ...\n");
-      wait_flip(true);  
-   }
+   RARCH_WARN("[KMS/EGL]: Triple buffering is not working correctly ...\n");
+   wait_flip(true);  
 }
 
 static void gfx_ctx_drm_egl_set_resize(void *data,
