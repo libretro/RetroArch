@@ -35,12 +35,10 @@ struct fbdev_window native_window;
 static bool g_resize;
 static unsigned g_width, g_height;
 
-static volatile sig_atomic_t g_quit;
-
 static void gfx_ctx_mali_fbdev_sighandler(int sig)
 {
    (void)sig;
-   g_quit = 1;
+   g_egl_quit = 1;
 }
 
 static void gfx_ctx_mali_fbdev_destroy(void *data)
@@ -50,7 +48,7 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
 
    egl_destroy(data);
 
-   g_quit         = 0;
+   g_egl_quit         = 0;
    g_resize       = false;
 
    /* Clear framebuffer and set cursor on again */
@@ -147,7 +145,7 @@ static void gfx_ctx_mali_fbdev_check_window(void *data, bool *quit,
       *resize = true;
    }
 
-   *quit = g_quit;
+   *quit = g_egl_quit;
 }
 
 static void gfx_ctx_mali_fbdev_set_resize(void *data,

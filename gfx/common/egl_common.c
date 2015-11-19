@@ -21,6 +21,8 @@
 #include "gl_common.h"
 #endif
 
+volatile sig_atomic_t g_egl_quit;
+
 EGLContext g_egl_ctx;
 EGLContext g_egl_hw_ctx;
 EGLSurface g_egl_surf;

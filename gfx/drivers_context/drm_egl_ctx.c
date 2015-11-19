@@ -73,8 +73,6 @@ typedef struct gfx_ctx_drm_egl_data
    struct gbm_surface *g_gbm_surface;
 } gfx_ctx_drm_egl_data_t;
 
-static volatile sig_atomic_t g_quit;
-
 static enum gfx_ctx_api g_api;
 
 static unsigned g_major;
@@ -134,7 +132,7 @@ static struct drm_fb *drm_fb_get_from_bo(
 static void sighandler(int sig)
 {
    (void)sig;
-   g_quit = 1;
+   g_egl_quit = 1;
 }
 
 static void gfx_ctx_drm_egl_swap_interval(void *data, unsigned interval)
@@ -153,7 +151,7 @@ static void gfx_ctx_drm_egl_check_window(void *data, bool *quit,
    (void)height;
 
    *resize = false;
-   *quit   = g_quit;
+   *quit   = g_egl_quit;
 }
 
 static unsigned first_page_flip;
@@ -377,8 +375,8 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
 
    free_drm_resources(drm);
 
-   drm->g_drm_mode = NULL;
-   g_quit         = 0;
+   drm->g_drm_mode     = NULL;
+   g_egl_quit          = 0;
    drm->g_crtc_id      = 0;
    drm->g_connector_id = 0;
 

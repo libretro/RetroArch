@@ -50,7 +50,6 @@ static enum gfx_ctx_api g_api;
 static unsigned g_major;
 static unsigned g_minor;
 
-static volatile sig_atomic_t g_quit;
 
 #ifndef EGL_OPENGL_ES3_BIT_KHR
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
@@ -59,7 +58,7 @@ static volatile sig_atomic_t g_quit;
 static void sighandler(int sig)
 {
    (void)sig;
-   g_quit = 1;
+   g_egl_quit = 1;
 }
 
 /* Shell surface callbacks. */
@@ -194,7 +193,7 @@ static void flush_wayland_fd(void)
       if (fd.revents & (POLLERR | POLLHUP))
       {
          close(wl->g_fd);
-         g_quit = true;
+         g_egl_quit = true;
       }
 
       if (fd.revents & POLLIN)
@@ -226,7 +225,7 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
       *height = new_height;
    }
 
-   *quit = g_quit;
+   *quit = g_egl_quit;
 }
 
 static void gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
@@ -344,7 +343,7 @@ static bool gfx_ctx_wl_init(void *data)
          attrib_ptr = NULL;
    }
 
-   g_quit = 0;
+   g_egl_quit = 0;
 
    wl->g_dpy = wl_display_connect(NULL);
    if (!wl->g_dpy)

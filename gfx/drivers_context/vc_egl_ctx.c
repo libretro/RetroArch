@@ -67,7 +67,7 @@ static INLINE bool gfx_ctx_vc_egl_query_extension(const char *ext)
 static void sighandler(int sig)
 {
    (void)sig;
-   g_quit = 1;
+   g_egl_quit = 1;
 }
 
 static void gfx_ctx_vc_check_window(void *data, bool *quit,
@@ -79,7 +79,7 @@ static void gfx_ctx_vc_check_window(void *data, bool *quit,
    (void)height;
 
    *resize = false;
-   *quit   = g_quit;
+   *quit   = g_egl_quit;
 }
 
 static void gfx_ctx_vc_set_resize(void *data, unsigned width, unsigned height)

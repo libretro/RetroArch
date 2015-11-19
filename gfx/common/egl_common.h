@@ -16,12 +16,16 @@
 #ifndef __EGL_COMMON_H
 #define __EGL_COMMON_H
 
+#include <signal.h>
+
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
 #include <boolean.h>
 
 #include "../video_context_driver.h"
+
+volatile sig_atomic_t g_egl_quit;
 
 extern EGLContext g_egl_ctx;
 extern EGLContext g_egl_hw_ctx;
