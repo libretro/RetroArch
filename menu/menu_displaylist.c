@@ -2889,6 +2889,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                   menu_hash_to_str(MENU_LABEL_COLLECTION), sizeof(path_playlist));
             playlist = menu->playlist;
 
+            content_playlist_qsort(playlist, menu_displaylist_sort_playlist);
+
             ret = menu_displaylist_parse_playlist(info, playlist, path_playlist, false);
 
             if (ret == 0)
