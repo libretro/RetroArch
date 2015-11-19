@@ -392,7 +392,8 @@ void x11_check_window(bool *quit)
       switch (event.type)
       {
          case ClientMessage:
-            if (event.xclient.window == g_x11_win && (Atom)event.xclient.data.l[0] == g_x11_quit_atom)
+            if (event.xclient.window == g_x11_win && 
+                  (Atom)event.xclient.data.l[0] == g_x11_quit_atom)
                g_x11_quit = true;
             break;
 

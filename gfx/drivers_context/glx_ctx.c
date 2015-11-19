@@ -247,12 +247,7 @@ void x_input_poll_wheel(void *data, XButtonEvent *event, bool latch);
 static void gfx_ctx_glx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
-   XEvent event;
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
    unsigned new_width = *width, new_height = *height;
-
-   (void)frame_count;
 
    gfx_ctx_glx_get_video_size(data, &new_width, &new_height);
 
@@ -263,47 +258,7 @@ static void gfx_ctx_glx_check_window(void *data, bool *quit,
       *height = new_height;
    }
 
-   while (XPending(g_x11_dpy))
-   {
-      bool filter;
-      XNextEvent(g_x11_dpy, &event);
-      filter = XFilterEvent(&event, g_x11_win);
-
-      switch (event.type)
-      {
-         case ClientMessage:
-            if (event.xclient.window == g_x11_win &&
-                  (Atom)event.xclient.data.l[0] == g_x11_quit_atom)
-               g_x11_quit = true;
-            break;
-
-         case DestroyNotify:
-            if (event.xdestroywindow.window == g_x11_win)
-               g_x11_quit = true;
-            break;
-
-         case MapNotify:
-            if (event.xmap.window == g_x11_win)
-               g_x11_has_focus = true;
-            break;
-
-         case UnmapNotify:
-            if (event.xunmap.window == g_x11_win)
-               g_x11_has_focus = false;
-            break;
-         case ButtonPress:
-            x_input_poll_wheel(driver->input_data, &event.xbutton, true);
-            break;
-         case ButtonRelease:
-            break;
-         case KeyPress:
-         case KeyRelease:
-            x11_handle_key_event(&event, g_x11_xic, filter);
-            break;
-      }
-   }
-
-   *quit = g_x11_quit;
+   x11_check_window(quit);
 }
 
 static void gfx_ctx_glx_swap_buffers(void *data)
