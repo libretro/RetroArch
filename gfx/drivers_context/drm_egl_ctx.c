@@ -173,14 +173,11 @@ static void page_flip_handler(int fd, unsigned frame,
    *(bool*)data = false;
 }
 
-static bool wait_flip(bool block)
+static bool wait_flip(gfx_ctx_drm_egl_data_t *drm, bool block)
 {
    int timeout = 0;
    struct pollfd fds = {0};
    drmEventContext evctx   = {0};
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-      driver->video_context_data;
 
    fds.fd     = drm->g_drm_fd;
    fds.events = POLLIN;
@@ -253,7 +250,7 @@ static void gfx_ctx_drm_egl_swap_buffers(void *data)
       /* We are still waiting for a flip 
        * (nonblocking mode, just drop the frame).
        */
-      if (wait_flip(g_interval))
+      if (wait_flip(drm, g_interval))
          return;
    }
 
@@ -265,7 +262,7 @@ static void gfx_ctx_drm_egl_swap_buffers(void *data)
    /* We have to wait for this flip to finish. 
     * This shouldn't happen as we have triple buffered page-flips. */
    RARCH_WARN("[KMS/EGL]: Triple buffering is not working correctly ...\n");
-   wait_flip(true);  
+   wait_flip(drm, true);  
 }
 
 static void gfx_ctx_drm_egl_set_resize(void *data,
@@ -344,7 +341,7 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
    /* Make sure we acknowledge all page-flips. */
 
    if (waiting_for_flip)
-      wait_flip(true);
+      wait_flip(drm, true);
 
    egl_destroy(NULL);
 
