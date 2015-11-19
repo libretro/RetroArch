@@ -536,3 +536,15 @@ void x11_update_window_title(void *data)
    if (settings->fps_show)
       rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
+
+bool x11_input_ctx_new(void)
+{
+   if (!x11_create_input_context(g_x11_dpy, g_x11_win, &g_x11_xim, &g_x11_xic))
+      return false;
+   return true;
+}
+
+void x11_input_ctx_destroy(void)
+{
+   x11_destroy_input_context(&g_x11_xim, &g_x11_xic);
+}

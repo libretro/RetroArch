@@ -83,5 +83,9 @@ bool x11_connect(void);
 
 void x11_update_window_title(void *data);
 
+bool x11_input_ctx_new(void);
+
+void x11_input_ctx_destroy(void);
+
 #endif
 

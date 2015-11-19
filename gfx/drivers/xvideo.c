@@ -576,7 +576,7 @@ static void *xv_init(const video_info_t *video,
    init_yuv_tables(xv);
    xv_init_font(xv, settings->video.font_path, settings->video.font_size);
 
-   if (!x11_create_input_context(g_x11_dpy, g_x11_win, &g_x11_xim, &g_x11_xic))
+   if (!x11_input_ctx_new())
       goto error;
 
    XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
@@ -819,7 +819,8 @@ static void xv_free(void *data)
    if (!xv)
       return;
 
-   x11_destroy_input_context(&g_x11_xim, &g_x11_xic);
+   x11_input_ctx_destroy();
+
    XShmDetach(g_x11_dpy, &xv->shminfo);
    shmdt(xv->shminfo.shmaddr);
    shmctl(xv->shminfo.shmid, IPC_RMID, NULL);
