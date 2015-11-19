@@ -852,13 +852,6 @@ static void gfx_ctx_drm_egl_input_driver(void *data,
 
 static bool gfx_ctx_drm_egl_has_focus(void *data)
 {
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-      driver->video_context_data;
-   (void)data;
-
-   if (!drm)
-      return false;
    return true;
 }
 
