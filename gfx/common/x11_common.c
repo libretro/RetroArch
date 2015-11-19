@@ -373,3 +373,58 @@ bool x11_get_metrics(void *data,
 
    return true;
 }
+
+void x_input_poll_wheel(void *data, XButtonEvent *event, bool latch);
+
+void x11_check_window(bool *quit)
+{
+   XEvent event;
+   driver_t *driver = driver_get_ptr();
+
+   while (XPending(g_x11_dpy))
+   {
+      bool filter;
+
+      /* Can get events from older windows. Check this. */
+      XNextEvent(g_x11_dpy, &event);
+      filter = XFilterEvent(&event, g_x11_win);
+
+      switch (event.type)
+      {
+         case ClientMessage:
+            if (event.xclient.window == g_x11_win && (Atom)event.xclient.data.l[0] == g_x11_quit_atom)
+               g_x11_quit = true;
+            break;
+
+         case DestroyNotify:
+            if (event.xdestroywindow.window == g_x11_win)
+               g_x11_quit = true;
+            break;
+
+         case MapNotify:
+            if (event.xmap.window == g_x11_win)
+               g_x11_has_focus = true;
+            break;
+
+         case UnmapNotify:
+            if (event.xunmap.window == g_x11_win)
+               g_x11_has_focus = false;
+            break;
+
+         case ButtonPress:
+            x_input_poll_wheel(driver->input_data, &event.xbutton, true);
+            break;
+
+         case ButtonRelease:
+            break;
+
+         case KeyPress:
+         case KeyRelease:
+            if (event.xkey.window == g_x11_win)
+               x11_handle_key_event(&event, g_x11_xic, filter);
+            break;
+      }
+   }
+
+   *quit = g_x11_quit;
+}

@@ -67,5 +67,7 @@ void x11_handle_key_event(XEvent *event, XIC ic, bool filter);
 bool x11_get_metrics(void *data,
       enum display_metric_types type, float *value);
 
+void x11_check_window(bool *quit);
+
 #endif
 
