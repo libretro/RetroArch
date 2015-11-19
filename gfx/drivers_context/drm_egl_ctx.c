@@ -129,12 +129,6 @@ static struct drm_fb *drm_fb_get_from_bo(
    return fb;
 }
 
-static void sighandler(int sig)
-{
-   (void)sig;
-   g_egl_quit = 1;
-}
-
 static void gfx_ctx_drm_egl_swap_interval(void *data, unsigned interval)
 {
    g_interval = interval;
@@ -376,7 +370,6 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
    free_drm_resources(drm);
 
    drm->g_drm_mode     = NULL;
-   g_egl_quit          = 0;
    drm->g_crtc_id      = 0;
    drm->g_connector_id = 0;
 
@@ -655,7 +648,6 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    EGLint major, minor, n, egl_attribs[16], *attr;
    float refresh_mod;
    int i, ret = 0;
-   struct sigaction sa = {{0}};
    struct drm_fb *fb = NULL;
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
@@ -665,11 +657,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    if (!drm)
       return false;
 
-   sa.sa_handler = sighandler;
-   sa.sa_flags   = SA_RESTART;
-   sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
+   egl_install_sighandlers();
 
    switch (g_api)
    {

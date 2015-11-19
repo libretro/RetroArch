@@ -64,12 +64,6 @@ static INLINE bool gfx_ctx_vc_egl_query_extension(const char *ext)
    return ret;
 }
 
-static void sighandler(int sig)
-{
-   (void)sig;
-   g_egl_quit = 1;
-}
-
 static void gfx_ctx_vc_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
@@ -305,17 +299,10 @@ static bool gfx_ctx_vc_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   struct sigaction sa = {{0}};
-
    if (g_inited)
       return false;
 
-   sa.sa_handler = sighandler;
-   sa.sa_flags   = SA_RESTART;
-   sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-
+   egl_install_sighandlers();
    egl_set_swap_interval(data, g_interval);
 
    g_inited = true;

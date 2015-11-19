@@ -164,3 +164,20 @@ void egl_get_video_size(void *data, unsigned *width, unsigned *height)
       *height = gl_height;
    }
 }
+
+static void egl_sighandler(int sig)
+{
+   (void)sig;
+   g_egl_quit = 1;
+}
+
+void egl_install_sighandlers(void)
+{
+   struct sigaction sa = {{0}};
+
+   sa.sa_handler = egl_sighandler;
+   sa.sa_flags   = SA_RESTART;
+   sigemptyset(&sa.sa_mask);
+   sigaction(SIGINT, &sa, NULL);
+   sigaction(SIGTERM, &sa, NULL);
+}

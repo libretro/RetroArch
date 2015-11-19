@@ -26,12 +26,6 @@
 static bool g_resize;
 static unsigned g_width, g_height;
 
-static void sighandler(int sig)
-{
-   (void)sig;
-   g_egl_quit = 1;
-}
-
 static void gfx_ctx_vivante_destroy(void *data)
 {
    egl_destroy(data);
@@ -44,7 +38,6 @@ static bool gfx_ctx_vivante_init(void *data)
    EGLint num_config;
    EGLint egl_version_major, egl_version_minor;
    EGLint format;
-   struct sigaction sa = {{0}};
    static const EGLint attribs[] = {
 #if 0
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
@@ -60,11 +53,7 @@ static bool gfx_ctx_vivante_init(void *data)
 
    (void)data;
 
-   sa.sa_handler = sighandler;
-   sa.sa_flags   = SA_RESTART;
-   sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
+   egl_install_sighandlers();
 
    RARCH_LOG("[Vivante fbdev]: Initializing context\n");
 

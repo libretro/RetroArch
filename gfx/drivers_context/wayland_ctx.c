@@ -55,12 +55,6 @@ static unsigned g_minor;
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
 #endif
 
-static void sighandler(int sig)
-{
-   (void)sig;
-   g_egl_quit = 1;
-}
-
 /* Shell surface callbacks. */
 static void shell_surface_handle_ping(void *data,
       struct wl_shell_surface *shell_surface,
@@ -503,14 +497,9 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    driver_t *driver = driver_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
       driver->video_context_data;
-   struct sigaction sa = {{0}};
    EGLint *attr = NULL;
 
-   sa.sa_handler = sighandler;
-   sa.sa_flags   = SA_RESTART;
-   sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
+   egl_install_sighandlers();
 
    attr = egl_fill_attribs(egl_attribs);
 

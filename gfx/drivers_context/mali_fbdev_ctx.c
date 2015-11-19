@@ -35,12 +35,6 @@ struct fbdev_window native_window;
 static bool g_resize;
 static unsigned g_width, g_height;
 
-static void gfx_ctx_mali_fbdev_sighandler(int sig)
-{
-   (void)sig;
-   g_egl_quit = 1;
-}
-
 static void gfx_ctx_mali_fbdev_destroy(void *data)
 {
    int fb;
@@ -75,7 +69,6 @@ static bool gfx_ctx_mali_fbdev_init(void *data)
    EGLint num_config;
    EGLint egl_version_major, egl_version_minor;
    EGLint format;
-   struct sigaction sa = {{0}};
    static const EGLint attribs[] = {
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -86,13 +79,7 @@ static bool gfx_ctx_mali_fbdev_init(void *data)
       EGL_NONE
    };
 
-   (void)data;
-
-   sa.sa_handler = gfx_ctx_mali_fbdev_sighandler;
-   sa.sa_flags   = SA_RESTART;
-   sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
+   egl_install_sighandlers();
 
    /* Disable cursor blinking so it's not visible in RetroArch. */
    system("setterm -cursor off");
