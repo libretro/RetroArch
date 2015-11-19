@@ -556,10 +556,6 @@ static void *xv_init(const video_info_t *video,
 
    xv_set_nonblock_state(xv, !video->vsync);
 
-   driver->display_type  = RARCH_DISPLAY_X11;
-   driver->video_display = (uintptr_t)g_x11_dpy;
-   driver->video_window  = (Window)g_x11_win;
-
    if (input && input_data)
    {
       xinput = input_x.init();
@@ -575,7 +571,7 @@ static void *xv_init(const video_info_t *video,
    init_yuv_tables(xv);
    xv_init_font(xv, settings->video.font_path, settings->video.font_size);
 
-   if (!x11_input_ctx_new())
+   if (!x11_input_ctx_new(true))
       goto error;
 
    XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);

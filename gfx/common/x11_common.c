@@ -38,7 +38,7 @@ Window   g_x11_win;
 static XIM g_x11_xim;
 static XIC g_x11_xic;
 Display *g_x11_dpy;
-bool g_x11_true_full;
+static bool g_x11_true_full;
 
 #define XA_INIT(x) XA##x = XInternAtom(dpy, #x, False)
 #define _NET_WM_STATE_ADD 1
@@ -538,10 +538,16 @@ void x11_update_window_title(void *data)
       rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 
-bool x11_input_ctx_new(void)
+bool x11_input_ctx_new(bool true_full)
 {
+   driver_t *driver    = driver_get_ptr();
    if (!x11_create_input_context(g_x11_dpy, g_x11_win, &g_x11_xim, &g_x11_xic))
       return false;
+
+   driver->display_type  = RARCH_DISPLAY_X11;
+   driver->video_display = (uintptr_t)g_x11_dpy;
+   driver->video_window  = (uintptr_t)g_x11_win;
+   g_x11_true_full       = true_full;
    return true;
 }
 

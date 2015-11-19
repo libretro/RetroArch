@@ -39,7 +39,6 @@ extern Atom g_x11_quit_atom;
 extern bool g_x11_has_focus;
 extern Window   g_x11_win;
 extern Display *g_x11_dpy;
-extern bool g_x11_true_full;
 extern Colormap g_x11_cmap;
 
 void x11_show_mouse(Display *dpy, Window win, bool state);
@@ -82,7 +81,7 @@ bool x11_connect(void);
 
 void x11_update_window_title(void *data);
 
-bool x11_input_ctx_new(void);
+bool x11_input_ctx_new(bool true_full);
 
 void x11_input_ctx_destroy(void);
 

@@ -511,13 +511,8 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
 
    XFree(vi);
 
-   if (!x11_input_ctx_new())
+   if (!x11_input_ctx_new(true_full))
       goto error;
-
-   driver->display_type  = RARCH_DISPLAY_X11;
-   driver->video_display = (uintptr_t)g_x11_dpy;
-   driver->video_window  = (uintptr_t)g_x11_win;
-   g_x11_true_full       = true_full;
 
    return true;
 
