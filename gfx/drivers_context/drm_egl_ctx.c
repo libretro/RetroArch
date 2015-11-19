@@ -147,13 +147,14 @@ static void gfx_ctx_drm_egl_check_window(void *data, bool *quit,
    *quit   = g_egl_quit;
 }
 
-static unsigned first_page_flip;
-static unsigned last_page_flip;
 static bool waiting_for_flip;
 
 static void page_flip_handler(int fd, unsigned frame,
       unsigned sec, unsigned usec, void *data)
 {
+   static unsigned first_page_flip;
+   static unsigned last_page_flip;
+
    (void)fd;
    (void)sec;
    (void)usec;
@@ -179,9 +180,11 @@ static bool wait_flip(gfx_ctx_drm_egl_data_t *drm, bool block)
    struct pollfd fds = {0};
    drmEventContext evctx   = {0};
 
-   fds.fd     = drm->g_drm_fd;
-   fds.events = POLLIN;
+   if (!waiting_for_flip)
+      return false;
 
+   fds.fd                  = drm->g_drm_fd;
+   fds.events              = POLLIN;
    evctx.version           = DRM_EVENT_CONTEXT_VERSION;
    evctx.page_flip_handler = page_flip_handler;
    
@@ -217,7 +220,7 @@ static bool wait_flip(gfx_ctx_drm_egl_data_t *drm, bool block)
    return false;
 }
 
-static void queue_flip(gfx_ctx_drm_egl_data_t *drm)
+static bool queue_flip(gfx_ctx_drm_egl_data_t *drm)
 {
    struct drm_fb *fb = NULL;
 
@@ -226,13 +229,11 @@ static void queue_flip(gfx_ctx_drm_egl_data_t *drm)
    fb = (struct drm_fb*)drm_fb_get_from_bo(drm, drm->g_next_bo);
 
    if (drmModePageFlip(drm->g_drm_fd, drm->g_crtc_id, fb->fb_id,
-         DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip) < 0)
-   {
-      RARCH_ERR("[KMS/EGL]: Failed to queue page flip.\n");
-      return;
-   }
-
-   waiting_for_flip = true;
+         DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip) == 0)
+      return true;
+   
+   /* Failed to queue page flip. */
+   return false;
 }
 
 static void gfx_ctx_drm_egl_swap_buffers(void *data)
@@ -244,17 +245,14 @@ static void gfx_ctx_drm_egl_swap_buffers(void *data)
    egl_swap_buffers(data);
 
    /* I guess we have to wait for flip to have taken 
-    * place before another flip can be queued up. */
-   if (waiting_for_flip)
-   {
-      /* We are still waiting for a flip 
-       * (nonblocking mode, just drop the frame).
-       */
-      if (wait_flip(drm, g_interval))
-         return;
-   }
+    * place before another flip can be queued up.
+    *
+    * If true, we are still waiting for a flip
+    * (nonblocking mode, so just drop the frame). */
+   if (wait_flip(drm, g_interval))
+      return;
 
-   queue_flip(drm);
+   waiting_for_flip = queue_flip(drm);
 
    if (gbm_surface_has_free_buffers(drm->g_gbm_surface))
       return;
@@ -339,9 +337,7 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
       return;
 
    /* Make sure we acknowledge all page-flips. */
-
-   if (waiting_for_flip)
-      wait_flip(drm, true);
+   wait_flip(drm, true);
 
    egl_destroy(NULL);
 
