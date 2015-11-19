@@ -214,8 +214,6 @@ static void gfx_ctx_glx_swap_interval(void *data, unsigned interval)
    }
 }
 
-void x_input_poll_wheel(void *data, XButtonEvent *event, bool latch);
-
 static void gfx_ctx_glx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
