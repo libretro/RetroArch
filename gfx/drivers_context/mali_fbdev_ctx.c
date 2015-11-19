@@ -15,7 +15,6 @@
 
 #include <unistd.h>
 
-#include <signal.h>
 #include <sys/ioctl.h>
 
 /* Includes and defines for framebuffer size retrieval */

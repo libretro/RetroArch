@@ -15,7 +15,6 @@
  */
 
 #include <sys/poll.h>
-#include <signal.h>
 #include <unistd.h>
 
 #include <wayland-client.h>

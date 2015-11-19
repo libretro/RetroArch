@@ -20,7 +20,6 @@
 
 #include <stdint.h>
 #include <errno.h>
-#include <signal.h>
 #include <unistd.h>
 #include <math.h>
 

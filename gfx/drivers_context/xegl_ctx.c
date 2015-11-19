@@ -17,7 +17,6 @@
 /* X/EGL context. Mostly used for testing GLES code paths. */
 
 #include <stdint.h>
-#include <signal.h>
 
 #include "../../driver.h"
 #include "../common/egl_common.h"
