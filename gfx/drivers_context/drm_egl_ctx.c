@@ -363,7 +363,7 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
    if (waiting_for_flip)
       wait_flip(true);
 
-   egl_destroy();
+   egl_destroy(NULL);
 
    /* Restore original CRTC. */
    if (drm->g_orig_crtc)

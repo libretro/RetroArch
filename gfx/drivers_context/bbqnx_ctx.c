@@ -45,7 +45,7 @@ static enum gfx_ctx_api g_api;
 
 static void gfx_ctx_qnx_destroy(void *data)
 {
-   egl_destroy();
+   egl_destroy(data);
 
    g_resize      = false;
 }

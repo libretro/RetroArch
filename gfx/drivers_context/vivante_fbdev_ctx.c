@@ -35,9 +35,7 @@ static void sighandler(int sig)
 
 static void gfx_ctx_vivante_destroy(void *data)
 {
-   (void)data;
-
-   egl_destroy();
+   egl_destroy(data);
 
    g_quit         = 0;
    g_resize       = false;

@@ -48,9 +48,7 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
    int fb;
    RFILE *fd;
 
-   (void)data;
-
-   egl_destroy();
+   egl_destroy(data);
 
    g_quit         = 0;
    g_resize       = false;

@@ -33,11 +33,6 @@ int system_property_get(const char *cmd, const char *args, char *value);
 
 static bool g_es3;
 
-static void android_gfx_ctx_destroy(void *data)
-{
-   egl_destroy();
-}
-
 static bool android_gfx_ctx_init(void *data)
 {
    int var;
@@ -123,7 +118,7 @@ static bool android_gfx_ctx_init(void *data)
    return true;
 
 error:
-   egl_destroy();
+   egl_destroy(NULL);
 
    return false;
 }
@@ -270,7 +265,7 @@ static bool android_gfx_ctx_get_metrics(void *data,
 
 const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_init,
-   android_gfx_ctx_destroy,
+   egl_destroy,
    android_gfx_ctx_bind_api,
    egl_set_swap_interval,
    android_gfx_ctx_set_video_mode,

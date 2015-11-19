@@ -72,7 +72,7 @@ gfx_ctx_proc_t egl_get_proc_address(const char *symbol)
    return ret;
 }
 
-void egl_destroy(void)
+void egl_destroy(void *data)
 {
    if (g_egl_dpy)
    {

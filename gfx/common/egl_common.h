@@ -33,7 +33,7 @@ extern unsigned g_interval;
 
 void egl_report_error(void);
 
-void egl_destroy(void);
+void egl_destroy(void *data);
 
 gfx_ctx_proc_t egl_get_proc_address(const char *symbol);
 

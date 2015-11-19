@@ -405,11 +405,8 @@ error:
 
 static void gfx_ctx_xegl_destroy(void *data)
 {
-   (void)data;
-
    x11_input_ctx_destroy();
-
-   egl_destroy();
+   egl_destroy(data);
 
    if (g_x11_win)
    {

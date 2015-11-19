@@ -143,7 +143,7 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
    if (!wl)
       return;
 
-   egl_destroy();
+   egl_destroy(NULL);
 
    if (wl->g_win)
       wl_egl_window_destroy(wl->g_win);
