@@ -61,7 +61,7 @@ bool win32_set_video_mode(void *data,
 bool win32_monitor_set_fullscreen(unsigned width,
       unsigned height, unsigned refresh, char *dev_name);
 
-bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen);
+bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen, const char *class_name);
 
 bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,

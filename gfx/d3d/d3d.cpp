@@ -575,7 +575,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 #endif
 
    memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
-   win32_window_init(&d3d->windowClass, true);
+   win32_window_init(&d3d->windowClass, true, NULL);
 
 #ifdef HAVE_MONITOR
    bool windowed_full;
