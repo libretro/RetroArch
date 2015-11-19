@@ -220,22 +220,16 @@ static bool wait_flip(bool block)
    return false;
 }
 
-static void queue_flip(void)
+static void queue_flip(gfx_ctx_drm_egl_data_t *drm)
 {
-   int ret;
    struct drm_fb *fb = NULL;
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-   driver->video_context_data;
 
    drm->g_next_bo = gbm_surface_lock_front_buffer(drm->g_gbm_surface);
 
    fb = (struct drm_fb*)drm_fb_get_from_bo(drm, drm->g_next_bo);
 
-   ret = drmModePageFlip(drm->g_drm_fd, drm->g_crtc_id, fb->fb_id,
-         DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip);
-
-   if (ret < 0)
+   if (drmModePageFlip(drm->g_drm_fd, drm->g_crtc_id, fb->fb_id,
+         DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip) < 0)
    {
       RARCH_ERR("[KMS/EGL]: Failed to queue page flip.\n");
       return;
@@ -263,7 +257,7 @@ static void gfx_ctx_drm_egl_swap_buffers(void *data)
          return;
    }
 
-   queue_flip();
+   queue_flip(drm);
 
    if (gbm_surface_has_free_buffers(drm->g_gbm_surface))
       return;
