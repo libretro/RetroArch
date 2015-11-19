@@ -33,7 +33,7 @@ static Atom XA_NET_MOVERESIZE_WINDOW;
 Colormap g_x11_cmap;
 static Atom g_x11_quit_atom;
 static volatile sig_atomic_t g_x11_quit;
-bool g_x11_has_focus;
+static bool g_x11_has_focus;
 Window   g_x11_win;
 static XIM g_x11_xim;
 static XIC g_x11_xic;
@@ -480,6 +480,11 @@ void x11_get_video_size(void *data, unsigned *width, unsigned *height)
       *width  = target.width;
       *height = target.height;
    }
+}
+
+bool x11_has_focus_internal(void *data)
+{
+   return g_x11_has_focus;
 }
 
 bool x11_has_focus(void *data)

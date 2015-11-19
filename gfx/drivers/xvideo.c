@@ -775,11 +775,6 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
    return true;
 }
 
-static bool xv_focus(void *data)
-{
-   return g_x11_has_focus;
-}
-
 static bool xv_suppress_screensaver(void *data, bool enable)
 {
    driver_t *driver = driver_get_ptr();
@@ -870,7 +865,7 @@ video_driver_t video_xvideo = {
    xv_frame,
    xv_set_nonblock_state,
    x11_alive,
-   xv_focus,
+   x11_has_focus_internal,
    xv_suppress_screensaver,
    xv_has_windowed,
    xv_set_shader,

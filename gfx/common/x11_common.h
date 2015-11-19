@@ -35,7 +35,6 @@
 
 #include "../video_context_driver.h"
 
-extern bool g_x11_has_focus;
 extern Window   g_x11_win;
 extern Display *g_x11_dpy;
 extern Colormap g_x11_cmap;
@@ -71,6 +70,8 @@ void x11_check_window(void *data, bool *quit,
 void x11_get_video_size(void *data, unsigned *width, unsigned *height);
 
 bool x11_has_focus(void *data);
+
+bool x11_has_focus_internal(void *data);
 
 bool x11_alive(void *data);
 
