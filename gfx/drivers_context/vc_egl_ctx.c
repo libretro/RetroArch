@@ -499,8 +499,7 @@ static float gfx_ctx_vc_translate_aspect(void *data,
    /* Check for SD televisions: they should always be 4:3. */
    if ((width == 640 || width == 720) && (height == 480 || height == 576))
       return 4.0f / 3.0f;
-   else
-      return (float)width / height;
+   return (float)width / height;
 }
 
 static bool gfx_ctx_vc_image_buffer_init(void *data,

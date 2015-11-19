@@ -139,6 +139,10 @@ VIDEO CONTEXT
 
 #endif
 
+#if defined(HAVE_EGL)
+#include "../gfx/common/egl_common.c"
+#endif
+
 #if defined(HAVE_X11)
 #include "../gfx/common/x11_common.c"
 

@@ -14,17 +14,13 @@
 *  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* X/EGL context. Mostly used for testing GLES code paths.
-* Should be its own file as it has lots of X11 stuff baked into it as well.
-*/
+/* X/EGL context. Mostly used for testing GLES code paths. */
 
 #include <stdint.h>
 #include <signal.h>
 
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-
 #include "../../driver.h"
+#include "../common/egl_common.h"
 #include "../common/gl_common.h"
 #include "../common/x11_common.h"
 
@@ -65,36 +61,6 @@ static int egl_nul_handler(Display *dpy, XErrorEvent *event)
 }
 
 static void gfx_ctx_xegl_destroy(void *data);
-
-static void egl_report_error(void)
-{
-   EGLint error = eglGetError();
-   const char *str = NULL;
-   switch (error)
-   {
-      case EGL_SUCCESS:
-         str = "EGL_SUCCESS";
-         break;
-
-      case EGL_BAD_DISPLAY:
-         str = "EGL_BAD_DISPLAY";
-         break;
-
-      case EGL_BAD_SURFACE:
-         str = "EGL_BAD_SURFACE";
-         break;
-
-      case EGL_BAD_CONTEXT:
-         str = "EGL_BAD_CONTEXT";
-         break;
-
-      default:
-         str = "Unknown";
-         break;
-   }
-
-   RARCH_ERR("[X/EGL]: #0x%x, %s\n", (unsigned)error, str);
-}
 
 static void gfx_ctx_xegl_swap_interval(void *data, unsigned interval)
 {

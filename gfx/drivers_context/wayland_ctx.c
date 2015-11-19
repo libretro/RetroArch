@@ -18,9 +18,6 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-
 #include <wayland-client.h>
 #include <wayland-egl.h>
 
@@ -28,6 +25,7 @@
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
+#include "../common/egl_common.h"
 #include "../common/gl_common.h"
 
 typedef struct gfx_ctx_wayland_data
@@ -204,37 +202,6 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 
    wl->g_width  = 0;
    wl->g_height = 0;
-}
-
-static void egl_report_error(void)
-{
-   EGLint error = eglGetError();
-   const char *str = NULL;
-
-   switch (error)
-   {
-      case EGL_SUCCESS:
-         str = "EGL_SUCCESS";
-         break;
-
-      case EGL_BAD_DISPLAY:
-         str = "EGL_BAD_DISPLAY";
-         break;
-
-      case EGL_BAD_SURFACE:
-         str = "EGL_BAD_SURFACE";
-         break;
-
-      case EGL_BAD_CONTEXT:
-         str = "EGL_BAD_CONTEXT";
-         break;
-
-      default:
-         str = "Unknown";
-         break;
-   }
-
-   RARCH_ERR("[Wayland/EGL]: #0x%x, %s\n", (unsigned)error, str);
 }
 
 static void gfx_ctx_wl_swap_interval(void *data, unsigned interval)
