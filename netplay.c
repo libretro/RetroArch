@@ -123,12 +123,13 @@ struct netplay
    uint32_t pause_frame;
 };
 
-enum {
+enum
+{
    CMD_OPT_ALLOWED_IN_SPECTATE_MODE = 0x1,
    CMD_OPT_REQUIRE_ACK              = 0x2,
    CMD_OPT_HOST_ONLY                = 0x4,
    CMD_OPT_CLIENT_ONLY              = 0x8,
-   CMD_OPT_REQUIRE_SYNC             = 0x10,
+   CMD_OPT_REQUIRE_SYNC             = 0x10
 };
 
 /**
@@ -1325,12 +1326,13 @@ bool netplay_command(netplay_t* netplay, enum netplay_cmd cmd,
                      const char* command_str,
                      const char* success_msg)
 {
-   assert(netplay);
+   char m[256];
    const char* msg         = NULL;
-
    bool allowed_spectate   = !!(flags & CMD_OPT_ALLOWED_IN_SPECTATE_MODE);
    bool host_only          = !!(flags & CMD_OPT_HOST_ONLY);
    bool require_sync       = !!(flags & CMD_OPT_REQUIRE_SYNC);
+
+   assert(netplay);
 
    if (netplay->spectate.enabled && !allowed_spectate)
    {
@@ -1360,9 +1362,9 @@ bool netplay_command(netplay_t* netplay, enum netplay_cmd cmd,
       }
    }
    return true;
-error: ;
-   char m[256];
-   snprintf(m, 255, msg, command_str);
+
+error:
+   snprintf(m, sizeof(m), msg, command_str);
    RARCH_WARN("%s\n", m);
    rarch_main_msg_queue_push(m, 1, 180, false);
    return false;
@@ -1376,7 +1378,6 @@ error: ;
  **/
 void netplay_flip_users(netplay_t *netplay)
 {
-   assert(netplay);
    uint32_t flip_frame = netplay->frame_count + 2 * UDP_FRAME_PACKETS;
    uint32_t flip_frame_net = htonl(flip_frame);
    bool command = netplay_command(
