@@ -35,8 +35,9 @@
 
 #include "../video_context_driver.h"
 
-Atom g_x11_quit_atom;
-volatile sig_atomic_t g_x11_quit;
+extern Atom g_x11_quit_atom;
+extern volatile sig_atomic_t g_x11_quit;
+extern bool g_x11_has_focus;
 
 void x11_show_mouse(Display *dpy, Window win, bool state);
 void x11_windowed_fullscreen(Display *dpy, Window win);

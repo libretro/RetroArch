@@ -37,7 +37,6 @@
 static Display *g_dpy;
 static Window   g_win;
 static Colormap g_cmap;
-static bool g_has_focus;
 static bool g_true_full;
 static unsigned g_screen;
 
@@ -176,12 +175,12 @@ static void gfx_ctx_xegl_check_window(void *data, bool *quit,
 
          case MapNotify:
             if (event.xmap.window == g_win)
-               g_has_focus = true;
+               g_x11_has_focus = true;
             break;
 
          case UnmapNotify:
             if (event.xunmap.window == g_win)
-               g_has_focus = false;
+               g_x11_has_focus = false;
             break;
 
          case ButtonPress:
@@ -612,7 +611,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    XSetErrorHandler(old_handler);
 
    XFree(vi);
-   g_has_focus = true;
+   g_x11_has_focus = true;
    g_inited    = true;
 
    if (!x11_create_input_context(g_dpy, g_win, &g_xim, &g_xic))
@@ -726,7 +725,7 @@ static bool gfx_ctx_xegl_has_focus(void *data)
 
    XGetInputFocus(g_dpy, &win, &rev);
 
-   return (win == g_win && g_has_focus) || g_true_full;
+   return (win == g_win && g_x11_has_focus) || g_true_full;
 }
 
 static bool gfx_ctx_xegl_suppress_screensaver(void *data, bool enable)

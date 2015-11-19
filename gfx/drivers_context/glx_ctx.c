@@ -32,7 +32,6 @@ static void (*g_pglSwapIntervalEXT)(Display*, GLXDrawable, int);
 
 typedef struct gfx_ctx_glx_data
 {
-   bool g_has_focus;
    bool g_true_full;
    bool g_use_hw_ctx;
    bool g_core_es;
@@ -288,12 +287,12 @@ static void gfx_ctx_glx_check_window(void *data, bool *quit,
 
          case MapNotify:
             if (event.xmap.window == glx->g_win)
-               glx->g_has_focus = true;
+               g_x11_has_focus = true;
             break;
 
          case UnmapNotify:
             if (event.xunmap.window == glx->g_win)
-               glx->g_has_focus = false;
+               g_x11_has_focus = false;
             break;
          case ButtonPress:
             x_input_poll_wheel(driver->input_data, &event.xbutton, true);
@@ -655,7 +654,7 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    XSetErrorHandler(old_handler);
 
    XFree(vi);
-   glx->g_has_focus = true;
+   g_x11_has_focus = true;
 
    if (!x11_create_input_context(glx->g_dpy, glx->g_win, &glx->g_xim, &glx->g_xic))
       goto error;
@@ -702,7 +701,7 @@ static bool gfx_ctx_glx_has_focus(void *data)
 
    XGetInputFocus(glx->g_dpy, &win, &rev);
 
-   return (win == glx->g_win && glx->g_has_focus) || glx->g_true_full;
+   return (win == glx->g_win && g_x11_has_focus) || glx->g_true_full;
 }
 
 static bool gfx_ctx_glx_suppress_screensaver(void *data, bool enable)
