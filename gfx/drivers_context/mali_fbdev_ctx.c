@@ -18,8 +18,6 @@
 #include <signal.h>
 #include <sys/ioctl.h>
 
-#include <EGL/egl.h>
-
 /* Includes and defines for framebuffer size retrieval */
 #include <linux/fb.h>
 #include <linux/vt.h>
@@ -30,6 +28,7 @@
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
+#include "../common/egl_common.h"
 #include "../common/gl_common.h"
 
 struct fbdev_window native_window;
@@ -281,19 +280,6 @@ static void gfx_ctx_mali_fbdev_input_driver(void *data,
    *input_data = NULL;
 }
 
-static gfx_ctx_proc_t gfx_ctx_mali_fbdev_get_proc_address(const char *symbol)
-{
-   gfx_ctx_proc_t ret;
-   void *sym__        = NULL;
-
-   retro_assert(sizeof(void*) == sizeof(void (*)(void)));
-
-   sym__ = eglGetProcAddress(symbol);
-   memcpy(&ret, &sym__, sizeof(void*));
-
-   return ret;
-}
-
 static bool gfx_ctx_mali_fbdev_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -340,7 +326,7 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    gfx_ctx_mali_fbdev_has_windowed,
    gfx_ctx_mali_fbdev_swap_buffers,
    gfx_ctx_mali_fbdev_input_driver,
-   gfx_ctx_mali_fbdev_get_proc_address,
+   egl_get_proc_address,
    NULL,
    NULL,
    NULL,

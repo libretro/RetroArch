@@ -16,12 +16,11 @@
 
 #include <signal.h>
 
-#include <EGL/egl.h>
-
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
+#include "../common/egl_common.h"
 #include "../common/gl_common.h"
 
 static EGLContext g_egl_ctx;
@@ -254,19 +253,6 @@ static void gfx_ctx_vivante_input_driver(void *data,
    *input_data = NULL;
 }
 
-static gfx_ctx_proc_t gfx_ctx_vivante_get_proc_address(const char *symbol)
-{
-   gfx_ctx_proc_t ret;
-   void *sym__;
-
-   retro_assert(sizeof(void*) == sizeof(void (*)(void)));
-
-   sym__ = eglGetProcAddress(symbol);
-   memcpy(&ret, &sym__, sizeof(void*));
-
-   return ret;
-}
-
 static bool gfx_ctx_vivante_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -313,7 +299,7 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    gfx_ctx_vivante_has_windowed,
    gfx_ctx_vivante_swap_buffers,
    gfx_ctx_vivante_input_driver,
-   gfx_ctx_vivante_get_proc_address,
+   egl_get_proc_address,
    NULL,
    NULL,
    NULL,

@@ -30,9 +30,6 @@
 #include <sys/stat.h>
 #include <sys/poll.h>
 
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-
 #include <libdrm/drm.h>
 #include <xf86drm.h>
 #include <xf86drmMode.h>
@@ -43,6 +40,7 @@
 
 #include "../../driver.h"
 #include "../../runloop.h"
+#include "../common/egl_common.h"
 #include "../common/gl_common.h"
 #include "../video_monitor.h"
 
@@ -908,11 +906,6 @@ static bool gfx_ctx_drm_egl_has_windowed(void *data)
    return false;
 }
 
-static gfx_ctx_proc_t gfx_ctx_drm_egl_get_proc_address(const char *symbol)
-{
-   return eglGetProcAddress(symbol);
-}
-
 static bool gfx_ctx_drm_egl_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -988,7 +981,7 @@ const gfx_ctx_driver_t gfx_ctx_drm_egl = {
    gfx_ctx_drm_egl_has_windowed,
    gfx_ctx_drm_egl_swap_buffers,
    gfx_ctx_drm_egl_input_driver,
-   gfx_ctx_drm_egl_get_proc_address,
+   egl_get_proc_address,
    NULL,
    NULL,
    NULL,

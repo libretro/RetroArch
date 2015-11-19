@@ -19,6 +19,10 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
+#include "../video_context_driver.h"
+
 void egl_report_error(void);
+
+gfx_ctx_proc_t egl_get_proc_address(const char *symbol);
 
 #endif

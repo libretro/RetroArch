@@ -662,11 +662,6 @@ static bool gfx_ctx_wl_has_windowed(void *data)
    return true;
 }
 
-static gfx_ctx_proc_t gfx_ctx_wl_get_proc_address(const char *symbol)
-{
-   return eglGetProcAddress(symbol);
-}
-
 static bool gfx_ctx_wl_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -709,9 +704,7 @@ static void gfx_ctx_wl_bind_hw_render(void *data, bool enable)
 
    wl->g_use_hw_ctx = enable;
 
-   if (!wl->g_egl_dpy)
-      return;
-   if (!wl->g_egl_surf)
+   if (!wl->g_egl_dpy || !wl->g_egl_surf)
       return;
 
    eglMakeCurrent(wl->g_egl_dpy, wl->g_egl_surf, wl->g_egl_surf,
@@ -882,7 +875,7 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_has_windowed,
    gfx_ctx_wl_swap_buffers,
    gfx_ctx_wl_input_driver,
-   gfx_ctx_wl_get_proc_address,
+   egl_get_proc_address,
    NULL,
    NULL,
    NULL,

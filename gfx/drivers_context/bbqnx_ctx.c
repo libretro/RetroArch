@@ -16,7 +16,6 @@
 
 #include <stdint.h>
 
-#include <EGL/egl.h>
 #include <GLES2/gl2.h>
 
 #include <bps/screen.h>
@@ -29,6 +28,7 @@
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
+#include "../common/egl_common.h"
 #include "../common/gl_common.h"
 
 #include "../image/image.h"
@@ -382,19 +382,6 @@ static void gfx_ctx_qnx_input_driver(void *data,
    *input_data = NULL;
 }
 
-static gfx_ctx_proc_t gfx_ctx_qnx_get_proc_address(const char *symbol)
-{
-   gfx_ctx_proc_t ret;
-   void *sym__;
-
-   retro_assert(sizeof(void*) == sizeof(void (*)(void)));
-
-   sym__ = eglGetProcAddress(symbol);
-   memcpy(&ret, &sym__, sizeof(void*));
-
-   return ret;
-}
-
 static bool gfx_ctx_qnx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -461,7 +448,7 @@ const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    gfx_ctx_qnx_has_windowed,
    gfx_ctx_qnx_swap_buffers,
    gfx_ctx_qnx_input_driver,
-   gfx_ctx_qnx_get_proc_address,
+   egl_get_proc_address,
    NULL,
    NULL,
    NULL,

@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_assert.h>
 #include <retro_log.h>
 
 #include "egl_common.h"
@@ -45,4 +46,17 @@ void egl_report_error(void)
    }
 
    RARCH_ERR("[EGL]: #0x%x, %s\n", (unsigned)error, str);
+}
+
+gfx_ctx_proc_t egl_get_proc_address(const char *symbol)
+{
+   gfx_ctx_proc_t ret;
+   void *sym__ = NULL;
+
+   retro_assert(sizeof(void*) == sizeof(void (*)(void)));
+
+   sym__ = eglGetProcAddress(symbol);
+   memcpy(&ret, &sym__, sizeof(void*));
+
+   return ret;
 }

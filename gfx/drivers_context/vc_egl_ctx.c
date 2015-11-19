@@ -21,8 +21,6 @@
 
 #include <sched.h>
 
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
 #include <EGL/eglext_brcm.h>
 #include <VG/openvg.h>
 #include <bcm_host.h>
@@ -32,6 +30,7 @@
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../video_context_driver.h"
+#include "../common/egl_common.h"
 #include "../common/gl_common.h"
 #include "../video_monitor.h"
 
@@ -486,11 +485,6 @@ static bool gfx_ctx_vc_has_windowed(void *data)
    return false;
 }
 
-static gfx_ctx_proc_t gfx_ctx_vc_get_proc_address(const char *symbol)
-{
-   return eglGetProcAddress(symbol);
-}
-
 static float gfx_ctx_vc_translate_aspect(void *data,
       unsigned width, unsigned height)
 {
@@ -518,9 +512,9 @@ static bool gfx_ctx_vc_image_buffer_init(void *data,
       return false;
 
    peglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC)
-      gfx_ctx_vc_get_proc_address("eglCreateImageKHR");
+      egl_get_proc_address("eglCreateImageKHR");
    peglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC)
-      gfx_ctx_vc_get_proc_address("eglDestroyImageKHR");
+      egl_get_proc_address("eglDestroyImageKHR");
 
    if (!peglCreateImageKHR || !peglDestroyImageKHR 
          || !gfx_ctx_vc_egl_query_extension("KHR_image"))
@@ -657,7 +651,7 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_has_windowed,
    gfx_ctx_vc_swap_buffers,
    gfx_ctx_vc_input_driver,
-   gfx_ctx_vc_get_proc_address,
+   egl_get_proc_address,
    gfx_ctx_vc_image_buffer_init,
    gfx_ctx_vc_image_buffer_write,
    NULL,

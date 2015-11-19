@@ -17,14 +17,12 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-
 #include <emscripten/emscripten.h>
 
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../video_context_driver.h"
+#include "../common/egl_common.h"
 #include "../common/gl_common.h"
 #include "../video_monitor.h"
 
@@ -274,11 +272,6 @@ static bool gfx_ctx_emscripten_has_windowed(void *data)
    return true;
 }
 
-static gfx_ctx_proc_t gfx_ctx_emscripten_get_proc_address(const char *symbol)
-{
-   return eglGetProcAddress(symbol);
-}
-
 static float gfx_ctx_emscripten_translate_aspect(void *data,
       unsigned width, unsigned height)
 {
@@ -323,7 +316,7 @@ const gfx_ctx_driver_t gfx_ctx_emscripten = {
    gfx_ctx_emscripten_has_windowed,
    gfx_ctx_emscripten_swap_buffers,
    gfx_ctx_emscripten_input_driver,
-   gfx_ctx_emscripten_get_proc_address,
+   egl_get_proc_address,
    gfx_ctx_emscripten_init_egl_image_buffer,
    gfx_ctx_emscripten_write_egl_image,
    NULL,

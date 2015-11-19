@@ -15,7 +15,6 @@
  */
 #include <stdint.h>
 
-#include <EGL/egl.h>
 #include <sys/system_properties.h>
 
 #include <formats/image.h>
@@ -24,6 +23,7 @@
 #include "../../general.h"
 #include "../../runloop.h"
 #include "../video_monitor.h"
+#include "../common/egl_common.h"
 #include "../common/gl_common.h"
 
 #include "../../frontend/drivers/platform_linux.h"
@@ -314,20 +314,6 @@ static void android_gfx_ctx_input_driver(void *data,
    *input_data = androidinput;
 }
 
-static gfx_ctx_proc_t android_gfx_ctx_get_proc_address(
-      const char *symbol)
-{
-   gfx_ctx_proc_t ret;
-   void *sym__ = NULL;
-
-   retro_assert(sizeof(void*) == sizeof(void (*)(void)));
-
-   sym__ = eglGetProcAddress(symbol);
-   memcpy(&ret, &sym__, sizeof(void*));
-
-   return ret;
-}
-
 static bool android_gfx_ctx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -446,7 +432,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_has_windowed,
    android_gfx_ctx_swap_buffers,
    android_gfx_ctx_input_driver,
-   android_gfx_ctx_get_proc_address,
+   egl_get_proc_address,
    NULL,
    NULL,
    NULL,
