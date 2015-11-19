@@ -377,12 +377,12 @@ static int16_t dinput_joypad_axis(unsigned port_num, uint32_t joyaxis)
    if (!pad->joypad)
       return 0;
 
-   if (AXIS_NEG_GET(joyaxis) <= 5)
+   if (AXIS_NEG_GET(joyaxis) <= 7)
    {
       axis = AXIS_NEG_GET(joyaxis);
       is_neg = true;
    }
-   else if (AXIS_POS_GET(joyaxis) <= 5)
+   else if (AXIS_POS_GET(joyaxis) <= 7)
    {
       axis = AXIS_POS_GET(joyaxis);
       is_pos = true;
@@ -407,6 +407,12 @@ static int16_t dinput_joypad_axis(unsigned port_num, uint32_t joyaxis)
          break;
       case 5:
          val = pad->joy_state.lRz;
+         break;
+      case 6:
+         val = pad->joy_state.rglSlider[0];
+         break;
+      case 7:
+         val = pad->joy_state.rglSlider[1];
          break;
    }
 
