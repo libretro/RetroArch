@@ -106,7 +106,7 @@ static void gfx_ctx_emscripten_destroy(void *data);
 
 static bool gfx_ctx_emscripten_init(void *data)
 {
-   EGLint width, height, num_config;
+   EGLint width, height, n, major, minor;
    static const EGLint attribute_list[] =
    {
       EGL_RED_SIZE, 8,
@@ -124,26 +124,18 @@ static bool gfx_ctx_emscripten_init(void *data)
 
    (void)data;
 
-   RARCH_LOG("[EMSCRIPTEN/EGL]: Initializing...\n");
-
    if (g_inited)
    {
       RARCH_LOG("[EMSCRIPTEN/EGL]: Attempted to re-initialize driver.\n");
       return true;
    }
 
-   /* Get an EGL display connection. */
-   g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-   if (!g_egl_dpy)
+   if (!egl_init_context(EGL_DEFAULT_DISPLAY, &major, &minor,
+            &n, attribute_list))
+   {
+      egl_report_error();
       goto error;
-
-   /* Initialize the EGL display connection. */
-   if (!eglInitialize(g_egl_dpy, NULL, NULL))
-      goto error;
-
-   /* Get an appropriate EGL frame buffer configuration. */
-   if (!eglChooseConfig(g_egl_dpy, attribute_list, &g_egl_config, 1, &num_config))
-      goto error;
+   }
 
    /* Create an EGL rendering context. */
    g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, EGL_NO_CONTEXT, context_attributes);

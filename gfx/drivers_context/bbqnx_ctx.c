@@ -52,8 +52,8 @@ static void gfx_ctx_qnx_destroy(void *data)
 
 static bool gfx_ctx_qnx_init(void *data)
 {
-   EGLint num_config;
-   EGLint egl_version_major, egl_version_minor;
+   EGLint n;
+   EGLint major, minor;
    EGLint context_attributes[] = {
       EGL_CONTEXT_CLIENT_VERSION, 2,
       EGL_NONE
@@ -98,30 +98,18 @@ static bool gfx_ctx_qnx_init(void *data)
 
    usage = SCREEN_USAGE_OPENGL_ES2 | SCREEN_USAGE_ROTATION;
 
-   RARCH_LOG("Initializing context\n");
-
-   if ((g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY)
-   {
-      RARCH_ERR("eglGetDisplay failed.\n");
-      goto error;
-   }
-
-   if (!eglInitialize(g_egl_dpy, &egl_version_major, &egl_version_minor))
-   {
-      RARCH_ERR("eglInitialize failed.\n");
-      goto error;
-   }
-
    if (!eglBindAPI(EGL_OPENGL_ES_API))
    {
       RARCH_ERR("eglBindAPI failed.\n");
       goto error;
    }
 
-   RARCH_LOG("[BLACKBERRY QNX/EGL]: EGL version: %d.%d\n", egl_version_major, egl_version_minor);
-
-   if (!eglChooseConfig(g_egl_dpy, attribs, &g_egl_config, 1, &num_config))
+   if (!egl_init_context(EGL_DEFAULT_DISPLAY, &major, &minor,
+            &n, attribs))
+   {
+      egl_report_error();
       goto error;
+   }
 
    g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, EGL_NO_CONTEXT, context_attributes);
 

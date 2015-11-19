@@ -64,9 +64,8 @@ static void gfx_ctx_mali_fbdev_get_video_size(void *data,
 
 static bool gfx_ctx_mali_fbdev_init(void *data)
 {
-
-   EGLint num_config;
-   EGLint egl_version_major, egl_version_minor;
+   EGLint n;
+   EGLint major, minor;
    EGLint format;
    static const EGLint attribs[] = {
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
@@ -83,26 +82,10 @@ static bool gfx_ctx_mali_fbdev_init(void *data)
    /* Disable cursor blinking so it's not visible in RetroArch. */
    system("setterm -cursor off");
    
-   RARCH_LOG("[Mali fbdev]: Initializing context\n");
-
-   if ((g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY)
+   if (!egl_init_context(EGL_DEFAULT_DISPLAY,
+            &major, &minor, &n, attribs))
    {
-      RARCH_ERR("[Mali fbdev]: eglGetDisplay failed.\n");
-      goto error;
-   }
-
-   if (!eglInitialize(g_egl_dpy, &egl_version_major, &egl_version_minor))
-   {
-      RARCH_ERR("[Mali fbdev]: eglInitialize failed.\n");
-      goto error;
-   }
-
-   RARCH_LOG("[Mali fbdev]: EGL version: %d.%d\n",
-         egl_version_major, egl_version_minor);
-
-   if (!eglChooseConfig(g_egl_dpy, attribs, &g_egl_config, 1, &num_config))
-   {
-      RARCH_ERR("[Mali fbdev]: eglChooseConfig failed.\n");
+      egl_report_error();
       goto error;
    }
 

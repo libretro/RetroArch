@@ -137,7 +137,7 @@ static void gfx_ctx_vc_destroy(void *data);
 static bool gfx_ctx_vc_init(void *data)
 {
    VC_DISPMANX_ALPHA_T alpha;
-   EGLint num_config;
+   EGLint n, major, minor;
    static EGL_DISPMANX_WINDOW_T nativewindow;
 
    DISPMANX_ELEMENT_HANDLE_T dispman_element;
@@ -164,7 +164,6 @@ static bool gfx_ctx_vc_init(void *data)
    };
    settings_t *settings = config_get_ptr();
 
-   RARCH_LOG("[VC/EGL]: Initializing...\n");
    if (g_inited)
    {
       RARCH_ERR("[VC/EGL]: Attempted to re-initialize driver.\n");
@@ -173,18 +172,12 @@ static bool gfx_ctx_vc_init(void *data)
 
    bcm_host_init();
 
-   /* Get an EGL display connection. */
-   g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-   if (!g_egl_dpy)
+   if (!egl_init_context(EGL_DEFAULT_DISPLAY,
+            &major, &minor, &n, attribute_list))
+   {
+      egl_report_error();
       goto error;
-
-   /* Initialize the EGL display connection. */
-   if (!eglInitialize(g_egl_dpy, NULL, NULL))
-      goto error;
-
-   /* Get an appropriate EGL frame buffer configuration. */
-   if (!eglChooseConfig(g_egl_dpy, attribute_list, &g_egl_config, 1, &num_config))
-      goto error;
+   }
 
    /* Create an EGL rendering context. */
    g_egl_ctx = eglCreateContext(

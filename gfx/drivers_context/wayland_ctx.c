@@ -303,8 +303,8 @@ static bool gfx_ctx_wl_init(void *data)
       EGL_NONE,
    };
 
-   EGLint egl_major = 0, egl_minor = 0;
-   EGLint num_configs;
+   EGLint major = 0, minor = 0;
+   EGLint n;
    const EGLint *attrib_ptr;
    driver_t *driver = driver_get_ptr();
 
@@ -365,29 +365,14 @@ static bool gfx_ctx_wl_init(void *data)
 
    wl->g_fd = wl_display_get_fd(wl->g_dpy);
 
-   g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)wl->g_dpy);
-
-   if (!g_egl_dpy)
+   if (!egl_init_context((EGLNativeDisplayType)wl->g_dpy,
+            &major, &minor, &n, attrib_ptr))
    {
-      RARCH_ERR("Failed to create EGL window.\n");
+      egl_report_error();
       goto error;
    }
 
-   if (!eglInitialize(g_egl_dpy, &egl_major, &egl_minor))
-   {
-      RARCH_ERR("Failed to initialize EGL.\n");
-      goto error;
-   }
-
-   RARCH_LOG("[Wayland/EGL]: EGL version: %d.%d\n", egl_major, egl_minor);
-
-   if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_egl_config, 1, &num_configs))
-   {
-      RARCH_ERR("[Wayland/EGL]: eglChooseConfig failed with 0x%x.\n", eglGetError());
-      goto error;
-   }
-
-   if (num_configs == 0 || !g_egl_config)
+   if (n == 0 || !g_egl_config)
    {
       RARCH_ERR("[Wayland/EGL]: No EGL configurations available.\n");
       goto error;

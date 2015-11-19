@@ -35,8 +35,8 @@ static void gfx_ctx_vivante_destroy(void *data)
 
 static bool gfx_ctx_vivante_init(void *data)
 {
-   EGLint num_config;
-   EGLint egl_version_major, egl_version_minor;
+   EGLint n;
+   EGLint major, minor;
    EGLint format;
    static const EGLint attribs[] = {
 #if 0
@@ -55,26 +55,10 @@ static bool gfx_ctx_vivante_init(void *data)
 
    egl_install_sighandlers();
 
-   RARCH_LOG("[Vivante fbdev]: Initializing context\n");
-
-   if ((g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY)
+   if (!egl_init_context(EGL_DEFAULT_DISPLAY, &major, &minor,
+            &n, attribs))
    {
-      RARCH_ERR("[Vivante fbdev]: eglGetDisplay failed.\n");
-      goto error;
-   }
-
-   if (!eglInitialize(g_egl_dpy, &egl_version_major, &egl_version_minor))
-   {
-      RARCH_ERR("[Vivante fbdev]: eglInitialize failed.\n");
-      goto error;
-   }
-
-   RARCH_LOG("[Vivante fbdev]: EGL version: %d.%d\n",
-         egl_version_major, egl_version_minor);
-
-   if (!eglChooseConfig(g_egl_dpy, attribs, &g_egl_config, 1, &num_config))
-   {
-      RARCH_ERR("[Vivante fbdev]: eglChooseConfig failed.\n");
+      egl_report_error();
       goto error;
    }
 
