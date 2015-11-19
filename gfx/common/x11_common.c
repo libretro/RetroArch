@@ -431,7 +431,7 @@ void x11_check_window(bool *quit)
    *quit = g_x11_quit;
 }
 
-void x11_get_video_size(unsigned *width, unsigned *height)
+void x11_get_video_size(void *data, unsigned *width, unsigned *height)
 {
    if (!g_x11_dpy || g_x11_win == None)
    {

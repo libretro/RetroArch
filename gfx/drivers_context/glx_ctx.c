@@ -85,13 +85,6 @@ static int glx_nul_handler(Display *dpy, XErrorEvent *event)
    return 0;
 }
 
-
-static void gfx_ctx_glx_get_video_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   x11_get_video_size(width, height);
-}
-
 static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
 {
    driver_t *driver = driver_get_ptr();
@@ -218,7 +211,7 @@ static void gfx_ctx_glx_check_window(void *data, bool *quit,
 {
    unsigned new_width = *width, new_height = *height;
 
-   gfx_ctx_glx_get_video_size(data, &new_width, &new_height);
+   x11_get_video_size(data, &new_width, &new_height);
 
    if (new_width != *width || new_height != *height)
    {
@@ -690,7 +683,7 @@ const gfx_ctx_driver_t gfx_ctx_glx = {
    gfx_ctx_glx_bind_api,
    gfx_ctx_glx_swap_interval,
    gfx_ctx_glx_set_video_mode,
-   gfx_ctx_glx_get_video_size,
+   x11_get_video_size,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

@@ -125,19 +125,13 @@ static void gfx_ctx_xegl_swap_interval(void *data, unsigned interval)
    }
 }
 
-static void gfx_ctx_xegl_get_video_size(void *data,
-   unsigned *width, unsigned *height)
-{
-   x11_get_video_size(width, height);
-}
-
 static void gfx_ctx_xegl_check_window(void *data, bool *quit,
    bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    unsigned new_width  = *width;
    unsigned new_height = *height;
 
-   gfx_ctx_xegl_get_video_size(data, &new_width, &new_height);
+   x11_get_video_size(data, &new_width, &new_height);
 
    if (new_width != *width || new_height != *height)
    {
@@ -726,7 +720,7 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    gfx_ctx_xegl_bind_api,
    gfx_ctx_xegl_swap_interval,
    gfx_ctx_xegl_set_video_mode,
-   gfx_ctx_xegl_get_video_size,
+   x11_get_video_size,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
