@@ -557,7 +557,6 @@ static void *xv_init(const video_info_t *video,
    x11_install_sighandlers();
 
    xv_set_nonblock_state(xv, !video->vsync);
-   g_x11_has_focus = true;
 
    driver->display_type  = RARCH_DISPLAY_X11;
    driver->video_display = (uintptr_t)g_x11_dpy;

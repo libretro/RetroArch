@@ -535,7 +535,6 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    XSetErrorHandler(old_handler);
 
    XFree(vi);
-   g_x11_has_focus = true;
 
    if (!x11_create_input_context(g_x11_dpy, g_x11_win, &glx->g_xim, &g_x11_xic))
       goto error;

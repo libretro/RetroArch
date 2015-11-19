@@ -304,6 +304,8 @@ unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
 
 bool x11_create_input_context(Display *dpy, Window win, XIM *xim, XIC *xic)
 {
+   g_x11_has_focus = true;
+
    *xim = XOpenIM(dpy, NULL, NULL, NULL);
 
    if (!*xim)
