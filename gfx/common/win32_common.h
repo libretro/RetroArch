@@ -62,7 +62,15 @@ bool win32_monitor_set_fullscreen(unsigned width,
       unsigned height, unsigned refresh, char *dev_name);
 
 #ifndef _XBOX
-extern "C" bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen, const char *class_name);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen, const char *class_name);
+
+#ifdef __cplusplus
+}
+#endif
 #endif
 
 bool win32_window_create(void *data, unsigned style,

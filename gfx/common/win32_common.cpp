@@ -172,7 +172,11 @@ static const char *win32_video_get_ident(void)
    return video_driver_get_ident();
 }
 
-static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
+#ifndef _MSC_VER
+extern "C" {
+#endif
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    settings_t *settings     = config_get_ptr();
@@ -246,6 +250,10 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
       return 0;
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
+
+#ifndef _MSC_VER
+}
+#endif
 
 bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,

@@ -111,6 +111,8 @@ typedef struct
    int parameters_start_y;
 } shader_dlg_t;
 
+extern LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+
 static shader_dlg_t g_shader_dlg = {0};
 
 static INLINE void shader_dlg_refresh_trackbar_label(int index)
