@@ -19,8 +19,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if !defined(_XBOX)
-
 #define IDI_ICON 1
 
 #ifndef _WIN32_WINNT
@@ -29,7 +27,6 @@
 
 #include <windows.h>
 #include <commdlg.h>
-#endif
 
 #include <file/file_path.h>
 #include "../ui_companion_driver.h"
