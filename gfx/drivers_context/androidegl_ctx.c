@@ -38,25 +38,6 @@ static void android_gfx_ctx_destroy(void *data)
    egl_destroy();
 }
 
-static void android_gfx_ctx_get_video_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   EGLint gl_width, gl_height;
-   
-   *width  = 0;
-   *height = 0;
-
-   if (!g_egl_dpy)
-      return;
-
-   eglQuerySurface(g_egl_dpy,
-         g_egl_surf, EGL_WIDTH, &gl_width);
-   eglQuerySurface(g_egl_dpy,
-         g_egl_surf, EGL_HEIGHT, &gl_height);
-   *width  = gl_width;
-   *height = gl_height;
-}
-
 static bool android_gfx_ctx_init(void *data)
 {
    int var;
@@ -157,7 +138,7 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
 
    *quit = false;
 
-   android_gfx_ctx_get_video_size(data, &new_width, &new_height);
+   egl_get_video_size(data, &new_width, &new_height);
 
    if (new_width != *width || new_height != *height)
    {
@@ -293,7 +274,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_bind_api,
    egl_set_swap_interval,
    android_gfx_ctx_set_video_mode,
-   android_gfx_ctx_get_video_size,
+   egl_get_video_size,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

@@ -43,4 +43,6 @@ void egl_swap_buffers(void *data);
 
 void egl_set_swap_interval(void *data, unsigned interval);
 
+void egl_get_video_size(void *data, unsigned *width, unsigned *height);
+
 #endif

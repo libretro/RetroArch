@@ -50,24 +50,6 @@ static void gfx_ctx_qnx_destroy(void *data)
    g_resize      = false;
 }
 
-static void gfx_ctx_qnx_get_video_size(void *data, unsigned *width, unsigned *height)
-{
-   EGLint gl_width, gl_height;
-
-   (void)data;
-
-   *width  = 0;
-   *height = 0;
-
-   if (!g_egl_dpy)
-      return;
-
-   eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &gl_width);
-   eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &gl_height);
-   *width  = gl_width;
-   *height = gl_height;
-}
-
 static bool gfx_ctx_qnx_init(void *data)
 {
    EGLint num_config;
@@ -287,7 +269,7 @@ static void gfx_ctx_qnx_check_window(void *data, bool *quit,
 
    *quit = false;
 
-   gfx_ctx_qnx_get_video_size(data, &new_width, &new_height);
+   egl_get_video_size(data, &new_width, &new_height);
    if (new_width != *width || new_height != *height)
    {
       *width  = new_width;
@@ -378,7 +360,7 @@ const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    gfx_ctx_qnx_bind_api,
    egl_set_swap_interval,
    gfx_ctx_qnx_set_video_mode,
-   gfx_ctx_qnx_get_video_size,
+   egl_get_video_size,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

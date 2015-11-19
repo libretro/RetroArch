@@ -43,25 +43,6 @@ static void gfx_ctx_vivante_destroy(void *data)
    g_resize       = false;
 }
 
-static void gfx_ctx_vivante_get_video_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   (void)data;
-
-   *width  = 0;
-   *height = 0;
-
-   if (g_egl_dpy != EGL_NO_DISPLAY && g_egl_surf != EGL_NO_SURFACE)
-   {
-      EGLint gl_width, gl_height;
-
-      eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &gl_width);
-      eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &gl_height);
-      *width  = gl_width;
-      *height = gl_height;
-   }
-}
-
 static bool gfx_ctx_vivante_init(void *data)
 {
    EGLint num_config;
@@ -125,9 +106,7 @@ static void gfx_ctx_vivante_check_window(void *data, bool *quit,
 {
    unsigned new_width, new_height;
 
-   (void)frame_count;
-
-   gfx_ctx_vivante_get_video_size(data, &new_width, &new_height);
+   egl_get_video_size(data, &new_width, &new_height);
 
    if (new_width != *width || new_height != *height)
    {
@@ -250,7 +229,7 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    gfx_ctx_vivante_bind_api,
    egl_set_swap_interval,
    gfx_ctx_vivante_set_video_mode,
-   gfx_ctx_vivante_get_video_size,
+   egl_get_video_size,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

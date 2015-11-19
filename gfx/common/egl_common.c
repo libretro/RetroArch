@@ -145,3 +145,19 @@ void egl_set_swap_interval(void *data, unsigned interval)
       egl_report_error();
    }
 }
+
+void egl_get_video_size(void *data, unsigned *width, unsigned *height)
+{
+   *width  = 0;
+   *height = 0;
+
+   if (g_egl_dpy != EGL_NO_DISPLAY && g_egl_surf != EGL_NO_SURFACE)
+   {
+      EGLint gl_width, gl_height;
+
+      eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &gl_width);
+      eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &gl_height);
+      *width  = gl_width;
+      *height = gl_height;
+   }
+}
