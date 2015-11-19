@@ -471,9 +471,7 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    glXMakeContextCurrent(g_x11_dpy, glx->g_glx_win, glx->g_glx_win, glx->g_ctx);
    XSync(g_x11_dpy, False);
 
-   g_x11_quit_atom = XInternAtom(g_x11_dpy, "WM_DELETE_WINDOW", False);
-   if (g_x11_quit_atom)
-      XSetWMProtocols(g_x11_dpy, g_x11_win, &g_x11_quit_atom, 1);
+   x11_install_quit_atom();
 
    glXGetConfig(g_x11_dpy, vi, GLX_DOUBLEBUFFER, &val);
    glx->g_is_double = val;

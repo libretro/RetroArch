@@ -31,7 +31,7 @@ static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
 Colormap g_x11_cmap;
-Atom g_x11_quit_atom;
+static Atom g_x11_quit_atom;
 static volatile sig_atomic_t g_x11_quit;
 bool g_x11_has_focus;
 Window   g_x11_win;
@@ -572,4 +572,11 @@ void x11_colormap_destroy(void)
 
    XFreeColormap(g_x11_dpy, g_x11_cmap);
    g_x11_cmap = None;
+}
+
+void x11_install_quit_atom(void)
+{
+   g_x11_quit_atom = XInternAtom(g_x11_dpy, "WM_DELETE_WINDOW", False);
+   if (g_x11_quit_atom)
+      XSetWMProtocols(g_x11_dpy, g_x11_win, &g_x11_quit_atom, 1);
 }

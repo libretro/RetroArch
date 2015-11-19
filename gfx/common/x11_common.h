@@ -35,7 +35,6 @@
 
 #include "../video_context_driver.h"
 
-extern Atom g_x11_quit_atom;
 extern bool g_x11_has_focus;
 extern Window   g_x11_win;
 extern Display *g_x11_dpy;
@@ -88,6 +87,8 @@ void x11_input_ctx_destroy(void);
 void x11_window_destroy(bool fullscreen);
 
 void x11_colormap_destroy(void);
+
+void x11_install_quit_atom(void);
 
 #endif
 

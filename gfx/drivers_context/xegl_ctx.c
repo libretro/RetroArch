@@ -450,9 +450,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
    XIfEvent(g_x11_dpy, &event, egl_wait_notify, NULL);
 
-   g_x11_quit_atom = XInternAtom(g_x11_dpy, "WM_DELETE_WINDOW", False);
-   if (g_x11_quit_atom)
-      XSetWMProtocols(g_x11_dpy, g_x11_win, &g_x11_quit_atom, 1);
+   x11_install_quit_atom();
 
    gfx_ctx_xegl_swap_interval(data, g_interval);
 

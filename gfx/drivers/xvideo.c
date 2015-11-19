@@ -548,10 +548,7 @@ static void *xv_init(const video_info_t *video,
    XSync(g_x11_dpy, False);
    memset(xv->image->data, 128, xv->image->data_size);
 
-   g_x11_quit_atom = XInternAtom(g_x11_dpy, "WM_DELETE_WINDOW", False);
-   if (g_x11_quit_atom)
-      XSetWMProtocols(g_x11_dpy, g_x11_win, &g_x11_quit_atom, 1);
-
+   x11_install_quit_atom();
    x11_install_sighandlers();
 
    xv_set_nonblock_state(xv, !video->vsync);
