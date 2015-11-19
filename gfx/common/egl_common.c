@@ -108,6 +108,7 @@ void egl_destroy(void *data)
    g_egl_surf    = EGL_NO_SURFACE;
    g_egl_dpy     = EGL_NO_DISPLAY;
    g_egl_config  = 0;
+   g_egl_quit    = 0;
 }
 
 void egl_bind_hw_render(void *data, bool enable)

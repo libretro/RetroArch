@@ -48,7 +48,6 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
 
    egl_destroy(data);
 
-   g_egl_quit         = 0;
    g_resize       = false;
 
    /* Clear framebuffer and set cursor on again */
