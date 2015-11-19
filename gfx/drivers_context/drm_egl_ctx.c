@@ -60,7 +60,6 @@ typedef struct gfx_ctx_drm_egl_data
    uint32_t g_connector_id;
    unsigned g_fb_width;
    unsigned g_fb_height;
-   unsigned g_interval;
 
    drmModeModeInfo *g_drm_mode;
    drmModeCrtcPtr g_orig_crtc;
@@ -140,13 +139,7 @@ static void sighandler(int sig)
 
 static void gfx_ctx_drm_egl_swap_interval(void *data, unsigned interval)
 {
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver->video_context_data;
-
-   (void)data;
-
-   if (drm)
-      drm->g_interval = interval;
+   g_interval = interval;
    if (interval > 1)
       RARCH_WARN("[KMS/EGL]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
 }
@@ -272,7 +265,7 @@ static void gfx_ctx_drm_egl_swap_buffers(void *data)
     * place before another flip can be queued up. */
    if (waiting_for_flip)
    {
-      wait_flip(drm->g_interval);
+      wait_flip(g_interval);
 
       /* We are still waiting for a flip 
        * (nonblocking mode, just drop the frame).
