@@ -260,12 +260,7 @@ static bool gfx_ctx_glx_init(void *data)
 
    XInitThreads();
 
-   g_x11_quit = 0;
-
-   if (!g_x11_dpy)
-      g_x11_dpy = XOpenDisplay(NULL);
-
-   if (!g_x11_dpy)
+   if (!x11_connect())
       goto error;
 
    glXQueryVersion(g_x11_dpy, &major, &minor);

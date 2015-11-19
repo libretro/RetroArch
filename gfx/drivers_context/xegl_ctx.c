@@ -215,16 +215,8 @@ static bool gfx_ctx_xegl_init(void *data)
          attrib_ptr = NULL;
    }
 
-   g_x11_quit = 0;
-
-   /* Keep one g_x11_dpy alive the entire process lifetime.
-    * This is necessary for nVidia's EGL implementation for now. */
-   if (!g_x11_dpy)
-   {
-      g_x11_dpy = XOpenDisplay(NULL);
-      if (!g_x11_dpy)
-         goto error;
-   }
+   if (!x11_connect())
+      goto error;
 
    g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)g_x11_dpy);
    if (g_egl_dpy == EGL_NO_DISPLAY)

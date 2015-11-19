@@ -503,3 +503,19 @@ void x11_install_sighandlers(void)
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 }
+
+bool x11_connect(void)
+{
+   g_x11_quit = 0;
+
+   /* Keep one g_x11_dpy alive the entire process lifetime.
+    * This is necessary for nVidia's EGL implementation for now. */
+   if (!g_x11_dpy)
+   {
+      g_x11_dpy = XOpenDisplay(NULL);
+      if (!g_x11_dpy)
+         return false;
+   }
+
+   return true;
+}

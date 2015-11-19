@@ -79,5 +79,7 @@ bool x11_alive(void *data);
 
 void x11_install_sighandlers(void);
 
+bool x11_connect(void);
+
 #endif
 
