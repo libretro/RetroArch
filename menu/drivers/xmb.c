@@ -149,6 +149,7 @@ typedef struct xmb_handle
    uintptr_t boxart;
    float boxart_size;
    char background_file_path[PATH_MAX_LENGTH];
+   char boxart_file_path[PATH_MAX_LENGTH];
 
    struct
    {
@@ -524,19 +525,22 @@ end:
    string_list_free(list);
 }
 
-static void xmb_update_boxart(xmb_handle_t *xmb, unsigned i)
+static void xmb_update_boxart_path(xmb_handle_t *xmb, unsigned i)
 {
    menu_entry_t entry;
-   char path[PATH_MAX_LENGTH] = {0};
    settings_t *settings       = config_get_ptr();
 
    menu_entry_get(&entry, 0, i, NULL, true);
 
-   fill_pathname_join(path, settings->boxarts_directory, entry.path, sizeof(path));
-   strlcat(path, ".png", sizeof(path));
+   fill_pathname_join(xmb->boxart_file_path, settings->boxarts_directory,
+         entry.path, sizeof(xmb->boxart_file_path));
+   strlcat(xmb->boxart_file_path, ".png", sizeof(xmb->boxart_file_path));
+}
 
-   if (path_file_exists(path))
-      rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, path,
+static void xmb_update_boxart_image(xmb_handle_t *xmb)
+{
+   if (path_file_exists(xmb->boxart_file_path))
+      rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, xmb->boxart_file_path,
             "cb_menu_boxart", 0, 1, true);
    else if (xmb->depth == 1)
       xmb->boxart = 0;
@@ -545,7 +549,7 @@ static void xmb_update_boxart(xmb_handle_t *xmb, unsigned i)
 static void xmb_selection_pointer_changed(bool allow_animations)
 {
    size_t selection;
-   unsigned i, end, tag, height, skip;
+   unsigned i, end, tag, height, skip, depth;
    int threshold = 0;
    xmb_handle_t        *xmb   = NULL;
    menu_handle_t        *menu = menu_driver_get_ptr();
@@ -591,8 +595,12 @@ static void xmb_selection_pointer_changed(bool allow_animations)
          ia = XMB_ITEM_ACTIVE_ALPHA;
          iz = XMB_ITEM_ACTIVE_ZOOM;
 
-         if (settings->menu.boxart_enable)
-            xmb_update_boxart(xmb, i);
+         depth = xmb_list_get_size(menu, MENU_LIST_PLAIN);
+         if (settings->menu.boxart_enable && depth == 1)
+         {
+            xmb_update_boxart_path(xmb, i);
+            xmb_update_boxart_image(xmb);
+         }
       }
 
       if (real_iy < -threshold)
@@ -945,7 +953,10 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    xmb->categories.active.idx_old = xmb->categories.selection_ptr;
 
    if (settings->menu.boxart_enable)
-      xmb_update_boxart(xmb, 0);
+   {
+      xmb_update_boxart_path(xmb, 0);
+      xmb_update_boxart_image(xmb);
+   }
 }
 
 static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
@@ -1202,6 +1213,7 @@ static void xmb_populate_entries(const char *path,
 {
    xmb_handle_t *xmb   = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (!menu)
       return;
@@ -1215,6 +1227,8 @@ static void xmb_populate_entries(const char *path,
    {
       xmb_selection_pointer_changed(false);
       menu->prevent_populate = false;
+      if (settings->menu.boxart_enable)
+         xmb_update_boxart_image(xmb);
       return;
    }
 
