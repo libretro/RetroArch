@@ -225,7 +225,7 @@ error:
  *
  * Returns: true (1) if element could be found, otherwise false (0).
  */
-bool string_list_find_elem(const struct string_list *list, const char *elem)
+int string_list_find_elem(const struct string_list *list, const char *elem)
 {
    size_t i;
 
@@ -235,7 +235,7 @@ bool string_list_find_elem(const struct string_list *list, const char *elem)
    for (i = 0; i < list->size; i++)
    {
       if (strcasecmp(list->elems[i].data, elem) == 0)
-         return true;
+         return i+1;
    }
 
    return false;
