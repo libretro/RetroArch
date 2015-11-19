@@ -136,47 +136,56 @@ static void shader_dlg_params_refresh(void)
 
    for (i = 0; i < GFX_MAX_PARAMETERS; i++)
    {
-      if (g_shader_dlg.controls[i].type == SHADER_PARAM_CTRL_NONE)
+      shader_param_ctrl_t*control = &g_shader_dlg.controls[i];
+
+      if (control->type == SHADER_PARAM_CTRL_NONE)
          break;
 
-      if (g_shader_dlg.controls[i].type == SHADER_PARAM_CTRL_CHECKBOX)
+      switch (control->type)
       {
-         bool checked = (shader->parameters[i].current == shader->parameters[i].maximum);
-         SendMessage(g_shader_dlg.controls[i].checkbox.hwnd, BM_SETCHECK, checked, 0);
+         case SHADER_PARAM_CTRL_CHECKBOX:
+            {
+               bool checked = (shader->parameters[i].current == shader->parameters[i].maximum);
+               SendMessage(control->checkbox.hwnd, BM_SETCHECK, checked, 0);
+            }
+            break;
+         case SHADER_PARAM_CTRL_TRACKBAR:
+            shader_dlg_refresh_trackbar_label(i);
 
-      }
-      else if (g_shader_dlg.controls[i].type == SHADER_PARAM_CTRL_TRACKBAR)
-      {
-         shader_dlg_refresh_trackbar_label(i);
-
-         SendMessage(g_shader_dlg.controls[i].trackbar.hwnd, TBM_SETRANGEMIN, (WPARAM)TRUE, (LPARAM)0);
-         SendMessage(g_shader_dlg.controls[i].trackbar.hwnd, TBM_SETRANGEMAX, (WPARAM)TRUE,
-               (LPARAM)((shader->parameters[i].maximum - shader->parameters[i].minimum) / shader->parameters[i].step));
-         SendMessage(g_shader_dlg.controls[i].trackbar.hwnd, TBM_SETPOS, (WPARAM)TRUE,
-               (LPARAM)((shader->parameters[i].current - shader->parameters[i].minimum) / shader->parameters[i].step));
-
+            SendMessage(control->trackbar.hwnd, TBM_SETRANGEMIN, (WPARAM)TRUE, (LPARAM)0);
+            SendMessage(control->trackbar.hwnd, TBM_SETRANGEMAX, (WPARAM)TRUE,
+                  (LPARAM)((shader->parameters[i].maximum - shader->parameters[i].minimum) / shader->parameters[i].step));
+            SendMessage(control->trackbar.hwnd, TBM_SETPOS, (WPARAM)TRUE,
+                  (LPARAM)((shader->parameters[i].current - shader->parameters[i].minimum) / shader->parameters[i].step));
+            break;
       }
    }
 }
 
 static void shader_dlg_params_clear(void)
 {
-   int i;
+   unsigned i;
 
    for (i = 0; i < GFX_MAX_PARAMETERS; i++)
    {
-      if (g_shader_dlg.controls[i].type == SHADER_PARAM_CTRL_NONE)
+      shader_param_ctrl_t*control = &g_shader_dlg.controls[i];
+
+      if (control->type == SHADER_PARAM_CTRL_NONE)
          break;
-      else if (g_shader_dlg.controls[i].type == SHADER_PARAM_CTRL_CHECKBOX)
-         DestroyWindow(g_shader_dlg.controls[i].checkbox.hwnd);
-      else if (g_shader_dlg.controls[i].type == SHADER_PARAM_CTRL_TRACKBAR)
+
+      switch (control->type)
       {
-         DestroyWindow(g_shader_dlg.controls[i].trackbar.label_title);
-         DestroyWindow(g_shader_dlg.controls[i].trackbar.label_val);
-         DestroyWindow(g_shader_dlg.controls[i].trackbar.hwnd);
+         case SHADER_PARAM_CTRL_CHECKBOX:
+            DestroyWindow(control->checkbox.hwnd);
+            break;
+         case SHADER_PARAM_CTRL_TRACKBAR:
+            DestroyWindow(control->trackbar.label_title);
+            DestroyWindow(control->trackbar.label_val);
+            DestroyWindow(control->trackbar.hwnd);
+            break;
       }
 
-      g_shader_dlg.controls[i].type = SHADER_PARAM_CTRL_NONE;
+      control->type = SHADER_PARAM_CTRL_NONE;
    }
 }
 
@@ -191,31 +200,31 @@ void shader_dlg_params_reload(void)
 
    if (!shader)
       return;
-
    if (shader->num_parameters > GFX_MAX_PARAMETERS)
       return;
 
    hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-
    pos_y = g_shader_dlg.parameters_start_y;
    pos_x = SHADER_DLG_CTRL_X;
 
    for (i = 0; i < (int)shader->num_parameters; i++)
    {
+      shader_param_ctrl_t*control = &g_shader_dlg.controls[i];
+
       if ((shader->parameters[i].minimum == 0.0)
             && (shader->parameters[i].maximum == (shader->parameters[i].minimum + shader->parameters[i].step)))
       {
          if ((pos_y + SHADER_DLG_CHECKBOX_HEIGHT + SHADER_DLG_CTRL_MARGIN + 20) > SHADER_DLG_MAX_HEIGHT)
          {
-            pos_y = g_shader_dlg.parameters_start_y;
+            pos_y  = g_shader_dlg.parameters_start_y;
             pos_x += SHADER_DLG_WIDTH;
          }
 
-         g_shader_dlg.controls[i].type = SHADER_PARAM_CTRL_CHECKBOX;
-         g_shader_dlg.controls[i].checkbox.hwnd = CreateWindowEx(0, "BUTTON", shader->parameters[i].desc,
+         control->type          = SHADER_PARAM_CTRL_CHECKBOX;
+         control->checkbox.hwnd = CreateWindowEx(0, "BUTTON", shader->parameters[i].desc,
                WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, pos_x, pos_y, SHADER_DLG_CTRL_WIDTH, SHADER_DLG_CHECKBOX_HEIGHT,
                g_shader_dlg.hwnd, (HMENU)(size_t)i, NULL, NULL);
-         SendMessage(g_shader_dlg.controls[i].checkbox.hwnd, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+         SendMessage(control->checkbox.hwnd, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
          pos_y += SHADER_DLG_CHECKBOX_HEIGHT + SHADER_DLG_CTRL_MARGIN;
       }
       else
@@ -227,23 +236,23 @@ void shader_dlg_params_reload(void)
             pos_x += SHADER_DLG_WIDTH;
          }
 
-         g_shader_dlg.controls[i].type = SHADER_PARAM_CTRL_TRACKBAR;
-         g_shader_dlg.controls[i].trackbar.label_title = CreateWindowEx(0, "STATIC", shader->parameters[i].desc,
+         control->type                 = SHADER_PARAM_CTRL_TRACKBAR;
+         control->trackbar.label_title = CreateWindowEx(0, "STATIC", shader->parameters[i].desc,
                WS_CHILD | WS_VISIBLE | SS_LEFT, pos_x, pos_y, SHADER_DLG_CTRL_WIDTH, SHADER_DLG_LABEL_HEIGHT, g_shader_dlg.hwnd,
                (HMENU)(size_t)i, NULL, NULL);
-         SendMessage(g_shader_dlg.controls[i].trackbar.label_title, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+         SendMessage(control->trackbar.label_title, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 
          pos_y += SHADER_DLG_LABEL_HEIGHT;
-         g_shader_dlg.controls[i].trackbar.hwnd = CreateWindowEx(0, TRACKBAR_CLASS, "",
+         control->trackbar.hwnd = CreateWindowEx(0, TRACKBAR_CLASS, "",
                WS_CHILD | WS_VISIBLE | TBS_HORZ | TBS_NOTICKS, pos_x + SHADER_DLG_TRACKBAR_LABEL_WIDTH, pos_y,
                SHADER_DLG_TRACKBAR_WIDTH, SHADER_DLG_TRACKBAR_HEIGHT, g_shader_dlg.hwnd, (HMENU)(size_t)i, NULL, NULL);
 
-         g_shader_dlg.controls[i].trackbar.label_val = CreateWindowEx(0, "STATIC", "", WS_CHILD | WS_VISIBLE | SS_LEFT, pos_x,
+         control->trackbar.label_val = CreateWindowEx(0, "STATIC", "", WS_CHILD | WS_VISIBLE | SS_LEFT, pos_x,
                pos_y, SHADER_DLG_TRACKBAR_LABEL_WIDTH, SHADER_DLG_LABEL_HEIGHT, g_shader_dlg.hwnd, (HMENU)(size_t)i, NULL, NULL);
-         SendMessage(g_shader_dlg.controls[i].trackbar.label_val, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+         SendMessage(control->trackbar.label_val, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 
-         SendMessage(g_shader_dlg.controls[i].trackbar.hwnd, TBM_SETBUDDY, (WPARAM)TRUE,
-               (LPARAM)g_shader_dlg.controls[i].trackbar.label_val);
+         SendMessage(control->trackbar.hwnd, TBM_SETBUDDY, (WPARAM)TRUE,
+               (LPARAM)control->trackbar.label_val);
 
          pos_y += SHADER_DLG_TRACKBAR_HEIGHT + SHADER_DLG_CTRL_MARGIN;
 

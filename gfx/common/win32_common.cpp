@@ -109,7 +109,7 @@ void win32_monitor_from_window(HWND data, bool destroy)
 {
 #ifndef _XBOX
    win32_monitor_last = MonitorFromWindow(data, MONITOR_DEFAULTTONEAREST);
-   if (destroy)
+   if (destroy && data)
       DestroyWindow(data);
 #endif
 }
