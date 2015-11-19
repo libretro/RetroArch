@@ -356,6 +356,38 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
+bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen, const char *class_name)
+{
+   wndclass->cbSize        = sizeof(WNDCLASSEX);
+   wndclass->style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+   wndclass->hInstance     = GetModuleHandle(NULL);
+   wndclass->hCursor       = LoadCursor(NULL, IDC_ARROW);
+   wndclass->lpszClassName = (class_name == NULL) ? "RetroArch" : class_name;
+   wndclass->hIcon         = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
+   wndclass->hIconSm       = (HICON)LoadImage(GetModuleHandle(NULL),
+         MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
+   if (!fullscreen)
+      wndclass->hbrBackground = (HBRUSH)COLOR_WINDOW;
+
+   if (class_name == NULL)
+      wndclass->lpfnWndProc   = WndProc;
+   else
+      wndclass->style         |= CS_CLASSDC;
+
+   if (!RegisterClassEx(wndclass))
+      return false;
+
+   /* This is non-NULL when we want a window for shader dialogs, 
+    * therefore early return here */
+   /* TODO/FIXME - this is ugly. Find a better way */
+   if (class_name != NULL) 
+      return true;
+
+   if (!win32_shader_dlg_init())
+      RARCH_ERR("[WGL]: wgl_shader_dlg_init() failed.\n");
+   return true;
+}
+
 bool win32_shader_dlg_init(void)
 {
    static bool inited = false;
