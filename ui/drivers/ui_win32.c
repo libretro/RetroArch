@@ -412,6 +412,33 @@ bool win32_shader_dlg_init(void)
    return true;
 }
 
+bool win32_browser(
+      HWND owner,
+      char *filename,
+      const char *extensions,
+      const char *title,
+      const char *initial_dir)
+{
+   OPENFILENAME ofn;
+
+   memset((void*)&ofn, 0, sizeof(OPENFILENAME));
+
+   ofn.lStructSize     = sizeof(OPENFILENAME);
+   ofn.hwndOwner       = owner;
+   ofn.lpstrFilter     = extensions;
+   ofn.lpstrFile       = filename;
+   ofn.lpstrTitle      = title;
+   ofn.lpstrInitialDir = TEXT(initial_dir);
+   ofn.lpstrDefExt     = "";
+   ofn.nMaxFile        = PATH_MAX;
+   ofn.Flags           = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+
+   if (!GetOpenFileName(&ofn))
+      return false;
+
+   return true;
+}
+
 LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 {
    WPARAM mode         = wparam & 0xffff;
@@ -531,33 +558,6 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 		PostMessage(owner, WM_CLOSE, 0, 0);
 	
 	return 0L;
-}
-
-bool win32_browser(
-      HWND owner,
-      char *filename,
-      const char *extensions,
-      const char *title,
-      const char *initial_dir)
-{
-   OPENFILENAME ofn;
-
-   memset((void*)&ofn, 0, sizeof(OPENFILENAME));
-
-   ofn.lStructSize     = sizeof(OPENFILENAME);
-   ofn.hwndOwner       = owner;
-   ofn.lpstrFilter     = extensions;
-   ofn.lpstrFile       = filename;
-   ofn.lpstrTitle      = title;
-   ofn.lpstrInitialDir = TEXT(initial_dir);
-   ofn.lpstrDefExt     = "";
-   ofn.nMaxFile        = PATH_MAX;
-   ofn.Flags           = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
-
-   if (!GetOpenFileName(&ofn))
-      return false;
-
-   return true;
 }
 
 static void ui_companion_win32_deinit(void *data)
