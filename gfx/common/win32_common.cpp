@@ -28,7 +28,6 @@
 #include <commdlg.h>
 #include "../../retroarch.h"
 #include "../video_thread_wrapper.h"
-#include "../drivers_wm/win32_shader_dlg.h"
 
 #ifndef _MSC_VER
 extern "C" {

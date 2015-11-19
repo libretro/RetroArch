@@ -48,6 +48,10 @@ void win32_monitor_get_info(void);
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
 
 void create_gl_context(HWND hwnd, bool *quit);
+
+bool win32_shader_dlg_init(void);
+void shader_dlg_show(HWND parent_hwnd);
+void shader_dlg_params_reload(void);
 #endif
 
 void win32_monitor_from_window(HWND data, bool destroy);

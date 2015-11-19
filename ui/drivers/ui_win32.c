@@ -46,7 +46,6 @@
 #include "../../runloop.h"
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/video_monitor.h"
-#include "../../gfx/drivers_wm/win32_shader_dlg.h"
 
 #include "../../gfx/common/gl_common.h"
 #include "../../gfx/common/win32_common.h"
