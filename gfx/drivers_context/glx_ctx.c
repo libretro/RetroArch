@@ -20,7 +20,6 @@
 #include <GL/glx.h>
 
 #include "../../driver.h"
-#include "../../runloop.h"
 
 #include "../common/gl_common.h"
 #include "../common/x11_common.h"
