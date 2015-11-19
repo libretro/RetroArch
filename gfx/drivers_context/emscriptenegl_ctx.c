@@ -30,11 +30,6 @@
 #include "../../config.h"
 #endif
 
-static EGLContext g_egl_ctx;
-static EGLSurface g_egl_surf;
-static EGLDisplay g_egl_dpy;
-static EGLConfig g_egl_config;
-
 static bool g_inited;
 
 static unsigned g_fb_width;

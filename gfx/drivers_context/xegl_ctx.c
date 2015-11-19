@@ -31,11 +31,6 @@
 static unsigned g_screen;
 
 static bool g_use_hw_ctx;
-static EGLContext g_egl_hw_ctx;
-static EGLContext g_egl_ctx;
-static EGLSurface g_egl_surf;
-static EGLDisplay g_egl_dpy;
-static EGLConfig g_egl_config;
 
 static XF86VidModeModeInfo g_desktop_mode;
 static bool g_should_reset_mode;

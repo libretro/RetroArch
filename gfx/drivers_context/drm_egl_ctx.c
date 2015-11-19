@@ -71,11 +71,6 @@ typedef struct gfx_ctx_drm_egl_data
 
    struct gbm_bo *g_bo;
    struct gbm_bo *g_next_bo;
-   EGLContext g_egl_hw_ctx;
-   EGLContext g_egl_ctx;
-   EGLSurface g_egl_surf;
-   EGLDisplay g_egl_dpy;
-   EGLConfig g_egl_config;
    struct gbm_device *g_gbm_dev;
    struct gbm_surface *g_gbm_surface;
 } gfx_ctx_drm_egl_data_t;
@@ -272,7 +267,7 @@ static void gfx_ctx_drm_egl_swap_buffers(void *data)
 
    (void)data;
 
-   eglSwapBuffers(drm->g_egl_dpy, drm->g_egl_surf);
+   eglSwapBuffers(g_egl_dpy, g_egl_surf);
 
    /* I guess we have to wait for flip to have taken 
     * place before another flip can be queued up. */
@@ -376,32 +371,32 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
    if (waiting_for_flip)
       wait_flip(true);
 
-   if (drm->g_egl_dpy)
+   if (g_egl_dpy)
    {
-      if (drm->g_egl_ctx)
+      if (g_egl_ctx)
       {
-         eglMakeCurrent(drm->g_egl_dpy,
+         eglMakeCurrent(g_egl_dpy,
                EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-         eglDestroyContext(drm->g_egl_dpy, drm->g_egl_ctx);
+         eglDestroyContext(g_egl_dpy, g_egl_ctx);
       }
 
-      if (drm->g_egl_hw_ctx)
-         eglDestroyContext(drm->g_egl_dpy, drm->g_egl_hw_ctx);
+      if (g_egl_hw_ctx)
+         eglDestroyContext(g_egl_dpy, g_egl_hw_ctx);
 
-      if (drm->g_egl_surf)
-         eglDestroySurface(drm->g_egl_dpy, drm->g_egl_surf);
-      eglTerminate(drm->g_egl_dpy);
+      if (g_egl_surf)
+         eglDestroySurface(g_egl_dpy, g_egl_surf);
+      eglTerminate(g_egl_dpy);
    }
 
    /* Be as careful as possible in deinit.
     * If we screw up, the KMS tty will not restore.
     */
 
-   drm->g_egl_ctx     = NULL;
-   drm->g_egl_hw_ctx  = NULL;
-   drm->g_egl_surf    = NULL;
-   drm->g_egl_dpy     = NULL;
-   drm->g_egl_config  = 0;
+   g_egl_ctx     = NULL;
+   g_egl_hw_ctx  = NULL;
+   g_egl_surf    = NULL;
+   g_egl_dpy     = NULL;
+   g_egl_config  = 0;
 
    /* Restore original CRTC. */
    if (drm->g_orig_crtc)
@@ -792,48 +787,48 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       goto error;
    }
 
-   drm->g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)drm->g_gbm_dev);
-   if (!drm->g_egl_dpy)
+   g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)drm->g_gbm_dev);
+   if (!g_egl_dpy)
    {
       RARCH_ERR("[KMS/EGL]: Couldn't get EGL display.\n");
       goto error;
    }
 
-   if (!eglInitialize(drm->g_egl_dpy, &major, &minor))
+   if (!eglInitialize(g_egl_dpy, &major, &minor))
       goto error;
 
-   if (!eglChooseConfig(drm->g_egl_dpy, attrib_ptr, &drm->g_egl_config, 1, &n) || n != 1)
+   if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_egl_config, 1, &n) || n != 1)
       goto error;
 
    attr = egl_fill_attribs(egl_attribs);
 
-   drm->g_egl_ctx = eglCreateContext(drm->g_egl_dpy, drm->g_egl_config, EGL_NO_CONTEXT,
+   g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, EGL_NO_CONTEXT,
          attr != egl_attribs ? egl_attribs : NULL);
 
-   if (drm->g_egl_ctx == EGL_NO_CONTEXT)
+   if (g_egl_ctx == EGL_NO_CONTEXT)
       goto error;
 
    if (drm->g_use_hw_ctx)
    {
-      drm->g_egl_hw_ctx = eglCreateContext(drm->g_egl_dpy, drm->g_egl_config, drm->g_egl_ctx,
+      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_egl_config, g_egl_ctx,
             attr != egl_attribs ? egl_attribs : NULL);
-      RARCH_LOG("[KMS/EGL]: Created shared context: %p.\n", (void*)drm->g_egl_hw_ctx);
+      RARCH_LOG("[KMS/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
 
-      if (drm->g_egl_hw_ctx == EGL_NO_CONTEXT)
+      if (g_egl_hw_ctx == EGL_NO_CONTEXT)
          goto error;
    }
 
-   drm->g_egl_surf = eglCreateWindowSurface(drm->g_egl_dpy,
-         drm->g_egl_config, (EGLNativeWindowType)drm->g_gbm_surface, NULL);
-   if (!drm->g_egl_surf)
+   g_egl_surf = eglCreateWindowSurface(g_egl_dpy,
+         g_egl_config, (EGLNativeWindowType)drm->g_gbm_surface, NULL);
+   if (!g_egl_surf)
       goto error;
 
-   if (!eglMakeCurrent(drm->g_egl_dpy,
-            drm->g_egl_surf, drm->g_egl_surf, drm->g_egl_ctx))
+   if (!eglMakeCurrent(g_egl_dpy,
+            g_egl_surf, g_egl_surf, g_egl_ctx))
       goto error;
 
    glClear(GL_COLOR_BUFFER_BIT);
-   eglSwapBuffers(drm->g_egl_dpy, drm->g_egl_surf);
+   eglSwapBuffers(g_egl_dpy, g_egl_surf);
 
    drm->g_bo = gbm_surface_lock_front_buffer(drm->g_gbm_surface);
    fb = drm_fb_get_from_bo(drm, drm->g_bo);
@@ -951,14 +946,14 @@ static void gfx_ctx_drm_egl_bind_hw_render(void *data, bool enable)
 
    drm->g_use_hw_ctx = enable;
 
-   if (!drm->g_egl_dpy)
+   if (!g_egl_dpy)
       return;
-   if (!drm->g_egl_surf)
+   if (!g_egl_surf)
       return;
 
-   eglMakeCurrent(drm->g_egl_dpy, drm->g_egl_surf,
-         drm->g_egl_surf,
-         enable ? drm->g_egl_hw_ctx : drm->g_egl_ctx);
+   eglMakeCurrent(g_egl_dpy, g_egl_surf,
+         g_egl_surf,
+         enable ? g_egl_hw_ctx : g_egl_ctx);
 }
 
 const gfx_ctx_driver_t gfx_ctx_drm_egl = {

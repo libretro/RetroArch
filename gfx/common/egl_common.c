@@ -18,6 +18,12 @@
 
 #include "egl_common.h"
 
+EGLContext g_egl_ctx;
+EGLContext g_egl_hw_ctx;
+EGLSurface g_egl_surf;
+EGLDisplay g_egl_dpy;
+EGLConfig g_egl_config;
+
 void egl_report_error(void)
 {
    EGLint    error = eglGetError();

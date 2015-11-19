@@ -30,11 +30,6 @@
 
 typedef struct gfx_ctx_wayland_data
 {
-   EGLContext g_egl_ctx;
-   EGLContext g_egl_hw_ctx;
-   EGLSurface g_egl_surf;
-   EGLDisplay g_egl_dpy;
-   EGLConfig g_egl_config;
    bool g_resize;
    bool g_use_hw_ctx;
    int g_fd;
@@ -150,28 +145,28 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
    if (!wl)
       return;
 
-   if (wl->g_egl_dpy)
+   if (g_egl_dpy)
    {
-      if (wl->g_egl_ctx)
+      if (g_egl_ctx)
       {
-         eglMakeCurrent(wl->g_egl_dpy,
+         eglMakeCurrent(g_egl_dpy,
                EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-         eglDestroyContext(wl->g_egl_dpy, wl->g_egl_ctx);
+         eglDestroyContext(g_egl_dpy, g_egl_ctx);
       }
 
-      if (wl->g_egl_hw_ctx)
-         eglDestroyContext(wl->g_egl_dpy, wl->g_egl_hw_ctx);
+      if (g_egl_hw_ctx)
+         eglDestroyContext(g_egl_dpy, g_egl_hw_ctx);
 
-      if (wl->g_egl_surf)
-         eglDestroySurface(wl->g_egl_dpy, wl->g_egl_surf);
-      eglTerminate(wl->g_egl_dpy);
+      if (g_egl_surf)
+         eglDestroySurface(g_egl_dpy, g_egl_surf);
+      eglTerminate(g_egl_dpy);
    }
 
-   wl->g_egl_ctx     = NULL;
-   wl->g_egl_hw_ctx  = NULL;
-   wl->g_egl_surf    = NULL;
-   wl->g_egl_dpy     = NULL;
-   wl->g_egl_config  = 0;
+   g_egl_ctx     = NULL;
+   g_egl_hw_ctx  = NULL;
+   g_egl_surf    = NULL;
+   g_egl_dpy     = NULL;
+   g_egl_config  = 0;
 
    if (wl->g_win)
       wl_egl_window_destroy(wl->g_win);
@@ -217,10 +212,10 @@ static void gfx_ctx_wl_swap_interval(void *data, unsigned interval)
 
    wl->g_interval = interval;
 
-   if (wl->g_egl_dpy && eglGetCurrentContext())
+   if (g_egl_dpy && eglGetCurrentContext())
    {
       RARCH_LOG("[Wayland/EGL]: eglSwapInterval(%u)\n", wl->g_interval);
-      if (!eglSwapInterval(wl->g_egl_dpy, wl->g_interval))
+      if (!eglSwapInterval(g_egl_dpy, wl->g_interval))
       {
          RARCH_ERR("[Wayland/EGL]: eglSwapInterval() failed.\n");
          egl_report_error();
@@ -289,7 +284,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
 
    (void)data;
 
-   eglSwapBuffers(wl->g_egl_dpy, wl->g_egl_surf);
+   eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
 static void gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
@@ -436,15 +431,15 @@ static bool gfx_ctx_wl_init(void *data)
 
    wl->g_fd = wl_display_get_fd(wl->g_dpy);
 
-   wl->g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)wl->g_dpy);
+   g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)wl->g_dpy);
 
-   if (!wl->g_egl_dpy)
+   if (!g_egl_dpy)
    {
       RARCH_ERR("Failed to create EGL window.\n");
       goto error;
    }
 
-   if (!eglInitialize(wl->g_egl_dpy, &egl_major, &egl_minor))
+   if (!eglInitialize(g_egl_dpy, &egl_major, &egl_minor))
    {
       RARCH_ERR("Failed to initialize EGL.\n");
       goto error;
@@ -452,13 +447,13 @@ static bool gfx_ctx_wl_init(void *data)
 
    RARCH_LOG("[Wayland/EGL]: EGL version: %d.%d\n", egl_major, egl_minor);
 
-   if (!eglChooseConfig(wl->g_egl_dpy, attrib_ptr, &wl->g_egl_config, 1, &num_configs))
+   if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_egl_config, 1, &num_configs))
    {
       RARCH_ERR("[Wayland/EGL]: eglChooseConfig failed with 0x%x.\n", eglGetError());
       goto error;
    }
 
-   if (num_configs == 0 || !wl->g_egl_config)
+   if (num_configs == 0 || !g_egl_config)
    {
       RARCH_ERR("[Wayland/EGL]: No EGL configurations available.\n");
       goto error;
@@ -590,29 +585,29 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    wl_shell_surface_set_class(wl->g_shell_surf, "RetroArch");
    wl_shell_surface_set_title(wl->g_shell_surf, "RetroArch");
 
-   wl->g_egl_ctx = eglCreateContext(wl->g_egl_dpy, wl->g_egl_config, EGL_NO_CONTEXT,
+   g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, EGL_NO_CONTEXT,
          attr != egl_attribs ? egl_attribs : NULL);
 
-   RARCH_LOG("[Wayland/EGL]: Created context: %p.\n", (void*)wl->g_egl_ctx);
-   if (wl->g_egl_ctx == EGL_NO_CONTEXT)
+   RARCH_LOG("[Wayland/EGL]: Created context: %p.\n", (void*)g_egl_ctx);
+   if (g_egl_ctx == EGL_NO_CONTEXT)
       goto error;
 
    if (wl->g_use_hw_ctx)
    {
-      wl->g_egl_hw_ctx = eglCreateContext(wl->g_egl_dpy, wl->g_egl_config, wl->g_egl_ctx,
+      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_egl_config, g_egl_ctx,
             attr != egl_attribs ? egl_attribs : NULL);
-      RARCH_LOG("[Wayland/EGL]: Created shared context: %p.\n", (void*)wl->g_egl_hw_ctx);
+      RARCH_LOG("[Wayland/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
 
-      if (wl->g_egl_hw_ctx == EGL_NO_CONTEXT)
+      if (g_egl_hw_ctx == EGL_NO_CONTEXT)
          goto error;
    }
 
-   wl->g_egl_surf = eglCreateWindowSurface(wl->g_egl_dpy, wl->g_egl_config,
+   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config,
          (EGLNativeWindowType)wl->g_win, NULL);
-   if (!wl->g_egl_surf)
+   if (!g_egl_surf)
       goto error;
 
-   if (!eglMakeCurrent(wl->g_egl_dpy, wl->g_egl_surf, wl->g_egl_surf, wl->g_egl_ctx))
+   if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
       goto error;
 
    RARCH_LOG("[Wayland/EGL]: Current context: %p.\n", (void*)eglGetCurrentContext());
@@ -704,11 +699,11 @@ static void gfx_ctx_wl_bind_hw_render(void *data, bool enable)
 
    wl->g_use_hw_ctx = enable;
 
-   if (!wl->g_egl_dpy || !wl->g_egl_surf)
+   if (!g_egl_dpy || !g_egl_surf)
       return;
 
-   eglMakeCurrent(wl->g_egl_dpy, wl->g_egl_surf, wl->g_egl_surf,
-         enable ? wl->g_egl_hw_ctx : wl->g_egl_ctx);
+   eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf,
+         enable ? g_egl_hw_ctx : g_egl_ctx);
 }
 
 static void keyboard_handle_keymap(void* data,

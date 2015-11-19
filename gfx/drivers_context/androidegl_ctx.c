@@ -34,11 +34,6 @@ int system_property_get(const char *cmd, const char *args, char *value);
 typedef struct gfx_ctx_android_data
 {
    bool g_use_hw_ctx;
-   EGLContext g_egl_hw_ctx;
-   EGLContext g_egl_ctx;
-   EGLSurface g_egl_surf;
-   EGLDisplay g_egl_dpy;
-   EGLConfig g_egl_config;
 } gfx_ctx_android_data_t;
 
 static bool g_es3;
@@ -54,7 +49,7 @@ static void android_gfx_ctx_set_swap_interval(void *data, unsigned interval)
    if (!android)
       return;
 
-   eglSwapInterval(android->g_egl_dpy, interval);
+   eglSwapInterval(g_egl_dpy, interval);
 }
 
 static void android_gfx_ctx_destroy_resources(gfx_ctx_android_data_t *android)
@@ -62,30 +57,30 @@ static void android_gfx_ctx_destroy_resources(gfx_ctx_android_data_t *android)
    if (!android)
       return;
 
-   if (android->g_egl_dpy)
+   if (g_egl_dpy)
    {
-      if (android->g_egl_ctx)
+      if (g_egl_ctx)
       {
-         eglMakeCurrent(android->g_egl_dpy,
+         eglMakeCurrent(g_egl_dpy,
                EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-         eglDestroyContext(android->g_egl_dpy, android->g_egl_ctx);
+         eglDestroyContext(g_egl_dpy, g_egl_ctx);
       }
 
-      if (android->g_egl_hw_ctx)
-         eglDestroyContext(android->g_egl_dpy, android->g_egl_hw_ctx);
+      if (g_egl_hw_ctx)
+         eglDestroyContext(g_egl_dpy, g_egl_hw_ctx);
 
-      if (android->g_egl_surf)
-         eglDestroySurface(android->g_egl_dpy, android->g_egl_surf);
-      eglTerminate(android->g_egl_dpy);
+      if (g_egl_surf)
+         eglDestroySurface(g_egl_dpy, g_egl_surf);
+      eglTerminate(g_egl_dpy);
    }
 
    /* Be as careful as possible in deinit. */
 
-   android->g_egl_ctx     = NULL;
-   android->g_egl_hw_ctx  = NULL;
-   android->g_egl_surf    = NULL;
-   android->g_egl_dpy     = NULL;
-   android->g_egl_config  = 0;
+   g_egl_ctx     = NULL;
+   g_egl_hw_ctx  = NULL;
+   g_egl_surf    = NULL;
+   g_egl_dpy     = NULL;
+   g_egl_config  = 0;
 }
 
 static void android_gfx_ctx_destroy(void *data)
@@ -121,13 +116,13 @@ static void android_gfx_ctx_get_video_size(void *data,
 
    if (!android)
       return;
-   if (!android->g_egl_dpy)
+   if (!g_egl_dpy)
       return;
 
-   eglQuerySurface(android->g_egl_dpy,
-         android->g_egl_surf, EGL_WIDTH, &gl_width);
-   eglQuerySurface(android->g_egl_dpy,
-         android->g_egl_surf, EGL_HEIGHT, &gl_height);
+   eglQuerySurface(g_egl_dpy,
+         g_egl_surf, EGL_WIDTH, &gl_width);
+   eglQuerySurface(g_egl_dpy,
+         g_egl_surf, EGL_HEIGHT, &gl_height);
    *width  = gl_width;
    *height = gl_height;
 }
@@ -165,26 +160,26 @@ static bool android_gfx_ctx_init(void *data)
 
    RARCH_LOG("Android EGL: GLES version = %d.\n", g_es3 ? 3 : 2);
 
-   android->g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+   g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 
-   if (!android->g_egl_dpy)
+   if (!g_egl_dpy)
    {
       RARCH_ERR("[Android/EGL]: Couldn't get EGL display.\n");
       goto error;
    }
 
-   if (!eglInitialize(android->g_egl_dpy,
+   if (!eglInitialize(g_egl_dpy,
             &egl_version_major, &egl_version_minor))
       goto error;
 
    RARCH_LOG("[ANDROID/EGL]: EGL version: %d.%d\n",
          egl_version_major, egl_version_minor);
 
-   if (!eglChooseConfig(android->g_egl_dpy,
-            attribs, &android->g_egl_config, 1, &num_config))
+   if (!eglChooseConfig(g_egl_dpy,
+            attribs, &g_egl_config, 1, &num_config))
       goto error;
 
-   var = eglGetConfigAttrib(android->g_egl_dpy, android->g_egl_config,
+   var = eglGetConfigAttrib(g_egl_dpy, g_egl_config,
          EGL_NATIVE_VISUAL_ID, &format);
 
    if (!var)
@@ -195,31 +190,31 @@ static bool android_gfx_ctx_init(void *data)
 
    ANativeWindow_setBuffersGeometry(android_app->window, 0, 0, format);
 
-   android->g_egl_ctx = eglCreateContext(android->g_egl_dpy,
-         android->g_egl_config, EGL_NO_CONTEXT, context_attributes);
+   g_egl_ctx = eglCreateContext(g_egl_dpy,
+         g_egl_config, EGL_NO_CONTEXT, context_attributes);
 
-   if (android->g_egl_ctx == EGL_NO_CONTEXT)
+   if (g_egl_ctx == EGL_NO_CONTEXT)
       goto error;
 
    if (android->g_use_hw_ctx)
    {
-      android->g_egl_hw_ctx = eglCreateContext(android->g_egl_dpy,
-           android->g_egl_config, android->g_egl_ctx,
+      g_egl_hw_ctx = eglCreateContext(g_egl_dpy,
+           g_egl_config, g_egl_ctx,
             context_attributes);
       RARCH_LOG("[Android/EGL]: Created shared context: %p.\n",
-            (void*)android->g_egl_hw_ctx);
+            (void*)g_egl_hw_ctx);
 
-      if (android->g_egl_hw_ctx == EGL_NO_CONTEXT)
+      if (g_egl_hw_ctx == EGL_NO_CONTEXT)
          goto error;
    }
 
-   android->g_egl_surf = eglCreateWindowSurface(android->g_egl_dpy,
-         android->g_egl_config, android_app->window, 0);
-   if (!android->g_egl_surf)
+   g_egl_surf = eglCreateWindowSurface(g_egl_dpy,
+         g_egl_config, android_app->window, 0);
+   if (!g_egl_surf)
       goto error;
 
-   if (!eglMakeCurrent(android->g_egl_dpy, android->g_egl_surf,
-            android->g_egl_surf, android->g_egl_ctx))
+   if (!eglMakeCurrent(g_egl_dpy, g_egl_surf,
+            g_egl_surf, g_egl_ctx))
       goto error;
 
    driver->video_context_data = android;
@@ -245,7 +240,7 @@ static void android_gfx_ctx_swap_buffers(void *data)
    (void)data;
 
    if (android)
-      eglSwapBuffers(android->g_egl_dpy, android->g_egl_surf);
+      eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
 static void android_gfx_ctx_check_window(void *data, bool *quit,
@@ -363,14 +358,14 @@ static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
 
    android->g_use_hw_ctx = enable;
 
-   if (!android->g_egl_dpy)
+   if (!g_egl_dpy)
       return;
-   if (!android->g_egl_surf)
+   if (!g_egl_surf)
       return;
 
-   eglMakeCurrent(android->g_egl_dpy, android->g_egl_surf,
-         android->g_egl_surf, enable ? 
-         android->g_egl_hw_ctx : android->g_egl_ctx);
+   eglMakeCurrent(g_egl_dpy, g_egl_surf,
+         g_egl_surf, enable ? 
+         g_egl_hw_ctx : g_egl_ctx);
 }
 
 static void dpi_get_density(char *s, size_t len)

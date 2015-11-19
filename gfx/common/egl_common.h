@@ -21,6 +21,12 @@
 
 #include "../video_context_driver.h"
 
+extern EGLContext g_egl_ctx;
+extern EGLContext g_egl_hw_ctx;
+extern EGLSurface g_egl_surf;
+extern EGLDisplay g_egl_dpy;
+extern EGLConfig g_egl_config;
+
 void egl_report_error(void);
 
 gfx_ctx_proc_t egl_get_proc_address(const char *symbol);

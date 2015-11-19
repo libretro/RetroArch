@@ -36,11 +36,6 @@
 #define WINDOW_BUFFERS 2
 
 static bool g_use_hw_ctx;
-static EGLContext g_egl_hw_ctx;
-static EGLContext g_egl_ctx;
-static EGLSurface g_egl_surf;
-static EGLDisplay g_egl_dpy;
-static EGLConfig g_egl_config;
 static bool g_resize;
 
 screen_context_t screen_ctx;

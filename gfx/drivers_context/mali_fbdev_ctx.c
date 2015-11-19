@@ -32,10 +32,6 @@
 #include "../common/gl_common.h"
 
 struct fbdev_window native_window;
-static EGLContext g_egl_ctx;
-static EGLSurface g_egl_surf;
-static EGLDisplay g_egl_dpy;
-static EGLConfig g_egl_config;
 static bool g_resize;
 static unsigned g_width, g_height;
 
