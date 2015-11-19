@@ -80,38 +80,45 @@ static void raise_too_many_arguments(const char **error)
 
 static void raise_expected_number(ssize_t where, const char **error)
 {
-   snprintf(tmp_error_buff, MAX_ERROR_LEN,
 #ifdef _WIN32
+   snprintf(tmp_error_buff, MAX_ERROR_LEN,
          "%I64u::Expected number",
-#else
-         "%llu::Expected number",
-#endif
          (unsigned long long)where);
+#else
+   snprintf(tmp_error_buff, MAX_ERROR_LEN,
+         "%llu::Expected number",
+         (unsigned long long)where);
+#endif
    *error = tmp_error_buff;
 }
 
 static void raise_expected_string(ssize_t where, const char ** error)
 {
-   snprintf(tmp_error_buff, MAX_ERROR_LEN,
 #ifdef _WIN32
+   snprintf(tmp_error_buff, MAX_ERROR_LEN,
          "%I64u::Expected string",
-#else
-         "%llu::Expected string",
-#endif
          (unsigned long long)where);
+#else
+   snprintf(tmp_error_buff, MAX_ERROR_LEN,
+         "%llu::Expected string",
+         (unsigned long long)where);
+#endif
    *error = tmp_error_buff;
 }
 
 static void raise_unexpected_eof(ssize_t where, const char ** error)
 {
-   snprintf(tmp_error_buff, MAX_ERROR_LEN,
 #ifdef _WIN32
+   snprintf(tmp_error_buff, MAX_ERROR_LEN,
          "%I64u::Unexpected EOF",
-#else
-         "%llu::Unexpected EOF",
-#endif
          (unsigned long long)where
          );
+#else
+   snprintf(tmp_error_buff, MAX_ERROR_LEN,
+         "%llu::Unexpected EOF",
+         (unsigned long long)where
+         );
+#endif
    *error = tmp_error_buff;
 }
 
@@ -124,14 +131,17 @@ static void raise_enomem(const char **error)
 static void raise_unknown_function(ssize_t where, const char *name,
       ssize_t len, const char **error)
 {
-   int n = snprintf(tmp_error_buff, MAX_ERROR_LEN,
 #ifdef _WIN32
+   int n = snprintf(tmp_error_buff, MAX_ERROR_LEN,
          "%I64u::Unknown function '",
-#else
-         "%llu::Unknown function '",
-#endif
          (unsigned long long)where
          );
+#else
+   int n = snprintf(tmp_error_buff, MAX_ERROR_LEN,
+         "%llu::Unknown function '",
+         (unsigned long long)where
+         );
+#endif
 
    if (len < (MAX_ERROR_LEN - n - 3))
       strncpy(tmp_error_buff + n, name, len);
