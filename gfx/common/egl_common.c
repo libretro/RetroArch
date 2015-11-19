@@ -26,6 +26,7 @@ EGLContext g_egl_hw_ctx;
 EGLSurface g_egl_surf;
 EGLDisplay g_egl_dpy;
 EGLConfig g_egl_config;
+bool g_use_hw_ctx;
 
 void egl_report_error(void)
 {

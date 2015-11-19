@@ -38,8 +38,6 @@
 #include "../../config.h"
 #endif
 
-static bool g_use_hw_ctx;
-
 static volatile sig_atomic_t g_quit;
 static bool g_inited;
 static unsigned g_interval;
@@ -613,13 +611,9 @@ static bool gfx_ctx_vc_image_buffer_write(void *data, const void *frame, unsigne
 
 static void gfx_ctx_vc_bind_hw_render(void *data, bool enable)
 {
-   (void)data;
-
    g_use_hw_ctx = enable;
 
-   if (!g_egl_dpy)
-      return;
-   if (!g_egl_surf)
+   if (!g_egl_dpy || !g_egl_surf)
       return;
 
    eglMakeCurrent(g_egl_dpy, g_egl_surf,

@@ -35,7 +35,6 @@
 
 #define WINDOW_BUFFERS 2
 
-static bool g_use_hw_ctx;
 static bool g_resize;
 
 screen_context_t screen_ctx;
@@ -387,13 +386,9 @@ static bool gfx_ctx_qnx_has_windowed(void *data)
 
 static void gfx_qnx_ctx_bind_hw_render(void *data, bool enable)
 {
-   (void)data;
-
    g_use_hw_ctx = enable;
 
-   if (!g_egl_dpy)
-      return;
-   if (!g_egl_surf)
+   if (!g_egl_dpy || !g_egl_surf)
       return;
 
    eglMakeCurrent(g_egl_dpy, g_egl_surf,

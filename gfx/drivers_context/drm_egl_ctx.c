@@ -54,7 +54,6 @@
 
 typedef struct gfx_ctx_drm_egl_data
 {
-   bool g_use_hw_ctx;
    RFILE *g_drm;
    int g_drm_fd;
    uint32_t g_crtc_id;
@@ -783,7 +782,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    if (g_egl_ctx == EGL_NO_CONTEXT)
       goto error;
 
-   if (drm->g_use_hw_ctx)
+   if (g_use_hw_ctx)
    {
       g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_egl_config, g_egl_ctx,
             attr != egl_attribs ? egl_attribs : NULL);
@@ -910,20 +909,9 @@ static bool gfx_ctx_drm_egl_bind_api(void *data,
 
 static void gfx_ctx_drm_egl_bind_hw_render(void *data, bool enable)
 {
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-      driver->video_context_data;
+   g_use_hw_ctx = enable;
 
-   if (!drm)
-      return;
-
-   (void)data;
-
-   drm->g_use_hw_ctx = enable;
-
-   if (!g_egl_dpy)
-      return;
-   if (!g_egl_surf)
+   if (!g_egl_dpy || !g_egl_surf)
       return;
 
    eglMakeCurrent(g_egl_dpy, g_egl_surf,

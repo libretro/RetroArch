@@ -31,7 +31,6 @@
 typedef struct gfx_ctx_wayland_data
 {
    bool g_resize;
-   bool g_use_hw_ctx;
    int g_fd;
    unsigned g_width;
    unsigned g_height;
@@ -571,7 +570,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    if (g_egl_ctx == EGL_NO_CONTEXT)
       goto error;
 
-   if (wl->g_use_hw_ctx)
+   if (g_use_hw_ctx)
    {
       g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_egl_config, g_egl_ctx,
             attr != egl_attribs ? egl_attribs : NULL);
@@ -670,13 +669,7 @@ static bool gfx_ctx_wl_bind_api(void *data,
 
 static void gfx_ctx_wl_bind_hw_render(void *data, bool enable)
 {
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      driver->video_context_data;
-
-   (void)data;
-
-   wl->g_use_hw_ctx = enable;
+   g_use_hw_ctx = enable;
 
    if (!g_egl_dpy || !g_egl_surf)
       return;

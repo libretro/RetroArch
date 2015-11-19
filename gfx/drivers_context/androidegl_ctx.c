@@ -33,7 +33,7 @@ int system_property_get(const char *cmd, const char *args, char *value);
 
 typedef struct gfx_ctx_android_data
 {
-   bool g_use_hw_ctx;
+   void *empty;
 } gfx_ctx_android_data_t;
 
 static bool g_es3;
@@ -158,7 +158,7 @@ static bool android_gfx_ctx_init(void *data)
    if (g_egl_ctx == EGL_NO_CONTEXT)
       goto error;
 
-   if (android->g_use_hw_ctx)
+   if (g_use_hw_ctx)
    {
       g_egl_hw_ctx = eglCreateContext(g_egl_dpy,
            g_egl_config, g_egl_ctx,
@@ -308,17 +308,7 @@ static bool android_gfx_ctx_has_windowed(void *data)
 
 static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
 {
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_android_data_t *android = NULL;
-   
-   android = (gfx_ctx_android_data_t*)driver->video_context_data;
-
-   (void)data;
-
-   if (!android)
-      return;
-
-   android->g_use_hw_ctx = enable;
+   g_use_hw_ctx = enable;
 
    if (!g_egl_dpy)
       return;

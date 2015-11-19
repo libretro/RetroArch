@@ -30,8 +30,6 @@
 
 static unsigned g_screen;
 
-static bool g_use_hw_ctx;
-
 static XF86VidModeModeInfo g_desktop_mode;
 static bool g_should_reset_mode;
 
@@ -563,12 +561,9 @@ static void gfx_ctx_xegl_show_mouse(void *data, bool state)
 
 static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)
 {
-   (void)data;
    g_use_hw_ctx = enable;
 
-   if (!g_egl_dpy)
-      return;
-   if (!g_egl_surf)
+   if (!g_egl_dpy || !g_egl_surf)
       return;
 
    eglMakeCurrent(g_egl_dpy, g_egl_surf,
