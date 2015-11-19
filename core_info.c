@@ -558,6 +558,18 @@ core_info_t *core_info_find(core_info_list_t *list,
    return NULL;
 }
 
+core_info_t *core_info_get(core_info_list_t *list, size_t i)
+{
+   core_info_t *info = (core_info_t*)&list->list[i];
+printf("%zu\n", i);
+   if (!info)
+      return NULL;
+   if (!info->path)
+      return NULL;
+
+   return info;
+}
+
 static int core_info_firmware_cmp(const void *a_, const void *b_)
 {
    const core_info_firmware_t *a = (const core_info_firmware_t*)a_;

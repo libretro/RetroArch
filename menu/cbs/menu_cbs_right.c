@@ -327,11 +327,48 @@ static int action_right_video_resolution(unsigned type, const char *label,
 static int playlist_association_right(unsigned type, const char *label,
       bool wraparound)
 {
-   unsigned idx     = type - MENU_SETTINGS_PLAYLIST_ASSOCIATION_START;
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   int i, next, found, current = 0;
+   char core_path[PATH_MAX_LENGTH]  = {0};
+   global_t *global                 = global_get_ptr();
+   settings_t *settings             = config_get_ptr();
+   const char *path                 = path_basename(label);
+   char new_playlist_cores[PATH_MAX_LENGTH] = {0};
 
-   (void)system;
-   (void)idx;
+   core_info_list_t *list = (global->core_info.list) ? global->core_info.list : NULL;
+   if (!list)
+      return NULL;
+
+   struct string_list *stnames = string_split(settings->playlist_names, ";");
+   struct string_list *stcores = string_split(settings->playlist_cores, ";");
+
+   if (!menu_playlist_find_associated_core(path, core_path, sizeof(core_path)))
+         strlcpy(core_path, "DETECT", sizeof(core_path));
+
+   for (i = 0; i < list->count; i++)
+   {
+      core_info_t *info = core_info_get(list, i);
+      if (!strcmp(info->path, core_path))
+         current = i;
+   }
+
+   next = current + 1;
+   if (next >= list->count)
+   {
+      if (wraparound)
+         next = list->count-1;
+      else
+         next = 0;
+   }
+
+   core_info_t *info = core_info_get(list, next);
+
+   found = string_list_find_elem(stnames, path);
+   if (found)
+      string_list_set(stcores, found-1, info->path);
+
+   string_list_join_concat(new_playlist_cores, sizeof(new_playlist_cores), stcores, ";");
+
+   strlcpy(settings->playlist_cores, new_playlist_cores, sizeof(settings->playlist_cores));
 
    return 0;
 }
