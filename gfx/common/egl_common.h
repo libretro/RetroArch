@@ -38,4 +38,6 @@ gfx_ctx_proc_t egl_get_proc_address(const char *symbol);
 
 void egl_bind_hw_render(void *data, bool enable);
 
+void egl_swap_buffers(void *data);
+
 #endif

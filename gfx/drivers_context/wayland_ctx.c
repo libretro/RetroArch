@@ -254,17 +254,6 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
    *quit = g_quit;
 }
 
-static void gfx_ctx_wl_swap_buffers(void *data)
-{
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      driver->video_context_data;
-
-   (void)data;
-
-   eglSwapBuffers(g_egl_dpy, g_egl_surf);
-}
-
 static void gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 {
    driver_t *driver = driver_get_ptr();
@@ -829,7 +818,7 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_has_focus,
    gfx_ctx_wl_suppress_screensaver,
    gfx_ctx_wl_has_windowed,
-   gfx_ctx_wl_swap_buffers,
+   egl_swap_buffers,
    gfx_ctx_wl_input_driver,
    egl_get_proc_address,
    NULL,

@@ -66,8 +66,10 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
 static void gfx_ctx_emscripten_swap_buffers(void *data)
 {
    (void)data;
-   // no-op in emscripten, no way to force swap/wait for VSync in browsers
-   //eglSwapBuffers(g_egl_dpy, g_egl_surf);
+   /* no-op in emscripten, no way to force swap/wait for VSync in browsers */
+#if 0
+   egl_swap_buffers(data);
+#endif
 }
 
 static void gfx_ctx_emscripten_set_resize(void *data,

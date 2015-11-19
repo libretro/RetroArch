@@ -192,19 +192,6 @@ error:
    return false;
 }
 
-static void android_gfx_ctx_swap_buffers(void *data)
-{
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_android_data_t *android = NULL;
-   
-   android = (gfx_ctx_android_data_t*)driver->video_context_data;
-
-   (void)data;
-
-   if (android)
-      eglSwapBuffers(g_egl_dpy, g_egl_surf);
-}
-
 static void android_gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
@@ -363,7 +350,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_has_focus,
    android_gfx_ctx_suppress_screensaver,
    android_gfx_ctx_has_windowed,
-   android_gfx_ctx_swap_buffers,
+   egl_swap_buffers,
    android_gfx_ctx_input_driver,
    egl_get_proc_address,
    NULL,

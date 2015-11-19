@@ -266,7 +266,7 @@ static void gfx_ctx_drm_egl_swap_buffers(void *data)
 
    (void)data;
 
-   eglSwapBuffers(g_egl_dpy, g_egl_surf);
+   egl_swap_buffers(data);
 
    /* I guess we have to wait for flip to have taken 
     * place before another flip can be queued up. */
@@ -802,7 +802,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       goto error;
 
    glClear(GL_COLOR_BUFFER_BIT);
-   eglSwapBuffers(g_egl_dpy, g_egl_surf);
+   egl_swap_buffers(NULL);
 
    drm->g_bo = gbm_surface_lock_front_buffer(drm->g_gbm_surface);
    fb = drm_fb_get_from_bo(drm, drm->g_bo);

@@ -118,3 +118,8 @@ void egl_bind_hw_render(void *data, bool enable)
          g_egl_surf,
          enable ? g_egl_hw_ctx : g_egl_ctx);
 }
+
+void egl_swap_buffers(void *data)
+{
+   eglSwapBuffers(g_egl_dpy, g_egl_surf);
+}

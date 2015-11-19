@@ -147,12 +147,6 @@ error:
    return false;
 }
 
-static void gfx_ctx_mali_fbdev_swap_buffers(void *data)
-{
-   (void)data;
-   eglSwapBuffers(g_egl_dpy, g_egl_surf);
-}
-
 static void gfx_ctx_mali_fbdev_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
@@ -302,7 +296,7 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    gfx_ctx_mali_fbdev_has_focus,
    gfx_ctx_mali_fbdev_suppress_screensaver,
    gfx_ctx_mali_fbdev_has_windowed,
-   gfx_ctx_mali_fbdev_swap_buffers,
+   egl_swap_buffers,
    gfx_ctx_mali_fbdev_input_driver,
    egl_get_proc_address,
    NULL,
