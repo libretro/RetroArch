@@ -667,17 +667,6 @@ static bool gfx_ctx_wl_bind_api(void *data,
    return false;
 }
 
-static void gfx_ctx_wl_bind_hw_render(void *data, bool enable)
-{
-   g_use_hw_ctx = enable;
-
-   if (!g_egl_dpy || !g_egl_surf)
-      return;
-
-   eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf,
-         enable ? g_egl_hw_ctx : g_egl_ctx);
-}
-
 static void keyboard_handle_keymap(void* data,
 struct wl_keyboard* keyboard,
 uint32_t format,
@@ -847,5 +836,5 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    NULL,
    NULL,
    "wayland",
-   gfx_ctx_wl_bind_hw_render,
+   egl_bind_hw_render,
 };

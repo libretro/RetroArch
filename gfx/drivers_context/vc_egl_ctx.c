@@ -609,17 +609,6 @@ static bool gfx_ctx_vc_image_buffer_write(void *data, const void *frame, unsigne
    return ret;
 }
 
-static void gfx_ctx_vc_bind_hw_render(void *data, bool enable)
-{
-   g_use_hw_ctx = enable;
-
-   if (!g_egl_dpy || !g_egl_surf)
-      return;
-
-   eglMakeCurrent(g_egl_dpy, g_egl_surf,
-         g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
-}
-
 const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_init,
    gfx_ctx_vc_destroy,
@@ -645,5 +634,5 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_image_buffer_write,
    NULL,
    "videocore",
-   gfx_ctx_vc_bind_hw_render,
+   egl_bind_hw_render,
 };

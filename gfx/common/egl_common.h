@@ -36,4 +36,6 @@ void egl_destroy(void);
 
 gfx_ctx_proc_t egl_get_proc_address(const char *symbol);
 
+void egl_bind_hw_render(void *data, bool enable);
+
 #endif

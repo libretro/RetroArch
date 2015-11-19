@@ -106,3 +106,15 @@ void egl_destroy(void)
    g_egl_dpy     = EGL_NO_DISPLAY;
    g_egl_config  = 0;
 }
+
+void egl_bind_hw_render(void *data, bool enable)
+{
+   g_use_hw_ctx = enable;
+
+   if (!g_egl_dpy || !g_egl_surf)
+      return;
+
+   eglMakeCurrent(g_egl_dpy, g_egl_surf,
+         g_egl_surf,
+         enable ? g_egl_hw_ctx : g_egl_ctx);
+}

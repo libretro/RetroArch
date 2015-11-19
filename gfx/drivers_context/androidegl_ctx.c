@@ -306,20 +306,6 @@ static bool android_gfx_ctx_has_windowed(void *data)
    return false;
 }
 
-static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
-{
-   g_use_hw_ctx = enable;
-
-   if (!g_egl_dpy)
-      return;
-   if (!g_egl_surf)
-      return;
-
-   eglMakeCurrent(g_egl_dpy, g_egl_surf,
-         g_egl_surf, enable ? 
-         g_egl_hw_ctx : g_egl_ctx);
-}
-
 static void dpi_get_density(char *s, size_t len)
 {
    system_property_get("getprop", "ro.sf.lcd_density", s);
@@ -384,5 +370,5 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL,
    NULL,
    "android",
-   android_gfx_ctx_bind_hw_render,
+   egl_bind_hw_render,
 };

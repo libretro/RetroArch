@@ -384,17 +384,6 @@ static bool gfx_ctx_qnx_has_windowed(void *data)
    return false;
 }
 
-static void gfx_qnx_ctx_bind_hw_render(void *data, bool enable)
-{
-   g_use_hw_ctx = enable;
-
-   if (!g_egl_dpy || !g_egl_surf)
-      return;
-
-   eglMakeCurrent(g_egl_dpy, g_egl_surf,
-         g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
-}
-
 const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    gfx_ctx_qnx_init,
    gfx_ctx_qnx_destroy,
@@ -420,5 +409,5 @@ const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    NULL,
    NULL,
    "blackberry_qnx",
-   gfx_qnx_ctx_bind_hw_render,
+   egl_bind_hw_render,
 };
