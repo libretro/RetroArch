@@ -27,17 +27,19 @@
 #include "../../general.h"
 #include "../video_monitor.h"
 
+Colormap g_x11_cmap;
+Window   g_x11_win;
+Display *g_x11_dpy;
+
 static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
-Colormap g_x11_cmap;
+
 static Atom g_x11_quit_atom;
 static volatile sig_atomic_t g_x11_quit;
 static bool g_x11_has_focus;
-Window   g_x11_win;
 static XIM g_x11_xim;
 static XIC g_x11_xic;
-Display *g_x11_dpy;
 static bool g_x11_true_full;
 
 #define XA_INIT(x) XA##x = XInternAtom(dpy, #x, False)
