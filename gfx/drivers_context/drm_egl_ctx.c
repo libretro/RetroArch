@@ -551,8 +551,6 @@ error:
    return false;
 }
 
-
-
 static EGLint *egl_fill_attribs(EGLint *attr)
 {
    switch (g_api)
