@@ -38,7 +38,6 @@
 #include "../../config.h"
 #endif
 
-static volatile sig_atomic_t g_quit;
 static bool g_inited;
 static enum gfx_ctx_api g_api;
 
