@@ -36,7 +36,6 @@
 #include "../video_context_driver.h"
 
 extern Atom g_x11_quit_atom;
-extern volatile sig_atomic_t g_x11_quit;
 extern bool g_x11_has_focus;
 extern Window   g_x11_win;
 extern XIC g_x11_xic;

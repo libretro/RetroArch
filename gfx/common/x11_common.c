@@ -30,7 +30,7 @@ static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
 Atom g_x11_quit_atom;
-volatile sig_atomic_t g_x11_quit;
+static volatile sig_atomic_t g_x11_quit;
 bool g_x11_has_focus;
 Window   g_x11_win;
 XIC g_x11_xic;
