@@ -41,6 +41,10 @@
 #include <retro_inline.h>
 #include <file/file_path.h>
 
+#ifdef HAVE_MENU
+#include "../../menu_hash.h"
+#endif
+
 #include "../ui_companion_driver.h"
 #include "../../driver.h"
 #include "../../runloop.h"
@@ -495,13 +499,21 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
             {
                case ID_M_LOAD_CORE:
                   extensions  = "All Files\0*.*\0 Libretro core(.dll)\0*.dll\0";
+#ifdef HAVE_MENU
+                  title       = menu_hash_to_str(MENU_LABEL_VALUE_CORE_LIST);
+#else
                   title       = "Load Core";
+#endif
                   initial_dir = settings->libretro_directory;
                   cmd         = EVENT_CMD_LOAD_CORE;
                   break;
                case ID_M_LOAD_CONTENT:
                   extensions  = "All Files\0*.*\0\0";
+#ifdef HAVE_MENU
+                  title       = menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT_LIST);
+#else
                   title       = "Load Content";
+#endif
                   initial_dir = settings->menu_content_directory;
                   cmd         = EVENT_CMD_LOAD_CONTENT;
                   break;
