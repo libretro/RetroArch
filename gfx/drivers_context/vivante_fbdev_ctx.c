@@ -128,19 +128,18 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
    g_width    = width;
    g_height   = height;
 
+   if (!egl_create_context(attribs))
+   {
+      egl_report_error();
+      goto error;
+   }
+
    window     = fbCreateWindow(fbGetDisplayByIndex(0), 0, 0, 0, 0);
    g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, window, 0);
 
    if (g_egl_surf == EGL_NO_SURFACE)
    {
       RARCH_ERR("eglCreateWindowSurface failed.\n");
-      goto error;
-   }
-
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, 0, attribs);
-   if (g_egl_ctx == EGL_NO_CONTEXT)
-   {
-      RARCH_ERR("eglCreateContext failed.\n");
       goto error;
    }
 

@@ -291,22 +291,10 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          CWBorderPixel | CWColormap | CWEventMask | (true_full ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, EGL_NO_CONTEXT,
-         attr != egl_attribs ? egl_attribs : NULL);
-
-   RARCH_LOG("[X/EGL]: Created context: %p.\n", (void*)g_egl_ctx);
-
-   if (g_egl_ctx == EGL_NO_CONTEXT)
-      goto error;
-
-   if (g_use_hw_ctx)
+   if (!egl_create_context((attr != egl_attribs) ? egl_attribs : NULL))
    {
-      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_egl_config, g_egl_ctx,
-            attr != egl_attribs ? egl_attribs : NULL);
-      RARCH_LOG("[X/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
-
-      if (g_egl_hw_ctx == EGL_NO_CONTEXT)
-         goto error;
+      egl_report_error();
+      goto error;
    }
 
    g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, (EGLNativeWindowType)g_x11_win, NULL);

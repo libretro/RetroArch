@@ -111,19 +111,10 @@ static bool gfx_ctx_qnx_init(void *data)
       goto error;
    }
 
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, EGL_NO_CONTEXT, context_attributes);
-
-   if (g_egl_ctx == EGL_NO_CONTEXT)
-      goto error;
-
-   if (g_use_hw_ctx)
+   if (!egl_create_context(context_attributes))
    {
-      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_egl_config, g_egl_ctx,
-            context_attributes);
-      RARCH_LOG("[BLACKBERRY QNX/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
-
-      if (g_egl_hw_ctx == EGL_NO_CONTEXT)
-         goto error;
+      egl_report_error();
+      goto error;
    }
 
    if(!screen_win)

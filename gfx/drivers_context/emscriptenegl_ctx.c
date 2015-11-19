@@ -137,10 +137,11 @@ static bool gfx_ctx_emscripten_init(void *data)
       goto error;
    }
 
-   /* Create an EGL rendering context. */
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, EGL_NO_CONTEXT, context_attributes);
-   if (!g_egl_ctx)
+   if (!egl_create_context(context_attributes))
+   {
+      egl_report_error();
       goto error;
+   }
 
    /* create an EGL window surface. */
    g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, 0, NULL);

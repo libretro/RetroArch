@@ -179,21 +179,10 @@ static bool gfx_ctx_vc_init(void *data)
       goto error;
    }
 
-   /* Create an EGL rendering context. */
-   g_egl_ctx = eglCreateContext(
-         g_egl_dpy, g_egl_config, EGL_NO_CONTEXT,
-         (g_api == GFX_CTX_OPENGL_ES_API) ? context_attributes : NULL);
-   if (!g_egl_ctx)
-      goto error;
-
-   if (g_use_hw_ctx)
+   if (!egl_create_context((g_api == GFX_CTX_OPENGL_ES_API) ? context_attributes : NULL))
    {
-      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_egl_config, g_egl_ctx,
-            context_attributes);
-      RARCH_LOG("[VC/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
-
-      if (g_egl_hw_ctx == EGL_NO_CONTEXT)
-         goto error;
+      egl_report_error();
+      goto error;
    }
 
    /* Create an EGL window surface. */
