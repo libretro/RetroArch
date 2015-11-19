@@ -983,7 +983,6 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
 {
    rarch_system_info_t *system = rarch_system_info_get_ptr();
    uint32_t hash_label  = menu_hash_calculate(label);
-   global_t *global = global_get_ptr();
 
    *s = '\0';
    *w = 19;
