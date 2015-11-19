@@ -51,6 +51,7 @@ extern const ui_companion_driver_t ui_companion_null;
 extern const ui_companion_driver_t ui_companion_cocoa;
 extern const ui_companion_driver_t ui_companion_cocoatouch;
 extern const ui_companion_driver_t ui_companion_qt;
+extern const ui_companion_driver_t ui_companion_win32;
 
 /**
  * ui_companion_find_driver:

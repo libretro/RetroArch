@@ -559,6 +559,12 @@ ifeq ($(HAVE_PARPORT), 1)
    OBJ += input/drivers_joypad/parport_joypad.o
 endif
 
+# Companion UI
+
+ifneq ($(findstring Win32,$(OS)),)
+OBJ += ui/drivers/ui_win32.o
+endif
+
 # Video
 
 OBJ += gfx/video_context_driver.o \
@@ -572,6 +578,7 @@ OBJ += gfx/video_texture.o
 else
 OBJ += gfx/video_texture_c.o
 endif
+
 
 ifeq ($(HAVE_GL_CONTEXT), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL

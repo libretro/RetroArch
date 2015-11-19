@@ -26,6 +26,9 @@
 static bool main_ui_companion_is_on_foreground;
 
 static const ui_companion_driver_t *ui_companion_drivers[] = {
+#ifdef _WIN32
+   &ui_companion_win32,
+#endif
 #ifdef HAVE_COCOA
    &ui_companion_cocoa,
 #endif
