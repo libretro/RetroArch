@@ -948,6 +948,31 @@ static void menu_action_setting_disp_set_label_menu_file_cheat(
          path, "(CHEAT)", s2, len2);
 }
 
+static void menu_action_setting_disp_set_label_core_option_create(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   global_t            *global = global_get_ptr();
+   if (!system)
+      return;
+
+   *s = '\0';
+   *w = 19;
+
+   strlcpy(s, "", len);
+
+   if (global->name.base[0] != '\0')
+      strlcpy(s,  path_basename(global->name.base), len);
+
+   strlcpy(s2, path, len2);
+}
+
 static void menu_action_setting_disp_set_label(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -1032,16 +1057,6 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
 
       if (core_opt)
          strlcpy(s, core_opt, len);
-   }
-   else if (type >= MENU_SETTINGS_CORE_OPTION_CREATE)
-   {
-      if (!system)
-         return;
-
-      strlcpy(s, "", len);
-
-      if (global->name.base[0] != '\0')
-         strlcpy(s,  path_basename(global->name.base), len);
    }
    else
       menu_setting_get_label(list, s,
@@ -1175,6 +1190,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
    {
       switch (type)
       {
+         case MENU_SETTINGS_CORE_OPTION_CREATE:
+            BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_core_option_create);
+            break;
          case MENU_FILE_CORE:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_core);
