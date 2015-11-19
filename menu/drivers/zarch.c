@@ -480,7 +480,7 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
       tab->prev_id         = tab->active_id;
    }
 
-   if (zui->pending_selection == -1)
+   if (zui->pending_selection == ~0U)
    {
       if (item_id < zui->active_id)
          zui->prev_id = item_id;
@@ -548,7 +548,7 @@ static bool zarch_zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label, unsi
 
    tab->prev_id      = tab->active_id;
 
-   if (zui->item.active == id || tab->active_id == ~0 || !tab->inited)
+   if (zui->item.active == id || tab->active_id == ~0U || !tab->inited)
       tab->active_id    = id;
    else if (id > tab->active_id)
    {
@@ -578,7 +578,7 @@ static bool zarch_zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label, unsi
 static void zarch_zui_render_lay_settings(zui_t *zui)
 {
    int width, x1, y1;
-   static zui_tabbed_t tabbed = {~0};
+   static zui_tabbed_t tabbed = {~0U};
 
    tabbed.vertical            = true;
    tabbed.tab_width           = 100;
@@ -605,7 +605,7 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
 
       if (zui->recent_dlist_first < 0)
          zui->recent_dlist_first = 0;
-      else if (zui->recent_dlist_first > size - 5)
+      else if (zui->recent_dlist_first > (int)size - 5)
          zui->recent_dlist_first = size - 5;
 
       zui->recent_dlist_first = min(max(zui->recent_dlist_first, 0), size - 5);
@@ -706,7 +706,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
 
             if (zui->load_dlist_first < 0)
                zui->load_dlist_first = 0;
-            else if (zui->load_dlist_first > size - 5)
+            else if (zui->load_dlist_first > (int)size - 5)
                zui->load_dlist_first = size - 5;
 
             zui->load_dlist_first = min(max(zui->load_dlist_first, 0), size - 5 - skip);
@@ -784,7 +784,7 @@ static int zarch_zui_render_lay_root_downloads(zui_t *zui, zui_tabbed_t *tabbed)
 static int zarch_zui_render_lay_root(zui_t *zui)
 {
    char item[PATH_MAX_LENGTH];
-   static zui_tabbed_t tabbed = {~0};
+   static zui_tabbed_t tabbed = {~0U};
 
    zarch_zui_tabbed_begin(zui, &tabbed, 0, 0);
 
@@ -810,19 +810,19 @@ static int zarch_zui_render_lay_root(zui_t *zui)
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 300 + 111, item); 
 #endif
 
-   if (zui->pending_selection == -1)
+   if (zui->pending_selection == ~0U)
    {
       switch (zui->action)
       {
          case MENU_ACTION_UP:
-            if (zui->prev_id != -1 && zui->prev_id != zui->active_id)
+            if (zui->prev_id != ~0U && zui->prev_id != zui->active_id)
             {
                if (zui->prev_id < zui->active_id)
                   zui->pending_selection = zui->prev_id;
             }
             break;
          case MENU_ACTION_DOWN:
-            if (zui->next_id != -1 && zui->next_id != zui->active_id)
+            if (zui->next_id != ~0U && zui->next_id != zui->active_id)
             {
                if (zui->next_id > zui->active_id) 
                   zui->pending_selection = zui->next_id;
@@ -843,7 +843,7 @@ static int zarch_zui_render_lay_root(zui_t *zui)
 static int zarch_zui_render_sidebar(zui_t *zui)
 {
    int width, x1, y1;
-   static zui_tabbed_t tabbed = {~0};
+   static zui_tabbed_t tabbed = {~0U};
    tabbed.vertical = true;
    tabbed.tab_width = 100;
 
@@ -907,7 +907,7 @@ static void zarch_render(void)
 
 static int zarch_zui_render_pick_core(zui_t *zui)
 {
-   static zui_tabbed_t tabbed = {~0};
+   static zui_tabbed_t tabbed = {~0U};
    unsigned i, j = 0;
    if (zui->pick_supported == 1)
    {

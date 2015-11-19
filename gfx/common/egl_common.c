@@ -65,7 +65,7 @@ gfx_ctx_proc_t egl_get_proc_address(const char *symbol)
 
    retro_assert(sizeof(void*) == sizeof(void (*)(void)));
 
-   sym__ = eglGetProcAddress(symbol);
+   sym__ = (void*)eglGetProcAddress(symbol);
    memcpy(&ret, &sym__, sizeof(void*));
 
    return ret;
