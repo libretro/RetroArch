@@ -76,9 +76,6 @@ static int egl_nul_handler(Display *dpy, XErrorEvent *event)
    return 0;
 }
 
-static void gfx_ctx_xegl_get_video_size(void *data,
-   unsigned *width, unsigned *height);
-
 static void gfx_ctx_xegl_destroy(void *data);
 
 static void egl_report_error(void)
@@ -129,6 +126,12 @@ static void gfx_ctx_xegl_swap_interval(void *data, unsigned interval)
    }
 }
 
+static void gfx_ctx_xegl_get_video_size(void *data,
+   unsigned *width, unsigned *height)
+{
+   x11_get_video_size(width, height);
+}
+
 static void gfx_ctx_xegl_check_window(void *data, bool *quit,
    bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
@@ -176,36 +179,6 @@ static void gfx_ctx_xegl_update_window_title(void *data)
       rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 
-static void gfx_ctx_xegl_get_video_size(void *data,
-   unsigned *width, unsigned *height)
-{
-   (void)data;
-
-   if (!g_x11_dpy || g_x11_win == None)
-   {
-      Display *dpy = XOpenDisplay(NULL);
-      if (dpy)
-      {
-         int screen = DefaultScreen(dpy);
-         *width  = DisplayWidth(dpy, screen);
-         *height = DisplayHeight(dpy, screen);
-         XCloseDisplay(dpy);
-      }
-      else
-      {
-         *width  = 0;
-         *height = 0;
-      }
-   }
-   else
-   {
-      XWindowAttributes target;
-      XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
-
-      *width  = target.width;
-      *height = target.height;
-   }
-}
 
 #define XEGL_ATTRIBS_BASE \
 EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \

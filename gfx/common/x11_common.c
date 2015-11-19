@@ -429,3 +429,29 @@ void x11_check_window(bool *quit)
 
    *quit = g_x11_quit;
 }
+
+void x11_get_video_size(unsigned *width, unsigned *height)
+{
+   if (!g_x11_dpy || g_x11_win == None)
+   {
+      Display *dpy = (Display*)XOpenDisplay(NULL);
+      *width  = 0;
+      *height = 0;
+
+      if (dpy)
+      {
+         int screen = DefaultScreen(dpy);
+         *width  = DisplayWidth(dpy, screen);
+         *height = DisplayHeight(dpy, screen);
+         XCloseDisplay(dpy);
+      }
+   }
+   else
+   {
+      XWindowAttributes target;
+      XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
+
+      *width  = target.width;
+      *height = target.height;
+   }
+}

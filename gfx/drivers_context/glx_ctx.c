@@ -86,39 +86,11 @@ static int glx_nul_handler(Display *dpy, XErrorEvent *event)
    return 0;
 }
 
+
 static void gfx_ctx_glx_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
-
-   if (!glx)
-      return;
-
-   (void)data;
-
-   if (!g_x11_dpy || g_x11_win == None)
-   {
-      Display *dpy = (Display*)XOpenDisplay(NULL);
-      *width  = 0;
-      *height = 0;
-
-      if (dpy)
-      {
-         int screen = DefaultScreen(dpy);
-         *width  = DisplayWidth(dpy, screen);
-         *height = DisplayHeight(dpy, screen);
-         XCloseDisplay(dpy);
-      }
-   }
-   else
-   {
-      XWindowAttributes target;
-      XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
-
-      *width  = target.width;
-      *height = target.height;
-   }
+   x11_get_video_size(width, height);
 }
 
 static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
