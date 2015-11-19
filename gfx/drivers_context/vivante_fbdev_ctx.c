@@ -44,26 +44,8 @@ static void gfx_ctx_vivante_destroy(void *data)
 {
    (void)data;
 
-   if (g_egl_dpy != EGL_NO_DISPLAY)
-   {
-      if (g_egl_ctx != EGL_NO_CONTEXT)
-      {
-         glFlush();
-         glFinish();
-      }
+   egl_destroy();
 
-      eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-      if (g_egl_ctx != EGL_NO_CONTEXT)
-         eglDestroyContext(g_egl_dpy, g_egl_ctx);
-      if (g_egl_surf != EGL_NO_SURFACE)
-         eglDestroySurface(g_egl_dpy, g_egl_surf);
-      eglTerminate(g_egl_dpy);
-   }
-
-   g_egl_dpy      = EGL_NO_DISPLAY;
-   g_egl_surf     = EGL_NO_SURFACE;
-   g_egl_ctx      = EGL_NO_CONTEXT;
-   g_egl_config   = 0;
    g_quit         = 0;
    g_resize       = false;
 }

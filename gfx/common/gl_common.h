@@ -23,11 +23,6 @@
 #include "../../config.h"
 #endif
 
-#ifdef HAVE_EGL
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-#endif
-
 #include <glsym/glsym.h>
 
 #include <retro_inline.h>

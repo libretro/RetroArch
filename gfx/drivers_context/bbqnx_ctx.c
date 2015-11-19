@@ -52,31 +52,8 @@ static void gfx_ctx_qnx_set_swap_interval(void *data, unsigned interval)
 
 static void gfx_ctx_qnx_destroy(void *data)
 {
-   (void)data;
+   egl_destroy();
 
-   if (g_egl_dpy)
-   {
-      if (g_egl_ctx)
-      {
-         eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-         eglDestroyContext(g_egl_dpy, g_egl_ctx);
-      }
-
-      if (g_egl_hw_ctx)
-         eglDestroyContext(g_egl_dpy, g_egl_hw_ctx);
-
-      if (g_egl_surf)
-         eglDestroySurface(g_egl_dpy, g_egl_surf);
-      eglTerminate(g_egl_dpy);
-   }
-
-   /* Be as careful as possible in deinit. */
-
-   g_egl_ctx     = NULL;
-   g_egl_hw_ctx  = NULL;
-   g_egl_surf    = NULL;
-   g_egl_dpy     = NULL;
-   g_egl_config  = 0;
    g_resize      = false;
 }
 

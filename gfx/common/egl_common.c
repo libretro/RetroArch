@@ -17,6 +17,9 @@
 #include <retro_log.h>
 
 #include "egl_common.h"
+#ifdef HAVE_OPENGL
+#include "gl_common.h"
+#endif
 
 EGLContext g_egl_ctx;
 EGLContext g_egl_hw_ctx;
@@ -65,4 +68,40 @@ gfx_ctx_proc_t egl_get_proc_address(const char *symbol)
    memcpy(&ret, &sym__, sizeof(void*));
 
    return ret;
+}
+
+void egl_destroy(void)
+{
+   if (g_egl_dpy)
+   {
+#ifdef HAVE_OPENGL
+      if (g_egl_ctx != EGL_NO_CONTEXT)
+      {
+         glFlush();
+         glFinish();
+      }
+#endif
+
+      eglMakeCurrent(g_egl_dpy,
+            EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+      if (g_egl_ctx != EGL_NO_CONTEXT)
+         eglDestroyContext(g_egl_dpy, g_egl_ctx);
+
+      if (g_egl_hw_ctx != EGL_NO_CONTEXT)
+         eglDestroyContext(g_egl_dpy, g_egl_hw_ctx);
+
+      if (g_egl_surf != EGL_NO_SURFACE)
+         eglDestroySurface(g_egl_dpy, g_egl_surf);
+      eglTerminate(g_egl_dpy);
+   }
+
+   /* Be as careful as possible in deinit.
+    * If we screw up, any TTY will not restore.
+    */
+
+   g_egl_ctx     = EGL_NO_CONTEXT;
+   g_egl_hw_ctx  = EGL_NO_CONTEXT;
+   g_egl_surf    = EGL_NO_SURFACE;
+   g_egl_dpy     = EGL_NO_DISPLAY;
+   g_egl_config  = 0;
 }

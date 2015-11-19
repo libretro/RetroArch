@@ -444,28 +444,7 @@ static void gfx_ctx_xegl_destroy(void *data)
 
    x11_input_ctx_destroy();
 
-   if (g_egl_dpy)
-   {
-      if (g_egl_ctx)
-      {
-         eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE,
-               EGL_NO_SURFACE, EGL_NO_CONTEXT);
-         eglDestroyContext(g_egl_dpy, g_egl_ctx);
-      }
-
-      if (g_egl_hw_ctx)
-         eglDestroyContext(g_egl_dpy, g_egl_hw_ctx);
-
-      if (g_egl_surf)
-         eglDestroySurface(g_egl_dpy, g_egl_surf);
-      eglTerminate(g_egl_dpy);
-   }
-
-   g_egl_ctx     = NULL;
-   g_egl_hw_ctx  = NULL;
-   g_egl_surf    = NULL;
-   g_egl_dpy     = NULL;
-   g_egl_config  = 0;
+   egl_destroy();
 
    if (g_x11_win)
    {

@@ -29,6 +29,8 @@ extern EGLConfig g_egl_config;
 
 void egl_report_error(void);
 
+void egl_destroy(void);
+
 gfx_ctx_proc_t egl_get_proc_address(const char *symbol);
 
 #endif

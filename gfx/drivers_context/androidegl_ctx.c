@@ -52,49 +52,11 @@ static void android_gfx_ctx_set_swap_interval(void *data, unsigned interval)
    eglSwapInterval(g_egl_dpy, interval);
 }
 
-static void android_gfx_ctx_destroy_resources(gfx_ctx_android_data_t *android)
-{
-   if (!android)
-      return;
-
-   if (g_egl_dpy)
-   {
-      if (g_egl_ctx)
-      {
-         eglMakeCurrent(g_egl_dpy,
-               EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-         eglDestroyContext(g_egl_dpy, g_egl_ctx);
-      }
-
-      if (g_egl_hw_ctx)
-         eglDestroyContext(g_egl_dpy, g_egl_hw_ctx);
-
-      if (g_egl_surf)
-         eglDestroySurface(g_egl_dpy, g_egl_surf);
-      eglTerminate(g_egl_dpy);
-   }
-
-   /* Be as careful as possible in deinit. */
-
-   g_egl_ctx     = NULL;
-   g_egl_hw_ctx  = NULL;
-   g_egl_surf    = NULL;
-   g_egl_dpy     = NULL;
-   g_egl_config  = 0;
-}
-
 static void android_gfx_ctx_destroy(void *data)
 {
    driver_t *driver = driver_get_ptr();
-   gfx_ctx_android_data_t *android = NULL;
    
-   android = (gfx_ctx_android_data_t*)driver->video_context_data;
-   (void)data;
-
-   if (!android)
-      return;
-
-   android_gfx_ctx_destroy_resources(android);
+   egl_destroy();
 
    if (driver->video_context_data)
       free(driver->video_context_data);
@@ -222,7 +184,7 @@ static bool android_gfx_ctx_init(void *data)
    return true;
 
 error:
-   android_gfx_ctx_destroy_resources(android);
+   egl_destroy();
 
    if (android)
       free(android);
