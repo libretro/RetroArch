@@ -486,3 +486,20 @@ bool x11_has_focus(void *data)
 
    return (win == g_x11_win && g_x11_has_focus) || g_x11_true_full;
 }
+
+static void x11_sighandler(int sig)
+{
+   (void)sig;
+   g_x11_quit = 1;
+}
+
+void x11_install_sighandlers(void)
+{
+   struct sigaction sa = {{0}};
+
+   sa.sa_handler = x11_sighandler;
+   sa.sa_flags   = SA_RESTART;
+   sigemptyset(&sa.sa_mask);
+   sigaction(SIGINT, &sa, NULL);
+   sigaction(SIGTERM, &sa, NULL);
+}

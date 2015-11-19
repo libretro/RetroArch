@@ -86,11 +86,6 @@ static void xv_set_nonblock_state(void *data, bool state)
       RARCH_WARN("Failed to set SYNC_TO_VBLANK attribute.\n");
 }
 
-static void xvideo_sighandler(int sig)
-{
-   g_x11_quit = 1;
-}
-
 static INLINE void calculate_yuv(uint8_t *y, uint8_t *u, uint8_t *v, unsigned r, unsigned g, unsigned b)
 {
    int y_ = (int)(+((double)r * 0.257) + ((double)g * 0.504) + ((double)b * 0.098) +  16.0);
@@ -405,7 +400,6 @@ static void *xv_init(const video_info_t *video,
    XWindowAttributes target;
    char buf[128]                          = {0};
    char buf_fps[128]                      = {0};
-   struct sigaction sa                    = {{0}};
    XSetWindowAttributes attributes        = {0};
    XVisualInfo visualtemplate             = {0};
    unsigned width                         = 0;
@@ -560,11 +554,7 @@ static void *xv_init(const video_info_t *video,
    if (g_x11_quit_atom)
       XSetWMProtocols(g_x11_dpy, g_x11_win, &g_x11_quit_atom, 1);
 
-   sa.sa_handler = xvideo_sighandler;
-   sa.sa_flags   = SA_RESTART;
-   sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
+   x11_install_sighandlers();
 
    xv_set_nonblock_state(xv, !video->vsync);
    g_x11_has_focus = true;

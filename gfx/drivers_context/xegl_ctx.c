@@ -55,12 +55,6 @@ static enum gfx_ctx_api g_api;
 static unsigned g_major;
 static unsigned g_minor;
 
-static void egl_sighandler(int sig)
-{
-   (void)sig;
-   g_x11_quit = 1;
-}
-
 static Bool egl_wait_notify(Display *d, XEvent *e, char *arg)
 {
    (void)d;
@@ -338,6 +332,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    unsigned width, unsigned height,
    bool fullscreen)
 {
+   XEvent event;
    EGLint egl_attribs[16];
    EGLint *attr;
    EGLint vid, num_visuals;
@@ -345,7 +340,6 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    bool true_full = false;
    int x_off = 0;
    int y_off = 0;
-   struct sigaction sa = {{0}};
    XVisualInfo temp = {0};
    XSetWindowAttributes swa = {0};
    XVisualInfo *vi = NULL;
@@ -354,13 +348,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
 
-   XEvent event;
-
-   sa.sa_handler = egl_sighandler;
-   sa.sa_flags   = SA_RESTART;
-   sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
+   x11_install_sighandlers();
 
    windowed_full = settings->video.windowed_fullscreen;
 

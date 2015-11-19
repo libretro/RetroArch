@@ -59,12 +59,6 @@ static unsigned g_minor;
 
 static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
 
-static void glx_sighandler(int sig)
-{
-   (void)sig;
-   g_x11_quit = 1;
-}
-
 static Bool glx_wait_notify(Display *d, XEvent *e, char *arg)
 {
    driver_t *driver = driver_get_ptr();
@@ -340,14 +334,9 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
    driver_t *driver = driver_get_ptr();
    gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
-   struct sigaction sa = {{0}};
    settings_t *settings    = config_get_ptr();
 
-   sa.sa_handler = glx_sighandler;
-   sa.sa_flags   = SA_RESTART;
-   sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
+   x11_install_sighandlers();
 
    if (!glx)
       return false;

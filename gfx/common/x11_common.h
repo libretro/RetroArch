@@ -77,5 +77,7 @@ bool x11_has_focus(void *data);
 
 bool x11_alive(void *data);
 
+void x11_install_sighandlers(void);
+
 #endif
 
