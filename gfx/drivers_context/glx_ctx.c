@@ -593,9 +593,7 @@ static void gfx_ctx_glx_bind_hw_render(void *data, bool enable)
 
    glx->g_use_hw_ctx = enable;
 
-   if (!g_x11_dpy)
-      return;
-   if (!glx->g_glx_win)
+   if (!g_x11_dpy || !glx->g_glx_win)
       return;
 
    glXMakeContextCurrent(g_x11_dpy, glx->g_glx_win,
