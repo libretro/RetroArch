@@ -34,8 +34,8 @@ Atom g_x11_quit_atom;
 static volatile sig_atomic_t g_x11_quit;
 bool g_x11_has_focus;
 Window   g_x11_win;
-XIM g_x11_xim;
-XIC g_x11_xic;
+static XIM g_x11_xim;
+static XIC g_x11_xic;
 Display *g_x11_dpy;
 bool g_x11_true_full;
 
