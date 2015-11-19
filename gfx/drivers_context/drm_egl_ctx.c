@@ -722,6 +722,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       goto error;
    }
 
+
    if (!egl_init_context((EGLNativeDisplayType)drm->g_gbm_dev, &major,
             &minor, &n, attrib_ptr))
    {
@@ -730,8 +731,9 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    }
 
    attr = egl_fill_attribs(egl_attribs);
+   EGLint *egl_attribs_ptr = &egl_attribs[0];
 
-   if (!egl_create_context(attr, &egl_attribs[0]))
+   if (!egl_create_context((attr != egl_attribs_ptr) ? egl_attribs_ptr : NULL))
    {
       egl_report_error();
       goto error;

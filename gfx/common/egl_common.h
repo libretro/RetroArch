@@ -55,6 +55,6 @@ bool egl_init_context(NativeDisplayType display,
       EGLint *major, EGLint *minor,
      EGLint *n, const EGLint *attrib_ptr);
 
-bool egl_create_context(EGLint *attr, EGLint *egl_attribs);
+bool egl_create_context(EGLint *egl_attribs);
 
 #endif

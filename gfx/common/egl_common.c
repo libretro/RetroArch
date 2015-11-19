@@ -205,10 +205,10 @@ bool egl_init_context(NativeDisplayType display,
    return true;
 }
 
-bool egl_create_context(EGLint *attr, EGLint *egl_attribs)
+bool egl_create_context(EGLint *egl_attribs)
 {
    g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, EGL_NO_CONTEXT,
-         (attr != egl_attribs) ? egl_attribs : NULL);
+         egl_attribs);
 
    if (g_egl_ctx == EGL_NO_CONTEXT)
       return false;
@@ -216,7 +216,7 @@ bool egl_create_context(EGLint *attr, EGLint *egl_attribs)
    if (g_use_hw_ctx)
    {
       g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_egl_config, g_egl_ctx,
-            (attr != egl_attribs) ? egl_attribs : NULL);
+            egl_attribs);
       RARCH_LOG("[EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
 
       if (g_egl_hw_ctx == EGL_NO_CONTEXT)

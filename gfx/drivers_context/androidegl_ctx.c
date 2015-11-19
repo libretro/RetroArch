@@ -76,22 +76,10 @@ static bool android_gfx_ctx_init(void *data)
 
    ANativeWindow_setBuffersGeometry(android_app->window, 0, 0, format);
 
-   g_egl_ctx = eglCreateContext(g_egl_dpy,
-         g_egl_config, EGL_NO_CONTEXT, context_attributes);
-
-   if (g_egl_ctx == EGL_NO_CONTEXT)
-      goto error;
-
-   if (g_use_hw_ctx)
+   if (!egl_create_context(context_attributes))
    {
-      g_egl_hw_ctx = eglCreateContext(g_egl_dpy,
-           g_egl_config, g_egl_ctx,
-            context_attributes);
-      RARCH_LOG("[Android/EGL]: Created shared context: %p.\n",
-            (void*)g_egl_hw_ctx);
-
-      if (g_egl_hw_ctx == EGL_NO_CONTEXT)
-         goto error;
+      egl_report_error();
+      goto error;
    }
 
    g_egl_surf = eglCreateWindowSurface(g_egl_dpy,
