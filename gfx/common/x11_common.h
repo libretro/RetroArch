@@ -41,6 +41,7 @@ extern bool g_x11_has_focus;
 extern Window   g_x11_win;
 extern XIC g_x11_xic;
 extern Display *g_x11_dpy;
+extern bool g_x11_true_full;
 
 void x11_show_mouse(Display *dpy, Window win, bool state);
 void x11_windowed_fullscreen(Display *dpy, Window win);
@@ -70,6 +71,8 @@ bool x11_get_metrics(void *data,
 void x11_check_window(bool *quit);
 
 void x11_get_video_size(unsigned *width, unsigned *height);
+
+bool x11_has_focus(void);
 
 #endif
 

@@ -35,6 +35,7 @@ bool g_x11_has_focus;
 Window   g_x11_win;
 XIC g_x11_xic;
 Display *g_x11_dpy;
+bool g_x11_true_full;
 
 #define XA_INIT(x) XA##x = XInternAtom(dpy, #x, False)
 #define _NET_WM_STATE_ADD 1
@@ -454,4 +455,14 @@ void x11_get_video_size(unsigned *width, unsigned *height)
       *width  = target.width;
       *height = target.height;
    }
+}
+
+bool x11_has_focus(void)
+{
+   Window win;
+   int rev;
+
+   XGetInputFocus(g_x11_dpy, &win, &rev);
+
+   return (win == g_x11_win && g_x11_has_focus) || g_x11_true_full;
 }

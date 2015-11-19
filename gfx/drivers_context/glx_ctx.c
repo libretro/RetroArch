@@ -32,7 +32,6 @@ static void (*g_pglSwapIntervalEXT)(Display*, GLXDrawable, int);
 
 typedef struct gfx_ctx_glx_data
 {
-   bool g_true_full;
    bool g_use_hw_ctx;
    bool g_core_es;
    bool g_core_es_core;
@@ -584,7 +583,7 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    driver->display_type  = RARCH_DISPLAY_X11;
    driver->video_display = (uintptr_t)g_x11_dpy;
    driver->video_window  = (uintptr_t)g_x11_win;
-   glx->g_true_full = true_full;
+   g_x11_true_full       = true_full;
 
    return true;
 
@@ -614,16 +613,7 @@ static void gfx_ctx_glx_input_driver(void *data,
 
 static bool gfx_ctx_glx_has_focus(void *data)
 {
-   Window win;
-   int rev;
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
-
-   (void)data;
-
-   XGetInputFocus(g_x11_dpy, &win, &rev);
-
-   return (win == g_x11_win && g_x11_has_focus) || glx->g_true_full;
+   return x11_has_focus();
 }
 
 static bool gfx_ctx_glx_suppress_screensaver(void *data, bool enable)

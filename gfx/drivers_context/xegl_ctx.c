@@ -35,7 +35,6 @@
 #endif
 
 static Colormap g_cmap;
-static bool g_true_full;
 static unsigned g_screen;
 
 static XIM g_xim;
@@ -539,7 +538,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    driver->display_type  = RARCH_DISPLAY_X11;
    driver->video_display = (uintptr_t)g_x11_dpy;
    driver->video_window  = (uintptr_t)g_x11_win;
-   g_true_full = true_full;
+   g_x11_true_full       = true_full;
 
    return true;
 
@@ -634,17 +633,10 @@ static void gfx_ctx_xegl_input_driver(void *data,
 
 static bool gfx_ctx_xegl_has_focus(void *data)
 {
-   Window win;
-   int rev;
-
-   (void)data;
-
    if (!g_inited)
       return false;
 
-   XGetInputFocus(g_x11_dpy, &win, &rev);
-
-   return (win == g_x11_win && g_x11_has_focus) || g_true_full;
+   return x11_has_focus();
 }
 
 static bool gfx_ctx_xegl_suppress_screensaver(void *data, bool enable)
