@@ -100,6 +100,7 @@ enum
    XMB_TEXTURE_CHEAT_OPTIONS,
    XMB_TEXTURE_DISK_OPTIONS,
    XMB_TEXTURE_SHADER_OPTIONS,
+   XMB_TEXTURE_ACHIEVEMENT_LIST,
    XMB_TEXTURE_SCREENSHOT,
    XMB_TEXTURE_RELOAD,
    XMB_TEXTURE_FILE,
@@ -1382,6 +1383,9 @@ static void xmb_draw_items(xmb_handle_t *xmb,
          case MENU_LABEL_SHADER_OPTIONS:
             icon = xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS].id;
             break;
+         case MENU_LABEL_ACHIEVEMENT_LIST:
+            icon = xmb->textures.list[XMB_TEXTURE_ACHIEVEMENT_LIST].id;
+            break;
          case MENU_LABEL_SAVESTATE:
             icon = xmb->textures.list[XMB_TEXTURE_SAVESTATE].id;
             break;
@@ -2161,6 +2165,9 @@ static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
             break;
          case XMB_TEXTURE_SHADER_OPTIONS:
             fill_pathname_join(path, iconpath, "core-shader-options.png", sizeof(path));
+            break;
+         case XMB_TEXTURE_ACHIEVEMENT_LIST:
+            fill_pathname_join(path, iconpath, "achievement-list.png", sizeof(path));
             break;
          case XMB_TEXTURE_SCREENSHOT:
             fill_pathname_join(path, iconpath, "screenshot.png", sizeof(path));
