@@ -121,8 +121,8 @@ static void *ctr_csnd_audio_init(const char *device, unsigned rate, unsigned lat
 
    ctr->pos                  = 0;
 
-   GSPGPU_FlushDataCache(ctr->l_paddr, CTR_CSND_AUDIO_SIZE);
-   GSPGPU_FlushDataCache(ctr->r_paddr, CTR_CSND_AUDIO_SIZE);
+   GSPGPU_FlushDataCache((void*)ctr->l_paddr, CTR_CSND_AUDIO_SIZE);
+   GSPGPU_FlushDataCache((void*)ctr->r_paddr, CTR_CSND_AUDIO_SIZE);
    csndPlaySound_custom(0x8, SOUND_LOOPMODE(CSND_LOOPMODE_NORMAL)| SOUND_FORMAT(CSND_ENCODING_PCM16),
                  1.0, -1.0, ctr->l, ctr->l, CTR_CSND_AUDIO_SIZE);
 

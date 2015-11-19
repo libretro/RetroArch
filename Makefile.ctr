@@ -1,12 +1,13 @@
 TARGET := retroarch_3ds
 LIBRETRO =
 
-DEBUG                = 0
-GRIFFIN_BUILD        = 1
-WHOLE_ARCHIVE_LINK   = 0
-BUILD_3DSX           = 1
-BUILD_3DS            = 1
-BUILD_CIA            = 1
+DEBUG                   = 0
+GRIFFIN_BUILD           = 1
+WHOLE_ARCHIVE_LINK      = 0
+BUILD_3DSX              = 1
+BUILD_3DS               = 1
+BUILD_CIA               = 1
+LIBCTRU_NO_DEPRECATION  = 1
 
 APP_TITLE            = Retroarch 3DS
 APP_DESCRIPTION      = Retroarch 3DS
@@ -276,6 +277,10 @@ ifeq ($(DEBUG), 1)
    CFLAGS	+= -O0 -g
 else
    CFLAGS	+= -O3
+endif
+
+ifeq ($(LIBCTRU_NO_DEPRECATION), 1)
+   CFLAGS	+= -DLIBCTRU_NO_DEPRECATION
 endif
 
 ifeq ($(WHOLE_ARCHIVE_LINK), 1)

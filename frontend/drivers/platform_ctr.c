@@ -131,6 +131,7 @@ static void frontend_ctr_deinit(void *data)
    }
 
    cfguExit();
+//   exitCfgu();
    ndspExit();
    csndExit();   
    gfxExit();
@@ -224,6 +225,7 @@ static void frontend_ctr_init(void *data)
    if(ndspInit() != 0)
       *dsp_audio_driver = audio_null;
    cfguInit();
+//   initCfgu();
 #endif
 }
 
