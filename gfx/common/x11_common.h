@@ -91,5 +91,7 @@ void x11_colormap_destroy(void);
 
 void x11_install_quit_atom(void);
 
+void x11_event_queue_check(XEvent *event);
+
 #endif
 

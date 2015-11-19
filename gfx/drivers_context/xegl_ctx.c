@@ -39,13 +39,6 @@ static enum gfx_ctx_api g_api;
 static unsigned g_major;
 static unsigned g_minor;
 
-static Bool egl_wait_notify(Display *d, XEvent *e, char *arg)
-{
-   (void)d;
-   (void)e;
-   return e->type == MapNotify && e->xmap.window == g_x11_win;
-}
-
 static int egl_nul_handler(Display *dpy, XErrorEvent *event)
 {
    (void)dpy;
@@ -400,8 +393,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          x11_move_window(g_x11_dpy, g_x11_win, x_off, y_off, width, height);
    }
 
-   XIfEvent(g_x11_dpy, &event, egl_wait_notify, NULL);
-
+   x11_event_queue_check(&event);
    x11_install_quit_atom();
 
    gfx_ctx_xegl_swap_interval(data, g_interval);

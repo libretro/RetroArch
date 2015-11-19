@@ -587,3 +587,13 @@ void x11_install_quit_atom(void)
    if (g_x11_quit_atom)
       XSetWMProtocols(g_x11_dpy, g_x11_win, &g_x11_quit_atom, 1);
 }
+
+static Bool x11_wait_notify(Display *d, XEvent *e, char *arg)
+{
+   return e->type == MapNotify && e->xmap.window == g_x11_win;
+}
+
+void x11_event_queue_check(XEvent *event)
+{
+   XIfEvent(g_x11_dpy, event, x11_wait_notify, NULL);
+}

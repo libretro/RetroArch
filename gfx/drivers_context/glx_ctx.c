@@ -54,11 +54,6 @@ static unsigned g_minor;
 
 static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
 
-static Bool glx_wait_notify(Display *d, XEvent *e, char *arg)
-{
-   return (e->type == MapNotify) && (e->xmap.window == g_x11_win);
-}
-
 static int glx_nul_handler(Display *dpy, XErrorEvent *event)
 {
    (void)dpy;
@@ -390,7 +385,7 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
          x11_move_window(g_x11_dpy, g_x11_win, x_off, y_off, width, height);
    }
 
-   XIfEvent(g_x11_dpy, &event, glx_wait_notify, NULL);
+   x11_event_queue_check(&event);
 
    if (!glx->g_ctx)
    {
