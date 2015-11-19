@@ -100,16 +100,21 @@ static int database_info_iterate_start
 {
    char msg[PATH_MAX_LENGTH] = {0};
 
-   snprintf(msg, sizeof(msg),
 #ifdef _WIN32
+   snprintf(msg, sizeof(msg),
          "%Iu/%Iu: %s %s...\n",
-#else
-         "%zu/%zu: %s %s...\n",
-#endif
          db->list_ptr,
          db->list->size,
          msg_hash_to_str(MSG_SCANNING),
          name);
+#else
+   snprintf(msg, sizeof(msg),
+         "%zu/%zu: %s %s...\n",
+         db->list_ptr,
+         db->list->size,
+         msg_hash_to_str(MSG_SCANNING),
+         name);
+#endif
 
    if (msg[0] != '\0')
       rarch_main_msg_queue_push(msg, 1, 180, true);
