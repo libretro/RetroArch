@@ -36,8 +36,6 @@
 static Colormap g_cmap;
 static unsigned g_screen;
 
-static XIM g_xim;
-
 static bool g_use_hw_ctx;
 static EGLContext g_egl_hw_ctx;
 static EGLContext g_egl_ctx;
@@ -470,7 +468,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    XFree(vi);
    g_inited    = true;
 
-   if (!x11_create_input_context(g_x11_dpy, g_x11_win, &g_xim, &g_x11_xic))
+   if (!x11_create_input_context(g_x11_dpy, g_x11_win, &g_x11_xim, &g_x11_xic))
       goto error;
 
    driver->display_type  = RARCH_DISPLAY_X11;
@@ -492,7 +490,7 @@ static void gfx_ctx_xegl_destroy(void *data)
 {
    (void)data;
 
-   x11_destroy_input_context(&g_xim, &g_x11_xic);
+   x11_destroy_input_context(&g_x11_xim, &g_x11_xic);
 
    if (g_egl_dpy)
    {

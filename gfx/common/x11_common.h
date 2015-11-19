@@ -39,6 +39,7 @@ extern Atom g_x11_quit_atom;
 extern bool g_x11_has_focus;
 extern Window   g_x11_win;
 extern XIC g_x11_xic;
+extern XIM g_x11_xim;
 extern Display *g_x11_dpy;
 extern bool g_x11_true_full;
 
