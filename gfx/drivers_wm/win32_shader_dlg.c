@@ -264,13 +264,6 @@ static void shader_dlg_update_on_top_state(void)
 
 void shader_dlg_show(HWND parent_hwnd)
 {
-   const video_driver_t* vid_drv;
-
-   video_driver_get_ptr(&vid_drv);
-
-   if(vid_drv != &video_gl)
-      return;
-
    if (!IsWindowVisible(g_shader_dlg.hwnd))
    {
       if (parent_hwnd)
@@ -354,7 +347,6 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
 bool win32_shader_dlg_init(void)
 {
    static bool inited = false;
-   const video_driver_t* vid_drv;
    int pos_y;
    HFONT hFont;
 
