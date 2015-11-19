@@ -91,9 +91,8 @@ static bool gfx_ctx_xegl_init(void *data)
    };
 
    const EGLint *attrib_ptr;
-
-   EGLint egl_major, egl_minor;
-   EGLint num_configs;
+   EGLint major, minor;
+   EGLint n;
 
    if (g_inited)
       return false;
@@ -123,30 +122,14 @@ static bool gfx_ctx_xegl_init(void *data)
    if (!x11_connect())
       goto error;
 
-   g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)g_x11_dpy);
-   if (g_egl_dpy == EGL_NO_DISPLAY)
+   if (!egl_init_context((EGLNativeDisplayType)g_x11_dpy,
+            &major, &minor, &n, attrib_ptr))
    {
-      RARCH_ERR("[X/EGL]: EGL display not available.\n");
       egl_report_error();
       goto error;
    }
 
-   if (!eglInitialize(g_egl_dpy, &egl_major, &egl_minor))
-   {
-      RARCH_ERR("[X/EGL]: Unable to initialize EGL.\n");
-      egl_report_error();
-      goto error;
-   }
-
-   RARCH_LOG("[X/EGL]: EGL version: %d.%d\n", egl_major, egl_minor);
-
-   if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_egl_config, 1, &num_configs))
-   {
-      RARCH_ERR("[X/EGL]: eglChooseConfig failed with 0x%x.\n", eglGetError());
-      goto error;
-   }
-
-   if (num_configs == 0 || !g_egl_config)
+   if (n == 0 || !g_egl_config)
    {
       RARCH_ERR("[X/EGL]: No EGL configurations available.\n");
       goto error;

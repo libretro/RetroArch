@@ -60,7 +60,10 @@ static bool android_gfx_ctx_init(void *data)
 
    if (!egl_init_context(EGL_DEFAULT_DISPLAY,
             &major, &minor, &n, attribs))
+   {
+      egl_report_error();
       goto error;
+   }
 
    var = eglGetConfigAttrib(g_egl_dpy, g_egl_config,
          EGL_NATIVE_VISUAL_ID, &format);

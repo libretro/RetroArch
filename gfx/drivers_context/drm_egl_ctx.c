@@ -724,7 +724,10 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
 
    if (!egl_init_context((EGLNativeDisplayType)drm->g_gbm_dev, &major,
             &minor, &n, attrib_ptr))
+   {
+      egl_report_error();
       goto error;
+   }
 
    attr = egl_fill_attribs(egl_attribs);
 
