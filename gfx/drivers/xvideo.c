@@ -788,9 +788,6 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
 
 static bool xv_focus(void *data)
 {
-   xv_t *xv = (xv_t*)data;
-   if (!xv)
-      return false;
    return g_x11_has_focus;
 }
 
