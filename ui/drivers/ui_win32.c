@@ -19,13 +19,53 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if !defined(_XBOX)
+
+#define IDI_ICON 1
+
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0500 //_WIN32_WINNT_WIN2K
+#endif
+
+#include <windows.h>
+#include <commdlg.h>
+#endif
+
 #include <file/file_path.h>
 #include "../ui_companion_driver.h"
+
 
 typedef struct ui_companion_win32
 {
    void *empty;
 } ui_companion_win32_t;
+
+bool win32_browser(
+      HWND owner,
+      char *filename,
+      const char *extensions,
+      const char *title,
+      const char *initial_dir)
+{
+   OPENFILENAME ofn;
+
+   memset((void*)&ofn, 0, sizeof(OPENFILENAME));
+
+   ofn.lStructSize     = sizeof(OPENFILENAME);
+   ofn.hwndOwner       = owner;
+   ofn.lpstrFilter     = extensions;
+   ofn.lpstrFile       = filename;
+   ofn.lpstrTitle      = title;
+   ofn.lpstrInitialDir = TEXT(initial_dir);
+   ofn.lpstrDefExt     = "";
+   ofn.nMaxFile        = PATH_MAX;
+   ofn.Flags           = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+
+   if (!GetOpenFileName(&ofn))
+      return false;
+
+   return true;
+}
 
 static void ui_companion_win32_deinit(void *data)
 {

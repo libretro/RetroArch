@@ -30,10 +30,13 @@
 #include "../video_thread_wrapper.h"
 #include "../drivers_wm/win32_shader_dlg.h"
 
-#ifdef __cplusplus
-extern "C"
-#endif
-bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
+extern "C" bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
+extern "C" bool win32_browser(
+      HWND owner,
+      char *filename,
+      const char *extensions,
+      const char *title,
+      const char *initial_dir);
 
 unsigned g_resize_width;
 unsigned g_resize_height;
@@ -278,33 +281,6 @@ bool win32_window_create(void *data, unsigned style,
    driver->video_window  = (uintptr_t)g_hwnd;
 #endif
    return true;
-}
-
-static bool win32_browser(
-      HWND owner,
-      char *filename,
-      const char *extensions,
-      const char *title,
-      const char *initial_dir)
-{
-	OPENFILENAME ofn;
-
-	memset((void*)&ofn, 0, sizeof(OPENFILENAME));
-
-	ofn.lStructSize     = sizeof(OPENFILENAME);
-	ofn.hwndOwner       = owner;
-	ofn.lpstrFilter     = extensions;
-	ofn.lpstrFile       = filename;
-	ofn.lpstrTitle      = title;
-	ofn.lpstrInitialDir = TEXT(initial_dir);
-	ofn.lpstrDefExt     = "";
-	ofn.nMaxFile        = PATH_MAX;
-	ofn.Flags           = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
-
-	if (!GetOpenFileName(&ofn))
-		return false;
-
-	return true;
 }
 
 LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
