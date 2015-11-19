@@ -29,6 +29,7 @@ extern EGLSurface g_egl_surf;
 extern EGLDisplay g_egl_dpy;
 extern EGLConfig g_egl_config;
 extern bool g_use_hw_ctx;
+extern unsigned g_interval;
 
 void egl_report_error(void);
 
@@ -39,5 +40,7 @@ gfx_ctx_proc_t egl_get_proc_address(const char *symbol);
 void egl_bind_hw_render(void *data, bool enable);
 
 void egl_swap_buffers(void *data);
+
+void egl_set_swap_interval(void *data, unsigned interval);
 
 #endif

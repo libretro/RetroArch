@@ -40,7 +40,6 @@
 
 static volatile sig_atomic_t g_quit;
 static bool g_inited;
-static unsigned g_interval;
 static enum gfx_ctx_api g_api;
 
 static unsigned g_fb_width;
@@ -70,20 +69,6 @@ static void sighandler(int sig)
 {
    (void)sig;
    g_quit = 1;
-}
-
-static void gfx_ctx_vc_swap_interval(void *data, unsigned interval)
-{
-   (void)data;
-
-   /* Can be called before initialization.
-    * Some contexts require that swap interval 
-    * is known at startup time.
-    */
-   g_interval = interval;
-
-   if (g_egl_dpy)
-      eglSwapInterval(g_egl_dpy, interval);
 }
 
 static void gfx_ctx_vc_check_window(void *data, bool *quit,
@@ -332,7 +317,7 @@ static bool gfx_ctx_vc_set_video_mode(void *data,
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 
-   gfx_ctx_vc_swap_interval(data, g_interval);
+   egl_set_swap_interval(data, g_interval);
 
    g_inited = true;
 
@@ -607,7 +592,7 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_init,
    gfx_ctx_vc_destroy,
    gfx_ctx_vc_bind_api,
-   gfx_ctx_vc_swap_interval,
+   egl_set_swap_interval,
    gfx_ctx_vc_set_video_mode,
    gfx_ctx_vc_get_video_size,
    NULL, /* get_video_output_size */

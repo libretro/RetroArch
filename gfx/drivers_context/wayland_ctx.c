@@ -34,7 +34,6 @@ typedef struct gfx_ctx_wayland_data
    int g_fd;
    unsigned g_width;
    unsigned g_height;
-   unsigned g_interval;
    struct wl_display *g_dpy;
    struct wl_registry *g_registry;
    struct wl_compositor *g_compositor;
@@ -175,30 +174,6 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 
    wl->g_width  = 0;
    wl->g_height = 0;
-}
-
-static void gfx_ctx_wl_swap_interval(void *data, unsigned interval)
-{
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      driver->video_context_data;
-
-   (void)data;
-
-   if (!wl)
-      return;
-
-   wl->g_interval = interval;
-
-   if (g_egl_dpy && eglGetCurrentContext())
-   {
-      RARCH_LOG("[Wayland/EGL]: eglSwapInterval(%u)\n", wl->g_interval);
-      if (!eglSwapInterval(g_egl_dpy, wl->g_interval))
-      {
-         RARCH_ERR("[Wayland/EGL]: eglSwapInterval() failed.\n");
-         egl_report_error();
-      }
-   }
 }
 
 static void flush_wayland_fd(void)
@@ -579,7 +554,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 
    RARCH_LOG("[Wayland/EGL]: Current context: %p.\n", (void*)eglGetCurrentContext());
 
-   gfx_ctx_wl_swap_interval(data, wl->g_interval);
+   egl_set_swap_interval(data, g_interval);
 
    if (fullscreen)
       wl_shell_surface_set_fullscreen(wl->g_shell_surf, WL_SHELL_SURFACE_FULLSCREEN_METHOD_DEFAULT, 0, NULL);
@@ -804,7 +779,7 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_init,
    gfx_ctx_wl_destroy,
    gfx_ctx_wl_bind_api,
-   gfx_ctx_wl_swap_interval,
+   egl_set_swap_interval,
    gfx_ctx_wl_set_video_mode,
    gfx_ctx_wl_get_video_size,
    NULL, /* get_video_output_size */

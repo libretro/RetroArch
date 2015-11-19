@@ -27,6 +27,7 @@ EGLSurface g_egl_surf;
 EGLDisplay g_egl_dpy;
 EGLConfig g_egl_config;
 bool g_use_hw_ctx;
+unsigned g_interval;
 
 void egl_report_error(void)
 {
@@ -122,4 +123,25 @@ void egl_bind_hw_render(void *data, bool enable)
 void egl_swap_buffers(void *data)
 {
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
+}
+
+void egl_set_swap_interval(void *data, unsigned interval)
+{
+   /* Can be called before initialization.
+    * Some contexts require that swap interval 
+    * is known at startup time.
+    */
+   g_interval = interval;
+
+   if (!g_egl_dpy)
+      return;
+   if (!(eglGetCurrentContext()))
+      return;
+
+   RARCH_LOG("[EGL]: eglSwapInterval(%u)\n", interval);
+   if (!eglSwapInterval(g_egl_dpy, interval))
+   {
+      RARCH_ERR("[EGL]: eglSwapInterval() failed.\n");
+      egl_report_error();
+   }
 }

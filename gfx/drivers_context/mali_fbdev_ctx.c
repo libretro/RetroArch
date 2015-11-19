@@ -43,14 +43,6 @@ static void gfx_ctx_mali_fbdev_sighandler(int sig)
    g_quit = 1;
 }
 
-static void gfx_ctx_mali_fbdev_set_swap_interval(
-      void *data, unsigned interval)
-{
-   (void)data;
-   if (g_egl_dpy)
-      eglSwapInterval(g_egl_dpy, interval);
-}
-
 static void gfx_ctx_mali_fbdev_destroy(void *data)
 {
    int fb;
@@ -282,7 +274,7 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    gfx_ctx_mali_fbdev_init,
    gfx_ctx_mali_fbdev_destroy,
    gfx_ctx_mali_fbdev_bind_api,
-   gfx_ctx_mali_fbdev_set_swap_interval,
+   egl_set_swap_interval,
    gfx_ctx_mali_fbdev_set_video_mode,
    gfx_ctx_mali_fbdev_get_video_size,
    NULL, /* get_video_output_size */

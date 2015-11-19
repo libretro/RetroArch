@@ -34,7 +34,6 @@ static XF86VidModeModeInfo g_desktop_mode;
 static bool g_should_reset_mode;
 
 static bool g_inited;
-static unsigned g_interval;
 static enum gfx_ctx_api g_api;
 static unsigned g_major;
 static unsigned g_minor;
@@ -47,24 +46,6 @@ static int egl_nul_handler(Display *dpy, XErrorEvent *event)
 }
 
 static void gfx_ctx_xegl_destroy(void *data);
-
-static void gfx_ctx_xegl_swap_interval(void *data, unsigned interval)
-{
-   (void)data;
-   g_interval = interval;
-
-   if (!g_egl_dpy)
-      return;
-   if (!(eglGetCurrentContext()))
-      return;
-
-   RARCH_LOG("[X/EGL]: eglSwapInterval(%u)\n", g_interval);
-   if (!eglSwapInterval(g_egl_dpy, g_interval))
-   {
-      RARCH_ERR("[X/EGL]: eglSwapInterval() failed.\n");
-      egl_report_error();
-   }
-}
 
 static void gfx_ctx_xegl_set_resize(void *data,
    unsigned width, unsigned height)
@@ -396,7 +377,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    x11_event_queue_check(&event);
    x11_install_quit_atom();
 
-   gfx_ctx_xegl_swap_interval(data, g_interval);
+   egl_set_swap_interval(data, g_interval);
 
    /* This can blow up on some drivers. It's not fatal, 
     * so override errors for this call.
@@ -550,7 +531,7 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    gfx_ctx_xegl_init,
    gfx_ctx_xegl_destroy,
    gfx_ctx_xegl_bind_api,
-   gfx_ctx_xegl_swap_interval,
+   egl_set_swap_interval,
    gfx_ctx_xegl_set_video_mode,
    x11_get_video_size,
    NULL, /* get_video_output_size */

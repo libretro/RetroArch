@@ -43,11 +43,6 @@ static screen_display_t screen_disp;
 
 static enum gfx_ctx_api g_api;
 
-static void gfx_ctx_qnx_set_swap_interval(void *data, unsigned interval)
-{
-   eglSwapInterval(g_egl_dpy, interval);
-}
-
 static void gfx_ctx_qnx_destroy(void *data)
 {
    egl_destroy();
@@ -381,7 +376,7 @@ const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    gfx_ctx_qnx_init,
    gfx_ctx_qnx_destroy,
    gfx_ctx_qnx_bind_api,
-   gfx_ctx_qnx_set_swap_interval,
+   egl_set_swap_interval,
    gfx_ctx_qnx_set_video_mode,
    gfx_ctx_qnx_get_video_size,
    NULL, /* get_video_output_size */

@@ -33,13 +33,6 @@ static void sighandler(int sig)
    g_quit = 1;
 }
 
-static void gfx_ctx_vivante_set_swap_interval(void *data, unsigned interval)
-{
-   (void)data;
-   if (g_egl_dpy)
-      eglSwapInterval(g_egl_dpy, interval);
-}
-
 static void gfx_ctx_vivante_destroy(void *data)
 {
    (void)data;
@@ -125,12 +118,6 @@ error:
    RARCH_ERR("[Vivante fbdev]: EGL error: %d.\n", eglGetError());
    gfx_ctx_vivante_destroy(data);
    return false;
-}
-
-static void gfx_ctx_vivante_swap_buffers(void *data)
-{
-   (void)data;
-   eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
 static void gfx_ctx_vivante_check_window(void *data, bool *quit,
@@ -261,7 +248,7 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    gfx_ctx_vivante_init,
    gfx_ctx_vivante_destroy,
    gfx_ctx_vivante_bind_api,
-   gfx_ctx_vivante_set_swap_interval,
+   egl_set_swap_interval,
    gfx_ctx_vivante_set_video_mode,
    gfx_ctx_vivante_get_video_size,
    NULL, /* get_video_output_size */
@@ -275,7 +262,7 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    gfx_ctx_vivante_has_focus,
    gfx_ctx_vivante_suppress_screensaver,
    gfx_ctx_vivante_has_windowed,
-   gfx_ctx_vivante_swap_buffers,
+   egl_swap_buffers,
    gfx_ctx_vivante_input_driver,
    egl_get_proc_address,
    NULL,

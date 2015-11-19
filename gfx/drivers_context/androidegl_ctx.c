@@ -33,11 +33,6 @@ int system_property_get(const char *cmd, const char *args, char *value);
 
 static bool g_es3;
 
-static void android_gfx_ctx_set_swap_interval(void *data, unsigned interval)
-{
-   eglSwapInterval(g_egl_dpy, interval);
-}
-
 static void android_gfx_ctx_destroy(void *data)
 {
    egl_destroy();
@@ -296,7 +291,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_init,
    android_gfx_ctx_destroy,
    android_gfx_ctx_bind_api,
-   android_gfx_ctx_set_swap_interval,
+   egl_set_swap_interval,
    android_gfx_ctx_set_video_mode,
    android_gfx_ctx_get_video_size,
    NULL, /* get_video_output_size */
