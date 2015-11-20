@@ -311,7 +311,7 @@ static int playlist_association_left(unsigned type, const char *label,
 
    core_info_list_t *list = (global->core_info.list) ? global->core_info.list : NULL;
    if (!list)
-      return NULL;
+      return -1;
 
    struct string_list *stnames = string_split(settings->playlist_names, ";");
    struct string_list *stcores = string_split(settings->playlist_cores, ";");
