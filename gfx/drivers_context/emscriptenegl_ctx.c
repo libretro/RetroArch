@@ -30,8 +30,6 @@
 #include "../../config.h"
 #endif
 
-static bool g_inited;
-
 static unsigned g_fb_width;
 static unsigned g_fb_height;
 
@@ -124,7 +122,7 @@ static bool gfx_ctx_emscripten_init(void *data)
 
    (void)data;
 
-   if (g_inited)
+   if (g_egl_inited)
    {
       RARCH_LOG("[EMSCRIPTEN/EGL]: Attempted to re-initialize driver.\n");
       return true;
@@ -171,10 +169,10 @@ static bool gfx_ctx_emscripten_set_video_mode(void *data,
 {
    (void)data;
 
-   if (g_inited)
+   if (g_egl_inited)
       return false;
 
-   g_inited = true;
+   g_egl_inited = true;
    return true;
 }
 
@@ -200,7 +198,7 @@ static void gfx_ctx_emscripten_destroy(void *data)
 {
    egl_destroy(data);
 
-   g_inited       = false;
+   g_egl_inited       = false;
 }
 
 static void gfx_ctx_emscripten_input_driver(void *data,
@@ -225,7 +223,7 @@ static bool gfx_ctx_emscripten_has_focus(void *data)
 {
    (void)data;
 
-   return g_inited;
+   return g_egl_inited;
 }
 
 static bool gfx_ctx_emscripten_suppress_screensaver(void *data, bool enable)

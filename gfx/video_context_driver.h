@@ -34,6 +34,7 @@ extern "C" {
 
 enum gfx_ctx_api
 {
+   GFX_CTX_NONE = 0,
    GFX_CTX_OPENGL_API,
    GFX_CTX_OPENGL_ES_API,
    GFX_CTX_DIRECT3D8_API,

@@ -38,9 +38,6 @@
 #include "../../config.h"
 #endif
 
-static bool g_inited;
-static enum gfx_ctx_api g_api;
-
 static unsigned g_fb_width;
 static unsigned g_fb_height;
 
@@ -164,7 +161,7 @@ static bool gfx_ctx_vc_init(void *data)
    };
    settings_t *settings = config_get_ptr();
 
-   if (g_inited)
+   if (g_egl_inited)
    {
       RARCH_ERR("[VC/EGL]: Attempted to re-initialize driver.\n");
       return false;
@@ -179,7 +176,7 @@ static bool gfx_ctx_vc_init(void *data)
       goto error;
    }
 
-   if (!egl_create_context((g_api == GFX_CTX_OPENGL_ES_API) ? context_attributes : NULL))
+   if (!egl_create_context((g_egl_api == GFX_CTX_OPENGL_ES_API) ? context_attributes : NULL))
    {
       egl_report_error();
       goto error;
@@ -281,13 +278,13 @@ static bool gfx_ctx_vc_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   if (g_inited)
+   if (g_egl_inited)
       return false;
 
    egl_install_sighandlers();
    egl_set_swap_interval(data, g_interval);
 
-   g_inited = true;
+   g_egl_inited = true;
 
    return true;
 }
@@ -299,7 +296,7 @@ static bool gfx_ctx_vc_bind_api(void *data,
    (void)major;
    (void)minor;
 
-   g_api = api;
+   g_egl_api = api;
 
    switch (api)
    {
@@ -344,7 +341,7 @@ static void gfx_ctx_vc_destroy(void *data)
 
       if (g_egl_ctx)
       {
-         gfx_ctx_vc_bind_api(data, g_api, 0, 0);
+         gfx_ctx_vc_bind_api(data, g_egl_api, 0, 0);
          eglMakeCurrent(g_egl_dpy,
                EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
          eglDestroyContext(g_egl_dpy, g_egl_ctx);
@@ -363,7 +360,7 @@ static void gfx_ctx_vc_destroy(void *data)
 
       if (g_egl_surf)
       {
-         gfx_ctx_vc_bind_api(data, g_api, 0, 0);
+         gfx_ctx_vc_bind_api(data, g_egl_api, 0, 0);
          eglDestroySurface(g_egl_dpy, g_egl_surf);
       }
 
@@ -376,7 +373,7 @@ static void gfx_ctx_vc_destroy(void *data)
       eglBindAPI(EGL_OPENVG_API);
       eglMakeCurrent(g_egl_dpy,
             EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-      gfx_ctx_vc_bind_api(data, g_api, 0, 0);
+      gfx_ctx_vc_bind_api(data, g_egl_api, 0, 0);
       eglMakeCurrent(g_egl_dpy,
             EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
       eglTerminate(g_egl_dpy);
@@ -389,7 +386,7 @@ static void gfx_ctx_vc_destroy(void *data)
    g_pbuff_surf   = NULL;
    g_egl_dpy      = NULL;
    g_egl_config   = 0;
-   g_inited       = false;
+   g_egl_inited   = false;
 
    for (i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)
    {
@@ -409,7 +406,7 @@ static void gfx_ctx_vc_input_driver(void *data,
 static bool gfx_ctx_vc_has_focus(void *data)
 {
    (void)data;
-   return g_inited;
+   return g_egl_inited;
 }
 
 static bool gfx_ctx_vc_suppress_screensaver(void *data, bool enable)
@@ -448,7 +445,7 @@ static bool gfx_ctx_vc_image_buffer_init(void *data,
    };
 
    /* Don't bother, we just use VGImages for our EGLImage anyway. */
-   if (g_api == GFX_CTX_OPENVG_API)
+   if (g_egl_api == GFX_CTX_OPENVG_API)
       return false;
 
    peglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC)
@@ -485,7 +482,7 @@ static bool gfx_ctx_vc_image_buffer_init(void *data,
       goto fail;
    }
 
-   gfx_ctx_vc_bind_api(data, g_api, 0, 0);
+   gfx_ctx_vc_bind_api(data, g_egl_api, 0, 0);
    eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
 
    g_smooth = video->smooth;
@@ -504,7 +501,7 @@ fail:
       g_pbuff_surf = EGL_NO_CONTEXT;
    }
 
-   gfx_ctx_vc_bind_api(data, g_api, 0, 0);
+   gfx_ctx_vc_bind_api(data, g_egl_api, 0, 0);
    eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
 
    return false;
@@ -550,7 +547,7 @@ static bool gfx_ctx_vc_image_buffer_write(void *data, const void *frame, unsigne
          height);
    *image_handle = eglBuffer[index];
 
-   gfx_ctx_vc_bind_api(data, g_api, 0, 0);
+   gfx_ctx_vc_bind_api(data, g_egl_api, 0, 0);
    eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
 
    return ret;

@@ -32,8 +32,6 @@ static unsigned g_screen;
 static XF86VidModeModeInfo g_desktop_mode;
 static bool g_should_reset_mode;
 
-static bool g_inited;
-static enum gfx_ctx_api g_api;
 static unsigned g_major;
 static unsigned g_minor;
 
@@ -94,12 +92,12 @@ static bool gfx_ctx_xegl_init(void *data)
    EGLint major, minor;
    EGLint n;
 
-   if (g_inited)
+   if (g_egl_inited)
       return false;
 
    XInitThreads();
 
-   switch (g_api)
+   switch (g_egl_api)
    {
       case GFX_CTX_OPENGL_API:
          attrib_ptr = egl_attribs_gl;
@@ -144,7 +142,7 @@ error:
 
 static EGLint *xegl_fill_attribs(EGLint *attr)
 {
-   switch (g_api)
+   switch (g_egl_api)
    {
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
@@ -358,7 +356,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    XSetErrorHandler(old_handler);
 
    XFree(vi);
-   g_inited    = true;
+   g_egl_inited    = true;
 
    if (!x11_input_ctx_new(true_full))
       goto error;
@@ -410,7 +408,7 @@ static void gfx_ctx_xegl_destroy(void *data)
    /* Do not close g_x11_dpy. We'll keep one for the entire application 
     * lifecycle to work-around nVidia EGL limitations.
     */
-   g_inited = false;
+   g_egl_inited = false;
 }
 
 static void gfx_ctx_xegl_input_driver(void *data,
@@ -426,7 +424,7 @@ static void gfx_ctx_xegl_input_driver(void *data,
 
 static bool gfx_ctx_xegl_has_focus(void *data)
 {
-   if (!g_inited)
+   if (!g_egl_inited)
       return false;
 
    return x11_has_focus(data);
@@ -460,9 +458,9 @@ static bool gfx_ctx_xegl_bind_api(void *data,
 {
    (void)data;
 
-   g_major = major;
-   g_minor = minor;
-   g_api = api;
+   g_major   = major;
+   g_minor   = minor;
+   g_egl_api = api;
 
    switch (api)
    {

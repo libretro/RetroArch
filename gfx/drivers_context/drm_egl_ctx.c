@@ -72,8 +72,6 @@ typedef struct gfx_ctx_drm_egl_data
    struct gbm_surface *g_gbm_surface;
 } gfx_ctx_drm_egl_data_t;
 
-static enum gfx_ctx_api g_api;
-
 static unsigned g_major;
 
 static unsigned g_minor;
@@ -528,7 +526,7 @@ error:
 
 static EGLint *egl_fill_attribs(EGLint *attr)
 {
-   switch (g_api)
+   switch (g_egl_api)
    {
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
@@ -643,7 +641,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
 
    egl_install_sighandlers();
 
-   switch (g_api)
+   switch (g_egl_api)
    {
       case GFX_CTX_OPENGL_API:
          attrib_ptr = egl_attribs_gl;
@@ -820,9 +818,9 @@ static bool gfx_ctx_drm_egl_bind_api(void *data,
 {
    (void)data;
 
-   g_major = major;
-   g_minor = minor;
-   g_api = api;
+   g_major   = major;
+   g_minor   = minor;
+   g_egl_api = api;
 
    switch (api)
    {

@@ -32,6 +32,8 @@ extern EGLContext g_egl_hw_ctx;
 extern EGLSurface g_egl_surf;
 extern EGLDisplay g_egl_dpy;
 extern EGLConfig g_egl_config;
+extern enum gfx_ctx_api g_egl_api;
+extern bool g_egl_inited;
 extern bool g_use_hw_ctx;
 extern unsigned g_interval;
 
