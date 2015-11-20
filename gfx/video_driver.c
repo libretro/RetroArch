@@ -791,12 +791,6 @@ void video_driver_get_video_output_prev(void)
 }
 
 
-bool video_driver_cached_frame_has_valid_fb(void)
-{
-   if (!video_state.frame_cache.data)
-      return false;
-   return (video_state.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID);
-}
 
 void video_driver_cached_frame_set_ptr(const void *data)
 {
@@ -1187,6 +1181,10 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB:
+         if (!video_state.frame_cache.data)
+            return false;
+         return (video_state.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID);
       case RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER:
          return video_driver_cached_frame();
       case RARCH_DISPLAY_CTL_IS_FOCUSED:

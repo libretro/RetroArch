@@ -234,7 +234,7 @@ bool take_screenshot(void)
 
    if (viewport_read)
       ret = take_screenshot_viewport();
-   else if (!video_driver_cached_frame_has_valid_fb())
+   else if (!video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB, NULL))
       ret = take_screenshot_raw();
    else if (driver->video->read_frame_raw)
    {

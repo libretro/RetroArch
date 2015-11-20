@@ -227,6 +227,7 @@ enum rarch_display_ctl_state
    RARCH_DISPLAY_CTL_IS_FOCUSED,
    /* Renders the current video frame. */
    RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER,
+   RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB,
    RARCH_DISPLAY_CTL_GET_FRAME_COUNT
 };
 
@@ -377,8 +378,6 @@ void video_driver_cached_frame_set_ptr(const void *data);
 
 void video_driver_cached_frame_get(const void **data, unsigned *width,
       unsigned *height, size_t *pitch);
-
-bool video_driver_cached_frame_has_valid_fb(void);
 
 #ifdef __cplusplus
 }
