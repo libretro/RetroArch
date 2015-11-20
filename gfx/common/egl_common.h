@@ -59,4 +59,6 @@ bool egl_init_context(NativeDisplayType display,
 
 bool egl_create_context(EGLint *egl_attribs);
 
+bool egl_create_surface(NativeWindowType native_window);
+
 #endif

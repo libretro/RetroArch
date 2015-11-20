@@ -228,3 +228,16 @@ bool egl_create_context(EGLint *egl_attribs)
 
    return true;
 }
+
+bool egl_create_surface(NativeWindowType native_window)
+{
+   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, native_window, NULL);
+   if (!g_egl_surf)
+      return false;
+
+   /* Connect the context to the surface. */
+   if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
+      return false;
+
+   return true;
+}

@@ -737,13 +737,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       goto error;
    }
 
-   g_egl_surf = eglCreateWindowSurface(g_egl_dpy,
-         g_egl_config, (EGLNativeWindowType)drm->g_gbm_surface, NULL);
-   if (!g_egl_surf)
-      goto error;
-
-   if (!eglMakeCurrent(g_egl_dpy,
-            g_egl_surf, g_egl_surf, g_egl_ctx))
+   if (!egl_create_surface((EGLNativeWindowType)drm->g_gbm_surface))
       goto error;
 
    glClear(GL_COLOR_BUFFER_BIT);

@@ -259,12 +259,7 @@ static bool gfx_ctx_vc_init(void *data)
    }
    vc_dispmanx_update_submit_sync(dispman_update);
 
-   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, &nativewindow, NULL);
-   if (!g_egl_surf)
-      goto error;
-
-   /* Connect the context to the surface. */
-   if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
+   if (!egl_create_surface(&nativewindow))
       goto error;
 
    return true;
