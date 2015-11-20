@@ -111,6 +111,8 @@ bool core_info_get_display_name(const char *path, char *s, size_t len);
 
 void core_info_get_name(const char *path, char *s, size_t len);
 
+core_info_t *core_info_get(core_info_list_t *list, size_t i);
+
 #ifdef __cplusplus
 }
 #endif
