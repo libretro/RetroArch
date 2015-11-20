@@ -243,7 +243,7 @@ const char *menu_hash_to_str_it(uint32_t hash)
       case MENU_VALUE_NOT_AVAILABLE:
          return "N/D";
       case MENU_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
-         return "Directory per il remapping dei dispositivi di input";
+         return "Directory per la rimappatura dei dispositivi di input";
       case MENU_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
          return "Directory per l'autoconfigurazione dei dispositivi di input";
       case MENU_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY:
@@ -384,6 +384,10 @@ const char *menu_hash_to_str_it(uint32_t hash)
          return "Slow-Motion Ratio";
       case MENU_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
          return "Configurazione per core";
+	  case MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS:
+         return "Usa opzioni core per gioco se disponibili";
+	  case MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE:
+         return "Crea file opzioni di gioco";
       case MENU_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
          return "Carica file di override automaticamente";
       case MENU_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
@@ -913,7 +917,7 @@ const char *menu_hash_to_str_it(uint32_t hash)
       case MENU_LABEL_VALUE_UI_SETTINGS:
          return "Interfaccia Utente";
       case MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
-         return "Seleziona file di menù";
+         return "Seleziona file";
       case MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS:
          return "Aggiorna";
       case MENU_LABEL_VALUE_NETWORK_SETTINGS:
@@ -993,7 +997,7 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
             char t[501];
 
             strlcpy(t, 
-                  "RetroArch si basa su una forma unica di\n"
+				  "RetroArch si basa su una forma unica di\n"
                   "sincronizzazione audio/video che necessita essere\n"
                   "calibrata rispetto alla frequenza di aggiornamento\n"
                   "del tuo schermo per ottenere le migliori performance.\n"
@@ -1004,8 +1008,8 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                   " \n", sizeof(t));
             snprintf(u, sizeof(u),
                   "a) Vai su '%s' -> '%s', e abilita\n"
-                  "'Threaded Video'. La frequenza di aggiornamento non sar¿\n"
-                  "influenzata in questo modo, il framerate sar¿ pi¿ alto,\n"
+                  "'Threaded Video'. La frequenza di aggiornamento non sarà\n"
+                  "influenzata in questo modo, il framerate sarà più alto,\n"
                   "ma il video potrebbe risultare meno fluido.\n"
                   "b) Vai su '%s' -> '%s', e guarda su\n"
                   "'%s'. Lascia caricare per\n"
@@ -1025,7 +1029,7 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                "seleziona '%s' oppure '%s'.\n"
                " \n"
                "I files saranno comparati alle entrate del database.\n"
-               "Se c'¿ un riscontro, sar¿ aggiunta un'entrata\n"
+               "Se c'è un riscontro, sarà aggiunta un'entrata\n"
                "alla collezione.\n"
                " \n"
                "Puoi accedere facilmente a questo contenuto\n"
@@ -1049,7 +1053,7 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
          snprintf(s, len,
                "Puoi usare i seguenti controlli sotto \n"
                "sia su gamepad che su tastiera\n"
-               "per controllare il men¿: \n"
+               "per controllare il menù: \n"
                " \n"
                );
          break;
@@ -1072,7 +1076,7 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                snprintf(s, len,
                      "udev Input driver. \n"
                      " \n"
-                     "Questo driver pu¿ caricare senza X. \n"
+                     "Questo driver può caricare senza X. \n"
                      " \n"
                      "Usa la recente evdev joypad API \n"
                      "per il supporto del joystick. Supporta \n"
@@ -1084,7 +1088,7 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                      "mouse e touchpads. \n"
                      " \n"
                      "Come predefinito nella maggior parte delle distribuzioni, i nodi /dev/input \n"
-                     "sono only-root (modalit¿ 600). Puoi settare una regola udev \n"
+                     "sono only-root (modalità 600). Puoi settare una regola udev \n"
                      "che fa queste accessibili ai non-root."
                      );
                break;
@@ -1094,9 +1098,9 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                      " \n"
                      "questo driver richiede un'attiva TTY. Gli eventi \n"
                      "della tastiera sono letti direttamente dal TTY che \n"
-                     "che lo rende pi¿ semplice, ma non tanto flessibile quanto udev. \n" "Mouse, ecc, non sono supportati. \n"
+                     "che lo rende più semplice, ma non tanto flessibile quanto udev. \n" "Mouse, ecc, non sono supportati. \n"
                      " \n"
-                     "Questo driver usa la pi¿ vecchia API per il joystick \n"
+                     "Questo driver usa la più vecchia API per il joystick \n"
                      "(/dev/input/js*).");
                break;
             default:
@@ -1116,14 +1120,14 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                "Per caricare i giochi, hai bisogno di \n"
                "un 'Core' da usare, e un gioco per quel core.\n"
                " \n"
-               "Per controllare dove il men¿ comincia \n"
+               "Per controllare dove il menù comincia \n"
                " a selezionare per contenuto, imposta  \n"
                "'File Browser Directory'. \n"
-               "Se non impostato, si avvier¿ nella root. \n"
+               "Se non impostato, si avvierà nella root. \n"
                " \n"
-               "Il browser filtrer¿ le\n"
+               "Il browser filtrerà le\n"
                "estensioni per l'ultimo core impostato \n"
-               "in 'Carica Core', e user¿ quel core \n"
+               "in 'Carica Core', e userà quel core \n"
                "quando il gioco viene caricato."
                );
          break;
@@ -1134,25 +1138,25 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                "Sfoglia per una implementazione per il \n"
                "core libretro. Dove il browser \n"
                "si avvia dipende dal percorso impostato per \n"
-               "Core Directory. Se vuoto, si avvier¿ nella root. \n"
+               "Core Directory. Se vuoto, si avvierà nella root. \n"
                " \n"
-               "Se la Core Directory ¿ una directory, il men¿ \n"
-               "user¿ quella come cartella principale. Se la Core \n"
-               "Directory ¿ un percorso completo, si avvier¿ \n"
+               "Se la Core Directory è una directory, il menù \n"
+               "userà quella come cartella principale. Se la Core \n"
+               "Directory è un percorso completo, si avvierà \n"
                "nella cartella dove si trova il file.");
          break;
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
          snprintf(s, len,
                "Caricando contenuto dalla cronologia. \n"
                " \n"
-               "Quando il contenuto ¿ caricato, le combinazioni \n"
+               "Quando il contenuto è caricato, le combinazioni \n"
                "contenuto e core sono salvati nella cronologia. \n"
                " \n"
-               "La cronologia ¿ salvata in un file nella stessa \n"
+               "La cronologia è salvata in un file nella stessa \n"
                "directory come il file di configurazione RetroArch. Se \n"
                "nessun file di configurazione viene caricato all'avvio, la \n"
-               "cronologia non sar¿ salvata o caricata, e non apparir¿ \n"
-               "nel men¿ principale."
+               "cronologia non sarà salvata o caricata, e non apparirà \n"
+               "nel menù principale."
                );
          break;
       case MENU_LABEL_VIDEO_DRIVER:
@@ -1177,7 +1181,7 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                snprintf(s, len,
                      "Driver video SDL 2.\n"
                      " \n"
-                     "Questo ¿ un driver video SDL 2 renderizzato \n"
+                     "Questo è un driver video SDL 2 renderizzato \n"
                      "via software.\n"
                      " \n"
                      "Le performance per le implementazioni dei core \n"
@@ -1188,7 +1192,7 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                snprintf(s, len,
                      "Driver video SDL.\n"
                      " \n"
-                     "Questo ¿ un driver video SDL 1.2 renderizzato \n"
+                     "Questo è un driver video SDL 1.2 renderizzato \n"
                      "via software.\n"
                      " \n"
                      "Le performance sono considerate quasi ottimali. \n"
@@ -1217,7 +1221,7 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                snprintf(s, len,
                      "Driver video Sunxi-G2D. \n"
                      " \n"
-                     "Questo ¿ un driver video Sunxi a bsso livello. \n"
+                     "Questo è un driver video Sunxi a bsso livello. \n"
                      "Usa il blocco G2D nei Soc Allwinner.");
                break;
             default:
@@ -1240,7 +1244,7 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
          {
             case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC:
                snprintf(s, len,
-                     "Implementazione SINC in modalit¿ finestra.");
+                     "Implementazione SINC in modalità finestra.");
                break;
             case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC:
                snprintf(s, len,
@@ -1269,12 +1273,12 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                "HLSL"
 #endif
                " preimposta direttamente. \n"
-               "Il men¿ degli shader ¿ aggiornato di conseguenza. \n"
+               "Il menù degli shader è aggiornato di conseguenza. \n"
                " \n"
                "Se la CGP usa metodi di scala che non sono \n"
                "semplici, (i.e. scala fonte, stessa scala \n"
                "fattore per X/Y), il fattore di scala mostrato \n"
-               "nel men¿ potrebbe essere non corretto."
+               "nel menù potrebbe essere non corretto."
                );
          break;
       case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
@@ -1283,16 +1287,16 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                " \n"
                "Il fattore di scala accumula, i.e. 2x \n"
                "per il primo passaggio e 2x per il secondo \n"
-               "passaggio dar¿ un scala totale di 4x. \n"
+               "passaggio darà un scala totale di 4x. \n"
                " \n"
-               "Se c'¿ un fattore di scala per l'ultimo \n"
-               "passaggio, il risultato ¿ allungare lo \n"
+               "Se c'è un fattore di scala per l'ultimo \n"
+               "passaggio, il risultato è allungare lo \n"
                "schermo con il filtro specificato in \n"
                "'Filtro Predefinito'. \n"
                " \n"
-               "Se 'Non considerare' ¿ impostato, sia la scala \n"
+               "Se 'Non considerare' è impostato, sia la scala \n"
                "1x che allunga a pieno schermo saranno \n"
-               "usati a seconda se ¿ o non ¿ l'ultimo \n"
+               "usati a seconda se è o non è l'ultimo \n"
                "passaggio."
                );
          break;
@@ -1308,21 +1312,21 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                "shader da usare. Se imposti questo a 0, e usi \n"
                "Applica modifiche agli shader, usi uno shader 'vuoto'. \n"
                " \n"
-               "L'opzione Filtro Predefinito riguarder¿ il \n"
+               "L'opzione Filtro Predefinito riguarderà il \n"
                "filtro di allungamento immagine.");
          break;
       case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
          snprintf(s, len,
                "Parametri shader. \n"
                " \n"
-               "Modifica direttamente l'attuale shader. Non sar¿ \n"
+               "Modifica direttamente l'attuale shader. Non sarà \n"
                "salvato al file preimpostato CGP/GLSLP.");
          break;
       case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
          snprintf(s, len,
                "Parametri Shader Preimpostati. \n"
                " \n"
-               "Modifica lo shader preimpostato attualmente nel men¿."
+               "Modifica lo shader preimpostato attualmente nel menù."
                );
          break;
       case MENU_LABEL_VIDEO_SHADER_PASS:
@@ -1340,22 +1344,22 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
       case MENU_LABEL_CONFIG_SAVE_ON_EXIT:
          snprintf(s, len,
                "Salva la configurazione sul disco all'uscita.\n"
-               "Utile per i men¿ in quanto i settaggi possono \n"
+               "Utile per i menù in quanto i settaggi possono \n"
                "essere modificati. Sovrascrive la configurazione.\n"
                " \n"
                "#include ed i commenti non sono \n"
                "conservati. \n"
                " \n"
-               "Per design, il file di configurazione ¿ \n"
-               "considerato immutabile in quanto ¿ \n"
+               "Per design, il file di configurazione è \n"
+               "considerato immutabile in quanto è \n"
                "piacevolmente mantenuto dall'utente, \n"
                "e non dovrebbe essere sovrascritto \n"
                "alle spalle dell'utente."
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
-               "\nQuesto non ¿ il caso per le \n"
+               "\nQuesto non è il caso per le \n"
                "console comunque, dove \n"
                "guardare al file di configurazione \n"
-               "manualmente non ¿ veramente un'opzione."
+               "manualmente non è veramente un'opzione."
 #endif
                );
          break;
@@ -1363,8 +1367,8 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
          snprintf(s, len,
                "Filtro hardware per questo passaggio. \n"
                " \n"
-               "Se 'Non prendere cura' ¿ impostato, allora il \n"
-               "'Filtro Predefinito' sar¿ usato."
+               "Se 'Non prendere cura' è impostato, allora il \n"
+               "'Filtro Predefinito' sarà usato."
                );
          break;
       case MENU_LABEL_AUTOSAVE_INTERVAL:
@@ -1372,8 +1376,8 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                "Salva automaticamente la SRAM non-volatile \n"
                "ad un itervallo regolare.\n"
                " \n"
-               "Questo ¿ disattivato come predefinito a meno che non \n"
-               "¿ impostato diversamente. L'intervallo ¿ misurato in \n"
+               "Questo è disattivato come predefinito a meno che non \n"
+               "è impostato diversamente. L'intervallo è misurato in \n"
                "secondi. \n"
                " \n"
                "Il valore 0 disattiva il salvataggio automatico.");
@@ -1382,7 +1386,7 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
          snprintf(s, len,
                "Tipo di dispositivo di input. \n"
                " \n"
-               "Sceglie quale tipo di dispositivo usare. Questo ¿ \n"
+               "Sceglie quale tipo di dispositivo usare. Questo è \n"
                "rilevante per il libretro core."
                );
          break;
@@ -1392,11 +1396,11 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                "(GET_LOG_INTERFACE). \n"
                " \n"
                " Se il livello dei log rilasciato da un libretro \n"
-               " core ¿ sotto il livello libretro_log, \n"
-               " sar¿ ignorato.\n"
+               " core è sotto il livello libretro_log, \n"
+               " sarà ignorato.\n"
                " \n"
                " DEBUG log sono sempre ignorati a meno che \n"
-               " la modalit¿ verbose mode ¿ attivata (--verbose).\n"
+               " la modalità verbose mode è attivata (--verbose).\n"
                " \n"
                " DEBUG = 0\n"
                " INFO  = 1\n"
@@ -1409,10 +1413,10 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
          snprintf(s, len,
                "Slot dello stato di salvataggio.\n"
                " \n"
-               " Con lo slot impostato a 0, il nome dello stato di salvataggio ¿ *.state \n"
-               " (o che cosa ¿ stato impostato sulla riga di comando).\n"
-               "Quando lo slot ¿ != 0, il percorso sar¿ (percorso)(d), \n"
-               "dove (d) ¿ il numero dello slot.");
+               " Con lo slot impostato a 0, il nome dello stato di salvataggio è *.state \n"
+               " (o che cosa è stato impostato sulla riga di comando).\n"
+               "Quando lo slot è != 0, il percorso sarà (percorso)(d), \n"
+               "dove (d) è il numero dello slot.");
          break;
       case MENU_LABEL_SHADER_APPLY_CHANGES:
          snprintf(s, len,
@@ -1421,14 +1425,14 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                "Dopo che modifichi i settaggi dello shader, usa questo per \n"
                "applicare i cambiamenti. \n"
                " \n"
-               "Modificare i settaggi dello shader ¿ un \n"
+               "Modificare i settaggi dello shader è un \n"
                "operazione costosa quindi deve essere \n"
                "fatta esplicitamente. \n"
                " \n"
-               "Quando applichi gli shader, i settaggi del men¿ \n"
+               "Quando applichi gli shader, i settaggi del menù \n"
                "degli shader sono salvati ad un file temporaneo (sia \n"
                "menu.cgp che menu.glslp) e caricati. Il file \n"
-               "rimane dopo che RetroArch esce. Il file ¿ \n"
+               "rimane dopo che RetroArch esce. Il file è \n"
                "salvato alla Directory Shader."
                );
          break;
@@ -1437,12 +1441,12 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                "Dispositivo di input. \n"
                " \n"
                "Scegli quale gamepad usare per l'utente N. \n"
-               "Il nome del pad ¿ disponibile."
+               "Il nome del pad è disponibile."
                );
          break;
       case MENU_LABEL_MENU_TOGGLE:
          snprintf(s, len,
-               "Attiva men¿.");
+               "Attiva menù.");
          break;
       case MENU_LABEL_GRAB_MOUSE_TOGGLE:
          snprintf(s, len,
@@ -2032,11 +2036,11 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                "andando su '%s' \n"
                "-> '%s'."
                " \n"
-               "Da l¿ puoi cambiare lo schema,\n"
-               "la dimensione e l'opacit¿ dei tasti, ecc.\n"
+               "Da lì puoi cambiare lo schema,\n"
+               "la dimensione e l'opacità dei tasti, ecc.\n"
                " \n"
                "NOTA: Come predefinito, gli schemi del gamepad virtuale\n"
-               "sono nascosti nel men¿.\n"
+               "sono nascosti nel menù.\n"
                "Se vorresti cambiare questa impostazione,\n"
                "puoi impostare '%s' a spento/OFF.",
                menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
