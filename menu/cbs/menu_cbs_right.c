@@ -329,12 +329,11 @@ static int playlist_association_right(unsigned type, const char *label,
 {
    int i, next, found, current = 0;
    char core_path[PATH_MAX_LENGTH]  = {0};
+   char new_playlist_cores[PATH_MAX_LENGTH] = {0};
    global_t *global                 = global_get_ptr();
    settings_t *settings             = config_get_ptr();
    const char *path                 = path_basename(label);
-   char new_playlist_cores[PATH_MAX_LENGTH] = {0};
-
-   core_info_list_t *list = (global->core_info.list) ? global->core_info.list : NULL;
+   core_info_list_t           *list = global ? global->core_info.list : NULL;
    if (!list)
       return -1;
 
