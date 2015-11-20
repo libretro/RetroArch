@@ -418,6 +418,7 @@ static void rgui_render(void)
    size_t i, end, fb_pitch;
    unsigned fb_width, fb_height;
    int bottom;
+   uint64_t *frame_count;
    char title[256], title_buf[256], title_msg[64];
    char msg[PATH_MAX_LENGTH], timedate[PATH_MAX_LENGTH];
    uint16_t *fb_data              = NULL;
@@ -425,7 +426,8 @@ static void rgui_render(void)
    menu_handle_t *menu            = menu_driver_get_ptr();
    driver_t *driver               = driver_get_ptr();
    settings_t *settings           = config_get_ptr();
-   uint64_t *frame_count          = video_driver_get_frame_count();
+
+   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
    msg[0]       = '\0';
    title[0]     = '\0';

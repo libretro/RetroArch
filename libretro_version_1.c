@@ -102,7 +102,7 @@ static void video_frame(const void *data, unsigned width,
       pitch  = output_pitch;
    }
 
-   frame_count = video_driver_get_frame_count();
+   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
    if (!video->frame(driver->video_data, data, width, height, *frame_count,
             pitch, driver->current_msg))

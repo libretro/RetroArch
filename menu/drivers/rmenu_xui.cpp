@@ -534,6 +534,7 @@ static void rmenu_xui_set_list_text(int index, const wchar_t* leftText,
 
 static void rmenu_xui_render(void)
 {
+   uint64_t *frame_count;
    bool display_kb, msg_force;
    unsigned fb_width;
 	size_t end, i, selection;
@@ -542,7 +543,8 @@ static void rmenu_xui_render(void)
    const char *label           = NULL;
 	unsigned menu_type          = 0;
    menu_handle_t *menu         = menu_driver_get_ptr();
-   uint64_t *frame_count       = video_driver_get_frame_count();
+
+   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
    menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,     &fb_width);
    menu_display_ctl(MENU_DISPLAY_CTL_MSG_FORCE, &msg_force);

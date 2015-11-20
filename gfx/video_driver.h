@@ -218,6 +218,14 @@ enum rarch_display_type
    RARCH_DISPLAY_OSX
 };
 
+enum rarch_display_ctl_state
+{
+   RARCH_DISPLAY_CTL_NONE = 0,
+   RARCH_DISPLAY_CTL_GET_FRAME_COUNT
+};
+
+bool video_driver_ctl(enum rarch_display_ctl_state state, void *data);
+
 /**
  * video_driver_find_handle:
  * @index              : index of driver to get handle to.
@@ -380,8 +388,6 @@ void video_driver_cached_frame_get(const void **data, unsigned *width,
       unsigned *height, size_t *pitch);
 
 bool video_driver_cached_frame_has_valid_fb(void);
-
-uint64_t *video_driver_get_frame_count(void);
 
 #ifdef __cplusplus
 }

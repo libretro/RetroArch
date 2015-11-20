@@ -369,11 +369,13 @@ static bool xdk_renderchain_render(void *data, const void *frame,
 {
    unsigned i;
    unsigned width, height;
+   uint64_t *frame_count    = NULL;
    d3d_video_t      *d3d    = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
    settings_t *settings     = config_get_ptr();
    xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
-   uint64_t *frame_count    = video_driver_get_frame_count();
+
+   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
    video_driver_get_size(&width, &height);
 

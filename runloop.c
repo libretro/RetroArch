@@ -875,6 +875,7 @@ static void rarch_main_cmd_get_state(driver_t *driver,
  */
 static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
 {
+   uint64_t *frame_count         = NULL;
    settings_t *settings          = config_get_ptr();
    global_t   *global            = global_get_ptr();
    driver_t *driver              = driver_get_ptr();
@@ -883,8 +884,10 @@ static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
    bool shutdown_pressed         = (system && system->shutdown) || cmd->quit_key_pressed;
    bool video_alive              = video && video->alive(driver->video_data);
    bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);
-   uint64_t *frame_count         = video_driver_get_frame_count();
-   bool frame_count_end          = main_max_frames && (*frame_count >= main_max_frames);
+   bool frame_count_end          = false;
+   
+   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+   frame_count_end               = main_max_frames && (*frame_count >= main_max_frames);
 
    if (shutdown_pressed || frame_count_end || movie_end || !video_alive || global->exec)
    {

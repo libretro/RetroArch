@@ -464,6 +464,7 @@ static bool zarch_zui_button(zui_t *zui, int x1, int y1, const char *label)
 static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
       const char *label, unsigned item_id, const char *entry)
 {
+   uint64_t *frame_count;
    char title_buf[PATH_MAX_LENGTH];
    unsigned ticker_size;
    bool set_active_id    = false;
@@ -472,7 +473,8 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
    int                y2 = y1 + 50;
    bool           active = zarch_zui_check_button_up(zui, id, x1, y1, x2, y2);
    const float       *bg = ZUI_BG_PANEL;
-   uint64_t *frame_count = video_driver_get_frame_count();
+
+   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
    if (tab->active_id != tab->prev_id)
    {

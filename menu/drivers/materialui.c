@@ -584,9 +584,10 @@ static void mui_render_menu_list(mui_handle_t *mui,
       float *pure_white)
 {
    unsigned header_height;
+   uint64_t *frame_count;
    size_t i                = 0;
-   uint64_t *frame_count   = video_driver_get_frame_count();
    size_t          end     = menu_entries_get_end();
+   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
    if (!menu_display_ctl(MENU_DISPLAY_CTL_UPDATE_PENDING, NULL))
       return;
@@ -732,11 +733,11 @@ static void mui_frame(void)
    char title_buf[PATH_MAX_LENGTH];
    size_t selection;
    size_t title_margin;
+   uint64_t *frame_count;
    mui_handle_t *mui               = NULL;
    driver_t *driver                = driver_get_ptr();
    menu_handle_t *menu             = menu_driver_get_ptr();
    settings_t *settings            = config_get_ptr();
-   uint64_t *frame_count           = video_driver_get_frame_count();
    const uint32_t normal_color     = 0x212121ff;
    const uint32_t hover_color      = 0x212121ff;
    const uint32_t title_color      = 0xffffffff;
@@ -745,6 +746,7 @@ static void mui_frame(void)
    bool background_rendered        = false;
    bool libretro_running           = menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
 
+   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
    (void)passivetab_color;
    (void)activetab_color;
 

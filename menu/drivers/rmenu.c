@@ -122,14 +122,16 @@ end:
 static void rmenu_render(void)
 {
    bool msg_force;
+   uint64_t *frame_count;
    size_t begin, end, i, j, selection;
    struct font_params font_parms = {0};
    char title[256]               = {0};
    char title_buf[256]           = {0};
    char title_msg[64]            = {0};
    menu_handle_t *menu           = menu_driver_get_ptr();
-   uint64_t *frame_count         = video_driver_get_frame_count();
    size_t  entries_end           = menu_entries_get_end();
+
+   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;

@@ -1311,13 +1311,15 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       size_t current, size_t cat_selection_ptr, float *color,
       unsigned width, unsigned height)
 {
+   uint64_t *frame_count;
    unsigned i, ticker_limit;
    math_matrix_4x4 mymat;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
-   uint64_t *frame_count       = video_driver_get_frame_count();
    menu_handle_t *menu         = menu_driver_get_ptr();
    settings_t   *settings      = config_get_ptr();
+
+   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
    if (!list || !list->size || !menu)
       return;

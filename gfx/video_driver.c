@@ -256,11 +256,6 @@ uintptr_t video_driver_get_current_framebuffer(void)
 
 static uint64_t video_frame_count;
 
-uint64_t *video_driver_get_frame_count(void)
-{
-   return &video_frame_count;
-}
-
 retro_proc_address_t video_driver_get_proc_address(const char *sym)
 {
    driver_t                   *driver = driver_get_ptr();
@@ -1210,4 +1205,25 @@ enum retro_pixel_format video_driver_get_pixel_format(void)
 void video_driver_set_pixel_format(enum retro_pixel_format fmt)
 {
    video_state.pix_fmt = fmt;
+}
+
+bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
+{
+   switch (state)
+   {
+      case RARCH_DISPLAY_CTL_GET_FRAME_COUNT:
+         {
+            uint64_t **ptr = (uint64_t**)data;
+            if (!ptr)
+               return false;
+            *ptr = &video_frame_count;
+            return true;
+         }
+         break;
+      case RARCH_DISPLAY_CTL_NONE:
+      default:
+         break;
+   }
+
+   return false;
 }
