@@ -1020,9 +1020,7 @@ bool video_driver_frame_filter(const void *data,
 
    rarch_perf_init(&softfilter_process, "softfilter_process");
 
-   if (!video_state.filter.filter)
-      return false;
-   if (!data)
+   if (!video_state.filter.filter || !data)
       return false;
 
    rarch_softfilter_get_output_size(video_state.filter.filter,
