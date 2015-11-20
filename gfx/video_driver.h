@@ -224,6 +224,7 @@ enum rarch_display_ctl_state
    RARCH_DISPLAY_CTL_FRAME_FILTER_ALIVE,
    RARCH_DISPLAY_CTL_FRAME_FILTER_IS_32BIT,
    RARCH_DISPLAY_CTL_HAS_WINDOWED,
+   RARCH_DISPLAY_CTL_IS_FOCUSED,
    RARCH_DISPLAY_CTL_GET_FRAME_COUNT
 };
 
@@ -316,8 +317,6 @@ bool video_driver_read_viewport(uint8_t *buffer);
 
 bool video_driver_set_shader(enum rarch_shader_type type,
       const char *path);
-
-bool video_driver_focus(void);
 
 #ifdef HAVE_OVERLAY
 bool video_driver_overlay_interface(const video_overlay_interface_t **iface);

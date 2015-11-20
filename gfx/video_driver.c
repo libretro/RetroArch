@@ -727,14 +727,6 @@ bool video_driver_read_viewport(uint8_t *buffer)
    return false;
 }
 
-bool video_driver_focus(void)
-{
-   driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
-
-   return video->focus(driver->video_data);
-}
-
 #ifdef HAVE_OVERLAY
 bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
 {
@@ -1189,15 +1181,15 @@ void video_driver_set_pixel_format(enum retro_pixel_format fmt)
 
 bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 {
+   driver_t            *driver = driver_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
+
    switch (state)
    {
+      case RARCH_DISPLAY_CTL_IS_FOCUSED:
+         return video->focus(driver->video_data);
       case RARCH_DISPLAY_CTL_HAS_WINDOWED:
-         {
-            driver_t            *driver = driver_get_ptr();
-            const video_driver_t *video = video_driver_ctx_get_ptr(driver);
-
-            return video->has_windowed(driver->video_data);
-         }
+         return video->has_windowed(driver->video_data);
       case RARCH_DISPLAY_CTL_GET_FRAME_COUNT:
          {
             uint64_t **ptr = (uint64_t**)data;

@@ -320,7 +320,7 @@ static void x_input_poll_mouse(x11_input_t *x11)
    x11->mouse_r  = mask & Button3Mask; 
 
    /* Somewhat hacky, but seem to do the job. */
-   if (x11->grab_mouse && video_driver_focus())
+   if (x11->grab_mouse && video_driver_ctl(RARCH_DISPLAY_CTL_IS_FOCUSED, NULL))
    {
       int mid_w, mid_h;
       struct video_viewport vp = {0};
@@ -363,7 +363,7 @@ static void x_input_poll(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
 
-   if (video_driver_focus())
+   if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_FOCUSED, NULL))
       XQueryKeymap(x11->display, x11->state);
    else
       memset(x11->state, 0, sizeof(x11->state));
