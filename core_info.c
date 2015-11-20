@@ -463,7 +463,7 @@ bool core_info_does_support_file(const core_info_t *core, const char *path)
 const char *core_info_list_get_all_extensions(void)
 {
    global_t *global = global_get_ptr();
-   core_info_list_t *list = (global->core_info.list) ? global->core_info.list : NULL;
+   core_info_list_t *list = global ? global->core_info.list : NULL;
    if (!list)
       return NULL;
    return list->all_ext;
