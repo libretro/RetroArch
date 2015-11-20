@@ -399,7 +399,7 @@ static void video_driver_unset_callback(void)
       hw_render = NULL;
 }
 
-void uninit_video_input(void)
+static bool uninit_video_input(void)
 {
    driver_t *driver = driver_get_ptr();
 
@@ -425,9 +425,11 @@ void uninit_video_input(void)
    video_driver_unset_callback();
    event_command(EVENT_CMD_SHADER_DIR_DEINIT);
    video_monitor_compute_fps_statistics();
+
+   return true;
 }
 
-bool init_video(void)
+static bool init_video(void)
 {
    unsigned max_dim, scale, width, height;
    video_viewport_t *custom_vp      = NULL;
@@ -1148,6 +1150,10 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_DISPLAY_CTL_INIT:
+         return init_video();
+      case RARCH_DISPLAY_CTL_DEINIT:
+         return uninit_video_input();
       case RARCH_DISPLAY_CTL_SET_ASPECT_RATIO:
          if (!poke || !poke->set_aspect_ratio)
             return false;

@@ -221,6 +221,8 @@ enum rarch_display_type
 enum rarch_display_ctl_state
 {
    RARCH_DISPLAY_CTL_NONE = 0,
+   RARCH_DISPLAY_CTL_INIT,
+   RARCH_DISPLAY_CTL_DEINIT,
    RARCH_DISPLAY_CTL_APPLY_STATE_CHANGES,
    RARCH_DISPLAY_CTL_FIND_DRIVER,
    RARCH_DISPLAY_CTL_FRAME_FILTER_ALIVE,
@@ -290,10 +292,6 @@ retro_proc_address_t video_driver_get_proc_address(const char *sym);
 
 bool video_driver_set_shader(enum rarch_shader_type type,
       const char *shader);
-
-void uninit_video_input(void);
-
-bool init_video(void);
 
 bool video_driver_set_rotation(unsigned rotation);
 

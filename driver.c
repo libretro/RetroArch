@@ -384,7 +384,7 @@ void init_drivers(int flags)
 
       video_monitor_reset();
 
-      init_video();
+      video_driver_ctl(RARCH_DISPLAY_CTL_INIT, NULL);
 
       if (!driver->video_cache_context_ack
             && hw_render->context_reset)
@@ -464,7 +464,7 @@ void uninit_drivers(int flags)
       uninit_audio();
 
    if (flags & DRIVERS_VIDEO_INPUT)
-      uninit_video_input();
+      video_driver_ctl(RARCH_DISPLAY_CTL_DEINIT, NULL);
 
    if (flags & DRIVER_VIDEO)
    {
