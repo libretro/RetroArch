@@ -508,10 +508,7 @@ static bool gfx_ctx_vc_image_buffer_write(void *data, const void *frame, unsigne
    bool ret = false;
 
    if (index >= MAX_EGLIMAGE_TEXTURES)
-   {
-      *image_handle = NULL;
-      return false;
-   }
+      goto error;
 
    eglBindAPI(EGL_OPENVG_API);
    eglMakeCurrent(g_egl_dpy, g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
@@ -546,6 +543,10 @@ static bool gfx_ctx_vc_image_buffer_write(void *data, const void *frame, unsigne
    eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
 
    return ret;
+
+error:
+   *image_handle = NULL;
+   return false;
 }
 
 const gfx_ctx_driver_t gfx_ctx_videocore = {
