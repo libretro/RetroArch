@@ -38,9 +38,17 @@ static const GLfloat gl_tex_coords[] = {
    1, 0
 };
 
-static void *menu_display_gl_get_default_mvp(void)
+static gl_t *gl_get_ptr(void)
 {
    gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
+   if (!gl)
+      return NULL;
+   return gl;
+}
+
+static void *menu_display_gl_get_default_mvp(void)
+{
+   gl_t *gl = gl_get_ptr();
 
    if (!gl)
       return NULL;
@@ -66,7 +74,7 @@ static GLenum menu_display_prim_to_gl_enum(enum menu_display_prim_type prim_type
 
 static void menu_display_gl_blend_begin(void)
 {
-   gl_t         *gl = (gl_t*)video_driver_get_ptr(NULL);
+   gl_t *gl = gl_get_ptr();
 
    if (!gl)
       return;
@@ -93,7 +101,7 @@ static void menu_display_gl_draw(
       )
 {
    driver_t     *driver = driver_get_ptr();
-   gl_t             *gl = (gl_t*)video_driver_get_ptr(NULL);
+   gl_t             *gl = gl_get_ptr();
    math_matrix_4x4 *mat = (math_matrix_4x4*)matrix_data;
 
    if (!gl)
@@ -141,7 +149,7 @@ static void menu_display_gl_draw_bg(
    const GLfloat *new_tex_coord = NULL;
    global_t     *global = global_get_ptr();
    settings_t *settings = config_get_ptr();
-   gl_t             *gl = (gl_t*)video_driver_get_ptr(NULL);
+   gl_t             *gl = gl_get_ptr();
 
    if (!gl)
       return;
