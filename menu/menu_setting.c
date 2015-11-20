@@ -4102,32 +4102,6 @@ static bool setting_append_list_video_options(
 
    END_SUB_GROUP(list, list_info, parent_group);
    START_SUB_GROUP(list, list_info, "Aspect", group_info.name, subgroup_info, parent_group);
-   CONFIG_BOOL(
-         &settings->video.force_aspect,
-         menu_hash_to_str(MENU_LABEL_VIDEO_FORCE_ASPECT),
-         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FORCE_ASPECT),
-         force_aspect,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-
-   CONFIG_BOOL(
-         &settings->video.aspect_ratio_auto,
-         menu_hash_to_str(MENU_LABEL_VIDEO_ASPECT_RATIO_AUTO),
-         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO),
-         aspect_ratio_auto,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-
    CONFIG_UINT(
          settings->video.aspect_ratio_idx,
          menu_hash_to_str(MENU_LABEL_VIDEO_ASPECT_RATIO_INDEX),
