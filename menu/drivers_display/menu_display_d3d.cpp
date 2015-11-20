@@ -43,13 +43,21 @@ static const float d3d_tex_coords[] = {
    1, 0
 };
 
-static void *menu_display_d3d_get_default_mvp(void)
+static d3d_video_t *d3d_get_ptr(void)
 {
    d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
 
    if (!d3d)
       return NULL;
+   return d3d;
+}
 
+static void *menu_display_d3d_get_default_mvp(void)
+{
+   d3d_video_t *d3d = d3d_get_ptr();
+
+   if (!d3d)
+      return NULL;
    return NULL; /* TODO/FIXME */
 }
 
@@ -70,7 +78,7 @@ static unsigned menu_display_prim_to_d3d_enum(enum menu_display_prim_type prim_t
 
 static void menu_display_d3d_blend_begin(void)
 {
-   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
+   d3d_video_t *d3d = d3d_get_ptr();
 
    if (!d3d)
       return;
@@ -85,7 +93,7 @@ static void menu_display_d3d_blend_begin(void)
 
 static void menu_display_d3d_blend_end(void)
 {
-   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
+   d3d_video_t *d3d = d3d_get_ptr();
 
    if (!d3d)
       return;
@@ -103,8 +111,7 @@ static void menu_display_d3d_draw(
       )
 {
    D3DVIEWPORT vp       = {0};
-   driver_t     *driver = driver_get_ptr();
-   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
+   d3d_video_t     *d3d = d3d_get_ptr();
    math_matrix_4x4 *mat = (math_matrix_4x4*)matrix_data;
 
    if (!d3d)
@@ -163,7 +170,7 @@ static void menu_display_d3d_draw_bg(
    const float *new_tex_coord = NULL;
    global_t     *global = global_get_ptr();
    settings_t *settings = config_get_ptr();
-   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
+   d3d_video_t     *d3d = d3d_get_ptr();
 
    if (!d3d)
       return;
@@ -205,16 +212,16 @@ static void menu_display_d3d_draw_bg(
 
 static void menu_display_d3d_restore_clear_color(void)
 {
-   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(NULL);
-   DWORD clear_color = 0x00000000;
+   d3d_video_t     *d3d = d3d_get_ptr();
+   DWORD    clear_color = 0x00000000;
 
    d3d_clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, clear_color, 0, 0);
 }
 
 static void menu_display_d3d_clear_color(float r, float g, float b, float a)
 {
-   d3d_video_t *d3d  = (d3d_video_t*)video_driver_get_ptr(NULL);
-   DWORD clear_color = D3DCOLOR_ARGB(BYTE_CLAMP(a * 255.0f), BYTE_CLAMP(r * 255.0f), BYTE_CLAMP(g * 255.0f), BYTE_CLAMP(b * 255.0f));
+   d3d_video_t     *d3d = d3d_get_ptr();
+   DWORD    clear_color = D3DCOLOR_ARGB(BYTE_CLAMP(a * 255.0f), BYTE_CLAMP(r * 255.0f), BYTE_CLAMP(g * 255.0f), BYTE_CLAMP(b * 255.0f));
 
    d3d_clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, clear_color, 0, 0);
 }
