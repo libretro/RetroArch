@@ -644,15 +644,6 @@ bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
    return false;
 }
 
-void video_driver_set_aspect_ratio(void)
-{
-   driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
-   settings_t *settings = config_get_ptr();
-
-   if (poke && poke->set_aspect_ratio)
-      poke->set_aspect_ratio(driver->video_data, settings->video.aspect_ratio_idx);
-}
 
 
 void video_driver_set_osd_msg(const char *msg,
@@ -1149,9 +1140,15 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
    driver_t                 *driver   = driver_get_ptr();
    const video_driver_t        *video = video_driver_ctx_get_ptr(driver);
    const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
+   settings_t               *settings = config_get_ptr();
 
    switch (state)
    {
+      case RARCH_DISPLAY_CTL_SET_ASPECT_RATIO:
+         if (!poke || !poke->set_aspect_ratio)
+            return false;
+         poke->set_aspect_ratio(driver->video_data, settings->video.aspect_ratio_idx);
+         return true;
       case RARCH_DISPLAY_CTL_SHOW_MOUSE:
          {
             bool *toggle                  = (bool*)data;

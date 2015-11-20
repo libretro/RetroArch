@@ -227,6 +227,7 @@ enum rarch_display_ctl_state
    RARCH_DISPLAY_CTL_FRAME_FILTER_IS_32BIT,
    RARCH_DISPLAY_CTL_HAS_WINDOWED,
    RARCH_DISPLAY_CTL_IS_FOCUSED,
+   RARCH_DISPLAY_CTL_SET_ASPECT_RATIO,
    RARCH_DISPLAY_CTL_READ_VIEWPORT,
    RARCH_DISPLAY_CTL_SET_NONBLOCK_STATE,
    /* Renders the current video frame. */
@@ -302,8 +303,6 @@ void video_driver_set_video_mode(unsigned width,
 
 bool video_driver_get_video_output_size(
       unsigned *width, unsigned *height);
-
-void video_driver_set_aspect_ratio(void);
 
 void video_driver_set_osd_msg(const char *msg,
       const struct font_params *params, void *font);

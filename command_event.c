@@ -1423,7 +1423,7 @@ bool event_command(enum event_command cmd)
          video_driver_ctl(RARCH_DISPLAY_CTL_SET_NONBLOCK_STATE, &boolean);
          break;
       case EVENT_CMD_VIDEO_SET_ASPECT_RATIO:
-         video_driver_set_aspect_ratio();
+         video_driver_ctl(RARCH_DISPLAY_CTL_SET_ASPECT_RATIO, NULL);
          break;
       case EVENT_CMD_AUDIO_SET_NONBLOCKING_STATE:
          boolean = true; /* fall-through */

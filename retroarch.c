@@ -1214,7 +1214,7 @@ int rarch_main_init(int argc, char *argv[])
       unsigned width = 0, height = 0;
 
       event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
-      video_driver_set_aspect_ratio();
+      video_driver_ctl(RARCH_DISPLAY_CTL_SET_ASPECT_RATIO, NULL);
 
       width = global->console.screen.resolutions.width;
       height = global->console.screen.resolutions.height;
