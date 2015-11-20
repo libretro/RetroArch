@@ -373,19 +373,18 @@ static void init_video_input(const input_driver_t *tmp)
    else
       find_input_driver();
 
+   /* This should never really happen as tmp (driver.input) is always
+    * found before this in find_driver_input(), or we have aborted
+    * in a similar fashion anyways. */
    if (!driver->input)
-   {
-      /* This should never really happen as tmp (driver.input) is always
-       * found before this in find_driver_input(), or we have aborted
-       * in a similar fashion anyways. */
-      retro_fail(1, "init_video_input()");
-   }
+      goto error;
 
    driver->input_data = input_driver_init();
 
    if (driver->input_data)
       return;
 
+error:
    RARCH_ERR("Cannot initialize input driver. Exiting ...\n");
    retro_fail(1, "init_video_input()");
 }
