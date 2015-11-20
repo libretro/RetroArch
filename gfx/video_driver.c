@@ -1145,14 +1145,14 @@ static bool video_driver_cached_frame(driver_t *driver)
 
 bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 {
-   driver_t          *driver   = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
+   driver_t                 *driver   = driver_get_ptr();
+   const video_driver_t        *video = video_driver_ctx_get_ptr(driver);
+   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
 
    switch (state)
    {
       case RARCH_DISPLAY_CTL_SHOW_MOUSE:
          {
-            const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
             bool *toggle                  = (bool*)data;
 
             if (poke && poke->show_mouse)
@@ -1173,12 +1173,8 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
       case RARCH_DISPLAY_CTL_FIND_DRIVER:
          return find_video_driver();
       case RARCH_DISPLAY_CTL_APPLY_STATE_CHANGES:
-         {
-            const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
-
-            if (poke && poke->apply_state_changes)
-               poke->apply_state_changes(driver->video_data);
-         }
+         if (poke && poke->apply_state_changes)
+            poke->apply_state_changes(driver->video_data);
          return true;
       case RARCH_DISPLAY_CTL_READ_VIEWPORT:
          if (video && video->read_viewport)
