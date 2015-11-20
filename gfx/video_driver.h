@@ -232,6 +232,7 @@ enum rarch_display_ctl_state
    /* Renders the current video frame. */
    RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER,
    RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB,
+   RARCH_DISPLAY_CTL_SHOW_MOUSE,
    RARCH_DISPLAY_CTL_GET_FRAME_COUNT
 };
 
@@ -303,8 +304,6 @@ bool video_driver_get_video_output_size(
       unsigned *width, unsigned *height);
 
 void video_driver_set_aspect_ratio(unsigned aspectratio_index);
-
-void video_driver_show_mouse(bool state);
 
 void video_driver_set_osd_msg(const char *msg,
       const struct font_params *params, void *font);

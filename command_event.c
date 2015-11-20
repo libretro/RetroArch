@@ -1760,6 +1760,7 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_GRAB_MOUSE_TOGGLE:
          {
             static bool grab_mouse_state  = false;
+            bool grab_mouse_state_tmp;
 
             grab_mouse_state = !grab_mouse_state;
 
@@ -1770,7 +1771,8 @@ bool event_command(enum event_command cmd)
                   msg_hash_to_str(MSG_GRAB_MOUSE_STATE),
                   grab_mouse_state ? "yes" : "no");
 
-            video_driver_show_mouse(!grab_mouse_state);
+            grab_mouse_state_tmp = !grab_mouse_state;
+            video_driver_ctl(RARCH_DISPLAY_CTL_SHOW_MOUSE, &grab_mouse_state_tmp);
          }
          break;
       case EVENT_CMD_PERFCNT_REPORT_FRONTEND_LOG:
