@@ -642,13 +642,11 @@ static bool rarch_game_specific_options(char **output)
    strlcat(game_path, ".opt", PATH_MAX_LENGTH);
 
    option_file = config_file_new(game_path);
-   if (option_file)
-   {
-      RARCH_LOG("Per-Game Options: game-specific core options found at %s\n", game_path);
-      *output = game_path;
-      return true;
-   }
-   return false;
+   if (!option_file) return false;
+   
+   RARCH_LOG("Per-Game Options: game-specific core options found at %s\n", game_path);
+   *output = game_path;
+   return true;
 }
 
 /**
