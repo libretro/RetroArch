@@ -203,14 +203,13 @@ static bool find_video_driver(void)
 
 /**
  * video_driver_get_ptr:
- * @drv                : real video driver will be set to this.
  *
  * Use this if you need the real video driver
  * and driver data pointers.
  *
  * Returns: video driver's userdata.
  **/
-void *video_driver_get_ptr(const video_driver_t **drv)
+void *video_driver_get_ptr(void)
 {
    driver_t *driver     = driver_get_ptr();
 
@@ -219,10 +218,8 @@ void *video_driver_get_ptr(const video_driver_t **drv)
 
    if (settings->video.threaded
          && !video_state.hw_render_callback.context_type)
-      return rarch_threaded_video_get_ptr(drv);
+      return rarch_threaded_video_get_ptr(NULL);
 #endif
-   if (drv)
-      *drv = driver->video;
 
    return driver->video_data;
 }

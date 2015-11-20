@@ -40,7 +40,7 @@ static const GLfloat gl_tex_coords[] = {
 
 static gl_t *gl_get_ptr(void)
 {
-   gl_t *gl = (gl_t*)video_driver_get_ptr(NULL);
+   gl_t *gl = (gl_t*)video_driver_get_ptr();
    if (!gl)
       return NULL;
    return gl;

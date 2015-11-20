@@ -268,14 +268,13 @@ const char* config_get_video_driver_options(void);
 
 /**
  * video_driver_get_ptr:
- * @drv                : real video driver will be set to this.
  *
  * Use this if you need the real video driver
  * and driver data pointers.
  *
  * Returns: video driver's userdata.
  **/
-void *video_driver_get_ptr(const video_driver_t **drv);
+void *video_driver_get_ptr(void);
 
 /**
  * video_driver_get_current_framebuffer:
