@@ -621,7 +621,6 @@ static bool rarch_game_specific_options(char **output)
    RARCH_LOG("Per-Game Options: core name: %s\n", core_name);
    RARCH_LOG("Per-Game Options: game name: %s\n", game_name);
 
-
    /* Config directory: config_directory.
    * Try config directory setting first,
    * fallback to the location of the current configuration file. */
@@ -635,17 +634,19 @@ static bool rarch_game_specific_options(char **output)
       return false;
    }
 
-
    /* Concatenate strings into full paths for game_path */
    fill_pathname_join(game_path, config_directory, core_name, PATH_MAX_LENGTH);
    fill_pathname_join(game_path, game_path, game_name, PATH_MAX_LENGTH);
    strlcat(game_path, ".opt", PATH_MAX_LENGTH);
 
    option_file = config_file_new(game_path);
-   if (!option_file) return false;
+   if (!option_file)
+      return false;
+
+   config_file_free(option_file);
    
    RARCH_LOG("Per-Game Options: game-specific core options found at %s\n", game_path);
-   *output = game_path;
+   *output = strdup(game_path);
    return true;
 }
 
@@ -731,9 +732,13 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                ret = rarch_game_specific_options(&game_options_path);
 
             if(ret)
+            {
                system->core_options = core_option_new(game_options_path, vars);
+               free(game_options_path);
+            }
             else
                system->core_options = core_option_new(options_path, vars);
+
          }
 
          break;
