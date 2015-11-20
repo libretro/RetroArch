@@ -283,7 +283,7 @@ void driver_set_nonblock_state(bool enable)
 
       if (!settings->video.vsync || system->force_nonblock)
          video_nonblock = true;
-      video_driver_set_nonblock_state(video_nonblock);
+      video_driver_ctl(RARCH_DISPLAY_CTL_SET_NONBLOCK_STATE, &video_nonblock);
    }
 
    audio_driver_set_nonblocking_state(enable);

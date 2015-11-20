@@ -590,14 +590,6 @@ bool video_driver_suppress_screensaver(bool enable)
    return video->suppress_screensaver(driver->video_data, enable);
 }
 
-void video_driver_set_nonblock_state(bool toggle)
-{
-   driver_t              *driver = driver_get_ptr();
-   const video_driver_t   *video = video_driver_ctx_get_ptr(driver);
-
-   if (video && video->set_nonblock_state)
-      video->set_nonblock_state(driver->video_data, toggle);
-}
 
 bool video_driver_set_viewport(unsigned width, unsigned height,
       bool force_fullscreen, bool allow_rotate)
@@ -1165,6 +1157,19 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_DISPLAY_CTL_SET_NONBLOCK_STATE:
+         {
+            driver_t              *driver = driver_get_ptr();
+            const video_driver_t   *video = video_driver_ctx_get_ptr(driver);
+            bool *toggle                  = (bool*)data;
+
+            if (!toggle || !video || !driver)
+               return false;
+
+            if (video && video->set_nonblock_state)
+               video->set_nonblock_state(driver->video_data, *toggle);
+         }
+         return true;
       case RARCH_DISPLAY_CTL_FIND_DRIVER:
          return find_video_driver();
       case RARCH_DISPLAY_CTL_APPLY_STATE_CHANGES:

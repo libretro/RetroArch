@@ -1420,7 +1420,7 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_VIDEO_SET_NONBLOCKING_STATE:
          boolean = true; /* fall-through */
       case EVENT_CMD_VIDEO_SET_BLOCKING_STATE:
-         video_driver_set_nonblock_state(boolean);
+         video_driver_ctl(RARCH_DISPLAY_CTL_SET_NONBLOCK_STATE, &boolean);
          break;
       case EVENT_CMD_VIDEO_SET_ASPECT_RATIO:
          video_driver_set_aspect_ratio(settings->video.aspect_ratio_idx);

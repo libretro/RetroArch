@@ -228,6 +228,7 @@ enum rarch_display_ctl_state
    RARCH_DISPLAY_CTL_HAS_WINDOWED,
    RARCH_DISPLAY_CTL_IS_FOCUSED,
    RARCH_DISPLAY_CTL_READ_VIEWPORT,
+   RARCH_DISPLAY_CTL_SET_NONBLOCK_STATE,
    /* Renders the current video frame. */
    RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER,
    RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB,
@@ -292,8 +293,6 @@ bool video_driver_set_shader(enum rarch_shader_type type,
 void uninit_video_input(void);
 
 void init_video(void);
-
-void video_driver_set_nonblock_state(bool toggle);
 
 bool video_driver_set_rotation(unsigned rotation);
 

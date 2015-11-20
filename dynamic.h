@@ -125,7 +125,8 @@ const struct retro_controller_description *
  **/
 bool rarch_environment_cb(unsigned cmd, void *data);
 
-struct retro_core_t {
+struct retro_core_t
+{
    void (*retro_init)(void);
    void (*retro_deinit)(void);
    unsigned (*retro_api_version)(void);
