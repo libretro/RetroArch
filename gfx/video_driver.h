@@ -303,7 +303,7 @@ void video_driver_set_video_mode(unsigned width,
 bool video_driver_get_video_output_size(
       unsigned *width, unsigned *height);
 
-void video_driver_set_aspect_ratio(unsigned aspectratio_index);
+void video_driver_set_aspect_ratio(void);
 
 void video_driver_set_osd_msg(const char *msg,
       const struct font_params *params, void *font);

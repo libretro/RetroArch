@@ -1211,18 +1211,10 @@ int rarch_main_init(int argc, char *argv[])
    event_command(EVENT_CMD_SAVEFILES_INIT);
 #if defined(GEKKO) && defined(HW_RVL)
    {
-      settings_t *settings = config_get_ptr();
-
-      if (settings)
-      {
-         event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
-         video_driver_set_aspect_ratio(settings->video.aspect_ratio_idx);
-      }
-
       unsigned width = 0, height = 0;
 
-      (void)width;
-      (void)height;
+      event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
+      video_driver_set_aspect_ratio();
 
       width = global->console.screen.resolutions.width;
       height = global->console.screen.resolutions.height;

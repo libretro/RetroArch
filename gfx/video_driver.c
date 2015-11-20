@@ -644,13 +644,14 @@ bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
    return false;
 }
 
-void video_driver_set_aspect_ratio(unsigned aspectratio_index)
+void video_driver_set_aspect_ratio(void)
 {
    driver_t                   *driver = driver_get_ptr();
    const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
+   settings_t *settings = config_get_ptr();
 
    if (poke && poke->set_aspect_ratio)
-      poke->set_aspect_ratio(driver->video_data, aspectratio_index);
+      poke->set_aspect_ratio(driver->video_data, settings->video.aspect_ratio_idx);
 }
 
 
