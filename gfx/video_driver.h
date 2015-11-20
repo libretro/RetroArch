@@ -221,6 +221,7 @@ enum rarch_display_type
 enum rarch_display_ctl_state
 {
    RARCH_DISPLAY_CTL_NONE = 0,
+   RARCH_DISPLAY_CTL_FRAME_FILTER_ALIVE,
    RARCH_DISPLAY_CTL_GET_FRAME_COUNT
 };
 
@@ -359,8 +360,6 @@ bool video_driver_frame_filter(const void *data,
       size_t pitch,
       unsigned *output_width, unsigned *output_height,
       unsigned *output_pitch);
-
-bool video_driver_frame_filter_alive(void);
 
 bool video_driver_frame_filter_is_32bit(void);
 

@@ -80,7 +80,7 @@ static void video_frame(const void *data, unsigned width,
     * but we really need to do processing before blocking on VSync
     * for best possible scheduling.
     */
-   if ((!video_driver_frame_filter_alive()
+   if ((!video_driver_ctl(RARCH_DISPLAY_CTL_FRAME_FILTER_ALIVE, NULL)
             || !settings->video.post_filter_record || !data
             || global->record.gpu_buffer)
       )

@@ -365,7 +365,7 @@ bool recording_init(void)
       else
          params.aspect_ratio = (float)params.out_width / params.out_height;
 
-      if (settings->video.post_filter_record && video_driver_frame_filter_alive())
+      if (settings->video.post_filter_record && video_driver_ctl(RARCH_DISPLAY_CTL_FRAME_FILTER_ALIVE, NULL))
       {
          unsigned max_width  = 0;
          unsigned max_height = 0;
