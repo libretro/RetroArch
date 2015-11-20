@@ -560,11 +560,12 @@ core_info_t *core_info_find(core_info_list_t *list,
 
 core_info_t *core_info_get(core_info_list_t *list, size_t i)
 {
-   core_info_t *info = (core_info_t*)&list->list[i];
-printf("%zu\n", i);
-   if (!info)
+   core_info_t *info = NULL;
+
+   if (!list)
       return NULL;
-   if (!info->path)
+   info = (core_info_t*)&list->list[i];
+   if (!info || !info->path)
       return NULL;
 
    return info;
