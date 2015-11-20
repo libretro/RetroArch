@@ -229,6 +229,8 @@ enum rarch_display_ctl_state
    RARCH_DISPLAY_CTL_FIND_DRIVER,
    RARCH_DISPLAY_CTL_FRAME_FILTER_ALIVE,
    RARCH_DISPLAY_CTL_FRAME_FILTER_IS_32BIT,
+   RARCH_DISPLAY_CTL_GET_PREV_VIDEO_OUT,
+   RARCH_DISPLAY_CTL_GET_NEXT_VIDEO_OUT,
    RARCH_DISPLAY_CTL_HAS_WINDOWED,
    RARCH_DISPLAY_CTL_IS_FOCUSED,
    RARCH_DISPLAY_CTL_SET_ASPECT_RATIO,
@@ -324,10 +326,6 @@ void * video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch);
 
 void video_driver_set_filtering(unsigned index, bool smooth);
-
-void video_driver_get_video_output_next(void);
-
-void video_driver_get_video_output_prev(void);
 
 bool video_driver_suppress_screensaver(bool enable);
 

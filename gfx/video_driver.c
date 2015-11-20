@@ -776,27 +776,6 @@ void video_driver_set_filtering(unsigned index, bool smooth)
       poke->set_filtering(driver->video_data, index, smooth);
 }
 
-
-void video_driver_get_video_output_next(void)
-{
-   driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
-
-   if (poke && poke->get_video_output_next)
-      poke->get_video_output_next(driver->video_data);
-}
-
-void video_driver_get_video_output_prev(void)
-{
-   driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
-
-   if (poke && poke->get_video_output_prev)
-      poke->get_video_output_prev(driver->video_data);
-}
-
-
-
 void video_driver_cached_frame_set_ptr(const void *data)
 {
    if (!data)
@@ -1144,6 +1123,16 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_DISPLAY_CTL_GET_NEXT_VIDEO_OUT:
+         if (!poke || !poke->get_video_output_next)
+            return false;
+            poke->get_video_output_next(driver->video_data);
+         return true;
+      case RARCH_DISPLAY_CTL_GET_PREV_VIDEO_OUT:
+         if (!poke || !poke->get_video_output_prev)
+            return false;
+            poke->get_video_output_prev(driver->video_data);
+         return true;
       case RARCH_DISPLAY_CTL_INIT:
          return init_video();
       case RARCH_DISPLAY_CTL_DEINIT:
@@ -1205,9 +1194,8 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             if (!ptr)
                return false;
             *ptr = &video_frame_count;
-            return true;
          }
-         break;
+         return true;
       case RARCH_DISPLAY_CTL_FRAME_FILTER_ALIVE:
          if (video_state.filter.filter)
             return true;
