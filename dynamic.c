@@ -618,8 +618,8 @@ static bool rarch_game_specific_options(char **output)
    if (core_name[0] == '\0' || game_name[0] == '\0')
       return false;
 
-   RARCH_LOG("Per-game Options: core name: %s\n", core_name);
-   RARCH_LOG("Per-game Options: game name: %s\n", game_name);
+   RARCH_LOG("Per-Game Options: core name: %s\n", core_name);
+   RARCH_LOG("Per-Game Options: game name: %s\n", game_name);
 
 
    /* Config directory: config_directory.
@@ -631,7 +631,7 @@ static bool rarch_game_specific_options(char **output)
       fill_pathname_basedir(config_directory, global->path.config, PATH_MAX_LENGTH);
    else
    {
-      RARCH_WARN("Per-game Options: no config directory set\n");
+      RARCH_WARN("Per-Game Options: no config directory set\n");
       return false;
    }
 
@@ -642,13 +642,12 @@ static bool rarch_game_specific_options(char **output)
    strlcat(game_path, ".opt", PATH_MAX_LENGTH);
 
    option_file = config_file_new(game_path);
-   if(option_file)
+   if (option_file)
    {
-      RARCH_LOG("Per-game options: game-specific core options found at %s\n", game_path);
+      RARCH_LOG("Per-Game Options: game-specific core options found at %s\n", game_path);
       *output = game_path;
       return true;
    }
-   config_file_free(option_file);
    return false;
 }
 

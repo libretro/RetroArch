@@ -572,7 +572,7 @@ void fill_pathname_resolve_relative(char *out_path,
 void fill_pathname_join(char *out_path,
       const char *dir, const char *path, size_t size)
 {
-   if (out_path!=dir)
+   if (out_path != dir)
       retro_assert(strlcpy(out_path, dir, size) < size);
 
    if (*out_path)
