@@ -116,14 +116,15 @@ static struct drm_fb *drm_fb_get_from_bo(
 
    ret = drmModeAddFB(drm->g_drm_fd, width, height, 24, 32, stride, handle, &fb->fb_id);
    if (ret < 0)
-   {
-      RARCH_ERR("[KMS/EGL]: Failed to create FB: %s\n", strerror(errno));
-      free(fb);
-      return NULL;
-   }
+      goto error;
 
    gbm_bo_set_user_data(bo, fb, drm_fb_destroy_callback);
    return fb;
+
+error:
+   RARCH_ERR("[KMS/EGL]: Failed to create FB: %s\n", strerror(errno));
+   free(fb);
+   return NULL;
 }
 
 static void gfx_ctx_drm_egl_swap_interval(void *data, unsigned interval)
