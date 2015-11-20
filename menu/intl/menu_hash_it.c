@@ -139,9 +139,13 @@ const char *menu_hash_to_str_it(uint32_t hash)
          return "Chiedi";
       case MENU_LABEL_VALUE_PRIVACY_SETTINGS:
          return "Privacy";
-      case MENU_VALUE_HORIZONTAL_MENU: /* Don't change. Breaks everything. (Would be: "Menú orizzontale") */
+#if 0
+      case MENU_VALUE_HORIZONTAL_MENU:
+         return "Menú orizzontale";
+#else
+      case MENU_VALUE_HORIZONTAL_MENU:
          return "Horizontal Menu";
-         /* Don't change these yet. Breaks everything. */
+#endif
 #if 0
 	  case MENU_VALUE_SETTINGS_TAB:
          return "Settaggi scheda";
