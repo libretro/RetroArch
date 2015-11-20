@@ -390,6 +390,15 @@ static void init_video_input(const input_driver_t *tmp)
    retro_fail(1, "init_video_input()");
 }
 
+static void video_driver_unset_callback(void)
+{
+   struct retro_hw_render_callback *hw_render =
+      video_driver_callback();
+
+   if (hw_render)
+      hw_render = NULL;
+}
+
 void uninit_video_input(void)
 {
    driver_t *driver = driver_get_ptr();
@@ -1040,14 +1049,6 @@ struct retro_hw_render_callback *video_driver_callback(void)
    return &video_state.hw_render_callback;
 }
 
-void video_driver_unset_callback(void)
-{
-   struct retro_hw_render_callback *hw_render =
-      video_driver_callback();
-
-   if (hw_render)
-      hw_render = NULL;
-}
 
 bool video_driver_frame_filter(const void *data,
       unsigned width, unsigned height,

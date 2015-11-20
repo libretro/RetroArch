@@ -348,8 +348,6 @@ void video_driver_set_aspect_ratio_value(float value);
 
 struct retro_hw_render_callback *video_driver_callback(void);
 
-void video_driver_unset_callback(void);
-
 bool video_driver_frame_filter(const void *data,
       unsigned width, unsigned height,
       size_t pitch,
