@@ -575,7 +575,7 @@ static int core_info_firmware_cmp(const void *a_, const void *b_)
 {
    const core_info_firmware_t *a = (const core_info_firmware_t*)a_;
    const core_info_firmware_t *b = (const core_info_firmware_t*)b_;
-   int order = b->missing - a->missing;
+   int                     order = b->missing - a->missing;
 
    if (order)
       return order;
@@ -617,7 +617,7 @@ void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
    if (!core_info_list || !core)
       return;
 
-   *firmware = NULL;
+   *firmware     = NULL;
    *num_firmware = 0;
 
    if (!(info = core_info_find(core_info_list, core)))
