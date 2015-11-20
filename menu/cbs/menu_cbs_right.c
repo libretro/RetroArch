@@ -318,7 +318,7 @@ static int action_right_video_resolution(unsigned type, const char *label,
          [global->console.screen.resolutions.current.idx];
    }
 #else
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_VIDEO_OUT_NEXT, NULL);
+   video_driver_ctl(RARCH_DISPLAY_CTL_GET_NEXT_VIDEO_OUT, NULL);
 #endif
 
    return 0;
