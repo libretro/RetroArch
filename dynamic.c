@@ -613,9 +613,9 @@ static bool rarch_game_specific_options(char **output)
    core_name = system ? system->info.library_name : NULL;
    game_name = global ? path_basename(global->name.base) : NULL;
 
-   if (!core_name  || !game_name)
+   if (!core_name || !game_name)
       return false;
-   if (core_name[0] == '\0' || game_name == '\0')
+   if (core_name[0] == '\0' || game_name[0] == '\0')
       return false;
 
    RARCH_LOG("Per-game Options: core name: %s\n", core_name);
