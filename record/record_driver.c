@@ -369,11 +369,11 @@ bool recording_init(void)
       {
          unsigned max_width  = 0;
          unsigned max_height = 0;
+         
+         params.pix_fmt    = FFEMU_PIX_RGB565;
 
-         if (video_driver_frame_filter_is_32bit())
+         if (video_driver_ctl(RARCH_DISPLAY_CTL_FRAME_FILTER_IS_32BIT, NULL))
             params.pix_fmt = FFEMU_PIX_ARGB8888;
-         else
-            params.pix_fmt =  FFEMU_PIX_RGB565;
 
          rarch_softfilter_get_max_output_size(
                video_driver_frame_filter_get_ptr(),

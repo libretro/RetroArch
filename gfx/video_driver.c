@@ -1175,11 +1175,6 @@ bool video_driver_frame_filter(const void *data,
    return true;
 }
 
-bool video_driver_frame_filter_is_32bit(void)
-{
-   return video_state.filter.out_rgb32;
-}
-
 rarch_softfilter_t *video_driver_frame_filter_get_ptr(void)
 {
    return video_state.filter.filter;
@@ -1217,6 +1212,8 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          if (video_state.filter.filter)
             return true;
          return false;
+      case RARCH_DISPLAY_CTL_FRAME_FILTER_IS_32BIT:
+         return video_state.filter.out_rgb32;
       case RARCH_DISPLAY_CTL_NONE:
       default:
          break;
