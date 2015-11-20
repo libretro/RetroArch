@@ -41,8 +41,6 @@ screen_context_t screen_ctx;
 screen_window_t screen_win;
 static screen_display_t screen_disp;
 
-static enum gfx_ctx_api g_api;
-
 static void gfx_ctx_qnx_destroy(void *data)
 {
    egl_destroy(data);
@@ -299,7 +297,7 @@ static bool gfx_ctx_qnx_bind_api(void *data,
    (void)major;
    (void)minor;
 
-   g_api = api;
+   g_egl_api = api;
 
    return api == GFX_CTX_OPENGL_ES_API;
 }
