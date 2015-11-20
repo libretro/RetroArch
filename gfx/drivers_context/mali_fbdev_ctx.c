@@ -172,17 +172,8 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
       goto error;
    }
 
-   if ((g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, &native_window, 0)) == EGL_NO_SURFACE)
-   {
-      RARCH_ERR("eglCreateWindowSurface failed.\n");
+   if (!egl_create_surface(&native_window))
       goto error;
-   }
-
-   if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
-   {
-      RARCH_ERR("eglMakeCurrent failed.\n");
-      goto error;
-   }
 
    return true;
 

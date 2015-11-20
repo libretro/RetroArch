@@ -214,18 +214,8 @@ static bool gfx_ctx_qnx_init(void *data)
       goto error;
    }
 
-   if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, screen_win, 0)))
-   {
-      RARCH_ERR("eglCreateWindowSurface failed.\n");
+   if (!egl_create_surface(screen_win))
       goto error;
-   }
-
-
-   if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
-   {
-      RARCH_ERR("eglMakeCurrent failed.\n");
-      goto error;
-   }
 
    return true;
 

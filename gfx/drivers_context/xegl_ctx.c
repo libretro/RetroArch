@@ -295,14 +295,8 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       goto error;
    }
 
-   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, (EGLNativeWindowType)g_x11_win, NULL);
-   if (!g_egl_surf)
+   if (!egl_create_surface((EGLNativeWindowType)g_x11_win))
       goto error;
-
-   if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
-      goto error;
-
-   RARCH_LOG("[X/EGL]: Current context: %p.\n", (void*)eglGetCurrentContext());
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
 

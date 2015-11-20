@@ -82,13 +82,7 @@ static bool android_gfx_ctx_init(void *data)
       goto error;
    }
 
-   g_egl_surf = eglCreateWindowSurface(g_egl_dpy,
-         g_egl_config, android_app->window, 0);
-   if (!g_egl_surf)
-      goto error;
-
-   if (!eglMakeCurrent(g_egl_dpy, g_egl_surf,
-            g_egl_surf, g_egl_ctx))
+   if (!egl_create_surface(android_app->window))
       goto error;
 
    return true;
