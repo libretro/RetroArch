@@ -588,14 +588,6 @@ bool video_driver_suppress_screensaver(bool enable)
    return video->suppress_screensaver(driver->video_data, enable);
 }
 
-bool video_driver_has_windowed(void)
-{
-   driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
-
-   return video->has_windowed(driver->video_data);
-}
-
 void video_driver_set_nonblock_state(bool toggle)
 {
    driver_t              *driver = driver_get_ptr();
@@ -1199,6 +1191,13 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 {
    switch (state)
    {
+      case RARCH_DISPLAY_CTL_HAS_WINDOWED:
+         {
+            driver_t            *driver = driver_get_ptr();
+            const video_driver_t *video = video_driver_ctx_get_ptr(driver);
+
+            return video->has_windowed(driver->video_data);
+         }
       case RARCH_DISPLAY_CTL_GET_FRAME_COUNT:
          {
             uint64_t **ptr = (uint64_t**)data;

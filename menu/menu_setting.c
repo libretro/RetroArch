@@ -4018,7 +4018,7 @@ static bool setting_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-   if (video_driver_has_windowed())
+   if (video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL))
    {
       CONFIG_BOOL(
             &settings->video.fullscreen,
@@ -4036,7 +4036,7 @@ static bool setting_append_list_video_options(
       settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
    }
 #endif
-   if (video_driver_has_windowed())
+   if (video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL))
    {
       CONFIG_BOOL(
             &settings->video.windowed_fullscreen,
@@ -4228,7 +4228,7 @@ static bool setting_append_list_video_options(
    START_SUB_GROUP(list, list_info, "Scaling", group_info.name, subgroup_info, parent_group);
 
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-   if (video_driver_has_windowed())
+   if (video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL))
    {
       CONFIG_FLOAT(
             settings->video.scale,

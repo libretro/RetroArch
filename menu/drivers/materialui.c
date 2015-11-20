@@ -883,7 +883,7 @@ static void mui_frame(void)
       mui->box_message[0] = '\0';
    }
 
-   if (settings->menu.mouse.enable && (settings->video.fullscreen || !video_driver_has_windowed()))
+   if (settings->menu.mouse.enable && (settings->video.fullscreen || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))
    {
       int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);

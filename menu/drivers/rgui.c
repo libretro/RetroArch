@@ -652,7 +652,7 @@ static void rgui_render(void)
       rgui->force_redraw = true;
    }
 
-   if (settings->menu.mouse.enable && (settings->video.fullscreen || !video_driver_has_windowed()))
+   if (settings->menu.mouse.enable && (settings->video.fullscreen || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))
       rgui_blit_cursor(menu);
 }
 

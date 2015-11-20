@@ -223,6 +223,7 @@ enum rarch_display_ctl_state
    RARCH_DISPLAY_CTL_NONE = 0,
    RARCH_DISPLAY_CTL_FRAME_FILTER_ALIVE,
    RARCH_DISPLAY_CTL_FRAME_FILTER_IS_32BIT,
+   RARCH_DISPLAY_CTL_HAS_WINDOWED,
    RARCH_DISPLAY_CTL_GET_FRAME_COUNT
 };
 
@@ -286,8 +287,6 @@ bool video_driver_set_shader(enum rarch_shader_type type,
 void uninit_video_input(void);
 
 void init_video(void);
-
-bool video_driver_has_windowed(void);
 
 void video_driver_set_nonblock_state(bool toggle);
 

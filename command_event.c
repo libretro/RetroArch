@@ -1649,7 +1649,7 @@ bool event_command(enum event_command cmd)
 #endif
          break;
       case EVENT_CMD_FULLSCREEN_TOGGLE:
-         if (!video_driver_has_windowed())
+         if (!video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL))
             return false;
 
          /* If we go fullscreen we drop all drivers and
