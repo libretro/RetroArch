@@ -716,16 +716,6 @@ bool video_driver_viewport_info(struct video_viewport *vp)
    return false;
 }
 
-bool video_driver_read_viewport(uint8_t *buffer)
-{
-   driver_t            *driver = driver_get_ptr();
-   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
-
-   if (video && video->read_viewport)
-      return video->read_viewport(driver->video_data,
-            buffer);
-   return false;
-}
 
 #ifdef HAVE_OVERLAY
 bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
@@ -1181,6 +1171,16 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_DISPLAY_CTL_READ_VIEWPORT:
+         {
+            driver_t            *driver = driver_get_ptr();
+            const video_driver_t *video = video_driver_ctx_get_ptr(driver);
+
+            if (video && video->read_viewport)
+               return video->read_viewport(driver->video_data,
+                     (uint8_t*)data);
+            return false;
+         }
       case RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB:
          if (!video_state.frame_cache.data)
             return false;

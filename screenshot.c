@@ -143,7 +143,7 @@ static bool take_screenshot_viewport(void)
    if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
       return false;
 
-   if (!video_driver_read_viewport(buffer))
+   if (!video_driver_ctl(RARCH_DISPLAY_CTL_READ_VIEWPORT, buffer))
       goto done;
 
    screenshot_dir = settings->screenshot_directory;

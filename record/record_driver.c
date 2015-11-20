@@ -205,7 +205,7 @@ void recording_dump_frame(const void *data, unsigned width,
       /* Big bottleneck.
        * Since we might need to do read-backs asynchronously,
        * it might take 3-4 times before this returns true. */
-      if (!video_driver_read_viewport(global->record.gpu_buffer))
+      if (!video_driver_ctl(RARCH_DISPLAY_CTL_READ_VIEWPORT, global->record.gpu_buffer))
             return;
 
       ffemu_data.pitch  = global->record.gpu_width * 3;

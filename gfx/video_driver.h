@@ -225,6 +225,7 @@ enum rarch_display_ctl_state
    RARCH_DISPLAY_CTL_FRAME_FILTER_IS_32BIT,
    RARCH_DISPLAY_CTL_HAS_WINDOWED,
    RARCH_DISPLAY_CTL_IS_FOCUSED,
+   RARCH_DISPLAY_CTL_READ_VIEWPORT,
    /* Renders the current video frame. */
    RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER,
    RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB,
@@ -315,8 +316,6 @@ void video_driver_set_texture_frame(const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha);
 
 bool video_driver_viewport_info(struct video_viewport *vp);
-
-bool video_driver_read_viewport(uint8_t *buffer);
 
 bool video_driver_set_shader(enum rarch_shader_type type,
       const char *path);
