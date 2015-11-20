@@ -1113,10 +1113,9 @@ void video_driver_set_pixel_format(enum retro_pixel_format fmt)
  *
  * Renders the current video frame.
  **/
-static bool video_driver_cached_frame(void)
+static bool video_driver_cached_frame(driver_t *driver)
 {
    bool is_idle;
-   driver_t *driver   = driver_get_ptr();
    void *recording    = driver ? driver->recording_data : NULL;
 
    rarch_main_ctl(RARCH_MAIN_CTL_IS_IDLE, &is_idle);
@@ -1146,12 +1145,13 @@ static bool video_driver_cached_frame(void)
 
 bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 {
+   driver_t          *driver   = driver_get_ptr();
+   const video_driver_t *video = video_driver_ctx_get_ptr(driver);
 
    switch (state)
    {
       case RARCH_DISPLAY_CTL_SHOW_MOUSE:
          {
-            driver_t                   *driver = driver_get_ptr();
             const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
             bool *toggle                  = (bool*)data;
 
@@ -1161,8 +1161,6 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          return true;
       case RARCH_DISPLAY_CTL_SET_NONBLOCK_STATE:
          {
-            driver_t              *driver = driver_get_ptr();
-            const video_driver_t   *video = video_driver_ctx_get_ptr(driver);
             bool *toggle                  = (bool*)data;
 
             if (!toggle || !video || !driver)
@@ -1176,7 +1174,6 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          return find_video_driver();
       case RARCH_DISPLAY_CTL_APPLY_STATE_CHANGES:
          {
-            driver_t                   *driver = driver_get_ptr();
             const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
 
             if (poke && poke->apply_state_changes)
@@ -1184,33 +1181,20 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          }
          return true;
       case RARCH_DISPLAY_CTL_READ_VIEWPORT:
-         {
-            driver_t            *driver = driver_get_ptr();
-            const video_driver_t *video = video_driver_ctx_get_ptr(driver);
-
-            if (video && video->read_viewport)
-               return video->read_viewport(driver->video_data,
-                     (uint8_t*)data);
-            return false;
-         }
+         if (video && video->read_viewport)
+            return video->read_viewport(driver->video_data,
+                  (uint8_t*)data);
+         return false;
       case RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB:
          if (!video_state.frame_cache.data)
             return false;
          return (video_state.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID);
       case RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER:
-         return video_driver_cached_frame();
+         return video_driver_cached_frame(driver);
       case RARCH_DISPLAY_CTL_IS_FOCUSED:
-         {
-            driver_t            *driver = driver_get_ptr();
-            const video_driver_t *video = video_driver_ctx_get_ptr(driver);
-            return video->focus(driver->video_data);
-         }
+         return video->focus(driver->video_data);
       case RARCH_DISPLAY_CTL_HAS_WINDOWED:
-         {
-            driver_t            *driver = driver_get_ptr();
-            const video_driver_t *video = video_driver_ctx_get_ptr(driver);
-            return video->has_windowed(driver->video_data);
-         }
+         return video->has_windowed(driver->video_data);
       case RARCH_DISPLAY_CTL_GET_FRAME_COUNT:
          {
             uint64_t **ptr = (uint64_t**)data;
