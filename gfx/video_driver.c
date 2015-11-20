@@ -814,44 +814,6 @@ void video_driver_set_size_height(unsigned height)
    video_state.video_height = height;
 }
 
-void video_monitor_adjust_system_rates(void)
-{
-   float timing_skew;
-   const struct retro_system_timing *info = NULL;
-   struct retro_system_av_info *av_info =
-      video_viewport_get_system_av_info();
-   settings_t *settings = config_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
-
-   if (!system)
-      return;
-
-   system->force_nonblock = false;
-
-   if  (av_info)
-      info = (const struct retro_system_timing*)&av_info->timing;
-
-   if (!info || info->fps <= 0.0)
-      return;
-
-   timing_skew = fabs(1.0f - info->fps / settings->video.refresh_rate);
-
-   /* We don't want to adjust pitch too much. If we have extreme cases,
-    * just don't readjust at all. */
-   if (timing_skew <= settings->audio.max_timing_skew)
-      return;
-
-   RARCH_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
-         settings->video.refresh_rate,
-         (float)info->fps);
-
-   if (info->fps <= settings->video.refresh_rate)
-      return;
-
-   /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
-   system->force_nonblock = true;
-   RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
-}
 
 /**
  * video_monitor_set_refresh_rate:
@@ -1136,6 +1098,45 @@ static bool video_driver_cached_frame(driver_t *driver)
    return true;
 }
 
+static void video_monitor_adjust_system_rates(void)
+{
+   float timing_skew;
+   const struct retro_system_timing *info = NULL;
+   struct retro_system_av_info *av_info =
+      video_viewport_get_system_av_info();
+   settings_t *settings = config_get_ptr();
+   rarch_system_info_t *system = rarch_system_info_get_ptr();
+
+   if (!system)
+      return;
+
+   system->force_nonblock = false;
+
+   if  (av_info)
+      info = (const struct retro_system_timing*)&av_info->timing;
+
+   if (!info || info->fps <= 0.0)
+      return;
+
+   timing_skew = fabs(1.0f - info->fps / settings->video.refresh_rate);
+
+   /* We don't want to adjust pitch too much. If we have extreme cases,
+    * just don't readjust at all. */
+   if (timing_skew <= settings->audio.max_timing_skew)
+      return;
+
+   RARCH_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
+         settings->video.refresh_rate,
+         (float)info->fps);
+
+   if (info->fps <= settings->video.refresh_rate)
+      return;
+
+   /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
+   system->force_nonblock = true;
+   RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
+}
+
 bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 {
    driver_t                 *driver   = driver_get_ptr();
@@ -1151,6 +1152,9 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          return uninit_video_input();
       case RARCH_DISPLAY_CTL_MONITOR_RESET:
          video_state.frame_time_samples_count = 0;
+         return true;
+      case RARCH_DISPLAY_CTL_MONITOR_ADJUST_SYSTEM_RATES:
+         video_monitor_adjust_system_rates();
          return true;
       case RARCH_DISPLAY_CTL_SET_ASPECT_RATIO:
          if (!poke || !poke->set_aspect_ratio)

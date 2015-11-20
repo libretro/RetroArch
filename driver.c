@@ -235,7 +235,7 @@ static void driver_adjust_system_rates(void)
    driver_t            *driver = driver_get_ptr();
 
    audio_monitor_adjust_system_rates();
-   video_monitor_adjust_system_rates();
+   video_driver_ctl(RARCH_DISPLAY_CTL_MONITOR_ADJUST_SYSTEM_RATES, NULL);
 
    if (!driver->video_data)
       return;

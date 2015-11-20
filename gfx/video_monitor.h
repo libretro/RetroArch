@@ -24,8 +24,6 @@
 extern "C" {
 #endif
 
-void video_monitor_adjust_system_rates(void);
-
 /**
  * video_monitor_set_refresh_rate:
  * @hz                 : New refresh rate for monitor.
