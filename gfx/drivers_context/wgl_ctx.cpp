@@ -64,6 +64,9 @@
 #define WGL_CONTEXT_DEBUG_BIT_ARB 0x0001
 #endif
 
+typedef HGLRC (APIENTRY *wglCreateContextAttribsProc)(HDC, HGLRC, const int*);
+static BOOL (APIENTRY *p_swap_interval)(int);
+
 static bool g_use_hw_ctx;
 static HGLRC g_hrc;
 static HGLRC g_hw_hrc;
@@ -76,11 +79,6 @@ static unsigned g_interval;
 
 static dylib_t dll_handle = NULL; /* Handle to OpenGL32.dll */
 
-static void gfx_ctx_wgl_destroy(void *data);
-
-static BOOL (APIENTRY *p_swap_interval)(int);
-
-typedef HGLRC (APIENTRY *wglCreateContextAttribsProc)(HDC, HGLRC, const int*);
 static wglCreateContextAttribsProc pcreate_context;
 
 static void setup_pixel_format(HDC hdc)
@@ -316,24 +314,6 @@ static bool gfx_ctx_wgl_init(void *data)
    return true;
 }
 
-static bool gfx_ctx_wgl_set_video_mode(void *data,
-      unsigned width, unsigned height,
-      bool fullscreen)
-{
-   if (!win32_set_video_mode(data, width, height, fullscreen))
-      goto error;
-
-   p_swap_interval = (BOOL (APIENTRY *)(int))wglGetProcAddress("wglSwapIntervalEXT");
-
-   gfx_ctx_wgl_swap_interval(data, g_interval);
-
-   return true;
-
-error:
-   gfx_ctx_wgl_destroy(data);
-   return false;
-}
-
 static void gfx_ctx_wgl_destroy(void *data)
 {
    driver_t *driver = driver_get_ptr();
@@ -378,6 +358,25 @@ static void gfx_ctx_wgl_destroy(void *data)
    g_major = g_minor = 0;
    p_swap_interval = NULL;
 }
+
+static bool gfx_ctx_wgl_set_video_mode(void *data,
+      unsigned width, unsigned height,
+      bool fullscreen)
+{
+   if (!win32_set_video_mode(data, width, height, fullscreen))
+      goto error;
+
+   p_swap_interval = (BOOL (APIENTRY *)(int))wglGetProcAddress("wglSwapIntervalEXT");
+
+   gfx_ctx_wgl_swap_interval(data, g_interval);
+
+   return true;
+
+error:
+   gfx_ctx_wgl_destroy(data);
+   return false;
+}
+
 
 static void gfx_ctx_wgl_input_driver(void *data,
       const input_driver_t **input, void **input_data)
