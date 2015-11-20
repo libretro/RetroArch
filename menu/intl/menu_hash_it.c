@@ -32,6 +32,675 @@
 /* DO NOT REMOVE THIS. If it causes build failure, it's because you saved the file as UTF-8. Read the above comment. */
 extern const char force_iso_8859_1[sizeof("àèéìòù")==6+1 ? 1 : -1];
 
+static const char *menu_hash_to_str_it_label(uint32_t hash)
+{
+   switch (hash)
+   {
+      case MENU_LABEL_CHEEVOS_TEST_UNOFFICIAL:
+         return "cheevos_test_unofficial";
+      case MENU_LABEL_CHEEVOS_ENABLE:
+         return "cheevos_enable";
+      case MENU_LABEL_INPUT_ICADE_ENABLE:
+         return "input_icade_enable";
+      case MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
+         return "keyboard_gamepad_mapping_type";
+      case MENU_LABEL_INPUT_SMALL_KEYBOARD_ENABLE:
+         return "input_small_keyboard_enable";
+      case MENU_LABEL_SAVE_CURRENT_CONFIG:
+         return "save_current_config";
+      case MENU_LABEL_STATE_SLOT:
+         return "state_slot";
+      case MENU_LABEL_CHEEVOS_USERNAME:
+         return "cheevos_username";
+      case MENU_LABEL_CHEEVOS_PASSWORD:
+         return "cheevos_password";
+      case MENU_LABEL_ACCOUNTS_CHEEVOS_USERNAME:
+         return "accounts_cheevos_username";
+      case MENU_LABEL_ACCOUNTS_CHEEVOS_PASSWORD:
+         return "accounts_cheevos_password";
+      case MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
+         return "retro_achievements";
+      case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
+         return "deferred_accounts_cheevos_list";
+      case MENU_LABEL_DEFERRED_USER_BINDS_LIST:
+         return "deferred_user_binds_list";
+      case MENU_LABEL_DEFERRED_ACCOUNTS_LIST:
+         return "deferred_accounts_list";
+      case MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST:
+         return "deferred_input_settings_list";
+      case MENU_LABEL_ACCOUNTS_LIST:
+         return "accounts_list";
+      case MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
+         return "deferred_input_hotkey_binds";
+      case MENU_LABEL_INPUT_HOTKEY_BINDS:
+         return "input_hotkey_binds";
+      case MENU_LABEL_INPUT_HOTKEY_BINDS_BEGIN:
+         return "input_hotkey_binds_begin";
+      case MENU_LABEL_INPUT_SETTINGS_BEGIN:
+         return "input_settings_begin";
+      case MENU_LABEL_PLAYLIST_SETTINGS_BEGIN:
+         return "playlist_settings_begin";
+      case MENU_LABEL_PLAYLIST_SETTINGS:
+         return "playlist_settings";
+      case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
+         return "deferred_playlist_settings";
+      case MENU_LABEL_INPUT_SETTINGS:
+         return "input_settings";
+      case MENU_LABEL_DEBUG_PANEL_ENABLE:
+         return "debug_panel_enable";
+      case MENU_LABEL_HELP_SCANNING_CONTENT:
+         return "help_scanning_content";
+      case MENU_LABEL_CHEEVOS_DESCRIPTION:
+         return "cheevos_description";
+      case MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
+         return "help_audio_video_troubleshooting";
+      case MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
+         return "help_change_virtual_gamepad";
+      case MENU_LABEL_HELP_WHAT_IS_A_CORE:
+         return "help_what_is_a_core";
+      case MENU_LABEL_HELP_LOADING_CONTENT:
+         return "help_loading_content";
+      case MENU_LABEL_HELP_LIST:
+         return "help_list";
+      case MENU_LABEL_HELP_CONTROLS:
+         return "help_controls";
+      case MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
+         return "deferred_archive_open_detect_core";
+      case MENU_LABEL_DEFERRED_ARCHIVE_OPEN:
+         return "deferred_archive_open";
+      case MENU_LABEL_LOAD_ARCHIVE_DETECT_CORE:
+         return "load_archive_detect_core";
+      case MENU_LABEL_LOAD_ARCHIVE:
+         return "load_archive";
+      case MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE:
+         return "deferred_archive_action_detect_core";
+      case MENU_LABEL_DEFERRED_ARCHIVE_ACTION:
+         return "deferred_archive_action";
+      case MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE:
+         return "open_archive_detect_core";
+      case MENU_LABEL_OPEN_ARCHIVE:
+         return "open_archive";
+      case MENU_LABEL_INPUT_BACK_AS_MENU_TOGGLE_ENABLE:
+         return "back_as_menu_toggle_enable";
+      case MENU_LABEL_INPUT_MENU_TOGGLE_GAMEPAD_COMBO:
+         return "input_menu_toggle_gamepad_combo";
+      case MENU_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
+         return "overlay_hide_in_menu";
+      case MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
+         return "no_playlist_entries_available";
+      case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
+         return "downloaded_file_detect_core_list";
+      case MENU_LABEL_UPDATE_CORE_INFO_FILES:
+         return "update_core_info_files";
+      case MENU_LABEL_DEFERRED_CORE_CONTENT_LIST:
+         return "deferred_core_content_list";
+      case MENU_LABEL_DOWNLOAD_CORE_CONTENT:
+         return "download_core_content";
+      case MENU_LABEL_SCAN_THIS_DIRECTORY:
+         return "scan_this_directory";
+      case MENU_LABEL_SCAN_FILE:
+         return "scan_file";
+      case MENU_LABEL_SCAN_DIRECTORY:
+         return "scan_directory";
+      case MENU_LABEL_ADD_CONTENT_LIST:
+         return "add_content";
+      case MENU_LABEL_OVERLAY_AUTOLOAD_PREFERRED:
+         return "overlay_autoload_preferred";
+      case MENU_LABEL_INFORMATION_LIST:
+         return "information_list";
+      case MENU_LABEL_USE_BUILTIN_PLAYER:
+         return "use_builtin_player";
+      case MENU_LABEL_CONTENT_SETTINGS:
+         return "quick_menu";
+      case MENU_LABEL_LOAD_CONTENT_LIST:
+         return "load_content";
+      case MENU_LABEL_NO_SETTINGS_FOUND:
+         return "menu_label_no_settings_found";
+      case MENU_LABEL_SYSTEM_BGM_ENABLE:
+         return "system_bgm_enable";
+      case MENU_LABEL_AUDIO_BLOCK_FRAMES:
+         return "audio_block_frames";
+      case MENU_LABEL_INPUT_BIND_MODE:
+         return "input_bind_mode";
+      case MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:
+         return "input_descriptor_label_show";
+      case MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
+         return "input_descriptor_hide_unbound";
+      case MENU_LABEL_VIDEO_FONT_ENABLE:
+         return "video_font_enable";
+      case MENU_LABEL_VIDEO_FONT_PATH:
+         return "video_font_path";
+      case MENU_LABEL_VIDEO_FONT_SIZE:
+         return "video_font_size";
+      case MENU_LABEL_VIDEO_MESSAGE_POS_X:
+         return "video_message_pos_x";
+      case MENU_LABEL_VIDEO_MESSAGE_POS_Y:
+         return "video_message_pos_y";
+      case MENU_LABEL_VIDEO_SOFT_FILTER:
+         return "soft_filter";
+      case MENU_LABEL_VIDEO_FILTER_FLICKER:
+         return "video_filter_flicker";
+      case MENU_LABEL_INPUT_REMAPPING_DIRECTORY:
+         return "input_remapping_directory";
+      case MENU_LABEL_JOYPAD_AUTOCONFIG_DIR:
+         return "joypad_autoconfig_dir";
+      case MENU_LABEL_RECORDING_CONFIG_DIRECTORY:
+         return "recording_config_directory";
+      case MENU_LABEL_RECORDING_OUTPUT_DIRECTORY:
+         return "recording_output_directory";
+      case MENU_LABEL_SCREENSHOT_DIRECTORY:
+         return "screenshot_directory";
+      case MENU_LABEL_PLAYLIST_DIRECTORY:
+         return "playlist_directory";
+      case MENU_LABEL_SAVEFILE_DIRECTORY:
+         return "savefile_directory";
+      case MENU_LABEL_SAVESTATE_DIRECTORY:
+         return "savestate_directory";
+      case MENU_LABEL_STDIN_CMD_ENABLE:
+         return "stdin_commands";
+      case MENU_LABEL_VIDEO_DRIVER:
+         return "video_driver";
+      case MENU_LABEL_RECORD_ENABLE:
+         return "record_enable";
+      case MENU_LABEL_VIDEO_GPU_RECORD:
+         return "video_gpu_record";
+      case MENU_LABEL_RECORD_PATH:
+         return "record_path";
+      case MENU_LABEL_RECORD_USE_OUTPUT_DIRECTORY:
+         return "record_use_output_directory";
+      case MENU_LABEL_RECORD_CONFIG:
+         return "record_config";
+      case MENU_LABEL_VIDEO_POST_FILTER_RECORD:
+         return "video_post_filter_record";
+      case MENU_LABEL_CORE_ASSETS_DIRECTORY:
+         return "core_assets_directory";
+      case MENU_LABEL_ASSETS_DIRECTORY:
+         return "assets_directory";
+      case MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
+         return "dynamic_wallpapers_directory";
+      case MENU_LABEL_BOXARTS_DIRECTORY:
+         return "boxarts_directory";
+      case MENU_LABEL_RGUI_BROWSER_DIRECTORY:
+         return "rgui_browser_directory";
+      case MENU_LABEL_RGUI_CONFIG_DIRECTORY:
+         return "rgui_config_directory";
+      case MENU_LABEL_LIBRETRO_INFO_PATH:
+         return "libretro_info_path";
+      case MENU_LABEL_LIBRETRO_DIR_PATH:
+         return "libretro_dir_path";
+      case MENU_LABEL_CURSOR_DIRECTORY:
+         return "cursor_directory";
+      case MENU_LABEL_CONTENT_DATABASE_DIRECTORY:
+         return "content_database_path";
+      case MENU_LABEL_SYSTEM_DIRECTORY:
+         return "system_directory";
+      case MENU_LABEL_CACHE_DIRECTORY:
+         return "cache_directory";
+      case MENU_LABEL_CHEAT_DATABASE_PATH:
+         return "cheat_database_path";
+      case MENU_LABEL_AUDIO_FILTER_DIR:
+         return "audio_filter_dir";
+      case MENU_LABEL_VIDEO_FILTER_DIR:
+         return "video_filter_dir";
+      case MENU_LABEL_VIDEO_SHADER_DIR:
+         return "video_shader_dir";
+      case MENU_LABEL_OVERLAY_DIRECTORY:
+         return "overlay_directory";
+      case MENU_LABEL_OSK_OVERLAY_DIRECTORY:
+         return "osk_overlay_directory";
+      case MENU_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
+         return "netplay_client_swap_input";
+      case MENU_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
+         return "netplay_spectator_mode_enable";
+      case MENU_LABEL_NETPLAY_IP_ADDRESS:
+         return "netplay_ip_address";
+      case MENU_LABEL_NETPLAY_TCP_UDP_PORT:
+         return "netplay_tcp_udp_port";
+      case MENU_LABEL_NETPLAY_ENABLE:
+         return "netplay_enable";
+      case MENU_LABEL_NETPLAY_DELAY_FRAMES:
+         return "netplay_delay_frames";
+      case MENU_LABEL_NETPLAY_MODE:
+         return "netplay_mode";
+      case MENU_LABEL_RGUI_SHOW_START_SCREEN:
+         return "rgui_show_start_screen";
+      case MENU_LABEL_TITLE_COLOR:
+         return "menu_title_color";
+      case MENU_LABEL_ENTRY_HOVER_COLOR:
+         return "menu_entry_hover_color";
+      case MENU_LABEL_TIMEDATE_ENABLE:
+         return "menu_timedate_enable";
+      case MENU_LABEL_THREADED_DATA_RUNLOOP_ENABLE:
+         return "threaded_data_runloop_enable";
+      case MENU_LABEL_ENTRY_NORMAL_COLOR:
+         return "menu_entry_normal_color";
+      case MENU_LABEL_SHOW_ADVANCED_SETTINGS:
+         return "menu_show_advanced_settings";
+      case MENU_LABEL_MOUSE_ENABLE:
+         return "menu_mouse_enable";
+      case MENU_LABEL_POINTER_ENABLE:
+         return "menu_pointer_enable";
+      case MENU_LABEL_CORE_ENABLE:
+         return "menu_core_enable";
+      case MENU_LABEL_DPI_OVERRIDE_ENABLE:
+         return "dpi_override_enable";
+      case MENU_LABEL_DPI_OVERRIDE_VALUE:
+         return "dpi_override_value";
+      case MENU_LABEL_SUSPEND_SCREENSAVER_ENABLE:
+         return "suspend_screensaver_enable";
+      case MENU_LABEL_VIDEO_DISABLE_COMPOSITION:
+         return "video_disable_composition";
+      case MENU_LABEL_PAUSE_NONACTIVE:
+         return "pause_nonactive";
+      case MENU_LABEL_UI_COMPANION_START_ON_BOOT:
+         return "ui_companion_start_on_boot";
+      case MENU_LABEL_UI_MENUBAR_ENABLE:
+         return "ui_menubar_enable";
+      case MENU_LABEL_ARCHIVE_MODE:
+         return "archive_mode";
+      case MENU_LABEL_NETWORK_CMD_ENABLE:
+         return "network_cmd_enable";
+      case MENU_LABEL_NETWORK_CMD_PORT:
+         return "network_cmd_port";
+      case MENU_LABEL_HISTORY_LIST_ENABLE:
+         return "history_list_enable";
+      case MENU_LABEL_CONTENT_HISTORY_SIZE:
+         return "Dimensione cronologia dei contenuti";
+      case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
+         return "video_refresh_rate_auto";
+      case MENU_LABEL_DUMMY_ON_CORE_SHUTDOWN:
+         return "dummy_on_core_shutdown";
+      case MENU_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
+         return "core_set_supports_no_content_enable";
+      case MENU_LABEL_FRAME_THROTTLE_ENABLE:
+         return "fastforward_ratio_throttle_enable";
+      case MENU_LABEL_FASTFORWARD_RATIO:
+         return "fastforward_ratio";
+      case MENU_LABEL_AUTO_REMAPS_ENABLE:
+         return "auto_remaps_enable";
+      case MENU_LABEL_SLOWMOTION_RATIO:
+         return "slowmotion_ratio";
+      case MENU_LABEL_CORE_SPECIFIC_CONFIG:
+         return "core_specific_config";
+      case MENU_LABEL_GAME_SPECIFIC_OPTIONS:
+         return "game_specific_options";
+      case MENU_LABEL_AUTO_OVERRIDES_ENABLE:
+         return "auto_overrides_enable";
+      case MENU_LABEL_CONFIG_SAVE_ON_EXIT:
+         return "config_save_on_exit";
+      case MENU_LABEL_VIDEO_SMOOTH:
+         return "video_smooth";
+      case MENU_LABEL_VIDEO_GAMMA:
+         return "video_gamma";
+      case MENU_LABEL_VIDEO_ALLOW_ROTATE:
+         return "video_allow_rotate";
+      case MENU_LABEL_VIDEO_HARD_SYNC:
+         return "video_hard_sync";
+      case MENU_LABEL_VIDEO_SWAP_INTERVAL:
+         return "video_swap_interval";
+      case MENU_LABEL_VIDEO_VSYNC:
+         return "video_vsync";
+      case MENU_LABEL_VIDEO_THREADED:
+         return "video_threaded";
+      case MENU_LABEL_VIDEO_ROTATION:
+         return "video_rotation";
+      case MENU_LABEL_VIDEO_GPU_SCREENSHOT:
+         return "video_gpu_screenshot";
+      case MENU_LABEL_VIDEO_CROP_OVERSCAN:
+         return "video_crop_overscan";
+      case MENU_LABEL_VIDEO_ASPECT_RATIO_INDEX:
+         return "aspect_ratio_index";
+      case MENU_LABEL_VIDEO_ASPECT_RATIO_AUTO:
+         return "video_aspect_ratio_auto";
+      case MENU_LABEL_VIDEO_FORCE_ASPECT:
+         return "video_force_aspect";
+      case MENU_LABEL_VIDEO_REFRESH_RATE: 
+         return "video_refresh_rate";
+      case MENU_LABEL_VIDEO_FORCE_SRGB_DISABLE:
+         return "video_force_srgb_disable";
+      case MENU_LABEL_VIDEO_WINDOWED_FULLSCREEN:
+         return "video_windowed_fullscreen";
+      case MENU_LABEL_PAL60_ENABLE:
+         return "pal60_enable";
+      case MENU_LABEL_VIDEO_VFILTER:
+         return "video_vfilter";
+      case MENU_LABEL_VIDEO_VI_WIDTH:
+         return "video_vi_width";
+      case MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION:
+         return "video_black_frame_insertion";
+      case MENU_LABEL_VIDEO_HARD_SYNC_FRAMES:
+         return "video_hard_sync_frames";
+      case MENU_LABEL_SORT_SAVEFILES_ENABLE:
+         return "sort_savefiles_enable";
+      case MENU_LABEL_SORT_SAVESTATES_ENABLE:
+         return "sort_savestates_enable";
+      case MENU_LABEL_VIDEO_FULLSCREEN:
+         return "video_fullscreen";
+      case MENU_LABEL_PERFCNT_ENABLE:
+         return "perfcnt_enable";
+      case MENU_LABEL_VIDEO_SCALE:
+         return "video_scale";
+      case MENU_LABEL_VIDEO_SCALE_INTEGER:
+         return "video_scale_integer";
+      case MENU_LABEL_LIBRETRO_LOG_LEVEL:
+         return "libretro_log_level";
+      case MENU_LABEL_LOG_VERBOSITY:
+         return "log_verbosity";
+      case MENU_LABEL_SAVESTATE_AUTO_SAVE:
+         return "savestate_auto_save";
+      case MENU_LABEL_SAVESTATE_AUTO_LOAD:
+         return "savestate_auto_load";
+      case MENU_LABEL_SAVESTATE_AUTO_INDEX:
+         return "savestate_auto_index";
+      case MENU_LABEL_AUTOSAVE_INTERVAL:
+         return "autosave_interval";
+      case MENU_LABEL_BLOCK_SRAM_OVERWRITE:
+         return "block_sram_overwrite";
+      case MENU_LABEL_VIDEO_SHARED_CONTEXT:
+         return "video_shared_context";
+      case MENU_LABEL_RESTART_RETROARCH:
+         return "restart_retroarch";
+      case MENU_LABEL_NETPLAY_NICKNAME:
+         return "netplay_nickname";
+      case MENU_LABEL_USER_LANGUAGE:
+         return "user_language";
+      case MENU_LABEL_CAMERA_ALLOW:
+         return "camera_allow";
+      case MENU_LABEL_LOCATION_ALLOW:
+         return "location_allow";
+      case MENU_LABEL_PAUSE_LIBRETRO:
+         return "menu_pause_libretro";
+      case MENU_LABEL_INPUT_OSK_OVERLAY_ENABLE:
+         return "input_osk_overlay_enable";
+      case MENU_LABEL_INPUT_OVERLAY_ENABLE:
+         return "input_overlay_enable";
+      case MENU_LABEL_VIDEO_MONITOR_INDEX:
+         return "video_monitor_index";
+      case MENU_LABEL_VIDEO_FRAME_DELAY:
+         return "video_frame_delay";
+      case MENU_LABEL_INPUT_DUTY_CYCLE:
+         return "input_duty_cycle";
+      case MENU_LABEL_INPUT_TURBO_PERIOD:
+         return "input_turbo_period";
+      case MENU_LABEL_INPUT_AXIS_THRESHOLD:
+         return "input_axis_threshold";
+      case MENU_LABEL_INPUT_REMAP_BINDS_ENABLE:
+         return "input_remap_binds_enable";
+      case MENU_LABEL_INPUT_MAX_USERS:
+         return "input_max_users";
+      case MENU_LABEL_INPUT_AUTODETECT_ENABLE:
+         return "input_autodetect_enable";
+      case MENU_LABEL_AUDIO_OUTPUT_RATE:
+         return "audio_output_rate";
+      case MENU_LABEL_AUDIO_MAX_TIMING_SKEW:
+         return "audio_max_timing_skew";
+      case MENU_LABEL_CHEAT_APPLY_CHANGES:
+         return "cheat_apply_changes";
+      case MENU_LABEL_REMAP_FILE_SAVE_CORE:
+         return "remap_file_save_core";
+      case MENU_LABEL_REMAP_FILE_SAVE_GAME:
+         return "remap_file_save_game";
+      case MENU_LABEL_CHEAT_NUM_PASSES:
+         return "cheat_num_passes";
+      case MENU_LABEL_SHADER_APPLY_CHANGES:
+         return "shader_apply_changes";
+      case MENU_LABEL_COLLECTION:
+         return "collection";
+      case MENU_LABEL_REWIND_ENABLE:
+         return "rewind_enable";
+      case MENU_LABEL_CONTENT_COLLECTION_LIST:
+         return "select_from_collection";
+      case MENU_LABEL_DETECT_CORE_LIST:
+         return "detect_core_list";
+      case MENU_LABEL_LOAD_CONTENT_HISTORY:
+         return "load_recent";
+      case MENU_LABEL_AUDIO_ENABLE:
+         return "audio_enable";
+      case MENU_LABEL_FPS_SHOW:
+         return "fps_show";
+      case MENU_LABEL_AUDIO_MUTE:
+         return "audio_mute_enable";
+      case MENU_LABEL_VIDEO_SHADER_PASS:
+         return "video_shader_pass";
+      case MENU_LABEL_AUDIO_VOLUME:
+         return "audio_volume";
+      case MENU_LABEL_AUDIO_SYNC:
+         return "audio_sync";
+      case MENU_LABEL_AUDIO_RATE_CONTROL_DELTA:
+         return "audio_rate_control_delta";
+      case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
+         return "video_shader_filter_pass";
+      case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
+         return "video_shader_scale_pass";
+      case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
+         return "video_shader_num_passes";
+      case MENU_LABEL_RDB_ENTRY_DESCRIPTION:
+         return "rdb_entry_description";
+      case MENU_LABEL_RDB_ENTRY_ORIGIN:
+         return "rdb_entry_origin";
+      case MENU_LABEL_RDB_ENTRY_PUBLISHER:
+         return "rdb_entry_publisher";
+      case MENU_LABEL_RDB_ENTRY_DEVELOPER:
+         return "rdb_entry_developer";
+      case MENU_LABEL_RDB_ENTRY_FRANCHISE:
+         return "rdb_entry_franchise";
+      case MENU_LABEL_RDB_ENTRY_MAX_USERS:
+         return "rdb_entry_max_users";
+      case MENU_LABEL_RDB_ENTRY_NAME:
+         return "rdb_entry_name";
+      case MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING:
+         return "rdb_entry_edge_magazine_rating";
+      case MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_REVIEW:
+         return "rdb_entry_edge_magazine_review";
+      case MENU_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
+         return "rdb_entry_famitsu_magazine_rating";
+      case MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
+         return "rdb_entry_edge_magazine_issue";
+      case MENU_LABEL_RDB_ENTRY_RELEASE_MONTH:
+         return "rdb_entry_releasemonth";
+      case MENU_LABEL_RDB_ENTRY_RELEASE_YEAR:
+         return "rdb_entry_releaseyear";
+      case MENU_LABEL_RDB_ENTRY_ENHANCEMENT_HW:
+         return "rdb_entry_enhancement_hw";
+      case MENU_LABEL_RDB_ENTRY_SHA1:
+         return "rdb_entry_sha1";
+      case MENU_LABEL_RDB_ENTRY_CRC32:
+         return "rdb_entry_crc32";
+      case MENU_LABEL_RDB_ENTRY_MD5:
+         return "rdb_entry_md5";
+      case MENU_LABEL_RDB_ENTRY_BBFC_RATING:
+         return "rdb_entry_bbfc_rating";
+      case MENU_LABEL_RDB_ENTRY_ESRB_RATING:
+         return "rdb_entry_esrb_rating";
+      case MENU_LABEL_RDB_ENTRY_ELSPA_RATING:
+         return "rdb_entry_elspa_rating";
+      case MENU_LABEL_RDB_ENTRY_PEGI_RATING:
+         return "rdb_entry_pegi_rating";
+      case MENU_LABEL_RDB_ENTRY_CERO_RATING:
+         return "rdb_entry_cero_rating";
+      case MENU_LABEL_RDB_ENTRY_ANALOG:
+         return "rdb_entry_analog";
+      case MENU_LABEL_CONFIGURATIONS:
+         return "configurations";
+      case MENU_LABEL_LOAD_OPEN_ZIP:
+         return "load_open_zip";
+      case MENU_LABEL_REWIND_GRANULARITY:
+         return "rewind_granularity";
+      case MENU_LABEL_REMAP_FILE_LOAD:
+         return "remap_file_load";
+      case MENU_LABEL_CUSTOM_RATIO:
+         return "custom_ratio";
+      case MENU_LABEL_USE_THIS_DIRECTORY:
+         return "use_this_directory";
+      case MENU_LABEL_RDB_ENTRY_START_CONTENT:
+         return "rdb_entry_start_content";
+      case MENU_LABEL_CUSTOM_BIND:
+         return "custom_bind";
+      case MENU_LABEL_CUSTOM_BIND_ALL:
+         return "custom_bind_all";
+      case MENU_LABEL_DISK_OPTIONS:
+         return "core_disk_options";
+      case MENU_LABEL_CORE_CHEAT_OPTIONS:
+         return "core_cheat_options";
+      case MENU_LABEL_CORE_OPTIONS:
+         return "core_options";
+      case MENU_LABEL_DATABASE_MANAGER_LIST:
+         return "database_manager_list";
+      case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
+         return "deferred_database_manager_list";
+      case MENU_LABEL_CURSOR_MANAGER_LIST:
+         return "cursor_manager_list";
+      case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
+         return "deferred_cursor_manager_list";
+      case MENU_LABEL_CHEAT_FILE_LOAD:
+         return "cheat_file_load";
+      case MENU_LABEL_CHEAT_FILE_SAVE_AS:
+         return "cheat_file_save_as";
+      case MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL:
+         return "deferred_rdb_entry_detail";
+      case MENU_LABEL_FRONTEND_COUNTERS:
+         return "frontend_counters";
+      case MENU_LABEL_CORE_COUNTERS:
+         return "core_counters";
+      case MENU_LABEL_DISK_CYCLE_TRAY_STATUS:
+         return "disk_cycle_tray_status";
+      case MENU_LABEL_DISK_IMAGE_APPEND:
+         return "disk_image_append";
+      case MENU_LABEL_DEFERRED_CORE_LIST:
+         return "deferred_core_list";
+      case MENU_LABEL_DEFERRED_CORE_LIST_SET:
+         return "deferred_core_list_set";
+      case MENU_LABEL_INFO_SCREEN:
+         return "info_screen";
+      case MENU_LABEL_SETTINGS:
+         return "settings";
+      case MENU_LABEL_QUIT_RETROARCH:
+         return "quit_retroarch";
+      case MENU_LABEL_HELP:
+         return "help";
+      case MENU_LABEL_SAVE_NEW_CONFIG:
+         return "save_new_config";
+      case MENU_LABEL_RESTART_CONTENT:
+         return "restart_content";
+      case MENU_LABEL_TAKE_SCREENSHOT:
+         return "take_screenshot";
+      case MENU_LABEL_CORE_UPDATER_LIST:
+         return "core_updater_list";
+      case MENU_LABEL_CORE_UPDATER_BUILDBOT_URL:
+         return "core_updater_buildbot_url";
+      case MENU_LABEL_BUILDBOT_ASSETS_URL:
+         return "buildbot_assets_url";
+      case MENU_LABEL_NAVIGATION_WRAPAROUND:
+         return "menu_navigation_wraparound_enable";
+      case MENU_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
+         return "menu_navigation_browser_filter_supported_extensions_enable";
+      case MENU_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
+         return "core_updater_auto_extract_archive";
+      case MENU_LABEL_DEBUG_INFORMATION:
+         return "debug_information";
+      case MENU_LABEL_ACHIEVEMENT_LIST:
+         return "achievement_list";
+      case MENU_LABEL_SYSTEM_INFORMATION:
+         return "system_information";
+      case MENU_LABEL_ONLINE_UPDATER:
+         return "online_updater";
+      case MENU_LABEL_CORE_INFORMATION:
+         return "core_information";
+      case MENU_LABEL_CORE_LIST:
+         return "load_core";
+      case MENU_LABEL_LOAD_CONTENT:
+         return "load_content_default";
+      case MENU_LABEL_CLOSE_CONTENT:
+         return "unload_core";
+      case MENU_LABEL_MANAGEMENT:
+         return "database_settings";
+      case MENU_LABEL_SAVE_STATE:
+         return "savestate";
+      case MENU_LABEL_LOAD_STATE:
+         return "loadstate";
+      case MENU_LABEL_RESUME_CONTENT:
+         return "resume_content";
+      case MENU_LABEL_INPUT_DRIVER:
+         return "input_driver";
+      case MENU_LABEL_AUDIO_DRIVER:
+         return "audio_driver";
+      case MENU_LABEL_JOYPAD_DRIVER:
+         return "input_joypad_driver";
+      case MENU_LABEL_AUDIO_RESAMPLER_DRIVER:
+         return "audio_resampler_driver";
+      case MENU_LABEL_RECORD_DRIVER:
+         return "record_driver";
+      case MENU_LABEL_MENU_DRIVER:
+         return "menu_driver";
+      case MENU_LABEL_CAMERA_DRIVER:
+         return "camera_driver";
+      case MENU_LABEL_LOCATION_DRIVER:
+         return "location_driver";
+      case MENU_LABEL_OVERLAY_SCALE:
+         return "input_overlay_scale";
+      case MENU_LABEL_OVERLAY_PRESET:
+         return "input_overlay";
+      case MENU_LABEL_KEYBOARD_OVERLAY_PRESET:
+         return "input_osk_overlay";
+      case MENU_LABEL_AUDIO_DEVICE:
+         return "audio_device";
+      case MENU_LABEL_AUDIO_LATENCY:
+         return "audio_latency";
+      case MENU_LABEL_OVERLAY_OPACITY:
+         return "input_overlay_opacity";
+      case MENU_LABEL_MENU_WALLPAPER:
+         return "menu_wallpaper";
+      case MENU_LABEL_DYNAMIC_WALLPAPER:
+         return "menu_dynamic_wallpaper_enable";
+      case MENU_LABEL_BOXART:
+         return "menu_boxart_enable";
+      case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
+         return "core_input_remapping_options";
+      case MENU_LABEL_SHADER_OPTIONS:
+         return "shader_options";
+      case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
+         return "video_shader_parameters";
+      case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+         return "video_shader_preset_parameters";
+      case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
+         return "video_shader_preset_save_as";
+      case MENU_LABEL_VIDEO_SHADER_PRESET:
+         return "video_shader_preset";
+      case MENU_LABEL_VIDEO_FILTER:
+         return "video_filter";
+      case MENU_LABEL_DEFERRED_VIDEO_FILTER:
+         return "deferred_video_filter";
+      case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
+         return "core_updater";
+      case MENU_LABEL_AUDIO_DSP_PLUGIN:
+         return "audio_dsp_plugin";
+      case MENU_LABEL_UPDATE_ASSETS:
+         return "update_assets";
+      case MENU_LABEL_UPDATE_CHEATS:
+         return "update_cheats";
+      case MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES:
+         return "update_autoconfig_profiles";
+      case MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES_HID:
+         return "update_autoconfig_profiles_hid";
+      case MENU_LABEL_UPDATE_DATABASES:
+         return "update_databases";
+      case MENU_LABEL_UPDATE_OVERLAYS:
+         return "update_overlays";
+      case MENU_LABEL_UPDATE_CG_SHADERS:
+         return "update_cg_shaders";
+      case MENU_LABEL_UPDATE_GLSL_SHADERS:
+         return "update_glsl_shaders";
+      case MENU_LABEL_SCREEN_RESOLUTION:
+         return "screen_resolution";
+      case MENU_LABEL_USE_BUILTIN_IMAGE_VIEWER:
+         return "use_builtin_image_viewer";
+      default:
+         break;
+   }
+
+   return "null";
+}
+
 const char *menu_hash_to_str_it(uint32_t hash)
 {
 
@@ -239,7 +908,7 @@ const char *menu_hash_to_str_it(uint32_t hash)
       case MENU_VALUE_NOT_AVAILABLE:
          return "N/D";
       case MENU_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
-         return "Directory per il remapping dei dispositivi di input";
+         return "Directory per la rimappatura dei dispositivi di input";
       case MENU_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
          return "Directory per l'autoconfigurazione dei dispositivi di input";
       case MENU_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY:
@@ -380,6 +1049,10 @@ const char *menu_hash_to_str_it(uint32_t hash)
          return "Slow-Motion Ratio";
       case MENU_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
          return "Configurazione per core";
+	  case MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS:
+         return "Usa opzioni core per gioco se disponibili";
+	  case MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE:
+         return "Crea file opzioni di gioco";
       case MENU_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
          return "Carica file di override automaticamente";
       case MENU_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
@@ -909,7 +1582,7 @@ const char *menu_hash_to_str_it(uint32_t hash)
       case MENU_LABEL_VALUE_UI_SETTINGS:
          return "Interfaccia Utente";
       case MENU_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
-         return "Seleziona file di menù";
+         return "Seleziona file";
       case MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS:
          return "Aggiorna";
       case MENU_LABEL_VALUE_NETWORK_SETTINGS:
@@ -1438,57 +2111,57 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
          break;
       case MENU_LABEL_MENU_TOGGLE:
          snprintf(s, len,
-               "Toggles menu.");
+               "Attiva menù.");
          break;
       case MENU_LABEL_GRAB_MOUSE_TOGGLE:
          snprintf(s, len,
-               "Toggles mouse grab.\n"
+               "Attiva presa mouse.\n"
                " \n"
-               "When mouse is grabbed, RetroArch hides the \n"
-               "mouse, and keeps the mouse pointer inside \n"
-               "the window to allow relative mouse input to \n"
-               "work better.");
+               "Quando usi il mouse, RetroArch nasconde il \n"
+               "mouse, e tiene il puntatore del mouse dentro \n"
+               "la finestra per permettere al relativo input del mouse \n"
+               "di funzionare meglio.");
          break;
       case MENU_LABEL_DISK_NEXT:
          snprintf(s, len,
-               "Cycles through disk images. Use after \n"
-               "ejecting. \n"
+               "Spostati tra le immagini del disco. Usa dopo \n"
+               "l'espulsione. \n"
                " \n"
-               " Complete by toggling eject again.");
+               " Completa premendo il tasto espulsione di nuovo.");
          break;
       case MENU_LABEL_VIDEO_FILTER:
 #ifdef HAVE_FILTERS_BUILTIN
          snprintf(s, len,
-               "CPU-based video filter.");
+               "Filtro video basato sulla CPU.");
 #else
          snprintf(s, len,
-               "CPU-based video filter.\n"
+               "Filtro video basato sulla CPU.\n"
                " \n"
-               "Path to a dynamic library.");
+               "Percorso di una libreria dinamica.");
 #endif
          break;
       case MENU_LABEL_AUDIO_DEVICE:
          snprintf(s, len,
-               "Override the default audio device \n"
-               "the audio driver uses.\n"
-               "This is driver dependent. E.g.\n"
+               "Escludi il dispositivo audio predefinito \n"
+               "che il driver audio usa.\n"
+               "Dipende dal driver. E.g.\n"
 #ifdef HAVE_ALSA
                " \n"
-               "ALSA wants a PCM device."
+               "ALSA vuole un dipositivo PCM."
 #endif
 #ifdef HAVE_OSS
                " \n"
-               "OSS wants a path (e.g. /dev/dsp)."
+               "OSS vuole un percorso (e.g. /dev/dsp)."
 #endif
 #ifdef HAVE_JACK
                " \n"
-               "JACK wants portnames (e.g. system:playback1\n"
+               "JACK vuole i nomi delle porte (e.g. system:playback1\n"
                ",system:playback_2)."
 #endif
 #ifdef HAVE_RSOUND
                " \n"
-               "RSound wants an IP address to an RSound \n"
-               "server."
+               "RSound vuole l'indirizzo IP di un \n"
+               "server RSound."
 #endif
                );
          break;
