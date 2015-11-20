@@ -21,7 +21,6 @@
 
 #include <sched.h>
 
-#include <EGL/eglext_brcm.h>
 #include <VG/openvg.h>
 #include <bcm_host.h>
 
@@ -33,6 +32,8 @@
 #include "../common/egl_common.h"
 #include "../common/gl_common.h"
 #include "../video_monitor.h"
+
+#include <EGL/eglext_brcm.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
