@@ -382,8 +382,7 @@ void init_drivers(int flags)
       const struct retro_hw_render_callback *hw_render = 
          (const struct retro_hw_render_callback*)video_driver_callback();
 
-      video_monitor_reset();
-
+      video_driver_ctl(RARCH_DISPLAY_CTL_MONITOR_RESET, NULL);
       video_driver_ctl(RARCH_DISPLAY_CTL_INIT, NULL);
 
       if (!driver->video_cache_context_ack

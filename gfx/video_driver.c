@@ -1031,11 +1031,6 @@ bool video_monitor_get_fps(char *buf, size_t size,
    return true;
 }
 
-void video_monitor_reset(void)
-{
-   video_state.frame_time_samples_count = 0;
-}
-
 float video_driver_get_aspect_ratio(void)
 {
    return video_state.aspect_ratio;
@@ -1154,6 +1149,9 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          return init_video();
       case RARCH_DISPLAY_CTL_DEINIT:
          return uninit_video_input();
+      case RARCH_DISPLAY_CTL_MONITOR_RESET:
+         video_state.frame_time_samples_count = 0;
+         return true;
       case RARCH_DISPLAY_CTL_SET_ASPECT_RATIO:
          if (!poke || !poke->set_aspect_ratio)
             return false;

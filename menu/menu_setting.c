@@ -880,7 +880,7 @@ static int setting_action_start_libretro_device_type(void *data)
 static int setting_action_start_video_refresh_rate_auto(
       void *data)
 {
-   video_monitor_reset();
+   video_driver_ctl(RARCH_DISPLAY_CTL_MONITOR_RESET, NULL);
 
    return 0;
 }

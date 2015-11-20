@@ -75,8 +75,6 @@ bool video_monitor_fps_statistics(double *refresh_rate,
 bool video_monitor_get_fps(char *buf, size_t size,
       char *buf_fps, size_t size_fps);
 
-void video_monitor_reset(void);
-
 #ifdef __cplusplus
 }
 #endif
