@@ -33,13 +33,6 @@ extern "C" {
 void video_monitor_set_refresh_rate(float hz);
 
 /**
- * video_monitor_compute_fps_statistics:
- *
- * Computes monitor FPS statistics.
- **/
-void video_monitor_compute_fps_statistics(void);
-
-/**
  * video_monitor_fps_statistics
  * @refresh_rate       : Monitor refresh rate.
  * @deviation          : Deviation from measured refresh rate.

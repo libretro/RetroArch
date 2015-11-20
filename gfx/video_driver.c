@@ -399,6 +399,38 @@ static void video_driver_unset_callback(void)
       hw_render = NULL;
 }
 
+/**
+ * video_monitor_compute_fps_statistics:
+ *
+ * Computes monitor FPS statistics.
+ **/
+static void video_monitor_compute_fps_statistics(void)
+{
+   double avg_fps = 0.0, stddev = 0.0;
+   unsigned samples = 0;
+   settings_t *settings = config_get_ptr();
+
+   if (settings->video.threaded)
+   {
+      RARCH_LOG("Monitor FPS estimation is disabled for threaded video.\n");
+      return;
+   }
+
+   if (video_state.frame_time_samples_count < 2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
+   {
+      RARCH_LOG(
+            "Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
+            2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
+      return;
+   }
+
+   if (video_monitor_fps_statistics(&avg_fps, &stddev, &samples))
+   {
+      RARCH_LOG("Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
+            avg_fps, 100.0 * stddev, samples);
+   }
+}
+
 static bool uninit_video_input(void)
 {
    driver_t *driver = driver_get_ptr();
@@ -833,37 +865,6 @@ void video_monitor_set_refresh_rate(float hz)
    settings->video.refresh_rate = hz;
 }
 
-/**
- * video_monitor_compute_fps_statistics:
- *
- * Computes monitor FPS statistics.
- **/
-void video_monitor_compute_fps_statistics(void)
-{
-   double avg_fps = 0.0, stddev = 0.0;
-   unsigned samples = 0;
-   settings_t *settings = config_get_ptr();
-
-   if (settings->video.threaded)
-   {
-      RARCH_LOG("Monitor FPS estimation is disabled for threaded video.\n");
-      return;
-   }
-
-   if (video_state.frame_time_samples_count < 2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
-   {
-      RARCH_LOG(
-            "Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
-            2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
-      return;
-   }
-
-   if (video_monitor_fps_statistics(&avg_fps, &stddev, &samples))
-   {
-      RARCH_LOG("Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
-            avg_fps, 100.0 * stddev, samples);
-   }
-}
 
 /**
  * video_monitor_fps_statistics
