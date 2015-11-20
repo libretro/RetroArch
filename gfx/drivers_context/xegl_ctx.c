@@ -42,7 +42,45 @@ static int egl_nul_handler(Display *dpy, XErrorEvent *event)
    return 0;
 }
 
-static void gfx_ctx_xegl_destroy(void *data);
+static void gfx_ctx_xegl_destroy(void *data)
+{
+   x11_input_ctx_destroy();
+   egl_destroy(data);
+
+   if (g_x11_win)
+   {
+      /* Save last used monitor for later. */
+#ifdef HAVE_XINERAMA
+      XWindowAttributes target;
+      Window child;
+
+      int x = 0, y = 0;
+      XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
+      XTranslateCoordinates(g_x11_dpy, g_x11_win, RootWindow(g_x11_dpy, DefaultScreen(g_x11_dpy)),
+            target.x, target.y, &x, &y, &child);
+
+      g_screen = x11_get_xinerama_monitor(g_x11_dpy, x, y,
+            target.width, target.height);
+
+      RARCH_LOG("[X/EGL]: Saved monitor #%u.\n", g_screen);
+#endif
+
+      x11_window_destroy(false);
+   }
+
+   x11_colormap_destroy();
+
+   if (g_should_reset_mode)
+   {
+      x11_exit_fullscreen(g_x11_dpy, &g_desktop_mode);
+      g_should_reset_mode = false;
+   }
+
+   /* Do not close g_x11_dpy. We'll keep one for the entire application 
+    * lifecycle to work-around nVidia EGL limitations.
+    */
+   g_egl_inited = false;
+}
 
 static void gfx_ctx_xegl_set_resize(void *data,
    unsigned width, unsigned height)
@@ -365,45 +403,6 @@ error:
    return false;
 }
 
-static void gfx_ctx_xegl_destroy(void *data)
-{
-   x11_input_ctx_destroy();
-   egl_destroy(data);
-
-   if (g_x11_win)
-   {
-      /* Save last used monitor for later. */
-#ifdef HAVE_XINERAMA
-      XWindowAttributes target;
-      Window child;
-
-      int x = 0, y = 0;
-      XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
-      XTranslateCoordinates(g_x11_dpy, g_x11_win, RootWindow(g_x11_dpy, DefaultScreen(g_x11_dpy)),
-            target.x, target.y, &x, &y, &child);
-
-      g_screen = x11_get_xinerama_monitor(g_x11_dpy, x, y,
-            target.width, target.height);
-
-      RARCH_LOG("[X/EGL]: Saved monitor #%u.\n", g_screen);
-#endif
-
-      x11_window_destroy(false);
-   }
-
-   x11_colormap_destroy();
-
-   if (g_should_reset_mode)
-   {
-      x11_exit_fullscreen(g_x11_dpy, &g_desktop_mode);
-      g_should_reset_mode = false;
-   }
-
-   /* Do not close g_x11_dpy. We'll keep one for the entire application 
-    * lifecycle to work-around nVidia EGL limitations.
-    */
-   g_egl_inited = false;
-}
 
 static void gfx_ctx_xegl_input_driver(void *data,
    const input_driver_t **input, void **input_data)
