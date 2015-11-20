@@ -225,6 +225,8 @@ enum rarch_display_ctl_state
    RARCH_DISPLAY_CTL_FRAME_FILTER_IS_32BIT,
    RARCH_DISPLAY_CTL_HAS_WINDOWED,
    RARCH_DISPLAY_CTL_IS_FOCUSED,
+   /* Renders the current video frame. */
+   RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER,
    RARCH_DISPLAY_CTL_GET_FRAME_COUNT
 };
 
@@ -367,13 +369,6 @@ void *video_driver_frame_filter_get_buf_ptr(void);
 enum retro_pixel_format video_driver_get_pixel_format(void);
 
 void video_driver_set_pixel_format(enum retro_pixel_format fmt);
-
-/**
- * video_driver_cached_frame:
- *
- * Renders the current video frame.
- **/
-void video_driver_cached_frame(void);
 
 void video_driver_cached_frame_set(const void *data, unsigned width,
       unsigned height, size_t pitch);

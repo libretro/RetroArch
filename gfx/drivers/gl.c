@@ -2950,7 +2950,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
          goto error;
       }
 
-      video_driver_cached_frame();
+      video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
 
       dst = buffer;
       src = (const uint8_t*)gl->readback_buffer_screenshot;

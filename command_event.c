@@ -1499,7 +1499,7 @@ bool event_command(enum event_command cmd)
             event_command(EVENT_CMD_AUDIO_STOP);
 
             if (settings->video.black_frame_insertion)
-               video_driver_cached_frame();
+               video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
          }
          else
          {

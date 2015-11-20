@@ -229,7 +229,7 @@ bool take_screenshot(void)
       video_driver_set_texture_enable(false, false);
 
       if (driver->video)
-         video_driver_cached_frame();
+         video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
    }
 
    if (viewport_read)
@@ -284,7 +284,7 @@ bool take_screenshot(void)
    rarch_main_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
 
    if (is_paused)
-      video_driver_cached_frame();
+      video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
 
    return ret;
 }

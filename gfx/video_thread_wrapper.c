@@ -169,7 +169,7 @@ static bool thread_handle_packet(thread_video_t *thr, const thread_packet_t *inc
             /* We can read safely
              *
              * read_viewport() in GL driver calls
-             * video_driver_cached_frame() to be able to read from
+             * 'cached frame render' to be able to read from
              * back buffer.
              *
              * This means frame() callback in threaded wrapper will

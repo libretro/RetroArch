@@ -449,7 +449,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             if (cmd->fullscreen_toggle)
             {
                event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
-               video_driver_cached_frame();
+               video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
             }
 
             if (!check_is_oneshot)
@@ -469,7 +469,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
                return false;
 
             if (settings->video.black_frame_insertion)
-               video_driver_cached_frame();
+               video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
 
             if (state_manager_frame_is_reversed())
                rarch_main_msg_queue_push_new(MSG_SLOW_MOTION_REWIND, 0, 30, true);

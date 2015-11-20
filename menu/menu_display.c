@@ -324,8 +324,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             return true;
          }
 
-         video_driver_cached_frame();
-         return true;
+         return video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
       case MENU_DISPLAY_CTL_SET_WIDTH:
          {
             unsigned *ptr = (unsigned*)data;

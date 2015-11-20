@@ -790,39 +790,6 @@ void video_driver_get_video_output_prev(void)
       poke->get_video_output_prev(driver->video_data);
 }
 
-/**
- * video_driver_cached_frame:
- *
- * Renders the current video frame.
- **/
-void video_driver_cached_frame(void)
-{
-   bool is_idle;
-   driver_t *driver   = driver_get_ptr();
-   void *recording    = driver ? driver->recording_data : NULL;
-
-   rarch_main_ctl(RARCH_MAIN_CTL_IS_IDLE, &is_idle);
-
-   if (is_idle)
-      return;
-
-   /* Cannot allow recording when pushing duped frames. */
-   driver->recording_data = NULL;
-
-   /* Not 100% safe, since the library might have
-    * freed the memory, but no known implementations do this.
-    * It would be really stupid at any rate ...
-    */
-   if (driver->retro_ctx.frame_cb)
-      driver->retro_ctx.frame_cb(
-            (video_state.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID)
-            ? NULL : video_state.frame_cache.data,
-            video_state.frame_cache.width,
-            video_state.frame_cache.height,
-            video_state.frame_cache.pitch);
-
-   driver->recording_data = recording;
-}
 
 bool video_driver_cached_frame_has_valid_fb(void)
 {
@@ -1179,11 +1146,49 @@ void video_driver_set_pixel_format(enum retro_pixel_format fmt)
    video_state.pix_fmt = fmt;
 }
 
+/**
+ * video_driver_cached_frame:
+ *
+ * Renders the current video frame.
+ **/
+static bool video_driver_cached_frame(void)
+{
+   bool is_idle;
+   driver_t *driver   = driver_get_ptr();
+   void *recording    = driver ? driver->recording_data : NULL;
+
+   rarch_main_ctl(RARCH_MAIN_CTL_IS_IDLE, &is_idle);
+
+   if (is_idle)
+      return true; /* Maybe return false here for indication of idleness? */
+
+   /* Cannot allow recording when pushing duped frames. */
+   driver->recording_data = NULL;
+
+   /* Not 100% safe, since the library might have
+    * freed the memory, but no known implementations do this.
+    * It would be really stupid at any rate ...
+    */
+   if (driver->retro_ctx.frame_cb)
+      driver->retro_ctx.frame_cb(
+            (video_state.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID)
+            ? NULL : video_state.frame_cache.data,
+            video_state.frame_cache.width,
+            video_state.frame_cache.height,
+            video_state.frame_cache.pitch);
+
+   driver->recording_data = recording;
+
+   return true;
+}
+
 bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 {
 
    switch (state)
    {
+      case RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER:
+         return video_driver_cached_frame();
       case RARCH_DISPLAY_CTL_IS_FOCUSED:
          {
             driver_t            *driver = driver_get_ptr();

@@ -627,7 +627,7 @@ static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer)
    rarch_perf_init(&sdl2_gfx_read_viewport, "sdl2_gfx_read_viewport");
    retro_perf_start(&sdl2_gfx_read_viewport);
 
-   video_driver_cached_frame();
+   video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
 
    surf  = SDL_GetWindowSurface(vid->window);
    bgr24 = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_BGR24, 0);
