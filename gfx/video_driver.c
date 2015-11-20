@@ -418,7 +418,7 @@ void uninit_video_input(void)
    video_monitor_compute_fps_statistics();
 }
 
-void init_video(void)
+bool init_video(void)
 {
    unsigned max_dim, scale, width, height;
    video_viewport_t *custom_vp      = NULL;
@@ -441,7 +441,7 @@ void init_video(void)
    if (!geom)
    {
       RARCH_ERR("AV geometry not initialized, cannot initialize video driver.\n");
-      retro_fail(1, "init_video()");
+      goto error;
    }
 
    max_dim   = max(geom->max_width, geom->max_height);
@@ -501,7 +501,7 @@ void init_video(void)
    if (!init_video_pixel_converter(RARCH_SCALE_BASE * scale))
    {
       RARCH_ERR("Failed to initialize pixel converter.\n");
-      retro_fail(1, "init_video()");
+      goto error;
    }
 
    video.width        = width;
@@ -534,7 +534,7 @@ void init_video(void)
                driver->video, &video))
       {
          RARCH_ERR("Cannot open threaded video driver ... Exiting ...\n");
-         retro_fail(1, "init_video()");
+         goto error;
       }
    }
    else
@@ -545,7 +545,7 @@ void init_video(void)
    if (!driver->video_data)
    {
       RARCH_ERR("Cannot open video driver ... Exiting ...\n");
-      retro_fail(1, "init_video()");
+      goto error;
    }
 
    driver->video_poke = NULL;
@@ -577,6 +577,12 @@ void init_video(void)
 #if defined(PSP)
    video_driver_set_texture_frame(&dummy_pixels, false, 1, 1, 1.0f);
 #endif
+
+   return true;
+
+error:
+   retro_fail(1, "init_video()");
+   return false;
 }
 
 bool video_driver_suppress_screensaver(bool enable)

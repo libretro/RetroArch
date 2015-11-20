@@ -293,7 +293,7 @@ bool video_driver_set_shader(enum rarch_shader_type type,
 
 void uninit_video_input(void);
 
-void init_video(void);
+bool init_video(void);
 
 bool video_driver_set_rotation(unsigned rotation);
 
