@@ -221,6 +221,7 @@ enum rarch_display_type
 enum rarch_display_ctl_state
 {
    RARCH_DISPLAY_CTL_NONE = 0,
+   RARCH_DISPLAY_CTL_APPLY_STATE_CHANGES,
    RARCH_DISPLAY_CTL_FRAME_FILTER_ALIVE,
    RARCH_DISPLAY_CTL_FRAME_FILTER_IS_32BIT,
    RARCH_DISPLAY_CTL_HAS_WINDOWED,
@@ -328,8 +329,6 @@ void * video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch);
 
 void video_driver_set_filtering(unsigned index, bool smooth);
-
-void video_driver_apply_state_changes(void);
 
 void video_driver_get_video_output_next(void);
 

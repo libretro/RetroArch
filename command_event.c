@@ -1415,7 +1415,7 @@ bool event_command(enum event_command cmd)
             return false;
          break;
       case EVENT_CMD_VIDEO_APPLY_STATE_CHANGES:
-         video_driver_apply_state_changes();
+         video_driver_ctl(RARCH_DISPLAY_CTL_APPLY_STATE_CHANGES, NULL);
          break;
       case EVENT_CMD_VIDEO_SET_NONBLOCKING_STATE:
          boolean = true; /* fall-through */

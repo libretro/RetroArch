@@ -753,14 +753,6 @@ void video_driver_set_filtering(unsigned index, bool smooth)
       poke->set_filtering(driver->video_data, index, smooth);
 }
 
-void video_driver_apply_state_changes(void)
-{
-   driver_t                   *driver = driver_get_ptr();
-   const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
-
-   if (poke && poke->apply_state_changes)
-      poke->apply_state_changes(driver->video_data);
-}
 
 void video_driver_get_video_output_next(void)
 {
@@ -1171,6 +1163,15 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_DISPLAY_CTL_APPLY_STATE_CHANGES:
+         {
+            driver_t                   *driver = driver_get_ptr();
+            const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
+
+            if (poke && poke->apply_state_changes)
+               poke->apply_state_changes(driver->video_data);
+         }
+         return true;
       case RARCH_DISPLAY_CTL_READ_VIEWPORT:
          {
             driver_t            *driver = driver_get_ptr();
