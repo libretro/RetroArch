@@ -220,7 +220,7 @@ bool find_next_driver(const char *label, char *s, size_t len)
 void init_drivers_pre(void)
 {
    find_audio_driver();
-   find_video_driver();
+   video_driver_ctl(RARCH_DISPLAY_CTL_FIND_DRIVER, NULL);
    find_input_driver();
    find_camera_driver();
    find_location_driver();

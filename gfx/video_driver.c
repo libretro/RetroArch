@@ -154,7 +154,7 @@ const char* config_get_video_driver_options(void)
    return char_list_new_special(STRING_LIST_VIDEO_DRIVERS, NULL);
 }
 
-void find_video_driver(void)
+static bool find_video_driver(void)
 {
    int i;
    driver_t *driver     = driver_get_ptr();
@@ -165,7 +165,7 @@ void find_video_driver(void)
    {
       RARCH_LOG("Using HW render, OpenGL driver forced.\n");
       driver->video = &video_gl;
-      return;
+      return true;
    }
 #endif
 
@@ -175,7 +175,7 @@ void find_video_driver(void)
       driver->video = driver->frontend_ctx->get_video_driver();
 
       if (driver->video)
-         return;
+         return true;
       RARCH_WARN("Frontend supports get_video_driver() but did not specify one.\n");
    }
 
@@ -197,6 +197,8 @@ void find_video_driver(void)
       if (!driver->video)
          retro_fail(1, "find_video_driver()");
    }
+
+   return true;
 }
 
 /**
@@ -522,7 +524,7 @@ void init_video(void)
 
    tmp = (const input_driver_t*)driver->input;
    /* Need to grab the "real" video driver interface on a reinit. */
-   find_video_driver();
+   video_driver_ctl(RARCH_DISPLAY_CTL_FIND_DRIVER, NULL);
 
 #ifdef HAVE_THREADS
    if (settings->video.threaded && !video_state.hw_render_callback.context_type)
@@ -1163,6 +1165,8 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_DISPLAY_CTL_FIND_DRIVER:
+         return find_video_driver();
       case RARCH_DISPLAY_CTL_APPLY_STATE_CHANGES:
          {
             driver_t                   *driver = driver_get_ptr();

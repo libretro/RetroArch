@@ -222,6 +222,7 @@ enum rarch_display_ctl_state
 {
    RARCH_DISPLAY_CTL_NONE = 0,
    RARCH_DISPLAY_CTL_APPLY_STATE_CHANGES,
+   RARCH_DISPLAY_CTL_FIND_DRIVER,
    RARCH_DISPLAY_CTL_FRAME_FILTER_ALIVE,
    RARCH_DISPLAY_CTL_FRAME_FILTER_IS_32BIT,
    RARCH_DISPLAY_CTL_HAS_WINDOWED,
@@ -261,8 +262,6 @@ const char *video_driver_find_ident(int index);
  * Returns: string listing of all video driver names, separated by '|'.
  **/
 const char* config_get_video_driver_options(void);
-
-void find_video_driver(void);
 
 /**
  * video_driver_get_ptr:
