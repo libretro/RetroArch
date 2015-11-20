@@ -206,4 +206,5 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    NULL,
    NULL,
    "vivante-fbdev",
+   egl_bind_hw_render,
 };
