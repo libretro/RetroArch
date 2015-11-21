@@ -1154,6 +1154,16 @@ static void config_file_dump_all(config_file_t *conf)
    }
 }
 #endif
+
+static void config_get_hex_base(config_file_t *conf, const char *key, unsigned *base)
+{
+   unsigned tmp = 0;
+   if (!base)
+      return;
+   if (config_get_hex(conf, key, &tmp))
+      *base = tmp;
+}
+
 /**
  * config_load:
  * @path                : path to be read from.
@@ -1264,12 +1274,12 @@ static bool config_load_file(const char *path, bool set_defaults)
          "menu_navigation_browser_filter_supported_extensions_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.show_advanced_settings,
          "menu_show_advanced_settings");
-   CONFIG_GET_HEX_BASE(conf, settings, menu.entry_normal_color,
-         "menu_entry_normal_color");
-   CONFIG_GET_HEX_BASE(conf, settings, menu.entry_hover_color,
-         "menu_entry_hover_color");
-   CONFIG_GET_HEX_BASE(conf, settings, menu.title_color,
-         "menu_title_color");
+   config_get_hex_base(conf, "menu_entry_normal_color",
+         &settings->menu.entry_normal_color);
+   config_get_hex_base(conf, "menu_entry_hover_color",
+         &settings->menu.entry_hover_color);
+   config_get_hex_base(conf, "menu_title_color",
+         &settings->menu.title_color);
    config_get_path(conf, "menu_wallpaper",
          settings->menu.wallpaper, sizeof(settings->menu.wallpaper));
    if (!strcmp(settings->menu.wallpaper, "default"))
