@@ -46,6 +46,7 @@ static void rarch_enable_ui(void)
 
    rarch_main_ctl(RARCH_MAIN_CTL_SET_PAUSED, &boolean);
    rarch_main_ctl(RARCH_MAIN_CTL_SET_IDLE,   &boolean);
+   rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING, NULL);
 }
 
 static void rarch_disable_ui(void)
@@ -56,6 +57,7 @@ static void rarch_disable_ui(void)
 
    rarch_main_ctl(RARCH_MAIN_CTL_SET_PAUSED, &boolean);
    rarch_main_ctl(RARCH_MAIN_CTL_SET_IDLE,   &boolean);
+   rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
 }
 
 static void ui_companion_cocoatouch_event_command(
