@@ -1060,6 +1060,7 @@ bool event_command(enum event_command cmd)
    switch (cmd)
    {
       case EVENT_CMD_SET_PER_GAME_RESOLUTION:
+#if defined(GEKKO)
          {
             unsigned width = 0, height = 0;
 
@@ -1074,6 +1075,7 @@ bool event_command(enum event_command cmd)
                rarch_main_msg_queue_push(msg, 1, 100, true);
             }
          }
+#endif
          break;
       case EVENT_CMD_LOAD_CONTENT_PERSIST:
 #ifdef HAVE_DYNAMIC
