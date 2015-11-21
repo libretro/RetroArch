@@ -95,6 +95,7 @@ enum setting_list_flags
    SL_FLAG_ALLOW_EMPTY_LIST                         =  (1 << 31)
 };
 
+typedef struct rarch_setting_group_info rarch_setting_group_info_t;
 typedef struct rarch_setting rarch_setting_t;
 
 #define SL_FLAG_SETTINGS_GROUP_ALL (SL_FLAG_SETTINGS_ALL - SL_FLAG_MAIN_MENU)

@@ -63,10 +63,10 @@ typedef struct rarch_setting_info
    int size;
 } rarch_setting_info_t;
 
-typedef struct rarch_setting_group_info
+struct rarch_setting_group_info
 {
    const char *name;
-} rarch_setting_group_info_t;
+};
 
 struct rarch_setting
 {
@@ -3910,18 +3910,15 @@ static bool setting_append_list_video_options(
          general_write_handler,
          general_read_handler);
 
+   END_SUB_GROUP(list, list_info, parent_group);
+   START_SUB_GROUP(list, list_info, "Platform-specific", group_info.name, subgroup_info, parent_group);
+
+   video_driver_menu_settings(&group_info, &subgroup_info, parent_group);
+
+   END_SUB_GROUP(list, list_info, parent_group);
 
    END_SUB_GROUP(list, list_info, parent_group);
    START_SUB_GROUP(list, list_info, "Monitor", group_info.name, subgroup_info, parent_group);
-
-#if defined(GEKKO) || defined(__CELLOS_LV2__)
-   CONFIG_ACTION(
-         menu_hash_to_str(MENU_LABEL_SCREEN_RESOLUTION),
-         menu_hash_to_str(MENU_LABEL_VALUE_SCREEN_RESOLUTION),
-         group_info.name,
-         subgroup_info.name,
-         parent_group);
-#endif
 
    CONFIG_UINT(
          settings->video.monitor_index,
@@ -4198,20 +4195,6 @@ static bool setting_append_list_video_options(
          general_write_handler,
          general_read_handler);
 
-#if defined(__CELLOS_LV2__)
-   CONFIG_BOOL(
-         &global->console.screen.pal60_enable,
-         menu_hash_to_str(MENU_LABEL_PAL60_ENABLE),
-         menu_hash_to_str(MENU_LABEL_VALUE_PAL60_ENABLE),
-         false,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-#endif
 
    CONFIG_UINT(
          settings->video.rotation,
@@ -4228,32 +4211,6 @@ static bool setting_append_list_video_options(
       &setting_get_string_representation_uint_video_rotation;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-#if defined(HW_RVL) || defined(_XBOX360)
-   CONFIG_UINT(
-         global->console.screen.gamma_correction,
-         menu_hash_to_str(MENU_LABEL_VIDEO_GAMMA),
-         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_GAMMA),
-         0,
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   menu_settings_list_current_add_cmd(
-         list,
-         list_info,
-         EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
-   menu_settings_list_current_add_range(
-         list,
-         list_info,
-         0,
-         MAX_GAMMA_SETTING,
-         1,
-         true,
-         true);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
-
-#endif
    END_SUB_GROUP(list, list_info, parent_group);
    START_SUB_GROUP(
          list,
@@ -4410,24 +4367,6 @@ static bool setting_append_list_video_options(
          general_write_handler,
          general_read_handler);
 
-#if defined(_XBOX1) || defined(HW_RVL)
-   CONFIG_BOOL(
-         &global->console.softfilter_enable,
-         menu_hash_to_str(MENU_LABEL_VIDEO_SOFT_FILTER),
-         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SOFT_FILTER),
-         false,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   menu_settings_list_current_add_cmd(
-         list,
-         list_info,
-         EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
-#endif
 
    CONFIG_PATH(
          settings->video.softfilter_plugin,
@@ -4443,19 +4382,6 @@ static bool setting_append_list_video_options(
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
-#ifdef _XBOX1
-   CONFIG_UINT(
-         settings->video.swap_interval,
-         menu_hash_to_str(MENU_LABEL_VIDEO_FILTER_FLICKER),
-         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FILTER_FLICKER),
-         0,
-         group_info.name,
-         subgroup_info.name,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
-#endif
    END_SUB_GROUP(list, list_info, parent_group);
    END_GROUP(list, list_info, parent_group);
 

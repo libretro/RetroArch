@@ -27,6 +27,10 @@
 #include "../performance.h"
 #include "../string_list_special.h"
 
+#ifdef HAVE_MENU
+#include "../menu/menu_setting.h"
+#endif
+
 #ifndef MEASURE_FRAME_TIME_SAMPLES_COUNT
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 #endif
@@ -1121,6 +1125,92 @@ static void video_monitor_adjust_system_rates(void)
    /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
    system->force_nonblock = true;
    RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
+}
+
+void video_driver_menu_settings(void *data, void *subgroup_data, const char *parent_group)
+{
+#ifdef HAVE_MENU
+   rarch_setting_group_info_t *group_info = (rarch_setting_group_info_t*)data;
+   rarch_setting_group_info_t *subgroup_info = (rarch_setting_group_info_t*)subgroup_data;
+#if defined(GEKKO) || defined(__CELLOS_LV2__)
+   CONFIG_ACTION(
+         menu_hash_to_str(MENU_LABEL_SCREEN_RESOLUTION),
+         menu_hash_to_str(MENU_LABEL_VALUE_SCREEN_RESOLUTION),
+         group_info->name,
+         subgroup_info->name,
+         parent_group);
+#endif
+#if defined(__CELLOS_LV2__)
+   CONFIG_BOOL(
+         &global->console.screen.pal60_enable,
+         menu_hash_to_str(MENU_LABEL_PAL60_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_PAL60_ENABLE),
+         false,
+         menu_hash_to_str(MENU_VALUE_OFF),
+         menu_hash_to_str(MENU_VALUE_ON),
+         group_info->name,
+         subgroup_info->name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+#endif
+#if defined(HW_RVL) || defined(_XBOX360)
+   CONFIG_UINT(
+         global->console.screen.gamma_correction,
+         menu_hash_to_str(MENU_LABEL_VIDEO_GAMMA),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_GAMMA),
+         0,
+         group_info->name,
+         subgroup_info->name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   menu_settings_list_current_add_cmd(
+         list,
+         list_info,
+         EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
+   menu_settings_list_current_add_range(
+         list,
+         list_info,
+         0,
+         MAX_GAMMA_SETTING,
+         1,
+         true,
+         true);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
+#endif
+#if defined(_XBOX1) || defined(HW_RVL)
+   CONFIG_BOOL(
+         &global->console.softfilter_enable,
+         menu_hash_to_str(MENU_LABEL_VIDEO_SOFT_FILTER),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SOFT_FILTER),
+         false,
+         menu_hash_to_str(MENU_VALUE_OFF),
+         menu_hash_to_str(MENU_VALUE_ON),
+         group_info->name,
+         subgroup_info->name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   menu_settings_list_current_add_cmd(
+         list,
+         list_info,
+         EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
+#endif
+#ifdef _XBOX1
+   CONFIG_UINT(
+         settings->video.swap_interval,
+         menu_hash_to_str(MENU_LABEL_VIDEO_FILTER_FLICKER),
+         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FILTER_FLICKER),
+         0,
+         group_info.name,
+         subgroup_info.name,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
+#endif
+#endif
 }
 
 bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)

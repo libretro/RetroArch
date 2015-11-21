@@ -371,6 +371,8 @@ void video_driver_cached_frame_set_ptr(const void *data);
 void video_driver_cached_frame_get(const void **data, unsigned *width,
       unsigned *height, size_t *pitch);
 
+void video_driver_menu_settings(void *data, void *subgroup_data, const char *parent_group);
+
 #ifdef __cplusplus
 }
 #endif
