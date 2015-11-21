@@ -60,8 +60,6 @@ static float gfx_ctx_ps3_get_aspect_ratio(void *data)
 {
    CellVideoOutState videoState;
 
-   (void)data;
-
    cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &videoState);
 
    switch (videoState.displayMode.aspect)
@@ -69,7 +67,7 @@ static float gfx_ctx_ps3_get_aspect_ratio(void *data)
       case CELL_VIDEO_OUT_ASPECT_4_3:
          return 4.0f/3.0f;
       case CELL_VIDEO_OUT_ASPECT_16_9:
-         return 16.0f/9.0f;
+         break;
    }
 
    return 16.0f/9.0f;
@@ -78,9 +76,6 @@ static float gfx_ctx_ps3_get_aspect_ratio(void *data)
 static void gfx_ctx_ps3_get_available_resolutions(void)
 {
    unsigned i;
-   bool defaultresolution;
-   uint32_t resolution_count;
-   uint16_t num_videomodes;
    uint32_t videomode[] = {
       CELL_VIDEO_OUT_RESOLUTION_480,
       CELL_VIDEO_OUT_RESOLUTION_576,
@@ -91,16 +86,13 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
       CELL_VIDEO_OUT_RESOLUTION_1600x1080,
       CELL_VIDEO_OUT_RESOLUTION_1080
    };
-   global_t *global = global_get_ptr();
+   uint32_t resolution_count = 0;
+   bool defaultresolution    = true;
+   uint16_t num_videomodes   = sizeof(videomode) / sizeof(uint32_t);
+   global_t       *global    = global_get_ptr();
 
    if (global->console.screen.resolutions.check)
       return;
-
-   defaultresolution = true;
-
-   num_videomodes = sizeof(videomode) / sizeof(uint32_t);
-
-   resolution_count = 0;
 
    for (i = 0; i < num_videomodes; i++)
    {
@@ -109,8 +101,9 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
          resolution_count++;
    }
 
-   global->console.screen.resolutions.list = malloc(resolution_count * sizeof(uint32_t));
    global->console.screen.resolutions.count = 0;
+   global->console.screen.resolutions.list  = 
+      malloc(resolution_count * sizeof(uint32_t));
 
    for (i = 0; i < num_videomodes; i++)
    {
@@ -123,7 +116,8 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
          if (global->console.screen.resolutions.current.id == videomode[i])
          {
             defaultresolution = false;
-            global->console.screen.resolutions.current.idx = global->console.screen.resolutions.count-1;
+            global->console.screen.resolutions.current.idx = 
+               global->console.screen.resolutions.count-1;
          }
       }
    }
@@ -227,6 +221,10 @@ static void gfx_ctx_ps3_get_video_size(void *data,
 
 static bool gfx_ctx_ps3_init(void *data)
 {
+#ifdef HAVE_PSGL
+   PSGLdeviceParameters params;
+   PSGLinitOptions options;
+#endif
    driver_t *driver = driver_get_ptr();
    global_t *global = global_get_ptr();
    gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)
@@ -239,30 +237,29 @@ static bool gfx_ctx_ps3_init(void *data)
       return false;
 
 #if defined(HAVE_PSGL)
-   PSGLdeviceParameters params;
-   PSGLinitOptions options = {
-      .enable = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS,
-      .maxSPUs = 1,
-      .initializeSPUs = GL_FALSE,
-   };
+   options.enable         = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS;
+   options.maxSPUs        = 1;
+   options.initializeSPUs = GL_FALSE;
 
    /* Initialize 6 SPUs but reserve 1 SPU as a raw SPU for PSGL. */
    sys_spu_initialize(6, 1);
    psglInit(&options);
 
-
-   params.enable = PSGL_DEVICE_PARAMETERS_COLOR_FORMAT |
+   params.enable            = 
+      PSGL_DEVICE_PARAMETERS_COLOR_FORMAT |
       PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT |
       PSGL_DEVICE_PARAMETERS_MULTISAMPLING_MODE;
-   params.colorFormat = GL_ARGB_SCE;
-   params.depthFormat = GL_NONE;
+   params.colorFormat       = GL_ARGB_SCE;
+   params.depthFormat       = GL_NONE;
    params.multisamplingMode = GL_MULTISAMPLING_NONE_SCE;
 
    if (global->console.screen.resolutions.current.id)
    {
       params.enable |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
 
-      gfx_ctx_ps3_get_resolution(global->console.screen.resolutions.current.id, &params.width, &params.height);
+      gfx_ctx_ps3_get_resolution(
+            global->console.screen.resolutions.current.id,
+            &params.width, &params.height);
 
       global->console.screen.pal_enable = false;
 
