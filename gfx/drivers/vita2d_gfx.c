@@ -20,7 +20,6 @@
 #include "../../defines/psp_defines.h"
 #include "../../general.h"
 #include "../../driver.h"
-#include "../video_viewport.h"
 #include "../video_monitor.h"
 
 typedef struct vita_menu_frame

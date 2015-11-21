@@ -16,7 +16,6 @@
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../retroarch.h"
-#include "../video_viewport.h"
 #include "../video_monitor.h"
 #include "../video_context_driver.h"
 #include "../font_renderer_driver.h"

@@ -24,7 +24,6 @@
 #include <gfx/scaler/scaler.h>
 #include "video_filter.h"
 #include "video_shader_parse.h"
-#include "video_viewport.h"
 
 #include "../libretro.h"
 #include "../input/input_driver.h"
@@ -126,6 +125,16 @@ typedef struct video_poke_interface
    struct video_shader *(*get_current_shader)(void *data);
 } video_poke_interface_t;
 
+typedef struct video_viewport
+{
+   int x;
+   int y;
+   unsigned width;
+   unsigned height;
+   unsigned full_width;
+   unsigned full_height;
+} video_viewport_t;
+
 typedef struct video_driver
 {
    /* Should the video driver act as an input driver as well?
@@ -188,24 +197,71 @@ typedef struct video_driver
    unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
 } video_driver_t;
 
-extern video_driver_t video_gl;
-extern video_driver_t video_psp1;
-extern video_driver_t video_vita2d;
-extern video_driver_t video_ctr;
-extern video_driver_t video_d3d;
-extern video_driver_t video_gx;
-extern video_driver_t video_xenon360;
-extern video_driver_t video_xvideo;
-extern video_driver_t video_xdk_d3d;
-extern video_driver_t video_sdl;
-extern video_driver_t video_sdl2;
-extern video_driver_t video_vg;
-extern video_driver_t video_omap;
-extern video_driver_t video_exynos;
-extern video_driver_t video_dispmanx;
-extern video_driver_t video_sunxi;
-extern video_driver_t video_xshm;
-extern video_driver_t video_null;
+
+enum aspect_ratio
+{
+   ASPECT_RATIO_4_3 = 0,
+   ASPECT_RATIO_16_9,
+   ASPECT_RATIO_16_10,
+   ASPECT_RATIO_16_15,
+   ASPECT_RATIO_1_1,
+   ASPECT_RATIO_2_1,
+   ASPECT_RATIO_3_2,
+   ASPECT_RATIO_3_4,
+   ASPECT_RATIO_4_1,
+   ASPECT_RATIO_4_4,
+   ASPECT_RATIO_5_4,
+   ASPECT_RATIO_6_5,
+   ASPECT_RATIO_7_9,
+   ASPECT_RATIO_8_3,
+   ASPECT_RATIO_8_7,
+   ASPECT_RATIO_19_12,
+   ASPECT_RATIO_19_14,
+   ASPECT_RATIO_30_17,
+   ASPECT_RATIO_32_9,
+   ASPECT_RATIO_CONFIG,
+   ASPECT_RATIO_SQUARE,
+   ASPECT_RATIO_CORE,
+   ASPECT_RATIO_CUSTOM,
+
+   ASPECT_RATIO_END
+};
+
+#define LAST_ASPECT_RATIO ASPECT_RATIO_CUSTOM
+
+enum rotation
+{
+   ORIENTATION_NORMAL = 0,
+   ORIENTATION_VERTICAL,
+   ORIENTATION_FLIPPED,
+   ORIENTATION_FLIPPED_ROTATED,
+   ORIENTATION_END
+};
+
+extern char rotation_lut[4][32];
+
+/* ABGR color format defines */
+
+#define WHITE		  0xffffffffu
+#define RED         0xff0000ffu
+#define GREEN		  0xff00ff00u
+#define BLUE        0xffff0000u
+#define YELLOW      0xff00ffffu
+#define PURPLE      0xffff00ffu
+#define CYAN        0xffffff00u
+#define ORANGE      0xff0063ffu
+#define SILVER      0xff8c848cu
+#define LIGHTBLUE   0xFFFFE0E0U
+#define LIGHTORANGE 0xFFE0EEFFu
+
+struct aspect_ratio_elem
+{
+   char name[64];
+   float value;
+};
+
+extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
+
 
 enum rarch_display_type
 {
@@ -377,6 +433,51 @@ void video_driver_cached_frame_get(const void **data, unsigned *width,
       unsigned *height, size_t *pitch);
 
 void video_driver_menu_settings(void *data, void *subgroup_data, const char *parent_group);
+
+/**
+ * video_viewport_set_config:
+ *
+ * Sets viewport to config aspect ratio.
+ **/
+void video_viewport_set_config(void);
+
+/**
+ * video_viewport_get_scaled_integer:
+ * @vp            : Viewport handle
+ * @width         : Width.
+ * @height        : Height.
+ * @aspect_ratio  : Aspect ratio (in float).
+ * @keep_aspect   : Preserve aspect ratio?
+ *
+ * Gets viewport scaling dimensions based on 
+ * scaled integer aspect ratio.
+ **/
+void video_viewport_get_scaled_integer(struct video_viewport *vp,
+      unsigned width, unsigned height,
+      float aspect_ratio, bool keep_aspect);
+
+struct retro_system_av_info *video_viewport_get_system_av_info(void);
+
+struct video_viewport *video_viewport_get_custom(void);
+
+extern video_driver_t video_gl;
+extern video_driver_t video_psp1;
+extern video_driver_t video_vita2d;
+extern video_driver_t video_ctr;
+extern video_driver_t video_d3d;
+extern video_driver_t video_gx;
+extern video_driver_t video_xenon360;
+extern video_driver_t video_xvideo;
+extern video_driver_t video_xdk_d3d;
+extern video_driver_t video_sdl;
+extern video_driver_t video_sdl2;
+extern video_driver_t video_vg;
+extern video_driver_t video_omap;
+extern video_driver_t video_exynos;
+extern video_driver_t video_dispmanx;
+extern video_driver_t video_sunxi;
+extern video_driver_t video_xshm;
+extern video_driver_t video_null;
 
 #ifdef __cplusplus
 }

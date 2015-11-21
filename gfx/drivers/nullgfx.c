@@ -16,7 +16,6 @@
 
 #include "../../general.h"
 #include "../../driver.h"
-#include "../video_viewport.h"
 
 static void *null_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)

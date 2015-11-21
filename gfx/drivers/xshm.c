@@ -19,7 +19,6 @@
 #include <string.h>
 #include <signal.h>
 #include <math.h>
-#include "../video_viewport.h"
 #include "../video_monitor.h"
 #include "../font_renderer_driver.h"
 #include <retro_inline.h>

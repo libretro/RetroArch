@@ -28,8 +28,6 @@
 #include "../config.h"
 #endif
 
-#include "../gfx/video_viewport.h"
-
 static const char *bind_user_prefix[MAX_USERS] = {
    "input_player1",
    "input_player2",

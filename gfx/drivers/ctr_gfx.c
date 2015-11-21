@@ -22,7 +22,6 @@
 
 #include "../../general.h"
 #include "../../driver.h"
-#include "../video_viewport.h"
 #include "../video_monitor.h"
 
 #include "retroarch.h"

@@ -19,7 +19,6 @@
 
 #include "../video_shader_parse.h"
 #include "../video_state_tracker.h"
-#include "../video_viewport.h"
 #include "../../libretro.h"
 #include "../../defines/d3d_defines.h"
 

@@ -46,7 +46,6 @@
 #include "retroarch.h"
 #include "screenshot.h"
 #include "gfx/video_driver.h"
-#include "gfx/video_viewport.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

@@ -27,7 +27,6 @@
 #include "../input_keymaps.h"
 
 #include "../../driver.h"
-#include "../../gfx/video_viewport.h"
 #include "../../general.h"
 
 typedef struct x11_input

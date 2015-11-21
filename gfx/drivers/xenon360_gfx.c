@@ -25,8 +25,6 @@
 #include "../../driver.h"
 #include "../../general.h"
 
-#Include "../video_viewport.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
