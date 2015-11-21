@@ -715,10 +715,10 @@ static void config_set_defaults(void)
 
    global->console.sound.system_bgm_enable = false;
 #ifdef RARCH_CONSOLE
-   global->console.screen.gamma_correction = DEFAULT_GAMMA;
-   global->console.screen.resolutions.current.id = 0;
    global->console.sound.mode = SOUND_MODE_NORMAL;
 #endif
+
+   video_driver_ctl(RARCH_DISPLAY_CTL_DEFAULT_SETTINGS, NULL);
 
    if (*g_defaults.path.buildbot_server_url)
       strlcpy(settings->network.buildbot_url,

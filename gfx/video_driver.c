@@ -22,6 +22,7 @@
 #include "video_pixel_converter.h"
 #include "video_context_driver.h"
 #include "video_monitor.h"
+#include "../config.def.h"
 #include "../general.h"
 #include "../performance.h"
 #include "../string_list_special.h"
@@ -1214,6 +1215,20 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          return false;
       case RARCH_DISPLAY_CTL_FRAME_FILTER_IS_32BIT:
          return video_state.filter.out_rgb32;
+      case RARCH_DISPLAY_CTL_DEFAULT_SETTINGS:
+         {
+            global_t *global    = global_get_ptr();
+
+            if (!global)
+               return false;
+
+            global->console.screen.gamma_correction       = DEFAULT_GAMMA;
+            global->console.flickerfilter_enable          = false;
+            global->console.softfilter_enable             = false;
+
+            global->console.screen.resolutions.current.id = 0;
+         }
+         return true;
       case RARCH_DISPLAY_CTL_LOAD_SETTINGS:
          {
             global_t *global    = global_get_ptr();
