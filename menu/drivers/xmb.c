@@ -1883,26 +1883,6 @@ static void xmb_layout(menu_handle_t *menu, xmb_handle_t *xmb)
    xmb->margins.label.left      = 85.0 * scale_factor;
    xmb->margins.label.top       = new_font_size / 3.0;
    xmb->margins.setting.left    = 600.0 * scale_factor;
-
-   if (width >= 3840)
-      scale_factor              = 2.0;
-   else if (width >= 2560)
-      scale_factor              = 1.5;
-   else if (width >= 1920)
-      scale_factor              = 1.0;
-   else if (width >= 1440)
-      scale_factor              = 0.75;
-   else if (width >=  960)
-      scale_factor              = 0.5;
-   else if (width >=  640)
-      scale_factor              = 0.375;
-   else if (width >=  480)
-      scale_factor              = 0.25;
-   else if (width >=  320)
-      scale_factor              = 0.1875;
-   else if (width >=  240)
-      scale_factor              = 0.125;
-
    xmb->icon.size               = 128.0 * scale_factor;
 
    current = selection;

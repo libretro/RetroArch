@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <file/file_path.h>
+
 #include "../menu.h"
 #include "../menu_cbs.h"
 #include "../menu_input.h"
@@ -264,6 +266,32 @@ static int action_start_core_setting(unsigned type,
    return 0;
 }
 
+static int action_start_playlist_association(unsigned type, const char *label)
+{
+   int i, next, found, current = 0;
+   char core_path[PATH_MAX_LENGTH]  = {0};
+   char new_playlist_cores[PATH_MAX_LENGTH] = {0};
+   global_t *global                 = global_get_ptr();
+   settings_t *settings             = config_get_ptr();
+   const char *path                 = path_basename(label);
+   core_info_list_t           *list = global ? global->core_info.list : NULL;
+   if (!list)
+      return -1;
+
+   struct string_list *stnames = string_split(settings->playlist_names, ";");
+   struct string_list *stcores = string_split(settings->playlist_cores, ";");
+
+   found = string_list_find_elem(stnames, path);
+   if (found)
+      string_list_set(stcores, found-1, "DETECT");
+
+   string_list_join_concat(new_playlist_cores, sizeof(new_playlist_cores), stcores, ";");
+
+   strlcpy(settings->playlist_cores, new_playlist_cores, sizeof(settings->playlist_cores));
+
+   return 0;
+}
+
 static int action_start_video_resolution(unsigned type, const char *label)
 {
    unsigned width = 0, height = 0;
@@ -348,6 +376,10 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
          type <= MENU_SETTINGS_PERF_COUNTERS_END)
    {
       BIND_ACTION_START(cbs, action_start_performance_counters_frontend);
+   }
+   else if ((type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START))
+   {
+      BIND_ACTION_START(cbs, action_start_playlist_association);
    }
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
    {
