@@ -238,6 +238,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
             max_width, max_height, i;
    gx_video_t *gx             = (gx_video_t*)data;
    settings_t *settings       = config_get_ptr();
+   global_t           *global = global_get_ptr();
 
    (void)level;
 
@@ -435,6 +436,10 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    for(i = 0; i < GX_RESOLUTIONS_LAST; i++)
       if(fbWidth == menu_gx_resolutions[i][0] && lines == menu_gx_resolutions[i][1])
 		  menu_current_gx_resolution = i;
+
+   global->console.screen.resolutions.width  = menu_gx_resolutions[menu_current_gx_resolution][0];
+   global->console.screen.resolutions.height = menu_gx_resolutions[menu_current_gx_resolution][0];
+
    RARCH_LOG("GX Resolution Index: %d\n", menu_current_gx_resolution);
 }
 

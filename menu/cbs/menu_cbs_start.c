@@ -264,26 +264,17 @@ static int action_start_core_setting(unsigned type,
    return 0;
 }
 
-static int action_start_video_resolution(
-      unsigned type, const char *label)
+static int action_start_video_resolution(unsigned type, const char *label)
 {
    unsigned width = 0, height = 0;
-   global_t *global = global_get_ptr();
 
    video_driver_set_video_mode(640, 480, true);
-
-   if (!global)
-      return -1;
 
    if (video_driver_get_video_output_size(&width, &height))
    {
       char msg[PATH_MAX_LENGTH] = {0};
 
-      video_driver_set_video_mode(width, height, true);
-      global->console.screen.resolutions.width = width;
-      global->console.screen.resolutions.height = height;
-
-      snprintf(msg, sizeof(msg),"Resetting to: %dx%d",width, height);
+      snprintf(msg, sizeof(msg),"Resetting to: %dx%d", width, height);
       menu_display_msg_queue_push(msg, 1, 100, true);
    }
 

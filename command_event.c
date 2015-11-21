@@ -1059,6 +1059,22 @@ bool event_command(enum event_command cmd)
 
    switch (cmd)
    {
+      case EVENT_CMD_SET_PER_GAME_RESOLUTION:
+         {
+            unsigned width = 0, height = 0;
+
+            event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
+
+            if (video_driver_get_video_output_size(&width, &height))
+            {
+               video_driver_set_video_mode(width, height, true);
+
+               char msg[PATH_MAX_LENGTH] = {0};
+               snprintf(msg, sizeof(msg),"Resolution: %dx%d",width, height);
+               rarch_main_msg_queue_push(msg, 1, 100, true);
+            }
+         }
+         break;
       case EVENT_CMD_LOAD_CONTENT_PERSIST:
 #ifdef HAVE_DYNAMIC
          event_command(EVENT_CMD_LOAD_CORE);

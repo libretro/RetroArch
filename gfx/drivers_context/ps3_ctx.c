@@ -302,7 +302,14 @@ static bool gfx_ctx_ps3_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   (void)data;
+   global_t *global = global_get_ptr();
+
+   if (!global)
+      return false;
+
+   global->console.screen.resolutions.width  = width;
+   global->console.screen.resolutions.height = height;
+
    return true;
 }
 
