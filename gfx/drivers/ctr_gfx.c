@@ -769,29 +769,33 @@ static void ctr_set_filtering(void* data, unsigned index, bool smooth)
       ctr->smooth = smooth;
 }
 
-static void ctr_set_aspect_ratio(void* data, unsigned aspectratio_index)
+static void ctr_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
 {
    ctr_video_t *ctr = (ctr_video_t*)data;
+   enum rarch_display_ctl_state cmd = RARCH_DISPLAY_CTL_NONE;
 
-   switch (aspectratio_index)
+   switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL, NULL);
+         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL;
          break;
 
       case ASPECT_RATIO_CORE:
-         video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE, NULL);
+         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE;
          break;
 
       case ASPECT_RATIO_CONFIG:
-         video_viewport_set_config();
+         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CONFIG;
          break;
 
       default:
          break;
    }
 
-   video_driver_set_aspect_ratio_value(aspectratio_lut[aspectratio_index].value);
+   if (cmd != RARCH_DISPLAY_CTL_NONE)
+      video_driver_ctl(cmd, NULL);
+
+   video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
 
    ctr->keep_aspect = true;
    ctr->should_resize = true;

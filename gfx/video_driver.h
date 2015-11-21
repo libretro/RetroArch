@@ -295,6 +295,8 @@ enum rarch_display_ctl_state
    RARCH_DISPLAY_CTL_SET_ASPECT_RATIO,
    /* Sets viewport to aspect ratio set by core. */
    RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE,
+   /* Sets viewport to config aspect ratio. */
+   RARCH_DISPLAY_CTL_SET_VIEWPORT_CONFIG,
    /* Sets viewport to square pixel aspect ratio based on width/height. */ 
    RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL,
    RARCH_DISPLAY_CTL_RESET_CUSTOM_VIEWPORT,
@@ -433,13 +435,6 @@ void video_driver_cached_frame_get(const void **data, unsigned *width,
       unsigned *height, size_t *pitch);
 
 void video_driver_menu_settings(void *data, void *subgroup_data, const char *parent_group);
-
-/**
- * video_viewport_set_config:
- *
- * Sets viewport to config aspect ratio.
- **/
-void video_viewport_set_config(void);
 
 /**
  * video_viewport_get_scaled_integer:

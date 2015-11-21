@@ -539,7 +539,7 @@ static bool init_video(void)
    /* Update core-dependent aspect ratio values. */
    video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL, NULL);
    video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE, NULL);
-   video_viewport_set_config();
+   video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIEWPORT_CONFIG, NULL);
 
    /* Update CUSTOM viewport. */
    custom_vp = video_viewport_get_custom();
@@ -1282,6 +1282,46 @@ static void video_viewport_set_square_pixel(unsigned width, unsigned height)
    aspectratio_lut[ASPECT_RATIO_SQUARE].value = (float)aspect_x / aspect_y;
 }
 
+/**
+ * video_viewport_set_config:
+ *
+ * Sets viewport to config aspect ratio.
+ **/
+static bool video_viewport_set_config(void)
+{
+   settings_t *settings = config_get_ptr();
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+
+   if (settings->video.aspect_ratio < 0.0f)
+   {
+      struct retro_game_geometry *geom = &av_info->geometry;
+
+      if (!geom)
+         return false;
+
+      if (geom->aspect_ratio > 0.0f && settings->video.aspect_ratio_auto)
+         aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
+      else
+      {
+         unsigned base_width  = geom->base_width;
+         unsigned base_height = geom->base_height;
+
+         /* Get around division by zero errors */
+         if (base_width == 0)
+            base_width = 1;
+         if (base_height == 0)
+            base_height = 1;
+         aspectratio_lut[ASPECT_RATIO_CONFIG].value = 
+            (float)base_width / base_height; /* 1:1 PAR. */
+      }
+   }
+   else
+      aspectratio_lut[ASPECT_RATIO_CONFIG].value = 
+         settings->video.aspect_ratio;
+
+   return true;
+}
+
 bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 {
    driver_t                 *driver   = driver_get_ptr();
@@ -1291,6 +1331,8 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_DISPLAY_CTL_SET_VIEWPORT_CONFIG:
+         return video_viewport_set_config();
       case RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL:
          {
             struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
@@ -1489,43 +1531,6 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
    return false;
 }
 
-/**
- * video_viewport_set_config:
- *
- * Sets viewport to config aspect ratio.
- **/
-void video_viewport_set_config(void)
-{
-   settings_t *settings = config_get_ptr();
-   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-
-   if (settings->video.aspect_ratio < 0.0f)
-   {
-      struct retro_game_geometry *geom = &av_info->geometry;
-
-      if (!geom)
-         return;
-
-      if (geom->aspect_ratio > 0.0f && settings->video.aspect_ratio_auto)
-         aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
-      else
-      {
-         unsigned base_width  = geom->base_width;
-         unsigned base_height = geom->base_height;
-
-         /* Get around division by zero errors */
-         if (base_width == 0)
-            base_width = 1;
-         if (base_height == 0)
-            base_height = 1;
-         aspectratio_lut[ASPECT_RATIO_CONFIG].value = 
-            (float)base_width / base_height; /* 1:1 PAR. */
-      }
-   }
-   else
-      aspectratio_lut[ASPECT_RATIO_CONFIG].value = 
-         settings->video.aspect_ratio;
-}
 
 /**
  * video_viewport_get_scaled_integer:

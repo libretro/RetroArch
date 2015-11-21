@@ -1543,24 +1543,28 @@ static void exynos_gfx_viewport_info(void *data, struct video_viewport *vp)
 static void exynos_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    struct exynos_video *vid = (struct exynos_video*)data;
+   enum rarch_display_ctl_state cmd = RARCH_DISPLAY_CTL_NONE;
 
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL, NULL);
+         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL;
          break;
 
       case ASPECT_RATIO_CORE:
-         video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE, NULL);
+         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE;
          break;
 
       case ASPECT_RATIO_CONFIG:
-         video_viewport_set_config();
+         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CONFIG;
          break;
 
       default:
          break;
    }
+
+   if (cmd != RARCH_DISPLAY_CTL_NONE)
+      video_driver_ctl(cmd, NULL);
 
    video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
    vid->aspect_changed = true;
