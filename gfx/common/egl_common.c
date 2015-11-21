@@ -30,7 +30,7 @@ EGLDisplay g_egl_dpy;
 EGLConfig g_egl_config;
 enum gfx_ctx_api g_egl_api;
 bool g_egl_inited;
-bool g_use_hw_ctx;
+static bool g_egl_use_hw_ctx;
 unsigned g_interval;
 
 void egl_report_error(void)
@@ -116,7 +116,7 @@ void egl_destroy(void *data)
 
 void egl_bind_hw_render(void *data, bool enable)
 {
-   g_use_hw_ctx = enable;
+   g_egl_use_hw_ctx = enable;
 
    if (!g_egl_dpy || !g_egl_surf)
       return;
@@ -216,7 +216,7 @@ bool egl_create_context(EGLint *egl_attribs)
    if (g_egl_ctx == EGL_NO_CONTEXT)
       return false;
 
-   if (g_use_hw_ctx)
+   if (g_egl_use_hw_ctx)
    {
       g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_egl_config, g_egl_ctx,
             egl_attribs);
