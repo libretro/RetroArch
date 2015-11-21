@@ -640,7 +640,7 @@ static void config_set_defaults(void)
 
    settings->core.set_supports_no_game_enable        = true;
 
-   video_viewport_reset_custom();
+   video_driver_ctl(RARCH_DISPLAY_CTL_RESET_CUSTOM_VIEWPORT, NULL);
 
    /* Make sure settings from other configs carry over into defaults
     * for another config. */

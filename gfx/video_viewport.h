@@ -140,8 +140,6 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
 
 struct retro_system_av_info *video_viewport_get_system_av_info(void);
 
-void video_viewport_reset_custom(void);
-
 struct video_viewport *video_viewport_get_custom(void);
 
 #ifdef __cplusplus

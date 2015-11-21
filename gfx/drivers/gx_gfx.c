@@ -430,7 +430,8 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    }
 
    /* custom viewports for older resolutions will most likely be corrupted, reset them */
-   video_viewport_reset_custom();
+   /* TOD/FIXME - is this needed? */
+   video_driver_ctl(RARCH_DISPLAY_CTL_RESET_CUSTOM_VIEWPORT, NULL);
 
    g_current_framebuf = 0;
    for(i = 0; i < GX_RESOLUTIONS_LAST; i++)

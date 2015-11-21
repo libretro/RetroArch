@@ -1224,6 +1224,18 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_DISPLAY_CTL_RESET_CUSTOM_VIEWPORT:
+         {
+            struct video_viewport *custom_vp = video_viewport_get_custom();
+            if (!custom_vp)
+               return false;
+
+            custom_vp->width  = 0;
+            custom_vp->height = 0;
+            custom_vp->x      = 0;
+            custom_vp->y      = 0;
+         }
+         return true;
       case RARCH_DISPLAY_CTL_GET_NEXT_VIDEO_OUT:
          if (poke && poke->get_video_output_next)
          {

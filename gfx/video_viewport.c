@@ -234,15 +234,3 @@ struct video_viewport *video_viewport_get_custom(void)
    settings_t *settings = config_get_ptr();
    return &settings->video_viewport_custom;
 }
-
-void video_viewport_reset_custom(void)
-{
-   struct video_viewport *custom_vp = video_viewport_get_custom();
-   if (!custom_vp)
-      return;
-
-   custom_vp->width  = 0;
-   custom_vp->height = 0;
-   custom_vp->x      = 0;
-   custom_vp->y      = 0;
-}
