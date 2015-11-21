@@ -110,13 +110,6 @@ extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 void video_viewport_set_square_pixel(unsigned width, unsigned height);
 
 /**
- * video_viewport_set_core:
- *
- * Sets viewport to aspect ratio set by core. 
- **/
-void video_viewport_set_core(void);
-
-/**
  * video_viewport_set_config:
  *
  * Sets viewport to config aspect ratio.

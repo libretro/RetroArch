@@ -502,7 +502,7 @@ static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
          break;
 
       case ASPECT_RATIO_CORE:
-         video_viewport_set_core();
+         video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE, NULL);
          break;
 
       case ASPECT_RATIO_CONFIG:

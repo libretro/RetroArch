@@ -16,40 +16,6 @@
 
 #include "../general.h"
 
-struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
-   { "4:3",           1.3333f },
-   { "16:9",          1.7778f },
-   { "16:10",         1.6f },
-   { "16:15",         16.0f / 15.0f },
-   { "1:1",           1.0f },
-   { "2:1",           2.0f },
-   { "3:2",           1.5f },
-   { "3:4",           0.75f },
-   { "4:1",           4.0f },
-   { "4:4",           1.0f },
-   { "5:4",           1.25f },
-   { "6:5",           1.2f },
-   { "7:9",           0.7777f },
-   { "8:3",           2.6666f },
-   { "8:7",           1.1428f },
-   { "19:12",         1.5833f },
-   { "19:14",         1.3571f },
-   { "30:17",         1.7647f },
-   { "32:9",          3.5555f },
-   { "Config",        0.0f },
-   { "Square pixel",  1.0f },
-   { "Core provided", 1.0f },
-   { "Custom",        0.0f }
-};
-
-char rotation_lut[4][32] =
-{
-   "Normal",
-   "90 deg",
-   "180 deg",
-   "270 deg"
-};
-
 static struct retro_system_av_info video_viewport_av_info;
 
 /**
@@ -82,28 +48,6 @@ void video_viewport_set_square_pixel(unsigned width, unsigned height)
          "%u:%u (1:1 PAR)", aspect_x, aspect_y);
 
    aspectratio_lut[ASPECT_RATIO_SQUARE].value = (float)aspect_x / aspect_y;
-}
-
-/**
- * video_viewport_set_core:
- *
- * Sets viewport to aspect ratio set by core. 
- **/
-void video_viewport_set_core(void)
-{
-   struct retro_system_av_info *av_info = 
-      video_viewport_get_system_av_info();
-   struct retro_game_geometry *geom = &av_info->geometry;
-
-   if (!geom || geom->base_width <= 0.0f || geom->base_height <= 0.0f)
-      return;
-
-   /* Fallback to 1:1 pixel ratio if none provided */
-   if (geom->aspect_ratio > 0.0f)
-      aspectratio_lut[ASPECT_RATIO_CORE].value = geom->aspect_ratio;
-   else
-      aspectratio_lut[ASPECT_RATIO_CORE].value = 
-         (float)geom->base_width / geom->base_height;
 }
 
 /**
