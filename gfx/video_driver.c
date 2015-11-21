@@ -1132,6 +1132,8 @@ void video_driver_menu_settings(void *data, void *subgroup_data, const char *par
 #ifdef HAVE_MENU
    rarch_setting_group_info_t *group_info = (rarch_setting_group_info_t*)data;
    rarch_setting_group_info_t *subgroup_info = (rarch_setting_group_info_t*)subgroup_data;
+   (void)group_info;
+   (void)subgroup_info;
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
    CONFIG_ACTION(
          menu_hash_to_str(MENU_LABEL_SCREEN_RESOLUTION),
