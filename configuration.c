@@ -33,39 +33,6 @@
 #include "config.h"
 #endif
 
-#define CONFIG_GET_BOOL_BASE(conf, base, var, key) do { \
-   bool tmp = false; \
-   if (config_get_bool(conf, key, &tmp)) \
-      base->var = tmp; \
-} while(0)
-
-#define CONFIG_GET_INT_BASE(conf, base, var, key) do { \
-   int tmp = 0; \
-   if (config_get_int(conf, key, &tmp)) \
-      base->var = tmp; \
-} while(0)
-
-#define CONFIG_GET_UINT64_BASE(conf, base, var, key) do { \
-   uint64_t tmp = 0; \
-   if (config_get_int(conf, key, &tmp)) \
-      base->var = tmp; \
-} while(0)
-
-#define CONFIG_GET_HEX_BASE(conf, base, var, key) do { \
-   unsigned tmp = 0; \
-   if (config_get_hex(conf, key, &tmp)) \
-      base->var = tmp; \
-} while(0)
-
-#define CONFIG_GET_FLOAT_BASE(conf, base, var, key) do { \
-   float tmp = 0.0f; \
-   if (config_get_float(conf, key, &tmp)) \
-      base->var = tmp; \
-} while(0)
-
-#define CONFIG_GET_STRING_BASE(conf, base, var, key) config_get_array(conf, key, base->var, sizeof(base->var))
-#define CONFIG_GET_PATH_BASE(conf, base, var, key)   config_get_path (conf, key, base->var, sizeof(base->var))
-
 static settings_t *g_config;
 struct defaults g_defaults;
 
@@ -1354,28 +1321,10 @@ static bool config_load_file(const char *path, bool set_defaults)
 #ifdef RARCH_CONSOLE
    /* TODO - will be refactored later to make it more clean - it's more
     * important that it works for consoles right now */
-
-   CONFIG_GET_BOOL_BASE(conf, global, console.screen.gamma_correction, "gamma_correction");
-
    config_get_bool(conf, "custom_bgm_enable",
          &global->console.sound.system_bgm_enable);
-   config_get_bool(conf, "flicker_filter_enable",
-         &global->console.flickerfilter_enable);
-   config_get_bool(conf, "soft_filter_enable",
-         &global->console.softfilter_enable);
-
-   CONFIG_GET_INT_BASE(conf, global, console.screen.resolutions.width,
-         "console_resolution_width");
-   CONFIG_GET_INT_BASE(conf, global, console.screen.resolutions.height,
-         "console_resolution_height");
-
-   CONFIG_GET_INT_BASE(conf, global, console.screen.flicker_filter_index,
-         "flicker_filter_index");
-   CONFIG_GET_INT_BASE(conf, global, console.screen.soft_filter_index,
-         "soft_filter_index");
-   CONFIG_GET_INT_BASE(conf, global, console.screen.resolutions.current.id,
-         "current_resolution_id");
    CONFIG_GET_INT_BASE(conf, global, console.sound.mode, "sound_mode");
+   video_driver_ctl(RARCH_DISPLAY_CTL_LOAD_SETTINGS, conf);
 #endif
    CONFIG_GET_INT_BASE(conf, settings, state_slot, "state_slot");
 
@@ -2711,24 +2660,6 @@ bool config_save_file(const char *path)
    config_set_float(conf, "video_message_pos_x", settings->video.msg_pos_x);
    config_set_float(conf, "video_message_pos_y", settings->video.msg_pos_y);
 
-   config_set_bool(conf, "gamma_correction",
-         global->console.screen.gamma_correction);
-   config_set_bool(conf, "soft_filter_enable",
-         global->console.softfilter_enable);
-   config_set_bool(conf, "flicker_filter_enable",
-         global->console.flickerfilter_enable);
-
-   config_set_int(conf, "console_resolution_width",
-         global->console.screen.resolutions.width);
-   config_set_int(conf, "console_resolution_height",
-         global->console.screen.resolutions.height);
-
-   config_set_int(conf, "flicker_filter_index",
-         global->console.screen.flicker_filter_index);
-   config_set_int(conf, "soft_filter_index",
-         global->console.screen.soft_filter_index);
-   config_set_int(conf, "current_resolution_id",
-         global->console.screen.resolutions.current.id);
    config_set_int(conf, "custom_viewport_width",
          settings->video_viewport_custom.width);
    config_set_int(conf, "custom_viewport_height",
@@ -2738,6 +2669,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "custom_viewport_y",
          settings->video_viewport_custom.y);
 
+   video_driver_ctl(RARCH_DISPLAY_CTL_SAVE_SETTINGS, conf);
 
    config_set_float(conf, "video_font_size", settings->video.font_size);
 

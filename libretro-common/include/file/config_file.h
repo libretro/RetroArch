@@ -34,6 +34,39 @@ extern "C" {
 
 #include <boolean.h>
 
+#define CONFIG_GET_BOOL_BASE(conf, base, var, key) do { \
+   bool tmp = false; \
+   if (config_get_bool(conf, key, &tmp)) \
+      base->var = tmp; \
+} while(0)
+
+#define CONFIG_GET_INT_BASE(conf, base, var, key) do { \
+   int tmp = 0; \
+   if (config_get_int(conf, key, &tmp)) \
+      base->var = tmp; \
+} while(0)
+
+#define CONFIG_GET_UINT64_BASE(conf, base, var, key) do { \
+   uint64_t tmp = 0; \
+   if (config_get_int(conf, key, &tmp)) \
+      base->var = tmp; \
+} while(0)
+
+#define CONFIG_GET_HEX_BASE(conf, base, var, key) do { \
+   unsigned tmp = 0; \
+   if (config_get_hex(conf, key, &tmp)) \
+      base->var = tmp; \
+} while(0)
+
+#define CONFIG_GET_FLOAT_BASE(conf, base, var, key) do { \
+   float tmp = 0.0f; \
+   if (config_get_float(conf, key, &tmp)) \
+      base->var = tmp; \
+} while(0)
+
+#define CONFIG_GET_STRING_BASE(conf, base, var, key) config_get_array(conf, key, base->var, sizeof(base->var))
+#define CONFIG_GET_PATH_BASE(conf, base, var, key)   config_get_path (conf, key, base->var, sizeof(base->var))
+
 typedef struct config_file config_file_t;
 
 /* Config file format

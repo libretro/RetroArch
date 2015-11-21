@@ -16,6 +16,8 @@
 
 #include <string.h>
 
+#include <file/config_file.h>
+
 #include "video_thread_wrapper.h"
 #include "video_pixel_converter.h"
 #include "video_context_driver.h"
@@ -1212,6 +1214,59 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          return false;
       case RARCH_DISPLAY_CTL_FRAME_FILTER_IS_32BIT:
          return video_state.filter.out_rgb32;
+      case RARCH_DISPLAY_CTL_LOAD_SETTINGS:
+         {
+            global_t *global    = global_get_ptr();
+            config_file_t *conf = (config_file_t*)data;
+
+            if (!conf)
+               return false;
+
+            CONFIG_GET_BOOL_BASE(conf, global, console.screen.gamma_correction, "gamma_correction");
+            config_get_bool(conf, "flicker_filter_enable",
+                  &global->console.flickerfilter_enable);
+            config_get_bool(conf, "soft_filter_enable",
+                  &global->console.softfilter_enable);
+
+            CONFIG_GET_INT_BASE(conf, global, console.screen.resolutions.width,
+                  "console_resolution_width");
+            CONFIG_GET_INT_BASE(conf, global, console.screen.resolutions.height,
+                  "console_resolution_height");
+            CONFIG_GET_INT_BASE(conf, global, console.screen.soft_filter_index,
+                  "soft_filter_index");
+            CONFIG_GET_INT_BASE(conf, global, console.screen.resolutions.current.id,
+                  "current_resolution_id");
+            CONFIG_GET_INT_BASE(conf, global, console.screen.flicker_filter_index,
+                  "flicker_filter_index");
+         }
+         return true;
+      case RARCH_DISPLAY_CTL_SAVE_SETTINGS:
+         {
+            global_t *global    = global_get_ptr();
+            config_file_t *conf = (config_file_t*)data;
+
+            if (!conf)
+               return false;
+
+            config_set_bool(conf, "gamma_correction",
+                  global->console.screen.gamma_correction);
+            config_set_bool(conf, "flicker_filter_enable",
+                  global->console.flickerfilter_enable);
+            config_set_bool(conf, "soft_filter_enable",
+                  global->console.softfilter_enable);
+
+            config_set_int(conf, "console_resolution_width",
+                  global->console.screen.resolutions.width);
+            config_set_int(conf, "console_resolution_height",
+                  global->console.screen.resolutions.height);
+            config_set_int(conf, "soft_filter_index",
+                  global->console.screen.soft_filter_index);
+            config_set_int(conf, "current_resolution_id",
+                  global->console.screen.resolutions.current.id);
+            config_set_int(conf, "flicker_filter_index",
+                  global->console.screen.flicker_filter_index);
+         }
+         return true;
       case RARCH_DISPLAY_CTL_NONE:
       default:
          break;
