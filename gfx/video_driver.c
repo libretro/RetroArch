@@ -666,15 +666,20 @@ bool video_driver_set_rotation(unsigned rotation)
 }
 
 
-void video_driver_set_video_mode(unsigned width,
+bool video_driver_set_video_mode(unsigned width,
       unsigned height, bool fullscreen)
 {
    driver_t                   *driver = driver_get_ptr();
    const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
 
    if (poke && poke->set_video_mode)
+   {
       poke->set_video_mode(driver->video_data,
             width, height, fullscreen);
+      return true;
+   }
+
+   return gfx_ctx_set_video_mode(driver->video_context_data, width, height, fullscreen);
 }
 
 bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
@@ -1130,14 +1135,14 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             poke->get_video_output_next(driver->video_data);
             return true;
          }
-         return gfx_ctx_get_video_output_next(driver->video_data);
+         return gfx_ctx_get_video_output_next(driver->video_context_data);
       case RARCH_DISPLAY_CTL_GET_PREV_VIDEO_OUT:
          if (poke && poke->get_video_output_prev)
          {
             poke->get_video_output_prev(driver->video_data);
             return true;
          }
-         return gfx_ctx_get_video_output_next(driver->video_data);
+         return gfx_ctx_get_video_output_next(driver->video_context_data);
       case RARCH_DISPLAY_CTL_INIT:
          return init_video();
       case RARCH_DISPLAY_CTL_DEINIT:

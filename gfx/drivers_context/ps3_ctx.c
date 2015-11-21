@@ -355,9 +355,8 @@ static bool gfx_ctx_ps3_bind_api(void *data,
    return api == GFX_CTX_OPENGL_API || GFX_CTX_OPENGL_ES_API;
 }
 
-static void gx_ctx_ps3_get_video_output_size(void *data, unsigned *width, unsigned *height)
+static void gfx_ctx_ps3_get_video_output_size(void *data, unsigned *width, unsigned *height)
 {
-   unsigned width, height;
    global_t *global = global_get_ptr();
 
    if (!global)
@@ -365,6 +364,17 @@ static void gx_ctx_ps3_get_video_output_size(void *data, unsigned *width, unsign
 
    gfx_ctx_ps3_get_resolution(global->console.screen.resolutions.current.id,
          width, height);
+
+   if (*width == 720 && *height == 576)
+   {
+      if (global->console.screen.pal_enable)
+         global->console.screen.pal60_enable = true;
+   }
+   else
+   {
+      global->console.screen.pal_enable = false;
+      global->console.screen.pal60_enable = false;
+   }
 }
 
 static void gfx_ctx_ps3_get_video_output_prev(void *data)

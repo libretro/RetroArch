@@ -299,7 +299,7 @@ bool video_driver_set_shader(enum rarch_shader_type type,
 
 bool video_driver_set_rotation(unsigned rotation);
 
-void video_driver_set_video_mode(unsigned width,
+bool video_driver_set_video_mode(unsigned width,
       unsigned height, bool fullscreen);
 
 bool video_driver_get_video_output_size(

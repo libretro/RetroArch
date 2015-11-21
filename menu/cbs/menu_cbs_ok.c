@@ -1833,39 +1833,23 @@ static int action_ok_help_load_content(const char *path,
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   global_t *global = global_get_ptr();
-
-#ifdef __CELLOS_LV2__
-   if (global->console.screen.resolutions.list[
-         global->console.screen.resolutions.current.idx] ==
-         CELL_VIDEO_OUT_RESOLUTION_576)
-   {
-      if (global->console.screen.pal_enable)
-         global->console.screen.pal60_enable = true;
-   }
-   else
-   {
-      global->console.screen.pal_enable = false;
-      global->console.screen.pal60_enable = false;
-   }
-
-   event_command(EVENT_CMD_REINIT);
-#else
    unsigned width   = 0;
    unsigned  height = 0;
+   global_t *global = global_get_ptr();
 
    if (video_driver_get_video_output_size(&width, &height))
    {
       char msg[PATH_MAX_LENGTH] = {0};
-
+#ifdef __CELLOS_LV2__
+      event_command(EVENT_CMD_REINIT);
+#else
       video_driver_set_video_mode(width, height, true);
       global->console.screen.resolutions.width = width;
       global->console.screen.resolutions.height = height;
-
-      snprintf(msg, sizeof(msg),"Applying: %dx%d\n START to reset",width, height);
+#endif
+      snprintf(msg, sizeof(msg),"Applying: %dx%d\n START to reset", width, height);
       menu_display_msg_queue_push(msg, 1, 100, true);
    }
-#endif
 
    return 0;
 }

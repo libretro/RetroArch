@@ -1679,7 +1679,9 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
 {
    menu_handle_t *menu    = menu_driver_get_ptr();
    global_t *global       = global_get_ptr();
+#ifdef HAVE_CHEEVOS
    settings_t *settings   = config_get_ptr();
+#endif
    if (!menu)
       return -1;
 
