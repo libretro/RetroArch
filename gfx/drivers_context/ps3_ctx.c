@@ -355,6 +355,39 @@ static bool gfx_ctx_ps3_bind_api(void *data,
    return api == GFX_CTX_OPENGL_API || GFX_CTX_OPENGL_ES_API;
 }
 
+static void gfx_ctx_ps3_get_video_output_prev(void *data)
+{
+   global_t *global = global_get_ptr();
+
+   if (!global)
+      return;
+
+   if (global->console.screen.resolutions.current.idx)
+   {
+      global->console.screen.resolutions.current.idx--;
+      global->console.screen.resolutions.current.id =
+         global->console.screen.resolutions.list
+         [global->console.screen.resolutions.current.idx];
+   }
+}
+
+static void gfx_ctx_ps3_get_video_output_next(void *data)
+{
+   global_t *global = global_get_ptr();
+
+   if (!global)
+      return;
+
+   if (global->console.screen.resolutions.current.idx + 1 <
+         global->console.screen.resolutions.count)
+   {
+      global->console.screen.resolutions.current.idx++;
+      global->console.screen.resolutions.current.id =
+         global->console.screen.resolutions.list
+         [global->console.screen.resolutions.current.idx];
+   }
+}
+
 const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_init,
    gfx_ctx_ps3_destroy,
@@ -363,8 +396,8 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_set_video_mode,
    gfx_ctx_ps3_get_video_size,
    NULL, /* get_video_output_size */
-   NULL, /* get_video_output_prev */
-   NULL, /* get_video_output_next */
+   gfx_ctx_ps3_get_video_output_prev,
+   gfx_ctx_ps3_get_video_output_next,
    NULL, /* get_metrics */
    NULL,
    gfx_ctx_ps3_update_window_title,

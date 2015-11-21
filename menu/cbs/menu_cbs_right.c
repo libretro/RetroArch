@@ -304,22 +304,7 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
 static int action_right_video_resolution(unsigned type, const char *label,
       bool wraparound)
 {
-   global_t *global = global_get_ptr();
-
-   (void)global;
-
-#if defined(__CELLOS_LV2__)
-   if (global->console.screen.resolutions.current.idx + 1 <
-         global->console.screen.resolutions.count)
-   {
-      global->console.screen.resolutions.current.idx++;
-      global->console.screen.resolutions.current.id =
-         global->console.screen.resolutions.list
-         [global->console.screen.resolutions.current.idx];
-   }
-#else
    video_driver_ctl(RARCH_DISPLAY_CTL_GET_NEXT_VIDEO_OUT, NULL);
-#endif
 
    return 0;
 }

@@ -119,20 +119,30 @@ void gfx_ctx_get_video_output_size(void *data,
       ctx->get_video_output_size(data, width, height);
 }
 
-void gfx_ctx_get_video_output_prev(void *data)
+bool gfx_ctx_get_video_output_prev(void *data)
 {
    const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (ctx->get_video_output_prev)
+   {
       ctx->get_video_output_prev(data);
+      return true;
+   }
+
+   return false;
 }
 
-void gfx_ctx_get_video_output_next(void *data)
+bool gfx_ctx_get_video_output_next(void *data)
 {
    const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
 
    if (ctx->get_video_output_next)
+   {
       ctx->get_video_output_next(data);
+      return true;
+   }
+
+   return false;
 }
 
 void gfx_ctx_swap_buffers(void *data)

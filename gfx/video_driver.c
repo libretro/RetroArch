@@ -18,6 +18,7 @@
 
 #include "video_thread_wrapper.h"
 #include "video_pixel_converter.h"
+#include "video_context_driver.h"
 #include "video_monitor.h"
 #include "../general.h"
 #include "../performance.h"
@@ -1124,15 +1125,19 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
    switch (state)
    {
       case RARCH_DISPLAY_CTL_GET_NEXT_VIDEO_OUT:
-         if (!poke || !poke->get_video_output_next)
-            return false;
+         if (poke && poke->get_video_output_next)
+         {
             poke->get_video_output_next(driver->video_data);
-         return true;
+            return true;
+         }
+         return gfx_ctx_get_video_output_next(driver->video_data);
       case RARCH_DISPLAY_CTL_GET_PREV_VIDEO_OUT:
-         if (!poke || !poke->get_video_output_prev)
-            return false;
+         if (poke && poke->get_video_output_prev)
+         {
             poke->get_video_output_prev(driver->video_data);
-         return true;
+            return true;
+         }
+         return gfx_ctx_get_video_output_next(driver->video_data);
       case RARCH_DISPLAY_CTL_INIT:
          return init_video();
       case RARCH_DISPLAY_CTL_DEINIT:

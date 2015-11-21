@@ -241,9 +241,9 @@ void gfx_ctx_bind_hw_render(void *data, bool enable);
 void gfx_ctx_get_video_output_size(void *data,
       unsigned *width, unsigned *height);
 
-void gfx_ctx_get_video_output_prev(void *data);
+bool gfx_ctx_get_video_output_prev(void *data);
 
-void gfx_ctx_get_video_output_next(void *data);
+bool gfx_ctx_get_video_output_next(void *data);
 
 const char *gfx_ctx_get_ident(void);
 
