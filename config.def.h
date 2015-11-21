@@ -130,6 +130,12 @@ enum
    RECORD_NULL
 };
 
+#ifdef GEKKO
+#define MAX_GAMMA_SETTING 2
+#else
+#define MAX_GAMMA_SETTING 1
+#endif
+
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)
 #define VIDEO_DEFAULT_DRIVER VIDEO_GL
 #elif defined(GEKKO)

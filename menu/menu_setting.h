@@ -21,6 +21,10 @@
 #include <stdlib.h>
 #include <boolean.h>
 
+#include "../command_event.h"
+#include "../libretro.h"
+#include "../input/input_driver.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -97,86 +101,177 @@ enum setting_list_flags
 
 typedef struct rarch_setting_group_info rarch_setting_group_info_t;
 typedef struct rarch_setting rarch_setting_t;
+typedef struct rarch_setting_info rarch_setting_info_t;
+
+typedef void (*change_handler_t               )(void *data);
+typedef int  (*action_left_handler_t          )(void *data, bool wraparound);
+typedef int  (*action_right_handler_t         )(void *data, bool wraparound);
+typedef int  (*action_up_handler_t            )(void *data);
+typedef int  (*action_down_handler_t          )(void *data);
+typedef int  (*action_start_handler_t         )(void *data);
+typedef int  (*action_cancel_handler_t        )(void *data);
+typedef int  (*action_ok_handler_t            )(void *data, bool wraparound);
+typedef int  (*action_select_handler_t        )(void *data, bool wraparound);
+typedef void (*get_string_representation_t    )(void *data, char *s, size_t len);
+
+rarch_setting_t setting_group_setting(enum setting_type type, const char* name,
+      const char *parent_group);
+
+/**
+ * setting_action_setting:
+ * @name               : Name of setting.
+ * @short_description  : Short description of setting.
+ * @group              : Group that the setting belongs to.
+ * @subgroup           : Subgroup that the setting belongs to.
+ *
+ * Initializes a setting of type ST_ACTION.
+ *
+ * Returns: setting of type ST_ACTION.
+ **/
+rarch_setting_t setting_action_setting(const char* name,
+      const char* short_description,
+      const char *group, const char *subgroup,
+      const char *parent_group);
 
 #define SL_FLAG_SETTINGS_GROUP_ALL (SL_FLAG_SETTINGS_ALL - SL_FLAG_MAIN_MENU)
 
-#define START_GROUP(group_info, NAME, parent_group) \
-do{ \
-   group_info.name = NAME; \
-   if (!(menu_settings_list_append(list, list_info, setting_group_setting (ST_GROUP, NAME, parent_group)))) return false; \
-}while(0)
+bool START_GROUP(rarch_setting_t **list, rarch_setting_info_t *list_info,
+      rarch_setting_group_info_t *group_info,
+      const char *name, const char *parent_group);
 
-#define END_GROUP(list, list_info, parent_group) \
-do{ \
-   if (!(menu_settings_list_append(list, list_info, setting_group_setting (ST_END_GROUP, 0, parent_group)))) return false; \
-}while(0)
+bool END_GROUP(rarch_setting_t **list, rarch_setting_info_t *list_info,
+      const char *parent_group);
 
-#define START_SUB_GROUP(list, list_info, NAME, group_info, subgroup_info, parent_group) \
-do{ \
-   subgroup_info.name = NAME; \
-   if (!(menu_settings_list_append(list, list_info, setting_subgroup_setting (ST_SUB_GROUP, NAME, group_info, parent_group)))) return false; \
-}while(0)
+bool START_SUB_GROUP(rarch_setting_t **list,
+      rarch_setting_info_t *list_info, const char *name,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group);
 
-#define END_SUB_GROUP(list, list_info, parent_group) \
-do{ \
-   if (!(menu_settings_list_append(list, list_info, setting_group_setting (ST_END_SUB_GROUP, 0, parent_group)))) return false; \
-}while(0)
+bool END_SUB_GROUP(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      const char *parent_group);
 
-#define CONFIG_ACTION(NAME, SHORT, group_info, subgroup_info, parent_group) \
-do{ \
-   if (!menu_settings_list_append(list, list_info, setting_action_setting  (NAME, SHORT, group_info, subgroup_info, parent_group))) return false; \
-}while(0)
+bool CONFIG_ACTION(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      const char *name, const char *SHORT,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group);
 
-#define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, OFF, ON, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
-do{ \
-   if (!menu_settings_list_append(list, list_info, setting_bool_setting  (NAME, SHORT, TARGET, DEF, OFF, ON, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))return false; \
-}while(0)
+bool CONFIG_BOOL(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      bool *target,
+      const char *name, const char *SHORT,
+      bool default_value,
+      const char *off, const char *on,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group,
+      change_handler_t change_handler, change_handler_t read_handler);
 
-#define CONFIG_INT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
-do{ \
-   if (!(menu_settings_list_append(list, list_info, setting_int_setting   (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
-}while(0)
+bool CONFIG_INT(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      int *target,
+      const char *name, const char *SHORT,
+      int default_value,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group,
+      change_handler_t change_handler, change_handler_t read_handler);
 
-#define CONFIG_UINT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
-do{ \
-   if (!(menu_settings_list_append(list, list_info, setting_uint_setting  (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
-}while(0)
+bool CONFIG_UINT(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      unsigned int *target,
+      const char *name, const char *SHORT,
+      unsigned int default_value,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group,
+      change_handler_t change_handler, change_handler_t read_handler);
 
-#define CONFIG_FLOAT(TARGET, NAME, SHORT, DEF, ROUNDING, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
-do{ \
-   if (!(menu_settings_list_append(list, list_info, setting_float_setting (NAME, SHORT, &TARGET, DEF, ROUNDING, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
-}while(0)
+bool CONFIG_FLOAT(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      float *target,
+      const char *name, const char *SHORT,
+      float default_value, const char *rounding,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group,
+      change_handler_t change_handler, change_handler_t read_handler);
 
-#define CONFIG_PATH(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
-do{ \
-   if (!(menu_settings_list_append(list, list_info, setting_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
-}while(0)
+bool CONFIG_PATH(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      char *target, size_t len,
+      const char *name, const char *SHORT,
+      const char *default_value,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group,
+      change_handler_t change_handler, change_handler_t read_handler);
 
-#define CONFIG_DIR(TARGET, NAME, SHORT, DEF, EMPTY, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
-do{ \
-   if (!(menu_settings_list_append(list, list_info, setting_string_setting(ST_DIR, NAME, SHORT, TARGET, sizeof(TARGET), DEF, EMPTY, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
-}while(0)
+bool CONFIG_DIR(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      char *target, size_t len,
+      const char *name, const char *SHORT,
+      const char *default_value, const char *empty,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group,
+      change_handler_t change_handler, change_handler_t read_handler);
 
-#define CONFIG_STRING(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
-do{ \
-   if (!(menu_settings_list_append(list, list_info, setting_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
-}while(0)
+bool CONFIG_STRING(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      char *target, size_t len,
+      const char *name, const char *SHORT,
+      const char *default_value,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group,
+      change_handler_t change_handler, change_handler_t read_handler);
 
-#define CONFIG_STRING_OPTIONS(TARGET, NAME, SHORT, DEF, OPTS, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
-do{ \
-  if (!(menu_settings_list_append(list, list_info, setting_string_setting_options(ST_STRING_OPTIONS, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", OPTS, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
-}while(0)
+bool CONFIG_STRING_OPTIONS(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      char *target, size_t len,
+      const char *name, const char *SHORT,
+      const char *default_value, const char *values,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group,
+      change_handler_t change_handler, change_handler_t read_handler);
 
-#define CONFIG_HEX(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER) \
-do{ \
-   if (!(menu_settings_list_append(list, list_info, setting_hex_setting(NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, parent_group, CHANGE_HANDLER, READ_HANDLER)))) return false; \
-}while(0)
+bool CONFIG_HEX(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      unsigned int *target,
+      const char *name, const char *SHORT,
+      unsigned int default_value, 
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group,
+      change_handler_t change_handler, change_handler_t read_handler);
 
 /* Please strdup() NAME and SHORT */
-#define CONFIG_BIND(TARGET, PLAYER, PLAYER_OFFSET, NAME, SHORT, DEF, group_info, subgroup_info, parent_group) \
-do{ \
-   if (!(menu_settings_list_append(list, list_info, setting_bind_setting  (NAME, SHORT, &TARGET, PLAYER, PLAYER_OFFSET, DEF, group_info, subgroup_info, parent_group)))) return false; \
-}while(0)
+bool CONFIG_BIND(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      struct retro_keybind *target,
+      uint32_t player, uint32_t player_offset,
+      const char *name, const char *SHORT,
+      const struct retro_keybind *default_value,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group);
 
 int menu_setting_generic(rarch_setting_t *setting, bool wraparound);
 
@@ -282,6 +377,26 @@ void *setting_get_ptr(rarch_setting_t *setting);
 bool menu_setting_action_right(rarch_setting_t *setting, bool wraparound);
 
 void menu_settings_list_increment(rarch_setting_t **list);
+
+void general_write_handler(void *data);
+
+void general_read_handler(void *data);
+
+void menu_settings_list_current_add_cmd(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      enum event_command values);
+
+void menu_settings_list_current_add_range(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      float min, float max, float step,
+      bool enforce_minrange_enable, bool enforce_maxrange_enable);
+
+void settings_data_list_current_add_flags(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      unsigned values);
 
 #ifdef __cplusplus
 }

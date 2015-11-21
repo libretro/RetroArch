@@ -28,6 +28,7 @@
 #include "../string_list_special.h"
 
 #ifdef HAVE_MENU
+#include "../menu/menu_hash.h"
 #include "../menu/menu_setting.h"
 #endif
 
@@ -1162,43 +1163,54 @@ static void video_monitor_adjust_system_rates(void)
    RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
 }
 
-void video_driver_menu_settings(void *data, void *subgroup_data, const char *parent_group)
+void video_driver_menu_settings(void **list_data, void *list_info_data,
+      void *group_data, void *subgroup_data, const char *parent_group)
 {
 #ifdef HAVE_MENU
-   rarch_setting_group_info_t *group_info = (rarch_setting_group_info_t*)data;
+   rarch_setting_t **list                    = (rarch_setting_t**)list_data;
+   rarch_setting_info_t *list_info           = (rarch_setting_info_t*)list_info_data;
+   rarch_setting_group_info_t *group_info    = (rarch_setting_group_info_t*)group_data;
    rarch_setting_group_info_t *subgroup_info = (rarch_setting_group_info_t*)subgroup_data;
+   global_t                        *global   = global_get_ptr();
+   (void)list;
+   (void)list_info;
    (void)group_info;
    (void)subgroup_info;
+   (void)global;
+
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
    CONFIG_ACTION(
+         list, list_info,
          menu_hash_to_str(MENU_LABEL_SCREEN_RESOLUTION),
          menu_hash_to_str(MENU_LABEL_VALUE_SCREEN_RESOLUTION),
-         group_info->name,
-         subgroup_info->name,
+         group_info,
+         subgroup_info,
          parent_group);
 #endif
 #if defined(__CELLOS_LV2__)
    CONFIG_BOOL(
+         list, list_info,
          &global->console.screen.pal60_enable,
          menu_hash_to_str(MENU_LABEL_PAL60_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_PAL60_ENABLE),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
-         group_info->name,
-         subgroup_info->name,
+         group_info,
+         subgroup_info,
          parent_group,
          general_write_handler,
          general_read_handler);
 #endif
 #if defined(HW_RVL) || defined(_XBOX360)
    CONFIG_UINT(
-         global->console.screen.gamma_correction,
+         list, list_info,
+         &global->console.screen.gamma_correction,
          menu_hash_to_str(MENU_LABEL_VIDEO_GAMMA),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_GAMMA),
          0,
-         group_info->name,
-         subgroup_info->name,
+         group_info,
+         subgroup_info,
          parent_group,
          general_write_handler,
          general_read_handler);
@@ -1218,14 +1230,15 @@ void video_driver_menu_settings(void *data, void *subgroup_data, const char *par
 #endif
 #if defined(_XBOX1) || defined(HW_RVL)
    CONFIG_BOOL(
+         list, list_info,
          &global->console.softfilter_enable,
          menu_hash_to_str(MENU_LABEL_VIDEO_SOFT_FILTER),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SOFT_FILTER),
          false,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
-         group_info->name,
-         subgroup_info->name,
+         group_info,
+         subgroup_info,
          parent_group,
          general_write_handler,
          general_read_handler);
@@ -1236,12 +1249,13 @@ void video_driver_menu_settings(void *data, void *subgroup_data, const char *par
 #endif
 #ifdef _XBOX1
    CONFIG_UINT(
-         settings->video.swap_interval,
+         list, list_info,
+         &settings->video.swap_interval,
          menu_hash_to_str(MENU_LABEL_VIDEO_FILTER_FLICKER),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FILTER_FLICKER),
          0,
-         group_info.name,
-         subgroup_info.name,
+         group_info,
+         subgroup_info,
          parent_group,
          general_write_handler,
          general_read_handler);
