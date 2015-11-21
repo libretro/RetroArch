@@ -1221,9 +1221,10 @@ static bool config_load_file(const char *path, bool set_defaults)
       CONFIG_GET_BOOL_BASE(conf, settings, video.fullscreen, "video_fullscreen");
 
    CONFIG_GET_BOOL_BASE(conf, settings, bundle_assets_extract_enable, "bundle_assets_extract_enable");
-   CONFIG_GET_PATH_BASE(conf, settings, bundle_assets_last_extracted_version, "bundle_assets_last_extracted_version");
-   CONFIG_GET_STRING_BASE(conf, settings, playlist_names, "playlist_names");
-   CONFIG_GET_STRING_BASE(conf, settings, playlist_cores, "playlist_cores");
+   config_get_path(conf, "bundle_assets_last_extracted_version",
+         settings->bundle_assets_last_extracted_version, sizeof(settings->bundle_assets_last_extracted_version));
+   config_get_array(conf, "playlist_names", settings->playlist_names, sizeof(settings->playlist_names));
+   config_get_array(conf, "playlist_cores", settings->playlist_cores, sizeof(settings->playlist_cores));
 
    CONFIG_GET_BOOL_BASE(conf, settings, video.windowed_fullscreen, "video_windowed_fullscreen");
    CONFIG_GET_INT_BASE (conf, settings, video.monitor_index, "video_monitor_index");
@@ -1407,41 +1408,46 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, audio.mute_enable, "audio_mute_enable");
    CONFIG_GET_INT_BASE(conf, settings, audio.out_rate, "audio_out_rate");
    CONFIG_GET_INT_BASE(conf, settings, audio.block_frames, "audio_block_frames");
-   CONFIG_GET_STRING_BASE(conf, settings, audio.device, "audio_device");
+
+   config_get_array(conf, "audio_device", settings->audio.device, sizeof(settings->audio.device));
+
    CONFIG_GET_INT_BASE(conf, settings, audio.latency, "audio_latency");
    CONFIG_GET_BOOL_BASE(conf, settings, audio.sync, "audio_sync");
    CONFIG_GET_BOOL_BASE(conf, settings, audio.rate_control, "audio_rate_control");
    CONFIG_GET_FLOAT_BASE(conf, settings, audio.rate_control_delta, "audio_rate_control_delta");
    CONFIG_GET_FLOAT_BASE(conf, settings, audio.max_timing_skew, "audio_max_timing_skew");
    CONFIG_GET_FLOAT_BASE(conf, settings, audio.volume, "audio_volume");
-   CONFIG_GET_STRING_BASE(conf, settings, audio.resampler, "audio_resampler");
+
+   config_get_array(conf, "audio_resampler", settings->audio.resampler, sizeof(settings->audio.resampler));
+
    audio_driver_set_volume_gain(db_to_gain(settings->audio.volume));
 
-   CONFIG_GET_STRING_BASE(conf, settings, camera.device, "camera_device");
+   config_get_array(conf, "camera_device", settings->camera.device, sizeof(settings->camera.device));
+
    CONFIG_GET_BOOL_BASE(conf, settings, camera.allow, "camera_allow");
 
 #ifdef HAVE_CHEEVOS
    CONFIG_GET_BOOL_BASE(conf, settings, cheevos.enable, "cheevos_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, cheevos.test_unofficial, "cheevos_test_unofficial");
-   CONFIG_GET_STRING_BASE(conf, settings, cheevos.username, "cheevos_username");
-   CONFIG_GET_STRING_BASE(conf, settings, cheevos.password, "cheevos_password");
+   config_get_array(conf, "cheevos_username", settings->cheevos.username, sizeof(settings->cheevos.username));
+   config_get_array(conf, "cheevos_password", settings->cheevos.password, sizeof(settings->cheevos.password));
 #endif
 
    CONFIG_GET_BOOL_BASE(conf, settings, location.allow, "location_allow");
-   CONFIG_GET_STRING_BASE(conf, settings, video.driver, "video_driver");
-   CONFIG_GET_STRING_BASE(conf, settings, record.driver, "record_driver");
-   CONFIG_GET_STRING_BASE(conf, settings, camera.driver, "camera_driver");
-   CONFIG_GET_STRING_BASE(conf, settings, location.driver, "location_driver");
+   config_get_array(conf, "video_driver",    settings->video.driver, sizeof(settings->video.driver));
+   config_get_array(conf, "record_driver",   settings->record.driver, sizeof(settings->video.driver));
+   config_get_array(conf, "camera_driver",   settings->camera.driver, sizeof(settings->camera.driver));
+   config_get_array(conf, "location_driver", settings->location.driver, sizeof(settings->location.driver));
 #ifdef HAVE_MENU
-   CONFIG_GET_STRING_BASE(conf, settings, menu.driver, "menu_driver");
+   config_get_array(conf, "menu_driver",     settings->menu.driver, sizeof(settings->menu.driver));
 #endif
-   CONFIG_GET_STRING_BASE(conf, settings, video.context_driver, "video_context_driver");
-   CONFIG_GET_STRING_BASE(conf, settings, audio.driver, "audio_driver");
+   config_get_array(conf, "video_context_driver", settings->video.context_driver, sizeof(settings->video.context_driver));
+   config_get_array(conf, "audio_driver", settings->audio.driver, sizeof(settings->audio.driver));
    config_get_path(conf, "video_filter", settings->video.softfilter_plugin, sizeof(settings->video.softfilter_plugin));
    config_get_path(conf, "audio_dsp_plugin", settings->audio.dsp_plugin, sizeof(settings->audio.dsp_plugin));
-   CONFIG_GET_STRING_BASE(conf, settings, input.driver, "input_driver");
-   CONFIG_GET_STRING_BASE(conf, settings, input.joypad_driver, "input_joypad_driver");
-   CONFIG_GET_STRING_BASE(conf, settings, input.keyboard_layout, "input_keyboard_layout");
+   config_get_array(conf, "input_driver", settings->input.driver, sizeof(settings->input.driver));
+   config_get_array(conf, "input_joypad_driver", settings->input.joypad_driver, sizeof(settings->input.joypad_driver));
+   config_get_array(conf, "input_keyboard_layout", settings->input.keyboard_layout, sizeof(settings->input.keyboard_layout));
 
    if (!global->has_set.libretro)
       config_get_path(conf, "libretro_path", settings->libretro, sizeof(settings->libretro));
@@ -1580,10 +1586,14 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, pause_nonactive, "pause_nonactive");
    CONFIG_GET_INT_BASE(conf, settings, autosave_interval, "autosave_interval");
 
-   CONFIG_GET_PATH_BASE(conf, settings, content_database, "content_database_path");
-   CONFIG_GET_PATH_BASE(conf, settings, cheat_database, "cheat_database_path");
-   CONFIG_GET_PATH_BASE(conf, settings, cursor_directory, "cursor_directory");
-   CONFIG_GET_PATH_BASE(conf, settings, cheat_settings_path, "cheat_settings_path");
+   config_get_path(conf, "content_database_path",
+         settings->content_database, sizeof(settings->content_database));
+   config_get_path(conf, "cheat_database_path",
+         settings->cheat_database, sizeof(settings->cheat_database));
+   config_get_path(conf, "cursor_directory",
+         settings->cursor_directory, sizeof(settings->cursor_directory));
+   config_get_path(conf, "cheat_settings_path",
+         settings->cheat_settings_path, sizeof(settings->cheat_settings_path));
 
    CONFIG_GET_BOOL_BASE(conf, settings, block_sram_overwrite, "block_sram_overwrite");
    CONFIG_GET_BOOL_BASE(conf, settings, savestate_auto_index, "savestate_auto_index");
@@ -1595,21 +1605,24 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, stdin_cmd_enable, "stdin_cmd_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, debug_panel_enable, "debug_panel_enable");
 
-   CONFIG_GET_PATH_BASE(conf, settings, content_history_directory, "content_history_dir");
+   config_get_path(conf, "content_history_dir", settings->content_history_directory,
+         sizeof(settings->content_history_directory));
 
    CONFIG_GET_BOOL_BASE(conf, settings, history_list_enable, "history_list_enable");
 
-   CONFIG_GET_PATH_BASE(conf, settings, content_history_path, "content_history_path");
+   config_get_path(conf, "content_history_path", settings->content_history_path,
+         sizeof(settings->content_history_path));
    CONFIG_GET_INT_BASE(conf, settings, content_history_size, "content_history_size");
 
    CONFIG_GET_INT_BASE(conf, settings, input.turbo_period, "input_turbo_period");
    CONFIG_GET_INT_BASE(conf, settings, input.turbo_duty_cycle, "input_duty_cycle");
 
    CONFIG_GET_BOOL_BASE(conf, settings, input.autodetect_enable, "input_autodetect_enable");
-   CONFIG_GET_PATH_BASE(conf, settings, input.autoconfig_dir, "joypad_autoconfig_dir");
+   config_get_path(conf, "joypad_autoconfig_dir",
+         settings->input.autoconfig_dir, sizeof(settings->input.autoconfig_dir));
 
    if (!global->has_set.username)
-      CONFIG_GET_PATH_BASE(conf, settings, username, "netplay_nickname");
+      config_get_path(conf, "netplay_nickname",  settings->username, sizeof(settings->username));
    CONFIG_GET_INT_BASE(conf, settings, user_language, "user_language");
 #ifdef HAVE_NETPLAY
    if (!global->has_set.netplay_mode)
@@ -1618,7 +1631,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (!global->has_set.netplay_mode)
       CONFIG_GET_BOOL_BASE(conf, global, netplay.is_client, "netplay_mode");
    if (!global->has_set.netplay_ip_address)
-      CONFIG_GET_PATH_BASE(conf, global, netplay.server, "netplay_ip_address");
+      config_get_path(conf, "netplay_ip_address", global->netplay.server, sizeof(global->netplay.server));
    if (!global->has_set.netplay_delay_frames)
       CONFIG_GET_INT_BASE(conf, global, netplay.sync_frames, "netplay_delay_frames");
    if (!global->has_set.netplay_ip_port)

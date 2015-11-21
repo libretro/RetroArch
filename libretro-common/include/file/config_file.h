@@ -64,9 +64,6 @@ extern "C" {
       base->var = tmp; \
 } while(0)
 
-#define CONFIG_GET_STRING_BASE(conf, base, var, key) config_get_array(conf, key, base->var, sizeof(base->var))
-#define CONFIG_GET_PATH_BASE(conf, base, var, key)   config_get_path (conf, key, base->var, sizeof(base->var))
-
 typedef struct config_file config_file_t;
 
 /* Config file format
