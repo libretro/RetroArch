@@ -191,8 +191,6 @@ static bool gfx_ctx_emscripten_bind_api(void *data,
 static void gfx_ctx_emscripten_destroy(void *data)
 {
    egl_destroy(data);
-
-   g_egl_inited       = false;
 }
 
 static void gfx_ctx_emscripten_input_driver(void *data,

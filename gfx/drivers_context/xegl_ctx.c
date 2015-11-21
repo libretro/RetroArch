@@ -79,7 +79,6 @@ static void gfx_ctx_xegl_destroy(void *data)
    /* Do not close g_x11_dpy. We'll keep one for the entire application 
     * lifecycle to work-around nVidia EGL limitations.
     */
-   g_egl_inited = false;
 }
 
 static void gfx_ctx_xegl_set_resize(void *data,

@@ -112,6 +112,7 @@ void egl_destroy(void *data)
    g_egl_config  = 0;
    g_egl_quit    = 0;
    g_egl_api     = GFX_CTX_NONE;
+   g_egl_inited  = false;
 }
 
 void egl_bind_hw_render(void *data, bool enable)
