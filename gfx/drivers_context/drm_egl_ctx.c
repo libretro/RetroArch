@@ -626,7 +626,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       EGL_RENDERABLE_TYPE, EGL_OPENVG_BIT,
       EGL_NONE,
    };
-
+   EGLint *egl_attribs_ptr = NULL;
    const EGLint *attrib_ptr;
    EGLint major, minor, n, egl_attribs[16], *attr;
    float refresh_mod;
@@ -729,8 +729,8 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       goto error;
    }
 
-   attr = egl_fill_attribs(egl_attribs);
-   EGLint *egl_attribs_ptr = &egl_attribs[0];
+   attr            = egl_fill_attribs(egl_attribs);
+   egl_attribs_ptr = &egl_attribs[0];
 
    if (!egl_create_context((attr != egl_attribs_ptr) ? egl_attribs_ptr : NULL))
    {

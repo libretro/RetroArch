@@ -25,7 +25,11 @@
 
 #include "../video_context_driver.h"
 
-volatile sig_atomic_t g_egl_quit;
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern volatile sig_atomic_t g_egl_quit;
 
 extern EGLContext g_egl_ctx;
 extern EGLContext g_egl_hw_ctx;
@@ -59,5 +63,9 @@ bool egl_init_context(NativeDisplayType display,
 bool egl_create_context(EGLint *egl_attribs);
 
 bool egl_create_surface(NativeWindowType native_window);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
