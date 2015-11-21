@@ -42,23 +42,18 @@ typedef struct gfx_ctx_ps3_data
 #if defined(HAVE_PSGL)
    PSGLdevice* gl_device;
    PSGLcontext* gl_context;
+#else
+   void *empty;
 #endif
 } gfx_ctx_ps3_data_t;
 
-static unsigned gfx_ctx_ps3_get_resolution_width(unsigned resolution_id)
+static void gfx_ctx_ps3_get_resolution(unsigned idx, unsigned *width, unsigned *height)
 {
    CellVideoOutResolution resolution;
-   cellVideoOutGetResolution(resolution_id, &resolution);
+   cellVideoOutGetResolution(idx, &resolution);
 
-   return resolution.width;
-}
-
-static unsigned gfx_ctx_ps3_get_resolution_height(unsigned resolution_id)
-{
-   CellVideoOutResolution resolution;
-   cellVideoOutGetResolution(resolution_id, &resolution);
-
-   return resolution.height;
+   *width  = resolution.width;
+   *height = resolution.height;
 }
 
 static float gfx_ctx_ps3_get_aspect_ratio(void *data)
@@ -143,17 +138,7 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
 
 static void gfx_ctx_ps3_set_swap_interval(void *data, unsigned interval)
 {
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)driver->video_context_data;
-
-   (void)data;
-
 #if defined(HAVE_PSGL)
-   if (!ps3)
-      return;
-   if (!ps3->gl_context)
-      return;
-
    if (interval)
       glEnable(GL_VSYNC_SCE);
    else
@@ -276,8 +261,9 @@ static bool gfx_ctx_ps3_init(void *data)
    if (global->console.screen.resolutions.current.id)
    {
       params.enable |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
-      params.width = gfx_ctx_ps3_get_resolution_width(global->console.screen.resolutions.current.id);
-      params.height = gfx_ctx_ps3_get_resolution_height(global->console.screen.resolutions.current.id);
+
+      gfx_ctx_ps3_get_resolution(global->console.screen.resolutions.current.id, &params.width, &params.height);
+
       global->console.screen.pal_enable = false;
 
       if (params.width == 720 && params.height == 576)
@@ -356,11 +342,7 @@ static void gfx_ctx_ps3_destroy(void *data)
 static void gfx_ctx_ps3_input_driver(void *data,
       const input_driver_t **input, void **input_data)
 {
-   void *ps3input = NULL;
-
-   (void)data;
-
-   ps3input = input_ps3.init();
+   void *ps3input = input_ps3.init();
 
    *input = ps3input ? &input_ps3 : NULL;
    *input_data = ps3input;
