@@ -19,38 +19,6 @@
 static struct retro_system_av_info video_viewport_av_info;
 
 /**
- * video_viewport_set_square_pixel:
- * @width         : Width.
- * @height        : Height.
- *
- * Sets viewport to square pixel aspect ratio based on @width and @height. 
- **/
-void video_viewport_set_square_pixel(unsigned width, unsigned height)
-{
-   unsigned len, highest, i, aspect_x, aspect_y;
-   if (width == 0 || height == 0)
-      return;
-
-   len      = min(width, height);
-   highest  = 1;
-
-   for (i = 1; i < len; i++)
-   {
-      if ((width % i) == 0 && (height % i) == 0)
-         highest = i;
-   }
-
-   aspect_x = width / highest;
-   aspect_y = height / highest;
-
-   snprintf(aspectratio_lut[ASPECT_RATIO_SQUARE].name,
-         sizeof(aspectratio_lut[ASPECT_RATIO_SQUARE].name),
-         "%u:%u (1:1 PAR)", aspect_x, aspect_y);
-
-   aspectratio_lut[ASPECT_RATIO_SQUARE].value = (float)aspect_x / aspect_y;
-}
-
-/**
  * video_viewport_set_config:
  *
  * Sets viewport to config aspect ratio.

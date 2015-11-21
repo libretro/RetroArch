@@ -239,6 +239,8 @@ enum rarch_display_ctl_state
    RARCH_DISPLAY_CTL_SET_ASPECT_RATIO,
    /* Sets viewport to aspect ratio set by core. */
    RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE,
+   /* Sets viewport to square pixel aspect ratio based on width/height. */ 
+   RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL,
    RARCH_DISPLAY_CTL_RESET_CUSTOM_VIEWPORT,
    RARCH_DISPLAY_CTL_READ_VIEWPORT,
    RARCH_DISPLAY_CTL_SET_NONBLOCK_STATE,

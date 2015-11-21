@@ -536,7 +536,7 @@ static bool init_video(void)
       scale = video_state.filter.scale;
 
    /* Update core-dependent aspect ratio values. */
-   video_viewport_set_square_pixel(geom->base_width, geom->base_height);
+   video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL, NULL);
    video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE, NULL);
    video_viewport_set_config();
 
@@ -1249,6 +1249,38 @@ void video_driver_menu_settings(void *data, void *subgroup_data, const char *par
 #endif
 }
 
+/**
+ * video_viewport_set_square_pixel:
+ * @width         : Width.
+ * @height        : Height.
+ *
+ * Sets viewport to square pixel aspect ratio based on @width and @height. 
+ **/
+static void video_viewport_set_square_pixel(unsigned width, unsigned height)
+{
+   unsigned len, highest, i, aspect_x, aspect_y;
+   if (width == 0 || height == 0)
+      return;
+
+   len      = min(width, height);
+   highest  = 1;
+
+   for (i = 1; i < len; i++)
+   {
+      if ((width % i) == 0 && (height % i) == 0)
+         highest = i;
+   }
+
+   aspect_x = width / highest;
+   aspect_y = height / highest;
+
+   snprintf(aspectratio_lut[ASPECT_RATIO_SQUARE].name,
+         sizeof(aspectratio_lut[ASPECT_RATIO_SQUARE].name),
+         "%u:%u (1:1 PAR)", aspect_x, aspect_y);
+
+   aspectratio_lut[ASPECT_RATIO_SQUARE].value = (float)aspect_x / aspect_y;
+}
+
 bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 {
    driver_t                 *driver   = driver_get_ptr();
@@ -1258,6 +1290,17 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL:
+         {
+            struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+            struct retro_game_geometry *geom = av_info ? &av_info->geometry : NULL;
+
+            if (!geom)
+               return false;
+
+            video_viewport_set_square_pixel(geom->base_width, geom->base_height);
+         }
+         return true;
       case RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE:
          {
             struct retro_system_av_info *av_info = 

@@ -3266,15 +3266,11 @@ static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    gl_t *gl         = (gl_t*)data;
-   const struct retro_system_av_info *av_info = 
-      (const struct retro_system_av_info*)video_viewport_get_system_av_info();
 
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         video_viewport_set_square_pixel(
-               av_info->geometry.base_width,
-               av_info->geometry.base_height);
+         video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL, NULL);
          break;
 
       case ASPECT_RATIO_CORE:

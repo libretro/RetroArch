@@ -498,14 +498,10 @@ static void vita_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
    vita_video_t *vita = (vita_video_t*)data;
 
-   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-
    switch (aspectratio_index)
    {
       case ASPECT_RATIO_SQUARE:
-         video_viewport_set_square_pixel(
-               av_info->geometry.base_width,
-               av_info->geometry.base_height);
+         video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL, NULL);
          break;
 
       case ASPECT_RATIO_CORE:
