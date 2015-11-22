@@ -16,7 +16,6 @@
 
 #include <string.h>
 
-#include "audio_monitor.h"
 #include "audio_driver.h"
 #include "audio_utils.h"
 #include "audio_thread_wrapper.h"

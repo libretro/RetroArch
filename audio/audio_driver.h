@@ -72,28 +72,6 @@ typedef struct audio_driver
    size_t (*buffer_size)(void *data);
 } audio_driver_t;
 
-extern audio_driver_t audio_rsound;
-extern audio_driver_t audio_oss;
-extern audio_driver_t audio_alsa;
-extern audio_driver_t audio_alsathread;
-extern audio_driver_t audio_roar;
-extern audio_driver_t audio_openal;
-extern audio_driver_t audio_opensl;
-extern audio_driver_t audio_jack;
-extern audio_driver_t audio_sdl;
-extern audio_driver_t audio_xa;
-extern audio_driver_t audio_pulse;
-extern audio_driver_t audio_dsound;
-extern audio_driver_t audio_coreaudio;
-extern audio_driver_t audio_xenon360;
-extern audio_driver_t audio_ps3;
-extern audio_driver_t audio_gx;
-extern audio_driver_t audio_psp;
-extern audio_driver_t audio_ctr_csnd;
-extern audio_driver_t audio_ctr_dsp;
-extern audio_driver_t audio_rwebaudio;
-extern audio_driver_t audio_null;
-
 /**
  * audio_driver_find_handle:
  * @index              : index of driver to get handle to.
@@ -175,6 +153,37 @@ bool audio_driver_has_callback(void);
 void audio_driver_callback(void);
 
 void audio_driver_callback_set_state(bool state);
+
+void audio_monitor_adjust_system_rates(void);
+
+/**
+ * audio_monitor_set_refresh_rate:
+ *
+ * Sets audio monitor refresh rate to new value.
+ **/
+void audio_monitor_set_refresh_rate(void);
+
+extern audio_driver_t audio_rsound;
+extern audio_driver_t audio_oss;
+extern audio_driver_t audio_alsa;
+extern audio_driver_t audio_alsathread;
+extern audio_driver_t audio_roar;
+extern audio_driver_t audio_openal;
+extern audio_driver_t audio_opensl;
+extern audio_driver_t audio_jack;
+extern audio_driver_t audio_sdl;
+extern audio_driver_t audio_xa;
+extern audio_driver_t audio_pulse;
+extern audio_driver_t audio_dsound;
+extern audio_driver_t audio_coreaudio;
+extern audio_driver_t audio_xenon360;
+extern audio_driver_t audio_ps3;
+extern audio_driver_t audio_gx;
+extern audio_driver_t audio_psp;
+extern audio_driver_t audio_ctr_csnd;
+extern audio_driver_t audio_ctr_dsp;
+extern audio_driver_t audio_rwebaudio;
+extern audio_driver_t audio_null;
 
 #ifdef __cplusplus
 }
