@@ -75,6 +75,8 @@ typedef struct audio_driver
 enum rarch_audio_ctl_state
 {
    RARCH_AUDIO_CTL_NONE = 0,
+   RARCH_AUDIO_CTL_START,
+   RARCH_AUDIO_CTL_STOP,
    RARCH_AUDIO_CTL_ALIVE
 };
 
@@ -106,10 +108,6 @@ bool audio_driver_mute_toggle(void);
  * Readjust the audio input rate.
  */
 void audio_driver_readjust_input_rate(void);
-
-bool audio_driver_start(void);
-
-bool audio_driver_stop(void);
 
 void audio_driver_set_nonblock_state(bool toggle);
 

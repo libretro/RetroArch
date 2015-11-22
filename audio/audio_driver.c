@@ -436,12 +436,10 @@ void init_audio(void)
 
    audio_data.buffer_free_samples_count = 0;
 
+   /* Threaded driver is initially stopped. */
    if (driver->audio_active && !settings->audio.mute_enable &&
          audio_data.audio_callback.callback)
-   {
-      /* Threaded driver is initially stopped. */
-      driver->audio->start(driver->audio_data);
-   }
+      audio_driver_ctl(RARCH_AUDIO_CTL_START, NULL);
 
    return;
 
@@ -505,21 +503,7 @@ void audio_driver_readjust_input_rate(void)
 
 
 
-bool audio_driver_start(void)
-{
-   driver_t *driver      = driver_get_ptr();
-   const audio_driver_t *audio = audio_get_ptr(driver);
 
-   return audio->start(driver->audio_data);
-}
-
-bool audio_driver_stop(void)
-{
-   driver_t *driver      = driver_get_ptr();
-   const audio_driver_t *audio = audio_get_ptr(driver);
-
-   return audio->stop(driver->audio_data);
-}
 
 void audio_driver_set_nonblock_state(bool toggle)
 {
@@ -862,6 +846,10 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          break;
       case RARCH_AUDIO_CTL_ALIVE:
          return audio->alive(driver->audio_data);
+      case RARCH_AUDIO_CTL_START:
+         return audio->start(driver->audio_data);
+      case RARCH_AUDIO_CTL_STOP:
+         return audio->stop(driver->audio_data);
    }
 
    return false;
