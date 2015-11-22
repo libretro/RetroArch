@@ -703,24 +703,6 @@ void audio_driver_dsp_filter_init(const char *device)
       RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n", device);
 }
 
-void audio_driver_setup_rewind(void)
-{
-   unsigned i;
-
-   /* Push audio ready to be played. */
-   audio_data.rewind_ptr = audio_data.rewind_size;
-
-   for (i = 0; i < audio_data.data_ptr; i += 2)
-   {
-      audio_data.rewind_buf[--audio_data.rewind_ptr] =
-         audio_data.conv_outsamples[i + 1];
-
-      audio_data.rewind_buf[--audio_data.rewind_ptr] =
-         audio_data.conv_outsamples[i + 0];
-   }
-
-   audio_data.data_ptr = 0;
-}
 
 void audio_driver_frame_is_reverse(void)
 {
@@ -775,6 +757,25 @@ static void audio_monitor_adjust_system_rates(void)
          audio_data.in_rate);
 }
 
+static void audio_driver_setup_rewind(void)
+{
+   unsigned i;
+
+   /* Push audio ready to be played. */
+   audio_data.rewind_ptr = audio_data.rewind_size;
+
+   for (i = 0; i < audio_data.data_ptr; i += 2)
+   {
+      audio_data.rewind_buf[--audio_data.rewind_ptr] =
+         audio_data.conv_outsamples[i + 1];
+
+      audio_data.rewind_buf[--audio_data.rewind_ptr] =
+         audio_data.conv_outsamples[i + 0];
+   }
+
+   audio_data.data_ptr = 0;
+}
+
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 {
    driver_t        *driver     = driver_get_ptr();
@@ -790,6 +791,9 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          return init_audio();
       case RARCH_AUDIO_CTL_DEINIT:
          return uninit_audio();
+      case RARCH_AUDIO_CTL_SETUP_REWIND:
+         audio_driver_setup_rewind();
+         return true;
       case RARCH_AUDIO_CTL_HAS_CALLBACK:
          return audio_data.audio_callback.callback;
       case RARCH_AUDIO_CTL_CALLBACK:

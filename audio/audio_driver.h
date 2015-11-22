@@ -79,6 +79,7 @@ enum rarch_audio_ctl_state
    RARCH_AUDIO_CTL_DEINIT,
    RARCH_AUDIO_CTL_START,
    RARCH_AUDIO_CTL_STOP,
+   RARCH_AUDIO_CTL_SETUP_REWIND,
    /* Sets audio monitor refresh rate to new value. */
    RARCH_AUDIO_CTL_MONITOR_SET_REFRESH_RATE,
    RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES,
@@ -136,8 +137,6 @@ void audio_driver_set_volume_gain(float gain);
 void audio_driver_dsp_filter_free(void);
 
 void audio_driver_dsp_filter_init(const char *device);
-
-void audio_driver_setup_rewind(void);
 
 void audio_driver_frame_is_reverse(void);
 

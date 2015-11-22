@@ -192,7 +192,7 @@ static void check_rewind(settings_t *settings,
       if (state_manager_pop(global->rewind.state, &buf))
       {
          state_manager_set_frame_is_reversed(true);
-         audio_driver_setup_rewind();
+         audio_driver_ctl(RARCH_AUDIO_CTL_SETUP_REWIND, NULL);
 
          rarch_main_msg_queue_push_new(MSG_REWINDING, 0,
                main_is_paused ? 1 : 30, true);
