@@ -14,81 +14,34 @@
  */
 
 #include <retro_miscellaneous.h>
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
-#endif
 
 #include "tasks.h"
 #include "../input/input_overlay.h"
 
-#ifdef HAVE_THREADS
-static slock_t *overlay_lock;
-#endif
-
-void rarch_main_data_overlay_image_upload_iterate(bool is_thread)
+void rarch_main_data_overlay_iterate(void)
 {
-#ifdef HAVE_THREADS
-   if (is_thread)
-      slock_lock(overlay_lock);
-#endif
-
-   switch (input_overlay_status())
+   while (input_overlay_status() != OVERLAY_STATUS_NONE)
    {
-      case OVERLAY_STATUS_DEFERRED_LOADING:
-         input_overlay_load_overlays_iterate();
-         break;
-      default:
-         break;
+      switch (input_overlay_status())
+      {
+         case OVERLAY_STATUS_DEFERRED_LOADING:
+            input_overlay_load_overlays_iterate();
+            break;
+         case OVERLAY_STATUS_DEFERRED_LOAD:
+            input_overlay_load_overlays();
+            break;
+         case OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE:
+            input_overlay_load_overlays_resolve_iterate();
+            break;
+         case OVERLAY_STATUS_DEFERRED_DONE:
+            input_overlay_new_done();
+            break;
+         case OVERLAY_STATUS_DEFERRED_ERROR:
+            input_overlay_free();
+            break;
+         default:
+         case OVERLAY_STATUS_NONE:
+            break;
+      }
    }
-
-#ifdef HAVE_THREADS
-   if (is_thread)
-      slock_unlock(overlay_lock);
-#endif
-}
-
-void rarch_main_data_overlay_iterate(bool is_thread)
-{
-#ifdef HAVE_THREADS
-   if (is_thread)
-      slock_lock(overlay_lock);
-#endif
-
-   switch (input_overlay_status())
-   {
-      case OVERLAY_STATUS_DEFERRED_LOAD:
-         input_overlay_load_overlays();
-         break;
-      case OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE:
-         input_overlay_load_overlays_resolve_iterate();
-         break;
-      case OVERLAY_STATUS_DEFERRED_DONE:
-         input_overlay_new_done();
-         break;
-      case OVERLAY_STATUS_DEFERRED_ERROR:
-         input_overlay_free();
-         break;
-      default:
-      case OVERLAY_STATUS_NONE:
-         break;
-   }
-
-#ifdef HAVE_THREADS
-   if (is_thread)
-      slock_unlock(overlay_lock);
-#endif
-}
-
-void rarch_main_data_overlay_thread_uninit(void)
-{
-#ifdef HAVE_THREADS
-   slock_free(overlay_lock);
-#endif
-}
-
-void rarch_main_data_overlay_thread_init(void)
-{
-#ifdef HAVE_THREADS
-   overlay_lock = slock_new();
-#endif
 }

@@ -69,9 +69,6 @@ static void data_runloop_thread_deinit(void)
 
       slock_free(g_data_runloop.lock);
       slock_free(g_data_runloop.cond_lock);
-#ifdef HAVE_OVERLAY
-      rarch_main_data_overlay_thread_uninit();
-#endif
       scond_free(g_data_runloop.cond);
    }
 }
@@ -195,10 +192,6 @@ static void rarch_main_data_thread_init(void)
    g_data_runloop.cond_lock       = slock_new();
    g_data_runloop.cond            = scond_new();
 
-#ifdef HAVE_OVERLAY
-   rarch_main_data_overlay_thread_init();
-#endif
-
    g_data_runloop.thread    = sthread_create(data_thread_loop, &g_data_runloop);
 
    if (!g_data_runloop.thread)
@@ -249,16 +242,13 @@ void rarch_main_data_iterate(void)
    }
 #endif
 
-#ifdef HAVE_OVERLAY
-   rarch_main_data_overlay_image_upload_iterate(false);
-#endif
 #ifdef HAVE_RPNG
 #ifdef HAVE_MENU
    rarch_main_data_nbio_image_upload_iterate(false);
 #endif
 #endif
 #ifdef HAVE_OVERLAY
-   rarch_main_data_overlay_iterate    (false);
+   rarch_main_data_overlay_iterate();
 #endif
 
 #ifdef HAVE_MENU
