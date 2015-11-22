@@ -183,7 +183,7 @@ static void data_thread_loop(void *data)
 #ifdef HAVE_THREADS
 static void rarch_main_data_thread_init(void)
 {
-   if (!g_data_runloop.thread_inited)
+   if (g_data_runloop.thread_inited)
       return;
 
    g_data_runloop.lock            = slock_new();
