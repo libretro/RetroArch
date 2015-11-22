@@ -503,14 +503,6 @@ void audio_driver_readjust_input_rate(void)
 #endif
 }
 
-bool audio_driver_alive(void)
-{
-   driver_t *driver     = driver_get_ptr();
-   const audio_driver_t *audio = driver ? 
-      (const audio_driver_t*)driver->audio : NULL;
-
-   return audio->alive(driver->audio_data);
-}
 
 
 bool audio_driver_start(void)
@@ -856,4 +848,21 @@ void audio_driver_callback_set_state(bool state)
       if (audio_data.audio_callback.set_state)
          audio_data.audio_callback.set_state(state);
    }
+}
+
+bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
+{
+   driver_t        *driver     = driver_get_ptr();
+   const audio_driver_t *audio = driver ? 
+      (const audio_driver_t*)driver->audio : NULL;
+
+   switch (state)
+   {
+      case RARCH_AUDIO_CTL_NONE:
+         break;
+      case RARCH_AUDIO_CTL_ALIVE:
+         return audio->alive(driver->audio_data);
+   }
+
+   return false;
 }

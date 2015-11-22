@@ -1303,14 +1303,14 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_AUDIO_STOP:
          if (!driver->audio_data)
             return false;
-         if (!audio_driver_alive())
+         if (!audio_driver_ctl(RARCH_AUDIO_CTL_ALIVE, NULL))
             return false;
 
          if (!audio_driver_stop())
             return false;
          break;
       case EVENT_CMD_AUDIO_START:
-         if (!driver->audio_data || audio_driver_alive())
+         if (!driver->audio_data || audio_driver_ctl(RARCH_AUDIO_CTL_ALIVE, NULL))
             return false;
 
          if (!settings->audio.mute_enable && !audio_driver_start())

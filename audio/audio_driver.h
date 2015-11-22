@@ -72,6 +72,14 @@ typedef struct audio_driver
    size_t (*buffer_size)(void *data);
 } audio_driver_t;
 
+enum rarch_audio_ctl_state
+{
+   RARCH_AUDIO_CTL_NONE = 0,
+   RARCH_AUDIO_CTL_ALIVE
+};
+
+bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data);
+
 /**
  * audio_driver_find_handle:
  * @index              : index of driver to get handle to.
@@ -98,8 +106,6 @@ bool audio_driver_mute_toggle(void);
  * Readjust the audio input rate.
  */
 void audio_driver_readjust_input_rate(void);
-
-bool audio_driver_alive(void);
 
 bool audio_driver_start(void);
 
