@@ -28,13 +28,6 @@
 #include "menu/menu.h"
 #endif
 
-enum thread_code_enum
-{
-   THREAD_CODE_INIT = 0,
-   THREAD_CODE_DEINIT,
-   THREAD_CODE_ALIVE
-};
-
 typedef struct data_runloop
 {
    bool inited;
@@ -42,7 +35,6 @@ typedef struct data_runloop
 #ifdef HAVE_THREADS
    bool thread_sleeping;
    bool thread_inited;
-   unsigned thread_code;
    bool alive;
 
    slock_t *lock;
@@ -82,7 +74,6 @@ void rarch_main_data_deinit(void)
       data_runloop_thread_deinit();
 
       g_data_runloop.thread_inited = false;
-      g_data_runloop.thread_code   = THREAD_CODE_DEINIT;
    }
 #endif
 
@@ -200,7 +191,6 @@ static void rarch_main_data_thread_init(void)
    slock_lock(g_data_runloop.lock);
    g_data_runloop.thread_inited   = true;
    g_data_runloop.alive           = true;
-   g_data_runloop.thread_code     = THREAD_CODE_ALIVE;
    slock_unlock(g_data_runloop.lock);
 
    return;
@@ -227,6 +217,20 @@ void rarch_main_data_iterate(void)
    settings_t     *settings     = config_get_ptr();
    
    (void)settings;
+#ifdef HAVE_THREADS
+   if (settings->threaded_data_runloop_enable)
+   {
+      if (!g_data_runloop.thread_inited)
+         rarch_main_data_thread_init();
+      else if (g_data_runloop.thread_sleeping)
+      {
+         slock_lock(g_data_runloop.cond_lock);
+         g_data_runloop.thread_sleeping = false;
+         scond_signal(g_data_runloop.cond);
+         slock_unlock(g_data_runloop.cond_lock);
+      }
+   }
+#endif
 
 #ifdef HAVE_RPNG
 #ifdef HAVE_MENU
@@ -341,20 +345,6 @@ void rarch_main_data_msg_queue_push(unsigned type,
       msg_queue_clear(queue);
    msg_queue_push(queue, new_msg, prio, duration);
 
-#ifdef HAVE_THREADS
-   if (settings->threaded_data_runloop_enable)
-   {
-      if (!g_data_runloop.thread_inited)
-         rarch_main_data_thread_init();
-      else if (g_data_runloop.thread_sleeping)
-      {
-         slock_lock(g_data_runloop.cond_lock);
-         g_data_runloop.thread_sleeping = false;
-         scond_signal(g_data_runloop.cond);
-         slock_unlock(g_data_runloop.cond_lock);
-      }
-   }
-#endif
 }
 
 void data_runloop_osd_msg(const char *msg, size_t len)
