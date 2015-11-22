@@ -449,13 +449,12 @@ error:
    return audio_driver_ctl(RARCH_AUDIO_CTL_DEINIT, NULL);
 }
 
-
 /*
  * audio_driver_readjust_input_rate:
  *
  * Readjust the audio input rate.
  */
-void audio_driver_readjust_input_rate(void)
+static void audio_driver_readjust_input_rate(void)
 {
    driver_t *driver     = driver_get_ptr();
    const audio_driver_t *audio = driver ? 
