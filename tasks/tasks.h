@@ -29,6 +29,42 @@
 extern "C" {
 #endif
 
+typedef struct rarch_task rarch_task_t;
+typedef void (*rarch_task_callback_t)(void *task_data, void *user_data, const char *error);
+typedef void (*rarch_task_handler_t)(rarch_task_t *task);
+
+struct rarch_task {
+    rarch_task_handler_t  handler;
+    rarch_task_callback_t callback; /* always called from the main loop */
+
+    /* set by the handler */
+    bool finished;
+
+    /* created by the handler, destroyed by the user */
+    void *task_data;
+
+    /* owned by the user */
+    void *user_data;
+
+    /* created and destroyed by the code related to the handler */
+    void *state;
+
+    /* created by task handler; destroyed by main loop (after calling the callback) */
+    char *error;
+
+    /* don't touch this. */
+    rarch_task_t *next;
+};
+
+/* MAIN THREAD ONLY */
+void rarch_task_init(void);
+void rarch_task_deinit(void);
+void rarch_task_check(void);
+
+/* MAIN AND TASK THREADS */
+void rarch_task_push(rarch_task_t *task);
+
+
 void rarch_main_data_nbio_uninit(void);
 
 void rarch_main_data_nbio_init(void);
