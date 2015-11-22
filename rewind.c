@@ -585,7 +585,7 @@ void init_rewind(void)
    if (!settings->rewind_enable || global->rewind.state)
       return;
 
-   if (audio_driver_has_callback())
+   if (audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
    {
       RARCH_ERR("%s.\n", msg_hash_to_str(MSG_REWIND_INIT_FAILED));
       return;

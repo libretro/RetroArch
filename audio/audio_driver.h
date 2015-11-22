@@ -83,6 +83,7 @@ enum rarch_audio_ctl_state
    RARCH_AUDIO_CTL_MONITOR_SET_REFRESH_RATE,
    RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES,
    RARCH_AUDIO_CTL_MUTE_TOGGLE,
+   RARCH_AUDIO_CTL_HAS_CALLBACK,
    RARCH_AUDIO_CTL_ALIVE
 };
 
@@ -142,8 +143,6 @@ void audio_driver_frame_is_reverse(void);
 void audio_driver_set_buffer_size(size_t bufsize);
 
 void audio_driver_set_callback(const void *info);
-
-bool audio_driver_has_callback(void);
 
 void audio_driver_callback(void);
 

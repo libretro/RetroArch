@@ -745,27 +745,22 @@ void audio_driver_set_callback(const void *data)
       audio_data.audio_callback = *cb;
 }
 
-bool audio_driver_has_callback(void)
-{
-   return audio_data.audio_callback.callback;
-}
-
 void audio_driver_callback(void)
 {
-   if (audio_driver_has_callback())
-   {
-      if (audio_data.audio_callback.callback)
-         audio_data.audio_callback.callback();
-   }
+   if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
+      return;
+
+   if (audio_data.audio_callback.callback)
+      audio_data.audio_callback.callback();
 }
 
 void audio_driver_callback_set_state(bool state)
 {
-   if (audio_driver_has_callback())
-   {
-      if (audio_data.audio_callback.set_state)
-         audio_data.audio_callback.set_state(state);
-   }
+   if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
+      return;
+
+   if (audio_data.audio_callback.set_state)
+      audio_data.audio_callback.set_state(state);
 }
 
 static void audio_monitor_adjust_system_rates(void)
@@ -806,6 +801,8 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          return init_audio();
       case RARCH_AUDIO_CTL_DEINIT:
          return uninit_audio();
+      case RARCH_AUDIO_CTL_HAS_CALLBACK:
+         return audio_data.audio_callback.callback;
       case RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES:
          audio_monitor_adjust_system_rates();
          return true;
