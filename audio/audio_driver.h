@@ -79,6 +79,7 @@ enum rarch_audio_ctl_state
    RARCH_AUDIO_CTL_DEINIT,
    RARCH_AUDIO_CTL_START,
    RARCH_AUDIO_CTL_STOP,
+   RARCH_AUDIO_CTL_MUTE_TOGGLE,
    RARCH_AUDIO_CTL_ALIVE
 };
 
@@ -101,8 +102,6 @@ const void *audio_driver_find_handle(int index);
  * if nothing found.
  **/
 const char *audio_driver_find_ident(int index);
-
-bool audio_driver_mute_toggle(void);
 
 /*
  * audio_driver_readjust_input_rate:

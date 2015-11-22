@@ -449,26 +449,6 @@ error:
    return audio_driver_ctl(RARCH_AUDIO_CTL_DEINIT, NULL);
 }
 
-bool audio_driver_mute_toggle(void)
-{
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
-
-   if (!driver->audio_data || !driver->audio_active)
-      return false;
-
-   settings->audio.mute_enable = !settings->audio.mute_enable;
-
-   if (settings->audio.mute_enable)
-      event_command(EVENT_CMD_AUDIO_STOP);
-   else if (!event_command(EVENT_CMD_AUDIO_START))
-   {
-      driver->audio_active = false;
-      return false;
-   }
-
-   return true;
-}
 
 /*
  * audio_driver_readjust_input_rate:
@@ -841,6 +821,7 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
    driver_t        *driver     = driver_get_ptr();
    const audio_driver_t *audio = driver ? 
       (const audio_driver_t*)driver->audio : NULL;
+   settings_t        *settings = config_get_ptr();
 
    switch (state)
    {
@@ -850,6 +831,20 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          return init_audio();
       case RARCH_AUDIO_CTL_DEINIT:
          return uninit_audio();
+      case RARCH_AUDIO_CTL_MUTE_TOGGLE:
+         if (!driver->audio_data || !driver->audio_active)
+            return false;
+
+         settings->audio.mute_enable = !settings->audio.mute_enable;
+
+         if (settings->audio.mute_enable)
+            event_command(EVENT_CMD_AUDIO_STOP);
+         else if (!event_command(EVENT_CMD_AUDIO_START))
+         {
+            driver->audio_active = false;
+            return false;
+         }
+         return true;
       case RARCH_AUDIO_CTL_ALIVE:
          return audio->alive(driver->audio_data);
       case RARCH_AUDIO_CTL_START:
