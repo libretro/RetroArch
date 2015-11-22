@@ -75,6 +75,8 @@ typedef struct audio_driver
 enum rarch_audio_ctl_state
 {
    RARCH_AUDIO_CTL_NONE = 0,
+   RARCH_AUDIO_CTL_INIT,
+   RARCH_AUDIO_CTL_DEINIT,
    RARCH_AUDIO_CTL_START,
    RARCH_AUDIO_CTL_STOP,
    RARCH_AUDIO_CTL_ALIVE
@@ -123,10 +125,6 @@ void audio_driver_set_nonblocking_state(bool enable);
 const char* config_get_audio_driver_options(void);
 
 void find_audio_driver(void);
-
-void uninit_audio(void);
-
-void init_audio(void);
 
 bool audio_driver_flush(const int16_t *data, size_t samples);
 

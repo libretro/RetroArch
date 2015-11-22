@@ -254,7 +254,7 @@ void find_audio_driver(void)
    }
 }
 
-void uninit_audio(void)
+static bool uninit_audio(void)
 {
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
@@ -274,7 +274,7 @@ void uninit_audio(void)
    if (!settings->audio.enable)
    {
       driver->audio_active = false;
-      return;
+      return false;
    }
 
    rarch_resampler_freep(&driver->resampler,
@@ -297,9 +297,11 @@ void uninit_audio(void)
    event_command(EVENT_CMD_DSP_FILTER_DEINIT);
 
    compute_audio_buffer_statistics();
+
+   return true;
 }
 
-void init_audio(void)
+static bool init_audio(void)
 {
    size_t outsamples_max, max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    driver_t *driver     = driver_get_ptr();
@@ -309,7 +311,7 @@ void init_audio(void)
 
    /* Resource leaks will follow if audio is initialized twice. */
    if (driver->audio_data)
-      return;
+      return false;
 
    /* Accomodate rewind since at some point we might have two full buffers. */
    outsamples_max = max_bufsamples * AUDIO_MAX_RATIO * 
@@ -339,7 +341,7 @@ void init_audio(void)
    if (!settings->audio.enable)
    {
       driver->audio_active = false;
-      return;
+      return false;
    }
 
    find_audio_driver();
@@ -441,10 +443,10 @@ void init_audio(void)
          audio_data.audio_callback.callback)
       audio_driver_ctl(RARCH_AUDIO_CTL_START, NULL);
 
-   return;
+   return true;
 
 error:
-   uninit_audio();
+   return audio_driver_ctl(RARCH_AUDIO_CTL_DEINIT, NULL);
 }
 
 bool audio_driver_mute_toggle(void)
@@ -844,6 +846,10 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
    {
       case RARCH_AUDIO_CTL_NONE:
          break;
+      case RARCH_AUDIO_CTL_INIT:
+         return init_audio();
+      case RARCH_AUDIO_CTL_DEINIT:
+         return uninit_audio();
       case RARCH_AUDIO_CTL_ALIVE:
          return audio->alive(driver->audio_data);
       case RARCH_AUDIO_CTL_START:

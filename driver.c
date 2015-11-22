@@ -392,7 +392,7 @@ void init_drivers(int flags)
    }
 
    if (flags & DRIVER_AUDIO)
-      init_audio();
+      audio_driver_ctl(RARCH_AUDIO_CTL_INIT, NULL);
 
    /* Only initialize camera driver if we're ever going to use it. */
    if ((flags & DRIVER_CAMERA) && driver->camera_active)
@@ -458,7 +458,7 @@ void uninit_drivers(int flags)
    }
 
    if (flags & DRIVER_AUDIO)
-      uninit_audio();
+      audio_driver_ctl(RARCH_AUDIO_CTL_DEINIT, NULL);
 
    if (flags & DRIVERS_VIDEO_INPUT)
       video_driver_ctl(RARCH_DISPLAY_CTL_DEINIT, NULL);
