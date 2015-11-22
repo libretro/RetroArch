@@ -740,44 +740,7 @@ void audio_driver_frame_is_reverse(void)
          audio_data.rewind_size - audio_data.rewind_ptr);
 }
 
-void audio_monitor_adjust_system_rates(void)
-{
-   float timing_skew;
-   settings_t                   *settings = config_get_ptr();
-   const struct retro_system_timing *info = NULL;
-   struct retro_system_av_info   *av_info = video_viewport_get_system_av_info();
-   
-   if (av_info)
-      info = (const struct retro_system_timing*)&av_info->timing;
 
-   if (!info || info->sample_rate <= 0.0)
-      return;
-
-   timing_skew        = fabs(1.0f - info->fps / settings->video.refresh_rate);
-   audio_data.in_rate = info->sample_rate;
-
-   if (timing_skew <= settings->audio.max_timing_skew)
-      audio_data.in_rate *= (settings->video.refresh_rate / info->fps);
-
-   RARCH_LOG("Set audio input rate to: %.2f Hz.\n",
-         audio_data.in_rate);
-}
-
-/**
- * audio_monitor_set_refresh_rate:
- *
- * Sets audio monitor refresh rate to new value.
- **/
-void audio_monitor_set_refresh_rate(void)
-{
-   settings_t *settings = config_get_ptr();
-
-   double new_src_ratio = (double)settings->audio.out_rate / 
-                           audio_data.in_rate;
-
-   audio_data.orig_src_ratio = new_src_ratio;
-   audio_data.src_ratio      = new_src_ratio;
-}
 
 void audio_driver_set_buffer_size(size_t bufsize)
 {
@@ -816,6 +779,29 @@ void audio_driver_callback_set_state(bool state)
    }
 }
 
+static void audio_monitor_adjust_system_rates(void)
+{
+   float timing_skew;
+   settings_t                   *settings = config_get_ptr();
+   const struct retro_system_timing *info = NULL;
+   struct retro_system_av_info   *av_info = video_viewport_get_system_av_info();
+   
+   if (av_info)
+      info = (const struct retro_system_timing*)&av_info->timing;
+
+   if (!info || info->sample_rate <= 0.0)
+      return;
+
+   timing_skew        = fabs(1.0f - info->fps / settings->video.refresh_rate);
+   audio_data.in_rate = info->sample_rate;
+
+   if (timing_skew <= settings->audio.max_timing_skew)
+      audio_data.in_rate *= (settings->video.refresh_rate / info->fps);
+
+   RARCH_LOG("Set audio input rate to: %.2f Hz.\n",
+         audio_data.in_rate);
+}
+
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 {
    driver_t        *driver     = driver_get_ptr();
@@ -831,6 +817,18 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          return init_audio();
       case RARCH_AUDIO_CTL_DEINIT:
          return uninit_audio();
+      case RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES:
+         audio_monitor_adjust_system_rates();
+         return true;
+      case RARCH_AUDIO_CTL_MONITOR_SET_REFRESH_RATE:
+         {
+            double new_src_ratio = (double)settings->audio.out_rate / 
+               audio_data.in_rate;
+
+            audio_data.orig_src_ratio = new_src_ratio;
+            audio_data.src_ratio      = new_src_ratio;
+         }
+         return true;
       case RARCH_AUDIO_CTL_MUTE_TOGGLE:
          if (!driver->audio_data || !driver->audio_active)
             return false;

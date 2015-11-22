@@ -232,7 +232,7 @@ static void driver_adjust_system_rates(void)
    rarch_system_info_t *system = rarch_system_info_get_ptr();
    driver_t            *driver = driver_get_ptr();
 
-   audio_monitor_adjust_system_rates();
+   audio_driver_ctl(RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES,   NULL);
    video_driver_ctl(RARCH_DISPLAY_CTL_MONITOR_ADJUST_SYSTEM_RATES, NULL);
 
    if (!driver->video_data)
@@ -255,7 +255,7 @@ static void driver_adjust_system_rates(void)
 void driver_set_refresh_rate(float hz)
 {
    video_monitor_set_refresh_rate(hz);
-   audio_monitor_set_refresh_rate();
+   audio_driver_ctl(RARCH_AUDIO_CTL_MONITOR_SET_REFRESH_RATE,   NULL);
    driver_adjust_system_rates();
 }
 
