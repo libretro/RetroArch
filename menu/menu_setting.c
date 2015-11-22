@@ -5149,6 +5149,7 @@ static bool setting_append_list_input_options(
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1, MAX_USERS, 1, true, true);
 
+#if TARGET_OS_IPHONE
    CONFIG_BOOL(
          list, list_info,
          &settings->input.keyboard_gamepad_enable,
@@ -5176,7 +5177,6 @@ static bool setting_append_list_input_options(
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
 
-#if TARGET_OS_IPHONE
    CONFIG_BOOL(
          list, list_info,
          &settings->input.small_keyboard_enable,
