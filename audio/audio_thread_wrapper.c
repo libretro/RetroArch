@@ -91,7 +91,7 @@ static void audio_thread_loop(void *data)
       }
 
       slock_unlock(thr->lock);
-      audio_driver_callback();
+      audio_driver_ctl(RARCH_AUDIO_CTL_CALLBACK, NULL);
    }
 
    RARCH_LOG("[Audio Thread]: Tearing down driver.\n");

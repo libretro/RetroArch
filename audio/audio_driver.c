@@ -729,8 +729,6 @@ void audio_driver_frame_is_reverse(void)
          audio_data.rewind_size - audio_data.rewind_ptr);
 }
 
-
-
 void audio_driver_set_buffer_size(size_t bufsize)
 {
    audio_data.driver_buffer_size = bufsize;
@@ -743,15 +741,6 @@ void audio_driver_set_callback(const void *data)
 
    if (cb)
       audio_data.audio_callback = *cb;
-}
-
-void audio_driver_callback(void)
-{
-   if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
-      return;
-
-   if (audio_data.audio_callback.callback)
-      audio_data.audio_callback.callback();
 }
 
 void audio_driver_callback_set_state(bool state)
@@ -803,6 +792,13 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          return uninit_audio();
       case RARCH_AUDIO_CTL_HAS_CALLBACK:
          return audio_data.audio_callback.callback;
+      case RARCH_AUDIO_CTL_CALLBACK:
+         if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
+            return false;
+
+         if (audio_data.audio_callback.callback)
+            audio_data.audio_callback.callback();
+         return true;
       case RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES:
          audio_monitor_adjust_system_rates();
          return true;
