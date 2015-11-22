@@ -113,9 +113,7 @@ static void frontend_ctr_deinit(void *data)
    *verbose           = true;
 
 #ifdef HAVE_FILE_LOGGER
-   if (global->log_file)
-      fclose(global->log_file);
-   global->log_file = NULL;
+   event_command(EVENT_CMD_LOG_FILE_DEINIT);
 #endif
 
    if(gfxBottomFramebuffers[0] == (u8*)currentConsole->frameBuffer)
