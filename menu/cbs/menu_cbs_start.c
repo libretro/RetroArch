@@ -268,8 +268,7 @@ static int action_start_core_setting(unsigned type,
 
 static int action_start_playlist_association(unsigned type, const char *label)
 {
-   int i, next, found, current = 0;
-   char core_path[PATH_MAX_LENGTH]  = {0};
+   int found;
    char new_playlist_cores[PATH_MAX_LENGTH] = {0};
    global_t *global                 = global_get_ptr();
    settings_t *settings             = config_get_ptr();
