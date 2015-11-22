@@ -17,6 +17,7 @@
 #ifndef __D3D_RENDER_CHAIN_H
 #define __D3D_RENDER_CHAIN_H
 
+#include "../video_driver.h"
 #include "../video_shader_parse.h"
 #include "../video_state_tracker.h"
 #include "../../libretro.h"

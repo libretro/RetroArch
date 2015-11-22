@@ -160,6 +160,9 @@ static void shader_dlg_params_refresh(void)
             SendMessage(control->trackbar.hwnd, TBM_SETPOS, (WPARAM)TRUE,
                   (LPARAM)((shader->parameters[i].current - shader->parameters[i].minimum) / shader->parameters[i].step));
             break;
+         case SHADER_PARAM_CTRL_NONE:
+         default:
+            break;
       }
    }
 }
