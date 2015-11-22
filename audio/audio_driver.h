@@ -106,8 +106,6 @@ const void *audio_driver_find_handle(int index);
  **/
 const char *audio_driver_find_ident(int index);
 
-void audio_driver_set_nonblock_state(bool toggle);
-
 void audio_driver_set_nonblocking_state(bool enable);
 
 /**

@@ -482,24 +482,14 @@ static void audio_driver_readjust_input_rate(void)
 #endif
 }
 
-
-
-
-
-void audio_driver_set_nonblock_state(bool toggle)
-{
-   driver_t *driver     = driver_get_ptr();
-   const audio_driver_t *audio = audio_get_ptr(driver);
-
-   audio->set_nonblock_state(driver->audio_data, toggle);
-}
-
 void audio_driver_set_nonblocking_state(bool enable)
 {
    driver_t *driver     = driver_get_ptr();
+   const audio_driver_t *audio = audio_get_ptr(driver);
    settings_t *settings = config_get_ptr();
    if (driver->audio_active && driver->audio_data)
-      audio_driver_set_nonblock_state(settings->audio.sync ? enable : true);
+      audio->set_nonblock_state(driver->audio_data,
+            settings->audio.sync ? enable : true);
 
    audio_data.chunk_size = enable ? audio_data.nonblock_chunk_size : 
       audio_data.block_chunk_size;

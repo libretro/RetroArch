@@ -1446,7 +1446,7 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_AUDIO_SET_NONBLOCKING_STATE:
          boolean = true; /* fall-through */
       case EVENT_CMD_AUDIO_SET_BLOCKING_STATE:
-         audio_driver_set_nonblock_state(boolean);
+         audio_driver_set_nonblocking_state(boolean);
          break;
       case EVENT_CMD_OVERLAY_SET_SCALE_FACTOR:
 #ifdef HAVE_OVERLAY
