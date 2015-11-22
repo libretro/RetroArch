@@ -40,6 +40,7 @@ typedef struct data_runloop
    bool inited;
 
 #ifdef HAVE_THREADS
+   bool thread_sleeping;
    bool thread_inited;
    unsigned thread_code;
    bool alive;
@@ -169,8 +170,12 @@ static void data_thread_loop(void *data)
 
       data_runloop_iterate(true);
 
-      while (!rarch_main_data_active())
-         scond_wait(runloop->cond, runloop->lock);
+      if (!rarch_main_data_active())
+      {
+         runloop->thread_sleeping = true;
+         while(runloop->thread_sleeping)
+            scond_wait(runloop->cond, runloop->lock);
+      }
 
       slock_unlock(runloop->lock);
 
@@ -368,6 +373,7 @@ void rarch_main_data_msg_queue_push(unsigned type,
       else
       {
          slock_lock(g_data_runloop.cond_lock);
+         g_data_runloop.thread_sleeping = false;
          scond_signal(g_data_runloop.cond);
          slock_unlock(g_data_runloop.cond_lock);
       }
