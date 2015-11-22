@@ -111,7 +111,6 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
-   bool verbosity;
    bool perfcnt_enable;
    bool force_fullscreen;
    bool core_shutdown_initiated;
@@ -355,7 +354,7 @@ void rarch_main_msg_queue_free(void);
 
 void rarch_main_msg_queue_init(void);
 
-bool rarch_main_verbosity(void);
+bool *retro_main_verbosity(void);
 
 FILE *retro_main_log_file(void);
 

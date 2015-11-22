@@ -49,6 +49,7 @@ static struct global g_extern;
 static bool main_is_idle;
 static bool main_is_paused;
 static bool main_is_slowmotion;
+static bool main_verbosity;
 
 static unsigned main_max_frames;
 
@@ -766,12 +767,9 @@ static void rarch_main_iterate_linefeed_overlay(driver_t *driver,
 }
 #endif
 
-bool retro_main_verbosity(void)
+bool *retro_main_verbosity(void)
 {
-   global_t *global = global_get_ptr();
-   if (!global)
-      return false;
-   return global->verbosity;
+   return &main_verbosity;
 }
 
 FILE *retro_main_log_file(void)

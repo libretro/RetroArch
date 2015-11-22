@@ -680,8 +680,12 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 'v':
-            global->verbosity = true;
-            global->has_set.verbosity = true;
+            {
+               bool *verbosity = retro_main_verbosity();
+               if (verbosity)
+                  *verbosity = true;
+               global->has_set.verbosity = true;
+            }
             break;
 
          case 'N':
@@ -1125,6 +1129,7 @@ void rarch_init_system_av_info(void)
 int rarch_main_init(int argc, char *argv[])
 {
    int sjlj_ret;
+   bool *verbosity      = NULL;
    global_t     *global = global_get_ptr();
 
    init_state();
@@ -1138,7 +1143,9 @@ int rarch_main_init(int argc, char *argv[])
    global->log_file     = stderr;
    parse_input(argc, argv);
 
-   if (global->verbosity)
+   verbosity = retro_main_verbosity();
+
+   if (verbosity && *verbosity)
    {
       char str[PATH_MAX_LENGTH] = {0};
 

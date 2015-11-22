@@ -65,21 +65,18 @@ FILE *retro_main_log_file(void);
 #define PROGRAM_NAME "N/A"
 #endif
 
-#if defined(RARCH_INTERNAL) && !defined(ANDROID)
 
-#ifdef __cplusplus
-extern "C" {
+static INLINE bool RARCH_LOG_VERBOSE(void)
+{
+   bool *verbose = NULL;
+#ifdef RARCH_INTERNAL
+   extern bool *retro_main_verbosity(void);
+   verbose = retro_main_verbosity();
 #endif
-bool retro_main_verbosity(void);
-
-#ifdef __cplusplus
+   if (!verbose)
+      return false;
+   return *verbose;
 }
-#endif
-
-#define RARCH_LOG_VERBOSE (retro_main_verbosity())
-#else
-#define RARCH_LOG_VERBOSE (true)
-#endif
 
 #if TARGET_OS_IPHONE && defined(RARCH_INTERNAL) && !TARGET_IPHONE_SIMULATOR
 static aslclient asl_client;
@@ -178,7 +175,7 @@ void logger_send_v(const char *__format, va_list args);
 #else
 static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
-   if (!RARCH_LOG_VERBOSE)
+   if (!RARCH_LOG_VERBOSE())
       return;
 #if TARGET_OS_IPHONE && defined(RARCH_INTERNAL)
 #if TARGET_IPHONE_SIMULATOR
@@ -226,7 +223,7 @@ static INLINE void RARCH_LOG(const char *fmt, ...)
 {
    va_list ap;
 
-   if (!RARCH_LOG_VERBOSE)
+   if (!RARCH_LOG_VERBOSE())
       return;
 
    va_start(ap, fmt);

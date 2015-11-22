@@ -42,7 +42,7 @@ static void menu_environment_get(int *argc, char *argv[],
 
    wrap_args->no_content       = menu->load_no_content;
    if (!global->has_set.verbosity)
-      wrap_args->verbose       =  global->verbosity;
+      wrap_args->verbose       = *retro_main_verbosity();
 
    wrap_args->config_path      = *global->path.config   ? global->path.config   : NULL;
    wrap_args->sram_path        = *global->dir.savefile  ? global->dir.savefile  : NULL;

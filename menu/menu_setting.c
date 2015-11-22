@@ -2847,8 +2847,12 @@ void general_write_handler(void *data)
          settings->input.joypad_map[4] = *setting->value.integer;
          break;
       case MENU_LABEL_LOG_VERBOSITY:
-         global->verbosity         = *setting->value.boolean;
-         global->has_set.verbosity = *setting->value.boolean;
+         {
+            bool *verbose = retro_main_verbosity();
+
+            *verbose = *setting->value.boolean;
+            global->has_set.verbosity = *setting->value.boolean;
+         }
          break;
       case MENU_LABEL_VIDEO_SMOOTH:
          video_driver_set_filtering(1, settings->video.smooth);
@@ -3895,7 +3899,7 @@ static bool setting_append_list_logging_options(
 
    CONFIG_BOOL(
          list, list_info,
-         &global->verbosity,
+         retro_main_verbosity(),
          menu_hash_to_str(MENU_LABEL_LOG_VERBOSITY),
          menu_hash_to_str(MENU_LABEL_VALUE_LOG_VERBOSITY),
          false,

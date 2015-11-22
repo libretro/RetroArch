@@ -1176,6 +1176,7 @@ static void config_get_hex_base(config_file_t *conf, const char *key, unsigned *
 static bool config_load_file(const char *path, bool set_defaults)
 {
    unsigned i;
+   bool tmp_bool;
    char *save                            = NULL;
    const char *extra_path                = NULL;
    char tmp_str[PATH_MAX_LENGTH]         = {0};
@@ -1537,7 +1538,14 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_BASE(conf, settings, libretro_log_level, "libretro_log_level");
 
    if (!global->has_set.verbosity)
-      CONFIG_GET_BOOL_BASE(conf, global, verbosity, "log_verbosity");
+   {
+      if (config_get_bool(conf, "log_verbosity", &tmp_bool))
+      {
+         bool *verbose = retro_main_verbosity();
+         if (verbose)
+            *verbose = tmp_bool;
+      }
+   }
 
    CONFIG_GET_BOOL_BASE(conf, global, perfcnt_enable, "perfcnt_enable");
 
@@ -2761,7 +2769,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "sort_savestates_enable",
          settings->sort_savestates_enable);
    config_set_int(conf, "libretro_log_level", settings->libretro_log_level);
-   config_set_bool(conf, "log_verbosity", global->verbosity);
+   config_set_bool(conf, "log_verbosity", *retro_main_verbosity());
    config_set_bool(conf, "perfcnt_enable", global->perfcnt_enable);
 
 #if TARGET_OS_IPHONE
