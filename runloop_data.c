@@ -360,7 +360,7 @@ void rarch_main_data_msg_queue_push(unsigned type,
    {
       if (!g_data_runloop.thread_inited)
          rarch_main_data_thread_init();
-      else
+      else if (g_data_runloop.thread_sleeping)
       {
          slock_lock(g_data_runloop.cond_lock);
          g_data_runloop.thread_sleeping = false;
