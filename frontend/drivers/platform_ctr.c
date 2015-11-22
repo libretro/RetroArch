@@ -109,7 +109,8 @@ static void frontend_ctr_deinit(void *data)
    (void)data;
 #ifndef IS_SALAMANDER
    global_t *global   = global_get_ptr();
-   global->verbosity = true;
+   bool *verbose      = retro_main_verbosity();
+   *verbose           = true;
 
 #ifdef HAVE_FILE_LOGGER
    if (global->log_file)
@@ -199,7 +200,9 @@ static void frontend_ctr_init(void *data)
 #ifndef IS_SALAMANDER
    (void)data;
    global_t *global   = global_get_ptr();
-   global->verbosity = true;
+   bool *verbose      = retro_main_verbosity();
+
+   *verbose           = true;
 
 #if 0
    APT_SetAppCpuTimeLimit(NULL, 80);

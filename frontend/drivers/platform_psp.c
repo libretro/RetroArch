@@ -164,8 +164,10 @@ static void frontend_psp_deinit(void *data)
 {
    (void)data;
 #ifndef IS_SALAMANDER
+   bool *verbose      = retro_main_verbosity();
    global_t *global   = global_get_ptr();
-   global->verbosity = false;
+
+   *verbose           = false;
 
 #ifdef HAVE_FILE_LOGGER
    if (global->log_file)

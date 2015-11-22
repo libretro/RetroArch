@@ -1185,6 +1185,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_file_t *conf                   = NULL;
    settings_t *settings                  = config_get_ptr();
    global_t   *global                    = global_get_ptr();
+   bool *verbose                         = retro_main_verbosity();
 
    if (path)
    {
@@ -1216,7 +1217,7 @@ static bool config_load_file(const char *path, bool set_defaults)
       extra_path = strtok_r(NULL, "|", &save);
    }
 #if 0
-   if (global->verbosity)
+   if (*verbose)
    {
       RARCH_LOG_OUTPUT("=== Config ===\n");
       config_file_dump_all(conf);
@@ -1541,7 +1542,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    {
       if (config_get_bool(conf, "log_verbosity", &tmp_bool))
       {
-         bool *verbose = retro_main_verbosity();
          if (verbose)
             *verbose = tmp_bool;
       }

@@ -122,8 +122,9 @@ void system_exec_wii(const char *_path, bool should_load_game)
    char game_path[PATH_MAX_LENGTH];
 #ifndef IS_SALAMANDER
    global_t *global = global_get_ptr();
-   bool original_verbose = global->verbosity;
-   global->verbosity = true;
+   bool *verbose    = retro_main_verbosity();
+   bool original_verbose = *verbose;
+   *verbose = true;
 #endif
 
    /* copy heap info into stack so it survives 
@@ -189,6 +190,6 @@ void system_exec_wii(const char *_path, bool should_load_game)
 exit:
    (void)0;
 #ifndef IS_SALAMANDER
-   global->verbosity = original_verbose;
+   *verbose = original_verbose;
 #endif
 }

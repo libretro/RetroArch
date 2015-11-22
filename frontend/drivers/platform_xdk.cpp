@@ -74,8 +74,9 @@ static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 {
 #ifndef IS_SALAMANDER
    global_t            *global = global_get_ptr();
-   bool original_verbose       = global->verbosity;
-   global->verbosity           = true;
+   bool *verbose               = retro_main_verbosity();
+   bool original_verbose       = *verbose;
+   *verbose                    = true;
 #endif
    char szSourceDevice[48]     = {0};
    char szDestinationDrive[16] = {0};
@@ -102,7 +103,7 @@ static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
    IoCreateSymbolicLink(&LinkName, &DeviceName);
 
 #ifndef IS_SALAMANDER
-   global->verbosity = original_verbose;
+   *verbose = original_verbose;
 #endif
    return S_OK;
 }
@@ -135,9 +136,10 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 
 #ifndef IS_SALAMANDER
    global_t      *global = global_get_ptr();
-   bool original_verbose = global->verbosity;
+   bool *verbose         = retro_main_verbosity();
+   bool original_verbose = *verbose;
 
-   global->verbosity = true;
+   *verbose              = true;
 #endif
 
 #ifndef IS_SALAMANDER
@@ -269,7 +271,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 
 #ifndef IS_SALAMANDER
 exit:
-   global->verbosity = original_verbose;
+   *verbose = original_verbose;
 #endif
 }
 
@@ -310,9 +312,10 @@ static void frontend_xdk_exitspawn(char *s, size_t len)
 static void frontend_xdk_exec(const char *path, bool should_load_game)
 {
 #ifndef IS_SALAMANDER
-   global_t *global = global_get_ptr();
-   bool original_verbose = global->verbosity;
-   global->verbosity = true;
+   global_t *global      = global_get_ptr();
+   bool *verbose         = retro_main_verbosity();
+   bool original_verbose = *verbose;
+   *verbose              = true;
 #endif
    (void)should_load_game;
 
@@ -349,7 +352,7 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
 #endif
 #endif
 #ifndef IS_SALAMANDER
-   global->verbosity = original_verbose;
+   *verbose = original_verbose;
 #endif
 }
 

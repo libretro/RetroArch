@@ -97,9 +97,10 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
 #ifndef IS_SALAMANDER
-   global_t *global = global_get_ptr();
-   bool original_verbose = global->verbosity;
-   global->verbosity = true;
+   global_t *global      = global_get_ptr();
+   bool *verbose         = retro_main_verbosity();
+   bool original_verbose = *verbose;
+   *verbose              = true;
 #endif
 
    (void)args;
@@ -233,7 +234,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
    }
 
 #ifndef IS_SALAMANDER
-   global->verbosity = original_verbose;
+   *verbose = original_verbose;
 #endif
 }
 
@@ -361,9 +362,10 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
 #ifndef IS_SALAMANDER
    char *fullpath        = NULL;
    global_t      *global = global_get_ptr();
-   bool original_verbose = global->verbosity;
+   bool *verbose         = retro_main_verbosity();
+   bool original_verbose = *verbose;
 
-   global->verbosity = true;
+   *verbose              = true;
 #endif
 
    (void)should_load_game;
@@ -399,7 +401,7 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
    cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
 
 #ifndef IS_SALAMANDER
-   global->verbosity = original_verbose;
+   *verbose = original_verbose;
 #endif
 }
 
@@ -409,9 +411,11 @@ static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
    bool should_load_game = false;
 
 #ifndef IS_SALAMANDER
-   global_t *global = global_get_ptr();
-   bool original_verbose = global->verbosity;
-   global->verbosity = true;
+   global_t      *global = global_get_ptr();
+   bool *verbose         = retro_main_verbosity();
+   bool original_verbose = *verbose;
+
+   *verbose              = true;
 
    should_load_game = exitspawn_start_game;
 
@@ -434,7 +438,7 @@ static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
 #endif
 
 #ifndef IS_SALAMANDER
-   global->verbosity = original_verbose;
+   *verbose = original_verbose;
 #endif
 #endif
 }
