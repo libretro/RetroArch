@@ -227,20 +227,6 @@ void rarch_main_data_iterate(void)
    settings_t     *settings     = config_get_ptr();
    
    (void)settings;
-#ifdef HAVE_THREADS
-   if (settings->threaded_data_runloop_enable)
-   {
-      switch (g_data_runloop.thread_code)
-      {
-         case THREAD_CODE_INIT:
-            rarch_main_data_thread_init();
-            break;
-         case THREAD_CODE_DEINIT:
-         case THREAD_CODE_ALIVE:
-            break;
-      }
-   }
-#endif
 
 #ifdef HAVE_RPNG
 #ifdef HAVE_MENU
