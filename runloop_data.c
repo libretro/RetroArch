@@ -181,10 +181,10 @@ static void data_thread_loop(void *data)
 #endif
 
 #ifdef HAVE_THREADS
-static void rarch_main_data_thread_init(void)
+static bool rarch_main_data_thread_init(void)
 {
-   if (!g_data_runloop.thread_inited)
-      return;
+   if (g_data_runloop.thread_inited)
+      return false;
 
    g_data_runloop.lock            = slock_new();
    g_data_runloop.cond_lock       = slock_new();
@@ -205,10 +205,11 @@ static void rarch_main_data_thread_init(void)
    g_data_runloop.thread_code     = THREAD_CODE_ALIVE;
    slock_unlock(g_data_runloop.lock);
 
-   return;
+   return true;
 
 error:
    data_runloop_thread_deinit();
+   return false;
 }
 #endif
 
@@ -363,9 +364,7 @@ void rarch_main_data_msg_queue_push(unsigned type,
 #ifdef HAVE_THREADS
    if (settings->threaded_data_runloop_enable)
    {
-      if (!g_data_runloop.thread_inited)
-         rarch_main_data_thread_init();
-      else
+      if (!rarch_main_data_thread_init())
       {
          slock_lock(g_data_runloop.cond_lock);
          scond_signal(g_data_runloop.cond);
