@@ -21,7 +21,6 @@
 #include "video_thread_wrapper.h"
 #include "video_pixel_converter.h"
 #include "video_context_driver.h"
-#include "video_monitor.h"
 #include "../config.def.h"
 #include "../general.h"
 #include "../performance.h"

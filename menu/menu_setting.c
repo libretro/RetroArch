@@ -37,7 +37,6 @@
 
 #include "../driver.h"
 #include "../general.h"
-#include "../gfx/video_monitor.h"
 #include "../dynamic.h"
 #include "../input/input_common.h"
 #include "../input/input_autodetect.h"

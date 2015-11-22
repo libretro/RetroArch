@@ -456,6 +456,48 @@ struct retro_system_av_info *video_viewport_get_system_av_info(void);
 
 struct video_viewport *video_viewport_get_custom(void);
 
+/**
+ * video_monitor_set_refresh_rate:
+ * @hz                 : New refresh rate for monitor.
+ *
+ * Sets monitor refresh rate to new value.
+ **/
+void video_monitor_set_refresh_rate(float hz);
+
+/**
+ * video_monitor_fps_statistics
+ * @refresh_rate       : Monitor refresh rate.
+ * @deviation          : Deviation from measured refresh rate.
+ * @sample_points      : Amount of sampled points.
+ *
+ * Gets the monitor FPS statistics based on the current
+ * runtime.
+ *
+ * Returns: true (1) on success.
+ * false (0) if:
+ * a) threaded video mode is enabled
+ * b) less than 2 frame time samples.
+ * c) FPS monitor enable is off.
+ **/
+bool video_monitor_fps_statistics(double *refresh_rate,
+      double *deviation, unsigned *sample_points);
+
+/**
+ * video_monitor_get_fps:
+ * @buf           : string suitable for Window title
+ * @size          : size of buffer.
+ * @buf_fps       : string of raw FPS only (optional).
+ * @size_fps      : size of raw FPS buffer.
+ *
+ * Get the amount of frames per seconds.
+ *
+ * Returns: true if framerate per seconds could be obtained,
+ * otherwise false.
+ *
+ **/
+bool video_monitor_get_fps(char *buf, size_t size,
+      char *buf_fps, size_t size_fps);
+
 extern video_driver_t video_gl;
 extern video_driver_t video_psp1;
 extern video_driver_t video_vita2d;

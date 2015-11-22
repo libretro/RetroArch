@@ -14,16 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../driver.h"
 #include <stdlib.h>
 #include <string.h>
-#include "../../general.h"
-#include "../../retroarch.h"
-#include <gfx/scaler/scaler.h>
-#include <retro_inline.h>
-#include "../video_monitor.h"
-#include "../video_context_driver.h"
-#include "../font_renderer_driver.h"
 
 #include <sys/ioctl.h>
 #include <sys/stat.h>
@@ -33,12 +25,22 @@
 #include <ctype.h>
 #include <assert.h>
 
-#include <sys/mman.h>
-#include <linux/omapfb.h>
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include <sys/mman.h>
+#include <linux/omapfb.h>
+
+#include <retro_inline.h>
+#include <gfx/scaler/scaler.h>
+
+#include "../../driver.h"
+#include "../../general.h"
+#include "../../retroarch.h"
+
+#include "../video_context_driver.h"
+#include "../font_renderer_driver.h"
 
 typedef struct omapfb_page
 {

@@ -31,7 +31,6 @@
 
 #include "../../driver.h"
 #include "../../general.h"
-#include "../video_monitor.h"
 #include "../font_renderer_driver.h"
 
 #include "../common/x11_common.h"

@@ -13,24 +13,23 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../driver.h"
-#include "../../general.h"
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
 #include <math.h>
-#include "../video_monitor.h"
-#include "../font_renderer_driver.h"
-#include <retro_inline.h>
 
-#include "../common/x11_common.h"
-
-#include <stdlib.h>
 /*#include <sys/ipc.h>*/
 #include <sys/shm.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/XShm.h>
+
+#include <retro_inline.h>
+
+#include "../../driver.h"
+#include "../../general.h"
+#include "../font_renderer_driver.h"
+#include "../common/x11_common.h"
 
 typedef struct xshm
 {

@@ -35,7 +35,6 @@
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
-#include "../video_monitor.h"
 #include "../font_renderer_driver.h"
 
 /* TODO: Honor these properties: vsync, menu rotation, menu alpha, aspect ratio change */

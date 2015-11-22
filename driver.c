@@ -18,7 +18,6 @@
 
 #include "general.h"
 #include "msg_hash.h"
-#include "gfx/video_monitor.h"
 #include "audio/audio_monitor.h"
 
 #include "msg_hash.h"

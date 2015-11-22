@@ -13,20 +13,22 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <3ds.h>
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
+
+#include <3ds.h>
+
+#include <retro_inline.h>
+
 #include "ctr_gu.h"
 #include "ctr_sprite_shader_shbin.h"
 
 #include "../../general.h"
 #include "../../driver.h"
-#include "../video_monitor.h"
 
-#include "retroarch.h"
-#include "performance.h"
-#include "retro_inline.h"
+#include "../../retroarch.h"
+#include "../../performance.h"
 
 #define CTR_TOP_FRAMEBUFFER_WIDTH    400
 #define CTR_TOP_FRAMEBUFFER_HEIGHT   240

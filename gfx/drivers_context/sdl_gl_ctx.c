@@ -19,7 +19,6 @@
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../common/gl_common.h"
-#include "../video_monitor.h"
 
 static enum gfx_ctx_api g_api = GFX_CTX_OPENGL_API;
 static unsigned       g_major = 2;

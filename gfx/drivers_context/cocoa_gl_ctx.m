@@ -32,7 +32,6 @@
 
 #import "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../video_context_driver.h"
-#include "../video_monitor.h"
 #include "../../configuration.h"
 #include "../../runloop.h"
 

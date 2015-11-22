@@ -22,10 +22,10 @@
 #include <psprtc.h>
 
 #include <retro_inline.h>
+
 #include "../../defines/psp_defines.h"
 #include "../../general.h"
 #include "../../driver.h"
-#include "../video_monitor.h"
 
 #ifndef SCEGU_SCR_WIDTH
 #define SCEGU_SCR_WIDTH 480

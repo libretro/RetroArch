@@ -35,7 +35,6 @@
 #include "../../dynamic.h"
 #include "../../runloop.h"
 #include "../video_context_driver.h"
-#include "../video_monitor.h"
 
 #include "../common/gl_common.h"
 #include "../common/win32_common.h"

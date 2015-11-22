@@ -31,7 +31,6 @@
 #include "../../defines/ps3_defines.h"
 #include "../common/gl_common.h"
 #include "../video_context_driver.h"
-#include "../video_monitor.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

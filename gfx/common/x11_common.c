@@ -25,7 +25,6 @@
 
 #include "x11_common.h"
 #include "../../general.h"
-#include "../video_monitor.h"
 
 Colormap g_x11_cmap;
 Window   g_x11_win;

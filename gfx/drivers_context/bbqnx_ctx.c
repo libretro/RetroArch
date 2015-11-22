@@ -27,7 +27,6 @@
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
-#include "../video_monitor.h"
 #include "../common/egl_common.h"
 #include "../common/gl_common.h"
 

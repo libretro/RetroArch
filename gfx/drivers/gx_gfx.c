@@ -28,7 +28,6 @@
 #include "../drivers_font_renderer/bitmap.h"
 #include "../../menu/menu_driver.h"
 #include "../../menu/menu_display.h"
-#include "../video_monitor.h"
 
 #ifdef HW_RVL
 #include "../../memory/wii/mem2_manager.h"

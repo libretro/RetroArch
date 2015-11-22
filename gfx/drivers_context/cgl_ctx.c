@@ -33,7 +33,6 @@
 #include "../../runloop.h"
 #include "../../configuration.h"
 #include "../video_context_driver.h"
-#include "../video_monitor.h"
 
 typedef int CGSConnectionID;
 typedef int CGSWindowID;

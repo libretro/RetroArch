@@ -14,14 +14,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "SDL.h"
-#include "../../driver.h"
 #include <stdlib.h>
 #include <string.h>
+
+#include <gfx/scaler/scaler.h>
+
+#include "SDL.h"
+
+#include "../../driver.h"
 #include "../../general.h"
 #include "../../performance.h"
-#include <gfx/scaler/scaler.h>
-#include "../video_monitor.h"
 #include "../video_context_driver.h"
 #include "../font_renderer_driver.h"
 

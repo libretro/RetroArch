@@ -25,7 +25,6 @@
 
 #include "../../general.h"
 #include "../../retroarch.h"
-#include "../video_monitor.h"
 #include "../font_renderer_driver.h"
 
 #define NUMPAGES 2

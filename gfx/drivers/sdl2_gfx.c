@@ -14,17 +14,18 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+#include <string.h>
+
+#include <retro_inline.h>
+#include <gfx/scaler/scaler.h>
+
 #include "SDL.h"
 #include "SDL_syswm.h"
 #include "../../driver.h"
-#include <stdlib.h>
-#include <string.h>
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../../performance.h"
-#include <retro_inline.h>
-#include <gfx/scaler/scaler.h>
-#include "../video_monitor.h"
 #include "../video_context_driver.h"
 #include "../font_renderer_driver.h"
 

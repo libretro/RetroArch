@@ -13,19 +13,19 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../driver.h"
-#include "../../general.h"
-#include "../../retroarch.h"
-#include "../video_monitor.h"
-#include "../video_context_driver.h"
-#include "../font_renderer_driver.h"
-
 #include <bcm_host.h>
+
 #include <rthreads/rthreads.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include "../../driver.h"
+#include "../../general.h"
+#include "../../retroarch.h"
+#include "../video_context_driver.h"
+#include "../font_renderer_driver.h"
 
 struct dispmanx_page
 {
