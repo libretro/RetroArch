@@ -315,28 +315,6 @@ static int rarch_main_data_image_iterate_parse_free(nbio_handle_t *nbio)
    return 0;
 }
 
-static int rarch_main_data_image_iterate_process_transfer_parse(nbio_handle_t *nbio)
-{
-   if (nbio->image.handle && nbio->image.cb)
-   {
-      size_t len = 0;
-      nbio->image.cb(nbio, len);
-   }
-
-   return 0;
-}
-
-static int rarch_main_data_image_iterate_transfer_parse(nbio_handle_t *nbio)
-{
-   if (nbio->image.handle && nbio->image.cb)
-   {
-      size_t len = 0;
-      nbio->image.cb(nbio, len);
-   }
-
-   return 0;
-}
-
 void rarch_main_data_nbio_image_iterate(bool is_thread)
 {
    nbio_handle_t         *nbio  = (nbio_handle_t*)nbio_ptr;
@@ -354,7 +332,11 @@ void rarch_main_data_nbio_image_iterate(bool is_thread)
             image->status = NBIO_IMAGE_STATUS_PROCESS_TRANSFER_PARSE;
          break;
       case NBIO_IMAGE_STATUS_TRANSFER_PARSE:
-         rarch_main_data_image_iterate_transfer_parse(nbio);
+         if (nbio->image.handle && nbio->image.cb)
+         {
+            size_t len = 0;
+            nbio->image.cb(nbio, len);
+         }
          if (image->is_blocking_on_processing)
             image->status = NBIO_IMAGE_STATUS_PROCESS_TRANSFER;
          break;
@@ -384,7 +366,11 @@ void rarch_main_data_nbio_image_upload_iterate(bool is_thread)
    switch (image->status)
    {
       case NBIO_IMAGE_STATUS_PROCESS_TRANSFER_PARSE:
-         rarch_main_data_image_iterate_process_transfer_parse(nbio);
+         if (nbio->image.handle && nbio->image.cb)
+         {
+            size_t len = 0;
+            nbio->image.cb(nbio, len);
+         }
          if (image->is_finished)
             image->status = NBIO_IMAGE_STATUS_TRANSFER_PARSE_FREE;
          break;
