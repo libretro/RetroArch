@@ -1532,6 +1532,8 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          return (video_state.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID);
       case RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER:
          return video_driver_cached_frame(driver);
+      case RARCH_DISPLAY_CTL_IS_ALIVE:
+         return video->alive(driver->video_data);
       case RARCH_DISPLAY_CTL_IS_FOCUSED:
          return video->focus(driver->video_data);
       case RARCH_DISPLAY_CTL_HAS_WINDOWED:

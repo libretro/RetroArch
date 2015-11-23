@@ -66,21 +66,19 @@ static retro_time_t frame_limit_minimum_time;
  *
  * Returns: true if libretro pause key was toggled, otherwise false.
  **/
-static bool check_pause(driver_t *driver, settings_t *settings,
+static bool check_pause(settings_t *settings,
       bool pause_pressed, bool frameadvance_pressed)
 {
    static bool old_focus    = true;
    bool focus               = true;
    enum event_command cmd   = EVENT_CMD_NONE;
    bool old_is_paused       = main_is_paused;
-   const video_driver_t *video = driver ? 
-      (const video_driver_t*)driver->current_video : NULL;
 
    /* FRAMEADVANCE will set us into pause mode. */
    pause_pressed |= !main_is_paused && frameadvance_pressed;
 
    if (settings->pause_nonactive)
-      focus = video->focus(driver->video_data);
+      focus = video_driver_ctl(RARCH_DISPLAY_CTL_IS_FOCUSED, NULL);
 
    if (focus && pause_pressed)
       cmd = EVENT_CMD_PAUSE_TOGGLE;
@@ -386,7 +384,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             }
 #endif
 
-            check_pause(driver, settings,
+            check_pause(settings,
                   cmd->pause_pressed, cmd->frameadvance_pressed);
 
             if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_PAUSE_STATE, cmd))
@@ -869,13 +867,10 @@ static void rarch_main_cmd_get_state(driver_t *driver,
 static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
 {
    uint64_t *frame_count         = NULL;
-   settings_t *settings          = config_get_ptr();
    global_t   *global            = global_get_ptr();
-   driver_t *driver              = driver_get_ptr();
    rarch_system_info_t *system   = rarch_system_info_get_ptr();
-   video_driver_t *video         = driver ? (video_driver_t*)driver->current_video : NULL;
    bool shutdown_pressed         = (system && system->shutdown) || cmd->quit_key_pressed;
-   bool video_alive              = video && video->alive(driver->video_data);
+   bool video_alive              = video_driver_ctl(RARCH_DISPLAY_CTL_IS_ALIVE, NULL);
    bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);
    bool frame_count_end          = false;
    
@@ -884,6 +879,8 @@ static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
 
    if (shutdown_pressed || frame_count_end || movie_end || !video_alive || global->exec)
    {
+      settings_t *settings       = config_get_ptr();
+
       if (global->exec)
          global->exec = false;
 
