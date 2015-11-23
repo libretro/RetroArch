@@ -520,6 +520,8 @@ bool video_pixel_frame_scale(const void *data,
 
 video_pixel_scaler_t *scaler_get_ptr(void);
 
+const video_poke_interface_t *video_driver_get_poke(void);
+
 extern video_driver_t video_gl;
 extern video_driver_t video_psp1;
 extern video_driver_t video_vita2d;

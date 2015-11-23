@@ -281,9 +281,6 @@ typedef struct driver
     * TODO: Refactor this better. */
    bool gfx_use_rgba;
 
-   /* Interface for "poking". */
-   const video_poke_interface_t *video_poke;
-
    /* Last message given to the video driver */
    char current_msg[PATH_MAX_LENGTH];
 } driver_t;
