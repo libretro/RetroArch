@@ -69,7 +69,7 @@ void rarch_main_data_http_init(void);
 
 #ifdef HAVE_RPNG
 void rarch_main_data_nbio_image_iterate(bool is_thread);
-void rarch_main_data_nbio_image_upload_iterate(bool is_thread);
+void rarch_main_data_nbio_image_upload_iterate(void);
 #endif
 
 #ifdef HAVE_LIBRETRODB

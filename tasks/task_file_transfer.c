@@ -353,15 +353,13 @@ void rarch_main_data_nbio_image_iterate(bool is_thread)
    }
 }
 
-void rarch_main_data_nbio_image_upload_iterate(bool is_thread)
+void rarch_main_data_nbio_image_upload_iterate(void)
 {
    nbio_handle_t         *nbio  = (nbio_handle_t*)nbio_ptr;
    nbio_image_handle_t   *image = nbio    ? &nbio->image   : NULL;
 
    if (!image || !nbio)
       return;
-
-   (void)is_thread;
 
    switch (image->status)
    {

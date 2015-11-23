@@ -234,7 +234,7 @@ void rarch_main_data_iterate(void)
 
 #ifdef HAVE_RPNG
 #ifdef HAVE_MENU
-   rarch_main_data_nbio_image_upload_iterate(false);
+   rarch_main_data_nbio_image_upload_iterate();
 #endif
 #endif
 #ifdef HAVE_OVERLAY
