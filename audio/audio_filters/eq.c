@@ -17,15 +17,12 @@
 #include <string.h>
 
 #include <retro_inline.h>
+#include <retro_miscellaneous.h>
 #include <filters.h>
 
 #include "dspfilter.h"
 
 #include "fft/fft.c"
-
-#ifndef M_PI
-#define M_PI 3.1415926535897932384626433832795
-#endif
 
 #ifndef min
 #define min(a, b) ((a) < (b) ? (a) : (b))
