@@ -763,7 +763,7 @@ static video_poke_interface_t sdl2_video_poke_interface = {
    NULL,
    NULL,
    NULL,
-   NULL<
+   NULL,
 #endif
    NULL,
 };
