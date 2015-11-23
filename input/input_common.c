@@ -502,3 +502,103 @@ void input_pop_analog_dpad(struct retro_keybind *binds)
    for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
       binds[i].joyaxis = binds[i].orig_joyaxis;
 }
+
+/**
+ * input_keys_pressed:
+ *
+ * Grab an input sample for this frame.
+ *
+ * TODO: In case RARCH_BIND_LIST_END starts exceeding 64,
+ * and you need a bitmask of more than 64 entries, reimplement
+ * it to use something like rarch_bits_t.
+ *
+ * Returns: Input sample containg a mask of all pressed keys.
+ */
+retro_input_t input_keys_pressed(void)
+{
+   unsigned i;
+   const struct retro_keybind *binds[MAX_USERS];
+   retro_input_t             ret = 0;
+   driver_t *driver              = driver_get_ptr();
+   settings_t *settings          = config_get_ptr();
+   global_t *global              = global_get_ptr();
+
+   for (i = 0; i < MAX_USERS; i++)
+      binds[i] = settings->input.binds[i];
+
+   if (!driver->input || !driver->input_data)
+      return 0;
+
+   global->turbo.count++;
+
+   driver->block_libretro_input = check_block_hotkey(driver->input->key_pressed(
+            driver->input_data, RARCH_ENABLE_HOTKEY));
+
+
+   for (i = 0; i < settings->input.max_users; i++)
+   {
+      input_push_analog_dpad(settings->input.binds[i],
+            settings->input.analog_dpad_mode[i]);
+      input_push_analog_dpad(settings->input.autoconf_binds[i],
+            settings->input.analog_dpad_mode[i]);
+
+      global->turbo.frame_enable[i] = 0;
+   }
+
+   if (!driver->block_libretro_input)
+   {
+      for (i = 0; i < settings->input.max_users; i++)
+         global->turbo.frame_enable[i] = input_driver_state(binds,
+               i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+   }
+
+   ret = input_driver_keys_pressed();
+
+   for (i = 0; i < settings->input.max_users; i++)
+   {
+      input_pop_analog_dpad(settings->input.binds[i]);
+      input_pop_analog_dpad(settings->input.autoconf_binds[i]);
+   }
+
+   return ret;
+}
+
+/**
+ * check_block_hotkey:
+ * @enable_hotkey        : Is hotkey enable key enabled?
+ *
+ * Checks if 'hotkey enable' key is pressed.
+ **/
+bool check_block_hotkey(bool enable_hotkey)
+{
+   bool use_hotkey_enable;
+   driver_t *driver              = driver_get_ptr();
+   settings_t *settings          = config_get_ptr();
+   global_t *global              = global_get_ptr();
+   const struct retro_keybind *bind =
+      &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
+   const struct retro_keybind *autoconf_bind =
+      &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
+
+   /* Don't block the check to RARCH_ENABLE_HOTKEY
+    * unless we're really supposed to. */
+   driver->block_hotkey = input_driver_keyboard_mapping_is_blocked();
+
+   /* If we haven't bound anything to this,
+    * always allow hotkeys. */
+   use_hotkey_enable                =
+         (bind->key != RETROK_UNKNOWN)
+      || (bind->joykey != NO_BTN)
+      || (bind->joyaxis != AXIS_NONE)
+      || (autoconf_bind->key != RETROK_UNKNOWN )
+      || (autoconf_bind->joykey != NO_BTN)
+      || (autoconf_bind->joyaxis != AXIS_NONE);
+
+   driver->block_hotkey             =
+      input_driver_keyboard_mapping_is_blocked() ||
+      (use_hotkey_enable && !enable_hotkey);
+
+   /* If we hold ENABLE_HOTKEY button, block all libretro input to allow
+    * hotkeys to be bound to same keys as RetroPad. */
+   return (use_hotkey_enable && enable_hotkey);
+}
