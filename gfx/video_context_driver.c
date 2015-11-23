@@ -78,29 +78,25 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    NULL
 };
 
+static void *video_context_data;
 
 void *gfx_ctx_data_get_ptr(void)
 {
-   driver_t  *driver     = driver_get_ptr();
-   if (!driver)
-      return NULL; 
-   return driver->video_context_data;
+   return video_context_data;
 }
 
 void gfx_ctx_data_set(void *ptr)
 {
-   driver_t  *driver     = driver_get_ptr();
-   if (!driver || !ptr)
+   if (!ptr)
       return;
-   driver->video_context_data = ptr;
+   video_context_data = ptr;
 }
 
 void gfx_ctx_free_data(void)
 {
-   driver_t  *driver     = driver_get_ptr();
-   if (driver->video_context_data)
-      free(driver->video_context_data);
-   driver->video_context_data = NULL;
+   if (video_context_data)
+      free(video_context_data);
+   video_context_data = NULL;
 }
 
 static const gfx_ctx_driver_t *gfx_ctx_get_ptr(void)
@@ -218,13 +214,12 @@ void gfx_ctx_translate_aspect(void *data, float *aspect,
 
 bool gfx_ctx_get_metrics(enum display_metric_types type, float *value)
 {
-   driver_t            *driver = driver_get_ptr(); 
    const gfx_ctx_driver_t *ctx = gfx_ctx_get_ptr();
-   if (!ctx || !driver)
+   if (!ctx)
       return false;
    if (!ctx->get_metrics)
       return false;
-   return ctx->get_metrics(driver->video_context_data, type,
+   return ctx->get_metrics(video_context_data, type,
          value);
 }
 
