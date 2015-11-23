@@ -196,9 +196,8 @@ unsigned video_texture_load(void *data,
 
    if (settings->video.threaded && !hw_render->context_type)
    {
-      driver_t     *driver = driver_get_ptr();
-      thread_video_t *thr  = (thread_video_t*)driver->video_data;
-      thread_packet_t pkt = { CMD_CUSTOM_COMMAND };
+      thread_video_t *thr  = (thread_video_t*)video_driver_get_ptr(true);
+      thread_packet_t pkt  = { CMD_CUSTOM_COMMAND };
 
       if (!thr)
          return 0;

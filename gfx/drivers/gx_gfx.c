@@ -971,12 +971,10 @@ static void gx_resize(void *data)
    gx->should_resize = false;
 }
 
-static void gx_blit_line(unsigned x, unsigned y, const char *message)
+static void gx_blit_line(gx_video_t *gx, unsigned x, unsigned y, const char *message)
 {
    unsigned width, height, h;
    bool double_width = false;
-   driver_t *driver = driver_get_ptr();
-   gx_video_t *gx = (gx_video_t*)driver->video_data;
 
    const GXColor b = {
       .r = 0x00,
@@ -1174,16 +1172,16 @@ static bool gx_frame(void *data, const void *frame,
 
       (void)mem2_txt;
 
-      gx_blit_line(x, y, fps_text_buf);
+      gx_blit_line(gx, x, y, fps_text_buf);
       y += FONT_HEIGHT * (gx->double_strike ? 1 : 2);
       snprintf(mem1_txt, sizeof(mem1_txt), "MEM1: %8d / %8d",
             SYSMEM1_SIZE - SYS_GetArena1Size(), SYSMEM1_SIZE);
-      gx_blit_line(x, y, mem1_txt);
+      gx_blit_line(gx, x, y, mem1_txt);
 #ifdef HW_RVL
       y += FONT_HEIGHT * (gx->double_strike ? 1 : 2);
       snprintf(mem2_txt, sizeof(mem2_txt), "MEM2: %8d / %8d",
             gx_mem2_used(), gx_mem2_total());
-      gx_blit_line(x, y, mem2_txt);
+      gx_blit_line(gx, x, y, mem2_txt);
 #endif
    }
 
@@ -1192,7 +1190,7 @@ static bool gx_frame(void *data, const void *frame,
       unsigned x = 7 * (gx->double_strike ? 1 : 2);
       unsigned y = gx->vp.full_height - (35 * (gx->double_strike ? 1 : 2));
 
-      gx_blit_line(x, y, msg);
+      gx_blit_line(gx, x, y, msg);
       clear_efb = GX_TRUE;
    }
 
@@ -1240,9 +1238,8 @@ static bool gx_has_windowed(void *data)
 
 static void gx_free(void *data)
 {
-   driver_t *driver = driver_get_ptr();
 #ifdef HAVE_OVERLAY
-   gx_video_t *gx = (gx_video_t*)driver->video_data;
+   gx_video_t *gx = (gx_video_t*)data;
 
    gx_free_overlay(gx);
 #endif

@@ -795,7 +795,7 @@ error:
 }
 
 static bool ffmpeg_push_video(void *data,
-      const struct ffemu_video_data *video_data)
+      const struct ffemu_video_data *vid)
 {
    unsigned y;
    bool drop_frame;
@@ -803,7 +803,7 @@ static bool ffmpeg_push_video(void *data,
    ffmpeg_t *handle = (ffmpeg_t*)data;
    int offset = 0;
 
-   if (!handle || !video_data)
+   if (!handle || !vid)
       return false;
 
    drop_frame = handle->video.frame_drop_count++ %
@@ -824,7 +824,7 @@ static bool ffmpeg_push_video(void *data,
       if (!handle->alive)
          return false;
 
-      if (avail >= sizeof(*video_data))
+      if (avail >= sizeof(*vid))
          break;
 
       slock_lock(handle->cond_lock);
@@ -845,7 +845,7 @@ static bool ffmpeg_push_video(void *data,
    /* Tightly pack our frame to conserve memory.
     * libretro tends to use a very large pitch.
     */
-   attr_data = *video_data;
+   attr_data = *vid;
 
    if (attr_data.is_dupe)
       attr_data.width = attr_data.height = attr_data.pitch = 0;
@@ -854,9 +854,9 @@ static bool ffmpeg_push_video(void *data,
 
    fifo_write(handle->attr_fifo, &attr_data, sizeof(attr_data));
 
-   for (y = 0; y < attr_data.height; y++, offset += video_data->pitch)
+   for (y = 0; y < attr_data.height; y++, offset += vid->pitch)
       fifo_write(handle->video_fifo,
-            (const uint8_t*)video_data->data + offset, attr_data.pitch);
+            (const uint8_t*)vid->data + offset, attr_data.pitch);
 
    slock_unlock(handle->lock);
    scond_signal(handle->cond);
@@ -947,34 +947,34 @@ static bool encode_video(ffmpeg_t *handle, AVPacket *pkt, AVFrame *frame)
 }
 
 static void ffmpeg_scale_input(ffmpeg_t *handle,
-      const struct ffemu_video_data *data)
+      const struct ffemu_video_data *vid)
 {
    /* Attempt to preserve more information if we scale down. */
-   bool shrunk = handle->params.out_width < data->width
-      || handle->params.out_height < data->height;
+   bool shrunk = handle->params.out_width < vid->width
+      || handle->params.out_height < vid->height;
 
    if (handle->video.use_sws)
    {
-      int linesize = data->pitch;
+      int linesize = vid->pitch;
 
       handle->video.sws = sws_getCachedContext(handle->video.sws,
-            data->width, data->height, handle->video.in_pix_fmt,
+            vid->width, vid->height, handle->video.in_pix_fmt,
             handle->params.out_width, handle->params.out_height,
             handle->video.pix_fmt,
             shrunk ? SWS_BILINEAR : SWS_POINT, NULL, NULL, NULL);
 
-      sws_scale(handle->video.sws, (const uint8_t* const*)&data->data,
-            &linesize, 0, data->height, handle->video.conv_frame->data,
+      sws_scale(handle->video.sws, (const uint8_t* const*)&vid->data,
+            &linesize, 0, vid->height, handle->video.conv_frame->data,
             handle->video.conv_frame->linesize);
    }
    else
    {
-      if ((int)data->width != handle->video.scaler.in_width
-            || (int)data->height != handle->video.scaler.in_height)
+      if ((int)vid->width != handle->video.scaler.in_width
+            || (int)vid->height != handle->video.scaler.in_height)
       {
-         handle->video.scaler.in_width  = data->width;
-         handle->video.scaler.in_height = data->height;
-         handle->video.scaler.in_stride = data->pitch;
+         handle->video.scaler.in_width  = vid->width;
+         handle->video.scaler.in_height = vid->height;
+         handle->video.scaler.in_stride = vid->pitch;
 
          handle->video.scaler.scaler_type = shrunk ?
             SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT;
@@ -988,17 +988,17 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
       }
 
       scaler_ctx_scale(&handle->video.scaler,
-            handle->video.conv_frame->data[0], data->data);
+            handle->video.conv_frame->data[0], vid->data);
    }
 }
 
 static bool ffmpeg_push_video_thread(ffmpeg_t *handle,
-      const struct ffemu_video_data *data)
+      const struct ffemu_video_data *vid)
 {
    AVPacket pkt;
 
-   if (!data->is_dupe)
-      ffmpeg_scale_input(handle, data);
+   if (!vid->is_dupe)
+      ffmpeg_scale_input(handle, vid);
 
    handle->video.conv_frame->pts = handle->video.frame_cnt;
 
@@ -1132,22 +1132,22 @@ static bool encode_audio(ffmpeg_t *handle, AVPacket *pkt, bool dry)
 }
 
 static void ffmpeg_audio_resample(ffmpeg_t *handle,
-      struct ffemu_audio_data *data)
+      struct ffemu_audio_data *aud)
 {
    if (!handle->audio.use_float && !handle->audio.resampler)
       return;
 
-   if (data->frames > handle->audio.float_conv_frames)
+   if (aud->frames > handle->audio.float_conv_frames)
    {
       handle->audio.float_conv = (float*)av_realloc(handle->audio.float_conv,
-            data->frames * handle->params.channels * sizeof(float));
+            aud->frames * handle->params.channels * sizeof(float));
       if (!handle->audio.float_conv)
          return;
 
-      handle->audio.float_conv_frames = data->frames;
+      handle->audio.float_conv_frames = aud->frames;
 
       /* To make sure we don't accidentially overflow. */
-      handle->audio.resample_out_frames = data->frames * handle->audio.ratio + 16;
+      handle->audio.resample_out_frames = aud->frames * handle->audio.ratio + 16;
 
       handle->audio.resample_out = (float*)av_realloc(handle->audio.resample_out,
             handle->audio.resample_out_frames *
@@ -1166,8 +1166,8 @@ static void ffmpeg_audio_resample(ffmpeg_t *handle,
    if (handle->audio.use_float || handle->audio.resampler)
    {
       audio_convert_s16_to_float(handle->audio.float_conv,
-            (const int16_t*)data->data, data->frames * handle->params.channels, 1.0);
-      data->data = handle->audio.float_conv;
+            (const int16_t*)aud->data, aud->frames * handle->params.channels, 1.0);
+      aud->data = handle->audio.float_conv;
    }
 
    if (handle->audio.resampler)
@@ -1175,39 +1175,39 @@ static void ffmpeg_audio_resample(ffmpeg_t *handle,
       /* It's always two channels ... */
       struct resampler_data info = {0};
 
-      info.data_in      = (const float*)data->data;
+      info.data_in      = (const float*)aud->data;
       info.data_out     = handle->audio.resample_out;
-      info.input_frames = data->frames;
+      info.input_frames = aud->frames;
       info.ratio        = handle->audio.ratio;
 
       rarch_resampler_process(handle->audio.resampler,
             handle->audio.resampler_data, &info);
-      data->data   = handle->audio.resample_out;
-      data->frames = info.output_frames;
+      aud->data   = handle->audio.resample_out;
+      aud->frames = info.output_frames;
 
       if (!handle->audio.use_float)
       {
          audio_convert_float_to_s16(handle->audio.fixed_conv,
                handle->audio.resample_out,
-               data->frames * handle->params.channels);
-         data->data = handle->audio.fixed_conv;
+               aud->frames * handle->params.channels);
+         aud->data = handle->audio.fixed_conv;
       }
    }
 }
 
 static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
-      struct ffemu_audio_data *data, bool require_block)
+      struct ffemu_audio_data *aud, bool require_block)
 {
    size_t written_frames = 0;
 
-   ffmpeg_audio_resample(handle, data);
+   ffmpeg_audio_resample(handle, aud);
 
-   while (written_frames < data->frames)
+   while (written_frames < aud->frames)
    {
       AVPacket pkt;
       size_t can_write    = handle->audio.codec->frame_size - 
          handle->audio.frames_in_buffer;
-      size_t write_left   = data->frames - written_frames;
+      size_t write_left   = aud->frames - written_frames;
       size_t write_frames = write_left > can_write ? can_write : write_left;
       size_t write_size   = write_frames * 
          handle->params.channels * handle->audio.sample_size;
@@ -1218,7 +1218,7 @@ static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
          handle->params.channels * handle->audio.sample_size;
 
       memcpy(handle->audio.buffer + bytes_in_buffer,
-            (const uint8_t*)data->data + written_bytes,
+            (const uint8_t*)aud->data + written_bytes,
             write_size);
 
       written_frames                 += write_frames;
