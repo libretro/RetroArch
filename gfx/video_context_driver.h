@@ -254,7 +254,7 @@ void gfx_ctx_input_driver(void *data,
 
 retro_proc_address_t gfx_ctx_get_proc_address(const char *sym);
 
-const void *gfx_ctx_data_get_ptr(void);
+void *gfx_ctx_data_get_ptr(void);
 
 void gfx_ctx_free_data(void);
 

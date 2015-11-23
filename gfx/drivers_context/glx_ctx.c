@@ -135,8 +135,8 @@ static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
 
 static void gfx_ctx_glx_destroy(void *data)
 {
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)
+      gfx_ctx_data_get_ptr();
 
    if (!glx)
       return;
@@ -144,16 +144,13 @@ static void gfx_ctx_glx_destroy(void *data)
    (void)data;
 
    ctx_glx_destroy_resources(glx);
-
-   if (driver->video_context_data)
-      free(driver->video_context_data);
-   driver->video_context_data = NULL;
+   gfx_ctx_free_data();
 }
 
 static void gfx_ctx_glx_swap_interval(void *data, unsigned interval)
 {
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)
+      gfx_ctx_data_get_ptr();
 
    glx->g_interval = interval;
 
@@ -178,9 +175,8 @@ static void gfx_ctx_glx_swap_interval(void *data, unsigned interval)
 
 static void gfx_ctx_glx_swap_buffers(void *data)
 {
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
-   (void)data;
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)
+      gfx_ctx_data_get_ptr();
 
    if (glx->g_is_double)
       glXSwapBuffers(g_x11_dpy, glx->g_glx_win);
@@ -289,8 +285,9 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    XSetWindowAttributes swa = {0};
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
    driver_t *driver = driver_get_ptr();
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
    settings_t *settings    = config_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)
+      gfx_ctx_data_get_ptr();
 
    x11_install_sighandlers();
 
@@ -578,8 +575,8 @@ static void gfx_ctx_glx_show_mouse(void *data, bool state)
 
 static void gfx_ctx_glx_bind_hw_render(void *data, bool enable)
 {
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)
+      gfx_ctx_data_get_ptr();
 
    if (!glx)
       return;

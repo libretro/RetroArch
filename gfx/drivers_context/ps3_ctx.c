@@ -207,8 +207,8 @@ static void gfx_ctx_ps3_update_window_title(void *data)
 static void gfx_ctx_ps3_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)driver->video_context_data;
+   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)
+      gfx_ctx_data_get_ptr();
 
    (void)data;
 
@@ -327,8 +327,8 @@ static void gfx_ctx_ps3_destroy_resources(gfx_ctx_ps3_data_t *ps3)
 
 static void gfx_ctx_ps3_destroy(void *data)
 {
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)driver->video_context_data;
+   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)
+      gfx_ctx_data_get_ptr();
 
    (void)data;
 
@@ -337,9 +337,7 @@ static void gfx_ctx_ps3_destroy(void *data)
 
    gfx_ctx_ps3_destroy_resources(ps3);
 
-   if (driver->video_context_data)
-      free(driver->video_context_data);
-   driver->video_context_data = NULL;
+   gfx_ctx_free_data();
 }
 
 static void gfx_ctx_ps3_input_driver(void *data,
