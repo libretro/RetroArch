@@ -33,6 +33,21 @@
 extern "C" {
 #endif
 
+enum text_alignment
+{
+   TEXT_ALIGN_LEFT = 0,
+   TEXT_ALIGN_RIGHT,
+   TEXT_ALIGN_CENTER
+};
+
+enum texture_filter_type
+{
+   TEXTURE_FILTER_LINEAR = 0,
+   TEXTURE_FILTER_NEAREST,
+   TEXTURE_FILTER_MIPMAP_LINEAR,
+   TEXTURE_FILTER_MIPMAP_NEAREST
+};
+
 typedef struct video_info
 {
    unsigned width;
@@ -56,12 +71,6 @@ typedef struct video_info
    bool rgb32;
 } video_info_t;
 
-  enum text_alignment
-  {
-     TEXT_ALIGN_LEFT = 0,
-     TEXT_ALIGN_RIGHT,
-     TEXT_ALIGN_CENTER
-  };
 
 struct font_params
 {
@@ -79,13 +88,12 @@ struct font_params
    enum text_alignment text_align;
 };
 
-enum texture_filter_type
+typedef struct video_pixel_scaler
 {
-   TEXTURE_FILTER_LINEAR = 0,
-   TEXTURE_FILTER_NEAREST,
-   TEXTURE_FILTER_MIPMAP_LINEAR,
-   TEXTURE_FILTER_MIPMAP_NEAREST
-};
+   struct scaler_ctx *scaler;
+   void *scaler_out;
+} video_pixel_scaler_t;
+
 
 #define FONT_COLOR_RGBA(r, g, b, a) (((r) << 24) | ((g) << 16) | ((b) << 8) | ((a) << 0))
 #define FONT_COLOR_GET_RED(col)   (((col) >> 24) & 0xff)
@@ -495,6 +503,18 @@ bool video_monitor_fps_statistics(double *refresh_rate,
  **/
 bool video_monitor_get_fps(char *buf, size_t size,
       char *buf_fps, size_t size_fps);
+
+void deinit_pixel_converter(void);
+
+bool init_video_pixel_converter(unsigned size);
+
+unsigned video_pixel_get_alignment(unsigned pitch);
+
+bool video_pixel_frame_scale(const void *data,
+      unsigned width, unsigned height,
+      size_t pitch);
+
+video_pixel_scaler_t *scaler_get_ptr(void);
 
 extern video_driver_t video_gl;
 extern video_driver_t video_psp1;

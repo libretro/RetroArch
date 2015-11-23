@@ -148,7 +148,6 @@ OBJ += frontend/frontend.o \
        input/input_hid_driver.o \
        gfx/video_common.o \
        gfx/video_driver.o \
-       gfx/video_pixel_converter.o \
        camera/camera_driver.o \
        location/location_driver.o \
        driver.o \

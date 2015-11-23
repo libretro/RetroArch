@@ -33,7 +33,6 @@
 #include "performance.h"
 #include "input/input_remapping.h"
 #include "record/record_driver.h"
-#include "gfx/video_pixel_converter.h"
 #include "verbosity.h"
 
 #ifdef HAVE_NETPLAY
