@@ -39,9 +39,9 @@
 char detect_content_path[PATH_MAX_LENGTH];
 unsigned rdb_entry_start_game_selection_ptr, rpl_entry_selection_ptr;
 size_t hack_shader_pass = 0;
-#ifdef HAVE_NETWORKING
-char core_updater_path[PATH_MAX_LENGTH];
-#endif
+
+/* defined in menu_cbs_deferred_push */
+void cb_net_generic(void *task_data, void *user_data, const char *err);
 
 int generic_action_ok_displaylist_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -1114,6 +1114,7 @@ static int action_ok_download_generic(const char *path,
    char s2[PATH_MAX_LENGTH];
    char s3[PATH_MAX_LENGTH];
    settings_t *settings            = config_get_ptr();
+   menu_file_transfer_t *transf;
 
    fill_pathname_join(s, settings->network.buildbot_assets_url,
          "frontend", sizeof(s));
@@ -1148,7 +1149,9 @@ static int action_ok_download_generic(const char *path,
 
    fill_pathname_join(s3, s, path, sizeof(s3));
 
-   strlcpy(core_updater_path, path, sizeof(core_updater_path));
+   transf = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
+   transf->type_hash = menu_hash_calculate(type_msg);
+   strlcpy(transf->path, path, sizeof(transf->path));
 
    snprintf(s2, sizeof(s2),
          "%s %s.",
@@ -1157,8 +1160,7 @@ static int action_ok_download_generic(const char *path,
 
    menu_display_msg_queue_push(s2, 1, 90, true);
 
-   rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, s3,
-         type_msg, 0, 1, true);
+   rarch_task_push_http_transfer(s3, type_msg, cb_generic_download, transf);
 #endif
    return 0;
 }
@@ -1383,6 +1385,7 @@ static int generic_action_ok_network(const char *path,
    settings_t *settings           = config_get_ptr();
    unsigned type_id2              = 0;
    const char *url_label          = NULL;
+   rarch_task_callback_t callback = NULL;
 
    menu_entries_set_refresh(true);
 
@@ -1398,17 +1401,22 @@ static int generic_action_ok_network(const char *path,
                "cores/gw/.index", sizeof(url_path));
          url_label = "cb_core_content_list";
          type_id2 = ACTION_OK_DL_CORE_CONTENT_LIST;
+         callback = cb_net_generic;
          break;
       case ACTION_OK_NETWORK_CORE_UPDATER_LIST:
          fill_pathname_join(url_path, settings->network.buildbot_url,
                ".index", sizeof(url_path));
          url_label = "cb_core_updater_list";
          type_id2  = ACTION_OK_DL_CORE_UPDATER_LIST;
+         callback = cb_net_generic;
          break;
    }
 
-   rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, url_path, url_label, 0, 1,
-         true);
+//   rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, url_path, url_label, 0, 1,
+//         true);
+
+   rarch_task_push_http_transfer(url_path, url_label, callback, NULL);
+
    return generic_action_ok_displaylist_push(path,
          label, type, idx, entry_idx, type_id2);
 }

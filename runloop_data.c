@@ -85,18 +85,11 @@ void rarch_main_data_deinit(void)
 
 void rarch_main_data_free(void)
 {
-#ifdef HAVE_NETWORKING
-   rarch_main_data_http_uninit();
-#endif
-
    memset(&g_data_runloop, 0, sizeof(g_data_runloop));
 }
 
 static void data_runloop_iterate(bool is_thread)
 {
-#ifdef HAVE_NETWORKING
-   rarch_main_data_http_iterate       (is_thread);
-#endif
 }
 
 
@@ -104,12 +97,6 @@ bool rarch_main_data_active(void)
 {
 #ifdef HAVE_OVERLAY
    if (input_overlay_data_is_active())
-      return true;
-#endif
-#ifdef HAVE_NETWORKING
-   if (rarch_main_data_http_get_handle())
-      return true;
-   if (rarch_main_data_http_conn_get_handle())
       return true;
 #endif
 
@@ -249,18 +236,11 @@ void rarch_main_data_clear_state(void)
    rarch_main_data_deinit();
    rarch_main_data_free();
    rarch_main_data_init();
-
-#ifdef HAVE_NETWORKING
-   rarch_main_data_http_init();
-#endif
 }
 
 
 void rarch_main_data_init_queues(void)
 {
-#ifdef HAVE_NETWORKING
-   rarch_main_data_http_init_msg_queue();
-#endif
 }
 
 
@@ -284,8 +264,6 @@ void rarch_main_data_msg_queue_push(unsigned type,
          break;
 #ifdef HAVE_NETWORKING
       case DATA_TYPE_HTTP:
-         queue = rarch_main_data_http_get_msg_queue_ptr();
-         fill_pathname_join_delim(new_msg, msg, msg2, '|', sizeof(new_msg));
          break;
 #endif
 #ifdef HAVE_OVERLAY

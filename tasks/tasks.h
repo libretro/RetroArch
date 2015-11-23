@@ -65,27 +65,12 @@ void rarch_task_check(void);
 void rarch_task_push(rarch_task_t *task);
 
 #ifdef HAVE_NETWORKING
-/**
- * rarch_main_data_http_iterate_transfer:
- *
- * Resumes HTTP transfer update.
- *
- * Returns: 0 when finished, -1 when we should continue
- * with the transfer on the next frame.
- **/
-void rarch_main_data_http_iterate(bool is_thread);
+typedef struct {
+    char *data;
+    size_t len;
+} http_transfer_data_t;
 
-msg_queue_t *rarch_main_data_http_get_msg_queue_ptr(void);
-
-void rarch_main_data_http_init_msg_queue(void);
-
-void *rarch_main_data_http_get_handle(void);
-
-void *rarch_main_data_http_conn_get_handle(void);
-
-void rarch_main_data_http_uninit(void);
-
-void rarch_main_data_http_init(void);
+bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task_callback_t cb, void *user_data);
 #endif
 
 #ifdef HAVE_RPNG
