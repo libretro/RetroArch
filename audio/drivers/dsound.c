@@ -35,7 +35,7 @@
 #include <queues/fifo_buffer.h>
 
 #include "../audio_driver.h"
-#include "../configuration.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #ifdef _XBOX
