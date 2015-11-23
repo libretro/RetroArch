@@ -1411,7 +1411,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
    else
 #endif
    {
-      bool use_rgba = video_driver_ctl(VIDEO_DISPLAY_CTL_SUPPORTS_RGBA, NULL);
+      bool use_rgba = video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_RGBA, NULL);
 
       glPixelStorei(GL_UNPACK_ALIGNMENT, video_pixel_get_alignment(width * gl->base_size));
 
