@@ -272,14 +272,6 @@ typedef struct driver
    uintptr_t video_window;
    enum rarch_display_type display_type;
 
-   /* Graphics driver requires RGBA byte order data (ABGR on little-endian)
-    * for 32-bit.
-    * This takes effect for overlay and shader cores that wants to load
-    * data into graphics driver. Kinda hackish to place it here, it is only
-    * used for GLES.
-    * TODO: Refactor this better. */
-   bool gfx_use_rgba;
-
    /* Last message given to the video driver */
    char current_msg[PATH_MAX_LENGTH];
 } driver_t;

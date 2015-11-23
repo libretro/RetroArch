@@ -1410,12 +1410,12 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
    else
 #endif
    {
-      driver_t *driver = driver_get_ptr();
+      bool use_rgba = video_driver_ctl(VIDEO_DISPLAY_CTL_SUPPORTS_RGBA, NULL);
 
       glPixelStorei(GL_UNPACK_ALIGNMENT, video_pixel_get_alignment(width * gl->base_size));
 
       /* Fallback for GLES devices without GL_BGRA_EXT. */
-      if (gl->base_size == 4 && driver->gfx_use_rgba)
+      if (gl->base_size == 4 && use_rgba)
       {
          gl_convert_frame_argb8888_abgr8888(gl, gl->conv_buffer,
                frame, width, height, pitch);
@@ -2009,7 +2009,6 @@ static void gl_set_nonblock_state(void *data, bool state)
 
 static bool resolve_extensions(gl_t *gl, const char *context_ident)
 {
-   driver_t *driver     = driver_get_ptr();
    const char *vendor   = (const char*)glGetString(GL_VENDOR);
    const char *renderer = (const char*)glGetString(GL_RENDERER);
    const char *version  = (const char*)glGetString(GL_VERSION);
@@ -2057,7 +2056,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 #endif
 
-   driver->gfx_use_rgba = false;
+   video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_RGBA, NULL);
 #ifdef HAVE_OPENGLES2
    bool gles3          = false;
    unsigned gles_major = 0, gles_minor = 0;
@@ -2069,12 +2068,10 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
       RARCH_LOG("[GL]: BGRA8888 extension found for GLES.\n");
    else
    {
-      driver->gfx_use_rgba = true;
+      video_driver_ctl(RARCH_DISPLAY_CTL_SET_RGBA, NULL);
       RARCH_WARN("[GL]: GLES implementation does not have BGRA8888 extension.\n"
                  "32-bit path will require conversion.\n");
    }
-
-   
 
    /* This format is mandated by GLES. */
    if (version && sscanf(version, "OpenGL ES %u.%u",
@@ -2148,8 +2145,6 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 
 static INLINE void gl_set_texture_fmts(gl_t *gl, bool rgb32)
 {
-   driver_t *driver = driver_get_ptr();
-
    gl->internal_fmt = RARCH_GL_INTERNAL_FORMAT16;
    gl->texture_type = RARCH_GL_TEXTURE_TYPE16;
    gl->texture_fmt  = RARCH_GL_FORMAT16;
@@ -2157,12 +2152,14 @@ static INLINE void gl_set_texture_fmts(gl_t *gl, bool rgb32)
 
    if (rgb32)
    {
+      bool use_rgba    = video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_RGBA, NULL);
+
       gl->internal_fmt = RARCH_GL_INTERNAL_FORMAT32;
       gl->texture_type = RARCH_GL_TEXTURE_TYPE32;
       gl->texture_fmt  = RARCH_GL_FORMAT32;
       gl->base_size    = sizeof(uint32_t);
 
-      if (driver->gfx_use_rgba)
+      if (use_rgba)
       {
          gl->internal_fmt = GL_RGBA;
          gl->texture_type = GL_RGBA;

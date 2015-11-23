@@ -39,9 +39,7 @@
 bool texture_image_set_color_shifts(unsigned *r_shift, unsigned *g_shift,
       unsigned *b_shift, unsigned *a_shift)
 {
-   driver_t *driver     = driver_get_ptr();
-   /* This interface "leak" is very ugly. FIXME: Fix this properly ... */
-   bool use_rgba        = driver ? driver->gfx_use_rgba : false;
+   bool use_rgba        = video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_RGBA, NULL);
    *a_shift             = 24;
    *r_shift             = use_rgba ? 0 : 16;
    *g_shift             = 8;

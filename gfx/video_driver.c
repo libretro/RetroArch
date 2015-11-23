@@ -69,6 +69,14 @@ typedef struct video_driver_state
    } filter;
 } video_driver_state_t;
 
+/* Graphics driver requires RGBA byte order data (ABGR on little-endian)
+ * for 32-bit.
+ * This takes effect for overlay and shader cores that wants to load
+ * data into graphics driver. Kinda hackish to place it here, it is only
+ * used for GLES.
+ * TODO: Refactor this better. */
+static bool gfx_use_rgba;
+
 static void *video_data;
 static const video_driver_t *current_video;
 
@@ -532,6 +540,7 @@ static bool uninit_video_input(void)
    if (hw_render->context_destroy && !driver->video_cache_context)
       hw_render->context_destroy();
 
+   video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_RGBA, NULL);
    current_video = NULL;
 
    if (!driver->video_data_own)
@@ -1442,6 +1451,14 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             custom_vp->y      = 0;
          }
          return true;
+      case RARCH_DISPLAY_CTL_SET_RGBA:
+         gfx_use_rgba = true;
+         break;
+      case RARCH_DISPLAY_CTL_UNSET_RGBA:
+         gfx_use_rgba = false;
+         break;
+      case RARCH_DISPLAY_CTL_SUPPORTS_RGBA:
+         return gfx_use_rgba;
       case RARCH_DISPLAY_CTL_GET_NEXT_VIDEO_OUT:
          if (video_poke && video_poke->get_video_output_next)
          {
