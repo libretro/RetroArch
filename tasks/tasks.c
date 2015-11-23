@@ -84,6 +84,7 @@ static void regular_gather(void)
 {
    rarch_task_t *task  = NULL;
    rarch_task_t *queue = NULL;
+   rarch_task_t *next  = NULL;
 
    /* mimics threaded_gather() for compatibility, a faster implementation
     * can be written for systems without HAVE_THREADS if necessary. */
@@ -93,8 +94,9 @@ static void regular_gather(void)
       queue = task;
    }
 
-   for (task = queue; task; task = task->next)
+   for (task = queue; task; task = next)
    {
+      next = task->next;
       task->handler(task);
 
       if (task->finished)
