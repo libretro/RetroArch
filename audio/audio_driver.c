@@ -62,6 +62,7 @@ typedef struct audio_driver_input_data
    uint64_t buffer_free_samples_count;
 } audio_driver_input_data_t;
 
+static void *audio_resampler_data;
 static const audio_driver_t *current_audio;
 static void *context_audio_data;
 
@@ -250,7 +251,7 @@ static bool uninit_audio(void)
    }
 
    rarch_resampler_freep(&driver->resampler,
-         &driver->resampler_data);
+         &audio_resampler_data);
 
    if (audio_data.audio_callback.callback)
    {
@@ -370,7 +371,7 @@ static bool init_audio(void)
    audio_data.orig_src_ratio = audio_data.src_ratio =
       (double)settings->audio.out_rate / audio_data.in_rate;
 
-   if (!rarch_resampler_realloc(&driver->resampler_data,
+   if (!rarch_resampler_realloc(&audio_resampler_data,
             &driver->resampler,
          settings->audio.resampler, audio_data.orig_src_ratio))
    {
@@ -551,8 +552,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    rarch_perf_init(&resampler_proc, "resampler_proc");
    retro_perf_start(&resampler_proc);
-   rarch_resampler_process(driver->resampler,
-         driver->resampler_data, &src_data);
+   rarch_resampler_process(driver->resampler, audio_resampler_data, &src_data);
    retro_perf_stop(&resampler_proc);
 
    output_data   = audio_data.outsamples;

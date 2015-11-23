@@ -213,7 +213,6 @@ typedef struct driver
    void *hid_data;
    void *camera_data;
    void *location_data;
-   void *resampler_data;
    void *recording_data;
    void *netplay_data;
    void *ui_companion_data;
