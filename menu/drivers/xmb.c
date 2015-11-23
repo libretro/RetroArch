@@ -534,7 +534,12 @@ static void xmb_update_boxart_path(xmb_handle_t *xmb, unsigned i)
    menu_entry_get(&entry, 0, i, NULL, true);
 
    fill_pathname_join(xmb->boxart_file_path, settings->boxarts_directory,
+         xmb->title_name, sizeof(xmb->boxart_file_path));
+   fill_pathname_join(xmb->boxart_file_path, xmb->boxart_file_path,
+         "Named_Snaps", sizeof(xmb->boxart_file_path));
+   fill_pathname_join(xmb->boxart_file_path, xmb->boxart_file_path,
          entry.path, sizeof(xmb->boxart_file_path));
+
    strlcat(xmb->boxart_file_path, ".png", sizeof(xmb->boxart_file_path));
 }
 
