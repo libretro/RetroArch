@@ -746,6 +746,7 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
 static void *d3d_init(const video_info_t *info,
       const input_driver_t **input, void **input_data)
 {
+   driver_t         *driver    = driver_get_ptr();
    d3d_video_t            *vid = NULL;
    const gfx_ctx_driver_t *ctx = NULL;
 
