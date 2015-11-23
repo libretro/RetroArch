@@ -26,6 +26,7 @@
 #include "../../cores/internal_cores.h"
 
 #include "../../general.h"
+#include "../../verbosity.h"
 #include "../../tasks/tasks.h"
 
 #define CB_CORE_UPDATER_DOWNLOAD       0x7412da7dU

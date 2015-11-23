@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "../general.h"
+#include "../verbosity.h"
 #include "tasks.h"
 
 #ifdef HAVE_THREADS
