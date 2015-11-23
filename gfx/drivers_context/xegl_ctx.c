@@ -258,7 +258,6 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    XVisualInfo temp = {0};
    XSetWindowAttributes swa = {0};
    XVisualInfo *vi = NULL;
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
    int (*old_handler)(Display*, XErrorEvent*) = NULL;

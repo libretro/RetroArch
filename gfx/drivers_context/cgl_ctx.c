@@ -307,7 +307,6 @@ static CGSSurfaceID attach_gl_context_to_window(CGLContextObj glCtx,
 static bool gfx_ctx_cgl_init(void *data)
 {
    CGError err;
-   driver_t *driver = driver_get_ptr();
    gfx_ctx_cgl_data_t *cgl = (gfx_ctx_cgl_data_t*)calloc(1, sizeof(gfx_ctx_cgl_data_t));
 
    if (!cgl)

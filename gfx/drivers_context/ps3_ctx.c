@@ -224,7 +224,6 @@ static bool gfx_ctx_ps3_init(void *data)
    PSGLdeviceParameters params;
    PSGLinitOptions options;
 #endif
-   driver_t *driver = driver_get_ptr();
    global_t *global = global_get_ptr();
    gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)
       calloc(1, sizeof(gfx_ctx_ps3_data_t));

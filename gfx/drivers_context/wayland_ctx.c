@@ -298,8 +298,6 @@ static bool gfx_ctx_wl_init(void *data)
    EGLint major = 0, minor = 0;
    EGLint n;
    const EGLint *attrib_ptr;
-   driver_t *driver = driver_get_ptr();
-
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
       calloc(1, sizeof(gfx_ctx_wayland_data_t));
 

@@ -67,12 +67,7 @@ static void sdl_ctx_destroy_resources(gfx_ctx_sdl_data_t *sdl)
 
 static bool sdl_ctx_init(void *data)
 {
-   gfx_ctx_sdl_data_t *sdl = NULL;
-   driver_t *driver = driver_get_ptr();
-
-   (void)data;
-
-   sdl = (gfx_ctx_sdl_data_t*)
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)
       calloc(1, sizeof(gfx_ctx_sdl_data_t));
 
    if (!sdl)
@@ -236,7 +231,6 @@ error:
 static void sdl_ctx_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)gfx_ctx_data_get_ptr();
 

@@ -208,7 +208,6 @@ static bool gfx_ctx_glx_init(void *data)
    int nelements, major, minor;
    GLXFBConfig *fbcs       = NULL;
    gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)calloc(1, sizeof(gfx_ctx_glx_data_t));
-   driver_t *driver        = driver_get_ptr();
    const struct retro_hw_render_callback *hw_render =
       (const struct retro_hw_render_callback*)video_driver_callback();
 

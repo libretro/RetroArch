@@ -371,9 +371,7 @@ static bool gfx_ctx_drm_egl_init(void *data)
    struct string_list *gpu_descriptors  = NULL;
    settings_t *settings                 = config_get_ptr();
    unsigned monitor = max(settings->video.monitor_index, 1);
-
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)calloc(1, sizeof(gfx_ctx_drm_egl_data_t));
-   driver_t *driver = driver_get_ptr();
 
    if (!drm)
       return false;
