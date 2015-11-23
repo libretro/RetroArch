@@ -252,11 +252,6 @@ static void menu_action_setting_disp_set_label_shader_parameter(
    const struct video_shader_parameter *param = NULL;
    struct video_shader *shader = NULL;
 #endif
-   driver_t *driver = driver_get_ptr();
-
-   if (!driver->video_poke || !driver->video_data)
-      return;
-
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);

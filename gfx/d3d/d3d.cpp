@@ -730,7 +730,6 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
    /* Default to Direct3D9 for now.
    TODO: GL core contexts through ANGLE? */
    unsigned minor       = 0;
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 #if defined(HAVE_D3D8)
    unsigned major       = 8;
@@ -739,7 +738,7 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
    unsigned major       = 9;
    enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
 #endif
-   return gfx_ctx_init_first(driver->video_data,
+   return gfx_ctx_init_first(video_driver_get_ptr(false),
          settings->video.context_driver,
          api, major, minor, false);
 }
@@ -748,13 +747,12 @@ static void *d3d_init(const video_info_t *info,
       const input_driver_t **input, void **input_data)
 {
    d3d_video_t            *vid = NULL;
-   driver_t            *driver = driver_get_ptr();
    const gfx_ctx_driver_t *ctx = NULL;
 
 #ifdef _XBOX
-   if (driver->video_data)
+   if (video_driver_get_ptr(false))
    {
-      d3d_video_t *vid = (d3d_video_t*)driver->video_data;
+      d3d_video_t *vid = (d3d_video_t*)video_driver_get_ptr(false);
 
       /* Reinitialize renderchain as we
        * might have changed pixel formats.*/
@@ -771,7 +769,7 @@ static void *d3d_init(const video_info_t *info,
 
          driver->video_data_own = true;
          driver->input_data_own = true;
-         return driver->video_data;
+         return vid;
       }
    }
 #endif

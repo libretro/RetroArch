@@ -186,8 +186,7 @@ void texture_image_free(struct texture_image *img)
 bool texture_image_load(struct texture_image *out_img, const char *path)
 {
    D3DXIMAGE_INFO m_imageInfo;
-   driver_t *driver     = driver_get_ptr();
-   d3d_video_t *d3d     = (d3d_video_t*)driver->video_data;
+   d3d_video_t *d3d     = (d3d_video_t*)video_driver_get_ptr(false);
    LPDIRECT3DTEXTURE d3dt = (LPDIRECT3DTEXTURE)out_img->texture_buf;
    LPDIRECT3DVERTEXBUFFER d3dv = (LPDIRECT3DVERTEXBUFFER)out_img->vertex_buf;
 

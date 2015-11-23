@@ -140,11 +140,6 @@ static void menu_display_d3d_draw(
    d3d_set_viewport(d3d->dev, &vp);
    d3d_set_texture(d3d->dev, 0, (LPDIRECT3DTEXTURE)texture);
 
-#if 0
-   gl->shader->set_coords(coords);
-   gl->shader->set_mvp(driver->video_data, mat);
-#endif
-
    d3d_draw_primitive(d3d->dev, (D3DPRIMITIVETYPE)menu_display_prim_to_d3d_enum(prim_type), 0, coords->vertices);
 
 #if 0
@@ -254,8 +249,7 @@ static bool menu_display_d3d_font_init_first(const void **font_driver,
    if (settings->video.threaded && !hw_render->context_type)
    {
       thread_packet_t pkt;
-      driver_t *driver    = driver_get_ptr();
-      thread_video_t *thr = (thread_video_t*)driver->video_data;
+      thread_video_t *thr = (thread_video_t*)video_driver_get_ptr(true);
 
       if (!thr)
          return false;

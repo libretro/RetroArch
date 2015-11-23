@@ -505,6 +505,8 @@ static void deinit_pixel_converter(void)
 static bool uninit_video_input(void)
 {
    driver_t *driver = driver_get_ptr();
+   const struct retro_hw_render_callback *hw_render = 
+      (const struct retro_hw_render_callback*)video_driver_callback();
 
    event_command(EVENT_CMD_OVERLAY_DEINIT);
 
@@ -529,7 +531,13 @@ static bool uninit_video_input(void)
    event_command(EVENT_CMD_SHADER_DIR_DEINIT);
    video_monitor_compute_fps_statistics();
 
+   if (hw_render->context_destroy && !driver->video_cache_context)
+      hw_render->context_destroy();
+
    current_video = NULL;
+
+   if (!driver->video_data_own)
+      driver->video_data = NULL;
 
    return true;
 }

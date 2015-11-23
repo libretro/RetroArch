@@ -236,7 +236,7 @@ static void driver_adjust_system_rates(void)
    audio_driver_ctl(RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES,   NULL);
    video_driver_ctl(RARCH_DISPLAY_CTL_MONITOR_ADJUST_SYSTEM_RATES, NULL);
 
-   if (!driver->video_data)
+   if (!video_driver_get_ptr(false))
       return;
 
    if (system->force_nonblock)
@@ -276,7 +276,7 @@ void driver_set_nonblock_state(bool enable)
    driver_t *driver     = driver_get_ptr();
 
    /* Only apply non-block-state for video if we're using vsync. */
-   if (driver->video_active && driver->video_data)
+   if (driver->video_active && video_driver_get_ptr(false))
    {
       bool video_nonblock = enable;
 
@@ -463,18 +463,6 @@ void uninit_drivers(int flags)
 
    if (flags & DRIVERS_VIDEO_INPUT)
       video_driver_ctl(RARCH_DISPLAY_CTL_DEINIT, NULL);
-
-   if (flags & DRIVER_VIDEO)
-   {
-      const struct retro_hw_render_callback *hw_render = 
-         (const struct retro_hw_render_callback*)video_driver_callback();
-
-      if (hw_render->context_destroy && !driver->video_cache_context)
-            hw_render->context_destroy();
-   }
-
-   if ((flags & DRIVER_VIDEO) && !driver->video_data_own)
-      driver->video_data = NULL;
 
    if ((flags & DRIVER_INPUT) && !driver->input_data_own)
       driver->input_data = NULL;

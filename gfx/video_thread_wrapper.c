@@ -1131,8 +1131,7 @@ bool rarch_threaded_video_init(const video_driver_t **out_driver,
  **/
 void *rarch_threaded_video_get_ptr(const video_driver_t **drv)
 {
-   driver_t *driver          = driver_get_ptr();
-   const thread_video_t *thr = (const thread_video_t*)driver->video_data;
+   const thread_video_t *thr = (const thread_video_t*)video_driver_get_ptr(true);
 
    if (drv)
       *drv = thr->driver;
@@ -1144,9 +1143,7 @@ void *rarch_threaded_video_get_ptr(const video_driver_t **drv)
 
 const char *rarch_threaded_video_get_ident(void)
 {
-   driver_t *driver          = driver_get_ptr();
-   const thread_video_t *thr = driver ? (const thread_video_t*)
-      driver->video_data : NULL;
+   const thread_video_t *thr = (const thread_video_t*)video_driver_get_ptr(true);
 
    if (!thr || !thr->driver)
       return NULL;

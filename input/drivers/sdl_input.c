@@ -299,12 +299,11 @@ static void sdl_grab_mouse(void *data, bool state)
    struct temp{
       SDL_Window *w;
    };
-   driver_t *driver = driver_get_ptr();
 
    if (!strcmp(video_driver_get_ident(), "sdl2"))
    {
       /* First member of sdl2_video_t is the window */
-      SDL_SetWindowGrab(((struct temp*)driver->video_data)->w,
+      SDL_SetWindowGrab(((struct temp*)video_driver_get_ptr(false))->w,
             state ? SDL_TRUE : SDL_FALSE);
    }
 #endif

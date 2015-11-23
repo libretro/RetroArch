@@ -100,7 +100,6 @@ static void menu_display_gl_draw(
       enum menu_display_prim_type prim_type
       )
 {
-   driver_t     *driver = driver_get_ptr();
    gl_t             *gl = gl_get_ptr();
    math_matrix_4x4 *mat = (math_matrix_4x4*)matrix_data;
 
@@ -124,7 +123,7 @@ static void menu_display_gl_draw(
    glBindTexture(GL_TEXTURE_2D, (GLuint)texture);
 
    gl->shader->set_coords(coords);
-   gl->shader->set_mvp(driver->video_data, mat);
+   gl->shader->set_mvp(video_driver_get_ptr(false), mat);
 
    glDrawArrays(menu_display_prim_to_gl_enum(prim_type), 0, coords->vertices);
 
@@ -226,8 +225,7 @@ static bool menu_display_gl_font_init_first(const void **font_driver,
    if (settings->video.threaded && !hw_render->context_type)
    {
       thread_packet_t pkt;
-      driver_t *driver    = driver_get_ptr();
-      thread_video_t *thr = (thread_video_t*)driver->video_data;
+      thread_video_t *thr = (thread_video_t*)video_driver_get_ptr(true);
 
       if (!thr)
          return false;

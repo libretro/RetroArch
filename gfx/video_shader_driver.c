@@ -72,14 +72,15 @@ const shader_backend_t *shader_ctx_init_first(void)
 
 struct video_shader *video_shader_driver_get_current_shader(void)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t       *driver = driver_get_ptr();
+   void     *video_driver = video_driver_get_ptr(true);
    if (!driver->video_poke)
       return NULL;
-   if (!driver->video_data)
+   if (!video_driver)
       return NULL;
    if (!driver->video_poke->get_current_shader)
       return NULL;
-   return driver->video_poke->get_current_shader(driver->video_data);
+   return driver->video_poke->get_current_shader(video_driver);
 }
 
 void video_shader_scale(unsigned idx,
