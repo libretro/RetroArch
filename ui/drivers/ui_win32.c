@@ -180,6 +180,8 @@ static void shader_dlg_params_clear(void)
 
       switch (control->type)
       {
+         case SHADER_PARAM_CTRL_NONE:
+            break;
          case SHADER_PARAM_CTRL_CHECKBOX:
             DestroyWindow(control->checkbox.hwnd);
             break;
