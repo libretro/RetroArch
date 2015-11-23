@@ -25,6 +25,7 @@
 #include <Cg/cgD3D9.h>
 
 #include <retro_inline.h>
+#include <retro_miscellaneous.h>
 #include <compat/strl.h>
 
 #include "render_chain_driver.h"

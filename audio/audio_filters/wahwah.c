@@ -19,11 +19,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define WAHWAH_LFO_SKIP_SAMPLES 30
+#include <retro_miscellaneous.h>
 
-#ifndef M_PI
-#define M_PI		3.1415926535897932384626433832795
-#endif
+#define WAHWAH_LFO_SKIP_SAMPLES 30
 
 struct wahwah_data
 {

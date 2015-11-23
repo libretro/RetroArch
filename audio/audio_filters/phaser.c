@@ -19,12 +19,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <retro_miscellaneous.h>
+
 #define phaserlfoshape 4.0
 #define phaserlfoskipsamples 20
-
-#ifndef M_PI
-#define M_PI		3.1415926535897932384626433832795
-#endif
 
 struct phaser_data
 {

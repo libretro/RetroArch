@@ -30,10 +30,6 @@
 #include <retro_inline.h>
 #include <filters.h>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
 static bool allocate_filters(struct scaler_ctx *ctx)
 {
    ctx->horiz.filter     = (int16_t*)scaler_alloc(sizeof(int16_t), ctx->horiz.filter_stride * ctx->out_width);

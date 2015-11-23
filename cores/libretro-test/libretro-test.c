@@ -5,11 +5,9 @@
 #include <string.h>
 #include <math.h>
 
-#include "../../libretro.h"
+#include <retro_miscellaneous.h>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
+#include "../../libretro.h"
 
 static uint16_t *frame_buf;
 static struct retro_log_callback logging;

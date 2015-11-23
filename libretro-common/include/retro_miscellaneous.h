@@ -59,6 +59,10 @@
 #define PATH_MAX_LENGTH 4096
 #endif
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846264338327
+#endif
+
 #ifndef max
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #endif

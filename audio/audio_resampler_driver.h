@@ -27,9 +27,7 @@ extern "C" {
 #include <math.h>
 #include <boolean.h>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846264338327
-#endif
+#include <retro_miscellaneous.h>
 
 #define RESAMPLER_SIMD_SSE      (1 << 0)
 #define RESAMPLER_SIMD_SSE2     (1 << 1)

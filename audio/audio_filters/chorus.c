@@ -18,9 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef M_PI
-#define M_PI 3.1415926535897932384626433832795
-#endif
+#include <retro_miscellaneous.h>
 
 #define CHORUS_MAX_DELAY 4096
 #define CHORUS_DELAY_MASK (CHORUS_MAX_DELAY - 1)
