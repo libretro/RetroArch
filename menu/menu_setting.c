@@ -220,7 +220,7 @@ rarch_setting_t setting_action_setting(const char* name,
  *
  * Returns: setting of type ST_GROUP.
  **/
-rarch_setting_t setting_group_setting(enum setting_type type, const char* name,
+static rarch_setting_t setting_group_setting(enum setting_type type, const char* name,
       const char *parent_group)
 {
    rarch_setting_t result   = {ST_NONE};

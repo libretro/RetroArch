@@ -114,9 +114,6 @@ typedef int  (*action_ok_handler_t            )(void *data, bool wraparound);
 typedef int  (*action_select_handler_t        )(void *data, bool wraparound);
 typedef void (*get_string_representation_t    )(void *data, char *s, size_t len);
 
-rarch_setting_t setting_group_setting(enum setting_type type, const char* name,
-      const char *parent_group);
-
 /**
  * setting_action_setting:
  * @name               : Name of setting.
