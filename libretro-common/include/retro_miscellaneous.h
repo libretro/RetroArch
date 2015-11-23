@@ -141,6 +141,19 @@ static INLINE uint32_t prev_pow2(uint32_t v)
    return v - (v >> 1);
 }
 
+/**
+ * db_to_gain:
+ * @db          : Decibels.
+ *
+ * Converts decibels to voltage gain.
+ *
+ * Returns: voltage gain value.
+ **/
+static INLINE float db_to_gain(float db)
+{
+   return powf(10.0f, db / 20.0f);
+}
+
 /* Helper macros and struct to keep track of many booleans.
  * To check for multiple bits, use &&, not &.
  * For OR, | can be used. */

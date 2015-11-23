@@ -130,19 +130,6 @@ extern struct defaults g_defaults;
 #endif
 
 /**
- * db_to_gain:
- * @db          : Decibels.
- *
- * Converts decibels to voltage gain.
- *
- * Returns: voltage gain value.
- **/
-static INLINE float db_to_gain(float db)
-{
-   return powf(10.0f, db / 20.0f);
-}
-
-/**
  * retro_fail:
  * @error_code  : Error code.
  * @error       : Error message to show.
