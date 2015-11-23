@@ -23,6 +23,7 @@
 #include "../common/win32_common.h"
 
 #include "../../runloop.h"
+#include "../../verbosity.h"
 
 #ifdef _MSC_VER
 #ifndef _XBOX

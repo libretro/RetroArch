@@ -26,6 +26,7 @@
 
 #include "../../driver.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 
 typedef struct xaudio2 xaudio2_t;
 

@@ -25,6 +25,7 @@
 
 #include "../frontend_driver.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 #include "../../menu/menu.h"
 
 /* We only load this library once, so we let it be 

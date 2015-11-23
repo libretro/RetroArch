@@ -14,6 +14,7 @@
  */
 
 #include "../../general.h"
+#include "../../verbosity.h"
 #include "win32_common.h"
 
 #if !defined(_XBOX)

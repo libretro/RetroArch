@@ -40,6 +40,7 @@
 #include "../../performance.h"
 
 #include "../../defines/d3d_defines.h"
+#include "../../verbosity.h"
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 

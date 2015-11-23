@@ -33,6 +33,7 @@
 #include "../input_common.h"
 
 #include "../../general.h"
+#include "../../verbosity.h"
 
 
 /* Check if the definitions do not already exist.
