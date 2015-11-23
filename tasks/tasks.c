@@ -11,7 +11,6 @@
 
 static rarch_task_t *running_queue  = NULL;
 static rarch_task_t *finished_queue = NULL;
-static bool thread_enabled = false;
 
 struct rarch_task_impl {
    void (*push_running)(rarch_task_t *);
