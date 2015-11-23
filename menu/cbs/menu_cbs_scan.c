@@ -30,6 +30,7 @@
    cbs->action_scan_ident = #name;
 #endif
 
+#ifdef HAVE_LIBETRODB
 static void handle_dbscan_finished(void *task_data, void *user_data, const char *err)
 {
    menu_environment_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST, NULL);
@@ -75,6 +76,7 @@ int action_scan_directory(const char *path,
 
    return 0;
 }
+#endif
 
 static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type)

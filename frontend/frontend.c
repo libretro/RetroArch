@@ -259,8 +259,10 @@ int rarch_main(int argc, char *argv[], void *data)
    void *args                      = (void*)data;
    int ret                         = 0;
    settings_t *settings            = NULL;
-   global_t *global                = NULL;
    driver_t *driver                = NULL;
+#ifdef HAVE_THREADS
+   global_t *global                = NULL;
+#endif
 
    rarch_main_alloc();
 
