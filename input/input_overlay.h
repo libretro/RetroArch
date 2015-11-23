@@ -191,23 +191,6 @@ typedef struct
     size_t size;
 } overlay_task_data_t;
 
-/**
- * input_overlay_new:
- * @path                  : Path to overlay file.
- * @enable                : Enable the overlay after initializing it?
- *
- * Creates and initializes an overlay handle.
- *
- * Returns: Overlay handle on success, otherwise NULL.
- **/
-input_overlay_t *input_overlay_new(const char *path, bool enable,
-      float alpha_mod, float scale_factor);
-
-bool input_overlay_load_overlays(void);
-
-bool input_overlay_load_overlays_iterate(void);
-
-bool input_overlay_load_overlays_resolve_iterate(void);
 
 bool input_overlay_new_done(void);
 
