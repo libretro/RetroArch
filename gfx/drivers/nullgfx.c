@@ -20,6 +20,8 @@
 static void *null_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
+   RARCH_ERR("Using the null video driver. RetroArch will not be visible.");
+
    *input = NULL;
    *input_data = NULL;
    (void)video;
