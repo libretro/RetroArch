@@ -25,6 +25,7 @@
 
 #include "x11_common.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 
 Colormap g_x11_cmap;
 Window   g_x11_win;

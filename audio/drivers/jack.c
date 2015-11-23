@@ -28,6 +28,7 @@
 
 #include "../../driver.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 
 #define FRAMES(x) (x / (sizeof(float) * 2))
 

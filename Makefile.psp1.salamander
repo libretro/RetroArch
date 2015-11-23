@@ -44,6 +44,7 @@ OBJS = frontend/frontend_salamander.o \
 		 libretro-common/file/retro_file.o \
 		 libretro-common/file/retro_stat.o \
 		 libretro-common/hash/rhash.o \
+		 verbosity.o \
 		 bootstrap/psp1/kernel_functions.o 
 
 PSPSDK=$(shell psp-config --pspsdk-path)

@@ -26,7 +26,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <retro_log.h>
 #include <retro_file.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
@@ -45,6 +44,7 @@
 #include "gfx/scaler/scaler.h"
 #include "retroarch.h"
 #include "screenshot.h"
+#include "verbosity.h"
 #include "gfx/video_driver.h"
 
 #ifdef HAVE_CONFIG_H

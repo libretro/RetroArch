@@ -44,6 +44,7 @@
 #include "movie.h"
 #include "patch.h"
 #include "system.h"
+#include "verbosity.h"
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos.h"

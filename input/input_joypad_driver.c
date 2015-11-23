@@ -21,6 +21,7 @@
 #include "input_keymaps.h"
 #include "../general.h"
 #include "../string_list_special.h"
+#include "../verbosity.h"
 
 static input_device_driver_t *joypad_drivers[] = {
 #ifdef __CELLOS_LV2__

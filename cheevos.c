@@ -19,7 +19,6 @@
 #include <formats/jsonsax.h>
 #include <retro_file.h>
 #include <rhash.h>
-#include <retro_log.h>
 #include <rthreads/async_job.h>
 
 #include "cheevos.h"
@@ -29,6 +28,7 @@
 #include "performance.h"
 #include "runloop.h"
 #include "menu/menu.h"
+#include "verbosity.h"
 
 enum
 {

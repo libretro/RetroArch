@@ -17,12 +17,11 @@
 #include <IOKit/hid/IOHIDManager.h>
 #include <IOKit/hid/IOHIDKeys.h>
 
-#include <retro_log.h>
-
 #include "../connect/joypad_connection.h"
 #include "../input_autodetect.h"
 #include "../input_hid_driver.h"
 #include "../../configuration.h"
+#include "../../verbosity.h"
 
 typedef struct apple_hid
 {

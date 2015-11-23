@@ -32,6 +32,7 @@
 #include "msg_hash.h"
 #include "system.h"
 #include "runloop.h"
+#include "verbosity.h"
 
 struct delta_frame
 {

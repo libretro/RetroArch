@@ -25,6 +25,7 @@
 
 #include "../input_autodetect.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 
 /* Linux parport driver does not support reading the control register
    Other platforms may support up to 17 buttons */

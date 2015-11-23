@@ -21,6 +21,7 @@
 #include "input_hid_driver.h"
 #include "../general.h"
 #include "../string_list_special.h"
+#include "../verbosity.h"
 
 static hid_driver_t *hid_drivers[] = {
 #if defined(HAVE_BTSTACK)

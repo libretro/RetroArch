@@ -53,6 +53,7 @@ OBJ = frontend/frontend_salamander.o \
 		libretro-common/file/retro_stat.o \
 		libretro-common/compat/compat_strl.o \
 		libretro-common/file/config_file.o \
+		verbosity.o \
 		$(APP_BOOTER_DIR)/app_booter.binobj
 
 ifeq ($(HAVE_LOGGER), 1)

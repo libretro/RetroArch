@@ -24,6 +24,7 @@
 #include "input_keymaps.h"
 
 #include "../general.h"
+#include "../verbosity.h"
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif

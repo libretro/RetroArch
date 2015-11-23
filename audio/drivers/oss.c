@@ -33,6 +33,7 @@
 
 #include "../../driver.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 
 #ifdef HAVE_OSS_BSD
 #define DEFAULT_OSS_DEV "/dev/audio"

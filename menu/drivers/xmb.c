@@ -23,7 +23,6 @@
 #include <file/file_path.h>
 #include <compat/posix_string.h>
 #include <compat/strl.h>
-#include <retro_log.h>
 #include <formats/image.h>
 #include <string/stdstring.h>
 #include <string/string_list.h>
@@ -41,6 +40,7 @@
 
 #include "../menu_cbs.h"
 
+#include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../file_ext.h"
 

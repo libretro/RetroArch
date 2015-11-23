@@ -22,7 +22,6 @@
 #include <errno.h>
 
 #include <retro_inline.h>
-#include <retro_log.h>
 #include <boolean.h>
 
 #include "libretro.h"
@@ -35,6 +34,7 @@
 #include "input/input_remapping.h"
 #include "record/record_driver.h"
 #include "gfx/video_pixel_converter.h"
+#include "verbosity.h"
 
 #ifdef HAVE_NETPLAY
 #include "netplay.h"

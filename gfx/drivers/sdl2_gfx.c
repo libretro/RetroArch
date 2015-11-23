@@ -26,6 +26,7 @@
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../../performance.h"
+#include "../../verbosity.h"
 #include "../video_context_driver.h"
 #include "../font_renderer_driver.h"
 

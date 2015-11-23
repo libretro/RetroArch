@@ -38,6 +38,7 @@
 
 #include "general.h"
 #include "runloop.h"
+#include "verbosity.h"
 
 #define DEFAULT_NETWORK_CMD_PORT 55355
 #define STDIN_BUF_SIZE 4096

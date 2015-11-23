@@ -24,6 +24,7 @@
 #include "../file_ext.h"
 #include "../general.h"
 #include "../performance.h"
+#include "../verbosity.h"
 #include "video_filter.h"
 #include "video_filters/softfilter.h"
 

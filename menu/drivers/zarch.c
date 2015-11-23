@@ -27,7 +27,6 @@
 #include <gfx/math/matrix_4x4.h>
 #include <formats/image.h>
 #include <compat/strl.h>
-#include <retro_log.h>
 #include <retro_stat.h>
 
 #include "menu_generic.h"
@@ -47,6 +46,7 @@
 
 #include "../../configuration.h"
 #include "../../runloop.h"
+#include "../../verbosity.h"
 
 #if 0
 #define ZARCH_DEBUG

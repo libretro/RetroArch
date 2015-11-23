@@ -31,6 +31,8 @@
 #include "../menu/menu_setting.h"
 #endif
 
+#include "../verbosity.h"
+
 #ifndef MEASURE_FRAME_TIME_SAMPLES_COUNT
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 #endif

@@ -25,6 +25,7 @@
 #include "menu_shader.h"
 #include "../configuration.h"
 #include "../runloop.h"
+#include "../verbosity.h"
 
 /**
  * menu_shader_manager_init:

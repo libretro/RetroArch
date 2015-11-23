@@ -12,7 +12,8 @@ LOCAL_SRC_FILES := apk-extract/apk-extract.c \
 						$(RARCH_DIR)/libretro-common/string/string_list.c \
 						$(RARCH_DIR)/libretro-common/compat/compat_strl.c \
 						$(RARCH_DIR)/libretro-common/file/retro_file.c \
-						$(RARCH_DIR)/libretro-common/file/retro_stat.c
+						$(RARCH_DIR)/libretro-common/file/retro_stat.c \
+						$(RARCH_DIR)/verbosity.c
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include/
 

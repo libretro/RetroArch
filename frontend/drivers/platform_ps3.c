@@ -27,7 +27,6 @@
 
 #include <sys/process.h>
 
-#include <retro_log.h>
 #include <file/file_path.h>
 #ifndef IS_SALAMANDER
 #include <file/file_list.h>
@@ -35,6 +34,7 @@
 
 #include "../../defines/ps3_defines.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 

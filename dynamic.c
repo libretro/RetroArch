@@ -18,7 +18,6 @@
 #include <ctype.h>
 
 #include <file/file_path.h>
-#include <retro_log.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 
@@ -36,6 +35,7 @@
 #include "configuration.h"
 #include "general.h"
 #include "msg_hash.h"
+#include "verbosity.h"
 
 #include "input/input_sensor.h"
 

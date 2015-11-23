@@ -60,6 +60,7 @@ extern "C" {
 #include <file/config_file.h>
 
 #include "../../general.h"
+#include "../../verbosity.h"
 #include "../../audio/audio_utils.h"
 #include "../record_driver.h"
 

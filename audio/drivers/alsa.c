@@ -19,6 +19,7 @@
 
 #include "../../driver.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 
 typedef struct alsa
 {

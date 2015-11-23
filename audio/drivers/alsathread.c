@@ -23,6 +23,7 @@
 
 #include "../../driver.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 
 #define TRY_ALSA(x) if (x < 0) { \
                   goto error; \

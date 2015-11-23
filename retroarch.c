@@ -38,6 +38,7 @@
 #include <retro_stat.h>
 
 #include "msg_hash.h"
+#include "verbosity.h"
 
 #include "libretro_version_1.h"
 #include "configuration.h"

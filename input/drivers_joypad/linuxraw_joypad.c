@@ -27,6 +27,7 @@
 
 #include "../input_autodetect.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 
 #define NUM_BUTTONS 32
 #define NUM_AXES 32

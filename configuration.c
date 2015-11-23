@@ -28,6 +28,7 @@
 #include "input/input_remapping.h"
 #include "general.h"
 #include "system.h"
+#include "verbosity.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

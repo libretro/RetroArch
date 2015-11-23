@@ -10,13 +10,6 @@
 
 #include "../native/com_retroarch_browser_NativeInterface.h"
 
-//#define VERBOSE_LOG
-
-#ifndef VERBOSE_LOG
-#undef RARCH_LOG
-#define RARCH_LOG(...)
-#endif
-
 struct userdata
 {
    const char *subdir;
@@ -45,7 +38,7 @@ static int zlib_cb(const char *name, const char *valid_exts,
    if (!path_mkdir(path_dir))
       goto error;
 
-   RARCH_LOG("Extracting %s -> %s ...\n", name, path);
+   printf("Extracting %s -> %s ...\n", name, path);
 
    if (!zlib_perform_mode(path, valid_exts,
             cdata, cmode, csize, size, crc32, userdata))
@@ -54,7 +47,7 @@ static int zlib_cb(const char *name, const char *valid_exts,
    return 1;
 
 error:
-   RARCH_ERR("Failed to deflate to: %s.\n", path);
+   printf("Failed to deflate to: %s.\n", path);
    return 0;
 }
 
@@ -74,7 +67,7 @@ JNIEXPORT jboolean JNICALL Java_com_retroarch_browser_NativeInterface_extractArc
 
    if (!zlib_parse_file(archive_c, NULL, zlib_cb, &data))
    {
-      RARCH_ERR("Failed to parse APK: %s.\n", archive_c);
+      printf("Failed to parse APK: %s.\n", archive_c);
       ret = JNI_FALSE;
    }
 

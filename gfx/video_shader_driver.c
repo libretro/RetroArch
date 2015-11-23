@@ -15,9 +15,8 @@
 
 #include <string.h>
 
-#include <retro_log.h>
-
 #include "video_shader_driver.h"
+#include "../verbosity.h"
 
 static const shader_backend_t *shader_ctx_drivers[] = {
 #ifdef HAVE_GLSL

@@ -37,10 +37,13 @@
 #endif
 
 #include <file/file_path.h>
+
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
+
+#include "verbosity.h"
 
 void fill_pathname_expand_special(char *out_path,
       const char *in_path, size_t size)

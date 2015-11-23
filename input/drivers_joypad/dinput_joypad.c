@@ -22,9 +22,9 @@
 #include <dinput.h>
 
 #include <boolean.h>
-#include <retro_log.h>
 
 #include "../../general.h"
+#include "../../verbosity.h"
 #include "../input_autodetect.h"
 #include "../input_common.h"
 #include "../input_joypad.h"

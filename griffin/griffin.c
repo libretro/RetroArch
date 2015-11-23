@@ -24,6 +24,7 @@
 
 #include <compat/posix_string.h>
 
+#include "../verbosity.c"
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
 #include "../netlogger.c"
 #endif

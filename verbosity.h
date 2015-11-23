@@ -1,5 +1,4 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -14,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_LOGGER_H
-#define __RARCH_LOGGER_H
+#ifndef __RARCH_VERBOSITY_H
+#define __RARCH_VERBOSITY_H
 
 #ifdef _XBOX1
 #include <xtl.h>
@@ -41,7 +40,13 @@
 #include <compat/posix_string.h>
 #include <compat/strl.h>
 
-#if defined(HAVE_FILE_LOGGER) && defined(RARCH_INTERNAL)
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+bool *retro_main_verbosity(void);
+
+#if defined(HAVE_FILE_LOGGER)
 
 #ifdef __cplusplus
 extern "C"
@@ -65,27 +70,21 @@ FILE *retro_main_log_file(void);
 #define PROGRAM_NAME "N/A"
 #endif
 
-#ifdef RARCH_INTERNAL
-#include "../../runloop.h"
-#endif
-
 static INLINE bool RARCH_LOG_VERBOSE(void)
 {
    bool *verbose = NULL;
-#ifdef RARCH_INTERNAL
    verbose = retro_main_verbosity();
-#endif
    if (!verbose)
       return false;
    return *verbose;
 }
 
-#if TARGET_OS_IPHONE && defined(RARCH_INTERNAL) && !TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR
 static aslclient asl_client;
 static int asl_inited = 0;
 #endif
 
-#if defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
+#if defined(HAVE_LOGGER)
 
 #define BUFSIZE	(64 * 1024)
 #define TCPDUMP_STACKSIZE	(16 * 1024)
@@ -179,7 +178,7 @@ static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
    if (!RARCH_LOG_VERBOSE())
       return;
-#if TARGET_OS_IPHONE && defined(RARCH_INTERNAL)
+#if TARGET_OS_IPHONE
 #if TARGET_IPHONE_SIMULATOR
    vprintf(fmt, ap);
 #else
@@ -204,7 +203,7 @@ static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          fmt);
    wvsprintf(buffer, msg_new, ap);
    OutputDebugStringA(buffer);
-#elif defined(ANDROID) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
+#elif defined(ANDROID) && defined(HAVE_LOGGER)
    int prio = ANDROID_LOG_INFO;
    if (tag)
    {
@@ -274,5 +273,9 @@ static INLINE void RARCH_ERR(const char *fmt, ...)
 }
 #endif
 
+
+#ifdef __cplusplus
+}
 #endif
 
+#endif

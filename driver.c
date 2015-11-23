@@ -20,6 +20,7 @@
 #include "msg_hash.h"
 
 #include "msg_hash.h"
+#include "verbosity.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"

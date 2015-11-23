@@ -19,6 +19,7 @@
 #include "performance.h"
 #include "general.h"
 #include "compat/strl.h"
+#include "verbosity.h"
 
 #ifdef _WIN32
 #define PERF_LOG_FMT "[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n"

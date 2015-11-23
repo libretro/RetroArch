@@ -18,7 +18,6 @@
 
 #include <file/file_path.h>
 #include <retro_inline.h>
-#include <retro_log.h>
 
 #include <compat/strl.h>
 
@@ -44,12 +43,13 @@
 #include "netplay.h"
 #endif
 
+#include "verbosity.h"
+
 static struct global g_extern;
 
 static bool main_is_idle;
 static bool main_is_paused;
 static bool main_is_slowmotion;
-static bool main_verbosity;
 
 static unsigned main_max_frames;
 
@@ -766,11 +766,6 @@ static void rarch_main_iterate_linefeed_overlay(driver_t *driver,
    }
 }
 #endif
-
-bool *retro_main_verbosity(void)
-{
-   return &main_verbosity;
-}
 
 FILE *retro_main_log_file(void)
 {

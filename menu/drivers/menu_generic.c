@@ -16,7 +16,6 @@
  */
 
 #include <compat/strl.h>
-#include <retro_log.h>
 
 #include "menu_generic.h"
 
@@ -34,6 +33,7 @@
 #include "../../cheevos.h"
 
 #include "../../runloop.h"
+#include "../../verbosity.h"
 
 static int action_iterate_help(char *s, size_t len, const char *label)
 {

@@ -26,6 +26,7 @@
 #include <rhash.h>
 
 #include "tasks.h"
+#include "../verbosity.h"
 
 #define CB_MENU_WALLPAPER     0xb476e505U
 #define CB_MENU_BOXART        0x68b307cdU

@@ -31,6 +31,7 @@
 
 #include "../input_autodetect.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 
 /* Udev/evdev Linux joypad driver.
  * More complex and extremely low level,

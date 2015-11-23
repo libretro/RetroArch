@@ -27,6 +27,7 @@
 #include "../file_ops.h"
 #include "../general.h"
 #include "../msg_hash.h"
+#include "../verbosity.h"
 #include "tasks.h"
 
 #define CB_CORE_UPDATER_DOWNLOAD       0x7412da7dU

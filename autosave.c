@@ -23,6 +23,7 @@
 #include <rthreads/rthreads.h>
 
 #include "general.h"
+#include "verbosity.h"
 
 struct autosave
 {

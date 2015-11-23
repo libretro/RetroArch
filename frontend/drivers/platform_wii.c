@@ -26,11 +26,11 @@
 #include <ogc/usbstorage.h>
 #include <sdcard/wiisd_io.h>
 
-#include <retro_log.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
 #include "../../defines/gx_defines.h"
+#include "../../verbosity.h"
 
 #define EXECUTE_ADDR ((uint8_t *) 0x91800000)
 #define BOOTER_ADDR  ((uint8_t *) 0x93000000)
@@ -121,7 +121,6 @@ void system_exec_wii(const char *_path, bool should_load_game)
    char path[PATH_MAX_LENGTH];
    char game_path[PATH_MAX_LENGTH];
 #ifndef IS_SALAMANDER
-   global_t *global = global_get_ptr();
    bool *verbose    = retro_main_verbosity();
    bool original_verbose = *verbose;
    *verbose = true;

@@ -19,7 +19,6 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <retro_log.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
 #include <file/dir_list.h>
@@ -27,6 +26,7 @@
 #include "frontend_driver.h"
 #include "../general.h"
 #include "../file_ext.h"
+#include "../verbosity.h"
 
 struct defaults g_defaults;
 

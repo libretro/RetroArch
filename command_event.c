@@ -32,6 +32,7 @@
 #include "cheevos.h"
 #endif
 
+#include "verbosity.h"
 #include "runloop_data.h"
 #include "configuration.h"
 #include "input/input_remapping.h"

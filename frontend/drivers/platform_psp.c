@@ -32,7 +32,6 @@ int scePowerSetArmClockFrequency(int freq);
 #endif
 
 #include <boolean.h>
-#include <retro_log.h>
 #include <file/file_path.h>
 #ifndef IS_SALAMANDER
 #include <file/file_list.h>
@@ -40,6 +39,7 @@ int scePowerSetArmClockFrequency(int freq);
 
 #include "../../defines/psp_defines.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
 #ifndef VITA

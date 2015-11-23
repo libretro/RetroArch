@@ -31,6 +31,7 @@
 
 #include "../../driver.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 #include "../font_renderer_driver.h"
 
 #include "../common/x11_common.h"

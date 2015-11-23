@@ -14,13 +14,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../general.h"
-#include "video_context_driver.h"
 #include <string.h>
+
+#include "video_context_driver.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
+
+#include "../general.h"
+#include "../verbosity.h"
 
 static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(__CELLOS_LV2__)

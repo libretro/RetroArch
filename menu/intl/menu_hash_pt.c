@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include <retro_assert.h>
+#include <compat/strl.h>
 
 #include "../menu_hash.h"
 #include "../../configuration.h"

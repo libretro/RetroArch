@@ -14,13 +14,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "audio_thread_wrapper.h"
-#include <rthreads/rthreads.h>
-#include "../general.h"
-#include "../performance.h"
-#include <queues/fifo_buffer.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <queues/fifo_buffer.h>
+#include <rthreads/rthreads.h>
+
+#include "audio_thread_wrapper.h"
+#include "../general.h"
+#include "../performance.h"
+#include "../verbosity.h"
 
 typedef struct audio_thread
 {

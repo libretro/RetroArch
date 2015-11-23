@@ -32,6 +32,7 @@
 #include "keyboard_line.h"
 
 #include "../configuration.h"
+#include "../verbosity.h"
 #include "input_common.h"
 
 #define BOX_RADIAL       0x18df06d2U

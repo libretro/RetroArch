@@ -20,6 +20,7 @@
 #include <file/file_path.h>
 
 #include "general.h"
+#include "verbosity.h"
 
 #include "tasks/tasks.h"
 #include "input/input_overlay.h"

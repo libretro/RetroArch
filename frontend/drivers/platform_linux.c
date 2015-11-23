@@ -39,7 +39,6 @@
 #include <retro_dirent.h>
 #include <retro_inline.h>
 #include <retro_file.h>
-#include <retro_log.h>
 #include <compat/strl.h>
 #include <rhash.h>
 #include <file/file_path.h>
@@ -47,6 +46,7 @@
 #include "../frontend.h"
 #include "../frontend_driver.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 #include "platform_linux.h"
 
 static bool                cpu_inited_once;

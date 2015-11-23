@@ -21,9 +21,9 @@
 
 #include <boolean.h>
 #include <compat/posix_string.h>
-#include <retro_log.h>
 
 #include "playlist.h"
+#include "verbosity.h"
 
 /**
  * content_playlist_get_index:

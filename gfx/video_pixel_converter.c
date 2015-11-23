@@ -20,6 +20,7 @@
 
 #include "../general.h"
 #include "../performance.h"
+#include "../verbosity.h"
 #include "video_pixel_converter.h"
 
 /* Used for 16-bit -> 16-bit conversions that take place before

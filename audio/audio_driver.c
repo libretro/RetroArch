@@ -21,6 +21,7 @@
 #include "audio_thread_wrapper.h"
 
 #include "../general.h"
+#include "../verbosity.h"
 #include "../string_list_special.h"
 
 #ifndef AUDIO_BUFFER_FREE_SAMPLES_COUNT

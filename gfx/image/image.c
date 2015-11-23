@@ -27,6 +27,7 @@
 #include "../common/d3d_common.h"
 #endif
 #include "../../file_ops.h"
+#include "../../verbosity.h"
 
 #include <stdint.h>
 #include <stdlib.h>

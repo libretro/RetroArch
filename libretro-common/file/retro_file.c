@@ -63,10 +63,6 @@
 #include <fcntl.h>
 #endif
 
-#ifdef RARCH_INTERNAL
-#include <retro_log.h>
-#endif
-
 #include <retro_file.h>
 #include <memmap.h>
 
@@ -227,12 +223,7 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
          stream->mapped = (uint8_t*)mmap((void*)0, stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0);
 
          if (stream->mapped == MAP_FAILED)
-         {
-#ifdef RARCH_INTERNAL
-            RARCH_WARN("mmap()ing %s failed: %s\n", path, strerror(errno));
-#endif
             stream->hints &= ~RFILE_HINT_MMAP;
-         }
       }
 #endif
    }
@@ -480,13 +471,7 @@ int retro_read_file(const char *path, void **buf, ssize_t *len)
       goto error;
 
    if ((ret = retro_fread(file, content_buf, content_buf_size)) < content_buf_size)
-   {
-#ifdef RARCH_INTERNAL
-      RARCH_WARN("Didn't read whole file: %s.\n", path);
-#else
       printf("Didn't read whole file: %s.\n", path);
-#endif
-   }
 
    if (!content_buf)
       goto error;

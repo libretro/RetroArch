@@ -24,6 +24,7 @@
 #include <boolean.h>
 
 #include "../../general.h"
+#include "../../verbosity.h"
 
 #include "../common/linux_common.h"
 #include "../input_keymaps.h"

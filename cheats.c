@@ -27,6 +27,7 @@
 #include "general.h"
 #include "runloop.h"
 #include "dynamic.h"
+#include "verbosity.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

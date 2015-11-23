@@ -18,6 +18,7 @@
 
 #include "../general.h"
 #include "../string_list_special.h"
+#include "../verbosity.h"
 
 static const input_driver_t *input_drivers[] = {
 #ifdef __CELLOS_LV2__

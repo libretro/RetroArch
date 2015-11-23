@@ -21,7 +21,6 @@
 #include <string.h>
 
 #include <boolean.h>
-#include <retro_log.h>
 
 #include <compat/msvc.h>
 #include <file/file_path.h>
@@ -30,6 +29,7 @@
 #include "patch.h"
 #include "file_ops.h"
 #include "general.h"
+#include "verbosity.h"
 
 enum bps_mode
 {

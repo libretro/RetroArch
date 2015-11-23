@@ -20,6 +20,7 @@
 
 #include "video_thread_wrapper.h"
 #include "../performance.h"
+#include "../verbosity.h"
 
 static void *thread_init_never_call(const video_info_t *video,
       const input_driver_t **input, void **input_data)

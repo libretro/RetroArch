@@ -40,6 +40,7 @@
 
 #include "../../general.h"
 #include "../../performance.h"
+#include "../../verbosity.h"
 
 struct buffer
 {

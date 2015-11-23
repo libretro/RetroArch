@@ -20,6 +20,7 @@
 
 #include "../font_renderer_driver.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 #include "../../file_ops.h"
 
 #define STB_TRUETYPE_IMPLEMENTATION

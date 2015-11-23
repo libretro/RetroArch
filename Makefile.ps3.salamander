@@ -31,7 +31,8 @@ PPU_SRCS		= frontend/frontend_salamander.c \
 				  libretro-common/string/string_list.c \
 				  libretro-common/compat/compat_strl.c \
 				  libretro-common/file/retro_file.c \
-				  libretro-common/file/config_file.c
+				  libretro-common/file/config_file.c \
+				  verbosity.c
 
 ifeq ($(HAVE_LOGGER), 1)
 PPU_CFLAGS		+= -DHAVE_LOGGER 

@@ -19,12 +19,14 @@
 #include <ctype.h>
 #include <string.h>
 
+#include <compat/strl.h>
+#include <compat/posix_string.h>
+
 #include "video_state_python.h"
 #include "../dynamic.h"
 #include "../libretro.h"
 #include "../general.h"
-#include <compat/strl.h>
-#include <compat/posix_string.h>
+#include "../verbosity.h"
 #include "../input/input_common.h"
 #include "../file_ops.h"
 

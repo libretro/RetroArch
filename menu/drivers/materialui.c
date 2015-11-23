@@ -22,7 +22,6 @@
 #include <string/stdstring.h>
 #include <limits.h>
 
-#include <retro_log.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <formats/image.h>
@@ -40,6 +39,7 @@
 #include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../runloop_data.h"
+#include "../../verbosity.h"
 
 enum
 {

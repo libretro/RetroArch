@@ -28,6 +28,7 @@
 
 #include "../../driver.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 
 typedef struct x11_input
 {

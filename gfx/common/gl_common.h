@@ -31,6 +31,7 @@
 #include <formats/image.h>
 
 #include "../../general.h"
+#include "../../verbosity.h"
 #include "../font_renderer_driver.h"
 #include "../video_common.h"
 #include "../video_context_driver.h"

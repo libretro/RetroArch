@@ -25,6 +25,7 @@
 #include "input_autodetect.h"
 
 #include "../general.h"
+#include "../verbosity.h"
 
 static bool remote_is_bound = false;
 

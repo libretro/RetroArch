@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <retro_log.h>
+#include "../../verbosity.h"
 
 #include "d3d_common.h"
 

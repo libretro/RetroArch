@@ -38,6 +38,7 @@
 #include <encodings/utf.h>
 
 #include "file_ops.h"
+#include "verbosity.h"
 
 #ifdef HAVE_COMPRESSION
 #ifdef HAVE_7ZIP

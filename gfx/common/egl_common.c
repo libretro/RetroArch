@@ -14,7 +14,8 @@
  */
 
 #include <retro_assert.h>
-#include <retro_log.h>
+
+#include "../../verbosity.h"
 
 #include "egl_common.h"
 #ifdef HAVE_OPENGL

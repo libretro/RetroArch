@@ -22,6 +22,7 @@
 #include <retro_endianness.h>
 
 #include "general.h"
+#include "verbosity.h"
 
 struct bsv_movie
 {

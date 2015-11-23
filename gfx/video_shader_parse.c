@@ -24,6 +24,7 @@
 #include <rhash.h>
 
 #include "../general.h"
+#include "../verbosity.h"
 #include "video_shader_parse.h"
 
 /**
