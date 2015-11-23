@@ -226,7 +226,6 @@ typedef struct driver
    menu_handle_t *menu;
    const menu_ctx_driver_t *menu_ctx;
 #endif
-   bool threaded_video;
 
    /* If set during context deinit, the driver should keep
     * graphics context alive to avoid having to reset all 
