@@ -201,7 +201,6 @@ typedef struct driver
    frontend_ctx_driver_t *frontend_ctx;
    const ui_companion_driver_t *ui_companion;
    const audio_driver_t *audio;
-   const video_driver_t *current_video;
    const void           *video_context;
    const input_driver_t *input;
    const camera_driver_t *camera;
