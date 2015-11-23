@@ -302,7 +302,7 @@ static void sdl_grab_mouse(void *data, bool state)
    sdl_input_t *sdl = (sdl_input_t*)data;
    driver_t *driver = driver_get_ptr();
 
-   if (driver->video != &video_sdl2)
+   if (driver->current_video != &video_sdl2)
       return;
 
    /* First member of sdl2_video_t is the window */

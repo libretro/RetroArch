@@ -60,7 +60,7 @@ static void video_frame(const void *data, unsigned width,
    global_t  *global      = global_get_ptr();
    settings_t *settings   = config_get_ptr();
    const video_driver_t *video = 
-      driver ? (const video_driver_t*)driver->video : NULL;
+      driver ? (const video_driver_t*)driver->current_video : NULL;
 
    if (!driver->video_active)
       return;

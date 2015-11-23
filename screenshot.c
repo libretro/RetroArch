@@ -219,15 +219,15 @@ bool take_screenshot(void)
 
    viewport_read = (settings->video.gpu_screenshot ||
          ((hw_render->context_type
-         != RETRO_HW_CONTEXT_NONE) && !driver->video->read_frame_raw))
-         && driver->video->read_viewport && driver->video->viewport_info;
+         != RETRO_HW_CONTEXT_NONE) && !driver->current_video->read_frame_raw))
+         && driver->current_video->read_viewport && driver->current_video->viewport_info;
 
    if (viewport_read)
    {
       /* Avoid taking screenshot of GUI overlays. */
       video_driver_set_texture_enable(false, false);
 
-      if (driver->video)
+      if (driver->current_video)
          video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
    }
 
@@ -235,7 +235,7 @@ bool take_screenshot(void)
       ret = take_screenshot_viewport();
    else if (!video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB, NULL))
       ret = take_screenshot_raw();
-   else if (driver->video->read_frame_raw)
+   else if (driver->current_video->read_frame_raw)
    {
       unsigned old_width, old_height;
       size_t old_pitch;

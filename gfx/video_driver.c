@@ -215,7 +215,7 @@ static bool find_video_driver(void)
    if (video_state.hw_render_callback.context_type)
    {
       RARCH_LOG("Using HW render, OpenGL driver forced.\n");
-      driver->video = &video_gl;
+      driver->current_video = &video_gl;
       return true;
    }
 #endif
@@ -223,16 +223,16 @@ static bool find_video_driver(void)
    if (driver->frontend_ctx &&
        driver->frontend_ctx->get_video_driver)
    {
-      driver->video = driver->frontend_ctx->get_video_driver();
+      driver->current_video = driver->frontend_ctx->get_video_driver();
 
-      if (driver->video)
+      if (driver->current_video)
          return true;
       RARCH_WARN("Frontend supports get_video_driver() but did not specify one.\n");
    }
 
    i = find_driver_index("video_driver", settings->video.driver);
    if (i >= 0)
-      driver->video = (const video_driver_t*)video_driver_find_handle(i);
+      driver->current_video = (const video_driver_t*)video_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -243,9 +243,9 @@ static bool find_video_driver(void)
          RARCH_LOG_OUTPUT("\t%s\n", video_driver_find_ident(d));
       RARCH_WARN("Going to default to first video driver...\n");
 
-      driver->video = (const video_driver_t*)video_driver_find_handle(0);
+      driver->current_video = (const video_driver_t*)video_driver_find_handle(0);
 
-      if (!driver->video)
+      if (!driver->current_video)
          retro_fail(1, "find_video_driver()");
    }
 
@@ -282,7 +282,7 @@ void *video_driver_get_ptr(void)
 
 #define video_driver_get_poke_ptr(driver) (driver) ? driver->video_poke : NULL
 
-#define video_driver_ctx_get_ptr(driver)  (driver) ? driver->video : NULL
+#define video_driver_ctx_get_ptr(driver)  (driver) ? driver->current_video : NULL
 
 const char *video_driver_get_ident(void)
 {
@@ -520,9 +520,9 @@ static bool uninit_video_input(void)
    if (
          !driver->video_data_own &&
          driver->video_data &&
-         driver->video &&
-         driver->video->free)
-      driver->video->free(driver->video_data);
+         driver->current_video &&
+         driver->current_video->free)
+      driver->current_video->free(driver->video_data);
 
    deinit_pixel_converter();
 
@@ -698,9 +698,9 @@ static bool init_video(void)
       /* Can't do hardware rendering with threaded driver currently. */
       RARCH_LOG("Starting threaded video driver ...\n");
 
-      if (!rarch_threaded_video_init(&driver->video, &driver->video_data,
+      if (!rarch_threaded_video_init(&driver->current_video, &driver->video_data,
                &driver->input, &driver->input_data,
-               driver->video, &video))
+               driver->current_video, &video))
       {
          RARCH_ERR("Cannot open threaded video driver ... Exiting ...\n");
          goto error;
@@ -708,7 +708,7 @@ static bool init_video(void)
    }
    else
 #endif
-      driver->video_data = driver->video->init(&video, &driver->input,
+      driver->video_data = driver->current_video->init(&video, &driver->input,
             &driver->input_data);
 
    if (!driver->video_data)
@@ -718,10 +718,10 @@ static bool init_video(void)
    }
 
    driver->video_poke = NULL;
-   if (driver->video->poke_interface)
-      driver->video->poke_interface(driver->video_data, &driver->video_poke);
+   if (driver->current_video->poke_interface)
+      driver->current_video->poke_interface(driver->video_data, &driver->video_poke);
 
-   if (driver->video->viewport_info && (!custom_vp->width ||
+   if (driver->current_video->viewport_info && (!custom_vp->width ||
             !custom_vp->height))
    {
       /* Force custom viewport to have sane parameters. */

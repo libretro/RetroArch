@@ -73,8 +73,8 @@ static bool check_pause(driver_t *driver, settings_t *settings,
    bool focus               = true;
    enum event_command cmd   = EVENT_CMD_NONE;
    bool old_is_paused       = main_is_paused;
-   const video_driver_t *video = driver ? (const video_driver_t*)driver->video :
-      NULL;
+   const video_driver_t *video = driver ? 
+      (const video_driver_t*)driver->current_video : NULL;
 
    /* FRAMEADVANCE will set us into pause mode. */
    pause_pressed |= !main_is_paused && frameadvance_pressed;
@@ -873,7 +873,7 @@ static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
    global_t   *global            = global_get_ptr();
    driver_t *driver              = driver_get_ptr();
    rarch_system_info_t *system   = rarch_system_info_get_ptr();
-   video_driver_t *video         = driver ? (video_driver_t*)driver->video : NULL;
+   video_driver_t *video         = driver ? (video_driver_t*)driver->current_video : NULL;
    bool shutdown_pressed         = (system && system->shutdown) || cmd->quit_key_pressed;
    bool video_alive              = video && video->alive(driver->video_data);
    bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);

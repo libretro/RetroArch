@@ -2742,7 +2742,6 @@ void general_write_handler(void *data)
    menu_displaylist_info_t info = {0};
    rarch_setting_t *setting     = (rarch_setting_t*)data;
    settings_t *settings         = config_get_ptr();
-   driver_t *driver             = driver_get_ptr();
    global_t *global             = global_get_ptr();
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
    rarch_system_info_t *system  = rarch_system_info_get_ptr();
@@ -2817,13 +2816,10 @@ void general_write_handler(void *data)
          }
          break;
       case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
-         if (driver->video && driver->video_data)
-         {
-            driver_set_refresh_rate(*setting->value.fraction);
+         driver_set_refresh_rate(*setting->value.fraction);
 
-            /* In case refresh rate update forced non-block video. */
-            rarch_cmd = EVENT_CMD_VIDEO_SET_BLOCKING_STATE;
-         }
+         /* In case refresh rate update forced non-block video. */
+         rarch_cmd = EVENT_CMD_VIDEO_SET_BLOCKING_STATE;
          break;
       case MENU_LABEL_VIDEO_SCALE:
          settings->video.scale = roundf(*setting->value.fraction);
