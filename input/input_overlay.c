@@ -551,6 +551,21 @@ static void input_overlay_loaded(void *task_data, void *user_data, const char *e
    input_overlay_t       *ol;
    driver_t *driver          = driver_get_ptr();
 
+   /* We can't display when the menu is up */
+   if (settings->input.overlay_hide_in_menu && menu_driver_alive())
+   {
+      if (!driver->osk_enable && settings->input.overlay_enable)
+      {
+         size_t i;
+         for (i = 0; i < data->size; i++)
+            input_overlay_free_overlay(&data->overlays[i]);
+
+         free(data->overlays);
+         free(data);
+         return;
+      }
+   }
+
    ol = (input_overlay_t*)calloc(1, sizeof(*ol));
    ol->overlays = data->overlays;
    ol->size     = data->size;
@@ -577,11 +592,11 @@ static void input_overlay_loaded(void *task_data, void *user_data, const char *e
    ol->state      = OVERLAY_STATUS_NONE;
    ol->alive      = true;
 
-   RARCH_LOG("%u overlays loaded.\n", (unsigned)data->size);
-
+   free(data);
    return;
 error:
    input_overlay_free();
+   free(data);
 }
 
 void input_overlay_init(void)
