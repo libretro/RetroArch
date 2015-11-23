@@ -212,7 +212,6 @@ typedef struct driver
 
    void *font_osd_data;
    void *audio_data;
-   void *video_data;
    void *video_context_data;
    void *video_shader_data;
    void *input_data;
