@@ -62,6 +62,7 @@ typedef struct audio_driver_input_data
    uint64_t buffer_free_samples_count;
 } audio_driver_input_data_t;
 
+static const audio_driver_t *current_audio;
 static void *context_audio_data;
 
 static audio_driver_input_data_t audio_data;
@@ -128,13 +129,6 @@ static const audio_driver_t *audio_drivers[] = {
    &audio_null,
    NULL,
 };
-
-static const audio_driver_t * audio_get_ptr(const driver_t *driver)
-{
-   if (driver->audio)
-      return driver->audio;
-   return NULL;
-}
 
 /**
  * compute_audio_buffer_statistics:
@@ -237,8 +231,8 @@ static bool uninit_audio(void)
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
-   if (context_audio_data && driver->audio)
-      driver->audio->free(context_audio_data);
+   if (context_audio_data && current_audio)
+      current_audio->free(context_audio_data);
 
    if (audio_data.conv_outsamples)
       free(audio_data.conv_outsamples);
@@ -275,6 +269,8 @@ static bool uninit_audio(void)
    event_command(EVENT_CMD_DSP_FILTER_DEINIT);
 
    compute_audio_buffer_statistics();
+
+   current_audio = NULL;
 
    if (!driver->audio_data_own)
       context_audio_data = NULL;
@@ -330,10 +326,10 @@ static bool init_audio(void)
    if (audio_data.audio_callback.callback)
    {
       RARCH_LOG("Starting threaded audio driver ...\n");
-      if (!rarch_threaded_audio_init(&driver->audio, &context_audio_data,
+      if (!rarch_threaded_audio_init(&current_audio, &context_audio_data,
                *settings->audio.device ? settings->audio.device : NULL,
                settings->audio.out_rate, settings->audio.latency,
-               driver->audio))
+               current_audio))
       {
          RARCH_ERR("Cannot open threaded audio driver ... Exiting ...\n");
          retro_fail(1, "init_audio()");
@@ -342,7 +338,7 @@ static bool init_audio(void)
    else
 #endif
    {
-      context_audio_data = driver->audio->init(*settings->audio.device ?
+      context_audio_data = current_audio->init(*settings->audio.device ?
             settings->audio.device : NULL,
             settings->audio.out_rate, settings->audio.latency);
    }
@@ -354,7 +350,7 @@ static bool init_audio(void)
    }
 
    audio_data.use_float = false;
-   if (driver->audio_active && driver->audio->use_float(context_audio_data))
+   if (driver->audio_active && current_audio->use_float(context_audio_data))
       audio_data.use_float = true;
 
    if (!settings->audio.sync && driver->audio_active)
@@ -405,10 +401,10 @@ static bool init_audio(void)
    {
       /* Audio rate control requires write_avail
        * and buffer_size to be implemented. */
-      if (driver->audio->buffer_size)
+      if (current_audio->buffer_size)
       {
          audio_data.driver_buffer_size = 
-            driver->audio->buffer_size(context_audio_data);
+            current_audio->buffer_size(context_audio_data);
          audio_data.rate_control = true;
       }
       else
@@ -437,14 +433,11 @@ error:
  */
 static void audio_driver_readjust_input_rate(void)
 {
-   driver_t *driver     = driver_get_ptr();
-   const audio_driver_t *audio = driver ? 
-      (const audio_driver_t*)driver->audio : NULL;
    settings_t *settings = config_get_ptr();
    unsigned write_idx   = audio_data.buffer_free_samples_count++ &
       (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
    int      half_size   = audio_data.driver_buffer_size / 2;
-   int      avail       = audio->write_avail(context_audio_data);
+   int      avail       = current_audio->write_avail(context_audio_data);
    int      delta_mid   = avail - half_size;
    double   direction   = (double)delta_mid / half_size;
    double   adjust      = 1.0 + settings->audio.rate_control_delta * direction;
@@ -466,10 +459,9 @@ static void audio_driver_readjust_input_rate(void)
 void audio_driver_set_nonblocking_state(bool enable)
 {
    driver_t *driver     = driver_get_ptr();
-   const audio_driver_t *audio = audio_get_ptr(driver);
    settings_t *settings = config_get_ptr();
    if (driver->audio_active && context_audio_data)
-      audio->set_nonblock_state(context_audio_data,
+      current_audio->set_nonblock_state(context_audio_data,
             settings->audio.sync ? enable : true);
 
    audio_data.chunk_size = enable ? audio_data.nonblock_chunk_size : 
@@ -500,8 +492,6 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    unsigned output_frames                      = 0;
    size_t   output_size                        = sizeof(float);
    driver_t  *driver                           = driver_get_ptr();
-   const audio_driver_t *audio                 = driver ? 
-      (const audio_driver_t*)driver->audio : NULL;
    settings_t *settings                        = config_get_ptr();
 
    if (driver->recording_data)
@@ -580,7 +570,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
       output_size = sizeof(int16_t);
    }
 
-   if (audio->write(context_audio_data, output_data, output_frames * output_size * 2) < 0)
+   if (current_audio->write(context_audio_data, output_data, output_frames * output_size * 2) < 0)
    {
       driver->audio_active = false;
       return false;
@@ -757,7 +747,7 @@ static bool find_audio_driver(void)
    int i = find_driver_index("audio_driver", settings->audio.driver);
 
    if (i >= 0)
-      driver->audio = (const audio_driver_t*)audio_driver_find_handle(i);
+      current_audio = (const audio_driver_t*)audio_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -768,9 +758,9 @@ static bool find_audio_driver(void)
          RARCH_LOG_OUTPUT("\t%s\n", audio_driver_find_ident(d));
       RARCH_WARN("Going to default to first audio driver...\n");
 
-      driver->audio = (const audio_driver_t*)audio_driver_find_handle(0);
+      current_audio = (const audio_driver_t*)audio_driver_find_handle(0);
 
-      if (!driver->audio)
+      if (!current_audio)
          retro_fail(1, "find_audio_driver()");
    }
 
@@ -780,8 +770,6 @@ static bool find_audio_driver(void)
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 {
    driver_t        *driver     = driver_get_ptr();
-   const audio_driver_t *audio = driver ? 
-      (const audio_driver_t*)driver->audio : NULL;
    settings_t        *settings = config_get_ptr();
 
    switch (state)
@@ -833,11 +821,11 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
       case RARCH_AUDIO_CTL_ALIVE:
          if (!context_audio_data)
             return false;
-         return audio->alive(context_audio_data);
+         return current_audio->alive(context_audio_data);
       case RARCH_AUDIO_CTL_START:
-         return audio->start(context_audio_data);
+         return current_audio->start(context_audio_data);
       case RARCH_AUDIO_CTL_STOP:
-         return audio->stop(context_audio_data);
+         return current_audio->stop(context_audio_data);
       case RARCH_AUDIO_CTL_FIND_DRIVER:
          return find_audio_driver();
       case RARCH_AUDIO_CTL_FRAME_IS_REVERSE:
