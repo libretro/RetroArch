@@ -325,6 +325,7 @@ finish:
    }
 }
 
+#ifdef HAVE_ZLIB
 static int zlib_extract_core_callback(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata)
@@ -356,6 +357,7 @@ error:
    RARCH_ERR("Failed to deflate to: %s.\n", path);
    return 0;
 }
+#endif
 
 /* expects http_transfer_t*, menu_file_transfer_t* */
 void cb_generic_download(void *task_data, void *user_data, const char *err)

@@ -78,12 +78,12 @@ typedef struct nbio_handle
    unsigned status;
 } nbio_handle_t;
 
-static void rarch_task_file_load_handler(rarch_task_t *task);
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 
 #ifdef HAVE_RPNG
+static void rarch_task_file_load_handler(rarch_task_t *task);
 static int cb_image_menu_upload_generic(void *data, size_t len)
 {
    nbio_handle_t *nbio = (nbio_handle_t*)data;
@@ -230,9 +230,6 @@ static int rarch_main_data_image_iterate_transfer_parse(nbio_handle_t *nbio)
 
    return 0;
 }
-#endif
-
-#endif
 
 static int cb_nbio_default(void *data, size_t len)
 {
@@ -248,8 +245,6 @@ static int cb_nbio_default(void *data, size_t len)
    return 0;
 }
 
-#ifdef HAVE_RPNG
-#ifdef HAVE_MENU
 static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
 {
    void *ptr           = NULL;
@@ -313,9 +308,12 @@ static int cb_nbio_image_menu_boxart(void *data, size_t len)
 
    return cb_nbio_generic(nbio, &len);
 }
+#endif
+#endif
 
 bool rarch_task_push_image_load(const char *fullpath, const char *type, rarch_task_callback_t cb)
 {
+#if defined(HAVE_RPNG) && defined(HAVE_MENU)
    rarch_task_t *t;
    nbio_handle_t *nbio;
    uint32_t cb_type_hash        = 0;
@@ -352,12 +350,12 @@ bool rarch_task_push_image_load(const char *fullpath, const char *type, rarch_ta
    t->callback = cb;
 
    rarch_task_push(t);
-
+#endif
    return true;
 }
-#endif
-#endif
 
+/* guarded for rpng/menu use but good for generic use */
+#if defined(HAVE_RPNG) && defined(HAVE_MENU)
 static int rarch_main_data_nbio_iterate_transfer(nbio_handle_t *nbio)
 {
    size_t i;
@@ -450,8 +448,9 @@ static void rarch_task_file_load_handler(rarch_task_t *task)
          goto task_finished;
       }
 
-   } else  if (nbio->is_finished)
-      goto task_finished;
+   } else
+      if (nbio->is_finished)
+         goto task_finished;
 
    return;
 
@@ -472,3 +471,4 @@ task_finished:
    nbio->frame_count = 0;
    free(nbio);
 }
+#endif
