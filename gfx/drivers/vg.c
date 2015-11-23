@@ -33,6 +33,7 @@
 #include "../font_renderer_driver.h"
 #include "../../content.h"
 #include "../../runloop.h"
+#include "../../verbosity.h"
 
 typedef struct
 {
