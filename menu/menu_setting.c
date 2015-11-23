@@ -184,7 +184,7 @@ static void setting_get_string_representation_st_path(void *data,
  *
  * Returns: setting of type ST_ACTION.
  **/
-rarch_setting_t setting_action_setting(const char* name,
+static rarch_setting_t setting_action_setting(const char* name,
       const char* short_description,
       const char *group, const char *subgroup,
       const char *parent_group)

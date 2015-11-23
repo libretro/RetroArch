@@ -114,22 +114,6 @@ typedef int  (*action_ok_handler_t            )(void *data, bool wraparound);
 typedef int  (*action_select_handler_t        )(void *data, bool wraparound);
 typedef void (*get_string_representation_t    )(void *data, char *s, size_t len);
 
-/**
- * setting_action_setting:
- * @name               : Name of setting.
- * @short_description  : Short description of setting.
- * @group              : Group that the setting belongs to.
- * @subgroup           : Subgroup that the setting belongs to.
- *
- * Initializes a setting of type ST_ACTION.
- *
- * Returns: setting of type ST_ACTION.
- **/
-rarch_setting_t setting_action_setting(const char* name,
-      const char* short_description,
-      const char *group, const char *subgroup,
-      const char *parent_group);
-
 #define SL_FLAG_SETTINGS_GROUP_ALL (SL_FLAG_SETTINGS_ALL - SL_FLAG_MAIN_MENU)
 
 bool START_GROUP(rarch_setting_t **list, rarch_setting_info_t *list_info,
