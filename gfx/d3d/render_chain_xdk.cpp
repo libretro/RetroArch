@@ -17,6 +17,7 @@
 #include <string.h>
 #include <retro_inline.h>
 #include "render_chain_driver.h"
+#include "../../verbosity.h"
 
 typedef struct xdk_renderchain
 {
