@@ -30,7 +30,7 @@
    cbs->action_scan_ident = #name;
 #endif
 
-#ifdef HAVE_LIBETRODB
+#ifdef HAVE_LIBRETRODB
 static void handle_dbscan_finished(void *task_data, void *user_data, const char *err)
 {
    menu_environment_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST, NULL);
