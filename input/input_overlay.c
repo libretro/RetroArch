@@ -199,10 +199,9 @@ static void input_overlay_free_overlay(struct overlay *overlay)
    texture_image_free(&overlay->image);
 }
 
-static void input_overlay_free_overlays(void)
+static void input_overlay_free_overlays(input_overlay_t *ol)
 {
    size_t i;
-   input_overlay_t *ol = overlay_ptr;
 
    if (!ol)
       return;
@@ -534,14 +533,14 @@ void input_overlay_free(void)
    input_overlay_t *ol      = overlay_ptr;
    if (!ol)
       return;
+   overlay_ptr = NULL;
 
-   input_overlay_free_overlays();
+   input_overlay_free_overlays(ol);
 
    if (ol->iface && ol->iface->enable)
       ol->iface->enable(ol->iface_data, false);
 
    free(ol);
-   overlay_ptr = NULL;
 }
 
 /* task_data = overlay_task_data_t* */
@@ -549,9 +548,10 @@ static void input_overlay_loaded(void *task_data, void *user_data, const char *e
 {
    overlay_task_data_t *data = (overlay_task_data_t*)task_data;
    settings_t      *settings = config_get_ptr();
-   input_overlay_t       *ol = (input_overlay_t*)calloc(1, sizeof(*ol));
+   input_overlay_t       *ol;
    driver_t *driver          = driver_get_ptr();
 
+   ol = (input_overlay_t*)calloc(1, sizeof(*ol));
    ol->overlays = data->overlays;
    ol->size     = data->size;
    ol->active   = data->active;
@@ -570,11 +570,7 @@ static void input_overlay_loaded(void *task_data, void *user_data, const char *e
    overlay_ptr = ol;
 
    input_overlay_load_active(settings->input.overlay_opacity);
-
-   input_overlay_enable(driver->osk_enable ?
-         settings->osk.enable : settings->input.overlay_enable);
-
-   input_overlay_set_alpha_mod(settings->input.overlay_opacity);
+   input_overlay_enable(driver->osk_enable ? settings->osk.enable : settings->input.overlay_enable);
    input_overlay_set_scale_factor(settings->input.overlay_scale);
 
    ol->next_index = (ol->index + 1) % ol->size;
@@ -590,6 +586,7 @@ error:
 
 void input_overlay_init(void)
 {
+   input_overlay_free();
    rarch_task_push_overlay_load_default(input_overlay_loaded, NULL);
 }
 
