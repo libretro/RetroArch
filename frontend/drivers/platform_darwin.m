@@ -16,7 +16,6 @@
  */
 
 #include <stdint.h>
-#include <boolean.h>
 #include <stddef.h>
 #include <string.h>
 #include <unistd.h>
@@ -40,6 +39,7 @@
 #include <UIKit/UIDevice.h>
 #endif
 
+#include <boolean.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 #include <rhash.h>
@@ -47,6 +47,7 @@
 #include "../frontend_driver.h"
 #include "../../ui/ui_companion_driver.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 
 #ifdef HAVE_MENU
 #include "../../menu/menu.h"

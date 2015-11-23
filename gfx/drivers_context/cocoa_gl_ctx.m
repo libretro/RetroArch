@@ -34,6 +34,7 @@
 #include "../video_context_driver.h"
 #include "../../configuration.h"
 #include "../../runloop.h"
+#include "../../verbosity.h"
 
 #if defined(HAVE_COCOATOUCH)
 #define GLContextClass EAGLContext

@@ -33,6 +33,7 @@
 
 #include "../../driver.h"
 #include "../../general.h"
+#include "../../verbosity.h"
 
 #if defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
 
