@@ -44,12 +44,6 @@ void rarch_main_data_iterate(void);
 
 void rarch_main_data_deinit(void);
 
-void rarch_main_data_free(void);
-
-void rarch_main_data_init_queues(void);
-
-bool rarch_main_data_active(void);
-
 #ifdef __cplusplus
 }
 #endif

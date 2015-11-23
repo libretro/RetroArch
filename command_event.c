@@ -1410,7 +1410,6 @@ bool event_command(enum event_command cmd)
          global->core_info.list = NULL;
          break;
       case EVENT_CMD_DATA_RUNLOOP_FREE:
-         rarch_main_data_free();
          break;
       case EVENT_CMD_CORE_INFO_INIT:
          event_command(EVENT_CMD_CORE_INFO_DEINIT);
@@ -1620,7 +1619,6 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_MSG_QUEUE_INIT:
          event_command(EVENT_CMD_MSG_QUEUE_DEINIT);
          rarch_main_msg_queue_init();
-         rarch_main_data_init_queues();
          break;
       case EVENT_CMD_BSV_MOVIE_DEINIT:
          if (!global)
