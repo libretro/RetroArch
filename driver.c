@@ -466,8 +466,5 @@ void uninit_drivers(int flags)
 
    if ((flags & DRIVER_INPUT) && !driver->input_data_own)
       driver->input_data = NULL;
-
-   if ((flags & DRIVER_AUDIO) && !driver->audio_data_own)
-      driver->audio_data = NULL;
 }
 
