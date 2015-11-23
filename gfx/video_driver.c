@@ -1158,10 +1158,11 @@ void video_driver_set_pixel_format(enum retro_pixel_format fmt)
  *
  * Renders the current video frame.
  **/
-static bool video_driver_cached_frame(driver_t *driver)
+static bool video_driver_cached_frame(void)
 {
    bool is_idle;
-   void *recording    = driver ? driver->recording_data : NULL;
+   driver_t   *driver   = driver_get_ptr();
+   void *recording      = driver ? driver->recording_data : NULL;
 
    rarch_main_ctl(RARCH_MAIN_CTL_IS_IDLE, &is_idle);
 
@@ -1502,7 +1503,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          {
             bool *toggle                  = (bool*)data;
 
-            if (!toggle || !driver)
+            if (!toggle)
                return false;
 
             if (current_video && current_video->set_nonblock_state)
@@ -1527,7 +1528,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
       case RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER:
          if (!current_video)
             return false;
-         return video_driver_cached_frame(driver);
+         return video_driver_cached_frame();
       case RARCH_DISPLAY_CTL_IS_ALIVE:
          return current_video->alive(video_data);
       case RARCH_DISPLAY_CTL_IS_FOCUSED:
