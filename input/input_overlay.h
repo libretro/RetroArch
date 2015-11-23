@@ -191,9 +191,6 @@ typedef struct
     size_t size;
 } overlay_task_data_t;
 
-
-bool input_overlay_new_done(void);
-
 /**
  * input_overlay_free:
  *

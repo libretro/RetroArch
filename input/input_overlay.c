@@ -42,7 +42,6 @@ struct input_overlay
    const video_overlay_interface_t *iface;
    bool enable;
 
-   enum overlay_image_transfer_status loading_status;
    bool blocked;
    bool alive;
 
@@ -50,28 +49,9 @@ struct input_overlay
    const struct overlay *active;
    size_t index;
    size_t size;
-   unsigned pos;
-   size_t resolve_pos;
-   size_t pos_increment;
 
    unsigned next_index;
-   char *overlay_path;
    enum overlay_status state;
-
-   struct
-   {
-      struct
-      {
-         unsigned size;
-      } overlays;
-   } config;
-
-   struct
-   {
-      bool enable;
-      float opacity;
-      float scale_factor;
-   } deferred;
 };
 
 typedef struct input_overlay_state
@@ -267,22 +247,6 @@ static void input_overlay_enable(bool enable)
 
    if (ol->iface && ol->iface->enable)
       ol->iface->enable(ol->iface_data, enable);
-}
-
-bool input_overlay_new_done(void)
-{
-   input_overlay_t *ol      = overlay_ptr;
-   if (!ol)
-      return false;
-
-   input_overlay_set_alpha_mod(ol->deferred.opacity);
-   input_overlay_set_scale_factor(ol->deferred.scale_factor);
-
-   ol->next_index = (ol->index + 1) % ol->size;
-   ol->state      = OVERLAY_STATUS_NONE;
-   ol->alive      = true;
-
-   return true;
 }
 
 /**
@@ -576,19 +540,18 @@ void input_overlay_free(void)
    if (ol->iface && ol->iface->enable)
       ol->iface->enable(ol->iface_data, false);
 
-   if (ol->overlay_path)
-      free(ol->overlay_path);
-   ol->overlay_path = NULL;
    free(ol);
    overlay_ptr = NULL;
 }
 
-/* task_data = overlay_array_t* */
+/* task_data = overlay_task_data_t* */
 static void input_overlay_loaded(void *task_data, void *user_data, const char *err)
 {
    overlay_task_data_t *data = (overlay_task_data_t*)task_data;
    settings_t      *settings = config_get_ptr();
    input_overlay_t       *ol = (input_overlay_t*)calloc(1, sizeof(*ol));
+   driver_t *driver          = driver_get_ptr();
+
    ol->overlays = data->overlays;
    ol->size     = data->size;
    ol->active   = data->active;
@@ -607,8 +570,16 @@ static void input_overlay_loaded(void *task_data, void *user_data, const char *e
    overlay_ptr = ol;
 
    input_overlay_load_active(settings->input.overlay_opacity);
-   input_overlay_enable(settings->input.overlay_scale);
 
+   input_overlay_enable(driver->osk_enable ?
+         settings->osk.enable : settings->input.overlay_enable);
+
+   input_overlay_set_alpha_mod(settings->input.overlay_opacity);
+   input_overlay_set_scale_factor(settings->input.overlay_scale);
+
+   ol->next_index = (ol->index + 1) % ol->size;
+   ol->state      = OVERLAY_STATUS_NONE;
+   ol->alive      = true;
 
    RARCH_LOG("%u overlays loaded.\n", (unsigned)data->size);
 

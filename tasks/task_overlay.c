@@ -714,12 +714,12 @@ bool rarch_task_push_overlay_load_default(
    if (driver->osk_enable)
    {
       if (!*settings->osk.overlay)
-         return 1;
+         return false;
    }
    else
    {
       if (!*settings->input.overlay)
-         return 1;
+         return false;
    }
 
    return rarch_task_push_overlay_load(
