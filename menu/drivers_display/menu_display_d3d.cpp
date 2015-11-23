@@ -45,7 +45,7 @@ static const float d3d_tex_coords[] = {
 
 static d3d_video_t *d3d_get_ptr(void)
 {
-   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr();
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
 
    if (!d3d)
       return NULL;
