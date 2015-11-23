@@ -700,6 +700,7 @@ RETROARCH
 #include "../runloop_data.c"
 #include "../runloop_msg.c"
 #include "../system.c"
+#include "../tasks/tasks.c"
 
 #include "../msg_hash.c"
 #include "../intl/msg_hash_de.c"
