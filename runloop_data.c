@@ -28,26 +28,11 @@
 #include "menu/menu.h"
 #endif
 
-#undef HAVE_THREADS
-typedef struct data_runloop
-{
-   bool inited;
-} data_runloop_t;
-
 static char data_runloop_msg[PATH_MAX_LENGTH];
-
-static data_runloop_t g_data_runloop;
 
 void rarch_main_data_deinit(void)
 {
-   g_data_runloop.inited = false;
-
    rarch_task_deinit();
-}
-
-void rarch_main_data_free(void)
-{
-   memset(&g_data_runloop, 0, sizeof(g_data_runloop));
 }
 
 bool rarch_main_data_active(void)
@@ -79,23 +64,14 @@ void rarch_main_data_iterate(void)
 
 static void rarch_main_data_init(void)
 {
-   g_data_runloop.inited = true;
-
    rarch_task_init();
 }
 
 void rarch_main_data_clear_state(void)
 {
    rarch_main_data_deinit();
-   rarch_main_data_free();
    rarch_main_data_init();
 }
-
-
-void rarch_main_data_init_queues(void)
-{
-}
-
 
 void rarch_main_data_msg_queue_push(unsigned type,
       const char *msg, const char *msg2,
