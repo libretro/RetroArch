@@ -261,7 +261,7 @@ static bool gfx_ctx_glx_init(void *data)
    glx->g_fbc = fbcs[0];
    XFree(fbcs);
 
-   driver->video_context_data = glx;
+   gfx_ctx_data_set(glx);
 
    return true;
 

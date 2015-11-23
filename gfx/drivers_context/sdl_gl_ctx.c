@@ -93,7 +93,7 @@ static bool sdl_ctx_init(void *data)
    RARCH_LOG("[SDL_GL] SDL %i.%i.%i gfx context driver initialized.\n",
            SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
 
-   driver->video_context_data = sdl;
+   gfx_ctx_data_set(sdl);
 
    return true;
 

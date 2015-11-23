@@ -87,6 +87,14 @@ void *gfx_ctx_data_get_ptr(void)
    return driver->video_context_data;
 }
 
+void gfx_ctx_data_set(void *ptr)
+{
+   driver_t  *driver     = driver_get_ptr();
+   if (!driver || !ptr)
+      return;
+   driver->video_context_data = ptr;
+}
+
 void gfx_ctx_free_data(void)
 {
    driver_t  *driver     = driver_get_ptr();

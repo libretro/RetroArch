@@ -256,6 +256,8 @@ retro_proc_address_t gfx_ctx_get_proc_address(const char *sym);
 
 void *gfx_ctx_data_get_ptr(void);
 
+void gfx_ctx_data_set(void *ptr);
+
 void gfx_ctx_free_data(void);
 
 #ifdef __cplusplus

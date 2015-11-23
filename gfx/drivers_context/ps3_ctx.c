@@ -292,7 +292,7 @@ static bool gfx_ctx_ps3_init(void *data)
 
    gfx_ctx_ps3_get_available_resolutions();
 
-   driver->video_context_data = ps3;
+   gfx_ctx_data_set(ps3);
 
    return true;
 }

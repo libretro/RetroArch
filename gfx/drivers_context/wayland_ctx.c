@@ -337,7 +337,7 @@ static bool gfx_ctx_wl_init(void *data)
       goto error;
    }
 
-   driver->video_context_data = wl;
+   gfx_ctx_data_set(wl);
 
    wl->g_registry = wl_display_get_registry(wl->g_dpy);
    wl_registry_add_listener(wl->g_registry, &registry_listener, NULL);

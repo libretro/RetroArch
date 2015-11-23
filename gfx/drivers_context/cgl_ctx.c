@@ -332,7 +332,7 @@ static bool gfx_ctx_cgl_init(void *data)
 
    CGLSetCurrentContext(cgl->glCtx);
 
-   driver->video_context_data = cgl;
+   gfx_ctx_data_set(cgl);
 
    return true;
 

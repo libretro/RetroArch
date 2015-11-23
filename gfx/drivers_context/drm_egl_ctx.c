@@ -509,7 +509,7 @@ nextgpu:
 
    dir_list_free(gpu_descriptors);
 
-   driver->video_context_data = drm;
+   gfx_ctx_data_set(drm);
 
    return true;
 
