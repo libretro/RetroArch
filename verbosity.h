@@ -55,7 +55,7 @@ void retro_main_log_file_init(const char *path);
 #if defined(HAVE_FILE_LOGGER)
 
 #ifdef __cplusplus
-extern "C"
+extern "C" {
 #endif
 
 #define LOG_FILE (retro_main_log_file())
