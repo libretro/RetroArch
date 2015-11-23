@@ -622,16 +622,19 @@ static void rarch_task_overlay_handler(rarch_task_t *task)
          rarch_task_overlay_resolve_iterate(loader);
          break;
       case OVERLAY_STATUS_DEFERRED_DONE:
-//         input_overlay_new_done();
-//         break;
+#if 0
+         input_overlay_new_done();
+         break;
+#endif
       case OVERLAY_STATUS_DEFERRED_ERROR:
-//         input_overlay_free();
-//         break;
-
+#if 0
+         input_overlay_free();
+         break;
+#endif
+         break;
       default:
       case OVERLAY_STATUS_NONE:
          goto task_finished;
-         break;
    }
 
    return;

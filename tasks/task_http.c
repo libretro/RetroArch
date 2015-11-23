@@ -153,7 +153,6 @@ static void rarch_task_http_transfer_handler(rarch_task_t *task)
          break;
       case HTTP_STATUS_TRANSFER_PARSE:
          goto task_finished;
-         break;
       case HTTP_STATUS_TRANSFER:
          if (!rarch_main_data_http_iterate_transfer(http))
             http->status = HTTP_STATUS_TRANSFER_PARSE;

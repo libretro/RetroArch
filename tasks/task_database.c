@@ -532,7 +532,6 @@ static void rarch_dbscan_task_handler(rarch_task_t *task)
       case DATABASE_STATUS_FREE:
       case DATABASE_STATUS_NONE:
          goto task_finished;
-         break;
    }
 
    return;
