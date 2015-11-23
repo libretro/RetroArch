@@ -504,10 +504,6 @@ bool video_monitor_fps_statistics(double *refresh_rate,
 bool video_monitor_get_fps(char *buf, size_t size,
       char *buf_fps, size_t size_fps);
 
-void deinit_pixel_converter(void);
-
-bool init_video_pixel_converter(unsigned size);
-
 unsigned video_pixel_get_alignment(unsigned pitch);
 
 bool video_pixel_frame_scale(const void *data,
