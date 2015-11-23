@@ -489,13 +489,14 @@ static void deinit_pixel_converter(void)
 
    if (scaler_ptr->scaler)
       free(scaler_ptr->scaler);
+   scaler_ptr->scaler     = NULL;
+
    if (scaler_ptr->scaler_out)
       free(scaler_ptr->scaler_out);
+   scaler_ptr->scaler_out = NULL;
+
    if (scaler_ptr)
       free(scaler_ptr);
-
-   scaler_ptr->scaler     = NULL;
-   scaler_ptr->scaler_out = NULL;
    scaler_ptr             = NULL;
 }
 
