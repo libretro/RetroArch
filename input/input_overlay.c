@@ -1034,7 +1034,6 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
       float opacity, float scale_factor)
 {
    input_overlay_t *ol = (input_overlay_t*)calloc(1, sizeof(*ol));
-   driver_t *driver    = driver_get_ptr();
 
    if (!ol)
       goto error;
@@ -1052,7 +1051,7 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
       goto error;
    }
 
-   ol->iface_data = driver->video_data;
+   ol->iface_data            = video_driver_get_ptr();
 
    if (!ol->iface)
       goto error;
