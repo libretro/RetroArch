@@ -17,8 +17,9 @@
 #ifndef RARCH_AUDIO_THREAD_H__
 #define RARCH_AUDIO_THREAD_H__
 
-#include "../driver.h"
 #include <boolean.h>
+
+#include "audio_driver.h"
 
 /**
  * rarch_threaded_audio_init:

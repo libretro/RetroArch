@@ -27,8 +27,8 @@
 #include <boolean.h>
 #include <retro_inline.h>
 
-#include "../../driver.h"
-#include "../../general.h"
+#include "../audio_driver.h"
+#include "../../configuration.h"
 #include "../../defines/gx_defines.h"
 
 #define CHUNK_FRAMES 64

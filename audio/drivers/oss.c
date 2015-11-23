@@ -31,8 +31,8 @@
 #include "config.h"
 #endif
 
-#include "../../driver.h"
-#include "../../general.h"
+#include "../audio_driver.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #ifdef HAVE_OSS_BSD

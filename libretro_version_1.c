@@ -32,6 +32,7 @@
 #include "rewind.h"
 #include "performance.h"
 #include "input/input_remapping.h"
+#include "audio/audio_driver.h"
 #include "record/record_driver.h"
 #include "verbosity.h"
 

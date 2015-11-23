@@ -19,8 +19,8 @@
 
 #include <queues/fifo_buffer.h>
 
-#include "../driver.h"
-#include "../general.h"
+#include "../audio_driver.h"
+#include "../../configuration.h"
 
 #include "../../defines/ps3_defines.h"
 

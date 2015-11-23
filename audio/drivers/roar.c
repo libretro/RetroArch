@@ -22,8 +22,8 @@
 
 #include <boolean.h>
 
-#include "../../driver.h"
-#include "../../general.h"
+#include "../audio_driver.h"
+#include "../../configuration.h"
 
 typedef struct
 {

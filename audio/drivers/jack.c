@@ -26,8 +26,8 @@
 #include <boolean.h>
 #include <rthreads/rthreads.h>
 
-#include "../../driver.h"
-#include "../../general.h"
+#include "../audio_driver.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #define FRAMES(x) (x / (sizeof(float) * 2))

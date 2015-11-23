@@ -26,6 +26,7 @@
 #include "rewind.h"
 #include "performance.h"
 #include "verbosity.h"
+#include "audio/audio_driver.h"
 
 /* This makes Valgrind throw errors if a core overflows its savestate size. */
 /* Keep it off unless you're chasing a core bug, it slows things down. */

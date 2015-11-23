@@ -28,8 +28,8 @@
 #include <windows.h>
 #endif
 
-#include "../../driver.h"
-#include "../../general.h"
+#include "../audio_driver.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #define BUFSIZE 1024

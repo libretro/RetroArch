@@ -18,8 +18,8 @@
 #define ALSA_PCM_NEW_SW_PARAMS_API
 #include <sys/asoundlib.h>
 
-#include "../../general.h"
-#include "../../driver.h"
+#include "../audio_driver.h"
+#include "../../configuration.h"
 
 #define MAX_FRAG_SIZE 3072
 #define DEFAULT_RATE 48000

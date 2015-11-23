@@ -26,8 +26,8 @@
 #include <queues/fifo_buffer.h>
 #include <retro_inline.h>
 
-#include "../../driver.h"
-#include "../../general.h"
+#include "../audio_driver.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 typedef struct sdl_audio

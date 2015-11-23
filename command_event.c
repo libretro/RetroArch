@@ -19,6 +19,7 @@
 
 #include "command_event.h"
 
+#include "audio/audio_driver.h"
 #include "general.h"
 #include "performance.h"
 #include "dynamic.h"

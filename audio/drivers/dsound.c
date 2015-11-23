@@ -34,8 +34,8 @@
 #include <rthreads/rthreads.h>
 #include <queues/fifo_buffer.h>
 
-#include "../../driver.h"
-#include "../../general.h"
+#include "../audio_driver.h"
+#include "../configuration.h"
 #include "../../verbosity.h"
 
 #ifdef _XBOX

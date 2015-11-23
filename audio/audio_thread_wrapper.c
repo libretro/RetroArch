@@ -21,7 +21,6 @@
 #include <rthreads/rthreads.h>
 
 #include "audio_thread_wrapper.h"
-#include "../general.h"
 #include "../performance.h"
 #include "../verbosity.h"
 

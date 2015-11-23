@@ -29,6 +29,7 @@
 
 #include "performance.h"
 
+#include "audio/audio_driver.h"
 #include "libretro_private.h"
 #include "cores/internal_cores.h"
 #include "retroarch.h"

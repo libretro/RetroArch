@@ -38,6 +38,7 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../dynamic.h"
+#include "../audio/audio_driver.h"
 #include "../input/input_common.h"
 #include "../input/input_autodetect.h"
 #include "../config.def.h"

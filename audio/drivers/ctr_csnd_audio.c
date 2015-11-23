@@ -14,8 +14,9 @@
  */
 
 #include <3ds.h>
-#include "../../general.h"
-#include "../../driver.h"
+
+#include "../audio_driver.h"
+#include "../../configuration.h"
 #include "../../performance.h"
 
 typedef struct

@@ -17,8 +17,8 @@
 
 #include <alsa/asoundlib.h>
 
-#include "../../driver.h"
-#include "../../general.h"
+#include "../audio_driver.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 typedef struct alsa

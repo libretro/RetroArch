@@ -29,6 +29,7 @@
 #include "retroarch.h"
 #include "runloop.h"
 #include "runloop_data.h"
+#include "audio/audio_driver.h"
 
 #include "msg_hash.h"
 

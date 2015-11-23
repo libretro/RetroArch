@@ -28,8 +28,8 @@
 #include <pspaudio.h>
 #endif
 
-#include "../../general.h"
-#include "../../driver.h"
+#include "../audio_driver.h"
+#include "../../configuration.h"
 
 typedef struct psp_audio
 {
