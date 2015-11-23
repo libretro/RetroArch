@@ -482,7 +482,7 @@ void audio_driver_set_nonblocking_state(bool enable)
  * Returns: true (1) if audio samples were written to the audio
  * driver, false (0) in case of an error.
  **/
-bool audio_driver_flush(const int16_t *data, size_t samples)
+static bool audio_driver_flush(const int16_t *data, size_t samples)
 {
    bool is_slowmotion, is_paused;
    static struct retro_perf_counter audio_convert_s16 = {0};

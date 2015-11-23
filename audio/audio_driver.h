@@ -122,8 +122,6 @@ void audio_driver_set_nonblocking_state(bool enable);
  **/
 const char* config_get_audio_driver_options(void);
 
-bool audio_driver_flush(const int16_t *data, size_t samples);
-
 void audio_driver_sample(int16_t left, int16_t right);
 
 size_t audio_driver_sample_batch(const int16_t *data, size_t frames);
