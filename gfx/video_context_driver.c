@@ -79,6 +79,22 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 };
 
 
+const void *gfx_ctx_data_get_ptr(void)
+{
+   driver_t  *driver     = driver_get_ptr();
+   if (!driver)
+      return NULL; 
+   return driver->video_context_data;
+}
+
+void gfx_ctx_free_data(void)
+{
+   driver_t  *driver     = driver_get_ptr();
+   if (driver->video_context_data)
+      free(driver->video_context_data);
+   driver->video_context_data = NULL;
+}
+
 static const gfx_ctx_driver_t *gfx_ctx_get_ptr(void)
 {
    driver_t  *driver     = driver_get_ptr();

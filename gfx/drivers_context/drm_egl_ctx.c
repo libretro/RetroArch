@@ -83,9 +83,9 @@ struct drm_fb
 
 static void drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
 {
-   driver_t *driver = driver_get_ptr();
    struct drm_fb *fb = (struct drm_fb*)data;
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver->video_context_data;
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
+      gfx_ctx_data_get_ptr();
 
    if (drm && fb->fb_id)
       drmModeRmFB(drm->g_drm_fd, fb->fb_id);
@@ -236,9 +236,8 @@ static bool queue_flip(gfx_ctx_drm_egl_data_t *drm)
 
 static void gfx_ctx_drm_egl_swap_buffers(void *data)
 {
-   driver_t *driver = driver_get_ptr();
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-   driver->video_context_data;
+      gfx_ctx_data_get_ptr();
 
    egl_swap_buffers(data);
 
@@ -281,10 +280,11 @@ static void gfx_ctx_drm_egl_update_window_title(void *data)
       rarch_main_msg_queue_push( buf_fps, 1, 1, false);
 }
 
-static void gfx_ctx_drm_egl_get_video_size(void *data, unsigned *width, unsigned *height)
+static void gfx_ctx_drm_egl_get_video_size(void *data,
+      unsigned *width, unsigned *height)
 {
-   driver_t *driver = driver_get_ptr();
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver->video_context_data;
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
+      gfx_ctx_data_get_ptr();
 
    if (!drm)
       return;
@@ -631,10 +631,9 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    float refresh_mod;
    int i, ret = 0;
    struct drm_fb *fb = NULL;
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-      driver->video_context_data;
+      gfx_ctx_data_get_ptr();
 
    if (!drm)
       return false;
@@ -765,20 +764,14 @@ error:
 
 static void gfx_ctx_drm_egl_destroy(void *data)
 {
-   driver_t *driver = driver_get_ptr();
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-      driver->video_context_data;
+      gfx_ctx_data_get_ptr();
 
    if (!drm)
       return;
 
-   (void)data;
-
    gfx_ctx_drm_egl_destroy_resources(drm);
-
-   if (driver->video_context_data)
-      free(driver->video_context_data);
-   driver->video_context_data = NULL;
+   gfx_ctx_free_data();
 }
 
 static void gfx_ctx_drm_egl_input_driver(void *data,
