@@ -1101,6 +1101,8 @@ void rarch_main_free(void)
 
    rarch_main_ctl(RARCH_MAIN_CTL_STATE_FREE,  NULL);
    rarch_main_ctl(RARCH_MAIN_CTL_GLOBAL_FREE, NULL);
+
+   rarch_main_data_deinit();
    config_free();
 }
 
