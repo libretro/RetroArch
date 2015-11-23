@@ -13,13 +13,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "dspfilter.h"
-#include <math.h>
 #include <stdlib.h>
 
-#ifndef min
-#define min(a, b) ((a) < (b) ? (a) : (b))
-#endif
+#include <retro_miscellaneous.h>
+
+#include "dspfilter.h"
 
 struct echo_channel
 {

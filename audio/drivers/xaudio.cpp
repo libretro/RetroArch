@@ -21,6 +21,7 @@
 #include <boolean.h>
 
 #include <compat/msvc.h>
+#include <retro_miscellaneous.h>
 
 #include "xaudio.h"
 
@@ -33,11 +34,6 @@ typedef struct xaudio2 xaudio2_t;
 #define MAX_BUFFERS      16
 
 #define MAX_BUFFERS_MASK (MAX_BUFFERS - 1)
-
-#undef min
-#undef max
-#define min(a, b) ((a) < (b) ? (a) : (b))
-#define max(a, b) ((a) > (b) ? (a) : (b))
 
 typedef struct
 {

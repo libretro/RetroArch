@@ -19,7 +19,10 @@
 #include <complex.h>
 #include <string.h>
 #include <assert.h>
+
 #include <stdbool.h>
+
+#include <retro_miscellaneous.h>
 
 #include "../audio_resampler_driver.h"
 #include "../audio_utils.h"
@@ -27,9 +30,6 @@
 #ifndef RESAMPLER_IDENT
 #define RESAMPLER_IDENT "sinc"
 #endif
-
-#undef min
-#define min(a, b) (((a) < (b)) ? (a) : (b))
 
 static void gen_signal(float *out, double omega, double bias_samples, size_t samples)
 {

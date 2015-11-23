@@ -15,13 +15,15 @@
 
 /* Convoluted Cosine Resampler */
 
-#include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
+
 #ifdef __SSE__
 #include <xmmintrin.h>
 #endif
+
 #include <retro_inline.h>
+#include <retro_miscellaneous.h>
 #include <memalign.h>
 
 #include "../audio_resampler_driver.h"
@@ -42,10 +44,6 @@
 
 #ifndef CC_RESAMPLER_PRECISION
 #define CC_RESAMPLER_PRECISION 1
-#endif
-
-#ifndef min
-#define min(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
 typedef struct rarch_CC_resampler

@@ -24,10 +24,6 @@
 
 #include "fft/fft.c"
 
-#ifndef min
-#define min(a, b) ((a) < (b) ? (a) : (b))
-#endif
-
 struct eq_data
 {
    fft_t *fft;
