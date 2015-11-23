@@ -864,16 +864,13 @@ void video_driver_get_size(unsigned *width, unsigned *height)
       *height = video_state.video_height;
 }
 
-void video_driver_set_size_width(unsigned width)
+void video_driver_set_size(unsigned *width, unsigned *height)
 {
-   video_state.video_width = width;
+   if (width)
+      video_state.video_width  = *width;
+   if (height)
+      video_state.video_height = *height;
 }
-
-void video_driver_set_size_height(unsigned height)
-{
-   video_state.video_height = height;
-}
-
 
 /**
  * video_monitor_set_refresh_rate:

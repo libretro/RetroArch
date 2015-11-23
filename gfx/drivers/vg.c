@@ -104,10 +104,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    RARCH_LOG("Detecting screen resolution %ux%u.\n", temp_width, temp_height);
 
    if (temp_width != 0 && temp_height != 0)
-   {
-      video_driver_set_size_width(temp_width);
-      video_driver_set_size_width(temp_height);
-   }
+      video_driver_set_size(&temp_width, &temp_height);
 
    gfx_ctx_swap_interval(vg, video->vsync ? 1 : 0);
 
@@ -139,8 +136,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    if (temp_width != 0 && temp_height != 0)
    {
       RARCH_LOG("Verified window resolution %ux%u.\n", temp_width, temp_height);
-      video_driver_set_size_width(temp_width);
-      video_driver_set_size_height(temp_height);
+      video_driver_set_size(&temp_width, &temp_height);
    }
 
    video_driver_get_size(&temp_width, &temp_height);
@@ -376,10 +372,7 @@ static bool vg_alive(void *data)
          &vg->should_resize, &temp_width, &temp_height);
 
    if (temp_width != 0 && temp_height != 0)
-   {
-      video_driver_set_size_width(temp_width);
-      video_driver_set_size_height(temp_height);
-   }
+      video_driver_set_size(&temp_width, &temp_height);
 
    return !quit;
 }

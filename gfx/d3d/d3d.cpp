@@ -177,9 +177,7 @@ void d3d_make_d3dpp(void *data,
       unsigned height         = 0;
 
       gfx_ctx_get_video_size(d3d, &width, &height);
-
-      video_driver_set_size_width(width);
-      video_driver_set_size_height(height);
+      video_driver_set_size(&width, &height);
 #endif
       video_driver_get_size(&d3dpp->BackBufferWidth, &d3dpp->BackBufferHeight);
    }
@@ -464,10 +462,7 @@ static bool d3d_alive(void *data)
    }
 
    if (temp_width != 0 && temp_height != 0)
-   {
-      video_driver_set_size_width(temp_width);
-      video_driver_set_size_height(temp_height);
-   }
+      video_driver_set_size(&temp_width, &temp_height);
 
    return ret;
 }
@@ -602,8 +597,9 @@ static bool d3d_construct(d3d_video_t *d3d,
 #else
    gfx_ctx_get_video_size(d3d, &full_x, &full_y);
 #endif
-   video_driver_set_size_width(info->fullscreen  ? full_x : info->width);
-   video_driver_set_size_height(info->fullscreen ? full_y : info->height);
+   video_driver_set_size(
+         info->fullscreen ? &full_x : &info->width,
+         info->fullscreen ? &full_y : &info->height);
 
 #ifndef _XBOX
 #ifdef HAVE_WINDOW

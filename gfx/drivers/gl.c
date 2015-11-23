@@ -2481,10 +2481,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gfx_ctx_get_video_size(gl, &temp_width, &temp_height);
 
    if (temp_width != 0 && temp_height != 0)
-   {
-      video_driver_set_size_width(temp_width);
-      video_driver_set_size_height(temp_height);
-   }
+      video_driver_set_size(&temp_width, &temp_height);
 
    video_driver_get_size(&temp_width, &temp_height);
 
@@ -2660,10 +2657,7 @@ static bool gl_alive(void *data)
    }
 
    if (temp_width != 0 && temp_height != 0)
-   {
-      video_driver_set_size_width(temp_width);
-      video_driver_set_size_height(temp_height);
-   }
+      video_driver_set_size(&temp_width, &temp_height);
 
    return ret;
 }

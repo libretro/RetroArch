@@ -65,8 +65,7 @@ static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
       RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
       d3d->video_info.width  = new_width;
       d3d->video_info.height = new_height;
-      video_driver_set_size_width(new_width);
-      video_driver_set_size_height(new_height);
+      video_driver_set_size(&new_width, &new_height);
       d3d_restore(d3d);
    }
 }

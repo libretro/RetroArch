@@ -402,9 +402,7 @@ bool video_driver_set_viewport(unsigned width, unsigned height,
 
 void video_driver_get_size(unsigned *width, unsigned *height);
 
-void video_driver_set_size_width(unsigned width);
-
-void video_driver_set_size_height(unsigned width);
+void video_driver_set_size(unsigned *width, unsigned *height);
 
 float video_driver_get_aspect_ratio(void);
 
