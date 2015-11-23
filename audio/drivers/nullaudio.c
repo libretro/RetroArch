@@ -14,6 +14,7 @@
  */
 
 #include "../audio_driver.h"
+#include "../../verbosity.h"
 
 static void *null_audio_init(const char *device, unsigned rate, unsigned latency)
 {
