@@ -86,7 +86,6 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    unsigned temp_width = 0, temp_height = 0;
    VGfloat clearColor[4] = {0, 0, 0, 1};
    settings_t        *settings = config_get_ptr();
-   driver_t            *driver = driver_get_ptr();
    const gfx_ctx_driver_t *ctx = NULL;
    vg_t                    *vg = (vg_t*)calloc(1, sizeof(vg_t));
 

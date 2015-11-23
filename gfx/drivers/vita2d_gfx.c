@@ -278,7 +278,8 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       }
    }
    
-   if(msg&&strcmp(msg,"")){
+   if(msg && strcmp(msg,""))
+   {
      driver_t          *driver = driver_get_ptr();
      const font_renderer_t *font_ctx = driver->font_osd_driver;
      
