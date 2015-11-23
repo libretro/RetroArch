@@ -202,7 +202,6 @@ typedef struct driver
    const input_driver_t *input;
    const camera_driver_t *camera;
    const location_driver_t *location;
-   const rarch_resampler_t *resampler;
    const record_driver_t *recording;
    struct retro_callbacks retro_ctx;
    const struct font_renderer *font_osd_driver;
