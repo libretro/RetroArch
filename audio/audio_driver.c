@@ -228,31 +228,6 @@ const char *config_get_audio_driver_options(void)
    return char_list_new_special(STRING_LIST_AUDIO_DRIVERS, NULL);
 }
 
-void find_audio_driver(void)
-{
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
-
-   int i = find_driver_index("audio_driver", settings->audio.driver);
-
-   if (i >= 0)
-      driver->audio = (const audio_driver_t*)audio_driver_find_handle(i);
-   else
-   {
-      unsigned d;
-      RARCH_ERR("Couldn't find any audio driver named \"%s\"\n",
-            settings->audio.driver);
-      RARCH_LOG_OUTPUT("Available audio drivers are:\n");
-      for (d = 0; audio_driver_find_handle(d); d++)
-         RARCH_LOG_OUTPUT("\t%s\n", audio_driver_find_ident(d));
-      RARCH_WARN("Going to default to first audio driver...\n");
-
-      driver->audio = (const audio_driver_t*)audio_driver_find_handle(0);
-
-      if (!driver->audio)
-         retro_fail(1, "find_audio_driver()");
-   }
-}
 
 static bool uninit_audio(void)
 {
@@ -344,7 +319,7 @@ static bool init_audio(void)
       return false;
    }
 
-   find_audio_driver();
+   audio_driver_ctl(RARCH_AUDIO_CTL_FIND_DRIVER, NULL);
 #ifdef HAVE_THREADS
    if (audio_data.audio_callback.callback)
    {
@@ -703,14 +678,6 @@ void audio_driver_dsp_filter_init(const char *device)
       RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n", device);
 }
 
-
-void audio_driver_frame_is_reverse(void)
-{
-   /* We just rewound. Flush rewind audio buffer. */
-   audio_driver_flush(audio_data.rewind_buf + audio_data.rewind_ptr,
-         audio_data.rewind_size - audio_data.rewind_ptr);
-}
-
 void audio_driver_set_buffer_size(size_t bufsize)
 {
    audio_data.driver_buffer_size = bufsize;
@@ -776,6 +743,34 @@ static void audio_driver_setup_rewind(void)
    audio_data.data_ptr = 0;
 }
 
+static bool find_audio_driver(void)
+{
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+
+   int i = find_driver_index("audio_driver", settings->audio.driver);
+
+   if (i >= 0)
+      driver->audio = (const audio_driver_t*)audio_driver_find_handle(i);
+   else
+   {
+      unsigned d;
+      RARCH_ERR("Couldn't find any audio driver named \"%s\"\n",
+            settings->audio.driver);
+      RARCH_LOG_OUTPUT("Available audio drivers are:\n");
+      for (d = 0; audio_driver_find_handle(d); d++)
+         RARCH_LOG_OUTPUT("\t%s\n", audio_driver_find_ident(d));
+      RARCH_WARN("Going to default to first audio driver...\n");
+
+      driver->audio = (const audio_driver_t*)audio_driver_find_handle(0);
+
+      if (!driver->audio)
+         retro_fail(1, "find_audio_driver()");
+   }
+
+   return true;
+}
+
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 {
    driver_t        *driver     = driver_get_ptr();
@@ -835,6 +830,13 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          return audio->start(driver->audio_data);
       case RARCH_AUDIO_CTL_STOP:
          return audio->stop(driver->audio_data);
+      case RARCH_AUDIO_CTL_FIND_DRIVER:
+         return find_audio_driver();
+      case RARCH_AUDIO_CTL_FRAME_IS_REVERSE:
+         /* We just rewound. Flush rewind audio buffer. */
+         audio_driver_flush(audio_data.rewind_buf + audio_data.rewind_ptr,
+               audio_data.rewind_size - audio_data.rewind_ptr);
+         return true;
    }
 
    return false;

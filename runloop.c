@@ -173,7 +173,7 @@ static void check_rewind(settings_t *settings,
 
    if (state_manager_frame_is_reversed())
    {
-      audio_driver_frame_is_reverse();
+      audio_driver_ctl(RARCH_AUDIO_CTL_FRAME_IS_REVERSE, NULL);
       state_manager_set_frame_is_reversed(false);
    }
 
