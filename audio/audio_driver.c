@@ -741,7 +741,6 @@ static void audio_driver_setup_rewind(void)
 
 static bool find_audio_driver(void)
 {
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
    int i = find_driver_index("audio_driver", settings->audio.driver);
