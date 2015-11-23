@@ -62,19 +62,6 @@ typedef struct db_handle
    unsigned status;
 } db_handle_t;
 
-static db_handle_t *db_ptr;
-
-static bool pending_scan_finished;
-
-bool rarch_main_data_db_pending_scan_finished(void)
-{
-   if (!pending_scan_finished)
-      return false;
-
-   pending_scan_finished = false;
-   return true;
-}
-
 #ifdef HAVE_LIBRETRODB
 
 #ifdef HAVE_ZLIB
@@ -489,48 +476,6 @@ static int database_info_iterate(database_state_handle_t *db_state, database_inf
    return 0;
 }
 
-static int database_info_poll(db_handle_t *db)
-{
-   char elem0[PATH_MAX_LENGTH];
-   uint32_t cb_type_hash        = 0;
-   struct string_list *str_list = NULL;
-   const char *path = msg_queue_pull(db->msg_queue);
-
-   if (!path)
-      return -1;
-
-   str_list                     = string_split(path, "|"); 
-
-   if (!str_list)
-      goto error;
-   if (str_list->size < 1)
-      goto error;
-
-   strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-   if (str_list->size > 1)
-      cb_type_hash = msg_hash_calculate(str_list->elems[1].data);
-
-   switch (cb_type_hash)
-   {
-      case CB_DB_SCAN_FILE:
-         db->handle = database_info_file_init(elem0, DATABASE_TYPE_ITERATE);
-         break;
-      case CB_DB_SCAN_FOLDER:
-         db->handle = database_info_dir_init(elem0, DATABASE_TYPE_ITERATE);
-         break;
-   }
-
-   string_list_free(str_list);
-
-   return 0;
-
-error:
-   if (str_list)
-      string_list_free(str_list);
-
-   return -1;
-}
-
 static void rarch_main_data_db_cleanup_state(database_state_handle_t *db_state)
 {
    if (!db_state)
@@ -541,115 +486,92 @@ static void rarch_main_data_db_cleanup_state(database_state_handle_t *db_state)
    db_state->buf = NULL;
 }
 
-void rarch_main_data_db_iterate(bool is_thread)
+static void rarch_dbscan_task_handler(rarch_task_t *task)
 {
-   database_info_handle_t      *db   = (db_ptr) ? db_ptr->handle : NULL;
-   database_state_handle_t *db_state = (db_ptr) ? &db_ptr->state : NULL;
-   const char *name = db ? db->list->elems[db->list_ptr].data    : NULL;
+   db_handle_t *db = (db_handle_t*)task->state;
+   database_info_handle_t  *dbinfo  = db->handle;
+   database_state_handle_t *dbstate = &db->state;
+   const char *name = dbinfo ? dbinfo->list->elems[dbinfo->list_ptr].data    : NULL;
 
-   if (!db)
-      goto do_poll;
+   if (!dbinfo)
+      goto task_finished;
 
-   switch (db->status)
+   switch (dbinfo->status)
    {
       case DATABASE_STATUS_ITERATE_BEGIN:
-         if (db_state && !db_state->list)
-            db_state->list = dir_list_new_special(NULL, DIR_LIST_DATABASES, NULL);
-         db->status = DATABASE_STATUS_ITERATE_START;
+         if (dbstate && !dbstate->list)
+            dbstate->list = dir_list_new_special(NULL, DIR_LIST_DATABASES, NULL);
+         dbinfo->status = DATABASE_STATUS_ITERATE_START;
          break;
       case DATABASE_STATUS_ITERATE_START:
-         rarch_main_data_db_cleanup_state(db_state);
-         db_state->list_index  = 0;
-         db_state->entry_index = 0;
-         database_info_iterate_start(db, name);
+         rarch_main_data_db_cleanup_state(dbstate);
+         dbstate->list_index  = 0;
+         dbstate->entry_index = 0;
+         database_info_iterate_start(dbinfo, name);
          break;
       case DATABASE_STATUS_ITERATE:
-         if (database_info_iterate(&db_ptr->state, db) == 0)
+         if (database_info_iterate(&db->state, dbinfo) == 0)
          {
-            db->status = DATABASE_STATUS_ITERATE_NEXT;
-            db->type   = DATABASE_TYPE_ITERATE;
+            dbinfo->status = DATABASE_STATUS_ITERATE_NEXT;
+            dbinfo->type   = DATABASE_TYPE_ITERATE;
          }
          break;
       case DATABASE_STATUS_ITERATE_NEXT:
-         if (database_info_iterate_next(db) == 0)
+         if (database_info_iterate_next(dbinfo) == 0)
          {
-            db->status = DATABASE_STATUS_ITERATE_START;
-            db->type   = DATABASE_TYPE_ITERATE;
+            dbinfo->status = DATABASE_STATUS_ITERATE_START;
+            dbinfo->type   = DATABASE_TYPE_ITERATE;
          }
          else
          {
             rarch_main_msg_queue_push_new(MSG_SCANNING_OF_DIRECTORY_FINISHED, 0, 180, true);
-            pending_scan_finished = true;
-            db->status = DATABASE_STATUS_FREE;
+            goto task_finished;
          }
          break;
-      case DATABASE_STATUS_FREE:
-         if (db_state->list)
-            dir_list_free(db_state->list);
-         db_state->list = NULL;
-         rarch_main_data_db_cleanup_state(db_state);
-         database_info_free(db);
-         if (db_ptr->handle)
-            free(db_ptr->handle);
-         db_ptr->handle = NULL;
-         break;
       default:
+      case DATABASE_STATUS_FREE:
       case DATABASE_STATUS_NONE:
-         goto do_poll;
+         goto task_finished;
+         break;
    }
 
    return;
+task_finished:
+   task->finished = true;
 
-do_poll:
-   if (database_info_poll(db_ptr) != -1)
-   {
-      if (db_ptr->handle)
-         db_ptr->handle->status = DATABASE_STATUS_ITERATE_BEGIN;
-   }
+   if (db->state.list)
+      dir_list_free(db->state.list);
+
+   if (db->state.buf)
+      free(db->state.buf);
+
+   if (db->handle)
+      database_info_free(db->handle);
+
+   free(dbinfo);
+   free(db);
 }
 
-
-void rarch_main_data_db_init_msg_queue(void)
+bool rarch_task_push_dbscan(const char *fullpath, bool directory, rarch_task_callback_t cb)
 {
-   db_handle_t      *db   = (db_handle_t*)db_ptr;
+   rarch_task_t *t = (rarch_task_t*)calloc(1, sizeof(*t));
+   db_handle_t *db = (db_handle_t*)calloc(1, sizeof(db_handle_t));
+   t->handler = rarch_dbscan_task_handler;
+   t->state   = db;
+   t->callback = cb;
 
-   if (!db)
-      return;
-   
-   if (!db->msg_queue)
-      retro_assert(db->msg_queue         = msg_queue_new(8));
+   if (directory)
+      db->handle = database_info_dir_init(fullpath, DATABASE_TYPE_ITERATE);
+   else
+      db->handle = database_info_file_init(fullpath, DATABASE_TYPE_ITERATE);
+
+   if (db->handle)
+      db->handle->status = DATABASE_STATUS_ITERATE_BEGIN;
+
+   rarch_task_push(t);
+
+   return true;
 }
 
-msg_queue_t *rarch_main_data_db_get_msg_queue_ptr(void)
-{
-   db_handle_t      *db   = (db_handle_t*)db_ptr;
-   if (!db)
-      return NULL;
-   return db->msg_queue;
-}
-
-void rarch_main_data_db_uninit(void)
-{
-   if (db_ptr)
-      free(db_ptr);
-   db_ptr = NULL;
-   pending_scan_finished = false;
-}
-
-void rarch_main_data_db_init(void)
-{
-   db_ptr                = (db_handle_t*)calloc(1, sizeof(*db_ptr));
-   pending_scan_finished = false;
-}
-
-bool rarch_main_data_db_is_active(void)
-{
-   db_handle_t              *db   = (db_handle_t*)db_ptr;
-   database_info_handle_t   *dbi  = db ? db->handle : NULL;
-   if (dbi && dbi->status != DATABASE_STATUS_NONE)
-      return true;
-
-   return false;
-}
 #endif
 

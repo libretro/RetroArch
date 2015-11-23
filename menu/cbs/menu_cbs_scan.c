@@ -22,12 +22,18 @@
 #include "../menu_setting.h"
 
 #include "../../runloop_data.h"
+#include "../../tasks/tasks.h"
 
 #ifndef BIND_ACTION_SCAN
 #define BIND_ACTION_SCAN(cbs, name) \
    cbs->action_scan = name; \
    cbs->action_scan_ident = #name;
 #endif
+
+static void handle_dbscan_finished(void *task_data, void *user_data, const char *err)
+{
+   menu_environment_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST, NULL);
+}
 
 int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx)
@@ -43,8 +49,8 @@ int action_scan_file(const char *path,
 
    fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
 
-   rarch_main_data_msg_queue_push(DATA_TYPE_DB, fullpath,
-         "cb_db_scan_file", 0, 1, true);
+   rarch_task_push_dbscan(fullpath, false, handle_dbscan_finished);
+
    return 0;
 }
 
@@ -65,8 +71,8 @@ int action_scan_directory(const char *path,
    if (path)
       fill_pathname_join(fullpath, fullpath, path, sizeof(fullpath));
 
-   rarch_main_data_msg_queue_push(DATA_TYPE_DB, fullpath,
-         "cb_db_scan_folder", 0, 1, true);
+   rarch_task_push_dbscan(fullpath, true, handle_dbscan_finished);
+
    return 0;
 }
 

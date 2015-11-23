@@ -109,20 +109,7 @@ void rarch_main_data_nbio_image_upload_iterate(void);
 #endif
 
 #ifdef HAVE_LIBRETRODB
-void rarch_main_data_db_iterate(bool is_thread);
-#ifdef HAVE_MENU
-bool rarch_main_data_db_pending_scan_finished(void);
-#endif
-
-void rarch_main_data_db_init_msg_queue(void);
-
-msg_queue_t *rarch_main_data_db_get_msg_queue_ptr(void);
-
-void rarch_main_data_db_uninit(void);
-
-void rarch_main_data_db_init(void);
-
-bool rarch_main_data_db_is_active(void);
+bool rarch_task_push_dbscan(const char *fullpath, bool directory, rarch_task_callback_t cb);
 #endif
 
 #ifdef HAVE_OVERLAY

@@ -79,6 +79,8 @@ void rarch_main_data_deinit(void)
 #endif
 
    g_data_runloop.inited = false;
+
+   rarch_task_deinit();
 }
 
 void rarch_main_data_free(void)
@@ -86,9 +88,6 @@ void rarch_main_data_free(void)
    rarch_main_data_nbio_uninit();
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_uninit();
-#endif
-#ifdef HAVE_LIBRETRODB
-   rarch_main_data_db_uninit();
 #endif
 
    memset(&g_data_runloop, 0, sizeof(g_data_runloop));
@@ -105,19 +104,11 @@ static void data_runloop_iterate(bool is_thread)
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_iterate       (is_thread);
 #endif
-#ifdef HAVE_LIBRETRODB
-   rarch_main_data_db_iterate         (is_thread);
-#endif
 }
 
 
 bool rarch_main_data_active(void)
 {
-#ifdef HAVE_LIBRETRODB
-   if (rarch_main_data_db_is_active())
-      return true;
-#endif
-
 #ifdef HAVE_OVERLAY
    if (input_overlay_data_is_active())
       return true;
@@ -204,11 +195,6 @@ error:
 #ifdef HAVE_MENU
 static void rarch_main_data_menu_iterate(void)
 {
-#ifdef HAVE_LIBRETRODB
-   if (rarch_main_data_db_pending_scan_finished())
-      menu_environment_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST, NULL);
-#endif
-
    menu_iterate_render();
 }
 #endif
@@ -252,6 +238,8 @@ void rarch_main_data_iterate(void)
       data_runloop_msg[0] = '\0';
    }
 
+   rarch_task_check();
+
 #ifdef HAVE_THREADS
    if (settings->threaded_data_runloop_enable && g_data_runloop.alive)
       return;
@@ -268,6 +256,8 @@ static void rarch_main_data_init(void)
 #endif
 
    g_data_runloop.inited = true;
+
+   rarch_task_init();
 }
 
 void rarch_main_data_clear_state(void)
@@ -280,9 +270,6 @@ void rarch_main_data_clear_state(void)
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_init();
 #endif
-#ifdef HAVE_LIBRETRODB
-   rarch_main_data_db_init();
-#endif
 }
 
 
@@ -292,9 +279,6 @@ void rarch_main_data_init_queues(void)
    rarch_main_data_http_init_msg_queue();
 #endif
    rarch_main_data_nbio_init_msg_queue();
-#ifdef HAVE_LIBRETRODB
-   rarch_main_data_db_init_msg_queue();
-#endif
 }
 
 
@@ -331,12 +315,9 @@ void rarch_main_data_msg_queue_push(unsigned type,
          fill_pathname_join_delim(new_msg, msg, msg2, '|', sizeof(new_msg));
          break;
 #endif
-#ifdef HAVE_LIBRETRODB
       case DATA_TYPE_DB:
-         queue = rarch_main_data_db_get_msg_queue_ptr();
-         fill_pathname_join_delim(new_msg, msg, msg2, '|', sizeof(new_msg));
+      default:
          break;
-#endif
    }
 
    if (!queue)
