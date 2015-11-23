@@ -1338,14 +1338,14 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_OVERLAY_DEINIT:
 #ifdef HAVE_OVERLAY
-         input_overlay_free_ptr();
+         input_overlay_free();
 #endif
          break;
       case EVENT_CMD_OVERLAY_INIT:
          event_command(EVENT_CMD_OVERLAY_DEINIT);
 #ifdef HAVE_OVERLAY
-         if (input_overlay_new_ptr() == -1)
-            RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_OVERLAY));
+         input_overlay_init();
+         //RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_OVERLAY));
 #endif
          break;
       case EVENT_CMD_OVERLAY_NEXT:

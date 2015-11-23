@@ -82,7 +82,8 @@ bool rarch_task_push_dbscan(const char *fullpath, bool directory, rarch_task_cal
 #endif
 
 #ifdef HAVE_OVERLAY
-void rarch_main_data_overlay_iterate(void);
+bool rarch_task_push_overlay_load_default(
+        rarch_task_callback_t cb, void *user_data);
 #endif
 
 void rarch_main_data_nbio_iterate(bool is_thread);

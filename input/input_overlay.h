@@ -21,11 +21,18 @@
 #include <boolean.h>
 
 #include <retro_miscellaneous.h>
+#include <formats/image.h>
 #include "../libretro.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define BOX_RADIAL       0x18df06d2U
+#define BOX_RECT         0x7c9d4d93U
+
+#define KEY_ANALOG_LEFT  0x56b92e81U
+#define KEY_ANALOG_RIGHT 0x2e4dc654U
 
 #define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
 #define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
@@ -91,9 +98,98 @@ enum overlay_image_transfer_status
    OVERLAY_IMAGE_TRANSFER_ERROR
 };
 
+
+struct overlay
+{
+   struct overlay_desc *descs;
+   size_t size;
+   size_t pos;
+   unsigned pos_increment;
+
+   struct texture_image image;
+
+   bool block_scale;
+   float mod_x, mod_y, mod_w, mod_h;
+   float x, y, w, h;
+   float scale;
+   float center_x, center_y;
+
+   bool full_screen;
+
+   char name[64];
+
+   struct
+   {
+      struct
+      {
+         char key[64];
+         char path[PATH_MAX_LENGTH];
+      } paths;
+
+      struct
+      {
+         char key[64];
+      } names;
+
+      struct
+      {
+         char array[256];
+         char key[64];
+      } rect;
+
+      struct
+      {
+         char key[64];
+         unsigned size;
+      } descs;
+
+      bool normalized;
+      float alpha_mod;
+      float range_mod;
+   } config;
+
+   struct texture_image *load_images;
+   unsigned load_images_size;
+};
+
+struct overlay_desc
+{
+   float x;
+   float y;
+
+   enum overlay_hitbox hitbox;
+   float range_x, range_y;
+   float range_x_mod, range_y_mod;
+   float mod_x, mod_y, mod_w, mod_h;
+   float delta_x, delta_y;
+
+   enum overlay_type type;
+   uint64_t key_mask;
+   float analog_saturate_pct;
+
+   unsigned next_index;
+   char next_index_name[64];
+
+   struct texture_image image;
+   unsigned image_index;
+
+   float alpha_mod;
+   float range_mod;
+
+   bool updated;
+   bool movable;
+};
+
 typedef struct overlay_desc overlay_desc_t;
 
 typedef struct input_overlay input_overlay_t;
+
+typedef struct
+{
+    struct overlay *overlays;
+    struct overlay *active;
+    size_t size;
+} overlay_task_data_t;
 
 /**
  * input_overlay_new:
@@ -122,6 +218,13 @@ bool input_overlay_new_done(void);
  **/
 void input_overlay_free(void);
 
+
+/**
+ * input_overlay_init
+ *
+ * Initializes the overlay system.
+ */
+void input_overlay_init(void);
 /**
  * input_overlay_set_alpha_mod:
  * @mod                   : New modulating factor to apply.
@@ -146,12 +249,6 @@ void input_overlay_set_scale_factor(float scale);
  * screen.
  **/
 void input_overlay_next(float opacity);
-
-bool input_overlay_data_is_active(void);
-
-void input_overlay_free_ptr(void);
-
-int input_overlay_new_ptr(void);
 
 enum overlay_status input_overlay_status(void);
 

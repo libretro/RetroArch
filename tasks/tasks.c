@@ -161,6 +161,7 @@ static void threaded_worker(void *userdata)
    {
       rarch_task_t *queue = NULL;
       rarch_task_t *task  = NULL;
+      rarch_task_t *next  = NULL;
 
       /* pop all into a local queue to avoid trouble with rarch_task_push(),
        * tasks are in the reverse order here. */
@@ -184,10 +185,9 @@ static void threaded_worker(void *userdata)
 
       slock_unlock(running_lock);
 
-
-
-      for (task = queue; task; task = task->next)
+      for (task = queue; task; task = next)
       {
+         next = task->next;
          task->handler(task);
 
          if (task->finished)

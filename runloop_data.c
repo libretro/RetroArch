@@ -23,61 +23,23 @@
 #include "verbosity.h"
 
 #include "tasks/tasks.h"
-#include "input/input_overlay.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"
 #endif
 
+#undef HAVE_THREADS
 typedef struct data_runloop
 {
    bool inited;
-
-#ifdef HAVE_THREADS
-   bool thread_sleeping;
-   bool thread_inited;
-   bool alive;
-
-   slock_t *lock;
-   slock_t *cond_lock;
-   scond_t *cond;
-   sthread_t *thread;
-#endif
 } data_runloop_t;
 
 static char data_runloop_msg[PATH_MAX_LENGTH];
 
 static data_runloop_t g_data_runloop;
 
-#ifdef HAVE_THREADS
-static void data_runloop_thread_deinit(void)
-{
-   if (!g_data_runloop.thread_inited)
-   {
-      slock_lock(g_data_runloop.cond_lock);
-      g_data_runloop.alive = false;
-      scond_signal(g_data_runloop.cond);
-      slock_unlock(g_data_runloop.cond_lock);
-      sthread_join(g_data_runloop.thread);
-
-      slock_free(g_data_runloop.lock);
-      slock_free(g_data_runloop.cond_lock);
-      scond_free(g_data_runloop.cond);
-   }
-}
-#endif
-
 void rarch_main_data_deinit(void)
 {
-#ifdef HAVE_THREADS
-   if (g_data_runloop.thread_inited)
-   {
-      data_runloop_thread_deinit();
-
-      g_data_runloop.thread_inited = false;
-   }
-#endif
-
    g_data_runloop.inited = false;
 
    rarch_task_deinit();
@@ -88,85 +50,10 @@ void rarch_main_data_free(void)
    memset(&g_data_runloop, 0, sizeof(g_data_runloop));
 }
 
-static void data_runloop_iterate(bool is_thread)
-{
-}
-
-
 bool rarch_main_data_active(void)
 {
-#ifdef HAVE_OVERLAY
-   if (input_overlay_data_is_active())
-      return true;
-#endif
-
    return false;
 }
-
-#ifdef HAVE_THREADS
-static void data_thread_loop(void *data)
-{
-   data_runloop_t *runloop = (data_runloop_t*)data;
-
-   RARCH_LOG("[Data Thread]: Initializing data thread.\n");
-
-   slock_lock(runloop->lock);
-   while (!runloop->thread_inited)
-      scond_wait(runloop->cond, runloop->lock);
-   slock_unlock(runloop->lock);
-
-   RARCH_LOG("[Data Thread]: Starting data thread.\n");
-
-   while (runloop->alive)
-   {
-      slock_lock(runloop->lock);
-
-      if (!runloop->alive)
-         break;
-
-      data_runloop_iterate(true);
-
-      if (!rarch_main_data_active())
-      {
-         runloop->thread_sleeping = true;
-         while(runloop->thread_sleeping)
-            scond_wait(runloop->cond, runloop->lock);
-      }
-
-      slock_unlock(runloop->lock);
-
-   }
-
-   RARCH_LOG("[Data Thread]: Stopping data thread.\n");
-}
-#endif
-
-#ifdef HAVE_THREADS
-static void rarch_main_data_thread_init(void)
-{
-   if (g_data_runloop.thread_inited)
-      return;
-
-   g_data_runloop.lock            = slock_new();
-   g_data_runloop.cond_lock       = slock_new();
-   g_data_runloop.cond            = scond_new();
-
-   g_data_runloop.thread    = sthread_create(data_thread_loop, &g_data_runloop);
-
-   if (!g_data_runloop.thread)
-      goto error;
-
-   slock_lock(g_data_runloop.lock);
-   g_data_runloop.thread_inited   = true;
-   g_data_runloop.alive           = true;
-   slock_unlock(g_data_runloop.lock);
-
-   return;
-
-error:
-   data_runloop_thread_deinit();
-}
-#endif
 
 #ifdef HAVE_MENU
 static void rarch_main_data_menu_iterate(void)
@@ -177,28 +64,6 @@ static void rarch_main_data_menu_iterate(void)
 
 void rarch_main_data_iterate(void)
 {
-   settings_t     *settings     = config_get_ptr();
-   
-   (void)settings;
-#ifdef HAVE_THREADS
-   if (settings->threaded_data_runloop_enable)
-   {
-      if (!g_data_runloop.thread_inited)
-         rarch_main_data_thread_init();
-      else if (g_data_runloop.thread_sleeping)
-      {
-         slock_lock(g_data_runloop.cond_lock);
-         g_data_runloop.thread_sleeping = false;
-         scond_signal(g_data_runloop.cond);
-         slock_unlock(g_data_runloop.cond_lock);
-      }
-   }
-#endif
-
-#ifdef HAVE_OVERLAY
-   rarch_main_data_overlay_iterate();
-#endif
-
 #ifdef HAVE_MENU
    rarch_main_data_menu_iterate();
 #endif
@@ -210,22 +75,10 @@ void rarch_main_data_iterate(void)
    }
 
    rarch_task_check();
-
-#ifdef HAVE_THREADS
-   if (settings->threaded_data_runloop_enable && g_data_runloop.alive)
-      return;
-#endif
-
-   data_runloop_iterate(false);
 }
 
 static void rarch_main_data_init(void)
 {
-#ifdef HAVE_THREADS
-   g_data_runloop.thread_inited = false;
-   g_data_runloop.alive         = false;
-#endif
-
    g_data_runloop.inited = true;
 
    rarch_task_init();
@@ -268,7 +121,6 @@ void rarch_main_data_msg_queue_push(unsigned type,
 #endif
 #ifdef HAVE_OVERLAY
       case DATA_TYPE_OVERLAY:
-         fill_pathname_join_delim(new_msg, msg, msg2, '|', sizeof(new_msg));
          break;
 #endif
       case DATA_TYPE_DB:
