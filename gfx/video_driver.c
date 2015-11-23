@@ -1422,9 +1422,20 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
    const video_driver_t        *video = video_driver_ctx_get_ptr(driver);
    const video_poke_interface_t *poke = video_driver_get_poke_ptr(driver);
    settings_t               *settings = config_get_ptr();
+   const struct retro_hw_render_callback *hw_render = 
+      (const struct retro_hw_render_callback*)video_driver_callback();
 
    switch (state)
    {
+      case RARCH_DISPLAY_CTL_SUPPORTS_RECORDING:
+         return settings->video.gpu_record && driver->current_video->read_viewport;
+      case RARCH_DISPLAY_CTL_SUPPORTS_VIEWPORT_READ:
+         return (settings->video.gpu_screenshot ||
+         ((hw_render->context_type
+         != RETRO_HW_CONTEXT_NONE) && !driver->current_video->read_frame_raw))
+         && driver->current_video->read_viewport && driver->current_video->viewport_info;
+      case RARCH_DISPLAY_CTL_SUPPORTS_READ_FRAME_RAW:
+         return driver->current_video->read_frame_raw;
       case RARCH_DISPLAY_CTL_SET_VIEWPORT_CONFIG:
          return video_viewport_set_config();
       case RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL:
@@ -1531,6 +1542,8 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             return false;
          return (video_state.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID);
       case RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER:
+         if (!driver->current_video)
+            return false;
          return video_driver_cached_frame(driver);
       case RARCH_DISPLAY_CTL_IS_ALIVE:
          return video->alive(driver->video_data);

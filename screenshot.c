@@ -61,18 +61,16 @@ static bool screenshot_dump(const char *folder, const void *frame,
    struct scaler_ctx scaler       = {0};
    RFILE *file                    = NULL;
    uint8_t *out_buffer            = NULL;
-   driver_t *driver               = driver_get_ptr();
 
    (void)file;
    (void)out_buffer;
    (void)scaler;
-   (void)driver;
 
    fill_dated_filename(shotname, IMG_EXT, sizeof(shotname));
    fill_pathname_join(filename, folder, shotname, sizeof(filename));
 
 #ifdef _XBOX1
-   d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(true);
    settings_t *settings = config_get_ptr();
 
    D3DSurface *surf = NULL;
@@ -207,35 +205,27 @@ bool take_screenshot(void)
    bool viewport_read   = false;
    bool ret             = true;
    const char *msg      = NULL;
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
-   const struct retro_hw_render_callback *hw_render = 
-      (const struct retro_hw_render_callback*)video_driver_callback();
 
    /* No way to infer screenshot directory. */
    if ((!*settings->screenshot_directory) && (!*global->name.base))
       return false;
 
-   viewport_read = (settings->video.gpu_screenshot ||
-         ((hw_render->context_type
-         != RETRO_HW_CONTEXT_NONE) && !driver->current_video->read_frame_raw))
-         && driver->current_video->read_viewport && driver->current_video->viewport_info;
+   viewport_read = video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_VIEWPORT_READ, NULL);
 
    if (viewport_read)
    {
       /* Avoid taking screenshot of GUI overlays. */
       video_driver_set_texture_enable(false, false);
-
-      if (driver->current_video)
-         video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+      video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
    }
 
    if (viewport_read)
       ret = take_screenshot_viewport();
    else if (!video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB, NULL))
       ret = take_screenshot_raw();
-   else if (driver->current_video->read_frame_raw)
+   else if (video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_READ_FRAME_RAW, NULL))
    {
       unsigned old_width, old_height;
       size_t old_pitch;

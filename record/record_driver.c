@@ -317,7 +317,7 @@ bool recording_init(void)
    if (*global->record.config)
       params.config = global->record.config;
 
-   if (settings->video.gpu_record && driver->current_video->read_viewport)
+   if (video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_RECORDING, NULL))
    {
       struct video_viewport vp = {0};
 
