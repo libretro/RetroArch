@@ -296,7 +296,6 @@ size_t core_len;
 
 void cb_net_generic(void *task_data, void *user_data, const char *err)
 {
-   int                ret = -1;
    menu_handle_t *menu    = menu_driver_get_ptr();
    http_transfer_data_t *data = (http_transfer_data_t*)task_data;
 
@@ -314,7 +313,6 @@ void cb_net_generic(void *task_data, void *user_data, const char *err)
    memcpy(core_buf, data->data, data->len * sizeof(char));
    core_buf[data->len] = '\0';
    core_len      = data->len;
-   ret           = 0;
 
    menu_entries_unset_refresh(true);
 
