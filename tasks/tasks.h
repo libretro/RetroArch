@@ -29,71 +29,62 @@
 extern "C" {
 #endif
 
-void rarch_main_data_nbio_uninit(void);
+typedef struct rarch_task rarch_task_t;
+typedef void (*rarch_task_callback_t)(void *task_data, void *user_data, const char *error);
+typedef void (*rarch_task_handler_t)(rarch_task_t *task);
 
-void rarch_main_data_nbio_init(void);
+struct rarch_task {
+    rarch_task_handler_t  handler;
+    rarch_task_callback_t callback; /* always called from the main loop */
 
-void rarch_main_data_nbio_init_msg_queue(void);
+    /* set by the handler */
+    bool finished;
 
-msg_queue_t *rarch_main_data_nbio_get_msg_queue_ptr(void);
+    /* created by the handler, destroyed by the user */
+    void *task_data;
 
-msg_queue_t *rarch_main_data_nbio_image_get_msg_queue_ptr(void);
+    /* owned by the user */
+    void *user_data;
 
-void *rarch_main_data_nbio_get_handle(void);
+    /* created and destroyed by the code related to the handler */
+    void *state;
 
-void *rarch_main_data_nbio_image_get_handle(void);
+    /* created by task handler; destroyed by main loop (after calling the callback) */
+    char *error;
+
+    /* don't touch this. */
+    rarch_task_t *next;
+};
+
+/* MAIN THREAD ONLY */
+void rarch_task_init(void);
+void rarch_task_deinit(void);
+void rarch_task_check(void);
+
+/* MAIN AND TASK THREADS */
+void rarch_task_push(rarch_task_t *task);
 
 #ifdef HAVE_NETWORKING
-/**
- * rarch_main_data_http_iterate_transfer:
- *
- * Resumes HTTP transfer update.
- *
- * Returns: 0 when finished, -1 when we should continue
- * with the transfer on the next frame.
- **/
-void rarch_main_data_http_iterate(bool is_thread);
+typedef struct {
+    char *data;
+    size_t len;
+} http_transfer_data_t;
 
-msg_queue_t *rarch_main_data_http_get_msg_queue_ptr(void);
-
-void rarch_main_data_http_init_msg_queue(void);
-
-void *rarch_main_data_http_get_handle(void);
-
-void *rarch_main_data_http_conn_get_handle(void);
-
-void rarch_main_data_http_uninit(void);
-
-void rarch_main_data_http_init(void);
+bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task_callback_t cb, void *user_data);
 #endif
 
 #ifdef HAVE_RPNG
-void rarch_main_data_nbio_image_iterate(bool is_thread);
-void rarch_main_data_nbio_image_upload_iterate(void);
+bool rarch_task_push_image_load(const char *fullpath, const char *type, rarch_task_callback_t cb);
 #endif
 
 #ifdef HAVE_LIBRETRODB
-void rarch_main_data_db_iterate(bool is_thread);
-#ifdef HAVE_MENU
-bool rarch_main_data_db_pending_scan_finished(void);
-#endif
-
-void rarch_main_data_db_init_msg_queue(void);
-
-msg_queue_t *rarch_main_data_db_get_msg_queue_ptr(void);
-
-void rarch_main_data_db_uninit(void);
-
-void rarch_main_data_db_init(void);
-
-bool rarch_main_data_db_is_active(void);
+bool rarch_task_push_dbscan(const char *fullpath, bool directory, rarch_task_callback_t cb);
 #endif
 
 #ifdef HAVE_OVERLAY
-void rarch_main_data_overlay_iterate(void);
+bool rarch_task_push_overlay_load_default(
+        rarch_task_callback_t cb, void *user_data);
 #endif
-
-void rarch_main_data_nbio_iterate(bool is_thread);
     
 void data_runloop_osd_msg(const char *s, size_t len);
 

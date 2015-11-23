@@ -125,6 +125,7 @@ OBJ += frontend/frontend.o \
        runloop.o \
        runloop_data.o \
        runloop_msg.o \
+       tasks/tasks.o \
        tasks/task_file_transfer.o \
        content.o \
 		 libretro-common/encodings/encoding_utf.o \

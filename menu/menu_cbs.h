@@ -67,9 +67,6 @@ enum
 
 /* FIXME - Externs, refactor */
 extern size_t hack_shader_pass;
-#ifdef HAVE_NETWORKING
-extern char core_updater_path[PATH_MAX_LENGTH];
-#endif
 
 /* Function callbacks */
 
@@ -199,5 +196,16 @@ void menu_cbs_init(void *data,
       unsigned type, size_t idx);
 
 bool menu_playlist_find_associated_core(const char *path, char *s, size_t len);
+
+
+#ifdef HAVE_NETWORKING
+void cb_net_generic(void *task_data, void *user_data, const char *err);
+
+typedef struct {
+    uint32_t type_hash;
+    char path[PATH_MAX_LENGTH];
+} menu_file_transfer_t;
+void cb_generic_download(void *task_data, void *user_data, const char *err);
+#endif
 
 #endif

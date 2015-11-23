@@ -47,6 +47,7 @@
 #include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
+#include "../../tasks/tasks.h"
 
 #if 0
 #define ZARCH_DEBUG
@@ -1109,8 +1110,8 @@ static void *zarch_init(void)
    zui->font_size       = 28;
 
    if (settings->menu.wallpaper[0] != '\0')
-      rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE,
-            settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
+      rarch_task_push_image_load(settings->menu.wallpaper,
+            "cb_menu_wallpaper", menu_display_handle_wallpaper_upload);
 
    zui->ca.allocated     =  0;
 
@@ -1228,8 +1229,8 @@ static void zarch_context_reset(void)
 
    zarch_context_bg_destroy(zui);
 
-   rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE,
-         settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
+   rarch_task_push_image_load(settings->menu.wallpaper,
+         "cb_menu_wallpaper", menu_display_handle_wallpaper_upload);
 
    zarch_allocate_white_texture(zui);
 

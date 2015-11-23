@@ -17,6 +17,7 @@
 
 #include "../menu.h"
 #include "../menu_cbs.h"
+#include "../../msg_hash.h"
 
 #ifdef HAVE_LIBRETRODB
 #include "../../database_info.h"
@@ -25,16 +26,27 @@
 #include "../../cores/internal_cores.h"
 
 #include "../../general.h"
+#include "../../verbosity.h"
+#include "../../tasks/tasks.h"
+
+#define CB_CORE_UPDATER_DOWNLOAD       0x7412da7dU
+#define CB_CORE_UPDATER_LIST           0x32fd4f01U
+#define CB_UPDATE_ASSETS               0xbf85795eU
+#define CB_UPDATE_CORE_INFO_FILES      0xe6084091U
+#define CB_UPDATE_AUTOCONFIG_PROFILES  0x28ada67dU
+#define CB_UPDATE_CHEATS               0xc360fec3U
+#define CB_UPDATE_OVERLAYS             0x699009a0U
+#define CB_UPDATE_DATABASES            0x931eb8d3U
+#define CB_UPDATE_SHADERS_GLSL         0x0121a186U
+#define CB_UPDATE_SHADERS_CG           0xc93a53feU
+#define CB_CORE_CONTENT_LIST           0xebc51227U
+#define CB_CORE_CONTENT_DOWNLOAD       0x03b3c0a3U
 
 #ifndef BIND_ACTION_DEFERRED_PUSH
 #define BIND_ACTION_DEFERRED_PUSH(cbs, name) \
    cbs->action_deferred_push = name; \
    cbs->action_deferred_push_ident = #name;
 #endif
-
-/* foward declarations */
-int cb_core_updater_list(void *data_, size_t len);
-int cb_core_content_list(void *data_, size_t len);
 
 static int deferred_push_dlist(menu_displaylist_info_t *info, unsigned val)
 {
@@ -282,41 +294,176 @@ static int deferred_push_disk_options(menu_displaylist_info_t *info)
 char *core_buf;
 size_t core_len;
 
-static int cb_net_generic(void *data_, size_t len)
+void cb_net_generic(void *task_data, void *user_data, const char *err)
 {
    int                ret = -1;
-   char             *data = (char*)data_;
    menu_handle_t *menu    = menu_driver_get_ptr();
-   if (!menu || !data)
-      goto end;
+   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+
+   if (!menu || !data || err)
+      goto finish;
 
    if (core_buf)
       free(core_buf);
 
-   core_buf = (char*)malloc((len+1) * sizeof(char));
+   core_buf = (char*)malloc((data->len+1) * sizeof(char));
 
    if (!core_buf)
-      goto end;
+      goto finish;
 
-   memcpy(core_buf, data, len * sizeof(char));
-   core_buf[len] = '\0';
-   core_len      = len;
+   memcpy(core_buf, data->data, data->len * sizeof(char));
+   core_buf[data->len] = '\0';
+   core_len      = data->len;
    ret           = 0;
 
    menu_entries_unset_refresh(true);
 
-end:
-   return ret;
+finish:
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+      free(data);
+   }
 }
 
-int cb_core_updater_list(void *data_, size_t len)
+static int zlib_extract_core_callback(const char *name, const char *valid_exts,
+      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+      uint32_t crc32, void *userdata)
 {
-   return cb_net_generic(data_, len);
+   char path[PATH_MAX_LENGTH];
+
+   /* Make directory */
+   fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
+   path_basedir(path);
+
+   if (!path_mkdir(path))
+      goto error;
+
+   /* Ignore directories. */
+   if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
+      return 1;
+
+   fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
+
+   RARCH_LOG("path is: %s, CRC32: 0x%x\n", path, crc32);
+
+   if (!zlib_perform_mode(path, valid_exts,
+            cdata, cmode, csize, size, crc32, userdata))
+      goto error;
+
+   return 1;
+
+error:
+   RARCH_ERR("Failed to deflate to: %s.\n", path);
+   return 0;
 }
 
-int cb_core_content_list(void *data_, size_t len)
+/* expects http_transfer_t*, menu_file_transfer_t* */
+void cb_generic_download(void *task_data, void *user_data, const char *err)
+//(void *data, size_t len, const char *dir_path)
 {
-   return cb_net_generic(data_, len);
+   char msg[PATH_MAX_LENGTH];
+   char output_path[PATH_MAX_LENGTH];
+   char shaderdir[PATH_MAX_LENGTH];
+   const char             *file_ext      = NULL;
+   const char             *dir_path      = NULL;
+   menu_file_transfer_t     *transf      = (menu_file_transfer_t*)user_data;
+   settings_t              *settings     = config_get_ptr();
+   http_transfer_data_t        *data     = (http_transfer_data_t*)task_data;
+
+   if (!data || !data->data | !transf)
+      goto finish;
+
+   /* we have to determine dir_path at the time of writting or else
+    * we'd run into races when the user changes the setting during an
+    * http transfer. */
+   switch (transf->type_hash)
+   {
+      case CB_CORE_UPDATER_DOWNLOAD:
+         dir_path = settings->libretro_directory;
+         break;
+      case CB_CORE_CONTENT_DOWNLOAD:
+         dir_path = settings->core_assets_directory;
+         break;
+      case CB_UPDATE_CORE_INFO_FILES:
+         dir_path = settings->libretro_info_path;
+         break;
+      case CB_UPDATE_ASSETS:
+         dir_path = settings->assets_directory;
+         break;
+      case CB_UPDATE_AUTOCONFIG_PROFILES:
+         dir_path = settings->input.autoconfig_dir;
+         break;
+      case CB_UPDATE_DATABASES:
+         dir_path = settings->content_database;
+         break;
+      case CB_UPDATE_OVERLAYS:
+         dir_path = settings->overlay_directory;
+         break;
+      case CB_UPDATE_CHEATS:
+         dir_path = settings->cheat_database;
+         break;
+      case CB_UPDATE_SHADERS_CG:
+      case CB_UPDATE_SHADERS_GLSL:
+      {
+         const char *dirname = transf->type_hash == CB_UPDATE_SHADERS_CG ?
+                  "shaders_cg" : "shaders_glsl";
+
+         fill_pathname_join(shaderdir, settings->video.shader_dir, dirname,
+               sizeof(shaderdir));
+         if (!path_file_exists(shaderdir))
+            if (!path_mkdir(shaderdir))
+               goto finish;
+         break;
+      }
+      default:
+         RARCH_WARN("Unknown transfer type '%u' bailing out.\n", transf->type_hash);
+         break;
+   }
+
+   fill_pathname_join(output_path, dir_path,
+         transf->path, sizeof(output_path));
+
+   if (!retro_write_file(output_path, data->data, data->len))
+      goto finish;
+
+   snprintf(msg, sizeof(msg), "%s: %s.",
+         msg_hash_to_str(MSG_DOWNLOAD_COMPLETE),
+         transf->path);
+
+   rarch_main_msg_queue_push(msg, 1, 90, true);
+
+#ifdef HAVE_ZLIB
+   /* TODO: this should generate a new task instead of blocking */
+   file_ext = path_get_extension(output_path);
+
+   if (!settings->network.buildbot_auto_extract_archive)
+      goto finish;
+
+   if (!strcasecmp(file_ext, "zip"))
+   {
+      if (!zlib_parse_file(output_path, NULL, zlib_extract_core_callback,
+               (void*)dir_path))
+         RARCH_LOG("%s\n", msg_hash_to_str(MSG_COULD_NOT_PROCESS_ZIP_FILE));
+
+      if (path_file_exists(output_path))
+         remove(output_path);
+   }
+#endif
+
+   if (transf->type_hash == CB_CORE_UPDATER_DOWNLOAD)
+      event_command(EVENT_CMD_CORE_INFO_INIT);
+
+finish:
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+      free(data);
+   }
+
+   free(transf);
 }
 
 static int deferred_push_core_updater_list(menu_displaylist_info_t *info)
