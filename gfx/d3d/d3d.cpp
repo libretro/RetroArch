@@ -597,9 +597,11 @@ static bool d3d_construct(d3d_video_t *d3d,
 #else
    gfx_ctx_get_video_size(d3d, &full_x, &full_y);
 #endif
-   video_driver_set_size(
-         info->fullscreen ? &full_x : &info->width,
-         info->fullscreen ? &full_y : &info->height);
+   {
+      unsigned new_width  = info->fullscreen ? full_x : info->width;
+      unsigned new_height = info->fullscreen ? full_y : info->height;
+      video_driver_set_size(&new_width, &new_height);
+   }
 
 #ifndef _XBOX
 #ifdef HAVE_WINDOW
