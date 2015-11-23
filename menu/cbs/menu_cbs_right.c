@@ -312,7 +312,7 @@ static int action_right_video_resolution(unsigned type, const char *label,
 static int playlist_association_right(unsigned type, const char *label,
       bool wraparound)
 {
-   int i, next, found, current = 0;
+   size_t i, next, found, current = 0;
    char core_path[PATH_MAX_LENGTH]  = {0};
    char new_playlist_cores[PATH_MAX_LENGTH] = {0};
    global_t *global                 = global_get_ptr();
