@@ -764,7 +764,7 @@ static void *d3d_init(const video_info_t *info,
 
          if (input && input_data)
          {
-            *input = driver->input;
+            *input      = driver->input;
             *input_data = driver->input_data;
          }
 
@@ -799,7 +799,7 @@ static void *d3d_init(const video_info_t *info,
 #endif
 #endif
 
-   driver->video_context     = ctx;
+   gfx_ctx_set(ctx);
 
    if (!d3d_construct(vid, info, input, input_data))
    {
@@ -819,8 +819,7 @@ static void *d3d_init(const video_info_t *info,
 error:
    if (vid)
       delete vid;
-   if (driver)
-      driver->video_context = NULL;
+   gfx_ctx_destroy(ctx);
    return NULL;
 }
 

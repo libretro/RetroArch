@@ -260,6 +260,10 @@ void gfx_ctx_data_set(void *ptr);
 
 void gfx_ctx_free_data(void);
 
+void gfx_ctx_set(const gfx_ctx_driver_t *ctx_driver);
+
+void gfx_ctx_destroy(const gfx_ctx_driver_t *ctx_driver);
+
 #ifdef __cplusplus
 }
 #endif

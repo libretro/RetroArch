@@ -99,7 +99,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    if (!ctx)
       goto error;
 
-   driver->video_context = ctx;
+   gfx_ctx_set(ctx);
 
    gfx_ctx_get_video_size(vg, &temp_width, &temp_height);
    RARCH_LOG("Detecting screen resolution %ux%u.\n", temp_width, temp_height);
@@ -199,8 +199,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 error:
    if (vg)
       free(vg);
-   if (driver)
-      driver->video_context = NULL;
+   gfx_ctx_destroy(ctx);
    return NULL;
 }
 
