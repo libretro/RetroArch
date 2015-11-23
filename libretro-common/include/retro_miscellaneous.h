@@ -24,6 +24,7 @@
 #define __RARCH_MISCELLANEOUS_H
 
 #include <stdint.h>
+#include <math.h>
 
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <sys/timer.h>
