@@ -64,21 +64,6 @@ void rarch_task_check(void);
 /* MAIN AND TASK THREADS */
 void rarch_task_push(rarch_task_t *task);
 
-
-void rarch_main_data_nbio_uninit(void);
-
-void rarch_main_data_nbio_init(void);
-
-void rarch_main_data_nbio_init_msg_queue(void);
-
-msg_queue_t *rarch_main_data_nbio_get_msg_queue_ptr(void);
-
-msg_queue_t *rarch_main_data_nbio_image_get_msg_queue_ptr(void);
-
-void *rarch_main_data_nbio_get_handle(void);
-
-void *rarch_main_data_nbio_image_get_handle(void);
-
 #ifdef HAVE_NETWORKING
 /**
  * rarch_main_data_http_iterate_transfer:
@@ -104,8 +89,7 @@ void rarch_main_data_http_init(void);
 #endif
 
 #ifdef HAVE_RPNG
-void rarch_main_data_nbio_image_iterate(bool is_thread);
-void rarch_main_data_nbio_image_upload_iterate(void);
+bool rarch_task_push_image_load(const char *fullpath, const char *type, rarch_task_callback_t cb);
 #endif
 
 #ifdef HAVE_LIBRETRODB

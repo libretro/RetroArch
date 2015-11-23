@@ -46,6 +46,7 @@
 
 #include "../../runloop.h"
 #include "../../runloop_data.h"
+#include "../../tasks/tasks.h"
 
 #ifndef XMB_THEME
 #define XMB_THEME "monochrome"
@@ -540,8 +541,8 @@ static void xmb_update_boxart_path(xmb_handle_t *xmb, unsigned i)
 static void xmb_update_boxart_image(xmb_handle_t *xmb)
 {
    if (path_file_exists(xmb->boxart_file_path))
-      rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, xmb->boxart_file_path,
-            "cb_menu_boxart", 0, 1, true);
+      rarch_task_push_image_load(xmb->boxart_file_path, "cb_menu_boxart",
+            menu_display_handle_boxart_upload);
    else if (xmb->depth == 1)
       xmb->boxart = 0;
 }
@@ -814,9 +815,8 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
        
        if(strcmp(path, xmb->background_file_path) != 0) {
            if(path_file_exists(path)) {
-               rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, path,
-                                          "cb_menu_wallpaper", 0, 1, true);
-               strlcpy(xmb->background_file_path, path, sizeof(xmb->background_file_path));
+              rarch_task_push_image_load(path, "cb_menu_wallpaper", menu_display_handle_wallpaper_upload);
+              strlcpy(xmb->background_file_path, path, sizeof(xmb->background_file_path));
            }
        }
    }
@@ -2248,8 +2248,7 @@ static void xmb_context_reset_background(const char *iconpath)
       strlcpy(path, settings->menu.wallpaper, sizeof(path));
 
    if (path_file_exists(path))
-      rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, path,
-            "cb_menu_wallpaper", 0, 1, true);
+      rarch_task_push_image_load(path, "cb_menu_wallpaper", menu_display_handle_wallpaper_upload);
 }
 
 static void xmb_context_reset(void)

@@ -85,7 +85,6 @@ void rarch_main_data_deinit(void)
 
 void rarch_main_data_free(void)
 {
-   rarch_main_data_nbio_uninit();
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_uninit();
 #endif
@@ -95,12 +94,6 @@ void rarch_main_data_free(void)
 
 static void data_runloop_iterate(bool is_thread)
 {
-   rarch_main_data_nbio_iterate       (is_thread);
-#ifdef HAVE_MENU
-#ifdef HAVE_RPNG
-   rarch_main_data_nbio_image_iterate (is_thread);
-#endif
-#endif
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_iterate       (is_thread);
 #endif
@@ -113,10 +106,6 @@ bool rarch_main_data_active(void)
    if (input_overlay_data_is_active())
       return true;
 #endif
-   if (rarch_main_data_nbio_image_get_handle())
-      return true;
-   if (rarch_main_data_nbio_get_handle())
-      return true;
 #ifdef HAVE_NETWORKING
    if (rarch_main_data_http_get_handle())
       return true;
@@ -219,11 +208,6 @@ void rarch_main_data_iterate(void)
    }
 #endif
 
-#ifdef HAVE_RPNG
-#ifdef HAVE_MENU
-   rarch_main_data_nbio_image_upload_iterate();
-#endif
-#endif
 #ifdef HAVE_OVERLAY
    rarch_main_data_overlay_iterate();
 #endif
@@ -266,7 +250,6 @@ void rarch_main_data_clear_state(void)
    rarch_main_data_free();
    rarch_main_data_init();
 
-   rarch_main_data_nbio_init();
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_init();
 #endif
@@ -278,7 +261,6 @@ void rarch_main_data_init_queues(void)
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_init_msg_queue();
 #endif
-   rarch_main_data_nbio_init_msg_queue();
 }
 
 
@@ -297,12 +279,8 @@ void rarch_main_data_msg_queue_push(unsigned type,
       case DATA_TYPE_NONE:
          break;
       case DATA_TYPE_FILE:
-         queue = rarch_main_data_nbio_get_msg_queue_ptr();
-         fill_pathname_join_delim(new_msg, msg, msg2, '|', sizeof(new_msg));
          break;
       case DATA_TYPE_IMAGE:
-         queue = rarch_main_data_nbio_image_get_msg_queue_ptr();
-         fill_pathname_join_delim(new_msg, msg, msg2, '|', sizeof(new_msg));
          break;
 #ifdef HAVE_NETWORKING
       case DATA_TYPE_HTTP:

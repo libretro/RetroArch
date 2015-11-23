@@ -25,6 +25,7 @@
 
 #include "../../general.h"
 #include "../../runloop_data.h"
+#include "../../tasks/tasks.h"
 #include "../../input/input_remapping.h"
 #include "../../system.h"
 
@@ -628,9 +629,8 @@ static int generic_action_ok(const char *path,
          if (path_file_exists(action_path))
          {
             strlcpy(settings->menu.wallpaper, action_path, sizeof(settings->menu.wallpaper));
-
-            rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, action_path, "cb_menu_wallpaper", 0, 1,
-                  true);
+            rarch_task_push_image_load(action_path,
+                  "cb_menu_wallpaper", menu_display_handle_wallpaper_upload);
          }
          break;
       case ACTION_OK_LOAD_CORE:

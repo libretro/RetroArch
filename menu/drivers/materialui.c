@@ -40,6 +40,7 @@
 #include "../../runloop.h"
 #include "../../runloop_data.h"
 #include "../../verbosity.h"
+#include "../../tasks/tasks.h"
 
 enum
 {
@@ -1163,8 +1164,8 @@ static void mui_context_reset(void)
    mui_allocate_white_texture(mui);
    mui_context_reset_textures(mui, iconpath);
 
-   rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE,
-         settings->menu.wallpaper, "cb_menu_wallpaper", 0, 1, true);
+   rarch_task_push_image_load(settings->menu.wallpaper, "cb_menu_wallpaper",
+         menu_display_handle_wallpaper_upload);
 }
 
 static int mui_environ(menu_environ_cb_t type, void *data)
