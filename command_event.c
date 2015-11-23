@@ -1707,12 +1707,7 @@ bool event_command(enum event_command cmd)
          global->subsystem_fullpaths = NULL;
          break;
       case EVENT_CMD_LOG_FILE_DEINIT:
-         if (!global)
-            break;
-
-         if (global->log_file && global->log_file != stderr)
-            fclose(global->log_file);
-         global->log_file = NULL;
+         retro_main_log_file_deinit();
          break;
       case EVENT_CMD_DISK_EJECT_TOGGLE:
          if (info && info->disk_control.get_num_images)

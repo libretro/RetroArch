@@ -765,14 +765,6 @@ static void rarch_main_iterate_linefeed_overlay(driver_t *driver,
 }
 #endif
 
-FILE *retro_main_log_file(void)
-{
-   global_t *global = global_get_ptr();
-   if (!global)
-      return NULL;
-   return global->log_file;
-}
-
 #ifdef HAVE_MENU
 static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
       driver_t *driver, settings_t *settings,

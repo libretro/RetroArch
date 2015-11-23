@@ -73,7 +73,6 @@ HRESULT xbox_io_mount(const char* szDrive, char* szDevice)
 static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 {
 #ifndef IS_SALAMANDER
-   global_t            *global = global_get_ptr();
    bool *verbose               = retro_main_verbosity();
    bool original_verbose       = *verbose;
    *verbose                    = true;
@@ -135,7 +134,6 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    (void)ret;
 
 #ifndef IS_SALAMANDER
-   global_t      *global = global_get_ptr();
    bool *verbose         = retro_main_verbosity();
    bool original_verbose = *verbose;
 
@@ -146,7 +144,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
-   global->log_file = fopen("/retroarch-log.txt", "w");
+   retro_main_log_file_init("/retroarch-log.txt");
 #endif
 #endif
 
@@ -312,7 +310,6 @@ static void frontend_xdk_exitspawn(char *s, size_t len)
 static void frontend_xdk_exec(const char *path, bool should_load_game)
 {
 #ifndef IS_SALAMANDER
-   global_t *global      = global_get_ptr();
    bool *verbose         = retro_main_verbosity();
    bool original_verbose = *verbose;
    *verbose              = true;

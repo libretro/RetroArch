@@ -890,7 +890,7 @@ static void parse_input(int argc, char *argv[])
 
 #ifdef HAVE_FILE_LOGGER
          case RA_OPT_LOG_FILE:
-            global->log_file = fopen(optarg, "wb");
+            retro_main_log_file_init(optarg);
             break;
 #endif
 
@@ -1141,7 +1141,7 @@ int rarch_main_init(int argc, char *argv[])
       return sjlj_ret;
    }
    global->inited.error = true;
-   global->log_file     = stderr;
+   retro_main_log_file_init(NULL);
    parse_input(argc, argv);
 
    verbosity = retro_main_verbosity();

@@ -17,7 +17,32 @@
 
 static bool main_verbosity;
 
+/* If this is non-NULL. RARCH_LOG and friends 
+ * will write to this file. */
+static FILE *log_file;
+
 bool *retro_main_verbosity(void)
 {
    return &main_verbosity;
+}
+
+FILE *retro_main_log_file(void)
+{
+   return log_file;
+}
+
+void retro_main_log_file_init(const char *path)
+{
+   log_file     = stderr;
+   if (path == NULL)
+      return;
+
+   log_file = fopen(path, "wb");
+}
+
+void retro_main_log_file_deinit(void)
+{
+   if (log_file && log_file != stderr)
+      fclose(log_file);
+   log_file = NULL;
 }

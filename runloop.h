@@ -309,10 +309,6 @@ typedef struct global
    async_job_t *async_jobs;
 #endif
    
-   /* If this is non-NULL. RARCH_LOG and friends 
-    * will write to this file. */
-   FILE *log_file;
-
    struct
    {
       bool main;
@@ -353,8 +349,6 @@ const char *rarch_main_msg_queue_pull(void);
 void rarch_main_msg_queue_free(void);
 
 void rarch_main_msg_queue_init(void);
-
-FILE *retro_main_log_file(void);
 
 bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data);
 

@@ -80,8 +80,7 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
 #ifndef VITA
-   global_t *global  = global_get_ptr();
-   global->log_file = fopen("ms0:/retroarch-log.txt", "w");
+   retro_main_log_file_init("ms0:/retroarch-log.txt");
 #endif
 #endif
 #endif

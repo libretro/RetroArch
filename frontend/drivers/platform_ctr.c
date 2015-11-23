@@ -49,8 +49,7 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
-   global_t *global  = global_get_ptr();
-   global->log_file = fopen("sdmc:/retroarch/retroarch-log.txt", "w");
+   retro_main_log_file_init("sdmc:/retroarch/retroarch-log.txt");
 #endif
 #endif
 
@@ -108,7 +107,6 @@ static void frontend_ctr_deinit(void *data)
    u8 not_2DS;
    (void)data;
 #ifndef IS_SALAMANDER
-   global_t *global   = global_get_ptr();
    bool *verbose      = retro_main_verbosity();
    *verbose           = true;
 
@@ -197,7 +195,6 @@ static void frontend_ctr_init(void *data)
 {
 #ifndef IS_SALAMANDER
    (void)data;
-   global_t *global   = global_get_ptr();
    bool *verbose      = retro_main_verbosity();
 
    *verbose           = true;

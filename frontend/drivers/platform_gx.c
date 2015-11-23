@@ -149,9 +149,7 @@ int gx_logger_net(struct _reent *r, int fd, const char *ptr, size_t len)
 #elif defined(HAVE_FILE_LOGGER)
 int gx_logger_file(struct _reent *r, int fd, const char *ptr, size_t len)
 {
-   global_t *global = global_get_ptr();
-
-   fwrite(ptr, 1, len, global->log_file);
+   fwrite(ptr, 1, len, retro_main_log_file());
    return len;
 }
 #endif
@@ -169,8 +167,7 @@ static void frontend_gx_get_environment_settings(int *argc, char *argv[],
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
-   global_t *global = global_get_ptr();
-   global->log_file = fopen("/retroarch-log.txt", "w");
+   retro_main_log_file_init("/retroarch-log.txt");
 #endif
 #endif
 

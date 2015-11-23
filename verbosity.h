@@ -46,13 +46,17 @@ extern "C" {
 
 bool *retro_main_verbosity(void);
 
+FILE *retro_main_log_file(void);
+
+void retro_main_log_file_deinit(void);
+
+void retro_main_log_file_init(const char *path);
+
 #if defined(HAVE_FILE_LOGGER)
 
 #ifdef __cplusplus
 extern "C"
 #endif
-
-FILE *retro_main_log_file(void);
 
 #define LOG_FILE (retro_main_log_file())
 
