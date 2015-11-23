@@ -51,7 +51,6 @@
 static void video_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
-   uint64_t *frame_count  = NULL;
    unsigned output_width  = 0;
    unsigned output_height = 0;
    unsigned  output_pitch = 0;
@@ -59,8 +58,6 @@ static void video_frame(const void *data, unsigned width,
    driver_t  *driver      = driver_get_ptr();
    global_t  *global      = global_get_ptr();
    settings_t *settings   = config_get_ptr();
-   const video_driver_t *video = 
-      driver ? (const video_driver_t*)driver->current_video : NULL;
 
    if (!driver->video_active)
       return;
@@ -85,13 +82,6 @@ static void video_frame(const void *data, unsigned width,
       )
       recording_dump_frame(data, width, height, pitch);
 
-   msg                = rarch_main_msg_queue_pull();
-
-   *driver->current_msg = 0;
-
-   if (msg)
-      strlcpy(driver->current_msg, msg, sizeof(driver->current_msg));
-
    if (video_driver_frame_filter(data, width, height, pitch,
             &output_width, &output_height, &output_pitch))
    {
@@ -101,13 +91,9 @@ static void video_frame(const void *data, unsigned width,
       pitch  = output_pitch;
    }
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+   msg                = rarch_main_msg_queue_pull();
 
-   if (!video->frame(driver->video_data, data, width, height, *frame_count,
-            pitch, driver->current_msg))
-      driver->video_active = false;
-
-   *frame_count = *frame_count + 1;
+   video_driver_frame(data, width, height, pitch, msg);
 }
 
 /**

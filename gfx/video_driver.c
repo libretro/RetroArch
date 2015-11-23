@@ -1759,3 +1759,25 @@ bool video_pixel_frame_scale(const void *data,
 
    return true;
 }
+
+void video_driver_frame(const void *data,
+      unsigned width, unsigned height,
+      size_t pitch, const char *msg)
+{
+   uint64_t *frame_count  = NULL;
+   driver_t  *driver      = driver_get_ptr();
+
+   *driver->current_msg = 0;
+
+   if (msg)
+      strlcpy(driver->current_msg, msg, sizeof(driver->current_msg));
+
+   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+
+   if (!driver->current_video->frame(
+            driver->video_data, data, width, height, *frame_count,
+            pitch, driver->current_msg))
+      driver->video_active = false;
+
+   *frame_count = *frame_count + 1;
+}
