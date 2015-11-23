@@ -13,12 +13,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../audio_resampler_driver.h"
-#include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdint.h>
+#include <math.h>
  
+#include "../audio_resampler_driver.h"
 typedef struct rarch_nearest_resampler
 {
    float fraction;

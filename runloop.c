@@ -16,6 +16,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
+
 #include <file/file_path.h>
 #include <retro_inline.h>
 

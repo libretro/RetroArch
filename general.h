@@ -18,6 +18,7 @@
 #define __RARCH_GENERAL_H
 
 #include <stdint.h>
+#include <math.h>
 #include <limits.h>
 
 /* Platform-specific headers */

@@ -22,6 +22,7 @@
 #include "msg_hash.h"
 #include "verbosity.h"
 #include "audio/audio_driver.h"
+#include "audio/audio_resampler_driver.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"

@@ -15,9 +15,9 @@
 
 /* Bog-standard windowed SINC implementation. */
 
-#include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <math.h>
 #include <string.h>
 
 #ifdef __SSE__

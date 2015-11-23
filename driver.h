@@ -33,7 +33,6 @@
 
 #include "camera/camera_driver.h"
 #include "location/location_driver.h"
-#include "audio/audio_resampler_driver.h"
 #include "record/record_driver.h"
 
 #include "libretro_version_1.h"
