@@ -70,7 +70,12 @@ static INLINE bool RARCH_LOG_VERBOSE(void)
 {
    bool *verbose = NULL;
 #ifdef RARCH_INTERNAL
+#ifdef __cplusplus
+   extern "C" bool *retro_main_verbosity(void);
+#else
    extern bool *retro_main_verbosity(void);
+#endif
+
    verbose = retro_main_verbosity();
 #endif
    if (!verbose)
