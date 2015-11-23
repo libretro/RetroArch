@@ -78,7 +78,8 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    NULL
 };
 
-static void *video_context_data;
+static const gfx_ctx_driver_t  *video_context;
+static        void *video_context_data;
 
 void *gfx_ctx_data_get_ptr(void)
 {
@@ -87,22 +88,17 @@ void *gfx_ctx_data_get_ptr(void)
 
 void gfx_ctx_set(const gfx_ctx_driver_t *ctx_driver)
 {
-   driver_t  *driver     = driver_get_ptr();
-   if (!driver || !ctx_driver)
+   if (!ctx_driver)
       return;
-   driver->video_context = ctx_driver;
+   video_context = ctx_driver;
 }
 
 void gfx_ctx_destroy(const gfx_ctx_driver_t *ctx_driver)
 {
-   driver_t  *driver     = driver_get_ptr();
-   if (!driver)
-      return;
-
    if (ctx_driver)
       gfx_ctx_destroy(ctx_driver);
 
-   driver->video_context = NULL;
+   video_context = NULL;
 }
 
 void gfx_ctx_data_set(void *ptr)
@@ -121,10 +117,7 @@ void gfx_ctx_free_data(void)
 
 static const gfx_ctx_driver_t *gfx_ctx_get_ptr(void)
 {
-   driver_t  *driver     = driver_get_ptr();
-   if (!driver)
-      return NULL; 
-   return (const gfx_ctx_driver_t*)driver->video_context;
+   return video_context;
 }
 
 void gfx_ctx_free(void *data)
