@@ -54,7 +54,7 @@ static bool shader_null_set_mvp(void *data, const math_matrix_4x4 *mat)
 {
 #ifdef HAVE_OPENGL
 #ifndef NO_GL_FF_MATRIX
-   gl_t *gl = (gl_t*)video_driver_get_ptr();
+   gl_t *gl = (gl_t*)video_driver_get_ptr(false);
    if (gl)
    {
       gl_ff_matrix(mat);
@@ -68,7 +68,7 @@ static bool shader_null_set_coords(const void *data)
 {
 #ifdef HAVE_OPENGL
 #ifndef NO_GL_FF_VERTEX
-   gl_t *gl = (gl_t*)video_driver_get_ptr();
+   gl_t *gl = (gl_t*)video_driver_get_ptr(false);
    if (gl)
    {
       const struct gfx_coords *coords = (const struct gfx_coords*)data;

@@ -265,7 +265,7 @@ video_pixel_scaler_t *scaler_get_ptr(void)
  *
  * Returns: video driver's userdata.
  **/
-void *video_driver_get_ptr(void)
+void *video_driver_get_ptr(bool force_nonthreaded_data)
 {
    driver_t *driver     = driver_get_ptr();
 
@@ -273,7 +273,7 @@ void *video_driver_get_ptr(void)
    settings_t *settings = config_get_ptr();
 
    if (settings->video.threaded
-         && !video_state.hw_render_callback.context_type)
+         && !video_state.hw_render_callback.context_type && !force_nonthreaded_data)
       return rarch_threaded_video_get_ptr(NULL);
 #endif
 

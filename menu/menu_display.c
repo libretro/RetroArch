@@ -239,7 +239,7 @@ bool menu_display_init_main_font(void *data,
 {
    bool      ret;
    driver_t    *driver  = driver_get_ptr();
-   void        *video   = video_driver_get_ptr();
+   void        *video   = video_driver_get_ptr(false);
    menu_display_t *disp = menu_display_get_ptr();
 
    if (!disp)

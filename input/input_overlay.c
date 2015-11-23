@@ -1051,7 +1051,7 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
       goto error;
    }
 
-   ol->iface_data            = video_driver_get_ptr();
+   ol->iface_data            = video_driver_get_ptr(true);
 
    if (!ol->iface)
       goto error;
