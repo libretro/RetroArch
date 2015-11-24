@@ -44,6 +44,7 @@
 #include "configuration.h"
 #include "general.h"
 #include "runloop_data.h"
+#include "tasks/tasks.h"
 #include "performance.h"
 #include "cheats.h"
 #include "system.h"
@@ -1073,7 +1074,6 @@ void rarch_main_alloc(void)
    event_command(EVENT_CMD_HISTORY_DEINIT);
 
    rarch_main_ctl(RARCH_MAIN_CTL_CLEAR_STATE, NULL);
-   rarch_main_data_clear_state();
 }
 
 /**
@@ -1165,6 +1165,7 @@ int rarch_main_init(int argc, char *argv[])
 
    rarch_ctl(RARCH_ACTION_STATE_VALIDATE_CPU_FEATURES, NULL);
    config_load();
+   rarch_task_init();
 
    {
       settings_t *settings = config_get_ptr();
