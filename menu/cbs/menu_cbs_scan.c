@@ -83,6 +83,7 @@ static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
 {
    switch (type)
    {
+#ifdef HAVE_LIBRETRODB
       case MENU_FILE_DIRECTORY:
          BIND_ACTION_SCAN(cbs, action_scan_directory);
          break;
@@ -90,6 +91,7 @@ static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
       case MENU_FILE_PLAIN:
          BIND_ACTION_SCAN(cbs, action_scan_file);
          break;
+#endif
       default:
          return -1;
    }
