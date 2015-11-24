@@ -148,7 +148,8 @@ typedef struct xmb_handle
    float x;
    float alpha;
    uintptr_t boxart;
-   float boxart_size;
+   float boxart_width;
+   float boxart_height;
    char background_file_path[PATH_MAX_LENGTH];
    char boxart_file_path[PATH_MAX_LENGTH];
 
@@ -401,7 +402,7 @@ static void xmb_draw_boxart(xmb_handle_t *xmb, float *color, unsigned width, uns
 {
    struct gfx_coords coords;
    math_matrix_4x4 mymat;
-   float y = xmb->margins.screen.top + xmb->icon.size + xmb->boxart_size;
+   float y = xmb->margins.screen.top + xmb->icon.size + xmb->boxart_height;
    float x = xmb->margins.screen.left + xmb->icon.spacing.horizontal +
       xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4;
 
@@ -416,8 +417,8 @@ static void xmb_draw_boxart(xmb_handle_t *xmb, float *color, unsigned width, uns
    menu_display_draw(
          x,
          height - y,
-         xmb->boxart_size,
-         xmb->boxart_size,
+         xmb->boxart_width,
+         xmb->boxart_height,
          &coords, &mymat, xmb->boxart,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 }
@@ -1872,7 +1873,7 @@ static void xmb_layout(menu_handle_t *menu, xmb_handle_t *xmb)
    new_font_size                = 32.0  * scale_factor;
    new_header_height            = 128.0 * scale_factor;
 
-   xmb->boxart_size             = 460.0 * scale_factor;
+   xmb->boxart_width            = 460.0 * scale_factor;
    xmb->cursor.size             = 64.0;
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,     &new_font_size);
@@ -2085,8 +2086,12 @@ static bool xmb_load_image(void *data, menu_image_type_t type)
                TEXTURE_FILTER_MIPMAP_LINEAR);
          break;
       case MENU_IMAGE_BOXART:
-         xmb->boxart = menu_display_texture_load(data,
-               TEXTURE_FILTER_MIPMAP_LINEAR);
+         {
+            struct texture_image *img = (struct texture_image*)data;
+            xmb->boxart_height = xmb->boxart_width * (float)img->height / (float)img->width;
+            xmb->boxart = menu_display_texture_load(data,
+                  TEXTURE_FILTER_MIPMAP_LINEAR);
+         }
          break;
    }
 
@@ -2286,6 +2291,9 @@ static void xmb_context_reset(void)
    xmb_context_reset_textures(xmb, iconpath);
    xmb_context_reset_background(iconpath);
    xmb_context_reset_horizontal_list(xmb, menu, themepath);
+
+   if (settings->menu.boxart_enable)
+      xmb_update_boxart_image(xmb);
 }
 
 static void xmb_navigation_clear(bool pending_push)
