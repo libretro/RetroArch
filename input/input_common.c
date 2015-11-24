@@ -515,7 +515,6 @@ static bool check_block_hotkey(bool enable_hotkey)
    bool use_hotkey_enable;
    driver_t *driver              = driver_get_ptr();
    settings_t *settings          = config_get_ptr();
-   global_t *global              = global_get_ptr();
    const struct retro_keybind *bind =
       &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
    const struct retro_keybind *autoconf_bind =

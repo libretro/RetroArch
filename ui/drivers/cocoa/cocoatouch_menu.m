@@ -745,7 +745,6 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (void)menuSelect: (uint32_t) i
 {
-  unsigned j;
   menu_entry_select(i);
   rarch_main_data_iterate();
 }
