@@ -9,8 +9,10 @@
 #include "rthreads/rthreads.h"
 #endif
 
-static rarch_task_t *running_queue  = NULL;
-static rarch_task_t *finished_queue = NULL;
+typedef struct {
+   rarch_task_t *front;
+   rarch_task_t *back;
+} task_queue_t;
 
 struct rarch_task_impl {
    void (*push_running)(rarch_task_t *);
@@ -19,34 +21,32 @@ struct rarch_task_impl {
    void (*init)(void);
    void (*deinit)(void);
 };
+static task_queue_t tasks_running  = {NULL, NULL};
+static task_queue_t tasks_finished = {NULL, NULL};
 
 static struct rarch_task_impl *impl_current = NULL;
 
-static void _push_task(rarch_task_t **q, rarch_task_t *task)
+static void task_queue_put(task_queue_t *queue, rarch_task_t *task)
 {
-   if (*q == NULL)
-      *q = task;
-   else
-   {
-      rarch_task_t *last = *q;
-      while (last->next)
-         last = last->next;
-
-      last->next = task;
-   }
-
    task->next = NULL;
+
+   if (queue->front == NULL)
+      queue->front = task;
+   else
+      queue->back->next = task;
+
+   queue->back = task;
 }
 
-static rarch_task_t *_pop_task(rarch_task_t **q)
+static rarch_task_t *task_queue_get(task_queue_t *queue)
 {
-   rarch_task_t *task = *q;
+   rarch_task_t *task = queue->front;
 
-   if (*q == NULL)
-      return NULL;
-
-   *q = task->next;
-   task->next = NULL;
+   if (task)
+   {
+      queue->front = task->next;
+      task->next = NULL;
+   }
 
    return task;
 }
@@ -54,7 +54,7 @@ static rarch_task_t *_pop_task(rarch_task_t **q)
 static void rarch_task_internal_gather(void)
 {
    rarch_task_t *next = NULL;
-   while ((next = _pop_task(&finished_queue)) != NULL)
+   while ((next = task_queue_get(&tasks_finished)) != NULL)
    {
       rarch_task_t *task = next;
       next = next->next;
@@ -71,12 +71,12 @@ static void rarch_task_internal_gather(void)
 
 static void regular_push_finished(rarch_task_t *task)
 {
-   _push_task(&finished_queue, task);
+   task_queue_put(&tasks_finished, task);
 }
 
 static void regular_push_running(rarch_task_t *task)
 {
-   _push_task(&running_queue, task);
+   task_queue_put(&tasks_running, task);
 }
 
 static void regular_gather(void)
@@ -87,7 +87,7 @@ static void regular_gather(void)
 
    /* mimics threaded_gather() for compatibility, a faster implementation
     * can be written for systems without HAVE_THREADS if necessary. */
-   while ((task = _pop_task(&running_queue)) != NULL)
+   while ((task = task_queue_get(&tasks_running)) != NULL)
    {
       task->next = queue;
       queue = task;
@@ -133,14 +133,14 @@ static bool worker_continue = true; /* use running_lock when touching it */
 static void threaded_push_finished(rarch_task_t *task)
 {
    slock_lock(finished_lock);
-   _push_task(&finished_queue, task);
+   task_queue_put(&tasks_finished, task);
    slock_unlock(finished_lock);
 }
 
 static void threaded_push_running(rarch_task_t *task)
 {
    slock_lock(running_lock);
-   _push_task(&running_queue, task);
+   task_queue_put(&tasks_running, task);
    scond_signal(worker_cond);
    slock_unlock(running_lock);
 }
@@ -171,7 +171,7 @@ static void threaded_worker(void *userdata)
       if (!worker_continue)
          break; /* should we keep running until all tasks finished? */
 
-      while ((task = _pop_task(&running_queue)) != NULL)
+      while ((task = task_queue_get(&tasks_running)) != NULL)
       {
          task->next = queue;
          queue = task;
@@ -245,7 +245,8 @@ static struct rarch_task_impl impl_threaded = {
 void rarch_task_init(void)
 {
 #ifdef HAVE_THREADS
-   if (config_get_ptr()->threaded_data_runloop_enable)
+   settings_t *settings = config_get_ptr();
+   if (settings->threaded_data_runloop_enable)
       impl_current = &impl_threaded;
    else
 #endif
