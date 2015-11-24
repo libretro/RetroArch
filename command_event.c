@@ -1206,7 +1206,7 @@ bool event_command(enum event_command cmd)
             if (menu)
                menu->load_no_content = false;
 #endif
-            rarch_main_data_deinit();
+            rarch_main_data_clear_state();
 
             rarch_main_ctl(RARCH_MAIN_CTL_CLEAR_CONTENT_PATH, NULL);
 
