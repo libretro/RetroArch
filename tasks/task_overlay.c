@@ -621,17 +621,9 @@ static void rarch_task_overlay_handler(rarch_task_t *task)
       case OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE:
          rarch_task_overlay_resolve_iterate(loader);
          break;
-      case OVERLAY_STATUS_DEFERRED_DONE:
-#if 0
-         input_overlay_new_done();
-         break;
-#endif
       case OVERLAY_STATUS_DEFERRED_ERROR:
-#if 0
-         input_overlay_free();
-         break;
-#endif
-         break;
+         task->error = strdup("Failed to load the overlay.");
+      case OVERLAY_STATUS_DEFERRED_DONE:
       default:
       case OVERLAY_STATUS_NONE:
          goto task_finished;
