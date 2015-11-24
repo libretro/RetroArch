@@ -13,10 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <retro_miscellaneous.h>
+#include <compat/strl.h>
 
-#include "general.h"
-#include "verbosity.h"
+#include "runloop_data.h"
+#include "runloop.h"
 
 #include "tasks/tasks.h"
 
