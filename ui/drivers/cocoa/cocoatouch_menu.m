@@ -747,12 +747,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
   unsigned j;
   menu_entry_select(i);
-    
-  if (!rarch_main_data_active())
-      return;
-    
-  for (j = 0; j < 32; j++)
-     rarch_main_data_iterate();
+  rarch_main_data_iterate();
 }
 
 - (void)menuBack

@@ -14,10 +14,6 @@
  */
 
 #include <retro_miscellaneous.h>
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
-#endif
-#include <file/file_path.h>
 
 #include "general.h"
 #include "verbosity.h"
@@ -33,11 +29,6 @@ static char data_runloop_msg[PATH_MAX_LENGTH];
 void rarch_main_data_deinit(void)
 {
    rarch_task_deinit();
-}
-
-bool rarch_main_data_active(void)
-{
-   return false;
 }
 
 #ifdef HAVE_MENU
