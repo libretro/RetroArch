@@ -266,11 +266,6 @@ static bool find_video_driver(void)
    return true;
 }
 
-video_pixel_scaler_t *scaler_get_ptr(void)
-{
-   return scaler_ptr;
-}
-
 /**
  * video_driver_get_ptr:
  *
@@ -1729,7 +1724,7 @@ static bool video_pixel_frame_scale(const void *data,
       size_t pitch)
 {
    static struct retro_perf_counter video_frame_conv = {0};
-   video_pixel_scaler_t *scaler = scaler_get_ptr();
+   video_pixel_scaler_t *scaler = scaler_ptr;
 
    rarch_perf_init(&video_frame_conv, "video_frame_conv");
 
@@ -1782,10 +1777,10 @@ void video_frame(const void *data, unsigned width,
 
    if (video_pixel_frame_scale(data, width, height, pitch))
    {
-      video_pixel_scaler_t *scaler = scaler_get_ptr();
+      video_pixel_scaler_t *scaler = scaler_ptr;
 
-      data                        = scaler->scaler_out;
-      pitch                       = scaler->scaler->out_stride;
+      data                         = scaler->scaler_out;
+      pitch                        = scaler->scaler->out_stride;
    }
 
    video_driver_cached_frame_set(data, width, height, pitch);
