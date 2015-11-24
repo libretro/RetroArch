@@ -1777,3 +1777,60 @@ void video_driver_frame(const void *data,
 
    *frame_count = *frame_count + 1;
 }
+
+/**
+ * video_frame:
+ * @data                 : pointer to data of the video frame.
+ * @width                : width of the video frame.
+ * @height               : height of the video frame.
+ * @pitch                : pitch of the video frame.
+ *
+ * Video frame render callback function.
+ **/
+void video_frame(const void *data, unsigned width,
+      unsigned height, size_t pitch)
+{
+   unsigned output_width  = 0;
+   unsigned output_height = 0;
+   unsigned  output_pitch = 0;
+   const char *msg        = NULL;
+   driver_t  *driver      = driver_get_ptr();
+   global_t  *global      = global_get_ptr();
+   settings_t *settings   = config_get_ptr();
+
+   if (!driver->video_active)
+      return;
+
+   if (video_pixel_frame_scale(data, width, height, pitch))
+   {
+      video_pixel_scaler_t *scaler = scaler_get_ptr();
+
+      data                        = scaler->scaler_out;
+      pitch                       = scaler->scaler->out_stride;
+   }
+
+   video_driver_cached_frame_set(data, width, height, pitch);
+
+   /* Slightly messy code,
+    * but we really need to do processing before blocking on VSync
+    * for best possible scheduling.
+    */
+   if ((!video_driver_ctl(RARCH_DISPLAY_CTL_FRAME_FILTER_ALIVE, NULL)
+            || !settings->video.post_filter_record || !data
+            || global->record.gpu_buffer)
+      )
+      recording_dump_frame(data, width, height, pitch);
+
+   if (video_driver_frame_filter(data, width, height, pitch,
+            &output_width, &output_height, &output_pitch))
+   {
+      data   = video_driver_frame_filter_get_buf_ptr();
+      width  = output_width;
+      height = output_height;
+      pitch  = output_pitch;
+   }
+
+   msg                = rarch_main_msg_queue_pull();
+
+   video_driver_frame(data, width, height, pitch, msg);
+}

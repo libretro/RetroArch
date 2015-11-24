@@ -525,6 +525,18 @@ video_pixel_scaler_t *scaler_get_ptr(void);
 
 const video_poke_interface_t *video_driver_get_poke(void);
 
+/**
+ * video_frame:
+ * @data                 : pointer to data of the video frame.
+ * @width                : width of the video frame.
+ * @height               : height of the video frame.
+ * @pitch                : pitch of the video frame.
+ *
+ * Video frame render callback function.
+ **/
+void video_frame(const void *data, unsigned width,
+      unsigned height, size_t pitch);
+
 extern video_driver_t video_gl;
 extern video_driver_t video_psp1;
 extern video_driver_t video_vita2d;
