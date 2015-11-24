@@ -49,6 +49,8 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total);
 /* 200, 404, or whatever.  */
 int net_http_status(struct http_t *state);
 
+bool net_http_error(struct http_t *state);
+
 /* Returns the downloaded data. The returned buffer is owned by the 
  * HTTP handler; it's freed by net_http_delete. 
  *

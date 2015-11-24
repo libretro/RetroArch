@@ -523,7 +523,7 @@ fail:
       state->status = -1;
    }
 
-   return false;
+   return true;
 }
 
 int net_http_status(struct http_t *state)
@@ -538,8 +538,7 @@ uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error)
    if (!state)
       return NULL;
 
-   if (!accept_error && 
-         (state->error || state->status<200 || state->status>299))
+   if (!accept_error && net_http_error(state))
    {
       if (len)
          *len=0;
@@ -562,4 +561,9 @@ void net_http_delete(struct http_t *state)
 //   if (state->data)
 //      free(state->data);
    free(state);
+}
+
+bool net_http_error(struct http_t *state)
+{
+   return (state->error || state->status<200 || state->status>299);
 }
