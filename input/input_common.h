@@ -121,8 +121,6 @@ void input_pop_analog_dpad(struct retro_keybind *binds);
 
 retro_input_t input_keys_pressed(void);
 
-bool check_block_hotkey(bool enable_hotkey);
-
 /**
  * input_poll:
  *

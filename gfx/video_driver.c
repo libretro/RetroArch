@@ -77,6 +77,8 @@ typedef struct video_driver_state
  * TODO: Refactor this better. */
 static bool gfx_use_rgba;
 
+static uint64_t video_frame_count;
+
 static void *video_data;
 static const video_driver_t *current_video;
 
@@ -312,7 +314,6 @@ uintptr_t video_driver_get_current_framebuffer(void)
    return 0;
 }
 
-static uint64_t video_frame_count;
 
 retro_proc_address_t video_driver_get_proc_address(const char *sym)
 {

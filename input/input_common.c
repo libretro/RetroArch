@@ -505,6 +505,46 @@ void input_pop_analog_dpad(struct retro_keybind *binds)
 }
 
 /**
+ * check_block_hotkey:
+ * @enable_hotkey        : Is hotkey enable key enabled?
+ *
+ * Checks if 'hotkey enable' key is pressed.
+ **/
+static bool check_block_hotkey(bool enable_hotkey)
+{
+   bool use_hotkey_enable;
+   driver_t *driver              = driver_get_ptr();
+   settings_t *settings          = config_get_ptr();
+   global_t *global              = global_get_ptr();
+   const struct retro_keybind *bind =
+      &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
+   const struct retro_keybind *autoconf_bind =
+      &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
+
+   /* Don't block the check to RARCH_ENABLE_HOTKEY
+    * unless we're really supposed to. */
+   driver->block_hotkey = input_driver_keyboard_mapping_is_blocked();
+
+   /* If we haven't bound anything to this,
+    * always allow hotkeys. */
+   use_hotkey_enable                =
+         (bind->key != RETROK_UNKNOWN)
+      || (bind->joykey != NO_BTN)
+      || (bind->joyaxis != AXIS_NONE)
+      || (autoconf_bind->key != RETROK_UNKNOWN )
+      || (autoconf_bind->joykey != NO_BTN)
+      || (autoconf_bind->joyaxis != AXIS_NONE);
+
+   driver->block_hotkey             =
+      input_driver_keyboard_mapping_is_blocked() ||
+      (use_hotkey_enable && !enable_hotkey);
+
+   /* If we hold ENABLE_HOTKEY button, block all libretro input to allow
+    * hotkeys to be bound to same keys as RetroPad. */
+   return (use_hotkey_enable && enable_hotkey);
+}
+
+/**
  * input_keys_pressed:
  *
  * Grab an input sample for this frame.
@@ -564,45 +604,6 @@ retro_input_t input_keys_pressed(void)
    return ret;
 }
 
-/**
- * check_block_hotkey:
- * @enable_hotkey        : Is hotkey enable key enabled?
- *
- * Checks if 'hotkey enable' key is pressed.
- **/
-bool check_block_hotkey(bool enable_hotkey)
-{
-   bool use_hotkey_enable;
-   driver_t *driver              = driver_get_ptr();
-   settings_t *settings          = config_get_ptr();
-   global_t *global              = global_get_ptr();
-   const struct retro_keybind *bind =
-      &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
-   const struct retro_keybind *autoconf_bind =
-      &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
-
-   /* Don't block the check to RARCH_ENABLE_HOTKEY
-    * unless we're really supposed to. */
-   driver->block_hotkey = input_driver_keyboard_mapping_is_blocked();
-
-   /* If we haven't bound anything to this,
-    * always allow hotkeys. */
-   use_hotkey_enable                =
-         (bind->key != RETROK_UNKNOWN)
-      || (bind->joykey != NO_BTN)
-      || (bind->joyaxis != AXIS_NONE)
-      || (autoconf_bind->key != RETROK_UNKNOWN )
-      || (autoconf_bind->joykey != NO_BTN)
-      || (autoconf_bind->joyaxis != AXIS_NONE);
-
-   driver->block_hotkey             =
-      input_driver_keyboard_mapping_is_blocked() ||
-      (use_hotkey_enable && !enable_hotkey);
-
-   /* If we hold ENABLE_HOTKEY button, block all libretro input to allow
-    * hotkeys to be bound to same keys as RetroPad. */
-   return (use_hotkey_enable && enable_hotkey);
-}
 
 /**
  * input_poll:
