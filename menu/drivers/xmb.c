@@ -547,7 +547,7 @@ static void xmb_update_boxart_image(xmb_handle_t *xmb)
 {
    if (path_file_exists(xmb->boxart_file_path))
       rarch_task_push_image_load(xmb->boxart_file_path, "cb_menu_boxart",
-            menu_display_handle_boxart_upload);
+            menu_display_handle_boxart_upload, NULL);
    else if (xmb->depth == 1)
       xmb->boxart = 0;
 }
@@ -818,9 +818,12 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
       if (!path_file_exists(path))
           xmb_fill_default_background_path(xmb, path, sizeof(path));
        
-       if(strcmp(path, xmb->background_file_path) != 0) {
-           if(path_file_exists(path)) {
-              rarch_task_push_image_load(path, "cb_menu_wallpaper", menu_display_handle_wallpaper_upload);
+       if(strcmp(path, xmb->background_file_path) != 0)
+       {
+           if(path_file_exists(path))
+           {
+              rarch_task_push_image_load(path, "cb_menu_wallpaper",
+                  menu_display_handle_wallpaper_upload, NULL);
               strlcpy(xmb->background_file_path, path, sizeof(xmb->background_file_path));
            }
        }
@@ -2253,7 +2256,8 @@ static void xmb_context_reset_background(const char *iconpath)
       strlcpy(path, settings->menu.wallpaper, sizeof(path));
 
    if (path_file_exists(path))
-      rarch_task_push_image_load(path, "cb_menu_wallpaper", menu_display_handle_wallpaper_upload);
+      rarch_task_push_image_load(path, "cb_menu_wallpaper",
+            menu_display_handle_wallpaper_upload, NULL);
 }
 
 static void xmb_context_reset(void)

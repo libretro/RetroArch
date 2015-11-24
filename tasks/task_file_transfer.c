@@ -311,7 +311,7 @@ static int cb_nbio_image_menu_boxart(void *data, size_t len)
 #endif
 #endif
 
-bool rarch_task_push_image_load(const char *fullpath, const char *type, rarch_task_callback_t cb)
+bool rarch_task_push_image_load(const char *fullpath, const char *type, rarch_task_callback_t cb, void *user_data)
 {
 #if defined(HAVE_RPNG) && defined(HAVE_MENU)
    rarch_task_t *t;
@@ -348,6 +348,7 @@ bool rarch_task_push_image_load(const char *fullpath, const char *type, rarch_ta
    t->state = nbio;
    t->handler = rarch_task_file_load_handler;
    t->callback = cb;
+   t->user_data = user_data;
 
    rarch_task_push(t);
 #endif
