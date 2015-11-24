@@ -73,46 +73,6 @@ void rarch_main_data_clear_state(void)
    rarch_main_data_init();
 }
 
-void rarch_main_data_msg_queue_push(unsigned type,
-      const char *msg, const char *msg2,
-      unsigned prio, unsigned duration, bool flush)
-{
-   char new_msg[PATH_MAX_LENGTH];
-   msg_queue_t *queue            = NULL;
-   settings_t     *settings      = config_get_ptr();
-
-   (void)settings;
-
-   switch(type)
-   {
-      case DATA_TYPE_NONE:
-         break;
-      case DATA_TYPE_FILE:
-         break;
-      case DATA_TYPE_IMAGE:
-         break;
-#ifdef HAVE_NETWORKING
-      case DATA_TYPE_HTTP:
-         break;
-#endif
-#ifdef HAVE_OVERLAY
-      case DATA_TYPE_OVERLAY:
-         break;
-#endif
-      case DATA_TYPE_DB:
-      default:
-         break;
-   }
-
-   if (!queue)
-      return;
-
-   if (flush)
-      msg_queue_clear(queue);
-   msg_queue_push(queue, new_msg, prio, duration);
-
-}
-
 void data_runloop_osd_msg(const char *msg, size_t len)
 {
    strlcpy(data_runloop_msg, msg, len);

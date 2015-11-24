@@ -1414,9 +1414,6 @@ static int generic_action_ok_network(const char *path,
          break;
    }
 
-//   rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, url_path, url_label, 0, 1,
-//         true);
-
    rarch_task_push_http_transfer(url_path, url_label, callback, NULL);
 
    return generic_action_ok_displaylist_push(path,

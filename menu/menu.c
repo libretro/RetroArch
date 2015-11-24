@@ -251,6 +251,7 @@ void *menu_init(const void *data)
    menu->help_screen_type           = MENU_HELP_WELCOME;
    settings->menu_show_start_screen = false;
 
+   /* TODO/FIXME - Update to newer tasks */
 #if 0
    if (settings->bundle_assets_extract_enable &&
          (strcmp(PACKAGE_VERSION, settings->bundle_assets_last_extracted_version) != 0)
