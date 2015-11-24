@@ -918,6 +918,7 @@ int action_ok_path_use_directory(const char *path,
    return menu_entry_pathdir_set_value(0, NULL);
 }
 
+#ifdef HAVE_LIBRETRODB
 static int action_ok_scan_file(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -929,6 +930,7 @@ static int action_ok_path_scan_directory(const char *path,
 {
    return action_scan_directory(NULL, label, type, idx);
 }
+#endif
 
 static int action_ok_core_deferred_set(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -2213,9 +2215,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_FILE_USE_DIRECTORY:
             BIND_ACTION_OK(cbs, action_ok_path_use_directory);
             break;
+#ifdef HAVE_LIBRETRODB
          case MENU_FILE_SCAN_DIRECTORY:
             BIND_ACTION_OK(cbs, action_ok_path_scan_directory);
             break;
+#endif
          case MENU_FILE_CONFIG:
             BIND_ACTION_OK(cbs, action_ok_config_load);
             break;
@@ -2301,9 +2305,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_FILE_PLAIN:
             switch (menu_label_hash)
             {
+#ifdef HAVE_LBIRETRODB
                case MENU_LABEL_SCAN_FILE:
                   BIND_ACTION_OK(cbs, action_ok_scan_file);
                   break;
+#endif
                case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
                case MENU_LABEL_DETECT_CORE_LIST:
                case MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
