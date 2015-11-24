@@ -95,9 +95,6 @@ void gfx_ctx_set(const gfx_ctx_driver_t *ctx_driver)
 
 void gfx_ctx_destroy(const gfx_ctx_driver_t *ctx_driver)
 {
-   if (ctx_driver)
-      gfx_ctx_destroy(ctx_driver);
-
    video_context = NULL;
 }
 
