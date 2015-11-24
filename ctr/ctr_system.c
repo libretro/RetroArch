@@ -21,7 +21,7 @@ extern u32 __heap_size_hbl;
 
 extern void (*__system_retAddr)(void);
 
-void __destroy_handle_list(void);
+void envDestroyHandles(void);
 void __appExit();
 void __libc_fini_array(void);
 
@@ -111,7 +111,7 @@ void __attribute__((noreturn)) __libctru_exit(int rc)
       svcControlMemory(&tmp, __stack_bottom, 0x0, __stack_size_extra, MEMOP_FREE, 0x0);
 
 	// Close some handles
-	__destroy_handle_list();
+	envDestroyHandles();
 
    if (__sync_fini)
 		__sync_fini();

@@ -4,16 +4,16 @@
 
 static void svchax_gspwn(u32 dst, u32 src, u32 size, u8* flush_buffer)
 {
-   extern Handle gspEvents[GSPEVENT_MAX];
+   extern Handle gspEvents[GSPGPU_EVENT_MAX];
 
    memcpy(flush_buffer, flush_buffer + 0x4000, 0x4000);
-   GSPGPU_InvalidateDataCache(dst, size);
-   GSPGPU_FlushDataCache(src, size);
+   GSPGPU_InvalidateDataCache((void*)dst, size);
+   GSPGPU_FlushDataCache((void*)src, size);
    memcpy(flush_buffer, flush_buffer + 0x4000, 0x4000);
 
-   svcClearEvent(gspEvents[GSPEVENT_PPF]);
-	GX_TextureCopy(src, 0, dst, 0, size, 8);
-   svcWaitSynchronization(gspEvents[GSPEVENT_PPF], U64_MAX);
+   svcClearEvent(gspEvents[GSPGPU_EVENT_PPF]);
+	GX_TextureCopy((void*)src, 0, (void*)dst, 0, size, 8);
+   svcWaitSynchronization(gspEvents[GSPGPU_EVENT_PPF], U64_MAX);
 
    memcpy(flush_buffer, flush_buffer + 0x4000, 0x4000);
 }
@@ -123,7 +123,7 @@ u32 __ctr_svchax = 0;
 
 void svchax_init(void)
 {
-   extern u32 __service_ptr;
+   extern void* __service_ptr;
 
    if (__ctr_svchax)
       return;

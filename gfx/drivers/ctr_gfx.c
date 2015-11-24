@@ -215,7 +215,7 @@ static void ctr_update_viewport(ctr_video_t* ctr)
 }
 
 
-static void ctr_lcd_aptHook(int hook, void* param)
+static void ctr_lcd_aptHook(APT_HookType hook, void* param)
 {
    ctr_video_t *ctr  = (ctr_video_t*)param;
    if(!ctr)
@@ -356,7 +356,7 @@ static void* ctr_init(const video_info_t* video,
                             sizeof(ctr_vertex_t));
    GPUCMD_Finalize();
    ctrGuFlushAndRun(true);
-   gspWaitForEvent(GSPEVENT_P3D, false);
+   gspWaitForEvent(GSPGPU_EVENT_P3D, false);
 
    if (input && input_data)
    {
@@ -401,7 +401,7 @@ static bool ctr_frame(void* data, const void* frame,
 
    if (!width || !height)
    {
-      gspWaitForEvent(GSPEVENT_VBlank0, true);
+      gspWaitForEvent(GSPGPU_EVENT_VBlank0, true);
       return true;
    }
 
@@ -441,17 +441,17 @@ static bool ctr_frame(void* data, const void* frame,
       ctr->lcd_buttom_on = !ctr->lcd_buttom_on;
    }
 
-   svcWaitSynchronization(gspEvents[GSPEVENT_P3D], 20000000);
-   svcClearEvent(gspEvents[GSPEVENT_P3D]);
-   svcWaitSynchronization(gspEvents[GSPEVENT_PPF], 20000000);
-   svcClearEvent(gspEvents[GSPEVENT_PPF]);
+   svcWaitSynchronization(gspEvents[GSPGPU_EVENT_P3D], 20000000);
+   svcClearEvent(gspEvents[GSPGPU_EVENT_P3D]);
+   svcWaitSynchronization(gspEvents[GSPGPU_EVENT_PPF], 20000000);
+   svcClearEvent(gspEvents[GSPGPU_EVENT_PPF]);
 
    frames++;
 
    if (ctr->vsync)
-      svcWaitSynchronization(gspEvents[GSPEVENT_VBlank0], U64_MAX);
+      svcWaitSynchronization(gspEvents[GSPGPU_EVENT_VBlank0], U64_MAX);
 
-   svcClearEvent(gspEvents[GSPEVENT_VBlank0]);
+   svcClearEvent(gspEvents[GSPGPU_EVENT_VBlank0]);
 
    currentTick = svcGetSystemTick();
    diff        = currentTick - lastTick;
@@ -541,7 +541,9 @@ static bool ctr_frame(void* data, const void* frame,
          && (pitch > 0x40))
       {
          /* can copy the buffer directly with the GPU */
-         ctrGuCopyImage(false, frame, pitch / (ctr->rgb32? 4: 2), height, ctr->rgb32 ? CTRGU_RGBA8: CTRGU_RGB565, false,
+//         GSPGPU_FlushDataCache(frame, pitch * height);
+         ctrGuSetCommandList_First(true,frame, pitch * height,0,0,0,0);
+         ctrGuCopyImage(true, frame, pitch / (ctr->rgb32? 4: 2), height, ctr->rgb32 ? CTRGU_RGBA8: CTRGU_RGB565, false,
                         ctr->texture_swizzled, ctr->texture_width, ctr->rgb32 ? CTRGU_RGBA8: CTRGU_RGB565,  true);
       }
       else

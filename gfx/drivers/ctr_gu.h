@@ -61,7 +61,7 @@ void wait_for_input(void);
 #endif
 
 
-extern Handle gspEvents[GSPEVENT_MAX];
+extern Handle gspEvents[GSPGPU_EVENT_MAX];
 extern u32* gpuCmdBuf;
 extern u32 gpuCmdBufOffset;
 extern u32 __linear_heap_size;
@@ -109,7 +109,7 @@ static INLINE Result ctrGuSetCommandList_First(bool queued, u32* buf0a, u32 buf0
    gxCommand[6]=(u32)buf2s; //buf2 size
    gxCommand[7]=0x0;
 
-   return GSPGPU_SubmitGxCommand(gxCmdBuf, gxCommand);
+   return gspSubmitGxCommand(gxCmdBuf, gxCommand);
 }
 
 __attribute__((always_inline))
@@ -123,7 +123,7 @@ static INLINE Result ctrGuSetCommandList_Last(bool queued, u32* buf0a, u32 buf0s
    gxCommand[4]=gxCommand[5]=gxCommand[6]=0x0;
    gxCommand[7]=(flags>>1)&1; //when non-zero, call svcFlushProcessDataCache() with the specified buffer
 
-   return GSPGPU_SubmitGxCommand(gxCmdBuf, gxCommand);
+   return gspSubmitGxCommand(gxCmdBuf, gxCommand);
 }
 
 __attribute__((always_inline))
@@ -147,7 +147,7 @@ static INLINE Result ctrGuSetMemoryFill(bool queued, u32* buf0a, u32 buf0v, u32*
    gxCommand[6]=(u32)buf1e; //buf1 end addr
    gxCommand[7]=(width0)|(width1<<16);
 
-   return GSPGPU_SubmitGxCommand(gxCmdBuf, gxCommand);
+   return gspSubmitGxCommand(gxCmdBuf, gxCommand);
 }
 
 __attribute__((always_inline))
@@ -169,7 +169,7 @@ static INLINE Result ctrGuCopyImage
                 | ((dst_w > src_w) ? CTRGU_DMA_TRUNCATE : 0);
    gxCommand[6]=gxCommand[7]=0x0;
 
-   return GSPGPU_SubmitGxCommand(gxCmdBuf, gxCommand);
+   return gspSubmitGxCommand(gxCmdBuf, gxCommand);
 
 }
 
@@ -188,7 +188,7 @@ static INLINE Result ctrGuDisplayTransfer
    gxCommand[5]=(src_fmt << 8) | (dst_fmt << 12) | multisample_lvl;
    gxCommand[6]=gxCommand[7]=0x0;
 
-   return GSPGPU_SubmitGxCommand(gxCmdBuf, gxCommand);
+   return gspSubmitGxCommand(gxCmdBuf, gxCommand);
 
 }
 
