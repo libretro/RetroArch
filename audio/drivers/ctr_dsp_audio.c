@@ -14,10 +14,12 @@
  */
 
 #include <3ds.h>
+#include <string.h>
 
 #include "../audio_driver.h"
 #include "../../configuration.h"
 #include "../../performance.h"
+#include "../../system.h"
 #include "../../ctr/ctr_debug.h"
 
 typedef struct

@@ -14,10 +14,12 @@
  */
 
 #include <3ds.h>
+#include <string.h>
 
 #include "../audio_driver.h"
 #include "../../configuration.h"
 #include "../../performance.h"
+#include "../../system.h"
 
 typedef struct
 {
@@ -70,8 +72,8 @@ Result csndPlaySound_custom(int chn, u32 flags, float vol, float pan, void* data
 
 	if (encoding != CSND_ENCODING_PSG)
 	{
-		if (data0) paddr0 = osConvertVirtToPhys((u32)data0);
-		if (data1) paddr1 = osConvertVirtToPhys((u32)data1);
+		if (data0) paddr0 = osConvertVirtToPhys(data0);
+		if (data1) paddr1 = osConvertVirtToPhys(data1);
 
 		if (data0 && encoding == CSND_ENCODING_ADPCM)
 		{
@@ -117,8 +119,8 @@ static void *ctr_csnd_audio_init(const char *device, unsigned rate, unsigned lat
    memset(ctr->l, 0, CTR_CSND_AUDIO_SIZE);
    memset(ctr->r, 0, CTR_CSND_AUDIO_SIZE);
 
-   ctr->l_paddr              = osConvertVirtToPhys((u32)ctr->l);
-   ctr->r_paddr              = osConvertVirtToPhys((u32)ctr->r);
+   ctr->l_paddr              = osConvertVirtToPhys(ctr->l);
+   ctr->r_paddr              = osConvertVirtToPhys(ctr->r);
 
    ctr->pos                  = 0;
 

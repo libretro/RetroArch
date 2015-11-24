@@ -18,6 +18,7 @@
 #include <queues/message_queue.h>
 #include <retro_miscellaneous.h>
 #include <gfx/math/matrix_4x4.h>
+#include <formats/image.h>
 
 #include "../config.def.h"
 #include "../gfx/video_thread_wrapper.h"
