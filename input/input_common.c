@@ -544,6 +544,38 @@ static bool check_block_hotkey(bool enable_hotkey)
    return (use_hotkey_enable && enable_hotkey);
 }
 
+static retro_input_t input_driver_keys_pressed(void)
+{
+   int key;
+   retro_input_t                ret = 0;
+   driver_t                 *driver = driver_get_ptr();
+   const input_driver_t      *input = input_get_ptr(driver);
+
+   for (key = 0; key < RARCH_BIND_LIST_END; key++)
+   {
+      bool state = false;
+      if ((!driver->block_libretro_input && ((key < RARCH_FIRST_META_KEY)))
+            || !driver->block_hotkey)
+         state = input->key_pressed(driver->input_data, key);
+
+      if (key >= RARCH_FIRST_META_KEY)
+         state |= input->meta_key_pressed(driver->input_data, key);
+
+#ifdef HAVE_OVERLAY
+      state |= input_overlay_key_pressed(key);
+#endif
+
+#ifdef HAVE_COMMAND
+      if (driver->command)
+         state |= rarch_cmd_get(driver->command, key);
+#endif
+
+      if (state)
+         ret |= (UINT64_C(1) << key);
+   }
+   return ret;
+}
+
 /**
  * input_keys_pressed:
  *

@@ -152,8 +152,6 @@ void find_input_driver(void);
 bool input_driver_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength);
 
-retro_input_t input_driver_keys_pressed(void);
-
 int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
       unsigned port, unsigned device, unsigned index, unsigned id);
 
@@ -174,6 +172,8 @@ void input_driver_free(void);
 bool input_driver_keyboard_mapping_is_blocked(void);
 
 void input_driver_keyboard_mapping_set_block(bool value);
+
+const input_driver_t *input_get_ptr(void *data);
 
 #ifdef __cplusplus
 }

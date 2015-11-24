@@ -137,8 +137,9 @@ void find_input_driver(void)
    }
 }
 
-static const input_driver_t *input_get_ptr(driver_t *driver)
+const input_driver_t *input_get_ptr(void *data)
 {
+   driver_t *driver = (driver_t*)data;
    if (!driver)
       return NULL;
    return driver->input;
@@ -163,38 +164,6 @@ bool input_driver_set_rumble_state(unsigned port,
       return input->set_rumble(driver->input_data,
             port, effect, strength);
    return false;
-}
-
-retro_input_t input_driver_keys_pressed(void)
-{
-   int key;
-   retro_input_t                ret = 0;
-   driver_t                 *driver = driver_get_ptr();
-   const input_driver_t      *input = input_get_ptr(driver);
-
-   for (key = 0; key < RARCH_BIND_LIST_END; key++)
-   {
-      bool state = false;
-      if ((!driver->block_libretro_input && ((key < RARCH_FIRST_META_KEY)))
-            || !driver->block_hotkey)
-         state = input->key_pressed(driver->input_data, key);
-
-      if (key >= RARCH_FIRST_META_KEY)
-         state |= input->meta_key_pressed(driver->input_data, key);
-
-#ifdef HAVE_OVERLAY
-      state |= input_overlay_key_pressed(key);
-#endif
-
-#ifdef HAVE_COMMAND
-      if (driver->command)
-         state |= rarch_cmd_get(driver->command, key);
-#endif
-
-      if (state)
-         ret |= (UINT64_C(1) << key);
-   }
-   return ret;
 }
 
 int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
