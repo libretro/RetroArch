@@ -35,7 +35,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	OBJS += griffin/griffin.o
 else
 	OBJS += libretro-common/file/file_extract.o
-   OBJS += verbosity.o
+	OBJS += verbosity.o
 	OBJS += performance.o
 	OBJS += libretro-common/compat/compat_getopt.o
 	OBJS += libretro-common/compat/compat_strcasestr.o
@@ -156,7 +156,7 @@ else
 	OBJS += runloop_data.o
 	OBJS += runloop_msg.o
 	OBJS += system.o
-   OBJS += tasks/tasks.o
+	OBJS += tasks/tasks.o
 	OBJS += msg_hash.o
 	OBJS += intl/msg_hash_de.o
 	OBJS += intl/msg_hash_es.o
