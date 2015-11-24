@@ -1724,7 +1724,7 @@ unsigned video_pixel_get_alignment(unsigned pitch)
    return 8;
 }
 
-bool video_pixel_frame_scale(const void *data,
+static bool video_pixel_frame_scale(const void *data,
       unsigned width, unsigned height,
       size_t pitch)
 {
@@ -1756,28 +1756,6 @@ bool video_pixel_frame_scale(const void *data,
    return true;
 }
 
-void video_driver_frame(const void *data,
-      unsigned width, unsigned height,
-      size_t pitch, const char *msg)
-{
-   uint64_t *frame_count  = NULL;
-   driver_t  *driver      = driver_get_ptr();
-
-   *driver->current_msg = 0;
-
-   if (msg)
-      strlcpy(driver->current_msg, msg, sizeof(driver->current_msg));
-
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
-
-   if (!current_video->frame(
-            video_data, data, width, height, *frame_count,
-            pitch, driver->current_msg))
-      driver->video_active = false;
-
-   *frame_count = *frame_count + 1;
-}
-
 /**
  * video_frame:
  * @data                 : pointer to data of the video frame.
@@ -1790,6 +1768,7 @@ void video_driver_frame(const void *data,
 void video_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
+   uint64_t *frame_count  = NULL;
    unsigned output_width  = 0;
    unsigned output_height = 0;
    unsigned  output_pitch = 0;
@@ -1832,5 +1811,17 @@ void video_frame(const void *data, unsigned width,
 
    msg                = rarch_main_msg_queue_pull();
 
-   video_driver_frame(data, width, height, pitch, msg);
+   *driver->current_msg = 0;
+
+   if (msg)
+      strlcpy(driver->current_msg, msg, sizeof(driver->current_msg));
+
+   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+
+   if (!current_video->frame(
+            video_data, data, width, height, *frame_count,
+            pitch, driver->current_msg))
+      driver->video_active = false;
+
+   *frame_count = *frame_count + 1;
 }

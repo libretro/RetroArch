@@ -517,10 +517,6 @@ bool video_monitor_get_fps(char *buf, size_t size,
 
 unsigned video_pixel_get_alignment(unsigned pitch);
 
-bool video_pixel_frame_scale(const void *data,
-      unsigned width, unsigned height,
-      size_t pitch);
-
 video_pixel_scaler_t *scaler_get_ptr(void);
 
 const video_poke_interface_t *video_driver_get_poke(void);
