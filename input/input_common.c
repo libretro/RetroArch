@@ -602,3 +602,29 @@ bool check_block_hotkey(bool enable_hotkey)
     * hotkeys to be bound to same keys as RetroPad. */
    return (use_hotkey_enable && enable_hotkey);
 }
+
+/**
+ * input_poll:
+ *
+ * Input polling callback function.
+ **/
+void input_poll(void)
+{
+   driver_t *driver               = driver_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   const input_driver_t *input     = driver ? 
+      (const input_driver_t*)driver->input : NULL;
+
+   (void)settings;
+
+   input->poll(driver->input_data);
+
+#ifdef HAVE_OVERLAY
+   input_poll_overlay(settings->input.overlay_opacity);
+#endif
+
+#ifdef HAVE_COMMAND
+   if (driver->command)
+      rarch_cmd_poll(driver->command);
+#endif
+}

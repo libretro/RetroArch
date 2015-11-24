@@ -123,9 +123,15 @@ retro_input_t input_keys_pressed(void);
 
 bool check_block_hotkey(bool enable_hotkey);
 
+/**
+ * input_poll:
+ *
+ * Input polling callback function.
+ **/
+void input_poll(void);
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-

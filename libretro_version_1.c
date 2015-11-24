@@ -31,6 +31,7 @@
 #include "retroarch.h"
 #include "rewind.h"
 #include "performance.h"
+#include "input/input_common.h"
 #include "input/input_remapping.h"
 #include "audio/audio_driver.h"
 #include "record/record_driver.h"
@@ -177,32 +178,6 @@ static int16_t input_state(unsigned port, unsigned device,
       bsv_movie_set_input(global->bsv.movie, res);
 
    return res;
-}
-
-/**
- * input_poll:
- *
- * Input polling callback function.
- **/
-static void input_poll(void)
-{
-   driver_t *driver               = driver_get_ptr();
-   settings_t *settings           = config_get_ptr();
-   const input_driver_t *input     = driver ? 
-      (const input_driver_t*)driver->input : NULL;
-
-   (void)settings;
-
-   input->poll(driver->input_data);
-
-#ifdef HAVE_OVERLAY
-   input_poll_overlay(settings->input.overlay_opacity);
-#endif
-
-#ifdef HAVE_COMMAND
-   if (driver->command)
-      rarch_cmd_poll(driver->command);
-#endif
 }
 
 /**

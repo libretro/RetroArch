@@ -2305,7 +2305,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_FILE_PLAIN:
             switch (menu_label_hash)
             {
-#ifdef HAVE_LBIRETRODB
+#ifdef HAVE_LIBRETRODB
                case MENU_LABEL_SCAN_FILE:
                   BIND_ACTION_OK(cbs, action_ok_scan_file);
                   break;
