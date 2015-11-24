@@ -130,6 +130,21 @@ bool check_block_hotkey(bool enable_hotkey);
  **/
 void input_poll(void);
 
+/**
+ * input_state:
+ * @port                 : user number.
+ * @device               : device identifier of user.
+ * @idx                  : index value of user.
+ * @id                   : identifier of key pressed by user.
+ *
+ * Input state callback function.
+ *
+ * Returns: Non-zero if the given key (identified by @id) was pressed by the user
+ * (assigned to @port).
+ **/
+int16_t input_state(unsigned port, unsigned device,
+      unsigned idx, unsigned id);
+
 #ifdef __cplusplus
 }
 #endif
