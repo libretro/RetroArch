@@ -151,12 +151,11 @@ static void rarch_task_http_transfer_handler(rarch_task_t *task)
          if (!rarch_main_data_http_con_iterate_transfer(http))
             http->status = HTTP_STATUS_CONNECTION_TRANSFER_PARSE;
          break;
-      case HTTP_STATUS_TRANSFER_PARSE:
-         goto task_finished;
       case HTTP_STATUS_TRANSFER:
          if (!rarch_main_data_http_iterate_transfer(http))
-            http->status = HTTP_STATUS_TRANSFER_PARSE;
+            goto task_finished;
          break;
+      case HTTP_STATUS_TRANSFER_PARSE:
       case HTTP_STATUS_POLL:
          goto task_finished;
       default:
@@ -167,17 +166,32 @@ static void rarch_task_http_transfer_handler(rarch_task_t *task)
 task_finished:
    task->finished = true;
 
-   data = (http_transfer_data_t*)calloc(1, sizeof(*data));
-   task->task_data = data;
-
    if (http->handle)
    {
-      data->data = (char*)net_http_data(http->handle, &data->len, false);
+      size_t len = 0;
+      char  *tmp = (char*)net_http_data(http->handle, &len, false);
 
-      if (data->data && http->cb)
-         http->cb(data->data, data->len);
+      if (tmp && http->cb)
+         http->cb(tmp, len);
 
-      /* we can't let net_http_delete free our data */
+      if (net_http_error(http->handle))
+      {
+         tmp = (char*)net_http_data(http->handle, &len, true);
+
+         if (tmp)
+            free(tmp);
+
+         task->error = strdup("Download failed.");
+      }
+      else
+      {
+         data = (http_transfer_data_t*)calloc(1, sizeof(*data));
+         data->data = tmp;
+         data->len  = len;
+
+         task->task_data = data;
+      }
+
       net_http_delete(http->handle);
    }
 

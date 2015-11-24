@@ -317,6 +317,9 @@ void cb_net_generic(void *task_data, void *user_data, const char *err)
    menu_entries_unset_refresh(true);
 
 finish:
+   if (err)
+      RARCH_ERR("Download failed: %s\n", err);
+
    if (data)
    {
       if (data->data)
@@ -456,6 +459,12 @@ void cb_generic_download(void *task_data, void *user_data, const char *err)
       event_command(EVENT_CMD_CORE_INFO_INIT);
 
 finish:
+   if (err)
+   {
+      RARCH_ERR("Download of '%s' failed: %s\n",
+            (transf ? transf->path: "unknown"), err);
+   }
+
    if (data)
    {
       if (data->data)
@@ -463,7 +472,8 @@ finish:
       free(data);
    }
 
-   free(transf);
+   if (transf)
+      free(transf);
 }
 
 static int deferred_push_core_updater_list(menu_displaylist_info_t *info)
