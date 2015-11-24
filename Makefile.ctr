@@ -14,9 +14,9 @@ APP_DESCRIPTION      = Retroarch 3DS
 APP_AUTHOR           = Team Libretro
 APP_PRODUCT_CODE     = RETROARCH-3DS
 APP_UNIQUE_ID        = 0xBAC00
-APP_ICON             = ctr/default.png
-APP_BANNER           = ctr/libretro_banner.png
-APP_AUDIO            = ctr/silent.wav
+APP_ICON             = ctr/assets/default.png
+APP_BANNER           = ctr/assets/libretro_banner.png
+APP_AUDIO            = ctr/assets/silent.wav
 APP_RSF              = ctr/tools/template.rsf
 APP_SYSTEM_MODE      = 64MB
 APP_SYSTEM_MODE_EXT  = 124MB
@@ -35,6 +35,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	OBJS += griffin/griffin.o
 else
 	OBJS += libretro-common/file/file_extract.o
+   OBJS += verbosity.o
 	OBJS += performance.o
 	OBJS += libretro-common/compat/compat_getopt.o
 	OBJS += libretro-common/compat/compat_strcasestr.o
@@ -90,8 +91,6 @@ else
 	OBJS += audio/drivers/nullaudio.o
 	OBJS += gfx/video_driver.o
 	OBJS += gfx/video_common.o
-	OBJS += gfx/video_pixel_converter.o
-	OBJS += gfx/video_viewport.o
 	OBJS += input/input_driver.o
 	OBJS += audio/audio_driver.o
 	OBJS += camera/camera_driver.o
@@ -157,6 +156,7 @@ else
 	OBJS += runloop_data.o
 	OBJS += runloop_msg.o
 	OBJS += system.o
+   OBJS += tasks/tasks.o
 	OBJS += msg_hash.o
 	OBJS += intl/msg_hash_de.o
 	OBJS += intl/msg_hash_es.o

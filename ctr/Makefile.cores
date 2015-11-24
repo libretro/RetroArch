@@ -6,9 +6,9 @@ ifeq ($(LIBRETRO), gambatte)
 	#APP_AUTHOR          = Team Libretro
 	APP_PRODUCT_CODE    = RARCH-GAMBATTE
 	APP_UNIQUE_ID       = 0xBAC01
-	APP_ICON            = ctr/gambatte.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/gambatte.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), gpsp)
 	APP_TITLE           = gpSP Libretro
@@ -16,9 +16,9 @@ else ifeq ($(LIBRETRO), gpsp)
 	#APP_AUTHOR          = Team Libretro
 	APP_PRODUCT_CODE    = RARCH-GPSP
 	APP_UNIQUE_ID       = 0xBAC02
-	APP_ICON            = ctr/gpsp.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/gpsp.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), fceumm)
 	APP_TITLE           = FCeumm Libretro
@@ -26,9 +26,9 @@ else ifeq ($(LIBRETRO), fceumm)
 	#APP_AUTHOR          = Team Libretro
 	APP_PRODUCT_CODE    = RARCH-FCEUMM
 	APP_UNIQUE_ID       = 0xBAC03
-	APP_ICON            = ctr/fceumm.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/fceumm.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), nestopia)
 	APP_TITLE           = Nestopia Libretro
@@ -36,9 +36,9 @@ else ifeq ($(LIBRETRO), nestopia)
 	#APP_AUTHOR          = Team Libretro
 	APP_PRODUCT_CODE    = RARCH-NESTOPIA
 	APP_UNIQUE_ID       = 0xBAC04
-	APP_ICON            = ctr/nestopia.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/nestopia.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), nxengine)
 	APP_TITLE           = NXengine Libretro
@@ -46,9 +46,9 @@ else ifeq ($(LIBRETRO), nxengine)
 	#APP_AUTHOR          = Team Libretro
 	APP_PRODUCT_CODE    = RARCH-NXENGINE
 	APP_UNIQUE_ID       = 0xBAC05
-	APP_ICON            = ctr/nxengine.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/nxengine.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), genesis_plus_gx)
 	APP_TITLE           = Genesis Plus GX Libretro
@@ -56,9 +56,9 @@ else ifeq ($(LIBRETRO), genesis_plus_gx)
 	#APP_AUTHOR          = Team Libretro
 	APP_PRODUCT_CODE    = RARCH-GENPLUSGX
 	APP_UNIQUE_ID       = 0xBAC06
-	APP_ICON            = ctr/genesis_plus_gx.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/genesis_plus_gx.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), catsfc)
 	APP_TITLE           = CATSFC Libretro
@@ -66,9 +66,9 @@ else ifeq ($(LIBRETRO), catsfc)
 	#APP_AUTHOR          = Team Libretro
 	APP_PRODUCT_CODE    = RARCH-CATSFC
 	APP_UNIQUE_ID       = 0xBAC07
-	APP_ICON            = ctr/catsfc.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/catsfc.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), mednafen_wswan)
 	APP_TITLE           = Mednafen wswan Libretro
@@ -76,9 +76,9 @@ else ifeq ($(LIBRETRO), mednafen_wswan)
 	#APP_AUTHOR          = Team Libretro
 	APP_PRODUCT_CODE    = RARCH-M-WSWAN
 	APP_UNIQUE_ID       = 0xBAC08
-	APP_ICON            = ctr/mednafen_wswan.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/mednafen_wswan.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), mednafen_vb)
 	APP_TITLE           = Mednafen VB Libretro
@@ -86,9 +86,9 @@ else ifeq ($(LIBRETRO), mednafen_vb)
 	#APP_AUTHOR          = Team Libretro
 	APP_PRODUCT_CODE    = RARCH-M-VB
 	APP_UNIQUE_ID       = 0xBAC09
-	APP_ICON            = ctr/mednafen_vb.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/mednafen_vb.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), mednafen_ngp)
 	APP_TITLE           = Mednafen NGP Libretro
@@ -96,9 +96,9 @@ else ifeq ($(LIBRETRO), mednafen_ngp)
 	#APP_AUTHOR          = Team Libretro
 	APP_PRODUCT_CODE    = RARCH-M-NGP
 	APP_UNIQUE_ID       = 0xBAC0A
-	APP_ICON            = ctr/mednafen_ngp.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/mednafen_ngp.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), 2048)
 	APP_TITLE           = 2048 Libretro
@@ -106,9 +106,9 @@ else ifeq ($(LIBRETRO), 2048)
 	#APP_AUTHOR          = Team Libretro
 	APP_PRODUCT_CODE    = RARCH-2048
 	APP_UNIQUE_ID       = 0xBAC0B
-	APP_ICON            = ctr/2048.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/2048.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), picodrive)
 	APP_TITLE           = Picodrive Libretro
@@ -116,9 +116,9 @@ else ifeq ($(LIBRETRO), picodrive)
 	#APP_AUTHOR          = Team Libretro
 	APP_PRODUCT_CODE    = RARCH-PICODRIVE
 	APP_UNIQUE_ID       = 0xBAC0C
-	APP_ICON            = ctr/picodrive.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/picodrive.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), snes9x_next)
 	APP_TITLE           = Snes9x Next Libretro
@@ -126,9 +126,9 @@ else ifeq ($(LIBRETRO), snes9x_next)
 	#APP_AUTHOR          = Team Libretro
 	APP_PRODUCT_CODE    = RARCH-SNES9XNEXT
 	APP_UNIQUE_ID       = 0xBAC0D
-	APP_ICON            = ctr/snes9x_next.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/snes9x_next.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), mgba)
 	APP_TITLE           = mGBA Libretro
@@ -136,9 +136,9 @@ else ifeq ($(LIBRETRO), mgba)
 	APP_AUTHOR          = Jeffrey Pfau
 	APP_PRODUCT_CODE    = RARCH-MGBA
 	APP_UNIQUE_ID       = 0xBAC0E
-	APP_ICON            = ctr/mgba.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/mgba.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), quicknes)
 	APP_TITLE           = QuickNES Libretro
@@ -146,9 +146,9 @@ else ifeq ($(LIBRETRO), quicknes)
 	APP_AUTHOR          = blargg, kode54
 	APP_PRODUCT_CODE    = RARCH-QUICKNES
 	APP_UNIQUE_ID       = 0xBAC0F
-	APP_ICON            = ctr/quicknes.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/quicknes.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), fb_alpha_neo)
 	APP_TITLE           = Neo Geo (FB Alpha)
@@ -156,9 +156,9 @@ else ifeq ($(LIBRETRO), fb_alpha_neo)
 	APP_AUTHOR          = Team FB Alpha
 	APP_PRODUCT_CODE    = RARCH-FBANEOGEO
 	APP_UNIQUE_ID       = 0xBAC10
-	APP_ICON            = ctr/fb_alpha_neo.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/fb_alpha_neo.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 	APP_SYSTEM_MODE     = 80MB
 
 else ifeq ($(LIBRETRO), fb_alpha_cps1)
@@ -167,9 +167,9 @@ else ifeq ($(LIBRETRO), fb_alpha_cps1)
 	APP_AUTHOR          = Team FB Alpha
 	APP_PRODUCT_CODE    = RARCH-FBACPS1
 	APP_UNIQUE_ID       = 0xBAC11
-	APP_ICON            = ctr/fb_alpha_cps1.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/fb_alpha_cps1.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), fb_alpha_cps2)
 	APP_TITLE           = Final Burn Alpha - CPS-2
@@ -177,9 +177,9 @@ else ifeq ($(LIBRETRO), fb_alpha_cps2)
 	APP_AUTHOR          = Team FB Alpha
 	APP_PRODUCT_CODE    = RARCH-FBACPS2
 	APP_UNIQUE_ID       = 0xBAC12
-	APP_ICON            = ctr/fb_alpha_cps2.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/fb_alpha_cps2.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 	APP_SYSTEM_MODE     = 80MB
 
 else ifeq ($(LIBRETRO), catsfc_plus)
@@ -188,9 +188,9 @@ else ifeq ($(LIBRETRO), catsfc_plus)
 	#APP_AUTHOR          = Team Libretro
 	APP_PRODUCT_CODE    = RARCH-CATSFCPLUS
 	APP_UNIQUE_ID       = 0xBAC13
-	APP_ICON            = ctr/catsfc_plus.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/catsfc_plus.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), mednafen_pce_fast)
 	APP_TITLE           = Mednafen/Beetle PCE FAST
@@ -198,9 +198,9 @@ else ifeq ($(LIBRETRO), mednafen_pce_fast)
 	APP_AUTHOR          = Ryphecha
 	APP_PRODUCT_CODE    = RARCH-M-PCE-FAST
 	APP_UNIQUE_ID       = 0xBAC14
-	APP_ICON            = ctr/mednafen_pce_fast.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/mednafen_pce_fast.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), pcsx_rearmed)
 	APP_TITLE           = PCSX ReARMed
@@ -208,9 +208,9 @@ else ifeq ($(LIBRETRO), pcsx_rearmed)
 	APP_AUTHOR          = PCSX Team, notaz, Exophase
 	APP_PRODUCT_CODE    = RARCH-PCSXRARMD
 	APP_UNIQUE_ID       = 0xBAC15
-	APP_ICON            = ctr/pcsx_rearmed.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/pcsx_rearmed.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 	
 else ifeq ($(LIBRETRO), fmsx)
 	APP_TITLE           = fMSX
@@ -218,9 +218,9 @@ else ifeq ($(LIBRETRO), fmsx)
 	APP_AUTHOR          = Marat Fayzullin
 	APP_PRODUCT_CODE    = RARCH-FMSX
 	APP_UNIQUE_ID       = 0xBAC16
-	APP_ICON            = ctr/fmsx.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/fmsx.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 	
 else ifeq ($(LIBRETRO), fb_alpha)
 	APP_TITLE           = Final Burn Alpha
@@ -228,9 +228,9 @@ else ifeq ($(LIBRETRO), fb_alpha)
 	APP_AUTHOR          = Team FB Alpha
 	APP_PRODUCT_CODE    = RARCH-FBA
 	APP_UNIQUE_ID       = 0xBAC17
-	#APP_ICON            = ctr/default.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	#APP_ICON            = ctr/assets/default.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 	APP_BIG_TEXT_SECTION = 1
 	
 else ifeq ($(LIBRETRO), mame2003)
@@ -239,9 +239,9 @@ else ifeq ($(LIBRETRO), mame2003)
 	#APP_AUTHOR          = Team Libretro
 	APP_PRODUCT_CODE    = RARCH-MAME2003
 	APP_UNIQUE_ID       = 0xBAC18
-	APP_ICON            = ctr/mame.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/mame.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 	APP_BIG_TEXT_SECTION = 1
 
 else ifeq ($(LIBRETRO), mame2000)
@@ -250,8 +250,8 @@ else ifeq ($(LIBRETRO), mame2000)
 	#APP_AUTHOR          = Team Libretro
 	APP_PRODUCT_CODE    = RARCH-MAME2000
 	APP_UNIQUE_ID       = 0xBAC19
-	APP_ICON            = ctr/mame.png
-	#APP_BANNER          = ctr/libretro_banner.png
-	#APP_AUDIO           = ctr/silent.wav
+	APP_ICON            = ctr/assets/mame.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 	APP_BIG_TEXT_SECTION = 1
 endif
