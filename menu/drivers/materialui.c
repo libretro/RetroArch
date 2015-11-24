@@ -1165,7 +1165,7 @@ static void mui_context_reset(void)
    mui_context_reset_textures(mui, iconpath);
 
    rarch_task_push_image_load(settings->menu.wallpaper, "cb_menu_wallpaper",
-         menu_display_handle_wallpaper_upload);
+         menu_display_handle_wallpaper_upload, NULL);
 }
 
 static int mui_environ(menu_environ_cb_t type, void *data)

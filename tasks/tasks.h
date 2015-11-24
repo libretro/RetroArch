@@ -73,7 +73,7 @@ typedef struct {
 bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task_callback_t cb, void *user_data);
 #endif
 
-bool rarch_task_push_image_load(const char *fullpath, const char *type, rarch_task_callback_t cb);
+bool rarch_task_push_image_load(const char *fullpath, const char *type, rarch_task_callback_t cb, void *user_data);
 
 #ifdef HAVE_LIBRETRODB
 bool rarch_task_push_dbscan(const char *fullpath, bool directory, rarch_task_callback_t cb);

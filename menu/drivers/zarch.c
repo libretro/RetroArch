@@ -1111,7 +1111,7 @@ static void *zarch_init(void)
 
    if (settings->menu.wallpaper[0] != '\0')
       rarch_task_push_image_load(settings->menu.wallpaper,
-            "cb_menu_wallpaper", menu_display_handle_wallpaper_upload);
+            "cb_menu_wallpaper", menu_display_handle_wallpaper_upload, NULL);
 
    zui->ca.allocated     =  0;
 
@@ -1230,7 +1230,7 @@ static void zarch_context_reset(void)
    zarch_context_bg_destroy(zui);
 
    rarch_task_push_image_load(settings->menu.wallpaper,
-         "cb_menu_wallpaper", menu_display_handle_wallpaper_upload);
+         "cb_menu_wallpaper", menu_display_handle_wallpaper_upload, NULL);
 
    zarch_allocate_white_texture(zui);
 
