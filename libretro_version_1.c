@@ -30,7 +30,6 @@
 #include "input/input_common.h"
 #include "gfx/video_driver.h"
 #include "audio/audio_driver.h"
-#include "verbosity.h"
 
 #ifdef HAVE_NETPLAY
 #include "netplay.h"
