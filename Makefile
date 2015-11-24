@@ -101,6 +101,13 @@ ifneq ($(SANITIZER),)
     LDFLAGS  := -fsanitize=$(SANITIZER) $(LDLAGS)
 endif
 
+ifneq ($(findstring $(GPERFTOOLS),profiler),)
+   LIBS += -lprofiler
+endif
+ifneq ($(findstring $(GPERFTOOLS),tcmalloc),)
+   LIBS += -ltcmalloc
+endif
+
 all: $(TARGET) config.mk
 
 -include $(RARCH_OBJ:.o=.d)
