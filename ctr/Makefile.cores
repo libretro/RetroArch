@@ -254,4 +254,15 @@ else ifeq ($(LIBRETRO), mame2000)
 	#APP_BANNER          = ctr/assets/libretro_banner.png
 	#APP_AUDIO           = ctr/assets/silent.wav
 	APP_BIG_TEXT_SECTION = 1
+
+else ifeq ($(LIBRETRO), pocketsnes)
+	APP_TITLE           = Pocket Snes
+	#APP_DESCRIPTION     = Retroarch 3DS
+	APP_AUTHOR          = various
+	APP_PRODUCT_CODE    = RARCH-POCKETSNES
+	APP_UNIQUE_ID       = 0xBAC1A
+	APP_ICON            = ctr/assets/pocketsnes.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
+
 endif
