@@ -540,7 +540,9 @@ static bool ctr_frame(void* data, const void* frame,
          && (pitch > 0x40))
       {
          /* can copy the buffer directly with the GPU */
-         ctrGuCopyImage(false, frame, pitch / (ctr->rgb32? 4: 2), height, ctr->rgb32 ? CTRGU_RGBA8: CTRGU_RGB565, false,
+//         GSPGPU_FlushDataCache(frame, pitch * height);
+         ctrGuSetCommandList_First(true,frame, pitch * height,0,0,0,0);
+         ctrGuCopyImage(true, frame, pitch / (ctr->rgb32? 4: 2), height, ctr->rgb32 ? CTRGU_RGBA8: CTRGU_RGB565, false,
                         ctr->texture_swizzled, ctr->texture_width, ctr->rgb32 ? CTRGU_RGBA8: CTRGU_RGB565,  true);
       }
       else
