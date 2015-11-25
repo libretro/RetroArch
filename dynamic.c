@@ -30,6 +30,8 @@
 #include "performance.h"
 
 #include "audio/audio_driver.h"
+#include "input/input_driver.h"
+
 #include "libretro_private.h"
 #include "cores/internal_cores.h"
 #include "retroarch.h"
@@ -38,7 +40,6 @@
 #include "msg_hash.h"
 #include "verbosity.h"
 
-#include "input/input_sensor.h"
 
 #ifdef HAVE_DYNAMIC
 #define SYMBOL(x) do { \
