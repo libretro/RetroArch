@@ -229,13 +229,16 @@ bool input_driver_grab_stdin(void)
    return false;
 }
 
-void *input_driver_init(void)
+bool input_driver_init(void)
 {
    driver_t *driver               = driver_get_ptr();
 
    if (driver && driver->input)
-      return driver->input->init();
-   return NULL;
+      driver->input_data = driver->input->init();
+
+   if (!driver->input_data)
+      return false;
+   return true;
 }
 
 void input_driver_free(void)

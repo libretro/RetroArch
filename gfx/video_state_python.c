@@ -102,9 +102,6 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    
    (void)self;
 
-   if (!driver->input_data)
-      return PyBool_FromLong(0);
-
    if (!PyArg_ParseTuple(args, "II", &user, &key))
       return NULL;
 
@@ -120,7 +117,6 @@ static PyObject *py_read_analog(PyObject *self, PyObject *args)
 {
    unsigned user, index, id, i;
    int16_t res = 0;
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    const struct retro_keybind *py_binds[MAX_USERS];
 
@@ -128,9 +124,6 @@ static PyObject *py_read_analog(PyObject *self, PyObject *args)
       py_binds[i] = settings->input.binds[i];
 
    (void)self;
-
-   if (!driver->input_data)
-      return PyBool_FromLong(0);
 
    if (!PyArg_ParseTuple(args, "III", &user, &index, &id))
       return NULL;

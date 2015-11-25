@@ -433,9 +433,7 @@ static void init_video_input(const input_driver_t *tmp)
    if (!driver->input)
       goto error;
 
-   driver->input_data = input_driver_init();
-
-   if (driver->input_data)
+   if (input_driver_init())
       return;
 
 error:

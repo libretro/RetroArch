@@ -165,7 +165,7 @@ bool input_driver_grab_mouse(bool state);
 
 bool input_driver_grab_stdin(void);
 
-void *input_driver_init(void);
+bool input_driver_init(void);
 
 void input_driver_free(void);
 
