@@ -1224,8 +1224,6 @@ bool event_command(enum event_command cmd)
          {
             const struct retro_hw_render_callback *hw_render =
                (const struct retro_hw_render_callback*)video_driver_callback();
-            const input_driver_t *input     = driver ?
-               (const input_driver_t*)driver->input : NULL;
 
             driver->video_cache_context     = hw_render->cache_context;
             driver->video_cache_context_ack = false;
@@ -1233,7 +1231,7 @@ bool event_command(enum event_command cmd)
             driver->video_cache_context     = false;
 
             /* Poll input to avoid possibly stale data to corrupt things. */
-            input->poll(driver->input_data);
+            input_driver_ctl(RARCH_INPUT_CTL_POLL, NULL);
 
 #ifdef HAVE_MENU
             menu_display_ctl(MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG, NULL);

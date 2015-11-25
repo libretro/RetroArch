@@ -455,6 +455,9 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_INPUT_CTL_POLL:
+         input->poll(driver->input_data);
+         return true;
       case RARCH_INPUT_CTL_INIT:
          if (driver && driver->input)
             driver->input_data = driver->input->init();

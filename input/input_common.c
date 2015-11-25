@@ -443,14 +443,14 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind,
  **/
 void input_poll(void)
 {
+#ifdef HAVE_COMMAND
    driver_t *driver               = driver_get_ptr();
+#endif
+#ifdef HAVE_OVERLAY
    settings_t *settings           = config_get_ptr();
-   const input_driver_t *input     = driver ? 
-      (const input_driver_t*)driver->input : NULL;
+#endif
 
-   (void)settings;
-
-   input->poll(driver->input_data);
+   input_driver_ctl(RARCH_INPUT_CTL_POLL, NULL);
 
 #ifdef HAVE_OVERLAY
    input_poll_overlay(settings->input.overlay_opacity);
