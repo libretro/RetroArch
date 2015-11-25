@@ -434,7 +434,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    {
        if (settings->input.autoconfigured[controller])
        {
-           snprintf(tmp, sizeof(tmp), "Port #%d device name: %s", controller, settings->input.device_names[controller]);
+           snprintf(tmp, sizeof(tmp), "Port #%d device name: %s (#%d)", controller, settings->input.device_names[controller], settings->input.device_name_index[controller]);
            menu_entries_push(info->list, tmp, "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
            snprintf(tmp, sizeof(tmp), "Port #%d device VID/PID: %d/%d", controller, settings->input.vid[controller], settings->input.pid[controller]);
            menu_entries_push(info->list, tmp, "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);

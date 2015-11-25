@@ -2648,7 +2648,10 @@ static void get_string_representation_bind_device(void * data, char *s,
       const char *device_name = settings->input.device_names[map];
 
       if (*device_name)
-         strlcpy(s, device_name, len);
+         snprintf(s, len,
+               "%s (#%u)",
+               device_name,
+               settings->input.device_name_index[map]);
       else
          snprintf(s, len,
                "%s (%s #%u)",
