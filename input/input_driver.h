@@ -179,6 +179,20 @@ const input_driver_t *input_get_ptr(void *data);
 
 void input_driver_set(const input_driver_t **input, void **input_data);
 
+/**
+ * input_sensor_set_state:
+ * @port               : User number.
+ * @effect             : Sensor action.
+ * @rate               : Sensor rate update.
+ *
+ * Sets the sensor state.
+ * Used by RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE.
+ **/
+bool input_sensor_set_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate);
+
+float input_sensor_get_input(unsigned port, unsigned id);
+
 #ifdef __cplusplus
 }
 #endif

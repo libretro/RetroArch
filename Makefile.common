@@ -165,7 +165,6 @@ OBJ += frontend/frontend.o \
        input/input_common.o \
        input/input_keymaps.o \
        input/input_remapping.o \
-       input/input_sensor.o \
        tasks/task_overlay.o \
        input/input_overlay.o \
        patch.o \

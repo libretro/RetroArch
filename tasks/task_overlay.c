@@ -638,7 +638,6 @@ task_finished:
 
    if (task->cancelled)
    {
-      struct overlay *o;
       unsigned i;
 
       if (task->error)
