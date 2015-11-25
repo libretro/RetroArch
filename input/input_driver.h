@@ -174,8 +174,6 @@ bool input_driver_grab_mouse(bool state);
 
 void input_driver_keyboard_mapping_set_block(bool value);
 
-const input_driver_t *input_get_ptr(void *data);
-
 void input_driver_set(const input_driver_t **input, void **input_data);
 
 /**
