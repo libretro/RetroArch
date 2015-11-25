@@ -16,7 +16,8 @@ typedef struct {
 
 struct rarch_task_impl {
    void (*push_running)(rarch_task_t *);
-   void (*push_finished)(rarch_task_t *);
+   void (*cancel)(void);
+   void (*wait)(void);
    void (*gather)(void);
    void (*init)(void);
    void (*deinit)(void);
@@ -53,12 +54,9 @@ static rarch_task_t *task_queue_get(task_queue_t *queue)
 
 static void rarch_task_internal_gather(void)
 {
-   rarch_task_t *next = NULL;
-   while ((next = task_queue_get(&tasks_finished)) != NULL)
+   rarch_task_t *task;
+   while ((task = task_queue_get(&tasks_finished)) != NULL)
    {
-      rarch_task_t *task = next;
-      next = next->next;
-
       if (task->callback)
          task->callback(task->task_data, task->user_data, task->error);
 
@@ -67,11 +65,6 @@ static void rarch_task_internal_gather(void)
 
       free(task);
    }
-}
-
-static void regular_push_finished(rarch_task_t *task)
-{
-   task_queue_put(&tasks_finished, task);
 }
 
 static void regular_push_running(rarch_task_t *task)
@@ -99,12 +92,26 @@ static void regular_gather(void)
       task->handler(task);
 
       if (task->finished)
-         regular_push_finished(task);
+         task_queue_put(&tasks_finished, task);
       else
          regular_push_running(task);
    }
 
    rarch_task_internal_gather();
+}
+
+static void regular_wait(void)
+{
+   while (tasks_running.front)
+      regular_gather();
+}
+
+static void regular_cancel()
+{
+   rarch_task_t *task;
+
+   for (task = tasks_running.front; task; task = task->next)
+      task->cancelled = true;
 }
 
 static void regular_init(void)
@@ -117,7 +124,8 @@ static void regular_deinit(void)
 
 static struct rarch_task_impl impl_regular = {
    regular_push_running,
-   regular_push_finished,
+   regular_cancel,
+   regular_wait,
    regular_gather,
    regular_init,
    regular_deinit
@@ -129,13 +137,6 @@ static slock_t *finished_lock = NULL;
 static scond_t *worker_cond   = NULL;
 static sthread_t *worker_thread = NULL;
 static bool worker_continue = true; /* use running_lock when touching it */
-
-static void threaded_push_finished(rarch_task_t *task)
-{
-   slock_lock(finished_lock);
-   task_queue_put(&tasks_finished, task);
-   slock_unlock(finished_lock);
-}
 
 static void threaded_push_running(rarch_task_t *task)
 {
@@ -150,6 +151,29 @@ static void threaded_gather(void)
    slock_lock(finished_lock);
    rarch_task_internal_gather();
    slock_unlock(finished_lock);
+}
+
+static void threaded_wait(void)
+{
+   bool wait;
+   do
+   {
+      threaded_gather();
+
+      slock_lock(running_lock);
+      wait = (tasks_running.front != NULL);
+      slock_unlock(running_lock);
+   } while (wait);
+}
+
+static void threaded_cancel(void)
+{
+   rarch_task_t *task;
+
+   slock_lock(running_lock);
+   for (task = tasks_running.front; task; task = task->next)
+      task->cancelled = true;
+   slock_unlock(running_lock);
 }
 
 static void threaded_worker(void *userdata)
@@ -192,7 +216,11 @@ static void threaded_worker(void *userdata)
          task->handler(task);
 
          if (task->finished)
-            threaded_push_finished(task);
+         {
+            slock_lock(finished_lock);
+            task_queue_put(&tasks_finished, task);
+            slock_unlock(finished_lock);
+         }
          else
             threaded_push_running(task);
       }
@@ -235,7 +263,8 @@ static void threaded_deinit(void)
 
 static struct rarch_task_impl impl_threaded = {
    threaded_push_running,
-   threaded_push_finished,
+   threaded_cancel,
+   threaded_wait,
    threaded_gather,
    threaded_init,
    threaded_deinit
@@ -282,7 +311,19 @@ void rarch_task_check(void)
    impl_current->gather();
 }
 
+/* The lack of NULL checks in the following functions is proposital
+ * to ensure correct control flow by the users. */
 void rarch_task_push(rarch_task_t *task)
 {
    impl_current->push_running(task);
+}
+
+void rarch_task_wait(void)
+{
+   impl_current->wait();
+}
+
+void rarch_task_reset(void)
+{
+   impl_current->cancel();
 }
