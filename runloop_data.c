@@ -31,17 +31,10 @@ void rarch_main_data_deinit(void)
    rarch_task_deinit();
 }
 
-#ifdef HAVE_MENU
-static void rarch_main_data_menu_iterate(void)
-{
-   menu_iterate_render();
-}
-#endif
-
 void rarch_main_data_iterate(void)
 {
 #ifdef HAVE_MENU
-   rarch_main_data_menu_iterate();
+   menu_iterate_render();
 #endif
 
    if (data_runloop_msg[0] != '\0')
@@ -53,15 +46,10 @@ void rarch_main_data_iterate(void)
    rarch_task_check();
 }
 
-static void rarch_main_data_init(void)
-{
-   rarch_task_init();
-}
-
 void rarch_main_data_clear_state(void)
 {
    rarch_main_data_deinit();
-   rarch_main_data_init();
+   rarch_task_init();
 }
 
 void data_runloop_osd_msg(const char *msg, size_t len)
