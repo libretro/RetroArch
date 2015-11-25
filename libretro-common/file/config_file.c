@@ -617,7 +617,7 @@ bool config_get_int(config_file_t *conf, const char *key, int *in)
    return entry != NULL && errno == 0;
 }
 
-#ifndef C89_BUILD
+#if defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
 bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
