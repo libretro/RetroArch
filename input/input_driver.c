@@ -219,16 +219,6 @@ bool input_driver_grab_mouse(bool state)
    return false;
 }
 
-bool input_driver_grab_stdin(void)
-{
-   driver_t            *driver = driver_get_ptr();
-   const input_driver_t *input = input_get_ptr(driver);
-
-   if (input->grab_stdin)
-      return input->grab_stdin(driver->input_data);
-   return false;
-}
-
 void input_driver_set(const input_driver_t **input, void **input_data)
 {
    driver_t *driver               = driver_get_ptr();
@@ -248,17 +238,6 @@ void input_driver_destroy(void)
 
    if (driver)
       driver->input_data = NULL;
-}
-
-bool input_driver_keyboard_mapping_is_blocked(void)
-{
-   driver_t *driver               = driver_get_ptr();
-   const input_driver_t *input = input_get_ptr(driver);
-
-   if (input->keyboard_mapping_is_blocked)
-      return driver->input->keyboard_mapping_is_blocked(
-            driver->input_data);
-   return false;
 }
 
 void input_driver_keyboard_mapping_set_block(bool value)
@@ -305,6 +284,7 @@ float input_sensor_get_input(unsigned port, unsigned id)
 bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
 {
    driver_t                   *driver = driver_get_ptr();
+   const input_driver_t        *input = input_get_ptr(driver);
    settings_t               *settings = config_get_ptr();
 
    switch (state)
@@ -321,6 +301,15 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
             return false;
          driver->input->free(driver->input_data);
          return true;
+      case RARCH_INPUT_CTL_GRAB_STDIN:
+         if (input->grab_stdin)
+            return input->grab_stdin(driver->input_data);
+         return false;
+      case RARCH_INPUT_CTL_KB_MAPPING_IS_BLOCKED:
+         if (input->keyboard_mapping_is_blocked)
+            return driver->input->keyboard_mapping_is_blocked(
+                  driver->input_data);
+         return false;
       case RARCH_INPUT_CTL_NONE:
       default:
          break;

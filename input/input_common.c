@@ -522,7 +522,7 @@ static bool check_block_hotkey(bool enable_hotkey)
 
    /* Don't block the check to RARCH_ENABLE_HOTKEY
     * unless we're really supposed to. */
-   driver->block_hotkey = input_driver_keyboard_mapping_is_blocked();
+   driver->block_hotkey = input_driver_ctl(RARCH_INPUT_CTL_KB_MAPPING_IS_BLOCKED, NULL);
 
    /* If we haven't bound anything to this,
     * always allow hotkeys. */
@@ -535,7 +535,7 @@ static bool check_block_hotkey(bool enable_hotkey)
       || (autoconf_bind->joyaxis != AXIS_NONE);
 
    driver->block_hotkey             =
-      input_driver_keyboard_mapping_is_blocked() ||
+      input_driver_ctl(RARCH_INPUT_CTL_KB_MAPPING_IS_BLOCKED, NULL) ||
       (use_hotkey_enable && !enable_hotkey);
 
    /* If we hold ENABLE_HOTKEY button, block all libretro input to allow

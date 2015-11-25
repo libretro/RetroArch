@@ -62,14 +62,14 @@ static void event_init_command(void)
    if (!settings->stdin_cmd_enable && !settings->network_cmd_enable)
       return;
 
-   if (settings->stdin_cmd_enable && input_driver_grab_stdin())
+   if (settings->stdin_cmd_enable && input_driver_ctl(RARCH_INPUT_CTL_GRAB_STDIN, NULL))
    {
       RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
             "Cannot use this command interface.\n");
    }
 
    if (!(driver->command = rarch_cmd_new(settings->stdin_cmd_enable
-               && !input_driver_grab_stdin(),
+               && !input_driver_ctl(RARCH_INPUT_CTL_GRAB_STDIN, NULL),
                settings->network_cmd_enable, settings->network_cmd_port)))
       RARCH_ERR("Failed to initialize command interface.\n");
 }
