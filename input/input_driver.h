@@ -51,6 +51,7 @@ enum rarch_input_ctl_state
    RARCH_INPUT_CTL_NONE = 0,
    RARCH_INPUT_CTL_INIT,
    RARCH_INPUT_CTL_DEINIT,
+   RARCH_INPUT_CTL_DESTROY,
    RARCH_INPUT_CTL_FIND_DRIVER,
    RARCH_INPUT_CTL_GRAB_STDIN,
    RARCH_INPUT_CTL_KB_MAPPING_IS_BLOCKED
@@ -170,8 +171,6 @@ const input_device_driver_t * input_driver_get_joypad_driver(void);
 const input_device_driver_t * input_driver_get_sec_joypad_driver(void);
 
 bool input_driver_grab_mouse(bool state);
-
-void input_driver_destroy(void);
 
 void input_driver_keyboard_mapping_set_block(bool value);
 

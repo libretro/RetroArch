@@ -208,14 +208,6 @@ void input_driver_set(const input_driver_t **input, void **input_data)
    driver->input_data_own = true;
 }
 
-void input_driver_destroy(void)
-{
-   driver_t *driver = driver_get_ptr();
-
-   if (driver)
-      driver->input_data = NULL;
-}
-
 void input_driver_keyboard_mapping_set_block(bool value)
 {
    driver_t *driver               = driver_get_ptr();
@@ -276,6 +268,11 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          if (!driver || !driver->input)
             return false;
          driver->input->free(driver->input_data);
+         return true;
+      case RARCH_INPUT_CTL_DESTROY:
+         if (!driver)
+            return false;
+         driver->input_data = NULL;
          return true;
       case RARCH_INPUT_CTL_GRAB_STDIN:
          if (input->grab_stdin)
