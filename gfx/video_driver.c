@@ -425,7 +425,7 @@ static void init_video_input(const input_driver_t *tmp)
    if (tmp)
       driver->input = tmp;
    else
-      find_input_driver();
+      input_driver_ctl(RARCH_INPUT_CTL_FIND_DRIVER, NULL);
 
    /* This should never really happen as tmp (driver.input) is always
     * found before this in find_driver_input(), or we have aborted

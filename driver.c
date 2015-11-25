@@ -222,7 +222,7 @@ void init_drivers_pre(void)
 {
    audio_driver_ctl(RARCH_AUDIO_CTL_FIND_DRIVER, NULL);
    video_driver_ctl(RARCH_DISPLAY_CTL_FIND_DRIVER, NULL);
-   find_input_driver();
+   input_driver_ctl(RARCH_INPUT_CTL_FIND_DRIVER, NULL);
    find_camera_driver();
    find_location_driver();
 #ifdef HAVE_MENU

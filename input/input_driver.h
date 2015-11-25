@@ -51,6 +51,7 @@ enum rarch_input_ctl_state
    RARCH_INPUT_CTL_NONE = 0,
    RARCH_INPUT_CTL_INIT,
    RARCH_INPUT_CTL_DEINIT,
+   RARCH_INPUT_CTL_FIND_DRIVER,
    RARCH_INPUT_CTL_GRAB_STDIN,
    RARCH_INPUT_CTL_KB_MAPPING_IS_BLOCKED
 };
@@ -146,8 +147,6 @@ const char *input_driver_find_ident(int index);
  * Returns: string listing of all input driver names, separated by '|'.
  **/
 const char* config_get_input_driver_options(void);
-
-void find_input_driver(void);
 
 /**
  * input_driver_set_rumble_state:

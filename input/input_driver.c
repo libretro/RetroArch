@@ -112,30 +112,6 @@ const char* config_get_input_driver_options(void)
    return char_list_new_special(STRING_LIST_INPUT_DRIVERS, NULL);
 }
 
-void find_input_driver(void)
-{
-   driver_t *driver = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
-   int i = find_driver_index("input_driver", settings->input.driver);
-
-   if (i >= 0)
-      driver->input = (const input_driver_t*)input_driver_find_handle(i);
-   else
-   {
-      unsigned d;
-      RARCH_ERR("Couldn't find any input driver named \"%s\"\n",
-            settings->input.driver);
-      RARCH_LOG_OUTPUT("Available input drivers are:\n");
-      for (d = 0; input_driver_find_handle(d); d++)
-         RARCH_LOG_OUTPUT("\t%s\n", input_driver_find_ident(d));
-      RARCH_WARN("Going to default to first input driver...\n");
-
-      driver->input = (const input_driver_t*)input_driver_find_handle(0);
-
-      if (!driver->input)
-         retro_fail(1, "find_input_driver()");
-   }
-}
 
 const input_driver_t *input_get_ptr(void *data)
 {
@@ -310,6 +286,31 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
             return driver->input->keyboard_mapping_is_blocked(
                   driver->input_data);
          return false;
+      case RARCH_INPUT_CTL_FIND_DRIVER:
+         {
+            int i = find_driver_index("input_driver", settings->input.driver);
+            if (i >= 0)
+               driver->input = (const input_driver_t*)input_driver_find_handle(i);
+            else
+            {
+               unsigned d;
+               RARCH_ERR("Couldn't find any input driver named \"%s\"\n",
+                     settings->input.driver);
+               RARCH_LOG_OUTPUT("Available input drivers are:\n");
+               for (d = 0; input_driver_find_handle(d); d++)
+                  RARCH_LOG_OUTPUT("\t%s\n", input_driver_find_ident(d));
+               RARCH_WARN("Going to default to first input driver...\n");
+
+               driver->input = (const input_driver_t*)input_driver_find_handle(0);
+
+               if (!driver->input)
+                  return false;
+               retro_fail(1, "find_input_driver()");
+               return false;
+            }
+         }
+
+         return true;
       case RARCH_INPUT_CTL_NONE:
       default:
          break;
