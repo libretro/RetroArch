@@ -314,6 +314,7 @@ static int playlist_association_right(unsigned type, const char *label,
 {
    size_t i, next, found, current = 0;
    char core_path[PATH_MAX_LENGTH]  = {0};
+   core_info_t *info                = NULL;
    struct string_list *stnames      = NULL;
    struct string_list *stcores      = NULL;
    char new_playlist_cores[PATH_MAX_LENGTH] = {0};
@@ -346,7 +347,7 @@ static int playlist_association_right(unsigned type, const char *label,
          next = 0;
    }
 
-   core_info_t *info = core_info_get(list, next);
+   info = core_info_get(list, next);
 
    found = string_list_find_elem(stnames, path);
    if (found)

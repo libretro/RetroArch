@@ -270,6 +270,8 @@ static int action_start_playlist_association(unsigned type, const char *label)
 {
    int found;
    char new_playlist_cores[PATH_MAX_LENGTH] = {0};
+   struct string_list *stnames      = NULL;
+   struct string_list *stcores      = NULL;
    global_t *global                 = global_get_ptr();
    settings_t *settings             = config_get_ptr();
    const char *path                 = path_basename(label);
@@ -277,10 +279,10 @@ static int action_start_playlist_association(unsigned type, const char *label)
    if (!list)
       return -1;
 
-   struct string_list *stnames = string_split(settings->playlist_names, ";");
-   struct string_list *stcores = string_split(settings->playlist_cores, ";");
+   stnames = string_split(settings->playlist_names, ";");
+   stcores = string_split(settings->playlist_cores, ";");
+   found   = string_list_find_elem(stnames, path);
 
-   found = string_list_find_elem(stnames, path);
    if (found)
       string_list_set(stcores, found-1, "DETECT");
 

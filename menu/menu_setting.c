@@ -1302,8 +1302,9 @@ bool START_SUB_GROUP(rarch_setting_t **list,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
 {
+   rarch_setting_t value;
    subgroup_info->name = name;
-   rarch_setting_t value = setting_subgroup_setting (ST_SUB_GROUP, name, group_info->name, parent_group);
+   value = setting_subgroup_setting (ST_SUB_GROUP, name, group_info->name, parent_group);
    if (!(menu_settings_list_append(list, list_info, value)))
       return false;
    return true;
