@@ -762,14 +762,9 @@ static void *d3d_init(const video_info_t *info,
          d3d_deinit_chain(vid);
          d3d_init_chain(vid, info);
 
-         if (input && input_data)
-         {
-            *input      = driver->input;
-            *input_data = driver->input_data;
-         }
+         input_driver_set(input, input_data);
 
          driver->video_data_own = true;
-         driver->input_data_own = true;
          return vid;
       }
    }
