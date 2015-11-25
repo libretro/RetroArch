@@ -29,6 +29,25 @@
 
 static bool remote_is_bound = false;
 
+/* adds an index for devices with the same name so they can be identified in the GUI*/
+static void input_reindex_devices()
+{
+   settings_t      *settings = config_get_ptr();
+   for(int i=0; i < settings->input.max_users; i++)
+      settings->input.device_name_index[i]=0;
+   for(int i=0; i < settings->input.max_users; i++)
+   {
+      const char *tmp = settings->input.device_names[i];
+
+      int k=1;
+      for(int j=0; j < settings->input.max_users; j++)
+      {
+         if(!strcmp(tmp,settings->input.device_names[j]) && settings->input.device_name_index[i]==0)
+            settings->input.device_name_index[j]=k++;
+      }
+   }
+}
+
 static void input_autoconfigure_joypad_conf(config_file_t *conf,
       struct retro_keybind *binds)
 {
@@ -149,7 +168,7 @@ static void input_autoconfigure_joypad_add(
       if (!block_osd_spam)
           rarch_main_msg_queue_push(msg, 0, 60, false);
    }
-
+   input_reindex_devices();
 #if 0
    RARCH_LOG("Autodetect: %s\n", msg);
 #endif
