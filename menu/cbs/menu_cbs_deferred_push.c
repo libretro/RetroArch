@@ -364,7 +364,9 @@ error:
 
 /* expects http_transfer_t*, menu_file_transfer_t* */
 void cb_generic_download(void *task_data, void *user_data, const char *err)
-//(void *data, size_t len, const char *dir_path)
+#if 0
+(void *data, size_t len, const char *dir_path)
+#endif
 {
    char msg[PATH_MAX_LENGTH];
    char output_path[PATH_MAX_LENGTH];

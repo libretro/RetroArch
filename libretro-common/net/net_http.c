@@ -558,8 +558,6 @@ void net_http_delete(struct http_t *state)
 
    if (state->fd != -1)
       socket_close(state->fd);
-//   if (state->data)
-//      free(state->data);
    free(state);
 }
 

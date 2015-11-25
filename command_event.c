@@ -1345,7 +1345,6 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_OVERLAY_DEINIT);
 #ifdef HAVE_OVERLAY
          input_overlay_init();
-         //RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_OVERLAY));
 #endif
          break;
       case EVENT_CMD_OVERLAY_NEXT:

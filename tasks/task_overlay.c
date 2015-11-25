@@ -312,7 +312,9 @@ static void rarch_task_overlay_deferred_loading(overlay_loader_t *loader)
       case OVERLAY_IMAGE_TRANSFER_NONE:
       case OVERLAY_IMAGE_TRANSFER_BUSY:
          loader->loading_status = OVERLAY_IMAGE_TRANSFER_DONE;
-         //break;
+#if 0
+         break;
+#endif
       case OVERLAY_IMAGE_TRANSFER_DONE:
          rarch_task_overlay_image_done(&loader->overlays[loader->pos]);
          loader->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_IMAGE_ITERATE;
@@ -593,9 +595,11 @@ static void rarch_task_overlay_resolve_iterate(overlay_loader_t *loader)
    {
       loader->active = &loader->overlays[0];
 
+#if 0
       /* TODO: MOVE TO MAIN THREAD / CALLBACK */
-//      input_overlay_load_active(loader->deferred.opacity);
-//      input_overlay_enable(loader->deferred.enable);
+      input_overlay_load_active(loader->deferred.opacity);
+      input_overlay_enable(loader->deferred.enable);
+#endif
    }
 
    loader->resolve_pos += 1;
