@@ -38,13 +38,7 @@ static void input_reindex_devices()
    for(int i=0; i < settings->input.max_users; i++)
    {
       const char *tmp = settings->input.device_names[i];
-      int count = 0;
 
-      for(int j=0; j < settings->input.max_users; j++)
-      {
-         if(!strcmp(tmp,settings->input.device_names[j]))
-            count++;
-      }
       int k=1;
       for(int j=0; j < settings->input.max_users; j++)
       {
