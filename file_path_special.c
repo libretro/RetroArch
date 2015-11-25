@@ -63,11 +63,12 @@ void fill_pathname_expand_special(char *out_path,
       }
    }
    else if ((in_path[0] == ':') &&
-#ifdef _WIN32
-         ((in_path[1] == '/') || (in_path[1] == '\\'))
-#else
+         (
          (in_path[1] == '/')
+#ifdef _WIN32
+         || (in_path[1] == '\\')
 #endif
+         )
             )
    {
       size_t src_size;
