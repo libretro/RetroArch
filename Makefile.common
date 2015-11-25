@@ -884,7 +884,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    # Netplay
 
    ifeq ($(HAVE_NETPLAY), 1)
-      DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD
+      DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD -DHAVE_NETWORK_GAMEPAD
       OBJ += netplay.o
    endif
 
