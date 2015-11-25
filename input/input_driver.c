@@ -229,18 +229,6 @@ bool input_driver_grab_stdin(void)
    return false;
 }
 
-bool input_driver_init(void)
-{
-   driver_t *driver               = driver_get_ptr();
-
-   if (driver && driver->input)
-      driver->input_data = driver->input->init();
-
-   if (!driver->input_data)
-      return false;
-   return true;
-}
-
 void input_driver_set(const input_driver_t **input, void **input_data)
 {
    driver_t *driver               = driver_get_ptr();
@@ -252,14 +240,6 @@ void input_driver_set(const input_driver_t **input, void **input_data)
    }
 
    driver->input_data_own = true;
-}
-
-void input_driver_free(void)
-{
-   driver_t *driver               = driver_get_ptr();
-
-   if (driver && driver->input)
-      driver->input->free(driver->input_data);
 }
 
 void input_driver_destroy(void)
@@ -320,4 +300,31 @@ float input_sensor_get_input(unsigned port, unsigned id)
       return driver->input->get_sensor_input(driver->input_data,
             port, id);
    return 0.0f;
+}
+
+bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
+{
+   driver_t                   *driver = driver_get_ptr();
+   settings_t               *settings = config_get_ptr();
+
+   switch (state)
+   {
+      case RARCH_INPUT_CTL_INIT:
+         if (driver && driver->input)
+            driver->input_data = driver->input->init();
+
+         if (!driver->input_data)
+            return false;
+         return true;
+      case RARCH_INPUT_CTL_DEINIT:
+         if (!driver || !driver->input)
+            return false;
+         driver->input->free(driver->input_data);
+         return true;
+      case RARCH_INPUT_CTL_NONE:
+      default:
+         break;
+   }
+
+   return false;
 }

@@ -433,7 +433,7 @@ static void init_video_input(const input_driver_t *tmp)
    if (!driver->input)
       goto error;
 
-   if (input_driver_init())
+   if (input_driver_ctl(RARCH_INPUT_CTL_INIT, NULL))
       return;
 
 error:
@@ -514,7 +514,7 @@ static bool uninit_video_input(void)
          !driver->input_data_own &&
          (driver->input_data != video_data)
       )
-      input_driver_free();
+      input_driver_ctl(RARCH_INPUT_CTL_DEINIT, NULL);
 
    if (
          !driver->video_data_own &&

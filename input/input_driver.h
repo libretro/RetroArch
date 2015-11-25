@@ -46,6 +46,13 @@ enum input_device_type
    INPUT_DEVICE_TYPE_JOYPAD
 };
 
+enum rarch_input_ctl_state
+{
+   RARCH_INPUT_CTL_NONE = 0,
+   RARCH_INPUT_CTL_INIT,
+   RARCH_INPUT_CTL_DEINIT,
+};
+
 struct retro_keybind
 {
    bool valid;
@@ -165,10 +172,6 @@ bool input_driver_grab_mouse(bool state);
 
 bool input_driver_grab_stdin(void);
 
-bool input_driver_init(void);
-
-void input_driver_free(void);
-
 void input_driver_destroy(void);
 
 bool input_driver_keyboard_mapping_is_blocked(void);
@@ -192,6 +195,8 @@ bool input_sensor_set_state(unsigned port,
       enum retro_sensor_action action, unsigned rate);
 
 float input_sensor_get_input(unsigned port, unsigned id);
+
+bool input_driver_ctl(enum rarch_input_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }
