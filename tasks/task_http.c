@@ -53,6 +53,7 @@ typedef struct http_handle
    struct http_t *handle;
    transfer_cb_t  cb;
    unsigned status;
+   bool error;
 } http_handle_t;
 
 static int rarch_main_data_http_con_iterate_transfer(http_handle_t *http)
@@ -92,6 +93,7 @@ static int cb_http_conn_default(void *data_, size_t len)
    if (!http->handle)
    {
       RARCH_ERR("Could not create new HTTP session handle.\n");
+      http->error = true;
       return -1;
    }
 
@@ -162,7 +164,7 @@ static void rarch_task_http_transfer_handler(rarch_task_t *task)
          break;
    }
 
-   if (task->cancelled)
+   if (task->cancelled || http->error)
       goto task_finished;
 
    return;
@@ -199,7 +201,8 @@ task_finished:
       }
 
       net_http_delete(http->handle);
-   }
+   } else if (http->error)
+      task->error = strdup("Internal error.");
 
    free(http);
 }
