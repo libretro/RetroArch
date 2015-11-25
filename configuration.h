@@ -229,6 +229,7 @@ typedef struct settings
       unsigned joypad_map[MAX_USERS];
       unsigned device[MAX_USERS];
       char device_names[MAX_USERS][64];
+      unsigned device_name_index[MAX_USERS];
       bool autodetect_enable;
       bool netplay_client_swap_input;
 
