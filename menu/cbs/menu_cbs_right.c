@@ -314,6 +314,8 @@ static int playlist_association_right(unsigned type, const char *label,
 {
    size_t i, next, found, current = 0;
    char core_path[PATH_MAX_LENGTH]  = {0};
+   struct string_list *stnames      = NULL;
+   struct string_list *stcores      = NULL;
    char new_playlist_cores[PATH_MAX_LENGTH] = {0};
    global_t *global                 = global_get_ptr();
    settings_t *settings             = config_get_ptr();
@@ -322,8 +324,8 @@ static int playlist_association_right(unsigned type, const char *label,
    if (!list)
       return -1;
 
-   struct string_list *stnames = string_split(settings->playlist_names, ";");
-   struct string_list *stcores = string_split(settings->playlist_cores, ";");
+   stnames = string_split(settings->playlist_names, ";");
+   stcores = string_split(settings->playlist_cores, ";");
 
    if (!menu_playlist_find_associated_core(path, core_path, sizeof(core_path)))
          strlcpy(core_path, "DETECT", sizeof(core_path));
