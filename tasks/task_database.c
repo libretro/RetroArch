@@ -493,7 +493,7 @@ static void rarch_dbscan_task_handler(rarch_task_t *task)
    database_state_handle_t *dbstate = &db->state;
    const char *name = dbinfo ? dbinfo->list->elems[dbinfo->list_ptr].data    : NULL;
 
-   if (!dbinfo)
+   if (!dbinfo || task->cancelled)
       goto task_finished;
 
    switch (dbinfo->status)

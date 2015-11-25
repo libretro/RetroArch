@@ -442,7 +442,7 @@ static void rarch_task_file_load_handler(rarch_task_t *task)
             break;
       }
 
-      if (nbio->is_finished && nbio->image.is_finished)
+      if (nbio->is_finished && nbio->image.is_finished && !task->cancelled)
       {
          task->task_data = malloc(sizeof(nbio->image.ti));
          memcpy(task->task_data, &nbio->image.ti, sizeof(nbio->image.ti));
@@ -452,6 +452,13 @@ static void rarch_task_file_load_handler(rarch_task_t *task)
    } else
       if (nbio->is_finished)
          goto task_finished;
+
+
+   if (task->cancelled)
+   {
+      task->error = strdup("Task canceled.");
+      goto task_finished;
+   }
 
    return;
 

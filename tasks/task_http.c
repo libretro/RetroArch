@@ -162,6 +162,9 @@ static void rarch_task_http_transfer_handler(rarch_task_t *task)
          break;
    }
 
+   if (task->cancelled)
+      goto task_finished;
+
    return;
 task_finished:
    task->finished = true;
@@ -174,14 +177,17 @@ task_finished:
       if (tmp && http->cb)
          http->cb(tmp, len);
 
-      if (net_http_error(http->handle))
+      if (net_http_error(http->handle) || task->cancelled)
       {
          tmp = (char*)net_http_data(http->handle, &len, true);
 
          if (tmp)
             free(tmp);
 
-         task->error = strdup("Download failed.");
+         if (task->cancelled)
+            task->error = strdup("Task cancelled.");
+         else
+            task->error = strdup("Download failed.");
       }
       else
       {

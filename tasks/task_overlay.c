@@ -629,17 +629,38 @@ static void rarch_task_overlay_handler(rarch_task_t *task)
          goto task_finished;
    }
 
+   if (task->cancelled)
+      goto task_finished;
+
    return;
 task_finished:
    task->finished = true;
 
-   data = (overlay_task_data_t*)calloc(1, sizeof(*data));
+   if (task->cancelled)
+   {
+      struct overlay *o;
+      unsigned i;
 
-   data->overlays = loader->overlays;
-   data->size     = loader->size;
-   data->active   = loader->active;
+      if (task->error)
+         free(task->error);
 
-   task->task_data = data;
+      task->error = strdup("Task cancelled.");
+
+      for (i = 0; i < loader->size; i++)
+         input_overlay_free_overlay(&loader->overlays[i]);
+
+      free(loader->overlays);
+   }
+   else
+   {
+      data = (overlay_task_data_t*)calloc(1, sizeof(*data));
+
+      data->overlays = loader->overlays;
+      data->size     = loader->size;
+      data->active   = loader->active;
+
+      task->task_data = data;
+   }
 
    if (loader->overlay_path)
       free(loader->overlay_path);
