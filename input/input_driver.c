@@ -241,12 +241,33 @@ bool input_driver_init(void)
    return true;
 }
 
+void input_driver_set(const input_driver_t **input, void **input_data)
+{
+   driver_t *driver               = driver_get_ptr();
+
+   if (input && input_data)
+   {
+      *input      = driver->input;
+      *input_data = driver->input_data;
+   }
+
+   driver->input_data_own = true;
+}
+
 void input_driver_free(void)
 {
    driver_t *driver               = driver_get_ptr();
 
    if (driver && driver->input)
       driver->input->free(driver->input_data);
+}
+
+void input_driver_destroy(void)
+{
+   driver_t *driver = driver_get_ptr();
+
+   if (driver)
+      driver->input_data = NULL;
 }
 
 bool input_driver_keyboard_mapping_is_blocked(void)

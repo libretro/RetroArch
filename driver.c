@@ -467,6 +467,6 @@ void uninit_drivers(int flags)
       video_driver_ctl(RARCH_DISPLAY_CTL_DEINIT, NULL);
 
    if ((flags & DRIVER_INPUT) && !driver->input_data_own)
-      driver->input_data = NULL;
+      input_driver_destroy();
 }
 

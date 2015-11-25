@@ -169,11 +169,15 @@ bool input_driver_init(void);
 
 void input_driver_free(void);
 
+void input_driver_destroy(void);
+
 bool input_driver_keyboard_mapping_is_blocked(void);
 
 void input_driver_keyboard_mapping_set_block(bool value);
 
 const input_driver_t *input_get_ptr(void *data);
+
+void input_driver_set(const input_driver_t **input, void **input_data);
 
 #ifdef __cplusplus
 }
