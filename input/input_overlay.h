@@ -198,6 +198,7 @@ typedef struct
  **/
 void input_overlay_free(void);
 
+void input_overlay_free_overlay(struct overlay *overlay);
 
 /**
  * input_overlay_init

@@ -180,7 +180,7 @@ void input_overlay_set_scale_factor(float scale)
    input_overlay_set_vertex_geom();
 }
 
-static void input_overlay_free_overlay(struct overlay *overlay)
+void input_overlay_free_overlay(struct overlay *overlay)
 {
    size_t i;
 
@@ -550,6 +550,9 @@ static void input_overlay_loaded(void *task_data, void *user_data, const char *e
    settings_t      *settings = config_get_ptr();
    input_overlay_t       *ol;
    driver_t *driver          = driver_get_ptr();
+
+   if (err)
+      return;
 
    /* We can't display when the menu is up */
    if (settings->input.overlay_hide_in_menu && menu_driver_alive())

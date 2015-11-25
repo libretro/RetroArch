@@ -37,8 +37,11 @@ struct rarch_task {
     rarch_task_handler_t  handler;
     rarch_task_callback_t callback; /* always called from the main loop */
 
-    /* set by the handler */
+    /* set to true by the handler to signal the task has finished executing. */
     bool finished;
+
+    /* set to true by the task system to signal the task *must* end. */
+    bool cancelled;
 
     /* created by the handler, destroyed by the user */
     void *task_data;
@@ -56,12 +59,57 @@ struct rarch_task {
     rarch_task_t *next;
 };
 
-/* MAIN THREAD ONLY */
+/**
+ * @brief Initializes the task system
+ *
+ * This function initializes the task system and chooses an appropriate
+ * implementation according to the settings.
+ *
+ * This function must only be called from the main thread.
+ */
 void rarch_task_init(void);
+
+/**
+ * @brief Deinitializes the task system
+ *
+ * This function deinitializes the task system. The tasks that are running at
+ * the moment will stay on hold until rarch_task_init() is called again.
+ */
 void rarch_task_deinit(void);
+
+/**
+ * @brief Checks for finished tasks
+ *
+ * Takes the finished tasks, if any, and runs their callbacks.
+ *
+ * This function must only be called from the main thread.
+ */
 void rarch_task_check(void);
 
-/* MAIN AND TASK THREADS */
+/**
+ * @brief Sends a signal to terminate all the tasks.
+ *
+ * This function won't terminate the tasks immediately. They will finish as
+ * soon as possible.
+ *
+ * This function must only be called from the main thread.
+ */
+void rarch_task_reset(void);
+
+/**
+ * @brief Blocks until all tasks have finished.
+ *
+ * This function must only be called from the main thread.
+ */
+void rarch_task_wait(void);
+
+/**
+ * @brief Pushes a task
+ *
+ * The task will start as soon as possible.
+ *
+ * @param task
+ */
 void rarch_task_push(rarch_task_t *task);
 
 #ifdef HAVE_NETWORKING
