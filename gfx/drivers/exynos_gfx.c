@@ -595,19 +595,7 @@ static int exynos_open(struct exynos_data *pdata)
       goto fail;
    }
 
-   for (i = 0; i < g_drm_resources->count_encoders; i++)
-   {
-      g_drm_encoder = drmModeGetEncoder(fd, g_drm_resources->encoders[i]);
-
-      if (!g_drm_encoder)
-         continue;
-
-      if (g_drm_encoder->encoder_id == g_drm_connector->encoder_id)
-         break;
-
-      drmModeFreeEncoder(g_drm_encoder);
-      g_drm_encoder = NULL;
-   }
+   drm_get_encoder(fd);
 
    /* Setup the flip handler. */
    g_drm_fds.fd                         = fd;

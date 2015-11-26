@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../verbosity.h"
+
 #include "drm_common.h"
 
 uint32_t g_connector_id;
@@ -44,6 +46,33 @@ void drm_restore_crtc(void)
 
    drmModeFreeCrtc(g_orig_crtc);
    g_orig_crtc = NULL;
+}
+
+bool drm_get_encoder(int fd)
+{
+   unsigned i;
+
+   for (i = 0; i < g_drm_resources->count_encoders; i++)
+   {
+      g_drm_encoder = drmModeGetEncoder(fd, g_drm_resources->encoders[i]);
+
+      if (!g_drm_encoder)
+         continue;
+
+      if (g_drm_encoder->encoder_id == g_drm_connector->encoder_id)
+         break;
+
+      drmModeFreeEncoder(g_drm_encoder);
+      g_drm_encoder = NULL;
+   }
+
+   if (!g_drm_encoder)
+   {
+      RARCH_WARN("[DRM]: Couldn't find DRM encoder.\n");
+      return false;
+   }
+
+   return true;
 }
 
 void drm_free(void)

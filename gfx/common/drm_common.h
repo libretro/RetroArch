@@ -23,6 +23,8 @@
 #include <xf86drmMode.h>
 #include <poll.h>
 
+#include <boolean.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -40,6 +42,8 @@ extern drmModeEncoder *g_drm_encoder;
 extern drmModeModeInfo *g_drm_mode;
 
 extern drmEventContext g_drm_evctx;
+
+bool drm_get_encoder(int fd);
 
 /* Restore the original CRTC. */
 void drm_restore_crtc(void);

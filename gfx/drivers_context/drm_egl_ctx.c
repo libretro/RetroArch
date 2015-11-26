@@ -426,24 +426,8 @@ nextgpu:
       goto nextgpu;
    }
 
-   for (i = 0; i < g_drm_resources->count_encoders; i++)
-   {
-      g_drm_encoder = drmModeGetEncoder(fd, g_drm_resources->encoders[i]);
-
-      if (!g_drm_encoder)
-         continue;
-      if (g_drm_encoder->encoder_id == g_drm_connector->encoder_id)
-         break;
-
-      drmModeFreeEncoder(g_drm_encoder);
-      g_drm_encoder = NULL;
-   }
-
-   if (!g_drm_encoder)
-   {
-      RARCH_WARN("[KMS/EGL]: Couldn't find DRM encoder.\n");
+   if (!drm_get_encoder(fd))
       goto nextgpu;
-   }
 
    for (i = 0; i < g_drm_connector->count_modes; i++)
    {
