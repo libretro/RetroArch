@@ -81,8 +81,14 @@ static void event_init_remote(void)
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
-   if (!(driver->remote = rarch_remote_new(55400,1)))
-      RARCH_ERR("Failed to initialize remote gamepad interface.\n");
+   for(int i=0; i < settings->input.max_users; i++)
+   {
+      if (settings->network_remote_enable[i])
+      {
+         if (!(driver->remote = rarch_remote_new(55400 + i,i)))
+            RARCH_ERR("Failed to initialize remote gamepad interface.\n");
+      }
+   }
 }
 #endif
 
