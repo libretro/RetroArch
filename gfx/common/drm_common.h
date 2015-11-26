@@ -48,6 +48,12 @@ bool drm_get_encoder(int fd);
 /* Restore the original CRTC. */
 void drm_restore_crtc(void);
 
+bool drm_get_resources(int fd);
+
+bool drm_get_connector(int id);
+
+void drm_setup(int fd);
+
 void drm_free(void);
 
 #ifdef __cplusplus

@@ -564,38 +564,14 @@ static int exynos_open(struct exynos_data *pdata)
       return -1;
    }
 
-   g_drm_resources = drmModeGetResources(fd);
-   if (!g_drm_resources)
-   {
-      RARCH_ERR("[video_exynos]: failed to get DRM resources\n");
+   if (!drm_get_resources(fd))
       goto fail;
-   }
 
-   for (i = 0; i < g_drm_resources->count_connectors; ++i)
-   {
-      if (settings->video.monitor_index != 0 &&
-            settings->video.monitor_index - 1 != i)
-         continue;
-
-      g_drm_connector = drmModeGetConnector(fd, g_drm_resources->connectors[i]);
-      if (!drm->connecto)
-         continue;
-
-      if (g_drm_connector->connection == DRM_MODE_CONNECTED &&
-            g_drm_connector->count_modes > 0)
-         break;
-
-      drmModeFreeConnector(g_drm_connector);
-      g_drm_connector = NULL;
-   }
-
-   if (i == g_drm_resources->count_connectors)
-   {
-      RARCH_ERR("[video_exynos]: no currently active connector found.\n");
+   if (!drm_get_decoder(fd))
       goto fail;
-   }
 
-   drm_get_encoder(fd);
+   if (!drm_get_encoder(fd))
+      goto fail;
 
    /* Setup the flip handler. */
    g_drm_fds.fd                         = fd;
@@ -669,12 +645,7 @@ static int exynos_init(struct exynos_data *pdata, unsigned bpp)
       goto fail;
    }
 
-   g_crtc_id         = g_drm_encoder->crtc_id;
-   g_connector_id    = g_drm_connector->connector_id;
-   g_orig_crtc       = drmModeGetCrtc(g_drm_fd, g_crtc_id);
-
-   if (!g_orig_crtc)
-      RARCH_WARN("[video_exynos]: cannot find original crtc\n");
+   drm_setup(g_drm_fd);
 
    pdata->width      = g_drm_mode->hdisplay;
    pdata->height     = g_drm_mode->vdisplay;
