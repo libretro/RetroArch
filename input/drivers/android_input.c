@@ -408,14 +408,21 @@ static void engine_handle_cmd(void)
          }
          break;
       case APP_CMD_LOST_FOCUS:
-         /* Avoid draining battery while app is not being used. */
-         if ((android_app->sensor_state_mask
-                  & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))
-               && android_app->accelerometerSensor != NULL
-               && driver->input_data)
-            android_input_set_sensor_state(driver->input_data, 0,
-                  RETRO_SENSOR_ACCELEROMETER_DISABLE,
-                  android_app->accelerometer_event_rate);
+         {
+            bool boolean = true;
+
+            rarch_main_ctl(RARCH_MAIN_CTL_SET_PAUSED, &boolean);
+            rarch_main_ctl(RARCH_MAIN_CTL_SET_IDLE,   &boolean);
+
+            /* Avoid draining battery while app is not being used. */
+            if ((android_app->sensor_state_mask
+                     & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))
+                  && android_app->accelerometerSensor != NULL
+                  && driver->input_data)
+               android_input_set_sensor_state(driver->input_data, 0,
+                     RETRO_SENSOR_ACCELEROMETER_DISABLE,
+                     android_app->accelerometer_event_rate);
+         }
          break;
 
       case APP_CMD_DESTROY:
