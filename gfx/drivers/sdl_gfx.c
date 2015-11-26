@@ -467,7 +467,7 @@ static void sdl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    if (cmd != RARCH_DISPLAY_CTL_NONE)
       video_driver_ctl(cmd, NULL);
 
-   video_driver_set_aspect_ratio_value(aspectratio_lut[aspectratio_index].value);
+   video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
 }
 
 static void sdl_apply_state_changes(void *data)
