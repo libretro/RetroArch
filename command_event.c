@@ -75,6 +75,23 @@ static void event_init_command(void)
 }
 #endif
 
+#ifdef HAVE_NETWORK_GAMEPAD
+static void event_init_remote(void)
+{
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+
+   for(int i=0; i < settings->input.max_users; i++)
+   {
+      if (settings->network_remote_enable[i])
+      {
+         if (!(driver->remote = rarch_remote_new(55400 + i,i)))
+            RARCH_ERR("Failed to initialize remote gamepad interface.\n");
+      }
+   }
+}
+#endif
+
 /**
  * event_free_temporary_content:
  *
@@ -1684,6 +1701,20 @@ bool event_command(enum event_command cmd)
          event_init_command();
 #endif
          break;
+case EVENT_CMD_REMOTE_DEINIT:
+#ifdef HAVE_NETWORK_GAMEPAD
+   if (driver->remote)
+      rarch_remote_free(driver->remote);
+   driver->remote = NULL;
+#endif
+   break;
+case EVENT_CMD_REMOTE_INIT:
+   event_command(EVENT_CMD_REMOTE_DEINIT);
+
+#ifdef HAVE_NETWORK_GAMEPAD
+   event_init_remote();
+#endif
+   break;
       case EVENT_CMD_TEMPORARY_CONTENT_DEINIT:
          if (!global)
             break;

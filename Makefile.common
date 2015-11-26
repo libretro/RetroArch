@@ -484,6 +484,10 @@ ifeq ($(HAVE_COMMAND), 1)
    OBJ += command.o
 endif
 
+ifeq ($(HAVE_NETWORK_GAMEPAD), 1)
+   OBJ += remote.o
+endif
+
 #Input
 
 ifeq ($(HAVE_WAYLAND), 1)
@@ -883,7 +887,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    # Netplay
 
    ifeq ($(HAVE_NETPLAY), 1)
-      DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD
+      DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD -DHAVE_NETWORK_GAMEPAD
       OBJ += netplay.o
    endif
 

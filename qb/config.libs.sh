@@ -156,12 +156,14 @@ if [ "$HAVE_NETWORKING" = 'yes' ]; then
       fi
    fi
    HAVE_NETWORK_CMD=yes
+   HAVE_NETWORK_GAMEPAD=yes
 
    [ "$HAVE_NETPLAY" != 'no' ] && HAVE_NETPLAY='yes'
 else
    echo "Warning: All networking features have been disabled."
    HAVE_NETWORK_CMD='no'
    HAVE_NETPLAY='no'
+   HAVE_NETWORK_GAMEPAD='no'
 fi
 
 check_lib STDIN_CMD "$CLIB" fcntl

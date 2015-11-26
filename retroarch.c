@@ -1213,6 +1213,7 @@ int rarch_main_init(int argc, char *argv[])
 
    event_command(EVENT_CMD_DRIVERS_INIT);
    event_command(EVENT_CMD_COMMAND_INIT);
+   event_command(EVENT_CMD_REMOTE_INIT);
    event_command(EVENT_CMD_REWIND_INIT);
    event_command(EVENT_CMD_CONTROLLERS_INIT);
    event_command(EVENT_CMD_RECORD_INIT);
@@ -1457,6 +1458,7 @@ void rarch_main_deinit(void)
 
    event_command(EVENT_CMD_NETPLAY_DEINIT);
    event_command(EVENT_CMD_COMMAND_DEINIT);
+   event_command(EVENT_CMD_REMOTE_DEINIT);
 
    if (global->sram.use)
       event_command(EVENT_CMD_AUTOSAVE_DEINIT);
