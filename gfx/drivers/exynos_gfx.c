@@ -24,10 +24,8 @@
 #include <stdint.h>
 #include <assert.h>
 
-#include <xf86drmMode.h>
 #include <drm_fourcc.h>
 #include <libdrm/exynos_drmif.h>
-
 #include <exynos/exynos_fimg2d.h>
 
 #include <retro_inline.h>

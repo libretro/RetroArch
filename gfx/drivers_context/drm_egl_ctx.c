@@ -30,17 +30,15 @@
 #include <sys/poll.h>
 
 #include <libdrm/drm.h>
-#include <xf86drm.h>
-#include <xf86drmMode.h>
 #include <gbm.h>
 
 #include <file/dir_list.h>
 #include <retro_file.h>
 
-#include "../common/drm_common.h"
 
 #include "../../driver.h"
 #include "../../runloop.h"
+#include "../common/drm_common.h"
 #include "../common/egl_common.h"
 #include "../common/gl_common.h"
 
