@@ -301,9 +301,6 @@ static void free_drm_resources(gfx_ctx_drm_egl_data_t *drm)
 
    drm->g_gbm_surface = NULL;
    drm->g_gbm_dev     = NULL;
-   g_drm_encoder      = NULL;
-   g_drm_connector    = NULL;
-   g_drm_resources    = NULL;
    g_drm_fd           = -1;
 }
 

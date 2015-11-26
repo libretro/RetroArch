@@ -35,10 +35,7 @@ extern uint32_t g_crtc_id;
 
 struct pollfd g_drm_fds;
 
-extern drmModeCrtc *g_orig_crtc;
-extern drmModeRes *g_drm_resources;
 extern drmModeConnector *g_drm_connector;
-extern drmModeEncoder *g_drm_encoder;
 extern drmModeModeInfo *g_drm_mode;
 
 extern drmEventContext g_drm_evctx;

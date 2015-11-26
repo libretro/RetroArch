@@ -22,13 +22,12 @@ uint32_t g_connector_id;
 int g_drm_fd;
 uint32_t g_crtc_id;
 
-drmModeCrtc *g_orig_crtc;
-
+static drmModeCrtc *g_orig_crtc;
 struct pollfd g_drm_fds;
 
-drmModeRes *g_drm_resources;
+static drmModeRes *g_drm_resources;
 drmModeConnector *g_drm_connector;
-drmModeEncoder *g_drm_encoder;
+static drmModeEncoder *g_drm_encoder;
 drmModeModeInfo *g_drm_mode;
 
 drmEventContext g_drm_evctx;
@@ -175,4 +174,7 @@ void drm_free(void)
    if (g_drm_resources)
       drmModeFreeResources(g_drm_resources);
 
+   g_drm_encoder      = NULL;
+   g_drm_connector    = NULL;
+   g_drm_resources    = NULL;
 }
