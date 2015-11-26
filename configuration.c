@@ -1620,9 +1620,12 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, savestate_auto_save, "savestate_auto_save");
    CONFIG_GET_BOOL_BASE(conf, settings, savestate_auto_load, "savestate_auto_load");
 
+#ifdef HAVE_COMMAND
    CONFIG_GET_BOOL_BASE(conf, settings, network_cmd_enable, "network_cmd_enable");
    CONFIG_GET_INT_BASE(conf, settings, network_cmd_port, "network_cmd_port");
    CONFIG_GET_BOOL_BASE(conf, settings, stdin_cmd_enable, "stdin_cmd_enable");
+#endif
+
    CONFIG_GET_BOOL_BASE(conf, settings, debug_panel_enable, "debug_panel_enable");
 
    config_get_path(conf, "content_history_dir", settings->content_history_directory,
@@ -2714,12 +2717,14 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "history_list_enable",
          settings->history_list_enable);
 
+#ifdef HAVE_COMMAND
    config_set_bool(conf, "network_cmd_enable",
          settings->network_cmd_enable);
    config_set_bool(conf, "stdin_cmd_enable",
          settings->stdin_cmd_enable);
    config_set_int(conf, "network_cmd_port",
          settings->network_cmd_port);
+#endif
 
    config_set_float(conf, "fastforward_ratio", settings->fastforward_ratio);
    config_set_float(conf, "slowmotion_ratio", settings->slowmotion_ratio);
