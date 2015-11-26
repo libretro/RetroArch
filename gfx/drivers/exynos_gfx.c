@@ -32,6 +32,8 @@
 
 #include <retro_inline.h>
 
+#include "../common/drm_common.h"
+
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
@@ -119,16 +121,12 @@ struct exynos_drm
   drmModeConnector *connector;
   drmModeEncoder *encoder;
   drmModeModeInfo *mode;
-  drmModeCrtc *orig_crtc;
-
   uint32_t crtc_id;
-  uint32_t connector_id;
 };
 
 struct exynos_data
 {
   char drmname[32];
-  int fd;
   struct exynos_device *device;
 
   struct exynos_drm *drm;
@@ -209,21 +207,6 @@ static int exynos_get_device_index(void)
    return index;
 }
 
-/* Restore the original CRTC. */
-static void exynos_restore_crtc(struct exynos_drm *d, int fd)
-{
-   if (!d->orig_crtc)
-      return;
-
-   drmModeSetCrtc(fd, d->orig_crtc->crtc_id,
-         d->orig_crtc->buffer_id,
-         d->orig_crtc->x,
-         d->orig_crtc->y,
-         &d->connector_id, 1, &d->orig_crtc->mode);
-
-   drmModeFreeCrtc(d->orig_crtc);
-   d->orig_crtc = NULL;
-}
 
 static void exynos_clean_up_drm(struct exynos_drm *d, int fd)
 {
@@ -503,7 +486,7 @@ static int exynos_g2d_init(struct exynos_data *pdata)
 {
    unsigned i;
    struct g2d_image *dst = NULL;
-   struct g2d_context *g2d = g2d_init(pdata->fd);
+   struct g2d_context *g2d = g2d_init(g_drm_fd);
    if (!g2d)
       return -1;
 
@@ -596,7 +579,7 @@ static int exynos_open(struct exynos_data *pdata)
    int devidx                             = exynos_get_device_index();
 
    if (pdata)
-      pdata->fd                           = -1;
+      g_drm_fd                            = -1;
 
    if (devidx != -1)
       snprintf(buf, sizeof(buf), "/dev/dri/card%d", devidx);
@@ -683,7 +666,7 @@ static int exynos_open(struct exynos_data *pdata)
    fliphandler->evctx.page_flip_handler = exynos_page_flip_handler;
 
    strncpy(pdata->drmname, buf, sizeof(buf));
-   pdata->fd = fd;
+   g_drm_fd = fd;
 
    pdata->drm = drm;
    pdata->fliphandler = fliphandler;
@@ -708,15 +691,14 @@ static void exynos_close(struct exynos_data *pdata)
 
    memset(pdata->drmname, 0, sizeof(char) * 32);
 
-   exynos_clean_up_drm(pdata->drm, pdata->fd);
-   pdata->fd = -1;
+   exynos_clean_up_drm(pdata->drm, g_drm_fd);
+   g_drm_fd   = -1;
    pdata->drm = NULL;
 }
 
 static int exynos_init(struct exynos_data *pdata, unsigned bpp)
 {
    unsigned i;
-   int fd                 = pdata->fd;
    struct exynos_drm *drm = pdata->drm;
    settings_t *settings   = config_get_ptr();
 
@@ -754,10 +736,10 @@ static int exynos_init(struct exynos_data *pdata, unsigned bpp)
    }
 
    drm->crtc_id      = drm->encoder->crtc_id;
-   drm->connector_id = drm->connector->connector_id;
-   drm->orig_crtc    = drmModeGetCrtc(fd, drm->crtc_id);
+   g_connector_id    = drm->connector->connector_id;
+   g_orig_crtc       = drmModeGetCrtc(g_drm_fd, drm->crtc_id);
 
-   if (!drm->orig_crtc)
+   if (!g_orig_crtc)
       RARCH_WARN("[video_exynos]: cannot find original crtc\n");
 
    pdata->width      = drm->mode->hdisplay;
@@ -778,7 +760,7 @@ static int exynos_init(struct exynos_data *pdata, unsigned bpp)
    return 0;
 
 fail:
-   exynos_restore_crtc(drm, fd);
+   drm_restore_crtc();
 
    drm->mode         = NULL;
 
@@ -790,7 +772,7 @@ static void exynos_deinit(struct exynos_data *pdata)
 {
    struct exynos_drm *drm = pdata->drm;
 
-   exynos_restore_crtc(drm, pdata->fd);
+   drm_restore_crtc();
 
    drm              = NULL;
 
@@ -810,7 +792,7 @@ static int exynos_alloc(struct exynos_data *pdata)
    uint32_t pixel_format;
    const unsigned flags = 0;
    uint32_t handles[4] = {0}, pitches[4] = {0}, offsets[4] = {0};
-   struct exynos_device *device = exynos_device_create(pdata->fd);
+   struct exynos_device *device = exynos_device_create(g_drm_fd);
 
    if (!device)
    {
@@ -875,7 +857,7 @@ static int exynos_alloc(struct exynos_data *pdata)
    {
       handles[0] = pages[i].bo->handle;
 
-      if (drmModeAddFB2(pdata->fd, pdata->width, pdata->height,
+      if (drmModeAddFB2(g_drm_fd, pdata->width, pdata->height,
                pixel_format, handles, pitches, offsets,
                &pages[i].buf_id, flags))
       {
@@ -885,7 +867,7 @@ static int exynos_alloc(struct exynos_data *pdata)
    }
 
    /* Setup CRTC: display the last allocated page. */
-   if (drmModeSetCrtc(pdata->fd, pdata->drm->crtc_id,
+   if (drmModeSetCrtc(g_drm_fd, pdata->drm->crtc_id,
             pages[pdata->num_pages - 1].buf_id,
             0, 0, &pdata->drm->connector_id, 1, pdata->drm->mode))
    {
@@ -913,7 +895,7 @@ static void exynos_free(struct exynos_data *pdata)
    unsigned i;
 
    /* Disable the CRTC. */
-   if (drmModeSetCrtc(pdata->fd, pdata->drm->crtc_id, 0,
+   if (drmModeSetCrtc(g_drm_fd, pdata->drm->crtc_id, 0,
             0, 0, NULL, 0, NULL))
       RARCH_WARN("[video_exynos]: failed to disable the CRTC.\n");
 
@@ -1134,7 +1116,7 @@ static int exynos_flip(struct exynos_data *pdata, struct exynos_page *page)
       exynos_wait_flip(pdata->fliphandler);
 
    /* Issue a page flip at the next vblank interval. */
-   if (drmModePageFlip(pdata->fd, pdata->drm->crtc_id, page->buf_id,
+   if (drmModePageFlip(g_drm_fd, pdata->drm->crtc_id, page->buf_id,
             DRM_MODE_PAGE_FLIP_EVENT, page) != 0)
    {
       RARCH_ERR("[video_exynos]: failed to issue page flip\n");

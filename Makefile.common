@@ -591,6 +591,7 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
 	endif
 
    ifeq ($(HAVE_KMS), 1)
+	   HAVE_DRM = 1
       OBJ += gfx/drivers_context/drm_egl_ctx.o
       DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
       LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
@@ -706,6 +707,11 @@ ifeq ($(HAVE_EXYNOS), 1)
           memory/neon/memcpy-neon.o
    LIBS += $(DRM_LIBS) $(EXYNOS_LIBS)
    DEFINES += $(DRM_CFLAGS) $(EXYNOS_CFLAGS)
+	HAVE_DRM = 1
+endif
+
+ifeq ($(HAVE_DRM), 1)
+	OBJ += gfx/common/drm_common.o
 endif
 
 ifeq ($(HAVE_DISPMANX), 1)

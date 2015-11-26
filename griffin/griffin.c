@@ -128,6 +128,9 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/cgl_ctx.c"
 #endif
 
+#ifdef HAVE_DRM
+#include "../gfx/common/drm_common.c"
+#endif
 
 #if defined(HAVE_OPENGL)
 

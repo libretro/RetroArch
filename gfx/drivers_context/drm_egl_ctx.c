@@ -37,6 +37,8 @@
 #include <file/dir_list.h>
 #include <retro_file.h>
 
+#include "../common/drm_common.h"
+
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../common/egl_common.h"
@@ -53,14 +55,11 @@
 typedef struct gfx_ctx_drm_egl_data
 {
    RFILE *g_drm;
-   int g_drm_fd;
    uint32_t g_crtc_id;
-   uint32_t g_connector_id;
    unsigned g_fb_width;
    unsigned g_fb_height;
 
    drmModeModeInfo *g_drm_mode;
-   drmModeCrtcPtr g_orig_crtc;
    drmModeRes *g_resources;
    drmModeConnector *g_connector;
    drmModeEncoder *g_encoder;
@@ -88,7 +87,7 @@ static void drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
       gfx_ctx_data_get_ptr();
 
    if (drm && fb->fb_id)
-      drmModeRmFB(drm->g_drm_fd, fb->fb_id);
+      drmModeRmFB(g_drm_fd, fb->fb_id);
 
    free(fb);
 }
@@ -113,7 +112,7 @@ static struct drm_fb *drm_fb_get_from_bo(
 
    RARCH_LOG("[KMS/EGL]: New FB: %ux%u (stride: %u).\n", width, height, stride);
 
-   ret = drmModeAddFB(drm->g_drm_fd, width, height, 24, 32, stride, handle, &fb->fb_id);
+   ret = drmModeAddFB(g_drm_fd, width, height, 24, 32, stride, handle, &fb->fb_id);
    if (ret < 0)
       goto error;
 
@@ -181,7 +180,7 @@ static bool wait_flip(gfx_ctx_drm_egl_data_t *drm, bool block)
    if (!waiting_for_flip)
       return false;
 
-   fds.fd                  = drm->g_drm_fd;
+   fds.fd                  = g_drm_fd;
    fds.events              = POLLIN;
    evctx.version           = DRM_EVENT_CONTEXT_VERSION;
    evctx.page_flip_handler = page_flip_handler;
@@ -200,7 +199,7 @@ static bool wait_flip(gfx_ctx_drm_egl_data_t *drm, bool block)
          break;
 
       if (fds.revents & POLLIN)
-         drmHandleEvent(drm->g_drm_fd, &evctx);
+         drmHandleEvent(g_drm_fd, &evctx);
       else
          break;
    }
@@ -226,7 +225,7 @@ static bool queue_flip(gfx_ctx_drm_egl_data_t *drm)
 
    fb = (struct drm_fb*)drm_fb_get_from_bo(drm, drm->g_next_bo);
 
-   if (drmModePageFlip(drm->g_drm_fd, drm->g_crtc_id, fb->fb_id,
+   if (drmModePageFlip(g_drm_fd, drm->g_crtc_id, fb->fb_id,
          DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip) == 0)
       return true;
    
@@ -314,10 +313,7 @@ static void free_drm_resources(gfx_ctx_drm_egl_data_t *drm)
    if (drm->g_resources)
       drmModeFreeResources(drm->g_resources);
 
-   if (drm->g_orig_crtc)
-      drmModeFreeCrtc(drm->g_orig_crtc);
-
-   if (drm->g_drm_fd >= 0)
+   if (g_drm_fd >= 0)
       retro_fclose(drm->g_drm);
 
    drm->g_gbm_surface = NULL;
@@ -325,8 +321,7 @@ static void free_drm_resources(gfx_ctx_drm_egl_data_t *drm)
    drm->g_encoder     = NULL;
    drm->g_connector   = NULL;
    drm->g_resources   = NULL;
-   drm->g_orig_crtc   = NULL;
-   drm->g_drm_fd      = -1;
+   g_drm_fd           = -1;
 }
 
 static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
@@ -340,20 +335,12 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
    egl_destroy(NULL);
 
    /* Restore original CRTC. */
-   if (drm->g_orig_crtc)
-   {
-      drmModeSetCrtc(drm->g_drm_fd, drm->g_orig_crtc->crtc_id,
-            drm->g_orig_crtc->buffer_id,
-            drm->g_orig_crtc->x,
-            drm->g_orig_crtc->y,
-            &drm->g_connector_id, 1, &drm->g_orig_crtc->mode);
-   }
-
+   drm_restore_crtc();
    free_drm_resources(drm);
 
    drm->g_drm_mode     = NULL;
    drm->g_crtc_id      = 0;
-   drm->g_connector_id = 0;
+   g_connector_id      = 0;
 
    drm->g_fb_width  = 0;
    drm->g_fb_height = 0;
@@ -376,10 +363,11 @@ static bool gfx_ctx_drm_egl_init(void *data)
    if (!drm)
       return false;
 
-   drm->g_drm_fd   = -1;
+   g_drm_fd   = -1;
    gpu_descriptors = dir_list_new("/dev/dri", NULL, false, false);
 
 nextgpu:
+   drm_restore_crtc();
    free_drm_resources(drm);
 
    if (!gpu_descriptors || gpu_index == gpu_descriptors->size)
@@ -396,9 +384,9 @@ nextgpu:
       goto nextgpu;
    }
 
-   drm->g_drm_fd = retro_get_fd(drm->g_drm);
+   g_drm_fd = retro_get_fd(drm->g_drm);
 
-   drm->g_resources = drmModeGetResources(drm->g_drm_fd);
+   drm->g_resources = drmModeGetResources(g_drm_fd);
    if (!drm->g_resources)
    {
       RARCH_WARN("[KMS/EGL]: Couldn't get device resources.\n");
@@ -413,7 +401,7 @@ nextgpu:
    for (i = 0; i < drm->g_resources->count_connectors; i++)
    {
       drmModeConnectorPtr conn = drmModeGetConnector(
-            drm->g_drm_fd, drm->g_resources->connectors[i]);
+            g_drm_fd, drm->g_resources->connectors[i]);
 
       if (conn)
       {
@@ -432,7 +420,7 @@ nextgpu:
    monitor_index = 0;
    for (i = 0; i < drm->g_resources->count_connectors; i++)
    {
-      drm->g_connector = drmModeGetConnector(drm->g_drm_fd,
+      drm->g_connector = drmModeGetConnector(g_drm_fd,
             drm->g_resources->connectors[i]);
 
       if (!drm->g_connector)
@@ -457,7 +445,7 @@ nextgpu:
 
    for (i = 0; i < drm->g_resources->count_encoders; i++)
    {
-      drm->g_encoder = drmModeGetEncoder(drm->g_drm_fd,
+      drm->g_encoder = drmModeGetEncoder(g_drm_fd,
             drm->g_resources->encoders[i]);
 
       if (!drm->g_encoder)
@@ -486,18 +474,18 @@ nextgpu:
    }
 
    drm->g_crtc_id   = drm->g_encoder->crtc_id;
-   drm->g_orig_crtc = drmModeGetCrtc(drm->g_drm_fd, drm->g_crtc_id);
-   if (!drm->g_orig_crtc)
+   g_orig_crtc      = drmModeGetCrtc(g_drm_fd, drm->g_crtc_id);
+   if (!g_orig_crtc)
       RARCH_WARN("[KMS/EGL]: Cannot find original CRTC.\n");
 
-   drm->g_connector_id = drm->g_connector->connector_id;
+   g_connector_id   = drm->g_connector->connector_id;
 
    /* First mode is assumed to be the "optimal" 
     * one for get_video_size() purposes. */
    drm->g_fb_width  = drm->g_connector->modes[0].hdisplay;
    drm->g_fb_height = drm->g_connector->modes[0].vdisplay;
 
-   drm->g_gbm_dev = gbm_create_device(drm->g_drm_fd);
+   drm->g_gbm_dev = gbm_create_device(g_drm_fd);
 
    if (!drm->g_gbm_dev)
    {
@@ -743,8 +731,8 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    drm->g_bo = gbm_surface_lock_front_buffer(drm->g_gbm_surface);
    fb = drm_fb_get_from_bo(drm, drm->g_bo);
 
-   ret = drmModeSetCrtc(drm->g_drm_fd,
-         drm->g_crtc_id, fb->fb_id, 0, 0, &drm->g_connector_id, 1, drm->g_drm_mode);
+   ret = drmModeSetCrtc(g_drm_fd,
+         drm->g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, drm->g_drm_mode);
    if (ret < 0)
       goto error;
 
