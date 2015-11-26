@@ -50,16 +50,18 @@
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
 #endif
 
+static struct gbm_bo *g_bo;
+static struct gbm_bo *g_next_bo;
+static struct gbm_surface *g_gbm_surface;
+static struct gbm_device *g_gbm_dev;
+
+static bool waiting_for_flip;
+
 typedef struct gfx_ctx_drm_egl_data
 {
    RFILE *g_drm;
    unsigned g_fb_width;
    unsigned g_fb_height;
-
-   struct gbm_bo *g_bo;
-   struct gbm_bo *g_next_bo;
-   struct gbm_device *g_gbm_dev;
-   struct gbm_surface *g_gbm_surface;
 } gfx_ctx_drm_egl_data_t;
 
 static unsigned g_major;
@@ -75,18 +77,14 @@ struct drm_fb
 static void drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
 {
    struct drm_fb *fb = (struct drm_fb*)data;
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-      gfx_ctx_data_get_ptr();
 
-   if (drm && fb->fb_id)
+   if (fb && fb->fb_id)
       drmModeRmFB(g_drm_fd, fb->fb_id);
 
    free(fb);
 }
 
-static struct drm_fb *drm_fb_get_from_bo(
-      gfx_ctx_drm_egl_data_t *drm,
-      struct gbm_bo *bo)
+static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
 {
    int ret;
    unsigned width, height, stride, handle;
@@ -94,7 +92,7 @@ static struct drm_fb *drm_fb_get_from_bo(
    if (fb)
       return fb;
 
-   fb = (struct drm_fb*)calloc(1, sizeof(*fb));
+   fb     = (struct drm_fb*)calloc(1, sizeof(*fb));
    fb->bo = bo;
 
    width  = gbm_bo_get_width(bo);
@@ -136,7 +134,6 @@ static void gfx_ctx_drm_egl_check_window(void *data, bool *quit,
    *quit   = g_egl_quit;
 }
 
-static bool waiting_for_flip;
 
 static void drm_egl_flip_handler(int fd, unsigned frame,
       unsigned sec, unsigned usec, void *data)
@@ -163,7 +160,7 @@ static void drm_egl_flip_handler(int fd, unsigned frame,
    *(bool*)data = false;
 }
 
-static bool wait_flip(gfx_ctx_drm_egl_data_t *drm, bool block)
+static bool wait_flip(bool block)
 {
    int timeout = 0;
 
@@ -195,20 +192,19 @@ static bool wait_flip(gfx_ctx_drm_egl_data_t *drm, bool block)
    /* Page flip has taken place. */
 
    /* This buffer is not on-screen anymore. Release it to GBM. */
-   gbm_surface_release_buffer(drm->g_gbm_surface, drm->g_bo);
+   gbm_surface_release_buffer(g_gbm_surface, g_bo);
    /* This buffer is being shown now. */
-   drm->g_bo = drm->g_next_bo; 
+   g_bo = g_next_bo; 
 
    return false;
 }
 
-static bool queue_flip(gfx_ctx_drm_egl_data_t *drm)
+static bool queue_flip(void)
 {
    struct drm_fb *fb = NULL;
 
-   drm->g_next_bo = gbm_surface_lock_front_buffer(drm->g_gbm_surface);
-
-   fb = (struct drm_fb*)drm_fb_get_from_bo(drm, drm->g_next_bo);
+   g_next_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
+   fb        = (struct drm_fb*)drm_fb_get_from_bo(g_next_bo);
 
    if (drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
          DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip) == 0)
@@ -220,9 +216,6 @@ static bool queue_flip(gfx_ctx_drm_egl_data_t *drm)
 
 static void gfx_ctx_drm_egl_swap_buffers(void *data)
 {
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-      gfx_ctx_data_get_ptr();
-
    egl_swap_buffers(data);
 
    /* I guess we have to wait for flip to have taken 
@@ -230,18 +223,18 @@ static void gfx_ctx_drm_egl_swap_buffers(void *data)
     *
     * If true, we are still waiting for a flip
     * (nonblocking mode, so just drop the frame). */
-   if (wait_flip(drm, g_interval))
+   if (wait_flip(g_interval))
       return;
 
-   waiting_for_flip = queue_flip(drm);
+   waiting_for_flip = queue_flip();
 
-   if (gbm_surface_has_free_buffers(drm->g_gbm_surface))
+   if (gbm_surface_has_free_buffers(g_gbm_surface))
       return;
 
    /* We have to wait for this flip to finish. 
     * This shouldn't happen as we have triple buffered page-flips. */
    RARCH_WARN("[KMS/EGL]: Triple buffering is not working correctly ...\n");
-   wait_flip(drm, true);  
+   wait_flip(true);  
 }
 
 static void gfx_ctx_drm_egl_set_resize(void *data,
@@ -283,19 +276,19 @@ static void free_drm_resources(gfx_ctx_drm_egl_data_t *drm)
    if (!drm)
       return;
 
-   if (drm->g_gbm_surface)
-      gbm_surface_destroy(drm->g_gbm_surface);
+   if (g_gbm_surface)
+      gbm_surface_destroy(g_gbm_surface);
 
-   if (drm->g_gbm_dev)
-      gbm_device_destroy(drm->g_gbm_dev);
+   if (g_gbm_dev)
+      gbm_device_destroy(g_gbm_dev);
 
    drm_free();
 
    if (g_drm_fd >= 0)
       retro_fclose(drm->g_drm);
 
-   drm->g_gbm_surface = NULL;
-   drm->g_gbm_dev     = NULL;
+   g_gbm_surface      = NULL;
+   g_gbm_dev          = NULL;
    g_drm_fd           = -1;
 }
 
@@ -305,7 +298,7 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
       return;
 
    /* Make sure we acknowledge all page-flips. */
-   wait_flip(drm, true);
+   wait_flip(true);
 
    egl_destroy(NULL);
 
@@ -320,8 +313,8 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
    drm->g_fb_width  = 0;
    drm->g_fb_height = 0;
 
-   drm->g_bo      = NULL;
-   drm->g_next_bo = NULL;
+   g_bo             = NULL;
+   g_next_bo        = NULL;
 }
 
 static bool gfx_ctx_drm_egl_init(void *data)
@@ -375,9 +368,9 @@ nextgpu:
    drm->g_fb_width  = g_drm_connector->modes[0].hdisplay;
    drm->g_fb_height = g_drm_connector->modes[0].vdisplay;
 
-   drm->g_gbm_dev = gbm_create_device(fd);
+   g_gbm_dev        = gbm_create_device(fd);
 
-   if (!drm->g_gbm_dev)
+   if (!g_gbm_dev)
    {
       RARCH_WARN("[KMS/EGL]: Couldn't create GBM device.\n");
       goto nextgpu;
@@ -590,21 +583,21 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    drm->g_fb_height = g_drm_mode->vdisplay;
 
    /* Create GBM surface. */
-   drm->g_gbm_surface = gbm_surface_create(
-         drm->g_gbm_dev,
+   g_gbm_surface = gbm_surface_create(
+         g_gbm_dev,
          drm->g_fb_width,
          drm->g_fb_height,
          GBM_FORMAT_XRGB8888,
          GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
 
-   if (!drm->g_gbm_surface)
+   if (!g_gbm_surface)
    {
       RARCH_ERR("[KMS/EGL]: Couldn't create GBM surface.\n");
       goto error;
    }
 
 
-   if (!egl_init_context((EGLNativeDisplayType)drm->g_gbm_dev, &major,
+   if (!egl_init_context((EGLNativeDisplayType)g_gbm_dev, &major,
             &minor, &n, attrib_ptr))
    {
       egl_report_error();
@@ -620,14 +613,14 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       goto error;
    }
 
-   if (!egl_create_surface((EGLNativeWindowType)drm->g_gbm_surface))
+   if (!egl_create_surface((EGLNativeWindowType)g_gbm_surface))
       goto error;
 
    glClear(GL_COLOR_BUFFER_BIT);
    egl_swap_buffers(NULL);
 
-   drm->g_bo = gbm_surface_lock_front_buffer(drm->g_gbm_surface);
-   fb = drm_fb_get_from_bo(drm, drm->g_bo);
+   g_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
+   fb = drm_fb_get_from_bo(g_bo);
 
    ret = drmModeSetCrtc(g_drm_fd,
          g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
