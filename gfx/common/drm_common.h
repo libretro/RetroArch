@@ -19,7 +19,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <xf86drm.h>
 #include <xf86drmMode.h>
+#include <poll.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,11 +31,15 @@ extern uint32_t g_connector_id;
 extern int g_drm_fd;
 extern uint32_t g_crtc_id;
 
+struct pollfd g_drm_fds;
+
 extern drmModeCrtc *g_orig_crtc;
 extern drmModeRes *g_drm_resources;
 extern drmModeConnector *g_drm_connector;
 extern drmModeEncoder *g_drm_encoder;
 extern drmModeModeInfo *g_drm_mode;
+
+extern drmEventContext g_drm_evctx;
 
 /* Restore the original CRTC. */
 void drm_restore_crtc(void);

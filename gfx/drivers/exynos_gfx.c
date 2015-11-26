@@ -109,18 +109,10 @@ struct exynos_page
   bool clear;     /* Set if page has to be cleared. */
 };
 
-struct exynos_fliphandler
-{
-  struct pollfd fds;
-  drmEventContext evctx;
-};
-
 struct exynos_data
 {
   char drmname[32];
   struct exynos_device *device;
-
-  struct exynos_fliphandler *fliphandler;
 
   /* G2D is used for scaling to framebuffer dimensions. */
   struct g2d_context *g2d;
@@ -219,20 +211,20 @@ static void exynos_page_flip_handler(int fd, unsigned frame, unsigned sec,
    page->base->cur_page = page;
 }
 
-static void exynos_wait_flip(struct exynos_fliphandler *fh)
+static void exynos_wait_flip(void)
 {
    const int timeout = -1;
 
-   fh->fds.revents = 0;
+   g_drm_fds.revents = 0;
 
-   if (poll(&fh->fds, 1, timeout) < 0)
+   if (poll(&g_drm_fds, 1, timeout) < 0)
       return;
 
-   if (fh->fds.revents & (POLLHUP | POLLERR))
+   if (g_drm_fds.revents & (POLLHUP | POLLERR))
       return;
 
-   if (fh->fds.revents & POLLIN)
-      drmHandleEvent(fh->fds.fd, &fh->evctx);
+   if (g_drm_fds.revents & POLLIN)
+      drmHandleEvent(g_drm_fds.fd, &g_drm_evctx);
 }
 
 static struct exynos_page *exynos_get_free_page(
@@ -550,7 +542,6 @@ static int exynos_open(struct exynos_data *pdata)
    int fd                                 = -1;
    char buf[32]                           = {0};
    struct exynos_drm *drm                 = NULL;
-   struct exynos_fliphandler *fliphandler = NULL;
    settings_t *settings                   = config_get_ptr();
    int devidx                             = exynos_get_device_index();
 
@@ -618,24 +609,14 @@ static int exynos_open(struct exynos_data *pdata)
       g_drm_encoder = NULL;
    }
 
-   fliphandler = (struct exynos_fliphandler*)calloc(1, sizeof(struct exynos_fliphandler));
-
-   if (!fliphandler)
-   {
-      RARCH_ERR("[video_exynos]: failed to allocate fliphandler\n");
-      goto fail;
-   }
-
    /* Setup the flip handler. */
-   fliphandler->fds.fd                  = fd;
-   fliphandler->fds.events              = POLLIN;
-   fliphandler->evctx.version           = DRM_EVENT_CONTEXT_VERSION;
-   fliphandler->evctx.page_flip_handler = exynos_page_flip_handler;
+   g_drm_fds.fd                         = fd;
+   g_drm_fds.events                     = POLLIN;
+   g_drm_evctx.version                  = DRM_EVENT_CONTEXT_VERSION;
+   g_drm_evctx.page_flip_handler        = exynos_page_flip_handler;
 
    strncpy(pdata->drmname, buf, sizeof(buf));
    g_drm_fd = fd;
-
-   pdata->fliphandler = fliphandler;
 
    RARCH_LOG("[video_exynos]: using DRM device \"%s\" with connector id %u.\n",
          pdata->drmname, g_drm_connector->connector_id);
@@ -643,7 +624,6 @@ static int exynos_open(struct exynos_data *pdata)
    return 0;
 
 fail:
-   free(fliphandler);
    drm_free();
    close(g_drm_fd);
 
@@ -653,8 +633,8 @@ fail:
 /* Counterpart to exynos_open. */
 static void exynos_close(struct exynos_data *pdata)
 {
-   free(pdata->fliphandler);
-   pdata->fliphandler = NULL;
+   memset(&g_drm_fds,     0, sizeof(struct pollfd));
+   memset(&g_drm_evctx,   0, sizeof(drmEventContext));
 
    memset(pdata->drmname, 0, sizeof(char) * 32);
 
@@ -906,7 +886,7 @@ static struct exynos_page *exynos_free_page(struct exynos_data *pdata)
       page = exynos_get_free_page(pdata->pages, pdata->num_pages);
 
       if (!page)
-         exynos_wait_flip(pdata->fliphandler);
+         exynos_wait_flip();
    }
 
    dst->bo[0] = page->bo->handle;
@@ -1075,7 +1055,7 @@ static int exynos_flip(struct exynos_data *pdata, struct exynos_page *page)
 {
    /* We don't queue multiple page flips. */
    if (pdata->pageflip_pending > 0)
-      exynos_wait_flip(pdata->fliphandler);
+      exynos_wait_flip();
 
    /* Issue a page flip at the next vblank interval. */
    if (drmModePageFlip(g_drm_fd, g_crtc_id, page->buf_id,
@@ -1091,7 +1071,7 @@ static int exynos_flip(struct exynos_data *pdata, struct exynos_page *page)
 
    /* On startup no frame is displayed. We therefore wait for the initial flip to finish. */
    if (!pdata->cur_page)
-      exynos_wait_flip(pdata->fliphandler);
+      exynos_wait_flip();
 
    return 0;
 }
@@ -1333,7 +1313,7 @@ static void exynos_gfx_free(void *data)
 
    /* Flush pages: One page remains, the one being displayed at this moment. */
    while (exynos_pages_used(pdata->pages, pdata->num_pages) > 1)
-      exynos_wait_flip(pdata->fliphandler);
+      exynos_wait_flip();
 
    exynos_free(pdata);
    exynos_deinit(pdata);

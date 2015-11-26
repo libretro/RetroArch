@@ -21,10 +21,14 @@ uint32_t g_crtc_id;
 
 drmModeCrtc *g_orig_crtc;
 
+struct pollfd g_drm_fds;
+
 drmModeRes *g_drm_resources;
 drmModeConnector *g_drm_connector;
 drmModeEncoder *g_drm_encoder;
 drmModeModeInfo *g_drm_mode;
+
+drmEventContext g_drm_evctx;
 
 /* Restore the original CRTC. */
 void drm_restore_crtc(void)

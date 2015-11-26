@@ -140,7 +140,7 @@ static void gfx_ctx_drm_egl_check_window(void *data, bool *quit,
 
 static bool waiting_for_flip;
 
-static void page_flip_handler(int fd, unsigned frame,
+static void drm_egl_flip_handler(int fd, unsigned frame,
       unsigned sec, unsigned usec, void *data)
 {
    static unsigned first_page_flip;
@@ -168,32 +168,25 @@ static void page_flip_handler(int fd, unsigned frame,
 static bool wait_flip(gfx_ctx_drm_egl_data_t *drm, bool block)
 {
    int timeout = 0;
-   struct pollfd fds = {0};
-   drmEventContext evctx   = {0};
 
    if (!waiting_for_flip)
       return false;
-
-   fds.fd                  = g_drm_fd;
-   fds.events              = POLLIN;
-   evctx.version           = DRM_EVENT_CONTEXT_VERSION;
-   evctx.page_flip_handler = page_flip_handler;
    
    if (block)
       timeout = -1;
 
    while (waiting_for_flip)
    {
-      fds.revents = 0;
+      g_drm_fds.revents = 0;
 
-      if (poll(&fds, 1, timeout) < 0)
+      if (poll(&g_drm_fds, 1, timeout) < 0)
          break;
 
-      if (fds.revents & (POLLHUP | POLLERR))
+      if (g_drm_fds.revents & (POLLHUP | POLLERR))
          break;
 
-      if (fds.revents & POLLIN)
-         drmHandleEvent(g_drm_fd, &evctx);
+      if (g_drm_fds.revents & POLLIN)
+         drmHandleEvent(g_drm_fd, &g_drm_evctx);
       else
          break;
    }
@@ -299,6 +292,9 @@ static void free_drm_resources(gfx_ctx_drm_egl_data_t *drm)
       gbm_device_destroy(drm->g_gbm_dev);
 
    drm_free();
+
+   memset(&g_drm_fds,     0, sizeof(struct pollfd));
+   memset(&g_drm_evctx,   0, sizeof(drmEventContext));
 
    if (g_drm_fd >= 0)
       retro_fclose(drm->g_drm);
@@ -483,6 +479,12 @@ nextgpu:
    dir_list_free(gpu_descriptors);
 
    gfx_ctx_data_set(drm);
+
+   /* Setup the flip handler. */
+   g_drm_fds.fd                         = g_drm_fd;
+   g_drm_fds.events                     = POLLIN;
+   g_drm_evctx.version                  = DRM_EVENT_CONTEXT_VERSION;
+   g_drm_evctx.page_flip_handler        = drm_egl_flip_handler;
 
    return true;
 
