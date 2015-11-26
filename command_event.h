@@ -175,6 +175,10 @@ enum event_command
    EVENT_CMD_COMMAND_INIT,
    /* Deinitialize command interface. */
    EVENT_CMD_COMMAND_DEINIT,
+   /* Initializes remote gamepad interface. */
+   EVENT_CMD_REMOTE_INIT,
+   /* Deinitializes remote gamepad interface. */
+   EVENT_CMD_REMOTE_DEINIT,
    /* Deinitializes drivers. */
    EVENT_CMD_DRIVERS_DEINIT,
    /* Initializes drivers. */
