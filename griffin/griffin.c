@@ -853,6 +853,10 @@ MENU
 #include "../command.c"
 #endif
 
+#ifdef HAVE_NETWORK_GAMEPAD
+#include "../remote.c"
+#endif
+
 #include "../command_event.c"
 
 #ifdef __cplusplus
