@@ -197,19 +197,6 @@ static int exynos_get_device_index(void)
    return index;
 }
 
-
-static void exynos_clean_up_drm(void)
-{
-   if (g_drm_encoder)
-      drmModeFreeEncoder(g_drm_encoder);
-   if (g_drm_connector)
-      drmModeFreeConnector(g_drm_connector);
-   if (g_drm_resources)
-      drmModeFreeResources(g_drm_resources);
-
-   close(g_drm_fd);
-}
-
 /* The main pageflip handler, which the DRM executes 
  * when it flips to the page.
  *
@@ -657,7 +644,8 @@ static int exynos_open(struct exynos_data *pdata)
 
 fail:
    free(fliphandler);
-   exynos_clean_up_drm();
+   drm_free();
+   close(g_drm_fd);
 
    return -1;
 }
@@ -670,7 +658,8 @@ static void exynos_close(struct exynos_data *pdata)
 
    memset(pdata->drmname, 0, sizeof(char) * 32);
 
-   exynos_clean_up_drm();
+   drm_free();
+   close(g_drm_fd);
    g_drm_fd   = -1;
 }
 

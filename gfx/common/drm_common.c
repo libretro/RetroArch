@@ -41,3 +41,14 @@ void drm_restore_crtc(void)
    drmModeFreeCrtc(g_orig_crtc);
    g_orig_crtc = NULL;
 }
+
+void drm_free(void)
+{
+   if (g_drm_encoder)
+      drmModeFreeEncoder(g_drm_encoder);
+   if (g_drm_connector)
+      drmModeFreeConnector(g_drm_connector);
+   if (g_drm_resources)
+      drmModeFreeResources(g_drm_resources);
+
+}

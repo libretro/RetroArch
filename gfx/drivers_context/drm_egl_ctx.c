@@ -298,14 +298,7 @@ static void free_drm_resources(gfx_ctx_drm_egl_data_t *drm)
    if (drm->g_gbm_dev)
       gbm_device_destroy(drm->g_gbm_dev);
 
-   if (g_drm_encoder)
-      drmModeFreeEncoder(g_drm_encoder);
-
-   if (g_drm_connector)
-      drmModeFreeConnector(g_drm_connector);
-
-   if (g_drm_resources)
-      drmModeFreeResources(g_drm_resources);
+   drm_free();
 
    if (g_drm_fd >= 0)
       retro_fclose(drm->g_drm);

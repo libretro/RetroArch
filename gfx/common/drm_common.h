@@ -38,6 +38,8 @@ extern drmModeModeInfo *g_drm_mode;
 /* Restore the original CRTC. */
 void drm_restore_crtc(void);
 
+void drm_free(void);
+
 #ifdef __cplusplus
 }
 #endif
