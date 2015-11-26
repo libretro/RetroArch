@@ -539,8 +539,6 @@ static int exynos_open(struct exynos_data *pdata)
    unsigned i;
    int fd                                 = -1;
    char buf[32]                           = {0};
-   struct exynos_drm *drm                 = NULL;
-   settings_t *settings                   = config_get_ptr();
    int devidx                             = exynos_get_device_index();
 
    if (pdata)
