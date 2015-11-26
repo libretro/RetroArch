@@ -420,6 +420,8 @@ void cb_generic_download(void *task_data, void *user_data, const char *err)
          if (!path_file_exists(shaderdir))
             if (!path_mkdir(shaderdir))
                goto finish;
+
+         dir_path = shaderdir;
          break;
       }
       default:
