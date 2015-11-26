@@ -334,7 +334,7 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
 
 static bool gfx_ctx_drm_egl_init(void *data)
 {
-   int i;
+   int fd, i;
    unsigned monitor_index;
    unsigned gpu_index                   = 0;
    const char *gpu                      = NULL;
@@ -346,7 +346,7 @@ static bool gfx_ctx_drm_egl_init(void *data)
    if (!drm)
       return false;
 
-   g_drm_fd   = -1;
+   fd   = -1;
    gpu_descriptors = dir_list_new("/dev/dri", NULL, false, false);
 
 nextgpu:
@@ -367,12 +367,12 @@ nextgpu:
       goto nextgpu;
    }
 
-   g_drm_fd = retro_get_fd(drm->g_drm);
+   fd = retro_get_fd(drm->g_drm);
 
-   g_drm_resources = drmModeGetResources(g_drm_fd);
+   g_drm_resources = drmModeGetResources(fd);
    if (!g_drm_resources)
    {
-      RARCH_WARN("[KMS/EGL]: Couldn't get device resources.\n");
+      RARCH_WARN("[DRM]: Couldn't get device resources.\n");
       goto nextgpu;
    }
 
@@ -384,7 +384,7 @@ nextgpu:
    for (i = 0; i < g_drm_resources->count_connectors; i++)
    {
       drmModeConnectorPtr conn = drmModeGetConnector(
-            g_drm_fd, g_drm_resources->connectors[i]);
+            fd, g_drm_resources->connectors[i]);
 
       if (conn)
       {
@@ -403,7 +403,7 @@ nextgpu:
    monitor_index = 0;
    for (i = 0; i < g_drm_resources->count_connectors; i++)
    {
-      g_drm_connector = drmModeGetConnector(g_drm_fd,
+      g_drm_connector = drmModeGetConnector(fd,
             g_drm_resources->connectors[i]);
 
       if (!g_drm_connector)
@@ -428,8 +428,7 @@ nextgpu:
 
    for (i = 0; i < g_drm_resources->count_encoders; i++)
    {
-      g_drm_encoder = drmModeGetEncoder(g_drm_fd,
-            g_drm_resources->encoders[i]);
+      g_drm_encoder = drmModeGetEncoder(fd, g_drm_resources->encoders[i]);
 
       if (!g_drm_encoder)
          continue;
@@ -457,7 +456,7 @@ nextgpu:
    }
 
    g_crtc_id        = g_drm_encoder->crtc_id;
-   g_orig_crtc      = drmModeGetCrtc(g_drm_fd, g_crtc_id);
+   g_orig_crtc      = drmModeGetCrtc(fd, g_crtc_id);
    if (!g_orig_crtc)
       RARCH_WARN("[KMS/EGL]: Cannot find original CRTC.\n");
 
@@ -468,7 +467,7 @@ nextgpu:
    drm->g_fb_width  = g_drm_connector->modes[0].hdisplay;
    drm->g_fb_height = g_drm_connector->modes[0].vdisplay;
 
-   drm->g_gbm_dev = gbm_create_device(g_drm_fd);
+   drm->g_gbm_dev = gbm_create_device(fd);
 
    if (!drm->g_gbm_dev)
    {
@@ -481,10 +480,12 @@ nextgpu:
    gfx_ctx_data_set(drm);
 
    /* Setup the flip handler. */
-   g_drm_fds.fd                         = g_drm_fd;
+   g_drm_fds.fd                         = fd;
    g_drm_fds.events                     = POLLIN;
    g_drm_evctx.version                  = DRM_EVENT_CONTEXT_VERSION;
    g_drm_evctx.page_flip_handler        = drm_egl_flip_handler;
+
+   g_drm_fd = fd;
 
    return true;
 
