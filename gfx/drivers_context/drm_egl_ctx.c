@@ -291,9 +291,6 @@ static void free_drm_resources(gfx_ctx_drm_egl_data_t *drm)
 
    drm_free();
 
-   memset(&g_drm_fds,     0, sizeof(struct pollfd));
-   memset(&g_drm_evctx,   0, sizeof(drmEventContext));
-
    if (g_drm_fd >= 0)
       retro_fclose(drm->g_drm);
 

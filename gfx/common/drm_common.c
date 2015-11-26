@@ -174,6 +174,9 @@ void drm_free(void)
    if (g_drm_resources)
       drmModeFreeResources(g_drm_resources);
 
+   memset(&g_drm_fds,     0, sizeof(struct pollfd));
+   memset(&g_drm_evctx,   0, sizeof(drmEventContext));
+
    g_drm_encoder      = NULL;
    g_drm_connector    = NULL;
    g_drm_resources    = NULL;

@@ -595,9 +595,6 @@ fail:
 /* Counterpart to exynos_open. */
 static void exynos_close(struct exynos_data *pdata)
 {
-   memset(&g_drm_fds,     0, sizeof(struct pollfd));
-   memset(&g_drm_evctx,   0, sizeof(drmEventContext));
-
    memset(pdata->drmname, 0, sizeof(char) * 32);
 
    drm_free();
