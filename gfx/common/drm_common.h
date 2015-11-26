@@ -26,8 +26,14 @@ extern "C" {
 #endif
 
 extern uint32_t g_connector_id;
-extern drmModeCrtc *g_orig_crtc;
 extern int g_drm_fd;
+extern uint32_t g_crtc_id;
+
+extern drmModeCrtc *g_orig_crtc;
+extern drmModeRes *g_drm_resources;
+extern drmModeConnector *g_drm_connector;
+extern drmModeEncoder *g_drm_encoder;
+extern drmModeModeInfo *g_drm_mode;
 
 /* Restore the original CRTC. */
 void drm_restore_crtc(void);

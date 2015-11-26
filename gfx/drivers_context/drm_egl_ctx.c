@@ -55,14 +55,8 @@
 typedef struct gfx_ctx_drm_egl_data
 {
    RFILE *g_drm;
-   uint32_t g_crtc_id;
    unsigned g_fb_width;
    unsigned g_fb_height;
-
-   drmModeModeInfo *g_drm_mode;
-   drmModeRes *g_resources;
-   drmModeConnector *g_connector;
-   drmModeEncoder *g_encoder;
 
    struct gbm_bo *g_bo;
    struct gbm_bo *g_next_bo;
@@ -225,7 +219,7 @@ static bool queue_flip(gfx_ctx_drm_egl_data_t *drm)
 
    fb = (struct drm_fb*)drm_fb_get_from_bo(drm, drm->g_next_bo);
 
-   if (drmModePageFlip(g_drm_fd, drm->g_crtc_id, fb->fb_id,
+   if (drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
          DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip) == 0)
       return true;
    
@@ -304,23 +298,23 @@ static void free_drm_resources(gfx_ctx_drm_egl_data_t *drm)
    if (drm->g_gbm_dev)
       gbm_device_destroy(drm->g_gbm_dev);
 
-   if (drm->g_encoder)
-      drmModeFreeEncoder(drm->g_encoder);
+   if (g_drm_encoder)
+      drmModeFreeEncoder(g_drm_encoder);
 
-   if (drm->g_connector)
-      drmModeFreeConnector(drm->g_connector);
+   if (g_drm_connector)
+      drmModeFreeConnector(g_drm_connector);
 
-   if (drm->g_resources)
-      drmModeFreeResources(drm->g_resources);
+   if (g_drm_resources)
+      drmModeFreeResources(g_drm_resources);
 
    if (g_drm_fd >= 0)
       retro_fclose(drm->g_drm);
 
    drm->g_gbm_surface = NULL;
    drm->g_gbm_dev     = NULL;
-   drm->g_encoder     = NULL;
-   drm->g_connector   = NULL;
-   drm->g_resources   = NULL;
+   g_drm_encoder      = NULL;
+   g_drm_connector    = NULL;
+   g_drm_resources    = NULL;
    g_drm_fd           = -1;
 }
 
@@ -338,8 +332,8 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
    drm_restore_crtc();
    free_drm_resources(drm);
 
-   drm->g_drm_mode     = NULL;
-   drm->g_crtc_id      = 0;
+   g_drm_mode          = NULL;
+   g_crtc_id           = 0;
    g_connector_id      = 0;
 
    drm->g_fb_width  = 0;
@@ -386,8 +380,8 @@ nextgpu:
 
    g_drm_fd = retro_get_fd(drm->g_drm);
 
-   drm->g_resources = drmModeGetResources(g_drm_fd);
-   if (!drm->g_resources)
+   g_drm_resources = drmModeGetResources(g_drm_fd);
+   if (!g_drm_resources)
    {
       RARCH_WARN("[KMS/EGL]: Couldn't get device resources.\n");
       goto nextgpu;
@@ -396,12 +390,12 @@ nextgpu:
    /* Enumerate all connectors. */
    monitor_index = 0;
    RARCH_LOG("[KMS/EGL]: Found %d connectors.\n",
-         drm->g_resources->count_connectors);
+         g_drm_resources->count_connectors);
 
-   for (i = 0; i < drm->g_resources->count_connectors; i++)
+   for (i = 0; i < g_drm_resources->count_connectors; i++)
    {
       drmModeConnectorPtr conn = drmModeGetConnector(
-            g_drm_fd, drm->g_resources->connectors[i]);
+            g_drm_fd, g_drm_resources->connectors[i]);
 
       if (conn)
       {
@@ -418,72 +412,72 @@ nextgpu:
    }
 
    monitor_index = 0;
-   for (i = 0; i < drm->g_resources->count_connectors; i++)
+   for (i = 0; i < g_drm_resources->count_connectors; i++)
    {
-      drm->g_connector = drmModeGetConnector(g_drm_fd,
-            drm->g_resources->connectors[i]);
+      g_drm_connector = drmModeGetConnector(g_drm_fd,
+            g_drm_resources->connectors[i]);
 
-      if (!drm->g_connector)
+      if (!g_drm_connector)
          continue;
-      if (drm->g_connector->connection == DRM_MODE_CONNECTED
-            && drm->g_connector->count_modes > 0)
+      if (g_drm_connector->connection == DRM_MODE_CONNECTED
+            && g_drm_connector->count_modes > 0)
       {
          monitor_index++;
          if (monitor_index == monitor)
             break;
       }
 
-      drmModeFreeConnector(drm->g_connector);
-      drm->g_connector = NULL;
+      drmModeFreeConnector(g_drm_connector);
+      g_drm_connector = NULL;
    }
 
-   if (!drm->g_connector)
+   if (!g_drm_connector)
    {
       RARCH_WARN("[KMS/EGL]: Couldn't get device connector.\n");
       goto nextgpu;
    }
 
-   for (i = 0; i < drm->g_resources->count_encoders; i++)
+   for (i = 0; i < g_drm_resources->count_encoders; i++)
    {
-      drm->g_encoder = drmModeGetEncoder(g_drm_fd,
-            drm->g_resources->encoders[i]);
+      g_drm_encoder = drmModeGetEncoder(g_drm_fd,
+            g_drm_resources->encoders[i]);
 
-      if (!drm->g_encoder)
+      if (!g_drm_encoder)
          continue;
-      if (drm->g_encoder->encoder_id == drm->g_connector->encoder_id)
+      if (g_drm_encoder->encoder_id == g_drm_connector->encoder_id)
          break;
 
-      drmModeFreeEncoder(drm->g_encoder);
-      drm->g_encoder = NULL;
+      drmModeFreeEncoder(g_drm_encoder);
+      g_drm_encoder = NULL;
    }
 
-   if (!drm->g_encoder)
+   if (!g_drm_encoder)
    {
       RARCH_WARN("[KMS/EGL]: Couldn't find DRM encoder.\n");
       goto nextgpu;
    }
 
-   for (i = 0; i < drm->g_connector->count_modes; i++)
+   for (i = 0; i < g_drm_connector->count_modes; i++)
    {
       RARCH_LOG("[KMS/EGL]: Mode %d: (%s) %d x %d, %u Hz\n",
             i,
-            drm->g_connector->modes[i].name,
-            drm->g_connector->modes[i].hdisplay,
-            drm->g_connector->modes[i].vdisplay,
-            drm->g_connector->modes[i].vrefresh);
+            g_drm_connector->modes[i].name,
+            g_drm_connector->modes[i].hdisplay,
+            g_drm_connector->modes[i].vdisplay,
+            g_drm_connector->modes[i].vrefresh);
    }
 
-   drm->g_crtc_id   = drm->g_encoder->crtc_id;
-   g_orig_crtc      = drmModeGetCrtc(g_drm_fd, drm->g_crtc_id);
+   g_crtc_id        = g_drm_encoder->crtc_id;
+   g_orig_crtc      = drmModeGetCrtc(g_drm_fd, g_crtc_id);
    if (!g_orig_crtc)
       RARCH_WARN("[KMS/EGL]: Cannot find original CRTC.\n");
 
-   g_connector_id   = drm->g_connector->connector_id;
+   g_connector_id   = g_drm_connector->connector_id;
 
    /* First mode is assumed to be the "optimal" 
     * one for get_video_size() purposes. */
-   drm->g_fb_width  = drm->g_connector->modes[0].hdisplay;
-   drm->g_fb_height = drm->g_connector->modes[0].vdisplay;
+   drm->g_fb_width  = g_drm_connector->modes[0].hdisplay;
+   drm->g_fb_height = g_drm_connector->modes[0].vdisplay;
 
    drm->g_gbm_dev = gbm_create_device(g_drm_fd);
 
@@ -654,7 +648,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
     * If not fullscreen, we get desired windowed size, 
     * which is not appropriate. */
    if ((width == 0 && height == 0) || !fullscreen)
-      drm->g_drm_mode = &drm->g_connector->modes[0];
+      g_drm_mode = &g_drm_connector->modes[0];
    else
    {
       /* Try to match settings->video.refresh_rate as closely as possible.
@@ -664,32 +658,32 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       float minimum_fps_diff = 0.0f;
 
       /* Find best match. */
-      for (i = 0; i < drm->g_connector->count_modes; i++)
+      for (i = 0; i < g_drm_connector->count_modes; i++)
       {
          float diff;
-         if (width != drm->g_connector->modes[i].hdisplay || 
-               height != drm->g_connector->modes[i].vdisplay)
+         if (width != g_drm_connector->modes[i].hdisplay || 
+               height != g_drm_connector->modes[i].vdisplay)
             continue;
 
-         diff = fabsf(refresh_mod * drm->g_connector->modes[i].vrefresh
+         diff = fabsf(refresh_mod * g_drm_connector->modes[i].vrefresh
                - settings->video.refresh_rate);
 
-         if (!drm->g_drm_mode || diff < minimum_fps_diff)
+         if (!g_drm_mode || diff < minimum_fps_diff)
          {
-            drm->g_drm_mode = &drm->g_connector->modes[i];
+            g_drm_mode = &g_drm_connector->modes[i];
             minimum_fps_diff = diff;
          }
       }
    }
 
-   if (!drm->g_drm_mode)
+   if (!g_drm_mode)
    {
       RARCH_ERR("[KMS/EGL]: Did not find suitable video mode for %u x %u.\n", width, height);
       goto error;
    }
 
-   drm->g_fb_width  = drm->g_drm_mode->hdisplay;
-   drm->g_fb_height = drm->g_drm_mode->vdisplay;
+   drm->g_fb_width  = g_drm_mode->hdisplay;
+   drm->g_fb_height = g_drm_mode->vdisplay;
 
    /* Create GBM surface. */
    drm->g_gbm_surface = gbm_surface_create(
@@ -732,7 +726,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    fb = drm_fb_get_from_bo(drm, drm->g_bo);
 
    ret = drmModeSetCrtc(g_drm_fd,
-         drm->g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, drm->g_drm_mode);
+         g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
    if (ret < 0)
       goto error;
 

@@ -16,8 +16,15 @@
 #include "drm_common.h"
 
 uint32_t g_connector_id;
-drmModeCrtc *g_orig_crtc;
 int g_drm_fd;
+uint32_t g_crtc_id;
+
+drmModeCrtc *g_orig_crtc;
+
+drmModeRes *g_drm_resources;
+drmModeConnector *g_drm_connector;
+drmModeEncoder *g_drm_encoder;
+drmModeModeInfo *g_drm_mode;
 
 /* Restore the original CRTC. */
 void drm_restore_crtc(void)
