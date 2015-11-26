@@ -1626,6 +1626,18 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, stdin_cmd_enable, "stdin_cmd_enable");
 #endif
 
+#ifdef HAVE_NETWORK_GAMEPAD
+   
+   for (int i=0; i < MAX_USERS; i++)
+   {
+      char tmp[64] = {0};
+      snprintf(tmp, sizeof(tmp), "network_remote_enable_p%u", i + 1);
+      config_get_bool(conf, tmp, &settings->network_remote_enable[i]);
+   }
+   CONFIG_GET_INT_BASE(conf, settings, network_remote_base_port, "network_remote_base_port");
+   
+#endif
+
    CONFIG_GET_BOOL_BASE(conf, settings, debug_panel_enable, "debug_panel_enable");
 
    config_get_path(conf, "content_history_dir", settings->content_history_directory,
@@ -2767,6 +2779,17 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, settings->input.analog_dpad_mode[i]);
    }
 
+#ifdef HAVE_NETWORK_GAMEPAD
+
+   for (int i=0; i < MAX_USERS; i++)
+   {
+      char tmp[64] = {0};
+      snprintf(tmp, sizeof(tmp), "network_remote_enable_p%u", i + 1);
+      config_set_bool(conf, tmp, settings->network_remote_enable[i]);
+   }
+   config_set_int(conf, "network_remote_base_port", settings->network_remote_base_port);
+
+#endif
    for (i = 0; i < MAX_USERS; i++)
       save_keybinds_user(conf, i);
 
