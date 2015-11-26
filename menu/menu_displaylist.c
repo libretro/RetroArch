@@ -588,7 +588,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          _network_command_supp ? menu_hash_to_str(MENU_LABEL_VALUE_YES) : menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_entries_push(info->list, feat_str, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-         
+
    snprintf(feat_str, sizeof(feat_str),
          "%s : %s",
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT),
