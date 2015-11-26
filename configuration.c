@@ -2714,6 +2714,13 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "history_list_enable",
          settings->history_list_enable);
 
+   config_set_bool(conf, "network_cmd_enable",
+         settings->network_cmd_enable);
+   config_set_bool(conf, "stdin_cmd_enable",
+         settings->stdin_cmd_enable);
+   config_set_int(conf, "network_cmd_port",
+         settings->network_cmd_port);
+
    config_set_float(conf, "fastforward_ratio", settings->fastforward_ratio);
    config_set_float(conf, "slowmotion_ratio", settings->slowmotion_ratio);
 
