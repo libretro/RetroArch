@@ -484,6 +484,10 @@ ifeq ($(HAVE_COMMAND), 1)
    OBJ += command.o
 endif
 
+ifeq ($(HAVE_NETWORK_GAMEPAD), 1)
+   OBJ += remote.o
+endif
+
 #Input
 
 ifeq ($(HAVE_WAYLAND), 1)

@@ -49,6 +49,10 @@
 #include "command.h"
 #endif
 
+#ifdef HAVE_NETWORK_GAMEPAD
+#include "remote.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -258,6 +262,9 @@ typedef struct driver
 
 #ifdef HAVE_COMMAND
    rarch_cmd_t *command;
+#endif
+#ifdef HAVE_NETWORK_GAMEPAD
+   rarch_remote_t *remote;
 #endif
    bool block_hotkey;
    bool block_libretro_input;
