@@ -43,7 +43,7 @@ struct rarch_remote
 {
 
 #if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
-   int net_fd;
+   int net_fd[MAX_USERS];
 #endif
 
    bool state[RARCH_BIND_LIST_END];
@@ -56,6 +56,8 @@ static bool remote_init_network(rarch_remote_t *handle, uint16_t port, unsigned 
    char port_buf[16]     = {0};
    struct addrinfo *res  = NULL;
    int yes               = 1;
+
+   port = port + user;
 
    if (!network_init())
       return false;
@@ -76,17 +78,17 @@ static bool remote_init_network(rarch_remote_t *handle, uint16_t port, unsigned 
    if (getaddrinfo_retro(NULL, port_buf, &hints, &res) < 0)
       goto error;
 
-   handle->net_fd = socket(res->ai_family,
+   handle->net_fd[user] = socket(res->ai_family,
          res->ai_socktype, res->ai_protocol);
-   if (handle->net_fd < 0)
+   if (handle->net_fd[user] < 0)
       goto error;
 
-   if (!socket_nonblock(handle->net_fd))
+   if (!socket_nonblock(handle->net_fd[user]))
       goto error;
 
-   setsockopt(handle->net_fd, SOL_SOCKET,
+   setsockopt(handle->net_fd[user], SOL_SOCKET,
          SO_REUSEADDR, (const char*)&yes, sizeof(int));
-   if (bind(handle->net_fd, res->ai_addr, res->ai_addrlen) < 0)
+   if (bind(handle->net_fd[user], res->ai_addr, res->ai_addrlen) < 0)
    {
       RARCH_ERR("Failed to bind socket.\n");
       goto error;
@@ -102,18 +104,24 @@ error:
 }
 #endif
 
-rarch_remote_t *rarch_remote_new(uint16_t port, unsigned user)
+rarch_remote_t *rarch_remote_new(uint16_t port)
 {
    rarch_remote_t *handle = (rarch_remote_t*)calloc(1, sizeof(*handle));
+   settings_t *settings = config_get_ptr();
    if (!handle)
       return NULL;
 
    (void)port;
 
 #if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
-   handle->net_fd = -1;
-   if (!remote_init_network(handle, port, user))
-      goto error;
+   for(int user = 0; user < MAX_USERS; user ++)
+   {
+      handle->net_fd[user] = -1;
+      if(settings->network_remote_enable_user[user])
+         if (!remote_init_network(handle, port, user))
+            goto error;
+   }
+
 #endif
 
    return handle;
@@ -128,8 +136,11 @@ error:
 void rarch_remote_free(rarch_remote_t *handle)
 {
 #if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
-   if (handle && handle->net_fd >= 0)
-      socket_close(handle->net_fd);
+   for(int user = 0; user < MAX_USERS; user ++)
+   {
+      socket_close(handle->net_fd[user]);
+   }
+
 #endif
 
    free(handle);
