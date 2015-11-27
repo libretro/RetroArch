@@ -359,9 +359,22 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             strlcpy(global->path.fullpath, fullpath, sizeof(global->path.fullpath));
          }
          break;
+      case RARCH_MAIN_CTL_CHECK_IDLE_STATE:
+         {
+            event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
+            bool focused = check_focus(settings);
+
+            check_pause(settings, focused,
+                  cmd->pause_pressed, cmd->frameadvance_pressed);
+
+            if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_PAUSE_STATE, cmd))
+               return false;
+            if (!focused)
+               return false;
+            break;
+         }
       case RARCH_MAIN_CTL_CHECK_STATE:
          {
-            bool focused              = false;
             event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
 
             if (!cmd || main_is_idle)
@@ -392,15 +405,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
                break;
             }
 #endif
-
-            focused = check_focus(settings);
-
-            check_pause(settings, focused,
-                  cmd->pause_pressed, cmd->frameadvance_pressed);
-
-            if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_PAUSE_STATE, cmd))
-               return false;
-            if (!focused)
+            if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_IDLE_STATE, data))
                return false;
 
             check_fast_forward_button(driver,
