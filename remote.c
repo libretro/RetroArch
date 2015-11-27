@@ -49,7 +49,20 @@ struct rarch_remote
    bool state[RARCH_BIND_LIST_END];
 };
 
-uint16_t state[MAX_USERS];
+typedef struct input_remote_state
+{
+   /* This is a bitmask of (1 << key_bind_id). */
+   uint64_t buttons[MAX_USERS];
+   /* Left X, Left Y, Right X, Right Y */
+   int16_t analog[4][MAX_USERS]; 
+
+} input_remote_state_t;
+
+static input_remote_state_t remote_st_ptr;
+static input_remote_state_t *input_remote_get_state_ptr(void)
+{
+   return &remote_st_ptr;
+}
 
 #if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
 static bool remote_init_network(rarch_remote_t *handle, uint16_t port, unsigned user)
@@ -149,26 +162,57 @@ void rarch_remote_free(rarch_remote_t *handle)
    free(handle);
 }
 
-void rarch_remote_set(rarch_remote_t *handle, unsigned id)
-{
-   if (id < RARCH_BIND_LIST_END)
-      handle->state[id] = true;
-}
-
-bool rarch_remote_get(rarch_remote_t *handle, unsigned id)
-{
-   return id < RARCH_BIND_LIST_END && handle->state[id];
-}
-
 static void parse_packet(char *buffer, unsigned size, unsigned user)
 {
+   input_remote_state_t *ol_state  = input_remote_get_state_ptr();
    /* todo implement parsing of input_state from the packet */
+   ol_state->buttons[user] = atoi(buffer);
+}
 
+void input_state_remote(int16_t *ret,
+      unsigned port, unsigned device, unsigned idx,
+      unsigned id)
+{
+   input_remote_state_t *ol_state  = input_remote_get_state_ptr();
+
+   if (!ol_state)
+      return;
+
+   switch (device)
+   {
+      case RETRO_DEVICE_JOYPAD:
+         if (input_remote_key_pressed(id, port))
+            *ret |= 1;
+         break;
+      case RETRO_DEVICE_ANALOG:
+         {
+            unsigned base = 0;
+
+            if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+               base = 2;
+            if (id == RETRO_DEVICE_ID_ANALOG_Y)
+               base += 1;
+            if (ol_state && ol_state->analog[base][port])
+               *ret = ol_state->analog[base][port];
+         }
+         break;
+   }
+}
+
+bool input_remote_key_pressed(int key, unsigned port)
+{
+   input_remote_state_t *ol_state  = input_remote_get_state_ptr();
+
+   if (!ol_state)
+      return false;
+
+   return (ol_state->buttons[port] & (UINT64_C(1) << key));
 }
 
 void rarch_remote_poll(rarch_remote_t *handle)
 {
    settings_t *settings = config_get_ptr();
+   input_remote_state_t *ol_state  = input_remote_get_state_ptr();
    
    for(int user=0; user < settings->input.max_users; user++)
    {
@@ -182,14 +226,13 @@ void rarch_remote_poll(rarch_remote_t *handle)
          FD_ZERO(&fds);
          FD_SET(handle->net_fd[user], &fds);
 
-         char buf[1024];
+         char buf[8];
          ssize_t ret = recvfrom(handle->net_fd[user], buf,
             sizeof(buf) - 1, 0, NULL, NULL);
          if (ret > 0)
             parse_packet(buf, sizeof(buf), user);
+         else
+            ol_state->buttons[user] = 0;
       }
    }
 }
-
-
-
