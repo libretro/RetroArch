@@ -662,8 +662,8 @@ void input_poll(void)
 #endif
 
 #ifdef HAVE_NETWORK_GAMEPAD
-   /*if (driver->remote)
-      rarch_remote_poll(driver->remote);*/
+   if (driver->remote)
+      rarch_remote_poll(driver->remote);
 #endif
 }
 
