@@ -37,7 +37,7 @@
 #include "verbosity.h"
 
 #define DEFAULT_NETWORK_GAMEPAD_PORT 55400
-#define STDIN_BUF_SIZE 4096
+#define UDP_FRAME_PACKETS 16
 
 struct rarch_remote
 {
@@ -48,6 +48,8 @@ struct rarch_remote
 
    bool state[RARCH_BIND_LIST_END];
 };
+
+uint16_t state[MAX_USERS];
 
 #if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
 static bool remote_init_network(rarch_remote_t *handle, uint16_t port, unsigned user)
@@ -156,6 +158,37 @@ void rarch_remote_set(rarch_remote_t *handle, unsigned id)
 bool rarch_remote_get(rarch_remote_t *handle, unsigned id)
 {
    return id < RARCH_BIND_LIST_END && handle->state[id];
+}
+
+static void parse_packet(char *buffer, unsigned size, unsigned user)
+{
+   /* todo implement parsing of input_state from the packet */
+
+}
+
+void rarch_remote_poll(rarch_remote_t *handle)
+{
+   settings_t *settings = config_get_ptr();
+   
+   for(int user=0; user < settings->input.max_users; user++)
+   {
+      if (settings->network_remote_enable_user[user])
+      {
+         
+         fd_set fds;
+         struct timeval tmp_tv = {0};
+         if (handle->net_fd[user] < 0)
+            return;
+         FD_ZERO(&fds);
+         FD_SET(handle->net_fd[user], &fds);
+
+         char buf[1024];
+         ssize_t ret = recvfrom(handle->net_fd[user], buf,
+            sizeof(buf) - 1, 0, NULL, NULL);
+         if (ret > 0)
+            parse_packet(buf, sizeof(buf), user);
+      }
+   }
 }
 
 
