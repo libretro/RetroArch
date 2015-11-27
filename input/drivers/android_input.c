@@ -356,15 +356,6 @@ static void engine_handle_cmd(void)
          android_app->activityState = cmd;
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
-
-         if (!system->shutdown)
-         {
-            bool boolean = true;
-            RARCH_LOG("Pausing RetroArch.\n");
-
-            rarch_main_ctl(RARCH_MAIN_CTL_SET_PAUSED, &boolean);
-            rarch_main_ctl(RARCH_MAIN_CTL_SET_IDLE,   &boolean);
-         }
          break;
 
       case APP_CMD_STOP:
@@ -381,10 +372,6 @@ static void engine_handle_cmd(void)
 
          /* The window is being hidden or closed, clean it up. */
          /* terminate display/EGL context here */
-
-#if 0
-         RARCH_WARN("Window is terminated outside PAUSED state.\n");
-#endif
 
          android_app->window = NULL;
          scond_broadcast(android_app->cond);
