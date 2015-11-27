@@ -516,6 +516,10 @@ int16_t input_state(unsigned port, unsigned device,
 #ifdef HAVE_OVERLAY
       input_state_overlay(&res, port, device, idx, id);
 #endif
+
+#ifdef HAVE_NETWORK_GAMEPAD
+      input_state_remote(&res, port, device, idx, id);
+#endif
    }
 
    /* Don't allow turbo for D-pad. */
