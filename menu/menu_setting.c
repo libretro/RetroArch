@@ -6299,15 +6299,18 @@ static bool setting_append_list_netplay_options(
 
    for(int user = 0; user < settings->input.max_users; user++)
    {
-      char s[64];
-      snprintf(s, sizeof(s), "User %d Remote Enable", user + 1);
-      RARCH_LOG("s %s\n",s);
+      char s1[64];
+      snprintf(s1, sizeof(s1), "%s_user_p%d", menu_hash_to_str(MENU_LABEL_NETWORK_REMOTE_ENABLE), user + 1);
+      char s2[64];
+      snprintf(s2, sizeof(s2), "User %d Remote Enable", user + 1);
+
+
       CONFIG_BOOL(
             list, list_info,
             &settings->network_remote_enable_user[user],
             /* todo: figure out this value, it's working fine but I don't think this is correct */
-            menu_hash_to_str(MENU_LABEL_NETWORK_REMOTE_ENABLE) + user + 1,
-            strdup(s),
+            strdup(s1),
+            strdup(s2),
             "", /* todo: add default */
             menu_hash_to_str(MENU_VALUE_OFF),
             menu_hash_to_str(MENU_VALUE_ON),
