@@ -36,9 +36,11 @@ void rarch_remote_free(rarch_remote_t *handle);
 
 void rarch_remote_poll(rarch_remote_t *handle);
 
-void rarch_remote_set(rarch_remote_t *handle, unsigned id);
+bool input_remote_key_pressed(int key, unsigned port);
 
-bool rarch_remote_get(rarch_remote_t *handle, unsigned id);
+void input_state_remote(int16_t *ret,
+      unsigned port, unsigned device, unsigned idx,
+      unsigned id);
 
 #ifdef __cplusplus
 }
