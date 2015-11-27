@@ -801,7 +801,8 @@ endif
 
 
 ifeq ($(HAVE_ZLIB), 1)
-   OBJ += libretro-common/file/file_extract.o
+   OBJ += libretro-common/file/file_extract.o \
+          tasks/task_decompress.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
 	HAVE_RPNG = 1

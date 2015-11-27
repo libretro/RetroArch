@@ -144,6 +144,13 @@ int detect_ps1_game(const char *track_path, char *game_id);
 
 int detect_psp_game(const char *track_path, char *game_id);
 
+typedef struct {
+    char *source_file;
+} decompress_task_data_t;
+
+bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
+      const char *valid_ext, rarch_task_callback_t cb, void *user_data);
+
 #ifdef __cplusplus
 }
 #endif
