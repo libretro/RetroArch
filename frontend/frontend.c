@@ -322,13 +322,18 @@ int rarch_main(int argc, char *argv[], void *data)
    }
 
 #ifndef HAVE_MAIN
-   do{
+   do
+   {
+      bool sleeping     = false;
       unsigned sleep_ms = 0;
       ret = rarch_main_iterate(&sleep_ms);
 
       if (ret == 1 && sleep_ms > 0)
+      {
+         sleeping = true;
          retro_sleep(sleep_ms);
-      rarch_main_data_iterate();
+      }
+      rarch_main_data_iterate(sleeping);
    }while(ret != -1);
 
    main_exit(args);

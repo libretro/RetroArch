@@ -16,6 +16,7 @@
 #ifndef __RETROARCH_DATA_RUNLOOP_H
 #define __RETROARCH_DATA_RUNLOOP_H
 
+#include <boolean.h>
 #include <retro_miscellaneous.h>
 
 #ifdef __cplusplus
