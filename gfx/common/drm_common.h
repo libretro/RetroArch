@@ -33,7 +33,7 @@ extern uint32_t g_connector_id;
 extern int g_drm_fd;
 extern uint32_t g_crtc_id;
 
-struct pollfd g_drm_fds;
+extern struct pollfd g_drm_fds;
 
 extern drmModeConnector *g_drm_connector;
 extern drmModeModeInfo *g_drm_mode;

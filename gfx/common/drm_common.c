@@ -71,7 +71,7 @@ bool drm_get_connector(int fd)
 
    RARCH_LOG("[DRM]: Found %d connectors.\n", g_drm_resources->count_connectors);
 
-   for (i = 0; i < g_drm_resources->count_connectors; i++)
+   for (i = 0; (int)i < g_drm_resources->count_connectors; i++)
    {
       drmModeConnectorPtr conn = drmModeGetConnector(
             fd, g_drm_resources->connectors[i]);
@@ -92,7 +92,7 @@ bool drm_get_connector(int fd)
 
    monitor_index = 0;
 
-   for (i = 0; i < g_drm_resources->count_connectors; i++)
+   for (i = 0; (int)i < g_drm_resources->count_connectors; i++)
    {
       g_drm_connector = drmModeGetConnector(fd,
             g_drm_resources->connectors[i]);
@@ -123,7 +123,7 @@ bool drm_get_encoder(int fd)
 {
    unsigned i;
 
-   for (i = 0; i < g_drm_resources->count_encoders; i++)
+   for (i = 0; (int)i < g_drm_resources->count_encoders; i++)
    {
       g_drm_encoder = drmModeGetEncoder(fd, g_drm_resources->encoders[i]);
 
@@ -143,7 +143,7 @@ bool drm_get_encoder(int fd)
       return false;
    }
 
-   for (i = 0; i < g_drm_connector->count_modes; i++)
+   for (i = 0; (int)i < g_drm_connector->count_modes; i++)
    {
       RARCH_LOG("[DRM]: Mode %d: (%s) %d x %d, %u Hz\n",
             i,
