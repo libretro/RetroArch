@@ -21,6 +21,8 @@
 #include <stdint.h>
 #include <sys/cdefs.h>
 
+#include <boolean.h>
+
 typedef enum
 {
    CPU_FAMILY_UNKNOWN = 0,
@@ -82,6 +84,7 @@ struct android_app
    int msgread;
    int msgwrite;
    int running;
+   bool unfocused;
    unsigned accelerometer_event_rate;
    const ASensor* accelerometerSensor;
    uint64_t sensor_state_mask;

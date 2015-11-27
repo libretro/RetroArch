@@ -393,6 +393,10 @@ static void engine_handle_cmd(void)
                      RETRO_SENSOR_ACCELEROMETER_ENABLE,
                      android_app->accelerometer_event_rate);
          }
+         slock_lock(android_app->mutex);
+         android_app->unfocused = false;
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
          break;
       case APP_CMD_LOST_FOCUS:
          {
@@ -410,6 +414,10 @@ static void engine_handle_cmd(void)
                      RETRO_SENSOR_ACCELEROMETER_DISABLE,
                      android_app->accelerometer_event_rate);
          }
+         slock_lock(android_app->mutex);
+         android_app->unfocused = true;
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
          break;
 
       case APP_CMD_DESTROY:

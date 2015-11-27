@@ -176,8 +176,11 @@ static bool android_gfx_ctx_bind_api(void *data,
 
 static bool android_gfx_ctx_has_focus(void *data)
 {
-   (void)data;
-   return true;
+   struct android_app *android_app = (struct android_app*)g_android;
+   
+   if (!android_app)
+      return true;
+   return (android_app->unfocused == true ) ? false : true;
 }
 
 static bool android_gfx_ctx_suppress_screensaver(void *data, bool enable)
