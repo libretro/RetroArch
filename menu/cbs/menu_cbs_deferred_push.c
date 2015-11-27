@@ -331,39 +331,35 @@ finish:
    }
 }
 
-#ifdef HAVE_ZLIB
-static int zlib_extract_core_callback(const char *name, const char *valid_exts,
-      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
-      uint32_t crc32, void *userdata)
+static void cb_decompressed(void *task_data, void *user_data, const char *err)
 {
-   char path[PATH_MAX_LENGTH];
+   decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
+   unsigned type_hash = (uintptr_t)user_data;
 
-   /* Make directory */
-   fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
-   path_basedir(path);
+   if (dec && !err)
+   {
+      char msg[PATH_MAX_LENGTH];
+      if (type_hash == CB_CORE_UPDATER_DOWNLOAD)
+         event_command(EVENT_CMD_CORE_INFO_INIT);
 
-   if (!path_mkdir(path))
-      goto error;
+      snprintf(msg, sizeof(msg), "%s extracted.", path_basename(dec->source_file));
+      rarch_main_msg_queue_push(msg, 1, 90, true);
+   }
 
-   /* Ignore directories. */
-   if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
-      return 1;
+   if (err)
+      RARCH_ERR("%s", err);
 
-   fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
+   if (dec)
+   {
+      if (path_file_exists(dec->source_file))
+         remove(dec->source_file);
 
-   RARCH_LOG("path is: %s, CRC32: 0x%x\n", path, crc32);
 
-   if (!zlib_perform_mode(path, valid_exts,
-            cdata, cmode, csize, size, crc32, userdata))
-      goto error;
 
-   return 1;
-
-error:
-   RARCH_ERR("Failed to deflate to: %s.\n", path);
-   return 0;
+      free(dec->source_file);
+      free(dec);
+   }
 }
-#endif
 
 /* expects http_transfer_t*, menu_file_transfer_t* */
 void cb_generic_download(void *task_data, void *user_data, const char *err)
@@ -445,7 +441,6 @@ void cb_generic_download(void *task_data, void *user_data, const char *err)
    rarch_main_msg_queue_push(msg, 1, 90, true);
 
 #ifdef HAVE_ZLIB
-   /* TODO: this should generate a new task instead of blocking */
    file_ext = path_get_extension(output_path);
 
    if (!settings->network.buildbot_auto_extract_archive)
@@ -453,17 +448,18 @@ void cb_generic_download(void *task_data, void *user_data, const char *err)
 
    if (!strcasecmp(file_ext, "zip"))
    {
-      if (!zlib_parse_file(output_path, NULL, zlib_extract_core_callback,
-               (void*)dir_path))
-         RARCH_LOG("%s\n", msg_hash_to_str(MSG_COULD_NOT_PROCESS_ZIP_FILE));
+      snprintf(msg, sizeof(msg), "Decompressing %s...",
+         path_basename(output_path));
 
-      if (path_file_exists(output_path))
-         remove(output_path);
+      rarch_main_msg_queue_push(msg, 1, 90, true);
+
+      rarch_task_push_decompress(output_path, dir_path, NULL,
+            cb_decompressed, (void*)(uintptr_t)CB_CORE_UPDATER_DOWNLOAD);
    }
-#endif
-
+#else
    if (transf->type_hash == CB_CORE_UPDATER_DOWNLOAD)
       event_command(EVENT_CMD_CORE_INFO_INIT);
+#endif
 
 finish:
    if (err)
