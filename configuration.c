@@ -1628,7 +1628,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 
 #ifdef HAVE_NETWORK_GAMEPAD
    CONFIG_GET_BOOL_BASE(conf, settings, network_remote_enable, "network_remote_enable");
-   for (int i=0; i < MAX_USERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       char tmp[64] = {0};
       snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
@@ -2780,8 +2780,7 @@ bool config_save_file(const char *path)
    }
 
 #ifdef HAVE_NETWORK_GAMEPAD
-
-   for (int i=0; i < MAX_USERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       char tmp[64] = {0};
       snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);

@@ -6115,6 +6115,7 @@ static bool setting_append_list_netplay_options(
       const char *parent_group)
 {
 #ifdef HAVE_NETPLAY
+   unsigned user;
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
@@ -6297,11 +6298,11 @@ static bool setting_append_list_netplay_options(
          menu_settings_list_current_add_range(list, list_info, 1, 99999, 1, true, true);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   for(int user = 0; user < settings->input.max_users; user++)
+   for(user = 0; user < settings->input.max_users; user++)
    {
-      char s1[64];
+      char s1[64], s2[64];
+
       snprintf(s1, sizeof(s1), "%s_user_p%d", menu_hash_to_str(MENU_LABEL_NETWORK_REMOTE_ENABLE), user + 1);
-      char s2[64];
       snprintf(s2, sizeof(s2), "User %d Remote Enable", user + 1);
 
 
