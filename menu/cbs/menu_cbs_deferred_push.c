@@ -299,11 +299,14 @@ void cb_net_generic(void *task_data, void *user_data, const char *err)
    menu_handle_t *menu    = menu_driver_get_ptr();
    http_transfer_data_t *data = (http_transfer_data_t*)task_data;
 
-   if (!menu || !data || err)
-      goto finish;
-
    if (core_buf)
       free(core_buf);
+
+   core_buf = NULL;
+   core_len = 0;
+
+   if (!menu || !data || err)
+      goto finish;
 
    core_buf = (char*)malloc((data->len+1) * sizeof(char));
 
@@ -314,9 +317,9 @@ void cb_net_generic(void *task_data, void *user_data, const char *err)
    core_buf[data->len] = '\0';
    core_len      = data->len;
 
+finish:
    menu_entries_unset_refresh(true);
 
-finish:
    if (err)
       RARCH_ERR("Download failed: %s\n", err);
 
