@@ -938,7 +938,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
       }
 
       if (!input && settings->menu.pause_libretro)
-         return 1;
+         ret = 1;
       goto end;
    }
 #endif
