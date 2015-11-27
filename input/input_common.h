@@ -40,7 +40,13 @@ struct input_bind_map
 
 extern const struct input_bind_map input_config_bind_map[];
 
-const char *input_bind_map_get_base(const void *data);
+const void *input_bind_map_get(unsigned i);
+
+const char *input_bind_map_get_base(unsigned i);
+
+unsigned input_bind_map_get_meta(unsigned i);
+
+const char *input_bind_map_get_desc(unsigned i);
 
 /**
  * input_translate_coord_viewport:

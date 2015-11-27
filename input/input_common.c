@@ -116,12 +116,36 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
 #endif
 };
 
-const char *input_bind_map_get_base(const void *data)
+const void *input_bind_map_get(unsigned i)
 {
-   const struct input_bind_map* keybind = (const struct input_bind_map*)data;
+   const struct input_bind_map* keybind = (const struct input_bind_map*)&input_config_bind_map[i];
+   if (!keybind)
+      return NULL;
+   return keybind;
+}
+
+unsigned input_bind_map_get_meta(unsigned i)
+{
+   const struct input_bind_map* keybind = (const struct input_bind_map*)input_bind_map_get(i);
+   if (!keybind)
+      return 0;
+   return keybind->meta;
+}
+
+const char *input_bind_map_get_base(unsigned i)
+{
+   const struct input_bind_map* keybind = (const struct input_bind_map*)input_bind_map_get(i);
    if (!keybind)
       return NULL;
    return keybind->base;
+}
+
+const char *input_bind_map_get_desc(unsigned i)
+{
+   const struct input_bind_map* keybind = (const struct input_bind_map*)input_bind_map_get(i);
+   if (!keybind)
+      return NULL;
+   return keybind->desc;
 }
 
 /**

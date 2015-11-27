@@ -3161,10 +3161,8 @@ static bool setting_append_list_input_player_options(
       char label[PATH_MAX_LENGTH];
       char name[PATH_MAX_LENGTH];
       bool do_add = true;
-      const struct input_bind_map* keybind = 
-         (const struct input_bind_map*)&input_config_bind_map[i];
 
-      if (!keybind || keybind->meta)
+      if (!input_bind_map_get_meta(i))
          continue;
 
       strlcpy(label, buffer[user], sizeof(label));
@@ -3190,9 +3188,9 @@ static bool setting_append_list_input_player_options(
          }
       }
       else
-         strlcat(label, keybind->desc, sizeof(label));
+         strlcat(label, input_bind_map_get_desc(i), sizeof(label));
 
-      snprintf(name, sizeof(name), "p%u_%s", user + 1, keybind->base);
+      snprintf(name, sizeof(name), "p%u_%s", user + 1, input_bind_map_get_base(i));
 
       if (do_add)
       {
@@ -5103,16 +5101,15 @@ static bool setting_append_list_input_hotkey_options(
 
    for (i = 0; i < RARCH_BIND_LIST_END; i ++)
    {
-      const struct input_bind_map* keybind = (const struct input_bind_map*)
-         &input_config_bind_map[i];
-
-      if (!keybind || !keybind->meta)
+      if (!input_bind_map_get_meta(i))
          continue;
 
       CONFIG_BIND(
             list, list_info,
             &settings->input.binds[0][i], 0, 0,
-            strdup(keybind->base), strdup(keybind->desc), &retro_keybinds_1[i],
+            strdup(input_bind_map_get_base(i)),
+            strdup(input_bind_map_get_desc(i)),
+            &retro_keybinds_1[i],
             &group_info, &subgroup_info, parent_group);
       (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
    }
