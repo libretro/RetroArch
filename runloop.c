@@ -59,6 +59,14 @@ static unsigned main_max_frames;
 static retro_time_t frame_limit_last_time;
 static retro_time_t frame_limit_minimum_time;
 
+static bool check_focus(settings_t *settings)
+{
+   if (settings->pause_nonactive)
+      return video_driver_ctl(RARCH_DISPLAY_CTL_IS_FOCUSED, NULL);
+
+   return true;
+}
+
 /**
  * check_pause:
  * @pressed              : was libretro pause key pressed?
@@ -70,18 +78,15 @@ static retro_time_t frame_limit_minimum_time;
  * Returns: true if libretro pause key was toggled, otherwise false.
  **/
 static bool check_pause(settings_t *settings,
-      bool pause_pressed, bool frameadvance_pressed)
+      bool focus, bool pause_pressed,
+      bool frameadvance_pressed)
 {
    static bool old_focus    = true;
-   bool focus               = true;
    enum event_command cmd   = EVENT_CMD_NONE;
    bool old_is_paused       = main_is_paused;
 
    /* FRAMEADVANCE will set us into pause mode. */
    pause_pressed |= !main_is_paused && frameadvance_pressed;
-
-   if (settings->pause_nonactive)
-      focus = video_driver_ctl(RARCH_DISPLAY_CTL_IS_FOCUSED, NULL);
 
    if (focus && pause_pressed)
       cmd = EVENT_CMD_PAUSE_TOGGLE;
@@ -356,6 +361,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
          break;
       case RARCH_MAIN_CTL_CHECK_STATE:
          {
+            bool focused              = false;
             event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
 
             if (!cmd || main_is_idle)
@@ -387,10 +393,14 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             }
 #endif
 
-            check_pause(settings,
+            focused = check_focus(settings);
+
+            check_pause(settings, focused,
                   cmd->pause_pressed, cmd->frameadvance_pressed);
 
             if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_PAUSE_STATE, cmd))
+               return false;
+            if (!focused)
                return false;
 
             check_fast_forward_button(driver,
