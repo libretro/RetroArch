@@ -2623,10 +2623,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
             for (i = 0; i < RARCH_BIND_LIST_END; i++)
             {
-               const struct input_bind_map* keybind = (const struct input_bind_map*)
-                  &input_config_bind_map[i];
                ret = menu_displaylist_parse_settings(menu, info,
-                     keybind->base, PARSE_ONLY_BIND, false);
+                     input_bind_map_get_base(&input_config_bind_map[i]), PARSE_ONLY_BIND, false);
                (void)ret;
             }
          }

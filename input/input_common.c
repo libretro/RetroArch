@@ -116,6 +116,14 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
 #endif
 };
 
+const char *input_bind_map_get_base(const void *data)
+{
+   const struct input_bind_map* keybind = (const struct input_bind_map*)data;
+   if (!keybind)
+      return NULL;
+   return keybind->base;
+}
+
 /**
  * input_translate_coord_viewport:
  * @mouse_x                        : Pointer X coordinate.
