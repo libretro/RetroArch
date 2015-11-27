@@ -274,6 +274,11 @@ static retro_input_t input_driver_keys_pressed(void)
          state |= rarch_cmd_get(driver->command, key);
 #endif
 
+#ifdef HAVE_NETWORK_GAMEPAD
+      if (driver->remote)
+         state |= input_remote_key_pressed(key,0);
+#endif
+
       if (state)
          ret |= (UINT64_C(1) << key);
    }
