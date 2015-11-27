@@ -437,6 +437,211 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind,
 }
 
 /**
+ * input_push_analog_dpad:
+ * @binds                          : Binds to modify.
+ * @mode                           : Which analog stick to bind D-Pad to.
+ *                                   E.g:
+ *                                   ANALOG_DPAD_LSTICK
+ *                                   ANALOG_DPAD_RSTICK
+ *
+ * Push analog to D-Pad mappings to binds.
+ **/
+void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
+{
+   unsigned i, j = 0;
+   bool inherit_joyaxis = false;
+
+   for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
+      binds[i].orig_joyaxis = binds[i].joyaxis;
+
+   switch (mode)
+   {
+      case ANALOG_DPAD_LSTICK:
+         /* check if analog left is defined.   *
+          * if plus and minus are equal abort. */
+         if (!((binds[RARCH_ANALOG_LEFT_X_PLUS].joyaxis == 
+               binds[RARCH_ANALOG_LEFT_X_MINUS].joyaxis) || 
+               (binds[RARCH_ANALOG_LEFT_Y_PLUS].joyaxis == 
+               binds[RARCH_ANALOG_LEFT_Y_MINUS].joyaxis)))
+         {
+            j = RARCH_ANALOG_LEFT_X_PLUS + 3;
+            inherit_joyaxis = true;
+         }
+         break;
+      case ANALOG_DPAD_RSTICK:
+         /* check if analog right is defined.  *
+          * if plus and minus are equal abort. */
+         if (!((binds[RARCH_ANALOG_RIGHT_X_PLUS].joyaxis == 
+               binds[RARCH_ANALOG_RIGHT_X_MINUS].joyaxis) || 
+               (binds[RARCH_ANALOG_RIGHT_Y_PLUS].joyaxis == 
+               binds[RARCH_ANALOG_RIGHT_Y_MINUS].joyaxis)))
+         {          
+            j = RARCH_ANALOG_RIGHT_X_PLUS + 3;
+            inherit_joyaxis = true;
+         }
+         break;
+   }
+
+   if (!inherit_joyaxis)
+      return;
+
+   /* Inherit joyaxis from analogs. */
+   for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
+      binds[i].joyaxis = binds[j--].joyaxis;
+}
+
+/**
+ * input_pop_analog_dpad:
+ * @binds                          : Binds to modify.
+ *
+ * Restores binds temporarily overridden by input_push_analog_dpad().
+ **/
+void input_pop_analog_dpad(struct retro_keybind *binds)
+{
+   unsigned i;
+
+   for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
+      binds[i].joyaxis = binds[i].orig_joyaxis;
+}
+
+/**
+ * check_block_hotkey:
+ * @enable_hotkey        : Is hotkey enable key enabled?
+ *
+ * Checks if 'hotkey enable' key is pressed.
+ **/
+static bool check_block_hotkey(bool enable_hotkey)
+{
+   bool use_hotkey_enable;
+   driver_t *driver              = driver_get_ptr();
+   settings_t *settings          = config_get_ptr();
+   const struct retro_keybind *bind =
+      &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
+   const struct retro_keybind *autoconf_bind =
+      &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
+
+   /* Don't block the check to RARCH_ENABLE_HOTKEY
+    * unless we're really supposed to. */
+   driver->block_hotkey = input_driver_keyboard_mapping_is_blocked();
+
+   /* If we haven't bound anything to this,
+    * always allow hotkeys. */
+   use_hotkey_enable                =
+         (bind->key != RETROK_UNKNOWN)
+      || (bind->joykey != NO_BTN)
+      || (bind->joyaxis != AXIS_NONE)
+      || (autoconf_bind->key != RETROK_UNKNOWN )
+      || (autoconf_bind->joykey != NO_BTN)
+      || (autoconf_bind->joyaxis != AXIS_NONE);
+
+   driver->block_hotkey             =
+      input_driver_keyboard_mapping_is_blocked() ||
+      (use_hotkey_enable && !enable_hotkey);
+
+   /* If we hold ENABLE_HOTKEY button, block all libretro input to allow
+    * hotkeys to be bound to same keys as RetroPad. */
+   return (use_hotkey_enable && enable_hotkey);
+}
+
+static retro_input_t input_driver_keys_pressed(void)
+{
+   int key;
+   retro_input_t                ret = 0;
+   driver_t                 *driver = driver_get_ptr();
+   const input_driver_t      *input = input_get_ptr(driver);
+
+   for (key = 0; key < RARCH_BIND_LIST_END; key++)
+   {
+      bool state = false;
+      if ((!driver->block_libretro_input && ((key < RARCH_FIRST_META_KEY)))
+            || !driver->block_hotkey)
+         state = input->key_pressed(driver->input_data, key);
+
+      if (key >= RARCH_FIRST_META_KEY)
+         state |= input->meta_key_pressed(driver->input_data, key);
+
+#ifdef HAVE_OVERLAY
+      state |= input_overlay_key_pressed(key);
+#endif
+
+#ifdef HAVE_COMMAND
+      if (driver->command)
+         state |= rarch_cmd_get(driver->command, key);
+#endif
+
+#ifdef HAVE_NETWORK_GAMEPAD
+      if (driver->remote)
+         state |= input_remote_key_pressed(key,0);
+#endif
+
+      if (state)
+         ret |= (UINT64_C(1) << key);
+   }
+   return ret;
+}
+
+/**
+ * input_keys_pressed:
+ *
+ * Grab an input sample for this frame.
+ *
+ * TODO: In case RARCH_BIND_LIST_END starts exceeding 64,
+ * and you need a bitmask of more than 64 entries, reimplement
+ * it to use something like rarch_bits_t.
+ *
+ * Returns: Input sample containg a mask of all pressed keys.
+ */
+retro_input_t input_keys_pressed(void)
+{
+   unsigned i;
+   const struct retro_keybind *binds[MAX_USERS];
+   retro_input_t             ret = 0;
+   driver_t *driver              = driver_get_ptr();
+   settings_t *settings          = config_get_ptr();
+   global_t *global              = global_get_ptr();
+
+   for (i = 0; i < MAX_USERS; i++)
+      binds[i] = settings->input.binds[i];
+
+   if (!driver->input || !driver->input_data)
+      return 0;
+
+   global->turbo.count++;
+
+   driver->block_libretro_input = check_block_hotkey(driver->input->key_pressed(
+            driver->input_data, RARCH_ENABLE_HOTKEY));
+
+
+   for (i = 0; i < settings->input.max_users; i++)
+   {
+      input_push_analog_dpad(settings->input.binds[i],
+            settings->input.analog_dpad_mode[i]);
+      input_push_analog_dpad(settings->input.autoconf_binds[i],
+            settings->input.analog_dpad_mode[i]);
+
+      global->turbo.frame_enable[i] = 0;
+   }
+
+   if (!driver->block_libretro_input)
+   {
+      for (i = 0; i < settings->input.max_users; i++)
+         global->turbo.frame_enable[i] = input_driver_state(binds,
+               i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+   }
+
+   ret = input_driver_keys_pressed();
+
+   for (i = 0; i < settings->input.max_users; i++)
+   {
+      input_pop_analog_dpad(settings->input.binds[i]);
+      input_pop_analog_dpad(settings->input.autoconf_binds[i]);
+   }
+
+   return ret;
+}
+
+
+/**
  * input_poll:
  *
  * Input polling callback function.
@@ -515,6 +720,10 @@ int16_t input_state(unsigned port, unsigned device,
 
 #ifdef HAVE_OVERLAY
       input_state_overlay(&res, port, device, idx, id);
+#endif
+
+#ifdef HAVE_NETWORK_GAMEPAD
+      input_state_remote(&res, port, device, idx, id);
 #endif
    }
 
