@@ -756,6 +756,9 @@ NETPLAY
 DATA RUNLOOP
 ============================================================ */
 #include "../tasks/task_file_transfer.c"
+#ifdef HAVE_ZLIB
+#include "../tasks/task_decompress.c"
+#endif
 #ifdef HAVE_LIBRETRODB
 #include "../tasks/task_database.c"
 #include "../tasks/task_database_cue.c"
