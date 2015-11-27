@@ -124,6 +124,14 @@ const void *input_bind_map_get(unsigned i)
    return keybind;
 }
 
+bool input_bind_map_get_valid(unsigned i)
+{
+   const struct input_bind_map* keybind = (const struct input_bind_map*)input_bind_map_get(i);
+   if (!keybind)
+      return false;
+   return keybind->valid;
+}
+
 unsigned input_bind_map_get_meta(unsigned i)
 {
    const struct input_bind_map* keybind = (const struct input_bind_map*)input_bind_map_get(i);

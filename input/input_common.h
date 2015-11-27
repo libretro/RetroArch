@@ -48,6 +48,8 @@ unsigned input_bind_map_get_meta(unsigned i);
 
 const char *input_bind_map_get_desc(unsigned i);
 
+bool input_bind_map_get_valid(unsigned i);
+
 /**
  * input_translate_coord_viewport:
  * @mouse_x                        : Pointer X coordinate.

@@ -1057,17 +1057,17 @@ static void read_keybinds_keyboard(config_file_t *conf, unsigned user,
 {
    const char *prefix = NULL;
 
-   if (!input_config_bind_map[idx].valid)
+   if (!input_bind_map_get_valid(idx))
       return;
 
-   if (!input_config_bind_map[idx].base)
+   if (!input_bind_map_get_base(idx))
       return;
 
-   prefix = input_config_get_prefix(user, input_config_bind_map[idx].meta);
+   prefix = input_config_get_prefix(user, input_bind_map_get_meta(idx));
 
    if (prefix)
       input_config_parse_key(conf, prefix,
-            input_config_bind_map[idx].base, bind);
+            input_bind_map_get_base(idx), bind);
 }
 
 static void read_keybinds_button(config_file_t *conf, unsigned user,
@@ -1075,17 +1075,17 @@ static void read_keybinds_button(config_file_t *conf, unsigned user,
 {
    const char *prefix = NULL;
 
-   if (!input_config_bind_map[idx].valid)
+   if (!input_bind_map_get_valid(idx))
       return;
-   if (!input_config_bind_map[idx].base)
+   if (!input_bind_map_get_base(idx))
       return;
 
    prefix = input_config_get_prefix(user,
-         input_config_bind_map[idx].meta);
+         input_bind_map_get_meta(idx));
 
    if (prefix)
       input_config_parse_joy_button(conf, prefix,
-            input_config_bind_map[idx].base, bind);
+            input_bind_map_get_base(idx), bind);
 }
 
 static void read_keybinds_axis(config_file_t *conf, unsigned user,
@@ -1093,17 +1093,17 @@ static void read_keybinds_axis(config_file_t *conf, unsigned user,
 {
    const char *prefix = NULL;
 
-   if (!input_config_bind_map[idx].valid)
+   if (!input_bind_map_get_valid(idx))
       return;
-   if (!input_config_bind_map[idx].base)
+   if (!input_bind_map_get_base(idx))
       return;
 
    prefix = input_config_get_prefix(user,
-         input_config_bind_map[idx].meta);
+         input_bind_map_get_meta(idx));
 
    if (prefix)
       input_config_parse_joy_axis(conf, prefix,
-            input_config_bind_map[idx].base, bind);
+            input_bind_map_get_base(idx), bind);
 }
 
 static void read_keybinds_user(config_file_t *conf, unsigned user)
@@ -1111,7 +1111,7 @@ static void read_keybinds_user(config_file_t *conf, unsigned user)
    unsigned i;
    settings_t *settings = config_get_ptr();
 
-   for (i = 0; input_config_bind_map[i].valid; i++)
+   for (i = 0; input_bind_map_get_valid(i); i++)
    {
       struct retro_keybind *bind = (struct retro_keybind*)
          &settings->input.binds[user][i];
@@ -2298,13 +2298,13 @@ static void save_keybinds_user(config_file_t *conf, unsigned user)
    unsigned i = 0;
    settings_t *settings = config_get_ptr();
 
-   for (i = 0; input_config_bind_map[i].valid; i++)
+   for (i = 0; input_bind_map_get_valid(i); i++)
    {
       const char *prefix = input_config_get_prefix(user,
-            input_config_bind_map[i].meta);
+            input_bind_map_get_meta(i));
 
       if (prefix)
-         save_keybind(conf, prefix, input_config_bind_map[i].base,
+         save_keybind(conf, prefix, input_bind_map_get_base(i),
                &settings->input.binds[user][i], true, true);
    }
 }
@@ -2420,7 +2420,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
 
    for (i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
-      save_keybind(conf, "input", input_config_bind_map[i].base,
+      save_keybind(conf, "input", input_bind_map_get_base(i),
             &settings->input.binds[user][i], false, false);
    }
    ret = config_file_write(conf, autoconf_file);
