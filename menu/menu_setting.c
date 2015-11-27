@@ -6252,7 +6252,7 @@ static bool setting_append_list_netplay_options(
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-    
+
    CONFIG_UINT(
          list, list_info,
          &settings->network_cmd_port,
@@ -6264,8 +6264,61 @@ static bool setting_append_list_netplay_options(
          parent_group,
          NULL,
          NULL);
+   menu_settings_list_current_add_range(list, list_info, 1, 99999, 1, true, true);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-    
+
+   CONFIG_BOOL(
+         list, list_info,
+         &settings->network_remote_enable,
+         menu_hash_to_str(MENU_LABEL_NETWORK_REMOTE_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_NETWORK_REMOTE_ENABLE),
+         "", /* todo: add default */
+         menu_hash_to_str(MENU_VALUE_OFF),
+         menu_hash_to_str(MENU_VALUE_ON),
+         &group_info,
+         &subgroup_info,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+   CONFIG_UINT(
+         list, list_info,
+         &settings->network_remote_base_port,
+         menu_hash_to_str(MENU_LABEL_NETWORK_REMOTE_PORT),
+         /* todo: localization */
+         "Network Remote Base Port",
+         network_remote_base_port,
+         &group_info,
+         &subgroup_info,
+         parent_group,
+         NULL,
+         NULL);
+         menu_settings_list_current_add_range(list, list_info, 1, 99999, 1, true, true);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+   for(int user = 0; user < settings->input.max_users; user++)
+   {
+      char s[64];
+      snprintf(s, sizeof(s), "User %d Remote Enable", user + 1);
+      RARCH_LOG("s %s\n",s);
+      CONFIG_BOOL(
+            list, list_info,
+            &settings->network_remote_enable_user[user],
+            /* todo: figure out this value, it's working fine but I don't think this is correct */
+            menu_hash_to_str(MENU_LABEL_NETWORK_REMOTE_ENABLE) + user + 1,
+            strdup(s),
+            "", /* todo: add default */
+            menu_hash_to_str(MENU_VALUE_OFF),
+            menu_hash_to_str(MENU_VALUE_ON),
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+   }
+
    CONFIG_BOOL(
          list, list_info,
          &settings->stdin_cmd_enable,
