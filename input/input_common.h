@@ -21,25 +21,6 @@
 #include <stdint.h>
 #include "../driver.h"
 
-/* Input config. */
-struct input_bind_map
-{
-   bool valid;
-
-   /* Meta binds get input as prefix, not input_playerN".
-    * 0 = libretro related.
-    * 1 = Common hotkey.
-    * 2 = Uncommon/obscure hotkey.
-    */
-   unsigned meta;
-
-   const char *base;
-   const char *desc;
-   unsigned retro_key;
-};
-
-extern const struct input_bind_map input_config_bind_map[];
-
 const void *input_bind_map_get(unsigned i);
 
 const char *input_bind_map_get_base(unsigned i);

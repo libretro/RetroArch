@@ -30,6 +30,23 @@
 #include "../config.h"
 #endif
 
+/* Input config. */
+struct input_bind_map
+{
+   bool valid;
+
+   /* Meta binds get input as prefix, not input_playerN".
+    * 0 = libretro related.
+    * 1 = Common hotkey.
+    * 2 = Uncommon/obscure hotkey.
+    */
+   unsigned meta;
+
+   const char *base;
+   const char *desc;
+   unsigned retro_key;
+};
+
 static const char *bind_user_prefix[MAX_USERS] = {
    "input_player1",
    "input_player2",
