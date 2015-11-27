@@ -1627,12 +1627,12 @@ static bool config_load_file(const char *path, bool set_defaults)
 #endif
 
 #ifdef HAVE_NETWORK_GAMEPAD
-   
+   CONFIG_GET_BOOL_BASE(conf, settings, network_remote_enable, "network_remote_enable");
    for (int i=0; i < MAX_USERS; i++)
    {
       char tmp[64] = {0};
-      snprintf(tmp, sizeof(tmp), "network_remote_enable_p%u", i + 1);
-      config_get_bool(conf, tmp, &settings->network_remote_enable[i]);
+      snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
+      config_get_bool(conf, tmp, &settings->network_remote_enable_user[i]);
    }
    CONFIG_GET_INT_BASE(conf, settings, network_remote_base_port, "network_remote_base_port");
    
@@ -2784,9 +2784,10 @@ bool config_save_file(const char *path)
    for (int i=0; i < MAX_USERS; i++)
    {
       char tmp[64] = {0};
-      snprintf(tmp, sizeof(tmp), "network_remote_enable_p%u", i + 1);
-      config_set_bool(conf, tmp, settings->network_remote_enable[i]);
+      snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
+      config_set_bool(conf, tmp, settings->network_remote_enable_user[i]);
    }
+   config_set_bool(conf, "network_remote_enable", settings->network_remote_enable);
    config_set_int(conf, "network_remote_base_port", settings->network_remote_base_port);
 
 #endif
