@@ -30,7 +30,7 @@ extern "C" {
 
 typedef struct rarch_remote rarch_remote_t;
 
-rarch_remote_t *rarch_remote_new(uint16_t port, unsigned user);
+rarch_remote_t *rarch_remote_new(uint16_t port);
 
 void rarch_remote_free(rarch_remote_t *handle);
 
