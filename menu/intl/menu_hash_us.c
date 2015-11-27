@@ -188,6 +188,10 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "savestate_directory";
       case MENU_LABEL_STDIN_CMD_ENABLE:
          return "stdin_commands";
+      case MENU_LABEL_NETWORK_REMOTE_ENABLE:
+         return "network_remote_enable";
+      case MENU_LABEL_NETWORK_REMOTE_PORT:
+         return "network_remote_base_port";
       case MENU_LABEL_VIDEO_DRIVER:
          return "video_driver";
       case MENU_LABEL_RECORD_ENABLE:
@@ -902,6 +906,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Savestate Dir";
       case MENU_LABEL_VALUE_STDIN_CMD_ENABLE:
          return "stdin Commands";
+      case MENU_LABEL_VALUE_NETWORK_REMOTE_ENABLE:
+         return "Network Gamepad";
       case MENU_LABEL_VALUE_VIDEO_DRIVER:
          return "Video Driver";
       case MENU_LABEL_VALUE_RECORD_ENABLE:

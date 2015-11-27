@@ -347,6 +347,9 @@ typedef struct settings
    bool network_cmd_enable;
    unsigned network_cmd_port;
    bool stdin_cmd_enable;
+   bool network_remote_enable;
+   bool network_remote_enable_user[MAX_USERS];
+   unsigned network_remote_base_port;
    bool debug_panel_enable;
 
    char core_assets_directory[PATH_MAX_LENGTH];
