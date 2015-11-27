@@ -114,7 +114,7 @@ rarch_remote_t *rarch_remote_new(uint16_t port)
    (void)port;
 
 #if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
-   for(int user = 0; user < MAX_USERS; user ++)
+   for(int user = 0; user < settings->input.max_users; user ++)
    {
       handle->net_fd[user] = -1;
       if(settings->network_remote_enable_user[user])
@@ -135,8 +135,9 @@ error:
 
 void rarch_remote_free(rarch_remote_t *handle)
 {
+   settings_t *settings = config_get_ptr();
 #if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
-   for(int user = 0; user < MAX_USERS; user ++)
+   for(int user = 0; user < settings->input.max_users; user ++)
    {
       socket_close(handle->net_fd[user]);
    }
