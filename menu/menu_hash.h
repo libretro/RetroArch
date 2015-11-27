@@ -645,7 +645,11 @@ extern "C" {
 #define MENU_LABEL_NETWORK_CMD_PORT                                            0xc1b9e0a6U
 #define MENU_LABEL_VALUE_NETWORK_CMD_PORT                                      0xee5773f3U
 #define MENU_LABEL_STDIN_CMD_ENABLE                                            0x665069c0U
+#define MENU_LABEL_NETWORK_REMOTE_ENABLE                                       0x99cd4420U
+#define MENU_LABEL_NETWORK_REMOTE_PORT                                         0x9aef9e18U
+
 #define MENU_LABEL_VALUE_STDIN_CMD_ENABLE                                      0xc98ecc46U
+#define MENU_LABEL_VALUE_NETWORK_REMOTE_ENABLE                                 0x32f1f6f1U
 #define MENU_LABEL_HISTORY_LIST_ENABLE                                         0xe1c2ae78U
 #define MENU_LABEL_VALUE_HISTORY_LIST_ENABLE                                   0xd2c13bbaU
 #define MENU_LABEL_CONTENT_HISTORY_SIZE                                        0x6f24c38bU

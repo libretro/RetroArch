@@ -32,6 +32,12 @@ static const bool _network_command_supp = true;
 static const bool _network_command_supp = false;
 #endif
 
+#ifdef HAVE_NETWORK_GAMEPAD
+static const bool _network_gamepad_supp = true;
+#else
+static const bool _network_gamepad_supp = false;
+#endif
+
 #ifdef HAVE_LIBUSB
 static const bool _libusb_supp = true;
 #else

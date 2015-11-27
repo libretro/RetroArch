@@ -460,6 +460,11 @@ void input_poll(void)
    if (driver->command)
       rarch_cmd_poll(driver->command);
 #endif
+
+#ifdef HAVE_NETWORK_GAMEPAD
+   if (driver->remote)
+      rarch_remote_poll(driver->remote);
+#endif
 }
 
 /**
@@ -510,6 +515,10 @@ int16_t input_state(unsigned port, unsigned device,
 
 #ifdef HAVE_OVERLAY
       input_state_overlay(&res, port, device, idx, id);
+#endif
+
+#ifdef HAVE_NETWORK_GAMEPAD
+      input_state_remote(&res, port, device, idx, id);
 #endif
    }
 
