@@ -17,10 +17,6 @@
 #ifndef INPUT_COMMON_H__
 #define INPUT_COMMON_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <file/config_file.h>
 #include <stdint.h>
 #include "../driver.h"
@@ -142,9 +138,5 @@ void input_poll(void);
  **/
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
