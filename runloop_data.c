@@ -31,10 +31,11 @@ void rarch_main_data_deinit(void)
    rarch_task_deinit();
 }
 
-void rarch_main_data_iterate(void)
+void rarch_main_data_iterate(bool sleeping)
 {
 #ifdef HAVE_MENU
-   menu_iterate_render();
+   if (!sleeping)
+      menu_iterate_render();
 #endif
 
    if (data_runloop_msg[0] != '\0')
