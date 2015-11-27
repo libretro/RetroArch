@@ -203,7 +203,7 @@ static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          fmt);
    wvsprintf(buffer, msg_new, ap);
    OutputDebugStringA(buffer);
-#elif defined(ANDROID) && defined(HAVE_LOGGER)
+#elif defined(ANDROID)
    int prio = ANDROID_LOG_INFO;
    if (tag)
    {
