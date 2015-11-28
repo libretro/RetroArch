@@ -127,11 +127,18 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
    rarch_task_t *t;
 
    if (!target_dir || !target_dir[0] || !source_file || !source_file[0])
+   {
+      RARCH_WARN("[decompress] Empty or null source file or target directory arguments.\n");
       return false;
+   }
 
    /* zip only */
    if (!path_file_exists(source_file) || strcmp("zip", path_get_extension(source_file)) != 0)
+   {
+      RARCH_WARN("[decompress] File '%s' does not exist or is not a compressed file.\n",
+            source_file);
       return false;
+   }
 
    if (!valid_ext || !valid_ext[0])
       valid_ext = NULL;
