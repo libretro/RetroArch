@@ -182,7 +182,7 @@ void input_config_parse_key(config_file_t *conf,
    fill_pathname_join_delim(key, prefix, btn, '_', sizeof(key));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
-      bind->key = input_translate_str_to_rk(tmp);
+      bind->key = input_config_translate_str_to_rk(tmp);
 }
 
 const char *input_config_get_prefix(unsigned user, bool meta)
@@ -212,14 +212,14 @@ static enum retro_key find_rk_bind(const char *str)
 }
 
 /**
- * input_translate_str_to_rk:
+ * input_config_translate_str_to_rk:
  * @str                            : String to translate to key ID.
  *
  * Translates tring representation to key identifier.
  *
  * Returns: key identifier.
  **/
-enum retro_key input_translate_str_to_rk(const char *str)
+enum retro_key input_config_translate_str_to_rk(const char *str)
 {
    if (strlen(str) == 1 && isalpha((int)*str))
       return (enum retro_key)(RETROK_a + (tolower((int)*str) - (int)'a'));
@@ -227,14 +227,14 @@ enum retro_key input_translate_str_to_rk(const char *str)
 }
 
 /**
- * input_translate_str_to_bind_id:
+ * input_config_translate_str_to_bind_id:
  * @str                            : String to translate to bind ID.
  *
  * Translate string representation to bind ID.
  *
  * Returns: Bind ID value on success, otherwise RARCH_BIND_LIST_END on not found.
  **/
-unsigned input_translate_str_to_bind_id(const char *str)
+unsigned input_config_translate_str_to_bind_id(const char *str)
 {
    unsigned i;
 

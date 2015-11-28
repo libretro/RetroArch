@@ -34,26 +34,26 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind, size_t size);
 
 /**
- * input_translate_str_to_rk:
+ * input_config_translate_str_to_rk:
  * @str                            : String to translate to key ID.
  *
  * Translates tring representation to key identifier.
  *
  * Returns: key identifier.
  **/
-enum retro_key input_translate_str_to_rk(const char *str);
+enum retro_key input_config_translate_str_to_rk(const char *str);
 
 const char *input_config_get_prefix(unsigned user, bool meta);
 
 /**
- * input_translate_str_to_bind_id:
+ * input_config_translate_str_to_bind_id:
  * @str                            : String to translate to bind ID.
  *
  * Translate string representation to bind ID.
  *
  * Returns: Bind ID value on success, otherwise RARCH_BIND_LIST_END on not found.
  **/
-unsigned input_translate_str_to_bind_id(const char *str);
+unsigned input_config_translate_str_to_bind_id(const char *str);
 
 void input_config_parse_key(config_file_t *conf,
       const char *prefix, const char *btn,

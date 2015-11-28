@@ -172,7 +172,7 @@ static bool rarch_task_overlay_load_desc(
          if (strstr(key, "retrok_") == key)
          {
             desc->type = OVERLAY_TYPE_KEYBOARD;
-            desc->key_mask = input_translate_str_to_rk(key + 7);
+            desc->key_mask = input_config_translate_str_to_rk(key + 7);
          }
          else
          {
@@ -182,7 +182,7 @@ static bool rarch_task_overlay_load_desc(
             for (tmp = strtok_r(key, "|", &save); tmp; tmp = strtok_r(NULL, "|", &save))
             {
                if (strcmp(tmp, "nul") != 0)
-                  desc->key_mask |= UINT64_C(1) << input_translate_str_to_bind_id(tmp);
+                  desc->key_mask |= UINT64_C(1) << input_config_translate_str_to_bind_id(tmp);
             }
 
             if (desc->key_mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
