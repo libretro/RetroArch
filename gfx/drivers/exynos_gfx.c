@@ -209,22 +209,6 @@ static void exynos_page_flip_handler(int fd, unsigned frame, unsigned sec,
    page->base->cur_page = page;
 }
 
-static void exynos_wait_flip(void)
-{
-   const int timeout = -1;
-
-   g_drm_fds.revents = 0;
-
-   if (poll(&g_drm_fds, 1, timeout) < 0)
-      return;
-
-   if (g_drm_fds.revents & (POLLHUP | POLLERR))
-      return;
-
-   if (g_drm_fds.revents & POLLIN)
-      drmHandleEvent(g_drm_fds.fd, &g_drm_evctx);
-}
-
 static struct exynos_page *exynos_get_free_page(
       struct exynos_page *p, unsigned cnt)
 {
@@ -838,7 +822,7 @@ static struct exynos_page *exynos_free_page(struct exynos_data *pdata)
       page = exynos_get_free_page(pdata->pages, pdata->num_pages);
 
       if (!page)
-         exynos_wait_flip();
+         drm_wait_flip(-1);
    }
 
    dst->bo[0] = page->bo->handle;
@@ -1007,7 +991,7 @@ static int exynos_flip(struct exynos_data *pdata, struct exynos_page *page)
 {
    /* We don't queue multiple page flips. */
    if (pdata->pageflip_pending > 0)
-      exynos_wait_flip();
+      drm_wait_flip(-1);
 
    /* Issue a page flip at the next vblank interval. */
    if (drmModePageFlip(g_drm_fd, g_crtc_id, page->buf_id,
@@ -1023,7 +1007,7 @@ static int exynos_flip(struct exynos_data *pdata, struct exynos_page *page)
 
    /* On startup no frame is displayed. We therefore wait for the initial flip to finish. */
    if (!pdata->cur_page)
-      exynos_wait_flip();
+      drm_wait_flip(-1);
 
    return 0;
 }
@@ -1265,7 +1249,7 @@ static void exynos_gfx_free(void *data)
 
    /* Flush pages: One page remains, the one being displayed at this moment. */
    while (exynos_pages_used(pdata->pages, pdata->num_pages) > 1)
-      exynos_wait_flip();
+      drm_wait_flip(-1);
 
    exynos_free(pdata);
    exynos_deinit(pdata);

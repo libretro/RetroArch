@@ -172,17 +172,7 @@ static bool wait_flip(bool block)
 
    while (waiting_for_flip)
    {
-      g_drm_fds.revents = 0;
-
-      if (poll(&g_drm_fds, 1, timeout) < 0)
-         break;
-
-      if (g_drm_fds.revents & (POLLHUP | POLLERR))
-         break;
-
-      if (g_drm_fds.revents & POLLIN)
-         drmHandleEvent(g_drm_fd, &g_drm_evctx);
-      else
+      if (!drm_wait_flip(timeout))
          break;
    }
 

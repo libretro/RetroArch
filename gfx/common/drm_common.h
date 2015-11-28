@@ -24,6 +24,7 @@
 #include <poll.h>
 
 #include <boolean.h>
+#include <retro_inline.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,6 +53,25 @@ bool drm_get_connector(int id);
 void drm_setup(int fd);
 
 void drm_free(void);
+
+static INLINE bool drm_wait_flip(int timeout)
+{
+   g_drm_fds.revents = 0;
+
+   if (poll(&g_drm_fds, 1, timeout) < 0)
+      return false;
+
+   if (g_drm_fds.revents & (POLLHUP | POLLERR))
+      return false;
+
+   if (g_drm_fds.revents & POLLIN)
+   {
+      drmHandleEvent(g_drm_fd, &g_drm_evctx);
+      return true;
+   }
+
+   return false;
+}
 
 #ifdef __cplusplus
 }
