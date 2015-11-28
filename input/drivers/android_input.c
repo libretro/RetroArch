@@ -25,7 +25,7 @@
 #include "../../frontend/drivers/platform_linux.h"
 #include "../input_autodetect.h"
 #include "../input_config.h"
-#include "../input_joypad.h"
+#include "../input_joypad_driver.h"
 #include "../../performance.h"
 #include "../../general.h"
 #include "../../driver.h"

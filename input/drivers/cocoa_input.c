@@ -18,7 +18,7 @@
 #include <unistd.h>
 
 #include "../input_config.h"
-#include "../input_joypad.h"
+#include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
 #include "cocoa_input.h"
 #include "../../general.h"

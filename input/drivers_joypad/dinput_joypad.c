@@ -27,7 +27,7 @@
 #include "../../verbosity.h"
 #include "../input_autodetect.h"
 #include "../input_config.h"
-#include "../input_joypad.h"
+#include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
 
 struct dinput_joypad

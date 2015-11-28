@@ -36,7 +36,7 @@
 #include "../general.h"
 #include "../cheats.h"
 #include "../performance.h"
-#include "../input/input_joypad.h"
+#include "../input/input_joypad_driver.h"
 #include "../input/input_remapping.h"
 #include "../input/input_config.h"
 

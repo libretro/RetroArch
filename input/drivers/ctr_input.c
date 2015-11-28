@@ -21,7 +21,7 @@
 #include "../../libretro.h"
 #include "../../general.h"
 #include "../input_config.h"
-#include "../input_joypad.h"
+#include "../input_joypad_driver.h"
 
 #define MAX_PADS 1
 

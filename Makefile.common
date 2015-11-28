@@ -161,7 +161,6 @@ OBJ += frontend/frontend.o \
        gfx/drivers_font_renderer/bitmapfont.o \
        input/input_autodetect.o \
        input/input_joypad_driver.o \
-       input/input_joypad.o \
        input/input_config.o \
        input/input_keymaps.o \
        input/input_remapping.o \
