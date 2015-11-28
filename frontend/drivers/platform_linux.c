@@ -1799,9 +1799,9 @@ static void frontend_linux_get_env(int *argc,
             fill_pathname_join(g_defaults.dir.autoconfig,
                   app_dir, "autoconfig", sizeof(g_defaults.dir.autoconfig));
             fill_pathname_join(g_defaults.dir.audio_filter,
-                  app_dir, "audio_filters", sizeof(g_defaults.dir.audio_filter));
+                  app_dir, "filters/audio", sizeof(g_defaults.dir.audio_filter));
             fill_pathname_join(g_defaults.dir.video_filter,
-                  app_dir, "video_filters", sizeof(g_defaults.dir.video_filter));
+                  app_dir, "filters/video", sizeof(g_defaults.dir.video_filter));
             strlcpy(g_defaults.dir.content_history,
                   app_dir, sizeof(g_defaults.dir.content_history));
             fill_pathname_join(g_defaults.dir.database,

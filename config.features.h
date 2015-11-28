@@ -38,6 +38,12 @@ static const bool _network_gamepad_supp = true;
 static const bool _network_gamepad_supp = false;
 #endif
 
+#ifdef HAVE_FILTERS_BUILTIN
+static const bool _cpu_filters = true;
+#else
+static const bool _cpu_filters = false;
+#endif
+
 #ifdef HAVE_LIBUSB
 static const bool _libusb_supp = true;
 #else
