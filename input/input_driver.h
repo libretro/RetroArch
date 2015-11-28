@@ -191,6 +191,69 @@ bool input_sensor_set_state(unsigned port,
 
 float input_sensor_get_input(unsigned port, unsigned id);
 
+/**
+ * input_translate_coord_viewport:
+ * @mouse_x                        : Pointer X coordinate.
+ * @mouse_y                        : Pointer Y coordinate.
+ * @res_x                          : Scaled  X coordinate.
+ * @res_y                          : Scaled  Y coordinate.
+ * @res_screen_x                   : Scaled screen X coordinate.
+ * @res_screen_y                   : Scaled screen Y coordinate.
+ *
+ * Translates pointer [X,Y] coordinates into scaled screen
+ * coordinates based on viewport info.
+ *
+ * Returns: true (1) if successful, false if video driver doesn't support
+ * viewport info.
+ **/
+bool input_translate_coord_viewport(int mouse_x, int mouse_y,
+      int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
+      int16_t *res_screen_y);
+
+/**
+ * input_push_analog_dpad:
+ * @binds                          : Binds to modify.
+ * @mode                           : Which analog stick to bind D-Pad to.
+ *                                   E.g:
+ *                                   ANALOG_DPAD_LSTICK
+ *                                   ANALOG_DPAD_RSTICK
+ *
+ * Push analog to D-Pad mappings to binds.
+ **/
+void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode);
+
+/**
+ * input_pop_analog_dpad:
+ * @binds                          : Binds to modify.
+ *
+ * Restores binds temporarily overridden by input_push_analog_dpad().
+ **/
+void input_pop_analog_dpad(struct retro_keybind *binds);
+
+/**
+ * input_poll:
+ *
+ * Input polling callback function.
+ **/
+void input_poll(void);
+
+/**
+ * input_state:
+ * @port                 : user number.
+ * @device               : device identifier of user.
+ * @idx                  : index value of user.
+ * @id                   : identifier of key pressed by user.
+ *
+ * Input state callback function.
+ *
+ * Returns: Non-zero if the given key (identified by @id) was pressed by the user
+ * (assigned to @port).
+ **/
+int16_t input_state(unsigned port, unsigned device,
+      unsigned idx, unsigned id);
+
+retro_input_t input_keys_pressed(void);
+
 bool input_driver_ctl(enum rarch_input_ctl_state state, void *data);
 
 #ifdef __cplusplus
