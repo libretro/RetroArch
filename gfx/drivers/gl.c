@@ -2018,6 +2018,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 #if defined(HAVE_GL_SYNC) || defined(HAVE_FBO)
    settings_t *settings = config_get_ptr();
 #endif
+   unsigned major = 0, minor = 0;
     
    (void)vendor;
    (void)renderer;
@@ -2037,6 +2038,9 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
       }
    }
 
+   if (version && sscanf(version, "%u.%u", &major, &minor) != 2)
+         major = minor = 0;
+
    /* GL_RGB565 internal format support.
     * Even though ES2 support is claimed, the format 
     * is not supported on older ATI catalyst drivers.
@@ -2049,6 +2053,24 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
       RARCH_LOG("[GL]: ATI card detected, skipping check for GL_RGB565 support.\n");
    else
       gl->have_es2_compat = gl_query_extension(gl, "ARB_ES2_compatibility");
+
+   if (major >= 3)
+      gl->have_full_npot_support = true;
+   else
+   {  /* try to detect actual npot support. might fail for older cards. */
+      GLint max_texture_size = 0;
+      GLint max_native_instr = 0;
+      bool arb_npot = gl_query_extension(gl, "ARB_texture_non_power_of_two");
+      bool arb_frag_program = gl_query_extension(gl, "ARB_fragment_program");
+
+      glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
+
+      if (arb_frag_program)
+         glGetIntegerv(GL_MAX_PROGRAM_NATIVE_INSTRUCTIONS_ARB, &max_native_instr);
+
+      gl->have_full_npot_support = arb_npot && arb_frag_program &&
+            (max_texture_size >= 8192) && (max_native_instr >= 4096);
+   }
 #endif
 
 #ifdef HAVE_GL_SYNC
@@ -2058,9 +2080,30 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 #endif
 
    video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_RGBA, NULL);
-#ifdef HAVE_OPENGLES2
+#if defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES2)
    bool gles3          = false;
-   unsigned gles_major = 0, gles_minor = 0;
+
+   if (version && sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
+         major = minor = 0;
+
+   if (major >= 3)
+   {
+      RARCH_LOG("[GL]: GLES3 or newer detected. Auto-enabling some extensions.\n");
+      gles3 = true;
+   }
+
+   if (gles3)
+      gl->have_full_npot_support = true;
+   else
+   {
+      bool arb_npot = gl_query_extension(gl, "ARB_texture_non_power_of_two");
+      bool oes_npot = gl_query_extension(gl, "OES_texture_npot");
+      gl->have_full_npot_support = arb_npot || oes_npot;
+   }
+#endif
+
+#ifdef HAVE_OPENGLES2
+
 
    /* There are both APPLE and EXT variants. */
    /* Videocore hardware supports BGRA8888 extension, but
@@ -2072,14 +2115,6 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
       video_driver_ctl(RARCH_DISPLAY_CTL_SET_RGBA, NULL);
       RARCH_WARN("[GL]: GLES implementation does not have BGRA8888 extension.\n"
                  "32-bit path will require conversion.\n");
-   }
-
-   /* This format is mandated by GLES. */
-   if (version && sscanf(version, "OpenGL ES %u.%u",
-            &gles_major, &gles_minor) == 2 && gles_major >= 3)
-   {
-      RARCH_LOG("[GL]: GLES3 or newer detected. Auto-enabling some extensions.\n");
-      gles3 = true;
    }
 
    /* GLES3 has unpack_subimage and sRGB in core. */

@@ -253,6 +253,7 @@ typedef struct gl
 #else
    bool have_es2_compat;
 #endif
+   bool have_full_npot_support;
 
    bool egl_images;
    video_info_t video_info;
