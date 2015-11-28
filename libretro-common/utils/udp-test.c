@@ -49,6 +49,8 @@ int main(void)
         {
             die("sendto()");
         }
+        /* sleep for 1 frame (60hz) */
+        usleep(16*1000); 
 
     }
 

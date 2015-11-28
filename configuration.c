@@ -533,6 +533,7 @@ static void config_set_defaults(void)
    settings->savestate_auto_load               = savestate_auto_load;
    settings->network_cmd_enable                = network_cmd_enable;
    settings->network_cmd_port                  = network_cmd_port;
+   settings->network_remote_base_port           = network_remote_base_port;
    settings->stdin_cmd_enable                  = stdin_cmd_enable;
    settings->content_history_size              = default_content_history_size;
    settings->libretro_log_level                = libretro_log_level;
