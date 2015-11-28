@@ -108,7 +108,7 @@ OBJ += frontend/frontend.o \
        ui/drivers/ui_null.o \
        libretro_version_1.o \
        retroarch.o \
-		 input/keyboard_line.o \
+		 input/input_keyboard.o \
        system.o \
        retroarch_info.o \
        command_event.o \

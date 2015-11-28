@@ -18,7 +18,7 @@
 #define _MENU_INPUT_H
 
 #include "../input/input_driver.h"
-#include "../input/keyboard_line.h"
+#include "../input/input_keyboard.h"
 
 #ifdef __cplusplus
 extern "C" {

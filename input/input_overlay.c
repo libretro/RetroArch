@@ -29,7 +29,7 @@
 #include <rhash.h>
 
 #include "input_overlay.h"
-#include "keyboard_line.h"
+#include "input_keyboard.h"
 
 #include "../configuration.h"
 #include "../verbosity.h"

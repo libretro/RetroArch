@@ -30,7 +30,7 @@
 #include "../input_config.h"
 #include "../input_joypad.h"
 #include "../input_keymaps.h"
-#include "../keyboard_line.h"
+#include "../input_keyboard.h"
 
 typedef struct sdl_input
 {

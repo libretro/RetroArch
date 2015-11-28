@@ -19,7 +19,7 @@
 #include <ctype.h>
 
 #include "../general.h"
-#include "keyboard_line.h"
+#include "input_keyboard.h"
 
 struct input_keyboard_line
 {
@@ -155,8 +155,7 @@ bool input_keyboard_line_event(
  *
  * Returns: pointer to string.
  **/
-const char **input_keyboard_line_get_buffer(
-      const input_keyboard_line_t *state)
+const char **input_keyboard_line_get_buffer(const input_keyboard_line_t *state)
 {
    return (const char**)&state->buffer;
 }

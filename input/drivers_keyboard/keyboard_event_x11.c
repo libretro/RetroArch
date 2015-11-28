@@ -26,7 +26,7 @@
 #include <retro_inline.h>
 #include <encodings/utf.h>
 
-#include "../keyboard_line.h"
+#include "../input_keyboard.h"
 #include "../input_keymaps.h"
 
 void x11_handle_key_event(XEvent *event, XIC ic, bool filter)

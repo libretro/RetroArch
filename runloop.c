@@ -35,7 +35,7 @@
 
 #include "msg_hash.h"
 
-#include "input/keyboard_line.h"
+#include "input/input_keyboard.h"
 #include "input/input_driver.h"
 #include "ui/ui_companion_driver.h"
 

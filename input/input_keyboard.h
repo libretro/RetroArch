@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef KEYBOARD_LINE_H__
-#define KEYBOARD_LINE_H__
+#ifndef INPUT_KEYBOARD_H__
+#define INPUT_KEYBOARD_H__
 
 #ifdef __cplusplus
 extern "C" {

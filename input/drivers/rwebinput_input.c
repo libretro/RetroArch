@@ -19,13 +19,13 @@
 
 #include "../input_joypad.h"
 #include "../input_autodetect.h"
+#include "../input_keyboard.h"
 #include "../input_config.h"
 #include "../input_keymaps.h"
 
 #include "../../driver.h"
 
 #include "../../general.h"
-#include "../keyboard_line.h"
 
 typedef struct rwebinput_state
 {
