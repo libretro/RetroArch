@@ -99,19 +99,11 @@ void win32_window_reset(void);
 
 void win32_destroy_window(void);
 
-#ifndef _MSC_VER
-extern "C" {
-#endif
-
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 
 LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
-
-#ifndef _MSC_VER
-}
-#endif
 
 #ifdef _XBOX
 BOOL IsIconic(HWND hwnd);
