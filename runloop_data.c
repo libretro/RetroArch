@@ -33,11 +33,6 @@ void rarch_main_data_deinit(void)
 
 void rarch_main_data_iterate(bool sleeping)
 {
-#ifdef HAVE_MENU
-   if (!sleeping)
-      menu_iterate_render();
-#endif
-
    if (data_runloop_msg[0] != '\0')
    {
       rarch_main_msg_queue_push(data_runloop_msg, 1, 10, true);

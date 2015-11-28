@@ -37,6 +37,7 @@
 
 #include "input/keyboard_line.h"
 #include "input/input_driver.h"
+#include "ui/ui_companion_driver.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"
@@ -850,6 +851,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
       if (input)
       {
          input = 0;
+         
 
          /* If core was paused before entering menu, evoke
           * pause toggle to wake it up. */
@@ -930,6 +932,10 @@ int rarch_main_iterate(unsigned *sleep_ms)
    {
       if (menu_driver_iterate((enum menu_action)menu_input_frame_retropad(input, trigger_input)) == -1)
          rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
+
+      if (check_focus(settings) && !ui_companion_is_on_foreground())
+         menu_iterate_render();
+
       if (!input && settings->menu.pause_libretro)
          ret = 1;
       goto end;
