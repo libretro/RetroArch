@@ -2065,8 +2065,11 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 
       glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
 
-      if (arb_frag_program)
-         glGetIntegerv(GL_MAX_PROGRAM_NATIVE_INSTRUCTIONS_ARB, &max_native_instr);
+#ifdef GL_MAX_PROGRAM_NATIVE_INSTRUCTIONS_ARB
+      if (arb_frag_program && glGetProgramivARB)
+         glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB,
+               GL_MAX_PROGRAM_NATIVE_INSTRUCTIONS_ARB, &max_native_instr);
+#endif
 
       gl->have_full_npot_support = arb_npot && arb_frag_program &&
             (max_texture_size >= 8192) && (max_native_instr >= 4096);
