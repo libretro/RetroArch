@@ -60,9 +60,9 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf,
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
       input_config_parse_joy_button(conf, "input",
-            input_bind_map_get_base(i), &binds[i]);
+            input_config_bind_map_get_base(i), &binds[i]);
       input_config_parse_joy_axis(conf, "input",
-            input_bind_map_get_base(i), &binds[i]);
+            input_config_bind_map_get_base(i), &binds[i]);
    }
 }
 

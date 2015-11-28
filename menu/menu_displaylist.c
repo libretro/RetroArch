@@ -2624,7 +2624,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             for (i = 0; i < RARCH_BIND_LIST_END; i++)
             {
                ret = menu_displaylist_parse_settings(menu, info,
-                     input_bind_map_get_base(i), PARSE_ONLY_BIND, false);
+                     input_config_bind_map_get_base(i), PARSE_ONLY_BIND, false);
                (void)ret;
             }
          }

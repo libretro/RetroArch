@@ -133,7 +133,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
 #endif
 };
 
-static const void *input_bind_map_get(unsigned i)
+static const void *input_config_bind_map_get(unsigned i)
 {
    const struct input_bind_map* keybind = (const struct input_bind_map*)&input_config_bind_map[i];
    if (!keybind)
@@ -141,33 +141,33 @@ static const void *input_bind_map_get(unsigned i)
    return keybind;
 }
 
-bool input_bind_map_get_valid(unsigned i)
+bool input_config_bind_map_get_valid(unsigned i)
 {
-   const struct input_bind_map* keybind = (const struct input_bind_map*)input_bind_map_get(i);
+   const struct input_bind_map* keybind = (const struct input_bind_map*)input_config_bind_map_get(i);
    if (!keybind)
       return false;
    return keybind->valid;
 }
 
-unsigned input_bind_map_get_meta(unsigned i)
+unsigned input_config_bind_map_get_meta(unsigned i)
 {
-   const struct input_bind_map* keybind = (const struct input_bind_map*)input_bind_map_get(i);
+   const struct input_bind_map* keybind = (const struct input_bind_map*)input_config_bind_map_get(i);
    if (!keybind)
       return 0;
    return keybind->meta;
 }
 
-const char *input_bind_map_get_base(unsigned i)
+const char *input_config_bind_map_get_base(unsigned i)
 {
-   const struct input_bind_map* keybind = (const struct input_bind_map*)input_bind_map_get(i);
+   const struct input_bind_map* keybind = (const struct input_bind_map*)input_config_bind_map_get(i);
    if (!keybind)
       return NULL;
    return keybind->base;
 }
 
-const char *input_bind_map_get_desc(unsigned i)
+const char *input_config_bind_map_get_desc(unsigned i)
 {
-   const struct input_bind_map* keybind = (const struct input_bind_map*)input_bind_map_get(i);
+   const struct input_bind_map* keybind = (const struct input_bind_map*)input_config_bind_map_get(i);
    if (!keybind)
       return NULL;
    return keybind->desc;

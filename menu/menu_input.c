@@ -735,7 +735,7 @@ int menu_input_key_bind_iterate(char *s, size_t len)
 
    snprintf(s, len,
          "[%s]\npress keyboard or joypad\n(timeout %d %s)",
-         input_bind_map_get_desc(
+         input_config_bind_map_get_desc(
          menu_input->binds.begin - MENU_SETTINGS_BIND_BEGIN),
          timeout,
          menu_hash_to_str(MENU_VALUE_SECONDS));

@@ -21,13 +21,13 @@
 #include <stdint.h>
 #include "../driver.h"
 
-const char *input_bind_map_get_base(unsigned i);
+const char *input_config_bind_map_get_base(unsigned i);
 
-unsigned input_bind_map_get_meta(unsigned i);
+unsigned input_config_bind_map_get_meta(unsigned i);
 
-const char *input_bind_map_get_desc(unsigned i);
+const char *input_config_bind_map_get_desc(unsigned i);
 
-bool input_bind_map_get_valid(unsigned i);
+bool input_config_bind_map_get_valid(unsigned i);
 
 /* auto_bind can be NULL. */
 void input_get_bind_string(char *buf, const struct retro_keybind *bind,
