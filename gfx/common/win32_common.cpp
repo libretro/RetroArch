@@ -172,11 +172,9 @@ static const char *win32_video_get_ident(void)
    return video_driver_get_ident();
 }
 
-LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
+static LRESULT CALLBACK WndProcCommon(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   settings_t *settings     = config_get_ptr();
-
    switch (message)
    {
       case WM_SYSCOMMAND:
@@ -195,76 +193,6 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       case WM_SYSKEYUP:
       case WM_SYSKEYDOWN:
          return win32_handle_keyboard_event(hwnd, message, wparam, lparam);
-
-      case WM_CREATE:
-         {
-            LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
-            curD3D                = p_cs->lpCreateParams;
-         }
-         return 0;
-
-      case WM_CLOSE:
-      case WM_DESTROY:
-      case WM_QUIT:
-      {
-         WINDOWPLACEMENT placement;
-         GetWindowPlacement(g_hwnd, &placement);
-         g_pos_x = placement.rcNormalPosition.left;
-         g_pos_y = placement.rcNormalPosition.top;
-         g_quit = true;
-         return 0;
-      }
-      case WM_SIZE:
-         /* Do not send resize message if we minimize. */
-         if (wparam != SIZE_MAXHIDE && wparam != SIZE_MINIMIZED)
-         {
-            g_resize_width  = LOWORD(lparam);
-            g_resize_height = HIWORD(lparam);
-            g_resized = true;
-         }
-         return 0;
-	  case WM_COMMAND:
-         if (settings->ui.menubar_enable)
-         {
-            HWND d3dr = g_hwnd;
-            LRESULT ret = win32_menu_loop(d3dr, wparam);
-            (void)ret;
-         }
-         break;
-   }
-
-   if (dinput_handle_message(dinput, message, wparam, lparam))
-      return 0;
-   return DefWindowProc(hwnd, message, wparam, lparam);
-}
-
-LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam)
-{
-   settings_t *settings     = config_get_ptr();
-
-   switch (message)
-   {
-      case WM_SYSCOMMAND:
-         /* Prevent screensavers, etc, while running. */
-         switch (wparam)
-         {
-            case SC_SCREENSAVE:
-            case SC_MONITORPOWER:
-               return 0;
-         }
-         break;
-
-      case WM_CHAR:
-      case WM_KEYDOWN:
-      case WM_KEYUP:
-      case WM_SYSKEYUP:
-      case WM_SYSKEYDOWN:
-         return win32_handle_keyboard_event(hwnd, message, wparam, lparam);
-
-      case WM_CREATE:
-         create_gl_context(hwnd, &g_quit);
-         return 0;
 
       case WM_CLOSE:
       case WM_DESTROY:
@@ -290,6 +218,65 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
          if (settings->ui.menubar_enable)
             win32_menu_loop(g_hwnd, wparam);
          break;
+   }
+   return 0;
+}
+
+LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   settings_t *settings     = config_get_ptr();
+
+   switch (message)
+   {
+      case WM_SYSCOMMAND:
+      case WM_CHAR:
+      case WM_KEYDOWN:
+      case WM_KEYUP:
+      case WM_SYSKEYUP:
+      case WM_SYSKEYDOWN:
+      case WM_CLOSE:
+      case WM_DESTROY:
+      case WM_QUIT:
+      case WM_SIZE:
+      case WM_COMMAND:
+         return WndProcCommon(hwnd, message, wparam, lparam);
+
+      case WM_CREATE:
+         {
+            LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
+            curD3D                = p_cs->lpCreateParams;
+         }
+         return 0;
+   }
+
+   if (dinput_handle_message(dinput, message, wparam, lparam))
+      return 0;
+   return DefWindowProc(hwnd, message, wparam, lparam);
+}
+
+LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   settings_t *settings     = config_get_ptr();
+
+   switch (message)
+   {
+      case WM_SYSCOMMAND:
+      case WM_CHAR:
+      case WM_KEYDOWN:
+      case WM_KEYUP:
+      case WM_SYSKEYUP:
+      case WM_SYSKEYDOWN:
+      case WM_CLOSE:
+      case WM_DESTROY:
+      case WM_QUIT:
+      case WM_SIZE:
+      case WM_COMMAND:
+         return WndProcCommon(hwnd, message, wparam, lparam);
+      case WM_CREATE:
+         create_gl_context(hwnd, &g_quit);
+         return 0;
    }
 
    if (dinput_handle_message(dinput_wgl, message, wparam, lparam))
