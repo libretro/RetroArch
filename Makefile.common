@@ -110,7 +110,6 @@ OBJ += frontend/frontend.o \
        retroarch.o \
 		 input/input_keyboard.o \
        system.o \
-       retroarch_info.o \
        command_event.o \
        msg_hash.o \
        intl/msg_hash_de.o \

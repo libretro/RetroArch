@@ -696,7 +696,6 @@ RETROARCH
 ============================================================ */
 #include "../libretro_version_1.c"
 #include "../retroarch.c"
-#include "../retroarch_info.c"
 #include "../runloop.c"
 #include "../runloop_data.c"
 #include "../runloop_msg.c"

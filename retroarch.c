@@ -1618,3 +1618,76 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
       rarch_main_ctl(RARCH_MAIN_CTL_SET_LIBRETRO_PATH, new_core_path);
    return -1;
 }
+
+int rarch_info_get_capabilities(enum rarch_capabilities type, char *s, size_t len)
+{
+   switch (type)
+   {
+      case RARCH_CAPABILITIES_CPU:
+         {
+            uint64_t cpu = retro_get_cpu_features();
+
+            if (cpu & RETRO_SIMD_MMX)
+               strlcat(s, "MMX ", len);
+            if (cpu & RETRO_SIMD_MMXEXT)
+               strlcat(s, "MMXEXT ", len);
+            if (cpu & RETRO_SIMD_SSE)
+               strlcat(s, "SSE1 ", len);
+            if (cpu & RETRO_SIMD_SSE2)
+               strlcat(s, "SSE2 ", len);
+            if (cpu & RETRO_SIMD_SSE3)
+               strlcat(s, "SSE3 ", len);
+            if (cpu & RETRO_SIMD_SSSE3)
+               strlcat(s, "SSSE3 ", len);
+            if (cpu & RETRO_SIMD_SSE4)
+               strlcat(s, "SSE4 ", len);
+            if (cpu & RETRO_SIMD_SSE42)
+               strlcat(s, "SSE4.2 ", len);
+            if (cpu & RETRO_SIMD_AVX)
+               strlcat(s, "AVX ", len);
+            if (cpu & RETRO_SIMD_AVX2)
+               strlcat(s, "AVX2 ", len);
+            if (cpu & RETRO_SIMD_VFPU)
+               strlcat(s, "VFPU ", len);
+            if (cpu & RETRO_SIMD_NEON)
+               strlcat(s, "NEON ", len);
+            if (cpu & RETRO_SIMD_PS)
+               strlcat(s, "PS ", len);
+            if (cpu & RETRO_SIMD_AES)
+               strlcat(s, "AES ", len);
+            if (cpu & RETRO_SIMD_VMX)
+               strlcat(s, "VMX ", len);
+            if (cpu & RETRO_SIMD_VMX128)
+               strlcat(s, "VMX128 ", len);
+         }
+         break;
+      case RARCH_CAPABILITIES_COMPILER:
+#if defined(_MSC_VER)
+         snprintf(s, len, "Compiler: MSVC (%d) %u-bit", _MSC_VER, (unsigned)
+               (CHAR_BIT * sizeof(size_t)));
+#elif defined(__SNC__)
+         snprintf(s, len, "Compiler: SNC (%d) %u-bit",
+               __SN_VER__, (unsigned)(CHAR_BIT * sizeof(size_t)));
+#elif defined(_WIN32) && defined(__GNUC__)
+         snprintf(s, len, "Compiler: MinGW (%d.%d.%d) %u-bit",
+               __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
+               (CHAR_BIT * sizeof(size_t)));
+#elif defined(__clang__)
+         snprintf(s, len, "Compiler: Clang/LLVM (%s) %u-bit",
+               __clang_version__, (unsigned)(CHAR_BIT * sizeof(size_t)));
+#elif defined(__GNUC__)
+         snprintf(s, len, "Compiler: GCC (%d.%d.%d) %u-bit",
+               __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
+               (CHAR_BIT * sizeof(size_t)));
+#else
+         snprintf(s, len, "Unknown compiler %u-bit",
+               (unsigned)(CHAR_BIT * sizeof(size_t)));
+#endif
+         break;
+      default:
+      case RARCH_CAPABILITIES_NONE:
+         break;
+   }
+
+   return 0;
+}
