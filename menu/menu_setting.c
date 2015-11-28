@@ -6111,8 +6111,10 @@ static bool setting_append_list_netplay_options(
       rarch_setting_info_t *list_info,
       const char *parent_group)
 {
-#ifdef HAVE_NETPLAY
+#if defined(HAVE_NETWORK_CMD)
    unsigned user;
+#endif
+#ifdef HAVE_NETPLAY
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
