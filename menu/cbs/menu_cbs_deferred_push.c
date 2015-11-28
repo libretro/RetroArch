@@ -428,6 +428,17 @@ void cb_generic_download(void *task_data, void *user_data, const char *err)
    fill_pathname_join(output_path, dir_path,
          transf->path, sizeof(output_path));
 
+   /* Make sure the directory exists */
+   path_basedir(output_path);
+   if (!path_mkdir(output_path))
+   {
+      err = "Failed to create the directory.";
+      goto finish;
+   }
+
+   fill_pathname_join(output_path, dir_path,
+         transf->path, sizeof(output_path));
+
    if (!retro_write_file(output_path, data->data, data->len))
    {
       err = "Write failed.";

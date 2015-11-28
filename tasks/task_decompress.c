@@ -68,32 +68,22 @@ error:
    snprintf(dec->callback_error, PATH_MAX_LENGTH, "Failed to deflate %s.\n", path);
 
    return 0;
-
 }
 
 static void rarch_task_decompress_handler(rarch_task_t *task)
 {
    decompress_state_t *dec = (decompress_state_t*)task->state;
    decompress_task_data_t *data = NULL;
-   bool failed;
+   bool returnerr;
+   int ret = 0;
 
-   zlib_parse_file_iterate(&dec->zlib, &failed, dec->source_file,
+   ret = zlib_parse_file_iterate(&dec->zlib, &returnerr, dec->source_file,
          dec->valid_ext, file_decompressed, dec);
 
-   if (failed)
+   if (task->cancelled || ret != 0)
    {
       task->error = dec->callback_error;
-      goto task_finished;
-   }
-
-   if (task->cancelled)
-      dec->zlib.type = ZLIB_TRANSFER_DEINIT;
-
-   /* run again to free resources */
-   if (dec->zlib.type == ZLIB_TRANSFER_DEINIT)
-   {
-      zlib_parse_file_iterate(&dec->zlib, &failed, dec->source_file,
-            dec->valid_ext, file_decompressed, dec);
+      zlib_parse_file_iterate_stop(&dec->zlib);
       goto task_finished;
    }
 
@@ -102,7 +92,7 @@ static void rarch_task_decompress_handler(rarch_task_t *task)
 task_finished:
    task->finished = true;
 
-   if (task->cancelled)
+   if (!task->error && task->cancelled)
       task->error = strdup("Task canceled");
 
    if (!task->error)
