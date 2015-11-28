@@ -707,7 +707,7 @@ static bool init_video(void)
       RARCH_LOG("Starting threaded video driver ...\n");
 
       if (!rarch_threaded_video_init(&current_video, &video_data,
-               &driver->input, &driver->input_data,
+               &driver->input, input_driver_get_data_ptr(),
                current_video, &video))
       {
          RARCH_ERR("Cannot open threaded video driver ... Exiting ...\n");
@@ -717,7 +717,7 @@ static bool init_video(void)
    else
 #endif
       video_data = current_video->init(&video, &driver->input,
-            &driver->input_data);
+            input_driver_get_data_ptr());
 
    if (!video_data)
    {

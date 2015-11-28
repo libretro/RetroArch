@@ -257,6 +257,8 @@ retro_input_t input_keys_pressed(void);
 
 bool input_driver_ctl(enum rarch_input_ctl_state state, void *data);
 
+void **input_driver_get_data_ptr(void);
+
 #ifdef __cplusplus
 }
 #endif
