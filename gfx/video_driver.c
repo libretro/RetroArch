@@ -1145,13 +1145,10 @@ void video_driver_set_pixel_format(enum retro_pixel_format fmt)
  **/
 static bool video_driver_cached_frame(void)
 {
-   bool is_idle;
    driver_t   *driver   = driver_get_ptr();
    void *recording      = driver ? driver->recording_data : NULL;
 
-   rarch_main_ctl(RARCH_MAIN_CTL_IS_IDLE, &is_idle);
-
-   if (is_idle)
+   if (rarch_main_ctl(RARCH_MAIN_CTL_IS_IDLE, NULL))
       return true; /* Maybe return false here for indication of idleness? */
 
    /* Cannot allow recording when pushing duped frames. */

@@ -444,16 +444,12 @@ static void rgui_render(void)
 
    if (!rgui->force_redraw)
    {
-      bool is_idle;
-
       menu_display_ctl(MENU_DISPLAY_CTL_MSG_FORCE, &msg_force);
 
       if (menu_entries_needs_refresh() && menu_driver_alive() && !msg_force)
          return;
 
-      rarch_main_ctl(RARCH_MAIN_CTL_IS_IDLE, &is_idle);
-            
-      if (is_idle)
+      if (rarch_main_ctl(RARCH_MAIN_CTL_IS_IDLE, NULL))
          return;
 
       if (!menu_display_ctl(MENU_DISPLAY_CTL_UPDATE_PENDING, NULL))
