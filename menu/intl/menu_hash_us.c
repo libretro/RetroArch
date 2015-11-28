@@ -1424,6 +1424,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Overlay support";
       case MENU_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT:
          return "Command interface support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT:
+         return "Network Gamepad support";
       case MENU_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT:
          return "Network Command interface support";
       case MENU_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT:
