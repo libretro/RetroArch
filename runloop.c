@@ -828,7 +828,7 @@ static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
  * Returns: 0 on success, 1 if we have to wait until button input in order
  * to wake up the loop, -1 if we forcibly quit out of the RetroArch iteration loop.
  **/
-int rarch_main_iterate(unsigned *sleep_ms)
+int rarch_main_iterate(unsigned *unfocused, unsigned *sleep_ms)
 {
    int ret;
    unsigned i;
@@ -933,7 +933,8 @@ int rarch_main_iterate(unsigned *sleep_ms)
 
       if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_IDLE_STATE, &cmd))
       {
-         *sleep_ms = 10;
+         *unfocused = 1;
+         *sleep_ms  = 10;
          return 1;
       }
 

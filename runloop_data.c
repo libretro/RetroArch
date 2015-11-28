@@ -31,10 +31,10 @@ void rarch_main_data_deinit(void)
    rarch_task_deinit();
 }
 
-void rarch_main_data_iterate(bool sleeping)
+void rarch_main_data_iterate(bool unfocused, bool sleeping)
 {
 #ifdef HAVE_MENU
-   if (!sleeping)
+   if (unfocused)
       menu_iterate_render();
 #endif
 

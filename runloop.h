@@ -339,7 +339,7 @@ global_t *global_get_ptr(void);
  * Returns: 0 on successful run, 1 if we have to wait until button input in order
  * to wake up the loop, -1 if we forcibly quit out of the RetroArch iteration loop. 
  **/
-int rarch_main_iterate(unsigned *sleep_ms);
+int rarch_main_iterate(unsigned *unfocused, unsigned *sleep_ms);
 
 void rarch_main_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);
