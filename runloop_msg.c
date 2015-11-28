@@ -16,6 +16,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdarg.h>
+
 #include <retro_assert.h>
 #include <queues/message_queue.h>
 #ifdef HAVE_THREADS
