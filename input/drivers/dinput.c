@@ -583,62 +583,62 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
    switch (message)
    {
       case WM_MOUSEMOVE:
-	 di->window_pos_x = GET_X_LPARAM(lParam);
-	 di->window_pos_y = GET_Y_LPARAM(lParam);
+         di->window_pos_x = GET_X_LPARAM(lParam);
+         di->window_pos_y = GET_Y_LPARAM(lParam);
          break;
       case WM_POINTERDOWN:
-      {
-         struct pointer_status *new_pointer =
-            (struct pointer_status *)malloc(sizeof(struct pointer_status));
-
-         if (!new_pointer)
          {
-            RARCH_ERR("dinput_handle_message: pointer allocation in WM_POINTERDOWN failed.\n");
-            return false;
-         }
+            struct pointer_status *new_pointer =
+               (struct pointer_status *)malloc(sizeof(struct pointer_status));
 
-         new_pointer->pointer_id = GET_POINTERID_WPARAM(wParam);
-         dinput_pointer_store_pos(new_pointer, lParam);
-         dinput_add_pointer(di, new_pointer);
-         return true;
-      }
+            if (!new_pointer)
+            {
+               RARCH_ERR("dinput_handle_message: pointer allocation in WM_POINTERDOWN failed.\n");
+               return false;
+            }
+
+            new_pointer->pointer_id = GET_POINTERID_WPARAM(wParam);
+            dinput_pointer_store_pos(new_pointer, lParam);
+            dinput_add_pointer(di, new_pointer);
+            return true;
+         }
       case WM_POINTERUP:
-      {
-         int pointer_id = GET_POINTERID_WPARAM(wParam);
-         dinput_delete_pointer(di, pointer_id);
-         return true;
-      }
+         {
+            int pointer_id = GET_POINTERID_WPARAM(wParam);
+            dinput_delete_pointer(di, pointer_id);
+            return true;
+         }
       case WM_POINTERUPDATE:
-      {
-         int pointer_id = GET_POINTERID_WPARAM(wParam);
-         struct pointer_status *pointer = dinput_find_pointer(di, pointer_id);
-         if (pointer)
-            dinput_pointer_store_pos(pointer, lParam);
-         return true;
-      }
+         {
+            int pointer_id = GET_POINTERID_WPARAM(wParam);
+            struct pointer_status *pointer = dinput_find_pointer(di, pointer_id);
+            if (pointer)
+               dinput_pointer_store_pos(pointer, lParam);
+            return true;
+         }
       case WM_DEVICECHANGE:
-      {
-         if (di->joypad)
-            di->joypad->destroy();
-         di->joypad = input_joypad_init_driver(settings->input.joypad_driver, di);
-         break;
-      }
+         {
+            if (di->joypad)
+               di->joypad->destroy();
+            di->joypad = input_joypad_init_driver(settings->input.joypad_driver, di);
+            break;
+         }
       case WM_MOUSEWHEEL:
-          {
-              if (((short) HIWORD(wParam))/120 > 0)
-                 di->mouse_wu = true;
-              if (((short) HIWORD(wParam))/120 < 0)
-                 di->mouse_wd = true;
-          }
-          break;
+         {
+            if (((short) HIWORD(wParam))/120 > 0)
+               di->mouse_wu = true;
+            if (((short) HIWORD(wParam))/120 < 0)
+               di->mouse_wd = true;
+         }
+         break;
       case WM_MOUSEHWHEEL:
-          {
-              if (((short) HIWORD(wParam))/120 > 0)
-                 di->mouse_hwu = true;
-              if (((short) HIWORD(wParam))/120 < 0)
-                 di->mouse_hwd = true;
-          }
-          break;
+         {
+            if (((short) HIWORD(wParam))/120 > 0)
+               di->mouse_hwu = true;
+            if (((short) HIWORD(wParam))/120 < 0)
+               di->mouse_hwd = true;
+         }
+         break;
    }
 
    return false;

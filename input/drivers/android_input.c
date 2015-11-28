@@ -291,7 +291,7 @@ error:
    return false;
 }
 
-static void engine_handle_cmd(void)
+static void android_input_poll_main_cmd(void)
 {
    bool is_paused;
    int8_t cmd;
@@ -786,7 +786,7 @@ static int android_input_get_id(android_input_t *android, AInputEvent *event)
    return id;
 }
 
-static void android_input_handle_input(void *data)
+static void android_input_poll_input(void *data)
 {
    AInputEvent *event = NULL;
    android_input_t    *android     = (android_input_t*)data;
@@ -831,7 +831,7 @@ static void android_input_handle_input(void *data)
    }
 }
 
-static void android_input_handle_user(void *data)
+static void android_input_poll_user(void *data)
 {
    android_input_t    *android     = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
@@ -870,13 +870,13 @@ static void android_input_poll(void *data)
       switch (ident)
       {
          case LOOPER_ID_INPUT:
-            android_input_handle_input(data);
+            android_input_poll_input(data);
             break;
          case LOOPER_ID_USER:
-            android_input_handle_user(data);
+            android_input_poll_user(data);
             break;
          case LOOPER_ID_MAIN:
-            engine_handle_cmd();
+            android_input_poll_main_cmd();
             break;
       }
    }
@@ -888,7 +888,7 @@ bool android_run_events(void *data)
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
 
    if (id == LOOPER_ID_MAIN)
-      engine_handle_cmd();
+      android_input_poll_main_cmd();
 
    /* Check if we are exiting. */
    if (system->shutdown)
