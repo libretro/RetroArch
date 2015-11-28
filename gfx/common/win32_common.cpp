@@ -201,8 +201,10 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
          return win32_handle_keyboard_event(hwnd, message, wparam, lparam);
 
       case WM_CREATE:
-         LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
-         curD3D                = p_cs->lpCreateParams;
+         {
+            LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
+            curD3D                = p_cs->lpCreateParams;
+         }
          return 0;
 
       case WM_CLOSE:
