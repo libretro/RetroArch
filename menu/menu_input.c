@@ -38,7 +38,7 @@
 #include "../performance.h"
 #include "../input/input_joypad.h"
 #include "../input/input_remapping.h"
-#include "../input/input_common.h"
+#include "../input/input_config.h"
 
 enum menu_mouse_action
 {

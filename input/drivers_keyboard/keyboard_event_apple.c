@@ -17,7 +17,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include "../input_common.h"
+#include "../input_config.h"
 #include "../input_keymaps.h"
 #include "../keyboard_line.h"
 #include "../drivers/cocoa_input.h"

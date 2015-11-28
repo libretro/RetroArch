@@ -33,7 +33,7 @@
 #include "../config.features.h"
 #include "../git_version.h"
 #include "../file_ext.h"
-#include "../input/input_common.h"
+#include "../input/input_config.h"
 #include "../dir_list_special.h"
 #include "../string_list_special.h"
 #include "../cheevos.h"

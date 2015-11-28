@@ -20,7 +20,7 @@
 
 #include <file/file_path.h>
 
-#include "input_common.h"
+#include "input_config.h"
 #include "input_keymaps.h"
 #include "input_remapping.h"
 

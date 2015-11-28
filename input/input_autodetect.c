@@ -21,7 +21,7 @@
 #include <file/dir_list.h>
 #include <file/file_path.h>
 
-#include "input_common.h"
+#include "input_config.h"
 #include "input_autodetect.h"
 
 #include "../general.h"

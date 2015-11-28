@@ -34,7 +34,6 @@
 #include "../configuration.h"
 #include "../verbosity.h"
 #include "../tasks/tasks.h"
-#include "input_common.h"
 
 struct input_overlay
 {

@@ -21,7 +21,7 @@
 #include <retro_miscellaneous.h>
 
 #include "cocoa_common.h"
-#include "../../../input/input_common.h"
+#include "../../../input/input_config.h"
 #include "../../../input/input_keymaps.h"
 #include "../../../input/drivers/cocoa_input.h"
 

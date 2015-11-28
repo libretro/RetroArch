@@ -162,7 +162,7 @@ OBJ += frontend/frontend.o \
        input/input_autodetect.o \
        input/input_joypad_driver.o \
        input/input_joypad.o \
-       input/input_common.o \
+       input/input_config.o \
        input/input_keymaps.o \
        input/input_remapping.o \
        tasks/task_overlay.o \

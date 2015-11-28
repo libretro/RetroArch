@@ -29,7 +29,7 @@
 #include "../../configuration.h"
 #include "../../performance.h"
 #include "../../input/input_autodetect.h"
-#include "../../input/input_common.h"
+#include "../../input/input_config.h"
 #include "../../cheevos.h"
 
 #include "../../runloop.h"

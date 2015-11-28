@@ -21,7 +21,7 @@
 #include <rhash.h>
 #include "tasks.h"
 
-#include "../input/input_common.h"
+#include "../input/input_config.h"
 #include "../input/input_overlay.h"
 #include "../configuration.h"
 #include "../verbosity.h"

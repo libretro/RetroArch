@@ -17,7 +17,7 @@
 #include "../../general.h"
 #include "../keyboard_line.h"
 #include "../../gfx/common/win32_common.h"
-#include "../input_common.h"
+#include "../input_config.h"
 #include "../input_keymaps.h"
 
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,

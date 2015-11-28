@@ -28,7 +28,6 @@
 
 #include "../common/linux_common.h"
 #include "../input_keymaps.h"
-#include "../input_common.h"
 #include "../input_joypad.h"
 
 typedef struct linuxraw_input

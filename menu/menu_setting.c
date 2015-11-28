@@ -40,7 +40,7 @@
 #include "../dynamic.h"
 #include "../audio/audio_driver.h"
 #include "../audio/audio_resampler_driver.h"
-#include "../input/input_common.h"
+#include "../input/input_config.h"
 #include "../input/input_autodetect.h"
 #include "../config.def.h"
 #include "../file_ext.h"

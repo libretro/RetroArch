@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INPUT_COMMON_H__
-#define INPUT_COMMON_H__
+#ifndef INPUT_CONFIG_H__
+#define INPUT_CONFIG_H__
 
 #include <file/config_file.h>
 #include <stdint.h>

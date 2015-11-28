@@ -34,7 +34,7 @@
 #include "../../driver.h"
 #include "../../libretro.h"
 #include "../../general.h"
-#include "../input_common.h"
+#include "../input_config.h"
 #ifdef HAVE_KERNEL_PRX
 #include "../../bootstrap/psp1/kernel_functions.h"
 #endif

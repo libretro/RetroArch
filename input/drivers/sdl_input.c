@@ -27,7 +27,7 @@
 #include "../../verbosity.h"
 #include "../../libretro.h"
 #include "../input_autodetect.h"
-#include "../input_common.h"
+#include "../input_config.h"
 #include "../input_joypad.h"
 #include "../input_keymaps.h"
 #include "../keyboard_line.h"

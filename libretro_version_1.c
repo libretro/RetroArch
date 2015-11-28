@@ -27,7 +27,6 @@
 #include "libretro.h"
 #include "general.h"
 #include "rewind.h"
-#include "input/input_common.h"
 #include "gfx/video_driver.h"
 #include "audio/audio_driver.h"
 

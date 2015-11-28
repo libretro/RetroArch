@@ -36,7 +36,6 @@
 #include "msg_hash.h"
 
 #include "input/keyboard_line.h"
-#include "input/input_common.h"
 #include "input/input_driver.h"
 
 #ifdef HAVE_MENU

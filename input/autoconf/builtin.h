@@ -17,7 +17,8 @@
 #ifndef AUTOCONF_BUILTIN_H__
 #define AUTOCONF_BUILTIN_H__
 
-#include "../input_common.h"
+#include "../input_config.h"
+
 #define DECL_BTN(btn, bind) "input_" #btn "_btn = " #bind "\n"
 #define DECL_AXIS(axis, bind) "input_" #axis "_axis = " #bind "\n"
 #define DECL_MENU(btn) "input_menu_toggle_btn = " #btn "\n"

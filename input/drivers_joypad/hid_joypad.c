@@ -15,7 +15,6 @@
  */
 
 #include "../input_autodetect.h"
-#include "../input_common.h"
 #include "../input_hid_driver.h"
 #include "../../driver.h"
 

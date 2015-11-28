@@ -311,7 +311,7 @@ INPUT
 #include "../input/input_joypad_driver.c"
 #include "../input/input_joypad.c"
 #include "../input/input_hid_driver.c"
-#include "../input/input_common.c"
+#include "../input/input_config.c"
 #include "../input/input_keymaps.c"
 #include "../input/input_remapping.c"
 #include "../input/keyboard_line.c"

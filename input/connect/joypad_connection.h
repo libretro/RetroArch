@@ -19,7 +19,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "../input_common.h"
+#include "../input_config.h"
 
 typedef void (*send_control_t)(void *data, uint8_t *buf, size_t size);
 

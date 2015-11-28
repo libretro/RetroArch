@@ -24,7 +24,7 @@
 
 #include "audio/audio_driver.h"
 #include "config.def.h"
-#include "input/input_common.h"
+#include "input/input_config.h"
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
 #include "general.h"

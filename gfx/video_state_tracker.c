@@ -19,7 +19,7 @@
 #include <compat/strl.h>
 #include <retro_inline.h>
 #include "../general.h"
-#include "../input/input_common.h"
+#include "../input/input_config.h"
 #include "../verbosity.h"
 
 #ifdef HAVE_PYTHON

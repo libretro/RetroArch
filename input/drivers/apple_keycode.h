@@ -156,6 +156,6 @@ enum
    KEY_RightGUI = 231
 };
 
-#include "../input_common.h"
+#include "../input_config.h"
 
 #endif
