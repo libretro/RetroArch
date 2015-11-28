@@ -69,7 +69,9 @@ enum rarch_main_ctl_state
    /* Initializes message queue. */
    RARCH_MAIN_CTL_MSG_QUEUE_INIT,
    /* Deinitializes message queue. */
-   RARCH_MAIN_CTL_MSG_QUEUE_DEINIT
+   RARCH_MAIN_CTL_MSG_QUEUE_DEINIT,
+   /* Initializes dummy core. */
+   RARCH_MAIN_CTL_PREPARE_DUMMY
 };
 
 typedef struct rarch_dir_list

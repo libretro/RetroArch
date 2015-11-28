@@ -1337,7 +1337,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             global->block_config_read = false;
             *settings->libretro = '\0'; /* Load core in new config. */
          }
-         event_command(EVENT_CMD_PREPARE_DUMMY);
+         rarch_main_ctl(RARCH_MAIN_CTL_PREPARE_DUMMY, NULL);
          return true;
       case RARCH_ACTION_STATE_MENU_RUNNING:
 #ifdef HAVE_MENU

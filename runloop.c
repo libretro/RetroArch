@@ -767,6 +767,20 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
          rarch_main_ctl(RARCH_MAIN_CTL_MSG_QUEUE_DEINIT, NULL);
          rarch_main_msg_queue_init();
          break;
+      case RARCH_MAIN_CTL_PREPARE_DUMMY:
+         {
+#ifdef HAVE_MENU
+            menu_handle_t *menu = menu_driver_get_ptr();
+            if (menu)
+               menu->load_no_content = false;
+#endif
+            rarch_main_data_clear_state();
+
+            rarch_main_ctl(RARCH_MAIN_CTL_CLEAR_CONTENT_PATH, NULL);
+
+            rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT, NULL);
+         }
+         break;
       default:
          return false;
    }
@@ -921,7 +935,7 @@ static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
       if (global->core_shutdown_initiated
             && settings->load_dummy_on_core_shutdown)
       {
-         if (!event_command(EVENT_CMD_PREPARE_DUMMY))
+         if (!rarch_main_ctl(RARCH_MAIN_CTL_PREPARE_DUMMY, NULL))
             return -1;
 
          system->shutdown = false;

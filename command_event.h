@@ -46,8 +46,6 @@ enum event_command
    EVENT_CMD_SAVE_STATE_INCREMENT,
    /* Takes screenshot. */
    EVENT_CMD_TAKE_SCREENSHOT,
-   /* Initializes dummy core. */
-   EVENT_CMD_PREPARE_DUMMY,
    /* Quits RetroArch. */
    EVENT_CMD_QUIT,
    /* Reinitialize all drivers. */

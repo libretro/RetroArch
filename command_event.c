@@ -1214,22 +1214,8 @@ bool event_command(enum event_command cmd)
          if (!take_screenshot())
             return false;
          break;
-      case EVENT_CMD_PREPARE_DUMMY:
-         {
-#ifdef HAVE_MENU
-            menu_handle_t *menu = menu_driver_get_ptr();
-            if (menu)
-               menu->load_no_content = false;
-#endif
-            rarch_main_data_clear_state();
-
-            rarch_main_ctl(RARCH_MAIN_CTL_CLEAR_CONTENT_PATH, NULL);
-
-            rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT, NULL);
-         }
-         break;
       case EVENT_CMD_UNLOAD_CORE:
-         event_command(EVENT_CMD_PREPARE_DUMMY);
+         rarch_main_ctl(RARCH_MAIN_CTL_PREPARE_DUMMY, NULL);
          event_command(EVENT_CMD_LOAD_CORE_DEINIT);
          break;
       case EVENT_CMD_QUIT:
