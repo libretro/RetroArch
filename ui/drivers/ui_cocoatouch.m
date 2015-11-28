@@ -72,16 +72,15 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 {
    bool is_idle;
    bool sleeping      = false;
-   unsigned unfocused = 0;
    unsigned sleep_ms  = 0;
-   int ret            = rarch_main_iterate(&unfocused, &sleep_ms);
+   int ret            = rarch_main_iterate(&sleep_ms);
 
    if (ret == 1 && !ui_companion_is_on_foreground() && sleep_ms > 0)
    {
       sleeping = true;
       retro_sleep(sleep_ms);
    }
-   rarch_main_data_iterate(unfocused, sleeping);
+   rarch_main_data_iterate(sleeping);
 
    if (ret == -1)
    {

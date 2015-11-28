@@ -226,17 +226,16 @@ static void poll_iteration(void)
     int ret = 0;
     while (ret != -1)
     {
-       bool sleeping     = false;
-       unsigned unfocused = 0;
-       unsigned sleep_ms  = 0;
+        bool sleeping     = false;
+       unsigned sleep_ms = 0;
        poll_iteration();
-       ret = rarch_main_iterate(&unfocused, &sleep_ms);
+       ret = rarch_main_iterate(&sleep_ms);
        if (ret == 1 && sleep_ms > 0)
        {
-          sleeping = true;
+           sleeping = true;
           retro_sleep(sleep_ms);
        }
-       rarch_main_data_iterate(unfocused, sleeping);
+       rarch_main_data_iterate(sleeping);
        while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
     }
     
