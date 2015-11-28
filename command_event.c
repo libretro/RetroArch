@@ -1421,8 +1421,6 @@ bool event_command(enum event_command cmd)
             core_info_list_free(global->core_info.list);
          global->core_info.list = NULL;
          break;
-      case EVENT_CMD_DATA_RUNLOOP_FREE:
-         break;
       case EVENT_CMD_CORE_INFO_INIT:
          event_command(EVENT_CMD_CORE_INFO_DEINIT);
 
