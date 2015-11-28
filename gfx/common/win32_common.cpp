@@ -161,17 +161,6 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
    GetMonitorInfo(*hm_to_use, (MONITORINFO*)mon);
 }
 
-static const char *win32_video_get_ident(void)
-{
-#ifdef HAVE_THREADS
-   settings_t *settings = config_get_ptr();
-
-   if (settings->video.threaded)
-      return rarch_threaded_video_get_ident();
-#endif
-   return video_driver_get_ident();
-}
-
 static LRESULT CALLBACK WndProcCommon(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
