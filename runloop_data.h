@@ -16,7 +16,6 @@
 #ifndef __RETROARCH_DATA_RUNLOOP_H
 #define __RETROARCH_DATA_RUNLOOP_H
 
-#include <boolean.h>
 #include <retro_miscellaneous.h>
 
 #ifdef __cplusplus
@@ -27,7 +26,7 @@ typedef int (*transfer_cb_t)(void *data, size_t len);
 
 void rarch_main_data_clear_state(void);
 
-void rarch_main_data_iterate(bool sleeping);
+void rarch_main_data_iterate(void);
 
 void rarch_main_data_deinit(void);
 

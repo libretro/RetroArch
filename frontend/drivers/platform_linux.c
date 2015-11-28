@@ -733,16 +733,12 @@ static void android_app_entry(void *data)
 #ifndef HAVE_MAIN
    do
    {
-      bool sleeping     = false;
       unsigned sleep_ms = 0;
       ret = rarch_main_iterate(&sleep_ms);
 
       if (ret == 1 && sleep_ms > 0)
-      {
-         sleeping = true;
          retro_sleep(sleep_ms);
-      }
-      rarch_main_data_iterate(sleeping);
+      rarch_main_data_iterate();
    }while (ret != -1);
 
    main_exit(data);

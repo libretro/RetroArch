@@ -31,7 +31,7 @@ void rarch_main_data_deinit(void)
    rarch_task_deinit();
 }
 
-void rarch_main_data_iterate(bool sleeping)
+void rarch_main_data_iterate(void)
 {
    if (data_runloop_msg[0] != '\0')
    {
