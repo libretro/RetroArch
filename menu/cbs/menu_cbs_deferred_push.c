@@ -354,8 +354,6 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
       if (path_file_exists(dec->source_file))
          remove(dec->source_file);
 
-
-
       free(dec->source_file);
       free(dec);
    }
@@ -367,7 +365,6 @@ void cb_generic_download(void *task_data, void *user_data, const char *err)
 (void *data, size_t len, const char *dir_path)
 #endif
 {
-   char msg[PATH_MAX_LENGTH];
    char output_path[PATH_MAX_LENGTH];
    char shaderdir[PATH_MAX_LENGTH];
    const char             *file_ext      = NULL;
@@ -432,13 +429,13 @@ void cb_generic_download(void *task_data, void *user_data, const char *err)
          transf->path, sizeof(output_path));
 
    if (!retro_write_file(output_path, data->data, data->len))
+   {
+      err = "Write failed.";
       goto finish;
+   }
 
-   snprintf(msg, sizeof(msg), "%s: %s.",
-         msg_hash_to_str(MSG_DOWNLOAD_COMPLETE),
-         transf->path);
-
-   rarch_main_msg_queue_push(msg, 1, 90, true);
+   rarch_main_msg_queue_pushf(1, 90, true, "%s: %s",
+         msg_hash_to_str(MSG_DOWNLOAD_COMPLETE), transf->path);
 
 #ifdef HAVE_ZLIB
    file_ext = path_get_extension(output_path);
@@ -448,13 +445,15 @@ void cb_generic_download(void *task_data, void *user_data, const char *err)
 
    if (!strcasecmp(file_ext, "zip"))
    {
-      snprintf(msg, sizeof(msg), "Decompressing %s...",
-         path_basename(output_path));
+      rarch_main_msg_queue_pushf(1, 90, true,
+            "Decompressing %s...", path_basename(output_path));
 
-      rarch_main_msg_queue_push(msg, 1, 90, true);
-
-      rarch_task_push_decompress(output_path, dir_path, NULL,
-            cb_decompressed, (void*)(uintptr_t)CB_CORE_UPDATER_DOWNLOAD);
+      if (!rarch_task_push_decompress(output_path, dir_path, NULL,
+            cb_decompressed, (void*)(uintptr_t)CB_CORE_UPDATER_DOWNLOAD))
+      {
+         rarch_main_msg_queue_pushf(1, 90, true,
+               "Decompression of %s failed.", path_basename(output_path));
+      }
    }
 #else
    if (transf->type_hash == CB_CORE_UPDATER_DOWNLOAD)
@@ -464,6 +463,8 @@ void cb_generic_download(void *task_data, void *user_data, const char *err)
 finish:
    if (err)
    {
+      rarch_main_msg_queue_pushf(1, 90, true, "Download failed.");
+
       RARCH_ERR("Download of '%s' failed: %s\n",
             (transf ? transf->path: "unknown"), err);
    }
