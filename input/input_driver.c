@@ -621,12 +621,21 @@ retro_input_t input_keys_pressed(void)
    return ret;
 }
 
+
 void **input_driver_get_data_ptr(void)
 {
    driver_t                   *driver = driver_get_ptr();
    if (!driver)
       return NULL;
    return (void**)&driver->input_data;
+}
+
+bool input_driver_data_ptr_is_same(void *data)
+{
+   driver_t                   *driver = driver_get_ptr();
+   if (!driver)
+      return false;
+   return (driver->input_data == data);
 }
 
 bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)

@@ -259,6 +259,8 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data);
 
 void **input_driver_get_data_ptr(void);
 
+bool input_driver_data_ptr_is_same(void *data);
+
 #ifdef __cplusplus
 }
 #endif
