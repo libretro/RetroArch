@@ -356,10 +356,6 @@ void rarch_main_msg_queue_push_new(uint32_t hash, unsigned prio,
 
 const char *rarch_main_msg_queue_pull(void);
 
-void rarch_main_msg_queue_free(void);
-
-void rarch_main_msg_queue_init(void);
-
 bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data);
 
 #ifdef __cplusplus

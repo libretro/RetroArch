@@ -16,10 +16,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdarg.h>
 #include <math.h>
 
 #include <file/file_path.h>
 #include <retro_inline.h>
+#include <retro_assert.h>
+#include <queues/message_queue.h>
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
 
 #include <compat/strl.h>
 
@@ -59,6 +65,114 @@ static unsigned main_max_frames;
 
 static retro_time_t frame_limit_last_time;
 static retro_time_t frame_limit_minimum_time;
+
+static msg_queue_t *g_msg_queue;
+
+#ifdef HAVE_THREADS
+static slock_t *mq_lock = NULL;
+#endif
+
+const char *rarch_main_msg_queue_pull(void)
+{
+   const char *ret = NULL;
+
+#ifdef HAVE_THREADS
+   slock_lock(mq_lock);
+#endif
+
+   ret = msg_queue_pull(g_msg_queue);
+
+#ifdef HAVE_THREADS
+   slock_unlock(mq_lock);
+#endif
+
+   return ret;
+}
+
+void rarch_main_msg_queue_push_new(uint32_t hash, unsigned prio, unsigned duration,
+      bool flush)
+{
+   const char *msg = msg_hash_to_str(hash);
+
+   if (!msg)
+      return;
+
+   rarch_main_msg_queue_push(msg, prio, duration, flush);
+}
+
+void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
+      bool flush)
+{
+   settings_t *settings;
+   settings = config_get_ptr();
+   if(!settings->video.font_enable)
+      return;
+   if (!g_msg_queue)
+      return;
+
+#ifdef HAVE_THREADS
+   slock_lock(mq_lock);
+#endif
+
+   if (flush)
+      msg_queue_clear(g_msg_queue);
+   msg_queue_push(g_msg_queue, msg, prio, duration);
+
+#ifdef HAVE_THREADS
+   slock_unlock(mq_lock);
+#endif
+
+   if (ui_companion_is_on_foreground())
+   {
+      const ui_companion_driver_t *ui = ui_companion_get_ptr();
+      if (ui->msg_queue_push)
+         ui->msg_queue_push(msg, prio, duration, flush);
+   }
+}
+
+void rarch_main_msg_queue_pushf(unsigned prio, unsigned duration,
+      bool flush, const char *fmt, ...)
+{
+   char buf[1024];
+   va_list ap;
+   va_start(ap, fmt);
+   vsnprintf(buf, sizeof(buf), fmt, ap);
+   va_end(ap);
+   rarch_main_msg_queue_push(buf, prio, duration, flush);
+}
+
+static void rarch_main_msg_queue_free(void)
+{
+   if (!g_msg_queue)
+      return;
+
+#ifdef HAVE_THREADS
+   slock_lock(mq_lock);
+#endif
+
+   msg_queue_free(g_msg_queue);
+
+#ifdef HAVE_THREADS
+   slock_unlock(mq_lock);
+   slock_free(mq_lock);
+#endif
+
+   g_msg_queue = NULL;
+}
+
+static void rarch_main_msg_queue_init(void)
+{
+   if (g_msg_queue)
+      return;
+
+   g_msg_queue = msg_queue_new(8);
+   retro_assert(g_msg_queue);
+
+#ifdef HAVE_THREADS
+   mq_lock = slock_new();
+   retro_assert(mq_lock);
+#endif
+}
 
 static bool check_focus(settings_t *settings)
 {
