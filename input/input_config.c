@@ -348,7 +348,7 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
    }
 }
 
-static void input_get_bind_string_joykey(char *buf, const char *prefix,
+static void input_config_get_bind_string_joykey(char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
    settings_t *settings = config_get_ptr();
@@ -391,7 +391,7 @@ static void input_get_bind_string_joykey(char *buf, const char *prefix,
    }
 }
 
-static void input_get_bind_string_joyaxis(char *buf, const char *prefix,
+static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
    unsigned axis        = 0;
@@ -414,7 +414,7 @@ static void input_get_bind_string_joyaxis(char *buf, const char *prefix,
       snprintf(buf, size, "%s%c%u (axis) ", prefix, dir, axis);
 }
 
-void input_get_bind_string(char *buf, const struct retro_keybind *bind,
+void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind, size_t size)
 {
    char key[64]    = {0};
@@ -425,13 +425,13 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind,
 
    *buf = '\0';
    if (bind->joykey != NO_BTN)
-      input_get_bind_string_joykey(buf, "", bind, size);
+      input_config_get_bind_string_joykey(buf, "", bind, size);
    else if (bind->joyaxis != AXIS_NONE)
-      input_get_bind_string_joyaxis(buf, "", bind, size);
+      input_config_get_bind_string_joyaxis(buf, "", bind, size);
    else if (auto_bind && auto_bind->joykey != NO_BTN)
-      input_get_bind_string_joykey(buf, "Auto: ", auto_bind, size);
+      input_config_get_bind_string_joykey(buf, "Auto: ", auto_bind, size);
    else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
-      input_get_bind_string_joyaxis(buf, "Auto: ", auto_bind, size);
+      input_config_get_bind_string_joyaxis(buf, "Auto: ", auto_bind, size);
 
 #ifndef RARCH_CONSOLE
    input_keymaps_translate_rk_to_str(bind->key, key, sizeof(key));

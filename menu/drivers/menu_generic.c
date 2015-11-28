@@ -98,7 +98,7 @@ static int action_iterate_help(char *s, size_t len, const char *label)
                const struct retro_keybind *auto_bind = (const struct retro_keybind*)
                   input_get_auto_bind(0, binds[i]);
 
-               input_get_bind_string(desc[i], keybind, auto_bind, sizeof(desc[i]));
+               input_config_get_bind_string(desc[i], keybind, auto_bind, sizeof(desc[i]));
             }
 
             menu_hash_get_help(MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG,

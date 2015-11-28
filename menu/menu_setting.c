@@ -916,7 +916,7 @@ static void setting_get_string_representation_st_bind(void *data,
    auto_bind    = (const struct retro_keybind*)
       input_get_auto_bind(index_offset, keybind->id);
 
-   input_get_bind_string(s, keybind, auto_bind, len);
+   input_config_get_bind_string(s, keybind, auto_bind, len);
 }
 
 static void setting_get_string_representation_int(void *data,
