@@ -249,7 +249,9 @@ static void dispmanx_surface_setup(void *data,  int src_width, int src_height,
    /* Allocate memory for all the pages in each surface
     * and initialize variables inside each page's struct. */
    surface->pages = calloc(surface->numpages, sizeof(struct dispmanx_page));
-   for (i = 0; i < surface->numpages; i++) {
+
+   for (i = 0; i < surface->numpages; i++)
+   {
       surface->pages[i].used = false;   
       surface->pages[i].surface = surface;   
       surface->pages[i].dispvars = _dispvars;   
