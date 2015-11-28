@@ -925,14 +925,15 @@ int rarch_main_iterate(unsigned *sleep_ms)
    if (menu_driver_alive())
    {
       bool focused = check_focus(settings) && !ui_companion_is_on_foreground();
+      bool is_idle = rarch_main_ctl(RARCH_MAIN_CTL_IS_IDLE, NULL);
 
       if (menu_driver_iterate((enum menu_action)menu_input_frame_retropad(input, trigger_input)) == -1)
          rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
 
-      if (focused)
+      if (focused || !is_idle)
          menu_iterate_render();
 
-      if (!focused)
+      if (!focused || is_idle)
       {
          *sleep_ms = 10;
          return 1;
