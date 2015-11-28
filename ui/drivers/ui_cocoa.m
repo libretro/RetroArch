@@ -207,11 +207,6 @@ static char** waiting_argv;
 static void poll_iteration(void)
 {
     NSEvent *event = NULL;
-    driver_t *driver = driver_get_ptr();
-    cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
-
-    if (!apple)
-      return;
     
     do
     {
