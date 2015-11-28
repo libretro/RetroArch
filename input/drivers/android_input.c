@@ -296,7 +296,6 @@ static void engine_handle_cmd(void)
    bool is_paused;
    int8_t cmd;
    struct android_app *android_app = (struct android_app*)g_android;
-   driver_t  *driver  = driver_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
@@ -387,9 +386,8 @@ static void engine_handle_cmd(void)
 
             if ((android_app->sensor_state_mask
                      & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))
-                  && android_app->accelerometerSensor == NULL
-                  && driver->input_data)
-               android_input_set_sensor_state(driver->input_data, 0,
+                  && android_app->accelerometerSensor == NULL)
+               input_sensor_set_state(0,
                      RETRO_SENSOR_ACCELEROMETER_ENABLE,
                      android_app->accelerometer_event_rate);
          }
@@ -409,8 +407,8 @@ static void engine_handle_cmd(void)
             if ((android_app->sensor_state_mask
                      & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))
                   && android_app->accelerometerSensor != NULL
-                  && driver->input_data)
-               android_input_set_sensor_state(driver->input_data, 0,
+                  )
+               input_sensor_set_state(0,
                      RETRO_SENSOR_ACCELEROMETER_DISABLE,
                      android_app->accelerometer_event_rate);
          }
