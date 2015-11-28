@@ -1101,8 +1101,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          uint64_t *mask = (uint64_t*)data;
 
          RARCH_LOG("Environ GET_INPUT_DEVICE_CAPABILITIES.\n");
-         if (driver->input &&
-               driver->input->get_capabilities && driver->input_data)
+         if (input_driver_ctl(RARCH_INPUT_CTL_HAS_CAPABILITIES, NULL))
             *mask = input_driver_get_capabilities();
          else
             return false;
