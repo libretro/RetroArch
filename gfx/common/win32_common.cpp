@@ -175,6 +175,8 @@ static const char *win32_video_get_ident(void)
 static LRESULT CALLBACK WndProcCommon(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
+   settings_t *settings     = config_get_ptr();
+
    switch (message)
    {
       case WM_SYSCOMMAND:
@@ -225,7 +227,6 @@ static LRESULT CALLBACK WndProcCommon(HWND hwnd, UINT message,
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   settings_t *settings     = config_get_ptr();
 
    switch (message)
    {
