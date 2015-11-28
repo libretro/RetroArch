@@ -113,7 +113,8 @@ typedef struct
    int parameters_start_y;
 } shader_dlg_t;
 
-extern LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+extern LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+extern LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
 static shader_dlg_t g_shader_dlg = {0};
 
@@ -387,9 +388,7 @@ bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen, const char *class_
    if (!fullscreen)
       wndclass->hbrBackground = (HBRUSH)COLOR_WINDOW;
 
-   if (class_name == NULL)
-      wndclass->lpfnWndProc   = WndProc;
-   else
+   if (class_name != NULL)
       wndclass->style         |= CS_CLASSDC;
 
    if (!RegisterClassEx(wndclass))

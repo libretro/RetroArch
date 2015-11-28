@@ -307,6 +307,8 @@ static bool gfx_ctx_wgl_init(void *data)
 
    win32_window_reset();
    win32_monitor_init();
+
+   wndclass.lpfnWndProc   = WndProcGL;
    if (!win32_window_init(&wndclass, true, NULL))
 	   return false;
 

@@ -176,12 +176,10 @@ static const char *win32_video_get_ident(void)
 extern "C" {
 #endif
 
-LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
+LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    settings_t *settings     = config_get_ptr();
-   driver_t   *driver       = driver_get_ptr();
-   const char *video_driver = win32_video_get_ident();
 
    switch (message)
    {
@@ -203,15 +201,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
          return win32_handle_keyboard_event(hwnd, message, wparam, lparam);
 
       case WM_CREATE:
-         if (!strcmp(video_driver, "gl"))
-         {
-            create_gl_context(hwnd, &g_quit);
-         }
-         else if (!strcmp(video_driver, "d3d"))
-         {
-            LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
-            curD3D                = p_cs->lpCreateParams;
-         }
+         LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
+         curD3D                = p_cs->lpCreateParams;
          return 0;
 
       case WM_CLOSE:
@@ -238,15 +229,72 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
          if (settings->ui.menubar_enable)
          {
             HWND d3dr = g_hwnd;
-            if (!strcmp(video_driver, "d3d"))
-               d3dr = g_hwnd;
             LRESULT ret = win32_menu_loop(d3dr, wparam);
             (void)ret;
          }
          break;
    }
 
-   if (dinput_handle_message((!strcmp(video_driver, "gl")) ? dinput_wgl : dinput, message, wparam, lparam))
+   if (dinput_handle_message(dinput, message, wparam, lparam))
+      return 0;
+   return DefWindowProc(hwnd, message, wparam, lparam);
+}
+
+LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   settings_t *settings     = config_get_ptr();
+
+   switch (message)
+   {
+      case WM_SYSCOMMAND:
+         /* Prevent screensavers, etc, while running. */
+         switch (wparam)
+         {
+            case SC_SCREENSAVE:
+            case SC_MONITORPOWER:
+               return 0;
+         }
+         break;
+
+      case WM_CHAR:
+      case WM_KEYDOWN:
+      case WM_KEYUP:
+      case WM_SYSKEYUP:
+      case WM_SYSKEYDOWN:
+         return win32_handle_keyboard_event(hwnd, message, wparam, lparam);
+
+      case WM_CREATE:
+         create_gl_context(hwnd, &g_quit);
+         return 0;
+
+      case WM_CLOSE:
+      case WM_DESTROY:
+      case WM_QUIT:
+      {
+         WINDOWPLACEMENT placement;
+         GetWindowPlacement(g_hwnd, &placement);
+         g_pos_x = placement.rcNormalPosition.left;
+         g_pos_y = placement.rcNormalPosition.top;
+         g_quit = true;
+         return 0;
+      }
+      case WM_SIZE:
+         /* Do not send resize message if we minimize. */
+         if (wparam != SIZE_MAXHIDE && wparam != SIZE_MINIMIZED)
+         {
+            g_resize_width  = LOWORD(lparam);
+            g_resize_height = HIWORD(lparam);
+            g_resized = true;
+         }
+         return 0;
+	  case WM_COMMAND:
+         if (settings->ui.menubar_enable)
+            win32_menu_loop(g_hwnd, wparam);
+         break;
+   }
+
+   if (dinput_handle_message(dinput_wgl, message, wparam, lparam))
       return 0;
    return DefWindowProc(hwnd, message, wparam, lparam);
 }

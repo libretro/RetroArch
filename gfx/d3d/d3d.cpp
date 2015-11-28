@@ -571,6 +571,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 
    memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
 #ifndef _XBOX
+   d3d->windowClass.lpfnWndProc = WndProcD3D;
    win32_window_init(&d3d->windowClass, true, NULL);
 #endif
 
