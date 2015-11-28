@@ -29,6 +29,12 @@
 #include "../../input/input_remapping.h"
 #include "../../system.h"
 
+enum
+{
+   ACTION_OK_FFMPEG = 0,
+   ACTION_OK_IMAGEVIEWER
+};
+
 #ifndef BIND_ACTION_OK
 #define BIND_ACTION_OK(cbs, name) \
    cbs->action_ok = name; \
@@ -539,13 +545,22 @@ static int action_ok_playlist_entry(const char *path,
       if (found_associated_core)
       {
          char new_display_name[PATH_MAX_LENGTH];
+         const char *entry_path  = NULL;
+         const char *entry_crc32 = NULL;
+         const char *db_name     = NULL;
+
+         content_playlist_get_index(menu->playlist, selection_ptr,
+               &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
 
          strlcpy(new_display_name, core_info->display_name, sizeof(new_display_name));
-         content_playlist_update(menu->playlist, selection_ptr,
-               menu->playlist->entries[selection_ptr].path, menu->playlist->entries[selection_ptr].label,
-               new_core_path , new_display_name,
-               menu->playlist->entries[selection_ptr].crc32,
-               menu->playlist->entries[selection_ptr].db_name);
+         content_playlist_update(menu->playlist,
+               selection_ptr,
+               entry_path,
+               entry_label,
+               new_core_path,
+               new_display_name,
+               entry_crc32,
+               db_name);
          content_playlist_write_file(menu->playlist);
       }
       else
@@ -937,6 +952,10 @@ static int action_ok_core_deferred_set(const char *path,
 {
    size_t selection;
    char core_display_name[PATH_MAX_LENGTH];
+   const char            *entry_path = NULL;
+   const char           *entry_label = NULL;
+   const char           *entry_crc32 = NULL;
+   const char               *db_name = NULL;
    menu_handle_t               *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
@@ -949,11 +968,14 @@ static int action_ok_core_deferred_set(const char *path,
 
    idx = rdb_entry_start_game_selection_ptr;
 
+   content_playlist_get_index(menu->playlist, idx,
+         &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
+
    content_playlist_update(menu->playlist, idx,
-         menu->playlist->entries[idx].path, menu->playlist->entries[idx].label,
+         entry_path, entry_label,
          path , core_display_name,
-         menu->playlist->entries[idx].crc32,
-         menu->playlist->entries[idx].db_name);
+         entry_crc32,
+         db_name);
 
    content_playlist_write_file(menu->playlist);
 
@@ -985,11 +1007,6 @@ static int action_ok_deferred_list_stub(const char *path,
    return 0;
 }
 
-enum
-{
-   ACTION_OK_FFMPEG = 0,
-   ACTION_OK_IMAGEVIEWER
-};
 
 static int generic_action_ok_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,

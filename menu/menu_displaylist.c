@@ -1158,14 +1158,20 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
       if (playlist)
       {
-         for (j = 0; j < playlist->size; j++)
+         for (j = 0; j < content_playlist_size(playlist); j++)
          {
+            const char *crc32                = NULL;
             char elem0[PATH_MAX_LENGTH]      = {0};
             char elem1[PATH_MAX_LENGTH]      = {0};
             bool match_found                 = false;
-            struct string_list *tmp_str_list = string_split(
-                  playlist->entries[j].crc32, "|");
+            struct string_list *tmp_str_list = NULL;
             uint32_t hash_value              = 0;
+
+            content_playlist_get_index(playlist, j,
+                  NULL, NULL, NULL, NULL,
+                  NULL, &crc32);
+
+            tmp_str_list                     = string_split(crc32, "|");
 
             if (!tmp_str_list)
                continue;
@@ -1638,10 +1644,13 @@ loop:
 static int menu_displaylist_sort_playlist(const content_playlist_entry_t *a,
       const content_playlist_entry_t *b)
 {
-   if (!a->label || !b->label)
+   const char *a_label = content_playlist_entry_get_label(a);
+   const char *b_label = content_playlist_entry_get_label(b);
+
+   if (!a_label || !b_label)
       return 0;
 
-   return strcasecmp(a->label, b->label);
+   return strcasecmp(a_label, b_label);
 }
 
 static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)

@@ -25,6 +25,25 @@
 #include "playlist.h"
 #include "verbosity.h"
 
+struct content_playlist_entry
+{
+   char *path;
+   char *label;
+   char *core_path;
+   char *core_name;
+   char *db_name;
+   char *crc32;
+};
+
+struct content_playlist
+{
+   struct content_playlist_entry *entries;
+   size_t size;
+   size_t cap;
+
+   char *conf_path;
+};
+
 /**
  * content_playlist_get_index:
  * @playlist        	   : Playlist handle.
@@ -313,6 +332,13 @@ size_t content_playlist_size(content_playlist_t *playlist)
    if (!playlist)
       return 0;
    return playlist->size;
+}
+
+const char *content_playlist_entry_get_label(const content_playlist_entry_t *entry)
+{
+   if (!entry)
+      return NULL;
+   return entry->label;
 }
 
 #ifndef PLAYLIST_ENTRIES

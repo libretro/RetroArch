@@ -24,24 +24,8 @@
 extern "C" {
 #endif
 
-typedef struct content_playlist_entry
-{
-   char *path;
-   char *label;
-   char *core_path;
-   char *core_name;
-   char *db_name;
-   char *crc32;
-} content_playlist_entry_t;
-
-typedef struct content_playlist
-{
-   struct content_playlist_entry *entries;
-   size_t size;
-   size_t cap;
-
-   char *conf_path;
-} content_playlist_t;
+typedef struct content_playlist_entry content_playlist_entry_t;
+typedef struct content_playlist       content_playlist_t;
 
 typedef int (content_playlist_sort_fun_t)(const content_playlist_entry_t *a,
       const content_playlist_entry_t *b);
@@ -81,6 +65,8 @@ void content_playlist_clear(content_playlist_t *playlist);
  * Returns: size of playlist.
  **/
 size_t content_playlist_size(content_playlist_t *playlist);
+
+const char *content_playlist_entry_get_label(const content_playlist_entry_t *entry);
 
 /**
  * content_playlist_get_index:
