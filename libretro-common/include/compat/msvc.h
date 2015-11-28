@@ -30,6 +30,9 @@
 #ifndef snprintf
 #define snprintf _snprintf
 #endif
+#ifndef vsnprintf
+#define vsnprintf _vsnprintf
+#endif
 #endif
 
 #undef UNICODE /* Do not bother with UNICODE at this time. */
