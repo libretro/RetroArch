@@ -934,7 +934,14 @@ int rarch_main_iterate(unsigned *sleep_ms)
          rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
 
       if (check_focus(settings) && !ui_companion_is_on_foreground())
+      {
          menu_iterate_render();
+      }
+      else
+      {
+         *sleep_ms = 10;
+         return 1;
+      }
 
       if (!input && settings->menu.pause_libretro)
          ret = 1;
