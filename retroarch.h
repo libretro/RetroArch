@@ -78,12 +78,12 @@ enum rarch_ctl_state
 
    RARCH_ACTION_STATE_FORCE_QUIT,
 
-      /* Compare libretro core API version against API version
-       * used by RetroArch.
-       *
-       * TODO - when libretro v2 gets added, allow for switching
-       * between libretro version backend dynamically.
-       */
+   /* Compare libretro core API version against API version
+    * used by RetroArch.
+    *
+    * TODO - when libretro v2 gets added, allow for switching
+    * between libretro version backend dynamically.
+    */
    RARCH_ACTION_STATE_VERIFY_API_VERSION,
 
       /* Validates CPU features for given processor architecture.
