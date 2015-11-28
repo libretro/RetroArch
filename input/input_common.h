@@ -21,8 +21,6 @@
 #include <stdint.h>
 #include "../driver.h"
 
-const void *input_bind_map_get(unsigned i);
-
 const char *input_bind_map_get_base(unsigned i);
 
 unsigned input_bind_map_get_meta(unsigned i);

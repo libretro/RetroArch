@@ -133,7 +133,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
 #endif
 };
 
-const void *input_bind_map_get(unsigned i)
+static const void *input_bind_map_get(unsigned i)
 {
    const struct input_bind_map* keybind = (const struct input_bind_map*)&input_config_bind_map[i];
    if (!keybind)
