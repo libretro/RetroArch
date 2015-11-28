@@ -13,6 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+#include <string.h>
+
 #include <libusb-1.0/libusb.h>
 
 #include <rthreads/rthreads.h>
@@ -21,6 +24,8 @@
 
 #include "../connect/joypad_connection.h"
 #include "../input_autodetect.h"
+#include "../input_config.h"
+#include "../input_driver.h"
 #include "../input_hid_driver.h"
 #include "../../verbosity.h"
 

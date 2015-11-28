@@ -15,6 +15,9 @@
  */
 
 #include <string.h>
+
+#include "../input_config.h"
+
 #include "joypad_connection.h"
 
 int pad_connection_find_vacant_pad(joypad_connection_t *joyconn)

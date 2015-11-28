@@ -19,6 +19,8 @@
 #include <stdlib.h>
 
 #include <boolean.h>
+
+#include "../../driver.h"
 #include "joypad_connection.h"
 
 enum connect_ps4_dpad_states

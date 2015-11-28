@@ -15,10 +15,14 @@
  */
 
 #include <stdint.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include <boolean.h>
+
 #include <retro_endianness.h>
+#include <retro_miscellaneous.h>
+
 #include "joypad_connection.h"
 
 /* wiimote state flags*/
