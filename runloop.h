@@ -65,7 +65,11 @@ enum rarch_main_ctl_state
    RARCH_MAIN_CTL_CHECK_MOVIE_RECORD,
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */
    RARCH_MAIN_CTL_CHECK_SLOWMOTION,
-   RARCH_MAIN_CTL_CHECK_PAUSE_STATE
+   RARCH_MAIN_CTL_CHECK_PAUSE_STATE,
+   /* Initializes message queue. */
+   RARCH_MAIN_CTL_MSG_QUEUE_INIT,
+   /* Deinitializes message queue. */
+   RARCH_MAIN_CTL_MSG_QUEUE_DEINIT
 };
 
 typedef struct rarch_dir_list

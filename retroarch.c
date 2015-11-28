@@ -1090,12 +1090,12 @@ void rarch_main_new(void)
    init_state();
    main_init_state_config();
 
-   event_command(EVENT_CMD_MSG_QUEUE_INIT);
+   rarch_main_ctl(RARCH_MAIN_CTL_MSG_QUEUE_INIT, NULL);
 }
 
 void rarch_main_free(void)
 {
-   event_command(EVENT_CMD_MSG_QUEUE_DEINIT);
+   rarch_main_ctl(RARCH_MAIN_CTL_MSG_QUEUE_DEINIT, NULL);
    event_command(EVENT_CMD_DRIVERS_DEINIT);
    event_command(EVENT_CMD_LOG_FILE_DEINIT);
 

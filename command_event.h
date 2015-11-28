@@ -147,10 +147,6 @@ enum event_command
    EVENT_CMD_SAVEFILES_INIT,
    /* Deinitializes savefiles. */
    EVENT_CMD_SAVEFILES_DEINIT,
-   /* Initializes message queue. */
-   EVENT_CMD_MSG_QUEUE_INIT,
-   /* Deinitializes message queue. */
-   EVENT_CMD_MSG_QUEUE_DEINIT,
    /* Initializes cheats. */
    EVENT_CMD_CHEATS_INIT,
    /* Deinitializes cheats. */

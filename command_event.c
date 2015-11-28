@@ -1625,13 +1625,6 @@ bool event_command(enum event_command cmd)
          if (global->sram.use)
             event_command(EVENT_CMD_AUTOSAVE_INIT);
          break;
-      case EVENT_CMD_MSG_QUEUE_DEINIT:
-         rarch_main_msg_queue_free();
-         break;
-      case EVENT_CMD_MSG_QUEUE_INIT:
-         event_command(EVENT_CMD_MSG_QUEUE_DEINIT);
-         rarch_main_msg_queue_init();
-         break;
       case EVENT_CMD_BSV_MOVIE_DEINIT:
          if (!global)
             break;

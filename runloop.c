@@ -646,6 +646,13 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             *ptr = main_is_paused;
          }
          break;
+      case RARCH_MAIN_CTL_MSG_QUEUE_DEINIT:
+         rarch_main_msg_queue_free();
+         break;
+      case RARCH_MAIN_CTL_MSG_QUEUE_INIT:
+         rarch_main_ctl(RARCH_MAIN_CTL_MSG_QUEUE_DEINIT, NULL);
+         rarch_main_msg_queue_init();
+         break;
       default:
          return false;
    }
