@@ -20,10 +20,6 @@
 
 #include "tasks/tasks.h"
 
-#ifdef HAVE_MENU
-#include "menu/menu.h"
-#endif
-
 static char data_runloop_msg[PATH_MAX_LENGTH];
 
 void rarch_main_data_deinit(void)
