@@ -717,6 +717,7 @@ endif
 
 ifeq ($(HAVE_DISPMANX), 1)
    OBJ += gfx/drivers/dispmanx_gfx.o
+	HAVE_VIDEOCORE = 1
    LIBS += $(DISPMANX_LIBS)
    DEFINES += $(DISPMANX_CFLAGS)
 endif
