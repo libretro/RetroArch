@@ -160,6 +160,8 @@ enum
    KEY_RightGUI = 231
 };
 
+#include <stdint.h>
+
 #include "../input_config.h"
 
 int16_t apple_input_is_pressed(unsigned port_num,
@@ -167,7 +169,7 @@ int16_t apple_input_is_pressed(unsigned port_num,
 
 int16_t apple_keyboard_state(unsigned id);
 
-void apple_keyboard_find_any_key(void);
+int32_t apple_keyboard_find_any_key(void);
 
 void apple_keyboard_free(void);
 

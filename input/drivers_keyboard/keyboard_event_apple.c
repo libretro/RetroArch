@@ -326,13 +326,15 @@ int16_t apple_keyboard_state(unsigned id)
    return (id < RETROK_LAST) && apple_key_state[bit];
 }
 
-void apple_keyboard_find_any_key(void)
+int32_t apple_keyboard_find_any_key(void)
 {
    unsigned i;
 
    for (i = 0; apple_key_name_map[i].hid_id; i++)
       if (apple_key_state[apple_key_name_map[i].hid_id])
          return apple_key_name_map[i].hid_id;
+
+   return 0;
 }
 
 void apple_keyboard_free(void)

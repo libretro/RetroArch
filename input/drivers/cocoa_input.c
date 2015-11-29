@@ -38,9 +38,7 @@ int32_t cocoa_input_find_any_key(void)
     if (apple->sec_joypad)
         apple->sec_joypad->poll();
 
-   apple_keyboard_find_any_key();
-
-   return 0;
+   return apple_keyboard_find_any_key();
 }
 
 static int cocoa_input_find_any_button_ret(cocoa_input_data_t *apple,
