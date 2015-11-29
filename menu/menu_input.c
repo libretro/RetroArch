@@ -170,7 +170,6 @@ void menu_input_key_event(bool down, unsigned keycode,
 static void menu_input_key_end_line(void)
 {
    bool keyboard_display    = false;
-   driver_t *driver         = driver_get_ptr();
 
    menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY, &keyboard_display);
    menu_input_ctl(MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL, NULL);
@@ -718,7 +717,6 @@ int menu_input_key_bind_iterate(char *s, size_t len)
    struct menu_bind_state binds;
    bool               timed_out = false;
    menu_input_t *menu_input     = menu_input_get_ptr();
-   driver_t *driver             = driver_get_ptr();
    int64_t current              = retro_get_time_usec();
    int timeout                  = (menu_input->binds.timeout_end - current) / 1000000;
 
