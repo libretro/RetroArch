@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <retro_miscellaneous.h>
 #include "driver.h"
+#include "gfx/video_driver.h"
 
 #ifndef MAX_USERS
 #define MAX_USERS 16
