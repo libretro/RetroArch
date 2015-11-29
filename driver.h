@@ -229,14 +229,6 @@ typedef struct driver
    const menu_ctx_driver_t *menu_ctx;
 #endif
 
-   /* If set during context deinit, the driver should keep
-    * graphics context alive to avoid having to reset all 
-    * context state. */
-   bool video_cache_context;
-
-   /* Set to true by driver if context caching succeeded. */
-   bool video_cache_context_ack;
-
    /* Set this to true if the platform in question needs to 'own' 
     * the respective handle and therefore skip regular RetroArch 
     * driver teardown/reiniting procedure.

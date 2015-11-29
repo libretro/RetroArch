@@ -385,10 +385,10 @@ void init_drivers(int flags)
       video_driver_ctl(RARCH_DISPLAY_CTL_MONITOR_RESET, NULL);
       video_driver_ctl(RARCH_DISPLAY_CTL_INIT, NULL);
 
-      if (!driver->video_cache_context_ack
+      if (!video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT_ACK, NULL)
             && hw_render->context_reset)
          hw_render->context_reset();
-      driver->video_cache_context_ack = false;
+      video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT_ACK, NULL);
 
       system->frame_time_last = 0;
    }

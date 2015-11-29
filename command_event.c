@@ -1226,10 +1226,14 @@ bool event_command(enum event_command cmd)
             const struct retro_hw_render_callback *hw_render =
                (const struct retro_hw_render_callback*)video_driver_callback();
 
-            driver->video_cache_context     = hw_render->cache_context;
-            driver->video_cache_context_ack = false;
+            if (hw_render->cache_context)
+               video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT, NULL);
+            else
+               video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT, NULL);
+
+            video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT_ACK, NULL);
             event_command(EVENT_CMD_RESET_CONTEXT);
-            driver->video_cache_context     = false;
+            video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT, NULL);
 
             /* Poll input to avoid possibly stale data to corrupt things. */
             input_driver_ctl(RARCH_INPUT_CTL_POLL, NULL);

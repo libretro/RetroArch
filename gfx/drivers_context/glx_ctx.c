@@ -63,8 +63,6 @@ static int glx_nul_handler(Display *dpy, XErrorEvent *event)
 
 static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
 {
-   driver_t *driver = driver_get_ptr();
-
    if (!glx)
       return;
 
@@ -76,7 +74,7 @@ static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
       glFinish();
       glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
 
-      if (!driver->video_cache_context)
+      if (!video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL))
       {
          if (glx->g_hw_ctx)
             glXDestroyContext(g_x11_dpy, glx->g_hw_ctx);
@@ -120,7 +118,7 @@ static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
       glx->g_should_reset_mode = false;
    }
 
-   if (!driver->video_cache_context && g_x11_dpy)
+   if (!video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL) && g_x11_dpy)
    {
       XCloseDisplay(g_x11_dpy);
       g_x11_dpy = NULL;
@@ -283,7 +281,6 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    XVisualInfo *vi = NULL;
    XSetWindowAttributes swa = {0};
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
-   driver_t *driver = driver_get_ptr();
    settings_t *settings    = config_get_ptr();
    gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)
       gfx_ctx_data_get_ptr();
@@ -446,7 +443,7 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    }
    else
    {
-      driver->video_cache_context_ack = true;
+      video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK, NULL);
       RARCH_LOG("[GLX]: Using cached GL context.\n");
    }
 

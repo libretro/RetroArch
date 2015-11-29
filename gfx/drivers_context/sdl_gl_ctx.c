@@ -158,10 +158,9 @@ static void sdl_ctx_swap_interval(void *data, unsigned interval)
 }
 
 static bool sdl_ctx_set_video_mode(void *data, unsigned width, unsigned height,
-                                   bool fullscreen)
+      bool fullscreen)
 {
    unsigned fsflag = 0;
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)gfx_ctx_data_get_ptr();
 
@@ -207,7 +206,7 @@ static bool sdl_ctx_set_video_mode(void *data, unsigned width, unsigned height,
 
 #ifdef HAVE_SDL2
    if (sdl->g_ctx)
-      driver->video_cache_context_ack = true;
+      video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK, NULL);
    else
    {
       sdl->g_ctx = SDL_GL_CreateContext(sdl->g_win);

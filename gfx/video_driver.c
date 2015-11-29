@@ -75,6 +75,14 @@ typedef struct video_pixel_scaler
    void *scaler_out;
 } video_pixel_scaler_t;
 
+/* If set during context deinit, the driver should keep
+ * graphics context alive to avoid having to reset all 
+ * context state. */
+static bool video_cache_context;
+
+/* Set to true by driver if context caching succeeded. */
+static bool video_cache_context_ack;
+
 /* Opaque handles to currently running window.
  * Used by e.g. input drivers which bind to a window.
  * Drivers are responsible for setting these if an input driver
@@ -548,7 +556,7 @@ static bool uninit_video_input(void)
    event_command(EVENT_CMD_SHADER_DIR_DEINIT);
    video_monitor_compute_fps_statistics();
 
-   if (hw_render->context_destroy && !driver->video_cache_context)
+   if (hw_render->context_destroy && !video_cache_context)
       hw_render->context_destroy();
 
    video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_RGBA, NULL);
@@ -1627,6 +1635,22 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          break;
       case RARCH_DISPLAY_CTL_OWNS_DRIVER:
          return video_data_own;
+      case RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT:
+         video_cache_context = true;
+         break;
+      case RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT:
+         video_cache_context = false;
+         break;
+      case RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT:
+         return video_cache_context;
+      case RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK:
+         video_cache_context_ack = true;
+         break;
+      case RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT_ACK:
+         video_cache_context_ack = false;
+         break;
+      case RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT_ACK:
+         return video_cache_context_ack;
       case RARCH_DISPLAY_CTL_NONE:
       default:
          break;
