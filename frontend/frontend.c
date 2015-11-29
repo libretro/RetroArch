@@ -16,13 +16,16 @@
  */
 
 #include <file/file_path.h>
+#include <retro_assert.h>
 #include <retro_stat.h>
 #include <rthreads/async_job.h>
 
 #include "frontend.h"
+
+#include "../defaults.h"
+#include "../driver.h"
 #include "../system.h"
 #include "../driver.h"
-#include "../general.h"
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../runloop_data.h"

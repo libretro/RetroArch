@@ -17,6 +17,9 @@
 #include <string.h>
 
 #include "frontend_driver.h"
+#ifndef IS_SALAMANDER
+#include "../driver.h"
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
