@@ -88,13 +88,6 @@ struct font_params
    enum text_alignment text_align;
 };
 
-typedef struct video_pixel_scaler
-{
-   struct scaler_ctx *scaler;
-   void *scaler_out;
-} video_pixel_scaler_t;
-
-
 #define FONT_COLOR_RGBA(r, g, b, a) (((r) << 24) | ((g) << 16) | ((b) << 8) | ((a) << 0))
 #define FONT_COLOR_GET_RED(col)   (((col) >> 24) & 0xff)
 #define FONT_COLOR_GET_GREEN(col) (((col) >> 16) & 0xff)

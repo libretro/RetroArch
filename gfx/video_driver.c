@@ -69,6 +69,12 @@ typedef struct video_driver_state
    } filter;
 } video_driver_state_t;
 
+typedef struct video_pixel_scaler
+{
+   struct scaler_ctx *scaler;
+   void *scaler_out;
+} video_pixel_scaler_t;
+
 /* Opaque handles to currently running window.
  * Used by e.g. input drivers which bind to a window.
  * Drivers are responsible for setting these if an input driver
