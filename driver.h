@@ -57,32 +57,32 @@
 extern "C" {
 #endif
 
-#define AUDIO_CHUNK_SIZE_BLOCKING 512
+#define AUDIO_CHUNK_SIZE_BLOCKING      512
 
 /* So we don't get complete line-noise when fast-forwarding audio. */
-#define AUDIO_CHUNK_SIZE_NONBLOCKING 2048
+#define AUDIO_CHUNK_SIZE_NONBLOCKING   2048
 
-#define AUDIO_MAX_RATIO 16
+#define AUDIO_MAX_RATIO                16
 
 /* Specialized _MOUSE that targets the full screen regardless of viewport.
  */
-#define RARCH_DEVICE_MOUSE_SCREEN (RETRO_DEVICE_MOUSE | 0x10000)
+#define RARCH_DEVICE_MOUSE_SCREEN      (RETRO_DEVICE_MOUSE | 0x10000)
 
 /* Specialized _POINTER that targets the full screen regardless of viewport.
  * Should not be used by a libretro implementation as coordinates returned
  * make no sense.
  *
  * It is only used internally for overlays. */
-#define RARCH_DEVICE_POINTER_SCREEN (RETRO_DEVICE_POINTER | 0x10000)
+#define RARCH_DEVICE_POINTER_SCREEN    (RETRO_DEVICE_POINTER | 0x10000)
 
-#define RARCH_DEVICE_ID_POINTER_BACK (RETRO_DEVICE_ID_POINTER_PRESSED | 0x10000)
+#define RARCH_DEVICE_ID_POINTER_BACK   (RETRO_DEVICE_ID_POINTER_PRESSED | 0x10000)
 
 /* libretro has 16 buttons from 0-15 (libretro.h)
  * Analog binds use RETRO_DEVICE_ANALOG, but we follow the same scheme
  * internally in RetroArch for simplicity, so they are mapped into [16, 23].
  */
-#define RARCH_FIRST_CUSTOM_BIND 16
-#define RARCH_FIRST_META_KEY RARCH_CUSTOM_BIND_LIST_END
+#define RARCH_FIRST_CUSTOM_BIND        16
+#define RARCH_FIRST_META_KEY           RARCH_CUSTOM_BIND_LIST_END
 
 /* RetroArch specific bind IDs. */
 enum
@@ -144,29 +144,29 @@ enum
    RARCH_BIND_LIST_END_NULL
 };
 
-#define AXIS_NEG(x) (((uint32_t)(x) << 16) | UINT16_C(0xFFFF))
-#define AXIS_POS(x) ((uint32_t)(x) | UINT32_C(0xFFFF0000))
-#define AXIS_NONE UINT32_C(0xFFFFFFFF)
-#define AXIS_DIR_NONE UINT16_C(0xFFFF)
+#define AXIS_NEG(x)        (((uint32_t)(x) << 16) | UINT16_C(0xFFFF))
+#define AXIS_POS(x)        ((uint32_t)(x) | UINT32_C(0xFFFF0000))
+#define AXIS_NONE          UINT32_C(0xFFFFFFFF)
+#define AXIS_DIR_NONE      UINT16_C(0xFFFF)
 
-#define AXIS_NEG_GET(x) (((uint32_t)(x) >> 16) & UINT16_C(0xFFFF))
-#define AXIS_POS_GET(x) ((uint32_t)(x) & UINT16_C(0xFFFF))
+#define AXIS_NEG_GET(x)    (((uint32_t)(x) >> 16) & UINT16_C(0xFFFF))
+#define AXIS_POS_GET(x)    ((uint32_t)(x) & UINT16_C(0xFFFF))
 
-#define NO_BTN UINT16_C(0xFFFF)
+#define NO_BTN             UINT16_C(0xFFFF)
 
-#define HAT_UP_SHIFT 15
-#define HAT_DOWN_SHIFT 14
-#define HAT_LEFT_SHIFT 13
-#define HAT_RIGHT_SHIFT 12
-#define HAT_UP_MASK (1 << HAT_UP_SHIFT)
-#define HAT_DOWN_MASK (1 << HAT_DOWN_SHIFT)
-#define HAT_LEFT_MASK (1 << HAT_LEFT_SHIFT)
-#define HAT_RIGHT_MASK (1 << HAT_RIGHT_SHIFT)
-#define HAT_MAP(x, hat) ((x & ((1 << 12) - 1)) | hat)
+#define HAT_UP_SHIFT       15
+#define HAT_DOWN_SHIFT     14
+#define HAT_LEFT_SHIFT     13
+#define HAT_RIGHT_SHIFT    12
+#define HAT_UP_MASK        (1 << HAT_UP_SHIFT)
+#define HAT_DOWN_MASK      (1 << HAT_DOWN_SHIFT)
+#define HAT_LEFT_MASK      (1 << HAT_LEFT_SHIFT)
+#define HAT_RIGHT_MASK     (1 << HAT_RIGHT_SHIFT)
+#define HAT_MAP(x, hat)    ((x & ((1 << 12) - 1)) | hat)
 
-#define HAT_MASK (HAT_UP_MASK | HAT_DOWN_MASK | HAT_LEFT_MASK | HAT_RIGHT_MASK)
-#define GET_HAT_DIR(x) (x & HAT_MASK)
-#define GET_HAT(x) (x & (~HAT_MASK))
+#define HAT_MASK           (HAT_UP_MASK | HAT_DOWN_MASK | HAT_LEFT_MASK | HAT_RIGHT_MASK)
+#define GET_HAT_DIR(x)     (x & HAT_MASK)
+#define GET_HAT(x)         (x & (~HAT_MASK))
 
 enum analog_dpad_mode
 {

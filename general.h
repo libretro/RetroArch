@@ -42,7 +42,6 @@
 
 #include "configuration.h"
 #include "driver.h"
-#include "playlist.h"
 #include "runloop.h"
 #include "defaults.h"
 #include "verbosity.h"
