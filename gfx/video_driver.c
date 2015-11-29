@@ -428,6 +428,8 @@ error:
 static void init_video_input(const input_driver_t *tmp)
 {
    driver_t *driver = driver_get_ptr();
+   if (driver->input)
+      return;
 
    /* Reset video frame count */
    video_frame_count = 0;
@@ -757,8 +759,7 @@ static bool init_video(void)
 
    video_driver_suppress_screensaver(settings->ui.suspend_screensaver_enable);
 
-   if (!driver->input)
-      init_video_input(tmp);
+   init_video_input(tmp);
 
    event_command(EVENT_CMD_OVERLAY_DEINIT);
    event_command(EVENT_CMD_OVERLAY_INIT);
