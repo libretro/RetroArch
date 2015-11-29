@@ -1778,7 +1778,7 @@ case EVENT_CMD_REMOTE_INIT:
 
             grab_mouse_state = !grab_mouse_state;
 
-            if (!driver->input || !input_driver_grab_mouse(grab_mouse_state))
+            if (!input_driver_grab_mouse(grab_mouse_state))
                return false;
 
             RARCH_LOG("%s: %s.\n",
