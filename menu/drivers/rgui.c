@@ -611,22 +611,6 @@ static void rgui_render(void)
             entry_selected ? hover_color : normal_color);
    }
 
-#ifdef GEKKO
-   const char *message_queue;
-
-   if (msg_force)
-   {
-      msg_force     = false;
-      message_queue = rarch_main_msg_queue_pull();
-
-      menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
-   }
-   else
-      message_queue = driver->current_msg;
-
-   rgui_render_messagebox( message_queue);
-#endif
-
    menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
 
    if (display_kb)

@@ -75,6 +75,9 @@ typedef struct video_pixel_scaler
    void *scaler_out;
 } video_pixel_scaler_t;
 
+/* Last message given to the video driver */
+static char current_msg[PATH_MAX_LENGTH];
+
 /* If set during context deinit, the driver should keep
  * graphics context alive to avoid having to reset all 
  * context state. */
@@ -1848,16 +1851,16 @@ void video_frame(const void *data, unsigned width,
 
    msg                = rarch_main_msg_queue_pull();
 
-   *driver->current_msg = 0;
+   *current_msg = 0;
 
    if (msg)
-      strlcpy(driver->current_msg, msg, sizeof(driver->current_msg));
+      strlcpy(current_msg, msg, sizeof(current_msg));
 
    video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
    if (!current_video->frame(
             video_data, data, width, height, *frame_count,
-            pitch, driver->current_msg))
+            pitch, current_msg))
       driver->video_active = false;
 
    *frame_count = *frame_count + 1;

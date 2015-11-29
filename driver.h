@@ -253,9 +253,6 @@ typedef struct driver
 #ifdef HAVE_NETWORK_GAMEPAD
    rarch_remote_t *remote;
 #endif
-
-   /* Last message given to the video driver */
-   char current_msg[PATH_MAX_LENGTH];
 } driver_t;
 
 /**
