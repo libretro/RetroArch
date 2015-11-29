@@ -250,6 +250,15 @@ float input_sensor_get_input(unsigned port, unsigned id)
    return 0.0f;
 }
 
+bool input_driver_key_pressed(unsigned key)
+{
+   driver_t *driver = driver_get_ptr();
+
+   if (driver->input && driver->input->key_pressed)
+      return driver->input->key_pressed(driver->input_data, key);
+   return false;
+}
+
 static retro_input_t input_driver_keys_pressed(void)
 {
    int key;
@@ -262,7 +271,7 @@ static retro_input_t input_driver_keys_pressed(void)
       bool state = false;
       if ((!driver->block_libretro_input && ((key < RARCH_FIRST_META_KEY)))
             || !driver->block_hotkey)
-         state = input->key_pressed(driver->input_data, key);
+         state = input_driver_key_pressed(key);
 
       if (key >= RARCH_FIRST_META_KEY)
          state |= input->meta_key_pressed(driver->input_data, key);
@@ -589,9 +598,8 @@ retro_input_t input_keys_pressed(void)
 
    global->turbo.count++;
 
-   driver->block_libretro_input = check_block_hotkey(driver->input->key_pressed(
-            driver->input_data, RARCH_ENABLE_HOTKEY));
-
+   driver->block_libretro_input = 
+      check_block_hotkey(input_driver_key_pressed(RARCH_ENABLE_HOTKEY));
 
    for (i = 0; i < settings->input.max_users; i++)
    {

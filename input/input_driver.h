@@ -253,6 +253,8 @@ void input_poll(void);
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
+bool input_driver_key_pressed(unsigned key);
+
 retro_input_t input_keys_pressed(void);
 
 bool input_driver_ctl(enum rarch_input_ctl_state state, void *data);
