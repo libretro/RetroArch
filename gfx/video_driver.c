@@ -428,7 +428,8 @@ error:
 static void init_video_input(const input_driver_t *tmp)
 {
    driver_t *driver = driver_get_ptr();
-   if (input_get_ptr())
+   const input_driver_t **input = input_get_double_ptr();
+   if (*input)
       return;
 
    /* Reset video frame count */
@@ -439,7 +440,7 @@ static void init_video_input(const input_driver_t *tmp)
    RARCH_LOG("Graphics driver did not initialize an input driver. Attempting to pick a suitable driver.\n");
 
    if (tmp)
-      driver->input = tmp;
+      *input = tmp;
    else
       input_driver_ctl(RARCH_INPUT_CTL_FIND_DRIVER, NULL);
 
@@ -723,7 +724,7 @@ static bool init_video(void)
       RARCH_LOG("Starting threaded video driver ...\n");
 
       if (!rarch_threaded_video_init(&current_video, &video_data,
-               &driver->input, input_driver_get_data_ptr(),
+               input_get_double_ptr(), input_driver_get_data_ptr(),
                current_video, &video))
       {
          RARCH_ERR("Cannot open threaded video driver ... Exiting ...\n");
@@ -732,7 +733,7 @@ static bool init_video(void)
    }
    else
 #endif
-      video_data = current_video->init(&video, &driver->input,
+      video_data = current_video->init(&video, input_get_double_ptr(),
             input_driver_get_data_ptr());
 
    if (!video_data)

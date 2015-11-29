@@ -139,6 +139,14 @@ const input_driver_t *input_get_ptr(void)
    return driver->input;
 }
 
+const input_driver_t **input_get_double_ptr(void)
+{
+   driver_t *driver = driver_get_ptr();
+   if (!driver)
+      return NULL;
+   return &driver->input;
+}
+
 /**
  * input_driver_set_rumble_state:
  * @port               : User number.
