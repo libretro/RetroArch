@@ -230,8 +230,7 @@ static bool check_pause(settings_t *settings,
  * Checks if the fast forward key has been pressed for this frame.
  *
  **/
-static void check_fast_forward_button(driver_t *driver,
-      bool fastforward_pressed,
+static void check_fast_forward_button(bool fastforward_pressed,
       bool hold_pressed, bool old_hold_pressed)
 {
    /* To avoid continous switching if we hold the button down, we require
@@ -239,9 +238,19 @@ static void check_fast_forward_button(driver_t *driver,
     * to be able to toggle between then.
     */
    if (fastforward_pressed)
-      driver->nonblock_state = !driver->nonblock_state;
+   {
+      if (input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL))
+         input_driver_ctl(RARCH_INPUT_CTL_UNSET_NONBLOCK_STATE, NULL);
+      else
+         input_driver_ctl(RARCH_INPUT_CTL_SET_NONBLOCK_STATE, NULL);
+   }
    else if (old_hold_pressed != hold_pressed)
-      driver->nonblock_state = hold_pressed;
+   {
+      if (hold_pressed)
+         input_driver_ctl(RARCH_INPUT_CTL_SET_NONBLOCK_STATE, NULL);
+      else
+         input_driver_ctl(RARCH_INPUT_CTL_UNSET_NONBLOCK_STATE, NULL);
+   }
    else
       return;
 
@@ -523,7 +532,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_IDLE_STATE, data))
                return false;
 
-            check_fast_forward_button(driver,
+            check_fast_forward_button(
                   cmd->fastforward_pressed,
                   cmd->hold_pressed, cmd->old_hold_pressed);
             check_stateslots(settings, cmd->state_slot_increase,
@@ -997,7 +1006,8 @@ int rarch_main_iterate(unsigned *sleep_ms)
 
       retro_time_t current     = retro_get_time_usec();
       retro_time_t delta       = current - system->frame_time_last;
-      bool is_locked_fps       = (main_is_paused || driver->nonblock_state) |
+      bool is_locked_fps       = (main_is_paused || 
+            input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL)) |
          !!driver->recording_data;
 
       if (!system->frame_time_last || is_locked_fps)
@@ -1115,7 +1125,8 @@ int rarch_main_iterate(unsigned *sleep_ms)
             settings->input.analog_dpad_mode[i]);
    }
 
-   if ((settings->video.frame_delay > 0) && !driver->nonblock_state)
+   if ((settings->video.frame_delay > 0) && 
+         !input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL))
       retro_sleep(settings->video.frame_delay);
 
    /* Run libretro for one frame. */

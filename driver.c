@@ -233,7 +233,6 @@ void init_drivers_pre(void)
 static void driver_adjust_system_rates(void)
 {
    rarch_system_info_t *system = rarch_system_info_get_ptr();
-   driver_t            *driver = driver_get_ptr();
 
    audio_driver_ctl(RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES,   NULL);
    video_driver_ctl(RARCH_DISPLAY_CTL_MONITOR_ADJUST_SYSTEM_RATES, NULL);
@@ -275,7 +274,7 @@ void driver_set_nonblock_state(void)
    settings_t *settings = config_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
    driver_t *driver     = driver_get_ptr();
-   bool enable          = driver->nonblock_state;
+   bool enable          = input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL);
 
    /* Only apply non-block-state for video if we're using vsync. */
    if (driver->video_active && video_driver_get_ptr(false))
@@ -418,7 +417,7 @@ void init_drivers(int flags)
    if (flags & (DRIVER_VIDEO | DRIVER_AUDIO))
    {
       /* Keep non-throttled state as good as possible. */
-      if (driver->nonblock_state)
+      if (input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL))
          driver_set_nonblock_state();
    }
 }

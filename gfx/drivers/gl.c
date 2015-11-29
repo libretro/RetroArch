@@ -1846,7 +1846,7 @@ static bool gl_frame(void *data, const void *frame,
     * and pause to prevent flicker. */
    if (
          settings->video.black_frame_insertion
-         && !driver->nonblock_state
+         && !input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL)
          && !is_slowmotion && !is_paused)
    {
       gfx_ctx_swap_buffers(gl);

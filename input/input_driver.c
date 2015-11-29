@@ -85,6 +85,7 @@ struct turbo_buttons
 static bool flushing_input;
 static bool block_libretro_input;
 static bool block_hotkey;
+static bool nonblock_state;
 static turbo_buttons_t turbo_btns;
 
 /**
@@ -689,6 +690,7 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
       case RARCH_INPUT_CTL_DESTROY:
          flushing_input = false;
          block_hotkey   = false;
+         nonblock_state = false;
          memset(&turbo_btns, 0, sizeof(turbo_buttons_t));
          if (!driver)
             return false;
@@ -744,6 +746,14 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          break;
       case RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED:
          return block_libretro_input;
+      case RARCH_INPUT_CTL_SET_NONBLOCK_STATE:
+         nonblock_state = true;
+         break;
+      case RARCH_INPUT_CTL_UNSET_NONBLOCK_STATE:
+         nonblock_state = false;
+         break;
+      case RARCH_INPUT_CTL_IS_NONBLOCK_STATE:
+         return nonblock_state;
       case RARCH_INPUT_CTL_NONE:
       default:
          break;
