@@ -712,7 +712,7 @@ static bool init_video(void)
       video_state.filter.out_rgb32 :
       (video_state.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 
-   tmp = (const input_driver_t*)driver->input;
+   tmp = input_get_ptr();
    /* Need to grab the "real" video driver interface on a reinit. */
    video_driver_ctl(RARCH_DISPLAY_CTL_FIND_DRIVER, NULL);
 
