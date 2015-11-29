@@ -276,7 +276,6 @@ static void state_tracker_update_input(state_tracker_t *tracker)
    unsigned i;
    const struct retro_keybind *binds[MAX_USERS];
    settings_t *settings = config_get_ptr();
-   driver_t *driver     = driver_get_ptr();
    uint16_t state[2]    = {0};
 
    /* Only bind for up to two players for now. */
@@ -290,7 +289,7 @@ static void state_tracker_update_input(state_tracker_t *tracker)
       input_push_analog_dpad(settings->input.autoconf_binds[i],
             settings->input.analog_dpad_mode[i]);
 
-   if (!driver->block_libretro_input)
+   if (!input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL))
    {
       for (i = 4; i < 16; i++)
       {

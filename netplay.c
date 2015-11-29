@@ -221,10 +221,9 @@ static bool get_self_input_state(netplay_t *netplay)
 {
    uint32_t state          = 0;
    struct delta_frame *ptr = &netplay->buffer[netplay->self_ptr];
-   driver_t *driver        = driver_get_ptr();
    settings_t *settings    = config_get_ptr();
 
-   if (!driver->block_libretro_input && netplay->frame_count > 0)
+   if (!input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL) && netplay->frame_count > 0)
    {
       unsigned i;
 

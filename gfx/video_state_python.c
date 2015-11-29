@@ -94,7 +94,6 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    unsigned user, key, i;
    const struct retro_keybind *py_binds[MAX_USERS];
    int16_t res = 0;
-   driver_t *driver = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    
    for (i = 0; i < MAX_USERS; i++)
@@ -108,7 +107,7 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    if (user > MAX_USERS || user < 1 || key >= RARCH_FIRST_META_KEY)
       return NULL;
 
-   if (!driver->block_libretro_input)
+   if (!input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL))
       res = input_driver_state(py_binds, user - 1, RETRO_DEVICE_JOYPAD, 0, key);
    return PyBool_FromLong(res);
 }

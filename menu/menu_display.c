@@ -316,12 +316,14 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
          if (menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL))
          {
-            driver_t      *driver     = driver_get_ptr();
-            bool block_libretro_input = driver->block_libretro_input;
+            bool libretro_input_is_blocked = input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL);
 
-            driver->block_libretro_input = true;
+            if (!libretro_input_is_blocked)
+               input_driver_ctl(RARCH_INPUT_CTL_SET_LIBRETRO_INPUT_BLOCKED, NULL);
+
             core.retro_run();
-            driver->block_libretro_input = block_libretro_input;
+
+            input_driver_ctl(RARCH_INPUT_CTL_UNSET_LIBRETRO_INPUT_BLOCKED, NULL);
             return true;
          }
 

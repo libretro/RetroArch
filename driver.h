@@ -266,7 +266,6 @@ typedef struct driver
 #ifdef HAVE_NETWORK_GAMEPAD
    rarch_remote_t *remote;
 #endif
-   bool block_libretro_input;
    bool nonblock_state;
 
    /* Last message given to the video driver */

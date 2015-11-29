@@ -83,6 +83,7 @@ struct turbo_buttons
 };
 
 static bool flushing_input;
+static bool block_libretro_input;
 static bool block_hotkey;
 static turbo_buttons_t turbo_btns;
 
@@ -283,7 +284,7 @@ static retro_input_t input_driver_keys_pressed(void)
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
    {
       bool state = false;
-      if ((!driver->block_libretro_input && ((key < RARCH_FIRST_META_KEY)))
+      if ((!block_libretro_input && ((key < RARCH_FIRST_META_KEY)))
             || !block_hotkey)
          state = input_driver_key_pressed(key);
 
@@ -500,7 +501,7 @@ int16_t input_state(unsigned port, unsigned device,
    if (settings->input.remap_binds_enable)
       input_remapping_state(port, &device, &idx, &id);
 
-   if (!flushing_input && !driver->block_libretro_input)
+   if (!flushing_input && !block_libretro_input)
    {
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
          res = input->input_state(driver->input_data, libretro_input_binds, port, device, idx, id);
@@ -610,8 +611,7 @@ retro_input_t input_keys_pressed(void)
       return 0;
 
    turbo_btns.count++;
-
-   driver->block_libretro_input = 
+   block_libretro_input = 
       check_block_hotkey(input_driver_key_pressed(RARCH_ENABLE_HOTKEY));
 
    for (i = 0; i < settings->input.max_users; i++)
@@ -624,7 +624,7 @@ retro_input_t input_keys_pressed(void)
       turbo_btns.frame_enable[i] = 0;
    }
 
-   if (!driver->block_libretro_input)
+   if (!block_libretro_input)
    {
       for (i = 0; i < settings->input.max_users; i++)
          turbo_btns.frame_enable[i] = input_driver_state(binds,
@@ -737,6 +737,14 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          break;
       case RARCH_INPUT_CTL_IS_FLUSHING_INPUT:
          return flushing_input;
+      case RARCH_INPUT_CTL_SET_LIBRETRO_INPUT_BLOCKED:
+         block_libretro_input = true;
+         break;
+      case RARCH_INPUT_CTL_UNSET_LIBRETRO_INPUT_BLOCKED:
+         block_libretro_input = false;
+         break;
+      case RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED:
+         return block_libretro_input;
       case RARCH_INPUT_CTL_NONE:
       default:
          break;
