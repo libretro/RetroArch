@@ -21,8 +21,6 @@
 #include <math.h>
 #include <limits.h>
 
-/* Platform-specific headers */
-
 #include <boolean.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
