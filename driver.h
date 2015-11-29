@@ -328,14 +328,13 @@ bool find_next_driver(const char *label, char *s, size_t len);
 
 /**
  * driver_set_nonblock_state:
- * @enable             : Enable nonblock state?
  *
  * Sets audio and video drivers to nonblock state.
  *
- * If @enable is false, sets blocking state for both
+ * If nonblock state is false, sets blocking state for both
  * audio and video drivers instead.
  **/
-void driver_set_nonblock_state(bool enable);
+void driver_set_nonblock_state(void);
 
 /**
  * driver_set_refresh_rate:

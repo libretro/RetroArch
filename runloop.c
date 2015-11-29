@@ -245,7 +245,7 @@ static void check_fast_forward_button(driver_t *driver,
    else
       return;
 
-   driver_set_nonblock_state(driver->nonblock_state);
+   driver_set_nonblock_state();
 }
 
 /**

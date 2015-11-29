@@ -287,7 +287,6 @@ int menu_driver_iterate(enum menu_action action)
 
 void menu_driver_toggle(bool latch)
 {
-   driver_t                     *driver = driver_get_ptr();
    const menu_ctx_driver_t *menu_driver = menu_ctx_driver_get_ptr();
    settings_t                 *settings = config_get_ptr();
    global_t                   *global   = global_get_ptr();
@@ -323,7 +322,7 @@ void menu_driver_toggle(bool latch)
    else
    {
       if (!system->shutdown)
-         driver_set_nonblock_state(driver->nonblock_state);
+         driver_set_nonblock_state();
 
       if (settings && settings->menu.pause_libretro)
          event_command(EVENT_CMD_AUDIO_START);
