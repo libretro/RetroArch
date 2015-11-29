@@ -49,7 +49,7 @@
 typedef struct udev_input udev_input_t;
 struct input_device;
 
-typedef void (*device_handle_cb)(udev_input_t *udev,
+typedef void (*device_handle_cb)(void *data,
       const struct input_event *event, struct input_device *dev);
 
 struct input_device
@@ -103,9 +103,10 @@ void free_xkb(void);
 void handle_xkb(int code, int value);
 #endif
 
-static void udev_handle_keyboard(udev_input_t *udev,
+static void udev_handle_keyboard(void *data,
       const struct input_event *event, struct input_device *dev)
 {
+   udev_input_t *udev = (udev_input_t*)data;
    switch (event->type)
    {
       case EV_KEY:
@@ -124,9 +125,11 @@ static void udev_handle_keyboard(udev_input_t *udev,
    }
 }
 
-static void udev_handle_touchpad(udev_input_t *udev,
+static void udev_handle_touchpad(void *data,
       const struct input_event *event, struct input_device *dev)
 {
+   udev_input_t *udev = (udev_input_t*)data;
+
    switch (event->type)
    {
       case EV_ABS:
@@ -188,9 +191,11 @@ static void udev_handle_touchpad(udev_input_t *udev,
    }
 }
 
-static void udev_handle_mouse(udev_input_t *udev,
+static void udev_handle_mouse(void *data,
       const struct input_event *event, struct input_device *dev)
 {
+   udev_input_t *udev = (udev_input_t*)data;
+
    switch (event->type)
    {
       case EV_KEY:
