@@ -24,6 +24,8 @@
 #include "../../general.h"
 #include "../../driver.h"
 
+#include "../drivers_keyboard/keyboard_event_apple.h"
+
 int32_t cocoa_input_find_any_key(void)
 {
    driver_t *driver =driver_get_ptr();
