@@ -82,6 +82,7 @@ struct turbo_buttons
    unsigned count;
 };
 
+static bool block_hotkey;
 static turbo_buttons_t turbo_btns;
 
 /**
@@ -282,7 +283,7 @@ static retro_input_t input_driver_keys_pressed(void)
    {
       bool state = false;
       if ((!driver->block_libretro_input && ((key < RARCH_FIRST_META_KEY)))
-            || !driver->block_hotkey)
+            || !block_hotkey)
          state = input_driver_key_pressed(key);
 
       if (key >= RARCH_FIRST_META_KEY)
@@ -561,7 +562,7 @@ static bool check_block_hotkey(bool enable_hotkey)
 
    /* Don't block the check to RARCH_ENABLE_HOTKEY
     * unless we're really supposed to. */
-   driver->block_hotkey = input_driver_ctl(RARCH_INPUT_CTL_KB_MAPPING_IS_BLOCKED, NULL);
+   block_hotkey = input_driver_ctl(RARCH_INPUT_CTL_KB_MAPPING_IS_BLOCKED, NULL);
 
    /* If we haven't bound anything to this,
     * always allow hotkeys. */
@@ -573,7 +574,7 @@ static bool check_block_hotkey(bool enable_hotkey)
       || (autoconf_bind->joykey != NO_BTN)
       || (autoconf_bind->joyaxis != AXIS_NONE);
 
-   driver->block_hotkey             =
+   block_hotkey             =
       input_driver_ctl(RARCH_INPUT_CTL_KB_MAPPING_IS_BLOCKED, NULL) ||
       (use_hotkey_enable && !enable_hotkey);
 
@@ -686,6 +687,7 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          driver->input->free(driver->input_data);
          return true;
       case RARCH_INPUT_CTL_DESTROY:
+         block_hotkey = false;
          memset(&turbo_btns, 0, sizeof(turbo_buttons_t));
          if (!driver)
             return false;
