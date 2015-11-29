@@ -17,14 +17,15 @@
 #ifndef __RARCH_DRIVER__H
 #define __RARCH_DRIVER__H
 
-#include <sys/types.h>
-#include <boolean.h>
-#include "libretro_private.h"
-#include <stdlib.h>
 #include <stdint.h>
-#include <compat/posix_string.h>
+#include <stdlib.h>
+#include <sys/types.h>
 
+#include <boolean.h>
+#include <compat/posix_string.h>
 #include <retro_miscellaneous.h>
+
+#include "libretro_private.h"
 
 #include "frontend/frontend_driver.h"
 #include "ui/ui_companion_driver.h"
