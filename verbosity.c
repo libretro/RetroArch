@@ -13,7 +13,29 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
+#if defined(HAVE_FILE_LOGGER)
+#define LOG_FILE (retro_main_log_file())
+#else
+#define LOG_FILE (stderr)
+#endif
+
+#if defined(IS_SALAMANDER)
+#define PROGRAM_NAME "RetroArch Salamander"
+#elif defined(RARCH_INTERNAL)
+#define PROGRAM_NAME "RetroArch"
+#elif defined(MARCH_INTERNAL)
+#define PROGRAM_NAME "MicroArch"
+#else
+#define PROGRAM_NAME "N/A"
+#endif
+
 #include "verbosity.h"
+
+#if TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR
+static aslclient asl_client;
+static int asl_inited = 0;
+#endif
 
 static bool main_verbosity;
 
@@ -48,6 +70,15 @@ void retro_main_log_file_deinit(void)
 }
 
 #if !defined(HAVE_LOGGER)
+static bool RARCH_LOG_VERBOSE(void)
+{
+   bool *verbose = NULL;
+   verbose = retro_main_verbosity();
+   if (!verbose)
+      return false;
+   return *verbose;
+}
+
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
    if (!RARCH_LOG_VERBOSE())
@@ -145,3 +176,4 @@ void RARCH_ERR(const char *fmt, ...)
    va_end(ap);
 }
 #endif
+
