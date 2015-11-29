@@ -34,8 +34,8 @@
 #include <file/file_list.h>
 #endif
 
-#include "../../driver.h"
-#include "../../general.h"
+#include "../frontend_driver.h"
+#include "../../defaults.h"
 #include "../../libretro_private.h"
 #include "../../defines/gx_defines.h"
 

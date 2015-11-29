@@ -16,7 +16,7 @@
 
 #include <string.h>
 
-#include "../driver.h"
+#include "frontend_driver.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

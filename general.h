@@ -44,6 +44,7 @@
 #include "driver.h"
 #include "playlist.h"
 #include "runloop.h"
+#include "defaults.h"
 #include "verbosity.h"
 
 #ifdef HAVE_CONFIG_H
@@ -73,57 +74,6 @@ enum sound_mode_enums
 #endif
    SOUND_MODE_LAST
 };
-
-struct defaults
-{
-   struct
-   {
-      char core_assets[PATH_MAX_LENGTH];
-      char menu_config[PATH_MAX_LENGTH];
-      char autoconfig[PATH_MAX_LENGTH];
-      char audio_filter[PATH_MAX_LENGTH];
-      char video_filter[PATH_MAX_LENGTH];
-      char assets[PATH_MAX_LENGTH];
-      char core[PATH_MAX_LENGTH];
-      char core_info[PATH_MAX_LENGTH];
-      char overlay[PATH_MAX_LENGTH];
-      char osk_overlay[PATH_MAX_LENGTH];
-      char port[PATH_MAX_LENGTH];
-      char shader[PATH_MAX_LENGTH];
-      char savestate[PATH_MAX_LENGTH];
-      char resampler[PATH_MAX_LENGTH];
-      char sram[PATH_MAX_LENGTH];
-      char screenshot[PATH_MAX_LENGTH];
-      char system[PATH_MAX_LENGTH];
-      char playlist[PATH_MAX_LENGTH];
-      char content_history[PATH_MAX_LENGTH];
-      char remap[PATH_MAX_LENGTH];
-      char cache[PATH_MAX_LENGTH];
-      char wallpapers[PATH_MAX_LENGTH];
-      char database[PATH_MAX_LENGTH];
-      char cursor[PATH_MAX_LENGTH];
-      char cheats[PATH_MAX_LENGTH];
-   } dir;
-
-   struct
-   {
-      char config[PATH_MAX_LENGTH];
-      char core[PATH_MAX_LENGTH];
-      char buildbot_server_url[PATH_MAX_LENGTH];
-   } path;
-
-   struct
-   {
-      int out_latency;
-      float video_refresh_rate;
-      bool video_threaded_enable;
-   } settings; 
-
-   content_playlist_t *history;
-};
-
-/* Public data structures. */
-extern struct defaults g_defaults;
 
 #ifdef __cplusplus
 }

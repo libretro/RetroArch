@@ -22,9 +22,10 @@
 #include <file/config_file.h>
 #include <file/file_path.h>
 #include <file/dir_list.h>
+#include <retro_miscellaneous.h>
 
 #include "frontend_driver.h"
-#include "../general.h"
+#include "../defaults.h"
 #include "../file_ext.h"
 #include "../verbosity.h"
 
