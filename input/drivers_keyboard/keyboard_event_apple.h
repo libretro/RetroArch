@@ -169,7 +169,7 @@ extern "C" {
 #endif
 
 void apple_input_keyboard_event(bool down,
-      unsigned code, uint32_t character, uint32_t mod, unsigned device)
+      unsigned code, uint32_t character, uint32_t mod, unsigned device);
 
 int16_t apple_input_is_pressed(unsigned port_num,
    const struct retro_keybind *binds, unsigned id);
