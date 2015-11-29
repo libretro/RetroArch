@@ -21,7 +21,6 @@
 #include "../input_keymaps.h"
 #include "../input_keyboard.h"
 
-#include "../drivers/cocoa_input.h"
 #include "../../general.h"
 #include "../../driver.h"
 
