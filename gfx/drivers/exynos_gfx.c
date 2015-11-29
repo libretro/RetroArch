@@ -276,10 +276,9 @@ static const char *exynos_buffer_name(enum exynos_buffer_type type)
 static struct exynos_bo *exynos_create_mapped_buffer(
       struct exynos_device *dev, unsigned size)
 {
-   struct exynos_bo *buf;
    const unsigned flags = 0;
+   struct exynos_bo *buf = exynos_bo_create(dev, size, flags);
 
-   buf = exynos_bo_create(dev, size, flags);
    if (!buf)
    {
       RARCH_ERR("[video_exynos]: failed to create temp buffer object\n");
@@ -359,8 +358,8 @@ static void exynos_put_glyph_rgba4444(struct exynos_data *pdata,
 {
    unsigned x, y;
    const enum exynos_image_type buf_type = defaults[EXYNOS_IMAGE_FONT].buf_type;
-   const unsigned buf_width = pdata->src[EXYNOS_IMAGE_FONT]->width;
-   uint16_t *__restrict__ dst = (uint16_t*)pdata->buf[buf_type]->vaddr +
+   const              unsigned buf_width = pdata->src[EXYNOS_IMAGE_FONT]->width;
+   uint16_t            *__restrict__ dst = (uint16_t*)pdata->buf[buf_type]->vaddr +
       dst_y * buf_width + dst_x;
 
    for (y = 0; y < g_height; ++y, src += g_pitch, dst += buf_width)
