@@ -48,9 +48,6 @@ void apple_rarch_exited(void)
 {
    NSEventType event_type;
    cocoa_input_data_t *apple = NULL;
-   driver_t *driver = driver_get_ptr();
-   if (!driver)
-      return;
    [super sendEvent:event];
 
    event_type = event.type;
@@ -110,7 +107,7 @@ void apple_rarch_exited(void)
             NSPoint pos;
             NSPoint mouse_pos;
 
-            apple = (cocoa_input_data_t*)driver->input_data;
+            apple = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple)
                return;
 
@@ -148,7 +145,7 @@ void apple_rarch_exited(void)
       case NSLeftMouseDown:
       case NSRightMouseDown:
       case NSOtherMouseDown:
-         apple = (cocoa_input_data_t*)driver->input_data;
+         apple = (cocoa_input_data_t*)input_driver_get_data();
          if (!apple)
             return;
          apple->mouse_buttons |= 1 << event.buttonNumber;
@@ -157,7 +154,7 @@ void apple_rarch_exited(void)
       case NSLeftMouseUp:
       case NSRightMouseUp:
       case NSOtherMouseUp:
-         apple = (cocoa_input_data_t*)driver->input_data;
+         apple = (cocoa_input_data_t*)input_driver_get_data();
          if (!apple)
             return;
          apple->mouse_buttons &= ~(1 << event.buttonNumber);

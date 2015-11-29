@@ -108,8 +108,7 @@ extern float cocoagl_gfx_ctx_get_native_scale(void);
 static void handle_touch_event(NSArray* touches)
 {
    unsigned i;
-   driver_t *driver          = driver_get_ptr();
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)input_driver_get_data();
    float scale               = cocoagl_gfx_ctx_get_native_scale();
 
    if (!apple)

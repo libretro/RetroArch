@@ -82,6 +82,7 @@ struct turbo_buttons
    unsigned count;
 };
 
+static void *main_input_data;
 static bool flushing_input;
 static bool block_libretro_input;
 static bool block_hotkey;
@@ -154,7 +155,7 @@ bool input_driver_set_rumble_state(unsigned port,
    const input_driver_t *input = input_get_ptr(driver);
 
    if (input->set_rumble)
-      return input->set_rumble(driver->input_data,
+      return input->set_rumble(main_input_data,
             port, effect, strength);
    return false;
 }
@@ -165,7 +166,7 @@ int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
    driver_t            *driver = driver_get_ptr();
    const input_driver_t *input = input_get_ptr(driver);
 
-   return input->input_state(driver->input_data, retro_keybinds,
+   return input->input_state(main_input_data, retro_keybinds,
          port, device, index, id);
 }
 
@@ -175,7 +176,7 @@ const input_device_driver_t *input_driver_get_joypad_driver(void)
    const input_driver_t *input = input_get_ptr(driver);
 
    if (input->get_joypad_driver)
-      return input->get_joypad_driver(driver->input_data);
+      return input->get_joypad_driver(main_input_data);
    return NULL;
 }
 
@@ -185,7 +186,7 @@ const input_device_driver_t *input_driver_get_sec_joypad_driver(void)
     const input_driver_t *input = input_get_ptr(driver);
     
     if (input->get_sec_joypad_driver)
-        return input->get_sec_joypad_driver(driver->input_data);
+        return input->get_sec_joypad_driver(main_input_data);
     return NULL;
 }
 
@@ -195,7 +196,7 @@ uint64_t input_driver_get_capabilities(void)
    const input_driver_t *input = input_get_ptr(driver);
 
    if (input->get_capabilities)
-      return input->get_capabilities(driver->input_data);
+      return input->get_capabilities(main_input_data);
    return 0; 
 }
 
@@ -206,7 +207,7 @@ bool input_driver_grab_mouse(bool state)
 
    if (input->grab_mouse)
    {
-      input->grab_mouse(driver->input_data, state);
+      input->grab_mouse(main_input_data, state);
       return true;
    }
    return false;
@@ -219,7 +220,7 @@ void input_driver_set(const input_driver_t **input, void **input_data)
    if (input && input_data)
    {
       *input      = driver->input;
-      *input_data = driver->input_data;
+      *input_data = main_input_data;
    }
 
    driver->input_data_own = true;
@@ -231,7 +232,7 @@ void input_driver_keyboard_mapping_set_block(bool value)
    const input_driver_t *input = input_get_ptr(driver);
 
    if (input->keyboard_mapping_set_block)
-      driver->input->keyboard_mapping_set_block(driver->input_data, value);
+      driver->input->keyboard_mapping_set_block(main_input_data, value);
 }
 
 /**
@@ -248,9 +249,9 @@ bool input_sensor_set_state(unsigned port,
 {
    driver_t *driver = driver_get_ptr();
 
-   if (driver->input && driver->input_data &&
+   if (driver->input && main_input_data &&
          driver->input->set_sensor_state)
-      return driver->input->set_sensor_state(driver->input_data,
+      return driver->input->set_sensor_state(main_input_data,
             port, action, rate);
    return false;
 }
@@ -259,9 +260,9 @@ float input_sensor_get_input(unsigned port, unsigned id)
 {
    driver_t *driver = driver_get_ptr();
 
-   if (driver->input && driver->input_data &&
+   if (driver->input && main_input_data &&
          driver->input->get_sensor_input)
-      return driver->input->get_sensor_input(driver->input_data,
+      return driver->input->get_sensor_input(main_input_data,
             port, id);
    return 0.0f;
 }
@@ -271,7 +272,7 @@ bool input_driver_key_pressed(unsigned key)
    driver_t *driver = driver_get_ptr();
 
    if (driver->input && driver->input->key_pressed)
-      return driver->input->key_pressed(driver->input_data, key);
+      return driver->input->key_pressed(main_input_data, key);
    return false;
 }
 
@@ -290,7 +291,7 @@ static retro_input_t input_driver_keys_pressed(void)
          state = input_driver_key_pressed(key);
 
       if (key >= RARCH_FIRST_META_KEY)
-         state |= input->meta_key_pressed(driver->input_data, key);
+         state |= input->meta_key_pressed(main_input_data, key);
 
 #ifdef HAVE_OVERLAY
       state |= input_overlay_key_pressed(key);
@@ -505,7 +506,7 @@ int16_t input_state(unsigned port, unsigned device,
    if (!flushing_input && !block_libretro_input)
    {
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
-         res = input->input_state(driver->input_data, libretro_input_binds, port, device, idx, id);
+         res = input->input_state(main_input_data, libretro_input_binds, port, device, idx, id);
 
 #ifdef HAVE_OVERLAY
       input_state_overlay(&res, port, device, idx, id);
@@ -607,7 +608,7 @@ retro_input_t input_keys_pressed(void)
    for (i = 0; i < MAX_USERS; i++)
       binds[i] = settings->input.binds[i];
 
-   if (!driver->input || !driver->input_data)
+   if (!driver->input || !main_input_data)
       return 0;
 
    turbo_btns.count++;
@@ -643,20 +644,19 @@ retro_input_t input_keys_pressed(void)
 }
 
 
+void *input_driver_get_data(void)
+{
+   return main_input_data;
+}
+
 void **input_driver_get_data_ptr(void)
 {
-   driver_t                   *driver = driver_get_ptr();
-   if (!driver)
-      return NULL;
-   return (void**)&driver->input_data;
+   return (void**)&main_input_data;
 }
 
 bool input_driver_data_ptr_is_same(void *data)
 {
-   driver_t                   *driver = driver_get_ptr();
-   if (!driver)
-      return false;
-   return (driver->input_data == data);
+   return (main_input_data == data);
 }
 
 bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
@@ -669,23 +669,23 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
    {
       case RARCH_INPUT_CTL_HAS_CAPABILITIES:
          if (driver->input &&
-               driver->input->get_capabilities && driver->input_data)
+               driver->input->get_capabilities && main_input_data)
             return true;
          return false;
       case RARCH_INPUT_CTL_POLL:
-         input->poll(driver->input_data);
+         input->poll(main_input_data);
          return true;
       case RARCH_INPUT_CTL_INIT:
          if (driver && driver->input)
-            driver->input_data = driver->input->init();
+            main_input_data = driver->input->init();
 
-         if (!driver->input_data)
+         if (!main_input_data)
             return false;
          return true;
       case RARCH_INPUT_CTL_DEINIT:
          if (!driver || !driver->input)
             return false;
-         driver->input->free(driver->input_data);
+         driver->input->free(main_input_data);
          return true;
       case RARCH_INPUT_CTL_DESTROY:
          flushing_input = false;
@@ -694,16 +694,16 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          memset(&turbo_btns, 0, sizeof(turbo_buttons_t));
          if (!driver)
             return false;
-         driver->input_data = NULL;
+         main_input_data = NULL;
          return true;
       case RARCH_INPUT_CTL_GRAB_STDIN:
          if (input->grab_stdin)
-            return input->grab_stdin(driver->input_data);
+            return input->grab_stdin(main_input_data);
          return false;
       case RARCH_INPUT_CTL_KB_MAPPING_IS_BLOCKED:
          if (input->keyboard_mapping_is_blocked)
             return driver->input->keyboard_mapping_is_blocked(
-                  driver->input_data);
+                  main_input_data);
          return false;
       case RARCH_INPUT_CTL_FIND_DRIVER:
          {
