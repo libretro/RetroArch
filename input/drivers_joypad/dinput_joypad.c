@@ -201,7 +201,6 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    bool is_xinput_pad;
 #endif
    LPDIRECTINPUTDEVICE8 *pad = NULL;
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
    (void)p;
@@ -249,7 +248,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 #endif
 
    IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2);
-   IDirectInputDevice8_SetCooperativeLevel(*pad, (HWND)driver->video_window,
+   IDirectInputDevice8_SetCooperativeLevel(*pad, (HWND)video_driver_window_get(),
          DISCL_NONEXCLUSIVE | DISCL_BACKGROUND);
 
    IDirectInputDevice8_EnumObjects(*pad, enum_axes_cb,
