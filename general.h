@@ -23,16 +23,6 @@
 
 /* Platform-specific headers */
 
-/* Windows */
-#ifdef _WIN32
-#ifdef _XBOX
-#include <xtl.h>
-#else
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif
-#endif
-
 #include <boolean.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
@@ -40,7 +30,6 @@
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
 
-#include "configuration.h"
 #include "driver.h"
 #include "runloop.h"
 #include "defaults.h"
