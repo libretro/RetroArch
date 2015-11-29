@@ -528,7 +528,7 @@ static bool uninit_video_input(void)
    event_command(EVENT_CMD_OVERLAY_DEINIT);
 
    if (
-         !driver->input_data_own &&
+         !input_driver_ctl(RARCH_INPUT_CTL_OWNS_DRIVER, NULL) &&
          !input_driver_data_ptr_is_same(video_data)
       )
       input_driver_ctl(RARCH_INPUT_CTL_DEINIT, NULL);

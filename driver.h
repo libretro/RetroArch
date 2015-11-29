@@ -249,7 +249,6 @@ typedef struct driver
     *
     * Typically, if a driver intends to make use of this, it should 
     * set this to true at the end of its 'init' function. */
-   bool input_data_own;
    bool camera_data_own;
    bool location_data_own;
 #ifdef HAVE_MENU

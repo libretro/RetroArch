@@ -363,7 +363,7 @@ void init_drivers(int flags)
    if (flags & DRIVER_AUDIO)
       audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_OWN_DRIVER, NULL);
    if (flags & DRIVER_INPUT)
-      driver->input_data_own = false;
+      input_driver_ctl(RARCH_INPUT_CTL_UNSET_OWN_DRIVER, NULL);
    if (flags & DRIVER_CAMERA)
       driver->camera_data_own = false;
    if (flags & DRIVER_LOCATION)
@@ -465,7 +465,7 @@ void uninit_drivers(int flags)
    if (flags & DRIVERS_VIDEO_INPUT)
       video_driver_ctl(RARCH_DISPLAY_CTL_DEINIT, NULL);
 
-   if ((flags & DRIVER_INPUT) && !driver->input_data_own)
+   if ((flags & DRIVER_INPUT) && !input_driver_ctl(RARCH_INPUT_CTL_OWNS_DRIVER, NULL))
       input_driver_ctl(RARCH_INPUT_CTL_DESTROY, NULL);
 }
 
