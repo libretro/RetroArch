@@ -32,8 +32,9 @@
 #include <file/file_list.h>
 #endif
 
+#include "../frontend_driver.h"
 #include "../../defines/ps3_defines.h"
-#include "../../general.h"
+#include "../../defaults.h"
 #include "../../verbosity.h"
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"
