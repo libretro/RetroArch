@@ -74,22 +74,6 @@ enum sound_mode_enums
  *
  * Sanely kills the program.
  **/
-static INLINE void retro_fail(int error_code, const char *error)
-{
-   global_t *global = global_get_ptr();
-
-   if (!global)
-      return;
-
-   /* We cannot longjmp unless we're in rarch_main_init().
-    * If not, something went very wrong, and we should 
-    * just exit right away. */
-   retro_assert(global->inited.error);
-
-   strlcpy(global->error_string, error, sizeof(global->error_string));
-   longjmp(global->error_sjlj_context, error_code);
-}
+void retro_fail(int error_code, const char *error);
 
 #endif
-
-
