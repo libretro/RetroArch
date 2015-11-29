@@ -384,6 +384,7 @@ INPUT
 
 #ifdef HAVE_UDEV
 #include "../input/drivers/udev_input.c"
+#include "../input/drivers_keyboard/keyboard_event_udev.c"
 #include "../input/drivers_joypad/udev_joypad.c"
 #endif
 

@@ -34,6 +34,7 @@
 
 #include <file/file_path.h>
 
+#include "../drivers_keyboard/keyboard_event_udev.h"
 #include "../common/linux_common.h"
 
 #include "../input_config.h"
@@ -47,12 +48,11 @@
 #endif
 
 typedef struct udev_input udev_input_t;
-struct input_device;
 
 typedef void (*device_handle_cb)(void *data,
-      const struct input_event *event, struct input_device *dev);
+      const struct input_event *event, udev_input_device_t *dev);
 
-struct input_device
+struct udev_input_device
 {
    int fd;
    dev_t dev;
@@ -84,10 +84,9 @@ struct udev_input
 
 
    const input_device_driver_t *joypad;
-   uint8_t key_state[(KEY_MAX + 7) / 8];
 
    int epfd;
-   struct input_device **devices;
+   udev_input_device_t **devices;
    unsigned num_devices;
 
    int16_t mouse_x;
@@ -97,36 +96,10 @@ struct udev_input
 
 #ifdef HAVE_XKBCOMMON
 int  init_xkb(void);
-
-void free_xkb(void);
-
-void handle_xkb(int code, int value);
 #endif
-
-static void udev_handle_keyboard(void *data,
-      const struct input_event *event, struct input_device *dev)
-{
-   udev_input_t *udev = (udev_input_t*)data;
-   switch (event->type)
-   {
-      case EV_KEY:
-         if (event->value)
-            BIT_SET(udev->key_state, event->code);
-         else
-            BIT_CLEAR(udev->key_state, event->code);
-
-#ifdef HAVE_XKBCOMMON
-         handle_xkb(event->code, event->value);
-#endif
-         break;
-
-      default:
-         break;
-   }
-}
 
 static void udev_handle_touchpad(void *data,
-      const struct input_event *event, struct input_device *dev)
+      const struct input_event *event, udev_input_device_t *dev)
 {
    udev_input_t *udev = (udev_input_t*)data;
 
@@ -192,7 +165,7 @@ static void udev_handle_touchpad(void *data,
 }
 
 static void udev_handle_mouse(void *data,
-      const struct input_event *event, struct input_device *dev)
+      const struct input_event *event, udev_input_device_t *dev)
 {
    udev_input_t *udev = (udev_input_t*)data;
 
@@ -267,8 +240,8 @@ static bool add_device(udev_input_t *udev,
       const char *devnode, device_handle_cb cb)
 {
    int fd;
-   struct input_device **tmp;
-   struct input_device *device = NULL;
+   udev_input_device_t **tmp;
+   udev_input_device_t *device = NULL;
    struct stat st              = {0};
    struct epoll_event event    = {0};
 
@@ -279,7 +252,7 @@ static bool add_device(udev_input_t *udev,
    if (fd < 0)
       return false;
 
-   device = (struct input_device*)calloc(1, sizeof(*device));
+   device = (udev_input_device_t*)calloc(1, sizeof(*device));
    if (!device)
       goto error;
 
@@ -295,7 +268,7 @@ static bool add_device(udev_input_t *udev,
           ioctl(fd, EVIOCGABS(ABS_Y), &device->state.touchpad.info_y) < 0))
       goto error;
 
-   tmp = (struct input_device**)realloc(udev->devices,
+   tmp = ( udev_input_device_t**)realloc(udev->devices,
          (udev->num_devices + 1) * sizeof(*udev->devices));
 
    if (!tmp)
@@ -419,7 +392,7 @@ static void udev_input_poll(void *data)
       {
          int j, len;
          struct input_event input_events[32];
-         struct input_device *device = (struct input_device*)events[i].data.ptr;
+         udev_input_device_t *device = (udev_input_device_t*)events[i].data.ptr;
 
          while ((len = read(device->fd, input_events, sizeof(input_events))) > 0)
          {
@@ -484,19 +457,7 @@ static int16_t udev_lightgun_state(udev_input_t *udev, unsigned id)
    return 0;
 }
 
-static bool udev_input_is_pressed(udev_input_t *udev, const struct retro_keybind *binds, unsigned id)
-{
-   if (id < RARCH_BIND_LIST_END)
-   {
-      const struct retro_keybind *bind = &binds[id];
-      unsigned bit = input_keymaps_translate_rk_to_keysym(binds[id].key);
-      return bind->valid && BIT_GET(udev->key_state, bit);
-   }
-   return false;
-}
-
-static int16_t udev_analog_pressed(udev_input_t *udev,
-      const struct retro_keybind *binds, unsigned idx, unsigned id)
+static int16_t udev_analog_pressed(const struct retro_keybind *binds, unsigned idx, unsigned id)
 {
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
@@ -504,9 +465,9 @@ static int16_t udev_analog_pressed(udev_input_t *udev,
 
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
-   if (udev_input_is_pressed(udev, binds, id_minus))
+   if (udev_input_is_pressed(binds, id_minus))
       pressed_minus = -0x7fff;
-   if (udev_input_is_pressed(udev, binds, id_plus))
+   if (udev_input_is_pressed(binds, id_plus))
       pressed_plus = 0x7fff;
 
    return pressed_plus + pressed_minus;
@@ -560,20 +521,17 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return udev_input_is_pressed(udev, binds[port], id) ||
+         return udev_input_is_pressed(binds[port], id) ||
             input_joypad_pressed(udev->joypad, port, binds[port], id);
 
       case RETRO_DEVICE_ANALOG:
-         ret = udev_analog_pressed(udev, binds[port], idx, id);
+         ret = udev_analog_pressed(binds[port], idx, id);
          if (!ret)
             ret = input_joypad_analog(udev->joypad, port, idx, id, binds[port]);
          return ret;
 
       case RETRO_DEVICE_KEYBOARD:
-         {
-            unsigned bit = input_keymaps_translate_rk_to_keysym((enum retro_key)id);
-            return id < RETROK_LAST && BIT_GET(udev->key_state, bit);
-         }
+         return udev_input_state_kb(data, binds, port, device, idx, id);
       case RETRO_DEVICE_MOUSE:
          return udev_mouse_state(udev, id);
 
@@ -594,7 +552,7 @@ static bool udev_input_key_pressed(void *data, int key)
    udev_input_t *udev    = (udev_input_t*)data;
    settings_t *settings  = config_get_ptr();
 
-   if (udev_input_is_pressed(udev, settings->input.binds[0], key))
+   if (udev_input_is_pressed(settings->input.binds[0], key))
       return true;
    if (input_joypad_pressed(udev->joypad, 0, settings->input.binds[0], key))
       return true;
@@ -633,9 +591,7 @@ static void udev_input_free(void *data)
    if (udev->udev)
       udev_unref(udev->udev);
 
-#ifdef HAVE_XKBCOMMON
-   free_xkb();
-#endif
+   udev_input_kb_free();
 
    free(udev);
 }
