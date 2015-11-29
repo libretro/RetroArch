@@ -75,6 +75,8 @@ typedef struct video_pixel_scaler
    void *scaler_out;
 } video_pixel_scaler_t;
 
+static bool video_active;
+
 /* Last message given to the video driver */
 static char current_msg[PATH_MAX_LENGTH];
 
@@ -1653,6 +1655,14 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          break;
       case RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT_ACK:
          return video_cache_context_ack;
+      case RARCH_DISPLAY_CTL_SET_ACTIVE:
+         video_active = true;
+         break;
+      case RARCH_DISPLAY_CTL_UNSET_ACTIVE:
+         video_active = false;
+         break;
+      case RARCH_DISPLAY_CTL_IS_ACTIVE:
+         return video_active;
       case RARCH_DISPLAY_CTL_NONE:
       default:
          break;
@@ -1813,11 +1823,10 @@ void video_frame(const void *data, unsigned width,
    unsigned output_height = 0;
    unsigned  output_pitch = 0;
    const char *msg        = NULL;
-   driver_t  *driver      = driver_get_ptr();
    global_t  *global      = global_get_ptr();
    settings_t *settings   = config_get_ptr();
 
-   if (!driver->video_active)
+   if (!video_active)
       return;
 
    if (video_pixel_frame_scale(data, width, height, pitch))
@@ -1861,7 +1870,7 @@ void video_frame(const void *data, unsigned width,
    if (!current_video->frame(
             video_data, data, width, height, *frame_count,
             pitch, current_msg))
-      driver->video_active = false;
+      video_active = false;
 
    *frame_count = *frame_count + 1;
 }

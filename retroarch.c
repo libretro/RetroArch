@@ -1025,11 +1025,7 @@ static void rarch_init_savefile_paths(void)
 
 static bool init_state(void)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (!driver)
-      return false;
-
-   driver->video_active = true;
+   video_driver_ctl(RARCH_DISPLAY_CTL_SET_ACTIVE, NULL);
    audio_driver_ctl(RARCH_AUDIO_CTL_SET_ACTIVE, NULL);
 
    return true;

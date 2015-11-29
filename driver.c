@@ -273,11 +273,10 @@ void driver_set_nonblock_state(void)
 {
    settings_t *settings = config_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
-   driver_t *driver     = driver_get_ptr();
    bool enable          = input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL);
 
    /* Only apply non-block-state for video if we're using vsync. */
-   if (driver->video_active && video_driver_get_ptr(false))
+   if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_ACTIVE, NULL) && video_driver_get_ptr(false))
    {
       bool video_nonblock = enable;
 
