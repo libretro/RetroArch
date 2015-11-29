@@ -33,52 +33,44 @@ static bool hid_joypad_init(void *data)
 
 static bool hid_joypad_query_pad(unsigned pad)
 {
-   driver_t *driver   = driver_get_ptr();
-   return generic_hid->query_pad(driver->hid_data, pad);
+   return generic_hid->query_pad((void*)hid_driver_get_data(), pad);
 }
 
 static void hid_joypad_free(void)
 {
-   driver_t *driver   = driver_get_ptr();
-   generic_hid->free(driver->hid_data);
+   generic_hid->free((void*)hid_driver_get_data());
    generic_hid = NULL;
 }
 
 static bool hid_joypad_button(unsigned port, uint16_t joykey)
 {
-   driver_t *driver   = driver_get_ptr();
-   return generic_hid->button(driver->hid_data, port, joykey);
+   return generic_hid->button((void*)hid_driver_get_data(), port, joykey);
 }
 
 static uint64_t hid_joypad_get_buttons(unsigned port)
 {
-   driver_t *driver   = driver_get_ptr();
-   return generic_hid->get_buttons(driver->hid_data, port);
+   return generic_hid->get_buttons((void*)hid_driver_get_data(), port);
 }
 
 static int16_t hid_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   driver_t *driver   = driver_get_ptr();
-   return generic_hid->axis(driver->hid_data, port, joyaxis);
+   return generic_hid->axis((void*)hid_driver_get_data(), port, joyaxis);
 }
 
 static void hid_joypad_poll(void)
 {
-   driver_t *driver   = driver_get_ptr();
-   generic_hid->poll(driver->hid_data);
+   generic_hid->poll((void*)hid_driver_get_data());
 }
 
 static bool hid_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   driver_t *driver   = driver_get_ptr();
-   return generic_hid->set_rumble(driver->hid_data, pad, effect, strength);
+   return generic_hid->set_rumble((void*)hid_driver_get_data(), pad, effect, strength);
 }
 
 static const char *hid_joypad_name(unsigned pad)
 {
-   driver_t *driver   = driver_get_ptr();
-   return generic_hid->name(driver->hid_data, pad);
+   return generic_hid->name((void*)hid_driver_get_data(), pad);
 }
 
 input_device_driver_t hid_joypad = {

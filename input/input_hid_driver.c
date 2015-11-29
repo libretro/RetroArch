@@ -40,6 +40,8 @@ static hid_driver_t *hid_drivers[] = {
    NULL,
 };
 
+static const void *hid_data;
+
 /**
  * hid_driver_find_handle:
  * @idx                : index of driver to get handle to.
@@ -53,6 +55,11 @@ const void *hid_driver_find_handle(int idx)
    if (!drv)
       return NULL;
    return drv;
+}
+
+const void *hid_driver_get_data(void)
+{
+   return hid_data;
 }
 
 /**
@@ -95,10 +102,9 @@ const hid_driver_t *input_hid_init_first(void)
 
    for (i = 0; hid_drivers[i]; i++)
    {
-      driver_t *driver = driver_get_ptr();
-      driver->hid_data = hid_drivers[i]->init();
+      hid_data = hid_drivers[i]->init();
 
-      if (driver->hid_data)
+      if (hid_data)
       {
          RARCH_LOG("Found HID driver: \"%s\".\n",
                hid_drivers[i]->ident);

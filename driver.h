@@ -210,7 +210,6 @@ typedef struct driver
 
    void *font_osd_data;
    void *video_shader_data;
-   void *hid_data;
    void *camera_data;
    void *location_data;
    void *recording_data;

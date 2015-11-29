@@ -85,6 +85,8 @@ const char* config_get_hid_driver_options(void);
  **/
 const hid_driver_t *input_hid_init_first(void);
 
+const void *hid_driver_get_data(void);
+
 #ifdef __cplusplus
 }
 #endif

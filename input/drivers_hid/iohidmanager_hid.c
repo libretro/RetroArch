@@ -133,10 +133,9 @@ static void iohidmanager_hid_device_report(void *data,
       CFIndex reportLength)
 {
    struct iohidmanager_hid_adapter *adapter = (struct iohidmanager_hid_adapter*)data;
-   driver_t *driver = driver_get_ptr();
-   iohidmanager_hid_t *hid = driver ? (iohidmanager_hid_t*)driver->hid_data : NULL;
+   iohidmanager_hid_t *hid = (iohidmanager_hid_t*)hid_driver_get_data();
 
-   if (adapter)
+   if (hid && adapter)
       pad_connection_packet(&hid->slots[adapter->slot], adapter->slot,
             adapter->data, reportLength + 1);
 }
@@ -147,8 +146,7 @@ static void iohidmanager_hid_device_report(void *data,
 static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
       void* sender, IOHIDValueRef value)
 {
-   driver_t                  *driver = driver_get_ptr();
-   iohidmanager_hid_t                  *hid = driver ? (iohidmanager_hid_t*)driver->hid_data : NULL;
+   iohidmanager_hid_t *hid = (iohidmanager_hid_t*)hid_driver_get_data();
    struct iohidmanager_hid_adapter *adapter = (struct iohidmanager_hid_adapter*)data;
    IOHIDElementRef element           = IOHIDValueGetElement(value);
    uint32_t type                     = IOHIDElementGetType(element);
@@ -224,11 +222,10 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
 
 static void iohidmanager_hid_device_remove(void *data, IOReturn result, void* sender)
 {
-   driver_t                  *driver = driver_get_ptr();
    struct iohidmanager_hid_adapter *adapter = (struct iohidmanager_hid_adapter*)data;
-   iohidmanager_hid_t                  *hid = driver ? (iohidmanager_hid_t*)driver->hid_data : NULL;
+   iohidmanager_hid_t *hid = (iohidmanager_hid_t*)hid_driver_get_data();
 
-   if (adapter && (adapter->slot < MAX_USERS))
+   if (hid && adapter && (adapter->slot < MAX_USERS))
    {
       input_config_autoconfigure_disconnect(adapter->slot, adapter->name);
 
@@ -299,8 +296,7 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
    uint16_t dev_vid, dev_pid;
 
    settings_t *settings = config_get_ptr();
-   driver_t   *driver   = driver_get_ptr();
-   iohidmanager_hid_t     *hid = driver ? (iohidmanager_hid_t*)driver->hid_data : NULL;
+   iohidmanager_hid_t     *hid = (iohidmanager_hid_t*)hid_driver_get_data();
    struct iohidmanager_hid_adapter *adapter = (struct iohidmanager_hid_adapter*)
       calloc(1, sizeof(*adapter));
 
