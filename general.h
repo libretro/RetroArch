@@ -28,7 +28,6 @@
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
 
-#include "driver.h"
 #include "runloop.h"
 #include "defaults.h"
 #include "verbosity.h"
