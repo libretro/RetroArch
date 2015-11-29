@@ -427,7 +427,6 @@ error:
 
 static void init_video_input(const input_driver_t *tmp)
 {
-   driver_t *driver = driver_get_ptr();
    const input_driver_t **input = input_get_double_ptr();
    if (*input)
       return;
@@ -620,7 +619,6 @@ static bool init_video(void)
    const struct retro_game_geometry *geom = NULL;
    video_info_t video               = {0};
    static uint16_t dummy_pixels[32] = {0};
-   driver_t *driver                 = driver_get_ptr();
    settings_t *settings             = config_get_ptr();
    rarch_system_info_t *system      = rarch_system_info_get_ptr();
    struct retro_system_av_info *av_info =

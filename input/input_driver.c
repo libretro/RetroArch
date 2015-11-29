@@ -82,6 +82,7 @@ struct turbo_buttons
    unsigned count;
 };
 
+static const input_driver_t *main_input;
 static void *main_input_data;
 static bool flushing_input;
 static bool block_libretro_input;
@@ -133,18 +134,12 @@ const char* config_get_input_driver_options(void)
 
 const input_driver_t *input_get_ptr(void)
 {
-   driver_t *driver = driver_get_ptr();
-   if (!driver)
-      return NULL;
-   return driver->input;
+   return main_input;
 }
 
 const input_driver_t **input_get_double_ptr(void)
 {
-   driver_t *driver = driver_get_ptr();
-   if (!driver)
-      return NULL;
-   return &driver->input;
+   return &main_input;
 }
 
 /**
@@ -221,7 +216,7 @@ void input_driver_set(const input_driver_t **input, void **input_data)
 
    if (input && input_data)
    {
-      *input      = driver->input;
+      *input      = main_input;
       *input_data = main_input_data;
    }
 
@@ -662,7 +657,6 @@ bool input_driver_data_ptr_is_same(void *data)
 
 bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
 {
-   driver_t                   *driver = driver_get_ptr();
    const input_driver_t        *input = input_get_ptr();
    settings_t               *settings = config_get_ptr();
 
@@ -676,14 +670,14 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          input->poll(main_input_data);
          return true;
       case RARCH_INPUT_CTL_INIT:
-         if (driver && input)
+         if (input)
             main_input_data = input->init();
 
          if (!main_input_data)
             return false;
          return true;
       case RARCH_INPUT_CTL_DEINIT:
-         if (!driver || !input)
+         if (!input)
             return false;
          input->free(main_input_data);
          return true;
@@ -692,8 +686,7 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          block_hotkey   = false;
          nonblock_state = false;
          memset(&turbo_btns, 0, sizeof(turbo_buttons_t));
-         if (!driver)
-            return false;
+         main_input      = NULL;
          main_input_data = NULL;
          return true;
       case RARCH_INPUT_CTL_GRAB_STDIN:
@@ -709,7 +702,7 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          {
             int i = find_driver_index("input_driver", settings->input.driver);
             if (i >= 0)
-               driver->input = (const input_driver_t*)input_driver_find_handle(i);
+               main_input = (const input_driver_t*)input_driver_find_handle(i);
             else
             {
                unsigned d;
@@ -720,9 +713,9 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
                   RARCH_LOG_OUTPUT("\t%s\n", input_driver_find_ident(d));
                RARCH_WARN("Going to default to first input driver...\n");
 
-               driver->input = (const input_driver_t*)input_driver_find_handle(0);
+               main_input = (const input_driver_t*)input_driver_find_handle(0);
 
-               if (!driver->input)
+               if (!main_input)
                   return false;
                retro_fail(1, "find_input_driver()");
                return false;
