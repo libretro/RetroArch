@@ -63,6 +63,7 @@ typedef struct audio_driver_input_data
    uint64_t buffer_free_samples_count;
 } audio_driver_input_data_t;
 
+static bool audio_data_own;
 static const rarch_resampler_t *audio_resampler;
 static void *audio_resampler_data;
 static const audio_driver_t *current_audio;
@@ -275,7 +276,7 @@ static bool uninit_audio(void)
 
    current_audio = NULL;
 
-   if (!driver->audio_data_own)
+   if (!audio_data_own)
       context_audio_data = NULL;
 
    return true;
@@ -829,6 +830,14 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          return current_audio->stop(context_audio_data);
       case RARCH_AUDIO_CTL_FIND_DRIVER:
          return find_audio_driver();
+      case RARCH_AUDIO_CTL_SET_OWN_DRIVER:
+         audio_data_own = true;
+         break;
+      case RARCH_AUDIO_CTL_UNSET_OWN_DRIVER:
+         audio_data_own = false;
+         break;
+      case RARCH_AUDIO_CTL_OWNS_DRIVER:
+         return audio_data_own;
       case RARCH_AUDIO_CTL_FRAME_IS_REVERSE:
          /* We just rewound. Flush rewind audio buffer. */
          audio_driver_flush(audio_data.rewind_buf + audio_data.rewind_ptr,

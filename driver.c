@@ -361,7 +361,7 @@ void init_drivers(int flags)
    if (flags & DRIVER_VIDEO)
       video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_OWN_DRIVER, NULL);
    if (flags & DRIVER_AUDIO)
-      driver->audio_data_own = false;
+      audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_OWN_DRIVER, NULL);
    if (flags & DRIVER_INPUT)
       driver->input_data_own = false;
    if (flags & DRIVER_CAMERA)
