@@ -428,7 +428,7 @@ error:
 static void init_video_input(const input_driver_t *tmp)
 {
    driver_t *driver = driver_get_ptr();
-   if (driver->input)
+   if (input_get_ptr())
       return;
 
    /* Reset video frame count */
@@ -446,7 +446,7 @@ static void init_video_input(const input_driver_t *tmp)
    /* This should never really happen as tmp (driver.input) is always
     * found before this in find_driver_input(), or we have aborted
     * in a similar fashion anyways. */
-   if (!driver->input)
+   if (!input_get_ptr())
       goto error;
 
    if (input_driver_ctl(RARCH_INPUT_CTL_INIT, NULL))
