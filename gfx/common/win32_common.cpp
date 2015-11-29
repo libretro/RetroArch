@@ -279,7 +279,6 @@ bool win32_window_create(void *data, unsigned style,
       unsigned height, bool fullscreen)
 {
 #ifndef _XBOX
-   driver_t   *driver       = driver_get_ptr();
    g_hwnd = CreateWindowEx(0, "RetroArch", "RetroArch",
          style,
          fullscreen ? mon_rect->left : g_pos_x,
@@ -289,9 +288,9 @@ bool win32_window_create(void *data, unsigned style,
    if (!g_hwnd)
       return false;
 
-   driver->display_type  = RARCH_DISPLAY_WIN32;
-   driver->video_display = 0;
-   driver->video_window  = (uintptr_t)g_hwnd;
+   video_driver_display_type_set(RARCH_DISPLAY_WIN32);
+   video_driver_display_set(0);
+   video_driver_window_set((uintptr_t)g_hwnd);
 #endif
    return true;
 }

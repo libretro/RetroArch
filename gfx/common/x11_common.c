@@ -547,13 +547,12 @@ void x11_update_window_title(void *data)
 
 bool x11_input_ctx_new(bool true_full)
 {
-   driver_t *driver    = driver_get_ptr();
    if (!x11_create_input_context(g_x11_dpy, g_x11_win, &g_x11_xim, &g_x11_xic))
       return false;
 
-   driver->display_type  = RARCH_DISPLAY_X11;
-   driver->video_display = (uintptr_t)g_x11_dpy;
-   driver->video_window  = (uintptr_t)g_x11_win;
+   video_driver_display_type_set(RARCH_DISPLAY_X11);
+   video_driver_display_set((uintptr_t)g_x11_dpy);
+   video_driver_window_set((uintptr_t)g_x11_win);
    g_x11_true_full       = true_full;
    return true;
 }

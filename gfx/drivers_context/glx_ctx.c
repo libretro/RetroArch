@@ -522,11 +522,10 @@ static void gfx_ctx_glx_input_driver(void *data,
 
 static bool gfx_ctx_glx_suppress_screensaver(void *data, bool enable)
 {
-   driver_t *driver = driver_get_ptr();
-   if (driver->display_type != RARCH_DISPLAY_X11)
+   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
       return false;
 
-   x11_suspend_screensaver(driver->video_window);
+   x11_suspend_screensaver(video_driver_window_get());
 
    return true;
 }

@@ -270,7 +270,6 @@ struct aspect_ratio_elem
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
-
 enum rarch_display_type
 {
    /* Non-bindable types like consoles, KMS, VideoCore, etc. */
@@ -530,6 +529,19 @@ const video_poke_interface_t *video_driver_get_poke(void);
  **/
 void video_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
+
+uintptr_t video_driver_display_get(void);
+
+enum rarch_display_type video_driver_display_type_get(void);
+
+uintptr_t video_driver_window_get(void);
+
+void video_driver_display_type_set(enum rarch_display_type type);
+
+void video_driver_display_set(uintptr_t idx);
+
+void video_driver_window_set(uintptr_t idx);
+
 
 extern video_driver_t video_gl;
 extern video_driver_t video_psp1;

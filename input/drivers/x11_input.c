@@ -26,6 +26,8 @@
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
 
+#include "../../gfx/video_driver.h"
+
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../verbosity.h"
@@ -49,11 +51,10 @@ typedef struct x11_input
 
 static void *x_input_init(void)
 {
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
    x11_input_t *x11;
+   settings_t *settings = config_get_ptr();
 
-   if (driver->display_type != RARCH_DISPLAY_X11)
+   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
    {
       RARCH_ERR("Currently active window is not an X11 window. Cannot use this driver.\n");
       return NULL;
@@ -64,8 +65,8 @@ static void *x_input_init(void)
       return NULL;
 
    /* Borrow the active X window ... */
-   x11->display = (Display*)driver->video_display;
-   x11->win     = (Window)driver->video_window;
+   x11->display = (Display*)video_driver_display_get();
+   x11->win     = (Window)video_driver_window_get();
 
    x11->joypad = input_joypad_init_driver(settings->input.joypad_driver, x11);
    input_keymaps_init_keyboard_lut(rarch_key_map_x11);

@@ -69,6 +69,14 @@ typedef struct video_driver_state
    } filter;
 } video_driver_state_t;
 
+/* Opaque handles to currently running window.
+ * Used by e.g. input drivers which bind to a window.
+ * Drivers are responsible for setting these if an input driver
+ * could potentially make use of this. */
+static uintptr_t video_display;
+static uintptr_t video_window;
+static enum rarch_display_type display_type;
+
 /* Graphics driver requires RGBA byte order data (ABGR on little-endian)
  * for 32-bit.
  * This takes effect for overlay and shader cores that wants to load
@@ -671,9 +679,9 @@ static bool init_video(void)
    else
       RARCH_LOG("Video @ fullscreen\n");
 
-   driver->display_type  = RARCH_DISPLAY_NONE;
-   driver->video_display = 0;
-   driver->video_window  = 0;
+   video_driver_display_type_set(RARCH_DISPLAY_NONE);
+   video_driver_display_set(0);
+   video_driver_window_set(0);
 
    if (!init_video_pixel_converter(RARCH_SCALE_BASE * scale))
    {
@@ -1815,4 +1823,34 @@ void video_frame(const void *data, unsigned width,
       driver->video_active = false;
 
    *frame_count = *frame_count + 1;
+}
+
+void video_driver_display_type_set(enum rarch_display_type type)
+{
+   display_type = type;
+}
+
+uintptr_t video_driver_display_get(void)
+{
+   return video_display;
+}
+
+void video_driver_display_set(uintptr_t idx)
+{
+   video_display = idx;
+}
+
+enum rarch_display_type video_driver_display_type_get(void)
+{
+   return display_type;
+}
+
+void video_driver_window_set(uintptr_t idx)
+{
+   video_window = idx;
+}
+
+uintptr_t video_driver_window_get(void)
+{
+   return video_window;
 }

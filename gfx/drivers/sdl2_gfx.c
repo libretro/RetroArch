@@ -210,8 +210,6 @@ static void sdl2_gfx_set_handles(sdl2_video_t *vid)
 {
    /* SysWMinfo headers are broken on OSX. */
 #if defined(_WIN32) || defined(HAVE_X11)
-   driver_t *driver = driver_get_ptr();
-
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
 
@@ -219,13 +217,13 @@ static void sdl2_gfx_set_handles(sdl2_video_t *vid)
       return;
 
 #if defined(_WIN32)
-   driver->display_type  = RARCH_DISPLAY_WIN32;
-   driver->video_display = 0;
-   driver->video_window  = (uintptr_t)info.info.win.window;
+   video_driver_display_type_set(RARCH_DISPLAY_WIN32);
+   video_driver_display_set(0);
+   video_driver_window_set((uintptr_t)info.info.win.window);
 #elif defined(HAVE_X11)
-   driver->display_type  = RARCH_DISPLAY_X11;
-   driver->video_display = (uintptr_t)info.info.x11.display;
-   driver->video_window  = (uintptr_t)info.info.x11.window;
+   video_driver_display_type_set(RARCH_DISPLAY_X11);
+   video_driver_display_set((uintptr_t)info.info.x11.display);
+   video_driver_window_set((uintptr_t)info.info.x11.window);
 #endif
 #endif
 }
@@ -560,15 +558,13 @@ static bool sdl2_gfx_focus(void *data)
 
 static bool sdl2_gfx_suppress_screensaver(void *data, bool enable)
 {
-   driver_t *driver = driver_get_ptr();
-
    (void)data;
    (void)enable;
 
-   if (driver->display_type == RARCH_DISPLAY_X11)
+   if (video_driver_display_type_get() == RARCH_DISPLAY_X11)
    {
 #ifdef HAVE_X11
-      x11_suspend_screensaver(driver->video_window);
+      x11_suspend_screensaver(video_driver_window_get());
 #endif
       return true;
    }

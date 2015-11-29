@@ -271,14 +271,6 @@ typedef struct driver
    bool flushing_input;
    bool nonblock_state;
 
-   /* Opaque handles to currently running window.
-    * Used by e.g. input drivers which bind to a window.
-    * Drivers are responsible for setting these if an input driver
-    * could potentially make use of this. */
-   uintptr_t video_display;
-   uintptr_t video_window;
-   enum rarch_display_type display_type;
-
    /* Last message given to the video driver */
    char current_msg[PATH_MAX_LENGTH];
 } driver_t;
