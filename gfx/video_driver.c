@@ -94,6 +94,7 @@ static bool gfx_use_rgba;
 static uint64_t video_frame_count;
 
 static void *video_data;
+static bool video_data_own;
 static const video_driver_t *current_video;
 
 /* Interface for "poking". */
@@ -533,7 +534,7 @@ static bool uninit_video_input(void)
       input_driver_ctl(RARCH_INPUT_CTL_DEINIT, NULL);
 
    if (
-         !driver->video_data_own &&
+         !video_data_own &&
          video_data &&
          current_video &&
          current_video->free)
@@ -553,7 +554,7 @@ static bool uninit_video_input(void)
    video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_RGBA, NULL);
    current_video = NULL;
 
-   if (!driver->video_data_own)
+   if (!video_data_own)
       video_data = NULL;
 
    return true;
@@ -1618,6 +1619,14 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
                   global->console.screen.flicker_filter_index);
          }
          return true;
+      case RARCH_DISPLAY_CTL_SET_OWN_DRIVER:
+         video_data_own = true;
+         break;
+      case RARCH_DISPLAY_CTL_UNSET_OWN_DRIVER:
+         video_data_own = false;
+         break;
+      case RARCH_DISPLAY_CTL_OWNS_DRIVER:
+         return video_data_own;
       case RARCH_DISPLAY_CTL_NONE:
       default:
          break;

@@ -359,7 +359,7 @@ void init_drivers(int flags)
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (flags & DRIVER_VIDEO)
-      driver->video_data_own = false;
+      video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_OWN_DRIVER, NULL);
    if (flags & DRIVER_AUDIO)
       driver->audio_data_own = false;
    if (flags & DRIVER_INPUT)

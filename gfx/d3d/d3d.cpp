@@ -765,7 +765,7 @@ static void *d3d_init(const video_info_t *info,
 
          input_driver_set(input, input_data);
 
-         driver->video_data_own = true;
+         video_driver_ctl(RARCH_DISPLAY_CTL_SET_OWN_DRIVER, NULL);
          return vid;
       }
    }
@@ -806,7 +806,7 @@ static void *d3d_init(const video_info_t *info,
    vid->keep_aspect       = info->force_aspect;
 
 #ifdef _XBOX
-   driver->video_data_own = true;
+   video_driver_ctl(RARCH_DISPLAY_CTL_SET_OWN_DRIVER, NULL);
    driver->input_data_own = true;
 #endif
 
