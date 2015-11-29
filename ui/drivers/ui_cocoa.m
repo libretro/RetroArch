@@ -26,6 +26,7 @@
 #include "cocoa/cocoa_common.h"
 #include "../ui_companion_driver.h"
 #include "../../input/drivers/cocoa_input.h"
+#include "../../input/drivers_keyboard/keyboard_event_apple.h"
 #include "../../frontend/frontend.h"
 #include "../../runloop_data.h"
 
