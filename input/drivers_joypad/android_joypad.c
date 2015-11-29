@@ -153,9 +153,7 @@ static void android_joypad_poll(void)
 
 static bool android_joypad_query_pad(unsigned pad)
 {
-   driver_t *driver         = driver_get_ptr();
-   android_input_t *android = driver ? (android_input_t*)driver->input_data : NULL;
-   return (pad < MAX_USERS && pad < android->pads_connected);
+   return (pad < MAX_USERS);
 }
 
 
