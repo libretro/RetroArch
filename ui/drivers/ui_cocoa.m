@@ -53,12 +53,8 @@ void apple_rarch_exited(void)
       return;
    [super sendEvent:event];
 
-   apple = (cocoa_input_data_t*)driver->input_data;
    event_type = event.type;
    
-   if (!apple)
-      return;
-
    switch ((int32_t)event_type)
    {
       case NSKeyDown:
@@ -110,36 +106,41 @@ void apple_rarch_exited(void)
       case NSLeftMouseDragged:
       case NSRightMouseDragged:
       case NSOtherMouseDragged:
-      {
-         NSPoint pos;
-          NSPoint mouse_pos;
-         /* Relative */
-         apple->mouse_rel_x = event.deltaX;
-         apple->mouse_rel_y = event.deltaY;
-          
+         {
+            NSPoint pos;
+            NSPoint mouse_pos;
+
+            apple = (cocoa_input_data_t*)driver->input_data;
+            if (!apple)
+               return;
+
+            /* Relative */
+            apple->mouse_rel_x = event.deltaX;
+            apple->mouse_rel_y = event.deltaY;
+
 #if MAC_OS_X_VERSION_10_7
-          NSScreen *screen = (NSScreen*)get_chosen_screen();
-          CGFloat backing_scale_factor = screen.backingScaleFactor;
+            NSScreen *screen = (NSScreen*)get_chosen_screen();
+            CGFloat backing_scale_factor = screen.backingScaleFactor;
 #else
-          CGFloat backing_scale_factor = 1.0f;
+            CGFloat backing_scale_factor = 1.0f;
 #endif
 
-         /* Absolute */
-         pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
-         apple->touches[0].screen_x = pos.x * backing_scale_factor;
-         apple->touches[0].screen_y = pos.y * backing_scale_factor;
-          
-          //window is a variable containing your window
-          //mouse_pos = [self.window mouseLocationOutsideOfEventStream];
-          //convert to screen coordinates
-          //mouse_pos = [[self.window convertBaseToScreen:mouse_pos];
-          
-         //mouse_pos = [event locationInWindow];
-          //mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:[CocoaView get] ];
-        mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow]  fromView:nil];
-          apple->window_pos_x = (int16_t)mouse_pos.x * backing_scale_factor;
-          apple->window_pos_y = (int16_t)mouse_pos.y * backing_scale_factor;
-      }
+            /* Absolute */
+            pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
+            apple->touches[0].screen_x = pos.x * backing_scale_factor;
+            apple->touches[0].screen_y = pos.y * backing_scale_factor;
+
+            //window is a variable containing your window
+            //mouse_pos = [self.window mouseLocationOutsideOfEventStream];
+            //convert to screen coordinates
+            //mouse_pos = [[self.window convertBaseToScreen:mouse_pos];
+
+            //mouse_pos = [event locationInWindow];
+            //mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:[CocoaView get] ];
+            mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow]  fromView:nil];
+            apple->window_pos_x = (int16_t)mouse_pos.x * backing_scale_factor;
+            apple->window_pos_y = (int16_t)mouse_pos.y * backing_scale_factor;
+         }
          break;
        case NSScrollWheel:
            /* TODO/FIXME - properly implement. */
@@ -147,12 +148,18 @@ void apple_rarch_exited(void)
       case NSLeftMouseDown:
       case NSRightMouseDown:
       case NSOtherMouseDown:
+         apple = (cocoa_input_data_t*)driver->input_data;
+         if (!apple)
+            return;
          apple->mouse_buttons |= 1 << event.buttonNumber;
          apple->touch_count = 1;
          break;
       case NSLeftMouseUp:
       case NSRightMouseUp:
       case NSOtherMouseUp:
+         apple = (cocoa_input_data_t*)driver->input_data;
+         if (!apple)
+            return;
          apple->mouse_buttons &= ~(1 << event.buttonNumber);
          apple->touch_count = 0;
          break;
