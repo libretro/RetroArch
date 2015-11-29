@@ -172,105 +172,15 @@ void logger_send_v(const char *__format, va_list args);
 } while (0)
 
 #endif
-
 #else
-static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
-{
-   if (!RARCH_LOG_VERBOSE())
-      return;
-#if TARGET_OS_IPHONE
-#if TARGET_IPHONE_SIMULATOR
-   vprintf(fmt, ap);
-#else
-   if (!asl_inited)
-   {
-      asl_client = asl_open("RetroArch", "com.apple.console", ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
-      asl_inited = 1;
-   }
-   aslmsg msg = asl_new(ASL_TYPE_MSG);
-   asl_set(msg, ASL_KEY_READ_UID, "-1");
-   if (tag)
-      asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s", tag);
-   asl_vlog(asl_client, msg, ASL_LEVEL_NOTICE, fmt, ap);
-   asl_free(msg);
-#endif
-#elif defined(_XBOX1)
-   /* FIXME: Using arbitrary string as fmt argument is unsafe. */
-   char msg_new[1024], buffer[1024];
-   snprintf(msg_new, sizeof(msg_new), "%s: %s %s",
-         PROGRAM_NAME,
-         tag ? tag : "",
-         fmt);
-   wvsprintf(buffer, msg_new, ap);
-   OutputDebugStringA(buffer);
-#elif defined(ANDROID)
-   int prio = ANDROID_LOG_INFO;
-   if (tag)
-   {
-      if (!strcmp("[WARN]", tag))
-         prio = ANDROID_LOG_WARN;
-      else if (!strcmp("[ERROR]", tag))
-         prio = ANDROID_LOG_ERROR;
-   }
-   __android_log_vprint(prio, PROGRAM_NAME, fmt, ap);
-#else
-   fprintf(LOG_FILE, "%s %s :: ", PROGRAM_NAME, tag ? tag : "[INFO]");
-   vfprintf(LOG_FILE, fmt, ap);
-   fflush(LOG_FILE);
-#endif
-}
-
-static INLINE void RARCH_LOG(const char *fmt, ...)
-{
-   va_list ap;
-
-   if (!RARCH_LOG_VERBOSE())
-      return;
-
-   va_start(ap, fmt);
-   RARCH_LOG_V("[INFO]", fmt, ap);
-   va_end(ap);
-}
-
-static INLINE void RARCH_LOG_OUTPUT_V(const char *tag,
-      const char *msg, va_list ap)
-{
-   RARCH_LOG_V(tag, msg, ap);
-}
-
-static INLINE void RARCH_LOG_OUTPUT(const char *msg, ...)
-{
-   va_list ap;
-   va_start(ap, msg);
-   RARCH_LOG_OUTPUT_V("[INFO]", msg, ap);
-   va_end(ap);
-}
-
-static INLINE void RARCH_WARN_V(const char *tag, const char *fmt, va_list ap)
-{
-   RARCH_LOG_V(tag, fmt, ap);
-}
-
-static INLINE void RARCH_WARN(const char *fmt, ...)
-{
-   va_list ap;
-   va_start(ap, fmt);
-   RARCH_WARN_V("[WARN]", fmt, ap);
-   va_end(ap);
-}
-
-static INLINE void RARCH_ERR_V(const char *tag, const char *fmt, va_list ap)
-{
-   RARCH_LOG_V(tag, fmt, ap);
-}
-
-static INLINE void RARCH_ERR(const char *fmt, ...)
-{
-   va_list ap;
-   va_start(ap, fmt);
-   RARCH_ERR_V("[ERROR]", fmt, ap);
-   va_end(ap);
-}
+void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap);
+void RARCH_LOG(const char *fmt, ...);
+void RARCH_LOG_OUTPUT_V(const char *tag, const char *msg, va_list ap);
+void RARCH_LOG_OUTPUT(const char *msg, ...);
+void RARCH_WARN_V(const char *tag, const char *fmt, va_list ap);
+void RARCH_WARN(const char *fmt, ...);
+void RARCH_ERR_V(const char *tag, const char *fmt, va_list ap);
+void RARCH_ERR(const char *fmt, ...);
 #endif
 
 
