@@ -40,6 +40,7 @@
 #include "msg_hash.h"
 #include "verbosity.h"
 
+#include "audio/audio_driver.h"
 #include "libretro_version_1.h"
 #include "configuration.h"
 #include "general.h"
@@ -1029,7 +1030,7 @@ static bool init_state(void)
       return false;
 
    driver->video_active = true;
-   driver->audio_active = true;
+   audio_driver_ctl(RARCH_AUDIO_CTL_SET_ACTIVE, NULL);
 
    return true;
 }

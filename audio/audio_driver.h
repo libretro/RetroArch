@@ -91,7 +91,9 @@ enum rarch_audio_ctl_state
    RARCH_AUDIO_CTL_FRAME_IS_REVERSE,
    RARCH_AUDIO_CTL_SET_OWN_DRIVER,
    RARCH_AUDIO_CTL_UNSET_OWN_DRIVER,
-   RARCH_AUDIO_CTL_OWNS_DRIVER
+   RARCH_AUDIO_CTL_OWNS_DRIVER,
+   RARCH_AUDIO_CTL_SET_ACTIVE,
+   RARCH_AUDIO_CTL_UNSET_ACTIVE
 };
 
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data);

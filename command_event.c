@@ -1319,7 +1319,7 @@ bool event_command(enum event_command cmd)
          if (!settings->audio.mute_enable && !audio_driver_ctl(RARCH_AUDIO_CTL_START, NULL))
          {
             RARCH_ERR("Failed to start audio driver. Will continue without audio.\n");
-            driver->audio_active = false;
+            audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_ACTIVE, NULL);
          }
          break;
       case EVENT_CMD_AUDIO_MUTE_TOGGLE:

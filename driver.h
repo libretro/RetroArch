@@ -216,7 +216,6 @@ typedef struct driver
    void *netplay_data;
    void *ui_companion_data;
 
-   bool audio_active;
    bool video_active;
    bool camera_active;
    bool location_active;
