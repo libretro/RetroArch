@@ -28,16 +28,9 @@
 
 #if TARGET_OS_IPHONE
 static bool small_keyboard_active;
-#endif
-
-static uint32_t apple_key_state[MAX_KEYS];
-
-#if defined(HAVE_COCOATOUCH)
 
 #define HIDKEY(X) X
-
-#elif defined(HAVE_COCOA)
-
+#else
 /* Taken from https://github.com/depp/keycode,
  * check keycode.h for license. */
 
@@ -54,6 +47,8 @@ static const unsigned char MAC_NATIVE_TO_HID[128] = {
 
 #define HIDKEY(X) (X < 128) ? MAC_NATIVE_TO_HID[X] : 0
 #endif
+
+static uint32_t apple_key_state[MAX_KEYS];
 
 #if TARGET_OS_IPHONE
 static bool handle_small_keyboard(unsigned* code, bool down)
