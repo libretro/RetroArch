@@ -15,6 +15,8 @@
 
 #include "keyboard_event_android.h"
 
+#define AKEYCODE_ASSIST 219
+
 #define LAST_KEYCODE AKEYCODE_ASSIST 
 
 #define MAX_KEYS ((LAST_KEYCODE + 7) / 8)

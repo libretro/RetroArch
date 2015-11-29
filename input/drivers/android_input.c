@@ -34,12 +34,6 @@
 
 #define MAX_TOUCH 16
 
-#define AKEY_EVENT_NO_ACTION 255
-
-#ifndef AKEYCODE_ASSIST
-#define AKEYCODE_ASSIST 219
-#endif
-
 typedef struct
 {
    float x;
