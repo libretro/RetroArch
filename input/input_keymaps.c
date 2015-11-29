@@ -48,7 +48,7 @@
 #include "../general.h"
 
 #ifdef __APPLE__
-#include "drivers/apple_keycode.h"
+#include "drivers_keyboard/keyboard_event_apple.h"
 
 const struct apple_key_name_map_entry apple_key_name_map[] =
 {

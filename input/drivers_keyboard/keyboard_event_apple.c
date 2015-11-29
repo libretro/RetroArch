@@ -25,7 +25,7 @@
 #include "../../general.h"
 #include "../../driver.h"
 
-#include "../drivers/apple_keycode.h"
+#include "keyboard_event_apple.h"
 
 #if TARGET_OS_IPHONE
 static bool small_keyboard_active;
