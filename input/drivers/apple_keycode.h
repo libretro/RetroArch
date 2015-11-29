@@ -33,6 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef KEYCODE_KEYCODE_H
 #define KEYCODE_KEYCODE_H
 
+#ifndef MAX_KEYS
+#define MAX_KEYS     256
+#endif
+
 enum
 {
    KEY_A = 4,
@@ -157,5 +161,14 @@ enum
 };
 
 #include "../input_config.h"
+
+int16_t apple_input_is_pressed(unsigned port_num,
+   const struct retro_keybind *binds, unsigned id);
+
+int16_t apple_keyboard_state(unsigned id);
+
+void apple_keyboard_find_any_key(void);
+
+void apple_keyboard_free(void);
 
 #endif

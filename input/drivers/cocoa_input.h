@@ -23,7 +23,6 @@
 
 /* Input responder */
 #define MAX_TOUCHES  16
-#define MAX_KEYS     256
 
 typedef struct
 {
@@ -47,11 +46,6 @@ typedef struct
    int16_t mouse_rel_y;
    int16_t mouse_wu;
    int16_t mouse_wd;
-
-   uint32_t key_state[MAX_KEYS];
-#if TARGET_OS_IPHONE
-   bool small_keyboard_active;
-#endif
 
    const input_device_driver_t *sec_joypad;
    const input_device_driver_t *joypad;

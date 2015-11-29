@@ -27,6 +27,12 @@
 
 #include "../drivers/apple_keycode.h"
 
+#if TARGET_OS_IPHONE
+static bool small_keyboard_active;
+#endif
+
+static uint32_t apple_key_state[MAX_KEYS];
+
 #if defined(HAVE_COCOATOUCH)
 
 #define HIDKEY(X) X
@@ -72,8 +78,6 @@ static bool handle_small_keyboard(unsigned* code, bool down)
       { KEY_X,          KP_2           }, { KEY_C,          KP_3           },
       { 0 }
    };
-   driver_t *driver = driver_get_ptr();
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
    unsigned translated_code  = 0;
 
    if (!map_initialized)
@@ -86,7 +90,7 @@ static bool handle_small_keyboard(unsigned* code, bool down)
 
    if (*code == KEY_RightShift)
    {
-      apple->small_keyboard_active = down;
+      small_keyboard_active = down;
       *code = 0;
       return true;
    }
@@ -94,11 +98,11 @@ static bool handle_small_keyboard(unsigned* code, bool down)
    translated_code = (*code < 128) ? mapping[*code] : 0;
 
    /* Allow old keys to be released. */
-   if (!down && apple->key_state[*code])
+   if (!down && apple_key_state[*code])
       return false;
 
-   if ((!down && apple->key_state[translated_code]) ||
-         apple->small_keyboard_active)
+   if ((!down && apple_key_state[translated_code]) ||
+         small_keyboard_active)
    {
       *code = translated_code;
       return true;
@@ -273,14 +277,9 @@ static bool handle_icade_event(unsigned *code, bool *keydown)
 void cocoa_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
-   driver_t *driver = driver_get_ptr();
 #if TARGET_OS_IPHONE
    settings_t *settings = config_get_ptr();
 #endif
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)driver->input_data;
-
-   if (!apple)
-      return;
 
    code = HIDKEY(code);
 
@@ -302,9 +301,43 @@ void cocoa_input_keyboard_event(bool down,
    if (code == 0 || code >= MAX_KEYS)
       return;
 
-   apple->key_state[code] = down;
+   apple_key_state[code] = down;
 
    input_keyboard_event(down,
          input_keymaps_translate_keysym_to_rk(code),
          character, (enum retro_mod)mod, device);
+}
+
+int16_t apple_input_is_pressed_kb(unsigned port_num,
+   const struct retro_keybind *binds, unsigned id)
+{
+   if (id < RARCH_BIND_LIST_END)
+   {
+      const struct retro_keybind *bind = &binds[id];
+      unsigned bit = input_keymaps_translate_rk_to_keysym(bind->key);
+      return bind->valid && apple_key_state[bit];
+   }
+   return 0;
+}
+
+int16_t apple_keyboard_state(unsigned id)
+{
+   unsigned bit = input_keymaps_translate_rk_to_keysym((enum retro_key)id);
+   return (id < RETROK_LAST) && apple_key_state[bit];
+}
+
+void apple_keyboard_find_any_key(void)
+{
+   unsigned i;
+
+   for (i = 0; apple_key_name_map[i].hid_id; i++)
+      if (apple_key_state[apple_key_name_map[i].hid_id])
+         return apple_key_name_map[i].hid_id;
+}
+
+void apple_keyboard_free(void)
+{
+   unsigned i;
+   for (i = 0; i < MAX_KEYS; i++)
+      apple_key_state[i] = 0;
 }
