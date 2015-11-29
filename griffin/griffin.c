@@ -320,6 +320,10 @@ INPUT
 #include "../tasks/task_overlay.c"
 #endif
 
+#ifdef HAVE_X11
+#include "../input/common/x11_input_common.c"
+#endif
+
 #if defined(__CELLOS_LV2__)
 #include "../input/drivers/ps3_input.c"
 #include "../input/drivers_joypad/ps3_joypad.c"

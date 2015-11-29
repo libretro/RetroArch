@@ -16,7 +16,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
 
@@ -27,6 +26,7 @@
 #include "../input_keymaps.h"
 
 #include "../../gfx/video_driver.h"
+#include "../common/input_x11_common.h"
 
 #include "../../driver.h"
 #include "../../general.h"
@@ -41,7 +41,7 @@ typedef struct x11_input
    Window win;
 
    char state[32];
-   bool mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
+   bool mouse_l, mouse_r, mouse_m;
    int mouse_x, mouse_y;
    int mouse_last_x, mouse_last_y;
 
@@ -150,17 +150,8 @@ static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
          return x11->mouse_r;
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         {
-            int16_t ret = x11->mouse_wu;
-            x11->mouse_wu = 0;
-            return ret;
-         }
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         {
-            int16_t ret = x11->mouse_wd;
-            x11->mouse_wd = 0;
-            return ret;
-         }
+         return x_mouse_state_wheel(id);
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
          return x11->mouse_m;
    }
@@ -342,23 +333,6 @@ static void x_input_poll_mouse(x11_input_t *x11)
    }
 }
 
-void x_input_poll_wheel(void *data, XButtonEvent *event, bool latch)
-{
-   x11_input_t *x11 = (x11_input_t*)data;
-
-   if (!x11)
-      return;
-
-   switch (event->button)
-   {
-      case 4:
-         x11->mouse_wu = 1;
-         break;
-      case 5:
-         x11->mouse_wd = 1;
-         break;
-   }
-}
 
 static void x_input_poll(void *data)
 {

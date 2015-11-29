@@ -24,6 +24,7 @@
 #include <X11/Xatom.h>
 
 #include "x11_common.h"
+#include "../../input/common/input_x11_common.h"
 #include "../../general.h"
 #include "../../verbosity.h"
 
@@ -382,12 +383,9 @@ bool x11_get_metrics(void *data,
    return true;
 }
 
-void x_input_poll_wheel(void *data, XButtonEvent *event, bool latch);
-
 bool x11_alive(void *data)
 {
    XEvent event;
-   driver_t *driver    = driver_get_ptr();
 
    while (XPending(g_x11_dpy))
    {
@@ -421,7 +419,7 @@ bool x11_alive(void *data)
             break;
 
          case ButtonPress:
-            x_input_poll_wheel(driver->input_data, &event.xbutton, true);
+            x_input_poll_wheel(&event.xbutton, true);
             break;
 
          case ButtonRelease:
