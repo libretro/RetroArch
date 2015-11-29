@@ -529,7 +529,6 @@ static void deinit_pixel_converter(void)
 
 static bool uninit_video_input(void)
 {
-   driver_t *driver = driver_get_ptr();
    const struct retro_hw_render_callback *hw_render = 
       (const struct retro_hw_render_callback*)video_driver_callback();
 
