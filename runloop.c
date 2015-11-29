@@ -858,7 +858,7 @@ static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
 }
 #endif
 
-static void rarch_main_cmd_get_state(driver_t *driver,
+static void rarch_main_cmd_get_state(
       settings_t *settings, event_cmd_state_t *cmd,
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
@@ -1025,7 +1025,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    }
 
    trigger_input = input & ~old_input;
-   rarch_main_cmd_get_state(driver, settings, &cmd, input, old_input, trigger_input);
+   rarch_main_cmd_get_state(settings, &cmd, input, old_input, trigger_input);
 
    if (cmd.overlay_next_pressed)
       event_command(EVENT_CMD_OVERLAY_NEXT);
