@@ -177,7 +177,7 @@ static void menu_input_key_end_line(void)
    menu_input_ctl(MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL_SETTING, NULL);
 
    /* Avoid triggering states on pressing return. */
-   driver->flushing_input = true;
+   input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
 }
 
 static void menu_input_search_callback(void *userdata, const char *str)
@@ -744,7 +744,7 @@ int menu_input_key_bind_iterate(char *s, size_t len)
    if (menu_input->binds.begin > menu_input->binds.last)
    {
       /* Avoid new binds triggering things right away. */
-      driver->flushing_input = true;
+      input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
 
       /* We won't be getting any key events, so just cancel early. */
       if (timed_out)
@@ -764,7 +764,7 @@ int menu_input_key_bind_iterate(char *s, size_t len)
       input_driver_keyboard_mapping_set_block(false);
 
       /* Avoid new binds triggering things right away. */
-      driver->flushing_input = true;
+      input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
 
       binds.begin++;
 

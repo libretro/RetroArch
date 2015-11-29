@@ -267,7 +267,6 @@ typedef struct driver
    rarch_remote_t *remote;
 #endif
    bool block_libretro_input;
-   bool flushing_input;
    bool nonblock_state;
 
    /* Last message given to the video driver */

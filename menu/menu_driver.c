@@ -329,7 +329,7 @@ void menu_driver_toggle(bool latch)
          event_command(EVENT_CMD_AUDIO_START);
 
       /* Prevent stray input from going to libretro core */
-      driver->flushing_input = true;
+      input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
 
       /* Restore libretro keyboard callback. */
       if (global)

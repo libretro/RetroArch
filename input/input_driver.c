@@ -82,6 +82,7 @@ struct turbo_buttons
    unsigned count;
 };
 
+static bool flushing_input;
 static bool block_hotkey;
 static turbo_buttons_t turbo_btns;
 
@@ -499,7 +500,7 @@ int16_t input_state(unsigned port, unsigned device,
    if (settings->input.remap_binds_enable)
       input_remapping_state(port, &device, &idx, &id);
 
-   if (!driver->flushing_input && !driver->block_libretro_input)
+   if (!flushing_input && !driver->block_libretro_input)
    {
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
          res = input->input_state(driver->input_data, libretro_input_binds, port, device, idx, id);
@@ -687,7 +688,8 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          driver->input->free(driver->input_data);
          return true;
       case RARCH_INPUT_CTL_DESTROY:
-         block_hotkey = false;
+         flushing_input = false;
+         block_hotkey   = false;
          memset(&turbo_btns, 0, sizeof(turbo_buttons_t));
          if (!driver)
             return false;
@@ -727,6 +729,14 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          }
 
          return true;
+      case RARCH_INPUT_CTL_SET_FLUSHING_INPUT:
+         flushing_input = true;
+         break;
+      case RARCH_INPUT_CTL_UNSET_FLUSHING_INPUT:
+         flushing_input = false;
+         break;
+      case RARCH_INPUT_CTL_IS_FLUSHING_INPUT:
+         return flushing_input;
       case RARCH_INPUT_CTL_NONE:
       default:
          break;

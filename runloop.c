@@ -818,7 +818,7 @@ static void rarch_main_iterate_linefeed_overlay(driver_t *driver,
 
 #ifdef HAVE_MENU
 static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
-      driver_t *driver, settings_t *settings,
+      settings_t *settings,
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
@@ -844,7 +844,7 @@ static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
          break;
    }
 
-   driver->flushing_input = true;
+   input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
    return true;
 }
 #endif
@@ -861,7 +861,7 @@ static void rarch_main_cmd_get_state(driver_t *driver,
    cmd->grab_mouse_pressed          = BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE);
 #ifdef HAVE_MENU
    cmd->menu_pressed                = BIT64_GET(trigger_input, RARCH_MENU_TOGGLE) ||
-                                      rarch_main_cmd_get_state_menu_toggle_button_combo(driver,
+                                      rarch_main_cmd_get_state_menu_toggle_button_combo(
                                             settings, input,
                                             old_input, trigger_input);
 #endif
@@ -974,9 +974,9 @@ int rarch_main_iterate(unsigned *sleep_ms)
    retro_input_t old_input         = last_input;
    last_input                      = input;
 
-   if (driver->flushing_input)
+   if (input_driver_ctl(RARCH_INPUT_CTL_IS_FLUSHING_INPUT, NULL))
    {
-      driver->flushing_input = false;
+      input_driver_ctl(RARCH_INPUT_CTL_UNSET_FLUSHING_INPUT, NULL);
       if (input)
       {
          input = 0;
@@ -986,7 +986,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
           * pause toggle to wake it up. */
          if (main_is_paused)
             BIT64_SET(input, RARCH_PAUSE_TOGGLE);
-         driver->flushing_input = true;
+         input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
       }
    }
 
