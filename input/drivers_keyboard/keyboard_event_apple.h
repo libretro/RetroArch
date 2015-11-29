@@ -164,6 +164,13 @@ enum
 
 #include "../input_config.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void apple_input_keyboard_event(bool down,
+      unsigned code, uint32_t character, uint32_t mod, unsigned device)
+
 int16_t apple_input_is_pressed(unsigned port_num,
    const struct retro_keybind *binds, unsigned id);
 
@@ -172,5 +179,10 @@ int16_t apple_keyboard_state(unsigned id);
 int32_t apple_keyboard_find_any_key(void);
 
 void apple_keyboard_free(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

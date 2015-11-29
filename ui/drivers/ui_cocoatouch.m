@@ -200,17 +200,17 @@ enum
          unsigned i;
          character = [ch characterAtIndex:0];
 
-         cocoa_input_keyboard_event(event._isKeyDown,
+         apple_input_keyboard_event(event._isKeyDown,
                (uint32_t)event._keyCode, 0, mod,
                RETRO_DEVICE_KEYBOARD);
          
          for (i = 1; i < ch.length; i++)
-            cocoa_input_keyboard_event(event._isKeyDown,
+            apple_input_keyboard_event(event._isKeyDown,
                   0, [ch characterAtIndex:i], mod,
                   RETRO_DEVICE_KEYBOARD);
       }
       
-      cocoa_input_keyboard_event(event._isKeyDown,
+      apple_input_keyboard_event(event._isKeyDown,
             (uint32_t)event._keyCode, character, mod,
             RETRO_DEVICE_KEYBOARD);
    }
@@ -244,8 +244,8 @@ enum
       switch (eventType)
       {
          case GSEVENT_TYPE_KEYDOWN:
-           case GSEVENT_TYPE_KEYUP:
-            cocoa_input_keyboard_event(eventType == GSEVENT_TYPE_KEYDOWN,
+         case GSEVENT_TYPE_KEYUP:
+            apple_input_keyboard_event(eventType == GSEVENT_TYPE_KEYDOWN,
                   *(uint16_t*)&eventMem[0x3C], 0, 0, RETRO_DEVICE_KEYBOARD);
             break;
       }

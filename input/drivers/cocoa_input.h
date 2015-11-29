@@ -51,17 +51,6 @@ typedef struct
    const input_device_driver_t *joypad;
 } cocoa_input_data_t;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void cocoa_input_keyboard_event(bool down, unsigned code,
-      uint32_t character, uint32_t mod, unsigned device);
-
-#ifdef __cplusplus
-}
-#endif
-
 extern int32_t cocoa_input_find_any_key(void);
 
 extern int32_t cocoa_input_find_any_button(uint32_t port);
