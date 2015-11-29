@@ -355,6 +355,7 @@ INPUT
 #include "../input/drivers/xenon360_input.c"
 #elif defined(ANDROID)
 #include "../input/drivers/android_input.c"
+#include "../input/drivers_keyboard/keyboard_event_android.c"
 #include "../input/drivers_joypad/android_joypad.c"
 #elif defined(__QNX__)
 #include "../input/drivers/qnx_input.c"

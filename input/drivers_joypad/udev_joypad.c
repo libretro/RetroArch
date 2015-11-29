@@ -618,11 +618,11 @@ static uint64_t udev_joypad_get_buttons(unsigned port)
 static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    int16_t val = 0;
-   const struct udev_joypad *pad;
+   const struct udev_joypad *pad = (const struct udev_joypad*)
+      &udev_pads[port];
+
    if (joyaxis == AXIS_NONE)
       return 0;
-
-   pad = (const struct udev_joypad*)&udev_pads[port];
 
    if (AXIS_NEG_GET(joyaxis) < NUM_AXES)
    {

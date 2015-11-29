@@ -26,21 +26,19 @@
 #include "../input_autodetect.h"
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
+#include "../drivers_keyboard/keyboard_event_android.h"
 #include "../../performance.h"
 #include "../../general.h"
 #include "../../driver.h"
 #include "../../system.h"
 
 #define MAX_TOUCH 16
-#define MAX_PADS 8
 
 #define AKEY_EVENT_NO_ACTION 255
 
 #ifndef AKEYCODE_ASSIST
 #define AKEYCODE_ASSIST 219
 #endif
-
-#define LAST_KEYCODE AKEYCODE_ASSIST
 
 typedef struct
 {
@@ -83,10 +81,7 @@ typedef struct android_input
    bool blocked;
    unsigned pads_connected;
    state_device_t pad_states[MAX_PADS];
-   uint8_t pad_state[MAX_PADS][(LAST_KEYCODE + 7) / 8];
-   int8_t hat_state[MAX_PADS][2];
 
-   int16_t analog_state[MAX_PADS][MAX_AXIS];
    sensor_t accelerometer_state;
    struct input_pointer pointer[MAX_TOUCH];
    unsigned pointer_count;
@@ -100,7 +95,8 @@ static void frontend_android_get_version_sdk(int32_t *sdk);
 bool (*engine_lookup_name)(char *buf,
       int *vendorId, int *productId, size_t size, int id);
 
-void (*engine_handle_dpad)(android_input_t *android, AInputEvent*, int, int);
+void (*engine_handle_dpad)(AInputEvent*, int, int);
+
 static bool android_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate);
 
@@ -110,53 +106,6 @@ extern float AMotionEvent_getAxisValue(const AInputEvent* motion_event,
 static typeof(AMotionEvent_getAxisValue) *p_AMotionEvent_getAxisValue;
 
 #define AMotionEvent_getAxisValue (*p_AMotionEvent_getAxisValue)
-
-static void engine_handle_dpad_default(android_input_t *android,
-      AInputEvent *event, int port, int source)
-{
-   size_t motion_ptr = AMotionEvent_getAction(event) >>
-      AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-   float x           = AMotionEvent_getX(event, motion_ptr);
-   float y           = AMotionEvent_getY(event, motion_ptr);
-
-   android->analog_state[port][0] = (int16_t)(x * 32767.0f);
-   android->analog_state[port][1] = (int16_t)(y * 32767.0f);
-}
-
-static void engine_handle_dpad_getaxisvalue(android_input_t *android,
-      AInputEvent *event, int port, int source)
-{
-   size_t motion_ptr = AMotionEvent_getAction(event) >>
-      AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-   float x           = AMotionEvent_getAxisValue(event, AXIS_X, motion_ptr);
-   float y           = AMotionEvent_getAxisValue(event, AXIS_Y, motion_ptr);
-   float z           = AMotionEvent_getAxisValue(event, AXIS_Z, motion_ptr);
-   float rz          = AMotionEvent_getAxisValue(event, AXIS_RZ, motion_ptr);
-   float hatx        = AMotionEvent_getAxisValue(event, AXIS_HAT_X, motion_ptr);
-   float haty        = AMotionEvent_getAxisValue(event, AXIS_HAT_Y, motion_ptr);
-   float ltrig       = AMotionEvent_getAxisValue(event, AXIS_LTRIGGER, motion_ptr);
-   float rtrig       = AMotionEvent_getAxisValue(event, AXIS_RTRIGGER, motion_ptr);
-   float brake       = AMotionEvent_getAxisValue(event, AXIS_BRAKE, motion_ptr);
-   float gas         = AMotionEvent_getAxisValue(event, AXIS_GAS, motion_ptr);
-
-   android->hat_state[port][0] = (int)hatx;
-   android->hat_state[port][1] = (int)haty;
-
-   /* XXX: this could be a loop instead, but do we really want to
-    * loop through every axis? */
-   android->analog_state[port][0] = (int16_t)(x * 32767.0f);
-   android->analog_state[port][1] = (int16_t)(y * 32767.0f);
-   android->analog_state[port][2] = (int16_t)(z * 32767.0f);
-   android->analog_state[port][3] = (int16_t)(rz * 32767.0f);
-#if 0
-   android->analog_state[port][4] = (int16_t)(hatx * 32767.0f);
-   android->analog_state[port][5] = (int16_t)(haty * 32767.0f);
-#endif
-   android->analog_state[port][6] = (int16_t)(ltrig * 32767.0f);
-   android->analog_state[port][7] = (int16_t)(rtrig * 32767.0f);
-   android->analog_state[port][8] = (int16_t)(brake * 32767.0f);
-   android->analog_state[port][9] = (int16_t)(gas * 32767.0f);
-}
 
 static bool android_input_lookup_name_prekitkat(char *buf,
       int *vendorId, int *productId, size_t size, int id)
@@ -514,7 +463,7 @@ static INLINE void android_input_poll_event_type_key(
       AInputEvent *event, int port, int keycode, int source,
       int type_event, int *handled)
 {
-   uint8_t *buf = android->pad_state[port];
+   uint8_t *buf = android_keyboard_state_get(port);
    int action  = AKeyEvent_getAction(event);
 
    /* some controllers send both the up and down events at once
@@ -813,7 +762,7 @@ static void android_input_poll_input(void *data)
             case AINPUT_EVENT_TYPE_MOTION:
                if (android_input_poll_event_type_motion(android, event,
                         port, source))
-                  engine_handle_dpad(android, event, port, source);
+                  engine_handle_dpad(event, port, source);
                break;
             case AINPUT_EVENT_TYPE_KEY:
                {
@@ -924,7 +873,7 @@ static int16_t android_input_state(void *data,
                   (android->pointer[idx].y != -0x8000);
             case RARCH_DEVICE_ID_POINTER_BACK:
                if(settings->input.autoconf_binds[0][RARCH_MENU_TOGGLE].joykey == 0)
-                  return BIT_GET(android->pad_state[0], AKEYCODE_BACK);
+                  return android_keyboard_input_pressed(AKEYCODE_BACK);
          }
          break;
       case RARCH_DEVICE_POINTER_SCREEN:
@@ -940,7 +889,7 @@ static int16_t android_input_state(void *data,
                   (android->pointer[idx].full_y != -0x8000);
             case RARCH_DEVICE_ID_POINTER_BACK:
                if(settings->input.autoconf_binds[0][RARCH_MENU_TOGGLE].joykey == 0)
-                  return BIT_GET(android->pad_state[0], AKEYCODE_BACK);
+                  return android_keyboard_input_pressed(AKEYCODE_BACK);
          }
          break;
    }
@@ -975,6 +924,7 @@ static void android_input_free_input(void *data)
       ASensorManager_destroyEventQueue(android->sensorManager,
             android->sensorEventQueue);
 
+   android_keyboard_free();
    free(data);
 }
 
