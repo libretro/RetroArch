@@ -72,6 +72,18 @@ static const input_driver_t *input_drivers[] = {
    NULL,
 };
 
+typedef struct turbo_buttons turbo_buttons_t;
+
+/* Turbo support. */
+struct turbo_buttons
+{
+   bool frame_enable[MAX_USERS];
+   uint16_t enable[MAX_USERS];
+   unsigned count;
+};
+
+static turbo_buttons_t turbo_btns;
+
 /**
  * input_driver_find_handle:
  * @idx                : index of driver to get handle to.
@@ -512,15 +524,15 @@ int16_t input_state(unsigned port, unsigned device,
        * released again, the input state will be modulated by a 
        * periodic pulse defined by the configured duty cycle. 
        */
-      if (res && global->turbo.frame_enable[port])
-         global->turbo.enable[port] |= (1 << id);
+      if (res && turbo_btns.frame_enable[port])
+         turbo_btns.enable[port] |= (1 << id);
       else if (!res)
-         global->turbo.enable[port] &= ~(1 << id);
+         turbo_btns.enable[port] &= ~(1 << id);
 
-      if (global->turbo.enable[port] & (1 << id))
+      if (turbo_btns.enable[port] & (1 << id))
       {
          /* if turbo button is enabled for this key ID */
-         res = res && ((global->turbo.count % settings->input.turbo_period)
+         res = res && ((turbo_btns.count % settings->input.turbo_period)
                < settings->input.turbo_duty_cycle);
       }
    }
@@ -588,7 +600,6 @@ retro_input_t input_keys_pressed(void)
    retro_input_t             ret = 0;
    driver_t *driver              = driver_get_ptr();
    settings_t *settings          = config_get_ptr();
-   global_t *global              = global_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
       binds[i] = settings->input.binds[i];
@@ -596,7 +607,7 @@ retro_input_t input_keys_pressed(void)
    if (!driver->input || !driver->input_data)
       return 0;
 
-   global->turbo.count++;
+   turbo_btns.count++;
 
    driver->block_libretro_input = 
       check_block_hotkey(input_driver_key_pressed(RARCH_ENABLE_HOTKEY));
@@ -608,13 +619,13 @@ retro_input_t input_keys_pressed(void)
       input_push_analog_dpad(settings->input.autoconf_binds[i],
             settings->input.analog_dpad_mode[i]);
 
-      global->turbo.frame_enable[i] = 0;
+      turbo_btns.frame_enable[i] = 0;
    }
 
    if (!driver->block_libretro_input)
    {
       for (i = 0; i < settings->input.max_users; i++)
-         global->turbo.frame_enable[i] = input_driver_state(binds,
+         turbo_btns.frame_enable[i] = input_driver_state(binds,
                i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
    }
 
@@ -675,6 +686,7 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          driver->input->free(driver->input_data);
          return true;
       case RARCH_INPUT_CTL_DESTROY:
+         memset(&turbo_btns, 0, sizeof(turbo_buttons_t));
          if (!driver)
             return false;
          driver->input_data = NULL;

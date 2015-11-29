@@ -231,14 +231,6 @@ typedef struct global
       bool use;
    } sram;
 
-   /* Turbo support. */
-   struct
-   {
-      bool frame_enable[MAX_USERS];
-      uint16_t enable[MAX_USERS];
-      unsigned count;
-   } turbo;
-
    /* Autosave support. */
    struct
    {
