@@ -26,7 +26,8 @@
 #include <file/file_list.h>
 #endif
 
-#include "../../general.h"
+#include "../frontend_driver.h"
+#include "../../defaults.h"
 #include "retroarch.h"
 #include "audio/audio_driver.h"
 

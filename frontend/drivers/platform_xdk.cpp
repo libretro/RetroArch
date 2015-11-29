@@ -28,7 +28,8 @@
 #include <retro_miscellaneous.h>
 
 #include "platform_xdk.h"
-#include "../../general.h"
+#include "../frontend_driver.h"
+#include "../../defaults.h"
 #ifndef IS_SALAMANDER
 #include "../../retroarch.h"
 #ifdef HAVE_MENU

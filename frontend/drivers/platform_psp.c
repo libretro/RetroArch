@@ -37,8 +37,9 @@ int scePowerSetArmClockFrequency(int freq);
 #include <file/file_list.h>
 #endif
 
+#include "../frontend_driver.h"
+#include "../../defaults.h"
 #include "../../defines/psp_defines.h"
-#include "../../general.h"
 #include "../../verbosity.h"
 
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
