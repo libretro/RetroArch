@@ -595,13 +595,13 @@ retro_input_t input_keys_pressed(void)
    unsigned i;
    const struct retro_keybind *binds[MAX_USERS];
    retro_input_t             ret = 0;
-   driver_t *driver              = driver_get_ptr();
    settings_t *settings          = config_get_ptr();
+   const input_driver_t        *input = input_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
       binds[i] = settings->input.binds[i];
 
-   if (!driver->input || !main_input_data)
+   if (!input || !main_input_data)
       return 0;
 
    turbo_btns.count++;
