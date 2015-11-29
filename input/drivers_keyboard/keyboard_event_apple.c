@@ -308,7 +308,7 @@ void cocoa_input_keyboard_event(bool down,
          character, (enum retro_mod)mod, device);
 }
 
-int16_t apple_input_is_pressed_kb(unsigned port_num,
+int16_t apple_input_is_pressed(unsigned port_num,
    const struct retro_keybind *binds, unsigned id)
 {
    if (id < RARCH_BIND_LIST_END)
