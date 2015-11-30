@@ -83,6 +83,8 @@ void save_ram_file(const char *path, int type);
  **/
 bool init_content_file(void);
 
+void content_temporary_free(void);
+
 #ifdef __cplusplus
 }
 #endif

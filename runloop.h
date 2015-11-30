@@ -125,8 +125,6 @@ typedef struct global
    bool perfcnt_enable;
    bool force_fullscreen;
 
-   struct string_list *temporary_content;
-
    struct
    {
       core_info_list_t *list;

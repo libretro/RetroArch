@@ -90,29 +90,6 @@ static void event_init_remote(void)
 }
 #endif
 
-/**
- * event_free_temporary_content:
- *
- * Frees temporary content handle.
- **/
-static void event_free_temporary_content(void)
-{
-   unsigned i;
-   global_t *global = global_get_ptr();
-
-   for (i = 0; i < global->temporary_content->size; i++)
-   {
-      const char *path = global->temporary_content->elems[i].data;
-
-      RARCH_LOG("%s: %s.\n",
-            msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
-      if (remove(path) < 0)
-         RARCH_ERR("%s: %s.\n",
-               msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
-               path);
-   }
-   string_list_free(global->temporary_content);
-}
 
 #if defined(HAVE_THREADS)
 static void event_init_autosave(void)
@@ -1695,12 +1672,7 @@ case EVENT_CMD_REMOTE_INIT:
 #endif
    break;
       case EVENT_CMD_TEMPORARY_CONTENT_DEINIT:
-         if (!global)
-            break;
-
-         if (global->temporary_content)
-            event_free_temporary_content();
-         global->temporary_content = NULL;
+         content_temporary_free();
          break;
       case EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT:
          if (!global)

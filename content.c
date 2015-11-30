@@ -50,6 +50,8 @@
 #include "cheevos.h"
 #endif
 
+static struct string_list *temporary_content;
+
 /**
  * read_content_file:
  * @path         : buffer of the content file.
@@ -393,16 +395,11 @@ static bool load_content_need_fullpath(
    char new_basedir[PATH_MAX_LENGTH] = {0};
    bool ret                          = false;
    settings_t *settings              = config_get_ptr();
-   global_t   *global                = global_get_ptr();
    rarch_system_info_t      *sys_info= rarch_system_info_get_ptr();
 
    if (sys_info && sys_info->info.block_extract)
       return true;
-
-   if (!need_fullpath)
-      return true;
-
-   if (!path_contains_compressed_file(path))
+   if (!need_fullpath || !path_contains_compressed_file(path))
       return true;
 
    RARCH_LOG("Compressed file in case of need_fullpath."
@@ -441,12 +438,12 @@ static bool load_content_need_fullpath(
       additional_path_allocs->elems
       [additional_path_allocs->size -1 ].data;
 
-   /* global->temporary_content is initialized in init_content_file
+   /* temporary_content is initialized in init_content_file
     * The following part takes care of cleanup of the unzipped files
     * after exit.
     */
-   retro_assert(global->temporary_content != NULL);
-   string_list_append(global->temporary_content,
+   retro_assert(temporary_content != NULL);
+   string_list_append(temporary_content,
          new_path, attributes);
 
 #endif
@@ -559,11 +556,10 @@ bool init_content_file(void)
    const struct retro_subsystem_info *special = NULL;
    settings_t *settings                       = config_get_ptr();
    rarch_system_info_t *system                = rarch_system_info_get_ptr();
-   global_t   *global                         = global_get_ptr();
+   global_t *global                           = global_get_ptr();
+   temporary_content                          = string_list_new();
 
-   global->temporary_content                  = string_list_new();
-
-   if (!global->temporary_content)
+   if (!temporary_content)
       goto error;
 
    if (*global->subsystem)
@@ -649,23 +645,23 @@ bool init_content_file(void)
 
       if (ext && !strcasecmp(ext, "zip"))
       {
-         char temporary_content[PATH_MAX_LENGTH] = {0};
+         char temp_content[PATH_MAX_LENGTH] = {0};
 
-         strlcpy(temporary_content, content->elems[i].data,
-               sizeof(temporary_content));
+         strlcpy(temp_content, content->elems[i].data,
+               sizeof(temp_content));
 
-         if (!zlib_extract_first_content_file(temporary_content,
-                  sizeof(temporary_content), valid_ext,
+         if (!zlib_extract_first_content_file(temp_content,
+                  sizeof(temp_content), valid_ext,
                   *settings->cache_directory ?
                   settings->cache_directory : NULL))
          {
             RARCH_ERR("Failed to extract content from zipped file: %s.\n",
-                  temporary_content);
+                  temp_content);
             goto error;
          }
-         string_list_set(content, i, temporary_content);
-         string_list_append(global->temporary_content,
-               temporary_content, attr);
+         string_list_set(content, i, temp_content);
+         string_list_append(temporary_content,
+               temp_content, attr);
       }
    }
 #endif
@@ -679,4 +675,32 @@ error:
    if (content)
       string_list_free(content);
    return ret;
+}
+
+/**
+ * content_free_temporary:
+ *
+ * Frees temporary content handle.
+ **/
+void content_temporary_free(void)
+{
+   unsigned i;
+
+   if (!temporary_content)
+      return;
+
+   for (i = 0; i < temporary_content->size; i++)
+   {
+      const char *path = temporary_content->elems[i].data;
+
+      RARCH_LOG("%s: %s.\n",
+            msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
+      if (remove(path) < 0)
+         RARCH_ERR("%s: %s.\n",
+               msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
+               path);
+   }
+   string_list_free(temporary_content);
+
+   temporary_content = NULL;
 }
