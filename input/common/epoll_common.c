@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 
 #include "epoll_common.h"
 
@@ -32,4 +33,9 @@ void epoll_free(bool is_joypad)
 
    epoll_inited                 = false;
    epoll_first_inited_is_joypad = false;
+}
+
+int epoll_waiting(struct epoll_event *events, int maxevents, int timeout)
+{
+   return epoll_wait(g_epoll, events, maxevents, timeout);
 }

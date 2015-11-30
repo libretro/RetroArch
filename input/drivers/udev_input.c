@@ -365,7 +365,7 @@ static void udev_input_poll(void *data)
    while (udev_mon_hotplug_available())
       udev_input_handle_hotplug(udev);
 
-   ret = epoll_wait(g_epoll, events, ARRAY_SIZE(events), 0);
+   ret = epoll_waiting(events, ARRAY_SIZE(events), 0);
 
    for (i = 0; i < ret; i++)
    {

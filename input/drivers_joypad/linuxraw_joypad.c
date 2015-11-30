@@ -194,7 +194,7 @@ static void linuxraw_joypad_poll(void)
    struct epoll_event events[MAX_USERS + 1];
 
 retry:
-   ret = epoll_wait(g_epoll, events, MAX_USERS + 1, 0);
+   ret = epoll_waiting(events, MAX_USERS + 1, 0);
    if (ret < 0 && errno == EINTR)
       goto retry;
 

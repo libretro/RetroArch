@@ -29,4 +29,6 @@ bool epoll_new(bool is_joypad);
 
 void epoll_free(bool is_joypad);
 
+int epoll_waiting(struct epoll_event *events, int maxevents, int timeout);
+
 #endif
