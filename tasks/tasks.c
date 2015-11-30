@@ -63,7 +63,31 @@ static void rarch_task_internal_gather(void)
       if (task->error)
          free(task->error);
 
+      if (task->title)
+         free(task->title);
+
       free(task);
+   }
+}
+
+static void push_task_progress(rarch_task_t *task)
+{
+   if (task->title)
+   {
+      if (task->finished)
+      {
+         if (task->error)
+            rarch_main_msg_queue_pushf(1, 60, true, "Failed: %s", task->title);
+         else
+            rarch_main_msg_queue_pushf(1, 60, true, "100%%: %s", task->title);
+      }
+      else
+      {
+         if (task->progress >= 0 && task->progress <= 100)
+            rarch_main_msg_queue_pushf(1, 10, true, "%i%%: %s", task->progress, task->title);
+         else
+            rarch_main_msg_queue_pushf(1, 10, true, "%s...", task->title);
+      }
    }
 }
 
@@ -78,8 +102,6 @@ static void regular_gather(void)
    rarch_task_t *queue = NULL;
    rarch_task_t *next  = NULL;
 
-   /* mimics threaded_gather() for compatibility, a faster implementation
-    * can be written for systems without HAVE_THREADS if necessary. */
    while ((task = task_queue_get(&tasks_running)) != NULL)
    {
       task->next = queue;
@@ -90,6 +112,8 @@ static void regular_gather(void)
    {
       next = task->next;
       task->handler(task);
+
+      push_task_progress(task);
 
       if (task->finished)
          task_queue_put(&tasks_finished, task);
@@ -148,6 +172,13 @@ static void threaded_push_running(rarch_task_t *task)
 
 static void threaded_gather(void)
 {
+   rarch_task_t *task;
+   slock_lock(running_lock);
+   for (task = tasks_running.front; task; task = task->next)
+      push_task_progress(task);
+
+   slock_unlock(running_lock);
+
    slock_lock(finished_lock);
    rarch_task_internal_gather();
    slock_unlock(finished_lock);

@@ -1172,13 +1172,6 @@ static int action_ok_download_generic(const char *path,
    transf->type_hash = menu_hash_calculate(type_msg);
    strlcpy(transf->path, path, sizeof(transf->path));
 
-   snprintf(s2, sizeof(s2),
-         "%s %s.",
-         menu_hash_to_str(MENU_LABEL_VALUE_STARTING_DOWNLOAD),
-         path);
-
-   menu_display_msg_queue_push(s2, 1, 90, true);
-
    rarch_task_push_http_transfer(s3, type_msg, cb_generic_download, transf);
 #endif
    return 0;
