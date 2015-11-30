@@ -621,7 +621,7 @@ static void *udev_input_init(void)
    if (!udev)
       return NULL;
 
-   if (!udev_mon_new())
+   if (!udev_mon_new(false))
       goto error;
 
 #ifdef HAVE_XKBCOMMON

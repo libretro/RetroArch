@@ -5,13 +5,16 @@
 #include "udev_common.h"
 
 static bool udev_mon_inited;
+static bool udev_mon_first_inited_is_joypad;
 static struct udev_monitor *g_udev_mon;
 static struct udev *g_udev;
 
-bool udev_mon_new(void)
+bool udev_mon_new(bool is_joypad)
 {
    if (udev_mon_inited)
       return true;
+
+   udev_mon_first_inited_is_joypad = is_joypad;
 
    g_udev = udev_new();
    if (!g_udev)
@@ -31,7 +34,7 @@ bool udev_mon_new(void)
 
 void udev_mon_free(bool is_joypad)
 {
-   if (!udev_mon_inited || is_joypad)
+   if (!udev_mon_inited || (is_joypad && !udev_mon_first_inited_is_joypad))
       return;
 
    if (g_udev_mon)
@@ -39,9 +42,10 @@ void udev_mon_free(bool is_joypad)
    if (g_udev)
       udev_unref(g_udev);
 
-   g_udev_mon      = NULL;
-   g_udev          = NULL;
-   udev_mon_inited = false;
+   g_udev_mon                      = NULL;
+   g_udev                          = NULL;
+   udev_mon_inited                 = false;
+   udev_mon_first_inited_is_joypad = false;
 }
 
 bool udev_mon_hotplug_available(void)

@@ -21,7 +21,7 @@
 
 #include <boolean.h>
 
-bool udev_mon_new(void);
+bool udev_mon_new(bool is_joypad);
 
 void udev_mon_free(bool is_joypad);
 

@@ -515,7 +515,7 @@ static bool udev_joypad_init(void *data)
    for (i = 0; i < MAX_USERS; i++)
       udev_pads[i].fd = -1;
 
-   if (!udev_mon_new())
+   if (!udev_mon_new(true))
       goto error;
 
    enumerate = udev_mon_enumerate();
