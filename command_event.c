@@ -79,50 +79,6 @@ static void event_save_files(void)
    }
 }
 
-static void event_init_movie(void)
-{
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-
-   if (global->bsv.movie_start_playback)
-   {
-      if (!(global->bsv.movie = bsv_movie_init(global->bsv.movie_start_path,
-                  RARCH_MOVIE_PLAYBACK)))
-      {
-         RARCH_ERR("%s: \"%s\".\n",
-               msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE),
-               global->bsv.movie_start_path);
-         retro_fail(1, "event_init_movie()");
-      }
-
-      global->bsv.movie_playback = true;
-      rarch_main_msg_queue_push_new(MSG_STARTING_MOVIE_PLAYBACK, 2, 180, false);
-      RARCH_LOG("%s.\n", msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
-      settings->rewind_granularity = 1;
-   }
-   else if (global->bsv.movie_start_recording)
-   {
-      char msg[PATH_MAX_LENGTH] = {0};
-      snprintf(msg, sizeof(msg),
-            "%s \"%s\".",
-            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-            global->bsv.movie_start_path);
-
-      if (!(global->bsv.movie = bsv_movie_init(global->bsv.movie_start_path,
-                  RARCH_MOVIE_RECORD)))
-      {
-         rarch_main_msg_queue_push_new(MSG_FAILED_TO_START_MOVIE_RECORD, 1, 180, true);
-         RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
-         return;
-      }
-
-      rarch_main_msg_queue_push(msg, 1, 180, true);
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-            global->bsv.movie_start_path);
-      settings->rewind_granularity = 1;
-   }
-}
 
 /**
  * event_disk_control_set_eject:
@@ -474,15 +430,12 @@ static void event_deinit_core(bool reinit)
 static void event_init_cheats(void)
 {
    bool allow_cheats = true;
-   driver_t *driver  = driver_get_ptr();
-   global_t *global  = global_get_ptr();
-
-   (void)driver;
-
 #ifdef HAVE_NETPLAY
+   driver_t *driver  = driver_get_ptr();
+
    allow_cheats &= !driver->netplay_data;
 #endif
-   allow_cheats &= !global->bsv.movie;
+   allow_cheats &= !bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL);
 
    if (!allow_cheats)
       return;
@@ -1043,7 +996,7 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_LOAD_STATE:
          /* Immutable - disallow savestate load when
           * we absolutely cannot change game state. */
-         if (global->bsv.movie)
+         if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             return false;
 
 #ifdef HAVE_NETPLAY
@@ -1502,16 +1455,11 @@ bool event_command(enum event_command cmd)
             event_command(EVENT_CMD_AUTOSAVE_INIT);
          break;
       case EVENT_CMD_BSV_MOVIE_DEINIT:
-         if (!global)
-            break;
-
-         if (global->bsv.movie)
-            bsv_movie_free(global->bsv.movie);
-         global->bsv.movie = NULL;
+         bsv_movie_ctl(BSV_MOVIE_CTL_DEINIT, NULL);
          break;
       case EVENT_CMD_BSV_MOVIE_INIT:
          event_command(EVENT_CMD_BSV_MOVIE_DEINIT);
-         event_init_movie();
+         bsv_movie_ctl(BSV_MOVIE_CTL_INIT, NULL);
          break;
       case EVENT_CMD_NETPLAY_DEINIT:
 #ifdef HAVE_NETPLAY

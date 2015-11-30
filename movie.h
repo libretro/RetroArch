@@ -40,6 +40,18 @@ enum rarch_movie_type
    RARCH_MOVIE_RECORD
 };
 
+enum bsv_ctl_state
+{
+   BSV_MOVIE_CTL_IS_INITED = 0,
+   BSV_MOVIE_CTL_PLAYBACK_ON,
+   BSV_MOVIE_CTL_PLAYBACK_OFF,
+   BSV_MOVIE_CTL_START_RECORDING,
+   BSV_MOVIE_CTL_START_PLAYBACK,
+   BSV_MOVIE_CTL_DEINIT,
+   BSV_MOVIE_CTL_INIT,
+   BSV_MOVIE_CTL_END
+};
+
 bsv_movie_t *bsv_movie_init(const char *path, enum rarch_movie_type type);
 
 /* Playback. */
@@ -56,6 +68,8 @@ void bsv_movie_set_frame_end(bsv_movie_t *handle);
 void bsv_movie_frame_rewind(bsv_movie_t *handle);
 
 void bsv_movie_free(bsv_movie_t *handle);
+
+bool bsv_movie_ctl(enum bsv_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }

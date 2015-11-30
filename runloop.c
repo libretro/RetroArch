@@ -562,11 +562,11 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_CHECK_MOVIE:
          if (global->bsv.movie_playback)
             return runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE_PLAYBACK, NULL);
-         if (!global->bsv.movie)
+         if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             return runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE_INIT, NULL);
          return runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE_RECORD, NULL);
       case RUNLOOP_CTL_CHECK_MOVIE_RECORD:
-         if (!global->bsv.movie)
+         if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             return false;
 
          rarch_main_msg_queue_push_new(
@@ -576,7 +576,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          event_command(EVENT_CMD_BSV_MOVIE_DEINIT);
          break;
       case RUNLOOP_CTL_CHECK_MOVIE_INIT:
-         if (global->bsv.movie)
+         if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             return false;
          {
             char path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
@@ -597,9 +597,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             global->bsv.movie = bsv_movie_init(path, RARCH_MOVIE_RECORD);
 
-            if (!global->bsv.movie)
+            if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
                return false;
-            else if (global->bsv.movie)
+            else if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             {
                rarch_main_msg_queue_push(msg, 1, 180, true);
                RARCH_LOG("%s \"%s\".\n",
@@ -865,11 +865,10 @@ static void rarch_main_cmd_get_state(
 static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
 {
    uint64_t *frame_count         = NULL;
-   global_t   *global            = global_get_ptr();
    rarch_system_info_t *system   = rarch_system_info_get_ptr();
    bool shutdown_pressed         = (system && system->shutdown) || cmd->quit_key_pressed;
    bool video_alive              = video_driver_ctl(RARCH_DISPLAY_CTL_IS_ALIVE, NULL);
-   bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);
+   bool movie_end                = bsv_movie_ctl(BSV_MOVIE_CTL_END, NULL);
    bool frame_count_end          = false;
    
    video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
@@ -1053,7 +1052,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
       netplay_pre_frame((netplay_t*)driver->netplay_data);
 #endif
 
-   if (global->bsv.movie)
+   if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
       bsv_movie_set_frame_start(global->bsv.movie);
 
    if (system->camera_callback.caps)
@@ -1092,7 +1091,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
       input_pop_analog_dpad(settings->input.autoconf_binds[i]);
    }
 
-   if (global->bsv.movie)
+   if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
       bsv_movie_set_frame_end(global->bsv.movie);
 
 #ifdef HAVE_NETPLAY
