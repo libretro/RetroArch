@@ -43,6 +43,14 @@
 #define RGUI_TERM_WIDTH(width)          (((width - RGUI_TERM_START_X(width) - RGUI_TERM_START_X(width)) / (FONT_WIDTH_STRIDE)))
 #define RGUI_TERM_HEIGHT(width, height) (((height - RGUI_TERM_START_Y(height) - RGUI_TERM_START_X(width)) / (FONT_HEIGHT_STRIDE)) - 1)
 
+typedef struct
+{
+   bool force_redraw;
+   char msgbox[4096];
+   unsigned last_width;
+   unsigned last_height;
+} rgui_t;
+
 #if defined(GEKKO)|| defined(PSP)
 #define HOVER_COLOR(settings)    ((3 << 0) | (10 << 4) | (3 << 8) | (7 << 12))
 #define NORMAL_COLOR(settings)   0x7FFF
@@ -51,15 +59,6 @@
 #define HOVER_COLOR(settings)    (argb32_to_rgba4444(settings->menu.entry_hover_color))
 #define NORMAL_COLOR(settings)   (argb32_to_rgba4444(settings->menu.entry_normal_color))
 #define TITLE_COLOR(settings)    (argb32_to_rgba4444(settings->menu.title_color))
-#endif
-
-typedef struct
-{
-   bool force_redraw;
-   char msgbox[4096];
-   unsigned last_width;
-   unsigned last_height;
-} rgui_t;
 
 static uint16_t argb32_to_rgba4444(uint32_t col)
 {
@@ -69,6 +68,7 @@ static uint16_t argb32_to_rgba4444(uint32_t col)
    unsigned b =  (col & 0xff)        >> 4;
    return (r << 12) | (g << 8) | (b << 4) | a;
 }
+#endif
 
 static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
 {

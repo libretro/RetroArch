@@ -442,9 +442,11 @@ global_t *global_get_ptr(void)
 
 bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 {
-   driver_t     *driver  = driver_get_ptr();
    settings_t *settings  = config_get_ptr();
    global_t     *global  = global_get_ptr();
+#ifdef HAVE_NETPLAY
+   driver_t     *driver  = driver_get_ptr();
+#endif
 
    switch (state)
    {
