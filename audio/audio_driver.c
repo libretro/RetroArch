@@ -481,7 +481,7 @@ void audio_driver_set_nonblocking_state(bool enable)
  **/
 static bool audio_driver_flush(const int16_t *data, size_t samples)
 {
-   bool is_slowmotion, is_paused;
+   bool is_slowmotion;
    static struct retro_perf_counter audio_convert_s16 = {0};
    static struct retro_perf_counter audio_convert_float = {0};
    static struct retro_perf_counter audio_dsp         = {0};
@@ -495,9 +495,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    recording_push_audio(data, samples);
 
-   runloop_ctl(RUNLOOP_CTL_IS_PAUSED, &is_paused);
-
-   if (is_paused || settings->audio.mute_enable)
+   if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) || settings->audio.mute_enable)
       return true;
    if (!audio_driver_active || !audio_driver_data.data)
       return false;

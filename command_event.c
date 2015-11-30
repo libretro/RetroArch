@@ -1199,15 +1199,11 @@ bool event_command(enum event_command cmd)
          event_init_remapping();
          break;
       case EVENT_CMD_REWIND_DEINIT:
-         if (!global)
-            break;
 #ifdef HAVE_NETPLAY
          if (driver->netplay_data)
             return false;
 #endif
-         if (global->rewind.state)
-            state_manager_free(global->rewind.state);
-         global->rewind.state = NULL;
+         state_manager_event_deinit();
          break;
       case EVENT_CMD_REWIND_INIT:
          if (!driver->netplay_data)
@@ -1436,9 +1432,7 @@ bool event_command(enum event_command cmd)
 #endif
          break;
       case EVENT_CMD_PAUSE_CHECKS:
-         runloop_ctl(RUNLOOP_CTL_IS_PAUSED, &boolean);
-
-         if (boolean)
+         if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
          {
             RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
             event_command(EVENT_CMD_AUDIO_STOP);
@@ -1453,7 +1447,7 @@ bool event_command(enum event_command cmd)
          }
          break;
       case EVENT_CMD_PAUSE_TOGGLE:
-         runloop_ctl(RUNLOOP_CTL_IS_PAUSED,  &boolean);
+         boolean = runloop_ctl(RUNLOOP_CTL_IS_PAUSED,  NULL);
          boolean = !boolean;
          runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
          event_command(EVENT_CMD_PAUSE_CHECKS);

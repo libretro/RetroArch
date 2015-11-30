@@ -98,6 +98,8 @@ repeat {
 size thisstart;
 #endif
 
+static bool frame_is_reversed;
+
 size_t state_manager_raw_maxsize(size_t uncomp)
 {
    /* bytes covered by a compressed block */
@@ -617,7 +619,6 @@ void init_rewind(void)
    state_manager_push_do(global->rewind.state);
 }
 
-static bool frame_is_reversed;
 
 bool state_manager_frame_is_reversed(void)
 {
@@ -627,4 +628,88 @@ bool state_manager_frame_is_reversed(void)
 void state_manager_set_frame_is_reversed(bool value)
 {
    frame_is_reversed = value;
+}
+
+void state_manager_event_deinit(void)
+{
+   global_t *global = global_get_ptr();
+   if (!global)
+      return;
+
+   if (global->rewind.state)
+      state_manager_free(global->rewind.state);
+   global->rewind.state = NULL;
+}
+
+/**
+ * check_rewind:
+ * @pressed              : was rewind key pressed or held?
+ *
+ * Checks if rewind toggle/hold was being pressed and/or held.
+ **/
+void state_manager_check_rewind(bool pressed)
+{
+   static bool first    = true;
+   global_t *global     = global_get_ptr();
+   settings_t *settings = config_get_ptr();
+
+   if (state_manager_frame_is_reversed())
+   {
+      audio_driver_ctl(RARCH_AUDIO_CTL_FRAME_IS_REVERSE, NULL);
+      state_manager_set_frame_is_reversed(false);
+   }
+
+   if (first)
+   {
+      first = false;
+      return;
+   }
+
+   if (!global->rewind.state)
+      return;
+
+   if (pressed)
+   {
+      const void *buf    = NULL;
+
+      if (state_manager_pop(global->rewind.state, &buf))
+      {
+         state_manager_set_frame_is_reversed(true);
+         audio_driver_ctl(RARCH_AUDIO_CTL_SETUP_REWIND, NULL);
+
+         rarch_main_msg_queue_push_new(MSG_REWINDING, 0,
+               runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ? 1 : 30, true);
+         core.retro_unserialize(buf, global->rewind.size);
+
+         if (global->bsv.movie)
+            bsv_movie_frame_rewind(global->bsv.movie);
+      }
+      else
+         rarch_main_msg_queue_push_new(MSG_REWIND_REACHED_END,
+               0, 30, true);
+   }
+   else
+   {
+      static unsigned cnt      = 0;
+
+      cnt = (cnt + 1) % (settings->rewind_granularity ?
+            settings->rewind_granularity : 1); /* Avoid possible SIGFPE. */
+
+      if ((cnt == 0) || global->bsv.movie)
+      {
+         static struct retro_perf_counter rewind_serialize = {0};
+         void *state = NULL;
+
+         state_manager_push_where(global->rewind.state, &state);
+
+         rarch_perf_init(&rewind_serialize, "rewind_serialize");
+         retro_perf_start(&rewind_serialize);
+         core.retro_serialize(state, global->rewind.size);
+         retro_perf_stop(&rewind_serialize);
+
+         state_manager_push_do(global->rewind.state);
+      }
+   }
+
+   retro_set_rewind_callbacks();
 }

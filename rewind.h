@@ -72,6 +72,16 @@ bool state_manager_frame_is_reversed(void);
 
 void state_manager_set_frame_is_reversed(bool value);
 
+void state_manager_event_deinit(void);
+
+/**
+ * check_rewind:
+ * @pressed              : was rewind key pressed or held?
+ *
+ * Checks if rewind toggle/hold was being pressed and/or held.
+ **/
+void state_manager_check_rewind(bool pressed);
+
 #ifdef __cplusplus
 }
 #endif

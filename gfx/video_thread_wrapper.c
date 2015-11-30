@@ -432,12 +432,10 @@ static void thread_loop(void *data)
 
 static bool thread_alive(void *data)
 {
-   bool ret, is_paused;
+   bool ret;
    thread_video_t *thr = (thread_video_t*)data;
 
-   runloop_ctl(RUNLOOP_CTL_IS_PAUSED, &is_paused);
-
-   if (is_paused)
+   if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
    {
       thread_packet_t pkt = { CMD_ALIVE };
       thread_send_and_wait(thr, &pkt);

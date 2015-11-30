@@ -236,7 +236,6 @@ error:
 
 static void android_input_poll_main_cmd(void)
 {
-   bool is_paused;
    int8_t cmd;
    struct android_app *android_app = (struct android_app*)g_android;
    rarch_system_info_t *system = rarch_system_info_get_ptr();
@@ -273,9 +272,7 @@ static void android_input_poll_main_cmd(void)
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
 
-         runloop_ctl(RUNLOOP_CTL_IS_PAUSED, &is_paused);
-
-         if (is_paused)
+         if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
             event_command(EVENT_CMD_REINIT);
          break;
 

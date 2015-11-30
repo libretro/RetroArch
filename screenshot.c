@@ -268,7 +268,7 @@ bool take_screenshot(void)
       msg = msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
    }
 
-   runloop_ctl(RUNLOOP_CTL_IS_PAUSED, &is_paused);
+   is_paused = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
 
    rarch_main_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
 
