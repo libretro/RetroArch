@@ -60,10 +60,6 @@ enum sound_mode_enums
    SOUND_MODE_LAST
 };
 
-#ifdef __cplusplus
-}
-#endif
-
 /**
  * retro_fail:
  * @error_code  : Error code.
@@ -72,5 +68,9 @@ enum sound_mode_enums
  * Sanely kills the program.
  **/
 void retro_fail(int error_code, const char *error);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
