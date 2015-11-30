@@ -255,7 +255,7 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
 
 #ifndef IS_SALAMANDER
    char *fullpath = NULL;
-   rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
+   rarch_main_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
    if (should_load_game && fullpath[0] != '\0')
    {

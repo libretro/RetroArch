@@ -1173,7 +1173,7 @@ static bool video_driver_cached_frame(void)
    driver_t   *driver   = driver_get_ptr();
    void *recording      = driver ? driver->recording_data : NULL;
 
-   if (rarch_main_ctl(RARCH_MAIN_CTL_IS_IDLE, NULL))
+   if (rarch_main_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
       return true; /* Maybe return false here for indication of idleness? */
 
    /* Cannot allow recording when pushing duped frames. */

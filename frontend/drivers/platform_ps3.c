@@ -372,7 +372,7 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
 
 #ifndef IS_SALAMANDER
-   rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
+   rarch_main_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
    if (should_load_game && fullpath[0] != '\0')
    {

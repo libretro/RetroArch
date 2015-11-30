@@ -37,7 +37,7 @@ static void menu_environment_get(int *argc, char *argv[],
    if (!wrap_args)
       return;
 
-   rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
+   rarch_main_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
    wrap_args->no_content       = menu->load_no_content;
    if (!global->has_set.verbosity)
@@ -62,7 +62,7 @@ static void menu_push_to_history_playlist(void)
    if (!settings->history_list_enable)
       return;
 
-   rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
+   rarch_main_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
    if (*fullpath)
    {
@@ -98,7 +98,7 @@ bool menu_load_content(enum rarch_core_type type)
    driver_t *driver     = driver_get_ptr();
    char *fullpath       = NULL;
 
-   rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
+   rarch_main_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
    /* redraw menu frame */
    menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
    menu_iterate_render();
@@ -137,12 +137,12 @@ int menu_common_load_content(
 
    if (core_path)
    {
-      rarch_main_ctl(RARCH_MAIN_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+      rarch_main_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
       event_command(EVENT_CMD_LOAD_CORE);
    }
 
    if (fullpath)
-      rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, (void*)fullpath);
+      rarch_main_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)fullpath);
 
    switch (type)
    {

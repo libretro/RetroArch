@@ -304,7 +304,7 @@ int rarch_main(int argc, char *argv[], void *data)
       global_t *global            = global_get_ptr();
       rarch_system_info_t *system = rarch_system_info_get_ptr();
 
-      rarch_main_ctl(RARCH_MAIN_CTL_GET_CONTENT_PATH, &fullpath);
+      rarch_main_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
       if (global->inited.content || system->no_content)
          history_playlist_push(

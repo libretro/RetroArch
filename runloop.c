@@ -450,7 +450,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 
    switch (state)
    {
-      case RARCH_MAIN_CTL_SET_WINDOWED_SCALE:
+      case RUNLOOP_CTL_SET_WINDOWED_SCALE:
          {
             unsigned *idx = (unsigned*)data;
             if (!idx)
@@ -458,7 +458,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             global->pending.windowed_scale = *idx;
          }
          break;
-      case RARCH_MAIN_CTL_SET_LIBRETRO_PATH:
+      case RUNLOOP_CTL_SET_LIBRETRO_PATH:
          {
             const char *fullpath = (const char*)data;
             if (!fullpath)
@@ -466,10 +466,10 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             strlcpy(settings->libretro, fullpath, sizeof(settings->libretro));
          }
          break;
-      case RARCH_MAIN_CTL_CLEAR_CONTENT_PATH:
+      case RUNLOOP_CTL_CLEAR_CONTENT_PATH:
          *global->path.fullpath = '\0';
          break;
-      case RARCH_MAIN_CTL_GET_CONTENT_PATH:
+      case RUNLOOP_CTL_GET_CONTENT_PATH:
          {
             char **fullpath = (char**)data;
             if (!fullpath)
@@ -477,7 +477,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             *fullpath       = (char*)global->path.fullpath;
          }
          break;
-      case RARCH_MAIN_CTL_SET_CONTENT_PATH:
+      case RUNLOOP_CTL_SET_CONTENT_PATH:
          {
             const char *fullpath = (const char*)data;
             if (!fullpath)
@@ -485,7 +485,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             strlcpy(global->path.fullpath, fullpath, sizeof(global->path.fullpath));
          }
          break;
-      case RARCH_MAIN_CTL_CHECK_IDLE_STATE:
+      case RUNLOOP_CTL_CHECK_IDLE_STATE:
          {
             event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
             bool focused = check_focus(settings);
@@ -493,13 +493,13 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             check_pause(settings, focused,
                   cmd->pause_pressed, cmd->frameadvance_pressed);
 
-            if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_PAUSE_STATE, cmd))
+            if (!rarch_main_ctl(RUNLOOP_CTL_CHECK_PAUSE_STATE, cmd))
                return false;
             if (!focused)
                return false;
             break;
          }
-      case RARCH_MAIN_CTL_CHECK_STATE:
+      case RUNLOOP_CTL_CHECK_STATE:
          {
             event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
 
@@ -536,7 +536,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
                break;
             }
 #endif
-            if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_IDLE_STATE, data))
+            if (!rarch_main_ctl(RUNLOOP_CTL_CHECK_IDLE_STATE, data))
                return false;
 
             check_fast_forward_button(
@@ -552,10 +552,10 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 
             check_rewind(settings, global, cmd->rewind_pressed);
 
-            rarch_main_ctl(RARCH_MAIN_CTL_CHECK_SLOWMOTION, &cmd->slowmotion_pressed);
+            rarch_main_ctl(RUNLOOP_CTL_CHECK_SLOWMOTION, &cmd->slowmotion_pressed);
 
             if (cmd->movie_record)
-               rarch_main_ctl(RARCH_MAIN_CTL_CHECK_MOVIE, NULL);
+               rarch_main_ctl(RUNLOOP_CTL_CHECK_MOVIE, NULL);
 
             check_shader_dir(global, cmd->shader_next_pressed,
                   cmd->shader_prev_pressed);
@@ -581,7 +581,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             }
          }
          break;
-      case RARCH_MAIN_CTL_CHECK_PAUSE_STATE:
+      case RUNLOOP_CTL_CHECK_PAUSE_STATE:
          {
             bool check_is_oneshot;
             event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
@@ -604,7 +604,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
                return false;
          }
          break;
-      case RARCH_MAIN_CTL_CHECK_SLOWMOTION:
+      case RUNLOOP_CTL_CHECK_SLOWMOTION:
          {
             bool *ptr            = (bool*)data;
 
@@ -625,13 +625,13 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
                rarch_main_msg_queue_push_new(MSG_SLOW_MOTION, 0, 30, true);
          }
          break;
-      case RARCH_MAIN_CTL_CHECK_MOVIE:
+      case RUNLOOP_CTL_CHECK_MOVIE:
          if (global->bsv.movie_playback)
-            return rarch_main_ctl(RARCH_MAIN_CTL_CHECK_MOVIE_PLAYBACK, NULL);
+            return rarch_main_ctl(RUNLOOP_CTL_CHECK_MOVIE_PLAYBACK, NULL);
          if (!global->bsv.movie)
-            return rarch_main_ctl(RARCH_MAIN_CTL_CHECK_MOVIE_INIT, NULL);
-         return rarch_main_ctl(RARCH_MAIN_CTL_CHECK_MOVIE_RECORD, NULL);
-      case RARCH_MAIN_CTL_CHECK_MOVIE_RECORD:
+            return rarch_main_ctl(RUNLOOP_CTL_CHECK_MOVIE_INIT, NULL);
+         return rarch_main_ctl(RUNLOOP_CTL_CHECK_MOVIE_RECORD, NULL);
+      case RUNLOOP_CTL_CHECK_MOVIE_RECORD:
          if (!global->bsv.movie)
             return false;
 
@@ -641,7 +641,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 
          event_command(EVENT_CMD_BSV_MOVIE_DEINIT);
          break;
-      case RARCH_MAIN_CTL_CHECK_MOVIE_INIT:
+      case RUNLOOP_CTL_CHECK_MOVIE_INIT:
          if (global->bsv.movie)
             return false;
          {
@@ -681,7 +681,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             }
          }
          break;
-      case RARCH_MAIN_CTL_CHECK_MOVIE_PLAYBACK:
+      case RUNLOOP_CTL_CHECK_MOVIE_PLAYBACK:
          if (!global->bsv.movie_end)
             return false;
 
@@ -694,14 +694,14 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
          global->bsv.movie_end      = false;
          global->bsv.movie_playback = false;
          break;
-      case RARCH_MAIN_CTL_STATE_FREE:
+      case RUNLOOP_CTL_STATE_FREE:
          main_is_idle               = false;
          main_is_paused             = false;
          main_is_slowmotion         = false;
          frame_limit_last_time      = 0.0;
          main_max_frames            = 0;
          break;
-      case RARCH_MAIN_CTL_GLOBAL_FREE:
+      case RUNLOOP_CTL_GLOBAL_FREE:
          event_command(EVENT_CMD_TEMPORARY_CONTENT_DEINIT);
          event_command(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
          event_command(EVENT_CMD_RECORD_DEINIT);
@@ -709,12 +709,12 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 
          memset(&g_extern, 0, sizeof(g_extern));
          break;
-      case RARCH_MAIN_CTL_CLEAR_STATE:
+      case RUNLOOP_CTL_CLEAR_STATE:
          driver_clear_state();
-         rarch_main_ctl(RARCH_MAIN_CTL_STATE_FREE,  NULL);
-         rarch_main_ctl(RARCH_MAIN_CTL_GLOBAL_FREE, NULL);
+         rarch_main_ctl(RUNLOOP_CTL_STATE_FREE,  NULL);
+         rarch_main_ctl(RUNLOOP_CTL_GLOBAL_FREE, NULL);
          break;
-      case RARCH_MAIN_CTL_SET_MAX_FRAMES:
+      case RUNLOOP_CTL_SET_MAX_FRAMES:
          {
             unsigned *ptr = (unsigned*)data;
             if (!ptr)
@@ -722,7 +722,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             main_max_frames = *ptr;
          }
          break;
-      case RARCH_MAIN_CTL_SET_FRAME_LIMIT_LAST_TIME:
+      case RUNLOOP_CTL_SET_FRAME_LIMIT_LAST_TIME:
          {
             struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
             float fastforward_ratio              = settings->fastforward_ratio;
@@ -734,9 +734,9 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
          }
          break;
-      case RARCH_MAIN_CTL_IS_IDLE:
+      case RUNLOOP_CTL_IS_IDLE:
          return main_is_idle;
-      case RARCH_MAIN_CTL_SET_IDLE:
+      case RUNLOOP_CTL_SET_IDLE:
          {
             bool *ptr = (bool*)data;
             if (!ptr)
@@ -744,7 +744,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             main_is_idle = *ptr;
          }
          break;
-      case RARCH_MAIN_CTL_IS_SLOWMOTION:
+      case RUNLOOP_CTL_IS_SLOWMOTION:
          {
             bool *ptr = (bool*)data;
             if (!ptr)
@@ -752,7 +752,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             *ptr = main_is_slowmotion;
          }
          break;
-      case RARCH_MAIN_CTL_SET_SLOWMOTION:
+      case RUNLOOP_CTL_SET_SLOWMOTION:
          {
             bool *ptr = (bool*)data;
             if (!ptr)
@@ -760,7 +760,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             main_is_slowmotion = *ptr;
          }
          break;
-      case RARCH_MAIN_CTL_SET_PAUSED:
+      case RUNLOOP_CTL_SET_PAUSED:
          {
             bool *ptr = (bool*)data;
             if (!ptr)
@@ -768,7 +768,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             main_is_paused = *ptr;
          }
          break;
-      case RARCH_MAIN_CTL_IS_PAUSED:
+      case RUNLOOP_CTL_IS_PAUSED:
          {
             bool *ptr = (bool*)data;
             if (!ptr)
@@ -776,14 +776,14 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             *ptr = main_is_paused;
          }
          break;
-      case RARCH_MAIN_CTL_MSG_QUEUE_DEINIT:
+      case RUNLOOP_CTL_MSG_QUEUE_DEINIT:
          rarch_main_msg_queue_free();
          break;
-      case RARCH_MAIN_CTL_MSG_QUEUE_INIT:
-         rarch_main_ctl(RARCH_MAIN_CTL_MSG_QUEUE_DEINIT, NULL);
+      case RUNLOOP_CTL_MSG_QUEUE_INIT:
+         rarch_main_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
          rarch_main_msg_queue_init();
          break;
-      case RARCH_MAIN_CTL_PREPARE_DUMMY:
+      case RUNLOOP_CTL_PREPARE_DUMMY:
          {
 #ifdef HAVE_MENU
             menu_handle_t *menu = menu_driver_get_ptr();
@@ -792,15 +792,15 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 #endif
             rarch_main_data_clear_state();
 
-            rarch_main_ctl(RARCH_MAIN_CTL_CLEAR_CONTENT_PATH, NULL);
+            rarch_main_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
 
             rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
          }
          break;
-      case RARCH_MAIN_CTL_SET_CORE_SHUTDOWN:
+      case RUNLOOP_CTL_SET_CORE_SHUTDOWN:
          main_core_shutdown_initiated = true;
          break;
-      case RARCH_MAIN_CTL_SET_EXEC:
+      case RUNLOOP_CTL_SET_EXEC:
          main_exec = true;
          break;
       default:
@@ -957,7 +957,7 @@ static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
       if (main_core_shutdown_initiated
             && settings->load_dummy_on_core_shutdown)
       {
-         if (!rarch_main_ctl(RARCH_MAIN_CTL_PREPARE_DUMMY, NULL))
+         if (!rarch_main_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL))
             return -1;
 
          system->shutdown             = false;
@@ -1083,7 +1083,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    if (menu_driver_alive())
    {
       bool focused = check_focus(settings) && !ui_companion_is_on_foreground();
-      bool is_idle = rarch_main_ctl(RARCH_MAIN_CTL_IS_IDLE, NULL);
+      bool is_idle = rarch_main_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
 
       if (menu_driver_iterate((enum menu_action)menu_input_frame_retropad(input, trigger_input)) == -1)
          rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
@@ -1103,7 +1103,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    }
 #endif
 
-   if (!rarch_main_ctl(RARCH_MAIN_CTL_CHECK_STATE, &cmd))
+   if (!rarch_main_ctl(RUNLOOP_CTL_CHECK_STATE, &cmd))
    {
       /* RetroArch has been paused. */
       driver->retro_ctx.poll_cb();

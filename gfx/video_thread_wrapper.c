@@ -435,7 +435,7 @@ static bool thread_alive(void *data)
    bool ret, is_paused;
    thread_video_t *thr = (thread_video_t*)data;
 
-   rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED, &is_paused);
+   rarch_main_ctl(RUNLOOP_CTL_IS_PAUSED, &is_paused);
 
    if (is_paused)
    {
