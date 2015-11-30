@@ -2678,6 +2678,9 @@ static bool gl_alive(void *data)
    bool quit = false, resize = false;
    gl_t         *gl = (gl_t*)data;
 
+   /* Needed because some context drivers don't track their sizes */
+   video_driver_get_size(&temp_width, &temp_height);
+
    if (gfx_ctx_check_window(data, &quit,
             &resize, &temp_width, &temp_height))
    {
