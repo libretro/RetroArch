@@ -63,7 +63,7 @@ static  int                g_cpuCount;
 #endif
 
 #ifdef __i386__
-static INLINE void cpu_x86_cpuid(int func, int values[4])
+static void cpu_x86_cpuid(int func, int values[4])
 {
     int a, b, c, d;
     /* We need to preserve ebx since we're compiling PIC code */

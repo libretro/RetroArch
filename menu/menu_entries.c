@@ -154,8 +154,7 @@ menu_file_list_cbs_t *menu_entries_get_actiondata_at_offset(
       file_list_get_actiondata_at_offset(list, idx);
 }
 
-static INLINE int menu_entries_flush_stack_type(
-      const char *needle, const char *label,
+static int menu_entries_flush_stack_type(const char *needle, const char *label,
       unsigned type, unsigned final_type)
 {
    return needle ? strcmp(needle, label) : (type != final_type);

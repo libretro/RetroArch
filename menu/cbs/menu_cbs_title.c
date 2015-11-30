@@ -31,14 +31,14 @@
    cbs->action_get_title_ident = #name;
 #endif
 
-static INLINE void replace_chars(char *str, char c1, char c2)
+static void replace_chars(char *str, char c1, char c2)
 {
    char *pos = NULL;
    while((pos = strchr(str, c1)))
       *pos = c2;
 }
 
-static INLINE void sanitize_to_string(char *s, const char *label, size_t len)
+static void sanitize_to_string(char *s, const char *label, size_t len)
 {
    char new_label[PATH_MAX_LENGTH] = {0};
 

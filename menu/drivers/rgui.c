@@ -61,7 +61,7 @@ typedef struct
    unsigned last_height;
 } rgui_t;
 
-static INLINE uint16_t argb32_to_rgba4444(uint32_t col)
+static uint16_t argb32_to_rgba4444(uint32_t col)
 {
    unsigned a = ((col >> 24) & 0xff) >> 4;
    unsigned r = ((col >> 16) & 0xff) >> 4;
