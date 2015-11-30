@@ -22,6 +22,14 @@
 #include "../string_list_special.h"
 #include "../verbosity.h"
 
+#ifdef HAVE_COMMAND
+#include "../command.h"
+#endif
+
+#ifdef HAVE_NETWORK_GAMEPAD
+#include "../remote.h"
+#endif
+
 static const input_driver_t *input_drivers[] = {
 #ifdef __CELLOS_LV2__
    &input_ps3,
@@ -84,6 +92,9 @@ struct turbo_buttons
 
 #ifdef HAVE_COMMAND
 static rarch_cmd_t *input_driver_command;
+#endif
+#ifdef HAVE_NETWORK_GAMEPAD
+static rarch_remote_t *input_driver_remote;
 #endif
 static bool input_driver_keyboard_linefeed_enable;
 static bool input_driver_osk_enabled;
@@ -260,9 +271,6 @@ static retro_input_t input_driver_keys_pressed(void)
 {
    int key;
    retro_input_t                ret = 0;
-#if defined(HAVE_COMMAND) || defined(HAVE_NETWORK_GAMEPAD)
-   driver_t                 *driver = driver_get_ptr();
-#endif
 
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
    {
@@ -284,7 +292,7 @@ static retro_input_t input_driver_keys_pressed(void)
 #endif
 
 #ifdef HAVE_NETWORK_GAMEPAD
-      if (driver->remote)
+      if (input_driver_remote)
          state |= input_remote_key_pressed(key,0);
 #endif
 
@@ -419,9 +427,6 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
  **/
 void input_poll(void)
 {
-#ifdef HAVE_COMMAND
-   driver_t *driver               = driver_get_ptr();
-#endif
 #ifdef HAVE_OVERLAY
    settings_t *settings           = config_get_ptr();
 #endif
@@ -438,8 +443,8 @@ void input_poll(void)
 #endif
 
 #ifdef HAVE_NETWORK_GAMEPAD
-   if (driver->remote)
-      rarch_remote_poll(driver->remote);
+   if (input_driver_remote)
+      rarch_remote_poll(input_driver_remote);
 #endif
 }
 
@@ -640,7 +645,6 @@ bool input_driver_data_ptr_is_same(void *data)
 #ifdef HAVE_COMMAND
 static void input_driver_command_init(void)
 {
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
    if (!settings->stdin_cmd_enable && !settings->network_cmd_enable)
@@ -656,6 +660,20 @@ static void input_driver_command_init(void)
                && !input_driver_ctl(RARCH_INPUT_CTL_GRAB_STDIN, NULL),
                settings->network_cmd_enable, settings->network_cmd_port)))
       RARCH_ERR("Failed to initialize command interface.\n");
+}
+#endif
+
+#ifdef HAVE_NETWORK_GAMEPAD
+static void input_driver_remote_init(void)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (settings->network_remote_enable)
+   {
+      if (!(input_driver_remote = rarch_remote_new(settings->network_remote_base_port)))
+         RARCH_ERR("Failed to initialize remote gamepad interface.\n");
+   }
+
 }
 #endif
 
@@ -784,6 +802,18 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          if (input_driver_command)
             rarch_cmd_free(input_driver_command);
          input_driver_command = NULL;
+#endif
+         break;
+      case RARCH_INPUT_CTL_REMOTE_DEINIT:
+#ifdef HAVE_NETWORK_GAMEPAD
+         if (input_driver_remote)
+            rarch_remote_free(input_driver_remote);
+         input_driver_remote = NULL;
+#endif
+         break;
+      case RARCH_INPUT_CTL_REMOTE_INIT:
+#ifdef HAVE_NETWORK_GAMEPAD
+         input_driver_remote_init();
 #endif
          break;
       case RARCH_INPUT_CTL_NONE:

@@ -46,14 +46,6 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_COMMAND
-#include "command.h"
-#endif
-
-#ifdef HAVE_NETWORK_GAMEPAD
-#include "remote.h"
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -240,10 +232,6 @@ typedef struct driver
    bool location_data_own;
 #ifdef HAVE_MENU
    bool menu_data_own;
-#endif
-
-#ifdef HAVE_NETWORK_GAMEPAD
-   rarch_remote_t *remote;
 #endif
 } driver_t;
 
