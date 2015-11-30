@@ -32,6 +32,7 @@
 #ifdef HAVE_CHEEVOS
 #include "cheevos.h"
 #endif
+#include "autosave.h"
 #include "configuration.h"
 #include "performance.h"
 #include "retroarch.h"

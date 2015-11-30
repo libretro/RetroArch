@@ -22,8 +22,18 @@
 
 #include <rthreads/rthreads.h>
 
-#include "general.h"
+#include "autosave.h"
+#include "configuration.h"
+#include "msg_hash.h"
+#include "runloop.h"
 #include "verbosity.h"
+
+/* Autosave support. */
+struct autosave_st
+{
+   autosave_t **list;
+   unsigned num;
+};
 
 struct autosave
 {
@@ -40,6 +50,8 @@ struct autosave
    size_t bufsize;
    unsigned interval;
 };
+
+static struct autosave_st autosave_state;
 
 /**
  * autosave_lock:
@@ -197,12 +209,11 @@ void autosave_free(autosave_t *handle)
 void lock_autosave(void)
 {
    unsigned i;
-   global_t *global = global_get_ptr();
 
-   for (i = 0; i < global->autosave.num; i++)
+   for (i = 0; i < autosave_state.num; i++)
    {
-      if (global->autosave.list[i])
-         autosave_lock(global->autosave.list[i]);
+      if (autosave_state.list[i])
+         autosave_lock(autosave_state.list[i]);
    }
 }
 
@@ -214,13 +225,57 @@ void lock_autosave(void)
 void unlock_autosave(void)
 {
    unsigned i;
-   global_t *global = global_get_ptr();
 
-   for (i = 0; i < global->autosave.num; i++)
+   for (i = 0; i < autosave_state.num; i++)
    {
-      if (global->autosave.list[i])
-         autosave_unlock(global->autosave.list[i]);
+      if (autosave_state.list[i])
+         autosave_unlock(autosave_state.list[i]);
    }
 }
 
+void autosave_event_init(void)
+{
+   unsigned i;
+   settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
+   if (settings->autosave_interval < 1 || !global->savefiles)
+      return;
+
+   if (!(autosave_state.list = (autosave_t**)calloc(global->savefiles->size,
+               sizeof(*autosave_state.list))))
+      return;
+
+   autosave_state.num = global->savefiles->size;
+
+   for (i = 0; i < global->savefiles->size; i++)
+   {
+      const char *path = global->savefiles->elems[i].data;
+      unsigned    type = global->savefiles->elems[i].attr.i;
+
+      if (core.retro_get_memory_size(type) <= 0)
+         continue;
+
+      autosave_state.list[i] = autosave_new(path,
+            core.retro_get_memory_data(type),
+            core.retro_get_memory_size(type),
+            settings->autosave_interval);
+
+      if (!autosave_state.list[i])
+         RARCH_WARN("%s\n", msg_hash_to_str(MSG_AUTOSAVE_FAILED));
+   }
+}
+
+void autosave_event_deinit(void)
+{
+   unsigned i;
+
+   for (i = 0; i < autosave_state.num; i++)
+      autosave_free(autosave_state.list[i]);
+
+   if (autosave_state.list)
+      free(autosave_state.list);
+
+   autosave_state.list     = NULL;
+   autosave_state.num      = 0;
+}

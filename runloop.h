@@ -25,7 +25,6 @@
 #include "core_options.h"
 #include "driver.h"
 #include "rewind.h"
-#include "autosave.h"
 #include "movie.h"
 #include "cheats.h"
 #include "dynamic.h"
@@ -227,13 +226,6 @@ typedef struct global
       bool save_disable;
       bool use;
    } sram;
-
-   /* Autosave support. */
-   struct
-   {
-      autosave_t **list;
-      unsigned num;
-   } autosave;
 
 #ifdef HAVE_NETPLAY
    /* Netplay. */

@@ -20,6 +20,7 @@
 #include "command_event.h"
 
 #include "audio/audio_driver.h"
+#include "autosave.h"
 #include "general.h"
 #include "performance.h"
 #include "dynamic.h"
@@ -90,56 +91,6 @@ static void event_init_remote(void)
 }
 #endif
 
-
-#if defined(HAVE_THREADS)
-static void event_init_autosave(void)
-{
-   unsigned i;
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-
-   if (settings->autosave_interval < 1 || !global->savefiles)
-      return;
-
-   if (!(global->autosave.list = (autosave_t**)calloc(global->savefiles->size,
-               sizeof(*global->autosave.list))))
-      return;
-
-   global->autosave.num = global->savefiles->size;
-
-   for (i = 0; i < global->savefiles->size; i++)
-   {
-      const char *path = global->savefiles->elems[i].data;
-      unsigned    type = global->savefiles->elems[i].attr.i;
-
-      if (core.retro_get_memory_size(type) <= 0)
-         continue;
-
-      global->autosave.list[i] = autosave_new(path,
-            core.retro_get_memory_data(type),
-            core.retro_get_memory_size(type),
-            settings->autosave_interval);
-
-      if (!global->autosave.list[i])
-         RARCH_WARN("%s\n", msg_hash_to_str(MSG_AUTOSAVE_FAILED));
-   }
-}
-
-static void event_deinit_autosave(void)
-{
-   unsigned i;
-   global_t *global = global_get_ptr();
-
-   for (i = 0; i < global->autosave.num; i++)
-      autosave_free(global->autosave.list[i]);
-
-   if (global->autosave.list)
-      free(global->autosave.list);
-
-   global->autosave.list     = NULL;
-   global->autosave.num      = 0;
-}
-#endif
 
 static void event_save_files(void)
 {
@@ -1270,13 +1221,13 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_AUTOSAVE_DEINIT:
 #ifdef HAVE_THREADS
-         event_deinit_autosave();
+         autosave_event_deinit();
 #endif
          break;
       case EVENT_CMD_AUTOSAVE_INIT:
          event_command(EVENT_CMD_AUTOSAVE_DEINIT);
 #ifdef HAVE_THREADS
-         event_init_autosave();
+         autosave_event_init();
 #endif
          break;
       case EVENT_CMD_AUTOSAVE_STATE:

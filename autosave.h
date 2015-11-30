@@ -62,6 +62,10 @@ void lock_autosave(void);
  **/
 void unlock_autosave(void);
 
+void autosave_event_init(void);
+
+void autosave_event_deinit(void);
+
 #ifdef __cplusplus
 }
 #endif
