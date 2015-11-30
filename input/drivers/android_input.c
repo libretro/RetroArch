@@ -273,7 +273,7 @@ static void android_input_poll_main_cmd(void)
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
 
-         rarch_main_ctl(RUNLOOP_CTL_IS_PAUSED, &is_paused);
+         runloop_ctl(RUNLOOP_CTL_IS_PAUSED, &is_paused);
 
          if (is_paused)
             event_command(EVENT_CMD_REINIT);
@@ -324,8 +324,8 @@ static void android_input_poll_main_cmd(void)
          {
             bool boolean = false;
 
-            rarch_main_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
-            rarch_main_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
+            runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
+            runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
 
             if ((android_app->sensor_state_mask
                      & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))
@@ -343,8 +343,8 @@ static void android_input_poll_main_cmd(void)
          {
             bool boolean = true;
 
-            rarch_main_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
-            rarch_main_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
+            runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
+            runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
 
             /* Avoid draining battery while app is not being used. */
             if ((android_app->sensor_state_mask

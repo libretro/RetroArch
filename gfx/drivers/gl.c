@@ -1839,8 +1839,8 @@ static bool gl_frame(void *data, const void *frame,
 #endif
 #endif
 #endif
-   rarch_main_ctl(RUNLOOP_CTL_IS_SLOWMOTION, &is_slowmotion);
-   rarch_main_ctl(RUNLOOP_CTL_IS_PAUSED,     &is_paused);
+   runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, &is_slowmotion);
+   runloop_ctl(RUNLOOP_CTL_IS_PAUSED,     &is_paused);
 
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */

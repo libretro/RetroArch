@@ -754,7 +754,7 @@ static void config_set_defaults(void)
       fill_pathname_expand_special(settings->libretro_directory,
             g_defaults.dir.core, sizeof(settings->libretro_directory));
    if (*g_defaults.path.core)
-      rarch_main_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, g_defaults.path.core);
+      runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, g_defaults.path.core);
    if (*g_defaults.dir.database)
       strlcpy(settings->content_database, g_defaults.dir.database,
             sizeof(settings->content_database));

@@ -323,7 +323,8 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
 #else
 #ifdef _XBOX
    char *fullpath = NULL;
-   rarch_main_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+
+   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
 #if defined(_XBOX1)
    LAUNCH_DATA ptr;

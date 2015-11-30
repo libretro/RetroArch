@@ -1042,7 +1042,7 @@ bool event_command(enum event_command cmd)
             event_command(EVENT_CMD_LOAD_CONTENT_PERSIST);
 #else
             char *fullpath = NULL;
-            rarch_main_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+            runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
             rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH,
                   (void*)settings->libretro);
             rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)fullpath);
@@ -1097,7 +1097,7 @@ bool event_command(enum event_command cmd)
             if (!settings->video.fullscreen)
                event_command(EVENT_CMD_REINIT);
 
-            rarch_main_ctl(RUNLOOP_CTL_SET_WINDOWED_SCALE, &idx);
+            runloop_ctl(RUNLOOP_CTL_SET_WINDOWED_SCALE, &idx);
          }
          break;
       case EVENT_CMD_MENU_TOGGLE:
@@ -1143,7 +1143,7 @@ bool event_command(enum event_command cmd)
             return false;
          break;
       case EVENT_CMD_UNLOAD_CORE:
-         rarch_main_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL);
+         runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL);
          event_command(EVENT_CMD_LOAD_CORE_DEINIT);
          break;
       case EVENT_CMD_QUIT:
@@ -1417,7 +1417,7 @@ bool event_command(enum event_command cmd)
 #if defined(GEKKO) && defined(HW_RVL)
             char new_path[PATH_MAX_LENGTH];
             fill_pathname_join(new_path, g_defaults.dir.core, SALAMANDER_FILE, sizeof(new_path));
-            rarch_main_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, new_path);
+            runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, new_path);
 #endif
             if (driver->frontend_ctx && driver->frontend_ctx->set_fork)
                driver->frontend_ctx->set_fork(true, false);
@@ -1436,7 +1436,7 @@ bool event_command(enum event_command cmd)
 #endif
          break;
       case EVENT_CMD_PAUSE_CHECKS:
-         rarch_main_ctl(RUNLOOP_CTL_IS_PAUSED, &boolean);
+         runloop_ctl(RUNLOOP_CTL_IS_PAUSED, &boolean);
 
          if (boolean)
          {
@@ -1453,21 +1453,21 @@ bool event_command(enum event_command cmd)
          }
          break;
       case EVENT_CMD_PAUSE_TOGGLE:
-         rarch_main_ctl(RUNLOOP_CTL_IS_PAUSED,  &boolean);
+         runloop_ctl(RUNLOOP_CTL_IS_PAUSED,  &boolean);
          boolean = !boolean;
-         rarch_main_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
+         runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_UNPAUSE:
          boolean = false;
 
-         rarch_main_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
+         runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_PAUSE:
          boolean = true;
 
-         rarch_main_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
+         runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
          event_command(EVENT_CMD_PAUSE_CHECKS);
          break;
       case EVENT_CMD_MENU_PAUSE_LIBRETRO:
@@ -1726,7 +1726,7 @@ case EVENT_CMD_REMOTE_INIT:
          event_set_volume(-0.5f);
          break;
       case EVENT_CMD_SET_FRAME_LIMIT:
-         rarch_main_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT_LAST_TIME, NULL);
+         runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT_LAST_TIME, NULL);
          break;
       case EVENT_CMD_NONE:
       default:

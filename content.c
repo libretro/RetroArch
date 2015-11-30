@@ -619,7 +619,8 @@ bool init_content_file(void)
    else
    {
       char *fullpath = NULL;
-      rarch_main_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+
+      runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
       attr.i  = system->info.block_extract;
       attr.i |= system->info.need_fullpath << 1;

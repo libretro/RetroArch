@@ -254,7 +254,7 @@ static void set_basename(const char *path)
    char *dst          = NULL;
    global_t *global   = global_get_ptr();
 
-   rarch_main_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)path);
+   runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)path);
    strlcpy(global->name.base,     path, sizeof(global->name.base));
 
 #ifdef HAVE_COMPRESSION
@@ -745,7 +745,7 @@ static void parse_input(int argc, char *argv[])
             }
             else
             {
-               rarch_main_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, optarg);
+               runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, optarg);
                global->has_set.libretro = true;
             }
             break;
@@ -883,7 +883,7 @@ static void parse_input(int argc, char *argv[])
          case RA_OPT_MAX_FRAMES:
             {
                unsigned max_frames = strtoul(optarg, NULL, 10);
-               rarch_main_ctl(RUNLOOP_CTL_SET_MAX_FRAMES, &max_frames);
+               runloop_ctl(RUNLOOP_CTL_SET_MAX_FRAMES, &max_frames);
             }
             break;
 
@@ -1083,7 +1083,7 @@ void rarch_main_alloc(void)
 
    event_command(EVENT_CMD_HISTORY_DEINIT);
 
-   rarch_main_ctl(RUNLOOP_CTL_CLEAR_STATE, NULL);
+   runloop_ctl(RUNLOOP_CTL_CLEAR_STATE, NULL);
 }
 
 /**
@@ -1100,17 +1100,17 @@ void rarch_main_new(void)
    init_state();
    main_init_state_config();
 
-   rarch_main_ctl(RUNLOOP_CTL_MSG_QUEUE_INIT, NULL);
+   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_INIT, NULL);
 }
 
 void rarch_main_free(void)
 {
-   rarch_main_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
+   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
    event_command(EVENT_CMD_DRIVERS_DEINIT);
    event_command(EVENT_CMD_LOG_FILE_DEINIT);
 
-   rarch_main_ctl(RUNLOOP_CTL_STATE_FREE,  NULL);
-   rarch_main_ctl(RUNLOOP_CTL_GLOBAL_FREE, NULL);
+   runloop_ctl(RUNLOOP_CTL_STATE_FREE,  NULL);
+   runloop_ctl(RUNLOOP_CTL_GLOBAL_FREE, NULL);
 
    rarch_main_data_deinit();
    config_free();
@@ -1185,7 +1185,7 @@ int rarch_main_init(int argc, char *argv[])
             settings->multimedia.builtin_imageviewer_enable))
       {
          char *fullpath = NULL;
-         rarch_main_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+         runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
          switch (rarch_path_is_media_type(fullpath))
          {
@@ -1348,7 +1348,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             global->block_config_read = false;
             *settings->libretro = '\0'; /* Load core in new config. */
          }
-         rarch_main_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL);
+         runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL);
          return true;
       case RARCH_CTL_MENU_RUNNING:
 #ifdef HAVE_MENU
@@ -1547,7 +1547,7 @@ void rarch_playlist_load_content(void *data, unsigned idx)
       free(path_check);
    }
 
-   rarch_main_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+   runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
 
 #ifdef HAVE_MENU
    if (menu)
@@ -1623,10 +1623,10 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    if (supported != 1)
       return 0;
 
-   rarch_main_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, s);
+   runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, s);
 
    if (path_file_exists(new_core_path))
-      rarch_main_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, new_core_path);
+      runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, new_core_path);
    return -1;
 }
 

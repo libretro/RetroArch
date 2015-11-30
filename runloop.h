@@ -35,7 +35,7 @@
 extern "C" {
 #endif
 
-enum rarch_main_ctl_state
+enum runloop_ctl_state
 {
    RUNLOOP_CTL_IS_IDLE = 0,
    RUNLOOP_CTL_SET_WINDOWED_SCALE,
@@ -336,7 +336,7 @@ void rarch_main_msg_queue_push_new(uint32_t hash, unsigned prio,
 
 const char *rarch_main_msg_queue_pull(void);
 
-bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data);
+bool runloop_ctl(enum runloop_ctl_state state, void *data);
 
 typedef int (*transfer_cb_t)(void *data, size_t len);
 

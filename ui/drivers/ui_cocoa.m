@@ -276,7 +276,7 @@ extern void action_ok_push_quick_menu(void);
       NSString *__core = [filenames objectAtIndex:0];
       const char *core_name = global ? global->menu.info.library_name : NULL;
 		
-      rarch_main_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
+      runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
 
       if (core_name)
          ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
@@ -306,13 +306,13 @@ extern void action_ok_push_quick_menu(void);
              
              if (__core)
              {
-                rarch_main_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)__core.UTF8String);
+                runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)__core.UTF8String);
                 ui_companion_event_command(EVENT_CMD_LOAD_CORE);
 
                 if (menu->load_no_content && settings->core.set_supports_no_game_enable)
                 {
                    int ret = 0;
-                   rarch_main_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+                   runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
                    ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
                    if (ret == -1)
                       action_ok_push_quick_menu();
@@ -341,7 +341,7 @@ extern void action_ok_push_quick_menu(void);
          NSString *__core = url.path;
          const char *core_name = global ? global->menu.info.library_name : NULL;
 			
-         rarch_main_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
+         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
 
          if (core_name)
             ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
@@ -412,7 +412,7 @@ extern void action_ok_push_quick_menu(void);
    if (sender_tag >= 10 && sender_tag <= 19)
    {
       unsigned idx = (sender_tag - (10-1));
-      rarch_main_ctl(RUNLOOP_CTL_SET_WINDOWED_SCALE, &idx);
+      runloop_ctl(RUNLOOP_CTL_SET_WINDOWED_SCALE, &idx);
       cmd = EVENT_CMD_RESIZE_WINDOWED_SCALE;
    }
 

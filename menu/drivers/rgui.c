@@ -449,7 +449,7 @@ static void rgui_render(void)
       if (menu_entries_needs_refresh() && menu_driver_alive() && !msg_force)
          return;
 
-      if (rarch_main_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+      if (runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
          return;
 
       if (!menu_display_ctl(MENU_DISPLAY_CTL_UPDATE_PENDING, NULL))

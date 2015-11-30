@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
             (argc - optind - 1) * sizeof(char*));
       argc--;
 
-      rarch_main_ctl(RUNLOOP_CTL_CLEAR_STATE);
+      runloop_ctl(RUNLOOP_CTL_CLEAR_STATE);
    }
 }
 

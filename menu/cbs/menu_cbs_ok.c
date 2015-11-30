@@ -650,14 +650,14 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_CORE:
          flush_char = NULL;
          flush_type = MENU_SETTINGS;
-         rarch_main_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, action_path);
+         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, action_path);
          event_command(EVENT_CMD_LOAD_CORE);
 
 #if defined(HAVE_DYNAMIC)
          /* No content needed for this core, load core immediately. */
          if (menu->load_no_content && settings->core.set_supports_no_game_enable)
          {
-            rarch_main_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+            runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
             ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
             if (ret == -1)
                action_ok_push_quick_menu();
@@ -1355,12 +1355,12 @@ static int action_ok_file_load_or_resume(const char *path,
    if (!menu)
       return -1;
 
-   rarch_main_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
    if (!strcmp(menu->deferred_path, fullpath))
       return generic_action_ok_command(EVENT_CMD_RESUME);
 
-   rarch_main_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, menu->deferred_path);
+   runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, menu->deferred_path);
    event_command(EVENT_CMD_LOAD_CORE);
    rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
 

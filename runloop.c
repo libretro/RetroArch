@@ -440,7 +440,7 @@ global_t *global_get_ptr(void)
    return &g_extern;
 }
 
-bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
+bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    settings_t *settings  = config_get_ptr();
    global_t     *global  = global_get_ptr();
@@ -493,7 +493,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             check_pause(settings, focused,
                   cmd->pause_pressed, cmd->frameadvance_pressed);
 
-            if (!rarch_main_ctl(RUNLOOP_CTL_CHECK_PAUSE_STATE, cmd))
+            if (!runloop_ctl(RUNLOOP_CTL_CHECK_PAUSE_STATE, cmd))
                return false;
             if (!focused)
                return false;
@@ -536,7 +536,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
                break;
             }
 #endif
-            if (!rarch_main_ctl(RUNLOOP_CTL_CHECK_IDLE_STATE, data))
+            if (!runloop_ctl(RUNLOOP_CTL_CHECK_IDLE_STATE, data))
                return false;
 
             check_fast_forward_button(
@@ -552,10 +552,10 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 
             check_rewind(settings, global, cmd->rewind_pressed);
 
-            rarch_main_ctl(RUNLOOP_CTL_CHECK_SLOWMOTION, &cmd->slowmotion_pressed);
+            runloop_ctl(RUNLOOP_CTL_CHECK_SLOWMOTION, &cmd->slowmotion_pressed);
 
             if (cmd->movie_record)
-               rarch_main_ctl(RUNLOOP_CTL_CHECK_MOVIE, NULL);
+               runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE, NULL);
 
             check_shader_dir(global, cmd->shader_next_pressed,
                   cmd->shader_prev_pressed);
@@ -627,10 +627,10 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_CHECK_MOVIE:
          if (global->bsv.movie_playback)
-            return rarch_main_ctl(RUNLOOP_CTL_CHECK_MOVIE_PLAYBACK, NULL);
+            return runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE_PLAYBACK, NULL);
          if (!global->bsv.movie)
-            return rarch_main_ctl(RUNLOOP_CTL_CHECK_MOVIE_INIT, NULL);
-         return rarch_main_ctl(RUNLOOP_CTL_CHECK_MOVIE_RECORD, NULL);
+            return runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE_INIT, NULL);
+         return runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE_RECORD, NULL);
       case RUNLOOP_CTL_CHECK_MOVIE_RECORD:
          if (!global->bsv.movie)
             return false;
@@ -711,8 +711,8 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_CLEAR_STATE:
          driver_clear_state();
-         rarch_main_ctl(RUNLOOP_CTL_STATE_FREE,  NULL);
-         rarch_main_ctl(RUNLOOP_CTL_GLOBAL_FREE, NULL);
+         runloop_ctl(RUNLOOP_CTL_STATE_FREE,  NULL);
+         runloop_ctl(RUNLOOP_CTL_GLOBAL_FREE, NULL);
          break;
       case RUNLOOP_CTL_SET_MAX_FRAMES:
          {
@@ -780,7 +780,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
          rarch_main_msg_queue_free();
          break;
       case RUNLOOP_CTL_MSG_QUEUE_INIT:
-         rarch_main_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
+         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
          rarch_main_msg_queue_init();
          break;
       case RUNLOOP_CTL_PREPARE_DUMMY:
@@ -792,7 +792,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 #endif
             rarch_main_data_clear_state();
 
-            rarch_main_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+            runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
 
             rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
          }
@@ -957,7 +957,7 @@ static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
       if (main_core_shutdown_initiated
             && settings->load_dummy_on_core_shutdown)
       {
-         if (!rarch_main_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL))
+         if (!runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL))
             return -1;
 
          system->shutdown             = false;
@@ -1083,7 +1083,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    if (menu_driver_alive())
    {
       bool focused = check_focus(settings) && !ui_companion_is_on_foreground();
-      bool is_idle = rarch_main_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
+      bool is_idle = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
 
       if (menu_driver_iterate((enum menu_action)menu_input_frame_retropad(input, trigger_input)) == -1)
          rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
@@ -1103,7 +1103,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    }
 #endif
 
-   if (!rarch_main_ctl(RUNLOOP_CTL_CHECK_STATE, &cmd))
+   if (!runloop_ctl(RUNLOOP_CTL_CHECK_STATE, &cmd))
    {
       /* RetroArch has been paused. */
       driver->retro_ctx.poll_cb();

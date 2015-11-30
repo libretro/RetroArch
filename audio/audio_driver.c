@@ -495,7 +495,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    recording_push_audio(data, samples);
 
-   rarch_main_ctl(RUNLOOP_CTL_IS_PAUSED, &is_paused);
+   runloop_ctl(RUNLOOP_CTL_IS_PAUSED, &is_paused);
 
    if (is_paused || settings->audio.mute_enable)
       return true;
@@ -535,7 +535,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    src_data.ratio = audio_driver_data.src_ratio;
 
-   rarch_main_ctl(RUNLOOP_CTL_IS_SLOWMOTION, &is_slowmotion);
+   runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, &is_slowmotion);
 
    if (is_slowmotion)
       src_data.ratio *= settings->slowmotion_ratio;

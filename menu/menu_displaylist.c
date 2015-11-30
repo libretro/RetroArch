@@ -1797,7 +1797,7 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
    if (!menu)
       return -1;
 
-   rarch_main_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
    if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY)
       && !strcmp(menu->deferred_path, fullpath))

@@ -768,7 +768,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SHUTDOWN:
          RARCH_LOG("Environ SHUTDOWN.\n");
          system->shutdown = true;
-         rarch_main_ctl(RUNLOOP_CTL_SET_CORE_SHUTDOWN, NULL);
+         runloop_ctl(RUNLOOP_CTL_SET_CORE_SHUTDOWN, NULL);
          break;
 
       case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
@@ -781,7 +781,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (settings->system_directory[0] == '\0')
          {
             char *fullpath = NULL;
-            rarch_main_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+            runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
             RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n", fullpath);
             fill_pathname_basedir(global->dir.systemdir, fullpath,
@@ -1286,20 +1286,20 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
          if (!path_file_exists((const char*)data))
             return false;
-         rarch_main_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, data);
+         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, data);
          break;
 
       case RETRO_ENVIRONMENT_EXEC:
       case RETRO_ENVIRONMENT_EXEC_ESCAPE:
          {
             char *fullpath = NULL;
-            rarch_main_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+            runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
             if (fullpath != data)
             {
-               rarch_main_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+               runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
                if (data)
-                  rarch_main_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, data);
+                  runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, data);
             }
 
 #if defined(RARCH_CONSOLE)
@@ -1312,7 +1312,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             if (cmd == RETRO_ENVIRONMENT_EXEC_ESCAPE)
             {
                RARCH_LOG("Environ (Private) EXEC_ESCAPE.\n");
-               rarch_main_ctl(RUNLOOP_CTL_SET_EXEC, NULL);
+               runloop_ctl(RUNLOOP_CTL_SET_EXEC, NULL);
             }
             else
                RARCH_LOG("Environ (Private) EXEC.\n");
