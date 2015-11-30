@@ -148,12 +148,8 @@ const char *msg_hash_to_str_pl(uint32_t hash)
          return "Usuwanie tymczasowego pliku treści";
       case MSG_LOADED_STATE_FROM_SLOT:
          return "Wczytano stan ze slotu";
-      case MSG_DOWNLOAD_PROGRESS:
-         return "Postęp pobierania";
       case MSG_COULD_NOT_PROCESS_ZIP_FILE:
          return "Nie udało się przetworzyć pliku ZIP.";
-      case MSG_DOWNLOAD_COMPLETE:
-         return "Zakończono pobieranie";
       case MSG_SCANNING_OF_DIRECTORY_FINISHED:
          return "Zakończono skanowanie katalogu";
       case MSG_SCANNING:

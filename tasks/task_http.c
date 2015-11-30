@@ -224,7 +224,7 @@ bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task
    t->user_data = user_data;
    t->progress = -1;
 
-   snprintf(tmp, sizeof(tmp), "Downloading '%s'", path_basename(url));
+   snprintf(tmp, sizeof(tmp), "%s '%s'", msg_hash_to_str(MSG_DOWNLOADING), path_basename(url));
    t->title = strdup(tmp);
 
    rarch_task_push(t);

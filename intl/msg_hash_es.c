@@ -157,12 +157,8 @@ const char *msg_hash_to_str_es(uint32_t hash)
          return "Borrando archivo temporal de contenido";
       case MSG_LOADED_STATE_FROM_SLOT:
          return "Carga rápida desde la ranura";
-      case MSG_DOWNLOAD_PROGRESS:
-         return "Progreso de la descarga";
       case MSG_COULD_NOT_PROCESS_ZIP_FILE:
          return "No se ha podido procesar el archivo ZIP.";
-      case MSG_DOWNLOAD_COMPLETE:
-         return "Descarga completa";
       case MSG_SCANNING_OF_DIRECTORY_FINISHED:
          return "Escaneado de carpetas terminado";
       case MSG_SCANNING:
@@ -195,6 +191,10 @@ const char *msg_hash_to_str_es(uint32_t hash)
          return "Rebobinando.";
       case MSG_REWIND_REACHED_END:
          return "Se ha llegado al final del búfer de rebobinado.";
+      case MSG_TASK_FAILED:
+        return "Fracasado";
+      case MSG_DOWNLOADING:
+        return "Descargando";
       default:
          break;
    }

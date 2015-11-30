@@ -3,6 +3,7 @@
 
 #include "../general.h"
 #include "../verbosity.h"
+#include "../msg_hash.h"
 #include "tasks.h"
 
 #ifdef HAVE_THREADS
@@ -77,7 +78,8 @@ static void push_task_progress(rarch_task_t *task)
       if (task->finished)
       {
          if (task->error)
-            rarch_main_msg_queue_pushf(1, 60, true, "Failed: %s", task->title);
+            rarch_main_msg_queue_pushf(1, 60, true, "%s: %s",
+               msg_hash_to_str(MSG_TASK_FAILED), task->title);
          else
             rarch_main_msg_queue_pushf(1, 60, true, "100%%: %s", task->title);
       }

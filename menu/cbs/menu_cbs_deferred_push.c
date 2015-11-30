@@ -338,15 +338,10 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
 
    if (dec && !err)
    {
-      char msg[PATH_MAX_LENGTH];
-
       if (type_hash == CB_CORE_UPDATER_DOWNLOAD)
          event_command(EVENT_CMD_CORE_INFO_INIT);
       else if (type_hash == CB_UPDATE_ASSETS)
          event_command(EVENT_CMD_REINIT);
-
-      snprintf(msg, sizeof(msg), "%s extracted.", path_basename(dec->source_file));
-      rarch_main_msg_queue_push(msg, 1, 90, true);
    }
 
    if (err)
@@ -448,9 +443,6 @@ void cb_generic_download(void *task_data, void *user_data, const char *err)
       goto finish;
    }
 
-   rarch_main_msg_queue_pushf(1, 90, true, "%s: %s",
-         msg_hash_to_str(MSG_DOWNLOAD_COMPLETE), transf->path);
-
 #ifdef HAVE_ZLIB
    file_ext = path_get_extension(output_path);
 
@@ -459,15 +451,8 @@ void cb_generic_download(void *task_data, void *user_data, const char *err)
 
    if (!strcasecmp(file_ext, "zip"))
    {
-      rarch_main_msg_queue_pushf(1, 90, true,
-            "Decompressing %s...", path_basename(output_path));
-
-      if (!rarch_task_push_decompress(output_path, dir_path, NULL,
-            cb_decompressed, (void*)(uintptr_t)transf->type_hash))
-      {
-         rarch_main_msg_queue_pushf(1, 90, true,
-               "Decompression of %s failed.", path_basename(output_path));
-      }
+      rarch_task_push_decompress(output_path, dir_path, NULL,
+            cb_decompressed, (void*)(uintptr_t)transf->type_hash);
    }
 #else
    if (transf->type_hash == CB_CORE_UPDATER_DOWNLOAD)
@@ -477,8 +462,6 @@ void cb_generic_download(void *task_data, void *user_data, const char *err)
 finish:
    if (err)
    {
-      rarch_main_msg_queue_pushf(1, 90, true, "Download failed.");
-
       RARCH_ERR("Download of '%s' failed: %s\n",
             (transf ? transf->path: "unknown"), err);
    }

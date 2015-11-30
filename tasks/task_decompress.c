@@ -23,6 +23,7 @@
 
 #include "tasks.h"
 #include "../verbosity.h"
+#include "../msg_hash.h"
 
 typedef struct {
    char *source_file;
@@ -115,6 +116,7 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
 {
    decompress_state_t *s;
    rarch_task_t *t;
+   char tmp[PATH_MAX_LENGTH];
 
    if (!target_dir || !target_dir[0] || !source_file || !source_file[0])
    {
@@ -147,6 +149,9 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
 
    t->callback  = cb;
    t->user_data = user_data;
+
+   snprintf(tmp, sizeof(tmp), "%s '%s'", msg_hash_to_str(MSG_EXTRACTING), path_basename(source_file));
+   t->title = strdup(tmp);
 
    rarch_task_push(t);
 

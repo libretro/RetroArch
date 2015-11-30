@@ -101,9 +101,7 @@
 #define MSG_SCANNING                                  0x4c547516U
 #define MSG_SCANNING_OF_DIRECTORY_FINISHED            0x399632a7U
 
-#define MSG_DOWNLOAD_COMPLETE                         0x4b9c4f75U
 #define MSG_COULD_NOT_PROCESS_ZIP_FILE                0xc18c89bbU
-#define MSG_DOWNLOAD_PROGRESS                         0x35ed9411U
 
 #define MSG_LOADED_STATE_FROM_SLOT                    0xadb48582U
 
@@ -152,6 +150,10 @@
 #define MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY           0xc1c9a655U
 
 #define MSG_GOT_INVALID_DISK_INDEX                    0xb138dd76U
+
+#define MSG_TASK_FAILED                               0xb23ed64aU
+#define MSG_DOWNLOADING                               0x465305dbU
+#define MSG_EXTRACTING                                0x25a4c19eU
 
 const char *msg_hash_to_str(uint32_t hash);
 
