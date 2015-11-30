@@ -20,8 +20,6 @@
 
 #include "tasks/tasks.h"
 
-static char data_runloop_msg[PATH_MAX_LENGTH];
-
 void rarch_main_data_deinit(void)
 {
    rarch_task_deinit();
@@ -29,12 +27,6 @@ void rarch_main_data_deinit(void)
 
 void rarch_main_data_iterate(void)
 {
-   if (data_runloop_msg[0] != '\0')
-   {
-      rarch_main_msg_queue_push(data_runloop_msg, 1, 10, true);
-      data_runloop_msg[0] = '\0';
-   }
-
    rarch_task_check();
 }
 
@@ -46,5 +38,5 @@ void rarch_main_data_clear_state(void)
 
 void data_runloop_osd_msg(const char *msg, size_t len)
 {
-   strlcpy(data_runloop_msg, msg, len);
+   rarch_main_msg_queue_push(msg, 1, 10, true);
 }
