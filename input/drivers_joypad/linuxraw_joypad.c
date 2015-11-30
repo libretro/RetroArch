@@ -41,7 +41,7 @@ struct linuxraw_joypad
 };
 
 static struct linuxraw_joypad linuxraw_pads[MAX_USERS];
-static int g_notify;
+static int g_inotify;
 static bool g_hotplug;
 
 static void linuxraw_poll_pad(struct linuxraw_joypad *pad)
@@ -124,7 +124,7 @@ static void handle_plugged_pad(void)
    if (!event_buf)
       return;
 
-   while ((rc = read(g_notify, event_buf, event_size)) >= 0)
+   while ((rc = read(g_inotify, event_buf, event_size)) >= 0)
    {
       struct inotify_event *event = (struct inotify_event*)&event_buf[0];
 
@@ -205,12 +205,6 @@ retry:
    }
 }
 
-static void linuxraw_joypad_setup_notify(void)
-{
-   fcntl(g_notify, F_SETFL, fcntl(g_notify, F_GETFL) | O_NONBLOCK);
-   inotify_add_watch(g_notify, "/dev/input", IN_DELETE | IN_CREATE | IN_ATTRIB);
-}
-
 static bool linuxraw_joypad_init(void *data)
 {
    unsigned i;
@@ -250,12 +244,13 @@ static bool linuxraw_joypad_init(void *data)
          input_config_autoconfigure_joypad(&params);
    }
 
-   g_notify = inotify_init();
+   g_inotify = inotify_init();
 
-   if (g_notify >= 0)
+   if (g_inotify >= 0)
    {
-      linuxraw_joypad_setup_notify();
-      epoll_add(g_notify, NULL);
+      fcntl(g_inotify, F_SETFL, fcntl(g_inotify, F_GETFL) | O_NONBLOCK);
+      inotify_add_watch(g_inotify, "/dev/input", IN_DELETE | IN_CREATE | IN_ATTRIB);
+      epoll_add(g_inotify, NULL);
    }
 
    g_hotplug = true;
@@ -278,9 +273,9 @@ static void linuxraw_joypad_destroy(void)
    for (i = 0; i < MAX_USERS; i++)
       linuxraw_pads[i].fd = -1;
 
-   if (g_notify >= 0)
-      close(g_notify);
-   g_notify = -1;
+   if (g_inotify >= 0)
+      close(g_inotify);
+   g_inotify = -1;
 
    epoll_free(true);
 
