@@ -491,18 +491,9 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    const void *output_data                     = NULL;
    unsigned output_frames                      = 0;
    size_t   output_size                        = sizeof(float);
-   driver_t  *driver                           = driver_get_ptr();
    settings_t *settings                        = config_get_ptr();
 
-   if (driver->recording_data)
-   {
-      struct ffemu_audio_data ffemu_data = {0};
-      ffemu_data.data                    = data;
-      ffemu_data.frames                  = samples / 2;
-
-      if (driver->recording && driver->recording->push_audio)
-         driver->recording->push_audio(driver->recording_data, &ffemu_data);
-   }
+   recording_push_audio(data, samples);
 
    rarch_main_ctl(RARCH_MAIN_CTL_IS_PAUSED, &is_paused);
 

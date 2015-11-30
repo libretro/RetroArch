@@ -256,6 +256,21 @@ void recording_set_state(bool state)
    recording_enable = state;
 }
 
+void recording_push_audio(const int16_t *data, size_t samples)
+{
+   struct ffemu_audio_data ffemu_data;
+   driver_t  *driver                  = driver_get_ptr();
+
+   if (!driver->recording_data)
+      return;
+
+   ffemu_data.data                    = data;
+   ffemu_data.frames                  = samples / 2;
+
+   if (driver->recording && driver->recording->push_audio)
+      driver->recording->push_audio(driver->recording_data, &ffemu_data);
+}
+
 /**
  * recording_init:
  *
