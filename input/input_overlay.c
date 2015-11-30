@@ -66,23 +66,6 @@ typedef struct input_overlay_state
 static input_overlay_t *overlay_ptr;
 static input_overlay_state_t overlay_st_ptr;
 
-static input_overlay_state_t *input_overlay_get_state_ptr(void)
-{
-   return &overlay_st_ptr;
-}
-
-bool input_overlay_data_is_active(void)
-{
-   input_overlay_t *overlay = overlay_ptr;
-   if (!overlay)
-      return false;
-
-   if (overlay->alive)
-      return false;
-
-   return true;
-}
-
 /**
  * input_overlay_scale:
  * @ol                    : Overlay handle.
@@ -635,17 +618,9 @@ bool input_overlay_is_alive(void)
    return ol->alive;
 }
 
-enum overlay_status input_overlay_status(void)
-{
-   input_overlay_t *ol      = overlay_ptr;
-   if (!ol)
-      return OVERLAY_STATUS_NONE;
-   return ol->state;
-}
-
 bool input_overlay_key_pressed(int key)
 {
-   input_overlay_state_t *ol_state  = input_overlay_get_state_ptr();
+   input_overlay_state_t *ol_state  = &overlay_st_ptr;
 
    if (!ol_state)
       return false;
@@ -665,7 +640,7 @@ void input_poll_overlay(float opacity)
    uint16_t key_mod                = 0;
    bool polled                     = false;
    settings_t *settings            = config_get_ptr();
-   input_overlay_state_t *ol_state = input_overlay_get_state_ptr();
+   input_overlay_state_t *ol_state = &overlay_st_ptr;
 
    if (!input_overlay_is_alive() || !ol_state)
       return;
@@ -790,7 +765,7 @@ void input_poll_overlay(float opacity)
 void input_state_overlay(int16_t *ret, unsigned port, unsigned device, unsigned idx,
       unsigned id)
 {
-   input_overlay_state_t *ol_state = input_overlay_get_state_ptr();
+   input_overlay_state_t *ol_state = &overlay_st_ptr;
 
    if (!ol_state)
       return;

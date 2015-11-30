@@ -231,8 +231,6 @@ void input_overlay_set_scale_factor(float scale);
  **/
 void input_overlay_next(float opacity);
 
-enum overlay_status input_overlay_status(void);
-
 /*
  * input_poll_overlay:
  * @ol : pointer to overlay 
