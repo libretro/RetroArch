@@ -98,6 +98,14 @@ repeat {
 size thisstart;
 #endif
 
+struct state_manager_rewind_state
+{
+   /* Rewind support. */
+   state_manager_t *state;
+   size_t size;
+};
+
+static struct state_manager_rewind_state rewind_state;
 static bool frame_is_reversed;
 
 size_t state_manager_raw_maxsize(size_t uncomp)
@@ -584,9 +592,8 @@ void init_rewind(void)
 {
    void *state          = NULL;
    settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
 
-   if (!settings->rewind_enable || global->rewind.state)
+   if (!settings->rewind_enable || rewind_state.state)
       return;
 
    if (audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
@@ -595,9 +602,9 @@ void init_rewind(void)
       return;
    }
 
-   global->rewind.size = core.retro_serialize_size();
+   rewind_state.size = core.retro_serialize_size();
 
-   if (!global->rewind.size)
+   if (!rewind_state.size)
    {
       RARCH_ERR("%s.\n",
             msg_hash_to_str(MSG_REWIND_INIT_FAILED_THREADED_AUDIO));
@@ -608,15 +615,15 @@ void init_rewind(void)
          msg_hash_to_str(MSG_REWIND_INIT),
          (unsigned)(settings->rewind_buffer_size / 1000000));
 
-   global->rewind.state = state_manager_new(global->rewind.size,
+   rewind_state.state = state_manager_new(rewind_state.size,
          settings->rewind_buffer_size);
 
-   if (!global->rewind.state)
+   if (!rewind_state.state)
       RARCH_WARN("%s.\n", msg_hash_to_str(MSG_REWIND_INIT_FAILED));
 
-   state_manager_push_where(global->rewind.state, &state);
-   core.retro_serialize(state, global->rewind.size);
-   state_manager_push_do(global->rewind.state);
+   state_manager_push_where(rewind_state.state, &state);
+   core.retro_serialize(state, rewind_state.size);
+   state_manager_push_do(rewind_state.state);
 }
 
 
@@ -632,13 +639,10 @@ void state_manager_set_frame_is_reversed(bool value)
 
 void state_manager_event_deinit(void)
 {
-   global_t *global = global_get_ptr();
-   if (!global)
-      return;
-
-   if (global->rewind.state)
-      state_manager_free(global->rewind.state);
-   global->rewind.state = NULL;
+   if (rewind_state.state)
+      state_manager_free(rewind_state.state);
+   rewind_state.state = NULL;
+   rewind_state.size  = 0;
 }
 
 /**
@@ -665,21 +669,21 @@ void state_manager_check_rewind(bool pressed)
       return;
    }
 
-   if (!global->rewind.state)
+   if (!rewind_state.state)
       return;
 
    if (pressed)
    {
       const void *buf    = NULL;
 
-      if (state_manager_pop(global->rewind.state, &buf))
+      if (state_manager_pop(rewind_state.state, &buf))
       {
          state_manager_set_frame_is_reversed(true);
          audio_driver_ctl(RARCH_AUDIO_CTL_SETUP_REWIND, NULL);
 
          rarch_main_msg_queue_push_new(MSG_REWINDING, 0,
                runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ? 1 : 30, true);
-         core.retro_unserialize(buf, global->rewind.size);
+         core.retro_unserialize(buf, rewind_state.size);
 
          if (global->bsv.movie)
             bsv_movie_frame_rewind(global->bsv.movie);
@@ -700,14 +704,14 @@ void state_manager_check_rewind(bool pressed)
          static struct retro_perf_counter rewind_serialize = {0};
          void *state = NULL;
 
-         state_manager_push_where(global->rewind.state, &state);
+         state_manager_push_where(rewind_state.state, &state);
 
          rarch_perf_init(&rewind_serialize, "rewind_serialize");
          retro_perf_start(&rewind_serialize);
-         core.retro_serialize(state, global->rewind.size);
+         core.retro_serialize(state, rewind_state.size);
          retro_perf_stop(&rewind_serialize);
 
-         state_manager_push_do(global->rewind.state);
+         state_manager_push_do(rewind_state.state);
       }
    }
 

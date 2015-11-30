@@ -18,12 +18,14 @@
 
 #include <boolean.h>
 
+#include <gfx/math/matrix_4x4.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
 
 #include "video_context_driver.h"
-#include <gfx/math/matrix_4x4.h>
+#include "../rewind.h"
 
 #ifdef __cplusplus
 extern "C" {

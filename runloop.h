@@ -24,7 +24,6 @@
 #include "core_info.h"
 #include "core_options.h"
 #include "driver.h"
-#include "rewind.h"
 #include "movie.h"
 #include "cheats.h"
 #include "dynamic.h"
@@ -197,13 +196,6 @@ typedef struct global
       struct retro_system_info info;
    } menu;
 #endif
-
-   struct
-   {
-      /* Rewind support. */
-      state_manager_t *state;
-      size_t size;
-   } rewind;
 
    struct
    {

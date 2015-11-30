@@ -28,6 +28,7 @@
 #include "screenshot.h"
 #include "msg_hash.h"
 #include "retroarch.h"
+#include "rewind.h"
 #include "dir_list_special.h"
 
 #ifdef HAVE_CHEEVOS
