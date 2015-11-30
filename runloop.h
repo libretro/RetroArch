@@ -318,9 +318,6 @@ int rarch_main_iterate(unsigned *sleep_ms);
 void rarch_main_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);
 
-void rarch_main_msg_queue_pushf(unsigned prio, unsigned duration,
-      bool flush, const char *fmt, ...);
-
 void rarch_main_msg_queue_push_new(uint32_t hash, unsigned prio,
       unsigned duration, bool flush);
 

@@ -132,17 +132,6 @@ void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration
    }
 }
 
-void rarch_main_msg_queue_pushf(unsigned prio, unsigned duration,
-      bool flush, const char *fmt, ...)
-{
-   char buf[1024];
-   va_list ap;
-   va_start(ap, fmt);
-   vsnprintf(buf, sizeof(buf), fmt, ap);
-   va_end(ap);
-   rarch_main_msg_queue_push(buf, prio, duration, flush);
-}
-
 static void rarch_main_msg_queue_free(void)
 {
    if (!g_msg_queue)

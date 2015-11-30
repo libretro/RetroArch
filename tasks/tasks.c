@@ -1,5 +1,5 @@
-
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include "../general.h"
 #include "../verbosity.h"
@@ -54,6 +54,17 @@ static rarch_task_t *task_queue_get(task_queue_t *queue)
    return task;
 }
 
+void task_msg_queue_pushf(unsigned prio, unsigned duration,
+      bool flush, const char *fmt, ...)
+{
+   char buf[1024];
+   va_list ap;
+   va_start(ap, fmt);
+   vsnprintf(buf, sizeof(buf), fmt, ap);
+   va_end(ap);
+   rarch_main_msg_queue_push(buf, prio, duration, flush);
+}
+
 static void push_task_progress(rarch_task_t *task)
 {
    if (task->title)
@@ -61,17 +72,17 @@ static void push_task_progress(rarch_task_t *task)
       if (task->finished)
       {
          if (task->error)
-            rarch_main_msg_queue_pushf(1, 60, true, "%s: %s",
+            task_msg_queue_pushf(1, 60, true, "%s: %s",
                msg_hash_to_str(MSG_TASK_FAILED), task->title);
          else
-            rarch_main_msg_queue_pushf(1, 60, true, "100%%: %s", task->title);
+            task_msg_queue_pushf(1, 60, true, "100%%: %s", task->title);
       }
       else
       {
          if (task->progress >= 0 && task->progress <= 100)
-            rarch_main_msg_queue_pushf(1, 60, true, "%i%%: %s", task->progress, task->title);
+            task_msg_queue_pushf(1, 60, true, "%i%%: %s", task->progress, task->title);
          else
-            rarch_main_msg_queue_pushf(1, 60, true, "%s...", task->title);
+            task_msg_queue_pushf(1, 60, true, "%s...", task->title);
       }
    }
 }
