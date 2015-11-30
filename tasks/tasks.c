@@ -54,24 +54,6 @@ static rarch_task_t *task_queue_get(task_queue_t *queue)
    return task;
 }
 
-static void rarch_task_internal_gather(void)
-{
-   rarch_task_t *task;
-   while ((task = task_queue_get(&tasks_finished)) != NULL)
-   {
-      if (task->callback)
-         task->callback(task->task_data, task->user_data, task->error);
-
-      if (task->error)
-         free(task->error);
-
-      if (task->title)
-         free(task->title);
-
-      free(task);
-   }
-}
-
 static void push_task_progress(rarch_task_t *task)
 {
    if (task->title)
@@ -91,6 +73,26 @@ static void push_task_progress(rarch_task_t *task)
          else
             rarch_main_msg_queue_pushf(1, 60, true, "%s...", task->title);
       }
+   }
+}
+
+static void rarch_task_internal_gather(void)
+{
+   rarch_task_t *task;
+   while ((task = task_queue_get(&tasks_finished)) != NULL)
+   {
+      push_task_progress(task);
+
+      if (task->callback)
+         task->callback(task->task_data, task->user_data, task->error);
+
+      if (task->error)
+         free(task->error);
+
+      if (task->title)
+         free(task->title);
+
+      free(task);
    }
 }
 
