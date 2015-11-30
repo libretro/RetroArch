@@ -242,9 +242,6 @@ typedef struct driver
    bool menu_data_own;
 #endif
 
-#ifdef HAVE_COMMAND
-   rarch_cmd_t *command;
-#endif
 #ifdef HAVE_NETWORK_GAMEPAD
    rarch_remote_t *remote;
 #endif

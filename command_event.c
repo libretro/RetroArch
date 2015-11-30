@@ -55,27 +55,6 @@
 #include <net/net_compat.h>
 #endif
 
-#ifdef HAVE_COMMAND
-static void event_init_command(void)
-{
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
-
-   if (!settings->stdin_cmd_enable && !settings->network_cmd_enable)
-      return;
-
-   if (settings->stdin_cmd_enable && input_driver_ctl(RARCH_INPUT_CTL_GRAB_STDIN, NULL))
-   {
-      RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
-            "Cannot use this command interface.\n");
-   }
-
-   if (!(driver->command = rarch_cmd_new(settings->stdin_cmd_enable
-               && !input_driver_ctl(RARCH_INPUT_CTL_GRAB_STDIN, NULL),
-               settings->network_cmd_enable, settings->network_cmd_port)))
-      RARCH_ERR("Failed to initialize command interface.\n");
-}
-#endif
 
 #ifdef HAVE_NETWORK_GAMEPAD
 static void event_init_remote(void)
@@ -1590,33 +1569,26 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_REINIT);
          break;
       case EVENT_CMD_COMMAND_DEINIT:
-#ifdef HAVE_COMMAND
-         if (driver->command)
-            rarch_cmd_free(driver->command);
-         driver->command = NULL;
-#endif
+         input_driver_ctl(RARCH_INPUT_CTL_COMMAND_DEINIT, NULL);
          break;
       case EVENT_CMD_COMMAND_INIT:
          event_command(EVENT_CMD_COMMAND_DEINIT);
-
-#ifdef HAVE_COMMAND
-         event_init_command();
+         input_driver_ctl(RARCH_INPUT_CTL_COMMAND_INIT, NULL);
+         break;
+      case EVENT_CMD_REMOTE_DEINIT:
+#ifdef HAVE_NETWORK_GAMEPAD
+         if (driver->remote)
+            rarch_remote_free(driver->remote);
+         driver->remote = NULL;
 #endif
          break;
-case EVENT_CMD_REMOTE_DEINIT:
-#ifdef HAVE_NETWORK_GAMEPAD
-   if (driver->remote)
-      rarch_remote_free(driver->remote);
-   driver->remote = NULL;
-#endif
-   break;
-case EVENT_CMD_REMOTE_INIT:
-   event_command(EVENT_CMD_REMOTE_DEINIT);
+      case EVENT_CMD_REMOTE_INIT:
+         event_command(EVENT_CMD_REMOTE_DEINIT);
 
 #ifdef HAVE_NETWORK_GAMEPAD
-   event_init_remote();
+         event_init_remote();
 #endif
-   break;
+         break;
       case EVENT_CMD_TEMPORARY_CONTENT_DEINIT:
          content_temporary_free();
          break;

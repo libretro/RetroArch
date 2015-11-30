@@ -82,6 +82,9 @@ struct turbo_buttons
    unsigned count;
 };
 
+#ifdef HAVE_COMMAND
+static rarch_cmd_t *input_driver_command;
+#endif
 static bool input_driver_keyboard_linefeed_enable;
 static bool input_driver_osk_enabled;
 static bool input_driver_data_own;
@@ -276,8 +279,8 @@ static retro_input_t input_driver_keys_pressed(void)
 #endif
 
 #ifdef HAVE_COMMAND
-      if (driver->command)
-         state |= rarch_cmd_get(driver->command, key);
+      if (input_driver_command)
+         state |= rarch_cmd_get(input_driver_command, key);
 #endif
 
 #ifdef HAVE_NETWORK_GAMEPAD
@@ -430,8 +433,8 @@ void input_poll(void)
 #endif
 
 #ifdef HAVE_COMMAND
-   if (driver->command)
-      rarch_cmd_poll(driver->command);
+   if (input_driver_command)
+      rarch_cmd_poll(input_driver_command);
 #endif
 
 #ifdef HAVE_NETWORK_GAMEPAD
@@ -634,6 +637,28 @@ bool input_driver_data_ptr_is_same(void *data)
    return (current_input_data == data);
 }
 
+#ifdef HAVE_COMMAND
+static void input_driver_command_init(void)
+{
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+
+   if (!settings->stdin_cmd_enable && !settings->network_cmd_enable)
+      return;
+
+   if (settings->stdin_cmd_enable && input_driver_ctl(RARCH_INPUT_CTL_GRAB_STDIN, NULL))
+   {
+      RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
+            "Cannot use this command interface.\n");
+   }
+
+   if (!(input_driver_command = rarch_cmd_new(settings->stdin_cmd_enable
+               && !input_driver_ctl(RARCH_INPUT_CTL_GRAB_STDIN, NULL),
+               settings->network_cmd_enable, settings->network_cmd_port)))
+      RARCH_ERR("Failed to initialize command interface.\n");
+}
+#endif
+
 bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
 {
    settings_t               *settings = config_get_ptr();
@@ -749,6 +774,18 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          break;
       case RARCH_INPUT_CTL_IS_KEYBOARD_LINEFEED_ENABLED:
          return input_driver_keyboard_linefeed_enable;
+      case RARCH_INPUT_CTL_COMMAND_INIT:
+#ifdef HAVE_COMMAND
+         input_driver_command_init();
+#endif
+         break;
+      case RARCH_INPUT_CTL_COMMAND_DEINIT:
+#ifdef HAVE_COMMAND
+         if (input_driver_command)
+            rarch_cmd_free(input_driver_command);
+         input_driver_command = NULL;
+#endif
+         break;
       case RARCH_INPUT_CTL_NONE:
       default:
          break;
