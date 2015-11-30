@@ -796,20 +796,20 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 
 
 #ifdef HAVE_OVERLAY
-static void rarch_main_iterate_linefeed_overlay(driver_t *driver,
-      settings_t *settings)
+static void rarch_main_iterate_linefeed_overlay(driver_t *driver, settings_t *settings)
 {
    static char prev_overlay_restore = false;
+   bool osk_enable = input_driver_ctl(RARCH_INPUT_CTL_IS_OSK_ENABLED, NULL);
 
-   if (driver->osk_enable && !driver->keyboard_linefeed_enable)
+   if (osk_enable && !driver->keyboard_linefeed_enable)
    {
-      driver->osk_enable    = false;
+      input_driver_ctl(RARCH_INPUT_CTL_UNSET_OSK_ENABLED, NULL);
       prev_overlay_restore  = true;
       event_command(EVENT_CMD_OVERLAY_DEINIT);
    }
-   else if (!driver->osk_enable && driver->keyboard_linefeed_enable)
+   else if (!osk_enable && driver->keyboard_linefeed_enable)
    {
-      driver->osk_enable    = true;
+      input_driver_ctl(RARCH_INPUT_CTL_SET_OSK_ENABLED, NULL);
       prev_overlay_restore  = false;
       event_command(EVENT_CMD_OVERLAY_INIT);
    }

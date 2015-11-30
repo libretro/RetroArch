@@ -35,6 +35,12 @@ struct input_keyboard_line
    void *userdata;
 };
 
+static input_keyboard_line_t *g_keyboard_line;
+
+static input_keyboard_press_t g_keyboard_press_cb;
+
+static void *g_keyboard_press_data;
+
 static void input_keyboard_line_toggle_osk(bool enable)
 {
    driver_t *driver     = driver_get_ptr();
@@ -159,12 +165,6 @@ const char **input_keyboard_line_get_buffer(const input_keyboard_line_t *state)
 {
    return (const char**)&state->buffer;
 }
-
-static input_keyboard_line_t *g_keyboard_line;
-
-static input_keyboard_press_t g_keyboard_press_cb;
-
-static void *g_keyboard_press_data;
 
 /**
  * input_keyboard_start_line:

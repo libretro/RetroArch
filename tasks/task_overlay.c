@@ -727,10 +727,10 @@ error:
 bool rarch_task_push_overlay_load_default(
       rarch_task_callback_t cb, void *user_data)
 {
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
+   bool osk_enable      = input_driver_ctl(RARCH_INPUT_CTL_IS_OSK_ENABLED, NULL);
 
-   if (driver->osk_enable)
+   if (osk_enable)
    {
       if (!*settings->osk.overlay)
          return false;
@@ -742,6 +742,6 @@ bool rarch_task_push_overlay_load_default(
    }
 
    return rarch_task_push_overlay_load(
-            driver->osk_enable ? settings->osk.overlay : settings->input.overlay,
+            osk_enable ? settings->osk.overlay : settings->input.overlay,
             cb, user_data);
 }

@@ -82,6 +82,7 @@ struct turbo_buttons
    unsigned count;
 };
 
+static bool main_osk_enabled;
 static bool input_data_own;
 static const input_driver_t *main_input;
 static void *main_input_data;
@@ -731,6 +732,14 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          break;
       case RARCH_INPUT_CTL_OWNS_DRIVER:
          return input_data_own;
+      case RARCH_INPUT_CTL_SET_OSK_ENABLED:
+         main_osk_enabled = true;
+         break;
+      case RARCH_INPUT_CTL_UNSET_OSK_ENABLED:
+         main_osk_enabled = false;
+         break;
+      case RARCH_INPUT_CTL_IS_OSK_ENABLED:
+         return main_osk_enabled;
       case RARCH_INPUT_CTL_NONE:
       default:
          break;
