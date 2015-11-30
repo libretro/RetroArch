@@ -59,6 +59,7 @@
 
 static struct global g_extern;
 
+static char runloop_fullpath[PATH_MAX_LENGTH];
 static bool runloop_perfcnt_enable;
 static bool main_exec;
 static bool main_core_shutdown_initiated;
@@ -397,14 +398,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
          break;
       case RUNLOOP_CTL_CLEAR_CONTENT_PATH:
-         *global->path.fullpath = '\0';
+         *runloop_fullpath = '\0';
          break;
       case RUNLOOP_CTL_GET_CONTENT_PATH:
          {
             char **fullpath = (char**)data;
             if (!fullpath)
                return false;
-            *fullpath       = (char*)global->path.fullpath;
+            *fullpath       = (char*)runloop_fullpath;
          }
          break;
       case RUNLOOP_CTL_SET_CONTENT_PATH:
@@ -412,7 +413,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             const char *fullpath = (const char*)data;
             if (!fullpath)
                return false;
-            strlcpy(global->path.fullpath, fullpath, sizeof(global->path.fullpath));
+            strlcpy(runloop_fullpath, fullpath, sizeof(runloop_fullpath));
          }
          break;
       case RUNLOOP_CTL_CHECK_IDLE_STATE:
@@ -641,6 +642,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          event_command(EVENT_CMD_LOG_FILE_DEINIT);
 
          rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+         runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH,  NULL);
          memset(&g_extern, 0, sizeof(g_extern));
          break;
       case RUNLOOP_CTL_CLEAR_STATE:
