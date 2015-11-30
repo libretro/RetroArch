@@ -45,7 +45,6 @@
 #include "../../file_ext.h"
 
 #include "../../runloop.h"
-#include "../../runloop_data.h"
 #include "../../tasks/tasks.h"
 
 #ifndef XMB_THEME

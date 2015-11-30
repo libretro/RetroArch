@@ -18,7 +18,7 @@
 #include "../menu_cbs.h"
 #include "../menu_setting.h"
 
-#include "../../runloop_data.h"
+#include "../../runloop.h"
 
 #ifndef BIND_ACTION_SELECT
 #define BIND_ACTION_SELECT(cbs, name) \

@@ -36,11 +36,11 @@
 #include "performance.h"
 #include "retroarch.h"
 #include "runloop.h"
-#include "runloop_data.h"
 #include "audio/audio_driver.h"
 
 #include "msg_hash.h"
 
+#include "tasks/tasks.h"
 #include "input/input_keyboard.h"
 #include "input/input_driver.h"
 #include "ui/ui_companion_driver.h"
@@ -1181,4 +1181,25 @@ end:
    frame_limit_last_time  = retro_get_time_usec();
 
    return 0;
+}
+
+void rarch_main_data_deinit(void)
+{
+   rarch_task_deinit();
+}
+
+void rarch_main_data_iterate(void)
+{
+   rarch_task_check();
+}
+
+void rarch_main_data_clear_state(void)
+{
+   rarch_main_data_deinit();
+   rarch_task_init();
+}
+
+void data_runloop_osd_msg(const char *msg, size_t len)
+{
+   rarch_main_msg_queue_push(msg, 1, 10, true);
 }

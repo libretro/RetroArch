@@ -44,7 +44,7 @@
 #include "libretro_version_1.h"
 #include "configuration.h"
 #include "general.h"
-#include "runloop_data.h"
+#include "runloop.h"
 #include "tasks/tasks.h"
 #include "performance.h"
 #include "cheats.h"

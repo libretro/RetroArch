@@ -40,7 +40,7 @@
 #include "../menu_entry.h"
 #include "../menu_display.h"
 #include "../menu_hash.h"
-#include "../../runloop_data.h"
+#include "../../runloop.h"
 
 #include "../../gfx/font_driver.h"
 

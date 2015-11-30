@@ -703,7 +703,6 @@ RETROARCH
 #include "../libretro_version_1.c"
 #include "../retroarch.c"
 #include "../runloop.c"
-#include "../runloop_data.c"
 #include "../system.c"
 #include "../tasks/tasks.c"
 

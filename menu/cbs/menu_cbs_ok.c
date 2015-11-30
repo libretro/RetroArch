@@ -24,7 +24,6 @@
 #include "../menu_hash.h"
 
 #include "../../general.h"
-#include "../../runloop_data.h"
 #include "../../tasks/tasks.h"
 #include "../../input/input_remapping.h"
 #include "../../system.h"

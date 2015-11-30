@@ -30,7 +30,7 @@
 #include "../../retroarch.h"
 
 #include "../../frontend/frontend.h"
-#include "../../runloop_data.h"
+#include "../../runloop.h"
 
 static char msg_old[PATH_MAX_LENGTH];
 static id apple_platform;

@@ -24,7 +24,6 @@
 
 #include "../general.h"
 #include "../frontend/frontend.h"
-#include "../runloop_data.h"
 
 static void menu_environment_get(int *argc, char *argv[],
       void *args, void *params_data)

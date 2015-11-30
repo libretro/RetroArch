@@ -352,6 +352,14 @@ const char *rarch_main_msg_queue_pull(void);
 
 bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data);
 
+typedef int (*transfer_cb_t)(void *data, size_t len);
+
+void rarch_main_data_clear_state(void);
+
+void rarch_main_data_iterate(void);
+
+void rarch_main_data_deinit(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -21,7 +21,7 @@
 #include "../menu_entry.h"
 #include "../menu_setting.h"
 
-#include "../../runloop_data.h"
+#include "../../runloop.h"
 #include "../../tasks/tasks.h"
 
 #ifndef BIND_ACTION_SCAN

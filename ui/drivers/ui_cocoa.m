@@ -28,7 +28,7 @@
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 #include "../../frontend/frontend.h"
-#include "../../runloop_data.h"
+#include "../../runloop.h"
 
 static id apple_platform;
 

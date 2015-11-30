@@ -21,7 +21,7 @@
 
 #include <queues/message_queue.h>
 
-#include "../runloop_data.h"
+#include "../runloop.h"
 
 #define MAX_TOKEN_LEN 255
 

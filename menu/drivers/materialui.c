@@ -38,7 +38,6 @@
 
 #include "../../configuration.h"
 #include "../../runloop.h"
-#include "../../runloop_data.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks.h"
 

@@ -28,7 +28,6 @@
 #include "../driver.h"
 #include "../retroarch.h"
 #include "../runloop.h"
-#include "../runloop_data.h"
 #include "../verbosity.h"
 
 #define MAX_ARGS 32
