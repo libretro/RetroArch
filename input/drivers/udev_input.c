@@ -24,7 +24,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <sys/poll.h>
 #include <sys/epoll.h>
 
 #include <libudev.h>
@@ -306,7 +305,7 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    const char *val_touchpad = NULL;
    const char *action       = NULL;
    const char *devnode      = NULL;
-   struct udev_device *dev  = udev_monitor_receive_device(g_udev_mon);
+   struct udev_device *dev  = udev_mon_receive_device();
 
    if (!dev)
       return;

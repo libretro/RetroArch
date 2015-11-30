@@ -21,7 +21,6 @@
 
 #include <boolean.h>
 
-extern struct udev_monitor *g_udev_mon;
 extern struct udev *g_udev;
 
 bool udev_mon_new(void);
@@ -29,5 +28,7 @@ bool udev_mon_new(void);
 void udev_mon_free(bool is_joypad);
 
 bool udev_mon_hotplug_available(void);
+
+struct udev_device *udev_mon_receive_device(void);
 
 #endif

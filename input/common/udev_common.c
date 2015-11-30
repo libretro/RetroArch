@@ -5,7 +5,7 @@
 #include "udev_common.h"
 
 static bool udev_mon_inited;
-struct udev_monitor *g_udev_mon;
+static struct udev_monitor *g_udev_mon;
 struct udev *g_udev;
 
 bool udev_mon_new(void)
@@ -55,4 +55,9 @@ bool udev_mon_hotplug_available(void)
    fds.events = POLLIN;
 
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
+}
+
+struct udev_device *udev_mon_receive_device(void)
+{
+   return udev_monitor_receive_device(g_udev_mon);
 }

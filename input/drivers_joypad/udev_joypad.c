@@ -397,7 +397,7 @@ static void udev_joypad_handle_hotplug(void)
    const char *val;
    const char *action;
    const char *devnode;
-   struct udev_device *dev = udev_monitor_receive_device(g_udev_mon);
+   struct udev_device *dev = udev_mon_receive_device();
    if (!dev)
       return;
 
