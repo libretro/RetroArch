@@ -21,10 +21,9 @@
 
 #include <sys/types.h>
 #include <sys/inotify.h>
-#include <sys/epoll.h>
-#include <fcntl.h>
 #include <linux/joystick.h>
 
+#include "../common/epoll_common.h"
 #include "../input_autodetect.h"
 #include "../../general.h"
 #include "../../verbosity.h"
@@ -43,7 +42,6 @@ struct linuxraw_joypad
 
 static struct linuxraw_joypad linuxraw_pads[MAX_USERS];
 static int g_notify;
-static int g_epoll;
 static bool g_hotplug;
 
 static void linuxraw_poll_pad(struct linuxraw_joypad *pad)
@@ -220,8 +218,7 @@ static bool linuxraw_joypad_init(void *data)
    unsigned i;
    settings_t *settings = config_get_ptr();
 
-   g_epoll              = epoll_create(MAX_USERS + 1);
-   if (g_epoll < 0)
+   if (!epoll_new(true))
       return false;
 
    (void)data;
@@ -291,9 +288,7 @@ static void linuxraw_joypad_destroy(void)
       close(g_notify);
    g_notify = -1;
 
-   if (g_epoll >= 0)
-      close(g_epoll);
-   g_epoll = -1;
+   epoll_free(true);
 
    g_hotplug = false;
 }

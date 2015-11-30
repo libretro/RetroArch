@@ -24,8 +24,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <sys/epoll.h>
-
 #include <libudev.h>
 #include <linux/types.h>
 #include <linux/input.h>
@@ -35,6 +33,7 @@
 
 #include "../drivers_keyboard/keyboard_event_udev.h"
 #include "../common/linux_common.h"
+#include "../common/epoll_common.h"
 #include "../common/udev_common.h"
 
 #include "../input_config.h"
@@ -81,7 +80,6 @@ struct udev_input
    bool blocked;
    const input_device_driver_t *joypad;
 
-   int epfd;
    udev_input_device_t **devices;
    unsigned num_devices;
 
@@ -264,7 +262,7 @@ static bool add_device(udev_input_t *udev,
    event.data.ptr           = device;
 
    /* Shouldn't happen, but just check it. */
-   if (epoll_ctl(udev->epfd, EPOLL_CTL_ADD, fd, &event) < 0)
+   if (epoll_ctl(g_epoll, EPOLL_CTL_ADD, fd, &event) < 0)
       RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n",
             fd, strerror(errno));
 
@@ -367,7 +365,7 @@ static void udev_input_poll(void *data)
    while (udev_mon_hotplug_available())
       udev_input_handle_hotplug(udev);
 
-   ret = epoll_wait(udev->epfd, events, ARRAY_SIZE(events), 0);
+   ret = epoll_wait(g_epoll, events, ARRAY_SIZE(events), 0);
 
    for (i = 0; i < ret; i++)
    {
@@ -559,8 +557,7 @@ static void udev_input_free(void *data)
    if (udev->joypad)
       udev->joypad->destroy();
 
-   if (udev->epfd >= 0)
-      close(udev->epfd);
+   epoll_free(false);
 
    for (i = 0; i < udev->num_devices; i++)
    {
@@ -629,8 +626,7 @@ static void *udev_input_init(void)
       goto error;
 #endif
 
-   udev->epfd = epoll_create(32);
-   if (udev->epfd < 0)
+   if (!epoll_new(false))
    {
       RARCH_ERR("Failed to create epoll FD.\n");
       goto error;

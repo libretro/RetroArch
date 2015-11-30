@@ -78,6 +78,7 @@ ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
    OBJ += input/drivers/linuxraw_input.o \
 			 input/common/linux_common.o \
+			 input/common/epoll_common.o \
           input/drivers_joypad/linuxraw_joypad.o \
           frontend/drivers/platform_linux.o
 endif
