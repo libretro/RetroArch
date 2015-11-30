@@ -22,7 +22,6 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/poll.h>
 #include <linux/types.h>
 #include <linux/input.h>
 
@@ -151,19 +150,6 @@ static void udev_poll_pad(struct udev_joypad *pad, unsigned p)
          }
       }
    }
-}
-
-static bool udev_hotplug_available(void)
-{
-   struct pollfd fds = {0};
-
-   if (!g_udev_mon)
-      return false;
-
-   fds.fd     = udev_monitor_get_fd(g_udev_mon);
-   fds.events = POLLIN;
-
-   return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }
 
 static int udev_find_vacant_pad(void)
@@ -408,10 +394,10 @@ static void udev_joypad_destroy(void)
 
 static void udev_joypad_handle_hotplug(void)
 {
-   struct udev_device *dev = udev_monitor_receive_device(g_udev_mon);
    const char *val;
    const char *action;
    const char *devnode;
+   struct udev_device *dev = udev_monitor_receive_device(g_udev_mon);
    if (!dev)
       return;
 
@@ -509,7 +495,7 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
 static void udev_joypad_poll(void)
 {
    unsigned i;
-   while (udev_hotplug_available())
+   while (udev_mon_hotplug_available())
       udev_joypad_handle_hotplug();
 
    for (i = 0; i < MAX_USERS; i++)

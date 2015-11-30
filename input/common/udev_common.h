@@ -28,4 +28,6 @@ bool udev_mon_new(void);
 
 void udev_mon_free(bool is_joypad);
 
+bool udev_mon_hotplug_available(void);
+
 #endif

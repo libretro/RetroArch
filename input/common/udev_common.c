@@ -1,4 +1,7 @@
 #include <stdio.h>
+
+#include <sys/poll.h>
+
 #include "udev_common.h"
 
 static bool udev_mon_inited;
@@ -39,4 +42,17 @@ void udev_mon_free(bool is_joypad)
    g_udev_mon      = NULL;
    g_udev          = NULL;
    udev_mon_inited = false;
+}
+
+bool udev_mon_hotplug_available(void)
+{
+   struct pollfd fds = {0};
+
+   if (!g_udev_mon)
+      return false;
+
+   fds.fd     = udev_monitor_get_fd(g_udev_mon);
+   fds.events = POLLIN;
+
+   return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }

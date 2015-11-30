@@ -220,19 +220,6 @@ static void udev_handle_mouse(void *data,
    }
 }
 
-static bool udev_input_hotplug_available(udev_input_t *udev)
-{
-   struct pollfd fds = {0};
-
-   if (!udev || !g_udev_mon)
-      return false;
-
-   fds.fd     = udev_monitor_get_fd(g_udev_mon);
-   fds.events = POLLIN;
-
-   return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
-}
-
 static bool add_device(udev_input_t *udev,
       const char *devnode, device_handle_cb cb)
 {
@@ -312,7 +299,6 @@ static void udev_input_remove_device(udev_input_t *udev, const char *devnode)
 static void udev_input_handle_hotplug(udev_input_t *udev)
 {
    bool is_keyboard, is_mouse, is_touchpad;
-   struct udev_device *dev  = udev_monitor_receive_device(g_udev_mon);
    device_handle_cb cb      = NULL;
    const char *devtype      = NULL;
    const char *val_keyboard = NULL;
@@ -320,6 +306,7 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    const char *val_touchpad = NULL;
    const char *action       = NULL;
    const char *devnode      = NULL;
+   struct udev_device *dev  = udev_monitor_receive_device(g_udev_mon);
 
    if (!dev)
       return;
@@ -378,7 +365,7 @@ static void udev_input_poll(void *data)
    udev->mouse_wu  = udev->mouse_wd  = 0;
    udev->mouse_whu = udev->mouse_whd = 0;
 
-   while (udev_input_hotplug_available(udev))
+   while (udev_mon_hotplug_available())
       udev_input_handle_hotplug(udev);
 
    ret = epoll_wait(udev->epfd, events, ARRAY_SIZE(events), 0);
