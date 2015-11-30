@@ -423,7 +423,7 @@ void input_poll(void)
    settings_t *settings           = config_get_ptr();
 #endif
 
-   input_driver_ctl(RARCH_INPUT_CTL_POLL, NULL);
+   current_input->poll(current_input_data);
 
 #ifdef HAVE_OVERLAY
    input_poll_overlay(settings->input.overlay_opacity);
@@ -641,7 +641,7 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
    switch (state)
    {
       case RARCH_INPUT_CTL_HAS_CAPABILITIES:
-         if (current_input && current_input->get_capabilities && current_input_data)
+         if (current_input->get_capabilities && current_input_data)
             return true;
          return false;
       case RARCH_INPUT_CTL_POLL:
