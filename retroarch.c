@@ -60,13 +60,15 @@
 #include "menu/menu_hash.h"
 #endif
 
-char current_savestate_dir[PATH_MAX_LENGTH];
-char current_savefile_dir[PATH_MAX_LENGTH];
+#include "config.features.h"
 
+static char current_savestate_dir[PATH_MAX_LENGTH];
+static char current_savefile_dir[PATH_MAX_LENGTH];
 
 /* Descriptive names for options without short variant. Please keep the name in
    sync with the option name. Order does not matter. */
-enum {
+enum
+{
    RA_OPT_MENU = 256, /* must be outside the range of a char */
    RA_OPT_PORT,
    RA_OPT_SPECTATE,
@@ -86,9 +88,8 @@ enum {
    RA_OPT_MAX_FRAMES
 };
 
-#include "config.features.h"
-
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
+
 static void print_features(void)
 {
    puts("");
@@ -323,7 +324,15 @@ static void set_special_paths(char **argv, unsigned num_content)
       /*fill_pathname_basedir(settings->system_directory, argv[0],
             sizeof(settings->system_directory));*/
    }
+}
 
+const char *rarch_get_current_savefile_dir(void)
+{
+   RARCH_LOG("Environ SAVE_DIRECTORY: \"%s\".\n",
+         current_savefile_dir);
+   if (*current_savefile_dir)
+      return current_savefile_dir;
+   return NULL;
 }
 
 void set_paths_redirect(const char *path)
@@ -336,13 +345,13 @@ void set_paths_redirect(const char *path)
             (info->info.library_name[0] != '\0'))
          ? msg_hash_calculate(info->info.library_name) : 0);
 
-         /* Initialize current save directories with the values from the config */
-         strlcpy(current_savefile_dir,
-               global->dir.savefile,
-               sizeof(current_savefile_dir));
-         strlcpy(current_savestate_dir,
-               global->dir.savestate,
-               sizeof(current_savestate_dir));
+   /* Initialize current save directories with the values from the config */
+   strlcpy(current_savefile_dir,
+         global->dir.savefile,
+         sizeof(current_savefile_dir));
+   strlcpy(current_savestate_dir,
+         global->dir.savestate,
+         sizeof(current_savestate_dir));
 
    if(global_library_name_hash != 0
 #ifdef HAVE_MENU

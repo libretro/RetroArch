@@ -207,9 +207,7 @@ int rarch_info_get_capabilities(enum rarch_capabilities type, char *s, size_t le
 
 enum rarch_content_type rarch_path_is_media_type(const char *path);
 
-extern char current_savestate_dir[PATH_MAX_LENGTH];
-extern char current_savefile_dir[PATH_MAX_LENGTH];
-extern bool orig_system_dir_empty;
+const char *rarch_get_current_savefile_dir(void);
 
 #ifdef __cplusplus
 }
