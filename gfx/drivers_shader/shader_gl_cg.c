@@ -156,30 +156,25 @@ typedef struct cg_shader_data
    CGcontext cgCtx;
 } cg_shader_data_t;
 
-static void gl_cg_reset_attrib(cg_shader_data_t *cg)
+static cg_shader_data_t *cg_data;
+
+static void gl_cg_reset_attrib(void)
 {
    unsigned i;
-   if (!cg)
-      return;
 
    /* Add sanity check that we did not overflow. */
-   retro_assert(cg->cg_attrib_idx <= ARRAY_SIZE(cg->cg_attribs));
+   retro_assert(cg_data->cg_attrib_idx <= ARRAY_SIZE(cg_data->cg_attribs));
 
-   for (i = 0; i < cg->cg_attrib_idx; i++)
-      cgGLDisableClientState(cg->cg_attribs[i]);
-   cg->cg_attrib_idx = 0;
+   for (i = 0; i < cg_data->cg_attrib_idx; i++)
+      cgGLDisableClientState(cg_data->cg_attribs[i]);
+   cg_data->cg_attrib_idx = 0;
 }
 
 static bool gl_cg_set_mvp(void *data, const math_matrix_4x4 *mat)
 {
-   driver_t *driver = driver_get_ptr();
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
-
-   (void)data;
-
-   if (cg && cg->prg[cg->active_idx].mvp)
+   if (cg_data && cg_data->prg[cg_data->active_idx].mvp)
    {
-      cgGLSetMatrixParameterfc(cg->prg[cg->active_idx].mvp, mat->data);
+      cgGLSetMatrixParameterfc(cg_data->prg[cg_data->active_idx].mvp, mat->data);
       return true;
    }
 
@@ -187,28 +182,26 @@ static bool gl_cg_set_mvp(void *data, const math_matrix_4x4 *mat)
    return false;
 }
 
-#define SET_COORD(cg, name, coords_name, len) do { \
-   if (cg->prg[cg->active_idx].name) \
+#define SET_COORD(cg_data, name, coords_name, len) do { \
+   if (cg_data->prg[cg_data->active_idx].name) \
    { \
-      cgGLSetParameterPointer(cg->prg[cg->active_idx].name, len, GL_FLOAT, 0, coords->coords_name); \
-      cgGLEnableClientState(cg->prg[cg->active_idx].name); \
-      cg->cg_attribs[cg->cg_attrib_idx++] = cg->prg[cg->active_idx].name; \
+      cgGLSetParameterPointer(cg_data->prg[cg_data->active_idx].name, len, GL_FLOAT, 0, coords->coords_name); \
+      cgGLEnableClientState(cg_data->prg[cg_data->active_idx].name); \
+      cg_data->cg_attribs[cg_data->cg_attrib_idx++] = cg_data->prg[cg_data->active_idx].name; \
    } \
 } while(0)
 
 static bool gl_cg_set_coords(const void *data)
 {
    const struct gfx_coords *coords = (const struct gfx_coords*)data;
-   driver_t *driver = driver_get_ptr();
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
 
-   if (!cg || !coords)
+   if (!cg_data || !coords)
       goto fallback;
 
-   SET_COORD(cg, vertex, vertex, 2);
-   SET_COORD(cg, tex, tex_coord, 2);
-   SET_COORD(cg, lut_tex, lut_tex_coord, 2);
-   SET_COORD(cg, color, color, 4);
+   SET_COORD(cg_data, vertex, vertex, 2);
+   SET_COORD(cg_data, tex, tex_coord, 2);
+   SET_COORD(cg_data, lut_tex, lut_tex_coord, 2);
+   SET_COORD(cg_data, color, color, 4);
 
    return true;
 fallback:
@@ -221,7 +214,7 @@ fallback:
 #define set_param_1f(param, x) \
    if (param) cgGLSetParameter1f(param, x)
 
-static void gl_cg_set_texture_info(cg_shader_data_t *cg, const struct cg_fbo_params *params, const struct gfx_tex_info *info)
+static void gl_cg_set_texture_info(const struct cg_fbo_params *params, const struct gfx_tex_info *info)
 {
    CGparameter param = params->tex;
    if (param)
@@ -244,7 +237,7 @@ static void gl_cg_set_texture_info(cg_shader_data_t *cg, const struct cg_fbo_par
       cgGLSetParameterPointer(params->coord, 2,
             GL_FLOAT, 0, info->coord);
       cgGLEnableClientState(params->coord);
-      cg->cg_attribs[cg->cg_attrib_idx++] = params->coord;
+      cg_data->cg_attribs[cg_data->cg_attrib_idx++] = params->coord;
    }
 }
 
@@ -263,236 +256,229 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
    const struct gfx_tex_info *prev_info = (const struct gfx_tex_info*)_prev_info;
    const struct gfx_tex_info *feedback_info = (const struct gfx_tex_info*)_feedback_info;
    const struct gfx_tex_info *fbo_info = (const struct gfx_tex_info*)_fbo_info;
-   driver_t *driver = driver_get_ptr();
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
 
    (void)data;
-   if (!cg || (cg->active_idx == 0) ||
-         (cg->active_idx == GL_SHADER_STOCK_BLEND))
+   if (!cg_data || (cg_data->active_idx == 0) ||
+         (cg_data->active_idx == GL_SHADER_STOCK_BLEND))
       return;
 
    /* Set frame. */
-   set_param_2f(cg->prg[cg->active_idx].vid_size_f, width, height);
-   set_param_2f(cg->prg[cg->active_idx].tex_size_f, tex_width, tex_height);
-   set_param_2f(cg->prg[cg->active_idx].out_size_f, out_width, out_height);
-   set_param_1f(cg->prg[cg->active_idx].frame_dir_f,
+   set_param_2f(cg_data->prg[cg_data->active_idx].vid_size_f, width, height);
+   set_param_2f(cg_data->prg[cg_data->active_idx].tex_size_f, tex_width, tex_height);
+   set_param_2f(cg_data->prg[cg_data->active_idx].out_size_f, out_width, out_height);
+   set_param_1f(cg_data->prg[cg_data->active_idx].frame_dir_f,
          state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
-   set_param_2f(cg->prg[cg->active_idx].vid_size_v, width, height);
-   set_param_2f(cg->prg[cg->active_idx].tex_size_v, tex_width, tex_height);
-   set_param_2f(cg->prg[cg->active_idx].out_size_v, out_width, out_height);
-   set_param_1f(cg->prg[cg->active_idx].frame_dir_v,
+   set_param_2f(cg_data->prg[cg_data->active_idx].vid_size_v, width, height);
+   set_param_2f(cg_data->prg[cg_data->active_idx].tex_size_v, tex_width, tex_height);
+   set_param_2f(cg_data->prg[cg_data->active_idx].out_size_v, out_width, out_height);
+   set_param_1f(cg_data->prg[cg_data->active_idx].frame_dir_v,
          state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
-   if (cg->prg[cg->active_idx].frame_cnt_f || cg->prg[cg->active_idx].frame_cnt_v)
+   if (cg_data->prg[cg_data->active_idx].frame_cnt_f || cg_data->prg[cg_data->active_idx].frame_cnt_v)
    {
-      unsigned modulo = cg->shader->pass[cg->active_idx - 1].frame_count_mod;
+      unsigned modulo = cg_data->shader->pass[cg_data->active_idx - 1].frame_count_mod;
       if (modulo)
          frame_count %= modulo;
 
-      set_param_1f(cg->prg[cg->active_idx].frame_cnt_f, (float)frame_count);
-      set_param_1f(cg->prg[cg->active_idx].frame_cnt_v, (float)frame_count);
+      set_param_1f(cg_data->prg[cg_data->active_idx].frame_cnt_f, (float)frame_count);
+      set_param_1f(cg_data->prg[cg_data->active_idx].frame_cnt_v, (float)frame_count);
    }
 
    /* Set orig texture. */
-   gl_cg_set_texture_info(cg, &cg->prg[cg->active_idx].orig, info);
+   gl_cg_set_texture_info(&cg_data->prg[cg_data->active_idx].orig, info);
 
    /* Set feedback texture. */
-   gl_cg_set_texture_info(cg, &cg->prg[cg->active_idx].feedback, feedback_info);
+   gl_cg_set_texture_info(&cg_data->prg[cg_data->active_idx].feedback, feedback_info);
 
    /* Set prev textures. */
    for (i = 0; i < PREV_TEXTURES; i++)
-      gl_cg_set_texture_info(cg, &cg->prg[cg->active_idx].prev[i], &prev_info[i]);
+      gl_cg_set_texture_info(&cg_data->prg[cg_data->active_idx].prev[i], &prev_info[i]);
 
    /* Set lookup textures. */
-   for (i = 0; i < cg->shader->luts; i++)
+   for (i = 0; i < cg_data->shader->luts; i++)
    {
       CGparameter vparam;
       CGparameter fparam = cgGetNamedParameter(
-            cg->prg[cg->active_idx].fprg, cg->shader->lut[i].id);
+            cg_data->prg[cg_data->active_idx].fprg, cg_data->shader->lut[i].id);
 
       if (fparam)
       {
-         cgGLSetTextureParameter(fparam, cg->lut_textures[i]);
+         cgGLSetTextureParameter(fparam, cg_data->lut_textures[i]);
          cgGLEnableTextureParameter(fparam);
       }
 
-      vparam = cgGetNamedParameter(cg->prg[cg->active_idx].vprg,
-		  cg->shader->lut[i].id);
+      vparam = cgGetNamedParameter(cg_data->prg[cg_data->active_idx].vprg,
+		  cg_data->shader->lut[i].id);
 
       if (vparam)
       {
-         cgGLSetTextureParameter(vparam, cg->lut_textures[i]);
+         cgGLSetTextureParameter(vparam, cg_data->lut_textures[i]);
          cgGLEnableTextureParameter(vparam);
       }
    }
 
    /* Set FBO textures. */
-   if (cg->active_idx)
+   if (cg_data->active_idx)
    {
       for (i = 0; i < fbo_info_cnt; i++)
-         gl_cg_set_texture_info(cg, &cg->prg[cg->active_idx].fbo[i], &fbo_info[i]);
+         gl_cg_set_texture_info(&cg_data->prg[cg_data->active_idx].fbo[i], &fbo_info[i]);
    }
 
    /* #pragma parameters. */
-   for (i = 0; i < cg->shader->num_parameters; i++)
+   for (i = 0; i < cg_data->shader->num_parameters; i++)
    {
       CGparameter param_v = cgGetNamedParameter(
-            cg->prg[cg->active_idx].vprg, cg->shader->parameters[i].id);
+            cg_data->prg[cg_data->active_idx].vprg, cg_data->shader->parameters[i].id);
       CGparameter param_f = cgGetNamedParameter(
-            cg->prg[cg->active_idx].fprg, cg->shader->parameters[i].id);
-      set_param_1f(param_v, cg->shader->parameters[i].current);
-      set_param_1f(param_f, cg->shader->parameters[i].current);
+            cg_data->prg[cg_data->active_idx].fprg, cg_data->shader->parameters[i].id);
+      set_param_1f(param_v, cg_data->shader->parameters[i].current);
+      set_param_1f(param_f, cg_data->shader->parameters[i].current);
    }
 
    /* Set state parameters. */
-   if (cg->state_tracker)
+   if (cg_data->state_tracker)
    {
       /* Only query uniforms in first pass. */
       static struct state_tracker_uniform tracker_info[MAX_VARIABLES];
       static unsigned cnt = 0;
 
-      if (cg->active_idx == 1)
-         cnt = state_tracker_get_uniform(cg->state_tracker, tracker_info,
+      if (cg_data->active_idx == 1)
+         cnt = state_tracker_get_uniform(cg_data->state_tracker, tracker_info,
                MAX_VARIABLES, frame_count);
 
       for (i = 0; i < cnt; i++)
       {
          CGparameter param_v = cgGetNamedParameter(
-               cg->prg[cg->active_idx].vprg, tracker_info[i].id);
+               cg_data->prg[cg_data->active_idx].vprg, tracker_info[i].id);
          CGparameter param_f = cgGetNamedParameter(
-               cg->prg[cg->active_idx].fprg, tracker_info[i].id);
+               cg_data->prg[cg_data->active_idx].fprg, tracker_info[i].id);
          set_param_1f(param_v, tracker_info[i].value);
          set_param_1f(param_f, tracker_info[i].value);
       }
    }
 }
 
-static void gl_cg_deinit_progs(cg_shader_data_t *cg)
+static void gl_cg_deinit_progs()
 {
    unsigned i;
 
-   if (!cg)
+   if (!cg_data)
       return;
 
    RARCH_LOG("CG: Destroying programs.\n");
-   cgGLUnbindProgram(cg->cgFProf);
-   cgGLUnbindProgram(cg->cgVProf);
+   cgGLUnbindProgram(cg_data->cgFProf);
+   cgGLUnbindProgram(cg_data->cgVProf);
 
    /* Programs may alias [0]. */
    for (i = 1; i < GFX_MAX_SHADERS; i++)
    {
-      if (cg->prg[i].fprg && cg->prg[i].fprg != cg->prg[0].fprg)
-         cgDestroyProgram(cg->prg[i].fprg);
-      if (cg->prg[i].vprg && cg->prg[i].vprg != cg->prg[0].vprg)
-         cgDestroyProgram(cg->prg[i].vprg);
+      if (cg_data->prg[i].fprg && cg_data->prg[i].fprg != cg_data->prg[0].fprg)
+         cgDestroyProgram(cg_data->prg[i].fprg);
+      if (cg_data->prg[i].vprg && cg_data->prg[i].vprg != cg_data->prg[0].vprg)
+         cgDestroyProgram(cg_data->prg[i].vprg);
    }
 
-   if (cg->prg[0].fprg)
-      cgDestroyProgram(cg->prg[0].fprg);
-   if (cg->prg[0].vprg)
-      cgDestroyProgram(cg->prg[0].vprg);
+   if (cg_data->prg[0].fprg)
+      cgDestroyProgram(cg_data->prg[0].fprg);
+   if (cg_data->prg[0].vprg)
+      cgDestroyProgram(cg_data->prg[0].vprg);
 
-   memset(cg->prg, 0, sizeof(cg->prg));
+   memset(cg_data->prg, 0, sizeof(cg_data->prg));
 }
 
-static void gl_cg_destroy_resources(cg_shader_data_t *cg)
+static void gl_cg_destroy_resources()
 {
-   if (!cg)
+   if (!cg_data)
       return;
 
-   gl_cg_reset_attrib(cg);
+   gl_cg_reset_attrib();
 
-   gl_cg_deinit_progs(cg);
+   gl_cg_deinit_progs();
 
-   if (cg->shader && cg->shader->luts)
+   if (cg_data->shader && cg_data->shader->luts)
    {
-      glDeleteTextures(cg->shader->luts, cg->lut_textures);
-      memset(cg->lut_textures, 0, sizeof(cg->lut_textures));
+      glDeleteTextures(cg_data->shader->luts, cg_data->lut_textures);
+      memset(cg_data->lut_textures, 0, sizeof(cg_data->lut_textures));
    }
 
-   if (cg->state_tracker)
+   if (cg_data->state_tracker)
    {
-      state_tracker_free(cg->state_tracker);
-      cg->state_tracker = NULL;
+      state_tracker_free(cg_data->state_tracker);
+      cg_data->state_tracker = NULL;
    }
 
-   free(cg->shader);
-   cg->shader = NULL;
+   free(cg_data->shader);
+   cg_data->shader = NULL;
 }
 
 /* Final deinit. */
-static void gl_cg_deinit_context_state(cg_shader_data_t *cg)
+static void gl_cg_deinit_context_state(void)
 {
-   if (cg->cgCtx)
+   if (cg_data->cgCtx)
    {
       RARCH_LOG("CG: Destroying context.\n");
-      cgDestroyContext(cg->cgCtx);
+      cgDestroyContext(cg_data->cgCtx);
    }
-   cg->cgCtx = NULL;
+   cg_data->cgCtx = NULL;
 }
 
 /* Full deinit. */
 static void gl_cg_deinit(void)
 {
-   driver_t *driver = driver_get_ptr();
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
-
-   if (!cg)
+   if (!cg_data)
       return;
 
-   gl_cg_destroy_resources(cg);
-   gl_cg_deinit_context_state(cg);
+   gl_cg_destroy_resources();
+   gl_cg_deinit_context_state();
+
+   free(cg_data);
+   cg_data = NULL;
 }
 
-#define SET_LISTING(cg, type) \
+#define SET_LISTING(cg_data, type) \
 { \
-   const char *list = cgGetLastListing(cg->cgCtx); \
+   const char *list = cgGetLastListing(cg_data->cgCtx); \
    if (list) \
       listing_##type = strdup(list); \
 }
 
-static bool load_program(
-      cg_shader_data_t *cg,
-      unsigned idx,
-      const char *prog,
-      bool path_is_file)
+static bool load_program(unsigned idx, const char *prog, bool path_is_file)
 {
-   bool ret = true;
-   char *listing_f = NULL;
-   char *listing_v = NULL;
-
-   unsigned i, argc = 0;
    const char *argv[2 + GFX_MAX_SHADERS];
+   bool ret         = true;
+   char *listing_f  = NULL;
+   char *listing_v  = NULL;
+   unsigned i, argc = 0;
 
    argv[argc++] = "-DPARAMETER_UNIFORM";
    for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
-      if (*(cg->cg_alias_define[i]))
-         argv[argc++] = cg->cg_alias_define[i];
+      if (*(cg_data->cg_alias_define[i]))
+         argv[argc++] = cg_data->cg_alias_define[i];
    }
    argv[argc] = NULL;
 
    if (path_is_file)
    {
-      cg->prg[idx].fprg = cgCreateProgramFromFile(cg->cgCtx, CG_SOURCE,
-            prog, cg->cgFProf, "main_fragment", argv);
-      SET_LISTING(cg, f);
-      cg->prg[idx].vprg = cgCreateProgramFromFile(cg->cgCtx, CG_SOURCE,
-            prog, cg->cgVProf, "main_vertex", argv);
-      SET_LISTING(cg, v);
+      cg_data->prg[idx].fprg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
+            prog, cg_data->cgFProf, "main_fragment", argv);
+      SET_LISTING(cg_data, f);
+      cg_data->prg[idx].vprg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
+            prog, cg_data->cgVProf, "main_vertex", argv);
+      SET_LISTING(cg_data, v);
    }
    else
    {
-      cg->prg[idx].fprg = cgCreateProgram(cg->cgCtx, CG_SOURCE,
-            prog, cg->cgFProf, "main_fragment", argv);
-      SET_LISTING(cg, f);
-      cg->prg[idx].vprg = cgCreateProgram(cg->cgCtx, CG_SOURCE,
-            prog, cg->cgVProf, "main_vertex", argv);
-      SET_LISTING(cg, v);
+      cg_data->prg[idx].fprg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE,
+            prog, cg_data->cgFProf, "main_fragment", argv);
+      SET_LISTING(cg_data, f);
+      cg_data->prg[idx].vprg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE,
+            prog, cg_data->cgVProf, "main_vertex", argv);
+      SET_LISTING(cg_data, v);
    }
 
-   if (!cg->prg[idx].fprg || !cg->prg[idx].vprg)
+   if (!cg_data->prg[idx].fprg || !cg_data->prg[idx].vprg)
    {
       RARCH_ERR("CG error: %s\n", cgGetErrorString(cgGetError()));
       if (listing_f)
@@ -504,8 +490,8 @@ static bool load_program(
       goto end;
    }
 
-   cgGLLoadProgram(cg->prg[idx].fprg);
-   cgGLLoadProgram(cg->prg[idx].vprg);
+   cgGLLoadProgram(cg_data->prg[idx].fprg);
+   cgGLLoadProgram(cg_data->prg[idx].vprg);
 
 end:
    free(listing_f);
@@ -513,62 +499,62 @@ end:
    return ret;
 }
 
-static void set_program_base_attrib(cg_shader_data_t *cg, unsigned i);
+static void set_program_base_attrib(unsigned i);
 
-static bool load_stock(cg_shader_data_t *cg)
+static bool load_stock(void)
 {
-   if (!load_program(cg, 0, stock_cg_program, false))
+   if (!load_program(0, stock_cg_program, false))
    {
       RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
       return false;
    }
 
-   set_program_base_attrib(cg, 0);
+   set_program_base_attrib(0);
 
    return true;
 }
 
-static bool load_plain(cg_shader_data_t *cg, const char *path)
+static bool load_plain(const char *path)
 {
-   if (!load_stock(cg))
+   if (!load_stock())
       return false;
 
-   cg->shader = (struct video_shader*)calloc(1, sizeof(*cg->shader));
-   if (!cg->shader)
+   cg_data->shader = (struct video_shader*)calloc(1, sizeof(*cg_data->shader));
+   if (!cg_data->shader)
       return false;
 
-   cg->shader->passes = 1;
+   cg_data->shader->passes = 1;
 
    if (path)
    {
       RARCH_LOG("Loading Cg file: %s\n", path);
-      strlcpy(cg->shader->pass[0].source.path, path,
-            sizeof(cg->shader->pass[0].source.path));
-      if (!load_program(cg, 1, path, true))
+      strlcpy(cg_data->shader->pass[0].source.path, path,
+            sizeof(cg_data->shader->pass[0].source.path));
+      if (!load_program(1, path, true))
          return false;
    }
    else
    {
       RARCH_LOG("Loading stock Cg file.\n");
-      cg->prg[1] = cg->prg[0];
+      cg_data->prg[1] = cg_data->prg[0];
    }
 
-   video_shader_resolve_parameters(NULL, cg->shader);
+   video_shader_resolve_parameters(NULL, cg_data->shader);
    return true;
 }
 
-static bool gl_cg_load_imports(cg_shader_data_t *cg)
+static bool gl_cg_load_imports(void)
 {
    unsigned i;
    struct state_tracker_info tracker_info = {0};
 
-   if (!cg->shader->variables)
+   if (!cg_data->shader->variables)
       return true;
 
-   for (i = 0; i < cg->shader->variables; i++)
+   for (i = 0; i < cg_data->shader->variables; i++)
    {
       unsigned memtype;
-      switch (cg->shader->variable[i].ram_type)
+      switch (cg_data->shader->variable[i].ram_type)
       {
          case RARCH_STATE_WRAM:
             memtype = RETRO_MEMORY_SYSTEM_RAM;
@@ -579,7 +565,7 @@ static bool gl_cg_load_imports(cg_shader_data_t *cg)
       }
 
       if ((memtype != -1u) && 
-            (cg->shader->variable[i].addr >= core.retro_get_memory_size(memtype)))
+            (cg_data->shader->variable[i].addr >= core.retro_get_memory_size(memtype)))
       {
          RARCH_ERR("Address out of bounds.\n");
          return false;
@@ -588,45 +574,45 @@ static bool gl_cg_load_imports(cg_shader_data_t *cg)
 
    tracker_info.wram = (uint8_t*)
       core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
-   tracker_info.info      = cg->shader->variable;
-   tracker_info.info_elem = cg->shader->variables;
+   tracker_info.info      = cg_data->shader->variable;
+   tracker_info.info_elem = cg_data->shader->variables;
 
 #ifdef HAVE_PYTHON
-   if (*cg->shader->script_path)
+   if (*cg_data->shader->script_path)
    {
-      tracker_info.script = cg->shader->script_path;
+      tracker_info.script = cg_data->shader->script_path;
       tracker_info.script_is_file = true;
    }
 
    tracker_info.script_class = 
-      *cg->shader->script_class ? cg->shader->script_class : NULL;
+      *cg_data->shader->script_class ? cg_data->shader->script_class : NULL;
 #endif
 
-   cg->state_tracker = state_tracker_init(&tracker_info);
-   if (!cg->state_tracker)
+   cg_data->state_tracker = state_tracker_init(&tracker_info);
+   if (!cg_data->state_tracker)
       RARCH_WARN("Failed to initialize state tracker.\n");
 
    return true;
 }
 
-static bool load_shader(cg_shader_data_t *cg, unsigned i)
+static bool load_shader(unsigned i)
 {
    RARCH_LOG("Loading Cg shader: \"%s\".\n",
-         cg->shader->pass[i].source.path);
+         cg_data->shader->pass[i].source.path);
 
-   if (!load_program(cg, i + 1,
-            cg->shader->pass[i].source.path, true))
+   if (!load_program(i + 1,
+            cg_data->shader->pass[i].source.path, true))
       return false;
 
    return true;
 }
 
-static bool load_preset(cg_shader_data_t *cg, const char *path)
+static bool load_preset(const char *path)
 {
    unsigned i;
    config_file_t *conf = NULL;
 
-   if (!load_stock(cg))
+   if (!load_stock())
       return false;
 
    RARCH_LOG("Loading Cg meta-shader: %s\n", path);
@@ -637,54 +623,54 @@ static bool load_preset(cg_shader_data_t *cg, const char *path)
       return false;
    }
 
-   cg->shader = (struct video_shader*)calloc(1, sizeof(*cg->shader));
-   if (!cg->shader)
+   cg_data->shader = (struct video_shader*)calloc(1, sizeof(*cg_data->shader));
+   if (!cg_data->shader)
    {
       config_file_free(conf);
       return false;
    }
 
-   if (!video_shader_read_conf_cgp(conf, cg->shader))
+   if (!video_shader_read_conf_cgp(conf, cg_data->shader))
    {
       RARCH_ERR("Failed to parse CGP file.\n");
       config_file_free(conf);
       return false;
    }
 
-   video_shader_resolve_relative(cg->shader, path);
-   video_shader_resolve_parameters(conf, cg->shader);
+   video_shader_resolve_relative(cg_data->shader, path);
+   video_shader_resolve_parameters(conf, cg_data->shader);
    config_file_free(conf);
 
-   if (cg->shader->passes > GFX_MAX_SHADERS - 3)
+   if (cg_data->shader->passes > GFX_MAX_SHADERS - 3)
    {
       RARCH_WARN("Too many shaders ... Capping shader amount to %d.\n",
             GFX_MAX_SHADERS - 3);
-      cg->shader->passes = GFX_MAX_SHADERS - 3;
+      cg_data->shader->passes = GFX_MAX_SHADERS - 3;
    }
 
-   for (i = 0; i < cg->shader->passes; i++)
-      if (*cg->shader->pass[i].alias)
-         snprintf(cg->cg_alias_define[i],
-               sizeof(cg->cg_alias_define[i]),
+   for (i = 0; i < cg_data->shader->passes; i++)
+      if (*cg_data->shader->pass[i].alias)
+         snprintf(cg_data->cg_alias_define[i],
+               sizeof(cg_data->cg_alias_define[i]),
                "-D%s_ALIAS",
-               cg->shader->pass[i].alias);
+               cg_data->shader->pass[i].alias);
 
-   for (i = 0; i < cg->shader->passes; i++)
+   for (i = 0; i < cg_data->shader->passes; i++)
    {
-      if (!load_shader(cg, i))
+      if (!load_shader(i))
       {
          RARCH_ERR("Failed to load shaders ...\n");
          return false;
       }
    }
 
-   if (!gl_load_luts(cg->shader, cg->lut_textures))
+   if (!gl_load_luts(cg_data->shader, cg_data->lut_textures))
    {
       RARCH_ERR("Failed to load lookup textures ...\n");
       return false;
    }
 
-   if (!gl_cg_load_imports(cg))
+   if (!gl_cg_load_imports())
    {
       RARCH_ERR("Failed to load imports ...\n");
       return false;
@@ -700,9 +686,9 @@ static bool load_preset(cg_shader_data_t *cg, const char *path)
 #define SEMANTIC_COLOR0       0xa9e93e54U
 #define SEMANTIC_POSITION     0xd87309baU
 
-static void set_program_base_attrib(cg_shader_data_t *cg, unsigned i)
+static void set_program_base_attrib(unsigned i)
 {
-   CGparameter param = cgGetFirstParameter(cg->prg[i].vprg, CG_PROGRAM);
+   CGparameter param = cgGetFirstParameter(cg_data->prg[i].vprg, CG_PROGRAM);
    for (; param; param = cgGetNextParameter(param))
    {
       uint32_t semantic_hash;
@@ -723,29 +709,29 @@ static void set_program_base_attrib(cg_shader_data_t *cg, unsigned i)
       {
          case SEMANTIC_TEXCOORD:
          case SEMANTIC_TEXCOORD0:
-            cg->prg[i].tex     = param;
+            cg_data->prg[i].tex     = param;
             break;
          case SEMANTIC_COLOR:
          case SEMANTIC_COLOR0:
-            cg->prg[i].color   = param;
+            cg_data->prg[i].color   = param;
             break;
          case SEMANTIC_POSITION:
-            cg->prg[i].vertex  = param;
+            cg_data->prg[i].vertex  = param;
             break;
          case SEMANTIC_TEXCOORD1:
-            cg->prg[i].lut_tex = param;
+            cg_data->prg[i].lut_tex = param;
             break;
       }
    }
 
-   if (!cg->prg[i].tex)
-      cg->prg[i].tex = cgGetNamedParameter  (cg->prg[i].vprg, "IN.tex_coord");
-   if (!cg->prg[i].color)
-      cg->prg[i].color = cgGetNamedParameter(cg->prg[i].vprg, "IN.color");
-   if (!cg->prg[i].vertex)
-      cg->prg[i].vertex = cgGetNamedParameter   (cg->prg[i].vprg, "IN.vertex_coord");
-   if (!cg->prg[i].lut_tex)
-      cg->prg[i].lut_tex = cgGetNamedParameter  (cg->prg[i].vprg, "IN.lut_tex_coord");
+   if (!cg_data->prg[i].tex)
+      cg_data->prg[i].tex = cgGetNamedParameter  (cg_data->prg[i].vprg, "IN.tex_coord");
+   if (!cg_data->prg[i].color)
+      cg_data->prg[i].color = cgGetNamedParameter(cg_data->prg[i].vprg, "IN.color");
+   if (!cg_data->prg[i].vertex)
+      cg_data->prg[i].vertex = cgGetNamedParameter   (cg_data->prg[i].vprg, "IN.vertex_coord");
+   if (!cg_data->prg[i].lut_tex)
+      cg_data->prg[i].lut_tex = cgGetNamedParameter  (cg_data->prg[i].vprg, "IN.lut_tex_coord");
 }
 
 static void set_pass_attrib(struct cg_program *program, struct cg_fbo_params *fbo,
@@ -774,53 +760,53 @@ static void set_pass_attrib(struct cg_program *program, struct cg_fbo_params *fb
       fbo->coord = cgGetNamedParameter(program->vprg, attr_buf);
 }
 
-static void set_program_attributes(cg_shader_data_t *cg, unsigned i)
+static void set_program_attributes(unsigned i)
 {
    unsigned j;
 
-   if (!cg)
+   if (!cg_data)
       return;
 
-   cgGLBindProgram(cg->prg[i].fprg);
-   cgGLBindProgram(cg->prg[i].vprg);
+   cgGLBindProgram(cg_data->prg[i].fprg);
+   cgGLBindProgram(cg_data->prg[i].vprg);
 
-   set_program_base_attrib(cg, i);
+   set_program_base_attrib(i);
 
-   cg->prg[i].vid_size_f = cgGetNamedParameter (cg->prg[i].fprg, "IN.video_size");
-   cg->prg[i].tex_size_f = cgGetNamedParameter (cg->prg[i].fprg, "IN.texture_size");
-   cg->prg[i].out_size_f = cgGetNamedParameter (cg->prg[i].fprg, "IN.output_size");
-   cg->prg[i].frame_cnt_f = cgGetNamedParameter(cg->prg[i].fprg, "IN.frame_count");
-   cg->prg[i].frame_dir_f = cgGetNamedParameter(cg->prg[i].fprg, "IN.frame_direction");
-   cg->prg[i].vid_size_v = cgGetNamedParameter (cg->prg[i].vprg, "IN.video_size");
-   cg->prg[i].tex_size_v = cgGetNamedParameter (cg->prg[i].vprg, "IN.texture_size");
-   cg->prg[i].out_size_v = cgGetNamedParameter (cg->prg[i].vprg, "IN.output_size");
-   cg->prg[i].frame_cnt_v = cgGetNamedParameter(cg->prg[i].vprg, "IN.frame_count");
-   cg->prg[i].frame_dir_v = cgGetNamedParameter(cg->prg[i].vprg, "IN.frame_direction");
+   cg_data->prg[i].vid_size_f = cgGetNamedParameter (cg_data->prg[i].fprg, "IN.video_size");
+   cg_data->prg[i].tex_size_f = cgGetNamedParameter (cg_data->prg[i].fprg, "IN.texture_size");
+   cg_data->prg[i].out_size_f = cgGetNamedParameter (cg_data->prg[i].fprg, "IN.output_size");
+   cg_data->prg[i].frame_cnt_f = cgGetNamedParameter(cg_data->prg[i].fprg, "IN.frame_count");
+   cg_data->prg[i].frame_dir_f = cgGetNamedParameter(cg_data->prg[i].fprg, "IN.frame_direction");
+   cg_data->prg[i].vid_size_v = cgGetNamedParameter (cg_data->prg[i].vprg, "IN.video_size");
+   cg_data->prg[i].tex_size_v = cgGetNamedParameter (cg_data->prg[i].vprg, "IN.texture_size");
+   cg_data->prg[i].out_size_v = cgGetNamedParameter (cg_data->prg[i].vprg, "IN.output_size");
+   cg_data->prg[i].frame_cnt_v = cgGetNamedParameter(cg_data->prg[i].vprg, "IN.frame_count");
+   cg_data->prg[i].frame_dir_v = cgGetNamedParameter(cg_data->prg[i].vprg, "IN.frame_direction");
 
-   cg->prg[i].mvp = cgGetNamedParameter(cg->prg[i].vprg, "modelViewProj");
-   if (!cg->prg[i].mvp)
-      cg->prg[i].mvp = cgGetNamedParameter(cg->prg[i].vprg, "IN.mvp_matrix");
+   cg_data->prg[i].mvp = cgGetNamedParameter(cg_data->prg[i].vprg, "modelViewProj");
+   if (!cg_data->prg[i].mvp)
+      cg_data->prg[i].mvp = cgGetNamedParameter(cg_data->prg[i].vprg, "IN.mvp_matrix");
 
-   cg->prg[i].orig.tex = cgGetNamedParameter(cg->prg[i].fprg, "ORIG.texture");
-   cg->prg[i].orig.vid_size_v = cgGetNamedParameter(cg->prg[i].vprg, "ORIG.video_size");
-   cg->prg[i].orig.vid_size_f = cgGetNamedParameter(cg->prg[i].fprg, "ORIG.video_size");
-   cg->prg[i].orig.tex_size_v = cgGetNamedParameter(cg->prg[i].vprg, "ORIG.texture_size");
-   cg->prg[i].orig.tex_size_f = cgGetNamedParameter(cg->prg[i].fprg, "ORIG.texture_size");
-   cg->prg[i].orig.coord = cgGetNamedParameter(cg->prg[i].vprg, "ORIG.tex_coord");
+   cg_data->prg[i].orig.tex = cgGetNamedParameter(cg_data->prg[i].fprg, "ORIG.texture");
+   cg_data->prg[i].orig.vid_size_v = cgGetNamedParameter(cg_data->prg[i].vprg, "ORIG.video_size");
+   cg_data->prg[i].orig.vid_size_f = cgGetNamedParameter(cg_data->prg[i].fprg, "ORIG.video_size");
+   cg_data->prg[i].orig.tex_size_v = cgGetNamedParameter(cg_data->prg[i].vprg, "ORIG.texture_size");
+   cg_data->prg[i].orig.tex_size_f = cgGetNamedParameter(cg_data->prg[i].fprg, "ORIG.texture_size");
+   cg_data->prg[i].orig.coord = cgGetNamedParameter(cg_data->prg[i].vprg, "ORIG.tex_coord");
 
-   cg->prg[i].feedback.tex = cgGetNamedParameter(cg->prg[i].fprg, "FEEDBACK.texture");
-   cg->prg[i].feedback.vid_size_v = cgGetNamedParameter(cg->prg[i].vprg, "FEEDBACK.video_size");
-   cg->prg[i].feedback.vid_size_f = cgGetNamedParameter(cg->prg[i].fprg, "FEEDBACK.video_size");
-   cg->prg[i].feedback.tex_size_v = cgGetNamedParameter(cg->prg[i].vprg, "FEEDBACK.texture_size");
-   cg->prg[i].feedback.tex_size_f = cgGetNamedParameter(cg->prg[i].fprg, "FEEDBACK.texture_size");
-   cg->prg[i].feedback.coord = cgGetNamedParameter(cg->prg[i].vprg, "FEEDBACK.tex_coord");
+   cg_data->prg[i].feedback.tex = cgGetNamedParameter(cg_data->prg[i].fprg, "FEEDBACK.texture");
+   cg_data->prg[i].feedback.vid_size_v = cgGetNamedParameter(cg_data->prg[i].vprg, "FEEDBACK.video_size");
+   cg_data->prg[i].feedback.vid_size_f = cgGetNamedParameter(cg_data->prg[i].fprg, "FEEDBACK.video_size");
+   cg_data->prg[i].feedback.tex_size_v = cgGetNamedParameter(cg_data->prg[i].vprg, "FEEDBACK.texture_size");
+   cg_data->prg[i].feedback.tex_size_f = cgGetNamedParameter(cg_data->prg[i].fprg, "FEEDBACK.texture_size");
+   cg_data->prg[i].feedback.coord = cgGetNamedParameter(cg_data->prg[i].vprg, "FEEDBACK.tex_coord");
 
    if (i > 1)
    {
       char pass_str[64] = {0};
 
       snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i);
-      set_pass_attrib(&cg->prg[i], &cg->prg[i].orig, pass_str);
+      set_pass_attrib(&cg_data->prg[i], &cg_data->prg[i].orig, pass_str);
    }
 
    for (j = 0; j < PREV_TEXTURES; j++)
@@ -848,19 +834,19 @@ static void set_program_attributes(cg_shader_data_t *cg, unsigned i)
       snprintf(attr_buf_coord,    sizeof(attr_buf_coord),
             "%s.tex_coord", prev_names[j]);
 
-      cg->prg[i].prev[j].tex = cgGetNamedParameter(cg->prg[i].fprg, attr_buf_tex);
+      cg_data->prg[i].prev[j].tex = cgGetNamedParameter(cg_data->prg[i].fprg, attr_buf_tex);
 
-      cg->prg[i].prev[j].vid_size_v = 
-         cgGetNamedParameter(cg->prg[i].vprg, attr_buf_vid_size);
-      cg->prg[i].prev[j].vid_size_f = 
-         cgGetNamedParameter(cg->prg[i].fprg, attr_buf_vid_size);
+      cg_data->prg[i].prev[j].vid_size_v = 
+         cgGetNamedParameter(cg_data->prg[i].vprg, attr_buf_vid_size);
+      cg_data->prg[i].prev[j].vid_size_f = 
+         cgGetNamedParameter(cg_data->prg[i].fprg, attr_buf_vid_size);
 
-      cg->prg[i].prev[j].tex_size_v = 
-         cgGetNamedParameter(cg->prg[i].vprg, attr_buf_tex_size);
-      cg->prg[i].prev[j].tex_size_f = 
-         cgGetNamedParameter(cg->prg[i].fprg, attr_buf_tex_size);
+      cg_data->prg[i].prev[j].tex_size_v = 
+         cgGetNamedParameter(cg_data->prg[i].vprg, attr_buf_tex_size);
+      cg_data->prg[i].prev[j].tex_size_f = 
+         cgGetNamedParameter(cg_data->prg[i].fprg, attr_buf_tex_size);
 
-      cg->prg[i].prev[j].coord = cgGetNamedParameter(cg->prg[i].vprg, attr_buf_coord);
+      cg_data->prg[i].prev[j].coord = cgGetNamedParameter(cg_data->prg[i].vprg, attr_buf_coord);
    }
 
    for (j = 0; j + 1 < i; j++)
@@ -868,39 +854,34 @@ static void set_program_attributes(cg_shader_data_t *cg, unsigned i)
       char pass_str[64] = {0};
 
       snprintf(pass_str, sizeof(pass_str), "PASS%u", j + 1);
-      set_pass_attrib(&cg->prg[i], &cg->prg[i].fbo[j], pass_str);
+      set_pass_attrib(&cg_data->prg[i], &cg_data->prg[i].fbo[j], pass_str);
       snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i - (j + 1));
-      set_pass_attrib(&cg->prg[i], &cg->prg[i].fbo[j], pass_str);
+      set_pass_attrib(&cg_data->prg[i], &cg_data->prg[i].fbo[j], pass_str);
 
-      if (*cg->shader->pass[j].alias)
-         set_pass_attrib(&cg->prg[i], &cg->prg[i].fbo[j], cg->shader->pass[j].alias);
+      if (*cg_data->shader->pass[j].alias)
+         set_pass_attrib(&cg_data->prg[i], &cg_data->prg[i].fbo[j], cg_data->shader->pass[j].alias);
    }
 }
 
 static bool gl_cg_init(void *data, const char *path)
 {
-   cg_shader_data_t *cg = NULL;
-   driver_t *driver     = NULL;
    unsigned i;
+   cg_data = (cg_shader_data_t*)calloc(1, sizeof(cg_shader_data_t));
 
-   (void)data;
-
-   cg     = (cg_shader_data_t*)calloc(1, sizeof(cg_shader_data_t));
-   driver = driver_get_ptr();
-
-   if (!cg)
+   if (!cg_data)
       return false;
 
 #ifdef HAVE_CG_RUNTIME_COMPILER
    cgRTCgcInit();
 #endif
 
-   cg->cgCtx = cgCreateContext();
+   cg_data->cgCtx = cgCreateContext();
 
-   if (!cg->cgCtx)
+   if (!cg_data->cgCtx)
    {
       RARCH_ERR("Failed to create Cg context\n");
-      free(cg);
+      free(cg_data);
+      cg_data = NULL;
       return false;
    }
 
@@ -909,100 +890,92 @@ static bool gl_cg_init(void *data, const char *path)
    cgSetErrorHandler(cg_error_handler, NULL);
 #endif
 
-   cg->cgFProf = cgGLGetLatestProfile(CG_GL_FRAGMENT);
-   cg->cgVProf = cgGLGetLatestProfile(CG_GL_VERTEX);
+   cg_data->cgFProf = cgGLGetLatestProfile(CG_GL_FRAGMENT);
+   cg_data->cgVProf = cgGLGetLatestProfile(CG_GL_VERTEX);
 
    if (
-         cg->cgFProf == CG_PROFILE_UNKNOWN ||
-         cg->cgVProf == CG_PROFILE_UNKNOWN)
+         cg_data->cgFProf == CG_PROFILE_UNKNOWN ||
+         cg_data->cgVProf == CG_PROFILE_UNKNOWN)
    {
       RARCH_ERR("Invalid profile type\n");
-      free(cg);
+      free(cg_data);
+      cg_data = NULL;
       goto error;
    }
 
-   RARCH_LOG("[Cg]: Vertex profile: %s\n",   cgGetProfileString(cg->cgVProf));
-   RARCH_LOG("[Cg]: Fragment profile: %s\n", cgGetProfileString(cg->cgFProf));
-   cgGLSetOptimalOptions(cg->cgFProf);
-   cgGLSetOptimalOptions(cg->cgVProf);
-   cgGLEnableProfile(cg->cgFProf);
-   cgGLEnableProfile(cg->cgVProf);
+   RARCH_LOG("[Cg]: Vertex profile: %s\n",   cgGetProfileString(cg_data->cgVProf));
+   RARCH_LOG("[Cg]: Fragment profile: %s\n", cgGetProfileString(cg_data->cgFProf));
+   cgGLSetOptimalOptions(cg_data->cgFProf);
+   cgGLSetOptimalOptions(cg_data->cgVProf);
+   cgGLEnableProfile(cg_data->cgFProf);
+   cgGLEnableProfile(cg_data->cgVProf);
 
-   memset(cg->cg_alias_define, 0, sizeof(cg->cg_alias_define));
+   memset(cg_data->cg_alias_define, 0, sizeof(cg_data->cg_alias_define));
 
    if (path && !strcmp(path_get_extension(path), "cgp"))
    {
-      if (!load_preset(cg, path))
+      if (!load_preset(path))
          goto error;
    }
    else
    {
-      if (!load_plain(cg, path))
+      if (!load_plain(path))
          goto error;
    }
 
-   cg->prg[0].mvp = cgGetNamedParameter(cg->prg[0].vprg, "IN.mvp_matrix");
-   for (i = 1; i <= cg->shader->passes; i++)
-      set_program_attributes(cg, i);
+   cg_data->prg[0].mvp = cgGetNamedParameter(cg_data->prg[0].vprg, "IN.mvp_matrix");
+   for (i = 1; i <= cg_data->shader->passes; i++)
+      set_program_attributes(i);
 
    /* If we aren't using last pass non-FBO shader, 
     * this shader will be assumed to be "fixed-function".
     *
     * Just use prg[0] for that pass, which will be
     * pass-through. */
-   cg->prg[cg->shader->passes + 1] = cg->prg[0]; 
+   cg_data->prg[cg_data->shader->passes + 1] = cg_data->prg[0]; 
 
    /* No need to apply Android hack in Cg. */
-   cg->prg[GL_SHADER_STOCK_BLEND] = cg->prg[0];
+   cg_data->prg[GL_SHADER_STOCK_BLEND] = cg_data->prg[0];
 
-   cgGLBindProgram(cg->prg[1].fprg);
-   cgGLBindProgram(cg->prg[1].vprg);
-
-   driver->video_shader_data = cg;
+   cgGLBindProgram(cg_data->prg[1].fprg);
+   cgGLBindProgram(cg_data->prg[1].vprg);
 
    return true;
 
 error:
-   gl_cg_destroy_resources(cg);
-   if (!cg)
-      free(cg);
+   gl_cg_destroy_resources();
+   if (!cg_data)
+      free(cg_data);
+   cg_data = NULL;
    return false;
 }
 
 static void gl_cg_use(void *data, unsigned idx)
 {
-   driver_t *driver = driver_get_ptr();
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
-   (void)data;
-
-   if (cg && cg->prg[idx].vprg && cg->prg[idx].fprg)
+   if (cg_data && cg_data->prg[idx].vprg && cg_data->prg[idx].fprg)
    {
-      gl_cg_reset_attrib(cg);
+      gl_cg_reset_attrib();
 
-      cg->active_idx = idx;
-      cgGLBindProgram(cg->prg[idx].vprg);
-      cgGLBindProgram(cg->prg[idx].fprg);
+      cg_data->active_idx = idx;
+      cgGLBindProgram(cg_data->prg[idx].vprg);
+      cgGLBindProgram(cg_data->prg[idx].fprg);
    }
 }
 
 static unsigned gl_cg_num(void)
 {
-   driver_t *driver = driver_get_ptr();
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
-   if (!cg)
+   if (!cg_data)
       return 0;
-   return cg->shader->passes;
+   return cg_data->shader->passes;
 }
 
 static bool gl_cg_filter_type(unsigned idx, bool *smooth)
 {
-   driver_t *driver = driver_get_ptr();
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
-   if (cg && idx &&
-         (cg->shader->pass[idx - 1].filter != RARCH_FILTER_UNSPEC)
+   if (cg_data && idx &&
+         (cg_data->shader->pass[idx - 1].filter != RARCH_FILTER_UNSPEC)
       )
    {
-      *smooth = (cg->shader->pass[idx - 1].filter == RARCH_FILTER_LINEAR);
+      *smooth = (cg_data->shader->pass[idx - 1].filter == RARCH_FILTER_LINEAR);
       return true;
    }
 
@@ -1011,19 +984,15 @@ static bool gl_cg_filter_type(unsigned idx, bool *smooth)
 
 static enum gfx_wrap_type gl_cg_wrap_type(unsigned idx)
 {
-   driver_t *driver = driver_get_ptr();
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
-   if (cg && idx)
-      return cg->shader->pass[idx - 1].wrap;
+   if (cg_data && idx)
+      return cg_data->shader->pass[idx - 1].wrap;
    return RARCH_WRAP_BORDER;
 }
 
 static void gl_cg_shader_scale(unsigned idx, struct gfx_fbo_scale *scale)
 {
-   driver_t *driver = driver_get_ptr();
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
-   if (cg && idx)
-      *scale = cg->shader->pass[idx - 1].fbo;
+   if (cg_data && idx)
+      *scale = cg_data->shader->pass[idx - 1].fbo;
    else
       scale->valid = false;
 }
@@ -1032,15 +1001,13 @@ static unsigned gl_cg_get_prev_textures(void)
 {
    unsigned i, j;
    unsigned max_prev = 0;
-   driver_t *driver = driver_get_ptr();
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
 
-   if (!cg)
+   if (!cg_data)
       return 0;
 
-   for (i = 1; i <= cg->shader->passes; i++)
+   for (i = 1; i <= cg_data->shader->passes; i++)
       for (j = 0; j < PREV_TEXTURES; j++)
-         if (cg->prg[i].prev[j].tex)
+         if (cg_data->prg[i].prev[j].tex)
             max_prev = max(j + 1, max_prev);
 
    return max_prev;
@@ -1048,32 +1015,25 @@ static unsigned gl_cg_get_prev_textures(void)
 
 static bool gl_cg_get_feedback_pass(unsigned *pass)
 {
-   driver_t *driver = driver_get_ptr();
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
-
-   if (!cg || cg->shader->feedback_pass < 0)
+   if (!cg_data || cg_data->shader->feedback_pass < 0)
       return false;
 
-   *pass = cg->shader->feedback_pass;
+   *pass = cg_data->shader->feedback_pass;
    return true;
 }
 
 static bool gl_cg_mipmap_input(unsigned idx)
 {
-   driver_t *driver = driver_get_ptr();
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
-   if (cg && idx)
-      return cg->shader->pass[idx - 1].mipmap;
+   if (cg_data && idx)
+      return cg_data->shader->pass[idx - 1].mipmap;
    return false;
 }
 
 static struct video_shader *gl_cg_get_current_shader(void)
 {
-   driver_t *driver = driver_get_ptr();
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
-   if (!cg)
+   if (!cg_data)
       return NULL;
-   return cg->shader;
+   return cg_data->shader;
 }
 
 const shader_backend_t gl_cg_backend = {
