@@ -148,12 +148,8 @@ const char *msg_hash_to_str_us(uint32_t hash)
          return "Removing temporary content file";
       case MSG_LOADED_STATE_FROM_SLOT:
          return "Loaded state from slot";
-      case MSG_DOWNLOAD_PROGRESS:
-         return "Download progress";
       case MSG_COULD_NOT_PROCESS_ZIP_FILE:
          return "Could not process ZIP file.";
-      case MSG_DOWNLOAD_COMPLETE:
-         return "Download complete";
       case MSG_SCANNING_OF_DIRECTORY_FINISHED:
          return "Scanning of directory finished";
       case MSG_SCANNING:
@@ -186,6 +182,12 @@ const char *msg_hash_to_str_us(uint32_t hash)
          return "Rewinding.";
       case MSG_REWIND_REACHED_END:
          return "Reached end of rewind buffer.";
+      case MSG_TASK_FAILED:
+         return "Failed";
+      case MSG_DOWNLOADING:
+         return "Downloading";
+      case MSG_EXTRACTING:
+         return "Extracting";
       default:
          break;
    }

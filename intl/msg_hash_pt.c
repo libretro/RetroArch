@@ -100,12 +100,8 @@ const char *msg_hash_to_str_pt(uint32_t hash)
          return "Removendo conteúdo temporário";
       case MSG_LOADED_STATE_FROM_SLOT:
          return "Estado carregado do slot";
-      case MSG_DOWNLOAD_PROGRESS:
-         return "Progresso do download";
       case MSG_COULD_NOT_PROCESS_ZIP_FILE:
          return "Incapaz de processar arquivo ZIP.";
-      case MSG_DOWNLOAD_COMPLETE:
-         return "Download concluído";
       case MSG_SCANNING_OF_DIRECTORY_FINISHED:
          return "Exame de diretório concluído";
       case MSG_SCANNING:
@@ -138,6 +134,12 @@ const char *msg_hash_to_str_pt(uint32_t hash)
          return "Retrocedendo.";
       case MSG_REWIND_REACHED_END:
          return "Final do buffer de retrocesso atingido.";
+      case MSG_TASK_FAILED:
+         return "Falhou";
+      case MSG_DOWNLOADING:
+         return "Baixando";
+      case MSG_EXTRACTING:
+         return "Extraindo";
       default:
          break;
    }

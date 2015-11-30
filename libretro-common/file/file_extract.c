@@ -604,6 +604,15 @@ bool zlib_parse_file(const char *file, const char *valid_exts,
    return returnerr;
 }
 
+int zlib_parse_file_progress(void *data)
+{
+   /* FIXME: this estimate is pretty bad */
+   zlib_transfer_t *state = (zlib_transfer_t*)data;
+   const uint8_t *offset = state->data + read_le(state->directory + 42, 4);
+   ptrdiff_t delta = offset - state->data - 46 - 22;
+   return delta * 100 / state->zip_size;
+}
+
 struct zip_extract_userdata
 {
    char *zip_path;

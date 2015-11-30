@@ -55,6 +55,10 @@ struct rarch_task {
     /* created by task handler; destroyed by main loop (after calling the callback) */
     char *error;
 
+    /* -1 = unmettered, 0-100 progress value */
+    char progress;
+    char *title; /* handler can modify but will be free()d automatically if non-null */
+
     /* don't touch this. */
     rarch_task_t *next;
 };

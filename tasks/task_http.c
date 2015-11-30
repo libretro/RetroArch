@@ -110,28 +110,14 @@ static int cb_http_conn_default(void *data_, size_t len)
  * Returns: 0 when finished, -1 when we should continue
  * with the transfer on the next frame.
  **/
-static int rarch_main_data_http_iterate_transfer(void *data)
+static int rarch_main_data_http_iterate_transfer(rarch_task_t *task)
 {
-   http_handle_t *http  = (http_handle_t*)data;
+   http_handle_t *http  = (http_handle_t*)task->state;
    size_t pos  = 0, tot = 0;
 
    if (!net_http_update(http->handle, &pos, &tot))
    {
-      int percent = 0;
-
-      if(tot != 0)
-         percent = (unsigned long long)pos * 100
-            / (unsigned long long)tot;
-
-      if (percent > 0)
-      {
-         char tmp[PATH_MAX_LENGTH];
-         snprintf(tmp, sizeof(tmp), "%s: %d%%",
-               msg_hash_to_str(MSG_DOWNLOAD_PROGRESS),
-               percent);
-         data_runloop_osd_msg(tmp, sizeof(tmp));
-      }
-
+      task->progress = tot == 0 ? -1 : (pos * 100 / tot);
       return -1;
    }
 
@@ -154,7 +140,7 @@ static void rarch_task_http_transfer_handler(rarch_task_t *task)
             http->status = HTTP_STATUS_CONNECTION_TRANSFER_PARSE;
          break;
       case HTTP_STATUS_TRANSFER:
-         if (!rarch_main_data_http_iterate_transfer(http))
+         if (!rarch_main_data_http_iterate_transfer(task))
             goto task_finished;
          break;
       case HTTP_STATUS_TRANSFER_PARSE:
@@ -212,6 +198,7 @@ bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task
    rarch_task_t  *t;
    http_handle_t *http;
    struct http_connection_t *conn;
+   char tmp[PATH_MAX_LENGTH];
 
    if (!url || !*url)
       return false;
@@ -235,6 +222,10 @@ bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task
    t->state = http;
    t->callback = cb;
    t->user_data = user_data;
+   t->progress = -1;
+
+   snprintf(tmp, sizeof(tmp), "%s '%s'", msg_hash_to_str(MSG_DOWNLOADING), path_basename(url));
+   t->title = strdup(tmp);
 
    rarch_task_push(t);
 
