@@ -685,7 +685,7 @@ void state_manager_check_rewind(bool pressed)
                runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ? 1 : 30, true);
          core.retro_unserialize(buf, rewind_state.size);
 
-         if (global->bsv.movie)
+         if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             bsv_movie_frame_rewind(global->bsv.movie);
       }
       else
@@ -699,7 +699,7 @@ void state_manager_check_rewind(bool pressed)
       cnt = (cnt + 1) % (settings->rewind_granularity ?
             settings->rewind_granularity : 1); /* Avoid possible SIGFPE. */
 
-      if ((cnt == 0) || global->bsv.movie)
+      if ((cnt == 0) || bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
       {
          static struct retro_perf_counter rewind_serialize = {0};
          void *state = NULL;

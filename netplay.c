@@ -1752,7 +1752,7 @@ bool init_netplay(void)
    if (!global->netplay.enable)
       return false;
 
-   if (global->bsv.movie_start_playback)
+   if (bsv_movie_ctl(BSV_MOVIE_CTL_START_PLAYBACK, NULL))
    {
       RARCH_WARN("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED));
       return false;

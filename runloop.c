@@ -560,7 +560,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
          break;
       case RUNLOOP_CTL_CHECK_MOVIE:
-         if (global->bsv.movie_playback)
+         if (bsv_movie_ctl(BSV_MOVIE_CTL_PLAYBACK_ON, NULL))
             return runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE_PLAYBACK, NULL);
          if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             return runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE_INIT, NULL);
