@@ -161,7 +161,7 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
    GetMonitorInfo(*hm_to_use, (MONITORINFO*)mon);
 }
 
-static LRESULT CALLBACK WndProcCommon(HWND hwnd, UINT message,
+static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    settings_t *settings     = config_get_ptr();
@@ -174,6 +174,7 @@ static LRESULT CALLBACK WndProcCommon(HWND hwnd, UINT message,
          {
             case SC_SCREENSAVE:
             case SC_MONITORPOWER:
+               *quit = true;
                return 0;
          }
          break;
@@ -183,6 +184,7 @@ static LRESULT CALLBACK WndProcCommon(HWND hwnd, UINT message,
       case WM_KEYUP:
       case WM_SYSKEYUP:
       case WM_SYSKEYDOWN:
+         *quit = true;
          return win32_handle_keyboard_event(hwnd, message, wparam, lparam);
 
       case WM_CLOSE:
@@ -194,6 +196,7 @@ static LRESULT CALLBACK WndProcCommon(HWND hwnd, UINT message,
          g_pos_x = placement.rcNormalPosition.left;
          g_pos_y = placement.rcNormalPosition.top;
          g_quit = true;
+         *quit = true;
          return 0;
       }
       case WM_SIZE:
@@ -204,6 +207,7 @@ static LRESULT CALLBACK WndProcCommon(HWND hwnd, UINT message,
             g_resize_height = HIWORD(lparam);
             g_resized = true;
          }
+         *quit = true;
          return 0;
 	  case WM_COMMAND:
          if (settings->ui.menubar_enable)
@@ -216,6 +220,8 @@ static LRESULT CALLBACK WndProcCommon(HWND hwnd, UINT message,
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
+   LRESULT ret;
+   bool quit = false;
 
    switch (message)
    {
@@ -230,8 +236,10 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       case WM_QUIT:
       case WM_SIZE:
       case WM_COMMAND:
-         return WndProcCommon(hwnd, message, wparam, lparam);
-
+         ret = WndProcCommon(&quit, hwnd, message, wparam, lparam);
+         if (quit)
+            return ret;
+         break;
       case WM_CREATE:
          {
             LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
@@ -248,6 +256,8 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
 LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
+   LRESULT ret;
+   bool quit = false;
    settings_t *settings     = config_get_ptr();
 
    switch (message)
@@ -263,7 +273,10 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
       case WM_QUIT:
       case WM_SIZE:
       case WM_COMMAND:
-         return WndProcCommon(hwnd, message, wparam, lparam);
+         ret = WndProcCommon(&quit, hwnd, message, wparam, lparam);
+         if (quit)
+            return ret;
+         break;
       case WM_CREATE:
          create_gl_context(hwnd, &g_quit);
          return 0;
