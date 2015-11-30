@@ -1174,7 +1174,7 @@ int rarch_main_init(int argc, char *argv[])
       RARCH_LOG_OUTPUT("=================================================\n");
    }
 
-   rarch_ctl(RARCH_ACTION_STATE_VALIDATE_CPU_FEATURES, NULL);
+   rarch_ctl(RARCH_CTL_VALIDATE_CPU_FEATURES, NULL);
    config_load();
    rarch_task_init();
 
@@ -1329,7 +1329,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
-      case RARCH_ACTION_STATE_REPLACE_CONFIG:
+      case RARCH_CTL_REPLACE_CONFIG:
          {
             char *path = (char*)data;
 
@@ -1350,7 +1350,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          }
          rarch_main_ctl(RARCH_MAIN_CTL_PREPARE_DUMMY, NULL);
          return true;
-      case RARCH_ACTION_STATE_MENU_RUNNING:
+      case RARCH_CTL_MENU_RUNNING:
 #ifdef HAVE_MENU
          menu_driver_toggle(true);
 #endif
@@ -1359,36 +1359,36 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             event_command(EVENT_CMD_OVERLAY_DEINIT);
 #endif
          break;
-      case RARCH_ACTION_STATE_LOAD_CONTENT:
+      case RARCH_CTL_LOAD_CONTENT:
 #ifdef HAVE_MENU
          /* If content loading fails, we go back to menu. */
          if (!menu_load_content(CORE_TYPE_PLAIN))
-            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING, NULL);
+            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
 #endif
          if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)
             driver->frontend_ctx->content_loaded();
          break;
 #ifdef HAVE_FFMPEG
-      case RARCH_ACTION_STATE_LOAD_CONTENT_FFMPEG:
+      case RARCH_CTL_LOAD_CONTENT_FFMPEG:
 #ifdef HAVE_MENU
          /* If content loading fails, we go back to menu. */
          if (!menu_load_content(CORE_TYPE_FFMPEG))
-            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING, NULL);
+            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
 #endif
          if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)
             driver->frontend_ctx->content_loaded();
          break;
 #endif
-      case RARCH_ACTION_STATE_LOAD_CONTENT_IMAGEVIEWER:
+      case RARCH_CTL_LOAD_CONTENT_IMAGEVIEWER:
 #ifdef HAVE_MENU
          /* If content loading fails, we go back to menu. */
          if (!menu_load_content(CORE_TYPE_IMAGEVIEWER))
-            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING, NULL);
+            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
 #endif
          if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)
             driver->frontend_ctx->content_loaded();
          break;
-      case RARCH_ACTION_STATE_MENU_RUNNING_FINISHED:
+      case RARCH_CTL_MENU_RUNNING_FINISHED:
 #ifdef HAVE_MENU
          menu_driver_toggle(false);
 #endif
@@ -1398,15 +1398,15 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             event_command(EVENT_CMD_OVERLAY_INIT);
 #endif
          break;
-      case RARCH_ACTION_STATE_QUIT:
+      case RARCH_CTL_QUIT:
          if (global)
             system->shutdown = true;
-         rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
+         rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
          break;
-      case RARCH_ACTION_STATE_FORCE_QUIT:
-         rarch_ctl(RARCH_ACTION_STATE_QUIT, NULL);
+      case RARCH_CTL_FORCE_QUIT:
+         rarch_ctl(RARCH_CTL_QUIT, NULL);
          break;
-      case RARCH_ACTION_STATE_VALIDATE_CPU_FEATURES:
+      case RARCH_CTL_VALIDATE_CPU_FEATURES:
          {
             uint64_t cpu = retro_get_cpu_features();
             (void)cpu;
@@ -1425,14 +1425,14 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
          }
          break;
-      case RARCH_ACTION_STATE_VERIFY_API_VERSION:
+      case RARCH_CTL_VERIFY_API_VERSION:
          RARCH_LOG("Version of libretro API: %u\n", core.retro_api_version());
          RARCH_LOG("Compiled against API: %u\n",    RETRO_API_VERSION);
 
          if (core.retro_api_version() != RETRO_API_VERSION)
             RARCH_WARN("%s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
          break;
-      case RARCH_ACTION_STATE_FILL_PATHNAMES:
+      case RARCH_CTL_FILL_PATHNAMES:
          rarch_init_savefile_paths();
          strlcpy(global->bsv.movie_path, global->name.savefile,
                sizeof(global->bsv.movie_path));
@@ -1450,7 +1450,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             fill_pathname_noext(global->name.ips, global->name.base, ".ips",
                   sizeof(global->name.ips));
          break;
-      case RARCH_ACTION_STATE_NONE:
+      case RARCH_CTL_NONE:
       default:
          return false;
    }

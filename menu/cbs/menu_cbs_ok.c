@@ -679,7 +679,7 @@ static int generic_action_ok(const char *path,
          msg_force       = true;
          menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
 
-         if (rarch_ctl(RARCH_ACTION_STATE_REPLACE_CONFIG, action_path))
+         if (rarch_ctl(RARCH_CTL_REPLACE_CONFIG, action_path))
          {
             bool pending_push = false;
             menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
@@ -1362,7 +1362,7 @@ static int action_ok_file_load_or_resume(const char *path,
 
    rarch_main_ctl(RARCH_MAIN_CTL_SET_CONTENT_PATH, menu->deferred_path);
    event_command(EVENT_CMD_LOAD_CORE);
-   rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT, NULL);
+   rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
 
    return -1;
 }

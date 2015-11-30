@@ -794,7 +794,7 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 
             rarch_main_ctl(RARCH_MAIN_CTL_CLEAR_CONTENT_PATH, NULL);
 
-            rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT, NULL);
+            rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
          }
          break;
       case RARCH_MAIN_CTL_SET_CORE_SHUTDOWN:
@@ -1062,10 +1062,10 @@ int rarch_main_iterate(unsigned *sleep_ms)
       if (menu_driver_alive())
       {
          if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
-            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
+            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
       }
       else
-         rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING, NULL);
+         rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
    }
 #endif
 
@@ -1086,7 +1086,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
       bool is_idle = rarch_main_ctl(RARCH_MAIN_CTL_IS_IDLE, NULL);
 
       if (menu_driver_iterate((enum menu_action)menu_input_frame_retropad(input, trigger_input)) == -1)
-         rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
+         rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 
       if (focused || !is_idle)
          menu_iterate_render();

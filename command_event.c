@@ -319,7 +319,7 @@ void event_disk_control_append_image(const char *path)
        * started out in a single disk case, and that this way
        * of doing it makes the most sense. */
       rarch_set_paths(path);
-      rarch_ctl(RARCH_ACTION_STATE_FILL_PATHNAMES, NULL);
+      rarch_ctl(RARCH_CTL_FILL_PATHNAMES, NULL);
    }
 
    event_command(EVENT_CMD_AUTOSAVE_INIT);
@@ -638,7 +638,7 @@ static bool event_init_content(void)
       return true;
 
    if (!global->inited.core.no_content)
-      rarch_ctl(RARCH_ACTION_STATE_FILL_PATHNAMES, NULL);
+      rarch_ctl(RARCH_CTL_FILL_PATHNAMES, NULL);
 
    if (!init_content_file())
       return false;
@@ -687,7 +687,7 @@ static bool event_init_core(void)
    if((settings->sort_savestates_enable || settings->sort_savefiles_enable) && !global->inited.core.no_content)
       set_paths_redirect(global->name.base);
 
-   rarch_ctl(RARCH_ACTION_STATE_VERIFY_API_VERSION, NULL);
+   rarch_ctl(RARCH_CTL_VERIFY_API_VERSION, NULL);
    core.retro_init();
 
    global->sram.use = (global->inited.core.type == CORE_TYPE_PLAIN) &&
@@ -1026,15 +1026,15 @@ bool event_command(enum event_command cmd)
 #ifdef HAVE_DYNAMIC
          event_command(EVENT_CMD_LOAD_CORE);
 #endif
-         rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT, NULL);
+         rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
          break;
 #ifdef HAVE_FFMPEG
       case EVENT_CMD_LOAD_CONTENT_FFMPEG:
-         rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT_FFMPEG, NULL);
+         rarch_ctl(RARCH_CTL_LOAD_CONTENT_FFMPEG, NULL);
          break;
 #endif
       case EVENT_CMD_LOAD_CONTENT_IMAGEVIEWER:
-         rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT_IMAGEVIEWER, NULL);
+         rarch_ctl(RARCH_CTL_LOAD_CONTENT_IMAGEVIEWER, NULL);
          break;
       case EVENT_CMD_LOAD_CONTENT:
          {
@@ -1103,9 +1103,9 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_MENU_TOGGLE:
 #ifdef HAVE_MENU
          if (menu_driver_alive())
-            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
+            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
          else
-            rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING, NULL);
+            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
 #endif
          break;
       case EVENT_CMD_CONTROLLERS_INIT:
@@ -1147,7 +1147,7 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_LOAD_CORE_DEINIT);
          break;
       case EVENT_CMD_QUIT:
-         rarch_ctl(RARCH_ACTION_STATE_QUIT, NULL);
+         rarch_ctl(RARCH_CTL_QUIT, NULL);
          break;
       case EVENT_CMD_REINIT:
          {
@@ -1400,17 +1400,17 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_DRIVERS_INIT);
          break;
       case EVENT_CMD_QUIT_RETROARCH:
-         rarch_ctl(RARCH_ACTION_STATE_FORCE_QUIT, NULL);
+         rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
          break;
       case EVENT_CMD_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
          rarch_main_msg_queue_push("Shutting down...", 1, 180, true);
-         rarch_ctl(RARCH_ACTION_STATE_FORCE_QUIT, NULL);
+         rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
          system("shutdown -P now");
 #endif
          break;
       case EVENT_CMD_RESUME:
-         rarch_ctl(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED, NULL);
+         rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
          break;
       case EVENT_CMD_RESTART_RETROARCH:
          {
