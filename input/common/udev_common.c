@@ -6,7 +6,7 @@
 
 static bool udev_mon_inited;
 static struct udev_monitor *g_udev_mon;
-struct udev *g_udev;
+static struct udev *g_udev;
 
 bool udev_mon_new(void)
 {
@@ -60,4 +60,16 @@ bool udev_mon_hotplug_available(void)
 struct udev_device *udev_mon_receive_device(void)
 {
    return udev_monitor_receive_device(g_udev_mon);
+}
+
+struct udev_enumerate *udev_mon_enumerate(void)
+{
+   return  udev_enumerate_new(g_udev);
+}
+
+/* Get the filename of the /sys entry for the device
+ * and create a udev_device object (dev) representing it. */
+struct udev_device *udev_mon_device_new(const char *name)
+{
+   return udev_device_new_from_syspath(g_udev, name);
 }

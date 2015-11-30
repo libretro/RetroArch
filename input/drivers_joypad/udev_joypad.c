@@ -518,7 +518,7 @@ static bool udev_joypad_init(void *data)
    if (!udev_mon_new())
       goto error;
 
-   enumerate = udev_enumerate_new(g_udev);
+   enumerate = udev_mon_enumerate();
    if (!enumerate)
       goto error;
 
@@ -529,7 +529,7 @@ static bool udev_joypad_init(void *data)
    for (item = devs; item; item = udev_list_entry_get_next(item))
    {
       const char         *name = udev_list_entry_get_name(item);
-      struct udev_device  *dev = udev_device_new_from_syspath(g_udev, name);
+      struct udev_device  *dev = udev_mon_device_new(name);
       const char      *devnode = udev_device_get_devnode(dev);
 
       if (devnode)
