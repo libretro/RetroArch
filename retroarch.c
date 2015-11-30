@@ -55,6 +55,10 @@
 
 #include "retroarch.h"
 
+#ifdef HAVE_COMMAND
+#include "command.h"
+#endif
+
 #ifdef HAVE_MENU
 #include "menu/menu.h"
 #include "menu/menu_hash.h"
