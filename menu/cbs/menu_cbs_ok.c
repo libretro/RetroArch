@@ -1129,7 +1129,6 @@ static int action_ok_download_generic(const char *path,
 {
 #ifdef HAVE_NETWORKING
    char s[PATH_MAX_LENGTH];
-   char s2[PATH_MAX_LENGTH];
    char s3[PATH_MAX_LENGTH];
    settings_t *settings            = config_get_ptr();
    menu_file_transfer_t *transf;
