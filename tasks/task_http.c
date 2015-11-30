@@ -92,7 +92,7 @@ static int cb_http_conn_default(void *data_, size_t len)
 
    if (!http->handle)
    {
-      RARCH_ERR("Could not create new HTTP session handle.\n");
+      RARCH_ERR("[http] Could not create new HTTP session handle.\n");
       http->error = true;
       return -1;
    }
@@ -193,6 +193,18 @@ task_finished:
    free(http);
 }
 
+static bool rarch_task_http_finder(rarch_task_t *task, void *user_data)
+{
+   http_handle_t *http = (http_handle_t*)task->state;
+   const char *handle_url;
+   if (task->handler != rarch_task_http_transfer_handler)
+      return false;
+
+   handle_url = net_http_connection_url(http->connection.handle);
+
+   return strcmp(handle_url, (const char*)user_data) == 0;
+}
+
 bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task_callback_t cb, void *user_data)
 {
    rarch_task_t  *t;
@@ -202,6 +214,13 @@ bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task
 
    if (!url || !*url)
       return false;
+
+   /* Concurrent download of the same file is not allowed */
+   if (rarch_task_find(rarch_task_http_finder, (void*)url))
+   {
+      RARCH_LOG("[http] '%s'' is already being downloaded.\n", url);
+      return false;
+   }
 
    conn = net_http_connection_new(url);
 

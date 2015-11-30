@@ -260,6 +260,11 @@ void net_http_connection_free(struct http_connection_t *conn)
    free(conn);
 }
 
+const char *net_http_connection_url(struct http_connection_t *conn)
+{
+   return conn->urlcopy;
+}
+
 struct http_t *net_http_new(struct http_connection_t *conn)
 {
    bool error;
