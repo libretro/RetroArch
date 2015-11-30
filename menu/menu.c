@@ -209,6 +209,26 @@ void menu_free(menu_handle_t *menu)
    free(menu);
 }
 
+#if 0
+static void bundle_decompressed(void *task_data, void *user_data, const char *err)
+{
+   decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
+
+   if (dec && !err)
+      event_command(EVENT_CMD_REINIT);
+
+   if (err)
+      RARCH_ERR("%s", err);
+
+   if (dec)
+   {
+      /* delete bundle? */
+      free(dec->source_file);
+      free(dec);
+   }
+}
+#endif
+
 /**
  * menu_init:
  * @data                     : Menu context handle.
@@ -250,16 +270,14 @@ void *menu_init(const void *data)
    menu->help_screen_type           = MENU_HELP_WELCOME;
    settings->menu_show_start_screen = false;
 
-   /* TODO/FIXME - Update to newer tasks */
+   /* FIXME: figure out bundle_path */
 #if 0
    if (settings->bundle_assets_extract_enable &&
          (strcmp(PACKAGE_VERSION, settings->bundle_assets_last_extracted_version) != 0)
       )
    {
-      menu->push_help_screen = true;
-      menu->help_screen_type = MENU_HELP_EXTRACT;
-
-      rarch_main_data_msg_queue_push(DATA_TYPE_FILE, "cb_bundle_extract", "cb_bundle_extract", 0, 1, true);
+      rarch_task_push_decompress(bundle_path, settings->core_assets_directory, NULL,
+            bundle_decompressed);
    }
 #endif
 
