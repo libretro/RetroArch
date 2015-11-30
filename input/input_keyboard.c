@@ -43,13 +43,15 @@ static void *g_keyboard_press_data;
 
 static void input_keyboard_line_toggle_osk(bool enable)
 {
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
    if (!settings->osk.enable)
       return;
 
-   driver->keyboard_linefeed_enable = enable;
+   if (enable)
+      input_driver_ctl(RARCH_INPUT_CTL_SET_KEYBOARD_LINEFEED_ENABLED, NULL);
+   else
+      input_driver_ctl(RARCH_INPUT_CTL_UNSET_KEYBOARD_LINEFEED_ENABLED, NULL);
 }
 
 /**

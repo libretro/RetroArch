@@ -82,6 +82,7 @@ struct turbo_buttons
    unsigned count;
 };
 
+static bool main_keyboard_linefeed_enable;
 static bool main_osk_enabled;
 static bool input_data_own;
 static const input_driver_t *main_input;
@@ -740,6 +741,14 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          break;
       case RARCH_INPUT_CTL_IS_OSK_ENABLED:
          return main_osk_enabled;
+      case RARCH_INPUT_CTL_SET_KEYBOARD_LINEFEED_ENABLED:
+         main_keyboard_linefeed_enable = true;
+         break;
+      case RARCH_INPUT_CTL_UNSET_KEYBOARD_LINEFEED_ENABLED:
+         main_keyboard_linefeed_enable = false;
+         break;
+      case RARCH_INPUT_CTL_IS_KEYBOARD_LINEFEED_ENABLED:
+         return main_keyboard_linefeed_enable;
       case RARCH_INPUT_CTL_NONE:
       default:
          break;

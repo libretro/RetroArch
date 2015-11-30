@@ -508,7 +508,12 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
                event_command(EVENT_CMD_AUDIO_MUTE_TOGGLE);
 
             if (cmd->osk_pressed)
-               driver->keyboard_linefeed_enable = !driver->keyboard_linefeed_enable;
+            {
+               if (input_driver_ctl(RARCH_INPUT_CTL_IS_KEYBOARD_LINEFEED_ENABLED, NULL))
+                  input_driver_ctl(RARCH_INPUT_CTL_UNSET_KEYBOARD_LINEFEED_ENABLED, NULL);
+               else
+                  input_driver_ctl(RARCH_INPUT_CTL_SET_KEYBOARD_LINEFEED_ENABLED, NULL);
+            }
 
             if (cmd->volume_up_pressed)
                event_command(EVENT_CMD_VOLUME_UP);
@@ -796,18 +801,18 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
 
 
 #ifdef HAVE_OVERLAY
-static void rarch_main_iterate_linefeed_overlay(driver_t *driver, settings_t *settings)
+static void rarch_main_iterate_linefeed_overlay(settings_t *settings)
 {
    static char prev_overlay_restore = false;
    bool osk_enable = input_driver_ctl(RARCH_INPUT_CTL_IS_OSK_ENABLED, NULL);
 
-   if (osk_enable && !driver->keyboard_linefeed_enable)
+   if (osk_enable && !input_driver_ctl(RARCH_INPUT_CTL_IS_KEYBOARD_LINEFEED_ENABLED, NULL))
    {
       input_driver_ctl(RARCH_INPUT_CTL_UNSET_OSK_ENABLED, NULL);
       prev_overlay_restore  = true;
       event_command(EVENT_CMD_OVERLAY_DEINIT);
    }
-   else if (!osk_enable && driver->keyboard_linefeed_enable)
+   else if (!osk_enable && input_driver_ctl(RARCH_INPUT_CTL_IS_KEYBOARD_LINEFEED_ENABLED, NULL))
    {
       input_driver_ctl(RARCH_INPUT_CTL_SET_OSK_ENABLED, NULL);
       prev_overlay_restore  = false;
@@ -1054,7 +1059,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
 #endif
 
 #ifdef HAVE_OVERLAY
-   rarch_main_iterate_linefeed_overlay(driver, settings);
+   rarch_main_iterate_linefeed_overlay(settings);
 #endif
 
    ret = rarch_main_iterate_time_to_exit(&cmd);
