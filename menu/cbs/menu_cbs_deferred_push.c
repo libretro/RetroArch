@@ -339,11 +339,11 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
    if (dec && !err)
    {
       char msg[PATH_MAX_LENGTH];
+
       if (type_hash == CB_CORE_UPDATER_DOWNLOAD)
          event_command(EVENT_CMD_CORE_INFO_INIT);
-       else if (type_hash == CB_UPDATE_ASSETS)
-       event_command(EVENT_CMD_REINIT);
-        
+      else if (type_hash == CB_UPDATE_ASSETS)
+         event_command(EVENT_CMD_REINIT);
 
       snprintf(msg, sizeof(msg), "%s extracted.", path_basename(dec->source_file));
       rarch_main_msg_queue_push(msg, 1, 90, true);
