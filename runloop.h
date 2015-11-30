@@ -124,8 +124,6 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
-   bool force_fullscreen;
-
    struct
    {
       core_info_list_t *list;

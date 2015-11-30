@@ -93,7 +93,11 @@ enum rarch_ctl_state
        * but this will do for now. */
    RARCH_CTL_VALIDATE_CPU_FEATURES,
 
-   RARCH_CTL_FILL_PATHNAMES
+   RARCH_CTL_FILL_PATHNAMES,
+
+   RARCH_CTL_SET_FORCE_FULLSCREEN,
+
+   RARCH_CTL_IS_FORCE_FULLSCREEN
 };
 
 enum rarch_content_type

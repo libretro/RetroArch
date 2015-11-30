@@ -88,6 +88,7 @@ enum
 static char current_savestate_dir[PATH_MAX_LENGTH];
 static char current_savefile_dir[PATH_MAX_LENGTH];
 
+static bool rarch_force_fullscreen;
 static bool error_on_init;
 static char error_string[PATH_MAX_LENGTH];
 static jmp_buf error_sjlj_context;
@@ -686,7 +687,7 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 'f':
-            global->force_fullscreen = true;
+            rarch_ctl(RARCH_CTL_SET_FORCE_FULLSCREEN, NULL);
             break;
 
          case 'S':
@@ -1041,6 +1042,8 @@ static bool init_state(void)
    video_driver_ctl(RARCH_DISPLAY_CTL_SET_ACTIVE, NULL);
    audio_driver_ctl(RARCH_AUDIO_CTL_SET_ACTIVE, NULL);
 
+   rarch_force_fullscreen = false;
+
    return true;
 }
 
@@ -1329,6 +1332,11 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
+      case RARCH_CTL_SET_FORCE_FULLSCREEN:
+         rarch_force_fullscreen = true;
+         break;
+      case RARCH_CTL_IS_FORCE_FULLSCREEN:
+         return rarch_force_fullscreen;
       case RARCH_CTL_REPLACE_CONFIG:
          {
             char *path = (char*)data;

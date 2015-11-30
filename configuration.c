@@ -28,6 +28,7 @@
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
 #include "general.h"
+#include "retroarch.h"
 #include "system.h"
 #include "verbosity.h"
 
@@ -441,8 +442,7 @@ static void config_set_defaults(void)
 #endif
    settings->multimedia.builtin_imageviewer_enable = true;
    settings->video.scale                 = scale;
-   settings->video.fullscreen            = global->force_fullscreen
-      ? true : fullscreen;
+   settings->video.fullscreen            = rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL)  ? true : fullscreen;
    settings->video.windowed_fullscreen   = windowed_fullscreen;
    settings->video.monitor_index         = monitor_index;
    settings->video.fullscreen_x          = fullscreen_x;
@@ -1232,7 +1232,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_BASE  (conf, settings, video.fullscreen_x, "video_fullscreen_x");
    CONFIG_GET_INT_BASE  (conf, settings, video.fullscreen_y, "video_fullscreen_y");
 
-   if (!global->force_fullscreen)
+   if (!rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
       CONFIG_GET_BOOL_BASE(conf, settings, video.fullscreen, "video_fullscreen");
 
    CONFIG_GET_BOOL_BASE(conf, settings, bundle_assets_extract_enable, "bundle_assets_extract_enable");
