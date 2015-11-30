@@ -87,9 +87,9 @@ static void push_task_progress(rarch_task_t *task)
       else
       {
          if (task->progress >= 0 && task->progress <= 100)
-            rarch_main_msg_queue_pushf(1, 10, true, "%i%%: %s", task->progress, task->title);
+            rarch_main_msg_queue_pushf(1, 60, true, "%i%%: %s", task->progress, task->title);
          else
-            rarch_main_msg_queue_pushf(1, 10, true, "%s...", task->title);
+            rarch_main_msg_queue_pushf(1, 60, true, "%s...", task->title);
       }
    }
 }
