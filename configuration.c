@@ -717,9 +717,6 @@ static void config_set_defaults(void)
    settings->user_language = 0;
 
    global->console.sound.system_bgm_enable = false;
-#ifdef RARCH_CONSOLE
-   global->console.sound.mode = SOUND_MODE_NORMAL;
-#endif
 
    video_driver_ctl(RARCH_DISPLAY_CTL_DEFAULT_SETTINGS, NULL);
 
@@ -1342,7 +1339,6 @@ static bool config_load_file(const char *path, bool set_defaults)
     * important that it works for consoles right now */
    config_get_bool(conf, "custom_bgm_enable",
          &global->console.sound.system_bgm_enable);
-   CONFIG_GET_INT_BASE(conf, global, console.sound.mode, "sound_mode");
    video_driver_ctl(RARCH_DISPLAY_CTL_LOAD_SETTINGS, conf);
 #endif
    CONFIG_GET_INT_BASE(conf, settings, state_slot, "state_slot");
@@ -2757,7 +2753,6 @@ bool config_save_file(const char *path)
 
    config_set_bool(conf, "config_save_on_exit",
          settings->config_save_on_exit);
-   config_set_int(conf, "sound_mode", global->console.sound.mode);
    config_set_int(conf, "state_slot", settings->state_slot);
 
 #ifdef HAVE_NETPLAY

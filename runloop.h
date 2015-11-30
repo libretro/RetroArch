@@ -278,7 +278,6 @@ typedef struct global
 
       struct
       {
-         unsigned mode;
          bool system_bgm_enable;
       } sound;
 

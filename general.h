@@ -44,18 +44,6 @@
 extern "C" {
 #endif
 
-enum sound_mode_enums
-{
-   SOUND_MODE_NORMAL = 0,
-#ifdef HAVE_RSOUND
-   SOUND_MODE_RSOUND,
-#endif
-#ifdef HAVE_HEADSET
-   SOUND_MODE_HEADSET,
-#endif
-   SOUND_MODE_LAST
-};
-
 /**
  * retro_fail:
  * @error_code  : Error code.
