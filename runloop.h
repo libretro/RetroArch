@@ -303,7 +303,6 @@ typedef struct global
    {
       bool main;
       bool content;
-      bool error;
       struct
       {
          bool no_content;
@@ -311,8 +310,6 @@ typedef struct global
       } core;
    } inited;
 
-   jmp_buf error_sjlj_context;
-   char error_string[PATH_MAX_LENGTH];
    retro_keyboard_event_t frontend_key_event;
 } global_t;
 

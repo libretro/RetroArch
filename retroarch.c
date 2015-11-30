@@ -62,9 +62,6 @@
 
 #include "config.features.h"
 
-static char current_savestate_dir[PATH_MAX_LENGTH];
-static char current_savefile_dir[PATH_MAX_LENGTH];
-
 /* Descriptive names for options without short variant. Please keep the name in
    sync with the option name. Order does not matter. */
 enum
@@ -87,6 +84,13 @@ enum
    RA_OPT_LOG_FILE,
    RA_OPT_MAX_FRAMES
 };
+
+static char current_savestate_dir[PATH_MAX_LENGTH];
+static char current_savefile_dir[PATH_MAX_LENGTH];
+
+static bool error_on_init;
+static char error_string[PATH_MAX_LENGTH];
+static jmp_buf error_sjlj_context;
 
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
 
@@ -1138,17 +1142,18 @@ void rarch_init_system_av_info(void)
 int rarch_main_init(int argc, char *argv[])
 {
    int sjlj_ret;
-   bool *verbosity      = NULL;
-   global_t     *global = global_get_ptr();
+   bool *verbosity   = NULL;
+   global_t *global  = global_get_ptr();
 
    init_state();
 
-   if ((sjlj_ret = setjmp(global->error_sjlj_context)) > 0)
+   if ((sjlj_ret = setjmp(error_sjlj_context)) > 0)
    {
-      RARCH_ERR("Fatal error received in: \"%s\"\n", global->error_string);
+      RARCH_ERR("Fatal error received in: \"%s\"\n", error_string);
       return sjlj_ret;
    }
-   global->inited.error = true;
+
+   error_on_init  = true;
    retro_main_log_file_init(NULL);
    parse_input(argc, argv);
 
@@ -1229,7 +1234,7 @@ int rarch_main_init(int argc, char *argv[])
    event_command(EVENT_CMD_SAVEFILES_INIT);
    event_command(EVENT_CMD_SET_PER_GAME_RESOLUTION);
 
-   global->inited.error = false;
+   error_on_init        = false;
    global->inited.main  = true;
    return 0;
 
@@ -1707,16 +1712,11 @@ int rarch_info_get_capabilities(enum rarch_capabilities type, char *s, size_t le
  **/
 void retro_fail(int error_code, const char *error)
 {
-   global_t *global = global_get_ptr();
-
-   if (!global)
-      return;
-
    /* We cannot longjmp unless we're in rarch_main_init().
     * If not, something went very wrong, and we should 
     * just exit right away. */
-   retro_assert(global->inited.error);
+   retro_assert(error_on_init);
 
-   strlcpy(global->error_string, error, sizeof(global->error_string));
-   longjmp(global->error_sjlj_context, error_code);
+   strlcpy(error_string, error, sizeof(error_string));
+   longjmp(error_sjlj_context, error_code);
 }
