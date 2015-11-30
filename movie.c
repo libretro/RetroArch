@@ -344,6 +344,9 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
       case BSV_MOVIE_CTL_SET_FRAME_END:
          bsv_movie_set_frame_end(global->bsv.movie);
          break;
+      case BSV_MOVIE_CTL_FRAME_REWIND:
+         bsv_movie_frame_rewind(global->bsv.movie);
+         break;
       default:
          return false;
    }

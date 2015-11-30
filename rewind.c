@@ -654,7 +654,6 @@ void state_manager_event_deinit(void)
 void state_manager_check_rewind(bool pressed)
 {
    static bool first    = true;
-   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
    if (state_manager_frame_is_reversed())
@@ -686,7 +685,7 @@ void state_manager_check_rewind(bool pressed)
          core.retro_unserialize(buf, rewind_state.size);
 
          if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-            bsv_movie_frame_rewind(global->bsv.movie);
+            bsv_movie_ctl(BSV_MOVIE_CTL_FRAME_REWIND, NULL);
       }
       else
          rarch_main_msg_queue_push_new(MSG_REWIND_REACHED_END,
