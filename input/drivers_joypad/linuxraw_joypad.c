@@ -89,8 +89,6 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
    *pad->ident = '\0';
    if (pad->fd >= 0)
    {
-      struct epoll_event event;
-
       if (ioctl(pad->fd, JSIOCGNAME(sizeof(settings->input.device_names[0])), pad->ident) >= 0)
       {
          RARCH_LOG("[Device]: Found pad: %s on %s.\n", pad->ident, path);
@@ -103,16 +101,16 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
             rarch_main_msg_queue_push(msg, 0, 60, false);
          }
       }
-
       else
          RARCH_ERR("[Device]: Didn't find ident of %s.\n", path);
 
-      event.events = EPOLLIN;
-      event.data.ptr = pad;
-      epoll_ctl(g_epoll, EPOLL_CTL_ADD, pad->fd, &event);
+      if (!epoll_add(pad->fd, pad))
+         goto error;
+
       return true;
    }
 
+error:
    RARCH_ERR("[Device]: Failed to open pad %s (error: %s).\n", path, strerror(errno));
    return false;
 }
@@ -253,15 +251,11 @@ static bool linuxraw_joypad_init(void *data)
    }
 
    g_notify = inotify_init();
+
    if (g_notify >= 0)
    {
-      struct epoll_event event;
-
       linuxraw_joypad_setup_notify();
-
-      event.events = EPOLLIN;
-      event.data.ptr = NULL;
-      epoll_ctl(g_epoll, EPOLL_CTL_ADD, g_notify, &event);
+      epoll_add(g_notify, NULL);
    }
 
    g_hotplug = true;

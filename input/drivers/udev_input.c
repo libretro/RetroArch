@@ -224,7 +224,6 @@ static bool add_device(udev_input_t *udev,
    udev_input_device_t **tmp;
    udev_input_device_t *device = NULL;
    struct stat st              = {0};
-   struct epoll_event event    = {0};
 
    if (stat(devnode, &st) < 0)
       return false;
@@ -258,13 +257,7 @@ static bool add_device(udev_input_t *udev,
    tmp[udev->num_devices++] = device;
    udev->devices            = tmp;
 
-   event.events             = EPOLLIN;
-   event.data.ptr           = device;
-
-   /* Shouldn't happen, but just check it. */
-   if (epoll_ctl(g_epoll, EPOLL_CTL_ADD, fd, &event) < 0)
-      RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n",
-            fd, strerror(errno));
+   epoll_add(fd, device);
 
    return true;
 
