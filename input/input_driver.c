@@ -480,7 +480,7 @@ int16_t input_state(unsigned port, unsigned device,
       if (bsv_movie_get_input(global->bsv.movie, &ret))
          return ret;
 
-      global->bsv.movie_end = true;
+      bsv_movie_ctl(BSV_MOVIE_CTL_SET_END, NULL);
    }
 
    if (settings->input.remap_binds_enable)

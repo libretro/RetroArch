@@ -625,8 +625,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
          event_command(EVENT_CMD_BSV_MOVIE_DEINIT);
 
-         global->bsv.movie_end      = false;
-         global->bsv.movie_playback = false;
+         bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_END, NULL);
+         bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_PLAYBACK, NULL);
          break;
       case RUNLOOP_CTL_STATE_FREE:
          main_is_idle               = false;
@@ -1053,7 +1053,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
 #endif
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-      bsv_movie_set_frame_start(global->bsv.movie);
+      bsv_movie_ctl(BSV_MOVIE_CTL_SET_FRAME_START, NULL);
 
    if (system->camera_callback.caps)
       driver_camera_poll();
@@ -1092,7 +1092,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    }
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-      bsv_movie_set_frame_end(global->bsv.movie);
+      bsv_movie_ctl(BSV_MOVIE_CTL_SET_FRAME_END, NULL);
 
 #ifdef HAVE_NETPLAY
    if (driver->netplay_data)
