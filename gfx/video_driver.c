@@ -1111,8 +1111,7 @@ struct retro_hw_render_callback *video_driver_callback(void)
    return &video_driver_state.hw_render_callback;
 }
 
-
-bool video_driver_frame_filter(const void *data,
+static bool video_driver_frame_filter(const void *data,
       unsigned width, unsigned height,
       size_t pitch,
       unsigned *output_width, unsigned *output_height,
@@ -1841,9 +1840,13 @@ void video_frame(const void *data, unsigned width,
     * but we really need to do processing before blocking on VSync
     * for best possible scheduling.
     */
-   if ((!video_driver_ctl(RARCH_DISPLAY_CTL_FRAME_FILTER_ALIVE, NULL)
-            || !settings->video.post_filter_record || !data
-            || global->record.gpu_buffer)
+   if (
+         (
+             !video_driver_state.filter.filter
+          || !settings->video.post_filter_record 
+          || !data
+          || global->record.gpu_buffer
+         )
       )
       recording_dump_frame(data, width, height, pitch);
 
