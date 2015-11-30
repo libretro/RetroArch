@@ -88,6 +88,7 @@ enum
 static char current_savestate_dir[PATH_MAX_LENGTH];
 static char current_savefile_dir[PATH_MAX_LENGTH];
 
+static bool rarch_block_config_read;
 static bool rarch_force_fullscreen;
 static bool error_on_init;
 static char error_string[PATH_MAX_LENGTH];
@@ -1337,6 +1338,15 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_IS_FORCE_FULLSCREEN:
          return rarch_force_fullscreen;
+      case RARCH_CTL_SET_BLOCK_CONFIG_READ:
+         rarch_block_config_read = true;
+         break;
+      case RARCH_CTL_UNSET_BLOCK_CONFIG_READ:
+         rarch_block_config_read = false;
+         break;
+      case RARCH_CTL_IS_BLOCK_CONFIG_READ:
+         return rarch_block_config_read;
+         break;
       case RARCH_CTL_REPLACE_CONFIG:
          {
             char *path = (char*)data;
@@ -1353,7 +1363,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
                config_save_file(global->path.config);
 
             strlcpy(global->path.config, path, sizeof(global->path.config));
-            global->block_config_read = false;
+
+            rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+
             *settings->libretro = '\0'; /* Load core in new config. */
          }
          runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL);

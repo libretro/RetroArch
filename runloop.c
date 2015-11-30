@@ -716,6 +716,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          event_command(EVENT_CMD_RECORD_DEINIT);
          event_command(EVENT_CMD_LOG_FILE_DEINIT);
 
+         rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
          memset(&g_extern, 0, sizeof(g_extern));
          break;
       case RUNLOOP_CTL_CLEAR_STATE:

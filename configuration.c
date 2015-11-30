@@ -840,7 +840,10 @@ static void config_set_defaults(void)
    settings->config_save_on_exit = config_save_on_exit;
 
    /* Avoid reloading config on every content load */
-   global->block_config_read = default_block_config_read;
+   if (default_block_config_read)
+      rarch_ctl(RARCH_CTL_SET_BLOCK_CONFIG_READ, NULL);
+   else
+      rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
 }
 
 #ifndef GLOBAL_CONFIG_DIR
@@ -2339,7 +2342,7 @@ void config_load(void)
    /* Flush out some states that could have been set by core environment variables */
    global->has_set.input_descriptors = false;
 
-   if (!global->block_config_read)
+   if (!rarch_ctl(RARCH_CTL_IS_BLOCK_CONFIG_READ, NULL))
    {
       config_set_defaults();
       parse_config_file();
