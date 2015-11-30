@@ -81,6 +81,8 @@ static void rarch_task_decompress_handler(rarch_task_t *task)
    ret = zlib_parse_file_iterate(&dec->zlib, &returnerr, dec->source_file,
          dec->valid_ext, file_decompressed, dec);
 
+   task->progress = zlib_parse_file_progress(&dec->zlib);
+
    if (task->cancelled || ret != 0)
    {
       task->error = dec->callback_error;

@@ -86,6 +86,8 @@ int zlib_parse_file_iterate(void *data, bool *returnerr,
 
 void zlib_parse_file_iterate_stop(void *data);
 
+int zlib_parse_file_progress(void *data);
+
 /**
  * zlib_extract_first_content_file:
  * @zip_path                    : filename path to ZIP archive.
