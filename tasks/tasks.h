@@ -32,6 +32,7 @@ extern "C" {
 typedef struct rarch_task rarch_task_t;
 typedef void (*rarch_task_callback_t)(void *task_data, void *user_data, const char *error);
 typedef void (*rarch_task_handler_t)(rarch_task_t *task);
+typedef bool (*rarch_task_finder_t)(rarch_task_t *task, void *user_data);
 
 struct rarch_task {
     rarch_task_handler_t  handler;
@@ -106,6 +107,15 @@ void rarch_task_reset(void);
  * This function must only be called from the main thread.
  */
 void rarch_task_wait(void);
+
+/**
+ * @brief Calls func for every running task until it returns true.
+ *
+ * @param func
+ * @param user_data
+ * @return a task or NULL if not found.
+ */
+bool rarch_task_find(rarch_task_finder_t func, void *user_data);
 
 /**
  * @brief Pushes a task

@@ -17,9 +17,10 @@ typedef struct {
 
 struct rarch_task_impl {
    void (*push_running)(rarch_task_t *);
-   void (*cancel)(void);
+   void (*reset)(void);
    void (*wait)(void);
    void (*gather)(void);
+   bool (*find)(rarch_task_finder_t, void*);
    void (*init)(void);
    void (*deinit)(void);
 };
@@ -132,7 +133,7 @@ static void regular_wait(void)
       regular_gather();
 }
 
-static void regular_cancel()
+static void regular_reset()
 {
    rarch_task_t *task;
 
@@ -148,11 +149,25 @@ static void regular_deinit(void)
 {
 }
 
+static bool regular_find(rarch_task_finder_t func, void *user_data)
+{
+   rarch_task_t *task;
+
+   for (task = tasks_running.front; task; task = task->next)
+   {
+      if (func(task, user_data))
+         return true;
+   }
+
+   return false;
+}
+
 static struct rarch_task_impl impl_regular = {
    regular_push_running,
-   regular_cancel,
+   regular_reset,
    regular_wait,
    regular_gather,
+   regular_find,
    regular_init,
    regular_deinit
 };
@@ -199,7 +214,7 @@ static void threaded_wait(void)
    } while (wait);
 }
 
-static void threaded_cancel(void)
+static void threaded_reset(void)
 {
    rarch_task_t *task;
 
@@ -262,6 +277,21 @@ static void threaded_worker(void *userdata)
    slock_unlock(running_lock);
 }
 
+static bool threaded_find(rarch_task_finder_t func, void *user_data)
+{
+   rarch_task_t *task;
+
+   slock_lock(running_lock);
+   for (task = tasks_running.front; task; task = task->next)
+   {
+      if (func(task, user_data))
+         return true;
+   }
+   slock_unlock(running_lock);
+
+   return false;
+}
+
 static void threaded_init(void)
 {
    running_lock  = slock_new();
@@ -296,9 +326,10 @@ static void threaded_deinit(void)
 
 static struct rarch_task_impl impl_threaded = {
    threaded_push_running,
-   threaded_cancel,
+   threaded_reset,
    threaded_wait,
    threaded_gather,
+   threaded_find,
    threaded_init,
    threaded_deinit
 };
@@ -358,5 +389,10 @@ void rarch_task_wait(void)
 
 void rarch_task_reset(void)
 {
-   impl_current->cancel();
+   impl_current->reset();
+}
+
+bool rarch_task_find(rarch_task_finder_t func, void *user_data)
+{
+   return impl_current->find(func, user_data);
 }
