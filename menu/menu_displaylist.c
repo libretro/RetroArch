@@ -1827,7 +1827,6 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
 
 static int menu_displaylist_parse_information_list(menu_displaylist_info_t *info)
 {
-   global_t *global            = global_get_ptr();
    settings_t *settings        = config_get_ptr();
 
    menu_entries_push(info->list,
@@ -1849,7 +1848,7 @@ static int menu_displaylist_parse_information_list(menu_displaylist_info_t *info
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
-   if (global->perfcnt_enable)
+   if (runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL))
    {
       menu_entries_push(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_FRONTEND_COUNTERS),
@@ -1873,10 +1872,6 @@ static int menu_displaylist_parse_information_list(menu_displaylist_info_t *info
 
 static int menu_displaylist_parse_add_content_list(menu_displaylist_info_t *info)
 {
-   global_t *global            = global_get_ptr();
-
-   (void)global;
-
 #ifdef HAVE_NETWORKING
    menu_entries_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
@@ -1901,10 +1896,6 @@ static int menu_displaylist_parse_add_content_list(menu_displaylist_info_t *info
 
 static int menu_displaylist_parse_scan_directory_list(menu_displaylist_info_t *info)
 {
-   global_t *global            = global_get_ptr();
-
-   (void)global;
-
 #ifdef HAVE_LIBRETRODB
    menu_entries_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_SCAN_DIRECTORY),

@@ -56,6 +56,9 @@ enum runloop_ctl_state
    RUNLOOP_CTL_GLOBAL_FREE,
    RUNLOOP_CTL_SET_CORE_SHUTDOWN,
    RUNLOOP_CTL_SET_EXEC,
+   RUNLOOP_CTL_SET_PERFCNT_ENABLE,
+   RUNLOOP_CTL_UNSET_PERFCNT_ENABLE,
+   RUNLOOP_CTL_IS_PERFCNT_ENABLE,
    /* Checks for state changes in this frame. */
    RUNLOOP_CTL_CHECK_STATE,
    RUNLOOP_CTL_CHECK_MOVIE,
@@ -121,7 +124,6 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
-   bool perfcnt_enable;
    bool force_fullscreen;
 
    struct
@@ -335,6 +337,8 @@ void rarch_main_msg_queue_push_new(uint32_t hash, unsigned prio,
       unsigned duration, bool flush);
 
 const char *rarch_main_msg_queue_pull(void);
+
+bool *runloop_perfcnt_enabled(void);
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 

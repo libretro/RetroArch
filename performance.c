@@ -136,10 +136,11 @@ unsigned retro_get_perf_count_libretro(void)
 
 void rarch_perf_register(struct retro_perf_counter *perf)
 {
-   global_t *global = global_get_ptr();
-
-   if (!global->perfcnt_enable || perf->registered
-         || perf_ptr_rarch >= MAX_COUNTERS)
+   if (
+            !runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL)
+         || perf->registered
+         || perf_ptr_rarch >= MAX_COUNTERS
+      )
       return;
 
    perf_counters_rarch[perf_ptr_rarch++] = perf;
@@ -179,9 +180,7 @@ static void log_counters(struct retro_perf_counter **counters, unsigned num)
 
 void rarch_perf_log(void)
 {
-   global_t *global = global_get_ptr();
-
-   if (!global->perfcnt_enable)
+   if (!runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL))
       return;
 
    RARCH_LOG("[PERF]: Performance counters (RetroArch):\n");
@@ -592,8 +591,7 @@ int rarch_perf_init(struct retro_perf_counter *perf, const char *name)
 
 void retro_perf_start(struct retro_perf_counter *perf)
 {
-   global_t *global = global_get_ptr();
-   if (!global->perfcnt_enable || !perf)
+   if (!runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL) || !perf)
       return;
 
    perf->call_cnt++;
@@ -602,8 +600,7 @@ void retro_perf_start(struct retro_perf_counter *perf)
 
 void retro_perf_stop(struct retro_perf_counter *perf)
 {
-   global_t *global = global_get_ptr();
-   if (!global->perfcnt_enable || !perf)
+   if (!runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL) || !perf)
       return;
 
    perf->total += retro_get_perf_counter() - perf->start;

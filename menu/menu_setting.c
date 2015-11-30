@@ -3887,7 +3887,6 @@ static bool setting_append_list_logging_options(
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    START_GROUP(list, list_info, &group_info, menu_hash_to_str(MENU_LABEL_VALUE_LOGGING_SETTINGS), parent_group);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -3950,7 +3949,7 @@ static bool setting_append_list_logging_options(
 
    CONFIG_BOOL(
          list, list_info,
-         &global->perfcnt_enable,
+         runloop_perfcnt_enabled(),
          menu_hash_to_str(MENU_LABEL_PERFCNT_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_PERFCNT_ENABLE),
          false,

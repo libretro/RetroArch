@@ -1550,7 +1550,17 @@ static bool config_load_file(const char *path, bool set_defaults)
       }
    }
 
-   CONFIG_GET_BOOL_BASE(conf, global, perfcnt_enable, "perfcnt_enable");
+   {
+      bool tmp_bool;
+      char tmp[64] = {0};
+      strlcpy(tmp, "perfcnt_enable", sizeof(tmp));
+      config_get_bool(conf, tmp, &tmp_bool);
+
+      if (tmp_bool)
+         runloop_ctl(RUNLOOP_CTL_SET_PERFCNT_ENABLE, NULL);
+      else
+         runloop_ctl(RUNLOOP_CTL_UNSET_PERFCNT_ENABLE, NULL);
+   }
 
 #if TARGET_OS_IPHONE
    CONFIG_GET_BOOL_BASE(conf, settings, input.small_keyboard_enable,   "small_keyboard_enable");
@@ -2808,7 +2818,11 @@ bool config_save_file(const char *path)
          settings->sort_savestates_enable);
    config_set_int(conf, "libretro_log_level", settings->libretro_log_level);
    config_set_bool(conf, "log_verbosity", *retro_main_verbosity());
-   config_set_bool(conf, "perfcnt_enable", global->perfcnt_enable);
+
+   {
+      bool perfcnt_enable = runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL);
+      config_set_bool(conf, "perfcnt_enable", perfcnt_enable);
+   }
 
 #if TARGET_OS_IPHONE
    config_set_bool(conf, "small_keyboard_enable",   settings->input.small_keyboard_enable);

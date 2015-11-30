@@ -58,6 +58,7 @@
 
 static struct global g_extern;
 
+static bool runloop_perfcnt_enable;
 static bool main_exec;
 static bool main_core_shutdown_initiated;
 static bool main_is_idle;
@@ -450,6 +451,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
    switch (state)
    {
+      case RUNLOOP_CTL_SET_PERFCNT_ENABLE:
+         runloop_perfcnt_enable = true;
+         break;
+      case RUNLOOP_CTL_UNSET_PERFCNT_ENABLE:
+         runloop_perfcnt_enable = false;
+         break;
+      case RUNLOOP_CTL_IS_PERFCNT_ENABLE:
+         return runloop_perfcnt_enable;
       case RUNLOOP_CTL_SET_WINDOWED_SCALE:
          {
             unsigned *idx = (unsigned*)data;
@@ -1213,4 +1222,9 @@ void rarch_main_data_clear_state(void)
 void data_runloop_osd_msg(const char *msg, size_t len)
 {
    rarch_main_msg_queue_push(msg, 1, 10, true);
+}
+
+bool *runloop_perfcnt_enabled(void)
+{
+   return &runloop_perfcnt_enable;
 }
