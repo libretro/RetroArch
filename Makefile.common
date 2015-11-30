@@ -525,6 +525,7 @@ ifeq ($(HAVE_UDEV), 1)
    DEFINES += $(UDEV_CFLAGS)
    LIBS += $(UDEV_LIBS)
    OBJ += input/drivers/udev_input.o \
+			 input/common/udev_common.o \
 			 input/drivers_keyboard/keyboard_event_udev.o \
           input/drivers_joypad/udev_joypad.o
 endif

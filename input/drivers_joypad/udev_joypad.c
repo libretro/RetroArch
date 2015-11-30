@@ -23,13 +23,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/poll.h>
-#include <libudev.h>
 #include <linux/types.h>
 #include <linux/input.h>
 
 #include <retro_inline.h>
 
 #include "../input_autodetect.h"
+#include "../common/udev_common.h"
 #include "../../general.h"
 #include "../../verbosity.h"
 
@@ -77,8 +77,6 @@ struct udev_joypad
    int32_t pid;
 };
 
-static struct udev *g_udev;
-static struct udev_monitor *g_udev_mon;
 static struct udev_joypad udev_pads[MAX_USERS];
 
 static INLINE int16_t udev_compute_axis(const struct input_absinfo *info, int value)
@@ -405,12 +403,7 @@ static void udev_joypad_destroy(void)
    for (i = 0; i < MAX_USERS; i++)
       udev_free_pad(i);
 
-   if (g_udev_mon)
-      udev_monitor_unref(g_udev_mon);
-   g_udev_mon = NULL;
-   if (g_udev)
-      udev_unref(g_udev);
-   g_udev = NULL;
+   udev_mon_free();
 }
 
 static void udev_joypad_handle_hotplug(void)
@@ -536,16 +529,8 @@ static bool udev_joypad_init(void *data)
    for (i = 0; i < MAX_USERS; i++)
       udev_pads[i].fd = -1;
 
-   g_udev = udev_new();
-   if (!g_udev)
-      return false;
-
-   g_udev_mon = udev_monitor_new_from_netlink(g_udev, "udev");
-   if (g_udev_mon)
-   {
-      udev_monitor_filter_add_match_subsystem_devtype(g_udev_mon, "input", NULL);
-      udev_monitor_enable_receiving(g_udev_mon);
-   }
+   if (!udev_mon_new())
+      goto error;
 
    enumerate = udev_enumerate_new(g_udev);
    if (!enumerate)
