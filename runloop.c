@@ -57,6 +57,7 @@
 
 static struct global g_extern;
 
+static bool main_exec;
 static bool main_core_shutdown_initiated;
 static bool main_is_idle;
 static bool main_is_paused;
@@ -796,6 +797,9 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
       case RARCH_MAIN_CTL_SET_CORE_SHUTDOWN:
          main_core_shutdown_initiated = true;
          break;
+      case RARCH_MAIN_CTL_SET_EXEC:
+         main_exec = true;
+         break;
       default:
          return false;
    }
@@ -935,12 +939,12 @@ static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
    video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
    frame_count_end               = main_max_frames && (*frame_count >= main_max_frames);
 
-   if (shutdown_pressed || frame_count_end || movie_end || !video_alive || global->exec)
+   if (shutdown_pressed || frame_count_end || movie_end || !video_alive || main_exec)
    {
       settings_t *settings       = config_get_ptr();
 
-      if (global->exec)
-         global->exec = false;
+      if (main_exec)
+         main_exec = false;
 
       /* Quits out of RetroArch main loop.
        * On special case, loads dummy core

@@ -56,6 +56,7 @@ enum rarch_main_ctl_state
    RARCH_MAIN_CTL_STATE_FREE,
    RARCH_MAIN_CTL_GLOBAL_FREE,
    RARCH_MAIN_CTL_SET_CORE_SHUTDOWN,
+   RARCH_MAIN_CTL_SET_EXEC,
    /* Checks for state changes in this frame. */
    RARCH_MAIN_CTL_CHECK_STATE,
    RARCH_MAIN_CTL_CHECK_MOVIE,
@@ -199,8 +200,6 @@ typedef struct global
       struct retro_system_info info;
    } menu;
 #endif
-
-   bool exec;
 
    struct
    {

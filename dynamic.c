@@ -1312,7 +1312,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             if (cmd == RETRO_ENVIRONMENT_EXEC_ESCAPE)
             {
                RARCH_LOG("Environ (Private) EXEC_ESCAPE.\n");
-               global->exec = true;
+               rarch_main_ctl(RARCH_MAIN_CTL_SET_EXEC, NULL);
             }
             else
                RARCH_LOG("Environ (Private) EXEC.\n");
