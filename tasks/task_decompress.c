@@ -113,6 +113,16 @@ task_finished:
    free(dec);
 }
 
+static bool rarch_task_decompress_finder(rarch_task_t *task, void *user_data)
+{
+   decompress_state_t *dec = (decompress_state_t*)task->state;
+
+   if (task->handler != rarch_task_decompress_handler)
+      return false;
+
+   return strcmp(dec->source_file, (const char*)user_data) == 0;
+}
+
 bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
       const char *valid_ext, rarch_task_callback_t cb, void *user_data)
 {
@@ -136,6 +146,12 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
 
    if (!valid_ext || !valid_ext[0])
       valid_ext = NULL;
+
+   if (rarch_task_find(rarch_task_decompress_finder, (void*)source_file))
+   {
+      RARCH_LOG("[decompress] File '%s' already being decompressed.\n", source_file);
+      return false;
+   }
 
    s = (decompress_state_t*)calloc(1, sizeof(*s));
 

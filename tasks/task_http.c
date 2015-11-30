@@ -92,7 +92,7 @@ static int cb_http_conn_default(void *data_, size_t len)
 
    if (!http->handle)
    {
-      RARCH_ERR("Could not create new HTTP session handle.\n");
+      RARCH_ERR("[http] Could not create new HTTP session handle.\n");
       http->error = true;
       return -1;
    }
@@ -218,7 +218,7 @@ bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task
    /* Concurrent download of the same file is not allowed */
    if (rarch_task_find(rarch_task_http_finder, (void*)url))
    {
-      RARCH_LOG("%s is already being downloaded.\n", url);
+      RARCH_LOG("[http] '%s'' is already being downloaded.\n", url);
       return false;
    }
 
