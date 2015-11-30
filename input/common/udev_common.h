@@ -26,6 +26,6 @@ extern struct udev *g_udev;
 
 bool udev_mon_new(void);
 
-void udev_mon_free(void);
+void udev_mon_free(bool is_joypad);
 
 #endif

@@ -403,7 +403,7 @@ static void udev_joypad_destroy(void)
    for (i = 0; i < MAX_USERS; i++)
       udev_free_pad(i);
 
-   udev_mon_free();
+   udev_mon_free(true);
 }
 
 static void udev_joypad_handle_hotplug(void)

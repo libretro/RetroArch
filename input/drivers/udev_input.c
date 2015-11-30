@@ -36,6 +36,7 @@
 
 #include "../drivers_keyboard/keyboard_event_udev.h"
 #include "../common/linux_common.h"
+#include "../common/udev_common.h"
 
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
@@ -79,10 +80,6 @@ struct udev_input_device
 struct udev_input
 {
    bool blocked;
-   struct udev *udev;
-   struct udev_monitor *monitor;
-
-
    const input_device_driver_t *joypad;
 
    int epfd;
@@ -227,10 +224,10 @@ static bool udev_input_hotplug_available(udev_input_t *udev)
 {
    struct pollfd fds = {0};
 
-   if (!udev || !udev->monitor)
+   if (!udev || !g_udev_mon)
       return false;
 
-   fds.fd     = udev_monitor_get_fd(udev->monitor);
+   fds.fd     = udev_monitor_get_fd(g_udev_mon);
    fds.events = POLLIN;
 
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
@@ -315,7 +312,7 @@ static void udev_input_remove_device(udev_input_t *udev, const char *devnode)
 static void udev_input_handle_hotplug(udev_input_t *udev)
 {
    bool is_keyboard, is_mouse, is_touchpad;
-   struct udev_device *dev  = udev_monitor_receive_device(udev->monitor);
+   struct udev_device *dev  = udev_monitor_receive_device(g_udev_mon);
    device_handle_cb cb      = NULL;
    const char *devtype      = NULL;
    const char *val_keyboard = NULL;
@@ -586,10 +583,7 @@ static void udev_input_free(void *data)
    }
    free(udev->devices);
 
-   if (udev->monitor)
-      udev_monitor_unref(udev->monitor);
-   if (udev->udev)
-      udev_unref(udev->udev);
+   udev_mon_free(false);
 
    udev_input_kb_free();
 
@@ -600,7 +594,7 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
 {
    struct udev_list_entry     *devs = NULL;
    struct udev_list_entry     *item = NULL;
-   struct udev_enumerate *enumerate = udev_enumerate_new(udev->udev);
+   struct udev_enumerate *enumerate = udev_enumerate_new(g_udev);
 
    if (!enumerate)
       return false;
@@ -615,7 +609,7 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
 
       /* Get the filename of the /sys entry for the device
        * and create a udev_device object (dev) representing it. */
-      struct udev_device *dev = udev_device_new_from_syspath(udev->udev, name);
+      struct udev_device *dev = udev_device_new_from_syspath(g_udev, name);
       const char *devnode     = udev_device_get_devnode(dev);
 
       if (devnode)
@@ -644,19 +638,8 @@ static void *udev_input_init(void)
    if (!udev)
       return NULL;
 
-   udev->udev = udev_new();
-   if (!udev->udev)
-   {
-      RARCH_ERR("Failed to create udev handle.\n");
+   if (!udev_mon_new())
       goto error;
-   }
-
-   udev->monitor = udev_monitor_new_from_netlink(udev->udev, "udev");
-   if (udev->monitor)
-   {
-      udev_monitor_filter_add_match_subsystem_devtype(udev->monitor, "input", NULL);
-      udev_monitor_enable_receiving(udev->monitor);
-   }
 
 #ifdef HAVE_XKBCOMMON
    if (init_xkb() == -1)
