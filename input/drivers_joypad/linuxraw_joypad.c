@@ -162,7 +162,7 @@ static void handle_plugged_pad(void)
                input_config_autoconfigure_joypad(&params);
             }
          }
-         /* Sometimes, device will be created before acess to it is established. */
+         /* Sometimes, device will be created before access to it is established. */
          else if (event->mask & (IN_CREATE | IN_ATTRIB))
          {
             bool ret;
