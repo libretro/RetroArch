@@ -13,6 +13,22 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _XBOX1
+#include <xtl.h>
+#endif
+
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#if TARGET_IPHONE_SIMULATOR
+#include <stdio.h>
+#else
+#include <asl.h>
+#endif
+#endif
+
+#ifdef ANDROID
+#include <android/log.h>
+#endif
 
 #if defined(HAVE_FILE_LOGGER)
 #define LOG_FILE (retro_main_log_file())

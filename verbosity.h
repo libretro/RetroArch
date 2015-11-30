@@ -16,26 +16,9 @@
 #ifndef __RARCH_VERBOSITY_H
 #define __RARCH_VERBOSITY_H
 
-#ifdef _XBOX1
-#include <xtl.h>
-#endif
+#include <stdio.h>
 #include <stdarg.h>
-#include <stdio.h>
 
-#ifdef __MACH__
-#include <TargetConditionals.h>
-#if TARGET_IPHONE_SIMULATOR
-#include <stdio.h>
-#else
-#include <asl.h>
-#endif
-#endif
-
-#ifdef ANDROID
-#include <android/log.h>
-#endif
-
-#include <retro_inline.h>
 #include <boolean.h>
 #include <compat/posix_string.h>
 #include <compat/strl.h>
