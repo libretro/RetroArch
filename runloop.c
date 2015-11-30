@@ -359,13 +359,16 @@ global_t *global_get_ptr(void)
    return &g_extern;
 }
 
+static void rarch_main_data_clear_state(void)
+{
+   runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
+   rarch_task_init();
+}
+
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    settings_t *settings  = config_get_ptr();
    global_t     *global  = global_get_ptr();
-#ifdef HAVE_NETPLAY
-   driver_t     *driver  = driver_get_ptr();
-#endif
 
    switch (state)
    {
@@ -453,14 +456,17 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                event_command(EVENT_CMD_VOLUME_DOWN);
 
 #ifdef HAVE_NETPLAY
-            if (driver->netplay_data)
             {
-               if (cmd->netplay_flip_pressed)
-                  event_command(EVENT_CMD_NETPLAY_FLIP_PLAYERS);
+               driver_t     *driver  = driver_get_ptr();
+               if (driver->netplay_data)
+               {
+                  if (cmd->netplay_flip_pressed)
+                     event_command(EVENT_CMD_NETPLAY_FLIP_PLAYERS);
 
-               if (cmd->fullscreen_toggle)
-                  event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
-               break;
+                  if (cmd->fullscreen_toggle)
+                     event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
+                  break;
+               }
             }
 #endif
             if (!runloop_ctl(RUNLOOP_CTL_CHECK_IDLE_STATE, data))
@@ -724,6 +730,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_SET_EXEC:
          main_exec = true;
+         break;
+      case RUNLOOP_CTL_DATA_DEINIT:
+         rarch_task_deinit();
          break;
       default:
          return false;
@@ -1116,21 +1125,11 @@ end:
    return 0;
 }
 
-void rarch_main_data_deinit(void)
-{
-   rarch_task_deinit();
-}
-
 void rarch_main_data_iterate(void)
 {
    rarch_task_check();
 }
 
-void rarch_main_data_clear_state(void)
-{
-   rarch_main_data_deinit();
-   rarch_task_init();
-}
 
 void data_runloop_osd_msg(const char *msg, size_t len)
 {

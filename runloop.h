@@ -58,6 +58,7 @@ enum runloop_ctl_state
    RUNLOOP_CTL_SET_PERFCNT_ENABLE,
    RUNLOOP_CTL_UNSET_PERFCNT_ENABLE,
    RUNLOOP_CTL_IS_PERFCNT_ENABLE,
+   RUNLOOP_CTL_DATA_DEINIT,
    /* Checks for state changes in this frame. */
    RUNLOOP_CTL_CHECK_STATE,
    RUNLOOP_CTL_CHECK_MOVIE,
@@ -329,11 +330,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data);
 
 typedef int (*transfer_cb_t)(void *data, size_t len);
 
-void rarch_main_data_clear_state(void);
-
 void rarch_main_data_iterate(void);
-
-void rarch_main_data_deinit(void);
 
 #ifdef __cplusplus
 }

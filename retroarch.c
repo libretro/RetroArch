@@ -1115,8 +1115,7 @@ void rarch_main_free(void)
 
    runloop_ctl(RUNLOOP_CTL_STATE_FREE,  NULL);
    runloop_ctl(RUNLOOP_CTL_GLOBAL_FREE, NULL);
-
-   rarch_main_data_deinit();
+   runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
    config_free();
 }
 
