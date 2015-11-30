@@ -55,6 +55,7 @@ enum rarch_main_ctl_state
    RARCH_MAIN_CTL_CLEAR_STATE,
    RARCH_MAIN_CTL_STATE_FREE,
    RARCH_MAIN_CTL_GLOBAL_FREE,
+   RARCH_MAIN_CTL_SET_CORE_SHUTDOWN,
    /* Checks for state changes in this frame. */
    RARCH_MAIN_CTL_CHECK_STATE,
    RARCH_MAIN_CTL_CHECK_MOVIE,
@@ -122,7 +123,6 @@ typedef struct global
 {
    bool perfcnt_enable;
    bool force_fullscreen;
-   bool core_shutdown_initiated;
 
    struct string_list *temporary_content;
 

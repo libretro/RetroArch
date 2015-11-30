@@ -57,6 +57,7 @@
 
 static struct global g_extern;
 
+static bool main_core_shutdown_initiated;
 static bool main_is_idle;
 static bool main_is_paused;
 static bool main_is_slowmotion;
@@ -792,6 +793,9 @@ bool rarch_main_ctl(enum rarch_main_ctl_state state, void *data)
             rarch_ctl(RARCH_ACTION_STATE_LOAD_CONTENT, NULL);
          }
          break;
+      case RARCH_MAIN_CTL_SET_CORE_SHUTDOWN:
+         main_core_shutdown_initiated = true;
+         break;
       default:
          return false;
    }
@@ -943,14 +947,14 @@ static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
        * instead of exiting RetroArch completely.
        * Aborts core shutdown if invoked.
        */
-      if (global->core_shutdown_initiated
+      if (main_core_shutdown_initiated
             && settings->load_dummy_on_core_shutdown)
       {
          if (!rarch_main_ctl(RARCH_MAIN_CTL_PREPARE_DUMMY, NULL))
             return -1;
 
-         system->shutdown = false;
-         global->core_shutdown_initiated = false;
+         system->shutdown             = false;
+         main_core_shutdown_initiated = false;
 
          return 0;
       }
