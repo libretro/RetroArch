@@ -21,6 +21,7 @@
 
 #include "audio/audio_driver.h"
 #include "autosave.h"
+#include "cheats.h"
 #include "general.h"
 #include "performance.h"
 #include "dynamic.h"

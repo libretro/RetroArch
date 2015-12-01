@@ -23,6 +23,7 @@
 #include "../menu_shader.h"
 #include "../menu_navigation.h"
 
+#include "../../cheats.h"
 #include "../../general.h"
 #include "../../retroarch.h"
 

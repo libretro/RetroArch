@@ -21,6 +21,7 @@
 #include "../menu_shader.h"
 #include "../menu_hash.h"
 
+#include "../../cheats.h"
 #include "../../general.h"
 #include "../../performance.h"
 #include "../../system.h"

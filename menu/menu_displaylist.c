@@ -28,6 +28,7 @@
 #include "../database_info.h"
 #endif
 
+#include "../cheats.h"
 #include "../general.h"
 #include "../gfx/video_shader_driver.h"
 #include "../config.features.h"

@@ -33,6 +33,7 @@
 #include "cheevos.h"
 #endif
 #include "autosave.h"
+#include "cheats.h"
 #include "configuration.h"
 #include "performance.h"
 #include "movie.h"
