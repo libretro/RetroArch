@@ -24,7 +24,6 @@
 #include "core_info.h"
 #include "core_options.h"
 #include "driver.h"
-#include "movie.h"
 #include "cheats.h"
 #include "dynamic.h"
 #include "system.h"
@@ -196,21 +195,6 @@ typedef struct global
       struct retro_system_info info;
    } menu;
 #endif
-
-   struct
-   {
-      /* Movie playback/recording support. */
-      bsv_movie_t *movie;
-      char movie_path[PATH_MAX_LENGTH];
-      bool movie_playback;
-      bool eof_exit;
-
-      /* Immediate playback/recording. */
-      char movie_start_path[PATH_MAX_LENGTH];
-      bool movie_start_recording;
-      bool movie_start_playback;
-      bool movie_end;
-   } bsv;
 
    struct
    {

@@ -24,6 +24,7 @@
 #include "general.h"
 #include "msg_hash.h"
 #include "rewind.h"
+#include "movie.h"
 #include "performance.h"
 #include "verbosity.h"
 #include "audio/audio_driver.h"

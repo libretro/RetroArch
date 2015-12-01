@@ -25,6 +25,7 @@
 #include "performance.h"
 #include "dynamic.h"
 #include "content.h"
+#include "movie.h"
 #include "screenshot.h"
 #include "msg_hash.h"
 #include "retroarch.h"

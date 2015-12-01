@@ -35,6 +35,7 @@
 #include "autosave.h"
 #include "configuration.h"
 #include "performance.h"
+#include "movie.h"
 #include "retroarch.h"
 #include "runloop.h"
 #include "rewind.h"

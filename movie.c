@@ -47,6 +47,23 @@ struct bsv_movie
    bool did_rewind;
 };
 
+struct bsv_state
+{
+   /* Movie playback/recording support. */
+   bsv_movie_t *movie;
+   char movie_path[PATH_MAX_LENGTH];
+   bool movie_playback;
+   bool eof_exit;
+
+   /* Immediate playback/recording. */
+   char movie_start_path[PATH_MAX_LENGTH];
+   bool movie_start_recording;
+   bool movie_start_playback;
+   bool movie_end;
+};
+
+struct bsv_state bsv_movie_state;
+
 static bool init_playback(bsv_movie_t *handle, const char *path)
 {
    uint32_t state_size;
@@ -158,8 +175,7 @@ void bsv_movie_free(bsv_movie_t *handle)
 
 bool bsv_movie_get_input(int16_t *input)
 {
-   global_t *global    = global_get_ptr();
-   bsv_movie_t *handle = global->bsv.movie;
+   bsv_movie_t *handle = bsv_movie_state.movie;
    if (fread(input, sizeof(int16_t), 1, handle->file) != 1)
       return false;
 
@@ -169,8 +185,7 @@ bool bsv_movie_get_input(int16_t *input)
 
 void bsv_movie_set_input(int16_t input)
 {
-   global_t *global    = global_get_ptr();
-   bsv_movie_t *handle = global->bsv.movie;
+   bsv_movie_t *handle = bsv_movie_state.movie;
 
    input = swap_if_big16(input);
    fwrite(&input, sizeof(int16_t), 1, handle->file);
@@ -266,20 +281,19 @@ void bsv_movie_frame_rewind(bsv_movie_t *handle)
 static void bsv_movie_init_state(void)
 {
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_START_PLAYBACK, NULL))
    {
-      if (!(bsv_movie_init_handle(global->bsv.movie_start_path,
+      if (!(bsv_movie_init_handle(bsv_movie_state.movie_start_path,
                   RARCH_MOVIE_PLAYBACK)))
       {
          RARCH_ERR("%s: \"%s\".\n",
                msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE),
-               global->bsv.movie_start_path);
+               bsv_movie_state.movie_start_path);
          retro_fail(1, "event_init_movie()");
       }
 
-      global->bsv.movie_playback = true;
+      bsv_movie_state.movie_playback = true;
       rarch_main_msg_queue_push_new(MSG_STARTING_MOVIE_PLAYBACK, 2, 180, false);
       RARCH_LOG("%s.\n", msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
       settings->rewind_granularity = 1;
@@ -290,9 +304,9 @@ static void bsv_movie_init_state(void)
       snprintf(msg, sizeof(msg),
             "%s \"%s\".",
             msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-            global->bsv.movie_start_path);
+            bsv_movie_state.movie_start_path);
 
-      if (!(bsv_movie_init_handle(global->bsv.movie_start_path,
+      if (!(bsv_movie_init_handle(bsv_movie_state.movie_start_path,
                   RARCH_MOVIE_RECORD)))
       {
          rarch_main_msg_queue_push_new(MSG_FAILED_TO_START_MOVIE_RECORD, 1, 180, true);
@@ -303,71 +317,69 @@ static void bsv_movie_init_state(void)
       rarch_main_msg_queue_push(msg, 1, 180, true);
       RARCH_LOG("%s \"%s\".\n",
             msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-            global->bsv.movie_start_path);
+            bsv_movie_state.movie_start_path);
       settings->rewind_granularity = 1;
    }
 }
 
 bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
 {
-   global_t *global = global_get_ptr();
-
    switch (state)
    {
       case BSV_MOVIE_CTL_IS_INITED:
-         return global->bsv.movie;
+         return bsv_movie_state.movie;
       case BSV_MOVIE_CTL_PLAYBACK_ON:
-         return global->bsv.movie && global->bsv.movie_playback;
+         return bsv_movie_state.movie && bsv_movie_state.movie_playback;
       case BSV_MOVIE_CTL_PLAYBACK_OFF:
-         return global->bsv.movie && !global->bsv.movie_playback;
+         return bsv_movie_state.movie && !bsv_movie_state.movie_playback;
       case BSV_MOVIE_CTL_START_RECORDING:
-         return global->bsv.movie_start_recording;
+         return bsv_movie_state.movie_start_recording;
       case BSV_MOVIE_CTL_SET_START_RECORDING:
-         global->bsv.movie_start_recording = true;
+         bsv_movie_state.movie_start_recording = true;
          break;
       case BSV_MOVIE_CTL_UNSET_START_RECORDING:
-         global->bsv.movie_start_recording = false;
+         bsv_movie_state.movie_start_recording = false;
          break;
       case BSV_MOVIE_CTL_START_PLAYBACK:
-         return global->bsv.movie_start_playback;
+         return bsv_movie_state.movie_start_playback;
       case BSV_MOVIE_CTL_SET_START_PLAYBACK:
-         global->bsv.movie_start_playback = true;
+         bsv_movie_state.movie_start_playback = true;
          break;
       case BSV_MOVIE_CTL_UNSET_START_PLAYBACK:
-         global->bsv.movie_start_playback = false;
+         bsv_movie_state.movie_start_playback = false;
          break;
       case BSV_MOVIE_CTL_END:
-         return global->bsv.movie_end;
+         return bsv_movie_state.movie_end;
       case BSV_MOVIE_CTL_SET_END_EOF:
-         global->bsv.eof_exit = true;
+         bsv_movie_state.eof_exit = true;
          break;
       case BSV_MOVIE_CTL_END_EOF:
-         return global->bsv.movie_end && global->bsv.eof_exit;
+         return bsv_movie_state.movie_end && bsv_movie_state.eof_exit;
       case BSV_MOVIE_CTL_SET_END:
-         global->bsv.movie_end = true;
+         bsv_movie_state.movie_end = true;
          break;
       case BSV_MOVIE_CTL_UNSET_END:
-         global->bsv.movie_end = false;
+         bsv_movie_state.movie_end = false;
          break;
       case BSV_MOVIE_CTL_UNSET_PLAYBACK:
-         global->bsv.movie_playback = false;
+         bsv_movie_state.movie_playback = false;
          break;
       case BSV_MOVIE_CTL_DEINIT:
-         if (global->bsv.movie)
-            bsv_movie_free(global->bsv.movie);
-         global->bsv.movie = NULL;
+         if (bsv_movie_state.movie)
+            bsv_movie_free(bsv_movie_state.movie);
+         bsv_movie_state.movie = NULL;
          break;
       case BSV_MOVIE_CTL_INIT:
          bsv_movie_init_state();
          break;
       case BSV_MOVIE_CTL_SET_FRAME_START:
-         bsv_movie_set_frame_start(global->bsv.movie);
+         bsv_movie_set_frame_start(bsv_movie_state.movie);
          break;
       case BSV_MOVIE_CTL_SET_FRAME_END:
-         bsv_movie_set_frame_end(global->bsv.movie);
+         bsv_movie_set_frame_end(bsv_movie_state.movie);
          break;
       case BSV_MOVIE_CTL_FRAME_REWIND:
-         bsv_movie_frame_rewind(global->bsv.movie);
+         bsv_movie_frame_rewind(bsv_movie_state.movie);
          break;
       default:
          return false;
@@ -378,36 +390,24 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
 
 const char *bsv_movie_get_path(void)
 {
-   global_t *global = global_get_ptr();
-   if (!global)
-      return NULL;
-   return global->bsv.movie_path;
+   return bsv_movie_state.movie_path;
 }
 
 void bsv_movie_set_path(const char *path)
 {
-   global_t *global = global_get_ptr();
-   if (!global)
-      return;
-   strlcpy(global->bsv.movie_path, path, sizeof(global->bsv.movie_path));
+   strlcpy(bsv_movie_state.movie_path, path, sizeof(bsv_movie_state.movie_path));
 }
 
 void bsv_movie_set_start_path(const char *path)
 {
-   global_t *global = global_get_ptr();
-   if (!global)
-      return;
-   strlcpy(global->bsv.movie_start_path, path,
-         sizeof(global->bsv.movie_start_path));
+   strlcpy(bsv_movie_state.movie_start_path, path,
+         sizeof(bsv_movie_state.movie_start_path));
 }
 
 bool bsv_movie_init_handle(const char *path, enum rarch_movie_type type)
 {
-   global_t *global = global_get_ptr();
-   if (!global)
-      return false;
-   global->bsv.movie = bsv_movie_init(path, type);
-   if (!global->bsv.movie)
+   bsv_movie_state.movie = bsv_movie_init(path, type);
+   if (!bsv_movie_state.movie)
       return false;
    return true;
 }

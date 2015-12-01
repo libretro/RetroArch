@@ -19,6 +19,7 @@
 #include "input_remapping.h"
 
 #include "../general.h"
+#include "../movie.h"
 #include "../string_list_special.h"
 #include "../verbosity.h"
 

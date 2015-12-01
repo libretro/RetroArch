@@ -38,6 +38,7 @@
 #include <retro_stat.h>
 
 #include "msg_hash.h"
+#include "movie.h"
 #include "verbosity.h"
 
 #include "audio/audio_driver.h"
