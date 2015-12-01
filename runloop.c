@@ -62,6 +62,8 @@
 
 static struct global g_extern;
 
+static rarch_dir_list_t runloop_shader_dir;
+
 static unsigned runloop_pending_windowed_scale;
 static char runloop_fullpath[PATH_MAX_LENGTH];
 static bool runloop_perfcnt_enable;
@@ -293,40 +295,34 @@ static void check_stateslots(settings_t *settings,
 
 void shader_dir_free(void)
 {
-   global_t *global = global_get_ptr();
-
-   if (!global)
-      return;
-
-   dir_list_free(global->dir.shader_dir.list);
-   global->dir.shader_dir.list = NULL;
-   global->dir.shader_dir.ptr  = 0;
+   dir_list_free(runloop_shader_dir.list);
+   runloop_shader_dir.list = NULL;
+   runloop_shader_dir.ptr  = 0;
 }
 
 bool shader_dir_init(void)
 {
    unsigned i;
-   global_t      *global = global_get_ptr();
    settings_t *settings  = config_get_ptr();
 
    if (!*settings->video.shader_dir)
       return false;
 
-   global->dir.shader_dir.list = dir_list_new_special(NULL, DIR_LIST_SHADERS, NULL);
+   runloop_shader_dir.list = dir_list_new_special(NULL, DIR_LIST_SHADERS, NULL);
 
-   if (!global->dir.shader_dir.list || global->dir.shader_dir.list->size == 0)
+   if (!runloop_shader_dir.list || runloop_shader_dir.list->size == 0)
    {
       event_command(EVENT_CMD_SHADER_DIR_DEINIT);
       return false;
    }
 
-   global->dir.shader_dir.ptr  = 0;
-   dir_list_sort(global->dir.shader_dir.list, false);
+   runloop_shader_dir.ptr  = 0;
+   dir_list_sort(runloop_shader_dir.list, false);
 
-   for (i = 0; i < global->dir.shader_dir.list->size; i++)
+   for (i = 0; i < runloop_shader_dir.list->size; i++)
       RARCH_LOG("%s \"%s\"\n",
             msg_hash_to_str(MSG_FOUND_SHADER),
-            global->dir.shader_dir.list->elems[i].data);
+            runloop_shader_dir.list->elems[i].data);
    return true;
 }
 
@@ -348,27 +344,26 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
    const char *shader          = NULL;
    const char *ext             = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
-   global_t *global            = global_get_ptr();
 
-   if (!global || !global->dir.shader_dir.list)
+   if (!runloop_shader_dir.list)
       return;
 
    if (pressed_next)
    {
-      global->dir.shader_dir.ptr = (global->dir.shader_dir.ptr + 1) %
-         global->dir.shader_dir.list->size;
+      runloop_shader_dir.ptr = (runloop_shader_dir.ptr + 1) %
+         runloop_shader_dir.list->size;
    }
    else if (pressed_prev)
    {
-      if (global->dir.shader_dir.ptr == 0)
-         global->dir.shader_dir.ptr = global->dir.shader_dir.list->size - 1;
+      if (runloop_shader_dir.ptr == 0)
+         runloop_shader_dir.ptr = runloop_shader_dir.list->size - 1;
       else
-         global->dir.shader_dir.ptr--;
+         runloop_shader_dir.ptr--;
    }
    else
       return;
 
-   shader   = global->dir.shader_dir.list->elems[global->dir.shader_dir.ptr].data;
+   shader   = runloop_shader_dir.list->elems[runloop_shader_dir.ptr].data;
    ext      = path_get_extension(shader);
    ext_hash = msg_hash_calculate(ext);
 
@@ -388,7 +383,7 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
 
    snprintf(msg, sizeof(msg), "%s #%u: \"%s\".",
          msg_hash_to_str(MSG_SHADER),
-         (unsigned)global->dir.shader_dir.ptr, shader);
+         (unsigned)runloop_shader_dir.ptr, shader);
    rarch_main_msg_queue_push(msg, 1, 120, true);
    RARCH_LOG("%s \"%s\".\n",
          msg_hash_to_str(MSG_APPLYING_SHADER),

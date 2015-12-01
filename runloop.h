@@ -92,7 +92,6 @@ typedef struct rarch_dir
 #ifdef HAVE_OVERLAY
    char osk_overlay[PATH_MAX_LENGTH];
 #endif
-   rarch_dir_list_t shader_dir;
    rarch_dir_list_t filter_dir;
 } rarch_dir_t;
 
