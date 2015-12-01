@@ -75,9 +75,8 @@ size_t utf8_conv_utf32(uint32_t *out, size_t out_chars,
    return ret;
 }
 
-
 bool utf16_conv_utf8(uint8_t *out, size_t *out_chars,
-      const uint16_t *in, size_t in_size)
+     const uint16_t *in, size_t in_size)
 {
    static uint8_t kUtf8Limits[5] = { 0xC0, 0xE0, 0xF0, 0xF8, 0xFC };
    size_t out_pos = 0;
@@ -93,9 +92,7 @@ bool utf16_conv_utf8(uint8_t *out, size_t *out_chars,
          *out_chars = out_pos;
          return true;
       }
-
       value = in[in_pos++];
-
       if (value < 0x80)
       {
          if (out)
@@ -119,12 +116,10 @@ bool utf16_conv_utf8(uint8_t *out, size_t *out_chars,
       for (numAdds = 1; numAdds < 5; numAdds++)
          if (value < (((uint32_t)1) << (numAdds * 5 + 6)))
             break;
-
       if (out)
          out[out_pos] = (char)(kUtf8Limits[numAdds - 1] 
                + (value >> (6 * numAdds)));
       out_pos++;
-
       do
       {
          numAdds--;
