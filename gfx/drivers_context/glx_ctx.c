@@ -39,7 +39,6 @@ typedef struct gfx_ctx_glx_data
 
    GLXWindow g_glx_win;
 
-   unsigned g_screen;
    unsigned g_interval;
 
    GLXContext g_ctx, g_hw_ctx;
@@ -100,10 +99,10 @@ static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
          XTranslateCoordinates(g_x11_dpy, g_x11_win, DefaultRootWindow(g_x11_dpy),
                target.x, target.y, &x, &y, &child);
 
-         glx->g_screen = x11_get_xinerama_monitor(g_x11_dpy, x, y,
+         g_x11_screen = x11_get_xinerama_monitor(g_x11_dpy, x, y,
                target.width, target.height);
 
-         RARCH_LOG("[GLX]: Saved monitor #%u.\n", glx->g_screen);
+         RARCH_LOG("[GLX]: Saved monitor #%u.\n", g_x11_screen);
       }
 #endif
 
@@ -267,6 +266,7 @@ error:
 
    if (glx)
       free(glx);
+   g_x11_screen = 0;
 
    return false;
 }
@@ -315,17 +315,17 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    }
 
    if (settings->video.monitor_index)
-      glx->g_screen = settings->video.monitor_index - 1;
+      g_x11_screen = settings->video.monitor_index - 1;
 
 #ifdef HAVE_XINERAMA
-   if (fullscreen || glx->g_screen != 0)
+   if (fullscreen || g_x11_screen != 0)
    {
       unsigned new_width  = width;
       unsigned new_height = height;
 
-      if (x11_get_xinerama_coord(g_x11_dpy, glx->g_screen,
+      if (x11_get_xinerama_coord(g_x11_dpy, g_x11_screen,
                &x_off, &y_off, &new_width, &new_height))
-         RARCH_LOG("[GLX]: Using Xinerama on screen #%u.\n", glx->g_screen);
+         RARCH_LOG("[GLX]: Using Xinerama on screen #%u.\n", g_x11_screen);
       else
          RARCH_LOG("[GLX]: Xinerama is not active on screen.\n");
 
@@ -374,7 +374,7 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
       /* If we want to map the window on a different screen, we'll have to do it by force.
        * Otherwise, we should try to let the window manager sort it out.
        * x_off and y_off usually get ignored in XCreateWindow(). */
-      if (glx->g_screen)
+      if (g_x11_screen)
          x11_move_window(g_x11_dpy, g_x11_win, x_off, y_off, width, height);
    }
 
@@ -501,6 +501,7 @@ error:
 
    if (glx)
       free(glx);
+   g_x11_screen = 0;
 
    return false;
 }

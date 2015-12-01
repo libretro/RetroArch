@@ -27,8 +27,6 @@
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
 #endif
 
-static unsigned g_screen;
-
 static XF86VidModeModeInfo g_desktop_mode;
 static bool g_should_reset_mode;
 
@@ -53,16 +51,16 @@ static void gfx_ctx_xegl_destroy(void *data)
 #ifdef HAVE_XINERAMA
       XWindowAttributes target;
       Window child;
-
       int x = 0, y = 0;
+
       XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
       XTranslateCoordinates(g_x11_dpy, g_x11_win, RootWindow(g_x11_dpy, DefaultScreen(g_x11_dpy)),
             target.x, target.y, &x, &y, &child);
 
-      g_screen = x11_get_xinerama_monitor(g_x11_dpy, x, y,
+      g_x11_screen = x11_get_xinerama_monitor(g_x11_dpy, x, y,
             target.width, target.height);
 
-      RARCH_LOG("[X/EGL]: Saved monitor #%u.\n", g_screen);
+      RARCH_LOG("[X/EGL]: Saved monitor #%u.\n", g_x11_screen);
 #endif
 
       x11_window_destroy(false);
@@ -295,16 +293,16 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    }
 
    if (settings->video.monitor_index)
-      g_screen = settings->video.monitor_index - 1;
+      g_x11_screen = settings->video.monitor_index - 1;
 
 #ifdef HAVE_XINERAMA
-   if (fullscreen || g_screen != 0)
+   if (fullscreen || g_x11_screen != 0)
    {
       unsigned new_width  = width;
       unsigned new_height = height;
 
-      if (x11_get_xinerama_coord(g_x11_dpy, g_screen, &x_off, &y_off, &new_width, &new_height))
-         RARCH_LOG("[X/EGL]: Using Xinerama on screen #%u.\n", g_screen);
+      if (x11_get_xinerama_coord(g_x11_dpy, g_x11_screen, &x_off, &y_off, &new_width, &new_height))
+         RARCH_LOG("[X/EGL]: Using Xinerama on screen #%u.\n", g_x11_screen);
       else
          RARCH_LOG("[X/EGL]: Xinerama is not active on screen.\n");
 
@@ -368,7 +366,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
        * Otherwise, we should try to let the window manager sort it out.
        * x_off and y_off usually get ignored in XCreateWindow().
        */
-      if (g_screen)
+      if (g_x11_screen)
          x11_move_window(g_x11_dpy, g_x11_win, x_off, y_off, width, height);
    }
 

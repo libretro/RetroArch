@@ -38,6 +38,7 @@
 extern Window   g_x11_win;
 extern Display *g_x11_dpy;
 extern Colormap g_x11_cmap;
+extern unsigned g_x11_screen;
 
 void x11_show_mouse(Display *dpy, Window win, bool state);
 void x11_windowed_fullscreen(Display *dpy, Window win);

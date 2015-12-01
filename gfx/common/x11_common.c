@@ -44,6 +44,8 @@ static XIM g_x11_xim;
 static XIC g_x11_xic;
 static bool g_x11_true_full;
 
+unsigned g_x11_screen;
+
 #define XA_INIT(x) XA##x = XInternAtom(dpy, #x, False)
 #define _NET_WM_STATE_ADD 1
 #define MOVERESIZE_GRAVITY_CENTER 5
