@@ -330,8 +330,10 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
    RARCH_LOG("%s\n", msg);
 }
 
-void cheat_manager_toggle_index(cheat_manager_t *handle, unsigned i)
+void cheat_manager_toggle_index(unsigned i)
 {
+   global_t *global        = global_get_ptr();
+   cheat_manager_t *handle = global->cheat;
    if (!handle)
       return;
 

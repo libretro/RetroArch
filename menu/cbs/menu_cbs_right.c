@@ -71,13 +71,7 @@ int shader_action_parameter_preset_right(unsigned type, const char *label,
 int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
       bool wraparound)
 {
-   global_t *global       = global_get_ptr();
-   cheat_manager_t *cheat = global->cheat;
-
-   if (!cheat)
-      return -1;
-
-   cheat_manager_toggle_index(cheat, idx);
+   cheat_manager_toggle_index(idx);
 
    return 0;
 }

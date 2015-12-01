@@ -57,7 +57,7 @@ void cheat_manager_apply_cheats(void);
 
 void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx);
 
-void cheat_manager_toggle_index(cheat_manager_t *handle, unsigned i);
+void cheat_manager_toggle_index(unsigned i);
 
 unsigned cheat_manager_get_buf_size(void);
 
