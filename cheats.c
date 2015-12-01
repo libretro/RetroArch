@@ -171,7 +171,6 @@ bool cheat_manager_load(const char *path)
    unsigned cheats = 0, i;
    cheat_manager_t *cheat;
    config_file_t *conf    = config_file_new(path);
-   global_t *global       = global_get_ptr();
 
    if (!conf)
       return false;
