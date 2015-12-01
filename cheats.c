@@ -107,7 +107,7 @@ void cheat_manager_set_code(cheat_manager_t *handle, unsigned i, const char *str
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool cheat_manager_save(cheat_manager_t *handle, const char *path)
+bool cheat_manager_save(const char *path)
 {
    bool ret;
    unsigned i;
@@ -115,6 +115,8 @@ bool cheat_manager_save(cheat_manager_t *handle, const char *path)
    char buf[PATH_MAX_LENGTH]         = {0};
    char cheats_file[PATH_MAX_LENGTH] = {0};
    settings_t              *settings = config_get_ptr();
+   global_t *global                  = global_get_ptr();
+   cheat_manager_t *handle           = global->cheat;
 
    fill_pathname_join(buf, settings->cheat_database,
          path, sizeof(buf));

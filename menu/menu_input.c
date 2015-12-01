@@ -373,7 +373,6 @@ void menu_input_st_string_callback(void *userdata, const char *str)
    {
       rarch_setting_t         *setting = NULL;
       const char                *label = NULL;
-      global_t                 *global = global_get_ptr();
 
       menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
 
@@ -394,7 +393,7 @@ void menu_input_st_string_callback(void *userdata, const char *str)
                menu_shader_manager_save_preset(str, false);
                break;
             case MENU_LABEL_CHEAT_FILE_SAVE_AS:
-               cheat_manager_save(global->cheat, str);
+               cheat_manager_save(str);
                break;
          }
       }

@@ -39,7 +39,7 @@ cheat_manager_t *cheat_manager_load(const char *path);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool cheat_manager_save(cheat_manager_t *handle, const char *path);
+bool cheat_manager_save(const char *path);
 
 bool cheat_manager_realloc(cheat_manager_t *handle, unsigned new_size);
 
