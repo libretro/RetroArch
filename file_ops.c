@@ -138,7 +138,7 @@ static SRes Utf16_To_Utf8Buf(CBuf *dest,
 
 static SRes Utf16_To_Char(CBuf *buf, const uint16_t *s, int fileMode)
 {
-   int len = 0;
+   unsigned len = 0;
 
    for (len = 0; s[len] != '\0'; len++);
 
@@ -172,16 +172,16 @@ static SRes Utf16_To_Char(CBuf *buf, const uint16_t *s, int fileMode)
 #endif
 }
 
-static SRes ConvertUtf16toCharString(const uint16_t *s, char *outstring)
+static SRes ConvertUtf16toCharString(const uint16_t *in, char *s, size_t len)
 {
    CBuf buf;
    SRes res;
 
    Buf_Init(&buf);
-   res = Utf16_To_Char(&buf, s, 0);
+   res = Utf16_To_Char(&buf, in, 0);
 
    if (res == SZ_OK)
-      strncpy(outstring, (const char*)buf.data, PATH_MAX_LENGTH);
+      strlcpy(s, (const char*)buf.data, len);
 
    Buf_Free(&buf, &g_Alloc);
    return res;
@@ -222,7 +222,7 @@ static int read_7zip_file(
    }
    else
    {
-      RARCH_LOG_OUTPUT("Openend archive %s. Now trying to extract %s\n",
+      RARCH_LOG_OUTPUT("Opened archive %s. Now trying to extract %s\n",
             archive_path,relative_path);
    }
 
@@ -268,7 +268,7 @@ static int read_7zip_file(
          }
 
          SzArEx_GetFileNameUtf16(&db, i, temp);
-         res = ConvertUtf16toCharString(temp,infile);
+         res = ConvertUtf16toCharString(temp, infile, sizeof(infile));
 
          if (!strcmp(infile, relative_path))
          {
@@ -419,7 +419,7 @@ static struct string_list *compressed_7zip_file_list_new(
             }
          }
          SzArEx_GetFileNameUtf16(&db, i, temp);
-         res      = ConvertUtf16toCharString(temp, infile);
+         res      = ConvertUtf16toCharString(temp, infile, sizeof(infile));
          file_ext = path_get_extension(infile);
 
          if (string_list_find_elem_prefix(ext_list, ".", file_ext))
