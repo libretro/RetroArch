@@ -3162,7 +3162,7 @@ static bool setting_append_list_input_player_options(
       char name[PATH_MAX_LENGTH];
       bool do_add = true;
 
-      if (!input_config_bind_map_get_meta(i))
+      if (input_config_bind_map_get_meta(i))
          continue;
 
       strlcpy(label, buffer[user], sizeof(label));
