@@ -40,6 +40,7 @@
 #include "retroarch.h"
 #include "runloop.h"
 #include "rewind.h"
+#include "dir_list_special.h"
 #include "audio/audio_driver.h"
 
 #include "msg_hash.h"
@@ -289,6 +290,45 @@ static void check_stateslots(settings_t *settings,
 #define SHADER_EXT_GLSLP     0x0f840c87U
 #define SHADER_EXT_CG        0x0059776fU
 #define SHADER_EXT_CGP       0x0b8865bfU
+
+void shader_dir_free(void)
+{
+   global_t *global = global_get_ptr();
+
+   if (!global)
+      return;
+
+   dir_list_free(global->dir.shader_dir.list);
+   global->dir.shader_dir.list = NULL;
+   global->dir.shader_dir.ptr  = 0;
+}
+
+bool shader_dir_init(void)
+{
+   unsigned i;
+   global_t      *global = global_get_ptr();
+   settings_t *settings  = config_get_ptr();
+
+   if (!*settings->video.shader_dir)
+      return false;
+
+   global->dir.shader_dir.list = dir_list_new_special(NULL, DIR_LIST_SHADERS, NULL);
+
+   if (!global->dir.shader_dir.list || global->dir.shader_dir.list->size == 0)
+   {
+      event_command(EVENT_CMD_SHADER_DIR_DEINIT);
+      return false;
+   }
+
+   global->dir.shader_dir.ptr  = 0;
+   dir_list_sort(global->dir.shader_dir.list, false);
+
+   for (i = 0; i < global->dir.shader_dir.list->size; i++)
+      RARCH_LOG("%s \"%s\"\n",
+            msg_hash_to_str(MSG_FOUND_SHADER),
+            global->dir.shader_dir.list->elems[i].data);
+   return true;
+}
 
 /**
  * check_shader_dir:

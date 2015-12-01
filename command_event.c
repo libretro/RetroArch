@@ -1398,34 +1398,13 @@ bool event_command(enum event_command cmd)
 #endif
          break;
       case EVENT_CMD_SHADER_DIR_DEINIT:
-         if (!global)
-            break;
-
-         dir_list_free(global->dir.shader_dir.list);
-         global->dir.shader_dir.list = NULL;
-         global->dir.shader_dir.ptr  = 0;
+         shader_dir_free();
          break;
       case EVENT_CMD_SHADER_DIR_INIT:
          event_command(EVENT_CMD_SHADER_DIR_DEINIT);
 
-         if (!*settings->video.shader_dir)
+         if (!shader_dir_init())
             return false;
-
-         global->dir.shader_dir.list = dir_list_new_special(NULL, DIR_LIST_SHADERS, NULL);
-
-         if (!global->dir.shader_dir.list || global->dir.shader_dir.list->size == 0)
-         {
-            event_command(EVENT_CMD_SHADER_DIR_DEINIT);
-            return false;
-         }
-
-         global->dir.shader_dir.ptr  = 0;
-         dir_list_sort(global->dir.shader_dir.list, false);
-
-         for (i = 0; i < global->dir.shader_dir.list->size; i++)
-            RARCH_LOG("%s \"%s\"\n",
-                  msg_hash_to_str(MSG_FOUND_SHADER),
-                  global->dir.shader_dir.list->elems[i].data);
          break;
       case EVENT_CMD_SAVEFILES:
          event_save_files();

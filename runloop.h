@@ -300,6 +300,10 @@ const char *rarch_main_msg_queue_pull(void);
 
 bool *runloop_perfcnt_enabled(void);
 
+void shader_dir_free(void);
+
+bool shader_dir_init(void);
+
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 
 typedef int (*transfer_cb_t)(void *data, size_t len);
