@@ -106,14 +106,12 @@ static int read_7zip_file(
    CFileInStream archiveStream;
    CLookToRead lookStream;
    CSzArEx db;
-   SRes res;
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
    uint8_t *output      = 0;
    size_t output_size   = 0;
    uint16_t *temp       = NULL;
    long outsize         = -1;
-   bool file_found      = false;
 
    /*These are the allocation routines.
     * Currently using the non-standard 7zip choices. */
@@ -139,13 +137,14 @@ static int read_7zip_file(
    LookToRead_Init(&lookStream);
    CrcGenerateTable();
    SzArEx_Init(&db);
-   res = SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp);
 
-   if (res == SZ_OK)
+   if (SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp) == SZ_OK)
    {
       uint32_t i;
+      bool file_found      = false;
       size_t temp_size     = 0;
       uint32_t block_index = 0xFFFFFFFF;
+      SRes res             = SZ_OK;
 
       for (i = 0; i < db.db.NumFiles; i++)
       {
@@ -220,6 +219,26 @@ static int read_7zip_file(
             break;
          }
       }
+
+      if (file_found && res == SZ_OK)
+      {
+      }
+      else
+      {
+         /* Error handling */
+         if (!file_found)
+            RARCH_ERR("File %s not found in %s\n", relative_path, archive_path);
+         else if (res == SZ_ERROR_UNSUPPORTED)
+            RARCH_ERR("7Zip decoder doesn't support this archive\n");
+         else if (res == SZ_ERROR_MEM)
+            RARCH_ERR("7Zip decoder could not allocate memory\n");
+         else if (res == SZ_ERROR_CRC)
+            RARCH_ERR("7Zip decoder encountered a CRC error in the archive\n");
+         else
+            RARCH_ERR("\nUnspecified error in 7-ZIP archive, error number was: #%d\n", res);
+
+         outsize    = -1;
+      }
    }
 
    IAlloc_Free(&allocImp, output);
@@ -227,21 +246,7 @@ static int read_7zip_file(
    free(temp);
    File_Close(&archiveStream.file);
 
-   if (res == SZ_OK && file_found == true)
-      return outsize;
-
-   /* Error handling */
-   if (!file_found)
-      RARCH_ERR("File %s not found in %s\n",relative_path,archive_path);
-   else if (res == SZ_ERROR_UNSUPPORTED)
-      RARCH_ERR("7Zip decoder doesn't support this archive\n");
-   else if (res == SZ_ERROR_MEM)
-      RARCH_ERR("7Zip decoder could not allocate memory\n");
-   else if (res == SZ_ERROR_CRC)
-      RARCH_ERR("7Zip decoder encountered a CRC error in the archive\n");
-   else
-      RARCH_ERR("\nUnspecified error in 7-ZIP archive, error number was: #%d\n", res);
-   return -1;
+   return outsize;
 }
 
 static struct string_list *compressed_7zip_file_list_new(
