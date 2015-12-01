@@ -156,8 +156,10 @@ void bsv_movie_free(bsv_movie_t *handle)
    free(handle);
 }
 
-bool bsv_movie_get_input(bsv_movie_t *handle, int16_t *input)
+bool bsv_movie_get_input(int16_t *input)
 {
+   global_t *global    = global_get_ptr();
+   bsv_movie_t *handle = global->bsv.movie;
    if (fread(input, sizeof(int16_t), 1, handle->file) != 1)
       return false;
 
@@ -165,8 +167,11 @@ bool bsv_movie_get_input(bsv_movie_t *handle, int16_t *input)
    return true;
 }
 
-void bsv_movie_set_input(bsv_movie_t *handle, int16_t input)
+void bsv_movie_set_input(int16_t input)
 {
+   global_t *global    = global_get_ptr();
+   bsv_movie_t *handle = global->bsv.movie;
+
    input = swap_if_big16(input);
    fwrite(&input, sizeof(int16_t), 1, handle->file);
 }

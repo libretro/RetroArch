@@ -61,10 +61,10 @@ enum bsv_ctl_state
 bsv_movie_t *bsv_movie_init(const char *path, enum rarch_movie_type type);
 
 /* Playback. */
-bool bsv_movie_get_input(bsv_movie_t *handle, int16_t *input);
+bool bsv_movie_get_input(int16_t *input);
 
 /* Recording. */
-void bsv_movie_set_input(bsv_movie_t *handle, int16_t input);
+void bsv_movie_set_input(int16_t input);
 
 /* Used for rewinding while playback/record. */
 void bsv_movie_set_frame_start(bsv_movie_t *handle);

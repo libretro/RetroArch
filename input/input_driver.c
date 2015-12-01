@@ -467,7 +467,6 @@ int16_t input_state(unsigned port, unsigned device,
    const struct retro_keybind *libretro_input_binds[MAX_USERS];
    int16_t res                     = 0;
    settings_t *settings            = config_get_ptr();
-   global_t *global                = global_get_ptr();
    
    for (i = 0; i < MAX_USERS; i++)
       libretro_input_binds[i] = settings->input.binds[i];
@@ -477,7 +476,7 @@ int16_t input_state(unsigned port, unsigned device,
    if (bsv_movie_ctl(BSV_MOVIE_CTL_PLAYBACK_ON, NULL))
    {
       int16_t ret;
-      if (bsv_movie_get_input(global->bsv.movie, &ret))
+      if (bsv_movie_get_input(&ret))
          return ret;
 
       bsv_movie_ctl(BSV_MOVIE_CTL_SET_END, NULL);
@@ -527,7 +526,7 @@ int16_t input_state(unsigned port, unsigned device,
    }
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_PLAYBACK_OFF, NULL))
-      bsv_movie_set_input(global->bsv.movie, res);
+      bsv_movie_set_input(res);
 
    return res;
 }
