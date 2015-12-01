@@ -63,9 +63,9 @@ unsigned cheat_manager_get_buf_size(void);
 
 const char *cheat_manager_get_desc(cheat_manager_t *handle, unsigned i);
 
-const char *cheat_manager_get_code(cheat_manager_t *handle, unsigned i);
+const char *cheat_manager_get_code(unsigned i);
 
-bool cheat_manager_get_code_state(cheat_manager_t *handle, unsigned i);
+bool cheat_manager_get_code_state(unsigned i);
 
 void cheat_manager_state_checks(
       bool cheat_index_plus_pressed,

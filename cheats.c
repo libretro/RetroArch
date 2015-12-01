@@ -360,8 +360,10 @@ void cheat_manager_index_prev(cheat_manager_t *handle)
    cheat_manager_update(handle, handle->ptr);
 }
 
-const char *cheat_manager_get_code(cheat_manager_t *handle, unsigned i)
+const char *cheat_manager_get_code(unsigned i)
 {
+   global_t *global        = global_get_ptr();
+   cheat_manager_t *handle = global->cheat;
    if (!handle)
       return NULL;
    return handle->cheats[i].code;
@@ -374,8 +376,10 @@ const char *cheat_manager_get_desc(cheat_manager_t *handle, unsigned i)
    return handle->cheats[i].desc;
 }
 
-bool cheat_manager_get_code_state(cheat_manager_t *handle, unsigned i)
+bool cheat_manager_get_code_state(unsigned i)
 {
+   global_t *global        = global_get_ptr();
+   cheat_manager_t *handle = global->cheat;
    if (!handle)
       return false;
    return handle->cheats[i].state;

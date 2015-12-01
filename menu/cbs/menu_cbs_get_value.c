@@ -405,18 +405,14 @@ static void menu_action_setting_disp_set_label_cheat(
       const char *path,
       char *s2, size_t len2)
 {
-   global_t *global     = global_get_ptr();
    unsigned cheat_index = type - MENU_SETTINGS_CHEAT_BEGIN;
-
-   if (!global)
-      return;
 
    if (cheat_index < cheat_manager_get_buf_size())
       snprintf(s, len, "%s : (%s)",
-            (cheat_manager_get_code(global->cheat, cheat_index) != NULL)
-            ? cheat_manager_get_code(global->cheat, cheat_index) : 
+            (cheat_manager_get_code(cheat_index) != NULL)
+            ? cheat_manager_get_code(cheat_index) : 
             menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE),
-            cheat_manager_get_code_state(global->cheat, cheat_index) ? 
+            cheat_manager_get_code_state(cheat_index) ? 
             menu_hash_to_str(MENU_VALUE_ON) :
             menu_hash_to_str(MENU_VALUE_OFF)
             );
