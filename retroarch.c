@@ -760,8 +760,16 @@ static void parse_input(int argc, char *argv[])
          case 'R':
             strlcpy(global->bsv.movie_start_path, optarg,
                   sizeof(global->bsv.movie_start_path));
-            global->bsv.movie_start_playback  = (c == 'P');
-            global->bsv.movie_start_recording = (c == 'R');
+
+            if (c == 'P')
+               bsv_movie_ctl(BSV_MOVIE_CTL_SET_START_PLAYBACK, NULL);
+            else
+               bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_START_PLAYBACK, NULL);
+
+            if (c == 'R')
+               bsv_movie_ctl(BSV_MOVIE_CTL_SET_START_RECORDING, NULL);
+            else
+               bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_START_RECORDING, NULL);
             break;
 
          case 'M':

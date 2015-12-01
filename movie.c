@@ -322,8 +322,20 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
          return global->bsv.movie && !global->bsv.movie_playback;
       case BSV_MOVIE_CTL_START_RECORDING:
          return global->bsv.movie_start_recording;
+      case BSV_MOVIE_CTL_SET_START_RECORDING:
+         global->bsv.movie_start_recording = true;
+         break;
+      case BSV_MOVIE_CTL_UNSET_START_RECORDING:
+         global->bsv.movie_start_recording = false;
+         break;
       case BSV_MOVIE_CTL_START_PLAYBACK:
          return global->bsv.movie_start_playback;
+      case BSV_MOVIE_CTL_SET_START_PLAYBACK:
+         global->bsv.movie_start_playback = true;
+         break;
+      case BSV_MOVIE_CTL_UNSET_START_PLAYBACK:
+         global->bsv.movie_start_playback = false;
+         break;
       case BSV_MOVIE_CTL_END:
          return global->bsv.movie_end && global->bsv.eof_exit;
       case BSV_MOVIE_CTL_SET_END:
