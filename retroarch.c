@@ -758,8 +758,7 @@ static void parse_input(int argc, char *argv[])
 #endif
          case 'P':
          case 'R':
-            strlcpy(global->bsv.movie_start_path, optarg,
-                  sizeof(global->bsv.movie_start_path));
+            bsv_movie_set_start_path(optarg);
 
             if (c == 'P')
                bsv_movie_ctl(BSV_MOVIE_CTL_SET_START_PLAYBACK, NULL);
@@ -1465,8 +1464,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_FILL_PATHNAMES:
          rarch_init_savefile_paths();
-         strlcpy(global->bsv.movie_path, global->name.savefile,
-               sizeof(global->bsv.movie_path));
+         bsv_movie_set_path(global->name.savefile);
 
          if (!*global->name.base)
             return false;

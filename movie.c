@@ -270,7 +270,7 @@ static void bsv_movie_init_state(void)
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_START_PLAYBACK, NULL))
    {
-      if (!(global->bsv.movie = bsv_movie_init(global->bsv.movie_start_path,
+      if (!(bsv_movie_init_handle(global->bsv.movie_start_path,
                   RARCH_MOVIE_PLAYBACK)))
       {
          RARCH_ERR("%s: \"%s\".\n",
@@ -292,7 +292,7 @@ static void bsv_movie_init_state(void)
             msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
             global->bsv.movie_start_path);
 
-      if (!(global->bsv.movie = bsv_movie_init(global->bsv.movie_start_path,
+      if (!(bsv_movie_init_handle(global->bsv.movie_start_path,
                   RARCH_MOVIE_RECORD)))
       {
          rarch_main_msg_queue_push_new(MSG_FAILED_TO_START_MOVIE_RECORD, 1, 180, true);
@@ -373,5 +373,41 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
          return false;
    }
 
+   return true;
+}
+
+const char *bsv_movie_get_path(void)
+{
+   global_t *global = global_get_ptr();
+   if (!global)
+      return NULL;
+   return global->bsv.movie_path;
+}
+
+void bsv_movie_set_path(const char *path)
+{
+   global_t *global = global_get_ptr();
+   if (!global)
+      return;
+   strlcpy(global->bsv.movie_path, path, sizeof(global->bsv.movie_path));
+}
+
+void bsv_movie_set_start_path(const char *path)
+{
+   global_t *global = global_get_ptr();
+   if (!global)
+      return;
+   strlcpy(global->bsv.movie_start_path, path,
+         sizeof(global->bsv.movie_start_path));
+}
+
+bool bsv_movie_init_handle(const char *path, enum rarch_movie_type type)
+{
+   global_t *global = global_get_ptr();
+   if (!global)
+      return false;
+   global->bsv.movie = bsv_movie_init(path, type);
+   if (!global->bsv.movie)
+      return false;
    return true;
 }

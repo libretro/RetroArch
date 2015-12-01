@@ -64,6 +64,12 @@ enum bsv_ctl_state
    BSV_MOVIE_CTL_UNSET_END
 };
 
+const char *bsv_movie_get_path(void);
+
+void bsv_movie_set_path(const char *path);
+
+void bsv_movie_set_start_path(const char *path);
+
 bsv_movie_t *bsv_movie_init(const char *path, enum rarch_movie_type type);
 
 /* Playback. */
@@ -82,6 +88,8 @@ void bsv_movie_frame_rewind(bsv_movie_t *handle);
 void bsv_movie_free(bsv_movie_t *handle);
 
 bool bsv_movie_ctl(enum bsv_ctl_state state, void *data);
+
+bool bsv_movie_init_handle(const char *path, enum rarch_movie_type type);
 
 #ifdef __cplusplus
 }

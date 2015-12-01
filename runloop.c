@@ -585,9 +585,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             if (settings->state_slot > 0)
                snprintf(path, sizeof(path), "%s%d",
-                     global->bsv.movie_path, settings->state_slot);
+                     bsv_movie_get_path(), settings->state_slot);
             else
-               strlcpy(path, global->bsv.movie_path, sizeof(path));
+               strlcpy(path, bsv_movie_get_path(), sizeof(path));
 
             strlcat(path, ".bsv", sizeof(path));
 
@@ -595,7 +595,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                   msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
                   path);
 
-            global->bsv.movie = bsv_movie_init(path, RARCH_MOVIE_RECORD);
+            bsv_movie_init_handle(path, RARCH_MOVIE_RECORD);
 
             if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
                return false;
