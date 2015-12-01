@@ -205,6 +205,7 @@ typedef struct driver
    void *camera_data;
    void *location_data;
    void *recording_data;
+   void *video_shader_data;
    void *netplay_data;
    void *ui_companion_data;
 
