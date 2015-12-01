@@ -29,7 +29,7 @@ unsigned cheat_manager_get_size(void);
 
 cheat_manager_t *cheat_manager_new(unsigned size);
 
-cheat_manager_t *cheat_manager_load(const char *path);
+bool cheat_manager_load(const char *path);
 
 /**
  * cheat_manager_save:
@@ -45,7 +45,7 @@ bool cheat_manager_realloc(unsigned new_size);
 
 void cheat_manager_set_code(unsigned index, const char *str);
 
-void cheat_manager_free(cheat_manager_t *handle);
+void cheat_manager_free(void);
 
 void cheat_manager_index_next(cheat_manager_t *handle);
 

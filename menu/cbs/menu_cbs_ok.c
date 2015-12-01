@@ -713,12 +713,9 @@ static int generic_action_ok(const char *path,
          }
          break;
       case ACTION_OK_LOAD_CHEAT_FILE:
-         if (global->cheat)
-            cheat_manager_free(global->cheat);
+         cheat_manager_free();
 
-         global->cheat = cheat_manager_load(action_path);
-
-         if (!global->cheat)
+         if (!cheat_manager_load(action_path))
             goto error;
          break;
       case ACTION_OK_APPEND_DISK_IMAGE:

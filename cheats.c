@@ -169,24 +169,25 @@ bool cheat_manager_save(const char *path)
    return ret;
 }
 
-cheat_manager_t *cheat_manager_load(const char *path)
+bool cheat_manager_load(const char *path)
 {
    unsigned cheats = 0, i;
-   cheat_manager_t *cheat = NULL;
-   config_file_t *conf = config_file_new(path);
+   cheat_manager_t *cheat;
+   config_file_t *conf    = config_file_new(path);
+   global_t *global       = global_get_ptr();
 
    if (!conf)
-      return NULL;
+      return false;
 
    config_get_uint(conf, "cheats", &cheats);
 
    if (cheats == 0)
-      return NULL;
+      return false;
 
    cheat = cheat_manager_new(cheats);
 
    if (!cheat)
-      return NULL;
+      return false;
 
    for (i = 0; i < cheats; i++)
    {
@@ -217,7 +218,9 @@ cheat_manager_t *cheat_manager_load(const char *path)
 
    config_file_free(conf);
 
-   return cheat;
+   global->cheat = cheat;
+
+   return true;
 }
 
 cheat_manager_t *cheat_manager_new(unsigned size)
@@ -288,8 +291,10 @@ bool cheat_manager_realloc(unsigned new_size)
    return true;
 }
 
-void cheat_manager_free(cheat_manager_t *handle)
+void cheat_manager_free(void)
 {
+   global_t *global        = global_get_ptr();
+   cheat_manager_t *handle = global->cheat;
    if (!handle)
       return;
 
@@ -409,9 +414,10 @@ void cheat_manager_state_checks(
 
 void cheat_manager_state_free(void)
 {
-   global_t *global = global_get_ptr();
+   global_t *global;
+   cheat_manager_free();
 
-   if (global->cheat)
-      cheat_manager_free(global->cheat);
+   global = global_get_ptr();
+
    global->cheat = NULL;
 }
