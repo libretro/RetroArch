@@ -58,33 +58,131 @@ static int Buf_EnsureSize(CBuf *dest, size_t size)
    return Buf_Create(dest, size, &g_Alloc);
 }
 
-static bool ConvertUtf16toCharString(const uint16_t *s, char *outstring)
-{
-   CBuf buf;
-   bool res;
-   size_t out_chars = 0;
-   int len = 0;
+#ifndef _WIN32
 
-   Buf_Init(&buf);
+static uint8_t kUtf8Limits[5] = { 0xC0, 0xE0, 0xF0, 0xF8, 0xFC };
+
+static Bool Utf16_To_Utf8(uint8_t *dest, size_t *destLen,
+      const uint16_t *src, size_t srcLen)
+{
+   size_t destPos = 0;
+   size_t srcPos  = 0;
+
+   for (;;)
+   {
+      unsigned numAdds;
+      uint32_t value;
+
+      if (srcPos == srcLen)
+      {
+         *destLen = destPos;
+         return True;
+      }
+      value = src[srcPos++];
+      if (value < 0x80)
+      {
+         if (dest)
+            dest[destPos] = (char)value;
+         destPos++;
+         continue;
+      }
+      if (value >= 0xD800 && value < 0xE000)
+      {
+         uint32_t c2;
+
+         if (value >= 0xDC00 || srcPos == srcLen)
+            break;
+         c2 = src[srcPos++];
+         if (c2 < 0xDC00 || c2 >= 0xE000)
+            break;
+         value = (((value - 0xD800) << 10) | (c2 - 0xDC00)) + 0x10000;
+      }
+      for (numAdds = 1; numAdds < 5; numAdds++)
+         if (value < (((uint32_t)1) << (numAdds * 5 + 6)))
+            break;
+      if (dest)
+         dest[destPos] = (char)(kUtf8Limits[numAdds - 1] 
+               + (value >> (6 * numAdds)));
+      destPos++;
+      do
+      {
+         numAdds--;
+         if (dest)
+            dest[destPos] = (char)(0x80 
+                  + ((value >> (6 * numAdds)) & 0x3F));
+         destPos++;
+      }while (numAdds != 0);
+   }
+   *destLen = destPos;
+   return False;
+}
+
+static SRes Utf16_To_Utf8Buf(CBuf *dest,
+      const uint16_t *src, size_t srcLen)
+{
+   Bool res;
+   size_t destLen = 0;
+
+   Utf16_To_Utf8(NULL, &destLen, src, srcLen);
+   destLen += 1;
+
+   if (!Buf_EnsureSize(dest, destLen))
+      return SZ_ERROR_MEM;
+
+   res = Utf16_To_Utf8(dest->data, &destLen, src, srcLen);
+   dest->data[destLen] = 0;
+
+   return res ? SZ_OK : SZ_ERROR_FAIL;
+}
+#endif
+
+static SRes Utf16_To_Char(CBuf *buf, const uint16_t *s, int fileMode)
+{
+   int len = 0;
 
    for (len = 0; s[len] != '\0'; len++);
 
-   utf16_conv_utf8(NULL, &out_chars, s, len);
-   out_chars += 1;
-
-   if (!Buf_EnsureSize(&buf, out_chars))
+#ifdef _WIN32
    {
-      res = SZ_ERROR_MEM;
-      goto end;
+      int size = len * 3 + 100;
+      if (!Buf_EnsureSize(buf, size))
+         return SZ_ERROR_MEM;
+      {
+         char defaultChar = '_';
+         BOOL defUsed;
+         int numChars = WideCharToMultiByte(fileMode ?
+               (
+#ifdef UNDER_CE
+                     CP_ACP
+#else
+                     AreFileApisANSI() ? CP_ACP : CP_OEMCP
+#endif
+               ) : CP_OEMCP,
+               0, (LPCWSTR)s, len, (char *)buf->data,
+               size, &defaultChar, &defUsed);
+         if (numChars == 0 || numChars >= size)
+            return SZ_ERROR_FAIL;
+         buf->data[numChars] = 0;
+         return SZ_OK;
+      }
    }
+#else
+   (void)fileMode;
+   return Utf16_To_Utf8Buf(buf, s, len);
+#endif
+}
 
-   res = utf16_conv_utf8(buf.data, &out_chars, s, len);
-   buf.data[out_chars] = 0;
+static SRes ConvertUtf16toCharString(const uint16_t *s, char *outstring)
+{
+   CBuf buf;
+   SRes res;
+
+   Buf_Init(&buf);
+   res = Utf16_To_Char(&buf, s, 0);
 
    if (res == SZ_OK)
       strncpy(outstring, (const char*)buf.data, PATH_MAX_LENGTH);
 
-end:
    Buf_Free(&buf, &g_Alloc);
    return res;
 }
@@ -170,7 +268,7 @@ static int read_7zip_file(
          }
 
          SzArEx_GetFileNameUtf16(&db, i, temp);
-         res = ConvertUtf16toCharString(temp,infile) ? SZ_OK : SZ_ERROR_FAIL;
+         res = ConvertUtf16toCharString(temp,infile);
 
          if (!strcmp(infile, relative_path))
          {
@@ -321,7 +419,7 @@ static struct string_list *compressed_7zip_file_list_new(
             }
          }
          SzArEx_GetFileNameUtf16(&db, i, temp);
-         res      = ConvertUtf16toCharString(temp, infile) ? SZ_OK : SZ_ERROR_FAIL;
+         res      = ConvertUtf16toCharString(temp, infile);
          file_ext = path_get_extension(infile);
 
          if (string_list_find_elem_prefix(ext_list, ".", file_ext))
