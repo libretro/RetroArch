@@ -232,9 +232,6 @@ typedef struct global
       bool use_output_dir;
    } record;
 
-
-   cheat_manager_t *cheat;
-
    /* Settings and/or global state that is specific to 
     * a console-style implementation. */
    struct

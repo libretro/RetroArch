@@ -52,10 +52,11 @@ struct cheat_manager
    unsigned buf_size;
 };
 
+static cheat_manager_t *cheat_manager_state;
+
 unsigned cheat_manager_get_buf_size(void)
 {
-   global_t *global        = global_get_ptr();
-   cheat_manager_t *handle = global->cheat;
+   cheat_manager_t *handle = cheat_manager_state;
    if (!handle)
       return 0;
    return handle->buf_size;
@@ -63,8 +64,7 @@ unsigned cheat_manager_get_buf_size(void)
 
 unsigned cheat_manager_get_size(void)
 {
-   global_t *global        = global_get_ptr();
-   cheat_manager_t *handle = global->cheat;
+   cheat_manager_t *handle = cheat_manager_state;
    if (!handle)
       return 0;
    return handle->size;
@@ -73,8 +73,7 @@ unsigned cheat_manager_get_size(void)
 void cheat_manager_apply_cheats(void)
 {
    unsigned i, idx = 0;
-   global_t *global        = global_get_ptr();
-   cheat_manager_t *handle = global->cheat;
+   cheat_manager_t *handle = cheat_manager_state;
 
    if (!handle)
       return;
@@ -95,8 +94,7 @@ void cheat_manager_apply_cheats(void)
 
 void cheat_manager_set_code(unsigned i, const char *str)
 {
-   global_t *global        = global_get_ptr();
-   cheat_manager_t *handle = global->cheat;
+   cheat_manager_t *handle = cheat_manager_state;
    if (!handle)
       return;
    handle->cheats[i].code  = strdup(str);
@@ -119,8 +117,7 @@ bool cheat_manager_save(const char *path)
    char buf[PATH_MAX_LENGTH]         = {0};
    char cheats_file[PATH_MAX_LENGTH] = {0};
    settings_t              *settings = config_get_ptr();
-   global_t *global                  = global_get_ptr();
-   cheat_manager_t *handle           = global->cheat;
+   cheat_manager_t *handle = cheat_manager_state;
 
    fill_pathname_join(buf, settings->cheat_database,
          path, sizeof(buf));
@@ -218,7 +215,7 @@ bool cheat_manager_load(const char *path)
 
    config_file_free(conf);
 
-   global->cheat = cheat;
+   cheat_manager_state = cheat;
 
    return true;
 }
@@ -258,8 +255,7 @@ cheat_manager_t *cheat_manager_new(unsigned size)
 bool cheat_manager_realloc(unsigned new_size)
 {
    unsigned i;
-   global_t *global        = global_get_ptr();
-   cheat_manager_t *handle = global->cheat;
+   cheat_manager_t *handle = cheat_manager_state;
 
    if (!handle)
       return false;
@@ -293,8 +289,7 @@ bool cheat_manager_realloc(unsigned new_size)
 
 void cheat_manager_free(void)
 {
-   global_t *global        = global_get_ptr();
-   cheat_manager_t *handle = global->cheat;
+   cheat_manager_t *handle = cheat_manager_state;
    if (!handle)
       return;
 
@@ -332,8 +327,7 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
 
 void cheat_manager_toggle_index(unsigned i)
 {
-   global_t *global        = global_get_ptr();
-   cheat_manager_t *handle = global->cheat;
+   cheat_manager_t *handle = cheat_manager_state;
    if (!handle)
       return;
 
@@ -375,8 +369,7 @@ void cheat_manager_index_prev(cheat_manager_t *handle)
 
 const char *cheat_manager_get_code(unsigned i)
 {
-   global_t *global        = global_get_ptr();
-   cheat_manager_t *handle = global->cheat;
+   cheat_manager_t *handle = cheat_manager_state;
    if (!handle)
       return NULL;
    return handle->cheats[i].code;
@@ -384,8 +377,7 @@ const char *cheat_manager_get_code(unsigned i)
 
 const char *cheat_manager_get_desc(unsigned i)
 {
-   global_t *global        = global_get_ptr();
-   cheat_manager_t *handle = global->cheat;
+   cheat_manager_t *handle = cheat_manager_state;
    if (!handle)
       return NULL;
    return handle->cheats[i].desc;
@@ -393,8 +385,7 @@ const char *cheat_manager_get_desc(unsigned i)
 
 bool cheat_manager_get_code_state(unsigned i)
 {
-   global_t *global        = global_get_ptr();
-   cheat_manager_t *handle = global->cheat;
+   cheat_manager_t *handle = cheat_manager_state;
    if (!handle)
       return false;
    return handle->cheats[i].state;
@@ -405,39 +396,35 @@ void cheat_manager_state_checks(
       bool cheat_index_minus_pressed,
       bool cheat_toggle_pressed)
 {
-   global_t *global = global_get_ptr();
-   if (!global || !global->cheat)
+   cheat_manager_t *handle = cheat_manager_state;
+   if (!handle)
       return;
    if (cheat_index_plus_pressed)
-      cheat_manager_index_next(global->cheat);
+      cheat_manager_index_next(handle);
    else if (cheat_index_minus_pressed)
-      cheat_manager_index_prev(global->cheat);
+      cheat_manager_index_prev(handle);
    else if (cheat_toggle_pressed)
-      cheat_manager_toggle(global->cheat);
+      cheat_manager_toggle(handle);
 }
 
 void cheat_manager_state_free(void)
 {
-   global_t *global;
    cheat_manager_free();
 
-   global = global_get_ptr();
-
-   global->cheat = NULL;
+   cheat_manager_state = NULL;
 }
 
 bool cheat_manager_alloc_if_empty(void)
 {
-   global_t *global       = global_get_ptr();
-   cheat_manager_t *cheat = global->cheat;
+   cheat_manager_t *handle = cheat_manager_state;
 
-   if (!cheat)
+   if (!handle)
    {
-      global->cheat = cheat_manager_new(0);
+      cheat_manager_t *tmp    = cheat_manager_new(0);
 
-      if (!global->cheat)
+      if (!tmp)
          return false;
-      cheat = global->cheat;
+      cheat_manager_state = tmp;
    }
 
    return true;
