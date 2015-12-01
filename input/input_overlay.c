@@ -528,9 +528,11 @@ void input_overlay_free(void)
 /* task_data = overlay_task_data_t* */
 static void input_overlay_loaded(void *task_data, void *user_data, const char *err)
 {
+   size_t i;
    input_overlay_t       *ol;
    overlay_task_data_t *data = (overlay_task_data_t*)task_data;
    settings_t      *settings = config_get_ptr();
+   const video_overlay_interface_t *iface = NULL;
 
    if (err)
       return;
@@ -540,32 +542,21 @@ static void input_overlay_loaded(void *task_data, void *user_data, const char *e
    {
       if (!input_driver_ctl(RARCH_INPUT_CTL_IS_OSK_ENABLED, NULL)
             && settings->input.overlay_enable)
-      {
-         size_t i;
-         for (i = 0; i < data->size; i++)
-            input_overlay_free_overlay(&data->overlays[i]);
+         goto abort_load;
+   }
 
-         free(data->overlays);
-         free(data);
-         return;
-      }
+   if (!video_driver_overlay_interface(&iface) || !iface)
+   {
+      RARCH_ERR("Overlay interface is not present in video driver.\n");
+      goto abort_load;
    }
 
    ol = (input_overlay_t*)calloc(1, sizeof(*ol));
    ol->overlays = data->overlays;
    ol->size     = data->size;
    ol->active   = data->active;
-
-   if (!video_driver_overlay_interface(&ol->iface))
-   {
-      RARCH_ERR("Overlay interface is not present in video driver.\n");
-      goto error;
-   }
-
-   ol->iface_data            = video_driver_get_ptr(true);
-
-   if (!ol->iface)
-      goto error;
+   ol->iface      = iface;
+   ol->iface_data = video_driver_get_ptr(true);
 
    overlay_ptr = ol;
 
@@ -579,8 +570,12 @@ static void input_overlay_loaded(void *task_data, void *user_data, const char *e
 
    free(data);
    return;
-error:
-   input_overlay_free();
+
+abort_load:
+   for (i = 0; i < data->size; i++)
+      input_overlay_free_overlay(&data->overlays[i]);
+
+   free(data->overlays);
    free(data);
 }
 
