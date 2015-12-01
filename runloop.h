@@ -184,11 +184,6 @@ typedef struct global
       bool ips_pref;
    } patch;
 
-   struct
-   {
-      unsigned windowed_scale;
-   } pending;
-
 #ifdef HAVE_MENU
    struct
    {

@@ -61,6 +61,7 @@
 
 static struct global g_extern;
 
+static unsigned runloop_pending_windowed_scale;
 static char runloop_fullpath[PATH_MAX_LENGTH];
 static bool runloop_perfcnt_enable;
 static bool main_exec;
@@ -300,14 +301,14 @@ static void check_stateslots(settings_t *settings,
  *
  * Will also immediately apply the shader.
  **/
-static void check_shader_dir(global_t *global,
-      bool pressed_next, bool pressed_prev)
+static void check_shader_dir(bool pressed_next, bool pressed_prev)
 {
    uint32_t ext_hash;
    char msg[PATH_MAX_LENGTH];
    const char *shader          = NULL;
    const char *ext             = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
+   global_t *global            = global_get_ptr();
 
    if (!global || !global->dir.shader_dir.list)
       return;
@@ -371,7 +372,6 @@ static void rarch_main_data_clear_state(void)
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    settings_t *settings  = config_get_ptr();
-   global_t     *global  = global_get_ptr();
 
    switch (state)
    {
@@ -388,7 +388,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             unsigned **scale = (unsigned**)data;
             if (!scale)
                return false;
-            *scale       = (unsigned*)&global->pending.windowed_scale;
+            *scale       = (unsigned*)&runloop_pending_windowed_scale;
          }
          break;
       case RUNLOOP_CTL_SET_WINDOWED_SCALE:
@@ -396,7 +396,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             unsigned *idx = (unsigned*)data;
             if (!idx)
                return false;
-            global->pending.windowed_scale = *idx;
+            runloop_pending_windowed_scale = *idx;
          }
          break;
       case RUNLOOP_CTL_SET_LIBRETRO_PATH:
@@ -501,7 +501,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (cmd->movie_record)
                runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE, NULL);
 
-            check_shader_dir(global, cmd->shader_next_pressed,
+            check_shader_dir(cmd->shader_next_pressed,
                   cmd->shader_prev_pressed);
 
             if (cmd->disk_eject_pressed)
