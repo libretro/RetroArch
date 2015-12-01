@@ -910,7 +910,7 @@ static void parse_input(int argc, char *argv[])
             exit(0);
 
          case RA_OPT_EOF_EXIT:
-            global->bsv.eof_exit = true;
+            bsv_movie_ctl(BSV_MOVIE_CTL_SET_END_EOF, NULL);
             break;
 
          case RA_OPT_VERSION:

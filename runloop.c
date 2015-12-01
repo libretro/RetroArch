@@ -616,7 +616,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
          break;
       case RUNLOOP_CTL_CHECK_MOVIE_PLAYBACK:
-         if (!global->bsv.movie_end)
+         if (!bsv_movie_ctl(BSV_MOVIE_CTL_END, NULL))
             return false;
 
          rarch_main_msg_queue_push_new(
@@ -868,7 +868,7 @@ static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
    rarch_system_info_t *system   = rarch_system_info_get_ptr();
    bool shutdown_pressed         = (system && system->shutdown) || cmd->quit_key_pressed;
    bool video_alive              = video_driver_ctl(RARCH_DISPLAY_CTL_IS_ALIVE, NULL);
-   bool movie_end                = bsv_movie_ctl(BSV_MOVIE_CTL_END, NULL);
+   bool movie_end                = bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL);
    bool frame_count_end          = false;
    
    video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);

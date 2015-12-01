@@ -337,6 +337,11 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
          global->bsv.movie_start_playback = false;
          break;
       case BSV_MOVIE_CTL_END:
+         return global->bsv.movie_end;
+      case BSV_MOVIE_CTL_SET_END_EOF:
+         global->bsv.eof_exit = true;
+         break;
+      case BSV_MOVIE_CTL_END_EOF:
          return global->bsv.movie_end && global->bsv.eof_exit;
       case BSV_MOVIE_CTL_SET_END:
          global->bsv.movie_end = true;
