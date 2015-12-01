@@ -505,15 +505,10 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (cmd->reset_pressed)
                event_command(EVENT_CMD_RESET);
 
-            if (global->cheat)
-            {
-               if (cmd->cheat_index_plus_pressed)
-                  cheat_manager_index_next(global->cheat);
-               else if (cmd->cheat_index_minus_pressed)
-                  cheat_manager_index_prev(global->cheat);
-               else if (cmd->cheat_toggle_pressed)
-                  cheat_manager_toggle(global->cheat);
-            }
+            cheat_manager_state_checks(
+                  cmd->cheat_index_plus_pressed,
+               cmd->cheat_index_minus_pressed,
+               cmd->cheat_toggle_pressed);
          }
          break;
       case RUNLOOP_CTL_CHECK_PAUSE_STATE:

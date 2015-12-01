@@ -1095,22 +1095,14 @@ bool event_command(enum event_command cmd)
          }
          break;
       case EVENT_CMD_CHEATS_DEINIT:
-         if (!global)
-            break;
-
-         if (global->cheat)
-            cheat_manager_free(global->cheat);
-         global->cheat = NULL;
+         cheat_manager_state_free();
          break;
       case EVENT_CMD_CHEATS_INIT:
          event_command(EVENT_CMD_CHEATS_DEINIT);
          event_init_cheats();
          break;
       case EVENT_CMD_CHEATS_APPLY:
-         if (!global->cheat)
-            break;
-
-         cheat_manager_apply_cheats(global->cheat);
+         cheat_manager_apply_cheats();
          break;
       case EVENT_CMD_REMAPPING_DEINIT:
          break;

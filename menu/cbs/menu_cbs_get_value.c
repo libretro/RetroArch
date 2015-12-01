@@ -48,12 +48,9 @@ static void menu_action_setting_disp_set_label_cheat_num_passes(
       const char *path,
       char *s2, size_t len2)
 {
-   global_t *global = global_get_ptr();
-
    *w = 19;
    strlcpy(s2, path, len2);
-   if (global && global->cheat)
-      snprintf(s, len, "%u", cheat_manager_get_buf_size(global->cheat));
+   snprintf(s, len, "%u", cheat_manager_get_buf_size());
 }
 
 static void menu_action_setting_disp_set_label_remap_file_load(
@@ -414,7 +411,7 @@ static void menu_action_setting_disp_set_label_cheat(
    if (!global)
       return;
 
-   if (cheat_index < cheat_manager_get_buf_size(global->cheat))
+   if (cheat_index < cheat_manager_get_buf_size())
       snprintf(s, len, "%s : (%s)",
             (cheat_manager_get_code(global->cheat, cheat_index) != NULL)
             ? cheat_manager_get_code(global->cheat, cheat_index) : 
