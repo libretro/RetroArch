@@ -61,8 +61,10 @@ unsigned cheat_manager_get_buf_size(void)
    return handle->buf_size;
 }
 
-unsigned cheat_manager_get_size(cheat_manager_t *handle)
+unsigned cheat_manager_get_size(void)
 {
+   global_t *global        = global_get_ptr();
+   cheat_manager_t *handle = global->cheat;
    if (!handle)
       return 0;
    return handle->size;
@@ -91,8 +93,10 @@ void cheat_manager_apply_cheats(void)
 #endif
 }
 
-void cheat_manager_set_code(cheat_manager_t *handle, unsigned i, const char *str)
+void cheat_manager_set_code(unsigned i, const char *str)
 {
+   global_t *global        = global_get_ptr();
+   cheat_manager_t *handle = global->cheat;
    if (!handle)
       return;
    handle->cheats[i].code  = strdup(str);
@@ -248,9 +252,11 @@ cheat_manager_t *cheat_manager_new(unsigned size)
    return handle;
 }
 
-bool cheat_manager_realloc(cheat_manager_t *handle, unsigned new_size)
+bool cheat_manager_realloc(unsigned new_size)
 {
    unsigned i;
+   global_t *global        = global_get_ptr();
+   cheat_manager_t *handle = global->cheat;
 
    if (!handle)
       return false;

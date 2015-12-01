@@ -2000,7 +2000,7 @@ static int menu_displaylist_parse_options_cheats(menu_displaylist_info_t *info)
          menu_hash_to_str(MENU_LABEL_CHEAT_APPLY_CHANGES),
          MENU_SETTING_ACTION, 0, 0);
 
-   for (i = 0; i < cheat_manager_get_size(cheat); i++)
+   for (i = 0; i < cheat_manager_get_size(); i++)
    {
       char cheat_label[64] = {0};
 

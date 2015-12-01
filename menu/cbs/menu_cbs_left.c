@@ -238,18 +238,13 @@ static int action_left_cheat_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned new_size = 0;
-   global_t *global       = global_get_ptr();
    menu_handle_t *menu    = menu_driver_get_ptr();
-   cheat_manager_t *cheat = global->cheat;
 
-   if (!cheat)
-      return -1;
-
-   if (cheat_manager_get_size(cheat))
-      new_size = cheat_manager_get_size(cheat) - 1;
+   if (cheat_manager_get_size())
+      new_size = cheat_manager_get_size() - 1;
    menu_entries_set_refresh(false);
    menu->prevent_populate = true;
-   cheat_manager_realloc(cheat, new_size);
+   cheat_manager_realloc(new_size);
 
    return 0;
 }

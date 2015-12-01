@@ -404,19 +404,17 @@ void menu_input_st_string_callback(void *userdata, const char *str)
 
 void menu_input_st_cheat_callback(void *userdata, const char *str)
 {
-   global_t *global         = global_get_ptr();
-   cheat_manager_t *cheat   = global ? global->cheat : NULL;
    menu_input_t *menu_input = menu_input_get_ptr();
 
    (void)userdata;
 
-   if (!menu_input || !cheat)
+   if (!menu_input)
       return;
 
-   if (cheat && str && *str)
+   if (str && *str)
    {
       unsigned cheat_index = menu_input->keyboard.type - MENU_SETTINGS_CHEAT_BEGIN;
-      cheat_manager_set_code(cheat, cheat_index, str);
+      cheat_manager_set_code(cheat_index, str);
    }
 
    menu_input_key_end_line();

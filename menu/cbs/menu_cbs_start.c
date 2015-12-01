@@ -239,16 +239,10 @@ static int action_start_shader_num_passes(unsigned type, const char *label)
 
 static int action_start_cheat_num_passes(unsigned type, const char *label)
 {
-   global_t *global       = global_get_ptr();
-   cheat_manager_t *cheat = global->cheat;
-
-   if (!cheat)
-      return -1;
-
-   if (cheat_manager_get_size(cheat))
+   if (cheat_manager_get_size())
    {
       menu_entries_set_refresh(false);
-      cheat_manager_realloc(cheat, 0);
+      cheat_manager_realloc(0);
    }
 
    return 0;
