@@ -89,23 +89,7 @@ static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
       glx->g_glx_win = 0;
 
       /* Save last used monitor for later. */
-#ifdef HAVE_XINERAMA
-      {
-         XWindowAttributes target;
-         Window child;
-
-         int x = 0, y = 0;
-         XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
-         XTranslateCoordinates(g_x11_dpy, g_x11_win, DefaultRootWindow(g_x11_dpy),
-               target.x, target.y, &x, &y, &child);
-
-         g_x11_screen = x11_get_xinerama_monitor(g_x11_dpy, x, y,
-               target.width, target.height);
-
-         RARCH_LOG("[GLX]: Saved monitor #%u.\n", g_x11_screen);
-      }
-#endif
-
+      x11_save_last_used_monitor(DefaultRootWindow(g_x11_dpy));
       x11_window_destroy(false);
    }
 

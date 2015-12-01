@@ -597,3 +597,21 @@ void x11_event_queue_check(XEvent *event)
 {
    XIfEvent(g_x11_dpy, event, x11_wait_notify, NULL);
 }
+
+void x11_save_last_used_monitor(Window win)
+{
+#ifdef HAVE_XINERAMA
+   XWindowAttributes target;
+   Window child;
+   int x = 0, y = 0;
+
+   XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
+   XTranslateCoordinates(g_x11_dpy, g_x11_win, DefaultRootWindow(g_x11_dpy),
+         target.x, target.y, &x, &y, &child);
+
+   g_x11_screen = x11_get_xinerama_monitor(g_x11_dpy, x, y,
+         target.width, target.height);
+
+   RARCH_LOG("[X11]: Saved monitor #%u.\n", g_x11_screen);
+#endif
+}

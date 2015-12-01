@@ -48,21 +48,7 @@ static void gfx_ctx_xegl_destroy(void *data)
    if (g_x11_win)
    {
       /* Save last used monitor for later. */
-#ifdef HAVE_XINERAMA
-      XWindowAttributes target;
-      Window child;
-      int x = 0, y = 0;
-
-      XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
-      XTranslateCoordinates(g_x11_dpy, g_x11_win, RootWindow(g_x11_dpy, DefaultScreen(g_x11_dpy)),
-            target.x, target.y, &x, &y, &child);
-
-      g_x11_screen = x11_get_xinerama_monitor(g_x11_dpy, x, y,
-            target.width, target.height);
-
-      RARCH_LOG("[X/EGL]: Saved monitor #%u.\n", g_x11_screen);
-#endif
-
+      x11_save_last_used_monitor(RootWindow(g_x11_dpy, DefaultScreen(g_x11_dpy)));
       x11_window_destroy(false);
    }
 
