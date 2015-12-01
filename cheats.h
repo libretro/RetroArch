@@ -61,7 +61,7 @@ void cheat_manager_toggle_index(unsigned i);
 
 unsigned cheat_manager_get_buf_size(void);
 
-const char *cheat_manager_get_desc(cheat_manager_t *handle, unsigned i);
+const char *cheat_manager_get_desc(unsigned i);
 
 const char *cheat_manager_get_code(unsigned i);
 
@@ -73,6 +73,8 @@ void cheat_manager_state_checks(
       bool cheat_toggle_pressed);
 
 void cheat_manager_state_free(void);
+
+bool cheat_manager_alloc_if_empty(void);
 
 #ifdef __cplusplus
 }

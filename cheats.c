@@ -382,8 +382,10 @@ const char *cheat_manager_get_code(unsigned i)
    return handle->cheats[i].code;
 }
 
-const char *cheat_manager_get_desc(cheat_manager_t *handle, unsigned i)
+const char *cheat_manager_get_desc(unsigned i)
 {
+   global_t *global        = global_get_ptr();
+   cheat_manager_t *handle = global->cheat;
    if (!handle)
       return NULL;
    return handle->cheats[i].desc;
@@ -422,4 +424,21 @@ void cheat_manager_state_free(void)
    global = global_get_ptr();
 
    global->cheat = NULL;
+}
+
+bool cheat_manager_alloc_if_empty(void)
+{
+   global_t *global       = global_get_ptr();
+   cheat_manager_t *cheat = global->cheat;
+
+   if (!cheat)
+   {
+      global->cheat = cheat_manager_new(0);
+
+      if (!global->cheat)
+         return false;
+      cheat = global->cheat;
+   }
+
+   return true;
 }

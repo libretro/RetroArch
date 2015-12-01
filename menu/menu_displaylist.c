@@ -1971,17 +1971,9 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
 static int menu_displaylist_parse_options_cheats(menu_displaylist_info_t *info)
 {
    unsigned i;
-   global_t *global       = global_get_ptr();
-   cheat_manager_t *cheat = global ? global->cheat : NULL;
 
-   if (!cheat)
-   {
-      global->cheat = cheat_manager_new(0);
-
-      if (!global->cheat)
-         return -1;
-      cheat = global->cheat;
-   }
+   if (!cheat_manager_alloc_if_empty())
+      return -1;
 
    menu_entries_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_CHEAT_FILE_LOAD),
@@ -2005,8 +1997,8 @@ static int menu_displaylist_parse_options_cheats(menu_displaylist_info_t *info)
       char cheat_label[64] = {0};
 
       snprintf(cheat_label, sizeof(cheat_label), "%s #%u: ", menu_hash_to_str(MENU_VALUE_CHEAT), i);
-      if (cheat_manager_get_desc(cheat, i))
-         strlcat(cheat_label, cheat_manager_get_desc(cheat, i), sizeof(cheat_label));
+      if (cheat_manager_get_desc(i))
+         strlcat(cheat_label, cheat_manager_get_desc(i), sizeof(cheat_label));
       menu_entries_push(info->list, cheat_label, "", MENU_SETTINGS_CHEAT_BEGIN + i, 0, 0);
    }
 
