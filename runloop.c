@@ -383,6 +383,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_PERFCNT_ENABLE:
          return runloop_perfcnt_enable;
+      case RUNLOOP_CTL_GET_WINDOWED_SCALE:
+         {
+            unsigned **scale = (unsigned**)data;
+            if (!scale)
+               return false;
+            *scale       = (unsigned*)&global->pending.windowed_scale;
+         }
+         break;
       case RUNLOOP_CTL_SET_WINDOWED_SCALE:
          {
             unsigned *idx = (unsigned*)data;

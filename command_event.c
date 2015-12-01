@@ -1010,10 +1010,14 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_RESIZE_WINDOWED_SCALE:
          {
             unsigned idx = 0;
-            if (global->pending.windowed_scale == 0)
+            unsigned *window_scale = NULL;
+
+            runloop_ctl(RUNLOOP_CTL_GET_WINDOWED_SCALE, &window_scale);
+
+            if (*window_scale == 0)
                return false;
 
-            settings->video.scale = global->pending.windowed_scale;
+            settings->video.scale = *window_scale;
 
             if (!settings->video.fullscreen)
                event_command(EVENT_CMD_REINIT);
