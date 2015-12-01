@@ -71,7 +71,7 @@ static bool Utf16_To_Char(CBuf *dest, const uint16_t *s, int fileMode)
    dest_len += 1;
 
    if (!Buf_EnsureSize(dest, dest_len))
-      return SZ_ERROR_MEM;
+      return false;
 
    res = utf16_conv_utf8(dest->data, &dest_len, s, len);
    dest->data[dest_len] = 0;
@@ -250,13 +250,10 @@ static struct string_list *compressed_7zip_file_list_new(
    CFileInStream archiveStream;
    CLookToRead lookStream;
    CSzArEx db;
-   SRes res;
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
    uint16_t *temp               = NULL;
    size_t temp_size             = 0;
-   long outsize                 = -1;
-
    struct string_list *ext_list = NULL;
    struct string_list     *list = string_list_new();
 
@@ -265,8 +262,6 @@ static struct string_list *compressed_7zip_file_list_new(
 
    if (ext)
       ext_list = string_split(ext, "|");
-
-   (void)outsize;
 
    /* These are the allocation routines - currently using 
     * the non-standard 7zip choices. */
@@ -278,7 +273,10 @@ static struct string_list *compressed_7zip_file_list_new(
    if (InFile_Open(&archiveStream.file, path))
    {
       RARCH_ERR("Could not open %s as 7z archive.\n",path);
-      goto error;
+
+      string_list_free(list);
+      list = NULL;
+      goto end;
    }
 
    FileInStream_CreateVTable(&archiveStream);
@@ -287,11 +285,11 @@ static struct string_list *compressed_7zip_file_list_new(
    LookToRead_Init(&lookStream);
    CrcGenerateTable();
    SzArEx_Init(&db);
-   res = SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp);
 
-   if (res == SZ_OK)
+   if (SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp) == SZ_OK)
    {
       uint32_t i;
+      SRes res  = SZ_OK;
 
       for (i = 0; i < db.db.NumFiles; i++)
       {
@@ -325,6 +323,7 @@ static struct string_list *compressed_7zip_file_list_new(
                break;
             }
          }
+
          SzArEx_GetFileNameUtf16(&db, i, temp);
          res      = ConvertUtf16toCharString(temp, infile, sizeof(infile)) ? SZ_OK : SZ_ERROR_FAIL;
          file_ext = path_get_extension(infile);
@@ -344,41 +343,40 @@ static struct string_list *compressed_7zip_file_list_new(
          attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
 
          if (!string_list_append(list, infile, attr))
-            goto error;
+         {
+            res = SZ_ERROR_MEM;
+            break;
+         }
+      }
 
+      if (res != SZ_OK)
+      {
+         /* Error handling */
+         if (res == SZ_ERROR_UNSUPPORTED)
+            RARCH_ERR("7Zip decoder doesn't support this archive. \n");
+         else if (res == SZ_ERROR_MEM)
+            RARCH_ERR("7Zip decoder could not allocate memory. \n");
+         else if (res == SZ_ERROR_CRC)
+            RARCH_ERR("7Zip decoder encountered a CRC error in the archive. \n");
+         else
+            RARCH_ERR(
+                  "\nUnspecified error in 7-ZIP archive, error number was: #%d. \n",
+                  res);
+
+         RARCH_ERR("Failed to open compressed_file: \"%s\"\n", path);
+
+         string_list_free(list);
+         list = NULL;
       }
    }
+
+end:
    SzArEx_Free(&db, &allocImp);
    free(temp);
    File_Close(&archiveStream.file);
-
-   if (res != SZ_OK)
-   {
-      /* Error handling */
-      if (res == SZ_ERROR_UNSUPPORTED)
-         RARCH_ERR("7Zip decoder doesn't support this archive. \n");
-      else if (res == SZ_ERROR_MEM)
-         RARCH_ERR("7Zip decoder could not allocate memory. \n");
-      else if (res == SZ_ERROR_CRC)
-         RARCH_ERR("7Zip decoder encountered a CRC error in the archive. \n");
-      else
-         RARCH_ERR(
-               "\nUnspecified error in 7-ZIP archive, error number was: #%d. \n",
-               res);
-      goto error;
-   }
 
    string_list_free(ext_list);
    return list;
-
-error:
-   RARCH_ERR("Failed to open compressed_file: \"%s\"\n", path);
-   SzArEx_Free(&db, &allocImp);
-   free(temp);
-   File_Close(&archiveStream.file);
-   string_list_free(list);
-   string_list_free(ext_list);
-   return NULL;
 }
 #endif
 
