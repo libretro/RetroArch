@@ -455,6 +455,8 @@ static void *sdl2_gfx_init(const video_info_t *video,
 
    sdl2_gfx_set_handles(vid);
 
+   sdl_refresh_viewport(vid);
+
    *input      = NULL;
    *input_data = NULL;
 
