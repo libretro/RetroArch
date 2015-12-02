@@ -630,6 +630,34 @@ static void onResume(ANativeActivity* activity)
          activity->instance, APP_CMD_RESUME);
 }
 
+static void* onSaveInstanceState(ANativeActivity* activity, size_t* outLen)
+{
+   void* savedState = NULL;
+   struct android_app* android_app = (struct android_app*)activity->instance;
+
+   RARCH_LOG("SaveInstanceState: %p\n", activity);
+
+   slock_lock(android_app->mutex);
+
+   android_app->stateSaved = 0;
+   android_app_write_cmd(android_app, APP_CMD_SAVE_STATE);
+
+   while (!android_app->stateSaved)
+      scond_wait(android_app->cond, android_app->mutex);
+
+   if (android_app->savedState != NULL)
+   {
+      savedState = android_app->savedState;
+      *outLen    = android_app->savedStateSize;
+      android_app->savedState = NULL;
+      android_app->savedStateSize = 0;
+   }
+
+   slock_unlock(android_app->mutex);
+
+   return savedState;
+}
+
 static void onPause(ANativeActivity* activity)
 {
    RARCH_LOG("Pause: %p\n", activity);
@@ -654,6 +682,13 @@ static void onConfigurationChanged(ANativeActivity *activity)
 
    RARCH_LOG("ConfigurationChanged: %p\n", activity);
    android_app_write_cmd(android_app, APP_CMD_CONFIG_CHANGED);
+}
+
+static void onLowMemory(ANativeActivity* activity)
+{
+   struct android_app* android_app = (struct android_app*)activity->instance;
+   RARCH_LOG("LowMemory: %p\n", activity);
+   android_app_write_cmd(android_app, APP_CMD_LOW_MEMORY);
 }
 
 static void onWindowFocusChanged(ANativeActivity* activity, int focused)
@@ -748,59 +783,34 @@ end:
    exit(0);
 }
 
-/*
- * Native activity interaction (called from main thread)
- **/
-
-void ANativeActivity_onCreate(ANativeActivity* activity,
-      void* savedState, size_t savedStateSize)
+static struct android_app* android_app_create(ANativeActivity* activity,
+        void* savedState, size_t savedStateSize)
 {
    int msgpipe[2];
-   struct android_app* android_app;
+   struct android_app *android_app = 
+      (struct android_app*)calloc(1, sizeof(*android_app));
 
-   (void)savedState;
-   (void)savedStateSize;
-
-   RARCH_LOG("Creating Native Activity: %p\n", activity);
-   activity->callbacks->onDestroy = onDestroy;
-   activity->callbacks->onStart = onStart;
-   activity->callbacks->onResume = onResume;
-   activity->callbacks->onSaveInstanceState = NULL;
-   activity->callbacks->onPause = onPause;
-   activity->callbacks->onStop = onStop;
-   activity->callbacks->onConfigurationChanged = onConfigurationChanged;
-   activity->callbacks->onLowMemory = NULL;
-   activity->callbacks->onWindowFocusChanged = onWindowFocusChanged;
-   activity->callbacks->onNativeWindowCreated = onNativeWindowCreated;
-   activity->callbacks->onNativeWindowDestroyed = onNativeWindowDestroyed;
-   activity->callbacks->onInputQueueCreated = onInputQueueCreated;
-   activity->callbacks->onInputQueueDestroyed = onInputQueueDestroyed;
-
-   /* These are set only for the native activity,
-    * and are reset when it ends. */
-   ANativeActivity_setWindowFlags(activity, AWINDOW_FLAG_KEEP_SCREEN_ON
-         | AWINDOW_FLAG_FULLSCREEN, 0);
-
-   if (pthread_key_create(&thread_key, jni_thread_destruct))
-      RARCH_ERR("Error initializing pthread_key\n");
-
-   android_app = (struct android_app*)calloc(1, sizeof(*android_app));
    if (!android_app)
    {
       RARCH_ERR("Failed to initialize android_app\n");
-      return;
+      return NULL;
    }
-
-   memset(android_app, 0, sizeof(struct android_app));
-
    android_app->activity = activity;
+
    android_app->mutex    = slock_new();
    android_app->cond     = scond_new();
+
+   if (savedState != NULL)
+   {
+      android_app->savedState = malloc(savedStateSize);
+      android_app->savedStateSize = savedStateSize;
+      memcpy(android_app->savedState, savedState, savedStateSize);
+   }
 
    if (pipe(msgpipe))
    {
       RARCH_ERR("could not create pipe: %s.\n", strerror(errno));
-      activity->instance = NULL;
+      return NULL;
    }
    android_app->msgread  = msgpipe[0];
    android_app->msgwrite = msgpipe[1];
@@ -813,7 +823,40 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
       scond_wait(android_app->cond, android_app->mutex);
    slock_unlock(android_app->mutex);
 
-   activity->instance = android_app;
+   return android_app;
+}
+
+/*
+ * Native activity interaction (called from main thread)
+ **/
+
+void ANativeActivity_onCreate(ANativeActivity* activity,
+      void* savedState, size_t savedStateSize)
+{
+   RARCH_LOG("Creating Native Activity: %p\n", activity);
+   activity->callbacks->onDestroy               = onDestroy;
+   activity->callbacks->onStart                 = onStart;
+   activity->callbacks->onResume                = onResume;
+   activity->callbacks->onSaveInstanceState     = onSaveInstanceState;
+   activity->callbacks->onPause                 = onPause;
+   activity->callbacks->onStop                  = onStop;
+   activity->callbacks->onConfigurationChanged  = onConfigurationChanged;
+   activity->callbacks->onLowMemory             = onLowMemory;
+   activity->callbacks->onWindowFocusChanged    = onWindowFocusChanged;
+   activity->callbacks->onNativeWindowCreated   = onNativeWindowCreated;
+   activity->callbacks->onNativeWindowDestroyed = onNativeWindowDestroyed;
+   activity->callbacks->onInputQueueCreated     = onInputQueueCreated;
+   activity->callbacks->onInputQueueDestroyed   = onInputQueueDestroyed;
+
+   /* These are set only for the native activity,
+    * and are reset when it ends. */
+   ANativeActivity_setWindowFlags(activity, AWINDOW_FLAG_KEEP_SCREEN_ON
+         | AWINDOW_FLAG_FULLSCREEN, 0);
+
+   if (pthread_key_create(&thread_key, jni_thread_destruct))
+      RARCH_ERR("Error initializing pthread_key\n");
+
+   activity->instance = android_app_create(activity, savedState, savedStateSize);
 }
 
 

@@ -241,7 +241,9 @@ static void android_input_poll_main_cmd(void)
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
+   {
       cmd = -1;
+   }
 
    switch (cmd)
    {
@@ -276,27 +278,16 @@ static void android_input_poll_main_cmd(void)
             event_command(EVENT_CMD_REINIT);
          break;
 
+      case APP_CMD_SAVE_STATE:
+         slock_lock(android_app->mutex);
+         android_app->stateSaved = 1;
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+         break;
+
       case APP_CMD_RESUME:
-         slock_lock(android_app->mutex);
-         android_app->activityState = cmd;
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
-         break;
-
       case APP_CMD_START:
-         slock_lock(android_app->mutex);
-         android_app->activityState = cmd;
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
-         break;
-
       case APP_CMD_PAUSE:
-         slock_lock(android_app->mutex);
-         android_app->activityState = cmd;
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
-         break;
-
       case APP_CMD_STOP:
          slock_lock(android_app->mutex);
          android_app->activityState = cmd;
@@ -359,7 +350,9 @@ static void android_input_poll_main_cmd(void)
          break;
 
       case APP_CMD_DESTROY:
+         RARCH_LOG("APP_CMD_DESTROY\n");
          system->shutdown = true;
+         android_app->destroyRequested = 1;
          break;
    }
 }

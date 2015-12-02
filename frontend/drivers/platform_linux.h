@@ -72,23 +72,59 @@ char sdcard_dir[PATH_MAX_LENGTH];
 
 struct android_app
 {
+   /* The ANativeActivity object instance that this app is running in. */
    ANativeActivity* activity;
+
+   /* This is the last instance's saved state, as provided at creation time.
+    * It is NULL if there was no state.  You can use this as you need; the
+    * memory will remain around until you call android_app_exec_cmd() for
+    * APP_CMD_RESUME, at which point it will be freed and savedState set to NULL.
+    * These variables should only be changed when processing a APP_CMD_SAVE_STATE,
+    * at which point they will be initialized to NULL and you can malloc your
+    * state and place the information here.  In that case the memory will be
+    * freed for you later.
+    */
+   void* savedState;
+   size_t savedStateSize;
+
+   /* The ALooper associated with the app's thread. */
    ALooper* looper;
+
+   /* When non-NULL, this is the input queue from which the app will
+    * receive user input events. */
    AInputQueue* inputQueue;
+
    AInputQueue* pendingInputQueue;
+
+   /* When non-NULL, this is the window surface that the app can draw in. */
    ANativeWindow* window;
+
    ANativeWindow* pendingWindow;
+
+   /* This is non-zero when the application's NativeActivity is being
+    * destroyed and waiting for the app thread to complete. */
+   int destroyRequested;
+
    slock_t *mutex;
    scond_t *cond;
+
+   /* Current state of the app's activity.  May be either APP_CMD_START,
+    * APP_CMD_RESUME, APP_CMD_PAUSE, or APP_CMD_STOP; see below. */
    int activityState;
+
    int msgread;
    int msgwrite;
+
+   sthread_t *thread;
+
    int running;
+   int stateSaved;
+   int destroyed;
+
    bool unfocused;
    unsigned accelerometer_event_rate;
    const ASensor* accelerometerSensor;
    uint64_t sensor_state_mask;
-   sthread_t *thread;
    char current_ime[PATH_MAX_LENGTH];
    jmethodID getIntent;
    jmethodID onRetroArchExit;
