@@ -25,6 +25,8 @@
 #include "../general.h"
 #include "../frontend/frontend.h"
 
+#include "../tasks/tasks.h"
+
 static void menu_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
@@ -275,11 +277,12 @@ void *menu_init(const void *data)
 
 #if 0
    if (settings->bundle_assets_extract_enable &&
+         settings->bundle_assets_src_path[0] != '\0' && settings->bundle_assets_dst_path[0] != '\0' &&
          settings->bundle_assets_extract_version_current != settings->bundle_assets_extract_last_version
       )
    {
       rarch_task_push_decompress(settings->bundle_assets_src_path, settings->bundle_assets_dst_path, NULL,
-            bundle_decompressed);
+            bundle_decompressed, NULL);
    }
 #endif
 
