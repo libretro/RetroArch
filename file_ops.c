@@ -120,11 +120,9 @@ static int read_7zip_file(
       RARCH_ERR("Could not open %s as 7z archive\n.",archive_path);
       return -1;
    }
-   else
-   {
-      RARCH_LOG_OUTPUT("Opened archive %s. Now trying to extract %s\n",
-            archive_path,relative_path);
-   }
+
+   RARCH_LOG_OUTPUT("Opened archive %s. Now trying to extract %s\n",
+         archive_path,relative_path);
 
    FileInStream_CreateVTable(&archiveStream);
    LookToRead_CreateVTable(&lookStream, False);
@@ -274,6 +272,8 @@ static struct string_list *compressed_7zip_file_list_new(
    {
       RARCH_ERR("Could not open %s as 7z archive.\n",path);
 
+      if (ext_list)
+         string_list_free(ext_list);
       string_list_free(list);
       list = NULL;
       goto end;
