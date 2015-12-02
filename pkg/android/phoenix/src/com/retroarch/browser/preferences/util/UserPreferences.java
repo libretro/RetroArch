@@ -13,6 +13,7 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Build;
 import android.preference.PreferenceManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.util.Log;
 
 /**
@@ -142,6 +143,19 @@ public final class UserPreferences
 		
 		config.setString("libretro_directory", coreDir);
 		config.setInt("audio_out_rate", getOptimalSamplingRate(ctx));
+
+		try
+		{
+			int version           = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionCode;
+         final String dst_path = dataDir + "/assets/";
+
+         config.setString("bundle_assets_src_path", ctx.getApplicationInfo().sourceDir);
+         config.setString("bundle_assets_dst_path", dst_path);
+         config.setInt("bundle_assets_extract_version_current", version);
+		}
+		catch (NameNotFoundException ignored)
+		{
+		}
 
 		// Refactor this entire mess and make this usable for per-core config
 		if (Build.VERSION.SDK_INT >= 17 && prefs.getBoolean("audio_latency_auto", true))

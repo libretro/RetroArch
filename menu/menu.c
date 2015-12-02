@@ -212,6 +212,7 @@ void menu_free(menu_handle_t *menu)
 #if 0
 static void bundle_decompressed(void *task_data, void *user_data, const char *err)
 {
+   settings_t      *settings   = config_get_ptr();
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
 
    if (dec && !err)
@@ -226,6 +227,8 @@ static void bundle_decompressed(void *task_data, void *user_data, const char *er
       free(dec->source_file);
       free(dec);
    }
+
+   settings->bundle_assets_extract_last_version = settings->bundle_assets_extract_version_current;
 }
 #endif
 
@@ -270,13 +273,12 @@ void *menu_init(const void *data)
    menu->help_screen_type           = MENU_HELP_WELCOME;
    settings->menu_show_start_screen = false;
 
-   /* FIXME: figure out bundle_path */
 #if 0
    if (settings->bundle_assets_extract_enable &&
-         (strcmp(PACKAGE_VERSION, settings->bundle_assets_last_extracted_version) != 0)
+         settings->bundle_assets_extract_version_current != settings->bundle_assets_extract_last_version
       )
    {
-      rarch_task_push_decompress(bundle_path, settings->core_assets_directory, NULL,
+      rarch_task_push_decompress(settings->bundle_assets_src_path, settings->bundle_assets_dst_path, NULL,
             bundle_decompressed);
    }
 #endif

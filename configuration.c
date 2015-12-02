@@ -667,7 +667,10 @@ static void config_set_defaults(void)
    *global->record.output_dir = '\0';
    *global->record.config_dir = '\0';
 
-   *settings->bundle_assets_last_extracted_version = '\0';
+   settings->bundle_assets_extract_version_current = 0;
+   settings->bundle_assets_extract_last_version    = 0;
+   *settings->bundle_assets_src_path = '\0';
+   *settings->bundle_assets_dst_path = '\0';
    *settings->playlist_names = '\0';
    *settings->playlist_cores = '\0';
    *settings->core_options_path = '\0';
@@ -1236,9 +1239,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (!rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
       CONFIG_GET_BOOL_BASE(conf, settings, video.fullscreen, "video_fullscreen");
 
-   CONFIG_GET_BOOL_BASE(conf, settings, bundle_assets_extract_enable, "bundle_assets_extract_enable");
-   config_get_path(conf, "bundle_assets_last_extracted_version",
-         settings->bundle_assets_last_extracted_version, sizeof(settings->bundle_assets_last_extracted_version));
    config_get_array(conf, "playlist_names", settings->playlist_names, sizeof(settings->playlist_names));
    config_get_array(conf, "playlist_cores", settings->playlist_cores, sizeof(settings->playlist_cores));
 
@@ -1601,6 +1601,12 @@ static bool config_load_file(const char *path, bool set_defaults)
       if (config_get_int(conf, "rewind_buffer_size", &buffer_size))
          settings->rewind_buffer_size = buffer_size * UINT64_C(1000000);
    }
+
+   CONFIG_GET_BOOL_BASE(conf, settings, bundle_assets_extract_enable, "bundle_assets_extract_enable");
+   CONFIG_GET_INT_BASE(conf, settings, bundle_assets_extract_version_current, "bundle_assets_extract_version_current");
+   CONFIG_GET_INT_BASE(conf, settings, bundle_assets_extract_last_version,    "bundle_assets_extract_last_version");
+   config_get_array(conf, "bundle_assets_src_path", settings->bundle_assets_src_path, sizeof(settings->bundle_assets_src_path));
+   config_get_array(conf, "bundle_assets_dst_path", settings->bundle_assets_dst_path, sizeof(settings->bundle_assets_dst_path));
 
    CONFIG_GET_INT_BASE(conf, settings, rewind_granularity, "rewind_granularity");
    CONFIG_GET_FLOAT_BASE(conf, settings, slowmotion_ratio, "slowmotion_ratio");
@@ -2531,7 +2537,10 @@ bool config_save_file(const char *path)
          settings->video.force_srgb_disable);
    config_set_bool(conf,  "video_fullscreen", settings->video.fullscreen);
    config_set_bool(conf,  "bundle_assets_extract_enable", settings->bundle_assets_extract_enable);
-   config_set_string(conf,  "bundle_assets_last_extracted_version", settings->bundle_assets_last_extracted_version);
+   config_set_int(conf,  "bundle_assets_extract_version_current", settings->bundle_assets_extract_version_current);
+   config_set_int(conf,  "bundle_assets_extract_last_version", settings->bundle_assets_extract_last_version);
+   config_set_string(conf,  "bundle_assets_src_path", settings->bundle_assets_src_path);
+   config_set_string(conf,  "bundle_assets_dst_path", settings->bundle_assets_dst_path);
    config_set_string(conf,  "playlist_names", settings->playlist_names);
    config_set_string(conf,  "playlist_cores", settings->playlist_cores);
    config_set_float(conf, "video_refresh_rate", settings->video.refresh_rate);

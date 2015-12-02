@@ -303,7 +303,10 @@ typedef struct settings
    int state_slot;
 
    bool bundle_assets_extract_enable;
-   char bundle_assets_last_extracted_version[PATH_MAX_LENGTH];
+   unsigned bundle_assets_extract_version_current;
+   unsigned bundle_assets_extract_last_version;
+   char bundle_assets_src_path[PATH_MAX_LENGTH];
+   char bundle_assets_dst_path[PATH_MAX_LENGTH];
 
    char core_options_path[PATH_MAX_LENGTH];
    char content_history_path[PATH_MAX_LENGTH];
