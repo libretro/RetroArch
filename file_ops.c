@@ -66,7 +66,7 @@ static int Buf_EnsureSize(CBuf *dest, size_t size)
    return 1;
 }
 
-static bool Utf16_To_Char(CBuf *dest, const uint16_t *s, int fileMode)
+static bool Utf16_To_Char(CBuf *dest, const uint16_t *s)
 {
    bool res;
    size_t dest_len = 0;
@@ -95,7 +95,7 @@ static bool ConvertUtf16toCharString(const uint16_t *in, char *s, size_t len)
    dest.data = 0;
    dest.size = 0;
 
-   ret = Utf16_To_Char(&dest, in, 0);
+   ret = Utf16_To_Char(&dest, in);
 
    if (ret)
       strlcpy(s, (const char*)dest.data, len);
