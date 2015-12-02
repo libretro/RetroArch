@@ -36,9 +36,9 @@ void gl_load_texture_data(GLuint id,
 {
    GLint mag_filter, min_filter;
    bool want_mipmap = false;
-   bool use_rgba = video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_RGBA, NULL);
-   bool rgb32 = (base_size == (sizeof(uint32_t)));
-   GLenum wrap = gl_wrap_type_to_enum(wrap_type);
+   bool use_rgba    = video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_RGBA, NULL);
+   bool rgb32       = (base_size == (sizeof(uint32_t)));
+   GLenum wrap      = gl_wrap_type_to_enum(wrap_type);
 
    glBindTexture(GL_TEXTURE_2D, id);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
