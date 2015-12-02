@@ -84,7 +84,7 @@ typedef struct android_input_data
 typedef struct android_input
 {
    bool blocked;
-   android_input_data_t copy;
+   android_input_data_t thread, copy;
    const input_device_driver_t *joypad;
 } android_input_t;
 
@@ -416,6 +416,7 @@ static void *android_input_init(void)
    if (!android)
       return NULL;
 
+   android->thread.pads_connected = 0;
    android->copy.pads_connected = 0;
    android->joypad         = input_joypad_init_driver(
          settings->input.joypad_driver, android);
@@ -457,7 +458,7 @@ static INLINE int android_input_poll_event_type_motion(
       android_input_t *android, AInputEvent *event,
       int port, int source)
 {
-   android_input_data_t *android_data = (android_input_data_t*)&android->copy;
+   android_input_data_t *android_data = (android_input_data_t*)&android->thread;
    int getaction, action;
    size_t motion_ptr;
    bool keyup;
@@ -790,7 +791,7 @@ static void android_input_poll_input(void *data)
    AInputEvent *event = NULL;
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t    *android     = (android_input_t*)data;
-   android_input_data_t    *android_data     = (android_input_data_t*)&android->copy;
+   android_input_data_t    *android_data     = (android_input_data_t*)&android->thread;
 
    /* Read all pending events. */
    while (AInputQueue_hasEvents(android_app->inputQueue))
@@ -835,7 +836,7 @@ static void android_input_poll_user(void *data)
 {
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t    *android     = (android_input_t*)data;
-   android_input_data_t *android_data = (android_input_data_t*)&android->copy;
+   android_input_data_t *android_data = (android_input_data_t*)&android->thread;
 
    if ((android_app->sensor_state_mask & (UINT64_C(1) <<
                RETRO_SENSOR_ACCELEROMETER_ENABLE))
@@ -855,15 +856,16 @@ static void android_input_poll_memcpy(void *data)
 {
    unsigned i, j;
    android_input_t    *android     = (android_input_t*)data;
-   android_input_data_t *android_data = (android_input_data_t*)&android->copy;
    struct android_app *android_app = (struct android_app*)g_android;
+
+   memcpy(&android->copy, &android->thread, sizeof(android->copy));
 
    for (i = 0; i < MAX_PADS; i++)
    {
       for (j = 0; j < 2; j++)
-         android_app->hat_state[i][j]    = android_data->hat_state[i][j];
+         android_app->hat_state[i][j]    = android->copy.hat_state[i][j];
       for (j = 0; j < MAX_AXIS; j++)
-         android_app->analog_state[i][j] = android_data->analog_state[i][j];
+         android_app->analog_state[i][j] = android->copy.analog_state[i][j];
    }
 }
 
