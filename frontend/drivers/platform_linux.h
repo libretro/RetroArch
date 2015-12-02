@@ -48,6 +48,14 @@ enum
    CPU_X86_FEATURE_MOVBE       = (1 << 2)
 };
 
+#ifndef MAX_PADS
+#define MAX_PADS 8
+#endif
+
+#ifndef MAX_AXIS
+#define MAX_AXIS 10
+#endif
+
 cpu_family   linux_get_cpu_family(void);
 
 uint64_t    linux_get_cpu_features(void);
@@ -165,6 +173,8 @@ struct android_app
    const ASensor* accelerometerSensor;
    uint64_t sensor_state_mask;
    char current_ime[PATH_MAX_LENGTH];
+   int16_t analog_state[MAX_PADS][MAX_AXIS];
+   int8_t hat_state[MAX_PADS][2];
    jmethodID getIntent;
    jmethodID onRetroArchExit;
    jmethodID getStringExtra;

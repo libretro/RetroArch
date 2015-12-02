@@ -17,6 +17,7 @@
  */
 
 #include <unistd.h>
+#include <dlfcn.h>
 
 #include <android/keycodes.h>
 
@@ -61,8 +62,6 @@ enum
    AXIS_BRAKE = 23
 };
 
-#define MAX_AXIS 10
-
 typedef struct state_device
 {
    int id;
@@ -73,6 +72,8 @@ typedef struct state_device
 typedef struct android_input_data
 {
    state_device_t pad_states[MAX_PADS];
+   int16_t analog_state[MAX_PADS][MAX_AXIS];
+   int8_t hat_state[MAX_PADS][2];
 
    unsigned pads_connected;
    sensor_t accelerometer_state;
@@ -92,7 +93,7 @@ static void frontend_android_get_version_sdk(int32_t *sdk);
 bool (*engine_lookup_name)(char *buf,
       int *vendorId, int *productId, size_t size, int id);
 
-void (*engine_handle_dpad)(AInputEvent*, int, int);
+void (*engine_handle_dpad)(android_input_data_t *, AInputEvent*, int, int);
 
 static bool android_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate);
@@ -358,6 +359,53 @@ static void android_input_poll_main_cmd(void)
    }
 }
 
+static void engine_handle_dpad_default(android_input_data_t *android_data,
+      AInputEvent *event, int port, int source)
+{
+   size_t motion_ptr = AMotionEvent_getAction(event) >>
+      AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+   float x           = AMotionEvent_getX(event, motion_ptr);
+   float y           = AMotionEvent_getY(event, motion_ptr);
+
+   android_data->analog_state[port][0] = (int16_t)(x * 32767.0f);
+   android_data->analog_state[port][1] = (int16_t)(y * 32767.0f);
+}
+
+static void engine_handle_dpad_getaxisvalue(android_input_data_t *android_data,
+      AInputEvent *event, int port, int source)
+{
+   size_t motion_ptr = AMotionEvent_getAction(event) >>
+      AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+   float x           = AMotionEvent_getAxisValue(event, AXIS_X, motion_ptr);
+   float y           = AMotionEvent_getAxisValue(event, AXIS_Y, motion_ptr);
+   float z           = AMotionEvent_getAxisValue(event, AXIS_Z, motion_ptr);
+   float rz          = AMotionEvent_getAxisValue(event, AXIS_RZ, motion_ptr);
+   float hatx        = AMotionEvent_getAxisValue(event, AXIS_HAT_X, motion_ptr);
+   float haty        = AMotionEvent_getAxisValue(event, AXIS_HAT_Y, motion_ptr);
+   float ltrig       = AMotionEvent_getAxisValue(event, AXIS_LTRIGGER, motion_ptr);
+   float rtrig       = AMotionEvent_getAxisValue(event, AXIS_RTRIGGER, motion_ptr);
+   float brake       = AMotionEvent_getAxisValue(event, AXIS_BRAKE, motion_ptr);
+   float gas         = AMotionEvent_getAxisValue(event, AXIS_GAS, motion_ptr);
+
+   android_data->hat_state[port][0] = (int)hatx;
+   android_data->hat_state[port][1] = (int)haty;
+
+   /* XXX: this could be a loop instead, but do we really want to
+    * loop through every axis? */
+   android_data->analog_state[port][0] = (int16_t)(x * 32767.0f);
+   android_data->analog_state[port][1] = (int16_t)(y * 32767.0f);
+   android_data->analog_state[port][2] = (int16_t)(z * 32767.0f);
+   android_data->analog_state[port][3] = (int16_t)(rz * 32767.0f);
+#if 0
+   android_data->analog_state[port][4] = (int16_t)(hatx * 32767.0f);
+   android_data->analog_state[port][5] = (int16_t)(haty * 32767.0f);
+#endif
+   android_data->analog_state[port][6] = (int16_t)(ltrig * 32767.0f);
+   android_data->analog_state[port][7] = (int16_t)(rtrig * 32767.0f);
+   android_data->analog_state[port][8] = (int16_t)(brake * 32767.0f);
+   android_data->analog_state[port][9] = (int16_t)(gas * 32767.0f);
+}
+
 static void *android_input_init(void)
 {
    int32_t sdk;
@@ -381,6 +429,22 @@ static void *android_input_init(void)
    else
       engine_lookup_name = android_input_lookup_name_prekitkat;
 
+   engine_handle_dpad         = engine_handle_dpad_default;
+
+   if ((dlopen("/system/lib/libandroid.so", RTLD_LOCAL | RTLD_LAZY)) == 0)
+   {
+      RARCH_WARN("Unable to open libandroid.so\n");
+      goto end;
+   }
+
+   if ((p_AMotionEvent_getAxisValue = dlsym(RTLD_DEFAULT,
+               "AMotionEvent_getAxisValue")))
+   {
+      RARCH_LOG("Set engine_handle_dpad to 'Get Axis Value' (for reading extra analog sticks)");
+      engine_handle_dpad = engine_handle_dpad_getaxisvalue;
+   }
+
+end:
    return android;
 }
 
@@ -749,7 +813,7 @@ static void android_input_poll_input(void *data)
             case AINPUT_EVENT_TYPE_MOTION:
                if (android_input_poll_event_type_motion(android, event,
                         port, source))
-                  engine_handle_dpad(event, port, source);
+                  engine_handle_dpad(android_data, event, port, source);
                break;
             case AINPUT_EVENT_TYPE_KEY:
                {
@@ -787,6 +851,22 @@ static void android_input_poll_user(void *data)
    }
 }
 
+static void android_input_poll_memcpy(void *data)
+{
+   unsigned i, j;
+   android_input_t    *android     = (android_input_t*)data;
+   android_input_data_t *android_data = (android_input_data_t*)&android->copy;
+   struct android_app *android_app = (struct android_app*)g_android;
+
+   for (i = 0; i < MAX_PADS; i++)
+   {
+      for (j = 0; j < 2; j++)
+         android_app->hat_state[i][j]    = android_data->hat_state[i][j];
+      for (j = 0; j < MAX_AXIS; j++)
+         android_app->analog_state[i][j] = android_data->analog_state[i][j];
+   }
+}
+
 /* Handle all events. If our activity is in pause state,
  * block until we're unpaused.
  */
@@ -820,6 +900,8 @@ static void android_input_poll(void *data)
          return;
       }
    }
+
+   android_input_poll_memcpy(data);
 }
 
 bool android_run_events(void *data)
