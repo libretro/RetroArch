@@ -212,32 +212,13 @@ static int read_7zip_file(
          }
       }
 
-      if (file_found && res == SZ_OK)
-      {
-      }
-      else
+      if (!(file_found && res == SZ_OK))
       {
          /* Error handling */
          if (!file_found)
             RARCH_ERR("File %s not found in %s\n", relative_path, archive_path);
-         else
-         {
-            switch (res)
-            {
-               case SZ_ERROR_UNSUPPORTED:
-                  RARCH_ERR("7Zip decoder doesn't support this archive.\n");
-                  break;
-               case SZ_ERROR_MEM:
-                  RARCH_ERR("7Zip decoder could not allocate memory\n");
-                  break;
-               case SZ_ERROR_CRC:
-                  RARCH_ERR("7Zip decoder encountered a CRC error in the archive\n");
-                  break;
-               default:
-                  RARCH_ERR("\nUnspecified error in 7-ZIP archive, error number was: #%d\n", res);
-                  break;
-            }
-         }
+
+         RARCH_ERR("Failed to open compressed file inside 7zip archive.\n");
 
          outsize    = -1;
       }
@@ -356,24 +337,6 @@ static struct string_list *compressed_7zip_file_list_new(
       if (res != SZ_OK)
       {
          /* Error handling */
-         switch (res)
-         {
-            case SZ_ERROR_UNSUPPORTED:
-               RARCH_ERR("7Zip decoder doesn't support this archive. \n");
-               break;
-            case SZ_ERROR_MEM:
-               RARCH_ERR("7Zip decoder could not allocate memory. \n");
-               break;
-            case SZ_ERROR_CRC:
-               RARCH_ERR("7Zip decoder encountered a CRC error in the archive. \n");
-               break;
-            default:
-               RARCH_ERR(
-                     "Unspecified error in 7-ZIP archive, error number was: #%d. \n",
-                     res);
-               break;
-         }
-
          RARCH_ERR("Failed to open compressed_file: \"%s\"\n", path);
 
          string_list_free(list);
