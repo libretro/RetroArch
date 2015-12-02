@@ -92,7 +92,9 @@ static bool ConvertUtf16toCharString(const uint16_t *in, char *s, size_t len)
    CBuf dest;
    bool ret;
 
-   Buf_Init(&dest);
+   dest.data = 0;
+   dest.size = 0;
+
    ret = Utf16_To_Char(&dest, in, 0);
 
    if (ret)
