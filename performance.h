@@ -19,8 +19,6 @@
 
 #include <stdint.h>
 
-#include <retro_inline.h>
-
 #include "libretro.h"
 
 #ifdef __cplusplus
