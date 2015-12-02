@@ -46,7 +46,6 @@
 #include "deps/7zip/7zAlloc.h"
 #include "deps/7zip/7zCrc.h"
 #include "deps/7zip/7zFile.h"
-#include "deps/7zip/7zVersion.h"
 
 static int Buf_EnsureSize(uint8_t **utf_data, size_t size)
 {
