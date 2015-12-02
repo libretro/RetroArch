@@ -54,8 +54,18 @@ static int Buf_EnsureSize(CBuf *dest, size_t size)
 {
    if (dest->size >= size)
       return 1;
-   Buf_Free(dest, &g_Alloc);
-   return Buf_Create(dest, size, &g_Alloc);
+
+   free(dest->data);
+
+   dest->data = 0;
+   dest->size = 0;
+
+   dest->data = (uint8_t*)malloc(size);
+   if (dest->data == 0)
+      return 0;
+
+   dest->size = size;
+   return 1;
 }
 
 static bool Utf16_To_Char(CBuf *dest, const uint16_t *s, int fileMode)
@@ -90,7 +100,10 @@ static bool ConvertUtf16toCharString(const uint16_t *in, char *s, size_t len)
    if (ret)
       strlcpy(s, (const char*)dest.data, len);
 
-   Buf_Free(&dest, &g_Alloc);
+   free(dest.data);
+   dest.data = 0;
+   dest.size = 0;
+
    return ret;
 }
 
