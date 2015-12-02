@@ -129,6 +129,7 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
    decompress_state_t *s;
    rarch_task_t *t;
    char tmp[PATH_MAX_LENGTH];
+   bool is_compressed = false;
 
    if (!target_dir || !target_dir[0] || !source_file || !source_file[0])
    {
@@ -136,8 +137,11 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
       return false;
    }
 
-   /* zip only */
-   if (!path_file_exists(source_file) || strcmp("zip", path_get_extension(source_file)) != 0)
+   /* ZIP or APK only */
+   is_compressed = !strcmp("zip", path_get_extension(source_file));
+   is_compressed = !is_compressed ? !strcmp("apk", path_get_extension(source_file)) : is_compressed;
+
+   if (!path_file_exists(source_file) || !is_compressed)
    {
       RARCH_WARN("[decompress] File '%s' does not exist or is not a compressed file.\n",
             source_file);
