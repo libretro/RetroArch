@@ -48,61 +48,43 @@
 #include "deps/7zip/7zFile.h"
 #include "deps/7zip/7zVersion.h"
 
-static int Buf_EnsureSize(CBuf *dest, size_t size)
+static int Buf_EnsureSize(uint8_t **utf_data, size_t size)
 {
-   if (dest->size >= size)
-      return 1;
-
-   free(dest->data);
-
-   dest->data = 0;
-   dest->size = 0;
-
-   dest->data = (uint8_t*)malloc(size);
-   if (dest->data == 0)
+   *utf_data   = (uint8_t*)malloc(size);
+   if (*utf_data == 0)
       return 0;
-
-   dest->size = size;
    return 1;
 }
 
-static bool Utf16_To_Char(CBuf *dest, const uint16_t *s)
+static bool Utf16_To_Char(uint8_t **utf_data, size_t *dest_len, const uint16_t *s)
 {
-   bool res;
-   size_t dest_len = 0;
    unsigned len    = 0;
 
    while (s[len] != '\0')
       len++;
 
-   utf16_conv_utf8(NULL, &dest_len, s, len);
-   dest_len += 1;
+   utf16_conv_utf8(NULL, dest_len, s, len);
+   *dest_len += 1;
 
-   if (!Buf_EnsureSize(dest, dest_len))
+   if (!Buf_EnsureSize(utf_data, *dest_len))
       return false;
 
-   res = utf16_conv_utf8(dest->data, &dest_len, s, len);
-   dest->data[dest_len] = 0;
-
-   return res;
+   return utf16_conv_utf8(*utf_data, dest_len, s, len);
 }
 
 static bool ConvertUtf16toCharString(const uint16_t *in, char *s, size_t len)
 {
-   CBuf dest;
-   bool ret;
+   size_t     dest_len  = 0;
+   uint8_t *utf16_data  = NULL;
+   bool            ret  = Utf16_To_Char(&utf16_data, &dest_len, in);
 
-   dest.data = 0;
-   dest.size = 0;
-
-   ret = Utf16_To_Char(&dest, in);
+   utf16_data[dest_len] = 0;
 
    if (ret)
-      strlcpy(s, (const char*)dest.data, len);
+      strlcpy(s, (const char*)utf16_data, len);
 
-   free(dest.data);
-   dest.data = 0;
-   dest.size = 0;
+   free(utf16_data);
+   utf16_data = NULL;
 
    return ret;
 }
