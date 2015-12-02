@@ -71,8 +71,37 @@ bool test_permissions(const char *path);
 
 char sdcard_dir[PATH_MAX_LENGTH];
 
+struct android_app;
+
+struct android_poll_source
+{
+   /* The identifier of this source.  May be LOOPER_ID_MAIN or
+    * LOOPER_ID_INPUT. */
+   int32_t id;
+
+   /* The android_app this ident is associated with. */
+   struct android_app* app;
+
+   /* Function to call to perform the standard processing of data from
+    * this source. */
+   void (*process)(struct android_app* app, struct android_poll_source* source);
+};
+
 struct android_app
 {
+   /* The application can place a pointer to its own state object
+    * here if it likes. */
+   void* userData;
+
+   /* Fill this in with the function to process main app commands (APP_CMD_*) */
+   void (*onAppCmd)(struct android_app* app, int32_t cmd);
+
+   /* Fill this in with the function to process input events.  At this point
+    * the event has already been pre-dispatched, and it will be finished upon
+    * return.  Return 1 if you have handled the event, 0 for any default
+    * dispatching. */
+   int32_t (*onInputEvent)(struct android_app* app, AInputEvent* event);
+
    /* The ANativeActivity object instance that this app is running in. */
    ANativeActivity* activity;
 
@@ -98,33 +127,37 @@ struct android_app
     * receive user input events. */
    AInputQueue* inputQueue;
 
-   AInputQueue* pendingInputQueue;
 
    /* When non-NULL, this is the window surface that the app can draw in. */
    ANativeWindow* window;
 
-   ANativeWindow* pendingWindow;
+   /* Current state of the app's activity.  May be either APP_CMD_START,
+    * APP_CMD_RESUME, APP_CMD_PAUSE, or APP_CMD_STOP; see below. */
+   int activityState;
 
    /* This is non-zero when the application's NativeActivity is being
     * destroyed and waiting for the app thread to complete. */
    int destroyRequested;
 
+   /* Below are "private" implementation of the glue code. */
    slock_t *mutex;
    scond_t *cond;
-
-   /* Current state of the app's activity.  May be either APP_CMD_START,
-    * APP_CMD_RESUME, APP_CMD_PAUSE, or APP_CMD_STOP; see below. */
-   int activityState;
 
    int msgread;
    int msgwrite;
 
    sthread_t *thread;
 
+   struct android_poll_source cmdPollSource;
+   struct android_poll_source inputPollSource;
+
    int running;
    int stateSaved;
    int destroyed;
+   AInputQueue* pendingInputQueue;
+   ANativeWindow* pendingWindow;
 
+   /*  Below are "private" implementation of RA code. */
    bool unfocused;
    unsigned accelerometer_event_rate;
    const ASensor* accelerometerSensor;
@@ -143,6 +176,7 @@ struct android_app
    jmethodID getPendingIntentDownloadsLocation;
    jmethodID getPendingIntentScreenshotsLocation;
 };
+
 
 enum
 {

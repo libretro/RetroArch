@@ -912,6 +912,10 @@ static void android_input_free_input(void *data)
       ASensorManager_destroyEventQueue(android->sensorManager,
             android->sensorEventQueue);
 
+   if (android->joypad)
+      android->joypad->destroy();
+   android->joypad = NULL;
+
    android_keyboard_free();
    free(data);
 }
