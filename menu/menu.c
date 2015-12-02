@@ -211,7 +211,6 @@ void menu_free(menu_handle_t *menu)
    free(menu);
 }
 
-#if 0
 static void bundle_decompressed(void *task_data, void *user_data, const char *err)
 {
    settings_t      *settings   = config_get_ptr();
@@ -232,7 +231,6 @@ static void bundle_decompressed(void *task_data, void *user_data, const char *er
 
    settings->bundle_assets_extract_last_version = settings->bundle_assets_extract_version_current;
 }
-#endif
 
 /**
  * menu_init:
@@ -275,7 +273,6 @@ void *menu_init(const void *data)
    menu->help_screen_type           = MENU_HELP_WELCOME;
    settings->menu_show_start_screen = false;
 
-#if 0
    if (settings->bundle_assets_extract_enable &&
          settings->bundle_assets_src_path[0] != '\0' && settings->bundle_assets_dst_path[0] != '\0' &&
          settings->bundle_assets_extract_version_current != settings->bundle_assets_extract_last_version
@@ -284,7 +281,6 @@ void *menu_init(const void *data)
       rarch_task_push_decompress(settings->bundle_assets_src_path, settings->bundle_assets_dst_path,
             settings->bundle_assets_dst_path_subdir, NULL, bundle_decompressed, NULL);
    }
-#endif
 
    menu_shader_manager_init(menu);
 

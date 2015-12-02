@@ -12,7 +12,6 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -63,119 +62,8 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		// Set the listeners for the menu items
 		findPreference("resumeContentPref").setOnPreferenceClickListener(this);
 		findPreference("quitRetroArch").setOnPreferenceClickListener(this);
-
-		// Extract assets. 
-		extractAssets();
 	}
 
-	private void extractAssets()
-	{
-		if (areAssetsExtracted())
-			return;
-
-		final Dialog dialog = new Dialog(ctx);
-		final Handler handler = new Handler();
-		dialog.setContentView(R.layout.assets);
-		dialog.setCancelable(false);
-		dialog.setTitle(R.string.asset_extraction);
-
-		// Java is fun :)
-		Thread assetsThread = new Thread(new Runnable()
-		{
-			public void run()
-			{
-				extractAssetsThread();
-				handler.post(new Runnable()
-				{
-					public void run()
-					{
-						dialog.dismiss();
-					}
-				});
-			}
-		});
-		assetsThread.start();
-
-		dialog.show();
-	}
-
-	// Extract assets from native code. Doing it from Java side is apparently unbearably slow ...
-	private void extractAssetsThread()
-	{
-		try
-		{
-			final String dataDir = ctx.getApplicationInfo().dataDir;
-			final String apk = ctx.getApplicationInfo().sourceDir;
-
-			Log.i(TAG, "Extracting RetroArch assets from: " + apk + " ...");
-			boolean success = NativeInterface.extractArchiveTo(apk, "assets", dataDir);
-			if (!success) {
-				throw new IOException("Failed to extract assets ...");
-			}
-			Log.i(TAG, "Extracted assets ...");
-
-			File cacheVersion = new File(dataDir, ".cacheversion");
-			DataOutputStream outputCacheVersion = new DataOutputStream(new FileOutputStream(cacheVersion, false));
-			outputCacheVersion.writeInt(getVersionCode());
-			outputCacheVersion.close();
-		}
-		catch (IOException e)
-		{
-			Log.e(TAG, "Failed to extract assets to cache.");
-		}
-	}
-
-	private boolean areAssetsExtracted()
-	{
-		int version = getVersionCode();
-
-		try
-		{
-			String dataDir = ctx.getApplicationInfo().dataDir;
-			File cacheVersion = new File(dataDir, ".cacheversion");
-			if (cacheVersion.isFile() && cacheVersion.canRead() && cacheVersion.canWrite())
-			{
-				DataInputStream cacheStream = new DataInputStream(new FileInputStream(cacheVersion));
-				int currentCacheVersion = 0;
-				try
-				{
-					currentCacheVersion = cacheStream.readInt();
-					cacheStream.close();
-				}
-				catch (IOException ignored)
-				{
-				}
-
-				if (currentCacheVersion == version)
-				{
-					Log.i("ASSETS", "Assets already extracted, skipping...");
-					return true;
-				}
-			}
-		}
-		catch (IOException e)
-		{
-			Log.e(TAG, "Failed to extract assets to cache.");
-			return false;
-		}
-
-		return false;
-	}
-
-	private int getVersionCode()
-	{
-		int version = 0;
-		try
-		{
-			version = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionCode;
-		}
-		catch (NameNotFoundException ignored)
-		{
-		}
-
-		return version;
-	}
-	
 	@Override
 	public boolean onPreferenceClick(Preference preference)
 	{
