@@ -238,12 +238,9 @@ static void android_input_poll_main_cmd(void)
 {
    int8_t cmd;
    struct android_app *android_app = (struct android_app*)g_android;
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
-   {
       cmd = -1;
-   }
 
    switch (cmd)
    {
@@ -353,7 +350,6 @@ static void android_input_poll_main_cmd(void)
 
       case APP_CMD_DESTROY:
          RARCH_LOG("APP_CMD_DESTROY\n");
-         system->shutdown = true;
          android_app->destroyRequested = 1;
          break;
    }
@@ -791,6 +787,8 @@ static void android_input_poll_user(void *data)
 static void android_input_poll(void *data)
 {
    int ident;
+   rarch_system_info_t     *system = rarch_system_info_get_ptr();
+   struct android_app *android_app = (struct android_app*)g_android;
 
    while ((ident =
             ALooper_pollAll((input_driver_key_pressed(RARCH_PAUSE_TOGGLE))
@@ -809,20 +807,29 @@ static void android_input_poll(void *data)
             android_input_poll_main_cmd();
             break;
       }
+
+      if (android_app->destroyRequested != 0)
+      {
+         system->shutdown = true;
+         return;
+      }
    }
 }
 
 bool android_run_events(void *data)
 {
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
-   int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
+   rarch_system_info_t     *system = rarch_system_info_get_ptr();
+   struct android_app *android_app = (struct android_app*)g_android;
 
-   if (id == LOOPER_ID_MAIN)
+   if (ALooper_pollOnce(-1, NULL, NULL, NULL) == LOOPER_ID_MAIN)
       android_input_poll_main_cmd();
 
    /* Check if we are exiting. */
-   if (system->shutdown)
+   if (android_app->destroyRequested != 0)
+   {
+      system->shutdown = true;
       return false;
+   }
 
    return true;
 }
