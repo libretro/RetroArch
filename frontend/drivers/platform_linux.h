@@ -60,6 +60,7 @@ int         linux_get_cpu_count(void);
 #include <sched.h>
 
 #include <android/looper.h>
+#include <android/configuration.h>
 #include <android/native_activity.h>
 #include <android/window.h>
 #include <android/sensor.h>
@@ -74,6 +75,9 @@ struct android_app
 {
    /* The ANativeActivity object instance that this app is running in. */
    ANativeActivity* activity;
+
+   /* The current configuration the app is running in. */
+   AConfiguration *config;
 
    /* This is the last instance's saved state, as provided at creation time.
     * It is NULL if there was no state.  You can use this as you need; the

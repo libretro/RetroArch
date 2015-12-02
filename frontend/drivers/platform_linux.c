@@ -597,16 +597,14 @@ static void android_app_set_activity_state(void *data, int8_t cmd)
       RARCH_LOG("RetroArch native thread is dead.\n");
 }
 
-static void onDestroy(ANativeActivity* activity)
+static void android_app_free(struct android_app* android_app)
 {
-   struct android_app *android_app = (struct android_app*)activity->instance;
+   slock_lock(android_app->mutex);
 
-   if (!android_app)
-      return;
-
-   RARCH_LOG("onDestroy: %p\n", activity);
    sthread_join(android_app->thread);
    RARCH_LOG("Joined with RetroArch native thread.\n");
+
+   slock_unlock(android_app->mutex);
 
    close(android_app->msgread);
    close(android_app->msgwrite);
@@ -614,6 +612,12 @@ static void onDestroy(ANativeActivity* activity)
    slock_free(android_app->mutex);
 
    free(android_app);
+}
+
+static void onDestroy(ANativeActivity* activity)
+{
+   RARCH_LOG("onDestroy: %p\n", activity);
+   android_app_free((struct android_app*)activity->instance);
 }
 
 static void onStart(ANativeActivity* activity)
@@ -2028,16 +2032,30 @@ static void frontend_linux_get_env(int *argc,
 #endif
 }
 
-static void frontend_linux_deinit(void *data)
-{
 #ifdef ANDROID
+static void free_saved_state(struct android_app* android_app)
+{
+    slock_lock(android_app->mutex);
+
+    if (android_app->savedState != NULL)
+    {
+        free(android_app->savedState);
+        android_app->savedState = NULL;
+        android_app->savedStateSize = 0;
+    }
+
+    slock_unlock(android_app->mutex);
+}
+
+static void android_app_destroy(struct android_app *android_app)
+{
    JNIEnv                     *env = NULL;
-   struct android_app *android_app = (struct android_app*)data;
 
-   if (!android_app)
-      return;
+   RARCH_LOG("android_app_destroy\n");
+   free_saved_state(android_app);
 
-   RARCH_LOG("Deinitializing RetroArch ...\n");
+   slock_lock(android_app->mutex);
+
    android_app->activityState = APP_CMD_DEAD;
 
    env = jni_thread_getenv();
@@ -2047,10 +2065,25 @@ static void frontend_linux_deinit(void *data)
             android_app->onRetroArchExit);
 
    if (android_app->inputQueue)
-   {
-      RARCH_LOG("Detaching Android input queue looper ...\n");
       AInputQueue_detachLooper(android_app->inputQueue);
-   }
+
+   AConfiguration_delete(android_app->config);
+   android_app->destroyed = 1;
+   scond_broadcast(android_app->cond);
+   slock_unlock(android_app->mutex);
+   /* Can't touch android_app object after this. */
+}
+#endif
+
+static void frontend_linux_deinit(void *data)
+{
+#ifdef ANDROID
+   struct android_app *android_app = (struct android_app*)data;
+
+   if (!android_app)
+      return;
+
+   android_app_destroy(android_app);
 #endif
 }
 
@@ -2065,6 +2098,9 @@ static void frontend_linux_init(void *data)
 
    if (!android_app)
       return;
+
+   android_app->config             = AConfiguration_new();
+   AConfiguration_fromAssetManager(android_app->config, android_app->activity->assetManager);
 
    looper = (ALooper*)ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
    ALooper_addFd(looper, android_app->msgread, LOOPER_ID_MAIN,
