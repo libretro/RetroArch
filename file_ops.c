@@ -47,14 +47,6 @@
 #include "deps/7zip/7zCrc.h"
 #include "deps/7zip/7zFile.h"
 
-static int Buf_EnsureSize(uint8_t **utf_data, size_t size)
-{
-   *utf_data   = (uint8_t*)malloc(size);
-   if (*utf_data == 0)
-      return 0;
-   return 1;
-}
-
 static bool Utf16_To_Char(uint8_t **utf_data, size_t *dest_len, const uint16_t *s)
 {
    unsigned len    = 0;
@@ -63,9 +55,9 @@ static bool Utf16_To_Char(uint8_t **utf_data, size_t *dest_len, const uint16_t *
       len++;
 
    utf16_conv_utf8(NULL, dest_len, s, len);
-   *dest_len += 1;
-
-   if (!Buf_EnsureSize(utf_data, *dest_len))
+   *dest_len  += 1;
+   *utf_data   = (uint8_t*)malloc(*dest_len);
+   if (*utf_data == 0)
       return false;
 
    return utf16_conv_utf8(*utf_data, dest_len, s, len);
