@@ -451,7 +451,7 @@ void cb_generic_download(void *task_data, void *user_data, const char *err)
 
    if (!strcasecmp(file_ext, "zip"))
    {
-      rarch_task_push_decompress(output_path, dir_path, NULL,
+      rarch_task_push_decompress(output_path, dir_path, NULL, NULL,
             cb_decompressed, (void*)(uintptr_t)transf->type_hash);
    }
 #else

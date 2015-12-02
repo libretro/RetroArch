@@ -307,6 +307,7 @@ typedef struct settings
    unsigned bundle_assets_extract_last_version;
    char bundle_assets_src_path[PATH_MAX_LENGTH];
    char bundle_assets_dst_path[PATH_MAX_LENGTH];
+   char bundle_assets_dst_path_subdir[PATH_MAX_LENGTH];
 
    char core_options_path[PATH_MAX_LENGTH];
    char content_history_path[PATH_MAX_LENGTH];

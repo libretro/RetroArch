@@ -25,8 +25,10 @@
 #include "../verbosity.h"
 #include "../msg_hash.h"
 
-typedef struct {
+typedef struct
+{
    char *source_file;
+   char *subdir;
    char *target_dir;
    char *valid_ext;
 
@@ -34,6 +36,46 @@ typedef struct {
 
    zlib_transfer_t zlib;
 } decompress_state_t;
+
+static int file_decompressed_subdir(const char *name, const char *valid_exts,
+   const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+   uint32_t crc32, void *userdata)
+{
+   char path[PATH_MAX_LENGTH];
+   char path_dir[PATH_MAX_LENGTH];
+   decompress_state_t *dec = (decompress_state_t*)userdata;
+
+   /* Ignore directories. */
+   if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
+      goto next_file;
+
+   if (strstr(name, dec->subdir) != name)
+      return 1;
+
+   name += strlen(dec->subdir) + 1;
+
+   fill_pathname_join(path, dec->target_dir, name, sizeof(path));
+   fill_pathname_basedir(path_dir, path, sizeof(path_dir));
+
+   /* Make directory */
+   if (!path_mkdir(path_dir))
+      goto error;
+
+   if (!zlib_perform_mode(path, valid_exts,
+            cdata, cmode, csize, size, crc32, userdata))
+      goto error;
+
+   RARCH_LOG("[deflate subdir] Path: %s, CRC32: 0x%x\n", name, crc32);
+
+next_file:
+   return 1;
+
+error:
+   dec->callback_error = (char*)malloc(PATH_MAX_LENGTH);
+   snprintf(dec->callback_error, PATH_MAX_LENGTH, "Failed to deflate %s.\n", path);
+
+   return 0;
+}
 
 static int file_decompressed(const char *name, const char *valid_exts,
    const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
@@ -71,14 +113,39 @@ error:
    return 0;
 }
 
+static void rarch_task_decompress_handler_finished(rarch_task_t *task,
+      decompress_state_t *dec)
+{
+
+   task->finished = true;
+
+   if (!task->error && task->cancelled)
+      task->error = strdup("Task canceled");
+
+   if (!task->error)
+   {
+      decompress_task_data_t *data = 
+         (decompress_task_data_t*)calloc(1, sizeof(*data));
+
+      data->source_file = dec->source_file;
+      task->task_data = data;
+   }
+   else
+      free(dec->source_file);
+
+   if (dec->subdir)
+      free(dec->subdir);
+   if (dec->valid_ext)
+      free(dec->valid_ext);
+   free(dec->target_dir);
+   free(dec);
+}
+
 static void rarch_task_decompress_handler(rarch_task_t *task)
 {
-   decompress_state_t *dec = (decompress_state_t*)task->state;
-   decompress_task_data_t *data = NULL;
    bool returnerr;
-   int ret = 0;
-
-   ret = zlib_parse_file_iterate(&dec->zlib, &returnerr, dec->source_file,
+   decompress_state_t *dec = (decompress_state_t*)task->state;
+   int ret = zlib_parse_file_iterate(&dec->zlib, &returnerr, dec->source_file,
          dec->valid_ext, file_decompressed, dec);
 
    task->progress = zlib_parse_file_progress(&dec->zlib);
@@ -87,30 +154,27 @@ static void rarch_task_decompress_handler(rarch_task_t *task)
    {
       task->error = dec->callback_error;
       zlib_parse_file_iterate_stop(&dec->zlib);
-      goto task_finished;
+
+      rarch_task_decompress_handler_finished(task, dec);
    }
+}
 
-   return;
+static void rarch_task_decompress_handler_subdir(rarch_task_t *task)
+{
+   bool returnerr;
+   decompress_state_t *dec = (decompress_state_t*)task->state;
+   int ret = zlib_parse_file_iterate(&dec->zlib, &returnerr, dec->source_file,
+         dec->valid_ext, file_decompressed_subdir, dec);
 
-task_finished:
-   task->finished = true;
+   task->progress = zlib_parse_file_progress(&dec->zlib);
 
-   if (!task->error && task->cancelled)
-      task->error = strdup("Task canceled");
-
-   if (!task->error)
+   if (task->cancelled || ret != 0)
    {
-      data = (decompress_task_data_t*)calloc(1, sizeof(*data));
-      data->source_file = dec->source_file;
-      task->task_data = data;
-   }
-   else
-      free(dec->source_file);
+      task->error = dec->callback_error;
+      zlib_parse_file_iterate_stop(&dec->zlib);
 
-   if (dec->valid_ext)
-      free(dec->valid_ext);
-   free(dec->target_dir);
-   free(dec);
+      rarch_task_decompress_handler_finished(task, dec);
+   }
 }
 
 static bool rarch_task_decompress_finder(rarch_task_t *task, void *user_data)
@@ -124,7 +188,7 @@ static bool rarch_task_decompress_finder(rarch_task_t *task, void *user_data)
 }
 
 bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
-      const char *valid_ext, rarch_task_callback_t cb, void *user_data)
+      const char *subdir, const char *valid_ext, rarch_task_callback_t cb, void *user_data)
 {
    decompress_state_t *s;
    rarch_task_t *t;
@@ -166,8 +230,14 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
    s->zlib.type = ZLIB_TRANSFER_INIT;
 
    t = (rarch_task_t*)calloc(1, sizeof(*t));
-   t->handler   = rarch_task_decompress_handler;
    t->state     = s;
+   t->handler   = rarch_task_decompress_handler;
+
+   if (subdir && subdir[0] != '\0')
+   {
+      s->subdir   = strdup(subdir);
+      t->handler   = rarch_task_decompress_handler_subdir;
+   }
 
    t->callback  = cb;
    t->user_data = user_data;

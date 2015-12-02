@@ -671,6 +671,7 @@ static void config_set_defaults(void)
    settings->bundle_assets_extract_last_version    = 0;
    *settings->bundle_assets_src_path = '\0';
    *settings->bundle_assets_dst_path = '\0';
+   *settings->bundle_assets_dst_path_subdir = '\0';
    *settings->playlist_names = '\0';
    *settings->playlist_cores = '\0';
    *settings->core_options_path = '\0';
@@ -1607,6 +1608,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_BASE(conf, settings, bundle_assets_extract_last_version,    "bundle_assets_extract_last_version");
    config_get_array(conf, "bundle_assets_src_path", settings->bundle_assets_src_path, sizeof(settings->bundle_assets_src_path));
    config_get_array(conf, "bundle_assets_dst_path", settings->bundle_assets_dst_path, sizeof(settings->bundle_assets_dst_path));
+   config_get_array(conf, "bundle_assets_dst_path_subdir", settings->bundle_assets_dst_path_subdir, sizeof(settings->bundle_assets_dst_path_subdir));
 
    CONFIG_GET_INT_BASE(conf, settings, rewind_granularity, "rewind_granularity");
    CONFIG_GET_FLOAT_BASE(conf, settings, slowmotion_ratio, "slowmotion_ratio");
@@ -2541,6 +2543,7 @@ bool config_save_file(const char *path)
    config_set_int(conf,  "bundle_assets_extract_last_version", settings->bundle_assets_extract_last_version);
    config_set_string(conf,  "bundle_assets_src_path", settings->bundle_assets_src_path);
    config_set_string(conf,  "bundle_assets_dst_path", settings->bundle_assets_dst_path);
+   config_set_string(conf,  "bundle_assets_dst_path_subdir", settings->bundle_assets_dst_path_subdir);
    config_set_string(conf,  "playlist_names", settings->playlist_names);
    config_set_string(conf,  "playlist_cores", settings->playlist_cores);
    config_set_float(conf, "video_refresh_rate", settings->video.refresh_rate);

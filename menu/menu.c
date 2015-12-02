@@ -281,8 +281,8 @@ void *menu_init(const void *data)
          settings->bundle_assets_extract_version_current != settings->bundle_assets_extract_last_version
       )
    {
-      rarch_task_push_decompress(settings->bundle_assets_src_path, settings->bundle_assets_dst_path, NULL,
-            bundle_decompressed, NULL);
+      rarch_task_push_decompress(settings->bundle_assets_src_path, settings->bundle_assets_dst_path,
+            settings->bundle_assets_dst_path_subdir, NULL, bundle_decompressed, NULL);
    }
 #endif
 
