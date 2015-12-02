@@ -48,8 +48,6 @@
 #include "deps/7zip/7zFile.h"
 #include "deps/7zip/7zVersion.h"
 
-static ISzAlloc g_Alloc = { SzAlloc, SzFree };
-
 static int Buf_EnsureSize(CBuf *dest, size_t size)
 {
    if (dest->size >= size)
