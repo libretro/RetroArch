@@ -221,14 +221,24 @@ static int read_7zip_file(
          /* Error handling */
          if (!file_found)
             RARCH_ERR("File %s not found in %s\n", relative_path, archive_path);
-         else if (res == SZ_ERROR_UNSUPPORTED)
-            RARCH_ERR("7Zip decoder doesn't support this archive\n");
-         else if (res == SZ_ERROR_MEM)
-            RARCH_ERR("7Zip decoder could not allocate memory\n");
-         else if (res == SZ_ERROR_CRC)
-            RARCH_ERR("7Zip decoder encountered a CRC error in the archive\n");
          else
-            RARCH_ERR("\nUnspecified error in 7-ZIP archive, error number was: #%d\n", res);
+         {
+            switch (res)
+            {
+               case SZ_ERROR_UNSUPPORTED:
+                  RARCH_ERR("7Zip decoder doesn't support this archive.\n");
+                  break;
+               case SZ_ERROR_MEM:
+                  RARCH_ERR("7Zip decoder could not allocate memory\n");
+                  break;
+               case SZ_ERROR_CRC:
+                  RARCH_ERR("7Zip decoder encountered a CRC error in the archive\n");
+                  break;
+               default:
+                  RARCH_ERR("\nUnspecified error in 7-ZIP archive, error number was: #%d\n", res);
+                  break;
+            }
+         }
 
          outsize    = -1;
       }
@@ -347,16 +357,23 @@ static struct string_list *compressed_7zip_file_list_new(
       if (res != SZ_OK)
       {
          /* Error handling */
-         if (res == SZ_ERROR_UNSUPPORTED)
-            RARCH_ERR("7Zip decoder doesn't support this archive. \n");
-         else if (res == SZ_ERROR_MEM)
-            RARCH_ERR("7Zip decoder could not allocate memory. \n");
-         else if (res == SZ_ERROR_CRC)
-            RARCH_ERR("7Zip decoder encountered a CRC error in the archive. \n");
-         else
-            RARCH_ERR(
-                  "\nUnspecified error in 7-ZIP archive, error number was: #%d. \n",
-                  res);
+         switch (res)
+         {
+            case SZ_ERROR_UNSUPPORTED:
+               RARCH_ERR("7Zip decoder doesn't support this archive. \n");
+               break;
+            case SZ_ERROR_MEM:
+               RARCH_ERR("7Zip decoder could not allocate memory. \n");
+               break;
+            case SZ_ERROR_CRC:
+               RARCH_ERR("7Zip decoder encountered a CRC error in the archive. \n");
+               break;
+            default:
+               RARCH_ERR(
+                     "Unspecified error in 7-ZIP archive, error number was: #%d. \n",
+                     res);
+               break;
+         }
 
          RARCH_ERR("Failed to open compressed_file: \"%s\"\n", path);
 
