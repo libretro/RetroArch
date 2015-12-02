@@ -70,15 +70,20 @@ typedef struct state_device
    char name[256];
 } state_device_t;
 
-typedef struct android_input
+typedef struct android_input_data
 {
-   bool blocked;
-   unsigned pads_connected;
    state_device_t pad_states[MAX_PADS];
 
+   unsigned pads_connected;
    sensor_t accelerometer_state;
    struct input_pointer pointer[MAX_TOUCH];
    unsigned pointer_count;
+} android_input_data_t;
+
+typedef struct android_input
+{
+   bool blocked;
+   android_input_data_t copy;
    const input_device_driver_t *joypad;
 } android_input_t;
 
@@ -363,7 +368,7 @@ static void *android_input_init(void)
    if (!android)
       return NULL;
 
-   android->pads_connected = 0;
+   android->copy.pads_connected = 0;
    android->joypad         = input_joypad_init_driver(
          settings->input.joypad_driver, android);
 
@@ -388,6 +393,7 @@ static INLINE int android_input_poll_event_type_motion(
       android_input_t *android, AInputEvent *event,
       int port, int source)
 {
+   android_input_data_t *android_data = (android_input_data_t*)&android->copy;
    int getaction, action;
    size_t motion_ptr;
    bool keyup;
@@ -407,11 +413,11 @@ static INLINE int android_input_poll_event_type_motion(
 
    if (keyup && motion_ptr < MAX_TOUCH)
    {
-      memmove(android->pointer + motion_ptr,
-            android->pointer + motion_ptr + 1,
+      memmove(android_data->pointer + motion_ptr,
+            android_data->pointer + motion_ptr + 1,
             (MAX_TOUCH - motion_ptr - 1) * sizeof(struct input_pointer));
-      if (android->pointer_count > 0)
-         android->pointer_count--;
+      if (android_data->pointer_count > 0)
+         android_data->pointer_count--;
    }
    else
    {
@@ -424,13 +430,13 @@ static INLINE int android_input_poll_event_type_motion(
          y = AMotionEvent_getY(event, motion_ptr);
 
          input_translate_coord_viewport(x, y,
-               &android->pointer[motion_ptr].x,
-               &android->pointer[motion_ptr].y,
-               &android->pointer[motion_ptr].full_x,
-               &android->pointer[motion_ptr].full_y);
+               &android_data->pointer[motion_ptr].x,
+               &android_data->pointer[motion_ptr].y,
+               &android_data->pointer[motion_ptr].full_x,
+               &android_data->pointer[motion_ptr].full_y);
 
-         android->pointer_count = max(
-               android->pointer_count,
+         android_data->pointer_count = max(
+               android_data->pointer_count,
                motion_ptr + 1);
       }
    }
@@ -465,7 +471,7 @@ static INLINE void android_input_poll_event_type_key(
       *handled = 0;
 }
 
-static int android_input_get_id_port(android_input_t *android, int id,
+static int android_input_get_id_port(android_input_data_t *android_data, int id,
       int source)
 {
    unsigned i;
@@ -473,8 +479,8 @@ static int android_input_get_id_port(android_input_t *android, int id,
             AINPUT_SOURCE_TOUCHPAD))
       return 0; /* touch overlay is always user 1 */
 
-   for (i = 0; i < android->pads_connected; i++)
-      if (android->pad_states[i].id == id)
+   for (i = 0; i < android_data->pads_connected; i++)
+      if (android_data->pad_states[i].id == id)
          return i;
 
    return -1;
@@ -483,20 +489,20 @@ static int android_input_get_id_port(android_input_t *android, int id,
 
 
 /* Returns the index inside android->pad_state */
-static int android_input_get_id_index_from_name(android_input_t *android,
+static int android_input_get_id_index_from_name(android_input_data_t *android_data,
       const char *name)
 {
    int i;
-   for (i = 0; i < android->pads_connected; i++)
+   for (i = 0; i < android_data->pads_connected; i++)
    {
-      if (!strcmp(name, android->pad_states[i].name))
+      if (!strcmp(name, android_data->pad_states[i].name))
          return i;
    }
 
    return -1;
 }
 
-static void handle_hotplug(android_input_t *android,
+static void handle_hotplug(android_input_data_t *android_data,
       struct android_app *android_app, unsigned *port, unsigned id,
       int source)
 {
@@ -595,7 +601,7 @@ static void handle_hotplug(android_input_t *android,
       strlcpy(name_buf, device_name, sizeof(name_buf));
    }
    else if ((strstr(device_name, "Virtual") || strstr(device_name, "gpio")) && 
-         strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.01"))
+         strstr(android_data->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.01"))
    {
       *port = 0;
       strlcpy(name_buf, "NVIDIA SHIELD Portable", sizeof(name_buf));
@@ -610,13 +616,13 @@ static void handle_hotplug(android_input_t *android,
     * NVIDIA button (84) using an autoconf file
     */
    else if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03") 
-         && !strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.0"))
+         && !strstr(android_data->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.0"))
    {
       *port = 0;
       strlcpy(name_buf, device_name, sizeof(name_buf));
    }
    else if ((strstr(device_name, "Virtual") || strstr(device_name, "gpio")) 
-         && strstr(android->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.03"))
+         && strstr(android_data->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.03"))
    {
       *port = 0;
       strlcpy(name_buf, "NVIDIA SHIELD Controller", sizeof(name_buf));
@@ -633,9 +639,9 @@ static void handle_hotplug(android_input_t *android,
       *port = 0;
       strlcpy(name_buf, device_name, sizeof(name_buf));
    }
-   else if ( *port==1 && ( strstr(android->pad_states[0].name,"Amazon Fire TV Remote")
-                      ||   strstr(android->pad_states[0].name,"Nexus Remote")
-                      ||   strstr(android->pad_states[0].name,"SHIELD Remote")))
+   else if ( *port==1 && ( strstr(android_data->pad_states[0].name,"Amazon Fire TV Remote")
+                      ||   strstr(android_data->pad_states[0].name,"Nexus Remote")
+                      ||   strstr(android_data->pad_states[0].name,"SHIELD Remote")))
    {
       *port = 0;
       strlcpy(name_buf, device_name, sizeof(name_buf));
@@ -692,13 +698,13 @@ static void handle_hotplug(android_input_t *android,
    if (!back_mapped && settings->input.back_as_menu_toggle_enable)
       settings->input.autoconf_binds[*port][RARCH_MENU_TOGGLE].joykey = AKEYCODE_BACK;
 
-   *port = android->pads_connected;
-   android->pad_states[android->pads_connected].id = id;
-   android->pad_states[android->pads_connected].port = *port;
-   strlcpy(android->pad_states[*port].name, name_buf,
-         sizeof(android->pad_states[*port].name));
+   *port = android_data->pads_connected;
+   android_data->pad_states[android_data->pads_connected].id = id;
+   android_data->pad_states[android_data->pads_connected].port = *port;
+   strlcpy(android_data->pad_states[*port].name, name_buf,
+         sizeof(android_data->pad_states[*port].name));
 
-   android->pads_connected++;
+   android_data->pads_connected++;
 }
 
 static int android_input_get_id(android_input_t *android, AInputEvent *event)
@@ -718,8 +724,9 @@ static int android_input_get_id(android_input_t *android, AInputEvent *event)
 static void android_input_poll_input(void *data)
 {
    AInputEvent *event = NULL;
-   android_input_t    *android     = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
+   android_input_t    *android     = (android_input_t*)data;
+   android_input_data_t    *android_data     = (android_input_data_t*)&android->copy;
 
    /* Read all pending events. */
    while (AInputQueue_hasEvents(android_app->inputQueue))
@@ -731,11 +738,11 @@ static void android_input_poll_input(void *data)
          int        source = AInputEvent_getSource(event);
          int    type_event = AInputEvent_getType(event);
          int            id = android_input_get_id(android, event);
-         int          port = android_input_get_id_port(android, id, source);
+         int          port = android_input_get_id_port(android_data, id, source);
 
          if (port < 0)
-            handle_hotplug(android, android_app,
-                  &android->pads_connected, id, source);
+            handle_hotplug(android_data, android_app,
+                  &android_data->pads_connected, id, source);
 
          switch (type_event)
          {
@@ -762,8 +769,9 @@ static void android_input_poll_input(void *data)
 
 static void android_input_poll_user(void *data)
 {
-   android_input_t    *android     = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
+   android_input_t    *android     = (android_input_t*)data;
+   android_input_data_t *android_data = (android_input_data_t*)&android->copy;
 
    if ((android_app->sensor_state_mask & (UINT64_C(1) <<
                RETRO_SENSOR_ACCELEROMETER_ENABLE))
@@ -772,9 +780,9 @@ static void android_input_poll_user(void *data)
       ASensorEvent event;
       while (ASensorEventQueue_getEvents(android_app->sensorEventQueue, &event, 1) > 0)
       {
-         android->accelerometer_state.x = event.acceleration.x;
-         android->accelerometer_state.y = event.acceleration.y;
-         android->accelerometer_state.z = event.acceleration.z;
+         android_data->accelerometer_state.x = event.acceleration.x;
+         android_data->accelerometer_state.y = event.acceleration.y;
+         android_data->accelerometer_state.z = event.acceleration.z;
       }
    }
 }
@@ -836,8 +844,9 @@ static int16_t android_input_state(void *data,
       const struct retro_keybind **binds, unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   android_input_t *android = (android_input_t*)data;
    settings_t *settings = config_get_ptr();
+   android_input_t *android = (android_input_t*)data;
+   android_input_data_t *android_data = (android_input_data_t*)&android->copy;
 
    switch (device)
    {
@@ -850,13 +859,13 @@ static int16_t android_input_state(void *data,
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
-               return android->pointer[idx].x;
+               return android_data->pointer[idx].x;
             case RETRO_DEVICE_ID_POINTER_Y:
-               return android->pointer[idx].y;
+               return android_data->pointer[idx].y;
             case RETRO_DEVICE_ID_POINTER_PRESSED:
-               return (idx < android->pointer_count) &&
-                  (android->pointer[idx].x != -0x8000) &&
-                  (android->pointer[idx].y != -0x8000);
+               return (idx < android_data->pointer_count) &&
+                  (android_data->pointer[idx].x != -0x8000) &&
+                  (android_data->pointer[idx].y != -0x8000);
             case RARCH_DEVICE_ID_POINTER_BACK:
                if(settings->input.autoconf_binds[0][RARCH_MENU_TOGGLE].joykey == 0)
                   return android_keyboard_input_pressed(AKEYCODE_BACK);
@@ -866,13 +875,13 @@ static int16_t android_input_state(void *data,
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
-               return android->pointer[idx].full_x;
+               return android_data->pointer[idx].full_x;
             case RETRO_DEVICE_ID_POINTER_Y:
-               return android->pointer[idx].full_y;
+               return android_data->pointer[idx].full_y;
             case RETRO_DEVICE_ID_POINTER_PRESSED:
-               return (idx < android->pointer_count) &&
-                  (android->pointer[idx].full_x != -0x8000) &&
-                  (android->pointer[idx].full_y != -0x8000);
+               return (idx < android_data->pointer_count) &&
+                  (android_data->pointer[idx].full_x != -0x8000) &&
+                  (android_data->pointer[idx].full_y != -0x8000);
             case RARCH_DEVICE_ID_POINTER_BACK:
                if(settings->input.autoconf_binds[0][RARCH_MENU_TOGGLE].joykey == 0)
                   return android_keyboard_input_pressed(AKEYCODE_BACK);
@@ -986,16 +995,17 @@ static bool android_input_set_sensor_state(void *data, unsigned port,
 static float android_input_get_sensor_input(void *data,
       unsigned port,unsigned id)
 {
-   android_input_t *android = (android_input_t*)data;
+   android_input_t      *android      = (android_input_t*)data;
+   android_input_data_t *android_data = (android_input_data_t*)&android->copy;
 
    switch (id)
    {
       case RETRO_SENSOR_ACCELEROMETER_X:
-         return android->accelerometer_state.x;
+         return android_data->accelerometer_state.x;
       case RETRO_SENSOR_ACCELEROMETER_Y:
-         return android->accelerometer_state.y;
+         return android_data->accelerometer_state.y;
       case RETRO_SENSOR_ACCELEROMETER_Z:
-         return android->accelerometer_state.z;
+         return android_data->accelerometer_state.z;
    }
 
    return 0;
