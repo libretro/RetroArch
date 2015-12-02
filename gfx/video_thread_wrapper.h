@@ -199,8 +199,6 @@ typedef struct thread_video
    bool alpha_update;
    slock_t *alpha_lock;
 
-/*   void (*send_cmd_func)(struct thread_video *, enum thread_cmd); */
-/*   void (*wait_reply_func)(struct thread_video *, enum thread_cmd); */
    void (*send_and_wait)(struct thread_video *, thread_packet_t*);
    enum thread_cmd send_cmd;
    enum thread_cmd reply_cmd;

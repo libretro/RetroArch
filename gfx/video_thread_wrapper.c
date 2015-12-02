@@ -360,8 +360,6 @@ static bool thread_handle_packet(thread_video_t *thr, const thread_packet_t *inc
 static void thread_loop(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   unsigned i = 0;
-   (void)i;
 
    for (;;)
    {
@@ -426,9 +424,6 @@ static void thread_loop(void *data)
       }
    }
 }
-
-
-
 
 static bool thread_alive(void *data)
 {
@@ -613,24 +608,22 @@ static bool thread_init(thread_video_t *thr, const video_info_t *info,
    max_size                  = info->input_scale * RARCH_SCALE_BASE;
    max_size                 *= max_size;
    max_size                 *= info->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   thr->frame.buffer        = (uint8_t*)malloc(max_size);
+   thr->frame.buffer         = (uint8_t*)malloc(max_size);
 
    if (!thr->frame.buffer)
       return false;
 
    memset(thr->frame.buffer, 0x80, max_size);
 
-   thr->last_time       = retro_get_time_usec();
-   thr->thread          = sthread_create(thread_loop, thr);
+   thr->last_time            = retro_get_time_usec();
+   thr->thread               = sthread_create(thread_loop, thr);
+
    if (!thr->thread)
       return false;
 
    thread_send_and_wait(thr, &pkt);
 
-/*   thr->send_cmd_func   = thread_send_cmd;   */
-/*   thr->wait_reply_func = thread_wait_reply; */
-
-   thr->send_and_wait = thread_send_and_wait;
+   thr->send_and_wait        = thread_send_and_wait;
    return pkt.data.b;
 }
 
@@ -823,6 +816,7 @@ static void thread_overlay_set_alpha(void *data, unsigned idx, float mod)
 
    if (!thr)
       return;
+
    slock_lock(thr->alpha_lock);
    thr->alpha_mod[idx] = mod;
    thr->alpha_update   = true;
