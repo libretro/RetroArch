@@ -455,10 +455,9 @@ static int archos1 = -1;
 static int archos2 = -1;
 
 static INLINE int android_input_poll_event_type_motion(
-      android_input_t *android, AInputEvent *event,
+      android_input_data_t *android_data, AInputEvent *event,
       int port, int source)
 {
-   android_input_data_t *android_data = (android_input_data_t*)&android->thread;
    int getaction, action;
    size_t motion_ptr;
    bool keyup;
@@ -510,7 +509,7 @@ static INLINE int android_input_poll_event_type_motion(
 }
 
 static INLINE void android_input_poll_event_type_key(
-      android_input_t *android, struct android_app *android_app,
+      struct android_app *android_app,
       AInputEvent *event, int port, int keycode, int source,
       int type_event, int *handled)
 {
@@ -772,7 +771,7 @@ static void handle_hotplug(android_input_data_t *android_data,
    android_data->pads_connected++;
 }
 
-static int android_input_get_id(android_input_t *android, AInputEvent *event)
+static int android_input_get_id(AInputEvent *event)
 {
    int id = AInputEvent_getDeviceId(event);
 
@@ -802,7 +801,7 @@ static void android_input_poll_input(void *data)
          int predispatched = AInputQueue_preDispatchEvent(android_app->inputQueue, event);
          int        source = AInputEvent_getSource(event);
          int    type_event = AInputEvent_getType(event);
-         int            id = android_input_get_id(android, event);
+         int            id = android_input_get_id(event);
          int          port = android_input_get_id_port(android_data, id, source);
 
          if (port < 0)
@@ -812,14 +811,14 @@ static void android_input_poll_input(void *data)
          switch (type_event)
          {
             case AINPUT_EVENT_TYPE_MOTION:
-               if (android_input_poll_event_type_motion(android, event,
+               if (android_input_poll_event_type_motion(android_data, event,
                         port, source))
                   engine_handle_dpad(android_data, event, port, source);
                break;
             case AINPUT_EVENT_TYPE_KEY:
                {
                   int keycode = AKeyEvent_getKeyCode(event);
-                  android_input_poll_event_type_key(android, android_app,
+                  android_input_poll_event_type_key(android_app,
                         event, port, keycode, source, type_event, &handled);
                }
                break;
