@@ -1842,7 +1842,7 @@ void video_driver_frame(const void *data, unsigned width,
              !video_driver_state.filter.filter
           || !settings->video.post_filter_record 
           || !data
-          || global && global->record.gpu_buffer
+          || (global && global->record.gpu_buffer)
          )
       )
       recording_dump_frame(data, width, height, pitch);
