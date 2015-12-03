@@ -130,6 +130,10 @@ void egl_bind_hw_render(void *data, bool enable)
 
 void egl_swap_buffers(void *data)
 {
+   if (g_egl_dpy  == EGL_NO_DISPLAY)
+      return;
+   if (g_egl_surf == EGL_NO_SURFACE)
+      return;
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
