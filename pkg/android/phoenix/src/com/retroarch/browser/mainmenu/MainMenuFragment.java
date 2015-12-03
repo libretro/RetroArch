@@ -1,12 +1,5 @@
 package com.retroarch.browser.mainmenu;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
@@ -20,7 +13,6 @@ import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.util.Log;
-import android.widget.Toast;
 import android.os.Environment;
 import android.content.Context;
 

@@ -1,10 +1,7 @@
 package com.retroarch.browser.preferences.util;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -111,16 +108,6 @@ public final class UserPreferences
 			Log.e(TAG, "Failed to create config file to: " + new_path);
 		}
 		return new_path;
-	}
-
-	/**
-	 * Re-reads the configuration file into the {@link SharedPreferences}
-	 * instance that contains all of the settings for the front-end.
-	 * 
-	 * @param ctx the current {@link Context}.
-	 */
-	public static void readbackConfigFile(Context ctx)
-	{
 	}
 
 	/**
@@ -309,32 +296,5 @@ public final class UserPreferences
 
 		Log.i(TAG, "Using sampling rate: " + ret + " Hz");
 		return ret;
-	}
-
-	/**
-	 * Retrieves the CPU info, as provided by /proc/cpuinfo.
-	 * 
-	 * @return the CPU info.
-	 */
-	public static String readCPUInfo()
-	{
-		StringBuilder result = new StringBuilder(255);
-
-		try
-		{
-			BufferedReader br = new BufferedReader(new InputStreamReader(
-					new FileInputStream("/proc/cpuinfo")));
-
-			String line;
-			while ((line = br.readLine()) != null)
-				result.append(line).append('\n');
-			br.close();
-		}
-		catch (IOException ex)
-		{
-			ex.printStackTrace();
-		}
-
-		return result.toString();
 	}
 }
