@@ -22,5 +22,6 @@ public class RetroActivityCommon extends RetroActivityLocation
 	// Use a separate JNI function to explicitly trigger the readback.
 	public void onRetroArchExit()
 	{
+      finish();
 	}
 }

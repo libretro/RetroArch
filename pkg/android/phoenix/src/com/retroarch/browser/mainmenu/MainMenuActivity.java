@@ -2,14 +2,20 @@ package com.retroarch.browser.mainmenu;
 
 import java.io.File;
 
-import com.retroarch.R;
 import com.retroarch.browser.preferences.util.UserPreferences;
+import com.retroarch.browser.retroactivity.RetroActivityFuture;
+import com.retroarch.browser.retroactivity.RetroActivityPast;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.media.AudioManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.preference.PreferenceActivity;
+import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
 
@@ -19,6 +25,24 @@ import android.support.v4.app.FragmentTransaction;
  */
 public final class MainMenuActivity extends FragmentActivity
 {
+	public static void startRetroActivity(Intent retro, String contentPath, String corePath,
+			String configFilePath, String imePath, String dataDirPath, String dataSourcePath)
+	{
+		if (contentPath != null) {
+			retro.putExtra("ROM", contentPath);
+		}
+		retro.putExtra("LIBRETRO", corePath);
+		retro.putExtra("CONFIGFILE", configFilePath);
+		retro.putExtra("IME", imePath);
+		retro.putExtra("DATADIR", dataDirPath);
+		retro.putExtra("APK", dataSourcePath);
+		retro.putExtra("SDCARD", Environment.getExternalStorageDirectory().getAbsolutePath());
+		retro.putExtra("DOWNLOADS", Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath());
+		retro.putExtra("SCREENSHOTS", Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
+        String external = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/com.retroarch/files";
+        retro.putExtra("EXTERNAL", external);
+	}
+
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
@@ -33,40 +57,32 @@ public final class MainMenuActivity extends FragmentActivity
 		if (!infoDir.exists())
 			infoDir.mkdir();
 
-		// Load the main menu layout
-		setContentView(R.layout.mainmenu_activity_layout);
-		if (savedInstanceState == null)
-		{
-			final MainMenuFragment mmf = new MainMenuFragment();
-			final FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-
-			// Add the base main menu fragment to the content view.
-			ft.replace(R.id.content_frame, mmf);
-			ft.commit();
-		}
-
 		// Bind audio stream to hardware controls.
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
-	}
 
-	public void setCoreTitle(String core_name)
-	{
-		setTitle("RetroArch : " + core_name);
-	}
+      UserPreferences.updateConfigFile(this);
+      final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+      Intent retro;
+      
+      if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB))
+      {
+         retro = new Intent(this, RetroActivityFuture.class);
+      }
+      else
+      {
+         retro = new Intent(this, RetroActivityPast.class);
+      }
+      retro.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-	@Override
-	protected void onSaveInstanceState(Bundle data)
-	{
-		super.onSaveInstanceState(data);
-
-		data.putCharSequence("title", getTitle());
-	}
-
-	@Override
-	protected void onRestoreInstanceState(Bundle savedInstanceState)
-	{
-		super.onRestoreInstanceState(savedInstanceState);
-
-		setTitle(savedInstanceState.getCharSequence("title"));
+      startRetroActivity(
+            retro,
+            null,
+            prefs.getString("libretro_path", getApplicationInfo().dataDir + "/cores/"),
+            UserPreferences.getDefaultConfigPath(this),
+            Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
+            getApplicationInfo().dataDir,
+            getApplicationInfo().sourceDir);
+      startActivity(retro);
+      finish();
 	}
 }
