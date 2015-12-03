@@ -603,7 +603,7 @@ void menu_display_texture_unload(uintptr_t *id)
    menu_disp->texture_unload(id);
 }
 
-void menu_display_draw(unsigned x, unsigned y,
+void menu_display_draw(float x, float y,
       unsigned width, unsigned height,
       struct gfx_coords *coords,
       void *matrix_data, 
