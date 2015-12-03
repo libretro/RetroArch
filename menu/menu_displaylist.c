@@ -1633,7 +1633,7 @@ loop:
       menu_settings_list_increment(&setting);
    }
 
-   if (count == 0 && add_empty_entry)
+   if (count <= 1 && add_empty_entry)
       menu_entries_push(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_NO_SETTINGS_FOUND),
             menu_hash_to_str(MENU_LABEL_NO_SETTINGS_FOUND),
