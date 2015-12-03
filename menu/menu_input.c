@@ -1183,7 +1183,8 @@ unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_in
    if (!driver || !menu_input)
       return 0;
 
-   driver->retro_ctx.poll_cb();
+   if (driver->retro_ctx.poll_cb)
+      driver->retro_ctx.poll_cb();
 
    /* don't run anything first frame, only capture held inputs
     * for old_input_state. */
