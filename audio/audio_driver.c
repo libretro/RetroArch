@@ -806,12 +806,20 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          }
          return true;
       case RARCH_AUDIO_CTL_ALIVE:
-         if (!audio_driver_context_audio_data)
+         if (!current_audio || !audio_driver_context_audio_data)
             return false;
          return current_audio->alive(audio_driver_context_audio_data);
       case RARCH_AUDIO_CTL_START:
+         if (!current_audio || !audio_driver_context_audio_data)
+            return false;
+         if (!current_audio->start)
+            return false;
          return current_audio->start(audio_driver_context_audio_data);
       case RARCH_AUDIO_CTL_STOP:
+         if (!current_audio || !audio_driver_context_audio_data)
+            return false;
+         if (!current_audio->stop)
+            return false;
          return current_audio->stop(audio_driver_context_audio_data);
       case RARCH_AUDIO_CTL_FIND_DRIVER:
          return find_audio_driver();
