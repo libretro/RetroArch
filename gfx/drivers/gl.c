@@ -1195,8 +1195,6 @@ static void gl_update_input_size(gl_t *gl, unsigned width,
 
       if (clear)
       {
-         RARCH_LOG("Gets here.\n");
-
          glPixelStorei(GL_UNPACK_ALIGNMENT,
                video_pixel_get_alignment(width * sizeof(uint32_t)));
 #if defined(HAVE_PSGL)
