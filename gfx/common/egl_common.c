@@ -212,8 +212,9 @@ bool egl_init_context(NativeDisplayType display,
 
 bool egl_create_context(EGLint *egl_attribs)
 {
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, EGL_NO_CONTEXT,
+   g_egl_ctx    = eglCreateContext(g_egl_dpy, g_egl_config, EGL_NO_CONTEXT,
          egl_attribs);
+   g_egl_hw_ctx = NULL;
 
    if (g_egl_ctx == EGL_NO_CONTEXT)
       return false;
