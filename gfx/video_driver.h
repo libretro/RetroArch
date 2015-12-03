@@ -448,10 +448,6 @@ void video_driver_cached_frame_get(const void **data, unsigned *width,
 void video_driver_menu_settings(void **list_data, void *list_info_data,
       void *group_data, void *subgroup_data, const char *parent_group);
 
-void video_driver_frame(const void *data,
-      unsigned width, unsigned height,
-      size_t pitch, const char *msg);
-
 /**
  * video_viewport_get_scaled_integer:
  * @vp            : Viewport handle
@@ -518,7 +514,7 @@ unsigned video_pixel_get_alignment(unsigned pitch);
 const video_poke_interface_t *video_driver_get_poke(void);
 
 /**
- * video_frame:
+ * video_driver_frame:
  * @data                 : pointer to data of the video frame.
  * @width                : width of the video frame.
  * @height               : height of the video frame.
@@ -526,7 +522,7 @@ const video_poke_interface_t *video_driver_get_poke(void);
  *
  * Video frame render callback function.
  **/
-void video_frame(const void *data, unsigned width,
+void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
 
 uintptr_t video_driver_display_get(void);

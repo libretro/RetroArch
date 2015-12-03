@@ -1803,7 +1803,7 @@ static bool video_pixel_frame_scale(const void *data,
 }
 
 /**
- * video_frame:
+ * video_driver_frame:
  * @data                 : pointer to data of the video frame.
  * @width                : width of the video frame.
  * @height               : height of the video frame.
@@ -1811,7 +1811,7 @@ static bool video_pixel_frame_scale(const void *data,
  *
  * Video frame render callback function.
  **/
-void video_frame(const void *data, unsigned width,
+void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
    unsigned output_width  = 0;
@@ -1842,7 +1842,7 @@ void video_frame(const void *data, unsigned width,
              !video_driver_state.filter.filter
           || !settings->video.post_filter_record 
           || !data
-          || global->record.gpu_buffer
+          || global && global->record.gpu_buffer
          )
       )
       recording_dump_frame(data, width, height, pitch);

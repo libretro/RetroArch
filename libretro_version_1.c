@@ -47,7 +47,7 @@ void retro_set_default_callbacks(void *data)
    if (!cbs)
       return;
 
-   cbs->frame_cb        = video_frame;
+   cbs->frame_cb        = video_driver_frame;
    cbs->sample_cb       = audio_driver_sample;
    cbs->sample_batch_cb = audio_driver_sample_batch;
    cbs->state_cb        = input_state;
@@ -73,7 +73,7 @@ void retro_init_libretro_cbs(void *data)
    (void)driver;
    (void)global;
 
-   core.retro_set_video_refresh(video_frame);
+   core.retro_set_video_refresh(video_driver_frame);
    core.retro_set_audio_sample(audio_driver_sample);
    core.retro_set_audio_sample_batch(audio_driver_sample_batch);
    core.retro_set_input_state(input_state);
