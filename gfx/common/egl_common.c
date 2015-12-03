@@ -120,7 +120,9 @@ void egl_bind_hw_render(void *data, bool enable)
 {
    g_egl_use_hw_ctx = enable;
 
-   if (!g_egl_dpy || !g_egl_surf)
+   if (g_egl_dpy  == EGL_NO_DISPLAY)
+      return;
+   if (g_egl_surf == EGL_NO_SURFACE)
       return;
 
    eglMakeCurrent(g_egl_dpy, g_egl_surf,
@@ -145,7 +147,7 @@ void egl_set_swap_interval(void *data, unsigned interval)
     */
    g_interval = interval;
 
-   if (!g_egl_dpy)
+   if (g_egl_dpy  == EGL_NO_DISPLAY)
       return;
    if (!(eglGetCurrentContext()))
       return;
@@ -239,7 +241,8 @@ bool egl_create_context(EGLint *egl_attribs)
 bool egl_create_surface(NativeWindowType native_window)
 {
    g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, native_window, NULL);
-   if (!g_egl_surf || g_egl_surf == EGL_NO_SURFACE)
+
+   if (g_egl_surf == EGL_NO_SURFACE)
       return false;
 
    /* Connect the context to the surface. */
