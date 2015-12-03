@@ -1,7 +1,5 @@
 package com.retroarch.browser.mainmenu;
 
-import java.io.File;
-
 import com.retroarch.browser.preferences.util.UserPreferences;
 import com.retroarch.browser.retroactivity.RetroActivityFuture;
 import com.retroarch.browser.retroactivity.RetroActivityPast;
@@ -45,15 +43,6 @@ public final class MainMenuActivity extends PreferenceActivity
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-
-		// Ensure resource directories are created.
-		final ApplicationInfo info = getApplicationInfo();
-		final File coresDir = new File(info.dataDir, "cores");
-		final File infoDir = new File(info.dataDir, "info");
-		if (!coresDir.exists())
-			coresDir.mkdir();
-		if (!infoDir.exists())
-			infoDir.mkdir();
 
 		// Bind audio stream to hardware controls.
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
