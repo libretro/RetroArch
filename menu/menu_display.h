@@ -78,7 +78,7 @@ enum menu_display_driver_type
 
 typedef struct menu_display_ctx_driver
 {
-   void (*draw)(unsigned x, unsigned y,
+   void (*draw)(float x, float y,
       unsigned width, unsigned height,
       struct gfx_coords *coords,
       void *matrix_data, 
@@ -141,7 +141,7 @@ void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned durati
 
 bool menu_display_driver_init_first(void);
 
-void menu_display_draw(unsigned x, unsigned y,
+void menu_display_draw(float x, float y,
       unsigned width, unsigned height,
       struct gfx_coords *coords,
       void *matrix_data, 

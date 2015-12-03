@@ -92,7 +92,7 @@ static void menu_display_gl_blend_end(void)
 }
 
 static void menu_display_gl_draw(
-      unsigned x, unsigned y,
+      float x, float y,
       unsigned width, unsigned height,
       struct gfx_coords *coords,
       void *matrix_data,
