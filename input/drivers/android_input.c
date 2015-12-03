@@ -105,6 +105,8 @@ static typeof(AMotionEvent_getAxisValue) *p_AMotionEvent_getAxisValue;
 
 #define AMotionEvent_getAxisValue (*p_AMotionEvent_getAxisValue)
 
+static void *libandroid_handle;
+
 static bool android_input_lookup_name_prekitkat(char *buf,
       int *vendorId, int *productId, size_t size, int id)
 {
@@ -406,6 +408,25 @@ static void engine_handle_dpad_getaxisvalue(android_input_data_t *android_data,
    android_data->analog_state[port][9] = (int16_t)(gas * 32767.0f);
 }
 
+
+static bool android_input_init_handle(void)
+{
+   if (libandroid_handle != NULL) /* already initialized */
+      return true;
+
+   if ((libandroid_handle = dlopen("/system/lib/libandroid.so",
+               RTLD_LOCAL | RTLD_LAZY)) == 0)
+      return false;
+
+   if ((p_AMotionEvent_getAxisValue = dlsym(RTLD_DEFAULT,
+               "AMotionEvent_getAxisValue")))
+   {
+      RARCH_LOG("Set engine_handle_dpad to 'Get Axis Value' (for reading extra analog sticks)");
+      engine_handle_dpad = engine_handle_dpad_getaxisvalue;
+   }
+   return true;
+}
+
 static void *android_input_init(void)
 {
    int32_t sdk;
@@ -432,20 +453,11 @@ static void *android_input_init(void)
 
    engine_handle_dpad         = engine_handle_dpad_default;
 
-   if ((dlopen("/system/lib/libandroid.so", RTLD_LOCAL | RTLD_LAZY)) == 0)
+   if (!android_input_init_handle())
    {
       RARCH_WARN("Unable to open libandroid.so\n");
-      goto end;
    }
 
-   if ((p_AMotionEvent_getAxisValue = dlsym(RTLD_DEFAULT,
-               "AMotionEvent_getAxisValue")))
-   {
-      RARCH_LOG("Set engine_handle_dpad to 'Get Axis Value' (for reading extra analog sticks)");
-      engine_handle_dpad = engine_handle_dpad_getaxisvalue;
-   }
-
-end:
    return android;
 }
 
@@ -1006,6 +1018,9 @@ static void android_input_free_input(void *data)
    if (android->joypad)
       android->joypad->destroy();
    android->joypad = NULL;
+
+   dylib_close((dylib_t)libandroid_handle);
+   libandroid_handle = NULL;
 
    android_keyboard_free();
    free(data);
