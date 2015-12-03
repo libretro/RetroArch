@@ -16,14 +16,12 @@ import android.os.Environment;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentTransaction;
 
 /**
  * {@link PreferenceActivity} subclass that provides all of the
  * functionality of the main menu screen.
  */
-public final class MainMenuActivity extends FragmentActivity
+public final class MainMenuActivity extends PreferenceActivity
 {
 	public static void startRetroActivity(Intent retro, String contentPath, String corePath,
 			String configFilePath, String imePath, String dataDirPath, String dataSourcePath)
