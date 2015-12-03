@@ -167,6 +167,8 @@ bool gfx_ctx_get_video_output_next(void *data)
 
 void gfx_ctx_swap_buffers(void *data)
 {
+   if (!current_video_context)
+      return;
    if (current_video_context->swap_buffers)
       current_video_context->swap_buffers(data);
 }
