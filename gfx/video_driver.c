@@ -1777,27 +1777,25 @@ static bool video_pixel_frame_scale(const void *data,
       size_t pitch)
 {
    static struct retro_perf_counter video_frame_conv = {0};
-   video_pixel_scaler_t *scaler = video_driver_scaler_ptr;
 
    rarch_perf_init(&video_frame_conv, "video_frame_conv");
 
-   if (!data)
-      return false;
-   if (video_driver_get_pixel_format() != RETRO_PIXEL_FORMAT_0RGB1555)
+   if (!data || video_driver_get_pixel_format() != RETRO_PIXEL_FORMAT_0RGB1555)
       return false;
    if (data == RETRO_HW_FRAME_BUFFER_VALID)
       return false;
 
    retro_perf_start(&video_frame_conv);
 
-   scaler->scaler->in_width      = width;
-   scaler->scaler->in_height     = height;
-   scaler->scaler->out_width     = width;
-   scaler->scaler->out_height    = height;
-   scaler->scaler->in_stride     = pitch;
-   scaler->scaler->out_stride    = width * sizeof(uint16_t);
+   video_driver_scaler_ptr->scaler->in_width      = width;
+   video_driver_scaler_ptr->scaler->in_height     = height;
+   video_driver_scaler_ptr->scaler->out_width     = width;
+   video_driver_scaler_ptr->scaler->out_height    = height;
+   video_driver_scaler_ptr->scaler->in_stride     = pitch;
+   video_driver_scaler_ptr->scaler->out_stride    = width * sizeof(uint16_t);
 
-   scaler_ctx_scale(scaler->scaler, scaler->scaler_out, data);
+   scaler_ctx_scale(video_driver_scaler_ptr->scaler,
+         video_driver_scaler_ptr->scaler_out, data);
 
    retro_perf_stop(&video_frame_conv);
 
@@ -1826,12 +1824,11 @@ void video_frame(const void *data, unsigned width,
    if (!video_driver_active)
       return;
 
-   if (video_pixel_frame_scale(data, width, height, pitch))
+   if (video_driver_scaler_ptr &&
+         video_pixel_frame_scale(data, width, height, pitch))
    {
-      video_pixel_scaler_t *scaler = video_driver_scaler_ptr;
-
-      data                         = scaler->scaler_out;
-      pitch                        = scaler->scaler->out_stride;
+      data                = video_driver_scaler_ptr->scaler_out;
+      pitch               = video_driver_scaler_ptr->scaler->out_stride;
    }
 
    video_driver_cached_frame_set(data, width, height, pitch);
@@ -1866,7 +1863,7 @@ void video_frame(const void *data, unsigned width,
    if (msg)
       strlcpy(video_driver_current_msg, msg, sizeof(video_driver_current_msg));
 
-   if (!current_video->frame(
+   if (!current_video || !current_video->frame(
             video_driver_data, data, width, height, video_driver_frame_count,
             pitch, video_driver_current_msg))
       video_driver_active = false;
