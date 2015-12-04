@@ -426,18 +426,18 @@ static void menu_input_key_bind_poll_bind_state_internal(const input_device_driv
    unsigned b, a, h;
     if (!joypad)
         return;
-    
+
     if (joypad->poll)
         joypad->poll();
-    
+
     /* poll only the relevant port */
     /* for (i = 0; i < settings->input.max_users; i++) */
     for (b = 0; b < MENU_MAX_BUTTONS; b++)
         state->state[port].buttons[b] = input_joypad_button_raw(joypad, port, b);
-    
+
     for (a = 0; a < MENU_MAX_AXES; a++)
         state->state[port].axes[a] = input_joypad_axis_raw(joypad, port, a);
-    
+
     for (h = 0; h < MENU_MAX_HATS; h++)
     {
         if (input_joypad_hat_raw(joypad, port, HAT_UP_MASK, h))
@@ -463,9 +463,9 @@ static void menu_input_key_bind_poll_bind_state(struct menu_bind_state *state, u
    memset(state->state, 0, sizeof(state->state));
    state->skip = timed_out || input_driver_state(NULL, 0,
          RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
-    
+
    menu_input_key_bind_poll_bind_state_internal(joypad, state, port, timed_out);
-    
+
    if (sec_joypad)
       menu_input_key_bind_poll_bind_state_internal(sec_joypad, state, port, timed_out);
 }
@@ -483,7 +483,7 @@ static void menu_input_key_bind_poll_bind_get_rested_axes(
    /* poll only the relevant port */
    for (a = 0; a < MENU_MAX_AXES; a++)
       state->axis_state[port].rested_axes[a] = input_joypad_axis_raw(joypad, port, a);
-    
+
    if (sec_joypad)
    {
         /* poll only the relevant port */
@@ -892,16 +892,18 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    unsigned header_height;
    settings_t *settings     = config_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
+   bool check_overlay;
 
    *input_mouse = MOUSE_ACTION_NONE;
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
 
-   if (!settings->menu.mouse.enable
+   check_overlay = (!settings->menu.mouse.enable) ;
 #ifdef HAVE_OVERLAY
-       || (settings->input.overlay_enable && input_overlay_is_alive())
+   check_overlay = (check_overlay || (settings->input.overlay_enable && input_overlay_is_alive())) ;
 #endif
-       )
+
+   if (check_overlay)
    {
       menu_input->mouse.wheeldown = false;
       menu_input->mouse.wheelup   = false;
@@ -1029,6 +1031,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
    int ret                  = 0;
    menu_input_t *menu_input = menu_input_get_ptr();
    settings_t *settings     = config_get_ptr();
+   bool check_overlay;
 
    if (!menu_input)
       return -1;
@@ -1036,11 +1039,12 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       return -1;
    menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
-   if (!settings->menu.pointer.enable
+   check_overlay = (!settings->menu.pointer.enable) ;
 #ifdef HAVE_OVERLAY
-       || (settings->input.overlay_enable && input_overlay_is_alive())
+   check_overlay = (check_overlay || (settings->input.overlay_enable && input_overlay_is_alive())) ;
 #endif
-      )
+
+   if (check_overlay)
       return 0;
 
    if (menu_input->pointer.pressed[0])
@@ -1147,7 +1151,7 @@ static unsigned menu_input_frame_pointer(unsigned *data)
    if (!mouse_enabled)
       mouse_enabled = !(settings->input.overlay_enable && input_overlay_is_alive());
 #endif
-    
+
    if (mouse_enabled)
       menu_input_mouse(&ret);
    else
