@@ -65,7 +65,6 @@ static rarch_dir_list_t runloop_shader_dir;
 
 static unsigned runloop_pending_windowed_scale;
 static char runloop_fullpath[PATH_MAX_LENGTH];
-static bool runloop_perfcnt_enable;
 static bool main_core_shutdown_initiated;
 static bool main_is_paused;
 static bool main_is_slowmotion;
@@ -403,6 +402,12 @@ static void rarch_main_data_clear_state(void)
    rarch_task_init();
 }
 
+bool *runloop_perfcnt_enabled(void)
+{
+   static bool runloop_perfcnt_enable;
+   return &runloop_perfcnt_enable;
+}
+
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    static bool runloop_idle  = false;
@@ -412,13 +417,22 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    switch (state)
    {
       case RUNLOOP_CTL_SET_PERFCNT_ENABLE:
-         runloop_perfcnt_enable = true;
+         {
+            bool *perfcnt_enable = runloop_perfcnt_enabled();
+            *perfcnt_enable = true;
+         }
          break;
       case RUNLOOP_CTL_UNSET_PERFCNT_ENABLE:
-         runloop_perfcnt_enable = false;
+         {
+            bool *perfcnt_enable = runloop_perfcnt_enabled();
+            *perfcnt_enable = false;
+         }
          break;
       case RUNLOOP_CTL_IS_PERFCNT_ENABLE:
-         return runloop_perfcnt_enable;
+         {
+            bool *perfcnt_enable = runloop_perfcnt_enabled();
+            return *perfcnt_enable;
+         }
       case RUNLOOP_CTL_GET_WINDOWED_SCALE:
          {
             unsigned **scale = (unsigned**)data;
@@ -1188,7 +1202,3 @@ void data_runloop_osd_msg(const char *msg, size_t len)
    rarch_main_msg_queue_push(msg, 1, 10, true);
 }
 
-bool *runloop_perfcnt_enabled(void)
-{
-   return &runloop_perfcnt_enable;
-}
