@@ -190,6 +190,7 @@ done:
 static void *coreaudio_init(const char *device,
       unsigned rate, unsigned latency)
 {
+   bool exist_component;
    size_t fifo_size;
    UInt32 i_size;
    AudioStreamBasicDescription real_desc;
@@ -249,12 +250,12 @@ static void *coreaudio_init(const char *device,
       goto error;
 
 #ifdef OSX_PPC
-   bool existComponent  = (OpenAComponent(comp, &dev->dev) != noErr);
+   exist_component  = (OpenAComponent(comp, &dev->dev) != noErr);
 #else
-   bool existComponent = (AudioComponentInstanceNew(comp, &dev->dev) != noErr);
+   exist_component = (AudioComponentInstanceNew(comp, &dev->dev) != noErr);
 #endif
 
-   if (existComponent)
+   if (exist_component)
       goto error;
 
 #if !TARGET_OS_IPHONE

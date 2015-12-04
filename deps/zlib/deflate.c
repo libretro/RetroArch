@@ -50,7 +50,7 @@
 /* @(#) $Id$ */
 
 #include "deflate.h"
-#include <stdbool.h>
+#include <boolean.h>
 
 const char deflate_copyright[] =
 " deflate 1.2.8 Copyright 1995-2013 Jean-loup Gailly and Mark Adler ";
@@ -1684,6 +1684,7 @@ local block_state deflate_slow(deflate_state *s, int flush)
 {
    IPos hash_head;          /* head of hash chain */
    int bflush;              /* set if current block must be flushed */
+   bool check_lenght;
 
    /* Process the input block. */
    for (;;) {
@@ -1722,11 +1723,11 @@ local block_state deflate_slow(deflate_state *s, int flush)
          s->match_length = longest_match (s, hash_head);
          /* longest_match() sets match_start */
 
-         bool checkLenght = (s->match_length <= 5 && (s->strategy == Z_FILTERED)) ;
+         check_lenght = (s->match_length <= 5 && (s->strategy == Z_FILTERED)) ;
 #if TOO_FAR <= 32767
-         checkLenght = (checkLenght || (s->match_length == MIN_MATCH && s->strstart - s->match_start > TOO_FAR)) ;
+         check_lenght = (check_lenght || (s->match_length == MIN_MATCH && s->strstart - s->match_start > TOO_FAR)) ;
 #endif
-         if (checkLenght) {
+         if (check_lenght) {
 
             /* If prev_match is also MIN_MATCH, match_start is garbage
              * but we will ignore the current match anyway.

@@ -892,17 +892,18 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    unsigned header_height;
    settings_t *settings     = config_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
+   bool check_overlay;
 
    *input_mouse = MOUSE_ACTION_NONE;
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
 
-   bool checkOverlay = (!settings->menu.mouse.enable) ;
+   check_overlay = (!settings->menu.mouse.enable) ;
 #ifdef HAVE_OVERLAY
-   checkOverlay = (checkOverlay || (settings->input.overlay_enable && input_overlay_is_alive())) ;
+   check_overlay = (check_overlay || (settings->input.overlay_enable && input_overlay_is_alive())) ;
 #endif
 
-   if (checkOverlay)
+   if (check_overlay)
    {
       menu_input->mouse.wheeldown = false;
       menu_input->mouse.wheelup   = false;
@@ -1030,6 +1031,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
    int ret                  = 0;
    menu_input_t *menu_input = menu_input_get_ptr();
    settings_t *settings     = config_get_ptr();
+   bool check_overlay;
 
    if (!menu_input)
       return -1;
@@ -1037,12 +1039,12 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       return -1;
    menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
-   bool checkOverlay = (!settings->menu.pointer.enable) ;
+   check_overlay = (!settings->menu.pointer.enable) ;
 #ifdef HAVE_OVERLAY
-   checkOverlay = (checkOverlay || (settings->input.overlay_enable && input_overlay_is_alive())) ;
+   check_overlay = (check_overlay || (settings->input.overlay_enable && input_overlay_is_alive())) ;
 #endif
 
-   if (checkOverlay)
+   if (check_overlay)
       return 0;
 
    if (menu_input->pointer.pressed[0])

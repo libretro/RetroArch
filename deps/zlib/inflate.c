@@ -80,7 +80,7 @@
    * The history for versions after 1.2.0 are in ChangeLog in zlib distribution.
    */
 
-#include <stdbool.h>
+#include <boolean.h>
 #include <compat/zutil.h>
 #include "inftrees.h"
 #include "inflate.h"
@@ -614,6 +614,7 @@ int ZEXPORT inflate(z_streamp strm, int flush)
    code last;                  /* parent table entry */
    unsigned len;               /* length to copy for repeats, bits to drop */
    int ret;                    /* return code */
+   bool  directive_test;
 #ifdef GUNZIP
    unsigned char hbuf[4];      /* buffer for gzip header crc calculation */
 #endif
@@ -1177,12 +1178,12 @@ int ZEXPORT inflate(z_streamp strm, int flush)
                            UPDATE(state->check, put - out, out);
                      out = left;
 #ifdef GUNZIP
-                     bool directiveTest = ((state->flags ? hold : ZSWAP32(hold)) != state->check) ;
+                      directive_test = ((state->flags ? hold : ZSWAP32(hold)) != state->check) ;
 #else
-                     bool directiveTest = ((ZSWAP32(hold)) != state->check) ;
+                      directive_test = ((ZSWAP32(hold)) != state->check) ;
 #endif
 
-                     if (directiveTest) {
+                     if ( directive_test) {
                         strm->msg = (char *)"incorrect data check";
                         state->mode = BAD;
                         break;

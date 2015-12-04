@@ -184,6 +184,7 @@ static bool netplay_can_poll(netplay_t *netplay)
 static bool send_chunk(netplay_t *netplay)
 {
    const struct sockaddr *addr = NULL;
+   bool check_where_to_send;
 
    if (netplay->addr)
       addr = netplay->addr->ai_addr;
@@ -193,18 +194,18 @@ static bool send_chunk(netplay_t *netplay)
    if (addr)
    {
 #ifdef ANDROID
-      bool checkWhereToSend = (sendto(netplay->udp_fd, (const char*)netplay->packet_buffer,
+      check_where_to_send = (sendto(netplay->udp_fd, (const char*)netplay->packet_buffer,
                                sizeof(netplay->packet_buffer), 0, addr,
                                sizeof(struct sockaddr_in6))
                                != sizeof(netplay->packet_buffer)) ;
 #else
-      bool checkWhereToSend = (sendto(netplay->udp_fd, (const char*)netplay->packet_buffer,
+      check_where_to_send = (sendto(netplay->udp_fd, (const char*)netplay->packet_buffer,
                                sizeof(netplay->packet_buffer), 0, addr,
                                sizeof(struct sockaddr_in))
                                != sizeof(netplay->packet_buffer)) ;
 #endif
 
-      if (checkWhereToSend)
+      if (check_where_to_send)
       {
          warn_hangup();
          netplay->has_connection = false;

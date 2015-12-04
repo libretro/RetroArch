@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
-#include <stdbool.h>
+#include <boolean.h>
 
 #include <compat/fnmatch.h>
 #include <compat/strl.h>
@@ -583,14 +583,15 @@ static struct buffer parse_integer(struct buffer buff,
       struct rmsgpack_dom_value *value, const char **error)
 {
    value->type = RDT_INT;
+   bool directive_test;
 
 #ifdef _WIN32
-   bool test = (sscanf(buff.data + buff.offset, "%I64d", (signed long long*)&value->val.int_) == 0);
+   directive_test = (sscanf(buff.data + buff.offset, "%I64d", (signed long long*)&value->val.int_) == 0);
 #else
-   bool test = (sscanf(buff.data + buff.offset, "%lld", (signed long long*)&value->val.int_) == 0);
+   directive_test = (sscanf(buff.data + buff.offset, "%lld", (signed long long*)&value->val.int_) == 0);
 #endif
 
-   if(test)
+   if(directive_test)
    {
       raise_expected_number(buff.offset, error);
    }

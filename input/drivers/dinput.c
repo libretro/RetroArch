@@ -89,6 +89,9 @@ void dinput_destroy_context(void)
 
 bool dinput_init_context(void)
 {
+
+   bool directive_test;
+
    if (g_dinput_ctx)
       return true;
 
@@ -96,16 +99,16 @@ bool dinput_init_context(void)
 
    /* Who said we shouldn't have same call signature in a COM API? <_< */
 #ifdef __cplusplus
-   bool test = (FAILED(DirectInput8Create(
+   directive_test = (FAILED(DirectInput8Create(
                 GetModuleHandle(NULL), DIRECTINPUT_VERSION, IID_IDirectInput8,
                 (void**)&g_dinput_ctx, NULL)));
 #else
-   bool test = (FAILED(DirectInput8Create(
+   directive_test = (FAILED(DirectInput8Create(
                 GetModuleHandle(NULL), DIRECTINPUT_VERSION, &IID_IDirectInput8,
                 (void**)&g_dinput_ctx, NULL)));
 #endif
 
-   if (test)
+   if (directive_test)
    {
       RARCH_ERR("Failed to init DirectInput.\n");
       return false;

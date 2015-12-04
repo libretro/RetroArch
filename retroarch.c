@@ -351,6 +351,7 @@ void set_paths_redirect(const char *path)
    global_t                *global   = global_get_ptr();
    settings_t              *settings = config_get_ptr();
    rarch_system_info_t      *info    = rarch_system_info_get_ptr();
+   bool check_global_library_name_hash;
 
    uint32_t global_library_name_hash = ((global && info->info.library_name &&
             (info->info.library_name[0] != '\0'))
@@ -364,7 +365,7 @@ void set_paths_redirect(const char *path)
          global->dir.savestate,
          sizeof(current_savestate_dir));
 
-   bool check_global_library_name_hash = (global_library_name_hash != 0) ;
+   check_global_library_name_hash = (global_library_name_hash != 0) ;
 #ifdef HAVE_MENU
    check_global_library_name_hash = (check_global_library_name_hash && (global_library_name_hash != MENU_VALUE_NO_CORE)) ;
 #endif

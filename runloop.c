@@ -967,6 +967,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    rarch_system_info_t *system     = rarch_system_info_get_ptr();
    retro_input_t old_input         = last_input;
    last_input                      = input;
+   bool paused_test;
 
    if (input_driver_ctl(RARCH_INPUT_CTL_IS_FLUSHING_INPUT, NULL))
    {
@@ -1015,12 +1016,12 @@ int rarch_main_iterate(unsigned *sleep_ms)
    if (cmd.overlay_next_pressed)
       event_command(EVENT_CMD_OVERLAY_NEXT);
 
-   bool pausedTest = (!main_is_paused) ;
+   paused_test = (!main_is_paused) ;
 #ifdef HAVE_MENU
-   pausedTest = (pausedTest || menu_driver_alive()) ;
+   paused_test = (paused_test || menu_driver_alive()) ;
 #endif
 
-   if (pausedTest)
+   if (paused_test)
    {
       if (cmd.fullscreen_toggle)
          event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
