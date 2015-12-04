@@ -964,7 +964,6 @@ static INLINE int rarch_main_iterate_time_to_exit(bool quit_key_pressed)
  **/
 int rarch_main_iterate(unsigned *sleep_ms)
 {
-   int ret;
    unsigned i;
    retro_input_t trigger_input;
    event_cmd_state_t    cmd;
@@ -1077,9 +1076,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    rarch_main_iterate_linefeed_overlay(settings);
 #endif
 
-   ret = rarch_main_iterate_time_to_exit(cmd.quit_key_pressed);
-
-   if (ret != 1)
+   if (rarch_main_iterate_time_to_exit(cmd.quit_key_pressed) != 1)
    {
       frame_limit_last_time = 0.0;
       return -1;
@@ -1104,8 +1101,6 @@ int rarch_main_iterate(unsigned *sleep_ms)
          return 1;
       }
 
-      if (!input && settings->menu.pause_libretro)
-         ret = 1;
       goto end;
    }
 #endif
