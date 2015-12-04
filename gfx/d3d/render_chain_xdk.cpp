@@ -45,8 +45,7 @@ static void renderchain_set_mvp(void *data, unsigned vp_width,
 
 #if defined(_XBOX360) && defined(HAVE_HLSL)
    hlsl_set_proj_matrix(XMMatrixRotationZ(rotation * (M_PI / 2.0)));
-   if (d3d->shader && d3d->shader->set_mvp)
-      d3d->shader->set_mvp(d3d, NULL);
+   video_shader_driver_set_mvp(d3d->shader, d3d, NULL);
 #elif defined(HAVE_D3D8)
    D3DXMATRIX p_out, p_rotate, mat;
    D3DXMatrixOrthoOffCenterLH(&mat, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);
@@ -214,8 +213,8 @@ static void renderchain_set_vertices(void *data, unsigned pass,
    {
       renderchain_set_mvp(d3d, width, height, d3d->dev_rotation);
       video_shader_driver_use(d3d->shader, d3d, pass);
-      if (d3d->shader->set_params)
-         d3d->shader->set_params(d3d, vert_width, vert_height, chain->tex_w,
+      video_shader_driver_set_params(
+         d3d->shader, d3d, vert_width, vert_height, chain->tex_w,
                chain->tex_h, width, height, frame_count,
                NULL, NULL, NULL, NULL, 0);
    }
