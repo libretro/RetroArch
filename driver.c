@@ -32,11 +32,16 @@
 #include "config.h"
 #endif
 
-static driver_t g_driver;
+driver_t *driver_get_ptr(void)
+{
+   static driver_t g_driver;
+   return &g_driver;
+}
 
 void driver_free(void)
 {
-   memset(&g_driver, 0, sizeof(g_driver));
+   driver_t *driver = driver_get_ptr();
+   memset(driver, 0, sizeof(driver_t));
 }
 
 void driver_clear_state(void)
@@ -44,10 +49,6 @@ void driver_clear_state(void)
    driver_free();
 }
 
-driver_t *driver_get_ptr(void)
-{
-   return &g_driver;
-}
 
 #define HASH_LOCATION_DRIVER           0x09189689U
 #define HASH_CAMERA_DRIVER             0xf25db959U
