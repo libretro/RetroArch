@@ -64,7 +64,6 @@ static rarch_dir_list_t runloop_shader_dir;
 
 static unsigned runloop_pending_windowed_scale;
 
-static unsigned main_max_frames;
 
 
 static msg_queue_t *g_msg_queue;
@@ -366,6 +365,7 @@ bool *runloop_perfcnt_enabled(void)
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    static char runloop_fullpath[PATH_MAX_LENGTH];
+   static unsigned runloop_max_frames          = false;
    static bool runloop_set_frame_limit         = false;
    static bool runloop_paused                  = false;
    static bool runloop_idle                    = false;
@@ -379,6 +379,13 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
    switch (state)
    {
+      case RUNLOOP_CTL_IS_FRAME_COUNT_END:
+         {
+            uint64_t *frame_count         = NULL;
+            video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+            return runloop_max_frames && (*frame_count >= runloop_max_frames);
+         }
+         break;
       case RUNLOOP_CTL_SET_FRAME_LIMIT:
          runloop_set_frame_limit = true;
          break;
@@ -660,7 +667,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_idle               = false;
          runloop_paused             = false;
          runloop_slowmotion         = false;
-         main_max_frames            = 0;
+         runloop_max_frames         = 0;
          break;
       case RUNLOOP_CTL_GLOBAL_FREE:
          {
@@ -687,7 +694,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             unsigned *ptr = (unsigned*)data;
             if (!ptr)
                return false;
-            main_max_frames = *ptr;
+            runloop_max_frames = *ptr;
          }
          break;
       case RUNLOOP_CTL_IS_IDLE:
@@ -918,44 +925,38 @@ static void rarch_main_cmd_get_state(
  */
 static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
 {
-   uint64_t *frame_count         = NULL;
+   settings_t *settings          = config_get_ptr();
    rarch_system_info_t *system   = rarch_system_info_get_ptr();
-   bool shutdown_pressed         = (system && system->shutdown) || cmd->quit_key_pressed;
-   bool video_alive              = video_driver_ctl(RARCH_DISPLAY_CTL_IS_ALIVE, NULL);
-   bool movie_end                = bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL);
-   bool frame_count_end          = false;
-   
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
-   frame_count_end               = main_max_frames && (*frame_count >= main_max_frames);
+   bool time_to_exit             = (system && system->shutdown) || cmd->quit_key_pressed;
+   time_to_exit                  = time_to_exit || (video_driver_ctl(RARCH_DISPLAY_CTL_IS_ALIVE, NULL) == false);
+   time_to_exit                  = time_to_exit || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL);
+   time_to_exit                  = time_to_exit || runloop_ctl(RUNLOOP_CTL_IS_FRAME_COUNT_END, NULL);
+   time_to_exit                  = time_to_exit || runloop_ctl(RUNLOOP_CTL_IS_EXEC, NULL);
 
-   if (shutdown_pressed || frame_count_end || movie_end || !video_alive || runloop_ctl(RUNLOOP_CTL_IS_EXEC, NULL))
+   if (!time_to_exit)
+      return 1;
+
+   if (runloop_ctl(RUNLOOP_CTL_IS_EXEC, NULL))
+      runloop_ctl(RUNLOOP_CTL_UNSET_EXEC, NULL);
+
+   /* Quits out of RetroArch main loop.
+    * On special case, loads dummy core
+    * instead of exiting RetroArch completely.
+    * Aborts core shutdown if invoked.
+    */
+   if (runloop_ctl(RUNLOOP_CTL_IS_CORE_SHUTDOWN, NULL)
+         && settings->load_dummy_on_core_shutdown)
    {
-      settings_t *settings       = config_get_ptr();
+      if (!runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL))
+         return -1;
 
-      if (runloop_ctl(RUNLOOP_CTL_IS_EXEC, NULL))
-         runloop_ctl(RUNLOOP_CTL_UNSET_EXEC, NULL);
+      system->shutdown             = false;
+      runloop_ctl(RUNLOOP_CTL_UNSET_CORE_SHUTDOWN, NULL);
 
-      /* Quits out of RetroArch main loop.
-       * On special case, loads dummy core
-       * instead of exiting RetroArch completely.
-       * Aborts core shutdown if invoked.
-       */
-      if (runloop_ctl(RUNLOOP_CTL_IS_CORE_SHUTDOWN, NULL)
-            && settings->load_dummy_on_core_shutdown)
-      {
-         if (!runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL))
-            return -1;
-
-         system->shutdown             = false;
-         runloop_ctl(RUNLOOP_CTL_UNSET_CORE_SHUTDOWN, NULL);
-
-         return 0;
-      }
-
-      return -1;
+      return 0;
    }
 
-   return 1;
+   return -1;
 }
 
 /**
