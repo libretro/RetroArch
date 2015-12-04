@@ -126,6 +126,8 @@ const char *video_shader_driver_get_ident(const shader_backend_t *shader);
 
 bool video_shader_driver_mipmap_input(const shader_backend_t *shader, unsigned index);
 
+unsigned video_shader_driver_num_shaders(const shader_backend_t *shader);
+
 #ifdef __cplusplus
 }
 #endif

@@ -127,3 +127,10 @@ bool video_shader_driver_mipmap_input(const shader_backend_t *shader, unsigned i
       return false;
    return shader->mipmap_input(index);
 }
+
+unsigned video_shader_driver_num_shaders(const shader_backend_t *shader)
+{
+   if (!shader)
+      return 0;
+   return shader->num_shaders();
+}

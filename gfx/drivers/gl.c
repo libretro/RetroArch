@@ -621,16 +621,16 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
    unsigned width, height;
    struct gfx_fbo_scale scale, scale_last;
 
-   if (!gl || gl->shader->num_shaders() == 0)
+   if (!gl || video_shader_driver_num_shaders(gl->shader) == 0)
       return;
 
    video_driver_get_size(&width, &height);
 
    video_shader_scale(1, gl->shader, &scale);
-   video_shader_scale(gl->shader->num_shaders(), gl->shader, &scale_last);
+   video_shader_scale(video_shader_driver_num_shaders(gl->shader), gl->shader, &scale_last);
 
    /* we always want FBO to be at least initialized on startup for consoles */
-   if (gl->shader->num_shaders() == 1 && !scale.valid)
+   if (video_shader_driver_num_shaders(gl->shader) == 1 && !scale.valid)
       return;
 
    if (!gl_check_fbo_proc(gl))
@@ -639,7 +639,7 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
       return;
    }
 
-   gl->fbo_pass = gl->shader->num_shaders() - 1;
+   gl->fbo_pass = video_shader_driver_num_shaders(gl->shader) - 1;
    if (scale_last.valid)
       gl->fbo_pass++;
 
@@ -2581,7 +2581,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
    RARCH_LOG("[GL]: Using %u textures.\n", gl->textures);
-   RARCH_LOG("[GL]: Loaded %u program(s).\n", gl->shader->num_shaders());
+   RARCH_LOG("[GL]: Loaded %u program(s).\n", video_shader_driver_num_shaders(gl->shader));
 
    gl->tex_w = gl->tex_h = (RARCH_SCALE_BASE * video->input_scale);
    gl->keep_aspect     = video->force_aspect;
