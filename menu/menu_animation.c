@@ -53,10 +53,9 @@ struct menu_animation
 
 typedef struct menu_animation menu_animation_t;
 
-static menu_animation_t menu_animation_state;
-
 static menu_animation_t *menu_animation_get_ptr(void)
 {
+   static menu_animation_t menu_animation_state;
    return &menu_animation_state;
 }
 
@@ -392,7 +391,7 @@ void menu_animation_free(void)
 
    free(anim->list);
 
-   memset(&menu_animation_state, 0, sizeof(menu_animation_t));
+   memset(anim, 0, sizeof(menu_animation_t));
 }
 
 void menu_animation_kill_by_subject(size_t count, const void *subjects)
