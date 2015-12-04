@@ -19,8 +19,6 @@
 #include <stdint.h>
 #include <boolean.h>
 
-#include <queues/message_queue.h>
-
 #include "../runloop.h"
 
 #define MAX_TOKEN_LEN 255

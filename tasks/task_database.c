@@ -17,6 +17,8 @@
 #include <compat/strl.h>
 #include <retro_endianness.h>
 
+#include <queues/message_queue.h>
+
 #include "tasks.h"
 
 #ifdef HAVE_LIBRETRODB
