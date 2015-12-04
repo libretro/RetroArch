@@ -72,10 +72,10 @@ struct netplay
    size_t buffer_size;
 
    /* Pointer where we are now. */
-   size_t self_ptr; 
+   size_t self_ptr;
    /* Points to the last reliable state that self ever had. */
    size_t other_ptr;
-   /* Pointer to where we are reading. 
+   /* Pointer to where we are reading.
     * Generally, other_ptr <= read_ptr <= self_ptr. */
    size_t read_ptr;
    /* A temporary pointer used on replay. */
@@ -88,7 +88,7 @@ struct netplay
    /* We don't want to poll several times on a frame. */
    bool can_poll;
 
-   /* To compat UDP packet loss we also send 
+   /* To compat UDP packet loss we also send
     * old data along with the packets. */
    uint32_t packet_buffer[UDP_FRAME_PACKETS * 2];
    uint32_t frame_count;
@@ -114,7 +114,7 @@ struct netplay
    /* User flipping
     * Flipping state. If ptr >= flip_frame, we apply the flip.
     * If not, we apply the opposite, effectively creating a trigger point.
-    * To avoid collition we need to make sure our client/host is synced up 
+    * To avoid collition we need to make sure our client/host is synced up
     * well after flip_frame before allowing another flip. */
    bool flip;
    uint32_t flip_frame;
@@ -161,7 +161,7 @@ bool check_netplay_synched(netplay_t* netplay)
  * netplay_should_skip:
  * @netplay              : pointer to netplay object
  *
- * If we're fast-forward replaying to resync, check if we 
+ * If we're fast-forward replaying to resync, check if we
  * should actually show frame.
  *
  * Returns: bool (1) if we should skip this frame, otherwise
@@ -192,15 +192,19 @@ static bool send_chunk(netplay_t *netplay)
 
    if (addr)
    {
-      if (sendto(netplay->udp_fd, (const char*)netplay->packet_buffer,
-               sizeof(netplay->packet_buffer), 0, addr,
 #ifdef ANDROID
-               sizeof(struct sockaddr_in6)
+      bool checkWhereToSend = (sendto(netplay->udp_fd, (const char*)netplay->packet_buffer,
+                               sizeof(netplay->packet_buffer), 0, addr,
+                               sizeof(struct sockaddr_in6))
+                               != sizeof(netplay->packet_buffer)) ;
 #else
-               sizeof(struct sockaddr_in)
+      bool checkWhereToSend = (sendto(netplay->udp_fd, (const char*)netplay->packet_buffer,
+                               sizeof(netplay->packet_buffer), 0, addr,
+                               sizeof(struct sockaddr_in))
+                               != sizeof(netplay->packet_buffer)) ;
 #endif
-         )
-            != sizeof(netplay->packet_buffer))
+
+      if (checkWhereToSend)
       {
          warn_hangup();
          netplay->has_connection = false;
@@ -228,7 +232,7 @@ static bool get_self_input_state(netplay_t *netplay)
    {
       unsigned i;
 
-      /* First frame we always give zero input since relying on 
+      /* First frame we always give zero input since relying on
        * input from first frame screws up when we use -F 0. */
       retro_input_state_t cb = netplay->cbs.state_cb;
       for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -250,7 +254,7 @@ static bool get_self_input_state(netplay_t *netplay)
 
    memmove(netplay->packet_buffer, netplay->packet_buffer + 2,
          sizeof (netplay->packet_buffer) - 2 * sizeof(uint32_t));
-   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2] = htonl(netplay->frame_count); 
+   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2] = htonl(netplay->frame_count);
    netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2 + 1] = htonl(state);
 
    if (!send_chunk(netplay))
@@ -369,10 +373,10 @@ static int poll_input(netplay_t *netplay, bool block)
    tv.tv_usec        = block ? (RETRY_MS * 1000) : 0;
 
    do
-   { 
+   {
       fd_set fds;
       /* select() does not take pointer to const struct timeval.
-       * Technically possible for select() to modify tmp_tv, so 
+       * Technically possible for select() to modify tmp_tv, so
        * we go paranoia mode. */
       struct timeval tmp_tv = tv;
 
@@ -388,7 +392,7 @@ static int poll_input(netplay_t *netplay, bool block)
       /* Somewhat hacky,
        * but we aren't using the TCP connection for anything useful atm. */
       if (FD_ISSET(netplay->fd, &fds) && !netplay_get_cmd(netplay))
-         return -1; 
+         return -1;
 
       if (FD_ISSET(netplay->udp_fd, &fds))
          return 1;
@@ -454,7 +458,7 @@ static void simulate_input(netplay_t *netplay)
    size_t ptr  = PREV_PTR(netplay->self_ptr);
    size_t prev = PREV_PTR(netplay->read_ptr);
 
-   netplay->buffer[ptr].simulated_input_state = 
+   netplay->buffer[ptr].simulated_input_state =
       netplay->buffer[prev].real_input_state;
    netplay->buffer[ptr].is_simulated = true;
    netplay->buffer[ptr].used_real = false;
@@ -464,8 +468,8 @@ static void simulate_input(netplay_t *netplay)
  * netplay_poll:
  * @netplay              : pointer to netplay object
  *
- * Polls network to see if we have anything new. If our 
- * network buffer is full, we simply have to block 
+ * Polls network to see if we have anything new. If our
+ * network buffer is full, we simply have to block
  * for new input data.
  *
  * Returns: true (1) if successful, otherwise false (0).
@@ -482,7 +486,7 @@ static bool netplay_poll(netplay_t *netplay)
    if (!get_self_input_state(netplay))
       return false;
 
-   /* We skip reading the first frame so the host has a chance to grab 
+   /* We skip reading the first frame so the host has a chance to grab
     * our host info so we don't block forever :') */
    if (netplay->frame_count == 0)
    {
@@ -494,7 +498,7 @@ static bool netplay_poll(netplay_t *netplay)
       return true;
    }
 
-   /* We might have reached the end of the buffer, where we 
+   /* We might have reached the end of the buffer, where we
     * simply have to block. */
    res = poll_input(netplay, netplay->other_ptr == netplay->self_ptr);
    if (res == -1)
@@ -507,7 +511,7 @@ static bool netplay_poll(netplay_t *netplay)
    if (res == 1)
    {
       uint32_t first_read = netplay->read_frame_count;
-      do 
+      do
       {
          uint32_t buffer[UDP_FRAME_PACKETS * 2];
          if (!receive_data(netplay, buffer, sizeof(buffer)))
@@ -518,8 +522,8 @@ static bool netplay_poll(netplay_t *netplay)
          }
          parse_packet(netplay, buffer, UDP_FRAME_PACKETS);
 
-      } while ((netplay->read_frame_count <= netplay->frame_count) && 
-            poll_input(netplay, (netplay->other_ptr == netplay->self_ptr) && 
+      } while ((netplay->read_frame_count <= netplay->frame_count) &&
+            poll_input(netplay, (netplay->other_ptr == netplay->self_ptr) &&
                (first_read == netplay->read_frame_count)) == 1);
    }
    else
@@ -605,7 +609,7 @@ static bool netplay_flip_port(netplay_t *netplay, bool port)
 static int16_t netplay_input_state(netplay_t *netplay, bool port, unsigned device,
       unsigned idx, unsigned id)
 {
-   size_t ptr = netplay->is_replay ? 
+   size_t ptr = netplay->is_replay ?
       netplay->tmp_ptr : PREV_PTR(netplay->self_ptr);
    uint16_t curr_input_state = netplay->buffer[ptr].self_state;
 
@@ -770,7 +774,7 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
    if (!res)
       return false;
 
-   /* If "localhost" is used, it is important to check every possible 
+   /* If "localhost" is used, it is important to check every possible
     * address for IPv4/IPv6. */
    tmp_info = res;
 
@@ -871,11 +875,11 @@ static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
 /**
  * implementation_magic_value:
  *
- * Not really a hash, but should be enough to differentiate 
+ * Not really a hash, but should be enough to differentiate
  * implementations from each other.
  *
  * Subtle differences in the implementation will not be possible to spot.
- * The alternative would have been checking serialization sizes, but it 
+ * The alternative would have been checking serialization sizes, but it
  * was troublesome for cross platform compat.
  **/
 static uint32_t implementation_magic_value(void)
@@ -957,7 +961,7 @@ static bool send_info(netplay_t *netplay)
    void *sram         = NULL;
    uint32_t header[3] = {0};
    global_t *global   = global_get_ptr();
-   
+
    header[0] = htonl(global->content_crc);
    header[1] = htonl(implementation_magic_value());
    header[2] = htonl(core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM));
@@ -1188,7 +1192,7 @@ static bool init_buffers(netplay_t *netplay)
 
    netplay->buffer = (struct delta_frame*)calloc(netplay->buffer_size,
          sizeof(*netplay->buffer));
-   
+
    if (!netplay->buffer)
       return false;
 
@@ -1216,7 +1220,7 @@ static bool init_buffers(netplay_t *netplay)
  * @spectate             : If true, enable spectator mode.
  * @nick                 : Nickname of user.
  *
- * Creates a new netplay handle. A NULL host means we're 
+ * Creates a new netplay handle. A NULL host means we're
  * hosting (user 1).
  *
  * Returns: new netplay handle.
@@ -1318,7 +1322,7 @@ static bool netplay_send_raw_cmd(netplay_t *netplay, uint32_t cmd,
  * @flags                  : flags of CMD_OPT_*
  * @command_str            : name of action
  * @success_msg            : message to display upon success
- * 
+ *
  * Sends a single netplay command and waits for response.
  */
 bool netplay_command(netplay_t* netplay, enum netplay_cmd cmd,
@@ -1338,7 +1342,7 @@ bool netplay_command(netplay_t* netplay, enum netplay_cmd cmd,
    if (netplay->spectate.enabled && !allowed_spectate)
    {
       msg = "Cannot %s in spectate mode.";
-      goto error; 
+      goto error;
    }
 
    if (host_only && netplay->port == 0)
@@ -1386,7 +1390,7 @@ void netplay_flip_users(netplay_t *netplay)
       &flip_frame_net, sizeof flip_frame_net,
       CMD_OPT_HOST_ONLY | CMD_OPT_REQUIRE_SYNC,
       "flip users", "Succesfully flipped users.\n");
-   
+
    if(command)
    {
       netplay->flip       ^= true;
@@ -1431,7 +1435,7 @@ void netplay_free(netplay_t *netplay)
 }
 
 /**
- * netplay_pre_frame_net:   
+ * netplay_pre_frame_net:
  * @netplay              : pointer to netplay object
  *
  * Pre-frame for Netplay (normal version).
@@ -1493,7 +1497,7 @@ int16_t input_state_spectate_client(unsigned port, unsigned device,
 }
 
 /**
- * netplay_pre_frame_spectate:   
+ * netplay_pre_frame_spectate:
  * @netplay              : pointer to netplay object
  *
  * Pre-frame for Netplay (spectate mode version).
@@ -1591,7 +1595,7 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
 }
 
 /**
- * netplay_pre_frame:   
+ * netplay_pre_frame:
  * @netplay              : pointer to netplay object
  *
  * Pre-frame for Netplay.
@@ -1606,7 +1610,7 @@ void netplay_pre_frame(netplay_t *netplay)
 }
 
 /**
- * netplay_post_frame_net:   
+ * netplay_post_frame_net:
  * @netplay              : pointer to netplay object
  *
  * Post-frame for Netplay (normal version).
@@ -1668,7 +1672,7 @@ static void netplay_post_frame_net(netplay_t *netplay)
 }
 
 /**
- * netplay_post_frame_spectate:   
+ * netplay_post_frame_spectate:
  * @netplay              : pointer to netplay object
  *
  * Post-frame for Netplay (spectate mode version).
@@ -1707,7 +1711,7 @@ static void netplay_post_frame_spectate(netplay_t *netplay)
 }
 
 /**
- * netplay_post_frame:   
+ * netplay_post_frame:
  * @netplay              : pointer to netplay object
  *
  * Post-frame for Netplay.
