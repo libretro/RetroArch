@@ -971,7 +971,6 @@ int rarch_main_iterate(unsigned *sleep_ms)
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
    static retro_input_t last_input              = 0;
-   bool menu_toggled                            = false;
    driver_t *driver                             = driver_get_ptr();
    settings_t *settings                         = config_get_ptr();
    global_t   *global                           = global_get_ptr();
@@ -1058,9 +1057,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
       event_command(EVENT_CMD_GRAB_MOUSE_TOGGLE);
 
 #ifdef HAVE_MENU
-   menu_toggled       = cmd.menu_pressed || (global->inited.core.type == CORE_TYPE_DUMMY);
-
-   if (menu_toggled)
+   if (cmd.menu_pressed || (global->inited.core.type == CORE_TYPE_DUMMY))
    {
       if (menu_driver_alive())
       {
