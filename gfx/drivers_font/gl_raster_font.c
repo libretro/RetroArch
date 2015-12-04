@@ -492,19 +492,19 @@ static const struct font_glyph *gl_raster_font_get_glyph(
 static void gl_raster_font_flush_block(void *data)
 {
    gl_raster_t       *font       = (gl_raster_t*)data;
-   gfx_font_raster_block_t *block = font->block;
+   gfx_font_raster_block_t *block = font ? font->block : NULL;
 
-   if (font && block->carr.coords.vertices)
-   {
-      gl_raster_font_setup_viewport(font, block->fullscreen);
-      gl_raster_font_draw_vertices(font->gl, (gfx_coords_t*)&block->carr.coords);
-      gl_raster_font_restore_viewport(font->gl);
-   }
+   if (!font || !block || !block->carr.coords.vertices)
+      return;
+
+   gl_raster_font_setup_viewport(font, block->fullscreen);
+   gl_raster_font_draw_vertices(font->gl, (gfx_coords_t*)&block->carr.coords);
+   gl_raster_font_restore_viewport(font->gl);
 }
 
 static void gl_raster_font_bind_block(void *data, void *userdata)
 {
-   gl_raster_t *font = (gl_raster_t*)data;
+   gl_raster_t              *font = (gl_raster_t*)data;
    gfx_font_raster_block_t *block = (gfx_font_raster_block_t*)userdata;
 
    if (font)
