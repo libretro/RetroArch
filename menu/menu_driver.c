@@ -322,7 +322,7 @@ void menu_driver_toggle(bool latch)
    }
    else
    {
-      if (!system->shutdown)
+      if (!runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
          driver_set_nonblock_state();
 
       if (settings && settings->menu.pause_libretro)

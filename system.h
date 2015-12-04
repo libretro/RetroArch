@@ -31,7 +31,6 @@ typedef struct rarch_system_info
    struct retro_system_info info;
 
    unsigned rotation;
-   bool shutdown;
    unsigned performance_level;
 
    bool block_extract;

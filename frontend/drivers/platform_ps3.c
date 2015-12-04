@@ -81,12 +81,11 @@ static void callback_sysutil_exit(uint64_t status,
       case CELL_SYSUTIL_REQUEST_EXITGAME:
          {
             frontend_ctx_driver_t *frontend = frontend_get_ptr();
-            rarch_system_info_t *system = rarch_system_info_get_ptr();
 
-            if (system)
-               system->shutdown = true;
             if (frontend)
                frontend->shutdown = frontend_ps3_shutdown;
+
+            runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
          }
          break;
    }

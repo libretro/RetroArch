@@ -31,7 +31,6 @@
 #include "../../performance.h"
 #include "../../general.h"
 #include "../../driver.h"
-#include "../../system.h"
 
 #define MAX_TOUCH 16
 
@@ -886,7 +885,6 @@ static void android_input_poll_memcpy(void *data)
 static void android_input_poll(void *data)
 {
    int ident;
-   rarch_system_info_t     *system = rarch_system_info_get_ptr();
    struct android_app *android_app = (struct android_app*)g_android;
 
    while ((ident =
@@ -909,7 +907,7 @@ static void android_input_poll(void *data)
 
       if (android_app->destroyRequested != 0)
       {
-         system->shutdown = true;
+         runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
          return;
       }
    }
@@ -919,7 +917,6 @@ static void android_input_poll(void *data)
 
 bool android_run_events(void *data)
 {
-   rarch_system_info_t     *system = rarch_system_info_get_ptr();
    struct android_app *android_app = (struct android_app*)g_android;
 
    if (ALooper_pollOnce(-1, NULL, NULL, NULL) == LOOPER_ID_MAIN)
@@ -928,7 +925,7 @@ bool android_run_events(void *data)
    /* Check if we are exiting. */
    if (android_app->destroyRequested != 0)
    {
-      system->shutdown = true;
+      runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
       return false;
    }
 

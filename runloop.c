@@ -357,6 +357,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    static bool runloop_idle                    = false;
    static bool runloop_exec                    = false;
    static bool runloop_slowmotion              = false;
+   static bool runloop_shutdown_initiated      = false;
    static bool runloop_core_shutdown_initiated = false;
 #ifdef HAVE_THREADS
    static slock_t *runloop_msg_queue_lock      = NULL;
@@ -790,6 +791,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_CORE_SHUTDOWN:
          return runloop_core_shutdown_initiated;
+      case RUNLOOP_CTL_SET_SHUTDOWN:
+         runloop_shutdown_initiated = true;
+         break;
+      case RUNLOOP_CTL_UNSET_SHUTDOWN:
+         runloop_shutdown_initiated = false;
+         break;
+      case RUNLOOP_CTL_IS_SHUTDOWN:
+         return runloop_shutdown_initiated;
       case RUNLOOP_CTL_SET_EXEC:
          runloop_exec = true;
          break;
@@ -930,8 +939,7 @@ static void rarch_main_cmd_get_state(
 static INLINE int rarch_main_iterate_time_to_exit(bool quit_key_pressed)
 {
    settings_t *settings          = config_get_ptr();
-   rarch_system_info_t *system   = rarch_system_info_get_ptr();
-   bool time_to_exit             = (system && system->shutdown) || quit_key_pressed;
+   bool time_to_exit             = runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL) || quit_key_pressed;
    time_to_exit                  = time_to_exit || (video_driver_ctl(RARCH_DISPLAY_CTL_IS_ALIVE, NULL) == false);
    time_to_exit                  = time_to_exit || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL);
    time_to_exit                  = time_to_exit || runloop_ctl(RUNLOOP_CTL_IS_FRAME_COUNT_END, NULL);
@@ -954,7 +962,7 @@ static INLINE int rarch_main_iterate_time_to_exit(bool quit_key_pressed)
       if (!runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL))
          return -1;
 
-      system->shutdown             = false;
+      runloop_ctl(RUNLOOP_CTL_UNSET_SHUTDOWN,      NULL);
       runloop_ctl(RUNLOOP_CTL_UNSET_CORE_SHUTDOWN, NULL);
 
       return 0;

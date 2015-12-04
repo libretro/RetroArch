@@ -1336,7 +1336,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    driver_t *driver                        = driver_get_ptr();
    global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
-   rarch_system_info_t *system             = rarch_system_info_get_ptr();
 
    switch(state)
    {
@@ -1437,8 +1436,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
          break;
       case RARCH_CTL_QUIT:
-         if (global)
-            system->shutdown = true;
+         runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
          rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
          break;
       case RARCH_CTL_FORCE_QUIT:

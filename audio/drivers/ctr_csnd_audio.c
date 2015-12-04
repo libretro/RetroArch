@@ -19,7 +19,6 @@
 #include "../audio_driver.h"
 #include "../../configuration.h"
 #include "../../performance.h"
-#include "../../system.h"
 
 typedef struct
 {
@@ -240,12 +239,11 @@ static bool ctr_csnd_audio_alive(void *data)
 static bool ctr_csnd_audio_start(void *data)
 {
    ctr_csnd_audio_t* ctr = (ctr_csnd_audio_t*)data;
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    /* Prevents restarting audio when the menu
     * is toggled off on shutdown */
 
-   if (system->shutdown)
+   if (runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
       return true;
 
 #if 0

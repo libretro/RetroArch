@@ -767,7 +767,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SHUTDOWN:
          RARCH_LOG("Environ SHUTDOWN.\n");
-         system->shutdown = true;
+         runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN,      NULL);
          runloop_ctl(RUNLOOP_CTL_SET_CORE_SHUTDOWN, NULL);
          break;
 
