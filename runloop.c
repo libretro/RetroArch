@@ -972,6 +972,8 @@ int rarch_main_iterate(unsigned *sleep_ms)
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
    static retro_input_t last_input              = 0;
+   bool menu_toggled                            = false;
+   bool fullscreen_toggled                      = false;
    driver_t *driver                             = driver_get_ptr();
    settings_t *settings                         = config_get_ptr();
    global_t   *global                           = global_get_ptr();
@@ -1043,21 +1045,21 @@ int rarch_main_iterate(unsigned *sleep_ms)
    if (cmd.overlay_next_pressed)
       event_command(EVENT_CMD_OVERLAY_NEXT);
 
-   if (!runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL)
+   fullscreen_toggled = !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
 #ifdef HAVE_MENU
-         || menu_driver_alive()
+   fullscreen_toggled = fullscreen_toggled || menu_driver_alive();
 #endif
-         )
-   {
-      if (cmd.fullscreen_toggle)
-         event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
-   }
+
+   if (fullscreen_toggled && cmd.fullscreen_toggle)
+      event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
 
    if (cmd.grab_mouse_pressed)
       event_command(EVENT_CMD_GRAB_MOUSE_TOGGLE);
 
 #ifdef HAVE_MENU
-   if (cmd.menu_pressed || (global->inited.core.type == CORE_TYPE_DUMMY))
+   menu_toggled       = cmd.menu_pressed || (global->inited.core.type == CORE_TYPE_DUMMY);
+
+   if (menu_toggled)
    {
       if (menu_driver_alive())
       {
