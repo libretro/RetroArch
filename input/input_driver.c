@@ -97,15 +97,10 @@ static rarch_cmd_t *input_driver_command;
 #ifdef HAVE_NETWORK_GAMEPAD
 static rarch_remote_t *input_driver_remote;
 #endif
-static bool input_driver_keyboard_linefeed_enable;
-static bool input_driver_osk_enabled;
-static bool input_driver_data_own;
 static const input_driver_t *current_input;
 static void *current_input_data;
-static bool input_driver_flushing_input;
 static bool input_driver_block_libretro_input;
 static bool input_driver_block_hotkey;
-static bool input_driver_nonblock_state;
 static turbo_buttons_t input_driver_turbo_btns;
 
 /**
@@ -223,8 +218,8 @@ void input_driver_set(const input_driver_t **input, void **input_data)
       *input      = current_input;
       *input_data = current_input_data;
    }
-
-   input_driver_data_own = true;
+   
+   input_driver_ctl(RARCH_INPUT_CTL_SET_OWN_DRIVER, NULL);
 }
 
 void input_driver_keyboard_mapping_set_block(bool value)
@@ -486,7 +481,7 @@ int16_t input_state(unsigned port, unsigned device,
    if (settings->input.remap_binds_enable)
       input_remapping_state(port, &device, &idx, &id);
 
-   if (!input_driver_flushing_input && !input_driver_block_libretro_input)
+   if (!input_driver_ctl(RARCH_INPUT_CTL_IS_FLUSHING_INPUT, NULL) && !input_driver_block_libretro_input)
    {
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
          res = current_input->input_state(
@@ -679,7 +674,12 @@ static void input_driver_remote_init(void)
 
 bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
 {
-   settings_t               *settings = config_get_ptr();
+   static bool input_driver_osk_enabled              = false;
+   static bool input_driver_keyboard_linefeed_enable = false;
+   static bool input_driver_nonblock_state           = false;
+   static bool input_driver_flushing_input           = false;;
+   static bool input_driver_data_own                 = false;
+   settings_t               *settings                = config_get_ptr();
 
    switch (state)
    {
