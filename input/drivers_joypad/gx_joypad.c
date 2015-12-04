@@ -524,17 +524,17 @@ static void gx_joypad_poll(void)
       g_menu = false;
    }
 
-   if (*state_p1 & ((UINT64_C(1) << GX_GC_HOME)
+   bool test = (*state_p1 & (UINT64_C(1) << GX_GC_HOME) ) ;
 #ifdef HW_RVL
-            | (UINT64_C(1) << GX_WIIMOTE_HOME)
-            | (UINT64_C(1) << GX_CLASSIC_HOME)
+   test = (test | (UINT64_C(1) << GX_WIIMOTE_HOME)
+                | (UINT64_C(1) << GX_CLASSIC_HOME)) ;
 #ifdef HAVE_LIBSICKSAXIS
-            | (UINT64_C(1) << GX_SIXAXIS_PS)
+   test = (test | (UINT64_C(1) << GX_SIXAXIS_PS)) ;
 #endif
 #endif
-            ))
-    
-   BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+
+   if(test)
+      BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
 }
 
 static bool gx_joypad_init(void *data)
