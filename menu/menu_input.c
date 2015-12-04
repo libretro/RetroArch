@@ -1031,6 +1031,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
    int ret                  = 0;
    menu_input_t *menu_input = menu_input_get_ptr();
    settings_t *settings     = config_get_ptr();
+   bool check_overlay       = settings ? !settings->menu.pointer.enable : false;
 
    if (!menu_input)
       return -1;
@@ -1038,11 +1039,12 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       return -1;
    menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
-   if (!settings->menu.pointer.enable
 #ifdef HAVE_OVERLAY
-       || (settings->input.overlay_enable && input_overlay_is_alive())
+   check_overlay = check_overlay || 
+      (settings->input.overlay_enable && input_overlay_is_alive());
 #endif
-      )
+
+   if (check_overlay)
       return 0;
 
    if (menu_input->pointer.pressed[0])
