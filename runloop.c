@@ -68,7 +68,6 @@ static unsigned runloop_pending_windowed_scale;
 static char runloop_fullpath[PATH_MAX_LENGTH];
 static bool runloop_perfcnt_enable;
 static bool main_core_shutdown_initiated;
-static bool main_is_idle;
 static bool main_is_paused;
 static bool main_is_slowmotion;
 
@@ -405,6 +404,7 @@ static void rarch_main_data_clear_state(void)
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
+   static bool runloop_idle  = false;
    static bool runloop_exec  = false;
    settings_t *settings      = config_get_ptr();
 
@@ -479,7 +479,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          {
             event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
 
-            if (!cmd || main_is_idle)
+            if (!cmd || runloop_idle)
                return false;
 
             if (cmd->screenshot_pressed)
@@ -669,7 +669,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_PLAYBACK, NULL);
          break;
       case RUNLOOP_CTL_STATE_FREE:
-         main_is_idle               = false;
+         runloop_idle               = false;
          main_is_paused             = false;
          main_is_slowmotion         = false;
          frame_limit_last_time      = 0.0;
@@ -711,13 +711,13 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
          break;
       case RUNLOOP_CTL_IS_IDLE:
-         return main_is_idle;
+         return runloop_idle;
       case RUNLOOP_CTL_SET_IDLE:
          {
             bool *ptr = (bool*)data;
             if (!ptr)
                return false;
-            main_is_idle = *ptr;
+            runloop_idle = *ptr;
          }
          break;
       case RUNLOOP_CTL_IS_SLOWMOTION:
