@@ -93,7 +93,6 @@ enum
 static char current_savestate_dir[PATH_MAX_LENGTH];
 static char current_savefile_dir[PATH_MAX_LENGTH];
 
-static bool error_on_init;
 static char error_string[PATH_MAX_LENGTH];
 static jmp_buf error_sjlj_context;
 
@@ -1160,7 +1159,7 @@ int rarch_main_init(int argc, char *argv[])
       return sjlj_ret;
    }
 
-   error_on_init  = true;
+   rarch_ctl(RARCH_CTL_SET_ERROR_ON_INIT, NULL);
    retro_main_log_file_init(NULL);
    parse_input(argc, argv);
 
@@ -1241,7 +1240,7 @@ int rarch_main_init(int argc, char *argv[])
    event_command(EVENT_CMD_SAVEFILES_INIT);
    event_command(EVENT_CMD_SET_PER_GAME_RESOLUTION);
 
-   error_on_init        = false;
+   rarch_ctl(RARCH_CTL_UNSET_ERROR_ON_INIT, NULL);
    global->inited.main  = true;
    return 0;
 
@@ -1329,6 +1328,7 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
+   static bool rarch_error_on_init         = false;;
    static bool rarch_block_config_read     = false;
    static bool rarch_force_fullscreen      = false;
    driver_t *driver                        = driver_get_ptr();
@@ -1338,6 +1338,14 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
+      case RARCH_CTL_SET_ERROR_ON_INIT:
+         rarch_error_on_init = true;
+         break;
+      case RARCH_CTL_UNSET_ERROR_ON_INIT:
+         rarch_error_on_init = false;
+         break;
+      case RARCH_CTL_IS_ERROR_ON_INIT:
+         return rarch_error_on_init;
       case RARCH_CTL_SET_FORCE_FULLSCREEN:
          rarch_force_fullscreen = true;
          break;
@@ -1742,7 +1750,7 @@ void retro_fail(int error_code, const char *error)
    /* We cannot longjmp unless we're in rarch_main_init().
     * If not, something went very wrong, and we should 
     * just exit right away. */
-   retro_assert(error_on_init);
+   retro_assert(rarch_ctl(RARCH_CTL_IS_ERROR_ON_INIT, NULL));
 
    strlcpy(error_string, error, sizeof(error_string));
    longjmp(error_sjlj_context, error_code);
