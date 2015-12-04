@@ -543,7 +543,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user);
  **/
 bool config_save_file(const char *path);
 
-settings_t *config_init(void);
+bool config_realloc(void);
 
 void config_free(void);
 

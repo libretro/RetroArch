@@ -37,8 +37,55 @@
 #include "config.h"
 #endif
 
-static settings_t *g_config;
 struct defaults g_defaults;
+
+static settings_t **config_get_ptr_double(void)
+{
+   static settings_t *g_config;
+   return &g_config;
+}
+
+static void config_free_ptr(void)
+{
+   settings_t **settings = config_get_ptr_double();
+   *settings = NULL;
+}
+
+settings_t *config_get_ptr(void)
+{
+   settings_t **settings = config_get_ptr_double();
+   return *settings;
+}
+
+void config_free(void)
+{
+   settings_t *settings = config_get_ptr();
+   if (!settings)
+      return;
+
+   free(settings);
+   config_free_ptr();
+}
+
+static bool config_init(void)
+{
+   settings_t **settings = config_get_ptr_double();
+   settings_t    *config = (settings_t*)calloc(1, sizeof(settings_t));
+
+   if (!config)
+      return false;
+
+   *settings = config;
+
+   return true;
+}
+
+bool config_realloc(void)
+{
+   config_free();
+   return config_init();
+}
+
 
 /**
  * config_get_default_audio:
@@ -2857,26 +2904,3 @@ bool config_save_file(const char *path)
    return ret;
 }
 
-settings_t *config_get_ptr(void)
-{
-   return g_config;
-}
-
-void config_free(void)
-{
-   if (!g_config)
-      return;
-
-   free(g_config);
-   g_config = NULL;
-}
-
-settings_t *config_init(void)
-{
-   g_config = (settings_t*)calloc(1, sizeof(settings_t));
-
-   if (!g_config)
-      return NULL;
-
-   return g_config;
-}

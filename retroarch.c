@@ -1086,13 +1086,7 @@ static void main_init_state_config(void)
 
 void rarch_main_alloc(void)
 {
-   settings_t *settings = config_get_ptr();
-
-   if (settings)
-      config_free();
-   settings = config_init();
-
-   if (!settings)
+   if (!config_realloc())
       return;
 
    event_command(EVENT_CMD_HISTORY_DEINIT);
