@@ -923,11 +923,11 @@ static void rarch_main_cmd_get_state(
  * d) Video driver no longer alive.
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
-static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
+static INLINE int rarch_main_iterate_time_to_exit(bool quit_key_pressed)
 {
    settings_t *settings          = config_get_ptr();
    rarch_system_info_t *system   = rarch_system_info_get_ptr();
-   bool time_to_exit             = (system && system->shutdown) || cmd->quit_key_pressed;
+   bool time_to_exit             = (system && system->shutdown) || quit_key_pressed;
    time_to_exit                  = time_to_exit || (video_driver_ctl(RARCH_DISPLAY_CTL_IS_ALIVE, NULL) == false);
    time_to_exit                  = time_to_exit || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL);
    time_to_exit                  = time_to_exit || runloop_ctl(RUNLOOP_CTL_IS_FRAME_COUNT_END, NULL);
@@ -1078,7 +1078,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    rarch_main_iterate_linefeed_overlay(settings);
 #endif
 
-   ret = rarch_main_iterate_time_to_exit(&cmd);
+   ret = rarch_main_iterate_time_to_exit(cmd.quit_key_pressed);
 
    if (ret != 1)
    {
