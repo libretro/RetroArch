@@ -60,7 +60,6 @@
 
 #include "verbosity.h"
 
-
 static rarch_dir_list_t runloop_shader_dir;
 
 static unsigned runloop_pending_windowed_scale;
@@ -73,10 +72,6 @@ static retro_time_t frame_limit_minimum_time;
 
 static msg_queue_t *g_msg_queue;
 
-#ifdef HAVE_THREADS
-static slock_t *mq_lock = NULL;
-#endif
-
 global_t *global_get_ptr(void)
 {
    static struct global g_extern;
@@ -87,15 +82,11 @@ const char *rarch_main_msg_queue_pull(void)
 {
    const char *ret = NULL;
 
-#ifdef HAVE_THREADS
-   slock_lock(mq_lock);
-#endif
+   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
 
    ret = msg_queue_pull(g_msg_queue);
 
-#ifdef HAVE_THREADS
-   slock_unlock(mq_lock);
-#endif
+   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
 
    return ret;
 }
@@ -118,17 +109,13 @@ void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration
    if(!settings->video.font_enable || !g_msg_queue)
       return;
 
-#ifdef HAVE_THREADS
-   slock_lock(mq_lock);
-#endif
+   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
 
    if (flush)
       msg_queue_clear(g_msg_queue);
    msg_queue_push(g_msg_queue, msg, prio, duration);
 
-#ifdef HAVE_THREADS
-   slock_unlock(mq_lock);
-#endif
+   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
 
    if (ui_companion_is_on_foreground())
    {
@@ -143,40 +130,14 @@ static void rarch_main_msg_queue_free(void)
    if (!g_msg_queue)
       return;
 
-#ifdef HAVE_THREADS
-   slock_lock(mq_lock);
-#endif
+   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
 
    msg_queue_free(g_msg_queue);
 
-#ifdef HAVE_THREADS
-   slock_unlock(mq_lock);
-   slock_free(mq_lock);
-#endif
+   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
+   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_FREE, NULL);
 
    g_msg_queue = NULL;
-}
-
-static void rarch_main_msg_queue_init(void)
-{
-   if (g_msg_queue)
-      return;
-
-   g_msg_queue = msg_queue_new(8);
-   retro_assert(g_msg_queue);
-
-#ifdef HAVE_THREADS
-   mq_lock = slock_new();
-   retro_assert(mq_lock);
-#endif
-}
-
-static bool check_focus(settings_t *settings)
-{
-   if (settings->pause_nonactive)
-      return video_driver_ctl(RARCH_DISPLAY_CTL_IS_FOCUSED, NULL);
-
-   return true;
 }
 
 /**
@@ -412,6 +373,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    static bool runloop_exec                    = false;
    static bool runloop_slowmotion              = false;
    static bool runloop_core_shutdown_initiated = false;
+#ifdef HAVE_THREADS
+   static slock_t *runloop_msg_queue_lock      = NULL;
+#endif
    settings_t *settings                        = config_get_ptr();
 
    switch (state)
@@ -476,17 +440,19 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             strlcpy(runloop_fullpath, fullpath, sizeof(runloop_fullpath));
          }
          break;
+      case RUNLOOP_CTL_CHECK_FOCUS:
+         if (settings->pause_nonactive)
+            return video_driver_ctl(RARCH_DISPLAY_CTL_IS_FOCUSED, NULL);
+         return true;
       case RUNLOOP_CTL_CHECK_IDLE_STATE:
          {
             event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
-            bool focused = check_focus(settings);
+            bool focused              = runloop_ctl(RUNLOOP_CTL_CHECK_FOCUS, NULL);
 
             check_pause(settings, focused,
                   cmd->pause_pressed, cmd->frameadvance_pressed);
 
-            if (!runloop_ctl(RUNLOOP_CTL_CHECK_PAUSE_STATE, cmd))
-               return false;
-            if (!focused)
+            if (!runloop_ctl(RUNLOOP_CTL_CHECK_PAUSE_STATE, cmd) || !focused)
                return false;
             break;
          }
@@ -766,12 +732,36 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_PAUSED:
          return runloop_paused;
+      case RUNLOOP_CTL_MSG_QUEUE_FREE:
+#ifdef HAVE_THREADS
+         slock_free(runloop_msg_queue_lock);
+#endif
+         break;
       case RUNLOOP_CTL_MSG_QUEUE_DEINIT:
          rarch_main_msg_queue_free();
          break;
       case RUNLOOP_CTL_MSG_QUEUE_INIT:
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
-         rarch_main_msg_queue_init();
+         if (g_msg_queue)
+            return true;
+
+         g_msg_queue = msg_queue_new(8);
+         retro_assert(g_msg_queue);
+
+#ifdef HAVE_THREADS
+         runloop_msg_queue_lock = slock_new();
+         retro_assert(runloop_msg_queue_lock);
+#endif
+         break;
+      case RUNLOOP_CTL_MSG_QUEUE_LOCK:
+#ifdef HAVE_THREADS
+         slock_lock(runloop_msg_queue_lock);
+#endif
+         break;
+      case RUNLOOP_CTL_MSG_QUEUE_UNLOCK:
+#ifdef HAVE_THREADS
+         slock_unlock(runloop_msg_queue_lock);
+#endif
          break;
       case RUNLOOP_CTL_PREPARE_DUMMY:
          {
@@ -1087,7 +1077,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
 #ifdef HAVE_MENU
    if (menu_driver_alive())
    {
-      bool focused = check_focus(settings) && !ui_companion_is_on_foreground();
+      bool focused = runloop_ctl(RUNLOOP_CTL_CHECK_FOCUS, NULL) && !ui_companion_is_on_foreground();
       bool is_idle = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
 
       if (menu_driver_iterate((enum menu_action)menu_input_frame_retropad(input, trigger_input)) == -1)
