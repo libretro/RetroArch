@@ -96,14 +96,16 @@ bool dinput_init_context(void)
 
    /* Who said we shouldn't have same call signature in a COM API? <_< */
 #ifdef __cplusplus
-   if (FAILED(DirectInput8Create(
-      GetModuleHandle(NULL), DIRECTINPUT_VERSION, IID_IDirectInput8,
-      (void**)&g_dinput_ctx, NULL)))
+   bool test = (FAILED(DirectInput8Create(
+                GetModuleHandle(NULL), DIRECTINPUT_VERSION, IID_IDirectInput8,
+                (void**)&g_dinput_ctx, NULL)));
 #else
-   if (FAILED(DirectInput8Create(
-      GetModuleHandle(NULL), DIRECTINPUT_VERSION, &IID_IDirectInput8,
-      (void**)&g_dinput_ctx, NULL)))
+   bool test = (FAILED(DirectInput8Create(
+                GetModuleHandle(NULL), DIRECTINPUT_VERSION, &IID_IDirectInput8,
+                (void**)&g_dinput_ctx, NULL)));
 #endif
+
+   if (test)
    {
       RARCH_ERR("Failed to init DirectInput.\n");
       return false;
