@@ -199,18 +199,19 @@ static void *coreaudio_init(const char *device,
    AudioComponent comp;
 #endif
 #ifndef TARGET_OS_IPHONE
-   AudioChannelLayout layout = {0};
+   AudioChannelLayout layout               = {0};
 #endif
-   AURenderCallbackStruct cb = {0};
+   AURenderCallbackStruct cb               = {0};
    AudioStreamBasicDescription stream_desc = {0};
-   static bool session_initialized = false;
-   coreaudio_t *dev = NULL;
+   bool component_unavailable              = false;
+   static bool session_initialized         = false;
+   coreaudio_t *dev                        = NULL;
 #ifdef OSX_PPC
-   ComponentDescription desc = {0};
+   ComponentDescription desc               = {0};
 #else
-   AudioComponentDescription desc = {0};
+   AudioComponentDescription desc          = {0};
 #endif
-   settings_t *settings = config_get_ptr();
+   settings_t *settings                    = config_get_ptr();
 
    (void)session_initialized;
    (void)device;
@@ -249,10 +250,12 @@ static void *coreaudio_init(const char *device,
       goto error;
    
 #ifdef OSX_PPC
-   if (OpenAComponent(comp, &dev->dev) != noErr)
+   component_unavailable = (OpenAComponent(comp, &dev->dev) != noErr);
 #else
-   if (AudioComponentInstanceNew(comp, &dev->dev) != noErr)
+   component_unavailable = (AudioComponentInstanceNew(comp, &dev->dev) != noErr);
 #endif
+
+   if (component_unavailable)
       goto error;
 
 #if !TARGET_OS_IPHONE
