@@ -66,8 +66,6 @@ static unsigned runloop_pending_windowed_scale;
 
 static unsigned main_max_frames;
 
-static retro_time_t frame_limit_last_time;
-static retro_time_t frame_limit_minimum_time;
 
 static msg_queue_t *g_msg_queue;
 
@@ -368,6 +366,7 @@ bool *runloop_perfcnt_enabled(void)
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    static char runloop_fullpath[PATH_MAX_LENGTH];
+   static bool runloop_set_frame_limit         = false;
    static bool runloop_paused                  = false;
    static bool runloop_idle                    = false;
    static bool runloop_exec                    = false;
@@ -380,6 +379,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
    switch (state)
    {
+      case RUNLOOP_CTL_SET_FRAME_LIMIT:
+         runloop_set_frame_limit = true;
+         break;
+      case RUNLOOP_CTL_UNSET_FRAME_LIMIT:
+         runloop_set_frame_limit = false;
+         break;
+      case RUNLOOP_CTL_SHOULD_SET_FRAME_LIMIT:
+         return runloop_set_frame_limit;
       case RUNLOOP_CTL_SET_PERFCNT_ENABLE:
          {
             bool *perfcnt_enable = runloop_perfcnt_enabled();
@@ -653,7 +660,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_idle               = false;
          runloop_paused             = false;
          runloop_slowmotion         = false;
-         frame_limit_last_time      = 0.0;
          main_max_frames            = 0;
          break;
       case RUNLOOP_CTL_GLOBAL_FREE:
@@ -682,18 +688,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (!ptr)
                return false;
             main_max_frames = *ptr;
-         }
-         break;
-      case RUNLOOP_CTL_SET_FRAME_LIMIT_LAST_TIME:
-         {
-            struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-            float fastforward_ratio              = settings->fastforward_ratio;
-
-            if (fastforward_ratio == 0.0f)
-               fastforward_ratio = 1.0f;
-
-            frame_limit_last_time    = retro_get_time_usec();
-            frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
          }
          break;
       case RUNLOOP_CTL_IS_IDLE:
@@ -979,14 +973,29 @@ int rarch_main_iterate(unsigned *sleep_ms)
    retro_input_t trigger_input;
    event_cmd_state_t    cmd;
    retro_time_t current, target, to_sleep_ms;
-   static retro_input_t last_input = 0;
-   driver_t *driver                = driver_get_ptr();
-   settings_t *settings            = config_get_ptr();
-   global_t   *global              = global_get_ptr();
-   retro_input_t input             = input_keys_pressed();
-   rarch_system_info_t *system     = rarch_system_info_get_ptr();
-   retro_input_t old_input         = last_input;
-   last_input                      = input;
+   static retro_time_t frame_limit_minimum_time = 0.0;
+   static retro_time_t frame_limit_last_time    = 0.0;
+   static retro_input_t last_input              = 0;
+   driver_t *driver                             = driver_get_ptr();
+   settings_t *settings                         = config_get_ptr();
+   global_t   *global                           = global_get_ptr();
+   retro_input_t input                          = input_keys_pressed();
+   rarch_system_info_t *system                  = rarch_system_info_get_ptr();
+   retro_input_t old_input                      = last_input;
+   last_input                                   = input;
+
+   if (runloop_ctl(RUNLOOP_CTL_SHOULD_SET_FRAME_LIMIT, NULL))
+   {
+      struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+      float fastforward_ratio              = (settings->fastforward_ratio == 0.0f) 
+         ? 1.0f : settings->fastforward_ratio;
+
+      frame_limit_last_time    = retro_get_time_usec();
+      frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f 
+            / (av_info->timing.fps * fastforward_ratio));
+
+      runloop_ctl(RUNLOOP_CTL_UNSET_FRAME_LIMIT, NULL);
+   }
 
    if (input_driver_ctl(RARCH_INPUT_CTL_IS_FLUSHING_INPUT, NULL))
    {
@@ -1071,7 +1080,10 @@ int rarch_main_iterate(unsigned *sleep_ms)
    ret = rarch_main_iterate_time_to_exit(&cmd);
 
    if (ret != 1)
+   {
+      frame_limit_last_time = 0.0;
       return -1;
+   }
 
 
 #ifdef HAVE_MENU

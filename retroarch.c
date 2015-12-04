@@ -1131,9 +1131,8 @@ void rarch_main_free(void)
 void rarch_init_system_av_info(void)
 {
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-
    core.retro_get_system_av_info(av_info);
-   event_command(EVENT_CMD_SET_FRAME_LIMIT);
+   runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
 }
 
 /**

@@ -1597,7 +1597,7 @@ bool event_command(enum event_command cmd)
          event_set_volume(-0.5f);
          break;
       case EVENT_CMD_SET_FRAME_LIMIT:
-         runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT_LAST_TIME, NULL);
+         runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
          break;
       case EVENT_CMD_NONE:
       default:
