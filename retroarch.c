@@ -364,11 +364,12 @@ void set_paths_redirect(const char *path)
          global->dir.savestate,
          sizeof(current_savestate_dir));
 
-   if(global_library_name_hash != 0
+   bool check_global_library_name_hash = (global_library_name_hash != 0) ;
 #ifdef HAVE_MENU
-         && (global_library_name_hash != MENU_VALUE_NO_CORE)
+   check_global_library_name_hash = (check_global_library_name_hash && (global_library_name_hash != MENU_VALUE_NO_CORE)) ;
 #endif
-         )
+
+   if (check_global_library_name_hash)
    {
       /* per-core saves: append the library_name to the save location */
       if (settings->sort_savefiles_enable && global->dir.savefile[0] != '\0')
@@ -1743,7 +1744,7 @@ int rarch_info_get_capabilities(enum rarch_capabilities type, char *s, size_t le
 void retro_fail(int error_code, const char *error)
 {
    /* We cannot longjmp unless we're in rarch_main_init().
-    * If not, something went very wrong, and we should 
+    * If not, something went very wrong, and we should
     * just exit right away. */
    retro_assert(error_on_init);
 
