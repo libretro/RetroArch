@@ -1823,7 +1823,7 @@ void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
    /* Last message given to the video driver */
-   static char video_driver_current_msg[PATH_MAX_LENGTH];
+   static char video_driver_current_msg[256];
    unsigned output_width  = 0;
    unsigned output_height = 0;
    unsigned  output_pitch = 0;
