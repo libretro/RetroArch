@@ -135,6 +135,13 @@ unsigned video_shader_driver_num_shaders(const shader_backend_t *shader)
    return shader->num_shaders();
 }
 
+unsigned video_shader_driver_get_prev_textures(const shader_backend_t *shader)
+{
+   if (!shader)
+      return 0;
+   return shader->get_prev_textures();
+}
+
 bool video_shader_driver_set_coords(const shader_backend_t *shader, const void *data)
 {
    if (!shader || !shader->set_coords)

@@ -132,6 +132,8 @@ bool video_shader_driver_set_coords(const shader_backend_t *shader, const void *
 
 bool video_shader_driver_set_mvp(const shader_backend_t *shader, void *data, const math_matrix_4x4 *mat);
 
+unsigned video_shader_driver_get_prev_textures(const shader_backend_t *shader);
+
 #ifdef __cplusplus
 }
 #endif
