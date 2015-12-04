@@ -106,7 +106,7 @@ bool dinput_init_context(void)
       (void**)&g_dinput_ctx, NULL)));
 #endif
 
-   if (!context_succeeded)
+   if (!context_initialized)
       goto error;
 
    return true;
