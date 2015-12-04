@@ -1328,7 +1328,7 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
-   static bool rarch_error_on_init         = false;;
+   static bool rarch_error_on_init         = false;
    static bool rarch_block_config_read     = false;
    static bool rarch_force_fullscreen      = false;
    driver_t *driver                        = driver_get_ptr();
