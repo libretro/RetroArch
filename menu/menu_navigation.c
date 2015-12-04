@@ -46,10 +46,10 @@ typedef struct menu_navigation
    size_t selection_ptr;
 } menu_navigation_t;
 
-static menu_navigation_t menu_navigation_state;
 
 static menu_navigation_t *menu_navigation_get_ptr(void)
 {
+   static menu_navigation_t menu_navigation_state;
    return &menu_navigation_state;
 }
 
@@ -268,5 +268,6 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
 
 void menu_navigation_free(void)
 {
-   memset(&menu_navigation_state, 0, sizeof(menu_navigation_t));
+   menu_navigation_t *nav = menu_navigation_get_ptr();
+   memset(nav, 0, sizeof(menu_navigation_t));
 }
