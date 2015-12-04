@@ -511,9 +511,6 @@ static void deinit_pixel_converter(void)
 
 static bool uninit_video_input(void)
 {
-   const struct retro_hw_render_callback *hw_render = 
-      (const struct retro_hw_render_callback*)video_driver_callback();
-
    event_command(EVENT_CMD_OVERLAY_DEINIT);
 
    if (
@@ -537,14 +534,7 @@ static bool uninit_video_input(void)
    event_command(EVENT_CMD_SHADER_DIR_DEINIT);
    video_monitor_compute_fps_statistics();
 
-   if (hw_render->context_destroy && !video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL))
-      hw_render->context_destroy();
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_RGBA, NULL);
-   current_video = NULL;
-
-   if (!video_driver_ctl(RARCH_DISPLAY_CTL_OWNS_DRIVER, NULL))
-         video_driver_data = NULL;
 
    return true;
 }
@@ -1490,6 +1480,13 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          return gfx_ctx_get_video_output_next(gfx_ctx_data_get_ptr());
       case RARCH_DISPLAY_CTL_INIT:
          return init_video();
+      case RARCH_DISPLAY_CTL_DESTROY:
+         video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_RGBA, NULL);
+         current_video = NULL;
+         break;
+      case RARCH_DISPLAY_CTL_DESTROY_DATA:
+         video_driver_data = NULL;
+         break;
       case RARCH_DISPLAY_CTL_DEINIT:
          return uninit_video_input();
       case RARCH_DISPLAY_CTL_MONITOR_RESET:

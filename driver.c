@@ -41,6 +41,9 @@ driver_t *driver_get_ptr(void)
 void driver_free(void)
 {
    driver_t *driver = driver_get_ptr();
+   video_driver_ctl(RARCH_DISPLAY_CTL_DESTROY, NULL);
+   audio_driver_ctl(RARCH_AUDIO_CTL_DESTROY, NULL);
+   input_driver_ctl(RARCH_INPUT_CTL_DESTROY, NULL);
    memset(driver, 0, sizeof(driver_t));
 }
 
@@ -464,7 +467,22 @@ void uninit_drivers(int flags)
    if (flags & DRIVERS_VIDEO_INPUT)
       video_driver_ctl(RARCH_DISPLAY_CTL_DEINIT, NULL);
 
+   if (flags & DRIVER_VIDEO)
+   {
+      const struct retro_hw_render_callback *hw_render = 
+         (const struct retro_hw_render_callback*)video_driver_callback();
+
+      if (hw_render->context_destroy && !video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL))
+         hw_render->context_destroy();
+   }
+
+   if ((flags & DRIVER_VIDEO) && !video_driver_ctl(RARCH_DISPLAY_CTL_OWNS_DRIVER, NULL))
+      video_driver_ctl(RARCH_DISPLAY_CTL_DESTROY_DATA, NULL);
+
    if ((flags & DRIVER_INPUT) && !input_driver_ctl(RARCH_INPUT_CTL_OWNS_DRIVER, NULL))
-      input_driver_ctl(RARCH_INPUT_CTL_DESTROY, NULL);
+      input_driver_ctl(RARCH_INPUT_CTL_DESTROY_DATA, NULL);
+
+   if ((flags & DRIVER_AUDIO) && !audio_driver_ctl(RARCH_AUDIO_CTL_OWNS_DRIVER, NULL))
+      audio_driver_ctl(RARCH_AUDIO_CTL_DESTROY_DATA, NULL);
 }
 

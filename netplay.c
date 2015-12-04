@@ -187,7 +187,6 @@ static bool netplay_can_poll(netplay_t *netplay)
 
 static bool send_chunk(netplay_t *netplay)
 {
-   bool check_where_to_send    = false;
    const struct sockaddr *addr = NULL;
 
    if (netplay->addr)
@@ -304,7 +303,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
    if (!socket_receive_all_blocking(netplay->fd, &cmd, sizeof(cmd)))
       return false;
 
-   cmd = ntohl(cmd);
+   cmd      = ntohl(cmd);
 
    cmd_size = cmd & 0xffff;
    cmd      = cmd >> 16;

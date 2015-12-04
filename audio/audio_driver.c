@@ -269,11 +269,6 @@ static bool uninit_audio(void)
 
    compute_audio_buffer_statistics();
 
-   current_audio = NULL;
-
-   if (!audio_driver_ctl(RARCH_AUDIO_CTL_OWNS_DRIVER, NULL))
-      audio_driver_context_audio_data = NULL;
-
    return true;
 }
 
@@ -773,6 +768,12 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          break;
       case RARCH_AUDIO_CTL_INIT:
          return init_audio();
+      case RARCH_AUDIO_CTL_DESTROY:
+         current_audio = NULL;
+         break;
+      case RARCH_AUDIO_CTL_DESTROY_DATA:
+         audio_driver_context_audio_data = NULL;
+         break;
       case RARCH_AUDIO_CTL_DEINIT:
          return uninit_audio();
       case RARCH_AUDIO_CTL_SETUP_REWIND:
