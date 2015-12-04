@@ -99,7 +99,6 @@ static rarch_remote_t *input_driver_remote;
 #endif
 static const input_driver_t *current_input;
 static void *current_input_data;
-static bool input_driver_block_hotkey;
 static turbo_buttons_t input_driver_turbo_btns;
 
 /**
@@ -271,7 +270,7 @@ static retro_input_t input_driver_keys_pressed(void)
    {
       bool state = false;
       if ((!input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL) && ((key < RARCH_FIRST_META_KEY)))
-            || !input_driver_block_hotkey)
+            || !input_driver_ctl(RARCH_INPUT_CTL_IS_HOTKEY_BLOCKED, NULL))
          state = input_driver_key_pressed(key);
 
       if (key >= RARCH_FIRST_META_KEY)
@@ -546,7 +545,10 @@ static bool check_input_driver_block_hotkey(bool enable_hotkey)
 
    /* Don't block the check to RARCH_ENABLE_HOTKEY
     * unless we're really supposed to. */
-   input_driver_block_hotkey  = kb_mapping_is_blocked;
+   if (kb_mapping_is_blocked)
+      input_driver_ctl(RARCH_INPUT_CTL_SET_HOTKEY_BLOCK, NULL);
+   else
+      input_driver_ctl(RARCH_INPUT_CTL_UNSET_HOTKEY_BLOCK, NULL);
 
    /* If we haven't bound anything to this,
     * always allow hotkeys. */
@@ -558,7 +560,10 @@ static bool check_input_driver_block_hotkey(bool enable_hotkey)
       || (autoconf_bind->joykey != NO_BTN)
       || (autoconf_bind->joyaxis != AXIS_NONE);
 
-   input_driver_block_hotkey  = kb_mapping_is_blocked || (use_hotkey_enable && !enable_hotkey);
+   if (kb_mapping_is_blocked || (use_hotkey_enable && !enable_hotkey))
+      input_driver_ctl(RARCH_INPUT_CTL_SET_HOTKEY_BLOCK, NULL);
+   else
+      input_driver_ctl(RARCH_INPUT_CTL_UNSET_HOTKEY_BLOCK, NULL);
 
    /* If we hold ENABLE_HOTKEY button, block all libretro input to allow
     * hotkeys to be bound to same keys as RetroPad. */
@@ -677,6 +682,7 @@ static void input_driver_remote_init(void)
 
 bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
 {
+   static bool input_driver_block_hotkey             = false;
    static bool input_driver_block_libretro_input     = false;
    static bool input_driver_osk_enabled              = false;
    static bool input_driver_keyboard_linefeed_enable = false;
@@ -756,6 +762,14 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          break;
       case RARCH_INPUT_CTL_IS_FLUSHING_INPUT:
          return input_driver_flushing_input;
+      case RARCH_INPUT_CTL_SET_HOTKEY_BLOCK:
+         input_driver_block_hotkey = true;
+         break;
+      case RARCH_INPUT_CTL_UNSET_HOTKEY_BLOCK:
+         input_driver_block_hotkey = false;
+         break;
+      case RARCH_INPUT_CTL_IS_HOTKEY_BLOCKED:
+         return input_driver_block_hotkey;
       case RARCH_INPUT_CTL_SET_LIBRETRO_INPUT_BLOCKED:
          input_driver_block_libretro_input = true;
          break;
