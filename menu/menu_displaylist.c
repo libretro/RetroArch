@@ -56,8 +56,11 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
    int i, j = 0;
    char *line_start = buf;
 
-   if (!buf)
+   if (!buf || !buf_size)
+   {
       menu_entries_push(list, "No entries to display.", "", MENU_FILE_NONE, 0, 0);
+      return;
+   }
 
    for (i = 0; i < buf_size; i++)
    {
