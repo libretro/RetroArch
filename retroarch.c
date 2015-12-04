@@ -93,8 +93,6 @@ enum
 static char current_savestate_dir[PATH_MAX_LENGTH];
 static char current_savefile_dir[PATH_MAX_LENGTH];
 
-static bool rarch_block_config_read;
-static bool rarch_force_fullscreen;
 static bool error_on_init;
 static char error_string[PATH_MAX_LENGTH];
 static jmp_buf error_sjlj_context;
@@ -1055,7 +1053,7 @@ static bool init_state(void)
    video_driver_ctl(RARCH_DISPLAY_CTL_SET_ACTIVE, NULL);
    audio_driver_ctl(RARCH_AUDIO_CTL_SET_ACTIVE, NULL);
 
-   rarch_force_fullscreen = false;
+   rarch_ctl(RARCH_CTL_UNSET_FORCE_FULLSCREEN, NULL);
 
    return true;
 }
@@ -1337,15 +1335,20 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
-   driver_t *driver     = driver_get_ptr();
-   global_t *global     = global_get_ptr();
-   settings_t *settings = config_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   static bool rarch_block_config_read     = false;
+   static bool rarch_force_fullscreen      = false;
+   driver_t *driver                        = driver_get_ptr();
+   global_t *global                        = global_get_ptr();
+   settings_t *settings                    = config_get_ptr();
+   rarch_system_info_t *system             = rarch_system_info_get_ptr();
 
    switch(state)
    {
       case RARCH_CTL_SET_FORCE_FULLSCREEN:
          rarch_force_fullscreen = true;
+         break;
+      case RARCH_CTL_UNSET_FORCE_FULLSCREEN:
+         rarch_force_fullscreen = false;
          break;
       case RARCH_CTL_IS_FORCE_FULLSCREEN:
          return rarch_force_fullscreen;
