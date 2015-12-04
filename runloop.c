@@ -977,7 +977,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    retro_input_t trigger_input;
    event_cmd_state_t    cmd;
    retro_time_t current, target, to_sleep_ms;
-   static retro_usec_t frame_time_last;
+   static retro_usec_t frame_time_last          = 0;
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
    static retro_input_t last_input              = 0;
