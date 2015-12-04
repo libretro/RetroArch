@@ -66,7 +66,6 @@ static rarch_dir_list_t runloop_shader_dir;
 static unsigned runloop_pending_windowed_scale;
 static char runloop_fullpath[PATH_MAX_LENGTH];
 static bool main_core_shutdown_initiated;
-static bool main_is_paused;
 
 static unsigned main_max_frames;
 
@@ -197,10 +196,10 @@ static bool check_pause(settings_t *settings,
 {
    static bool old_focus    = true;
    enum event_command cmd   = EVENT_CMD_NONE;
-   bool old_is_paused       = main_is_paused;
+   bool old_is_paused       = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
 
    /* FRAMEADVANCE will set us into pause mode. */
-   pause_pressed |= !main_is_paused && frameadvance_pressed;
+   pause_pressed |= !old_is_paused && frameadvance_pressed;
 
    if (focus && pause_pressed)
       cmd = EVENT_CMD_PAUSE_TOGGLE;
@@ -214,7 +213,7 @@ static bool check_pause(settings_t *settings,
    if (cmd != EVENT_CMD_NONE)
       event_command(cmd);
 
-   if (main_is_paused == old_is_paused)
+   if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) == old_is_paused)
       return false;
 
    return true;
@@ -409,6 +408,7 @@ bool *runloop_perfcnt_enabled(void)
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
+   static bool runloop_paused     = false;
    static bool runloop_idle       = false;
    static bool runloop_exec       = false;
    static bool runloop_slowmotion = false;
@@ -580,7 +580,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             check_is_oneshot     = cmd->frameadvance_pressed || cmd->rewind_pressed;
 
-            if (!main_is_paused)
+            if (!runloop_paused)
                return true;
 
             if (cmd->fullscreen_toggle)
@@ -685,7 +685,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_STATE_FREE:
          runloop_idle               = false;
-         main_is_paused             = false;
+         runloop_paused             = false;
          runloop_slowmotion         = false;
          frame_limit_last_time      = 0.0;
          main_max_frames            = 0;
@@ -761,11 +761,11 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             bool *ptr = (bool*)data;
             if (!ptr)
                return false;
-            main_is_paused = *ptr;
+            runloop_paused = *ptr;
          }
          break;
       case RUNLOOP_CTL_IS_PAUSED:
-         return main_is_paused;
+         return runloop_paused;
       case RUNLOOP_CTL_MSG_QUEUE_DEINIT:
          rarch_main_msg_queue_free();
          break;
@@ -1003,7 +1003,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
 
          /* If core was paused before entering menu, evoke
           * pause toggle to wake it up. */
-         if (main_is_paused)
+         if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
             BIT64_SET(input, RARCH_PAUSE_TOGGLE);
          input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
       }
@@ -1017,7 +1017,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
       bool is_slowmotion;
       retro_time_t current     = retro_get_time_usec();
       retro_time_t delta       = current - system->frame_time_last;
-      bool is_locked_fps       = (main_is_paused || 
+      bool is_locked_fps       = (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ||
             input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL)) |
          !!driver->recording_data;
 
@@ -1043,7 +1043,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    if (cmd.overlay_next_pressed)
       event_command(EVENT_CMD_OVERLAY_NEXT);
 
-   if (!main_is_paused
+   if (!runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL)
 #ifdef HAVE_MENU
          || menu_driver_alive()
 #endif
