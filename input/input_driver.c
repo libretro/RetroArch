@@ -99,7 +99,6 @@ static rarch_remote_t *input_driver_remote;
 #endif
 static const input_driver_t *current_input;
 static void *current_input_data;
-static bool input_driver_block_libretro_input;
 static bool input_driver_block_hotkey;
 static turbo_buttons_t input_driver_turbo_btns;
 
@@ -271,7 +270,7 @@ static retro_input_t input_driver_keys_pressed(void)
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
    {
       bool state = false;
-      if ((!input_driver_block_libretro_input && ((key < RARCH_FIRST_META_KEY)))
+      if ((!input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL) && ((key < RARCH_FIRST_META_KEY)))
             || !input_driver_block_hotkey)
          state = input_driver_key_pressed(key);
 
@@ -481,7 +480,8 @@ int16_t input_state(unsigned port, unsigned device,
    if (settings->input.remap_binds_enable)
       input_remapping_state(port, &device, &idx, &id);
 
-   if (!input_driver_ctl(RARCH_INPUT_CTL_IS_FLUSHING_INPUT, NULL) && !input_driver_block_libretro_input)
+   if (!input_driver_ctl(RARCH_INPUT_CTL_IS_FLUSHING_INPUT, NULL) 
+         && !input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL))
    {
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
          res = current_input->input_state(
@@ -590,8 +590,11 @@ retro_input_t input_keys_pressed(void)
       return 0;
 
    input_driver_turbo_btns.count++;
-   input_driver_block_libretro_input = 
-      check_input_driver_block_hotkey(input_driver_key_pressed(RARCH_ENABLE_HOTKEY));
+   
+   if (check_input_driver_block_hotkey(input_driver_key_pressed(RARCH_ENABLE_HOTKEY)))
+      input_driver_ctl(RARCH_INPUT_CTL_SET_LIBRETRO_INPUT_BLOCKED, NULL);
+   else
+      input_driver_ctl(RARCH_INPUT_CTL_UNSET_LIBRETRO_INPUT_BLOCKED, NULL);
 
    for (i = 0; i < settings->input.max_users; i++)
    {
@@ -603,7 +606,7 @@ retro_input_t input_keys_pressed(void)
       input_driver_turbo_btns.frame_enable[i] = 0;
    }
 
-   if (!input_driver_block_libretro_input)
+   if (!input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL))
    {
       for (i = 0; i < settings->input.max_users; i++)
          input_driver_turbo_btns.frame_enable[i] = input_driver_state(binds,
@@ -674,6 +677,7 @@ static void input_driver_remote_init(void)
 
 bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
 {
+   static bool input_driver_block_libretro_input     = false;
    static bool input_driver_osk_enabled              = false;
    static bool input_driver_keyboard_linefeed_enable = false;
    static bool input_driver_nonblock_state           = false;
