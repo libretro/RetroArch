@@ -346,7 +346,8 @@ static int16_t WPAD_StickY(WPADData *data, u8 right)
 static void gx_joypad_poll(void)
 {
    unsigned i, j, port;
-   uint8_t gcpad    = 0;
+   uint64_t *state_p1  = NULL;
+   uint8_t gcpad       = 0;
 
    pad_state[0] = 0;
    pad_state[1] = 0;
@@ -514,8 +515,7 @@ static void gx_joypad_poll(void)
                analog_state[port][i][j] = -0x7fff;
    }
 
-   uint64_t *state_p1 = &pad_state[0];
-
+   state_p1 = &pad_state[0];
 
    BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
    if (g_menu)
@@ -524,17 +524,17 @@ static void gx_joypad_poll(void)
       g_menu = false;
    }
 
-   if (*state_p1 & ((UINT64_C(1) << GX_GC_HOME)
+   check_menu_toggle = (*state_p1 & (UINT64_C(1) << GX_GC_HOME));
 #ifdef HW_RVL
-            | (UINT64_C(1) << GX_WIIMOTE_HOME)
-            | (UINT64_C(1) << GX_CLASSIC_HOME)
+   check_menu_toggle = (check_menu_toggle| (UINT64_C(1) << GX_WIIMOTE_HOME)
+         | (UINT64_C(1) << GX_CLASSIC_HOME));
 #ifdef HAVE_LIBSICKSAXIS
-            | (UINT64_C(1) << GX_SIXAXIS_PS)
+   check_menu_toggle = (check_menu_toggle | (UINT64_C(1) << GX_SIXAXIS_PS));
 #endif
 #endif
-            ))
-    
-   BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+
+   if (check_menu_toggle)
+      BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
 }
 
 static bool gx_joypad_init(void *data)
