@@ -1032,14 +1032,12 @@ bool video_monitor_fps_statistics(double *refresh_rate,
 bool video_monitor_get_fps(char *buf, size_t size,
       char *buf_fps, size_t size_fps)
 {
-   retro_time_t        new_time;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   retro_time_t        new_time  = retro_get_time_usec();
+   rarch_system_info_t *system   = rarch_system_info_get_ptr();
 
    *buf = '\0';
-
-   new_time = retro_get_time_usec();
 
    if (video_driver_frame_count)
    {
