@@ -581,23 +581,28 @@ static struct buffer parse_string(struct buffer buff,
 static struct buffer parse_integer(struct buffer buff,
       struct rmsgpack_dom_value *value, const char **error)
 {
+   bool test   = false;
+
    value->type = RDT_INT;
 
 #ifdef _WIN32
-   if (sscanf(buff.data + buff.offset,
+   test        = (sscanf(buff.data + buff.offset,
             "%I64d",
-            (signed long long*)&value->val.int_) == 0)
+            (signed long long*)&value->val.int_) == 0);
 #else
-   if (sscanf(buff.data + buff.offset,
+   test        = (sscanf(buff.data + buff.offset,
             "%lld",
-            (signed long long*)&value->val.int_) == 0)
+            (signed long long*)&value->val.int_) == 0);
 #endif
+
+   if (test)
       raise_expected_number(buff.offset, error);
    else
    {
       while (isdigit((int)buff.data[buff.offset]))
          buff.offset++;
    }
+
    return buff;
 }
 
