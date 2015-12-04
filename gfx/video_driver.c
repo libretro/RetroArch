@@ -611,14 +611,16 @@ static bool init_video_pixel_converter(unsigned size)
    return true;
 
 error:
-   if (video_driver_scaler_ptr->scaler_out)
-      free(video_driver_scaler_ptr->scaler_out);
-   if (video_driver_scaler_ptr->scaler)
-      free(video_driver_scaler_ptr->scaler);
    if (video_driver_scaler_ptr)
-      free(video_driver_scaler_ptr);
+   {
+      if (video_driver_scaler_ptr->scaler_out)
+         free(video_driver_scaler_ptr->scaler_out);
+      if (video_driver_scaler_ptr->scaler)
+         free(video_driver_scaler_ptr->scaler);
 
-   video_driver_scaler_ptr = NULL;
+      free(video_driver_scaler_ptr);
+      video_driver_scaler_ptr = NULL;
+   }
 
    return false;
 }

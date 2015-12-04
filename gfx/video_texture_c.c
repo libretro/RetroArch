@@ -242,8 +242,10 @@ unsigned video_texture_load(void *data,
 static void video_texture_gl_unload(uintptr_t *id)
 {
    if (id)
+   {
       glDeleteTextures(1, (const GLuint*)id);
-   *id = 0;
+      *id = 0;
+   }
 }
 #endif
 
