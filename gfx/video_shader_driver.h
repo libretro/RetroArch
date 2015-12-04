@@ -25,7 +25,6 @@
 #endif
 
 #include "video_context_driver.h"
-#include "../rewind.h"
 
 #ifdef __cplusplus
 extern "C" {

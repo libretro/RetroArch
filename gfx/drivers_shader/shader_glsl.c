@@ -25,6 +25,7 @@
 #include "../video_state_tracker.h"
 #include "../../dynamic.h"
 #include "../../file_ops.h"
+#include "../../rewind.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
