@@ -67,7 +67,6 @@ static rarch_dir_list_t runloop_shader_dir;
 static unsigned runloop_pending_windowed_scale;
 static char runloop_fullpath[PATH_MAX_LENGTH];
 static bool runloop_perfcnt_enable;
-static bool main_exec;
 static bool main_core_shutdown_initiated;
 static bool main_is_idle;
 static bool main_is_paused;
@@ -406,7 +405,8 @@ static void rarch_main_data_clear_state(void)
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
-   settings_t *settings  = config_get_ptr();
+   static bool runloop_exec  = false;
+   settings_t *settings      = config_get_ptr();
 
    switch (state)
    {
@@ -771,8 +771,13 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          main_core_shutdown_initiated = true;
          break;
       case RUNLOOP_CTL_SET_EXEC:
-         main_exec = true;
+         runloop_exec = true;
          break;
+      case RUNLOOP_CTL_UNSET_EXEC:
+         runloop_exec = false;
+         break;
+      case RUNLOOP_CTL_IS_EXEC:
+         return runloop_exec;
       case RUNLOOP_CTL_DATA_DEINIT:
          rarch_task_deinit();
          break;
@@ -914,12 +919,12 @@ static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
    video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
    frame_count_end               = main_max_frames && (*frame_count >= main_max_frames);
 
-   if (shutdown_pressed || frame_count_end || movie_end || !video_alive || main_exec)
+   if (shutdown_pressed || frame_count_end || movie_end || !video_alive || runloop_ctl(RUNLOOP_CTL_IS_EXEC, NULL))
    {
       settings_t *settings       = config_get_ptr();
 
-      if (main_exec)
-         main_exec = false;
+      if (runloop_ctl(RUNLOOP_CTL_IS_EXEC, NULL))
+         runloop_ctl(RUNLOOP_CTL_UNSET_EXEC, NULL);
 
       /* Quits out of RetroArch main loop.
        * On special case, loads dummy core
