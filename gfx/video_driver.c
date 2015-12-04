@@ -337,7 +337,7 @@ const video_poke_interface_t *video_driver_get_poke(void)
  **/
 uintptr_t video_driver_get_current_framebuffer(void)
 {
-   if (video_driver_poke->get_current_framebuffer)
+   if (video_driver_poke && video_driver_poke->get_current_framebuffer)
       return video_driver_poke->get_current_framebuffer(video_driver_data);
    return 0;
 }
@@ -345,7 +345,7 @@ uintptr_t video_driver_get_current_framebuffer(void)
 
 retro_proc_address_t video_driver_get_proc_address(const char *sym)
 {
-   if (video_driver_poke->get_proc_address)
+   if (video_driver_poke && video_driver_poke->get_proc_address)
       return video_driver_poke->get_proc_address(video_driver_data, sym);
    return NULL;
 }
@@ -820,7 +820,7 @@ bool video_driver_set_rotation(unsigned rotation)
 bool video_driver_set_video_mode(unsigned width,
       unsigned height, bool fullscreen)
 {
-   if (video_driver_poke->set_video_mode)
+   if (video_driver_poke && video_driver_poke->set_video_mode)
    {
       video_driver_poke->set_video_mode(video_driver_data, width, height, fullscreen);
       return true;
@@ -831,7 +831,7 @@ bool video_driver_set_video_mode(unsigned width,
 
 bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
 {
-   if (video_driver_poke->get_video_output_size)
+   if (video_driver_poke && video_driver_poke->get_video_output_size)
    {
       video_driver_poke->get_video_output_size(video_driver_data, width, height);
       return true;
@@ -844,14 +844,14 @@ bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
 void video_driver_set_osd_msg(const char *msg,
       const struct font_params *params, void *font)
 {
-   if (video_driver_poke->set_osd_msg)
+   if (video_driver_poke && video_driver_poke->set_osd_msg)
       video_driver_poke->set_osd_msg(video_driver_data, msg, params, font);
 }
 
 void video_driver_set_texture_enable(bool enable, bool fullscreen)
 {
 #ifdef HAVE_MENU
-   if (video_driver_poke->set_texture_enable)
+   if (video_driver_poke && video_driver_poke->set_texture_enable)
       video_driver_poke->set_texture_enable(video_driver_data, enable, fullscreen);
 #endif
 }
@@ -860,7 +860,7 @@ void video_driver_set_texture_frame(const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
 #ifdef HAVE_MENU
-   if (video_driver_poke->set_texture_frame)
+   if (video_driver_poke && video_driver_poke->set_texture_frame)
       video_driver_poke->set_texture_frame(video_driver_data, frame, rgb32, width, height, alpha);
 #endif
 }
@@ -899,7 +899,7 @@ void *video_driver_read_frame_raw(unsigned *width,
 
 void video_driver_set_filtering(unsigned index, bool smooth)
 {
-   if (video_driver_poke->set_filtering)
+   if (video_driver_poke && video_driver_poke->set_filtering)
       video_driver_poke->set_filtering(video_driver_data, index, smooth);
 }
 
@@ -1476,6 +1476,9 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
       case RARCH_DISPLAY_CTL_SUPPORTS_RGBA:
          return video_driver_use_rgba;
       case RARCH_DISPLAY_CTL_GET_NEXT_VIDEO_OUT:
+         if (!video_driver_poke)
+            return false;
+
          if (video_driver_poke->get_video_output_next)
          {
             video_driver_poke->get_video_output_next(video_driver_data);
@@ -1483,6 +1486,9 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          }
          return gfx_ctx_get_video_output_next(gfx_ctx_data_get_ptr());
       case RARCH_DISPLAY_CTL_GET_PREV_VIDEO_OUT:
+         if (!video_driver_poke)
+            return false;
+
          if (video_driver_poke->get_video_output_prev)
          {
             video_driver_poke->get_video_output_prev(video_driver_data);
@@ -1500,11 +1506,14 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          video_monitor_adjust_system_rates();
          return true;
       case RARCH_DISPLAY_CTL_SET_ASPECT_RATIO:
-         if (!video_driver_poke->set_aspect_ratio)
+         if (!video_driver_poke || !video_driver_poke->set_aspect_ratio)
             return false;
          video_driver_poke->set_aspect_ratio(video_driver_data, settings->video.aspect_ratio_idx);
          return true;
       case RARCH_DISPLAY_CTL_SHOW_MOUSE:
+         if (!video_driver_poke)
+            return false;
+
          {
             bool *toggle                  = (bool*)data;
 
@@ -1526,6 +1535,8 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
       case RARCH_DISPLAY_CTL_FIND_DRIVER:
          return find_video_driver();
       case RARCH_DISPLAY_CTL_APPLY_STATE_CHANGES:
+         if (!video_driver_poke)
+            return false;
          if (video_driver_poke->apply_state_changes)
             video_driver_poke->apply_state_changes(video_driver_data);
          return true;
