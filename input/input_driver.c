@@ -677,7 +677,7 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
    static bool input_driver_osk_enabled              = false;
    static bool input_driver_keyboard_linefeed_enable = false;
    static bool input_driver_nonblock_state           = false;
-   static bool input_driver_flushing_input           = false;;
+   static bool input_driver_flushing_input           = false;
    static bool input_driver_data_own                 = false;
    settings_t               *settings                = config_get_ptr();
 
