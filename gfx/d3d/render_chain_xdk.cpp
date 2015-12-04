@@ -213,8 +213,7 @@ static void renderchain_set_vertices(void *data, unsigned pass,
    if (d3d->shader)
    {
       renderchain_set_mvp(d3d, width, height, d3d->dev_rotation);
-      if (d3d->shader->use)
-         d3d->shader->use(d3d, pass);
+      video_shader_driver_use(d3d->shader, d3d, pass);
       if (d3d->shader->set_params)
          d3d->shader->set_params(d3d, vert_width, vert_height, chain->tex_w,
                chain->tex_h, width, height, frame_count,

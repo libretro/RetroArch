@@ -106,3 +106,10 @@ void video_shader_driver_deinit(const shader_backend_t *shader)
       return;
    shader->deinit();
 }
+
+void video_shader_driver_use(const shader_backend_t *shader, void *data, unsigned index)
+{
+   if (!shader)
+      return;
+   shader->use(data, index);
+}

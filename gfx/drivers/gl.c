@@ -448,7 +448,7 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 
    mag_filter = min_filter_to_mag(min_filter);
 
-   wrap = gl->shader->wrap_type(i + 2);
+   wrap      = gl->shader->wrap_type(i + 2);
    wrap_enum = gl_wrap_type_to_enum(wrap);
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
@@ -1101,7 +1101,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
 
       glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
 
-      gl->shader->use(gl, i + 1);
+      video_shader_driver_use(gl->shader, gl, i + 1);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
       if (gl->shader->mipmap_input(i + 1))
@@ -1147,7 +1147,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
 
    /* Render our FBO texture to back buffer. */
    gl_bind_backbuffer();
-   gl->shader->use(gl, gl->fbo_pass + 1);
+   video_shader_driver_use(gl->shader, gl, gl->fbo_pass + 1);
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
@@ -1531,7 +1531,7 @@ static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned shader)
 
    video_driver_get_size(&width, &height);
 
-   gl->shader->use(gl, shader);
+   video_shader_driver_use(gl->shader, gl, shader);
    gl_set_viewport(gl, width, height, false, true);
 }
 
@@ -1603,7 +1603,7 @@ static INLINE void gl_draw_texture(gl_t *gl)
    gl->coords.color     = color;
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
-   gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+   video_shader_driver_use(gl->shader, gl, GL_SHADER_STOCK_BLEND);
    gl->coords.vertices  = 4;
    gl->shader->set_coords(&gl->coords);
    gl->shader->set_mvp(gl, &gl->mvp_no_rot);
@@ -1653,7 +1653,7 @@ static bool gl_frame(void *data, const void *frame,
       glBindVertexArray(gl->vao);
 #endif
 
-   gl->shader->use(gl, 1);
+   video_shader_driver_use(gl->shader, gl, 1);
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
@@ -1812,7 +1812,7 @@ static bool gl_frame(void *data, const void *frame,
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
    {
-      gl->shader->use(gl, 0);
+      video_shader_driver_use(gl->shader, gl, 0);
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
       gl_disable_client_arrays(gl);
@@ -3241,7 +3241,8 @@ static void gl_render_overlay(void *data)
       glViewport(0, 0, width, height);
 
    /* Ensure that we reset the attrib array. */
-   gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+   video_shader_driver_use(gl->shader, gl, GL_SHADER_STOCK_BLEND);
+
    gl->coords.vertex    = gl->overlay_vertex_coord;
    gl->coords.tex_coord = gl->overlay_tex_coord;
    gl->coords.color     = gl->overlay_color_coord;
