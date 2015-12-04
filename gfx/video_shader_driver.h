@@ -134,6 +134,24 @@ bool video_shader_driver_set_mvp(const shader_backend_t *shader, void *data, con
 
 unsigned video_shader_driver_get_prev_textures(const shader_backend_t *shader);
 
+bool video_shader_driver_filter_type(const shader_backend_t *shader, unsigned index, bool *smooth);
+
+enum gfx_wrap_type video_shader_driver_wrap_type(const shader_backend_t *shader, unsigned index);
+
+bool video_shader_driver_get_feedback_pass(const shader_backend_t *shader, unsigned *pass);
+
+struct video_shader *video_shader_driver_direct_get_current_shader(const shader_backend_t *shader);
+
+void video_shader_driver_set_params(const shader_backend_t *shader, 
+      void *data, unsigned width, unsigned height, 
+      unsigned tex_width, unsigned tex_height, 
+      unsigned out_width, unsigned out_height,
+      unsigned frame_counter,
+      const void *info, 
+      const void *prev_info,
+      const void *feedback_info,
+      const void *fbo_info, unsigned fbo_info_cnt);
+
 #ifdef __cplusplus
 }
 #endif

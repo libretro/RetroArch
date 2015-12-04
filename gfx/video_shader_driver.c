@@ -155,3 +155,46 @@ bool video_shader_driver_set_mvp(const shader_backend_t *shader, void *data, con
       return false;
    return shader->set_mvp(data, mat);
 }
+
+bool video_shader_driver_filter_type(const shader_backend_t *shader, unsigned index, bool *smooth)
+{
+   if (!shader || !shader->filter_type)
+      return false;
+   return shader->filter_type(index, smooth);
+}
+
+enum gfx_wrap_type video_shader_driver_wrap_type(const shader_backend_t *shader, unsigned index)
+{
+   return shader->wrap_type(index);
+}
+
+bool video_shader_driver_get_feedback_pass(const shader_backend_t *shader, unsigned *pass)
+{
+   if (!shader || !shader->get_feedback_pass)
+      return false;
+   return shader->get_feedback_pass(pass);
+}
+
+struct video_shader *video_shader_driver_direct_get_current_shader(const shader_backend_t *shader)
+{
+   if (!shader || !shader->get_current_shader)
+      return NULL;
+   return shader->get_current_shader();
+}
+
+void video_shader_driver_set_params(const shader_backend_t *shader, 
+      void *data, unsigned width, unsigned height, 
+      unsigned tex_width, unsigned tex_height, 
+      unsigned out_width, unsigned out_height,
+      unsigned frame_counter,
+      const void *info, 
+      const void *prev_info,
+      const void *feedback_info,
+      const void *fbo_info, unsigned fbo_info_cnt)
+{
+   if (!shader || !shader->set_params)
+      return NULL;
+   return shader->set_params(data, width, height, tex_width, tex_height,
+         out_width, out_height, frame_counter, info, prev_info, feedback_info,
+         fbo_info, fbo_info_cnt);
+}

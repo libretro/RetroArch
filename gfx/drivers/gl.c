@@ -439,7 +439,7 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
    mipmapped  = video_shader_driver_mipmap_input(gl->shader, i + 2);
    min_filter = mipmapped ? base_mip_filt : base_filt;
 
-   if (gl->shader->filter_type(i + 2, &smooth))
+   if (video_shader_driver_filter_type(gl->shader, i + 2, &smooth))
    {
       min_filter = mipmapped ? (smooth ? 
             GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
@@ -448,7 +448,7 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 
    mag_filter = min_filter_to_mag(min_filter);
 
-   wrap      = gl->shader->wrap_type(i + 2);
+   wrap      = video_shader_driver_wrap_type(gl->shader, i + 2);
    wrap_enum = gl_wrap_type_to_enum(wrap);
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
@@ -676,7 +676,7 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
             gl->fbo_rect[i].width, gl->fbo_rect[i].height);
    }
 
-   gl->fbo_feedback_enable = gl->shader->get_feedback_pass(&gl->fbo_feedback_pass);
+   gl->fbo_feedback_enable = video_shader_driver_get_feedback_pass(gl->shader, &gl->fbo_feedback_pass);
 
    if (gl->fbo_feedback_enable && gl->fbo_feedback_pass < (unsigned)gl->fbo_pass)
    {
@@ -1111,7 +1111,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
 
       /* Render to FBO with certain size. */
       gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
-      gl->shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
+      video_shader_driver_set_params(gl->shader, gl, prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
             gl->vp.width, gl->vp.height, (unsigned int)frame_count, 
             tex_info, gl->prev_info, feedback_info, fbo_tex_info, fbo_tex_info_cnt);
@@ -1157,7 +1157,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    glClear(GL_COLOR_BUFFER_BIT);
    gl_set_viewport(gl, width, height, false, true);
 
-   gl->shader->set_params(gl,
+   video_shader_driver_set_params(gl->shader, gl,
          prev_rect->img_width, prev_rect->img_height, 
          prev_rect->width, prev_rect->height, 
          gl->vp.width, gl->vp.height, (unsigned int)frame_count, 
@@ -1765,7 +1765,7 @@ static bool gl_frame(void *data, const void *frame,
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   gl->shader->set_params(gl,
+   video_shader_driver_set_params(gl->shader, gl,
          frame_width, frame_height,
          gl->tex_w, gl->tex_h,
          gl->vp.width, gl->vp.height,
@@ -2593,7 +2593,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    gl->tex_mipmap      = video_shader_driver_mipmap_input(gl->shader, 1);
 
-   if (gl->shader->filter_type(1, &force_smooth))
+   if (video_shader_driver_filter_type(gl->shader, 1, &force_smooth))
       gl->tex_min_filter = gl->tex_mipmap ? (force_smooth ? 
             GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST) 
          : (force_smooth ? GL_LINEAR : GL_NEAREST);
@@ -2603,7 +2603,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
          : (video->smooth ? GL_LINEAR : GL_NEAREST);
    
    gl->tex_mag_filter = min_filter_to_mag(gl->tex_min_filter);
-   gl->wrap_mode      = gl_wrap_type_to_enum(gl->shader->wrap_type(1));
+   gl->wrap_mode      = gl_wrap_type_to_enum(video_shader_driver_wrap_type(gl->shader, 1));
 
    gl_set_texture_fmts(gl, video->rgb32);
 
@@ -2727,10 +2727,10 @@ static void gl_update_tex_filter_frame(gl_t *gl)
 
    context_bind_hw_render(gl, false);
 
-   if (!gl->shader->filter_type(1, &smooth))
+   if (!video_shader_driver_filter_type(gl->shader, 1, &smooth))
       smooth = settings->video.smooth;
 
-   wrap_mode             = gl_wrap_type_to_enum(gl->shader->wrap_type(1));
+   wrap_mode             = gl_wrap_type_to_enum(video_shader_driver_wrap_type(gl->shader, 1));
    gl->tex_mipmap        = video_shader_driver_mipmap_input(gl->shader, 1);
 
    gl->video_info.smooth = smooth;
@@ -3404,7 +3404,9 @@ static void gl_show_mouse(void *data, bool state)
 static struct video_shader *gl_get_current_shader(void *data)
 {
    gl_t *gl = (gl_t*)data;
-   return (gl && gl->shader) ? gl->shader->get_current_shader() : NULL;
+   if (!gl)
+      return NULL;
+   return video_shader_driver_direct_get_current_shader(gl->shader);
 }
 #endif
 
