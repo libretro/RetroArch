@@ -67,7 +67,6 @@ static unsigned runloop_pending_windowed_scale;
 static char runloop_fullpath[PATH_MAX_LENGTH];
 static bool main_core_shutdown_initiated;
 static bool main_is_paused;
-static bool main_is_slowmotion;
 
 static unsigned main_max_frames;
 
@@ -410,9 +409,10 @@ bool *runloop_perfcnt_enabled(void)
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
-   static bool runloop_idle  = false;
-   static bool runloop_exec  = false;
-   settings_t *settings      = config_get_ptr();
+   static bool runloop_idle       = false;
+   static bool runloop_exec       = false;
+   static bool runloop_slowmotion = false;
+   settings_t *settings           = config_get_ptr();
 
    switch (state)
    {
@@ -600,9 +600,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (!ptr)
                return false;
 
-            main_is_slowmotion   = *ptr;
+            runloop_slowmotion   = *ptr;
 
-            if (!main_is_slowmotion)
+            if (!runloop_slowmotion)
                return false;
 
             if (settings->video.black_frame_insertion)
@@ -686,7 +686,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_STATE_FREE:
          runloop_idle               = false;
          main_is_paused             = false;
-         main_is_slowmotion         = false;
+         runloop_slowmotion         = false;
          frame_limit_last_time      = 0.0;
          main_max_frames            = 0;
          break;
@@ -745,7 +745,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             bool *ptr = (bool*)data;
             if (!ptr)
                return false;
-            *ptr = main_is_slowmotion;
+            *ptr = runloop_slowmotion;
          }
          break;
       case RUNLOOP_CTL_SET_SLOWMOTION:
@@ -753,7 +753,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             bool *ptr = (bool*)data;
             if (!ptr)
                return false;
-            main_is_slowmotion = *ptr;
+            runloop_slowmotion = *ptr;
          }
          break;
       case RUNLOOP_CTL_SET_PAUSED:
@@ -1014,16 +1014,19 @@ int rarch_main_iterate(unsigned *sleep_ms)
       /* Updates frame timing if frame timing callback is in use by the core.
        * Limits frame time if fast forward ratio throttle is enabled. */
 
+      bool is_slowmotion;
       retro_time_t current     = retro_get_time_usec();
       retro_time_t delta       = current - system->frame_time_last;
       bool is_locked_fps       = (main_is_paused || 
             input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL)) |
          !!driver->recording_data;
 
+      runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, &is_slowmotion);
+
       if (!system->frame_time_last || is_locked_fps)
          delta = system->frame_time.reference;
 
-      if (!is_locked_fps && main_is_slowmotion)
+      if (!is_locked_fps && is_slowmotion)
          delta /= settings->slowmotion_ratio;
 
       system->frame_time_last = current;
