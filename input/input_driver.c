@@ -721,7 +721,6 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          input_driver_nonblock_state = false;
          memset(&input_driver_turbo_btns, 0, sizeof(turbo_buttons_t));
          current_input      = NULL;
-         input_driver_ctl(RARCH_INPUT_CTL_DESTROY_DATA, NULL);
          return true;
       case RARCH_INPUT_CTL_GRAB_STDIN:
          if (current_input->grab_stdin)
