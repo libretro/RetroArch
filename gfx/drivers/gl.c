@@ -2809,9 +2809,9 @@ static bool gl_set_shader(void *data,
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 #endif
 
-   if (!gl->shader->init(gl, path))
+   if (!video_shader_driver_init(gl->shader, gl, path))
    {
-      bool ret = gl->shader->init(gl, NULL);
+      bool ret = video_shader_driver_init(gl->shader, gl, NULL);
 
       RARCH_WARN("[GL]: Failed to set multipass shader. Falling back to stock.\n");
 
