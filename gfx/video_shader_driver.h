@@ -118,6 +118,8 @@ struct video_shader *video_shader_driver_get_current_shader(void);
 
 bool video_shader_driver_init(const shader_backend_t *shader, void *data, const char *path);
 
+void video_shader_driver_deinit(const shader_backend_t *shader);
+
 #ifdef __cplusplus
 }
 #endif

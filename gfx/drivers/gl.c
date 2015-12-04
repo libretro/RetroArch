@@ -288,8 +288,7 @@ static bool gl_shader_init(gl_t *gl)
 
 static void gl_shader_deinit(gl_t *gl)
 {
-   if (gl->shader)
-      gl->shader->deinit();
+   video_shader_driver_deinit(gl->shader);
    gl->shader = NULL;
 }
 

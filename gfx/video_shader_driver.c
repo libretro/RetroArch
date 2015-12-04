@@ -99,3 +99,10 @@ bool video_shader_driver_init(const shader_backend_t *shader, void *data, const 
       return false;
    return shader->init(data, path);
 }
+
+void video_shader_driver_deinit(const shader_backend_t *shader)
+{
+   if (!shader)
+      return;
+   shader->deinit();
+}
