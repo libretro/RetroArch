@@ -910,7 +910,7 @@ static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
    bool video_alive              = video_driver_ctl(RARCH_DISPLAY_CTL_IS_ALIVE, NULL);
    bool movie_end                = bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL);
    bool frame_count_end          = false;
-   
+
    video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
    frame_count_end               = main_max_frames && (*frame_count >= main_max_frames);
 
@@ -974,7 +974,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
       if (input)
       {
          input = 0;
-         
+
 
          /* If core was paused before entering menu, evoke
           * pause toggle to wake it up. */
@@ -991,7 +991,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
 
       retro_time_t current     = retro_get_time_usec();
       retro_time_t delta       = current - system->frame_time_last;
-      bool is_locked_fps       = (main_is_paused || 
+      bool is_locked_fps       = (main_is_paused ||
             input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL)) |
          !!driver->recording_data;
 
@@ -1015,11 +1015,12 @@ int rarch_main_iterate(unsigned *sleep_ms)
    if (cmd.overlay_next_pressed)
       event_command(EVENT_CMD_OVERLAY_NEXT);
 
-   if (!main_is_paused
+   bool pausedTest = (!main_is_paused) ;
 #ifdef HAVE_MENU
-         || menu_driver_alive()
+   pausedTest = (pausedTest || menu_driver_alive()) ;
 #endif
-         )
+
+   if (pausedTest)
    {
       if (cmd.fullscreen_toggle)
          event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
@@ -1110,7 +1111,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
             settings->input.analog_dpad_mode[i]);
    }
 
-   if ((settings->video.frame_delay > 0) && 
+   if ((settings->video.frame_delay > 0) &&
          !input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL))
       retro_sleep(settings->video.frame_delay);
 
