@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2014 - Chris Moeller
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -122,7 +122,7 @@ static OSStatus audio_write_cb(void *userdata,
       slock_unlock(dev->lock);
 
       /* Technically possible to deadlock without. */
-      scond_signal(dev->cond); 
+      scond_signal(dev->cond);
       return noErr;
    }
 
@@ -144,10 +144,10 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
    unsigned i;
    AudioDeviceID *devices;
    AudioObjectPropertyAddress propaddr =
-   { 
-      kAudioHardwarePropertyDevices, 
-      kAudioObjectPropertyScopeGlobal, 
-      kAudioObjectPropertyElementMaster 
+   {
+      kAudioHardwarePropertyDevices,
+      kAudioObjectPropertyScopeGlobal,
+      kAudioObjectPropertyElementMaster
    };
 
    UInt32 size = 0, deviceCount;
@@ -173,10 +173,10 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
       device_name[0] = 0;
 
       if (AudioObjectGetPropertyData(devices[i],
-               &propaddr, 0, 0, &size, device_name) == noErr 
+               &propaddr, 0, 0, &size, device_name) == noErr
             && !strcmp(device_name, device))
       {
-         AudioUnitSetProperty(dev->dev, kAudioOutputUnitProperty_CurrentDevice, 
+         AudioUnitSetProperty(dev->dev, kAudioOutputUnitProperty_CurrentDevice,
                kAudioUnitScope_Global, 0, &devices[i], sizeof(AudioDeviceID));
          goto done;
       }
@@ -247,12 +247,14 @@ static void *coreaudio_init(const char *device,
 #endif
    if (comp == NULL)
       goto error;
-   
+
 #ifdef OSX_PPC
-   if (OpenAComponent(comp, &dev->dev) != noErr)
+   bool existComponent  = (OpenAComponent(comp, &dev->dev) != noErr);
 #else
-   if (AudioComponentInstanceNew(comp, &dev->dev) != noErr)
+   bool existComponent = (AudioComponentInstanceNew(comp, &dev->dev) != noErr);
 #endif
+
+   if (existComponent)
       goto error;
 
 #if !TARGET_OS_IPHONE
@@ -270,17 +272,17 @@ static void *coreaudio_init(const char *device,
    stream_desc.mBytesPerFrame    = 2 * sizeof(float);
    stream_desc.mFramesPerPacket  = 1;
    stream_desc.mFormatID         = kAudioFormatLinearPCM;
-   stream_desc.mFormatFlags      = kAudioFormatFlagIsFloat | 
-      kAudioFormatFlagIsPacked | (is_little_endian() ? 
+   stream_desc.mFormatFlags      = kAudioFormatFlagIsFloat |
+      kAudioFormatFlagIsPacked | (is_little_endian() ?
             0 : kAudioFormatFlagIsBigEndian);
-   
+
    if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_StreamFormat,
          kAudioUnitScope_Input, 0, &stream_desc, sizeof(stream_desc)) != noErr)
       goto error;
-   
+
    /* Check returned audio format. */
    i_size = sizeof(real_desc);
-   if (AudioUnitGetProperty(dev->dev, kAudioUnitProperty_StreamFormat, 
+   if (AudioUnitGetProperty(dev->dev, kAudioUnitProperty_StreamFormat,
             kAudioUnitScope_Input, 0, &real_desc, &i_size) != noErr)
       goto error;
 
