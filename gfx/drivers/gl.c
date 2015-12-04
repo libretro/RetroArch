@@ -275,15 +275,12 @@ static bool gl_shader_init(gl_t *gl)
 
    gl->shader = backend;
 
-   if (gl->shader && gl->shader->init)
-   {
-      ret = gl->shader->init(gl, shader_path);
+   ret = video_shader_init(gl->shader, gl, shader_path);
 
-      if (!ret)
-      {
-         RARCH_ERR("[GL]: Failed to initialize shader, falling back to stock.\n");
-         ret = gl->shader->init(gl, NULL);
-      }
+   if (!ret)
+   {
+      RARCH_ERR("[GL]: Failed to initialize shader, falling back to stock.\n");
+      ret = video_shader_init(gl->shader, gl, NULL);
    }
 
    return ret;
