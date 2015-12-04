@@ -769,7 +769,9 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
       case RARCH_AUDIO_CTL_INIT:
          return init_audio();
       case RARCH_AUDIO_CTL_DESTROY:
-         current_audio = NULL;
+         audio_driver_active   = false;
+         audio_driver_data_own = false;
+         current_audio         = NULL;
          break;
       case RARCH_AUDIO_CTL_DESTROY_DATA:
          audio_driver_context_audio_data = NULL;
