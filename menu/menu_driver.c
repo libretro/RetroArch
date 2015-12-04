@@ -316,7 +316,8 @@ void menu_driver_toggle(bool latch)
       {
          global->frontend_key_event = system->key_event;
          system->key_event          = menu_input_key_event;
-         system->frame_time_last    = 0;
+
+         runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME_LAST, NULL);
       }
    }
    else

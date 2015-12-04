@@ -356,7 +356,6 @@ static void menu_update_libretro_info(void)
 void init_drivers(int flags)
 {
    driver_t *driver   = driver_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    if (flags & DRIVER_VIDEO)
       video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_OWN_DRIVER, NULL);
@@ -390,7 +389,7 @@ void init_drivers(int flags)
          hw_render->context_reset();
       video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT_ACK, NULL);
 
-      system->frame_time_last = 0;
+      runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME_LAST, NULL);
    }
 
    if (flags & DRIVER_AUDIO)

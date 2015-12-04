@@ -351,6 +351,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    static char runloop_fullpath[PATH_MAX_LENGTH];
    static unsigned runloop_max_frames          = false;
+   static bool runloop_frame_time_last         = false;
    static bool runloop_set_frame_limit         = false;
    static bool runloop_paused                  = false;
    static bool runloop_idle                    = false;
@@ -371,6 +372,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             return runloop_max_frames && (*frame_count >= runloop_max_frames);
          }
          break;
+      case RUNLOOP_CTL_SET_FRAME_TIME_LAST:
+         runloop_frame_time_last = true;
+         break;
+      case RUNLOOP_CTL_UNSET_FRAME_TIME_LAST:
+         runloop_frame_time_last = false;
+         break;
+      case RUNLOOP_CTL_IS_FRAME_TIME_LAST:
+         return runloop_frame_time_last;
       case RUNLOOP_CTL_SET_FRAME_LIMIT:
          runloop_set_frame_limit = true;
          break;
@@ -968,6 +977,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    retro_input_t trigger_input;
    event_cmd_state_t    cmd;
    retro_time_t current, target, to_sleep_ms;
+   static retro_usec_t frame_time_last;
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
    static retro_input_t last_input              = 0;
@@ -978,6 +988,12 @@ int rarch_main_iterate(unsigned *sleep_ms)
    rarch_system_info_t *system                  = rarch_system_info_get_ptr();
    retro_input_t old_input                      = last_input;
    last_input                                   = input;
+
+   if (runloop_ctl(RUNLOOP_CTL_IS_FRAME_TIME_LAST, NULL))
+   {
+      frame_time_last = 0;
+      runloop_ctl(RUNLOOP_CTL_UNSET_FRAME_TIME_LAST, NULL);
+   }
 
    if (runloop_ctl(RUNLOOP_CTL_SHOULD_SET_FRAME_LIMIT, NULL))
    {
@@ -1015,23 +1031,23 @@ int rarch_main_iterate(unsigned *sleep_ms)
 
       bool is_slowmotion;
       retro_time_t current     = retro_get_time_usec();
-      retro_time_t delta       = current - system->frame_time_last;
+      retro_time_t delta       = current - frame_time_last;
       bool is_locked_fps       = (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ||
             input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL)) |
          !!driver->recording_data;
 
       runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, &is_slowmotion);
 
-      if (!system->frame_time_last || is_locked_fps)
+      if (!frame_time_last || is_locked_fps)
          delta = system->frame_time.reference;
 
       if (!is_locked_fps && is_slowmotion)
          delta /= settings->slowmotion_ratio;
 
-      system->frame_time_last = current;
+      frame_time_last = current;
 
       if (is_locked_fps)
-         system->frame_time_last = 0;
+         frame_time_last = 0;
 
       system->frame_time.callback(delta);
    }
