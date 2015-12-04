@@ -306,10 +306,7 @@ static bool xdk_renderchain_init_shader(void *data, void *renderchain_data)
    shader_path = settings->video.shader_path;
    d3d->shader = &hlsl_backend;
 
-   if (!d3d->shader)
-      return false;
-
-   return d3d->shader->init(d3d, shader_path);
+   return video_shader_driver_init(d3d->shader, d3d, shader_path); 
 #endif
 
    return true;

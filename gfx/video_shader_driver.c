@@ -93,7 +93,7 @@ void video_shader_scale(unsigned idx,
       shader->shader_scale(idx, scale);
 }
 
-bool video_shader_init(const shader_backend_t *shader, void *data, const char *path)
+bool video_shader_driver_init(const shader_backend_t *shader, void *data, const char *path)
 {
    if (!shader || !shader->init)
       return false;

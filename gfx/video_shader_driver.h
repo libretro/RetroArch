@@ -116,7 +116,7 @@ const shader_backend_t *shader_ctx_init_first(void);
 
 struct video_shader *video_shader_driver_get_current_shader(void);
 
-bool video_shader_init(const shader_backend_t *shader, void *data, const char *path);
+bool video_shader_driver_init(const shader_backend_t *shader, void *data, const char *path);
 
 #ifdef __cplusplus
 }
