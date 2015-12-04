@@ -27,9 +27,8 @@
 #include "../general.h"
 #include "../verbosity.h"
 
-static bool remote_is_bound = false;
-
-/* adds an index for devices with the same name so they can be identified in the GUI*/
+/* Adds an index for devices with the same name,
+ * so they can be identified in the GUI. */
 static void input_reindex_devices()
 {
    unsigned i;
@@ -46,7 +45,8 @@ static void input_reindex_devices()
 
       for(j = 0; j < settings->input.max_users; j++)
       {
-         if(!strcmp(tmp,settings->input.device_names[j]) && settings->input.device_name_index[i]==0)
+         if(!strcmp(tmp,settings->input.device_names[j])
+               && settings->input.device_name_index[i]==0)
             settings->input.device_name_index[j]=k++;
       }
    }
@@ -77,8 +77,6 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
 
    if (!conf)
       return false;
-
-   *ident = *input_driver = '\0';
 
    config_get_array(conf, "input_device", ident, sizeof(ident));
    config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
@@ -123,15 +121,14 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    return score;
 }
 
-static void input_autoconfigure_joypad_add(
-      config_file_t *conf,
-      autoconfig_params_t *params)
+static void input_autoconfigure_joypad_add(config_file_t *conf, autoconfig_params_t *params)
 {
    bool block_osd_spam;
-   char msg[PATH_MAX_LENGTH] = {0};
+   static bool remote_is_bound        = false;
+   char msg[PATH_MAX_LENGTH]          = {0};
    char display_name[PATH_MAX_LENGTH] = {0};
-   char device_type[PATH_MAX_LENGTH] = {0};
-   settings_t      *settings = config_get_ptr();
+   char device_type[PATH_MAX_LENGTH]  = {0};
+   settings_t      *settings          = config_get_ptr();
 
    config_get_array(conf, "input_device_display_name", display_name, sizeof(display_name));
    config_get_array(conf, "input_device_type", device_type, sizeof(device_type));
