@@ -2565,8 +2565,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    if (gl->shader)
    {
-      RARCH_LOG("[GL]: Default shader backend found: %s.\n",
-            gl->shader->ident);
+      RARCH_LOG("[GL]: Default shader backend found: %s.\n", video_shader_driver_get_ident(gl->shader));
    }
 
    if (!gl_shader_init(gl))
