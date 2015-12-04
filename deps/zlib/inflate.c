@@ -80,6 +80,7 @@
    * The history for versions after 1.2.0 are in ChangeLog in zlib distribution.
    */
 
+#include <stdbool.h>
 #include <compat/zutil.h>
 #include "inftrees.h"
 #include "inflate.h"
@@ -1175,11 +1176,13 @@ int ZEXPORT inflate(z_streamp strm, int flush)
                         strm->adler = state->check =
                            UPDATE(state->check, put - out, out);
                      out = left;
-                     if ((
 #ifdef GUNZIP
-                              state->flags ? hold :
+                     bool directiveTest = ((state->flags ? hold : ZSWAP32(hold)) != state->check) ;
+#else
+                     bool directiveTest = ((ZSWAP32(hold)) != state->check) ;
 #endif
-                              ZSWAP32(hold)) != state->check) {
+
+                     if (directiveTest) {
                         strm->msg = (char *)"incorrect data check";
                         state->mode = BAD;
                         break;
