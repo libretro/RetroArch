@@ -134,3 +134,17 @@ unsigned video_shader_driver_num_shaders(const shader_backend_t *shader)
       return 0;
    return shader->num_shaders();
 }
+
+bool video_shader_driver_set_coords(const shader_backend_t *shader, const void *data)
+{
+   if (!shader || !shader->set_coords)
+      return false;
+   return shader->set_coords(data);
+}
+
+bool video_shader_driver_set_mvp(const shader_backend_t *shader, void *data, const math_matrix_4x4 *mat)
+{
+   if (!shader || !shader->set_mvp)
+      return false;
+   return shader->set_mvp(data, mat);
+}

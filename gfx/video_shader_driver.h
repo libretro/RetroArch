@@ -128,6 +128,10 @@ bool video_shader_driver_mipmap_input(const shader_backend_t *shader, unsigned i
 
 unsigned video_shader_driver_num_shaders(const shader_backend_t *shader);
 
+bool video_shader_driver_set_coords(const shader_backend_t *shader, const void *data);
+
+bool video_shader_driver_set_mvp(const shader_backend_t *shader, void *data, const math_matrix_4x4 *mat);
+
 #ifdef __cplusplus
 }
 #endif
