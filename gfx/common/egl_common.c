@@ -81,12 +81,14 @@ void egl_destroy(void *data)
 {
    if (g_egl_dpy)
    {
-#ifdef HAVE_OPENGL
+#if defined HAVE_OPENGL
+#if !defined(RARCH_MOBILE)
       if (g_egl_ctx != EGL_NO_CONTEXT)
       {
          glFlush();
          glFinish();
       }
+#endif
 #endif
 
       eglMakeCurrent(g_egl_dpy,
