@@ -346,8 +346,9 @@ static int16_t WPAD_StickY(WPADData *data, u8 right)
 static void gx_joypad_poll(void)
 {
    unsigned i, j, port;
-   uint64_t *state_p1  = NULL;
-   uint8_t gcpad       = 0;
+   uint64_t *state_p1     = NULL;
+   uint8_t gcpad          = 0;
+   bool check_menu_toggle = false;
 
    pad_state[0] = 0;
    pad_state[1] = 0;
