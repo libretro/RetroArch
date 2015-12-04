@@ -35,6 +35,10 @@
 #include "runloop.h"
 #include "verbosity.h"
 
+#ifdef ANDROID
+#define HAVE_IPV6
+#endif
+
 struct delta_frame
 {
    void *state;
@@ -183,6 +187,7 @@ static bool netplay_can_poll(netplay_t *netplay)
 
 static bool send_chunk(netplay_t *netplay)
 {
+   bool check_where_to_send    = false;
    const struct sockaddr *addr = NULL;
 
    if (netplay->addr)
@@ -192,15 +197,19 @@ static bool send_chunk(netplay_t *netplay)
 
    if (addr)
    {
-      if (sendto(netplay->udp_fd, (const char*)netplay->packet_buffer,
+      ssize_t bytes_sent;
+
+#ifdef HAVE_IPV6
+      bytes_sent = (sendto(netplay->udp_fd, (const char*)netplay->packet_buffer,
                sizeof(netplay->packet_buffer), 0, addr,
-#ifdef ANDROID
-               sizeof(struct sockaddr_in6)
+               sizeof(struct sockaddr_in6)));
 #else
-               sizeof(struct sockaddr_in)
+      bytes_sent = (sendto(netplay->udp_fd, (const char*)netplay->packet_buffer,
+               sizeof(netplay->packet_buffer), 0, addr,
+               sizeof(struct sockaddr_in)));
 #endif
-         )
-            != sizeof(netplay->packet_buffer))
+
+      if (bytes_sent != sizeof(netplay->packet_buffer))
       {
          warn_hangup();
          netplay->has_connection = false;
