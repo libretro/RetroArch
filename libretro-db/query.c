@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include <compat/fnmatch.h>
 #include <compat/strl.h>
@@ -73,7 +74,7 @@ static char tmp_error_buff [MAX_ERROR_LEN] = {0};
 /* Errors */
 static void raise_too_many_arguments(const char **error)
 {
-   strlcpy(tmp_error_buff, 
+   strlcpy(tmp_error_buff,
          "Too many arguments in function call.", sizeof(tmp_error_buff));
    *error = tmp_error_buff;
 }
@@ -584,15 +585,15 @@ static struct buffer parse_integer(struct buffer buff,
    value->type = RDT_INT;
 
 #ifdef _WIN32
-   if (sscanf(buff.data + buff.offset,
-            "%I64d",
-            (signed long long*)&value->val.int_) == 0)
+   bool test = (sscanf(buff.data + buff.offset, "%I64d", (signed long long*)&value->val.int_) == 0);
 #else
-   if (sscanf(buff.data + buff.offset,
-            "%lld",
-            (signed long long*)&value->val.int_) == 0)
+   bool test = (sscanf(buff.data + buff.offset, "%lld", (signed long long*)&value->val.int_) == 0);
 #endif
+
+   if(test)
+   {
       raise_expected_number(buff.offset, error);
+   }
    else
    {
       while (isdigit((int)buff.data[buff.offset]))
@@ -974,4 +975,3 @@ int libretrodb_query_filter(libretrodb_query_t *q,
    struct rmsgpack_dom_value res = inv.func(*v, inv.argc, inv.argv);
    return (res.type == RDT_BOOL && res.val.bool_);
 }
-
