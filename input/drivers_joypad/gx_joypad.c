@@ -301,45 +301,46 @@ static int16_t WPAD_StickX(WPADData *data, u8 right)
 
 static int16_t WPAD_StickY(WPADData *data, u8 right)
 {
-  float mag = 0.0f;
-  float ang = 0.0f;
+   double val;
+   float mag = 0.0f;
+   float ang = 0.0f;
 
-  switch (data->exp.type)
-  {
-    case WPAD_EXP_NUNCHUK:
-    case WPAD_EXP_GUITARHERO3:
-      if (right == 0)
-      {
-        mag = data->exp.nunchuk.js.mag;
-        ang = data->exp.nunchuk.js.ang;
-      }
-      break;
+   switch (data->exp.type)
+   {
+      case WPAD_EXP_NUNCHUK:
+      case WPAD_EXP_GUITARHERO3:
+         if (right == 0)
+         {
+            mag = data->exp.nunchuk.js.mag;
+            ang = data->exp.nunchuk.js.ang;
+         }
+         break;
 
-    case WPAD_EXP_CLASSIC:
-      if (right == 0)
-      {
-        mag = data->exp.classic.ljs.mag;
-        ang = data->exp.classic.ljs.ang;
-      }
-      else
-      {
-        mag = data->exp.classic.rjs.mag;
-        ang = data->exp.classic.rjs.ang;
-      }
-      break;
+      case WPAD_EXP_CLASSIC:
+         if (right == 0)
+         {
+            mag = data->exp.classic.ljs.mag;
+            ang = data->exp.classic.ljs.ang;
+         }
+         else
+         {
+            mag = data->exp.classic.rjs.mag;
+            ang = data->exp.classic.rjs.ang;
+         }
+         break;
 
-    default:
-      break;
-  }
+      default:
+         break;
+   }
 
-  /* calculate Y value (angle need to be converted into radian) */
-  if (mag > 1.0f)
-     mag = 1.0f;
-  else if (mag < -1.0f)
-     mag = -1.0f;
-  double val = -mag * cos(PI * ang/180.0f);
+   /* calculate Y value (angle need to be converted into radian) */
+   if (mag > 1.0f)
+      mag = 1.0f;
+   else if (mag < -1.0f)
+      mag = -1.0f;
+   val    = -mag * cos(PI * ang/180.0f);
 
-  return (int16_t)(val * 32767.0f);
+   return (int16_t)(val * 32767.0f);
 }
 #endif
 
