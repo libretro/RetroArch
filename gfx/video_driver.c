@@ -75,19 +75,6 @@ typedef struct video_pixel_scaler
    void *scaler_out;
 } video_pixel_scaler_t;
 
-static bool video_driver_active;
-
-/* Last message given to the video driver */
-static char video_driver_current_msg[PATH_MAX_LENGTH];
-
-/* If set during context deinit, the driver should keep
- * graphics context alive to avoid having to reset all 
- * context state. */
-static bool video_driver_cache_context;
-
-/* Set to true by driver if context caching succeeded. */
-static bool video_driver_cache_context_ack;
-
 /* Opaque handles to currently running window.
  * Used by e.g. input drivers which bind to a window.
  * Drivers are responsible for setting these if an input driver
@@ -96,24 +83,14 @@ static uintptr_t video_driver_display;
 static uintptr_t video_driver_window;
 static enum rarch_display_type video_driver_display_type;
 
-/* Graphics driver requires RGBA byte order data (ABGR on little-endian)
- * for 32-bit.
- * This takes effect for overlay and shader cores that wants to load
- * data into graphics driver. Kinda hackish to place it here, it is only
- * used for GLES.
- * TODO: Refactor this better. */
-static bool video_driver_use_rgba;
-
 static uint64_t video_driver_frame_count;
 
 static void *video_driver_data;
-static bool video_driver_data_own;
 static const video_driver_t *current_video;
 
 /* Interface for "poking". */
 static const video_poke_interface_t *video_driver_poke;
 
-static struct retro_system_av_info video_viewport_av_info;
 static video_driver_state_t video_driver_state;
 
 /* Used for 16-bit -> 16-bit conversions that take place before
@@ -546,9 +523,10 @@ static bool uninit_video_input(void)
       input_driver_ctl(RARCH_INPUT_CTL_DEINIT, NULL);
 
    if (
-         !video_driver_data_own &&
-         video_driver_data &&
-         current_video->free)
+         !video_driver_ctl(RARCH_DISPLAY_CTL_OWNS_DRIVER, NULL)
+         && video_driver_data 
+         && current_video->free
+      )
       current_video->free(video_driver_data);
 
    deinit_pixel_converter();
@@ -559,14 +537,14 @@ static bool uninit_video_input(void)
    event_command(EVENT_CMD_SHADER_DIR_DEINIT);
    video_monitor_compute_fps_statistics();
 
-   if (hw_render->context_destroy && !video_driver_cache_context)
+   if (hw_render->context_destroy && !video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL))
       hw_render->context_destroy();
 
    video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_RGBA, NULL);
    current_video = NULL;
 
-   if (!video_driver_data_own)
-      video_driver_data = NULL;
+   if (!video_driver_ctl(RARCH_DISPLAY_CTL_OWNS_DRIVER, NULL))
+         video_driver_data = NULL;
 
    return true;
 }
@@ -1412,7 +1390,22 @@ static bool video_viewport_set_config(void)
 
 bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 {
-   settings_t               *settings = config_get_ptr();
+   /* Graphics driver requires RGBA byte order data (ABGR on little-endian)
+    * for 32-bit.
+    * This takes effect for overlay and shader cores that wants to load
+    * data into graphics driver. Kinda hackish to place it here, it is only
+    * used for GLES.
+    * TODO: Refactor this better. */
+   static bool video_driver_use_rgba                = false;
+   static bool video_driver_data_own                = false;
+   static bool video_driver_active                  = false;
+   /* If set during context deinit, the driver should keep
+    * graphics context alive to avoid having to reset all 
+    * context state. */
+   static bool video_driver_cache_context           = false;
+   /* Set to true by driver if context caching succeeded. */
+   static bool video_driver_cache_context_ack       = false;
+   settings_t *settings                             = config_get_ptr();
    const struct retro_hw_render_callback *hw_render = 
       (const struct retro_hw_render_callback*)video_driver_callback();
 
@@ -1765,7 +1758,9 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
 
 struct retro_system_av_info *video_viewport_get_system_av_info(void)
 {
-   return (struct retro_system_av_info*)&video_viewport_av_info;
+   static struct retro_system_av_info av_info;
+
+   return &av_info;
 }
 
 struct video_viewport *video_viewport_get_custom(void)
@@ -1827,6 +1822,8 @@ static bool video_pixel_frame_scale(const void *data,
 void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
+   /* Last message given to the video driver */
+   static char video_driver_current_msg[PATH_MAX_LENGTH];
    unsigned output_width  = 0;
    unsigned output_height = 0;
    unsigned  output_pitch = 0;
@@ -1834,7 +1831,7 @@ void video_driver_frame(const void *data, unsigned width,
    global_t  *global      = global_get_ptr();
    settings_t *settings   = config_get_ptr();
 
-   if (!video_driver_active)
+   if (!video_driver_ctl(RARCH_DISPLAY_CTL_IS_ACTIVE, NULL))
       return;
 
    if (video_driver_scaler_ptr &&
@@ -1879,7 +1876,7 @@ void video_driver_frame(const void *data, unsigned width,
    if (!current_video || !current_video->frame(
             video_driver_data, data, width, height, video_driver_frame_count,
             pitch, video_driver_current_msg))
-      video_driver_active = false;
+      video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_ACTIVE, NULL);
 
    video_driver_frame_count++;
 }
