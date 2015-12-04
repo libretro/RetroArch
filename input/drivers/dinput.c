@@ -89,6 +89,7 @@ void dinput_destroy_context(void)
 
 bool dinput_init_context(void)
 {
+   bool context_initialized = false;
    if (g_dinput_ctx)
       return true;
 
@@ -96,20 +97,23 @@ bool dinput_init_context(void)
 
    /* Who said we shouldn't have same call signature in a COM API? <_< */
 #ifdef __cplusplus
-   if (FAILED(DirectInput8Create(
+   context_initialized = (SUCCEEDED(DirectInput8Create(
       GetModuleHandle(NULL), DIRECTINPUT_VERSION, IID_IDirectInput8,
-      (void**)&g_dinput_ctx, NULL)))
+      (void**)&g_dinput_ctx, NULL)));
 #else
-   if (FAILED(DirectInput8Create(
+   context_initialized = (SUCCEEDED(DirectInput8Create(
       GetModuleHandle(NULL), DIRECTINPUT_VERSION, &IID_IDirectInput8,
-      (void**)&g_dinput_ctx, NULL)))
+      (void**)&g_dinput_ctx, NULL)));
 #endif
-   {
-      RARCH_ERR("Failed to init DirectInput.\n");
-      return false;
-   }
+
+   if (!context_succeeded)
+      goto error;
 
    return true;
+
+error:
+   RARCH_ERR("Failed to initialize DirectInput.\n");
+   return false;
 }
 
 static void *dinput_init(void)
