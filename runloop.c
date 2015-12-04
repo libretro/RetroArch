@@ -60,7 +60,6 @@
 
 #include "verbosity.h"
 
-static struct global g_extern;
 
 static rarch_dir_list_t runloop_shader_dir;
 
@@ -81,6 +80,12 @@ static msg_queue_t *g_msg_queue;
 #ifdef HAVE_THREADS
 static slock_t *mq_lock = NULL;
 #endif
+
+global_t *global_get_ptr(void)
+{
+   static struct global g_extern;
+   return &g_extern;
+}
 
 const char *rarch_main_msg_queue_pull(void)
 {
@@ -391,10 +396,6 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
       RARCH_WARN("%s\n", msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER));
 }
 
-global_t *global_get_ptr(void)
-{
-   return &g_extern;
-}
 
 static void rarch_main_data_clear_state(void)
 {
@@ -676,14 +677,19 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          main_max_frames            = 0;
          break;
       case RUNLOOP_CTL_GLOBAL_FREE:
-         event_command(EVENT_CMD_TEMPORARY_CONTENT_DEINIT);
-         event_command(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
-         event_command(EVENT_CMD_RECORD_DEINIT);
-         event_command(EVENT_CMD_LOG_FILE_DEINIT);
+         {
+            global_t *global;
+            event_command(EVENT_CMD_TEMPORARY_CONTENT_DEINIT);
+            event_command(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
+            event_command(EVENT_CMD_RECORD_DEINIT);
+            event_command(EVENT_CMD_LOG_FILE_DEINIT);
 
-         rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
-         runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH,  NULL);
-         memset(&g_extern, 0, sizeof(g_extern));
+            rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+            runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH,  NULL);
+
+            global = global_get_ptr();
+            memset(global, 0, sizeof(struct global));
+         }
          break;
       case RUNLOOP_CTL_CLEAR_STATE:
          driver_clear_state();
