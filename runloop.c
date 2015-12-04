@@ -121,21 +121,6 @@ void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration
    }
 }
 
-static void rarch_main_msg_queue_free(void)
-{
-   if (!g_msg_queue)
-      return;
-
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
-
-   msg_queue_free(g_msg_queue);
-
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_FREE, NULL);
-
-   g_msg_queue = NULL;
-}
-
 /**
  * check_pause:
  * @pressed              : was libretro pause key pressed?
@@ -222,7 +207,7 @@ static void check_fast_forward_button(bool fastforward_pressed,
 static void check_stateslots(settings_t *settings,
       bool pressed_increase, bool pressed_decrease)
 {
-   char msg[PATH_MAX_LENGTH];
+   char msg[128];
 
    /* Save state slots */
    if (pressed_increase)
@@ -739,7 +724,17 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 #endif
          break;
       case RUNLOOP_CTL_MSG_QUEUE_DEINIT:
-         rarch_main_msg_queue_free();
+         if (!g_msg_queue)
+            return true;
+
+         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
+
+         msg_queue_free(g_msg_queue);
+
+         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
+         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_FREE, NULL);
+
+         g_msg_queue = NULL;
          break;
       case RUNLOOP_CTL_MSG_QUEUE_INIT:
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
