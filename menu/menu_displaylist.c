@@ -1559,6 +1559,7 @@ int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info,
             switch (type)
             {
                case ST_GROUP:
+               case ST_END_GROUP:
                case ST_SUB_GROUP:
                case ST_END_SUB_GROUP:
                   goto loop;
@@ -1633,7 +1634,7 @@ loop:
       menu_settings_list_increment(&setting);
    }
 
-   if (count <= 1 && add_empty_entry)
+   if (count == 0 && add_empty_entry)
       menu_entries_push(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_NO_SETTINGS_FOUND),
             menu_hash_to_str(MENU_LABEL_NO_SETTINGS_FOUND),
