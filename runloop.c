@@ -65,7 +65,6 @@ static rarch_dir_list_t runloop_shader_dir;
 
 static unsigned runloop_pending_windowed_scale;
 static char runloop_fullpath[PATH_MAX_LENGTH];
-static bool main_core_shutdown_initiated;
 
 static unsigned main_max_frames;
 
@@ -408,11 +407,12 @@ bool *runloop_perfcnt_enabled(void)
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
-   static bool runloop_paused     = false;
-   static bool runloop_idle       = false;
-   static bool runloop_exec       = false;
-   static bool runloop_slowmotion = false;
-   settings_t *settings           = config_get_ptr();
+   static bool runloop_paused                  = false;
+   static bool runloop_idle                    = false;
+   static bool runloop_exec                    = false;
+   static bool runloop_slowmotion              = false;
+   static bool runloop_core_shutdown_initiated = false;
+   settings_t *settings                        = config_get_ptr();
 
    switch (state)
    {
@@ -788,8 +788,13 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
          break;
       case RUNLOOP_CTL_SET_CORE_SHUTDOWN:
-         main_core_shutdown_initiated = true;
+         runloop_core_shutdown_initiated = true;
          break;
+      case RUNLOOP_CTL_UNSET_CORE_SHUTDOWN:
+         runloop_core_shutdown_initiated = false;
+         break;
+      case RUNLOOP_CTL_IS_CORE_SHUTDOWN:
+         return runloop_core_shutdown_initiated;
       case RUNLOOP_CTL_SET_EXEC:
          runloop_exec = true;
          break;
@@ -951,14 +956,14 @@ static INLINE int rarch_main_iterate_time_to_exit(event_cmd_state_t *cmd)
        * instead of exiting RetroArch completely.
        * Aborts core shutdown if invoked.
        */
-      if (main_core_shutdown_initiated
+      if (runloop_ctl(RUNLOOP_CTL_IS_CORE_SHUTDOWN, NULL)
             && settings->load_dummy_on_core_shutdown)
       {
          if (!runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL))
             return -1;
 
          system->shutdown             = false;
-         main_core_shutdown_initiated = false;
+         runloop_ctl(RUNLOOP_CTL_UNSET_CORE_SHUTDOWN, NULL);
 
          return 0;
       }
