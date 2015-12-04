@@ -436,9 +436,9 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   mipmapped = gl->shader->mipmap_input(i + 2);
-
+   mipmapped  = video_shader_driver_mipmap_input(gl->shader, i + 2);
    min_filter = mipmapped ? base_mip_filt : base_filt;
+
    if (gl->shader->filter_type(i + 2, &smooth))
    {
       min_filter = mipmapped ? (smooth ? 
@@ -1104,7 +1104,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       video_shader_driver_use(gl->shader, gl, i + 1);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
-      if (gl->shader->mipmap_input(i + 1))
+      if (video_shader_driver_mipmap_input(gl->shader, i + 1))
          glGenerateMipmap(GL_TEXTURE_2D);
 
       glClear(GL_COLOR_BUFFER_BIT);
@@ -1151,7 +1151,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
-   if (gl->shader->mipmap_input(gl->fbo_pass + 1))
+   if (video_shader_driver_mipmap_input(gl->shader, gl->fbo_pass + 1))
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
@@ -2591,7 +2591,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_set_shader_viewport(gl, 0);
    gl_set_shader_viewport(gl, 1);
 
-   gl->tex_mipmap      = gl->shader->mipmap_input(1);
+   gl->tex_mipmap      = video_shader_driver_mipmap_input(gl->shader, 1);
 
    if (gl->shader->filter_type(1, &force_smooth))
       gl->tex_min_filter = gl->tex_mipmap ? (force_smooth ? 
@@ -2731,7 +2731,7 @@ static void gl_update_tex_filter_frame(gl_t *gl)
       smooth = settings->video.smooth;
 
    wrap_mode             = gl_wrap_type_to_enum(gl->shader->wrap_type(1));
-   gl->tex_mipmap        = gl->shader->mipmap_input(1);
+   gl->tex_mipmap        = video_shader_driver_mipmap_input(gl->shader, 1);
 
    gl->video_info.smooth = smooth;
    new_filt = gl->tex_mipmap ? (smooth ? 
@@ -3246,6 +3246,7 @@ static void gl_render_overlay(void *data)
    gl->coords.tex_coord = gl->overlay_tex_coord;
    gl->coords.color     = gl->overlay_color_coord;
    gl->coords.vertices  = 4 * gl->overlays;
+
    gl->shader->set_coords(&gl->coords);
    gl->shader->set_mvp(gl, &gl->mvp_no_rot);
 

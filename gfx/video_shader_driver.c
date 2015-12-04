@@ -120,3 +120,10 @@ const char *video_shader_driver_get_ident(const shader_backend_t *shader)
       return NULL;
    return shader->ident;
 }
+
+bool video_shader_driver_mipmap_input(const shader_backend_t *shader, unsigned index)
+{
+   if (!shader)
+      return false;
+   return shader->mipmap_input(index);
+}
