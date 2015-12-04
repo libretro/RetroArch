@@ -281,7 +281,7 @@ static bool init_audio(void)
 
    /* Resource leaks will follow if audio is initialized twice. */
    if (audio_driver_context_audio_data)
-      return false;
+      return true;
 
    /* Accomodate rewind since at some point we might have two full buffers. */
    outsamples_max = max_bufsamples * AUDIO_MAX_RATIO * 
