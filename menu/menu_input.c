@@ -144,17 +144,20 @@ typedef struct menu_input
 } menu_input_t;
 
 static unsigned     bind_port;
-static menu_input_t menu_input_state;
-
-void menu_input_free(void)
-{
-   memset(&menu_input_state, 0, sizeof(menu_input_t));
-}
 
 static menu_input_t *menu_input_get_ptr(void)
 {
+   static menu_input_t menu_input_state;
    return &menu_input_state;
 }
+
+void menu_input_free(void)
+{
+   menu_input_t *menu_input = menu_input_get_ptr();
+
+   memset(menu_input, 0, sizeof(menu_input_t));
+}
+
 
 void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod)
