@@ -63,7 +63,6 @@
 static rarch_dir_list_t runloop_shader_dir;
 
 static unsigned runloop_pending_windowed_scale;
-static char runloop_fullpath[PATH_MAX_LENGTH];
 
 static unsigned main_max_frames;
 
@@ -368,6 +367,7 @@ bool *runloop_perfcnt_enabled(void)
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
+   static char runloop_fullpath[PATH_MAX_LENGTH];
    static bool runloop_paused                  = false;
    static bool runloop_idle                    = false;
    static bool runloop_exec                    = false;
