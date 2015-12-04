@@ -205,42 +205,6 @@ enum event_command
    EVENT_CMD_VOLUME_DOWN
 };
 
-typedef struct event_cmd_state
-{
-   bool fullscreen_toggle;
-   bool overlay_next_pressed;
-   bool grab_mouse_pressed;
-   bool menu_pressed;
-   bool quit_key_pressed;
-   bool screenshot_pressed;
-   bool mute_pressed;
-   bool osk_pressed;
-   bool volume_up_pressed;
-   bool volume_down_pressed;
-   bool reset_pressed;
-   bool disk_prev_pressed;
-   bool disk_next_pressed;
-   bool disk_eject_pressed;
-   bool movie_record;
-   bool save_state_pressed;
-   bool load_state_pressed;
-   bool slowmotion_pressed;
-   bool shader_next_pressed;
-   bool shader_prev_pressed;
-   bool fastforward_pressed;
-   bool hold_pressed;
-   bool old_hold_pressed;
-   bool state_slot_increase;
-   bool state_slot_decrease;
-   bool pause_pressed;
-   bool frameadvance_pressed;
-   bool rewind_pressed;
-   bool netplay_flip_pressed;
-   bool cheat_index_plus_pressed;
-   bool cheat_index_minus_pressed;
-   bool cheat_toggle_pressed;
-} event_cmd_state_t;
-
 /**
  * event_disk_control_append_image:
  * @path                 : Path to disk image. 
