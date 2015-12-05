@@ -185,17 +185,21 @@ enum
 typedef struct driver
 {
    const camera_driver_t *camera;
-   const location_driver_t *location;
-   const record_driver_t *recording;
-   struct retro_callbacks retro_ctx;
    void *camera_data;
-   void *location_data;
-   void *recording_data;
-   void *netplay_data;
-
    bool camera_active;
-   bool location_active;
+   bool camera_data_own;
 
+   const location_driver_t *location;
+   void *location_data;
+   bool location_active;
+   bool location_data_own;
+
+   const record_driver_t *recording;
+   void *recording_data;
+
+   struct retro_callbacks retro_ctx;
+
+   void *netplay_data;
 
    /* Set this to true if the platform in question needs to 'own' 
     * the respective handle and therefore skip regular RetroArch 
@@ -209,8 +213,6 @@ typedef struct driver
     *
     * Typically, if a driver intends to make use of this, it should 
     * set this to true at the end of its 'init' function. */
-   bool camera_data_own;
-   bool location_data_own;
 } driver_t;
 
 /**
