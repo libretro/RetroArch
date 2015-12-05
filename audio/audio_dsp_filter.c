@@ -19,6 +19,7 @@
 #include <retro_miscellaneous.h>
 
 #include <compat/posix_string.h>
+#include <dynamic/dylib.h>
 
 #include <file/file_path.h>
 #include <file/config_file_userdata.h>

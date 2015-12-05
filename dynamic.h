@@ -24,8 +24,6 @@
 #include "config.h"
 #endif
 
-#include <dynamic/dylib.h>
-
 enum rarch_core_type 
 {
    CORE_TYPE_PLAIN = 0,

@@ -19,6 +19,7 @@
 #include <file/config_file_userdata.h>
 #include <file/file_path.h>
 #include <file/dir_list.h>
+#include <dynamic/dylib.h>
 
 #include "../dynamic.h"
 #include "../file_ext.h"

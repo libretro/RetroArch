@@ -20,6 +20,7 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
+#include <dynamic/dylib.h>
 
 #include <boolean.h>
 
