@@ -1079,7 +1079,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
       retro_time_t delta       = current - frame_time_last;
       bool is_locked_fps       = (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ||
             input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL)) |
-         !!driver->recording_data;
+         !!recording_driver_get_data_ptr();
 
       runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, &is_slowmotion);
 

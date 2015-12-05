@@ -662,10 +662,9 @@ static bool rarch_game_specific_options(char **output)
 bool rarch_environment_cb(unsigned cmd, void *data)
 {
    unsigned p;
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   settings_t         *settings = config_get_ptr();
+   global_t         *global     = global_get_ptr();
+   rarch_system_info_t *system  = rarch_system_info_get_ptr();
 
    if (ignore_environment_cb)
       return false;
@@ -1049,7 +1048,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             (const struct retro_audio_callback*)data;
          RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
 
-         if (driver->recording_data) /* A/V sync is a must. */
+         if (recording_driver_get_data_ptr()) /* A/V sync is a must. */
             return false;
 
 #ifdef HAVE_NETPLAY

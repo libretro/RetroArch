@@ -1136,13 +1136,13 @@ void video_driver_set_pixel_format(enum retro_pixel_format fmt)
 static bool video_driver_cached_frame(void)
 {
    driver_t   *driver   = driver_get_ptr();
-   void *recording      = driver ? driver->recording_data : NULL;
+   void *recording      = recording_driver_get_data_ptr();
 
    if (runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
       return true; /* Maybe return false here for indication of idleness? */
 
    /* Cannot allow recording when pushing duped frames. */
-   driver->recording_data = NULL;
+   recording_driver_clear_data_ptr();
 
    /* Not 100% safe, since the library might have
     * freed the memory, but no known implementations do this.
@@ -1156,7 +1156,7 @@ static bool video_driver_cached_frame(void)
             video_driver_state.frame_cache.height,
             video_driver_state.frame_cache.pitch);
 
-   driver->recording_data = recording;
+   recording_driver_set_data_ptr(recording);
 
    return true;
 }

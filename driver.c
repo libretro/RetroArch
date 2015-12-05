@@ -307,14 +307,13 @@ void driver_set_nonblock_state(void)
 bool driver_update_system_av_info(const struct retro_system_av_info *info)
 {
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-   driver_t *driver = driver_get_ptr();
 
    memcpy(av_info, info, sizeof(*av_info));
    event_command(EVENT_CMD_REINIT);
 
    /* Cannot continue recording with different parameters.
     * Take the easiest route out and just restart the recording. */
-   if (driver->recording_data)
+   if (recording_driver_get_data_ptr())
    {
       rarch_main_msg_queue_push_new(
             MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT, 2, 180, false);

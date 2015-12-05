@@ -416,3 +416,27 @@ bool recording_init(void)
 
    return true;
 }
+
+void *recording_driver_get_data_ptr(void)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (!driver)
+      return NULL;
+   return driver->recording_data;
+}
+
+void recording_driver_clear_data_ptr(void)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (!driver)
+      return;
+   driver->recording_data = NULL;
+}
+
+void recording_driver_set_data_ptr(void *data)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (!driver)
+      return;
+   driver->recording_data = data;
+}

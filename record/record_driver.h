@@ -166,6 +166,12 @@ void recording_set_state(bool state);
 
 void recording_push_audio(const int16_t *data, size_t samples);
 
+void *recording_driver_get_data_ptr(void);
+
+void recording_driver_clear_data_ptr(void);
+
+void recording_driver_set_data_ptr(void *data);
+
 #ifdef __cplusplus
 }
 #endif
