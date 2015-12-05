@@ -545,7 +545,7 @@ void uninit_libretro_sym(void)
 
    rarch_system_info_free();
 
-   driver->camera_active   = false;
+   camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
    driver->location_active = false;
 
    /* Performance counters no longer valid. */
@@ -1122,7 +1122,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->start                         = driver_camera_start;
          cb->stop                          = driver_camera_stop;
          system->camera_callback           = *cb;
-         driver->camera_active = cb->caps != 0;
+         if (cb->caps != 0)
+            camera_driver_ctl(RARCH_CAMERA_CTL_SET_ACTIVE, NULL);
+         else
+            camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
          break;
       }
 

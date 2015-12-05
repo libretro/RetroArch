@@ -191,7 +191,7 @@ void init_camera(void)
    if (!driver->camera_data)
    {
       RARCH_ERR("Failed to initialize camera driver. Will continue without camera.\n");
-      driver->camera_active = false;
+      camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
    }
 
    if (system->camera_callback.initialized)
@@ -212,4 +212,34 @@ void uninit_camera(void)
          driver->camera->free(driver->camera_data);
    }
    driver->camera_data = NULL;
+}
+
+bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
+{
+   static bool camera_driver_active              = false;
+   static bool camera_driver_data_own            = false;
+
+   switch (state)
+   {
+      case RARCH_CAMERA_CTL_SET_OWN_DRIVER:
+         camera_driver_data_own = true;
+         break;
+      case RARCH_CAMERA_CTL_UNSET_OWN_DRIVER:
+         camera_driver_data_own = false;
+         break;
+      case RARCH_CAMERA_CTL_OWNS_DRIVER:
+         return camera_driver_data_own;
+      case RARCH_CAMERA_CTL_SET_ACTIVE:
+         camera_driver_active = true; 
+         break;
+      case RARCH_CAMERA_CTL_UNSET_ACTIVE:
+         camera_driver_active = false; 
+         break;
+      case RARCH_CAMERA_CTL_IS_ACTIVE:
+        return camera_driver_active; 
+      default:
+         break;
+   }
+   
+   return false;
 }

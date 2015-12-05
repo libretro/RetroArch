@@ -367,7 +367,7 @@ void init_drivers(int flags)
    if (flags & DRIVER_INPUT)
       input_driver_ctl(RARCH_INPUT_CTL_UNSET_OWN_DRIVER, NULL);
    if (flags & DRIVER_CAMERA)
-      driver->camera_data_own = false;
+      camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_OWN_DRIVER, NULL);
    if (flags & DRIVER_LOCATION)
       driver->location_data_own = false;
 
@@ -399,7 +399,7 @@ void init_drivers(int flags)
       audio_driver_ctl(RARCH_AUDIO_CTL_INIT, NULL);
 
    /* Only initialize camera driver if we're ever going to use it. */
-   if ((flags & DRIVER_CAMERA) && driver->camera_active)
+   if ((flags & DRIVER_CAMERA) && camera_driver_ctl(RARCH_CAMERA_CTL_IS_ACTIVE, NULL))
       init_camera();
 
    /* Only initialize location driver if we're ever going to use it. */
@@ -452,7 +452,7 @@ void uninit_drivers(int flags)
       driver->location_data = NULL;
    }
 
-   if ((flags & DRIVER_CAMERA) && !driver->camera_data_own)
+   if ((flags & DRIVER_CAMERA) && !camera_driver_ctl(RARCH_CAMERA_CTL_OWNS_DRIVER, NULL))
    {
       uninit_camera();
       driver->camera_data = NULL;
