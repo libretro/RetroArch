@@ -107,7 +107,7 @@ typedef struct menu_display_ctx_driver
    const float *(*get_tex_coords)(void);
    unsigned (*texture_load)(void *data, enum texture_filter_type type);
    void (*texture_unload)(uintptr_t *id);
-   bool (*font_init_first)(const void **font_driver,
+   bool (*font_init_first)(
          void **font_handle, void *video_data, const char *font_path,
          float font_size);
    enum menu_display_driver_type type;
@@ -117,10 +117,6 @@ typedef struct menu_display_ctx_driver
 void menu_display_free(void);
 
 bool menu_display_init(void);
-
-bool menu_display_font_init_first(const void **font_driver,
-      void **font_handle, void *video_data, const char *font_path,
-      float font_size);
 
 bool menu_display_font_bind_block(void *data, const void *font_data, void *userdata);
 

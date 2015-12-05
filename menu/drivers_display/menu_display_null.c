@@ -21,7 +21,6 @@
 #include "../../config.def.h"
 #include "../../gfx/font_renderer_driver.h"
 #include "../../gfx/video_context_driver.h"
-#include "../../gfx/video_thread_wrapper.h"
 #include "../../gfx/video_texture.h"
 
 #include "../menu_display.h"
@@ -88,7 +87,7 @@ static const float *menu_display_null_get_tex_coords(void)
    return &floats[0];
 }
 
-static bool menu_display_null_font_init_first(const void **font_driver,
+static bool menu_display_null_font_init_first(
       void **font_handle, void *video_data, const char *font_path,
       float font_size)
 {

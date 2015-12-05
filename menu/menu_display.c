@@ -131,15 +131,15 @@ bool menu_display_init(void)
    return true;
 }
 
-bool menu_display_font_init_first(const void **font_driver,
-      void **font_handle, void *video_data, const char *font_path,
+static bool menu_display_font_init_first(void **font_handle,
+      void *video_data, const char *font_path,
       float font_size)
 {
    menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
    if (!menu_disp || !menu_disp->font_init_first)
       return false;
 
-   return menu_disp->font_init_first(font_driver, font_handle, video_data,
+   return menu_disp->font_init_first(font_handle, video_data,
          font_path, font_size);
 }
 
@@ -239,7 +239,6 @@ bool menu_display_init_main_font(void *data,
       const char *font_path, float font_size)
 {
    bool      ret;
-   driver_t    *driver  = driver_get_ptr();
    void        *video   = video_driver_get_ptr(false);
    menu_display_t *disp = menu_display_get_ptr();
 
@@ -250,7 +249,6 @@ bool menu_display_init_main_font(void *data,
       menu_display_free_main_font();
 
    ret = menu_display_font_init_first(
-         (const void**)&driver->font_osd_driver,
          &disp->font.buf, video,
          font_path, font_size);
 

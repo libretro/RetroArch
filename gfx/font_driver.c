@@ -15,6 +15,7 @@
  */
 
 #include "font_driver.h"
+#include "video_thread_wrapper.h"
 #include "../general.h"
 
 #ifdef HAVE_D3D
@@ -187,13 +188,39 @@ void font_driver_free(void *data)
 
 bool font_driver_init_first(const void **font_driver, void *font_handle,
       void *data, const char *font_path, float font_size,
+      bool threading_hint,
       enum font_driver_render_api api)
 {
+   settings_t *settings = config_get_ptr();
+   const struct retro_hw_render_callback *hw_render =
+      (const struct retro_hw_render_callback*)video_driver_callback();
    driver_t *driver             = driver_get_ptr();
    const void **new_font_driver = font_driver ? font_driver 
       : (const void**)&driver->font_osd_driver;
    void *new_font_handle        = font_handle ? font_handle 
       : &driver->font_osd_data;
+
+   if (threading_hint && settings->video.threaded && !hw_render->context_type)
+   {
+      thread_packet_t pkt;
+      thread_video_t *thr = (thread_video_t*)video_driver_get_ptr(true);
+
+      if (!thr)
+         return false;
+
+      pkt.type                       = CMD_FONT_INIT;
+      pkt.data.font_init.method      = font_init_first;
+      pkt.data.font_init.font_driver = new_font_driver;
+      pkt.data.font_init.font_handle = new_font_handle;
+      pkt.data.font_init.video_data  = data;
+      pkt.data.font_init.font_path   = font_path;
+      pkt.data.font_init.font_size   = font_size;
+      pkt.data.font_init.api         = api;
+
+      thr->send_and_wait(thr, &pkt);
+
+      return pkt.data.font_init.return_value;
+   }
 
    return font_init_first(new_font_driver, new_font_handle,
          data, font_path, font_size, api);

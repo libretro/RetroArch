@@ -401,7 +401,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
          sizeof(settings->video.font_path));
 #endif
    if (!font_driver_init_first(NULL, NULL,
-            d3d, settings->video.font_path, 0, FONT_DRIVER_RENDER_DIRECT3D_API))
+            d3d, settings->video.font_path, 0, false, FONT_DRIVER_RENDER_DIRECT3D_API))
    {
       RARCH_ERR("[D3D]: Failed to initialize font renderer.\n");
       return false;

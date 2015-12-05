@@ -71,7 +71,7 @@ void font_driver_free(void *data);
 
 bool font_driver_init_first(const void **font_driver, void *font_handle,
       void *data, const char *font_path, float font_size,
-      enum font_driver_render_api api);
+      bool threading_hint, enum font_driver_render_api api);
 
 #ifdef __cplusplus
 }
