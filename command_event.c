@@ -436,9 +436,7 @@ static void event_init_cheats(void)
 {
    bool allow_cheats = true;
 #ifdef HAVE_NETPLAY
-   driver_t *driver  = driver_get_ptr();
-
-   allow_cheats &= !driver->netplay_data;
+   allow_cheats &= !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL);
 #endif
    allow_cheats &= !bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL);
 
@@ -1005,7 +1003,7 @@ bool event_command(enum event_command cmd)
             return false;
 
 #ifdef HAVE_NETPLAY
-         if (driver->netplay_data)
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
             return false;
 #endif
          event_main_state(cmd);
@@ -1120,13 +1118,13 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_REWIND_DEINIT:
 #ifdef HAVE_NETPLAY
-         if (driver->netplay_data)
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
             return false;
 #endif
          state_manager_event_deinit();
          break;
       case EVENT_CMD_REWIND_INIT:
-         if (!driver->netplay_data)
+         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
             init_rewind();
          break;
       case EVENT_CMD_REWIND_TOGGLE:
@@ -1422,7 +1420,7 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_SAVEFILES_INIT:
          global->sram.use = global->sram.use && !global->sram.save_disable
 #ifdef HAVE_NETPLAY
-            && (!driver->netplay_data || !global->netplay.is_client)
+            && (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL) || !global->netplay.is_client)
 #endif
             ;
 
@@ -1464,12 +1462,7 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_NETPLAY_FLIP_PLAYERS:
 #ifdef HAVE_NETPLAY
-         {
-            netplay_t *netplay = (netplay_t*)driver->netplay_data;
-            if (!netplay)
-               return false;
-            netplay_flip_users(netplay);
-         }
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, NULL);
 #endif
          break;
       case EVENT_CMD_FULLSCREEN_TOGGLE:

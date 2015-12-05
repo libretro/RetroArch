@@ -1805,6 +1805,8 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_NETPLAY_CTL_IS_DATA_INITED:
+         return true;
       case RARCH_NETPLAY_CTL_POST_FRAME:
          netplay_post_frame((netplay_t*)driver->netplay_data);
          break;

@@ -64,13 +64,11 @@ void retro_set_default_callbacks(void *data)
 void retro_init_libretro_cbs(void *data)
 {
    struct retro_callbacks *cbs = (struct retro_callbacks*)data;
-   driver_t            *driver = driver_get_ptr();
    global_t            *global = global_get_ptr();
 
    if (!cbs)
       return;
 
-   (void)driver;
    (void)global;
 
    core.retro_set_video_refresh(video_driver_frame);
@@ -82,7 +80,7 @@ void retro_init_libretro_cbs(void *data)
    retro_set_default_callbacks(cbs);
 
 #ifdef HAVE_NETPLAY
-   if (!driver->netplay_data)
+   if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
       return;
 
    if (global->netplay.is_spectate)
