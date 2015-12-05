@@ -358,7 +358,6 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    unsigned width, height;
    bool ret             = true;
    settings_t *settings = config_get_ptr();
-   driver_t   *driver   = driver_get_ptr();
 
    if (!d3d)
       return false;
@@ -536,7 +535,6 @@ static bool d3d_construct(d3d_video_t *d3d,
       void **input_data)
 {
    unsigned full_x, full_y;
-   driver_t    *driver         = driver_get_ptr();
    settings_t    *settings     = config_get_ptr();
 
    d3d->should_resize = false;
@@ -1430,7 +1428,6 @@ static bool d3d_frame(void *data, const void *frame,
    unsigned i                          = 0;
    d3d_video_t *d3d                    = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr               = (LPDIRECT3DDEVICE)d3d->dev;
-   driver_t *driver                    = driver_get_ptr();
    settings_t *settings                = config_get_ptr();
    HWND window                         = win32_get_window();
 

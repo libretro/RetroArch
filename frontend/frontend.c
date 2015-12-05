@@ -44,7 +44,6 @@
  **/
 void main_exit(void *args)
 {
-   driver_t *driver                      = driver_get_ptr();
    settings_t *settings                  = config_get_ptr();
    global_t   *global                    = global_get_ptr();
 
@@ -53,6 +52,7 @@ void main_exit(void *args)
    if (global->inited.main)
    {
 #ifdef HAVE_MENU
+      driver_t *driver     = driver_get_ptr();
       /* Do not want menu context to live any more. */
       driver->menu_data_own = false;
 #endif

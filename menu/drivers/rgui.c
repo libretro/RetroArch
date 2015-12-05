@@ -424,7 +424,6 @@ static void rgui_render(void)
    uint16_t *fb_data              = NULL;
    rgui_t *rgui                   = NULL;
    menu_handle_t *menu            = menu_driver_get_ptr();
-   driver_t *driver               = driver_get_ptr();
    settings_t *settings           = config_get_ptr();
 
    video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
@@ -434,8 +433,6 @@ static void rgui_render(void)
    title_buf[0] = '\0';
    title_msg[0] = '\0';
    timedate[0]  = '\0';
-
-   (void)driver;
 
    if (!menu || !menu->userdata)
       return;

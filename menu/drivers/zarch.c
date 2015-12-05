@@ -967,15 +967,12 @@ static void zarch_frame(void)
    float coord_color[16];
    float coord_color2[16];
    zui_t *zui           = NULL;
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
    
    if (!menu)
       return;
 
-   (void)driver;
-   
    zui      = (zui_t*)menu->userdata;
    zui->menu = menu;
 
@@ -1125,7 +1122,6 @@ error:
 static void zarch_free(void *data)
 {
    menu_handle_t *menu                     = (menu_handle_t*)data;
-   driver_t      *driver                   = driver_get_ptr();
    zui_t        *zui                       = (zui_t*)menu->userdata;
 
    if (!zui || !menu)
@@ -1150,10 +1146,9 @@ static void zarch_context_bg_destroy(zui_t *zui)
 static void zarch_context_destroy(void)
 {
    menu_handle_t *menu   = menu_driver_get_ptr();
-   driver_t      *driver = driver_get_ptr();
    zui_t        *zui     = menu ? (zui_t*)menu->userdata : NULL;
     
-   if (!menu || !zui || !driver)
+   if (!menu || !zui)
       return;
 
    menu_display_free_main_font();

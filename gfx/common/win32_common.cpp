@@ -459,10 +459,9 @@ bool win32_set_video_mode(void *data,
    float refresh_mod;
    unsigned refresh;
    bool windowed_full;
-   RECT rect   = {0};
-   HMONITOR hm_to_use = NULL;
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   RECT rect             = {0};
+   HMONITOR hm_to_use    = NULL;
+   settings_t *settings  = config_get_ptr();
 
    win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
 

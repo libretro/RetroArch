@@ -80,8 +80,7 @@ typedef struct vita_video
 static void *vita2d_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   vita_video_t *vita = (vita_video_t *)calloc(1, sizeof(vita_video_t));
-   driver_t            *driver = driver_get_ptr();
+   vita_video_t *vita   = (vita_video_t *)calloc(1, sizeof(vita_video_t));
    settings_t *settings = config_get_ptr();
 
    if (!vita)

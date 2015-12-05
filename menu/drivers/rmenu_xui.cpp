@@ -274,9 +274,7 @@ static void* rmenu_xui_init(void)
    video_info_t video_info     = {0};
    TypefaceDescriptor typeface = {0};
    settings_t *settings        = config_get_ptr();
-   driver_t   *driver          = driver_get_ptr();
-   menu_handle_t *menu         = (menu_handle_t*)
-      calloc(1, sizeof(*menu));
+   menu_handle_t *menu         = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
       return NULL;
@@ -368,8 +366,7 @@ static void xui_render_message(const char *msg)
    size_t i                      = 0;
    size_t j                      = 0;
    struct string_list *list      = NULL;
-   driver_t *driver              = driver_get_ptr();
-   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
+   d3d_video_t              *d3d = (d3d_video_t*)video_driver_get_ptr(false);
 
    if (!d3d)
       return;
@@ -408,10 +405,9 @@ static void rmenu_xui_frame(void)
    D3DXMATRIX matOrigView;
    LPDIRECT3DDEVICE d3dr;
    const char *message;
-   D3DVIEWPORT vp_full = {0};
-   d3d_video_t *d3d = NULL;
+   D3DVIEWPORT vp_full   = {0};
+   d3d_video_t *d3d      = NULL;
    menu_handle_t *menu   = menu_driver_get_ptr();
-   driver_t      *driver = driver_get_ptr();
 
    if (!menu)
       return;
