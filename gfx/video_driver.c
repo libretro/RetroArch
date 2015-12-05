@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include <gfx/scaler/pixconv.h>
+#include <gfx/scaler/scaler.h>
 
 #include <file/config_file.h>
 

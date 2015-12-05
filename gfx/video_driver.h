@@ -20,8 +20,9 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <sys/types.h>
+
 #include <boolean.h>
-#include <gfx/scaler/scaler.h>
+
 #include "font_driver.h"
 #include "video_filter.h"
 #include "video_shader_parse.h"
