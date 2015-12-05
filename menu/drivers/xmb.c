@@ -1677,7 +1677,6 @@ static void xmb_frame(void)
    bool display_kb;
    bool render_background                  = false;
    xmb_handle_t *xmb                       = NULL;
-   driver_t *driver                        = driver_get_ptr();
    menu_handle_t   *menu                   = menu_driver_get_ptr();
    settings_t   *settings                  = config_get_ptr();
    file_list_t *selection_buf              = menu_entries_get_selection_buf_ptr(0);
@@ -2024,7 +2023,6 @@ static void xmb_free(void *data)
 {
    xmb_handle_t *xmb                       = NULL;
    menu_handle_t *menu                     = (menu_handle_t*)data;
-   driver_t *driver                        = driver_get_ptr();
 
    if (menu && menu->userdata)
    {

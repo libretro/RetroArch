@@ -735,7 +735,6 @@ static void mui_frame(void)
    size_t title_margin;
    uint64_t *frame_count;
    mui_handle_t *mui               = NULL;
-   driver_t *driver                = driver_get_ptr();
    menu_handle_t *menu             = menu_driver_get_ptr();
    settings_t *settings            = config_get_ptr();
    const uint32_t normal_color     = 0x212121ff;
@@ -998,7 +997,6 @@ error:
 static void mui_free(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
-   driver_t *driver    = driver_get_ptr();
    mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
 
    if (!mui)

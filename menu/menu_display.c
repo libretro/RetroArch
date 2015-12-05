@@ -167,7 +167,6 @@ bool menu_display_font_flush_block(void)
 
 void menu_display_free_main_font(void)
 {
-   driver_t     *driver = driver_get_ptr();
    menu_display_t *disp = menu_display_get_ptr();
     
    if (disp && disp->font.buf)
