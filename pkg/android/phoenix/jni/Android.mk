@@ -54,17 +54,20 @@ LOCAL_CFLAGS += -Wall -pthread -Wno-unused-function -fno-stack-protector -funrol
 LOCAL_CFLAGS += -DHAVE_7ZIP
 LOCAL_CFLAGS += -DHAVE_CHEEVOS
 
-ifeq ($(NDK_DEBUG),1)
-LOCAL_CFLAGS += -O0 -g
-else
-LOCAL_CFLAGS += -O2 -DNDEBUG
-endif
+# Let ndk-build set the optimization flags but remove -O3 like in cf3c3
+LOCAL_CFLAGS := $(subst -O3,-O2,$(LOCAL_CFLAGS))
 
 LOCAL_LDLIBS	:= -L$(SYSROOT)/usr/lib -landroid -lEGL $(GLES_LIB) $(LOGGER_LDLIBS) -ldl
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include/
 
 LOCAL_CFLAGS += -DHAVE_SL
 LOCAL_LDLIBS += -lOpenSLES -lz
+
+ifneq ($(SANITIZER),)
+   LOCAL_CFLAGS   += -g -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
+   LOCAL_CPPFLAGS += -g -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
+   LOCAL_LDFLAGS  += -fsanitize=$(SANITIZER)
+endif
 
 include $(BUILD_SHARED_LIBRARY)
 
