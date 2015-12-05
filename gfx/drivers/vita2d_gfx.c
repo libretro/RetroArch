@@ -132,10 +132,9 @@ static void *vita2d_gfx_init(const video_info_t *video,
    vita->keep_aspect        = true;
    vita->should_resize      = true;
 #ifdef HAVE_OVERLAY
-   vita->overlay_enable           = false;
+   vita->overlay_enable     = false;
 #endif
-   if (!font_init_first((const void**)&driver->font_osd_driver, &driver->font_osd_data,
-          vita, *settings->video.font_path 
+   if (!font_driver_init_first(vita, *settings->video.font_path 
           ? settings->video.font_path : NULL, settings->video.font_size,
           FONT_DRIVER_RENDER_VITA2D))
    {
@@ -279,13 +278,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    }
    
    if(msg && strcmp(msg,""))
-   {
-     driver_t          *driver = driver_get_ptr();
-     const font_renderer_t *font_ctx = driver->font_osd_driver;
-     
-     if (font_ctx->render_msg)
-       font_ctx->render_msg(driver->font_osd_data, msg, NULL);
-   }
+     font_driver_render_msg(msg, NULL);
    
    vita2d_end_drawing();
    vita2d_swap_buffers();

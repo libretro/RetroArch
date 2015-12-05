@@ -1433,7 +1433,6 @@ static bool d3d_frame(void *data, const void *frame,
    driver_t *driver                    = driver_get_ptr();
    settings_t *settings                = config_get_ptr();
    HWND window                         = win32_get_window();
-   const font_renderer_t *font_ctx     = driver->font_osd_driver;
 
    (void)i;
 
