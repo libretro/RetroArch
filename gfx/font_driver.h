@@ -63,7 +63,7 @@ bool font_init_first(
 
 bool font_driver_has_render_msg(void);
 
-void font_driver_render_msg(const char *msg, const struct font_params *params);
+void font_driver_render_msg(void *data, const char *msg, const struct font_params *params);
 
 void font_driver_free(void);
 

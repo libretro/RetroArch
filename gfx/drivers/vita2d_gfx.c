@@ -278,7 +278,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    }
    
    if(msg && strcmp(msg,""))
-     font_driver_render_msg(msg, NULL);
+     font_driver_render_msg(NULL, msg, NULL);
    
    vita2d_end_drawing();
    vita2d_swap_buffers();

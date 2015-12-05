@@ -525,7 +525,7 @@ static void d3d_set_osd_msg(void *data, const char *msg,
    if (d3d->renderchain_driver->set_font_rect && params)
       d3d->renderchain_driver->set_font_rect(d3d, params);
 
-   font_driver_render_msg(msg, params);
+   font_driver_render_msg(NULL, msg, params);
 }
 
 /* Delay constructor due to lack of exceptions. */
@@ -1509,7 +1509,7 @@ static bool d3d_frame(void *data, const void *frame,
       font_parms.y                  = msg_height;
       font_parms.scale              = 21;
 #endif
-      font_driver_render_msg(msg, &font_params);
+      font_driver_render_msg(NULL, msg, &font_params);
    }
 
 #ifdef HAVE_MENU

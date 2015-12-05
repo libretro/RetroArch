@@ -1795,7 +1795,7 @@ static bool gl_frame(void *data, const void *frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(msg, NULL);
+      font_driver_render_msg(NULL, msg, NULL);
 
 #ifdef HAVE_OVERLAY
    if (gl->overlay_enable)
@@ -3373,18 +3373,7 @@ static void gl_apply_state_changes(void *data)
 static void gl_set_osd_msg(void *data, const char *msg,
       const struct font_params *params, void *font)
 {
-   driver_t *driver = driver_get_ptr();
-   const struct font_renderer *font_driver = driver ? 
-      driver->font_osd_driver : NULL;
-   gl_t *gl = (gl_t*)data;
-   if (!gl)
-      return;
-
-   if (!font)
-      font = driver->font_osd_data;
-
-   if (driver->font_osd_driver && font)
-      font_driver->render_msg(font, msg, params);
+   font_driver_render_msg(font, msg, params);
 }
 
 static void gl_show_mouse(void *data, bool state)

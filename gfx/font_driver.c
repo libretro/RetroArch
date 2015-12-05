@@ -152,13 +152,13 @@ bool font_driver_has_render_msg(void)
    return true;
 }
 
-void font_driver_render_msg(const char *msg, const struct font_params *params)
+void font_driver_render_msg(void *font_data, const char *msg, const struct font_params *params)
 {
    driver_t          *driver = driver_get_ptr();
    const font_renderer_t *font_ctx = driver->font_osd_driver;
 
    if (font_ctx->render_msg)
-      font_ctx->render_msg(driver->font_osd_data, msg, params);
+      font_ctx->render_msg(font_data ? font_data : driver->font_osd_data, msg, params);
 }
 
 void font_driver_free(void)
