@@ -65,7 +65,7 @@ bool font_driver_has_render_msg(void);
 
 void font_driver_render_msg(void *data, const char *msg, const struct font_params *params);
 
-void font_driver_free(void);
+void font_driver_free(void *data);
 
 bool font_driver_init_first(void *data, const char *font_path, float font_size,
       enum font_driver_render_api api);

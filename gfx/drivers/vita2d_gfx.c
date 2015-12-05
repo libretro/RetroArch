@@ -342,6 +342,8 @@ static void vita2d_gfx_free(void *data)
       vita->texture = NULL;
    }
 
+   font_driver_free(NULL);
+
    RARCH_LOG("vita2d_gfx_free() done\n");
 }
 

@@ -161,13 +161,17 @@ void font_driver_render_msg(void *font_data, const char *msg, const struct font_
       font_ctx->render_msg(font_data ? font_data : driver->font_osd_data, msg, params);
 }
 
-void font_driver_free(void)
+void font_driver_free(void *data)
 {
    driver_t *driver = driver_get_ptr();
    const font_renderer_t *font_ctx = (const font_renderer_t*)driver->font_osd_driver;
 
    if (font_ctx->free)
-      font_ctx->free(driver->font_osd_data);
+      font_ctx->free(data ? data : driver->font_osd_data);
+
+   if (data)
+      return;
+
    driver->font_osd_data   = NULL;
    driver->font_osd_driver = NULL;
 }

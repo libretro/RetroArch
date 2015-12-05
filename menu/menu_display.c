@@ -178,7 +178,7 @@ void menu_display_free_main_font(void)
     
    if (disp && disp->font.buf)
    {
-      driver->font_osd_driver->free(disp->font.buf);
+      font_driver_free(disp->font.buf);
       disp->font.buf = NULL;
    }
 }
