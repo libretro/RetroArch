@@ -36,20 +36,6 @@
 #include "config.h"
 #endif
 
-void driver_free(void)
-{
-   video_driver_ctl(RARCH_DISPLAY_CTL_DESTROY, NULL);
-   audio_driver_ctl(RARCH_AUDIO_CTL_DESTROY, NULL);
-   input_driver_ctl(RARCH_INPUT_CTL_DESTROY, NULL);
-   retro_uninit_libretro_cbs();
-}
-
-void driver_clear_state(void)
-{
-   driver_free();
-}
-
-
 #define HASH_LOCATION_DRIVER           0x09189689U
 #define HASH_CAMERA_DRIVER             0xf25db959U
 #define HASH_MENU_DRIVER               0xd607fb05U
@@ -59,6 +45,14 @@ void driver_clear_state(void)
 #define HASH_AUDIO_DRIVER              0x26594002U
 #define HASH_AUDIO_RESAMPLER_DRIVER    0xedcba9ecU
 #define HASH_RECORD_DRIVER             0x144cd2cfU
+
+void driver_free(void)
+{
+   video_driver_ctl(RARCH_DISPLAY_CTL_DESTROY, NULL);
+   audio_driver_ctl(RARCH_AUDIO_CTL_DESTROY, NULL);
+   input_driver_ctl(RARCH_INPUT_CTL_DESTROY, NULL);
+   retro_uninit_libretro_cbs();
+}
 /**
  * find_driver_nonempty:
  * @label              : string of driver type to be found.

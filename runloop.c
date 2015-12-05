@@ -707,7 +707,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
          break;
       case RUNLOOP_CTL_CLEAR_STATE:
-         driver_clear_state();
+         driver_free();
          runloop_ctl(RUNLOOP_CTL_STATE_FREE,  NULL);
          runloop_ctl(RUNLOOP_CTL_GLOBAL_FREE, NULL);
          break;

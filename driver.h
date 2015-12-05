@@ -289,8 +289,6 @@ int find_driver_index(const char * label, const char *drv);
 
 void driver_free(void);
 
-void driver_clear_state(void);
-  
 #ifdef __cplusplus
 }
 #endif
