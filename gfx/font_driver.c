@@ -33,15 +33,18 @@ static const font_renderer_driver_t *font_backends[] = {
    NULL
 };
 
+static const struct font_renderer *font_osd_driver;
+
+static void *font_osd_data;
+
 int font_renderer_get_message_width(const char *msg, float scale)
 {
-    driver_t *driver                        = driver_get_ptr();  
-    const struct font_renderer *font_driver = driver ? driver->font_osd_driver : NULL;
+    const struct font_renderer *font_driver = font_osd_driver;
     
     if (!font_driver || !font_driver->get_message_width)
        return 0;
        
-    return font_driver->get_message_width(driver->font_osd_data, msg, strlen(msg), scale);
+    return font_driver->get_message_width(font_osd_data, msg, strlen(msg), scale);
 }
 
 int font_renderer_create_default(const void **data, void **handle,
@@ -207,8 +210,7 @@ bool font_init_first(const void **font_driver, void **font_handle,
 
 bool font_driver_has_render_msg(void)
 {
-   driver_t          *driver = driver_get_ptr();
-   const font_renderer_t *font_ctx = driver->font_osd_driver;
+   const font_renderer_t *font_ctx = font_osd_driver;
    if (!font_ctx || !font_ctx->render_msg)
       return false;
    return true;
@@ -216,18 +218,16 @@ bool font_driver_has_render_msg(void)
 
 void font_driver_render_msg(void *font_data, const char *msg, const struct font_params *params)
 {
-   driver_t          *driver = driver_get_ptr();
-   const font_renderer_t *font_ctx = driver->font_osd_driver;
+   const font_renderer_t *font_ctx = font_osd_driver;
 
    if (font_ctx->render_msg)
-      font_ctx->render_msg(font_data ? font_data : driver->font_osd_data, msg, params);
+      font_ctx->render_msg(font_data ? font_data : font_osd_data, msg, params);
 }
 
 void font_driver_bind_block(void *font_data, void *block)
 {
-   driver_t          *driver       = driver_get_ptr();
-   const font_renderer_t *font_ctx = driver->font_osd_driver;
-   void             *new_font_data = font_data ? font_data : driver->font_osd_data;
+   const font_renderer_t *font_ctx = font_osd_driver;
+   void             *new_font_data = font_data ? font_data : font_osd_data;
 
    if (font_ctx->bind_block)
       font_ctx->bind_block(new_font_data, block);
@@ -235,8 +235,7 @@ void font_driver_bind_block(void *font_data, void *block)
 
 void font_driver_flush(void *data)
 {
-   driver_t          *driver       = driver_get_ptr();
-   const font_renderer_t *font_ctx = driver->font_osd_driver;
+   const font_renderer_t *font_ctx = font_osd_driver;
 
    if (font_ctx->flush)
       font_ctx->flush(data);
@@ -244,8 +243,7 @@ void font_driver_flush(void *data)
 
 int font_driver_get_message_width(void *data, const char *msg, unsigned len, float scale)
 {
-   driver_t          *driver       = driver_get_ptr();
-   const font_renderer_t *font_ctx = driver->font_osd_driver;
+   const font_renderer_t *font_ctx = font_osd_driver;
 
    if (!font_ctx || !font_ctx->get_message_width)
       return -1;
@@ -254,17 +252,16 @@ int font_driver_get_message_width(void *data, const char *msg, unsigned len, flo
 
 void font_driver_free(void *data)
 {
-   driver_t *driver = driver_get_ptr();
-   const font_renderer_t *font_ctx = (const font_renderer_t*)driver->font_osd_driver;
+   const font_renderer_t *font_ctx = (const font_renderer_t*)font_osd_driver;
 
    if (font_ctx->free)
-      font_ctx->free(data ? data : driver->font_osd_data);
+      font_ctx->free(data ? data : font_osd_data);
 
    if (data)
       return;
 
-   driver->font_osd_data   = NULL;
-   driver->font_osd_driver = NULL;
+   font_osd_data   = NULL;
+   font_osd_driver = NULL;
 }
 
 bool font_driver_init_first(const void **font_driver, void *font_handle,
@@ -275,11 +272,10 @@ bool font_driver_init_first(const void **font_driver, void *font_handle,
    settings_t *settings = config_get_ptr();
    const struct retro_hw_render_callback *hw_render =
       (const struct retro_hw_render_callback*)video_driver_callback();
-   driver_t *driver             = driver_get_ptr();
    const void **new_font_driver = font_driver ? font_driver 
-      : (const void**)&driver->font_osd_driver;
+      : (const void**)&font_osd_driver;
    void *new_font_handle        = font_handle ? font_handle 
-      : &driver->font_osd_data;
+      : &font_osd_data;
 
    if (threading_hint && settings->video.threaded && !hw_render->context_type)
    {

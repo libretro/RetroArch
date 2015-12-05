@@ -194,9 +194,6 @@ typedef struct driver
    const location_driver_t *location;
    const record_driver_t *recording;
    struct retro_callbacks retro_ctx;
-   const struct font_renderer *font_osd_driver;
-
-   void *font_osd_data;
    void *camera_data;
    void *location_data;
    void *recording_data;
