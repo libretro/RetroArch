@@ -1699,7 +1699,7 @@ static void xmb_frame(void)
 
    video_driver_get_size(&width, &height);
 
-   menu_display_font_bind_block(menu, font_driver, &xmb->raster_block);
+   menu_display_font_bind_block(font_driver, &xmb->raster_block);
 
    xmb->raster_block.carr.coords.vertices = 0;
 

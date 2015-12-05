@@ -968,7 +968,6 @@ static void zarch_frame(void)
    float coord_color[16];
    float coord_color2[16];
    zui_t *zui           = NULL;
-   const struct font_renderer *font_driver = NULL;
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
@@ -1010,9 +1009,7 @@ static void zarch_frame(void)
 
    zui->tmp_block.carr.coords.vertices = 0;
 
-   font_driver = driver->font_osd_driver;
-
-   menu_display_font_bind_block(zui->menu, font_driver, &zui->tmp_block);
+   menu_display_font_bind_block(driver->font_osd_driver, &zui->tmp_block);
 
    zarch_zui_push_quad(zui->width, zui->height, ZUI_BG_SCREEN, &zui->ca, 0, 0, zui->width, zui->height);
    zarch_zui_snow(zui, &zui->ca, zui->width, zui->height);

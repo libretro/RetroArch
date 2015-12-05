@@ -143,7 +143,7 @@ static bool menu_display_font_init_first(void **font_handle,
          font_path, font_size);
 }
 
-bool menu_display_font_bind_block(void *data, const void *font_data, void *userdata)
+bool menu_display_font_bind_block(const void *font_data, void *userdata)
 {
    const struct font_renderer *font_driver = 
       (const struct font_renderer*)font_data;
@@ -160,15 +160,13 @@ bool menu_display_font_flush_block(void *data, const void *font_data)
 {
    const struct font_renderer *font_driver = 
       (const struct font_renderer*)font_data;
-   menu_handle_t *menu = (menu_handle_t*)data;
    menu_display_t *disp = menu_display_get_ptr();
    if (!font_driver || !font_driver->flush || !disp || !disp->font.buf)
       return false;
 
    font_driver->flush(disp->font.buf);
 
-   return menu_display_font_bind_block(menu,
-         font_driver, NULL);
+   return menu_display_font_bind_block(font_driver, NULL);
 }
 
 void menu_display_free_main_font(void)

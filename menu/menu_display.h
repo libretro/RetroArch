@@ -118,7 +118,7 @@ void menu_display_free(void);
 
 bool menu_display_init(void);
 
-bool menu_display_font_bind_block(void *data, const void *font_data, void *userdata);
+bool menu_display_font_bind_block(const void *font_data, void *userdata);
 
 bool menu_display_font_flush_block(void *data, const void *font_data);
 
