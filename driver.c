@@ -447,10 +447,7 @@ void uninit_drivers(int flags)
 #endif
 
    if ((flags & DRIVER_LOCATION) && !location_driver_ctl(RARCH_LOCATION_CTL_OWNS_DRIVER, NULL))
-   {
       uninit_location();
-      driver->location_data = NULL;
-   }
 
    if ((flags & DRIVER_CAMERA) && !camera_driver_ctl(RARCH_CAMERA_CTL_OWNS_DRIVER, NULL))
    {

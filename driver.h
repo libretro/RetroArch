@@ -187,9 +187,6 @@ typedef struct driver
    const camera_driver_t *camera;
    void *camera_data;
 
-   const location_driver_t *location;
-   void *location_data;
-
    const record_driver_t *recording;
    void *recording_data;
 
