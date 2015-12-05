@@ -25,23 +25,10 @@
 #include <boolean.h>
 
 #include "menu_driver.h"
+#include "menu_shader.h"
 #include "../driver.h"
 #include "../input/input_driver.h"
 #include "../dynamic.h"
-
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-#ifndef HAVE_SHADER_MANAGER
-#define HAVE_SHADER_MANAGER
-#endif
-#endif
-
-#ifndef GFX_MAX_PARAMETERS
-#define GFX_MAX_PARAMETERS 64
-#endif
-
-#ifndef GFX_MAX_SHADERS
-#define GFX_MAX_SHADERS 16
-#endif
 
 #ifndef MAX_COUNTERS
 #define MAX_COUNTERS 64
