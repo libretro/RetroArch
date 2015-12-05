@@ -1677,7 +1677,7 @@ static void xmb_frame(void)
    bool display_kb;
    bool render_background                  = false;
    xmb_handle_t *xmb                       = NULL;
-   const struct font_renderer *font_driver = NULL;
+   driver_t *driver                        = driver_get_ptr();
    menu_handle_t   *menu                   = menu_driver_get_ptr();
    settings_t   *settings                  = config_get_ptr();
    file_list_t *selection_buf              = menu_entries_get_selection_buf_ptr(0);
@@ -1699,7 +1699,7 @@ static void xmb_frame(void)
 
    video_driver_get_size(&width, &height);
 
-   menu_display_font_bind_block(font_driver, &xmb->raster_block);
+   menu_display_font_bind_block(driver->font_osd_driver, &xmb->raster_block);
 
    xmb->raster_block.carr.coords.vertices = 0;
 
@@ -1792,7 +1792,7 @@ static void xmb_frame(void)
 
    xmb_frame_horizontal_list(xmb, menu, width, height, &item_color[0]);
 
-   menu_display_font_flush_block(menu, font_driver);
+   menu_display_font_flush_block(menu, driver->font_osd_driver);
 
    menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
 
