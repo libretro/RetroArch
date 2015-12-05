@@ -146,7 +146,7 @@ void font_driver_flush(void *data);
 
 void font_driver_free(void *data);
 
-bool font_driver_init_first(const void **font_driver, void *font_handle,
+bool font_driver_init_first(const void **font_driver, void **font_handle,
       void *data, const char *font_path, float font_size,
       bool threading_hint, enum font_driver_render_api api);
 

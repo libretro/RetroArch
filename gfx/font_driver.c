@@ -264,7 +264,7 @@ void font_driver_free(void *data)
    font_osd_driver = NULL;
 }
 
-bool font_driver_init_first(const void **font_driver, void *font_handle,
+bool font_driver_init_first(const void **font_driver, void **font_handle,
       void *data, const char *font_path, float font_size,
       bool threading_hint,
       enum font_driver_render_api api)
@@ -274,8 +274,8 @@ bool font_driver_init_first(const void **font_driver, void *font_handle,
       (const struct retro_hw_render_callback*)video_driver_callback();
    const void **new_font_driver = font_driver ? font_driver 
       : (const void**)&font_osd_driver;
-   void *new_font_handle        = font_handle ? font_handle 
-      : &font_osd_data;
+   void **new_font_handle        = font_handle ? font_handle 
+      : (void**)&font_osd_data;
 
    if (threading_hint && settings->video.threaded && !hw_render->context_type)
    {
