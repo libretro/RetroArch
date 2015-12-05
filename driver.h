@@ -25,7 +25,7 @@
 #include <compat/posix_string.h>
 #include <retro_miscellaneous.h>
 
-#include "libretro_private.h"
+#include "libretro.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
