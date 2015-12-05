@@ -960,8 +960,7 @@ static void mui_layout(menu_handle_t *menu, mui_handle_t *mui)
 
    if (fb_buf) /* calculate a more realistic ticker_limit */
    {
-      driver_t *driver = driver_get_ptr();
-      unsigned m_width = driver->font_osd_driver->get_message_width(fb_buf, "a", 1, 1);
+      unsigned m_width = font_driver_get_message_width(fb_buf, "a", 1, 1);
 
       if (m_width)
          mui->glyph_width = m_width;

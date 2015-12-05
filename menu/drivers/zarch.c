@@ -221,8 +221,7 @@ static void zarch_zui_font(menu_handle_t *menu)
 
 static float zarch_zui_strwidth(void *fb_buf, const char *text, float scale)
 {
-   driver_t *driver = (driver_t*)driver_get_ptr();
-   return driver->font_osd_driver->get_message_width(fb_buf, text, strlen(text), scale);
+   return font_driver_get_message_width(fb_buf, text, strlen(text), scale);
 }
 
 enum zarch_zui_input_state

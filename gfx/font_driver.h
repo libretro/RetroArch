@@ -140,6 +140,8 @@ void font_driver_render_msg(void *data, const char *msg, const struct font_param
 
 void font_driver_bind_block(void *font_data, void *block);
 
+int font_driver_get_message_width(void *data, const char *msg, unsigned len, float scale);
+
 void font_driver_flush(void *data);
 
 void font_driver_free(void *data);

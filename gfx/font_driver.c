@@ -242,6 +242,16 @@ void font_driver_flush(void *data)
       font_ctx->flush(data);
 }
 
+int font_driver_get_message_width(void *data, const char *msg, unsigned len, float scale)
+{
+   driver_t          *driver       = driver_get_ptr();
+   const font_renderer_t *font_ctx = driver->font_osd_driver;
+
+   if (!font_ctx || !font_ctx->get_message_width)
+      return -1;
+   return font_ctx->get_message_width(data, msg, len, scale);
+}
+
 void font_driver_free(void *data)
 {
    driver_t *driver = driver_get_ptr();
