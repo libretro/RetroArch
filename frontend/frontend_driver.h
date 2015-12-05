@@ -118,6 +118,12 @@ void frontend_driver_set_fork(bool a, bool b);
 
 void frontend_driver_process_args(int *argc, char *argv[]);
 
+bool frontend_driver_is_inited(void);
+
+void frontend_driver_init_first(void *args);
+
+environment_get_t frontend_driver_environment_get_ptr(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -19,6 +19,7 @@
 #include "frontend_driver.h"
 #ifndef IS_SALAMANDER
 #include "../driver.h"
+#include "../verbosity.h"
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -145,5 +146,34 @@ void frontend_driver_process_args(int *argc, char *argv[])
    if (!frontend || !frontend->process_args)
       return;
    frontend->process_args(argc, argv);
+}
+
+bool frontend_driver_is_inited(void)
+{
+   driver_t *driver = driver_get_ptr();
+   if (!driver->frontend_ctx)
+      return false;
+   return true;
+}
+
+void frontend_driver_init_first(void *args)
+{
+   driver_t *driver = driver_get_ptr();
+   if (driver)
+      driver->frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
+
+   if (!driver || !driver->frontend_ctx)
+      RARCH_WARN("Frontend context could not be initialized.\n");
+
+   if (driver->frontend_ctx && driver->frontend_ctx->init)
+      driver->frontend_ctx->init(args);
+}
+
+environment_get_t frontend_driver_environment_get_ptr(void)
+{
+   driver_t *driver = driver_get_ptr();
+   if (!driver || !driver->frontend_ctx)
+      return NULL;
+   return driver->frontend_ctx->environment_get;
 }
 #endif

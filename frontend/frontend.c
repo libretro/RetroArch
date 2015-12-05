@@ -267,15 +267,7 @@ int rarch_main(int argc, char *argv[], void *data)
 
    driver = driver_get_ptr();
 
-   if (driver)
-      driver->frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
-
-   if (!driver || !driver->frontend_ctx)
-      RARCH_WARN("Frontend context could not be initialized.\n");
-
-   if (driver->frontend_ctx && driver->frontend_ctx->init)
-      driver->frontend_ctx->init(args);
-
+   frontend_driver_init_first(args);
    rarch_main_new();
 
 #ifdef HAVE_THREADS
@@ -283,10 +275,10 @@ int rarch_main(int argc, char *argv[], void *data)
    global->async_jobs = async_job_new();
 #endif
    
-   if (driver->frontend_ctx)
+   if (frontend_driver_is_inited())
    {
       if (!(ret = (main_load_content(argc, argv, args,
-                     driver->frontend_ctx->environment_get))))
+                     frontend_driver_environment_get_ptr()))))
          return ret;
    }
 
