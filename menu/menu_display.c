@@ -156,7 +156,7 @@ bool menu_display_font_bind_block(const void *font_data, void *userdata)
    return true;
 }
 
-bool menu_display_font_flush_block(void *data, const void *font_data)
+bool menu_display_font_flush_block(const void *font_data)
 {
    const struct font_renderer *font_driver = 
       (const struct font_renderer*)font_data;

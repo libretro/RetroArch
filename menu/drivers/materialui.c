@@ -817,7 +817,7 @@ static void mui_frame(void)
 
    mui_render_menu_list(mui, width, height, menu, normal_color, hover_color, &pure_white[0]);
 
-   menu_display_font_flush_block(menu, driver->font_osd_driver);
+   menu_display_font_flush_block(driver->font_osd_driver);
 
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 

@@ -1062,7 +1062,7 @@ static void zarch_frame(void)
          NULL, menu_display_get_tex_coords(), 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
-   menu_display_font_flush_block(zui->menu, driver->font_osd_driver);
+   menu_display_font_flush_block(driver->font_osd_driver);
 
    zui->rendering = false;
 

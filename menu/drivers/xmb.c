@@ -1792,7 +1792,7 @@ static void xmb_frame(void)
 
    xmb_frame_horizontal_list(xmb, menu, width, height, &item_color[0]);
 
-   menu_display_font_flush_block(menu, driver->font_osd_driver);
+   menu_display_font_flush_block(driver->font_osd_driver);
 
    menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
 
