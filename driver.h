@@ -61,6 +61,40 @@ extern "C" {
 #define RARCH_FIRST_CUSTOM_BIND        16
 #define RARCH_FIRST_META_KEY           RARCH_CUSTOM_BIND_LIST_END
 
+#define AXIS_NEG(x)        (((uint32_t)(x) << 16) | UINT16_C(0xFFFF))
+#define AXIS_POS(x)        ((uint32_t)(x) | UINT32_C(0xFFFF0000))
+#define AXIS_NONE          UINT32_C(0xFFFFFFFF)
+#define AXIS_DIR_NONE      UINT16_C(0xFFFF)
+
+#define AXIS_NEG_GET(x)    (((uint32_t)(x) >> 16) & UINT16_C(0xFFFF))
+#define AXIS_POS_GET(x)    ((uint32_t)(x) & UINT16_C(0xFFFF))
+
+#define NO_BTN             UINT16_C(0xFFFF)
+
+#define HAT_UP_SHIFT       15
+#define HAT_DOWN_SHIFT     14
+#define HAT_LEFT_SHIFT     13
+#define HAT_RIGHT_SHIFT    12
+#define HAT_UP_MASK        (1 << HAT_UP_SHIFT)
+#define HAT_DOWN_MASK      (1 << HAT_DOWN_SHIFT)
+#define HAT_LEFT_MASK      (1 << HAT_LEFT_SHIFT)
+#define HAT_RIGHT_MASK     (1 << HAT_RIGHT_SHIFT)
+#define HAT_MAP(x, hat)    ((x & ((1 << 12) - 1)) | hat)
+
+#define HAT_MASK           (HAT_UP_MASK | HAT_DOWN_MASK | HAT_LEFT_MASK | HAT_RIGHT_MASK)
+#define GET_HAT_DIR(x)     (x & HAT_MASK)
+#define GET_HAT(x)         (x & (~HAT_MASK))
+
+/* Drivers for EVENT_CMD_DRIVERS_DEINIT and EVENT_CMD_DRIVERS_INIT */
+#define DRIVERS_CMD_ALL \
+      ( DRIVER_AUDIO \
+      | DRIVER_VIDEO \
+      | DRIVER_INPUT \
+      | DRIVER_CAMERA \
+      | DRIVER_LOCATION \
+      | DRIVER_MENU \
+      | DRIVERS_VIDEO_INPUT )
+
 /* RetroArch specific bind IDs. */
 enum
 {
@@ -121,30 +155,6 @@ enum
    RARCH_BIND_LIST_END_NULL
 };
 
-#define AXIS_NEG(x)        (((uint32_t)(x) << 16) | UINT16_C(0xFFFF))
-#define AXIS_POS(x)        ((uint32_t)(x) | UINT32_C(0xFFFF0000))
-#define AXIS_NONE          UINT32_C(0xFFFFFFFF)
-#define AXIS_DIR_NONE      UINT16_C(0xFFFF)
-
-#define AXIS_NEG_GET(x)    (((uint32_t)(x) >> 16) & UINT16_C(0xFFFF))
-#define AXIS_POS_GET(x)    ((uint32_t)(x) & UINT16_C(0xFFFF))
-
-#define NO_BTN             UINT16_C(0xFFFF)
-
-#define HAT_UP_SHIFT       15
-#define HAT_DOWN_SHIFT     14
-#define HAT_LEFT_SHIFT     13
-#define HAT_RIGHT_SHIFT    12
-#define HAT_UP_MASK        (1 << HAT_UP_SHIFT)
-#define HAT_DOWN_MASK      (1 << HAT_DOWN_SHIFT)
-#define HAT_LEFT_MASK      (1 << HAT_LEFT_SHIFT)
-#define HAT_RIGHT_MASK     (1 << HAT_RIGHT_SHIFT)
-#define HAT_MAP(x, hat)    ((x & ((1 << 12) - 1)) | hat)
-
-#define HAT_MASK           (HAT_UP_MASK | HAT_DOWN_MASK | HAT_LEFT_MASK | HAT_RIGHT_MASK)
-#define GET_HAT_DIR(x)     (x & HAT_MASK)
-#define GET_HAT(x)         (x & (~HAT_MASK))
-
 enum analog_dpad_mode
 {
    ANALOG_DPAD_NONE = 0,
@@ -165,15 +175,6 @@ enum
    DRIVERS_VIDEO_INPUT = 1 << 6
 };
 
-/* Drivers for EVENT_CMD_DRIVERS_DEINIT and EVENT_CMD_DRIVERS_INIT */
-#define DRIVERS_CMD_ALL \
-      ( DRIVER_AUDIO \
-      | DRIVER_VIDEO \
-      | DRIVER_INPUT \
-      | DRIVER_CAMERA \
-      | DRIVER_LOCATION \
-      | DRIVER_MENU \
-      | DRIVERS_VIDEO_INPUT )
 
 /* TODO/FIXME - comment needs to be moved to each respective driver */
 
@@ -297,4 +298,3 @@ void driver_clear_state(void);
 #endif
 
 #endif
-
