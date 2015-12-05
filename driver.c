@@ -291,7 +291,7 @@ void driver_set_nonblock_state(void)
 
 /**
  * driver_update_system_av_info:
- * @info               : pointer to new A/V info
+ * @data               : pointer to new A/V info
  *
  * Update the system Audio/Video information. 
  * Will reinitialize audio/video drivers.
@@ -299,9 +299,10 @@ void driver_set_nonblock_state(void)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool driver_update_system_av_info(const struct retro_system_av_info *info)
+bool driver_update_system_av_info(const void *data)
 {
-   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   const struct retro_system_av_info *info = (const struct retro_system_av_info*)data;
+   struct retro_system_av_info *av_info    = video_viewport_get_system_av_info();
 
    memcpy(av_info, info, sizeof(*av_info));
    event_command(EVENT_CMD_REINIT);

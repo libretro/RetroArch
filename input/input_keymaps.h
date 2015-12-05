@@ -19,7 +19,8 @@
 
 #include <file/config_file.h>
 #include <stdint.h>
-#include "../driver.h"
+
+#include "../libretro.h"
 
 #ifdef __cplusplus
 extern "C" {

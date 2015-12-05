@@ -24,8 +24,6 @@
 #include <boolean.h>
 #include <compat/posix_string.h>
 
-#include "libretro.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -275,7 +273,7 @@ void driver_set_refresh_rate(float hz);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool driver_update_system_av_info(const struct retro_system_av_info *info);
+bool driver_update_system_av_info(const void *data);
 
 /**
  * find_driver_index:

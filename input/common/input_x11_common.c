@@ -14,6 +14,7 @@
  */
 
 #include "input_x11_common.h"
+#include "../../libretro.h"
 
 static bool x11_mouse_wu;
 static bool x11_mouse_wd;
