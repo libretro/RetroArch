@@ -1805,6 +1805,12 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_NETPLAY_CTL_POST_FRAME:
+         netplay_post_frame((netplay_t*)driver->netplay_data);
+         break;
+      case RARCH_NETPLAY_CTL_PRE_FRAME:
+         netplay_pre_frame((netplay_t*)driver->netplay_data);
+         break;
       case RARCH_NETPLAY_CTL_FLIP_PLAYERS:
          {
             bool *state = (bool*)data;

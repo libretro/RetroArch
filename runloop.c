@@ -1167,8 +1167,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
 #endif
 
 #ifdef HAVE_NETPLAY
-   if (driver->netplay_data)
-      netplay_pre_frame((netplay_t*)driver->netplay_data);
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_PRE_FRAME, NULL);
 #endif
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
@@ -1214,8 +1213,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
       bsv_movie_ctl(BSV_MOVIE_CTL_SET_FRAME_END, NULL);
 
 #ifdef HAVE_NETPLAY
-   if (driver->netplay_data)
-      netplay_post_frame((netplay_t*)driver->netplay_data);
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_POST_FRAME, NULL);
 #endif
 
 #if defined(HAVE_THREADS)
