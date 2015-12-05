@@ -20,11 +20,20 @@
 
 #include <stdint.h>
 #include <stddef.h>
+
 #include <boolean.h>
+
 #include "libretro.h"
 #include "libretro_version_1.h"
 
 typedef struct netplay netplay_t;
+
+enum rarch_netplay_ctl_state
+{
+   RARCH_NETPLAY_CTL_NONE = 0,
+   RARCH_NETPLAY_CTL_FLIP_PLAYERS,
+   RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE
+};
 
 /* TODO: most of this, actually */
 /* /!\ WARNING: A command identifier cannot exceed 16 bytes in length. */
@@ -145,5 +154,7 @@ void netplay_post_frame(netplay_t *handle);
 bool init_netplay(void);
 
 void deinit_netplay(void);
+
+bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data);
 
 #endif

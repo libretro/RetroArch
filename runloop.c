@@ -528,18 +528,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                event_command(EVENT_CMD_VOLUME_DOWN);
 
 #ifdef HAVE_NETPLAY
-            {
-               driver_t     *driver  = driver_get_ptr();
-               if (driver->netplay_data)
-               {
-                  if (cmd->netplay_flip_pressed)
-                     event_command(EVENT_CMD_NETPLAY_FLIP_PLAYERS);
-
-                  if (cmd->fullscreen_toggle)
-                     event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
-                  break;
-               }
-            }
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, &cmd->netplay_flip_pressed);
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE, &cmd->fullscreen_toggle);
 #endif
             if (!runloop_ctl(RUNLOOP_CTL_CHECK_IDLE_STATE, data))
                return false;

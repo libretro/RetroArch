@@ -1796,6 +1796,37 @@ bool init_netplay(void)
    return false;
 }
 
+bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
+{
+   driver_t *driver = driver_get_ptr();
+
+   if (!driver->netplay_data)
+      return false;
+
+   switch (state)
+   {
+      case RARCH_NETPLAY_CTL_FLIP_PLAYERS:
+         {
+            bool *state = (bool*)data;
+            if (*state)
+               event_command(EVENT_CMD_NETPLAY_FLIP_PLAYERS);
+         }
+         break;
+      case RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE:
+         {
+            bool *state = (bool*)data;
+            if (*state)
+               event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
+         }
+         break;
+      default:
+      case RARCH_NETPLAY_CTL_NONE:
+         break;
+   }
+
+   return false;
+}
+
 #ifdef HAVE_SOCKET_LEGACY
 
 #undef sockaddr_storage
