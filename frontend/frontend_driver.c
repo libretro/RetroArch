@@ -119,5 +119,13 @@ int frontend_driver_parse_drive_list(void *data)
       return -1;
    return frontend->parse_drive_list(data);
 }
-#endif
 
+void frontend_driver_content_loaded(void)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+
+   if (!frontend || !frontend->content_loaded)
+      return;
+   frontend->content_loaded();
+}
+#endif

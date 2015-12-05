@@ -1402,8 +1402,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          if (!menu_load_content(CORE_TYPE_PLAIN))
             rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
 #endif
-         if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)
-            driver->frontend_ctx->content_loaded();
+         frontend_driver_content_loaded();
          break;
 #ifdef HAVE_FFMPEG
       case RARCH_CTL_LOAD_CONTENT_FFMPEG:
@@ -1412,8 +1411,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          if (!menu_load_content(CORE_TYPE_FFMPEG))
             rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
 #endif
-         if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)
-            driver->frontend_ctx->content_loaded();
+         frontend_driver_content_loaded();
          break;
 #endif
       case RARCH_CTL_LOAD_CONTENT_IMAGEVIEWER:
@@ -1422,8 +1420,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          if (!menu_load_content(CORE_TYPE_IMAGEVIEWER))
             rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
 #endif
-         if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)
-            driver->frontend_ctx->content_loaded();
+         frontend_driver_content_loaded();
          break;
       case RARCH_CTL_MENU_RUNNING_FINISHED:
 #ifdef HAVE_MENU

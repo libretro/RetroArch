@@ -111,6 +111,8 @@ frontend_ctx_driver_t *frontend_ctx_init_first(void);
 
 int frontend_driver_parse_drive_list(void *data);
 
+void frontend_driver_content_loaded(void);
+
 #ifdef __cplusplus
 }
 #endif
