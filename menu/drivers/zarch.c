@@ -1142,7 +1142,7 @@ static void zarch_free(void *data)
       free(menu->userdata);
    menu->userdata = NULL;
 
-   font_driver_bind_block(NULL);
+   font_driver_bind_block(NULL, NULL);
 }
 
 static void zarch_context_bg_destroy(zui_t *zui)

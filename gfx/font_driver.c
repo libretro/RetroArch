@@ -162,13 +162,14 @@ void font_driver_render_msg(void *font_data, const char *msg, const struct font_
       font_ctx->render_msg(font_data ? font_data : driver->font_osd_data, msg, params);
 }
 
-void font_driver_bind_block(void *block)
+void font_driver_bind_block(void *font_data, void *block)
 {
-   driver_t          *driver = driver_get_ptr();
+   driver_t          *driver       = driver_get_ptr();
    const font_renderer_t *font_ctx = driver->font_osd_driver;
+   void             *new_font_data = font_data ? font_data : driver->font_osd_data;
 
    if (font_ctx->bind_block)
-      font_ctx->bind_block(driver->font_osd_data, block);
+      font_ctx->bind_block(new_font_data, block);
 }
 
 void font_driver_free(void *data)

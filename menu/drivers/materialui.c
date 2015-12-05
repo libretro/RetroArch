@@ -1007,7 +1007,7 @@ static void mui_free(void *data)
 
    gfx_coord_array_free(&mui->list_block.carr);
 
-   font_driver_bind_block(NULL);
+   font_driver_bind_block(NULL, NULL);
 
    if (menu->userdata)
       free(menu->userdata);

@@ -2051,7 +2051,7 @@ static void xmb_free(void *data)
       menu->userdata = NULL;
    }
 
-   font_driver_bind_block(NULL);
+   font_driver_bind_block(NULL, NULL);
 }
 
 static void xmb_context_bg_destroy(xmb_handle_t *xmb)
