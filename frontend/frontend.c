@@ -21,6 +21,7 @@
 #include <rthreads/async_job.h>
 
 #include "frontend.h"
+#include "../ui/ui_companion_driver.h"
 
 #include "../defaults.h"
 #include "../driver.h"
@@ -29,6 +30,7 @@
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../verbosity.h"
+
 
 #define MAX_ARGS 32
 

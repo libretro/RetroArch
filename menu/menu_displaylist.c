@@ -31,6 +31,7 @@
 #include "../cheats.h"
 #include "../general.h"
 #include "../frontend/frontend_driver.h"
+#include "../ui/ui_companion_driver.h"
 #include "../gfx/video_shader_driver.h"
 #include "../config.features.h"
 #include "../git_version.h"

@@ -31,6 +31,7 @@
 #include "../../input/input_autodetect.h"
 #include "../../input/input_config.h"
 #include "../../cheevos.h"
+#include "../../ui/ui_companion_driver.h"
 
 #include "../../runloop.h"
 #include "../../verbosity.h"

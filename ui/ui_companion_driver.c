@@ -18,11 +18,12 @@
 #include <boolean.h>
 
 #include "../configuration.h"
-#include "../driver.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
+
+#include "ui_companion_driver.h"
 
 
 static const ui_companion_driver_t *ui_companion_drivers[] = {

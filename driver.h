@@ -27,7 +27,6 @@
 
 #include "libretro_private.h"
 
-#include "ui/ui_companion_driver.h"
 #include "gfx/font_renderer_driver.h"
 
 #include "camera/camera_driver.h"

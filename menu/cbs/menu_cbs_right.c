@@ -26,6 +26,7 @@
 #include "../../cheats.h"
 #include "../../general.h"
 #include "../../retroarch.h"
+#include "../../ui/ui_companion_driver.h"
 
 #ifndef BIND_ACTION_RIGHT
 #define BIND_ACTION_RIGHT(cbs, name) \
