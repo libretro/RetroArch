@@ -177,22 +177,24 @@ enum
       | DRIVER_MENU \
       | DRIVERS_VIDEO_INPUT )
 
+/* TODO/FIXME - comment needs to be moved to each respective driver */
+
+/* Set this to true if the platform in question needs to 'own' 
+ * the respective handle and therefore skip regular RetroArch 
+ * driver teardown/reiniting procedure.
+ *
+ * If set to true, the 'free' function will get skipped. It is 
+ * then up to the driver implementation to properly handle 
+ * 'reiniting' inside the 'init' function and make sure it 
+ * returns the existing handle instead of allocating and 
+ * returning a pointer to a new handle.
+ *
+ * Typically, if a driver intends to make use of this, it should 
+ * set this to true at the end of its 'init' function. */
+
 typedef struct driver
 {
    struct retro_callbacks retro_ctx;
-
-   /* Set this to true if the platform in question needs to 'own' 
-    * the respective handle and therefore skip regular RetroArch 
-    * driver teardown/reiniting procedure.
-    *
-    * If set to true, the 'free' function will get skipped. It is 
-    * then up to the driver implementation to properly handle 
-    * 'reiniting' inside the 'init' function and make sure it 
-    * returns the existing handle instead of allocating and 
-    * returning a pointer to a new handle.
-    *
-    * Typically, if a driver intends to make use of this, it should 
-    * set this to true at the end of its 'init' function. */
 } driver_t;
 
 /**
