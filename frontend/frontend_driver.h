@@ -116,6 +116,8 @@ void frontend_driver_content_loaded(void);
 
 void frontend_driver_set_fork(bool a, bool b);
 
+void frontend_driver_process_args(int *argc, char *argv[]);
+
 #ifdef __cplusplus
 }
 #endif

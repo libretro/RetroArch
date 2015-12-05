@@ -105,8 +105,7 @@ bool menu_load_content(enum rarch_core_type type)
    menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
    menu_iterate_render();
 
-   if (!(main_load_content(0, NULL, NULL, menu_environment_get,
-         driver->frontend_ctx->process_args)))
+   if (!(main_load_content(0, NULL, NULL, menu_environment_get)))
    {
       char name[PATH_MAX_LENGTH] = {0};
       char msg[PATH_MAX_LENGTH]  = {0};

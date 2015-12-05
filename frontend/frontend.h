@@ -56,7 +56,6 @@ int rarch_main(int argc, char *argv[], void *data);
  * @argv             : Argument variable list.
  * @args             : Arguments passed from callee.
  * @environ_get      : Function passed for environment_get function.
- * @process_args     : Function passed for process_args function.
  *
  * Loads content file and starts up RetroArch.
  * If no content file can be loaded, will start up RetroArch
@@ -65,8 +64,7 @@ int rarch_main(int argc, char *argv[], void *data);
  * Returns: false (0) if rarch_main_init failed, otherwise true (1).
  **/
 bool main_load_content(int argc, char **argv,
-      void *args, environment_get_t environ_get,
-      process_args_t process_args);
+      void *args, environment_get_t environ_get);
 
 #ifdef __cplusplus
 }

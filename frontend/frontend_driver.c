@@ -137,4 +137,13 @@ void frontend_driver_set_fork(bool a, bool b)
       return;
    frontend->set_fork(a, b);
 }
+
+void frontend_driver_process_args(int *argc, char *argv[])
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+
+   if (!frontend || !frontend->process_args)
+      return;
+   frontend->process_args(argc, argv);
+}
 #endif

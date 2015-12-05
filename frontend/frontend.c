@@ -179,7 +179,6 @@ static void history_playlist_push(content_playlist_t *playlist,
  * @argv             : Argument variable list.
  * @args             : Arguments passed from callee.
  * @environ_get      : Function passed for environment_get function.
- * @process_args     : Function passed for process_args function.
  *
  * Loads content file and starts up RetroArch.
  * If no content file can be loaded, will start up RetroArch
@@ -188,8 +187,7 @@ static void history_playlist_push(content_playlist_t *playlist,
  * Returns: false (0) if rarch_main_init failed, otherwise true (1).
  **/
 bool main_load_content(int argc, char **argv, void *args,
-      environment_get_t environ_get,
-      process_args_t process_args)
+      environment_get_t environ_get)
 {
    unsigned i;
    bool retval                       = true;
@@ -235,8 +233,7 @@ bool main_load_content(int argc, char **argv, void *args,
 
    check_defaults_dirs();
 
-   if (process_args)
-      process_args(rarch_argc_ptr, rarch_argv_ptr);
+   frontend_driver_process_args(rarch_argc_ptr, rarch_argv_ptr);
 
 error:
    for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
@@ -289,8 +286,7 @@ int rarch_main(int argc, char *argv[], void *data)
    if (driver->frontend_ctx)
    {
       if (!(ret = (main_load_content(argc, argv, args,
-                     driver->frontend_ctx->environment_get,
-                     driver->frontend_ctx->process_args))))
+                     driver->frontend_ctx->environment_get))))
          return ret;
    }
 
