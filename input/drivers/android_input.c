@@ -579,7 +579,7 @@ static int android_input_get_id_index_from_name(android_input_data_t *android_da
 }
 
 static void handle_hotplug(android_input_data_t *android_data,
-      struct android_app *android_app, unsigned *port, unsigned id,
+      struct android_app *android_app, int *port, int id,
       int source)
 {
    char device_name[256]        = {0};
@@ -818,7 +818,7 @@ static void android_input_poll_input(void *data)
 
          if (port < 0)
             handle_hotplug(android_data, android_app,
-                  &android_data->pads_connected, id, source);
+                  &port, id, source);
 
          switch (type_event)
          {
