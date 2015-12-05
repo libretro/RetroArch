@@ -210,7 +210,7 @@ void init_location(void)
       system->location_callback.initialized();
 }
 
-void uninit_location(void)
+static void uninit_location(void)
 {
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
@@ -233,6 +233,9 @@ bool location_driver_ctl(enum rarch_location_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_LOCATION_CTL_DEINIT:
+         uninit_location();
+         break;
       case RARCH_LOCATION_CTL_SET_OWN_DRIVER:
          location_driver_data_own = true;
          break;

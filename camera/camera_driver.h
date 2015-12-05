@@ -28,6 +28,7 @@ extern "C" {
 enum rarch_camera_ctl_state
 {
    RARCH_CAMERA_CTL_NONE = 0,
+   RARCH_CAMERA_CTL_DEINIT,
    RARCH_CAMERA_CTL_SET_OWN_DRIVER,
    RARCH_CAMERA_CTL_UNSET_OWN_DRIVER,
    RARCH_CAMERA_CTL_OWNS_DRIVER,
@@ -126,8 +127,6 @@ const char *camera_driver_find_ident(int index);
 void find_camera_driver(void);
 
 void init_camera(void);
-
-void uninit_camera(void);
 
 bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data);
 

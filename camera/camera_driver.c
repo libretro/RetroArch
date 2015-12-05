@@ -196,7 +196,7 @@ void init_camera(void)
       system->camera_callback.initialized();
 }
 
-void uninit_camera(void)
+static void uninit_camera(void)
 {
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
@@ -235,6 +235,9 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
          break;
       case RARCH_CAMERA_CTL_IS_ACTIVE:
         return camera_driver_active; 
+      case RARCH_CAMERA_CTL_DEINIT:
+        uninit_camera();
+        break;
       default:
          break;
    }
