@@ -16,8 +16,6 @@
 #ifndef __RETROARCH_RUNLOOP_H
 #define __RETROARCH_RUNLOOP_H
 
-#include <setjmp.h>
-
 #include <rthreads/async_job.h>
 
 #include "libretro.h"

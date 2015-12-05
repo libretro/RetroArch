@@ -20,6 +20,9 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+
+#include <setjmp.h>
+
 #include <boolean.h>
 
 #ifdef _WIN32
