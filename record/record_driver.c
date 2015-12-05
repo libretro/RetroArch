@@ -40,6 +40,9 @@ static const record_driver_t *record_drivers[] = {
    NULL,
 };
 
+static const record_driver_t *recording_driver;
+static void *recording_data;
+
 /**
  * record_driver_find_ident:
  * @idx                : index of driver to get handle to.
@@ -84,12 +87,11 @@ const char* config_get_record_driver_options(void)
 
 void find_record_driver(void)
 {
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    int                i = find_driver_index("record_driver", settings->record.driver);
 
    if (i >= 0)
-      driver->recording_driver = (const record_driver_t*)record_driver_find_handle(i);
+      recording_driver = (const record_driver_t*)record_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -101,9 +103,9 @@ void find_record_driver(void)
          RARCH_LOG_OUTPUT("\t%s\n", record_driver_find_ident(d));
       RARCH_WARN("Going to default to first record driver...\n");
 
-      driver->recording_driver = (const record_driver_t*)record_driver_find_handle(0);
+      recording_driver = (const record_driver_t*)record_driver_find_handle(0);
 
-      if (!driver->recording_driver)
+      if (!recording_driver)
          retro_fail(1, "find_record_driver()");
    }
 }
@@ -165,10 +167,9 @@ void recording_dump_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
    struct ffemu_video_data ffemu_data = {0};
-   driver_t *driver = driver_get_ptr();
    global_t *global = global_get_ptr();
 
-   if (!driver->recording_data)
+   if (!recording_data)
       return;
 
    ffemu_data.pitch   = pitch;
@@ -221,25 +222,23 @@ void recording_dump_frame(const void *data, unsigned width,
    if (!global->record.gpu_buffer)
       ffemu_data.is_dupe = !data;
 
-   if (driver->recording_driver && driver->recording_driver->push_video)
-      driver->recording_driver->push_video(driver->recording_data, &ffemu_data);
+   if (recording_driver && recording_driver->push_video)
+      recording_driver->push_video(recording_data, &ffemu_data);
 }
 
 bool recording_deinit(void)
 {
-   driver_t *driver = driver_get_ptr();
-
-   if (!driver->recording_data || !driver->recording_driver)
+   if (!recording_data || !recording_driver)
       return false;
 
-   if (driver->recording_driver->finalize)
-      driver->recording_driver->finalize(driver->recording_data);
+   if (recording_driver->finalize)
+      recording_driver->finalize(recording_data);
 
-   if (driver->recording_driver->free)
-      driver->recording_driver->free(driver->recording_data);
+   if (recording_driver->free)
+      recording_driver->free(recording_data);
 
-   driver->recording_data        = NULL;
-   driver->recording_driver      = NULL;
+   recording_data            = NULL;
+   recording_driver          = NULL;
 
    event_command(EVENT_CMD_GPU_RECORD_DEINIT);
 
@@ -259,16 +258,15 @@ void recording_set_state(bool state)
 void recording_push_audio(const int16_t *data, size_t samples)
 {
    struct ffemu_audio_data ffemu_data;
-   driver_t  *driver                  = driver_get_ptr();
 
-   if (!driver->recording_data)
+   if (!recording_data)
       return;
 
    ffemu_data.data                    = data;
    ffemu_data.frames                  = samples / 2;
 
-   if (driver->recording_driver && driver->recording_driver->push_audio)
-      driver->recording_driver->push_audio(driver->recording_data, &ffemu_data);
+   if (recording_driver && recording_driver->push_audio)
+      recording_driver->push_audio(recording_data, &ffemu_data);
 }
 
 /**
@@ -406,7 +404,7 @@ bool recording_init(void)
          params.fb_width, params.fb_height,
          (unsigned)params.pix_fmt);
 
-   if (!record_driver_init_first(&driver->recording_driver, &driver->recording_data, &params))
+   if (!record_driver_init_first(&recording_driver, &recording_data, &params))
    {
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_START_RECORDING));
       event_command(EVENT_CMD_GPU_RECORD_DEINIT);
@@ -419,24 +417,15 @@ bool recording_init(void)
 
 void *recording_driver_get_data_ptr(void)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (!driver)
-      return NULL;
-   return driver->recording_data;
+   return recording_data;
 }
 
 void recording_driver_clear_data_ptr(void)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (!driver)
-      return;
-   driver->recording_data = NULL;
+   recording_data = NULL;
 }
 
 void recording_driver_set_data_ptr(void *data)
 {
-   driver_t *driver     = driver_get_ptr();
-   if (!driver)
-      return;
-   driver->recording_data = data;
+   recording_data = data;
 }
