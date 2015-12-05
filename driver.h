@@ -27,8 +27,6 @@
 
 #include "libretro_private.h"
 
-#include "gfx/font_driver.h"
-
 #include "camera/camera_driver.h"
 #include "location/location_driver.h"
 #include "record/record_driver.h"
