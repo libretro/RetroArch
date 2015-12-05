@@ -2641,7 +2641,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    
    if (settings->video.font_enable)
    {
-      if (!font_driver_init_first(gl, *settings->video.font_path 
+      if (!font_driver_init_first(NULL, NULL, gl, *settings->video.font_path 
             ? settings->video.font_path : NULL, settings->video.font_size,
             FONT_DRIVER_RENDER_OPENGL_API))
          RARCH_ERR("[GL]: Failed to initialize font renderer.\n");

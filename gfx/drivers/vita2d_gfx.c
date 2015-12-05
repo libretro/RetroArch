@@ -134,7 +134,7 @@ static void *vita2d_gfx_init(const video_info_t *video,
 #ifdef HAVE_OVERLAY
    vita->overlay_enable     = false;
 #endif
-   if (!font_driver_init_first(vita, *settings->video.font_path 
+   if (!font_driver_init_first(NULL, NULL, vita, *settings->video.font_path 
           ? settings->video.font_path : NULL, settings->video.font_size,
           FONT_DRIVER_RENDER_VITA2D))
    {

@@ -185,10 +185,16 @@ void font_driver_free(void *data)
    driver->font_osd_driver = NULL;
 }
 
-bool font_driver_init_first(void *data, const char *font_path, float font_size,
+bool font_driver_init_first(const void **font_driver, void *font_handle,
+      void *data, const char *font_path, float font_size,
       enum font_driver_render_api api)
 {
-   driver_t *driver = driver_get_ptr();
-   return font_init_first((const void**)&driver->font_osd_driver, &driver->font_osd_data,
-            data, font_path, font_size, api);
+   driver_t *driver             = driver_get_ptr();
+   const void **new_font_driver = font_driver ? font_driver 
+      : (const void**)&driver->font_osd_driver;
+   void *new_font_handle        = font_handle ? font_handle 
+      : &driver->font_osd_data;
+
+   return font_init_first(new_font_driver, new_font_handle,
+         data, font_path, font_size, api);
 }

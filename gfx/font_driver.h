@@ -69,7 +69,8 @@ void font_driver_bind_block(void *block);
 
 void font_driver_free(void *data);
 
-bool font_driver_init_first(void *data, const char *font_path, float font_size,
+bool font_driver_init_first(const void **font_driver, void *font_handle,
+      void *data, const char *font_path, float font_size,
       enum font_driver_render_api api);
 
 #ifdef __cplusplus
