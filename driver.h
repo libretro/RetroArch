@@ -201,8 +201,8 @@ typedef struct driver
    bool location_active;
 
 #ifdef HAVE_MENU
-   menu_handle_t *menu;
-   const menu_ctx_driver_t *menu_ctx;
+   menu_handle_t *menu_driver_data;
+   const menu_ctx_driver_t *menu_driver_ctx;
 #endif
 
    /* Set this to true if the platform in question needs to 'own' 

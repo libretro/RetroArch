@@ -97,7 +97,7 @@ void find_menu_driver(void)
 
    int i = find_driver_index("menu_driver", settings->menu.driver);
    if (i >= 0)
-      driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
+      driver->menu_driver_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -108,9 +108,9 @@ void find_menu_driver(void)
          RARCH_LOG_OUTPUT("\t%s\n", menu_driver_find_ident(d));
       RARCH_WARN("Going to default to first menu driver...\n");
 
-      driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(0);
+      driver->menu_driver_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(0);
 
-      if (!driver->menu_ctx)
+      if (!driver->menu_driver_ctx)
          retro_fail(1, "find_menu_driver()");
    }
 }
@@ -118,33 +118,33 @@ void find_menu_driver(void)
 menu_handle_t *menu_driver_get_ptr(void)
 {
    driver_t *driver = driver_get_ptr();
-   if (!driver || !driver->menu)
+   if (!driver || !driver->menu_driver_data)
       return NULL;
-   return driver->menu;
+   return driver->menu_driver_data;
 }
 
 const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void)
 {
    driver_t *driver = driver_get_ptr();
-   if (!driver || !driver->menu_ctx)
+   if (!driver || !driver->menu_driver_ctx)
       return NULL;
-   return driver->menu_ctx;
+   return driver->menu_driver_ctx;
 }
 
 void init_menu(void)
 {
    driver_t *driver     = driver_get_ptr();
 
-   if (driver->menu)
+   if (driver->menu_driver_data)
       return;
 
    find_menu_driver();
 
-   if (!(driver->menu = (menu_handle_t*)menu_init(driver->menu_ctx)))
+   if (!(driver->menu_driver_data = (menu_handle_t*)menu_init(driver->menu_driver_ctx)))
       retro_fail(1, "init_menu()");
 
-   if (driver->menu_ctx->lists_init)
-      if (!driver->menu_ctx->lists_init(driver->menu))
+   if (driver->menu_driver_ctx->lists_init)
+      if (!driver->menu_driver_ctx->lists_init(driver->menu_driver_data))
          retro_fail(1, "init_menu()");
 }
 
@@ -388,14 +388,14 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_data_own = false;
          break;
       case RARCH_MENU_CTL_IS_SET_TEXTURE:
-         if (!driver || !driver->menu_ctx)
+         if (!driver || !driver->menu_driver_ctx)
             return false;
-         return driver->menu_ctx->set_texture;
+         return driver->menu_driver_ctx->set_texture;
       case RARCH_MENU_CTL_OWNS_DRIVER:
          return menu_driver_data_own;
       case RARCH_MENU_CTL_DEINIT:
-         menu_free(driver->menu);
-         driver->menu = NULL;
+         menu_free(driver->menu_driver_data);
+         driver->menu_driver_data = NULL;
          break;
       default:
       case RARCH_MENU_CTL_NONE:
