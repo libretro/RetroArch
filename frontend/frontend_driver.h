@@ -18,6 +18,7 @@
 #define __FRONTEND_DRIVER_H
 
 #include <stddef.h>
+
 #include <boolean.h>
 
 #ifdef HAVE_CONFIG_H
@@ -112,6 +113,8 @@ frontend_ctx_driver_t *frontend_ctx_init_first(void);
 int frontend_driver_parse_drive_list(void *data);
 
 void frontend_driver_content_loaded(void);
+
+void frontend_driver_set_fork(bool a, bool b);
 
 #ifdef __cplusplus
 }

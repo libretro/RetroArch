@@ -1332,8 +1332,7 @@ bool event_command(enum event_command cmd)
             fill_pathname_join(new_path, g_defaults.dir.core, SALAMANDER_FILE, sizeof(new_path));
             runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, new_path);
 #endif
-            if (driver->frontend_ctx && driver->frontend_ctx->set_fork)
-               driver->frontend_ctx->set_fork(true, false);
+            frontend_driver_set_fork(true, false);
          }
          break;
       case EVENT_CMD_MENU_SAVE_CURRENT_CONFIG:
