@@ -826,13 +826,12 @@ static int menu_input_pointer(unsigned *action)
    unsigned fb_width, fb_height;
    int pointer_device, pointer_x, pointer_y;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
-   menu_input_t *menu_input  = menu_input_get_ptr();
-   driver_t *driver          = driver_get_ptr();
+   menu_input_t *menu_input                     = menu_input_get_ptr();
 
    menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,  &fb_width);
    menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &fb_height);
 
-   pointer_device = driver->menu_ctx->set_texture?
+   pointer_device = menu_driver_ctl(RARCH_MENU_CTL_IS_SET_TEXTURE, NULL) ?
         RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
 
    menu_input->pointer.pressed[0]  = input_driver_state(binds, 0, pointer_device,
