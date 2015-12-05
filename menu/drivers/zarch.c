@@ -1009,7 +1009,7 @@ static void zarch_frame(void)
 
    zui->tmp_block.carr.coords.vertices = 0;
 
-   menu_display_font_bind_block(driver->font_osd_driver, &zui->tmp_block);
+   menu_display_font_bind_block(&zui->tmp_block);
 
    zarch_zui_push_quad(zui->width, zui->height, ZUI_BG_SCREEN, &zui->ca, 0, 0, zui->width, zui->height);
    zarch_zui_snow(zui, &zui->ca, zui->width, zui->height);
@@ -1062,7 +1062,7 @@ static void zarch_frame(void)
          NULL, menu_display_get_tex_coords(), 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
-   menu_display_font_flush_block(driver->font_osd_driver);
+   menu_display_font_flush_block();
 
    zui->rendering = false;
 
