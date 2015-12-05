@@ -25,7 +25,7 @@
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 
-#include "../font_renderer_driver.h"
+#include "../font_driver.h"
 #include "../../general.h"
 
 #define CT_ATLAS_ROWS 16

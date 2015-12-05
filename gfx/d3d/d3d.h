@@ -52,7 +52,6 @@
 #endif
 
 #include "../font_driver.h"
-#include "../font_renderer_driver.h"
 #include "../video_context_driver.h"
 #include "../common/d3d_common.h"
 #include "render_chain_driver.h"

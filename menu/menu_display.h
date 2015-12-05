@@ -22,7 +22,7 @@
 
 #include "../gfx/video_texture.h"
 #include "../gfx/video_context_driver.h"
-#include "../gfx/font_renderer_driver.h"
+#include "../gfx/font_driver.h"
 #include "../gfx/video_common.h"
 
 #ifdef __cplusplus

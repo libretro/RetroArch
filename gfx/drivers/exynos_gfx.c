@@ -35,7 +35,7 @@
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
-#include "../font_renderer_driver.h"
+#include "../font_driver.h"
 
 /* TODO: Honor these properties: vsync, menu rotation, menu alpha, aspect ratio change */
 

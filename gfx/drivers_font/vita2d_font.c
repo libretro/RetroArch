@@ -16,7 +16,6 @@
 
 #include <vita2d.h>
 
-#include "../font_renderer_driver.h"
 #include "../font_driver.h"
 
 const unsigned char stockfont[] = {

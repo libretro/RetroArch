@@ -28,7 +28,7 @@
 #include "../../performance.h"
 #include "../../verbosity.h"
 #include "../video_context_driver.h"
-#include "../font_renderer_driver.h"
+#include "../font_driver.h"
 
 #ifdef HAVE_X11
 #include "../common/x11_common.h"
@@ -100,7 +100,7 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
    if (!settings->video.font_enable)
       return;
 
-   if (!font_renderer_create_default(&vid->font_driver, &vid->font_data,
+   if (!font_renderer_create_default((const void**)&vid->font_driver, &vid->font_data,
                                     *font_path ? font_path : NULL, font_size))
    {
       RARCH_WARN("[SDL]: Could not initialize fonts.\n");

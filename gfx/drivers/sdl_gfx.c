@@ -25,7 +25,7 @@
 #include "../../general.h"
 #include "../../performance.h"
 #include "../video_context_driver.h"
-#include "../font_renderer_driver.h"
+#include "../font_driver.h"
 
 #ifdef HAVE_X11
 #include "../common/x11_common.h"

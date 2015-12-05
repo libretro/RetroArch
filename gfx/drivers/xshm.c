@@ -28,7 +28,7 @@
 
 #include "../../driver.h"
 #include "../../general.h"
-#include "../font_renderer_driver.h"
+#include "../font_driver.h"
 #include "../common/x11_common.h"
 
 typedef struct xshm

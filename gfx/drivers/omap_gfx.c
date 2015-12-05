@@ -40,7 +40,7 @@
 #include "../../retroarch.h"
 
 #include "../video_context_driver.h"
-#include "../font_renderer_driver.h"
+#include "../font_driver.h"
 
 typedef struct omapfb_page
 {

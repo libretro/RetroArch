@@ -272,7 +272,6 @@ VIDEO DRIVER
 FONTS
 ============================================================ */
 
-#include "../gfx/font_renderer_driver.c"
 #include "../gfx/drivers_font_renderer/bitmapfont.c"
 #include "../gfx/font_driver.c"
 

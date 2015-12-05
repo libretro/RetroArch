@@ -32,7 +32,7 @@
 
 #include "../../general.h"
 #include "../../verbosity.h"
-#include "../font_renderer_driver.h"
+#include "../font_driver.h"
 #include "../video_common.h"
 #include "../video_context_driver.h"
 #include "../video_shader_driver.h"

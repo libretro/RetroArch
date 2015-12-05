@@ -25,7 +25,7 @@
 
 #include "../../general.h"
 #include "../../retroarch.h"
-#include "../font_renderer_driver.h"
+#include "../font_driver.h"
 
 #define NUMPAGES 2
 

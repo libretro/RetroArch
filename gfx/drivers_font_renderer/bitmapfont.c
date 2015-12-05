@@ -20,7 +20,7 @@
 
 #include <boolean.h>
 
-#include "../font_renderer_driver.h"
+#include "../font_driver.h"
 #include "bitmap.h"
 
 #define BMP_ATLAS_COLS 16

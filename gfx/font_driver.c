@@ -17,6 +17,67 @@
 #include "font_driver.h"
 #include "video_thread_wrapper.h"
 #include "../general.h"
+#include "../verbosity.h"
+
+static const font_renderer_driver_t *font_backends[] = {
+#ifdef HAVE_FREETYPE
+   &freetype_font_renderer,
+#endif
+#if defined(__APPLE__) && defined(HAVE_CORETEXT)
+   &coretext_font_renderer,
+#endif
+#ifdef HAVE_STB_FONT
+   &stb_font_renderer,
+#endif
+   &bitmap_font_renderer,
+   NULL
+};
+
+int font_renderer_get_message_width(const char *msg, float scale)
+{
+    driver_t *driver                        = driver_get_ptr();  
+    const struct font_renderer *font_driver = driver ? driver->font_osd_driver : NULL;
+    
+    if (!font_driver || !font_driver->get_message_width)
+       return 0;
+       
+    return font_driver->get_message_width(driver->font_osd_data, msg, strlen(msg), scale);
+}
+
+int font_renderer_create_default(const void **data, void **handle,
+      const char *font_path, unsigned font_size)
+{
+
+   unsigned i;
+   const font_renderer_driver_t **drv = (const font_renderer_driver_t**)data;
+
+   for (i = 0; font_backends[i]; i++)
+   {
+      const char *path = font_path;
+
+      if (!path)
+         path = font_backends[i]->get_default_font();
+      if (!path)
+         continue;
+
+      *handle = font_backends[i]->init(path, font_size);
+      if (*handle)
+      {
+         RARCH_LOG("Using font rendering backend: %s.\n",
+               font_backends[i]->ident);
+         *drv = font_backends[i];
+         return 1;
+      }
+      else
+         RARCH_ERR("Failed to create rendering backend: %s.\n",
+               font_backends[i]->ident);
+   }
+
+   *drv = NULL;
+   *handle = NULL;
+
+   return 0;
+}
 
 #ifdef HAVE_D3D
 static const font_renderer_t *d3d_font_backends[] = {

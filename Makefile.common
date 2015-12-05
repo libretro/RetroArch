@@ -182,7 +182,6 @@ OBJ += frontend/frontend.o \
        libretro-common/gfx/scaler/scaler_int.o \
        libretro-common/gfx/scaler/scaler_filter.o \
        gfx/font_driver.o \
-       gfx/font_renderer_driver.o \
        gfx/video_filter.o \
        audio/audio_resampler_driver.o \
        audio/audio_dsp_filter.o \

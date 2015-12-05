@@ -30,7 +30,7 @@
 #include "../../retroarch.h"
 #include "../../driver.h"
 #include "../../performance.h"
-#include "../font_renderer_driver.h"
+#include "../font_driver.h"
 #include "../../content.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"

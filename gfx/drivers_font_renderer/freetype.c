@@ -19,10 +19,12 @@
 #include <string.h>
 
 #include <ft2build.h>
+
+#include <file/file_path.h>
+
 #include FT_FREETYPE_H
 
-#include "../font_renderer_driver.h"
-#include <file/file_path.h>
+#include "../font_driver.h"
 #include "../../general.h"
 
 #define FT_ATLAS_ROWS 16

@@ -29,7 +29,6 @@
 #define DbgFontExit cellDbgFontExit
 #endif
 
-#include "../font_renderer_driver.h"
 #include "../font_driver.h"
 
 static void *libdbg_font_init_font(void *gl_data, const char *font_path, float font_size)
