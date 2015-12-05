@@ -230,7 +230,6 @@ const char* config_get_video_driver_options(void)
 static bool find_video_driver(void)
 {
    int i;
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
 #if defined(HAVE_OPENGL) && defined(HAVE_FBO)

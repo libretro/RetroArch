@@ -1334,7 +1334,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    static bool rarch_error_on_init         = false;
    static bool rarch_block_config_read     = false;
    static bool rarch_force_fullscreen      = false;
-   driver_t *driver                        = driver_get_ptr();
    global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
 

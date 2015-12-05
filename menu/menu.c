@@ -97,7 +97,6 @@ bool menu_load_content(enum rarch_core_type type)
 {
    bool msg_force       = true;
    menu_handle_t *menu  = menu_driver_get_ptr();
-   driver_t *driver     = driver_get_ptr();
    char *fullpath       = NULL;
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
