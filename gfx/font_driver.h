@@ -127,13 +127,6 @@ typedef struct font_renderer_driver
 int font_renderer_create_default(const void **driver,
       void **handle, const char *font_path, unsigned font_size);
       
-int font_renderer_get_message_width(const char *msg, float scale);
-
-bool font_init_first(
-      const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size,
-      enum font_driver_render_api api);
-
 bool font_driver_has_render_msg(void);
 
 void font_driver_render_msg(void *data, const char *msg, const struct font_params *params);

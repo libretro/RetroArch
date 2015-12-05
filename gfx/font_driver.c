@@ -37,16 +37,6 @@ static const struct font_renderer *font_osd_driver;
 
 static void *font_osd_data;
 
-int font_renderer_get_message_width(const char *msg, float scale)
-{
-    const struct font_renderer *font_driver = font_osd_driver;
-    
-    if (!font_driver || !font_driver->get_message_width)
-       return 0;
-       
-    return font_driver->get_message_width(font_osd_data, msg, strlen(msg), scale);
-}
-
 int font_renderer_create_default(const void **data, void **handle,
       const char *font_path, unsigned font_size)
 {
@@ -174,7 +164,7 @@ static bool vita2d_font_init_first(
 }
 #endif
 
-bool font_init_first(const void **font_driver, void **font_handle,
+static bool font_init_first(const void **font_driver, void **font_handle,
       void *video_data, const char *font_path, float font_size,
       enum font_driver_render_api api)
 {
