@@ -54,6 +54,9 @@ ifeq ($(DEBUG), 1)
    OPTIMIZE_FLAG = -O0 -g
 else
    OPTIMIZE_FLAG = -O3 -ffast-math
+ifneq ($(findstring Win32,$(OS)),)
+   LDFLAGS += -mwindows
+endif
 endif
 
 CFLAGS   += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) $(DEBUG_FLAG) -I.
