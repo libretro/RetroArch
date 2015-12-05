@@ -373,7 +373,7 @@ void init_drivers(int flags)
 
 #ifdef HAVE_MENU
    /* By default, we want the menu to persist through driver reinits. */
-   driver->menu_data_own = true;
+   menu_driver_ctl(RARCH_MENU_CTL_SET_OWN_DRIVER, NULL);
 #endif
 
    if (flags & (DRIVER_VIDEO | DRIVER_AUDIO))
@@ -441,7 +441,7 @@ void uninit_drivers(int flags)
    {
       menu_driver_context_destroy();
 
-      if (!driver->menu_data_own)
+      if (!menu_driver_ctl(RARCH_MENU_CTL_OWNS_DRIVER, NULL))
       {
          menu_free(driver->menu);
          driver->menu = NULL;

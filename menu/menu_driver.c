@@ -373,3 +373,24 @@ int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
 
    return ret;
 }
+
+bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
+{
+   static bool menu_driver_data_own               = false;
+
+   switch (state)
+   {
+      case RARCH_MENU_CTL_SET_OWN_DRIVER:
+         menu_driver_data_own = true;
+         break;
+      case RARCH_MENU_CTL_UNSET_OWN_DRIVER:
+         menu_driver_data_own = false;
+         break;
+      case RARCH_MENU_CTL_OWNS_DRIVER:
+         return menu_driver_data_own;
+      default:
+         break;
+   }
+
+   return false;
+}

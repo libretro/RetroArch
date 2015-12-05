@@ -62,6 +62,14 @@ typedef enum
    MENU_HELP_LAST
 } menu_help_type_t;
 
+enum rarch_menu_ctl_state
+{
+   RARCH_MENU_CTL_NONE = 0,
+   RARCH_MENU_CTL_SET_OWN_DRIVER,
+   RARCH_MENU_CTL_UNSET_OWN_DRIVER,
+   RARCH_MENU_CTL_OWNS_DRIVER
+};
+
 typedef struct
 {
    void *userdata;
@@ -233,6 +241,8 @@ int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
 
 /* HACK */
 extern unsigned int rdb_entry_start_game_selection_ptr;
+
+bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }

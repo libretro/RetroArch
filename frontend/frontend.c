@@ -31,6 +31,9 @@
 #include "../runloop.h"
 #include "../verbosity.h"
 
+#ifdef HAVE_MENU
+#include "../menu/menu_driver.h"
+#endif
 
 #define MAX_ARGS 32
 
@@ -52,9 +55,8 @@ void main_exit(void *args)
    if (global->inited.main)
    {
 #ifdef HAVE_MENU
-      driver_t *driver     = driver_get_ptr();
       /* Do not want menu context to live any more. */
-      driver->menu_data_own = false;
+      menu_driver_ctl(RARCH_MENU_CTL_UNSET_OWN_DRIVER, NULL);
 #endif
       rarch_main_deinit();
    }
