@@ -182,7 +182,7 @@ enum
 
 typedef struct driver
 {
-   const record_driver_t *recording;
+   const record_driver_t *recording_driver;
    void *recording_data;
 
    struct retro_callbacks retro_ctx;

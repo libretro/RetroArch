@@ -89,7 +89,7 @@ void find_record_driver(void)
    int                i = find_driver_index("record_driver", settings->record.driver);
 
    if (i >= 0)
-      driver->recording = (const record_driver_t*)record_driver_find_handle(i);
+      driver->recording_driver = (const record_driver_t*)record_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -101,9 +101,9 @@ void find_record_driver(void)
          RARCH_LOG_OUTPUT("\t%s\n", record_driver_find_ident(d));
       RARCH_WARN("Going to default to first record driver...\n");
 
-      driver->recording = (const record_driver_t*)record_driver_find_handle(0);
+      driver->recording_driver = (const record_driver_t*)record_driver_find_handle(0);
 
-      if (!driver->recording)
+      if (!driver->recording_driver)
          retro_fail(1, "find_record_driver()");
    }
 }
@@ -221,25 +221,25 @@ void recording_dump_frame(const void *data, unsigned width,
    if (!global->record.gpu_buffer)
       ffemu_data.is_dupe = !data;
 
-   if (driver->recording && driver->recording->push_video)
-      driver->recording->push_video(driver->recording_data, &ffemu_data);
+   if (driver->recording_driver && driver->recording_driver->push_video)
+      driver->recording_driver->push_video(driver->recording_data, &ffemu_data);
 }
 
 bool recording_deinit(void)
 {
    driver_t *driver = driver_get_ptr();
 
-   if (!driver->recording_data || !driver->recording)
+   if (!driver->recording_data || !driver->recording_driver)
       return false;
 
-   if (driver->recording->finalize)
-      driver->recording->finalize(driver->recording_data);
+   if (driver->recording_driver->finalize)
+      driver->recording_driver->finalize(driver->recording_data);
 
-   if (driver->recording->free)
-      driver->recording->free(driver->recording_data);
+   if (driver->recording_driver->free)
+      driver->recording_driver->free(driver->recording_data);
 
-   driver->recording_data = NULL;
-   driver->recording      = NULL;
+   driver->recording_data        = NULL;
+   driver->recording_driver      = NULL;
 
    event_command(EVENT_CMD_GPU_RECORD_DEINIT);
 
@@ -267,8 +267,8 @@ void recording_push_audio(const int16_t *data, size_t samples)
    ffemu_data.data                    = data;
    ffemu_data.frames                  = samples / 2;
 
-   if (driver->recording && driver->recording->push_audio)
-      driver->recording->push_audio(driver->recording_data, &ffemu_data);
+   if (driver->recording_driver && driver->recording_driver->push_audio)
+      driver->recording_driver->push_audio(driver->recording_data, &ffemu_data);
 }
 
 /**
@@ -406,7 +406,7 @@ bool recording_init(void)
          params.fb_width, params.fb_height,
          (unsigned)params.pix_fmt);
 
-   if (!record_driver_init_first(&driver->recording, &driver->recording_data, &params))
+   if (!record_driver_init_first(&driver->recording_driver, &driver->recording_data, &params))
    {
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_START_RECORDING));
       event_command(EVENT_CMD_GPU_RECORD_DEINIT);
