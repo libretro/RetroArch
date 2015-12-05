@@ -1124,7 +1124,9 @@ bool event_command(enum event_command cmd)
          state_manager_event_deinit();
          break;
       case EVENT_CMD_REWIND_INIT:
+#ifdef HAVE_NETPLAY
          if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+#endif
             init_rewind();
          break;
       case EVENT_CMD_REWIND_TOGGLE:
