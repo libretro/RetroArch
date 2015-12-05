@@ -2025,8 +2025,6 @@ static void xmb_free(void *data)
    xmb_handle_t *xmb                       = NULL;
    menu_handle_t *menu                     = (menu_handle_t*)data;
    driver_t *driver                        = driver_get_ptr();
-   const struct font_renderer *font_driver = 
-      (const struct font_renderer*)driver->font_osd_driver;
 
    if (menu && menu->userdata)
    {
@@ -2053,8 +2051,7 @@ static void xmb_free(void *data)
       menu->userdata = NULL;
    }
 
-   if (font_driver->bind_block)
-      font_driver->bind_block(driver->font_osd_data, NULL);
+   font_driver_bind_block(NULL);
 }
 
 static void xmb_context_bg_destroy(xmb_handle_t *xmb)

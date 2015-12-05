@@ -1131,8 +1131,6 @@ static void zarch_free(void *data)
    menu_handle_t *menu                     = (menu_handle_t*)data;
    driver_t      *driver                   = driver_get_ptr();
    zui_t        *zui                       = (zui_t*)menu->userdata;
-   const struct font_renderer *font_driver = 
-      (const struct font_renderer*)driver->font_osd_driver;
 
    if (!zui || !menu)
       return;
@@ -1144,9 +1142,7 @@ static void zarch_free(void *data)
       free(menu->userdata);
    menu->userdata = NULL;
 
-   if (font_driver->bind_block)
-      font_driver->bind_block(driver->font_osd_data, NULL);
-
+   font_driver_bind_block(NULL);
 }
 
 static void zarch_context_bg_destroy(zui_t *zui)

@@ -1001,16 +1001,13 @@ static void mui_free(void *data)
    menu_handle_t *menu = (menu_handle_t*)data;
    driver_t *driver    = driver_get_ptr();
    mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
-   const struct font_renderer *font_driver = driver ?
-         (const struct font_renderer*)driver->font_osd_driver : NULL;
 
    if (!mui)
       return;
 
    gfx_coord_array_free(&mui->list_block.carr);
 
-   if (font_driver && font_driver->bind_block)
-      font_driver->bind_block(driver->font_osd_data, NULL);
+   font_driver_bind_block(NULL);
 
    if (menu->userdata)
       free(menu->userdata);
