@@ -40,6 +40,9 @@ static const camera_driver_t *camera_drivers[] = {
    NULL,
 };
 
+static const camera_driver_t *camera_driver;
+static void *camera_data;
+
 /**
  * camera_driver_find_handle:
  * @idx                : index of driver to get handle to.
@@ -86,12 +89,11 @@ const char* config_get_camera_driver_options(void)
 
 void find_camera_driver(void)
 {
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    int i = find_driver_index("camera_driver", settings->camera.driver);
 
    if (i >= 0)
-      driver->camera = (const camera_driver_t*)camera_driver_find_handle(i);
+      camera_driver = (const camera_driver_t*)camera_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -103,9 +105,9 @@ void find_camera_driver(void)
        
       RARCH_WARN("Going to default to first camera driver...\n");
        
-      driver->camera = (const camera_driver_t*)camera_driver_find_handle(0);
+      camera_driver = (const camera_driver_t*)camera_driver_find_handle(0);
        
-      if (!driver->camera)
+      if (!camera_driver)
          retro_fail(1, "find_camera_driver()");
    }
 }
@@ -120,13 +122,12 @@ void find_camera_driver(void)
  **/
 bool driver_camera_start(void)
 {
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
-   if (driver->camera && driver->camera_data && driver->camera->start)
+   if (camera_driver && camera_data && camera_driver->start)
    {
       if (settings->camera.allow)
-         return driver->camera->start(driver->camera_data);
+         return camera_driver->start(camera_data);
 
       rarch_main_msg_queue_push(
             "Camera is explicitly disabled.\n", 1, 180, false);
@@ -144,9 +145,8 @@ bool driver_camera_start(void)
  **/
 void driver_camera_stop(void)
 {
-   driver_t *driver = driver_get_ptr();
-   if (driver->camera && driver->camera->stop && driver->camera_data)
-      driver->camera->stop(driver->camera_data);
+   if (camera_driver && camera_driver->stop && camera_data)
+      camera_driver->stop(camera_data);
 }
 
 /**
@@ -159,28 +159,26 @@ void driver_camera_stop(void)
  **/
 void driver_camera_poll(void)
 {
-   driver_t            *driver = driver_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
-   if (driver->camera && driver->camera->poll && driver->camera_data)
-      driver->camera->poll(driver->camera_data,
+   if (camera_driver && camera_driver->poll && camera_data)
+      camera_driver->poll(camera_data,
             system->camera_callback.frame_raw_framebuffer,
             system->camera_callback.frame_opengl_texture);
 }
 
 void init_camera(void)
 {
-   driver_t *driver     = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   settings_t        *settings = config_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
    /* Resource leaks will follow if camera is initialized twice. */
-   if (driver->camera_data)
+   if (camera_data)
       return;
 
    find_camera_driver();
 
-   driver->camera_data = driver->camera->init(
+   camera_data = camera_driver->init(
          *settings->camera.device ? settings->camera.device : NULL,
          system->camera_callback.caps,
          settings->camera.width ?
@@ -188,7 +186,7 @@ void init_camera(void)
          settings->camera.height ?
          settings->camera.height : system->camera_callback.height);
 
-   if (!driver->camera_data)
+   if (!camera_data)
    {
       RARCH_ERR("Failed to initialize camera driver. Will continue without camera.\n");
       camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
@@ -200,18 +198,18 @@ void init_camera(void)
 
 void uninit_camera(void)
 {
-   driver_t *driver = driver_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
-   if (driver->camera_data && driver->camera)
+   if (camera_data && camera_driver)
    {
       if (system->camera_callback.deinitialized)
          system->camera_callback.deinitialized();
 
-      if (driver->camera->free)
-         driver->camera->free(driver->camera_data);
+      if (camera_driver->free)
+         camera_driver->free(camera_data);
    }
-   driver->camera_data = NULL;
+
+   camera_data = NULL;
 }
 
 bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)

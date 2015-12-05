@@ -451,10 +451,7 @@ void uninit_drivers(int flags)
       uninit_location();
 
    if ((flags & DRIVER_CAMERA) && !camera_driver_ctl(RARCH_CAMERA_CTL_OWNS_DRIVER, NULL))
-   {
       uninit_camera();
-      driver->camera_data = NULL;
-   }
 
    if (flags & DRIVER_AUDIO)
       audio_driver_ctl(RARCH_AUDIO_CTL_DEINIT, NULL);
