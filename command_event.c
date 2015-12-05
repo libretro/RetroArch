@@ -1029,7 +1029,7 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_MENU_TOGGLE:
 #ifdef HAVE_MENU
-         if (menu_driver_alive())
+         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
             rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
          else
             rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
@@ -1096,7 +1096,7 @@ bool event_command(enum event_command cmd)
 #ifdef HAVE_MENU
             menu_display_ctl(MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG, NULL);
 
-            if (menu_driver_alive())
+            if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
                event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
 #endif
          }
@@ -1384,7 +1384,7 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_MENU_PAUSE_LIBRETRO:
 #ifdef HAVE_MENU
-         if (menu_driver_alive())
+         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
          {
             if (settings->menu.pause_libretro)
                event_command(EVENT_CMD_AUDIO_STOP);

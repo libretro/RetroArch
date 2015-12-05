@@ -1527,7 +1527,7 @@ static bool d3d_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_MENU
-   if (menu_driver_alive())
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
       menu_driver_frame();
 #endif
 

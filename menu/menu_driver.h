@@ -66,6 +66,9 @@ enum rarch_menu_ctl_state
 {
    RARCH_MENU_CTL_NONE = 0,
    RARCH_MENU_CTL_DEINIT,
+   RARCH_MENU_CTL_SET_ALIVE,
+   RARCH_MENU_CTL_UNSET_ALIVE,
+   RARCH_MENU_CTL_IS_ALIVE,
    RARCH_MENU_CTL_IS_SET_TEXTURE,
    RARCH_MENU_CTL_SET_OWN_DRIVER,
    RARCH_MENU_CTL_UNSET_OWN_DRIVER,
@@ -221,8 +224,6 @@ void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i);
 const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void);
 
 void  menu_driver_context_destroy(void);
-
-bool menu_driver_alive(void);
 
 bool menu_driver_list_push(menu_displaylist_info_t *info, unsigned type);
 

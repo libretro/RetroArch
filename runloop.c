@@ -1106,7 +1106,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    {
       bool fullscreen_toggled = !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
 #ifdef HAVE_MENU
-      fullscreen_toggled = fullscreen_toggled || menu_driver_alive();
+      fullscreen_toggled = fullscreen_toggled || menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL);
 #endif
 
       if (fullscreen_toggled)
@@ -1119,7 +1119,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
 #ifdef HAVE_MENU
    if (cmd.menu_pressed || (global->inited.core.type == CORE_TYPE_DUMMY))
    {
-      if (menu_driver_alive())
+      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
       {
          if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
             rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
@@ -1141,7 +1141,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
 
 
 #ifdef HAVE_MENU
-   if (menu_driver_alive())
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
       bool focused = runloop_ctl(RUNLOOP_CTL_CHECK_FOCUS, NULL) && !ui_companion_is_on_foreground();
       bool is_idle = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);

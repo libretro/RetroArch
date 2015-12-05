@@ -44,7 +44,6 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    NULL
 };
 
-static bool menu_alive = false;
 static menu_handle_t *menu_driver_data;
 static const menu_ctx_driver_t *menu_driver_ctx;
 
@@ -268,11 +267,6 @@ void menu_driver_free(menu_handle_t *menu)
       driver->free(menu);
 }
 
-bool menu_driver_alive(void)
-{
-   return menu_alive;
-}
-
 int menu_driver_iterate(enum menu_action action)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
@@ -292,9 +286,12 @@ void menu_driver_toggle(bool latch)
    if (menu_driver->toggle)
       menu_driver->toggle(latch);
 
-   menu_alive = latch;
+   if (latch)
+      menu_driver_ctl(RARCH_MENU_CTL_SET_ALIVE, NULL);
+   else
+      menu_driver_ctl(RARCH_MENU_CTL_UNSET_ALIVE, NULL);
 
-   if (menu_alive == true)
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
       menu_entries_set_refresh(false);
 
@@ -373,10 +370,19 @@ int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
+   static bool menu_driver_alive                  = false;
    static bool menu_driver_data_own               = false;
 
    switch (state)
    {
+      case RARCH_MENU_CTL_SET_ALIVE:
+         menu_driver_alive = true;
+         break;
+      case RARCH_MENU_CTL_UNSET_ALIVE:
+         menu_driver_alive = false;
+         break;
+      case RARCH_MENU_CTL_IS_ALIVE:
+         return menu_driver_alive;
       case RARCH_MENU_CTL_SET_OWN_DRIVER:
          menu_driver_data_own = true;
          break;

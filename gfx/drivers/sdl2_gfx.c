@@ -522,7 +522,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
    SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL, vid->rotation, NULL, SDL_FLIP_NONE);
 
 #ifdef HAVE_MENU
-   if (menu_driver_alive())
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
       menu_driver_frame();
 #endif
 

@@ -362,7 +362,7 @@ int menu_iterate_render(void)
          driver->render();
    }
 
-   if (menu_driver_alive() && !runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) && !runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
       menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO, NULL);
 
    menu_driver_set_texture();

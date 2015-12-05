@@ -542,7 +542,7 @@ static void input_overlay_loaded(void *task_data, void *user_data, const char *e
       return;
 
    /* We can't display when the menu is up */
-   if (settings->input.overlay_hide_in_menu && menu_driver_alive())
+   if (settings->input.overlay_hide_in_menu && menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
       if (!input_driver_ctl(RARCH_INPUT_CTL_IS_OSK_ENABLED, NULL)
             && settings->input.overlay_enable)
