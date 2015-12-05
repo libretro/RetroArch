@@ -37,6 +37,10 @@
 #define HAVE_WINDOW
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "../../performance.h"
 
 #include "../../defines/d3d_defines.h"
@@ -1506,7 +1510,7 @@ static bool d3d_frame(void *data, const void *frame,
       font_parms.y                  = msg_height;
       font_parms.scale              = 21;
 #endif
-      font_driver_render_msg(NULL, msg, &font_params);
+      font_driver_render_msg(NULL, msg, &font_parms);
    }
 
 #ifdef HAVE_MENU
