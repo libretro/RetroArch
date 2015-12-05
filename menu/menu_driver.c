@@ -377,6 +377,7 @@ int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    static bool menu_driver_data_own               = false;
+   driver_t *driver = driver_get_ptr();
 
    switch (state)
    {
@@ -388,6 +389,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_OWNS_DRIVER:
          return menu_driver_data_own;
+      case RARCH_MENU_CTL_DEINIT:
+         menu_free(driver->menu);
+         driver->menu = NULL;
+         break;
       default:
       case RARCH_MENU_CTL_NONE:
          break;

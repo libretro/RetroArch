@@ -442,10 +442,7 @@ void uninit_drivers(int flags)
       menu_driver_context_destroy();
 
       if (!menu_driver_ctl(RARCH_MENU_CTL_OWNS_DRIVER, NULL))
-      {
-         menu_free(driver->menu);
-         driver->menu = NULL;
-      }
+         menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
    }
 #endif
 
