@@ -21,7 +21,7 @@
 #include "../video_shader_driver.h"
 #include <stdint.h>
 
-void hlsl_set_proj_matrix(XMMATRIX rotation_value);
+void hlsl_set_proj_matrix(void *data, XMMATRIX rotation_value);
 
 #define RARCH_HLSL_MAX_SHADERS 16
 

@@ -36,10 +36,33 @@
 
 #include "../video_shader_driver.h"
 
-static void shader_null_deinit(void) { }
-static bool shader_null_init(void *data, const char *path) { return true; }
+typedef struct null_shader_data
+{
+   void *empty;
+} null_shader_data_t;
 
-static void shader_null_set_params(void *data, unsigned width, unsigned height, 
+static void shader_null_deinit(void *data)
+{
+   null_shader_data_t *null_shader = (null_shader_data_t*)data;
+   if (!null_shader)
+      return;
+
+   free(null_shader);
+}
+
+static void *shader_null_init(void *data, const char *path)
+{
+   null_shader_data_t *null_shader = (null_shader_data_t*)
+      calloc(1, sizeof(*null_shader));
+
+   if (!null_shader)
+      return NULL;
+
+   return null_shader;
+}
+
+static void shader_null_set_params(void *data, void *shader_data,
+      unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
@@ -50,7 +73,7 @@ static void shader_null_set_params(void *data, unsigned width, unsigned height,
 {
 }
 
-static bool shader_null_set_mvp(void *data, const math_matrix_4x4 *mat)
+static bool shader_null_set_mvp(void *data, void *shader_data, const math_matrix_4x4 *mat)
 {
 #ifdef HAVE_OPENGL
 #ifndef NO_GL_FF_MATRIX
@@ -61,7 +84,7 @@ static bool shader_null_set_mvp(void *data, const math_matrix_4x4 *mat)
    return false;
 }
 
-static bool shader_null_set_coords(const void *data)
+static bool shader_null_set_coords(void *handle_data, void *shader_data, const void *data)
 {
 #ifdef HAVE_OPENGL
 #ifndef NO_GL_FF_VERTEX
@@ -75,55 +98,55 @@ static bool shader_null_set_coords(const void *data)
    return false;
 }
 
-static void shader_null_use(void *data, unsigned idx)
+static void shader_null_use(void *data, void *shader_data, unsigned idx)
 {
    (void)data;
    (void)idx;
 }
 
-static unsigned shader_null_num(void)
+static unsigned shader_null_num(void *data)
 {
    return 0;
 }
 
-static bool shader_null_filter_type(unsigned idx, bool *smooth)
+static bool shader_null_filter_type(void *data, unsigned idx, bool *smooth)
 {
    (void)idx;
    (void)smooth;
    return false;
 }
 
-static enum gfx_wrap_type shader_null_wrap_type(unsigned idx)
+static enum gfx_wrap_type shader_null_wrap_type(void *data, unsigned idx)
 {
    (void)idx;
    return RARCH_WRAP_BORDER;
 }
 
-static void shader_null_shader_scale(unsigned idx,
-      struct gfx_fbo_scale *scale)
+static void shader_null_shader_scale(void *data,
+      unsigned idx, struct gfx_fbo_scale *scale)
 {
    (void)idx;
    (void)scale;
 }
 
-static unsigned shader_null_get_prev_textures(void)
+static unsigned shader_null_get_prev_textures(void *data)
 {
    return 0;
 }
 
-static bool shader_null_mipmap_input(unsigned idx)
+static bool shader_null_mipmap_input(void *data, unsigned idx)
 {
    (void)idx;
    return false;
 }
 
-static bool shader_null_get_feedback_pass(unsigned *idx)
+static bool shader_null_get_feedback_pass(void *data, unsigned *idx)
 {
    (void)idx;
    return false;
 }
 
-static struct video_shader *shader_null_get_current_shader(void)
+static struct video_shader *shader_null_get_current_shader(void *data)
 {
    return NULL;
 }

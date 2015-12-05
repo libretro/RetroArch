@@ -1117,7 +1117,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
             tex_info, gl->prev_info, feedback_info, fbo_tex_info, fbo_tex_info_cnt);
 
       gl->coords.vertices = 4;
-      video_shader_driver_set_coords(gl->shader, &gl->coords);
+      video_shader_driver_set_coords(gl->shader, NULL, &gl->coords);
       video_shader_driver_set_mvp(gl->shader, gl, &gl->mvp);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
@@ -1166,7 +1166,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    gl->coords.vertex = gl->vertex_ptr;
 
    gl->coords.vertices = 4;
-   video_shader_driver_set_coords(gl->shader, &gl->coords);
+   video_shader_driver_set_coords(gl->shader, NULL, &gl->coords);
    video_shader_driver_set_mvp(gl->shader, gl, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -1605,7 +1605,7 @@ static INLINE void gl_draw_texture(gl_t *gl)
 
    video_shader_driver_use(gl->shader, gl, GL_SHADER_STOCK_BLEND);
    gl->coords.vertices  = 4;
-   video_shader_driver_set_coords(gl->shader, &gl->coords);
+   video_shader_driver_set_coords(gl->shader, NULL, &gl->coords);
    video_shader_driver_set_mvp(gl->shader, gl, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
@@ -1774,7 +1774,7 @@ static bool gl_frame(void *data, const void *frame,
          NULL, 0);
 
    gl->coords.vertices = 4;
-   video_shader_driver_set_coords(gl->shader, &gl->coords);
+   video_shader_driver_set_coords(gl->shader, NULL, &gl->coords);
    video_shader_driver_set_mvp(gl->shader, gl, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -3247,7 +3247,7 @@ static void gl_render_overlay(void *data)
    gl->coords.color     = gl->overlay_color_coord;
    gl->coords.vertices  = 4 * gl->overlays;
 
-   video_shader_driver_set_coords(gl->shader, &gl->coords);
+   video_shader_driver_set_coords(gl->shader, NULL, &gl->coords);
    video_shader_driver_set_mvp(gl->shader, gl, &gl->mvp_no_rot);
 
    for (i = 0; i < gl->overlays; i++)

@@ -228,8 +228,8 @@ static void gl_raster_font_draw_vertices(gl_t *gl, const gfx_coords_t *coords)
    if (!gl)
       return;
 
-   gl->shader->set_coords(coords);
-   gl->shader->set_mvp(gl, &gl->mvp_no_rot);
+   video_shader_driver_set_coords(gl->shader, NULL, coords);
+   video_shader_driver_set_mvp(gl->shader, gl, &gl->mvp_no_rot);
 
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
 }
@@ -367,10 +367,7 @@ static void gl_raster_font_render_message(
 static void gl_raster_font_setup_viewport(gl_raster_t *font, bool full_screen)
 {
    unsigned width, height;
-   gl_t         *gl = font->gl;
-
-   if (!gl)
-      return;
+   gl_t *gl = font ? font->gl : NULL;
 
    video_driver_get_size(&width, &height);
 
@@ -382,8 +379,7 @@ static void gl_raster_font_setup_viewport(gl_raster_t *font, bool full_screen)
 
    glBindTexture(GL_TEXTURE_2D, font->tex);
 
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+   video_shader_driver_use(gl->shader, NULL, GL_SHADER_STOCK_BLEND);
 }
 
 static void gl_raster_font_restore_viewport(gl_t *gl)
