@@ -20,6 +20,7 @@
 #include <boolean.h>
 #include "libretro.h"
 #include "driver.h"
+#include "gfx/video_driver.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

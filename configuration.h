@@ -18,7 +18,10 @@
 #define __RARCH_CONFIGURATION_H__
 
 #include <stdint.h>
+
 #include <retro_miscellaneous.h>
+
+#include "gfx/video_driver.h"
 #include "driver.h"
 
 #ifndef MAX_USERS

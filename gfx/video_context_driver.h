@@ -19,7 +19,7 @@
 
 #include <boolean.h>
 
-#include "../driver.h"
+#include "video_driver.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

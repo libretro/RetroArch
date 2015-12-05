@@ -198,7 +198,6 @@ typedef struct video_driver
    unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
 } video_driver_t;
 
-
 enum aspect_ratio
 {
    ASPECT_RATIO_4_3 = 0,
