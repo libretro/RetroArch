@@ -181,8 +181,6 @@ typedef struct driver
 {
    struct retro_callbacks retro_ctx;
 
-   void *netplay_data;
-
    /* Set this to true if the platform in question needs to 'own' 
     * the respective handle and therefore skip regular RetroArch 
     * driver teardown/reiniting procedure.

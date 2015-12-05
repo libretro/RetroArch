@@ -40,6 +40,21 @@
 #define HAVE_IPV6
 #endif
 
+#define UDP_FRAME_PACKETS 16
+#define MAX_SPECTATORS 16
+
+#define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
+#define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
+
+enum
+{
+   CMD_OPT_ALLOWED_IN_SPECTATE_MODE = 0x1,
+   CMD_OPT_REQUIRE_ACK              = 0x2,
+   CMD_OPT_HOST_ONLY                = 0x4,
+   CMD_OPT_CLIENT_ONLY              = 0x8,
+   CMD_OPT_REQUIRE_SYNC             = 0x10
+};
+
 struct delta_frame
 {
    void *state;
@@ -51,12 +66,6 @@ struct delta_frame
    bool is_simulated;
    bool used_real;
 };
-
-#define UDP_FRAME_PACKETS 16
-#define MAX_SPECTATORS 16
-
-#define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
-#define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
 
 struct netplay
 {
@@ -130,14 +139,7 @@ struct netplay
    uint32_t pause_frame;
 };
 
-enum
-{
-   CMD_OPT_ALLOWED_IN_SPECTATE_MODE = 0x1,
-   CMD_OPT_REQUIRE_ACK              = 0x2,
-   CMD_OPT_HOST_ONLY                = 0x4,
-   CMD_OPT_CLIENT_ONLY              = 0x8,
-   CMD_OPT_REQUIRE_SYNC             = 0x10
-};
+static void *netplay_data;
 
 /**
  * warn_hangup:
@@ -551,8 +553,7 @@ static bool netplay_poll(netplay_t *netplay)
 
 void input_poll_net(void)
 {
-   driver_t *driver = driver_get_ptr();
-   netplay_t *netplay = (netplay_t*)driver->netplay_data;
+   netplay_t *netplay = (netplay_t*)netplay_data;
    if (!netplay_should_skip(netplay) && netplay_can_poll(netplay))
       netplay_poll(netplay);
 }
@@ -560,24 +561,21 @@ void input_poll_net(void)
 void video_frame_net(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
-   driver_t *driver = driver_get_ptr();
-   netplay_t *netplay = (netplay_t*)driver->netplay_data;
+   netplay_t *netplay = (netplay_t*)netplay_data;
    if (!netplay_should_skip(netplay))
       netplay->cbs.frame_cb(data, width, height, pitch);
 }
 
 void audio_sample_net(int16_t left, int16_t right)
 {
-   driver_t *driver = driver_get_ptr();
-   netplay_t *netplay = (netplay_t*)driver->netplay_data;
+   netplay_t *netplay = (netplay_t*)netplay_data;
    if (!netplay_should_skip(netplay))
       netplay->cbs.sample_cb(left, right);
 }
 
 size_t audio_sample_batch_net(const int16_t *data, size_t frames)
 {
-   driver_t *driver = driver_get_ptr();
-   netplay_t *netplay = (netplay_t*)driver->netplay_data;
+   netplay_t *netplay = (netplay_t*)netplay_data;
    if (!netplay_should_skip(netplay))
       return netplay->cbs.sample_batch_cb(data, frames);
    return frames;
@@ -632,8 +630,7 @@ static int16_t netplay_input_state(netplay_t *netplay, bool port, unsigned devic
 int16_t input_state_net(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   driver_t *driver = driver_get_ptr();
-   netplay_t *netplay = (netplay_t*)driver->netplay_data;
+   netplay_t *netplay = (netplay_t*)netplay_data;
    if (netplay_is_alive(netplay))
       return netplay_input_state(netplay, port, device, idx, id);
    return netplay->cbs.state_cb(port, device, idx, id);
@@ -1470,8 +1467,7 @@ static void netplay_set_spectate_input(netplay_t *netplay, int16_t input)
 int16_t input_state_spectate(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   driver_t *driver = driver_get_ptr();
-   netplay_t *netplay = (netplay_t*)driver->netplay_data;
+   netplay_t *netplay = (netplay_t*)netplay_data;
    int16_t res        = netplay->cbs.state_cb(port, device, idx, id);
 
    netplay_set_spectate_input(netplay, res);
@@ -1496,8 +1492,7 @@ static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
 int16_t input_state_spectate_client(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   driver_t *driver = driver_get_ptr();
-   return netplay_get_spectate_input((netplay_t*)driver->netplay_data, port,
+   return netplay_get_spectate_input((netplay_t*)netplay_data, port,
          device, idx, id);
 }
 
@@ -1733,11 +1728,10 @@ void netplay_post_frame(netplay_t *netplay)
 
 void deinit_netplay(void)
 {
-   driver_t *driver     = driver_get_ptr();
-   netplay_t *netplay = (netplay_t*)driver->netplay_data;
+   netplay_t *netplay = (netplay_t*)netplay_data;
    if (netplay)
       netplay_free(netplay);
-   driver->netplay_data = NULL;
+   netplay_data = NULL;
 }
 
 #define RARCH_DEFAULT_PORT 55435
@@ -1755,7 +1749,6 @@ void deinit_netplay(void)
 bool init_netplay(void)
 {
    struct retro_callbacks cbs = {0};
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
 
@@ -1778,13 +1771,13 @@ bool init_netplay(void)
    else
       RARCH_LOG("Waiting for client...\n");
 
-   driver->netplay_data = (netplay_t*)netplay_new(
+   netplay_data = (netplay_t*)netplay_new(
          global->netplay.is_client ? global->netplay.server : NULL,
          global->netplay.port ? global->netplay.port : RARCH_DEFAULT_PORT,
          global->netplay.sync_frames, &cbs, global->netplay.is_spectate,
          settings->username);
 
-   if (driver->netplay_data)
+   if (netplay_data)
       return true;
 
    global->netplay.is_client = false;
@@ -1798,9 +1791,7 @@ bool init_netplay(void)
 
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 {
-   driver_t *driver = driver_get_ptr();
-
-   if (!driver->netplay_data)
+   if (!netplay_data)
       return false;
 
    switch (state)
@@ -1808,10 +1799,10 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
       case RARCH_NETPLAY_CTL_IS_DATA_INITED:
          return true;
       case RARCH_NETPLAY_CTL_POST_FRAME:
-         netplay_post_frame((netplay_t*)driver->netplay_data);
+         netplay_post_frame((netplay_t*)netplay_data);
          break;
       case RARCH_NETPLAY_CTL_PRE_FRAME:
-         netplay_pre_frame((netplay_t*)driver->netplay_data);
+         netplay_pre_frame((netplay_t*)netplay_data);
          break;
       case RARCH_NETPLAY_CTL_FLIP_PLAYERS:
          {
