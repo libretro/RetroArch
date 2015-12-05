@@ -20,7 +20,7 @@
 
 #include "record_driver.h"
 
-#include "../driver.h"
+#include "../command_event.h"
 #include "../general.h"
 #include "../verbosity.h"
 #include "../msg_hash.h"

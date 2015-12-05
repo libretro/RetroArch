@@ -35,6 +35,10 @@
 #include "../verbosity.h"
 #include "../tasks/tasks.h"
 
+#ifdef HAVE_MENU
+#include "../menu/menu_driver.h"
+#endif
+
 struct input_overlay
 {
    void *iface_data;

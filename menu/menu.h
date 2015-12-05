@@ -24,6 +24,7 @@
 #include <ctype.h>
 #include <boolean.h>
 
+#include "menu_driver.h"
 #include "../driver.h"
 #include "../input/input_driver.h"
 #include "../dynamic.h"

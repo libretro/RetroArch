@@ -16,11 +16,15 @@
 
 #include <string.h>
 
+#include <retro_assert.h>
+
 #include "audio_driver.h"
 #include "audio_resampler_driver.h"
 #include "audio_utils.h"
 #include "audio_thread_wrapper.h"
 
+#include "../command_event.h"
+#include "../configuration.h"
 #include "../general.h"
 #include "../verbosity.h"
 #include "../string_list_special.h"

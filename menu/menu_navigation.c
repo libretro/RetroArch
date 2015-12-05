@@ -29,6 +29,8 @@
 #include <boolean.h>
 
 #include "../configuration.h"
+#include "menu_driver.h"
+#include "menu_navigation.h"
 
 typedef struct menu_navigation
 {

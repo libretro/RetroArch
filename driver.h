@@ -33,10 +33,6 @@
 
 #include "libretro_version_1.h"
 
-#ifdef HAVE_MENU
-#include "menu/menu_driver.h"
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

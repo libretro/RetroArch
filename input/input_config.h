@@ -17,9 +17,11 @@
 #ifndef INPUT_CONFIG_H__
 #define INPUT_CONFIG_H__
 
-#include <file/config_file.h>
 #include <stdint.h>
-#include "../driver.h"
+
+#include <file/config_file.h>
+
+#include "input_driver.h"
 
 const char *input_config_bind_map_get_base(unsigned i);
 

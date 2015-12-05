@@ -15,9 +15,9 @@
  */
 
 #include "../input_joypad_driver.h"
+#include "../input_driver.h"
 #include "../input_autodetect.h"
 #include "../../general.h"
-#include "../../driver.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "string.h"

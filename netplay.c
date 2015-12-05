@@ -26,6 +26,7 @@
 #include <retro_endianness.h>
 
 #include "netplay.h"
+#include "command_event.h"
 #include "general.h"
 #include "autosave.h"
 #include "dynamic.h"

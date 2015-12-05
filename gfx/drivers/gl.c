@@ -54,6 +54,10 @@
 #include <string/string_list.h>
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../common/win32_common.h"
 #endif
