@@ -38,6 +38,7 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../dynamic.h"
+#include "../location/location_driver.h"
 #include "../audio/audio_driver.h"
 #include "../audio/audio_resampler_driver.h"
 #include "../input/input_config.h"

@@ -16,6 +16,8 @@
 
 #include <string.h>
 
+#include "location_driver.h"
+
 #include "../general.h"
 #include "../string_list_special.h"
 #include "../verbosity.h"
