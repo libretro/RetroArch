@@ -23,7 +23,6 @@
 
 #include <boolean.h>
 #include <compat/posix_string.h>
-#include <retro_miscellaneous.h>
 
 #include "libretro.h"
 

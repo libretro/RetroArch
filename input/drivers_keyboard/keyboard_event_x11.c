@@ -25,6 +25,7 @@
 #include <boolean.h>
 #include <retro_inline.h>
 #include <encodings/utf.h>
+#include <retro_miscellaneous.h>
 
 #include "../input_keyboard.h"
 #include "../input_keymaps.h"
