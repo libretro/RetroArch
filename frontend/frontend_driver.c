@@ -215,7 +215,7 @@ void frontend_driver_shutdown(bool a)
 {
    frontend_ctx_driver_t *frontend = frontend_get_ptr();
    if (!frontend || !frontend->shutdown)
-      return NULL;
-   return frontend->shutdown(a);
+      return;
+   frontend->shutdown(a);
 }
 #endif
