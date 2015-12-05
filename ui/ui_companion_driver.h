@@ -90,6 +90,8 @@ void ui_companion_driver_notify_list_loaded(file_list_t *list, file_list_t *menu
 
 void ui_companion_driver_notify_content_loaded(void);
 
+void ui_companion_driver_free(void);
+
 #ifdef __cplusplus
 }
 #endif

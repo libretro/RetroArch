@@ -191,7 +191,6 @@ enum
 
 typedef struct driver
 {
-   const ui_companion_driver_t *ui_companion;
    const camera_driver_t *camera;
    const location_driver_t *location;
    const record_driver_t *recording;
@@ -203,7 +202,6 @@ typedef struct driver
    void *location_data;
    void *recording_data;
    void *netplay_data;
-   void *ui_companion_data;
 
    bool camera_active;
    bool location_active;

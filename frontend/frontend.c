@@ -74,6 +74,7 @@ void main_exit(void *args)
    frontend_driver_shutdown(false);
 
    driver_free();
+   ui_companion_driver_free();
    frontend_driver_free();
 }
 

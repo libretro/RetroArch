@@ -24,7 +24,6 @@
 #include "../config.h"
 #endif
 
-static bool main_ui_companion_is_on_foreground;
 
 static const ui_companion_driver_t *ui_companion_drivers[] = {
 #if defined(_WIN32) && !defined(_XBOX)
@@ -42,6 +41,10 @@ static const ui_companion_driver_t *ui_companion_drivers[] = {
    &ui_companion_null,
    NULL
 };
+
+static bool main_ui_companion_is_on_foreground;
+static const ui_companion_driver_t *ui_companion;
+static void *ui_companion_data;
 
 /**
  * ui_companion_find_driver:
@@ -93,71 +96,68 @@ const ui_companion_driver_t *ui_companion_init_first(void)
 
 const ui_companion_driver_t *ui_companion_get_ptr(void)
 {
-   driver_t *driver        = driver_get_ptr();
-   if (!driver)
-      return NULL;
-   return driver->ui_companion;
+   return ui_companion;
 }
 
 void ui_companion_event_command(enum event_command action)
 {
-   driver_t *driver        = driver_get_ptr();
    const ui_companion_driver_t *ui = ui_companion_get_ptr();
 
-   if (driver && ui && ui->event_command)
-      ui->event_command(driver->ui_companion_data, action);
+   if (ui && ui->event_command)
+      ui->event_command(ui_companion_data, action);
 }
 
 void ui_companion_driver_deinit(void)
 {
-   driver_t *driver        = driver_get_ptr();
    const ui_companion_driver_t *ui = ui_companion_get_ptr();
    if (!ui)
       return;
    if (ui->deinit)
-      ui->deinit(driver->ui_companion_data);
+      ui->deinit(ui_companion_data);
+   ui_companion_data = NULL;
 }
 
 void ui_companion_driver_init_first(void)
 {
    settings_t *settings    = config_get_ptr();
-   driver_t *driver        = driver_get_ptr();
-   if (driver)
-      driver->ui_companion = (ui_companion_driver_t*)ui_companion_init_first();
 
-   if (driver->ui_companion && driver->ui_companion->toggle)
+   ui_companion = (ui_companion_driver_t*)ui_companion_init_first();
+
+   if (ui_companion && ui_companion->toggle)
    {
       if (settings->ui.companion_start_on_boot)
-         driver->ui_companion->toggle(driver->ui_companion_data);
+         ui_companion->toggle(ui_companion_data);
    }
 }
 
 void ui_companion_driver_notify_refresh(void)
 {
-   driver_t *driver        = driver_get_ptr();
    const ui_companion_driver_t *ui = ui_companion_get_ptr();
    if (!ui)
       return;
    if (ui->notify_refresh)
-      ui->notify_refresh(driver->ui_companion_data);
+      ui->notify_refresh(ui_companion_data);
 }
 
 void ui_companion_driver_notify_list_loaded(file_list_t *list, file_list_t *menu_list)
 {
-   driver_t *driver        = driver_get_ptr();
    const ui_companion_driver_t *ui = ui_companion_get_ptr();
    if (!ui)
       return;
    if (ui->notify_list_loaded)
-      ui->notify_list_loaded(driver->ui_companion_data, list, menu_list);
+      ui->notify_list_loaded(ui_companion_data, list, menu_list);
 }
 
 void ui_companion_driver_notify_content_loaded(void)
 {
-   driver_t *driver        = driver_get_ptr();
    const ui_companion_driver_t *ui = ui_companion_get_ptr();
    if (!ui)
       return;
    if (ui->notify_content_loaded)
-      ui->notify_content_loaded(driver->ui_companion_data);
+      ui->notify_content_loaded(ui_companion_data);
+}
+
+void ui_companion_driver_free(void)
+{
+   ui_companion = NULL;
 }
