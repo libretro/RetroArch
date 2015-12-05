@@ -28,6 +28,7 @@
 #endif
 
 #include "audio/audio_driver.h"
+#include "camera/camera_driver.h"
 #include "location/location_driver.h"
 #include "performance.h"
 

@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../driver.h"
+#include "../camera_driver.h"
 
 static void *nullcamera_init(const char *device, uint64_t caps,
       unsigned width, unsigned height)

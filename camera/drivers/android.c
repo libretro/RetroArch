@@ -16,7 +16,8 @@
  */
 
 #include <glsym/glsym.h>
-#include "../../driver.h"
+
+#include "../camera_driver.h"
 #include "../../gfx/video_texture.h"
 
 typedef struct android_camera

@@ -32,13 +32,15 @@
 #include <linux/videodev2.h>
 
 #include <memmap.h>
+
+#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <gfx/scaler/scaler.h>
 #include <retro_stat.h>
 
 #include <compat/strl.h>
 
-#include "../../general.h"
+#include "../camera_driver.h"
 #include "../../performance.h"
 #include "../../verbosity.h"
 

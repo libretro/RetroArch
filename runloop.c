@@ -42,6 +42,7 @@
 #include "rewind.h"
 #include "dir_list_special.h"
 #include "audio/audio_driver.h"
+#include "camera/camera_driver.h"
 
 #include "msg_hash.h"
 
