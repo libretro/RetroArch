@@ -33,7 +33,7 @@ typedef struct retro_callbacks
    retro_input_poll_t poll_cb;
 } retro_callbacks_t;
 
-retro_callbacks_t retro_ctx;
+extern retro_callbacks_t retro_ctx;
 
 /**
  * retro_init_libretro_cbs:
