@@ -18,8 +18,6 @@
 #define __RARCH_GENERAL_H
 
 #include <stdint.h>
-#include <math.h>
-#include <limits.h>
 
 #include <boolean.h>
 #include <compat/strl.h>
