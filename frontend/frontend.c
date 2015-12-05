@@ -45,7 +45,6 @@ void main_exit(void *args)
    driver_t *driver                      = driver_get_ptr();
    settings_t *settings                  = config_get_ptr();
    global_t   *global                    = global_get_ptr();
-   const ui_companion_driver_t *ui       = ui_companion_get_ptr();
 
    event_command(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
 
@@ -70,11 +69,7 @@ void main_exit(void *args)
 
    rarch_main_free();
 
-   if (ui)
-   {
-      if (ui->deinit)
-         ui->deinit(driver->ui_companion_data);
-   }
+   ui_companion_driver_deinit();
 
    frontend_driver_shutdown(false);
 
@@ -248,14 +243,11 @@ int rarch_main(int argc, char *argv[], void *data)
    void *args                      = (void*)data;
    int ret                         = 0;
    settings_t *settings            = NULL;
-   driver_t *driver                = NULL;
 #ifdef HAVE_THREADS
    global_t *global                = NULL;
 #endif
 
    rarch_main_alloc();
-
-   driver = driver_get_ptr();
 
    frontend_driver_init_first(args);
    rarch_main_new();
@@ -292,14 +284,7 @@ int rarch_main(int argc, char *argv[], void *data)
                system ? &system->info : NULL);
    }
 
-   if (driver)
-      driver->ui_companion = (ui_companion_driver_t*)ui_companion_init_first();
-
-   if (driver->ui_companion && driver->ui_companion->toggle)
-   {
-      if (settings->ui.companion_start_on_boot)
-         driver->ui_companion->toggle(driver->ui_companion_data);
-   }
+   ui_companion_driver_init_first();
 
 #ifndef HAVE_MAIN
    do

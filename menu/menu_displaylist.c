@@ -3198,15 +3198,11 @@ void menu_displaylist_push_list_process(menu_displaylist_info_t *info)
    if (info->need_push)
    {
       const menu_ctx_driver_t *menu_driver = menu_ctx_driver_get_ptr();
-      driver_t *driver                = driver_get_ptr();
-      const ui_companion_driver_t *ui = ui_companion_get_ptr();
 
       if (menu_driver->populate_entries)
          menu_driver->populate_entries(info->path, info->label, info->type);
 
-      if (ui && driver)
-         ui->notify_list_loaded(driver->ui_companion_data,
-               info->list, info->menu_list);
+      ui_companion_driver_notify_list_loaded(info->list, info->menu_list);
    }
 }
 

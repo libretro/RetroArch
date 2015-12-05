@@ -74,11 +74,21 @@ const ui_companion_driver_t *ui_companion_get_ptr(void);
  **/
 const ui_companion_driver_t *ui_companion_init_first(void);
 
+void ui_companion_driver_init_first(void);
+
 bool ui_companion_is_on_foreground(void);
 
 void ui_companion_set_foreground(unsigned enable);
 
 void ui_companion_event_command(enum event_command action);
+
+void ui_companion_driver_deinit(void);
+
+void ui_companion_driver_notify_refresh(void);
+
+void ui_companion_driver_notify_list_loaded(file_list_t *list, file_list_t *menu_list);
+
+void ui_companion_driver_notify_content_loaded(void);
 
 #ifdef __cplusplus
 }

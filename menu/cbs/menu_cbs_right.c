@@ -38,17 +38,14 @@ static int generic_shader_action_parameter_right(
       struct video_shader *shader, struct video_shader_parameter *param,
       unsigned type, const char *label, bool wraparound)
 {
-   driver_t                     *driver = driver_get_ptr();
-   const ui_companion_driver_t      *ui = ui_companion_get_ptr();
-
    if (!shader)
       return -1;
 
    param->current += param->step;
    param->current  = min(max(param->minimum, param->current), param->maximum);
 
-   if (ui->notify_refresh && ui_companion_is_on_foreground())
-      ui->notify_refresh(driver->ui_companion_data);
+   if (ui_companion_is_on_foreground())
+      ui_companion_driver_notify_refresh();
    return 0;
 }
 
@@ -353,8 +350,6 @@ static int playlist_association_right(unsigned type, const char *label,
 int core_setting_right(unsigned type, const char *label,
       bool wraparound)
 {
-   driver_t * driver = driver_get_ptr();
-   const ui_companion_driver_t *ui = ui_companion_get_ptr();
    unsigned idx     = type - MENU_SETTINGS_CORE_OPTION_START;
    rarch_system_info_t *system = rarch_system_info_get_ptr();
 
@@ -362,8 +357,8 @@ int core_setting_right(unsigned type, const char *label,
 
    core_option_next(system->core_options, idx);
 
-   if (ui->notify_refresh && ui_companion_is_on_foreground())
-      ui->notify_refresh(driver->ui_companion_data);
+   if (ui_companion_is_on_foreground())
+      ui_companion_driver_notify_refresh();
 
    return 0;
 }
