@@ -241,10 +241,9 @@ static bool find_video_driver(void)
    }
 #endif
 
-   if (driver->frontend_ctx &&
-       driver->frontend_ctx->get_video_driver)
+   if (frontend_driver_has_get_video_driver_func())
    {
-      current_video = driver->frontend_ctx->get_video_driver();
+      current_video = frontend_driver_get_video_driver();
 
       if (current_video)
          return true;

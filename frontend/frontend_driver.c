@@ -176,4 +176,20 @@ environment_get_t frontend_driver_environment_get_ptr(void)
       return NULL;
    return driver->frontend_ctx->environment_get;
 }
+
+bool frontend_driver_has_get_video_driver_func(void)
+{
+   driver_t *driver = driver_get_ptr();
+   if (!driver || !driver->frontend_ctx || !driver->frontend_ctx->get_video_driver)
+      return false;
+   return true;
+}
+
+const struct video_driver *frontend_driver_get_video_driver(void)
+{
+   driver_t *driver = driver_get_ptr();
+   if (!driver || !driver->frontend_ctx || !driver->frontend_ctx->get_video_driver)
+      return NULL;
+   return driver->frontend_ctx->get_video_driver();
+}
 #endif

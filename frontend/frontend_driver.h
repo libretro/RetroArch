@@ -124,6 +124,9 @@ void frontend_driver_init_first(void *args);
 
 environment_get_t frontend_driver_environment_get_ptr(void);
 
+bool frontend_driver_has_get_video_driver_func(void);
+
+const struct video_driver *frontend_driver_get_video_driver(void);
 #ifdef __cplusplus
 }
 #endif
