@@ -509,8 +509,6 @@ void init_libretro_sym(enum rarch_core_type type)
  **/
 void uninit_libretro_sym(void)
 {
-   driver_t            *driver = driver_get_ptr();
-
 #ifdef HAVE_DYNAMIC
    if (lib_handle)
       dylib_close(lib_handle);
@@ -546,7 +544,7 @@ void uninit_libretro_sym(void)
    rarch_system_info_free();
 
    camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
-   driver->location_active = false;
+   location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
 
    /* Performance counters no longer valid. */
    retro_perf_clear();
@@ -1140,7 +1138,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->get_position          = driver_location_get_position;
          cb->set_interval          = driver_location_set_interval;
          system->location_callback = *cb;
-         driver->location_active   = true;
+
+         location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
          break;
       }
 

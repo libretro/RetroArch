@@ -189,8 +189,6 @@ typedef struct driver
 
    const location_driver_t *location;
    void *location_data;
-   bool location_active;
-   bool location_data_own;
 
    const record_driver_t *recording;
    void *recording_data;

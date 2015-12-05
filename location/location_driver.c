@@ -204,7 +204,7 @@ void init_location(void)
    if (!driver->location_data)
    {
       RARCH_ERR("Failed to initialize location driver. Will continue without location.\n");
-      driver->location_active = false;
+      location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
    }
 
    if (system->location_callback.initialized)
@@ -225,4 +225,34 @@ void uninit_location(void)
          driver->location->free(driver->location_data);
    }
    driver->location_data = NULL;
+}
+
+bool location_driver_ctl(enum rarch_location_ctl_state state, void *data)
+{
+   static bool location_driver_active              = false;
+   static bool location_driver_data_own            = false;
+
+   switch (state)
+   {
+      case RARCH_LOCATION_CTL_SET_OWN_DRIVER:
+         location_driver_data_own = true;
+         break;
+      case RARCH_LOCATION_CTL_UNSET_OWN_DRIVER:
+         location_driver_data_own = false;
+         break;
+      case RARCH_LOCATION_CTL_OWNS_DRIVER:
+         return location_driver_data_own;
+      case RARCH_LOCATION_CTL_SET_ACTIVE:
+         location_driver_active = true; 
+         break;
+      case RARCH_LOCATION_CTL_UNSET_ACTIVE:
+         location_driver_active = false; 
+         break;
+      case RARCH_LOCATION_CTL_IS_ACTIVE:
+        return location_driver_active; 
+      default:
+         break;
+   }
+   
+   return false;
 }

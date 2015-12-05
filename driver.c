@@ -369,7 +369,7 @@ void init_drivers(int flags)
    if (flags & DRIVER_CAMERA)
       camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_OWN_DRIVER, NULL);
    if (flags & DRIVER_LOCATION)
-      driver->location_data_own = false;
+      location_driver_ctl(RARCH_LOCATION_CTL_UNSET_OWN_DRIVER, NULL);
 
 #ifdef HAVE_MENU
    /* By default, we want the menu to persist through driver reinits. */
@@ -403,7 +403,7 @@ void init_drivers(int flags)
       init_camera();
 
    /* Only initialize location driver if we're ever going to use it. */
-   if ((flags & DRIVER_LOCATION) && driver->location_active)
+   if ((flags & DRIVER_LOCATION) && location_driver_ctl(RARCH_LOCATION_CTL_IS_ACTIVE, NULL))
       init_location();
 
 #ifdef HAVE_MENU
@@ -446,7 +446,7 @@ void uninit_drivers(int flags)
    }
 #endif
 
-   if ((flags & DRIVER_LOCATION) && !driver->location_data_own)
+   if ((flags & DRIVER_LOCATION) && !location_driver_ctl(RARCH_LOCATION_CTL_OWNS_DRIVER, NULL))
    {
       uninit_location();
       driver->location_data = NULL;
