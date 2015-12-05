@@ -808,8 +808,6 @@ bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
    return false;
 }
 
-
-
 void video_driver_set_osd_msg(const char *msg,
       const struct font_params *params, void *font)
 {

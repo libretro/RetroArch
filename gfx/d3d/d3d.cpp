@@ -107,16 +107,10 @@ static void d3d_deinit_chain(d3d_video_t *d3d)
 
 static void d3d_deinitialize(d3d_video_t *d3d)
 {
-   driver_t *driver = driver_get_ptr();
-   const font_renderer_t *font_ctx = NULL;
    if (!d3d)
       return;
 
-   font_ctx = (const font_renderer_t*)driver->font_osd_driver;
-
-   if (font_ctx->free)
-      font_ctx->free(driver->font_osd_data);
-   font_ctx = NULL;
+   font_driver_free();
    d3d_deinit_chain(d3d);
 }
 
@@ -406,8 +400,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    strlcpy(settings->video.font_path, "game:\\media\\Arial_12.xpr",
          sizeof(settings->video.font_path));
 #endif
-   if (!font_init_first((const void**)&driver->font_osd_driver, &driver->font_osd_data,
-         d3d, settings->video.font_path, 0, FONT_DRIVER_RENDER_DIRECT3D_API))
+   if (!font_driver_init_first(d3d, settings->video.font_path, 0, FONT_DRIVER_RENDER_DIRECT3D_API))
    {
       RARCH_ERR("[D3D]: Failed to initialize font renderer.\n");
       return false;
@@ -528,14 +521,11 @@ static void d3d_set_osd_msg(void *data, const char *msg,
       const struct font_params *params, void *font)
 {
    d3d_video_t          *d3d = (d3d_video_t*)data;
-   driver_t          *driver = driver_get_ptr();
-   const font_renderer_t *font_ctx = driver->font_osd_driver;
 
    if (d3d->renderchain_driver->set_font_rect && params)
       d3d->renderchain_driver->set_font_rect(d3d, params);
 
-   if (font_ctx->render_msg)
-      font_ctx->render_msg(driver->font_osd_data, msg, params);
+   font_driver_render_msg(msg, params);
 }
 
 /* Delay constructor due to lack of exceptions. */
@@ -1505,7 +1495,7 @@ static bool d3d_frame(void *data, const void *frame,
       return false;
    }
 
-   if (font_ctx->render_msg && msg)
+   if (font_driver_has_render_msg() && msg)
    {
       struct font_params font_parms = {0};
 #ifdef _XBOX
@@ -1520,7 +1510,7 @@ static bool d3d_frame(void *data, const void *frame,
       font_parms.y                  = msg_height;
       font_parms.scale              = 21;
 #endif
-      font_ctx->render_msg(driver->font_osd_data, msg, &font_parms);
+      font_driver_render_msg(msg, &font_params);
    }
 
 #ifdef HAVE_MENU

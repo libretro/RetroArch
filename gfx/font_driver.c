@@ -142,3 +142,40 @@ bool font_init_first(const void **font_driver, void **font_handle,
 
    return false;
 }
+
+bool font_driver_has_render_msg(void)
+{
+   driver_t          *driver = driver_get_ptr();
+   const font_renderer_t *font_ctx = driver->font_osd_driver;
+   if (!font_ctx || !font_ctx->render_msg)
+      return false;
+   return true;
+}
+
+void font_driver_render_msg(const char *msg, const struct font_params *params)
+{
+   driver_t          *driver = driver_get_ptr();
+   const font_renderer_t *font_ctx = driver->font_osd_driver;
+
+   if (font_ctx->render_msg)
+      font_ctx->render_msg(driver->font_osd_data, msg, params);
+}
+
+void font_driver_free(void)
+{
+   driver_t *driver = driver_get_ptr();
+   const font_renderer_t *font_ctx = (const font_renderer_t*)driver->font_osd_driver;
+
+   if (font_ctx->free)
+      font_ctx->free(driver->font_osd_data);
+   driver->font_osd_data   = NULL;
+   driver->font_osd_driver = NULL;
+}
+
+bool font_driver_init_first(void *data, const char *font_path, float font_size,
+      enum font_driver_render_api api)
+{
+   driver_t *driver = driver_get_ptr();
+   return font_init_first((const void**)&driver->font_osd_driver, &driver->font_osd_data,
+            data, font_path, font_size, api);
+}

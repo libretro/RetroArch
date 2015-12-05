@@ -33,9 +33,41 @@ enum font_driver_render_api
    FONT_DRIVER_RENDER_VITA2D
 };
 
+enum text_alignment
+{
+   TEXT_ALIGN_LEFT = 0,
+   TEXT_ALIGN_RIGHT,
+   TEXT_ALIGN_CENTER
+};
+
+struct font_params
+{
+   float x;
+   float y;
+   float scale;
+   /* Drop shadow color multiplier. */
+   float drop_mod;
+   /* Drop shadow offset.
+    * If both are 0, no drop shadow will be rendered. */
+   int drop_x, drop_y;
+   /* ABGR. Use the macros. */
+   uint32_t color;
+   bool full_screen;
+   enum text_alignment text_align;
+};
+
 bool font_init_first(
       const void **font_driver, void **font_handle,
       void *video_data, const char *font_path, float font_size,
+      enum font_driver_render_api api);
+
+bool font_driver_has_render_msg(void);
+
+void font_driver_render_msg(const char *msg, const struct font_params *params);
+
+void font_driver_free(void);
+
+bool font_driver_init_first(void *data, const char *font_path, float font_size,
       enum font_driver_render_api api);
 
 #ifdef __cplusplus

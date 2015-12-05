@@ -1637,9 +1637,7 @@ static bool gl_frame(void *data, const void *frame,
    struct gfx_tex_info feedback_info;
    static struct retro_perf_counter frame_run = {0};
    gl_t                            *gl = (gl_t*)data;
-   driver_t                    *driver = driver_get_ptr();
    settings_t                *settings = config_get_ptr();
-   const struct font_renderer *font_driver = driver ? driver->font_osd_driver : NULL;
 
    rarch_perf_init(&frame_run, "frame_run");
    retro_perf_start(&frame_run);
@@ -1796,8 +1794,8 @@ static bool gl_frame(void *data, const void *frame,
    }
 #endif
 
-   if (msg && driver->font_osd_driver && driver->font_osd_data)
-      font_driver->render_msg(driver->font_osd_data, msg, NULL);
+   if (msg)
+      font_driver_render_msg(msg, NULL);
 
 #ifdef HAVE_OVERLAY
    if (gl->overlay_enable)
@@ -1916,10 +1914,6 @@ static void gl_free_overlay(gl_t *gl)
 static void gl_free(void *data)
 {
    gl_t *gl = (gl_t*)data;
-   driver_t *driver = driver_get_ptr();
-   const struct font_renderer *font_driver = driver ? 
-      driver->font_osd_driver : NULL;
-
    if (!gl)
       return;
 
@@ -1940,8 +1934,7 @@ static void gl_free(void *data)
    }
 #endif
 
-   if (font_driver && driver->font_osd_data)
-      font_driver->free(driver->font_osd_data);
+   font_driver_free();
    gl_shader_deinit(gl);
 
 #ifndef NO_GL_FF_VERTEX
@@ -2453,8 +2446,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    const char *version                = NULL;
    struct retro_hw_render_callback *hw_render = NULL;
    settings_t *settings               = config_get_ptr();
-   driver_t *driver                   = driver_get_ptr();
-   gl_t *gl = (gl_t*)calloc(1, sizeof(gl_t));
+   gl_t *gl                           = (gl_t*)calloc(1, sizeof(gl_t));
    if (!gl)
       return NULL;
 
@@ -2649,8 +2641,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    
    if (settings->video.font_enable)
    {
-      if (!font_init_first((const void**)&driver->font_osd_driver, &driver->font_osd_data,
-            gl, *settings->video.font_path 
+      if (!font_driver_init_first(gl, *settings->video.font_path 
             ? settings->video.font_path : NULL, settings->video.font_size,
             FONT_DRIVER_RENDER_OPENGL_API))
          RARCH_ERR("[GL]: Failed to initialize font renderer.\n");

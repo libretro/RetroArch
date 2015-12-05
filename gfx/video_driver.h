@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <boolean.h>
 #include <gfx/scaler/scaler.h>
+#include "font_driver.h"
 #include "video_filter.h"
 #include "video_shader_parse.h"
 
@@ -32,13 +33,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-enum text_alignment
-{
-   TEXT_ALIGN_LEFT = 0,
-   TEXT_ALIGN_RIGHT,
-   TEXT_ALIGN_CENTER
-};
 
 enum texture_filter_type
 {
@@ -70,23 +64,6 @@ typedef struct video_info
    /* Use 32bit RGBA rather than native RGB565/XBGR1555. */
    bool rgb32;
 } video_info_t;
-
-
-struct font_params
-{
-   float x;
-   float y;
-   float scale;
-   /* Drop shadow color multiplier. */
-   float drop_mod;
-   /* Drop shadow offset.
-    * If both are 0, no drop shadow will be rendered. */
-   int drop_x, drop_y;
-   /* ABGR. Use the macros. */
-   uint32_t color;
-   bool full_screen;
-   enum text_alignment text_align;
-};
 
 #define FONT_COLOR_RGBA(r, g, b, a) (((r) << 24) | ((g) << 16) | ((b) << 8) | ((a) << 0))
 #define FONT_COLOR_GET_RED(col)   (((col) >> 24) & 0xff)
