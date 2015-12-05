@@ -43,13 +43,14 @@
 #include "dir_list_special.h"
 #include "audio/audio_driver.h"
 #include "camera/camera_driver.h"
+#include "record/record_driver.h"
+#include "input/input_driver.h"
+#include "ui/ui_companion_driver.h"
 
 #include "msg_hash.h"
 
 #include "tasks/tasks.h"
 #include "input/input_keyboard.h"
-#include "input/input_driver.h"
-#include "ui/ui_companion_driver.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"

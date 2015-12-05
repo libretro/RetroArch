@@ -26,9 +26,6 @@
 #include <retro_miscellaneous.h>
 
 #include "libretro_private.h"
-
-#include "record/record_driver.h"
-
 #include "libretro_version_1.h"
 
 #ifdef HAVE_CONFIG_H

@@ -21,6 +21,7 @@
 
 #include "frontend/frontend_driver.h"
 #include "audio/audio_driver.h"
+#include "record/record_driver.h"
 #include "autosave.h"
 #include "cheats.h"
 #include "general.h"

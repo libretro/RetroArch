@@ -32,6 +32,7 @@
 #include <retro_miscellaneous.h>
 
 #include "../../driver.h"
+#include "../../record/record_driver.h"
 #include "../../performance.h"
 
 #include "../../libretro.h"

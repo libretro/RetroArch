@@ -40,6 +40,7 @@
 #include "../dynamic.h"
 #include "../camera/camera_driver.h"
 #include "../location/location_driver.h"
+#include "../record/record_driver.h"
 #include "../audio/audio_driver.h"
 #include "../audio/audio_resampler_driver.h"
 #include "../input/input_config.h"

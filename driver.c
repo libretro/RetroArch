@@ -24,6 +24,7 @@
 #include "audio/audio_driver.h"
 #include "audio/audio_resampler_driver.h"
 #include "camera/camera_driver.h"
+#include "record/record_driver.h"
 #include "location/location_driver.h"
 
 #ifdef HAVE_MENU
