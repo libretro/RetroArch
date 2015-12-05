@@ -25,7 +25,6 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <retro_assert.h>
-#include <retro_miscellaneous.h>
 
 #include "runloop.h"
 #include "defaults.h"
