@@ -21,6 +21,7 @@
 
 #include <android/keycodes.h>
 
+#include <dynamic/dylib.h>
 #include <retro_inline.h>
 
 #include "../../frontend/drivers/platform_linux.h"
