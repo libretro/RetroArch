@@ -45,7 +45,6 @@ void main_exit(void *args)
    driver_t *driver                      = driver_get_ptr();
    settings_t *settings                  = config_get_ptr();
    global_t   *global                    = global_get_ptr();
-   const frontend_ctx_driver_t *frontend = frontend_get_ptr();
    const ui_companion_driver_t *ui       = ui_companion_get_ptr();
 
    event_command(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
@@ -65,15 +64,9 @@ void main_exit(void *args)
    logger_shutdown();
 #endif
 
-   if (frontend)
-   {
-      if (frontend->deinit)
-         frontend->deinit(args);
-
-      if (frontend->exitspawn)
-         frontend->exitspawn(settings->libretro,
-               sizeof(settings->libretro));
-   }
+   frontend_driver_deinit(args);
+   frontend_driver_exitspawn(settings->libretro,
+         sizeof(settings->libretro));
 
    rarch_main_free();
 
@@ -83,13 +76,10 @@ void main_exit(void *args)
          ui->deinit(driver->ui_companion_data);
    }
 
-   if (frontend)
-   {
-      if (frontend->shutdown)
-         frontend->shutdown(false);
-   }
+   frontend_driver_shutdown(false);
 
    driver_free();
+   frontend_driver_free();
 }
 
 static void check_defaults_dirs(void)

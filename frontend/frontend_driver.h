@@ -122,11 +122,19 @@ bool frontend_driver_is_inited(void);
 
 void frontend_driver_init_first(void *args);
 
+void frontend_driver_free(void);
+
 environment_get_t frontend_driver_environment_get_ptr(void);
 
 bool frontend_driver_has_get_video_driver_func(void);
 
 const struct video_driver *frontend_driver_get_video_driver(void);
+
+void frontend_driver_shutdown(bool a);
+
+void frontend_driver_deinit(void *args);
+
+void frontend_driver_exitspawn(char *s, size_t len);
 #ifdef __cplusplus
 }
 #endif

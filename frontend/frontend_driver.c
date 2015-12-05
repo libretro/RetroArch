@@ -61,6 +61,8 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
    NULL
 };
 
+static frontend_ctx_driver_t *current_frontend_ctx;
+
 /**
  * frontend_ctx_find_driver:
  * @ident               : Identifier name of driver to find.
@@ -106,10 +108,7 @@ frontend_ctx_driver_t *frontend_ctx_init_first(void)
 #ifndef IS_SALAMANDER
 frontend_ctx_driver_t *frontend_get_ptr(void)
 {
-   driver_t *driver        = driver_get_ptr();
-   if (!driver)
-      return NULL;
-   return driver->frontend_ctx;
+   return current_frontend_ctx;
 }
 
 int frontend_driver_parse_drive_list(void *data)
@@ -150,46 +149,73 @@ void frontend_driver_process_args(int *argc, char *argv[])
 
 bool frontend_driver_is_inited(void)
 {
-   driver_t *driver = driver_get_ptr();
-   if (!driver->frontend_ctx)
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend)
       return false;
    return true;
 }
 
 void frontend_driver_init_first(void *args)
 {
-   driver_t *driver = driver_get_ptr();
-   if (driver)
-      driver->frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
+   current_frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
 
-   if (!driver || !driver->frontend_ctx)
+   if (!current_frontend_ctx)
       RARCH_WARN("Frontend context could not be initialized.\n");
 
-   if (driver->frontend_ctx && driver->frontend_ctx->init)
-      driver->frontend_ctx->init(args);
+   if (current_frontend_ctx && current_frontend_ctx->init)
+      current_frontend_ctx->init(args);
+}
+
+void frontend_driver_free(void)
+{
+   current_frontend_ctx = NULL;
 }
 
 environment_get_t frontend_driver_environment_get_ptr(void)
 {
-   driver_t *driver = driver_get_ptr();
-   if (!driver || !driver->frontend_ctx)
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend)
       return NULL;
-   return driver->frontend_ctx->environment_get;
+   return frontend->environment_get;
 }
 
 bool frontend_driver_has_get_video_driver_func(void)
 {
-   driver_t *driver = driver_get_ptr();
-   if (!driver || !driver->frontend_ctx || !driver->frontend_ctx->get_video_driver)
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->get_video_driver)
       return false;
    return true;
 }
 
 const struct video_driver *frontend_driver_get_video_driver(void)
 {
-   driver_t *driver = driver_get_ptr();
-   if (!driver || !driver->frontend_ctx || !driver->frontend_ctx->get_video_driver)
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->get_video_driver)
       return NULL;
-   return driver->frontend_ctx->get_video_driver();
+   return frontend->get_video_driver();
+}
+
+void frontend_driver_exitspawn(char *s, size_t len)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->exitspawn)
+      return;
+   frontend->exitspawn(s, len);
+}
+
+void frontend_driver_deinit(void *args)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->deinit)
+      return;
+   frontend->deinit(args);
+}
+
+void frontend_driver_shutdown(bool a)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->shutdown)
+      return NULL;
+   return frontend->shutdown(a);
 }
 #endif
