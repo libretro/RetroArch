@@ -36,6 +36,7 @@
 #include "../general.h"
 #include "../cheats.h"
 #include "../performance.h"
+#include "../libretro_version_1.h"
 #include "../input/input_joypad_driver.h"
 #include "../input/input_remapping.h"
 #include "../input/input_config.h"
@@ -1183,14 +1184,13 @@ unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_in
    bool set_scroll                         = false;
    size_t new_scroll_accel                 = 0;
    menu_input_t *menu_input                = menu_input_get_ptr();
-   driver_t *driver                        = driver_get_ptr();
    settings_t *settings                    = config_get_ptr();
 
-   if (!driver || !menu_input)
+   if (!menu_input)
       return 0;
 
-   if (driver->retro_ctx.poll_cb)
-      driver->retro_ctx.poll_cb();
+   if (retro_ctx.poll_cb)
+      retro_ctx.poll_cb();
 
    /* don't run anything first frame, only capture held inputs
     * for old_input_state. */

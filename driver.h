@@ -26,7 +26,6 @@
 #include <retro_miscellaneous.h>
 
 #include "libretro_private.h"
-#include "libretro_version_1.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -192,11 +191,6 @@ enum
  * Typically, if a driver intends to make use of this, it should 
  * set this to true at the end of its 'init' function. */
 
-typedef struct driver
-{
-   struct retro_callbacks retro_ctx;
-} driver_t;
-
 /**
  * init_drivers:
  * @flags              : Bitmask of drivers to initialize.
@@ -294,8 +288,6 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info);
  * index number of the driver found in the array.
  **/
 int find_driver_index(const char * label, const char *drv);
-
-driver_t *driver_get_ptr(void);
 
 void driver_free(void);
 

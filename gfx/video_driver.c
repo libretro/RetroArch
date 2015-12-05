@@ -29,6 +29,7 @@
 #include "../general.h"
 #include "../performance.h"
 #include "../string_list_special.h"
+#include "../libretro_version_1.h"
 
 #ifdef HAVE_MENU
 #include "../menu/menu_hash.h"
@@ -1136,7 +1137,6 @@ void video_driver_set_pixel_format(enum retro_pixel_format fmt)
  **/
 static bool video_driver_cached_frame(void)
 {
-   driver_t   *driver   = driver_get_ptr();
    void *recording      = recording_driver_get_data_ptr();
 
    if (runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
@@ -1149,8 +1149,8 @@ static bool video_driver_cached_frame(void)
     * freed the memory, but no known implementations do this.
     * It would be really stupid at any rate ...
     */
-   if (driver->retro_ctx.frame_cb)
-      driver->retro_ctx.frame_cb(
+   if (retro_ctx.frame_cb)
+      retro_ctx.frame_cb(
             (video_driver_state.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID)
             ? NULL : video_driver_state.frame_cache.data,
             video_driver_state.frame_cache.width,

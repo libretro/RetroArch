@@ -46,6 +46,7 @@
 #include "record/record_driver.h"
 #include "input/input_driver.h"
 #include "ui/ui_companion_driver.h"
+#include "libretro_version_1.h"
 
 #include "msg_hash.h"
 
@@ -1017,7 +1018,6 @@ int rarch_main_iterate(unsigned *sleep_ms)
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
    static retro_input_t last_input              = 0;
-   driver_t *driver                             = driver_get_ptr();
    settings_t *settings                         = config_get_ptr();
    global_t   *global                           = global_get_ptr();
    retro_input_t input                          = input_keys_pressed();
@@ -1157,7 +1157,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    if (!runloop_ctl(RUNLOOP_CTL_CHECK_STATE, &cmd))
    {
       /* RetroArch has been paused. */
-      driver->retro_ctx.poll_cb();
+      retro_ctx.poll_cb();
       *sleep_ms = 10;
       return 1;
    }

@@ -33,6 +33,8 @@ typedef struct retro_callbacks
    retro_input_poll_t poll_cb;
 } retro_callbacks_t;
 
+retro_callbacks_t retro_ctx;
+
 /**
  * retro_init_libretro_cbs:
  * @data           : pointer to retro_callbacks object
@@ -72,6 +74,8 @@ void retro_set_rewind_callbacks(void);
  * Returns: true (1) on success, otherwise false (0).
  **/
 bool retro_flush_audio(const int16_t *data, size_t samples);
+
+void retro_uninit_libretro_cbs(void);
 
 #ifdef __cplusplus
 }

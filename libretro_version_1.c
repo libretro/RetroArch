@@ -34,6 +34,8 @@
 #include "netplay.h"
 #endif
 
+struct retro_callbacks retro_ctx;
+
 /**
  * retro_set_default_callbacks:
  * @data           : pointer to retro_callbacks object
@@ -52,6 +54,17 @@ void retro_set_default_callbacks(void *data)
    cbs->sample_batch_cb = audio_driver_sample_batch;
    cbs->state_cb        = input_state;
    cbs->poll_cb         = input_poll;
+}
+
+void retro_uninit_libretro_cbs(void)
+{
+   struct retro_callbacks *cbs = (struct retro_callbacks*)&retro_ctx;
+
+   cbs->frame_cb        = NULL;
+   cbs->sample_cb       = NULL;
+   cbs->sample_batch_cb = NULL;
+   cbs->state_cb        = NULL;
+   cbs->poll_cb         = NULL;
 }
 
 /**

@@ -584,7 +584,6 @@ static bool event_init_content(void)
 static bool event_init_core(void)
 {
    global_t *global     = global_get_ptr();
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
    /* auto overrides: apply overrides */
@@ -618,7 +617,7 @@ static bool event_init_core(void)
    if (!event_init_content())
       return false;
 
-   retro_init_libretro_cbs(&driver->retro_ctx);
+   retro_init_libretro_cbs(&retro_ctx);
    rarch_init_system_av_info();
 
    return true;
@@ -917,7 +916,6 @@ bool event_command(enum event_command cmd)
 {
    unsigned i           = 0;
    bool boolean         = false;
-   driver_t  *driver    = driver_get_ptr();
    global_t  *global    = global_get_ptr();
    settings_t *settings = config_get_ptr();
    rarch_system_info_t *info = rarch_system_info_get_ptr();

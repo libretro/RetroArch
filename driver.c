@@ -26,6 +26,7 @@
 #include "camera/camera_driver.h"
 #include "record/record_driver.h"
 #include "location/location_driver.h"
+#include "libretro_version_1.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"
@@ -35,19 +36,12 @@
 #include "config.h"
 #endif
 
-driver_t *driver_get_ptr(void)
-{
-   static driver_t g_driver;
-   return &g_driver;
-}
-
 void driver_free(void)
 {
-   driver_t *driver = driver_get_ptr();
    video_driver_ctl(RARCH_DISPLAY_CTL_DESTROY, NULL);
    audio_driver_ctl(RARCH_AUDIO_CTL_DESTROY, NULL);
    input_driver_ctl(RARCH_INPUT_CTL_DESTROY, NULL);
-   memset(driver, 0, sizeof(driver_t));
+   retro_uninit_libretro_cbs();
 }
 
 void driver_clear_state(void)
@@ -360,8 +354,6 @@ static void menu_update_libretro_info(void)
  **/
 void init_drivers(int flags)
 {
-   driver_t *driver   = driver_get_ptr();
-
    if (flags & DRIVER_VIDEO)
       video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_OWN_DRIVER, NULL);
    if (flags & DRIVER_AUDIO)
@@ -436,8 +428,6 @@ void init_drivers(int flags)
  **/
 void uninit_drivers(int flags)
 {
-   driver_t *driver = driver_get_ptr();
-
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU)
    {
