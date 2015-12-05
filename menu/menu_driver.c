@@ -398,7 +398,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_DEINIT:
          menu_free(menu_driver_data);
          menu_driver_data = NULL;
-         menu_driver_ctx  = NULL;
          break;
       default:
       case RARCH_MENU_CTL_NONE:
