@@ -41,6 +41,7 @@
 #include "movie.h"
 #include "verbosity.h"
 
+#include "frontend/frontend_driver.h"
 #include "audio/audio_driver.h"
 #include "libretro_version_1.h"
 #include "configuration.h"

@@ -22,6 +22,7 @@
 #include <file/config_file.h>
 
 #include "video_thread_wrapper.h"
+#include "../frontend/frontend_driver.h"
 #include "video_context_driver.h"
 #include "../config.def.h"
 #include "../general.h"
