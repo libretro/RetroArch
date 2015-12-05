@@ -156,13 +156,11 @@ bool menu_display_font_bind_block(void *userdata)
 
 bool menu_display_font_flush_block(void)
 {
-   driver_t *driver     = driver_get_ptr();
    menu_display_t *disp = menu_display_get_ptr();
-   const struct font_renderer *font_driver = driver->font_osd_driver;
-   if (!font_driver || !font_driver->flush || !disp || !disp->font.buf)
+   if (!disp || !disp->font.buf)
       return false;
 
-   font_driver->flush(disp->font.buf);
+   font_driver_flush(disp->font.buf);
 
    return menu_display_font_bind_block(NULL);
 }

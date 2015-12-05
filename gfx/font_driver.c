@@ -233,6 +233,15 @@ void font_driver_bind_block(void *font_data, void *block)
       font_ctx->bind_block(new_font_data, block);
 }
 
+void font_driver_flush(void *data)
+{
+   driver_t          *driver       = driver_get_ptr();
+   const font_renderer_t *font_ctx = driver->font_osd_driver;
+
+   if (font_ctx->flush)
+      font_ctx->flush(data);
+}
+
 void font_driver_free(void *data)
 {
    driver_t *driver = driver_get_ptr();
@@ -287,3 +296,4 @@ bool font_driver_init_first(const void **font_driver, void *font_handle,
    return font_init_first(new_font_driver, new_font_handle,
          data, font_path, font_size, api);
 }
+
