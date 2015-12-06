@@ -16,8 +16,6 @@
 #ifndef __RETROARCH_RUNLOOP_H
 #define __RETROARCH_RUNLOOP_H
 
-#include <rthreads/async_job.h>
-
 #include "libretro.h"
 #include "core_info.h"
 #include "core_options.h"
@@ -271,10 +269,6 @@ typedef struct global
       bool flickerfilter_enable;
       bool softfilter_enable;
    } console;
-   
-#ifdef HAVE_THREADS
-   async_job_t *async_jobs;
-#endif
    
    struct
    {

@@ -18,7 +18,10 @@
 #include <file/file_path.h>
 #include <retro_assert.h>
 #include <retro_stat.h>
+
+#ifdef HAVE_THREADS
 #include <rthreads/async_job.h>
+#endif
 
 #include "frontend.h"
 #include "../ui/ui_companion_driver.h"
@@ -36,6 +39,15 @@
 #endif
 
 #define MAX_ARGS 32
+
+#ifdef HAVE_THREADS
+static async_job_t *async_jobs;
+
+int rarch_main_async_job_add(async_task_t task, void *payload)
+{
+   return async_job_add(async_jobs, task, payload);
+}
+#endif
 
 /**
  * main_exit:
@@ -258,8 +270,7 @@ int rarch_main(int argc, char *argv[], void *data)
    rarch_main_new();
 
 #ifdef HAVE_THREADS
-   global = global_get_ptr();
-   global->async_jobs = async_job_new();
+   async_jobs = async_job_new();
 #endif
    
    if (frontend_driver_is_inited())
@@ -306,8 +317,8 @@ int rarch_main(int argc, char *argv[], void *data)
 #endif
 
 #ifdef HAVE_THREADS
-   async_job_free(global->async_jobs);
-   global->async_jobs = NULL;
+   async_job_free(async_jobs);
+   async_jobs = NULL;
 #endif
 
    return 0;

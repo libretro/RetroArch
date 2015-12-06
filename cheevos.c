@@ -34,7 +34,6 @@
 
 #include "verbosity.h"
 
-
 enum
 {
    CHEEVOS_VAR_SIZE_BIT_0,
@@ -174,6 +173,10 @@ cheevos_globals_t cheevos_globals =
    0,
    0
 };
+
+/* forward declaration */
+
+int rarch_main_async_job_add(async_task_t task, void *payload);
 
 /*****************************************************************************
 Supporting functions.
@@ -1245,7 +1248,7 @@ static void cheevos_unlocker(void *payload)
       else
       {
          RARCH_LOG("CHEEVOS error awarding achievement %u, will retry\n", cheevo_id);
-         async_job_add(global->async_jobs, cheevos_unlocker, (void*)(uintptr_t)cheevo_id);
+         rarch_main_async_job_add(cheevos_unlocker, (void*)(uintptr_t)cheevo_id);
       }
    }
 }
@@ -1266,7 +1269,7 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
          rarch_main_msg_queue_push(cheevo->title, 0, 3 * 60, false);
          rarch_main_msg_queue_push(cheevo->description, 0, 5 * 60, false);
 
-         async_job_add(global->async_jobs, cheevos_unlocker, (void*)(uintptr_t)cheevo->id);
+         rarch_main_async_job_add(cheevos_unlocker, (void*)(uintptr_t)cheevo->id);
 
          cheevo->active = 0;
       }
@@ -1435,7 +1438,7 @@ static void cheevos_playing(void *payload)
       else
       {
          RARCH_LOG("CHEEVOS error posting playing game %u activity, will retry\n", game_id);
-         async_job_add(global->async_jobs, cheevos_playing, (void*)(uintptr_t)game_id);
+         rarch_main_async_job_add(cheevos_playing, (void*)(uintptr_t)game_id);
       }
    }
 }
@@ -1915,7 +1918,7 @@ int cheevos_load(const struct retro_game_info *info)
          free((void*)json);
          cheevos_locals.loaded = 1;
          
-         async_job_add(global->async_jobs, cheevos_playing, (void*)(uintptr_t)game_id);
+         rarch_main_async_job_add(cheevos_playing, (void*)(uintptr_t)game_id);
          return 0;
       }
       
