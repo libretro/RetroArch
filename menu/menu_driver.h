@@ -66,6 +66,8 @@ enum rarch_menu_ctl_state
 {
    RARCH_MENU_CTL_NONE = 0,
    RARCH_MENU_CTL_DEINIT,
+   RARCH_MENU_CTL_SET_TOGGLE,
+   RARCH_MENU_CTL_UNSET_TOGGLE,
    RARCH_MENU_CTL_SET_ALIVE,
    RARCH_MENU_CTL_UNSET_ALIVE,
    RARCH_MENU_CTL_IS_ALIVE,
@@ -207,8 +209,6 @@ void menu_driver_frame(void);
 void menu_driver_context_reset(void);
 
 void menu_driver_free(menu_handle_t *menu);
-
-void menu_driver_toggle(bool latch);
 
 bool menu_driver_load_image(void *data, menu_image_type_t type);
 

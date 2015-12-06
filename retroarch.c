@@ -1394,7 +1394,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          return true;
       case RARCH_CTL_MENU_RUNNING:
 #ifdef HAVE_MENU
-         menu_driver_toggle(true);
+         menu_driver_ctl(RARCH_MENU_CTL_SET_TOGGLE, NULL);
 #endif
 #ifdef HAVE_OVERLAY
          if (settings->input.overlay_hide_in_menu)
@@ -1429,7 +1429,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_MENU_RUNNING_FINISHED:
 #ifdef HAVE_MENU
-         menu_driver_toggle(false);
+         menu_driver_ctl(RARCH_MENU_CTL_UNSET_TOGGLE, NULL);
 #endif
          video_driver_set_texture_enable(false, false);
 #ifdef HAVE_OVERLAY

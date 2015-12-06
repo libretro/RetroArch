@@ -276,7 +276,7 @@ int menu_driver_iterate(enum menu_action action)
    return -1;
 }
 
-void menu_driver_toggle(bool latch)
+static void menu_driver_toggle(bool latch)
 {
    const menu_ctx_driver_t *menu_driver = menu_ctx_driver_get_ptr();
    settings_t                 *settings = config_get_ptr();
@@ -375,6 +375,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_MENU_CTL_SET_TOGGLE:
+         menu_driver_toggle(true);
+         break;
+      case RARCH_MENU_CTL_UNSET_TOGGLE:
+         menu_driver_toggle(false);
+         break;
       case RARCH_MENU_CTL_SET_ALIVE:
          menu_driver_alive = true;
          break;
