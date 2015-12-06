@@ -194,6 +194,7 @@ unsigned video_texture_load(void *data,
    const struct retro_hw_render_callback *hw_render =
       (const struct retro_hw_render_callback*)video_driver_callback();
 
+#ifdef HAVE_THREADS
    if (settings->video.threaded && !hw_render->context_type)
    {
       thread_video_t *thr  = (thread_video_t*)video_driver_get_ptr(true);
@@ -230,6 +231,7 @@ unsigned video_texture_load(void *data,
 
       return pkt.data.custom_command.return_value;
    }
+#endif
 
    return video_texture_png_load(data, type, filter_type);
 }
