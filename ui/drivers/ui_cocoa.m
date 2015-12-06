@@ -273,7 +273,7 @@ extern void action_ok_push_quick_menu(void);
    if (filenames.count == 1 && [filenames objectAtIndex:0])
    {
       NSString *__core = [filenames objectAtIndex:0];
-      const char *core_name = g_system_menu.library_name : NULL;
+      const char *core_name = g_system_menu.library_name;
 		
       runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
 
@@ -337,7 +337,7 @@ extern void action_ok_push_quick_menu(void);
       {
          NSURL *url = (NSURL*)panel.URL;
          NSString *__core = url.path;
-         const char *core_name = g_system_menu.library_name : NULL;
+         const char *core_name = g_system_menu.library_name;
 			
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
 
