@@ -226,7 +226,7 @@ unsigned video_texture_load(void *data,
 
       pkt.data.custom_command.data   = (void*)data;
 
-      thr->send_and_wait(thr, &pkt);
+      rarch_threaded_video_send_and_wait(thr, &pkt);
 
       return pkt.data.custom_command.return_value;
    }

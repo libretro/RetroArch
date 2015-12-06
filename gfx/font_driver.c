@@ -284,7 +284,7 @@ bool font_driver_init_first(const void **font_driver, void **font_handle,
       pkt.data.font_init.font_size   = font_size;
       pkt.data.font_init.api         = api;
 
-      thr->send_and_wait(thr, &pkt);
+      rarch_threaded_video_send_and_wait(thr, &pkt);
 
       return pkt.data.font_init.return_value;
    }
