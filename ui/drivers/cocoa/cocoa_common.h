@@ -19,8 +19,10 @@
 
 #include <Foundation/Foundation.h>
 
+#ifdef HAVE_MENU
 #include "../../menu/menu_setting.h"
-#include "../../menu/menu.h"
+#include "../../menu/menu_driver.h"
+#endif
 
 #ifdef HAVE_CORELOCATION
 #include <CoreLocation/CoreLocation.h>

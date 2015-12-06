@@ -26,11 +26,14 @@
 #include "../ui_companion_driver.h"
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
-#include "../../menu/menu_setting.h"
 #include "../../retroarch.h"
 
 #include "../../frontend/frontend.h"
 #include "../../runloop.h"
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_setting.h"
+#endif
 
 static char msg_old[PATH_MAX_LENGTH];
 static id apple_platform;
@@ -509,6 +512,7 @@ static void *ui_companion_cocoatouch_init(void)
 }
 
 static size_t old_size = 0;
+
 static void ui_companion_cocoatouch_notify_list_pushed(void *data,
    file_list_t *list, file_list_t *menu_list)
 {

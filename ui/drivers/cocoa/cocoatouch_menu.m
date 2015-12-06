@@ -25,9 +25,12 @@
 #include "../../../input/input_keymaps.h"
 #include "../../../input/drivers/cocoa_input.h"
 
+#include "../../../runloop.h"
+
+#ifdef HAVE_MENU
 #include "../../../menu/menu_entry.h"
 #include "../../../menu/drivers/menu_generic.h"
-#include "../../../runloop.h"
+#endif
 
 // Menu Support
 
