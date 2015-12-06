@@ -17,7 +17,6 @@
 #ifndef INPUT_KEYMAPS_H__
 #define INPUT_KEYMAPS_H__
 
-#include <file/config_file.h>
 #include <stdint.h>
 
 #include "../libretro.h"
