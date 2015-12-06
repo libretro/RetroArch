@@ -130,17 +130,21 @@ static int action_get_title_generic(char *s, size_t len, const char *path,
       const char *text)
 {
    char elem0_path[PATH_MAX_LENGTH] = {0};
-   struct string_list *list_path    = string_split(path, "|");
+   struct string_list *list_path    = NULL;
+   
+   if (path && path[0] != '\0')
+      list_path = string_split(path, "|");
 
    if (list_path)
    {
       if (list_path->size > 0)
          strlcpy(elem0_path, list_path->elems[0].data, sizeof(elem0_path));
       string_list_free(list_path);
+      snprintf(s, len, "%s - %s", text,
+            (elem0_path[0] != '\0') ? path_basename(elem0_path) : "");
    }
-
-   snprintf(s, len, "%s - %s", text,
-         (elem0_path[0] != '\0') ? path_basename(elem0_path) : "");
+   else
+      strlcpy(s, "N/A", len);
 
    return 0;
 }
