@@ -19,8 +19,6 @@
 #include "general.h"
 #include "msg_hash.h"
 
-#include "msg_hash.h"
-#include "verbosity.h"
 #include "audio/audio_driver.h"
 #include "audio/audio_resampler_driver.h"
 #include "camera/camera_driver.h"
@@ -266,12 +264,14 @@ void driver_set_refresh_rate(float hz)
  **/
 void driver_set_nonblock_state(void)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t        *settings = config_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
-   bool enable          = input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL);
+   bool                 enable = input_driver_ctl(
+         RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL);
 
    /* Only apply non-block-state for video if we're using vsync. */
-   if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_ACTIVE, NULL) && video_driver_get_ptr(false))
+   if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_ACTIVE, NULL) 
+         && video_driver_get_ptr(false))
    {
       bool video_nonblock = enable;
 
@@ -323,11 +323,8 @@ bool driver_update_system_av_info(const void *data)
 static void menu_update_libretro_info(void)
 {
    global_t *global               = global_get_ptr();
-   struct retro_system_info *info = NULL;
+   struct retro_system_info *info = global ? &global->menu.info : NULL;
    
-   if (global)
-      info = &global->menu.info;
-
    if (!global || !info)
       return;
 
