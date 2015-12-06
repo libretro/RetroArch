@@ -244,13 +244,6 @@ void menu_driver_context_reset(void)
       driver->context_reset();
 }
 
-void menu_driver_frame(void)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->frame)
-      driver->frame();
-}
 
 int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
@@ -642,11 +635,11 @@ error:
    return NULL;
 }
 
-
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    static bool menu_driver_alive                  = false;
    static bool menu_driver_data_own               = false;
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
    switch (state)
    {
@@ -654,6 +647,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_alive    = false;
          menu_driver_data_own = false;
          menu_driver_ctx      = NULL;
+         break;
+      case RARCH_MENU_CTL_FRAME:
+         if (!menu_driver_alive)
+            return false;
+         if (driver->frame)
+            driver->frame();
          break;
       case RARCH_MENU_CTL_SET_TOGGLE:
          menu_driver_toggle(true);
