@@ -57,7 +57,7 @@ static bool screenshot_dump(const char *folder, const void *frame,
 {
    bool ret;
    char filename[PATH_MAX_LENGTH] = {0};
-   char shotname[PATH_MAX_LENGTH] = {0};
+   char shotname[256]             = {0};
    struct scaler_ctx scaler       = {0};
    RFILE *file                    = NULL;
    uint8_t *out_buffer            = NULL;

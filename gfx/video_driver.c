@@ -927,7 +927,7 @@ void video_driver_set_size(unsigned *width, unsigned *height)
  **/
 void video_monitor_set_refresh_rate(float hz)
 {
-   char msg[PATH_MAX_LENGTH];
+   char msg[128];
    settings_t *settings = config_get_ptr();
 
    snprintf(msg, sizeof(msg), "Setting refresh rate to: %.3f Hz.", hz);

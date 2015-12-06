@@ -318,7 +318,7 @@ bool shader_dir_init(void)
 static void check_shader_dir(bool pressed_next, bool pressed_prev)
 {
    uint32_t ext_hash;
-   char msg[PATH_MAX_LENGTH];
+   char msg[128];
    const char *shader          = NULL;
    const char *ext             = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
@@ -636,7 +636,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             return false;
          {
-            char path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
+            char msg[128];
+            char path[PATH_MAX_LENGTH];
 
             settings->rewind_granularity = 1;
 

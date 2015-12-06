@@ -180,7 +180,7 @@ typedef struct xmb_handle
       } label;
    } margins;
 
-   char title_name[PATH_MAX_LENGTH];
+   char title_name[256];
 
    struct 
    {

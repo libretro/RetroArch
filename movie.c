@@ -299,7 +299,7 @@ static void bsv_movie_init_state(void)
    }
    else if (bsv_movie_ctl(BSV_MOVIE_CTL_START_RECORDING, NULL))
    {
-      char msg[PATH_MAX_LENGTH] = {0};
+      char msg[256];
       snprintf(msg, sizeof(msg),
             "%s \"%s\".",
             msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),

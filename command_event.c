@@ -96,7 +96,7 @@ static void event_save_files(void)
  **/
 static void event_disk_control_set_eject(bool new_state, bool print_log)
 {
-   char msg[PATH_MAX_LENGTH] = {0};
+   char msg[128]             = {0};
    bool error                = false;
    rarch_system_info_t *info = rarch_system_info_get_ptr();
    const struct retro_disk_control_callback *control =
@@ -155,11 +155,11 @@ static void event_check_disk_eject(
 static void event_disk_control_set_index(unsigned idx)
 {
    unsigned num_disks;
-   char msg[PATH_MAX_LENGTH] = {0};
+   bool error                                        = false;
+   char msg[128]                                     = {0};
    rarch_system_info_t                      *info    = rarch_system_info_get_ptr();
    const struct retro_disk_control_callback *control =
       info ? (const struct retro_disk_control_callback*)&info->disk_control : NULL;
-   bool error = false;
 
    if (!control || !control->get_num_images)
       return;
@@ -209,7 +209,7 @@ static void event_disk_control_set_index(unsigned idx)
 void event_disk_control_append_image(const char *path)
 {
    unsigned new_idx;
-   char msg[PATH_MAX_LENGTH]                         = {0};
+   char msg[128]                                     = {0};
    struct retro_game_info info                       = {0};
    global_t                                  *global = global_get_ptr();
    rarch_system_info_t                       *sysinfo = rarch_system_info_get_ptr();
@@ -333,7 +333,7 @@ static void event_check_disk_next(
  **/
 static void event_set_volume(float gain)
 {
-   char msg[PATH_MAX_LENGTH] = {0};
+   char msg[128]             = {0};
    settings_t *settings      = config_get_ptr();
 
    settings->audio.volume += gain;
@@ -466,7 +466,7 @@ static bool event_load_save_files(void)
 static void event_load_auto_state(void)
 {
    bool ret;
-   char msg[PATH_MAX_LENGTH]                 = {0};
+   char msg[128]                             = {0};
    char savestate_name_auto[PATH_MAX_LENGTH] = {0};
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
@@ -526,7 +526,7 @@ static void event_set_savestate_auto_index(void)
    for (i = 0; i < dir_list->size; i++)
    {
       unsigned idx;
-      char elem_base[PATH_MAX_LENGTH] = {0};
+      char elem_base[128]             = {0};
       const char *end                 = NULL;
       const char *dir_elem            = dir_list->elems[i].data;
 
@@ -670,7 +670,7 @@ static bool event_save_core_config(void)
    char config_dir[PATH_MAX_LENGTH]  = {0};
    char config_name[PATH_MAX_LENGTH] = {0};
    char config_path[PATH_MAX_LENGTH] = {0};
-   char msg[PATH_MAX_LENGTH]         = {0};
+   char msg[128]                     = {0};
    bool ret                          = false;
    bool found_path                   = false;
    bool overrides_active             = false;
@@ -847,7 +847,7 @@ static void event_load_state(const char *path, char *s, size_t len)
 static void event_main_state(unsigned cmd)
 {
    char path[PATH_MAX_LENGTH] = {0};
-   char msg[PATH_MAX_LENGTH]  = {0};
+   char msg[128]              = {0};
    global_t *global           = global_get_ptr();
    settings_t *settings       = config_get_ptr();
 
@@ -933,9 +933,10 @@ bool event_command(enum event_command cmd)
 
             if (video_driver_get_video_output_size(&width, &height))
             {
+               char msg[128] = {0};
+
                video_driver_set_video_mode(width, height, true);
 
-               char msg[PATH_MAX_LENGTH] = {0};
                snprintf(msg, sizeof(msg),"Resolution: %dx%d",width, height);
                rarch_main_msg_queue_push(msg, 1, 100, true);
             }

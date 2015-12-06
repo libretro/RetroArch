@@ -484,15 +484,12 @@ static void mui_render_label_value(mui_handle_t *mui,
 {
    char label_str[PATH_MAX_LENGTH];
    char value_str[PATH_MAX_LENGTH];
-   int value_len         = strlen(value);
-   int ticker_limit      = 0;
-   size_t usable_width   = 0;
+   int value_len            = strlen(value);
+   int ticker_limit         = 0;
+   size_t usable_width      = 0;
    uintptr_t texture_switch = 0;
-   bool do_draw_text     = false;
-   uint32_t hash_value   = 0;
-
-   label_str[0] = '\0';
-   value_str[0] = '\0';
+   bool do_draw_text        = false;
+   uint32_t hash_value      = 0;
 
    usable_width = width - (mui->margin * 2);
 
@@ -728,9 +725,9 @@ static void mui_frame(void)
       0, 0, 0, 0.2,
    };
    unsigned width, height, ticker_limit, i;
-   char msg[PATH_MAX_LENGTH];
-   char title[PATH_MAX_LENGTH];
-   char title_buf[PATH_MAX_LENGTH];
+   char msg[256];
+   char title[256];
+   char title_buf[256];
    size_t selection;
    size_t title_margin;
    uint64_t *frame_count;
