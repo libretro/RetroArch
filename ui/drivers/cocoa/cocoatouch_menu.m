@@ -19,6 +19,7 @@
 #include <boolean.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
+#include <string/string_list.h>
 
 #include "cocoa_common.h"
 #include "../../../input/input_config.h"
