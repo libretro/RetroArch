@@ -49,6 +49,9 @@ void driver_free(void)
    video_driver_ctl(RARCH_DISPLAY_CTL_DESTROY, NULL);
    audio_driver_ctl(RARCH_AUDIO_CTL_DESTROY, NULL);
    input_driver_ctl(RARCH_INPUT_CTL_DESTROY, NULL);
+#ifdef HAVE_MENU
+   menu_driver_ctl(RARCH_MENU_CTL_DESTROY, NULL);
+#endif
    retro_uninit_libretro_cbs();
 }
 /**
