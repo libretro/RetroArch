@@ -28,6 +28,7 @@
 #include "input/input_config.h"
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
+#include "defaults.h"
 #include "general.h"
 #include "retroarch.h"
 #include "system.h"

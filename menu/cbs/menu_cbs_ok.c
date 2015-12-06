@@ -23,6 +23,7 @@
 #include "../menu_shader.h"
 #include "../menu_hash.h"
 
+#include "../../defaults.h"
 #include "../../cheats.h"
 #include "../../general.h"
 #include "../../tasks/tasks.h"

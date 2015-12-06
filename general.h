@@ -25,7 +25,6 @@
 #include <retro_assert.h>
 
 #include "runloop.h"
-#include "defaults.h"
 #include "verbosity.h"
 
 #ifdef HAVE_CONFIG_H

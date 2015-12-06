@@ -35,6 +35,7 @@
 #include "menu_input.h"
 #include "menu_hash.h"
 
+#include "../defaults.h"
 #include "../driver.h"
 #include "../general.h"
 #include "../system.h"
