@@ -1847,7 +1847,7 @@ void video_driver_frame(const void *data, unsigned width,
    unsigned output_width  = 0;
    unsigned output_height = 0;
    unsigned  output_pitch = 0;
-   const char *msg        = NULL;
+   const char *msg        = rarch_main_msg_queue_pull();
    settings_t *settings   = config_get_ptr();
 
    if (!video_driver_ctl(RARCH_DISPLAY_CTL_IS_ACTIVE, NULL))
@@ -1884,8 +1884,6 @@ void video_driver_frame(const void *data, unsigned width,
       height = output_height;
       pitch  = output_pitch;
    }
-
-   msg                = rarch_main_msg_queue_pull();
 
    if (!current_video || !current_video->frame(
             video_driver_data, data, width, height, video_driver_frame_count,
