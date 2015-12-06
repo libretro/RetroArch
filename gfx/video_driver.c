@@ -1399,6 +1399,15 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_DISPLAY_CTL_DESTROY:
+         video_driver_use_rgba          = false;
+         video_driver_data_own          = false;
+         video_driver_active            = false;
+         video_driver_cache_context     = false;
+         video_driver_cache_context_ack = false;
+         video_driver_record_gpu_buffer = NULL;
+         current_video                  = NULL;
+         break;
       case RARCH_DISPLAY_CTL_SUPPORTS_RECORDING:
          return settings->video.gpu_record && current_video->read_viewport;
       case RARCH_DISPLAY_CTL_SUPPORTS_VIEWPORT_READ:
@@ -1480,14 +1489,6 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          return gfx_ctx_get_video_output_next(gfx_ctx_data_get_ptr());
       case RARCH_DISPLAY_CTL_INIT:
          return init_video();
-      case RARCH_DISPLAY_CTL_DESTROY:
-         video_driver_use_rgba          = false;
-         video_driver_data_own          = false;
-         video_driver_cache_context     = false;
-         video_driver_cache_context_ack = false;
-         video_driver_active            = false;
-         current_video                  = NULL;
-         break;
       case RARCH_DISPLAY_CTL_DESTROY_DATA:
          video_driver_data = NULL;
          break;
