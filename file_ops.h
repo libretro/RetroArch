@@ -14,15 +14,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBRETRO_SDK_FILE_OPS_H
-#define __LIBRETRO_SDK_FILE_OPS_H
+#ifndef __RARCH_FILE_OPS_H
+#define __RARCH_FILE_OPS_H
 
-#include <boolean.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
-#include <sys/types.h>
-#include <string/string_list.h>
+
+#include <boolean.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,7 +46,7 @@ int read_compressed_file(const char * path, void **buf,
  * Read the contents of a file into @buf. Will call read_compressed_file
  * if path contains a compressed file, otherwise will call read_generic_file.
  *
- * Returns: true if file read, false on error.
+ * Returns: true (1) if file read, false (0) on error.
  */
 int read_file(const char *path, void **buf, ssize_t *length);
 
