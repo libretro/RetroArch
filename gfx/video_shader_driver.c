@@ -117,7 +117,8 @@ void video_shader_driver_deinit(const shader_backend_t *shader)
    if (!shader)
       return;
 
-   shader->deinit(shader_data);
+   if (shader->deinit)
+      shader->deinit(shader_data);
 
    shader_data = NULL;
 }
