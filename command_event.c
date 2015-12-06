@@ -1199,9 +1199,6 @@ bool event_command(enum event_command cmd)
 #endif
          break;
       case EVENT_CMD_DSP_FILTER_DEINIT:
-         if (!global)
-            break;
-
          audio_driver_dsp_filter_free();
          break;
       case EVENT_CMD_DSP_FILTER_INIT:
@@ -1211,12 +1208,7 @@ bool event_command(enum event_command cmd)
          audio_driver_dsp_filter_init(settings->audio.dsp_plugin);
          break;
       case EVENT_CMD_GPU_RECORD_DEINIT:
-         if (!global)
-            break;
-
-         if (global->record.gpu_buffer)
-            free(global->record.gpu_buffer);
-         global->record.gpu_buffer = NULL;
+         video_driver_ctl(RARCH_DISPLAY_CTL_GPU_RECORD_DEINIT, NULL);
          break;
       case EVENT_CMD_RECORD_DEINIT:
          if (!recording_deinit())

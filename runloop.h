@@ -232,7 +232,6 @@ typedef struct global
       unsigned width;
       unsigned height;
 
-      uint8_t *gpu_buffer;
       size_t gpu_width;
       size_t gpu_height;
       char output_dir[PATH_MAX_LENGTH];

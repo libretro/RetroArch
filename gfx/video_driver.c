@@ -1395,6 +1395,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
    settings_t *settings                             = config_get_ptr();
    const struct retro_hw_render_callback *hw_render = 
       (const struct retro_hw_render_callback*)video_driver_callback();
+   static uint8_t *video_driver_record_gpu_buffer   = NULL;
 
    switch (state)
    {
@@ -1661,6 +1662,33 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          break;
       case RARCH_DISPLAY_CTL_IS_ACTIVE:
          return video_driver_active;
+      case RARCH_DISPLAY_CTL_HAS_GPU_RECORD:
+         return (video_driver_record_gpu_buffer != NULL);
+      case RARCH_DISPLAY_CTL_GPU_RECORD_GET:
+         {
+            uint8_t **new_data  = (uint8_t**)data;
+
+            if (!new_data)
+               return false;
+            *new_data = video_driver_record_gpu_buffer;
+            return true;
+         }
+         break;
+      case RARCH_DISPLAY_CTL_GPU_RECORD_INIT:
+         {
+            unsigned *new_size  = (unsigned*)data;
+            if (!new_size)
+               return false;
+            video_driver_record_gpu_buffer = (uint8_t*)malloc(*new_size);
+            if (!video_driver_record_gpu_buffer)
+               return false;
+            return true;
+         }
+      case RARCH_DISPLAY_CTL_GPU_RECORD_DEINIT:
+         if (video_driver_record_gpu_buffer)
+            free(video_driver_record_gpu_buffer);
+         video_driver_record_gpu_buffer = NULL;
+         break;
       case RARCH_DISPLAY_CTL_NONE:
       default:
          break;
@@ -1820,7 +1848,6 @@ void video_driver_frame(const void *data, unsigned width,
    unsigned output_height = 0;
    unsigned  output_pitch = 0;
    const char *msg        = NULL;
-   global_t  *global      = global_get_ptr();
    settings_t *settings   = config_get_ptr();
 
    if (!video_driver_ctl(RARCH_DISPLAY_CTL_IS_ACTIVE, NULL))
@@ -1844,7 +1871,7 @@ void video_driver_frame(const void *data, unsigned width,
              !video_driver_state.filter.filter
           || !settings->video.post_filter_record 
           || !data
-          || (global && global->record.gpu_buffer)
+          || video_driver_ctl(RARCH_DISPLAY_CTL_HAS_GPU_RECORD, NULL)
          )
       )
       recording_dump_frame(data, width, height, pitch);

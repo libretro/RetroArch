@@ -177,8 +177,9 @@ void recording_dump_frame(const void *data, unsigned width,
    ffemu_data.height  = height;
    ffemu_data.data    = data;
 
-   if (global->record.gpu_buffer)
+   if (video_driver_ctl(RARCH_DISPLAY_CTL_HAS_GPU_RECORD, NULL))
    {
+      uint8_t *gpu_buf         = NULL;
       struct video_viewport vp = {0};
 
       video_driver_viewport_info(&vp);
@@ -204,22 +205,24 @@ void recording_dump_frame(const void *data, unsigned width,
          return;
       }
 
+      if (!video_driver_ctl(RARCH_DISPLAY_CTL_GPU_RECORD_GET, &gpu_buf))
+         return;
+
       /* Big bottleneck.
        * Since we might need to do read-backs asynchronously,
        * it might take 3-4 times before this returns true. */
-      if (!video_driver_ctl(RARCH_DISPLAY_CTL_READ_VIEWPORT, global->record.gpu_buffer))
+      if (!video_driver_ctl(RARCH_DISPLAY_CTL_READ_VIEWPORT, gpu_buf))
             return;
 
       ffemu_data.pitch  = global->record.gpu_width * 3;
       ffemu_data.width  = global->record.gpu_width;
       ffemu_data.height = global->record.gpu_height;
-      ffemu_data.data   = global->record.gpu_buffer +
-         (ffemu_data.height - 1) * ffemu_data.pitch;
+      ffemu_data.data   = gpu_buf + (ffemu_data.height - 1) * ffemu_data.pitch;
 
       ffemu_data.pitch  = -ffemu_data.pitch;
    }
 
-   if (!global->record.gpu_buffer)
+   if (!video_driver_ctl(RARCH_DISPLAY_CTL_HAS_GPU_RECORD, NULL))
       ffemu_data.is_dupe = !data;
 
    if (recording_driver && recording_driver->push_video)
@@ -331,6 +334,7 @@ bool recording_init(void)
 
    if (video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_RECORDING, NULL))
    {
+      unsigned gpu_size;
       struct video_viewport vp = {0};
 
       video_driver_viewport_info(&vp);
@@ -360,8 +364,8 @@ bool recording_init(void)
       RARCH_LOG("%s %u x %u\n", msg_hash_to_str(MSG_DETECTED_VIEWPORT_OF),
             vp.width, vp.height);
 
-      global->record.gpu_buffer = (uint8_t*)malloc(vp.width * vp.height * 3);
-      if (!global->record.gpu_buffer)
+      gpu_size = vp.width * vp.height * 3;
+      if (!video_driver_ctl(RARCH_DISPLAY_CTL_GPU_RECORD_INIT, &gpu_size))
          return false;
    }
    else
