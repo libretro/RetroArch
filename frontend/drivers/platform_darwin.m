@@ -50,7 +50,7 @@
 #include "../../verbosity.h"
 
 #ifdef HAVE_MENU
-#include "../../menu/menu.h"
+#include "../../menu/menu_driver.h"
 #endif
 
 #if 1

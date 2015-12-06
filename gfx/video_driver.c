@@ -536,8 +536,6 @@ static bool uninit_video_input(void)
    event_command(EVENT_CMD_SHADER_DIR_DEINIT);
    video_monitor_compute_fps_statistics();
 
-
-
    return true;
 }
 

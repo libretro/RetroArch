@@ -36,7 +36,7 @@
 #ifdef IS_SALAMANDER
 #include "../../file_ext.h"
 #else
-#include "../../menu/menu.h"
+#include "../../menu/menu_driver.h"
 #endif
 
 const char* elf_path_cst = "sdmc:/retroarch/test.3dsx";

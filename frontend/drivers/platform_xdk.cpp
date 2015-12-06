@@ -33,7 +33,7 @@
 #ifndef IS_SALAMANDER
 #include "../../retroarch.h"
 #ifdef HAVE_MENU
-#include "../../menu/menu.h"
+#include "../../menu/menu_driver.h"
 #endif
 #endif
 
