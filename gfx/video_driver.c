@@ -1481,8 +1481,12 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
       case RARCH_DISPLAY_CTL_INIT:
          return init_video();
       case RARCH_DISPLAY_CTL_DESTROY:
-         video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_RGBA, NULL);
-         current_video = NULL;
+         video_driver_use_rgba          = false;
+         video_driver_data_own          = false;
+         video_driver_cache_context     = false;
+         video_driver_cache_context_ack = false;
+         video_driver_active            = false;
+         current_video                  = NULL;
          break;
       case RARCH_DISPLAY_CTL_DESTROY_DATA:
          video_driver_data = NULL;
