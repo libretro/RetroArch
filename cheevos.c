@@ -26,6 +26,7 @@
 #include "net_http_special.h"
 #include "configuration.h"
 #include "performance.h"
+#include "runloop.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
