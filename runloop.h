@@ -21,7 +21,6 @@
 #include "configuration.h"
 #include "libretro.h"
 #include "core_info.h"
-#include "core_options.h"
 #include "dynamic.h"
 
 #ifdef __cplusplus
