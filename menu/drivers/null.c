@@ -19,9 +19,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+
 #include "../menu_driver.h"
 #include "../menu_display.h"
-#include "../menu.h"
+
 #include "../../general.h"
 
 menu_ctx_driver_t menu_ctx_null = {

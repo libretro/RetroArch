@@ -14,7 +14,8 @@
  */
 
 #include <file/file_path.h>
-#include "../menu.h"
+
+#include "../menu_driver.h"
 #include "../menu_cbs.h"
 
 static int action_cancel_pop_default(const char *path,

@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../menu.h"
+#include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_navigation.h"
 

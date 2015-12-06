@@ -31,7 +31,6 @@
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
-#include "../menu.h"
 #include "../menu_animation.h"
 #include "../menu_entry.h"
 #include "../menu_entries.h"

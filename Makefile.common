@@ -407,8 +407,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
    else
       PSEUDO_NS :=
    endif
-   OBJ += menu/menu.o \
-          menu/menu_hash.o \
+   OBJ += menu/menu_hash.o \
 			 menu/menu_driver.o \
           menu/intl/menu_hash_de.o \
           menu/intl/menu_hash_es.o \

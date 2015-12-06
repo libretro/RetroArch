@@ -16,7 +16,7 @@
 #include <file/file_path.h>
 #include <retro_stat.h>
 
-#include "../menu.h"
+#include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_display.h"
 #include "../menu_setting.h"

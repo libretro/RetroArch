@@ -547,7 +547,6 @@ DRIVERS
 #include "../audio/audio_driver.c"
 #include "../camera/camera_driver.c"
 #include "../location/location_driver.c"
-#include "../menu/menu_driver.c"
 #include "../driver.c"
 
 /*============================================================
@@ -781,7 +780,7 @@ PLAYLISTS
 MENU
 ============================================================ */
 #ifdef HAVE_MENU
-#include "../menu/menu.c"
+#include "../menu/menu_driver.c"
 #include "../menu/menu_hash.c"
 #include "../menu/menu_input.c"
 #include "../menu/menu_entry.c"

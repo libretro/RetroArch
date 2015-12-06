@@ -23,7 +23,7 @@
 #include "../config.def.h"
 #include "../gfx/video_thread_wrapper.h"
 
-#include "menu.h"
+#include "menu_driver.h"
 #include "menu_animation.h"
 #include "menu_display.h"
 

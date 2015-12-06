@@ -17,8 +17,10 @@
 #define MENU_CBS_H__
 
 #include <stdlib.h>
+
 #include <boolean.h>
 
+#include "menu_entries.h"
 #include "menu_hash.h"
 
 enum

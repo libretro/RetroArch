@@ -20,7 +20,10 @@
 #include <stdlib.h>
 
 #include "libretro.h"
+
+#ifdef HAVE_MENU
 #include "menu/menu_entries.h"
+#endif
 
 typedef struct
 {
@@ -32,7 +35,9 @@ extern cheevos_globals_t cheevos_globals;
 
 int cheevos_load(const struct retro_game_info *info);
 
+#ifdef HAVE_MENU
 void cheevos_populate_menu(menu_displaylist_info_t *info);
+#endif
 
 void cheevos_get_description(unsigned cheevo_ndx, char *str, size_t len);
 

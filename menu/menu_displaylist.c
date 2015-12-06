@@ -21,7 +21,7 @@
 #include <file/dir_list.h>
 #include <retro_stat.h>
 
-#include "menu.h"
+#include "menu_driver.h"
 #include "menu_hash.h"
 
 #ifdef HAVE_LIBRETRODB

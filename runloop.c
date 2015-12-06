@@ -54,7 +54,7 @@
 #include "input/input_keyboard.h"
 
 #ifdef HAVE_MENU
-#include "menu/menu.h"
+#include "menu/menu_driver.h"
 #endif
 
 #ifdef HAVE_NETPLAY
