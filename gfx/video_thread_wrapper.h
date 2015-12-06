@@ -17,11 +17,12 @@
 #ifndef RARCH_VIDEO_THREAD_H__
 #define RARCH_VIDEO_THREAD_H__
 
-#include "../driver.h"
-#include "../general.h"
 #include <boolean.h>
+
 #include <rthreads/rthreads.h>
+
 #include "font_driver.h"
+#include "video_shader_driver.h"
 
 #ifdef __cplusplus
 extern "C" {
