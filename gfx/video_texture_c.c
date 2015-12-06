@@ -191,10 +191,10 @@ unsigned video_texture_load(void *data,
       enum texture_filter_type  filter_type)
 {
    settings_t *settings = config_get_ptr();
+#ifdef HAVE_THREADS
    const struct retro_hw_render_callback *hw_render =
       (const struct retro_hw_render_callback*)video_driver_callback();
 
-#ifdef HAVE_THREADS
    if (settings->video.threaded && !hw_render->context_type)
    {
       thread_video_t *thr  = (thread_video_t*)video_driver_get_ptr(true);
