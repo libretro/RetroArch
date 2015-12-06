@@ -18,6 +18,8 @@
 #include <string.h>
 #include <limits.h>
 
+#include <rthreads/rthreads.h>
+
 #include "video_thread_wrapper.h"
 #include "../performance.h"
 #include "../runloop.h"

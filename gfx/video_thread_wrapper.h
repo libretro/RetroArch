@@ -19,8 +19,6 @@
 
 #include <boolean.h>
 
-#include <rthreads/rthreads.h>
-
 #include "font_driver.h"
 #include "video_shader_driver.h"
 
