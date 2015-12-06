@@ -272,9 +272,8 @@ extern void action_ok_push_quick_menu(void);
 {
    if (filenames.count == 1 && [filenames objectAtIndex:0])
    {
-      global_t *global = global_get_ptr();
       NSString *__core = [filenames objectAtIndex:0];
-      const char *core_name = global ? global->menu.info.library_name : NULL;
+      const char *core_name = g_system_menu.library_name : NULL;
 		
       runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
 
@@ -336,10 +335,9 @@ extern void action_ok_push_quick_menu(void);
 
       if (result == NSOKButton && panel.URL)
       {
-         global_t *global = global_get_ptr();
          NSURL *url = (NSURL*)panel.URL;
          NSString *__core = url.path;
-         const char *core_name = global ? global->menu.info.library_name : NULL;
+         const char *core_name = g_system_menu.library_name : NULL;
 			
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
 
