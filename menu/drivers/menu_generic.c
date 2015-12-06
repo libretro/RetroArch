@@ -365,7 +365,7 @@ int menu_iterate_render(void)
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) && !runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
       menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO, NULL);
 
-   menu_driver_set_texture();
+   menu_driver_ctl(RARCH_MENU_CTL_SET_TEXTURE, NULL);
 
    menu->state               = 0;
 

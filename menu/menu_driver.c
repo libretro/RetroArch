@@ -228,14 +228,6 @@ void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i)
    return NULL;
 }
 
-void menu_driver_set_texture(void)
-{
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-
-   if (driver->set_texture)
-      driver->set_texture();
-}
-
 void menu_driver_context_reset(void)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
@@ -673,6 +665,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_UNSET_OWN_DRIVER:
          menu_driver_data_own = false;
+         break;
+      case RARCH_MENU_CTL_SET_TEXTURE:
+         if (driver->set_texture)
+            driver->set_texture();
          break;
       case RARCH_MENU_CTL_IS_SET_TEXTURE:
          if (!menu_driver_ctx)
