@@ -162,7 +162,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    global_t *global          = global_get_ptr();
    core_info_t *core_info    = global ? (core_info_t*)global->core_info.current : NULL;
 
-   if (!core_info || !core_info->data)
+   if (!core_info || !core_info->config_data)
    {
       menu_entries_push(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE),

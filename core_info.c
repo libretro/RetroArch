@@ -69,13 +69,14 @@ static void core_info_list_resolve_all_firmware(
 
    for (i = 0; i < core_info_list->count; i++)
    {
-      unsigned count    = 0;
-      core_info_t *info = (core_info_t*)&core_info_list->list[i];
+      unsigned count        = 0;
+      core_info_t *info     = (core_info_t*)&core_info_list->list[i];
+      config_file_t *config = info->config_data;
 
-      if (!info || !info->data)
+      if (!info || !config)
          continue;
 
-      if (!config_get_uint(info->data, "firmware_count", &count))
+      if (!config_get_uint(config, "firmware_count", &count))
          continue;
 
       info->firmware = (core_info_firmware_t*)
@@ -94,9 +95,9 @@ static void core_info_list_resolve_all_firmware(
          snprintf(desc_key, sizeof(desc_key), "firmware%u_desc", c);
          snprintf(opt_key, sizeof(opt_key), "firmware%u_opt", c);
 
-         config_get_string(info->data, path_key, &info->firmware[c].path);
-         config_get_string(info->data, desc_key, &info->firmware[c].desc);
-         config_get_bool(info->data, opt_key , &info->firmware[c].optional);
+         config_get_string(config, path_key, &info->firmware[c].path);
+         config_get_string(config, desc_key, &info->firmware[c].desc);
+         config_get_bool(config, opt_key , &info->firmware[c].optional);
       }
    }
 }
@@ -125,6 +126,7 @@ void core_info_get_name(const char *path, char *s, size_t len)
 
    for (i = 0; i < contents->size; i++)
    {
+      config_file_t *conf                  = NULL;
       char info_path_base[PATH_MAX_LENGTH] = {0};
       char info_path[PATH_MAX_LENGTH]      = {0};
 
@@ -152,11 +154,14 @@ void core_info_get_name(const char *path, char *s, size_t len)
             settings->libretro_info_path : settings->libretro_directory,
             info_path_base, sizeof(info_path));
 
-      core_info[i].data = config_file_new(info_path);
+      conf = config_file_new(info_path);
 
-      if (core_info[i].data)
-         config_get_string(core_info[i].data, "corename",
+      if (conf)
+      {
+         config_get_string(conf, "corename",
                &core_info[i].core_name);
+         core_info[i].config_data = (void*)conf;
+      }
 
       strlcpy(s, core_info[i].core_name, len);
    }
@@ -192,6 +197,7 @@ core_info_list_t *core_info_list_new(void)
 
    for (i = 0; i < contents->size; i++)
    {
+      config_file_t *conf                  = NULL;
       char info_path_base[PATH_MAX_LENGTH] = {0};
       char info_path[PATH_MAX_LENGTH]      = {0};
       core_info[i].path = strdup(contents->elems[i].data);
@@ -215,64 +221,66 @@ core_info_list_t *core_info_list_new(void)
             settings->libretro_info_path : settings->libretro_directory,
             info_path_base, sizeof(info_path));
 
-      core_info[i].data = config_file_new(info_path);
+      conf = config_file_new(info_path);
 
-      if (core_info[i].data)
+      if (conf)
       {
          unsigned count = 0;
-         config_get_string(core_info[i].data, "display_name",
+         config_get_string(conf, "display_name",
                &core_info[i].display_name);
-         config_get_string(core_info[i].data, "corename",
+         config_get_string(conf, "corename",
                &core_info[i].core_name);
-         config_get_string(core_info[i].data, "systemname",
+         config_get_string(conf, "systemname",
                &core_info[i].systemname);
-         config_get_string(core_info[i].data, "manufacturer",
+         config_get_string(conf, "manufacturer",
                &core_info[i].system_manufacturer);
-         config_get_uint(core_info[i].data, "firmware_count", &count);
+         config_get_uint(conf, "firmware_count", &count);
          core_info[i].firmware_count = count;
-         if (config_get_string(core_info[i].data, "supported_extensions",
+         if (config_get_string(conf, "supported_extensions",
                   &core_info[i].supported_extensions) &&
                core_info[i].supported_extensions)
             core_info[i].supported_extensions_list =
                string_split(core_info[i].supported_extensions, "|");
 
-         if (config_get_string(core_info[i].data, "authors",
+         if (config_get_string(conf, "authors",
                   &core_info[i].authors) &&
                core_info[i].authors)
             core_info[i].authors_list =
                string_split(core_info[i].authors, "|");
 
-         if (config_get_string(core_info[i].data, "permissions",
+         if (config_get_string(conf, "permissions",
                   &core_info[i].permissions) &&
                core_info[i].permissions)
             core_info[i].permissions_list =
                string_split(core_info[i].permissions, "|");
 
-         if (config_get_string(core_info[i].data, "license",
+         if (config_get_string(conf, "license",
                   &core_info[i].licenses) &&
                core_info[i].licenses)
             core_info[i].licenses_list =
                string_split(core_info[i].licenses, "|");
 
-         if (config_get_string(core_info[i].data, "categories",
+         if (config_get_string(conf, "categories",
                   &core_info[i].categories) &&
                core_info[i].categories)
             core_info[i].categories_list =
                string_split(core_info[i].categories, "|");
 
-         if (config_get_string(core_info[i].data, "database",
+         if (config_get_string(conf, "database",
                   &core_info[i].databases) &&
                core_info[i].databases)
             core_info[i].databases_list =
                string_split(core_info[i].databases, "|");
 
-         if (config_get_string(core_info[i].data, "notes",
+         if (config_get_string(conf, "notes",
                   &core_info[i].notes) &&
                core_info[i].notes)
             core_info[i].note_list = string_split(core_info[i].notes, "|");
 
-         config_get_bool(core_info[i].data, "supports_no_game",
+         config_get_bool(conf, "supports_no_game",
                &core_info[i].supports_no_game);
+
+         core_info[i].config_data = conf;
       }
 
       if (!core_info[i].display_name)
@@ -326,7 +334,7 @@ void core_info_list_free(core_info_list_t *core_info_list)
       string_list_free(info->licenses_list);
       string_list_free(info->categories_list);
       string_list_free(info->databases_list);
-      config_file_free(info->data);
+      config_file_free((config_file_t*)info->config_data);
 
       for (j = 0; j < info->firmware_count; j++)
       {
@@ -349,7 +357,10 @@ size_t core_info_list_num_info_files(core_info_list_t *core_info_list)
       return 0;
 
    for (i = 0; i < core_info_list->count; i++)
-      num += !!core_info_list->list[i].data;
+   {
+      config_file_t *conf = (config_file_t*)core_info_list->list[i].config_data;
+      num += !!conf;
+   }
 
    return num;
 }

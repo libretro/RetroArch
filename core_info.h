@@ -18,7 +18,6 @@
 #ifndef CORE_INFO_H_
 #define CORE_INFO_H_
 
-#include <file/config_file.h>
 #include <stddef.h>
 
 #ifdef __cplusplus
@@ -38,7 +37,7 @@ typedef struct
 typedef struct
 {
    char *path;
-   config_file_t *data;
+   void *config_data;
    char *display_name;
    char *core_name;
    char *system_manufacturer;
