@@ -85,10 +85,10 @@ static int zlib_compare_crc32(const char *name, const char *valid_exts,
 }
 #endif
 
-static int database_info_iterate_start
-(database_info_handle_t *db, const char *name)
+static int database_info_iterate_start(database_info_handle_t *db,
+      const char *name)
 {
-   char msg[PATH_MAX_LENGTH] = {0};
+   char msg[128] = {0};
 
 #ifdef _WIN32
    snprintf(msg, sizeof(msg),

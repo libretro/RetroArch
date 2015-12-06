@@ -1687,7 +1687,7 @@ static void netplay_post_frame_spectate(netplay_t *netplay)
 
    for (i = 0; i < MAX_SPECTATORS; i++)
    {
-      char msg[PATH_MAX_LENGTH] = {0};
+      char msg[128];
 
       if (netplay->spectate.fds[i] == -1)
          continue;

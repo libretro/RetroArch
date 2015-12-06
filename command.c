@@ -222,7 +222,7 @@ static const struct cmd_map map[] = {
 
 static bool cmd_set_shader(const char *arg)
 {
-   char msg[PATH_MAX_LENGTH]   = {0};
+   char msg[256];
    enum rarch_shader_type type = RARCH_SHADER_NONE;
    const char             *ext = path_get_extension(arg);
    uint32_t ext_hash           = msg_hash_calculate(ext);
