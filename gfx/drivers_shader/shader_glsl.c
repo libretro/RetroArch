@@ -715,6 +715,8 @@ static void gl_glsl_deinit(void *data)
       return;
 
    gl_glsl_destroy_resources(glsl);
+
+   free(glsl);
 }
 
 static void *gl_glsl_init(void *data, const char *path)
