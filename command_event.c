@@ -33,6 +33,7 @@
 #include "msg_hash.h"
 #include "retroarch.h"
 #include "rewind.h"
+#include "system.h"
 #include "dir_list_special.h"
 
 #ifdef HAVE_CHEEVOS
@@ -972,7 +973,7 @@ bool event_command(enum event_command cmd)
       case EVENT_CMD_LOAD_CORE_DEINIT:
 #ifdef HAVE_DYNAMIC
 #ifdef HAVE_MENU
-         libretro_free_system_info(&global->menu.info);
+         libretro_free_system_info(&g_system_menu);
 #endif
 #endif
          break;
@@ -982,7 +983,7 @@ bool event_command(enum event_command cmd)
 #ifdef HAVE_MENU
             menu_handle_t *menu = menu_driver_get_ptr();
             if (menu)
-               event_update_system_info(&global->menu.info,
+               event_update_system_info(&g_system_menu,
                      &menu->load_no_content);
 #endif
          }

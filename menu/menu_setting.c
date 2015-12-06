@@ -37,6 +37,7 @@
 
 #include "../driver.h"
 #include "../general.h"
+#include "../system.h"
 #include "../dynamic.h"
 #include "../camera/camera_driver.h"
 #include "../location/location_driver.h"

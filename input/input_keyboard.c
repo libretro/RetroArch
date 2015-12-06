@@ -18,8 +18,10 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "../general.h"
 #include "input_keyboard.h"
+
+#include "../general.h"
+#include "../system.h"
 
 struct input_keyboard_line
 {

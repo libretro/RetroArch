@@ -25,6 +25,7 @@
 #include "menu_shader.h"
 
 #include "../general.h"
+#include "../system.h"
 #include "../frontend/frontend.h"
 #include "../string_list_special.h"
 #include "../tasks/tasks.h"
@@ -392,7 +393,6 @@ static void menu_environment_get(int *argc, char *argv[],
 static void menu_push_to_history_playlist(void)
 {
    settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
    char *fullpath       = NULL;
 
    if (!settings->history_list_enable)
@@ -414,7 +414,7 @@ static void menu_push_to_history_playlist(void)
          fullpath,
          NULL,
          settings->libretro,
-         global->menu.info.library_name,
+         g_system_menu.library_name,
          NULL,
          NULL);
 }
@@ -525,7 +525,7 @@ void menu_free(menu_handle_t *menu)
    menu_driver_free(menu);
 
 #ifdef HAVE_DYNAMIC
-   libretro_free_system_info(&global->menu.info);
+   libretro_free_system_info(&g_system_menu);
 #endif
 
    menu_display_free();

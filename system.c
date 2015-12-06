@@ -27,6 +27,10 @@
 
 static rarch_system_info_t *g_system;
 
+#ifdef HAVE_MENU
+struct retro_system_info g_system_menu;
+#endif
+
 static rarch_system_info_t *rarch_system_info_new(void)
 {
    return (rarch_system_info_t*)calloc(1, sizeof(rarch_system_info_t)); 

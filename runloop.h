@@ -16,11 +16,13 @@
 #ifndef __RETROARCH_RUNLOOP_H
 #define __RETROARCH_RUNLOOP_H
 
+#include <retro_miscellaneous.h>
+
+#include "configuration.h"
 #include "libretro.h"
 #include "core_info.h"
 #include "core_options.h"
 #include "dynamic.h"
-#include "system.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -193,13 +195,6 @@ typedef struct global
       bool bps_pref;
       bool ips_pref;
    } patch;
-
-#ifdef HAVE_MENU
-   struct
-   {
-      struct retro_system_info info;
-   } menu;
-#endif
 
    struct
    {

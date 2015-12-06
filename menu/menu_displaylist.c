@@ -30,6 +30,7 @@
 
 #include "../cheats.h"
 #include "../general.h"
+#include "../system.h"
 #include "../frontend/frontend_driver.h"
 #include "../ui/ui_companion_driver.h"
 #include "../gfx/video_shader_driver.h"

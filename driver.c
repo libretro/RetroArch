@@ -18,6 +18,7 @@
 
 #include "general.h"
 #include "msg_hash.h"
+#include "system.h"
 
 #include "audio/audio_driver.h"
 #include "audio/audio_resampler_driver.h"
@@ -325,10 +326,9 @@ bool driver_update_system_av_info(const void *data)
  **/
 static void menu_update_libretro_info(void)
 {
-   global_t *global               = global_get_ptr();
-   struct retro_system_info *info = global ? &global->menu.info : NULL;
+   struct retro_system_info *info = &g_system_menu;
    
-   if (!global || !info)
+   if (!info)
       return;
 
 #ifndef HAVE_DYNAMIC

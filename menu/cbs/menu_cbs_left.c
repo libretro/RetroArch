@@ -26,6 +26,7 @@
 #include "../../cheats.h"
 #include "../../general.h"
 #include "../../retroarch.h"
+#include "../../system.h"
 
 #ifndef BIND_ACTION_LEFT
 #define BIND_ACTION_LEFT(cbs, name) \

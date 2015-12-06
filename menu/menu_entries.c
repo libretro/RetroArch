@@ -22,6 +22,7 @@
 #include "menu_hash.h"
 
 #include "../general.h"
+#include "../system.h"
 
 struct menu_list
 {
@@ -463,20 +464,13 @@ bool menu_entries_show_back(void)
  * (shown at the top of the UI). */
 int menu_entries_get_core_title(char *s, size_t len)
 {
-   const char *core_name          = NULL;
-   const char *core_version       = NULL;
-   global_t *global               = global_get_ptr();
    settings_t *settings           = config_get_ptr();
    rarch_system_info_t      *info = rarch_system_info_get_ptr();
+   const char *core_name          = g_system_menu.library_name;
+   const char *core_version       = g_system_menu.library_version;
 
    if (!settings->menu.core_enable)
       return -1; 
-
-   if (global)
-   {
-      core_name    = global->menu.info.library_name;
-      core_version = global->menu.info.library_version;
-   }
 
    if (!core_name || core_name[0] == '\0')
       core_name = info->info.library_name;

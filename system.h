@@ -57,6 +57,10 @@ typedef struct rarch_system_info
    unsigned num_ports;
 } rarch_system_info_t;
 
+#ifdef HAVE_MENU
+extern struct retro_system_info g_system_menu;
+#endif
+
 rarch_system_info_t *rarch_system_info_get_ptr(void);
 
 void rarch_system_info_free(void);

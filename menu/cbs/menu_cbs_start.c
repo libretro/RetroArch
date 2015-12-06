@@ -26,6 +26,7 @@
 #include "../../cheats.h"
 #include "../../general.h"
 #include "../../retroarch.h"
+#include "../../system.h"
 #include "../../performance.h"
 
 #include "../../gfx/video_shader_driver.h"

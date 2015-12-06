@@ -33,6 +33,7 @@
 #include "location/location_driver.h"
 #include "record/record_driver.h"
 #include "performance.h"
+#include "system.h"
 
 #include "libretro_private.h"
 #include "cores/internal_cores.h"

@@ -31,6 +31,7 @@
 #include "../performance.h"
 #include "../string_list_special.h"
 #include "../libretro_version_1.h"
+#include "../system.h"
 
 #ifdef HAVE_MENU
 #include "../menu/menu_hash.h"

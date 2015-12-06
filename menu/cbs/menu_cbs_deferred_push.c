@@ -26,6 +26,7 @@
 #include "../../cores/internal_cores.h"
 
 #include "../../general.h"
+#include "../../system.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks.h"
 
@@ -510,7 +511,6 @@ enum
 static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned type)
 {
    settings_t        *settings = config_get_ptr();
-   global_t            *global = global_get_ptr();
    rarch_system_info_t *system = rarch_system_info_get_ptr();
    menu_handle_t        *menu  = menu_driver_get_ptr();
    const char          *exts   = core_info_list_get_all_extensions();
@@ -537,10 +537,10 @@ static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned typ
   
          if (exts)
             strlcpy(info->exts, exts, sizeof(info->exts));
-         else if (global->menu.info.valid_extensions)
+         else if (g_system_menu.valid_extensions)
          {
-            if (*global->menu.info.valid_extensions)
-               strlcpy(info->exts, global->menu.info.valid_extensions,
+            if (*g_system_menu.valid_extensions)
+               strlcpy(info->exts, g_system_menu.valid_extensions,
                      sizeof(info->exts));
          }
          else
@@ -548,10 +548,10 @@ static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned typ
          break;
       case PUSH_ARCHIVE_OPEN:
          info->setting      = menu_setting_find(info->label);
-         if (global->menu.info.valid_extensions)
+         if (g_system_menu.valid_extensions)
          {
-            if (*global->menu.info.valid_extensions)
-               strlcpy(info->exts, global->menu.info.valid_extensions,
+            if (*g_system_menu.valid_extensions)
+               strlcpy(info->exts, g_system_menu.valid_extensions,
                      sizeof(info->exts));
          }
          else
@@ -562,10 +562,10 @@ static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned typ
          if (menu_setting_get_browser_selection_type(info->setting) == ST_DIR)
          {
          }
-         else if (global->menu.info.valid_extensions)
+         else if (g_system_menu.valid_extensions)
          {
-            if (*global->menu.info.valid_extensions)
-               strlcpy(info->exts, global->menu.info.valid_extensions,
+            if (*g_system_menu.valid_extensions)
+               strlcpy(info->exts, g_system_menu.valid_extensions,
                      sizeof(info->exts));
          }
          else

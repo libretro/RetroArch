@@ -23,6 +23,7 @@
 
 #include <boolean.h>
 
+#include "../../configuration.h"
 #include "../../general.h"
 #include "../../verbosity.h"
 
