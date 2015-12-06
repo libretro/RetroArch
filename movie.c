@@ -24,7 +24,6 @@
 #include "movie.h"
 #include "general.h"
 #include "msg_hash.h"
-#include "runloop.h"
 #include "verbosity.h"
 
 struct bsv_movie
