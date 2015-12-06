@@ -19,7 +19,7 @@
 
 #include <stdint.h>
 
-#include <retro_miscellaneous.h>
+#include <boolean.h>
 
 #include "gfx/video_driver.h"
 #include "driver.h"

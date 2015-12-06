@@ -21,7 +21,6 @@
 #include "libretro.h"
 #include "core_info.h"
 #include "core_options.h"
-#include "driver.h"
 #include "dynamic.h"
 #include "system.h"
 #include "performance.h"
