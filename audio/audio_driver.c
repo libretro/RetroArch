@@ -782,7 +782,12 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          audio_driver_context_audio_data = NULL;
          break;
       case RARCH_AUDIO_CTL_DEINIT:
-         return uninit_audio();
+         if (uninit_audio())
+         {
+            audio_driver_context_audio_data = NULL;
+            return true;
+         }
+         break;
       case RARCH_AUDIO_CTL_SETUP_REWIND:
          audio_driver_setup_rewind();
          return true;

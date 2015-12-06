@@ -1491,7 +1491,9 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          video_driver_data = NULL;
          break;
       case RARCH_DISPLAY_CTL_DEINIT:
-         return uninit_video_input();
+         uninit_video_input();
+         video_driver_data = NULL;
+         return true;
       case RARCH_DISPLAY_CTL_MONITOR_RESET:
          video_driver_state.frame_time_samples_count = 0;
          return true;
