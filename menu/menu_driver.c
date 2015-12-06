@@ -650,6 +650,11 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_MENU_CTL_DESTROY:
+         menu_driver_alive    = false;
+         menu_driver_data_own = false;
+         menu_driver_ctx      = NULL;
+         break;
       case RARCH_MENU_CTL_SET_TOGGLE:
          menu_driver_toggle(true);
          break;
@@ -664,9 +669,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_IS_ALIVE:
          return menu_driver_alive;
-      case RARCH_MENU_CTL_DESTROY:
-         menu_driver_ctx = NULL;
-         break;
       case RARCH_MENU_CTL_SET_OWN_DRIVER:
          menu_driver_data_own = true;
          break;
