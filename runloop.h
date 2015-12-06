@@ -21,7 +21,6 @@
 #include "core_options.h"
 #include "dynamic.h"
 #include "system.h"
-#include "performance.h"
 
 #ifdef __cplusplus
 extern "C" {

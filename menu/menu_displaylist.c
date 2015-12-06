@@ -39,7 +39,11 @@
 #include "../input/input_config.h"
 #include "../dir_list_special.h"
 #include "../string_list_special.h"
+#include "../performance.h"
+
+#ifdef HAVE_CHEEVOS
 #include "../cheevos.h"
+#endif
 
 #ifdef __linux__
 #include "../frontend/drivers/platform_linux.h"

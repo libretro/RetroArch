@@ -27,6 +27,7 @@
 #include "../command_event.h"
 #include "../configuration.h"
 #include "../general.h"
+#include "../performance.h"
 #include "../verbosity.h"
 #include "../string_list_special.h"
 
