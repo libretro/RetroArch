@@ -16,9 +16,15 @@
 #ifndef __RARCH_SYSTEM_H
 #define __RARCH_SYSTEM_H
 
-#include "configuration.h"
+#include <retro_miscellaneous.h>
+
+#include "driver.h"
 #include "core_options.h"
 #include "libretro.h"
+
+#ifndef MAX_USERS
+#define MAX_USERS 16
+#endif
 
 #ifdef __cplusplus
 extern "C" {
