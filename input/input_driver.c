@@ -711,6 +711,7 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          if (!current_input)
             return false;
          current_input->free(current_input_data);
+         current_input_data = NULL;
          return true;
       case RARCH_INPUT_CTL_DESTROY_DATA:
          current_input_data = NULL;
