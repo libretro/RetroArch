@@ -231,8 +231,8 @@ static void mui_blit_line(float x, float y, unsigned width, unsigned height,
       const char *message, uint32_t color, enum text_alignment text_align)
 {
    int font_size;
+   struct font_params params;
    void *fb_buf              = NULL;
-   struct font_params params = {0};
    menu_handle_t *menu       = menu_driver_get_ptr();
 
    if (!menu)
@@ -242,7 +242,10 @@ static void mui_blit_line(float x, float y, unsigned width, unsigned height,
 
    params.x           = x / width;
    params.y           = 1.0f - (y + font_size / 3) / height;
-   params.scale       = 1.0;
+   params.scale       = 1.0f;
+   params.drop_mod    = 0.0f;
+   params.drop_x      = 0.0f;
+   params.drop_y      = 0.0f;
    params.color       = color;
    params.full_screen = true;
    params.text_align  = text_align;

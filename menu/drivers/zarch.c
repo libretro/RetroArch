@@ -312,13 +312,16 @@ static unsigned zarch_zui_hash(zui_t *zui, const char *s)
 
 static void zarch_zui_draw_text(zui_t *zui, uint32_t color, int x, int y, const char *text)
 {
-   struct font_params params = {0};
+   struct font_params params;
 
    /* need to use height-y because the font renderer 
     * uses a different model-view-projection (MVP). */
    params.x           = x / (float)zui->width;
    params.y           = (zui->height - y) / (float)zui->height;
-   params.scale       = 1.0;
+   params.scale       = 1.0f;
+   params.drop_mod    = 0.0f;
+   params.drop_x      = 0.0f;
+   params.drop_y      = 0.0f;
    params.color       = color;
    params.full_screen = true;
    params.text_align  = TEXT_ALIGN_LEFT;

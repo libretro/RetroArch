@@ -429,8 +429,8 @@ static void xmb_draw_text(menu_handle_t *menu,
       enum text_alignment text_align,
       unsigned width, unsigned height)
 {
+   struct font_params params;
    uint8_t a8                =   0;
-   struct font_params params = {0};
    void *disp_buf            = NULL;
 
    if (alpha > xmb->alpha)
@@ -447,8 +447,10 @@ static void xmb_draw_text(menu_handle_t *menu,
 
    params.x           = x        / width;
    params.y           = 1.0f - y / height;
-
    params.scale       = scale_factor;
+   params.drop_mod    = 0.0f;
+   params.drop_x      = 0.0f;
+   params.drop_y      = 0.0f;
    params.color       = FONT_COLOR_RGBA(255, 255, 255, a8);
    params.full_screen = true;
    params.text_align  = text_align;
@@ -1346,21 +1348,18 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
    for (; i < end; i++)
    {
+      menu_entry_t entry;
       char name[PATH_MAX_LENGTH];
       char value[PATH_MAX_LENGTH];
       float icon_x, icon_y;
 
       const float half_size       = xmb->icon.size / 2.0f;
-      menu_entry_t entry          = {{0}};
       uintptr_t texture_switch       = 0;
       uintptr_t         icon         = 0;
       xmb_node_t *   node         = (xmb_node_t*)menu_entries_get_userdata_at_offset(list, i);
       uint32_t hash_label         = 0;
       uint32_t hash_value         = 0;
       bool do_draw_text           = false;
-
-      *entry.path = *entry.label  = *entry.value = 0;
-      entry.idx   = entry.spacing = entry.type = 0;
 
       if (!node)
          continue;

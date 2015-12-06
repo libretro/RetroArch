@@ -124,7 +124,7 @@ static void rmenu_render(void)
    bool msg_force;
    uint64_t *frame_count;
    size_t begin, end, i, j, selection;
-   struct font_params font_parms = {0};
+   struct font_params font_parms;
    char title[256]               = {0};
    char title_buf[256]           = {0};
    char title_msg[64]            = {0};
@@ -171,11 +171,14 @@ static void rmenu_render(void)
    menu_animation_ticker_str(title_buf, RMENU_TERM_WIDTH,
          *frame_count / 15, title, true);
 
-   font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
-   font_parms.y = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET
+   font_parms.x        = POSITION_EDGE_MIN + POSITION_OFFSET;
+   font_parms.y        = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET
       - (POSITION_OFFSET*2);
-   font_parms.scale = FONT_SIZE_NORMAL;
-   font_parms.color = WHITE;
+   font_parms.scale    = FONT_SIZE_NORMAL;
+   font_parms.color    = WHITE;
+   font_parms.drop_mod = 0.0f;
+   font_parms.drop_x   = 0.0f;
+   font_parms.drop_y   = 0.0f;
 
    video_driver_set_osd_msg(title_buf, &font_parms, NULL);
 
