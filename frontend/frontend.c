@@ -260,9 +260,6 @@ int rarch_main(int argc, char *argv[], void *data)
    void *args                      = (void*)data;
    int ret                         = 0;
    settings_t *settings            = NULL;
-#ifdef HAVE_THREADS
-   global_t *global                = NULL;
-#endif
 
    rarch_main_alloc();
 

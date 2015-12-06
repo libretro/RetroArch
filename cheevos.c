@@ -26,7 +26,6 @@
 #include "net_http_special.h"
 #include "configuration.h"
 #include "performance.h"
-#include "runloop.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
@@ -1226,7 +1225,6 @@ static void cheevos_unlocker(void *payload)
    char request[256];
    const char *result;
    settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
    unsigned cheevo_id   = (unsigned)(uintptr_t)payload;
 
    if (!cheevos_login(NULL))
@@ -1255,9 +1253,8 @@ static void cheevos_unlocker(void *payload)
 
 static void cheevos_test_cheevo_set(const cheevoset_t *set)
 {
-   global_t *global    = global_get_ptr();
+   cheevo_t *cheevo    = NULL;
    const cheevo_t *end = set->cheevos + set->count;
-   cheevo_t *cheevo;
 
    for (cheevo = set->cheevos; cheevo < end; cheevo++)
    {
@@ -1415,7 +1412,6 @@ static void cheevos_playing(void *payload)
 {
    char request[256];
    const char* json;
-   global_t *global     = global_get_ptr();
    unsigned game_id     = (unsigned)(uintptr_t)payload;
    settings_t *settings = config_get_ptr();
    
@@ -1821,7 +1817,6 @@ int cheevos_load(const struct retro_game_info *info)
    const char *json;
    retro_time_t timeout = 5000000;
    unsigned game_id     = 0;
-   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
    
    cheevos_locals.loaded = 0;
