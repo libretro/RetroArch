@@ -305,6 +305,11 @@ int rarch_main(int argc, char *argv[], void *data)
    main_exit(args);
 #endif
 
+#ifdef HAVE_THREADS
+   async_job_free(global->async_jobs);
+   global->async_jobs = NULL;
+#endif
+
    return 0;
 }
 
