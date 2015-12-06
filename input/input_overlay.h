@@ -22,7 +22,6 @@
 
 #include <retro_miscellaneous.h>
 #include <formats/image.h>
-#include "../libretro.h"
 
 #ifdef __cplusplus
 extern "C" {

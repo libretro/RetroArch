@@ -21,7 +21,6 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include <boolean.h>
-#include "../libretro.h"
 
 #include "input_joypad_driver.h"
 
