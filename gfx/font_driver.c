@@ -260,12 +260,14 @@ bool font_driver_init_first(const void **font_driver, void **font_handle,
       enum font_driver_render_api api)
 {
    settings_t *settings = config_get_ptr();
-   const struct retro_hw_render_callback *hw_render =
-      (const struct retro_hw_render_callback*)video_driver_callback();
    const void **new_font_driver = font_driver ? font_driver 
       : (const void**)&font_osd_driver;
    void **new_font_handle        = font_handle ? font_handle 
       : (void**)&font_osd_data;
+
+#ifdef HAVE_THREADS
+   const struct retro_hw_render_callback *hw_render =
+      (const struct retro_hw_render_callback*)video_driver_callback();
 
    if (threading_hint && settings->video.threaded && !hw_render->context_type)
    {
@@ -288,6 +290,7 @@ bool font_driver_init_first(const void **font_driver, void **font_handle,
 
       return pkt.data.font_init.return_value;
    }
+#endif
 
    return font_init_first(new_font_driver, new_font_handle,
          data, font_path, font_size, api);
