@@ -16,7 +16,7 @@
 #include <compat/strl.h>
 #include <string/string_list.h>
 
-#include "menu.h"
+#include "menu_driver.h"
 #include "menu_hash.h"
 #include "menu_cbs.h"
 #include "../verbosity.h"
