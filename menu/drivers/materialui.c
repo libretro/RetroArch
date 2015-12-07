@@ -232,10 +232,6 @@ static void mui_blit_line(float x, float y, unsigned width, unsigned height,
    int font_size;
    struct font_params params;
    void *fb_buf              = NULL;
-   menu_handle_t *menu       = menu_driver_get_ptr();
-
-   if (!menu)
-      return;
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
 
