@@ -70,7 +70,6 @@ typedef struct event_cmd_state
    uint64_t old_state;
    uint64_t trigger_state;
    bool fullscreen_toggle;
-   bool menu_pressed;
    bool volume_down_pressed;
    bool slowmotion_pressed;
    bool fastforward_pressed;
@@ -173,7 +172,12 @@ static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
 
 #define rarch_main_cmd_press(cmd, id)     BIT64_GET(cmd->state,         id)
 #define rarch_main_cmd_pressed(cmd, id)   BIT64_GET(cmd->old_state,     id)
-
+#ifdef HAVE_MENU
+#define rarch_main_cmd_menu_press(cmd)   (BIT64_GET(cmd->trigger_state, RARCH_MENU_TOGGLE) || \
+                                      rarch_main_cmd_get_state_menu_toggle_button_combo( \
+                                            settings, cmd->state, \
+                                            cmd->old_state, cmd->trigger_state))
+#endif
 static void rarch_main_cmd_get_state(
       settings_t *settings, event_cmd_state_t *cmd,
       retro_input_t input, retro_input_t old_input,
@@ -185,12 +189,6 @@ static void rarch_main_cmd_get_state(
    cmd->state                       = input;
    cmd->old_state                   = old_input;
    cmd->trigger_state               = trigger_input;
-#ifdef HAVE_MENU
-   cmd->menu_pressed                = BIT64_GET(cmd->trigger_state, RARCH_MENU_TOGGLE) ||
-                                      rarch_main_cmd_get_state_menu_toggle_button_combo(
-                                            settings, cmd->state,
-                                            cmd->old_state, cmd->trigger_state);
-#endif
    cmd->slowmotion_pressed          = BIT64_GET(cmd->state,         RARCH_SLOWMOTION);
    cmd->netplay_flip_pressed        = BIT64_GET(cmd->trigger_state, RARCH_NETPLAY_FLIP);
    cmd->fullscreen_toggle           = BIT64_GET(cmd->trigger_state, RARCH_FULLSCREEN_TOGGLE_KEY);
@@ -1077,7 +1075,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
       event_command(EVENT_CMD_GRAB_MOUSE_TOGGLE);
 
 #ifdef HAVE_MENU
-   if (cmd.menu_pressed || (global->inited.core.type == CORE_TYPE_DUMMY))
+   if (rarch_main_cmd_menu_press(cmd_ptr) || (global->inited.core.type == CORE_TYPE_DUMMY))
    {
       if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
       {
