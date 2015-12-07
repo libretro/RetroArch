@@ -503,7 +503,6 @@ static void init_texture(void *data, unsigned width, unsigned height)
    gx_video_t *gx               = (gx_video_t*)data;
    struct __gx_texobj *fb_ptr   = (struct __gx_texobj*)&g_tex.obj;
    struct __gx_texobj *menu_ptr = (struct __gx_texobj*)&menu_tex.obj;
-   menu_handle_t *menu          = menu_driver_get_ptr();
    settings_t *settings         = config_get_ptr();
 
    width &= ~3;
@@ -512,11 +511,8 @@ static void init_texture(void *data, unsigned width, unsigned height)
    menu_w = 320;
    menu_h = 240;
 
-   if (menu)
-   {
-      menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,  &menu_w);
-      menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &menu_h);
-   }
+   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,  &menu_w);
+   menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &menu_h);
 
    __GX_InitTexObj(fb_ptr, g_tex.data, width, height,
          (gx->rgb32) ? GX_TF_RGBA8 : gx->menu_texture_enable ? 
