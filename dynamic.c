@@ -592,67 +592,6 @@ static void rarch_log_libretro(enum retro_log_level level,
 }
 
 /**
- * rarch_game_specific_options:
- * @cmd                          : Output variable with path to core options file.
- *
- * Environment callback function implementation.
- *
- * Returns: true (1) if a game specific core options path has been found,
- * otherwise false (0).
- **/
-static bool rarch_game_specific_options(char **output)
-{
-   settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
-
-   const char *core_name                  = NULL;
-   const char *game_name                  = NULL;
-   config_file_t *option_file             = NULL;
-   char game_path[PATH_MAX_LENGTH]        = {0};
-   char config_directory[PATH_MAX_LENGTH] = {0};
-
-   core_name = system ? system->info.library_name : NULL;
-   game_name = global ? path_basename(global->name.base) : NULL;
-
-   if (!core_name || !game_name)
-      return false;
-   if (core_name[0] == '\0' || game_name[0] == '\0')
-      return false;
-
-   RARCH_LOG("Per-Game Options: core name: %s\n", core_name);
-   RARCH_LOG("Per-Game Options: game name: %s\n", game_name);
-
-   /* Config directory: config_directory.
-   * Try config directory setting first,
-   * fallback to the location of the current configuration file. */
-   if (settings->menu_config_directory[0] != '\0')
-      strlcpy(config_directory, settings->menu_config_directory, sizeof(config_directory));
-   else if (global->path.config[0] != '\0')
-      fill_pathname_basedir(config_directory, global->path.config, sizeof(config_directory));
-   else
-   {
-      RARCH_WARN("Per-Game Options: no config directory set\n");
-      return false;
-   }
-
-   /* Concatenate strings into full paths for game_path */
-   fill_pathname_join(game_path, config_directory, core_name, sizeof(game_path));
-   fill_pathname_join(game_path, game_path, game_name, sizeof(game_path));
-   strlcat(game_path, ".opt", sizeof(game_path));
-
-   option_file = config_file_new(game_path);
-   if (!option_file)
-      return false;
-
-   config_file_free(option_file);
-   
-   RARCH_LOG("Per-Game Options: game-specific core options found at %s\n", game_path);
-   *output = strdup(game_path);
-   return true;
-}
-
-/**
  * rarch_environment_cb:
  * @cmd                          : Identifier of command.
  * @data                         : Pointer to data.
@@ -710,34 +649,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ SET_VARIABLES.\n");
 
          runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_DEINIT, NULL);
-
-         {
-            char *game_options_path           = NULL;
-            bool ret                          = false;
-            const struct retro_variable *vars = (const struct retro_variable*)data;
-            char buf[PATH_MAX_LENGTH]         = {0};
-            const char *options_path          = settings->core_options_path;
-
-            if (!*options_path && *global->path.config)
-            {
-               fill_pathname_resolve_relative(buf, global->path.config,
-                     "retroarch-core-options.cfg", sizeof(buf));
-               options_path = buf;
-            }
-            
-            
-            if (settings->game_specific_options)
-               ret = rarch_game_specific_options(&game_options_path);
-
-            if(ret)
-            {
-               system->core_options = core_option_new(game_options_path, vars);
-               free(game_options_path);
-            }
-            else
-               system->core_options = core_option_new(options_path, vars);
-
-         }
+         runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_INIT,   data);
 
          break;
       }
