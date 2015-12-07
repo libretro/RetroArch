@@ -30,8 +30,6 @@
 #include "../verbosity.h"
 #include "tasks.h"
 
-extern char core_updater_path[PATH_MAX_LENGTH];
-
 enum http_status_enum
 {
    HTTP_STATUS_POLL = 0,
