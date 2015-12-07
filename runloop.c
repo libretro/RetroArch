@@ -70,9 +70,6 @@ typedef struct event_cmd_state
    uint64_t old_state;
    uint64_t trigger_state;
    bool fullscreen_toggle;
-   bool volume_down_pressed;
-   bool slowmotion_pressed;
-   bool fastforward_pressed;
    bool netplay_flip_pressed;
 } event_cmd_state_t;
 
@@ -189,7 +186,6 @@ static void rarch_main_cmd_get_state(
    cmd->state                       = input;
    cmd->old_state                   = old_input;
    cmd->trigger_state               = trigger_input;
-   cmd->slowmotion_pressed          = BIT64_GET(cmd->state,         RARCH_SLOWMOTION);
    cmd->netplay_flip_pressed        = BIT64_GET(cmd->trigger_state, RARCH_NETPLAY_FLIP);
    cmd->fullscreen_toggle           = BIT64_GET(cmd->trigger_state, RARCH_FULLSCREEN_TOGGLE_KEY);
 }
@@ -541,6 +537,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
       case RUNLOOP_CTL_CHECK_STATE:
          {
+            bool tmp                  = false;
             event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
 
             if (!cmd || runloop_idle)
@@ -588,7 +585,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             state_manager_check_rewind(rarch_main_cmd_press(cmd, RARCH_REWIND));
 
-            runloop_ctl(RUNLOOP_CTL_CHECK_SLOWMOTION, &cmd->slowmotion_pressed);
+            tmp = rarch_main_cmd_press(cmd, RARCH_SLOWMOTION);
+
+            runloop_ctl(RUNLOOP_CTL_CHECK_SLOWMOTION, &tmp);
 
             if (rarch_main_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
                runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE, NULL);
