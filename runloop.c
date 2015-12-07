@@ -804,9 +804,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_MSG_QUEUE_INIT:
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
-         if (g_msg_queue)
-            return true;
-
          g_msg_queue = msg_queue_new(8);
          retro_assert(g_msg_queue);
 

@@ -146,7 +146,7 @@ static void regular_wait(void)
       regular_gather();
 }
 
-static void regular_reset()
+static void regular_reset(void)
 {
    rarch_task_t *task;
 
