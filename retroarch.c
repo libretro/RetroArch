@@ -350,7 +350,7 @@ const char *rarch_get_current_savefile_dir(void)
    return NULL;
 }
 
-void set_paths_redirect(const char *path)
+static void set_paths_redirect(const char *path)
 {
    bool check_global_library_name_hash = false;
    global_t                *global     = global_get_ptr();
@@ -1345,6 +1345,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
+      case RARCH_CTL_SET_PATHS_REDIRECT:
+         set_paths_redirect(global->name.base);
+         break;
       case RARCH_CTL_SET_ERROR_ON_INIT:
          rarch_error_on_init = true;
          break;

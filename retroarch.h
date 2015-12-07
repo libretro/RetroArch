@@ -92,6 +92,8 @@ enum rarch_ctl_state
 
    RARCH_CTL_FILL_PATHNAMES,
 
+   RARCH_CTL_SET_PATHS_REDIRECT,
+
    RARCH_CTL_SET_FORCE_FULLSCREEN,
 
    RARCH_CTL_UNSET_FORCE_FULLSCREEN,
@@ -216,8 +218,6 @@ int rarch_defer_core(void *data,
 void rarch_init_system_av_info(void);
 
 void rarch_set_paths(const char *path);
-
-void set_paths_redirect(const char *path);
 
 int rarch_info_get_capabilities(enum rarch_capabilities type, char *s, size_t len);
 

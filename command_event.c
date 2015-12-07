@@ -605,7 +605,7 @@ static bool event_init_core(void)
 
    /* per-core saves: reset redirection paths */
    if((settings->sort_savestates_enable || settings->sort_savefiles_enable) && !global->inited.core.no_content)
-      set_paths_redirect(global->name.base);
+      rarch_ctl(RARCH_CTL_SET_PATHS_REDIRECT, NULL);
 
    rarch_ctl(RARCH_CTL_VERIFY_API_VERSION, NULL);
    core.retro_init();
