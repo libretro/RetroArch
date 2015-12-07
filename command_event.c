@@ -1390,12 +1390,12 @@ bool event_command(enum event_command cmd)
 #endif
          break;
       case EVENT_CMD_SHADER_DIR_DEINIT:
-         shader_dir_free();
+         runloop_ctl(RUNLOOP_CTL_SHADER_DIR_DEINIT, NULL);
          break;
       case EVENT_CMD_SHADER_DIR_INIT:
          event_command(EVENT_CMD_SHADER_DIR_DEINIT);
 
-         if (!shader_dir_init())
+         if (!runloop_ctl(RUNLOOP_CTL_SHADER_DIR_INIT, NULL))
             return false;
          break;
       case EVENT_CMD_SAVEFILES:

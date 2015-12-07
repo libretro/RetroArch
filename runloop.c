@@ -302,14 +302,14 @@ static void check_stateslots(settings_t *settings,
 #define SHADER_EXT_CG        0x0059776fU
 #define SHADER_EXT_CGP       0x0b8865bfU
 
-void shader_dir_free(void)
+static void shader_dir_free(void)
 {
    dir_list_free(runloop_shader_dir.list);
    runloop_shader_dir.list = NULL;
    runloop_shader_dir.ptr  = 0;
 }
 
-bool shader_dir_init(void)
+static bool shader_dir_init(void)
 {
    unsigned i;
    settings_t *settings  = config_get_ptr();
@@ -495,6 +495,11 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
    switch (state)
    {
+      case RUNLOOP_CTL_SHADER_DIR_DEINIT:
+         shader_dir_free();
+         return true;
+      case RUNLOOP_CTL_SHADER_DIR_INIT:
+         return shader_dir_init();
       case RUNLOOP_CTL_SYSTEM_INFO_INIT:
          core.retro_get_system_info(&system->info);
 

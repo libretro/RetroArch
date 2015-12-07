@@ -90,6 +90,8 @@ enum runloop_ctl_state
    RUNLOOP_CTL_CORE_OPTIONS_GET,
    RUNLOOP_CTL_CORE_OPTIONS_INIT,
    RUNLOOP_CTL_CORE_OPTIONS_DEINIT,
+   RUNLOOP_CTL_SHADER_DIR_DEINIT,
+   RUNLOOP_CTL_SHADER_DIR_INIT,
    RUNLOOP_CTL_SYSTEM_INFO_INIT,
    RUNLOOP_CTL_SYSTEM_INFO_FREE,
    RUNLOOP_CTL_PREPARE_DUMMY
@@ -304,10 +306,6 @@ void rarch_main_msg_queue_push_new(uint32_t hash, unsigned prio,
 const char *rarch_main_msg_queue_pull(void);
 
 bool *runloop_perfcnt_enabled(void);
-
-void shader_dir_free(void);
-
-bool shader_dir_init(void);
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 
