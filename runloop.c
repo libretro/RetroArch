@@ -71,14 +71,9 @@ typedef struct event_cmd_state
    uint64_t trigger_state;
    bool fullscreen_toggle;
    bool menu_pressed;
-   bool quit_key_pressed;
-   bool volume_up_pressed;
    bool volume_down_pressed;
    bool slowmotion_pressed;
    bool fastforward_pressed;
-   bool hold_pressed;
-   bool old_hold_pressed;
-   bool rewind_pressed;
    bool netplay_flip_pressed;
 } event_cmd_state_t;
 
@@ -176,6 +171,9 @@ static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
 
 #define rarch_main_cmd_triggered(cmd, id) BIT64_GET(cmd->trigger_state, id) 
 
+#define rarch_main_cmd_press(cmd, id)     BIT64_GET(cmd->state,         id)
+#define rarch_main_cmd_pressed(cmd, id)   BIT64_GET(cmd->old_state,     id)
+
 static void rarch_main_cmd_get_state(
       settings_t *settings, event_cmd_state_t *cmd,
       retro_input_t input, retro_input_t old_input,
@@ -193,13 +191,7 @@ static void rarch_main_cmd_get_state(
                                             settings, cmd->state,
                                             cmd->old_state, cmd->trigger_state);
 #endif
-   cmd->quit_key_pressed            = BIT64_GET(cmd->state,         RARCH_QUIT_KEY);
-   cmd->volume_up_pressed           = BIT64_GET(cmd->state,         RARCH_VOLUME_UP);
-   cmd->volume_down_pressed         = BIT64_GET(cmd->state,         RARCH_VOLUME_DOWN);
    cmd->slowmotion_pressed          = BIT64_GET(cmd->state,         RARCH_SLOWMOTION);
-   cmd->hold_pressed                = BIT64_GET(cmd->state,         RARCH_FAST_FORWARD_HOLD_KEY);
-   cmd->old_hold_pressed            = BIT64_GET(cmd->old_state,     RARCH_FAST_FORWARD_HOLD_KEY);
-   cmd->rewind_pressed              = BIT64_GET(cmd->state,         RARCH_REWIND);
    cmd->netplay_flip_pressed        = BIT64_GET(cmd->trigger_state, RARCH_NETPLAY_FLIP);
    cmd->fullscreen_toggle           = BIT64_GET(cmd->trigger_state, RARCH_FULLSCREEN_TOGGLE_KEY);
 }
@@ -570,9 +562,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                   input_driver_ctl(RARCH_INPUT_CTL_SET_KEYBOARD_LINEFEED_ENABLED, NULL);
             }
 
-            if (cmd->volume_up_pressed)
+            if (rarch_main_cmd_press(cmd, RARCH_VOLUME_UP))
                event_command(EVENT_CMD_VOLUME_UP);
-            else if (cmd->volume_down_pressed)
+            else if (rarch_main_cmd_press(cmd, RARCH_VOLUME_DOWN))
                event_command(EVENT_CMD_VOLUME_DOWN);
 
 #ifdef HAVE_NETPLAY
@@ -584,7 +576,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             check_fast_forward_button(
                   rarch_main_cmd_triggered(cmd, RARCH_FAST_FORWARD_KEY),
-                  cmd->hold_pressed, cmd->old_hold_pressed);
+                  rarch_main_cmd_press    (cmd, RARCH_FAST_FORWARD_HOLD_KEY),
+                  rarch_main_cmd_pressed  (cmd, RARCH_FAST_FORWARD_HOLD_KEY));
             check_stateslots(settings,
                   rarch_main_cmd_triggered(cmd, RARCH_STATE_SLOT_PLUS),
                   rarch_main_cmd_triggered(cmd, RARCH_STATE_SLOT_MINUS)
@@ -595,7 +588,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             else if (rarch_main_cmd_triggered(cmd, RARCH_LOAD_STATE_KEY))
                event_command(EVENT_CMD_LOAD_STATE);
 
-            state_manager_check_rewind(cmd->rewind_pressed);
+            state_manager_check_rewind(rarch_main_cmd_press(cmd, RARCH_REWIND));
 
             runloop_ctl(RUNLOOP_CTL_CHECK_SLOWMOTION, &cmd->slowmotion_pressed);
 
@@ -630,7 +623,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (!cmd)
                return false;
 
-            check_is_oneshot     = rarch_main_cmd_triggered(cmd, RARCH_FRAMEADVANCE) || cmd->rewind_pressed;
+            check_is_oneshot     = rarch_main_cmd_triggered(cmd, RARCH_FRAMEADVANCE) 
+               || rarch_main_cmd_press(cmd, RARCH_REWIND);
 
             if (!runloop_paused)
                return true;
@@ -1099,7 +1093,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    rarch_main_iterate_linefeed_overlay(settings);
 #endif
 
-   if (rarch_main_iterate_time_to_exit(cmd.quit_key_pressed) != 1)
+   if (rarch_main_iterate_time_to_exit(rarch_main_cmd_press(cmd_ptr, RARCH_QUIT_KEY)) != 1)
    {
       frame_limit_last_time = 0.0;
       return -1;
