@@ -146,7 +146,7 @@ void runloop_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
 }
 
 #ifdef HAVE_MENU
-static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
+static bool runloop_cmd_get_state_menu_toggle_button_combo(
       settings_t *settings,
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
@@ -178,13 +178,13 @@ static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
 }
 #endif
 
-#define rarch_main_cmd_triggered(cmd, id) BIT64_GET(cmd->state[2], id) 
+#define runloop_cmd_triggered(cmd, id) BIT64_GET(cmd->state[2], id) 
 
-#define rarch_main_cmd_press(cmd, id)     BIT64_GET(cmd->state[0], id)
-#define rarch_main_cmd_pressed(cmd, id)   BIT64_GET(cmd->state[1], id)
+#define runloop_cmd_press(cmd, id)     BIT64_GET(cmd->state[0], id)
+#define runloop_cmd_pressed(cmd, id)   BIT64_GET(cmd->state[1], id)
 #ifdef HAVE_MENU
-#define rarch_main_cmd_menu_press(cmd)   (BIT64_GET(cmd->state[2], RARCH_MENU_TOGGLE) || \
-                                      rarch_main_cmd_get_state_menu_toggle_button_combo( \
+#define runloop_cmd_menu_press(cmd)   (BIT64_GET(cmd->state[2], RARCH_MENU_TOGGLE) || \
+                                      runloop_cmd_get_state_menu_toggle_button_combo( \
                                             settings, cmd->state[0], \
                                             cmd->state[1], cmd->state[2]))
 #endif
@@ -463,7 +463,7 @@ static bool rarch_game_specific_options(char **output)
    return true;
 }
 
-static void rarch_main_data_clear_state(void)
+static void runloop_data_clear_state(void)
 {
    runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
    rarch_task_init();
@@ -633,8 +633,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             bool focused              = runloop_ctl(RUNLOOP_CTL_CHECK_FOCUS, NULL);
 
             check_pause(settings, focused,
-                  rarch_main_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE),
-                  rarch_main_cmd_triggered(cmd, RARCH_FRAMEADVANCE));
+                  runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE),
+                  runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE));
 
             if (!runloop_ctl(RUNLOOP_CTL_CHECK_PAUSE_STATE, cmd) || !focused)
                return false;
@@ -648,13 +648,13 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (!cmd || runloop_idle)
                return false;
 
-            if (rarch_main_cmd_triggered(cmd, RARCH_SCREENSHOT))
+            if (runloop_cmd_triggered(cmd, RARCH_SCREENSHOT))
                event_command(EVENT_CMD_TAKE_SCREENSHOT);
 
-            if (rarch_main_cmd_triggered(cmd, RARCH_MUTE))
+            if (runloop_cmd_triggered(cmd, RARCH_MUTE))
                event_command(EVENT_CMD_AUDIO_MUTE_TOGGLE);
 
-            if (rarch_main_cmd_triggered(cmd, RARCH_OSK))
+            if (runloop_cmd_triggered(cmd, RARCH_OSK))
             {
                if (input_driver_ctl(RARCH_INPUT_CTL_IS_KEYBOARD_LINEFEED_ENABLED, NULL))
                   input_driver_ctl(RARCH_INPUT_CTL_UNSET_KEYBOARD_LINEFEED_ENABLED, NULL);
@@ -662,61 +662,61 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                   input_driver_ctl(RARCH_INPUT_CTL_SET_KEYBOARD_LINEFEED_ENABLED, NULL);
             }
 
-            if (rarch_main_cmd_press(cmd, RARCH_VOLUME_UP))
+            if (runloop_cmd_press(cmd, RARCH_VOLUME_UP))
                event_command(EVENT_CMD_VOLUME_UP);
-            else if (rarch_main_cmd_press(cmd, RARCH_VOLUME_DOWN))
+            else if (runloop_cmd_press(cmd, RARCH_VOLUME_DOWN))
                event_command(EVENT_CMD_VOLUME_DOWN);
 
 #ifdef HAVE_NETPLAY
-            tmp = rarch_main_cmd_triggered(cmd, RARCH_NETPLAY_FLIP);
+            tmp = runloop_cmd_triggered(cmd, RARCH_NETPLAY_FLIP);
             netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, &tmp);
-            tmp = rarch_main_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY);
+            tmp = runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY);
             netplay_driver_ctl(RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE, &tmp);
 #endif
             if (!runloop_ctl(RUNLOOP_CTL_CHECK_IDLE_STATE, data))
                return false;
 
             check_fast_forward_button(
-                  rarch_main_cmd_triggered(cmd, RARCH_FAST_FORWARD_KEY),
-                  rarch_main_cmd_press    (cmd, RARCH_FAST_FORWARD_HOLD_KEY),
-                  rarch_main_cmd_pressed  (cmd, RARCH_FAST_FORWARD_HOLD_KEY));
+                  runloop_cmd_triggered(cmd, RARCH_FAST_FORWARD_KEY),
+                  runloop_cmd_press    (cmd, RARCH_FAST_FORWARD_HOLD_KEY),
+                  runloop_cmd_pressed  (cmd, RARCH_FAST_FORWARD_HOLD_KEY));
             check_stateslots(settings,
-                  rarch_main_cmd_triggered(cmd, RARCH_STATE_SLOT_PLUS),
-                  rarch_main_cmd_triggered(cmd, RARCH_STATE_SLOT_MINUS)
+                  runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_PLUS),
+                  runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_MINUS)
                   );
 
-            if (rarch_main_cmd_triggered(cmd, RARCH_SAVE_STATE_KEY))
+            if (runloop_cmd_triggered(cmd, RARCH_SAVE_STATE_KEY))
                event_command(EVENT_CMD_SAVE_STATE);
-            else if (rarch_main_cmd_triggered(cmd, RARCH_LOAD_STATE_KEY))
+            else if (runloop_cmd_triggered(cmd, RARCH_LOAD_STATE_KEY))
                event_command(EVENT_CMD_LOAD_STATE);
 
-            state_manager_check_rewind(rarch_main_cmd_press(cmd, RARCH_REWIND));
+            state_manager_check_rewind(runloop_cmd_press(cmd, RARCH_REWIND));
 
-            tmp = rarch_main_cmd_press(cmd, RARCH_SLOWMOTION);
+            tmp = runloop_cmd_press(cmd, RARCH_SLOWMOTION);
 
             runloop_ctl(RUNLOOP_CTL_CHECK_SLOWMOTION, &tmp);
 
-            if (rarch_main_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
+            if (runloop_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
                runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE, NULL);
 
             check_shader_dir(
-                  rarch_main_cmd_triggered(cmd, RARCH_SHADER_NEXT),
-                  rarch_main_cmd_triggered(cmd, RARCH_SHADER_PREV));
+                  runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT),
+                  runloop_cmd_triggered(cmd, RARCH_SHADER_PREV));
 
-            if (rarch_main_cmd_triggered(cmd, RARCH_DISK_EJECT_TOGGLE))
+            if (runloop_cmd_triggered(cmd, RARCH_DISK_EJECT_TOGGLE))
                event_command(EVENT_CMD_DISK_EJECT_TOGGLE);
-            else if (rarch_main_cmd_triggered(cmd, RARCH_DISK_NEXT))
+            else if (runloop_cmd_triggered(cmd, RARCH_DISK_NEXT))
                event_command(EVENT_CMD_DISK_NEXT);
-            else if (rarch_main_cmd_triggered(cmd, RARCH_DISK_PREV))
+            else if (runloop_cmd_triggered(cmd, RARCH_DISK_PREV))
                event_command(EVENT_CMD_DISK_PREV);
 
-            if (rarch_main_cmd_triggered(cmd, RARCH_RESET))
+            if (runloop_cmd_triggered(cmd, RARCH_RESET))
                event_command(EVENT_CMD_RESET);
 
             cheat_manager_state_checks(
-                  rarch_main_cmd_triggered(cmd, RARCH_CHEAT_INDEX_PLUS),
-                  rarch_main_cmd_triggered(cmd, RARCH_CHEAT_INDEX_MINUS),
-                  rarch_main_cmd_triggered(cmd, RARCH_CHEAT_TOGGLE));
+                  runloop_cmd_triggered(cmd, RARCH_CHEAT_INDEX_PLUS),
+                  runloop_cmd_triggered(cmd, RARCH_CHEAT_INDEX_MINUS),
+                  runloop_cmd_triggered(cmd, RARCH_CHEAT_TOGGLE));
          }
          break;
       case RUNLOOP_CTL_CHECK_PAUSE_STATE:
@@ -727,13 +727,13 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (!cmd)
                return false;
 
-            check_is_oneshot     = rarch_main_cmd_triggered(cmd, RARCH_FRAMEADVANCE) 
-               || rarch_main_cmd_press(cmd, RARCH_REWIND);
+            check_is_oneshot     = runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE) 
+               || runloop_cmd_press(cmd, RARCH_REWIND);
 
             if (!runloop_paused)
                return true;
 
-            if (rarch_main_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
+            if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
             {
                event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
                video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
@@ -952,7 +952,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (menu)
                menu->load_no_content = false;
 #endif
-            rarch_main_data_clear_state();
+            runloop_data_clear_state();
 
             runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
 
@@ -1215,10 +1215,10 @@ int runloop_iterate(unsigned *sleep_ms)
    cmd.state[1]      = old_input;           /* previous */
    cmd.state[2]      = input & ~old_input;  /* trigger  */
 
-   if (rarch_main_cmd_triggered(cmd_ptr, RARCH_OVERLAY_NEXT))
+   if (runloop_cmd_triggered(cmd_ptr, RARCH_OVERLAY_NEXT))
       event_command(EVENT_CMD_OVERLAY_NEXT);
 
-   if (rarch_main_cmd_triggered(cmd_ptr, RARCH_FULLSCREEN_TOGGLE_KEY))
+   if (runloop_cmd_triggered(cmd_ptr, RARCH_FULLSCREEN_TOGGLE_KEY))
    {
       bool fullscreen_toggled = !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
 #ifdef HAVE_MENU
@@ -1229,11 +1229,11 @@ int runloop_iterate(unsigned *sleep_ms)
          event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
    }
 
-   if (rarch_main_cmd_triggered(cmd_ptr, RARCH_GRAB_MOUSE_TOGGLE))
+   if (runloop_cmd_triggered(cmd_ptr, RARCH_GRAB_MOUSE_TOGGLE))
       event_command(EVENT_CMD_GRAB_MOUSE_TOGGLE);
 
 #ifdef HAVE_MENU
-   if (rarch_main_cmd_menu_press(cmd_ptr) || (global->inited.core.type == CORE_TYPE_DUMMY))
+   if (runloop_cmd_menu_press(cmd_ptr) || (global->inited.core.type == CORE_TYPE_DUMMY))
    {
       if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
       {
@@ -1249,7 +1249,7 @@ int runloop_iterate(unsigned *sleep_ms)
    runloop_iterate_linefeed_overlay(settings);
 #endif
 
-   if (runloop_iterate_time_to_exit(rarch_main_cmd_press(cmd_ptr, RARCH_QUIT_KEY)) != 1)
+   if (runloop_iterate_time_to_exit(runloop_cmd_press(cmd_ptr, RARCH_QUIT_KEY)) != 1)
    {
       frame_limit_last_time = 0.0;
       return -1;
