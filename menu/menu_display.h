@@ -50,6 +50,8 @@ enum menu_display_ctl_state
    MENU_DISPLAY_CTL_SET_FB_PITCH,
    MENU_DISPLAY_CTL_LIBRETRO,
    MENU_DISPLAY_CTL_LIBRETRO_RUNNING,
+   MENU_DISPLAY_CTL_SET_STUB_DRAW_FRAME,
+   MENU_DISPLAY_CTL_UNSET_STUB_DRAW_FRAME,
    MENU_DISPLAY_CTL_FONT_DATA_INIT,
    MENU_DISPLAY_CTL_SET_FONT_DATA_INIT,
    MENU_DISPLAY_CTL_FONT_SIZE,
@@ -76,16 +78,14 @@ enum menu_display_driver_type
    MENU_VIDEO_DRIVER_DIRECT3D
 };
 
-typedef struct menu_display_ctx_driver
-{
-   void (*draw)(float x, float y,
+typedef void (*menu_display_draw_t)(float x, float y,
       unsigned width, unsigned height,
       struct gfx_coords *coords,
       void *matrix_data, 
       uintptr_t texture,
       enum menu_display_prim_type prim_type
       );
-   void (*draw_bg)(
+typedef void (*menu_display_draw_bg_t)(
       unsigned width, unsigned height,
       uintptr_t texture,
       float handle_alpha,
@@ -97,6 +97,11 @@ typedef struct menu_display_ctx_driver
       size_t vertex_count,
       enum menu_display_prim_type prim_type
       );
+
+typedef struct menu_display_ctx_driver
+{
+   menu_display_draw_t draw;
+   menu_display_draw_bg_t draw_bg;
    void (*blend_begin)(void);
    void (*blend_end)(void);
    void (*restore_clear_color)(void);
