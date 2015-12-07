@@ -516,8 +516,7 @@ static bool load_content(const struct retro_subsystem_info *special,
       
 #ifdef HAVE_CHEEVOS
       /* Load the achievements into memory if the game has content. */
-
-      cheevos_globals.cheats_were_enabled = cheevos_globals.cheats_are_enabled;
+      cheevos_set_cheats();
       cheevos_load(*content->elems[0].data ? info : NULL);
 #endif
    }

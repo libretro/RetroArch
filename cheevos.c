@@ -160,6 +160,57 @@ typedef struct
    char token[32];
 } cheevos_locals_t;
 
+typedef struct
+{
+   int is_element;
+} cheevos_deactivate_t;
+
+typedef struct
+{
+   unsigned    key_hash;
+   int         is_key;
+   const char *value;
+   size_t      length;
+} cheevos_getvalueud_t;
+
+typedef struct
+{
+   int      in_cheevos;
+   uint32_t field_hash;
+   unsigned core_count;
+   unsigned unofficial_count;
+} cheevos_countud_t;
+
+typedef struct
+{
+   const char *string;
+   size_t      length;
+} cheevos_field_t;
+
+typedef struct
+{
+   int      in_cheevos;
+   unsigned core_count;
+   unsigned unofficial_count;
+
+   cheevos_field_t *field;
+   cheevos_field_t  id, memaddr, title, desc, points, author;
+   cheevos_field_t  modified, created, badge, flags;
+} cheevos_readud_t;
+
+typedef struct
+{
+   unsigned (*finder)(const struct retro_game_info *, retro_time_t);
+   const char *name;
+   const uint32_t *ext_hashes;
+} cheevos_finder_t;
+
+typedef struct
+{
+   int cheats_are_enabled;
+   int cheats_were_enabled;
+} cheevos_globals_t;
+
 cheevos_locals_t cheevos_locals =
 {
    0,
@@ -168,7 +219,7 @@ cheevos_locals_t cheevos_locals =
    {0},
 };
 
-cheevos_globals_t cheevos_globals =
+static cheevos_globals_t cheevos_globals =
 {
    0,
    0
@@ -226,14 +277,6 @@ static int cheevos_http_get(const char **result, size_t *size, const char *url, 
    return ret;
 }
 
-typedef struct
-{
-   unsigned    key_hash;
-   int         is_key;
-   const char *value;
-   size_t      length;
-}
-cheevos_getvalueud_t;
 
 static int cheevos_getvalue__json_key(void *userdata, const char *name, size_t length)
 {
@@ -325,14 +368,6 @@ static int cheevos_get_value(const char *json, unsigned key_hash, char *value, s
 Count number of achievements in a JSON file.
 *****************************************************************************/
 
-typedef struct
-{
-   int      in_cheevos;
-   uint32_t field_hash;
-   unsigned core_count;
-   unsigned unofficial_count;
-}
-cheevos_countud_t;
 
 static int cheevos_count__json_end_array(void *userdata)
 {
@@ -629,22 +664,6 @@ static void cheevos_parse_memaddr(cheevos_cond_t *cond, const char *memaddr)
 Load achievements from a JSON string.
 *****************************************************************************/
 
-typedef struct
-{
-   const char *string;
-   size_t      length;
-} cheevos_field_t;
-
-typedef struct
-{
-   int      in_cheevos;
-   unsigned core_count;
-   unsigned unofficial_count;
-
-   cheevos_field_t *field;
-   cheevos_field_t  id, memaddr, title, desc, points, author;
-   cheevos_field_t  modified, created, badge, flags;
-} cheevos_readud_t;
 
 static INLINE const char *cheevos_dupstr(const cheevos_field_t *field)
 {
@@ -1276,17 +1295,21 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
 
 void cheevos_test(void)
 {
-   if (cheevos_locals.loaded)
+   if (!cheevos_locals.loaded)
+      return;
+
+   if (     !cheevos_globals.cheats_are_enabled 
+         && !cheevos_globals.cheats_were_enabled)
    {
       settings_t *settings = config_get_ptr();
-      
-      if (settings->cheevos.enable && !cheevos_globals.cheats_are_enabled && !cheevos_globals.cheats_were_enabled)
-      {
-         cheevos_test_cheevo_set(&cheevos_locals.core);
 
-         if (settings->cheevos.test_unofficial)
-            cheevos_test_cheevo_set(&cheevos_locals.unofficial);
-      }
+      if (!settings->cheevos.enable)
+         return;
+
+      cheevos_test_cheevo_set(&cheevos_locals.core);
+
+      if (settings->cheevos.test_unofficial)
+         cheevos_test_cheevo_set(&cheevos_locals.unofficial);
    }
 }
 
@@ -1314,9 +1337,7 @@ static void cheevos_free_cheevo_set(const cheevoset_t *set)
    const cheevo_t *end = cheevo + set->count;
 
    while (cheevo < end)
-   {
       cheevos_free_cheevo(cheevo++);
-   }
 
    free((void*)set->cheevos);
 }
@@ -1440,10 +1461,6 @@ static void cheevos_playing(void *payload)
    }
 }
 
-typedef struct
-{
-   int is_element;
-} cheevos_deactivate_t;
 
 static int cheevos_deactivate__json_index(void *userdata, unsigned int index)
 {
@@ -1767,12 +1784,6 @@ static unsigned cheevos_find_game_id_nes(const struct retro_game_info *info, ret
    return cheevos_get_game_id(hash, &to);
 }
 
-typedef struct
-{
-   unsigned (*finder)(const struct retro_game_info *, retro_time_t);
-   const char *name;
-   const uint32_t *ext_hashes;
-} cheevos_finder_t;
 
 int cheevos_load(const struct retro_game_info *info)
 {
@@ -1998,4 +2009,15 @@ void cheevos_get_description(unsigned cheevo_ndx, char *str, size_t len)
    
    strncpy(str, cheevos[cheevo_ndx].description, len);
    str[len - 1] = 0;
+}
+
+void cheevos_set_cheats(void)
+{
+   cheevos_globals.cheats_were_enabled = cheevos_globals.cheats_are_enabled;
+}
+
+void cheevos_apply_cheats(bool enable)
+{
+   cheevos_globals.cheats_are_enabled = enable;
+   cheevos_globals.cheats_were_enabled |= cheevos_globals.cheats_are_enabled;
 }

@@ -87,8 +87,7 @@ void cheat_manager_apply_cheats(void)
    }
    
 #ifdef HAVE_CHEEVOS
-   cheevos_globals.cheats_are_enabled = idx != 0;
-   cheevos_globals.cheats_were_enabled |= cheevos_globals.cheats_are_enabled;
+   cheevos_apply_cheats(idx != 0);
 #endif
 }
 

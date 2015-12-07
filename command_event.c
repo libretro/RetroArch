@@ -1040,7 +1040,7 @@ bool event_command(enum event_command cmd)
          rarch_main_msg_queue_push_new(MSG_RESET, 1, 120, true);
 
 #ifdef HAVE_CHEEVOS
-         cheevos_globals.cheats_were_enabled = cheevos_globals.cheats_are_enabled;
+         cheevos_set_cheats();
 #endif
          core.retro_reset();
 
