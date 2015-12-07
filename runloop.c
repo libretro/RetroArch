@@ -946,16 +946,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 #endif
          break;
       case RUNLOOP_CTL_PREPARE_DUMMY:
-         {
 #ifdef HAVE_MENU
-            menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
+         menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
 #endif
-            runloop_data_clear_state();
+         runloop_data_clear_state();
 
-            runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+         runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
 
-            rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
-         }
+         rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
          break;
       case RUNLOOP_CTL_SET_CORE_SHUTDOWN:
          runloop_core_shutdown_initiated = true;
