@@ -54,6 +54,13 @@ enum rarch_ctl_state
 {
    RARCH_CTL_NONE = 0,
 
+   /* Will teardown drivers and clears all
+    * internal state of the program. */
+   RARCH_CTL_DEINIT,
+
+   /* Initialize all drivers. */
+   RARCH_CTL_INIT,
+
    RARCH_CTL_LOAD_CONTENT,
 
 #ifdef HAVE_FFMPEG
@@ -142,8 +149,6 @@ struct rarch_main_wrap
 };
 
 void rarch_main_alloc(void);
-
-void rarch_main_new(void);
 
 void rarch_main_free(void);
 

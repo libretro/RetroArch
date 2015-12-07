@@ -264,7 +264,7 @@ int rarch_main(int argc, char *argv[], void *data)
    rarch_main_alloc();
 
    frontend_driver_init_first(args);
-   rarch_main_new();
+   rarch_ctl(RARCH_CTL_INIT, NULL);
 
 #ifdef HAVE_THREADS
    async_jobs = async_job_new();

@@ -1067,32 +1067,6 @@ static bool init_state(void)
    return true;
 }
 
-static void main_clear_state_drivers(void)
-{
-   global_t *global = global_get_ptr();
-   bool inited      = false;
-   if (!global)
-      return;
-   inited           = global->inited.main;
-   if (!inited)
-      return;
-
-   event_command(EVENT_CMD_DRIVERS_DEINIT);
-   event_command(EVENT_CMD_DRIVERS_INIT);
-}
-
-static void main_init_state_config(void)
-{
-   unsigned i;
-   settings_t *settings = config_get_ptr();
-
-   if (!settings)
-      return;
-
-   for (i = 0; i < MAX_USERS; i++)
-      settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
-}
-
 void rarch_main_alloc(void)
 {
    if (!config_realloc())
@@ -1101,23 +1075,6 @@ void rarch_main_alloc(void)
    event_command(EVENT_CMD_HISTORY_DEINIT);
 
    runloop_ctl(RUNLOOP_CTL_CLEAR_STATE, NULL);
-}
-
-/**
- * rarch_main_new:
- *
- * Will teardown drivers and clears all
- * internal state of the program.
- * If @inited is true, will initialize all
- * drivers again after teardown.
- **/
-void rarch_main_new(void)
-{
-   main_clear_state_drivers();
-   init_state();
-   main_init_state_config();
-
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_INIT, NULL);
 }
 
 void rarch_main_free(void)
@@ -1345,6 +1302,29 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
+      case RARCH_CTL_DEINIT:
+         {
+            bool inited      = false;
+            if (!global)
+               return false;
+            inited           = global->inited.main;
+            if (!inited)
+               return false;
+
+            event_command(EVENT_CMD_DRIVERS_DEINIT);
+            event_command(EVENT_CMD_DRIVERS_INIT);
+         }
+         return true;
+      case RARCH_CTL_INIT:
+         rarch_ctl(RARCH_CTL_DEINIT, NULL);
+         init_state();
+         {
+            unsigned i;
+            for (i = 0; i < MAX_USERS; i++)
+               settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
+         }
+         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_INIT, NULL);
+         return true;
       case RARCH_CTL_SET_PATHS_REDIRECT:
          set_paths_redirect(global->name.base);
          break;
