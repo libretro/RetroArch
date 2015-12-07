@@ -325,7 +325,7 @@ static void android_input_poll_main_cmd(void)
             runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
 #ifdef HAVE_MENU
             menu_display_ctl(MENU_DISPLAY_CTL_UNSET_STUB_DRAW_FRAME, NULL);
-            video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_STUB_DRAW_FRAME, NULL);
+            video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_STUB_FRAME, NULL);
 #endif
 
             if ((android_app->sensor_state_mask
@@ -348,7 +348,7 @@ static void android_input_poll_main_cmd(void)
             runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
 #ifdef HAVE_MENU
             menu_display_ctl(MENU_DISPLAY_CTL_SET_STUB_DRAW_FRAME, NULL);
-            video_driver_ctl(RARCH_DISPLAY_CTL_SET_STUB_DRAW_FRAME, NULL);
+            video_driver_ctl(RARCH_DISPLAY_CTL_SET_STUB_FRAME, NULL);
 #endif
 
             /* Avoid draining battery while app is not being used. */
