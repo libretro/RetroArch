@@ -72,19 +72,12 @@ typedef struct event_cmd_state
    bool quit_key_pressed;
    bool volume_up_pressed;
    bool volume_down_pressed;
-   bool movie_record;
    bool slowmotion_pressed;
    bool fastforward_pressed;
    bool hold_pressed;
    bool old_hold_pressed;
-   bool state_slot_increase;
-   bool state_slot_decrease;
-   bool frameadvance_pressed;
    bool rewind_pressed;
    bool netplay_flip_pressed;
-   bool cheat_index_plus_pressed;
-   bool cheat_index_minus_pressed;
-   bool cheat_toggle_pressed;
 } event_cmd_state_t;
 
 static rarch_dir_list_t runloop_shader_dir;
@@ -196,26 +189,15 @@ static void rarch_main_cmd_get_state(
                                             settings, input,
                                             old_input, trigger_input);
 #endif
-   cmd->quit_key_pressed            = BIT64_GET(input, RARCH_QUIT_KEY);
-   cmd->volume_up_pressed           = BIT64_GET(input, RARCH_VOLUME_UP);
-   cmd->volume_down_pressed         = BIT64_GET(input, RARCH_VOLUME_DOWN);
-   cmd->movie_record                = BIT64_GET(trigger_input, RARCH_MOVIE_RECORD_TOGGLE);
-   cmd->slowmotion_pressed          = BIT64_GET(input, RARCH_SLOWMOTION);
-   cmd->fastforward_pressed         = BIT64_GET(trigger_input, RARCH_FAST_FORWARD_KEY);
-   cmd->hold_pressed                = BIT64_GET(input, RARCH_FAST_FORWARD_HOLD_KEY);
-   cmd->old_hold_pressed            = BIT64_GET(old_input, RARCH_FAST_FORWARD_HOLD_KEY);
-   cmd->state_slot_increase         = BIT64_GET(trigger_input, RARCH_STATE_SLOT_PLUS);
-   cmd->state_slot_decrease         = BIT64_GET(trigger_input, RARCH_STATE_SLOT_MINUS);
-   cmd->frameadvance_pressed        = BIT64_GET(trigger_input, RARCH_FRAMEADVANCE);
+   cmd->quit_key_pressed            = BIT64_GET(input,         RARCH_QUIT_KEY);
+   cmd->volume_up_pressed           = BIT64_GET(input,         RARCH_VOLUME_UP);
+   cmd->volume_down_pressed         = BIT64_GET(input,         RARCH_VOLUME_DOWN);
+   cmd->slowmotion_pressed          = BIT64_GET(input,         RARCH_SLOWMOTION);
+   cmd->hold_pressed                = BIT64_GET(input,         RARCH_FAST_FORWARD_HOLD_KEY);
+   cmd->old_hold_pressed            = BIT64_GET(old_input,     RARCH_FAST_FORWARD_HOLD_KEY);
    cmd->rewind_pressed              = BIT64_GET(input,         RARCH_REWIND);
    cmd->netplay_flip_pressed        = BIT64_GET(trigger_input, RARCH_NETPLAY_FLIP);
    cmd->fullscreen_toggle           = BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
-   cmd->cheat_index_plus_pressed    = BIT64_GET(trigger_input,
-         RARCH_CHEAT_INDEX_PLUS);
-   cmd->cheat_index_minus_pressed   = BIT64_GET(trigger_input,
-         RARCH_CHEAT_INDEX_MINUS);
-   cmd->cheat_toggle_pressed        = BIT64_GET(trigger_input,
-         RARCH_CHEAT_TOGGLE);
 }
 
 /**
@@ -557,7 +539,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             check_pause(settings, focused,
                   rarch_main_cmd_pressed(cmd, RARCH_PAUSE_TOGGLE),
-                  cmd->frameadvance_pressed);
+                  rarch_main_cmd_pressed(cmd, RARCH_FRAMEADVANCE));
 
             if (!runloop_ctl(RUNLOOP_CTL_CHECK_PAUSE_STATE, cmd) || !focused)
                return false;
@@ -597,10 +579,12 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                return false;
 
             check_fast_forward_button(
-                  cmd->fastforward_pressed,
+                  rarch_main_cmd_pressed(cmd, RARCH_FAST_FORWARD_KEY),
                   cmd->hold_pressed, cmd->old_hold_pressed);
-            check_stateslots(settings, cmd->state_slot_increase,
-                  cmd->state_slot_decrease);
+            check_stateslots(settings,
+                  rarch_main_cmd_pressed(cmd, RARCH_STATE_SLOT_PLUS),
+                  rarch_main_cmd_pressed(cmd, RARCH_STATE_SLOT_MINUS)
+                  );
 
             if (rarch_main_cmd_pressed(cmd, RARCH_SAVE_STATE_KEY))
                event_command(EVENT_CMD_SAVE_STATE);
@@ -611,7 +595,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             runloop_ctl(RUNLOOP_CTL_CHECK_SLOWMOTION, &cmd->slowmotion_pressed);
 
-            if (cmd->movie_record)
+            if (rarch_main_cmd_pressed(cmd, RARCH_MOVIE_RECORD_TOGGLE))
                runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE, NULL);
 
             check_shader_dir(
@@ -629,9 +613,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                event_command(EVENT_CMD_RESET);
 
             cheat_manager_state_checks(
-                  cmd->cheat_index_plus_pressed,
-               cmd->cheat_index_minus_pressed,
-               cmd->cheat_toggle_pressed);
+                  rarch_main_cmd_pressed(cmd, RARCH_CHEAT_INDEX_PLUS),
+                  rarch_main_cmd_pressed(cmd, RARCH_CHEAT_INDEX_MINUS),
+                  rarch_main_cmd_pressed(cmd, RARCH_CHEAT_TOGGLE));
          }
          break;
       case RUNLOOP_CTL_CHECK_PAUSE_STATE:
@@ -642,7 +626,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (!cmd)
                return false;
 
-            check_is_oneshot     = cmd->frameadvance_pressed || cmd->rewind_pressed;
+            check_is_oneshot     = rarch_main_cmd_pressed(cmd, RARCH_FRAMEADVANCE) || cmd->rewind_pressed;
 
             if (!runloop_paused)
                return true;
