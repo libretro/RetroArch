@@ -220,6 +220,11 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_CAMERA_CTL_DESTROY:
+         camera_driver_active   = false;
+         camera_driver_data_own = false;
+         camera_driver          = NULL;
+         break;
       case RARCH_CAMERA_CTL_SET_OWN_DRIVER:
          camera_driver_data_own = true;
          break;

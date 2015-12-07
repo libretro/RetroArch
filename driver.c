@@ -53,6 +53,8 @@ void driver_free(void)
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_DESTROY, NULL);
 #endif
+   location_driver_ctl(RARCH_LOCATION_CTL_DESTROY, NULL);
+   camera_driver_ctl(RARCH_CAMERA_CTL_DESTROY, NULL);
    retro_uninit_libretro_cbs();
 }
 /**
