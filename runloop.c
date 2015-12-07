@@ -69,8 +69,6 @@ typedef struct event_cmd_state
    uint64_t state;
    uint64_t old_state;
    uint64_t trigger_state;
-   bool fullscreen_toggle;
-   bool netplay_flip_pressed;
 } event_cmd_state_t;
 
 static rarch_dir_list_t runloop_shader_dir;
@@ -175,20 +173,6 @@ static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
                                             settings, cmd->state, \
                                             cmd->old_state, cmd->trigger_state))
 #endif
-static void rarch_main_cmd_get_state(
-      settings_t *settings, event_cmd_state_t *cmd,
-      retro_input_t input, retro_input_t old_input,
-      retro_input_t trigger_input)
-{
-   if (!cmd)
-      return;
-
-   cmd->state                       = input;
-   cmd->old_state                   = old_input;
-   cmd->trigger_state               = trigger_input;
-   cmd->netplay_flip_pressed        = BIT64_GET(cmd->trigger_state, RARCH_NETPLAY_FLIP);
-   cmd->fullscreen_toggle           = BIT64_GET(cmd->trigger_state, RARCH_FULLSCREEN_TOGGLE_KEY);
-}
 
 /**
  * check_pause:
@@ -563,8 +547,10 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                event_command(EVENT_CMD_VOLUME_DOWN);
 
 #ifdef HAVE_NETPLAY
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, &cmd->netplay_flip_pressed);
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE, &cmd->fullscreen_toggle);
+            tmp = rarch_main_cmd_triggered(cmd, RARCH_NETPLAY_FLIP);
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, &tmp);
+            tmp = rarch_main_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY);
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE, &tmp);
 #endif
             if (!runloop_ctl(RUNLOOP_CTL_CHECK_IDLE_STATE, data))
                return false;
@@ -626,7 +612,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (!runloop_paused)
                return true;
 
-            if (cmd->fullscreen_toggle)
+            if (rarch_main_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
             {
                event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
                video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
@@ -1053,13 +1039,15 @@ int rarch_main_iterate(unsigned *sleep_ms)
       system->frame_time.callback(delta);
    }
 
-   trigger_input = input & ~old_input;
-   rarch_main_cmd_get_state(settings, &cmd, input, old_input, trigger_input);
+   trigger_input     = input & ~old_input;
+   cmd.state         = input;
+   cmd.old_state     = old_input;
+   cmd.trigger_state = trigger_input;
 
    if (rarch_main_cmd_triggered(cmd_ptr, RARCH_OVERLAY_NEXT))
       event_command(EVENT_CMD_OVERLAY_NEXT);
 
-   if (cmd.fullscreen_toggle)
+   if (rarch_main_cmd_triggered(cmd_ptr, RARCH_FULLSCREEN_TOGGLE_KEY))
    {
       bool fullscreen_toggled = !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
 #ifdef HAVE_MENU
