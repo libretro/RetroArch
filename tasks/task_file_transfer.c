@@ -14,7 +14,7 @@
  */
 
 #include <string.h>
-
+#include <errno.h>
 #include <file/nbio.h>
 #include <formats/image.h>
 #include <formats/rpng.h>
@@ -325,7 +325,7 @@ bool rarch_task_push_image_load(const char *fullpath, const char *type, rarch_ta
 
    if (!handle)
    {
-      RARCH_ERR("Could not create new file loading handle.\n");
+      RARCH_ERR("[image load] Failed to open '%s': %s.\n", fullpath, strerror(errno));
       return false;
    }
 

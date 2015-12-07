@@ -491,7 +491,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
             if (settings->menu.dpi.override_enable)
                *dpi = settings->menu.dpi.override_value;
-            else if (!gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, dpi))
+            else if (!gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, dpi) || !*dpi)
                *dpi = menu_dpi_override_value;
          }
          return true;
