@@ -691,6 +691,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_idle               = false;
          runloop_paused             = false;
          runloop_slowmotion         = false;
+         runloop_frame_time_last    = false;
+         runloop_set_frame_limit    = false;
          runloop_max_frames         = 0;
          break;
       case RUNLOOP_CTL_GLOBAL_FREE:
