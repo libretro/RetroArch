@@ -66,32 +66,19 @@
 
 typedef struct event_cmd_state
 {
+   uint64_t state;
    bool fullscreen_toggle;
-   bool overlay_next_pressed;
-   bool grab_mouse_pressed;
    bool menu_pressed;
    bool quit_key_pressed;
-   bool screenshot_pressed;
-   bool mute_pressed;
-   bool osk_pressed;
    bool volume_up_pressed;
    bool volume_down_pressed;
-   bool reset_pressed;
-   bool disk_prev_pressed;
-   bool disk_next_pressed;
-   bool disk_eject_pressed;
    bool movie_record;
-   bool save_state_pressed;
-   bool load_state_pressed;
    bool slowmotion_pressed;
-   bool shader_next_pressed;
-   bool shader_prev_pressed;
    bool fastforward_pressed;
    bool hold_pressed;
    bool old_hold_pressed;
    bool state_slot_increase;
    bool state_slot_decrease;
-   bool pause_pressed;
    bool frameadvance_pressed;
    bool rewind_pressed;
    bool netplay_flip_pressed;
@@ -157,6 +144,78 @@ void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration
       if (ui->msg_queue_push)
          ui->msg_queue_push(msg, prio, duration, flush);
    }
+}
+
+#ifdef HAVE_MENU
+static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
+      settings_t *settings,
+      retro_input_t input, retro_input_t old_input,
+      retro_input_t trigger_input)
+{
+   switch (settings->input.menu_toggle_gamepad_combo)
+   {
+      case 0:
+         return false;
+      case 1:
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+            return false;
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_Y))
+            return false;
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L))
+            return false;
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R))
+            return false;
+         break;
+      case 2:
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L3))
+            return false;
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R3))
+            return false;
+         break;
+   }
+
+   input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
+   return true;
+}
+#endif
+
+#define rarch_main_cmd_pressed(cmd, id) BIT64_GET(cmd->state, id) 
+
+static void rarch_main_cmd_get_state(
+      settings_t *settings, event_cmd_state_t *cmd,
+      retro_input_t input, retro_input_t old_input,
+      retro_input_t trigger_input)
+{
+   if (!cmd)
+      return;
+
+   cmd->state                       = trigger_input;
+#ifdef HAVE_MENU
+   cmd->menu_pressed                = BIT64_GET(trigger_input, RARCH_MENU_TOGGLE) ||
+                                      rarch_main_cmd_get_state_menu_toggle_button_combo(
+                                            settings, input,
+                                            old_input, trigger_input);
+#endif
+   cmd->quit_key_pressed            = BIT64_GET(input, RARCH_QUIT_KEY);
+   cmd->volume_up_pressed           = BIT64_GET(input, RARCH_VOLUME_UP);
+   cmd->volume_down_pressed         = BIT64_GET(input, RARCH_VOLUME_DOWN);
+   cmd->movie_record                = BIT64_GET(trigger_input, RARCH_MOVIE_RECORD_TOGGLE);
+   cmd->slowmotion_pressed          = BIT64_GET(input, RARCH_SLOWMOTION);
+   cmd->fastforward_pressed         = BIT64_GET(trigger_input, RARCH_FAST_FORWARD_KEY);
+   cmd->hold_pressed                = BIT64_GET(input, RARCH_FAST_FORWARD_HOLD_KEY);
+   cmd->old_hold_pressed            = BIT64_GET(old_input, RARCH_FAST_FORWARD_HOLD_KEY);
+   cmd->state_slot_increase         = BIT64_GET(trigger_input, RARCH_STATE_SLOT_PLUS);
+   cmd->state_slot_decrease         = BIT64_GET(trigger_input, RARCH_STATE_SLOT_MINUS);
+   cmd->frameadvance_pressed        = BIT64_GET(trigger_input, RARCH_FRAMEADVANCE);
+   cmd->rewind_pressed              = BIT64_GET(input,         RARCH_REWIND);
+   cmd->netplay_flip_pressed        = BIT64_GET(trigger_input, RARCH_NETPLAY_FLIP);
+   cmd->fullscreen_toggle           = BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
+   cmd->cheat_index_plus_pressed    = BIT64_GET(trigger_input,
+         RARCH_CHEAT_INDEX_PLUS);
+   cmd->cheat_index_minus_pressed   = BIT64_GET(trigger_input,
+         RARCH_CHEAT_INDEX_MINUS);
+   cmd->cheat_toggle_pressed        = BIT64_GET(trigger_input,
+         RARCH_CHEAT_TOGGLE);
 }
 
 /**
@@ -497,7 +556,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             bool focused              = runloop_ctl(RUNLOOP_CTL_CHECK_FOCUS, NULL);
 
             check_pause(settings, focused,
-                  cmd->pause_pressed, cmd->frameadvance_pressed);
+                  rarch_main_cmd_pressed(cmd, RARCH_PAUSE_TOGGLE),
+                  cmd->frameadvance_pressed);
 
             if (!runloop_ctl(RUNLOOP_CTL_CHECK_PAUSE_STATE, cmd) || !focused)
                return false;
@@ -510,13 +570,13 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (!cmd || runloop_idle)
                return false;
 
-            if (cmd->screenshot_pressed)
+            if (rarch_main_cmd_pressed(cmd, RARCH_SCREENSHOT))
                event_command(EVENT_CMD_TAKE_SCREENSHOT);
 
-            if (cmd->mute_pressed)
+            if (rarch_main_cmd_pressed(cmd, RARCH_MUTE))
                event_command(EVENT_CMD_AUDIO_MUTE_TOGGLE);
 
-            if (cmd->osk_pressed)
+            if (rarch_main_cmd_pressed(cmd, RARCH_OSK))
             {
                if (input_driver_ctl(RARCH_INPUT_CTL_IS_KEYBOARD_LINEFEED_ENABLED, NULL))
                   input_driver_ctl(RARCH_INPUT_CTL_UNSET_KEYBOARD_LINEFEED_ENABLED, NULL);
@@ -542,9 +602,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             check_stateslots(settings, cmd->state_slot_increase,
                   cmd->state_slot_decrease);
 
-            if (cmd->save_state_pressed)
+            if (rarch_main_cmd_pressed(cmd, RARCH_SAVE_STATE_KEY))
                event_command(EVENT_CMD_SAVE_STATE);
-            else if (cmd->load_state_pressed)
+            else if (rarch_main_cmd_pressed(cmd, RARCH_LOAD_STATE_KEY))
                event_command(EVENT_CMD_LOAD_STATE);
 
             state_manager_check_rewind(cmd->rewind_pressed);
@@ -554,17 +614,18 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (cmd->movie_record)
                runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE, NULL);
 
-            check_shader_dir(cmd->shader_next_pressed,
-                  cmd->shader_prev_pressed);
+            check_shader_dir(
+                  rarch_main_cmd_pressed(cmd, RARCH_SHADER_NEXT),
+                  rarch_main_cmd_pressed(cmd, RARCH_SHADER_PREV));
 
-            if (cmd->disk_eject_pressed)
+            if (rarch_main_cmd_pressed(cmd, RARCH_DISK_EJECT_TOGGLE))
                event_command(EVENT_CMD_DISK_EJECT_TOGGLE);
-            else if (cmd->disk_next_pressed)
+            else if (rarch_main_cmd_pressed(cmd, RARCH_DISK_NEXT))
                event_command(EVENT_CMD_DISK_NEXT);
-            else if (cmd->disk_prev_pressed)
+            else if (rarch_main_cmd_pressed(cmd, RARCH_DISK_PREV))
                event_command(EVENT_CMD_DISK_PREV);
 
-            if (cmd->reset_pressed)
+            if (rarch_main_cmd_pressed(cmd, RARCH_RESET))
                event_command(EVENT_CMD_RESET);
 
             cheat_manager_state_checks(
@@ -877,88 +938,7 @@ static void rarch_main_iterate_linefeed_overlay(settings_t *settings)
 }
 #endif
 
-#ifdef HAVE_MENU
-static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
-      settings_t *settings,
-      retro_input_t input, retro_input_t old_input,
-      retro_input_t trigger_input)
-{
-   switch (settings->input.menu_toggle_gamepad_combo)
-   {
-      case 0:
-         return false;
-      case 1:
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_DOWN))
-            return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_Y))
-            return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L))
-            return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R))
-            return false;
-         break;
-      case 2:
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L3))
-            return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R3))
-            return false;
-         break;
-   }
 
-   input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
-   return true;
-}
-#endif
-
-static void rarch_main_cmd_get_state(
-      settings_t *settings, event_cmd_state_t *cmd,
-      retro_input_t input, retro_input_t old_input,
-      retro_input_t trigger_input)
-{
-   if (!cmd)
-      return;
-
-   cmd->overlay_next_pressed        = BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT);
-   cmd->grab_mouse_pressed          = BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE);
-#ifdef HAVE_MENU
-   cmd->menu_pressed                = BIT64_GET(trigger_input, RARCH_MENU_TOGGLE) ||
-                                      rarch_main_cmd_get_state_menu_toggle_button_combo(
-                                            settings, input,
-                                            old_input, trigger_input);
-#endif
-   cmd->quit_key_pressed            = BIT64_GET(input, RARCH_QUIT_KEY);
-   cmd->screenshot_pressed          = BIT64_GET(trigger_input, RARCH_SCREENSHOT);
-   cmd->mute_pressed                = BIT64_GET(trigger_input, RARCH_MUTE);
-   cmd->osk_pressed                 = BIT64_GET(trigger_input, RARCH_OSK);
-   cmd->volume_up_pressed           = BIT64_GET(input, RARCH_VOLUME_UP);
-   cmd->volume_down_pressed         = BIT64_GET(input, RARCH_VOLUME_DOWN);
-   cmd->reset_pressed               = BIT64_GET(trigger_input, RARCH_RESET);
-   cmd->disk_prev_pressed           = BIT64_GET(trigger_input, RARCH_DISK_PREV);
-   cmd->disk_next_pressed           = BIT64_GET(trigger_input, RARCH_DISK_NEXT);
-   cmd->disk_eject_pressed          = BIT64_GET(trigger_input, RARCH_DISK_EJECT_TOGGLE);
-   cmd->movie_record                = BIT64_GET(trigger_input, RARCH_MOVIE_RECORD_TOGGLE);
-   cmd->save_state_pressed          = BIT64_GET(trigger_input, RARCH_SAVE_STATE_KEY);
-   cmd->load_state_pressed          = BIT64_GET(trigger_input, RARCH_LOAD_STATE_KEY);
-   cmd->slowmotion_pressed          = BIT64_GET(input, RARCH_SLOWMOTION);
-   cmd->shader_next_pressed         = BIT64_GET(trigger_input, RARCH_SHADER_NEXT);
-   cmd->shader_prev_pressed         = BIT64_GET(trigger_input, RARCH_SHADER_PREV);
-   cmd->fastforward_pressed         = BIT64_GET(trigger_input, RARCH_FAST_FORWARD_KEY);
-   cmd->hold_pressed                = BIT64_GET(input, RARCH_FAST_FORWARD_HOLD_KEY);
-   cmd->old_hold_pressed            = BIT64_GET(old_input, RARCH_FAST_FORWARD_HOLD_KEY);
-   cmd->state_slot_increase         = BIT64_GET(trigger_input, RARCH_STATE_SLOT_PLUS);
-   cmd->state_slot_decrease         = BIT64_GET(trigger_input, RARCH_STATE_SLOT_MINUS);
-   cmd->pause_pressed               = BIT64_GET(trigger_input, RARCH_PAUSE_TOGGLE);
-   cmd->frameadvance_pressed        = BIT64_GET(trigger_input, RARCH_FRAMEADVANCE);
-   cmd->rewind_pressed              = BIT64_GET(input,         RARCH_REWIND);
-   cmd->netplay_flip_pressed        = BIT64_GET(trigger_input, RARCH_NETPLAY_FLIP);
-   cmd->fullscreen_toggle           = BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
-   cmd->cheat_index_plus_pressed    = BIT64_GET(trigger_input,
-         RARCH_CHEAT_INDEX_PLUS);
-   cmd->cheat_index_minus_pressed   = BIT64_GET(trigger_input,
-         RARCH_CHEAT_INDEX_MINUS);
-   cmd->cheat_toggle_pressed        = BIT64_GET(trigger_input,
-         RARCH_CHEAT_TOGGLE);
-}
 
 /* Time to exit out of the main loop?
  * Reasons for exiting:
@@ -1018,6 +998,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    unsigned i;
    retro_input_t trigger_input;
    event_cmd_state_t    cmd;
+   event_cmd_state_t   *cmd_ptr                 = &cmd;
    retro_time_t current, target, to_sleep_ms;
    static retro_usec_t frame_time_last          = 0;
    static retro_time_t frame_limit_minimum_time = 0.0;
@@ -1096,7 +1077,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
    trigger_input = input & ~old_input;
    rarch_main_cmd_get_state(settings, &cmd, input, old_input, trigger_input);
 
-   if (cmd.overlay_next_pressed)
+   if (rarch_main_cmd_pressed(cmd_ptr, RARCH_OVERLAY_NEXT))
       event_command(EVENT_CMD_OVERLAY_NEXT);
 
    if (cmd.fullscreen_toggle)
@@ -1110,7 +1091,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
          event_command(EVENT_CMD_FULLSCREEN_TOGGLE);
    }
 
-   if (cmd.grab_mouse_pressed)
+   if (rarch_main_cmd_pressed(cmd_ptr, RARCH_GRAB_MOUSE_TOGGLE))
       event_command(EVENT_CMD_GRAB_MOUSE_TOGGLE);
 
 #ifdef HAVE_MENU
