@@ -297,13 +297,13 @@ global_t *global_get_ptr(void);
  **/
 int runloop_iterate(unsigned *sleep_ms);
 
-void rarch_main_msg_queue_push(const char *msg, unsigned prio,
+void runloop_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);
 
-void rarch_main_msg_queue_push_new(uint32_t hash, unsigned prio,
+void runloop_msg_queue_push_new(uint32_t hash, unsigned prio,
       unsigned duration, bool flush);
 
-const char *rarch_main_msg_queue_pull(void);
+const char *runloop_msg_queue_pull(void);
 
 bool *runloop_perfcnt_enabled(void);
 

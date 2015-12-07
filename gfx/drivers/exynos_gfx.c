@@ -1305,7 +1305,7 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
       char buffer_fps[128] = {0};
       video_monitor_get_fps(buffer, sizeof(buffer),
             settings->fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
-      rarch_main_msg_queue_push(buffer_fps, 1, 1, false);
+      runloop_msg_queue_push(buffer_fps, 1, 1, false);
    }
 
    /* If at this point the dimension parameters are still zero, setup some  *

@@ -434,13 +434,13 @@ static void rmenu_xui_frame(void)
 
    XuiRenderSetViewTransform( app.GetDC(), &matOrigView );
 
-   message = rarch_main_msg_queue_pull();
+   message = runloop_msg_queue_pull();
 
    if (message)
       xui_render_message(message);
    else
    {
-      message = rarch_main_msg_queue_pull();
+      message = runloop_msg_queue_pull();
       if (message)
          xui_render_message(message);
    }

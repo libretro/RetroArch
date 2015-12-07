@@ -128,7 +128,7 @@ static void event_disk_control_set_eject(bool new_state, bool print_log)
 
       /* Only noise in menu. */
       if (print_log)
-         rarch_main_msg_queue_push(msg, 1, 180, true);
+         runloop_msg_queue_push(msg, 1, 180, true);
    }
 }
 
@@ -195,7 +195,7 @@ static void event_disk_control_set_index(unsigned idx)
          RARCH_ERR("%s\n", msg);
       else
          RARCH_LOG("%s\n", msg);
-      rarch_main_msg_queue_push(msg, 1, 180, true);
+      runloop_msg_queue_push(msg, 1, 180, true);
    }
 }
 
@@ -233,7 +233,7 @@ void event_disk_control_append_image(const char *path)
    snprintf(msg, sizeof(msg), "%s: ", msg_hash_to_str(MSG_APPENDED_DISK));
    strlcat(msg, path, sizeof(msg));
    RARCH_LOG("%s\n", msg);
-   rarch_main_msg_queue_push(msg, 0, 180, true);
+   runloop_msg_queue_push(msg, 0, 180, true);
 
    event_command(EVENT_CMD_AUTOSAVE_DEINIT);
 
@@ -340,7 +340,7 @@ static void event_set_volume(float gain)
    settings->audio.volume  = min(settings->audio.volume, 12.0f);
 
    snprintf(msg, sizeof(msg), "Volume: %.1f dB", settings->audio.volume);
-   rarch_main_msg_queue_push(msg, 1, 180, true);
+   runloop_msg_queue_push(msg, 1, 180, true);
    RARCH_LOG("%s\n", msg);
 
    audio_driver_set_volume_gain(db_to_gain(settings->audio.volume));
@@ -490,7 +490,7 @@ static void event_load_auto_state(void)
 
    snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" %s.",
          savestate_name_auto, ret ? "succeeded" : "failed");
-   rarch_main_msg_queue_push(msg, 1, 180, false);
+   runloop_msg_queue_push(msg, 1, 180, false);
    RARCH_LOG("%s\n", msg);
 }
 
@@ -686,7 +686,7 @@ static bool event_save_core_config(void)
             sizeof(config_dir));
    else
    {
-      rarch_main_msg_queue_push_new(MSG_CONFIG_DIRECTORY_NOT_SET, 1, 180, true);
+      runloop_msg_queue_push_new(MSG_CONFIG_DIRECTORY_NOT_SET, 1, 180, true);
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
       return false;
    }
@@ -755,7 +755,7 @@ static bool event_save_core_config(void)
       RARCH_ERR("%s\n", msg);
    }
 
-   rarch_main_msg_queue_push(msg, 1, 180, true);
+   runloop_msg_queue_push(msg, 1, 180, true);
    global->overrides_active = overrides_active;
    return ret;
 }
@@ -874,7 +874,7 @@ static void event_main_state(unsigned cmd)
    else
       strlcpy(msg, msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES), sizeof(msg));
 
-   rarch_main_msg_queue_push(msg, 2, 180, true);
+   runloop_msg_queue_push(msg, 2, 180, true);
    RARCH_LOG("%s\n", msg);
 }
 
@@ -937,7 +937,7 @@ bool event_command(enum event_command cmd)
                video_driver_set_video_mode(width, height, true);
 
                snprintf(msg, sizeof(msg),"Resolution: %dx%d",width, height);
-               rarch_main_msg_queue_push(msg, 1, 100, true);
+               runloop_msg_queue_push(msg, 1, 100, true);
             }
          }
 #endif
@@ -1037,7 +1037,7 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_RESET:
          RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
-         rarch_main_msg_queue_push_new(MSG_RESET, 1, 120, true);
+         runloop_msg_queue_push_new(MSG_RESET, 1, 120, true);
 
 #ifdef HAVE_CHEEVOS
          cheevos_set_cheats();
@@ -1177,7 +1177,7 @@ bool event_command(enum event_command cmd)
                return false;
             }
 
-            rarch_main_msg_queue_push(msg, 1, 180, true);
+            runloop_msg_queue_push(msg, 1, 180, true);
             RARCH_LOG("%s\n", msg);
          }
          break;
@@ -1310,7 +1310,7 @@ bool event_command(enum event_command cmd)
          break;
       case EVENT_CMD_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
-         rarch_main_msg_queue_push("Shutting down...", 1, 180, true);
+         runloop_msg_queue_push("Shutting down...", 1, 180, true);
          rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
          system("shutdown -P now");
 #endif
@@ -1505,7 +1505,7 @@ bool event_command(enum event_command cmd)
                event_check_disk_eject(control);
          }
          else
-            rarch_main_msg_queue_push_new(
+            runloop_msg_queue_push_new(
                   MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
                   1, 120, true);
          break;
@@ -1525,7 +1525,7 @@ bool event_command(enum event_command cmd)
             event_check_disk_next(control);
          }
          else
-            rarch_main_msg_queue_push_new(
+            runloop_msg_queue_push_new(
                   MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
                   1, 120, true);
          break;
@@ -1545,7 +1545,7 @@ bool event_command(enum event_command cmd)
             event_check_disk_prev(control);
          }
          else
-            rarch_main_msg_queue_push_new(
+            runloop_msg_queue_push_new(
                   MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
                   1, 120, true);
          break;

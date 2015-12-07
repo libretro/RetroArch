@@ -62,7 +62,7 @@ void task_msg_queue_pushf(unsigned prio, unsigned duration,
    va_start(ap, fmt);
    vsnprintf(buf, sizeof(buf), fmt, ap);
    va_end(ap);
-   rarch_main_msg_queue_push(buf, prio, duration, flush);
+   runloop_msg_queue_push(buf, prio, duration, flush);
 }
 
 static void push_task_progress(rarch_task_t *task)

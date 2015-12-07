@@ -107,7 +107,7 @@ static int database_info_iterate_start(database_info_handle_t *db,
 #endif
 
    if (msg[0] != '\0')
-      rarch_main_msg_queue_push(msg, 1, 180, true);
+      runloop_msg_queue_push(msg, 1, 180, true);
 
 #if 0
    RARCH_LOG("msg: %s\n", msg);
@@ -526,7 +526,7 @@ static void rarch_dbscan_task_handler(rarch_task_t *task)
          }
          else
          {
-            rarch_main_msg_queue_push_new(MSG_SCANNING_OF_DIRECTORY_FINISHED, 0, 180, true);
+            runloop_msg_queue_push_new(MSG_SCANNING_OF_DIRECTORY_FINISHED, 0, 180, true);
             goto task_finished;
          }
          break;

@@ -543,7 +543,7 @@ void x11_update_window_title(void *data)
             buf_fps, sizeof(buf_fps)))
       XStoreName(g_x11_dpy, g_x11_win, buf);
    if (settings->fps_show)
-      rarch_main_msg_queue_push(buf_fps, 1, 1, false);
+      runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 bool x11_input_ctx_new(bool true_full)

@@ -242,7 +242,7 @@ static bool cmd_set_shader(const char *arg)
    }
 
    snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
-   rarch_main_msg_queue_push(msg, 1, 120, true);
+   runloop_msg_queue_push(msg, 1, 120, true);
    RARCH_LOG("%s \"%s\".\n",
          msg_hash_to_str(MSG_APPLYING_SHADER),
          arg);

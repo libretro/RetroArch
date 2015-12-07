@@ -1207,8 +1207,8 @@ static int cheevos_login(retro_time_t *timeout)
    
    if (!username || !*username || !password || !*password)
    {
-      rarch_main_msg_queue_push("Missing Retro Achievements account information", 0, 5 * 60, false);
-      rarch_main_msg_queue_push("Please fill in your account information in Settings", 0, 5 * 60, false);
+      runloop_msg_queue_push("Missing Retro Achievements account information", 0, 5 * 60, false);
+      runloop_msg_queue_push("Please fill in your account information in Settings", 0, 5 * 60, false);
       RARCH_LOG("CHEEVOS username and/or password not informed\n");
       return -1;
    }
@@ -1236,8 +1236,8 @@ static int cheevos_login(retro_time_t *timeout)
       }
    }
 
-   rarch_main_msg_queue_push("Retro Achievements login error", 0, 5 * 60, false);
-   rarch_main_msg_queue_push("Please make sure your account information is correct", 0, 5 * 60, false);
+   runloop_msg_queue_push("Retro Achievements login error", 0, 5 * 60, false);
+   runloop_msg_queue_push("Please make sure your account information is correct", 0, 5 * 60, false);
    RARCH_LOG("CHEEVOS error getting user token\n");
    return -1;
 }
@@ -1285,8 +1285,8 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
          RARCH_LOG("CHEEVOS %s\n", cheevo->title);
          RARCH_LOG("CHEEVOS %s\n", cheevo->description);
 
-         rarch_main_msg_queue_push(cheevo->title, 0, 3 * 60, false);
-         rarch_main_msg_queue_push(cheevo->description, 0, 5 * 60, false);
+         runloop_msg_queue_push(cheevo->title, 0, 3 * 60, false);
+         runloop_msg_queue_push(cheevo->description, 0, 5 * 60, false);
 
          rarch_main_async_job_add(cheevos_unlocker, (void*)(uintptr_t)cheevo->id);
 
@@ -1851,7 +1851,7 @@ int cheevos_load(const void *data)
    
    if (!memory)
    {
-      rarch_main_msg_queue_push("This core doesn't support achievements", 0, 5 * 60, false);
+      runloop_msg_queue_push("This core doesn't support achievements", 0, 5 * 60, false);
       RARCH_LOG("This core doesn't support achievements\n");
       return -1;
    }
@@ -1915,7 +1915,7 @@ int cheevos_load(const void *data)
       }
    }
    
-   rarch_main_msg_queue_push("This game doesn't feature achievements", 0, 5 * 60, false);
+   runloop_msg_queue_push("This game doesn't feature achievements", 0, 5 * 60, false);
    return -1;
    
    found:
@@ -1935,7 +1935,7 @@ int cheevos_load(const void *data)
       free((void*)json);
    }
    
-   rarch_main_msg_queue_push("Error loading achievements", 0, 5 * 60, false);
+   runloop_msg_queue_push("Error loading achievements", 0, 5 * 60, false);
    return -1;
 }
 

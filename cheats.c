@@ -309,7 +309,7 @@ void cheat_manager_free(void)
 
 void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
 {
-   char msg[256] = {0};
+   char msg[256];
 
    if (!handle)
       return;
@@ -319,7 +319,7 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
          (handle->cheats[handle_idx].desc) ? 
          (handle->cheats[handle_idx].desc) : (handle->cheats[handle_idx].code)
          );
-   rarch_main_msg_queue_push(msg, 1, 180, true);
+   runloop_msg_queue_push(msg, 1, 180, true);
    RARCH_LOG("%s\n", msg);
 }
 

@@ -375,7 +375,7 @@ static void cocoagl_gfx_ctx_update_window_title(void *data)
        [[g_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
 #endif
     if (settings->fps_show)
-        rarch_main_msg_queue_push(buf_fps, 1, 1, false);
+        runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types type,

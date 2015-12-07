@@ -125,7 +125,7 @@ bool driver_location_start(void)
       if (settings->location.allow)
          return location_driver->start(location_data);
 
-      rarch_main_msg_queue_push("Location is explicitly disabled.\n", 1, 180, true);
+      runloop_msg_queue_push("Location is explicitly disabled.\n", 1, 180, true);
    }
    return false;
 }

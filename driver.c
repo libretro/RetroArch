@@ -311,7 +311,7 @@ bool driver_update_system_av_info(const void *data)
     * Take the easiest route out and just restart the recording. */
    if (recording_driver_get_data_ptr())
    {
-      rarch_main_msg_queue_push_new(
+      runloop_msg_queue_push_new(
             MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT, 2, 180, false);
       event_command(EVENT_CMD_RECORD_DEINIT);
       event_command(EVENT_CMD_RECORD_INIT);

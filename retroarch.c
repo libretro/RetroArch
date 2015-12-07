@@ -1557,7 +1557,7 @@ void rarch_playlist_load_content(void *data, unsigned idx)
       fp = retro_fopen(path_check, RFILE_MODE_READ, -1);
       if (!fp)
       {
-         rarch_main_msg_queue_push("File could not be loaded.\n", 1, 100, true);
+         runloop_msg_queue_push("File could not be loaded.\n", 1, 100, true);
          RARCH_LOG("File at %s failed to load.\n", path_check);
          free(path_tolower);
          free(path_check);

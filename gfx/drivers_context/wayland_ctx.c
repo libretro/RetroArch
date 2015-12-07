@@ -241,7 +241,7 @@ static void gfx_ctx_wl_update_window_title(void *data)
       wl_shell_surface_set_title(wl->g_shell_surf, buf);
 
    if (settings->fps_show)
-      rarch_main_msg_queue_push(buf_fps, 1, 1, false);
+      runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static void gfx_ctx_wl_get_video_size(void *data,

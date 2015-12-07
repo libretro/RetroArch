@@ -130,7 +130,7 @@ bool driver_camera_start(void)
       if (settings->camera.allow)
          return camera_driver->start(camera_data);
 
-      rarch_main_msg_queue_push(
+      runloop_msg_queue_push(
             "Camera is explicitly disabled.\n", 1, 180, false);
    }
    return false;

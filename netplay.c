@@ -149,7 +149,7 @@ static void *netplay_data;
 static void warn_hangup(void)
 {
    RARCH_WARN("Netplay has disconnected. Will continue without connection ...\n");
-   rarch_main_msg_queue_push("Netplay has disconnected. Will continue without connection.", 0, 480, false);
+   runloop_msg_queue_push("Netplay has disconnected. Will continue without connection.", 0, 480, false);
 }
 
 /**
@@ -338,7 +338,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
          netplay->flip_frame = flip_frame;
 
          RARCH_LOG("Netplay users are flipped.\n");
-         rarch_main_msg_queue_push("Netplay users are flipped.", 1, 180, false);
+         runloop_msg_queue_push("Netplay users are flipped.", 1, 180, false);
 
          return netplay_cmd_ack(netplay);
 
@@ -686,7 +686,7 @@ static void log_connection(const struct sockaddr_storage *their_addr,
 
       snprintf(msg, sizeof(msg), "Got connection from: \"%s (%s)\" (#%u)",
             nick, str, slot);
-      rarch_main_msg_queue_push(msg, 1, 180, false);
+      runloop_msg_queue_push(msg, 1, 180, false);
       RARCH_LOG("%s\n", msg);
    }
 }
@@ -995,7 +995,7 @@ static bool send_info(netplay_t *netplay)
 
    snprintf(msg, sizeof(msg), "Connected to: \"%s\"", netplay->other_nick);
    RARCH_LOG("%s\n", msg);
-   rarch_main_msg_queue_push(msg, 1, 180, false);
+   runloop_msg_queue_push(msg, 1, 180, false);
 
    return true;
 }
@@ -1148,7 +1148,7 @@ static bool get_info_spectate(netplay_t *netplay)
    }
 
    snprintf(msg, sizeof(msg), "Connected to \"%s\"", netplay->other_nick);
-   rarch_main_msg_queue_push(msg, 1, 180, false);
+   runloop_msg_queue_push(msg, 1, 180, false);
    RARCH_LOG("%s\n", msg);
 
 
@@ -1361,7 +1361,7 @@ bool netplay_command(netplay_t* netplay, enum netplay_cmd cmd,
 
    if(netplay_send_raw_cmd(netplay, cmd, data, sz)) {
       if(netplay_get_response(netplay))
-         rarch_main_msg_queue_push(success_msg, 1, 180, false);
+         runloop_msg_queue_push(success_msg, 1, 180, false);
       else
       {
          msg = "Failed to send command \"%s\"";
@@ -1373,7 +1373,7 @@ bool netplay_command(netplay_t* netplay, enum netplay_cmd cmd,
 error:
    snprintf(m, sizeof(m), msg, command_str);
    RARCH_WARN("%s\n", m);
-   rarch_main_msg_queue_push(m, 1, 180, false);
+   runloop_msg_queue_push(m, 1, 180, false);
    return false;
 }
 
@@ -1483,7 +1483,7 @@ static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
       return swap_if_big16(inp);
 
    RARCH_ERR("Connection with host was cut.\n");
-   rarch_main_msg_queue_push("Connection with host was cut.", 1, 180, true);
+   runloop_msg_queue_push("Connection with host was cut.", 1, 180, true);
 
    core.retro_set_input_state(netplay->cbs.state_cb);
    return netplay->cbs.state_cb(port, device, idx, id);
@@ -1700,7 +1700,7 @@ static void netplay_post_frame_spectate(netplay_t *netplay)
       RARCH_LOG("Client (#%u) disconnected ...\n", i);
 
       snprintf(msg, sizeof(msg), "Client (#%u) disconnected.", i);
-      rarch_main_msg_queue_push(msg, 1, 180, false);
+      runloop_msg_queue_push(msg, 1, 180, false);
 
       socket_close(netplay->spectate.fds[i]);
       netplay->spectate.fds[i] = -1;
@@ -1783,7 +1783,7 @@ bool init_netplay(void)
    global->netplay.is_client = false;
    RARCH_WARN("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
 
-   rarch_main_msg_queue_push_new(
+   runloop_msg_queue_push_new(
          MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED,
          0, 180, false);
    return false;

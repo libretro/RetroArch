@@ -270,7 +270,7 @@ bool take_screenshot(void)
 
    is_paused = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
 
-   rarch_main_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
+   runloop_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
 
    if (is_paused)
       video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);

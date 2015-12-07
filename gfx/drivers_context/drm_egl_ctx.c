@@ -244,7 +244,7 @@ static void gfx_ctx_drm_egl_update_window_title(void *data)
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
    if (settings->fps_show)
-      rarch_main_msg_queue_push( buf_fps, 1, 1, false);
+      runloop_msg_queue_push( buf_fps, 1, 1, false);
 }
 
 static void gfx_ctx_drm_egl_get_video_size(void *data,

@@ -155,7 +155,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf, autoconfig_param
             params->name);
 
       if(!remote_is_bound)
-         rarch_main_msg_queue_push(msg, 0, 60, false);
+         runloop_msg_queue_push(msg, 0, 60, false);
       remote_is_bound = true;
    }
    else
@@ -167,7 +167,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf, autoconfig_param
          snprintf(msg, sizeof(msg), "%s configured in port #%u.",
                params->name, params->idx);
       if (!block_osd_spam)
-          rarch_main_msg_queue_push(msg, 0, 60, false);
+          runloop_msg_queue_push(msg, 0, 60, false);
    }
    input_reindex_devices();
 #if 0
@@ -330,7 +330,7 @@ bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
 
       RARCH_LOG("Autodetect: no profiles found for %s (%d/%d)", params->name, params->vid, params->pid);
       snprintf(msg, sizeof(msg), "%s (%ld/%ld) not configured", params->name, (long)params->vid, (long)params->pid);
-      rarch_main_msg_queue_push(msg, 0, 60, false);
+      runloop_msg_queue_push(msg, 0, 60, false);
    }
    return ret;
 }
@@ -350,9 +350,9 @@ const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
 
 void input_config_autoconfigure_disconnect(unsigned i, const char *ident)
 {
-   char msg[PATH_MAX_LENGTH] = {0};
+   char msg[PATH_MAX_LENGTH];
 
    snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", i, ident);
-   rarch_main_msg_queue_push(msg, 0, 60, false);
+   runloop_msg_queue_push(msg, 0, 60, false);
    RARCH_LOG("Autodetect: %s\n", msg);
 }

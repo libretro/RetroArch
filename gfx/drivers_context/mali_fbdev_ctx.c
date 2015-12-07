@@ -134,7 +134,7 @@ static void gfx_ctx_mali_fbdev_update_window_title(void *data)
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
    if (settings->fps_show)
-      rarch_main_msg_queue_push(buf_fps, 1, 1, false);
+      runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,

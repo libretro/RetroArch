@@ -98,7 +98,7 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
             char msg[512] = {0};
 
             snprintf(msg, sizeof(msg), "Device #%u (%s) connected.", (unsigned)(pad - linuxraw_pads), pad->ident);
-            rarch_main_msg_queue_push(msg, 0, 60, false);
+            runloop_msg_queue_push(msg, 0, 60, false);
          }
       }
       else

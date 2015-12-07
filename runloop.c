@@ -98,7 +98,7 @@ rarch_system_info_t *rarch_system_info_get_ptr(void)
    return &g_system;
 }
 
-const char *rarch_main_msg_queue_pull(void)
+const char *runloop_msg_queue_pull(void)
 {
    const char *ret = NULL;
 
@@ -111,7 +111,7 @@ const char *rarch_main_msg_queue_pull(void)
    return ret;
 }
 
-void rarch_main_msg_queue_push_new(uint32_t hash, unsigned prio, unsigned duration,
+void runloop_msg_queue_push_new(uint32_t hash, unsigned prio, unsigned duration,
       bool flush)
 {
    const char *msg = msg_hash_to_str(hash);
@@ -119,10 +119,10 @@ void rarch_main_msg_queue_push_new(uint32_t hash, unsigned prio, unsigned durati
    if (!msg)
       return;
 
-   rarch_main_msg_queue_push(msg, prio, duration, flush);
+   runloop_msg_queue_push(msg, prio, duration, flush);
 }
 
-void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
+void runloop_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
       bool flush)
 {
    settings_t *settings = config_get_ptr();
@@ -292,7 +292,7 @@ static void check_stateslots(settings_t *settings,
          msg_hash_to_str(MSG_STATE_SLOT),
          settings->state_slot);
 
-   rarch_main_msg_queue_push(msg, 1, 180, true);
+   runloop_msg_queue_push(msg, 1, 180, true);
 
    RARCH_LOG("%s\n", msg);
 }
@@ -393,7 +393,7 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
    snprintf(msg, sizeof(msg), "%s #%u: \"%s\".",
          msg_hash_to_str(MSG_SHADER),
          (unsigned)runloop_shader_dir.ptr, shader);
-   rarch_main_msg_queue_push(msg, 1, 120, true);
+   runloop_msg_queue_push(msg, 1, 120, true);
    RARCH_LOG("%s \"%s\".\n",
          msg_hash_to_str(MSG_APPLYING_SHADER),
          shader);
@@ -759,9 +759,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
 
             if (state_manager_frame_is_reversed())
-               rarch_main_msg_queue_push_new(MSG_SLOW_MOTION_REWIND, 0, 30, true);
+               runloop_msg_queue_push_new(MSG_SLOW_MOTION_REWIND, 0, 30, true);
             else
-               rarch_main_msg_queue_push_new(MSG_SLOW_MOTION, 0, 30, true);
+               runloop_msg_queue_push_new(MSG_SLOW_MOTION, 0, 30, true);
          }
          break;
       case RUNLOOP_CTL_CHECK_MOVIE:
@@ -774,7 +774,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             return false;
 
-         rarch_main_msg_queue_push_new(
+         runloop_msg_queue_push_new(
                MSG_MOVIE_RECORD_STOPPED, 2, 180, true);
          RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
 
@@ -807,14 +807,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                return false;
             else if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             {
-               rarch_main_msg_queue_push(msg, 1, 180, true);
+               runloop_msg_queue_push(msg, 1, 180, true);
                RARCH_LOG("%s \"%s\".\n",
                      msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
                      path);
             }
             else
             {
-               rarch_main_msg_queue_push_new(
+               runloop_msg_queue_push_new(
                      MSG_FAILED_TO_START_MOVIE_RECORD,
                      1, 180, true);
                RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
@@ -825,7 +825,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          if (!bsv_movie_ctl(BSV_MOVIE_CTL_END, NULL))
             return false;
 
-         rarch_main_msg_queue_push_new(
+         runloop_msg_queue_push_new(
                MSG_MOVIE_PLAYBACK_ENDED, 1, 180, false);
          RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
 
@@ -1375,6 +1375,6 @@ void runloop_data_iterate(void)
 
 void data_runloop_osd_msg(const char *msg, size_t len)
 {
-   rarch_main_msg_queue_push(msg, 1, 10, true);
+   runloop_msg_queue_push(msg, 1, 10, true);
 }
 

@@ -344,7 +344,7 @@ static void udev_check_device(struct udev_device *dev, const char *path, bool ho
             char msg[256];
 
             snprintf(msg, sizeof(msg), "Device #%u (%s) connected.", pad, path);
-            rarch_main_msg_queue_push(msg, 0, 60, false);
+            runloop_msg_queue_push(msg, 0, 60, false);
             RARCH_LOG("[udev]: %s\n", msg);
          }
          break;

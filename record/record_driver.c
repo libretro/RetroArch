@@ -200,7 +200,7 @@ void recording_dump_frame(const void *data, unsigned width,
       {
          RARCH_WARN("%s\n", msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE));
 
-         rarch_main_msg_queue_push_new(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE, 1, 180, true);
+         runloop_msg_queue_push_new(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE, 1, 180, true);
          event_command(EVENT_CMD_RECORD_DEINIT);
          return;
       }
