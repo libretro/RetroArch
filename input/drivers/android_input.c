@@ -747,6 +747,10 @@ static void handle_hotplug(android_input_data_t *android_data,
       strlcpy(settings->input.device_names[*port],
             name_buf, sizeof(settings->input.device_names[*port]));
 
+   /* this is not a built in or fixed device, assign a new port */
+   if (*port < 0)
+      *port = android_data->pads_connected;
+
    if (settings->input.autodetect_enable)
    {
       bool      autoconfigured;
@@ -774,7 +778,6 @@ static void handle_hotplug(android_input_data_t *android_data,
    if (!back_mapped && settings->input.back_as_menu_toggle_enable)
       settings->input.autoconf_binds[*port][RARCH_MENU_TOGGLE].joykey = AKEYCODE_BACK;
 
-   *port = android_data->pads_connected;
    android_data->pad_states[android_data->pads_connected].id = id;
    android_data->pad_states[android_data->pads_connected].port = *port;
    strlcpy(android_data->pad_states[*port].name, name_buf,
