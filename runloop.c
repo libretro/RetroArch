@@ -921,6 +921,31 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_DATA_DEINIT:
          rarch_task_deinit();
          break;
+      case RUNLOOP_CTL_IS_CORE_OPTION_UPDATED:
+         return system->core_options ?
+            core_option_updated(system->core_options) : false;
+      case RUNLOOP_CTL_CORE_OPTIONS_GET:
+         {
+            struct retro_variable *var = (struct retro_variable*)data;
+
+            if (!system || !system->core_options || !var)
+               return false;
+
+            RARCH_LOG("Environ GET_VARIABLE %s:\n", var->key);
+            core_option_get(system->core_options, var);
+            RARCH_LOG("\t%s\n", var->value ? var->value : "N/A");
+         }
+         return true;
+      case RUNLOOP_CTL_CORE_OPTIONS_DEINIT:
+         if (!system->core_options)
+            return false;
+
+         core_option_flush(system->core_options);
+         core_option_free(system->core_options);
+
+         system->core_options = NULL;
+         return true;
+      case RUNLOOP_CTL_NONE:
       default:
          return false;
    }

@@ -687,32 +687,29 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_VARIABLE:
       {
-         struct retro_variable *var = (struct retro_variable*)data;
-         RARCH_LOG("Environ GET_VARIABLE %s:\n", var->key);
 
-         if (system && system->core_options)
-            core_option_get(system->core_options, var);
-         else
-            var->value = NULL;
+         if (!runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_GET, data))
+         {
+            struct retro_variable *var = (struct retro_variable*)data;
 
-         RARCH_LOG("\t%s\n", var->value ? var->value : "N/A");
+            RARCH_LOG("Environ GET_VARIABLE %s:\n", var->key);
+            if (var)
+               var->value = NULL;
+            RARCH_LOG("\t%s\n", var->value ? var->value : "N/A");
+         }
+
          break;
       }
 
       case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
-         *(bool*)data = system->core_options ?
-            core_option_updated(system->core_options) : false;
+         *(bool*)data = runloop_ctl(RUNLOOP_CTL_IS_CORE_OPTION_UPDATED, NULL);
          break;
 
       case RETRO_ENVIRONMENT_SET_VARIABLES:
       {
          RARCH_LOG("Environ SET_VARIABLES.\n");
 
-         if (system && system->core_options)
-         {
-            core_option_flush(system->core_options);
-            core_option_free(system->core_options);
-         }
+         runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_DEINIT, NULL);
 
          {
             char *game_options_path           = NULL;
