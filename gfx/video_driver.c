@@ -91,7 +91,7 @@ static enum rarch_display_type video_driver_display_type;
 static uint64_t video_driver_frame_count;
 
 static void *video_driver_data;
-static const video_driver_t *current_video;
+static video_driver_t *current_video;
 
 /* Interface for "poking". */
 static const video_poke_interface_t *video_driver_poke;
@@ -247,7 +247,7 @@ static bool find_video_driver(void)
 
    if (frontend_driver_has_get_video_driver_func())
    {
-      current_video = frontend_driver_get_video_driver();
+      current_video = (video_driver_t*)frontend_driver_get_video_driver();
 
       if (current_video)
          return true;
@@ -256,7 +256,7 @@ static bool find_video_driver(void)
 
    i = find_driver_index("video_driver", settings->video.driver);
    if (i >= 0)
-      current_video = (const video_driver_t*)video_driver_find_handle(i);
+      current_video = (video_driver_t*)video_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -267,7 +267,7 @@ static bool find_video_driver(void)
          RARCH_LOG_OUTPUT("\t%s\n", video_driver_find_ident(d));
       RARCH_WARN("Going to default to first video driver...\n");
 
-      current_video = (const video_driver_t*)video_driver_find_handle(0);
+      current_video = (video_driver_t*)video_driver_find_handle(0);
 
       if (!current_video)
          retro_fail(1, "find_video_driver()");
@@ -704,7 +704,7 @@ static bool init_video(void)
       /* Can't do hardware rendering with threaded driver currently. */
       RARCH_LOG("Starting threaded video driver ...\n");
 
-      if (!rarch_threaded_video_init(&current_video, &video_driver_data,
+      if (!rarch_threaded_video_init((const video_driver_t**)&current_video, &video_driver_data,
                input_get_double_ptr(), input_driver_get_data_ptr(),
                current_video, &video))
       {
@@ -1385,6 +1385,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
    static bool video_driver_use_rgba                = false;
    static bool video_driver_data_own                = false;
    static bool video_driver_active                  = false;
+   static video_driver_frame_t frame_bak            = NULL;
    /* If set during context deinit, the driver should keep
     * graphics context alive to avoid having to reset all 
     * context state. */
@@ -1406,6 +1407,15 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          video_driver_cache_context_ack = false;
          video_driver_record_gpu_buffer = NULL;
          current_video                  = NULL;
+         break;
+      case RARCH_DISPLAY_CTL_SET_STUB_FRAME:
+         frame_bak                      = current_video->frame;
+         current_video->frame           = video_null.frame;
+         break;
+      case RARCH_DISPLAY_CTL_UNSET_STUB_FRAME:
+         if (frame_bak != NULL)
+            current_video->frame        = frame_bak;
+         frame_bak                      = NULL;
          break;
       case RARCH_DISPLAY_CTL_SUPPORTS_RECORDING:
          return settings->video.gpu_record && current_video->read_viewport;

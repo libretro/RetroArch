@@ -129,6 +129,8 @@ enum rarch_display_ctl_state
    RARCH_DISPLAY_CTL_RESET_CUSTOM_VIEWPORT,
    RARCH_DISPLAY_CTL_READ_VIEWPORT,
    RARCH_DISPLAY_CTL_SET_NONBLOCK_STATE,
+   RARCH_DISPLAY_CTL_SET_STUB_FRAME,
+   RARCH_DISPLAY_CTL_UNSET_STUB_FRAME,
    /* Renders the current video frame. */
    RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER,
    RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB,
@@ -223,6 +225,10 @@ typedef struct video_viewport
    unsigned full_height;
 } video_viewport_t;
 
+/* msg is for showing a message on the screen along with the video frame. */
+typedef bool (*video_driver_frame_t)(void *data, const void *frame, unsigned width,
+      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg);
+
 typedef struct video_driver
 {
    /* Should the video driver act as an input driver as well?
@@ -232,9 +238,7 @@ typedef struct video_driver
    void *(*init)(const video_info_t *video, const input_driver_t **input,
          void **input_data);
 
-   /* msg is for showing a message on the screen along with the video frame. */
-   bool (*frame)(void *data, const void *frame, unsigned width,
-         unsigned height, uint64_t frame_count, unsigned pitch, const char *msg);
+   video_driver_frame_t frame;
 
    /* Should we care about syncing to vblank? Fast forwarding. */
    void (*set_nonblock_state)(void *data, bool toggle);
