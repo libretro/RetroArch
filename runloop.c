@@ -66,9 +66,7 @@
 
 typedef struct event_cmd_state
 {
-   uint64_t state;
-   uint64_t old_state;
-   uint64_t trigger_state;
+   retro_input_t state[3];
 } event_cmd_state_t;
 
 static rarch_dir_list_t runloop_shader_dir;
@@ -163,15 +161,15 @@ static bool rarch_main_cmd_get_state_menu_toggle_button_combo(
 }
 #endif
 
-#define rarch_main_cmd_triggered(cmd, id) BIT64_GET(cmd->trigger_state, id) 
+#define rarch_main_cmd_triggered(cmd, id) BIT64_GET(cmd->state[2], id) 
 
-#define rarch_main_cmd_press(cmd, id)     BIT64_GET(cmd->state,         id)
-#define rarch_main_cmd_pressed(cmd, id)   BIT64_GET(cmd->old_state,     id)
+#define rarch_main_cmd_press(cmd, id)     BIT64_GET(cmd->state[0], id)
+#define rarch_main_cmd_pressed(cmd, id)   BIT64_GET(cmd->state[1], id)
 #ifdef HAVE_MENU
-#define rarch_main_cmd_menu_press(cmd)   (BIT64_GET(cmd->trigger_state, RARCH_MENU_TOGGLE) || \
+#define rarch_main_cmd_menu_press(cmd)   (BIT64_GET(cmd->state[2], RARCH_MENU_TOGGLE) || \
                                       rarch_main_cmd_get_state_menu_toggle_button_combo( \
-                                            settings, cmd->state, \
-                                            cmd->old_state, cmd->trigger_state))
+                                            settings, cmd->state[0], \
+                                            cmd->state[1], cmd->state[2]))
 #endif
 
 /**
@@ -961,7 +959,6 @@ static INLINE int rarch_main_iterate_time_to_exit(bool quit_key_pressed)
 int rarch_main_iterate(unsigned *sleep_ms)
 {
    unsigned i;
-   retro_input_t trigger_input;
    event_cmd_state_t    cmd;
    event_cmd_state_t   *cmd_ptr                 = &cmd;
    retro_time_t current, target, to_sleep_ms;
@@ -1039,10 +1036,9 @@ int rarch_main_iterate(unsigned *sleep_ms)
       system->frame_time.callback(delta);
    }
 
-   trigger_input     = input & ~old_input;
-   cmd.state         = input;
-   cmd.old_state     = old_input;
-   cmd.trigger_state = trigger_input;
+   cmd.state[0]      = input;               /* current  */
+   cmd.state[1]      = old_input;           /* previous */
+   cmd.state[2]      = input & ~old_input;  /* trigger  */
 
    if (rarch_main_cmd_triggered(cmd_ptr, RARCH_OVERLAY_NEXT))
       event_command(EVENT_CMD_OVERLAY_NEXT);
@@ -1091,7 +1087,7 @@ int rarch_main_iterate(unsigned *sleep_ms)
       bool focused = runloop_ctl(RUNLOOP_CTL_CHECK_FOCUS, NULL) && !ui_companion_is_on_foreground();
       bool is_idle = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
 
-      if (menu_driver_iterate((enum menu_action)menu_input_frame_retropad(input, trigger_input)) == -1)
+      if (menu_driver_iterate((enum menu_action)menu_input_frame_retropad(input, cmd.state[2])) == -1)
          rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 
       if (focused || !is_idle)
