@@ -20,8 +20,6 @@
 #include <boolean.h>
 #include <retro_miscellaneous.h>
 
-#include "command_event.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
