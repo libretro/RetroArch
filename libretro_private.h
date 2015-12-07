@@ -60,6 +60,10 @@
                                             * _EXEC. NULL means no game.
                                             */
 
+#define RETRO_ENVIRONMENT_SET_IGNORE_ENVIRON_CB (RETRO_ENVIRONMENT_PRIVATE | 3)
+
+#define RETRO_ENVIRONMENT_UNSET_IGNORE_ENVIRON_CB (RETRO_ENVIRONMENT_PRIVATE | 4)
+
 
 #endif
 

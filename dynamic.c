@@ -67,7 +67,6 @@ static dylib_t lib_handle;
 #endif
 
 struct retro_core_t core;
-static bool ignore_environment_cb;
 
 #ifdef HAVE_DYNAMIC
 static bool *load_no_content_hook;
@@ -115,9 +114,9 @@ void libretro_get_environment_info(void (*func)(retro_environment_t),
    /* It's possible that we just set get_system_info callback to the currently running core.
     * Make sure we reset it to the actual environment callback.
     * Ignore any environment callbacks here in case we're running on the non-current core. */
-   ignore_environment_cb = true;
+   rarch_environment_cb(RETRO_ENVIRONMENT_SET_IGNORE_ENVIRON_CB, NULL);
    func(rarch_environment_cb);
-   ignore_environment_cb = false;
+   rarch_environment_cb(RETRO_ENVIRONMENT_UNSET_IGNORE_ENVIRON_CB, NULL);
 }
 
 static dylib_t libretro_get_system_info_lib(const char *path,
@@ -604,9 +603,10 @@ static void rarch_log_libretro(enum retro_log_level level,
 bool rarch_environment_cb(unsigned cmd, void *data)
 {
    unsigned p;
-   settings_t         *settings = config_get_ptr();
-   global_t         *global     = global_get_ptr();
-   rarch_system_info_t *system  = rarch_system_info_get_ptr();
+   static bool ignore_environment_cb = false;
+   settings_t              *settings = config_get_ptr();
+   global_t              *global     = global_get_ptr();
+   rarch_system_info_t      *system  = rarch_system_info_get_ptr();
 
    if (ignore_environment_cb)
       return false;
@@ -1231,6 +1231,12 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             else
                RARCH_LOG("Environ (Private) EXEC.\n");
          }
+         break;
+      case RETRO_ENVIRONMENT_SET_IGNORE_ENVIRON_CB:
+         ignore_environment_cb = true;
+         break;
+      case RETRO_ENVIRONMENT_UNSET_IGNORE_ENVIRON_CB:
+         ignore_environment_cb = false;
          break;
 
       default:
