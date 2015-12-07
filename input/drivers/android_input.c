@@ -48,6 +48,9 @@ struct input_pointer
    int16_t full_x, full_y;
 };
 
+int primary_id = -1;
+int secondary_id = -1;
+
 enum
 {
    AXIS_X = 0,
@@ -425,6 +428,9 @@ static bool android_input_init_handle(void)
       RARCH_LOG("Set engine_handle_dpad to 'Get Axis Value' (for reading extra analog sticks)");
       engine_handle_dpad = engine_handle_dpad_getaxisvalue;
    }
+   primary_id = -1;
+   secondary_id = -1;
+
    return true;
 }
 
@@ -461,9 +467,6 @@ static void *android_input_init(void)
 
    return android;
 }
-
-int primary_id = -1;
-int secondary_id = -1;
 
 static INLINE int android_input_poll_event_type_motion(
       android_input_data_t *android_data, AInputEvent *event,
@@ -604,6 +607,7 @@ static void handle_hotplug(android_input_data_t *android_data,
       return;
    }
 
+   RARCH_LOG("Device Name: %s\n IDS: %d, %d", name_buf, primary_id, secondary_id);
    /* FIXME - per-device hacks for nVidia Shield, Xperia Play and others
 
     * Built-in controller is always user 1
@@ -638,7 +642,6 @@ static void handle_hotplug(android_input_data_t *android_data,
             return;
 
          strlcpy (name_buf, "NVIDIA SHIELD Portable", sizeof(name_buf));
-         RARCH_LOG("Device Name: %s\n", name_buf);
          *port = 0;
       }
    }
@@ -660,7 +663,6 @@ static void handle_hotplug(android_input_data_t *android_data,
            return;
 
         strlcpy (name_buf, "GPD XD", sizeof(name_buf));
-        RARCH_LOG("Device Name: %s\n", name_buf);
         *port = 0;
      }
   }
@@ -681,7 +683,6 @@ static void handle_hotplug(android_input_data_t *android_data,
             return;
 
          strlcpy (name_buf, "XPERIA Play", sizeof(name_buf));
-         RARCH_LOG("Device Name: %s\n", name_buf);
          *port = 0;
       }
    }
