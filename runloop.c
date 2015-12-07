@@ -760,8 +760,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_MSG_QUEUE_FREE:
 #ifdef HAVE_THREADS
          slock_free(runloop_msg_queue_lock);
-#endif
          runloop_msg_queue_lock = NULL;
+#endif
          break;
       case RUNLOOP_CTL_MSG_QUEUE_DEINIT:
          if (!g_msg_queue)
