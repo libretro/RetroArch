@@ -234,9 +234,6 @@ typedef struct
       char msg[PATH_MAX_LENGTH];
    } menu_state;
 
-   /* Menu entries */
-   menu_entries_t *entries;
-
    bool load_no_content;
 
    /* Menu shader */

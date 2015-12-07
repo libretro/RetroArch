@@ -47,7 +47,8 @@
 #include "deps/7zip/7zCrc.h"
 #include "deps/7zip/7zFile.h"
 
-static bool Utf16_To_Char(uint8_t **utf_data, size_t *dest_len, const uint16_t *in)
+static bool Utf16_To_Char(uint8_t **utf_data,
+      size_t *dest_len, const uint16_t *in)
 {
    unsigned len    = 0;
 
@@ -63,11 +64,13 @@ static bool Utf16_To_Char(uint8_t **utf_data, size_t *dest_len, const uint16_t *
    return utf16_conv_utf8(*utf_data, dest_len, in, len);
 }
 
-static bool ConvertUtf16toCharString(const uint16_t *in, char *s, size_t len)
+static bool ConvertUtf16toCharString(const uint16_t *in,
+      char *s, size_t len)
 {
    size_t     dest_len  = 0;
    uint8_t *utf16_data  = NULL;
-   bool            ret  = Utf16_To_Char(&utf16_data, &dest_len, in);
+   bool            ret  = Utf16_To_Char(
+         &utf16_data, &dest_len, in);
 
    if (ret)
    {

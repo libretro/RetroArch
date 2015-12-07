@@ -43,6 +43,8 @@ struct menu_entries
    rarch_setting_t *list_settings;
 };
 
+static menu_entries_t *menu_entries_data;
+
 static void menu_list_free_list(file_list_t *list)
 {
    unsigned i;
@@ -352,18 +354,9 @@ void menu_entries_refresh(file_list_t *list)
    }
 }
 
-static menu_entries_t *menu_entries_get_ptr(void)
-{
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
-      return NULL;
-
-   return menu->entries;
-}
-
 rarch_setting_t *menu_setting_get_ptr(void)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
+   menu_entries_t *entries = menu_entries_data;
 
    if (!entries)
       return NULL;
@@ -372,7 +365,7 @@ rarch_setting_t *menu_setting_get_ptr(void)
 
 menu_list_t *menu_list_get_ptr(void)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
+   menu_entries_t *entries = menu_entries_data;
    if (!entries)
       return NULL;
    return entries->menu_list;
@@ -381,7 +374,7 @@ menu_list_t *menu_list_get_ptr(void)
 /* Sets the starting index of the menu entry list. */
 void menu_entries_set_start(size_t i)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
+   menu_entries_t *entries = menu_entries_data;
    
    if (entries)
       entries->begin = i;
@@ -390,7 +383,7 @@ void menu_entries_set_start(size_t i)
 /* Returns the starting index of the menu entry list. */
 size_t menu_entries_get_start(void)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
+   menu_entries_t *entries = menu_entries_data;
    
    if (!entries)
      return 0;
@@ -506,7 +499,7 @@ file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
 
 bool menu_entries_needs_refresh(void)
 {
-   menu_entries_t *entries   = menu_entries_get_ptr();
+   menu_entries_t *entries = menu_entries_data;
 
    if (!entries || entries->nonblocking_refresh)
       return false;
@@ -517,7 +510,7 @@ bool menu_entries_needs_refresh(void)
 
 void menu_entries_set_refresh(bool nonblocking)
 {
-   menu_entries_t *entries   = menu_entries_get_ptr();
+   menu_entries_t *entries = menu_entries_data;
    if (entries)
    {
       if (nonblocking)
@@ -529,7 +522,7 @@ void menu_entries_set_refresh(bool nonblocking)
 
 void menu_entries_unset_refresh(bool nonblocking)
 {
-   menu_entries_t *entries   = menu_entries_get_ptr();
+   menu_entries_t *entries = menu_entries_data;
    if (entries)
    {
       if (nonblocking)
@@ -541,20 +534,16 @@ void menu_entries_unset_refresh(bool nonblocking)
 
 bool menu_entries_init(void *data)
 {
-   menu_entries_t *entries = NULL;
-   menu_handle_t *menu     = (menu_handle_t*)data;
-   if (!menu)
-      goto error;
-
-   entries = (menu_entries_t*)calloc(1, sizeof(*entries));
+   menu_entries_t *entries = (menu_entries_t*)
+      calloc(1, sizeof(*entries));
 
    if (!entries)
       goto error;
 
-   menu->entries = (struct menu_entries*)entries;
-
    if (!(entries->menu_list = (menu_list_t*)menu_list_new()))
       goto error;
+
+   menu_entries_data = (struct menu_entries*)entries;
 
    entries->list_settings      = menu_setting_new();
 
@@ -563,14 +552,12 @@ bool menu_entries_init(void *data)
 error:
    if (entries)
       free(entries);
-   if (menu)
-      menu->entries = NULL;
    return false;
 }
 
 void menu_entries_free(void)
 {
-   menu_entries_t *entries = menu_entries_get_ptr();
+   menu_entries_t *entries = menu_entries_data;
 
    if (!entries)
       return;
@@ -581,6 +568,9 @@ void menu_entries_free(void)
 
    menu_list_free(entries->menu_list);
    entries->menu_list     = NULL;
+
+   free(menu_entries_data);
+   menu_entries_data = NULL;
 }
 
 void menu_entries_push(file_list_t *list, const char *path, const char *label,

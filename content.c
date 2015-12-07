@@ -50,6 +50,13 @@
 #include "cheevos.h"
 #endif
 
+struct sram_block
+{
+   unsigned type;
+   void *data;
+   size_t size;
+};
+
 static struct string_list *temporary_content;
 
 /**
@@ -107,8 +114,8 @@ static void dump_to_file_desperate(const void *data,
       size_t size, unsigned type)
 {
    time_t time_;
+   char timebuf[256];
    char path[PATH_MAX_LENGTH]    = {0};
-   char timebuf[PATH_MAX_LENGTH] = {0};
 #if defined(_WIN32) && !defined(_XBOX)
    const char *base = getenv("APPDATA");
 #elif defined(__CELLOS_LV2__) || defined(_XBOX)
@@ -138,12 +145,6 @@ error:
    RARCH_WARN("Failed ... Cannot recover save file.\n");
 }
 
-struct sram_block
-{
-   unsigned type;
-   void *data;
-   size_t size;
-};
 
 /**
  * save_state:
@@ -336,9 +337,7 @@ void save_ram_file(const char *path, int type)
    size_t size = core.retro_get_memory_size(type);
    void *data  = core.retro_get_memory_data(type);
 
-   if (!data)
-      return;
-   if (size == 0)
+   if (!data || size == 0)
       return;
 
    if (!retro_write_file(path, data, size))
