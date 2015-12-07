@@ -627,6 +627,7 @@ error:
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
+   static bool menu_driver_prevent_populate       = false;
    static bool menu_driver_load_no_content        = false;
    static bool menu_driver_alive                  = false;
    static bool menu_driver_data_own               = false;
@@ -635,10 +636,11 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
    switch (state)
    {
       case RARCH_MENU_CTL_DESTROY:
-         menu_driver_load_no_content = false;
-         menu_driver_alive           = false;
-         menu_driver_data_own        = false;
-         menu_driver_ctx             = NULL;
+         menu_driver_prevent_populate = false;
+         menu_driver_load_no_content  = false;
+         menu_driver_alive            = false;
+         menu_driver_data_own         = false;
+         menu_driver_ctx              = NULL;
          break;
       case RARCH_MENU_CTL_FRAME:
          if (!menu_driver_alive)
@@ -646,6 +648,14 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          if (driver->frame)
             driver->frame();
          break;
+      case RARCH_MENU_CTL_SET_PREVENT_POPULATE:
+         menu_driver_prevent_populate = true;
+         break;
+      case RARCH_MENU_CTL_UNSET_PREVENT_POPULATE:
+         menu_driver_prevent_populate = false;
+         break;
+      case RARCH_MENU_CTL_IS_PREVENT_POPULATE:
+         return menu_driver_prevent_populate;
       case RARCH_MENU_CTL_SET_TOGGLE:
          menu_driver_toggle(true);
          break;

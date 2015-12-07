@@ -1139,7 +1139,7 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb,
       free(xmb->horizontal_list);
    xmb->horizontal_list = NULL;
 
-   menu->prevent_populate = true;
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
    xmb_init_horizontal_list(menu, xmb);
    xmb_context_reset_horizontal_list(xmb, menu, themepath);
@@ -1232,10 +1232,10 @@ static void xmb_populate_entries(const char *path,
    if (!xmb)
       return;
 
-   if (menu->prevent_populate)
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_PREVENT_POPULATE, NULL))
    {
       xmb_selection_pointer_changed(false);
-      menu->prevent_populate = false;
+      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
       if (settings->menu.boxart_enable)
          xmb_update_boxart_image(xmb);
       return;
@@ -1984,7 +1984,7 @@ static void *xmb_init(void)
    xmb->depth                   = 1;
    xmb->old_depth               = 1;
    xmb->alpha                   = 0;
-   menu->prevent_populate       = false;
+   menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
 
    /* TODO/FIXME - we don't use framebuffer at all
     * for XMB, we should refactor this dependency
@@ -2565,6 +2565,7 @@ static void xmb_context_destroy(void)
 
 static void xmb_toggle(bool menu_on)
 {
+   bool tmp             = false;
    xmb_handle_t *xmb    = NULL;
    menu_handle_t *menu  = menu_driver_get_ptr();
 
@@ -2587,7 +2588,12 @@ static void xmb_toggle(bool menu_on)
    menu_animation_push(XMB_DELAY, 1.0f,
          &xmb->alpha, EASING_IN_OUT_QUAD, -1, NULL);
 
-   menu->prevent_populate = !menu_entries_needs_refresh();
+   tmp = !menu_entries_needs_refresh();
+
+   if (tmp)
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   else
+      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
 
    xmb_toggle_horizontal_list(xmb, menu);
 }

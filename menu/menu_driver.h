@@ -96,6 +96,9 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_NONE = 0,
    RARCH_MENU_CTL_DEINIT,
    RARCH_MENU_CTL_FRAME,
+   RARCH_MENU_CTL_SET_PREVENT_POPULATE,
+   RARCH_MENU_CTL_UNSET_PREVENT_POPULATE,
+   RARCH_MENU_CTL_IS_PREVENT_POPULATE,
    RARCH_MENU_CTL_SET_TEXTURE,
    RARCH_MENU_CTL_SET_TOGGLE,
    RARCH_MENU_CTL_UNSET_TOGGLE,
@@ -245,8 +248,6 @@ typedef struct
 
    content_playlist_t *playlist;
    char db_playlist_file[PATH_MAX_LENGTH];
-
-   bool prevent_populate; /* xmb hack */
 } menu_handle_t;
 
 typedef struct menu_ctx_driver

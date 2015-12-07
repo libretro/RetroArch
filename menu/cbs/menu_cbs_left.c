@@ -240,12 +240,11 @@ static int action_left_cheat_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned new_size = 0;
-   menu_handle_t *menu    = menu_driver_get_ptr();
 
    if (cheat_manager_get_size())
       new_size = cheat_manager_get_size() - 1;
    menu_entries_set_refresh(false);
-   menu->prevent_populate = true;
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    cheat_manager_realloc(new_size);
 
    return 0;
@@ -267,7 +266,7 @@ static int action_left_shader_num_passes(unsigned type, const char *label,
    if (shader->passes)
       shader->passes--;
    menu_entries_set_refresh(false);
-   menu->prevent_populate = true;
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    video_shader_resolve_parameters(NULL, menu->shader);
 
 #endif
