@@ -48,19 +48,13 @@
 
 #include "verbosity.h"
 
-#if TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR
-static aslclient asl_client;
-static int asl_inited = 0;
-#endif
-
-static bool main_verbosity;
-
 /* If this is non-NULL. RARCH_LOG and friends 
  * will write to this file. */
 static FILE *log_file;
 
 bool *retro_main_verbosity(void)
 {
+   static bool main_verbosity;
    return &main_verbosity;
 }
 
@@ -97,6 +91,13 @@ static bool RARCH_LOG_VERBOSE(void)
 
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
+#if TARGET_OS_IPHONE
+   static int asl_inited = 0;
+#if !TARGET_IPHONE_SIMULATOR
+static aslclient asl_client;
+#endif
+#endif
+
    if (!RARCH_LOG_VERBOSE())
       return;
 #if TARGET_OS_IPHONE
