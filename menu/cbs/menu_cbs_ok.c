@@ -657,7 +657,7 @@ static int generic_action_ok(const char *path,
 
 #if defined(HAVE_DYNAMIC)
          /* No content needed for this core, load core immediately. */
-         if (menu->load_no_content && settings->core.set_supports_no_game_enable)
+         if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) && settings->core.set_supports_no_game_enable)
          {
             runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
             ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);

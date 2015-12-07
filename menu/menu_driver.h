@@ -107,6 +107,7 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_SET_OWN_DRIVER,
    RARCH_MENU_CTL_UNSET_OWN_DRIVER,
    RARCH_MENU_CTL_OWNS_DRIVER,
+   RARCH_MENU_CTL_LOAD_NO_CONTENT_GET,
    RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT,
    RARCH_MENU_CTL_SET_LOAD_NO_CONTENT,
    RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT
@@ -236,8 +237,6 @@ typedef struct
    {
       char msg[PATH_MAX_LENGTH];
    } menu_state;
-
-   bool load_no_content;
 
    /* Menu shader */
    char default_glslp[PATH_MAX_LENGTH];

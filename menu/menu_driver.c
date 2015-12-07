@@ -366,17 +366,16 @@ static void menu_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
+   char *fullpath       = NULL;
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   char *fullpath       = NULL;
     
    if (!wrap_args)
       return;
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
-   wrap_args->no_content       = menu->load_no_content;
+   wrap_args->no_content       = menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL);
    if (!global->has_set.verbosity)
       wrap_args->verbose       = *retro_main_verbosity();
 
@@ -430,7 +429,6 @@ static void menu_push_to_history_playlist(void)
 bool menu_load_content(enum rarch_core_type type)
 {
    bool msg_force       = true;
-   menu_handle_t *menu  = menu_driver_get_ptr();
    char *fullpath       = NULL;
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
@@ -450,11 +448,11 @@ bool menu_load_content(enum rarch_core_type type)
       return false;
    }
 
-   menu_shader_manager_init(menu);
+   menu_shader_manager_init(menu_driver_get_ptr());
 
    event_command(EVENT_CMD_HISTORY_INIT);
 
-   if (*fullpath || (menu && menu->load_no_content))
+   if (*fullpath || menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
       menu_push_to_history_playlist();
 
    event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
@@ -629,17 +627,18 @@ error:
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
+   static bool menu_driver_load_no_content        = false;
    static bool menu_driver_alive                  = false;
    static bool menu_driver_data_own               = false;
    const menu_ctx_driver_t *driver                = menu_ctx_driver_get_ptr();
-   menu_handle_t *menu                            = menu_driver_get_ptr();
 
    switch (state)
    {
       case RARCH_MENU_CTL_DESTROY:
-         menu_driver_alive    = false;
-         menu_driver_data_own = false;
-         menu_driver_ctx      = NULL;
+         menu_driver_load_no_content = false;
+         menu_driver_alive           = false;
+         menu_driver_data_own        = false;
+         menu_driver_ctx             = NULL;
          break;
       case RARCH_MENU_CTL_FRAME:
          if (!menu_driver_alive)
@@ -681,13 +680,22 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_free(menu_driver_data);
          menu_driver_data = NULL;
          break;
+      case RARCH_MENU_CTL_LOAD_NO_CONTENT_GET:
+         {
+            bool **ptr = (bool**)data;
+            if (!ptr)
+               return false;
+            *ptr = (bool*)&menu_driver_load_no_content;
+            return true;
+         }
+         break;
       case RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT:
-         return menu->load_no_content;
+         return menu_driver_load_no_content;
       case RARCH_MENU_CTL_SET_LOAD_NO_CONTENT:
-         menu->load_no_content = true;
+         menu_driver_load_no_content = true;
          break;
       case RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT:
-         menu->load_no_content = false;
+         menu_driver_load_no_content = false;
          break;
       default:
       case RARCH_MENU_CTL_NONE:

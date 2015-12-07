@@ -981,10 +981,9 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_LOAD_CORE_DEINIT);
          {
 #ifdef HAVE_MENU
-            menu_handle_t *menu = menu_driver_get_ptr();
-            if (menu)
-               event_update_system_info(&g_system_menu,
-                     &menu->load_no_content);
+            bool *ptr = NULL;
+            if (menu_driver_ctl(RARCH_MENU_CTL_LOAD_NO_CONTENT_GET, &ptr))
+               event_update_system_info(&g_system_menu, ptr);
 #endif
          }
          break;
