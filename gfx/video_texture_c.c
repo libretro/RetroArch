@@ -212,18 +212,22 @@ unsigned video_texture_load(void *data,
       switch (type)
       {
          case TEXTURE_BACKEND_OPENGL:
+#ifdef HAVE_OPENGL
             if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR ||
                   filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
                pkt.data.custom_command.method = video_texture_png_load_wrap_gl_mipmap;
             else
                pkt.data.custom_command.method = video_texture_png_load_wrap_gl;
+#endif
             break;
          case TEXTURE_BACKEND_DIRECT3D:
+#ifdef HAVE_D3D
             if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR ||
                   filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
                pkt.data.custom_command.method = video_texture_png_load_wrap_d3d_mipmap;
             else
                pkt.data.custom_command.method = video_texture_png_load_wrap_d3d;
+#endif
             break;
          case TEXTURE_BACKEND_DEFAULT:
          default:
