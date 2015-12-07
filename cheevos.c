@@ -23,6 +23,7 @@
 
 #include "cheevos.h"
 #include "dynamic.h"
+#include "libretro.h"
 #include "net_http_special.h"
 #include "configuration.h"
 #include "performance.h"
@@ -1785,7 +1786,7 @@ static unsigned cheevos_find_game_id_nes(const struct retro_game_info *info, ret
 }
 
 
-int cheevos_load(const struct retro_game_info *info)
+int cheevos_load(const void *data)
 {
    static const uint32_t genesis_exts[] =
    {
@@ -1830,6 +1831,7 @@ int cheevos_load(const struct retro_game_info *info)
    retro_time_t timeout = 5000000;
    unsigned game_id     = 0;
    settings_t *settings = config_get_ptr();
+   const struct retro_game_info *info = (const struct retro_game_info*)data;
    
    cheevos_locals.loaded = 0;
    

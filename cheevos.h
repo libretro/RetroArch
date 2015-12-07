@@ -19,13 +19,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "libretro.h"
-
 #ifdef HAVE_MENU
 #include "menu/menu_entries.h"
 #endif
 
-int cheevos_load(const struct retro_game_info *info);
+int cheevos_load(const void *data);
 
 #ifdef HAVE_MENU
 void cheevos_populate_menu(menu_displaylist_info_t *info);
