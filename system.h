@@ -69,10 +69,6 @@ extern struct retro_system_info g_system_menu;
 
 rarch_system_info_t *rarch_system_info_get_ptr(void);
 
-void rarch_system_info_free(void);
-
-void rarch_system_info_init(void);
-
 #ifdef __cplusplus
 }
 #endif

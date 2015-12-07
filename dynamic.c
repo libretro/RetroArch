@@ -521,34 +521,33 @@ void uninit_libretro_sym(void)
    lib_handle = NULL;
 #endif
 
-   core.retro_init = NULL;
-   core.retro_deinit = NULL;
-   core.retro_api_version = NULL;
-   core.retro_get_system_info = NULL;
-   core.retro_get_system_av_info = NULL;
-   core.retro_set_environment = NULL;
-   core.retro_set_video_refresh = NULL;
-   core.retro_set_audio_sample = NULL;
-   core.retro_set_audio_sample_batch = NULL;
-   core.retro_set_input_poll = NULL;
-   core.retro_set_input_state = NULL;
+   core.retro_init                       = NULL;
+   core.retro_deinit                     = NULL;
+   core.retro_api_version                = NULL;
+   core.retro_get_system_info            = NULL;
+   core.retro_get_system_av_info         = NULL;
+   core.retro_set_environment            = NULL;
+   core.retro_set_video_refresh          = NULL;
+   core.retro_set_audio_sample           = NULL;
+   core.retro_set_audio_sample_batch     = NULL;
+   core.retro_set_input_poll             = NULL;
+   core.retro_set_input_state            = NULL;
    core.retro_set_controller_port_device = NULL;
-   core.retro_reset = NULL;
-   core.retro_run = NULL;
-   core.retro_serialize_size = NULL;
-   core.retro_serialize = NULL;
-   core.retro_unserialize = NULL;
-   core.retro_cheat_reset = NULL;
-   core.retro_cheat_set = NULL;
-   core.retro_load_game = NULL;
-   core.retro_load_game_special = NULL;
-   core.retro_unload_game = NULL;
-   core.retro_get_region = NULL;
-   core.retro_get_memory_data = NULL;
-   core.retro_get_memory_size = NULL;
+   core.retro_reset                      = NULL;
+   core.retro_run                        = NULL;
+   core.retro_serialize_size             = NULL;
+   core.retro_serialize                  = NULL;
+   core.retro_unserialize                = NULL;
+   core.retro_cheat_reset                = NULL;
+   core.retro_cheat_set                  = NULL;
+   core.retro_load_game                  = NULL;
+   core.retro_load_game_special          = NULL;
+   core.retro_unload_game                = NULL;
+   core.retro_get_region                 = NULL;
+   core.retro_get_memory_data            = NULL;
+   core.retro_get_memory_size            = NULL;
 
-   rarch_system_info_free();
-
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_FREE, NULL);
    camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
    location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
 

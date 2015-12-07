@@ -64,6 +64,18 @@
 
 #include "verbosity.h"
 
+#ifdef HAVE_ZLIB
+#define DEFAULT_EXT "zip"
+#else
+#define DEFAULT_EXT ""
+#endif
+
+static rarch_system_info_t *g_system;
+
+#ifdef HAVE_MENU
+struct retro_system_info g_system_menu;
+#endif
+
 typedef struct event_cmd_state
 {
    retro_input_t state[3];
@@ -79,6 +91,18 @@ global_t *global_get_ptr(void)
 {
    static struct global g_extern;
    return &g_extern;
+}
+
+static rarch_system_info_t *rarch_system_info_new(void)
+{
+   return (rarch_system_info_t*)calloc(1, sizeof(rarch_system_info_t)); 
+}
+
+rarch_system_info_t *rarch_system_info_get_ptr(void)
+{
+   if (!g_system)
+      g_system = rarch_system_info_new();
+   return g_system;
 }
 
 const char *rarch_main_msg_queue_pull(void)
@@ -414,9 +438,52 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    static slock_t *runloop_msg_queue_lock      = NULL;
 #endif
    settings_t *settings                        = config_get_ptr();
+   rarch_system_info_t *system                 = rarch_system_info_get_ptr();
 
    switch (state)
    {
+      case RUNLOOP_CTL_SYSTEM_INFO_INIT:
+         core.retro_get_system_info(&system->info);
+
+         if (!system->info.library_name)
+            system->info.library_name = msg_hash_to_str(MSG_UNKNOWN);
+         if (!system->info.library_version)
+            system->info.library_version = "v0";
+
+#ifndef RARCH_CONSOLE
+         strlcpy(system->title_buf, 
+               msg_hash_to_str(MSG_PROGRAM), sizeof(system->title_buf));
+         strlcat(system->title_buf, " : ", sizeof(system->title_buf));
+#endif
+         strlcat(system->title_buf, system->info.library_name, sizeof(system->title_buf));
+         strlcat(system->title_buf, " ", sizeof(system->title_buf));
+         strlcat(system->title_buf, system->info.library_version, sizeof(system->title_buf));
+         strlcpy(system->valid_extensions, system->info.valid_extensions ?
+               system->info.valid_extensions : DEFAULT_EXT,
+               sizeof(system->valid_extensions));
+         system->block_extract = system->info.block_extract;
+         break;
+      case RUNLOOP_CTL_SYSTEM_INFO_FREE:
+         if (!g_system)
+            return false;
+
+         if (g_system->core_options)
+         {
+            core_option_flush(g_system->core_options);
+            core_option_free(g_system->core_options);
+         }
+
+         /* No longer valid. */
+         if (g_system->special)
+            free(g_system->special);
+         g_system->special = NULL;
+         if (g_system->ports)
+            free(g_system->ports);
+         g_system->ports   = NULL;
+
+         free(g_system);
+         g_system = NULL;
+         break;
       case RUNLOOP_CTL_IS_FRAME_COUNT_END:
          {
             uint64_t *frame_count         = NULL;

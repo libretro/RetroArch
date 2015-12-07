@@ -1230,7 +1230,7 @@ int rarch_main_init(int argc, char *argv[])
    }
 
    init_libretro_sym(global->inited.core.type);
-   rarch_system_info_init();
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_INIT, NULL);
 
    init_drivers_pre();
 
