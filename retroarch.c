@@ -1522,13 +1522,9 @@ void rarch_main_deinit(void)
  **/
 void rarch_playlist_load_content(void *data, unsigned idx)
 {
-   unsigned i;
    const char *core_path        = NULL;
    const char *path             = NULL;
    content_playlist_t *playlist = (content_playlist_t*)data;
-#ifdef HAVE_MENU
-   menu_handle_t *menu          = menu_driver_get_ptr();
-#endif
 
    if (!playlist)
       return;
@@ -1538,13 +1534,13 @@ void rarch_playlist_load_content(void *data, unsigned idx)
 
    if (path && path[0] != '\0')
    {
+      unsigned i;
       RFILE *fp           = NULL;
       char *path_check    = NULL;
       char *path_tolower  = strdup(path);
 
       for (i = 0; i < strlen(path_tolower); ++i)
          path_tolower[i] = tolower(path_tolower[i]);
-
 
       if (strstr(path_tolower, ".zip"))
          strstr(path_tolower, ".zip")[4] = '\0';
@@ -1571,8 +1567,10 @@ void rarch_playlist_load_content(void *data, unsigned idx)
    runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
 
 #ifdef HAVE_MENU
-   if (menu)
-      menu->load_no_content = (path) ? false : true;
+   if (path)
+      menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
+   else
+      menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
 #endif
 
    rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)path);

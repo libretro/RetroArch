@@ -631,7 +631,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    static bool menu_driver_alive                  = false;
    static bool menu_driver_data_own               = false;
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+   const menu_ctx_driver_t *driver                = menu_ctx_driver_get_ptr();
+   menu_handle_t *menu                            = menu_driver_get_ptr();
 
    switch (state)
    {
@@ -679,6 +680,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_DEINIT:
          menu_free(menu_driver_data);
          menu_driver_data = NULL;
+         break;
+      case RARCH_MENU_CTL_SET_LOAD_NO_CONTENT:
+         menu->load_no_content = true;
+         break;
+      case RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT:
+         menu->load_no_content = false;
          break;
       default:
       case RARCH_MENU_CTL_NONE:
