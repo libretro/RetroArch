@@ -63,6 +63,8 @@ enum rarch_ctl_state
 
    RARCH_CTL_PREINIT,
 
+   RARCH_CTL_DESTROY,
+
    RARCH_CTL_LOAD_CONTENT,
 
 #ifdef HAVE_FFMPEG
@@ -149,8 +151,6 @@ struct rarch_main_wrap
 
    bool touched;
 };
-
-void rarch_main_free(void);
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data);
 

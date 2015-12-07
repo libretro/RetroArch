@@ -1067,18 +1067,6 @@ static bool init_state(void)
    return true;
 }
 
-void rarch_main_free(void)
-{
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
-   event_command(EVENT_CMD_DRIVERS_DEINIT);
-   event_command(EVENT_CMD_LOG_FILE_DEINIT);
-
-   runloop_ctl(RUNLOOP_CTL_STATE_FREE,  NULL);
-   runloop_ctl(RUNLOOP_CTL_GLOBAL_FREE, NULL);
-   runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
-   config_free();
-}
-
 /**
  * rarch_init_system_av_info:
  *
@@ -1292,6 +1280,20 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
+      case RARCH_CTL_DESTROY:
+         rarch_error_on_init     = false;
+         rarch_block_config_read = false;
+         rarch_force_fullscreen  = false;
+
+         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
+         event_command(EVENT_CMD_DRIVERS_DEINIT);
+         event_command(EVENT_CMD_LOG_FILE_DEINIT);
+
+         runloop_ctl(RUNLOOP_CTL_STATE_FREE,  NULL);
+         runloop_ctl(RUNLOOP_CTL_GLOBAL_FREE, NULL);
+         runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
+         config_free();
+         return true;
       case RARCH_CTL_DEINIT:
          {
             bool inited      = false;

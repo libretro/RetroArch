@@ -83,7 +83,7 @@ void main_exit(void *args)
    frontend_driver_exitspawn(settings->libretro,
          sizeof(settings->libretro));
 
-   rarch_main_free();
+   rarch_ctl(RARCH_CTL_DESTROY, NULL);
 
    ui_companion_driver_deinit();
 
