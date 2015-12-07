@@ -61,6 +61,8 @@ enum rarch_ctl_state
    /* Initialize all drivers. */
    RARCH_CTL_INIT,
 
+   RARCH_CTL_PREINIT,
+
    RARCH_CTL_LOAD_CONTENT,
 
 #ifdef HAVE_FFMPEG
@@ -147,8 +149,6 @@ struct rarch_main_wrap
 
    bool touched;
 };
-
-void rarch_main_alloc(void);
 
 void rarch_main_free(void);
 

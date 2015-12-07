@@ -261,7 +261,7 @@ int rarch_main(int argc, char *argv[], void *data)
    int ret                         = 0;
    settings_t *settings            = NULL;
 
-   rarch_main_alloc();
+   rarch_ctl(RARCH_CTL_PREINIT, NULL);
 
    frontend_driver_init_first(args);
    rarch_ctl(RARCH_CTL_INIT, NULL);

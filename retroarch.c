@@ -1067,16 +1067,6 @@ static bool init_state(void)
    return true;
 }
 
-void rarch_main_alloc(void)
-{
-   if (!config_realloc())
-      return;
-
-   event_command(EVENT_CMD_HISTORY_DEINIT);
-
-   runloop_ctl(RUNLOOP_CTL_CLEAR_STATE, NULL);
-}
-
 void rarch_main_free(void)
 {
    runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
@@ -1314,6 +1304,14 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             event_command(EVENT_CMD_DRIVERS_DEINIT);
             event_command(EVENT_CMD_DRIVERS_INIT);
          }
+         return true;
+      case RARCH_CTL_PREINIT:
+         if (!config_realloc())
+            return false;
+
+         event_command(EVENT_CMD_HISTORY_DEINIT);
+
+         runloop_ctl(RUNLOOP_CTL_CLEAR_STATE, NULL);
          return true;
       case RARCH_CTL_INIT:
          rarch_ctl(RARCH_CTL_DEINIT, NULL);
