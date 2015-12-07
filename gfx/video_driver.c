@@ -1850,6 +1850,7 @@ static bool video_pixel_frame_scale(const void *data,
 void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
+   static char video_driver_msg[256];
    unsigned output_width  = 0;
    unsigned output_height = 0;
    unsigned  output_pitch = 0;
@@ -1891,9 +1892,13 @@ void video_driver_frame(const void *data, unsigned width,
       pitch  = output_pitch;
    }
 
+   video_driver_msg[0] = '\0';
+   if (msg)
+      strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
+
    if (!current_video || !current_video->frame(
             video_driver_data, data, width, height, video_driver_frame_count,
-            pitch, msg))
+            pitch, video_driver_msg))
       video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_ACTIVE, NULL);
 
    video_driver_frame_count++;
