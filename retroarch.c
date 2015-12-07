@@ -40,6 +40,7 @@
 #include <file/file_path.h>
 #include <retro_stat.h>
 
+#include "core_info.h"
 #include "msg_hash.h"
 #include "movie.h"
 #include "verbosity.h"
@@ -1612,13 +1613,14 @@ void rarch_playlist_load_content(void *data, unsigned idx)
  * selection needs to be made from a list, otherwise
  * returns -1 and fills in @s with path to core.
  **/
-int rarch_defer_core(core_info_list_t *core_info, const char *dir,
+int rarch_defer_core(void *data, const char *dir,
       const char *path, const char *menu_label,
       char *s, size_t len)
 {
    char new_core_path[PATH_MAX_LENGTH] = {0};
    const core_info_t *info             = NULL;
    size_t supported                    = 0;
+   core_info_list_t *core_info         = (core_info_list_t*)data;
    global_t   *global                  = global_get_ptr();
 #ifdef HAVE_MENU
    uint32_t menu_label_hash            = msg_hash_calculate(menu_label);

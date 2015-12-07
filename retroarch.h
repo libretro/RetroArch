@@ -20,7 +20,6 @@
 #include <boolean.h>
 #include <retro_miscellaneous.h>
 
-#include "core_info.h"
 #include "command_event.h"
 
 #ifdef __cplusplus
@@ -205,8 +204,9 @@ void rarch_playlist_load_content(void *data, unsigned index);
  * selection needs to be made from a list, otherwise
  * returns -1 and fills in @s with path to core.
  **/
-int rarch_defer_core(core_info_list_t *data,
-      const char *dir, const char *path, const char *menu_label,
+int rarch_defer_core(void *data,
+      const char *dir, const char *path,
+      const char *menu_label,
       char *s, size_t len);
 
 /**
