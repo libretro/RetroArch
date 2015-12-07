@@ -288,14 +288,14 @@ typedef struct global
 global_t *global_get_ptr(void);
 
 /**
- * rarch_main_iterate:
+ * runloop_iterate:
  *
  * Run Libretro core in RetroArch for one frame.
  *
  * Returns: 0 on successful run, 1 if we have to wait until button input in order
  * to wake up the loop, -1 if we forcibly quit out of the RetroArch iteration loop. 
  **/
-int rarch_main_iterate(unsigned *sleep_ms);
+int runloop_iterate(unsigned *sleep_ms);
 
 void rarch_main_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);
@@ -311,7 +311,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data);
 
 typedef int (*transfer_cb_t)(void *data, size_t len);
 
-void rarch_main_data_iterate(void);
+void runloop_data_iterate(void);
 
 #ifdef __cplusplus
 }

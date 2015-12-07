@@ -303,11 +303,11 @@ int rarch_main(int argc, char *argv[], void *data)
    do
    {
       unsigned sleep_ms = 0;
-      ret = rarch_main_iterate(&sleep_ms);
+      ret = runloop_iterate(&sleep_ms);
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
-      rarch_main_data_iterate();
+      runloop_data_iterate();
    }while(ret != -1);
 
    main_exit(args);

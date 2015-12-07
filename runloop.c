@@ -1050,7 +1050,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
 
 #ifdef HAVE_OVERLAY
-static void rarch_main_iterate_linefeed_overlay(settings_t *settings)
+static void runloop_iterate_linefeed_overlay(settings_t *settings)
 {
    static char prev_overlay_restore = false;
    bool osk_enable = input_driver_ctl(RARCH_INPUT_CTL_IS_OSK_ENABLED, NULL);
@@ -1086,7 +1086,7 @@ static void rarch_main_iterate_linefeed_overlay(settings_t *settings)
  * d) Video driver no longer alive.
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
-static INLINE int rarch_main_iterate_time_to_exit(bool quit_key_pressed)
+static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 {
    bool time_to_exit             = runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL) || quit_key_pressed;
    time_to_exit                  = time_to_exit || (video_driver_ctl(RARCH_DISPLAY_CTL_IS_ALIVE, NULL) == false);
@@ -1124,14 +1124,14 @@ static INLINE int rarch_main_iterate_time_to_exit(bool quit_key_pressed)
 }
 
 /**
- * rarch_main_iterate:
+ * runloop_iterate:
  *
  * Run Libretro core in RetroArch for one frame.
  *
  * Returns: 0 on success, 1 if we have to wait until button input in order
  * to wake up the loop, -1 if we forcibly quit out of the RetroArch iteration loop.
  **/
-int rarch_main_iterate(unsigned *sleep_ms)
+int runloop_iterate(unsigned *sleep_ms)
 {
    unsigned i;
    event_cmd_state_t    cmd;
@@ -1246,10 +1246,10 @@ int rarch_main_iterate(unsigned *sleep_ms)
 #endif
 
 #ifdef HAVE_OVERLAY
-   rarch_main_iterate_linefeed_overlay(settings);
+   runloop_iterate_linefeed_overlay(settings);
 #endif
 
-   if (rarch_main_iterate_time_to_exit(rarch_main_cmd_press(cmd_ptr, RARCH_QUIT_KEY)) != 1)
+   if (runloop_iterate_time_to_exit(rarch_main_cmd_press(cmd_ptr, RARCH_QUIT_KEY)) != 1)
    {
       frame_limit_last_time = 0.0;
       return -1;
@@ -1367,7 +1367,7 @@ end:
    return 0;
 }
 
-void rarch_main_data_iterate(void)
+void runloop_data_iterate(void)
 {
    rarch_task_check();
 }

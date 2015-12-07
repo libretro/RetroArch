@@ -229,10 +229,10 @@ static void poll_iteration(void)
     {
        unsigned sleep_ms = 0;
        poll_iteration();
-       ret = rarch_main_iterate(&sleep_ms);
+       ret = runloop_iterate(&sleep_ms);
        if (ret == 1 && sleep_ms > 0)
           retro_sleep(sleep_ms);
-       rarch_main_data_iterate();
+       runloop_data_iterate();
        while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
     }
     
