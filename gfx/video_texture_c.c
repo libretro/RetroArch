@@ -152,12 +152,15 @@ static unsigned video_texture_png_load(void *data,
    return id;
 }
 
+#ifdef HAVE_THREADS
 static int video_texture_png_load_wrap(void *data)
 {
    return video_texture_png_load(data, TEXTURE_BACKEND_DEFAULT,
          TEXTURE_FILTER_LINEAR);
 }
+#endif
 
+#ifdef HAVE_OPENGL
 static int video_texture_png_load_wrap_gl_mipmap(void *data)
 {
    return video_texture_png_load(data, TEXTURE_BACKEND_OPENGL,
@@ -169,7 +172,9 @@ static int video_texture_png_load_wrap_gl(void *data)
    return video_texture_png_load(data, TEXTURE_BACKEND_OPENGL,
          TEXTURE_FILTER_LINEAR);
 }
+#endif
 
+#ifdef HAVE_D3D
 static int video_texture_png_load_wrap_d3d_mipmap(void *data)
 {
    return video_texture_png_load(data, TEXTURE_BACKEND_DIRECT3D,
@@ -181,6 +186,7 @@ static int video_texture_png_load_wrap_d3d(void *data)
    return video_texture_png_load(data, TEXTURE_BACKEND_DIRECT3D,
          TEXTURE_FILTER_LINEAR);
 }
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -190,8 +196,8 @@ unsigned video_texture_load(void *data,
       enum texture_backend_type type,
       enum texture_filter_type  filter_type)
 {
-   settings_t *settings = config_get_ptr();
 #ifdef HAVE_THREADS
+   settings_t *settings = config_get_ptr();
    const struct retro_hw_render_callback *hw_render =
       (const struct retro_hw_render_callback*)video_driver_callback();
 

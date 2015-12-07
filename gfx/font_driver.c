@@ -259,13 +259,13 @@ bool font_driver_init_first(const void **font_driver, void **font_handle,
       bool threading_hint,
       enum font_driver_render_api api)
 {
-   settings_t *settings = config_get_ptr();
    const void **new_font_driver = font_driver ? font_driver 
       : (const void**)&font_osd_driver;
    void **new_font_handle        = font_handle ? font_handle 
       : (void**)&font_osd_data;
 
 #ifdef HAVE_THREADS
+   settings_t *settings = config_get_ptr();
    const struct retro_hw_render_callback *hw_render =
       (const struct retro_hw_render_callback*)video_driver_callback();
 
