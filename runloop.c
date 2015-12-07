@@ -70,7 +70,7 @@
 #define DEFAULT_EXT ""
 #endif
 
-static rarch_system_info_t *g_system;
+static rarch_system_info_t g_system;
 
 #ifdef HAVE_MENU
 struct retro_system_info g_system_menu;
@@ -93,16 +93,9 @@ global_t *global_get_ptr(void)
    return &g_extern;
 }
 
-static rarch_system_info_t *rarch_system_info_new(void)
-{
-   return (rarch_system_info_t*)calloc(1, sizeof(rarch_system_info_t)); 
-}
-
 rarch_system_info_t *rarch_system_info_get_ptr(void)
 {
-   if (!g_system)
-      g_system = rarch_system_info_new();
-   return g_system;
+   return &g_system;
 }
 
 const char *rarch_main_msg_queue_pull(void)
@@ -464,25 +457,23 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          system->block_extract = system->info.block_extract;
          break;
       case RUNLOOP_CTL_SYSTEM_INFO_FREE:
-         if (!g_system)
-            return false;
-
-         if (g_system->core_options)
+         if (system->core_options)
          {
-            core_option_flush(g_system->core_options);
-            core_option_free(g_system->core_options);
+            core_option_flush(system->core_options);
+            core_option_free(system->core_options);
          }
 
-         /* No longer valid. */
-         if (g_system->special)
-            free(g_system->special);
-         g_system->special = NULL;
-         if (g_system->ports)
-            free(g_system->ports);
-         g_system->ports   = NULL;
+         system->core_options = NULL;
 
-         free(g_system);
-         g_system = NULL;
+         /* No longer valid. */
+         if (system->special)
+            free(system->special);
+         system->special = NULL;
+         if (system->ports)
+            free(system->ports);
+         system->ports   = NULL;
+
+         memset(&g_system, 0, sizeof(rarch_system_info_t));
          break;
       case RUNLOOP_CTL_IS_FRAME_COUNT_END:
          {
