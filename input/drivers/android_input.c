@@ -462,13 +462,8 @@ static void *android_input_init(void)
    return android;
 }
 
-static int xperia1 = -1;
-static int xperia2 = -1;
-static int archos1 = -1;
-static int archos2 = -1;
-
-static int primary_id = -1;
-static int secondary_id = -1;
+int primary_id = -1;
+int secondary_id = -1;
 
 static INLINE int android_input_poll_event_type_motion(
       android_input_data_t *android_data, AInputEvent *event,
@@ -811,13 +806,6 @@ static void handle_hotplug(android_input_data_t *android_data,
 static int android_input_get_id(AInputEvent *event)
 {
    int id = AInputEvent_getDeviceId(event);
-
-   /* Needs to be cleaned up */
-   if (id == xperia2)
-      id = xperia1;
-
-   if (id == archos2)
-      id = archos1;
 
    if (id == secondary_id)
       id = primary_id;
