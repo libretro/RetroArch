@@ -948,9 +948,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_PREPARE_DUMMY:
          {
 #ifdef HAVE_MENU
-            menu_handle_t *menu = menu_driver_get_ptr();
-            if (menu)
-               menu->load_no_content = false;
+            menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
 #endif
             runloop_data_clear_state();
 

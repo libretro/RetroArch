@@ -681,6 +681,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_free(menu_driver_data);
          menu_driver_data = NULL;
          break;
+      case RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT:
+         return menu->load_no_content;
       case RARCH_MENU_CTL_SET_LOAD_NO_CONTENT:
          menu->load_no_content = true;
          break;

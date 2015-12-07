@@ -299,7 +299,6 @@ extern void action_ok_push_quick_menu(void);
          
          if (result == NSOKButton && panel.URL)
          {
-             menu_handle_t *menu  = menu_driver_get_ptr();
              settings_t *settings = config_get_ptr();
              NSURL *url = (NSURL*)panel.URL;
              NSString *__core = url.path;
@@ -309,7 +308,7 @@ extern void action_ok_push_quick_menu(void);
                 runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)__core.UTF8String);
                 ui_companion_event_command(EVENT_CMD_LOAD_CORE);
 
-                if (menu->load_no_content && settings->core.set_supports_no_game_enable)
+                if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) && settings->core.set_supports_no_game_enable)
                 {
                    int ret = 0;
                    runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
