@@ -19,14 +19,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#ifdef HAVE_MENU
-#include "menu/menu_entries.h"
-#endif
-
 int cheevos_load(const void *data);
 
 #ifdef HAVE_MENU
-void cheevos_populate_menu(menu_displaylist_info_t *info);
+void cheevos_populate_menu(void *data);
 #endif
 
 void cheevos_get_description(unsigned cheevo_ndx, char *str, size_t len);

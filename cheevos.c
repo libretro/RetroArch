@@ -31,6 +31,7 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#include "menu/menu_entries.h"
 #endif
 
 #include "verbosity.h"
@@ -1939,12 +1940,13 @@ int cheevos_load(const void *data)
 }
 
 #ifdef HAVE_MENU
-void cheevos_populate_menu(menu_displaylist_info_t *info)
+void cheevos_populate_menu(void *data)
 {
    unsigned i;
-   const cheevo_t *end;
-   cheevo_t *cheevo;
-   settings_t *settings = config_get_ptr();
+   const cheevo_t *end           = NULL;
+   cheevo_t *cheevo              = NULL;
+   settings_t *settings          = config_get_ptr();
+   menu_displaylist_info_t *info = (menu_displaylist_info_t*)data;
    
    menu_entries_push(info->list, "Unlocked Achievements:", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
    menu_entries_push(info->list, "", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
