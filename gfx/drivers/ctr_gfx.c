@@ -24,6 +24,7 @@
 #include "ctr_gu.h"
 #include "ctr_sprite_shader_shbin.h"
 
+#include "../../command_event.h"
 #include "../../general.h"
 #include "../../driver.h"
 
