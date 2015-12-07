@@ -33,6 +33,10 @@
 #include "../../general.h"
 #include "../../driver.h"
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_display.h"
+#endif
+
 #define MAX_TOUCH 16
 
 typedef struct
@@ -319,6 +323,9 @@ static void android_input_poll_main_cmd(void)
 
             runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
             runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
+#ifdef HAVE_MENU
+            menu_display_ctl(MENU_DISPLAY_CTL_UNSET_STUB_DRAW_FRAME, NULL);
+#endif
 
             if ((android_app->sensor_state_mask
                      & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))
@@ -338,6 +345,9 @@ static void android_input_poll_main_cmd(void)
 
             runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
             runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
+#ifdef HAVE_MENU
+            menu_display_ctl(MENU_DISPLAY_CTL_SET_STUB_DRAW_FRAME, NULL);
+#endif
 
             /* Avoid draining battery while app is not being used. */
             if ((android_app->sensor_state_mask

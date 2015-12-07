@@ -256,7 +256,7 @@ bool menu_display_init_main_font(void *data,
 bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 {
    unsigned width, height;
-   static menu_display_draw_t draw_bak = NULL;
+   static menu_display_draw_t draw_bak       = NULL;
    static menu_display_draw_bg_t draw_bg_bak = NULL;
    menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
    menu_display_t  *disp      = menu_display_get_ptr();
@@ -272,8 +272,10 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          menu_disp->draw_bg = menu_display_ctx_null.draw_bg;
          break;
       case MENU_DISPLAY_CTL_UNSET_STUB_DRAW_FRAME:
-         menu_disp->draw    = draw_bak;
-         menu_disp->draw_bg = draw_bg_bak;
+         if (draw_bak != NULL)
+            menu_disp->draw    = draw_bak;
+         if (draw_bg_bak != NULL)
+            menu_disp->draw_bg = draw_bg_bak;
          break;
       case MENU_DISPLAY_CTL_FONT_BUF:
          {
