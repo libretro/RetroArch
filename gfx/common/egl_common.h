@@ -88,7 +88,7 @@ bool egl_init_context(void *data, NativeDisplayType display,
       EGLint *major, EGLint *minor,
      EGLint *n, const EGLint *attrib_ptr);
 
-bool egl_create_context(void *data, EGLint *egl_attribs);
+bool egl_create_context(void *data, const EGLint *egl_attribs);
 
 bool egl_create_surface(void *data, NativeWindowType native_window);
 

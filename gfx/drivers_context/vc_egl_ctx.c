@@ -282,11 +282,13 @@ static bool gfx_ctx_vc_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+    vc_ctx_data_t *vc = (vc_ctx_data_t*)data;
+
    if (g_egl_inited)
       return false;
 
    egl_install_sighandlers();
-   egl_set_swap_interval(data, g_interval);
+   egl_set_swap_interval(data, vc->egl.interval);
 
    g_egl_inited = true;
 
@@ -537,7 +539,7 @@ static bool gfx_ctx_vc_image_buffer_write(void *data, const void *frame, unsigne
             vc->res,
             vc->res,
             VG_IMAGE_QUALITY_NONANTIALIASED);
-      eglBuffer[index] = peglCreateImageKHR(
+      vc->eglBuffer[index] = peglCreateImageKHR(
             vc->egl.dpy,
             vc->eglimage_ctx,
             EGL_VG_PARENT_IMAGE_KHR,
