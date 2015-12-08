@@ -165,7 +165,7 @@ static void *gfx_ctx_d3d_init(void *video_driver)
 
    win32_monitor_init();
 
-   return "d3d";
+   return (void*)"d3d";
 }
 
 static void gfx_ctx_d3d_destroy(void *data)
