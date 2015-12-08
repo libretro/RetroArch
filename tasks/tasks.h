@@ -55,7 +55,7 @@ struct rarch_task {
     char *error;
 
     /* -1 = unmettered, 0-100 progress value */
-    char progress;
+    int8_t progress;
     char *title; /* handler can modify but will be free()d automatically if non-null */
 
     /* don't touch this. */
