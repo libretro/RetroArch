@@ -1226,3 +1226,44 @@ void rarch_threaded_video_send_and_wait(thread_video_t *thr, thread_packet_t *pk
       return;
    thr->send_and_wait(thr, pkt);
 }
+
+bool rarch_threaded_video_font_init(const void **font_driver, void **font_handle,
+      void *data, const char *font_path, float font_size,
+      enum font_driver_render_api api, custom_font_command_method_t func)
+{
+   thread_packet_t pkt;
+   thread_video_t *thr = (thread_video_t*)video_driver_get_ptr(true);
+
+   if (!thr)
+      return false;
+
+   pkt.type                       = CMD_FONT_INIT;
+   pkt.data.font_init.method      = func;
+   pkt.data.font_init.font_driver = font_driver;
+   pkt.data.font_init.font_handle = font_handle;
+   pkt.data.font_init.video_data  = data;
+   pkt.data.font_init.font_path   = font_path;
+   pkt.data.font_init.font_size   = font_size;
+   pkt.data.font_init.api         = api;
+
+   rarch_threaded_video_send_and_wait(thr, &pkt);
+
+   return pkt.data.font_init.return_value;
+}
+
+unsigned rarch_threaded_video_texture_load(void *data,
+      custom_command_method_t func)
+{
+   thread_video_t *thr  = (thread_video_t*)video_driver_get_ptr(true);
+   thread_packet_t pkt  = { CMD_CUSTOM_COMMAND };
+
+   if (!thr)
+      return 0;
+
+   pkt.data.custom_command.method = func;
+   pkt.data.custom_command.data   = (void*)data;
+
+   rarch_threaded_video_send_and_wait(thr, &pkt);
+
+   return pkt.data.custom_command.return_value;
+}

@@ -62,6 +62,11 @@ enum thread_cmd
    CMD_DUMMY = INT_MAX
 };
 
+typedef int (*custom_command_method_t)(void*);
+
+typedef bool (*custom_font_command_method_t)(const void **font_driver,
+      void **font_handle, void *video_data, const char *font_path,
+      float font_size, enum font_driver_render_api api);
 
 typedef struct
 {
@@ -127,16 +132,14 @@ typedef struct
 
       struct
       {
-         int (*method)(void*);
+         custom_command_method_t method;
          void* data;
          int return_value;
       } custom_command;
 
       struct
       {
-         bool (*method)(const void **font_driver,
-                        void **font_handle, void *video_data, const char *font_path,
-                        float font_size, enum font_driver_render_api api);
+         custom_font_command_method_t method;
          const void **font_driver;
          void **font_handle;
          void *video_data;
@@ -186,6 +189,14 @@ bool rarch_threaded_video_init(
 void *rarch_threaded_video_get_ptr(const video_driver_t **drv);
 
 const char *rarch_threaded_video_get_ident(void);
+
+bool rarch_threaded_video_font_init(const void **font_driver,
+      void **font_handle,
+      void *data, const char *font_path, float font_size,
+      enum font_driver_render_api api, custom_font_command_method_t func);
+
+unsigned rarch_threaded_video_texture_load(void *data,
+      custom_command_method_t func);
 
 #ifdef __cplusplus
 }

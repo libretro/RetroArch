@@ -203,11 +203,7 @@ unsigned video_texture_load(void *data,
 
    if (settings->video.threaded && !hw_render->context_type)
    {
-      thread_video_t *thr  = (thread_video_t*)video_driver_get_ptr(true);
-      thread_packet_t pkt  = { CMD_CUSTOM_COMMAND };
-
-      if (!thr)
-         return 0;
+      custom_command_method_t func = video_texture_png_load_wrap;
 
       switch (type)
       {
@@ -215,31 +211,26 @@ unsigned video_texture_load(void *data,
 #ifdef HAVE_OPENGL
             if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR ||
                   filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
-               pkt.data.custom_command.method = video_texture_png_load_wrap_gl_mipmap;
+               func = video_texture_png_load_wrap_gl_mipmap;
             else
-               pkt.data.custom_command.method = video_texture_png_load_wrap_gl;
+               func = video_texture_png_load_wrap_gl;
 #endif
             break;
          case TEXTURE_BACKEND_DIRECT3D:
 #ifdef HAVE_D3D
             if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR ||
                   filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
-               pkt.data.custom_command.method = video_texture_png_load_wrap_d3d_mipmap;
+               func = video_texture_png_load_wrap_d3d_mipmap;
             else
-               pkt.data.custom_command.method = video_texture_png_load_wrap_d3d;
+               func = video_texture_png_load_wrap_d3d;
 #endif
             break;
          case TEXTURE_BACKEND_DEFAULT:
          default:
-            pkt.data.custom_command.method = video_texture_png_load_wrap;
             break;
       }
 
-      pkt.data.custom_command.data   = (void*)data;
-
-      rarch_threaded_video_send_and_wait(thr, &pkt);
-
-      return pkt.data.custom_command.return_value;
+      return rarch_threaded_video_texture_load(data, func);
    }
 #endif
 

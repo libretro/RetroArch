@@ -263,33 +263,14 @@ bool font_driver_init_first(const void **font_driver, void **font_handle,
       : (const void**)&font_osd_driver;
    void **new_font_handle        = font_handle ? font_handle 
       : (void**)&font_osd_data;
-
 #ifdef HAVE_THREADS
    settings_t *settings = config_get_ptr();
    const struct retro_hw_render_callback *hw_render =
       (const struct retro_hw_render_callback*)video_driver_callback();
 
    if (threading_hint && settings->video.threaded && !hw_render->context_type)
-   {
-      thread_packet_t pkt;
-      thread_video_t *thr = (thread_video_t*)video_driver_get_ptr(true);
-
-      if (!thr)
-         return false;
-
-      pkt.type                       = CMD_FONT_INIT;
-      pkt.data.font_init.method      = font_init_first;
-      pkt.data.font_init.font_driver = new_font_driver;
-      pkt.data.font_init.font_handle = new_font_handle;
-      pkt.data.font_init.video_data  = data;
-      pkt.data.font_init.font_path   = font_path;
-      pkt.data.font_init.font_size   = font_size;
-      pkt.data.font_init.api         = api;
-
-      rarch_threaded_video_send_and_wait(thr, &pkt);
-
-      return pkt.data.font_init.return_value;
-   }
+      return rarch_threaded_video_font_init(new_font_driver, new_font_handle,
+            data, font_path, font_size, api, font_init_first);
 #endif
 
    return font_init_first(new_font_driver, new_font_handle,
