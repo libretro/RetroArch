@@ -125,11 +125,11 @@ static void gfx_ctx_null_bind_hw_render(void *data, bool enable)
    (void)enable;
 }
 
-static bool gfx_ctx_null_init(void *data)
+static void *gfx_ctx_null_init(void *video_driver)
 {
-   (void)data;
+   (void)video_driver;
 
-   return true;
+   return (void*)"null";
 }
 
 const gfx_ctx_driver_t gfx_ctx_null = {

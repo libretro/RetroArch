@@ -61,7 +61,7 @@ static void gfx_ctx_mali_fbdev_get_video_size(void *data,
    *height = g_height;
 }
 
-static bool gfx_ctx_mali_fbdev_init(void *data)
+static void *gfx_ctx_mali_fbdev_init(void *video_driver)
 {
    EGLint n;
    EGLint major, minor;
@@ -88,12 +88,12 @@ static bool gfx_ctx_mali_fbdev_init(void *data)
       goto error;
    }
 
-   return true;
+   return (void*)"mali";
 
 error:
    RARCH_ERR("[Mali fbdev]: EGL error: %d.\n", eglGetError());
-   gfx_ctx_mali_fbdev_destroy(data);
-   return false;
+   gfx_ctx_mali_fbdev_destroy(video_driver);
+   return NULL;
 }
 
 static void gfx_ctx_mali_fbdev_check_window(void *data, bool *quit,

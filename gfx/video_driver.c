@@ -797,7 +797,7 @@ bool video_driver_set_video_mode(unsigned width,
       return true;
    }
 
-   return gfx_ctx_set_video_mode(gfx_ctx_data_get_ptr(), width, height, fullscreen);
+   return gfx_ctx_set_video_mode(width, height, fullscreen);
 }
 
 bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
@@ -1485,7 +1485,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             video_driver_poke->get_video_output_next(video_driver_data);
             return true;
          }
-         return gfx_ctx_get_video_output_next(gfx_ctx_data_get_ptr());
+         return gfx_ctx_get_video_output_next();
       case RARCH_DISPLAY_CTL_GET_PREV_VIDEO_OUT:
          if (!video_driver_poke)
             return false;
@@ -1495,7 +1495,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             video_driver_poke->get_video_output_prev(video_driver_data);
             return true;
          }
-         return gfx_ctx_get_video_output_next(gfx_ctx_data_get_ptr());
+         return gfx_ctx_get_video_output_next();
       case RARCH_DISPLAY_CTL_INIT:
          return init_video();
       case RARCH_DISPLAY_CTL_DESTROY_DATA:

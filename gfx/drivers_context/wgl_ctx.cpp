@@ -295,23 +295,23 @@ static void gfx_ctx_wgl_get_video_size(void *data, unsigned *width, unsigned *he
    }
 }
 
-static bool gfx_ctx_wgl_init(void *data)
+static void *gfx_ctx_wgl_init(void *video_driver)
 {
    WNDCLASSEX wndclass = {0};
 
-   (void)data;
+   (void)video_driver;
 
    if (g_inited)
-      return false;
+      return NULL;
 
    win32_window_reset();
    win32_monitor_init();
 
    wndclass.lpfnWndProc   = WndProcGL;
    if (!win32_window_init(&wndclass, true, NULL))
-	   return false;
+           return NULL;
 
-   return true;
+   return (void*)"wgl";
 }
 
 static void gfx_ctx_wgl_destroy(void *data)

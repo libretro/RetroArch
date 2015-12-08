@@ -53,21 +53,18 @@ enum display_metric_types
 
 typedef void (*gfx_ctx_proc_t)(void);
 
-/* The opaque void* argument should be the overlying driver data 
- * (e.g. gl_t for OpenGL contexts).
- *
- * This will allow us in the future to have separate contexts 
- * to separate gl_t structs (if needed).
- *
- * For now, this is only relevant for D3D. */
-
 typedef struct gfx_ctx_driver
 {
-   bool (*init)(void *data);
+   /* The opaque pointer is the underlying video driver data (e.g. gl_t for
+    * OpenGL contexts). Although not advised, the context driver is allowed
+    * to hold a pointer to it as the context never outlives the video driver.
+    *
+    * The context driver is responsible for it's own data.*/
+   void* (*init)(void *video_driver);
    void (*destroy)(void *data);
 
    /* Which API to bind to. */
-   bool (*bind_api)(void *data, enum gfx_ctx_api,
+   bool (*bind_api)(void *video_driver, enum gfx_ctx_api,
          unsigned major, unsigned minor);
 
    /* Sets the swap interval. */
@@ -203,16 +200,15 @@ void find_prev_gfx_context_driver(void);
 
 bool gfx_ctx_get_metrics(enum display_metric_types type, float *value);
 
-void gfx_ctx_translate_aspect(void *data, float *aspect,
+void gfx_ctx_translate_aspect(float *aspect,
       unsigned width, unsigned height);
 
-bool gfx_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height,
+bool gfx_ctx_set_video_mode(unsigned width, unsigned height,
       bool fullscreen);
 
-void gfx_ctx_swap_buffers(void *data);
+void gfx_ctx_swap_buffers(void);
 
-bool gfx_ctx_focus(void *data);
+bool gfx_ctx_focus(void);
 
 bool gfx_ctx_image_buffer_init(void *data, const video_info_t *info);
 
@@ -220,46 +216,41 @@ bool gfx_ctx_image_buffer_write(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, bool rgb32,
       unsigned index, void **image_handle);
 
-void gfx_ctx_show_mouse(void *data, bool state);
+void gfx_ctx_show_mouse(bool state);
 
-bool gfx_ctx_has_windowed(void *data);
+bool gfx_ctx_has_windowed(void);
 
-bool gfx_ctx_check_window(void *data, bool *quit, bool *resize,
+bool gfx_ctx_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height);
 
-bool gfx_ctx_suppress_screensaver(void *data, bool enable);
+bool gfx_ctx_suppress_screensaver(bool enable);
 
-void gfx_ctx_update_window_title(void *data);
+void gfx_ctx_update_window_title(void);
 
-void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height);
+void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 
-void gfx_ctx_set_resize(void *data, unsigned width, unsigned height);
+void gfx_ctx_set_resize(unsigned width, unsigned height);
 
-void gfx_ctx_swap_interval(void *data, unsigned interval);
+void gfx_ctx_swap_interval(unsigned interval);
 
-void gfx_ctx_bind_hw_render(void *data, bool enable);
+void gfx_ctx_bind_hw_render(bool enable);
 
-void gfx_ctx_get_video_output_size(void *data,
-      unsigned *width, unsigned *height);
+void gfx_ctx_get_video_output_size(unsigned *width, unsigned *height);
 
-bool gfx_ctx_get_video_output_prev(void *data);
+bool gfx_ctx_get_video_output_prev(void);
 
-bool gfx_ctx_get_video_output_next(void *data);
+bool gfx_ctx_get_video_output_next(void);
 
 const char *gfx_ctx_get_ident(void);
 
-void gfx_ctx_free(void *data);
+void gfx_ctx_free(void);
 
-void gfx_ctx_input_driver(void *data,
-      const input_driver_t **input, void **input_data);
+void gfx_ctx_input_driver(
+        const input_driver_t **input, void **input_data);
 
 retro_proc_address_t gfx_ctx_get_proc_address(const char *sym);
 
 void *gfx_ctx_data_get_ptr(void);
-
-void gfx_ctx_data_set(void *ptr);
-
-void gfx_ctx_free_data(void);
 
 void gfx_ctx_set(const gfx_ctx_driver_t *ctx_driver);
 

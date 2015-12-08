@@ -27,11 +27,11 @@
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
 #endif
 
-static XF86VidModeModeInfo g_desktop_mode;
-static bool g_should_reset_mode;
-
-static unsigned g_major;
-static unsigned g_minor;
+typedef struct {
+   egl_ctx_data_t egl;
+   XF86VidModeModeInfo desktop_mode;
+   bool should_reset_mode;
+} xegl_ctx_data_t;
 
 static int egl_nul_handler(Display *dpy, XErrorEvent *event)
 {
@@ -42,6 +42,8 @@ static int egl_nul_handler(Display *dpy, XErrorEvent *event)
 
 static void gfx_ctx_xegl_destroy(void *data)
 {
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+
    x11_input_ctx_destroy();
    egl_destroy(data);
 
@@ -54,11 +56,13 @@ static void gfx_ctx_xegl_destroy(void *data)
 
    x11_colormap_destroy();
 
-   if (g_should_reset_mode)
+   if (xegl->should_reset_mode)
    {
-      x11_exit_fullscreen(g_x11_dpy, &g_desktop_mode);
-      g_should_reset_mode = false;
+      x11_exit_fullscreen(g_x11_dpy, &xegl->desktop_mode);
+      xegl->should_reset_mode = false;
    }
+
+   free(data);
 
    /* Do not close g_x11_dpy. We'll keep one for the entire application 
     * lifecycle to work-around nVidia EGL limitations.
@@ -81,7 +85,7 @@ EGL_BLUE_SIZE,       1, \
 EGL_ALPHA_SIZE,      0, \
 EGL_DEPTH_SIZE,      0
 
-static bool gfx_ctx_xegl_init(void *data)
+static void *gfx_ctx_xegl_init(void *video_driver)
 {
    static const EGLint egl_attribs_gl[] = {
       XEGL_ATTRIBS_BASE,
@@ -112,20 +116,26 @@ static bool gfx_ctx_xegl_init(void *data)
    const EGLint *attrib_ptr;
    EGLint major, minor;
    EGLint n;
+   xegl_ctx_data_t *xegl;
+
 
    if (g_egl_inited)
-      return false;
+      return NULL;
 
    XInitThreads();
 
-   switch (g_egl_api)
+   xegl = (xegl_ctx_data_t*)calloc(1, sizeof(xegl_ctx_data_t));
+   if (!xegl)
+      return NULL;
+
+   switch (xegl->egl.api)
    {
       case GFX_CTX_OPENGL_API:
          attrib_ptr = egl_attribs_gl;
          break;
       case GFX_CTX_OPENGL_ES_API:
 #ifdef EGL_KHR_create_context
-         if (g_major >= 3)
+         if (xegl->egl.major >= 3)
             attrib_ptr = egl_attribs_gles3;
          else
 #endif
@@ -141,33 +151,33 @@ static bool gfx_ctx_xegl_init(void *data)
    if (!x11_connect())
       goto error;
 
-   if (!egl_init_context((EGLNativeDisplayType)g_x11_dpy,
+   if (!egl_init_context(xegl, (EGLNativeDisplayType)g_x11_dpy,
             &major, &minor, &n, attrib_ptr))
    {
       egl_report_error();
       goto error;
    }
 
-   if (n == 0 || !egl_has_config())
+   if (n == 0 || !egl_has_config(xegl))
       goto error;
 
-   return true;
+   return xegl;
 
 error:
-   gfx_ctx_xegl_destroy(data);
-   return false;
+   gfx_ctx_xegl_destroy(xegl);
+   return NULL;
 }
 
-static EGLint *xegl_fill_attribs(EGLint *attr)
+static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
 {
-   switch (g_egl_api)
+   switch (xegl->egl.api)
    {
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
          {
             const struct retro_hw_render_callback *hw_render =
                (const struct retro_hw_render_callback*)video_driver_callback();
-            unsigned version = g_major * 1000 + g_minor;
+            unsigned version = xegl->egl.major * 1000 + xegl->egl.minor;
             bool core        = version >= 3001;
 #ifdef GL_DEBUG
             bool debug = true;
@@ -178,9 +188,9 @@ static EGLint *xegl_fill_attribs(EGLint *attr)
             if (core)
             {
                *attr++ = EGL_CONTEXT_MAJOR_VERSION_KHR;
-               *attr++ = g_major;
+               *attr++ = xegl->egl.major;
                *attr++ = EGL_CONTEXT_MINOR_VERSION_KHR;
-               *attr++ = g_minor;
+               *attr++ = xegl->egl.minor;
 
                /* Technically, we don't have core/compat until 3.2.
                 * Version 3.1 is either compat or not depending 
@@ -206,12 +216,12 @@ static EGLint *xegl_fill_attribs(EGLint *attr)
       case GFX_CTX_OPENGL_ES_API:
          /* Same as EGL_CONTEXT_MAJOR_VERSION. */
          *attr++ = EGL_CONTEXT_CLIENT_VERSION;
-         *attr++ = g_major ? (EGLint)g_major : 2;
+         *attr++ = xegl->egl.major ? (EGLint)xegl->egl.major : 2;
 #ifdef EGL_KHR_create_context
-         if (g_minor > 0)
+         if (xegl->egl.minor > 0)
          {
             *attr++ = EGL_CONTEXT_MINOR_VERSION_KHR;
-            *attr++ = g_minor;
+            *attr++ = xegl->egl.minor;
          }
 #endif
          break;
@@ -240,6 +250,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    XSetWindowAttributes swa = {0};
    XVisualInfo *vi = NULL;
    settings_t *settings = config_get_ptr();
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
 
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
 
@@ -248,9 +259,9 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    windowed_full = settings->video.windowed_fullscreen;
 
    attr = egl_attribs;
-   attr = xegl_fill_attribs(attr);
+   attr = xegl_fill_attribs(xegl, attr);
 
-   if (!egl_get_native_visual_id(&vid))
+   if (!egl_get_native_visual_id(xegl, &vid))
       goto error;
 
    temp.visualid = vid;
@@ -266,9 +277,9 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
    if (fullscreen && !windowed_full)
    {
-      if (x11_enter_fullscreen(g_x11_dpy, width, height, &g_desktop_mode))
+      if (x11_enter_fullscreen(g_x11_dpy, width, height, &xegl->desktop_mode))
       {
-         g_should_reset_mode = true;
+         xegl->should_reset_mode = true;
          true_full = true;
       }
       else
@@ -306,13 +317,13 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          CWBorderPixel | CWColormap | CWEventMask | (true_full ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
-   if (!egl_create_context((attr != egl_attribs) ? egl_attribs : NULL))
+   if (!egl_create_context(xegl, (attr != egl_attribs) ? egl_attribs : NULL))
    {
       egl_report_error();
       goto error;
    }
 
-   if (!egl_create_surface((EGLNativeWindowType)g_x11_win))
+   if (!egl_create_surface(xegl, (EGLNativeWindowType)g_x11_win))
       goto error;
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
@@ -356,7 +367,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    x11_event_queue_check(&event);
    x11_install_quit_atom();
 
-   egl_set_swap_interval(data, g_interval);
+   egl_set_swap_interval(xegl, xegl->egl.interval);
 
    /* This can blow up on some drivers. It's not fatal, 
     * so override errors for this call.
@@ -367,7 +378,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    XSetErrorHandler(old_handler);
 
    XFree(vi);
-   g_egl_inited    = true;
+   g_egl_inited = true;
 
    if (!x11_input_ctx_new(true_full))
       goto error;
@@ -423,13 +434,11 @@ static bool gfx_ctx_xegl_has_windowed(void *data)
    return true;
 }
 
-static bool gfx_ctx_xegl_bind_api(void *data,
+static bool gfx_ctx_xegl_bind_api(void *video_driver,
    enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)data;
-
-   g_major   = major;
-   g_minor   = minor;
+   g_egl_major  = major;
+   g_egl_minor  = minor;
    g_egl_api = api;
 
    switch (api)

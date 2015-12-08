@@ -207,10 +207,7 @@ static void gfx_ctx_ps3_update_window_title(void *data)
 static void gfx_ctx_ps3_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)
-      gfx_ctx_data_get_ptr();
-
-   (void)data;
+   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)data;
 
 #if defined(HAVE_PSGL)
    if (ps3)
@@ -218,7 +215,7 @@ static void gfx_ctx_ps3_get_video_size(void *data,
 #endif
 }
 
-static bool gfx_ctx_ps3_init(void *data)
+static void *gfx_ctx_ps3_init(void *video_driver)
 {
 #ifdef HAVE_PSGL
    PSGLdeviceParameters params;
@@ -228,11 +225,11 @@ static bool gfx_ctx_ps3_init(void *data)
    gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)
       calloc(1, sizeof(gfx_ctx_ps3_data_t));
 
-   (void)data;
+   (void)video_driver;
    (void)global;
 
    if (!ps3)
-      return false;
+      return NULL;
 
 #if defined(HAVE_PSGL)
    options.enable         = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS;
@@ -291,9 +288,7 @@ static bool gfx_ctx_ps3_init(void *data)
 
    gfx_ctx_ps3_get_available_resolutions();
 
-   gfx_ctx_data_set(ps3);
-
-   return true;
+   return ps3;
 }
 
 static bool gfx_ctx_ps3_set_video_mode(void *data,
@@ -326,10 +321,7 @@ static void gfx_ctx_ps3_destroy_resources(gfx_ctx_ps3_data_t *ps3)
 
 static void gfx_ctx_ps3_destroy(void *data)
 {
-   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)
-      gfx_ctx_data_get_ptr();
-
-   (void)data;
+   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)data;
 
    if (!ps3)
       return;

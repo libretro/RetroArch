@@ -34,20 +34,24 @@
 
 #define WINDOW_BUFFERS 2
 
-static bool g_resize;
-
 screen_context_t screen_ctx;
-screen_window_t screen_win;
-static screen_display_t screen_disp;
+
+typedef struct {
+    screen_window_t screen_win;
+    screen_display_t screen_disp;
+    bool resize;
+} qnx_ctx_data_t;
 
 static void gfx_ctx_qnx_destroy(void *data)
 {
+   qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
    egl_destroy(data);
 
-   g_resize      = false;
+   qnx->resize      = false;
+   free(data);
 }
 
-static bool gfx_ctx_qnx_init(void *data)
+static void *gfx_ctx_qnx_init(void *video_driver)
 {
    EGLint n;
    EGLint major, minor;
@@ -65,6 +69,10 @@ static bool gfx_ctx_qnx_init(void *data)
    };
    int angle, size[2];
    int usage, format = SCREEN_FORMAT_RGBX8888;
+   qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)calloc(1, sizeof(*qnx));
+
+   if (!qnx)
+       goto screen_error;
 
    /* Create a screen context that will be used to 
     * create an EGL surface to receive libscreen events */
@@ -101,41 +109,41 @@ static bool gfx_ctx_qnx_init(void *data)
       goto error;
    }
 
-   if (!egl_init_context(EGL_DEFAULT_DISPLAY, &major, &minor,
+   if (!egl_init_context(qnx, EGL_DEFAULT_DISPLAY, &major, &minor,
             &n, attribs))
    {
       egl_report_error();
       goto error;
    }
 
-   if (!egl_create_context(context_attributes))
+   if (!egl_create_context(qnx, context_attributes))
    {
       egl_report_error();
       goto error;
    }
 
-   if(!screen_win)
+   if(!qnx->screen_win)
    {
-      if (screen_create_window(&screen_win, screen_ctx))
+      if (screen_create_window(&qnx->screen_win, screen_ctx))
       {
-	     RARCH_ERR("screen_create_window failed:.\n");
+             RARCH_ERR("screen_create_window failed:.\n");
 	     goto error;
       }
    }
 
-   if (screen_set_window_property_iv(screen_win, SCREEN_PROPERTY_FORMAT, &format))
+   if (screen_set_window_property_iv(qnx->screen_win, SCREEN_PROPERTY_FORMAT, &format))
    {
       RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_FORMAT] failed.\n");
       goto error;
    }
 
-   if (screen_set_window_property_iv(screen_win, SCREEN_PROPERTY_USAGE, &usage))
+   if (screen_set_window_property_iv(qnx->screen_win, SCREEN_PROPERTY_USAGE, &usage))
    {
       RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_USAGE] failed.\n");
       goto error;
    }
 
-   if (screen_get_window_property_pv(screen_win, SCREEN_PROPERTY_DISPLAY, (void **)&screen_disp))
+   if (screen_get_window_property_pv(qnx->screen_win, SCREEN_PROPERTY_DISPLAY, (void **)&qnx->screen_disp))
    {
       RARCH_ERR("screen_get_window_property_pv [SCREEN_PROPERTY_DISPLAY] failed.\n");
       goto error;
@@ -143,7 +151,7 @@ static bool gfx_ctx_qnx_init(void *data)
 
    int screen_resolution[2];
 
-   if (screen_get_display_property_iv(screen_disp, SCREEN_PROPERTY_SIZE, screen_resolution))
+   if (screen_get_display_property_iv(qnx->screen_disp, SCREEN_PROPERTY_SIZE, screen_resolution))
    {
       RARCH_ERR("screen_get_window_property_iv [SCREEN_PROPERTY_SIZE] failed.\n");
       goto error;
@@ -153,13 +161,13 @@ static bool gfx_ctx_qnx_init(void *data)
    angle = atoi(getenv("ORIENTATION"));
 
    screen_display_mode_t screen_mode;
-   if (screen_get_display_property_pv(screen_disp, SCREEN_PROPERTY_MODE, (void**)&screen_mode))
+   if (screen_get_display_property_pv(qnx->screen_disp, SCREEN_PROPERTY_MODE, (void**)&screen_mode))
    {
       RARCH_ERR("screen_get_display_property_pv [SCREEN_PROPERTY_MODE] failed.\n");
       goto error;
    }
 
-   if (screen_get_window_property_iv(screen_win, SCREEN_PROPERTY_BUFFER_SIZE, size))
+   if (screen_get_window_property_iv(qnx->screen_win, SCREEN_PROPERTY_BUFFER_SIZE, size))
    {
       RARCH_ERR("screen_get_window_property_iv [SCREEN_PROPERTY_BUFFER_SIZE] failed.\n");
       goto error;
@@ -192,36 +200,36 @@ static bool gfx_ctx_qnx_init(void *data)
    }
 
 
-   if (screen_set_window_property_iv(screen_win, SCREEN_PROPERTY_BUFFER_SIZE, buffer_size))
+   if (screen_set_window_property_iv(qnx->screen_win, SCREEN_PROPERTY_BUFFER_SIZE, buffer_size))
    {
       RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_BUFFER_SIZE] failed.\n");
       goto error;
    }
 
-   if (screen_set_window_property_iv(screen_win, SCREEN_PROPERTY_ROTATION, &angle))
+   if (screen_set_window_property_iv(qnx->screen_win, SCREEN_PROPERTY_ROTATION, &angle))
    {
       RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_ROTATION] failed.\n");
       goto error;
    }
 #endif
 
-   if (screen_create_window_buffers(screen_win, WINDOW_BUFFERS))
+   if (screen_create_window_buffers(qnx->screen_win, WINDOW_BUFFERS))
    {
       RARCH_ERR("screen_create_window_buffers failed.\n");
       goto error;
    }
 
-   if (!egl_create_surface(screen_win))
+   if (!egl_create_surface(qnx->screen_win))
       goto error;
 
-   return true;
+   return "egl";
 
 error:
    RARCH_ERR("EGL error: %d.\n", eglGetError());
-   gfx_ctx_qnx_destroy(data);
+   gfx_ctx_qnx_destroy(video_driver);
 screen_error:
    screen_stop_events(screen_ctx);
-   return false;
+   return NULL;
 }
 
 static void gfx_ctx_qnx_check_window(void *data, bool *quit,

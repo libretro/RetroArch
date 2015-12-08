@@ -101,7 +101,7 @@ static void gfx_ctx_emscripten_get_video_size(void *data,
 
 static void gfx_ctx_emscripten_destroy(void *data);
 
-static bool gfx_ctx_emscripten_init(void *data)
+static void *gfx_ctx_emscripten_init(void *video_driver)
 {
    EGLint width, height, n, major, minor;
    static const EGLint attribute_list[] =
@@ -119,12 +119,12 @@ static bool gfx_ctx_emscripten_init(void *data)
       EGL_NONE
    };
 
-   (void)data;
+   (void)video_driver;
 
    if (g_egl_inited)
    {
       RARCH_LOG("[EMSCRIPTEN/EGL]: Attempted to re-initialize driver.\n");
-      return true;
+      return (void*)"emscripten";
    }
 
    if (!egl_init_context(EGL_DEFAULT_DISPLAY, &major, &minor,
@@ -149,11 +149,11 @@ static bool gfx_ctx_emscripten_init(void *data)
    g_fb_height = height;
    RARCH_LOG("[EMSCRIPTEN/EGL]: Dimensions: %ux%u\n", width, height);
 
-   return true;
+   return (void*)"emscripten";
 
 error:
-   gfx_ctx_emscripten_destroy(data);
-   return false;
+   gfx_ctx_emscripten_destroy(video_driver);
+   return NULL;
 }
 
 static bool gfx_ctx_emscripten_set_video_mode(void *data,

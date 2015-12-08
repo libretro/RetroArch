@@ -304,7 +304,7 @@ static CGSSurfaceID attach_gl_context_to_window(CGLContextObj glCtx,
     return sid;
 }
 
-static bool gfx_ctx_cgl_init(void *data)
+static void *gfx_ctx_cgl_init(void *video_driver)
 {
    CGError err;
    gfx_ctx_cgl_data_t *cgl = (gfx_ctx_cgl_data_t*)calloc(1, sizeof(gfx_ctx_cgl_data_t));
@@ -333,12 +333,12 @@ static bool gfx_ctx_cgl_init(void *data)
 
    gfx_ctx_data_set(cgl);
 
-   return true;
+   return cgl;
 
 error:
    gfx_ctx_cgl_destroy(cgl);
 
-   return false;
+   return NULL;
 }
 
 const gfx_ctx_driver_t gfx_ctx_cgl = {

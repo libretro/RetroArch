@@ -98,25 +98,12 @@ void gfx_ctx_destroy(const gfx_ctx_driver_t *ctx_driver)
    current_video_context = NULL;
 }
 
-void gfx_ctx_data_set(void *ptr)
-{
-   if (!ptr)
-      return;
-   video_context_data = ptr;
-}
-
-void gfx_ctx_free_data(void)
-{
-   if (video_context_data)
-      free(video_context_data);
-   video_context_data = NULL;
-}
-
-void gfx_ctx_free(void *data)
+void gfx_ctx_free(void)
 {
    if (current_video_context->destroy)
-      current_video_context->destroy(data);
+      current_video_context->destroy(video_context_data);
    current_video_context = NULL;
+   video_context_data    = NULL;
 }
 
 const char *gfx_ctx_get_ident(void)
@@ -128,78 +115,78 @@ const char *gfx_ctx_get_ident(void)
    return ctx->ident;
 }
 
-void gfx_ctx_update_window_title(void *data)
+void gfx_ctx_update_window_title(void)
 {
    if (current_video_context->update_window_title)
-      current_video_context->update_window_title(data);
+      current_video_context->update_window_title(video_context_data);
 }
 
-void gfx_ctx_get_video_output_size(void *data,
+void gfx_ctx_get_video_output_size(
       unsigned *width, unsigned *height)
 {
    const gfx_ctx_driver_t *ctx = current_video_context;
 
    if (ctx->get_video_output_size)
-      ctx->get_video_output_size(data, width, height);
+      ctx->get_video_output_size(video_context_data, width, height);
 }
 
-bool gfx_ctx_get_video_output_prev(void *data)
+bool gfx_ctx_get_video_output_prev(void)
 {
    if (current_video_context->get_video_output_prev)
    {
-      current_video_context->get_video_output_prev(data);
+      current_video_context->get_video_output_prev(video_context_data);
       return true;
    }
 
    return false;
 }
 
-bool gfx_ctx_get_video_output_next(void *data)
+bool gfx_ctx_get_video_output_next(void)
 {
    if (current_video_context->get_video_output_next)
    {
-      current_video_context->get_video_output_next(data);
+      current_video_context->get_video_output_next(video_context_data);
       return true;
    }
 
    return false;
 }
 
-void gfx_ctx_swap_buffers(void *data)
+void gfx_ctx_swap_buffers(void)
 {
    if (!current_video_context)
       return;
    if (current_video_context->swap_buffers)
-      current_video_context->swap_buffers(data);
+      current_video_context->swap_buffers(video_context_data);
 }
 
-void gfx_ctx_bind_hw_render(void *data, bool enable)
+void gfx_ctx_bind_hw_render(bool enable)
 {
    if (current_video_context->bind_hw_render)
-      current_video_context->bind_hw_render(data, enable);
+      current_video_context->bind_hw_render(video_context_data, enable);
 }
 
-bool gfx_ctx_focus(void *data)
+bool gfx_ctx_focus(void)
 {
-   if (data && current_video_context->has_focus)
-      return current_video_context->has_focus(data);
+   if (video_context_data && current_video_context->has_focus)
+      return current_video_context->has_focus(video_context_data);
    return false;
 }
 
-bool gfx_ctx_set_video_mode(void *data,
+bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       bool fullscreen)
 {
    if (current_video_context->set_video_mode)
-      return current_video_context->set_video_mode(data, width, height, fullscreen);
+      return current_video_context->set_video_mode(video_context_data, width, height, fullscreen);
    return false;
 }
 
-void gfx_ctx_translate_aspect(void *data, float *aspect,
+void gfx_ctx_translate_aspect(float *aspect,
       unsigned width, unsigned height)
 {
    if (current_video_context->translate_aspect)
-      *aspect = current_video_context->translate_aspect(data, width, height);
+      *aspect = current_video_context->translate_aspect(video_context_data, width, height);
 }
 
 bool gfx_ctx_get_metrics(enum display_metric_types type, float *value)
@@ -234,64 +221,64 @@ retro_proc_address_t gfx_ctx_get_proc_address(const char *sym)
    return current_video_context->get_proc_address(sym);
 }
 
-void gfx_ctx_show_mouse(void *data, bool state)
+void gfx_ctx_show_mouse(bool state)
 {
-   if (data && current_video_context->show_mouse)
-      current_video_context->show_mouse(data, state);
+   if (video_context_data && current_video_context->show_mouse)
+      current_video_context->show_mouse(video_context_data, state);
 }
 
-bool gfx_ctx_has_windowed(void *data)
+bool gfx_ctx_has_windowed(void)
 {
-   if (data)
-      return current_video_context->has_windowed(data);
+   if (video_context_data)
+      return current_video_context->has_windowed(video_context_data);
    return true;
 }
 
-bool gfx_ctx_check_window(void *data, bool *quit, bool *resize,
+bool gfx_ctx_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
    uint64_t       *frame_count;
    
    video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
-   if (!data)
+   if (!video_context_data)
       return false;
    
-   current_video_context->check_window(data, quit, resize, width, height, (unsigned int)*frame_count);
+   current_video_context->check_window(video_context_data, quit, resize, width, height, (unsigned int)*frame_count);
 
    return true;
 }
 
-bool gfx_ctx_suppress_screensaver(void *data, bool enable)
+bool gfx_ctx_suppress_screensaver(bool enable)
 {
-   if (data && current_video_context)
-      return current_video_context->suppress_screensaver(data, enable);
+   if (video_context_data && current_video_context)
+      return current_video_context->suppress_screensaver(video_context_data, enable);
    return false;
 }
 
-void gfx_ctx_get_video_size(void *data,
+void gfx_ctx_get_video_size(
       unsigned *width, unsigned *height)
 {
-   current_video_context->get_video_size(data, width, height);
+   current_video_context->get_video_size(video_context_data, width, height);
 }
 
-void gfx_ctx_swap_interval(void *data, unsigned interval)
+void gfx_ctx_swap_interval(unsigned interval)
 {
    if (current_video_context)
-      current_video_context->swap_interval(data, interval);
+      current_video_context->swap_interval(video_context_data, interval);
 }
 
-void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+void gfx_ctx_set_resize(unsigned width, unsigned height)
 {
    if (current_video_context)
-      current_video_context->set_resize(data, width, height);
+      current_video_context->set_resize(video_context_data, width, height);
 }
 
-void gfx_ctx_input_driver(void *data,
+void gfx_ctx_input_driver(
       const input_driver_t **input, void **input_data)
 {
    if (current_video_context)
-      current_video_context->input_driver(data, input, input_data);
+      current_video_context->input_driver(video_context_data, input, input_data);
 }
 
 /**
@@ -375,15 +362,16 @@ static const gfx_ctx_driver_t *gfx_ctx_init(void *data,
 
    if (ctx->bind_api(data, api, major, minor))
    {
-      bool initialized = ctx->init(data);
+      void *ctx_data = ctx->init(data);
 
-      if (!initialized)
+      if (!ctx_data)
          return NULL;
 
       if (ctx->bind_hw_render)
-         ctx->bind_hw_render(data,
+         ctx->bind_hw_render(ctx_data,
                settings->video.shared_context && hw_render_ctx);
 
+      video_context_data = ctx_data;
       return ctx;
    }
 
