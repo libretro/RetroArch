@@ -696,9 +696,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (!ptr)
                return false;
             *ptr = (bool*)&menu_driver_load_no_content;
-            return true;
          }
-         break;
+         return true;
       case RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT:
          return menu_driver_load_no_content;
       case RARCH_MENU_CTL_SET_LOAD_NO_CONTENT:

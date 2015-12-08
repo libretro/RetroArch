@@ -546,7 +546,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
             return runloop_max_frames && (*frame_count >= runloop_max_frames);
          }
-         break;
       case RUNLOOP_CTL_SET_FRAME_TIME_LAST:
          runloop_frame_time_last = true;
          break;

@@ -1687,9 +1687,8 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             if (!new_data)
                return false;
             *new_data = video_driver_record_gpu_buffer;
-            return true;
          }
-         break;
+         return true;
       case RARCH_DISPLAY_CTL_GPU_RECORD_INIT:
          {
             unsigned *new_size  = (unsigned*)data;

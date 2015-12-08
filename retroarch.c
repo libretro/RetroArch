@@ -1352,7 +1352,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_IS_BLOCK_CONFIG_READ:
          return rarch_block_config_read;
-         break;
       case RARCH_CTL_REPLACE_CONFIG:
          {
             char *path = (char*)data;
