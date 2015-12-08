@@ -73,8 +73,6 @@ typedef struct thread_packet thread_packet_t;
 
 typedef struct thread_video thread_video_t;
 
-void rarch_threaded_video_send_and_wait(thread_video_t *thr, thread_packet_t *pkt);
-
 /**
  * rarch_threaded_video_init:
  * @out_driver                : Output video driver

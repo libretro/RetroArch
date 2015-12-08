@@ -1305,7 +1305,7 @@ const char *rarch_threaded_video_get_ident(void)
    return thr->driver->ident;
 }
 
-void rarch_threaded_video_send_and_wait(thread_video_t *thr, thread_packet_t *pkt)
+static void rarch_threaded_video_send_and_wait(thread_video_t *thr, thread_packet_t *pkt)
 {
    if (!thr || !pkt)
       return;
