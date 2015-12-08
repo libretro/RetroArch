@@ -268,3 +268,12 @@ bool egl_get_native_visual_id(EGLint *value)
    return true;
 }
 
+bool egl_has_config(void)
+{
+   if (!g_egl_config)
+   {
+      RARCH_ERR("[EGL]: No EGL configurations available.\n");
+      return false;
+   }
+   return true;
+}

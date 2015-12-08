@@ -148,11 +148,8 @@ static bool gfx_ctx_xegl_init(void *data)
       goto error;
    }
 
-   if (n == 0 || !g_egl_config)
-   {
-      RARCH_ERR("[X/EGL]: No EGL configurations available.\n");
+   if (n == 0 || !egl_has_config())
       goto error;
-   }
 
    return true;
 

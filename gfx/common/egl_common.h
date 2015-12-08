@@ -66,6 +66,8 @@ bool egl_create_surface(NativeWindowType native_window);
 
 bool egl_get_native_visual_id(EGLint *value);
 
+bool egl_has_config(void);
+
 #ifdef __cplusplus
 }
 #endif
