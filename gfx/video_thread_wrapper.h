@@ -17,10 +17,11 @@
 #ifndef RARCH_VIDEO_THREAD_H__
 #define RARCH_VIDEO_THREAD_H__
 
+#include <limits.h>
+
 #include <boolean.h>
 
-#include "font_driver.h"
-#include "video_shader_driver.h"
+#include "video_driver.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,88 +69,7 @@ typedef bool (*custom_font_command_method_t)(const void **font_driver,
       void **font_handle, void *video_data, const char *font_path,
       float font_size, enum font_driver_render_api api);
 
-typedef struct
-{
-   enum thread_cmd type;
-   union
-   {
-      bool b;
-      int i;
-      float f;
-      const char *str;
-      void *v;
-
-      struct
-      {
-         enum rarch_shader_type type;
-         const char *path;
-      } set_shader;
-
-      struct
-      {
-         unsigned width;
-         unsigned height;
-         bool force_full;
-         bool allow_rotate;
-      } set_viewport;
-
-      struct
-      {
-         unsigned index;
-         float x, y, w, h;
-      } rect;
-
-      struct
-      {
-         const struct texture_image *data;
-         unsigned num;
-      } image;
-
-      struct
-      {
-         unsigned width;
-         unsigned height;
-      } output;
-
-      struct
-      {
-         unsigned width;
-         unsigned height;
-         bool fullscreen;
-      } new_mode;
-
-      struct
-      {
-         unsigned index;
-         bool smooth;
-      } filtering;
-
-      struct
-      {
-         char msg[PATH_MAX_LENGTH];
-         struct font_params params;
-      } osd_message;
-
-      struct
-      {
-         custom_command_method_t method;
-         void* data;
-         int return_value;
-      } custom_command;
-
-      struct
-      {
-         custom_font_command_method_t method;
-         const void **font_driver;
-         void **font_handle;
-         void *video_data;
-         const char *font_path;
-         float font_size;
-         bool return_value;
-         enum font_driver_render_api api;
-      } font_init;
-   } data;
-} thread_packet_t;
+typedef struct thread_packet thread_packet_t;
 
 typedef struct thread_video thread_video_t;
 
