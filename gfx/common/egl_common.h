@@ -29,16 +29,44 @@
 extern "C" {
 #endif
 
-extern volatile sig_atomic_t g_egl_quit;
+/* Put this structure as the first member of egl-based contexts
+ * like this:
+ *    typedef struct
+ *    {
+ *       egl_ctx_data_t egl;
+ *       int member0;
+ *       char member1;
+ *     ....
+ *    } my_ctx_data_t;
+ *
+ * You can call egl functions passing the data pointer you receive
+ * or using &ctx_data->egl. It's up to you.
+ */
+typedef struct
+{
+   EGLContext ctx;
+   EGLContext hw_ctx;
+   EGLSurface surf;
+   EGLDisplay dpy;
+   EGLConfig config;
+   unsigned interval;
 
-extern EGLContext g_egl_ctx;
-extern EGLContext g_egl_hw_ctx;
-extern EGLSurface g_egl_surf;
-extern EGLDisplay g_egl_dpy;
-extern EGLConfig g_egl_config;
-extern enum gfx_ctx_api g_egl_api;
+   unsigned major;
+   unsigned minor;
+   enum gfx_ctx_api api;
+
+   /* egl "private" */
+   bool use_hw_ctx;
+} egl_ctx_data_t;
+
+extern volatile sig_atomic_t g_egl_quit;
 extern bool g_egl_inited;
-extern unsigned g_interval;
+
+/* bind_api is called before init so we need these, please
+ * try no to use them outside of bind_api() and init() */
+extern enum gfx_ctx_api g_egl_api;
+extern unsigned g_egl_major;
+extern unsigned g_egl_minor;
 
 void egl_report_error(void);
 
@@ -56,17 +84,17 @@ void egl_get_video_size(void *data, unsigned *width, unsigned *height);
 
 void egl_install_sighandlers(void);
 
-bool egl_init_context(NativeDisplayType display,
+bool egl_init_context(void *data, NativeDisplayType display,
       EGLint *major, EGLint *minor,
      EGLint *n, const EGLint *attrib_ptr);
 
-bool egl_create_context(EGLint *egl_attribs);
+bool egl_create_context(void *data, EGLint *egl_attribs);
 
-bool egl_create_surface(NativeWindowType native_window);
+bool egl_create_surface(void *data, NativeWindowType native_window);
 
-bool egl_get_native_visual_id(EGLint *value);
+bool egl_get_native_visual_id(void *data, EGLint *value);
 
-bool egl_has_config(void);
+bool egl_has_config(void *data);
 
 #ifdef __cplusplus
 }

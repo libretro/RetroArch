@@ -59,14 +59,11 @@ static bool waiting_for_flip;
 
 typedef struct gfx_ctx_drm_egl_data
 {
+   egl_ctx_data_t egl;
    RFILE *g_drm;
    unsigned g_fb_width;
    unsigned g_fb_height;
 } gfx_ctx_drm_egl_data_t;
-
-static unsigned g_major;
-
-static unsigned g_minor;
 
 struct drm_fb
 {
@@ -117,7 +114,8 @@ error:
 
 static void gfx_ctx_drm_egl_swap_interval(void *data, unsigned interval)
 {
-   g_interval = interval;
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
+   drm->egl.interval = interval;
    if (interval > 1)
       RARCH_WARN("[KMS/EGL]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
 }
@@ -206,6 +204,7 @@ static bool queue_flip(void)
 
 static void gfx_ctx_drm_egl_swap_buffers(void *data)
 {
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
    egl_swap_buffers(data);
 
    /* I guess we have to wait for flip to have taken 
@@ -213,7 +212,7 @@ static void gfx_ctx_drm_egl_swap_buffers(void *data)
     *
     * If true, we are still waiting for a flip
     * (nonblocking mode, so just drop the frame). */
-   if (wait_flip(g_interval))
+   if (wait_flip(drm->egl.interval))
       return;
 
    waiting_for_flip = queue_flip();
@@ -289,7 +288,7 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
    /* Make sure we acknowledge all page-flips. */
    wait_flip(true);
 
-   egl_destroy(NULL);
+   egl_destroy(drm);
 
    /* Restore original CRTC. */
    drm_restore_crtc();
@@ -388,14 +387,14 @@ error:
    return NULL;
 }
 
-static EGLint *egl_fill_attribs(EGLint *attr)
+static EGLint *egl_fill_attribs(gfx_ctx_drm_egl_data_t *drm, EGLint *attr)
 {
-   switch (g_egl_api)
+   switch (drm->egl.api)
    {
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
       {
-         unsigned version = g_major * 1000 + g_minor;
+         unsigned version = drm->egl.major * 1000 + drm->egl.minor;
          bool core        = version >= 3001;
 #ifdef GL_DEBUG
          bool debug       = true;
@@ -408,9 +407,9 @@ static EGLint *egl_fill_attribs(EGLint *attr)
          if (core)
          {
             *attr++ = EGL_CONTEXT_MAJOR_VERSION_KHR;
-            *attr++ = g_major;
+            *attr++ = drm->egl.major;
             *attr++ = EGL_CONTEXT_MINOR_VERSION_KHR;
-            *attr++ = g_minor;
+            *attr++ = drm->egl.minor;
 
             /* Technically, we don't have core/compat until 3.2.
              * Version 3.1 is either compat or not depending 
@@ -434,12 +433,12 @@ static EGLint *egl_fill_attribs(EGLint *attr)
 
       case GFX_CTX_OPENGL_ES_API:
          *attr++ = EGL_CONTEXT_CLIENT_VERSION;
-         *attr++ = g_major ? (EGLint)g_major : 2;
+         *attr++ = drm->egl.major ? (EGLint)drm->egl.major : 2;
 #ifdef EGL_KHR_create_context
-         if (g_minor > 0)
+         if (drm->egl.minor > 0)
          {
             *attr++ = EGL_CONTEXT_MINOR_VERSION_KHR;
-            *attr++ = g_minor;
+            *attr++ = drm->egl.minor;
          }
 #endif
          break;
@@ -510,7 +509,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
          break;
       case GFX_CTX_OPENGL_ES_API:
 #ifdef EGL_KHR_create_context
-         if (g_major >= 3)
+         if (drm->egl.major >= 3)
             attrib_ptr = egl_attribs_gles3;
          else
 #endif
@@ -583,27 +582,27 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    }
 
 
-   if (!egl_init_context((EGLNativeDisplayType)g_gbm_dev, &major,
+   if (!egl_init_context(drm, (EGLNativeDisplayType)g_gbm_dev, &major,
             &minor, &n, attrib_ptr))
    {
       egl_report_error();
       goto error;
    }
 
-   attr            = egl_fill_attribs(egl_attribs);
+   attr            = egl_fill_attribs(drm, egl_attribs);
    egl_attribs_ptr = &egl_attribs[0];
 
-   if (!egl_create_context((attr != egl_attribs_ptr) ? egl_attribs_ptr : NULL))
+   if (!egl_create_context(drm, (attr != egl_attribs_ptr) ? egl_attribs_ptr : NULL))
    {
       egl_report_error();
       goto error;
    }
 
-   if (!egl_create_surface((EGLNativeWindowType)g_gbm_surface))
+   if (!egl_create_surface(drm, (EGLNativeWindowType)g_gbm_surface))
       goto error;
 
    glClear(GL_COLOR_BUFFER_BIT);
-   egl_swap_buffers(NULL);
+   egl_swap_buffers(drm);
 
    g_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
    fb = drm_fb_get_from_bo(g_bo);
@@ -662,14 +661,14 @@ static bool gfx_ctx_drm_egl_has_windowed(void *data)
    return false;
 }
 
-static bool gfx_ctx_drm_egl_bind_api(void *data,
+static bool gfx_ctx_drm_egl_bind_api(void *video_driver,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)data;
+   (void)video_driver;
 
-   g_major   = major;
-   g_minor   = minor;
-   g_egl_api = api;
+   g_egl_major = major;
+   g_egl_minor = minor;
+   g_egl_api   = api;
 
    switch (api)
    {

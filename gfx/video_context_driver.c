@@ -103,6 +103,7 @@ void gfx_ctx_free(void)
    if (current_video_context->destroy)
       current_video_context->destroy(video_context_data);
    current_video_context = NULL;
+   video_context_data    = NULL;
 }
 
 const char *gfx_ctx_get_ident(void)

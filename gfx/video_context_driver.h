@@ -64,7 +64,7 @@ typedef struct gfx_ctx_driver
    void (*destroy)(void *data);
 
    /* Which API to bind to. */
-   bool (*bind_api)(void *data, enum gfx_ctx_api,
+   bool (*bind_api)(void *video_driver, enum gfx_ctx_api,
          unsigned major, unsigned minor);
 
    /* Sets the swap interval. */
