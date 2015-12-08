@@ -38,22 +38,25 @@
 #include "../../config.h"
 #endif
 
-static unsigned g_fb_width;
-static unsigned g_fb_height;
+typedef struct {
+   egl_ctx_data_t egl;
+   bool resize;
+   unsigned fb_width, fb_height;
 
-static EGLImageKHR eglBuffer[MAX_EGLIMAGE_TEXTURES];
-static EGLContext g_eglimage_ctx;
-static EGLSurface g_pbuff_surf;
-static VGImage g_egl_vgimage[MAX_EGLIMAGE_TEXTURES];
-static bool g_smooth;
-static unsigned g_egl_res;
+   EGLImageKHR eglBuffer[MAX_EGLIMAGE_TEXTURES];
+   EGLContext eglimage_ctx;
+   EGLSurface pbuff_surf;
+   VGImage vgimage[MAX_EGLIMAGE_TEXTURES];
+   bool smooth;
+   unsigned res;
+} vc_ctx_data_t;
 
 static PFNEGLCREATEIMAGEKHRPROC peglCreateImageKHR;
 static PFNEGLDESTROYIMAGEKHRPROC peglDestroyImageKHR;
 
-static INLINE bool gfx_ctx_vc_egl_query_extension(const char *ext)
+static INLINE bool gfx_ctx_vc_egl_query_extension(vc_ctx_data_t *vc, const char *ext)
 {
-   const char *str = (const char*)eglQueryString(g_egl_dpy, EGL_EXTENSIONS);
+   const char *str = (const char*)eglQueryString(vc->egl.dpy, EGL_EXTENSIONS);
    bool ret = str && strstr(str, ext);
    RARCH_LOG("Querying EGL extension: %s => %s\n",
          ext, ret ? "exists" : "doesn't exist");
@@ -97,9 +100,9 @@ static void gfx_ctx_vc_update_window_title(void *data)
 static void gfx_ctx_vc_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
+   vc_ctx_data_t *vc = (vc_ctx_data_t*)data;
    settings_t *settings = config_get_ptr();
 
-   (void)data;
    /* Use dispmanx upscaling if 
     * fullscreen_x and fullscreen_y are set. */
 
@@ -113,7 +116,7 @@ static void gfx_ctx_vc_get_video_size(void *data,
       /*  Calculate source and destination aspect ratios. */
 
       float srcAspect = (float)settings->video.fullscreen_x / (float)settings->video.fullscreen_y;
-      float dstAspect = (float)g_fb_width / (float)g_fb_height;
+      float dstAspect = (float)vc->fb_width / (float)vc->fb_height;
 
       /* If source and destination aspect ratios are not equal correct source width. */
       if (srcAspect != dstAspect)
@@ -124,8 +127,8 @@ static void gfx_ctx_vc_get_video_size(void *data,
    }
    else
    {
-      *width  = g_fb_width;
-      *height = g_fb_height;
+      *width  = vc->fb_width;
+      *height = vc->fb_height;
    }
 }
 
@@ -160,36 +163,42 @@ static void *gfx_ctx_vc_init(void *video_driver)
       EGL_NONE
    };
    settings_t *settings = config_get_ptr();
+   vc_ctx_data_t *vc;
 
    if (g_egl_inited)
    {
       RARCH_ERR("[VC/EGL]: Attempted to re-initialize driver.\n");
-      return (void*)"vc";
+      return NULL;
    }
+
+   vc = (vc_ctx_data_t*)calloc(1, sizeof(*vc));
+
+   if (!vc)
+       return NULL;
 
    bcm_host_init();
 
-   if (!egl_init_context(EGL_DEFAULT_DISPLAY,
+   if (!egl_init_context(vc, EGL_DEFAULT_DISPLAY,
             &major, &minor, &n, attribute_list))
    {
       egl_report_error();
       goto error;
    }
 
-   if (!egl_create_context((g_egl_api == GFX_CTX_OPENGL_ES_API) ? context_attributes : NULL))
+   if (!egl_create_context(vc, (g_egl_api == GFX_CTX_OPENGL_ES_API) ? context_attributes : NULL))
    {
       egl_report_error();
       goto error;
    }
 
    /* Create an EGL window surface. */
-   if (graphics_get_display_size(0 /* LCD */, &g_fb_width, &g_fb_height) < 0)
+   if (graphics_get_display_size(0 /* LCD */, &vc->fb_width, &vc->fb_height) < 0)
       goto error;
 
    dst_rect.x = 0;
    dst_rect.y = 0;
-   dst_rect.width = g_fb_width;
-   dst_rect.height = g_fb_height;
+   dst_rect.width = vc->fb_width;
+   dst_rect.height = vc->fb_height;
 
    src_rect.x = 0;
    src_rect.y = 0;
@@ -204,7 +213,7 @@ static void *gfx_ctx_vc_init(void *video_driver)
 
       /* Calculate source and destination aspect ratios. */
       float srcAspect = (float)settings->video.fullscreen_x / (float)settings->video.fullscreen_y;
-      float dstAspect = (float)g_fb_width / (float)g_fb_height;
+      float dstAspect = (float)vc->fb_width / (float)vc->fb_height;
       /* If source and destination aspect ratios are not equal correct source width. */
       if (srcAspect != dstAspect)
          src_rect.width = (unsigned)(settings->video.fullscreen_y * dstAspect) << 16;
@@ -214,8 +223,8 @@ static void *gfx_ctx_vc_init(void *video_driver)
    }
    else
    {
-      src_rect.width = g_fb_width << 16;
-      src_rect.height = g_fb_height << 16;
+      src_rect.width = vc->fb_width << 16;
+      src_rect.height = vc->fb_height << 16;
    }
 
    dispman_display = vc_dispmanx_display_open(0 /* LCD */);
@@ -243,7 +252,7 @@ static void *gfx_ctx_vc_init(void *video_driver)
 
       /* Calculate source and destination aspect ratios. */
       float srcAspect = (float)settings->video.fullscreen_x / (float)settings->video.fullscreen_y;
-      float dstAspect = (float)g_fb_width / (float)g_fb_height;
+      float dstAspect = (float)vc->fb_width / (float)vc->fb_height;
 
       /* If source and destination aspect ratios are not equal correct source width. */
       if (srcAspect != dstAspect)
@@ -254,15 +263,15 @@ static void *gfx_ctx_vc_init(void *video_driver)
    }
    else
    {
-      nativewindow.width = g_fb_width;
-      nativewindow.height = g_fb_height;
+      nativewindow.width = vc->fb_width;
+      nativewindow.height = vc->fb_height;
    }
    vc_dispmanx_update_submit_sync(dispman_update);
 
-   if (!egl_create_surface(&nativewindow))
+   if (!egl_create_surface(vc, &nativewindow))
       goto error;
 
-   return (void*)"vc";
+   return vc;
 
 error:
    gfx_ctx_vc_destroy(video_driver);
@@ -310,83 +319,83 @@ static bool gfx_ctx_vc_bind_api(void *data,
 
 static void gfx_ctx_vc_destroy(void *data)
 {
-   (void)data;
+   vc_ctx_data_t *vc = (vc_ctx_data_t*)data;
    unsigned i;
 
-   if (g_egl_dpy)
+   if (vc->egl.dpy)
    {
       for (i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)
       {
-         if (eglBuffer[i] && peglDestroyImageKHR)
+         if (vc->eglBuffer[i] && peglDestroyImageKHR)
          {
             eglBindAPI(EGL_OPENVG_API);
-            eglMakeCurrent(g_egl_dpy,
-                  g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
-            peglDestroyImageKHR(g_egl_dpy, eglBuffer[i]);
+            eglMakeCurrent(vc->egl.dpy,
+                  vc->pbuff_surf, vc->pbuff_surf, vc->eglimage_ctx);
+            peglDestroyImageKHR(vc->egl.dpy, vc->eglBuffer[i]);
          }
 
-         if (g_egl_vgimage[i])
+         if (vc->vgimage[i])
          {
             eglBindAPI(EGL_OPENVG_API);
-            eglMakeCurrent(g_egl_dpy,
-                  g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
-            vgDestroyImage(g_egl_vgimage[i]);
+            eglMakeCurrent(vc->egl.dpy,
+                  vc->pbuff_surf, vc->pbuff_surf, vc->eglimage_ctx);
+            vgDestroyImage(vc->vgimage[i]);
          }
       }
 
-      if (g_egl_ctx)
+      if (vc->egl.ctx)
       {
-         gfx_ctx_vc_bind_api(data, g_egl_api, 0, 0);
-         eglMakeCurrent(g_egl_dpy,
+         gfx_ctx_vc_bind_api(data, vc->egl.api, 0, 0);
+         eglMakeCurrent(vc->egl.dpy,
                EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-         eglDestroyContext(g_egl_dpy, g_egl_ctx);
+         eglDestroyContext(vc->egl.dpy, vc->egl.ctx);
       }
 
-      if (g_egl_hw_ctx)
-         eglDestroyContext(g_egl_dpy, g_egl_hw_ctx);
+      if (vc->egl.hw_ctx)
+         eglDestroyContext(vc->egl.dpy, vc->egl.hw_ctx);
 
-      if (g_eglimage_ctx)
+      if (vc->eglimage_ctx)
       {
          eglBindAPI(EGL_OPENVG_API);
-         eglMakeCurrent(g_egl_dpy,
+         eglMakeCurrent(vc->egl.dpy,
                EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-         eglDestroyContext(g_egl_dpy, g_eglimage_ctx);
+         eglDestroyContext(vc->egl.dpy, vc->eglimage_ctx);
       }
 
-      if (g_egl_surf)
+      if (vc->egl.surf)
       {
          gfx_ctx_vc_bind_api(data, g_egl_api, 0, 0);
-         eglDestroySurface(g_egl_dpy, g_egl_surf);
+         eglDestroySurface(vc->egl.dpy, vc->egl.surf);
       }
 
-      if (g_pbuff_surf)
+      if (vc->pbuff_surf)
       {
          eglBindAPI(EGL_OPENVG_API);
-         eglDestroySurface(g_egl_dpy, g_pbuff_surf);
+         eglDestroySurface(vc->egl.dpy, vc->pbuff_surf);
       }
 
       eglBindAPI(EGL_OPENVG_API);
-      eglMakeCurrent(g_egl_dpy,
+      eglMakeCurrent(vc->egl.dpy,
             EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-      gfx_ctx_vc_bind_api(data, g_egl_api, 0, 0);
-      eglMakeCurrent(g_egl_dpy,
+      gfx_ctx_vc_bind_api(data, vc->egl.api, 0, 0);
+      eglMakeCurrent(vc->egl.dpy,
             EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-      eglTerminate(g_egl_dpy);
+      eglTerminate(vc->egl.dpy);
    }
 
-   g_egl_ctx      = NULL;
-   g_egl_hw_ctx   = NULL;
-   g_eglimage_ctx = NULL;
-   g_egl_surf     = NULL;
-   g_pbuff_surf   = NULL;
-   g_egl_dpy      = NULL;
-   g_egl_config   = 0;
-   g_egl_inited   = false;
+   vc->egl.ctx      = NULL;
+   vc->egl.hw_ctx   = NULL;
+   vc->eglimage_ctx = NULL;
+   vc->egl.surf     = NULL;
+   vc->pbuff_surf   = NULL;
+   vc->egl.dpy      = NULL;
+   vc->egl.config   = 0;
+   g_egl_inited     = false;
 
    for (i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)
    {
-      eglBuffer[i]     = NULL;
-      g_egl_vgimage[i] = 0;
+      vc->eglBuffer[i]     = NULL;
+      vc->vgimage[i] = 0;
    }
 }
 
@@ -431,16 +440,17 @@ static float gfx_ctx_vc_translate_aspect(void *data,
 static bool gfx_ctx_vc_image_buffer_init(void *data,
       const video_info_t *video)
 {
+   vc_ctx_data_t *vc = (vc_ctx_data_t*)data;
    EGLBoolean result;
    EGLint pbufsurface_list[] =
    {
-      EGL_WIDTH, g_egl_res,
-      EGL_HEIGHT, g_egl_res,
+      EGL_WIDTH, vc->res,
+      EGL_HEIGHT, vc->res,
       EGL_NONE
    };
 
    /* Don't bother, we just use VGImages for our EGLImage anyway. */
-   if (g_egl_api == GFX_CTX_OPENVG_API)
+   if (vc->egl.api == GFX_CTX_OPENVG_API)
       return false;
 
    peglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC)
@@ -449,55 +459,55 @@ static bool gfx_ctx_vc_image_buffer_init(void *data,
       egl_get_proc_address("eglDestroyImageKHR");
 
    if (!peglCreateImageKHR || !peglDestroyImageKHR 
-         || !gfx_ctx_vc_egl_query_extension("KHR_image"))
+         || !gfx_ctx_vc_egl_query_extension(vc, "KHR_image"))
       return false;
 
-   g_egl_res = video->input_scale * RARCH_SCALE_BASE;
+   vc->res = video->input_scale * RARCH_SCALE_BASE;
 
    eglBindAPI(EGL_OPENVG_API);
-   g_pbuff_surf = eglCreatePbufferSurface(g_egl_dpy, g_egl_config, pbufsurface_list);
-   if (g_pbuff_surf == EGL_NO_SURFACE)
+   vc->pbuff_surf = eglCreatePbufferSurface(vc->egl.dpy, vc->egl.config, pbufsurface_list);
+   if (vc->pbuff_surf == EGL_NO_SURFACE)
    {
       RARCH_ERR("[VideoCore:EGLImage] failed to create PbufferSurface\n");
       goto fail;
    }
 
-   g_eglimage_ctx = eglCreateContext(g_egl_dpy, g_egl_config, NULL, NULL);
-   if (g_eglimage_ctx == EGL_NO_CONTEXT)
+   vc->eglimage_ctx = eglCreateContext(vc->egl.dpy, vc->egl.config, NULL, NULL);
+   if (vc->eglimage_ctx == EGL_NO_CONTEXT)
    {
       RARCH_ERR("[VideoCore:EGLImage] failed to create context\n");
       goto fail;
    }
 
    /* Test to make sure we can switch context. */
-   result = eglMakeCurrent(g_egl_dpy, g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
+   result = eglMakeCurrent(vc->egl.dpy, vc->pbuff_surf, vc->pbuff_surf, vc->eglimage_ctx);
    if (result == EGL_FALSE)
    {
       RARCH_ERR("[VideoCore:EGLImage] failed to make context current\n");
       goto fail;
    }
 
-   gfx_ctx_vc_bind_api(data, g_egl_api, 0, 0);
-   eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
+   gfx_ctx_vc_bind_api(NULL, vc->egl.api, 0, 0);
+   eglMakeCurrent(vc->egl.dpy, vc->egl.surf, vc->egl.surf, vc->egl.ctx);
 
-   g_smooth = video->smooth;
+   vc->smooth = video->smooth;
    return true;
 
 fail:
-   if (g_pbuff_surf != EGL_NO_SURFACE)
+   if (vc->pbuff_surf != EGL_NO_SURFACE)
    {
-      eglDestroySurface(g_egl_dpy, g_pbuff_surf);
-      g_pbuff_surf = EGL_NO_SURFACE;
+      eglDestroySurface(vc->egl.dpy, vc->pbuff_surf);
+      vc->pbuff_surf = EGL_NO_SURFACE;
    }
 
-   if (g_eglimage_ctx != EGL_NO_CONTEXT)
+   if (vc->eglimage_ctx != EGL_NO_CONTEXT)
    {
-      eglDestroyContext(g_egl_dpy, g_eglimage_ctx);
-      g_pbuff_surf = EGL_NO_CONTEXT;
+      eglDestroyContext(vc->egl.dpy, vc->eglimage_ctx);
+      vc->pbuff_surf = EGL_NO_CONTEXT;
    }
 
-   gfx_ctx_vc_bind_api(data, g_egl_api, 0, 0);
-   eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
+   gfx_ctx_vc_bind_api(NULL, g_egl_api, 0, 0);
+   eglMakeCurrent(vc->egl.dpy, vc->egl.surf, vc->egl.surf, vc->egl.ctx);
 
    return false;
 }
@@ -506,41 +516,42 @@ static bool gfx_ctx_vc_image_buffer_write(void *data, const void *frame, unsigne
       unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle)
 {
    bool ret = false;
+   vc_ctx_data_t *vc = (vc_ctx_data_t*)data;
 
    if (index >= MAX_EGLIMAGE_TEXTURES)
       goto error;
 
    eglBindAPI(EGL_OPENVG_API);
-   eglMakeCurrent(g_egl_dpy, g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
+   eglMakeCurrent(vc->egl.dpy, vc->pbuff_surf, vc->pbuff_surf, vc->eglimage_ctx);
 
-   if (!eglBuffer[index] || !g_egl_vgimage[index])
+   if (!vc->eglBuffer[index] || !vc->vgimage[index])
    {
-      g_egl_vgimage[index] = vgCreateImage(
+      vc->vgimage[index] = vgCreateImage(
             rgb32 ? VG_sXRGB_8888 : VG_sRGB_565,
-            g_egl_res,
-            g_egl_res,
+            vc->res,
+            vc->res,
             VG_IMAGE_QUALITY_NONANTIALIASED);
       eglBuffer[index] = peglCreateImageKHR(
-            g_egl_dpy,
-            g_eglimage_ctx,
+            vc->egl.dpy,
+            vc->eglimage_ctx,
             EGL_VG_PARENT_IMAGE_KHR,
-            (EGLClientBuffer)g_egl_vgimage[index],
+            (EGLClientBuffer)vc->vgimage[index],
             NULL);
       ret = true;
    }
 
    vgImageSubData(
-         g_egl_vgimage[index],
+         vc->vgimage[index],
          frame, pitch,
          (rgb32 ? VG_sXRGB_8888 : VG_sRGB_565),
          0,
          0,
          width,
          height);
-   *image_handle = eglBuffer[index];
+   *image_handle = vc->eglBuffer[index];
 
-   gfx_ctx_vc_bind_api(data, g_egl_api, 0, 0);
-   eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
+   gfx_ctx_vc_bind_api(NULL, vc->egl.api, 0, 0);
+   eglMakeCurrent(vc->egl.dpy, vc->egl.surf, vc->egl.surf, vc->egl.ctx);
 
    return ret;
 
