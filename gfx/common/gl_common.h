@@ -35,8 +35,6 @@
 #include "../font_driver.h"
 #include "../video_common.h"
 #include "../video_context_driver.h"
-#include "../video_shader_driver.h"
-#include "../video_shader_parse.h"
 
 #if (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
 #ifdef GL_PIXEL_PACK_BUFFER

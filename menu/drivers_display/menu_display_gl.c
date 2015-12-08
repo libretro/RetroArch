@@ -18,6 +18,7 @@
 #include "../../config.def.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_context_driver.h"
+#include "../../gfx/video_shader_driver.h"
 #include "../../gfx/video_texture.h"
 #include "../../gfx/common/gl_common.h"
 
