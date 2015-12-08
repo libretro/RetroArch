@@ -172,12 +172,8 @@
 #endif
 #endif
 
-struct gl_font_renderer;
-
 typedef struct gl
 {
-   uint64_t frame_count;
-
    bool vsync;
    GLuint texture[GFX_MAX_TEXTURES];
    unsigned tex_index; /* For use with PREV. */
