@@ -322,6 +322,12 @@ static void gfx_ctx_vc_destroy(void *data)
    vc_ctx_data_t *vc = (vc_ctx_data_t*)data;
    unsigned i;
 
+   if (!vc)
+   {
+       g_egl_inited = false;
+       return;
+   }
+
    if (vc->egl.dpy)
    {
       for (i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)

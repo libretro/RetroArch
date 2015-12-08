@@ -29,18 +29,27 @@
 #include "../common/egl_common.h"
 #include "../common/gl_common.h"
 
-struct fbdev_window native_window;
-static bool g_resize;
-static unsigned g_width, g_height;
+typedef struct {
+   egl_ctx_data_t egl;
+
+   fbdev_window native_window;
+   bool resize;
+   unsigned width, height;
+} mali_ctx_data_t;
 
 static void gfx_ctx_mali_fbdev_destroy(void *data)
 {
    int fb;
    RFILE *fd;
+   mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
 
-   egl_destroy(data);
+   if (mali)
+   {
+       egl_destroy(data);
 
-   g_resize       = false;
+       mali->resize       = false;
+       free(mali);
+   }
 
    /* Clear framebuffer and set cursor on again */
    fd = retro_fopen("/dev/tty", RFILE_MODE_READ_WRITE, -1);
@@ -55,10 +64,10 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
 static void gfx_ctx_mali_fbdev_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   (void)data;
+   mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
 
-   *width  = g_width;
-   *height = g_height;
+   *width  = mali->width;
+   *height = mali->height;
 }
 
 static void *gfx_ctx_mali_fbdev_init(void *video_driver)
@@ -76,19 +85,24 @@ static void *gfx_ctx_mali_fbdev_init(void *video_driver)
       EGL_NONE
    };
 
+   mali_ctx_data_t *mali = (mali_ctx_data_t*)calloc(1, sizeof(*mali));
+
+   if (!mali)
+       return NULL;
+
    egl_install_sighandlers();
 
    /* Disable cursor blinking so it's not visible in RetroArch. */
    system("setterm -cursor off");
    
-   if (!egl_init_context(EGL_DEFAULT_DISPLAY,
+   if (!egl_init_context(mali, EGL_DEFAULT_DISPLAY,
             &major, &minor, &n, attribs))
    {
       egl_report_error();
       goto error;
    }
 
-   return (void*)"mali";
+   return mali;
 
 error:
    RARCH_ERR("[Mali fbdev]: EGL error: %d.\n", eglGetError());
@@ -146,6 +160,7 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
       EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
       EGL_NONE
    };
+   mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
    RFILE *fd = retro_fopen("/dev/fb0", RFILE_MODE_READ_WRITE, -1);
    int fb    = retro_get_fd(fd);
 
@@ -159,19 +174,19 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
    width                = vinfo.xres;
    height               = vinfo.yres;
 
-   g_width              = width;
-   g_height             = height;
+   mali->width              = width;
+   mali->height             = height;
 
-   native_window.width  = vinfo.xres;
-   native_window.height = vinfo.yres;
+   mali->native_window.width  = vinfo.xres;
+   mali->native_window.height = vinfo.yres;
 
-   if (!egl_create_context(attribs))
+   if (!egl_create_context(mali, attribs))
    {
       egl_report_error();
       goto error;
    }
 
-   if (!egl_create_surface(&native_window))
+   if (!egl_create_surface(mali, &mali->native_window))
       goto error;
 
    return true;
