@@ -150,10 +150,11 @@ static int action_right_mainmenu(unsigned type, const char *label,
 
    if (list_size == 1)
    {
+      size_t list_size_horiz = menu_driver_list_get_size(MENU_LIST_HORIZONTAL);
+      size_t list_size_tabs  = menu_driver_list_get_size(MENU_LIST_TABS);
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
-      if (menu_driver_list_get_selection() != 
-         (menu_driver_list_get_size(MENU_LIST_HORIZONTAL)
-         + menu_driver_list_get_size(MENU_LIST_TABS))
+
+      if ((menu_driver_list_get_selection() != (list_size_horiz + list_size_tabs))
          || settings->menu.navigation.wraparound.enable)
          push_list = 1;
    }
