@@ -32,7 +32,7 @@ int system_property_get(const char *cmd, const char *args, char *value);
 
 static bool g_es3;
 
-static bool android_gfx_ctx_init(void *data)
+static void *android_gfx_ctx_init(void *video_driver)
 {
    EGLint n, major, minor;
    EGLint format;
@@ -50,39 +50,55 @@ static bool android_gfx_ctx_init(void *data)
       EGL_NONE
    };
    struct android_app *android_app = (struct android_app*)g_android;
-   
+   egl_ctx_data_t *egl;
+
    if (!android_app)
       return false;
 
+   egl = (egl_ctx_data_t*)calloc(1, sizeof(*egl));
+
    RARCH_LOG("Android EGL: GLES version = %d.\n", g_es3 ? 3 : 2);
 
-   if (!egl_init_context(EGL_DEFAULT_DISPLAY,
+   if (!egl_init_context(egl, EGL_DEFAULT_DISPLAY,
             &major, &minor, &n, attribs))
    {
       egl_report_error();
       goto error;
    }
 
-   if (!egl_get_native_visual_id(&format))
+   if (!egl_get_native_visual_id(egl, &format))
       goto error;
 
    ANativeWindow_setBuffersGeometry(android_app->window, 0, 0, format);
 
-   if (!egl_create_context(context_attributes))
+   if (!egl_create_context(egl, context_attributes))
    {
       egl_report_error();
       goto error;
    }
 
-   if (!egl_create_surface(android_app->window))
+   if (!egl_create_surface(egl, android_app->window))
       goto error;
 
-   return true;
+   return egl;
 
 error:
-   egl_destroy(NULL);
+   if (egl)
+   {
+      egl_destroy(egl);
+      free(egl);
+   }
 
-   return false;
+   return NULL;
+}
+
+static void android_gfx_ctx_destroy(void *data)
+{
+   if (data)
+   {
+      egl_destroy(data);
+      free(data);
+   }
 }
 
 static void android_gfx_ctx_check_window(void *data, bool *quit,
@@ -229,7 +245,7 @@ static bool android_gfx_ctx_get_metrics(void *data,
 
 const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_init,
-   egl_destroy,
+   android_gfx_ctx_destroy,
    android_gfx_ctx_bind_api,
    egl_set_swap_interval,
    android_gfx_ctx_set_video_mode,
