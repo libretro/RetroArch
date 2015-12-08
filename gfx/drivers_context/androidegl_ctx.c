@@ -69,19 +69,26 @@ static void *android_gfx_ctx_init(void *video_driver)
    if (!egl_get_native_visual_id(egl, &format))
       goto error;
 
+   slock_lock(android_app->mutex);
+   if (!android_app->window)
+      goto unlock_error;
+
    ANativeWindow_setBuffersGeometry(android_app->window, 0, 0, format);
 
    if (!egl_create_context(egl, context_attributes))
    {
       egl_report_error();
-      goto error;
+      goto unlock_error;
    }
 
    if (!egl_create_surface(egl, android_app->window))
-      goto error;
+      goto unlock_error;
 
+   slock_unlock(android_app->mutex);
    return egl;
 
+unlock_error:
+   slock_unlock(android_app->mutex);
 error:
    if (egl)
    {
@@ -185,10 +192,15 @@ static bool android_gfx_ctx_bind_api(void *data,
 static bool android_gfx_ctx_has_focus(void *data)
 {
    struct android_app *android_app = (struct android_app*)g_android;
-   
+   bool focused;
    if (!android_app)
       return true;
-   return (android_app->unfocused == true ) ? false : true;
+
+   slock_lock(android_app->mutex);
+   focused = !android_app->unfocused;
+   slock_unlock(android_app->mutex);
+
+   return focused;
 }
 
 static bool android_gfx_ctx_suppress_screensaver(void *data, bool enable)
