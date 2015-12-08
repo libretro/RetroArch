@@ -883,8 +883,14 @@ static void android_input_poll_memcpy(void *data)
    unsigned i, j;
    android_input_t    *android     = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
+   
+   if (!android)
+      return;
 
    memcpy(&android->copy, &android->thread, sizeof(android->copy));
+   
+   if (!android_app)
+      return;
 
    for (i = 0; i < MAX_PADS; i++)
    {
