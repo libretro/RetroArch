@@ -106,6 +106,8 @@ bool rarch_threaded_video_init(
  **/
 void *rarch_threaded_video_get_ptr(const video_driver_t **drv);
 
+const char *rarch_threaded_video_get_ident(void);
+
 bool rarch_threaded_video_font_init(const void **font_driver,
       void **font_handle,
       void *data, const char *font_path, float font_size,
