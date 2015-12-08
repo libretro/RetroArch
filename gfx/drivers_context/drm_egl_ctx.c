@@ -250,8 +250,7 @@ static void gfx_ctx_drm_egl_update_window_title(void *data)
 static void gfx_ctx_drm_egl_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-      gfx_ctx_data_get_ptr();
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
 
    if (!drm)
       return;
@@ -307,7 +306,7 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
    g_next_bo        = NULL;
 }
 
-static bool gfx_ctx_drm_egl_init(void *data)
+static void *gfx_ctx_drm_egl_init(void *video_driver)
 {
    int fd, i;
    unsigned monitor_index;
@@ -317,7 +316,7 @@ static bool gfx_ctx_drm_egl_init(void *data)
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)calloc(1, sizeof(gfx_ctx_drm_egl_data_t));
 
    if (!drm)
-      return false;
+      return NULL;
 
    fd   = -1;
    gpu_descriptors = dir_list_new("/dev/dri", NULL, false, false);
@@ -368,8 +367,6 @@ nextgpu:
 
    dir_list_free(gpu_descriptors);
 
-   gfx_ctx_data_set(drm);
-
    /* Setup the flip handler. */
    g_drm_fds.fd                         = fd;
    g_drm_fds.events                     = POLLIN;
@@ -378,7 +375,7 @@ nextgpu:
 
    g_drm_fd = fd;
 
-   return true;
+   return drm;
 
 error:
    dir_list_free(gpu_descriptors);
@@ -388,7 +385,7 @@ error:
    if (drm)
       free(drm);
 
-   return false;
+   return NULL;
 }
 
 static EGLint *egl_fill_attribs(EGLint *attr)
@@ -499,8 +496,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    int i, ret = 0;
    struct drm_fb *fb = NULL;
    settings_t *settings = config_get_ptr();
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-      gfx_ctx_data_get_ptr();
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
 
    if (!drm)
       return false;
@@ -631,14 +627,13 @@ error:
 
 static void gfx_ctx_drm_egl_destroy(void *data)
 {
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-      gfx_ctx_data_get_ptr();
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
 
    if (!drm)
       return;
 
    gfx_ctx_drm_egl_destroy_resources(drm);
-   gfx_ctx_free_data();
+   free(drm);
 }
 
 static void gfx_ctx_drm_egl_input_driver(void *data,

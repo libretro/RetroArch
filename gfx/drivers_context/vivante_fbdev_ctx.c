@@ -32,7 +32,7 @@ static void gfx_ctx_vivante_destroy(void *data)
    g_resize       = false;
 }
 
-static bool gfx_ctx_vivante_init(void *data)
+static void *gfx_ctx_vivante_init(void *video_driver)
 {
    EGLint n;
    EGLint major, minor;
@@ -50,7 +50,7 @@ static bool gfx_ctx_vivante_init(void *data)
       EGL_NONE
    };
 
-   (void)data;
+   (void)video_driver;
 
    egl_install_sighandlers();
 
@@ -61,12 +61,12 @@ static bool gfx_ctx_vivante_init(void *data)
       goto error;
    }
 
-   return true;
+   return (void*)"vivante";
 
 error:
    RARCH_ERR("[Vivante fbdev]: EGL error: %d.\n", eglGetError());
-   gfx_ctx_vivante_destroy(data);
-   return false;
+   gfx_ctx_vivante_destroy(video_driver);
+   return NULL;
 }
 
 static void gfx_ctx_vivante_check_window(void *data, bool *quit,

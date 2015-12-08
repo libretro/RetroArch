@@ -148,9 +148,9 @@ void cocoagl_gfx_ctx_update(void)
 #endif
 }
 
-static bool cocoagl_gfx_ctx_init(void *data)
+static void *cocoagl_gfx_ctx_init(void *video_driver)
 {
-   (void)data;
+   (void)video_driver;
     
 #if defined(HAVE_COCOA)
     CocoaView *g_view = (CocoaView*)nsview_get_ptr();
@@ -196,7 +196,7 @@ static bool cocoagl_gfx_ctx_init(void *data)
     [g_context makeCurrentContext];
    // Make sure the view was created
    [CocoaView get];
-   return true;
+   return "cocoa";
 }
 
 static void cocoagl_gfx_ctx_destroy(void *data)

@@ -116,8 +116,7 @@ static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
 
 static void gfx_ctx_glx_destroy(void *data)
 {
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)
-      gfx_ctx_data_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)data;
 
    if (!glx)
       return;
@@ -125,13 +124,12 @@ static void gfx_ctx_glx_destroy(void *data)
    (void)data;
 
    ctx_glx_destroy_resources(glx);
-   gfx_ctx_free_data();
+   free(data);
 }
 
 static void gfx_ctx_glx_swap_interval(void *data, unsigned interval)
 {
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)
-      gfx_ctx_data_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)data;
 
    glx->g_interval = interval;
 
@@ -156,8 +154,7 @@ static void gfx_ctx_glx_swap_interval(void *data, unsigned interval)
 
 static void gfx_ctx_glx_swap_buffers(void *data)
 {
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)
-      gfx_ctx_data_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)data;
 
    if (glx->g_is_double)
       glXSwapBuffers(g_x11_dpy, glx->g_glx_win);
@@ -171,7 +168,7 @@ static void gfx_ctx_glx_set_resize(void *data,
    (void)height;
 }
 
-static bool gfx_ctx_glx_init(void *data)
+static void *gfx_ctx_glx_init(void *data)
 {
    static const int visual_attribs[] = {
       GLX_X_RENDERABLE     , True,
@@ -241,9 +238,7 @@ static bool gfx_ctx_glx_init(void *data)
    glx->g_fbc = fbcs[0];
    XFree(fbcs);
 
-   gfx_ctx_data_set(glx);
-
-   return true;
+   return glx;
 
 error:
    ctx_glx_destroy_resources(glx);
@@ -252,7 +247,7 @@ error:
       free(glx);
    g_x11_screen = 0;
 
-   return false;
+   return NULL;
 }
 
 static bool gfx_ctx_glx_set_video_mode(void *data,
@@ -266,8 +261,7 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    XSetWindowAttributes swa = {0};
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
    settings_t *settings    = config_get_ptr();
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)
-      gfx_ctx_data_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)data;
 
    x11_install_sighandlers();
 
@@ -555,8 +549,7 @@ static void gfx_ctx_glx_show_mouse(void *data, bool state)
 
 static void gfx_ctx_glx_bind_hw_render(void *data, bool enable)
 {
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)
-      gfx_ctx_data_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)data;
 
    if (!glx)
       return;

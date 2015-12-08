@@ -131,7 +131,7 @@ static void gfx_ctx_vc_get_video_size(void *data,
 
 static void gfx_ctx_vc_destroy(void *data);
 
-static bool gfx_ctx_vc_init(void *data)
+static void *gfx_ctx_vc_init(void *video_driver)
 {
    VC_DISPMANX_ALPHA_T alpha;
    EGLint n, major, minor;
@@ -164,7 +164,7 @@ static bool gfx_ctx_vc_init(void *data)
    if (g_egl_inited)
    {
       RARCH_ERR("[VC/EGL]: Attempted to re-initialize driver.\n");
-      return false;
+      return (void*)"vc";
    }
 
    bcm_host_init();
@@ -262,11 +262,11 @@ static bool gfx_ctx_vc_init(void *data)
    if (!egl_create_surface(&nativewindow))
       goto error;
 
-   return true;
+   return (void*)"vc";
 
 error:
-   gfx_ctx_vc_destroy(data);
-   return false;
+   gfx_ctx_vc_destroy(video_driver);
+   return NULL;
 }
 
 static bool gfx_ctx_vc_set_video_mode(void *data,

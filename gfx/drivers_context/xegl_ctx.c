@@ -81,7 +81,7 @@ EGL_BLUE_SIZE,       1, \
 EGL_ALPHA_SIZE,      0, \
 EGL_DEPTH_SIZE,      0
 
-static bool gfx_ctx_xegl_init(void *data)
+static void *gfx_ctx_xegl_init(void *video_driver)
 {
    static const EGLint egl_attribs_gl[] = {
       XEGL_ATTRIBS_BASE,
@@ -114,7 +114,7 @@ static bool gfx_ctx_xegl_init(void *data)
    EGLint n;
 
    if (g_egl_inited)
-      return false;
+      return NULL;
 
    XInitThreads();
 
@@ -151,11 +151,11 @@ static bool gfx_ctx_xegl_init(void *data)
    if (n == 0 || !egl_has_config())
       goto error;
 
-   return true;
+   return (void*)"xegl";
 
 error:
-   gfx_ctx_xegl_destroy(data);
-   return false;
+   gfx_ctx_xegl_destroy(video_driver);
+   return NULL;
 }
 
 static EGLint *xegl_fill_attribs(EGLint *attr)

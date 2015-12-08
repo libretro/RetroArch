@@ -65,10 +65,8 @@ static void shell_surface_handle_configure(void *data,
       struct wl_shell_surface *shell_surface,
       uint32_t edges, int32_t width, int32_t height)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      gfx_ctx_data_get_ptr();
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   (void)data;
    (void)shell_surface;
    (void)edges;
 
@@ -96,10 +94,8 @@ static const struct wl_shell_surface_listener shell_surface_listener = {
 static void registry_handle_global(void *data, struct wl_registry *reg,
       uint32_t id, const char *interface, uint32_t version)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      gfx_ctx_data_get_ptr();
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   (void)data;
    (void)version;
 
    if (!strcmp(interface, "wl_compositor"))
@@ -218,10 +214,7 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
 
 static void gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      gfx_ctx_data_get_ptr();
-
-   (void)data;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    wl_egl_window_resize(wl->g_win, width, height, 0, 0);
 }
@@ -231,10 +224,7 @@ static void gfx_ctx_wl_update_window_title(void *data)
    char buf[128]              = {0};
    char buf_fps[128]          = {0};
    settings_t *settings       = config_get_ptr();
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      gfx_ctx_data_get_ptr();
-
-   (void)data;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    if (video_monitor_get_fps(buf, sizeof(buf),  
             buf_fps, sizeof(buf_fps)))
@@ -247,10 +237,7 @@ static void gfx_ctx_wl_update_window_title(void *data)
 static void gfx_ctx_wl_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      gfx_ctx_data_get_ptr();
-
-   (void)data;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    *width  = wl->g_width;
    *height = wl->g_height;
@@ -267,7 +254,7 @@ static void gfx_ctx_wl_get_video_size(void *data,
    EGL_ALPHA_SIZE,      0, \
    EGL_DEPTH_SIZE,      0
 
-static bool gfx_ctx_wl_init(void *data)
+static void *gfx_ctx_wl_init(void *video_driver)
 {
    static const EGLint egl_attribs_gl[] = {
       WL_EGL_ATTRIBS_BASE,
@@ -301,10 +288,10 @@ static bool gfx_ctx_wl_init(void *data)
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
       calloc(1, sizeof(gfx_ctx_wayland_data_t));
 
-   (void)data;
+   (void)video_driver;
 
    if (!wl)
-      return false;
+      return NULL;
 
    switch (g_egl_api)
    {
@@ -335,8 +322,6 @@ static bool gfx_ctx_wl_init(void *data)
       goto error;
    }
 
-   gfx_ctx_data_set(wl);
-
    wl->g_registry = wl_display_get_registry(wl->g_dpy);
    wl_registry_add_listener(wl->g_registry, &registry_listener, NULL);
    wl_display_dispatch(wl->g_dpy);
@@ -365,7 +350,7 @@ static bool gfx_ctx_wl_init(void *data)
    if (n == 0 || !egl_has_config())
       goto error;
 
-   return true;
+   return wl;
 
 error:
    gfx_ctx_wl_destroy_resources(wl);
@@ -373,9 +358,7 @@ error:
    if (wl)
       free(wl);
 
-   gfx_ctx_free_data();
-
-   return false;
+   return NULL;
 }
 
 static EGLint *egl_fill_attribs(EGLint *attr)
@@ -442,17 +425,14 @@ static EGLint *egl_fill_attribs(EGLint *attr)
 
 static void gfx_ctx_wl_destroy(void *data)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      gfx_ctx_data_get_ptr();
-
-   (void)data;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    if (!wl)
       return;
 
    gfx_ctx_wl_destroy_resources(wl);
 
-   gfx_ctx_free_data();
+   free(wl);
 }
 
 static bool gfx_ctx_wl_set_video_mode(void *data,
@@ -461,8 +441,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 {
    EGLint egl_attribs[16];
    EGLint *attr = NULL;
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      gfx_ctx_data_get_ptr();
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    egl_install_sighandlers();
 
@@ -679,8 +658,7 @@ static const struct wl_pointer_listener pointer_listener = {
 static void seat_handle_capabilities(void *data,
 struct wl_seat *seat, unsigned caps)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      gfx_ctx_data_get_ptr();
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && !wl->g_wl_keyboard)
    {

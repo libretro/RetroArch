@@ -47,7 +47,7 @@ static void gfx_ctx_qnx_destroy(void *data)
    g_resize      = false;
 }
 
-static bool gfx_ctx_qnx_init(void *data)
+static void *gfx_ctx_qnx_init(void *video_driver)
 {
    EGLint n;
    EGLint major, minor;
@@ -214,14 +214,14 @@ static bool gfx_ctx_qnx_init(void *data)
    if (!egl_create_surface(screen_win))
       goto error;
 
-   return true;
+   return "egl";
 
 error:
    RARCH_ERR("EGL error: %d.\n", eglGetError());
-   gfx_ctx_qnx_destroy(data);
+   gfx_ctx_qnx_destroy(video_driver);
 screen_error:
    screen_stop_events(screen_ctx);
-   return false;
+   return NULL;
 }
 
 static void gfx_ctx_qnx_check_window(void *data, bool *quit,

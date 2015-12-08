@@ -65,13 +65,13 @@ static void sdl_ctx_destroy_resources(gfx_ctx_sdl_data_t *sdl)
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
-static bool sdl_ctx_init(void *data)
+static void *sdl_ctx_init(void *video_driver)
 {
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)
       calloc(1, sizeof(gfx_ctx_sdl_data_t));
 
    if (!sdl)
-      return false;
+      return NULL;
 
 #ifdef HAVE_X11
    XInitThreads();
@@ -88,9 +88,7 @@ static bool sdl_ctx_init(void *data)
    RARCH_LOG("[SDL_GL] SDL %i.%i.%i gfx context driver initialized.\n",
            SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
 
-   gfx_ctx_data_set(sdl);
-
-   return true;
+   return sdl;
 
 error:
    RARCH_WARN("[SDL_GL]: Failed to initialize SDL gfx context driver: %s\n",
@@ -101,20 +99,18 @@ error:
    if (sdl)
       free(sdl);
 
-   return false;
+   return NULL;
 }
 
 static void sdl_ctx_destroy(void *data)
 {
-   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)gfx_ctx_data_get_ptr();
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
 
    if (!sdl)
       return;
-
-   (void)data;
    
    sdl_ctx_destroy_resources(sdl);
-   gfx_ctx_free_data();
+   free(sdl);
 }
 
 static bool sdl_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major,
@@ -162,9 +158,7 @@ static bool sdl_ctx_set_video_mode(void *data, unsigned width, unsigned height,
 {
    unsigned fsflag = 0;
    settings_t *settings = config_get_ptr();
-   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)gfx_ctx_data_get_ptr();
-
-   (void)data;
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
 
    sdl->g_new_width  = width;
    sdl->g_new_height = height;
@@ -231,7 +225,7 @@ static void sdl_ctx_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
    settings_t *settings = config_get_ptr();
-   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)gfx_ctx_data_get_ptr();
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
 
    if (!sdl)
       return;
@@ -269,7 +263,7 @@ static void sdl_ctx_update_window_title(void *data)
    char buf[128]           = {0};
    char buf_fps[128]       = {0};
    settings_t *settings    = config_get_ptr();
-   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)gfx_ctx_data_get_ptr();
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
 
    if (!sdl)
       return;
@@ -291,9 +285,7 @@ static void sdl_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *
                             unsigned *height, unsigned frame_count)
 {
    SDL_Event event;
-   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)gfx_ctx_data_get_ptr();
-
-   (void)data;
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
 
    SDL_PumpEvents();
 
@@ -354,7 +346,7 @@ static bool sdl_ctx_has_focus(void *data)
    unsigned flags;
 
 #ifdef HAVE_SDL2
-   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)gfx_ctx_data_get_ptr();
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
    flags = (SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS);
    return (SDL_GetWindowFlags(sdl->g_win) & flags) == flags;
 #else
@@ -381,7 +373,7 @@ static bool sdl_ctx_has_windowed(void *data)
 static void sdl_ctx_swap_buffers(void *data)
 {
 #ifdef HAVE_SDL2
-   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)gfx_ctx_data_get_ptr();
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
    SDL_GL_SwapWindow(sdl->g_win);
 #else
    SDL_GL_SwapBuffers();
