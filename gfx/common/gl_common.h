@@ -179,7 +179,6 @@ struct gl_font_renderer;
 typedef struct gl
 {
    uint64_t frame_count;
-   const shader_backend_t *shader;
 
    bool vsync;
    GLuint texture[GFX_MAX_TEXTURES];
