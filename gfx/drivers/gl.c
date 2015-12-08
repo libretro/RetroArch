@@ -2799,7 +2799,7 @@ static bool gl_set_shader(void *data,
 
    if (!video_shader_driver_init(shader, gl, path))
    {
-      bool ret = video_shader_driver_init(shader, gl, NULL);
+      video_shader_driver_init(shader, gl, NULL);
 
       RARCH_WARN("[GL]: Failed to set multipass shader. Falling back to stock.\n");
 
