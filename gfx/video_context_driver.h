@@ -210,9 +210,9 @@ void gfx_ctx_swap_buffers(void);
 
 bool gfx_ctx_focus(void);
 
-bool gfx_ctx_image_buffer_init(void *data, const video_info_t *info);
+bool gfx_ctx_image_buffer_init(const video_info_t *info);
 
-bool gfx_ctx_image_buffer_write(void *data, const void *frame,
+bool gfx_ctx_image_buffer_write(const void *frame,
       unsigned width, unsigned height, unsigned pitch, bool rgb32,
       unsigned index, void **image_handle);
 

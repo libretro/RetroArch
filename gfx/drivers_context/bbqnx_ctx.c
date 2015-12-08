@@ -37,6 +37,7 @@
 screen_context_t screen_ctx;
 
 typedef struct {
+    egl_ctx_data_t egl;
     screen_window_t screen_win;
     screen_display_t screen_disp;
     bool resize;
@@ -222,7 +223,7 @@ static void *gfx_ctx_qnx_init(void *video_driver)
    if (!egl_create_surface(qnx->screen_win))
       goto error;
 
-   return "egl";
+   return qnx;
 
 error:
    RARCH_ERR("EGL error: %d.\n", eglGetError());

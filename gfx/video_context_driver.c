@@ -197,21 +197,21 @@ bool gfx_ctx_get_metrics(enum display_metric_types type, float *value)
    return false;
 }
 
-bool gfx_ctx_image_buffer_init(void *data, const video_info_t* info)
+bool gfx_ctx_image_buffer_init(const video_info_t* info)
 {
    const gfx_ctx_driver_t *ctx = current_video_context;
    if (ctx->image_buffer_init)
-      return ctx->image_buffer_init(data, info);
+      return ctx->image_buffer_init(video_context_data, info);
    return false;
 }
 
-bool gfx_ctx_image_buffer_write(void *data, const void *frame, unsigned width,
+bool gfx_ctx_image_buffer_write(const void *frame, unsigned width,
          unsigned height, unsigned pitch, bool rgb32,
          unsigned index, void **image_handle)
 {
    const gfx_ctx_driver_t *ctx = current_video_context;
    if (ctx->image_buffer_write)
-      return ctx->image_buffer_write(data, frame, width, height, pitch,
+      return ctx->image_buffer_write(video_context_data, frame, width, height, pitch,
             rgb32, index, image_handle);
    return false;
 }

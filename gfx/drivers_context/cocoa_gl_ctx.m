@@ -196,7 +196,7 @@ static void *cocoagl_gfx_ctx_init(void *video_driver)
     [g_context makeCurrentContext];
    // Make sure the view was created
    [CocoaView get];
-   return "cocoa";
+   return (void*)"cocoa";
 }
 
 static void cocoagl_gfx_ctx_destroy(void *data)
