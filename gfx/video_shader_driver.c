@@ -32,6 +32,7 @@ static const shader_backend_t *shader_ctx_drivers[] = {
    NULL
 };
 
+static const shader_backend_t *current_shader;
 static void *shader_data;
 
 /**
@@ -56,20 +57,23 @@ const shader_backend_t *shader_ctx_find_driver(const char *ident)
 }
 
 /**
- * shader_ctx_init_first:
+ * shader_driver_ctx_init_first:
  *
- * Finds first suitable shader context driver and initializes.
+ * Finds first suitable shader context driver.
  *
- * Returns: shader context driver if found, otherwise NULL.
+ * Returns: true (1) if found, otherwise false (0).
  **/
-const shader_backend_t *shader_ctx_init_first(void)
+bool shader_driver_ctx_init_first(void)
 {
    unsigned i;
 
    for (i = 0; shader_ctx_drivers[i]; i++)
-      return shader_ctx_drivers[i];
+   {
+      current_shader = shader_ctx_drivers[i];
+      return true;
+   }
 
-   return NULL;
+   return false;
 }
 
 struct video_shader *video_shader_driver_get_current_shader(void)
@@ -83,16 +87,15 @@ struct video_shader *video_shader_driver_get_current_shader(void)
    return video_poke->get_current_shader(video_driver);
 }
 
-void video_shader_scale(unsigned idx,
-      const shader_backend_t *shader,  struct gfx_fbo_scale *scale)
+void video_shader_driver_scale(unsigned idx, struct gfx_fbo_scale *scale)
 {
-   if (!scale || !shader)
+   if (!scale || !current_shader)
       return;
 
    scale->valid = false;
 
-   if (shader->shader_scale)
-      shader->shader_scale(shader_data, idx, scale);
+   if (current_shader->shader_scale)
+      current_shader->shader_scale(shader_data, idx, scale);
 }
 
 bool video_shader_driver_init(const shader_backend_t *shader, void *data, const char *path)
@@ -107,98 +110,100 @@ bool video_shader_driver_init(const shader_backend_t *shader, void *data, const 
    if (!tmp)
       return false;
 
-   shader_data = tmp;
+   shader_data    = tmp;
+   current_shader = shader;
 
    return true;
 }
 
-void video_shader_driver_deinit(const shader_backend_t *shader)
+void video_shader_driver_deinit(void)
 {
-   if (!shader)
+   if (!current_shader)
       return;
 
-   if (shader->deinit)
-      shader->deinit(shader_data);
+   if (current_shader->deinit)
+      current_shader->deinit(shader_data);
 
-   shader_data = NULL;
+   shader_data    = NULL;
+   current_shader = NULL;
 }
 
-void video_shader_driver_use(const shader_backend_t *shader, void *data, unsigned index)
+void video_shader_driver_use(void *data, unsigned index)
 {
-   if (!shader)
+   if (!current_shader)
       return;
-   shader->use(data, shader_data, index);
+   current_shader->use(data, shader_data, index);
 }
 
-const char *video_shader_driver_get_ident(const shader_backend_t *shader)
+const char *video_shader_driver_get_ident(void)
 {
-   if (!shader)
+   if (!current_shader)
       return NULL;
-   return shader->ident;
+   return current_shader->ident;
 }
 
-bool video_shader_driver_mipmap_input(const shader_backend_t *shader, unsigned index)
+bool video_shader_driver_mipmap_input(unsigned index)
 {
-   if (!shader)
+   if (!current_shader)
       return false;
-   return shader->mipmap_input(shader_data, index);
+   return current_shader->mipmap_input(shader_data, index);
 }
 
-unsigned video_shader_driver_num_shaders(const shader_backend_t *shader)
+unsigned video_shader_driver_num_shaders(void)
 {
-   if (!shader)
+   if (!current_shader)
       return 0;
-   return shader->num_shaders(shader_data);
+   return current_shader->num_shaders(shader_data);
 }
 
-unsigned video_shader_driver_get_prev_textures(const shader_backend_t *shader)
+unsigned video_shader_driver_get_prev_textures(void)
 {
-   if (!shader)
+   if (!current_shader)
       return 0;
-   return shader->get_prev_textures(shader_data);
+   return current_shader->get_prev_textures(shader_data);
 }
 
-bool video_shader_driver_set_coords(const shader_backend_t *shader, void *handle_data, const void *data)
+bool video_shader_driver_set_coords(void *handle_data, const void *data)
 {
-   if (!shader || !shader->set_coords)
+   if (!current_shader || !current_shader->set_coords)
       return false;
-   return shader->set_coords(handle_data, shader_data, data);
+   return current_shader->set_coords(handle_data, shader_data, data);
 }
 
-bool video_shader_driver_set_mvp(const shader_backend_t *shader, void *data, const math_matrix_4x4 *mat)
+bool video_shader_driver_set_mvp(void *data, const math_matrix_4x4 *mat)
 {
-   if (!shader || !shader->set_mvp)
+   if (!current_shader || !current_shader->set_mvp)
       return false;
-   return shader->set_mvp(data, shader_data, mat);
+   return current_shader->set_mvp(data, shader_data, mat);
 }
 
-bool video_shader_driver_filter_type(const shader_backend_t *shader, unsigned index, bool *smooth)
+bool video_shader_driver_filter_type(unsigned index, bool *smooth)
 {
-   if (!shader || !shader->filter_type)
+   if (!current_shader || !current_shader->filter_type)
       return false;
-   return shader->filter_type(shader_data, index, smooth);
+   return current_shader->filter_type(shader_data, index, smooth);
 }
 
-enum gfx_wrap_type video_shader_driver_wrap_type(const shader_backend_t *shader, unsigned index)
+enum gfx_wrap_type video_shader_driver_wrap_type(unsigned index)
 {
-   return shader->wrap_type(shader_data, index);
+   return current_shader->wrap_type(shader_data, index);
 }
 
-bool video_shader_driver_get_feedback_pass(const shader_backend_t *shader, unsigned *pass)
+bool video_shader_driver_get_feedback_pass(unsigned *pass)
 {
-   if (!shader || !shader->get_feedback_pass)
+   if (!current_shader || !current_shader->get_feedback_pass)
       return false;
-   return shader->get_feedback_pass(shader_data, pass);
+   return current_shader->get_feedback_pass(shader_data, pass);
 }
 
-struct video_shader *video_shader_driver_direct_get_current_shader(const shader_backend_t *shader)
+struct video_shader *video_shader_driver_direct_get_current_shader(void)
 {
-   if (!shader || !shader->get_current_shader)
+   if (!current_shader || !current_shader->get_current_shader)
       return NULL;
-   return shader->get_current_shader(shader_data);
+   return current_shader->get_current_shader(shader_data);
 }
 
-void video_shader_driver_set_params(const shader_backend_t *shader, 
+void video_shader_driver_set_params( 
       void *data, unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height,
@@ -208,9 +213,9 @@ void video_shader_driver_set_params(const shader_backend_t *shader,
       const void *feedback_info,
       const void *fbo_info, unsigned fbo_info_cnt)
 {
-   if (!shader || !shader->set_params)
+   if (!current_shader || !current_shader->set_params)
       return;
-   return shader->set_params(data, shader_data,
+   return current_shader->set_params(data, shader_data,
          width, height, tex_width, tex_height,
          out_width, out_height, frame_counter, info, prev_info, feedback_info,
          fbo_info, fbo_info_cnt);

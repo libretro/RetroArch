@@ -83,11 +83,6 @@ static void menu_display_d3d_blend_begin(void)
       return;
 
    d3d_enable_blend_func(d3d->dev);
-
-#if 0
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
-#endif
 }
 
 static void menu_display_d3d_blend_end(void)

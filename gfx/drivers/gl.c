@@ -278,14 +278,12 @@ static bool gl_shader_init(gl_t *gl)
 #endif
 #endif
 
-   gl->shader = backend;
-
-   ret = video_shader_driver_init(gl->shader, gl, shader_path);
+   ret = video_shader_driver_init(backend, gl, shader_path);
 
    if (!ret)
    {
       RARCH_ERR("[GL]: Failed to initialize shader, falling back to stock.\n");
-      ret = video_shader_driver_init(gl->shader, gl, NULL);
+      ret = video_shader_driver_init(backend, gl, NULL);
    }
 
    return ret;
@@ -293,8 +291,7 @@ static bool gl_shader_init(gl_t *gl)
 
 static void gl_shader_deinit(gl_t *gl)
 {
-   video_shader_driver_deinit(gl->shader);
-   gl->shader = NULL;
+   video_shader_driver_deinit();
 }
 
 #ifndef NO_GL_FF_VERTEX
@@ -441,10 +438,10 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   mipmapped  = video_shader_driver_mipmap_input(gl->shader, i + 2);
+   mipmapped  = video_shader_driver_mipmap_input(i + 2);
    min_filter = mipmapped ? base_mip_filt : base_filt;
 
-   if (video_shader_driver_filter_type(gl->shader, i + 2, &smooth))
+   if (video_shader_driver_filter_type(i + 2, &smooth))
    {
       min_filter = mipmapped ? (smooth ? 
             GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
@@ -453,7 +450,7 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 
    mag_filter = min_filter_to_mag(min_filter);
 
-   wrap      = video_shader_driver_wrap_type(gl->shader, i + 2);
+   wrap      = video_shader_driver_wrap_type(i + 2);
    wrap_enum = gl_wrap_type_to_enum(wrap);
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
@@ -626,16 +623,16 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
    unsigned width, height;
    struct gfx_fbo_scale scale, scale_last;
 
-   if (!gl || video_shader_driver_num_shaders(gl->shader) == 0)
+   if (!gl || video_shader_driver_num_shaders() == 0)
       return;
 
    video_driver_get_size(&width, &height);
 
-   video_shader_scale(1, gl->shader, &scale);
-   video_shader_scale(video_shader_driver_num_shaders(gl->shader), gl->shader, &scale_last);
+   video_shader_driver_scale(1, &scale);
+   video_shader_driver_scale(video_shader_driver_num_shaders(), &scale_last);
 
    /* we always want FBO to be at least initialized on startup for consoles */
-   if (video_shader_driver_num_shaders(gl->shader) == 1 && !scale.valid)
+   if (video_shader_driver_num_shaders() == 1 && !scale.valid)
       return;
 
    if (!gl_check_fbo_proc(gl))
@@ -644,7 +641,7 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
       return;
    }
 
-   gl->fbo_pass = video_shader_driver_num_shaders(gl->shader) - 1;
+   gl->fbo_pass = video_shader_driver_num_shaders() - 1;
    if (scale_last.valid)
       gl->fbo_pass++;
 
@@ -660,7 +657,7 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
 
    for (i = 1; i < gl->fbo_pass; i++)
    {
-      video_shader_scale(i + 1, gl->shader, &gl->fbo_scale[i]);
+      video_shader_driver_scale(i + 1, &gl->fbo_scale[i]);
 
       if (!gl->fbo_scale[i].valid)
       {
@@ -681,7 +678,7 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
             gl->fbo_rect[i].width, gl->fbo_rect[i].height);
    }
 
-   gl->fbo_feedback_enable = video_shader_driver_get_feedback_pass(gl->shader, &gl->fbo_feedback_pass);
+   gl->fbo_feedback_enable = video_shader_driver_get_feedback_pass(&gl->fbo_feedback_pass);
 
    if (gl->fbo_feedback_enable && gl->fbo_feedback_pass < (unsigned)gl->fbo_pass)
    {
@@ -1106,24 +1103,24 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
 
       glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
 
-      video_shader_driver_use(gl->shader, gl, i + 1);
+      video_shader_driver_use(gl, i + 1);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
-      if (video_shader_driver_mipmap_input(gl->shader, i + 1))
+      if (video_shader_driver_mipmap_input(i + 1))
          glGenerateMipmap(GL_TEXTURE_2D);
 
       glClear(GL_COLOR_BUFFER_BIT);
 
       /* Render to FBO with certain size. */
       gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
-      video_shader_driver_set_params(gl->shader, gl, prev_rect->img_width, prev_rect->img_height, 
+      video_shader_driver_set_params(gl, prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
             gl->vp.width, gl->vp.height, (unsigned int)frame_count, 
             tex_info, gl->prev_info, feedback_info, fbo_tex_info, fbo_tex_info_cnt);
 
       gl->coords.vertices = 4;
-      video_shader_driver_set_coords(gl->shader, NULL, &gl->coords);
-      video_shader_driver_set_mvp(gl->shader, gl, &gl->mvp);
+      video_shader_driver_set_coords(NULL, &gl->coords);
+      video_shader_driver_set_mvp(gl, &gl->mvp);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
 
@@ -1152,17 +1149,17 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
 
    /* Render our FBO texture to back buffer. */
    gl_bind_backbuffer();
-   video_shader_driver_use(gl->shader, gl, gl->fbo_pass + 1);
+   video_shader_driver_use(gl, gl->fbo_pass + 1);
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
-   if (video_shader_driver_mipmap_input(gl->shader, gl->fbo_pass + 1))
+   if (video_shader_driver_mipmap_input(gl->fbo_pass + 1))
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
    gl_set_viewport(gl, width, height, false, true);
 
-   video_shader_driver_set_params(gl->shader, gl,
+   video_shader_driver_set_params(gl,
          prev_rect->img_width, prev_rect->img_height, 
          prev_rect->width, prev_rect->height, 
          gl->vp.width, gl->vp.height, (unsigned int)frame_count, 
@@ -1171,8 +1168,8 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    gl->coords.vertex = gl->vertex_ptr;
 
    gl->coords.vertices = 4;
-   video_shader_driver_set_coords(gl->shader, NULL, &gl->coords);
-   video_shader_driver_set_mvp(gl->shader, gl, &gl->mvp);
+   video_shader_driver_set_coords(NULL, &gl->coords);
+   video_shader_driver_set_mvp(gl, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    gl->coords.tex_coord = gl->tex_info.coord;
@@ -1536,7 +1533,7 @@ static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned shader)
 
    video_driver_get_size(&width, &height);
 
-   video_shader_driver_use(gl->shader, gl, shader);
+   video_shader_driver_use(gl, shader);
    gl_set_viewport(gl, width, height, false, true);
 }
 
@@ -1608,10 +1605,10 @@ static INLINE void gl_draw_texture(gl_t *gl)
    gl->coords.color     = color;
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
-   video_shader_driver_use(gl->shader, gl, GL_SHADER_STOCK_BLEND);
+   video_shader_driver_use(gl, GL_SHADER_STOCK_BLEND);
    gl->coords.vertices  = 4;
-   video_shader_driver_set_coords(gl->shader, NULL, &gl->coords);
-   video_shader_driver_set_mvp(gl->shader, gl, &gl->mvp_no_rot);
+   video_shader_driver_set_coords(NULL, &gl->coords);
+   video_shader_driver_set_mvp(gl, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
 
@@ -1656,7 +1653,7 @@ static bool gl_frame(void *data, const void *frame,
       glBindVertexArray(gl->vao);
 #endif
 
-   video_shader_driver_use(gl->shader, gl, 1);
+   video_shader_driver_use(gl, 1);
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
@@ -1768,7 +1765,7 @@ static bool gl_frame(void *data, const void *frame,
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   video_shader_driver_set_params(gl->shader, gl,
+   video_shader_driver_set_params(gl,
          frame_width, frame_height,
          gl->tex_w, gl->tex_h,
          gl->vp.width, gl->vp.height,
@@ -1777,8 +1774,8 @@ static bool gl_frame(void *data, const void *frame,
          NULL, 0);
 
    gl->coords.vertices = 4;
-   video_shader_driver_set_coords(gl->shader, NULL, &gl->coords);
-   video_shader_driver_set_mvp(gl->shader, gl, &gl->mvp);
+   video_shader_driver_set_coords(NULL, &gl->coords);
+   video_shader_driver_set_mvp(gl, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 #ifdef HAVE_FBO
@@ -1814,7 +1811,7 @@ static bool gl_frame(void *data, const void *frame,
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
    {
-      video_shader_driver_use(gl->shader, gl, 0);
+      video_shader_driver_use(gl, 0);
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
       gl_disable_client_arrays(gl);
@@ -2557,12 +2554,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
          hw_render->version_major, hw_render->version_minor);
 #endif
 
-   gl->shader      = (const shader_backend_t*)shader_ctx_init_first();
+   if (!shader_driver_ctx_init_first())
+      goto error;
 
-   if (gl->shader)
-   {
-      RARCH_LOG("[GL]: Default shader backend found: %s.\n", video_shader_driver_get_ident(gl->shader));
-   }
+   RARCH_LOG("[GL]: Default shader backend found: %s.\n", video_shader_driver_get_ident());
 
    if (!gl_shader_init(gl))
    {
@@ -2570,14 +2565,13 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       goto error;
    }
 
-   if (gl->shader)
    {
-      unsigned minimum = video_shader_driver_get_prev_textures(gl->shader);
+      unsigned minimum = video_shader_driver_get_prev_textures();
       gl->textures     = max(minimum + 1, gl->textures);
    }
 
    RARCH_LOG("[GL]: Using %u textures.\n", gl->textures);
-   RARCH_LOG("[GL]: Loaded %u program(s).\n", video_shader_driver_num_shaders(gl->shader));
+   RARCH_LOG("[GL]: Loaded %u program(s).\n", video_shader_driver_num_shaders());
 
    gl->tex_w = gl->tex_h = (RARCH_SCALE_BASE * video->input_scale);
    gl->keep_aspect     = video->force_aspect;
@@ -2587,9 +2581,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_set_shader_viewport(gl, 0);
    gl_set_shader_viewport(gl, 1);
 
-   gl->tex_mipmap      = video_shader_driver_mipmap_input(gl->shader, 1);
+   gl->tex_mipmap      = video_shader_driver_mipmap_input(1);
 
-   if (video_shader_driver_filter_type(gl->shader, 1, &force_smooth))
+   if (video_shader_driver_filter_type(1, &force_smooth))
       gl->tex_min_filter = gl->tex_mipmap ? (force_smooth ? 
             GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST) 
          : (force_smooth ? GL_LINEAR : GL_NEAREST);
@@ -2599,7 +2593,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
          : (video->smooth ? GL_LINEAR : GL_NEAREST);
    
    gl->tex_mag_filter = min_filter_to_mag(gl->tex_min_filter);
-   gl->wrap_mode      = gl_wrap_type_to_enum(video_shader_driver_wrap_type(gl->shader, 1));
+   gl->wrap_mode      = gl_wrap_type_to_enum(video_shader_driver_wrap_type(1));
 
    gl_set_texture_fmts(gl, video->rgb32);
 
@@ -2722,11 +2716,11 @@ static void gl_update_tex_filter_frame(gl_t *gl)
 
    context_bind_hw_render(gl, false);
 
-   if (!video_shader_driver_filter_type(gl->shader, 1, &smooth))
+   if (!video_shader_driver_filter_type(1, &smooth))
       smooth = settings->video.smooth;
 
-   wrap_mode             = gl_wrap_type_to_enum(video_shader_driver_wrap_type(gl->shader, 1));
-   gl->tex_mipmap        = video_shader_driver_mipmap_input(gl->shader, 1);
+   wrap_mode             = gl_wrap_type_to_enum(video_shader_driver_wrap_type(1));
+   gl->tex_mipmap        = video_shader_driver_mipmap_input(1);
 
    gl->video_info.smooth = smooth;
    new_filt = gl->tex_mipmap ? (smooth ? 
@@ -2760,6 +2754,7 @@ static bool gl_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
+   const shader_backend_t *shader = NULL;
    gl_t *gl = (gl_t*)data;
 
    if (!gl)
@@ -2776,13 +2771,13 @@ static bool gl_set_shader(void *data,
    {
 #ifdef HAVE_GLSL
       case RARCH_SHADER_GLSL:
-         gl->shader = &gl_glsl_backend;
+         shader = &gl_glsl_backend;
          break;
 #endif
 
 #ifdef HAVE_CG
       case RARCH_SHADER_CG:
-         gl->shader = &gl_cg_backend;
+         shader = &gl_cg_backend;
          break;
 #endif
 
@@ -2790,7 +2785,7 @@ static bool gl_set_shader(void *data,
          break;
    }
 
-   if (!gl->shader)
+   if (!shader)
    {
       RARCH_ERR("[GL]: Cannot find shader core for path: %s.\n", path);
       context_bind_hw_render(gl, true);
@@ -2802,23 +2797,21 @@ static bool gl_set_shader(void *data,
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 #endif
 
-   if (!video_shader_driver_init(gl->shader, gl, path))
+   if (!video_shader_driver_init(shader, gl, path))
    {
-      bool ret = video_shader_driver_init(gl->shader, gl, NULL);
+      bool ret = video_shader_driver_init(shader, gl, NULL);
 
       RARCH_WARN("[GL]: Failed to set multipass shader. Falling back to stock.\n");
 
-      if (!ret)
-         gl->shader = NULL;
       context_bind_hw_render(gl, true);
       return false;
    }
 
    gl_update_tex_filter_frame(gl);
 
-   if (gl->shader)
+   if (shader)
    {
-      unsigned textures = video_shader_driver_get_prev_textures(gl->shader) + 1;
+      unsigned textures = video_shader_driver_get_prev_textures() + 1;
 
       if (textures > gl->textures) /* Have to reinit a bit. */
       {
@@ -3235,15 +3228,15 @@ static void gl_render_overlay(void *data)
       glViewport(0, 0, width, height);
 
    /* Ensure that we reset the attrib array. */
-   video_shader_driver_use(gl->shader, gl, GL_SHADER_STOCK_BLEND);
+   video_shader_driver_use(gl, GL_SHADER_STOCK_BLEND);
 
    gl->coords.vertex    = gl->overlay_vertex_coord;
    gl->coords.tex_coord = gl->overlay_tex_coord;
    gl->coords.color     = gl->overlay_color_coord;
    gl->coords.vertices  = 4 * gl->overlays;
 
-   video_shader_driver_set_coords(gl->shader, NULL, &gl->coords);
-   video_shader_driver_set_mvp(gl->shader, gl, &gl->mvp_no_rot);
+   video_shader_driver_set_coords(NULL, &gl->coords);
+   video_shader_driver_set_mvp(gl, &gl->mvp_no_rot);
 
    for (i = 0; i < gl->overlays; i++)
    {
@@ -3387,10 +3380,7 @@ static void gl_show_mouse(void *data, bool state)
 
 static struct video_shader *gl_get_current_shader(void *data)
 {
-   gl_t *gl = (gl_t*)data;
-   if (!gl)
-      return NULL;
-   return video_shader_driver_direct_get_current_shader(gl->shader);
+   return video_shader_driver_direct_get_current_shader();
 }
 #endif
 

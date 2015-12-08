@@ -45,7 +45,7 @@ static void renderchain_set_mvp(void *data, unsigned vp_width,
 
 #if defined(_XBOX360) && defined(HAVE_HLSL)
    hlsl_set_proj_matrix(XMMatrixRotationZ(rotation * (M_PI / 2.0)));
-   video_shader_driver_set_mvp(d3d->shader, d3d, NULL);
+   video_shader_driver_set_mvp(d3d, NULL);
 #elif defined(HAVE_D3D8)
    D3DXMATRIX p_out, p_rotate, mat;
    D3DXMatrixOrthoOffCenterLH(&mat, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);
@@ -209,15 +209,12 @@ static void renderchain_set_vertices(void *data, unsigned pass,
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 #ifdef _XBOX
-   if (d3d->shader)
-   {
-      renderchain_set_mvp(d3d, width, height, d3d->dev_rotation);
-      video_shader_driver_use(d3d->shader, d3d, pass);
-      video_shader_driver_set_params(
-         d3d->shader, d3d, vert_width, vert_height, chain->tex_w,
-               chain->tex_h, width, height, frame_count,
-               NULL, NULL, NULL, NULL, 0);
-   }
+   renderchain_set_mvp(d3d, width, height, d3d->dev_rotation);
+   video_shader_driver_use(d3d, pass);
+   video_shader_driver_set_params(
+         d3d, vert_width, vert_height, chain->tex_w,
+         chain->tex_h, width, height, frame_count,
+         NULL, NULL, NULL, NULL, 0);
 #endif
 #endif
 }
@@ -302,9 +299,9 @@ static bool xdk_renderchain_init_shader(void *data, void *renderchain_data)
 #if defined(HAVE_HLSL)
    RARCH_LOG("D3D]: Using HLSL shader backend.\n");
    shader_path = settings->video.shader_path;
-   d3d->shader = &hlsl_backend;
+   const shader_backend_t *shader = &hlsl_backend;
 
-   return video_shader_driver_init(d3d->shader, d3d, shader_path); 
+   return video_shader_driver_init(hlsl_backend, d3d, shader_path); 
 #endif
 
    return true;

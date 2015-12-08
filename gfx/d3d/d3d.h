@@ -110,9 +110,7 @@ typedef struct d3d_video
    std::string shader_path;
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-#ifdef _XBOX
-   const shader_backend_t *shader;
-#else
+#ifndef _XBOX
    struct video_shader shader;
 #endif
 #endif

@@ -73,15 +73,10 @@ static GLenum menu_display_prim_to_gl_enum(enum menu_display_prim_type prim_type
 
 static void menu_display_gl_blend_begin(void)
 {
-   gl_t *gl = gl_get_ptr();
-
-   if (!gl)
-      return;
-
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-   video_shader_driver_use(gl->shader, NULL, GL_SHADER_STOCK_BLEND);
+   video_shader_driver_use(NULL, GL_SHADER_STOCK_BLEND);
 }
 
 static void menu_display_gl_blend_end(void)
@@ -120,8 +115,8 @@ static void menu_display_gl_draw(
    glViewport(x, y, width, height);
    glBindTexture(GL_TEXTURE_2D, (GLuint)texture);
 
-   video_shader_driver_set_coords(gl->shader, gl, coords);
-   video_shader_driver_set_mvp(gl->shader, video_driver_get_ptr(false), mat);
+   video_shader_driver_set_coords(gl, coords);
+   video_shader_driver_set_mvp(video_driver_get_ptr(false), mat);
 
    glDrawArrays(menu_display_prim_to_gl_enum(prim_type), 0, coords->vertices);
 
