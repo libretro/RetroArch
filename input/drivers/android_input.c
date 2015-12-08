@@ -443,6 +443,7 @@ static void *android_input_init(void)
 {
    int32_t sdk;
    settings_t *settings = config_get_ptr();
+   struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android = (android_input_t*)
       calloc(1, sizeof(*android));
 
@@ -469,6 +470,8 @@ static void *android_input_init(void)
    {
       RARCH_WARN("Unable to open libandroid.so\n");
    }
+
+   android_app->input_alive = true;
 
    return android;
 }
@@ -884,14 +887,8 @@ static void android_input_poll_memcpy(void *data)
    android_input_t    *android     = (android_input_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
    
-   if (!android)
-      return;
-
    memcpy(&android->copy, &android->thread, sizeof(android->copy));
    
-   if (!android_app)
-      return;
-
    for (i = 0; i < MAX_PADS; i++)
    {
       for (j = 0; j < 2; j++)
@@ -934,7 +931,8 @@ static void android_input_poll(void *data)
       }
    }
 
-   android_input_poll_memcpy(data);
+   if (android_app->input_alive)
+      android_input_poll_memcpy(data);
 }
 
 bool android_run_events(void *data)
@@ -1037,6 +1035,8 @@ static void android_input_free_input(void *data)
    if (android->joypad)
       android->joypad->destroy();
    android->joypad = NULL;
+
+   android_app->input_alive = false;
 
    dylib_close((dylib_t)libandroid_handle);
    libandroid_handle = NULL;

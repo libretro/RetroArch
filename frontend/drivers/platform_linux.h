@@ -173,6 +173,7 @@ struct android_app
    const ASensor* accelerometerSensor;
    uint64_t sensor_state_mask;
    char current_ime[PATH_MAX_LENGTH];
+   bool input_alive;
    int16_t analog_state[MAX_PADS][MAX_AXIS];
    int8_t hat_state[MAX_PADS][2];
    jmethodID getIntent;
