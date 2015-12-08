@@ -253,7 +253,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    attr = egl_attribs;
    attr = xegl_fill_attribs(attr);
 
-   if (!eglGetConfigAttrib(g_egl_dpy, g_egl_config, EGL_NATIVE_VISUAL_ID, &vid))
+   if (!egl_get_native_visual_id(&vid))
       goto error;
 
    temp.visualid = vid;

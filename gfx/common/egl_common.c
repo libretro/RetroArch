@@ -255,3 +255,16 @@ bool egl_create_surface(NativeWindowType native_window)
 
    return true;
 }
+
+bool egl_get_native_visual_id(EGLint *value)
+{
+   if (!eglGetConfigAttrib(g_egl_dpy, g_egl_config,
+         EGL_NATIVE_VISUAL_ID, value))
+   {
+      RARCH_ERR("[EGL]: egl_get_native_visual_id failed.\n");
+      return false;
+   }
+
+   return true;
+}
+

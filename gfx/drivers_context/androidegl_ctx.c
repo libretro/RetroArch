@@ -34,7 +34,6 @@ static bool g_es3;
 
 static bool android_gfx_ctx_init(void *data)
 {
-   int var;
    EGLint n, major, minor;
    EGLint format;
    EGLint context_attributes[] = {
@@ -64,14 +63,8 @@ static bool android_gfx_ctx_init(void *data)
       goto error;
    }
 
-   var = eglGetConfigAttrib(g_egl_dpy, g_egl_config,
-         EGL_NATIVE_VISUAL_ID, &format);
-
-   if (!var)
-   {
-      RARCH_ERR("eglGetConfigAttrib failed: %d.\n", var);
+   if (!egl_get_native_visual_id(&format))
       goto error;
-   }
 
    ANativeWindow_setBuffersGeometry(android_app->window, 0, 0, format);
 
