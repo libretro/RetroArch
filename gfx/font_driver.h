@@ -74,21 +74,6 @@ struct font_atlas
    unsigned height;
 };
 
-typedef struct font_renderer
-{
-   void *(*init)(void *data, const char *font_path, float font_size);
-   void (*free)(void *data);
-   void (*render_msg)(void *data, const char *msg,
-         const void *params);
-   const char *ident;
-
-   const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
-   void (*bind_block)(void *data, void *block);
-   void (*flush)(void *data);
-   
-   int (*get_message_width)(void *data, const char *msg, unsigned msg_len_full, float scale);
-} font_renderer_t;
-
 struct font_params
 {
    float x;
@@ -104,6 +89,21 @@ struct font_params
    bool full_screen;
    enum text_alignment text_align;
 };
+
+typedef struct font_renderer
+{
+   void *(*init)(void *data, const char *font_path, float font_size);
+   void (*free)(void *data);
+   void (*render_msg)(void *data, const char *msg,
+         const void *params);
+   const char *ident;
+
+   const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
+   void (*bind_block)(void *data, void *block);
+   void (*flush)(void *data);
+   
+   int (*get_message_width)(void *data, const char *msg, unsigned msg_len_full, float scale);
+} font_renderer_t;
 
 typedef struct font_renderer_driver
 {
