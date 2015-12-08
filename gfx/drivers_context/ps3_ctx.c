@@ -327,8 +327,7 @@ static void gfx_ctx_ps3_destroy(void *data)
       return;
 
    gfx_ctx_ps3_destroy_resources(ps3);
-
-   gfx_ctx_free_data();
+   free(data);
 }
 
 static void gfx_ctx_ps3_input_driver(void *data,
