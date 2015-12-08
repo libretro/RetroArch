@@ -293,15 +293,6 @@ typedef struct gl
    GLuint vao;
 } gl_t;
 
-static INLINE void context_bind_hw_render(gl_t *gl, bool enable)
-{
-   if (!gl)
-      return;
-
-   if (gl->shared_context_use)
-      gfx_ctx_bind_hw_render(gl, enable);
-}
-
 static INLINE bool gl_check_error(void)
 {
    int error = glGetError();

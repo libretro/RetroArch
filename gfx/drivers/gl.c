@@ -105,6 +105,12 @@ static const GLfloat white_color[] = {
    1, 1, 1, 1,
 };
 
+static INLINE void context_bind_hw_render(gl_t *gl, bool enable)
+{
+   if (gl && gl->shared_context_use)
+      gfx_ctx_bind_hw_render(gl, enable);
+}
+
 static INLINE bool gl_query_extension(gl_t *gl, const char *ext)
 {
    bool ret = false;
