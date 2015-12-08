@@ -176,21 +176,9 @@ void menu_display_free_main_font(void)
    }
 }
 
-static const char *menu_video_get_ident(void)
-{
-#ifdef HAVE_THREADS
-   settings_t *settings = config_get_ptr();
-
-   if (settings->video.threaded)
-      return rarch_threaded_video_get_ident();
-#endif
-
-   return video_driver_get_ident();
-}
-
 static bool menu_display_check_compatibility(enum menu_display_driver_type type)
 {
-   const char *video_driver = menu_video_get_ident();
+   const char *video_driver = video_driver_get_ident();
 
    switch (type)
    {

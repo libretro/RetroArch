@@ -1296,15 +1296,6 @@ void *rarch_threaded_video_get_ptr(const video_driver_t **drv)
    return thr->driver_data;
 }
 
-const char *rarch_threaded_video_get_ident(void)
-{
-   const thread_video_t *thr = (const thread_video_t*)video_driver_get_ptr(true);
-
-   if (!thr || !thr->driver)
-      return NULL;
-   return thr->driver->ident;
-}
-
 static void rarch_threaded_video_send_and_wait(thread_video_t *thr, thread_packet_t *pkt)
 {
    if (!thr || !pkt)
