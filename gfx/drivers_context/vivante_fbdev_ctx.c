@@ -22,14 +22,19 @@
 #include "../common/egl_common.h"
 #include "../common/gl_common.h"
 
-static bool g_resize;
-static unsigned g_width, g_height;
+typedef struct {
+   egl_ctx_data_t egl;
+   bool resize;
+   unsigned width, height;
+} vivante_ctx_data_t;
 
 static void gfx_ctx_vivante_destroy(void *data)
 {
+   vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
    egl_destroy(data);
 
-   g_resize       = false;
+   viv->resize       = false;
+   free(viv);
 }
 
 static void *gfx_ctx_vivante_init(void *video_driver)
@@ -49,23 +54,27 @@ static void *gfx_ctx_vivante_init(void *video_driver)
       EGL_SAMPLES,            0,
       EGL_NONE
    };
+   vivante_ctx_data_t *viv = (vivante_ctx_data_t*)calloc(1, sizeof(*viv));
+
+   if (!viv)
+       return NULL;
 
    (void)video_driver;
 
    egl_install_sighandlers();
 
-   if (!egl_init_context(EGL_DEFAULT_DISPLAY, &major, &minor,
+   if (!egl_init_context(viv, EGL_DEFAULT_DISPLAY, &major, &minor,
             &n, attribs))
    {
       egl_report_error();
       goto error;
    }
 
-   return (void*)"vivante";
+   return viv;
 
 error:
    RARCH_ERR("[Vivante fbdev]: EGL error: %d.\n", eglGetError());
-   gfx_ctx_vivante_destroy(video_driver);
+   gfx_ctx_vivante_destroy(viv);
    return NULL;
 }
 
@@ -117,6 +126,7 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
       EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
       EGL_NONE
    };
+   vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
 
    /* Pick some arbitrary default. */
    if (!width || !fullscreen)
@@ -124,10 +134,10 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
    if (!height || !fullscreen)
       height = 1024;
 
-   g_width    = width;
-   g_height   = height;
+   viv->width    = width;
+   viv->height   = height;
 
-   if (!egl_create_context(attribs))
+   if (!egl_create_context(viv, attribs))
    {
       egl_report_error();
       goto error;
@@ -135,7 +145,7 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
 
    window     = fbCreateWindow(fbGetDisplayByIndex(0), 0, 0, 0, 0);
 
-   if (!egl_create_surface(window))
+   if (!egl_create_surface(viv, window))
       goto error;
 
    return true;
