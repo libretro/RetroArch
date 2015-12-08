@@ -287,7 +287,7 @@ static void d3d_set_viewport(void *data,
 
    video_driver_get_size(&width, &height);
 
-   gfx_ctx_translate_aspect(d3d, &device_aspect, width, height);
+   gfx_ctx_translate_aspect(&device_aspect, width, height);
 
    if (settings->video.scale_integer && !force_full)
    {
@@ -436,7 +436,7 @@ static void d3d_set_nonblock_state(void *data, bool state)
 
    d3d->video_info.vsync = !state;
 
-   gfx_ctx_swap_interval(d3d, state ? 0 : 1);
+   gfx_ctx_swap_interval(state ? 0 : 1);
 }
 
 static bool d3d_alive(void *data)
@@ -447,7 +447,7 @@ static bool d3d_alive(void *data)
    bool        quit   = false;
    bool        resize = false;
 
-   if (gfx_ctx_check_window(d3d, &quit, &resize,
+   if (gfx_ctx_check_window(&quit, &resize,
             &temp_width, &temp_height))
    {
       if (quit)
@@ -466,17 +466,17 @@ static bool d3d_alive(void *data)
 
 static bool d3d_focus(void *data)
 {
-   return gfx_ctx_focus(data);
+   return gfx_ctx_focus();
 }
 
 static bool d3d_suppress_screensaver(void *data, bool enable)
 {
-   return gfx_ctx_suppress_screensaver(data, enable);
+   return gfx_ctx_suppress_screensaver(enable);
 }
 
 static bool d3d_has_windowed(void *data)
 {
-   return gfx_ctx_has_windowed(data);
+   return gfx_ctx_has_windowed();
 }
 
 static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -687,7 +687,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    if (!d3d_initialize(d3d, &d3d->video_info))
       return false;
 
-   gfx_ctx_input_driver(d3d, input, input_data);
+   gfx_ctx_input_driver(input, input_data);
 
    RARCH_LOG("[D3D]: Init complete.\n");
    return true;
@@ -716,7 +716,7 @@ static void d3d_set_rotation(void *data, unsigned rot)
 
 static void d3d_show_mouse(void *data, bool state)
 {
-   gfx_ctx_show_mouse(data, state);
+   gfx_ctx_show_mouse(state);
 }
 
 static const gfx_ctx_driver_t *d3d_get_context(void *data)
@@ -1386,7 +1386,7 @@ static void d3d_overlay_enable(void *data, bool state)
    for (i = 0; i < d3d->overlays.size(); i++)
       d3d->overlays_enabled = state;
 
-   gfx_ctx_show_mouse(d3d, state);
+   gfx_ctx_show_mouse(state);
 }
 
 static void d3d_overlay_full_screen(void *data, bool enable)
@@ -1532,9 +1532,9 @@ static bool d3d_frame(void *data, const void *frame,
 
    retro_perf_stop(&d3d_frame);
 
-   gfx_ctx_update_window_title(d3d);
+   gfx_ctx_update_window_title();
 
-   gfx_ctx_swap_buffers(d3d);
+   gfx_ctx_swap_buffers();
 
    d3d->frame_count++;
 
