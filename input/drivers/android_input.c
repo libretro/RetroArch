@@ -647,25 +647,25 @@ static void handle_hotplug(android_input_data_t *android_data,
    }
 
    /* GPD XD */
-  else if(strstr(device_model, "XD") && (
-     strstr(device_name, "Virtual") || strstr(device_name, "rk29-keypad") ||
-     strstr(device_name,"Playstation3") || strstr(device_name,"XBOX")))
-  {
-     /* only use the hack if the device is one of the built-in devices */
-     RARCH_LOG("GPD XD Detected: %s\n", device_model);
-     {
-        if ( primary_id < 0 )
-           primary_id = id;
-        else
-           secondary_id = id;
+   else if(strstr(device_model, "XD") && (
+      strstr(device_name, "Virtual") || strstr(device_name, "rk29-keypad") ||
+      strstr(device_name,"Playstation3") || strstr(device_name,"XBOX")))
+   {
+      /* only use the hack if the device is one of the built-in devices */
+      RARCH_LOG("GPD XD Detected: %s\n", device_model);
+      {
+         if ( primary_id < 0 )
+            primary_id = id;
+         else
+            secondary_id = id;
 
-        if ( secondary_id > 0)
-           return;
+         if ( secondary_id > 0)
+            return;
 
-        strlcpy (name_buf, "GPD XD", sizeof(name_buf));
-        *port = 0;
-     }
-  }
+         strlcpy (name_buf, "GPD XD", sizeof(name_buf));
+         *port = 0;
+      }
+   }
 
      /* XPERIA Play */
    else if(strstr(device_model, "R800") && (
@@ -683,6 +683,26 @@ static void handle_hotplug(android_input_data_t *android_data,
             return;
 
          strlcpy (name_buf, "XPERIA Play", sizeof(name_buf));
+         *port = 0;
+      }
+   }
+
+   /* ARCHOS Gamepad */
+   else if(strstr(device_model, "ARCHOS GAMEPAD") && (
+      strstr(device_name, "joy_key") || strstr(device_name, "joystick")))
+   {
+      /* only use the hack if the device is one of the built-in devices */
+      RARCH_LOG("ARCHOS GAMEPAD Detected: %s\n", device_model);
+      {
+         if ( primary_id < 0 )
+            primary_id = id;
+         else
+            secondary_id = id;
+
+         if ( secondary_id > 0)
+            return;
+
+         strlcpy (name_buf, "ARCHOS GamePad", sizeof(name_buf));
          *port = 0;
       }
    }
