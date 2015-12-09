@@ -243,7 +243,7 @@ bool take_screenshot(void)
 
       if (frame_data)
       {
-         video_driver_cached_frame_set_ptr(frame_data);
+         video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_SET_PTR, (void*)frame_data);
          ret = take_screenshot_raw();
          free(frame_data);
       }

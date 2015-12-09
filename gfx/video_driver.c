@@ -872,14 +872,6 @@ void video_driver_set_filtering(unsigned index, bool smooth)
       video_driver_poke->set_filtering(video_driver_data, index, smooth);
 }
 
-void video_driver_cached_frame_set_ptr(const void *data)
-{
-   if (!data)
-      return;
-
-   video_driver_state.frame_cache.data   = data;
-}
-
 void video_driver_cached_frame_set(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
@@ -1403,6 +1395,11 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          video_driver_record_gpu_buffer = NULL;
          current_video                  = NULL;
          break;
+      case RARCH_DISPLAY_CTL_CACHED_FRAME_SET_PTR:
+         if (!data)
+            return false;
+         video_driver_state.frame_cache.data   = (const void*)data;
+         return true;
       case RARCH_DISPLAY_CTL_SET_STUB_FRAME:
          frame_bak                      = current_video->frame;
          current_video->frame           = video_null.frame;

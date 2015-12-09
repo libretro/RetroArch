@@ -134,6 +134,7 @@ enum rarch_display_ctl_state
    /* Renders the current video frame. */
    RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER,
    RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB,
+   RARCH_DISPLAY_CTL_CACHED_FRAME_SET_PTR,
    RARCH_DISPLAY_CTL_SHOW_MOUSE,
    RARCH_DISPLAY_CTL_GET_FRAME_COUNT,
    RARCH_DISPLAY_CTL_SET_OWN_DRIVER,
@@ -427,8 +428,6 @@ void video_driver_set_pixel_format(enum retro_pixel_format fmt);
 
 void video_driver_cached_frame_set(const void *data, unsigned width,
       unsigned height, size_t pitch);
-
-void video_driver_cached_frame_set_ptr(const void *data);
 
 void video_driver_cached_frame_get(const void **data, unsigned *width,
       unsigned *height, size_t *pitch);
