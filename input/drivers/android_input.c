@@ -52,6 +52,9 @@ struct input_pointer
    int16_t full_x, full_y;
 };
 
+int primary_id = -1;
+int secondary_id = -1;
+
 enum
 {
    AXIS_X = 0,
@@ -93,6 +96,7 @@ typedef struct android_input
 } android_input_t;
 
 static void frontend_android_get_version_sdk(int32_t *sdk);
+static void frontend_android_get_name(char *s, size_t len);
 
 bool (*engine_lookup_name)(char *buf,
       int *vendorId, int *productId, size_t size, int id);
@@ -444,6 +448,9 @@ static bool android_input_init_handle(void)
       RARCH_LOG("Set engine_handle_dpad to 'Get Axis Value' (for reading extra analog sticks)");
       engine_handle_dpad = engine_handle_dpad_getaxisvalue;
    }
+   primary_id = -1;
+   secondary_id = -1;
+
    return true;
 }
 
@@ -483,11 +490,6 @@ static void *android_input_init(void)
 
    return android;
 }
-
-static int xperia1 = -1;
-static int xperia2 = -1;
-static int archos1 = -1;
-static int archos2 = -1;
 
 static INLINE int android_input_poll_event_type_motion(
       android_input_data_t *android_data, AInputEvent *event,
@@ -611,6 +613,10 @@ static void handle_hotplug(android_input_data_t *android_data,
    int productId                = 0;
    bool back_mapped             = false;
    settings_t         *settings = config_get_ptr();
+   char device_model[256] = {0};
+   frontend_android_get_name(device_model, sizeof(device_model));
+
+   RARCH_LOG("Device model: (%s).\n", device_model);
 
    if (*port > MAX_PADS)
    {
@@ -624,13 +630,17 @@ static void handle_hotplug(android_input_data_t *android_data,
       return;
    }
 
+   RARCH_LOG("Device Name: %s\n IDS: %d, %d", name_buf, primary_id, secondary_id);
    /* FIXME - per-device hacks for nVidia Shield, Xperia Play and others
-    * For Xperia Play We need to keep 'count' of the amount of similar devices
-    * and group them in a single port.
-    *
-    * For the NVIDIA Shield we must make sure that the built-in controllers always
-    * map to the port
-    *
+
+    * Built-in controller is always user 1
+    * Back button is on a separate HID device with no VID/PID
+    * so we overwrite the id to make it act as one device
+    * other device names should use the normal process
+
+    * This process depends on autoconf, but can work with user
+    * created autoconfs properly
+
     * For TTT HT - keep track of how many of these 'pads' are already
     * connected, and based on that, assign one of them to be User 1 and
     * the other to be User 2.
@@ -638,32 +648,86 @@ static void handle_hotplug(android_input_data_t *android_data,
     * If this is finally implemented right, then these port conditionals can go.
     */
 
-   /* Xperia Play */
-   if (strstr(device_name, "keypad-game-zeus") ||
-         strstr(device_name, "keypad-zeus"))
+    /* NVIDIA Shield Portable */
+   if(strstr(device_model, "SHIELD\0") && (
+      strstr(device_name, "Virtual") || strstr(device_name, "gpio") ||
+      strstr(device_name,"NVIDIA Corporation NVIDIA Controller v01.01")))
    {
-      if (xperia1 < 0)
+      /* only use the hack if the device is one of the built-in devices */
+      RARCH_LOG("NVIDIA Shield Detected: %s\n", device_model);
       {
-         RARCH_LOG("zeus_pad 1 detected: %u\n", id);
-         xperia1 = id;
+         if ( primary_id < 0 )
+            primary_id = id;
+         else
+            secondary_id = id;
+
+         if ( secondary_id > 0)
+            return;
+
+         strlcpy (name_buf, "NVIDIA SHIELD Portable", sizeof(name_buf));
+         *port = 0;
       }
-      else
-      {
-         RARCH_LOG("zeus_pad 2 detected: %u\n", id);
-         xperia2 = id;
-      }
-      strlcpy(name_buf, device_name, sizeof(name_buf));
    }
 
-   /* Archos Gamepad */
-   else if (strstr(device_name, "joy_key") || strstr(device_name, "joystick"))
+   /* GPD XD */
+   else if(strstr(device_model, "XD") && (
+      strstr(device_name, "Virtual") || strstr(device_name, "rk29-keypad") ||
+      strstr(device_name,"Playstation3") || strstr(device_name,"XBOX")))
    {
-      if (archos1 < 0)
-         archos1 = id;
-      else
-         archos2 = id;
-      *port = 0;
-      strlcpy(name_buf, "Archos Gamepad", sizeof(name_buf));
+      /* only use the hack if the device is one of the built-in devices */
+      RARCH_LOG("GPD XD Detected: %s\n", device_model);
+      {
+         if ( primary_id < 0 )
+            primary_id = id;
+         else
+            secondary_id = id;
+
+         if ( secondary_id > 0)
+            return;
+
+         strlcpy (name_buf, "GPD XD", sizeof(name_buf));
+         *port = 0;
+      }
+   }
+
+     /* XPERIA Play */
+   else if(strstr(device_model, "R800") && (
+       strstr(device_name, "keypad-game-zeus") || strstr(device_name, "keypad-zeus")))
+   {
+      /* only use the hack if the device is one of the built-in devices */
+      RARCH_LOG("Sony XPERIA Play Detected: %s\n", device_model);
+      {
+         if ( primary_id < 0 )
+            primary_id = id;
+         else
+            secondary_id = id;
+
+         if ( secondary_id > 0)
+            return;
+
+         strlcpy (name_buf, "XPERIA Play", sizeof(name_buf));
+         *port = 0;
+      }
+   }
+
+   /* ARCHOS Gamepad */
+   else if(strstr(device_model, "ARCHOS GAMEPAD") && (
+      strstr(device_name, "joy_key") || strstr(device_name, "joystick")))
+   {
+      /* only use the hack if the device is one of the built-in devices */
+      RARCH_LOG("ARCHOS GAMEPAD Detected: %s\n", device_model);
+      {
+         if ( primary_id < 0 )
+            primary_id = id;
+         else
+            secondary_id = id;
+
+         if ( secondary_id > 0)
+            return;
+
+         strlcpy (name_buf, "ARCHOS GamePad", sizeof(name_buf));
+         *port = 0;
+      }
    }
 
    else if (strstr(device_name, "iControlPad-"))
@@ -688,32 +752,7 @@ static void handle_hotplug(android_input_data_t *android_data,
          strlcpy(name_buf, "SideWinder Classic", sizeof(name_buf));
    }
 
-   /* NVIDIA Shield Portable 
-    * Built-in controller is always user 1 
-    * Back button is on a separate HID device with no VID/PID
-    * so we bind that controller to user 1 too and overwrite
-    * whenever a gamepad button is pressed
-    */
-   else if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.01"))
-   {
-      *port = 0;
-      strlcpy(name_buf, device_name, sizeof(name_buf));
-   }
-   else if ((strstr(device_name, "Virtual") || strstr(device_name, "gpio")) && 
-         strstr(android_data->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.01"))
-   {
-      *port = 0;
-      strlcpy(name_buf, "NVIDIA SHIELD Portable", sizeof(name_buf));
-   }
 
-   /* Other NVIDIA Shield Devices
-    * NVIDIA button on the controller is on a separate HID device
-    * so whenever that button is hit, bind that device to user 1 and
-    * overwrite it whenever a SHIELD Controller button is pressed
-    * 
-    * In this case we won't map back (4) to menu, instead we map the 
-    * NVIDIA button (84) using an autoconf file
-    */
    else if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03") 
          && !strstr(android_data->pad_states[0].name,"NVIDIA Corporation NVIDIA Controller v01.0"))
    {
@@ -770,7 +809,6 @@ static void handle_hotplug(android_input_data_t *android_data,
       strlcpy(settings->input.device_names[*port],
             name_buf, sizeof(settings->input.device_names[*port]));
 
-   /* this is not a built in or fixed device, assign a new port */
    if (*port < 0)
       *port = android_data->pads_connected;
 
@@ -779,7 +817,7 @@ static void handle_hotplug(android_input_data_t *android_data,
       bool      autoconfigured;
       autoconfig_params_t params   = {{0}};
 
-      RARCH_LOG("Port %d: %s VID/PID: %d/%d\n", *port, name_buf, params.vid, params.pid);
+      RARCH_LOG("Pads Connected: %d Port: %d\n %s VID/PID: %d/%d\n",android_data->pads_connected, *port, name_buf, params.vid, params.pid);
 
       strlcpy(params.name, name_buf, sizeof(params.name));
       params.idx = *port;
@@ -813,12 +851,8 @@ static int android_input_get_id(AInputEvent *event)
 {
    int id = AInputEvent_getDeviceId(event);
 
-   /* Needs to be cleaned up */
-   if (id == xperia2)
-      id = xperia1;
-
-   if (id == archos2)
-      id = archos1;
+   if (id == secondary_id)
+      id = primary_id;
 
    return id;
 }
@@ -844,7 +878,7 @@ static void android_input_poll_input(void *data)
 
          if (port < 0)
             handle_hotplug(android_data, android_app,
-                  &port, id, source);
+            &port, id, source);
 
          switch (type_event)
          {
