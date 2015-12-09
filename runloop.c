@@ -521,6 +521,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                sizeof(system->valid_extensions));
          system->block_extract = system->info.block_extract;
          break;
+      case RUNLOOP_CTL_HAS_CORE_OPTIONS:
+         return system && system->core_options;
       case RUNLOOP_CTL_SYSTEM_INFO_FREE:
          if (system->core_options)
          {
