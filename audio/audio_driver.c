@@ -236,8 +236,12 @@ static bool uninit_audio(void)
 {
    settings_t *settings = config_get_ptr();
 
-   if (audio_driver_context_audio_data && current_audio)
-      current_audio->free(audio_driver_context_audio_data);
+   if (current_audio && current_audio->free)
+   {
+      if (audio_driver_context_audio_data)
+         current_audio->free(audio_driver_context_audio_data);
+      audio_driver_context_audio_data = NULL;
+   }
 
    if (audio_driver_data.conv_outsamples)
       free(audio_driver_data.conv_outsamples);
@@ -784,10 +788,7 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          break;
       case RARCH_AUDIO_CTL_DEINIT:
          if (uninit_audio())
-         {
-            audio_driver_context_audio_data = NULL;
             return true;
-         }
          break;
       case RARCH_AUDIO_CTL_SETUP_REWIND:
          audio_driver_setup_rewind();
