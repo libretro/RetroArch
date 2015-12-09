@@ -708,9 +708,8 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
             return false;
          return true;
       case RARCH_INPUT_CTL_DEINIT:
-         if (!current_input)
-            return false;
-         current_input->free(current_input_data);
+         if (current_input && current_input->free)
+            current_input->free(current_input_data);
          current_input_data = NULL;
          return true;
       case RARCH_INPUT_CTL_DESTROY_DATA:
