@@ -105,13 +105,13 @@ void video_shader_driver_scale(unsigned idx, struct gfx_fbo_scale *scale);
 const shader_backend_t *shader_ctx_find_driver(const char *ident);
 
 /**
- * shader_driver_ctx_init_first:
+ * video_shader_driver_init_first:
  *
  * Finds first suitable shader context driver.
  *
  * Returns: shader context driver if found, otherwise NULL.
  **/
-bool shader_driver_ctx_init_first(void);
+bool video_shader_driver_init_first(void);
 
 struct video_shader *video_shader_driver_get_current_shader(void);
 

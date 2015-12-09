@@ -57,13 +57,13 @@ const shader_backend_t *shader_ctx_find_driver(const char *ident)
 }
 
 /**
- * shader_driver_ctx_init_first:
+ * video_shader_driver_init_first:
  *
  * Finds first suitable shader context driver.
  *
  * Returns: true (1) if found, otherwise false (0).
  **/
-bool shader_driver_ctx_init_first(void)
+bool video_shader_driver_init_first(void)
 {
    unsigned i;
 
