@@ -68,7 +68,7 @@ static PFNVGCREATEEGLIMAGETARGETKHRPROC pvgCreateEGLImageTargetKHR;
 
 static void vg_set_nonblock_state(void *data, bool state)
 {
-   gfx_ctx_swap_interval(data, state ? 0 : 1);
+   gfx_ctx_swap_interval(state ? 0 : 1);
 }
 
 static INLINE bool vg_query_extension(const char *ext)
@@ -100,15 +100,15 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    gfx_ctx_set(ctx);
 
-   gfx_ctx_get_video_size(vg, &temp_width, &temp_height);
+   gfx_ctx_get_video_size(&temp_width, &temp_height);
    RARCH_LOG("Detecting screen resolution %ux%u.\n", temp_width, temp_height);
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);
 
-   gfx_ctx_swap_interval(vg, video->vsync ? 1 : 0);
+   gfx_ctx_swap_interval(video->vsync ? 1 : 0);
 
-   gfx_ctx_update_window_title(vg);
+   gfx_ctx_update_window_title();
 
    vg->mTexType    = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;
    vg->keep_aspect = video->force_aspect;
@@ -123,14 +123,14 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
       win_height = temp_height;
    }
 
-   if (!gfx_ctx_set_video_mode(vg, win_width, win_height, video->fullscreen))
+   if (!gfx_ctx_set_video_mode(win_width, win_height, video->fullscreen))
       goto error;
 
    video_driver_get_size(&temp_width, &temp_height);
 
    temp_width  = 0;
    temp_height = 0;
-   gfx_ctx_get_video_size(vg, &temp_width, &temp_height);
+   gfx_ctx_get_video_size(&temp_width, &temp_height);
    vg->should_resize = true;
 
    if (temp_width != 0 && temp_height != 0)
@@ -143,7 +143,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    vg->mScreenAspect = (float)temp_width / temp_height;
 
-   gfx_ctx_translate_aspect(vg, &vg->mScreenAspect, temp_width, temp_height);
+   gfx_ctx_translate_aspect(&vg->mScreenAspect, temp_width, temp_height);
 
    vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
 
@@ -152,7 +152,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
          video->smooth ? VG_IMAGE_QUALITY_BETTER : VG_IMAGE_QUALITY_NONANTIALIASED);
    vg_set_nonblock_state(vg, !video->vsync);
 
-   gfx_ctx_input_driver(vg, input, input_data);
+   gfx_ctx_input_driver(input, input_data);
 
    if (settings->video.font_enable && font_renderer_create_default(&vg->font_driver, &vg->mFontRenderer,
             *settings->video.font_path ? settings->video.font_path : NULL, settings->video.font_size))
@@ -176,7 +176,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
       }
    }
 
-   if (vg_query_extension("KHR_EGL_image") && gfx_ctx_image_buffer_init(vg, video))
+   if (vg_query_extension("KHR_EGL_image") && gfx_ctx_image_buffer_init(video))
    {
       pvgCreateEGLImageTargetKHR = (PFNVGCREATEEGLIMAGETARGETKHRPROC)gfx_ctx_get_proc_address("vgCreateEGLImageTargetKHR");
 
@@ -285,7 +285,7 @@ static void vg_copy_frame(void *data, const void *frame,
    if (vg->mEglImageBuf)
    {
       EGLImageKHR img = 0;
-      bool                new_egl = gfx_ctx_image_buffer_write(vg,
+      bool                new_egl = gfx_ctx_image_buffer_write(
             frame, width, height, pitch, (vg->mTexType == VG_sXRGB_8888), 0, &img);
 
       retro_assert(img != EGL_NO_IMAGE_KHR);
@@ -352,11 +352,11 @@ static bool vg_frame(void *data, const void *frame,
       vg_draw_message(vg, msg);
 #endif
 
-   gfx_ctx_update_window_title(vg);
+   gfx_ctx_update_window_title();
 
    retro_perf_stop(&vg_fr);
 
-   gfx_ctx_swap_buffers(vg);
+   gfx_ctx_swap_buffers();
 
    return true;
 }
@@ -367,7 +367,7 @@ static bool vg_alive(void *data)
    unsigned temp_width = 0, temp_height = 0;
    vg_t            *vg = (vg_t*)data;
 
-   gfx_ctx_check_window(data, &quit,
+   gfx_ctx_check_window(&quit,
          &vg->should_resize, &temp_width, &temp_height);
 
    if (temp_width != 0 && temp_height != 0)
@@ -378,17 +378,17 @@ static bool vg_alive(void *data)
 
 static bool vg_focus(void *data)
 {
-   return gfx_ctx_focus(data);
+   return gfx_ctx_focus();
 }
 
 static bool vg_suppress_screensaver(void *data, bool enable)
 {
-   return gfx_ctx_suppress_screensaver(data, enable);
+   return gfx_ctx_suppress_screensaver(enable);
 }
 
 static bool vg_has_windowed(void *data)
 {
-   return gfx_ctx_has_windowed(data);
+   return gfx_ctx_has_windowed();
 }
 
 static bool vg_set_shader(void *data,
