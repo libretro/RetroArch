@@ -36,6 +36,7 @@
 #include "../menu_display.h"
 #include "../menu_hash.h"
 #include "../menu_display.h"
+#include "../menu_navigation.h"
 
 #include "../menu_cbs.h"
 
@@ -43,7 +44,6 @@
 #include "../../configuration.h"
 #include "../../file_ext.h"
 
-#include "../../runloop.h"
 #include "../../tasks/tasks.h"
 
 #ifndef XMB_THEME

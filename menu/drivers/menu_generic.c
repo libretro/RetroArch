@@ -23,6 +23,7 @@
 #include "../menu_animation.h"
 #include "../menu_display.h"
 #include "../menu_displaylist.h"
+#include "../menu_navigation.h"
 #include "../menu_hash.h"
 #include "../menu_entries.h"
 

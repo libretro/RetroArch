@@ -21,6 +21,7 @@
 #include "../menu_display.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
+#include "../menu_navigation.h"
 #include "../menu_hash.h"
 
 #include "../../defaults.h"

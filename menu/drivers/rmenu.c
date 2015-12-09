@@ -31,6 +31,7 @@
 #include "../menu_input.h"
 #include "../menu_setting.h"
 #include "../menu_display.h"
+#include "../menu_navigation.h"
 #include "../../general.h"
 #include "../../config.def.h"
 #include "../../performance.h"

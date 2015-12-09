@@ -39,8 +39,8 @@
 #include "../menu_animation.h"
 #include "../menu_entry.h"
 #include "../menu_display.h"
+#include "../menu_navigation.h"
 #include "../menu_hash.h"
-#include "../../runloop.h"
 
 #include "../../gfx/font_driver.h"
 

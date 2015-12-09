@@ -20,6 +20,7 @@
 #include "menu_driver.h"
 #include "menu_cbs.h"
 #include "menu_hash.h"
+#include "menu_navigation.h"
 
 #include "../general.h"
 #include "../system.h"
