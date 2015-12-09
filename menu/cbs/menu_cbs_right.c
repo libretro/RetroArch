@@ -354,7 +354,7 @@ int core_setting_right(unsigned type, const char *label,
 {
    unsigned idx     = type - MENU_SETTINGS_CORE_OPTION_START;
 
-   runloop_ctl(RUNLOOP_CTL_CORE_OPTION_NEXT, NULL);
+   runloop_ctl(RUNLOOP_CTL_CORE_OPTION_NEXT, &idx);
 
    return 0;
 }
