@@ -529,10 +529,8 @@ char ext_dir[PATH_MAX_LENGTH];
 /* forward declaration */
 bool android_run_events(void *data);
 
-static INLINE void android_app_write_cmd(void *data, int8_t cmd)
+static INLINE void android_app_write_cmd(struct android_app *android_app, int8_t cmd)
 {
-   struct android_app *android_app = (struct android_app*)data;
-
    if (!android_app)
       return;
 
@@ -540,10 +538,8 @@ static INLINE void android_app_write_cmd(void *data, int8_t cmd)
       RARCH_ERR("Failure writing android_app cmd: %s\n", strerror(errno));
 }
 
-static void android_app_set_input(void *data, AInputQueue* inputQueue)
+static void android_app_set_input(struct android_app *android_app, AInputQueue* inputQueue)
 {
-   struct android_app *android_app = (struct android_app*)data;
-
    if (!android_app)
       return;
 
@@ -557,10 +553,8 @@ static void android_app_set_input(void *data, AInputQueue* inputQueue)
    slock_unlock(android_app->mutex);
 }
 
-static void android_app_set_window(void *data, ANativeWindow* window)
+static void android_app_set_window(struct android_app *android_app, ANativeWindow* window)
 {
-   struct android_app *android_app = (struct android_app*)data;
-
    if (!android_app)
       return;
 
@@ -672,21 +666,14 @@ static void onStop(ANativeActivity* activity)
 
 static void onConfigurationChanged(ANativeActivity *activity)
 {
-   struct android_app* android_app = (struct android_app*)
-      activity->instance;
-
-   if (!android_app)
-      return;
-
    RARCH_LOG("ConfigurationChanged: %p\n", activity);
-   android_app_write_cmd(android_app, APP_CMD_CONFIG_CHANGED);
+   android_app_write_cmd((struct android_app*)activity->instance, APP_CMD_CONFIG_CHANGED);
 }
 
 static void onLowMemory(ANativeActivity* activity)
 {
-   struct android_app* android_app = (struct android_app*)activity->instance;
    RARCH_LOG("LowMemory: %p\n", activity);
-   android_app_write_cmd(android_app, APP_CMD_LOW_MEMORY);
+   android_app_write_cmd((struct android_app*)activity->instance, APP_CMD_LOW_MEMORY);
 }
 
 static void onWindowFocusChanged(ANativeActivity* activity, int focused)
@@ -856,8 +843,6 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
 
    activity->instance = android_app_create(activity, savedState, savedStateSize);
 }
-
-
 
 static void frontend_android_get_name(char *s, size_t len)
 {
