@@ -143,6 +143,8 @@ struct android_app
     * APP_CMD_RESUME, APP_CMD_PAUSE, or APP_CMD_STOP; see below. */
    int activityState;
 
+   int reinitRequested;
+
    /* This is non-zero when the application's NativeActivity is being
     * destroyed and waiting for the app thread to complete. */
    int destroyRequested;
@@ -290,7 +292,9 @@ enum
     * Command from main thread: the app's activity is being destroyed,
     * and waiting for the app thread to clean up and exit before proceeding.
     */
-   APP_CMD_DESTROY
+   APP_CMD_DESTROY,
+
+   APP_CMD_REINIT_DONE
 };
 
 #define JNI_EXCEPTION(env) \
@@ -357,6 +361,8 @@ enum
    JNI_EXCEPTION(env)
 
 extern JNIEnv *jni_thread_getenv(void);
+
+void android_app_write_cmd(struct android_app *android_app, int8_t cmd);
 
 extern struct android_app *g_android;
 #else

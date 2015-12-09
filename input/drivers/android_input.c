@@ -254,6 +254,15 @@ static void android_input_poll_main_cmd(void)
 
    switch (cmd)
    {
+      case APP_CMD_REINIT_DONE:
+         slock_lock(android_app->mutex);
+
+         android_app->reinitRequested = 0;
+
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+         break;
+
       case APP_CMD_INPUT_CHANGED:
          slock_lock(android_app->mutex);
 
@@ -278,11 +287,10 @@ static void android_input_poll_main_cmd(void)
       case APP_CMD_INIT_WINDOW:
          slock_lock(android_app->mutex);
          android_app->window = android_app->pendingWindow;
+         android_app->reinitRequested = 1;
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
 
-         if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
-            event_command(EVENT_CMD_REINIT);
          break;
 
       case APP_CMD_SAVE_STATE:
@@ -923,10 +931,18 @@ static void android_input_poll(void *data)
             android_input_poll_main_cmd();
             break;
       }
-
+      
       if (android_app->destroyRequested != 0)
       {
          runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+         return;
+      }
+
+      if (android_app->reinitRequested != 0)
+      {
+         if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+            event_command(EVENT_CMD_REINIT);
+         android_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
          return;
       }
    }
@@ -947,6 +963,13 @@ bool android_run_events(void *data)
    {
       runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
       return false;
+   }
+
+   if (android_app->reinitRequested != 0)
+   {
+      if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+         event_command(EVENT_CMD_REINIT);
+      android_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
    }
 
    return true;

@@ -529,7 +529,7 @@ char ext_dir[PATH_MAX_LENGTH];
 /* forward declaration */
 bool android_run_events(void *data);
 
-static INLINE void android_app_write_cmd(struct android_app *android_app, int8_t cmd)
+void android_app_write_cmd(struct android_app *android_app, int8_t cmd)
 {
    if (!android_app)
       return;
