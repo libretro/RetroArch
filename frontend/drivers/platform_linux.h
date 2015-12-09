@@ -290,10 +290,7 @@ enum
     * Command from main thread: the app's activity is being destroyed,
     * and waiting for the app thread to clean up and exit before proceeding.
     */
-   APP_CMD_DESTROY,
-
-   // Set by thread when it will no longer reply to commands.
-   APP_CMD_DEAD
+   APP_CMD_DESTROY
 };
 
 #define JNI_EXCEPTION(env) \

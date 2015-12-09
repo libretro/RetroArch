@@ -579,22 +579,16 @@ static void android_app_set_window(void *data, ANativeWindow* window)
    slock_unlock(android_app->mutex);
 }
 
-static void android_app_set_activity_state(void *data, int8_t cmd)
+static void android_app_set_activity_state(struct android_app *android_app, int8_t cmd)
 {
-   struct android_app *android_app = (struct android_app*)data;
-
    if (!android_app)
       return;
 
    slock_lock(android_app->mutex);
    android_app_write_cmd(android_app, cmd);
-   while (android_app->activityState != cmd
-         && android_app->activityState != APP_CMD_DEAD)
+   while (android_app->activityState != cmd)
       scond_wait(android_app->cond, android_app->mutex);
    slock_unlock(android_app->mutex);
-
-   if (android_app->activityState == APP_CMD_DEAD)
-      RARCH_LOG("RetroArch native thread is dead.\n");
 }
 
 static void android_app_free(struct android_app* android_app)
@@ -2049,14 +2043,12 @@ static void free_saved_state(struct android_app* android_app)
 
 static void android_app_destroy(struct android_app *android_app)
 {
-   JNIEnv                     *env = NULL;
+   JNIEnv *env = NULL;
 
    RARCH_LOG("android_app_destroy\n");
    free_saved_state(android_app);
 
    slock_lock(android_app->mutex);
-
-   android_app->activityState = APP_CMD_DEAD;
 
    env = jni_thread_getenv();
 
