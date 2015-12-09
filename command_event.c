@@ -59,31 +59,6 @@
 #include <net/net_compat.h>
 #endif
 
-
-
-
-static void event_save_files(void)
-{
-   unsigned i;
-   global_t *global = global_get_ptr();
-
-   if (!global->savefiles || !global->sram.use)
-      return;
-
-   for (i = 0; i < global->savefiles->size; i++)
-   {
-      unsigned type    = global->savefiles->elems[i].attr.i;
-      const char *path = global->savefiles->elems[i].data;
-      RARCH_LOG("%s #%u %s \"%s\".\n",
-            msg_hash_to_str(MSG_SAVING_RAM_TYPE),
-            type,
-            msg_hash_to_str(MSG_TO),
-            path);
-      save_ram_file(path, type);
-   }
-}
-
-
 /**
  * event_disk_control_set_eject:
  * @new_state            : Eject or close the virtual drive tray.
@@ -103,8 +78,6 @@ static void event_disk_control_set_eject(bool new_state, bool print_log)
 
    if (!control || !control->get_num_images)
       return;
-
-   *msg = '\0';
 
    if (control->set_eject_state(new_state))
       snprintf(msg, sizeof(msg), "%s %s",
@@ -133,19 +106,6 @@ static void event_disk_control_set_eject(bool new_state, bool print_log)
 }
 
 /**
- * event_check_disk_eject:
- * @control              : Handle to disk control handle.
- *
- * Perform disk eject (Core Disk Options).
- **/
-static void event_check_disk_eject(
-      const struct retro_disk_control_callback *control)
-{
-   bool new_state = !control->get_eject_state();
-   event_disk_control_set_eject(new_state, true);
-}
-
-/**
  * event_disk_control_set_index:
  * @idx                : Index of disk to set as current.
  *
@@ -162,8 +122,6 @@ static void event_disk_control_set_index(unsigned idx)
 
    if (!control || !control->get_num_images)
       return;
-
-   *msg = '\0';
 
    num_disks = control->get_num_images();
 
@@ -266,9 +224,7 @@ static void event_check_disk_prev(
    unsigned current      = 0;
    bool disk_prev_enable = false;
 
-   if (!control)
-      return;
-   if (!control->get_num_images)
+   if (!control || !control->get_num_images)
       return;
    if (!control->get_image_index)
       return;
@@ -301,9 +257,7 @@ static void event_check_disk_next(
    unsigned current          = 0;
    bool     disk_next_enable = false;
 
-   if (!control)
-      return;
-   if (!control->get_num_images)
+   if (!control || !control->get_num_images)
       return;
    if (!control->get_image_index)
       return;
@@ -332,7 +286,7 @@ static void event_check_disk_next(
  **/
 static void event_set_volume(float gain)
 {
-   char msg[128]             = {0};
+   char msg[128];
    settings_t *settings      = config_get_ptr();
 
    settings->audio.volume += gain;
@@ -354,7 +308,7 @@ static void event_set_volume(float gain)
 static void event_init_controllers(void)
 {
    unsigned i;
-   settings_t *settings = config_get_ptr();
+   settings_t      *settings = config_get_ptr();
    rarch_system_info_t *info = rarch_system_info_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
@@ -422,7 +376,7 @@ static void event_deinit_core(bool reinit)
       event_command(EVENT_CMD_DRIVERS_DEINIT);
 
   /* auto overrides: reload the original config */
-   if(global->overrides_active)
+   if(global && global->overrides_active)
    {
       config_unload_override();
       global->overrides_active = false;
@@ -1398,8 +1352,21 @@ bool event_command(enum event_command cmd)
             return false;
          break;
       case EVENT_CMD_SAVEFILES:
-         event_save_files();
-         break;
+         if (!global->savefiles || !global->sram.use)
+            return false;
+
+         for (i = 0; i < global->savefiles->size; i++)
+         {
+            unsigned type    = global->savefiles->elems[i].attr.i;
+            const char *path = global->savefiles->elems[i].data;
+            RARCH_LOG("%s #%u %s \"%s\".\n",
+                  msg_hash_to_str(MSG_SAVING_RAM_TYPE),
+                  type,
+                  msg_hash_to_str(MSG_TO),
+                  path);
+            save_ram_file(path, type);
+         }
+         return true;
       case EVENT_CMD_SAVEFILES_DEINIT:
          if (!global)
             break;
@@ -1501,7 +1468,10 @@ bool event_command(enum event_command cmd)
                &info->disk_control;
 
             if (control)
-               event_check_disk_eject(control);
+            {
+               bool new_state = !control->get_eject_state();
+               event_disk_control_set_eject(new_state, true);
+            }
          }
          else
             runloop_msg_queue_push_new(
