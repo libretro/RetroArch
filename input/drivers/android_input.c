@@ -52,8 +52,8 @@ struct input_pointer
    int16_t full_x, full_y;
 };
 
-int primary_id = -1;
-int secondary_id = -1;
+static int primary_id   = -1;
+static int secondary_id = -1;
 
 enum
 {
