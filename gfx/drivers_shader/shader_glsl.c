@@ -698,9 +698,9 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
 
    for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
-      if (glsl->glsl_vbo[i].vbo_primary)
+      if (glIsBuffer(glsl->glsl_vbo[i].vbo_primary))
          glDeleteBuffers(1, &glsl->glsl_vbo[i].vbo_primary);
-      if (glsl->glsl_vbo[i].vbo_secondary)
+      if (glIsBuffer(glsl->glsl_vbo[i].vbo_secondary))
          glDeleteBuffers(1, &glsl->glsl_vbo[i].vbo_secondary);
 
       free(glsl->glsl_vbo[i].buffer_primary);
