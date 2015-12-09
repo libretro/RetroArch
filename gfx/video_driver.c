@@ -875,7 +875,7 @@ void video_driver_set_filtering(unsigned index, bool smooth)
 void video_driver_cached_frame_set(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
-   video_driver_state.frame_cache.data   = data;
+   video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_SET_PTR, (void*)data);
    video_driver_state.frame_cache.width  = width;
    video_driver_state.frame_cache.height = height;
    video_driver_state.frame_cache.pitch  = pitch;
