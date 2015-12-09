@@ -172,7 +172,7 @@ bool video_shader_driver_set_coords(void *handle_data, const void *data)
 
 bool video_shader_driver_set_mvp(void *data, const math_matrix_4x4 *mat)
 {
-   if (!current_shader || !current_shader->set_mvp)
+   if (!current_shader || !current_shader->set_mvp || !mat)
       return false;
    return current_shader->set_mvp(data, shader_data, mat);
 }
