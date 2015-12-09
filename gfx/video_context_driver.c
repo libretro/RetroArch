@@ -81,11 +81,6 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 static const gfx_ctx_driver_t  *current_video_context;
 static        void *video_context_data;
 
-void *gfx_ctx_data_get_ptr(void)
-{
-   return video_context_data;
-}
-
 void gfx_ctx_set(const gfx_ctx_driver_t *ctx_driver)
 {
    if (!ctx_driver)

@@ -156,11 +156,9 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
    wl->height = 0;
 }
 
-static void flush_wayland_fd(void)
+static void flush_wayland_fd(gfx_ctx_wayland_data_t *wl)
 {
    struct pollfd fd = {0};
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      gfx_ctx_data_get_ptr();
 
    wl_display_dispatch_pending(wl->dpy);
    wl_display_flush(wl->dpy);
@@ -191,7 +189,7 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
 
    (void)frame_count;
 
-   flush_wayland_fd();
+   flush_wayland_fd(data);
 
    new_width = *width;
    new_height = *height;
@@ -470,7 +468,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    if (fullscreen)
       wl_shell_surface_set_fullscreen(wl->shell_surf, WL_SHELL_SURFACE_FULLSCREEN_METHOD_DEFAULT, 0, NULL);
 
-   flush_wayland_fd();
+   flush_wayland_fd(wl);
    return true;
 
 error:
