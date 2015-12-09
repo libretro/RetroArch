@@ -1115,11 +1115,6 @@ rarch_softfilter_t *video_driver_frame_filter_get_ptr(void)
    return video_driver_state.filter.filter;
 }
 
-void *video_driver_frame_filter_get_buf_ptr(void)
-{
-   return video_driver_state.filter.buffer;
-}
-
 enum retro_pixel_format video_driver_get_pixel_format(void)
 {
    return video_driver_state.pix_fmt;
@@ -1895,7 +1890,7 @@ void video_driver_frame(const void *data, unsigned width,
    if (video_driver_frame_filter(data, width, height, pitch,
             &output_width, &output_height, &output_pitch))
    {
-      data   = video_driver_frame_filter_get_buf_ptr();
+      data   = video_driver_state.filter.buffer;
       width  = output_width;
       height = output_height;
       pitch  = output_pitch;
