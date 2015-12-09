@@ -336,11 +336,8 @@ static int core_setting_left(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned idx     = type - MENU_SETTINGS_CORE_OPTION_START;
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
-   (void)label;
-
-   core_option_prev(system->core_options, idx);
+   runloop_ctl(RUNLOOP_CTL_CORE_OPTION_PREV, &idx);
 
    return 0;
 }

@@ -984,6 +984,26 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_IS_CORE_OPTION_UPDATED:
          return system->core_options ?
             core_option_updated(system->core_options) : false;
+      case RUNLOOP_CTL_CORE_OPTION_PREV:
+         {
+            unsigned *idx = (unsigned*)data;
+            if (!idx)
+               return false;
+            core_option_prev(system->core_options, *idx);
+            if (ui_companion_is_on_foreground())
+               ui_companion_driver_notify_refresh();
+         }
+         return true;
+      case RUNLOOP_CTL_CORE_OPTION_NEXT:
+         {
+            unsigned *idx = (unsigned*)data;
+            if (!idx)
+               return false;
+            core_option_next(system->core_options, *idx);
+            if (ui_companion_is_on_foreground())
+               ui_companion_driver_notify_refresh();
+         }
+         return true;
       case RUNLOOP_CTL_CORE_OPTIONS_GET:
          {
             struct retro_variable *var = (struct retro_variable*)data;

@@ -353,14 +353,8 @@ int core_setting_right(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned idx     = type - MENU_SETTINGS_CORE_OPTION_START;
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
 
-   (void)label;
-
-   core_option_next(system->core_options, idx);
-
-   if (ui_companion_is_on_foreground())
-      ui_companion_driver_notify_refresh();
+   runloop_ctl(RUNLOOP_CTL_CORE_OPTION_NEXT, NULL);
 
    return 0;
 }
