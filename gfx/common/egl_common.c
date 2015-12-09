@@ -224,7 +224,7 @@ bool egl_init_context(void *data, NativeDisplayType display,
    return true;
 }
 
-bool egl_create_context(void *data, EGLint *egl_attribs)
+bool egl_create_context(void *data, const EGLint *egl_attribs)
 {
    egl_ctx_data_t *egl = (egl_ctx_data_t*)data;
    egl->ctx    = eglCreateContext(egl->dpy, egl->config, EGL_NO_CONTEXT,

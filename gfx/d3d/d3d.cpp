@@ -174,7 +174,7 @@ void d3d_make_d3dpp(void *data,
       unsigned width          = 0;
       unsigned height         = 0;
 
-      gfx_ctx_get_video_size(d3d, &width, &height);
+      gfx_ctx_get_video_size(&width, &height);
       video_driver_set_size(&width, &height);
 #endif
       video_driver_get_size(&d3dpp->BackBufferWidth, &d3dpp->BackBufferHeight);
@@ -589,7 +589,7 @@ static bool d3d_construct(d3d_video_t *d3d,
          (int)(mon_rect.right  - mon_rect.left),
          (int)(mon_rect.bottom - mon_rect.top));
 #else
-   gfx_ctx_get_video_size(d3d, &full_x, &full_y);
+   gfx_ctx_get_video_size(&full_x, &full_y);
 #endif
    {
       unsigned new_width  = info->fullscreen ? full_x : info->width;
@@ -825,7 +825,7 @@ static void d3d_free(void *data)
 #endif
 
 #ifdef _XBOX
-   gfx_ctx_free(d3d);
+   gfx_ctx_free();
 #else
 
 #ifdef HAVE_MENU
