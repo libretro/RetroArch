@@ -675,6 +675,8 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
    {
       if (glsl->gl_program[i] == 0 || (i && glsl->gl_program[i] == glsl->gl_program[0]))
          continue;
+      if (!glIsProgram(glsl->gl_program[i]))
+         continue;
 
       glDeleteProgram(glsl->gl_program[i]);
    }
