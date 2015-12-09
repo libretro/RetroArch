@@ -3035,7 +3035,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_CORE_OPTIONS:
          if (runloop_ctl(RUNLOOP_CTL_HAS_CORE_OPTIONS, NULL))
          {
-            size_t opts = core_option_size(system->core_options);
+            size_t opts;
+
+            runloop_ctl(RUNLOOP_CTL_GET_CORE_OPTION_SIZE, &opts);
 
             if (settings->game_specific_options)
             {
