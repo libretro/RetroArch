@@ -537,21 +537,14 @@ static void xmb_update_boxart_image(xmb_handle_t *xmb)
       xmb->boxart = 0;
 }
 
-static void xmb_selection_pointer_changed(bool allow_animations)
+static void xmb_selection_pointer_changed(xmb_handle_t *xmb, bool allow_animations)
 {
    size_t selection;
    unsigned i, end, tag, height, skip, depth;
    int threshold = 0;
-   xmb_handle_t        *xmb   = NULL;
-   menu_handle_t        *menu = menu_driver_get_ptr();
    menu_list_t     *menu_list = menu_list_get_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    settings_t       *settings = config_get_ptr();
-
-   if (!menu)
-      return;
-
-   xmb = (xmb_handle_t*)menu->userdata;
 
    if (!xmb)
       return;
@@ -1208,7 +1201,7 @@ static void xmb_populate_entries(const char *path,
 
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_PREVENT_POPULATE, NULL))
    {
-      xmb_selection_pointer_changed(false);
+      xmb_selection_pointer_changed(xmb, false);
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
       if (settings->menu.boxart_enable)
          xmb_update_boxart_image(xmb);
@@ -2255,23 +2248,31 @@ static void xmb_context_reset(void)
 
 static void xmb_navigation_clear(bool pending_push)
 {
+   menu_handle_t *menu = menu_driver_get_ptr();
+   xmb_handle_t  *xmb  = menu ? (xmb_handle_t*)menu->userdata : NULL;
    if (!pending_push)
-      xmb_selection_pointer_changed(true);
+      xmb_selection_pointer_changed(xmb, true);
 }
 
 static void xmb_navigation_pointer_changed(void)
 {
-   xmb_selection_pointer_changed(true);
+   menu_handle_t *menu = menu_driver_get_ptr();
+   xmb_handle_t  *xmb  = menu ? (xmb_handle_t*)menu->userdata : NULL;
+   xmb_selection_pointer_changed(xmb, true);
 }
 
 static void xmb_navigation_set(bool scroll)
 {
-   xmb_selection_pointer_changed(true);
+   menu_handle_t *menu = menu_driver_get_ptr();
+   xmb_handle_t  *xmb  = menu ? (xmb_handle_t*)menu->userdata : NULL;
+   xmb_selection_pointer_changed(xmb, true);
 }
 
 static void xmb_navigation_alphabet(size_t *unused)
 {
-   xmb_selection_pointer_changed(true);
+   menu_handle_t *menu = menu_driver_get_ptr();
+   xmb_handle_t  *xmb  = menu ? (xmb_handle_t*)menu->userdata : NULL;
+   xmb_selection_pointer_changed(xmb, true);
 }
 
 static void xmb_list_insert(file_list_t *list,
