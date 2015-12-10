@@ -532,15 +532,12 @@ static void rmenu_xui_render(void *data)
 	const char *dir             = NULL;
    const char *label           = NULL;
 	unsigned menu_type          = 0;
-   menu_handle_t *menu         = menu_driver_get_ptr();
 
    video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
    menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,     &fb_width);
    menu_display_ctl(MENU_DISPLAY_CTL_MSG_FORCE, &msg_force);
 
-   if (!menu)
-      return;
    if (
          menu_entries_needs_refresh() 
          && menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL)

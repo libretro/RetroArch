@@ -124,15 +124,11 @@ static void rmenu_render(void *data)
    char title[256]               = {0};
    char title_buf[256]           = {0};
    char title_msg[64]            = {0};
-   menu_handle_t *menu           = menu_driver_get_ptr();
    size_t  entries_end           = menu_entries_get_end();
 
    video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
-
-   if (!menu)
       return;
 
    if (!render_normal)
@@ -227,15 +223,10 @@ static void rmenu_render(void *data)
 static void rmenu_set_texture(void)
 {
    unsigned fb_width, fb_height;
-   menu_handle_t      *menu   = menu_driver_get_ptr();
 
-   if (!menu)
-      return;
    if (menu_texture_inited)
       return;
-   if (!menu_texture)
-      return;
-   if (!menu_texture->pixels)
+   if (!menu_texture || !menu_texture->pixels)
       return;
 
    menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,  &fb_width);
@@ -263,11 +254,7 @@ static void rmenu_wallpaper_set_defaults(char *s, size_t len)
 static void rmenu_context_reset(void)
 {
    char menu_bg[PATH_MAX_LENGTH] = {0};
-   menu_handle_t *menu           = menu_driver_get_ptr();
    settings_t *settings          = config_get_ptr();
-
-   if (!menu)
-      return;
 
    if (*settings->menu.wallpaper)
       strlcpy(menu_bg, settings->menu.wallpaper, sizeof(menu_bg));
