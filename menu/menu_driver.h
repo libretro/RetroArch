@@ -252,7 +252,7 @@ typedef struct menu_ctx_driver
    void  (*render_messagebox)(void *data, const char *msg);
    int   (*iterate)(enum menu_action action);
    void  (*render)(void *data);
-   void  (*frame)(void);
+   void  (*frame)(void *data);
    void* (*init)(void);
    void  (*free)(void*);
    void  (*context_reset)(void);

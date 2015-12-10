@@ -567,7 +567,6 @@ static void mui_render_label_value(mui_handle_t *mui,
 
 static void mui_render_menu_list(mui_handle_t *mui,
       unsigned width, unsigned height,
-      menu_handle_t *menu,
       uint32_t normal_color,
       uint32_t hover_color,
       float *pure_white)
@@ -664,7 +663,7 @@ static void bgcolor_setalpha(float *bg, float alpha)
    bg[15] = alpha;
 }
 
-static void mui_frame(void)
+static void mui_frame(void *data)
 {
    unsigned header_height;
    bool display_kb;
@@ -723,8 +722,7 @@ static void mui_frame(void)
    size_t selection;
    size_t title_margin;
    uint64_t *frame_count;
-   mui_handle_t *mui               = NULL;
-   menu_handle_t *menu             = menu_driver_get_ptr();
+   mui_handle_t *mui               = (mui_handle_t*)data;
    settings_t *settings            = config_get_ptr();
    const uint32_t normal_color     = 0x212121ff;
    const uint32_t hover_color      = 0x212121ff;
@@ -738,10 +736,8 @@ static void mui_frame(void)
    (void)passivetab_color;
    (void)activetab_color;
 
-   if (!menu || !menu->userdata)
+   if (!mui)
       return;
-
-   mui = (mui_handle_t*)menu->userdata;
 
    msg[0]       = '\0';
    title[0]     = '\0';
@@ -803,7 +799,7 @@ static void mui_frame(void)
 
    menu_display_font_bind_block(&mui->list_block);
 
-   mui_render_menu_list(mui, width, height, menu, normal_color, hover_color, &pure_white[0]);
+   mui_render_menu_list(mui, width, height, normal_color, hover_color, &pure_white[0]);
 
    menu_display_font_flush_block();
 
@@ -815,7 +811,7 @@ static void mui_frame(void)
    mui->tabs_height = 0;
 
    /* display tabs if depth equal one, if not hide them */
-   if (mui_list_get_size(menu, MENU_LIST_PLAIN) == 1)
+   if (mui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
    {
       mui_draw_tab_begin(mui, width, height, &white_bg[0], &grey_bg[0]);
 
