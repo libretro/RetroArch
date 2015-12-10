@@ -204,7 +204,7 @@ static void menu_input_search_callback(void *userdata, const char *str)
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 {
    menu_input_t *menu_input = menu_input_get_ptr();
-   menu_handle_t      *menu = menu_driver_get_ptr();
+   menu_handle_t      *menu = NULL;
 
    if (!menu_input)
       return false;
@@ -212,6 +212,8 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
    switch (state)
    {
       case MENU_INPUT_CTL_SEARCH_START:
+         menu = menu_driver_get_ptr();
+
          menu_input->keyboard.display = true;
          menu_input->keyboard.label   = menu_hash_to_str(MENU_VALUE_SEARCH);
          menu_input->keyboard.buffer  =

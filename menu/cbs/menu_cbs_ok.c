@@ -90,7 +90,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_OPEN_ARCHIVE:
          if (menu)
          {
-            menu_path  = menu->scratch2_buf;
+            menu_path    = menu->scratch2_buf;
             content_path = menu->scratch_buf;
          }
          fill_pathname_join(detect_content_path, menu_path, content_path,
