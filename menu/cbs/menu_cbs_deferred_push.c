@@ -297,7 +297,6 @@ size_t core_len;
 
 void cb_net_generic(void *task_data, void *user_data, const char *err)
 {
-   menu_handle_t *menu    = menu_driver_get_ptr();
    http_transfer_data_t *data = (http_transfer_data_t*)task_data;
 
    if (core_buf)
@@ -306,7 +305,7 @@ void cb_net_generic(void *task_data, void *user_data, const char *err)
    core_buf = NULL;
    core_len = 0;
 
-   if (!menu || !data || err)
+   if (!data || err)
       goto finish;
 
    core_buf = (char*)malloc((data->len+1) * sizeof(char));
