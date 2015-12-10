@@ -284,22 +284,20 @@ static void menu_action_setting_disp_set_label_shader_preset_parameter(
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    const struct video_shader_parameter *param = NULL;
+   struct video_shader *shader = NULL;
 #endif
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   if (!menu)
-      return;
-
-   (void)menu;
 
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   if (!menu->shader)
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+   if (!shader)
       return;
 
-   param = &menu->shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
+   param = &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
 
    if (!param)
       return;
@@ -318,11 +316,11 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
       const char *path,
       char *s2, size_t len2)
 {
-   unsigned pass = 0;
-   unsigned scale_value = 0;
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   if (!menu)
-      return;
+   unsigned pass               = 0;
+   unsigned scale_value        = 0;
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+   struct video_shader *shader = NULL;
+#endif
 
    *s = '\0';
    *w = 19;
@@ -330,14 +328,15 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
 
    (void)pass;
    (void)scale_value;
-   (void)menu;
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   if (!menu->shader)
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+   if (!shader)
       return;
 
    pass        = (type - MENU_SETTINGS_SHADER_PASS_SCALE_0);
-   scale_value = menu->shader->pass[pass].fbo.scale_x;
+   scale_value = shader->pass[pass].fbo.scale_x;
 
    if (!scale_value)
       strlcpy(s, menu_hash_to_str(MENU_VALUE_DONT_CARE), len);
