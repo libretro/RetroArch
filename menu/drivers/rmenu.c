@@ -115,7 +115,7 @@ end:
    string_list_free(list);
 }
 
-static void rmenu_render(void)
+static void rmenu_render(void *data)
 {
    bool msg_force;
    uint64_t *frame_count;

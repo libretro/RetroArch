@@ -405,7 +405,7 @@ static void rgui_blit_cursor(void)
    color_rect(fb_data, fb_pitch, fb_width, fb_height, x - 5, y, 11, 1, 0xFFFF);
 }
 
-static void rgui_render(void)
+static void rgui_render(void *data)
 {
    unsigned x, y;
    bool display_kb, msg_force;
@@ -417,9 +417,9 @@ static void rgui_render(void)
    char title[256], title_buf[256], title_msg[64];
    char msg[PATH_MAX_LENGTH], timedate[PATH_MAX_LENGTH];
    uint16_t *fb_data              = NULL;
-   rgui_t *rgui                   = NULL;
    menu_handle_t *menu            = menu_driver_get_ptr();
    settings_t *settings           = config_get_ptr();
+   rgui_t *rgui                   = (rgui_t*)data;
 
    video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
@@ -429,10 +429,8 @@ static void rgui_render(void)
    title_msg[0] = '\0';
    timedate[0]  = '\0';
 
-   if (!menu || !menu->userdata)
+   if (!menu || !rgui)
       return;
-
-   rgui = (rgui_t*)menu->userdata;
 
    if (!rgui->force_redraw)
    {

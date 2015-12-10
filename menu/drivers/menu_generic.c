@@ -360,7 +360,7 @@ int menu_iterate_render(void)
    {
       menu_animation_ctl(MENU_ANIMATION_CTL_UPDATE_TIME, NULL);
       if (driver->render)
-         driver->render();
+         driver->render(menu->userdata);
    }
 
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) && !runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))

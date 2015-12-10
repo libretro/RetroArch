@@ -886,25 +886,6 @@ static void zarch_zui_draw_cursor(float x, float y)
 {
 }
 
-static void zarch_render(void)
-{
-   int bottom;
-   unsigned width, height;
-   zui_t         *zarch = NULL;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   settings_t *settings = config_get_ptr();
-
-   if (!menu || !menu->userdata)
-      return;
-    
-   (void)settings;
-   (void)bottom;
-   (void)zarch;
-
-   video_driver_get_size(&width, &height);
-
-}
-
 static int zarch_zui_render_pick_core(zui_t *zui)
 {
    static zui_tabbed_t tabbed = {~0U};
@@ -1324,7 +1305,7 @@ menu_ctx_driver_t menu_ctx_zarch = {
    NULL,
    NULL,
    zarch_iterate,
-   zarch_render,
+   NULL,
    zarch_frame,
    zarch_init,
    zarch_free,

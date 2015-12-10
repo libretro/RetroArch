@@ -1561,19 +1561,13 @@ static void xmb_draw_cursor(xmb_handle_t *xmb,
    menu_display_blend_end();
 }
 
-static void xmb_render(void)
+static void xmb_render(void *data)
 {
    float delta_time, dt;
    size_t selection;
-   unsigned i, end, height = 0;
-   xmb_handle_t      *xmb   = NULL;
+   unsigned i, end, height  = 0;
    settings_t   *settings   = config_get_ptr();
-   menu_handle_t    *menu   = menu_driver_get_ptr();
-
-   if (!menu)
-      return;
-
-   xmb = (xmb_handle_t*)menu->userdata;
+   xmb_handle_t *xmb        = (xmb_handle_t*)data;
 
    if (!xmb)
       return;

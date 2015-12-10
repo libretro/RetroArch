@@ -528,7 +528,7 @@ static void rmenu_xui_set_list_text(int index, const wchar_t* leftText,
    }
 }
 
-static void rmenu_xui_render(void)
+static void rmenu_xui_render(void *data)
 {
    uint64_t *frame_count;
    bool display_kb, msg_force;
