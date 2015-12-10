@@ -330,9 +330,10 @@ static void menu_driver_toggle(bool latch)
 bool menu_driver_load_image(void *data, menu_image_type_t type)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+   menu_handle_t *menu             = menu_driver_get_ptr();
 
    if (driver->load_image)
-      return driver->load_image(data, type);
+      return driver->load_image(menu->userdata, data, type);
 
    return false;
 }

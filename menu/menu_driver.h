@@ -282,7 +282,7 @@ typedef struct menu_ctx_driver
          const char *path, const char *label, unsigned type, size_t idx,
          const char *elem0, const char *elem1,
          uint32_t label_hash, uint32_t menu_label_hash);
-   bool  (*load_image)(void *data, menu_image_type_t type);
+   bool  (*load_image)(void *userdata, void *data, menu_image_type_t type);
    const char *ident;
    int (*environ_cb)(menu_environ_cb_t type, void *data, void *userdata);
    int (*pointer_tap)(void *data, unsigned x, unsigned y, unsigned ptr,

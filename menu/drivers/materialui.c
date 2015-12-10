@@ -1020,15 +1020,9 @@ static void mui_context_destroy(void)
    mui_context_bg_destroy(mui);
 }
 
-static bool mui_load_image(void *data, menu_image_type_t type)
+static bool mui_load_image(void *userdata, void *data, menu_image_type_t type)
 {
-   mui_handle_t *mui   = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-
-   if (!menu || !menu->userdata)
-      return false;
-
-   mui = (mui_handle_t*)menu->userdata;
+   mui_handle_t *mui = (mui_handle_t*)userdata;
 
    switch (type)
    {

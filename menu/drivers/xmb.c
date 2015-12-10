@@ -2005,15 +2005,9 @@ static void xmb_context_bg_destroy(xmb_handle_t *xmb)
    menu_display_texture_unload((uintptr_t*)&xmb->textures.bg.id);
 }
 
-static bool xmb_load_image(void *data, menu_image_type_t type)
+static bool xmb_load_image(void *userdata, void *data, menu_image_type_t type)
 {
-   xmb_handle_t *xmb   = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-
-   if (!menu)
-      return false;
-
-   xmb = (xmb_handle_t*)menu->userdata;
+   xmb_handle_t *xmb = (xmb_handle_t*)userdata;
 
    if (!xmb || !data)
       return false;
@@ -2039,8 +2033,6 @@ static bool xmb_load_image(void *data, menu_image_type_t type)
 
    return true;
 }
-
-
 
 static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
 {

@@ -1130,15 +1130,10 @@ static void zarch_context_destroy(void)
    zarch_context_bg_destroy(zui);
 }
 
-static bool zarch_load_image(void *data, menu_image_type_t type)
+static bool zarch_load_image(void *userdata, 
+      void *data, menu_image_type_t type)
 {
-   zui_t        *zui   = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-
-   if (!menu)
-      return false;
-   
-   zui = (zui_t*)menu->userdata;
+   zui_t        *zui = (zui_t*)userdata;
 
    if (!zui || !data)
       return false;
