@@ -102,24 +102,25 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
       char *s2, size_t len2)
 {
    unsigned pass = 0;
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   if (!menu)
-      return;
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+   struct video_shader *shader = NULL;
+#endif
 
    (void)pass;
-   (void)menu;
 
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   if (!menu || !menu->shader)
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+   if (!shader)
       return;
 
   pass = (type - MENU_SETTINGS_SHADER_PASS_FILTER_0);
 
-  switch (menu->shader->pass[pass].filter)
+  switch (shader->pass[pass].filter)
   {
      case 0:
         strlcpy(s, menu_hash_to_str(MENU_VALUE_DONT_CARE),
@@ -167,18 +168,18 @@ static void menu_action_setting_disp_set_label_shader_num_passes(
       const char *path,
       char *s2, size_t len2)
 {
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   if (!menu)
-      return;
-
-   (void)menu;
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+   struct video_shader *shader = NULL;
+#endif
 
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   if (menu && menu->shader)
-      snprintf(s, len, "%u", menu->shader->passes);
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+   if (shader)
+      snprintf(s, len, "%u", shader->passes);
 #endif
 }
 
@@ -191,13 +192,12 @@ static void menu_action_setting_disp_set_label_shader_pass(
       const char *path,
       char *s2, size_t len2)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+   struct video_shader *shader = NULL;
+#endif
    unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_0);
-   menu_handle_t *menu    = menu_driver_get_ptr();
-   if (!menu)
-      return;
 
    (void)pass;
-   (void)menu;
 
    *s = '\0';
    *w = 19;
@@ -205,11 +205,14 @@ static void menu_action_setting_disp_set_label_shader_pass(
    strlcpy(s, menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), len);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   if (!menu->shader)
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+   if (!shader)
       return;
-   if (*menu->shader->pass[pass].source.path)
+
+   if (*shader->pass[pass].source.path)
       fill_pathname_base(s,
-            menu->shader->pass[pass].source.path, len);
+            shader->pass[pass].source.path, len);
 #endif
 }
 

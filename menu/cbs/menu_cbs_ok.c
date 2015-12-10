@@ -625,12 +625,16 @@ static int generic_action_ok(const char *path,
    int ret                           = 0;
    const char             *menu_path = NULL;
    const char *flush_char            = NULL;
+   struct video_shader      *shader  = NULL;
    global_t                  *global = global_get_ptr();
    menu_handle_t               *menu = menu_driver_get_ptr();
    settings_t              *settings = config_get_ptr();
 
    if (!menu)
       goto error;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
 
    menu_entries_get_last_stack(&menu_path, NULL,
          NULL, NULL);
@@ -691,16 +695,16 @@ static int generic_action_ok(const char *path,
          break;
 #ifdef HAVE_SHADER_MANAGER
       case ACTION_OK_LOAD_PRESET:
-         menu_shader_manager_set_preset(menu->shader,
+         menu_shader_manager_set_preset(shader,
                video_shader_parse_type(action_path, RARCH_SHADER_NONE),
                action_path);
          break;
       case ACTION_OK_LOAD_SHADER_PASS:
          strlcpy(
-               menu->shader->pass[hack_shader_pass].source.path,
+               shader->pass[hack_shader_pass].source.path,
                action_path,
-               sizeof(menu->shader->pass[hack_shader_pass].source.path));
-         video_shader_resolve_parameters(NULL, menu->shader);
+               sizeof(shader->pass[hack_shader_pass].source.path));
+         video_shader_resolve_parameters(NULL, shader);
          break;
 #endif
       case ACTION_OK_LOAD_RECORD_CONFIGFILE:

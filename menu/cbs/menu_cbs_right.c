@@ -61,9 +61,15 @@ int shader_action_parameter_right(unsigned type, const char *label, bool wraparo
 int shader_action_parameter_preset_right(unsigned type, const char *label,
       bool wraparound)
 {
-   menu_handle_t                  *menu = menu_driver_get_ptr();
-    struct video_shader         *shader = menu ? menu->shader : NULL;
-   struct video_shader_parameter *param = &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
+   struct video_shader_parameter *param = NULL;
+   struct video_shader      *shader     = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+
+   param = shader ? 
+      &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0] :
+      NULL;
    return generic_shader_action_parameter_right(shader, param, type, label, wraparound);
 }
 #endif
@@ -190,13 +196,11 @@ static int action_right_shader_scale_pass(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
-   struct video_shader *shader = NULL;
+   struct video_shader *shader           = NULL;
    struct video_shader_pass *shader_pass = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
-      return -1;
 
-   shader = menu->shader;
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
    if (!shader)
       return -1;
    shader_pass = &shader->pass[pass];
@@ -220,15 +224,13 @@ static int action_right_shader_filter_pass(unsigned type, const char *label,
       bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
-   unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
-   struct video_shader *shader = NULL;
+   unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
+   unsigned delta                        = 1;
+   struct video_shader *shader           = NULL;
    struct video_shader_pass *shader_pass = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   unsigned delta = 1;
-   if (!menu)
-      return -1;
 
-   shader = menu->shader;
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
    if (!shader)
       return -1;
    shader_pass = &shader->pass[pass];
@@ -272,11 +274,9 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
-      return -1;
 
-   shader = menu->shader;
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
    if (!shader)
       return -1;
 
@@ -284,7 +284,7 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
       shader->passes++;
    menu_entries_set_refresh(false);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-   video_shader_resolve_parameters(NULL, menu->shader);
+   video_shader_resolve_parameters(NULL, shader);
 
 #endif
    return 0;
