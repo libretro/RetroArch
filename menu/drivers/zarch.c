@@ -944,9 +944,8 @@ static void zarch_frame(void *data)
    unsigned i;
    float coord_color[16];
    float coord_color2[16];
-   zui_t *zui           = (zui_t*)data;
    settings_t *settings = config_get_ptr();
-   menu_handle_t *menu  = menu_driver_get_ptr();
+   zui_t *zui           = (zui_t*)data;
    
    if (!zui)
       return;
