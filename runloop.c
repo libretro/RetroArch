@@ -1286,7 +1286,7 @@ int runloop_iterate(unsigned *sleep_ms)
          rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 
       if (focused || !is_idle)
-         menu_iterate_render();
+         menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
       if (!focused || is_idle)
       {

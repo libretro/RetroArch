@@ -452,7 +452,7 @@ bool menu_load_content(enum rarch_core_type type)
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
    /* redraw menu frame */
    menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
-   menu_iterate_render();
+   menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
    if (!(main_load_content(0, NULL, NULL, menu_environment_get)))
    {
@@ -659,6 +659,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_alive            = false;
          menu_driver_data_own         = false;
          menu_driver_ctx              = NULL;
+         break;
+      case RARCH_MENU_CTL_RENDER:
+         menu_iterate_render(menu_driver_data,
+               menu_driver_data ? menu_driver_data->userdata : NULL);
          break;
       case RARCH_MENU_CTL_FRAME:
          if (!menu_driver_alive)

@@ -93,6 +93,7 @@ enum rarch_menu_ctl_state
 {
    RARCH_MENU_CTL_NONE = 0,
    RARCH_MENU_CTL_DEINIT,
+   RARCH_MENU_CTL_RENDER,
    RARCH_MENU_CTL_FRAME,
    RARCH_MENU_CTL_SET_PREVENT_POPULATE,
    RARCH_MENU_CTL_UNSET_PREVENT_POPULATE,
@@ -402,7 +403,7 @@ void *menu_init(const void *data);
  **/
 int menu_iterate(bool render_this_frame, enum menu_action action);
 
-int menu_iterate_render(void);
+int menu_iterate_render(void *data, void *userdata);
 
 /**
  * menu_free:
