@@ -418,7 +418,6 @@ static void rgui_render(void *data)
    char title[256], title_buf[256], title_msg[64];
    char msg[PATH_MAX_LENGTH], timedate[PATH_MAX_LENGTH];
    uint16_t *fb_data              = NULL;
-   menu_handle_t *menu            = menu_driver_get_ptr();
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
 
@@ -430,7 +429,7 @@ static void rgui_render(void *data)
    title_msg[0] = '\0';
    timedate[0]  = '\0';
 
-   if (!menu || !rgui)
+   if (!rgui)
       return;
 
    if (!rgui->force_redraw)
