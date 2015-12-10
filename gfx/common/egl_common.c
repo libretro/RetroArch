@@ -61,15 +61,7 @@ void egl_report_error(void)
 
 gfx_ctx_proc_t egl_get_proc_address(const char *symbol)
 {
-   gfx_ctx_proc_t ret;
-   void *sym__ = NULL;
-
-   retro_assert(sizeof(void*) == sizeof(void (*)(void)));
-
-   sym__ = (void*)eglGetProcAddress(symbol);
-   memcpy(&ret, &sym__, sizeof(void*));
-
-   return ret;
+   return eglGetProcAddress(symbol);
 }
 
 void egl_destroy(void *data)
