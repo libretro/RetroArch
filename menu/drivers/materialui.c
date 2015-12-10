@@ -907,7 +907,7 @@ static void mui_font(menu_handle_t *menu)
    fill_pathname_join(mediapath, settings->assets_directory, "glui", sizeof(mediapath));
    fill_pathname_join(fontpath, mediapath, "Roboto-Regular.ttf", sizeof(fontpath));
 
-   if (!menu_display_init_main_font(menu, fontpath, font_size))
+   if (!menu_display_init_main_font(fontpath, font_size))
       RARCH_WARN("Failed to load font.");
 }
 

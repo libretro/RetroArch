@@ -228,8 +228,7 @@ bool menu_display_driver_init_first(void)
    return false;
 }
 
-bool menu_display_init_main_font(void *data,
-      const char *font_path, float font_size)
+bool menu_display_init_main_font(const char *font_path, float font_size)
 {
    bool      ret;
    void        *video   = video_driver_get_ptr(false);

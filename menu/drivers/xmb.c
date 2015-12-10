@@ -1836,7 +1836,7 @@ static void xmb_font(menu_handle_t *menu)
    fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
    fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
 
-   if (!menu_display_init_main_font(menu, fontpath, font_size))
+   if (!menu_display_init_main_font(fontpath, font_size))
       RARCH_WARN("Failed to load font.");
 }
 

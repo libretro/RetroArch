@@ -215,7 +215,7 @@ static void zarch_zui_font(menu_handle_t *menu)
    fill_pathname_join(mediapath, settings->assets_directory, "zarch", sizeof(mediapath));
    fill_pathname_join(fontpath, mediapath, "Roboto-Condensed.ttf", sizeof(fontpath));
 
-   if (!menu_display_init_main_font(menu, fontpath, font_size))
+   if (!menu_display_init_main_font(fontpath, font_size))
       RARCH_WARN("Failed to load font.");
 }
 
@@ -1190,7 +1190,7 @@ static void zarch_context_reset(void)
    zui      = (zui_t*)menu->userdata;
    font_path = settings->video.font_enable ? settings->video.font_path : NULL;
 
-   if (!menu_display_init_main_font(menu, font_path, zui->font_size))
+   if (!menu_display_init_main_font(font_path, zui->font_size))
       RARCH_WARN("Failed to load font.");
 
    zarch_context_bg_destroy(zui);

@@ -127,8 +127,7 @@ bool menu_display_font_bind_block(void *userdata);
 
 bool menu_display_font_flush_block(void);
 
-bool menu_display_init_main_font(void *data,
-      const char *font_path, float font_size);
+bool menu_display_init_main_font(const char *font_path, float font_size);
 
 void menu_display_free_main_font(void);
 
