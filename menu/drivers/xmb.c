@@ -458,7 +458,7 @@ static void xmb_draw_text(xmb_handle_t *xmb,
    video_driver_set_osd_msg(str, &params, disp_buf);
 }
 
-static void xmb_render_messagebox_internal(const char *message)
+static void xmb_messagebox(const char *message)
 {
    xmb_handle_t *xmb   = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
@@ -474,7 +474,7 @@ static void xmb_render_messagebox_internal(const char *message)
    strlcpy(xmb->box_message, message, sizeof(xmb->box_message));
 }
 
-static void xmb_frame_messagebox(const char *message)
+static void xmb_render_messagebox_internal(const char *message)
 {
    int x, y, font_size;
    unsigned i;
@@ -1818,7 +1818,7 @@ static void xmb_frame(void)
             &coord_color[0], &coord_color2[0],
             NULL, NULL, 4,
             MENU_DISPLAY_PRIM_TRIANGLESTRIP);
-      xmb_frame_messagebox(msg);
+      xmb_render_messagebox_internal(msg);
    }
 
    /* set alpha components of colors */
@@ -2741,7 +2741,7 @@ static int xmb_pointer_tap(unsigned x, unsigned y, unsigned ptr,
 
 menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
-   xmb_render_messagebox_internal,
+   xmb_messagebox,
    generic_menu_iterate,
    xmb_render,
    xmb_frame,
