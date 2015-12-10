@@ -615,8 +615,11 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
     switch (buttonIndex)
     {
         case 0:
-            generic_menu_iterate(MENU_ACTION_OK);
-            break;
+           {
+              menu_handle_t *driver = menu_driver_get_ptr();
+              generic_menu_iterate(driver, driver ? driver->userdata : NULL, MENU_ACTION_OK);
+           }
+           break;
     }
 }
 
