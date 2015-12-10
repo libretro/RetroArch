@@ -946,10 +946,11 @@ static void android_input_poll_memcpy(void *data)
 static void android_input_poll(void *data)
 {
    int ident;
+   unsigned key                    = RARCH_PAUSE_TOGGLE;
    struct android_app *android_app = (struct android_app*)g_android;
 
    while ((ident =
-            ALooper_pollAll((input_driver_key_pressed(RARCH_PAUSE_TOGGLE))
+            ALooper_pollAll((input_driver_ctl(RARCH_INPUT_CTL_KEY_PRESSED, &key))
                ? -1 : 0,
                NULL, NULL, NULL)) >= 0)
    {

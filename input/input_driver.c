@@ -254,16 +254,9 @@ float input_sensor_get_input(unsigned port, unsigned id)
    return 0.0f;
 }
 
-bool input_driver_key_pressed(unsigned key)
-{
-   if (current_input->key_pressed)
-      return current_input->key_pressed(current_input_data, key);
-   return false;
-}
-
 static retro_input_t input_driver_keys_pressed(void)
 {
-   int key;
+   unsigned key;
    retro_input_t                ret = 0;
 
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
@@ -271,7 +264,7 @@ static retro_input_t input_driver_keys_pressed(void)
       bool state = false;
       if ((!input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL) && ((key < RARCH_FIRST_META_KEY)))
             || !input_driver_ctl(RARCH_INPUT_CTL_IS_HOTKEY_BLOCKED, NULL))
-         state = input_driver_key_pressed(key);
+         state = input_driver_ctl(RARCH_INPUT_CTL_KEY_PRESSED, &key);
 
       if (key >= RARCH_FIRST_META_KEY)
          state |= current_input->meta_key_pressed(current_input_data, key);
@@ -583,7 +576,7 @@ static bool check_input_driver_block_hotkey(bool enable_hotkey)
  */
 retro_input_t input_keys_pressed(void)
 {
-   unsigned i;
+   unsigned i, key;
    const struct retro_keybind *binds[MAX_USERS];
    retro_input_t             ret = 0;
    settings_t *settings          = config_get_ptr();
@@ -595,8 +588,10 @@ retro_input_t input_keys_pressed(void)
       return 0;
 
    input_driver_turbo_btns.count++;
+
+   key = RARCH_ENABLE_HOTKEY;
    
-   if (check_input_driver_block_hotkey(input_driver_key_pressed(RARCH_ENABLE_HOTKEY)))
+   if (check_input_driver_block_hotkey(input_driver_ctl(RARCH_INPUT_CTL_KEY_PRESSED, &key)))
       input_driver_ctl(RARCH_INPUT_CTL_SET_LIBRETRO_INPUT_BLOCKED, NULL);
    else
       input_driver_ctl(RARCH_INPUT_CTL_UNSET_LIBRETRO_INPUT_BLOCKED, NULL);
@@ -693,6 +688,13 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_INPUT_CTL_KEY_PRESSED:
+         {
+            unsigned *key = (unsigned*)data;
+            if (key && current_input->key_pressed)
+               return current_input->key_pressed(current_input_data, *key);
+         }
+         return false;
       case RARCH_INPUT_CTL_HAS_CAPABILITIES:
          if (current_input->get_capabilities && current_input_data)
             return true;

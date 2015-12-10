@@ -81,7 +81,8 @@ enum rarch_input_ctl_state
    RARCH_INPUT_CTL_COMMAND_INIT,
    RARCH_INPUT_CTL_COMMAND_DEINIT,
    RARCH_INPUT_CTL_REMOTE_INIT,
-   RARCH_INPUT_CTL_REMOTE_DEINIT
+   RARCH_INPUT_CTL_REMOTE_DEINIT,
+   RARCH_INPUT_CTL_KEY_PRESSED
 };
 
 struct retro_keybind
@@ -277,8 +278,6 @@ void input_poll(void);
  **/
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
-
-bool input_driver_key_pressed(unsigned key);
 
 retro_input_t input_keys_pressed(void);
 
