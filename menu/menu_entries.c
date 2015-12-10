@@ -578,7 +578,6 @@ void menu_entries_push(file_list_t *list, const char *path, const char *label,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {
    size_t idx;
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
    menu_file_list_cbs_t *cbs       = NULL;
    if (!list || !label)
       return;
