@@ -221,8 +221,6 @@ typedef struct
 {
    void *userdata;
 
-   float scroll_y;
-
    bool push_help_screen;
    unsigned         help_screen_id;
    menu_help_type_t help_screen_type;

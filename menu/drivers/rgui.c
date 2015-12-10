@@ -50,6 +50,7 @@ typedef struct
    char msgbox[4096];
    unsigned last_width;
    unsigned last_height;
+   float scroll_y;
 } rgui_t;
 
 #if defined(GEKKO)|| defined(PSP)
@@ -477,10 +478,10 @@ static void rgui_render(void *data)
       if (pointer_dragged)
       {
          int16_t delta_y = menu_input_pointer_state(MENU_POINTER_DELTA_Y_AXIS);
-         menu->scroll_y += delta_y;
-         menu_entries_set_start(-menu->scroll_y / 11 + 2);
-         if (menu->scroll_y > 0)
-            menu->scroll_y = 0;
+         rgui->scroll_y += delta_y;
+         menu_entries_set_start(-rgui->scroll_y / 11 + 2);
+         if (rgui->scroll_y > 0)
+            rgui->scroll_y = 0;
       }
    }
 
@@ -735,12 +736,13 @@ static void rgui_set_texture(void)
 
 static void rgui_navigation_clear(bool pending_push)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   menu_handle_t    *menu = menu_driver_get_ptr();
+   rgui_t           *rgui = menu ? (rgui_t*)menu->userdata : NULL;
+   if (!rgui)
       return;
 
    menu_entries_set_start(0);
-   menu->scroll_y = 0;
+   rgui->scroll_y = 0;
 }
 
 static void rgui_navigation_set(bool scroll)

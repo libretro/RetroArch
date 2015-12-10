@@ -107,6 +107,7 @@ typedef struct mui_handle
    } categories;
 
    gfx_font_raster_block_t list_block;
+   float scroll_y;
 } mui_handle_t;
 
 static void mui_context_reset_textures(mui_handle_t *mui, const char *iconpath)
@@ -333,7 +334,7 @@ static void mui_draw_scrollbar(unsigned width, unsigned height, float *coord_col
    total_height     = height - header_height - mui->tabs_height;
    scrollbar_margin = mui->scrollbar_width;
    scrollbar_height = total_height / (content_height / total_height);
-   y                = total_height * menu->scroll_y / content_height;
+   y                = total_height * mui->scroll_y / content_height;
 
    /* apply a margin on the top and bottom of the scrollbar for aestetic */
    scrollbar_height -= scrollbar_margin * 2;
@@ -427,13 +428,13 @@ static void mui_render(void *data)
       int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
       float    old_accel_val, new_accel_val;
       unsigned new_pointer_val = 
-         (pointer_y - mui->line_height + menu->scroll_y - 16)
+         (pointer_y - mui->line_height + mui->scroll_y - 16)
          / mui->line_height;
 
       menu_input_ctl(MENU_INPUT_CTL_POINTER_ACCEL_READ, &old_accel_val);
       menu_input_ctl(MENU_INPUT_CTL_POINTER_PTR, &new_pointer_val);
 
-      menu->scroll_y            -= old_accel_val / 60.0;
+      mui->scroll_y            -= old_accel_val / 60.0;
 
       new_accel_val = old_accel_val * 0.96;
 
@@ -445,28 +446,28 @@ static void mui_render(void *data)
       int16_t mouse_y          = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
       unsigned new_pointer_val = 
-         (mouse_y - mui->line_height + menu->scroll_y - 16)
+         (mouse_y - mui->line_height + mui->scroll_y - 16)
          / mui->line_height;
 
       menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &new_pointer_val);
    }
 
-   if (menu->scroll_y < 0)
-      menu->scroll_y = 0;
+   if (mui->scroll_y < 0)
+      mui->scroll_y = 0;
 
    bottom = menu_entries_get_end() * mui->line_height
       - height + header_height + mui->tabs_height;
-   if (menu->scroll_y > bottom)
-      menu->scroll_y = bottom;
+   if (mui->scroll_y > bottom)
+      mui->scroll_y = bottom;
 
    if (menu_entries_get_end() * mui->line_height
          < height - header_height - mui->tabs_height)
-      menu->scroll_y = 0;
+      mui->scroll_y = 0;
 
    if (menu_entries_get_end() < height / mui->line_height)
       menu_entries_set_start(0);
    else
-      menu_entries_set_start(menu->scroll_y / mui->line_height);
+      menu_entries_set_start(mui->scroll_y / mui->line_height);
 }
 
 static void mui_render_label_value(mui_handle_t *mui,
@@ -595,7 +596,7 @@ static void mui_render_menu_list(mui_handle_t *mui,
       if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
          continue;
 
-      y = header_height - menu->scroll_y + (mui->line_height * i);
+      y = header_height - mui->scroll_y + (mui->line_height * i);
 
       if ((y - (int)mui->line_height) > (int)height
             || ((y + (int)mui->line_height) < 0))
@@ -796,7 +797,7 @@ static void mui_frame(void)
 
    /* highlighted entry */
    mui_render_quad(0,
-         header_height - menu->scroll_y + mui->line_height *
+         header_height -   mui->scroll_y + mui->line_height *
          selection, width, mui->line_height,
          width, height,
          &lightblue_bg[0]);
@@ -1084,12 +1085,13 @@ static void mui_navigation_set(bool scroll)
 {
    menu_handle_t *menu  = menu_driver_get_ptr();
    float     scroll_pos = mui_get_scroll();
+   mui_handle_t *mui    = menu ? (mui_handle_t*)menu->userdata : NULL;
 
-   if (!menu || !scroll)
+   if (!mui || !scroll)
       return;
 
    menu_animation_push(10, scroll_pos,
-         &menu->scroll_y, EASING_IN_OUT_QUAD, -1, NULL);
+         &mui->scroll_y, EASING_IN_OUT_QUAD, -1, NULL);
 }
 
 static void  mui_list_set_selection(file_list_t *list)
@@ -1100,11 +1102,12 @@ static void  mui_list_set_selection(file_list_t *list)
 static void mui_navigation_clear(bool pending_push)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   mui_handle_t *mui    = menu ? (mui_handle_t*)menu->userdata : NULL;
+   if (!mui)
       return;
 
    menu_entries_set_start(0);
-   menu->scroll_y = 0;
+   mui->scroll_y = 0;
 }
 
 static void mui_navigation_set_last(void)
@@ -1121,10 +1124,11 @@ static void mui_populate_entries(const char *path,
       const char *label, unsigned i)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
+   mui_handle_t *mui    = menu ? (mui_handle_t*)menu->userdata : NULL;
+   if (!mui)
       return;
 
-   menu->scroll_y = mui_get_scroll();
+   mui->scroll_y = mui_get_scroll();
 }
 
 static void mui_context_reset(void)
