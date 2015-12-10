@@ -2515,7 +2515,7 @@ bool config_save_file(const char *path)
    if (!conf)
       conf = config_file_new(NULL);
 
-   if (!conf || global->overrides_active)
+   if (!conf || runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
       return false;
 
    RARCH_LOG("Saving config at path: \"%s\"\n", path);

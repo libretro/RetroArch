@@ -362,8 +362,6 @@ static void event_init_controllers(void)
 
 static void event_deinit_core(bool reinit)
 {
-   global_t *global     = global_get_ptr();
-
 #ifdef HAVE_CHEEVOS
    /* Unload the achievements from memory. */
    cheevos_unload();
@@ -376,10 +374,10 @@ static void event_deinit_core(bool reinit)
       event_command(EVENT_CMD_DRIVERS_DEINIT);
 
   /* auto overrides: reload the original config */
-   if(global && global->overrides_active)
+   if(runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
    {
       config_unload_override();
-      global->overrides_active = false;
+      runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
    }
 
    uninit_libretro_sym();
@@ -543,9 +541,9 @@ static bool event_init_core(void)
    if(settings->auto_overrides_enable)
    {
       if (config_load_override())
-         global->overrides_active = true;
+         runloop_ctl(RUNLOOP_CTL_SET_OVERRIDES_ACTIVE, NULL);
       else
-         global->overrides_active = false;
+         runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
    }
 
    /* reset video format to libretro's default */
@@ -688,10 +686,10 @@ static bool event_save_core_config(void)
    }
 
    /* Overrides block config file saving, make it appear as overrides weren't enabled for a manual save */
-   if (global->overrides_active)
+   if (runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
    {
-      global->overrides_active = false;
-	  overrides_active = true;
+      runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
+      overrides_active = true;
    }
 
    if ((ret = config_save_file(config_path)))
@@ -710,7 +708,11 @@ static bool event_save_core_config(void)
    }
 
    runloop_msg_queue_push(msg, 1, 180, true);
-   global->overrides_active = overrides_active;
+
+   if (overrides_active)
+      runloop_ctl(RUNLOOP_CTL_SET_OVERRIDES_ACTIVE, NULL);
+   else
+      runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
    return ret;
 }
 

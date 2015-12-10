@@ -482,6 +482,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    static bool runloop_shutdown_initiated      = false;
    static bool runloop_core_shutdown_initiated = false;
    static bool runloop_perfcnt_enable          = false;
+   static bool runloop_overrides_active        = false;
 #ifdef HAVE_THREADS
    static slock_t *runloop_msg_queue_lock      = NULL;
 #endif
@@ -557,6 +558,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_UNSET_FRAME_TIME_LAST:
          runloop_frame_time_last = false;
          break;
+      case RUNLOOP_CTL_SET_OVERRIDES_ACTIVE:
+         runloop_overrides_active = true;
+         break;
+      case RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE:
+         runloop_overrides_active = false; 
+         break;
+      case RUNLOOP_CTL_IS_OVERRIDES_ACTIVE:
+         return runloop_overrides_active;
       case RUNLOOP_CTL_IS_FRAME_TIME_LAST:
          return runloop_frame_time_last;
       case RUNLOOP_CTL_SET_FRAME_LIMIT:
@@ -844,6 +853,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_slowmotion         = false;
          runloop_frame_time_last    = false;
          runloop_set_frame_limit    = false;
+         runloop_overrides_active   = false;
          runloop_max_frames         = 0;
          break;
       case RUNLOOP_CTL_GLOBAL_FREE:
@@ -856,6 +866,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
             runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH,  NULL);
+            runloop_overrides_active   = false;
 
             global = global_get_ptr();
             memset(global, 0, sizeof(struct global));

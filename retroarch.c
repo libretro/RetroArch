@@ -630,7 +630,7 @@ static void parse_input(int argc, char *argv[])
    *global->name.bps                     = '\0';
    *global->name.ips                     = '\0';
 
-   global->overrides_active              = false;
+   runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
 
    if (argc < 2)
    {
