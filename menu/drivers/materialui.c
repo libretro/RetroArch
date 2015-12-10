@@ -318,12 +318,11 @@ static void mui_draw_tab_end(mui_handle_t *mui,
          &blue_bg[0]);
 }
 
-static void mui_draw_scrollbar(unsigned width, unsigned height, float *coord_color)
+static void mui_draw_scrollbar(mui_handle_t *mui, 
+      unsigned width, unsigned height, float *coord_color)
 {
    unsigned header_height;
    float content_height, total_height, scrollbar_height, scrollbar_margin, y;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
 
    if (!mui)
       return;
@@ -567,7 +566,6 @@ static void mui_render_label_value(mui_handle_t *mui,
 
 static void mui_render_menu_list(mui_handle_t *mui,
       unsigned width, unsigned height,
-      menu_handle_t *menu,
       uint32_t normal_color,
       uint32_t hover_color,
       float *pure_white)
@@ -804,7 +802,7 @@ static void mui_frame(void)
 
    menu_display_font_bind_block(&mui->list_block);
 
-   mui_render_menu_list(mui, width, height, menu, normal_color, hover_color, &pure_white[0]);
+   mui_render_menu_list(mui, width, height, normal_color, hover_color, &pure_white[0]);
 
    menu_display_font_flush_block();
 
@@ -848,7 +846,7 @@ static void mui_frame(void)
    mui_blit_line(title_margin, header_height / 2, width, height,
          title_buf, title_color, TEXT_ALIGN_LEFT);
 
-   mui_draw_scrollbar(width, height, &grey_bg[0]);
+   mui_draw_scrollbar(mui, width, height, &grey_bg[0]);
 
    menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
 
@@ -897,7 +895,7 @@ static void mui_allocate_white_texture(mui_handle_t *mui)
          TEXTURE_FILTER_NEAREST);
 }
 
-static void mui_font(menu_handle_t *menu)
+static void mui_font(void)
 {
    int font_size;
    char mediapath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
@@ -912,7 +910,7 @@ static void mui_font(menu_handle_t *menu)
       RARCH_WARN("Failed to load font.");
 }
 
-static void mui_layout(menu_handle_t *menu, mui_handle_t *mui)
+static void mui_layout(mui_handle_t *mui)
 {
    void *fb_buf;
    float scale_factor;
@@ -943,7 +941,7 @@ static void mui_layout(menu_handle_t *menu, mui_handle_t *mui)
    /* we assume the average glyph aspect ratio is close to 3:4 */
    mui->glyph_width = new_font_size * 3/4;
 
-   mui_font(menu);
+   mui_font();
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &fb_buf);
 
@@ -974,7 +972,7 @@ static void *mui_init(void)
 
    mui = (mui_handle_t*)menu->userdata;
 
-   mui_layout(menu, mui);
+   mui_layout(mui);
    mui_allocate_white_texture(mui);
 
    return menu;
@@ -1055,22 +1053,17 @@ static bool mui_load_image(void *data, menu_image_type_t type)
    return true;
 }
 
-static float mui_get_scroll(void)
+static float mui_get_scroll(mui_handle_t *mui)
 {
    size_t selection;
    unsigned width, height, half = 0;
-   mui_handle_t *mui            = NULL;
-   menu_handle_t    *menu       = menu_driver_get_ptr();
 
+   if (!mui)
+      return 0;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;
 
-   if (!menu || !menu->userdata)
-      return 0;
-
    video_driver_get_size(&width, &height);
-
-   mui = (mui_handle_t*)menu->userdata;
 
    if (mui->line_height)
       half = (height / mui->line_height) / 2;
@@ -1084,8 +1077,8 @@ static float mui_get_scroll(void)
 static void mui_navigation_set(bool scroll)
 {
    menu_handle_t *menu  = menu_driver_get_ptr();
-   float     scroll_pos = mui_get_scroll();
    mui_handle_t *mui    = menu ? (mui_handle_t*)menu->userdata : NULL;
+   float     scroll_pos = mui_get_scroll(mui);
 
    if (!mui || !scroll)
       return;
@@ -1128,7 +1121,7 @@ static void mui_populate_entries(const char *path,
    if (!mui)
       return;
 
-   mui->scroll_y = mui_get_scroll();
+   mui->scroll_y = mui_get_scroll(mui);
 }
 
 static void mui_context_reset(void)
@@ -1145,7 +1138,7 @@ static void mui_context_reset(void)
          "glui", sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
-   mui_layout(menu, mui);
+   mui_layout(mui);
    mui_context_bg_destroy(mui);
    mui_allocate_white_texture(mui);
    mui_context_reset_textures(mui, iconpath);
