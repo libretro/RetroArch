@@ -70,11 +70,6 @@
 #define DEFAULT_EXT ""
 #endif
 
-
-#ifdef HAVE_MENU
-struct retro_system_info g_system_menu;
-#endif
-
 typedef struct event_cmd_state
 {
    retro_input_t state[3];

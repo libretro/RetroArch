@@ -942,10 +942,8 @@ bool event_command(enum event_command cmd)
          }
          break;
       case EVENT_CMD_LOAD_CORE_DEINIT:
-#ifdef HAVE_DYNAMIC
 #ifdef HAVE_MENU
-         libretro_free_system_info(&g_system_menu);
-#endif
+         menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
 #endif
          break;
       case EVENT_CMD_LOAD_CORE_PERSIST:
@@ -953,8 +951,12 @@ bool event_command(enum event_command cmd)
          {
 #ifdef HAVE_MENU
             bool *ptr = NULL;
+            struct retro_system_info *system = NULL;
+
+            menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system);
+
             if (menu_driver_ctl(RARCH_MENU_CTL_LOAD_NO_CONTENT_GET, &ptr))
-               event_update_system_info(&g_system_menu, ptr);
+               event_update_system_info(system, ptr);
 #endif
          }
          break;

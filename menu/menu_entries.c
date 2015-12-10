@@ -458,10 +458,17 @@ bool menu_entries_show_back(void)
  * (shown at the top of the UI). */
 int menu_entries_get_core_title(char *s, size_t len)
 {
+   struct retro_system_info    *system = NULL;
    rarch_system_info_t      *info = NULL;
    settings_t *settings           = config_get_ptr();
-   const char *core_name          = g_system_menu.library_name;
-   const char *core_version       = g_system_menu.library_version;
+   const char *core_name          = NULL;
+   const char *core_version       = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
+         &system);
+   
+   core_name    = system->library_name;
+   core_version = system->library_version;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 

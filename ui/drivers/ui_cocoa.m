@@ -273,8 +273,14 @@ extern void action_ok_push_quick_menu(void);
 {
    if (filenames.count == 1 && [filenames objectAtIndex:0])
    {
+      struct retro_system_info         *system = NULL;
       NSString *__core = [filenames objectAtIndex:0];
-      const char *core_name = g_system_menu.library_name;
+      const char *core_name = NULL;
+
+      menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system);
+      
+      if (system)
+         core_name = system->library_name;
 		
       runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
 
@@ -335,9 +341,15 @@ extern void action_ok_push_quick_menu(void);
 
       if (result == NSOKButton && panel.URL)
       {
+         struct retro_system_info          *system = NULL;
          NSURL *url = (NSURL*)panel.URL;
          NSString *__core = url.path;
-         const char *core_name = g_system_menu.library_name;
+         const char *core_name = NULL;
+         
+         menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system);
+         
+         if (system)
+            core_name = system->library_name;
 			
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
 

@@ -331,7 +331,10 @@ bool driver_update_system_av_info(const void *data)
  **/
 static void menu_update_libretro_info(void)
 {
-   struct retro_system_info *info = &g_system_menu;
+   struct retro_system_info *info = NULL;
+   
+   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
+         &info);
    
    if (!info)
       return;

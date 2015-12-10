@@ -412,8 +412,9 @@ static void menu_environment_get(int *argc, char *argv[],
 
 static void menu_push_to_history_playlist(void)
 {
-   settings_t *settings = config_get_ptr();
-   char *fullpath       = NULL;
+   struct retro_system_info *system = NULL;
+   settings_t *settings        = config_get_ptr();
+   char *fullpath              = NULL;
 
    if (!settings->history_list_enable)
       return;
@@ -430,11 +431,14 @@ static void menu_push_to_history_playlist(void)
       menu_display_msg_queue_push(str, 1, 1, false);
    }
 
+   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
+         &system);
+
    content_playlist_push(g_defaults.history,
          fullpath,
          NULL,
          settings->libretro,
-         g_system_menu.library_name,
+         system->library_name,
          NULL,
          NULL);
 }
@@ -543,9 +547,7 @@ void menu_free(menu_handle_t *menu)
    menu_navigation_free();
    menu_driver_free(menu);
 
-#ifdef HAVE_DYNAMIC
-   libretro_free_system_info(&g_system_menu);
-#endif
+   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
 
    menu_display_free();
    menu_entries_free();
@@ -648,6 +650,7 @@ error:
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
+   static struct retro_system_info menu_driver_system;
    static bool menu_driver_prevent_populate       = false;
    static bool menu_driver_load_no_content        = false;
    static bool menu_driver_alive                  = false;
@@ -662,6 +665,19 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_alive            = false;
          menu_driver_data_own         = false;
          menu_driver_ctx              = NULL;
+         break;
+      case RARCH_MENU_CTL_SYSTEM_INFO_GET:
+         {
+            struct retro_system_info **system = (struct retro_system_info**)data;
+            if (!system)
+               return false;
+            *system = &menu_driver_system;
+         }
+         return true;
+      case RARCH_MENU_CTL_SYSTEM_INFO_DEINIT:
+#ifdef HAVE_DYNAMIC
+         libretro_free_system_info(&menu_driver_system);
+#endif
          break;
       case RARCH_MENU_CTL_RENDER:
          menu_iterate_render(menu_driver_data,
