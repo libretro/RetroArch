@@ -2196,19 +2196,13 @@ static void xmb_context_reset_background(const char *iconpath)
             menu_display_handle_wallpaper_upload, NULL);
 }
 
-static void xmb_context_reset(void)
+static void xmb_context_reset(void *data)
 {
    char mediapath[PATH_MAX_LENGTH] = {0};
    char themepath[PATH_MAX_LENGTH] = {0};
    char iconpath[PATH_MAX_LENGTH]  = {0};
-   xmb_handle_t *xmb               = NULL;
-   menu_handle_t *menu             = menu_driver_get_ptr();
    settings_t *settings            = config_get_ptr();
-
-   if (!menu)
-      return;
-
-   xmb = (xmb_handle_t*)menu->userdata;
+   xmb_handle_t *xmb               = (xmb_handle_t*)data;
    if (!xmb)
       return;
 

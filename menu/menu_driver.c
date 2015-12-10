@@ -171,7 +171,7 @@ void  menu_driver_context_destroy(void)
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
    menu_handle_t *menu             = menu_driver_get_ptr();
 
-   if (!menu || !menu->userdata)
+   if (!menu)
       return;
    if (driver && driver->context_destroy)
       driver->context_destroy(menu->userdata);
@@ -236,10 +236,13 @@ void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i)
 
 void menu_driver_context_reset(void)
 {
+   menu_handle_t *menu             = menu_driver_get_ptr();
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
+   if (!menu)
+      return;
    if (driver->context_reset)
-      driver->context_reset();
+      driver->context_reset(menu->userdata);
 }
 
 

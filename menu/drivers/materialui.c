@@ -1112,11 +1112,10 @@ static void mui_populate_entries(
    mui->scroll_y = mui_get_scroll(mui);
 }
 
-static void mui_context_reset(void)
+static void mui_context_reset(void *data)
 {
    char iconpath[PATH_MAX_LENGTH] = {0};
-   menu_handle_t *menu            = menu_driver_get_ptr();
-   mui_handle_t *mui              = menu ? (mui_handle_t*)menu->userdata : NULL;
+   mui_handle_t *mui              = (mui_handle_t*)data;
    settings_t *settings           = config_get_ptr();
 
    if (!mui || !settings)

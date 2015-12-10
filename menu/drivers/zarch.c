@@ -1166,17 +1166,16 @@ static void zarch_allocate_white_texture(zui_t *zui)
          TEXTURE_FILTER_NEAREST);
 }
 
-static void zarch_context_reset(void)
+static void zarch_context_reset(void *data)
 {
-   zui_t          *zui   = NULL;
+   const char *font_path = NULL;
    menu_handle_t *menu   = menu_driver_get_ptr();
    settings_t *settings  = config_get_ptr();
-   const char *font_path = NULL;
+   zui_t          *zui   = (zui_t*)data;
 
-   if (!menu || !menu->userdata || !settings)
+   if (!zui || !settings)
       return;
 
-   zui      = (zui_t*)menu->userdata;
    font_path = settings->video.font_enable ? settings->video.font_path : NULL;
 
    if (!menu_display_init_main_font(font_path, zui->font_size))
