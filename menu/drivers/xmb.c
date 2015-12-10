@@ -421,8 +421,7 @@ static void xmb_draw_boxart(xmb_handle_t *xmb, float *color, unsigned width, uns
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 }
 
-static void xmb_draw_text(menu_handle_t *menu,
-      xmb_handle_t *xmb,
+static void xmb_draw_text(xmb_handle_t *xmb,
       const char *str, float x,
       float y, float scale_factor, float alpha,
       enum text_alignment text_align,
@@ -511,9 +510,8 @@ static void xmb_frame_messagebox(const char *message)
       const char *msg = list->elems[i].data;
 
       if (msg)
-         xmb_draw_text(menu,
-               xmb,
-               msg,
+         xmb_draw_text(
+               xmb, msg,
                x,
                y + i * font_size,
                1,
@@ -1325,12 +1323,11 @@ static void xmb_draw_items(xmb_handle_t *xmb,
    math_matrix_4x4 mymat;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
-   menu_handle_t *menu         = menu_driver_get_ptr();
    settings_t   *settings      = config_get_ptr();
 
    video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
-   if (!list || !list->size || !menu)
+   if (!list || !list->size)
       return;
 
    if (cat_selection_ptr > XMB_SYSTEM_TAB_END)
@@ -1496,7 +1493,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
             *frame_count / 20, entry.path,
             (i == current));
 
-      xmb_draw_text(menu, xmb, name,
+      xmb_draw_text(xmb, name,
             node->x + xmb->margins.screen.left + 
             xmb->icon.spacing.horizontal + xmb->margins.label.left, 
             xmb->margins.screen.top + node->y + xmb->margins.label.top, 
@@ -1509,7 +1506,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
 
       if (do_draw_text)
-         xmb_draw_text(menu, xmb, value,
+         xmb_draw_text(xmb, value,
                node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal + 
                xmb->margins.label.left + xmb->margins.setting.left, 
                xmb->margins.screen.top + node->y + xmb->margins.label.top, 
@@ -1716,7 +1713,7 @@ static void xmb_frame(void)
          &coord_color2[0], NULL, NULL, 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
-   xmb_draw_text(menu, xmb,
+   xmb_draw_text(xmb,
          xmb->title_name, xmb->margins.title.left,
          xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT,
          width, height);
@@ -1725,14 +1722,14 @@ static void xmb_frame(void)
    {
       menu_display_timedate(timedate, sizeof(timedate), 4);
 
-      xmb_draw_text(menu, xmb, timedate,
+      xmb_draw_text(xmb, timedate,
             width - xmb->margins.title.left - xmb->icon.size / 4, 
             xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
             width, height);
    }
 
    if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
-      xmb_draw_text(menu, xmb, title_msg, xmb->margins.title.left, 
+      xmb_draw_text(xmb, title_msg, xmb->margins.title.left, 
             height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
             width, height);
 
@@ -1855,7 +1852,7 @@ static void xmb_font(menu_handle_t *menu)
       RARCH_WARN("Failed to load font.");
 }
 
-static void xmb_layout(menu_handle_t *menu, xmb_handle_t *xmb)
+static void xmb_layout(xmb_handle_t *xmb)
 {
    int new_font_size;
    size_t selection;
@@ -2282,7 +2279,7 @@ static void xmb_context_reset(void)
    fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
-   xmb_layout(menu, xmb);
+   xmb_layout(xmb);
    xmb_font(menu);
    xmb_context_reset_textures(xmb, iconpath);
    xmb_context_reset_background(iconpath);

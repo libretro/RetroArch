@@ -371,18 +371,12 @@ static void mui_render_messagebox(const char *message)
    unsigned i, width, height;
    uint32_t normal_color;
    int x, y, font_size;
-   struct string_list *list = NULL;
-   menu_handle_t *menu      = menu_driver_get_ptr();
    settings_t *settings     = config_get_ptr();
-
-   if (!menu || !menu->userdata)
-      return;
-
-   list = (struct string_list*)string_split(message, "\n");
+   struct string_list *list = (struct string_list*)
+      string_split(message, "\n");
 
    if (!list)
       return;
-
    if (list->elems == 0)
       goto end;
 

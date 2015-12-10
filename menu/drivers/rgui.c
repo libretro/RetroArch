@@ -272,9 +272,6 @@ static void rgui_render_background(void)
    uint16_t         *fb_data  = NULL;
    uint16_t             *src  = NULL;
    uint16_t             *dst  = NULL;
-   menu_handle_t        *menu = menu_driver_get_ptr();
-   if (!menu)
-      return;
 
    menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,    &fb_width);
    menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT,   &fb_height);
@@ -322,13 +319,10 @@ static void rgui_render_messagebox(const char *message)
    uint16_t color;
    uint16_t *fb_data          = NULL;
    struct string_list *list   = NULL;
-   menu_handle_t *menu        = menu_driver_get_ptr();
    settings_t *settings       = config_get_ptr();
 
-   if (!menu || !message || !*message)
+   if (!message || !*message)
       return;
-
-   (void)settings;
 
    list = string_split(message, "\n");
    if (!list)
@@ -394,7 +388,7 @@ end:
    string_list_free(list);
 }
 
-static void rgui_blit_cursor(menu_handle_t *menu)
+static void rgui_blit_cursor(void)
 {
    size_t   fb_pitch;
    unsigned fb_width, fb_height;
@@ -631,7 +625,7 @@ static void rgui_render(void)
    }
 
    if (settings->menu.mouse.enable && (settings->video.fullscreen || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))
-      rgui_blit_cursor(menu);
+      rgui_blit_cursor();
 }
 
 static void *rgui_init(void)
@@ -727,10 +721,6 @@ static void rgui_set_texture(void)
    unsigned fb_width, fb_height;
    uint16_t *fb_data          = NULL;
    bool              fb_dirty = false;
-   menu_handle_t        *menu = menu_driver_get_ptr();
-
-   if (!menu)
-      return;
 
    menu_display_ctl(MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG, &fb_dirty);
 
@@ -759,11 +749,10 @@ static void rgui_navigation_set(bool scroll)
 {
    size_t selection;
    unsigned fb_width, fb_height;
-   menu_handle_t *menu            = menu_driver_get_ptr();
    size_t end                     = menu_entries_get_end();
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
-   if (!menu || !scroll)
+   if (!scroll)
       return;
 
    menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,  &fb_width);
@@ -780,31 +769,23 @@ static void rgui_navigation_set(bool scroll)
 
 static void rgui_navigation_set_last(void)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (menu)
-      rgui_navigation_set(true);
+   rgui_navigation_set(true);
 }
 
 static void rgui_navigation_descend_alphabet(size_t *unused)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (menu)
-      rgui_navigation_set(true);
+   rgui_navigation_set(true);
 }
 
 static void rgui_navigation_ascend_alphabet(size_t *unused)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (menu)
-      rgui_navigation_set(true);
+   rgui_navigation_set(true);
 }
 
 static void rgui_populate_entries(const char *path,
       const char *label, unsigned k)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (menu)
-      rgui_navigation_set(true);
+   rgui_navigation_set(true);
 }
 
 static int rgui_environ(menu_environ_cb_t type, void *data)
