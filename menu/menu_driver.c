@@ -340,10 +340,11 @@ bool menu_driver_load_image(void *data, menu_image_type_t type)
 bool menu_environment_cb(menu_environ_cb_t type, void *data)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+   menu_handle_t *menu             = menu_driver_get_ptr();
 
    if (driver->environ_cb)
    {
-      int ret = driver->environ_cb(type, data);
+      int ret = driver->environ_cb(type, data, menu->userdata);
       if (ret == 0)
          return true;
    }

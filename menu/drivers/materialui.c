@@ -1142,7 +1142,7 @@ static void mui_context_reset(void)
          menu_display_handle_wallpaper_upload, NULL);
 }
 
-static int mui_environ(menu_environ_cb_t type, void *data)
+static int mui_environ(menu_environ_cb_t type, void *data, void *userdata)
 {
    switch (type)
    {

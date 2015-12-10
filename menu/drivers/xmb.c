@@ -1115,15 +1115,13 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
    xmb_context_reset_horizontal_list(xmb, themepath);
 }
 
-static int xmb_environ(menu_environ_cb_t type, void *data)
+static int xmb_environ(menu_environ_cb_t type, void *data, void *userdata)
 {
    switch (type)
    {
       case MENU_ENVIRON_RESET_HORIZONTAL_LIST:
          {
-            menu_handle_t    *menu   = menu_driver_get_ptr();
-            xmb_handle_t *xmb        = menu ? 
-               (xmb_handle_t*)menu->userdata : NULL;
+            xmb_handle_t *xmb        = (xmb_handle_t*)userdata;
 
             if (!xmb)
                return -1;
