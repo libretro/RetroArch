@@ -373,10 +373,12 @@ void rarch_task_deinit(void)
 void rarch_task_check(void)
 {
 #ifdef HAVE_THREADS
-   bool current_threaded = impl_current == &impl_threaded;
-   bool want_threaded = config_get_ptr()->threaded_data_runloop_enable;
+   settings_t *settings  = config_get_ptr();
+   bool current_threaded = (impl_current == &impl_threaded);
+   bool want_threaded    = settings->threaded_data_runloop_enable;
 
-   if (want_threaded != current_threaded) {
+   if (want_threaded != current_threaded)
+   {
       RARCH_LOG("Switching rarch_task implementation.\n");
       rarch_task_deinit();
    }
