@@ -1232,11 +1232,14 @@ static void mui_list_cache(void *data, menu_list_type_t type, unsigned action)
    }
 }
 
-static int mui_list_push(menu_displaylist_info_t *info, unsigned type)
+static int mui_list_push(void *data, void *userdata,
+      menu_displaylist_info_t *info, unsigned type)
 {
    int ret = -1;
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t *menu = (menu_handle_t*)data;
    global_t    *global = global_get_ptr();
+
+   (void)userdata;
 
    switch (type)
    {

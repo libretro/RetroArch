@@ -196,7 +196,9 @@ bool menu_driver_list_push(menu_displaylist_info_t *info, unsigned type)
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
    if (driver->list_push)
-      if (driver->list_push(info, type) == 0)
+      if (driver->list_push(menu_driver_data,
+               menu_driver_data ? menu_driver_data->userdata : NULL,
+               info, type) == 0)
          return true;
    return false;
 }
