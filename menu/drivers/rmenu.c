@@ -69,15 +69,11 @@ struct texture_image *menu_texture;
 static bool render_normal = true;
 static bool menu_texture_inited =false;
 
-static void rmenu_render_messagebox(const char *message)
+static void rmenu_render_messagebox(void *data, const char *message)
 {
    struct font_params font_parms;
    size_t i, j;
    struct string_list *list = NULL;
-   menu_handle_t *menu   = menu_driver_get_ptr();
-
-   if (!menu)
-      return;
 
    if (!message || !*message)
       return;

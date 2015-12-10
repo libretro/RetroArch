@@ -346,7 +346,7 @@ int menu_iterate_render(void)
    if (BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX) && menu->menu_state.msg[0] != '\0')
    {
       if (driver->render_messagebox)
-         driver->render_messagebox(menu->menu_state.msg);
+         driver->render_messagebox(menu->userdata, menu->menu_state.msg);
 
       if (ui_companion_is_on_foreground())
       {

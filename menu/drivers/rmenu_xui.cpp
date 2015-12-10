@@ -465,7 +465,7 @@ static void rmenu_xui_render_background(void)
 		XuiElementSetShow(m_background, TRUE);
 }
 
-static void rmenu_xui_render_messagebox(const char *message)
+static void rmenu_xui_render_messagebox(void *data, const char *message)
 {
    msg_queue_clear(xui_msg_queue);
    msg_queue_push(xui_msg_queue, message, 2, 1);

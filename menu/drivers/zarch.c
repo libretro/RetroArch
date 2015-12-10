@@ -886,11 +886,6 @@ static void zarch_zui_draw_cursor(float x, float y)
 {
 }
 
-static void zarch_get_message(const char *message)
-{
-
-}
-
 static void zarch_render(void)
 {
    int bottom;
@@ -1327,7 +1322,7 @@ static bool zarch_menu_init_list(void *data)
 
 menu_ctx_driver_t menu_ctx_zarch = {
    NULL,
-   zarch_get_message,
+   NULL,
    zarch_iterate,
    zarch_render,
    zarch_frame,

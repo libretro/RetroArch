@@ -458,15 +458,9 @@ static void xmb_draw_text(xmb_handle_t *xmb,
    video_driver_set_osd_msg(str, &params, disp_buf);
 }
 
-static void xmb_messagebox(const char *message)
+static void xmb_messagebox(void *data, const char *message)
 {
-   xmb_handle_t *xmb   = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-
-   if (!menu)
-      return;
-
-   xmb = (xmb_handle_t*)menu->userdata;
+   xmb_handle_t *xmb = (xmb_handle_t*)data;
 
    if (!xmb || !message || !*message)
       return;

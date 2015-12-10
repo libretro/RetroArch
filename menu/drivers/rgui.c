@@ -297,15 +297,13 @@ static void rgui_render_background(void)
          green_filler);
 }
 
-static void rgui_set_message(const char *message)
+static void rgui_set_message(void *data, const char *message)
 {
-   menu_handle_t    *menu = menu_driver_get_ptr();
-   rgui_t           *rgui = NULL;
+   rgui_t           *rgui = (rgui_t*)data;
 
-   if (!menu || !menu->userdata || !message || !*message)
+   if (!rgui || !message || !*message)
       return;
 
-   rgui = (rgui_t*)menu->userdata;
    strlcpy(rgui->msgbox, message, sizeof(rgui->msgbox));
    rgui->force_redraw = true;
 }

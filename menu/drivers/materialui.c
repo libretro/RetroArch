@@ -355,10 +355,9 @@ static void mui_draw_scrollbar(unsigned width, unsigned height, float *coord_col
    }
 }
 
-static void mui_get_message(const char *message)
+static void mui_get_message(void *data, const char *message)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
+   mui_handle_t *mui   = (mui_handle_t*)data;
 
    if (!mui || !message || !*message)
       return;
