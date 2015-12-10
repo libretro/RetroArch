@@ -301,7 +301,7 @@ static void *rmenu_init(void)
    return menu;
 }
 
-static void rmenu_context_destroy(void)
+static void rmenu_context_destroy(void *data)
 {
    texture_image_free(menu_texture);
 }

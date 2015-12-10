@@ -1003,11 +1003,10 @@ static void mui_context_bg_destroy(mui_handle_t *mui)
    menu_display_texture_unload((uintptr_t*)&mui->textures.white);
 }
 
-static void mui_context_destroy(void)
+static void mui_context_destroy(void *data)
 {
    unsigned i;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
+   mui_handle_t *mui   = (mui_handle_t*)data;
 
    if (!mui)
       return;

@@ -2477,16 +2477,10 @@ static void xmb_list_cache(void *data, menu_list_type_t type, unsigned action)
 }
 
 
-static void xmb_context_destroy(void)
+static void xmb_context_destroy(void *data)
 {
    unsigned i;
-   xmb_handle_t *xmb   = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-
-   if (!menu)
-      return;
-
-   xmb = (xmb_handle_t*)menu->userdata;
+   xmb_handle_t *xmb   = (xmb_handle_t*)data;
 
    if (!xmb)
       return;

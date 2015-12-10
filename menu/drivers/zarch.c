@@ -1117,12 +1117,11 @@ static void zarch_context_bg_destroy(zui_t *zui)
    menu_display_texture_unload((uintptr_t*)&zui->textures.white);
 }
 
-static void zarch_context_destroy(void)
+static void zarch_context_destroy(void *data)
 {
-   menu_handle_t *menu   = menu_driver_get_ptr();
-   zui_t        *zui     = menu ? (zui_t*)menu->userdata : NULL;
+   zui_t        *zui     = (zui_t*)data;
     
-   if (!menu || !zui)
+   if (!zui)
       return;
 
    menu_display_free_main_font();
