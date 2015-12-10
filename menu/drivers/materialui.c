@@ -406,7 +406,6 @@ static void mui_render(void *data)
 {
    float delta_time, dt;
    unsigned bottom, width, height, header_height;
-   menu_handle_t *menu  = menu_driver_get_ptr();
    mui_handle_t *mui    = (mui_handle_t*)data;
    settings_t *settings = config_get_ptr();
 
