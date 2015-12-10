@@ -215,7 +215,8 @@ void video_shader_driver_set_params(
 {
    if (!current_shader || !current_shader->set_params)
       return;
-   return current_shader->set_params(data, shader_data,
+
+   current_shader->set_params(data, shader_data,
          width, height, tex_width, tex_height,
          out_width, out_height, frame_counter, info, prev_info, feedback_info,
          fbo_info, fbo_info_cnt);
