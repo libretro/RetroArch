@@ -37,9 +37,9 @@
 #include "../../runloop.h"
 #include "../../verbosity.h"
 
-static int action_iterate_help(char *s, size_t len, const char *label)
+static int action_iterate_help(menu_handle_t *menu, 
+      char *s, size_t len, const char *label)
 {
-   menu_handle_t *menu       = menu_driver_get_ptr();
    settings_t *settings      = config_get_ptr();
 
    switch (menu->help_screen_type)
@@ -214,7 +214,7 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
  *
  * Returns: 0 on success, -1 if we need to quit out of the loop. 
  **/
-int generic_menu_iterate(enum menu_action action)
+int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 {
    size_t selection;
    menu_entry_t entry;
@@ -223,7 +223,7 @@ int generic_menu_iterate(enum menu_action action)
    int ret                    = 0;
    uint32_t label_hash        = 0;
    uint32_t hash              = 0;
-   menu_handle_t *menu        = menu_driver_get_ptr();
+   menu_handle_t *menu        = (menu_handle_t*)data;
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
@@ -246,7 +246,7 @@ int generic_menu_iterate(enum menu_action action)
    switch (iterate_type)
    {
       case ITERATE_TYPE_HELP:
-         ret = action_iterate_help(menu->menu_state.msg, sizeof(menu->menu_state.msg), label);
+         ret = action_iterate_help(menu, menu->menu_state.msg, sizeof(menu->menu_state.msg), label);
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
          if (ret == 1 || action == MENU_ACTION_OK)
@@ -332,7 +332,7 @@ end:
 int menu_iterate_render(void)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_handle_t *menu             = menu_driver_get_ptr();
 
    if (!menu)
       return -1;

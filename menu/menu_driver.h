@@ -250,7 +250,7 @@ typedef struct menu_ctx_driver
 {
    void  (*set_texture)(void);
    void  (*render_messagebox)(void *data, const char *msg);
-   int   (*iterate)(enum menu_action action);
+   int   (*iterate)(void *data, void *userdata, enum menu_action action);
    void  (*render)(void *data);
    void  (*frame)(void *data);
    void* (*init)(void);

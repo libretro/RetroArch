@@ -1191,20 +1191,17 @@ static void zarch_context_reset(void *data)
    zarch_zui_font();
 }
 
-static int zarch_iterate(enum menu_action action)
+static int zarch_iterate(void *data, void *userdata, enum menu_action action)
 {
-   int ret = 0;
-   int         action_id;
+   int action_id, ret = 0;
    menu_entry_t entry;
-   zui_t *zui           = NULL;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   enum menu_action act = (enum menu_action)action;
    bool perform_action  = true;
+   enum menu_action act = (enum menu_action)action;
+   menu_handle_t *menu  = (menu_handle_t*)data;
+   zui_t *zui           = (zui_t*)userdata;
 
    if (!menu)
       return 0;
-
-   zui      = (zui_t*)menu->userdata;
 
    if (!zui)
       return -1;

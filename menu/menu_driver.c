@@ -275,7 +275,8 @@ int menu_driver_iterate(enum menu_action action)
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
    if (driver->iterate)
-      return driver->iterate(action);
+      return driver->iterate(menu_driver_data,
+            menu_driver_data ? menu_driver_data->userdata : NULL, action);
    return -1;
 }
 
