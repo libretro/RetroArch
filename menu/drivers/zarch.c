@@ -111,7 +111,6 @@ typedef struct zarch_handle
 {
    enum menu_action action;
    bool rendering;
-   menu_handle_t *menu;
    math_matrix_4x4 mvp;
    unsigned width;
    unsigned height;
@@ -204,7 +203,7 @@ static enum
    LAY_SETTINGS
 } layout = LAY_HOME;
 
-static void zarch_zui_font(menu_handle_t *menu)
+static void zarch_zui_font(void)
 {
    int font_size;
    char mediapath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
@@ -940,20 +939,17 @@ static int zarch_zui_render_pick_core(zui_t *zui)
    return 0;
 }
 
-static void zarch_frame(void)
+static void zarch_frame(void *data)
 {
    unsigned i;
    float coord_color[16];
    float coord_color2[16];
-   zui_t *zui           = NULL;
+   zui_t *zui           = (zui_t*)data;
    settings_t *settings = config_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
    
-   if (!menu)
+   if (!zui)
       return;
-
-   zui      = (zui_t*)menu->userdata;
-   zui->menu = menu;
 
    video_driver_get_size(&zui->width, &zui->height);
 
@@ -1089,7 +1085,7 @@ static void *zarch_init(void)
 
    matrix_4x4_ortho(&zui->mvp, 0, 1, 1, 0, 0, 1);
 
-   zarch_zui_font(menu);
+   zarch_zui_font();
 
    return menu;
 error:
@@ -1201,7 +1197,7 @@ static void zarch_context_reset(void)
    zarch_allocate_white_texture(zui);
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE, &zui->font_size);
-   zarch_zui_font(menu);
+   zarch_zui_font();
 }
 
 static int zarch_iterate(enum menu_action action)

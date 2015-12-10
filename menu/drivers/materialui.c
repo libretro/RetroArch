@@ -663,7 +663,7 @@ static void bgcolor_setalpha(float *bg, float alpha)
    bg[15] = alpha;
 }
 
-static void mui_frame(void)
+static void mui_frame(void *data)
 {
    unsigned header_height;
    bool display_kb;
@@ -722,8 +722,7 @@ static void mui_frame(void)
    size_t selection;
    size_t title_margin;
    uint64_t *frame_count;
-   mui_handle_t *mui               = NULL;
-   menu_handle_t *menu             = menu_driver_get_ptr();
+   mui_handle_t *mui               = (mui_handle_t*)data;
    settings_t *settings            = config_get_ptr();
    const uint32_t normal_color     = 0x212121ff;
    const uint32_t hover_color      = 0x212121ff;
@@ -737,10 +736,8 @@ static void mui_frame(void)
    (void)passivetab_color;
    (void)activetab_color;
 
-   if (!menu || !menu->userdata)
+   if (!mui)
       return;
-
-   mui = (mui_handle_t*)menu->userdata;
 
    msg[0]       = '\0';
    title[0]     = '\0';

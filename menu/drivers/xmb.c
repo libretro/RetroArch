@@ -1639,7 +1639,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
    }
 }
 
-static void xmb_frame(void)
+static void xmb_frame(void *data)
 {
    size_t selection;
    math_matrix_4x4 mymat;
@@ -1652,20 +1652,14 @@ static void xmb_frame(void)
    float coord_color2[16];
    bool display_kb;
    bool render_background                  = false;
-   xmb_handle_t *xmb                       = NULL;
-   menu_handle_t   *menu                   = menu_driver_get_ptr();
+   xmb_handle_t *xmb                       = (xmb_handle_t*)data;
    settings_t   *settings                  = config_get_ptr();
    file_list_t *selection_buf              = menu_entries_get_selection_buf_ptr(0);
    file_list_t *menu_stack                 = menu_entries_get_menu_stack_ptr(0);
 
-   if (!menu)
+   if (!xmb)
       return;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
-
-   xmb = (xmb_handle_t*)menu->userdata;
-
-   if (!xmb)
       return;
 
    msg[0]       = '\0';
