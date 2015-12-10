@@ -154,6 +154,15 @@ void init_menu(void)
          retro_fail(1, "init_menu()");
 }
 
+void menu_driver_list_insert(file_list_t *list, const char *path,
+      const char *label, size_t idx)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (driver->list_insert)
+      driver->list_insert(menu_driver_data ? menu_driver_data->userdata : NULL,
+            list, path, label, idx);
+}
 
 void  menu_driver_list_free(file_list_t *list, size_t idx, size_t list_size)
 {

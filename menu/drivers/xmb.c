@@ -2253,24 +2253,19 @@ static void xmb_navigation_alphabet(size_t *unused)
    xmb_selection_pointer_changed(xmb, true);
 }
 
-static void xmb_list_insert(file_list_t *list,
+static void xmb_list_insert(void *userdata,
+      file_list_t *list,
       const char *path, const char *unused, size_t list_size)
 {
    size_t selection;
    int current            = 0;
    int i                  = list_size;
    xmb_node_t *node       = NULL;
-   xmb_handle_t *xmb      = NULL;
-   menu_handle_t *menu    = menu_driver_get_ptr();
+   xmb_handle_t *xmb      = (xmb_handle_t*)userdata;
 
-   if (!menu)
+   if (!xmb || !list)
       return;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
-
-   xmb = (xmb_handle_t*)menu->userdata;
-
-   if (!list || !xmb)
       return;
 
    node = (xmb_node_t*)menu_entries_get_userdata_at_offset(list, i);

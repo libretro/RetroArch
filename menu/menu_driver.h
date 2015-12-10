@@ -269,7 +269,8 @@ typedef struct menu_ctx_driver
    void  (*navigation_descend_alphabet)(size_t *);
    void  (*navigation_ascend_alphabet)(size_t *);
    bool  (*lists_init)(void*);
-   void  (*list_insert)(file_list_t *list, const char *, const char *, size_t);
+   void  (*list_insert)(void *userdata,
+         file_list_t *list, const char *, const char *, size_t);
    void  (*list_free)(file_list_t *list, size_t, size_t);
    void  (*list_clear)(file_list_t *list);
    void  (*list_cache)(void *data, menu_list_type_t, unsigned);
@@ -369,6 +370,9 @@ int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
 int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action);
+
+void menu_driver_list_insert(file_list_t *list, const char *path,
+      const char *label, size_t idx);
 
 void menu_driver_navigation_clear(bool pending_push);
 

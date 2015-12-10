@@ -587,8 +587,7 @@ void menu_entries_push(file_list_t *list, const char *path, const char *label,
 
    idx = list->size - 1;
 
-   if (driver->list_insert)
-      driver->list_insert(list, path, label, idx);
+   menu_driver_list_insert(list, path, label, idx);
 
    file_list_free_actiondata(list, idx);
    cbs = (menu_file_list_cbs_t*)
