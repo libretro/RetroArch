@@ -247,8 +247,10 @@ static int action_start_cheat_num_passes(unsigned type, const char *label)
 static int action_start_core_setting(unsigned type,
       const char *label)
 {
-   unsigned idx           = type - MENU_SETTINGS_CORE_OPTION_START;
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   unsigned idx                = type - MENU_SETTINGS_CORE_OPTION_START;
+   rarch_system_info_t *system = NULL;
+   
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (system)
       core_option_set_default(system->core_options, idx);

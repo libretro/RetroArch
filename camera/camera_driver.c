@@ -160,7 +160,9 @@ void driver_camera_stop(void)
  **/
 void driver_camera_poll(void)
 {
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   rarch_system_info_t *system = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (camera_driver && camera_driver->poll && camera_data)
       camera_driver->poll(camera_data,
@@ -171,7 +173,9 @@ void driver_camera_poll(void)
 void init_camera(void)
 {
    settings_t        *settings = config_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   rarch_system_info_t *system = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    /* Resource leaks will follow if camera is initialized twice. */
    if (camera_data)
@@ -199,7 +203,8 @@ void init_camera(void)
 
 static void uninit_camera(void)
 {
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   rarch_system_info_t *system = NULL;
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (camera_data && camera_driver)
    {

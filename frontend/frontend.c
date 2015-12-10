@@ -152,7 +152,9 @@ static void history_playlist_push(content_playlist_t *playlist,
 {
    char tmp[PATH_MAX_LENGTH]             = {0};
    global_t                    *global   = global_get_ptr();
-   rarch_system_info_t *system           = rarch_system_info_get_ptr();
+   rarch_system_info_t *system           = NULL;
+   
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (!playlist || (global->inited.core.type == CORE_TYPE_DUMMY) || !info)
       return;
@@ -285,7 +287,9 @@ int rarch_main(int argc, char *argv[], void *data)
    {
       char *fullpath              = NULL;
       global_t *global            = global_get_ptr();
-      rarch_system_info_t *system = rarch_system_info_get_ptr();
+      rarch_system_info_t *system = NULL;
+      
+      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
       runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 

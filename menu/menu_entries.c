@@ -458,10 +458,12 @@ bool menu_entries_show_back(void)
  * (shown at the top of the UI). */
 int menu_entries_get_core_title(char *s, size_t len)
 {
+   rarch_system_info_t      *info = NULL;
    settings_t *settings           = config_get_ptr();
-   rarch_system_info_t      *info = rarch_system_info_get_ptr();
    const char *core_name          = g_system_menu.library_name;
    const char *core_version       = g_system_menu.library_version;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    if (!settings->menu.core_enable)
       return -1; 

@@ -394,7 +394,9 @@ static bool load_content_need_fullpath(
    char new_basedir[PATH_MAX_LENGTH] = {0};
    bool ret                          = false;
    settings_t *settings              = config_get_ptr();
-   rarch_system_info_t      *sys_info= rarch_system_info_get_ptr();
+   rarch_system_info_t      *sys_info= NULL;
+   
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
 
    if (sys_info && sys_info->info.block_extract)
       return true;
@@ -552,10 +554,12 @@ bool init_content_file(void)
    bool ret                                   = false;
    struct string_list *content                = NULL;
    const struct retro_subsystem_info *special = NULL;
+   rarch_system_info_t *system                = NULL;
    settings_t *settings                       = config_get_ptr();
-   rarch_system_info_t *system                = rarch_system_info_get_ptr();
    global_t *global                           = global_get_ptr();
    temporary_content                          = string_list_new();
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (!temporary_content)
       goto error;

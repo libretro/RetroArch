@@ -597,15 +597,17 @@ error:
 static bool init_video(void)
 {
    unsigned max_dim, scale, width, height;
-   video_viewport_t *custom_vp      = NULL;
-   const input_driver_t *tmp        = NULL;
+   video_viewport_t *custom_vp            = NULL;
+   const input_driver_t *tmp              = NULL;
    const struct retro_game_geometry *geom = NULL;
-   video_info_t video               = {0};
-   static uint16_t dummy_pixels[32] = {0};
-   settings_t *settings             = config_get_ptr();
-   rarch_system_info_t *system      = rarch_system_info_get_ptr();
-   struct retro_system_av_info *av_info =
+   rarch_system_info_t *system            = NULL;
+   video_info_t video                     = {0};
+   static uint16_t dummy_pixels[32]       = {0};
+   settings_t *settings                   = config_get_ptr();
+   struct retro_system_av_info *av_info   =
       video_viewport_get_system_av_info();
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    init_video_filter(video_driver_state.pix_fmt);
    event_command(EVENT_CMD_SHADER_DIR_INIT);
@@ -1016,7 +1018,9 @@ bool video_monitor_get_fps(char *buf, size_t size,
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    retro_time_t        new_time  = retro_get_time_usec();
-   rarch_system_info_t *system   = rarch_system_info_get_ptr();
+   rarch_system_info_t *system   = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    *buf = '\0';
 
@@ -1153,10 +1157,12 @@ static void video_monitor_adjust_system_rates(void)
 {
    float timing_skew;
    const struct retro_system_timing *info = NULL;
-   struct retro_system_av_info *av_info =
+   struct retro_system_av_info *av_info   =
       video_viewport_get_system_av_info();
-   settings_t *settings = config_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   settings_t *settings                   = config_get_ptr();
+   rarch_system_info_t *system            = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (!system)
       return;
@@ -1197,6 +1203,7 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
    rarch_setting_group_info_t *group_info    = (rarch_setting_group_info_t*)group_data;
    rarch_setting_group_info_t *subgroup_info = (rarch_setting_group_info_t*)subgroup_data;
    global_t                        *global   = global_get_ptr();
+
    (void)list;
    (void)list_info;
    (void)group_info;

@@ -1716,7 +1716,9 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
 
    if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
    {
-      rarch_system_info_t *system = rarch_system_info_get_ptr();
+      rarch_system_info_t *system = NULL;
+      
+      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
       menu_entries_push(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_RESUME_CONTENT),
@@ -2019,8 +2021,10 @@ static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *in
 {
    unsigned p, retro_id;
    settings_t        *settings = config_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   rarch_system_info_t *system = NULL;
    menu_handle_t       *menu   = menu_driver_get_ptr();
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    for (p = 0; p < settings->input.max_users; p++)
    {
@@ -2406,7 +2410,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    menu_handle_t       *menu   = menu_driver_get_ptr();
    global_t          *global   = global_get_ptr();
    settings_t      *settings   = config_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   rarch_system_info_t *system = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (menu_driver_list_push(info, type))
       return 0;

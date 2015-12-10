@@ -352,14 +352,17 @@ const char *rarch_get_current_savefile_dir(void)
 
 static void set_paths_redirect(const char *path)
 {
+   uint32_t global_library_name_hash   = 0;
    bool check_global_library_name_hash = false;
    global_t                *global     = global_get_ptr();
    settings_t              *settings   = config_get_ptr();
-   rarch_system_info_t      *info      = rarch_system_info_get_ptr();
+   rarch_system_info_t      *info      = NULL;
+   
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
-   uint32_t global_library_name_hash = ((global && info->info.library_name &&
+   if (global && info->info.library_name &&
             (info->info.library_name[0] != '\0'))
-         ? msg_hash_calculate(info->info.library_name) : 0);
+         global_library_name_hash = msg_hash_calculate(info->info.library_name);
 
    /* Initialize current save directories with the values from the config */
    strlcpy(current_savefile_dir,
@@ -971,7 +974,9 @@ static void parse_input(int argc, char *argv[])
 static void rarch_init_savefile_paths(void)
 {
    global_t            *global = global_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   rarch_system_info_t *system = NULL;
+   
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    event_command(EVENT_CMD_SAVEFILES_DEINIT);
 

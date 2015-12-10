@@ -972,10 +972,12 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
 {
    unsigned index_offset;
    const struct retro_controller_description *desc = NULL;
-   const char *name = NULL;
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
-   settings_t      *settings = config_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   const char *name            = NULL;
+   rarch_setting_t *setting    = (rarch_setting_t*)data;
+   settings_t      *settings   = config_get_ptr();
+   rarch_system_info_t *system = NULL;
+   
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (!setting)
       return;
@@ -2183,7 +2185,9 @@ static int setting_action_start_libretro_device_type(void *data)
    const struct retro_controller_info *desc = NULL;
    rarch_setting_t   *setting  = (rarch_setting_t*)data;
    settings_t        *settings = config_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   rarch_system_info_t *system = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (setting_generic_action_start_default(setting) != 0)
       return -1;
@@ -2326,9 +2330,11 @@ static int setting_action_left_libretro_device_type(
    unsigned current_device, current_idx, i, devices[128],
             types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
-   settings_t      *settings = config_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   rarch_setting_t *setting    = (rarch_setting_t*)data;
+   settings_t      *settings   = config_get_ptr();
+   rarch_system_info_t *system = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (!setting)
       return -1;
@@ -2384,9 +2390,11 @@ static int setting_action_right_libretro_device_type(
    unsigned current_device, current_idx, i, devices[128],
             types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
-   settings_t      *settings = config_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   rarch_setting_t *setting    = (rarch_setting_t*)data;
+   settings_t      *settings   = config_get_ptr();
+   rarch_system_info_t *system = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (!setting)
       return -1;
@@ -2756,9 +2764,11 @@ void general_write_handler(void *data)
    settings_t *settings         = config_get_ptr();
    global_t *global             = global_get_ptr();
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
-   rarch_system_info_t *system  = rarch_system_info_get_ptr();
+   rarch_system_info_t *system  = NULL;
    uint32_t hash                = setting ? menu_hash_calculate(setting->name) : 0;
    uint64_t flags               = menu_setting_get_flags(setting);
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (!setting)
       return;
@@ -3005,7 +3015,9 @@ static bool setting_append_list_input_player_options(
    global_t   *global   = global_get_ptr();
    const struct retro_keybind* const defaults =
       (user == 0) ? retro_keybinds_1 : retro_keybinds_rest;
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   rarch_system_info_t *system = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    snprintf(buffer[user],    sizeof(buffer[user]),
          "%s %u", menu_hash_to_str(MENU_VALUE_USER), user + 1);

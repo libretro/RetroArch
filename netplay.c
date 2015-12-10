@@ -888,10 +888,15 @@ static uint32_t implementation_magic_value(void)
 {
    size_t i, len;
    uint32_t res                        = 0;
+   rarch_system_info_t *info           = NULL;
+   const char *lib                     = NULL;
    const char *ver                     = PACKAGE_VERSION;
    unsigned api                        = core.retro_api_version();
-   rarch_system_info_t *info           = rarch_system_info_get_ptr();
-   const char *lib                     = info ? info->info.library_name : NULL;
+   
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+   
+   if (info)
+      lib = info->info.library_name;
 
    res |= api;
 

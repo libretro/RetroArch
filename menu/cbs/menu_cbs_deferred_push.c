@@ -510,9 +510,11 @@ enum
 static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned type)
 {
    settings_t        *settings = config_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
+   rarch_system_info_t *system = NULL;
    menu_handle_t        *menu  = menu_driver_get_ptr();
    const char          *exts   = core_info_list_get_all_extensions();
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    switch (id)
    {

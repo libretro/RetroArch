@@ -70,7 +70,6 @@
 #define DEFAULT_EXT ""
 #endif
 
-static rarch_system_info_t g_system;
 
 #ifdef HAVE_MENU
 struct retro_system_info g_system_menu;
@@ -93,10 +92,6 @@ global_t *global_get_ptr(void)
    return &g_extern;
 }
 
-rarch_system_info_t *rarch_system_info_get_ptr(void)
-{
-   return &g_system;
-}
 
 const char *runloop_msg_queue_pull(void)
 {
@@ -413,15 +408,16 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
  **/
 static bool rarch_game_specific_options(char **output)
 {
-   settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
-
+   settings_t *settings                   = config_get_ptr();
+   global_t *global                       = global_get_ptr();
+   rarch_system_info_t *system            = NULL;
    const char *core_name                  = NULL;
    const char *game_name                  = NULL;
    config_file_t *option_file             = NULL;
    char game_path[PATH_MAX_LENGTH]        = {0};
    char config_directory[PATH_MAX_LENGTH] = {0};
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    core_name = system ? system->info.library_name : NULL;
    game_name = global ? path_basename(global->name.base) : NULL;
@@ -472,6 +468,7 @@ static void runloop_data_clear_state(void)
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    static char runloop_fullpath[PATH_MAX_LENGTH];
+   static rarch_system_info_t runloop_system;
    static unsigned runloop_max_frames          = false;
    static bool runloop_frame_time_last         = false;
    static bool runloop_set_frame_limit         = false;
@@ -487,7 +484,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    static slock_t *runloop_msg_queue_lock      = NULL;
 #endif
    settings_t *settings                        = config_get_ptr();
-   rarch_system_info_t *system                 = rarch_system_info_get_ptr();
 
    switch (state)
    {
@@ -497,54 +493,62 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_SHADER_DIR_INIT:
          return shader_dir_init();
       case RUNLOOP_CTL_SYSTEM_INFO_INIT:
-         core.retro_get_system_info(&system->info);
+         core.retro_get_system_info(&runloop_system.info);
 
-         if (!system->info.library_name)
-            system->info.library_name = msg_hash_to_str(MSG_UNKNOWN);
-         if (!system->info.library_version)
-            system->info.library_version = "v0";
+         if (!runloop_system.info.library_name)
+            runloop_system.info.library_name = msg_hash_to_str(MSG_UNKNOWN);
+         if (!runloop_system.info.library_version)
+            runloop_system.info.library_version = "v0";
 
 #ifndef RARCH_CONSOLE
-         strlcpy(system->title_buf, 
-               msg_hash_to_str(MSG_PROGRAM), sizeof(system->title_buf));
-         strlcat(system->title_buf, " : ", sizeof(system->title_buf));
+         strlcpy(runloop_system.title_buf, 
+               msg_hash_to_str(MSG_PROGRAM), sizeof(runloop_system.title_buf));
+         strlcat(runloop_system.title_buf, " : ", sizeof(runloop_system.title_buf));
 #endif
-         strlcat(system->title_buf, system->info.library_name, sizeof(system->title_buf));
-         strlcat(system->title_buf, " ", sizeof(system->title_buf));
-         strlcat(system->title_buf, system->info.library_version, sizeof(system->title_buf));
-         strlcpy(system->valid_extensions, system->info.valid_extensions ?
-               system->info.valid_extensions : DEFAULT_EXT,
-               sizeof(system->valid_extensions));
-         system->block_extract = system->info.block_extract;
+         strlcat(runloop_system.title_buf, runloop_system.info.library_name, sizeof(runloop_system.title_buf));
+         strlcat(runloop_system.title_buf, " ", sizeof(runloop_system.title_buf));
+         strlcat(runloop_system.title_buf, runloop_system.info.library_version, sizeof(runloop_system.title_buf));
+         strlcpy(runloop_system.valid_extensions, runloop_system.info.valid_extensions ?
+               runloop_system.info.valid_extensions : DEFAULT_EXT,
+               sizeof(runloop_system.valid_extensions));
+         runloop_system.block_extract = runloop_system.info.block_extract;
          break;
       case RUNLOOP_CTL_GET_CORE_OPTION_SIZE:
          {
             unsigned *idx = (unsigned*)data;
             if (!idx)
                return false;
-            *idx = core_option_size(system->core_options);
+            *idx = core_option_size(runloop_system.core_options);
          }
          return true;
       case RUNLOOP_CTL_HAS_CORE_OPTIONS:
-         return system && system->core_options;
-      case RUNLOOP_CTL_SYSTEM_INFO_FREE:
-         if (system->core_options)
+         return runloop_system.core_options;
+      case RUNLOOP_CTL_SYSTEM_INFO_GET:
          {
-            core_option_flush(system->core_options);
-            core_option_free(system->core_options);
+            rarch_system_info_t **system = (rarch_system_info_t**)data;
+            if (!system)
+               return false;
+            *system = &runloop_system;
+         }
+         return true;
+      case RUNLOOP_CTL_SYSTEM_INFO_FREE:
+         if (runloop_system.core_options)
+         {
+            core_option_flush(runloop_system.core_options);
+            core_option_free(runloop_system.core_options);
          }
 
-         system->core_options = NULL;
+         runloop_system.core_options = NULL;
 
          /* No longer valid. */
-         if (system->special)
-            free(system->special);
-         system->special = NULL;
-         if (system->ports)
-            free(system->ports);
-         system->ports   = NULL;
+         if (runloop_system.special)
+            free(runloop_system.special);
+         runloop_system.special = NULL;
+         if (runloop_system.ports)
+            free(runloop_system.ports);
+         runloop_system.ports   = NULL;
 
-         memset(&g_system, 0, sizeof(rarch_system_info_t));
+         memset(&runloop_system, 0, sizeof(rarch_system_info_t));
          break;
       case RUNLOOP_CTL_IS_FRAME_COUNT_END:
          {
@@ -998,14 +1002,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          rarch_task_deinit();
          break;
       case RUNLOOP_CTL_IS_CORE_OPTION_UPDATED:
-         return system->core_options ?
-            core_option_updated(system->core_options) : false;
+         return runloop_system.core_options ?
+            core_option_updated(runloop_system.core_options) : false;
       case RUNLOOP_CTL_CORE_OPTION_PREV:
          {
             unsigned *idx = (unsigned*)data;
             if (!idx)
                return false;
-            core_option_prev(system->core_options, *idx);
+            core_option_prev(runloop_system.core_options, *idx);
             if (ui_companion_is_on_foreground())
                ui_companion_driver_notify_refresh();
          }
@@ -1015,7 +1019,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             unsigned *idx = (unsigned*)data;
             if (!idx)
                return false;
-            core_option_next(system->core_options, *idx);
+            core_option_next(runloop_system.core_options, *idx);
             if (ui_companion_is_on_foreground())
                ui_companion_driver_notify_refresh();
          }
@@ -1024,11 +1028,11 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          {
             struct retro_variable *var = (struct retro_variable*)data;
 
-            if (!system || !system->core_options || !var)
+            if (!runloop_system.core_options || !var)
                return false;
 
             RARCH_LOG("Environ GET_VARIABLE %s:\n", var->key);
-            core_option_get(system->core_options, var);
+            core_option_get(runloop_system.core_options, var);
             RARCH_LOG("\t%s\n", var->value ? var->value : "N/A");
          }
          return true;
@@ -1054,22 +1058,22 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             if(ret)
             {
-               system->core_options = core_option_new(game_options_path, vars);
+               runloop_system.core_options = core_option_new(game_options_path, vars);
                free(game_options_path);
             }
             else
-               system->core_options = core_option_new(options_path, vars);
+               runloop_system.core_options = core_option_new(options_path, vars);
 
          }
          break;
       case RUNLOOP_CTL_CORE_OPTIONS_DEINIT:
-         if (!system->core_options)
+         if (!runloop_system.core_options)
             return false;
 
-         core_option_flush(system->core_options);
-         core_option_free(system->core_options);
+         core_option_flush(runloop_system.core_options);
+         core_option_free(runloop_system.core_options);
 
-         system->core_options = NULL;
+         runloop_system.core_options = NULL;
          return true;
       case RUNLOOP_CTL_NONE:
       default:
@@ -1174,11 +1178,13 @@ int runloop_iterate(unsigned *sleep_ms)
    static retro_input_t last_input              = 0;
    settings_t *settings                         = config_get_ptr();
    global_t   *global                           = global_get_ptr();
-   rarch_system_info_t *system                  = rarch_system_info_get_ptr();
+   rarch_system_info_t *system                  = NULL;
 
    cmd.state[1]                                 = last_input;
    cmd.state[0]                                 = input_keys_pressed();
    last_input                                   = cmd.state[0];
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (runloop_ctl(RUNLOOP_CTL_IS_FRAME_TIME_LAST, NULL))
    {

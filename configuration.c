@@ -1923,7 +1923,9 @@ bool config_load_override(void)
    bool should_append                     = false;
    global_t *global                       = global_get_ptr();
    settings_t *settings                   = config_get_ptr();
-   rarch_system_info_t *system              = rarch_system_info_get_ptr();
+   rarch_system_info_t *system            = NULL;
+   
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (!global || !settings || !system)
    {
@@ -2111,7 +2113,9 @@ bool config_load_remap(void)
    char game_path[PATH_MAX_LENGTH]         = {0};    /* final path for game-specific configuration (prefix+suffix) */
    global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
-   rarch_system_info_t *system               = rarch_system_info_get_ptr();
+   rarch_system_info_t *system             = NULL;
+   
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    /* Early return in case a library isn't loaded or remapping is disabled */
    if (!system->info.library_name || !strcmp(system->info.library_name,"No Core"))

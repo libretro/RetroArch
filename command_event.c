@@ -70,11 +70,15 @@
  **/
 static void event_disk_control_set_eject(bool new_state, bool print_log)
 {
-   char msg[128]             = {0};
-   bool error                = false;
-   rarch_system_info_t *info = rarch_system_info_get_ptr();
-   const struct retro_disk_control_callback *control =
-      info ? (const struct retro_disk_control_callback*)&info->disk_control : NULL;
+   char msg[128]                                     = {0};
+   bool error                                        = false;
+   rarch_system_info_t *info                         = NULL;
+   const struct retro_disk_control_callback *control = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+
+   if (info)
+      control = (const struct retro_disk_control_callback*)&info->disk_control;
 
    if (!control || !control->get_num_images)
       return;
@@ -116,9 +120,13 @@ static void event_disk_control_set_index(unsigned idx)
    unsigned num_disks;
    bool error                                        = false;
    char msg[128]                                     = {0};
-   rarch_system_info_t                      *info    = rarch_system_info_get_ptr();
-   const struct retro_disk_control_callback *control =
-      info ? (const struct retro_disk_control_callback*)&info->disk_control : NULL;
+   rarch_system_info_t                      *info    = NULL;
+   const struct retro_disk_control_callback *control = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+
+   if (info)
+      control = (const struct retro_disk_control_callback*)&info->disk_control;
 
    if (!control || !control->get_num_images)
       return;
@@ -166,13 +174,16 @@ static void event_disk_control_set_index(unsigned idx)
 void event_disk_control_append_image(const char *path)
 {
    unsigned new_idx;
-   char msg[128]                                     = {0};
-   struct retro_game_info info                       = {0};
-   global_t                                  *global = global_get_ptr();
-   rarch_system_info_t                       *sysinfo = rarch_system_info_get_ptr();
-   const struct retro_disk_control_callback *control =
-      sysinfo ? (const struct retro_disk_control_callback*)&sysinfo->disk_control
-      : NULL;
+   char msg[128]                                      = {0};
+   struct retro_game_info info                        = {0};
+   global_t                                  *global  = global_get_ptr();
+   const struct retro_disk_control_callback *control  = NULL;
+   rarch_system_info_t                       *sysinfo = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sysinfo);
+
+   if (sysinfo)
+      control = (const struct retro_disk_control_callback*)&sysinfo->disk_control;
 
    if (!control)
       return;
@@ -309,7 +320,9 @@ static void event_init_controllers(void)
 {
    unsigned i;
    settings_t      *settings = config_get_ptr();
-   rarch_system_info_t *info = rarch_system_info_get_ptr();
+   rarch_system_info_t *info = NULL;
+   
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -869,11 +882,13 @@ static bool event_update_system_info(struct retro_system_info *_info,
  **/
 bool event_command(enum event_command cmd)
 {
-   unsigned i           = 0;
-   bool boolean         = false;
-   global_t  *global    = global_get_ptr();
-   settings_t *settings = config_get_ptr();
-   rarch_system_info_t *info = rarch_system_info_get_ptr();
+   unsigned i                = 0;
+   bool boolean              = false;
+   global_t  *global         = global_get_ptr();
+   settings_t *settings      = config_get_ptr();
+   rarch_system_info_t *info = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    (void)i;
 

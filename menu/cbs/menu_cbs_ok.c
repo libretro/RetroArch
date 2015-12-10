@@ -887,9 +887,14 @@ static int generic_action_ok_remap_file_save(const char *path,
    char file[PATH_MAX_LENGTH];
    global_t *global                = global_get_ptr();
    settings_t *settings            = config_get_ptr();
-   rarch_system_info_t *info       = rarch_system_info_get_ptr();
+   rarch_system_info_t *info       = NULL;
    const char *game_name           = NULL;
-   const char *core_name           = info ? info->info.library_name : NULL;
+   const char *core_name           = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+
+   if (info)
+      core_name           = info->info.library_name;
 
    fill_pathname_join(directory, settings->input_remapping_directory, core_name, PATH_MAX_LENGTH);
 
@@ -1266,15 +1271,16 @@ static int action_ok_disk_cycle_tray_status(const char *path,
 static int action_ok_option_create(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
-
+   settings_t *settings                   = config_get_ptr();
+   global_t *global                       = global_get_ptr();
+   rarch_system_info_t *system            = NULL;
    const char *core_name                  = NULL;
    const char *game_name                  = NULL;
    char core_path[PATH_MAX_LENGTH]        = {0};
    char game_path[PATH_MAX_LENGTH]        = {0};
    char config_directory[PATH_MAX_LENGTH] = {0};
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    /* Config directory: config_directory.
    * Try config directory setting first,

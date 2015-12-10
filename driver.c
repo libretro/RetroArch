@@ -231,8 +231,9 @@ void init_drivers_pre(void)
 
 static void driver_adjust_system_rates(void)
 {
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
-
+   rarch_system_info_t *system = NULL;
+   
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
    audio_driver_ctl(RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES,   NULL);
    video_driver_ctl(RARCH_DISPLAY_CTL_MONITOR_ADJUST_SYSTEM_RATES, NULL);
 
@@ -271,9 +272,11 @@ void driver_set_refresh_rate(float hz)
 void driver_set_nonblock_state(void)
 {
    settings_t        *settings = config_get_ptr();
-   rarch_system_info_t *system = rarch_system_info_get_ptr();
    bool                 enable = input_driver_ctl(
          RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL);
+   rarch_system_info_t *system = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    /* Only apply non-block-state for video if we're using vsync. */
    if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_ACTIVE, NULL) 
