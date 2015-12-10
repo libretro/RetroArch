@@ -640,6 +640,7 @@ static void mui_draw_cursor(mui_handle_t *mui,
 static size_t mui_list_get_size(void *data, menu_list_type_t type)
 {
    size_t list_size = 0;
+   (void)data;
 
    switch (type)
    {
@@ -815,7 +816,7 @@ static void mui_frame(void)
    mui->tabs_height = 0;
 
    /* display tabs if depth equal one, if not hide them */
-   if (mui_list_get_size(menu, MENU_LIST_PLAIN) == 1)
+   if (mui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
    {
       mui_draw_tab_begin(mui, width, height, &white_bg[0], &grey_bg[0]);
 

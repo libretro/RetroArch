@@ -216,7 +216,7 @@ size_t menu_driver_list_get_size(menu_list_type_t type)
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
    if (driver && driver->list_get_size)
-      return driver->list_get_size(menu, type);
+      return driver->list_get_size(menu->userdata, type);
    return 0;
 }
 

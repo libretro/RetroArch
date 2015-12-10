@@ -265,8 +265,7 @@ static size_t xmb_list_get_selection(void *data)
 static size_t xmb_list_get_size(void *data, menu_list_type_t type)
 {
    size_t list_size        = 0;
-   menu_handle_t *menu     = (menu_handle_t*)data;
-   xmb_handle_t *xmb       = menu    ? (xmb_handle_t*)menu->userdata : NULL;
+   xmb_handle_t *xmb       = (xmb_handle_t*)data;
 
    switch (type)
    {
@@ -594,7 +593,7 @@ static void xmb_selection_pointer_changed(bool allow_animations)
          ia = XMB_ITEM_ACTIVE_ALPHA;
          iz = XMB_ITEM_ACTIVE_ZOOM;
 
-         depth = xmb_list_get_size(menu, MENU_LIST_PLAIN);
+         depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
          if (settings->menu.boxart_enable && depth == 1)
          {
             xmb_update_boxart_path(xmb, i);
@@ -895,7 +894,7 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
 static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 {
    unsigned j;
-   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
+   size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
 
    for (j = 0; j <= list_size; j++)
    {
@@ -963,7 +962,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 {
    unsigned j;
-   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
+   size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
 
    for (j = 0; j <= list_size; j++)
    {
@@ -987,7 +986,7 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb,
       menu_handle_t *menu)
 {
    unsigned i;
-   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
+   size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
 
    for (i = 0; i < list_size; i++)
    {
@@ -1028,7 +1027,7 @@ static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
 static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
 {
    unsigned i;
-   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
+   size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
 
    for (i = 0; i <= list_size; i++)
    {
@@ -1055,7 +1054,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
 {
    unsigned i;
    int depth; /* keep this integer */
-   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL);
+   size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
 
    xmb->categories.x_pos = xmb->icon.spacing.horizontal *
       -(float)xmb->categories.selection_ptr;
@@ -1172,7 +1171,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
-   xmb->depth = xmb_list_get_size(menu, MENU_LIST_PLAIN);
+   xmb->depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
 
    if (xmb->depth > xmb->old_depth)
       dir = 1;
@@ -1617,7 +1616,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
       float *color)
 {
    unsigned i;
-   size_t list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
+   size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
 
    for (i = 0; i <= list_size; i++)
    {
@@ -1721,7 +1720,7 @@ static void xmb_frame(void)
             height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
             width, height);
 
-   depth = xmb_list_get_size(menu, MENU_LIST_PLAIN);
+   depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
 
    xmb_draw_items(xmb,
          xmb->selection_buf_old,
@@ -2449,7 +2448,7 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
    xmb_list_deep_copy(menu_stack, xmb->menu_stack_old);
    xmb->selection_ptr_old = selection;
 
-   list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
+   list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
 
    switch (type)
    {
@@ -2562,7 +2561,7 @@ static void xmb_toggle(bool menu_on)
    if (!xmb)
       return;
 
-   xmb->depth = xmb_list_get_size(menu, MENU_LIST_PLAIN);
+   xmb->depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
 
    if (!menu_on)
    {
