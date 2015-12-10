@@ -1195,11 +1195,10 @@ static void mui_preswitch_tabs(mui_handle_t *mui, unsigned action)
    }
 }
 
-static void mui_list_cache(menu_list_type_t type, unsigned action)
+static void mui_list_cache(void *data, menu_list_type_t type, unsigned action)
 {
    size_t list_size;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
+   mui_handle_t *mui   = (mui_handle_t*)data;
 
    if (!mui)
       return;

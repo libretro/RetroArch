@@ -205,9 +205,10 @@ bool menu_driver_list_push(menu_displaylist_info_t *info, unsigned type)
 void menu_driver_list_cache(menu_list_type_t type, unsigned action)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+   menu_handle_t *menu             = menu_driver_get_ptr();
 
    if (driver->list_cache)
-      driver->list_cache(type, action);
+      driver->list_cache(menu->userdata, type, action);
 }
 
 size_t menu_driver_list_get_size(menu_list_type_t type)

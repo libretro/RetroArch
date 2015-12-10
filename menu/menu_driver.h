@@ -271,7 +271,7 @@ typedef struct menu_ctx_driver
    void  (*list_insert)(file_list_t *list, const char *, const char *, size_t);
    void  (*list_free)(file_list_t *list, size_t, size_t);
    void  (*list_clear)(file_list_t *list);
-   void  (*list_cache)(menu_list_type_t, unsigned);
+   void  (*list_cache)(void *data, menu_list_type_t, unsigned);
    int   (*list_push)(menu_displaylist_info_t*, unsigned);
    size_t(*list_get_selection)(void *data);
    size_t(*list_get_size)(void *data, menu_list_type_t type);

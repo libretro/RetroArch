@@ -2399,18 +2399,12 @@ static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst)
    }
 }
 
-static void xmb_list_cache(menu_list_type_t type, unsigned action)
+static void xmb_list_cache(void *data, menu_list_type_t type, unsigned action)
 {
    size_t stack_size, list_size, selection;
-   xmb_handle_t      *xmb = NULL;
-   menu_handle_t    *menu = menu_driver_get_ptr();
+   xmb_handle_t      *xmb     = (xmb_handle_t*)data;
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-
-   if (!menu)
-      return;
-
-   xmb = (xmb_handle_t*)menu->userdata;
 
    if (!xmb)
       return;
