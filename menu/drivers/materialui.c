@@ -1159,13 +1159,11 @@ static int mui_environ(menu_environ_cb_t type, void *data)
    return -1;
 }
 
-static void mui_preswitch_tabs(unsigned action)
+static void mui_preswitch_tabs(mui_handle_t *mui, unsigned action)
 {
    size_t idx              = 0;
    size_t stack_size       = 0;
    file_list_t *menu_stack = NULL;
-   menu_handle_t *menu     = menu_driver_get_ptr();
-   mui_handle_t *mui       = menu ? (mui_handle_t*)menu->userdata : NULL;
 
    if (!mui)
       return;
@@ -1242,7 +1240,7 @@ static void mui_list_cache(menu_list_type_t type, unsigned action)
                break;
          }
 
-         mui_preswitch_tabs(action);
+         mui_preswitch_tabs(mui, action);
          break;
       default:
          break;
@@ -1378,7 +1376,7 @@ static int mui_pointer_tap(unsigned x, unsigned y,
          {
             mui->categories.selection_ptr = i;
 
-            mui_preswitch_tabs(action);
+            mui_preswitch_tabs(mui, action);
 
             if (cbs && cbs->action_content_list_switch)
                return cbs->action_content_list_switch(selection_buf, menu_stack,
