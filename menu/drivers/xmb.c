@@ -1824,7 +1824,7 @@ static void xmb_frame(void)
 }
 
 
-static void xmb_font(menu_handle_t *menu)
+static void xmb_font(void)
 {
    int font_size;
    char mediapath[PATH_MAX_LENGTH], themepath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
@@ -1979,7 +1979,7 @@ static void *xmb_init(void)
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &height);
 
    xmb_init_horizontal_list(menu, xmb);
-   xmb_font(menu);
+   xmb_font();
 
    return menu;
 
@@ -2268,7 +2268,7 @@ static void xmb_context_reset(void)
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
    xmb_layout(xmb);
-   xmb_font(menu);
+   xmb_font();
    xmb_context_reset_textures(xmb, iconpath);
    xmb_context_reset_background(iconpath);
    xmb_context_reset_horizontal_list(xmb, menu, themepath);
@@ -2376,7 +2376,7 @@ static void xmb_list_clear(file_list_t *list)
    }
 }
 
-static void xmb_list_deep_copy(menu_handle_t *menu, const file_list_t *src, file_list_t *dst)
+static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst)
 {
    size_t i;
    size_t size = dst->size;
@@ -2445,8 +2445,8 @@ static void xmb_list_cache(menu_list_type_t type, unsigned action)
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
-   xmb_list_deep_copy(menu, selection_buf, xmb->selection_buf_old);
-   xmb_list_deep_copy(menu, menu_stack, xmb->menu_stack_old);
+   xmb_list_deep_copy(selection_buf, xmb->selection_buf_old);
+   xmb_list_deep_copy(menu_stack, xmb->menu_stack_old);
    xmb->selection_ptr_old = selection;
 
    list_size = xmb_list_get_size(menu, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
