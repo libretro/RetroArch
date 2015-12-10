@@ -3890,6 +3890,7 @@ static bool setting_append_list_logging_options(
       rarch_setting_info_t *list_info,
       const char *parent_group)
 {
+   bool *tmp_b = NULL;
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
@@ -3953,9 +3954,11 @@ static bool setting_append_list_logging_options(
    START_SUB_GROUP(list, list_info, "Performance Counters", &group_info, &subgroup_info,
          parent_group);
 
+   runloop_ctl(RUNLOOP_CTL_GET_PERFCNT, &tmp_b);
+
    CONFIG_BOOL(
          list, list_info,
-         runloop_perfcnt_enabled(),
+         tmp_b,
          menu_hash_to_str(MENU_LABEL_PERFCNT_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_PERFCNT_ENABLE),
          false,

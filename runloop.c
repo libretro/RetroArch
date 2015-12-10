@@ -469,12 +469,6 @@ static void runloop_data_clear_state(void)
    rarch_task_init();
 }
 
-bool *runloop_perfcnt_enabled(void)
-{
-   static bool runloop_perfcnt_enable;
-   return &runloop_perfcnt_enable;
-}
-
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    static char runloop_fullpath[PATH_MAX_LENGTH];
@@ -487,6 +481,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    static bool runloop_slowmotion              = false;
    static bool runloop_shutdown_initiated      = false;
    static bool runloop_core_shutdown_initiated = false;
+   static bool runloop_perfcnt_enable          = false;
 #ifdef HAVE_THREADS
    static slock_t *runloop_msg_queue_lock      = NULL;
 #endif
@@ -572,23 +567,22 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_SHOULD_SET_FRAME_LIMIT:
          return runloop_set_frame_limit;
-      case RUNLOOP_CTL_SET_PERFCNT_ENABLE:
+      case RUNLOOP_CTL_GET_PERFCNT:
          {
-            bool *perfcnt_enable = runloop_perfcnt_enabled();
-            *perfcnt_enable = true;
+            bool **perfcnt = (bool**)data;
+            if (!perfcnt)
+               return false;
+            *perfcnt = &runloop_perfcnt_enable;
          }
+         return true;
+      case RUNLOOP_CTL_SET_PERFCNT_ENABLE:
+         runloop_perfcnt_enable = true;
          break;
       case RUNLOOP_CTL_UNSET_PERFCNT_ENABLE:
-         {
-            bool *perfcnt_enable = runloop_perfcnt_enabled();
-            *perfcnt_enable = false;
-         }
+         runloop_perfcnt_enable = false;
          break;
       case RUNLOOP_CTL_IS_PERFCNT_ENABLE:
-         {
-            bool *perfcnt_enable = runloop_perfcnt_enabled();
-            return *perfcnt_enable;
-         }
+         return runloop_perfcnt_enable;
       case RUNLOOP_CTL_GET_WINDOWED_SCALE:
          {
             unsigned **scale = (unsigned**)data;
@@ -844,6 +838,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_PLAYBACK, NULL);
          break;
       case RUNLOOP_CTL_STATE_FREE:
+         runloop_perfcnt_enable     = false;
          runloop_idle               = false;
          runloop_paused             = false;
          runloop_slowmotion         = false;

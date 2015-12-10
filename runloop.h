@@ -63,6 +63,7 @@ enum runloop_ctl_state
    RUNLOOP_CTL_SET_EXEC,
    RUNLOOP_CTL_UNSET_EXEC,
    RUNLOOP_CTL_IS_EXEC,
+   RUNLOOP_CTL_GET_PERFCNT,
    RUNLOOP_CTL_SET_PERFCNT_ENABLE,
    RUNLOOP_CTL_UNSET_PERFCNT_ENABLE,
    RUNLOOP_CTL_IS_PERFCNT_ENABLE,
@@ -308,8 +309,6 @@ void runloop_msg_queue_push_new(uint32_t hash, unsigned prio,
       unsigned duration, bool flush);
 
 const char *runloop_msg_queue_pull(void);
-
-bool *runloop_perfcnt_enabled(void);
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 
