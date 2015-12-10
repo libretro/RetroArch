@@ -131,13 +131,13 @@ static int action_start_shader_action_parameter(unsigned type, const char *label
 static int action_start_shader_action_preset_parameter(unsigned type, const char *label)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader = NULL;
+   struct video_shader *shader          = NULL;
    struct video_shader_parameter *param = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
-      return -1;
 
-   if (!(shader = menu->shader))
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+
+   if (!shader)
       return 0;
 
    param = &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
@@ -153,12 +153,10 @@ static int action_start_shader_pass(unsigned type, const char *label)
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader           = NULL;
    struct video_shader_pass *shader_pass = NULL;
-   menu_handle_t *menu                   = menu_driver_get_ptr();
    hack_shader_pass                      = type - MENU_SETTINGS_SHADER_PASS_0;
-   if (!menu)
-      return -1;
 
-   shader = menu->shader;
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
 
    if (shader)
       shader_pass = &shader->pass[hack_shader_pass];
@@ -174,14 +172,12 @@ static int action_start_shader_pass(unsigned type, const char *label)
 static int action_start_shader_scale_pass(unsigned type, const char *label)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader = NULL;
+   struct video_shader *shader           = NULL;
    struct video_shader_pass *shader_pass = NULL;
-   unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
-      return -1;
+   unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
 
-   shader      = menu->shader;
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
 
    if (shader)
       shader_pass = &shader->pass[pass];
@@ -199,14 +195,13 @@ static int action_start_shader_scale_pass(unsigned type, const char *label)
 static int action_start_shader_filter_pass(unsigned type, const char *label)
 {
 #ifdef HAVE_SHADER_MANAGER
-   unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
-   struct video_shader *shader = NULL;
+   unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
+   struct video_shader *shader           = NULL;
    struct video_shader_pass *shader_pass = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
-      return -1;
 
-   shader = menu->shader;
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+
    if (!shader)
       return -1;
    shader_pass = &shader->pass[pass];
@@ -223,18 +218,17 @@ static int action_start_shader_num_passes(unsigned type, const char *label)
 {
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   if (!menu)
-      return -1;
 
-   shader = menu->shader;
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+
    if (!shader)
       return -1;
    if (shader->passes)
       shader->passes = 0;
 
    menu_entries_set_refresh(false);
-   video_shader_resolve_parameters(NULL, menu->shader);
+   video_shader_resolve_parameters(NULL, shader);
 #endif
    return 0;
 }
