@@ -891,7 +891,7 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
    return node;
 }
 
-static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
+static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
 {
    unsigned j;
    size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
@@ -937,7 +937,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 
    xmb->categories.active.idx += dir;
 
-   xmb_list_switch_horizontal_list(xmb, menu);
+   xmb_list_switch_horizontal_list(xmb);
 
    menu_animation_push(XMB_DELAY,
          xmb->icon.spacing.horizontal * -(float)xmb->categories.selection_ptr,
@@ -959,7 +959,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    }
 }
 
-static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
+static void xmb_list_open_horizontal_list(xmb_handle_t *xmb)
 {
    unsigned j;
    size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
@@ -982,8 +982,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu
    }
 }
 
-static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb,
-      menu_handle_t *menu)
+static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb)
 {
    unsigned i;
    size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
@@ -1000,7 +999,7 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb,
    }
 }
 
-static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
+static void xmb_init_horizontal_list(xmb_handle_t *xmb)
 {
    menu_displaylist_info_t info = {0};
    settings_t *settings         = config_get_ptr();
@@ -1024,7 +1023,7 @@ static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
       menu_displaylist_push_list_process(&info);
 }
 
-static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
+static void xmb_toggle_horizontal_list(xmb_handle_t *xmb)
 {
    unsigned i;
    size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + XMB_SYSTEM_TAB_END;
@@ -1049,8 +1048,7 @@ static void xmb_toggle_horizontal_list(xmb_handle_t *xmb, menu_handle_t *menu)
    }
 }
 
-static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
-      menu_handle_t *menu, const char *themepath)
+static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb, const char *themepath)
 {
    unsigned i;
    int depth; /* keep this integer */
@@ -1111,11 +1109,10 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb,
       texture_image_free(&ti);
    }
 
-   xmb_toggle_horizontal_list(xmb, menu);
+   xmb_toggle_horizontal_list(xmb);
 }
 
-static void xmb_refresh_horizontal_list(xmb_handle_t *xmb,
-      menu_handle_t *menu)
+static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
 {
    char mediapath[PATH_MAX_LENGTH] = {0};
    char themepath[PATH_MAX_LENGTH] = {0};
@@ -1125,15 +1122,15 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb,
    fill_pathname_join(mediapath, settings->assets_directory, "xmb", sizeof(mediapath));
    fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
 
-   xmb_context_destroy_horizontal_list(xmb, menu);
+   xmb_context_destroy_horizontal_list(xmb);
    if (xmb->horizontal_list)
       free(xmb->horizontal_list);
    xmb->horizontal_list = NULL;
 
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
-   xmb_init_horizontal_list(menu, xmb);
-   xmb_context_reset_horizontal_list(xmb, menu, themepath);
+   xmb_init_horizontal_list(xmb);
+   xmb_context_reset_horizontal_list(xmb, themepath);
 }
 
 static int xmb_environ(menu_environ_cb_t type, void *data)
@@ -1146,10 +1143,10 @@ static int xmb_environ(menu_environ_cb_t type, void *data)
             xmb_handle_t *xmb        = menu ? 
                (xmb_handle_t*)menu->userdata : NULL;
 
-            if (!xmb || !menu)
+            if (!xmb)
                return -1;
 
-            xmb_refresh_horizontal_list(xmb, menu);
+            xmb_refresh_horizontal_list(xmb);
          }
          break;
       default:
@@ -1163,11 +1160,8 @@ static void xmb_list_open(xmb_handle_t *xmb)
 {
    size_t selection;
    int                    dir = 0;
-   menu_handle_t        *menu = menu_driver_get_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-   if (!menu)
-      return;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
@@ -1178,7 +1172,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
    else if (xmb->depth < xmb->old_depth)
       dir = -1;
 
-   xmb_list_open_horizontal_list(xmb, menu);
+   xmb_list_open_horizontal_list(xmb);
 
    xmb_list_open_old(xmb, xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
@@ -1612,7 +1606,7 @@ static void xmb_render(void *data)
 }
 
 static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
-      menu_handle_t *menu, unsigned width, unsigned height,
+      unsigned width, unsigned height,
       float *color)
 {
    unsigned i;
@@ -1771,7 +1765,7 @@ static void xmb_frame(void)
             0,
             1, &coord_color2[0]);
 
-   xmb_frame_horizontal_list(xmb, menu, width, height, &item_color[0]);
+   xmb_frame_horizontal_list(xmb, width, height, &item_color[0]);
 
    menu_display_font_flush_block();
 
@@ -1977,7 +1971,7 @@ static void *xmb_init(void)
    menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,  &width);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &height);
 
-   xmb_init_horizontal_list(menu, xmb);
+   xmb_init_horizontal_list(xmb);
    xmb_font();
 
    return menu;
@@ -2270,7 +2264,7 @@ static void xmb_context_reset(void)
    xmb_font();
    xmb_context_reset_textures(xmb, iconpath);
    xmb_context_reset_background(iconpath);
-   xmb_context_reset_horizontal_list(xmb, menu, themepath);
+   xmb_context_reset_horizontal_list(xmb, themepath);
 
    if (settings->menu.boxart_enable)
       xmb_update_boxart_image(xmb);
@@ -2542,7 +2536,7 @@ static void xmb_context_destroy(void)
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
       menu_display_texture_unload((uintptr_t*)&xmb->textures.list[i].id);
 
-   xmb_context_destroy_horizontal_list(xmb, menu);
+   xmb_context_destroy_horizontal_list(xmb);
 
    menu_display_free_main_font();
 }
@@ -2579,7 +2573,7 @@ static void xmb_toggle(bool menu_on)
    else
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
 
-   xmb_toggle_horizontal_list(xmb, menu);
+   xmb_toggle_horizontal_list(xmb);
 }
 
 static int deferred_push_content_actions(menu_displaylist_info_t *info)
