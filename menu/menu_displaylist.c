@@ -972,12 +972,9 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
 {
    unsigned i;
    struct video_shader *shader = NULL;
-   menu_handle_t         *menu = menu_driver_get_ptr();
 
-   if (!menu)
-      return -1;
-
-   shader = menu->shader;
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
 
    if (!shader)
       return -1;
