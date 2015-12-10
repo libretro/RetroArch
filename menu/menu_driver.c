@@ -358,9 +358,10 @@ int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
 {
    int ret = 0;
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+   menu_handle_t             *menu = menu_driver_get_ptr();
 
    if (driver->pointer_tap)
-      ret = driver->pointer_tap(x, y, ptr, cbs, entry, action);
+      ret = driver->pointer_tap(menu->userdata, x, y, ptr, cbs, entry, action);
 
    return ret;
 }

@@ -2661,7 +2661,8 @@ static bool xmb_menu_init_list(void *data)
    return true;
 }
 
-static int xmb_pointer_tap(unsigned x, unsigned y, unsigned ptr,
+static int xmb_pointer_tap(void *userdata,
+      unsigned x, unsigned y, unsigned ptr,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {

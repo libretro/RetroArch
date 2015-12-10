@@ -800,7 +800,8 @@ static int rgui_environ(menu_environ_cb_t type, void *data, void *userdata)
    return 0;
 }
 
-static int rgui_pointer_tap(unsigned x, unsigned y,
+static int rgui_pointer_tap(void *data,
+      unsigned x, unsigned y,
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {

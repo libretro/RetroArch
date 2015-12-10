@@ -1334,15 +1334,15 @@ static size_t mui_list_get_selection(void *data)
    return mui->categories.selection_ptr;
 }
 
-static int mui_pointer_tap(unsigned x, unsigned y, 
+static int mui_pointer_tap(void *userdata,
+      unsigned x, unsigned y, 
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
    size_t selection, idx;
    unsigned header_height, width, height, i;
    bool scroll                = false;
-   menu_handle_t *menu        = menu_driver_get_ptr();
-   mui_handle_t *mui          = menu ? (mui_handle_t*)menu->userdata : NULL;
+   mui_handle_t *mui          = (mui_handle_t*)userdata;
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 

@@ -284,7 +284,7 @@ typedef struct menu_ctx_driver
    bool  (*load_image)(void *data, menu_image_type_t type);
    const char *ident;
    int (*environ_cb)(menu_environ_cb_t type, void *data, void *userdata);
-   int (*pointer_tap)(unsigned x, unsigned y, unsigned ptr,
+   int (*pointer_tap)(void *data, unsigned x, unsigned y, unsigned ptr,
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
 } menu_ctx_driver_t;
