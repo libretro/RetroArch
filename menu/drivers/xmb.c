@@ -2225,10 +2225,9 @@ static void xmb_context_reset(void *data)
       xmb_update_boxart_image(xmb);
 }
 
-static void xmb_navigation_clear(bool pending_push)
+static void xmb_navigation_clear(void *data, bool pending_push)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   xmb_handle_t  *xmb  = menu ? (xmb_handle_t*)menu->userdata : NULL;
+   xmb_handle_t  *xmb  = (xmb_handle_t*)data;
    if (!pending_push)
       xmb_selection_pointer_changed(xmb, true);
 }

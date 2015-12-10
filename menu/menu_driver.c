@@ -364,6 +364,17 @@ int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
    return ret;
 }
 
+void menu_driver_navigation_clear(bool pending_push)
+{
+   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
+
+   if (!menu_driver_data)
+      return;
+
+   if (driver->navigation_clear)
+      driver->navigation_clear(menu_driver_data->userdata, pending_push);
+}
+
 static void menu_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {

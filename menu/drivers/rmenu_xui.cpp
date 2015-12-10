@@ -619,7 +619,7 @@ static void rmenu_xui_populate_entries(const char *path,
    XuiListSetCurSelVisible(m_menulist, selection);
 }
 
-static void rmenu_xui_navigation_clear(bool pending_push)
+static void rmenu_xui_navigation_clear(void *data, bool pending_push)
 {
    size_t selection;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))

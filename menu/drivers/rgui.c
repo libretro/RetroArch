@@ -733,10 +733,9 @@ static void rgui_set_texture(void)
    video_driver_set_texture_frame(fb_data, false, fb_width, fb_height, 1.0f);
 }
 
-static void rgui_navigation_clear(bool pending_push)
+static void rgui_navigation_clear(void *data, bool pending_push)
 {
-   menu_handle_t    *menu = menu_driver_get_ptr();
-   rgui_t           *rgui = menu ? (rgui_t*)menu->userdata : NULL;
+   rgui_t           *rgui = (rgui_t*)data;
    if (!rgui)
       return;
 

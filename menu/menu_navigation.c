@@ -78,8 +78,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
 
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
-            if (driver->navigation_clear)
-               driver->navigation_clear(*pending_push);
+            menu_driver_navigation_clear(*pending_push);
          }
          return true;
       case MENU_NAVIGATION_CTL_INCREMENT:

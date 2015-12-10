@@ -261,7 +261,7 @@ typedef struct menu_ctx_driver
          const char *path, const char *label,
          unsigned k);
    void  (*toggle)(void *userdata, bool);
-   void  (*navigation_clear)(bool);
+   void  (*navigation_clear)(void *, bool);
    void  (*navigation_decrement)(void);
    void  (*navigation_increment)(void);
    void  (*navigation_set)(bool);
@@ -369,6 +369,8 @@ int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
 int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action);
+
+void menu_driver_navigation_clear(bool pending_push);
 
 /* HACK */
 extern unsigned int rdb_entry_start_game_selection_ptr;

@@ -1080,10 +1080,9 @@ static void  mui_list_set_selection(file_list_t *list)
    mui_navigation_set(true);
 }
 
-static void mui_navigation_clear(bool pending_push)
+static void mui_navigation_clear(void *data, bool pending_push)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   mui_handle_t *mui    = menu ? (mui_handle_t*)menu->userdata : NULL;
+   mui_handle_t *mui    = (mui_handle_t*)data;
    if (!mui)
       return;
 
