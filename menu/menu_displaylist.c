@@ -3195,6 +3195,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
 void menu_displaylist_push_list_process(menu_displaylist_info_t *info)
 {
+
    if (!info)
       return;
 
@@ -3207,9 +3208,10 @@ void menu_displaylist_push_list_process(menu_displaylist_info_t *info)
    if (info->need_push)
    {
       const menu_ctx_driver_t *menu_driver = menu_ctx_driver_get_ptr();
+      menu_handle_t         *menu = menu_driver_get_ptr();
 
-      if (menu_driver->populate_entries)
-         menu_driver->populate_entries(info->path, info->label, info->type);
+      if (menu && menu_driver->populate_entries)
+         menu_driver->populate_entries(menu->userdata, info->path, info->label, info->type);
 
       ui_companion_driver_notify_list_loaded(info->list, info->menu_list);
    }

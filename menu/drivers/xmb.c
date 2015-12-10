@@ -1182,17 +1182,12 @@ static void xmb_list_open(xmb_handle_t *xmb)
    xmb->old_depth = xmb->depth;
 }
 
-static void xmb_populate_entries(const char *path,
+static void xmb_populate_entries(void *data,
+      const char *path,
       const char *label, unsigned k)
 {
-   xmb_handle_t *xmb   = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
-
-   if (!menu)
-      return;
-
-   xmb = (xmb_handle_t*)menu->userdata;
+   xmb_handle_t *xmb = (xmb_handle_t*)data;
 
    if (!xmb)
       return;

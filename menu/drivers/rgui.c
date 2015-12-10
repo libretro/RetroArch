@@ -781,7 +781,8 @@ static void rgui_navigation_ascend_alphabet(size_t *unused)
    rgui_navigation_set(true);
 }
 
-static void rgui_populate_entries(const char *path,
+static void rgui_populate_entries(void *data,
+      const char *path,
       const char *label, unsigned k)
 {
    rgui_navigation_set(true);

@@ -257,7 +257,8 @@ typedef struct menu_ctx_driver
    void  (*free)(void*);
    void  (*context_reset)(void);
    void  (*context_destroy)(void);
-   void  (*populate_entries)(const char *path, const char *label,
+   void  (*populate_entries)(void *data,
+         const char *path, const char *label,
          unsigned k);
    void  (*toggle)(bool);
    void  (*navigation_clear)(bool);

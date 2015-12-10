@@ -1108,11 +1108,11 @@ static void mui_navigation_alphabet(size_t *unused)
    mui_navigation_set(true);
 }
 
-static void mui_populate_entries(const char *path,
+static void mui_populate_entries(
+      void *data, const char *path,
       const char *label, unsigned i)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   mui_handle_t *mui    = menu ? (mui_handle_t*)menu->userdata : NULL;
+   mui_handle_t *mui    = (mui_handle_t*)data;
    if (!mui)
       return;
 
