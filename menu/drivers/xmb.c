@@ -915,14 +915,10 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 {
    size_t selection;
    int dir = -1;
-   menu_handle_t        *menu = menu_driver_get_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    settings_t     *settings   = config_get_ptr();
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
-
-   if (!menu)
       return;
 
    if (xmb->categories.selection_ptr > xmb->categories.selection_ptr_old)
