@@ -46,7 +46,8 @@ void menu_shader_manager_init(menu_handle_t *menu)
    if (!menu)
       return;
 
-   shader = (struct video_shader*)menu->shader;
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
 
    if (*global->path.core_specific_config
          && settings->core_specific_config)
@@ -196,6 +197,7 @@ void menu_shader_manager_save_preset(
    const char *dirs[3]         = {0};
    config_file_t *conf         = NULL;
    bool ret                    = false;
+   struct video_shader *shader = NULL;
    global_t *global            = global_get_ptr();
    settings_t *settings        = config_get_ptr();
    menu_handle_t *menu         = menu_driver_get_ptr();
@@ -206,7 +208,13 @@ void menu_shader_manager_save_preset(
       return;
    }
 
-   type = menu_shader_manager_get_type(menu->shader);
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+
+   if (!shader)
+      return;
+
+   type = menu_shader_manager_get_type(shader);
 
    if (type == RARCH_SHADER_NONE)
       return;
@@ -248,7 +256,7 @@ void menu_shader_manager_save_preset(
 
    if (!(conf = (config_file_t*)config_file_new(NULL)))
       return;
-   video_shader_write_conf_cgp(conf, menu->shader);
+   video_shader_write_conf_cgp(conf, shader);
 
    for (d = 0; d < ARRAY_SIZE(dirs); d++)
    {
@@ -325,11 +333,18 @@ unsigned menu_shader_manager_get_type(const struct video_shader *shader)
 void menu_shader_manager_apply_changes(void)
 {
 #ifdef HAVE_SHADER_MANAGER
-   menu_handle_t *menu         = menu_driver_get_ptr();
-   unsigned shader_type = menu_shader_manager_get_type(menu->shader);
+   unsigned shader_type;
+   struct video_shader *shader = NULL;
 
-   if (menu->shader->passes 
-         && shader_type != RARCH_SHADER_NONE)
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+
+   if (!shader)
+      return;
+
+   shader_type = menu_shader_manager_get_type(shader);
+
+   if (shader->passes && shader_type != RARCH_SHADER_NONE)
    {
       menu_shader_manager_save_preset(NULL, true);
       return;
