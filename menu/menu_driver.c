@@ -56,6 +56,7 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 
 static menu_handle_t *menu_driver_data;
 static const menu_ctx_driver_t *menu_driver_ctx;
+static struct video_shader *menu_driver_shader;
 
 /**
  * menu_driver_find_handle:
@@ -612,8 +613,8 @@ void *menu_init(const void *data)
       goto error;
 
 #ifdef HAVE_SHADER_MANAGER
-   menu->shader = (struct video_shader*)calloc(1, sizeof(struct video_shader));
-   if (!menu->shader)
+   menu_driver_shader = (struct video_shader*)calloc(1, sizeof(struct video_shader));
+   if (!menu_driver_shader)
       goto error;
 #endif
 
@@ -666,9 +667,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_SHADER_DEINIT:
 #ifdef HAVE_SHADER_MANAGER
-         if (menu_driver_data->shader)
-            free(menu_driver_data->shader);
-         menu_driver_data->shader = NULL;
+         if (menu_driver_shader)
+            free(menu_driver_shader);
+         menu_driver_shader = NULL;
 #endif
          return true;
       case RARCH_MENU_CTL_SHADER_GET:
@@ -676,7 +677,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             struct video_shader **shader = (struct video_shader**)data;
             if (!shader)
                return false;
-            *shader = menu_driver_data ? menu_driver_data->shader : NULL;
+            *shader = menu_driver_shader;
          }
          return true;
       case RARCH_MENU_CTL_FRAME:

@@ -30,12 +30,13 @@
 #include "menu_entries.h"
 #include "menu_setting.h"
 
+#include "../gfx/video_shader_driver.h"
+
 #include "../driver.h"
 #include "../libretro.h"
 #include "../playlist.h"
 #include "../input/input_driver.h"
 #include "../dynamic.h"
-#include "../gfx/video_shader_driver.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -243,7 +244,6 @@ typedef struct
    /* Menu shader */
    char default_glslp[PATH_MAX_LENGTH];
    char default_cgp[PATH_MAX_LENGTH];
-   struct video_shader *shader;
 
    content_playlist_t *playlist;
    char db_playlist_file[PATH_MAX_LENGTH];
