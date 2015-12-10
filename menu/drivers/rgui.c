@@ -324,6 +324,8 @@ static void rgui_render_messagebox(const char *message)
    if (!message || !*message)
       return;
 
+   (void)settings;
+
    list = string_split(message, "\n");
    if (!list)
       return;
