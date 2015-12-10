@@ -467,24 +467,17 @@ static void xmb_messagebox(void *data, const char *message)
    strlcpy(xmb->box_message, message, sizeof(xmb->box_message));
 }
 
-static void xmb_render_messagebox_internal(const char *message)
+static void xmb_render_messagebox_internal(xmb_handle_t *xmb, const char *message)
 {
    int x, y, font_size;
    unsigned i;
    unsigned width, height;
    struct string_list *list = NULL;
-   xmb_handle_t *xmb        = NULL;
-   menu_handle_t *menu      = menu_driver_get_ptr();
-
-   if (!menu)
-      return;
-
-   video_driver_get_size(&width, &height);
-
-   xmb = (xmb_handle_t*)menu->userdata;
 
    if (!xmb)
       return;
+
+   video_driver_get_size(&width, &height);
 
    list = string_split(message, "\n");
    if (!list)
@@ -1793,7 +1786,7 @@ static void xmb_frame(void *data)
             &coord_color[0], &coord_color2[0],
             NULL, NULL, 4,
             MENU_DISPLAY_PRIM_TRIANGLESTRIP);
-      xmb_render_messagebox_internal(msg);
+      xmb_render_messagebox_internal(xmb, msg);
    }
 
    /* set alpha components of colors */
