@@ -2499,16 +2499,10 @@ static void xmb_context_destroy(void)
    menu_display_free_main_font();
 }
 
-static void xmb_toggle(bool menu_on)
+static void xmb_toggle(void *userdata, bool menu_on)
 {
    bool tmp             = false;
-   xmb_handle_t *xmb    = NULL;
-   menu_handle_t *menu  = menu_driver_get_ptr();
-
-   if (!menu)
-      return;
-
-   xmb = (xmb_handle_t*)menu->userdata;
+   xmb_handle_t *xmb    = (xmb_handle_t*)userdata;
 
    if (!xmb)
       return;

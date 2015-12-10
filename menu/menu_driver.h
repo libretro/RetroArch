@@ -260,7 +260,7 @@ typedef struct menu_ctx_driver
    void  (*populate_entries)(void *data,
          const char *path, const char *label,
          unsigned k);
-   void  (*toggle)(bool);
+   void  (*toggle)(void *userdata, bool);
    void  (*navigation_clear)(bool);
    void  (*navigation_decrement)(void);
    void  (*navigation_increment)(void);

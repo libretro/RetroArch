@@ -278,9 +278,10 @@ static void menu_driver_toggle(bool latch)
    settings_t                 *settings = config_get_ptr();
    global_t                   *global   = global_get_ptr();
    rarch_system_info_t          *system = rarch_system_info_get_ptr();
+   menu_handle_t                  *menu = menu_driver_get_ptr();
 
    if (menu_driver->toggle)
-      menu_driver->toggle(latch);
+      menu_driver->toggle(menu->userdata, latch);
 
    if (latch)
       menu_driver_ctl(RARCH_MENU_CTL_SET_ALIVE, NULL);
