@@ -610,13 +610,17 @@ bool menu_entries_increment_selection_buf(void)
    if (!menu_list)
       return false;
 
-   selection_buf = (file_list_t**)realloc(selection_buf, (menu_list->selection_buf_size + 1) * sizeof(*menu_list->selection_buf));
+   selection_buf = (file_list_t**)
+      realloc(selection_buf,
+            (menu_list->selection_buf_size + 1) 
+            * sizeof(*menu_list->selection_buf));
 
    if (!selection_buf)
       goto error;
 
    menu_list->selection_buf = selection_buf;
-   menu_list->selection_buf[menu_list->selection_buf_size] = (file_list_t*)calloc(1, sizeof(*menu_list->selection_buf[menu_list->selection_buf_size]));
+   menu_list->selection_buf[menu_list->selection_buf_size] = (file_list_t*)
+      calloc(1, sizeof(*menu_list->selection_buf[menu_list->selection_buf_size]));
    menu_list->selection_buf_size = menu_list->selection_buf_size + 1;
 
    return true;
@@ -635,13 +639,15 @@ bool menu_entries_increment_menu_stack(void)
    if (!menu_list)
       return false;
 
-   menu_stack = (file_list_t**)realloc(menu_stack, (menu_list->menu_stack_size + 1) * sizeof(*menu_list->menu_stack));
+   menu_stack = (file_list_t**)realloc(menu_stack,
+         (menu_list->menu_stack_size + 1) * sizeof(*menu_list->menu_stack));
 
    if (!menu_stack)
       goto error;
 
    menu_list->menu_stack = menu_stack;
-   menu_list->menu_stack[menu_list->menu_stack_size] = (file_list_t*)calloc(1, sizeof(*menu_list->menu_stack[menu_list->menu_stack_size]));
+   menu_list->menu_stack[menu_list->menu_stack_size] = (file_list_t*)
+      calloc(1, sizeof(*menu_list->menu_stack[menu_list->menu_stack_size]));
    menu_list->menu_stack_size = menu_list->menu_stack_size + 1;
 
    return true;
