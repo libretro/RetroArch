@@ -111,6 +111,7 @@ typedef struct zarch_handle
 {
    enum menu_action action;
    bool rendering;
+   menu_handle_t *menu;
    math_matrix_4x4 mvp;
    unsigned width;
    unsigned height;
@@ -939,18 +940,21 @@ static int zarch_zui_render_pick_core(zui_t *zui)
    return 0;
 }
 
-static void zarch_frame(void *data)
+static void zarch_frame(void)
 {
    unsigned i;
    float coord_color[16];
    float coord_color2[16];
-   zui_t *zui           = (zui_t*)data;
+   zui_t *zui           = NULL;
    settings_t *settings = config_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
-
-   if (!zui)
-      return;
    
+   if (!menu)
+      return;
+
+   zui      = (zui_t*)menu->userdata;
+   zui->menu = menu;
+
    video_driver_get_size(&zui->width, &zui->height);
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);

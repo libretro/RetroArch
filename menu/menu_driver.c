@@ -632,7 +632,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
    static bool menu_driver_load_no_content        = false;
    static bool menu_driver_alive                  = false;
    static bool menu_driver_data_own               = false;
-   menu_handle_t *menu                            = menu_driver_get_ptr();
    const menu_ctx_driver_t *driver                = menu_ctx_driver_get_ptr();
 
    switch (state)
@@ -648,7 +647,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          if (!menu_driver_alive)
             return false;
          if (driver->frame)
-            driver->frame(menu->userdata);
+            driver->frame();
          break;
       case RARCH_MENU_CTL_SET_PREVENT_POPULATE:
          menu_driver_prevent_populate = true;

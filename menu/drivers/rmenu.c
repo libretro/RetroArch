@@ -124,11 +124,15 @@ static void rmenu_render(void *data)
    char title[256]               = {0};
    char title_buf[256]           = {0};
    char title_msg[64]            = {0};
+   menu_handle_t *menu           = menu_driver_get_ptr();
    size_t  entries_end           = menu_entries_get_end();
 
    video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return;
+
+   if (!menu)
       return;
 
    if (!render_normal)
