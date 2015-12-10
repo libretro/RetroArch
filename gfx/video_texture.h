@@ -17,7 +17,7 @@
 #ifndef _VIDEO_TEXTURE_H
 #define _VIDEO_TEXTURE_H
 
-#include "video_driver.h"
+#include <stdint.h>
 
 enum texture_backend_type
 {
