@@ -418,7 +418,7 @@ void input_poll(void)
    settings_t *settings           = config_get_ptr();
 #endif
 
-   current_input->poll(current_input_data);
+   input_driver_ctl(RARCH_INPUT_CTL_POLL, NULL);
 
 #ifdef HAVE_OVERLAY
    input_poll_overlay(settings->input.overlay_opacity);
@@ -533,8 +533,8 @@ static bool check_input_driver_block_hotkey(bool enable_hotkey)
       &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
    const struct retro_keybind *autoconf_bind =
       &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
-   bool kb_mapping_is_blocked = (current_input->keyboard_mapping_is_blocked) ?
-      current_input->keyboard_mapping_is_blocked(current_input_data) : false;
+   bool kb_mapping_is_blocked = input_driver_ctl(
+         RARCH_INPUT_CTL_KB_MAPPING_IS_BLOCKED, NULL);
 
    /* Don't block the check to RARCH_ENABLE_HOTKEY
     * unless we're really supposed to. */
@@ -684,7 +684,6 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
    static bool input_driver_nonblock_state           = false;
    static bool input_driver_flushing_input           = false;
    static bool input_driver_data_own                 = false;
-   settings_t               *settings                = config_get_ptr();
 
    switch (state)
    {
@@ -738,7 +737,10 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          return false;
       case RARCH_INPUT_CTL_FIND_DRIVER:
          {
-            int i = find_driver_index("input_driver", settings->input.driver);
+            settings_t *settings = config_get_ptr();
+            int                i = find_driver_index("input_driver",
+                  settings->input.driver);
+
             if (i >= 0)
                current_input = (const input_driver_t*)input_driver_find_handle(i);
             else
@@ -759,7 +761,6 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
                return false;
             }
          }
-
          return true;
       case RARCH_INPUT_CTL_SET_FLUSHING_INPUT:
          input_driver_flushing_input = true;
