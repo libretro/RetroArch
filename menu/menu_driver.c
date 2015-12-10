@@ -169,12 +169,11 @@ void  menu_driver_list_free(file_list_t *list, size_t idx, size_t list_size)
 void  menu_driver_context_destroy(void)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   menu_handle_t *menu             = menu_driver_get_ptr();
 
-   if (!menu)
+   if (!menu_driver_data)
       return;
    if (driver && driver->context_destroy)
-      driver->context_destroy(menu->userdata);
+      driver->context_destroy(menu_driver_data->userdata);
 }
 
 void  menu_driver_list_set_selection(file_list_t *list)
@@ -188,10 +187,9 @@ void  menu_driver_list_set_selection(file_list_t *list)
 size_t  menu_driver_list_get_selection(void)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   menu_handle_t *menu             = menu_driver_get_ptr();
 
    if (driver && driver->list_get_selection)
-      return driver->list_get_selection(menu);
+      return driver->list_get_selection(menu_driver_data);
    return 0;
 }
 
@@ -208,41 +206,37 @@ bool menu_driver_list_push(menu_displaylist_info_t *info, unsigned type)
 void menu_driver_list_cache(menu_list_type_t type, unsigned action)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   menu_handle_t *menu             = menu_driver_get_ptr();
 
    if (driver->list_cache)
-      driver->list_cache(menu->userdata, type, action);
+      driver->list_cache(menu_driver_data->userdata, type, action);
 }
 
 size_t menu_driver_list_get_size(menu_list_type_t type)
 {
-   menu_handle_t *menu             = menu_driver_get_ptr();
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
    if (driver && driver->list_get_size)
-      return driver->list_get_size(menu->userdata, type);
+      return driver->list_get_size(menu_driver_data->userdata, type);
    return 0;
 }
 
 void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i)
 {
-   menu_handle_t *menu             = menu_driver_get_ptr();
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
    if (driver && driver->list_get_entry)
-      return driver->list_get_entry(menu, type, i);
+      return driver->list_get_entry(menu_driver_data, type, i);
    return NULL;
 }
 
 void menu_driver_context_reset(void)
 {
-   menu_handle_t *menu             = menu_driver_get_ptr();
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (!menu)
+   if (!menu_driver_data)
       return;
    if (driver->context_reset)
-      driver->context_reset(menu->userdata);
+      driver->context_reset(menu_driver_data->userdata);
 }
 
 
@@ -284,10 +278,9 @@ static void menu_driver_toggle(bool latch)
    settings_t                 *settings = config_get_ptr();
    global_t                   *global   = global_get_ptr();
    rarch_system_info_t          *system = rarch_system_info_get_ptr();
-   menu_handle_t                  *menu = menu_driver_get_ptr();
 
    if (menu_driver->toggle)
-      menu_driver->toggle(menu->userdata, latch);
+      menu_driver->toggle(menu_driver_data->userdata, latch);
 
    if (latch)
       menu_driver_ctl(RARCH_MENU_CTL_SET_ALIVE, NULL);
@@ -337,10 +330,9 @@ static void menu_driver_toggle(bool latch)
 bool menu_driver_load_image(void *data, menu_image_type_t type)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   menu_handle_t *menu             = menu_driver_get_ptr();
 
    if (driver->load_image)
-      return driver->load_image(menu->userdata, data, type);
+      return driver->load_image(menu_driver_data->userdata, data, type);
 
    return false;
 }
@@ -348,11 +340,10 @@ bool menu_driver_load_image(void *data, menu_image_type_t type)
 bool menu_environment_cb(menu_environ_cb_t type, void *data)
 {
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   menu_handle_t *menu             = menu_driver_get_ptr();
 
    if (driver->environ_cb)
    {
-      int ret = driver->environ_cb(type, data, menu->userdata);
+      int ret = driver->environ_cb(type, data, menu_driver_data->userdata);
       if (ret == 0)
          return true;
    }
@@ -366,10 +357,9 @@ int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
 {
    int ret = 0;
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
-   menu_handle_t             *menu = menu_driver_get_ptr();
 
    if (driver->pointer_tap)
-      ret = driver->pointer_tap(menu->userdata, x, y, ptr, cbs, entry, action);
+      ret = driver->pointer_tap(menu_driver_data->userdata, x, y, ptr, cbs, entry, action);
 
    return ret;
 }
@@ -460,7 +450,7 @@ bool menu_load_content(enum rarch_core_type type)
       return false;
    }
 
-   menu_shader_manager_init(menu_driver_get_ptr());
+   menu_shader_manager_init(menu_driver_data);
 
    event_command(EVENT_CMD_HISTORY_INIT);
 
@@ -644,7 +634,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
    static bool menu_driver_alive                  = false;
    static bool menu_driver_data_own               = false;
    const menu_ctx_driver_t *driver                = menu_ctx_driver_get_ptr();
-   menu_handle_t *menu                            = menu_driver_get_ptr();
 
    switch (state)
    {
@@ -659,7 +648,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          if (!menu_driver_alive)
             return false;
          if (driver->frame)
-            driver->frame(menu->userdata);
+            driver->frame(menu_driver_data->userdata);
          break;
       case RARCH_MENU_CTL_SET_PREVENT_POPULATE:
          menu_driver_prevent_populate = true;
