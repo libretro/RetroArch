@@ -189,7 +189,7 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
 
    (void)frame_count;
 
-   flush_wayland_fd(data);
+   flush_wayland_fd((gfx_ctx_wayland_data_t*)data);
 
    new_width = *width;
    new_height = *height;

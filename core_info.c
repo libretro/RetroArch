@@ -71,7 +71,7 @@ static void core_info_list_resolve_all_firmware(
    {
       unsigned count        = 0;
       core_info_t *info     = (core_info_t*)&core_info_list->list[i];
-      config_file_t *config = info->config_data;
+      config_file_t *config = (config_file_t*)info->config_data;
 
       if (!info || !config)
          continue;
