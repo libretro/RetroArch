@@ -1163,10 +1163,11 @@ int runloop_iterate(unsigned *sleep_ms)
    static retro_input_t last_input              = 0;
    settings_t *settings                         = config_get_ptr();
    global_t   *global                           = global_get_ptr();
-   retro_input_t input                          = input_keys_pressed();
    rarch_system_info_t *system                  = rarch_system_info_get_ptr();
-   retro_input_t old_input                      = last_input;
-   last_input                                   = input;
+
+   cmd.state[1]                                 = last_input;
+   cmd.state[0]                                 = input_keys_pressed();
+   last_input                                   = cmd.state[0];
 
    if (runloop_ctl(RUNLOOP_CTL_IS_FRAME_TIME_LAST, NULL))
    {
@@ -1190,15 +1191,14 @@ int runloop_iterate(unsigned *sleep_ms)
    if (input_driver_ctl(RARCH_INPUT_CTL_IS_FLUSHING_INPUT, NULL))
    {
       input_driver_ctl(RARCH_INPUT_CTL_UNSET_FLUSHING_INPUT, NULL);
-      if (input)
+      if (cmd.state[0])
       {
-         input = 0;
-         
+         cmd.state[0] = 0;
 
          /* If core was paused before entering menu, evoke
           * pause toggle to wake it up. */
          if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
-            BIT64_SET(input, RARCH_PAUSE_TOGGLE);
+            BIT64_SET(cmd.state[0], RARCH_PAUSE_TOGGLE);
          input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
       }
    }
@@ -1231,9 +1231,7 @@ int runloop_iterate(unsigned *sleep_ms)
       system->frame_time.callback(delta);
    }
 
-   cmd.state[0]      = input;               /* current  */
-   cmd.state[1]      = old_input;           /* previous */
-   cmd.state[2]      = input & ~old_input;  /* trigger  */
+   cmd.state[2]      = cmd.state[0] & ~cmd.state[1];  /* trigger  */
 
    if (runloop_cmd_triggered(cmd_ptr, RARCH_OVERLAY_NEXT))
       event_command(EVENT_CMD_OVERLAY_NEXT);
@@ -1282,7 +1280,7 @@ int runloop_iterate(unsigned *sleep_ms)
       bool focused = runloop_ctl(RUNLOOP_CTL_CHECK_FOCUS, NULL) && !ui_companion_is_on_foreground();
       bool is_idle = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
 
-      if (menu_driver_iterate((enum menu_action)menu_input_frame_retropad(input, cmd.state[2])) == -1)
+      if (menu_driver_iterate((enum menu_action)menu_input_frame_retropad(cmd.state[0], cmd.state[2])) == -1)
          rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 
       if (focused || !is_idle)
