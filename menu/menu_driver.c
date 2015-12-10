@@ -664,6 +664,13 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_iterate_render(menu_driver_data,
                menu_driver_data ? menu_driver_data->userdata : NULL);
          break;
+      case RARCH_MENU_CTL_SHADER_DEINIT:
+#ifdef HAVE_SHADER_MANAGER
+         if (menu_driver_data->shader)
+            free(menu_driver_data->shader);
+         menu_driver_data->shader = NULL;
+#endif
+         return true;
       case RARCH_MENU_CTL_SHADER_GET:
          {
             struct video_shader **shader = (struct video_shader**)data;

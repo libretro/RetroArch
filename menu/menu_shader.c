@@ -369,9 +369,5 @@ void menu_shader_manager_apply_changes(void)
 
 void menu_shader_free(menu_handle_t *menu)
 {
-#ifdef HAVE_SHADER_MANAGER
-   if (menu->shader)
-      free(menu->shader);
-   menu->shader = NULL;
-#endif
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_DEINIT, NULL);
 }
