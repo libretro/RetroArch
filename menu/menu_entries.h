@@ -101,6 +101,11 @@ typedef struct menu_file_list_cbs
 
 } menu_file_list_cbs_t;
 
+enum menu_entries_ctl_state
+{
+   MENU_ENTRIES_CTL_NONE = 0
+};
+
 typedef struct menu_list menu_list_t;
 
 void menu_entries_set_start(size_t i);
@@ -178,6 +183,8 @@ void menu_entries_push_selection_buf(file_list_t *list, const char *path, const 
 void menu_entries_refresh(file_list_t *list);
 
 rarch_setting_t *menu_entries_get_setting(uint32_t i);
+
+bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }

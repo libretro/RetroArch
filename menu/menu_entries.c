@@ -724,3 +724,15 @@ rarch_setting_t *menu_entries_get_setting(uint32_t i)
       return NULL;
    return cbs->setting;
 }
+
+bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
+{
+   switch (state)
+   {
+      case MENU_ENTRIES_CTL_NONE:
+      default:
+         break;
+   }
+
+   return false;
+}
