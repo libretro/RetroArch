@@ -103,8 +103,6 @@ typedef struct menu_file_list_cbs
 
 typedef struct menu_list menu_list_t;
 
-typedef struct menu_entries menu_entries_t;
-
 void menu_entries_set_start(size_t i);
 
 size_t menu_entries_get_start(void);

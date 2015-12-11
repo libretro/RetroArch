@@ -44,6 +44,8 @@ struct menu_entries
    rarch_setting_t *list_settings;
 };
 
+typedef struct menu_entries menu_entries_t;
+
 static menu_entries_t *menu_entries_data;
 
 static void menu_list_free_list(file_list_t *list)
