@@ -568,6 +568,7 @@ static void bundle_decompressed(void *task_data, void *user_data, const char *er
    }
 
    settings->bundle_assets_extract_last_version = settings->bundle_assets_extract_version_current;
+   settings->bundle_finished = true;
 }
 
 /**
@@ -614,6 +615,8 @@ void *menu_init(const void *data)
          settings->bundle_assets_extract_version_current != settings->bundle_assets_extract_last_version
       )
    {
+      menu->help_screen_type           = MENU_HELP_EXTRACT;
+      menu->push_help_screen           = true;
       rarch_task_push_decompress(settings->bundle_assets_src_path, settings->bundle_assets_dst_path,
             settings->bundle_assets_dst_path_subdir, NULL, bundle_decompressed, NULL);
    }

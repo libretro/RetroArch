@@ -41,6 +41,8 @@ typedef struct settings
    char playlist_names[PATH_MAX_LENGTH];
    char playlist_cores[PATH_MAX_LENGTH];
 
+   bool bundle_finished;
+
    struct
    {
       char driver[32];

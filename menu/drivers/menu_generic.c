@@ -40,6 +40,7 @@
 static int action_iterate_help(menu_handle_t *menu, 
       char *s, size_t len, const char *label)
 {
+   bool do_exit = false;
    settings_t *settings      = config_get_ptr();
 
    switch (menu->help_screen_type)
@@ -70,8 +71,7 @@ static int action_iterate_help(menu_handle_t *menu,
                timer_end   = true;
                timer_begin = false;
                timeout_end = 0;
-               menu->help_screen_type = MENU_HELP_NONE;
-               return 1;
+               do_exit     = true;
             }
          }
          break;
@@ -169,12 +169,23 @@ static int action_iterate_help(menu_handle_t *menu,
       case MENU_HELP_EXTRACT:
          menu_hash_get_help(MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
                s, len);
+
+         if (settings->bundle_finished)
+         {
+            settings->bundle_finished = false;
+            do_exit                   = true;
+         }
          break;
       case MENU_HELP_NONE:
       default:
          break;
    }
 
+   if (do_exit)
+   {
+      menu->help_screen_type = MENU_HELP_NONE;
+      return 1;
+   }
 
    return 0;
 }
