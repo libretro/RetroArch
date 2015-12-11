@@ -1213,12 +1213,7 @@ bool event_command(enum event_command cmd)
                settings->content_history_size);
          break;
       case EVENT_CMD_CORE_INFO_DEINIT:
-         if (!global)
-            break;
-
-         if (global->core_info.list)
-            core_info_list_free(global->core_info.list);
-         global->core_info.list = NULL;
+         runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_FREE, NULL);
          break;
       case EVENT_CMD_CORE_INFO_INIT:
          event_command(EVENT_CMD_CORE_INFO_DEINIT);

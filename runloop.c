@@ -522,6 +522,17 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          return true;
       case RUNLOOP_CTL_HAS_CORE_OPTIONS:
          return runloop_system.core_options;
+      case RUNLOOP_CTL_CURRENT_CORE_LIST_FREE:
+         {
+            global_t *global = global_get_ptr();
+
+            if (!global)
+               return false;
+            if (global->core_info.list)
+               core_info_list_free(global->core_info.list);
+            global->core_info.list = NULL;
+         }
+         return true;
       case RUNLOOP_CTL_CURRENT_CORE_FREE:
          if (core_info_current)
             free(core_info_current);
