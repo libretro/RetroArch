@@ -957,9 +957,12 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          }
       }
 
-      if (is_history)
+      if (!path)
          menu_entries_push(info->list, fill_buf, path_playlist,
                MENU_FILE_PLAYLIST_ENTRY, 0, i);
+      else if (is_history)
+         menu_entries_push(info->list, fill_buf,
+               path, MENU_FILE_RPL_ENTRY, 0, i);
       else
          menu_entries_push(info->list, label,
                path, MENU_FILE_RPL_ENTRY, 0, i);
@@ -2946,6 +2949,11 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             strlcpy(path_playlist, "history", sizeof(path_playlist));
 
             ret = menu_displaylist_parse_playlist(info, playlist, path_playlist, true);
+
+            strlcpy(menu->db_playlist_file, settings->content_history_path,
+                  sizeof(menu->db_playlist_file));
+            menu->playlist  = content_playlist_init(menu->db_playlist_file,
+                  COLLECTION_SIZE);
 
             if (ret == 0)
             {
