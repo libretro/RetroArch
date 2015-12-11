@@ -288,10 +288,8 @@ static void menu_driver_toggle(bool latch)
    rarch_system_info_t          *system = NULL;
    
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   menu_driver_ctl(RARCH_MENU_CTL_TOGGLE, &latch);
 
-   if (driver->toggle)
-      driver->toggle(
-            menu_userdata ? menu_userdata : NULL, latch);
 
    if (latch)
       menu_driver_ctl(RARCH_MENU_CTL_SET_ALIVE, NULL);
@@ -843,6 +841,16 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                driver->list_clear(list);
          }
          return true;
+       case RARCH_MENU_CTL_TOGGLE:
+         {
+            bool *latch = (bool*)data;
+            if (!latch)
+               return false;
+
+            if (driver->toggle)
+               driver->toggle(menu_userdata, *latch);
+         }
+         break;
       default:
       case RARCH_MENU_CTL_NONE:
          break;
