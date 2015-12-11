@@ -589,7 +589,6 @@ void *menu_init(const void *data)
 {
    menu_handle_t *menu         = NULL;
    menu_ctx_driver_t *menu_ctx = (menu_ctx_driver_t*)data;
-   global_t  *global           = global_get_ptr();
    settings_t *settings        = config_get_ptr();
    
    if (!menu_ctx)

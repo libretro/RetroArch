@@ -1605,7 +1605,6 @@ int rarch_defer_core(void *data, const char *dir,
    const core_info_t *info             = NULL;
    size_t supported                    = 0;
    core_info_list_t *core_info         = (core_info_list_t*)data;
-   global_t   *global                  = global_get_ptr();
 #ifdef HAVE_MENU
    uint32_t menu_label_hash            = msg_hash_calculate(menu_label);
 #endif
