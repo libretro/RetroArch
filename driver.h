@@ -182,6 +182,10 @@ enum driver_ctl_state
     * Should be run before RARCH_DRIVER_CTL_INIT.
     */
    RARCH_DRIVER_CTL_INIT_PRE,
+   /* Sets monitor refresh rate to new value by calling
+    * video_monitor_set_refresh_rate(). Subsequently
+    * calls audio_monitor_set_refresh_rate(). */
+   RARCH_DRIVER_CTL_SET_REFRESH_RATE
 };
 
 
@@ -253,16 +257,6 @@ bool find_next_driver(const char *label, char *s, size_t len);
  * audio and video drivers instead.
  **/
 void driver_set_nonblock_state(void);
-
-/**
- * driver_set_refresh_rate:
- * @hz                 : New refresh rate for monitor.
- *
- * Sets monitor refresh rate to new value by calling
- * video_monitor_set_refresh_rate(). Subsequently
- * calls audio_monitor_set_refresh_rate().
- **/
-void driver_set_refresh_rate(float hz);
 
 /**
  * driver_update_system_av_info:

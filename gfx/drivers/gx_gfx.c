@@ -414,17 +414,17 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
 
    if (tvmode == VI_PAL)
    {
+      float refresh_rate = 50.0f;
       if (modetype == VI_NON_INTERLACE)
-         driver_set_refresh_rate(50.0801f);
-      else
-         driver_set_refresh_rate(50.0f);
+         refresh_rate = 50.0801f;
+      driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
    }
    else
    {
+      float refresh_rate = 59.94f;
       if (modetype == VI_NON_INTERLACE)
-         driver_set_refresh_rate(59.8261f);
-      else
-         driver_set_refresh_rate(59.94f);
+         refresh_rate = 59.8261f;
+      driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
    }
 
    /* custom viewports for older resolutions will most likely be corrupted, reset them */

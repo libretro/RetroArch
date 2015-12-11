@@ -240,7 +240,8 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
 static void* ctr_init(const video_info_t* video,
       const input_driver_t** input, void** input_data)
 {
-   void* ctrinput = NULL;
+   float refresh_rate;
+   void* ctrinput   = NULL;
    ctr_video_t* ctr = (ctr_video_t*)linearAlloc(sizeof(ctr_video_t));
 
    if (!ctr)
@@ -375,8 +376,9 @@ static void* ctr_init(const video_info_t* video,
    ctr->empty_framebuffer = linearAlloc(320 * 240 * 2);
    memset(ctr->empty_framebuffer, 0, 320 * 240 * 2);
 
-   driver_set_refresh_rate((32730.0 * 8192.0) / 4481134.0);
+   refresh_rate = (32730.0 * 8192.0) / 4481134.0;
 
+   driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
    aptHook(&ctr->lcd_aptHook, ctr_lcd_aptHook, ctr);
 
    return ctr;

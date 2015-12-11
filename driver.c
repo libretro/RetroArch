@@ -215,21 +215,6 @@ static void driver_adjust_system_rates(void)
 }
 
 /**
- * driver_set_refresh_rate:
- * @hz                 : New refresh rate for monitor.
- *
- * Sets monitor refresh rate to new value by calling
- * video_monitor_set_refresh_rate(). Subsequently
- * calls audio_monitor_set_refresh_rate().
- **/
-void driver_set_refresh_rate(float hz)
-{
-   video_monitor_set_refresh_rate(hz);
-   audio_driver_ctl(RARCH_AUDIO_CTL_MONITOR_SET_REFRESH_RATE,   NULL);
-   driver_adjust_system_rates();
-}
-
-/**
  * driver_set_nonblock_state:
  *
  * Sets audio and video drivers to nonblock state (if enabled).
@@ -444,16 +429,6 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
 {
    switch (state)
    {
-      case RARCH_DRIVER_CTL_INIT_PRE:
-         audio_driver_ctl(RARCH_AUDIO_CTL_FIND_DRIVER, NULL);
-         video_driver_ctl(RARCH_DISPLAY_CTL_FIND_DRIVER, NULL);
-         input_driver_ctl(RARCH_INPUT_CTL_FIND_DRIVER, NULL);
-         find_camera_driver();
-         find_location_driver();
-#ifdef HAVE_MENU
-         find_menu_driver();
-#endif
-         break;
       case RARCH_DRIVER_CTL_DEINIT:
          video_driver_ctl(RARCH_DISPLAY_CTL_DESTROY, NULL);
          audio_driver_ctl(RARCH_AUDIO_CTL_DESTROY, NULL);
@@ -464,6 +439,24 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          location_driver_ctl(RARCH_LOCATION_CTL_DESTROY, NULL);
          camera_driver_ctl(RARCH_CAMERA_CTL_DESTROY, NULL);
          retro_uninit_libretro_cbs();
+         break;
+      case RARCH_DRIVER_CTL_INIT_PRE:
+         audio_driver_ctl(RARCH_AUDIO_CTL_FIND_DRIVER, NULL);
+         video_driver_ctl(RARCH_DISPLAY_CTL_FIND_DRIVER, NULL);
+         input_driver_ctl(RARCH_INPUT_CTL_FIND_DRIVER, NULL);
+         find_camera_driver();
+         find_location_driver();
+#ifdef HAVE_MENU
+         find_menu_driver();
+#endif
+         break;
+      case RARCH_DRIVER_CTL_SET_REFRESH_RATE:
+         {
+            float *hz = (float*)data;
+            video_monitor_set_refresh_rate(*hz);
+            audio_driver_ctl(RARCH_AUDIO_CTL_MONITOR_SET_REFRESH_RATE,   NULL);
+            driver_adjust_system_rates();
+         }
          break;
       case RARCH_DRIVER_CTL_NONE:
       default:
