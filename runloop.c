@@ -251,7 +251,7 @@ static void check_fast_forward_button(bool fastforward_pressed,
    else
       return;
 
-   driver_set_nonblock_state();
+   driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
 }
 
 /**

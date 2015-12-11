@@ -324,7 +324,7 @@ static void menu_driver_toggle(bool latch)
    else
    {
       if (!runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
-         driver_set_nonblock_state();
+         driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
 
       if (settings && settings->menu.pause_libretro)
          event_command(EVENT_CMD_AUDIO_START);

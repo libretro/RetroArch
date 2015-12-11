@@ -185,7 +185,12 @@ enum driver_ctl_state
    /* Sets monitor refresh rate to new value by calling
     * video_monitor_set_refresh_rate(). Subsequently
     * calls audio_monitor_set_refresh_rate(). */
-   RARCH_DRIVER_CTL_SET_REFRESH_RATE
+   RARCH_DRIVER_CTL_SET_REFRESH_RATE,
+   /* Sets audio and video drivers to nonblock state.
+    *
+    * If nonblock state is false, sets blocking state for both
+    * audio and video drivers instead. */
+   RARCH_DRIVER_CTL_SET_NONBLOCK_STATE
 };
 
 
@@ -247,16 +252,6 @@ bool find_prev_driver(const char *label, char *s, size_t len);
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool find_next_driver(const char *label, char *s, size_t len);
-
-/**
- * driver_set_nonblock_state:
- *
- * Sets audio and video drivers to nonblock state.
- *
- * If nonblock state is false, sets blocking state for both
- * audio and video drivers instead.
- **/
-void driver_set_nonblock_state(void);
 
 /**
  * driver_update_system_av_info:

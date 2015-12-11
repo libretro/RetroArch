@@ -211,7 +211,7 @@ static void driver_adjust_system_rates(void)
    if (system->force_nonblock)
       event_command(EVENT_CMD_VIDEO_SET_NONBLOCKING_STATE);
    else
-      driver_set_nonblock_state();
+      driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
 }
 
 /**
@@ -222,12 +222,12 @@ static void driver_adjust_system_rates(void)
  * If nonblock state is false, sets 
  * blocking state for both audio and video drivers instead.
  **/
-void driver_set_nonblock_state(void)
+static void driver_set_nonblock_state(void)
 {
+   rarch_system_info_t *system = NULL;
    settings_t        *settings = config_get_ptr();
    bool                 enable = input_driver_ctl(
          RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL);
-   rarch_system_info_t *system = NULL;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
@@ -370,7 +370,7 @@ void init_drivers(int flags)
    {
       /* Keep non-throttled state as good as possible. */
       if (input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL))
-         driver_set_nonblock_state();
+         driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
    }
 }
 
@@ -457,6 +457,9 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             audio_driver_ctl(RARCH_AUDIO_CTL_MONITOR_SET_REFRESH_RATE,   NULL);
             driver_adjust_system_rates();
          }
+         break;
+      case RARCH_DRIVER_CTL_SET_NONBLOCK_STATE:
+         driver_set_nonblock_state();
          break;
       case RARCH_DRIVER_CTL_NONE:
       default:
