@@ -543,7 +543,7 @@ void menu_free(menu_handle_t *menu)
   
    menu_shader_free(menu);
 
-   menu_input_free();
+   menu_input_ctl(MENU_INPUT_CTL_DEINIT, NULL);
    menu_navigation_free();
    menu_driver_free(menu);
 

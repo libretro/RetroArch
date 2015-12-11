@@ -154,9 +154,6 @@ static menu_input_t *menu_input_get_ptr(void)
 
 void menu_input_free(void)
 {
-   menu_input_t *menu_input = menu_input_get_ptr();
-
-   memset(menu_input, 0, sizeof(menu_input_t));
 }
 
 
@@ -211,6 +208,9 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 
    switch (state)
    {
+      case MENU_INPUT_CTL_DEINIT:
+         memset(menu_input, 0, sizeof(menu_input_t));
+         break;
       case MENU_INPUT_CTL_SEARCH_START:
          menu = menu_driver_get_ptr();
 

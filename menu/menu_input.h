@@ -86,7 +86,8 @@ enum menu_input_ctl_state
    MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING,
    MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING,
    MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL_SETTING,
-   MENU_INPUT_CTL_SEARCH_START
+   MENU_INPUT_CTL_SEARCH_START,
+   MENU_INPUT_CTL_DEINIT
 };
 
 enum menu_input_bind_mode
@@ -128,8 +129,6 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state);
 bool menu_input_mouse_check_hitbox(int x1, int y1, int x2, int y2);
 
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data);
-
-void menu_input_free(void);
 
 #ifdef __cplusplus
 }
