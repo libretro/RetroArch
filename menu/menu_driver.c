@@ -292,7 +292,9 @@ static void menu_driver_toggle(bool latch)
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (menu_driver->toggle)
-      menu_driver->toggle(menu_driver_data->userdata, latch);
+      menu_driver->toggle(
+            menu_driver_data ? menu_driver_data->userdata : NULL,
+            latch);
 
    if (latch)
       menu_driver_ctl(RARCH_MENU_CTL_SET_ALIVE, NULL);
