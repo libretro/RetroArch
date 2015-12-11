@@ -540,10 +540,9 @@ void menu_entries_unset_refresh(bool nonblocking)
    }
 }
 
-bool menu_entries_init(void *data)
+bool menu_entries_init(void)
 {
-   menu_entries_t *entries = (menu_entries_t*)
-      calloc(1, sizeof(*entries));
+   menu_entries_t *entries = (menu_entries_t*)calloc(1, sizeof(*entries));
 
    if (!entries)
       goto error;
@@ -551,9 +550,12 @@ bool menu_entries_init(void *data)
    if (!(entries->menu_list = (menu_list_t*)menu_list_new()))
       goto error;
 
-   menu_entries_data = (struct menu_entries*)entries;
-
    entries->list_settings      = menu_setting_new();
+
+   if (!entries->list_settings)
+      goto error;
+
+   menu_entries_data = (struct menu_entries*)entries;
 
    return true;
 

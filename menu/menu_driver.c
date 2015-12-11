@@ -593,7 +593,7 @@ void *menu_init(const void *data)
    strlcpy(settings->menu.driver, menu_ctx->ident,
          sizeof(settings->menu.driver));
 
-   if (!menu_entries_init(menu))
+   if (!menu_entries_init())
       goto error;
 
    if (!runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_INIT, NULL))
