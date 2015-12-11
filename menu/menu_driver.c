@@ -537,18 +537,12 @@ void menu_free(menu_handle_t *menu)
    if (!menu)
       return;
 
-   if (menu->playlist)
-      content_playlist_free(menu->playlist);
-   menu->playlist = NULL;
-  
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
    menu_shader_free(menu);
-
    menu_input_ctl(MENU_INPUT_CTL_DEINIT, NULL);
    menu_navigation_ctl(MENU_NAVIGATION_CTL_DEINIT, NULL);
    menu_driver_free(menu);
-
    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
-
    menu_display_free();
    menu_entries_free();
 
@@ -665,6 +659,13 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_alive            = false;
          menu_driver_data_own         = false;
          menu_driver_ctx              = NULL;
+         break;
+      case RARCH_MENU_CTL_PLAYLIST_FREE:
+         if (!menu_driver_data)
+            return false;
+         if (menu_driver_data->playlist)
+            content_playlist_free(menu_driver_data->playlist);
+         menu_driver_data->playlist = NULL;
          break;
       case RARCH_MENU_CTL_PLAYLIST_GET:
          {

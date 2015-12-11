@@ -1683,8 +1683,7 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
    strlcpy(lpl_basename, item->path, sizeof(lpl_basename));
    path_remove_extension(lpl_basename);
 
-   if (menu->playlist)
-      content_playlist_free(menu->playlist);
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
 
    fill_pathname_join(path_playlist,
          settings->playlist_directory, item->path,
@@ -2916,8 +2915,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             char path_playlist[PATH_MAX_LENGTH];
             content_playlist_t *playlist        = NULL;
 
-            if (menu->playlist)
-               content_playlist_free(menu->playlist);
+            menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
 
             fill_pathname_join(path_playlist,
                   settings->playlist_directory, info->path,
