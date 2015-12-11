@@ -950,7 +950,7 @@ static void mui_layout(mui_handle_t *mui)
    }
 }
 
-static void *mui_init(void)
+static void *mui_init(void **userdata)
 {
    mui_handle_t   *mui = NULL;
    menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
@@ -966,10 +966,11 @@ static void *mui_init(void)
    if (!mui)
       goto error;
 
-   menu->userdata = mui;
+   *userdata = mui;
 
    mui_layout(mui);
    mui_allocate_white_texture(mui);
+
 
    return menu;
 error:

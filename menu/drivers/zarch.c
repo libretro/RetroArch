@@ -1046,7 +1046,7 @@ static void zarch_frame(void *data)
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
 
-static void *zarch_init(void)
+static void *zarch_init(void **userdata)
 {
    int unused;
    zui_t *zui                              = NULL;
@@ -1064,7 +1064,7 @@ static void *zarch_init(void)
    if (!zui)
       goto error;
 
-   menu->userdata       = zui;
+   *userdata       = zui;
 
    if (settings->menu.mouse.enable)
    {

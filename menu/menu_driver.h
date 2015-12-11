@@ -232,8 +232,6 @@ typedef enum
 
 typedef struct
 {
-   void *userdata;
-
    bool push_help_screen;
    unsigned         help_screen_id;
    menu_help_type_t help_screen_type;
@@ -264,7 +262,7 @@ typedef struct menu_ctx_driver
    int   (*iterate)(void *data, void *userdata, enum menu_action action);
    void  (*render)(void *data);
    void  (*frame)(void *data);
-   void* (*init)(void);
+   void* (*init)(void**);
    void  (*free)(void*);
    void  (*context_reset)(void *data);
    void  (*context_destroy)(void *data);

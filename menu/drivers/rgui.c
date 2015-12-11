@@ -626,7 +626,7 @@ static void rgui_render(void *data)
       rgui_blit_cursor();
 }
 
-static void *rgui_init(void)
+static void *rgui_init(void **userdata)
 {
    size_t fb_pitch;
    unsigned fb_width, fb_height, new_font_height;
@@ -643,7 +643,7 @@ static void *rgui_init(void)
    if (!rgui)
       goto error;
 
-   menu->userdata = rgui;
+   *userdata = rgui;
 
    /* 4 extra lines to cache  the checked background */
    fb_data = (uint16_t*)calloc(400 * (240 + 4), sizeof(uint16_t));

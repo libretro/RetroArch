@@ -270,7 +270,7 @@ static void rmenu_context_reset(void)
    menu_texture_inited = false;
 }
 
-static void *rmenu_init(void)
+static void *rmenu_init(void **userdata)
 {
    menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
 
@@ -280,12 +280,14 @@ static void *rmenu_init(void)
    menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
 
    if (!menu_texture)
-   {
-      free(menu);
-      return NULL;
-   }
+      goto error;
 
    return menu;
+
+error:
+   if (menu)
+      free(menu);
+   return NULL;
 }
 
 static void rmenu_context_destroy(void *data)

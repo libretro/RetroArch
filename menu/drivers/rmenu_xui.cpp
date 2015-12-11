@@ -266,7 +266,7 @@ cleanup:
    return hr;
 }
 
-static void* rmenu_xui_init(void)
+static void* rmenu_xui_init(void **userdata)
 {
    HRESULT hr;
    d3d_video_t *d3d            = NULL;

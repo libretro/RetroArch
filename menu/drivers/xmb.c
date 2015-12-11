@@ -1890,7 +1890,7 @@ static void xmb_layout(xmb_handle_t *xmb)
    }
 }
 
-static void *xmb_init(void)
+static void *xmb_init(void **userdata)
 {
    unsigned width, height;
    xmb_handle_t *xmb          = NULL;
@@ -1909,7 +1909,7 @@ static void *xmb_init(void)
    if (!xmb)
       goto error;
 
-   menu->userdata = xmb;
+   *userdata = xmb;
 
    xmb->menu_stack_old        = (file_list_t*)calloc(1, sizeof(file_list_t));
 
