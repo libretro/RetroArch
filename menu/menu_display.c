@@ -113,7 +113,7 @@ void menu_display_free(void)
       msg_queue_free(disp->msg_queue);
    disp->msg_queue = NULL;
 
-   menu_animation_free();
+   menu_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
 
    menu_display_fb_free(&frame_buf_state);
    memset(&frame_buf_state,    0, sizeof(menu_framebuf_t));

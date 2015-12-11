@@ -375,7 +375,7 @@ static void menu_animation_push_internal(menu_animation_t *anim, const struct tw
    *target = *t;
 }
 
-void menu_animation_free(void)
+static void menu_animation_free(void)
 {
    size_t i;
    menu_animation_t *anim = menu_animation_get_ptr();
@@ -632,6 +632,9 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 
    switch (state)
    {
+      case MENU_ANIMATION_CTL_DEINIT:
+         menu_animation_free();
+         break;
       case MENU_ANIMATION_CTL_IS_ACTIVE:
          return anim->is_active;
       case MENU_ANIMATION_CTL_CLEAR_ACTIVE:

@@ -35,6 +35,7 @@ typedef void  (*tween_cb)  (void);
 enum menu_animation_ctl_state
 {
    MENU_ANIMATION_CTL_IS_ACTIVE = 0,
+   MENU_ANIMATION_CTL_DEINIT,
    MENU_ANIMATION_CTL_CLEAR_ACTIVE,
    MENU_ANIMATION_CTL_SET_ACTIVE,
    MENU_ANIMATION_CTL_DELTA_TIME,
@@ -87,8 +88,6 @@ enum menu_animation_easing_type
    EASING_IN_OUT_BOUNCE,
    EASING_OUT_IN_BOUNCE
 };
-
-void menu_animation_free(void);
 
 void menu_animation_kill_by_subject(size_t count, const void *subjects);
 
