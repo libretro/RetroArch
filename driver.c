@@ -307,7 +307,7 @@ static void menu_update_libretro_info(void)
  * Initializes drivers.
  * @flags determines which drivers get initialized.
  **/
-void init_drivers(int flags)
+static void init_drivers(int flags)
 {
    if (flags & DRIVER_VIDEO)
       video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_OWN_DRIVER, NULL);
@@ -439,6 +439,14 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          camera_driver_ctl(RARCH_CAMERA_CTL_DESTROY, NULL);
          retro_uninit_libretro_cbs();
          break;
+      case RARCH_DRIVER_CTL_INIT:
+         {
+            int *flags = (int*)data;
+            if (!flags)
+               return false;
+            init_drivers(*flags);
+         }
+         return true;
       case RARCH_DRIVER_CTL_INIT_PRE:
          audio_driver_ctl(RARCH_AUDIO_CTL_FIND_DRIVER, NULL);
          video_driver_ctl(RARCH_DISPLAY_CTL_FIND_DRIVER, NULL);

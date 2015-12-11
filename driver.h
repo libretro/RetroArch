@@ -160,7 +160,6 @@ enum analog_dpad_mode
    ANALOG_DPAD_LAST
 };
 
-/* Flags for init_drivers/uninit_drivers */
 enum
 {
    DRIVER_AUDIO        = 1 << 0,
@@ -176,6 +175,10 @@ enum driver_ctl_state
 {
    RARCH_DRIVER_CTL_NONE = 0,
    RARCH_DRIVER_CTL_DEINIT,
+   /* Initializes drivers.
+    * @data is a bitmask which determines 
+    * which drivers get initialized. */
+   RARCH_DRIVER_CTL_INIT,
    /* Attempts to find a default driver for 
     * all driver types.
     *
@@ -212,15 +215,6 @@ enum driver_ctl_state
  *
  * Typically, if a driver intends to make use of this, it should 
  * set this to true at the end of its 'init' function. */
-
-/**
- * init_drivers:
- * @flags              : Bitmask of drivers to initialize.
- *
- * Initializes drivers.
- * @flags determines which drivers get initialized.
- **/
-void init_drivers(int flags);
 
 /**
  * uninit_drivers:

@@ -1264,14 +1264,23 @@ bool event_command(enum event_command cmd)
 #endif
          break;
       case EVENT_CMD_DRIVERS_DEINIT:
-         uninit_drivers(DRIVERS_CMD_ALL);
+         {
+            int flags = DRIVERS_CMD_ALL;
+            uninit_drivers(flags);
+         }
          break;
       case EVENT_CMD_DRIVERS_INIT:
-         init_drivers(DRIVERS_CMD_ALL);
+         {
+            int flags = DRIVERS_CMD_ALL;
+            driver_ctl(RARCH_DRIVER_CTL_INIT, &flags);
+         }
          break;
       case EVENT_CMD_AUDIO_REINIT:
-         uninit_drivers(DRIVER_AUDIO);
-         init_drivers(DRIVER_AUDIO);
+         {
+            int flags = DRIVER_AUDIO;
+            uninit_drivers(flags);
+            driver_ctl(RARCH_DRIVER_CTL_INIT, &flags);
+         }
          break;
       case EVENT_CMD_RESET_CONTEXT:
          event_command(EVENT_CMD_DRIVERS_DEINIT);
