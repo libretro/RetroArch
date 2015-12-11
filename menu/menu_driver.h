@@ -34,7 +34,6 @@
 #include "../driver.h"
 #include "../libretro.h"
 #include "../playlist.h"
-#include "../input/input_driver.h"
 #include "../dynamic.h"
 
 #ifdef __cplusplus
