@@ -33,7 +33,6 @@
 
 #include "../driver.h"
 #include "../libretro.h"
-#include "../playlist.h"
 #include "../dynamic.h"
 
 #ifdef __cplusplus
@@ -248,7 +247,6 @@ typedef struct
    char default_glslp[PATH_MAX_LENGTH];
    char default_cgp[PATH_MAX_LENGTH];
 
-   content_playlist_t *playlist;
    char db_playlist_file[PATH_MAX_LENGTH];
 } menu_handle_t;
 

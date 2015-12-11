@@ -645,11 +645,12 @@ error:
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    static struct retro_system_info menu_driver_system;
-   static bool menu_driver_prevent_populate       = false;
-   static bool menu_driver_load_no_content        = false;
-   static bool menu_driver_alive                  = false;
-   static bool menu_driver_data_own               = false;
-   const menu_ctx_driver_t *driver                = menu_ctx_driver_get_ptr();
+   static content_playlist_t *menu_driver_playlist = NULL;
+   static bool menu_driver_prevent_populate        = false;
+   static bool menu_driver_load_no_content         = false;
+   static bool menu_driver_alive                   = false;
+   static bool menu_driver_data_own                = false;
+   const menu_ctx_driver_t *driver                 = menu_ctx_driver_get_ptr();
 
    switch (state)
    {
@@ -661,27 +662,25 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_ctx              = NULL;
          break;
       case RARCH_MENU_CTL_PLAYLIST_FREE:
-         if (!menu_driver_data)
-            return false;
-         if (menu_driver_data->playlist)
-            content_playlist_free(menu_driver_data->playlist);
-         menu_driver_data->playlist = NULL;
+         if (menu_driver_playlist)
+            content_playlist_free(menu_driver_playlist);
+         menu_driver_playlist = NULL;
          break;
       case RARCH_MENU_CTL_PLAYLIST_INIT:
          {
             const char *path = (const char*)data;
-            if (!path || path[0] == '\0' || !menu_driver_data)
+            if (!path || path[0] == '\0')
                return false;
-            menu_driver_data->playlist  = content_playlist_init(path,
+            menu_driver_playlist  = content_playlist_init(path,
                   COLLECTION_SIZE);
          }
          return true;
       case RARCH_MENU_CTL_PLAYLIST_GET:
          {
             content_playlist_t **playlist = (content_playlist_t**)data;
-            if (!playlist || !menu_driver_data)
+            if (!playlist)
                return false;
-            *playlist = menu_driver_data->playlist;
+            *playlist = menu_driver_playlist;
          }
          return true;
       case RARCH_MENU_CTL_SYSTEM_INFO_GET:
