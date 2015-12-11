@@ -666,6 +666,14 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_data_own         = false;
          menu_driver_ctx              = NULL;
          break;
+      case RARCH_MENU_CTL_PLAYLIST_GET:
+         {
+            content_playlist_t **playlist = (content_playlist_t**)data;
+            if (!playlist || !menu_driver_data)
+               return false;
+            *playlist = menu_driver_data->playlist;
+         }
+         return true;
       case RARCH_MENU_CTL_SYSTEM_INFO_GET:
          {
             struct retro_system_info **system = (struct retro_system_info**)data;
