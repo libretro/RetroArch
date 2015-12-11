@@ -358,21 +358,17 @@ void menu_entries_refresh(file_list_t *list)
 /* Sets the starting index of the menu entry list. */
 void menu_entries_set_start(size_t i)
 {
-   menu_entries_t *entries = menu_entries_data;
-   
-   if (entries)
-      entries->begin = i;
+   if (menu_entries_data)
+      menu_entries_data->begin = i;
 }
 
 /* Returns the starting index of the menu entry list. */
 size_t menu_entries_get_start(void)
 {
-   menu_entries_t *entries = menu_entries_data;
-   
-   if (!entries)
+   if (!menu_entries_data)
      return 0;
 
-   return entries->begin;
+   return menu_entries_data->begin;
 }
 
 /* Returns the last index (+1) of the menu entry list. */
