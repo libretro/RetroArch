@@ -513,9 +513,9 @@ bool menu_entries_needs_refresh(void)
 
    if (!entries || entries->nonblocking_refresh)
       return false;
-   if (entries->need_refresh)
-      return true;
-   return false;
+   if (!entries->need_refresh)
+      return false;
+   return true;
 }
 
 void menu_entries_set_refresh(bool nonblocking)
