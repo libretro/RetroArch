@@ -1688,13 +1688,15 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
    fill_pathname_join(path_playlist,
          settings->playlist_directory, item->path,
          sizeof(path_playlist));
-   menu->playlist  = content_playlist_init(path_playlist,
-         COLLECTION_SIZE);
+
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT, (void*)path_playlist);
+
    strlcpy(menu->db_playlist_file, path_playlist, sizeof(menu->db_playlist_file));
    strlcpy(path_playlist,
          menu_hash_to_str(MENU_LABEL_COLLECTION),
          sizeof(path_playlist));
-   playlist = menu->playlist;
+
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
    content_playlist_qsort(playlist, menu_displaylist_sort_playlist);
 
@@ -2920,12 +2922,14 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             fill_pathname_join(path_playlist,
                   settings->playlist_directory, info->path,
                   sizeof(path_playlist));
-            menu->playlist  = content_playlist_init(path_playlist,
-                  COLLECTION_SIZE);
+
+            menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT, (void*)path_playlist);
+
             strlcpy(menu->db_playlist_file, path_playlist, sizeof(menu->db_playlist_file));
             strlcpy(path_playlist,
                   menu_hash_to_str(MENU_LABEL_COLLECTION), sizeof(path_playlist));
-            playlist = menu->playlist;
+
+            menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
             content_playlist_qsort(playlist, menu_displaylist_sort_playlist);
 
@@ -2953,8 +2957,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
             strlcpy(menu->db_playlist_file, settings->content_history_path,
                   sizeof(menu->db_playlist_file));
-            menu->playlist  = content_playlist_init(menu->db_playlist_file,
-                  COLLECTION_SIZE);
+
+            menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT, (void*)menu->db_playlist_file);
 
             if (ret == 0)
             {

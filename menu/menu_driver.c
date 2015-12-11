@@ -667,6 +667,15 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             content_playlist_free(menu_driver_data->playlist);
          menu_driver_data->playlist = NULL;
          break;
+      case RARCH_MENU_CTL_PLAYLIST_INIT:
+         {
+            const char *path = (const char*)data;
+            if (!path || path[0] == '\0' || !menu_driver_data)
+               return false;
+            menu_driver_data->playlist  = content_playlist_init(path,
+                  COLLECTION_SIZE);
+         }
+         return true;
       case RARCH_MENU_CTL_PLAYLIST_GET:
          {
             content_playlist_t **playlist = (content_playlist_t**)data;
