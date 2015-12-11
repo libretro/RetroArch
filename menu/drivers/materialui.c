@@ -36,6 +36,7 @@
 #include "../menu_hash.h"
 #include "../menu_display.h"
 
+#include "../../core_info.h"
 #include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"

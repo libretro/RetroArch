@@ -14,6 +14,7 @@
  */
 
 #include <file/file_path.h>
+#include <string/string_list.h>
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
@@ -23,6 +24,7 @@
 #include "../menu_shader.h"
 #include "../menu_navigation.h"
 
+#include "../../core_info.h"
 #include "../../cheats.h"
 #include "../../general.h"
 #include "../../retroarch.h"

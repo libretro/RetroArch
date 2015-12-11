@@ -24,6 +24,7 @@
 #include "../menu_navigation.h"
 #include "../menu_hash.h"
 
+#include "../../core_info.h"
 #include "../../defaults.h"
 #include "../../cheats.h"
 #include "../../general.h"

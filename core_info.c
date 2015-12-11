@@ -18,6 +18,7 @@
 #include <file/file_path.h>
 #include <file/file_extract.h>
 
+#include "core_info.h"
 #include "general.h"
 #include "dir_list_special.h"
 #include "config.def.h"

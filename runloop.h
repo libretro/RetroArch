@@ -19,7 +19,6 @@
 #include <retro_miscellaneous.h>
 
 #include "configuration.h"
-#include "core_info.h"
 #include "dynamic.h"
 
 #ifdef __cplusplus

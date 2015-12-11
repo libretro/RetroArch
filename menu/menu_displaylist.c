@@ -42,6 +42,7 @@
 #include "../dir_list_special.h"
 #include "../string_list_special.h"
 #include "../performance.h"
+#include "../core_info.h"
 
 #ifdef HAVE_CHEEVOS
 #include "../cheevos.h"

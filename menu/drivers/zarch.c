@@ -44,6 +44,7 @@
 
 #include "../../gfx/font_driver.h"
 
+#include "../../core_info.h"
 #include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"

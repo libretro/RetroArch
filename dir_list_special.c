@@ -18,6 +18,7 @@
 #include "general.h"
 #include "file_ext.h"
 #include "configuration.h"
+#include "core_info.h"
 
 struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_type type, const char *filter)
 {

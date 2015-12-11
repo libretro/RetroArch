@@ -29,6 +29,7 @@
 #include "location/location_driver.h"
 #endif
 
+#include "core_info.h"
 #include "general.h"
 #include "gfx/video_driver.h"
 #include "input/input_driver.h"

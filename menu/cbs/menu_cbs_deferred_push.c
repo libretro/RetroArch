@@ -25,6 +25,7 @@
 
 #include "../../cores/internal_cores.h"
 
+#include "../../core_info.h"
 #include "../../general.h"
 #include "../../system.h"
 #include "../../verbosity.h"
