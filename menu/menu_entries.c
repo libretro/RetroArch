@@ -501,17 +501,6 @@ file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
    return menu_list->selection_buf[idx];
 }
 
-bool menu_entries_needs_refresh(void)
-{
-   menu_entries_t *entries = menu_entries_data;
-
-   if (!entries || entries->nonblocking_refresh)
-      return false;
-   if (!entries->need_refresh)
-      return false;
-   return true;
-}
-
 void menu_entries_set_refresh(bool nonblocking)
 {
    menu_entries_t *entries = menu_entries_data;
@@ -536,7 +525,7 @@ void menu_entries_unset_refresh(bool nonblocking)
    }
 }
 
-bool menu_entries_init(void)
+static bool menu_entries_init(void)
 {
    menu_entries_t *entries = (menu_entries_t*)calloc(1, sizeof(*entries));
 
@@ -721,6 +710,14 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
          free(menu_entries_data);
          menu_entries_data = NULL;
          return true;
+      case MENU_ENTRIES_CTL_NEEDS_REFRESH:
+         if (!entries || entries->nonblocking_refresh)
+            return false;
+         if (!entries->need_refresh)
+            return false;
+         return true;
+      case MENU_ENTRIES_CTL_INIT:
+         return menu_entries_init();
       case MENU_ENTRIES_CTL_SHOW_BACK:
          /* Returns true if a Back button should be shown 
           * (i.e. we are at least

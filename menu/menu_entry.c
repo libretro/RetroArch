@@ -416,7 +416,7 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
 
    cbs = menu_entries_get_actiondata_at_offset(selection_buf, i);
 
-   if (menu_entries_needs_refresh())
+   if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL))
    {
       if (cbs && cbs->action_refresh)
       {

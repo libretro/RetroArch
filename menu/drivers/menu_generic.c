@@ -249,7 +249,9 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    hash                      = menu_hash_calculate(label);
    iterate_type              = action_iterate_type(hash);
 
-   if (action != MENU_ACTION_NOOP || menu_entries_needs_refresh() || menu_display_ctl(MENU_DISPLAY_CTL_UPDATE_PENDING, NULL))
+   if (     action != MENU_ACTION_NOOP
+         || menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL) 
+         || menu_display_ctl(MENU_DISPLAY_CTL_UPDATE_PENDING, NULL))
    {
       BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
    }

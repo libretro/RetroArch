@@ -2485,7 +2485,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
    menu_animation_push(XMB_DELAY, 1.0f,
          &xmb->alpha, EASING_IN_OUT_QUAD, -1, NULL);
 
-   tmp = !menu_entries_needs_refresh();
+   tmp = !menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL);
 
    if (tmp)
       menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
