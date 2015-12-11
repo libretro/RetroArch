@@ -260,7 +260,7 @@ void menu_driver_free(menu_handle_t *menu)
    const menu_ctx_driver_t *driver = menu_driver_ctx;
 
    if (driver->free)
-      driver->free(menu_userdata ? menu_userdata : NULL);
+      driver->free(menu_userdata);
 
    if (!menu_driver_data)
       return;
