@@ -175,6 +175,10 @@ enum driver_ctl_state
 {
    RARCH_DRIVER_CTL_NONE = 0,
    RARCH_DRIVER_CTL_DEINIT,
+   /* Deinitializes drivers.
+    * @data is a bitmask which determines 
+    * which drivers get deinitialized. */
+   RARCH_DRIVER_CTL_UNINIT,
    /* Initializes drivers.
     * @data is a bitmask which determines 
     * which drivers get initialized. */
@@ -215,15 +219,6 @@ enum driver_ctl_state
  *
  * Typically, if a driver intends to make use of this, it should 
  * set this to true at the end of its 'init' function. */
-
-/**
- * uninit_drivers:
- * @flags              : Bitmask of drivers to deinitialize.
- *
- * Deinitializes drivers.
- * @flags determines which drivers get deinitialized.
- **/
-void uninit_drivers(int flags);
 
 bool find_first_driver(const char *label, char *s, size_t len);
 

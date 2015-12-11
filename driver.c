@@ -381,7 +381,7 @@ static void init_drivers(int flags)
  * Deinitializes drivers.
  * @flags determines which drivers get deinitialized.
  **/
-void uninit_drivers(int flags)
+static void uninit_drivers(int flags)
 {
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU)
@@ -439,6 +439,14 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          camera_driver_ctl(RARCH_CAMERA_CTL_DESTROY, NULL);
          retro_uninit_libretro_cbs();
          break;
+      case RARCH_DRIVER_CTL_UNINIT:
+         {
+            int *flags = (int*)data;
+            if (!flags)
+               return false;
+            uninit_drivers(*flags);
+         }
+         return true;
       case RARCH_DRIVER_CTL_INIT:
          {
             int *flags = (int*)data;
