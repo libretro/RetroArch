@@ -1808,6 +1808,7 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
    const char *core_name           = NULL;
    const char *db_name             = NULL;
    char *fullpath                  = NULL;
+   content_playlist_t *playlist    = NULL;
 
    if (!menu)
       return -1;
@@ -1821,7 +1822,9 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
       menu_entries_push(info->list, "Run", "collection",
             MENU_FILE_PLAYLIST_ENTRY, 0, idx);
 
-   content_playlist_get_index(menu->playlist, idx,
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+
+   content_playlist_get_index(playlist, idx,
          NULL, &label, &core_path, &core_name, NULL, &db_name);
 
    if (db_name && db_name[0] != '\0')
