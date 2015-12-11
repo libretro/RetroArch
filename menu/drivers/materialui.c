@@ -1063,11 +1063,10 @@ static float mui_get_scroll(mui_handle_t *mui)
    return ((selection + 2 - half) * mui->line_height);
 }
 
-static void mui_navigation_set(bool scroll)
+static void mui_navigation_set(void *data, bool scroll)
 {
-   menu_handle_t *menu  = menu_driver_get_ptr();
-   mui_handle_t *mui    = menu ? (mui_handle_t*)menu->userdata : NULL;
-   float     scroll_pos = mui_get_scroll(mui);
+   mui_handle_t *mui    = (mui_handle_t*)data;
+   float     scroll_pos = mui ? mui_get_scroll(mui) : 0.0f;
 
    if (!mui || !scroll)
       return;
@@ -1076,9 +1075,9 @@ static void mui_navigation_set(bool scroll)
          &mui->scroll_y, EASING_IN_OUT_QUAD, -1, NULL);
 }
 
-static void  mui_list_set_selection(file_list_t *list)
+static void  mui_list_set_selection(void *data, file_list_t *list)
 {
-   mui_navigation_set(true);
+   mui_navigation_set(data, true);
 }
 
 static void mui_navigation_clear(void *data, bool pending_push)
@@ -1091,14 +1090,14 @@ static void mui_navigation_clear(void *data, bool pending_push)
    mui->scroll_y = 0;
 }
 
-static void mui_navigation_set_last(void)
+static void mui_navigation_set_last(void *data)
 {
-   mui_navigation_set(true);
+   mui_navigation_set(data, true);
 }
 
-static void mui_navigation_alphabet(size_t *unused)
+static void mui_navigation_alphabet(void *data, size_t *unused)
 {
-   mui_navigation_set(true);
+   mui_navigation_set(data, true);
 }
 
 static void mui_populate_entries(

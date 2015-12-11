@@ -90,6 +90,12 @@ typedef enum
 enum rarch_menu_ctl_state
 {
    RARCH_MENU_CTL_NONE = 0,
+   RARCH_MENU_CTL_NAVIGATION_INCREMENT,
+   RARCH_MENU_CTL_NAVIGATION_DECREMENT,
+   RARCH_MENU_CTL_NAVIGATION_SET,
+   RARCH_MENU_CTL_NAVIGATION_SET_LAST,
+   RARCH_MENU_CTL_NAVIGATION_ASCEND_ALPHABET,
+   RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET,
    RARCH_MENU_CTL_DEINIT,
    RARCH_MENU_CTL_SHADER_DEINIT,
    RARCH_MENU_CTL_SHADER_GET,
@@ -266,12 +272,12 @@ typedef struct menu_ctx_driver
          unsigned k);
    void  (*toggle)(void *userdata, bool);
    void  (*navigation_clear)(void *, bool);
-   void  (*navigation_decrement)(void);
-   void  (*navigation_increment)(void);
-   void  (*navigation_set)(bool);
-   void  (*navigation_set_last)(void);
-   void  (*navigation_descend_alphabet)(size_t *);
-   void  (*navigation_ascend_alphabet)(size_t *);
+   void  (*navigation_decrement)(void *data);
+   void  (*navigation_increment)(void *data);
+   void  (*navigation_set)(void *data, bool);
+   void  (*navigation_set_last)(void *data);
+   void  (*navigation_descend_alphabet)(void *, size_t *);
+   void  (*navigation_ascend_alphabet)(void *, size_t *);
    bool  (*lists_init)(void*);
    void  (*list_insert)(void *userdata,
          file_list_t *list, const char *, const char *, size_t);
@@ -282,7 +288,7 @@ typedef struct menu_ctx_driver
    size_t(*list_get_selection)(void *data);
    size_t(*list_get_size)(void *data, menu_list_type_t type);
    void *(*list_get_entry)(void *data, menu_list_type_t type, unsigned i);
-   void  (*list_set_selection)(file_list_t *list);
+   void  (*list_set_selection)(void *data, file_list_t *list);
    int   (*bind_init)(menu_file_list_cbs_t *cbs,
          const char *path, const char *label, unsigned type, size_t idx,
          const char *elem0, const char *elem1,

@@ -51,7 +51,6 @@ typedef struct menu_navigation
 bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
 {
    static menu_navigation_t menu_navigation_state;
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
    settings_t          *settings   = config_get_ptr();
    size_t          menu_list_size  = menu_entries_get_size();
    menu_navigation_t        *nav   = &menu_navigation_state;
@@ -113,8 +112,8 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                   }
                }
             }
-            if (driver->navigation_increment)
-               driver->navigation_increment();
+            
+            menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_INCREMENT, NULL);
          }
          return true;
       case MENU_NAVIGATION_CTL_DECREMENT:
@@ -141,30 +140,18 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, NULL);
-
-            if (driver->navigation_decrement)
-               driver->navigation_decrement();
+            menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_DECREMENT, NULL);
 
          }
          return true;
       case MENU_NAVIGATION_CTL_SET:
-         {
-            bool *scroll = (bool*)data;
-
-            if (!scroll)
-               return false;
-
-            if (driver->navigation_set)
-               driver->navigation_set(*scroll);
-         }
+         menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET, data);
          return true;
       case MENU_NAVIGATION_CTL_SET_LAST:
          {
             size_t new_selection = menu_list_size - 1;
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection);
-
-            if (driver->navigation_set_last)
-               driver->navigation_set_last();
+            menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET_LAST, NULL);
          }
          return true;
       case MENU_NAVIGATION_CTL_ASCEND_ALPHABET:
@@ -185,8 +172,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                i++;
             *ptr_out = nav->scroll.indices.list[i + 1];
 
-            if (driver->navigation_ascend_alphabet)
-               driver->navigation_ascend_alphabet(ptr_out);
+            menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_ASCEND_ALPHABET, ptr_out);
          }
          return true;
       case MENU_NAVIGATION_CTL_DESCEND_ALPHABET:
@@ -208,8 +194,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                i--;
             *ptr_out = nav->scroll.indices.list[i - 1];
 
-            if (driver->navigation_descend_alphabet)
-               driver->navigation_descend_alphabet(ptr_out);
+            menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET, ptr_out);
          }
          return true;
       case MENU_NAVIGATION_CTL_GET_SELECTION:

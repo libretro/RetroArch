@@ -2232,24 +2232,21 @@ static void xmb_navigation_clear(void *data, bool pending_push)
       xmb_selection_pointer_changed(xmb, true);
 }
 
-static void xmb_navigation_pointer_changed(void)
+static void xmb_navigation_pointer_changed(void *data)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   xmb_handle_t  *xmb  = menu ? (xmb_handle_t*)menu->userdata : NULL;
+   xmb_handle_t  *xmb  = (xmb_handle_t*)data;
    xmb_selection_pointer_changed(xmb, true);
 }
 
-static void xmb_navigation_set(bool scroll)
+static void xmb_navigation_set(void *data, bool scroll)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   xmb_handle_t  *xmb  = menu ? (xmb_handle_t*)menu->userdata : NULL;
+   xmb_handle_t  *xmb  = (xmb_handle_t*)data;
    xmb_selection_pointer_changed(xmb, true);
 }
 
-static void xmb_navigation_alphabet(size_t *unused)
+static void xmb_navigation_alphabet(void *data, size_t *unused)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
-   xmb_handle_t  *xmb  = menu ? (xmb_handle_t*)menu->userdata : NULL;
+   xmb_handle_t  *xmb  = (xmb_handle_t*)data;
    xmb_selection_pointer_changed(xmb, true);
 }
 

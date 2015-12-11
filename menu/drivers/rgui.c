@@ -743,7 +743,7 @@ static void rgui_navigation_clear(void *data, bool pending_push)
    rgui->scroll_y = 0;
 }
 
-static void rgui_navigation_set(bool scroll)
+static void rgui_navigation_set(void *data, bool scroll)
 {
    size_t selection;
    unsigned fb_width, fb_height;
@@ -765,26 +765,26 @@ static void rgui_navigation_set(bool scroll)
       menu_entries_set_start(end - RGUI_TERM_HEIGHT(fb_width, fb_height));
 }
 
-static void rgui_navigation_set_last(void)
+static void rgui_navigation_set_last(void *data)
 {
-   rgui_navigation_set(true);
+   rgui_navigation_set(data, true);
 }
 
-static void rgui_navigation_descend_alphabet(size_t *unused)
+static void rgui_navigation_descend_alphabet(void *data, size_t *unused)
 {
-   rgui_navigation_set(true);
+   rgui_navigation_set(data, true);
 }
 
-static void rgui_navigation_ascend_alphabet(size_t *unused)
+static void rgui_navigation_ascend_alphabet(void *data, size_t *unused)
 {
-   rgui_navigation_set(true);
+   rgui_navigation_set(data, true);
 }
 
 static void rgui_populate_entries(void *data,
       const char *path,
       const char *label, unsigned k)
 {
-   rgui_navigation_set(true);
+   rgui_navigation_set(data, true);
 }
 
 static int rgui_environ(menu_environ_cb_t type, void *data, void *userdata)

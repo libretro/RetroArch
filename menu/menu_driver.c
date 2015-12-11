@@ -189,7 +189,8 @@ void  menu_driver_list_set_selection(file_list_t *list)
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
    if (driver && driver->list_set_selection)
-      driver->list_set_selection(list);
+      driver->list_set_selection(
+            menu_driver_data ? menu_driver_data->userdata : NULL, list);
 }
 
 size_t  menu_driver_list_get_selection(void)
@@ -772,6 +773,54 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT:
          menu_driver_load_no_content = false;
+         break;
+      case RARCH_MENU_CTL_NAVIGATION_INCREMENT:
+         if (driver->navigation_increment)
+            driver->navigation_increment(menu_driver_data ? menu_driver_data->userdata : NULL);
+         break;
+      case RARCH_MENU_CTL_NAVIGATION_DECREMENT:
+         if (driver->navigation_decrement)
+            driver->navigation_decrement(menu_driver_data ? menu_driver_data->userdata : NULL);
+         break;
+      case RARCH_MENU_CTL_NAVIGATION_SET:
+         {
+            bool *scroll = (bool*)data;
+
+            if (!scroll)
+               return false;
+            if (driver->navigation_set)
+               driver->navigation_set(menu_driver_data ? menu_driver_data->userdata : NULL,
+                     *scroll);
+         }
+         return true;
+      case RARCH_MENU_CTL_NAVIGATION_SET_LAST:
+         if (driver->navigation_set_last)
+            driver->navigation_set_last(menu_driver_data ? menu_driver_data->userdata : NULL);
+         break;
+      case RARCH_MENU_CTL_NAVIGATION_ASCEND_ALPHABET:
+         {
+            size_t *ptr_out = (size_t*)data;
+
+            if (!ptr_out)
+               return false;
+
+            if (driver->navigation_ascend_alphabet)
+               driver->navigation_ascend_alphabet(
+                     menu_driver_data ? menu_driver_data->userdata : NULL,
+                     ptr_out);
+         }
+       case RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET:
+         {
+            size_t *ptr_out = (size_t*)data;
+
+            if (!ptr_out)
+               return false;
+
+            if (driver->navigation_descend_alphabet)
+               driver->navigation_descend_alphabet(
+                     menu_driver_data ? menu_driver_data->userdata : NULL,
+                     ptr_out);
+         }
          break;
       default:
       case RARCH_MENU_CTL_NONE:
