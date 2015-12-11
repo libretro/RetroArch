@@ -282,14 +282,12 @@ int menu_driver_iterate(enum menu_action action)
 
 static void menu_driver_toggle(bool latch)
 {
-   const menu_ctx_driver_t      *driver = menu_driver_ctx;
    settings_t                 *settings = config_get_ptr();
    global_t                   *global   = global_get_ptr();
    rarch_system_info_t          *system = NULL;
    
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
    menu_driver_ctl(RARCH_MENU_CTL_TOGGLE, &latch);
-
 
    if (latch)
       menu_driver_ctl(RARCH_MENU_CTL_SET_ALIVE, NULL);
