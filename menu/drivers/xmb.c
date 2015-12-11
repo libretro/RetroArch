@@ -540,9 +540,11 @@ static void xmb_selection_pointer_changed(xmb_handle_t *xmb, bool allow_animatio
    size_t selection;
    unsigned i, end, tag, height, skip, depth;
    int threshold = 0;
-   menu_list_t     *menu_list = menu_list_get_ptr();
+   menu_list_t     *menu_list = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    settings_t       *settings = config_get_ptr();
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
 
    if (!xmb)
       return;

@@ -106,6 +106,7 @@ enum menu_entries_ctl_state
    MENU_ENTRIES_CTL_NONE = 0,
    MENU_ENTRIES_CTL_DEINIT,
    MENU_ENTRIES_CTL_INIT,
+   MENU_ENTRIES_CTL_LIST_GET,
    MENU_ENTRIES_CTL_NEEDS_REFRESH,
    MENU_ENTRIES_CTL_SHOW_BACK
 };
@@ -153,8 +154,6 @@ size_t menu_entries_get_size(void);
 void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type,
       size_t *entry_idx, const char **alt);
-
-menu_list_t *menu_list_get_ptr(void);
 
 void *menu_entries_get_userdata_at_offset(const file_list_t *list, size_t idx);
 
