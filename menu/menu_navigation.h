@@ -26,6 +26,7 @@ extern "C" {
 enum menu_navigation_ctl_state
 {
    MENU_NAVIGATION_CTL_CLEAR = 0,
+   MENU_NAVIGATION_CTL_DEINIT,
    MENU_NAVIGATION_CTL_INCREMENT,
    MENU_NAVIGATION_CTL_DECREMENT,
    MENU_NAVIGATION_CTL_SET,
@@ -41,8 +42,6 @@ enum menu_navigation_ctl_state
 };
 
 bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data);
-
-void menu_navigation_free(void);
 
 #ifdef __cplusplus
 }

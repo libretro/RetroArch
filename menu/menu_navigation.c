@@ -67,6 +67,9 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
 
    switch (state)
    {
+      case MENU_NAVIGATION_CTL_DEINIT:
+         memset(nav, 0, sizeof(menu_navigation_t));
+         break;
       case MENU_NAVIGATION_CTL_CLEAR:
          {
             size_t idx         = 0;
@@ -265,10 +268,4 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
    }
 
    return false;
-}
-
-void menu_navigation_free(void)
-{
-   menu_navigation_t *nav = menu_navigation_get_ptr();
-   memset(nav, 0, sizeof(menu_navigation_t));
 }
