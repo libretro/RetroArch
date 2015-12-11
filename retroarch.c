@@ -1629,7 +1629,7 @@ int rarch_defer_core(void *data, const char *dir,
 #ifdef HAVE_MENU
    if (menu_label_hash == MENU_LABEL_LOAD_CONTENT)
    {
-      info = (const core_info_t*)&global->core_info.current;
+      runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_GET, (void*)&info);
 
       if (info)
       {

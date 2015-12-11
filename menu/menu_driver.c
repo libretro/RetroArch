@@ -551,9 +551,7 @@ void menu_free(menu_handle_t *menu)
    if (global->core_info.list)
       core_info_list_free(global->core_info.list);
 
-   if (global->core_info.current)
-      free(global->core_info.current);
-   global->core_info.current = NULL;
+   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_FREE, NULL);
 
    free(menu);
 }
@@ -606,8 +604,7 @@ void *menu_init(const void *data)
    if (!menu_entries_init(menu))
       goto error;
 
-   global->core_info.current = (core_info_t*)calloc(1, sizeof(core_info_t));
-   if (!global->core_info.current)
+   if (!runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_INIT, NULL))
       goto error;
 
 #ifdef HAVE_SHADER_MANAGER
