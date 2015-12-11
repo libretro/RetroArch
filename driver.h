@@ -172,6 +172,12 @@ enum
    DRIVERS_VIDEO_INPUT = 1 << 6
 };
 
+enum driver_ctl_state
+{
+   RARCH_DRIVER_CTL_NONE = 0,
+   RARCH_DRIVER_CTL_DEINIT
+};
+
 
 /* TODO/FIXME - comment needs to be moved to each respective driver */
 
@@ -286,7 +292,7 @@ bool driver_update_system_av_info(const void *data);
  **/
 int find_driver_index(const char * label, const char *drv);
 
-void driver_free(void);
+bool driver_ctl(enum driver_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }

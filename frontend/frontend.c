@@ -89,7 +89,7 @@ void main_exit(void *args)
 
    frontend_driver_shutdown(false);
 
-   driver_free();
+   driver_ctl(RARCH_DRIVER_CTL_DEINIT, NULL);
    ui_companion_driver_free();
    frontend_driver_free();
 }

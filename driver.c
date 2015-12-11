@@ -45,18 +45,6 @@
 #define HASH_AUDIO_RESAMPLER_DRIVER    0xedcba9ecU
 #define HASH_RECORD_DRIVER             0x144cd2cfU
 
-void driver_free(void)
-{
-   video_driver_ctl(RARCH_DISPLAY_CTL_DESTROY, NULL);
-   audio_driver_ctl(RARCH_AUDIO_CTL_DESTROY, NULL);
-   input_driver_ctl(RARCH_INPUT_CTL_DESTROY, NULL);
-#ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_DESTROY, NULL);
-#endif
-   location_driver_ctl(RARCH_LOCATION_CTL_DESTROY, NULL);
-   camera_driver_ctl(RARCH_CAMERA_CTL_DESTROY, NULL);
-   retro_uninit_libretro_cbs();
-}
 /**
  * find_driver_nonempty:
  * @label              : string of driver type to be found.
@@ -472,3 +460,25 @@ void uninit_drivers(int flags)
       audio_driver_ctl(RARCH_AUDIO_CTL_DESTROY_DATA, NULL);
 }
 
+bool driver_ctl(enum driver_ctl_state state, void *data)
+{
+   switch (state)
+   {
+      case RARCH_DRIVER_CTL_DEINIT:
+         video_driver_ctl(RARCH_DISPLAY_CTL_DESTROY, NULL);
+         audio_driver_ctl(RARCH_AUDIO_CTL_DESTROY, NULL);
+         input_driver_ctl(RARCH_INPUT_CTL_DESTROY, NULL);
+#ifdef HAVE_MENU
+         menu_driver_ctl(RARCH_MENU_CTL_DESTROY, NULL);
+#endif
+         location_driver_ctl(RARCH_LOCATION_CTL_DESTROY, NULL);
+         camera_driver_ctl(RARCH_CAMERA_CTL_DESTROY, NULL);
+         retro_uninit_libretro_cbs();
+         break;
+      case RARCH_DRIVER_CTL_NONE:
+      default:
+         break;
+   }
+
+   return false;
+}
