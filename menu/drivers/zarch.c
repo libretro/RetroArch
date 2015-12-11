@@ -1059,12 +1059,12 @@ static void *zarch_init(void)
    if (!menu_display_driver_init_first())
       goto error;
 
-   menu->userdata       = (zui_t*)calloc(1, sizeof(zui_t));
+   zui       = (zui_t*)calloc(1, sizeof(zui_t));
 
-   if (!menu->userdata)
+   if (!zui)
       goto error;
 
-   zui                  = (zui_t*)menu->userdata;
+   menu->userdata       = zui;
 
    if (settings->menu.mouse.enable)
    {

@@ -1904,12 +1904,12 @@ static void *xmb_init(void)
 
    video_driver_get_size(&width, &height);
 
-   menu->userdata             = (xmb_handle_t*)calloc(1, sizeof(xmb_handle_t));
+   xmb = (xmb_handle_t*)calloc(1, sizeof(xmb_handle_t));
 
-   if (!menu->userdata)
+   if (!xmb)
       goto error;
 
-   xmb = (xmb_handle_t*)menu->userdata;
+   menu->userdata = xmb;
 
    xmb->menu_stack_old        = (file_list_t*)calloc(1, sizeof(file_list_t));
 

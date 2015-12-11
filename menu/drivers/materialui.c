@@ -961,12 +961,12 @@ static void *mui_init(void)
    if (!menu_display_driver_init_first())
       goto error;
 
-   menu->userdata = (mui_handle_t*)calloc(1, sizeof(mui_handle_t));
+   mui = (mui_handle_t*)calloc(1, sizeof(mui_handle_t));
 
-   if (!menu->userdata)
+   if (!mui)
       goto error;
 
-   mui = (mui_handle_t*)menu->userdata;
+   menu->userdata = mui;
 
    mui_layout(mui);
    mui_allocate_white_texture(mui);

@@ -638,10 +638,12 @@ static void *rgui_init(void)
    if (!menu)
       return NULL;
 
-   menu->userdata = rgui = (rgui_t*)calloc(1, sizeof(rgui_t));
+   rgui = (rgui_t*)calloc(1, sizeof(rgui_t));
 
    if (!rgui)
       goto error;
+
+   menu->userdata = rgui;
 
    /* 4 extra lines to cache  the checked background */
    fb_data = (uint16_t*)calloc(400 * (240 + 4), sizeof(uint16_t));
@@ -682,9 +684,6 @@ error:
          free(fb_data);
       fb_data = NULL;
       menu_display_ctl(MENU_DISPLAY_CTL_SET_FB_DATA, &fb_data);
-      if (menu->userdata)
-         free(menu->userdata);
-      menu->userdata = NULL;
       free(menu);
    }
    return NULL;
