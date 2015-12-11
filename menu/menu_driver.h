@@ -99,7 +99,9 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_DEINIT,
    RARCH_MENU_CTL_SHADER_DEINIT,
    RARCH_MENU_CTL_SHADER_GET,
+   RARCH_MENU_CTL_BLIT_RENDER,
    RARCH_MENU_CTL_RENDER,
+   RARCH_MENU_CTL_RENDER_MESSAGEBOX,
    RARCH_MENU_CTL_FRAME,
    RARCH_MENU_CTL_SET_PREVENT_POPULATE,
    RARCH_MENU_CTL_UNSET_PREVENT_POPULATE,
@@ -124,6 +126,7 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_PLAYLIST_FREE,
    RARCH_MENU_CTL_PLAYLIST_INIT,
    RARCH_MENU_CTL_PLAYLIST_GET,
+   RARCH_MENU_CTL_LIST_CLEAR,
    RARCH_MENU_CTL_POPULATE_ENTRIES
 };
 
@@ -358,8 +361,6 @@ size_t menu_driver_list_get_size(menu_list_type_t type);
 void  menu_driver_list_set_selection(file_list_t *list);
 
 void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i);
-
-const menu_ctx_driver_t *menu_ctx_driver_get_ptr(void);
 
 void  menu_driver_context_destroy(void);
 

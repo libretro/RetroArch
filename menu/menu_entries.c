@@ -223,10 +223,8 @@ static void menu_list_flush_stack(menu_list_t *list,
 void menu_entries_clear(file_list_t *list)
 {
    unsigned i;
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
-   if (driver->list_clear)
-      driver->list_clear(list);
+   menu_driver_ctl(RARCH_MENU_CTL_LIST_CLEAR, list);
 
    for (i = 0; i < list->size; i++)
       file_list_free_actiondata(list, i);

@@ -331,7 +331,6 @@ end:
 
 int menu_iterate_render(void *data, void *userdata)
 {
-   const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
    menu_handle_t *menu             = (menu_handle_t*)data;
 
    if (!menu)
@@ -345,8 +344,7 @@ int menu_iterate_render(void *data, void *userdata)
 
    if (BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX) && menu->menu_state.msg[0] != '\0')
    {
-      if (driver->render_messagebox)
-         driver->render_messagebox(userdata, menu->menu_state.msg);
+      menu_driver_ctl(RARCH_MENU_CTL_RENDER_MESSAGEBOX, NULL);
 
       if (ui_companion_is_on_foreground())
       {
@@ -359,8 +357,7 @@ int menu_iterate_render(void *data, void *userdata)
    if (BIT64_GET(menu->state, MENU_STATE_BLIT))
    {
       menu_animation_ctl(MENU_ANIMATION_CTL_UPDATE_TIME, NULL);
-      if (driver->render)
-         driver->render(userdata);
+      menu_driver_ctl(RARCH_MENU_CTL_BLIT_RENDER, NULL);
    }
 
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) && !runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
