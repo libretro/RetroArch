@@ -1435,9 +1435,3 @@ end:
 
    return 0;
 }
-
-void data_runloop_osd_msg(const char *msg, size_t len)
-{
-   runloop_msg_queue_push(msg, 1, 10, true);
-}
-

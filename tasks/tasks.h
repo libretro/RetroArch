@@ -144,8 +144,6 @@ bool rarch_task_push_overlay_load_default(
         rarch_task_callback_t cb, void *user_data);
 #endif
     
-void data_runloop_osd_msg(const char *s, size_t len);
-
 int find_first_data_track(const char* cue_path,
       int32_t* offset, char* track_path, size_t max_len);
 
