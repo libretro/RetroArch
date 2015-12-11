@@ -484,25 +484,23 @@ file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
 
 void menu_entries_set_refresh(bool nonblocking)
 {
-   menu_entries_t *entries = menu_entries_data;
-   if (entries)
+   if (menu_entries_data)
    {
       if (nonblocking)
-         entries->nonblocking_refresh = true;
+         menu_entries_data->nonblocking_refresh = true;
       else
-         entries->need_refresh        = true;
+         menu_entries_data->need_refresh        = true;
    }
 }
 
 void menu_entries_unset_refresh(bool nonblocking)
 {
-   menu_entries_t *entries = menu_entries_data;
-   if (entries)
+   if (menu_entries_data)
    {
       if (nonblocking)
-         entries->nonblocking_refresh = false;
+         menu_entries_data->nonblocking_refresh = false;
       else
-         entries->need_refresh        = false;
+         menu_entries_data->need_refresh        = false;
    }
 }
 
@@ -681,44 +679,42 @@ rarch_setting_t *menu_entries_get_setting(uint32_t i)
 
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
 {
-   menu_entries_t *entries = menu_entries_data;
-
    switch (state)
    {
       case MENU_ENTRIES_CTL_DEINIT:
-         if (!entries)
+         if (!menu_entries_data)
             return false;
 
-         if (entries->list_settings)
-            menu_setting_free(entries->list_settings);
-         entries->list_settings = NULL;
+         if (menu_entries_data->list_settings)
+            menu_setting_free(menu_entries_data->list_settings);
+         menu_entries_data->list_settings = NULL;
 
-         menu_list_free(entries->menu_list);
-         entries->menu_list     = NULL;
+         menu_list_free(menu_entries_data->menu_list);
+         menu_entries_data->menu_list     = NULL;
 
          free(menu_entries_data);
          menu_entries_data = NULL;
          return true;
       case MENU_ENTRIES_CTL_NEEDS_REFRESH:
-         if (!entries || entries->nonblocking_refresh)
+         if (!menu_entries_data || menu_entries_data->nonblocking_refresh)
             return false;
-         if (!entries->need_refresh)
+         if (!menu_entries_data->need_refresh)
             return false;
          return true;
       case MENU_ENTRIES_CTL_LIST_GET:
          {
             menu_list_t **list = (menu_list_t**)data;
-            if (!list || !entries)
+            if (!list || !menu_entries_data)
                return false;
-            *list = entries->menu_list;
+            *list = menu_entries_data->menu_list;
          }
          return true;
       case MENU_ENTRIES_CTL_SETTINGS_GET:
          {
             rarch_setting_t **settings = (rarch_setting_t**)data;
-            if (!settings || !entries)
+            if (!settings || !menu_entries_data)
                return false;
-            *settings = entries->list_settings;
+            *settings = menu_entries_data->list_settings;
          }
          return true;
       case MENU_ENTRIES_CTL_INIT:
