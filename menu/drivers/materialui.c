@@ -1235,9 +1235,10 @@ static void mui_list_cache(void *data, menu_list_type_t type, unsigned action)
 static int mui_list_push(void *data, void *userdata,
       menu_displaylist_info_t *info, unsigned type)
 {
-   int ret = -1;
-   menu_handle_t *menu = (menu_handle_t*)data;
-   global_t    *global = global_get_ptr();
+   int ret                = -1;
+   core_info_list_t *list = NULL;
+   menu_handle_t *menu    = (menu_handle_t*)data;
+   global_t *global       = global_get_ptr();
 
    (void)userdata;
 
@@ -1250,7 +1251,8 @@ static int mui_list_push(void *data, void *userdata,
                menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
                MENU_SETTING_ACTION, 0, 0);
 
-         if (core_info_list_num_info_files(global->core_info.list))
+         runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
+         if (core_info_list_num_info_files(list))
          {
             menu_entries_push(info->list,
                   menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),

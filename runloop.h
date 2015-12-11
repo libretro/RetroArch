@@ -71,6 +71,8 @@ enum runloop_ctl_state
    RUNLOOP_CTL_UNSET_PERFCNT_ENABLE,
    RUNLOOP_CTL_IS_PERFCNT_ENABLE,
    RUNLOOP_CTL_CURRENT_CORE_LIST_FREE,
+   RUNLOOP_CTL_CURRENT_CORE_LIST_INIT,
+   RUNLOOP_CTL_CURRENT_CORE_LIST_GET,
    RUNLOOP_CTL_CURRENT_CORE_FREE,
    RUNLOOP_CTL_CURRENT_CORE_INIT,
    RUNLOOP_CTL_CURRENT_CORE_GET,
@@ -155,11 +157,6 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
-   struct
-   {
-      core_info_list_t *list;
-   } core_info;
-
    uint32_t content_crc;
 
    rarch_path_t path;

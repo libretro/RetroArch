@@ -660,8 +660,8 @@ static void zarch_zui_render_lay_root_load_set_new_path(zui_t *zui, const char *
 static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
 {
    char parent_dir[PATH_MAX_LENGTH];
-   settings_t *settings = config_get_ptr();
-   global_t     *global = global_get_ptr();
+   settings_t *settings   = config_get_ptr();
+   core_info_list_t *list = NULL;
 
    if (zarch_zui_tab(zui, tabbed, "Load", 1))
    {
@@ -749,7 +749,10 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
                   zui->pick_cores     = NULL;
                   zui->pick_supported = 0;
                   strncpy(zui->pick_content, path, sizeof(zui->pick_content)-1);
-                  core_info_list_get_supported_cores(global->core_info.list, path,
+
+                  runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
+
+                  core_info_list_get_supported_cores(list, path,
                         &zui->pick_cores, &zui->pick_supported);
                   layout = LAY_PICK_CORE;
                   break;

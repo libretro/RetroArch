@@ -43,9 +43,9 @@ struct string_list *string_list_new_special(enum string_list_type type,
 {
    union string_list_elem_attr attr;
    unsigned i;
-   const core_info_t *core_info = NULL;
-   global_t *global      = global_get_ptr();
-   struct string_list *s = string_list_new();
+   core_info_list_t *core_info_list = NULL;
+   const core_info_t *core_info     = NULL;
+   struct string_list *s            = string_list_new();
 
    attr.i = 0;
 
@@ -157,7 +157,9 @@ struct string_list *string_list_new_special(enum string_list_type type,
          }
          break;
       case STRING_LIST_SUPPORTED_CORES_PATHS:
-         core_info_list_get_supported_cores(global->core_info.list,
+         runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &core_info_list);
+
+         core_info_list_get_supported_cores(core_info_list,
                (const char*)data, &core_info, list_size);
 
          if (*list_size == 0)
@@ -177,10 +179,12 @@ struct string_list *string_list_new_special(enum string_list_type type,
          }
          break;
       case STRING_LIST_CORES_PATHS:
-         for (i = 0; i < core_info_list_num_info_files(global->core_info.list); i++)
+         runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &core_info_list);
+
+         for (i = 0; i < core_info_list_num_info_files(core_info_list); i++)
          {
             const char *opt  = NULL;
-            core_info        = (const core_info_t*)&global->core_info.list->list[i];
+            core_info        = (const core_info_t*)&core_info_list->list[i];
             opt              = core_info ? core_info->path : NULL;
 
             if (!opt)
@@ -191,7 +195,8 @@ struct string_list *string_list_new_special(enum string_list_type type,
          }
          break; 
       case STRING_LIST_SUPPORTED_CORES_NAMES:
-         core_info_list_get_supported_cores(global->core_info.list,
+         runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &core_info_list);
+         core_info_list_get_supported_cores(core_info_list,
                (const char*)data, &core_info, list_size);
 
          if (*list_size == 0)
@@ -211,10 +216,11 @@ struct string_list *string_list_new_special(enum string_list_type type,
          }
          break;
       case STRING_LIST_CORES_NAMES:
-         for (i = 0; i < core_info_list_num_info_files(global->core_info.list); i++)
+         runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &core_info_list);
+         for (i = 0; i < core_info_list_num_info_files(core_info_list); i++)
          {
             const char *opt  = NULL;
-            core_info        = (const core_info_t*)&global->core_info.list->list[i];
+            core_info        = (const core_info_t*)&core_info_list->list[i];
             opt              = core_info ? core_info->display_name : NULL;
 
             if (!opt)

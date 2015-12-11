@@ -381,7 +381,7 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx, const char *pa
    const char *menu_label   = NULL;
    int ret                  = 0;
    menu_handle_t *menu      = menu_driver_get_ptr();
-   global_t *global         = global_get_ptr();
+   core_info_list_t *list   = NULL;
 
    if (!menu)
       return -1;
@@ -403,7 +403,9 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx, const char *pa
             sizeof(menu_path_new));
    }
 
-   ret = rarch_defer_core(global->core_info.list,
+   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
+
+   ret = rarch_defer_core(list,
          menu_path_new, path, menu_label, menu->deferred_path,
          sizeof(menu->deferred_path));
 
@@ -539,12 +541,14 @@ static int action_ok_playlist_entry(const char *path,
    {
       char new_core_path[PATH_MAX_LENGTH];
       core_info_t            *core_info = NULL;
-      global_t                  *global = global_get_ptr();
+      core_info_list_t *list            = NULL;
       const char             *path_base = path_basename(menu->db_playlist_file);
       bool        found_associated_core = menu_playlist_find_associated_core(
             path_base, new_core_path, sizeof(new_core_path));
 
-      if (!(core_info = core_info_find(global->core_info.list, new_core_path)))
+      runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
+
+      if (!(core_info = core_info_find(list, new_core_path)))
          found_associated_core = false;
 
       if (found_associated_core)
@@ -1777,7 +1781,7 @@ static int action_ok_load_archive_detect_core(const char *path,
 {
    size_t selection;
    int ret                  = 0;
-   global_t      *global    = global_get_ptr();
+   core_info_list_t *list   = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
    const char *menu_path    = menu ? menu->scratch2_buf : NULL;
    const char *content_path = menu ? menu->scratch_buf  : NULL;
@@ -1788,7 +1792,9 @@ static int action_ok_load_archive_detect_core(const char *path,
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return false;
 
-   ret = rarch_defer_core(global->core_info.list, menu_path, content_path, label,
+   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
+
+   ret = rarch_defer_core(list, menu_path, content_path, label,
          menu->deferred_path, sizeof(menu->deferred_path));
 
    fill_pathname_join(detect_content_path, menu_path, content_path,

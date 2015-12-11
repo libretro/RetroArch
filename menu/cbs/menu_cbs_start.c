@@ -264,10 +264,11 @@ static int action_start_playlist_association(unsigned type, const char *label)
    char new_playlist_cores[PATH_MAX_LENGTH] = {0};
    struct string_list *stnames      = NULL;
    struct string_list *stcores      = NULL;
-   global_t *global                 = global_get_ptr();
+   core_info_list_t           *list = NULL;
    settings_t *settings             = config_get_ptr();
    const char *path                 = path_basename(label);
-   core_info_list_t           *list = global ? global->core_info.list : NULL;
+
+   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
    if (!list)
       return -1;
 

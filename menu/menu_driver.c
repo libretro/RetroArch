@@ -533,7 +533,6 @@ int menu_common_load_content(
  **/
 void menu_free(menu_handle_t *menu)
 {
-   global_t        *global    = global_get_ptr();
    if (!menu)
       return;
 
@@ -548,9 +547,7 @@ void menu_free(menu_handle_t *menu)
 
    event_command(EVENT_CMD_HISTORY_DEINIT);
 
-   if (global->core_info.list)
-      core_info_list_free(global->core_info.list);
-
+   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_FREE, NULL);
    runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_FREE, NULL);
 
    free(menu);

@@ -851,9 +851,9 @@ static void event_main_state(unsigned cmd)
 static bool event_update_system_info(struct retro_system_info *_info,
       bool *load_no_content)
 {
-   core_info_t *core_info = NULL;
-   settings_t *settings   = config_get_ptr();
-   global_t   *global     = global_get_ptr();
+   core_info_list_t *core_info_list = NULL;
+   core_info_t *core_info           = NULL;
+   settings_t *settings             = config_get_ptr();
 
 #if defined(HAVE_DYNAMIC)
    if (!(*settings->libretro))
@@ -862,12 +862,13 @@ static bool event_update_system_info(struct retro_system_info *_info,
    libretro_get_system_info(settings->libretro, _info,
          load_no_content);
 #endif
-   if (!global->core_info.list)
+   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_GET, &core_info);
+   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &core_info_list);
+
+   if (!core_info_list)
       return false;
 
-   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_GET, &core_info);
-
-   if (!core_info_list_get_info(global->core_info.list,
+   if (!core_info_list_get_info(core_info_list,
             core_info, settings->libretro))
       return false;
 
@@ -1219,7 +1220,7 @@ bool event_command(enum event_command cmd)
          event_command(EVENT_CMD_CORE_INFO_DEINIT);
 
          if (*settings->libretro_directory)
-            global->core_info.list = core_info_list_new();
+            runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_INIT, NULL);
          break;
       case EVENT_CMD_CORE_DEINIT:
          {

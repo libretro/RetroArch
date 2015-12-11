@@ -1033,9 +1033,12 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
          strlcpy(s, "N/A", len);
       else
       {
-         global_t *global = global_get_ptr();
          char buf[PATH_MAX_LENGTH];
-         if (core_info_list_get_display_name(global->core_info.list, s, buf, sizeof(buf)))
+         core_info_list_t *list = NULL;
+
+         runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
+
+         if (core_info_list_get_display_name(list, s, buf, sizeof(buf)))
             strlcpy(s, buf, len);
       }
    }

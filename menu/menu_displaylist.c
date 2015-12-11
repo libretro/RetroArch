@@ -258,8 +258,11 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->firmware_count > 0)
    {
-      core_info_list_update_missing_firmware(
-            global->core_info.list, core_info->path,
+      core_info_list_t *list = NULL;
+
+      runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
+
+      core_info_list_update_missing_firmware(list, core_info->path,
             settings->system_directory);
 
       strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_FIRMWARE), sizeof(tmp));
@@ -2099,6 +2102,9 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
    global_t *global             = global_get_ptr();
    settings_t *settings         = config_get_ptr();
    uint32_t hash_label          = menu_hash_calculate(info->label);
+   core_info_list_t *list      = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
 
    (void)device;
 
@@ -2311,7 +2317,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
 
                fill_pathname_join(core_path, dir, path, sizeof(core_path));
 
-               if (core_info_list_get_display_name(global->core_info.list,
+               if (core_info_list_get_display_name(list,
                         core_path, display_name, sizeof(display_name)))
                   menu_entries_set_alt_at_offset(info->list, i, display_name);
             }
@@ -2420,7 +2426,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    global_t          *global   = global_get_ptr();
    settings_t      *settings   = config_get_ptr();
    rarch_system_info_t *system = NULL;
+   core_info_list_t *list      = NULL;
 
+   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (menu_driver_list_push(info, type))
@@ -2790,7 +2798,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
                MENU_SETTING_ACTION, 0, 0);
 
-         if (core_info_list_num_info_files(global->core_info.list))
+         if (core_info_list_num_info_files(list))
          {
             menu_entries_push(info->list,
                   menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),
