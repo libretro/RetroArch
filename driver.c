@@ -255,9 +255,8 @@ static void driver_set_nonblock_state(void)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool driver_update_system_av_info(const void *data)
+static bool driver_update_system_av_info(const struct retro_system_av_info *info)
 {
-   const struct retro_system_av_info *info = (const struct retro_system_av_info*)data;
    struct retro_system_av_info *av_info    = video_viewport_get_system_av_info();
 
    memcpy(av_info, info, sizeof(*av_info));
@@ -461,6 +460,14 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
       case RARCH_DRIVER_CTL_SET_NONBLOCK_STATE:
          driver_set_nonblock_state();
          break;
+      case RARCH_DRIVER_CTL_UPDATE_SYSTEM_AV_INFO:
+         {
+            const struct retro_system_av_info **info = (const struct retro_system_av_info**)data;
+            if (!info)
+               return false;
+            return driver_update_system_av_info(*info);
+         }
+         return true;
       case RARCH_DRIVER_CTL_NONE:
       default:
          break;

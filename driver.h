@@ -190,7 +190,11 @@ enum driver_ctl_state
     *
     * If nonblock state is false, sets blocking state for both
     * audio and video drivers instead. */
-   RARCH_DRIVER_CTL_SET_NONBLOCK_STATE
+   RARCH_DRIVER_CTL_SET_NONBLOCK_STATE,
+   /* Update the system Audio/Video information. 
+    * Will reinitialize audio/video drivers.
+    * Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO. */
+   RARCH_DRIVER_CTL_UPDATE_SYSTEM_AV_INFO
 };
 
 
@@ -252,18 +256,6 @@ bool find_prev_driver(const char *label, char *s, size_t len);
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool find_next_driver(const char *label, char *s, size_t len);
-
-/**
- * driver_update_system_av_info:
- * @info               : pointer to new A/V info
- *
- * Update the system Audio/Video information. 
- * Will reinitialize audio/video drivers.
- * Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool driver_update_system_av_info(const void *data);
 
 /**
  * find_driver_index:
