@@ -539,7 +539,7 @@ void menu_free(menu_handle_t *menu)
    menu_driver_free(menu);
    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
    menu_display_free();
-   menu_entries_free();
+   menu_entries_ctl(MENU_ENTRIES_CTL_DEINIT, NULL);
 
    event_command(EVENT_CMD_HISTORY_DEINIT);
 

@@ -104,6 +104,7 @@ typedef struct menu_file_list_cbs
 enum menu_entries_ctl_state
 {
    MENU_ENTRIES_CTL_NONE = 0,
+   MENU_ENTRIES_CTL_DEINIT,
    MENU_ENTRIES_CTL_SHOW_BACK
 };
 
@@ -137,8 +138,6 @@ void menu_entries_push(file_list_t *list, const char *path, const char *label,
       unsigned type, size_t directory_ptr, size_t entry_idx);
 
 bool menu_entries_init(void);
-
-void menu_entries_free(void);
 
 void menu_entries_get_last_stack(const char **path, const char **label,
       unsigned *file_type, size_t *entry_idx);

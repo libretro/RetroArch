@@ -561,24 +561,6 @@ error:
    return false;
 }
 
-void menu_entries_free(void)
-{
-   menu_entries_t *entries = menu_entries_data;
-
-   if (!entries)
-      return;
-
-   if (entries->list_settings)
-      menu_setting_free(entries->list_settings);
-   entries->list_settings = NULL;
-
-   menu_list_free(entries->menu_list);
-   entries->menu_list     = NULL;
-
-   free(menu_entries_data);
-   menu_entries_data = NULL;
-}
-
 void menu_entries_push(file_list_t *list, const char *path, const char *label,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {
@@ -721,12 +703,28 @@ rarch_setting_t *menu_entries_get_setting(uint32_t i)
 
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
 {
+   menu_entries_t *entries = menu_entries_data;
+
    switch (state)
    {
-      /* Returns true if a Back button should be shown 
-       * (i.e. we are at least
-       * one level deep in the menu hierarchy). */
+      case MENU_ENTRIES_CTL_DEINIT:
+         if (!entries)
+            return false;
+
+         if (entries->list_settings)
+            menu_setting_free(entries->list_settings);
+         entries->list_settings = NULL;
+
+         menu_list_free(entries->menu_list);
+         entries->menu_list     = NULL;
+
+         free(menu_entries_data);
+         menu_entries_data = NULL;
+         return true;
       case MENU_ENTRIES_CTL_SHOW_BACK:
+         /* Returns true if a Back button should be shown 
+          * (i.e. we are at least
+          * one level deep in the menu hierarchy). */
          return (menu_entries_get_stack_size(0) > 1);
       case MENU_ENTRIES_CTL_NONE:
       default:
