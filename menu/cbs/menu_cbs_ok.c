@@ -969,28 +969,29 @@ static int action_ok_core_deferred_set(const char *path,
    const char           *entry_label = NULL;
    const char           *entry_crc32 = NULL;
    const char               *db_name = NULL;
-   menu_handle_t               *menu = menu_driver_get_ptr();
-   if (!menu)
-      return -1;
+   content_playlist_t *playlist      = NULL;
+
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return -1;
 
-   retro_assert(menu->playlist != NULL);
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+
+   retro_assert(playlist != NULL);
 
    core_info_get_name(path, core_display_name, sizeof(core_display_name));
 
    idx = rdb_entry_start_game_selection_ptr;
 
-   content_playlist_get_index(menu->playlist, idx,
+   content_playlist_get_index(playlist, idx,
          &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
 
-   content_playlist_update(menu->playlist, idx,
+   content_playlist_update(playlist, idx,
          entry_path, entry_label,
          path , core_display_name,
          entry_crc32,
          db_name);
 
-   content_playlist_write_file(menu->playlist);
+   content_playlist_write_file(playlist);
 
    menu_entries_pop_stack(&selection, 0);
    menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
