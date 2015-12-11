@@ -103,6 +103,7 @@ enum runloop_ctl_state
    RUNLOOP_CTL_SYSTEM_INFO_GET,
    RUNLOOP_CTL_SYSTEM_INFO_INIT,
    RUNLOOP_CTL_SYSTEM_INFO_FREE,
+   RUNLOOP_CTL_DATA_ITERATE,
    RUNLOOP_CTL_PREPARE_DUMMY
 };
 
@@ -315,8 +316,6 @@ const char *runloop_msg_queue_pull(void);
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 
 typedef int (*transfer_cb_t)(void *data, size_t len);
-
-void runloop_data_iterate(void);
 
 #ifdef __cplusplus
 }

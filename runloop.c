@@ -482,6 +482,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
    switch (state)
    {
+      case RUNLOOP_CTL_DATA_ITERATE:
+         rarch_task_check();
+         return true;
       case RUNLOOP_CTL_SHADER_DIR_DEINIT:
          shader_dir_free();
          return true;
@@ -1396,12 +1399,6 @@ end:
 
    return 0;
 }
-
-void runloop_data_iterate(void)
-{
-   rarch_task_check();
-}
-
 
 void data_runloop_osd_msg(const char *msg, size_t len)
 {

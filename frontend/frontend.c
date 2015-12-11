@@ -311,7 +311,7 @@ int rarch_main(int argc, char *argv[], void *data)
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
-      runloop_data_iterate();
+      runloop_ctl(RUNLOOP_CTL_DATA_ITERATE, NULL);
    }while(ret != -1);
 
    main_exit(args);

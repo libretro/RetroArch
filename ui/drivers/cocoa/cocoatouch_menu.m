@@ -753,7 +753,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 - (void)menuSelect: (uint32_t) i
 {
   menu_entry_select(i);
-  runloop_data_iterate();
+  runloop_ctl(RUNLOOP_CTL_DATA_ITERATE, NULL);
 }
 
 - (void)menuBack

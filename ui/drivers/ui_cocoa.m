@@ -232,7 +232,7 @@ static void poll_iteration(void)
        ret = runloop_iterate(&sleep_ms);
        if (ret == 1 && sleep_ms > 0)
           retro_sleep(sleep_ms);
-       runloop_data_iterate();
+       runloop_ctl(RUNLOOP_CTL_DATA_ITERATE, NULL);
        while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
     }
     

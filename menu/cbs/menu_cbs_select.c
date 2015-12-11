@@ -78,7 +78,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
    if (action != MENU_ACTION_NOOP)
        ret = menu_entry_action(&entry, idx, action);
 
-   runloop_data_iterate();
+   runloop_ctl(RUNLOOP_CTL_DATA_ITERATE, NULL);
     
    return ret;
 }

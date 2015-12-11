@@ -79,7 +79,7 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 
    if (ret == 1 && !ui_companion_is_on_foreground() && sleep_ms > 0)
       retro_sleep(sleep_ms);
-   runloop_data_iterate();
+   runloop_ctl(RUNLOOP_CTL_DATA_ITERATE, NULL);
 
    if (ret == -1)
    {
