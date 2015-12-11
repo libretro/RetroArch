@@ -521,6 +521,15 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          return true;
       case RUNLOOP_CTL_HAS_CORE_OPTIONS:
          return runloop_system.core_options;
+      case RUNLOOP_CTL_CURRENT_CORE_GET:
+         {
+            global_t *global   = global_get_ptr();
+            core_info_t **core = (core_info_t**)data;
+            if (!core || !global)
+               return false;
+            *core = global->core_info.current;
+         }
+         return true;
       case RUNLOOP_CTL_SYSTEM_INFO_GET:
          {
             rarch_system_info_t **system = (rarch_system_info_t**)data;
