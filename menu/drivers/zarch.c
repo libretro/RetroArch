@@ -1102,18 +1102,13 @@ error:
 
 static void zarch_free(void *data)
 {
-   menu_handle_t *menu                     = (menu_handle_t*)data;
-   zui_t        *zui                       = (zui_t*)menu->userdata;
+   zui_t        *zui                       = (zui_t*)data;
 
-   if (!zui || !menu)
-      return;
-
-   gfx_coord_array_free(&zui->ca);
-   gfx_coord_array_free(&zui->tmp_block.carr);
-
-   if (menu->userdata)
-      free(menu->userdata);
-   menu->userdata = NULL;
+   if (zui)
+   {
+      gfx_coord_array_free(&zui->ca);
+      gfx_coord_array_free(&zui->tmp_block.carr);
+   }
 
    font_driver_bind_block(NULL, NULL);
 }

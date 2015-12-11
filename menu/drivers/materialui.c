@@ -980,8 +980,7 @@ error:
 
 static void mui_free(void *data)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
+   mui_handle_t *mui   = (mui_handle_t*)data;
 
    if (!mui)
       return;
@@ -989,10 +988,6 @@ static void mui_free(void *data)
    gfx_coord_array_free(&mui->list_block.carr);
 
    font_driver_bind_block(NULL, NULL);
-
-   if (menu->userdata)
-      free(menu->userdata);
-   menu->userdata = NULL;
 }
 
 static void mui_context_bg_destroy(mui_handle_t *mui)

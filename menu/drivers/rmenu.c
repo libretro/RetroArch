@@ -295,6 +295,7 @@ static void rmenu_context_destroy(void *data)
 
 static void rmenu_free(void *data)
 {
+   (void)data;
 }
 
 static int rmenu_environ(menu_environ_cb_t type, void *data)

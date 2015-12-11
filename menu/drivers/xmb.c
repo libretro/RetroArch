@@ -1966,16 +1966,10 @@ error:
 
 static void xmb_free(void *data)
 {
-   xmb_handle_t *xmb                       = NULL;
-   menu_handle_t *menu                     = (menu_handle_t*)data;
+   xmb_handle_t *xmb                       = (xmb_handle_t*)data;
 
-   if (menu && menu->userdata)
+   if (xmb)
    {
-      xmb = (xmb_handle_t*)menu->userdata;
-
-      if (!xmb)
-         return;
-
       if (xmb->menu_stack_old)
          file_list_free(xmb->menu_stack_old);
       xmb->menu_stack_old = NULL;
@@ -1988,10 +1982,6 @@ static void xmb_free(void *data)
       xmb->horizontal_list = NULL;
 
       gfx_coord_array_free(&xmb->raster_block.carr);
-
-      if (menu->userdata)
-         free(menu->userdata);
-      menu->userdata = NULL;
    }
 
    font_driver_bind_block(NULL, NULL);

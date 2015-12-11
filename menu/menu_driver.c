@@ -269,7 +269,14 @@ void menu_driver_free(menu_handle_t *menu)
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
    if (driver->free)
-      driver->free(menu);
+      driver->free(menu_driver_data ? menu_driver_data->userdata : NULL);
+
+   if (!menu_driver_data)
+      return;
+
+   if (menu_driver_data->userdata)
+      free(menu_driver_data->userdata);
+   menu_driver_data->userdata = NULL;
 }
 
 int menu_driver_iterate(enum menu_action action)

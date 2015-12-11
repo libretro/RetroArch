@@ -694,14 +694,6 @@ static void rgui_free(void *data)
 {
    uint8_t *font_fb;
    bool fb_font_inited   = false;
-   menu_handle_t  *menu  = (menu_handle_t*)data;
-
-   if (!menu)
-      return;
-
-   if (menu->userdata)
-      free(menu->userdata);
-   menu->userdata = NULL;
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_DATA_INIT, &fb_font_inited);
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_FB, &font_fb);
