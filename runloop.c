@@ -478,6 +478,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 #ifdef HAVE_THREADS
    static slock_t *runloop_msg_queue_lock      = NULL;
 #endif
+   static core_info_t *core_info_current       = NULL;
    settings_t *settings                        = config_get_ptr();
 
    switch (state)
@@ -522,32 +523,21 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_HAS_CORE_OPTIONS:
          return runloop_system.core_options;
       case RUNLOOP_CTL_CURRENT_CORE_FREE:
-         {
-            global_t *global   = global_get_ptr();
-            if (!global)
-               return false;
-            if (global->core_info.current)
-               free(global->core_info.current);
-            global->core_info.current = NULL;
-         }
+         if (core_info_current)
+            free(core_info_current);
+         core_info_current = NULL;
          return true;
       case RUNLOOP_CTL_CURRENT_CORE_INIT:
-         {
-            global_t *global   = global_get_ptr();
-            if (!global)
-               return false;
-            global->core_info.current = (core_info_t*)calloc(1, sizeof(core_info_t));
-            if (!global->core_info.current)
-               return false;
-         }
+         core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
+         if (!core_info_current)
+            return false;
          return true;
       case RUNLOOP_CTL_CURRENT_CORE_GET:
          {
-            global_t *global   = global_get_ptr();
             core_info_t **core = (core_info_t**)data;
-            if (!core || !global)
+            if (!core)
                return false;
-            *core = global->core_info.current;
+            *core = core_info_current;
          }
          return true;
       case RUNLOOP_CTL_SYSTEM_INFO_GET:

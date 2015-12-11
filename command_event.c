@@ -851,8 +851,9 @@ static void event_main_state(unsigned cmd)
 static bool event_update_system_info(struct retro_system_info *_info,
       bool *load_no_content)
 {
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   core_info_t *core_info = NULL;
+   settings_t *settings   = config_get_ptr();
+   global_t   *global     = global_get_ptr();
 
 #if defined(HAVE_DYNAMIC)
    if (!(*settings->libretro))
@@ -864,8 +865,10 @@ static bool event_update_system_info(struct retro_system_info *_info,
    if (!global->core_info.list)
       return false;
 
+   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_GET, &core_info);
+
    if (!core_info_list_get_info(global->core_info.list,
-            global->core_info.current, settings->libretro))
+            core_info, settings->libretro))
       return false;
 
    return true;

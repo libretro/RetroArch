@@ -157,7 +157,6 @@ typedef struct global
    struct
    {
       core_info_list_t *list;
-      core_info_t *current;
    } core_info;
 
    uint32_t content_crc;

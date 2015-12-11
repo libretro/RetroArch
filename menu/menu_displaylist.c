@@ -161,7 +161,9 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    char tmp[PATH_MAX_LENGTH];
    settings_t *settings      = config_get_ptr();
    global_t *global          = global_get_ptr();
-   core_info_t *core_info    = global ? (core_info_t*)global->core_info.current : NULL;
+   core_info_t *core_info    = NULL;
+   
+   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_GET, &core_info);
 
    if (!core_info || !core_info->config_data)
    {
