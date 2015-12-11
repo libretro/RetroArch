@@ -198,7 +198,8 @@ size_t  menu_driver_list_get_selection(void)
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
    if (driver && driver->list_get_selection)
-      return driver->list_get_selection(menu_driver_data);
+      return driver->list_get_selection(menu_driver_data 
+            ? menu_driver_data->userdata : NULL);
    return 0;
 }
 

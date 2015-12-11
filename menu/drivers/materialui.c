@@ -1316,8 +1316,7 @@ static int mui_list_push(void *data, void *userdata,
 
 static size_t mui_list_get_selection(void *data)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-   mui_handle_t *mui   = menu ? (mui_handle_t*)menu->userdata : NULL;
+   mui_handle_t *mui   = (mui_handle_t*)data;
 
    if (!mui)
       return 0;

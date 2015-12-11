@@ -253,8 +253,7 @@ static void xmb_fill_default_background_path(xmb_handle_t *xmb, char *path, size
 
 static size_t xmb_list_get_selection(void *data)
 {
-   menu_handle_t *menu    = (menu_handle_t*)data;
-   xmb_handle_t *xmb      = menu ? (xmb_handle_t*)menu->userdata : NULL;
+   xmb_handle_t *xmb      = (xmb_handle_t*)data;
 
    if (!xmb)
       return 0;
