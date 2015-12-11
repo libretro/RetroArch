@@ -88,11 +88,6 @@ static menu_display_ctx_driver_t *menu_display_context_get_ptr(void)
    return disp->display_ctx;
 }
 
-static menu_framebuf_t *menu_display_fb_get_ptr(void)
-{
-   return &frame_buf_state;
-}
-
 static void menu_display_fb_free(menu_framebuf_t *frame_buf)
 {
    if (!frame_buf)
@@ -257,10 +252,10 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
    unsigned width, height;
    static menu_display_draw_t draw_bak       = NULL;
    static menu_display_draw_bg_t draw_bg_bak = NULL;
-   menu_framebuf_t *frame_buf = menu_display_fb_get_ptr();
-   menu_display_t  *disp      = menu_display_get_ptr();
-   menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
-   settings_t *settings       = config_get_ptr();
+   menu_framebuf_t *frame_buf                = &frame_buf_state;
+   menu_display_t  *disp                     = menu_display_get_ptr();
+   menu_display_ctx_driver_t *menu_disp      = menu_display_context_get_ptr();
+   settings_t *settings                      = config_get_ptr();
 
    switch (state)
    {
