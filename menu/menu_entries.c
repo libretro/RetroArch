@@ -447,12 +447,6 @@ int menu_entries_get_title(char *s, size_t len)
    return 0;
 }
 
-/* Returns true if a Back button should be shown (i.e. we are at least
- * one level deep in the menu hierarchy). */
-bool menu_entries_show_back(void)
-{
-   return (menu_entries_get_stack_size(0) > 1);
-}
 
 /* Sets 's' to the name of the current core 
  * (shown at the top of the UI). */
@@ -729,6 +723,11 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
 {
    switch (state)
    {
+      /* Returns true if a Back button should be shown 
+       * (i.e. we are at least
+       * one level deep in the menu hierarchy). */
+      case MENU_ENTRIES_CTL_SHOW_BACK:
+         return (menu_entries_get_stack_size(0) > 1);
       case MENU_ENTRIES_CTL_NONE:
       default:
          break;

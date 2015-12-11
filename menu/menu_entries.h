@@ -103,7 +103,8 @@ typedef struct menu_file_list_cbs
 
 enum menu_entries_ctl_state
 {
-   MENU_ENTRIES_CTL_NONE = 0
+   MENU_ENTRIES_CTL_NONE = 0,
+   MENU_ENTRIES_CTL_SHOW_BACK
 };
 
 typedef struct menu_list menu_list_t;
@@ -117,8 +118,6 @@ size_t menu_entries_get_end(void);
 void menu_entries_get(size_t i, menu_entry_t *entry);
 
 int menu_entries_get_title(char *title, size_t title_len);
-
-bool menu_entries_show_back(void);
 
 int menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 

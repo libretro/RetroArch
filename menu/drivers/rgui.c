@@ -519,7 +519,7 @@ static void rgui_render(void *data)
    hover_color  = HOVER_COLOR(settings);
    normal_color = NORMAL_COLOR(settings);
 
-   if (menu_entries_show_back())
+   if (menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL))
       blit_line(fb_data, fb_pitch,
             RGUI_TERM_START_X(fb_width),
             RGUI_TERM_START_X(fb_width),

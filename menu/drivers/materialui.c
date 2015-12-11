@@ -827,7 +827,7 @@ static void mui_frame(void *data)
 
    title_margin = mui->margin;
 
-   if (menu_entries_show_back())
+   if (menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL))
    {
       title_margin = mui->icon_size;
       mui_draw_icon(mui, mui->textures.list[MUI_TEXTURE_BACK].id,

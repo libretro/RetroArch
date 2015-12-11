@@ -672,7 +672,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    [self.sections addObject:everything];
 
    weakSelf = self;
-   if (menu_entries_show_back())
+   if (menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL))
      [self set_leftbutton:BOXSTRING("Back")
                    target:weakSelf
                    action:@selector(menuBack)];
