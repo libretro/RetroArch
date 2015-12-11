@@ -237,7 +237,9 @@ void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i)
    const menu_ctx_driver_t *driver = menu_ctx_driver_get_ptr();
 
    if (driver && driver->list_get_entry)
-      return driver->list_get_entry(menu_driver_data, type, i);
+      return driver->list_get_entry(
+            menu_driver_data ? menu_driver_data->userdata : NULL,
+            type, i);
    return NULL;
 }
 

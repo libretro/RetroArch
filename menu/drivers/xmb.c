@@ -286,8 +286,7 @@ static void *xmb_list_get_entry(void *data, menu_list_type_t type, unsigned i)
 {
    void *ptr               = NULL;
    size_t list_size        = 0;
-   menu_handle_t *menu     = (menu_handle_t*)data;
-   xmb_handle_t *xmb       = menu ? (xmb_handle_t*)menu->userdata : NULL;
+   xmb_handle_t *xmb       = (xmb_handle_t*)data;
    file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
 
    switch (type)
