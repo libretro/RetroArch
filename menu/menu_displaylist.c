@@ -161,7 +161,6 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    unsigned i;
    char tmp[PATH_MAX_LENGTH];
    settings_t *settings      = config_get_ptr();
-   global_t *global          = global_get_ptr();
    core_info_t *core_info    = NULL;
    
    runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_GET, &core_info);
@@ -2099,11 +2098,10 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
    bool path_is_compressed, push_dir, filter_ext;
    size_t i, list_size;
    struct string_list *str_list = NULL;
+   core_info_list_t *list      = NULL;
    int                   device = 0;
-   global_t *global             = global_get_ptr();
    settings_t *settings         = config_get_ptr();
    uint32_t hash_label          = menu_hash_calculate(info->label);
-   core_info_list_t *list      = NULL;
 
    runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
 
