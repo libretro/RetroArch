@@ -824,6 +824,18 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                      ptr_out);
          }
          break;
+       case RARCH_MENU_CTL_POPULATE_ENTRIES:
+         {
+            menu_displaylist_info_t *info = (menu_displaylist_info_t*)data;
+
+            if (!info)
+               return false;
+            if (driver->populate_entries)
+               driver->populate_entries(
+                     menu_driver_data ? menu_driver_data->userdata : NULL,
+                     info->path, info->label, info->type);
+         }
+         return true;
       default:
       case RARCH_MENU_CTL_NONE:
          break;
