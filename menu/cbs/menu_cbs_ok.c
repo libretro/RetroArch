@@ -476,15 +476,16 @@ static int action_ok_playlist_entry(const char *path,
 {
    size_t selection;
    uint32_t core_name_hash, core_path_hash;
-   const char *entry_path       = NULL;
-   const char *entry_label      = NULL;
-   const char *core_path        = NULL;
-   const char *core_name        = NULL;
-   size_t selection_ptr         = 0;
-   content_playlist_t *playlist = g_defaults.history;
-   bool is_history              = true;
-   menu_handle_t *menu          = menu_driver_get_ptr();
-   uint32_t hash_label          = menu_hash_calculate(label);
+   const char *entry_path           = NULL;
+   const char *entry_label          = NULL;
+   const char *core_path            = NULL;
+   const char *core_name            = NULL;
+   size_t selection_ptr             = 0;
+   content_playlist_t *tmp_playlist = NULL;
+   content_playlist_t *playlist     = g_defaults.history;
+   bool is_history                  = true;
+   menu_handle_t *menu              = menu_driver_get_ptr();
+   uint32_t hash_label              = menu_hash_calculate(label);
 
    if (!menu)
       return -1;
@@ -495,15 +496,17 @@ static int action_ok_playlist_entry(const char *path,
    {
       case MENU_LABEL_COLLECTION:
       case MENU_LABEL_RDB_ENTRY_START_CONTENT:
-         if (!menu->playlist)
-         {
-            menu->playlist = content_playlist_init(menu->db_playlist_file, COLLECTION_SIZE);
+         menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
 
-            if (!menu->playlist)
+         if (!tmp_playlist)
+         {
+            tmp_playlist = content_playlist_init(menu->db_playlist_file, COLLECTION_SIZE);
+
+            if (!tmp_playlist)
                return -1;
          }
 
-         playlist = menu->playlist;
+         playlist   = tmp_playlist;
          is_history = false;
          break;
    }
@@ -551,11 +554,13 @@ static int action_ok_playlist_entry(const char *path,
          const char *entry_crc32 = NULL;
          const char *db_name     = NULL;
 
-         content_playlist_get_index(menu->playlist, selection_ptr,
+         menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+
+         content_playlist_get_index(tmp_playlist, selection_ptr,
                &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
 
          strlcpy(new_display_name, core_info->display_name, sizeof(new_display_name));
-         content_playlist_update(menu->playlist,
+         content_playlist_update(tmp_playlist,
                selection_ptr,
                entry_path,
                entry_label,
@@ -563,7 +568,7 @@ static int action_ok_playlist_entry(const char *path,
                new_display_name,
                entry_crc32,
                db_name);
-         content_playlist_write_file(menu->playlist);
+         content_playlist_write_file(tmp_playlist);
       }
       else
          return action_ok_file_load_with_detect_core(entry_path, label, type, selection_ptr, entry_idx);
