@@ -1171,8 +1171,7 @@ int rarch_main_init(int argc, char *argv[])
 
    init_libretro_sym(global->inited.core.type);
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_INIT, NULL);
-
-   init_drivers_pre();
+   driver_ctl(RARCH_DRIVER_CTL_INIT_PRE, NULL);
 
    if (!event_command(EVENT_CMD_CORE_INIT))
       goto error;

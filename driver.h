@@ -175,7 +175,13 @@ enum
 enum driver_ctl_state
 {
    RARCH_DRIVER_CTL_NONE = 0,
-   RARCH_DRIVER_CTL_DEINIT
+   RARCH_DRIVER_CTL_DEINIT,
+   /* Attempts to find a default driver for 
+    * all driver types.
+    *
+    * Should be run before RARCH_DRIVER_CTL_INIT.
+    */
+   RARCH_DRIVER_CTL_INIT_PRE,
 };
 
 
@@ -202,16 +208,6 @@ enum driver_ctl_state
  * @flags determines which drivers get initialized.
  **/
 void init_drivers(int flags);
-
-/**
- * init_drivers_pre:
- *
- * Attempts to find a default driver for 
- * all driver types.
- *
- * Should be run before init_drivers().
- **/
-void init_drivers_pre(void);
 
 /**
  * uninit_drivers:

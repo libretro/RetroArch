@@ -197,26 +197,6 @@ bool find_next_driver(const char *label, char *s, size_t len)
    return true;
 }
 
-/**
- * init_drivers_pre:
- *
- * Attempts to find a default driver for 
- * all driver types.
- *
- * Should be run before init_drivers().
- **/
-void init_drivers_pre(void)
-{
-   audio_driver_ctl(RARCH_AUDIO_CTL_FIND_DRIVER, NULL);
-   video_driver_ctl(RARCH_DISPLAY_CTL_FIND_DRIVER, NULL);
-   input_driver_ctl(RARCH_INPUT_CTL_FIND_DRIVER, NULL);
-   find_camera_driver();
-   find_location_driver();
-#ifdef HAVE_MENU
-   find_menu_driver();
-#endif
-}
-
 static void driver_adjust_system_rates(void)
 {
    rarch_system_info_t *system = NULL;
@@ -464,6 +444,16 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
 {
    switch (state)
    {
+      case RARCH_DRIVER_CTL_INIT_PRE:
+         audio_driver_ctl(RARCH_AUDIO_CTL_FIND_DRIVER, NULL);
+         video_driver_ctl(RARCH_DISPLAY_CTL_FIND_DRIVER, NULL);
+         input_driver_ctl(RARCH_INPUT_CTL_FIND_DRIVER, NULL);
+         find_camera_driver();
+         find_location_driver();
+#ifdef HAVE_MENU
+         find_menu_driver();
+#endif
+         break;
       case RARCH_DRIVER_CTL_DEINIT:
          video_driver_ctl(RARCH_DISPLAY_CTL_DESTROY, NULL);
          audio_driver_ctl(RARCH_AUDIO_CTL_DESTROY, NULL);
