@@ -355,15 +355,6 @@ void menu_entries_refresh(file_list_t *list)
    }
 }
 
-rarch_setting_t *menu_setting_get_ptr(void)
-{
-   menu_entries_t *entries = menu_entries_data;
-
-   if (!entries)
-      return NULL;
-   return entries->list_settings;
-}
-
 /* Sets the starting index of the menu entry list. */
 void menu_entries_set_start(size_t i)
 {
@@ -724,6 +715,14 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
             if (!list || !entries)
                return false;
             *list = entries->menu_list;
+         }
+         return true;
+      case MENU_ENTRIES_CTL_SETTINGS_GET:
+         {
+            rarch_setting_t **settings = (rarch_setting_t**)data;
+            if (!settings || !entries)
+               return false;
+            *settings = entries->list_settings;
          }
          return true;
       case MENU_ENTRIES_CTL_INIT:

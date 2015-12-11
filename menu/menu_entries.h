@@ -107,6 +107,7 @@ enum menu_entries_ctl_state
    MENU_ENTRIES_CTL_DEINIT,
    MENU_ENTRIES_CTL_INIT,
    MENU_ENTRIES_CTL_LIST_GET,
+   MENU_ENTRIES_CTL_SETTINGS_GET,
    MENU_ENTRIES_CTL_NEEDS_REFRESH,
    MENU_ENTRIES_CTL_SHOW_BACK
 };
@@ -124,8 +125,6 @@ void menu_entries_get(size_t i, menu_entry_t *entry);
 int menu_entries_get_title(char *title, size_t title_len);
 
 int menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
-
-rarch_setting_t *menu_setting_get_ptr(void);
 
 void menu_entries_set_refresh(bool nonblocking);
 

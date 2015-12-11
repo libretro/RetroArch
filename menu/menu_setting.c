@@ -1856,8 +1856,10 @@ uint32_t menu_setting_get_index(rarch_setting_t *setting)
  **/
 rarch_setting_t *menu_setting_find(const char *label)
 {
-   rarch_setting_t *setting = menu_setting_get_ptr();
-   uint32_t needle = 0;
+   rarch_setting_t *setting = NULL;
+   uint32_t needle          = 0;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_GET, &setting);
 
    if (!setting || !label)
       return NULL;
