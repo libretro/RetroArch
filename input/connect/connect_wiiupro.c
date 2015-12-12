@@ -48,8 +48,14 @@ struct wiiupro_buttons
 
 struct wiiupro
 {
-   uint8_t hatvalue[4];
+   int32_t hatvalue[4];
    struct wiiupro_buttons btn;
+};
+
+struct wiiupro_calib
+{
+    int32_t hatvalue_calib[4];
+    uint16_t calib_round;
 };
 
 struct hidpad_wiiupro_data
@@ -61,6 +67,8 @@ struct hidpad_wiiupro_data
    bool have_led;
    uint16_t motors[2];
 };
+
+struct wiiupro_calib* calib_data;
 
 static void hidpad_wiiupro_send_control(struct hidpad_wiiupro_data* device)
 {
@@ -74,6 +82,8 @@ static void* hidpad_wiiupro_init(void *data, uint32_t slot, send_control_t ptr)
    struct pad_connection* connection = (struct pad_connection*)data;
    struct hidpad_wiiupro_data* device    = (struct hidpad_wiiupro_data*)
       calloc(1, sizeof(struct hidpad_wiiupro_data));
+   calib_data = (struct wiiupro_calib*)
+      calloc(1, sizeof(struct wiiupro_calib));
 
    if (!device)
       goto error;
@@ -84,7 +94,8 @@ static void* hidpad_wiiupro_init(void *data, uint32_t slot, send_control_t ptr)
    device->connection   = connection;
    device->slot         = slot;
    device->send_control = ptr;
-
+   
+   calib_data->calib_round = 0;
    /* Without this, the digital buttons won't be reported. */
    hidpad_wiiupro_send_control(device);
 
@@ -194,10 +205,22 @@ static void hidpad_wiiupro_packet_handler(void *data, uint8_t *packet, uint16_t 
 
    device->data.btn.home    = (packet[0x0C] & 0x8)  ? 1 : 0;
 
-   device->data.hatvalue[0] = (packet[4] |  (packet[4 + 1] << 8));
-   device->data.hatvalue[1] = (packet[8] |  (packet[8 + 1] << 8));
-   device->data.hatvalue[2] = (packet[6] |  (packet[6 + 1] << 8));
-   device->data.hatvalue[3] = (packet[10] | (packet[10 + 1] << 8));
+   if(calib_data->calib_round < 5)
+   {
+       calib_data->hatvalue_calib[0] = (packet[4] |  (packet[4 + 1] << 8));
+       calib_data->hatvalue_calib[1] = (packet[8] |  (packet[8 + 1] << 8));
+       calib_data->hatvalue_calib[2] = (packet[6] |  (packet[6 + 1] << 8));
+       calib_data->hatvalue_calib[3] = (packet[10] | (packet[10 + 1] << 8));
+       
+       calib_data->calib_round++;
+   }
+   else
+   {
+       device->data.hatvalue[0] = (packet[4] |  (packet[4 + 1] << 8)) - calib_data->hatvalue_calib[0];
+       device->data.hatvalue[1] = (packet[8] |  (packet[8 + 1] << 8)) - calib_data->hatvalue_calib[1];
+       device->data.hatvalue[2] = (packet[6] |  (packet[6 + 1] << 8)) - calib_data->hatvalue_calib[2];
+       device->data.hatvalue[3] = (packet[10] | (packet[10 + 1] << 8)) - calib_data->hatvalue_calib[3];
+   }
 }
 
 static void hidpad_wiiupro_set_rumble(void *data,
