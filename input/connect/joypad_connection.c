@@ -96,7 +96,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
           {
               const char *name_match = strstr(pad_map[i].name, name);
               
-              if(pad_map[i].vid == 1406 && pad_map[i].pid == 816)  // Never change, Nintendo.
+              if(pad_map[i].vid == 1406 && pad_map[i].pid == 816)  /* Never change, Nintendo. */
               {
                   if(strcmp(pad_map[i].name, name) != 0)
                       continue;
