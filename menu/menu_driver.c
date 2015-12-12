@@ -231,15 +231,6 @@ void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i)
    return NULL;
 }
 
-void menu_driver_context_reset(void)
-{
-   const menu_ctx_driver_t *driver = menu_driver_ctx;
-
-   if (driver->context_reset)
-      driver->context_reset(menu_userdata ? menu_userdata : NULL);
-}
-
-
 int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
@@ -863,6 +854,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 #endif
          }
+         break;
+       case RARCH_MENU_CTL_CONTEXT_RESET:
+         if (driver->context_reset)
+            driver->context_reset(menu_userdata ? menu_userdata : NULL);
          break;
       default:
       case RARCH_MENU_CTL_NONE:

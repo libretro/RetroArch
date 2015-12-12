@@ -129,6 +129,7 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_PLAYLIST_GET,
    RARCH_MENU_CTL_LIST_CLEAR,
    RARCH_MENU_CTL_TOGGLE,
+   RARCH_MENU_CTL_CONTEXT_RESET,
    RARCH_MENU_CTL_POPULATE_ENTRIES
 };
 
@@ -347,8 +348,6 @@ void find_menu_driver(void);
 void init_menu(void);
 
 menu_handle_t *menu_driver_get_ptr(void);
-
-void menu_driver_context_reset(void);
 
 void menu_driver_free(menu_handle_t *menu);
 
