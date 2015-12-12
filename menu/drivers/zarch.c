@@ -1039,10 +1039,9 @@ static void zarch_frame(void *data)
          NULL, menu_display_get_tex_coords(), 4,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
-   menu_display_font_flush_block();
-
    zui->rendering = false;
 
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
 

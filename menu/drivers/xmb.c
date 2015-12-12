@@ -1744,8 +1744,7 @@ static void xmb_frame(void *data)
 
    xmb_frame_horizontal_list(xmb, width, height, &item_color[0]);
 
-   menu_display_font_flush_block();
-
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK, NULL);
    menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
 
    if (display_kb)

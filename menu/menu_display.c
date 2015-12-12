@@ -135,17 +135,6 @@ bool menu_display_font_bind_block(void *userdata)
    return true;
 }
 
-bool menu_display_font_flush_block(void)
-{
-   menu_display_t *disp = menu_display_get_ptr();
-   if (!disp || !disp->font.buf)
-      return false;
-
-   font_driver_flush(disp->font.buf);
-
-   return menu_display_font_bind_block(NULL);
-}
-
 void menu_display_free_main_font(void)
 {
    menu_display_t *disp = menu_display_get_ptr();
@@ -245,6 +234,14 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
    switch (state)
    {
+      case MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK:
+         if (!disp || !disp->font.buf)
+            return false;
+
+         font_driver_flush(disp->font.buf);
+
+         return menu_display_font_bind_block(NULL);
+         break;
       case MENU_DISPLAY_CTL_FRAMEBUF_DEINIT:
          if (menu_display_framebuf.data)
             free(menu_display_framebuf.data);

@@ -804,8 +804,7 @@ static void mui_frame(void *data)
 
    mui_render_menu_list(mui, width, height, normal_color, hover_color, &pure_white[0]);
 
-   menu_display_font_flush_block();
-
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK, NULL);
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    /* header */

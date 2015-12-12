@@ -60,6 +60,7 @@ enum menu_display_ctl_state
    MENU_DISPLAY_CTL_MSG_FORCE,
    MENU_DISPLAY_CTL_SET_MSG_FORCE,
    MENU_DISPLAY_CTL_FONT_BUF,
+   MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK,
    MENU_DISPLAY_CTL_SET_FONT_BUF,
    MENU_DISPLAY_CTL_FONT_FB,
    MENU_DISPLAY_CTL_SET_FONT_FB
@@ -125,8 +126,6 @@ void menu_display_free(void);
 bool menu_display_init(void);
 
 bool menu_display_font_bind_block(void *userdata);
-
-bool menu_display_font_flush_block(void);
 
 bool menu_display_init_main_font(const char *font_path, float font_size);
 
