@@ -169,14 +169,6 @@ void  menu_driver_list_free(file_list_t *list, size_t idx, size_t list_size)
    file_list_free_actiondata(list, idx);
 }
 
-void  menu_driver_context_destroy(void)
-{
-   const menu_ctx_driver_t *driver = menu_driver_ctx;
-
-   if (driver && driver->context_destroy)
-      driver->context_destroy(menu_userdata ? menu_userdata : NULL);
-}
-
 void  menu_driver_list_set_selection(file_list_t *list)
 {
    const menu_ctx_driver_t *driver = menu_driver_ctx;
@@ -858,6 +850,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
        case RARCH_MENU_CTL_CONTEXT_RESET:
          if (driver->context_reset)
             driver->context_reset(menu_userdata ? menu_userdata : NULL);
+         break;
+       case RARCH_MENU_CTL_CONTEXT_DESTROY:
+         if (driver && driver->context_destroy)
+            driver->context_destroy(menu_userdata ? menu_userdata : NULL);
          break;
       default:
       case RARCH_MENU_CTL_NONE:

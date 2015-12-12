@@ -130,6 +130,7 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_LIST_CLEAR,
    RARCH_MENU_CTL_TOGGLE,
    RARCH_MENU_CTL_CONTEXT_RESET,
+   RARCH_MENU_CTL_CONTEXT_DESTROY,
    RARCH_MENU_CTL_POPULATE_ENTRIES
 };
 
@@ -362,8 +363,6 @@ size_t menu_driver_list_get_size(menu_list_type_t type);
 void  menu_driver_list_set_selection(file_list_t *list);
 
 void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i);
-
-void  menu_driver_context_destroy(void);
 
 bool menu_driver_list_push(menu_displaylist_info_t *info, unsigned type);
 
