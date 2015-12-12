@@ -115,19 +115,18 @@ static void hidpad_ps4_send_control(struct hidpad_ps4_data* device)
 
 static void* hidpad_ps4_init(void *data, uint32_t slot, send_control_t ptr)
 {
+#if 0
    uint8_t magic_data[0x25];
+#endif
    struct pad_connection* connection = (struct pad_connection*)data;
    struct hidpad_ps4_data* device    = (struct hidpad_ps4_data*)
       calloc(1, sizeof(struct hidpad_ps4_data));
 
    if (!device)
-      return NULL;
+      goto error;
 
    if (!connection)
-   {
-      free(device);
-      return NULL;
-   }
+      goto error;
 
    device->connection   = connection;
    device->slot         = slot;
@@ -137,14 +136,18 @@ static void* hidpad_ps4_init(void *data, uint32_t slot, send_control_t ptr)
    /* TODO - unsure of this */
    /* This is needed to get full input packet over bluetooth. */
    device->send_control(device->connection, magic_data, 0x2);
+   (void)magic_data;
 #endif
 
    /* Without this, the digital buttons won't be reported. */
    hidpad_ps4_send_control(device);
 
-   (void)magic_data;
-
    return device;
+
+error:
+   if (device)
+      free(device);
+   return NULL;
 }
 
 static void hidpad_ps4_deinit(void *data)
