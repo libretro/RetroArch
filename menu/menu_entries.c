@@ -36,7 +36,6 @@ struct menu_list
 struct menu_entries
 {
    menu_list_t *menu_list;
-   rarch_setting_t *list_settings;
 };
 
 typedef struct menu_entries menu_entries_t;
@@ -473,9 +472,7 @@ static bool menu_entries_init(void)
    if (!(entries->menu_list = (menu_list_t*)menu_list_new()))
       goto error;
 
-   entries->list_settings      = menu_setting_new();
-
-   if (!entries->list_settings)
+   if (!menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_INIT, NULL))
       goto error;
 
    menu_entries_data = (struct menu_entries*)entries;
@@ -639,19 +636,16 @@ rarch_setting_t *menu_entries_get_setting(uint32_t i)
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
 {
    /* Flagged when menu entries need to be refreshed */
-   static bool menu_entries_need_refresh        = false;
-   static bool menu_entries_nonblocking_refresh = false;
-   static size_t menu_entries_begin             = 0;
+   static bool menu_entries_need_refresh              = false;
+   static bool menu_entries_nonblocking_refresh       = false;
+   static size_t menu_entries_begin                   = 0;
+   static rarch_setting_t *menu_entries_list_settings = NULL;
 
    switch (state)
    {
       case MENU_ENTRIES_CTL_DEINIT:
          if (!menu_entries_data)
             return false;
-
-         if (menu_entries_data->list_settings)
-            menu_setting_free(menu_entries_data->list_settings);
-         menu_entries_data->list_settings = NULL;
 
          menu_list_free(menu_entries_data->menu_list);
          menu_entries_data->menu_list     = NULL;
@@ -681,8 +675,19 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
             rarch_setting_t **settings = (rarch_setting_t**)data;
             if (!settings || !menu_entries_data)
                return false;
-            *settings = menu_entries_data->list_settings;
+            *settings = menu_entries_list_settings;
          }
+         return true;
+      case MENU_ENTRIES_CTL_SETTINGS_DEINIT:
+         if (menu_entries_list_settings)
+            menu_setting_free(menu_entries_list_settings);
+         menu_entries_list_settings = NULL;
+         return true;
+      case MENU_ENTRIES_CTL_SETTINGS_INIT:
+         menu_entries_list_settings      = menu_setting_new();
+
+         if (!menu_entries_list_settings)
+            return false;
          return true;
       case MENU_ENTRIES_CTL_SET_REFRESH:
          if (menu_entries_data)
