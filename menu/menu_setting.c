@@ -6563,6 +6563,7 @@ static bool setting_append_list_user_options(
          true,
          true);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_MENU_REFRESH);
    (*list)[list_info->index - 1].get_string_representation = 
       &setting_get_string_representation_uint_user_language;
 

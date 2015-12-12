@@ -899,6 +899,11 @@ bool event_command(enum event_command cmd)
 
    switch (cmd)
    {
+      case EVENT_CMD_MENU_REFRESH:
+#ifdef HAVE_MENU
+         menu_driver_ctl(RARCH_MENU_CTL_REFRESH, NULL);
+#endif
+         break;
       case EVENT_CMD_SET_PER_GAME_RESOLUTION:
 #if defined(GEKKO)
          {

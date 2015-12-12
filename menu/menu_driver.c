@@ -853,6 +853,17 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                driver->toggle(menu_userdata, *latch);
          }
          break;
+       case RARCH_MENU_CTL_REFRESH:
+         {
+#if 0
+            bool refresh = false;
+            menu_entries_ctl(MENU_ENTRIES_CTL_LIST_DEINIT, NULL);
+            menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_DEINIT, NULL);
+            menu_entries_ctl(MENU_ENTRIES_CTL_INIT, NULL);
+            menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+#endif
+         }
+         break;
       default:
       case RARCH_MENU_CTL_NONE:
          break;
