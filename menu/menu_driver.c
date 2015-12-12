@@ -346,21 +346,12 @@ int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   int ret = 0;
    const menu_ctx_driver_t      *driver = menu_driver_ctx;
 
    if (driver->pointer_tap)
-      ret = driver->pointer_tap(menu_userdata ? menu_userdata : NULL, x, y, ptr, cbs, entry, action);
+      return driver->pointer_tap(menu_userdata ? menu_userdata : NULL, x, y, ptr, cbs, entry, action);
 
-   return ret;
-}
-
-void menu_driver_navigation_clear(bool pending_push)
-{
-   const menu_ctx_driver_t      *driver = menu_driver_ctx;
-
-   if (driver->navigation_clear)
-      driver->navigation_clear(menu_userdata ? menu_userdata : NULL, pending_push);
+   return 0;
 }
 
 static void menu_environment_get(int *argc, char *argv[],
@@ -804,6 +795,16 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
             if (driver->navigation_descend_alphabet)
                driver->navigation_descend_alphabet(menu_userdata, ptr_out);
+         }
+         break;
+       case RARCH_MENU_CTL_NAVIGATION_CLEAR:
+         {
+            bool *pending_push = (bool*)data;
+
+            if (!pending_push)
+               return false;
+            if (driver->navigation_clear)
+               driver->navigation_clear(menu_userdata ? menu_userdata : NULL, pending_push);
          }
          break;
        case RARCH_MENU_CTL_POPULATE_ENTRIES:

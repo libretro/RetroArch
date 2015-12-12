@@ -67,14 +67,10 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          {
             size_t idx         = 0;
             bool scroll        = true;
-            bool *pending_push = (bool*)data;
-
-            if (!pending_push)
-               return false;
 
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
-            menu_driver_navigation_clear(*pending_push);
+            menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_CLEAR, data);
          }
          return true;
       case MENU_NAVIGATION_CTL_INCREMENT:

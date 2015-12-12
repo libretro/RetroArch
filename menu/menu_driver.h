@@ -94,6 +94,7 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_NAVIGATION_INCREMENT,
    RARCH_MENU_CTL_NAVIGATION_DECREMENT,
    RARCH_MENU_CTL_NAVIGATION_SET,
+   RARCH_MENU_CTL_NAVIGATION_CLEAR,
    RARCH_MENU_CTL_NAVIGATION_SET_LAST,
    RARCH_MENU_CTL_NAVIGATION_ASCEND_ALPHABET,
    RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET,
@@ -383,8 +384,6 @@ int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
 
 void menu_driver_list_insert(file_list_t *list, const char *path,
       const char *label, size_t idx);
-
-void menu_driver_navigation_clear(bool pending_push);
 
 /* HACK */
 extern unsigned int rdb_entry_start_game_selection_ptr;
