@@ -63,7 +63,9 @@ enum menu_display_ctl_state
    MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK,
    MENU_DISPLAY_CTL_SET_FONT_BUF,
    MENU_DISPLAY_CTL_FONT_FB,
-   MENU_DISPLAY_CTL_SET_FONT_FB
+   MENU_DISPLAY_CTL_SET_FONT_FB,
+   MENU_DISPLAY_CTL_BLEND_BEGIN,
+   MENU_DISPLAY_CTL_BLEND_END
 };
 
 enum menu_display_prim_type
@@ -164,10 +166,6 @@ void menu_display_draw_bg(
 
 void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
       float scale_x, float scale_y, float scale_z, bool scale_enable);
-
-void menu_display_blend_begin(void);
-
-void menu_display_blend_end(void);
 
 unsigned menu_display_texture_load(void *data,
       enum texture_filter_type  filter_type);

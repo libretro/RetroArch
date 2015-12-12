@@ -234,6 +234,16 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
    switch (state)
    {
+      case MENU_DISPLAY_CTL_BLEND_BEGIN:
+         if (!menu_disp || !menu_disp->blend_begin)
+            return false;
+         menu_disp->blend_begin();
+         break;
+      case MENU_DISPLAY_CTL_BLEND_END:
+         if (!menu_disp || !menu_disp->blend_end)
+            return false;
+         menu_disp->blend_end();
+         break;
       case MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK:
          if (!disp || !disp->font.buf)
             return false;
@@ -530,23 +540,6 @@ void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned durati
 }
 
 
-void menu_display_blend_begin(void)
-{
-   menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
-   if (!menu_disp || !menu_disp->blend_begin)
-      return;
-
-   menu_disp->blend_begin();
-}
-
-void menu_display_blend_end(void)
-{
-   menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
-   if (!menu_disp || !menu_disp->blend_end)
-      return;
-
-   menu_disp->blend_end();
-}
 
 void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
       float scale_x, float scale_y, float scale_z, bool scale_enable)

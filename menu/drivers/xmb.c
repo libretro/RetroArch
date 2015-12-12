@@ -1480,7 +1480,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                TEXT_ALIGN_LEFT,
                width, height);
 
-      menu_display_blend_begin();
+      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
       /* set alpha components of color */
       color[3] = color[7] = color[11] = color[15] = (node->alpha > xmb->alpha) ? xmb->alpha : node->alpha;
@@ -1503,7 +1503,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                0,
                1, &color[0]);
 
-      menu_display_blend_end();
+      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
    }
 }
 
@@ -1519,7 +1519,7 @@ static void xmb_draw_cursor(xmb_handle_t *xmb,
    coords.lut_tex_coord = NULL;
    coords.color         = (const float*)color;
 
-   menu_display_blend_begin();
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
    menu_display_draw(
          x - (xmb->cursor.size/2),
@@ -1529,7 +1529,7 @@ static void xmb_draw_cursor(xmb_handle_t *xmb,
          &coords, NULL, xmb->textures.list[XMB_TEXTURE_POINTER].id,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
-   menu_display_blend_end();
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
 static void xmb_render(void *data)
@@ -1602,7 +1602,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
       if (!node)
          continue;
 
-      menu_display_blend_begin();
+      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
       /* set alpha components of color */
       color[3] = color[7] = color[11] = color[15] = (node->alpha > xmb->alpha) ? xmb->alpha : node->alpha;
@@ -1618,7 +1618,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
                node->zoom,
                &color[0]);
 
-      menu_display_blend_end();
+      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
    }
 }
 
@@ -1710,7 +1710,7 @@ static void xmb_frame(void *data)
 
    menu_display_matrix_4x4_rotate_z(&mymat, 0, 1, 1, 1, true);
 
-   menu_display_blend_begin();
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
    if (settings->menu.boxart_enable && xmb->boxart)
       xmb_draw_boxart(xmb, &coord_color2[0], width, height);

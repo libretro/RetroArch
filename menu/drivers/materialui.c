@@ -176,7 +176,7 @@ static void mui_draw_icon(mui_handle_t *mui,
    struct gfx_coords coords;
    math_matrix_4x4 mymat;
 
-   menu_display_blend_begin();
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
    menu_display_matrix_4x4_rotate_z(&mymat, rotation, scale_factor, scale_factor, 1, true);
 
@@ -194,7 +194,7 @@ static void mui_draw_icon(mui_handle_t *mui,
          &coords, &mymat, texture,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
-   menu_display_blend_end();
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
 
@@ -266,7 +266,7 @@ static void mui_render_quad(mui_handle_t *mui,
    coords.lut_tex_coord = NULL;
    coords.color         = coord_color;
 
-   menu_display_blend_begin();
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
    menu_display_draw(
          x,
@@ -276,7 +276,7 @@ static void mui_render_quad(mui_handle_t *mui,
          &coords, NULL, mui->textures.white,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
-   menu_display_blend_end();
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
 static void mui_draw_tab_begin(mui_handle_t *mui,
@@ -624,7 +624,7 @@ static void mui_draw_cursor(mui_handle_t *mui,
    coords.lut_tex_coord = NULL;
    coords.color         = (const float*)color;
 
-   menu_display_blend_begin();
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
    menu_display_draw(
          x - 32,
@@ -635,7 +635,7 @@ static void mui_draw_cursor(mui_handle_t *mui,
          mui->textures.list[MUI_TEXTURE_POINTER].id,
          MENU_DISPLAY_PRIM_TRIANGLESTRIP);
 
-   menu_display_blend_end();
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
 static size_t mui_list_get_size(void *data, menu_list_type_t type)
