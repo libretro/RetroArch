@@ -64,8 +64,8 @@ struct hidpad_wiiupro_data
 
 static void hidpad_wiiupro_send_control(struct hidpad_wiiupro_data* device)
 {
-   /* 0x15 - Request status */
-   static uint8_t report_buffer[4] = { 0xA2, 0x15, 0x00 };
+   /* 0x12 = Set data report; 0x34 = All buttons and analogs */
+   static uint8_t report_buffer[4] = { 0xA2, 0x12, 0x00, 0x34 };
    device->send_control(device->connection, report_buffer, sizeof(report_buffer));
 }
 
