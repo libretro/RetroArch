@@ -137,13 +137,24 @@ static uint64_t hidpad_wiiupro_get_buttons(void *data)
 
 static int16_t hidpad_wiiupro_get_axis(void *data, unsigned axis)
 {
-   /* stub out for now */
+#if 0
+   struct hidpad_wiiupro_data *device = (struct hidpad_wiiupro_data*)data;
+   struct wiiupro *rpt = device ? (struct wiiupro*)&device->data : NULL;
+
+   if (device && (axis < 4))
+   {
+      int val = rpt ? rpt->hatvalue[axis] : 0;
+      val = (val << 8) - 0x8000;
+      return (abs(val) > 0x1000) ? val : 0;
+   }
+#endif
 
    return 0;
 }
 
 static void hidpad_wiiupro_packet_handler(void *data, uint8_t *packet, uint16_t size)
 {
+   size_t i;
    struct hidpad_wiiupro_data *device = (struct hidpad_wiiupro_data*)data;
 
    if (!device)
@@ -163,25 +174,28 @@ static void hidpad_wiiupro_packet_handler(void *data, uint8_t *packet, uint16_t 
 
    memset(&device->data, 0, sizeof(struct wiiupro));
 
-   device->data.btn.b     = (packet[0x0D] & 0x40) ? 1 : 0;
-   device->data.btn.a     = (packet[0x0D] & 0x10) ? 1 : 0;
-   device->data.btn.y     = (packet[0x0D] & 0x20) ? 1 : 0;
-   device->data.btn.x     = (packet[0x0D] & 0x08) ? 1 : 0;
-   device->data.btn.l     = (packet[0x0C] & 0x20) ? 1 : 0;
-   device->data.btn.r     = (packet[0x0C] & 0x02) ? 1 : 0;
-   device->data.btn.zl    = (packet[0x0D] & 0x80) ? 1 : 0;
-   device->data.btn.zr    = (packet[0x0D] & 0x04) ? 1 : 0;
-   device->data.btn.minus = (packet[0x0C] & 0x10) ? 1 : 0;
-   device->data.btn.plus  = (packet[0x0C] & 0x04) ? 1 : 0;
-   device->data.btn.l3    = (packet[0x0E] & 0x02) ? 1 : 0;
-   device->data.btn.r3    = (packet[0x0E] & 0x01) ? 1 : 0;
+   device->data.btn.b       = (packet[0x0D] & 0x40) ? 1 : 0;
+   device->data.btn.a       = (packet[0x0D] & 0x10) ? 1 : 0;
+   device->data.btn.y       = (packet[0x0D] & 0x20) ? 1 : 0;
+   device->data.btn.x       = (packet[0x0D] & 0x08) ? 1 : 0;
+   device->data.btn.l       = (packet[0x0C] & 0x20) ? 1 : 0;
+   device->data.btn.r       = (packet[0x0C] & 0x02) ? 1 : 0;
+   device->data.btn.zl      = (packet[0x0D] & 0x80) ? 1 : 0;
+   device->data.btn.zr      = (packet[0x0D] & 0x04) ? 1 : 0;
+   device->data.btn.minus   = (packet[0x0C] & 0x10) ? 1 : 0;
+   device->data.btn.plus    = (packet[0x0C] & 0x04) ? 1 : 0;
+   device->data.btn.l3      = (packet[0x0E] & 0x02) ? 1 : 0;
+   device->data.btn.r3      = (packet[0x0E] & 0x01) ? 1 : 0;
 
-   device->data.btn.left  = (packet[0x0D] & 0x02) ? 1 : 0;
-   device->data.btn.right = (packet[0x0C] & 0x80) ? 1 : 0;
-   device->data.btn.up    = (packet[0x0D] & 0x01) ? 1 : 0;
-   device->data.btn.down  = (packet[0x0C] & 0x40) ? 1 : 0;
+   device->data.btn.left    = (packet[0x0D] & 0x02) ? 1 : 0;
+   device->data.btn.right   = (packet[0x0C] & 0x80) ? 1 : 0;
+   device->data.btn.up      = (packet[0x0D] & 0x01) ? 1 : 0;
+   device->data.btn.down    = (packet[0x0C] & 0x40) ? 1 : 0;
 
-   device->data.btn.home  = (packet[0x0C] & 0x8)  ? 1 : 0;
+   device->data.btn.home    = (packet[0x0C] & 0x8)  ? 1 : 0;
+
+   for (i = 0; i < 4; i++)
+      device->data.hatvalue[i] = (packet[i] | (packet[i + 1] << 8));
 }
 
 static void hidpad_wiiupro_set_rumble(void *data,
