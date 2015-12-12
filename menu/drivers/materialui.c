@@ -402,6 +402,7 @@ end:
 
 static void mui_render(void *data)
 {
+   size_t i             = 0;
    float delta_time, dt;
    unsigned bottom, width, height, header_height;
    mui_handle_t *mui    = (mui_handle_t*)data;
@@ -461,10 +462,11 @@ static void mui_render(void *data)
          < height - header_height - mui->tabs_height)
       mui->scroll_y = 0;
 
-   if (menu_entries_get_end() < height / mui->line_height)
-      menu_entries_set_start(0);
+   if (menu_entries_get_end() < height / mui->line_height) { }
    else
-      menu_entries_set_start(mui->scroll_y / mui->line_height);
+      i = mui->scroll_y / mui->line_height;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
 }
 
 static void mui_render_label_value(mui_handle_t *mui,
@@ -582,7 +584,9 @@ static void mui_render_menu_list(mui_handle_t *mui,
 
    mui->list_block.carr.coords.vertices = 0;
 
-   for (i = menu_entries_get_start(); i < end; i++)
+   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
+
+   for (; i < end; i++)
    {
       int y;
       size_t selection;
@@ -1078,11 +1082,12 @@ static void  mui_list_set_selection(void *data, file_list_t *list)
 
 static void mui_navigation_clear(void *data, bool pending_push)
 {
+   size_t i             = 0;
    mui_handle_t *mui    = (mui_handle_t*)data;
    if (!mui)
       return;
 
-   menu_entries_set_start(0);
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
    mui->scroll_y = 0;
 }
 

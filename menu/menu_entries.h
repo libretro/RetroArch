@@ -111,14 +111,14 @@ enum menu_entries_ctl_state
    MENU_ENTRIES_CTL_SET_REFRESH,
    MENU_ENTRIES_CTL_UNSET_REFRESH,
    MENU_ENTRIES_CTL_NEEDS_REFRESH,
+   /* Sets the starting index of the menu entry list. */
+   MENU_ENTRIES_CTL_SET_START,
+   /* Returns the starting index of the menu entry list. */
+   MENU_ENTRIES_CTL_START_GET,
    MENU_ENTRIES_CTL_SHOW_BACK
 };
 
 typedef struct menu_list menu_list_t;
-
-void menu_entries_set_start(size_t i);
-
-size_t menu_entries_get_start(void);
 
 size_t menu_entries_get_end(void);
 

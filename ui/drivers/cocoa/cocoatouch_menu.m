@@ -665,7 +665,9 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    self.title = BOXSTRING(title);
   
    end = menu_entries_get_end();    
-   for (i = menu_entries_get_start(); i < end; i++)
+   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
+
+   for (; i < end; i++)
      [everything addObject:[self make_menu_item_for_entry: i]];
 
    self.sections = [NSMutableArray array];

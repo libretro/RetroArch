@@ -35,7 +35,6 @@ struct menu_list
 
 struct menu_entries
 {
-   size_t begin;
    menu_list_t *menu_list;
    rarch_setting_t *list_settings;
 };
@@ -353,22 +352,6 @@ void menu_entries_refresh(file_list_t *list)
    }
 }
 
-/* Sets the starting index of the menu entry list. */
-void menu_entries_set_start(size_t i)
-{
-   if (menu_entries_data)
-      menu_entries_data->begin = i;
-}
-
-/* Returns the starting index of the menu entry list. */
-size_t menu_entries_get_start(void)
-{
-   if (!menu_entries_data)
-     return 0;
-
-   return menu_entries_data->begin;
-}
-
 /* Returns the last index (+1) of the menu entry list. */
 size_t menu_entries_get_end(void)
 {
@@ -658,6 +641,7 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
    /* Flagged when menu entries need to be refreshed */
    static bool menu_entries_need_refresh        = false;
    static bool menu_entries_nonblocking_refresh = false;
+   static size_t menu_entries_begin             = 0;
 
    switch (state)
    {
@@ -676,6 +660,7 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
          menu_entries_need_refresh        = NULL;
          menu_entries_nonblocking_refresh = NULL;
          menu_entries_data                = NULL;
+         menu_entries_begin               = 0;
          return true;
       case MENU_ENTRIES_CTL_NEEDS_REFRESH:
          if (!menu_entries_data || menu_entries_nonblocking_refresh)
@@ -719,6 +704,21 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
                menu_entries_nonblocking_refresh = false;
             else
                menu_entries_need_refresh        = false;
+         }
+         return true;
+      case MENU_ENTRIES_CTL_SET_START:
+         {
+            size_t *idx = (size_t*)data;
+            if (idx)
+               menu_entries_begin = *idx;
+         }
+      case MENU_ENTRIES_CTL_START_GET:
+         {
+            size_t *idx = (size_t*)data;
+            if (!idx)
+               return 0;
+
+            *idx = menu_entries_begin;
          }
          return true;
       case MENU_ENTRIES_CTL_INIT:

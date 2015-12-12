@@ -537,9 +537,10 @@ static void xmb_update_boxart_image(xmb_handle_t *xmb)
 
 static void xmb_selection_pointer_changed(xmb_handle_t *xmb, bool allow_animations)
 {
-   size_t selection;
-   unsigned i, end, tag, height, skip, depth;
-   int threshold = 0;
+   size_t skip;
+   unsigned i, end, tag, height, depth;
+   size_t selection, num      = 0;
+   int threshold              = 0;
    menu_list_t     *menu_list = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    settings_t       *settings = config_get_ptr();
@@ -558,7 +559,7 @@ static void xmb_selection_pointer_changed(xmb_handle_t *xmb, bool allow_animatio
    video_driver_get_size(NULL, &height);
 
    menu_animation_kill_by_tag(tag);
-   menu_entries_set_start(0);
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &num);
    skip = 0;
 
    for (i = 0; i < end; i++)
@@ -605,7 +606,7 @@ static void xmb_selection_pointer_changed(xmb_handle_t *xmb, bool allow_animatio
       }
    }
 
-   menu_entries_set_start(skip);
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &skip);
 }
 
 static void xmb_list_open_old(xmb_handle_t *xmb,
@@ -658,6 +659,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i, height;
+   size_t skip          = 0;
    int        threshold = xmb->icon.size * 10;
    size_t           end = file_list_get_size(list);
 
@@ -709,7 +711,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
    }
 
    xmb->old_depth = xmb->depth;
-   menu_entries_set_start(0);
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &skip);
 }
 
 static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, unsigned i)
@@ -1281,7 +1283,8 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       unsigned width, unsigned height)
 {
    uint64_t *frame_count;
-   unsigned i, ticker_limit;
+   size_t i;
+   unsigned ticker_limit;
    math_matrix_4x4 mymat;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
@@ -1299,7 +1302,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
    menu_display_matrix_4x4_rotate_z(&mymat, 0, 1, 1, 1, true);
 
-   i = menu_entries_get_start();
+   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
    if (list == xmb->selection_buf_old)
       i = 0;
@@ -1574,8 +1577,13 @@ static void xmb_render(void *data)
       }
    }
 
-   if (menu_entries_get_start() >= end)
-      menu_entries_set_start(0);
+   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
+
+   if (i >= end)
+   {
+      i = 0;
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
+   }
 
    menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 }
