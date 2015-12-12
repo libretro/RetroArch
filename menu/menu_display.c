@@ -73,8 +73,6 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 
 static menu_display_t  menu_display_state;
 
-static menu_framebuf_t frame_buf_state;
-
 static menu_display_t *menu_display_get_ptr(void)
 {
    return &menu_display_state;
@@ -88,16 +86,6 @@ static menu_display_ctx_driver_t *menu_display_context_get_ptr(void)
    return disp->display_ctx;
 }
 
-static void menu_display_fb_free(menu_framebuf_t *frame_buf)
-{
-   if (!frame_buf)
-      return;
-
-   if (frame_buf->data)
-      free(frame_buf->data);
-   frame_buf->data = NULL;
-}
-
 void menu_display_free(void)
 {
    menu_display_t *disp = menu_display_get_ptr();
@@ -109,9 +97,7 @@ void menu_display_free(void)
    disp->msg_queue = NULL;
 
    menu_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
-
-   menu_display_fb_free(&frame_buf_state);
-   memset(&frame_buf_state,    0, sizeof(menu_framebuf_t));
+   menu_display_ctl(MENU_DISPLAY_CTL_FRAMEBUF_DEINIT, NULL);
    memset(&menu_display_state, 0, sizeof(menu_display_t));
 }
 
@@ -250,15 +236,21 @@ bool menu_display_init_main_font(const char *font_path, float font_size)
 bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 {
    unsigned width, height;
+   static menu_framebuf_t menu_display_framebuf;
    static menu_display_draw_t draw_bak       = NULL;
    static menu_display_draw_bg_t draw_bg_bak = NULL;
-   menu_framebuf_t *frame_buf                = &frame_buf_state;
    menu_display_t  *disp                     = menu_display_get_ptr();
    menu_display_ctx_driver_t *menu_disp      = menu_display_context_get_ptr();
    settings_t *settings                      = config_get_ptr();
 
    switch (state)
    {
+      case MENU_DISPLAY_CTL_FRAMEBUF_DEINIT:
+         if (menu_display_framebuf.data)
+            free(menu_display_framebuf.data);
+         menu_display_framebuf.data = NULL;
+         memset(&menu_display_framebuf,    0, sizeof(menu_framebuf_t));
+         break;
       case MENU_DISPLAY_CTL_SET_STUB_DRAW_FRAME:
          draw_bak           = menu_disp->draw;
          draw_bg_bak        = menu_disp->draw_bg;
@@ -333,7 +325,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             unsigned *ptr = (unsigned*)data;
             if (!ptr)
                return false;
-            frame_buf->width = *ptr;
+            menu_display_framebuf.width = *ptr;
          }
          return true;
       case MENU_DISPLAY_CTL_WIDTH:
@@ -341,7 +333,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             unsigned *ptr = (unsigned*)data;
             if (!ptr)
                return false;
-            *ptr = frame_buf->width;
+            *ptr = menu_display_framebuf.width;
          }
          return true;
       case MENU_DISPLAY_CTL_HEIGHT:
@@ -349,7 +341,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             unsigned *ptr = (unsigned*)data;
             if (!ptr)
                return false;
-            *ptr = frame_buf->height;
+            *ptr = menu_display_framebuf.height;
          }
          return true;
       case MENU_DISPLAY_CTL_HEADER_HEIGHT:
@@ -389,7 +381,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             unsigned *ptr = (unsigned*)data;
             if (!ptr)
                return false;
-            frame_buf->height = *ptr;
+            menu_display_framebuf.height = *ptr;
          }
          return true;
       case MENU_DISPLAY_CTL_FB_DATA:
@@ -397,7 +389,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             uint16_t **ptr = (uint16_t**)data;
             if (!ptr)
                return false;
-            *ptr = frame_buf->data;
+            *ptr = menu_display_framebuf.data;
          }
          return true;
       case MENU_DISPLAY_CTL_SET_FB_DATA:
@@ -405,7 +397,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             uint16_t *ptr = (uint16_t*)data;
             if (!ptr)
                return false;
-            frame_buf->data = ptr;
+            menu_display_framebuf.data = ptr;
          }
          return true;
       case MENU_DISPLAY_CTL_FB_PITCH:
@@ -413,7 +405,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             size_t *ptr = (size_t*)data;
             if (!ptr)
                return false;
-            *ptr = frame_buf->pitch;
+            *ptr = menu_display_framebuf.pitch;
          }
          return true;
       case MENU_DISPLAY_CTL_SET_FB_PITCH:
@@ -421,7 +413,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             size_t *ptr = (size_t*)data;
             if (!ptr)
                return false;
-            frame_buf->pitch = *ptr;
+            menu_display_framebuf.pitch = *ptr;
          }
          return true;
       case MENU_DISPLAY_CTL_MSG_FORCE:
@@ -477,18 +469,18 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
       case MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG:
          {
             bool *ptr = (bool*)data;
-            if (!ptr || !frame_buf)
+            if (!ptr)
                return false;
-            *ptr = frame_buf->dirty;
+            *ptr = menu_display_framebuf.dirty;
          }
          return true;
       case MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG:
-         if (frame_buf && frame_buf->data)
-            frame_buf->dirty = true;
+         if (menu_display_framebuf.data)
+            menu_display_framebuf.dirty = true;
          return true;
       case MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG:
-         if (frame_buf && frame_buf->data)
-            frame_buf->dirty = false;
+         if (menu_display_framebuf.data)
+            menu_display_framebuf.dirty = false;
          return true;
       case MENU_DISPLAY_CTL_GET_DPI:
          {
