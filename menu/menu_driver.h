@@ -403,26 +403,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
  **/
 void *menu_init(const void *data);
 
-/**
- * menu_iterate:
- * @render_this_frame        : Render this frame or not
- * @action                   : Associated action for this frame
- *
- * Runs RetroArch menu for one frame.
- *
- * Returns: 0 on success, -1 if we need to quit out of the loop.
- **/
-int menu_iterate(bool render_this_frame, enum menu_action action);
-
 int menu_iterate_render(void *data, void *userdata);
-
-/**
- * menu_free:
- * @menu                     : Menu handle.
- *
- * Frees a menu handle
- **/
-void menu_free(menu_handle_t *menu);
 
 /**
  * menu_load_content:

@@ -528,7 +528,7 @@ int menu_common_load_content(
  *
  * Frees a menu handle
  **/
-void menu_free(menu_handle_t *menu)
+static void menu_free(menu_handle_t *menu)
 {
    if (!menu)
       return;
