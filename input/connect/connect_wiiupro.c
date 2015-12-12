@@ -194,8 +194,10 @@ static void hidpad_wiiupro_packet_handler(void *data, uint8_t *packet, uint16_t 
 
    device->data.btn.home    = (packet[0x0C] & 0x8)  ? 1 : 0;
 
-   for (i = 0; i < 4; i++)
-      device->data.hatvalue[i] = (packet[i] | (packet[i + 1] << 8));
+   device->data.hatvalue[0] = (packet[4] |  (packet[4 + 1] << 8));
+   device->data.hatvalue[1] = (packet[8] |  (packet[8 + 1] << 8));
+   device->data.hatvalue[2] = (packet[6] |  (packet[6 + 1] << 8));
+   device->data.hatvalue[3] = (packet[10] | (packet[10 + 1] << 8));
 }
 
 static void hidpad_wiiupro_set_rumble(void *data,
