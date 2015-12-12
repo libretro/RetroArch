@@ -33,15 +33,6 @@ struct menu_list
    size_t selection_buf_size;
 };
 
-struct menu_entries
-{
-   menu_list_t *menu_list;
-};
-
-typedef struct menu_entries menu_entries_t;
-
-static menu_entries_t *menu_entries_data;
-
 static void menu_list_free_list(file_list_t *list)
 {
    unsigned i;
@@ -464,24 +455,18 @@ file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
 
 static bool menu_entries_init(void)
 {
-   menu_entries_t *entries = (menu_entries_t*)calloc(1, sizeof(*entries));
-
-   if (!entries)
-      goto error;
-
-   if (!(entries->menu_list = (menu_list_t*)menu_list_new()))
+   if (!menu_entries_ctl(MENU_ENTRIES_CTL_LIST_INIT, NULL))
       goto error;
 
    if (!menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_INIT, NULL))
       goto error;
 
-   menu_entries_data = (struct menu_entries*)entries;
-
    return true;
 
 error:
-   if (entries)
-      free(entries);
+   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_DEINIT, NULL);
+   menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_DEINIT, NULL);
+
    return false;
 }
 
@@ -640,24 +625,20 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
    static bool menu_entries_nonblocking_refresh       = false;
    static size_t menu_entries_begin                   = 0;
    static rarch_setting_t *menu_entries_list_settings = NULL;
+   static menu_list_t *menu_entries_list              = NULL;
 
    switch (state)
    {
       case MENU_ENTRIES_CTL_DEINIT:
-         if (!menu_entries_data)
-            return false;
+         menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_DEINIT, NULL);
+         menu_entries_ctl(MENU_ENTRIES_CTL_LIST_DEINIT, NULL);
 
-         menu_list_free(menu_entries_data->menu_list);
-         menu_entries_data->menu_list     = NULL;
-
-         free(menu_entries_data);
          menu_entries_need_refresh        = NULL;
          menu_entries_nonblocking_refresh = NULL;
-         menu_entries_data                = NULL;
          menu_entries_begin               = 0;
          return true;
       case MENU_ENTRIES_CTL_NEEDS_REFRESH:
-         if (!menu_entries_data || menu_entries_nonblocking_refresh)
+         if (menu_entries_nonblocking_refresh)
             return false;
          if (!menu_entries_need_refresh)
             return false;
@@ -665,15 +646,24 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
       case MENU_ENTRIES_CTL_LIST_GET:
          {
             menu_list_t **list = (menu_list_t**)data;
-            if (!list || !menu_entries_data)
+            if (!list)
                return false;
-            *list = menu_entries_data->menu_list;
+            *list = menu_entries_list;
          }
+         return true;
+      case MENU_ENTRIES_CTL_LIST_DEINIT:
+         if (menu_entries_list)
+            menu_list_free(menu_entries_list);
+         menu_entries_list     = NULL;
+         return true;
+      case MENU_ENTRIES_CTL_LIST_INIT:
+         if (!(menu_entries_list = (menu_list_t*)menu_list_new()))
+            return false;
          return true;
       case MENU_ENTRIES_CTL_SETTINGS_GET:
          {
             rarch_setting_t **settings = (rarch_setting_t**)data;
-            if (!settings || !menu_entries_data)
+            if (!settings)
                return false;
             *settings = menu_entries_list_settings;
          }
@@ -690,7 +680,6 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
             return false;
          return true;
       case MENU_ENTRIES_CTL_SET_REFRESH:
-         if (menu_entries_data)
          {
             bool *nonblocking = (bool*)data;
 
@@ -701,7 +690,6 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
          }
          return true;
       case MENU_ENTRIES_CTL_UNSET_REFRESH:
-         if (menu_entries_data)
          {
             bool *nonblocking = (bool*)data;
 
