@@ -320,6 +320,7 @@ void cb_net_generic(void *task_data, void *user_data, const char *err)
    core_len      = data->len;
 
 finish:
+   refresh = true;
    menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
 
    if (err)
