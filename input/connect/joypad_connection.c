@@ -81,30 +81,35 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
          pad_connection_interface_t *iface;
       } pad_map[] =
       {
-         { "Nintendo RVL-CNT-01-UC",      1406,  816,    &pad_connection_wiiupro },
-         { "Nintendo RVL-CNT-01",         1406,  816,    &pad_connection_wii },
-         { "Wireless Controller",         1356, 1476,    &pad_connection_ps4 },
-         { "PLAYSTATION(R)3 Controller",  1356,  616,    &pad_connection_ps3 },
-         { 0, 0}
+          { "Nintendo RVL-CNT-01",         1406,  816,    &pad_connection_wii },
+          { "Nintendo RVL-CNT-01-UC",      1406,  816,    &pad_connection_wiiupro },
+          { "Wireless Controller",         1356, 1476,    &pad_connection_ps4 },
+          { "PLAYSTATION(R)3 Controller",  1356,  616,    &pad_connection_ps3 },
+          { 0, 0}
       };
-
+       
       if (s)
       {
-         unsigned i;
-
-         for (i = 0; name && pad_map[i].name; i++)
-         {
-            const char *name_match = strstr(name, pad_map[i].name);
-
-            if (name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))
-            {
-               s->iface      = pad_map[i].iface;
-               s->data       = s->iface->init(data, pad, ptr);
-               s->connected  = true;
-
-               return pad;
-            }
-         }
+          unsigned i;
+          
+          for (i = 0; name && pad_map[i].name; i++)
+          {
+              const char *name_match = strstr(pad_map[i].name, name);
+              
+              if(pad_map[i].vid == 1406 && pad_map[i].pid == 816)  // Never change, Nintendo.
+              {
+                  if(strcmp(pad_map[i].name, name) != 0)
+                      continue;
+              }
+              
+              if (name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))
+              {
+                  s->iface      = pad_map[i].iface;
+                  s->data       = s->iface->init(data, pad, ptr);
+                  s->connected  = true;
+                  return pad;
+              }
+          }
       }
    }
 
