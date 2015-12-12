@@ -421,6 +421,7 @@ INPUT (HID)
 #include "../input/connect/connect_ps3.c"
 #include "../input/connect/connect_ps4.c"
 #include "../input/connect/connect_wii.c"
+#include "../input/connect/connect_wiiupro.c"
 #endif
 
 /*============================================================

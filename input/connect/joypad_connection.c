@@ -82,9 +82,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       } pad_map[] =
       {
          { "Nintendo RVL-CNT-01",         1406,  816,    &pad_connection_wii },
-#if 0
-         { "Nintendo RVL-CNT-01-UC",      0,       0,    &pad_connection_wii_u },
-#endif
+         { "Nintendo RVL-CNT-01-UC",      0,       0,    &pad_connection_wiiupro },
          { "Wireless Controller",         1356, 1476,    &pad_connection_ps4 },
          { "PLAYSTATION(R)3 Controller",  1356,  616,    &pad_connection_ps3 },
          { 0, 0}
