@@ -296,7 +296,8 @@ static void menu_driver_toggle(bool latch)
 
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
-      menu_entries_set_refresh(false);
+      bool refresh = false;
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
       /* Menu should always run with vsync on. */
       event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);

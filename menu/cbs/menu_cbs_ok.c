@@ -1417,8 +1417,9 @@ static int generic_action_ok_network(const char *path,
    unsigned type_id2              = 0;
    const char *url_label          = NULL;
    rarch_task_callback_t callback = NULL;
+   bool refresh                   = true;
 
-   menu_entries_set_refresh(true);
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
    if (settings->network.buildbot_url[0] == '\0')
       return -1;

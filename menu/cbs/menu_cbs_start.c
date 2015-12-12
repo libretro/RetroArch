@@ -218,6 +218,7 @@ static int action_start_shader_filter_pass(unsigned type, const char *label)
 static int action_start_shader_num_passes(unsigned type, const char *label)
 {
 #ifdef HAVE_SHADER_MANAGER
+   bool refresh                = false;
    struct video_shader *shader = NULL;
 
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
@@ -228,7 +229,7 @@ static int action_start_shader_num_passes(unsigned type, const char *label)
    if (shader->passes)
       shader->passes = 0;
 
-   menu_entries_set_refresh(false);
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    video_shader_resolve_parameters(NULL, shader);
 #endif
    return 0;
@@ -238,7 +239,8 @@ static int action_start_cheat_num_passes(unsigned type, const char *label)
 {
    if (cheat_manager_get_size())
    {
-      menu_entries_set_refresh(false);
+      bool refresh                = false;
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
       cheat_manager_realloc(0);
    }
 

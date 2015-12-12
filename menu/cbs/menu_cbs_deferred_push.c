@@ -298,6 +298,7 @@ size_t core_len;
 
 void cb_net_generic(void *task_data, void *user_data, const char *err)
 {
+   bool refresh = false;
    http_transfer_data_t *data = (http_transfer_data_t*)task_data;
 
    if (core_buf)
@@ -319,7 +320,7 @@ void cb_net_generic(void *task_data, void *user_data, const char *err)
    core_len      = data->len;
 
 finish:
-   menu_entries_unset_refresh(true);
+   menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
 
    if (err)
       RARCH_ERR("Download failed: %s\n", err);

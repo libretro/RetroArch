@@ -169,6 +169,7 @@ static int menu_entries_flush_stack_type(const char *needle, const char *label,
 
 static bool menu_list_pop_stack(menu_list_t *list, size_t idx, size_t *directory_ptr)
 {
+   bool refresh           = false;
    file_list_t *menu_list = NULL;
    if (!list)
       return false;
@@ -186,7 +187,7 @@ static bool menu_list_pop_stack(menu_list_t *list, size_t idx, size_t *directory
    file_list_pop(menu_list, directory_ptr);
    menu_driver_list_set_selection(menu_list);
 
-   menu_entries_set_refresh(false);
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
    return true;
 }
@@ -194,6 +195,7 @@ static bool menu_list_pop_stack(menu_list_t *list, size_t idx, size_t *directory
 static void menu_list_flush_stack(menu_list_t *list,
       size_t idx, const char *needle, unsigned final_type)
 {
+   bool refresh           = false;
    const char *path       = NULL;
    const char *label      = NULL;
    unsigned type          = 0;
@@ -201,7 +203,7 @@ static void menu_list_flush_stack(menu_list_t *list,
    if (!list)
       return;
 
-   menu_entries_set_refresh(false);
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_entries_get_last(list->menu_stack[idx],
          &path, &label, &type, &entry_idx);
 
@@ -482,28 +484,6 @@ file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
    return menu_list->selection_buf[idx];
 }
 
-void menu_entries_set_refresh(bool nonblocking)
-{
-   if (menu_entries_data)
-   {
-      if (nonblocking)
-         menu_entries_data->nonblocking_refresh = true;
-      else
-         menu_entries_data->need_refresh        = true;
-   }
-}
-
-void menu_entries_unset_refresh(bool nonblocking)
-{
-   if (menu_entries_data)
-   {
-      if (nonblocking)
-         menu_entries_data->nonblocking_refresh = false;
-      else
-         menu_entries_data->need_refresh        = false;
-   }
-}
-
 static bool menu_entries_init(void)
 {
    menu_entries_t *entries = (menu_entries_t*)calloc(1, sizeof(*entries));
@@ -715,6 +695,28 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
             if (!settings || !menu_entries_data)
                return false;
             *settings = menu_entries_data->list_settings;
+         }
+         return true;
+      case MENU_ENTRIES_CTL_SET_REFRESH:
+         if (menu_entries_data)
+         {
+            bool *nonblocking = (bool*)data;
+
+            if (*nonblocking)
+               menu_entries_data->nonblocking_refresh = true;
+            else
+               menu_entries_data->need_refresh        = true;
+         }
+         return true;
+      case MENU_ENTRIES_CTL_UNSET_REFRESH:
+         if (menu_entries_data)
+         {
+            bool *nonblocking = (bool*)data;
+
+            if (*nonblocking)
+               menu_entries_data->nonblocking_refresh = false;
+            else
+               menu_entries_data->need_refresh        = false;
          }
          return true;
       case MENU_ENTRIES_CTL_INIT:

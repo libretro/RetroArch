@@ -420,10 +420,11 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
    {
       if (cbs && cbs->action_refresh)
       {
+         bool refresh               = false;
          file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
 
          cbs->action_refresh(selection_buf, menu_stack);
-         menu_entries_unset_refresh(false);
+         menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
       }
    }
 

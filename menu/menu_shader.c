@@ -141,6 +141,7 @@ void menu_shader_manager_set_preset(struct video_shader *shader,
 {
 #ifdef HAVE_SHADER_MANAGER
    config_file_t *conf         = NULL;
+   bool refresh                = false;
    settings_t *settings        = config_get_ptr();
 
    settings->video.shader_enable = false;
@@ -177,7 +178,7 @@ void menu_shader_manager_set_preset(struct video_shader *shader,
    }
    config_file_free(conf);
 
-   menu_entries_set_refresh(false);
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 #endif
 }
 
