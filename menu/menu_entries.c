@@ -35,10 +35,6 @@ struct menu_list
 
 struct menu_entries
 {
-   /* Flagged when menu entries need to be refreshed */
-   bool need_refresh;
-   bool nonblocking_refresh;
-
    size_t begin;
    menu_list_t *menu_list;
    rarch_setting_t *list_settings;
@@ -659,6 +655,10 @@ rarch_setting_t *menu_entries_get_setting(uint32_t i)
 
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
 {
+   /* Flagged when menu entries need to be refreshed */
+   static bool menu_entries_need_refresh        = false;
+   static bool menu_entries_nonblocking_refresh = false;
+
    switch (state)
    {
       case MENU_ENTRIES_CTL_DEINIT:
@@ -673,12 +673,14 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
          menu_entries_data->menu_list     = NULL;
 
          free(menu_entries_data);
-         menu_entries_data = NULL;
+         menu_entries_need_refresh        = NULL;
+         menu_entries_nonblocking_refresh = NULL;
+         menu_entries_data                = NULL;
          return true;
       case MENU_ENTRIES_CTL_NEEDS_REFRESH:
-         if (!menu_entries_data || menu_entries_data->nonblocking_refresh)
+         if (!menu_entries_data || menu_entries_nonblocking_refresh)
             return false;
-         if (!menu_entries_data->need_refresh)
+         if (!menu_entries_need_refresh)
             return false;
          return true;
       case MENU_ENTRIES_CTL_LIST_GET:
@@ -703,9 +705,9 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
             bool *nonblocking = (bool*)data;
 
             if (*nonblocking)
-               menu_entries_data->nonblocking_refresh = true;
+               menu_entries_nonblocking_refresh = true;
             else
-               menu_entries_data->need_refresh        = true;
+               menu_entries_need_refresh        = true;
          }
          return true;
       case MENU_ENTRIES_CTL_UNSET_REFRESH:
@@ -714,9 +716,9 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
             bool *nonblocking = (bool*)data;
 
             if (*nonblocking)
-               menu_entries_data->nonblocking_refresh = false;
+               menu_entries_nonblocking_refresh = false;
             else
-               menu_entries_data->need_refresh        = false;
+               menu_entries_need_refresh        = false;
          }
          return true;
       case MENU_ENTRIES_CTL_INIT:
