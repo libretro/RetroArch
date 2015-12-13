@@ -1217,10 +1217,8 @@ static int setting_bool_action_toggle_default(void *data, bool wraparound)
    if (!setting)
       return -1;
 
-   menu_setting_set_with_string_representation(setting,
+   return menu_setting_set_with_string_representation(setting,
          *setting->value.boolean ? "false" : "true");
-
-   return 0;
 }
 
 static int setting_generic_action_ok_default(void *data, bool wraparound)
@@ -1766,7 +1764,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_DIR:
       case ST_BIND:
       case ST_ACTION:
-         if (setting_handler(setting, action) == 0)
+         if (setting_handler(setting, action) != 0)
             return menu_setting_generic(setting, wraparound);
          break;
       default:
