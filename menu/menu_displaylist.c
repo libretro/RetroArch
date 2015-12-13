@@ -2969,6 +2969,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             strlcpy(menu->db_playlist_file, settings->content_history_path,
                   sizeof(menu->db_playlist_file));
 
+            menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
             menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT, (void*)menu->db_playlist_file);
 
             if (ret == 0)
