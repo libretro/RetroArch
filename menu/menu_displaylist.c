@@ -3063,7 +3063,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_CORE_OPTIONS:
          if (runloop_ctl(RUNLOOP_CTL_HAS_CORE_OPTIONS, NULL))
          {
-            size_t opts;
+            size_t opts = 0;
 
             runloop_ctl(RUNLOOP_CTL_GET_CORE_OPTION_SIZE, &opts);
 
