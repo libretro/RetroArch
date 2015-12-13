@@ -2495,6 +2495,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    RARCH_LOG("[GL]: Vendor: %s, Renderer: %s.\n", vendor, renderer);
    RARCH_LOG("[GL]: Version: %s.\n", version);
 
+   if (version && version[0] != '\0')
+      sscanf(version, "%d.%d", &gl->version_major, &gl->version_minor);
+
 #ifndef RARCH_CONSOLE
    rglgen_resolve_symbols(ctx_driver->get_proc_address);
 #endif

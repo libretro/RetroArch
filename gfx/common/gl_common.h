@@ -174,6 +174,9 @@
 
 typedef struct gl
 {
+   int version_major;
+   int version_minor;
+
    bool vsync;
    GLuint texture[GFX_MAX_TEXTURES];
    unsigned tex_index; /* For use with PREV. */
