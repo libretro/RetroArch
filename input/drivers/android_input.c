@@ -832,10 +832,6 @@ static void handle_hotplug(android_input_data_t *android_data,
    else if (strstr(android_app->current_ime, "com.hexad.bluezime"))
       strlcpy(name_buf, android_app->current_ime, sizeof(name_buf));
 
-   if (name_buf[0] != '\0')
-      strlcpy(settings->input.device_names[*port],
-            name_buf, sizeof(settings->input.device_names[*port]));
-
    if (*port < 0)
       *port = android_data->pads_connected;
 
@@ -861,6 +857,12 @@ static void handle_hotplug(android_input_data_t *android_data,
          if (settings->input.autoconf_binds[*port][RARCH_MENU_TOGGLE].joykey != 0)
             back_mapped = true;
       }
+   }
+
+   if (name_buf[0] != '\0')
+   {
+      strlcpy(settings->input.device_names[*port],
+            name_buf, sizeof(settings->input.device_names[*port]));
    }
 
    if (!back_mapped && settings->input.back_as_menu_toggle_enable)
