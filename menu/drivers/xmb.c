@@ -1535,8 +1535,8 @@ static void xmb_draw_cursor(xmb_handle_t *xmb,
 static void xmb_render(void *data)
 {
    float delta_time, dt;
-   size_t selection;
-   unsigned i, end, height  = 0;
+   size_t i, selection;
+   unsigned end, height  = 0;
    settings_t   *settings   = config_get_ptr();
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
 
