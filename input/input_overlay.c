@@ -549,6 +549,9 @@ static void input_overlay_loaded(void *task_data, void *user_data, const char *e
          goto abort_load;
    }
 
+   if (!settings->input.overlay_enable)
+      goto abort_load;
+
    if (!video_driver_overlay_interface(&iface) || !iface)
    {
       RARCH_ERR("Overlay interface is not present in video driver.\n");
@@ -586,7 +589,9 @@ abort_load:
 void input_overlay_init(void)
 {
    input_overlay_free();
-   rarch_task_push_overlay_load_default(input_overlay_loaded, NULL);
+
+   if (config_get_ptr()->input.overlay_enable)
+      rarch_task_push_overlay_load_default(input_overlay_loaded, NULL);
 }
 
 /**
