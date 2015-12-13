@@ -1,3 +1,6 @@
+STATIC_LINKING := 0
+AR             := ar
+
 ifeq ($(platform),)
 platform = unix
 ifeq ($(shell uname -a),)
@@ -44,12 +47,17 @@ ifndef ($(NOUNIVERSAL))
 endif
 endif
 
+ifeq ($(STATIC_LINKING), 1)
+EXT := a
+endif
+
 ifeq ($(platform), unix)
-   TARGET := $(TARGET_NAME)_libretro.so
+	EXT ?= so
+   TARGET := $(TARGET_NAME)_libretro.$(EXT)
    fpic := -fPIC
    SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
 else ifeq ($(platform), linux-portable)
-   TARGET := $(TARGET_NAME)_libretro.so
+   TARGET := $(TARGET_NAME)_libretro.$(EXT)
    fpic := -fPIC -nostdlib
    SHARED := -shared -Wl,--version-script=link.T
 	LIBM :=
@@ -104,7 +112,7 @@ else
 endif
 
 OBJECTS := libretro-test.o
-CFLAGS += -Wall -pedantic $(fpic)
+CFLAGS += -I../../libretro-common/include -Wall -pedantic $(fpic)
 
 ifneq (,$(findstring qnx,$(platform)))
 CFLAGS += -Wc,-std=c99
