@@ -237,9 +237,6 @@ void input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
    static bool deferred_wait_keys;
-   rarch_system_info_t *system = NULL;
-   
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (deferred_wait_keys)
    {
@@ -283,7 +280,13 @@ void input_keyboard_event(bool down, unsigned code,
       /* Unblock all hotkeys. */
       input_driver_keyboard_mapping_set_block(false);
    }
-   else if (system->key_event)
-      system->key_event(down, code, character, mod);
+   else
+   {
+      rarch_system_info_t *system = NULL;
+      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+
+      if (system && system->key_event)
+         system->key_event(down, code, character, mod);
+   }
 }
 
