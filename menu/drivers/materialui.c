@@ -270,7 +270,7 @@ static void mui_render_quad(mui_handle_t *mui,
 
    menu_display_draw(
          x,
-         height - y - h,
+         (int)height - y - (int)h,
          w,
          h,
          &coords, NULL, mui->textures.white,
