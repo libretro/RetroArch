@@ -2574,7 +2574,8 @@ static int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound
    if (video_monitor_fps_statistics(&video_refresh_rate,
             &deviation, &sample_points))
    {
-      driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &video_refresh_rate);
+      float video_refresh_rate_float = (float)video_refresh_rate;
+      driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &video_refresh_rate_float);
       /* Incase refresh rate update forced non-block video. */
       event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
    }
