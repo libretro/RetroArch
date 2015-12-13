@@ -295,10 +295,16 @@ static void menu_driver_toggle(bool latch)
        * FIXME: This should probably be moved to menu_common somehow. */
       if (global)
       {
-         global->frontend_key_event = system->key_event;
-         system->key_event          = menu_input_key_event;
+         retro_keyboard_event_t *key_event = NULL;
+         runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
 
-         runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME_LAST, NULL);
+         if (key_event)
+         {
+            global->frontend_key_event = *key_event;
+            *key_event                 = menu_input_key_event;
+
+            runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME_LAST, NULL);
+         }
       }
    }
    else
@@ -314,7 +320,14 @@ static void menu_driver_toggle(bool latch)
 
       /* Restore libretro keyboard callback. */
       if (global)
-         system->key_event = global->frontend_key_event;
+      {
+         retro_keyboard_event_t *key_event = NULL;
+
+         runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
+
+         if (key_event)
+            *key_event = global->frontend_key_event;
+      }
    }
 }
 

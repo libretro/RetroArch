@@ -46,8 +46,6 @@ typedef struct rarch_system_info
    const char *input_desc_btn[MAX_USERS][RARCH_FIRST_META_KEY];
    char valid_extensions[PATH_MAX_LENGTH];
 
-   retro_keyboard_event_t key_event;
-
    struct retro_disk_control_callback disk_control; 
    struct retro_camera_callback camera_callback;
    struct retro_location_callback location_callback;

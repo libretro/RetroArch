@@ -846,12 +846,18 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
       {
+         retro_keyboard_event_t *key_event = NULL;
          const struct retro_keyboard_callback *info =
             (const struct retro_keyboard_callback*)data;
 
+         runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
+
+         if (!key_event)
+            return false;
+
          RARCH_LOG("Environ SET_KEYBOARD_CALLBACK.\n");
-         system->key_event          = info->callback;
-         global->frontend_key_event = system->key_event;
+         *key_event                  = info->callback;
+         global->frontend_key_event  = *key_event;
          break;
       }
 

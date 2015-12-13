@@ -282,11 +282,10 @@ void input_keyboard_event(bool down, unsigned code,
    }
    else
    {
-      rarch_system_info_t *system = NULL;
-      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+      retro_keyboard_event_t *key_event = NULL;
+      runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
 
-      if (system && system->key_event)
-         system->key_event(down, code, character, mod);
+      if (key_event && *key_event)
+         (*key_event)(down, code, character, mod);
    }
 }
-

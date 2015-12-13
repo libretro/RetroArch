@@ -465,23 +465,24 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    static char runloop_fullpath[PATH_MAX_LENGTH];
    static rarch_system_info_t runloop_system;
-   static unsigned runloop_max_frames          = false;
-   static bool runloop_frame_time_last         = false;
-   static bool runloop_set_frame_limit         = false;
-   static bool runloop_paused                  = false;
-   static bool runloop_idle                    = false;
-   static bool runloop_exec                    = false;
-   static bool runloop_slowmotion              = false;
-   static bool runloop_shutdown_initiated      = false;
-   static bool runloop_core_shutdown_initiated = false;
-   static bool runloop_perfcnt_enable          = false;
-   static bool runloop_overrides_active        = false;
+   static retro_keyboard_event_t runloop_key_event = NULL;
+   static unsigned runloop_max_frames              = false;
+   static bool runloop_frame_time_last             = false;
+   static bool runloop_set_frame_limit             = false;
+   static bool runloop_paused                      = false;
+   static bool runloop_idle                        = false;
+   static bool runloop_exec                        = false;
+   static bool runloop_slowmotion                  = false;
+   static bool runloop_shutdown_initiated          = false;
+   static bool runloop_core_shutdown_initiated     = false;
+   static bool runloop_perfcnt_enable              = false;
+   static bool runloop_overrides_active            = false;
 #ifdef HAVE_THREADS
-   static slock_t *runloop_msg_queue_lock      = NULL;
+   static slock_t *runloop_msg_queue_lock          = NULL;
 #endif
-   static core_info_t *core_info_current       = NULL;
-   static core_info_list_t *core_info_curr_list= NULL;
-   settings_t *settings                        = config_get_ptr();
+   static core_info_t *core_info_current           = NULL;
+   static core_info_list_t *core_info_curr_list    = NULL;
+   settings_t *settings                            = config_get_ptr();
 
    switch (state)
    {
@@ -582,6 +583,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             free(runloop_system.ports);
          runloop_system.ports   = NULL;
 
+         runloop_key_event      = NULL;
          memset(&runloop_system, 0, sizeof(rarch_system_info_t));
          break;
       case RUNLOOP_CTL_IS_FRAME_COUNT_END:
@@ -1109,6 +1111,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
          runloop_system.core_options = NULL;
          return true;
+      case RUNLOOP_CTL_KEY_EVENT_GET:
+         {
+            retro_keyboard_event_t **key_event = (retro_keyboard_event_t**)data;
+            if (!key_event)
+               return false;
+            *key_event = &runloop_key_event;
+         }
+         break;
       case RUNLOOP_CTL_NONE:
       default:
          return false;
