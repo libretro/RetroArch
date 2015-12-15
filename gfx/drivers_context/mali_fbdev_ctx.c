@@ -32,7 +32,7 @@
 typedef struct {
    egl_ctx_data_t egl;
 
-   fbdev_window native_window;
+   struct mali_native_window native_window;
    bool resize;
    unsigned width, height;
 } mali_ctx_data_t;
