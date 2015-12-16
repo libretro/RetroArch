@@ -540,6 +540,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                return false;
             *core = core_info_curr_list;
          }
+         return true;
       case RUNLOOP_CTL_CURRENT_CORE_FREE:
          if (core_info_current)
             free(core_info_current);
