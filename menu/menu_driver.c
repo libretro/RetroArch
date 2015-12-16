@@ -425,6 +425,8 @@ static void menu_push_to_history_playlist(void)
          system->library_name,
          NULL,
          NULL);
+
+   content_playlist_write_file(g_defaults.history);
 }
 
 /**
