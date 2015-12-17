@@ -1036,6 +1036,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Use per-game core options if available";
       case MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE:
          return "Create game-options file";
+      case MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE:
+         return "Game-options file";
       case MENU_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
          return "Load Override Files Automatically";
       case MENU_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:

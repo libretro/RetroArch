@@ -477,6 +477,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    static bool runloop_core_shutdown_initiated     = false;
    static bool runloop_perfcnt_enable              = false;
    static bool runloop_overrides_active            = false;
+   static bool runloop_game_options_active         = false;
 #ifdef HAVE_THREADS
    static slock_t *runloop_msg_queue_lock          = NULL;
 #endif
@@ -607,6 +608,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_OVERRIDES_ACTIVE:
          return runloop_overrides_active;
+      case RUNLOOP_CTL_SET_GAME_OPTIONS_ACTIVE:
+         runloop_game_options_active = true;
+         break;
+      case RUNLOOP_CTL_UNSET_GAME_OPTIONS_ACTIVE:
+         runloop_game_options_active = false;
+         break;
+      case RUNLOOP_CTL_IS_GAME_OPTIONS_ACTIVE:
+         return runloop_game_options_active;
       case RUNLOOP_CTL_IS_FRAME_TIME_LAST:
          return runloop_frame_time_last;
       case RUNLOOP_CTL_SET_FRAME_LIMIT:
@@ -1095,11 +1104,15 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             if(ret)
             {
+               runloop_ctl(RUNLOOP_CTL_SET_GAME_OPTIONS_ACTIVE, NULL);
                runloop_system.core_options = core_option_new(game_options_path, vars);
                free(game_options_path);
             }
             else
+            {
+               runloop_ctl(RUNLOOP_CTL_UNSET_GAME_OPTIONS_ACTIVE, NULL);
                runloop_system.core_options = core_option_new(options_path, vars);
+            }
 
          }
          break;

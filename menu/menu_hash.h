@@ -307,6 +307,7 @@ extern "C" {
 #define MENU_LABEL_GAME_SPECIFIC_OPTIONS                                       0x142ec90fU
 #define MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS                                 0x6aed8a05U
 #define MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE                          0xf8d2456cU
+#define MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE                          0x06BF9E5F8
 #define MENU_LABEL_AUTO_OVERRIDES_ENABLE                                       0x35ff91b6U
 #define MENU_LABEL_VALUE_AUTO_OVERRIDES_ENABLE                                 0xc21c3a11U
 #define MENU_LABEL_AUTO_REMAPS_ENABLE                                          0x98c8f98bU

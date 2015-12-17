@@ -3070,9 +3070,18 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
             if (settings->game_specific_options)
             {
-               menu_entries_push(info->list,
-                     menu_hash_to_str(MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE), "",
-                     MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0);
+               if (!runloop_ctl(RUNLOOP_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
+               {
+                  menu_entries_push(info->list,
+                        menu_hash_to_str(MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE), "",
+                        MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0);
+               }
+               else
+               {
+                  menu_entries_push(info->list,
+                        menu_hash_to_str(MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE), "",
+                        MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
+               }
             }
             if (opts == 0)
             {
