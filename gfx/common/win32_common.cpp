@@ -427,7 +427,7 @@ bool win32_suppress_screensaver(void *data, bool enable)
 
          RequestContext.Version = POWER_REQUEST_CONTEXT_VERSION;
          RequestContext.Flags = POWER_REQUEST_CONTEXT_SIMPLE_STRING;
-         RequestContext.Reason.SimpleReasonString = L"RetroArch running";
+         RequestContext.Reason.SimpleReasonString = (LPWSTR)L"RetroArch running";
 
          Request = PowerCreateRequest(&RequestContext);
 
