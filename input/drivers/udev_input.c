@@ -24,6 +24,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <sys/poll.h>
+#include <sys/epoll.h>
+
 #include <libudev.h>
 #include <linux/types.h>
 #include <linux/input.h>
@@ -33,8 +36,6 @@
 
 #include "../drivers_keyboard/keyboard_event_udev.h"
 #include "../common/linux_common.h"
-#include "../common/epoll_common.h"
-#include "../common/udev_common.h"
 
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
@@ -78,8 +79,13 @@ struct udev_input_device
 struct udev_input
 {
    bool blocked;
+   struct udev *udev;
+   struct udev_monitor *monitor;
+
+
    const input_device_driver_t *joypad;
 
+   int epfd;
    udev_input_device_t **devices;
    unsigned num_devices;
 
@@ -217,6 +223,19 @@ static void udev_handle_mouse(void *data,
    }
 }
 
+static bool udev_input_hotplug_available(udev_input_t *udev)
+{
+   struct pollfd fds = {0};
+
+   if (!udev || !udev->monitor)
+      return false;
+
+   fds.fd     = udev_monitor_get_fd(udev->monitor);
+   fds.events = POLLIN;
+
+   return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
+}
+
 static bool add_device(udev_input_t *udev,
       const char *devnode, device_handle_cb cb)
 {
@@ -224,6 +243,7 @@ static bool add_device(udev_input_t *udev,
    udev_input_device_t **tmp;
    udev_input_device_t *device = NULL;
    struct stat st              = {0};
+   struct epoll_event event    = {0};
 
    if (stat(devnode, &st) < 0)
       return false;
@@ -257,7 +277,13 @@ static bool add_device(udev_input_t *udev,
    tmp[udev->num_devices++] = device;
    udev->devices            = tmp;
 
-   epoll_add(fd, device);
+   event.events             = EPOLLIN;
+   event.data.ptr           = device;
+
+   /* Shouldn't happen, but just check it. */
+   if (epoll_ctl(udev->epfd, EPOLL_CTL_ADD, fd, &event) < 0)
+      RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n",
+            fd, strerror(errno));
 
    return true;
 
@@ -289,6 +315,7 @@ static void udev_input_remove_device(udev_input_t *udev, const char *devnode)
 static void udev_input_handle_hotplug(udev_input_t *udev)
 {
    bool is_keyboard, is_mouse, is_touchpad;
+   struct udev_device *dev  = udev_monitor_receive_device(udev->monitor);
    device_handle_cb cb      = NULL;
    const char *devtype      = NULL;
    const char *val_keyboard = NULL;
@@ -296,7 +323,6 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    const char *val_touchpad = NULL;
    const char *action       = NULL;
    const char *devnode      = NULL;
-   struct udev_device *dev  = udev_mon_receive_device();
 
    if (!dev)
       return;
@@ -355,10 +381,10 @@ static void udev_input_poll(void *data)
    udev->mouse_wu  = udev->mouse_wd  = 0;
    udev->mouse_whu = udev->mouse_whd = 0;
 
-   while (udev_mon_hotplug_available())
+   while (udev_input_hotplug_available(udev))
       udev_input_handle_hotplug(udev);
 
-   ret = epoll_waiting(events, ARRAY_SIZE(events), 0);
+   ret = epoll_wait(udev->epfd, events, ARRAY_SIZE(events), 0);
 
    for (i = 0; i < ret; i++)
    {
@@ -550,7 +576,8 @@ static void udev_input_free(void *data)
    if (udev->joypad)
       udev->joypad->destroy();
 
-   epoll_free(false);
+   if (udev->epfd >= 0)
+      close(udev->epfd);
 
    for (i = 0; i < udev->num_devices; i++)
    {
@@ -559,7 +586,10 @@ static void udev_input_free(void *data)
    }
    free(udev->devices);
 
-   udev_mon_free(false);
+   if (udev->monitor)
+      udev_monitor_unref(udev->monitor);
+   if (udev->udev)
+      udev_unref(udev->udev);
 
    udev_input_kb_free();
 
@@ -570,7 +600,7 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
 {
    struct udev_list_entry     *devs = NULL;
    struct udev_list_entry     *item = NULL;
-   struct udev_enumerate *enumerate = udev_mon_enumerate();
+   struct udev_enumerate *enumerate = udev_enumerate_new(udev->udev);
 
    if (!enumerate)
       return false;
@@ -581,9 +611,12 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
 
    for (item = devs; item; item = udev_list_entry_get_next(item))
    {
-      const char *name         = udev_list_entry_get_name(item);
-      struct udev_device  *dev = udev_mon_device_new(name);
-      const char *devnode      = udev_device_get_devnode(dev);
+      const char *name        = udev_list_entry_get_name(item);
+
+      /* Get the filename of the /sys entry for the device
+       * and create a udev_device object (dev) representing it. */
+      struct udev_device *dev = udev_device_new_from_syspath(udev->udev, name);
+      const char *devnode     = udev_device_get_devnode(dev);
 
       if (devnode)
       {
@@ -611,15 +644,27 @@ static void *udev_input_init(void)
    if (!udev)
       return NULL;
 
-   if (!udev_mon_new(false))
+   udev->udev = udev_new();
+   if (!udev->udev)
+   {
+      RARCH_ERR("Failed to create udev handle.\n");
       goto error;
+   }
+
+   udev->monitor = udev_monitor_new_from_netlink(udev->udev, "udev");
+   if (udev->monitor)
+   {
+      udev_monitor_filter_add_match_subsystem_devtype(udev->monitor, "input", NULL);
+      udev_monitor_enable_receiving(udev->monitor);
+   }
 
 #ifdef HAVE_XKBCOMMON
    if (init_xkb() == -1)
       goto error;
 #endif
 
-   if (!epoll_new(false))
+   udev->epfd = epoll_create(32);
+   if (udev->epfd < 0)
    {
       RARCH_ERR("Failed to create epoll FD.\n");
       goto error;

@@ -22,13 +22,14 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/poll.h>
+#include <libudev.h>
 #include <linux/types.h>
 #include <linux/input.h>
 
 #include <retro_inline.h>
 
 #include "../input_autodetect.h"
-#include "../common/udev_common.h"
 #include "../../general.h"
 #include "../../verbosity.h"
 
@@ -70,12 +71,14 @@ struct udev_joypad
    uint16_t strength[2];
    uint16_t configured_strength[2];
 
-   char ident[256];
+   char ident[PATH_MAX_LENGTH];
    char *path;
    int32_t vid;
    int32_t pid;
 };
 
+static struct udev *g_udev;
+static struct udev_monitor *g_udev_mon;
 static struct udev_joypad udev_pads[MAX_USERS];
 
 static INLINE int16_t udev_compute_axis(const struct input_absinfo *info, int value)
@@ -150,6 +153,19 @@ static void udev_poll_pad(struct udev_joypad *pad, unsigned p)
          }
       }
    }
+}
+
+static bool udev_hotplug_available(void)
+{
+   struct pollfd fds = {0};
+
+   if (!g_udev_mon)
+      return false;
+
+   fds.fd     = udev_monitor_get_fd(g_udev_mon);
+   fds.events = POLLIN;
+
+   return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }
 
 static int udev_find_vacant_pad(void)
@@ -341,7 +357,7 @@ static void udev_check_device(struct udev_device *dev, const char *path, bool ho
       default:
          if (hotplugged)
          {
-            char msg[256];
+            char msg[PATH_MAX_LENGTH] = {0};
 
             snprintf(msg, sizeof(msg), "Device #%u (%s) connected.", pad, path);
             runloop_msg_queue_push(msg, 0, 60, false);
@@ -389,15 +405,20 @@ static void udev_joypad_destroy(void)
    for (i = 0; i < MAX_USERS; i++)
       udev_free_pad(i);
 
-   udev_mon_free(true);
+   if (g_udev_mon)
+      udev_monitor_unref(g_udev_mon);
+   g_udev_mon = NULL;
+   if (g_udev)
+      udev_unref(g_udev);
+   g_udev = NULL;
 }
 
 static void udev_joypad_handle_hotplug(void)
 {
+   struct udev_device *dev = udev_monitor_receive_device(g_udev_mon);
    const char *val;
    const char *action;
    const char *devnode;
-   struct udev_device *dev = udev_mon_receive_device();
    if (!dev)
       return;
 
@@ -495,7 +516,7 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
 static void udev_joypad_poll(void)
 {
    unsigned i;
-   while (udev_mon_hotplug_available())
+   while (udev_hotplug_available())
       udev_joypad_handle_hotplug();
 
    for (i = 0; i < MAX_USERS; i++)
@@ -515,10 +536,18 @@ static bool udev_joypad_init(void *data)
    for (i = 0; i < MAX_USERS; i++)
       udev_pads[i].fd = -1;
 
-   if (!udev_mon_new(true))
-      goto error;
+   g_udev = udev_new();
+   if (!g_udev)
+      return false;
 
-   enumerate = udev_mon_enumerate();
+   g_udev_mon = udev_monitor_new_from_netlink(g_udev, "udev");
+   if (g_udev_mon)
+   {
+      udev_monitor_filter_add_match_subsystem_devtype(g_udev_mon, "input", NULL);
+      udev_monitor_enable_receiving(g_udev_mon);
+   }
+
+   enumerate = udev_enumerate_new(g_udev);
    if (!enumerate)
       goto error;
 
@@ -529,7 +558,7 @@ static bool udev_joypad_init(void *data)
    for (item = devs; item; item = udev_list_entry_get_next(item))
    {
       const char         *name = udev_list_entry_get_name(item);
-      struct udev_device  *dev = udev_mon_device_new(name);
+      struct udev_device  *dev = udev_device_new_from_syspath(g_udev, name);
       const char      *devnode = udev_device_get_devnode(dev);
 
       if (devnode)
@@ -589,11 +618,11 @@ static uint64_t udev_joypad_get_buttons(unsigned port)
 static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    int16_t val = 0;
-   const struct udev_joypad *pad = (const struct udev_joypad*)
-      &udev_pads[port];
-
+   const struct udev_joypad *pad;
    if (joyaxis == AXIS_NONE)
       return 0;
+
+   pad = (const struct udev_joypad*)&udev_pads[port];
 
    if (AXIS_NEG_GET(joyaxis) < NUM_AXES)
    {
