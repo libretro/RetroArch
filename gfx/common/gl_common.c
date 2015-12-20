@@ -15,7 +15,6 @@
  */
 
 #include "gl_common.h"
-#include "../video_texture.h"
 
 void gl_ff_vertex(const void *data)
 {

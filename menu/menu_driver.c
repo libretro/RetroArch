@@ -25,11 +25,13 @@
 #include "menu_hash.h"
 #include "menu_shader.h"
 
+#include "../general.h"
 #include "../system.h"
 #include "../defaults.h"
 #include "../frontend/frontend.h"
 #include "../string_list_special.h"
 #include "../tasks/tasks.h"
+#include "../verbosity.h"
 
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_RMENU)

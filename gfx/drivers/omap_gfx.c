@@ -1135,6 +1135,8 @@ static void omap_gfx_set_texture_enable(void *data, bool state, bool full_screen
 
 static const video_poke_interface_t omap_gfx_poke_interface = {
    NULL,
+   NULL,
+   NULL,
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

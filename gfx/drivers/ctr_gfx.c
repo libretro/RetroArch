@@ -825,8 +825,9 @@ static void ctr_viewport_info(void* data, struct video_viewport* vp)
       *vp = ctr->vp;
 }
 
-static const video_poke_interface_t ctr_poke_interface =
-{
+static const video_poke_interface_t ctr_poke_interface = {
+   NULL,
+   NULL,
    NULL,
    ctr_set_filtering,
    NULL, /* get_video_output_size */

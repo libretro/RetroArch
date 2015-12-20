@@ -19,7 +19,6 @@
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/video_shader_driver.h"
-#include "../../gfx/video_texture.h"
 #include "../../gfx/common/gl_common.h"
 
 #include "../menu_display.h"
@@ -193,14 +192,16 @@ static void menu_display_gl_clear_color(float r, float g, float b, float a)
 
 static unsigned menu_display_gl_texture_load(void *data, enum texture_filter_type type)
 {
-   return video_texture_load(data, TEXTURE_BACKEND_OPENGL, type);
+   unsigned id;
+   video_driver_texture_load(data, type, &id);
+   return id;
 }
 
 static void menu_display_gl_texture_unload(uintptr_t *id)
 {
    if (!id)
       return;
-   video_texture_unload(TEXTURE_BACKEND_OPENGL, id);
+   video_driver_texture_unload(id);
 }
 
 static const float *menu_display_gl_get_tex_coords(void)

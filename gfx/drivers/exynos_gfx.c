@@ -1486,6 +1486,8 @@ static void exynos_show_mouse(void *data, bool state)
 }
 
 static const video_poke_interface_t exynos_poke_interface = {
+   NULL,
+   NULL,
    NULL, /* set_video_mode */
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */

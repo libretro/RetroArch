@@ -190,6 +190,9 @@ typedef struct video_info
 
 typedef struct video_poke_interface
 {
+   unsigned (*load_texture)(void *video_data, void *data,
+         bool threaded, enum texture_filter_type filter_type);
+   void (*unload_texture)(void *data, uintptr_t *id);
    void (*set_video_mode)(void *data, unsigned width, unsigned height, bool fullscreen);
    void (*set_filtering)(void *data, unsigned index, bool smooth);
    void (*get_video_output_size)(void *data, unsigned *width, unsigned *height);
@@ -524,6 +527,21 @@ void video_driver_display_set(uintptr_t idx);
 
 void video_driver_window_set(uintptr_t idx);
 
+bool video_driver_texture_load(void *data,
+      enum texture_filter_type  filter_type,
+      unsigned *id);
+
+bool video_driver_texture_unload(uintptr_t *id);
+
+#ifdef HAVE_OPENGL
+void gl_load_texture_data(uint32_t id,
+      enum gfx_wrap_type wrap_type,
+      enum texture_filter_type filter_type,
+      unsigned alignment,
+      unsigned width, unsigned height,
+      const void *frame,
+      unsigned base_size);
+#endif
 
 extern video_driver_t video_gl;
 extern video_driver_t video_psp1;

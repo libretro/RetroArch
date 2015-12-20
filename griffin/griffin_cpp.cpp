@@ -77,9 +77,6 @@ VIDEO DRIVER
 #ifdef _XBOX
 #include "../frontend/drivers/platform_xdk.cpp"
 #endif
-#ifdef _WIN32
-#include "../gfx/video_texture.cpp"
-#endif
 
 #if defined(HAVE_D3D)
 #include "../gfx/common/d3d_common.cpp"

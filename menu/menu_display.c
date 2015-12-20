@@ -15,13 +15,17 @@
 
 #include <time.h>
 
+#include <retro_assert.h>
 #include <queues/message_queue.h>
 #include <retro_miscellaneous.h>
 #include <gfx/math/matrix_4x4.h>
 #include <formats/image.h>
 
 #include "../config.def.h"
+#include "../configuration.h"
+#include "../runloop.h"
 #include "../gfx/video_thread_wrapper.h"
+#include "../verbosity.h"
 
 #include "menu_driver.h"
 #include "menu_animation.h"

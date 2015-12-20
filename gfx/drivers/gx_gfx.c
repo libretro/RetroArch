@@ -1338,6 +1338,8 @@ static void gx_get_video_output_next(void *data)
 }
 
 static const video_poke_interface_t gx_poke_interface = {
+   NULL,
+   NULL,
    gx_set_video_mode,
    NULL,
    gx_get_video_output_size,

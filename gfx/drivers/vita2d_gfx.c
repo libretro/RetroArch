@@ -596,6 +596,8 @@ static void vita_set_texture_enable(void *data, bool state, bool full_screen)
 
 static const video_poke_interface_t vita_poke_interface = {
    NULL,
+   NULL,
+   NULL,
    vita_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

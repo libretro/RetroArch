@@ -1941,3 +1941,38 @@ uintptr_t video_driver_window_get(void)
 {
    return video_driver_window;
 }
+
+bool video_driver_texture_load(void *data,
+      enum texture_filter_type  filter_type,
+      unsigned *id)
+{
+   settings_t *settings = config_get_ptr();
+   const struct retro_hw_render_callback *hw_render =
+      (const struct retro_hw_render_callback*)video_driver_callback();
+
+   if (!id)
+      return false;
+
+   if (!video_driver_poke || !video_driver_poke->load_texture)
+      return false;
+
+   *id = video_driver_poke->load_texture(video_driver_data, data,
+#ifdef HAVE_THREADS
+         settings->video.threaded && !hw_render->context_type,
+#else
+         false,
+#endif
+         filter_type);
+
+   return true;
+}
+
+bool video_driver_texture_unload(uintptr_t *id)
+{
+   if (!video_driver_poke || !video_driver_poke->unload_texture)
+      return false;
+
+   video_driver_poke->unload_texture(video_driver_data, id);
+
+   return true;
+}

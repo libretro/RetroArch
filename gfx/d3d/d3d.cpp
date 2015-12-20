@@ -1686,7 +1686,62 @@ static void d3d_set_menu_texture_enable(void *data,
 }
 #endif
 
+static void video_texture_load_d3d(struct texture_image *ti,
+      enum texture_filter_type filter_type,
+      uintptr_t *id)
+{
+   id = (uintptr_t*)d3d_texture_new(NULL, NULL,
+         ti->width, ti->height, 1, 
+         0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, 0, 0, 0,
+         NULL, NULL);
+}
+
+static int video_texture_load_wrap_d3d_mipmap(void *data)
+{
+   return video_texture_load_d3d(data, TEXTURE_BACKEND_DIRECT3D,
+         TEXTURE_FILTER_MIPMAP_LINEAR);
+}
+
+static int video_texture_load_wrap_d3d(void *data)
+{
+   return video_texture_load_d3d(data, TEXTURE_BACKEND_DIRECT3D,
+         TEXTURE_FILTER_LINEAR);
+}
+
+static unsigned d3d_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type)
+{
+   if (threaded)
+   {
+      custom_command_method_t func = video_texture_load_wrap_d3d;
+
+      switch (filter_type)
+      {
+#ifdef HAVE_D3D
+         case TEXTURE_FILTER_MIPMAP_LINEAR:
+         case TEXTURE_FILTER_MIPMAP_NEAREST:
+            func = video_texture_load_wrap_d3d_mipmap;
+            break;
+         default:
+            func = video_texture_load_wrap_d3d;
+            break;
+#endif
+      }
+
+      return rarch_threaded_video_texture_load(data, func);
+   }
+
+   return video_texture_load_d3d(data, type, filter_type);
+}
+
+static void d3d_unload_texture(void *data, uintptr_t *id)
+{
+   d3d_texture_free((LPDIRECT3DTEXTURE)id);
+}
+
 static const video_poke_interface_t d3d_poke_interface = {
+   d3d_load_texture,
+   d3d_unload_texture,
    NULL,
    NULL,
    NULL, /* get_video_output_size */

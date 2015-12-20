@@ -38,6 +38,12 @@
 #include "../../libretro.h"
 #include "../../general.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
+#include "../common/gl_common.h"
+
+#ifdef HAVE_THREADS
+#include "../video_thread_wrapper.h"
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -45,7 +51,6 @@
 
 #include "../font_driver.h"
 #include "../video_context_driver.h"
-#include "../video_texture.h"
 
 #ifdef HAVE_GLSL
 #include "../drivers_shader/shader_glsl.h"
@@ -3409,7 +3414,141 @@ static void gl_get_video_output_next(void *data)
    gfx_ctx_get_video_output_next();
 }
 
+void gl_load_texture_data(uint32_t id_data,
+      enum gfx_wrap_type wrap_type,
+      enum texture_filter_type filter_type,
+      unsigned alignment,
+      unsigned width, unsigned height,
+      const void *frame, unsigned base_size)
+{
+   GLint mag_filter, min_filter;
+   bool want_mipmap = false;
+   bool use_rgba    = video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_RGBA, NULL);
+   bool rgb32       = (base_size == (sizeof(uint32_t)));
+   GLenum wrap      = gl_wrap_type_to_enum(wrap_type);
+   GLuint id        = (GLuint)id_data;
+
+   glBindTexture(GL_TEXTURE_2D, id);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
+    
+#if defined(HAVE_OPENGLES2) || defined(HAVE_PSGL) || defined(OSX_PPC)
+   if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR)
+       filter_type = TEXTURE_FILTER_LINEAR;
+   if (filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
+       filter_type = TEXTURE_FILTER_NEAREST;
+#endif
+
+   switch (filter_type)
+   {
+      case TEXTURE_FILTER_MIPMAP_LINEAR:
+         min_filter = GL_LINEAR_MIPMAP_NEAREST;
+         mag_filter = GL_LINEAR;
+         want_mipmap = true;
+         break;
+      case TEXTURE_FILTER_MIPMAP_NEAREST:
+         min_filter = GL_NEAREST_MIPMAP_NEAREST;
+         mag_filter = GL_NEAREST;
+         want_mipmap = true;
+         break;
+      case TEXTURE_FILTER_NEAREST:
+         min_filter = GL_NEAREST;
+         mag_filter = GL_NEAREST;
+         break;
+      case TEXTURE_FILTER_LINEAR:
+      default:
+         min_filter = GL_LINEAR;
+         mag_filter = GL_LINEAR;
+         break;
+   }
+
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
+
+   glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+   glTexImage2D(GL_TEXTURE_2D,
+         0,
+         (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
+         width, height, 0,
+         (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
+         (rgb32) ? RARCH_GL_FORMAT32 : GL_UNSIGNED_SHORT_4_4_4_4, frame);
+
+   if (want_mipmap)
+      glGenerateMipmap(GL_TEXTURE_2D);
+}
+
+static void video_texture_load_gl(
+      struct texture_image *ti,
+      enum texture_filter_type filter_type,
+      uintptr_t *id)
+{
+   /* Generate the OpenGL texture object */
+   glGenTextures(1, (GLuint*)id);
+   gl_load_texture_data((GLuint)*id, 
+         RARCH_WRAP_EDGE, filter_type,
+         4 /* TODO/FIXME - dehardcode */,
+         ti->width, ti->height, ti->pixels,
+         sizeof(uint32_t) /* TODO/FIXME - dehardcode */
+         );
+}
+
+static int video_texture_load_wrap_gl_mipmap(void *data)
+{
+   uintptr_t id = 0;
+
+   if (!data)
+      return 0;
+   video_texture_load_gl(data, TEXTURE_FILTER_MIPMAP_LINEAR, &id);
+   return id;
+}
+
+static int video_texture_load_wrap_gl(void *data)
+{
+   uintptr_t id = 0;
+
+   if (!data)
+      return 0;
+   video_texture_load_gl(data, TEXTURE_FILTER_LINEAR, &id);
+   return id;
+}
+
+static unsigned gl_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type)
+{
+   uintptr_t id = 0;
+
+   if (threaded)
+   {
+      custom_command_method_t func = video_texture_load_wrap_gl;
+
+      switch (filter_type)
+      {
+         case TEXTURE_FILTER_MIPMAP_LINEAR:
+         case TEXTURE_FILTER_MIPMAP_NEAREST:
+            func = video_texture_load_wrap_gl_mipmap;
+            break;
+         default:
+            break;
+      }
+      return rarch_threaded_video_texture_load(data, func);
+   }
+
+   video_texture_load_gl(data, filter_type, &id);
+   return id;
+}
+
+static void gl_unload_texture(void *data, uintptr_t *id)
+{
+   if (!id)
+      return;
+
+   glDeleteTextures(1, (const GLuint*)id);
+   *id = 0;
+}
+
 static const video_poke_interface_t gl_poke_interface = {
+   gl_load_texture,
+   gl_unload_texture,
    gl_set_video_mode,
    NULL,
    gl_get_video_output_size,

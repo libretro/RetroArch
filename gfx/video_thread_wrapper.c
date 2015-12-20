@@ -1135,6 +1135,28 @@ static void thread_set_osd_msg(void *data, const char *msg,
 }
 #endif
 
+static unsigned thread_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type)
+{
+   thread_video_t *thr = (thread_video_t*)video_data;
+
+   if (!thr || !thr->poke || !thr->poke->load_texture)
+      return 0;
+
+   return thr->poke->load_texture(thr->driver_data, data, threaded, filter_type);
+}
+
+static void thread_unload_texture(void *video_data, uintptr_t *id)
+{
+   thread_video_t *thr = (thread_video_t*)video_data;
+
+   if (!thr)
+      return;
+
+   if (thr->poke && thr->poke->unload_texture)
+      thr->poke->unload_texture(thr->driver_data, id);
+}
+
 static void thread_apply_state_changes(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -1158,6 +1180,8 @@ static struct video_shader *thread_get_current_shader(void *data)
 }
 
 static const video_poke_interface_t thread_poke = {
+   thread_load_texture,
+   thread_unload_texture,
    thread_set_video_mode,
    thread_set_filtering,
    thread_get_video_output_size,
