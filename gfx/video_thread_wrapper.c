@@ -1135,7 +1135,7 @@ static void thread_set_osd_msg(void *data, const char *msg,
 }
 #endif
 
-static unsigned thread_load_texture(void *video_data, void *data,
+static uintptr_t thread_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
    thread_video_t *thr = (thread_video_t*)video_data;

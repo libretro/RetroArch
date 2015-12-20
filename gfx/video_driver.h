@@ -190,7 +190,7 @@ typedef struct video_info
 
 typedef struct video_poke_interface
 {
-   unsigned (*load_texture)(void *video_data, void *data,
+   uintptr_t (*load_texture)(void *video_data, void *data,
          bool threaded, enum texture_filter_type filter_type);
    void (*unload_texture)(void *data, uintptr_t *id);
    void (*set_video_mode)(void *data, unsigned width, unsigned height, bool fullscreen);

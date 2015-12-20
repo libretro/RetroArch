@@ -1715,7 +1715,7 @@ static int video_texture_load_wrap_d3d(void *data)
    return id;
 }
 
-static unsigned d3d_load_texture(void *video_data, void *data,
+static uintptr_t d3d_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
    uintptr_t id = 0;

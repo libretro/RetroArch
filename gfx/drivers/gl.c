@@ -3512,7 +3512,7 @@ static int video_texture_load_wrap_gl(void *data)
    return id;
 }
 
-static unsigned gl_load_texture(void *video_data, void *data,
+static uintptr_t gl_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
    uintptr_t id = 0;
