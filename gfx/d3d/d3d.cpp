@@ -99,6 +99,7 @@ static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay);
 
 static void d3d_deinit_chain(d3d_video_t *d3d)
 {
+   if (d3d && d3d->renderchain_driver && d3d->renderchain_driver->chain_free)
    d3d->renderchain_driver->chain_free(d3d->renderchain_data);
 
    d3d->renderchain_driver = NULL;
@@ -1698,19 +1699,23 @@ static void video_texture_load_d3d(struct texture_image *ti,
 
 static int video_texture_load_wrap_d3d_mipmap(void *data)
 {
-   return video_texture_load_d3d(data, TEXTURE_BACKEND_DIRECT3D,
-         TEXTURE_FILTER_MIPMAP_LINEAR);
+   uintptr_t id = 0;
+   video_texture_load_d3d((texture_image*)data, TEXTURE_FILTER_MIPMAP_LINEAR, &id);
+   return id;
 }
 
 static int video_texture_load_wrap_d3d(void *data)
 {
-   return video_texture_load_d3d(data, TEXTURE_BACKEND_DIRECT3D,
-         TEXTURE_FILTER_LINEAR);
+   uintptr_t id = 0;
+   video_texture_load_d3d((texture_image*)data, TEXTURE_FILTER_LINEAR, &id);
+   return id;
 }
 
 static unsigned d3d_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
+   uintptr_t id = 0;
+
    if (threaded)
    {
       custom_command_method_t func = video_texture_load_wrap_d3d;
@@ -1731,7 +1736,8 @@ static unsigned d3d_load_texture(void *video_data, void *data,
       return rarch_threaded_video_texture_load(data, func);
    }
 
-   return video_texture_load_d3d(data, type, filter_type);
+   video_texture_load_d3d((texture_image*)data, filter_type, &id);
+   return id;
 }
 
 static void d3d_unload_texture(void *data, uintptr_t *id)

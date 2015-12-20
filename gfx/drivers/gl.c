@@ -3498,7 +3498,7 @@ static int video_texture_load_wrap_gl_mipmap(void *data)
 
    if (!data)
       return 0;
-   video_texture_load_gl(data, TEXTURE_FILTER_MIPMAP_LINEAR, &id);
+   video_texture_load_gl((struct texture_image*)data, TEXTURE_FILTER_MIPMAP_LINEAR, &id);
    return id;
 }
 
@@ -3508,7 +3508,7 @@ static int video_texture_load_wrap_gl(void *data)
 
    if (!data)
       return 0;
-   video_texture_load_gl(data, TEXTURE_FILTER_LINEAR, &id);
+   video_texture_load_gl((struct texture_image*)data, TEXTURE_FILTER_LINEAR, &id);
    return id;
 }
 
@@ -3533,7 +3533,7 @@ static unsigned gl_load_texture(void *video_data, void *data,
       return rarch_threaded_video_texture_load(data, func);
    }
 
-   video_texture_load_gl(data, filter_type, &id);
+   video_texture_load_gl((struct texture_image*)data, filter_type, &id);
    return id;
 }
 
