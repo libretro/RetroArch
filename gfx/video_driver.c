@@ -423,7 +423,12 @@ static void init_video_input(const input_driver_t *tmp)
 {
    const input_driver_t **input = input_get_double_ptr();
    if (*input)
+   {
+      if (!input_driver_get_data() && !input_driver_ctl(RARCH_INPUT_CTL_INIT, NULL))
+         goto error;
+
       return;
+   }
 
    /* Reset video frame count */
    video_driver_frame_count = 0;
