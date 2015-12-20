@@ -30,6 +30,10 @@
 #include "../../dynamic.h"
 #include "render_chain_driver.h"
 
+#ifdef HAVE_THREADS
+#include "../video_thread_wrapper.h"
+#endif
+
 #include "../common/win32_common.h"
 
 #ifndef _XBOX
