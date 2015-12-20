@@ -161,11 +161,9 @@ static bool gfx_ctx_d3d_bind_api(void *data,
 
 static void *gfx_ctx_d3d_init(void *video_driver)
 {
-   (void)video_driver;
-
    win32_monitor_init();
 
-   return (void*)"d3d";
+   return video_driver;
 }
 
 static void gfx_ctx_d3d_destroy(void *data)
