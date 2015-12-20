@@ -1700,14 +1700,14 @@ static void video_texture_load_d3d(struct texture_image *ti,
 static int video_texture_load_wrap_d3d_mipmap(void *data)
 {
    uintptr_t id = 0;
-   video_texture_load_d3d((texture_image*)data, TEXTURE_FILTER_MIPMAP_LINEAR, &id);
+   video_texture_load_d3d((struct texture_image*)data, TEXTURE_FILTER_MIPMAP_LINEAR, &id);
    return id;
 }
 
 static int video_texture_load_wrap_d3d(void *data)
 {
    uintptr_t id = 0;
-   video_texture_load_d3d((texture_image*)data, TEXTURE_FILTER_LINEAR, &id);
+   video_texture_load_d3d((struct texture_image*)data, TEXTURE_FILTER_LINEAR, &id);
    return id;
 }
 
@@ -1736,7 +1736,7 @@ static unsigned d3d_load_texture(void *video_data, void *data,
       return rarch_threaded_video_texture_load(data, func);
    }
 
-   video_texture_load_d3d((texture_image*)data, filter_type, &id);
+   video_texture_load_d3d((struct texture_image*)data, filter_type, &id);
    return id;
 }
 
