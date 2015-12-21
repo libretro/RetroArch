@@ -678,8 +678,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_SYSTEM_INFO_DEINIT:
 #ifdef HAVE_DYNAMIC
          libretro_free_system_info(&menu_driver_system);
-#endif
          memset(&menu_driver_system, 0, sizeof(struct retro_system_info));
+#endif
          break;
       case RARCH_MENU_CTL_RENDER_MESSAGEBOX:
          if (driver->render_messagebox)
