@@ -57,20 +57,20 @@ extern "C" {
 #  if defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)
 #    ifdef RETRO_IMPORT_SYMBOLS
 #      ifdef __GNUC__
-#        define RETRO_API RETRO_CALLCONV __attribute__((dllimport))
+#        define RETRO_API RETRO_CALLCONV __attribute__((__dllimport__))
 #      else
 #        define RETRO_API RETRO_CALLCONV __declspec(dllimport)
 #      endif
 #    else
 #      ifdef __GNUC__
-#        define RETRO_API RETRO_CALLCONV __attribute__((dllexport))
+#        define RETRO_API RETRO_CALLCONV __attribute__((__dllexport__))
 #      else
 #        define RETRO_API RETRO_CALLCONV __declspec(dllexport)
 #      endif
 #    endif
 #  else
 #      if defined(__GNUC__) && __GNUC__ >= 4 && !defined(__CELLOS_LV2__)
-#        define RETRO_API RETRO_CALLCONV __attribute__((visibility("default")))
+#        define RETRO_API RETRO_CALLCONV __attribute__((__visibility__("default")))
 #      else
 #        define RETRO_API RETRO_CALLCONV
 #      endif
