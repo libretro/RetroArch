@@ -75,21 +75,21 @@ static INLINE void ctrGuSetTexture(GPU_TEXUNIT unit, u32* data,
    {
    case GPU_TEXUNIT0:
       GPUCMD_AddWrite(GPUREG_TEXUNIT0_TYPE, colorType);
-      GPUCMD_AddWrite(GPUREG_TEXUNIT0_LOC, ((u32)data)>>3);
+      GPUCMD_AddWrite(GPUREG_TEXUNIT0_ADDR1, ((u32)data)>>3);
       GPUCMD_AddWrite(GPUREG_TEXUNIT0_DIM, (height)|(width<<16));
       GPUCMD_AddWrite(GPUREG_TEXUNIT0_PARAM, param);
       break;
 
    case GPU_TEXUNIT1:
       GPUCMD_AddWrite(GPUREG_TEXUNIT1_TYPE, colorType);
-      GPUCMD_AddWrite(GPUREG_TEXUNIT1_LOC, ((u32)data)>>3);
+      GPUCMD_AddWrite(GPUREG_TEXUNIT1_ADDR, ((u32)data)>>3);
       GPUCMD_AddWrite(GPUREG_TEXUNIT1_DIM, (height)|(width<<16));
       GPUCMD_AddWrite(GPUREG_TEXUNIT1_PARAM, param);
       break;
 
    case GPU_TEXUNIT2:
       GPUCMD_AddWrite(GPUREG_TEXUNIT2_TYPE, colorType);
-      GPUCMD_AddWrite(GPUREG_TEXUNIT2_LOC, ((u32)data)>>3);
+      GPUCMD_AddWrite(GPUREG_TEXUNIT2_ADDR, ((u32)data)>>3);
       GPUCMD_AddWrite(GPUREG_TEXUNIT2_DIM, (height)|(width<<16));
       GPUCMD_AddWrite(GPUREG_TEXUNIT2_PARAM, param);
       break;
@@ -218,7 +218,7 @@ static INLINE void ctrGuSetAttributeBuffers(u32 total_attributes,
 
    GPUCMD_AddIncrementalWrites(GPUREG_ATTRIBBUFFERS_LOC, param, 0x00000027);
    GPUCMD_AddMaskedWrite(GPUREG_VSH_INPUTBUFFER_CONFIG, 0xB, 0xA0000000|(total_attributes-1));
-   GPUCMD_AddWrite(GPUREG_0242, (total_attributes-1));
+   GPUCMD_AddWrite(GPUREG_VSH_NUM_ATTR, (total_attributes-1));
    GPUCMD_AddIncrementalWrites(GPUREG_VSH_ATTRIBUTES_PERMUTATION_LOW, ((u32[]){0x76543210, 0xBA98}), 2);
 }
 

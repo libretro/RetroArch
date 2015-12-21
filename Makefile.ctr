@@ -246,10 +246,6 @@ ifeq ($(strip $(AEMSTRO)),)
 $(error "Please set AEMSTRO in your environment. export AEMSTRO=<path to>aemstro")
 endif
 
-ifeq ($(wildcard $(CTRULIB)/include/3ds/ndsp),)
-$(error "Please update ctrulib to the great-refactor branch")
-endif
-
 
 APP_TITLE         := $(shell echo "$(APP_TITLE)" | cut -c1-128)
 APP_DESCRIPTION   := $(shell echo "$(APP_DESCRIPTION)" | cut -c1-256)

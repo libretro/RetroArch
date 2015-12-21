@@ -327,8 +327,8 @@ static void* ctr_init(const video_info_t* video,
    GPU_SetDepthTestAndWriteMask(false, GPU_ALWAYS, GPU_WRITE_ALL);
    //   GPU_SetDepthTestAndWriteMask(true, GPU_ALWAYS, GPU_WRITE_ALL);
 
-   GPUCMD_AddMaskedWrite(GPUREG_0062, 0x1, 0);
-   GPUCMD_AddWrite(GPUREG_0118, 0);
+   GPUCMD_AddMaskedWrite(GPUREG_EARLYDEPTH_TEST1, 0x1, 0);
+   GPUCMD_AddWrite(GPUREG_EARLYDEPTH_TEST2, 0);
 
    GPU_SetAlphaBlending(GPU_BLEND_ADD, GPU_BLEND_ADD,
                         GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA,

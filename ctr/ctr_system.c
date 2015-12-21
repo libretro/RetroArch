@@ -28,6 +28,7 @@ void __libc_fini_array(void);
 void __libctru_init(void (*retAddr)(void));
 void __appInit();
 void __libc_init_array(void);
+void __system_initSyscalls(void);
 void __system_allocateHeaps();
 void __system_initArgv();
 
@@ -43,15 +44,16 @@ Result __sync_init(void) __attribute__((weak));
 
 void __attribute__((weak)) __libctru_init(void (*retAddr)(void))
 {
-	// Register newlib exit() syscall
-	__syscalls.exit = __ctru_exit;
-    __syscalls.gettod_r = __libctru_gtod;
+	// Store the return address
+	__system_retAddr = envIsHomebrew() ? retAddr : NULL;
 
-	__system_retAddr = __service_ptr ? retAddr : NULL;
+	// Initialize the synchronization subsystem
+	__sync_init();
 
-	if (__sync_init)
-		__sync_init();
+	// Initialize newlib support system calls
+	__system_initSyscalls();
 
+	// Allocate application and linear heaps
 	__system_allocateHeaps();
 
 	// Build argc/argv if present
@@ -200,7 +202,7 @@ int ctr_request_update(void)
    consoleInit(GFX_BOTTOM, NULL);
 
    printf("\n\nunsupported version\n\n");
-   printf("Please update your playload\n");
+   printf("Please update your payload\n");
 
    wait_for_input();
 
