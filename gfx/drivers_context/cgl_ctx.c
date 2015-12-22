@@ -331,8 +331,6 @@ static void *gfx_ctx_cgl_init(void *video_driver)
 
    CGLSetCurrentContext(cgl->glCtx);
 
-   gfx_ctx_data_set(cgl);
-
    return cgl;
 
 error:
