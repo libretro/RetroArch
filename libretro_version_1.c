@@ -31,7 +31,7 @@
 #include "audio/audio_driver.h"
 
 #ifdef HAVE_NETPLAY
-#include "netplay.h"
+#include "netplay/netplay.h"
 #endif
 
 struct retro_callbacks retro_ctx;
