@@ -2471,6 +2471,7 @@ static void xmb_context_destroy(void *data)
       menu_display_texture_unload((uintptr_t*)&xmb->textures.list[i].id);
 
    xmb_context_destroy_horizontal_list(xmb);
+   xmb_context_bg_destroy(xmb);
 
    menu_display_free_main_font();
 }
