@@ -153,64 +153,6 @@ static void post_frame(netplay_t *netplay)
    netplay->spectate.input_ptr = 0;
 }
 
-static bool get_info(netplay_t *netplay)
-{
-   size_t save_state_size, size;
-   void *buf          = NULL;
-   uint32_t header[4] = {0};
-   char msg[512]      = {0};
-   bool ret           = true;
-
-   if (!np_send_nickname(netplay, netplay->fd))
-   {
-      RARCH_ERR("Failed to send nickname to host.\n");
-      return false;
-   }
-
-   if (!np_get_nickname(netplay, netplay->fd))
-   {
-      RARCH_ERR("Failed to receive nickname from host.\n");
-      return false;
-   }
-
-   snprintf(msg, sizeof(msg), "Connected to \"%s\"", netplay->other_nick);
-   runloop_msg_queue_push(msg, 1, 180, false);
-   RARCH_LOG("%s\n", msg);
-
-
-   if (!socket_receive_all_blocking(netplay->fd, header, sizeof(header)))
-   {
-      RARCH_ERR("Cannot get header from host.\n");
-      return false;
-   }
-
-   save_state_size = core.retro_serialize_size();
-   if (!np_bsv_parse_header(header, np_impl_magic()))
-   {
-      RARCH_ERR("Received invalid BSV header from host.\n");
-      return false;
-   }
-
-   buf = malloc(save_state_size);
-   if (!buf)
-      return false;
-
-   size = save_state_size;
-
-   if (!socket_receive_all_blocking(netplay->fd, buf, size))
-   {
-      RARCH_ERR("Failed to receive save state from host.\n");
-      free(buf);
-      return false;
-   }
-
-   if (save_state_size)
-      ret = core.retro_unserialize(buf, save_state_size);
-
-   free(buf);
-   return ret;
-}
-
 static bool info_cb(netplay_t *netplay, unsigned frames)
 {
    unsigned i;
