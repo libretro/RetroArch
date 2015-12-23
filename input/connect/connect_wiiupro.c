@@ -165,7 +165,6 @@ static int16_t hidpad_wiiupro_get_axis(void *data, unsigned axis)
 
 static void hidpad_wiiupro_packet_handler(void *data, uint8_t *packet, uint16_t size)
 {
-   size_t i;
    struct hidpad_wiiupro_data *device = (struct hidpad_wiiupro_data*)data;
 
    if (!device)
