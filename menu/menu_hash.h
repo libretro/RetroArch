@@ -130,6 +130,7 @@ extern "C" {
 #define MENU_VALUE_SEARCH                                                      0xd0d5febbU
 
 #define MENU_LABEL_DEFERRED_CORE_CONTENT_LIST                                  0x76150c63U
+#define MENU_LABEL_DEFERRED_LAKKA_LIST                                         0x3db437c4U
 
 #define MENU_LABEL_VALUE_DOWNLOAD_CORE_CONTENT                                 0xa8bb22d8U
 #define MENU_LABEL_DOWNLOAD_CORE_CONTENT                                       0xc63b1d3fU
@@ -164,6 +165,9 @@ extern "C" {
 
 #define MENU_LABEL_UPDATE_ASSETS                                               0x37fa42daU
 #define MENU_LABEL_VALUE_UPDATE_ASSETS                                         0x0fdf0b1bU
+
+#define MENU_LABEL_UPDATE_LAKKA                                                0x19b51eebU
+#define MENU_LABEL_VALUE_UPDATE_LAKKA                                          0x6611630cU
 
 #define MENU_LABEL_UPDATE_CHEATS                                               0x3bd5c83fU
 #define MENU_LABEL_VALUE_UPDATE_CHEATS                                         0x13ba9080U

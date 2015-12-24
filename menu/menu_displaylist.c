@@ -1933,6 +1933,14 @@ static int menu_displaylist_parse_scan_directory_list(menu_displaylist_info_t *i
 static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
 {
 #ifdef HAVE_NETWORKING
+
+#ifdef HAVE_LAKKA
+   menu_entries_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_LAKKA),
+         menu_hash_to_str(MENU_LABEL_UPDATE_LAKKA),
+         MENU_SETTING_ACTION, 0, 0);
+#endif
+
    menu_entries_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
          menu_hash_to_str(MENU_LABEL_CORE_UPDATER_LIST),
@@ -1983,6 +1991,7 @@ static int menu_displaylist_parse_options(menu_displaylist_info_t *info)
          menu_hash_to_str(MENU_LABEL_UPDATE_GLSL_SHADERS),
          MENU_SETTING_ACTION, 0, 0);
 #endif
+
 #else
    menu_entries_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
@@ -2469,6 +2478,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_CORES:
       case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_CORES_UPDATER:
+      case DISPLAYLIST_LAKKA:
       case DISPLAYLIST_CORES_SUPPORTED:
       case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
       case DISPLAYLIST_CORE_INFO:
@@ -2912,6 +2922,12 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_CORES_UPDATER:
 #ifdef HAVE_NETWORKING
          print_buf_lines(info->list, core_buf, core_len, MENU_FILE_DOWNLOAD_CORE);
+         info->need_push    = true;
+         info->need_refresh = true;
+#endif
+      case DISPLAYLIST_LAKKA:
+#ifdef HAVE_NETWORKING
+         print_buf_lines(info->list, core_buf, core_len, MENU_FILE_DOWNLOAD_LAKKA);
          info->need_push    = true;
          info->need_refresh = true;
 #endif
