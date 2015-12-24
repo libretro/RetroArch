@@ -19,6 +19,7 @@
 #include "../audio_driver.h"
 #include "../../configuration.h"
 #include "../../performance.h"
+#include "../../runloop.h"
 
 typedef struct
 {

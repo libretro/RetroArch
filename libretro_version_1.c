@@ -25,6 +25,7 @@
 #include <boolean.h>
 
 #include "libretro.h"
+#include "libretro_version_1.h"
 #include "general.h"
 #include "rewind.h"
 #include "gfx/video_driver.h"

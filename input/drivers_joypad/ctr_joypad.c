@@ -20,6 +20,7 @@
 #include "../../general.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#include "../../command_event.h"
 #include "string.h"
 #include "3ds.h"
 
