@@ -454,7 +454,10 @@ int retro_read_file(const char *path, void **buf, ssize_t *len)
    RFILE *file              = retro_fopen(path, RFILE_MODE_READ, -1);
 
    if (!file)
+   {
+      fprintf(stderr, "%s: Failed to open %s: %s\n", __FUNCTION__, path, strerror(errno));
       goto error;
+   }
 
    if (retro_fseek(file, 0, SEEK_END) != 0)
       goto error;
@@ -470,11 +473,14 @@ int retro_read_file(const char *path, void **buf, ssize_t *len)
    if (!content_buf)
       goto error;
 
-   if ((ret = retro_fread(file, content_buf, content_buf_size)) < content_buf_size)
-      printf("Didn't read whole file: %s.\n", path);
-
-   if (!content_buf)
+   ret = retro_fread(file, content_buf, content_buf_size);
+   if (ret < 0)
+   {
+      fprintf(stderr, "%s: Failed to read %s: %s\n", __FUNCTION__, path, strerror(errno));
       goto error;
+   }
+
+   retro_fclose(file);
 
    *buf    = content_buf;
 
@@ -482,16 +488,14 @@ int retro_read_file(const char *path, void **buf, ssize_t *len)
     * Will only work with sane character formatting (Unix). */
    ((char*)content_buf)[content_buf_size] = '\0';
 
-   if (retro_fclose(file) != 0)
-      printf("Failed to close file stream.\n");
-
    if (len)
       *len = ret;
 
    return 1;
 
 error:
-   retro_fclose(file);
+   if (file)
+      retro_fclose(file);
    if (content_buf)
       free(content_buf);
    if (len)
