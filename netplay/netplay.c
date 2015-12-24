@@ -25,26 +25,7 @@
 #include <net/net_compat.h>
 #include <retro_endianness.h>
 
-#include "netplay.h"
-#include "command_event.h"
-#include "general.h"
-#include "autosave.h"
-#include "dynamic.h"
-#include "movie.h"
-#include "msg_hash.h"
-#include "system.h"
-#include "runloop.h"
-#include "verbosity.h"
-
-#ifdef ANDROID
-#define HAVE_IPV6
-#endif
-
-#define UDP_FRAME_PACKETS 16
-#define MAX_SPECTATORS 16
-
-#define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
-#define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
+#include "netplay_private.h"
 
 enum
 {
@@ -54,92 +35,6 @@ enum
    CMD_OPT_CLIENT_ONLY              = 0x8,
    CMD_OPT_REQUIRE_SYNC             = 0x10
 };
-
-struct delta_frame
-{
-   void *state;
-
-   uint16_t real_input_state;
-   uint16_t simulated_input_state;
-   uint16_t self_state;
-
-   bool is_simulated;
-   bool used_real;
-};
-
-struct netplay
-{
-   char nick[32];
-   char other_nick[32];
-   struct sockaddr_storage other_addr;
-
-   struct retro_callbacks cbs;
-   /* TCP connection for state sending, etc. Also used for commands */
-   int fd;
-   /* UDP connection for game state updates. */
-   int udp_fd;
-   /* Which port is governed by netplay (other user)? */
-   unsigned port;
-   bool has_connection;
-
-   struct delta_frame *buffer;
-   size_t buffer_size;
-
-   /* Pointer where we are now. */
-   size_t self_ptr; 
-   /* Points to the last reliable state that self ever had. */
-   size_t other_ptr;
-   /* Pointer to where we are reading. 
-    * Generally, other_ptr <= read_ptr <= self_ptr. */
-   size_t read_ptr;
-   /* A temporary pointer used on replay. */
-   size_t tmp_ptr;
-
-   size_t state_size;
-
-   /* Are we replaying old frames? */
-   bool is_replay;
-   /* We don't want to poll several times on a frame. */
-   bool can_poll;
-
-   /* To compat UDP packet loss we also send 
-    * old data along with the packets. */
-   uint32_t packet_buffer[UDP_FRAME_PACKETS * 2];
-   uint32_t frame_count;
-   uint32_t read_frame_count;
-   uint32_t other_frame_count;
-   uint32_t tmp_frame_count;
-   struct addrinfo *addr;
-   struct sockaddr_storage their_addr;
-   bool has_client_addr;
-
-   unsigned timeout_cnt;
-
-   /* Spectating. */
-   struct {
-      bool enabled;
-      bool client;
-      int fds[MAX_SPECTATORS];
-      uint16_t *input;
-      size_t input_ptr;
-      size_t input_sz;
-   } spectate;
-
-   /* User flipping
-    * Flipping state. If ptr >= flip_frame, we apply the flip.
-    * If not, we apply the opposite, effectively creating a trigger point.
-    * To avoid collition we need to make sure our client/host is synced up 
-    * well after flip_frame before allowing another flip. */
-   bool flip;
-   uint32_t flip_frame;
-
-   /* Netplay pausing
-    */
-   bool pause;
-   uint32_t pause_frame;
-};
-
-static void *netplay_data;
 
 /**
  * warn_hangup:
@@ -162,6 +57,10 @@ bool check_netplay_synched(netplay_t* netplay)
 {
    assert(netplay);
    return netplay->frame_count < (netplay->flip_frame + 2 * UDP_FRAME_PACKETS);
+}
+
+static bool info_cb(netplay_t* netplay, unsigned frames) {
+   return netplay->net_cbs->info_cb(netplay, frames);
 }
 
 /**
@@ -638,7 +537,7 @@ int16_t input_state_net(unsigned port, unsigned device,
 
 #ifndef HAVE_SOCKET_LEGACY
 /* Custom inet_ntop. Win32 doesn't seem to support this ... */
-static void log_connection(const struct sockaddr_storage *their_addr,
+void np_log_connection(const struct sockaddr_storage *their_addr,
       unsigned slot, const char *nick)
 {
    union
@@ -873,351 +772,6 @@ static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
    return true;
 }
 
-
-/**
- * implementation_magic_value:
- *
- * Not really a hash, but should be enough to differentiate 
- * implementations from each other.
- *
- * Subtle differences in the implementation will not be possible to spot.
- * The alternative would have been checking serialization sizes, but it 
- * was troublesome for cross platform compat.
- **/
-static uint32_t implementation_magic_value(void)
-{
-   size_t i, len;
-   uint32_t res                        = 0;
-   rarch_system_info_t *info           = NULL;
-   const char *lib                     = NULL;
-   const char *ver                     = PACKAGE_VERSION;
-   unsigned api                        = core.retro_api_version();
-   
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
-   
-   if (info)
-      lib = info->info.library_name;
-
-   res |= api;
-
-   len = strlen(lib);
-   for (i = 0; i < len; i++)
-      res ^= lib[i] << (i & 0xf);
-
-   lib = info->info.library_version;
-   len = strlen(lib);
-
-   for (i = 0; i < len; i++)
-      res ^= lib[i] << (i & 0xf);
-
-   len = strlen(ver);
-   for (i = 0; i < len; i++)
-      res ^= ver[i] << ((i & 0xf) + 16);
-
-   return res;
-}
-
-static bool send_nickname(netplay_t *netplay, int fd)
-{
-   uint8_t nick_size = strlen(netplay->nick);
-
-   if (!socket_send_all_blocking(fd, &nick_size, sizeof(nick_size)))
-   {
-      RARCH_ERR("Failed to send nick size.\n");
-      return false;
-   }
-
-   if (!socket_send_all_blocking(fd, netplay->nick, nick_size))
-   {
-      RARCH_ERR("Failed to send nick.\n");
-      return false;
-   }
-
-   return true;
-}
-
-static bool get_nickname(netplay_t *netplay, int fd)
-{
-   uint8_t nick_size;
-
-   if (!socket_receive_all_blocking(fd, &nick_size, sizeof(nick_size)))
-   {
-      RARCH_ERR("Failed to receive nick size from host.\n");
-      return false;
-   }
-
-   if (nick_size >= sizeof(netplay->other_nick))
-   {
-      RARCH_ERR("Invalid nick size.\n");
-      return false;
-   }
-
-   if (!socket_receive_all_blocking(fd, netplay->other_nick, nick_size))
-   {
-      RARCH_ERR("Failed to receive nick.\n");
-      return false;
-   }
-
-   return true;
-}
-
-static bool send_info(netplay_t *netplay)
-{
-   unsigned sram_size;
-   char msg[512]      = {0};
-   void *sram         = NULL;
-   uint32_t header[3] = {0};
-   global_t *global   = global_get_ptr();
-   
-   header[0] = htonl(global->content_crc);
-   header[1] = htonl(implementation_magic_value());
-   header[2] = htonl(core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM));
-
-   if (!socket_send_all_blocking(netplay->fd, header, sizeof(header)))
-      return false;
-
-   if (!send_nickname(netplay, netplay->fd))
-   {
-      RARCH_ERR("Failed to send nick to host.\n");
-      return false;
-   }
-
-   /* Get SRAM data from User 1. */
-   sram      = core.retro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
-   sram_size = core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
-
-   if (!socket_receive_all_blocking(netplay->fd, sram, sram_size))
-   {
-      RARCH_ERR("Failed to receive SRAM data from host.\n");
-      return false;
-   }
-
-   if (!get_nickname(netplay, netplay->fd))
-   {
-      RARCH_ERR("Failed to receive nick from host.\n");
-      return false;
-   }
-
-   snprintf(msg, sizeof(msg), "Connected to: \"%s\"", netplay->other_nick);
-   RARCH_LOG("%s\n", msg);
-   runloop_msg_queue_push(msg, 1, 180, false);
-
-   return true;
-}
-
-static bool get_info(netplay_t *netplay)
-{
-   unsigned sram_size;
-   uint32_t header[3];
-   const void *sram = NULL;
-   global_t *global = global_get_ptr();
-
-   if (!socket_receive_all_blocking(netplay->fd, header, sizeof(header)))
-   {
-      RARCH_ERR("Failed to receive header from client.\n");
-      return false;
-   }
-
-   if (global->content_crc != ntohl(header[0]))
-   {
-      RARCH_ERR("Content CRC32s differ. Cannot use different games.\n");
-      return false;
-   }
-
-   if (implementation_magic_value() != ntohl(header[1]))
-   {
-      RARCH_ERR("Implementations differ, make sure you're using exact same libretro implementations and RetroArch version.\n");
-      return false;
-   }
-
-   if (core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM) != ntohl(header[2]))
-   {
-      RARCH_ERR("Content SRAM sizes do not correspond.\n");
-      return false;
-   }
-
-   if (!get_nickname(netplay, netplay->fd))
-   {
-      RARCH_ERR("Failed to get nickname from client.\n");
-      return false;
-   }
-
-   /* Send SRAM data to our User 2. */
-   sram      = core.retro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
-   sram_size = core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
-
-   if (!socket_send_all_blocking(netplay->fd, sram, sram_size))
-   {
-      RARCH_ERR("Failed to send SRAM data to client.\n");
-      return false;
-   }
-
-   if (!send_nickname(netplay, netplay->fd))
-   {
-      RARCH_ERR("Failed to send nickname to client.\n");
-      return false;
-   }
-
-#ifndef HAVE_SOCKET_LEGACY
-   log_connection(&netplay->other_addr, 0, netplay->other_nick);
-#endif
-
-   return true;
-}
-
-static uint32_t *bsv_header_generate(size_t *size, uint32_t magic)
-{
-   uint32_t *header, bsv_header[4] = {0};
-   size_t serialize_size = core.retro_serialize_size();
-   size_t header_size = sizeof(bsv_header) + serialize_size;
-   global_t *global = global_get_ptr();
-
-   *size = header_size;
-
-   header = (uint32_t*)malloc(header_size);
-   if (!header)
-      return NULL;
-
-   bsv_header[MAGIC_INDEX]      = swap_if_little32(BSV_MAGIC);
-   bsv_header[SERIALIZER_INDEX] = swap_if_big32(magic);
-   bsv_header[CRC_INDEX]        = swap_if_big32(global->content_crc);
-   bsv_header[STATE_SIZE_INDEX] = swap_if_big32(serialize_size);
-
-   if (serialize_size && !core.retro_serialize(header + 4, serialize_size))
-   {
-      free(header);
-      return NULL;
-   }
-
-   memcpy(header, bsv_header, sizeof(bsv_header));
-   return header;
-}
-
-static bool bsv_parse_header(const uint32_t *header, uint32_t magic)
-{
-   uint32_t in_crc, in_magic, in_state_size;
-   uint32_t in_bsv = swap_if_little32(header[MAGIC_INDEX]);
-   global_t *global = global_get_ptr();
-
-   if (in_bsv != BSV_MAGIC)
-   {
-      RARCH_ERR("BSV magic mismatch, got 0x%x, expected 0x%x.\n",
-            in_bsv, BSV_MAGIC);
-      return false;
-   }
-
-   in_magic = swap_if_big32(header[SERIALIZER_INDEX]);
-   if (in_magic != magic)
-   {
-      RARCH_ERR("Magic mismatch, got 0x%x, expected 0x%x.\n", in_magic, magic);
-      return false;
-   }
-
-   in_crc = swap_if_big32(header[CRC_INDEX]);
-   if (in_crc != global->content_crc)
-   {
-      RARCH_ERR("CRC32 mismatch, got 0x%x, expected 0x%x.\n", in_crc,
-            global->content_crc);
-      return false;
-   }
-
-   in_state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
-   if (in_state_size != core.retro_serialize_size())
-   {
-      RARCH_ERR("Serialization size mismatch, got 0x%x, expected 0x%x.\n",
-            (unsigned)in_state_size, (unsigned)core.retro_serialize_size());
-      return false;
-   }
-
-   return true;
-}
-
-static bool get_info_spectate(netplay_t *netplay)
-{
-   size_t save_state_size, size;
-   void *buf          = NULL;
-   uint32_t header[4] = {0};
-   char msg[512]      = {0};
-   bool ret           = true;
-
-   if (!send_nickname(netplay, netplay->fd))
-   {
-      RARCH_ERR("Failed to send nickname to host.\n");
-      return false;
-   }
-
-   if (!get_nickname(netplay, netplay->fd))
-   {
-      RARCH_ERR("Failed to receive nickname from host.\n");
-      return false;
-   }
-
-   snprintf(msg, sizeof(msg), "Connected to \"%s\"", netplay->other_nick);
-   runloop_msg_queue_push(msg, 1, 180, false);
-   RARCH_LOG("%s\n", msg);
-
-
-   if (!socket_receive_all_blocking(netplay->fd, header, sizeof(header)))
-   {
-      RARCH_ERR("Cannot get header from host.\n");
-      return false;
-   }
-
-   save_state_size = core.retro_serialize_size();
-   if (!bsv_parse_header(header, implementation_magic_value()))
-   {
-      RARCH_ERR("Received invalid BSV header from host.\n");
-      return false;
-   }
-
-   buf = malloc(save_state_size);
-   if (!buf)
-      return false;
-
-   size = save_state_size;
-
-   if (!socket_receive_all_blocking(netplay->fd, buf, size))
-   {
-      RARCH_ERR("Failed to receive save state from host.\n");
-      free(buf);
-      return false;
-   }
-
-   if (save_state_size)
-      ret = core.retro_unserialize(buf, save_state_size);
-
-   free(buf);
-   return ret;
-}
-
-static bool init_buffers(netplay_t *netplay)
-{
-   unsigned i;
-
-   if (!netplay)
-      return false;
-
-   netplay->buffer = (struct delta_frame*)calloc(netplay->buffer_size,
-         sizeof(*netplay->buffer));
-   
-   if (!netplay->buffer)
-      return false;
-
-   netplay->state_size = core.retro_serialize_size();
-
-   for (i = 0; i < netplay->buffer_size; i++)
-   {
-      netplay->buffer[i].state = malloc(netplay->state_size);
-
-      if (!netplay->buffer[i].state)
-         return false;
-
-      netplay->buffer[i].is_simulated = true;
-   }
-
-   return true;
-}
-
 /**
  * netplay_new:
  * @server               : IP address of server.
@@ -1252,8 +806,13 @@ netplay_t *netplay_new(const char *server, uint16_t port,
    netplay->cbs               = *cb;
    netplay->port              = server ? 0 : 1;
    netplay->spectate.enabled  = spectate;
-   netplay->spectate.client   = server != NULL;
+   netplay->is_server         = server == NULL;
    strlcpy(netplay->nick, nick, sizeof(netplay->nick));
+
+   if(spectate)
+      netplay->net_cbs = netplay_get_cbs_spectate();
+   else
+      netplay->net_cbs = netplay_get_cbs_net();
 
    if (!init_socket(netplay, server, port))
    {
@@ -1261,37 +820,8 @@ netplay_t *netplay_new(const char *server, uint16_t port,
       return NULL;
    }
 
-   if (spectate)
-   {
-      if (server)
-      {
-         if (!get_info_spectate(netplay))
-            goto error;
-      }
-
-      for (i = 0; i < MAX_SPECTATORS; i++)
-         netplay->spectate.fds[i] = -1;
-   }
-   else
-   {
-      if (server)
-      {
-         if (!send_info(netplay))
-            goto error;
-      }
-      else
-      {
-         if (!get_info(netplay))
-            goto error;
-      }
-
-      netplay->buffer_size = frames + 1;
-
-      if (!init_buffers(netplay))
-         goto error;
-
-      netplay->has_connection = true;
-   }
+   if(!info_cb(netplay, frames))
+      goto error;
 
    return netplay;
 
@@ -1441,20 +971,6 @@ void netplay_free(netplay_t *netplay)
    free(netplay);
 }
 
-/**
- * netplay_pre_frame_net:   
- * @netplay              : pointer to netplay object
- *
- * Pre-frame for Netplay (normal version).
- **/
-static void netplay_pre_frame_net(netplay_t *netplay)
-{
-   core.retro_serialize(netplay->buffer[netplay->self_ptr].state,
-         netplay->state_size);
-   netplay->can_poll = true;
-
-   input_poll_net();
-}
 
 static void netplay_set_spectate_input(netplay_t *netplay, int16_t input)
 {
@@ -1502,104 +1018,6 @@ int16_t input_state_spectate_client(unsigned port, unsigned device,
 }
 
 /**
- * netplay_pre_frame_spectate:   
- * @netplay              : pointer to netplay object
- *
- * Pre-frame for Netplay (spectate mode version).
- **/
-static void netplay_pre_frame_spectate(netplay_t *netplay)
-{
-   unsigned i;
-   uint32_t *header;
-   int new_fd, idx, bufsize;
-   size_t header_size;
-   struct sockaddr_storage their_addr;
-   socklen_t addr_size;
-   fd_set fds;
-   struct timeval tmp_tv = {0};
-
-   if (netplay->spectate.client)
-      return;
-
-   FD_ZERO(&fds);
-   FD_SET(netplay->fd, &fds);
-
-   if (socket_select(netplay->fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
-      return;
-
-   if (!FD_ISSET(netplay->fd, &fds))
-      return;
-
-   addr_size = sizeof(their_addr);
-   new_fd = accept(netplay->fd, (struct sockaddr*)&their_addr, &addr_size);
-   if (new_fd < 0)
-   {
-      RARCH_ERR("Failed to accept incoming spectator.\n");
-      return;
-   }
-
-   idx = -1;
-   for (i = 0; i < MAX_SPECTATORS; i++)
-   {
-      if (netplay->spectate.fds[i] == -1)
-      {
-         idx = i;
-         break;
-      }
-   }
-
-   /* No vacant client streams :( */
-   if (idx == -1)
-   {
-      socket_close(new_fd);
-      return;
-   }
-
-   if (!get_nickname(netplay, new_fd))
-   {
-      RARCH_ERR("Failed to get nickname from client.\n");
-      socket_close(new_fd);
-      return;
-   }
-
-   if (!send_nickname(netplay, new_fd))
-   {
-      RARCH_ERR("Failed to send nickname to client.\n");
-      socket_close(new_fd);
-      return;
-   }
-
-   header = bsv_header_generate(&header_size,
-         implementation_magic_value());
-
-   if (!header)
-   {
-      RARCH_ERR("Failed to generate BSV header.\n");
-      socket_close(new_fd);
-      return;
-   }
-
-   bufsize = header_size;
-   setsockopt(new_fd, SOL_SOCKET, SO_SNDBUF, (const char*)&bufsize,
-         sizeof(int));
-
-   if (!socket_send_all_blocking(new_fd, header, header_size))
-   {
-      RARCH_ERR("Failed to send header to client.\n");
-      socket_close(new_fd);
-      free(header);
-      return;
-   }
-
-   free(header);
-   netplay->spectate.fds[idx] = new_fd;
-
-#ifndef HAVE_SOCKET_LEGACY
-   log_connection(&their_addr, idx, netplay->other_nick);
-#endif
-}
-
-/**
  * netplay_pre_frame:   
  * @netplay              : pointer to netplay object
  *
@@ -1608,111 +1026,8 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
  **/
 void netplay_pre_frame(netplay_t *netplay)
 {
-   if (netplay->spectate.enabled)
-      netplay_pre_frame_spectate(netplay);
-   else
-      netplay_pre_frame_net(netplay);
-}
-
-/**
- * netplay_post_frame_net:   
- * @netplay              : pointer to netplay object
- *
- * Post-frame for Netplay (normal version).
- * We check if we have new input and replay from recorded input.
- **/
-static void netplay_post_frame_net(netplay_t *netplay)
-{
-   netplay->frame_count++;
-
-   /* Nothing to do... */
-   if (netplay->other_frame_count == netplay->read_frame_count)
-      return;
-
-   /* Skip ahead if we predicted correctly.
-    * Skip until our simulation failed. */
-   while (netplay->other_frame_count < netplay->read_frame_count)
-   {
-      const struct delta_frame *ptr = &netplay->buffer[netplay->other_ptr];
-
-      if ((ptr->simulated_input_state != ptr->real_input_state)
-            && !ptr->used_real)
-         break;
-      netplay->other_ptr = NEXT_PTR(netplay->other_ptr);
-      netplay->other_frame_count++;
-   }
-
-   if (netplay->other_frame_count < netplay->read_frame_count)
-   {
-      bool first = true;
-
-      /* Replay frames. */
-      netplay->is_replay = true;
-      netplay->tmp_ptr = netplay->other_ptr;
-      netplay->tmp_frame_count = netplay->other_frame_count;
-
-      core.retro_unserialize(netplay->buffer[netplay->other_ptr].state,
-            netplay->state_size);
-
-      while (first || (netplay->tmp_ptr != netplay->self_ptr))
-      {
-         core.retro_serialize(netplay->buffer[netplay->tmp_ptr].state,
-               netplay->state_size);
-#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
-         lock_autosave();
-#endif
-         core.retro_run();
-#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
-         unlock_autosave();
-#endif
-         netplay->tmp_ptr = NEXT_PTR(netplay->tmp_ptr);
-         netplay->tmp_frame_count++;
-         first = false;
-      }
-
-      netplay->other_ptr = netplay->read_ptr;
-      netplay->other_frame_count = netplay->read_frame_count;
-      netplay->is_replay = false;
-   }
-}
-
-/**
- * netplay_post_frame_spectate:   
- * @netplay              : pointer to netplay object
- *
- * Post-frame for Netplay (spectate mode version).
- * We check if we have new input and replay from recorded input.
- **/
-static void netplay_post_frame_spectate(netplay_t *netplay)
-{
-   unsigned i;
-
-   if (netplay->spectate.client)
-      return;
-
-   for (i = 0; i < MAX_SPECTATORS; i++)
-   {
-      char msg[128];
-
-      if (netplay->spectate.fds[i] == -1)
-         continue;
-
-      if (socket_send_all_blocking(netplay->spectate.fds[i],
-               netplay->spectate.input,
-               netplay->spectate.input_ptr * sizeof(int16_t)))
-         continue;
-
-      RARCH_LOG("Client (#%u) disconnected ...\n", i);
-
-      snprintf(msg, sizeof(msg), "Client (#%u) disconnected.", i);
-      runloop_msg_queue_push(msg, 1, 180, false);
-
-      socket_close(netplay->spectate.fds[i]);
-      netplay->spectate.fds[i] = -1;
-      break;
-   }
-
-   netplay->spectate.input_ptr = 0;
+   assert(netplay && netplay->net_cbs->pre_frame);
+   netplay->net_cbs->pre_frame(netplay);
 }
 
 /**
@@ -1725,10 +1040,8 @@ static void netplay_post_frame_spectate(netplay_t *netplay)
  **/
 void netplay_post_frame(netplay_t *netplay)
 {
-   if (netplay->spectate.enabled)
-      netplay_post_frame_spectate(netplay);
-   else
-      netplay_post_frame_net(netplay);
+   assert(netplay && netplay->net_cbs->post_frame);
+   netplay->net_cbs->post_frame(netplay);
 }
 
 void deinit_netplay(void)
@@ -1738,8 +1051,6 @@ void deinit_netplay(void)
       netplay_free(netplay);
    netplay_data = NULL;
 }
-
-#define RARCH_DEFAULT_PORT 55435
 
 /**
  * init_netplay:

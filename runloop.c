@@ -60,7 +60,7 @@
 #endif
 
 #ifdef HAVE_NETPLAY
-#include "netplay.h"
+#include "netplay/netplay.h"
 #endif
 
 #include "verbosity.h"
