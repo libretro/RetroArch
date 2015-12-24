@@ -59,7 +59,7 @@ bool check_netplay_synched(netplay_t* netplay)
    return netplay->frame_count < (netplay->flip_frame + 2 * UDP_FRAME_PACKETS);
 }
 
-static bool info_cb(netplay_t* netplay, unsigned frames) {
+static bool netplay_info_cb(netplay_t* netplay, unsigned frames) {
    return netplay->net_cbs->info_cb(netplay, frames);
 }
 
@@ -791,7 +791,6 @@ netplay_t *netplay_new(const char *server, uint16_t port,
       bool spectate,
       const char *nick)
 {
-   unsigned i;
    netplay_t *netplay = NULL;
 
    if (frames > UDP_FRAME_PACKETS)
@@ -820,7 +819,7 @@ netplay_t *netplay_new(const char *server, uint16_t port,
       return NULL;
    }
 
-   if(!info_cb(netplay, frames))
+   if(!netplay_info_cb(netplay, frames))
       goto error;
 
    return netplay;

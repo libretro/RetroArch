@@ -21,7 +21,7 @@
  *
  * Pre-frame for Netplay (normal version).
  **/
-static void pre_frame(netplay_t *netplay)
+static void netplay_net_pre_frame(netplay_t *netplay)
 {
    core.retro_serialize(netplay->buffer[netplay->self_ptr].state,
          netplay->state_size);
@@ -37,7 +37,7 @@ static void pre_frame(netplay_t *netplay)
  * Post-frame for Netplay (normal version).
  * We check if we have new input and replay from recorded input.
  **/
-static void post_frame(netplay_t *netplay)
+static void netplay_net_post_frame(netplay_t *netplay)
 {
    netplay->frame_count++;
 
@@ -91,7 +91,7 @@ static void post_frame(netplay_t *netplay)
       netplay->is_replay = false;
    }
 }
-static bool init_buffers(netplay_t *netplay)
+static bool netplay_net_init_buffers(netplay_t *netplay)
 {
    unsigned i;
 
@@ -119,7 +119,7 @@ static bool init_buffers(netplay_t *netplay)
    return true;
 }
 
-static bool info_cb(netplay_t* netplay, unsigned frames)
+static bool netplay_net_info_cb(netplay_t* netplay, unsigned frames)
 {
    if (np_is_server(netplay))
    {
@@ -134,7 +134,7 @@ static bool info_cb(netplay_t* netplay, unsigned frames)
 
    netplay->buffer_size = frames + 1;
 
-   if (!init_buffers(netplay))
+   if (!netplay_net_init_buffers(netplay))
       return false;
 
    netplay->has_connection = true;
@@ -145,9 +145,9 @@ static bool info_cb(netplay_t* netplay, unsigned frames)
 struct netplay_callbacks* netplay_get_cbs_net(void)
 {
    static struct netplay_callbacks cbs = {
-      &pre_frame,
-      &post_frame,
-      &info_cb
+      &netplay_net_pre_frame,
+      &netplay_net_post_frame,
+      &netplay_net_info_cb
    };
    return &cbs;
 }

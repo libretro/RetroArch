@@ -22,7 +22,7 @@
  *
  * Pre-frame for Netplay (spectate mode version).
  **/
-static void pre_frame(netplay_t *netplay)
+static void netplay_spectate_pre_frame(netplay_t *netplay)
 {
    unsigned i;
    uint32_t *header;
@@ -121,7 +121,7 @@ static void pre_frame(netplay_t *netplay)
  * Post-frame for Netplay (spectate mode version).
  * We check if we have new input and replay from recorded input.
  **/
-static void post_frame(netplay_t *netplay)
+static void netplay_spectate_post_frame(netplay_t *netplay)
 {
    unsigned i;
 
@@ -153,7 +153,7 @@ static void post_frame(netplay_t *netplay)
    netplay->spectate.input_ptr = 0;
 }
 
-static bool info_cb(netplay_t *netplay, unsigned frames)
+static bool netplay_spectate_info_cb(netplay_t *netplay, unsigned frames)
 {
    unsigned i;
    if(np_is_server(netplay))
@@ -170,9 +170,9 @@ static bool info_cb(netplay_t *netplay, unsigned frames)
 struct netplay_callbacks* netplay_get_cbs_spectate(void)
 {
    static struct netplay_callbacks cbs = {
-      &pre_frame,
-      &post_frame,
-      &info_cb
+      &netplay_spectate_pre_frame,
+      &netplay_spectate_post_frame,
+      &netplay_spectate_info_cb
    };
 
    return &cbs;
