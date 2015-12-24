@@ -111,7 +111,7 @@ static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t size)
          do{
             svcSleepThread(100000);
             sample_pos = ndspChnGetSamplePos(ctr->channel);
-         }while (((sample_pos - (ctr->pos + size >>2)) & CTR_DSP_AUDIO_COUNT_MASK) > (CTR_DSP_AUDIO_COUNT >> 1)
+         }while (((sample_pos - (ctr->pos + (size >>2))) & CTR_DSP_AUDIO_COUNT_MASK) > (CTR_DSP_AUDIO_COUNT >> 1)
                  || (((ctr->pos - (CTR_DSP_AUDIO_COUNT >> 4) - sample_pos) & CTR_DSP_AUDIO_COUNT_MASK) > (CTR_DSP_AUDIO_COUNT >> 1)));
       }
    }
