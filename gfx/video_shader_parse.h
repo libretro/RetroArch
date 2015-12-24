@@ -39,7 +39,7 @@ extern "C" {
 #endif
 
 #ifndef GFX_MAX_PARAMETERS
-#define GFX_MAX_PARAMETERS 64
+#define GFX_MAX_PARAMETERS 128
 #endif
 
 enum rarch_shader_type
