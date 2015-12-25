@@ -14,13 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <net/net_compat.h>
-#include <retro_endianness.h>
-
 #include "netplay_private.h"
 
 /**
