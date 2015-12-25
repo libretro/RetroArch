@@ -407,29 +407,7 @@ static void linux_cpu_init(void)
 
 #ifdef __i386__
    g_cpuFamily = CPU_FAMILY_X86;
-
-   int regs[4];
-
-   /* According to http://en.wikipedia.org/wiki/CPUID */
-#define VENDOR_INTEL_b  0x756e6547
-#define VENDOR_INTEL_c  0x6c65746e
-#define VENDOR_INTEL_d  0x49656e69
-
-   x86_cpuid(0, regs);
-   int vendorIsIntel = (regs[1] == VENDOR_INTEL_b &&
-         regs[2] == VENDOR_INTEL_c &&
-         regs[3] == VENDOR_INTEL_d);
-
-   x86_cpuid(1, regs);
-   if ((regs[2] & (1 << 9)))
-      g_cpuFeatures |= CPU_X86_FEATURE_SSSE3;
-   if ((regs[2] & (1 << 23)))
-      g_cpuFeatures |= CPU_X86_FEATURE_POPCNT;
-   if (vendorIsIntel && (regs[2] & (1 << 22)))
-      g_cpuFeatures |= CPU_X86_FEATURE_MOVBE;
-#endif
-
-#ifdef _MIPS_ARCH
+#elif defined(_MIPS_ARCH)
    g_cpuFamily = CPU_FAMILY_MIPS;
 #endif
 
