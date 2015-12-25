@@ -793,6 +793,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *
 #ifdef HAVE_NETWORKING
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_updater_list);
 #endif
+            break;
          case MENU_LABEL_DEFERRED_LAKKA_LIST:
 #ifdef HAVE_NETWORKING
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_lakka_list);

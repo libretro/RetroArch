@@ -2925,6 +2925,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          info->need_push    = true;
          info->need_refresh = true;
 #endif
+         break;
       case DISPLAYLIST_LAKKA:
 #ifdef HAVE_NETWORKING
          print_buf_lines(info->list, core_buf, core_len, MENU_FILE_DOWNLOAD_LAKKA);
