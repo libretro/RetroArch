@@ -541,6 +541,7 @@ static void menu_free(menu_handle_t *menu)
    free(menu);
 }
 
+#ifdef HAVE_ZLIB
 static void bundle_decompressed(void *task_data, void *user_data, const char *err)
 {
    settings_t      *settings   = config_get_ptr();
@@ -562,6 +563,7 @@ static void bundle_decompressed(void *task_data, void *user_data, const char *er
    settings->bundle_assets_extract_last_version = settings->bundle_assets_extract_version_current;
    settings->bundle_finished = true;
 }
+#endif
 
 /**
  * menu_init:
