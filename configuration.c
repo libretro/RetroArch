@@ -2126,7 +2126,7 @@ bool config_load_remap(void)
 
    if (!core_name  || !game_name)
       return false;
-   if (core_name[0] == '\0' || game_name == '\0')
+   if (core_name[0] == '\0' || game_name[0] == '\0')
       return false;
 
    RARCH_LOG("Remaps: core name: %s\n", core_name);

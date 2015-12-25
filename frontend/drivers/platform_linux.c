@@ -757,8 +757,12 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    if (pipe(msgpipe))
    {
       RARCH_ERR("could not create pipe: %s.\n", strerror(errno));
+      if(android_app->savedState)
+        free(android_app->savedState);
+      free(android_app);
       return NULL;
    }
+
    android_app->msgread  = msgpipe[0];
    android_app->msgwrite = msgpipe[1];
 

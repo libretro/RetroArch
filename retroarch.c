@@ -359,8 +359,12 @@ static void set_paths_redirect(const char *path)
    rarch_system_info_t      *info      = NULL;
    
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
-
-   if (global && info->info.library_name &&
+   if (!global)
+   {
+    RARCH_WARN("set_paths_redirect was sent a NULL \"global\" pointer.");
+    return;
+   }
+   if (info->info.library_name &&
             (info->info.library_name[0] != '\0'))
          global_library_name_hash = msg_hash_calculate(info->info.library_name);
 
@@ -1638,6 +1642,7 @@ int rarch_defer_core(void *data, const char *dir,
    }
    else
 #endif
+    if (info)
       strlcpy(new_core_path, info->path, sizeof(new_core_path));
 
    /* There are multiple deferred cores and a
