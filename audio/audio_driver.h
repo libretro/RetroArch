@@ -148,6 +148,7 @@ void audio_driver_dsp_filter_init(const char *device);
 void audio_driver_set_buffer_size(size_t bufsize);
 
 void audio_driver_set_callback(const void *info);
+void audio_driver_unset_callback(void);
 
 void audio_driver_callback_set_state(bool state);
 

@@ -261,12 +261,6 @@ static bool uninit_audio(void)
    rarch_resampler_freep(&audio_driver_resampler,
          &audio_driver_resampler_data);
 
-   if (audio_driver_data.audio_callback.callback)
-   {
-      audio_driver_data.audio_callback.callback  = NULL;
-      audio_driver_data.audio_callback.set_state = NULL;
-   }
-
    if (audio_driver_data.data)
       free(audio_driver_data.data);
    audio_driver_data.data = NULL;
@@ -673,6 +667,12 @@ void audio_driver_dsp_filter_init(const char *device)
 void audio_driver_set_buffer_size(size_t bufsize)
 {
    audio_driver_data.driver_buffer_size = bufsize;
+}
+
+void audio_driver_unset_callback(void)
+{
+   audio_driver_data.audio_callback.callback  = NULL;
+   audio_driver_data.audio_callback.set_state = NULL;
 }
 
 void audio_driver_set_callback(const void *data)

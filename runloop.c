@@ -585,7 +585,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             free(runloop_system.ports);
          runloop_system.ports   = NULL;
 
-         runloop_key_event      = NULL;
+         runloop_key_event = NULL;
+         global_get_ptr()->frontend_key_event = NULL;
+         audio_driver_unset_callback();
          memset(&runloop_system, 0, sizeof(rarch_system_info_t));
          break;
       case RUNLOOP_CTL_IS_FRAME_COUNT_END:
