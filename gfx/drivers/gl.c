@@ -1946,7 +1946,8 @@ static void gl_free(void *data)
    }
 #endif
 
-   font_driver_free(NULL);
+   if (font_driver_has_render_msg())
+      font_driver_free(NULL);
    gl_shader_deinit(gl);
 
 #ifndef NO_GL_FF_VERTEX
