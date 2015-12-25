@@ -430,6 +430,11 @@ unsigned retro_get_cpu_cores(void)
 #endif
 }
 
+/* According to http://en.wikipedia.org/wiki/CPUID */
+#define VENDOR_INTEL_b  0x756e6547
+#define VENDOR_INTEL_c  0x6c65746e
+#define VENDOR_INTEL_d  0x49656e69
+
 /**
  * retro_get_cpu_features:
  *
@@ -446,6 +451,7 @@ uint64_t retro_get_cpu_features(void)
    uint64_t cpu        = 0;
    unsigned max_flag   = 0;
 #if defined(CPU_X86)
+   int vendor_is_intel = 0;
    const int avx_flags = (1 << 27) | (1 << 28);
 #endif
 
@@ -469,6 +475,11 @@ uint64_t retro_get_cpu_features(void)
    memcpy(vendor, vendor_shuffle, sizeof(vendor_shuffle));
 
    RARCH_LOG("[CPUID]: Vendor: %s\n", vendor);
+
+   vendor_is_intel = (
+         flags[1] == VENDOR_INTEL_b &&
+         flags[2] == VENDOR_INTEL_c &&
+         flags[3] == VENDOR_INTEL_d);
 
    max_flag = flags[0];
    if (max_flag < 1) /* Does CPUID not support func = 1? (unlikely ...) */
@@ -504,6 +515,9 @@ uint64_t retro_get_cpu_features(void)
 
    if ((flags[2] & (1 << 23)))
       cpu |= RETRO_SIMD_POPCNT;
+
+   if (vendor_is_intel && (flags[2] & (1 << 22)))
+      cpu |= RETRO_SIMD_MOVBE;
 
    if (flags[2] & (1 << 25))
       cpu |= RETRO_SIMD_AES;
