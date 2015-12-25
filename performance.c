@@ -305,7 +305,7 @@ retro_time_t retro_get_time_usec(void)
 #endif
 
 #ifdef CPU_X86
-static void x86_cpuid(int func, int flags[4])
+void x86_cpuid(int func, int flags[4])
 {
    /* On Android, we compile RetroArch with PIC, and we
     * are not allowed to clobber the ebx register. */
