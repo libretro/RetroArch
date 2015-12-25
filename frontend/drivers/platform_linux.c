@@ -84,7 +84,7 @@ static void cpu_x86_cpuid(int func, int values[4])
 #endif
 
 #ifdef __ARM_ARCH__
-/* Extract the content of a the first occurence of a given field in
+/* Extract the content of a the first occurrence of a given field in
  * the content of /proc/cpuinfo and return it as a heap-allocated
  * string that must be freed by the caller.
  *
@@ -97,7 +97,7 @@ static char *extract_cpuinfo_field(char* buffer, ssize_t length, const char* fie
    int  fieldlen = strlen(field);
    char* bufend  = buffer + length;
    char* result  = NULL;
-   /* Look for first field occurence, and ensures it starts the line. */
+   /* Look for first field occurrence, and ensures it starts the line. */
    const char *p = buffer;
 
    bufend = buffer + length;
