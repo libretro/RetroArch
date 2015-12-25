@@ -176,6 +176,7 @@ void system_exec_wii(const char *_path, bool should_load_game)
    /* don't use memcpy, there might be an overlap. */
    memmove(EXECUTE_ADDR, dol, size);
    DCFlushRange(EXECUTE_ADDR, size);
+   free(dol);
 
    dol_copy_argv_path(path, should_load_game ? game_path : NULL);
 
