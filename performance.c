@@ -486,6 +486,7 @@ uint64_t retro_get_cpu_features(void)
       cpu |= RETRO_SIMD_MMXEXT;
    }
 
+
    if (flags[3] & (1 << 26))
       cpu |= RETRO_SIMD_SSE2;
 
@@ -500,6 +501,9 @@ uint64_t retro_get_cpu_features(void)
 
    if (flags[2] & (1 << 20))
       cpu |= RETRO_SIMD_SSE42;
+
+   if ((flags[2] & (1 << 23)))
+      cpu |= RETRO_SIMD_POPCNT;
 
    if (flags[2] & (1 << 25))
       cpu |= RETRO_SIMD_AES;

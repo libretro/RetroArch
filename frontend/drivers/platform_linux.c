@@ -421,11 +421,11 @@ static void linux_cpu_init(void)
          regs[3] == VENDOR_INTEL_d);
 
    x86_cpuid(1, regs);
-   if ((regs[2] & (1 << 9)) != 0)
+   if ((regs[2] & (1 << 9)))
       g_cpuFeatures |= CPU_X86_FEATURE_SSSE3;
-   if ((regs[2] & (1 << 23)) != 0)
+   if ((regs[2] & (1 << 23)))
       g_cpuFeatures |= CPU_X86_FEATURE_POPCNT;
-   if (vendorIsIntel && (regs[2] & (1 << 22)) != 0)
+   if (vendorIsIntel && (regs[2] & (1 << 22)))
       g_cpuFeatures |= CPU_X86_FEATURE_MOVBE;
 #endif
 
