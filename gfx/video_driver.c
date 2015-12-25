@@ -322,6 +322,12 @@ uintptr_t video_driver_get_current_framebuffer(void)
    return 0;
 }
 
+bool video_driver_get_current_software_framebuffer(struct retro_framebuffer *framebuffer)
+{
+   if (video_driver_poke && video_driver_poke->get_current_software_framebuffer)
+      return video_driver_poke->get_current_software_framebuffer(video_driver_data, framebuffer);
+   return false;
+}
 
 retro_proc_address_t video_driver_get_proc_address(const char *sym)
 {

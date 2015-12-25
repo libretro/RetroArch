@@ -217,6 +217,7 @@ typedef struct video_poke_interface
    void (*grab_mouse_toggle)(void *data);
 
    struct video_shader *(*get_current_shader)(void *data);
+   bool (*get_current_software_framebuffer)(void *data, struct retro_framebuffer *framebuffer);
 } video_poke_interface_t;
 
 typedef struct video_viewport
@@ -370,6 +371,8 @@ void *video_driver_get_ptr(bool force_nonthreaded_data);
  * Returns: pointer to hardware framebuffer object, otherwise 0.
  **/
 uintptr_t video_driver_get_current_framebuffer(void);
+
+bool video_driver_get_current_software_framebuffer(struct retro_framebuffer *framebuffer);
 
 retro_proc_address_t video_driver_get_proc_address(const char *sym);
 

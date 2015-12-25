@@ -890,6 +890,36 @@ enum retro_mod
                                             * Returns the specified language of the frontend, if specified by the user.
                                             * It can be used by the core for localization purposes.
                                             */
+#define RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER (40 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* struct retro_framebuffer * --
+                                            * Returns a preallocated framebuffer which the core can use for rendering
+                                            * the frame into when not using SET_HW_RENDER.
+                                            * The framebuffer returned from this call must not be used
+                                            * after the current call to retro_run() returns.
+                                            *
+                                            * The goal of this call is to allow zero-copy behavior where a core
+                                            * can render directly into video memory, avoiding extra bandwidth cost by copying
+                                            * memory from core to video memory.
+                                            *
+                                            * If this call succeeds and the core renders into it,
+                                            * the framebuffer pointer and pitch can be passed to retro_video_refresh_t.
+                                            * If the buffer from GET_CURRENT_SOFTWARE_FRAMEBUFFER is to be used,
+                                            * the core must pass the exact
+                                            * same pointer as returned by GET_CURRENT_SOFTWARE_FRAMEBUFFER;
+                                            * i.e. passing a pointer which is offset from the
+                                            * buffer is undefined. The width, height and pitch parameters
+                                            * must also match exactly to the values obtained from GET_CURRENT_SOFTWARE_FRAMEBUFFER.
+                                            *
+                                            * It is possible for a frontend to return a different pixel format
+                                            * than the one used in SET_PIXEL_FORMAT. This can happen if the frontend
+                                            * needs to perform conversion.
+                                            *
+                                            * It is still valid for a core to render to a different buffer
+                                            * even if GET_CURRENT_SOFTWARE_FRAMEBUFFER succeeds.
+                                            *
+                                            * A frontend must make sure that the pointer obtained from this function is
+                                            * writeable (and readable).
+                                            */
 
 #define RETRO_MEMDESC_CONST     (1 << 0)   /* The frontend will never change this memory area once retro_load_game has returned. */
 #define RETRO_MEMDESC_BIGENDIAN (1 << 1)   /* The memory area contains big endian data. Default is little endian. */
@@ -1820,6 +1850,36 @@ struct retro_game_info
                             * if need_fullpath was set. */
    size_t      size;       /* Size of memory buffer. */
    const char *meta;       /* String of implementation specific meta-data. */
+};
+
+#define RETRO_MEMORY_ACCESS_WRITE (1 << 0)
+   /* The core will write to the buffer provided by retro_framebuffer::data. */
+#define RETRO_MEMORY_ACCESS_READ (1 << 1)
+   /* The core will read from retro_framebuffer::data. */
+#define RETRO_MEMORY_TYPE_CACHED (1 << 0)
+   /* The memory in data is cached.
+    * If not cached, random writes and/or reading from the buffer is expected to be very slow. */
+struct retro_framebuffer
+{
+   void *data;                      /* The framebuffer which the core can render into.
+                                       Set by frontend in GET_CURRENT_SOFTWARE_FRAMEBUFFER.
+                                       The initial contents of data are unspecified. */
+   unsigned width;                  /* The framebuffer width used by the core. Set by core. */
+   unsigned height;                 /* The framebuffer height used by the core. Set by core. */
+   size_t pitch;                    /* The number of bytes between the beginning of a scanline,
+                                       and beginning of the next scanline.
+                                       Set by frontend in GET_CURRENT_SOFTWARE_FRAMEBUFFER. */
+   enum retro_pixel_format format;  /* The pixel format the core must use to render into data.
+                                       This format could differ from the format used in
+                                       SET_PIXEL_FORMAT.
+                                       Set by frontend in GET_CURRENT_SOFTWARE_FRAMEBUFFER. */
+
+   unsigned access_flags;           /* How the core will access the memory in the framebuffer.
+                                       RETRO_MEMORY_ACCESS_* flags.
+                                       Set by core. */
+   unsigned memory_flags;           /* Flags telling core how the memory has been mapped.
+                                       RETRO_MEMORY_TYPE_* flags.
+                                       Set by frontend in GET_CURRENT_SOFTWARE_FRAMEBUFFER. */
 };
 
 /* Callbacks */
