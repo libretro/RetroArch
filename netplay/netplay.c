@@ -1140,7 +1140,13 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 
    return false;
 }
-
+/* /!\
+   netplay.c does something naughty and undefines
+   sockaddr_storage and addrinfo. This is disastrous
+   for griffin builds.
+   
+   TODO: put this somewhere safer.
+ */
 #ifdef HAVE_SOCKET_LEGACY
 
 #undef sockaddr_storage
