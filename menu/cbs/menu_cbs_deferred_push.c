@@ -43,6 +43,7 @@
 #define CB_UPDATE_SHADERS_CG           0xc93a53feU
 #define CB_CORE_CONTENT_LIST           0xebc51227U
 #define CB_CORE_CONTENT_DOWNLOAD       0x03b3c0a3U
+#define CB_LAKKA_DOWNLOAD              0x54eaa904U
 
 #ifndef BIND_ACTION_DEFERRED_PUSH
 #define BIND_ACTION_DEFERRED_PUSH(cbs, name) \
@@ -421,6 +422,9 @@ void cb_generic_download(void *task_data, void *user_data, const char *err)
          dir_path = shaderdir;
          break;
       }
+      case CB_LAKKA_DOWNLOAD:
+         dir_path = "/storage/.update/"; /* TODO unhardcode this ? */
+         break;
       default:
          RARCH_WARN("Unknown transfer type '%u' bailing out.\n", transf->type_hash);
          break;
@@ -489,6 +493,12 @@ static int deferred_push_core_content_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_CORE_CONTENT);
 }
+
+static int deferred_push_lakka_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_LAKKA);
+}
+
 #endif
 
 static int deferred_archive_action_detect_core(menu_displaylist_info_t *info)
@@ -782,6 +792,10 @@ static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *
          case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
 #ifdef HAVE_NETWORKING
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_updater_list);
+#endif
+         case MENU_LABEL_DEFERRED_LAKKA_LIST:
+#ifdef HAVE_NETWORKING
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_lakka_list);
 #endif
             break;
          case MENU_LABEL_LOAD_CONTENT_HISTORY:
