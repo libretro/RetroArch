@@ -41,6 +41,8 @@
 #include "cheevos.h"
 #endif
 
+#include "libretro_private.h"
+#include "libretro_version_1.h"
 #include "verbosity.h"
 #include "runloop.h"
 #include "configuration.h"

@@ -27,6 +27,7 @@
 #endif
 
 #include "../frontend_driver.h"
+#include "../../verbosity.h"
 #include "../../defaults.h"
 #include "retroarch.h"
 #include "audio/audio_driver.h"

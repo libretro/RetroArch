@@ -50,7 +50,6 @@ else
 	OBJS += gfx/video_context_driver.o
 	OBJS += gfx/drivers_context/gfx_null_ctx.o
 	OBJS += gfx/image/image.o
-	OBJS += gfx/video_texture.o
 	OBJS += libretro-common/formats/tga/rtga.o
 	OBJS += libretro-common/formats/png/rpng.o
 	OBJS += libretro-common/formats/png/rpng_encode.o
@@ -59,18 +58,15 @@ else
 	OBJS += libretro-common/gfx/math/matrix_3x3.o
 	OBJS += gfx/drivers/ctr_gfx.o
 	OBJS += gfx/drivers/nullgfx.o
-	OBJS += gfx/font_renderer_driver.o
-	OBJS += gfx/drivers_font_renderer/bitmapfont.o
 	OBJS += gfx/font_driver.o
+	OBJS += gfx/drivers_font_renderer/bitmapfont.o
 	OBJS += input/input_autodetect.o
 	OBJS += input/input_joypad_driver.o
-	OBJS += input/input_joypad.o
 	OBJS += input/input_hid_driver.o
-	OBJS += input/input_common.o
+	OBJS += input/input_config.o
 	OBJS += input/input_keymaps.o
 	OBJS += input/input_remapping.o
-	OBJS += input/input_sensor.o
-	OBJS += input/keyboard_line.o
+	OBJS += input/input_keyboard.o
 	OBJS += input/drivers/ctr_input.o
 	OBJS += input/drivers_joypad/ctr_joypad.o
 	OBJS += input/autoconf/builtin_ctr.o
@@ -95,7 +91,6 @@ else
 	OBJS += audio/audio_driver.o
 	OBJS += camera/camera_driver.o
 	OBJS += location/location_driver.o
-	OBJS += menu/menu_driver.o
 	OBJS += driver.o
 	OBJS += libretro-common/gfx/scaler/scaler_filter.o
 	OBJS += libretro-common/gfx/scaler/pixconv.o
@@ -151,11 +146,7 @@ else
 	OBJS += frontend/frontend.o
 	OBJS += libretro_version_1.o
 	OBJS += retroarch.o
-	OBJS += retroarch_info.o
 	OBJS += runloop.o
-	OBJS += runloop_data.o
-	OBJS += runloop_msg.o
-	OBJS += system.o
 	OBJS += tasks/tasks.o
 	OBJS += msg_hash.o
 	OBJS += intl/msg_hash_de.o
@@ -170,10 +161,11 @@ else
 	OBJS += movie.o
 	OBJS += record/record_driver.o
 	OBJS += record/drivers/record_null.o
+	OBJS += tasks/task_decompress.o
 	OBJS += tasks/task_file_transfer.o
 	OBJS += screenshot.o
 	OBJS += playlist.o
-	OBJS += menu/menu.o
+	OBJS += menu/menu_driver.o
 	OBJS += menu/menu_hash.o
 	OBJS += menu/menu_input.o
 	OBJS += menu/menu_entry.o
@@ -259,7 +251,7 @@ INCDIRS := -I$(CTRULIB)/include
 LIBDIRS := -L. -L$(CTRULIB)/lib
 
 
-ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp
+ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp -mtp=soft
 
 CFLAGS	+=	-mword-relocations \
 			-fomit-frame-pointer -ffast-math \

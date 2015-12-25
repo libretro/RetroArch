@@ -38,6 +38,7 @@
 
 #include "libretro_private.h"
 #include "cores/internal_cores.h"
+#include "frontend/frontend_driver.h"
 #include "retroarch.h"
 #include "configuration.h"
 #include "general.h"
