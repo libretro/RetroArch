@@ -1946,14 +1946,13 @@ bool video_driver_texture_load(void *data,
       enum texture_filter_type  filter_type,
       unsigned *id)
 {
+#ifdef HAVE_THREADS
    settings_t *settings = config_get_ptr();
    const struct retro_hw_render_callback *hw_render =
       (const struct retro_hw_render_callback*)video_driver_callback();
+#endif
 
-   if (!id)
-      return false;
-
-   if (!video_driver_poke || !video_driver_poke->load_texture)
+   if (!id || !video_driver_poke || !video_driver_poke->load_texture)
       return false;
 
    *id = video_driver_poke->load_texture(video_driver_data, data,
