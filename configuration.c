@@ -21,6 +21,7 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <retro_stat.h>
+#include <string/stdstring.h>
 
 #include "audio/audio_driver.h"
 #include "configuration.h"
@@ -620,7 +621,7 @@ static void config_set_defaults(void)
 #ifdef HAVE_CHEEVOS
    settings->cheevos.enable                         = false;
    settings->cheevos.test_unofficial                = false;
-   *settings->cheevos.username                     = '\0';
+   *settings->cheevos.username                      = '\0';
    *settings->cheevos.password                      = '\0';
 #endif
 
@@ -1780,19 +1781,19 @@ static bool config_load_file(const char *path, bool set_defaults)
          RARCH_WARN("savestate_directory is not a directory, ignoring ...\n");
    }
 
-   if (settings->content_history_path[0] == '\0')
+   if (string_is_empty(settings->content_history_path))
    {
-      if (settings->content_history_directory[0] != '\0')
+      if (string_is_empty(settings->content_history_directory))
       {
-         fill_pathname_join(settings->content_history_path,
-               settings->content_history_directory,
-               "content_history.lpl",
+         fill_pathname_resolve_relative(settings->content_history_path,
+               global->path.config, "content_history.lpl",
                sizeof(settings->content_history_path));
       }
       else
       {
-         fill_pathname_resolve_relative(settings->content_history_path,
-               global->path.config, "content_history.lpl",
+         fill_pathname_join(settings->content_history_path,
+               settings->content_history_directory,
+               "content_history.lpl",
                sizeof(settings->content_history_path));
       }
    }
@@ -1934,7 +1935,7 @@ bool config_load_override(void)
    }
 
    /* Early return in case a library isn't loaded */
-   if (system->info.library_name[0] == '\0' || !strcmp(system->info.library_name,"No Core"))
+   if (string_is_empty(system->info.library_name) || !strcmp(system->info.library_name,"No Core"))
       return false;
 
    core_name = system ? system->info.library_name : NULL;
@@ -1942,7 +1943,7 @@ bool config_load_override(void)
 
    if (!core_name  || !game_name)
       return false;
-   if (core_name[0] == '\0' || game_name[0] == '\0')
+   if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
    RARCH_LOG("Overrides: core name: %s\n", core_name);
@@ -1951,9 +1952,9 @@ bool config_load_override(void)
    /* Config directory: config_directory.
     * Try config directory setting first,
     * fallback to the location of the current configuration file. */
-   if (settings->menu_config_directory[0] != '\0')
+   if (!string_is_empty(settings->menu_config_directory))
       strlcpy(config_directory, settings->menu_config_directory, PATH_MAX_LENGTH);
-   else if (global->path.config[0] != '\0')
+   else if (!string_is_empty(global->path.config))
       fill_pathname_basedir(config_directory, global->path.config, PATH_MAX_LENGTH);
    else
    {
@@ -2126,7 +2127,7 @@ bool config_load_remap(void)
 
    if (!core_name  || !game_name)
       return false;
-   if (core_name[0] == '\0' || game_name[0] == '\0')
+   if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
    RARCH_LOG("Remaps: core name: %s\n", core_name);
@@ -2134,13 +2135,13 @@ bool config_load_remap(void)
 
    /* Remap directory: remap_directory.
     * Try remap directory setting, no fallbacks defined */
-   if (settings->input_remapping_directory[0] != '\0')
-      strlcpy(remap_directory, settings->input_remapping_directory, PATH_MAX_LENGTH);
-   else
+   if (string_is_empty(settings->input_remapping_directory))
    {
       RARCH_WARN("Remaps: no remap directory set.\n");
       return false;
    }
+
+   strlcpy(remap_directory, settings->input_remapping_directory, PATH_MAX_LENGTH);
    RARCH_LOG("Remaps: remap directory: %s\n", remap_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */
