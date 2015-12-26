@@ -72,12 +72,26 @@
 #define DEFAULT_EXT ""
 #endif
 
+#define SHADER_EXT_GLSL      0x7c976537U
+#define SHADER_EXT_GLSLP     0x0f840c87U
+#define SHADER_EXT_CG        0x0059776fU
+#define SHADER_EXT_CGP       0x0b8865bfU
+
+#define runloop_cmd_triggered(cmd, id) BIT64_GET(cmd->state[2], id) 
+
+#define runloop_cmd_press(cmd, id)     BIT64_GET(cmd->state[0], id)
+#define runloop_cmd_pressed(cmd, id)   BIT64_GET(cmd->state[1], id)
+#ifdef HAVE_MENU
+#define runloop_cmd_menu_press(cmd)   (BIT64_GET(cmd->state[2], RARCH_MENU_TOGGLE) || \
+                                      runloop_cmd_get_state_menu_toggle_button_combo( \
+                                            settings, cmd->state[0], \
+                                            cmd->state[1], cmd->state[2]))
+#endif
+
 typedef struct event_cmd_state
 {
    retro_input_t state[3];
 } event_cmd_state_t;
-
-
 
 static msg_queue_t *g_msg_queue;
 
@@ -86,7 +100,6 @@ global_t *global_get_ptr(void)
    static struct global g_extern;
    return &g_extern;
 }
-
 
 const char *runloop_msg_queue_pull(void)
 {
@@ -166,17 +179,6 @@ static bool runloop_cmd_get_state_menu_toggle_button_combo(
    input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
    return true;
 }
-#endif
-
-#define runloop_cmd_triggered(cmd, id) BIT64_GET(cmd->state[2], id) 
-
-#define runloop_cmd_press(cmd, id)     BIT64_GET(cmd->state[0], id)
-#define runloop_cmd_pressed(cmd, id)   BIT64_GET(cmd->state[1], id)
-#ifdef HAVE_MENU
-#define runloop_cmd_menu_press(cmd)   (BIT64_GET(cmd->state[2], RARCH_MENU_TOGGLE) || \
-                                      runloop_cmd_get_state_menu_toggle_button_combo( \
-                                            settings, cmd->state[0], \
-                                            cmd->state[1], cmd->state[2]))
 #endif
 
 /**
@@ -286,11 +288,6 @@ static void check_stateslots(settings_t *settings,
 
    RARCH_LOG("%s\n", msg);
 }
-
-#define SHADER_EXT_GLSL      0x7c976537U
-#define SHADER_EXT_GLSLP     0x0f840c87U
-#define SHADER_EXT_CG        0x0059776fU
-#define SHADER_EXT_CGP       0x0b8865bfU
 
 static void shader_dir_free(rarch_dir_list_t *dir_list)
 {
