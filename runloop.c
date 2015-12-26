@@ -79,7 +79,6 @@ typedef struct event_cmd_state
 
 static rarch_dir_list_t runloop_shader_dir;
 
-static unsigned runloop_pending_windowed_scale;
 
 static msg_queue_t *g_msg_queue;
 
@@ -464,6 +463,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    static char runloop_fullpath[PATH_MAX_LENGTH];
    static rarch_system_info_t runloop_system;
+   static unsigned runloop_pending_windowed_scale;
    static retro_keyboard_event_t runloop_key_event = NULL;
    static unsigned runloop_max_frames              = false;
    static bool runloop_frame_time_last             = false;
