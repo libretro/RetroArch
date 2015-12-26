@@ -1185,6 +1185,7 @@ static void runloop_iterate_linefeed_overlay(settings_t *settings)
  */
 static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 {
+   settings_t *settings          = NULL;
    bool time_to_exit             = runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL) || quit_key_pressed;
    time_to_exit                  = time_to_exit || (video_driver_ctl(RARCH_DISPLAY_CTL_IS_ALIVE, NULL) == false);
    time_to_exit                  = time_to_exit || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL);
@@ -1197,27 +1198,26 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
    if (runloop_ctl(RUNLOOP_CTL_IS_EXEC, NULL))
       runloop_ctl(RUNLOOP_CTL_UNSET_EXEC, NULL);
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_CORE_SHUTDOWN, NULL))
-   {
-      /* Quits out of RetroArch main loop.
-       * On special case, loads dummy core
-       * instead of exiting RetroArch completely.
-       * Aborts core shutdown if invoked.
-       */
+   if (!runloop_ctl(RUNLOOP_CTL_IS_CORE_SHUTDOWN, NULL))
+      return -1;
 
-      settings_t *settings          = config_get_ptr();
-      if (!settings->load_dummy_on_core_shutdown)
-         return -1;
-      if (!runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL))
-         return -1;
+   /* Quits out of RetroArch main loop.
+    * On special case, loads dummy core
+    * instead of exiting RetroArch completely.
+    * Aborts core shutdown if invoked.
+    */
 
-      runloop_ctl(RUNLOOP_CTL_UNSET_SHUTDOWN,      NULL);
-      runloop_ctl(RUNLOOP_CTL_UNSET_CORE_SHUTDOWN, NULL);
+   settings = config_get_ptr();
 
-      return 0;
-   }
+   if (!settings->load_dummy_on_core_shutdown)
+      return -1;
+   if (!runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL))
+      return -1;
 
-   return -1;
+   runloop_ctl(RUNLOOP_CTL_UNSET_SHUTDOWN,      NULL);
+   runloop_ctl(RUNLOOP_CTL_UNSET_CORE_SHUTDOWN, NULL);
+
+   return 0;
 }
 
 /**
