@@ -98,7 +98,6 @@ enum
    RA_OPT_MAX_FRAMES
 };
 
-static char current_savestate_dir[PATH_MAX_LENGTH];
 static char current_savefile_dir[PATH_MAX_LENGTH];
 
 static char error_string[PATH_MAX_LENGTH];
@@ -353,6 +352,7 @@ const char *rarch_get_current_savefile_dir(void)
 
 static void set_paths_redirect(const char *path)
 {
+   char current_savestate_dir[PATH_MAX_LENGTH];
    uint32_t global_library_name_hash   = 0;
    bool check_global_library_name_hash = false;
    global_t                *global     = global_get_ptr();
