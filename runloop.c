@@ -26,6 +26,7 @@
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
+#include <string/stdstring.h>
 
 #include <compat/strl.h>
 
@@ -420,7 +421,7 @@ static bool rarch_game_specific_options(char **output)
 
    if (!core_name || !game_name)
       return false;
-   if (core_name[0] == '\0' || game_name[0] == '\0')
+   if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
    RARCH_LOG("Per-Game Options: core name: %s\n", core_name);
@@ -429,9 +430,9 @@ static bool rarch_game_specific_options(char **output)
    /* Config directory: config_directory.
    * Try config directory setting first,
    * fallback to the location of the current configuration file. */
-   if (settings->menu_config_directory[0] != '\0')
+   if (!string_is_empty(settings->menu_config_directory))
       strlcpy(config_directory, settings->menu_config_directory, sizeof(config_directory));
-   else if (global->path.config[0] != '\0')
+   else if (!string_is_empty(global->path.config))
       fill_pathname_basedir(config_directory, global->path.config, sizeof(config_directory));
    else
    {

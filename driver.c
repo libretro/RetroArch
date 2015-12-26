@@ -15,6 +15,7 @@
  */
 
 #include <compat/posix_string.h>
+#include <string/stdstring.h>
 
 #include "general.h"
 #include "msg_hash.h"
@@ -139,7 +140,7 @@ int find_driver_index(const char * label, const char *drv)
    {
       if (!obj)
          return -1;
-      if (str[0] == '\0')
+      if (string_is_empty(str))
          break;
       if (!strcasecmp(drv, str))
          return i;
