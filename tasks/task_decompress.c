@@ -18,6 +18,7 @@
 #endif
 
 #include <string/string_list.h>
+#include <string/stdstring.h>
 #include <file/file_path.h>
 #include <file/file_extract.h>
 
@@ -233,7 +234,7 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
    t->state     = s;
    t->handler   = rarch_task_decompress_handler;
 
-   if (subdir && subdir[0] != '\0')
+   if (!string_is_empty(subdir))
    {
       s->subdir   = strdup(subdir);
       t->handler   = rarch_task_decompress_handler_subdir;

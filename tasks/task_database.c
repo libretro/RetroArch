@@ -16,6 +16,7 @@
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
 #include <retro_endianness.h>
+#include <string/stdstring.h>
 
 #include <queues/message_queue.h>
 
@@ -106,7 +107,7 @@ static int database_info_iterate_start(database_info_handle_t *db,
          name);
 #endif
 
-   if (msg[0] != '\0')
+   if (!string_is_empty(msg))
       runloop_msg_queue_push(msg, 1, 180, true);
 
 #if 0
@@ -282,7 +283,7 @@ static int database_info_list_iterate_found_match(
 
    strlcpy(entry_path_str, entry_path, sizeof(entry_path_str));
 
-   if (zip_name && zip_name[0] != '\0')
+   if (!string_is_empty(zip_name))
       fill_pathname_join_delim(entry_path_str, entry_path_str, zip_name,
             '#', sizeof(entry_path_str));
 

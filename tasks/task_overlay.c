@@ -14,11 +14,14 @@
  */
 
 #include <stdlib.h>
+
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 #include <file/config_file.h>
 #include <string/string_list.h>
+#include <string/stdstring.h>
 #include <rhash.h>
+
 #include "tasks.h"
 
 #include "../input/input_config.h"
@@ -462,7 +465,7 @@ static void rarch_task_overlay_deferred_load(overlay_loader_t *loader)
       config_get_path(conf, overlay->config.paths.key,
                overlay->config.paths.path, sizeof(overlay->config.paths.path));
 
-      if (overlay->config.paths.path[0] != '\0')
+      if (!string_is_empty(overlay->config.paths.path))
       {
          char overlay_resolved_path[PATH_MAX_LENGTH] = {0};
 
