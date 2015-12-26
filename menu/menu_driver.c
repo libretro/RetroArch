@@ -660,7 +660,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_PLAYLIST_INIT:
          {
             const char *path = (const char*)data;
-            if (!string_is_empty(path))
+            if (string_is_empty(path))
                return false;
             menu_driver_playlist  = content_playlist_init(path,
                   COLLECTION_SIZE);
