@@ -46,6 +46,7 @@ OBJ = frontend/frontend_salamander.o \
 		frontend/drivers/platform_null.o \
 		libretro-common/file/file_path.o \
 		libretro-common/hash/rhash.o \
+		libretro-common/string/stdstring.o \
 		libretro-common/string/string_list.o \
 		libretro-common/file/dir_list.o \
 		libretro-common/file/retro_file.o \

@@ -129,7 +129,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
    else
 #endif
 #ifndef IS_SALAMANDER
-      if (*argc > 1 && argv[1] != NULL && argv[1][0] != '\0')
+      if (*argc > 1 && !string_is_empty(argv[1]))
       {
          static char path[PATH_MAX_LENGTH];
          *path = '\0';
@@ -373,7 +373,7 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
 #ifndef IS_SALAMANDER
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
-   if (should_load_game && fullpath[0] != '\0')
+   if (should_load_game && !string_is_empty(fullpath))
    {
       char game_path[256];
       strlcpy(game_path, fullpath, sizeof(game_path));

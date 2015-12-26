@@ -33,6 +33,7 @@
 #ifndef IS_SALAMANDER
 #include <file/file_list.h>
 #endif
+#include <string/stdstring.h>
 
 #include "../frontend_driver.h"
 #include "../../defaults.h"
@@ -318,7 +319,7 @@ static void frontend_gx_exitspawn(char *s, size_t len)
 {
    bool should_load_game = false;
 #if defined(IS_SALAMANDER)
-   if (gx_rom_path[0] != '\0')
+   if (!string_is_empty(gx_rom_path))
       should_load_game = true;
 #elif defined(HW_RVL)
    should_load_game = exitspawn_start_game;

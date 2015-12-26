@@ -129,7 +129,7 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
 #endif
 
 #ifndef IS_SALAMANDER
-   if (argv[1] && (argv[1][0] != '\0'))
+   if (!string_is_empty(argv[1]))
    {
       static char path[PATH_MAX_LENGTH];
       struct rarch_main_wrap *args = NULL;
@@ -258,7 +258,7 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
-   if (should_load_game && fullpath[0] != '\0')
+   if (should_load_game && !string_is_empty(fullpath))
    {
       argp[args] = '\0';
       strlcat(argp + args, fullpath, sizeof(argp) - args);

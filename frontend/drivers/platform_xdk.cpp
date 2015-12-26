@@ -26,6 +26,7 @@
 #include <file/file_list.h>
 #endif
 #include <retro_miscellaneous.h>
+#include <string/stdstring.h>
 
 #include "platform_xdk.h"
 #include "../frontend_driver.h"
@@ -215,7 +216,8 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 
       extracted_path = (char*)&ptr.Data;
 
-      if (extracted_path && extracted_path[0] != '\0'
+      if (
+            !string_is_empty(extracted_path)
             && (strstr(extracted_path, "Pool") == NULL)
             /* Hack. Unknown problem */)
       {
@@ -239,32 +241,31 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 	  }
 	  else
 		  sprintf_s(extracted_path, dwLaunchDataSize, "%s", pLaunchData);
-      if (extracted_path && extracted_path[0] != '\0')
-      {
-         /* Auto-start game */
+
+     /* Auto-start game */
+      if (!string_is_empty(extracted_path))
          strlcpy(path, extracted_path, sizeof(path));
-      }
 
       if (pLaunchData)
          delete []pLaunchData;
    }
 #endif
-   if (path && path[0] != '\0')
+   if (!string_is_empty(path))
    {
-         struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
+      struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
 
-         if (args)
-         {
-            /* Auto-start game. */
-            args->touched        = true;
-            args->no_content     = false;
-            args->verbose        = false;
-            args->config_path    = NULL;
-            args->sram_path      = NULL;
-            args->state_path     = NULL;
-            args->content_path   = path;
-            args->libretro_path  = NULL;
-         }
+      if (args)
+      {
+         /* Auto-start game. */
+         args->touched        = true;
+         args->no_content     = false;
+         args->verbose        = false;
+         args->config_path    = NULL;
+         args->sram_path      = NULL;
+         args->state_path     = NULL;
+         args->content_path   = path;
+         args->libretro_path  = NULL;
+      }
    }
 #endif
 
@@ -318,7 +319,7 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
    (void)should_load_game;
 
 #ifdef IS_SALAMANDER
-   if (path[0] != '\0')
+   if (!string_is_empty(path))
       XLaunchNewImage(path, NULL);
 #else
 #ifdef _XBOX
@@ -331,21 +332,21 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
    memset(&ptr, 0, sizeof(ptr));
 
 
-   if (should_load_game && fullpath[0] != '\0')
+   if (should_load_game && !string_is_empty(fullpath))
       snprintf((char*)ptr.Data, sizeof(ptr.Data), "%s", fullpath);
 
-   if (path[0] != '\0')
-      XLaunchNewImage(path, ptr.Data[0] != '\0' ? &ptr : NULL);
+   if (!string_is_empty(path))
+      XLaunchNewImage(path, !string_is_empty(ptr.Data) ? &ptr : NULL);
 #elif defined(_XBOX360)
    char game_path[1024] = {0};
 
-   if (should_load_game && fullpath[0] != '\0')
+   if (should_load_game && !string_is_empty(fullpath))
    {
       strlcpy(game_path, fullpath, sizeof(game_path));
       XSetLaunchData(game_path, MAX_LAUNCH_DATA_SIZE);
    }
 
-   if (path[0] != '\0')
+   if (!string_is_empty(path))
       XLaunchNewImage(path, NULL);
 #endif
 #endif

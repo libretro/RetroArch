@@ -94,13 +94,14 @@ static void find_and_set_first_file(char *s, size_t len,
    find_first_libretro_core(first_file, sizeof(first_file),
          g_defaults.dir.core, ext);
 
-   if (first_file[0] != '\0')
+   if (string_is_empty(first_file))
    {
-      fill_pathname_join(s, g_defaults.dir.core, first_file, len);
-      RARCH_LOG("libretro_path now set to: %s.\n", s);
-   }
-   else
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
+      return;
+   }
+
+   fill_pathname_join(s, g_defaults.dir.core, first_file, len);
+   RARCH_LOG("libretro_path now set to: %s.\n", s);
 }
 
 static void salamander_init(char *s, size_t len)
