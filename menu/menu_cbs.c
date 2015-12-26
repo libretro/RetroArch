@@ -14,6 +14,7 @@
  */
 
 #include <compat/strl.h>
+#include <string/stdstring.h>
 #include <string/string_list.h>
 
 #include "menu_driver.h"
@@ -28,7 +29,7 @@
 static void menu_cbs_init_log(const char *entry_label, const char *bind_label, const char *label)
 {
 #ifdef DEBUG_LOG
-   if (label && label[0] != '\0')
+   if (!string_is_empty(label))
       RARCH_LOG("[%s]\t\t\tFound %s bind : [%s]\n", entry_label, bind_label, label);
 #endif
 }
@@ -73,7 +74,7 @@ void menu_cbs_init(void *data,
    RARCH_LOG("\n");
 #endif
 
-   repr_label = (label && label[0] != '\0') ? label : path;
+   repr_label = (!string_is_empty(label)) ? label : path;
 
    ret = menu_cbs_init_bind_ok(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
 

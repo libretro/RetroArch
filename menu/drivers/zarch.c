@@ -25,6 +25,7 @@
 #include <file/dir_list.h>
 #include <compat/posix_string.h>
 #include <gfx/math/matrix_4x4.h>
+#include <string/stdstring.h>
 #include <formats/image.h>
 #include <compat/strl.h>
 #include <retro_stat.h>
@@ -691,7 +692,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
       if (zui->load_dlist)
       {
          fill_pathname_parent_dir(parent_dir, zui->load_cwd, sizeof(parent_dir));
-         if (parent_dir[0] != '\0' &&
+         if (!string_is_empty(parent_dir) &&
                zarch_zui_list_item(zui, tabbed, 0, tabbed->tabline_size + 73, " ..", 0, NULL /* TODO/FIXME */))
          {
             zarch_zui_render_lay_root_load_set_new_path(zui, parent_dir);
@@ -1082,7 +1083,7 @@ static void *zarch_init(void **userdata)
    zui->header_height  = 1000; /* dpi / 3; */
    zui->font_size       = 28;
 
-   if (settings->menu.wallpaper[0] != '\0')
+   if (!string_is_empty(settings->menu.wallpaper))
       rarch_task_push_image_load(settings->menu.wallpaper,
             "cb_menu_wallpaper", menu_display_handle_wallpaper_upload, NULL);
 

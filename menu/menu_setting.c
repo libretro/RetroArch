@@ -26,6 +26,7 @@
 #include <file/file_list.h>
 #include <file/file_path.h>
 #include <file/config_file.h>
+#include <string/stdstring.h>
 
 #include "menu_setting.h"
 
@@ -1877,7 +1878,7 @@ rarch_setting_t *menu_setting_find(const char *label)
          if (strcmp(label, name) != 0)
             continue;
 
-         if (short_description[0] == '\0')
+         if (string_is_empty(short_description))
             return NULL;
 
          if (setting->read_handler)
@@ -2911,7 +2912,7 @@ void general_write_handler(void *data)
          break;
       case MENU_LABEL_NETPLAY_IP_ADDRESS:
 #ifdef HAVE_NETPLAY
-         global->has_set.netplay_ip_address = (setting->value.string[0] != '\0');
+         global->has_set.netplay_ip_address = (!string_is_empty(setting->value.string));
 #endif
          break;
       case MENU_LABEL_NETPLAY_MODE:

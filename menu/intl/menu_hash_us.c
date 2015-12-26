@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #include "../menu_hash.h"
 #include "../../configuration.h"
@@ -2710,7 +2711,7 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                menu_hash_to_str(MENU_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
                );
       default:
-         if (s[0] == '\0')
+         if (string_is_empty(s))
             strlcpy(s, menu_hash_to_str(MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
          return -1;
    }

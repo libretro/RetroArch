@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include <retro_inline.h>
+#include <string/stdstring.h>
 
 #include "menu_driver.h"
 #include "menu_cbs.h"
@@ -359,7 +360,7 @@ void menu_entries_get(size_t i, menu_entry_t *entry)
 
    menu_entries_get_last_stack(NULL, &label, NULL, NULL);
 
-   entry->path[0] = entry->value[0] = entry->label[0] = '\0';
+   entry->path[0] = entry->value[0] = string_is_empty(entry->label);
 
    menu_entries_get_at_offset(selection_buf, i,
          &path, &entry_label, &entry->type, &entry->entry_idx, NULL);
@@ -419,9 +420,9 @@ int menu_entries_get_core_title(char *s, size_t len)
    if (!settings->menu.core_enable)
       return -1; 
 
-   if (!core_name || core_name[0] == '\0')
+   if (string_is_empty(core_name))
       core_name = info->info.library_name;
-   if (!core_name || core_name[0] == '\0')
+   if (string_is_empty(core_name))
       core_name = menu_hash_to_str(MENU_VALUE_NO_CORE);
 
    if (!core_version)

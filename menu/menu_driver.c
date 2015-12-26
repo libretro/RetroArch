@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include "menu_driver.h"
 #include "menu_cbs.h"
@@ -604,9 +605,11 @@ void *menu_init(const void *data)
    menu->help_screen_type           = MENU_HELP_WELCOME;
    settings->menu_show_start_screen = false;
 
-   if (settings->bundle_assets_extract_enable &&
-         settings->bundle_assets_src_path[0] != '\0' && settings->bundle_assets_dst_path[0] != '\0' &&
-         settings->bundle_assets_extract_version_current != settings->bundle_assets_extract_last_version
+   if (
+             settings->bundle_assets_extract_enable
+         && !string_is_empty(settings->bundle_assets_src_path) 
+         && !string_is_empty(settings->bundle_assets_dst_path)
+         && settings->bundle_assets_extract_version_current != settings->bundle_assets_extract_last_version
       )
    {
       menu->help_screen_type           = MENU_HELP_EXTRACT;
@@ -657,7 +660,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_PLAYLIST_INIT:
          {
             const char *path = (const char*)data;
-            if (!path || path[0] == '\0')
+            if (!string_is_empty(path))
                return false;
             menu_driver_playlist  = content_playlist_init(path,
                   COLLECTION_SIZE);

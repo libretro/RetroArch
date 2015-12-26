@@ -20,6 +20,7 @@
 #include <file/file_extract.h>
 #include <file/dir_list.h>
 #include <retro_stat.h>
+#include <string/stdstring.h>
 
 #include "menu_driver.h"
 #include "menu_navigation.h"
@@ -947,10 +948,10 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          fill_short_pathname_representation(path_short, path,
                sizeof(path_short));
          strlcpy(fill_buf,
-               (label && label[0] != '\0') ? label : path_short,
+               (!string_is_empty(label)) ? label : path_short,
                sizeof(fill_buf));
 
-         if (core_name && core_name[0] != '\0')
+         if (!string_is_empty(core_name))
          {
             if (core_name_hash != MENU_VALUE_DETECT)
             {
@@ -1484,7 +1485,7 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
 
    for (i = 0; i < db_list->count; i++)
    {
-      if (db_list->list[i].name && db_list->list[i].name[0] != '\0')
+      if (!string_is_empty(db_list->list[i].name))
          menu_entries_push(list, db_list->list[i].name,
                path, MENU_FILE_RDB_ENTRY, 0, 0);
    }
@@ -1833,7 +1834,7 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
    content_playlist_get_index(playlist, idx,
          NULL, &label, &core_path, &core_name, NULL, &db_name);
 
-   if (db_name && db_name[0] != '\0')
+   if (!string_is_empty(db_name))
    {
       char db_path[PATH_MAX_LENGTH] = {0};
 
@@ -2156,7 +2157,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
       char out_dir[PATH_MAX_LENGTH];
       fill_pathname_parent_dir(out_dir, info->path, sizeof(out_dir));
 
-      if (out_dir[0] != '\0')
+      if (!string_is_empty(out_dir))
       {
          menu_entries_push(info->list, "..", info->path,
                MENU_FILE_PARENT_DIRECTORY, 0, 0);
@@ -2900,7 +2901,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_DATABASE_QUERY:
          ret = menu_database_parse_query(info->list,
-               info->path, (info->path_c[0] == '\0') ? NULL : info->path_c);
+               info->path, string_is_empty(info->path_c) ? NULL : info->path_c);
          strlcpy(info->path, info->path_b, sizeof(info->path));
 
          info->need_sort    = true;
@@ -3313,14 +3314,7 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
          strlcpy(info.label, menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
                sizeof(info.label));
 
-         if (settings->playlist_directory[0] != '\0')
-         {
-            strlcpy(info.path, settings->playlist_directory,
-                  sizeof(info.path));
-            if (menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL) != 0)
-               return -1;
-         }
-         else
+         if (string_is_empty(settings->playlist_directory))
          {
             menu_entries_clear(info.list);
             menu_entries_push(info.list,
@@ -3329,6 +3323,13 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
                   MENU_INFO_MESSAGE, 0, 0);
             info.need_refresh = true;
             info.need_push    = true;
+         }
+         else
+         {
+            strlcpy(info.path, settings->playlist_directory,
+                  sizeof(info.path));
+            if (menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL) != 0)
+               return -1;
          }
          menu_displaylist_push_list_process(&info);
          return 0;

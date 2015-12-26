@@ -14,6 +14,7 @@
  */
 
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
@@ -189,7 +190,7 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(menu_displ
 
    database_info_build_query(query, sizeof(query), info->label, str_list->elems[0].data);
 
-   if (query[0] == '\0')
+   if (string_is_empty(query))
       goto end;
 
    strlcpy(info->path,   str_list->elems[1].data, sizeof(info->path));

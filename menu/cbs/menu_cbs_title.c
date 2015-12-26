@@ -131,7 +131,7 @@ static int action_get_title_generic(char *s, size_t len, const char *path,
 {
    struct string_list *list_path    = NULL;
    
-   if (path && path[0] != '\0')
+   if (!string_is_empty(path))
       list_path = string_split(path, "|");
 
    if (list_path)
@@ -141,7 +141,7 @@ static int action_get_title_generic(char *s, size_t len, const char *path,
          strlcpy(elem0_path, list_path->elems[0].data, sizeof(elem0_path));
       string_list_free(list_path);
       snprintf(s, len, "%s - %s", text,
-            (elem0_path[0] != '\0') ? path_basename(elem0_path) : "");
+            (string_is_empty(elem0_path)) ? "" : path_basename(elem0_path));
    }
    else
       strlcpy(s, "N/A", len);
@@ -284,7 +284,7 @@ static int action_get_title_group_settings(const char *path, const char *label,
 
    strlcpy(s, elem0, len);
 
-   if (elem1[0] != '\0')
+   if (!string_is_empty(elem1))
    {
       strlcat(s, " - ", len);
       strlcat(s, elem1, len);

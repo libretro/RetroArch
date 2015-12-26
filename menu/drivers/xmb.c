@@ -1446,7 +1446,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       }
 
       ticker_limit = 35;
-      if (entry.value[0] == '\0')
+      if (string_is_empty(entry.value))
       {
          if (settings->menu.boxart_enable && xmb->boxart)
             ticker_limit = 40;
@@ -1759,7 +1759,7 @@ static void xmb_frame(void *data)
       render_background = true;
    }
 
-   if (xmb->box_message[0] != '\0')
+   if (!string_is_empty(xmb->box_message))
    {
       strlcpy(msg, xmb->box_message,
             sizeof(msg));
@@ -2150,7 +2150,7 @@ static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
             break;
       }
 
-      if (path[0] == '\0' || !path_file_exists(path))
+      if (string_is_empty(path) || !path_file_exists(path))
          continue;
 
       texture_image_load(&ti, path);

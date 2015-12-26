@@ -21,6 +21,7 @@
 #include <string.h>
 #include <limits.h>
 
+#include <string/stdstring.h>
 #include <string/string_list.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
@@ -635,7 +636,7 @@ static void rgui_render(void *data)
       rgui_render_messagebox(msg);
    }
 
-   if (rgui->msgbox[0] != '\0')
+   if (!string_is_empty(rgui->msgbox))
    {
       rgui_render_messagebox(rgui->msgbox);
       rgui->msgbox[0] = '\0';

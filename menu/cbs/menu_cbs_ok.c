@@ -15,6 +15,7 @@
 
 #include <file/file_path.h>
 #include <retro_stat.h>
+#include <string/stdstring.h>
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
@@ -228,10 +229,10 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_CONFIGURATIONS_LIST:
          info.type          = type;
          info.directory_ptr = idx;
-         if (settings->menu_config_directory[0] != '\0')
-            info_path        = settings->menu_config_directory;
-         else
+         if (string_is_empty(settings->menu_config_directory))
             info_path        = label;
+         else
+            info_path        = settings->menu_config_directory;
          info_label = label;
          break;
       case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE:
@@ -1317,9 +1318,9 @@ static int action_ok_option_create(const char *path,
    /* Config directory: config_directory.
    * Try config directory setting first,
    * fallback to the location of the current configuration file. */
-   if (settings->menu_config_directory[0] != '\0')
+   if (!string_is_empty(settings->menu_config_directory))
       strlcpy(config_directory, settings->menu_config_directory, PATH_MAX_LENGTH);
-   else if (global->path.config[0] != '\0')
+   else if (!string_is_empty(global->path.config))
       fill_pathname_basedir(config_directory, global->path.config, PATH_MAX_LENGTH);
    else
    {
@@ -1327,12 +1328,10 @@ static int action_ok_option_create(const char *path,
       return false;
    }
 
-   core_name = system ? system->info.library_name : NULL;
+   core_name = system ? system->info.library_name        : NULL;
    game_name = global ? path_basename(global->name.base) : NULL;
 
-   if (!core_name  || !game_name)
-      return false;
-   if (core_name[0] == '\0' || game_name == '\0')
+   if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
    /* Concatenate strings into full paths for game_path */
@@ -1443,7 +1442,7 @@ static int generic_action_ok_network(const char *path,
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
-   if (settings->network.buildbot_url[0] == '\0')
+   if (string_is_empty(settings->network.buildbot_url))
       return -1;
 
    event_command(EVENT_CMD_NETWORK_INIT);
@@ -1964,7 +1963,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 {
    uint32_t elem0_hash      = menu_hash_calculate(elem0);
 
-   if (elem0[0] != '\0' && (is_rdb_entry(elem0_hash) == 0))
+   if (!string_is_empty(elem0) && (is_rdb_entry(elem0_hash) == 0))
    {
       BIND_ACTION_OK(cbs, action_ok_rdb_entry_submenu);
       return 0;

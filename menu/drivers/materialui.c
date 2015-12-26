@@ -19,13 +19,13 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
-#include <string/stdstring.h>
 #include <limits.h>
 
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <formats/image.h>
 #include <gfx/math/matrix_4x4.h>
+#include <string/stdstring.h>
 #include <string/string_list.h>
 
 #include "menu_generic.h"
@@ -154,7 +154,7 @@ static void mui_context_reset_textures(mui_handle_t *mui, const char *iconpath)
             break;
       }
 
-      if (path[0] == '\0' || !path_file_exists(path))
+      if (string_is_empty(path) || !path_file_exists(path))
          continue;
 
       texture_image_load(&ti, path);
@@ -862,7 +862,7 @@ static void mui_frame(void *data)
       mui_render_messagebox(msg);
    }
 
-   if (mui->box_message[0] != '\0')
+   if (!string_is_empty(mui->box_message))
    {
       mui_render_quad(mui, 0, 0, width, height, width, height, &black_bg[0]);
       mui_render_messagebox(mui->box_message);

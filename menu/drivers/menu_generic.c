@@ -16,6 +16,7 @@
  */
 
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #include "menu_generic.h"
 
@@ -355,7 +356,7 @@ int menu_iterate_render(void *data, void *userdata)
    if (BIT64_GET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER))
       menu_display_ctl(MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG, NULL);
 
-   if (BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX) && menu->menu_state.msg[0] != '\0')
+   if (BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX) && !string_is_empty(menu->menu_state.msg))
    {
       menu_driver_ctl(RARCH_MENU_CTL_RENDER_MESSAGEBOX, NULL);
 
