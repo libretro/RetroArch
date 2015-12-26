@@ -474,6 +474,8 @@ static void config_set_defaults(void)
    if (def_menu)
       strlcpy(settings->menu.driver,
             def_menu,  sizeof(settings->menu.driver));
+   settings->menu.xmb_scale_factor = xmb_scale_factor;
+   settings->menu.xmb_alpha_factor = xmb_alpha_factor;
 #endif
 
    settings->history_list_enable         = def_history_list_enable;
@@ -1375,6 +1377,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    config_get_path(conf, "video_font_path", settings->video.font_path, sizeof(settings->video.font_path));
    CONFIG_GET_FLOAT_BASE(conf, settings, video.font_size, "video_font_size");
+
    CONFIG_GET_BOOL_BASE(conf, settings, video.font_enable, "video_font_enable");
    CONFIG_GET_FLOAT_BASE(conf, settings, video.msg_pos_x, "video_message_pos_x");
    CONFIG_GET_FLOAT_BASE(conf, settings, video.msg_pos_y, "video_message_pos_y");
@@ -1504,6 +1507,8 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_get_array(conf, "location_driver", settings->location.driver, sizeof(settings->location.driver));
 #ifdef HAVE_MENU
    config_get_array(conf, "menu_driver",     settings->menu.driver, sizeof(settings->menu.driver));
+   CONFIG_GET_INT_BASE(conf, settings, menu.xmb_scale_factor, "xmb_scale_factor");
+   CONFIG_GET_INT_BASE(conf, settings, menu.xmb_alpha_factor, "xmb_alpha_factor");
 #endif
    config_get_array(conf, "video_context_driver", settings->video.context_driver, sizeof(settings->video.context_driver));
    config_get_array(conf, "audio_driver", settings->audio.driver, sizeof(settings->audio.driver));
@@ -2728,6 +2733,8 @@ bool config_save_file(const char *path)
          *settings->playlist_directory ?
          settings->playlist_directory : "default");
 #ifdef HAVE_MENU
+   config_set_int(conf, "xmb_scale_factor", settings->menu.xmb_scale_factor);
+   config_set_int(conf, "xmb_alpha_factor", settings->menu.xmb_alpha_factor);
    config_set_path(conf, "rgui_browser_directory",
          *settings->menu_content_directory ?
          settings->menu_content_directory : "default");
@@ -2790,8 +2797,6 @@ bool config_save_file(const char *path)
          settings->video_viewport_custom.y);
 
    video_driver_ctl(RARCH_DISPLAY_CTL_SAVE_SETTINGS, conf);
-
-   config_set_float(conf, "video_font_size", settings->video.font_size);
 
    config_set_bool(conf, "block_sram_overwrite",
          settings->block_sram_overwrite);
