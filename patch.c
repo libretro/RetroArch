@@ -25,6 +25,7 @@
 #include <compat/msvc.h>
 #include <file/file_path.h>
 #include <file/file_extract.h>
+#include <string/stdstring.h>
 
 #include "patch.h"
 #include "file_ops.h"
@@ -522,7 +523,7 @@ static bool try_bps_patch(uint8_t **buf, ssize_t *size)
 
    if (!allow_bps)
       return false;
-   if (global->name.bps[0] == '\0')
+   if (string_is_empty(global->name.bps))
       return false;
 
    return apply_patch_content(buf, size, "BPS", global->name.bps,
@@ -536,7 +537,7 @@ static bool try_ups_patch(uint8_t **buf, ssize_t *size)
 
    if (!allow_ups)
       return false;
-   if (global->name.ups[0] == '\0')
+   if (string_is_empty(global->name.ups))
       return false;
 
    return apply_patch_content(buf, size, "UPS", global->name.ups,
@@ -550,7 +551,7 @@ static bool try_ips_patch(uint8_t **buf, ssize_t *size)
 
    if (!allow_ips)
       return false;
-   if (global->name.ips[0] == '\0')
+   if (string_is_empty(global->name.ips))
       return false;
 
    return apply_patch_content(buf, size, "IPS", global->name.ips,

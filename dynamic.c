@@ -21,6 +21,7 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <dynamic/dylib.h>
+#include <string/stdstring.h>
 
 #include <boolean.h>
 
@@ -692,7 +693,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
-         if (settings->system_directory[0] == '\0')
+         if (string_is_empty(settings->system_directory))
          {
             char *fullpath = NULL;
             runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
