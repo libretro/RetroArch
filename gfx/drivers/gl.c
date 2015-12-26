@@ -30,6 +30,7 @@
 #include <formats/image.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
+#include <string/stdstring.h>
 
 #include "../../driver.h"
 #include "../../record/record_driver.h"
@@ -2501,7 +2502,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    RARCH_LOG("[GL]: Vendor: %s, Renderer: %s.\n", vendor, renderer);
    RARCH_LOG("[GL]: Version: %s.\n", version);
 
-   if (version && version[0] != '\0')
+   if (!string_is_empty(version))
       sscanf(version, "%d.%d", &gl->version_major, &gl->version_minor);
 
 #ifndef RARCH_CONSOLE

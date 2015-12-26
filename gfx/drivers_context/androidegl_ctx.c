@@ -18,6 +18,7 @@
 #include <sys/system_properties.h>
 
 #include <formats/image.h>
+#include <string/stdstring.h>
 
 #include "../../driver.h"
 #include "../../general.h"
@@ -220,7 +221,7 @@ static void dpi_get_density(char *s, size_t len)
 {
    system_property_get("getprop", "ro.sf.lcd_density", s);
 
-   if (s[0] == '\0')
+   if (string_is_empty(s))
       system_property_get("wm", "density", s);
 }
 
@@ -240,7 +241,7 @@ static bool android_gfx_ctx_get_metrics(void *data,
          if (dpi == -1)
          {
             dpi_get_density(density, sizeof(density));
-            if (density[0] == '\0')
+            if (string_is_empty(density))
                return false;
             dpi    = atoi(density);
          }

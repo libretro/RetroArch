@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string/stdstring.h>
+
 #include "shader_hlsl.h"
 
 #include "../video_shader_parse.h"
@@ -256,7 +258,7 @@ static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, void *data, const char *pa
 
    hlsl->cg_shader->passes = 1;
 
-   if (path && path[0] != '\0')
+   if (!string_is_empty(path))
    {
       RARCH_LOG("Loading Cg/HLSL file: %s\n", path);
       strlcpy(hlsl->cg_shader->pass[0].source.path,

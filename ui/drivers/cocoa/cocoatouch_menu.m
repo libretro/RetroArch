@@ -19,6 +19,7 @@
 #include <boolean.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
+#include <string/stdstring.h>
 #include <string/string_list.h>
 
 #include "cocoa_common.h"
@@ -122,7 +123,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
   result.textLabel.text = BOXSTRING(label);
 
-  if (label[0] == '\0')
+  if (string_is_empty(label))
     strlcpy(buffer, "N/A", sizeof(buffer));
   result.detailTextLabel.text = BOXSTRING(buffer);
   return result;
@@ -426,7 +427,7 @@ replacementString:(NSString *)string
    field.delegate = self.formatter;
 
    menu_entry_get_value(self.i, buffer, sizeof(buffer));
-   if (buffer[0] == '\0')
+   if (string_is_empty(buffer))
       strlcpy(buffer, "N/A", sizeof(buffer));
 
    field.placeholder = BOXSTRING(buffer);
