@@ -1941,8 +1941,6 @@ bool config_load_override(void)
    core_name = system ? system->info.library_name : NULL;
    game_name = global ? path_basename(global->name.base) : NULL;
 
-   if (!core_name  || !game_name)
-      return false;
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
@@ -2125,8 +2123,6 @@ bool config_load_remap(void)
    core_name = system ? system->info.library_name : NULL;
    game_name = global ? path_basename(global->name.base) : NULL;
 
-   if (!core_name  || !game_name)
-      return false;
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
