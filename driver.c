@@ -479,11 +479,10 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
       case RARCH_DRIVER_CTL_UPDATE_SYSTEM_AV_INFO:
          {
             const struct retro_system_av_info **info = (const struct retro_system_av_info**)data;
-            if (!info)
-               return false;
-            return driver_update_system_av_info(*info);
+            if (info)
+               return driver_update_system_av_info(*info);
          }
-         return true;
+         return false;
       case RARCH_DRIVER_CTL_NONE:
       default:
          break;
