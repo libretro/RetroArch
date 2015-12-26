@@ -14,6 +14,7 @@
  */
 
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
@@ -962,7 +963,7 @@ static void menu_action_setting_disp_set_label_core_option_create(
 
    strlcpy(s, "", len);
 
-   if (global->name.base[0] != '\0')
+   if (!string_is_empty(global->name.base))
       strlcpy(s,  path_basename(global->name.base), len);
 
    strlcpy(s2, path, len2);
