@@ -1426,7 +1426,7 @@ enum
 {
    ACTION_OK_NETWORK_CORE_CONTENT_LIST = 0,
    ACTION_OK_NETWORK_CORE_UPDATER_LIST,
-   ACTION_OK_NETWORK_LAKKA_LIST,
+   ACTION_OK_NETWORK_LAKKA_LIST
 };
 
 static int generic_action_ok_network(const char *path,
