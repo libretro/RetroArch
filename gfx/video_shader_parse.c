@@ -27,6 +27,23 @@
 #include "../verbosity.h"
 #include "video_shader_parse.h"
 
+#define WRAP_MODE_CLAMP_TO_BORDER      0x3676ed11U
+#define WRAP_MODE_CLAMP_TO_EDGE        0x9427a608U
+#define WRAP_MODE_REPEAT               0x192dec66U
+#define WRAP_MODE_MIRRORED_REPEAT      0x117ac9a9U
+
+#define SCALE_TYPE_SOURCE              0x1c3aff76U
+#define SCALE_TYPE_VIEWPORT            0xe8f01225U
+#define SCALE_TYPE_ABSOLUTE            0x8cc74f64U
+
+
+#define SEMANTIC_CAPTURE               0xb2f5d639U
+#define SEMANTIC_CAPTURE_PREVIOUS      0x64d6d495U
+#define SEMANTIC_TRANSITION            0x96486f70U
+#define SEMANTIC_TRANSITION_PREVIOUS   0x536abbacU
+#define SEMANTIC_TRANSITION_COUNT      0x3ef2af78U
+#define SEMANTIC_PYTHON                0x15efc547U
+
 /**
  * wrap_mode_to_str:
  * @type              : Wrap type.
@@ -53,11 +70,6 @@ static const char *wrap_mode_to_str(enum gfx_wrap_type type)
 
    return "???";
 }
-
-#define WRAP_MODE_CLAMP_TO_BORDER      0x3676ed11U
-#define WRAP_MODE_CLAMP_TO_EDGE        0x9427a608U
-#define WRAP_MODE_REPEAT               0x192dec66U
-#define WRAP_MODE_MIRRORED_REPEAT      0x117ac9a9U
 
 /** 
  * wrap_str_to_mode:
@@ -87,10 +99,6 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
          wrap_mode);
    return RARCH_WRAP_DEFAULT;
 }
-
-#define SCALE_TYPE_SOURCE        0x1c3aff76U
-#define SCALE_TYPE_VIEWPORT      0xe8f01225U
-#define SCALE_TYPE_ABSOLUTE      0x8cc74f64U
 
 /** 
  * video_shader_parse_pass:
@@ -455,13 +463,6 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 
    return true;
 }
-
-#define SEMANTIC_CAPTURE              0xb2f5d639U
-#define SEMANTIC_CAPTURE_PREVIOUS     0x64d6d495U
-#define SEMANTIC_TRANSITION           0x96486f70U
-#define SEMANTIC_TRANSITION_PREVIOUS  0x536abbacU
-#define SEMANTIC_TRANSITION_COUNT     0x3ef2af78U
-#define SEMANTIC_PYTHON               0x15efc547U
 
 /** 
  * video_shader_parse_imports:
