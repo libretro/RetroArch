@@ -47,7 +47,7 @@
 #include "deps/7zip/7zCrc.h"
 #include "deps/7zip/7zFile.h"
 
-static bool Utf16_To_Char(uint8_t **utf_data,
+static bool utf16_to_char(uint8_t **utf_data,
       size_t *dest_len, const uint16_t *in)
 {
    unsigned len    = 0;
@@ -64,13 +64,11 @@ static bool Utf16_To_Char(uint8_t **utf_data,
    return utf16_conv_utf8(*utf_data, dest_len, in, len);
 }
 
-static bool ConvertUtf16toCharString(const uint16_t *in,
-      char *s, size_t len)
+static bool utf16_to_char_string(const uint16_t *in, char *s, size_t len)
 {
    size_t     dest_len  = 0;
    uint8_t *utf16_data  = NULL;
-   bool            ret  = Utf16_To_Char(
-         &utf16_data, &dest_len, in);
+   bool            ret  = utf16_to_char(&utf16_data, &dest_len, in);
 
    if (ret)
    {
@@ -162,7 +160,7 @@ static int read_7zip_file(
          }
 
          SzArEx_GetFileNameUtf16(&db, i, temp);
-         res = ConvertUtf16toCharString(temp, infile, sizeof(infile)) ? SZ_OK : SZ_ERROR_FAIL;
+         res = utf16_to_char_string(temp, infile, sizeof(infile)) ? SZ_OK : SZ_ERROR_FAIL;
 
          if (!strcmp(infile, relative_path))
          {
@@ -306,7 +304,7 @@ static struct string_list *compressed_7zip_file_list_new(
          }
 
          SzArEx_GetFileNameUtf16(&db, i, temp);
-         res      = ConvertUtf16toCharString(temp, infile, sizeof(infile)) ? SZ_OK : SZ_ERROR_FAIL;
+         res      = utf16_to_char_string(temp, infile, sizeof(infile)) ? SZ_OK : SZ_ERROR_FAIL;
          file_ext = path_get_extension(infile);
 
          if (string_list_find_elem_prefix(ext_list, ".", file_ext))
