@@ -255,7 +255,6 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          font_driver_flush(disp->font.buf);
 
          return menu_display_font_bind_block(NULL);
-         break;
       case MENU_DISPLAY_CTL_FRAMEBUF_DEINIT:
          if (menu_display_framebuf.data)
             free(menu_display_framebuf.data);
