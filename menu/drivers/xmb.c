@@ -1663,7 +1663,7 @@ static void xmb_frame(void *data)
    }
 
    /* set alpha components of colors */
-   coord_color[3]  = coord_color[7]  = coord_color[11]  = coord_color[15]  = (float)settings->menu.xmb_alpha_factor/100;
+   coord_color[3]  = coord_color[7]  = coord_color[11]  = coord_color[15]  = ((float)settings->menu.xmb_alpha_factor/100 > xmb->alpha) ? xmb->alpha : (float)settings->menu.xmb_alpha_factor/100;
    coord_color2[3] = coord_color2[7] = coord_color2[11] = coord_color2[15] = xmb->alpha;
 
    menu_display_draw_bg(
@@ -1842,7 +1842,7 @@ static void xmb_layout(xmb_handle_t *xmb)
    xmb->margins.title.bottom    = 60 * scale_factor - new_font_size / 3;
    xmb->margins.label.left      = 85.0 * scale_factor;
    xmb->margins.label.top       = new_font_size / 3.0;
-   xmb->margins.setting.left    = 700.0 * scale_factor;
+   xmb->margins.setting.left    = 600.0 * scale_factor;
    xmb->icon.size               = 128.0 * scale_factor;
 
    current = selection;
